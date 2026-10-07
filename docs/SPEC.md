@@ -256,6 +256,7 @@ A SPEC deve crescer com o produto, **não antes dele**.
 ### Mobilidade ativa e circulação de pedestres
 
 - Pedestres se deslocam fisicamente pela cidade.
+- A posição e o estado de deslocamento de um cidadão pertencem à simulação e não dependem de ele estar sendo renderizado; retirar sua representação visual por distância/câmera não pode alterar a viagem real.
 - Caminhadas fazem parte real das viagens, incluindo trechos até estacionamentos, pontos de ônibus e outros destinos.
 - Bicicletas existirão como modal real de transporte e circularão fisicamente pela cidade.
 - Ciclovias farão parte da infraestrutura viária.
@@ -284,6 +285,9 @@ A SPEC deve crescer com o produto, **não antes dele**.
 
 ### Comportamento detalhado do tráfego
 
+- O estado real do trânsito pertence à simulação e independe da câmera: um veículo fora da tela continua ocupando a malha viária, contribuindo para filas, congestionamento, tempos de viagem e demais consequências enquanto estiver em deslocamento.
+- Quando uma área está visível, a apresentação deve refletir de forma fiel o estado real do trânsito daquela área; otimização gráfica não pode fazer uma via congestionada parecer vazia nem esconder causas relevantes do jogador.
+- Remover ou simplificar a representação visual de um veículo não pode removê-lo causalmente da simulação, teletransportá-lo, eliminar atraso, estacionamento, consumo, capacidade, bloqueio ou qualquer outra consequência real.
 - Veículos escolhem a faixa adequada antes de conversões.
 - Filas são mantidas por faixa e afetam o fluxo de forma independente.
 - Mudanças de faixa e ultrapassagens fazem parte da simulação.
