@@ -380,7 +380,7 @@ A SPEC deve crescer com o produto, **não antes dele**.
 
 - Quando uma obra específica depende de material importado, os caminhões externos podem entregar diretamente no canteiro a quantidade necessária para aquela obra.
 - Essa entrega direta não exige passagem por depósito municipal.
-- Importações genéricas, destinadas a formar estoque da cidade, devem ser entregues em depósito municipal.
+- Para materiais de construção, não há importação genérica para formar estoque no escopo atual; a importação ocorre quando uma obra exige recursos indisponíveis localmente.
 
 
 ### Capacidade e operação de depósitos
@@ -395,3 +395,17 @@ A SPEC deve crescer com o produto, **não antes dele**.
 
 - No escopo inicial, excedentes elegíveis podem ser exportados automaticamente.
 - Toda receita e movimentação relevante de exportação deve aparecer de forma clara nas finanças da cidade.
+
+
+### Reserva e prioridade de materiais de obra
+
+- Ao confirmar uma obra, materiais já disponíveis no estoque municipal ficam reservados para aquela obra.
+- Se os materiais necessários ainda não estiverem disponíveis, a obra pode permanecer parada aguardando a chegada física das cargas.
+- Quando várias obras disputam o mesmo estoque, a prioridade inicial segue a ordem em que as obras foram criadas.
+
+
+### Política inicial de importação de materiais
+
+- No escopo atual, a importação de materiais de construção acontece em resposta a uma obra que exige recursos indisponíveis localmente.
+- Não existe compra genérica automática de materiais apenas para encher estoque.
+- O custo de frete da importação faz parte do custo monetário total exibido para a construção.
