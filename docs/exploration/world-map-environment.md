@@ -1,5 +1,9 @@
 # IndexCities — Mundo, mapa, terreno e ambiente
 
+> **Revisão humana:** PARCIALMENTE REVISADO.  
+> **Auditoria:** classificação conservadora com base no estado anterior à reorganização temática, commit `4b97ace2`. o documento mistura conteúdo discutido/confirmado com pesquisa, síntese ou redação da IA ainda não revisada integralmente.
+>
+
 > **Status:** exploração ativa, com algumas decisões já promovidas para a SPEC — não é fonte de verdade.
 >
 > Reúne direção visual, geração e reprodutibilidade do mapa, terreno, vegetação, clima e decisões de representação física do espaço urbano. Decisões já oficiais devem ser lidas na SPEC.
@@ -14,6 +18,9 @@ Este arquivo é material de exploração temática. Quando houver divergência, 
 ---
 
 ## Referência visual fornecida
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** direção visual em exploração; a apresentação 3D isométrica já está confirmada na SPEC.
 
@@ -40,6 +47,9 @@ A intenção atual é produzir boa parte dos assets visuais com uma ferramenta/I
 ---
 
 ## Terreno, vegetação e alcance de serviços
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** parcialmente decidido.
 
@@ -88,6 +98,9 @@ Pode ser reavaliada futuramente caso ruído se prove relevante para bem-estar, m
 
 ## Geração de mapa e reprodutibilidade
 
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
+
 **Status:** estrutura decidida; algoritmo ainda em exploração.
 
 Decidido:
@@ -119,6 +132,9 @@ Se o algoritmo de geração evoluir, apenas guardar a seed pode não ser suficie
 
 ## Terreno plano no escopo inicial
 
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
+
 **Status:** decidido.
 
 O mapa inicial do IndexCities será plano.
@@ -139,6 +155,9 @@ Essa decisão reduz complexidade de construção, pathfinding, geração de mapa
 ---
 
 ## Construção híbrida: grid lógico + liberdade de posicionamento
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** direção de protótipo aceita; ainda precisa ser validada em implementação.
 
@@ -177,6 +196,9 @@ Testar:
 ---
 
 ## Clima e ambiente sazonal
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** documentado para futuro; fora do escopo atual.
 
