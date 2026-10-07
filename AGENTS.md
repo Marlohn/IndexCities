@@ -14,6 +14,22 @@ Estas regras valem para humanos e IAs. O objetivo é maximizar progresso útil s
 Antes de uma mudança relevante, leia a SPEC e somente o código necessário para entender o alvo. Consulte a ARCHITECTURE quando a mudança afetar organização técnica, fronteiras ou dependências. Consulte a EXPLORATION quando a tarefa depender de uma discussão ainda aberta ou do raciocínio que levou a uma decisão.
 
 
+## Auditoria humana de conteúdo produzido por IA
+
+Conteúdo criado por IA não pode ganhar autoridade apenas porque foi escrito ou organizado no repositório.
+
+Regras:
+
+- qualquer pesquisa, proposta, recomendação, hipótese, síntese ou conclusão produzida pela IA que ainda não tenha sido discutida/revisada pelo responsável deve ser tratada como **revisão humana pendente**;
+- esse conteúdo pode viver em `docs/EXPLORATION.md` ou em `docs/exploration/*.md`, mas deve deixar claro que ainda precisa de revisão humana;
+- conteúdo com revisão humana pendente **não pode ser promovido** para `docs/SPEC.md`, `docs/ARCHITECTURE.md` ou virar regra em `AGENTS.md`;
+- somente após discussão explícita e confirmação do responsável a conclusão correspondente pode ser promovida para a fonte canônica adequada;
+- reorganizar, resumir ou mover conteúdo não conta como revisão humana;
+- quando houver dúvida sobre se algo foi realmente aprovado pelo responsável, trate como **pendente**, não como decidido;
+- termos como **decidido**, **aprovado**, **confirmado** ou equivalentes só devem ser usados quando houver evidência de decisão explícita do responsável ou quando a fonte canônica já registrar essa decisão.
+
+O objetivo é impedir que uma análise da IA seja confundida com decisão de produto, arquitetura ou processo.
+
 ## Fluxo contínuo de conversa e documentação
 
 Durante conversas de exploração ou definição com o responsável pelo projeto:
