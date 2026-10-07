@@ -218,3 +218,13 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Quando um cidadão está dentro de um prédio, sua atividade e estado continuam sendo simulados, mas sua posição interna pode permanecer abstrata.
 - Cidadãos podem sair para alimentação, lazer e socialização.
 - Cidadãos podem visitar amigos e familiares em outras residências.
+
+
+### Relacionamentos, família e ciclo de vida
+
+- Amizades e relacionamentos amorosos evoluem ao longo do tempo.
+- Cidadãos podem formar união/casamento e criar um novo domicílio.
+- Casais/famílias podem decidir ter filhos com base nas condições de vida e contexto da simulação.
+- Nascimentos devem ocorrer em hospital quando houver acesso e capacidade adequados.
+- O ciclo de vida inclui infância, adolescência, vida adulta e velhice.
+- A fase da vida altera necessidades, educação, trabalho e comportamento.
