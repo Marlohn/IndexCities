@@ -3749,6 +3749,25 @@ No primeiro escopo, pode ser mais simples tratar a empresa que assume o prédio 
 
 Isso evita criar mercado imobiliário comercial separado apenas por realismo.
 
+
+### Decisão fechada: comércio e indústria aguardam empresa adquirente
+
+Foi aprovado:
+
+jogador constrói prédio privado
+→ prédio concluído fica vazio/procurando operador
+→ empresas locais ou exteriores avaliam o ativo
+→ uma empresa adquire
+→ pagamento retorna ao Caixa da Cidade
+→ empresa torna-se proprietária + operadora
+→ operação segue com caixa empresarial próprio
+
+No primeiro modelo não haverá separação entre proprietário do imóvel comercial/industrial e a empresa operadora.
+
+A regra anterior de o Caixa da Cidade fornecer **capitalização operacional inicial** para a empresa fica superada por esta decisão. A empresa adquirente precisa chegar ao negócio com capital próprio real.
+
+Ainda permanece aberto **quem é o proprietário humano da empresa** e como o capital de uma empresa nova é formado.
+
 ### Grande risco 1: dinheiro infinito vindo do exterior
 
 Se qualquer prédio puder ser vendido instantaneamente a um comprador externo com dinheiro ilimitado, surge um exploit:
@@ -3854,19 +3873,15 @@ A superfície mostra:
 
 A visão detalhada mostra candidatos, preço, capacidade financeira e fatores relevantes.
 
-### Conflito com decisão atual se esta hipótese for aprovada
+### Coerência após aprovação
 
-A SPEC atualmente diz que:
-- o Caixa da Cidade paga toda construção privada;
-- uma empresa privada recebe do próprio Caixa da Cidade uma capitalização operacional inicial.
+A SPEC foi revisada:
+- o Caixa da Cidade continua pagando a construção;
+- a capitalização operacional automática da empresa foi removida;
+- a empresa adquirente compra o ativo com capital próprio;
+- o valor da aquisição retorna ao Caixa da Cidade.
 
-Se uma empresa local/exterior **adquirir** o prédio com capital próprio, essa capitalização inicial paga pela cidade provavelmente deixa de fazer sentido.
-
-Uma eventual aprovação desta hipótese exige revisar:
-- capitalização inicial das empresas;
-- origem do caixa inicial de uma nova empresa;
-- recuperação do investimento do Caixa da Cidade;
-- propriedade inicial de residências e prédios econômicos.
+Ainda precisam ser definidos a origem do capital de empresas novas e o vínculo entre empresa e SIM proprietário.
 
 ### Avaliação atual
 
@@ -3997,16 +4012,16 @@ A decisão é automática, mas deve ser diagnosticável:
 - imóvel adquirido;
 - renda/aluguel esperado quando aplicável.
 
-### Granularidade ainda aberta: indivíduo versus família
+### Granularidade decidida para o primeiro modelo
 
-O saldo individual do SIM foi aprovado.
+O saldo individual do SIM foi aprovado e a propriedade residencial terá **um único titular cidadão**.
 
-Ainda não está decidido se um imóvel comprado por um casal/família:
-- pertence a um cidadão específico;
-- pertence ao domicílio/família;
-- admite copropriedade.
+Um casal/família pode somar dinheiro para uma compra, mas:
+- um SIM específico fica registrado como proprietário;
+- aluguel recebido vai para esse proprietário conforme as regras econômicas definidas;
+- copropriedade fica fora do primeiro modelo.
 
-Não inventar esse detalhe até ele gerar consequência de gameplay suficiente.
+Essa simplificação preserva dinheiro e propriedade concretos sem exigir divisão jurídica de ativos.
 
 ### Coerência com comprador exterior
 
@@ -4015,3 +4030,102 @@ Permanece a decisão anterior:
 - investimento imobiliário externo puro continua fora do primeiro modelo.
 
 Depois de migrar e tornar-se residente real, essa família/cidadão pode futuramente acumular patrimônio e participar das mesmas regras de investimento local.
+
+
+---
+
+## Propriedade humana das empresas
+
+**Status:** aberto; recomendação atual é empresa como entidade separada com um SIM proprietário no primeiro modelo.
+
+### Por que a empresa precisa ser entidade própria
+
+Mesmo que um SIM seja dono, empresa e pessoa têm responsabilidades econômicas diferentes.
+
+**SIM**
+- carteira pessoal;
+- salário e consumo;
+- moradia e patrimônio pessoal;
+- impostos pessoais;
+- pode investir em empresa.
+
+**Empresa**
+- caixa empresarial;
+- estoque;
+- receitas de vendas;
+- salários pagos;
+- insumos, frete e impostos empresariais;
+- vagas e funcionários;
+- falência/encerramento.
+
+Misturar carteira pessoal e caixa da empresa faria uma compra de comida do dono competir diretamente com pagamento de salário dos funcionários e tornaria diagnóstico muito pior.
+
+### Opção A — empresa separada com um SIM proprietário
+
+**Recomendação atual.**
+
+Fluxo conceitual:
+
+SIM investe capital pessoal
+→ empresa possui caixa próprio
+→ empresa compra/adquire estabelecimento
+→ empresa opera
+→ lucro fica inicialmente no caixa da empresa
+→ eventual retirada/dividendo ao proprietário é outro fluxo explícito
+
+Prós:
+- empresa continua sendo entidade real e auditável;
+- existe um dono humano concreto;
+- separa patrimônio pessoal de operação empresarial;
+- um SIM pode enriquecer por possuir negócio sem misturar todos os pagamentos;
+- morte/herança futura da participação pode ter significado, se decidida depois.
+
+Contras:
+- surge o conceito de transferência entre dinheiro pessoal e empresarial;
+- precisamos definir quando/como lucro chega ao proprietário;
+- empresas exteriores levantam a questão de onde está seu dono.
+
+### Opção B — empresa é apenas extensão financeira do SIM
+
+Prós:
+- menos entidades monetárias.
+
+Contras:
+- mistura dinheiro pessoal, estoque, salários e despesas do negócio;
+- falência empresarial pode quebrar a carteira pessoal imediatamente;
+- difícil explicar expansão, múltiplos estabelecimentos e trabalhadores;
+- pior para causalidade e calibração.
+
+**Não recomendada.**
+
+### Opção C — empresa existe sem proprietário cidadão modelado
+
+Prós:
+- mais simples para empresas exteriores e grandes negócios.
+
+Contras:
+- introduz uma entidade econômica sem dono concreto;
+- enfraquece o princípio de evitar abstrações;
+- fica menos claro para onde vai o valor econômico acumulado.
+
+**Não recomendada como regra geral.**
+
+### Recomendação atual
+
+No primeiro modelo:
+- empresa é entidade própria;
+- cada empresa tem **um SIM proprietário**;
+- caixa pessoal e caixa empresarial são separados;
+- copropriedade/acionistas ficam fora;
+- o proprietário pode investir dinheiro real na empresa;
+- dividendos/retiradas só devem existir quando houver regra explícita.
+
+### Ponto ainda aberto: empresa exterior
+
+Há duas possibilidades principais antes de fechar a recomendação:
+1. empresa exterior entra junto com um SIM proprietário que também passa a existir/migrar para a cidade;
+2. permitir proprietário fora do mapa como entidade econômica externa explícita.
+
+A primeira é mais concreta, mas pode forçar migrações artificiais. A segunda é mais fiel a empresas externas, mas exige modelar um proprietário econômico fora da cidade.
+
+Não decidir sem comparar impacto de gameplay.
