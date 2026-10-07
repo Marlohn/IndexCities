@@ -1820,11 +1820,7 @@ Isso evita transporte e armazenamento artificiais quando o destino da carga já 
 
 ### Importação para estoque
 
-Quando a cidade compra materiais sem uma obra específica como destino:
-
-- a carga entra pela conexão externa;
-- caminhões levam a mercadoria ao depósito municipal;
-- o material passa a compor o estoque geral da cidade.
+Para materiais de construção, compra genérica para abastecer estoque fica fora do escopo atual. A importação é acionada por uma obra com falta de recursos.
 
 ---
 
@@ -1866,3 +1862,67 @@ Requisito de UI/finanças:
 - o jogador precisa conseguir entender se a cidade está ganhando dinheiro por produção interna ou dependendo de importações.
 
 No futuro pode ser avaliado controle manual por categoria, limites mínimos de estoque ou políticas de exportação, mas isso não é necessário no primeiro escopo.
+
+
+---
+
+## Reserva de materiais e fila de obras
+
+**Status:** decidido para o escopo inicial.
+
+Ao confirmar uma obra:
+
+1. o sistema verifica o estoque municipal disponível;
+2. a quantidade existente é reservada imediatamente para aquela obra;
+3. materiais reservados deixam de estar disponíveis para outras obras;
+4. se faltar material, a obra aguarda a entrega física;
+5. quando várias obras competem pelo mesmo recurso, a prioridade segue a ordem de criação.
+
+### Por que FIFO é uma boa regra inicial
+
+A ordem de criação (FIFO) é:
+
+- determinística;
+- fácil de explicar;
+- simples de depurar;
+- previsível para o jogador;
+- suficiente para validar o sistema antes de adicionar controles extras.
+
+### Possível evolução futura
+
+Pode valer a pena permitir prioridade manual de obras críticas, por exemplo:
+
+- hospital;
+- bombeiros;
+- água;
+- energia;
+- infraestrutura de emergência.
+
+Isso fica fora do escopo atual até existir necessidade real observada no gameplay.
+
+
+---
+
+## Política de importação de materiais acionada por obra
+
+**Status:** decidido.
+
+Para materiais de construção, o fluxo inicial não usa reposição genérica de estoque.
+
+A importação acontece quando:
+
+- o jogador confirma uma obra;
+- a obra exige materiais;
+- a cidade não possui quantidade suficiente disponível localmente.
+
+Nesse caso, a interface calcula e mostra:
+
+- materiais locais usados;
+- materiais faltantes;
+- preço dos materiais importados;
+- frete;
+- custo monetário total da construção.
+
+O frete não aparece como cobrança posterior separada: ele já compõe o preço mostrado antes da confirmação.
+
+Mesmo pago antecipadamente, o material continua sujeito à logística física e a obra espera a entrega dos caminhões.
