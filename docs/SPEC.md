@@ -49,6 +49,8 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - Cada emprego corresponderá a uma **vaga real** dentro de uma empresa ou serviço.
 - Empresas terão dinheiro e estado econômico próprio.
 - Estoque e/ou produção devem existir como parte do modelo econômico das empresas.
+- O consumo será modelado inicialmente por **categorias de produtos**, não por SKU individual.
+- Compras reais reduzem estoque real, movimentam dinheiro real e geram necessidade de reposição/logística.
 - Empresas poderão falir quando suas condições econômicas levarem a isso.
 
 ### Serviços públicos
@@ -63,6 +65,17 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - Construções passam por uma fase real de obra.
 - Obras consomem materiais da cidade.
 - Obras dependem de trabalhadores reais da população simulada.
+
+### Necessidades e serviços urbanos
+
+- Cidadãos precisam se alimentar regularmente e adquirir comida de forma real dentro da economia.
+- Cada prédio consome água e eletricidade de forma real.
+- Água e eletricidade dependem de redes/capacidades reais da cidade.
+- Prédios geram lixo.
+- A coleta de lixo deve acontecer fisicamente por veículos/serviços da cidade.
+- Cidadãos podem adoecer individualmente e buscar atendimento real.
+- Crime pode ser cometido por cidadãos individuais.
+- A polícia deve reagir a ocorrências reais geradas pela simulação.
 
 ### Tempo de jogo
 
