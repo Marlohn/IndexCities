@@ -1,5 +1,9 @@
 # IndexCities — Direção de produto e princípios de simulação
 
+> **Revisão humana:** PARCIALMENTE REVISADO.  
+> **Auditoria:** classificação conservadora com base no estado anterior à reorganização temática, commit `4b97ace2`. o documento mistura conteúdo discutido/confirmado com pesquisa, síntese ou redação da IA ainda não revisada integralmente.
+>
+
 > **Status:** exploração ativa, com vários princípios já promovidos para SPEC/AGENTS — não é fonte de verdade.
 >
 > Reúne a direção geral do jogo, questões de identidade/loop, princípios de profundidade sistêmica, legibilidade e microgerenciamento. Quando um trecho já foi promovido para a SPEC ou para AGENTS, ele permanece aqui apenas como histórico e justificativa.
@@ -14,6 +18,9 @@ Este arquivo é material de exploração temática. Quando houver divergência, 
 ---
 
 ## Ponto de partida do produto
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** aberto.
 
@@ -47,6 +54,9 @@ Material de projetos anteriores pode ser consultado no futuro como pesquisa, mas
 ---
 
 ## Direção atual do jogo
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** em exploração, exceto onde a SPEC já registra uma decisão fechada.
 
@@ -108,6 +118,9 @@ A direção é usar testes e outras proteções onde eles realmente defendam com
 
 ## Princípios desejados para a simulação
 
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
+
 **Status:** direção de produto em exploração; profundidade e limites dependem de pesquisa e benchmark.
 
 Além de "ter muitos agentes", o objetivo declarado é que os sistemas tenham **causa e consequência coerentes**.
@@ -132,6 +145,9 @@ O objetivo é chegar ao **máximo de profundidade viável**, sem fixar antecipad
 
 ## Escala física e forma de construir
 
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
+
 **Status:** parcialmente decidido.
 
 A granularidade de construção em casas e prédios já está decidida na SPEC.
@@ -151,6 +167,9 @@ A quantidade final de população, lotes, casas, edifícios, comércio e indúst
 ---
 
 ## Pesquisa prioritária: objetivo central, progressão e endgame
+
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
 
 **Status:** pesquisa específica e ampla obrigatória antes de fechar a estrutura de objetivos.
 
@@ -181,6 +200,9 @@ O documento [exploration/genre-benchmark.md](genre-benchmark.md) já contém evi
 ---
 
 ## Princípio geral: gameplay antes de microgerenciamento
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** decidido como critério transversal de design; também registrado em AGENTS e SPEC.
 
@@ -220,6 +242,9 @@ Esse critério deve ser reaplicado a transporte, serviços, empresas, cidadãos,
 ---
 
 ## Revisão geral: profundidade, legibilidade e dois níveis de leitura
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** princípio aprovado e revisão transversal realizada.
 
@@ -358,6 +383,9 @@ Isso permite corrigir balanceamento sem "chutar" o motivo de um comportamento em
 ---
 
 ## Princípio reforçado: evitar abstração sem causa concreta
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** decidido como critério transversal; também registrado em AGENTS e SPEC.
 
