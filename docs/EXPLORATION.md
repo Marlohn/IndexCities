@@ -4129,3 +4129,19 @@ Há duas possibilidades principais antes de fechar a recomendação:
 A primeira é mais concreta, mas pode forçar migrações artificiais. A segunda é mais fiel a empresas externas, mas exige modelar um proprietário econômico fora da cidade.
 
 Não decidir sem comparar impacto de gameplay.
+
+
+---
+
+## Interface e ferramentas do jogador
+
+**Status:** exploração concentrada em documento auxiliar.
+
+A pesquisa sobre GUI, construção, ferramenta de rua, snapping, overlays, atalhos, planejamento e realocação de edifícios foi separada para [PLAYER_INTERFACE.md](PLAYER_INTERFACE.md).
+
+Pontos atuais:
+
+- o comportamento de rua ortogonal em L num único gesto foi decidido e promovido para a SPEC;
+- mover projetos ainda não iniciados é uma hipótese forte de qualidade de vida;
+- mover prédio concluído permanece aberto e deve respeitar obra, materiais, trabalhadores, ocupantes, estoque e identidade da entidade;
+- a direção de UI em teste é mapa limpo, barra de ações previsível, painel contextual e preview forte antes de confirmar.
