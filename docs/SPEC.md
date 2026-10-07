@@ -267,7 +267,7 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Casas e apartamentos seguem o mesmo princípio geral de construção: quando o jogador ordena a obra, o custo sai do **Caixa da Cidade** e consome materiais físicos.
 - O jogador continua decidindo diretamente onde as residências serão construídas.
 - Depois de ocupada, a residência participa da economia familiar por meio de preço e/ou aluguel real.
-- O destino exato desses pagamentos ainda está em definição e deve preservar simplicidade, causalidade e retorno legível do investimento em moradia.
+- Aluguel é transferido ao proprietário real do imóvel. Compra e venda transferem dinheiro entre comprador e proprietário; a regra exata de propriedade/venda do ativo recém-construído antes do primeiro comprador ainda precisa ser fechada.
 
 ### Terreno e logística econômica
 
@@ -404,7 +404,7 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Não haverá, neste primeiro modelo, investidor residencial externo que permaneça fora da cidade comprando imóveis apenas para receber aluguel.
 - A procura exterior não é infinita: deve depender de fatores reais e diagnosticáveis, como emprego, preço, disponibilidade de moradia e atratividade da cidade.
 - Baixa demanda pode manter uma residência vazia por mais tempo; isso é consequência econômica válida e deve ser legível para o jogador.
-- A lógica detalhada de compra por famílias locais, propriedade para aluguel, herança e venda posterior continua em definição.
+- Famílias locais podem comprar imóveis adicionais para aluguel quando tiverem recursos reais; a fórmula de decisão, herança, revenda e regras do primeiro proprietário de um ativo recém-construído continuam em definição.
 
 ### Turismo e hospedagem
 
