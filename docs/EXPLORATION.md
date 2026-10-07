@@ -982,3 +982,46 @@ Falta definir a granularidade das categorias e a política de reposição para c
 - estacionamento específico para bicicletas.
 
 Esses sistemas podem ser revisitados depois que mobilidade básica, trânsito, estacionamento de carros e logística estiverem estáveis.
+
+
+---
+
+## Vias, travessias e controle de tráfego
+
+**Status:** parcialmente decidido.
+
+### Tipos de via iniciais
+
+Decidido para o escopo atual:
+
+- via urbana comum;
+- rodovia.
+
+A via urbana comum terá calçada por padrão.
+
+Novas categorias de via, perfis, larguras, faixas exclusivas e outras variações podem ser adicionadas depois, caso se provem necessárias.
+
+### Estacionamento
+
+Decidido:
+
+- estacionamento na rua ocupa espaço físico real;
+- edificações podem oferecer vagas privadas;
+- vagas privadas reduzem pressão por estacionamento público.
+
+### Travessias de pedestres
+
+A regra exata ainda precisa ser confirmada.
+
+Questão pendente:
+- pedestres devem atravessar **somente** em faixas/semafóros;
+- ou podem eventualmente atravessar fora desses pontos?
+
+### Semáforos
+
+A lógica exata ainda precisa ser confirmada.
+
+Questão pendente:
+- ciclos fixos;
+- controle adaptativo ao tráfego;
+- ou modelo híbrido configurável.
