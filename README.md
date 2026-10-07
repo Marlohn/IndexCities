@@ -4,12 +4,13 @@ IndexCities é uma nova base para um city builder 3D desktop, construída em **G
 
 O projeto começa propositalmente simples: primeiro queremos provar um jogo **jogável, visualmente convincente e tecnicamente saudável**. Processo e arquitetura só crescem quando resolvem um problema real.
 
-## Fonte de verdade
+## Documentos principais
 
-- [`docs/SPEC.md`](docs/SPEC.md) — define **o que o produto é e o que está no escopo atual**.
-- [`AGENTS.md`](AGENTS.md) — define **como humanos e IAs devem trabalhar no repositório**.
+- [`docs/SPEC.md`](docs/SPEC.md) — **o que o produto é e o que está decidido**.
+- [`docs/EXPLORATION.md`](docs/EXPLORATION.md) — **pesquisas, ideias, alternativas e decisões ainda em formação**.
+- [`AGENTS.md`](AGENTS.md) — **como humanos e IAs devem trabalhar e como esses documentos se relacionam**.
 
-Uma funcionalidade nova de produto entra primeiro na SPEC. Bugs que apenas restauram comportamento já especificado podem ser corrigidos diretamente.
+Uma funcionalidade nova de produto entra primeiro na SPEC. Pesquisa e discussão ficam na EXPLORATION até a decisão ser fechada. Bugs que apenas restauram comportamento já especificado podem ser corrigidos diretamente.
 
 ## Origem
 
