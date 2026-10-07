@@ -17,6 +17,7 @@ Durante conversas de exploração ou definição com o responsável pelo projeto
 
 - trate o que ele disser como entrada ativa de produto, não apenas como contexto de conversa;
 - quando houver afirmação factual verificável, pesquise e confirme antes de registrá-la como fato;
+- prefira fontes primárias, documentação oficial, dados públicos e benchmarks reproduzíveis; não use suposição como substituto de evidência;
 - quando houver uma decisão explícita, atualize a fonte de verdade apropriada imediatamente, sem esperar um pedido separado de documentação;
 - decisões de produto vão para `docs/SPEC.md`;
 - hipóteses, ideias, alternativas, referências, dúvidas e resultados de pesquisa vão para `docs/EXPLORATION.md`;
