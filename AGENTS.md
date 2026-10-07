@@ -26,7 +26,8 @@ Durante conversas de exploração ou definição com o responsável pelo projeto
 - se a documentação existente ficar desatualizada, contraditória ou incompleta à luz da conversa atual, corrija-a na mesma sessão;
 - não transforme suposição em requisito: quando não houver evidência ou decisão suficiente, registre como aberto e indique o que precisa ser pesquisado ou medido;
 - mantenha a documentação enxuta: atualize o que mudou em vez de acumular transcrições da conversa;
-- quando a conversa estiver sendo usada como entrevista de definição do produto, faça perguntas curtas em sequência, registre cada rodada e continue para a próxima até o responsável pedir para parar.
+- quando a conversa estiver sendo usada como entrevista de definição do produto, faça perguntas curtas em sequência, registre cada rodada e continue para a próxima até o responsável pedir para parar;
+- antes de formular novas perguntas, consulte `docs/SPEC.md` e `docs/EXPLORATION.md` e evite repetir perguntas já respondidas ou decisões já registradas.
 
 ## Arquitetura de especificação
 
