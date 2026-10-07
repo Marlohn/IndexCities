@@ -62,6 +62,13 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - Esses serviços terão capacidade real.
 - Esses serviços dependerão de funcionários reais da população simulada.
 
+### Pilar de gameplay: economia material
+
+- A expansão da cidade não deve ser resolvida apenas por dinheiro: **materiais físicos são um recurso central de gameplay**.
+- Construir a cidade exige obter materiais por produção local e/ou importação.
+- Produção, armazenamento, transporte e consumo desses materiais devem formar cadeias observáveis que geram atividade econômica, logística e empregos.
+- Dinheiro continua relevante para pagar obras, importações, frete, operação e outros custos, mas não substitui a disponibilidade física dos materiais.
+
 ### Construção e obras
 
 - Prédios e infraestrutura não aparecem instantaneamente prontos.
@@ -353,7 +360,6 @@ A SPEC deve crescer com o produto, **não antes dele**.
 
 - A cidade começa essencialmente vazia, sem tecido urbano pré-construído.
 - O mapa mantém apenas os elementos estruturais já definidos, como ambiente natural e conexão externa.
-- A possibilidade de fornecer um depósito/galpão inicial gratuito permanece em avaliação e não está decidida.
 
 
 ### Comércio exterior e logística externa
