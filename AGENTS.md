@@ -102,6 +102,19 @@ Para qualquer decisão de produto, avalie explicitamente o custo de microgerenci
 - Ao comparar alternativas, registre quando uma opção é mais realista porém pior de jogar, ou mais simples porém destrói consequências importantes.
 - Aplique este critério de forma genérica a todos os sistemas, não apenas a materiais e construção.
 
+## Princípio de causalidade e diagnóstico
+
+Sistemas profundos não podem virar caixas-pretas.
+
+- Toda consequência relevante para o jogador deve ser explicável a partir do estado real da simulação.
+- Quando algo falhar, o sistema deve conseguir responder **o que aconteceu, por que aconteceu e qual ação pode resolver**, usando as mesmas variáveis que realmente produziram o resultado.
+- Evite variáveis vagas de "saúde", "felicidade" ou "economia" quando elas apenas escondem causas reais. Agregados podem existir para UI, mas precisam ser derivados de fatores inspecionáveis.
+- Automação e abstração de interface não autorizam lógica invisível sem rastreabilidade.
+- Para calibração e debug, prefira fórmulas determinísticas, parâmetros explícitos e estados observáveis. Aleatoriedade só deve ser usada quando tiver função clara de gameplay e continuar diagnosticável.
+- Ao implementar sistemas sistêmicos, mantenha uma forma proporcional de inspecionar entradas, saídas e causas — por UI de diagnóstico, debug ou telemetria conforme a fase do projeto.
+- O feedback superficial deve ser simples e acionável; o detalhamento deve estar disponível sob demanda sem exigir que todos os jogadores o leiam.
+- Não crie uma explicação separada da simulação: a explicação exibida deve ser derivada da causa real.
+
 ## Regra principal de escopo
 
 - **Funcionalidade nova de produto precisa estar na SPEC antes de ser implementada.**
