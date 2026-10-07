@@ -101,3 +101,14 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Bombeiros precisam deslocar veículos e equipes fisicamente até a ocorrência.
 - Mortes individuais geram consequências reais para a cidade.
 - O sistema funerário/cemitério e a remoção física de corpos fazem parte da simulação.
+
+
+### Trabalho, emprego e renda
+
+- Cidadãos empregados têm horários reais de entrada e saída.
+- Os horários de trabalho devem influenciar diretamente os padrões de deslocamento e o trânsito.
+- Empresas e serviços podem operar em múltiplos turnos quando necessário.
+- Cidadãos desempregados procuram vagas reais disponíveis.
+- Vagas podem exigir níveis de educação e/ou qualificação compatíveis.
+- Cada vaga possui salário real.
+- Salários são pagos periodicamente ao trabalhador.
