@@ -4169,8 +4169,10 @@ A pesquisa sobre GUI, construção, ferramenta de rua, snapping, overlays, atalh
 Pontos atuais:
 
 - o comportamento de rua ortogonal em L num único gesto foi decidido e promovido para a SPEC;
-- mover projetos ainda não iniciados é uma hipótese forte de qualidade de vida;
-- mover prédio concluído permanece aberto e deve respeitar obra, materiais, trabalhadores, ocupantes, estoque e identidade da entidade;
+- a direção atual para teste é permitir cancelar ou reposicionar qualquer obra ainda incompleta sem punição material relevante, devolvendo integralmente os materiais comprometidos ao estoque; rastrear material parcialmente consumido durante cancelamento foi considerado provável microgerenciamento sem valor suficiente;
+- prédio concluído continua tendo consequência física: demolição perde o investimento realizado;
+- realocação de prédio concluído permanece em exploração, mas a hipótese preferida é uma ferramenta de alto nível, rápida e visualmente física, em que a origem desaparece enquanto o destino é montado, possivelmente com veículos/equipe fazendo a transição, sem obrigar o jogador a repetir uma obra longa;
+- custo, duração e interrupção operacional da realocação ainda precisam de POC e calibração;
 - a direção de UI em teste é mapa limpo, barra de ações previsível, painel contextual e preview forte antes de confirmar.
 
 
