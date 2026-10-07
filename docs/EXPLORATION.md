@@ -4401,3 +4401,35 @@ Primeiro:
 5. revisar arquivos antigos aos poucos, promovendo decisões válidas para SPEC e removendo contradições.
 
 `GENRE_BENCHMARK.md` pode permanecer como documento especial fora da pasta ou ser movido depois; ele possui função de referência comparativa distinta da exploração temática normal e não precisa ser reorganizado apenas por uniformidade.
+
+---
+
+## IA local para decisões da simulação
+
+**Status:** pesquisado; não recomendado como estratégia de performance nesta fase.
+
+Foi avaliada a ideia de usar modelos de decisão do tipo Jev e alternativas locais como Laya para decidir ações de cidadãos, famílias ou empresas.
+
+### Conclusão atual
+
+Não adotar esse tipo de modelo no loop central do Simulation Core com o objetivo de melhorar performance, e não priorizar uma POC agora apenas para validar desempenho.
+
+O motivo é estrutural: inferência neural local continua sendo muito mais cara do que regras, funções de utilidade e filtros simples em C# para decisões massivas. Os benchmarks públicos recentes do Laya mostram latência de dezenas de milissegundos por pergunta isolada em GPU e centenas de milissegundos em CPU em algumas configurações, embora batching reduza bastante o custo médio. Isso é interessante para uma IA, mas não para substituir decisões simples de milhares de agentes.
+
+Além disso, usar GPU para inferência durante um jogo 3D disputa recursos com a própria renderização e adiciona memória, runtime e complexidade de distribuição. Fine-tuning também passa a ser parte necessária do produto: os checkpoints base do Laya têm desempenho fraco em tarefas não vistas e os melhores números publicados dependem de especialização para um domínio.
+
+Para o IndexCities, o caminho de performance continua sendo o que a arquitetura já favorece:
+
+- decisões locais simples e auditáveis;
+- atualização somente quando necessário;
+- filtros para reduzir candidatos antes de pontuar;
+- processamento em lotes distribuídos no tempo;
+- estruturas de dados leves e benchmarkadas;
+- regras/Utility AI quando houver múltiplas alternativas com pesos diferentes.
+
+### Possível uso futuro
+
+IA local continua sendo uma opção interessante se surgir um objetivo de **gameplay** que regras explícitas não atendam bem — por exemplo, comportamento deliberadamente menos previsível ou uma camada especial de personalidade/estratégia em decisões raras.
+
+Nesse caso, ela deve ser avaliada como melhora de comportamento, não como otimização de performance, e deve permanecer subordinada ao estado autoritativo e às invariantes do Simulation Core.
+
