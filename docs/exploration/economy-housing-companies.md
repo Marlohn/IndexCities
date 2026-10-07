@@ -904,7 +904,7 @@ Essa escolha define o tamanho real do sistema de moradia.
 
 ## Clarificação: para onde vai o aluguel
 
-**Status:** exploração; nenhuma escolha promovida para a SPEC ainda.
+**Status:** parcialmente superado. O destino do aluguel foi posteriormente decidido e promovido para a SPEC: o pagamento vai ao proprietário real do imóvel. Este trecho preserva o raciocínio anterior e as questões que ainda permaneceram abertas naquele momento.
 
 A proposta anterior de usar uma "empresa imobiliária" como recebedora padrão de todo aluguel foi considerada insuficientemente clara.
 
