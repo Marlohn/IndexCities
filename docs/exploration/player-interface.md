@@ -1,10 +1,17 @@
 # IndexCities — Interface e ferramentas do jogador
 
+> **Revisão humana:** PENDENTE.  
+> **Auditoria:** classificação conservadora com base no estado anterior à reorganização temática, commit `4b97ace2`. o conteúdo deste documento ainda não foi revisado integralmente pelo responsável e não pode ser tratado como decisão.
+>
+
 > **Status:** exploração temática ativa — não é fonte de verdade.
 >
 > A autoridade de produto continua sendo `docs/SPEC.md`. Este documento concentra pesquisa, alternativas, referências e hipóteses sobre interface e ferramentas do jogador. Quando uma decisão fecha, o resultado oficial deve ser promovido para `docs/SPEC.md`; este arquivo preserva o raciocínio e o material ainda em formação.
 
 ## Objetivo
+
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
 
 A interface do IndexCities deve deixar o jogador **construir, entender e corrigir a cidade com pouco atrito**, sem esconder a profundidade da simulação.
 
@@ -24,6 +31,9 @@ Princípios usados neste documento:
 ---
 
 ## Decisão já oficial: rua em L com um único gesto
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 A ferramenta de ruas terá suporte a um trajeto ortogonal em **L** usando um único gesto.
 
@@ -82,6 +92,9 @@ Precisamos evitar o problema relatado em ferramentas excessivamente agressivas: 
 ---
 
 ## Pesquisa: o que outros jogos e ferramentas ensinam
+
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
 
 ### Cities: Skylines II
 
@@ -176,6 +189,9 @@ https://github.com/aleksandrbelov/Burgage
 
 ## Modelo proposto para a GUI principal
 
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
+
 **Status: proposta para protótipo, ainda não decisão oficial completa.**
 
 A interface deve manter o centro da tela o mais livre possível. O mapa é o principal instrumento do jogo.
@@ -251,6 +267,9 @@ Eventos normais e repetitivos devem ser agregados ou ficar em histórico.
 ---
 
 ## Ferramentas essenciais candidatas
+
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
 
 **Status: exploração.**
 
@@ -373,6 +392,9 @@ A primeira categoria deveria ser fácil. A segunda não deve virar uma máquina 
 ---
 
 ## Cancelar, mover e realocar construções
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status: exploração aberta. Não é requisito oficial ainda.**
 
@@ -541,6 +563,9 @@ Portanto, a direção para protótipo é:
 
 ## Uma ideia importante: editar sem perder identidade
 
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
+
 Se um prédio for realocado, reconstruído ou substituído, precisamos decidir o que acontece com sua identidade.
 
 Exemplo:
@@ -567,6 +592,9 @@ Esse ponto ainda precisa de pesquisa e decisão.
 ---
 
 ## Ferramentas de qualidade de vida a considerar
+
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
 
 ### Favoritos / hotbar
 
@@ -632,6 +660,9 @@ https://forums.crateentertainment.com/t/reduce-clicks-move-the/128750
 ---
 
 ## Ideias fora do padrão para testar
+
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
 
 ### 1. "Planejar bairro"
 
@@ -709,6 +740,9 @@ Não como sistema de undo total, mas como orientação e diagnóstico.
 
 ## O que evitar
 
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
+
 ### Interface cheia de indicadores permanentes
 
 O IndexCities terá muitos dados. Colocar todos na HUD tornará a cidade secundária.
@@ -740,6 +774,9 @@ Confirmação deve existir onde o custo do erro é alto. Se cada rua e blueprint
 ---
 
 ## Protótipo recomendado
+
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
 
 Primeira fatia de UI a testar:
 
@@ -776,6 +813,9 @@ Durante o protótipo, medir/observar:
 
 ## Questões ainda abertas
 
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
+
 1. A ferramenta de rua em L deve usar grid rígido, alinhamento assistido ou ambos?
 2. Como exatamente o jogador inverte o lado do L?
 3. Teremos curvas livres no primeiro escopo ou só depois?
@@ -795,6 +835,9 @@ Durante o protótipo, medir/observar:
 ---
 
 ## Direção atual
+
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
 
 O caminho mais coerente, neste momento, é uma interface de **mapa limpo + ferramentas contextuais + preview forte**.
 
