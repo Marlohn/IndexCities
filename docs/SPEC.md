@@ -62,6 +62,13 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - Esses serviços terão capacidade real.
 - Esses serviços dependerão de funcionários reais da população simulada.
 
+### Princípio de design: profundidade sem microgerenciamento
+
+- O jogo deve priorizar **decisões sistêmicas e consequências observáveis**, não tarefas repetitivas de administração.
+- Realismo deve ser mantido quando cria gameplay; detalhes que apenas adicionam cliques, contabilidade ou manutenção manual podem ser agregados ou automatizados.
+- A interface pode apresentar informações agregadas enquanto a simulação mantém localização, transporte, capacidade, escassez e demais consequências físicas internamente.
+- Esse princípio vale para todos os sistemas do produto.
+
 ### Pilar de gameplay: economia material
 
 - A expansão da cidade não deve ser resolvida apenas por dinheiro: **materiais físicos são um recurso central de gameplay**.
@@ -395,25 +402,25 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - A produção agrícola é transportada fisicamente por veículos de carga.
 
 
-### Armazenamento municipal
+### Centro de Materiais de Construção
 
-- No escopo atual, depósitos/galpões de materiais são municipais.
-- O Pátio Municipal de Obras pode manter um estoque pequeno; depósitos dedicados oferecem capacidade significativamente maior.
-- Armazenamento privado de materiais pode ser reconsiderado futuramente.
+- O armazenamento principal de materiais de construção será tratado como **Centro de Materiais de Construção**, evitando que a interface force uma distinção de propriedade pública/privada.
+- O Pátio Municipal de Obras pode manter um estoque pequeno; o Centro de Materiais oferece capacidade significativamente maior.
+- O Centro funciona como infraestrutura física de armazenamento e logística da cidade; sua existência não implica que todo material armazenado pertença juridicamente à prefeitura.
 
 
 ### Fluxo de importação para obras
 
 - Quando uma obra específica depende de material importado, os caminhões externos podem entregar diretamente no canteiro a quantidade necessária para aquela obra.
-- Essa entrega direta não exige passagem por depósito municipal.
+- Essa entrega direta não exige passagem pelo Centro de Materiais de Construção.
 - Para materiais de construção, não há importação genérica para formar estoque no escopo atual; a importação ocorre quando uma obra exige recursos indisponíveis localmente.
 
 
-### Capacidade e operação de depósitos
+### Capacidade e operação do Centro de Materiais
 
-- Depósitos municipais possuem capacidade física limitada.
-- No escopo inicial, um mesmo depósito municipal de obras pode armazenar todos os tipos de **materiais de construção**.
-- Depósitos possuem capacidade limitada de carga e descarga simultânea.
+- Centros de Materiais de Construção possuem capacidade física limitada.
+- No escopo inicial, um mesmo Centro pode armazenar todos os tipos de **materiais de construção**.
+- Centros possuem capacidade limitada de carga e descarga simultânea.
 - Saturação de carga/descarga pode gerar fila física de caminhões.
 
 
@@ -423,11 +430,15 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Toda receita e movimentação relevante de exportação deve aparecer de forma clara nas finanças da cidade.
 
 
-### Reserva e prioridade de materiais de obra
+### Disponibilidade, reserva e prioridade de materiais de obra
 
-- Ao confirmar uma obra, materiais já disponíveis no estoque municipal ficam reservados para aquela obra.
-- Se os materiais necessários ainda não estiverem disponíveis, a obra pode permanecer parada aguardando a chegada física das cargas.
-- Quando várias obras disputam o mesmo estoque, a prioridade inicial segue a ordem em que as obras foram criadas.
+- Para o jogador, materiais de construção são apresentados como **Disponível na cidade**, agregando a oferta local elegível.
+- Essa visão agregada não teletransporta materiais: cada quantidade continua existindo em uma localização física real, como Centro de Materiais, Pátio, fábrica ou fornecedor.
+- Ao confirmar uma obra, o sistema reserva automaticamente materiais locais elegíveis.
+- Materiais reservados deixam de estar disponíveis para outras obras.
+- Se faltar material local, o sistema importa a quantidade necessária conforme as regras de importação já definidas.
+- Caminhões continuam obrigatórios para levar o material de sua origem física até o canteiro.
+- Quando várias obras disputam a mesma oferta local, a prioridade inicial segue a ordem em que as obras foram criadas.
 
 
 ### Política inicial de importação de materiais
@@ -453,8 +464,8 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - O Pátio possui capacidade operacional limitada, determinada pela quantidade de equipes/trabalhadores públicos disponíveis para executar obras.
 - Quando a capacidade local do Pátio é insuficiente para uma nova obra, a obra não precisa esperar: a prefeitura pode contratar/importar uma equipe externa temporária, aumentando o custo monetário daquela construção.
 - O Pátio também possui um pequeno estoque físico de materiais de construção.
-- O estoque do Pátio tem capacidade menor que a de um depósito municipal dedicado.
-- Depósitos municipais continuam sendo a infraestrutura principal para armazenamento de grandes quantidades de materiais.
+- O estoque do Pátio tem capacidade menor que a de um Centro de Materiais de Construção.
+- Centros de Materiais continuam sendo a infraestrutura principal para armazenamento de grandes quantidades de materiais.
 
 
 ### Bootstrap inicial de construção
@@ -484,8 +495,8 @@ A SPEC deve crescer com o produto, **não antes dele**.
 
 ### Armazenamento por tipo de recurso
 
-- Depósitos municipais de obras armazenam materiais de construção: areia e brita, concreto, aço, madeira e asfalto.
-- Alimentos, combustível e suprimentos médicos não usam o depósito municipal de obras como estoque normal.
+- Centros de Materiais de Construção armazenam materiais de construção: areia e brita, concreto, aço, madeira e asfalto.
+- Alimentos, combustível e suprimentos médicos não usam o Centro de Materiais como estoque normal.
 - Esses bens usam armazenamento coerente com sua função, como estoques de mercados/comércios, postos de combustível, hospitais, farmácias e outras instalações apropriadas.
 
 
@@ -495,3 +506,10 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - A importação de Alimentos paga produto e frete e gera entrega física.
 - No escopo inicial, Combustível pode ser importado já refinado/pronto pela conexão externa e distribuído fisicamente aos postos.
 - Refino/produção local de combustível pode ser aprofundado depois, sem ser necessário para o primeiro fluxo funcional da cidade.
+
+
+### Visão agregada de materiais
+
+- A interface deve mostrar a oferta de materiais de construção de forma agregada em nível da cidade.
+- Para cada material, o jogador deve conseguir entender pelo menos o total disponível localmente, o que está reservado, o que está em trânsito e quanto precisará ser importado para uma nova obra.
+- A agregação é apenas de interface e decisão; localização física, transporte, capacidade de armazenamento e congestionamento continuam simulados.
