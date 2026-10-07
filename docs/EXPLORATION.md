@@ -2850,3 +2850,87 @@ Foi confirmado que fazendas, mercados, postos, fábricas e demais atividades eco
 A questão em aberto é se cada empresa precisa ter um **saldo bancário explícito e rígido** ou se basta simular receitas, custos, lucro/prejuízo e saúde financeira de forma mais abstrata.
 
 Critério transversal: manter detalhe econômico quando ele cria decisões ou consequências úteis; abstrair quando ele vira contabilidade que o jogador não controla diretamente.
+
+
+### Evidência comparativa
+
+**Cities: Skylines II**
+
+A Paradox descreve uma economia com quatro tipos de entidade monetária: cidade/jogador, famílias, empresas e **investidores abstratos**. Empresas compram recursos, pagam salários, aluguel e custos de transporte; avaliam lucro, ajustam produção e podem falir se não conseguirem voltar à lucratividade. Ao mesmo tempo, o próprio design declara que a cadeia produtiva foi feita para que o jogador **não precise microgerenciá-la**, embora possa investigar seus detalhes.
+
+A revisão Economy 2.0 também foi motivada por feedback de que a simulação econômica estava pouco transparente e dava pouco controle ao jogador — um alerta direto contra adicionar complexidade financeira invisível sem benefício de decisão.
+
+Fontes:
+- Paradox — Cities: Skylines II, Economy & Production: https://www.paradoxinteractive.com/games/cities-skylines-ii/features/economy-production
+- Paradox — Economy 2.0 Part 1: https://www.paradoxinteractive.com/games/cities-skylines-ii/news/dev-diary-economy-part-one
+
+**Manor Lords**
+
+Manor Lords usa **Regional Wealth** como riqueza agregada da região para importações e investimentos econômicos, separada do Treasury pessoal. O jogo não exige um saldo bancário individual para cada oficina ou produtor.
+
+Fonte:
+- Manor Lords Official Wiki — Regional Wealth: https://wiki.hoodedhorse.com/Manor_Lords/Regional_wealth
+
+**Workers & Resources: Soviet Republic**
+
+O jogo demonstra o extremo oposto: a economia doméstica pode funcionar quase sem dinheiro interno, com profundidade concentrada em recursos, trabalho, produção, transporte e comércio exterior. A moeda é principalmente relevante para importações/exportações. Apesar do contexto de economia planejada ser diferente do IndexCities, ele prova que **realismo físico e econômico não depende de um saldo bancário por empresa**.
+
+Fonte:
+- Workers & Resources Official Wiki — Economy/overview: https://wiki.hoodedhorse.com/Workers_Resources_Soviet_Republic/Workers_%26_Resources%3A_Soviet_Republic
+
+### Leitura para o IndexCities
+
+Há três níveis possíveis:
+
+**A. Caixa bancário explícito por empresa**
+- cada empresa tem saldo em moeda;
+- toda compra e pagamento exige liquidez imediata;
+- empréstimos/capitalização passam a ser necessários para evitar falências artificiais;
+- é o modelo mais realista contabilmente, mas cria grande complexidade e risco de comportamento opaco.
+
+**B. Contabilidade econômica sem caixa rígido — recomendação para o primeiro escopo**
+- cada empresa registra receita, salários, insumos, frete, impostos e lucro/prejuízo;
+- compra e venda continuam movimentando valores entre agentes para fins econômicos;
+- porém o jogo não exige que o jogador acompanhe ou administre uma conta bancária individual;
+- sobrevivência depende de lucratividade/saúde financeira ao longo do tempo, não de um saldo instantâneo zerar;
+- investidores iniciais são abstratos e fornecem o capital de abertura da empresa.
+
+**C. Economia privada totalmente agregada**
+- empresas não têm nem P&L individual relevante;
+- só existe riqueza privada agregada da cidade;
+- simples, mas enfraquece decisões já desejadas como empresas falirem individualmente e salários/custos influenciarem cada negócio.
+
+### Recomendação
+
+Começar pelo modelo **B**.
+
+Uma empresa privada deve ter um **estado econômico individual**, mas não precisa de uma carteira que o jogador trate como recurso separado.
+
+Ao selecionar a empresa, mostrar apenas informação útil:
+- receita;
+- salários;
+- custo de insumos;
+- frete;
+- impostos;
+- lucro/prejuízo;
+- situação: saudável / pressionada / risco de falência.
+
+Não exigir do jogador:
+- transferir capital entre empresas;
+- acompanhar saldo bancário diário;
+- aprovar empréstimos empresariais;
+- financiar capital de giro manualmente.
+
+Para nascer, a empresa recebe capital de **investidores privados abstratos**. Isso é coerente com o jogador controlar desenvolvimento urbano sem precisar simular investidores individuais.
+
+Se a empresa operar com prejuízo persistente, reduz produção/emprego e eventualmente fecha. Isso preserva consequência econômica real sem fazer a simulação depender de uma contabilidade de caixa completa.
+
+### Critério para aprofundar depois
+
+Só promover saldo bancário, crédito, dívida empresarial e investidores individuais a sistemas reais se aparecer gameplay que dependa deles, por exemplo:
+- bancos;
+- juros;
+- crises de crédito;
+- investimentos privados concorrentes;
+- aquisição/fusão de empresas;
+- políticas municipais de financiamento.
