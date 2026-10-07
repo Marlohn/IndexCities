@@ -2838,7 +2838,7 @@ Esse critério deve ser reaplicado a transporte, serviços, empresas, cidadãos,
 
 ## Dinheiro privado por empresa: validação de gameplay
 
-**Status:** em pesquisa; decisão reaberta.
+**Status:** decidido após pesquisa e revisão de causalidade. Caixa real por empresa foi escolhido, sem microgestão bancária pelo jogador.
 
 Foi confirmado que fazendas, mercados, postos, fábricas e demais atividades econômicas colocadas pelo jogador podem ser operadas por empresas privadas.
 
@@ -2846,6 +2846,50 @@ A questão em aberto é se cada empresa precisa ter um **saldo bancário explíc
 
 Critério transversal: manter detalhe econômico quando ele cria decisões ou consequências úteis; abstrair quando ele vira contabilidade que o jogador não controla diretamente.
 
+
+
+### Decisão final: caixa real auditável por empresa
+
+O primeiro escopo usará **caixa monetário real por empresa**.
+
+A escolha não é para aumentar microgestão; é para evitar caixas-pretas e dar uma fonte de verdade econômica que possa ser calibrada e depurada.
+
+Fluxo conceitual:
+
+capital privado inicial
++ vendas/receitas
+- salários
+- insumos
+- frete
+- impostos
+- demais custos explícitos
+= caixa da empresa
+
+Regras:
+
+- toda movimentação relevante precisa ter origem e destino identificáveis;
+- o jogador não transfere dinheiro manualmente entre empresas;
+- a UI superficial mostra situação e causa curta;
+- a visão detalhada permite reconstruir receitas, despesas e evolução do caixa;
+- indicadores como "saudável" ou "em risco" podem existir apenas como resumo derivado, nunca como variável econômica mágica;
+- não existe bailout invisível;
+- crédito e recapitalização ficam fora do escopo até serem decididos explicitamente.
+
+A empresa recebe **capitalização privada inicial** de investidores/setor privado externo agregado. Essa é uma abstração controlada: a entrada monetária é explícita, quantificada e registrada no ledger. O valor exato deve ser um parâmetro de balanceamento e pode variar por tipo/escala de empresa.
+
+A relação entre essa capitalização e **quem financia a construção física inicial** do prédio privado permanece aberta e não deve ser inferida.
+
+### Por que esta opção venceu
+
+Em comparação com apenas lucro/prejuízo acumulado ou um estado abstrato:
+
+- permite saber exatamente se a empresa consegue pagar uma compra;
+- permite reproduzir e explicar falências;
+- permite medir efeitos de salários, impostos, frete e preços;
+- facilita telemetria e balanceamento;
+- preserva a possibilidade futura de crédito, bancos e investimentos sem exigir esses sistemas agora.
+
+O custo adicional de simulação não deve virar custo de operação para o jogador: a contabilidade acontece automaticamente.
 
 ### Evidência comparativa
 
@@ -2883,7 +2927,7 @@ Há três níveis possíveis:
 - empréstimos/capitalização passam a ser necessários para evitar falências artificiais;
 - é o modelo mais realista contabilmente, mas cria grande complexidade e risco de comportamento opaco.
 
-**B. Contabilidade econômica sem caixa rígido — recomendação para o primeiro escopo**
+**B. Contabilidade econômica sem caixa rígido — alternativa considerada, não escolhida**
 - cada empresa registra receita, salários, insumos, frete, impostos e lucro/prejuízo;
 - compra e venda continuam movimentando valores entre agentes para fins econômicos;
 - porém o jogo não exige que o jogador acompanhe ou administre uma conta bancária individual;
@@ -2895,9 +2939,9 @@ Há três níveis possíveis:
 - só existe riqueza privada agregada da cidade;
 - simples, mas enfraquece decisões já desejadas como empresas falirem individualmente e salários/custos influenciarem cada negócio.
 
-### Recomendação
+### Recomendação anterior — superada
 
-Começar pelo modelo **B**.
+A recomendação inicial de começar pelo modelo **B** foi substituída após a revisão de causalidade. O modelo escolhido é caixa real auditável por empresa, com UI em camadas e sem microgestão bancária.
 
 Uma empresa privada deve ter um **estado econômico individual**, mas não precisa de uma carteira que o jogador trate como recurso separado.
 
@@ -2938,24 +2982,20 @@ A preocupação com caixa-preta muda a recomendação anterior.
 
 Não é suficiente ter apenas um estado abstrato "saudável / pressionada / falindo". O estado econômico precisa ser **derivado de fluxos concretos e auditáveis**.
 
-Direção preferida para POC:
+Direção decidida para POC:
+- caixa real por empresa;
 - vendas/receitas reais;
 - salários reais;
 - custo real de insumos;
 - frete real;
 - impostos reais;
 - demais custos definidos explicitamente;
-- resultado econômico calculado a partir desses fluxos;
-- qualquer reserva financeira/capital de giro, se existir, deve obedecer regra determinística e ser inspecionável.
+- resultado econômico e saldo calculados a partir desses fluxos;
+- capitalização inicial explícita e inspecionável.
 
 A UI normal não precisa mostrar toda contabilidade, mas o painel detalhado/debug deve conseguir reconstruir por que a empresa piorou.
 
-Ainda está aberto se haverá um **saldo monetário rígido por empresa**. Antes de decidir, comparar:
-1. caixa explícito real;
-2. capital de giro/reserva simplificada derivada;
-3. apenas lucro/prejuízo acumulado.
-
-Critério principal: qual modelo produz falência, compra de insumos e expansão de forma previsível, calibrável e explicável sem gerar microgerenciamento para o jogador.
+A comparação foi encerrada em favor de **caixa explícito real**, por ser o modelo mais previsível, calibrável e explicável. A operação desse caixa continua automática para evitar microgerenciamento.
 
 ---
 
