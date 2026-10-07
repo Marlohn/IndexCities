@@ -4,11 +4,65 @@ Estas regras valem para humanos e IAs. O objetivo é maximizar progresso jogáve
 
 ## Fonte de verdade
 
-- `docs/SPEC.md` define o produto e o escopo atual.
+- `docs/SPEC.md` define o **produto decidido** e o escopo atual.
+- `docs/EXPLORATION.md` guarda **pesquisa, ideias, alternativas e decisões ainda em discussão**.
 - O código e o histórico deste repositório definem o estado real da implementação.
 - O [CityBuilder](https://github.com/Marlohn/CityBuilder) é referência histórica e técnica, não uma arquitetura a ser copiada por padrão.
 
-Antes de uma mudança relevante, leia a SPEC e somente o código necessário para entender o alvo. Não investigue, documente ou planeje por ritual.
+Antes de uma mudança relevante, leia a SPEC e somente o código necessário para entender o alvo. Consulte a EXPLORATION quando a tarefa depender de uma discussão ainda aberta ou do raciocínio que levou a uma decisão.
+
+## Arquitetura de especificação
+
+O IndexCities usa deliberadamente uma arquitetura de especificação mínima.
+
+### SPEC
+
+`docs/SPEC.md` é a autoridade sobre **o que o jogo deve ser agora**.
+
+Ela deve:
+
+- descrever o estado desejado atual do produto;
+- permanecer curta, legível e útil;
+- registrar somente decisões já tomadas;
+- dizer o que está dentro e fora do escopo atual;
+- descrever requisitos e garantias de produto, não detalhes acidentais de implementação.
+
+Ela não deve virar:
+
+- diário de desenvolvimento;
+- histórico de discussões;
+- depósito de ideias;
+- lista de tarefas;
+- especificação detalhada de classes e arquivos;
+- documento gigante tentando prever todo o futuro.
+
+### EXPLORATION
+
+`docs/EXPLORATION.md` é o espaço de pensamento.
+
+Use para:
+
+- pesquisar uma ideia;
+- comparar alternativas;
+- registrar referências, prós e contras;
+- manter perguntas ainda abertas;
+- preservar por que uma opção foi aceita ou descartada.
+
+Quando uma discussão fecha, **a decisão final entra resumida na SPEC**. A EXPLORATION pode preservar o raciocínio e as evidências, mas não substitui a SPEC.
+
+### Evolução futura
+
+Não adote OpenSpec, Spec Kit, BMAD ou outro framework de processo apenas por parecer mais completo.
+
+A arquitetura só deve ficar mais sofisticada quando existir uma dor concreta e recorrente, por exemplo:
+
+- a SPEC única ficou grande demais para continuar clara;
+- agentes perdem contexto importante entre sessões;
+- implementação e SPEC divergem repetidamente;
+- múltiplas frentes paralelas começam a conflitar;
+- rastreabilidade adicional passa a economizar mais tempo do que custa.
+
+Até isso acontecer, **uma SPEC + uma EXPLORATION + este AGENTS.md são suficientes**.
 
 ## Regra principal de escopo
 
@@ -26,7 +80,7 @@ Antes de uma mudança relevante, leia a SPEC e somente o código necessário par
 - Use testes quando eles protegem comportamento ou evitam regressão; não crie testes cerimoniais.
 - Não crie handoffs artificiais entre papéis de IA.
 - Processo novo só entra quando resolve uma dor recorrente e observável.
-- Não adote OpenSpec, Spec Kit ou outro framework de processo sem uma decisão explícita baseada em necessidade real.
+- Planejamento deve ser proporcional ao risco: experimento visual pode ir quase direto para código; mudança estrutural, persistência, determinismo ou contrato merece mais cuidado.
 
 ## Garantias técnicas
 
@@ -43,11 +97,12 @@ Estas lições do CityBuilder continuam válidas até a SPEC decidir o contrári
 ## Como trabalhar
 
 1. Entenda o comportamento desejado na SPEC e no pedido atual.
-2. Inspecione somente o necessário no código e, quando útil, no CityBuilder.
-3. Implemente diretamente.
-4. Rode a validação relevante para a mudança.
-5. Revise o diff final e confirme que não adicionou escopo não pedido.
-6. Atualize a SPEC somente quando o produto mudou.
+2. Se a decisão ainda estiver aberta, pesquise e registre o raciocínio na EXPLORATION antes de transformá-la em produto.
+3. Inspecione somente o necessário no código e, quando útil, no CityBuilder.
+4. Implemente diretamente.
+5. Rode a validação relevante para a mudança.
+6. Revise o diff final e confirme que não adicionou escopo não pedido.
+7. Atualize a SPEC somente quando o produto mudou.
 
 ## Definição prática de pronto
 
