@@ -306,8 +306,13 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Poluição sonora fica fora do escopo atual.
 
 
-### Acesso real a serviços e amenidades
 
-- Serviços e amenidades baseados em destino não devem depender apenas de um círculo fixo de influência.
-- Cidadãos podem se deslocar para destinos mais distantes quando isso fizer sentido.
-- O uso de hospitais, parques e outros destinos deve considerar fatores reais da simulação, como acessibilidade, tempo/distância de viagem, capacidade e disponibilidade.
+
+### Mapa, seed e limites
+
+- O mapa é gerado/reproduzido a partir de uma **seed determinística**.
+- A mesma seed deve permitir reproduzir o mesmo mapa/cidade-base para facilitar debug e testes.
+- O mapa inicial já vem com relevo, vegetação, rio e/ou lago e conexão externa preparados.
+- Não haverá compra/desbloqueio progressivo de novas áreas no escopo atual.
+- O mapa começa com **borda fixa**.
+- Não há recuo mínimo obrigatório entre construções e a margem de rios/lagos no escopo atual.
