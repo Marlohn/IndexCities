@@ -48,14 +48,25 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - No escopo atual, quando o jogador coloca um prédio de atividade econômica privada, como fazenda, mercado, posto ou fábrica, uma empresa privada passa a operar aquele estabelecimento.
 - Empresas terão funcionários reais.
 - Cada emprego corresponderá a uma **vaga real** dentro de uma empresa ou serviço.
-- Empresas terão estado econômico próprio; a granularidade do caixa/dinheiro privado ainda está em definição.
+- Empresas privadas terão **caixa monetário real e individual**, mantido pela simulação e auditável.
 - Estoque e/ou produção devem existir como parte do modelo econômico das empresas.
 - O consumo será modelado inicialmente por **categorias de produtos**, não por SKU individual.
 - Compras reais reduzem estoque real, movimentam dinheiro real e geram necessidade de reposição/logística.
-- Empresas poderão falir quando suas condições econômicas levarem a isso; o jogador deve conseguir identificar as causas econômicas relevantes da deterioração e da falência.
+- Empresas poderão falir quando não conseguirem sustentar suas obrigações econômicas; o jogador deve conseguir identificar as receitas, despesas e eventos concretos que levaram à deterioração e à falência.
 - Fazendas e agricultura produzem diretamente a categoria **Alimentos** no escopo inicial.
 - Mercadorias físicas modeladas como estoque podem ser importadas pela conexão externa quando a oferta local for insuficiente ou inexistente.
 - No escopo inicial, os preços externos de importação permanecem estáveis.
+
+### Finanças privadas das empresas
+
+- Cada empresa privada possui um saldo monetário real.
+- Receitas e despesas da empresa devem ser lançadas a partir de fluxos econômicos reais da simulação, incluindo vendas, salários, insumos, frete, impostos e outros custos definidos.
+- O estado econômico da empresa e uma eventual falência devem ser derivados desses fluxos e do caixa real, não de um indicador oculto independente.
+- A empresa recebe uma capitalização privada inicial explícita ao começar a operar. A origem é o setor privado externo/investidores privados agregados; o valor deve seguir regra configurável e auditável para calibração.
+- O jogador não precisa administrar transferências bancárias, capital de giro ou pagamentos individuais manualmente.
+- A leitura normal pode resumir a situação da empresa; uma visão detalhada deve permitir inspecionar caixa, receitas, despesas e causas de deterioração.
+- Não haverá resgates, crédito ou dinheiro invisível para impedir falência. Se crédito, subsídio ou recapitalização forem adicionados futuramente, deverão ser sistemas explícitos e diagnosticáveis.
+- A relação exata entre capital privado e o financiamento da construção inicial de um prédio privado continua em definição.
 
 ### Serviços públicos
 
