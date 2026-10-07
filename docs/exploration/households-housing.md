@@ -1,5 +1,9 @@
 # IndexCities — Famílias, moradia e patrimônio
 
+> **Revisão humana:** PARCIALMENTE REVISADO.  
+> **Auditoria:** classificação conservadora com base no estado anterior à reorganização temática, commit `4b97ace2`. o documento mistura conteúdo discutido/confirmado com pesquisa, síntese ou redação da IA ainda não revisada integralmente.
+>
+
 > **Status:** exploração ativa; parte do modelo de propriedade e investimento já foi promovida para a SPEC — não é fonte de verdade.
 >
 > Reúne renda e consumo familiar, valor imobiliário, vulnerabilidade financeira, aluguel, propriedade, herança e investimento residencial por cidadãos.
@@ -11,6 +15,9 @@ Este arquivo é material de exploração temática. A autoridade do produto cont
 ---
 
 ## Dinheiro, renda familiar e consumo
+
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
 
 **Status:** em exploração.
 
@@ -74,6 +81,9 @@ Se um detalhe não muda nenhum sistema relevante, ele pode permanecer agregado.
 
 ## Valor imobiliário e propriedade de lotes
 
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
+
 **Status:** em exploração.
 
 Ainda não está decidido se cada lote terá proprietário individual e valor de mercado próprio.
@@ -117,6 +127,9 @@ Ainda precisa ser decidido:
 ---
 
 ## Falência pessoal, população sem moradia e demanda imobiliária
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** em exploração; existência desses fenômenos já está decidida na SPEC.
 
@@ -190,6 +203,9 @@ A fórmula final só deve ser escolhida depois de testar se o jogador consegue e
 ---
 
 ## Destino econômico de aluguel e preço residencial
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** parcialmente superado. O destino do aluguel foi decidido: vai ao proprietário real. Este trecho preserva as alternativas discutidas; primeira venda, revenda e herança ainda têm detalhes abertos.
 
@@ -281,6 +297,9 @@ Essa decisão deve ser revisitada antes de implementar compra de imóvel real.
 ---
 
 ## Revisão de moradia: impostos, aluguel, propriedade e herança
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** aberto; a recomendação anterior de enviar todo aluguel ao Caixa da Cidade foi suspensa.
 
@@ -410,6 +429,9 @@ Essa escolha define o tamanho real do sistema de moradia.
 
 ## Clarificação: para onde vai o aluguel
 
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
+
 **Status:** parcialmente superado. O destino do aluguel foi posteriormente decidido e promovido para a SPEC: o pagamento vai ao proprietário real do imóvel. Este trecho preserva o raciocínio anterior e as questões que ainda permaneceram abertas naquele momento.
 
 A proposta anterior de usar uma "empresa imobiliária" como recebedora padrão de todo aluguel foi considerada insuficientemente clara.
@@ -525,6 +547,9 @@ Não decidir esse ponto por conveniência técnica; ele define o fluxo monetári
 
 ## Decisão: patrimônio individual e investimento residencial local
 
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
+
 **Status:** decidido no modelo conceitual; fórmulas e regras familiares ainda precisam de calibração.
 
 Foi aprovado que os cidadãos terão **dinheiro real individual** e que isso pode gerar investimento residencial emergente.
@@ -633,6 +658,9 @@ Depois de migrar e tornar-se residente real, essa família/cidadão pode futuram
 ---
 
 ## Morte do SIM e destino do patrimônio
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** decisão parcial promovida para a SPEC; regras de herdeiro elegível e usos futuros do fundo continuam abertas.
 
