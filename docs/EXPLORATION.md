@@ -741,3 +741,43 @@ Direção a validar:
 - horários diferentes devem distribuir ou concentrar tráfego ao longo do dia.
 
 O objetivo é obter consequências reais de horário e escala sem obrigar o jogador a montar manualmente cada escala de trabalho, salvo se isso se provar divertido em protótipo.
+
+
+---
+
+## Valor imobiliário e propriedade de lotes
+
+**Status:** em exploração.
+
+Ainda não está decidido se cada lote terá proprietário individual e valor de mercado próprio.
+
+Também não está definido como calcular valor imobiliário.
+
+Fatores candidatos a investigar com dados e referências reais:
+
+- proximidade de empregos e comércio;
+- acesso viário e transporte;
+- qualidade de escolas e saúde;
+- criminalidade;
+- poluição e ruído;
+- acesso a áreas verdes e água;
+- congestionamento;
+- oferta e demanda por moradia;
+- tamanho/qualidade do imóvel;
+- renda da vizinhança;
+- impostos e custos recorrentes.
+
+O modelo deve ser validado antes de virar regra de produto. Evitar fórmula arbitrária sem referência empírica.
+
+### Dívida municipal
+
+A dívida municipal passa a fazer parte da direção do produto porque uma cidade sem mecanismo de financiamento pode entrar em estado de caixa negativo sem caminho de recuperação.
+
+Ainda precisa ser decidido:
+
+- quem empresta;
+- limite de endividamento;
+- juros;
+- prazo;
+- consequências de inadimplência;
+- se empréstimos aparecem automaticamente como ferramenta de emergência ou exigem decisão explícita do jogador.
