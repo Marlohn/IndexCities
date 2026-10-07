@@ -288,3 +288,9 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Falta de água reduz a eficiência de empresas e serviços.
 - Se a falta de água persistir, empresas e serviços podem interromper a operação.
 - O tempo e os limiares para redução de eficiência e fechamento devem ser configuráveis.
+
+
+### Falhas de energia e resposta à poluição
+
+- Quando a demanda de energia supera a geração disponível, podem ocorrer apagões.
+- Cidadãos podem decidir se mudar de áreas excessivamente poluídas.
