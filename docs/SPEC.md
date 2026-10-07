@@ -265,3 +265,17 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Professores são trabalhadores reais, ocupando vagas reais.
 - Educação e qualificação influenciam acesso a empregos e salários.
 - Crianças e adolescentes podem ficar sem escola quando não houver vaga ou acesso adequado.
+
+
+### Água, esgoto, energia e poluição
+
+- A cidade capta água de fontes naturais, como rio ou lago.
+- A água precisa passar por tratamento antes do consumo.
+- Prédios geram esgoto e a cidade precisa tratar esse esgoto.
+- No escopo atual, água e esgoto não exigem desenho manual de encanamentos.
+- O sistema funciona por demanda e capacidade de infraestrutura construída.
+- Usinas geram energia real para a cidade.
+- A energia também funciona por demanda e capacidade, sem exigir desenho manual detalhado da rede elétrica no escopo atual.
+- Poluição é gerada por fontes reais, incluindo indústria, trânsito e esgoto.
+- Poluição afeta saúde e valor/atratividade das áreas.
+- Energia solar e eólica fazem parte das opções de geração.
