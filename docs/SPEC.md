@@ -56,16 +56,18 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - Um casal/família pode somar recursos para viabilizar a compra, mas a propriedade fica registrada em nome de um único SIM; copropriedade fica fora do primeiro modelo.
 - Ao entrar na simulação, cidadãos podem iniciar com um saldo monetário explícito conforme regra de geração/migração; o valor e sua distribuição devem ser configuráveis e auditáveis, sem criação invisível de riqueza.
 
-### Patrimônio não reclamado
+### Oferta monetária fixa e Reserva Global
 
-- Existe um **Fundo de Patrimônio Não Reclamado** rastreável para valores que ficam sem titular econômico após o encerramento de uma entidade.
-- Quando um SIM morre sem herdeiro elegível, seu dinheiro remanescente é transferido para esse fundo.
-- Quando uma empresa é encerrada definitivamente, eventual saldo remanescente após os fluxos já definidos também é transferido para esse fundo.
-- O fundo é separado do Caixa da Cidade, das carteiras dos SIMs e dos caixas das empresas; o jogador não pode usá-lo para construir ou operar a cidade.
-- Imóveis e outros ativos sem sucessor podem permanecer explicitamente **sem proprietário**, em estado de patrimônio não reclamado, em vez de o fundo tornar-se seu proprietário.
-- Um ativo sem proprietário pode voltar ao mercado; quando for vendido, o valor recebido entra no Fundo de Patrimônio Não Reclamado.
-- O fundo registra saldo, entradas e saídas, mas sua eventual utilização futura não está definida e não deve ser inventada antes de existir função de gameplay concreta.
-- O Fundo de Patrimônio Não Reclamado não representa nem controla a conexão exterior; são conceitos separados.
+- A simulação usa uma **oferta monetária global fixa**: o dinheiro não é criado nem destruído pelos fluxos normais; ele apenas muda de titular.
+- O total monetário global é a soma do **Caixa da Cidade + carteiras dos SIMs + caixas das empresas + Reserva Global**.
+- A **Reserva Global** é um saldo técnico por trás das cenas, não controlado nem normalmente exibido ao jogador. Ela representa a parcela do dinheiro global que não está naquele momento com os agentes econômicos locais.
+- Todo lançamento na Reserva Global deve ser rastreável por origem, destino, motivo e entidade/evento relacionado.
+- Quando uma família ou empresa entra a partir do mundo exterior, seu capital inicial sai da Reserva Global; quando um fluxo econômico sai da cidade para uma contraparte externa não modelada, o valor retorna à Reserva Global.
+- Quando um SIM morre sem herdeiro elegível ou uma empresa é encerrada definitivamente sem outro titular econômico definido para o saldo remanescente, esse dinheiro retorna à Reserva Global com a origem registrada.
+- Patrimônio sem sucessor continua podendo permanecer explicitamente **sem proprietário**; a Reserva Global não se torna proprietária do ativo físico.
+- Quando um ativo sem proprietário é vendido, o pagamento entra na Reserva Global com a origem registrada.
+- A Reserva Global não substitui destinatários reais: se existe um SIM, empresa, proprietário, fornecedor ou outro recebedor econômico concreto, o dinheiro deve ir para esse agente.
+- O valor inicial total, sua distribuição inicial e as faixas de capital dadas a novos migrantes/empresas são parâmetros de calibração e devem ser reproduzíveis pela seed.
 
 ### Empresas e economia
 
@@ -88,7 +90,7 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - O ativo concluído entra em procura por operador/adquirente; baixa oportunidade econômica pode mantê-lo vazio por mais tempo.
 - Empresas locais existentes e novas empresas vindas da conexão exterior podem disputar esses ativos conforme fatores concretos como demanda/clientes, trabalhadores disponíveis, insumos, logística, localização e custos.
 - No primeiro modelo, a empresa que adquire o prédio é também sua **proprietária e operadora econômica**; não haverá separação entre proprietário imobiliário e empresa operadora para comércio/indústria.
-- O preço pago pela aquisição retorna ao **Caixa da Cidade**, recuperando total ou parcialmente o capital usado pelo jogador para desenvolver aquele ativo.
+- O preço pago pela primeira aquisição vai para a **Reserva Global**, não retorna ao Caixa da Cidade.
 - A procura externa não é infinita e não pode garantir venda/lucro; deve depender de condições econômicas reais e diagnosticáveis.
 - O jogador não escolhe manualmente qual empresa assume o prédio nem negocia propostas individuais.
 - No primeiro modelo, a empresa é uma **entidade econômica independente sem proprietário humano/SIM modelado**. A camada de sócios/acionistas fica fora do escopo inicial.
@@ -100,7 +102,7 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - Quando a obra termina, o prédio pode permanecer vazio em estado de **procurando empresa**.
 - No início da cidade, novas empresas candidatas podem vir da conexão exterior com capital próprio explícito e finito.
 - A empresa candidata avalia a oportunidade econômica do prédio; a lógica segue o mesmo princípio causal da demanda residencial, mas com fatores próprios de negócio, como clientes, concorrência, trabalhadores, insumos, logística, localização e custos.
-- Se uma empresa adquirir o ativo, o pagamento retorna ao Caixa da Cidade; a empresa passa a possuir e operar o estabelecimento.
+- Se uma empresa adquirir o ativo, o pagamento vai para a Reserva Global; a empresa passa a possuir e operar o estabelecimento.
 - Após a aquisição, a empresa contrata SIMs reais, compra insumos/estoque, vende/produz, paga salários e impostos e mantém seu próprio caixa.
 - Empresas já presentes na cidade podem futuramente adquirir outros estabelecimentos usando o próprio caixa acumulado.
 - A criação de uma empresa nova puramente local, sem origem externa nem empresa anterior, fica fora do primeiro modelo até existir uma fonte concreta de capital.
@@ -125,8 +127,8 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - O limiar e o tempo exatos de encerramento são parâmetros de balanceamento e não exigem microgerenciamento do jogador.
 - O encerramento pode ter uma etapa técnica curta de liquidação apenas para dar destino causal aos ativos e ao dinheiro; ela não é uma mecânica de gestão para o jogador.
 - Enquanto essa liquidação existir, imóveis ainda pertencentes à empresa podem ser colocados automaticamente no mercado; o pagamento de uma venda entra no caixa da empresa em liquidação.
-- Quando a empresa não tiver mais ativos pendentes, eventual saldo monetário remanescente vai para o **Fundo de Patrimônio Não Reclamado**, e a entidade empresa é removida.
-- Se um ativo ficar sem titular após o encerramento, ele pode permanecer explicitamente sem proprietário e continuar disponível no mercado; uma venda futura envia o valor ao Fundo de Patrimônio Não Reclamado.
+- Quando a empresa não tiver mais ativos pendentes, eventual saldo monetário remanescente sem outro titular econômico definido volta para a **Reserva Global**, e a entidade empresa é removida.
+- Se um ativo ficar sem titular após o encerramento, ele pode permanecer explicitamente sem proprietário e continuar disponível no mercado; uma venda futura envia o valor à Reserva Global com a origem registrada.
 - Fechar um estabelecimento isolado de uma empresa que continua saudável em outros locais **não encerra a empresa inteira**; essa distinção existe sem exigir uma simulação jurídica de falência.
 
 ### Serviços públicos
@@ -266,24 +268,26 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - O menu financeiro deve separar claramente entradas e saídas da prefeitura.
 - Salários de todos os trabalhadores públicos devem aparecer explicitamente entre as despesas municipais.
 - A cidade poderá usar empréstimos/dívida municipal para evitar travamentos financeiros e permitir recuperação de caixa.
+- O principal de um empréstimo sai da **Reserva Global** e entra no Caixa da Cidade; pagamentos de principal e juros retornam à Reserva Global. O empréstimo redistribui dinheiro existente e não cria moeda nova.
 
 
 ### Caixa da cidade e investimento em construções
 
 - O jogador administra um único **Caixa da Cidade** como recurso monetário principal controlável. Ele representa o capital disponível para desenvolver e operar a cidade no gameplay, não uma representação jurídica literal apenas do caixa da prefeitura.
 - Receitas municipais, impostos e outras entradas definidas alimentam esse caixa; despesas públicas, salários e construções ordenadas pelo jogador consomem esse caixa.
-- Construções públicas e demais projetos explicitamente financiados pela cidade consomem dinheiro do Caixa da Cidade e materiais físicos.
-- O financiamento padrão de construções **privadas** foi reaberto: não assumir que o Caixa da Cidade adianta todo o capital e depois o recupera na venda, pois isso pode criar reciclagem de dinheiro e reduzir a relevância dos impostos.
+- Como o jogador posiciona diretamente as construções no escopo atual, **obras públicas e privadas ordenadas pelo jogador consomem dinheiro do Caixa da Cidade e materiais físicos**. Esse custo é parte deliberada da gameplay e do diferencial do IndexCities.
+- O dinheiro gasto não desaparece: pagamentos a agentes locais reais vão para esses agentes; parcelas cuja contraparte seja externa ou não modelada retornam à Reserva Global.
+- A primeira aquisição de um ativo privado recém-construído **não devolve o preço ao Caixa da Cidade**; o pagamento vai para a Reserva Global, evitando reciclagem automática de capital e preservando impostos/receitas públicas como fonte principal de recuperação financeira do jogador.
 - Depois que uma empresa adquire e passa a operar o prédio, ela usa seu próprio caixa, receitas e despesas; o jogador não pode usar diretamente esse dinheiro como Caixa da Cidade nem precisa administrá-lo manualmente.
 - O resultado de uma empresa privada beneficia ou prejudica a cidade por efeitos econômicos reais, como empregos, salários, impostos, produção, logística e eventual fechamento, não por transferência livre de seu caixa para o jogador.
 
 ### Financiamento de moradia
 
-- O jogador continua decidindo diretamente onde as residências serão construídas.
-- A residência participa da economia familiar por meio de preço e/ou aluguel real.
-- Aluguel é transferido ao proprietário real do imóvel; compra e venda transferem dinheiro entre agentes econômicos reais.
-- O financiamento inicial de uma residência privada recém-construída está **reaberto**. Não considerar como regra que o Caixa da Cidade paga a obra e recupera automaticamente o mesmo capital na primeira venda.
-- A solução deve preservar a importância de impostos e demais receitas públicas como base recorrente do Caixa da Cidade, sem criar dinheiro circular ou fazer valores desaparecerem.
+- O jogador continua decidindo diretamente onde as residências serão construídas, e a obra consome Caixa da Cidade + materiais físicos.
+- Uma residência privada recém-construída pode ficar sem proprietário até a primeira aquisição.
+- Na primeira aquisição, o comprador paga com dinheiro real; esse pagamento vai para a **Reserva Global**, não retorna ao Caixa da Cidade.
+- Depois que existe um proprietário privado real, aluguel vai ao proprietário e revendas transferem dinheiro entre comprador e proprietário normalmente.
+- A cidade recupera financeiramente o custo de desenvolver moradia principalmente de forma indireta, por impostos e demais receitas públicas, e não por revenda do ativo.
 
 ### Terreno e logística econômica
 
@@ -420,7 +424,7 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Não haverá, neste primeiro modelo, investidor residencial externo que permaneça fora da cidade comprando imóveis apenas para receber aluguel.
 - A procura exterior não é infinita: deve depender de fatores reais e diagnosticáveis, como emprego, preço, disponibilidade de moradia e atratividade da cidade.
 - Baixa demanda pode manter uma residência vazia por mais tempo; isso é consequência econômica válida e deve ser legível para o jogador.
-- Famílias locais podem comprar imóveis adicionais para aluguel quando tiverem recursos reais; a fórmula de decisão, a prioridade exata de herdeiros, a revenda e as regras do primeiro proprietário de um ativo recém-construído continuam em definição. O caso sem herdeiro já segue as regras de patrimônio não reclamado desta SPEC.
+- Famílias locais podem comprar imóveis adicionais para aluguel quando tiverem recursos reais; a fórmula de decisão, a prioridade exata de herdeiros, a revenda e as regras do primeiro proprietário de um ativo recém-construído continuam em definição. O caso sem herdeiro já segue as regras da Reserva Global desta SPEC.
 
 ### Turismo e hospedagem
 
