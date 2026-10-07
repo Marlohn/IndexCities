@@ -192,3 +192,12 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Ônibus param fisicamente nos pontos.
 - Passageiros embarcam e desembarcam fisicamente nos pontos de ônibus.
 - Congestionamentos podem bloquear cruzamentos e gerar efeitos em cascata na malha viária.
+
+
+### Operação física de serviços e embarque
+
+- Veículos de emergência têm prioridade no trânsito, e os demais veículos devem ceder passagem quando aplicável.
+- Veículos de serviço, incluindo coleta de lixo, entregas, manutenção e emergência, precisam parar/estacionar fisicamente para executar suas tarefas.
+- Comércio e indústria possuem pontos físicos de carga e descarga.
+- Veículos precisam sair fisicamente de garagens ou estacionamentos antes de entrar na via.
+- Filas de pedestres em pontos de ônibus, entradas de prédios e travessias ocupam espaço físico real.
