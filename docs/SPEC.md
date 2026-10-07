@@ -22,9 +22,21 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 
 ## Decisões de produto confirmadas
 
+### Conceito e apresentação
+
+- O IndexCities será um **city builder**.
+- A apresentação será **3D com câmera isométrica**.
+- A construção será feita na granularidade de **casas e prédios**, sem construção por cômodos.
+
 ### Tecnologia
 
 - A engine do jogo será **Godot**.
+- O desenvolvimento principal será em **C#**.
+
+### Tempo de jogo
+
+- O jogo terá **pause** e velocidades **1, 2 e 3**.
+- A escala de tempo e seus multiplicadores devem ser configuráveis para permitir calibração durante o desenvolvimento.
 
 ## Fora de escopo automático
 
