@@ -204,6 +204,23 @@ O relógio do jogo deve permitir:
 
 A política exata de frequência ainda será medida; a separação já deve existir.
 
+### Scheduler de simulação e frequências diferentes
+
+O núcleo terá um **scheduler de simulação**: sistemas não devem assumir que todos precisam executar na mesma frequência.
+
+A arquitetura deve permitir, por exemplo, que mobilidade local, decisões de cidadãos, economia, serviços e estatísticas sejam atualizados em cadências diferentes, sempre com semântica explícita.
+
+Regras:
+
+- não chamar indiscriminadamente `Update()` em toda entidade a cada frame/tick;
+- sistemas registram trabalho por necessidade/cadência, em vez de cada entidade possuir um loop autônomo obrigatório;
+- entidades ou subsistemas sem trabalho relevante podem ficar inativos até um evento, deadline ou mudança de estado acordá-los;
+- trabalho caro pode ser distribuído entre ticks quando a resposta não precisa ser instantânea;
+- frequências concretas continuam sendo parâmetros de benchmark, não números fixados agora;
+- ordem de atualização e dependências entre sistemas precisam ser explícitas para preservar causalidade e reprodutibilidade.
+
+O scheduler não é um framework genérico de jobs neste momento. É apenas a responsabilidade explícita de decidir **o que atualiza, quando e com qual orçamento**.
+
 ### Threads
 
 Não será definida agora uma arquitetura multithread completa.
@@ -339,6 +356,23 @@ Evitar:
 
 Quando comunicação assíncrona/eventos realmente trouxer vantagem, eventos devem carregar dados suficientes e ter escopo claro. Um barramento global não é arquitetura padrão.
 
+### Mobilidade e pathfinding são um subsistema especializado
+
+`Mobility` não deve expor apenas uma função genérica do tipo `FindPath(A, B)` que qualquer agente possa chamar sem controle.
+
+A arquitetura deve permitir uma estratégia hierárquica:
+
+1. **conectividade barata** — saber rapidamente se origem e destino pertencem a regiões conectadas;
+2. **grafo macro/coarse** — estimar distância/custo e selecionar corredores sem percorrer toda a malha fina;
+3. **rota detalhada** — calcular o caminho fino somente quando ele realmente será usado;
+4. **movimento local** — decisões de faixa, avoidance e microcomportamento podem operar em estruturas próprias sem refazer a rota global.
+
+Mudanças de ruas, pontes, cruzamentos e acessos devem invalidar/recalcular somente os derivados afetados sempre que a representação escolhida permitir.
+
+Consultas caras devem passar por fila/orçamento/prioridade quando necessário. Um pico de centenas ou milhares de agentes pedindo rota ao mesmo tempo não pode bloquear o tick inteiro sem limite.
+
+A API exata, algoritmos e uso de NavigationServer continuam em exploração/prototipagem. A decisão arquitetural é preservar essa separação para não confundir **decidir destino**, **estimar custo**, **encontrar rota** e **mover-se pela rota**.
+
 ---
 
 ## 8. Modelo de comunicação
@@ -366,6 +400,26 @@ Expressam algo que já aconteceu e que outras partes precisam observar.
 Exemplos possíveis: empresa encerrou, obra concluiu, cidadão mudou de residência.
 
 Eventos não substituem chamadas diretas simples. Eles serão usados quando houver desacoplamento real a ganhar.
+
+### Estado primário x estado derivado
+
+A simulação deve distinguir:
+
+- **estado autoritativo/primário** — dados que definem o mundo, como dinheiro, estoque, residência, emprego, vias e localização lógica;
+- **estado derivado** — índices, agregados, overlays, conectividade, estatísticas, caches e read models calculados a partir do estado primário.
+
+Estado derivado não deve virar uma segunda fonte de verdade.
+
+Quando recalcular um derivado for caro, a implementação pode usar:
+
+- atualização incremental;
+- dirty flags;
+- buckets;
+- caches de curta duração;
+- snapshots/read models;
+- recomputação em lote.
+
+Essas otimizações só entram quando houver benefício mensurável e precisam ter invalidação centralizada junto às operações que alteram o estado primário.
 
 ---
 
@@ -404,7 +458,8 @@ A persistência deve trabalhar sobre um modelo próprio de estado da simulação
 
 Requisitos arquiteturais:
 
-- formato versionado;
+- formato versionado desde a primeira versão persistida;
+- número/identificador de schema explícito no save;
 - IDs estáveis;
 - ausência de referências a Nodes;
 - possibilidade de migração entre versões;
@@ -412,7 +467,7 @@ Requisitos arquiteturais:
 
 O formato concreto — JSON, binário ou outro — **não está decidido** e deve ser escolhido quando houver um primeiro estado real para persistir.
 
-Não criar um framework de migração antes de existir a primeira mudança de schema; apenas não fechar a porta para ele.
+Não criar um framework de migração antes de existir a primeira mudança de schema. Quando o primeiro schema mudar, preferir migrações pequenas e explícitas de versões anteriores para a versão atual, preservando testes com saves antigos relevantes.
 
 ---
 
@@ -455,6 +510,23 @@ Não duplicar no Godot testes de regra já cobertos no núcleo.
 Quando houver projetos/assemblies reais, vale criar guardrails baratos que impeçam o núcleo de ganhar dependência de `Godot.*`.
 
 Não adotar cobertura percentual como objetivo.
+
+### Observabilidade de simulação
+
+Performance e causalidade precisam ser inspecionáveis por subsistema.
+
+A instrumentação deve poder medir, quando o sistema existir:
+
+- tempo por tick e por sistema;
+- quantidade de entidades processadas/ativas;
+- filas e atrasos do scheduler;
+- solicitações, falhas e tempo de pathfinding;
+- recomputações de caches/índices;
+- alocações e pressão de GC;
+- tamanhos relevantes de coleções;
+- causas de fallback, retry ou backlog.
+
+A instrumentação pode começar simples e só crescer com os sistemas reais. O objetivo é evitar descobrir tarde que "o jogo está lento" sem saber qual mecanismo criou o custo.
 
 ---
 
@@ -503,10 +575,12 @@ Estratégia:
 
 1. manter simulação fora de Nodes;
 2. representar entidades por IDs e estruturas C# controladas pelo núcleo;
-3. medir CPU, memória, GC e tempo de tick;
-4. identificar sistemas quentes;
-5. otimizar a representação desses sistemas;
-6. considerar arrays contíguos, pools, SoA/ECS ou jobs somente onde os benchmarks justificarem.
+3. evitar atualizar entidades inativas ou trabalho cujo resultado não é necessário naquele tick;
+4. medir CPU, memória, GC, cache behavior quando possível e tempo por sistema/tick;
+5. identificar sistemas quentes;
+6. otimizar algoritmos e frequência antes de simplesmente adicionar threads;
+7. melhorar localidade/representação dos hotspots;
+8. considerar arrays contíguos, pools, hot/cold split, SoA/ECS ou jobs somente onde os benchmarks justificarem.
 
 A fronteira entre simulação e apresentação torna essa evolução possível sem reescrever UI e assets.
 
@@ -604,7 +678,8 @@ Ainda não estão decididos:
 - formato de save;
 - formato de configuração de gameplay;
 - estratégia exata de snapshots/read models;
-- frequência dos ticks de cada sistema;
+- frequências concretas do scheduler;
+- algoritmo e representação definitivos de pathfinding;
 - job system;
 - modding API;
 - scripting externo;
@@ -633,6 +708,8 @@ Referências:
 - https://docs.godotengine.org/en/stable/engine_details/architecture/godot_architecture_diagram.html
 - https://docs.godotengine.org/en/4.5/tutorials/scripting/resources.html
 - https://docs.godotengine.org/en/stable/classes/class_projectsettings.html
+- https://docs.godotengine.org/en/4.4/tutorials/navigation/navigation_optimizing_performance.html
+- https://docs.godotengine.org/en/stable/tutorials/navigation/navigation_using_navigationservers.html
 
 ### City builders e simulações abertas
 
@@ -653,6 +730,31 @@ Referências:
 
 - https://github.com/zeikar/cimulity
 
+**SimCity / GlassBox:** o design separava Resources, Units, Maps e regras, e mantinha agentes móveis deliberadamente simples para suportar grandes quantidades. É evidência útil de que "entidade persistente" não precisa significar lógica pesada executada por objeto em todo tick.
+
+- https://www.andrewwillmott.com/talks/inside-glassbox
+- https://www.gamedeveloper.com/design/gdc-2012-breaking-down-em-simcity-em-s-glassbox-engine
+
+**Banished:** o pós-mortem de pathfinding mostra que otimizar A* não bastava. O jogo separou conectividade, grafo macro e caminho detalhado; decisões de distância passaram a usar representação coarse muito mais barata. Esse caso sustenta tratar mobilidade como arquitetura hierárquica, não como chamada de A* por agente.
+
+- https://shiningrocksoftware.com/2013-11-21-more-bugs-pathfinding-problems/
+- https://banished-wiki.com/wiki/Pathfinding
+
+**Factorio:** os devlogs documentam repetidamente que atualizar milhares de entidades a cada tick, baixa localidade de memória e multithreading ingênuo criam gargalos. Otimizações eficazes incluem colocar sistemas para "dormir", buckets de atualização, mover lógica para managers especializados e paralelizar apenas trabalhos com dependências controladas.
+
+- https://www.factorio.com/blog/post/fff-421
+- https://www.factorio.com/blog/post/fff-324
+- https://www.factorio.com/blog/post/fff-204
+- https://www.factorio.com/blog/post/fff-151
+- https://www.factorio.com/blog/post/fff-215
+- https://www.factorio.com/blog/post/fff-364
+- https://www.factorio.com/blog/post/fff-415
+
+**OpenTTD:** mantém estado de simulação determinístico, savegames versionados e compatibilidade explícita por versão. Serve como evidência de que versionamento de estado e reprodutibilidade precisam ser preocupações de base em simuladores longevos.
+
+- https://github.com/OpenTTD/OpenTTD/blob/master/docs/desync.md
+- https://docs.openttd.org/source/d6/dd4/saveload_8h_source
+
 ### Princípios gerais
 
 - Game Programming Patterns — Decoupling:
@@ -661,6 +763,10 @@ Referências:
   https://gameprogrammingpatterns.com/event-queue.html
 - Game Programming Patterns — Data Locality:
   https://gameprogrammingpatterns.com/data-locality.html
+- Game Programming Patterns — Dirty Flag:
+  https://gameprogrammingpatterns.com/dirty-flag.html
+- Game Programming Patterns — Update Method:
+  https://gameprogrammingpatterns.com/update-method.html
 - Martin Fowler — Linking Modular Architecture to Development Teams:
   https://martinfowler.com/articles/linking-modular-arch.html
 - Microsoft — Dependency inversion / explicit dependencies:
