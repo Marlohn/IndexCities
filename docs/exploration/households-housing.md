@@ -16,7 +16,7 @@ Este arquivo é material de exploração temática. A autoridade do produto cont
 
 ## Dinheiro, renda familiar e consumo
 
-> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
 
 
 **Status:** em exploração.
