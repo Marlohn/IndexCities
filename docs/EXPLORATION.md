@@ -3221,3 +3221,46 @@ Não foi decidido:
 - intervenções/subsídios específicos.
 
 Esses temas ficam fora até criarem uma decisão de gameplay relevante.
+
+
+---
+
+## Demanda como orientação, não bloqueio
+
+**Status:** decidido no comportamento principal; fórmula ainda aberta.
+
+O jogador continua responsável pela gestão do tecido econômico.
+
+A demanda **não impede** uma construção. Se o jogador quiser colocar cinco mercados próximos, o jogo permite.
+
+O sistema deve, porém, tornar a consequência legível:
+
+- antes/depois da colocação, indicar baixa demanda quando aplicável;
+- mostrar que estabelecimentos equivalentes disputam a mesma clientela;
+- deixar o jogador correr o risco econômico conscientemente;
+- se a empresa depois tiver poucos clientes e prejuízo, a deterioração precisa apontar essa causa real.
+
+Exemplo conceitual:
+
+cinco mercados concentrados
+→ clientela disponível dividida/insuficiente
+→ aviso de baixa demanda
+→ vendas menores
+→ pressão sobre o caixa das empresas
+→ risco de fechamento se persistir.
+
+Isso é preferível a bloquear o prédio, porque mantém agência e transforma demanda em ferramenta de gestão.
+
+### Ainda aberto
+
+A fórmula não deve ser inventada agora. Antes da implementação, definir e testar:
+
+- se demanda é principalmente local por área de atendimento ou também possui componente global;
+- efeito de distância/tempo de viagem;
+- população potencial atendida;
+- capacidade dos estabelecimentos;
+- concorrência entre negócios equivalentes;
+- substituição entre categorias parecidas;
+- como mostrar os fatores sem criar uma barra misteriosa.
+
+A regra transversal continua valendo: o jogador precisa conseguir descobrir por que a demanda está baixa.
