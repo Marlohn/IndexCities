@@ -279,3 +279,12 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Poluição é gerada por fontes reais, incluindo indústria, trânsito e esgoto.
 - Poluição afeta saúde e valor/atratividade das áreas.
 - Energia solar e eólica fazem parte das opções de geração.
+
+
+### Resíduos e falhas de infraestrutura
+
+- A cidade terá destinação física de resíduos, incluindo estruturas como aterro e/ou incineração, com capacidade real.
+- Reciclagem fica fora do escopo inicial.
+- Falta de água reduz a eficiência de empresas e serviços.
+- Se a falta de água persistir, empresas e serviços podem interromper a operação.
+- O tempo e os limiares para redução de eficiência e fechamento devem ser configuráveis.
