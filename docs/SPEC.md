@@ -62,11 +62,20 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - Cada empresa privada possui um saldo monetário real.
 - Receitas e despesas da empresa devem ser lançadas a partir de fluxos econômicos reais da simulação, incluindo vendas, salários, insumos, frete, impostos e outros custos definidos.
 - O estado econômico da empresa e uma eventual falência devem ser derivados desses fluxos e do caixa real, não de um indicador oculto independente.
-- A empresa recebe uma capitalização privada inicial explícita ao começar a operar. A origem é o setor privado externo/investidores privados agregados; o valor deve seguir regra configurável e auditável para calibração.
+- A empresa recebe uma capitalização operacional inicial explícita ao começar a operar. Esse valor faz parte do custo monetário da construção privada ordenada pelo jogador e é transferido do caixa da cidade para o caixa da empresa; o valor deve seguir regra configurável e auditável para calibração.
 - O jogador não precisa administrar transferências bancárias, capital de giro ou pagamentos individuais manualmente.
 - A leitura normal pode resumir a situação da empresa; uma visão detalhada deve permitir inspecionar caixa, receitas, despesas e causas de deterioração.
 - Não haverá resgates, crédito ou dinheiro invisível para impedir falência. Se crédito, subsídio ou recapitalização forem adicionados futuramente, deverão ser sistemas explícitos e diagnosticáveis.
-- A relação exata entre capital privado e o financiamento da construção inicial de um prédio privado continua em definição.
+- A construção física e a capitalização inicial de um prédio privado fazem parte do custo pago pelo caixa da cidade quando o jogador ordena aquela construção.
+
+### Falência e encerramento de empresas
+
+- O jogo não precisa simular legislação ou processo jurídico de falência.
+- Para gameplay, falência significa que uma empresa não consegue sustentar sua operação por tempo suficiente e encerra as atividades.
+- A deterioração deve vir de causas reais e auditáveis, como falta de clientes/receita, custos de insumos, salários, frete, impostos ou interrupções de abastecimento.
+- Antes do fechamento, a empresa deve permanecer em estado de risco por um período calibrável e mostrar ao jogador a principal causa real do problema.
+- O limiar e o tempo exatos de encerramento são parâmetros de balanceamento e não exigem microgerenciamento do jogador.
+- O destino do prédio após o encerramento da empresa ainda não está definido.
 
 ### Serviços públicos
 
@@ -188,6 +197,16 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Salários de todos os trabalhadores públicos devem aparecer explicitamente entre as despesas municipais.
 - A cidade poderá usar empréstimos/dívida municipal para evitar travamentos financeiros e permitir recuperação de caixa.
 
+
+### Caixa da cidade e investimento em construções
+
+- O jogador administra um único **caixa da cidade** como recurso monetário principal controlável.
+- Receitas municipais, impostos e outras entradas definidas alimentam esse caixa; despesas públicas, salários e construções ordenadas pelo jogador consomem esse caixa.
+- Como o jogador posiciona diretamente todos os prédios no escopo atual, **toda construção que ele ordena consome dinheiro do caixa da cidade e materiais físicos**, independentemente de o prédio depois ser operado pelo setor público ou por uma empresa privada.
+- Essa é uma abstração consciente de gameplay: a distinção público/privado afeta principalmente a operação após a inauguração, não cria dois sistemas de pagamento na ferramenta de construção.
+- O custo monetário de uma construção privada inclui uma **capitalização operacional inicial** da empresa que irá operar o prédio; esse valor é transferido do caixa da cidade para o caixa real da empresa quando ela entra em operação.
+- Depois de inaugurada, a empresa privada passa a operar com seu próprio caixa, receitas e despesas; o jogador não pode usar diretamente esse dinheiro como caixa da cidade.
+- O resultado de uma empresa privada beneficia ou prejudica a cidade por efeitos econômicos reais, como empregos, salários, impostos, produção, logística e eventual fechamento, não por transferência livre de seu caixa para o jogador.
 
 ### Terreno e logística econômica
 
