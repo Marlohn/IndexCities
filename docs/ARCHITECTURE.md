@@ -491,11 +491,15 @@ Não criar um framework de migração antes de existir a primeira mudança de sc
 
 ## 11. Testes
 
-A estratégia segue as fronteiras arquiteturais.
+A estratégia segue as fronteiras arquiteturais e deve priorizar **retorno rápido durante o desenvolvimento**.
 
-### Simulation Core
+A regra principal é: **rode o menor conjunto de testes que realmente prova a mudança; aumente o alcance quando o risco aumentar.**
 
-Maior concentração de testes automatizados.
+Isso evita que toda pequena alteração obrigue a executar a suíte inteira.
+
+### Testes rápidos do Simulation Core
+
+A maior parte dos testes automatizados deve ficar no núcleo da simulação, porque são baratos de executar e protegem as regras mais importantes.
 
 Devem proteger principalmente:
 
@@ -510,9 +514,19 @@ Devem proteger principalmente:
 
 Esses testes devem rodar com `dotnet test`, sem editor Godot.
 
-### Godot / integração
+### Testes de integração
 
-Testar somente onde a engine é parte do comportamento:
+Testes de integração verificam se duas ou mais partes realmente funcionam juntas. Devem existir principalmente nas fronteiras onde há risco real, por exemplo:
+
+- Simulation Core ↔ camada de aplicação;
+- persistência ↔ estado da simulação;
+- Godot ↔ comandos e dados vindos da simulação.
+
+Eles devem ser menos numerosos que os testes rápidos do núcleo, porque custam mais tempo e normalmente precisam de mais infraestrutura.
+
+### Godot / testes mais amplos
+
+Testar com Godot somente onde a engine é parte do comportamento:
 
 - conversão de coordenadas;
 - integração de cena;
@@ -523,11 +537,40 @@ Testar somente onde a engine é parte do comportamento:
 
 Não duplicar no Godot testes de regra já cobertos no núcleo.
 
+### Ordem prática de execução
+
+Durante desenvolvimento:
+
+1. executar primeiro os testes da área alterada;
+2. se a mudança cruzar uma fronteira, executar também os testes de integração daquela fronteira;
+3. executar testes Godot somente quando a alteração tocar comportamento que depende da engine;
+4. executar a suíte completa em momentos de maior confiança necessária, como integração de mudanças amplas, marcos importantes e antes de releases.
+
+Quando a suíte crescer, os testes devem poder ser filtrados por projeto, domínio e categoria usando os recursos normais do `dotnet test`.
+
+A automação de CI pode usar caminhos alterados para evitar iniciar jobs totalmente irrelevantes, desde que mudanças em contratos compartilhados continuem disparando os testes dependentes.
+
+### Performance não é teste funcional
+
+Benchmarks de desempenho devem ficar separados dos testes funcionais normais.
+
+Eles servem para medir, por exemplo:
+
+- tempo de tick;
+- quantidade de cidadãos/veículos suportados;
+- custo de pathfinding;
+- alocações e GC;
+- tempo de save/load.
+
+Um benchmark não deve tornar cada edição lenta. Rode benchmarks quando houver mudança de algoritmo, estrutura de dados, escala ou quando uma regressão de desempenho for suspeita.
+
 ### Testes de arquitetura
 
 Quando houver projetos/assemblies reais, vale criar guardrails baratos que impeçam o núcleo de ganhar dependência de `Godot.*`.
 
 Não adotar cobertura percentual como objetivo.
+
+Também não duplicar o mesmo comportamento em várias camadas sem necessidade. Um teste novo deve existir porque protege uma regra, uma integração importante ou uma regressão concreta.
 
 ### Observabilidade de simulação
 
@@ -570,16 +613,41 @@ A fronteira headless é uma capacidade arquitetural; não precisa virar um subsi
 
 ---
 
-## 13. Determinismo e aleatoriedade
+## 13. Reproduzir cidades e bugs
 
 A simulação deve favorecer comportamento reproduzível.
 
-- aleatoriedade entra por uma fonte explícita;
-- seeds devem poder ser controladas em testes e benchmarks;
-- sistemas não devem usar aleatoriedade global escondida;
-- um bug deve poder ser reproduzido a partir de estado + configuração + seed sempre que praticável.
+### Seed do mapa
 
-Determinismo bit-a-bit entre todas as plataformas **não é requisito atual**. O objetivo imediato é diagnóstico e teste reproduzível.
+A seed define o ponto de partida reproduzível do mapa e da geração inicial.
+
+Usar a mesma seed deve permitir gerar novamente a mesma cidade-base, desde que a versão e as configurações relevantes também sejam compatíveis.
+
+**A seed sozinha não reproduz uma cidade horas depois de gameplay.** Depois que o jogador constrói, cidadãos tomam decisões e números aleatórios avançam, o estado mudou.
+
+### Pacote de reprodução de bug
+
+Quando precisarmos reproduzir um bug ocorrido durante uma cidade em andamento, o formato desejado é guardar um pequeno conjunto de informações:
+
+- versão/build do jogo;
+- seed inicial;
+- configurações que alteram a simulação;
+- um save ou checkpoint próximo do problema;
+- estado dos geradores de números aleatórios quando necessário;
+- sequência de comandos/ações desde o checkpoint até o bug.
+
+Assim podemos carregar um ponto conhecido e repetir os mesmos passos até a falha.
+
+Não é necessário registrar para sempre cada frame ou cada detalhe da cidade. O sistema de reprodução deve ser proporcional ao problema e pode evoluir quando houver bugs reais que justifiquem mais informação.
+
+### Aleatoriedade
+
+- aleatoriedade entra por fontes explícitas;
+- seeds devem poder ser controladas em testes e benchmarks;
+- evitar aleatoriedade global escondida;
+- quando um sistema usar um gerador próprio, seu estado deve poder ser salvo/restaurado se isso for necessário para reprodução.
+
+O objetivo é conseguir repetir cenários e diagnosticar bugs. Determinismo bit-a-bit entre todas as plataformas **não é requisito atual**.
 
 ---
 
@@ -772,6 +840,19 @@ Referências:
 
 - https://github.com/OpenTTD/OpenTTD/blob/master/docs/desync.md
 - https://docs.openttd.org/source/d6/dd4/saveload_8h_source
+
+### Testes, SDD e reprodução
+
+- GitHub Spec Kit — conceito de Spec-Driven Development:
+  https://github.com/github/spec-kit/blob/main/docs/concepts/sdd.md
+- Microsoft .NET — filtros para executar testes selecionados:
+  https://learn.microsoft.com/en-us/dotnet/core/testing/selective-unit-tests
+- Martin Fowler — Practical Test Pyramid:
+  https://martinfowler.com/articles/practical-test-pyramid.html
+- GitHub Actions — filtros por caminhos alterados:
+  https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow
+- Godot — geração aleatória, seed e estado do gerador:
+  https://docs.godotengine.org/en/4.7/tutorials/math/random_number_generation.html
 
 ### Princípios gerais
 
