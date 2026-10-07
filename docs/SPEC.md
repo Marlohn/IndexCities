@@ -69,7 +69,7 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - Toda obra possui custo em **dinheiro e materiais**.
 - Obras consomem materiais reais da cidade.
 - Obras dependem de trabalhadores reais da população simulada.
-- Materiais de construção precisam existir em estoque antes de serem consumidos pela obra.
+- Materiais de construção precisam estar fisicamente disponíveis e reservados para a obra antes de serem consumidos, seja em estoque municipal ou já entregues no canteiro.
 - No início de uma cidade, materiais podem ser importados pela conexão externa usando o dinheiro inicial.
 - O custo apresentado da obra deve indicar explicitamente quando materiais faltantes serão importados e quanto essa importação aumenta o custo monetário.
 - A cidade precisa possuir infraestrutura física de armazenamento, como depósitos/galpões, para materiais de construção.
@@ -409,3 +409,11 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - No escopo atual, a importação de materiais de construção acontece em resposta a uma obra que exige recursos indisponíveis localmente.
 - Não existe compra genérica automática de materiais apenas para encher estoque.
 - O custo de frete da importação faz parte do custo monetário total exibido para a construção.
+
+
+### Cancelamento de obras e demolição
+
+- Ao cancelar uma obra ainda não concluída, materiais já entregues e ainda recuperáveis retornam ao depósito municipal.
+- Materiais apenas reservados, mas ainda não consumidos, deixam de ficar reservados.
+- A política de devolução de valores monetários em cancelamento de obra ainda não está definida.
+- Demolir uma construção já realizada não devolve o dinheiro nem os materiais originalmente gastos.
