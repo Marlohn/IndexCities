@@ -1327,3 +1327,32 @@ Isso é compatível com o gameplay desejado:
 A ideia é conceitualmente sólida e especialmente boa para o IndexCities porque reforça causalidade: todo dinheiro tem origem e destino.
 
 O principal risco não é “o dinheiro acabar globalmente”, mas **ficar mal distribuído** entre Caixa, cidadãos, empresas e reserva. Isso precisa ser observado em POC/benchmark antes de fixar valores iniciais.
+
+
+---
+
+### Decisão: oferta monetária fixa, Reserva Global e empréstimos
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — a regra central foi confirmada diretamente pelo responsável; valores e calibração ainda não foram revisados/fechados.
+
+**Status:** decisão promovida para a SPEC.
+
+Decidido:
+- existe uma quantidade total fixa de dinheiro na simulação;
+- esse dinheiro fica distribuído entre Caixa da Cidade, SIMs, empresas e uma **Reserva Global** invisível ao jogador;
+- a Reserva Global funciona como contraparte de entradas/saídas externas e de valores sem titular econômico modelado;
+- migrantes e empresas externas recebem capital retirado dessa reserva;
+- valores que saem da economia local para contrapartes externas ou ficam sem titular voltam para a reserva;
+- a primeira aquisição de um ativo privado construído pela cidade não devolve dinheiro ao player: o pagamento vai para a Reserva Global;
+- empréstimos municipais saem da Reserva Global e retornam a ela por amortização/juros;
+- todo movimento deve guardar origem/motivo para auditoria;
+- a soma monetária global deve ser uma invariável de debug.
+
+### Nome
+
+Foram considerados:
+- **Fundo Global** — curto, mas pode soar como um fundo que o jogador administra;
+- **Reserva Monetária Global** — preciso, porém mais técnico;
+- **Reserva Global** — curto e comunica melhor que é um saldo de bastidor.
+
+**Recomendação atual:** usar **Reserva Global** no produto/documentação e tratar **oferta monetária global** como o nome do total fixo de dinheiro.
