@@ -170,3 +170,14 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Vagas de estacionamento na rua ocupam espaço físico real da via.
 - Casas e prédios podem ter vagas/garagens privadas.
 - Vagas privadas reduzem a necessidade de estacionamento na rua.
+
+
+### Regras de circulação viária
+
+- Pedestres atravessam vias urbanas apenas em faixas de pedestres.
+- Semáforos operam inicialmente em ciclos fixos.
+- Rodovias permitem velocidades maiores que vias urbanas comuns.
+- Não é permitido construir casas, comércios ou outros edifícios diretamente conectados às rodovias.
+- Rotatórias fazem parte do sistema viário.
+- O número de faixas influencia capacidade, fluxo e congestionamento de forma real.
+- O trânsito deve buscar alto realismo operacional.
