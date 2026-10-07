@@ -1728,7 +1728,7 @@ Problema: se toda obra precisa de material armazenado, mas o primeiro depósito 
 
 ### Recomendação atual
 
-Testar a alternativa 2.
+A alternativa de estoque inicial continua válida como fallback, mas surgiu uma opção potencialmente melhor: permitir compra explícita de material importado no momento da construção, mantendo entrega física. Essa alternativa deve ser comparada no onboarding antes de fechar a regra.
 
 A conexão externa funciona como origem do lote inicial, não como depósito urbano permanente. O lote deve ser pequeno e dimensionado apenas para colocar a cadeia logística em funcionamento.
 
@@ -1740,3 +1740,44 @@ Ainda precisa ser confirmado:
 - quantidade suficiente para quais primeiras construções;
 - se também deve cobrir o primeiro trecho de via;
 - quem/qual veículo transporta esse estoque até o primeiro canteiro.
+
+
+---
+
+## Compra automática de material importado ao construir
+
+**Status:** direção recomendada; ainda precisa ser confirmada como comportamento final.
+
+Ideia: quando o jogador tenta construir algo e a cidade não possui materiais suficientes em estoque, a interface pode mostrar explicitamente que o material faltante será importado.
+
+Exemplo conceitual:
+
+- custo da obra;
+- materiais necessários;
+- quantidade disponível localmente;
+- quantidade faltante;
+- custo de importação do material faltante;
+- indicação clara de que a obra só avança após a entrega física.
+
+### Vantagens
+
+- evita exigir um estoque inicial artificial;
+- explica desde o começo a relação entre dinheiro, materiais e logística;
+- mantém a cidade vazia no início;
+- evita soft-lock de primeira construção;
+- torna o custo real da dependência externa visível;
+- reforça a decisão futura de produzir materiais localmente.
+
+### Regra importante
+
+Pagar pela importação **não teletransporta o material**.
+
+O pedido gera um fluxo logístico real:
+
+conexão externa → caminhão externo → destino/depósito/canteiro → descarga → disponibilidade para a obra.
+
+A construção só deve avançar quando o material realmente chegar.
+
+### Questão ainda aberta
+
+Definir se a primeira entrega pode ir diretamente ao canteiro ou se, após o primeiro depósito existir, toda importação de materiais deve obrigatoriamente passar por armazenamento municipal.
