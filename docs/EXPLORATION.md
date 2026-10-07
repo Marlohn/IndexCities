@@ -3500,3 +3500,114 @@ A decisão realmente importante agora não é "quem recebe R$ X de aluguel", mas
 **o primeiro escopo já deve distinguir família proprietária de família locatária, ou todas as famílias começam num modelo de aluguel e propriedade/herança entra depois?**
 
 Essa escolha define o tamanho real do sistema de moradia.
+
+
+---
+
+## Clarificação: para onde vai o aluguel
+
+**Status:** exploração; nenhuma escolha promovida para a SPEC ainda.
+
+A proposta anterior de usar uma "empresa imobiliária" como recebedora padrão de todo aluguel foi considerada insuficientemente clara.
+
+### Regra econômica desejada
+
+**Dinheiro de aluguel não deve desaparecer nem ir para um agente genérico sem dono.**
+
+Se houver aluguel real:
+
+família locatária
+→ paga aluguel
+→ **proprietário real daquela unidade residencial**
+
+O Caixa da Cidade recebe apenas os impostos/taxas aplicáveis.
+
+### Modelo mais coerente em exploração: propriedade por unidade
+
+Cada casa ou unidade de apartamento teria um proprietário econômico explícito.
+
+O proprietário poderia ser:
+
+- uma família;
+- uma entidade privada proprietária/operadora de imóveis;
+- eventualmente o próprio setor público em casos específicos, se houver moradia pública no futuro.
+
+Consequências:
+
+**Família proprietária**
+- mora na própria unidade;
+- não paga aluguel a si mesma;
+- pode pagar imposto/taxas e manutenção;
+- o imóvel é patrimônio;
+- no futuro pode ser transferido por venda ou herança.
+
+**Família locatária**
+- ocupa imóvel de outro proprietário;
+- paga aluguel ao proprietário real;
+- não possui aquele patrimônio.
+
+**Entidade privada proprietária**
+- recebe aluguel das unidades que possui;
+- paga impostos e custos definidos;
+- seu fluxo precisa ser auditável se for modelada como agente econômico real.
+
+### Por que isso é mais limpo
+
+Prós:
+- cada pagamento tem origem e destino;
+- propriedade e aluguel usam a mesma regra;
+- uma futura herança passa a ser uma simples transferência de propriedade;
+- imposto continua sendo a principal ponte de receita para o Caixa da Cidade;
+- não existe "landlord virtual" escondido;
+- a diferença proprietário versus locatário tem consequência real.
+
+Contras:
+- precisamos manter o proprietário de cada unidade;
+- compra/venda e herança ficam conceitualmente conectadas ao sistema;
+- apartamentos podem ter propriedade por unidade, aumentando estado persistente;
+- ainda é necessário decidir quem é o proprietário inicial quando o jogador constrói uma nova moradia.
+
+### Ponto crítico revelado
+
+A pergunta "para quem vai o aluguel?" mostra que **todas as famílias alugarem sem modelar propriedade não é tão simples quanto parecia**.
+
+Ou:
+1. existe um proprietário real;
+2. o Caixa da Cidade vira proprietário/locador;
+3. ou o dinheiro vai para uma abstração/sumidouro.
+
+A opção 3 contradiz o princípio de causalidade do projeto. A opção 2 conflita com a intenção de uma economia centrada principalmente em impostos.
+
+Por isso, a hipótese de **propriedade residencial real, porém automática para o jogador**, ganhou força.
+
+### O que não precisa vir junto
+
+Modelar propriedade não obriga imediatamente a implementar:
+- hipoteca;
+- financiamento bancário;
+- cartório;
+- processo jurídico;
+- escolha manual de proprietário pelo jogador;
+- mercado financeiro imobiliário detalhado.
+
+O estado mínimo pode ser apenas:
+
+unidade residencial
+→ owner entity id
+→ occupant household id
+→ preço/aluguel
+→ impostos/custos aplicáveis
+
+Isso permite profundidade econômica sem obrigar microgestão.
+
+### Questão macro ainda aberta
+
+**Quem recebe a propriedade inicial de uma nova residência construída pelo jogador?**
+
+Alternativas a comparar antes de decidir:
+- fica inicialmente no Caixa da Cidade/desenvolvedor e depois é vendida ou alugada;
+- é adquirida automaticamente por uma família com capacidade financeira;
+- é adquirida por uma entidade privada real de propriedade imobiliária;
+- existe uma regra híbrida conforme demanda e capacidade de compra.
+
+Não decidir esse ponto por conveniência técnica; ele define o fluxo monetário de moradia.
