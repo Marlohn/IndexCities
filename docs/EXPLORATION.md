@@ -1326,3 +1326,62 @@ Tópicos preservados para reavaliação futura:
 - redução de disponibilidade de água em períodos secos.
 
 Nenhum desses sistemas deve ser implementado no escopo atual. Devem ser revisitados quando a simulação básica de mobilidade, serviços urbanos, energia, água e emergências estiver estável.
+
+
+---
+
+## Terreno, vegetação e alcance de serviços
+
+**Status:** parcialmente decidido.
+
+### Edição de terreno
+
+**Adiada para o futuro.**
+
+No escopo inicial, o jogador não precisa modificar relevo.
+
+Razão prática: terraplanagem aumenta a complexidade de vários sistemas ao mesmo tempo, incluindo:
+
+- colocação de edifícios;
+- vias e inclinações;
+- navegação;
+- água;
+- colisões;
+- visual;
+- geração/validação do mapa.
+
+A decisão pode ser reavaliada depois que construção, vias, água e terreno-base estiverem estáveis.
+
+### Vegetação
+
+Direção decidida:
+
+- vegetação deve ter presença visual forte;
+- árvores e outros elementos naturais podem ser removidos para construção;
+- variedade, densidade e integração com ruas/lotes devem receber atenção visual.
+
+Ainda pode ser explorado no futuro se vegetação terá efeitos sistêmicos adicionais além de apresentação e uso de espaços públicos.
+
+### Parques, amenidades e serviços sem "círculo mágico"
+
+Foi definido um princípio importante: **não usar, como regra geral, um raio fixo arbitrário para determinar quem pode usar um serviço ou amenidade**.
+
+Exemplo: um cidadão pode atravessar a cidade para buscar um hospital se aquele for o destino disponível/adequado.
+
+Para destinos como hospital, escola, parque, comércio e lazer, o modelo deve preferir fatores como:
+
+- tempo/distância real de viagem;
+- rota disponível;
+- capacidade do destino;
+- qualidade/adequação;
+- custo;
+- preferência do cidadão;
+- alternativas concorrentes.
+
+Isso não impede efeitos que são naturalmente espaciais, como poluição ou ruído, de terem propagação local. A regra se aplica principalmente a **acesso e escolha de destinos**.
+
+### Poluição sonora
+
+**Fora do escopo atual.**
+
+Pode ser reavaliada futuramente caso ruído se prove relevante para bem-estar, moradia ou valor imobiliário.
