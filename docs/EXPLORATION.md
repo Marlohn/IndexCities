@@ -2523,9 +2523,11 @@ Três modelos possíveis:
 - o jogador controla o desenho/localização da cidade, mas caixa operacional e lucro pertencem às empresas;
 - subsídios, incentivos ou investimento municipal podem ser adicionados apenas se houver necessidade.
 
-Antes de decidir, é preciso preservar coerência com duas regras já existentes:
+Antes de decidir, é preciso preservar coerência com as regras já existentes:
 - o jogador posiciona diretamente todos os prédios;
-- empresas têm dinheiro e estado econômico próprios e podem falir.
+- prédios econômicos colocados pelo jogador passam a ser operados por empresas privadas;
+- empresas têm estado econômico próprio e podem falir;
+- a granularidade exata do dinheiro/caixa empresarial foi reaberta e não deve ser tratada como decisão fechada.
 
 O modelo privado ou híbrido parece mais compatível com empresas terem caixa próprio e poderem falir, mas o financiamento da construção precisa ser definido antes de virar requisito.
 
@@ -2835,3 +2837,16 @@ Abstrair ou automatizar quando tende a virar rotina:
 A interface pode ser mais simples que a simulação. O sistema pode saber exatamente onde cada carga está, quem a produziu e como ela se move, enquanto o jogador recebe uma visão agregada suficiente para decidir.
 
 Esse critério deve ser reaplicado a transporte, serviços, empresas, cidadãos, cadeias produtivas, construção, finanças e demais sistemas à medida que forem definidos.
+
+
+---
+
+## Dinheiro privado por empresa: validação de gameplay
+
+**Status:** em pesquisa; decisão reaberta.
+
+Foi confirmado que fazendas, mercados, postos, fábricas e demais atividades econômicas colocadas pelo jogador podem ser operadas por empresas privadas.
+
+A questão em aberto é se cada empresa precisa ter um **saldo bancário explícito e rígido** ou se basta simular receitas, custos, lucro/prejuízo e saúde financeira de forma mais abstrata.
+
+Critério transversal: manter detalhe econômico quando ele cria decisões ou consequências úteis; abstrair quando ele vira contabilidade que o jogador não controla diretamente.
