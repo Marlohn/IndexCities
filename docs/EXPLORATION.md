@@ -721,3 +721,23 @@ Ainda precisa ser decidido o nível de granularidade da equipe:
 4. turnos e escalas individuais.
 
 A regra de profundidade continua a mesma: só detalhar quando isso gerar consequência clara para gameplay, capacidade, custo, deslocamento ou decisão do jogador.
+
+
+---
+
+## Turnos de trabalho e operação contínua
+
+**Status:** em exploração; suporte a múltiplos turnos já está decidido na SPEC.
+
+A intenção é permitir turnos diferentes para empresas e serviços, inclusive quando houver operação noturna, mas sem transformar escala de funcionários em microgerenciamento manual obrigatório.
+
+Direção a validar:
+
+- cada trabalhador pode ter um horário/turno individual;
+- empresas definem janelas de operação e quantidade de vagas por turno;
+- serviços críticos podem precisar de cobertura contínua;
+- a simulação pode gerar escalas automaticamente a partir das necessidades da empresa/serviço;
+- o jogador deve intervir apenas quando houver uma decisão relevante, como ampliar capacidade, mudar horário de funcionamento ou lidar com falta de pessoal;
+- horários diferentes devem distribuir ou concentrar tráfego ao longo do dia.
+
+O objetivo é obter consequências reais de horário e escala sem obrigar o jogador a montar manualmente cada escala de trabalho, salvo se isso se provar divertido em protótipo.
