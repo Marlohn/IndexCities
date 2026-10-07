@@ -1,5 +1,9 @@
 # IndexCities — Empresas, mercados e finanças da cidade
 
+> **Revisão humana:** PARCIALMENTE REVISADO.  
+> **Auditoria:** classificação conservadora com base no estado anterior à reorganização temática, commit `4b97ace2`. o documento mistura conteúdo discutido/confirmado com pesquisa, síntese ou redação da IA ainda não revisada integralmente.
+>
+
 > **Status:** exploração ativa; várias decisões conceituais já foram promovidas para a SPEC — não é fonte de verdade.
 >
 > Reúne empresas privadas, demanda, aquisição de ativos, caixa empresarial, falência, abastecimento, conexão econômica externa e interpretação do Caixa da Cidade.
@@ -11,6 +15,9 @@ Este arquivo é material de exploração temática. A autoridade do produto cont
 ---
 
 ## Agricultura e produção local de alimentos
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** decidido em nível de produto; cadeia detalhada ainda aberta.
 
@@ -39,6 +46,9 @@ Ainda precisa ser pesquisado/calibrado:
 
 ## Importação externa e preços iniciais
 
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
+
 **Status:** parcialmente decidido.
 
 Decidido:
@@ -57,6 +67,9 @@ Para implementação, o preço deve ser um dado de balanceamento configurável p
 ---
 
 ## Transparência das finanças municipais
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** decidido.
 
@@ -89,6 +102,9 @@ Isso também evita dupla cobrança: se um trabalhador do Pátio já recebe salá
 ---
 
 ## Abastecimento de alimentos e combustível no primeiro escopo
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** decidido.
 
@@ -131,6 +147,9 @@ Essa separação substitui qualquer interpretação anterior de que um único de
 ---
 
 ## Propriedade e controle: prefeitura versus empresas privadas
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** parcialmente decidido. O jogador financia e coloca as construções; a operação econômica posterior pode ser privada.
 
@@ -186,6 +205,9 @@ O modelo privado ou híbrido parece mais compatível com empresas terem caixa pr
 ---
 
 ## Dinheiro privado por empresa: validação de gameplay
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** decidido após pesquisa e revisão de causalidade. Caixa real por empresa foi escolhido, sem microgestão bancária pelo jogador.
 
@@ -354,6 +376,9 @@ A comparação foi encerrada em favor de **caixa explícito real**, por ser o mo
 
 ## Revisão: quem paga quando o jogador constrói
 
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
+
 **Status:** decidido para o escopo atual.
 
 A discussão sobre "investidor privado paga a construção" estava criando uma camada conceitual que brigava com a regra central já decidida: **o jogador posiciona diretamente todos os prédios**.
@@ -417,6 +442,9 @@ Isso preserva conservação monetária e facilita diagnóstico.
 
 ## Falência empresarial sem simular processo jurídico
 
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
+
 **Status:** direção decidida; parâmetros ainda precisam de calibração.
 
 Não é necessário simular legislação de insolvência, credores, tribunais ou processo jurídico.
@@ -456,6 +484,9 @@ Esses temas ficam fora até criarem uma decisão de gameplay relevante.
 ---
 
 ## Demanda como orientação, não bloqueio
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** decidido no comportamento principal; fórmula ainda aberta.
 
@@ -504,6 +535,9 @@ A regra transversal continua valendo: o jogador precisa conseguir descobrir por 
 
 ## Interpretação do Caixa da Cidade
 
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
+
 **Status:** decidido.
 
 O **Caixa da Cidade** é o recurso monetário principal controlado pelo jogador e representa capital disponível para desenvolvimento e operação da cidade.
@@ -532,6 +566,9 @@ A abstração evita criar vários bolsos de investimento controlados pelo jogado
 ---
 
 ## Mercado de aquisição ligado à conexão exterior
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** parcialmente promovido para a SPEC. Aquisição residencial externa para migração, prédios econômicos vazios aguardando empresa e aquisição por empresas foram decididos; fórmulas, preços e alguns fluxos futuros seguem em calibração/exploração.
 
@@ -826,6 +863,9 @@ Por isso, a ideia merece continuar sendo explorada, mas só deve virar requisito
 
 ## Propriedade humana das empresas
 
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
+
 **Status:** decidido para o primeiro modelo: empresa é entidade econômica independente sem SIM proprietário modelado.
 
 A hipótese anterior era dar a cada empresa um SIM proprietário. O problema levantado é válido: se o SIM investe dinheiro pessoal, a empresa lucra em um caixa separado e depois precisamos criar dividendos, retiradas, herança de participação e outras transferências só para o dinheiro "voltar ao bolso" do dono.
@@ -950,6 +990,9 @@ Reavaliar donos/acionistas somente se surgirem sistemas como empreendedorismo in
 ---
 
 ## Fluxo do player após concluir comércio/indústria
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** modelo conceitual decidido; detalhes de apresentação e parâmetros seguem para POC/calibração.
 
@@ -1094,6 +1137,9 @@ A ordem desejada é:
 ---
 
 ## Encerramento de estabelecimento e continuidade da empresa
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** decisão promovida para a SPEC; detalhes de estoque e outros ativos específicos permanecem abertos até existirem no modelo.
 
