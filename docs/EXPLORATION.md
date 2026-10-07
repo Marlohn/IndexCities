@@ -1440,73 +1440,207 @@ Essa decisão reduz complexidade de construção, pathfinding, geração de mapa
 
 ## Materiais de construção, importação e estoque
 
-**Status:** consumo real de materiais, importação inicial e armazenamento estão decididos; categorias exatas ainda em calibração.
+**Status:** consumo real, importação, armazenamento e entrega física estão decididos; a lista de materiais abaixo é uma recomendação de pesquisa e ainda precisa de aprovação.
 
-### Evidência física útil para o modelo
+### Resultado da pesquisa ampla
 
-A pesquisa aponta uma separação importante entre matérias-primas e produtos:
+A evidência converge para alguns materiais muito mais importantes que outros quando o objetivo é representar **edifícios + ruas + pontes + infraestrutura urbana** sem explodir o número de SKUs.
 
-- **concreto** é produzido principalmente com cimento, água e agregados (areia, cascalho/pedra britada);
-- agregados representam a maior parte do volume do concreto;
-- **aço** é um material estrutural fundamental e possui cadeia produtiva própria;
-- **madeira** continua sendo material estrutural relevante, especialmente em construções leves;
-- pavimento asfáltico é majoritariamente agregado ligado por uma pequena fração de ligante asfáltico.
+O USGS destaca areia, cascalho, rocha/pedra e argila como materiais minerais que formam grande parte de edifícios, vias, pontes e infraestrutura. A FHWA trata agregados como elemento crítico de base de vias, pavimento asfáltico, concreto, estruturas e drenagem. No concreto, agregados representam aproximadamente 60–75% do volume; no asfalto, agregados ficam perto de 90–95% da mistura em massa. Aço é central em edifícios, concreto armado e pontes, e madeira permanece material estrutural relevante em construções e pontes.
 
-Fontes:
-- American Cement Association — Cement & Concrete FAQ: https://www.cement.org/cement-concrete/cement-concrete-faq/
-- USGS — Construction aggregates: https://www.usgs.gov/publications/construction-aggregates
-- worldsteel — What is steel?: https://worldsteel.org/about-steel/what-is-steel/
+Fontes principais:
+- USGS — Building America: Construction Materials (2026): https://www.usgs.gov/mission-areas/geology-energy-minerals/science/building-america-usgs-and-nations-construction
+- FHWA — Aggregates: https://www.fhwa.dot.gov/pavement/aggregates/
+- American Cement Association — Applications of Cement: https://www.cement.org/cement-concrete/applications-of-cement/
+- FHWA — Warm Mix Asphalt FAQ: https://www.fhwa.dot.gov/innovation/everydaycounts/edc-1/wma-faqs.cfm
+- U.S. DOE — Iron and Steel Manufacturing: https://www.energy.gov/cmei/ito/iron-and-steel-manufacturing
+- worldsteel — Rebar / construction: https://worldsteel.org/wider-sustainability/life-cycle-thinking/lca-eco-profiles-2026-release/global-rebar-construction/
 - USDA Forest Service — Wood Handbook: https://research.fs.usda.gov/fpl/wood-handbook
-- National Asphalt Pavement Association — Engineering Asphalt Pavement: https://www.asphaltpavement.org/all-about-asphalt/asphalt-facts/engineering/
 
-### Baseline recomendada para o primeiro protótipo
+### Tier 1 recomendado para o primeiro POC
 
-Para evitar SKUs demais e ainda preservar cadeias econômicas distintas, testar inicialmente:
+#### 1. Agregados
 
-**Materiais consumidos diretamente por obras**
-- concreto;
-- aço;
-- madeira;
-- asfalto, principalmente para vias e superfícies pavimentadas.
+Representação agregada de:
+- areia;
+- cascalho;
+- brita/pedra britada.
 
-**Insumos para produção local**
-- cimento;
-- agregados (areia/cascalho/pedra britada);
-- água para concreto;
-- matérias-primas de aço somente quando/ se a cadeia siderúrgica for aprofundada.
+Por que merece existir:
+- entra diretamente em base de ruas;
+- é a maior fração física de concreto e asfalto;
+- também aparece em drenagem, fundações e terraplenagem leve;
+- cria uma cadeia de carga pesada com grande impacto logístico.
 
-Uma cadeia inicial plausível é:
+Cadeia candidata:
 
-agregados + cimento + água → concreto → obra
+extração/pedreira/areal → britagem/classificação → agregados → depósito / concreteira / usina de asfalto / obra
 
-e, em paralelo:
+**Dependência ainda aberta:** produzir agregados localmente exige decidir como recursos minerais aparecem no mapa. Até isso existir, matéria-prima ou agregado acabado pode ser importado.
 
-aço → obra  
-madeira → obra  
-agregados + ligante asfáltico → asfalto → vias
+#### 2. Cimento
 
-Isso é uma abstração de gameplay baseada em cadeias reais, não uma receita industrial completa.
+Cimento não deve ser confundido com concreto.
 
-### Fluxo inicial da cidade
+Cadeia física real simplificada:
 
-Decidido:
+calcário + argila/xisto + outros corretivos → forno → clínquer → moagem com gesso/outros materiais → cimento
+
+Fonte: American Cement Association — Cement & Concrete FAQ:
+https://www.cement.org/cement-concrete/cement-concrete-faq/
+
+Recomendação de gameplay:
+- cimento é insumo industrial;
+- pode ser importado;
+- produção local completa exige indústria pesada e recursos minerais, portanto pode entrar depois da concreteira.
+
+#### 3. Concreto
+
+Cadeia simplificada:
+
+cimento + agregados + água → usina/concreteira → caminhão-betoneira → canteiro
+
+A American Cement Association registra que concreto é formado por cimento, água e agregados, e que concreto de central pode ser entregue ao canteiro por caminhão-misturador.
+
+Por que é muito forte para o jogo:
+- usado em edifícios, fundações, pontes e infraestrutura;
+- conecta água + cimento + agregados;
+- exige produção e transporte físico;
+- cria motivo claro para construir uma concreteira local em vez de importar tudo.
+
+#### 4. Aço
+
+Aço deve permanecer uma única categoria de material inicialmente, sem separar vergalhão, perfil, chapa etc.
+
+Rotas reais principais:
+- minério de ferro → ferro → aciaria/BOF → aço;
+- sucata → forno elétrico a arco (EAF) → aço.
+
+O DOE registra ferro-minério e sucata como matérias-primas importantes; worldsteel mostra aço estrutural e vergalhão em edifícios, rodovias e pontes.
+
+Recomendação de gameplay:
+- **import-first** no começo;
+- produção local de aço deve ser uma indústria mais avançada;
+- quando implementada, pode usar matéria-prima importada e/ou sucata, evitando exigir uma mina de ferro em todo mapa.
+
+#### 5. Madeira serrada
+
+Cadeia simplificada:
+
+floresta/logs → serraria → madeira serrada/produtos estruturais → depósito/obra
+
+A USDA documenta madeira, madeira serrada e produtos engenheirados como materiais de engenharia usados em edifícios e pontes.
+
+Recomendação:
+- uma única categoria **madeira** no primeiro POC;
+- não separar tábuas, vigas, compensado, CLT etc.;
+- decidir separadamente se árvores comuns do mapa podem virar matéria-prima ou se haverá silvicultura própria.
+
+#### 6. Asfalto
+
+Cadeia simplificada:
+
+agregados + ligante asfáltico → usina de asfalto → caminhão → obra viária
+
+A FHWA informa que misturas asfálticas são majoritariamente agregados, ligados por material asfáltico derivado do processamento de petróleo.
+
+Sinergia importante:
+- o ligante pode futuramente se conectar à cadeia de combustível/refino já planejada;
+- agregados compartilham a mesma cadeia usada por concreto.
+
+### Tier 2 recomendado para depois do POC
+
+Esses materiais são reais e importantes, mas acrescentam menos ao primeiro loop material ou criam cadeias muito específicas.
+
+#### Alvenaria / tijolos / blocos
+- argila/xisto → preparação → moldagem → forno → tijolo;
+- ou cimento + agregados → bloco de concreto.
+- USGS confirma argila/xisto como base de tijolos.
+- recomendação: deixar para depois; regionalidade e sobreposição com concreto reduzem a urgência.
+
+Fonte:
+https://pubs.usgs.gov/myb/vol1/2019/myb1-2019-clay-shale.pdf
+
+#### Vidro
+- areia silicosa + soda ash + calcário → forno → vidro.
+- relevante em edifícios, principalmente fachadas/janelas.
+- recomendação: material de segunda fase, especialmente para prédios maiores/comerciais.
+
+Fonte:
+https://www.usgs.gov/centers/national-minerals-information-center/soda-ash-statistics-and-information
+
+#### Gesso / drywall
+- gesso → processamento → placas/produtos de acabamento.
+- muito usado em interiores, mas tem pouca consequência urbana/logística distinta no primeiro POC.
+- recomendação: adiar ou agregar em acabamento.
+
+Fonte:
+https://www.usgs.gov/centers/national-minerals-information-center/gypsum-statistics-and-information
+
+#### Cobre e componentes elétricos
+- cobre é fortemente ligado a fiação, energia e edifícios.
+- como a rede elétrica detalhada não será desenhada no escopo atual, separar cobre cedo tende a criar detalhe sem decisão equivalente.
+- recomendação: adiar; pode entrar quando infraestrutura elétrica/industrial justificar.
+
+Fonte:
+https://www.usgs.gov/centers/national-minerals-information-center/copper-statistics-and-information
+
+#### Alumínio, plásticos, borracha e outros componentes
+- reais e relevantes;
+- melhor agregar ou deixar implícitos até existir gameplay específico.
+
+### Recomendação de lista inicial
+
+Para validar o diferencial de economia material, o melhor conjunto inicial parece ser:
+
+1. **agregados**
+2. **cimento**
+3. **concreto**
+4. **aço**
+5. **madeira**
+6. **asfalto**
+
+Essa lista é pequena, mas cria quatro cadeias diferentes e conectadas:
+
+- mineral → agregados;
+- mineral/processamento → cimento → concreto;
+- metalurgia → aço;
+- floresta → madeira;
+- petróleo + agregados → asfalto.
+
+### O que produzir localmente primeiro
+
+Nem todo material precisa ter cadeia completa de extração local desde o primeiro protótipo.
+
+Ordem recomendada de POC:
+
+1. **concreteira local** usando cimento e agregados importados;
+2. **usina de asfalto local** usando agregados + ligante importados;
+3. **serraria** quando a origem dos logs estiver definida;
+4. **produção local de agregados** depois de decidir recursos minerais no mapa;
+5. **fábrica de cimento** depois de decidir calcário/argila e indústria pesada;
+6. **produção de aço** mais tarde, por ser uma cadeia industrial muito mais pesada.
+
+Essa ordem permite testar o loop produção → emprego → estoque → caminhão → obra sem exigir, de saída, geologia de recursos e indústria pesada completa.
+
+### Consequência importante para geração de mapa
+
+Se o jogo permitir extração local de agregados, calcário, argila ou minério, será necessário decidir como **depósitos de recursos naturais** são gerados pela seed.
+
+Isso ainda não está na SPEC e não deve ser assumido durante a implementação.
+
+### Fluxo de construção já decidido
 
 1. a cidade começa com dinheiro;
-2. enquanto não possui produção local suficiente, compra materiais do exterior;
-3. materiais entram fisicamente pela conexão externa;
-4. quando a importação é acionada por uma obra específica, a carga pode ir diretamente ao canteiro;
-5. materiais produzidos/estocados localmente usam depósitos municipais;
-6. obras reservam materiais locais e aguardam a chegada física do que precisar ser importado;
-7. produção local pode substituir importações conforme a cidade se desenvolve.
+2. a obra calcula dinheiro + materiais;
+3. estoque local é reservado;
+4. materiais faltantes podem ser importados, com preço + frete visíveis;
+5. caminhões entregam fisicamente;
+6. quando a carga chega ao canteiro, o material é consumido de uma vez;
+7. mão de obra local do Pátio é usada quando disponível;
+8. se faltar capacidade local, equipe externa é contratada e encarece a obra;
+9. produção local reduz dependência e custo de importação ao longo do crescimento.
 
-Já está definido que o depósito inicial aceita todos os materiais, tem capacidade limitada e é municipal.
-
-Ainda precisa ser decidido/calibrado:
-
-- quantidade inicial de dinheiro;
-- quais indústrias de materiais estarão disponíveis no primeiro protótipo;
-- capacidades, custos e velocidades dos depósitos;
-- preços concretos de cada material e frete.
 
 ---
 
