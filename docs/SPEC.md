@@ -39,11 +39,14 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - Qualquer cidadão deve poder ser selecionado individualmente pelo jogador.
 - O jogador deve poder acompanhar a vida e o estado daquele cidadão ao longo do tempo.
 - Cidadãos são entidades persistentes da simulação, e não apenas elementos visuais decorativos.
+- Cada residência deve ter ocupantes/famílias reais.
+- Casas representam uma residência/família; prédios residenciais podem conter múltiplas unidades e múltiplas famílias.
 
 ### Empresas e economia
 
 - Empresas serão entidades reais da simulação.
 - Empresas terão funcionários reais.
+- Cada emprego corresponderá a uma **vaga real** dentro de uma empresa ou serviço.
 - Empresas terão dinheiro e estado econômico próprio.
 - Estoque e/ou produção devem existir como parte do modelo econômico das empresas.
 - Empresas poderão falir quando suas condições econômicas levarem a isso.
@@ -53,6 +56,13 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - Serviços como escola, hospital, polícia e bombeiros devem funcionar como sistemas reais da cidade, não como bônus abstratos.
 - Esses serviços terão capacidade real.
 - Esses serviços dependerão de funcionários reais da população simulada.
+
+### Construção e obras
+
+- Prédios e infraestrutura não aparecem instantaneamente prontos.
+- Construções passam por uma fase real de obra.
+- Obras consomem materiais da cidade.
+- Obras dependem de trabalhadores reais da população simulada.
 
 ### Tempo de jogo
 
