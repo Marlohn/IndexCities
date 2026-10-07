@@ -1385,3 +1385,56 @@ Isso não impede efeitos que são naturalmente espaciais, como poluição ou ru�
 **Fora do escopo atual.**
 
 Pode ser reavaliada futuramente caso ruído se prove relevante para bem-estar, moradia ou valor imobiliário.
+
+
+---
+
+## Alcance, influência e escolha de serviços
+
+**Status:** em pesquisa; não é uma regra fechada de produto.
+
+A discussão anterior sobre "não usar círculo de influência" foi fechada cedo demais e fica corrigida aqui.
+
+O que se quer investigar:
+
+- um círculo/área visual pode ser útil para mostrar onde um serviço tende a ter **maior influência ou conveniência**;
+- esse círculo não precisa significar um corte absoluto em que cidadãos fora dele ficam proibidos de usar o serviço;
+- um cidadão pode aceitar viajar mais longe quando houver motivo, necessidade, qualidade superior, falta de alternativa ou capacidade disponível;
+- diferentes sistemas podem precisar de modelos diferentes: hospital, escola, parque, comércio e lazer não necessariamente usam a mesma regra.
+
+Modelos a comparar:
+
+1. **Raio rígido** — simples e barato, mas pouco realista.
+2. **Raio como peso/heurística** — proximidade aumenta preferência, sem bloquear destinos mais distantes.
+3. **Custo de viagem** — escolha baseada em tempo/distância real de rota.
+4. **Modelo híbrido** — raio para UI/diagnóstico + custo de viagem/capacidade para decisão real.
+
+A decisão deve vir de pesquisa, protótipo e legibilidade para o jogador. Não assumir que "fora do círculo ninguém vem".
+
+---
+
+## Geração de mapa e reprodutibilidade
+
+**Status:** estrutura decidida; algoritmo ainda em exploração.
+
+Decidido:
+
+- seed determinística;
+- mesma seed deve reproduzir o mesmo mapa-base;
+- seed será ferramenta importante de debug, teste e reprodução de bugs;
+- terreno inicial já inclui natureza e conexão externa;
+- sem compra de tiles/áreas no escopo atual;
+- borda fixa no início.
+
+Ainda precisa ser definido:
+
+- algoritmo de geração de relevo;
+- distribuição de vegetação;
+- geração de rio/lago;
+- posição e quantidade de conexões externas;
+- tamanho do mapa;
+- como versionar a geração para que uma mesma seed continue reproduzível quando o algoritmo mudar.
+
+### Observação importante para debug
+
+Se o algoritmo de geração evoluir, apenas guardar a seed pode não ser suficiente para reproduzir mapas antigos. Uma solução futura pode exigir armazenar também a **versão do gerador** ou serializar o mapa resultante no save. Isso deve ser considerado quando a implementação começar.
