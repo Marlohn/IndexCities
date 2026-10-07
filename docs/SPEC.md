@@ -422,8 +422,8 @@ A SPEC deve crescer com o produto, **não antes dele**.
 
 ### Cancelamento de obras e demolição
 
-- Ao cancelar uma obra ainda não concluída, materiais já entregues e ainda recuperáveis retornam ao depósito municipal.
-- Materiais apenas reservados, mas ainda não consumidos, deixam de ficar reservados.
+- Ao cancelar uma obra ainda não concluída, materiais apenas reservados e ainda não entregues/consumidos deixam de ficar reservados.
+- Materiais que já chegaram ao canteiro foram consumidos e não retornam ao depósito.
 - A política de devolução de valores monetários em cancelamento de obra ainda não está definida.
 - Demolir uma construção já realizada não devolve o dinheiro nem os materiais originalmente gastos.
 
@@ -433,7 +433,8 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - A execução das obras municipais depende de um **Pátio Municipal de Obras** construído pelo jogador.
 - O Pátio emprega trabalhadores públicos reais da população simulada.
 - Esses trabalhadores recebem salários pagos pela prefeitura e registrados explicitamente nas despesas municipais.
-- O Pátio possui capacidade operacional limitada para executar obras.
+- O Pátio possui capacidade operacional limitada, determinada pela quantidade de equipes/trabalhadores públicos disponíveis para executar obras.
+- Quando a capacidade local do Pátio é insuficiente para uma nova obra, a obra não precisa esperar: a prefeitura pode contratar/importar uma equipe externa temporária, aumentando o custo monetário daquela construção.
 - O Pátio também possui um pequeno estoque físico de materiais de construção.
 - O estoque do Pátio tem capacidade menor que a de um depósito municipal dedicado.
 - Depósitos municipais continuam sendo a infraestrutura principal para armazenamento de grandes quantidades de materiais.
@@ -447,3 +448,18 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - A equipe externa pode executar o primeiro Pátio Municipal de Obras e a infraestrutura mínima necessária para viabilizá-lo.
 - Materiais dessas primeiras obras continuam obedecendo às regras normais de custo, importação e entrega física.
 - Depois que o Pátio Municipal de Obras entra em operação, as obras municipais passam ao fluxo normal com trabalhadores públicos da cidade.
+
+
+### Capacidade local e mão de obra externa de obras
+
+- Obras usam equipes locais do Pátio Municipal de Obras quando houver trabalhadores públicos disponíveis.
+- A quantidade de trabalhadores/equipes disponíveis define quantas obras podem ser atendidas localmente.
+- Se não houver capacidade local suficiente, a prefeitura pode contratar uma equipe externa temporária pela conexão externa.
+- O uso de equipe externa aumenta o custo monetário da obra e deve aparecer explicitamente no custo apresentado ao jogador.
+- Falta de capacidade de mão de obra local, por si só, não bloqueia a criação de novas obras.
+
+
+### Consumo de materiais no canteiro
+
+- Os materiais necessários para uma obra são consumidos de uma vez quando a carga correspondente chega ao canteiro.
+- A obra não precisa exibir consumo gradual de materiais ao longo do progresso.
