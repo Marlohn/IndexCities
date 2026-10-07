@@ -121,37 +121,37 @@ Exemplos de responsabilidades:
 - nomes de cenas e caminhos `res://...`;
 - lógica que exista apenas para produzir um efeito visual.
 
-### Identidade, presença física e representação visual
+### O que existe na simulação e o que aparece na tela
 
-Entidades da simulação devem usar identidades próprias, como `CitizenId`, `CompanyId`, `BuildingId` e `VehicleId`, em vez de referências para Nodes.
+Cidadãos, empresas, prédios e veículos devem ter uma identidade própria dentro da simulação, como `CitizenId`, `CompanyId`, `BuildingId` e `VehicleId`. Eles não devem ser identificados por um Node do Godot.
 
-Devem ser separados quatro conceitos:
+Precisamos separar quatro coisas:
 
-1. **existência lógica** — a entidade existe, tem identidade e estado persistente;
-2. **estado físico da simulação** — quando aplicável, a simulação sabe onde ela está, por onde se desloca, o que ocupa e quais consequências físicas produz;
-3. **computação ativa** — a entidade ou sistema só precisa consumir CPU quando houver trabalho relevante; scheduler, eventos e estados inativos podem evitar updates inúteis;
-4. **representação visual** — Node, Node3D, MultiMesh, RenderingServer ou outra técnica usada apenas para mostrar aquele estado.
+1. **existir no jogo** — por exemplo, João continua sendo o mesmo cidadão ao longo do tempo;
+2. **estar em algum lugar da cidade** — quando necessário, a simulação sabe onde João ou um veículo está, por onde está passando e o que está ocupando;
+3. **precisar de processamento naquele momento** — nem todo cidadão ou veículo precisa executar trabalho de CPU o tempo todo; o jogo pode atualizar cada sistema somente quando for necessário;
+4. **aparecer na tela** — Godot usa Node, Node3D, MultiMesh, RenderingServer ou outra técnica apenas para desenhar aquilo que já existe na simulação.
 
-A apresentação pode manter um mapeamento entre um ID da simulação e sua representação visual.
+A parte visual pode ligar o ID de um cidadão, prédio ou veículo à sua imagem na tela.
 
-Isso permite que uma entidade:
+Com isso:
 
-- exista sem estar renderizada;
-- continue ocupando espaço, viajando ou produzindo consequências físicas sem possuir um Node ativo;
-- seja descarregada visualmente sem desaparecer da cidade;
-- seja testada headless;
-- seja salva sem serializar objetos Godot;
-- mude de representação visual sem mudar sua identidade.
+- algo pode continuar existindo mesmo quando está fora da tela;
+- um veículo pode continuar ocupando a rua e causando trânsito sem precisar manter um Node ativo;
+- tirar algo da tela não faz esse objeto desaparecer da cidade;
+- a simulação pode ser testada sem abrir a parte gráfica do jogo;
+- o save não precisa guardar objetos internos do Godot;
+- podemos mudar completamente a forma de desenhar algo sem mudar quem ou o que aquilo representa.
 
-**Um Node/Node3D nunca é a entidade autoritativa da simulação; é apenas uma possível representação dela.**
+**Um Node ou Node3D nunca é o cidadão, empresa, prédio ou veículo real da simulação. Ele é apenas uma forma de mostrar esse objeto na tela.**
 
-### Estado e regras
+### Onde fica a verdade do jogo
 
-O estado autoritativo de gameplay vive na simulação.
+A simulação é quem guarda o estado real do jogo.
 
-Para mobilidade, isso inclui as informações necessárias para que viagens, filas, congestionamento, estacionamento, carga/descarga, chegada ao trabalho e demais efeitos continuem causalmente corretos mesmo quando a câmera não está observando a área. O nível interno exato de detalhe pode variar por algoritmo e performance, mas o resultado causal não pode depender da visibilidade.
+No trânsito, por exemplo, isso significa manter informação suficiente para que viagens, filas, congestionamento, estacionamento, carga e descarga e chegada ao trabalho continuem corretos mesmo quando a câmera está olhando para outro lugar. A forma interna de calcular isso pode mudar por questão de desempenho, mas o resultado não pode mudar só porque o jogador não está vendo.
 
-A apresentação **não pode** ser a fonte de verdade de dinheiro, estoque, ocupação, emprego, velocidade lógica, produção, saúde de empresa ou qualquer outro valor que altere resultado de gameplay.
+A parte visual **não pode** decidir dinheiro, estoque, ocupação, emprego, produção, velocidade real de um veículo ou qualquer outro valor que altere o que acontece no jogo.
 
 Quando uma animação ou efeito visual terminar, isso pode informar o host, mas não deve inventar uma segunda regra paralela.
 
@@ -216,22 +216,22 @@ O relógio do jogo deve permitir:
 
 A política exata de frequência ainda será medida; a separação já deve existir.
 
-### Scheduler de simulação e frequências diferentes
+### Cada sistema pode atualizar em um ritmo diferente
 
-O núcleo terá um **scheduler de simulação**: sistemas não devem assumir que todos precisam executar na mesma frequência.
+A simulação terá uma **agenda de atualização** (scheduler): nem tudo precisa ser recalculado na mesma frequência.
 
-A arquitetura deve permitir, por exemplo, que mobilidade local, decisões de cidadãos, economia, serviços e estatísticas sejam atualizados em cadências diferentes, sempre com semântica explícita.
+Por exemplo, movimento de veículos, decisões de cidadãos, economia, serviços e estatísticas podem ser atualizados em ritmos diferentes.
 
 Regras:
 
-- não chamar indiscriminadamente `Update()` em toda entidade a cada frame/tick;
-- sistemas registram trabalho por necessidade/cadência, em vez de cada entidade possuir um loop autônomo obrigatório;
-- entidades ou subsistemas sem trabalho relevante podem ficar inativos até um evento, deadline ou mudança de estado acordá-los;
-- trabalho caro pode ser distribuído entre ticks quando a resposta não precisa ser instantânea;
-- frequências concretas continuam sendo parâmetros de benchmark, não números fixados agora;
-- ordem de atualização e dependências entre sistemas precisam ser explícitas para preservar causalidade e reprodutibilidade.
+- não executar `Update()` em todos os cidadãos, veículos e empresas a cada frame sem necessidade;
+- cada sistema deve trabalhar somente quando houver algo relevante para atualizar;
+- partes sem trabalho podem ficar paradas até chegar a hora ou acontecer algo que exija uma atualização;
+- trabalhos pesados podem ser divididos entre várias atualizações quando não precisam de resposta imediata;
+- a frequência exata de cada sistema será decidida por testes de desempenho;
+- a ordem entre sistemas precisa ser clara para que causa e efeito continuem corretos.
 
-O scheduler não é um framework genérico de jobs neste momento. É apenas a responsabilidade explícita de decidir **o que atualiza, quando e com qual orçamento**.
+Isso não significa criar agora um sistema complexo de tarefas ou threads. Significa apenas controlar **o que precisa ser atualizado, quando e quanto trabalho pode ser feito de uma vez**.
 
 ### Threads
 
@@ -262,17 +262,17 @@ Ela pode descartar, agrupar ou simplificar representação visual por distância
 
 ### Regra importante
 
-**Ausência visual não significa ausência na simulação. Culling visual não autoriza culling causal.**
+**Sair da tela não significa sair da simulação.**
 
-Um cidadão ou veículo fora da câmera pode continuar existindo, deslocando-se e produzindo consequências reais sem manter um `Node3D` ativo.
+Um cidadão ou veículo pode continuar existindo, se deslocando e causando consequências reais mesmo sem um `Node3D` ativo.
 
-Quando um agente está em deslocamento físico, a simulação deve conseguir determinar seu estado espacial relevante independentemente de existir representação visual ativa. A apresentação apenas materializa esse estado quando necessário.
+Se um cidadão ou veículo está viajando, a simulação precisa continuar sabendo o suficiente sobre onde ele está e o que está acontecendo. A parte visual apenas mostra esse estado quando o jogador olha para aquela área.
 
-Quando a câmera passa a mostrar uma área, a apresentação deve refletir o estado real daquela área. Um congestionamento real não pode aparecer como uma avenida vazia apenas porque seus veículos estavam anteriormente fora da câmera.
+Quando a câmera chega a uma região, o que aparece na tela deve combinar com a situação real da simulação. Uma avenida congestionada não pode aparecer vazia só porque antes estava fora da câmera.
 
-A otimização deve acontecer em **como representar** o estado — pooling, instancing, MultiMesh, RenderingServer, LOD ou outras técnicas adequadas — e não em falsificar o estado da simulação.
+Para ganhar desempenho, podemos mudar **como desenhamos** os objetos — usando reutilização de objetos, instâncias, MultiMesh, RenderingServer, LOD ou outras técnicas — mas não podemos falsificar o que está acontecendo na cidade.
 
-Essa separação é particularmente importante para a escala pretendida do IndexCities.
+Essa separação é especialmente importante para a escala pretendida do IndexCities.
 
 ---
 
