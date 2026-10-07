@@ -294,3 +294,20 @@ A SPEC deve crescer com o produto, **não antes dele**.
 
 - Quando a demanda de energia supera a geração disponível, podem ocorrer apagões.
 - Cidadãos podem decidir se mudar de áreas excessivamente poluídas.
+
+
+### Terreno, vegetação e espaços públicos
+
+- Edição manual de relevo fica fora do escopo inicial.
+- Vegetação faz parte importante da apresentação da cidade.
+- Árvores e vegetação podem ser removidas quando necessário para construir.
+- Parques e espaços públicos podem afetar lazer, bem-estar e atratividade da cidade.
+- Praças, bancos, playgrounds e outros espaços públicos devem ter uso real pelos cidadãos.
+- Poluição sonora fica fora do escopo atual.
+
+
+### Acesso real a serviços e amenidades
+
+- Serviços e amenidades baseados em destino não devem depender apenas de um círculo fixo de influência.
+- Cidadãos podem se deslocar para destinos mais distantes quando isso fizer sentido.
+- O uso de hospitais, parques e outros destinos deve considerar fatores reais da simulação, como acessibilidade, tempo/distância de viagem, capacidade e disponibilidade.
