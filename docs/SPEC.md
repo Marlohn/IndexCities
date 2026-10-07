@@ -52,7 +52,7 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - Estoque e/ou produção devem existir como parte do modelo econômico das empresas.
 - O consumo será modelado inicialmente por **categorias de produtos**, não por SKU individual.
 - Compras reais reduzem estoque real, movimentam dinheiro real e geram necessidade de reposição/logística.
-- Empresas poderão falir quando suas condições econômicas levarem a isso.
+- Empresas poderão falir quando suas condições econômicas levarem a isso; o jogador deve conseguir identificar as causas econômicas relevantes da deterioração e da falência.
 - Fazendas e agricultura produzem diretamente a categoria **Alimentos** no escopo inicial.
 - Mercadorias físicas modeladas como estoque podem ser importadas pela conexão externa quando a oferta local for insuficiente ou inexistente.
 - No escopo inicial, os preços externos de importação permanecem estáveis.
@@ -69,6 +69,16 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - Realismo deve ser mantido quando cria gameplay; detalhes que apenas adicionam cliques, contabilidade ou manutenção manual podem ser agregados ou automatizados.
 - A interface pode apresentar informações agregadas enquanto a simulação mantém localização, transporte, capacidade, escassez e demais consequências físicas internamente.
 - Esse princípio vale para todos os sistemas do produto.
+
+### Princípio de design: leitura em camadas e causalidade
+
+- A mesma simulação deve servir tanto a jogadores que preferem feedback direto quanto a jogadores que gostam de investigar estatísticas e otimizar sistemas.
+- Problemas importantes devem aparecer primeiro por sinais visuais claros e consistentes, com uma causa resumida e uma ação compreensível.
+- O jogador deve poder aprofundar o mesmo problema e ver dados, fatores e cadeia causal quando quiser.
+- Consequências relevantes, como falência, falta de recurso, mudança de demanda ou interrupção de serviço, não podem depender de caixas-pretas impossíveis de explicar.
+- Informações importantes não devem depender apenas de cor ou de um ícone sem contexto; texto curto, tooltip ou outro canal de explicação deve estar disponível.
+- Simplificar a interface não significa simplificar artificialmente a simulação: o detalhe pode continuar existindo internamente desde que seja legível e diagnosticável.
+- Não está decidido criar modos separados "simples" e "avançado"; o objetivo atual é obter profundidade progressiva na mesma experiência.
 
 ### Pilar de gameplay: economia material
 
@@ -101,10 +111,10 @@ A primeira base de recursos físicos do jogo será composta por oito categorias:
 - Toda obra possui custo em **dinheiro e materiais**.
 - Obras consomem materiais reais da cidade.
 - Obras dependem de trabalhadores reais. No fluxo normal, as equipes do Pátio Municipal de Obras são formadas por cidadãos empregados pela prefeitura; no bootstrap inicial, uma equipe externa temporária pode executar as primeiras obras.
-- Materiais de construção precisam estar fisicamente disponíveis e reservados para a obra antes de serem consumidos, seja em estoque municipal ou já entregues no canteiro.
+- Materiais de construção precisam estar fisicamente disponíveis e reservados para a obra antes de serem consumidos, seja na oferta local elegível da cidade ou já entregues no canteiro.
 - No início de uma cidade, materiais podem ser importados pela conexão externa usando o dinheiro inicial.
 - O custo apresentado da obra deve indicar explicitamente quando materiais faltantes serão importados e quanto essa importação aumenta o custo monetário.
-- A cidade precisa possuir infraestrutura física de armazenamento, como depósitos/galpões, para materiais de construção.
+- A cidade precisa possuir infraestrutura física de armazenamento, como Centros de Materiais de Construção, para materiais de construção.
 - Materiais precisam chegar fisicamente ao canteiro de obras, normalmente por veículos de carga, antes de serem consumidos pela construção.
 - A cidade pode desenvolver produção local de materiais por meio de indústrias/fábricas apropriadas, reduzindo dependência de importações.
 - As cadeias produtivas e a ordem de introdução dos insumos intermediários continuam sendo aprofundadas na EXPLORATION.
@@ -180,7 +190,7 @@ A SPEC deve crescer com o produto, **não antes dele**.
 
 - Lotes não precisam ter proprietário individual.
 - Toda construção é colocada pelo jogador.
-- A cidade deve calcular e expor **demanda** para orientar o que faz sentido construir.
+- A cidade deve calcular e expor **demanda** para orientar o que faz sentido construir, incluindo os principais fatores que estão aumentando ou reduzindo essa demanda.
 - Cidadãos podem entrar em falência pessoal.
 - Pode existir população sem moradia.
 - Oferta e demanda devem influenciar preços de aluguel e venda, sem exigir um modelo excessivamente complexo.
