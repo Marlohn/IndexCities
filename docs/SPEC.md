@@ -52,7 +52,7 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - O consumo será modelado inicialmente por **categorias de produtos**, não por SKU individual.
 - Compras reais reduzem estoque real, movimentam dinheiro real e geram necessidade de reposição/logística.
 - Empresas poderão falir quando suas condições econômicas levarem a isso.
-- Fazendas e agricultura produzem alimentos reais para abastecer a cidade.
+- Fazendas e agricultura produzem diretamente a categoria **Alimentos** no escopo inicial.
 - Mercadorias físicas modeladas como estoque podem ser importadas pela conexão externa quando a oferta local for insuficiente ou inexistente.
 - No escopo inicial, os preços externos de importação permanecem estáveis.
 
@@ -412,7 +412,7 @@ A SPEC deve crescer com o produto, **não antes dele**.
 ### Capacidade e operação de depósitos
 
 - Depósitos municipais possuem capacidade física limitada.
-- No escopo inicial, um mesmo depósito pode armazenar todos os tipos de materiais.
+- No escopo inicial, um mesmo depósito municipal de obras pode armazenar todos os tipos de **materiais de construção**.
 - Depósitos possuem capacidade limitada de carga e descarga simultânea.
 - Saturação de carga/descarga pode gerar fila física de caminhões.
 
@@ -480,3 +480,18 @@ A SPEC deve crescer com o produto, **não antes dele**.
 
 - Os materiais necessários para uma obra são consumidos de uma vez quando a carga correspondente chega ao canteiro.
 - A obra não precisa exibir consumo gradual de materiais ao longo do progresso.
+
+
+### Armazenamento por tipo de recurso
+
+- Depósitos municipais de obras armazenam materiais de construção: areia e brita, concreto, aço, madeira e asfalto.
+- Alimentos, combustível e suprimentos médicos não usam o depósito municipal de obras como estoque normal.
+- Esses bens usam armazenamento coerente com sua função, como estoques de mercados/comércios, postos de combustível, hospitais, farmácias e outras instalações apropriadas.
+
+
+### Abastecimento inicial de alimentos e combustível
+
+- Se a oferta local de Alimentos for insuficiente, mercados/comércios podem importar automaticamente Alimentos pela conexão externa.
+- A importação de Alimentos paga produto e frete e gera entrega física.
+- No escopo inicial, Combustível pode ser importado já refinado/pronto pela conexão externa e distribuído fisicamente aos postos.
+- Refino/produção local de combustível pode ser aprofundado depois, sem ser necessário para o primeiro fluxo funcional da cidade.
