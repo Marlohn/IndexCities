@@ -1746,7 +1746,7 @@ Ainda precisa ser confirmado:
 
 ## Compra automática de material importado ao construir
 
-**Status:** direção recomendada; ainda precisa ser confirmada como comportamento final.
+**Status:** comportamento principal decidido; detalhes de UI e balanceamento ainda precisam ser prototipados.
 
 Ideia: quando o jogador tenta construir algo e a cidade não possui materiais suficientes em estoque, a interface pode mostrar explicitamente que o material faltante será importado.
 
@@ -1781,3 +1781,88 @@ A construção só deve avançar quando o material realmente chegar.
 ### Questão ainda aberta
 
 Definir se a primeira entrega pode ir diretamente ao canteiro ou se, após o primeiro depósito existir, toda importação de materiais deve obrigatoriamente passar por armazenamento municipal.
+
+
+---
+
+## Regra de custo de construção e transparência de importação
+
+**Status:** decidido.
+
+Toda construção combina dois tipos de custo:
+
+- **dinheiro**;
+- **materiais físicos**.
+
+Quando o estoque local não cobre todos os materiais necessários, a interface deve separar claramente:
+
+- custo base da obra;
+- materiais necessários;
+- materiais disponíveis localmente;
+- materiais faltantes;
+- custo adicional de importação;
+- custo monetário total.
+
+O objetivo é fazer a dependência externa aparecer como consequência econômica visível, e não como taxa escondida.
+
+Pagar a importação não elimina a logística: a obra só avança depois que os materiais importados chegarem fisicamente.
+
+### Entrega dedicada à obra
+
+Para uma importação disparada por uma obra específica:
+
+- o pedido deve corresponder à quantidade necessária;
+- um ou mais caminhões externos transportam essa quantidade;
+- os caminhões podem ir diretamente ao canteiro;
+- não é necessário desviar a carga para o depósito municipal.
+
+Isso evita transporte e armazenamento artificiais quando o destino da carga já é conhecido.
+
+### Importação para estoque
+
+Quando a cidade compra materiais sem uma obra específica como destino:
+
+- a carga entra pela conexão externa;
+- caminhões levam a mercadoria ao depósito municipal;
+- o material passa a compor o estoque geral da cidade.
+
+---
+
+## Depósito municipal inicial
+
+**Status:** decidido em nível funcional; números ainda precisam de calibração.
+
+No escopo inicial:
+
+- um mesmo tipo de depósito municipal aceita todos os materiais;
+- capacidade de armazenamento é limitada;
+- capacidade de carga/descarga também é limitada;
+- excesso de caminhões pode formar fila física;
+- tipos especializados de armazenamento podem ser avaliados depois, apenas se criarem gameplay suficiente.
+
+Parâmetros que devem ser configuráveis durante desenvolvimento:
+
+- capacidade total;
+- quantidade de baias/pontos simultâneos;
+- velocidade de carga e descarga;
+- custo de construção;
+- custo operacional.
+
+Isso não significa necessariamente expor todas essas opções ao jogador.
+
+---
+
+## Exportação automática e contabilidade
+
+**Status:** decidido para o escopo inicial.
+
+Excedentes podem ser exportados automaticamente para reduzir microgerenciamento.
+
+Requisito de UI/finanças:
+
+- receita de exportação precisa aparecer separadamente;
+- quantidade e tipo de mercadoria exportada devem ser consultáveis;
+- custos logísticos relevantes não devem ficar escondidos;
+- o jogador precisa conseguir entender se a cidade está ganhando dinheiro por produção interna ou dependendo de importações.
+
+No futuro pode ser avaliado controle manual por categoria, limites mínimos de estoque ou políticas de exportação, mas isso não é necessário no primeiro escopo.
