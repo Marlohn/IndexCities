@@ -1305,3 +1305,24 @@ Decidido:
 - duração e limiares devem ser configuráveis.
 
 Isso permite calibrar o sistema sem transformar uma interrupção momentânea em fechamento imediato.
+
+
+---
+
+## Clima e ambiente sazonal
+
+**Status:** documentado para futuro; fora do escopo atual.
+
+Tópicos preservados para reavaliação futura:
+
+- chuva;
+- temperatura;
+- estações do ano;
+- efeitos climáticos sobre a cidade;
+- chuva forte e alagamentos;
+- impactos de alagamento no trânsito e em edificações;
+- aumento de risco de incêndio em períodos secos/quentes;
+- variação de consumo de energia com frio/calor;
+- redução de disponibilidade de água em períodos secos.
+
+Nenhum desses sistemas deve ser implementado no escopo atual. Devem ser revisitados quando a simulação básica de mobilidade, serviços urbanos, energia, água e emergências estiver estável.
