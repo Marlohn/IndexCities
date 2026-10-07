@@ -1169,3 +1169,25 @@ Evitar transformar falência em uma segunda simulação de gestão empresarial.
 - o fundo passa a servir genericamente para valores sem titular econômico, não apenas heranças.
 
 O objetivo é manter essa camada no mínimo necessário para preservar causalidade. Não adicionar credores, ordem jurídica de pagamento, administrador judicial ou outras regras enquanto não houver gameplay concreto que justifique isso.
+
+
+---
+
+## Reavaliação do pagamento da primeira aquisição privada
+
+> **Revisão humana desta seção:** PENDENTE — problema reaberto por impacto direto no gameplay; não é decisão oficial.
+
+A regra atual da SPEC em que o Caixa constrói comércio/indústria e recebe de volta o preço pago pela empresa cria o mesmo risco identificado em moradia: capital de construção pode ser reciclado e reduzir demais a importância dos impostos.
+
+Alternativa em discussão:
+- o Caixa da Cidade continua arcando com a construção como parte do diferencial do IndexCities;
+- a empresa que assume o ativo paga com dinheiro real;
+- esse pagamento não volta ao jogador; é liquidado contra a economia exterior;
+- o jogador passa a recuperar o investimento apenas indiretamente, por empregos, atividade econômica e impostos;
+- não criar financiamento, incorporadora ou negociação manual.
+
+**Pró:** mantém o loop de construção simples e evita transformar o jogador em desenvolvedor imobiliário/comercial buscando revenda.
+
+**Contra:** cria saída monetária da economia local e exige calibrar entradas externas para não drenar capital demais.
+
+A regra canônica ainda não foi alterada neste ponto; precisa de confirmação antes de mudar a SPEC.
