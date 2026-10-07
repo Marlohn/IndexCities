@@ -1089,3 +1089,20 @@ A ordem desejada é:
 
 
 ---
+
+
+---
+
+## Encerramento de estabelecimento e continuidade da empresa
+
+**Status:** exploração separada; não confundir com herança de SIM.
+
+Hipótese em avaliação:
+- fechar um estabelecimento não mata automaticamente a entidade empresa;
+- imóvel fechado pode continuar pertencendo à empresa enquanto está à venda;
+- outra empresa pode comprar o ativo;
+- o pagamento iria para a empresa vendedora;
+- empresa sem operação pode permanecer temporariamente procurando nova oportunidade enquanto ainda possuir caixa ou ativos;
+- remoção definitiva da empresa exigiria não possuir operação, ativos nem capital economicamente útil.
+
+Essa hipótese será discutida separadamente antes de qualquer promoção para a SPEC.
