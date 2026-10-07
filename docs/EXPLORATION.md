@@ -1270,3 +1270,38 @@ Ainda precisa ser definido:
 - relação com saúde;
 - impacto em valor imobiliário;
 - efeito de vento, relevo ou fluxo de água.
+
+
+---
+
+## Resíduos e degradação por falta de água
+
+**Status:** parcialmente decidido.
+
+### Resíduos
+
+Decidido:
+
+- lixo precisa ter destino físico;
+- aterro e/ou incineração fazem parte do sistema;
+- capacidade de processamento importa;
+- reciclagem fica fora do escopo inicial.
+
+Ainda precisa ser definido:
+
+- tipos de instalação iniciais;
+- custos operacionais;
+- impacto ambiental;
+- distância/logística de coleta;
+- capacidade por instalação.
+
+### Falta de água
+
+Decidido:
+
+- a resposta não é instantânea;
+- primeiro há perda de eficiência;
+- após um período sem abastecimento, a atividade pode parar;
+- duração e limiares devem ser configuráveis.
+
+Isso permite calibrar o sistema sem transformar uma interrupção momentânea em fechamento imediato.
