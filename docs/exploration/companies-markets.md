@@ -1221,3 +1221,64 @@ Cada lançamento deve guardar ao menos valor, origem, motivo e entidade/evento r
 
 A vantagem é reaproveitar a mesma infraestrutura de rastreamento sem inventar novas “carteiras”. O cuidado é não somar semanticamente esses valores como um único fundo: patrimônio não reclamado pode ter regras futuras próprias, enquanto liquidação exterior é apenas uma fronteira econômica e não deve virar dinheiro utilizável ou reivindicável.
 
+
+
+---
+
+## Hipótese: reserva econômica externa como ciclo monetário
+
+> **Revisão humana desta seção:** PENDENTE — ideia proposta pelo responsável e análise complementar da IA; não é decisão oficial.
+
+### Ideia central
+
+Usar um único fundo genérico por trás da simulação como **reserva econômica externa**. Ele começa com um saldo inicial finito e todo lançamento registra origem, destino, motivo e entidade/evento relacionado.
+
+A intenção é fechar o ciclo monetário sem criar dinheiro do nada nem fazer valores desaparecerem.
+
+### Fluxos candidatos
+
+**Saem da reserva e entram na cidade**
+- saldo inicial de uma família que migra para a cidade;
+- capital inicial de uma nova empresa vinda do exterior;
+- pagamentos externos por exportações, quando esse fluxo existir;
+- outros fluxos cuja contraparte real seja o mundo exterior.
+
+**Voltam da cidade para a reserva**
+- dinheiro levado por moradores/empresas que deixam definitivamente a simulação, quando aplicável;
+- patrimônio sem herdeiro;
+- saldo final de empresa encerrada sem titular;
+- primeira aquisição de ativos privados quando o pagamento não deve retornar ao Caixa da Cidade;
+- pagamentos por importações e outros fluxos cuja contraparte seja o exterior.
+
+### Regra importante
+
+A reserva **não deve virar destino genérico para qualquer valor que ainda não foi modelado**.
+
+Se existe um destinatário real dentro da simulação — trabalhador, empresa, proprietário, fornecedor, prefeitura etc. — o dinheiro deve ir para esse destinatário. A reserva só fecha:
+- fluxos com o mundo exterior;
+- valores efetivamente sem titular econômico modelado.
+
+Isso evita usar o fundo para esconder lacunas da economia.
+
+### Pontos fortes
+
+- cria conservação e rastreabilidade do dinheiro;
+- fornece origem concreta para capital inicial de migrantes e empresas externas;
+- permite que dinheiro retirado da economia volte a ser usado em entradas futuras;
+- reutiliza um único ledger em vez de várias carteiras artificiais;
+- combina com a conexão exterior já existente;
+- facilita debug: é possível explicar de onde veio e para onde foi cada valor.
+
+### Riscos e pontos que faltam fechar
+
+- **saldo inicial:** precisa ser calibrado; não pode ser arbitrário nem baixo a ponto de travar crescimento;
+- **distribuição:** valores entregues a migrantes/empresas não devem ser puro RNG sem limites; usar distribuição configurável e reproduzível pela seed;
+- **esgotamento:** se a reserva puder chegar a zero, é preciso decidir se isso realmente deve impedir migração, novas empresas ou pagamentos externos; isso pode criar um bloqueio de gameplay indesejado;
+- **comércio exterior:** se importações adicionarem dinheiro à reserva e exportações retirarem, ela passa a representar também uma espécie de balanço externo da cidade;
+- **visibilidade:** o jogador provavelmente não precisa gerenciar o fundo, mas debug/diagnóstico deve mostrar saldo e fluxos por origem.
+
+### Avaliação atual da IA
+
+A ideia é coerente e mais forte do que usar o fundo apenas como destino de dinheiro sem titular. Ela pode transformar o fundo em uma fronteira monetária concreta entre a cidade e o mundo exterior.
+
+O maior risco não é conceitual; é de balanceamento: um fundo realmente finito pode virar um limitador invisível da cidade. Antes de promover para a SPEC, deve ser decidido se o saldo pode efetivamente restringir entradas externas ou se funciona apenas como contabilidade conservativa com uma reserva inicial dimensionada para não travar o jogo.
