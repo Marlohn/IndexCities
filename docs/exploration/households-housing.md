@@ -627,3 +627,105 @@ Depois de migrar e tornar-se residente real, essa família/cidadão pode futuram
 ---
 
 ---
+
+
+---
+
+## Morte do SIM e destino do patrimônio
+
+**Status:** reaberto; a ideia de um espólio como entidade temporária deixou de ser a recomendação principal para o primeiro modelo.
+
+### Problema
+
+Quando um SIM morre, precisamos resolver separadamente:
+- dinheiro pessoal;
+- imóveis e outros patrimônios;
+- continuidade de moradores que ainda vivem no imóvel;
+- destino do valor de uma futura venda.
+
+A solução deve preservar causalidade sem criar uma engine jurídica que não gere gameplay.
+
+### Opção A — espólio temporário como entidade
+
+O falecido gera uma entidade temporária que segura dinheiro e propriedades, vende ativos e depois distribui o resultado.
+
+**Prós**
+- rastreamento completo;
+- suporta herança, venda, dívidas e múltiplos herdeiros;
+- nenhum valor fica sem proprietário durante a transição.
+
+**Contras**
+- cria uma nova entidade e ciclo de vida apenas para resolver sucessão;
+- exige regra de encerramento do espólio;
+- aproxima o jogo de uma simulação jurídica sem decisão relevante para o jogador;
+- pode acumular estados temporários e casos especiais.
+
+**Avaliação atual:** robusto, mas provavelmente mais complexo do que o primeiro modelo precisa.
+
+### Opção B — sucessão imediata, sem espólio
+
+A morte é tratada como um evento de transferência.
+
+Se existir herdeiro elegível na simulação:
+- dinheiro é transferido diretamente;
+- propriedade é transferida diretamente;
+- não existe fase intermediária;
+- se o herdeiro já mora no imóvel, a ocupação pode continuar sem expulsão artificial.
+
+Se não existir herdeiro elegível local:
+- dinheiro restante sai explicitamente da economia local pela conexão exterior como sucessão não modelada;
+- imóvel fica desocupado e entra à venda;
+- o valor pago na venda também sai pela conexão exterior;
+- não existe uma carteira/entidade de espólio persistente.
+
+**Prós**
+- muito simples;
+- não cria entidade jurídica;
+- mantém origem e destino monetários explícitos;
+- não transforma mortes em receita automática para o Caixa da Cidade;
+- usa uma fronteira econômica que o jogo já possui: o restante do mundo;
+- permite adicionar herança mais profunda depois sem exigir isso agora.
+
+**Contras**
+- herdeiro exterior/sucessão exterior é uma abstração de fronteira;
+- riqueza pode sair da cidade ao longo das gerações;
+- a propriedade precisa de um estado simples de “venda por sucessão” enquanto aguarda comprador.
+
+### Opção C — sem herdeiro, patrimônio vai ao Caixa da Cidade
+
+**Prós**
+- regra curta e concreta;
+- nenhum agente temporário;
+- não exige saída monetária externa.
+
+**Contras**
+- mortes passam a gerar receita para o jogador;
+- pode criar incentivo sistêmico estranho, principalmente se saúde/velhice influenciarem mortalidade;
+- transforma a prefeitura em herdeira universal por conveniência;
+- pode distorcer o orçamento municipal.
+
+### Opção D — dinheiro some e imóvel simplesmente volta ao mercado
+
+**Prós**
+- implementação mínima.
+
+**Contras**
+- cria sumidouro monetário invisível;
+- o pagamento do próximo comprador continua sem destinatário claro;
+- contradiz causalidade e o princípio de evitar abstrações mágicas.
+
+**Não recomendada.**
+
+### Recomendação atual
+
+Para o primeiro modelo, preferir **sucessão imediata sem entidade de espólio**:
+
+1. procurar um herdeiro elegível real;
+2. se existir, transferir dinheiro e patrimônio diretamente;
+3. se não existir, tratar a sucessão restante como fluxo explícito para fora da cidade pela conexão exterior;
+4. imóvel sem herdeiro fica vazio e disponível para compra;
+5. não simular inventário, testamento, divisão jurídica, cartório ou tempo de processo.
+
+A regra exata de prioridade entre possíveis herdeiros ainda precisa ser decidida separadamente.
+
+Essa recomendação é uma simplificação de fronteira, não uma decisão oficial até aprovação.
