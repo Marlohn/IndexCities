@@ -100,6 +100,14 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - Simplificar a interface não significa simplificar artificialmente a simulação: o detalhe pode continuar existindo internamente desde que seja legível e diagnosticável.
 - Não está decidido criar modos separados "simples" e "avançado"; o objetivo atual é obter profundidade progressiva na mesma experiência.
 
+### Princípio de design: concretude antes de abstração
+
+- O IndexCities deve preferir, sempre que viável, **entidades, propriedade, dinheiro, recursos e fluxos concretos** a proxies abstratos criados apenas para simplificar a simulação.
+- Uma abstração só deve permanecer quando reduzir microgerenciamento, custo técnico ou complexidade visual sem esconder a causa real do sistema.
+- Estados agregados de interface podem existir, mas devem ser derivados de entidades e fluxos reais e inspecionáveis.
+- Dinheiro, recursos, demanda e propriedade não devem surgir, desaparecer ou mudar de mãos sem uma origem e um destino economicamente explicáveis.
+- Esse princípio não proíbe abstrações já úteis ao produto, como interiores não renderizados, visões agregadas de materiais ou redes de serviço por capacidade; ele exige que essas abstrações preservem causalidade e diagnóstico.
+
 ### Pilar de gameplay: economia material
 
 - A expansão da cidade não deve ser resolvida apenas por dinheiro: **materiais físicos são um recurso central de gameplay**.
@@ -341,6 +349,16 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Turistas e visitantes existem como população temporária.
 - O crescimento populacional deve vir de mecanismos reais da simulação, principalmente nascimentos e migração, evitando criação arbitrária de moradores.
 
+
+### Aquisição residencial pela conexão exterior
+
+- Residências privadas concluídas podem permanecer vazias enquanto aguardam comprador/ocupante compatível com a demanda.
+- Famílias já existentes na cidade e famílias vindas da conexão exterior podem participar da procura por moradia.
+- No primeiro modelo, uma família compradora vinda do exterior só pode adquirir uma residência para **migrar e morar na cidade**.
+- Não haverá, neste primeiro modelo, investidor residencial externo que permaneça fora da cidade comprando imóveis apenas para receber aluguel.
+- A procura exterior não é infinita: deve depender de fatores reais e diagnosticáveis, como emprego, preço, disponibilidade de moradia e atratividade da cidade.
+- Baixa demanda pode manter uma residência vazia por mais tempo; isso é consequência econômica válida e deve ser legível para o jogador.
+- A lógica detalhada de compra por famílias locais, propriedade para aluguel, herança e venda posterior continua em definição.
 
 ### Turismo e hospedagem
 
