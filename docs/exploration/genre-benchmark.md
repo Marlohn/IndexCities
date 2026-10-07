@@ -1,5 +1,9 @@
 # IndexCities — Genre Benchmark
 
+> **Revisão humana:** PENDENTE.  
+> **Auditoria:** classificação conservadora com base no estado anterior à reorganização temática, commit `4b97ace2`. o conteúdo deste documento ainda não foi revisado integralmente pelo responsável e não pode ser tratado como decisão.
+>
+
 > **Status:** exploração temática de referência recorrente — não é fonte de verdade.
 >
 > Este documento é uma **referência comparativa do gênero city builder**.
@@ -9,6 +13,9 @@
 > **Não é uma fonte de requisitos do IndexCities.** A fonte de verdade do produto continua sendo [SPEC.md](../SPEC.md). Hipóteses e decisões ainda abertas continuam em [EXPLORATION.md](../EXPLORATION.md).
 
 ## Para que este documento existe
+
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
 
 O objetivo não é copiar concorrentes nem tentar construir uma média do mercado.
 
@@ -24,6 +31,9 @@ Ele deve ajudar a detectar dois tipos de problema:
 Diferença em relação a outros jogos **não é problema por si só**. Muitas das melhores ideias surgem justamente de quebrar padrões. O benchmark serve para tornar essa diferença consciente.
 
 ## Quando revisitar
+
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
 
 Este documento não precisa ser consultado em toda mudança pequena.
 
@@ -48,6 +58,9 @@ Em cada revisão, a pergunta não deve ser “estamos iguais aos outros jogos?�
 
 ## Como interpretar as evidências
 
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
+
 Nem todas as fontes têm o mesmo peso.
 
 | Confiança | Tipo de evidência |
@@ -61,6 +74,9 @@ Feedback de jogadores é especialmente útil para detectar **dor, expectativa e 
 ---
 
 ## Benchmark comparativo
+
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
 
 | Projeto / fonte | Tema | O que fizeram | Funcionou | Problema / risco | Lição comparativa | Confiança |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -91,6 +107,9 @@ Feedback de jogadores é especialmente útil para detectar **dor, expectativa e 
 ---
 
 ## Padrões recorrentes do gênero
+
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
 
 ### 1. Complexidade só vale quando produz decisão
 
@@ -186,6 +205,9 @@ O IndexCities ainda precisa decidir qual resposta combina com sua fantasia.
 
 ## Perguntas para comparar com o IndexCities
 
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
+
 Ao revisitar este benchmark, use perguntas como estas:
 
 ### Loop e identidade
@@ -226,6 +248,9 @@ Ao revisitar este benchmark, use perguntas como estas:
 
 ## Regra para futuras revisões
 
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
+
 Quando uma comparação revelar um problema:
 
 - **não copie automaticamente a solução usada por outro jogo**;
@@ -238,6 +263,9 @@ Quando o IndexCities deliberadamente escolher um caminho diferente do padrão do
 ---
 
 ## Fontes principais
+
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
 
 Esta lista não é exaustiva; ela preserva as referências de maior utilidade encontradas até agora.
 
@@ -316,6 +344,9 @@ Nesse modelo, esses elementos não precisariam consumir uma célula inteira do g
 ---
 
 ## Pesquisa histórica ampliada migrada do hub
+
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
 
 > Esta seção preserva a rodada extensa de pesquisa que antes vivia no `docs/EXPLORATION.md`. O benchmark curado acima continua sendo a leitura principal; o material abaixo serve como evidência e histórico adicional.
 
