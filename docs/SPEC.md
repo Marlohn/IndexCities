@@ -237,3 +237,12 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Cidadãos podem deixar a cidade quando não encontram condições adequadas, incluindo trabalho, moradia ou satisfação.
 - Turistas e visitantes existem como população temporária.
 - O crescimento populacional deve vir de mecanismos reais da simulação, principalmente nascimentos e migração, evitando criação arbitrária de moradores.
+
+
+### Turismo e hospedagem
+
+- Turistas precisam de hospedagem real quando permanecem na cidade.
+- Hotéis funcionam como empresas reais, com funcionários, capacidade, receita e ocupação.
+- Parques, comércio, atrações e outros pontos de interesse podem aumentar a demanda turística.
+- Turistas chegam fisicamente à cidade.
+- A chegada pode ocorrer por rodovia, transporte público e carro particular.
