@@ -89,3 +89,15 @@ Nada é considerado obrigatório apenas por ter existido em outro projeto.
 Qualquer ideia anterior pode ser revisitada futuramente como material de pesquisa, mas precisa passar novamente pelo processo de exploração e decisão antes de entrar nesta SPEC.
 
 A SPEC deve crescer com o produto, **não antes dele**.
+
+
+### Educação, saúde, segurança e emergências
+
+- Crianças e adolescentes têm idade escolar, matrícula real e deslocamento diário para a escola.
+- Hospitais e unidades de saúde têm funcionários reais.
+- A capacidade de atendimento deve depender de recursos reais da unidade, incluindo equipe disponível.
+- Prisões/cadeias existem fisicamente e criminosos podem cumprir pena por um período.
+- Prédios podem pegar fogo individualmente.
+- Bombeiros precisam deslocar veículos e equipes fisicamente até a ocorrência.
+- Mortes individuais geram consequências reais para a cidade.
+- O sistema funerário/cemitério e a remoção física de corpos fazem parte da simulação.
