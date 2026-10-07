@@ -3264,3 +3264,115 @@ A fórmula não deve ser inventada agora. Antes da implementação, definir e te
 - como mostrar os fatores sem criar uma barra misteriosa.
 
 A regra transversal continua valendo: o jogador precisa conseguir descobrir por que a demanda está baixa.
+
+
+---
+
+## Destino econômico de aluguel e preço residencial
+
+**Status:** aberto; construção de moradia pelo Caixa da Cidade está decidida, destino dos pagamentos ainda precisa de decisão.
+
+Foi decidido que casas e apartamentos seguem o mesmo loop de construção dos demais prédios:
+
+Caixa da Cidade + materiais
+→ obra
+→ residência disponível
+→ família ocupa
+→ aluguel e/ou preço afetam o orçamento familiar
+
+A questão restante é **para quem vai o dinheiro pago pela família**.
+
+### Opção A — pagamento retorna ao Caixa da Cidade
+
+**Recomendação atual para o primeiro escopo.**
+
+Como o jogador financiou diretamente a construção, aluguel funciona como retorno econômico daquele investimento.
+
+Vantagens:
+- fluxo extremamente legível;
+- nenhuma entidade extra de proprietário/locador;
+- construção residencial deixa de ser apenas despesa e ganha retorno econômico;
+- fácil de balancear e diagnosticar;
+- combina com a interpretação do Caixa da Cidade como capital de desenvolvimento controlado pelo jogador, não como conta jurídica literal da prefeitura.
+
+Risco:
+- é uma abstração forte: em uma economia real, toda moradia privada não pertenceria à cidade/jogador;
+- precisa evitar transformar aluguel em fonte automática de dinheiro sem risco.
+
+Consequências úteis de gameplay podem vir de fatores já existentes:
+- vacância;
+- renda das famílias;
+- localização;
+- preço/aluguel;
+- atratividade;
+- capacidade de pagamento.
+
+### Opção B — proprietário/investidor privado recebe
+
+É mais realista, mas exigiria criar proprietário, conta ou setor imobiliário separado.
+
+Problemas:
+- nova camada financeira com pouca interação direta do jogador;
+- risco alto de caixa-preta;
+- jogador paga a construção mas o retorno vai para outro agente, o que pode parecer incoerente;
+- exigiria explicar como o investidor nasce e como recupera capital.
+
+Não recomendada para o primeiro escopo.
+
+### Opção C — conta econômica do próprio prédio
+
+Cada residência/prédio teria uma conta operacional que recebe aluguel e paga custos.
+
+É auditável, mas adiciona outra entidade financeira além de famílias, empresas e Caixa da Cidade.
+
+Só vale se manutenção predial, condomínio, proprietário ou investimento imobiliário virarem gameplay real.
+
+### Recomendação
+
+Começar com **aluguel retornando ao Caixa da Cidade**.
+
+Interpretação de gameplay:
+
+o jogador investe em moradia
+→ famílias ocupam
+→ pagam aluguel real
+→ o Caixa da Cidade recupera parte do investimento ao longo do tempo
+
+Isso não precisa significar juridicamente que "a prefeitura é dona de todas as casas". O Caixa da Cidade já foi definido como uma abstração de capital de desenvolvimento controlado pelo jogador.
+
+### Compra/venda da residência
+
+Venda é mais delicada que aluguel porque cria uma pergunta de propriedade e revenda.
+
+Recomendação para evitar micro prematuro:
+- manter **aluguel** como fluxo econômico inicial mais simples;
+- não fechar compra/venda real de imóveis até existir motivo de gameplay para propriedade residencial.
+
+Se preço de venda continuar na simulação, ele pode inicialmente funcionar como indicador de valor/affordability sem exigir transferência jurídica completa de propriedade.
+
+Essa decisão deve ser revisitada antes de implementar compra de imóvel real.
+
+
+---
+
+## Interpretação do Caixa da Cidade
+
+**Status:** decidido.
+
+O **Caixa da Cidade** é o recurso monetário principal controlado pelo jogador e representa capital disponível para desenvolvimento e operação da cidade.
+
+Ele **não deve ser interpretado literalmente apenas como a conta jurídica da prefeitura**.
+
+Isso permite um único loop de construção:
+
+jogador decide construir
+→ Caixa da Cidade paga
+→ materiais são consumidos
+→ o prédio entra em operação
+
+Depois da inauguração, a operação pode divergir:
+- serviço público continua ligado às despesas públicas;
+- empresa privada opera com caixa próprio;
+- moradia participa da economia familiar e ainda precisa fechar o destino do aluguel/preço.
+
+A abstração evita criar vários bolsos de investimento controlados pelo jogador sem eliminar caixas reais de entidades simuladas quando eles geram gameplay.
