@@ -39,8 +39,20 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - Qualquer cidadão deve poder ser selecionado individualmente pelo jogador.
 - O jogador deve poder acompanhar a vida e o estado daquele cidadão ao longo do tempo.
 - Cidadãos são entidades persistentes da simulação, e não apenas elementos visuais decorativos.
+- Cada cidadão possui **saldo monetário individual real**, que pode ser inspecionado e afetado por renda, consumo, impostos, aluguel, compra de patrimônio e demais fluxos econômicos definidos.
 - Cada residência deve ter ocupantes/famílias reais.
 - Casas representam uma residência/família; prédios residenciais podem conter múltiplas unidades e múltiplas famílias.
+
+### Patrimônio e investimento residencial dos cidadãos
+
+- Cidadãos podem acumular dinheiro e patrimônio ao longo da vida.
+- Um cidadão/família local com recursos suficientes pode adquirir **imóveis residenciais adicionais** além da própria moradia.
+- A decisão de investir em outro imóvel acontece pela simulação, sem exigir aprovação manual do jogador.
+- Um imóvel adicional pode ser disponibilizado para aluguel a outra família real.
+- O aluguel pago deve ir ao **proprietário real do imóvel**, e não a um recebedor abstrato.
+- A compra só pode ocorrer com dinheiro real disponível do comprador; a decisão deve considerar fatores econômicos concretos, como preço, demanda e expectativa de ocupação/renda.
+- A fórmula exata de decisão, limites de investimento e a granularidade jurídica entre indivíduo/casal/família continuam em calibração/exploração.
+- Ao entrar na simulação, cidadãos podem iniciar com um saldo monetário explícito conforme regra de geração/migração; o valor e sua distribuição devem ser configuráveis e auditáveis, sem criação invisível de riqueza.
 
 ### Empresas e economia
 
@@ -192,7 +204,7 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Cidadãos desempregados procuram vagas reais disponíveis.
 - Vagas podem exigir níveis de educação e/ou qualificação compatíveis.
 - Cada vaga possui salário real.
-- Salários são pagos periodicamente ao trabalhador.
+- Salários são pagos periodicamente ao trabalhador e entram em seu saldo monetário real.
 
 
 ### Moradia e finanças públicas
