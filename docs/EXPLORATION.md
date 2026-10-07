@@ -1932,7 +1932,23 @@ Mesmo pago antecipadamente, o material continua sujeito à logística física e 
 
 ## Quem executa as obras
 
-**Status:** em exploração; ainda não é requisito.
+**Status:** Pátio Municipal de Obras decidido; bootstrap inicial ainda em aberto.
+
+
+
+### Decisão atual: Pátio Municipal de Obras
+
+Foi escolhido um modelo municipal para o primeiro escopo:
+
+- o jogador constrói fisicamente o Pátio Municipal de Obras;
+- ele não existe no início da cidade;
+- trabalhadores do Pátio são cidadãos reais e funcionários públicos;
+- sua folha salarial aparece nas despesas da prefeitura;
+- o Pátio tem capacidade operacional limitada;
+- possui um pequeno estoque próprio de materiais;
+- depósitos municipais dedicados continuam necessários para estoque em maior escala.
+
+Construtoras privadas permanecem como possibilidade futura, não como requisito atual.
 
 
 ### O que significa "construtora" no jogo
@@ -1988,7 +2004,7 @@ Problema: enfraquece a economia de empresas reais já desejada para o jogo.
 Vantagem: encaixa fortemente na proposta de simulador.
 Problema: adiciona bastante complexidade cedo.
 
-**C. Modelo híbrido recomendado para POC**
+**C. Modelo híbrido anteriormente recomendado para POC**
 - construtora é empresa real;
 - recebe pagamento/contrato pela obra;
 - emprega trabalhadores reais;
@@ -2102,3 +2118,86 @@ Precisamos verificar se:
 - importação continua útil sem ser sempre a melhor opção;
 - o número de materiais permanece administrável;
 - o jogador entende claramente por que uma obra está parada e quanto custa depender do exterior.
+
+
+---
+
+## Transparência das finanças municipais
+
+**Status:** decidido.
+
+O orçamento da prefeitura deve deixar explícito de onde o dinheiro entra e para onde sai.
+
+No mínimo, a interface financeira precisa separar categorias como:
+
+**Entradas**
+- impostos;
+- exportações;
+- outras receitas municipais que forem adicionadas futuramente.
+
+**Saídas**
+- salários de trabalhadores públicos;
+- importação de materiais;
+- frete;
+- construção;
+- operação/manutenção de serviços;
+- pagamento de dívida quando aplicável.
+
+A folha de pagamento dos funcionários públicos não deve ficar escondida dentro de um custo genérico de serviço ou de obra.
+
+Isso também evita dupla cobrança: se um trabalhador do Pátio já recebe salário da prefeitura, esse salário não deve ser cobrado novamente como se fosse um custo separado da mesma mão de obra na obra.
+
+
+---
+
+## Estoque do Pátio versus depósito dedicado
+
+**Status:** direção decidida; capacidades ainda precisam de calibração.
+
+O Pátio Municipal de Obras terá um estoque pequeno para apoiar operações correntes.
+
+A intenção é criar dois níveis:
+
+- **Pátio Municipal de Obras:** estoque pequeno e conveniente, ligado diretamente à execução das obras;
+- **Depósito municipal dedicado:** capacidade muito maior, voltado a estoque em escala da cidade.
+
+Questões de calibração:
+
+- capacidade relativa entre os dois;
+- se o Pátio recebe automaticamente materiais reservados para obras;
+- número de pontos de carga/descarga;
+- quando o estoque do Pátio é usado antes do depósito;
+- se o Pátio pode receber diretamente uma importação destinada a uma obra próxima.
+
+Esses detalhes precisam ser testados sem criar movimentação logística redundante.
+
+
+---
+
+## Conflito de bootstrap: quem constrói o primeiro Pátio
+
+**Status:** aberto; precisa ser resolvido antes da implementação do fluxo inicial.
+
+Há uma dependência circular:
+
+1. o mapa começa sem edifícios, apenas com a conexão externa e ambiente natural;
+2. obras municipais são executadas pelo Pátio Municipal de Obras;
+3. o Pátio também precisa ser construído.
+
+Portanto, o próprio Pátio não pode depender exclusivamente de um Pátio local já existente.
+
+### Alternativas a avaliar
+
+**A. Equipe externa de construção para bootstrap**
+- uma equipe temporária vem pela conexão externa;
+- executa o primeiro Pátio e possivelmente a infraestrutura mínima de acesso;
+- depois o sistema normal passa para trabalhadores municipais.
+
+**B. Primeira obra abstrata**
+- o primeiro Pátio é uma exceção de onboarding;
+- simples, mas quebra a lógica física justamente no início.
+
+**C. Pátio inicial pré-construído**
+- foi rejeitado: a cidade deve começar vazia.
+
+A alternativa A parece mais coerente com a conexão externa, os trabalhadores externos já aceitos para caminhões e a proposta de simulação física, mas **ainda precisa de confirmação explícita**.
