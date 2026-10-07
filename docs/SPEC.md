@@ -69,6 +69,23 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - Produção, armazenamento, transporte e consumo desses materiais devem formar cadeias observáveis que geram atividade econômica, logística e empregos.
 - Dinheiro continua relevante para pagar obras, importações, frete, operação e outros custos, mas não substitui a disponibilidade física dos materiais.
 
+### Recursos físicos iniciais
+
+A primeira base de recursos físicos do jogo será composta por oito categorias:
+
+- **Alimentos** — consumo da população.
+- **Combustível** — veículos, logística e serviços.
+- **Suprimentos médicos** — medicamentos e consumíveis de saúde agregados em uma categoria.
+- **Areia e brita** — base viária, drenagem e insumo de concreto/asfalto.
+- **Concreto** — material final de construção.
+- **Aço** — material estrutural agregado em uma categoria.
+- **Madeira** — material de construção agregado em uma categoria.
+- **Asfalto** — vias e superfícies pavimentadas.
+
+- O nome exibido ao jogador será **Areia e brita**, evitando o termo técnico pouco intuitivo "agregados".
+- Insumos industriais intermediários só precisam aparecer quando a respectiva cadeia produtiva existir. Exemplos incluem cimento, culturas/produtos agrícolas, madeira em tora, ligante asfáltico/bitume e pedra bruta.
+- Água, eletricidade, esgoto e lixo permanecem sistemas de serviço/capacidade, não recursos de estoque equivalentes a essas categorias.
+
 ### Construção e obras
 
 - Prédios e infraestrutura não aparecem instantaneamente prontos.
@@ -82,7 +99,7 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - A cidade precisa possuir infraestrutura física de armazenamento, como depósitos/galpões, para materiais de construção.
 - Materiais precisam chegar fisicamente ao canteiro de obras, normalmente por veículos de carga, antes de serem consumidos pela construção.
 - A cidade pode desenvolver produção local de materiais por meio de indústrias/fábricas apropriadas, reduzindo dependência de importações.
-- A lista exata de materiais e cadeias produtivas deve seguir a pesquisa registrada na EXPLORATION.
+- As cadeias produtivas e a ordem de introdução dos insumos intermediários continuam sendo aprofundadas na EXPLORATION.
 
 ### Necessidades e serviços urbanos
 
