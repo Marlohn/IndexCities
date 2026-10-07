@@ -3275,7 +3275,7 @@ A regra transversal continua valendo: o jogador precisa conseguir descobrir por 
 
 ## Destino econômico de aluguel e preço residencial
 
-**Status:** aberto; construção de moradia pelo Caixa da Cidade está decidida, destino dos pagamentos ainda precisa de decisão.
+**Status:** parcialmente superado. O destino do aluguel foi decidido: vai ao proprietário real. Este trecho preserva as alternativas discutidas; primeira venda, revenda e herança ainda têm detalhes abertos.
 
 Foi decidido que casas e apartamentos seguem o mesmo loop de construção dos demais prédios:
 
@@ -3620,9 +3620,9 @@ Não decidir esse ponto por conveniência técnica; ele define o fluxo monetári
 
 ---
 
-## Hipótese: mercado de aquisição ligado à conexão exterior
+## Mercado de aquisição ligado à conexão exterior
 
-**Status:** hipótese forte em debate; não promovida para a SPEC.
+**Status:** parcialmente promovido para a SPEC. Aquisição residencial externa para migração, prédios econômicos vazios aguardando empresa e aquisição por empresas foram decididos; fórmulas, preços e alguns fluxos futuros seguem em calibração/exploração.
 
 ### Ideia
 
