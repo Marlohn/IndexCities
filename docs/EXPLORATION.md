@@ -1533,3 +1533,124 @@ A pesquisa futura deve comparar amplamente:
 Critério principal: encontrar **algo distintivo e memorável que dê propósito às decisões sistêmicas do IndexCities**, sem destruir a liberdade de city builder.
 
 O documento [GENRE_BENCHMARK.md](GENRE_BENCHMARK.md) já contém evidências sobre endgame e progressão e deve ser uma das fontes dessa pesquisa, mas não substitui uma rodada dedicada.
+
+---
+
+## Bens e materiais básicos para uma cidade funcionar
+
+**Status:** pesquisa de baseline; categorias finais ainda não são requisito.
+
+A pergunta aqui é mais ampla do que "quais materiais entram numa obra". O objetivo é identificar quais fluxos físicos mínimos precisam existir para a cidade parecer funcional sem criar centenas de SKUs.
+
+### Referências usadas
+
+A FEMA organiza serviços essenciais de uma comunidade em lifelines que incluem, entre outros, **alimentos/água/abrigo, saúde e cadeia de suprimentos médicos, energia/combustível, transporte e sistemas de água**. Isso ajuda a separar o que realmente sustenta uma cidade do que é apenas variedade comercial.
+
+A OMS trata medicamentos essenciais como produtos que precisam estar disponíveis continuamente em sistemas de saúde funcionais.
+
+O Freight Analysis Framework da FHWA separa fluxos reais de carga em famílias como alimentos, combustíveis, farmacêuticos, madeira, minerais, metais e outros bens manufaturados.
+
+Fontes:
+- FEMA — Community Lifelines: https://www.fema.gov/emergency-managers/practitioners/lifelines
+- FEMA — Supply Chain Resilience Guide: https://www.fema.gov/sites/default/files/2020-07/supply-chain-resilience-guide.pdf
+- WHO — Essential medicines: https://www.who.int/news-room/fact-sheets/detail/essential-medicines
+- FHWA — Freight Analysis Framework: https://ops.fhwa.dot.gov/freight/freight_analysis/faf/
+
+### Baseline recomendada para a primeira economia física
+
+Em vez de dezenas de produtos, testar primeiro **cinco famílias de estoque**:
+
+1. **Alimentos** — abastecem residências, mercados, restaurantes e padarias.
+2. **Medicamentos e suprimentos médicos** — abastecem farmácias, hospitais e unidades de saúde.
+3. **Combustível** — abastece postos e veículos e se conecta a trânsito, transporte público, logística e serviços urbanos.
+4. **Materiais de construção** — abastecem obras; família interna inicial a testar: concreto, aço, madeira e asfalto.
+5. **Bens gerais** — representa produtos domésticos/duráveis e consumo cotidiano que não justificam SKU próprio no início.
+
+### O que não precisa virar estoque da mesma forma
+
+Alguns sistemas essenciais já decididos devem continuar como **serviços/capacidade**, não como mercadoria genérica:
+
+- água potável;
+- tratamento de esgoto;
+- eletricidade;
+- coleta/destinação de lixo.
+
+### Camada de insumos produtivos
+
+Para produção local, algumas famílias precisam de insumos intermediários. Eles só devem aparecer quando a cadeia correspondente existir.
+
+Exemplos:
+- cimento + agregados + água → concreto;
+- aço → construção/manufatura;
+- madeira → construção/manufatura;
+- agregados + ligante asfáltico → asfalto;
+- combustível refinado → postos/veículos.
+
+Outros candidatos para fases seguintes, caso tragam gameplay suficiente:
+- vidro;
+- tijolos/cerâmica;
+- plásticos/borracha;
+- papel;
+- produtos químicos;
+- peças/máquinas;
+- fertilizantes;
+- produtos agrícolas in natura.
+
+### Recomendação atual
+
+Para o primeiro protótipo econômico, começar com alimentos, medicamentos/suprimentos médicos, combustível, materiais de construção e bens gerais. Aprofundar apenas cadeias que criarem decisões interessantes ou gargalos logísticos relevantes.
+
+---
+
+## Construção híbrida: grid lógico + liberdade de posicionamento
+
+**Status:** direção de protótipo aceita; ainda precisa ser validada em implementação.
+
+A proposta atual é testar um modelo **híbrido**, em vez de escolher desde já entre grid rígido e posicionamento totalmente livre.
+
+### Evidência comparativa
+
+Farthest Frontier começou com construção em grid por razões estratégicas e, em 2026, adicionou posicionamento livre em 360° após feedback recorrente dos jogadores. O jogo manteve a possibilidade de alternar entre modo livre e grid durante a colocação. Algumas estruturas continuam presas ao grid por causa das restrições do pathfinding.
+
+Fontes:
+- Crate Entertainment — Free-Build Mode: https://forums.crateentertainment.com/t/v1-1-patch-preview/152189
+- Crate Entertainment — v1.1.0: https://forums.crateentertainment.com/t/farthest-frontier-v1-1-0/153834
+- Godot 4.5 — GridMap: https://docs.godotengine.org/en/4.5/classes/class_gridmap.html
+
+### Protótipo recomendado
+
+Testar:
+- uma **grade lógica interna** para ocupação, colisão, lotes e consultas espaciais;
+- posicionamento visual com alguma liberdade;
+- snap opcional a borda da rua, alinhamento com vizinhos, linhas/células da grade e ângulos úteis;
+- possibilidade de mostrar/ocultar a grade como ajuda visual.
+
+### Riscos a medir no POC
+
+- footprints irregulares;
+- gaps visuais;
+- colisão entre construções;
+- conexão correta com calçada/rua;
+- estacionamento e pontos de carga;
+- pathfinding de pedestres;
+- performance das consultas espaciais;
+- clareza do feedback de posicionamento.
+
+---
+
+## Estado inicial, depósitos e abastecimento de obras
+
+**Status:** parcialmente decidido.
+
+Decidido:
+- a cidade começa essencialmente vazia;
+- materiais podem ser importados pela conexão externa;
+- depósitos/galpões físicos armazenam materiais;
+- materiais precisam chegar fisicamente ao canteiro antes do avanço da obra;
+- fábricas locais podem produzir materiais depois.
+
+Em aberto:
+- se o jogador recebe um pequeno depósito inicial pronto/gratuito;
+- ou se recebe apenas dinheiro e precisa construir o primeiro depósito.
+
+Essa decisão deve ser avaliada como parte do onboarding e da prevenção de soft-lock: o início precisa permitir a primeira obra sem criar um ciclo impossível de depender de um depósito que também exige materiais ainda indisponíveis.
