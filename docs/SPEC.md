@@ -200,13 +200,20 @@ A SPEC deve crescer com o produto, **não antes dele**.
 
 ### Caixa da cidade e investimento em construções
 
-- O jogador administra um único **caixa da cidade** como recurso monetário principal controlável.
+- O jogador administra um único **Caixa da Cidade** como recurso monetário principal controlável. Ele representa o capital disponível para desenvolver e operar a cidade no gameplay, não uma representação jurídica literal apenas do caixa da prefeitura.
 - Receitas municipais, impostos e outras entradas definidas alimentam esse caixa; despesas públicas, salários e construções ordenadas pelo jogador consomem esse caixa.
 - Como o jogador posiciona diretamente todos os prédios no escopo atual, **toda construção que ele ordena consome dinheiro do caixa da cidade e materiais físicos**, independentemente de o prédio depois ser operado pelo setor público ou por uma empresa privada.
 - Essa é uma abstração consciente de gameplay: a distinção público/privado afeta principalmente a operação após a inauguração, não cria dois sistemas de pagamento na ferramenta de construção.
 - O custo monetário de uma construção privada inclui uma **capitalização operacional inicial** da empresa que irá operar o prédio; esse valor é transferido do caixa da cidade para o caixa real da empresa quando ela entra em operação.
-- Depois de inaugurada, a empresa privada passa a operar com seu próprio caixa, receitas e despesas; o jogador não pode usar diretamente esse dinheiro como caixa da cidade.
+- Depois de inaugurada, a empresa privada passa a operar com seu próprio caixa, receitas e despesas; o jogador não pode usar diretamente esse dinheiro como Caixa da Cidade nem precisa administrá-lo manualmente.
 - O resultado de uma empresa privada beneficia ou prejudica a cidade por efeitos econômicos reais, como empregos, salários, impostos, produção, logística e eventual fechamento, não por transferência livre de seu caixa para o jogador.
+
+### Financiamento de moradia pelo jogador
+
+- Casas e apartamentos seguem o mesmo princípio geral de construção: quando o jogador ordena a obra, o custo sai do **Caixa da Cidade** e consome materiais físicos.
+- O jogador continua decidindo diretamente onde as residências serão construídas.
+- Depois de ocupada, a residência participa da economia familiar por meio de preço e/ou aluguel real.
+- O destino exato desses pagamentos ainda está em definição e deve preservar simplicidade, causalidade e retorno legível do investimento em moradia.
 
 ### Terreno e logística econômica
 
