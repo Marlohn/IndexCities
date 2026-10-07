@@ -261,3 +261,92 @@ Isso ainda precisa ser transformado em arquitetura técnica concreta com base em
 ### Testes e guardrails
 
 A direção é usar testes e outras proteções onde eles realmente defendam comportamento importante, especialmente regras da simulação e invariantes de sistemas interligados. A cobertura e a estratégia exatas ainda não estão decididas.
+
+
+---
+
+## Referência visual fornecida
+
+**Status:** direção visual em exploração; a apresentação 3D isométrica já está confirmada na SPEC.
+
+Foram fornecidas imagens de referência produzidas a partir de assets já existentes do projeto/autor. Elas devem ser consideradas nas futuras decisões de direção visual, escala de câmera, densidade urbana e legibilidade.
+
+Características observáveis nas referências:
+
+- visual 3D estilizado, com geometria simples e leitura limpa;
+- câmera alta/isométrica capaz de mostrar simultaneamente ruas, calçadas, lotes e edifícios;
+- edificações individuais claramente distinguíveis;
+- escala urbana de bairro/cidade pequena, com casas, comércio de esquina, vegetação, mobiliário urbano e vias;
+- prioridade para legibilidade visual em vez de realismo fotográfico;
+- presença visível de detalhes urbanos como faixas de pedestre, postes, bancos, cercas, jardins e mesas externas;
+- cidadãos e veículos aparecem em escala compatível com leitura individual.
+
+As imagens são referência de exploração, não especificação dimensional. Medidas, grid, tamanho de lote, distância de câmera e densidade ainda precisam ser definidos e testados.
+
+### Pipeline de assets
+
+A intenção atual é produzir boa parte dos assets visuais com uma ferramenta/IA externa especializada e integrá-los ao jogo depois. O pipeline exato de formatos, importação, LODs, colisões, materiais e validação ainda não foi definido.
+
+---
+
+## Princípios desejados para a simulação
+
+**Status:** direção de produto em exploração; profundidade e limites dependem de pesquisa e benchmark.
+
+Além de "ter muitos agentes", o objetivo declarado é que os sistemas tenham **causa e consequência coerentes**.
+
+Exemplos da direção desejada:
+
+- um cidadão pertence a uma residência/família;
+- cidadãos estudam e trabalham em locais reais da cidade;
+- trabalho e atividade econômica geram ou movimentam recursos;
+- cidadãos possuem renda/dinheiro e consomem;
+- bem-estar/alegria deve refletir as condições de vida;
+- relacionamentos e ciclo de vida podem incluir casamento, filhos, envelhecimento e morte;
+- veículos devem estar ligados de forma coerente a pessoas ou famílias;
+- viagens devem existir por algum motivo da simulação, não apenas como decoração;
+- os sistemas econômicos, populacionais, de mobilidade e serviços devem influenciar uns aos outros.
+
+O objetivo é chegar ao **máximo de profundidade viável**, sem fixar antecipadamente quais desses sistemas serão simulados em todos os ticks ou para toda a população. Estratégias como níveis de detalhe de simulação, atualização por frequência e agregação continuam abertas e devem ser avaliadas por benchmark.
+
+---
+
+## Escala física e forma de construir
+
+**Status:** parcialmente decidido.
+
+A granularidade de construção em casas e prédios já está decidida na SPEC.
+
+Direções ainda em exploração:
+
+- cidade com extensão controlada, menor que grandes mapas/metrópoles de city builders tradicionais;
+- menos dependência de grandes áreas de zoneamento automático;
+- maior importância para cada lote e edifício individual;
+- quantidade de grids/células e tamanho total do mapa ainda não definidos;
+- mesmo com área menor, a cidade deve poder atingir uma escala urbana significativa e oferecer os principais serviços e atividades de uma cidade funcional.
+
+A quantidade final de população, lotes, casas, edifícios, comércio e indústria deve vir de dados reais e benchmarks, não de um número arbitrário.
+
+---
+
+## Objetivos de arquitetura de desenvolvimento
+
+**Status:** direção arquitetural a validar.
+
+A organização técnica deve buscar separação clara de responsabilidades para facilitar manutenção, testes e trabalho assistido por IA.
+
+Áreas que se deseja manter desacopladas sempre que isso fizer sentido:
+
+- núcleo da simulação e regras de domínio;
+- integração com Godot;
+- apresentação/renderização;
+- UI;
+- assets e conteúdo visual.
+
+Como o desenvolvimento principal será em C#, a organização do código deve permanecer compreensível e convencional para desenvolvimento C#, evitando abstrações desnecessárias.
+
+Também existe o objetivo de criar **guardrails técnicos** para permitir que modelos de IA mais baratos façam alterações locais com menor risco de regressão em gameplay. Esses guardrails devem surgir de necessidades concretas e podem incluir testes, limites de módulos, validações e convenções de código.
+
+### Ambiente de desenvolvimento
+
+O desenvolvimento está planejado para acontecer principalmente em máquina local. Fluxo de build, execução, profiling e automação local ainda precisam ser definidos quando houver código executável.
