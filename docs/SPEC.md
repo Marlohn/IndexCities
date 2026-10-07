@@ -235,7 +235,9 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Os horários de trabalho devem influenciar diretamente os padrões de deslocamento e o trânsito.
 - Empresas e serviços podem operar em múltiplos turnos quando necessário.
 - Cidadãos desempregados procuram vagas reais disponíveis.
-- Vagas podem exigir níveis de educação e/ou qualificação compatíveis.
+- No primeiro modelo, empregos não possuem cargos ou profissões formais como mecânica; o vínculo principal é o SIM trabalhar em determinada empresa, serviço ou estrutura.
+- Uma estrutura pode exigir uma quantidade de funcionários, e vagas podem continuar tendo salário, turno e requisitos de educação ou qualificação quando necessário, sem exigir uma hierarquia de cargos.
+- Não haverá gerente, chefe ou outro cargo obrigatório para uma empresa ou serviço funcionar no primeiro modelo.
 - Cada vaga possui salário real.
 - Salários são pagos periodicamente ao trabalhador e entram em seu saldo monetário real.
 
