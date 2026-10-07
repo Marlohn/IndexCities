@@ -3284,7 +3284,7 @@ A questão restante é **para quem vai o dinheiro pago pela família**.
 
 ### Opção A — pagamento retorna ao Caixa da Cidade
 
-**Recomendação atual para o primeiro escopo.**
+**Recomendação anterior, agora em revisão.**
 
 Como o jogador financiou diretamente a construção, aluguel funciona como retorno econômico daquele investimento.
 
@@ -3327,9 +3327,9 @@ Cada residência/prédio teria uma conta operacional que recebe aluguel e paga c
 
 Só vale se manutenção predial, condomínio, proprietário ou investimento imobiliário virarem gameplay real.
 
-### Recomendação
+### Recomendação anterior — reaberta
 
-Começar com **aluguel retornando ao Caixa da Cidade**.
+A recomendação de começar com **aluguel retornando ao Caixa da Cidade** foi reaberta porque ela entra em tensão com uma economia centrada em impostos e com a possibilidade futura de famílias possuírem ou herdarem moradia.
 
 Interpretação de gameplay:
 
@@ -3376,3 +3376,127 @@ Depois da inauguração, a operação pode divergir:
 - moradia participa da economia familiar e ainda precisa fechar o destino do aluguel/preço.
 
 A abstração evita criar vários bolsos de investimento controlados pelo jogador sem eliminar caixas reais de entidades simuladas quando eles geram gameplay.
+
+
+---
+
+## Revisão de moradia: impostos, aluguel, propriedade e herança
+
+**Status:** aberto; a recomendação anterior de enviar todo aluguel ao Caixa da Cidade foi suspensa.
+
+### Novo ponto de partida
+
+A intenção de gameplay é que a receita recorrente controlada pelo jogador venha **principalmente de impostos e outras receitas da cidade**, e não de o jogador funcionar como proprietário universal de moradias e empresas.
+
+Isso combina melhor com a operação privada já decidida para empresas.
+
+### Consequência importante
+
+Se no futuro houver diferença entre uma família que **possui/herdou** uma casa e uma família que **aluga**, mandar todo aluguel direto ao Caixa da Cidade deixa de ser conceitualmente limpo.
+
+A propriedade da moradia passa a ter consequências reais:
+
+- família proprietária: não paga aluguel; possui um ativo; pode pagar imposto sobre propriedade e custos de manutenção; uma herança pode transferir esse ativo;
+- família locatária: paga aluguel recorrente; não possui o imóvel; tende a ter menor barreira de entrada e maior facilidade de mudança;
+- cidade: recebe impostos/tributos definidos, não necessariamente o aluguel bruto.
+
+### Alternativa A — todas as moradias são aluguel no primeiro escopo
+
+**Prós**
+- modelo muito simples;
+- nenhuma lógica de compra, venda, herança ou proprietário individual;
+- fácil de balancear;
+- combina com famílias mudando de residência.
+
+**Contras**
+- enfraquece riqueza patrimonial familiar;
+- herança de imóvel não existe;
+- duas famílias com a mesma renda ficam economicamente parecidas mesmo que, conceitualmente, uma pudesse ter patrimônio;
+- reduz profundidade potencial dos cidadãos persistentes.
+
+### Alternativa B — propriedade residencial real por família + aluguel privado
+
+**Prós**
+- cria diferença concreta entre proprietário e locatário;
+- patrimônio familiar pode afetar vulnerabilidade econômica;
+- herança passa a ter significado real;
+- preço de imóvel deixa de ser apenas um indicador;
+- impostos sobre propriedade podem gerar receita municipal de forma clara;
+- combina com cidadãos/famílias persistentes.
+
+**Contras**
+- exige definir compra, venda e transferência de propriedade;
+- exige resolver quem recebe aluguel de imóveis locados;
+- herança e propriedade adicionam estado persistente;
+- risco de transformar moradia em um sistema grande demais cedo.
+
+### Alternativa C — setor/proprietário imobiliário abstrato
+
+**Prós**
+- aluguel não precisa ir para o Caixa da Cidade;
+- cidade recebe impostos;
+- evita proprietário individual para cada imóvel.
+
+**Contras**
+- alto risco de caixa-preta;
+- adiciona dinheiro circulando para um agente que o jogador não vê;
+- repete exatamente o tipo de abstração econômica difícil de diagnosticar que o projeto quer evitar.
+
+**Não recomendada** sem uma entidade econômica real e inspecionável.
+
+### Alternativa D — empresa imobiliária privada real para imóveis de aluguel
+
+Imóveis locados são operados por uma empresa imobiliária, usando o mesmo modelo econômico já definido para outras empresas.
+
+Fluxo:
+
+família locatária
+→ paga aluguel
+→ caixa da empresa imobiliária
+→ manutenção/custos/impostos
+→ resultado da empresa
+
+**Prós**
+- reaproveita um sistema já existente: empresa privada com caixa e ledger;
+- aluguel tem origem e destino reais;
+- cidade recebe impostos;
+- nenhuma necessidade de um "landlord virtual" invisível;
+- pode operar apartamentos e casas destinadas a aluguel sem microgerenciamento do jogador.
+
+**Contras**
+- cria mais um tipo de empresa;
+- ainda precisa definir como o prédio passa a ser operado por essa empresa;
+- se adotado cedo demais, pode ampliar o escopo de economia imobiliária.
+
+### Evidência de referência
+
+Cities: Skylines II originalmente tinha um landlord virtual na economia de aluguel. Na Economy 2.0, a Paradox removeu esse landlord virtual e passou a dividir o upkeep entre os locatários, junto com uma revisão ampla de aluguel e transparência econômica. Isso é um alerta útil contra introduzir um recebedor abstrato de aluguel apenas para "fechar a conta".
+
+Manor Lords mantém uma separação clara entre riqueza regional e tesouro do jogador, com tributação transferindo riqueza para o tesouro. É um precedente de gameplay em que a economia dos habitantes existe separada da receita controlada pelo jogador.
+
+Fontes:
+- Paradox — Economy 2.0 Part 2: https://www.paradoxinteractive.com/games/cities-skylines-ii/news/dev-diary-economy-part-two
+- Paradox — Zones & Signature Buildings: https://www.paradoxinteractive.com/games/cities-skylines-ii/features/zones-signature-buildings
+- Manor Lords Official Wiki — Regional Wealth: https://wiki.hoodedhorse.com/Manor_Lords/Special%3AMyLanguage/regional_wealth
+
+### Recomendação atual
+
+**Não mandar aluguel bruto para o Caixa da Cidade por padrão.**
+
+A direção mais coerente parece ser:
+
+- Caixa da Cidade recebe principalmente **impostos e receitas públicas**;
+- empresas privadas continuam com caixa próprio;
+- se houver aluguel privado, ele deve ir para uma entidade privada real e auditável, preferencialmente reaproveitando o modelo de empresa;
+- se houver propriedade familiar, a família proprietária não paga aluguel e o imóvel pode se tornar patrimônio/herança;
+- imposto sobre propriedade e/ou outras taxas podem alimentar o Caixa da Cidade.
+
+Porém, **não promover propriedade/herança para a SPEC ainda**. Antes disso, decidir se essa profundidade gera gameplay suficiente para entrar no primeiro escopo ou se deve ser uma evolução posterior.
+
+### Pergunta macro restante
+
+A decisão realmente importante agora não é "quem recebe R$ X de aluguel", mas:
+
+**o primeiro escopo já deve distinguir família proprietária de família locatária, ou todas as famílias começam num modelo de aluguel e propriedade/herança entra depois?**
+
+Essa escolha define o tamanho real do sistema de moradia.
