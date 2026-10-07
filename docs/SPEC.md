@@ -156,6 +156,14 @@ A primeira base de recursos físicos do jogo será composta por oito categorias:
 - Insumos industriais intermediários só precisam aparecer quando a respectiva cadeia produtiva existir. Exemplos incluem cimento, culturas/produtos agrícolas, madeira em tora, ligante asfáltico/bitume e pedra bruta.
 - Água, eletricidade, esgoto e lixo permanecem sistemas de serviço/capacidade, não recursos de estoque equivalentes a essas categorias.
 
+### Ferramenta de construção de ruas
+
+- A ferramenta de ruas deve permitir construir um trajeto ortogonal em **L** num único gesto de clique e arraste quando o ponto inicial e o ponto final diferirem nos dois eixos.
+- Durante o arraste, o jogo deve mostrar uma prévia completa do trajeto antes da confirmação.
+- Quando houver duas formas possíveis de fazer o L, o jogador deve conseguir alternar ou influenciar de forma simples qual lado recebe a curva.
+- Se início e fim estiverem alinhados, o mesmo gesto pode produzir um trecho reto; o objetivo não é obrigar curvas artificiais, mas evitar exigir que o jogador construa cada perna do L separadamente.
+- A confirmação da rua deve respeitar as regras normais de obra, custo, materiais, terreno e demais restrições da simulação.
+
 ### Construção e obras
 
 - Prédios e infraestrutura não aparecem instantaneamente prontos.
