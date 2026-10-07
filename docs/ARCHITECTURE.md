@@ -121,23 +121,35 @@ Exemplos de responsabilidades:
 - nomes de cenas e caminhos `res://...`;
 - lógica que exista apenas para produzir um efeito visual.
 
-### Identidade
+### Identidade, presença física e representação visual
 
 Entidades da simulação devem usar identidades próprias, como `CitizenId`, `CompanyId`, `BuildingId` e `VehicleId`, em vez de referências para Nodes.
+
+Devem ser separados quatro conceitos:
+
+1. **existência lógica** — a entidade existe, tem identidade e estado persistente;
+2. **estado físico da simulação** — quando aplicável, a simulação sabe onde ela está, por onde se desloca, o que ocupa e quais consequências físicas produz;
+3. **computação ativa** — a entidade ou sistema só precisa consumir CPU quando houver trabalho relevante; scheduler, eventos e estados inativos podem evitar updates inúteis;
+4. **representação visual** — Node, Node3D, MultiMesh, RenderingServer ou outra técnica usada apenas para mostrar aquele estado.
 
 A apresentação pode manter um mapeamento entre um ID da simulação e sua representação visual.
 
 Isso permite que uma entidade:
 
 - exista sem estar renderizada;
+- continue ocupando espaço, viajando ou produzindo consequências físicas sem possuir um Node ativo;
 - seja descarregada visualmente sem desaparecer da cidade;
 - seja testada headless;
 - seja salva sem serializar objetos Godot;
 - mude de representação visual sem mudar sua identidade.
 
+**Um Node/Node3D nunca é a entidade autoritativa da simulação; é apenas uma possível representação dela.**
+
 ### Estado e regras
 
 O estado autoritativo de gameplay vive na simulação.
+
+Para mobilidade, isso inclui as informações necessárias para que viagens, filas, congestionamento, estacionamento, carga/descarga, chegada ao trabalho e demais efeitos continuem causalmente corretos mesmo quando a câmera não está observando a área. O nível interno exato de detalhe pode variar por algoritmo e performance, mas o resultado causal não pode depender da visibilidade.
 
 A apresentação **não pode** ser a fonte de verdade de dinheiro, estoque, ocupação, emprego, velocidade lógica, produção, saúde de empresa ou qualquer outro valor que altere resultado de gameplay.
 
@@ -250,9 +262,15 @@ Ela pode descartar, agrupar ou simplificar representação visual por distância
 
 ### Regra importante
 
-**Ausência visual não significa ausência na simulação.**
+**Ausência visual não significa ausência na simulação. Culling visual não autoriza culling causal.**
 
-Um cidadão fora da câmera pode continuar existindo e evoluindo sem manter um `Node3D` ativo.
+Um cidadão ou veículo fora da câmera pode continuar existindo, deslocando-se e produzindo consequências reais sem manter um `Node3D` ativo.
+
+Quando um agente está em deslocamento físico, a simulação deve conseguir determinar seu estado espacial relevante independentemente de existir representação visual ativa. A apresentação apenas materializa esse estado quando necessário.
+
+Quando a câmera passa a mostrar uma área, a apresentação deve refletir o estado real daquela área. Um congestionamento real não pode aparecer como uma avenida vazia apenas porque seus veículos estavam anteriormente fora da câmera.
+
+A otimização deve acontecer em **como representar** o estado — pooling, instancing, MultiMesh, RenderingServer, LOD ou outras técnicas adequadas — e não em falsificar o estado da simulação.
 
 Essa separação é particularmente importante para a escala pretendida do IndexCities.
 
