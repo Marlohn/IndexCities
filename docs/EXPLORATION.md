@@ -3912,3 +3912,106 @@ Aceitar abstração quando:
 - não cria dinheiro, recurso, proprietário, demanda ou comportamento mágico.
 
 Esse critério deve ser reaplicado em todas as próximas decisões.
+
+
+---
+
+## Decisão: patrimônio individual e investimento residencial local
+
+**Status:** decidido no modelo conceitual; fórmulas e regras familiares ainda precisam de calibração.
+
+Foi aprovado que os cidadãos terão **dinheiro real individual** e que isso pode gerar investimento residencial emergente.
+
+### Carteira/patrimônio do cidadão
+
+Cada SIM possui saldo monetário real.
+
+Esse saldo pode ser afetado por:
+- salários e outras rendas definidas;
+- consumo;
+- impostos;
+- aluguel pago ou recebido;
+- compra de imóvel;
+- venda futura de patrimônio;
+- demais fluxos econômicos explícitos.
+
+Ao criar/introduzir um cidadão na simulação, ele pode entrar com um saldo inicial explícito. Para migrantes vindos do exterior, esse dinheiro representa patrimônio trazido do restante do mundo.
+
+O valor inicial não deve ser mágico nem infinito:
+- precisa seguir uma regra de geração;
+- deve ser calibrável;
+- precisa aparecer em debug/diagnóstico;
+- não pode funcionar como fonte ilimitada de capital externo.
+
+A regra exata por idade, perfil, família e origem ainda está aberta.
+
+### Investimento residencial por cidadãos locais
+
+Um cidadão/família que acumulou dinheiro suficiente pode decidir automaticamente comprar outro imóvel.
+
+Fluxo conceitual:
+
+cidadão acumula patrimônio
+→ encontra imóvel disponível
+→ avalia preço + demanda + expectativa de ocupação/renda
+→ compra com dinheiro real
+→ torna-se proprietário
+→ outra família pode alugar
+→ aluguel vai para o proprietário real
+→ cidade recebe impostos aplicáveis
+
+Isso cria uma diferença econômica visível entre:
+- renda do trabalho;
+- consumo;
+- poupança;
+- patrimônio;
+- renda de aluguel.
+
+### Prós
+
+- aluguel deixa de precisar de empresa imobiliária abstrata;
+- dinheiro sempre tem origem e destino;
+- cidadãos ricos podem se comportar de forma diferente de cidadãos sem patrimônio;
+- herança futura ganha significado concreto;
+- desigualdade patrimonial pode emergir sem um score artificial;
+- propriedades vazias e demanda imobiliária passam a ter agentes reais;
+- reforça o valor de cidadãos persistentes.
+
+### Contras/riscos
+
+- aumenta o estado econômico por cidadão;
+- pode gerar concentração extrema de imóveis se não houver comportamento/limites plausíveis;
+- exige cuidado para não transformar a simulação em mercado financeiro imobiliário excessivamente detalhado;
+- casais/famílias levantam a questão de quem juridicamente possui o imóvel;
+- dinheiro inicial de novos cidadãos precisa ser limitado para não criar capital externo infinito.
+
+### Regra de microgerenciamento
+
+O jogador não escolhe qual cidadão compra qual imóvel.
+
+A decisão é automática, mas deve ser diagnosticável:
+- comprador;
+- preço;
+- dinheiro antes/depois;
+- motivo econômico da compra;
+- imóvel adquirido;
+- renda/aluguel esperado quando aplicável.
+
+### Granularidade ainda aberta: indivíduo versus família
+
+O saldo individual do SIM foi aprovado.
+
+Ainda não está decidido se um imóvel comprado por um casal/família:
+- pertence a um cidadão específico;
+- pertence ao domicílio/família;
+- admite copropriedade.
+
+Não inventar esse detalhe até ele gerar consequência de gameplay suficiente.
+
+### Coerência com comprador exterior
+
+Permanece a decisão anterior:
+- família residencial vinda do exterior compra para **migrar e morar**;
+- investimento imobiliário externo puro continua fora do primeiro modelo.
+
+Depois de migrar e tornar-se residente real, essa família/cidadão pode futuramente acumular patrimônio e participar das mesmas regras de investimento local.
