@@ -70,7 +70,7 @@ Até lá, simplicidade é uma característica do processo, não uma deficiência
 
 **Status:** decisão consolidada.
 
-A pesquisa e a direção arquitetural inicial foram consolidadas em [ARCHITECTURE.md](ARCHITECTURE.md), que passa a ser a autoridade sobre organização técnica, fronteiras e direção de dependências.
+A pesquisa e a direção arquitetural inicial foram consolidadas em [ARCHITECTURE.md](../ARCHITECTURE.md), que passa a ser a autoridade sobre organização técnica, fronteiras e direção de dependências.
 
 Conclusões principais:
 
@@ -119,4 +119,4 @@ A migração é gradual: não é necessário desmontar o conteúdo histórico de
 
 `exploration/genre-benchmark.md` também fica em `docs/exploration/`. Apesar de ter uso comparativo recorrente, continua sendo material de pesquisa/referência e não uma fonte canônica.
 
-A primeira migração aplicada foi a interface do jogador para [`exploration/player-interface.md`](exploration/player-interface.md).
+A primeira migração aplicada foi a interface do jogador para [`exploration/player-interface.md`](player-interface.md).
