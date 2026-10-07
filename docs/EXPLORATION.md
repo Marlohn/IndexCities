@@ -1494,17 +1494,19 @@ Decidido:
 1. a cidade começa com dinheiro;
 2. enquanto não possui produção local suficiente, compra materiais do exterior;
 3. materiais entram fisicamente pela conexão externa;
-4. materiais precisam ser armazenados;
-5. obras retiram/recebem materiais desse estoque;
-6. produção local pode substituir importações conforme a cidade se desenvolve.
+4. quando a importação é acionada por uma obra específica, a carga pode ir diretamente ao canteiro;
+5. materiais produzidos/estocados localmente usam depósitos municipais;
+6. obras reservam materiais locais e aguardam a chegada física do que precisar ser importado;
+7. produção local pode substituir importações conforme a cidade se desenvolve.
 
-Ainda precisa ser decidido:
+Já está definido que o depósito inicial aceita todos os materiais, tem capacidade limitada e é municipal.
 
-- tipo e capacidade dos depósitos/galpões;
-- se estoque pertence à prefeitura, empresas privadas ou ambos;
-- preços de importação;
-- quantidade inicial de dinheiro/material;
-- quais indústrias de materiais estarão disponíveis no primeiro protótipo.
+Ainda precisa ser decidido/calibrado:
+
+- quantidade inicial de dinheiro;
+- quais indústrias de materiais estarão disponíveis no primeiro protótipo;
+- capacidades, custos e velocidades dos depósitos;
+- preços concretos de cada material e frete.
 
 ---
 
@@ -1653,20 +1655,18 @@ Testar:
 
 ## Estado inicial, depósitos e abastecimento de obras
 
-**Status:** parcialmente decidido.
+**Status:** decidido em nível de fluxo; números ainda precisam de calibração.
 
 Decidido:
 - a cidade começa essencialmente vazia;
+- não é necessário um depósito gratuito inicial;
 - materiais podem ser importados pela conexão externa;
-- depósitos/galpões físicos armazenam materiais;
+- quando uma obra específica não tem material local suficiente, a importação pode ser entregue diretamente ao canteiro;
+- depósitos/galpões municipais armazenam materiais produzidos ou mantidos localmente;
 - materiais precisam chegar fisicamente ao canteiro antes do avanço da obra;
 - fábricas locais podem produzir materiais depois.
 
-Em aberto:
-- se o jogador recebe um pequeno depósito inicial pronto/gratuito;
-- ou se recebe apenas dinheiro e precisa construir o primeiro depósito.
-
-Essa decisão deve ser avaliada como parte do onboarding e da prevenção de soft-lock: o início precisa permitir a primeira obra sem criar um ciclo impossível de depender de um depósito que também exige materiais ainda indisponíveis.
+Esse fluxo elimina o soft-lock do primeiro depósito sem criar um edifício gratuito artificial.
 
 ---
 
@@ -1934,6 +1934,29 @@ Mesmo pago antecipadamente, o material continua sujeito à logística física e 
 
 **Status:** em exploração; ainda não é requisito.
 
+
+### O que significa "construtora" no jogo
+
+A ideia discutida até aqui seria uma entidade operacional ligada às obras, não simplesmente mais um custo abstrato.
+
+Ela **poderia** ter um edifício físico colocável pelo jogador, como um escritório/pátio de obras, mas isso não está decidido.
+
+A pergunta expôs uma ambiguidade importante no produto atual:
+
+- a SPEC diz que o jogador coloca diretamente casas, prédios, empresas e serviços;
+- isso não define automaticamente quem **possui** ou **financia** cada edifício depois de colocado;
+- portanto, "o jogador constrói uma construtora" não deve ser interpretado automaticamente como "a prefeitura é dona de uma empresa privada".
+
+Antes de fechar a construtora, precisamos decidir como separar:
+
+- **controle do jogador sobre a colocação**;
+- **propriedade municipal ou privada**;
+- **quem paga a construção**;
+- **quem recebe a receita da operação**.
+
+Uma alternativa coerente é um **Departamento/Pátio Municipal de Obras**, com trabalhadores reais, enquanto construtoras privadas ficam para uma etapa posterior. Outra é uma construtora privada real que recebe contratos. Ambas precisam ser comparadas com o modelo econômico geral para evitar dupla cobrança de salários ou propriedade incoerente.
+
+
 ### Classificação econômica real
 
 Construção não precisa ser encaixada artificialmente como indústria de manufatura ou comércio varejista. O NAICS trata **Construction (setor 23)** como setor econômico próprio. Ele inclui construção de edifícios, obras pesadas/engenharia e empreiteiros especializados. Empreiteiros gerais normalmente assumem a responsabilidade por um projeto inteiro e podem subcontratar partes do trabalho.
@@ -2014,3 +2037,68 @@ Decidido:
 - a demolição continua tendo seu próprio custo configurável conforme já definido.
 
 Não há sistema de salvage/reciclagem de material no escopo atual.
+
+
+---
+
+## Hipótese de diferenciação: cidade construída por cadeias materiais
+
+**Status:** direção prioritária de produto; hipótese de diferenciação ainda precisa ser validada em gameplay.
+
+A economia material passa a ser uma linha central de investigação do IndexCities.
+
+A intenção é fugir do padrão em que construir é principalmente clicar em algo e pagar dinheiro. No IndexCities, a cidade deve crescer porque consegue **obter, produzir, transportar e aplicar materiais físicos**.
+
+### Loop central a explorar
+
+necessidade de construir  
+→ calcular dinheiro + materiais  
+→ usar estoque local e/ou importar faltantes  
+→ transportar fisicamente  
+→ executar a obra com trabalhadores  
+→ nova infraestrutura/empresa entra em operação  
+→ gera empregos, produção, consumo e novos fluxos  
+→ produção local reduz dependência externa e cria novas possibilidades de expansão
+
+### Por que isso pode ser um diferencial
+
+Se funcionar bem, o material deixa de ser apenas um custo adicional e passa a conectar:
+
+- construção;
+- indústria;
+- agricultura quando aplicável;
+- importação/exportação;
+- logística;
+- depósitos;
+- trânsito de carga;
+- empregos;
+- finanças municipais;
+- crescimento da cidade.
+
+A hipótese é que a cidade se torne legível como uma rede produtiva real, e não apenas como uma coleção de edifícios comprados com dinheiro.
+
+### Regra de pesquisa daqui em diante
+
+Ao avaliar uma nova construção ou infraestrutura, investigar:
+
+- quais materiais ela consome;
+- de onde esses materiais podem vir;
+- como podem ser produzidos localmente;
+- como são armazenados;
+- como são transportados;
+- quais empregos a cadeia cria;
+- quais gargalos e consequências a falta do material produz;
+- se a granularidade acrescenta gameplay ou apenas microgerenciamento.
+
+### Validação necessária
+
+Essa direção deve ser prototipada antes de ser tratada como o diferencial definitivo do jogo.
+
+Precisamos verificar se:
+
+- a logística é compreensível;
+- esperar material cria decisões e não apenas atraso;
+- produzir localmente é recompensador;
+- importação continua útil sem ser sempre a melhor opção;
+- o número de materiais permanece administrável;
+- o jogador entende claramente por que uma obra está parada e quanto custa depender do exterior.
