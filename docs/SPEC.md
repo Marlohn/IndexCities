@@ -80,11 +80,24 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - O preço pago pela aquisição retorna ao **Caixa da Cidade**, recuperando total ou parcialmente o capital usado pelo jogador para desenvolver aquele ativo.
 - A procura externa não é infinita e não pode garantir venda/lucro; deve depender de condições econômicas reais e diagnosticáveis.
 - O jogador não escolhe manualmente qual empresa assume o prédio nem negocia propostas individuais.
-- A relação exata entre uma empresa e seus proprietários humanos/cidadãos ainda está em definição.
+- No primeiro modelo, a empresa é uma **entidade econômica independente sem proprietário humano/SIM modelado**. A camada de sócios/acionistas fica fora do escopo inicial.
+
+### Ciclo inicial de um prédio econômico privado
+
+- A regra vale tanto para **comércio quanto para indústria** privados.
+- O jogador financia e constrói o prédio com Caixa da Cidade + materiais físicos.
+- Quando a obra termina, o prédio pode permanecer vazio em estado de **procurando empresa**.
+- No início da cidade, novas empresas candidatas podem vir da conexão exterior com capital próprio explícito e finito.
+- A empresa candidata avalia a oportunidade econômica do prédio; a lógica segue o mesmo princípio causal da demanda residencial, mas com fatores próprios de negócio, como clientes, concorrência, trabalhadores, insumos, logística, localização e custos.
+- Se uma empresa adquirir o ativo, o pagamento retorna ao Caixa da Cidade; a empresa passa a possuir e operar o estabelecimento.
+- Após a aquisição, a empresa contrata SIMs reais, compra insumos/estoque, vende/produz, paga salários e impostos e mantém seu próprio caixa.
+- Empresas já presentes na cidade podem futuramente adquirir outros estabelecimentos usando o próprio caixa acumulado.
+- A criação de uma empresa nova puramente local, sem origem externa nem empresa anterior, fica fora do primeiro modelo até existir uma fonte concreta de capital.
 
 ### Finanças privadas das empresas
 
 - Cada empresa privada possui um saldo monetário real.
+- O lucro permanece no próprio caixa da empresa e pode financiar operação, absorção de prejuízos e expansão futura; não existem dividendos ou retiradas para um proprietário humano no primeiro modelo.
 - Receitas e despesas da empresa devem ser lançadas a partir de fluxos econômicos reais da simulação, incluindo vendas, salários, insumos, frete, impostos e outros custos definidos.
 - O estado econômico da empresa e uma eventual falência devem ser derivados desses fluxos e do caixa real, não de um indicador oculto independente.
 - O jogador não precisa administrar transferências bancárias, capital de giro ou pagamentos individuais manualmente.
