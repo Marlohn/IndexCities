@@ -660,7 +660,7 @@ Depois de migrar e tornar-se residente real, essa família/cidadão pode futuram
 
 Quando um SIM morre **sem herdeiro elegível**:
 
-- o dinheiro remanescente vai para um **Fundo de Patrimônio Não Reclamado**;
+- o dinheiro remanescente vai para um **Reserva Global**;
 - o fundo é um ledger financeiro separado e rastreável;
 - ele não faz parte do Caixa da Cidade, das carteiras dos SIMs ou dos caixas das empresas;
 - o jogador não pode gastar esse saldo;
@@ -817,7 +817,7 @@ Hipótese:
 - o jogador/cidade continua pagando e executando a construção, inclusive de residências privadas;
 - quando um primeiro proprietário assume o imóvel, o pagamento de aquisição **não retorna ao Caixa da Cidade**;
 - esse valor é liquidado contra a **economia exterior**, uma fronteira contábil já existente para fluxos que entram e saem da cidade;
-- a economia exterior não é o Fundo de Patrimônio Não Reclamado e não é controlada pelo jogador;
+- a economia exterior não é o Reserva Global e não é controlada pelo jogador;
 - depois da primeira aquisição, revendas entre SIMs seguem normalmente entre os agentes privados;
 - a cidade recebe principalmente impostos e taxas.
 
