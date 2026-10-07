@@ -781,3 +781,72 @@ Ainda precisa ser decidido:
 - prazo;
 - consequências de inadimplência;
 - se empréstimos aparecem automaticamente como ferramenta de emergência ou exigem decisão explícita do jogador.
+
+
+---
+
+## Falência pessoal, população sem moradia e demanda imobiliária
+
+**Status:** em exploração; existência desses fenômenos já está decidida na SPEC.
+
+### Falência pessoal
+
+Ainda precisa ser definido o que acontece quando um cidadão/família perde capacidade de pagar suas despesas.
+
+Perguntas a investigar:
+
+- atraso de aluguel;
+- despejo;
+- perda de acesso a bens/serviços;
+- mudança para moradia mais barata;
+- busca emergencial de emprego;
+- apoio social;
+- endividamento pessoal ou ausência dele;
+- efeitos sobre bem-estar, saúde e criminalidade.
+
+A consequência deve criar dinâmica sistêmica sem virar punição arbitrária.
+
+### População sem moradia
+
+A população sem moradia deve existir como estado real da simulação, mas a resposta pública ainda está aberta.
+
+Opções a pesquisar:
+
+- abrigos temporários;
+- assistência social;
+- moradia pública/subsidiada;
+- programas de emprego;
+- saúde e atendimento emergencial;
+- impacto em orçamento municipal e uso do espaço urbano.
+
+A prefeitura deve poder reagir, mas o nível de controle e automação ainda precisa ser decidido.
+
+### Demanda orientando construção
+
+Como toda construção é colocada pelo jogador, a simulação precisa indicar demanda de forma clara.
+
+A demanda pode considerar, entre outros:
+
+- número de famílias procurando moradia;
+- faixa de renda;
+- vagas de emprego abertas;
+- falta de comércio/serviços por categoria;
+- estoque insuficiente;
+- distância e acessibilidade;
+- capacidade ociosa existente;
+- crescimento populacional.
+
+A intenção é usar demanda como **sinal para decisão do jogador**, não como zoneamento automático.
+
+### Oferta e demanda nos preços
+
+Direção desejada: modelo simples, legível e configurável.
+
+Hipótese inicial a avaliar:
+
+- preço-base do imóvel/aluguel;
+- multiplicador de oferta/demanda;
+- modificadores de localização e qualidade;
+- limites de variação para evitar instabilidade artificial.
+
+A fórmula final só deve ser escolhida depois de testar se o jogador consegue entender por que os preços subiram ou caíram.
