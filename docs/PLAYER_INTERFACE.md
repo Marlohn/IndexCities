@@ -372,124 +372,170 @@ A primeira categoria deveria ser fácil. A segunda não deve virar uma máquina 
 
 ---
 
-## Mover construções existentes
+## Cancelar, mover e realocar construções
 
 **Status: exploração aberta. Não é requisito oficial ainda.**
 
-A vontade de poder reorganizar a cidade é válida, mas "clicar e arrastar um prédio pronto para outro lugar" conflita com vários sistemas já decididos:
+A prioridade aqui é gameplay. O sistema de obras é profundo, mas corrigir um erro de planejamento não pode exigir que o jogador espere uma longa operação logística ou seja punido por detalhes de materiais parcialmente consumidos que não criam uma decisão interessante.
 
-- obras levam tempo;
-- construção consome materiais;
-- trabalhadores executam a obra;
-- materiais precisam chegar fisicamente;
-- edifícios podem conter famílias, empresas, estoque e conexões;
-- localização tem consequência econômica e logística.
+A fronteira mais promissora é simples:
 
-Por isso, devemos separar três casos.
+> **antes de a construção estar concluída, ela continua sendo recuperável; depois de concluída, passa a ser um ativo físico de verdade.**
 
-### Caso A — projeto ainda não começou
+Isso evita microgerenciamento sem transformar prédios prontos em objetos sem consequência.
 
-**Recomendação forte:** permitir mover livremente.
+### Caso A — projeto colocado, obra ainda não concluída
 
-O jogador está corrigindo planejamento, não movendo uma estrutura física.
+Hipótese preferida para teste:
 
-Idealmente:
+- o jogador pode cancelar ou reposicionar o projeto;
+- todos os materiais comprometidos com aquela obra retornam ao estoque elegível da cidade;
+- não precisamos rastrear para gameplay quanto concreto já virou fundação ou quanta madeira já foi aplicada;
+- conceitualmente, o canteiro recupera/reaproveita os materiais;
+- o jogo pode fazer essa devolução de forma imediata ou praticamente imediata na interface;
+- o novo local volta a depender normalmente de acesso, logística, equipe e demais regras de construção.
 
-- selecionar blueprint;
-- arrastar para nova posição;
-- girar;
-- alterar acesso;
-- recalcular custo;
-- sem custo de demolição.
+Isso inclui tanto uma obra que ainda espera materiais quanto uma obra visualmente já iniciada.
 
-Isso resolve boa parte da frustração sem ferir a simulação.
+A simplificação é deliberada: rastrear "material usado versus recuperável" acrescentaria contabilidade e punição, mas provavelmente pouca decisão interessante.
 
-Workers & Resources tem pedidos recorrentes exatamente por essa capacidade durante planejamento:
-https://steamcommunity.com/app/784150/discussions/0/4208119778366547705/
+Ainda precisa ser decidido se existe algum custo monetário/trabalho perdido ao cancelar uma obra incompleta. A preferência atual é evitar penalidade relevante enquanto isso não gerar gameplay claro.
 
-### Caso B — obra já começou
+### Por que isso continua coerente com a simulação
 
-Possível comportamento:
+Não é necessário fingir que materiais brotam do nada.
 
-- cancelar;
-- recuperar parte dos materiais ainda não consumidos;
-- materiais já usados viram recuperação/demolição;
-- criar novo projeto em outro local.
+A abstração pode ser:
 
-Não deve parecer que a fundação e materiais simplesmente teleportaram.
+obra incompleta
+→ materiais continuam economicamente recuperáveis
+→ cancelamento libera/devolve o lote comprometido
+→ estoque da cidade volta a tê-los disponíveis
 
-### Caso C — prédio concluído
+A animação pode mostrar retirada do canteiro quando isso for útil, mas o jogador não deve precisar esperar caminhões por muito tempo apenas para corrigir layout.
 
-Existem quatro caminhos conceituais.
+O detalhe físico existe para dar causa e consequência, não para criar burocracia.
 
-#### Opção 1: não mover; demolir e reconstruir
+### Caso B — prédio concluído e demolido
 
-Prós:
-- máximo de coerência;
-- reaproveita sistemas existentes;
-- simples de entender.
+Aqui a fronteira muda.
 
-Contras:
-- reorganização pode ficar cansativa;
-- punição alta para erro antigo de layout;
-- pode desestimular experimentação.
+Se o jogador simplesmente demolir um prédio pronto:
 
-#### Opção 2: comando "Realocar"
+- o investimento da obra foi consumido;
+- os materiais investidos não retornam integralmente;
+- o dinheiro investido não é devolvido;
+- construir novamente exige uma nova obra.
 
-A UI parece simples, mas por baixo acontece uma operação real:
+Podemos futuramente explorar sucata/reciclagem se isso criar gameplay suficiente, mas não precisamos disso para justificar a regra básica.
 
-1. selecionar prédio;
-2. escolher novo local;
-3. verificar viabilidade;
-4. criar plano de realocação;
-5. retirar moradores/estoque/operação quando necessário;
-6. desmontar ou preparar estrutura;
-7. transportar materiais/partes;
-8. reconstruir;
-9. reabrir.
+### Caso C — prédio concluído e jogador quer apenas mudar de lugar
 
-O jogador vê uma única ação de alto nível, mas a simulação continua coerente.
+Não devemos automaticamente obrigar o jogador a:
 
-Essa opção combina bem com a filosofia "profundidade sem microgerenciamento".
+1. demolir;
+2. esperar tudo desaparecer;
+3. abrir o menu de construção;
+4. procurar o mesmo prédio;
+5. colocar novamente;
+6. esperar uma segunda obra longa.
 
-#### Opção 3: permitir apenas alguns tipos
+Isso é coerente fisicamente, mas pode ser péssimo de jogar.
 
-Against the Storm usa essa regra: certos prédios são móveis, alguns custam recursos e muitos não podem ser movidos.
+A hipótese mais promissora é uma ação de alto nível chamada **Realocar**.
 
-Poderia fazer sentido para:
+Fluxo possível:
 
-- estruturas leves;
-- depósitos temporários;
-- elementos decorativos;
-- equipamentos de canteiro.
+1. selecionar o prédio;
+2. escolher `Realocar`;
+3. posicionar um ghost do mesmo prédio no novo local;
+4. confirmar;
+5. o local antigo começa a desaparecer enquanto o novo começa a aparecer;
+6. veículos/equipe de obra podem fazer algumas viagens visuais entre os dois pontos;
+7. após um período curto e calibrado, a entidade passa a operar no novo endereço.
 
-E não para:
+Para o jogador, é uma única ação fluida.
 
-- edifícios grandes;
-- infraestrutura pesada;
-- estruturas com fundação complexa.
+Para a apresentação, parece uma mudança física e não um teleporte instantâneo.
 
-Risco: categorias arbitrárias precisam ser intuitivas.
+Para a simulação, não precisamos obrigatoriamente reproduzir uma reconstrução completa com o mesmo tempo e a mesma cadeia logística de uma obra nova.
 
-#### Opção 4: mover tudo instantaneamente
+### A realocação pode ser uma abstração deliberada
 
-Não recomendado para o modo normal.
+É aceitável que a realocação seja mais rápida e simples do que construir do zero se isso gerar uma experiência melhor.
 
-Seria coerente apenas como:
+O importante é não esconder a ação:
 
-- ferramenta de debug;
-- modo criativo explícito;
-- opção de acessibilidade/sandbox muito específica.
+- existe um estado "em realocação";
+- o prédio antigo vai desaparecendo;
+- o novo vai sendo montado;
+- podem existir caminhões/equipe conectando visualmente os dois;
+- moradores, empresa, serviço ou estoque não aparecem nos dois lugares ao mesmo tempo;
+- durante a transição, a operação pode ficar pausada ou parcialmente indisponível.
 
-### Hipótese mais promissora
+Não precisamos transformar a realocação em uma simulação detalhada de desmontagem de cada material.
 
-A melhor direção para testar é:
+### Custo e tempo da realocação
 
-- **blueprint não iniciado: mover livremente**;
-- **obra iniciada: cancelar/replanejar com consequência**;
-- **prédio concluído: botão "Realocar" que cria uma operação real**, não teletransporte.
+Ainda aberto.
 
-Ainda precisamos decidir se "realocar" realmente desmonta e reconstrói ou se, para alguns prédios, simula transporte físico da estrutura.
+Três alternativas merecem POC:
+
+**1. custo pequeno + tempo curto**
+
+Pró:
+- preserva consequência;
+- continua fluido.
+
+Contra:
+- precisamos justificar/calibrar custo.
+
+**2. apenas tempo curto**
+
+Pró:
+- excelente qualidade de vida;
+- muito simples de entender.
+
+Contra:
+- pode permitir reorganizar a cidade inteira sem consequência econômica.
+
+**3. custo proporcional ao prédio, mas muito menor que reconstrução**
+
+Pró:
+- dificulta abuso sem tornar a ferramenta punitiva;
+- comunica que mover estrutura pronta tem trabalho real.
+
+Contra:
+- acrescenta mais um parâmetro econômico.
+
+Não escolher isso por realismo. Testar qual alternativa produz decisões sem transformar reorganização em tarefa chata.
+
+### O que preservar durante uma realocação
+
+Uma vantagem importante de tratar isso como `Realocar` em vez de demolir + construir é preservar a identidade da entidade.
+
+Possíveis exemplos:
+
+- a mesma escola continua sendo a mesma escola;
+- a mesma empresa continua operando o estabelecimento;
+- funcionários continuam vinculados;
+- histórico do prédio/serviço não desaparece;
+- configurações específicas continuam;
+- estoque pode ser transferido dentro da operação.
+
+Isso precisa ser decidido por tipo de entidade, mas provavelmente cria uma experiência muito melhor do que destruir conceitualmente tudo só porque o endereço mudou.
+
+### Princípio provisório
+
+A profundidade deve estar **na consequência relevante**, não na quantidade de espera ou cliques.
+
+Portanto, a direção para protótipo é:
+
+- **obra incompleta:** pode cancelar/mover e recuperar integralmente os materiais;
+- **demolição de prédio pronto:** perde o investimento e precisa reconstruir se quiser outro;
+- **realocação de prédio pronto:** ferramenta fluida e abreviada, com transição visual entre origem e destino, sem exigir uma reconstrução completa e demorada;
+- detalhes de custo, duração, paralisação e transferência de ocupantes/estoque continuam em teste.
+
 
 ---
 
