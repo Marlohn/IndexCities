@@ -6,10 +6,11 @@ Estas regras valem para humanos e IAs. O objetivo é maximizar progresso útil s
 
 - `docs/SPEC.md` define o **produto decidido** e o escopo atual.
 - `docs/EXPLORATION.md` guarda **pesquisa, ideias, alternativas e decisões ainda em discussão**.
+- `docs/ARCHITECTURE.md` define **as decisões estruturais de software**: fronteiras, responsabilidades e direção de dependências.
 - `docs/GENRE_BENCHMARK.md` guarda a **referência comparativa externa do gênero**, usada periodicamente para confrontar o IndexCities com aprendizados, falhas e expectativas observados em outros city builders; não define requisitos.
 - O código e o histórico deste repositório definem o estado real da implementação.
 
-Antes de uma mudança relevante, leia a SPEC e somente o código necessário para entender o alvo. Consulte a EXPLORATION quando a tarefa depender de uma discussão ainda aberta ou do raciocínio que levou a uma decisão.
+Antes de uma mudança relevante, leia a SPEC e somente o código necessário para entender o alvo. Consulte a ARCHITECTURE quando a mudança afetar organização técnica, fronteiras ou dependências. Consulte a EXPLORATION quando a tarefa depender de uma discussão ainda aberta ou do raciocínio que levou a uma decisão.
 
 
 ## Fluxo contínuo de conversa e documentação
