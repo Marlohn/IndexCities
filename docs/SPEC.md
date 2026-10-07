@@ -272,17 +272,18 @@ A SPEC deve crescer com o produto, **não antes dele**.
 
 - O jogador administra um único **Caixa da Cidade** como recurso monetário principal controlável. Ele representa o capital disponível para desenvolver e operar a cidade no gameplay, não uma representação jurídica literal apenas do caixa da prefeitura.
 - Receitas municipais, impostos e outras entradas definidas alimentam esse caixa; despesas públicas, salários e construções ordenadas pelo jogador consomem esse caixa.
-- Como o jogador posiciona diretamente todos os prédios no escopo atual, **toda construção que ele ordena consome dinheiro do caixa da cidade e materiais físicos**, independentemente de o prédio depois ser operado pelo setor público ou por uma empresa privada.
-- Essa é uma abstração consciente de gameplay: a distinção público/privado afeta principalmente a operação após a inauguração, não cria dois sistemas de pagamento na ferramenta de construção.
+- Construções públicas e demais projetos explicitamente financiados pela cidade consomem dinheiro do Caixa da Cidade e materiais físicos.
+- O financiamento padrão de construções **privadas** foi reaberto: não assumir que o Caixa da Cidade adianta todo o capital e depois o recupera na venda, pois isso pode criar reciclagem de dinheiro e reduzir a relevância dos impostos.
 - Depois que uma empresa adquire e passa a operar o prédio, ela usa seu próprio caixa, receitas e despesas; o jogador não pode usar diretamente esse dinheiro como Caixa da Cidade nem precisa administrá-lo manualmente.
 - O resultado de uma empresa privada beneficia ou prejudica a cidade por efeitos econômicos reais, como empregos, salários, impostos, produção, logística e eventual fechamento, não por transferência livre de seu caixa para o jogador.
 
-### Financiamento de moradia pelo jogador
+### Financiamento de moradia
 
-- Casas e apartamentos seguem o mesmo princípio geral de construção: quando o jogador ordena a obra, o custo sai do **Caixa da Cidade** e consome materiais físicos.
 - O jogador continua decidindo diretamente onde as residências serão construídas.
-- Depois de ocupada, a residência participa da economia familiar por meio de preço e/ou aluguel real.
-- Aluguel é transferido ao proprietário real do imóvel. Compra e venda transferem dinheiro entre comprador e proprietário; a regra exata de propriedade/venda do ativo recém-construído antes do primeiro comprador ainda precisa ser fechada.
+- A residência participa da economia familiar por meio de preço e/ou aluguel real.
+- Aluguel é transferido ao proprietário real do imóvel; compra e venda transferem dinheiro entre agentes econômicos reais.
+- O financiamento inicial de uma residência privada recém-construída está **reaberto**. Não considerar como regra que o Caixa da Cidade paga a obra e recupera automaticamente o mesmo capital na primeira venda.
+- A solução deve preservar a importância de impostos e demais receitas públicas como base recorrente do Caixa da Cidade, sem criar dinheiro circular ou fazer valores desaparecerem.
 
 ### Terreno e logística econômica
 
