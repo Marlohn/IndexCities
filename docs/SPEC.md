@@ -352,3 +352,23 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - A cidade começa essencialmente vazia, sem tecido urbano pré-construído.
 - O mapa mantém apenas os elementos estruturais já definidos, como ambiente natural e conexão externa.
 - A possibilidade de fornecer um depósito/galpão inicial gratuito permanece em avaliação e não está decidida.
+
+
+### Comércio exterior e logística externa
+
+- Caminhões vindos do exterior podem ser operados por motoristas externos, que não pertencem à população simulada da cidade.
+- A cidade pode exportar excedentes produzidos localmente pela conexão externa.
+- Exportações e importações usam fluxos físicos pela conexão externa.
+
+
+### Agricultura
+
+- Fazendas ocupam terreno físico real.
+- Fazendas empregam trabalhadores reais da população simulada.
+- A produção agrícola é transportada fisicamente por veículos de carga.
+
+
+### Armazenamento municipal
+
+- No escopo atual, depósitos/galpões de materiais são municipais.
+- Armazenamento privado de materiais pode ser reconsiderado futuramente.
