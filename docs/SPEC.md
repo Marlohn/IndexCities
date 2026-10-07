@@ -312,7 +312,7 @@ A SPEC deve crescer com o produto, **não antes dele**.
 
 - O mapa é gerado/reproduzido a partir de uma **seed determinística**.
 - A mesma seed deve permitir reproduzir o mesmo mapa/cidade-base para facilitar debug e testes.
-- O mapa inicial já vem com relevo, vegetação, rio e/ou lago e conexão externa preparados.
+- O mapa inicial será **plano** e já virá com vegetação, rio e/ou lago e conexão externa preparados.
 - Não haverá compra/desbloqueio progressivo de novas áreas no escopo atual.
 - O mapa começa com **borda fixa**.
 - Não há recuo mínimo obrigatório entre construções e a margem de rios/lagos no escopo atual.
