@@ -859,3 +859,55 @@ A direção preferida passa a ser:
 Beneficiário social intermediário foi descartado para o primeiro modelo.
 
 Ainda não é decisão oficial até promoção para a SPEC.
+
+
+### Reavaliação: o fundo deve ser dono do imóvel?
+
+**Status:** aberto; recomendação atual é separar custódia financeira de propriedade física.
+
+Três modelos foram comparados:
+
+#### A. Fundo possui também os imóveis sem herdeiro
+
+Prós:
+- todo ativo continua com proprietário explícito;
+- venda tem um vendedor formal.
+
+Contras:
+- transforma o fundo em agente imobiliário;
+- abre perguntas sobre aluguel, manutenção, impostos, operação e acumulação de propriedades;
+- mistura duas responsabilidades: guardar valores sem destinatário e possuir/gerir ativos físicos.
+
+#### B. Imóvel fica explicitamente sem dono / não reclamado
+
+O imóvel entra em um estado próprio, por exemplo:
+- `owner = none`;
+- status = `unclaimed / sem proprietário`;
+- continua existindo fisicamente;
+- pode ser colocado no mercado;
+- quando vendido, o pagamento vai para o Fundo de Patrimônio Não Reclamado.
+
+Prós:
+- modelo mais simples;
+- fundo continua sendo apenas um ledger financeiro;
+- o estado sem proprietário pode ser reaproveitado para outros casos reais de ativos sem titular, sem inventar uma entidade dona;
+- evita perguntas de operação/gestão do imóvel pelo fundo.
+
+Contras:
+- o modelo de propriedade precisa aceitar explicitamente ausência de proprietário;
+- sistemas que assumirem `owner_id` obrigatório terão de lidar com esse estado.
+
+**Recomendação atual:** preferir esta opção. O fundo guarda dinheiro; o imóvel pode ficar em estado explícito de patrimônio não reclamado até nova aquisição.
+
+#### C. Fazer o fundo representar também a conexão econômica exterior
+
+Prós:
+- centralizaria fluxos externos e valores sem destinatário local.
+
+Contras:
+- mistura sucessão, importação/exportação, capital externo e patrimônio não reclamado;
+- cria um “megaagente” abstrato com responsabilidades sem relação direta;
+- aumenta risco de o fundo virar destino/origem mágica de dinheiro;
+- enfraquece a separação causal entre sistemas.
+
+**Não recomendado.** A conexão exterior deve continuar sendo uma fronteira econômica; o Fundo de Patrimônio Não Reclamado deve continuar sendo apenas um mecanismo de custódia/rastreio de patrimônio sem titular.
