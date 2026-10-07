@@ -658,15 +658,15 @@ Há três níveis possíveis:
 
 ### Avaliação provisória
 
-Para o IndexCities, o nível **por categorias** parece o melhor primeiro alvo de protótipo:
+**Decisão fechada:** o modelo inicial será **por categorias de produtos**, não por SKU individual.
+
+Razões preservadas desta exploração:
 
 - mantém a relação real entre produção, logística, estoque, consumo e falta de produtos;
 - permite que comércio tenha motivo para receber entregas;
 - permite que preço e escassez afetem cidadãos e empresas;
 - evita explodir o número de entidades com milhares de SKUs que provavelmente não gerariam gameplay proporcional;
 - deixa espaço para aprofundar categorias específicas mais tarde se elas se provarem importantes.
-
-Isso ainda **não é decisão de produto**. Deve ser validado em protótipo.
 
 ### Regra de profundidade sugerida
 
