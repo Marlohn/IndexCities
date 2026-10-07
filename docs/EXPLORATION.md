@@ -4036,7 +4036,7 @@ Depois de migrar e tornar-se residente real, essa família/cidadão pode futuram
 
 ## Propriedade humana das empresas
 
-**Status:** reaberto; recomendação atual mudou após revisar o fluxo de lucros e o custo de modelar donos.
+**Status:** decidido para o primeiro modelo: empresa é entidade econômica independente sem SIM proprietário modelado.
 
 A hipótese anterior era dar a cada empresa um SIM proprietário. O problema levantado é válido: se o SIM investe dinheiro pessoal, a empresa lucra em um caixa separado e depois precisamos criar dividendos, retiradas, herança de participação e outras transferências só para o dinheiro "voltar ao bolso" do dono.
 
@@ -4044,7 +4044,7 @@ Isso adiciona um sistema de propriedade empresarial antes de ele gerar gameplay 
 
 ### Opção A — empresa independente, sem proprietário humano modelado
 
-**Recomendação atual para o primeiro modelo.**
+**Decisão aprovada para o primeiro modelo.**
 
 A empresa continua sendo uma entidade econômica concreta e persistente:
 - caixa próprio real;
@@ -4141,7 +4141,7 @@ Uma abstração é aceitável quando:
 
 Nesse caso, a empresa é concreta; o acionista é a camada omitida.
 
-### Recomendação atual
+### Decisão atual
 
 Para o primeiro modelo:
 - empresa é entidade econômica independente;
@@ -4167,3 +4167,123 @@ Pontos atuais:
 - mover projetos ainda não iniciados é uma hipótese forte de qualidade de vida;
 - mover prédio concluído permanece aberto e deve respeitar obra, materiais, trabalhadores, ocupantes, estoque e identidade da entidade;
 - a direção de UI em teste é mapa limpo, barra de ações previsível, painel contextual e preview forte antes de confirmar.
+
+
+---
+
+## Fluxo do player após concluir comércio/indústria
+
+**Status:** modelo conceitual decidido; detalhes de apresentação e parâmetros seguem para POC/calibração.
+
+A regra vale para **comércio e indústria** privados.
+
+### Fluxo
+
+1. jogador escolhe e financia a construção;
+2. Caixa da Cidade paga dinheiro e materiais conforme as regras de obra;
+3. obra física é concluída;
+4. prédio fica **vazio / procurando empresa**;
+5. empresas candidatas avaliam o ativo;
+6. no início da cidade, a fonte normal de novas empresas é a conexão exterior;
+7. uma empresa com capital suficiente compra o ativo;
+8. o valor da compra retorna ao Caixa da Cidade;
+9. a empresa passa a ser proprietária + operadora;
+10. empresa contrata SIMs reais e inicia operação;
+11. dali em diante caixa, estoque, salários, impostos, produção/vendas e falência pertencem à entidade empresa.
+
+### Demanda: mesmo princípio, fatores diferentes
+
+Residência e empresa usam a mesma ideia de mercado:
+
+ativo vazio
+→ candidatos avaliam
+→ baixa oportunidade gera demora/vacância
+
+Mas não devem compartilhar uma fórmula genérica.
+
+**Residencial** observa principalmente:
+- preço/affordability;
+- moradia disponível;
+- emprego;
+- localização/acesso;
+- tamanho/necessidade da família.
+
+**Comércio/indústria** observa principalmente:
+- clientes/demanda do produto;
+- concorrência;
+- mão de obra;
+- insumos;
+- logística;
+- custos;
+- localização.
+
+Assim, "demanda" é um princípio comum, não uma barra mágica universal.
+
+### Empresas exteriores
+
+No primeiro modelo, uma empresa nova que entra pela conexão exterior é criada como entidade econômica concreta com:
+- tipo/atividade;
+- caixa inicial finito;
+- capacidade de pagar a aquisição;
+- capital restante suficiente para iniciar operação segundo regras calibráveis.
+
+O capital inicial representa recursos trazidos do exterior. Deve ser explícito, limitado e diagnosticável.
+
+Depois de entrar, a empresa deixa de ser apenas "externa": passa a existir na cidade e obedece às mesmas regras de caixa, emprego, estoque, impostos e falência.
+
+### Empresas locais existentes
+
+Uma empresa que já opera na cidade pode futuramente comprar outro estabelecimento usando seu próprio caixa.
+
+Isso é o sentido de:
+**empresa existente usa o próprio caixa para expandir**.
+
+Não significa que o jogador manda expandir; a empresa toma a decisão automaticamente conforme oportunidade e capacidade financeira.
+
+### Empresa nova puramente local
+
+No primeiro modelo, não é necessário permitir que uma empresa completamente nova nasça dentro da cidade sem origem definida.
+
+Isso evita criar capital inicial do nada.
+
+Uma forma futura pode usar:
+- empreendedorismo de SIMs;
+- cisão/investimento de empresa existente;
+- crédito;
+- outra fonte concreta.
+
+Nenhuma delas entra sem decisão explícita.
+
+### Dono versus representante
+
+A empresa **não terá SIM proprietário** no primeiro modelo.
+
+Isso não impede que exista um SIM visível ligado à operação.
+
+Alternativas:
+
+**A. Apenas funcionários comuns**
+- mais simples;
+- empresa funciona se preencher as vagas necessárias;
+- não há uma pessoa especial representando a empresa.
+
+**B. Um cargo real de gerente/responsável**
+- um SIM empregado ocupa a função de gerente/responsável do estabelecimento;
+- recebe salário;
+- não é dono e não recebe automaticamente o lucro;
+- pode ser mostrado na UI como contato humano da operação.
+
+Prós de B:
+- dá um rosto humano ao comércio/indústria;
+- conecta a empresa aos cidadãos sem abrir dividendos/acionistas;
+- reaproveita o sistema de empregos;
+- falta de gerente pode, se desejado depois, afetar capacidade/abertura de forma concreta.
+
+Contras de B:
+- adiciona mais uma vaga obrigatória;
+- se não tiver consequência de gameplay, vira detalhe decorativo;
+- pode piorar escassez de mão de obra em estabelecimentos pequenos.
+
+**Recomendação atual:** usar **gerente/responsável como cargo de trabalho apenas se ele tiver consequência operacional real**. Não criar "representante" puramente cosmético só para preencher a ausência de dono.
+
+Para uma pequena loja, o gerente pode ser a pessoa que o jogador vê como responsável pelo local sem ser financeiramente proprietário da empresa.
