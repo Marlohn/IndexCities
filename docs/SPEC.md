@@ -139,3 +139,14 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Cidadãos podem entrar em falência pessoal.
 - Pode existir população sem moradia.
 - Oferta e demanda devem influenciar preços de aluguel e venda, sem exigir um modelo excessivamente complexo.
+
+
+### Transporte público e veículos
+
+- O jogo terá transporte público com operação real.
+- Ônibus terão linhas, frota, motoristas e capacidade reais.
+- Outros modais de transporte público também farão parte do sistema; os tipos exatos serão definidos progressivamente.
+- Veículos particulares precisam estacionar de verdade.
+- O realismo operacional dos carros deve ser alto, incluindo deslocamento e estacionamento coerentes.
+- Veículos consomem combustível.
+- Combustível participa de uma cadeia econômica real entre produção/refino, distribuição para postos e consumo pelos veículos.
