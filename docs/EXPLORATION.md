@@ -1142,3 +1142,21 @@ Possíveis efeitos:
 - redistribuição de demanda.
 
 Também fica fora do escopo atual até a simulação básica de rotina, trabalho e mobilidade estar estável.
+
+
+---
+
+## Eventos temporários e turismo
+
+**Status:** eventos temporários adiados para o futuro; turismo básico já está decidido na SPEC.
+
+No futuro, eventos como shows, feiras e festivais podem ser usados para gerar picos temporários de:
+
+- visitantes;
+- demanda por hotéis;
+- trânsito;
+- transporte público;
+- comércio;
+- segurança e serviços urbanos.
+
+Esses eventos não entram no escopo atual. Devem ser revisitados depois que turismo, mobilidade, hotelaria e capacidade dos serviços estiverem estáveis.
