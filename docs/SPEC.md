@@ -254,6 +254,7 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Fluxos externos entram e saem da cidade por essa conexão.
 - Turistas, novos moradores, cargas e outros fluxos externos usam essa conexão.
 - Todos os meios de transporte externos devem se integrar a esse sistema de conexão com o exterior.
+- O mapa deve começar com pelo menos uma **rodovia conectando a área jogável ao exterior**.
 - A forma exata da conexão externa e quantos pontos físicos ela terá ainda podem evoluir, mas o conceito é obrigatório.
 
 
@@ -316,3 +317,10 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Não haverá compra/desbloqueio progressivo de novas áreas no escopo atual.
 - O mapa começa com **borda fixa**.
 - Não há recuo mínimo obrigatório entre construções e a margem de rios/lagos no escopo atual.
+
+
+### Pontes, viadutos e sobreposição viária
+
+- O jogador pode construir pontes.
+- Ruas podem passar por cima de outras ruas por meio de viadutos/níveis sobrepostos.
+- A malha viária deve permitir cruzamentos em níveis diferentes sem exigir interseção no mesmo plano.
