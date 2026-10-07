@@ -606,12 +606,13 @@ A decisão é automática, mas deve ser diagnosticável:
 
 ### Granularidade decidida para o primeiro modelo
 
-O saldo individual do SIM foi aprovado e a propriedade residencial terá **um único titular cidadão**.
+O saldo individual do SIM foi aprovado e, enquanto houver propriedade privada, a unidade residencial terá **um único titular cidadão**. O estado excepcional de patrimônio não reclamado pode deixar o imóvel explicitamente sem proprietário.
 
 Um casal/família pode somar dinheiro para uma compra, mas:
-- um SIM específico fica registrado como proprietário;
+- um SIM específico fica registrado como proprietário enquanto o imóvel estiver em propriedade privada;
 - aluguel recebido vai para esse proprietário conforme as regras econômicas definidas;
-- copropriedade fica fora do primeiro modelo.
+- copropriedade fica fora do primeiro modelo;
+- patrimônio não reclamado é a exceção explícita em que o imóvel pode ficar sem proprietário.
 
 Essa simplificação preserva dinheiro e propriedade concretos sem exigir divisão jurídica de ativos.
 
