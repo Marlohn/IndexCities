@@ -1191,3 +1191,19 @@ Alternativa em discussão:
 **Contra:** cria saída monetária da economia local e exige calibrar entradas externas para não drenar capital demais.
 
 A regra canônica ainda não foi alterada neste ponto; precisa de confirmação antes de mudar a SPEC.
+
+
+### Ledger técnico compartilhado, saldos lógicos separados
+
+> **Revisão humana desta seção:** PENDENTE — proposta nova em discussão; não é decisão oficial.
+
+Para evitar criar várias entidades financeiras artificiais, uma implementação possível é usar o mesmo mecanismo técnico de ledger para valores fora do Caixa da Cidade, mas com **categorias/saldos lógicos separados**.
+
+Exemplo:
+- `unclaimed_property` — dinheiro que ficou sem titular econômico e pertence ao conceito de Patrimônio Não Reclamado;
+- `external_settlement` — dinheiro que saiu da economia local em uma liquidação com a economia exterior, como a primeira aquisição de um ativo privado.
+
+Cada lançamento deve guardar ao menos valor, origem, motivo e entidade/evento relacionado.
+
+A vantagem é reaproveitar a mesma infraestrutura de rastreamento sem inventar novas “carteiras”. O cuidado é não somar semanticamente esses valores como um único fundo: patrimônio não reclamado pode ter regras futuras próprias, enquanto liquidação exterior é apenas uma fronteira econômica e não deve virar dinheiro utilizável ou reivindicável.
+
