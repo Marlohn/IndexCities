@@ -63,8 +63,12 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 
 - Prédios e infraestrutura não aparecem instantaneamente prontos.
 - Construções passam por uma fase real de obra.
-- Obras consomem materiais da cidade.
+- Obras consomem materiais reais da cidade.
 - Obras dependem de trabalhadores reais da população simulada.
+- Materiais de construção precisam existir em estoque antes de serem consumidos pela obra.
+- No início de uma cidade, materiais podem ser importados pela conexão externa usando o dinheiro inicial.
+- A cidade precisa possuir infraestrutura de armazenamento para materiais de construção.
+- A lista exata de materiais e cadeias produtivas deve seguir a pesquisa registrada na EXPLORATION.
 
 ### Necessidades e serviços urbanos
 
@@ -324,3 +328,15 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - O jogador pode construir pontes.
 - Ruas podem passar por cima de outras ruas por meio de viadutos/níveis sobrepostos.
 - A malha viária deve permitir cruzamentos em níveis diferentes sem exigir interseção no mesmo plano.
+
+
+### Saves e persistência
+
+- O jogo permite múltiplos saves e múltiplas cidades.
+- Autosave existe e sua frequência deve ser configurável.
+
+
+### Demolição
+
+- Demolição de prédios e vias é instantânea no escopo atual.
+- Demolição tem custo configurável.
