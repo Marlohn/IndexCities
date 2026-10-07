@@ -1,10 +1,17 @@
 # IndexCities — IA para decisões, simulação e desenvolvimento
 
+> **Revisão humana:** PENDENTE.  
+> **Auditoria:** classificação conservadora com base no estado anterior à reorganização temática, commit `4b97ace2`. o conteúdo deste documento ainda não foi revisado integralmente pelo responsável e não pode ser tratado como decisão.
+>
+
 > **Status:** pesquisa concluída para a fase atual — não é fonte de verdade.
 >
 > A autoridade de produto continua sendo `docs/SPEC.md` e decisões estruturais oficiais pertencem a `docs/ARCHITECTURE.md`. Este documento preserva a pesquisa, os trade-offs e as conclusões atuais sobre uso de modelos de decisão como Jev e Laya no IndexCities.
 
 ## Objetivo
+
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
 
 Avaliar se modelos de decisão especializados e baratos podem trazer vantagem real ao IndexCities em dois contextos:
 
@@ -16,6 +23,9 @@ A pergunta central não é apenas se a tecnologia funciona, mas se ela resolve m
 ---
 
 ## 1. IA local para decisões da simulação
+
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
 
 **Conclusão atual:** não recomendada como estratégia de performance e não vale priorizar uma POC apenas para esse objetivo.
 
@@ -55,6 +65,9 @@ Nesse caso, ela deve ser avaliada como melhora de comportamento, não como otimi
 ---
 
 ## 2. Modelos de decisão no processo de desenvolvimento
+
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
 
 **Conclusão atual:** não recomendados como camada geral de desenvolvimento, arquitetura ou definição de produto nesta fase.
 
@@ -96,6 +109,9 @@ No IndexCities atual, essa camada provavelmente custaria mais complexidade do qu
 
 ## Critérios para reconsiderar
 
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
+
 Reavaliar Jev/Laya apenas quando existir uma dor concreta que combine com o formato da tecnologia.
 
 ### Na simulação
@@ -122,6 +138,9 @@ Não introduzir Jev/Laya apenas como uma segunda opinião genérica.
 ---
 
 ## Resumo da posição atual
+
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
 
 - **Jev/Laya no core para ganhar performance:** não.
 - **POC de IA local apenas para performance:** não vale priorizar.
