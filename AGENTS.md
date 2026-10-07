@@ -89,6 +89,19 @@ A arquitetura só deve ficar mais sofisticada quando existir uma dor concreta e 
 
 Até isso acontecer, **uma SPEC + uma EXPLORATION + este AGENTS.md continuam sendo a arquitetura central**. Documentos auxiliares só devem existir quando resolvem uma dor concreta; `docs/GENRE_BENCHMARK.md` existe especificamente para manter a pesquisa comparativa extensa fora da EXPLORATION e servir como referência periódica de validação.
 
+
+## Princípio de gameplay e microgerenciamento
+
+Para qualquer decisão de produto, avalie explicitamente o custo de microgerenciamento contra o valor de gameplay.
+
+- Realismo não é objetivo suficiente por si só: detalhe adicional precisa criar decisão, consequência, leitura sistêmica ou feedback interessante.
+- Preserve profundidade sistêmica quando ela gera causa e efeito observável, especialmente produção, logística, emprego, trânsito, capacidade, escassez e finanças.
+- Abstraia ou automatize tarefas repetitivas que exigem cliques/contabilidade sem produzir decisões significativas.
+- Prefira interfaces agregadas para leitura e decisão quando a simulação puder manter o detalhe físico internamente.
+- Não remova logística, escassez ou consequências apenas para simplificar; simplifique a operação manual, não necessariamente a simulação.
+- Ao comparar alternativas, registre quando uma opção é mais realista porém pior de jogar, ou mais simples porém destrói consequências importantes.
+- Aplique este critério de forma genérica a todos os sistemas, não apenas a materiais e construção.
+
 ## Regra principal de escopo
 
 - **Funcionalidade nova de produto precisa estar na SPEC antes de ser implementada.**
