@@ -1,5 +1,9 @@
 # IndexCities — Processo de desenvolvimento e documentação
 
+> **Revisão humana:** PARCIALMENTE REVISADO.  
+> **Auditoria:** classificação conservadora com base no estado anterior à reorganização temática, commit `4b97ace2`. o documento mistura conteúdo discutido/confirmado com pesquisa, síntese ou redação da IA ainda não revisada integralmente.
+>
+
 > **Status:** decidido para a fase atual; histórico e justificativas preservados aqui — não é fonte de verdade.
 >
 > Este documento preserva a pesquisa que levou ao processo leve de desenvolvimento, às fronteiras documentais e à arquitetura de trabalho. Regras vigentes para humanos e IAs pertencem a `AGENTS.md`; decisões estruturais vigentes pertencem a `docs/ARCHITECTURE.md`.
@@ -14,6 +18,9 @@ Este arquivo é material de exploração temática. Quando houver divergência, 
 ---
 
 ## Processo de desenvolvimento com IA
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** decidido para a fase atual.
 
@@ -68,6 +75,9 @@ Até lá, simplicidade é uma característica do processo, não uma deficiência
 
 ## Arquitetura de desenvolvimento
 
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
+
 **Status:** decisão consolidada.
 
 A pesquisa e a direção arquitetural inicial foram consolidadas em [ARCHITECTURE.md](../ARCHITECTURE.md), que passa a ser a autoridade sobre organização técnica, fronteiras e direção de dependências.
@@ -89,6 +99,9 @@ A pesquisa que sustentou essas decisões está resumida no próprio documento de
 ---
 
 ## Organização dos documentos de exploração
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** decidido e aplicado.
 
