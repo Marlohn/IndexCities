@@ -633,281 +633,53 @@ Depois de migrar e tornar-se residente real, essa família/cidadão pode futuram
 
 ## Morte do SIM e destino do patrimônio
 
-**Status:** em exploração avançada; fundo agregado de patrimônio não reclamado é a direção preferida, ainda sem promoção para a SPEC.
+**Status:** decisão parcial promovida para a SPEC; regras de herdeiro elegível e usos futuros do fundo continuam abertas.
 
-### Direção preferida atual
+### Decisão atual
 
-Evitar beneficiário social intermediário e evitar um espólio por falecido.
+Quando um SIM morre **sem herdeiro elegível**:
 
-Quando não houver herdeiro elegível:
-- dinheiro do SIM vai para um **Fundo de Patrimônio Não Reclamado**;
-- imóveis e outros ativos sem sucessor ficam vinculados a esse fundo até venda/transferência;
-- o valor obtido na venda também entra no mesmo fundo;
-- o fundo é separado do Caixa da Cidade, das carteiras dos SIMs e dos caixas das empresas;
-- saldo, entradas, saídas e ativos vinculados devem ser rastreáveis;
-- o jogador não pode gastar esse saldo como orçamento da cidade;
-- o uso futuro do fundo fica aberto até existir uma função de gameplay concreta.
+- o dinheiro remanescente vai para um **Fundo de Patrimônio Não Reclamado**;
+- o fundo é um ledger financeiro separado e rastreável;
+- ele não faz parte do Caixa da Cidade, das carteiras dos SIMs ou dos caixas das empresas;
+- o jogador não pode gastar esse saldo;
+- imóveis e outros ativos podem ficar explicitamente **sem proprietário / não reclamados**;
+- o fundo não se torna proprietário desses ativos;
+- se um imóvel não reclamado for vendido, o pagamento entra no fundo;
+- o uso futuro do saldo fica aberto;
+- o fundo não representa nem controla a conexão exterior.
 
-A intenção é ter um único ledger/patrimônio agregado, não uma entidade jurídica individual por falecido.
+### Por que não fazer o fundo possuir os imóveis
 
-**Prós**
-- preserva dinheiro e propriedade sem fazê-los desaparecer;
-- evita premiar o jogador por mortes;
-- não cria herdeiros artificiais nem espólios individuais;
-- mantém rastreabilidade;
-- deixa espaço para um uso futuro coerente do fundo.
+**Prós de deixar o ativo sem dono**
+- mantém o fundo apenas como custódia financeira;
+- evita transformar o fundo em imobiliária;
+- evita perguntas sobre aluguel, manutenção, impostos e operação pelo fundo;
+- cria um estado genérico reutilizável de ativo sem proprietário.
 
-**Contras**
-- cria um pool financeiro fora da economia ativa;
-- se nunca ganhar função, pode virar apenas dinheiro estacionado;
-- o fundo não deve virar uma fonte de recursos para o jogador sem decisão explícita, pois isso recriaria o problema original.
+**Contra**
+- sistemas de propriedade precisam aceitar `owner = none` de forma explícita.
 
-### Problema
+Esse custo foi considerado menor que criar um proprietário artificial.
 
-Quando um SIM morre, precisamos resolver separadamente:
-- dinheiro pessoal;
-- imóveis e outros patrimônios;
-- continuidade de moradores que ainda vivem no imóvel;
-- destino do valor de uma futura venda.
+### Alternativas descartadas para o primeiro modelo
 
-A solução deve preservar causalidade sem criar uma engine jurídica que não gere gameplay.
+- **Espólio individual por falecido:** completo, mas cria entidade e processo jurídico sem gameplay suficiente.
+- **Beneficiário social intermediário:** apenas adiciona outro possível recebedor antes do caso realmente sem sucessor.
+- **Tudo para o Caixa da Cidade:** transforma mortes em receita direta do jogador.
+- **Dinheiro desaparece:** quebra rastreabilidade e causalidade.
+- **Fundo como controlador da conexão exterior:** mistura responsabilidades sem relação direta e cria risco de virar um agente econômico mágico.
 
-### Opção A — espólio temporário como entidade
+### Pesquisa de referência
 
-O falecido gera uma entidade temporária que segura dinheiro e propriedades, vende ativos e depois distribui o resultado.
+A pesquisa externa mostrou que sistemas reais frequentemente tratam patrimônio sem herdeiro por mecanismos públicos ou de patrimônio não reclamado. Isso serviu como referência para procurar uma solução rastreável, mas o IndexCities deliberadamente não replica processo jurídico detalhado.
 
-**Prós**
-- rastreamento completo;
-- suporta herança, venda, dívidas e múltiplos herdeiros;
-- nenhum valor fica sem proprietário durante a transição.
+As referências e alternativas pesquisadas permanecem material de contexto; a regra canônica atual está na SPEC.
 
-**Contras**
-- cria uma nova entidade e ciclo de vida apenas para resolver sucessão;
-- exige regra de encerramento do espólio;
-- aproxima o jogo de uma simulação jurídica sem decisão relevante para o jogador;
-- pode acumular estados temporários e casos especiais.
+### Pontos ainda abertos
 
-**Avaliação atual:** robusto, mas provavelmente mais complexo do que o primeiro modelo precisa.
+- quem conta como herdeiro elegível e em qual prioridade;
+- se obrigações já existentes na simulação são liquidadas antes da transferência ao fundo;
+- se o fundo algum dia terá outra função de gameplay;
+- tratamento de outros tipos de ativos além de dinheiro e imóveis quando eles forem introduzidos.
 
-### Opção B — sucessão imediata, sem espólio
-
-A morte é tratada como um evento de transferência.
-
-Se existir herdeiro elegível na simulação:
-- dinheiro é transferido diretamente;
-- propriedade é transferida diretamente;
-- não existe fase intermediária;
-- se o herdeiro já mora no imóvel, a ocupação pode continuar sem expulsão artificial.
-
-Se não existir herdeiro elegível local:
-- dinheiro restante sai explicitamente da economia local pela conexão exterior como sucessão não modelada;
-- imóvel fica desocupado e entra à venda;
-- o valor pago na venda também sai pela conexão exterior;
-- não existe uma carteira/entidade de espólio persistente.
-
-**Prós**
-- muito simples;
-- não cria entidade jurídica;
-- mantém origem e destino monetários explícitos;
-- não transforma mortes em receita automática para o Caixa da Cidade;
-- usa uma fronteira econômica que o jogo já possui: o restante do mundo;
-- permite adicionar herança mais profunda depois sem exigir isso agora.
-
-**Contras**
-- herdeiro exterior/sucessão exterior é uma abstração de fronteira;
-- riqueza pode sair da cidade ao longo das gerações;
-- a propriedade precisa de um estado simples de “venda por sucessão” enquanto aguarda comprador.
-
-### Opção C — sem herdeiro, patrimônio vai ao Caixa da Cidade
-
-**Prós**
-- regra curta e concreta;
-- nenhum agente temporário;
-- não exige saída monetária externa.
-
-**Contras**
-- mortes passam a gerar receita para o jogador;
-- pode criar incentivo sistêmico estranho, principalmente se saúde/velhice influenciarem mortalidade;
-- transforma a prefeitura em herdeira universal por conveniência;
-- pode distorcer o orçamento municipal.
-
-### Opção D — dinheiro some e imóvel simplesmente volta ao mercado
-
-**Prós**
-- implementação mínima.
-
-**Contras**
-- cria sumidouro monetário invisível;
-- o pagamento do próximo comprador continua sem destinatário claro;
-- contradiz causalidade e o princípio de evitar abstrações mágicas.
-
-**Não recomendada.**
-
-### Opção E — patrimônio sem herdeiro vai para uma autoridade externa
-
-Em vez de inventar um herdeiro exterior, o patrimônio sem herdeiro passa para uma **autoridade pública externa não controlada pelo jogador**.
-
-Fluxo:
-- SIM morre sem herdeiro;
-- dinheiro remanescente sai da economia local para essa autoridade externa;
-- imóvel fica disponível para venda;
-- o valor líquido da venda também vai para essa autoridade;
-- o Caixa da Cidade recebe apenas impostos/taxas normais aplicáveis.
-
-**Prós**
-- destino concreto e simples;
-- não recompensa o jogador pela morte de cidadãos;
-- evita criar espólio persistente;
-- não exige inventar parentes fora da cidade;
-- preserva a separação entre governo local e restante do mundo.
-
-**Contras**
-- continua usando uma entidade de fronteira não simulada;
-- riqueza sai da cidade quando não há sucessor local.
-
-**Avaliação atual:** alternativa mais limpa que “herdeiro externo genérico” e mais coerente que enviar tudo ao Caixa da Cidade.
-
-### Recomendação atual
-
-Para o primeiro modelo, a preferência atual é **sucessão imediata sem entidade de espólio**; para casos sem herdeiro, a alternativa mais forte em avaliação é transferência para uma autoridade pública externa, não para o Caixa da Cidade:
-
-1. procurar um herdeiro elegível real;
-2. se existir, transferir dinheiro e patrimônio diretamente;
-3. se não existir, tratar a sucessão restante como fluxo explícito para fora da cidade pela conexão exterior;
-4. imóvel sem herdeiro fica vazio e disponível para compra;
-5. não simular inventário, testamento, divisão jurídica, cartório ou tempo de processo.
-
-A regra exata de prioridade entre possíveis herdeiros ainda precisa ser decidida separadamente.
-
-Essa recomendação é uma simplificação de fronteira, não uma decisão oficial até aprovação.
-
-
-### Pesquisa externa — patrimônio sem herdeiro
-
-**Status:** pesquisa concluída para ampliar alternativas; decisão continua aberta.
-
-A comparação de regras reais mostrou um padrão importante: quando não há herdeiro, a solução jurídica costuma terminar em alguma autoridade pública, não em uma redistribuição automática para o mercado.
-
-Referências:
-- Brasil: Código Civil, art. 1.822 — após o período legal, herança vacante é incorporada ao Município/Distrito Federal ou União, conforme o caso: https://normas.leg.br/?urn=urn:lex:br:federal:lei:2002-01-10;10406!art1822
-- Alemanha: BGB § 1936 — sem parentes/cônjuge/parceiro, o Land ou a Federação herda: https://www.gesetze-im-internet.de/bgb/__1936.html
-- Inglaterra e País de Gales: bona vacantia passa à Coroa quando não há testamento nem família conhecida: https://www.gov.uk/unclaimed-estates-bona-vacantia
-- Escócia: bens sem herdeiro são tratados como ultimus haeres; valores líquidos podem ir para o fundo público consolidado: https://www.gov.scot/publications/land-reform-review-group-final-report-land-scotland-common-good/pages/21/
-
-A pesquisa encontrou duas ideias úteis para o jogo além de "vai para o governo":
-
-#### 1. Beneficiário social antes de considerar o patrimônio sem dono — descartado para o primeiro modelo
-
-Na Inglaterra e País de Gales, pessoas não aparentadas podem pedir pagamento discricionário da herança quando, por exemplo, viviam com o falecido ou prestavam cuidados/serviços relevantes:
-https://www.gov.uk/unclaimed-estates-bona-vacantia/grants-from-a-deceased-persons-estate
-
-Adaptação possível ao IndexCities:
-- parentes/herdeiros reais têm prioridade;
-- na ausência deles, um coabitante ou relação social muito próxima pode ser elegível;
-- somente se ninguém for elegível o patrimônio vira "não reclamado".
-
-Isso aproveitaria relações já simuladas, mas foi considerado uma camada intermediária sem valor suficiente: apenas cria mais um possível recebedor antes do caso realmente sem sucessor.
-
-#### 2. Fundo único de patrimônio não reclamado
-
-Em vez de criar um espólio por SIM ou mandar dinheiro ao Caixa da Cidade:
-- existe um único ledger/fundo de patrimônio não reclamado;
-- dinheiro restante é transferido para ele;
-- imóvel sem sucessor entra à venda;
-- valor da venda entra no mesmo fundo;
-- o jogador não controla esse saldo;
-- uma futura regra de reivindicação poderia retirar valores dele se surgir um beneficiário válido.
-
-Há paralelo com sistemas de unclaimed property em que governos mantêm valores não reclamados para possível reivindicação futura:
-https://www.usa.gov/unclaimed-money
-
-Prós:
-- dinheiro não some;
-- não cria receita para o jogador;
-- não precisa de entidade de espólio por falecido;
-- permite reivindicação futura;
-- é apenas um ledger agregado.
-
-Contras:
-- dinheiro fica fora da circulação ativa;
-- ainda é uma abstração administrativa;
-- precisa ficar claro que não é o Caixa da Cidade.
-
-#### 3. Obrigações reais antes de qualquer sucessão
-
-Outra prática real é pagar despesas e dívidas do falecido a partir do patrimônio antes da distribuição. Funeral é um exemplo explícito:
-https://www.gov.uk/government/publications/death-and-bereavement
-
-Adaptação possível:
-- despesas funerárias reais;
-- impostos/taxas pendentes;
-- outras dívidas que já existirem na simulação;
-- apenas o saldo líquido segue para beneficiário ou patrimônio não reclamado.
-
-Isso dá destinos econômicos concretos para parte do dinheiro sem inventar um sumidouro.
-
-### Recomendação após pesquisa
-
-A direção preferida passa a ser:
-
-1. herdeiro elegível real, quando existir;
-2. obrigações reais do falecido podem ser liquidadas se já fizerem parte da simulação;
-3. sem herdeiro, dinheiro e ativos passam ao **Fundo de Patrimônio Não Reclamado**;
-4. o fundo permanece separado e rastreável;
-5. nenhuma utilização posterior do fundo é assumida agora.
-
-Beneficiário social intermediário foi descartado para o primeiro modelo.
-
-Ainda não é decisão oficial até promoção para a SPEC.
-
-
-### Reavaliação: o fundo deve ser dono do imóvel?
-
-**Status:** aberto; recomendação atual é separar custódia financeira de propriedade física.
-
-Três modelos foram comparados:
-
-#### A. Fundo possui também os imóveis sem herdeiro
-
-Prós:
-- todo ativo continua com proprietário explícito;
-- venda tem um vendedor formal.
-
-Contras:
-- transforma o fundo em agente imobiliário;
-- abre perguntas sobre aluguel, manutenção, impostos, operação e acumulação de propriedades;
-- mistura duas responsabilidades: guardar valores sem destinatário e possuir/gerir ativos físicos.
-
-#### B. Imóvel fica explicitamente sem dono / não reclamado
-
-O imóvel entra em um estado próprio, por exemplo:
-- `owner = none`;
-- status = `unclaimed / sem proprietário`;
-- continua existindo fisicamente;
-- pode ser colocado no mercado;
-- quando vendido, o pagamento vai para o Fundo de Patrimônio Não Reclamado.
-
-Prós:
-- modelo mais simples;
-- fundo continua sendo apenas um ledger financeiro;
-- o estado sem proprietário pode ser reaproveitado para outros casos reais de ativos sem titular, sem inventar uma entidade dona;
-- evita perguntas de operação/gestão do imóvel pelo fundo.
-
-Contras:
-- o modelo de propriedade precisa aceitar explicitamente ausência de proprietário;
-- sistemas que assumirem `owner_id` obrigatório terão de lidar com esse estado.
-
-**Recomendação atual:** preferir esta opção. O fundo guarda dinheiro; o imóvel pode ficar em estado explícito de patrimônio não reclamado até nova aquisição.
-
-#### C. Fazer o fundo representar também a conexão econômica exterior
-
-Prós:
-- centralizaria fluxos externos e valores sem destinatário local.
-
-Contras:
-- mistura sucessão, importação/exportação, capital externo e patrimônio não reclamado;
-- cria um “megaagente” abstrato com responsabilidades sem relação direta;
-- aumenta risco de o fundo virar destino/origem mágica de dinheiro;
-- enfraquece a separação causal entre sistemas.
-
-**Não recomendado.** A conexão exterior deve continuar sendo uma fronteira econômica; o Fundo de Patrimônio Não Reclamado deve continuar sendo apenas um mecanismo de custódia/rastreio de patrimônio sem titular.
