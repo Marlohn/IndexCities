@@ -1209,3 +1209,64 @@ Ela deve sustentar, conforme os sistemas forem implementados:
 A conexão externa evita criar agentes ou mercadorias no meio do mapa sem origem observável.
 
 Ainda precisa ser definido se haverá um único ponto físico, múltiplos pontos por modal ou uma camada lógica comum conectada a diferentes terminais.
+
+
+---
+
+## Infraestrutura de água, esgoto e energia
+
+**Status:** parcialmente decidido.
+
+### Água e esgoto
+
+Decidido:
+
+- captação física a partir de rio/lago;
+- tratamento de água;
+- geração real de esgoto;
+- tratamento de esgoto;
+- demanda e capacidade importam;
+- o jogador não precisa desenhar manualmente encanamentos no escopo atual.
+
+Direção de modelagem:
+
+- edifícios consomem capacidade hídrica;
+- infraestrutura construída aumenta capacidade de captação/tratamento;
+- excesso de demanda pode gerar falta d'água ou esgoto sem atendimento;
+- cobertura pode ser modelada de forma agregada ou por área, sem rede de tubos explícita.
+
+O modelo exato de cobertura ainda precisa ser escolhido.
+
+### Energia
+
+Decidido:
+
+- geração real;
+- demanda real;
+- capacidade limitada;
+- não exigir desenho manual detalhado de linhas/rede elétrica no escopo atual;
+- solar e eólica fazem parte das opções.
+
+Ainda em exploração:
+
+- carvão;
+- nuclear;
+- regras de custo, combustível, poluição e capacidade por tipo de usina.
+
+### Hidrelétrica
+
+**Adiada para o futuro.**
+
+Como hidrelétrica depende fortemente de relevo, curso d'água, barragem e alteração física do terreno, ela deve ser reconsiderada depois que terreno, água e simulação ambiental estiverem mais maduros.
+
+### Poluição
+
+Já está decidido que poluição deve vir de fontes reais da cidade e afetar sistemas reais.
+
+Ainda precisa ser definido:
+
+- tipos de poluição (ar, água, solo, ruído);
+- raio/dispersão;
+- relação com saúde;
+- impacto em valor imobiliário;
+- efeito de vento, relevo ou fluxo de água.
