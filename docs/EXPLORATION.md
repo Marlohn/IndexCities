@@ -18,16 +18,18 @@ Use este arquivo para localizar rapidamente o pensamento ainda não oficial do p
 
 O status abaixo é agregado por documento. `PARCIALMENTE REVISADO` significa que o arquivo mistura material discutido/confirmado com conteúdo da IA ainda não revisado integralmente. Seções individuais podem ter status mais restritivo no próprio arquivo.
 
+Auditoria reconciliada em **2026-10-07** com o histórico de conversas disponível. A classificação é conservadora: conteúdo discutido pode ser parcial, mas pesquisa/síntese da IA que não foi lida integralmente continua pendente.
+
 ## Explorações temáticas
 
 - **Direção de produto e princípios de simulação** — revisão humana: **PARCIALMENTE REVISADO**; ativa; identidade, loop, profundidade, legibilidade e microgerenciamento: [`exploration/product-direction.md`](exploration/product-direction.md).
-- **Escala, performance e baselines** — revisão humana: **PENDENTE**; ativa; população, profundidade individual, tempo e referências empíricas para benchmark: [`exploration/simulation-scale.md`](exploration/simulation-scale.md).
+- **Escala, performance e baselines** — revisão humana: **PARCIALMENTE REVISADO**; ativa; população, profundidade individual, tempo e referências empíricas para benchmark: [`exploration/simulation-scale.md`](exploration/simulation-scale.md).
 - **Mundo, mapa, terreno e ambiente** — revisão humana: **PARCIALMENTE REVISADO**; ativa; direção visual, seed/reprodutibilidade, terreno, vegetação, clima e grid: [`exploration/world-map-environment.md`](exploration/world-map-environment.md).
 - **Mobilidade, serviços e infraestrutura urbana** — revisão humana: **PARCIALMENTE REVISADO**; ativa; vias, transporte, saúde, educação, serviços, água, energia, resíduos e conexão externa: [`exploration/city-systems.md`](exploration/city-systems.md).
 - **Famílias, moradia e patrimônio** — revisão humana: **PARCIALMENTE REVISADO**; ativa; renda, consumo, valor imobiliário, aluguel, propriedade, vulnerabilidade financeira e investimento residencial: [`exploration/households-housing.md`](exploration/households-housing.md).
 - **Empresas, mercados e finanças da cidade** — revisão humana: **PARCIALMENTE REVISADO**; ativa; empresas privadas, demanda, aquisição, caixa, falência, abastecimento e fluxos monetários da cidade: [`exploration/companies-markets.md`](exploration/companies-markets.md).
 - **Construção, materiais e logística** — revisão humana: **PARCIALMENTE REVISADO**; ativa; materiais físicos, estoques, importação/exportação, obras, Pátio e cadeia logística: [`exploration/construction-materials-logistics.md`](exploration/construction-materials-logistics.md).
-- **Interface e ferramentas do jogador** — revisão humana: **PENDENTE**; ativa; construção, ferramentas, snapping, overlays, realocação e fluxo de interação: [`exploration/player-interface.md`](exploration/player-interface.md).
+- **Interface e ferramentas do jogador** — revisão humana: **PARCIALMENTE REVISADO**; ativa; construção, ferramentas, snapping, overlays, realocação e fluxo de interação: [`exploration/player-interface.md`](exploration/player-interface.md).
 - **Referência comparativa do gênero** — revisão humana: **PENDENTE**; recorrente; benchmark externo para confrontar escolhas do IndexCities com outros city builders: [`exploration/genre-benchmark.md`](exploration/genre-benchmark.md).
 - **IA para decisões, simulação e desenvolvimento** — revisão humana: **PENDENTE**; pesquisa concluída para a fase atual; Jev/Laya não são recomendados no core por performance nem como camada geral do workflow: [`exploration/ai-decision-systems.md`](exploration/ai-decision-systems.md).
 - **Processo de desenvolvimento e documentação** — revisão humana: **PARCIALMENTE REVISADO**; decidido para a fase atual; histórico das alternativas e justificativas, enquanto as regras vigentes ficam em `AGENTS.md`: [`exploration/development-process.md`](exploration/development-process.md).
