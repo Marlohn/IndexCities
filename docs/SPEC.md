@@ -228,3 +228,12 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Nascimentos devem ocorrer em hospital quando houver acesso e capacidade adequados.
 - O ciclo de vida inclui infância, adolescência, vida adulta e velhice.
 - A fase da vida altera necessidades, educação, trabalho e comportamento.
+
+
+### Migração, turismo e crescimento populacional
+
+- Cidadãos podem entrar e sair da cidade por migração.
+- Novos moradores podem se mudar para a cidade em resposta a fatores como emprego, moradia e qualidade de vida.
+- Cidadãos podem deixar a cidade quando não encontram condições adequadas, incluindo trabalho, moradia ou satisfação.
+- Turistas e visitantes existem como população temporária.
+- O crescimento populacional deve vir de mecanismos reais da simulação, principalmente nascimentos e migração, evitando criação arbitrária de moradores.
