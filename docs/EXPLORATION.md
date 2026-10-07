@@ -19,6 +19,17 @@ Não é necessário documentar cada conversa pequena. Use este arquivo quando pr
 
 ---
 
+
+## Referência comparativa do gênero
+
+A pesquisa comparativa extensa sobre outros city builders, repositórios, post-mortems e comunidades foi consolidada em [GENRE_BENCHMARK.md](GENRE_BENCHMARK.md).
+
+Esse documento deve ser revisitado em marcos relevantes do desenvolvimento para comparar o que está sendo criado com padrões, acertos, falhas e expectativas observados no gênero. O objetivo **não é copiar concorrentes nem transformar padrões externos em requisitos**, mas verificar se as escolhas do IndexCities continuam coerentes com a experiência desejada e se diferenças importantes são deliberadas.
+
+Descobertas ainda abertas continuam sendo discutidas aqui na EXPLORATION; somente decisões fechadas entram na SPEC.
+
+---
+
 ## Processo de desenvolvimento com IA
 
 **Status:** decidido para a fase atual.
