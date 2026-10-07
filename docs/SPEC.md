@@ -51,13 +51,15 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - Um imóvel adicional pode ser disponibilizado para aluguel a outra família real.
 - O aluguel pago deve ir ao **proprietário real do imóvel**, e não a um recebedor abstrato.
 - A compra só pode ocorrer com dinheiro real disponível do comprador; a decisão deve considerar fatores econômicos concretos, como preço, demanda e expectativa de ocupação/renda.
-- A fórmula exata de decisão, limites de investimento e a granularidade jurídica entre indivíduo/casal/família continuam em calibração/exploração.
+- A fórmula exata de decisão e os limites de investimento continuam em calibração/exploração.
+- No primeiro modelo, cada imóvel residencial tem **um único cidadão como proprietário registrado**.
+- Um casal/família pode somar recursos para viabilizar a compra, mas a propriedade fica registrada em nome de um único SIM; copropriedade fica fora do primeiro modelo.
 - Ao entrar na simulação, cidadãos podem iniciar com um saldo monetário explícito conforme regra de geração/migração; o valor e sua distribuição devem ser configuráveis e auditáveis, sem criação invisível de riqueza.
 
 ### Empresas e economia
 
 - Empresas serão entidades reais da simulação.
-- No escopo atual, quando o jogador coloca um prédio de atividade econômica privada, como fazenda, mercado, posto ou fábrica, uma empresa privada passa a operar aquele estabelecimento.
+- No escopo atual, quando o jogador conclui um prédio de atividade econômica privada, como fazenda, mercado, posto ou fábrica, o prédio pode permanecer **vazio/procurando operador** até que uma empresa local ou vinda da conexão exterior decida adquiri-lo e operá-lo.
 - Empresas terão funcionários reais.
 - Cada emprego corresponderá a uma **vaga real** dentro de uma empresa ou serviço.
 - Empresas privadas terão **caixa monetário real e individual**, mantido pela simulação e auditável.
@@ -69,16 +71,26 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - Mercadorias físicas modeladas como estoque podem ser importadas pela conexão externa quando a oferta local for insuficiente ou inexistente.
 - No escopo inicial, os preços externos de importação permanecem estáveis.
 
+### Aquisição e operação de comércio e indústria
+
+- Prédios privados de comércio e indústria não recebem automaticamente uma empresa ao serem concluídos.
+- O ativo concluído entra em procura por operador/adquirente; baixa oportunidade econômica pode mantê-lo vazio por mais tempo.
+- Empresas locais existentes e novas empresas vindas da conexão exterior podem disputar esses ativos conforme fatores concretos como demanda/clientes, trabalhadores disponíveis, insumos, logística, localização e custos.
+- No primeiro modelo, a empresa que adquire o prédio é também sua **proprietária e operadora econômica**; não haverá separação entre proprietário imobiliário e empresa operadora para comércio/indústria.
+- O preço pago pela aquisição retorna ao **Caixa da Cidade**, recuperando total ou parcialmente o capital usado pelo jogador para desenvolver aquele ativo.
+- A procura externa não é infinita e não pode garantir venda/lucro; deve depender de condições econômicas reais e diagnosticáveis.
+- O jogador não escolhe manualmente qual empresa assume o prédio nem negocia propostas individuais.
+- A relação exata entre uma empresa e seus proprietários humanos/cidadãos ainda está em definição.
+
 ### Finanças privadas das empresas
 
 - Cada empresa privada possui um saldo monetário real.
 - Receitas e despesas da empresa devem ser lançadas a partir de fluxos econômicos reais da simulação, incluindo vendas, salários, insumos, frete, impostos e outros custos definidos.
 - O estado econômico da empresa e uma eventual falência devem ser derivados desses fluxos e do caixa real, não de um indicador oculto independente.
-- A empresa recebe uma capitalização operacional inicial explícita ao começar a operar. Esse valor faz parte do custo monetário da construção privada ordenada pelo jogador e é transferido do caixa da cidade para o caixa da empresa; o valor deve seguir regra configurável e auditável para calibração.
 - O jogador não precisa administrar transferências bancárias, capital de giro ou pagamentos individuais manualmente.
 - A leitura normal pode resumir a situação da empresa; uma visão detalhada deve permitir inspecionar caixa, receitas, despesas e causas de deterioração.
 - Não haverá resgates, crédito ou dinheiro invisível para impedir falência. Se crédito, subsídio ou recapitalização forem adicionados futuramente, deverão ser sistemas explícitos e diagnosticáveis.
-- A construção física e a capitalização inicial de um prédio privado fazem parte do custo pago pelo caixa da cidade quando o jogador ordena aquela construção.
+- A construção física de um prédio privado é financiada pelo Caixa da Cidade; após concluído, o ativo pode ser adquirido por uma empresa com capital próprio conforme as regras de aquisição.
 
 ### Falência e encerramento de empresas
 
@@ -224,8 +236,7 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Receitas municipais, impostos e outras entradas definidas alimentam esse caixa; despesas públicas, salários e construções ordenadas pelo jogador consomem esse caixa.
 - Como o jogador posiciona diretamente todos os prédios no escopo atual, **toda construção que ele ordena consome dinheiro do caixa da cidade e materiais físicos**, independentemente de o prédio depois ser operado pelo setor público ou por uma empresa privada.
 - Essa é uma abstração consciente de gameplay: a distinção público/privado afeta principalmente a operação após a inauguração, não cria dois sistemas de pagamento na ferramenta de construção.
-- O custo monetário de uma construção privada inclui uma **capitalização operacional inicial** da empresa que irá operar o prédio; esse valor é transferido do caixa da cidade para o caixa real da empresa quando ela entra em operação.
-- Depois de inaugurada, a empresa privada passa a operar com seu próprio caixa, receitas e despesas; o jogador não pode usar diretamente esse dinheiro como Caixa da Cidade nem precisa administrá-lo manualmente.
+- Depois que uma empresa adquire e passa a operar o prédio, ela usa seu próprio caixa, receitas e despesas; o jogador não pode usar diretamente esse dinheiro como Caixa da Cidade nem precisa administrá-lo manualmente.
 - O resultado de uma empresa privada beneficia ou prejudica a cidade por efeitos econômicos reais, como empregos, salários, impostos, produção, logística e eventual fechamento, não por transferência livre de seu caixa para o jogador.
 
 ### Financiamento de moradia pelo jogador
