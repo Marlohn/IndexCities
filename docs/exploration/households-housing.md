@@ -633,7 +633,34 @@ Depois de migrar e tornar-se residente real, essa família/cidadão pode futuram
 
 ## Morte do SIM e destino do patrimônio
 
-**Status:** reaberto; a ideia de um espólio como entidade temporária deixou de ser a recomendação principal para o primeiro modelo.
+**Status:** em exploração avançada; fundo agregado de patrimônio não reclamado é a direção preferida, ainda sem promoção para a SPEC.
+
+### Direção preferida atual
+
+Evitar beneficiário social intermediário e evitar um espólio por falecido.
+
+Quando não houver herdeiro elegível:
+- dinheiro do SIM vai para um **Fundo de Patrimônio Não Reclamado**;
+- imóveis e outros ativos sem sucessor ficam vinculados a esse fundo até venda/transferência;
+- o valor obtido na venda também entra no mesmo fundo;
+- o fundo é separado do Caixa da Cidade, das carteiras dos SIMs e dos caixas das empresas;
+- saldo, entradas, saídas e ativos vinculados devem ser rastreáveis;
+- o jogador não pode gastar esse saldo como orçamento da cidade;
+- o uso futuro do fundo fica aberto até existir uma função de gameplay concreta.
+
+A intenção é ter um único ledger/patrimônio agregado, não uma entidade jurídica individual por falecido.
+
+**Prós**
+- preserva dinheiro e propriedade sem fazê-los desaparecer;
+- evita premiar o jogador por mortes;
+- não cria herdeiros artificiais nem espólios individuais;
+- mantém rastreabilidade;
+- deixa espaço para um uso futuro coerente do fundo.
+
+**Contras**
+- cria um pool financeiro fora da economia ativa;
+- se nunca ganhar função, pode virar apenas dinheiro estacionado;
+- o fundo não deve virar uma fonte de recursos para o jogador sem decisão explícita, pois isso recriaria o problema original.
 
 ### Problema
 
@@ -769,7 +796,7 @@ Referências:
 
 A pesquisa encontrou duas ideias úteis para o jogo além de "vai para o governo":
 
-#### 1. Beneficiário social antes de considerar o patrimônio sem dono
+#### 1. Beneficiário social antes de considerar o patrimônio sem dono — descartado para o primeiro modelo
 
 Na Inglaterra e País de Gales, pessoas não aparentadas podem pedir pagamento discricionário da herança quando, por exemplo, viviam com o falecido ou prestavam cuidados/serviços relevantes:
 https://www.gov.uk/unclaimed-estates-bona-vacantia/grants-from-a-deceased-persons-estate
@@ -779,7 +806,7 @@ Adaptação possível ao IndexCities:
 - na ausência deles, um coabitante ou relação social muito próxima pode ser elegível;
 - somente se ninguém for elegível o patrimônio vira "não reclamado".
 
-Isso aproveita relações já simuladas e reduz muito os casos terminais sem inventar um herdeiro exterior.
+Isso aproveitaria relações já simuladas, mas foi considerado uma camada intermediária sem valor suficiente: apenas cria mais um possível recebedor antes do caso realmente sem sucessor.
 
 #### 2. Fundo único de patrimônio não reclamado
 
@@ -821,13 +848,14 @@ Isso dá destinos econômicos concretos para parte do dinheiro sem inventar um s
 
 ### Recomendação após pesquisa
 
-A alternativa mais promissora para testar é uma **cadeia curta de sucessão**:
+A direção preferida passa a ser:
 
-1. herdeiro familiar real;
-2. se não houver, beneficiário social elegível (coabitante/relação próxima), se fizer sentido;
-3. pagar obrigações reais do falecido;
-4. se ainda não houver destinatário, saldo e produto da venda vão para um **fundo agregado de patrimônio não reclamado**, não controlado pelo jogador.
+1. herdeiro elegível real, quando existir;
+2. obrigações reais do falecido podem ser liquidadas se já fizerem parte da simulação;
+3. sem herdeiro, dinheiro e ativos passam ao **Fundo de Patrimônio Não Reclamado**;
+4. o fundo permanece separado e rastreável;
+5. nenhuma utilização posterior do fundo é assumida agora.
 
-Essa combinação parece mais coerente com o gameplay do que transferir tudo ao Caixa da Cidade ou criar um espólio individual persistente.
+Beneficiário social intermediário foi descartado para o primeiro modelo.
 
-Ainda não é decisão oficial.
+Ainda não é decisão oficial até promoção para a SPEC.
