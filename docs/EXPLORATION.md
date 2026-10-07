@@ -2534,7 +2534,7 @@ O modelo privado ou híbrido parece mais compatível com empresas terem caixa pr
 
 ## Materiais no modelo híbrido público/privado
 
-**Status:** proposta de modelagem; ainda não é requisito.
+**Status:** proposta anterior em revisão. A separação estrita de estoques públicos/privados tende a adicionar complexidade de gameplay sem benefício proporcional.
 
 Se o IndexCities adotar o modelo híbrido em que serviços/infraestrutura são municipais e atividades econômicas são privadas, os materiais não devem virar um estoque comum sem dono.
 
@@ -2634,3 +2634,156 @@ O modelo de materiais funciona independentemente de quem fornece a mão de obra,
 - ou pode contratar o Pátio Municipal de Obras como serviço pago.
 
 Não assumir uma dessas alternativas até existir decisão.
+
+
+---
+
+## Revisão de gameplay: disponibilidade da cidade versus propriedade jurídica
+
+**Status:** direção recomendada em exploração; ainda não é requisito.
+
+A tentativa anterior de separar materiais de construção em estoques públicos e privados é economicamente plausível, mas cria um problema de UX: o jogador já controla diretamente a colocação de todos os edifícios. Exigir que ele também raciocine sobre "este aço é municipal, aquele aço é privado" pode transformar o core material em contabilidade de propriedade, em vez de logística e planejamento urbano.
+
+### Referências de gameplay
+
+**Anno 1800**
+
+A Ubisoft explica que qualquer recurso colocado em um warehouse fica disponível em qualquer warehouse da mesma ilha. É uma abstração deliberada que reduz microgerenciamento de estoque sem eliminar produção, transporte entre ilhas ou cadeias produtivas.
+
+Fonte:
+- Ubisoft — Anno 1800 Console Edition: 4 Tips for Getting Started: https://news.ubisoft.com/en-gb/article/6z7wAll2mXTdQtp79h2B2x/anno-1800-console-edition-4-tips-for-getting-started
+
+**Manor Lords**
+
+O jogo separa Regional Wealth do Treasury, mas recursos de construção são tratados como recursos da região e construções consomem materiais disponíveis no assentamento. Storehouses recolhem recursos de estoques locais e o jogo expõe reservas/limites de produção em nível regional.
+
+Fontes:
+- Manor Lords Official Wiki — Resources: https://wiki.hoodedhorse.com/Manor_Lords/Resources
+- Manor Lords Official Wiki — Buildings: https://wiki.hoodedhorse.com/Manor_Lords/Buildings/en
+- Manor Lords Official Wiki — Storehouse: https://wiki.hoodedhorse.com/Manor_Lords/Storehouse
+
+**Workers & Resources: Soviet Republic**
+
+No Realistic Mode, construções precisam receber recursos e trabalhadores fisicamente; construction offices buscam materiais em fontes específicas e levam ao canteiro. A documentação oficial descreve esse modo como mais sistemático e management-heavy.
+
+A comunidade mostra os dois lados:
+- jogadores valorizam muito a satisfação de ver tudo ser produzido e transportado;
+- outros relatam que o excesso de atribuição, fases, veículos subutilizados e esperas transforma construção em microgerenciamento cansativo.
+
+Fontes:
+- Official Wiki — Game settings: https://wiki.hoodedhorse.com/Workers_Resources_Soviet_Republic/Game_settings
+- Official Wiki — Construction: https://wiki.hoodedhorse.com/Workers_Resources_Soviet_Republic/Construction
+- Official Wiki — Construction office: https://wiki.hoodedhorse.com/Workers_Resources_Soviet_Republic/Construction_office
+- Reddit /r/Workers_And_Resources — "I'm giving up on realistic mode" (2025)
+- Reddit /r/Workers_And_Resources — "Should realistic mode be split..." (2023)
+
+### Recomendação para o IndexCities
+
+Separar **disponibilidade de gameplay** de **propriedade econômica**.
+
+Para o jogador, materiais de construção devem aparecer como **Disponível na cidade**, não como dois estoques principais "público" e "privado".
+
+Exemplo de UI:
+
+Concreto
+- disponível localmente: 120 t
+- reservado: 40 t
+- em trânsito: 30 t
+- produção local: 20 t/dia
+- dependência de importação: 35%
+
+A origem física continua real:
+
+- depósito de construção;
+- concreteira;
+- serraria;
+- usina de asfalto;
+- fornecedor local;
+- conexão externa.
+
+O sistema sabe onde o material está e caminhões precisam buscá-lo e entregá-lo, mas o jogador não precisa gerenciar propriedade jurídica de cada tonelada.
+
+### Como uma obra funcionaria
+
+jogador coloca a construção
+→ sistema calcula materiais necessários
+→ verifica a oferta física disponível na cidade
+→ reserva automaticamente fontes locais elegíveis
+→ importa apenas o que faltar
+→ caminhões entregam ao canteiro
+→ material é consumido ao chegar
+
+Esse fluxo pode valer para qualquer construção, evitando duas mecânicas diferentes de materiais.
+
+### Dinheiro pode continuar separado
+
+A unificação da disponibilidade material **não exige** unificar dinheiro.
+
+Se futuramente houver diferença entre obra pública e privada:
+
+- a prefeitura pode pagar obras/serviços públicos;
+- empresa/investidor pode financiar atividade privada;
+- produtores locais podem receber dinheiro quando seus materiais forem utilizados;
+- importações continuam tendo custo e frete.
+
+Essas transferências podem acontecer na simulação sem obrigar o jogador a administrar estoques por proprietário.
+
+Em outras palavras: **um painel agregado de oferta local não significa que juridicamente todo material pertence à prefeitura**.
+
+### Papel do jogador
+
+A regra atual de que o jogador posiciona todos os edifícios já coloca o jogador acima do papel literal de um prefeito.
+
+Uma interpretação mais coerente para a gameplay é:
+
+- o jogador controla o desenvolvimento da cidade;
+- o orçamento municipal continua existindo como entidade econômica real;
+- empresas continuam tendo caixa e estado econômico próprios;
+- mas a UI do jogador pode agregar recursos e capacidade da cidade para permitir decisões claras.
+
+Isso evita tentar fazer a interface obedecer literalmente à propriedade jurídica de cada recurso.
+
+### Depósito municipal precisa ser reavaliado
+
+A decisão atual de chamar o principal armazenamento de materiais de **depósito municipal** pode entrar em tensão com essa visão.
+
+Alternativas futuras:
+- manter o depósito municipal como reserva estratégica pública, enquanto "Disponível na cidade" inclui também estoques de produtores;
+- transformar o prédio em **Depósito de Materiais de Construção / Centro Logístico**, sem exigir que toda carga armazenada seja propriedade pública;
+- permitir que o depósito seja uma infraestrutura municipal de logística usada pelo mercado local.
+
+Não alterar a SPEC até existir decisão.
+
+### Critério de design
+
+Preservar o que gera gameplay:
+- materiais físicos;
+- produção;
+- estoque limitado;
+- caminhões;
+- distância;
+- congestionamento;
+- capacidade de carga/descarga;
+- importação;
+- custo;
+- escassez.
+
+Evitar o que tende a virar microgerenciamento contábil:
+- escolher manualmente o dono de cada lote;
+- separar a mesma categoria em "aço público" e "aço privado" na UI principal;
+- exigir depósitos duplicados apenas por propriedade;
+- fazer o jogador autorizar cada transação entre empresas e prefeitura.
+
+### Recomendação atual
+
+A melhor direção parece ser **mercado/oferta material da cidade com logística física**, e não um estoque juridicamente único nem estoques públicos/privados expostos ao jogador.
+
+O próximo POC deveria medir se o jogador consegue entender:
+- quanto existe na cidade;
+- onde está fisicamente;
+- quanto já está reservado;
+- quanto precisa ser importado;
+- por que uma obra está esperando;
+- quanto produzir localmente está economizando.
+
+Essa direção mantém realismo sistêmico sem transformar o jogo em contabilidade manual.
