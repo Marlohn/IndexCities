@@ -45,9 +45,10 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 ### Empresas e economia
 
 - Empresas serão entidades reais da simulação.
+- No escopo atual, quando o jogador coloca um prédio de atividade econômica privada, como fazenda, mercado, posto ou fábrica, uma empresa privada passa a operar aquele estabelecimento.
 - Empresas terão funcionários reais.
 - Cada emprego corresponderá a uma **vaga real** dentro de uma empresa ou serviço.
-- Empresas terão dinheiro e estado econômico próprio.
+- Empresas terão estado econômico próprio; a granularidade do caixa/dinheiro privado ainda está em definição.
 - Estoque e/ou produção devem existir como parte do modelo econômico das empresas.
 - O consumo será modelado inicialmente por **categorias de produtos**, não por SKU individual.
 - Compras reais reduzem estoque real, movimentam dinheiro real e geram necessidade de reposição/logística.
