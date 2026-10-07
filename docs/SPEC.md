@@ -27,11 +27,32 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - O IndexCities será um **city builder**.
 - A apresentação será **3D com câmera isométrica**.
 - A construção será feita na granularidade de **casas e prédios**, sem construção por cômodos.
+- No escopo atual, o jogador posiciona **cada prédio diretamente**; zoneamento automático não faz parte da proposta atual.
 
 ### Tecnologia
 
 - A engine do jogo será **Godot**.
 - O desenvolvimento principal será em **C#**.
+
+### Cidadãos e simulação
+
+- Qualquer cidadão deve poder ser selecionado individualmente pelo jogador.
+- O jogador deve poder acompanhar a vida e o estado daquele cidadão ao longo do tempo.
+- Cidadãos são entidades persistentes da simulação, e não apenas elementos visuais decorativos.
+
+### Empresas e economia
+
+- Empresas serão entidades reais da simulação.
+- Empresas terão funcionários reais.
+- Empresas terão dinheiro e estado econômico próprio.
+- Estoque e/ou produção devem existir como parte do modelo econômico das empresas.
+- Empresas poderão falir quando suas condições econômicas levarem a isso.
+
+### Serviços públicos
+
+- Serviços como escola, hospital, polícia e bombeiros devem funcionar como sistemas reais da cidade, não como bônus abstratos.
+- Esses serviços terão capacidade real.
+- Esses serviços dependerão de funcionários reais da população simulada.
 
 ### Tempo de jogo
 
