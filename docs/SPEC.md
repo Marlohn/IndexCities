@@ -297,7 +297,7 @@ A SPEC deve crescer com o produto, **não antes dele**.
 ### Transporte público e veículos
 
 - O jogo terá transporte público com operação real.
-- Ônibus terão linhas, frota, motoristas e capacidade reais.
+- Ônibus terão linhas, frota, capacidade e SIMs reais executando a condução durante a operação. Essa atribuição operacional não exige um sistema formal de cargos/profissões no primeiro modelo.
 - Outros modais de transporte público também farão parte do sistema; os tipos exatos serão definidos progressivamente.
 - Veículos particulares precisam estacionar de verdade.
 - O realismo operacional dos carros deve ser alto, incluindo deslocamento e estacionamento coerentes.
@@ -362,7 +362,7 @@ A SPEC deve crescer com o produto, **não antes dele**.
 
 ### Transporte sob demanda e operação de carga
 
-- Táxis e transporte sob demanda existirão com motorista e passageiro reais.
+- Táxis e transporte sob demanda existirão com um SIM real conduzindo o veículo e um passageiro real; a função de condução é uma atribuição operacional, não um cargo/profissão formal no primeiro modelo.
 - Caminhões podem ter tamanhos e capacidades diferentes.
 - A capacidade do caminhão influencia quantas viagens são necessárias para transportar uma carga.
 - Comércio não precisa operar com janelas fixas de entrega; o tempo de chegada pode emergir do tráfego e da logística.
@@ -427,12 +427,12 @@ A SPEC deve crescer com o produto, **não antes dele**.
 
 ### Educação e qualificação
 
-- Escolas têm professores reais e alunos reais.
-- A capacidade escolar depende do quadro de professores e da quantidade de alunos atendidos.
+- Escolas têm funcionários reais e alunos reais.
+- No primeiro modelo, a capacidade escolar depende da quantidade/capacidade de funcionários da escola e da quantidade de alunos atendidos, sem exigir cargos profissionais distintos.
 - O jogo terá ensino superior/universidade.
-- Professores são trabalhadores reais, ocupando vagas reais.
 - Educação e qualificação influenciam acesso a empregos e salários.
 - Crianças e adolescentes podem ficar sem escola quando não houver vaga ou acesso adequado.
+- A diferenciação futura entre cargos como professor e outras funções escolares fica fora do primeiro modelo.
 
 
 ### Água, esgoto, energia e poluição
