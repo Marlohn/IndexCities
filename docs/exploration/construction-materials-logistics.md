@@ -1,5 +1,9 @@
 # IndexCities — Construção, materiais e logística
 
+> **Revisão humana:** PARCIALMENTE REVISADO.  
+> **Auditoria:** classificação conservadora com base no estado anterior à reorganização temática, commit `4b97ace2`. o documento mistura conteúdo discutido/confirmado com pesquisa, síntese ou redação da IA ainda não revisada integralmente.
+>
+
 > **Status:** exploração ativa; muitas regras já foram promovidas para a SPEC, enquanto calibração e diferenciação de gameplay continuam abertas — não é fonte de verdade.
 >
 > Concentra a evolução do modelo de construção física, materiais, estoques, importação/exportação, reservas, execução de obras e logística. Alternativas superadas permanecem identificadas para preservar por que o modelo atual foi escolhido.
@@ -14,6 +18,9 @@ Este arquivo é material de exploração temática. Quando houver divergência, 
 ---
 
 ## Materiais de construção, importação e estoque
+
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
 
 **Status:** pesquisa histórica parcialmente superada pela seção **Revisão 2 — base material realista da cidade**. As evidências e cadeias abaixo continuam úteis, mas a lista inicial oficial está agora na SPEC.
 
@@ -223,6 +230,9 @@ Isso ainda não está na SPEC e não deve ser assumido durante a implementação
 
 ## Bens e materiais básicos para uma cidade funcionar
 
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
+
 ### Correção de escopo da pesquisa de materiais
 
 A proposta anterior de cinco famílias misturou três problemas diferentes e **não deve ser tratada como lista aprovada**:
@@ -304,6 +314,9 @@ Para o primeiro protótipo econômico, começar com alimentos, medicamentos/supr
 
 ## Estado inicial, depósitos e abastecimento de obras
 
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
+
 **Status:** decidido em nível de fluxo; números ainda precisam de calibração.
 
 Decidido:
@@ -323,6 +336,9 @@ Esse fluxo elimina o soft-lock do primeiro depósito sem criar um edifício grat
 
 ## Bootstrap logístico da primeira construção
 
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
+
 **Status:** resolvido.
 
 Não existe depósito gratuito nem estoque inicial artificial.
@@ -341,6 +357,9 @@ Para o problema de mão de obra inicial, uma equipe externa temporária entra pe
 ---
 
 ## Compra automática de material importado ao construir
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** comportamento principal decidido; detalhes de UI e balanceamento ainda precisam ser prototipados.
 
@@ -385,6 +404,9 @@ Importações acionadas por uma obra específica podem ir diretamente ao canteir
 
 ## Regra de custo de construção e transparência de importação
 
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
+
 **Status:** decidido.
 
 Toda construção combina dois tipos de custo:
@@ -426,6 +448,9 @@ Para materiais de construção, compra genérica para abastecer estoque fica for
 
 ## Depósito municipal inicial
 
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
+
 **Status:** decidido em nível funcional; números ainda precisam de calibração.
 
 No escopo inicial:
@@ -452,6 +477,9 @@ Isso não significa necessariamente expor todas essas opções ao jogador.
 
 ## Exportação automática e contabilidade
 
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
+
 **Status:** decidido para o escopo inicial.
 
 Excedentes podem ser exportados automaticamente para reduzir microgerenciamento.
@@ -471,6 +499,9 @@ No futuro pode ser avaliado controle manual por categoria, limites mínimos de e
 ---
 
 ## Reserva de materiais e fila de obras
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** decidido para o escopo inicial.
 
@@ -511,6 +542,9 @@ Isso fica fora do escopo atual até existir necessidade real observada no gamepl
 
 ## Política de importação de materiais acionada por obra
 
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
+
 **Status:** decidido.
 
 Para materiais de construção, o fluxo inicial não usa reposição genérica de estoque.
@@ -539,6 +573,9 @@ Mesmo pago antecipadamente, o material continua sujeito à logística física e 
 ---
 
 ## Quem executa as obras
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** Pátio Municipal de Obras, bootstrap externo e contratação externa por falta de capacidade local decididos.
 
@@ -597,6 +634,9 @@ Máquinas e equipamentos de obra ainda precisam de pesquisa específica para dec
 
 ## Cancelamento versus demolição
 
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
+
 **Status:** parcialmente decidido.
 
 ### Cancelamento de obra inacabada
@@ -628,6 +668,9 @@ Não há sistema de salvage/reciclagem de material no escopo atual.
 ---
 
 ## Hipótese de diferenciação: cidade construída por cadeias materiais
+
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
 
 **Status:** direção prioritária de produto; hipótese de diferenciação ainda precisa ser validada em gameplay.
 
@@ -696,6 +739,9 @@ Precisamos verificar se:
 
 ## Estoque do Pátio versus depósito dedicado
 
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
+
 **Status:** direção decidida; capacidades ainda precisam de calibração.
 
 O Pátio Municipal de Obras terá um estoque pequeno para apoiar operações correntes.
@@ -721,6 +767,9 @@ Esses detalhes precisam ser testados sem criar movimentação logística redunda
 ---
 
 ## Bootstrap do primeiro Pátio
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** decidido.
 
@@ -755,6 +804,9 @@ A equipe externa é uma exceção apenas de **origem da mão de obra**, não uma
 ---
 
 ## Capacidade do Pátio e contratação externa por obra
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** decidido em nível de comportamento; números ainda precisam de calibração.
 
@@ -801,6 +853,9 @@ O número exato de trabalhadores por equipe, produtividade e quantidade de equip
 
 ## Consumo instantâneo de materiais ao chegar ao canteiro
 
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
+
 **Status:** decidido.
 
 Para evitar microgestão desnecessária, o jogo não precisa mostrar materiais sendo consumidos gradualmente durante a obra.
@@ -826,6 +881,9 @@ Isso mantém uma regra simples e coerente com o modelo de consumo imediato.
 ---
 
 ## Revisão 2 — base material realista da cidade
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** aprovada. A base inicial foi promovida para a SPEC.
 
@@ -927,6 +985,9 @@ Não foi identificado conflito com as regras atuais de importação, armazenamen
 ---
 
 ## Materiais no modelo híbrido público/privado
+
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
 
 **Status:** proposta superada. A separação estrita de estoques públicos/privados foi descartada como modelo principal de gameplay por adicionar microgerenciamento sem benefício proporcional.
 
@@ -1035,6 +1096,9 @@ Não assumir uma dessas alternativas até existir decisão.
 ---
 
 ## Revisão de gameplay: disponibilidade da cidade versus propriedade jurídica
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** aprovada e promovida para a SPEC.
 
