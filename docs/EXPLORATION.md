@@ -4036,100 +4036,122 @@ Depois de migrar e tornar-se residente real, essa família/cidadão pode futuram
 
 ## Propriedade humana das empresas
 
-**Status:** aberto; recomendação atual é empresa como entidade separada com um SIM proprietário no primeiro modelo.
+**Status:** reaberto; recomendação atual mudou após revisar o fluxo de lucros e o custo de modelar donos.
 
-### Por que a empresa precisa ser entidade própria
+A hipótese anterior era dar a cada empresa um SIM proprietário. O problema levantado é válido: se o SIM investe dinheiro pessoal, a empresa lucra em um caixa separado e depois precisamos criar dividendos, retiradas, herança de participação e outras transferências só para o dinheiro "voltar ao bolso" do dono.
 
-Mesmo que um SIM seja dono, empresa e pessoa têm responsabilidades econômicas diferentes.
+Isso adiciona um sistema de propriedade empresarial antes de ele gerar gameplay claro.
 
-**SIM**
-- carteira pessoal;
-- salário e consumo;
-- moradia e patrimônio pessoal;
-- impostos pessoais;
-- pode investir em empresa.
+### Opção A — empresa independente, sem proprietário humano modelado
 
-**Empresa**
-- caixa empresarial;
+**Recomendação atual para o primeiro modelo.**
+
+A empresa continua sendo uma entidade econômica concreta e persistente:
+- caixa próprio real;
 - estoque;
-- receitas de vendas;
-- salários pagos;
-- insumos, frete e impostos empresariais;
-- vagas e funcionários;
-- falência/encerramento.
+- receitas e despesas;
+- salários;
+- impostos;
+- funcionários e vagas;
+- propriedades/estabelecimentos;
+- falência;
+- expansão.
 
-Misturar carteira pessoal e caixa da empresa faria uma compra de comida do dono competir diretamente com pagamento de salário dos funcionários e tornaria diagnóstico muito pior.
+O que fica fora é apenas a camada de acionistas/dono humano.
 
-### Opção A — empresa separada com um SIM proprietário
+Fluxo:
+empresa possui caixa
+→ compra/adquire estabelecimento
+→ opera
+→ lucros ficam no caixa da própria empresa
+→ usa caixa para sobreviver, comprar insumos e futuramente expandir
+→ paga impostos ao Caixa da Cidade
 
-**Recomendação atual.**
+**Prós**
+- muito mais simples;
+- elimina dividendos/retiradas e confusão entre carteira do SIM e caixa empresarial;
+- empresa continua totalmente auditável;
+- lucro tem destino concreto: permanece na própria empresa;
+- facilita empresas vindas do exterior;
+- evita forçar um proprietário a migrar para a cidade;
+- preserva possibilidade de adicionar donos/acionistas depois.
 
-Fluxo conceitual:
+**Contras**
+- não existe, por enquanto, um cidadão enriquecendo diretamente por possuir uma empresa;
+- patrimônio empresarial não entra em herança;
+- é uma abstração jurídica: toda empresa real teria algum dono/acionista, mas esse ator não é modelado.
 
-SIM investe capital pessoal
-→ empresa possui caixa próprio
-→ empresa compra/adquire estabelecimento
-→ empresa opera
-→ lucro fica inicialmente no caixa da empresa
-→ eventual retirada/dividendo ao proprietário é outro fluxo explícito
+Essa abstração é considerada aceitável se propriedade empresarial não produzir decisões relevantes no primeiro escopo. A empresa **não é abstrata**: ela é o próprio agente econômico concreto. Apenas seus acionistas ficam fora da simulação.
 
-Prós:
-- empresa continua sendo entidade real e auditável;
-- existe um dono humano concreto;
-- separa patrimônio pessoal de operação empresarial;
-- um SIM pode enriquecer por possuir negócio sem misturar todos os pagamentos;
-- morte/herança futura da participação pode ter significado, se decidida depois.
+### Opção B — empresa separada com um SIM proprietário
 
-Contras:
-- surge o conceito de transferência entre dinheiro pessoal e empresarial;
-- precisamos definir quando/como lucro chega ao proprietário;
-- empresas exteriores levantam a questão de onde está seu dono.
+**Prós**
+- conecta riqueza pessoal e empresas;
+- permitiria dividendos, herança e empreendedorismo individual;
+- proprietário humano fica visível.
 
-### Opção B — empresa é apenas extensão financeira do SIM
+**Contras**
+- exige definir investimento inicial, retirada/dividendos, patrimônio empresarial e herança;
+- cria transferências adicionais sem benefício claro para a gestão da cidade neste momento;
+- complica empresas externas;
+- pode virar detalhe econômico que não muda as decisões do jogador.
 
-Prós:
-- menos entidades monetárias.
+Não recomendada para o primeiro modelo.
 
-Contras:
-- mistura dinheiro pessoal, estoque, salários e despesas do negócio;
-- falência empresarial pode quebrar a carteira pessoal imediatamente;
-- difícil explicar expansão, múltiplos estabelecimentos e trabalhadores;
-- pior para causalidade e calibração.
+### Ponto crítico: origem do capital
 
-**Não recomendada.**
+Empresa sem dono modelado não autoriza dinheiro mágico.
 
-### Opção C — empresa existe sem proprietário cidadão modelado
+Precisamos distinguir:
 
-Prós:
-- mais simples para empresas exteriores e grandes negócios.
+**Empresa já existente**
+- usa o próprio caixa acumulado para adquirir novo estabelecimento/expandir.
 
-Contras:
-- introduz uma entidade econômica sem dono concreto;
-- enfraquece o princípio de evitar abstrações;
-- fica menos claro para onde vai o valor econômico acumulado.
+**Empresa nova vinda do exterior**
+- entra com capital inicial explícito proveniente da conexão exterior;
+- esse valor é finito, configurável e diagnosticável;
+- a procura externa continua limitada pelas condições econômicas da cidade.
 
-**Não recomendada como regra geral.**
+**Empresa nova criada localmente**
+- não deve aparecer com dinheiro do nada;
+- sua formação precisa de uma fonte real de capital antes de ser habilitada;
+- pode ficar fora do primeiro modelo até existir uma regra clara.
+
+### Lucro
+
+Sem proprietário modelado, o lucro não "some":
+- aumenta o caixa/patrimônio da empresa;
+- melhora sua capacidade de absorver prejuízo;
+- permite comprar insumos;
+- permite contratar e operar;
+- pode financiar expansão futura;
+- gera impostos conforme as regras fiscais.
+
+Só será necessário criar dividendos/retiradas se futuramente decidirmos que a relação entre cidadão e propriedade empresarial gera gameplay suficiente.
+
+### Relação com o princípio de evitar abstrações
+
+Evitar abstração não significa modelar toda camada jurídica do mundo real.
+
+Uma abstração é aceitável quando:
+- a entidade relevante continua concreta;
+- dinheiro tem origem e destino;
+- nenhuma consequência importante fica escondida;
+- a camada omitida não gera decisão de gameplay.
+
+Nesse caso, a empresa é concreta; o acionista é a camada omitida.
 
 ### Recomendação atual
 
-No primeiro modelo:
-- empresa é entidade própria;
-- cada empresa tem **um SIM proprietário**;
-- caixa pessoal e caixa empresarial são separados;
-- copropriedade/acionistas ficam fora;
-- o proprietário pode investir dinheiro real na empresa;
-- dividendos/retiradas só devem existir quando houver regra explícita.
+Para o primeiro modelo:
+- empresa é entidade econômica independente;
+- não existe SIM proprietário modelado;
+- lucro permanece na empresa;
+- empresas existentes expandem com caixa próprio;
+- empresas novas externas podem entrar com capital externo explícito;
+- criação de empresa nova local fica aberta até existir fonte concreta de capital.
 
-### Ponto ainda aberto: empresa exterior
-
-Há duas possibilidades principais antes de fechar a recomendação:
-1. empresa exterior entra junto com um SIM proprietário que também passa a existir/migrar para a cidade;
-2. permitir proprietário fora do mapa como entidade econômica externa explícita.
-
-A primeira é mais concreta, mas pode forçar migrações artificiais. A segunda é mais fiel a empresas externas, mas exige modelar um proprietário econômico fora da cidade.
-
-Não decidir sem comparar impacto de gameplay.
-
+Reavaliar donos/acionistas somente se surgirem sistemas como empreendedorismo individual, dividendos, herança empresarial, compra/venda de empresas ou concentração de capital que justifiquem o custo.
 
 ---
 
