@@ -203,3 +203,61 @@ Para os assuntos desta seção:
 - benchmarks do próprio IndexCities determinam limites técnicos;
 - referências de outros jogos servem como comparação, não como prova;
 - nenhum número vira requisito apenas porque parece razoável.
+
+
+---
+
+## Direção atual do jogo
+
+**Status:** em exploração, exceto onde a SPEC já registra uma decisão fechada.
+
+### Referência de experiência
+
+O ponto de referência declarado é **Cities: Skylines**, principalmente pelo estilo geral de construção e gestão de cidade. Isso é referência de comparação, não requisito de copiar sistemas ou arquitetura.
+
+### Escala e densidade
+
+A intenção atual é explorar uma cidade **menor em extensão e população que as grandes cidades típicas de Cities: Skylines**, mas com muito mais detalhe por lote, edifício, família, cidadão e veículo.
+
+A escala populacional ainda não foi decidida. Ela deve ser derivada de duas frentes:
+
+1. dados reais sobre o que caracteriza uma cidade pequena, mas funcionalmente completa;
+2. benchmarks do próprio IndexCities para descobrir quanto detalhe individual cabe no orçamento de CPU, memória e tempo de frame.
+
+### Simulação de cidadãos
+
+A ambição de exploração é simular cidadãos com vida persistente e conectada à cidade, incluindo, quando viável:
+
+- família e residência;
+- estudo e trabalho;
+- renda, consumo e participação na economia;
+- necessidades e bem-estar;
+- relacionamentos, casamento, filhos, envelhecimento e morte;
+- propriedade e uso de veículos;
+- deslocamentos que impactam o trânsito.
+
+O objetivo é maximizar coerência sistêmica, mas a profundidade final só deve ser fechada depois de benchmarks e protótipos. Não há autorização para inventar limites de população ou cortar sistemas apenas por suposição.
+
+### Trânsito e veículos
+
+A direção desejada é que veículos pertençam de forma coerente a pessoas ou famílias e que os deslocamentos tenham causa observável. O trânsito deve emergir das rotinas e necessidades da população, evitando tráfego puramente decorativo.
+
+O grau exato de fidelidade, pathfinding, estacionamento, posse de veículos, transporte público e regras viárias continua aberto para pesquisa e prototipagem.
+
+### Organização técnica a explorar
+
+Há preferência por separar claramente:
+
+- núcleo de simulação e regras;
+- integração com Godot;
+- apresentação/renderização;
+- UI;
+- assets.
+
+Também há interesse em uma arquitetura que permita agentes de IA trabalharem em partes isoladas do projeto com menor risco de alterar regras centrais sem intenção.
+
+Isso ainda precisa ser transformado em arquitetura técnica concreta com base em protótipos, profiling e necessidades reais do código.
+
+### Testes e guardrails
+
+A direção é usar testes e outras proteções onde eles realmente defendam comportamento importante, especialmente regras da simulação e invariantes de sistemas interligados. A cobertura e a estratégia exatas ainda não estão decididas.
