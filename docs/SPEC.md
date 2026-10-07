@@ -58,10 +58,12 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 
 ### Patrimônio não reclamado
 
-- Quando um SIM morre sem herdeiro elegível, seu dinheiro remanescente é transferido para um **Fundo de Patrimônio Não Reclamado** rastreável.
-- Esse fundo é separado do Caixa da Cidade, das carteiras dos SIMs e dos caixas das empresas; o jogador não pode usá-lo para construir ou operar a cidade.
+- Existe um **Fundo de Patrimônio Não Reclamado** rastreável para valores que ficam sem titular econômico após o encerramento de uma entidade.
+- Quando um SIM morre sem herdeiro elegível, seu dinheiro remanescente é transferido para esse fundo.
+- Quando uma empresa é encerrada definitivamente, eventual saldo remanescente após os fluxos já definidos também é transferido para esse fundo.
+- O fundo é separado do Caixa da Cidade, das carteiras dos SIMs e dos caixas das empresas; o jogador não pode usá-lo para construir ou operar a cidade.
 - Imóveis e outros ativos sem sucessor podem permanecer explicitamente **sem proprietário**, em estado de patrimônio não reclamado, em vez de o fundo tornar-se seu proprietário.
-- Um imóvel residencial sem proprietário pode voltar ao mercado; quando for vendido, o valor recebido entra no Fundo de Patrimônio Não Reclamado.
+- Um ativo sem proprietário pode voltar ao mercado; quando for vendido, o valor recebido entra no Fundo de Patrimônio Não Reclamado.
 - O fundo registra saldo, entradas e saídas, mas sua eventual utilização futura não está definida e não deve ser inventada antes de existir função de gameplay concreta.
 - O Fundo de Patrimônio Não Reclamado não representa nem controla a conexão exterior; são conceitos separados.
 
@@ -116,12 +118,16 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 
 ### Falência e encerramento de empresas
 
-- O jogo não precisa simular legislação ou processo jurídico de falência.
-- Para gameplay, falência significa que uma empresa não consegue sustentar sua operação por tempo suficiente e encerra as atividades.
+- O jogo não precisa simular legislação ou processo jurídico detalhado de falência.
+- Para gameplay, falência significa que uma empresa não consegue sustentar sua operação por tempo suficiente e **encerra definitivamente como empresa**; ela não permanece indefinidamente tentando recomeçar.
 - A deterioração deve vir de causas reais e auditáveis, como falta de clientes/receita, custos de insumos, salários, frete, impostos ou interrupções de abastecimento.
 - Antes do fechamento, a empresa deve permanecer em estado de risco por um período calibrável e mostrar ao jogador a principal causa real do problema.
 - O limiar e o tempo exatos de encerramento são parâmetros de balanceamento e não exigem microgerenciamento do jogador.
-- O destino do prédio após o encerramento da empresa ainda não está definido.
+- O encerramento pode ter uma etapa técnica curta de liquidação apenas para dar destino causal aos ativos e ao dinheiro; ela não é uma mecânica de gestão para o jogador.
+- Enquanto essa liquidação existir, imóveis ainda pertencentes à empresa podem ser colocados automaticamente no mercado; o pagamento de uma venda entra no caixa da empresa em liquidação.
+- Quando a empresa não tiver mais ativos pendentes, eventual saldo monetário remanescente vai para o **Fundo de Patrimônio Não Reclamado**, e a entidade empresa é removida.
+- Se um ativo ficar sem titular após o encerramento, ele pode permanecer explicitamente sem proprietário e continuar disponível no mercado; uma venda futura envia o valor ao Fundo de Patrimônio Não Reclamado.
+- Fechar um estabelecimento isolado de uma empresa que continua saudável em outros locais não precisa encerrar a empresa inteira; essa distinção pode existir sem criar uma simulação jurídica de falência.
 
 ### Serviços públicos
 
