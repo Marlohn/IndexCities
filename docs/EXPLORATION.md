@@ -2338,3 +2338,86 @@ Essa decisão substitui a ideia anterior de devolver material já entregue:
 - material que chegou ao canteiro já foi consumido e é perdido se a obra for cancelada depois.
 
 Isso mantém uma regra simples e coerente com o modelo de consumo imediato.
+
+
+---
+
+## Revisão 2 — base material realista da cidade
+
+**Status:** pesquisa; ainda não é requisito.
+
+A lista anterior ficou excessivamente centrada em construção e usou o termo técnico "agregados", que não é claro como linguagem de gameplay. A revisão separa três papéis: bens essenciais consumidos pela cidade, materiais finais usados em obras e insumos industriais.
+
+### Evidência
+
+A FEMA trata como funções críticas de uma comunidade: alimentos/abrigo, saúde e cadeia de suprimentos médicos, energia/combustível, transporte e água/esgoto. A OMS reforça a necessidade de disponibilidade contínua de medicamentos essenciais.
+
+As contas de fluxo material da Eurostat separam biomassa, metais, minerais não metálicos e combustíveis fósseis. Em 2025, minerais não metálicos responderam por cerca de 53% do consumo material doméstico da UE, biomassa 26%, fósseis 16% e minérios metálicos 5%. Esses percentuais são evidência de importância física, não valores de balanceamento para o jogo.
+
+O USDA descreve a cadeia alimentar ligando produção agrícola, processamento, atacado, varejo/restaurantes e consumo, com armazenamento e transporte entre etapas.
+
+O USGS e a FHWA mostram que areia, cascalho e pedra britada são matérias-primas básicas de enorme volume para edifícios, estradas, pontes, concreto, asfalto, base viária e drenagem.
+
+Fontes principais:
+- FEMA Community Lifelines
+- FEMA Supply Chain Resilience Guide
+- WHO Essential medicines
+- Eurostat Material Flow Accounts
+- USDA ERS Retailing & Wholesaling
+- USGS Building America: Construction Materials
+- FHWA Aggregates
+- FHWA Freight Analysis Framework
+
+### Nomenclatura
+
+"Agregados" é tecnicamente correto, mas não é recomendado como nome exibido ao jogador.
+
+Se areia e brita permanecerem agrupadas, usar **Areia e brita**. Internamente podem continuar sendo tratadas como uma família mineral.
+
+### Proposta revisada
+
+**Bens essenciais da cidade**
+- **Alimentos** — consumo dos cidadãos; importação e produção local.
+- **Combustível** — veículos, logística e serviços; já faz parte do produto decidido.
+- **Suprimentos médicos** — medicamentos e consumíveis de saúde em uma categoria agregada; forte candidato, mas pode entrar após o primeiro POC se o escopo precisar ser menor.
+
+**Materiais consumidos diretamente por obras**
+- **Areia e brita** — base de vias, drenagem e insumo de concreto/asfalto.
+- **Concreto** — material final de obra; cadeia candidata: cimento + areia/brita + água.
+- **Aço** — uma categoria inicialmente.
+- **Madeira** — uma categoria inicialmente.
+- **Asfalto** — principalmente vias e superfícies pavimentadas.
+
+**Insumos industriais que só precisam aparecer quando a cadeia local existir**
+- cimento;
+- produtos agrícolas/culturas;
+- madeira em tora;
+- ligante asfáltico/bitume;
+- pedra bruta.
+
+Isso evita começar simultaneamente com clínquer, minério, tijolo, vidro, gesso, cobre, alumínio, plásticos e dezenas de outros produtos.
+
+### Benchmark do gênero
+
+Workers & Resources: Soviet Republic já usa construção física por materiais, importação e produção local. Seu conjunto inclui gravel, concrete, asphalt, steel, prefab panels, bricks, boards e componentes, além de comida e combustível.
+
+Portanto, **construção por materiais não é inédita por si só**. O diferencial potencial do IndexCities está em integrar esse núcleo com cidadãos persistentes, emprego real, Pátio Municipal de Obras, orçamento/salários públicos, mão de obra externa quando falta capacidade, importação física e economia familiar/empresarial.
+
+Fonte: Workers & Resources: Soviet Republic Official Wiki — Construction materials, Construction, Resources e Food.
+
+### Direção recomendada para o primeiro POC
+
+Testar primeiro:
+- alimentos;
+- combustível;
+- areia e brita;
+- concreto;
+- aço;
+- madeira;
+- asfalto.
+
+Suprimentos médicos entram logo depois ou já no mesmo POC se a simulação de saúde for implementada nessa fase.
+
+Cimento deve existir como insumo da concreteira, não necessariamente como material consumido diretamente pelas obras. O mesmo princípio vale para culturas, toras, bitume e pedra bruta.
+
+Ainda precisa de aprovação antes de mover qualquer lista para a SPEC.
