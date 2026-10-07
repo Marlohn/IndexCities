@@ -1,0 +1,759 @@
+# IndexCities — Interface e ferramentas do jogador
+
+> **Status:** documento auxiliar de design e pesquisa.
+>
+> A autoridade de produto continua sendo `docs/SPEC.md`. Ideias ainda abertas continuam sendo exploração. Este documento existe para concentrar decisões, referências e hipóteses sobre a interface e as ferramentas de construção sem transformar toda pesquisa em requisito oficial.
+
+## Objetivo
+
+A interface do IndexCities deve deixar o jogador **construir, entender e corrigir a cidade com pouco atrito**, sem esconder a profundidade da simulação.
+
+O jogo tem uma dificuldade especial: uma ação aparentemente simples — colocar uma rua ou um prédio — pode envolver dinheiro, materiais, trabalhadores, logística, terreno, acesso, demanda e consequências futuras. A UI precisa mostrar o suficiente para a decisão ser compreensível, mas sem virar uma tela cheia de números.
+
+Princípios usados neste documento:
+
+- primeiro mostrar a ação e a consequência mais importante;
+- detalhe adicional aparece sob demanda;
+- preview antes de compromisso;
+- ferramentas frequentes devem exigir poucos cliques;
+- o jogador deve conseguir corrigir planejamento sem ser punido por acidentes de interface;
+- mudanças em coisas já construídas devem respeitar a simulação;
+- não esconder erro apenas com cor: sempre que algo estiver bloqueado, deve existir um motivo em texto curto;
+- profundidade da simulação não deve virar burocracia de UI.
+
+---
+
+## Decisão já oficial: rua em L com um único gesto
+
+A ferramenta de ruas terá suporte a um trajeto ortogonal em **L** usando um único gesto.
+
+Fluxo esperado:
+
+1. o jogador seleciona a ferramenta de rua;
+2. clica no ponto inicial;
+3. arrasta até o ponto final;
+4. se os dois pontos diferirem nos dois eixos, aparece uma prévia em L;
+5. a ferramenta escolhe uma orientação inicial para a curva;
+6. o jogador pode inverter facilmente o lado da curva;
+7. soltar/confimar transforma toda a prévia em um projeto de obra.
+
+Se início e fim estiverem alinhados, a ferramenta pode produzir uma reta. A intenção não é forçar um L quando ele não faz sentido; é permitir construir a forma comum "vai para frente e depois vira" sem obrigar duas operações separadas.
+
+### Como escolher entre os dois L possíveis
+
+Ainda é detalhe de interação, mas a solução preferida para protótipo é combinar:
+
+- **inferência pelo movimento do mouse:** a ferramenta tenta entender qual perna o jogador parece estar priorizando;
+- **tecla simples para inverter:** por exemplo `Tab`, alternando entre "horizontal primeiro" e "vertical primeiro";
+- indicação visual clara do ponto da curva.
+
+Não depender apenas de um menu ou botão na tela para essa troca. É uma operação que precisa continuar fluida durante o arraste.
+
+### Preview da rua
+
+Antes da confirmação, a rua deve mostrar:
+
+- caminho completo;
+- ponto da curva;
+- comprimento;
+- custo monetário;
+- materiais necessários;
+- trechos que exigem alteração de terreno;
+- obstáculos ou demolições;
+- ligação ou não com ruas existentes;
+- motivo quando algum trecho for inválido.
+
+No futuro, se inclinação tiver consequência viária relevante, a prévia também pode mostrar declive excessivo ou custo adicional.
+
+### Snapping
+
+Snapping deve ajudar, não dominar.
+
+Candidatos a snap:
+
+- centro ou borda de rua existente;
+- cruzamentos;
+- alinhamento ortogonal;
+- pontos de conexão de prédios;
+- grid estrutural do mapa, quando aplicável.
+
+Precisamos evitar o problema relatado em ferramentas excessivamente agressivas: muitos nós de snap tornam difícil posicionar exatamente onde o jogador quer. A UI deve oferecer uma forma temporária e rápida de reduzir/desativar snapping durante a colocação.
+
+---
+
+## Pesquisa: o que outros jogos e ferramentas ensinam
+
+### Cities: Skylines II
+
+A ferramenta oficial de ruas combina:
+
+- modos diferentes de desenho;
+- snapping configurável;
+- guias;
+- preview;
+- modo paralelo;
+- ferramenta de substituição;
+- cancelamento por etapa.
+
+A maior lição não é copiar os modos. É permitir que uma ferramenta complexa continue previsível porque o jogador vê o resultado **antes de confirmar**.
+
+Fonte:
+https://www.paradoxinteractive.com/games/cities-skylines-ii/features/road-tools
+
+### OpenTTD
+
+OpenTTD usa ferramentas de arrastar para infraestrutura e uma ferramenta automática que deduz a orientação do trecho a partir do movimento do cursor.
+
+Pontos úteis:
+
+- construção e remoção usam gestos parecidos;
+- atalhos reduzem troca constante de menus;
+- a prévia da infraestrutura aparece antes da colocação;
+- uma ferramenta automática pode substituir vários botões direcionais.
+
+Fontes:
+https://wiki.openttd.org/en/Manual/Building%20roads
+https://wiki.openttd.org/en/Archive/Manual/Autorail
+
+### Workers & Resources: Soviet Republic
+
+É uma boa referência tanto positiva quanto negativa.
+
+Pontos positivos:
+
+- grande quantidade de overlays e informações;
+- hotbar configurável;
+- ferramentas de medição e construção;
+- a simulação profunda exige feedback detalhado.
+
+Problemas recorrentes relatados por jogadores:
+
+- excesso de pequenos controles;
+- muitas operações dependentes de atalhos pouco descobertos;
+- ações simples podem exigir muitos cliques;
+- overlays úteis nem sempre são fáceis de alcançar.
+
+A lição para o IndexCities é não confundir **quantidade de ferramentas** com **boa interface**.
+
+Fontes:
+https://wiki.hoodedhorse.com/Workers_Resources_Soviet_Republic/General
+https://steamcommunity.com/app/784150/discussions/0/6895657465779638292/
+
+### Against the Storm
+
+É uma referência interessante para contexto durante construção.
+
+Ao posicionar certos prédios, o jogo mostra apenas a informação relevante para aquela ação:
+
+- alcance;
+- recursos próximos;
+- solo adequado;
+- relações com outros prédios.
+
+Também diferencia edifícios que podem ser movidos gratuitamente, movidos com custo ou não movidos.
+
+Fonte:
+https://wiki.hoodedhorse.com/Against_the_Storm/Buildings
+
+### Manor Lords
+
+O desenho livre de estradas cria cidades orgânicas, mas discussões de jogadores mostram um problema importante: quando curva e snapping ficam difíceis de prever, a liberdade vira frustração.
+
+Isso reforça a ideia de o IndexCities começar com uma ferramenta assistida simples em vez de tentar entregar imediatamente um editor de spline muito livre.
+
+Referências:
+https://www.reddit.com/r/ManorLords/comments/1plw0ul/road_placement/
+https://www.reddit.com/r/ManorLords/comments/1rb3jic/reclamation_starter_map_road_shape_tools/
+
+### Projetos open source
+
+O projeto Burgage usa preview fantasma, validação de colisão, snap magnético e estradas por spline. É uma referência útil de implementação e interação, sem ser requisito para nossa arquitetura.
+
+Fonte:
+https://github.com/aleksandrbelov/Burgage
+
+---
+
+## Modelo proposto para a GUI principal
+
+**Status: proposta para protótipo, ainda não decisão oficial completa.**
+
+A interface deve manter o centro da tela o mais livre possível. O mapa é o principal instrumento do jogo.
+
+### Barra superior: estado da cidade
+
+Informação persistente, pequena e de consulta rápida:
+
+- dinheiro da cidade;
+- população;
+- velocidade/pausa;
+- data/tempo da simulação;
+- alertas importantes;
+- eventualmente materiais críticos em falta, se isso provar ser necessário.
+
+Evitar colocar uma dúzia de indicadores fixos apenas porque existem na simulação. Se um número não muda uma decisão frequente, ele pode ficar em painel ou overlay.
+
+### Barra inferior: ações do jogador
+
+A zona principal de construção e ferramentas.
+
+Categorias iniciais candidatas:
+
+- ruas e mobilidade;
+- residências;
+- comércio/empresas;
+- indústria e produção;
+- serviços públicos;
+- infraestrutura;
+- obras e logística;
+- demolição;
+- ferramentas de edição/planejamento.
+
+A barra inferior funciona bem para construção porque fica previsível e deixa as laterais disponíveis para inspeção e informação contextual.
+
+### Painel lateral ao selecionar algo
+
+Selecionar cidadão, prédio, empresa, obra ou trecho de infraestrutura abre um painel contextual.
+
+Primeira camada:
+
+- o que é;
+- estado atual;
+- principal problema, se houver;
+- ações relevantes.
+
+Camadas seguintes:
+
+- detalhes;
+- histórico;
+- fluxos econômicos;
+- causas;
+- conexões;
+- dados de debug quando aplicável.
+
+Isso segue a decisão da SPEC de leitura em camadas: informação rápida primeiro, cadeia causal quando o jogador quiser investigar.
+
+### Canto de notificações
+
+Notificação deve significar "isso merece atenção", não ser um feed de tudo que aconteceu.
+
+Categorias:
+
+- bloqueio de obra;
+- serviço crítico parado;
+- empresa em risco;
+- falta severa de material;
+- infraestrutura desconectada;
+- situação que exige ação do jogador.
+
+Eventos normais e repetitivos devem ser agregados ou ficar em histórico.
+
+---
+
+## Ferramentas essenciais candidatas
+
+**Status: exploração.**
+
+### 1. Seleção / inspeção
+
+Ferramenta padrão.
+
+Clique em:
+
+- cidadão;
+- veículo;
+- prédio;
+- obra;
+- rua;
+- empresa;
+- serviço.
+
+A seleção deve funcionar como porta de entrada para entender a simulação, não apenas para editar objetos.
+
+### 2. Construção de prédio
+
+Fluxo preferido:
+
+- escolher prédio;
+- preview fantasma;
+- girar;
+- possivelmente espelhar quando fizer sentido;
+- snapping opcional;
+- mostrar acesso viário e restrições;
+- mostrar custo e materiais;
+- confirmar projeto;
+- obra começa conforme as regras da simulação.
+
+O prédio não aparece magicamente pronto.
+
+### 3. Pipeta / copiar
+
+Selecionar uma construção existente e entrar diretamente no modo de colocar outra do mesmo tipo.
+
+Ferramenta de alto valor porque elimina navegação repetida pelo catálogo.
+
+Não significa copiar estado, funcionários ou empresa; apenas escolher o mesmo tipo de construção.
+
+### 4. Rua
+
+Primeiro modo: L assistido, descrito acima.
+
+Extensões que podem ser testadas depois:
+
+- reta explícita;
+- sequência de múltiplos segmentos antes de confirmar;
+- curva suave;
+- rua paralela;
+- substituir/modernizar tipo de rua;
+- largura ou variantes;
+- ponte/túnel.
+
+Não colocar todos esses modos na primeira versão apenas porque outros jogos possuem.
+
+### 5. Demolição
+
+Precisa ser rápida, mas segura.
+
+Diferença importante:
+
+- cancelar projeto ainda não iniciado;
+- cancelar obra em andamento;
+- demolir estrutura concluída.
+
+Essas três ações podem ter consequências econômicas diferentes.
+
+Para estruturas habitadas, empregando cidadãos ou contendo estoque, a UI precisa explicar o impacto antes da confirmação.
+
+### 6. Medição
+
+Ferramenta simples para:
+
+- distância;
+- eventualmente área;
+- comprimento estimado de rua.
+
+Workers & Resources mostra que jogadores de jogos espaciais profundos valorizam bastante uma ferramenta de medição.
+
+### 7. Overlays
+
+Overlays devem responder perguntas, não apenas pintar o mapa.
+
+Exemplos:
+
+- trânsito;
+- acesso a empregos;
+- educação;
+- saúde;
+- incêndio;
+- água/energia/esgoto;
+- poluição;
+- materiais/logística;
+- valor ou custo do solo, se existir;
+- demanda/vacância;
+- obras.
+
+Ao selecionar um prédio para construir, alguns overlays devem aparecer automaticamente quando forem relevantes. O jogador não deveria precisar abrir manualmente "cobertura de escola" toda vez que posicionar uma escola.
+
+### 8. Desfazer durante planejamento
+
+Precisamos distinguir duas coisas:
+
+**desfazer interface/planejamento**
+- mover preview;
+- alterar rota ainda não confirmada;
+- cancelar blueprint não iniciado.
+
+**desfazer mundo/simulação**
+- apagar uma construção já realizada;
+- restaurar prédio demolido;
+- devolver materiais e tempo.
+
+A primeira categoria deveria ser fácil. A segunda não deve virar uma máquina do tempo invisível.
+
+---
+
+## Mover construções existentes
+
+**Status: exploração aberta. Não é requisito oficial ainda.**
+
+A vontade de poder reorganizar a cidade é válida, mas "clicar e arrastar um prédio pronto para outro lugar" conflita com vários sistemas já decididos:
+
+- obras levam tempo;
+- construção consome materiais;
+- trabalhadores executam a obra;
+- materiais precisam chegar fisicamente;
+- edifícios podem conter famílias, empresas, estoque e conexões;
+- localização tem consequência econômica e logística.
+
+Por isso, devemos separar três casos.
+
+### Caso A — projeto ainda não começou
+
+**Recomendação forte:** permitir mover livremente.
+
+O jogador está corrigindo planejamento, não movendo uma estrutura física.
+
+Idealmente:
+
+- selecionar blueprint;
+- arrastar para nova posição;
+- girar;
+- alterar acesso;
+- recalcular custo;
+- sem custo de demolição.
+
+Isso resolve boa parte da frustração sem ferir a simulação.
+
+Workers & Resources tem pedidos recorrentes exatamente por essa capacidade durante planejamento:
+https://steamcommunity.com/app/784150/discussions/0/4208119778366547705/
+
+### Caso B — obra já começou
+
+Possível comportamento:
+
+- cancelar;
+- recuperar parte dos materiais ainda não consumidos;
+- materiais já usados viram recuperação/demolição;
+- criar novo projeto em outro local.
+
+Não deve parecer que a fundação e materiais simplesmente teleportaram.
+
+### Caso C — prédio concluído
+
+Existem quatro caminhos conceituais.
+
+#### Opção 1: não mover; demolir e reconstruir
+
+Prós:
+- máximo de coerência;
+- reaproveita sistemas existentes;
+- simples de entender.
+
+Contras:
+- reorganização pode ficar cansativa;
+- punição alta para erro antigo de layout;
+- pode desestimular experimentação.
+
+#### Opção 2: comando "Realocar"
+
+A UI parece simples, mas por baixo acontece uma operação real:
+
+1. selecionar prédio;
+2. escolher novo local;
+3. verificar viabilidade;
+4. criar plano de realocação;
+5. retirar moradores/estoque/operação quando necessário;
+6. desmontar ou preparar estrutura;
+7. transportar materiais/partes;
+8. reconstruir;
+9. reabrir.
+
+O jogador vê uma única ação de alto nível, mas a simulação continua coerente.
+
+Essa opção combina bem com a filosofia "profundidade sem microgerenciamento".
+
+#### Opção 3: permitir apenas alguns tipos
+
+Against the Storm usa essa regra: certos prédios são móveis, alguns custam recursos e muitos não podem ser movidos.
+
+Poderia fazer sentido para:
+
+- estruturas leves;
+- depósitos temporários;
+- elementos decorativos;
+- equipamentos de canteiro.
+
+E não para:
+
+- edifícios grandes;
+- infraestrutura pesada;
+- estruturas com fundação complexa.
+
+Risco: categorias arbitrárias precisam ser intuitivas.
+
+#### Opção 4: mover tudo instantaneamente
+
+Não recomendado para o modo normal.
+
+Seria coerente apenas como:
+
+- ferramenta de debug;
+- modo criativo explícito;
+- opção de acessibilidade/sandbox muito específica.
+
+### Hipótese mais promissora
+
+A melhor direção para testar é:
+
+- **blueprint não iniciado: mover livremente**;
+- **obra iniciada: cancelar/replanejar com consequência**;
+- **prédio concluído: botão "Realocar" que cria uma operação real**, não teletransporte.
+
+Ainda precisamos decidir se "realocar" realmente desmonta e reconstrói ou se, para alguns prédios, simula transporte físico da estrutura.
+
+---
+
+## Uma ideia importante: editar sem perder identidade
+
+Se um prédio for realocado, reconstruído ou substituído, precisamos decidir o que acontece com sua identidade.
+
+Exemplo:
+
+- uma escola muda de endereço;
+- funcionários continuam vinculados?
+- alunos continuam vinculados?
+- histórico continua sendo da mesma instituição?
+- estoque acompanha?
+- empresa que opera o prédio continua sendo a mesma?
+
+Isso pode ser mais importante para gameplay do que a animação da mudança.
+
+Uma boa ferramenta de "realocação" talvez deva preservar a **entidade institucional/econômica** enquanto troca sua estrutura física.
+
+Isso permite dizer:
+
+> "A Escola Municipal Central está sendo transferida para o novo prédio"
+
+em vez de destruir uma escola conceitualmente e criar outra sem relação.
+
+Esse ponto ainda precisa de pesquisa e decisão.
+
+---
+
+## Ferramentas de qualidade de vida a considerar
+
+### Favoritos / hotbar
+
+Jogador deve poder colocar ferramentas ou construções frequentes em atalhos.
+
+Isso evita navegar por categorias repetidamente.
+
+### Último item usado
+
+Após colocar uma construção, manter acesso rápido ao último tipo usado.
+
+### Construção contínua
+
+Para itens repetitivos:
+
+- árvores;
+- postes;
+- pequenas estruturas;
+- ruas.
+
+Pode manter a ferramenta ativa depois de confirmar.
+
+### Tecla modificadora para comportamento temporário
+
+Exemplos possíveis:
+
+- ignorar snap enquanto segura uma tecla;
+- inverter o L;
+- apagar usando a mesma ferramenta;
+- fazer ajuste fino de rotação.
+
+Melhor do que criar um botão permanente para cada variação.
+
+### Transparência automática
+
+Quando prédio/árvore esconde o ponto onde o jogador está tentando construir, elementos entre câmera e cursor podem ficar transparentes temporariamente.
+
+### Auto-overlay contextual
+
+Ao colocar:
+
+- escola → mostrar alunos/cobertura relevante;
+- hospital → mostrar cobertura/capacidade relevante;
+- indústria → mostrar logística e acesso;
+- residência → mostrar acesso, emprego e serviços;
+- depósito → mostrar fluxos de materiais;
+- rua → mostrar conexões, inclinação e obstáculos.
+
+### Informação perto do cursor, sem tapar o alvo
+
+Fóruns de Farthest Frontier relatam que janelas de placement frequentemente ficam em cima da área que o jogador está tentando posicionar.
+
+Regra para o IndexCities:
+
+- dados essenciais podem acompanhar o cursor;
+- painel deve escolher automaticamente o lado livre;
+- informação detalhada fica fora da área imediata de placement;
+- nunca esconder o ponto exato que está sendo editado.
+
+Referência:
+https://forums.crateentertainment.com/t/reduce-clicks-move-the/128750
+
+---
+
+## Ideias fora do padrão para testar
+
+### 1. "Planejar bairro"
+
+O jogador desenha vários prédios e ruas como blueprints antes de liberar a obra.
+
+Benefícios:
+
+- permite revisar layout inteiro;
+- orçamento agregado;
+- materiais totais;
+- prioridade de execução;
+- menos necessidade de demolir erro de posicionamento.
+
+Risco:
+- não virar um modo complexo de desenho arquitetônico.
+
+### 2. Comparação antes/depois
+
+Ao realocar, demolir ou substituir algo importante, mostrar:
+
+- situação atual;
+- situação prevista;
+- mudanças principais.
+
+Exemplo:
+"Esta escola deixará 230 moradores fora do alcance durante a obra."
+
+### 3. Ferramenta "Por que aqui?"
+
+Ao passar o mouse com um prédio selecionado, mostrar rapidamente:
+
+- por que aquele local é bom;
+- por que é ruim;
+- principal gargalo.
+
+Não um score mágico. Deve ser derivado de causas reais.
+
+### 4. Ferramenta "Consertar conexão"
+
+Quando um prédio está sem acesso adequado, clicar no alerta poderia abrir diretamente a ferramenta de rua já apontando para as conexões possíveis.
+
+A UI não apenas informa o problema; leva o jogador à ferramenta que pode resolvê-lo.
+
+### 5. Preview temporal da obra
+
+Além de custo, uma obra poderia mostrar estimativa baseada no estado atual:
+
+- equipe disponível;
+- material presente;
+- material a importar;
+- distância logística.
+
+Não precisa prometer precisão absoluta, mas ajuda a comparar decisões.
+
+### 6. Modo de planejamento sem compromisso
+
+Permite experimentar layout sem iniciar obras imediatamente.
+
+Só ao clicar "aprovar plano" os projetos entram na fila real.
+
+Pode ser muito valioso porque o IndexCities possui construção material e lenta; planejamento incorreto custa mais do que em um city painter.
+
+### 7. Histórico visual curto de alterações
+
+Após uma sessão grande de obras, um pequeno histórico poderia mostrar as últimas ações do jogador:
+
+- projeto criado;
+- projeto cancelado;
+- prédio marcado para realocação;
+- rua alterada.
+
+Não como sistema de undo total, mas como orientação e diagnóstico.
+
+---
+
+## O que evitar
+
+### Interface cheia de indicadores permanentes
+
+O IndexCities terá muitos dados. Colocar todos na HUD tornará a cidade secundária.
+
+### Ícones sem texto em ações críticas
+
+Ícones podem acelerar uso experiente, mas tooltip e nome devem existir.
+
+### Ferramentas escondidas apenas em atalhos
+
+Atalho acelera. Não deve ser a única forma de descobrir uma função importante.
+
+### Snap impossível de controlar
+
+Ajuda automática que luta contra o jogador é pior do que não ter ajuda.
+
+### Janela sobre a área de construção
+
+Informação de placement não pode esconder a própria placement.
+
+### "Mover" que teleporta toda a simulação
+
+Prédio, estoque, família, empresa e funcionários não devem mudar de localização instantaneamente só porque a UI usa a palavra mover.
+
+### Confirmação para toda ação pequena
+
+Confirmação deve existir onde o custo do erro é alto. Se cada rua e blueprint exigir modal, a interface fica lenta.
+
+---
+
+## Protótipo recomendado
+
+Primeira fatia de UI a testar:
+
+1. HUD mínima;
+2. seleção de entidades;
+3. barra inferior de construção;
+4. placement de prédio com ghost + rotação + validação;
+5. ferramenta de rua em L;
+6. custo/material no preview;
+7. cancelamento de blueprint;
+8. mover blueprint ainda não iniciado;
+9. demolir;
+10. um overlay de trânsito;
+11. um overlay de logística/material;
+12. painel lateral simples de inspeção.
+
+Não implementar dezenas de categorias antes de descobrir se esses fluxos são agradáveis.
+
+### Testes observáveis
+
+Durante o protótipo, medir/observar:
+
+- quantos cliques para construir uma rua em L;
+- quantos cliques para colocar cinco casas iguais;
+- se usuário entende por que placement está inválido;
+- se consegue inverter o L sem procurar menu;
+- se corrige um blueprint sem demolir/recriar;
+- se encontra a origem de uma obra parada;
+- se painéis cobrem o local de construção;
+- se snapping ajuda ou luta contra o cursor;
+- se alertas levam diretamente a uma ação possível.
+
+---
+
+## Questões ainda abertas
+
+1. A ferramenta de rua em L deve usar grid rígido, alinhamento assistido ou ambos?
+2. Como exatamente o jogador inverte o lado do L?
+3. Teremos curvas livres no primeiro escopo ou só depois?
+4. O jogo terá modo de planejamento em lote?
+5. Blueprint sem obra iniciada poderá sempre ser movido gratuitamente?
+6. Realocação de prédio concluído será permitida para todos os tipos ou só alguns?
+7. Realocar preserva a identidade da empresa/serviço?
+8. O que acontece com moradores, funcionários e estoque durante a realocação?
+9. Quanto material pode ser recuperado ao cancelar/demolir?
+10. Quais overlays entram no primeiro protótipo?
+11. Hotbar será fixa, configurável ou híbrida?
+12. Quais ações merecem confirmação?
+13. Teremos "copiar/pipeta" desde o início?
+14. A posição principal da barra de construção será inferior mesmo após testes de resolução e escala?
+15. Como a UI adapta a densidade de informação em telas menores?
+
+---
+
+## Direção atual
+
+O caminho mais coerente, neste momento, é uma interface de **mapa limpo + ferramentas contextuais + preview forte**.
+
+A experiência de construção deve ser rápida o bastante para não transformar cada ação em trabalho administrativo, mas cada confirmação deve continuar ligada à simulação real.
+
+A rua em L é um bom exemplo do princípio: o jogador faz **um gesto simples**, enquanto o jogo resolve a geometria e apresenta as consequências.
+
+A realocação de prédios deve seguir a mesma filosofia: **uma ação simples na interface pode disparar um processo profundo na simulação**, em vez de obrigar o jogador a executar manualmente cada etapa ou, no extremo oposto, fingir que a etapa não existe.
