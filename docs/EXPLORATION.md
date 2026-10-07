@@ -51,14 +51,19 @@ Ao mesmo tempo, desenvolvimento totalmente sem limites pode causar deriva de esc
 
 ### Conclusão
 
-O IndexCities adota por enquanto uma abordagem de **“Go Horse com cerca”**:
+O IndexCities adota **Spec-Driven Development (SDD) leve**: a especificação vem antes do desenvolvimento, sem transformar cada mudança em um processo pesado.
+
+Na prática:
 
 - uma única SPEC curta e autoritativa;
+- ARCHITECTURE para decisões estruturais;
 - AGENTS.md com regras de trabalho;
 - EXPLORATION para pesquisa e decisões ainda abertas;
-- implementação rápida dentro desses limites;
+- implementação rápida depois que a intenção estiver definida;
 - validação proporcional ao risco;
 - nenhum framework adicional de SDD por enquanto.
+
+A pesquisa confirmou que SDD normalmente significa colocar intenção e especificação antes da implementação. Ferramentas como Spec Kit estruturam isso em várias etapas, mas o IndexCities adota apenas o princípio necessário, sem copiar a cerimônia inteira.
 
 ### Princípio de evolução
 
