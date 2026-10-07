@@ -246,3 +246,22 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Parques, comércio, atrações e outros pontos de interesse podem aumentar a demanda turística.
 - Turistas chegam fisicamente à cidade.
 - A chegada pode ocorrer por rodovia, transporte público e carro particular.
+
+
+### Conexão externa da cidade
+
+- O mapa terá uma **conexão externa** que representa a ligação da cidade com o restante do mundo.
+- Fluxos externos entram e saem da cidade por essa conexão.
+- Turistas, novos moradores, cargas e outros fluxos externos usam essa conexão.
+- Todos os meios de transporte externos devem se integrar a esse sistema de conexão com o exterior.
+- A forma exata da conexão externa e quantos pontos físicos ela terá ainda podem evoluir, mas o conceito é obrigatório.
+
+
+### Educação e qualificação
+
+- Escolas têm professores reais e alunos reais.
+- A capacidade escolar depende do quadro de professores e da quantidade de alunos atendidos.
+- O jogo terá ensino superior/universidade.
+- Professores são trabalhadores reais, ocupando vagas reais.
+- Educação e qualificação influenciam acesso a empregos e salários.
+- Crianças e adolescentes podem ficar sem escola quando não houver vaga ou acesso adequado.
