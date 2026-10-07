@@ -761,13 +761,21 @@ Interpretação:
 - se o capital for sempre recuperado integralmente, dinheiro vira mais uma restrição de liquidez do que um custo permanente para expansão residencial;
 - ainda é preciso decidir o que acontece quando a demanda não suporta o valor necessário para recuperar o custo.
 
-### Recomendação para discussão
+### Reavaliação após discussão
 
-A opção C parece o melhor compromisso com as decisões atuais. O ponto central é separar:
+A opção C foi **rejeitada**: se o Caixa sempre adianta o capital e o recupera integralmente na primeira venda, o dinheiro vira essencialmente reciclável. Com impostos também entrando, o jogador perde boa parte da pressão financeira e o sistema tende a produzir uma fonte circular de capital.
 
-- **receita da cidade** → principalmente impostos e receitas públicas;
-- **recuperação de capital de desenvolvimento** → devolução do dinheiro que o Caixa adiantou para criar um ativo privado.
+Isso revela que o problema está antes da pergunta “para quem vai o dinheiro da primeira venda?”. A premissa a reavaliar é **quem financia uma construção privada**.
 
-A interface financeira deve manter essas categorias separadas para não apresentar venda de moradia como “lucro municipal”.
+Direção agora preferida para discutir:
+- o jogador continua escolhendo onde construir;
+- uma residência privada não precisa ser financiada pelo Caixa da Cidade por padrão;
+- capital privado real pode financiar a obra: família local, família externa que vai migrar e morar, ou investidor residencial local já permitido;
+- construção só começa quando houver um agente real com capital suficiente para assumir o projeto, salvo política pública explícita de subsídio/moradia pública no futuro;
+- a cidade recebe principalmente impostos e taxas, não o preço integral do imóvel.
 
-Ainda não decidir se a recuperação é sempre integral, se pode haver perda quando a demanda é baixa ou como o preço inicial é calculado.
+**Pró:** elimina a reciclagem infinita de capital e mantém impostos relevantes.
+
+**Contra:** o placement do jogador passa a representar uma proposta/autorização de desenvolvimento privado, não necessariamente uma obra imediatamente paga pelo Caixa; esse fluxo precisa ser testado para não parecer que o jogador constrói casas “de graça”.
+
+Essa direção ainda não é decisão oficial.
