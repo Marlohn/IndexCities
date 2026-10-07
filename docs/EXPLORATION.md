@@ -1538,6 +1538,19 @@ O documento [GENRE_BENCHMARK.md](GENRE_BENCHMARK.md) já contém evidências sob
 
 ## Bens e materiais básicos para uma cidade funcionar
 
+### Correção de escopo da pesquisa de materiais
+
+A proposta anterior de cinco famílias misturou três problemas diferentes e **não deve ser tratada como lista aprovada**:
+
+1. materiais para construir e manter infraestrutura;
+2. insumos essenciais para operar serviços/economia;
+3. mercadorias consumidas pela população.
+
+A pesquisa pedida para o IndexCities deve primeiro responder: **qual é o menor conjunto coerente de materiais físicos necessário para construir, manter e fazer uma cidade funcionar**, preservando cadeias logísticas interessantes sem criar SKUs desnecessários.
+
+Alimentos, medicamentos e bens de consumo continuam relevantes para a economia, mas não devem ser usados para responder sozinhos à pergunta sobre materiais básicos da cidade.
+
+
 **Status:** pesquisa de baseline; categorias finais ainda não são requisito.
 
 A pergunta aqui é mais ampla do que "quais materiais entram numa obra". O objetivo é identificar quais fluxos físicos mínimos precisam existir para a cidade parecer funcional sem criar centenas de SKUs.
@@ -1654,3 +1667,76 @@ Em aberto:
 - ou se recebe apenas dinheiro e precisa construir o primeiro depósito.
 
 Essa decisão deve ser avaliada como parte do onboarding e da prevenção de soft-lock: o início precisa permitir a primeira obra sem criar um ciclo impossível de depender de um depósito que também exige materiais ainda indisponíveis.
+
+---
+
+## Agricultura e produção local de alimentos
+
+**Status:** decidido em nível de produto; cadeia detalhada ainda aberta.
+
+- Fazendas/agricultura existirão.
+- A produção agrícola gera alimento real para abastecer a economia da cidade.
+- A produção deve integrar estoque, transporte e consumo já definidos.
+
+Ainda precisa ser pesquisado/decidido:
+
+- quais tipos de produção agrícola entram primeiro;
+- se haverá matéria-prima agrícola separada de alimento processado;
+- necessidade de água, trabalhadores, veículos e armazenamento;
+- produtividade por área;
+- processamento por indústrias alimentícias.
+
+
+---
+
+## Importação externa e preços iniciais
+
+**Status:** parcialmente decidido.
+
+Decidido:
+
+- mercadorias físicas podem ser importadas enquanto a cidade não as produz localmente em quantidade suficiente;
+- importações usam a conexão externa;
+- preços externos ficam **estáveis no escopo inicial**, sem mercado externo dinâmico.
+
+Para implementação, o preço deve ser um dado de balanceamento configurável pelo projeto, mas isso não implica necessariamente uma opção exposta ao jogador.
+
+
+---
+
+## Bootstrap logístico da primeira construção
+
+**Status:** proposta recomendada; ainda não fechada.
+
+Problema: se toda obra precisa de material armazenado, mas o primeiro depósito também precisa de material para ser construído, pode surgir um ciclo impossível.
+
+### Alternativas
+
+1. **Depósito inicial gratuito**
+   - simples;
+   - porém pula justamente a primeira etapa da cadeia de construção.
+
+2. **Pequeno estoque inicial na conexão externa**
+   - a cidade continua sem tecido urbano pronto;
+   - existe apenas uma quantidade limitada de material de bootstrap disponível no ponto externo;
+   - esse material permite construir o primeiro acesso viário e o primeiro depósito;
+   - depois disso, todo abastecimento segue a logística normal.
+
+3. **Entrega externa direta na primeira obra**
+   - reduz infraestrutura especial;
+   - mas cria uma exceção em que materiais ignoram o armazenamento obrigatório.
+
+### Recomendação atual
+
+Testar a alternativa 2.
+
+A conexão externa funciona como origem do lote inicial, não como depósito urbano permanente. O lote deve ser pequeno e dimensionado apenas para colocar a cadeia logística em funcionamento.
+
+No fluxo normal, caminhões de carga chegam fisicamente do exterior pela rodovia/conexão externa, entregam mercadorias em depósitos/estabelecimentos e depois retornam ao exterior ou seguem sua rota.
+
+Ainda precisa ser confirmado:
+
+- se o estoque inicial fica literalmente em uma área de staging na conexão externa;
+- quantidade suficiente para quais primeiras construções;
+- se também deve cobrir o primeiro trecho de via;
+- quem/qual veículo transporta esse estoque até o primeiro canteiro.
