@@ -1108,3 +1108,37 @@ A logística deve emergir principalmente de:
 - fila/capacidade no ponto de carga e descarga.
 
 Se no futuro restrições de horário gerarem gameplay útil, elas podem ser reavaliadas.
+
+
+---
+
+## Filas físicas e horários de funcionamento
+
+**Status:** documentado para futuro; fora do escopo atual.
+
+### Filas físicas em comércio e saúde
+
+No futuro pode ser útil representar filas físicas quando a capacidade de um comércio, hospital ou outro serviço for excedida.
+
+Possíveis consequências:
+
+- espera visível;
+- ocupação de calçadas/espaço externo;
+- impacto em satisfação;
+- atraso em atendimento;
+- incentivo para ampliar capacidade.
+
+Não é necessário implementar isso agora.
+
+### Horários de funcionamento
+
+Comércio e serviços podem futuramente ter horários reais de abertura e fechamento.
+
+Possíveis efeitos:
+
+- concentração de viagens em certos horários;
+- necessidade de turnos;
+- indisponibilidade temporária de serviços;
+- redistribuição de demanda.
+
+Também fica fora do escopo atual até a simulação básica de rotina, trabalho e mobilidade estar estável.
