@@ -10,6 +10,21 @@ Estas regras valem para humanos e IAs. O objetivo é maximizar progresso útil s
 
 Antes de uma mudança relevante, leia a SPEC e somente o código necessário para entender o alvo. Consulte a EXPLORATION quando a tarefa depender de uma discussão ainda aberta ou do raciocínio que levou a uma decisão.
 
+
+## Fluxo contínuo de conversa e documentação
+
+Durante conversas de exploração ou definição com o responsável pelo projeto:
+
+- trate o que ele disser como entrada ativa de produto, não apenas como contexto de conversa;
+- quando houver afirmação factual verificável, pesquise e confirme antes de registrá-la como fato;
+- quando houver uma decisão explícita, atualize a fonte de verdade apropriada imediatamente, sem esperar um pedido separado de documentação;
+- decisões de produto vão para `docs/SPEC.md`;
+- hipóteses, ideias, alternativas, referências, dúvidas e resultados de pesquisa vão para `docs/EXPLORATION.md`;
+- regras de desenvolvimento e de trabalho vão para `AGENTS.md`;
+- se a documentação existente ficar desatualizada, contraditória ou incompleta à luz da conversa atual, corrija-a na mesma sessão;
+- não transforme suposição em requisito: quando não houver evidência ou decisão suficiente, registre como aberto e indique o que precisa ser pesquisado ou medido;
+- mantenha a documentação enxuta: atualize o que mudou em vez de acumular transcrições da conversa.
+
 ## Arquitetura de especificação
 
 O IndexCities usa deliberadamente uma arquitetura de especificação mínima.
