@@ -52,7 +52,7 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - O aluguel pago deve ir ao **proprietário real do imóvel**, e não a um recebedor abstrato.
 - A compra só pode ocorrer com dinheiro real disponível do comprador; a decisão deve considerar fatores econômicos concretos, como preço, demanda e expectativa de ocupação/renda.
 - A fórmula exata de decisão e os limites de investimento continuam em calibração/exploração.
-- No primeiro modelo, cada imóvel residencial tem **um único cidadão como proprietário registrado**.
+- No primeiro modelo, cada imóvel residencial **privadamente possuído** tem um único cidadão como proprietário registrado; um imóvel pode ficar temporariamente sem proprietário quando entrar em estado de patrimônio não reclamado.
 - Um casal/família pode somar recursos para viabilizar a compra, mas a propriedade fica registrada em nome de um único SIM; copropriedade fica fora do primeiro modelo.
 - Ao entrar na simulação, cidadãos podem iniciar com um saldo monetário explícito conforme regra de geração/migração; o valor e sua distribuição devem ser configuráveis e auditáveis, sem criação invisível de riqueza.
 
@@ -127,7 +127,7 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - Enquanto essa liquidação existir, imóveis ainda pertencentes à empresa podem ser colocados automaticamente no mercado; o pagamento de uma venda entra no caixa da empresa em liquidação.
 - Quando a empresa não tiver mais ativos pendentes, eventual saldo monetário remanescente vai para o **Fundo de Patrimônio Não Reclamado**, e a entidade empresa é removida.
 - Se um ativo ficar sem titular após o encerramento, ele pode permanecer explicitamente sem proprietário e continuar disponível no mercado; uma venda futura envia o valor ao Fundo de Patrimônio Não Reclamado.
-- Fechar um estabelecimento isolado de uma empresa que continua saudável em outros locais não precisa encerrar a empresa inteira; essa distinção pode existir sem criar uma simulação jurídica de falência.
+- Fechar um estabelecimento isolado de uma empresa que continua saudável em outros locais **não encerra a empresa inteira**; essa distinção existe sem exigir uma simulação jurídica de falência.
 
 ### Serviços públicos
 
@@ -419,7 +419,7 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Não haverá, neste primeiro modelo, investidor residencial externo que permaneça fora da cidade comprando imóveis apenas para receber aluguel.
 - A procura exterior não é infinita: deve depender de fatores reais e diagnosticáveis, como emprego, preço, disponibilidade de moradia e atratividade da cidade.
 - Baixa demanda pode manter uma residência vazia por mais tempo; isso é consequência econômica válida e deve ser legível para o jogador.
-- Famílias locais podem comprar imóveis adicionais para aluguel quando tiverem recursos reais; a fórmula de decisão, herança, revenda e regras do primeiro proprietário de um ativo recém-construído continuam em definição.
+- Famílias locais podem comprar imóveis adicionais para aluguel quando tiverem recursos reais; a fórmula de decisão, a prioridade exata de herdeiros, a revenda e as regras do primeiro proprietário de um ativo recém-construído continuam em definição. O caso sem herdeiro já segue as regras de patrimônio não reclamado desta SPEC.
 
 ### Turismo e hospedagem
 
