@@ -3611,3 +3611,263 @@ Alternativas a comparar antes de decidir:
 - existe uma regra híbrida conforme demanda e capacidade de compra.
 
 Não decidir esse ponto por conveniência técnica; ele define o fluxo monetário de moradia.
+
+
+---
+
+## Hipótese: mercado de aquisição ligado à conexão exterior
+
+**Status:** hipótese forte em debate; não promovida para a SPEC.
+
+### Ideia
+
+Quando o jogador termina uma construção privada, o prédio pode começar **sem proprietário/operador definitivo**.
+
+Ele entra em um mercado automático de aquisição/ocupação.
+
+Candidatos podem vir de:
+- famílias já existentes na cidade;
+- empresas já existentes na cidade;
+- novos candidatos vindos da conexão exterior.
+
+Baixa demanda significa menos candidatos e pode deixar o ativo vazio por mais tempo.
+
+A conexão exterior deixa de servir apenas para pessoas, carga e serviços: ela também pode representar a entrada de **capital, novas famílias e novas empresas** na cidade.
+
+### Referências de gameplay
+
+Cities: Skylines II usa uma lógica próxima em dois pontos, embora não simule compra explícita do imóvel:
+- residências construídas mas desocupadas reduzem demanda residencial; novos cidadãos procuram moradia conforme emprego, educação e atratividade;
+- edifícios econômicos podem ficar desocupados até uma empresa se instalar, e empresas avaliam localização, clientes, trabalhadores, recursos e custos antes de escolher onde operar.
+
+A documentação também usa Outside Connections como origem de novos cidadãos e de recursos/serviços externos.
+
+Fontes:
+- Paradox — Zones & Signature Buildings: https://www.paradoxinteractive.com/games/cities-skylines-ii/features/zones-signature-buildings
+- Paradox — Economy & Production: https://www.paradoxinteractive.com/games/cities-skylines-ii/features/economy-production
+- Paradox — Public & Cargo Transportation: https://www.paradoxinteractive.com/games/cities-skylines-ii/features/public-cargo-transportation
+- Paradox — City Services: https://www.paradoxinteractive.com/games/cities-skylines-ii/features/city-services-districts-policies
+
+Isso valida o princípio de **prédio vazio + agente adequado entra conforme demanda**, mas não valida automaticamente um sistema de propriedade/compra; essa parte é proposta específica do IndexCities.
+
+### Principal vantagem
+
+A proposta conecta sistemas que já existem em vez de criar uma camada isolada:
+
+jogador constrói
+→ capital fica imobilizado no ativo
+→ ativo entra no mercado
+→ demanda define velocidade/interesse
+→ família/empresa local ou externa adquire
+→ dinheiro da aquisição tem origem real
+→ ocupante/empresa entra em operação
+→ cidade passa a receber impostos e efeitos econômicos
+
+Isso transforma vacância em consequência real de uma decisão ruim do jogador.
+
+### Residencial
+
+A proposta é especialmente forte para moradia.
+
+Uma residência concluída poderia receber candidatos:
+
+**Família local**
+- já mora na cidade;
+- avalia preço, renda/poupança, tamanho da família, localização e acesso;
+- se comprar para morar, muda de residência e deixa a anterior disponível;
+- se puder comprar como investimento, pode tornar-se proprietária e alugá-la.
+
+**Família exterior**
+- avalia cidade, emprego, preço e moradia;
+- ao concluir a compra para residência própria, entra pela conexão exterior e passa a ser família real da cidade.
+
+Essa dinâmica pode criar cadeias naturais:
+
+família compra casa nova
+→ libera imóvel antigo
+→ outra família ocupa/compra
+→ migração e mobilidade residencial emergem do mesmo mercado.
+
+### Grande ponto em aberto: compra para morar versus comprar para alugar
+
+Permitir que qualquer família compre imóveis extras para renda gera gameplay patrimonial interessante, mas amplia bastante o sistema.
+
+Prós:
+- diferencia riqueza de renda;
+- cria proprietários e locatários reais;
+- dá significado a herança;
+- aluguel tem destino claro;
+- pode produzir concentração patrimonial e vulnerabilidade econômica emergentes.
+
+Contras:
+- exige poupança/riqueza familiar real;
+- pode exigir limite ou lógica de investimento para evitar comportamento absurdo;
+- amplia a importância de preço dos imóveis;
+- pode gerar especulação e imóveis vazios;
+- external buyer que compra apenas para alugar sem virar entidade local recriaria um landlord invisível.
+
+**Recomendação de segurança:** se houver comprador exterior residencial no primeiro escopo, preferir famílias que compram para **morar e migrar para a cidade**. Investidor exterior que permanece fora da cidade não deve ser introduzido sem uma entidade econômica explícita e auditável.
+
+### Comércio e indústria: usar o mesmo mecanismo, mas não necessariamente a mesma propriedade
+
+Para comércio e indústria, o conceito de **prédio vazio aguardando empresa** é forte.
+
+Candidatos:
+- empresa local existente querendo expandir;
+- nova empresa formada/local;
+- empresa exterior entrando na cidade.
+
+A empresa avalia:
+- demanda/clientes;
+- trabalhadores;
+- insumos;
+- logística;
+- localização;
+- custos.
+
+Baixa oportunidade pode deixar o prédio vazio.
+
+Porém, não é obrigatório separar:
+- proprietário jurídico do prédio;
+- empresa operadora.
+
+No primeiro escopo, pode ser mais simples tratar a empresa que assume o prédio como **proprietária/operadora econômica** daquele ativo.
+
+Isso evita criar mercado imobiliário comercial separado apenas por realismo.
+
+### Grande risco 1: dinheiro infinito vindo do exterior
+
+Se qualquer prédio puder ser vendido instantaneamente a um comprador externo com dinheiro ilimitado, surge um exploit:
+
+importar materiais
+→ construir
+→ vender para exterior
+→ receber mais dinheiro
+→ repetir infinitamente
+
+Portanto, **conexão exterior não pode ser comprador infinito**.
+
+A demanda exterior precisa ser limitada por causas observáveis, por exemplo:
+- empregos disponíveis;
+- qualidade/atratividade;
+- preço;
+- tipo/tamanho de moradia;
+- oportunidade econômica;
+- oferta já vazia na cidade.
+
+A UI deve conseguir mostrar algo como:
+- candidatos locais interessados;
+- candidatos externos interessados;
+- motivo de baixa procura;
+- tempo em vacância.
+
+### Grande risco 2: de onde vem e para onde vai o preço de compra
+
+Se o jogador usa o Caixa da Cidade para construir e depois um agente compra o ativo, o preço de aquisição precisa ter destino explícito.
+
+Hipótese coerente:
+
+Caixa da Cidade paga a construção
+→ prédio concluído é um ativo do desenvolvimento da cidade
+→ comprador paga aquisição
+→ valor retorna ao Caixa da Cidade
+→ depois a receita recorrente da cidade vem principalmente de impostos
+
+Assim, venda de imóvel/prédio funciona como **reciclagem do capital investido**, enquanto impostos continuam sendo a receita recorrente.
+
+Isso também diferencia:
+- fluxo de capital: construir/vender;
+- fluxo fiscal: impostos durante a operação.
+
+### Risco de arbitragem
+
+Se preço de venda for simplesmente maior que custo de construção e a demanda exterior não tiver limite, o jogador vira incorporador com lucro garantido.
+
+Precisam ser testados:
+- custo total da obra;
+- valor de mercado;
+- oferta concorrente;
+- demanda local/exterior;
+- tempo de vacância;
+- orçamento real dos compradores.
+
+Não assumir lucro garantido.
+
+### Pré-requisito oculto: dinheiro das famílias
+
+Compra residencial real exige que famílias tenham alguma forma explícita de:
+- dinheiro/poupança;
+- capacidade de compra.
+
+Hoje renda e orçamento familiar já existem conceitualmente, mas a granularidade de patrimônio/poupança ainda precisa ser fechada.
+
+Sem poupança real, a escolha de comprador vira caixa-preta.
+
+Hipoteca/banco **não precisa** entrar automaticamente. Uma primeira versão pode permitir compra apenas quando a família possui recursos suficientes, deixando financiamento imobiliário para uma decisão futura.
+
+### Apartamentos
+
+Há duas opções conceituais:
+
+1. prédio inteiro tem um proprietário;
+2. cada unidade residencial tem proprietário próprio.
+
+Propriedade por unidade combina melhor com:
+- família proprietária;
+- herança;
+- compra/venda individual;
+- aluguel por unidade.
+
+Mas aumenta estado persistente.
+
+Não decidir ainda; avaliar no POC de moradia.
+
+### Como evitar microgerenciamento
+
+O jogador não precisa:
+- escolher comprador;
+- aprovar propostas;
+- organizar leilão;
+- administrar contratos.
+
+O mercado pode resolver automaticamente.
+
+A superfície mostra:
+- **vazio / à venda / procurando operador**;
+- demanda boa/média/baixa;
+- interesse local/exterior;
+- principal motivo de demora.
+
+A visão detalhada mostra candidatos, preço, capacidade financeira e fatores relevantes.
+
+### Conflito com decisão atual se esta hipótese for aprovada
+
+A SPEC atualmente diz que:
+- o Caixa da Cidade paga toda construção privada;
+- uma empresa privada recebe do próprio Caixa da Cidade uma capitalização operacional inicial.
+
+Se uma empresa local/exterior **adquirir** o prédio com capital próprio, essa capitalização inicial paga pela cidade provavelmente deixa de fazer sentido.
+
+Uma eventual aprovação desta hipótese exige revisar:
+- capitalização inicial das empresas;
+- origem do caixa inicial de uma nova empresa;
+- recuperação do investimento do Caixa da Cidade;
+- propriedade inicial de residências e prédios econômicos.
+
+### Avaliação atual
+
+A hipótese parece mais coerente que o modelo anterior porque:
+- conecta demanda, vacância, migração, empresas e conexão exterior;
+- mantém o jogador no controle da construção;
+- permite que impostos sejam a receita recorrente principal;
+- reduz necessidade de proprietários abstratos;
+- cria consequências visíveis para construir demais.
+
+O maior risco não é complexidade de simulação. É **criar capital externo infinito ou uma disputa de compradores opaca**.
+
+Por isso, a ideia merece continuar sendo explorada, mas só deve virar requisito depois de fechar:
+1. quem pode adquirir residencial;
+2. se comprador exterior precisa entrar/migrar;
+3. como comércio/indústria tratam aquisição versus operação;
+4. como o preço de compra retorna ao Caixa da Cidade;
+5. como limitar e explicar demanda exterior.
