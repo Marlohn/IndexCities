@@ -363,7 +363,7 @@ Se no futuro restrições de horário gerarem gameplay útil, elas podem ser rea
 
 ## Filas físicas e horários de funcionamento
 
-> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
 
 
 **Status:** documentado para futuro; fora do escopo atual.
