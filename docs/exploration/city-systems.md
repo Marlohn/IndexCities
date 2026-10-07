@@ -1,5 +1,9 @@
 # IndexCities — Mobilidade, serviços e infraestrutura urbana
 
+> **Revisão humana:** PARCIALMENTE REVISADO.  
+> **Auditoria:** classificação conservadora com base no estado anterior à reorganização temática, commit `4b97ace2`. o documento mistura conteúdo discutido/confirmado com pesquisa, síntese ou redação da IA ainda não revisada integralmente.
+>
+
 > **Status:** exploração ativa; diversos comportamentos já estão parcialmente promovidos para a SPEC — não é fonte de verdade.
 >
 > Concentra pesquisa e raciocínio sobre serviços urbanos, mobilidade, vias, educação, saúde, infraestrutura técnica, conexão externa e capacidades operacionais. A SPEC continua sendo a autoridade sobre o que já foi decidido.
@@ -14,6 +18,9 @@ Este arquivo é material de exploração temática. Quando houver divergência, 
 ---
 
 ## Capacidade hospitalar e equipe médica
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** em exploração; existência de funcionários reais e capacidade real já está decidida na SPEC.
 
@@ -47,6 +54,9 @@ A regra de profundidade continua a mesma: só detalhar quando isso gerar consequ
 
 ## Turnos de trabalho e operação contínua
 
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
+
 **Status:** em exploração; suporte a múltiplos turnos já está decidido na SPEC.
 
 A intenção é permitir turnos diferentes para empresas e serviços, inclusive quando houver operação noturna, mas sem transformar escala de funcionários em microgerenciamento manual obrigatório.
@@ -68,6 +78,9 @@ O objetivo é obter consequências reais de horário e escala sem obrigar o joga
 ---
 
 ## Transporte público, estacionamento e combustível
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** parcialmente decidido.
 
@@ -133,6 +146,9 @@ O sistema deve se conectar à logística já decidida, em vez de funcionar como 
 
 ## Funcionalidades adiadas
 
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
+
 **Status:** fora do escopo atual, mas preservadas para reavaliação futura.
 
 - assistência social municipal, incluindo abrigos e programas de apoio;
@@ -146,6 +162,9 @@ Esses tópicos não devem ser implementados agora. Podem ser revisitados futuram
 ---
 
 ## Mobilidade ativa e realismo de deslocamento
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** parcialmente decidido.
 
@@ -194,6 +213,9 @@ Falta definir a granularidade das categorias e a política de reposição para c
 
 ## Funcionalidades adiadas de mobilidade
 
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
+
 **Status:** fora do escopo atual.
 
 - acidentes de trânsito com colisões, feridos e resposta emergencial;
@@ -208,6 +230,9 @@ Esses sistemas podem ser revisitados depois que mobilidade básica, trânsito, e
 ---
 
 ## Vias, travessias e controle de tráfego
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** parcialmente decidido.
 
@@ -244,6 +269,9 @@ Decidido no escopo atual: semáforos usam ciclos fixos. Controle adaptativo pode
 ---
 
 ## Função da rodovia e hierarquia viária
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** direção confirmada parcialmente.
 
@@ -294,6 +322,9 @@ Controle adaptativo pode ser reconsiderado no futuro se congestionamentos e game
 
 ## Granularidade operacional de serviços
 
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
+
 **Status:** direção parcialmente fechada.
 
 A simulação deve evitar ações instantâneas quando isso destruir causa e consequência, mas também não precisa reproduzir cada segundo do mundo real.
@@ -332,6 +363,9 @@ Se no futuro restrições de horário gerarem gameplay útil, elas podem ser rea
 
 ## Filas físicas e horários de funcionamento
 
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
+
 **Status:** documentado para futuro; fora do escopo atual.
 
 ### Filas físicas em comércio e saúde
@@ -368,6 +402,9 @@ Também fica fora do escopo atual até a simulação básica de rotina, trabalho
 
 ## Eventos temporários e turismo
 
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
+
 **Status:** eventos temporários adiados para o futuro; turismo básico já está decidido na SPEC.
 
 No futuro, eventos como shows, feiras e festivais podem ser usados para gerar picos temporários de:
@@ -387,6 +424,9 @@ Esses eventos não entram no escopo atual. Devem ser revisitados depois que turi
 ---
 
 ## Capacidade educacional
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** estrutura decidida; parâmetros ainda em exploração.
 
@@ -417,6 +457,9 @@ Esses valores devem ser baseados em dados reais ou benchmark do jogo, não escol
 
 ## Conexão externa
 
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
+
 **Status:** conceito decidido; representação física ainda em exploração.
 
 A conexão externa representa o "mundo fora do mapa".
@@ -440,6 +483,9 @@ Ainda precisa ser definido se haverá um único ponto físico, múltiplos pontos
 ---
 
 ## Infraestrutura de água, esgoto e energia
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
 
 **Status:** parcialmente decidido.
 
@@ -504,6 +550,9 @@ Ainda precisa ser definido:
 
 ## Resíduos e degradação por falta de água
 
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+
+
 **Status:** parcialmente decidido.
 
 ### Resíduos
@@ -540,6 +589,9 @@ Isso permite calibrar o sistema sem transformar uma interrupção momentânea em
 ---
 
 ## Alcance, influência e escolha de serviços
+
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
 
 **Status:** em pesquisa; não é uma regra fechada de produto.
 
