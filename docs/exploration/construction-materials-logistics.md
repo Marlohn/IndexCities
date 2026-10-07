@@ -19,7 +19,7 @@ Este arquivo é material de exploração temática. Quando houver divergência, 
 
 ## Materiais de construção, importação e estoque
 
-> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
 
 
 **Status:** pesquisa histórica parcialmente superada pela seção **Revisão 2 — base material realista da cidade**. As evidências e cadeias abaixo continuam úteis, mas a lista inicial oficial está agora na SPEC.
@@ -230,7 +230,7 @@ Isso ainda não está na SPEC e não deve ser assumido durante a implementação
 
 ## Bens e materiais básicos para uma cidade funcionar
 
-> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
 
 
 ### Correção de escopo da pesquisa de materiais
@@ -669,7 +669,7 @@ Não há sistema de salvage/reciclagem de material no escopo atual.
 
 ## Hipótese de diferenciação: cidade construída por cadeias materiais
 
-> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
 
 
 **Status:** direção prioritária de produto; hipótese de diferenciação ainda precisa ser validada em gameplay.
@@ -986,7 +986,7 @@ Não foi identificado conflito com as regras atuais de importação, armazenamen
 
 ## Materiais no modelo híbrido público/privado
 
-> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
 
 
 **Status:** proposta superada. A separação estrita de estoques públicos/privados foi descartada como modelo principal de gameplay por adicionar microgerenciamento sem benefício proporcional.
