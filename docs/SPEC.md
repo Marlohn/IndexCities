@@ -181,3 +181,14 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Rotatórias fazem parte do sistema viário.
 - O número de faixas influencia capacidade, fluxo e congestionamento de forma real.
 - O trânsito deve buscar alto realismo operacional.
+
+
+### Comportamento detalhado do tráfego
+
+- Veículos escolhem a faixa adequada antes de conversões.
+- Filas são mantidas por faixa e afetam o fluxo de forma independente.
+- Mudanças de faixa e ultrapassagens fazem parte da simulação.
+- Rotatórias, cruzamentos e acessos respeitam regras reais de preferência.
+- Ônibus param fisicamente nos pontos.
+- Passageiros embarcam e desembarcam fisicamente nos pontos de ônibus.
+- Congestionamentos podem bloquear cruzamentos e gerar efeitos em cascata na malha viária.
