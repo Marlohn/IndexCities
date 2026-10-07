@@ -4315,3 +4315,89 @@ A ordem desejada é:
 1. emprego simples por estrutura;
 2. validar salários, turnos, deslocamento, capacidade e contratação;
 3. depois avaliar cargos como aprofundamento.
+
+
+---
+
+## Organização dos documentos de exploração
+
+**Status:** proposta em avaliação.
+
+### Dor observada
+
+Conversas paralelas estão produzindo documentos temáticos úteis, mas alguns acabam fora do padrão central de documentação. Hoje já existem documentos auxiliares como `PLAYER_INTERFACE.md` e `GENRE_BENCHMARK.md` no mesmo nível de `SPEC.md`, `ARCHITECTURE.md` e `EXPLORATION.md`.
+
+O risco é misturar:
+- fonte de verdade;
+- pesquisa;
+- rascunho;
+- benchmark;
+- decisões já promovidas;
+- exploração ainda aberta.
+
+### Opção A — manter tudo em docs/
+
+Prós:
+- estrutura mínima;
+- menos navegação;
+- nenhum movimento de arquivos.
+
+Contras:
+- documentos auxiliares ficam visualmente no mesmo nível das fontes canônicas;
+- chats paralelos tendem a criar novos arquivos sem padrão;
+- fica mais difícil saber o que é oficial, o que é pesquisa e o que precisa ser promovido/limpo.
+
+### Opção B — criar docs/exploration/ para documentos temáticos
+
+Estrutura conceitual:
+
+```
+docs/
+  SPEC.md
+  ARCHITECTURE.md
+  EXPLORATION.md
+  exploration/
+    <tema>.md
+    <tema>.md
+```
+
+`EXPLORATION.md` continua sendo o ponto central e o índice da exploração, enquanto documentos extensos por assunto ficam em `docs/exploration/`.
+
+Prós:
+- separa claramente fontes canônicas de material em formação;
+- permite que conversas paralelas trabalhem em temas diferentes sem inflar um único arquivo;
+- facilita limpar e promover decisões para SPEC;
+- reduz conflito de edição no mesmo EXPLORATION.md;
+- deixa explícito que documentos temáticos não são fonte final de verdade.
+
+Contras:
+- risco de fragmentação;
+- um mesmo assunto pode aparecer em vários arquivos;
+- documentos podem ficar esquecidos ou contradizer a SPEC se não houver disciplina mínima;
+- navegação aumenta um pouco.
+
+### Recomendação atual
+
+Adotar a pasta `docs/exploration/`, mantendo `docs/EXPLORATION.md` como **hub/índice** e não como depósito de toda pesquisa.
+
+Regras propostas, ainda não promovidas para AGENTS:
+- `SPEC.md` continua sendo a única fonte de verdade de produto;
+- `ARCHITECTURE.md` continua sendo a fonte de verdade estrutural;
+- `EXPLORATION.md` lista temas ativos, status e links para documentos temáticos;
+- pesquisa extensa, alternativas e rascunhos por tema vão para `docs/exploration/<tema>.md`;
+- quando uma decisão fecha, ela é resumida na SPEC e o documento de exploração é marcado como decidido/superado quando aplicável;
+- evitar criar subpastas adicionais até existir volume real que justifique;
+- cada documento temático deve declarar no topo que **não é fonte de verdade** e indicar seu status.
+
+### Migração sugerida
+
+Não mover tudo de uma vez.
+
+Primeiro:
+1. criar `docs/exploration/`;
+2. mover para lá apenas documentos claramente exploratórios;
+3. atualizar links;
+4. deixar `EXPLORATION.md` como índice;
+5. revisar arquivos antigos aos poucos, promovendo decisões válidas para SPEC e removendo contradições.
+
+`GENRE_BENCHMARK.md` pode permanecer como documento especial fora da pasta ou ser movido depois; ele possui função de referência comparativa distinta da exploração temática normal e não precisa ser reorganizado apenas por uniformidade.
