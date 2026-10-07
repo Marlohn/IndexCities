@@ -4389,3 +4389,28 @@ IA local continua sendo uma opção interessante se surgir um objetivo de **game
 
 Nesse caso, ela deve ser avaliada como melhora de comportamento, não como otimização de performance, e deve permanecer subordinada ao estado autoritativo e às invariantes do Simulation Core.
 
+---
+
+## Modelos de decisão no processo de desenvolvimento
+
+**Status:** pesquisado; não recomendado como camada geral de desenvolvimento ou definição de produto nesta fase.
+
+Foi avaliado o uso de modelos de decisão do tipo Jev e Laya não dentro da gameplay, mas como auxiliares no desenvolvimento, arquitetura e evolução da SPEC.
+
+### Conclusão
+
+Jev/Laya não substituem um modelo generativo ou raciocínio humano/assistido por IA para escrever código, projetar arquitetura ou decidir produto. Esses trabalhos são abertos: exigem criar alternativas, combinar contexto amplo, explicar consequências e produzir código ou texto novo. Modelos System One trabalham melhor quando a resposta já está delimitada a escolha, score ou sim/não.
+
+Há, porém, um nicho útil: **gates e classificações repetitivas e bem definidas**. Exemplos possíveis no desenvolvimento seriam classificar risco de um diff, escolher qual suíte de testes executar, detectar provável violação de uma regra arquitetural explícita, rotear uma tarefa para um módulo ou decidir se um caso deve ser escalado para um modelo maior. Benchmarks públicos recentes mostram Jev competitivo em revisões pequenas quando as regras são explícitas, mas esses resultados não demonstram revisão aberta de PRs ou descoberta geral de bugs. Laya tende a precisar de fine-tuning para ficar forte em domínios específicos, o que exige dataset, treinamento, calibração e manutenção.
+
+Para o IndexCities hoje, adicionar essa camada provavelmente custaria mais complexidade do que economizaria. O volume de decisões de desenvolvimento ainda é baixo, a arquitetura e a SPEC continuam mudando e não existe um conjunto grande e estável de decisões rotuladas que justifique especializar Laya.
+
+### Regra prática
+
+1. **Regra formalizável:** código, teste, analyzer ou outra checagem determinística.
+2. **Julgamento fechado, subjetivo e repetitivo em alto volume:** considerar Jev; considerar Laya quando existir dataset estável e houver vantagem concreta em execução local/especialização.
+3. **Decisão aberta, arquitetura, design de produto, escrita de SPEC ou geração/revisão profunda de código:** usar modelo generativo com acesso ao contexto do repositório e exigir justificativa verificável.
+
+### Critério para reconsiderar
+
+Reavaliar Jev/Laya no processo de desenvolvimento somente quando surgir uma classificação recorrente em volume suficiente para representar custo ou latência relevantes e houver um conjunto de exemplos que permita medir acurácia. Não introduzir a tecnologia apenas como uma segunda opinião genérica.
