@@ -779,3 +779,30 @@ Direção agora preferida para discutir:
 **Contra:** o placement do jogador passa a representar uma proposta/autorização de desenvolvimento privado, não necessariamente uma obra imediatamente paga pelo Caixa; esse fluxo precisa ser testado para não parecer que o jogador constrói casas “de graça”.
 
 Essa direção ainda não é decisão oficial.
+
+
+### Alternativa simples: liquidação pela economia exterior
+
+> **Revisão humana desta seção:** PENDENTE — alternativa nova em discussão; não é decisão oficial.
+
+Hipótese:
+- o jogador/cidade continua pagando e executando a construção, inclusive de residências privadas;
+- quando um primeiro proprietário assume o imóvel, o pagamento de aquisição **não retorna ao Caixa da Cidade**;
+- esse valor é liquidado contra a **economia exterior**, uma fronteira contábil já existente para fluxos que entram e saem da cidade;
+- a economia exterior não é o Fundo de Patrimônio Não Reclamado e não é controlada pelo jogador;
+- depois da primeira aquisição, revendas entre SIMs seguem normalmente entre os agentes privados;
+- a cidade recebe principalmente impostos e taxas.
+
+Vantagens:
+- preserva o diferencial de gameplay em que o jogador constrói toda a cidade e suporta o custo;
+- evita reciclagem infinita do capital de construção;
+- não exige financiamento, incorporadora ou nova etapa de aprovação;
+- comprador converte dinheiro em patrimônio real, sem receber um imóvel grátis;
+- o jogador continua dependendo de impostos/receitas públicas para sustentar novas obras.
+
+Riscos:
+- pagamentos de primeira aquisição por agentes locais retiram dinheiro da economia interna;
+- será necessário observar em POC se esse dreno monetário fica excessivo;
+- a fronteira exterior precisa ser auditável para que o dinheiro não pareça simplesmente desaparecer.
+
+Essa alternativa é atualmente mais promissora que financiamento privado da obra ou recuperação automática do custo pelo Caixa, mas permanece aberta.
