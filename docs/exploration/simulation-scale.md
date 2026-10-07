@@ -1,5 +1,9 @@
 # IndexCities — Escala, performance e baselines da simulação
 
+> **Revisão humana:** PENDENTE.  
+> **Auditoria:** classificação conservadora com base no estado anterior à reorganização temática, commit `4b97ace2`. o conteúdo deste documento ainda não foi revisado integralmente pelo responsável e não pode ser tratado como decisão.
+>
+
 > **Status:** exploração ativa e referência de calibração — não é fonte de verdade.
 >
 > Concentra pesquisa sobre população, profundidade individual, limites técnicos, tempo de jogo e baselines empíricos usados para orientar protótipos e benchmarks. Números provisórios não viram requisitos sem promoção explícita para a SPEC.
@@ -14,6 +18,9 @@ Este arquivo é material de exploração temática. Quando houver divergência, 
 ---
 
 ## Escala da cidade, profundidade da simulação e tempo
+
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
 
 **Status:** em exploração.
 
@@ -127,6 +134,9 @@ Para os assuntos desta seção:
 ---
 
 ## Baselines empíricos provisórios
+
+> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+
 
 **Status:** referência de calibração, não decisão de produto.
 
