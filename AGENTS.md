@@ -16,19 +16,33 @@ Antes de uma mudança relevante, leia a SPEC e somente o código necessário par
 
 ## Auditoria humana de conteúdo produzido por IA
 
-Conteúdo criado por IA não pode ganhar autoridade apenas porque foi escrito ou organizado no repositório.
+Conteúdo criado por IA não pode ganhar autoridade apenas porque foi escrito, pesquisado, resumido ou organizado no repositório.
 
-Regras:
+### Status obrigatório de revisão humana
 
-- qualquer pesquisa, proposta, recomendação, hipótese, síntese ou conclusão produzida pela IA que ainda não tenha sido discutida/revisada pelo responsável deve ser tratada como **revisão humana pendente**;
-- esse conteúdo pode viver em `docs/EXPLORATION.md` ou em `docs/exploration/*.md`, mas deve deixar claro que ainda precisa de revisão humana;
-- conteúdo com revisão humana pendente **não pode ser promovido** para `docs/SPEC.md`, `docs/ARCHITECTURE.md` ou virar regra em `AGENTS.md`;
+Todo documento temático de exploração criado ou ampliado por IA deve declarar de forma visível, logo no topo, um destes estados:
+
+- **PENDENTE** — o conteúdo ainda não foi revisado pelo responsável;
+- **PARCIALMENTE REVISADO** — parte do conteúdo ou das decisões foi discutida/confirmada, mas o documento ainda contém pesquisa, síntese, proposta ou redação da IA que não foi revisada integralmente;
+- **REVISADO** — o responsável revisou explicitamente o conteúdo atual daquele documento ou seção.
+
+Quando um documento misturar conteúdo com estados diferentes, use o estado agregado mais conservador no topo e marque também as seções relevantes com `Revisão humana desta seção`.
+
+### Regras
+
+- toda pesquisa, proposta, recomendação, hipótese, benchmark, síntese ou conclusão produzida pela IA começa como **PENDENTE**, salvo quando a conversa atual já contém revisão explícita daquele conteúdo;
+- conteúdo criado a partir de uma decisão discutida com o responsável, mas expandido ou sintetizado pela IA sem revisão integral do texto, deve ser **PARCIALMENTE REVISADO**, não `REVISADO`;
+- reorganizar, resumir, mover ou reformatar conteúdo **não conta como revisão humana**;
+- adicionar conteúdo novo não revisado a um documento previamente revisado exige marcar a nova seção como `PENDENTE` ou reduzir o status agregado do documento para `PARCIALMENTE REVISADO`;
+- conteúdo **PENDENTE** não pode ser promovido para `docs/SPEC.md`, `docs/ARCHITECTURE.md` nem virar regra em `AGENTS.md`;
+- em conteúdo **PARCIALMENTE REVISADO**, somente a parte explicitamente discutida e confirmada pode ser promovida; a pesquisa/síntese restante continua sem autoridade;
 - somente após discussão explícita e confirmação do responsável a conclusão correspondente pode ser promovida para a fonte canônica adequada;
-- reorganizar, resumir ou mover conteúdo não conta como revisão humana;
-- quando houver dúvida sobre se algo foi realmente aprovado pelo responsável, trate como **pendente**, não como decidido;
-- termos como **decidido**, **aprovado**, **confirmado** ou equivalentes só devem ser usados quando houver evidência de decisão explícita do responsável ou quando a fonte canônica já registrar essa decisão.
+- quando houver dúvida sobre se algo foi realmente aprovado pelo responsável, trate como **PENDENTE**;
+- termos como **decidido**, **aprovado**, **confirmado** ou equivalentes só devem descrever uma decisão do responsável ou algo já registrado na fonte canônica; não podem transformar uma recomendação da IA em decisão;
+- durante a conversa, sempre que a IA registrar pesquisa ou análise nova que ainda não foi revisada pelo responsável, deve avisar de forma breve que o material foi salvo como **revisão humana pendente**;
+- `docs/EXPLORATION.md` deve mostrar o status agregado de revisão humana de cada documento temático, para que o responsável consiga localizar rapidamente o que ainda precisa revisar.
 
-O objetivo é impedir que uma análise da IA seja confundida com decisão de produto, arquitetura ou processo.
+O objetivo é simples: a IA pode pesquisar, propor, comparar e documentar, mas **não decide pelo responsável**. A auditoria deve tornar evidente o que ainda precisa de leitura/discussão humana antes de ganhar autoridade.
 
 ## Fluxo contínuo de conversa e documentação
 
