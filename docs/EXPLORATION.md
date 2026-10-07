@@ -1438,3 +1438,22 @@ Ainda precisa ser definido:
 ### Observação importante para debug
 
 Se o algoritmo de geração evoluir, apenas guardar a seed pode não ser suficiente para reproduzir mapas antigos. Uma solução futura pode exigir armazenar também a **versão do gerador** ou serializar o mapa resultante no save. Isso deve ser considerado quando a implementação começar.
+
+
+---
+
+## Terreno plano no escopo inicial
+
+**Status:** decidido.
+
+O mapa inicial do IndexCities será plano.
+
+Consequências para o escopo atual:
+
+- não há morros ou variações relevantes de elevação;
+- não é necessário resolver inclinação de ruas ou prédios nesta fase;
+- edição de terreno continua adiada;
+- rios e lagos podem existir em um terreno essencialmente plano;
+- pontes e outras estruturas que dependam de desnível devem ser avaliadas separadamente, sem assumir relevo acidentado.
+
+Essa decisão reduz complexidade de construção, pathfinding, geração de mapa e validação durante as primeiras fases do projeto.
