@@ -924,3 +924,61 @@ O sistema deve se conectar à logística já decidida, em vez de funcionar como 
 - saúde mental e dependência química.
 
 Esses tópicos não devem ser implementados agora. Podem ser revisitados futuramente quando os sistemas básicos de população, saúde, moradia e orçamento já estiverem maduros.
+
+
+---
+
+## Mobilidade ativa e realismo de deslocamento
+
+**Status:** parcialmente decidido.
+
+Já está decidido que pedestres e bicicletas existem fisicamente na cidade.
+
+### Pedestres
+
+A intenção é de alto realismo de deslocamento:
+
+- cidadãos caminham fisicamente entre origem e destino;
+- viagens multimodais podem incluir trechos a pé;
+- cidadãos podem caminhar até estacionamento, ponto de ônibus, estação, comércio, escola e trabalho;
+- o caminho de pedestres precisa respeitar calçadas, travessias e acessibilidade viária.
+
+O nível exato de animação, detecção de obstáculos e priorização de travessias ainda precisa ser prototipado.
+
+### Bicicletas
+
+Decidido:
+
+- bicicletas circulam fisicamente;
+- bicicleta é um modal real;
+- ciclovias fazem parte da infraestrutura.
+
+Adiado para o futuro:
+
+- estacionamento específico para bicicletas.
+
+### Estoque real no comércio
+
+Foi reforçada a regra de que comércio não possui estoque meramente decorativo.
+
+Ela vale para:
+
+- postos de combustível;
+- padarias;
+- farmácias;
+- mercados;
+- demais comércios baseados em bens.
+
+Falta definir a granularidade das categorias e a política de reposição para cada tipo de estabelecimento.
+
+---
+
+## Funcionalidades adiadas de mobilidade
+
+**Status:** fora do escopo atual.
+
+- acidentes de trânsito com colisões, feridos e resposta emergencial;
+- manutenção mecânica e quebra de veículos;
+- estacionamento específico para bicicletas.
+
+Esses sistemas podem ser revisitados depois que mobilidade básica, trânsito, estacionamento de carros e logística estiverem estáveis.
