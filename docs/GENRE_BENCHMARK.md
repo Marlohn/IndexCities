@@ -270,3 +270,43 @@ Esta lista não é exaustiva; ela preserva as referências de maior utilidade en
 - r/gamedev — discussões de escala de agentes: https://www.reddit.com/r/gamedev/
 - Steam Community — Workers & Resources: https://steamcommunity.com/app/784150/discussions/
 - Steam Community — Cities: Skylines II: https://steamcommunity.com/app/949230/discussions/
+
+
+### Grid hierárquico / subgrid para detalhe local
+
+**Status:** referência técnica promissora; não é decisão de produto.
+
+Uma ideia que merece teste no IndexCities é separar a resolução lógica do mapa em pelo menos dois níveis:
+
+- **grid macro:** usado para estrutura urbana, ocupação principal, lotes, ruas e edifícios;
+- **subgrid local:** usado dentro ou ao redor de uma célula/elemento macro para detalhes menores, alinhamento fino e mobiliário urbano.
+
+A referência mais clara encontrada até agora é **Anno 117: Pax Romana**. A equipe da Ubisoft subdividiu cada tile do grid em **4 subtiles** para permitir estradas e edifícios diagonais sem abandonar a precisão e a simplicidade do grid. Eles também mudaram a representação visual das ruas para um grafo entre nós, em vez de renderizar cada pedaço como um tile independente.
+
+Isso não prova que o IndexCities deva usar exatamente 2x2 ou aplicar o mesmo sistema a todos os objetos, mas valida o princípio de **manter uma grade estrutural mais grossa e usar resolução mais fina quando o problema exige**.
+
+Uma extensão a prototipar seria permitir que uma célula de rua/lote exponha posições locais menores para elementos como:
+
+- bancos;
+- postes;
+- árvores;
+- lixeiras;
+- canteiros/grama;
+- pontos de ônibus;
+- placas;
+- faixas e outros detalhes de calçada.
+
+Nesse modelo, esses elementos não precisariam consumir uma célula inteira do grid urbano.
+
+**Cuidados:**
+
+- não criar subcélulas para tudo apenas por flexibilidade futura;
+- separar ocupação lógica importante de decoração visual;
+- evitar multiplicar memória/estado globalmente se o subgrid só for necessário localmente;
+- testar se a granularidade menor realmente melhora construção e legibilidade;
+- considerar coordenadas locais ou slots paramétricos dentro do elemento em vez de materializar uma matriz completa quando isso for suficiente.
+
+**Referências:**
+- Anno 117 — Roads & building in the grid: https://www.anno-union.com/devblog-roads-building-in-the-grid/
+- Anno 117 — All roads lead to Anno: https://www.anno-union.com/devblog-all-roads-lead-to-anno/
+- Simtropolis — discussão histórica sugerindo grids menores guiados pela largura de faixas: https://community.simtropolis.com/forums/topic/16662-simtropolis-1000/?page=21
