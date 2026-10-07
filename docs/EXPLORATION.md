@@ -1011,20 +1011,11 @@ Decidido:
 
 ### Travessias de pedestres
 
-A regra exata ainda precisa ser confirmada.
-
-Questão pendente:
-- pedestres devem atravessar **somente** em faixas/semafóros;
-- ou podem eventualmente atravessar fora desses pontos?
+Decidido no escopo atual: pedestres atravessam vias urbanas somente em faixas.
 
 ### Semáforos
 
-A lógica exata ainda precisa ser confirmada.
-
-Questão pendente:
-- ciclos fixos;
-- controle adaptativo ao tráfego;
-- ou modelo híbrido configurável.
+Decidido no escopo atual: semáforos usam ciclos fixos. Controle adaptativo pode ser reconsiderado futuramente.
 
 
 ---
@@ -1362,23 +1353,9 @@ Direção decidida:
 
 Ainda pode ser explorado no futuro se vegetação terá efeitos sistêmicos adicionais além de apresentação e uso de espaços públicos.
 
-### Parques, amenidades e serviços sem "círculo mágico"
+### Parques, amenidades e serviços
 
-Foi definido um princípio importante: **não usar, como regra geral, um raio fixo arbitrário para determinar quem pode usar um serviço ou amenidade**.
-
-Exemplo: um cidadão pode atravessar a cidade para buscar um hospital se aquele for o destino disponível/adequado.
-
-Para destinos como hospital, escola, parque, comércio e lazer, o modelo deve preferir fatores como:
-
-- tempo/distância real de viagem;
-- rota disponível;
-- capacidade do destino;
-- qualidade/adequação;
-- custo;
-- preferência do cidadão;
-- alternativas concorrentes.
-
-Isso não impede efeitos que são naturalmente espaciais, como poluição ou ruído, de terem propagação local. A regra se aplica principalmente a **acesso e escolha de destinos**.
+O modelo de alcance e influência ainda está em pesquisa. A seção específica **"Alcance, influência e escolha de serviços"** contém a comparação atual entre raio rígido, heurística de influência, custo de viagem e modelos híbridos.
 
 ### Poluição sonora
 
@@ -1428,7 +1405,7 @@ Decidido:
 
 Ainda precisa ser definido:
 
-- algoritmo de geração de relevo;
+- geração da base plana do mapa;
 - distribuição de vegetação;
 - geração de rio/lago;
 - posição e quantidade de conexões externas;
@@ -1457,3 +1434,102 @@ Consequências para o escopo atual:
 - pontes e outras estruturas que dependam de desnível devem ser avaliadas separadamente, sem assumir relevo acidentado.
 
 Essa decisão reduz complexidade de construção, pathfinding, geração de mapa e validação durante as primeiras fases do projeto.
+
+
+---
+
+## Materiais de construção, importação e estoque
+
+**Status:** consumo real de materiais, importação inicial e armazenamento estão decididos; categorias exatas ainda em calibração.
+
+### Evidência física útil para o modelo
+
+A pesquisa aponta uma separação importante entre matérias-primas e produtos:
+
+- **concreto** é produzido principalmente com cimento, água e agregados (areia, cascalho/pedra britada);
+- agregados representam a maior parte do volume do concreto;
+- **aço** é um material estrutural fundamental e possui cadeia produtiva própria;
+- **madeira** continua sendo material estrutural relevante, especialmente em construções leves;
+- pavimento asfáltico é majoritariamente agregado ligado por uma pequena fração de ligante asfáltico.
+
+Fontes:
+- American Cement Association — Cement & Concrete FAQ: https://www.cement.org/cement-concrete/cement-concrete-faq/
+- USGS — Construction aggregates: https://www.usgs.gov/publications/construction-aggregates
+- worldsteel — What is steel?: https://worldsteel.org/about-steel/what-is-steel/
+- USDA Forest Service — Wood Handbook: https://research.fs.usda.gov/fpl/wood-handbook
+- National Asphalt Pavement Association — Engineering Asphalt Pavement: https://www.asphaltpavement.org/all-about-asphalt/asphalt-facts/engineering/
+
+### Baseline recomendada para o primeiro protótipo
+
+Para evitar SKUs demais e ainda preservar cadeias econômicas distintas, testar inicialmente:
+
+**Materiais consumidos diretamente por obras**
+- concreto;
+- aço;
+- madeira;
+- asfalto, principalmente para vias e superfícies pavimentadas.
+
+**Insumos para produção local**
+- cimento;
+- agregados (areia/cascalho/pedra britada);
+- água para concreto;
+- matérias-primas de aço somente quando/ se a cadeia siderúrgica for aprofundada.
+
+Uma cadeia inicial plausível é:
+
+agregados + cimento + água → concreto → obra
+
+e, em paralelo:
+
+aço → obra  
+madeira → obra  
+agregados + ligante asfáltico → asfalto → vias
+
+Isso é uma abstração de gameplay baseada em cadeias reais, não uma receita industrial completa.
+
+### Fluxo inicial da cidade
+
+Decidido:
+
+1. a cidade começa com dinheiro;
+2. enquanto não possui produção local suficiente, compra materiais do exterior;
+3. materiais entram fisicamente pela conexão externa;
+4. materiais precisam ser armazenados;
+5. obras retiram/recebem materiais desse estoque;
+6. produção local pode substituir importações conforme a cidade se desenvolve.
+
+Ainda precisa ser decidido:
+
+- tipo e capacidade dos depósitos/galpões;
+- se estoque pertence à prefeitura, empresas privadas ou ambos;
+- preços de importação;
+- quantidade inicial de dinheiro/material;
+- quais indústrias de materiais estarão disponíveis no primeiro protótipo.
+
+---
+
+## Pesquisa prioritária: objetivo central, progressão e endgame
+
+**Status:** pesquisa específica e ampla obrigatória antes de fechar a estrutura de objetivos.
+
+O IndexCities ainda não tem uma condição de vitória, objetivo central ou modelo de progressão decidido.
+
+Essa decisão não deve ser preenchida com uma meta genérica de "chegar a X habitantes".
+
+A pesquisa futura deve comparar amplamente:
+
+- sandbox puro;
+- marcos/milestones;
+- objetivos econômicos;
+- qualidade de vida;
+- crescimento sustentável;
+- desafios/cenários;
+- metas escolhidas pelo jogador;
+- progressão baseada em desbloqueios;
+- crises e recuperação;
+- objetivos de longo prazo/endgame;
+- como outros city builders evitam que o late game vire apenas crescimento numérico.
+
+Critério principal: encontrar **algo distintivo e memorável que dê propósito às decisões sistêmicas do IndexCities**, sem destruir a liberdade de city builder.
+
+O documento [GENRE_BENCHMARK.md](GENRE_BENCHMARK.md) já contém evidências sobre endgame e progressão e deve ser uma das fontes dessa pesquisa, mas não substitui uma rodada dedicada.
