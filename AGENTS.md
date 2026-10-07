@@ -6,6 +6,7 @@ Estas regras valem para humanos e IAs. O objetivo é maximizar progresso útil s
 
 - `docs/SPEC.md` define o **produto decidido** e o escopo atual.
 - `docs/EXPLORATION.md` guarda **pesquisa, ideias, alternativas e decisões ainda em discussão**.
+- `docs/GENRE_BENCHMARK.md` guarda a **referência comparativa externa do gênero**, usada periodicamente para confrontar o IndexCities com aprendizados, falhas e expectativas observados em outros city builders; não define requisitos.
 - O código e o histórico deste repositório definem o estado real da implementação.
 
 Antes de uma mudança relevante, leia a SPEC e somente o código necessário para entender o alvo. Consulte a EXPLORATION quando a tarefa depender de uma discussão ainda aberta ou do raciocínio que levou a uma decisão.
@@ -83,7 +84,7 @@ A arquitetura só deve ficar mais sofisticada quando existir uma dor concreta e 
 - múltiplas frentes paralelas começam a conflitar;
 - rastreabilidade adicional passa a economizar mais tempo do que custa.
 
-Até isso acontecer, **uma SPEC + uma EXPLORATION + este AGENTS.md são suficientes**.
+Até isso acontecer, **uma SPEC + uma EXPLORATION + este AGENTS.md continuam sendo a arquitetura central**. Documentos auxiliares só devem existir quando resolvem uma dor concreta; `docs/GENRE_BENCHMARK.md` existe especificamente para manter a pesquisa comparativa extensa fora da EXPLORATION e servir como referência periódica de validação.
 
 ## Regra principal de escopo
 
