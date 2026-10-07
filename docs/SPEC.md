@@ -138,6 +138,8 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Residências têm preço e/ou aluguel real que afetam o orçamento familiar.
 - Cidadãos e empresas pagam impostos reais para a cidade.
 - A cidade possui orçamento municipal real, com receitas e despesas.
+- O menu financeiro deve separar claramente entradas e saídas da prefeitura.
+- Salários de todos os trabalhadores públicos devem aparecer explicitamente entre as despesas municipais.
 - A cidade poderá usar empréstimos/dívida municipal para evitar travamentos financeiros e permitir recuperação de caixa.
 
 
@@ -359,7 +361,7 @@ A SPEC deve crescer com o produto, **não antes dele**.
 ### Estado inicial da cidade
 
 - A cidade começa essencialmente vazia, sem tecido urbano pré-construído.
-- O mapa mantém apenas os elementos estruturais já definidos, como ambiente natural e conexão externa.
+- O mapa mantém apenas os elementos naturais já definidos e a conexão externa; nenhum edifício municipal, incluindo o Pátio Municipal de Obras, começa construído.
 
 
 ### Comércio exterior e logística externa
@@ -379,6 +381,7 @@ A SPEC deve crescer com o produto, **não antes dele**.
 ### Armazenamento municipal
 
 - No escopo atual, depósitos/galpões de materiais são municipais.
+- O Pátio Municipal de Obras pode manter um estoque pequeno; depósitos dedicados oferecem capacidade significativamente maior.
 - Armazenamento privado de materiais pode ser reconsiderado futuramente.
 
 
@@ -423,3 +426,14 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Materiais apenas reservados, mas ainda não consumidos, deixam de ficar reservados.
 - A política de devolução de valores monetários em cancelamento de obra ainda não está definida.
 - Demolir uma construção já realizada não devolve o dinheiro nem os materiais originalmente gastos.
+
+
+### Pátio Municipal de Obras
+
+- A execução das obras municipais depende de um **Pátio Municipal de Obras** construído pelo jogador.
+- O Pátio emprega trabalhadores públicos reais da população simulada.
+- Esses trabalhadores recebem salários pagos pela prefeitura e registrados explicitamente nas despesas municipais.
+- O Pátio possui capacidade operacional limitada para executar obras.
+- O Pátio também possui um pequeno estoque físico de materiais de construção.
+- O estoque do Pátio tem capacidade menor que a de um depósito municipal dedicado.
+- Depósitos municipais continuam sendo a infraestrutura principal para armazenamento de grandes quantidades de materiais.
