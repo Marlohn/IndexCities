@@ -94,6 +94,26 @@ Regras dos documentos temáticos:
 
 Evite criar novos arquivos Markdown soltos em `docs/` para exploração. A raiz de `docs/` fica reservada às fontes canônicas (`SPEC.md`, `ARCHITECTURE.md`, `EXPLORATION.md`) e a eventuais documentos que sejam explicitamente aprovados como canônicos.
 
+### Padrão de organização da exploração para IAs
+
+Este padrão existe para evitar que `docs/EXPLORATION.md` volte a se tornar um arquivo monolítico com centenas ou milhares de linhas, difícil de navegar, caro para carregar em contexto e propenso a conflitos quando várias sessões trabalham em paralelo.
+
+Ao trabalhar com exploração:
+
+1. **Comece pelo hub.** Leia `docs/EXPLORATION.md` para localizar o domínio relevante antes de criar ou editar conteúdo.
+2. **Atualize o documento temático existente.** Se o assunto já pertence claramente a um domínio listado no hub, escreva em `docs/exploration/<tema>.md`; não replique a pesquisa no hub.
+3. **Use o hub apenas para navegação e estado.** Mantenha ali nome do tema, status curto, uma frase de escopo e link. Pesquisa extensa, benchmarks, alternativas, histórico e raciocínio pertencem ao documento temático.
+4. **Agrupe por domínio durável, não por conversa.** Prefira documentos como `construction-materials-logistics.md` ou `companies-markets.md` em vez de arquivos por sessão, data, pergunta ou rodada de pesquisa.
+5. **Não crie um arquivo novo cedo demais.** Se a observação for curta, transversal e não tiver domínio natural, ela pode ficar temporariamente no hub. Separe somente quando o conteúdo ganhar volume real, referências, alternativas ou trabalho paralelo.
+6. **Não deixe documentos temáticos crescerem sem limite.** Se um arquivo passar a misturar domínios que podem evoluir independentemente, divida por fronteira conceitual estável e atualize o hub. Não fragmente apenas por tamanho.
+7. **Preserve o histórico útil, não a transcrição.** Conserve evidências, alternativas rejeitadas, trade-offs e motivo de decisões quando ajudarem trabalho futuro. Remova repetição, conversa cronológica e texto que não acrescenta contexto reutilizável.
+8. **Marque o estado do conhecimento.** Quando algo for decidido, superado, reaberto ou continuar em exploração, deixe isso claro no documento temático. Não mantenha uma recomendação antiga parecendo vigente.
+9. **Promova sem duplicar autoridade.** Se uma exploração virar decisão oficial, registre o resultado conciso na `SPEC.md`, `ARCHITECTURE.md` ou `AGENTS.md` e mantenha no documento temático apenas o raciocínio/histórico, apontando que a fonte canônica é outra.
+10. **Revise links após mover conteúdo.** Documentos em `docs/exploration/` têm caminho relativo diferente do hub; corrija referências e verifique que nenhum link ficou apontando para arquivo removido ou localização antiga.
+
+O objetivo não é produzir mais documentação. É tornar o contexto **mais barato de localizar, mais fácil de carregar seletivamente e menos sujeito a conflito**, para humanos e IAs. Uma IA futura deve conseguir ler o hub, abrir somente os temas necessários para a tarefa e chegar ao contexto relevante sem precisar consumir todo o histórico de exploração.
+
+
 
 ### Roteamento rápido de documentação
 
