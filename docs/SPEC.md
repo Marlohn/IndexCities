@@ -150,3 +150,13 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - O realismo operacional dos carros deve ser alto, incluindo deslocamento e estacionamento coerentes.
 - Veículos consomem combustível.
 - Combustível participa de uma cadeia econômica real entre produção/refino, distribuição para postos e consumo pelos veículos.
+- Postos mantêm estoque real de combustível e podem ficar sem produto.
+- O mesmo princípio de estoque real vale para comércios como padarias, farmácias, mercados e outros estabelecimentos.
+
+
+### Mobilidade ativa e circulação de pedestres
+
+- Pedestres se deslocam fisicamente pela cidade.
+- Caminhadas fazem parte real das viagens, incluindo trechos até estacionamentos, pontos de ônibus e outros destinos.
+- Bicicletas existirão como modal real de transporte e circularão fisicamente pela cidade.
+- Ciclovias farão parte da infraestrutura viária.
