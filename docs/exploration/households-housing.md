@@ -277,17 +277,9 @@ o jogador investe em moradia
 
 Isso não precisa significar juridicamente que "a prefeitura é dona de todas as casas". O Caixa da Cidade já foi definido como uma abstração de capital de desenvolvimento controlado pelo jogador.
 
-### Compra/venda da residência
+### Compra/venda da residência — orientação histórica superada
 
-Venda é mais delicada que aluguel porque cria uma pergunta de propriedade e revenda.
-
-Recomendação para evitar micro prematuro:
-- manter **aluguel** como fluxo econômico inicial mais simples;
-- não fechar compra/venda real de imóveis até existir motivo de gameplay para propriedade residencial.
-
-Se preço de venda continuar na simulação, ele pode inicialmente funcionar como indicador de valor/affordability sem exigir transferência jurídica completa de propriedade.
-
-Essa decisão deve ser revisitada antes de implementar compra de imóvel real.
+A recomendação antiga de adiar compra/venda real foi superada: a SPEC já adota dinheiro individual, propriedade residencial real, investimento local e transferências de propriedade. O ponto que continua aberto é especificamente **como funciona a primeira venda de uma residência construída pelo jogador e para onde vai esse pagamento**.
 
 
 ---
@@ -712,3 +704,70 @@ As referências e alternativas pesquisadas permanecem material de contexto; a re
 - se o fundo algum dia terá outra função de gameplay;
 - tratamento de outros tipos de ativos além de dinheiro e imóveis quando eles forem introduzidos.
 
+
+
+---
+
+## Primeira venda de residência recém-construída e papel do Caixa
+
+> **Revisão humana desta seção:** PENDENTE — análise nova da IA motivada por preocupação explícita do responsável; precisa ser validada antes de virar decisão.
+
+**Status:** aberto.
+
+Foi levantado um risco de gameplay importante: se o jogador constrói residências com o Caixa da Cidade e recebe integralmente o preço de mercado na primeira venda, o loop pode aproximar o jogo de um simulador de incorporação/especulação imobiliária e reduzir a importância dos impostos como fonte recorrente de receita.
+
+### Opção A — primeira venda inteira retorna ao Caixa
+
+**Prós**
+- recicla rapidamente o capital usado para construir;
+- fluxo simples e legível;
+- evita criar outro agente vendedor.
+
+**Contras**
+- se o preço de venda puder superar o custo, cria lucro direto por construir e revender;
+- pode tornar desenvolvimento imobiliário a principal fonte de dinheiro do jogador;
+- entra em tensão com a intenção de impostos sustentarem a cidade.
+
+### Opção B — primeira venda não retorna ao Caixa
+
+**Prós**
+- mantém impostos e receitas públicas como fonte principal de recursos;
+- elimina incentivo de especulação imobiliária pelo jogador.
+
+**Contras**
+- o Caixa financia uma propriedade privada e não recupera diretamente o capital;
+- transforma toda moradia privada em subsídio público pesado;
+- pode tornar expansão excessivamente cara ou exigir outra fonte de financiamento.
+
+### Opção C — Caixa recupera apenas o capital adiantado, sem lucro imobiliário
+
+Interpretação:
+- o Caixa financia/adianta a construção porque o jogador controla o desenvolvimento físico da cidade;
+- a residência pronta entra no mercado sem proprietário;
+- o primeiro comprador paga até o valor necessário para recuperar o custo de desenvolvimento definido;
+- esse retorno é registrado como **recuperação de capital**, não como receita operacional/lucro da cidade;
+- não há ganho especulativo na primeira venda;
+- depois do primeiro proprietário, revendas normais transferem dinheiro entre proprietários privados e a cidade recebe apenas impostos/taxas definidos.
+
+**Prós**
+- preserva o modelo atual de construção pelo jogador;
+- evita transformar o Caixa em incorporadora lucrativa;
+- mantém impostos como principal fonte de receita recorrente;
+- permite que capital de desenvolvimento seja reutilizado;
+- não exige empresa imobiliária ou outro agente artificial.
+
+**Contras**
+- a primeira venda tem uma regra diferente das revendas privadas;
+- se o capital for sempre recuperado integralmente, dinheiro vira mais uma restrição de liquidez do que um custo permanente para expansão residencial;
+- ainda é preciso decidir o que acontece quando a demanda não suporta o valor necessário para recuperar o custo.
+
+### Recomendação para discussão
+
+A opção C parece o melhor compromisso com as decisões atuais. O ponto central é separar:
+
+- **receita da cidade** → principalmente impostos e receitas públicas;
+- **recuperação de capital de desenvolvimento** → devolução do dinheiro que o Caixa adiantou para criar um ativo privado.
+
+A interface financeira deve manter essas categorias separadas para não apresentar venda de moradia como “lucro municipal”.
+
+Ainda não decidir se a recuperação é sempre integral, se pode haver perda quando a demanda é baixa ou como o preço inicial é calculado.
