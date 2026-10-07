@@ -120,4 +120,12 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Residências têm preço e/ou aluguel real que afetam o orçamento familiar.
 - Cidadãos e empresas pagam impostos reais para a cidade.
 - A cidade possui orçamento municipal real, com receitas e despesas.
-- Empréstimos/dívida municipal ficam fora do escopo inicial.
+- A cidade poderá usar empréstimos/dívida municipal para evitar travamentos financeiros e permitir recuperação de caixa.
+
+
+### Terreno e logística econômica
+
+- Todo mapa jogável deve conter **pelo menos um rio ou um lago**.
+- Estabelecimentos comerciais podem fechar quando não conseguem sustentar sua operação, incluindo falta de clientes.
+- Indústrias precisam receber matéria-prima real e escoar produção real.
+- Caminhões de carga circulam fisicamente entre fornecedores, indústrias, comércio e obras.
