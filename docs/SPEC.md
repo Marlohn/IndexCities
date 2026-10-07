@@ -52,6 +52,9 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - O consumo será modelado inicialmente por **categorias de produtos**, não por SKU individual.
 - Compras reais reduzem estoque real, movimentam dinheiro real e geram necessidade de reposição/logística.
 - Empresas poderão falir quando suas condições econômicas levarem a isso.
+- Fazendas e agricultura produzem alimentos reais para abastecer a cidade.
+- Mercadorias físicas modeladas como estoque podem ser importadas pela conexão externa quando a oferta local for insuficiente ou inexistente.
+- No escopo inicial, os preços externos de importação permanecem estáveis.
 
 ### Serviços públicos
 
