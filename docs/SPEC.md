@@ -201,3 +201,13 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Comércio e indústria possuem pontos físicos de carga e descarga.
 - Veículos precisam sair fisicamente de garagens ou estacionamentos antes de entrar na via.
 - Filas de pedestres em pontos de ônibus, entradas de prédios e travessias ocupam espaço físico real.
+
+
+### Transporte sob demanda e operação de carga
+
+- Táxis e transporte sob demanda existirão com motorista e passageiro reais.
+- Caminhões podem ter tamanhos e capacidades diferentes.
+- A capacidade do caminhão influencia quantas viagens são necessárias para transportar uma carga.
+- Comércio não precisa operar com janelas fixas de entrega; o tempo de chegada pode emergir do tráfego e da logística.
+- A entrada e saída de pessoas dos prédios é simulada fisicamente, enquanto o interior dos edifícios permanece abstrato.
+- Serviços como coleta, carga/descarga e atendimento de emergência levam algum tempo para serem executados, mas não precisam buscar fidelidade temporal extrema.
