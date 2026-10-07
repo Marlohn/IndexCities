@@ -622,3 +622,61 @@ Fontes principais adicionais:
 - Reddit r/gamedev — 500+ agentes: https://www.reddit.com/r/gamedev/comments/1uccg2b/how_can_colony_management_games_simulate_500/
 - Reddit r/CityBuilders — realista sem tédio: https://www.reddit.com/r/CityBuilders/comments/1ve9qdu/best_city_builder_that_is_realistic_but_not/
 - Reddit r/CityBuilders — endgame: https://www.reddit.com/r/CityBuilders/comments/1uiy417/should_city_builders_ever_have_a_true_endgame/
+
+
+---
+
+## Dinheiro, renda familiar e consumo
+
+**Status:** em exploração.
+
+### Renda individual e familiar
+
+Direção discutida:
+
+- cidadãos adultos podem ter dinheiro individual;
+- crianças não precisam possuir uma conta financeira própria por padrão;
+- a família/domicílio pode ter uma noção agregada de renda e despesas compartilhadas;
+- ainda precisa ser decidido como dividir salário, patrimônio, contas da casa, dependentes e gastos individuais.
+
+Uma opção promissora para testar é manter **renda e patrimônio individuais**, mas calcular também métricas de **renda familiar disponível** e despesas comuns do domicílio. Isso preserva individualidade sem obrigar toda decisão econômica a existir em nível bancário extremamente granular.
+
+### Até onde simular compras?
+
+A questão central não é “simular tudo”, mas decidir quais detalhes geram consequências úteis no jogo.
+
+Há três níveis possíveis:
+
+1. **Compra abstrata**  
+   O cidadão gasta dinheiro e a loja recebe receita, mas não existe item/estoque real.
+
+2. **Compra por categorias**  
+   A loja mantém estoques de categorias como comida, remédios, combustível, roupas e materiais. O cidadão consome uma categoria, não uma SKU específica.
+
+3. **Compra por item individual**  
+   Cada produto possui unidade, preço, estoque e consumo próprios.
+
+### Avaliação provisória
+
+Para o IndexCities, o nível **por categorias** parece o melhor primeiro alvo de protótipo:
+
+- mantém a relação real entre produção, logística, estoque, consumo e falta de produtos;
+- permite que comércio tenha motivo para receber entregas;
+- permite que preço e escassez afetem cidadãos e empresas;
+- evita explodir o número de entidades com milhares de SKUs que provavelmente não gerariam gameplay proporcional;
+- deixa espaço para aprofundar categorias específicas mais tarde se elas se provarem importantes.
+
+Isso ainda **não é decisão de produto**. Deve ser validado em protótipo.
+
+### Regra de profundidade sugerida
+
+Um detalhe só deve entrar na simulação se produzir ao menos uma consequência observável relevante, como:
+
+- alterar decisão do cidadão;
+- alterar preço, estoque ou logística;
+- causar falta de produto/serviço;
+- mudar tráfego;
+- afetar renda, bem-estar ou emprego;
+- criar uma decisão interessante para o jogador.
+
+Se um detalhe não muda nenhum sistema relevante, ele pode permanecer agregado.
