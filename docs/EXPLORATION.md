@@ -340,28 +340,23 @@ A quantidade final de população, lotes, casas, edifícios, comércio e indúst
 
 ---
 
-## Objetivos de arquitetura de desenvolvimento
+## Arquitetura de desenvolvimento
 
-**Status:** direção arquitetural a validar.
+**Status:** decisão consolidada.
 
-A organização técnica deve buscar separação clara de responsabilidades para facilitar manutenção, testes e trabalho assistido por IA.
+A pesquisa e a direção arquitetural inicial foram consolidadas em [ARCHITECTURE.md](ARCHITECTURE.md), que passa a ser a autoridade sobre organização técnica, fronteiras e direção de dependências.
 
-Áreas que se deseja manter desacopladas sempre que isso fizer sentido:
+Conclusões principais:
 
-- núcleo da simulação e regras de domínio;
-- integração com Godot;
-- apresentação/renderização;
-- UI;
-- assets e conteúdo visual.
+- monólito modular, sem microserviços/processos distribuídos como requisito;
+- núcleo de simulação em C#/.NET puro, sem dependência de Godot;
+- Godot como host/adaptador e camada de apresentação;
+- UI como leitura + comandos, sem possuir o estado autoritativo da cidade;
+- assets e conteúdo visual desacoplados das regras de gameplay;
+- capacidade de execução headless para testes, benchmarks e ferramentas/agentes;
+- ECS, multithreading, event bus, DI e outras estruturas adicionais permanecem adiados até existir profiling ou necessidade concreta.
 
-Como o desenvolvimento principal será em C#, a organização do código deve permanecer compreensível e convencional para desenvolvimento C#, evitando abstrações desnecessárias.
-
-Também existe o objetivo de criar **guardrails técnicos** para permitir que modelos de IA mais baratos façam alterações locais com menor risco de regressão em gameplay. Esses guardrails devem surgir de necessidades concretas e podem incluir testes, limites de módulos, validações e convenções de código.
-
-### Ambiente de desenvolvimento
-
-O desenvolvimento está planejado para acontecer principalmente em máquina local. Fluxo de build, execução, profiling e automação local ainda precisam ser definidos quando houver código executável.
-
+A pesquisa que sustentou essas decisões está resumida no próprio documento de arquitetura. Novas alternativas ou revisões ainda não decididas voltam a ser exploradas aqui antes de alterar a arquitetura oficial.
 
 ---
 
