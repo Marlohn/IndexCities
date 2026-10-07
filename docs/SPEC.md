@@ -66,10 +66,12 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 
 - Prédios e infraestrutura não aparecem instantaneamente prontos.
 - Construções passam por uma fase real de obra.
+- Toda obra possui custo em **dinheiro e materiais**.
 - Obras consomem materiais reais da cidade.
 - Obras dependem de trabalhadores reais da população simulada.
 - Materiais de construção precisam existir em estoque antes de serem consumidos pela obra.
 - No início de uma cidade, materiais podem ser importados pela conexão externa usando o dinheiro inicial.
+- O custo apresentado da obra deve indicar explicitamente quando materiais faltantes serão importados e quanto essa importação aumenta o custo monetário.
 - A cidade precisa possuir infraestrutura física de armazenamento, como depósitos/galpões, para materiais de construção.
 - Materiais precisam chegar fisicamente ao canteiro de obras, normalmente por veículos de carga, antes de serem consumidos pela construção.
 - A cidade pode desenvolver produção local de materiais por meio de indústrias/fábricas apropriadas, reduzindo dependência de importações.
@@ -372,3 +374,24 @@ A SPEC deve crescer com o produto, **não antes dele**.
 
 - No escopo atual, depósitos/galpões de materiais são municipais.
 - Armazenamento privado de materiais pode ser reconsiderado futuramente.
+
+
+### Fluxo de importação para obras
+
+- Quando uma obra específica depende de material importado, os caminhões externos podem entregar diretamente no canteiro a quantidade necessária para aquela obra.
+- Essa entrega direta não exige passagem por depósito municipal.
+- Importações genéricas, destinadas a formar estoque da cidade, devem ser entregues em depósito municipal.
+
+
+### Capacidade e operação de depósitos
+
+- Depósitos municipais possuem capacidade física limitada.
+- No escopo inicial, um mesmo depósito pode armazenar todos os tipos de materiais.
+- Depósitos possuem capacidade limitada de carga e descarga simultânea.
+- Saturação de carga/descarga pode gerar fila física de caminhões.
+
+
+### Exportação automática
+
+- No escopo inicial, excedentes elegíveis podem ser exportados automaticamente.
+- Toda receita e movimentação relevante de exportação deve aparecer de forma clara nas finanças da cidade.
