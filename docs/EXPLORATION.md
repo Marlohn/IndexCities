@@ -1440,7 +1440,7 @@ Essa decisão reduz complexidade de construção, pathfinding, geração de mapa
 
 ## Materiais de construção, importação e estoque
 
-**Status:** consumo real, importação, armazenamento e entrega física estão decididos; a lista de materiais abaixo é uma recomendação de pesquisa e ainda precisa de aprovação.
+**Status:** pesquisa histórica parcialmente superada pela seção **Revisão 2 — base material realista da cidade**. As evidências e cadeias abaixo continuam úteis, mas a lista inicial oficial está agora na SPEC.
 
 ### Resultado da pesquisa ampla
 
@@ -2344,7 +2344,7 @@ Isso mantém uma regra simples e coerente com o modelo de consumo imediato.
 
 ## Revisão 2 — base material realista da cidade
 
-**Status:** pesquisa; ainda não é requisito.
+**Status:** aprovada. A base inicial foi promovida para a SPEC.
 
 A lista anterior ficou excessivamente centrada em construção e usou o termo técnico "agregados", que não é claro como linguagem de gameplay. A revisão separa três papéis: bens essenciais consumidos pela cidade, materiais finais usados em obras e insumos industriais.
 
@@ -2405,19 +2405,35 @@ Portanto, **construção por materiais não é inédita por si só**. O diferenc
 
 Fonte: Workers & Resources: Soviet Republic Official Wiki — Construction materials, Construction, Resources e Food.
 
-### Direção recomendada para o primeiro POC
+### Decisão aprovada
 
-Testar primeiro:
+A base inicial oficial agora é:
+
 - alimentos;
 - combustível;
+- suprimentos médicos;
 - areia e brita;
 - concreto;
 - aço;
 - madeira;
 - asfalto.
 
-Suprimentos médicos entram logo depois ou já no mesmo POC se a simulação de saúde for implementada nessa fase.
+Cimento permanece como insumo da concreteira, não como material final obrigatório de toda obra. O mesmo princípio vale para culturas/produtos agrícolas, madeira em tora, ligante asfáltico/bitume e pedra bruta: entram quando suas cadeias produtivas forem implementadas.
 
-Cimento deve existir como insumo da concreteira, não necessariamente como material consumido diretamente pelas obras. O mesmo princípio vale para culturas, toras, bitume e pedra bruta.
+Essa lista foi movida para a SPEC.
 
-Ainda precisa de aprovação antes de mover qualquer lista para a SPEC.
+
+---
+
+### Checagem de coerência desta decisão
+
+A base de oito recursos é compatível com as decisões já existentes:
+
+- **alimentos** já eram necessidade real dos cidadãos e agora ganham uma categoria física inicial;
+- **combustível** já fazia parte da cadeia econômica e dos veículos;
+- **suprimentos médicos** complementam o sistema de saúde real sem introduzir SKUs individuais;
+- **areia e brita, concreto, aço, madeira e asfalto** alimentam o pilar de construção material;
+- água e eletricidade continuam como sistemas de capacidade, evitando duplicidade conceitual;
+- a regra de categorias agregadas continua respeitada: nenhum desses recursos exige SKU individual no escopo inicial.
+
+Não foi identificado conflito com as regras atuais de importação, armazenamento, Pátio Municipal de Obras ou logística física.
