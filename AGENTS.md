@@ -8,7 +8,7 @@ Estas regras valem para humanos e IAs. O objetivo é maximizar progresso útil s
 - `docs/EXPLORATION.md` é o **hub/índice central da exploração**: aponta temas ativos, status e documentos temáticos relevantes.
 - `docs/exploration/*.md` guarda **pesquisa temática, ideias, alternativas, referências e decisões ainda em discussão** quando o assunto merece documento próprio.
 - `docs/ARCHITECTURE.md` define **as decisões estruturais de software**: fronteiras, responsabilidades e direção de dependências.
-- `docs/GENRE_BENCHMARK.md` guarda a **referência comparativa externa do gênero**, usada periodicamente para confrontar o IndexCities com aprendizados, falhas e expectativas observados em outros city builders; não define requisitos.
+- `docs/exploration/genre-benchmark.md` guarda a **referência comparativa externa do gênero**, usada periodicamente para confrontar o IndexCities com aprendizados, falhas e expectativas observados em outros city builders; é exploração temática recorrente e não define requisitos.
 - O código e o histórico deste repositório definem o estado real da implementação.
 
 Antes de uma mudança relevante, leia a SPEC e somente o código necessário para entender o alvo. Consulte a ARCHITECTURE quando a mudança afetar organização técnica, fronteiras ou dependências. Consulte a EXPLORATION quando a tarefa depender de uma discussão ainda aberta ou do raciocínio que levou a uma decisão.
@@ -92,7 +92,26 @@ Regras dos documentos temáticos:
 - o documento pode continuar como histórico/raciocínio, mas deve marcar o que foi decidido, superado ou ainda está aberto;
 - não criar subpastas adicionais ou novos documentos por ritual; só separar quando houver volume ou paralelismo real.
 
-Evite criar novos arquivos Markdown soltos em `docs/` para exploração. A raiz de `docs/` fica reservada às fontes canônicas e a documentos especiais com função recorrente e explicitamente justificada, como `GENRE_BENCHMARK.md`.
+Evite criar novos arquivos Markdown soltos em `docs/` para exploração. A raiz de `docs/` fica reservada às fontes canônicas (`SPEC.md`, `ARCHITECTURE.md`, `EXPLORATION.md`) e a eventuais documentos que sejam explicitamente aprovados como canônicos.
+
+
+### Roteamento rápido de documentação
+
+Antes de criar ou editar documentação, escolha o destino pelo conteúdo:
+
+- **Decisão de produto já fechada** → `docs/SPEC.md`.
+- **Decisão estrutural de software já fechada** → `docs/ARCHITECTURE.md`.
+- **Pesquisa/ideia curta ou questão transversal** → `docs/EXPLORATION.md`.
+- **Pesquisa extensa ou tema trabalhado em paralelo** → `docs/exploration/<tema>.md`, com link/status no hub.
+- **Regra de trabalho para humanos/IAs** → `AGENTS.md`.
+
+Não trate nenhum arquivo em `docs/exploration/` como requisito só porque ele contém uma conclusão ou recomendação. Uma decisão de produto só é oficial depois de aparecer na SPEC; uma decisão estrutural só é oficial depois de aparecer na ARCHITECTURE.
+
+Antes de criar um novo arquivo:
+1. verifique se já existe documento temático equivalente;
+2. prefira atualizar o existente;
+3. só crie outro quando separar o assunto reduzir conflito ou melhorar claramente a leitura;
+4. nunca duplique a mesma decisão em dois documentos exploratórios como se ambos fossem autoritativos.
 
 ### Sem herança automática
 
@@ -112,7 +131,7 @@ A arquitetura só deve ficar mais sofisticada quando existir uma dor concreta e 
 - múltiplas frentes paralelas começam a conflitar;
 - rastreabilidade adicional passa a economizar mais tempo do que custa.
 
-Até isso acontecer, **SPEC + ARCHITECTURE + EXPLORATION hub + este AGENTS.md continuam sendo a arquitetura central**. Documentos temáticos em `docs/exploration/` são extensões da exploração, não novas fontes de verdade. Documentos especiais só devem existir quando resolvem uma dor concreta; `docs/GENRE_BENCHMARK.md` continua fora da pasta temática porque serve como referência comparativa recorrente do gênero.
+Até isso acontecer, **SPEC + ARCHITECTURE + EXPLORATION hub + este AGENTS.md continuam sendo a arquitetura central**. Documentos em `docs/exploration/` são extensões da exploração, não novas fontes de verdade. O benchmark do gênero também vive ali, apesar de ter uso recorrente.
 
 
 ## Princípio de gameplay e microgerenciamento
