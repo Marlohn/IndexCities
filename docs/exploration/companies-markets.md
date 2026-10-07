@@ -1227,7 +1227,7 @@ A vantagem é reaproveitar a mesma infraestrutura de rastreamento sem inventar n
 
 ## Hipótese: reserva econômica externa como ciclo monetário
 
-> **Revisão humana desta seção:** PENDENTE — ideia proposta pelo responsável e análise complementar da IA; não é decisão oficial.
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — a ideia-base foi discutida diretamente com o responsável; a modelagem e os riscos abaixo ainda precisam de validação.
 
 ### Ideia central
 
@@ -1282,3 +1282,48 @@ Isso evita usar o fundo para esconder lacunas da economia.
 A ideia é coerente e mais forte do que usar o fundo apenas como destino de dinheiro sem titular. Ela pode transformar o fundo em uma fronteira monetária concreta entre a cidade e o mundo exterior.
 
 O maior risco não é conceitual; é de balanceamento: um fundo realmente finito pode virar um limitador invisível da cidade. Antes de promover para a SPEC, deve ser decidido se o saldo pode efetivamente restringir entradas externas ou se funciona apenas como contabilidade conservativa com uma reserva inicial dimensionada para não travar o jogo.
+
+
+### Refinamento: oferta monetária fechada
+
+A proposta pode ser entendida de forma mais precisa como uma **oferta monetária total fechada**.
+
+Exemplo conceitual:
+- existe um total monetário global (M);
+- esse total fica distribuído entre Caixa da Cidade, carteiras dos SIMs, caixas das empresas e a reserva externa;
+- o dinheiro não é criado nem destruído nesses fluxos: apenas muda de titular;
+- quando um migrante ou empresa externa entra, recebe saldo transferido da reserva;
+- quando dinheiro sai da economia local para um fluxo externo ou fica sem titular econômico, ele retorna à reserva.
+
+Importante: se o total global for R$ 1 milhão, não significa que o fundo tem R$ 1 milhão **além** de o player ter R$ 1 milhão. O player, SIMs e empresas já fazem parte desse mesmo R$ 1 milhão. A reserva representa apenas a parcela ainda fora dos agentes locais.
+
+Exemplo:
+- total global: R$ 1.000.000;
+- Caixa da Cidade: R$ 700.000;
+- reserva externa: R$ 300.000;
+- SIMs/empresas: R$ 0 no instante inicial;
+- soma sempre: R$ 1.000.000.
+
+### O que funciona bem nesse modelo
+
+Matematicamente, o dinheiro global não “acaba” enquanto nenhum sistema criar ou destruir moeda. Ele apenas circula. O que pode acabar temporariamente é o dinheiro de um **agente específico** ou a **liquidez disponível na reserva externa**.
+
+Isso é compatível com o gameplay desejado:
+- o jogador pode ficar sem caixa mesmo existindo dinheiro em SIMs, empresas ou na reserva;
+- impostos transferem dinheiro de SIMs/empresas para o Caixa;
+- salários e compras redistribuem dinheiro para SIMs/empresas;
+- importações e entradas/saídas externas movimentam dinheiro entre cidade e reserva.
+
+### Cuidados para fechar o ciclo corretamente
+
+1. **Não mandar todo gasto de construção para a reserva.** Se a obra paga salário a trabalhadores locais ou compra material de empresa local, esse dinheiro deve ir aos agentes reais. Só a parcela cujo destinatário é externo vai para a reserva.
+2. **Liquidez pode travar mesmo com dinheiro total suficiente.** Muito dinheiro pode ficar concentrado em poucos agentes ou fora da cidade; isso é um problema de distribuição, não de quantidade total.
+3. **Crescimento populacional aumenta a demanda por liquidez.** Com oferta monetária fixa, salários, preços e saldo inicial dos novos agentes precisam ser calibrados para que o sistema continue funcionando em cidades grandes.
+4. **A reserva não deve ser usada para esconder destinatários reais.** Sempre que houver um recebedor concreto, o pagamento deve ir para ele.
+5. **A soma monetária global deve ser uma invariável auditável de debug.** Qualquer diferença indica criação/destruição acidental de dinheiro.
+
+### Avaliação atual
+
+A ideia é conceitualmente sólida e especialmente boa para o IndexCities porque reforça causalidade: todo dinheiro tem origem e destino.
+
+O principal risco não é “o dinheiro acabar globalmente”, mas **ficar mal distribuído** entre Caixa, cidadãos, empresas e reserva. Isso precisa ser observado em POC/benchmark antes de fixar valores iniciais.
