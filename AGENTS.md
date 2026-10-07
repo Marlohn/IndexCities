@@ -5,7 +5,8 @@ Estas regras valem para humanos e IAs. O objetivo é maximizar progresso útil s
 ## Fonte de verdade
 
 - `docs/SPEC.md` define o **produto decidido** e o escopo atual.
-- `docs/EXPLORATION.md` guarda **pesquisa, ideias, alternativas e decisões ainda em discussão**.
+- `docs/EXPLORATION.md` é o **hub/índice central da exploração**: aponta temas ativos, status e documentos temáticos relevantes.
+- `docs/exploration/*.md` guarda **pesquisa temática, ideias, alternativas, referências e decisões ainda em discussão** quando o assunto merece documento próprio.
 - `docs/ARCHITECTURE.md` define **as decisões estruturais de software**: fronteiras, responsabilidades e direção de dependências.
 - `docs/GENRE_BENCHMARK.md` guarda a **referência comparativa externa do gênero**, usada periodicamente para confrontar o IndexCities com aprendizados, falhas e expectativas observados em outros city builders; não define requisitos.
 - O código e o histórico deste repositório definem o estado real da implementação.
@@ -22,7 +23,7 @@ Durante conversas de exploração ou definição com o responsável pelo projeto
 - prefira fontes primárias, documentação oficial, dados públicos e benchmarks reproduzíveis; não use suposição como substituto de evidência;
 - quando houver uma decisão explícita, atualize a fonte de verdade apropriada imediatamente, sem esperar um pedido separado de documentação;
 - decisões de produto vão para `docs/SPEC.md`;
-- hipóteses, ideias, alternativas, referências, dúvidas e resultados de pesquisa vão para `docs/EXPLORATION.md`;
+- hipóteses, ideias, alternativas, referências, dúvidas e resultados de pesquisa ficam em `docs/EXPLORATION.md` quando forem curtos; quando o tema crescer ou estiver sendo trabalhado em paralelo, use `docs/exploration/<tema>.md` e mantenha `docs/EXPLORATION.md` como índice/status;
 - regras de desenvolvimento e de trabalho vão para `AGENTS.md`;
 - se a documentação existente ficar desatualizada, contraditória ou incompleta à luz da conversa atual, corrija-a na mesma sessão;
 - não transforme suposição em requisito: quando não houver evidência ou decisão suficiente, registre como aberto e indique o que precisa ser pesquisado ou medido;
@@ -41,7 +42,7 @@ Aqui isso significa:
 
 - mudança de produto ou comportamento novo entra na `SPEC.md` antes do código;
 - decisão estrutural importante entra na `ARCHITECTURE.md` antes de orientar implementação;
-- dúvidas, pesquisa e alternativas ainda abertas ficam na `EXPLORATION.md`;
+- dúvidas, pesquisa e alternativas ainda abertas ficam na `EXPLORATION.md` ou, quando forem temáticas/extensas, em `docs/exploration/<tema>.md` referenciadas pelo hub;
 - bugs que apenas restauram comportamento já especificado não exigem mudar a SPEC;
 - experimentos isolados podem existir antes da SPEC, mas só viram produto quando a decisão for registrada.
 
@@ -71,17 +72,27 @@ Ela não deve virar:
 
 ### EXPLORATION
 
-`docs/EXPLORATION.md` é o espaço de pensamento.
+`docs/EXPLORATION.md` é o **hub central do pensamento ainda não oficial**. Ele deve permanecer navegável e indicar:
+- temas ativos;
+- status resumido;
+- links para documentos temáticos;
+- questões transversais que ainda não justificam arquivo próprio.
 
-Use para:
+Use `docs/exploration/<tema>.md` quando:
+- a pesquisa ficar extensa;
+- houver muitas alternativas/evidências;
+- o tema estiver sendo trabalhado em paralelo por conversas diferentes;
+- manter tudo no hub piorar leitura ou aumentar conflito de edição.
 
-- pesquisar uma ideia;
-- comparar alternativas;
-- registrar referências, prós e contras;
-- manter perguntas ainda abertas;
-- preservar por que uma opção foi aceita ou descartada.
+Regras dos documentos temáticos:
+- devem declarar no topo que **não são fonte de verdade**;
+- devem indicar status quando útil;
+- preservam pesquisa, alternativas, referências, prós/contras e raciocínio;
+- quando uma decisão fecha, **o resultado oficial entra resumido na SPEC**;
+- o documento pode continuar como histórico/raciocínio, mas deve marcar o que foi decidido, superado ou ainda está aberto;
+- não criar subpastas adicionais ou novos documentos por ritual; só separar quando houver volume ou paralelismo real.
 
-Quando uma discussão fecha, **a decisão final entra resumida na SPEC**. A EXPLORATION pode preservar o raciocínio e as evidências, mas não substitui a SPEC.
+Evite criar novos arquivos Markdown soltos em `docs/` para exploração. A raiz de `docs/` fica reservada às fontes canônicas e a documentos especiais com função recorrente e explicitamente justificada, como `GENRE_BENCHMARK.md`.
 
 ### Sem herança automática
 
@@ -101,7 +112,7 @@ A arquitetura só deve ficar mais sofisticada quando existir uma dor concreta e 
 - múltiplas frentes paralelas começam a conflitar;
 - rastreabilidade adicional passa a economizar mais tempo do que custa.
 
-Até isso acontecer, **uma SPEC + uma EXPLORATION + este AGENTS.md continuam sendo a arquitetura central**. Documentos auxiliares só devem existir quando resolvem uma dor concreta; `docs/GENRE_BENCHMARK.md` existe especificamente para manter a pesquisa comparativa extensa fora da EXPLORATION e servir como referência periódica de validação.
+Até isso acontecer, **SPEC + ARCHITECTURE + EXPLORATION hub + este AGENTS.md continuam sendo a arquitetura central**. Documentos temáticos em `docs/exploration/` são extensões da exploração, não novas fontes de verdade. Documentos especiais só devem existir quando resolvem uma dor concreta; `docs/GENRE_BENCHMARK.md` continua fora da pasta temática porque serve como referência comparativa recorrente do gênero.
 
 
 ## Princípio de gameplay e microgerenciamento
