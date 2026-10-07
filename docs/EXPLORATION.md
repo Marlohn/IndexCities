@@ -1025,3 +1025,50 @@ Questão pendente:
 - ciclos fixos;
 - controle adaptativo ao tráfego;
 - ou modelo híbrido configurável.
+
+
+---
+
+## Função da rodovia e hierarquia viária
+
+**Status:** direção confirmada parcialmente.
+
+A rodovia será tratada como infraestrutura de mobilidade de alta capacidade, não como via de acesso local.
+
+Implicações já definidas:
+
+- maior velocidade operacional;
+- sem construção direta de edifícios ao longo da rodovia;
+- acesso à cidade feito por conexões apropriadas com a malha urbana;
+- capacidade depende do número de faixas;
+- rotatórias e cruzamentos fazem parte da rede urbana.
+
+### Razão de design
+
+Separar rodovia de via urbana ajuda a manter uma hierarquia viária compreensível:
+
+- rodovia: deslocamento rápido entre áreas;
+- via urbana: acesso local, calçadas, travessias e estacionamento.
+
+Isso também reduz um problema comum em redes viárias: misturar tráfego local com tráfego de passagem na mesma infraestrutura.
+
+### Travessias
+
+Decidido:
+
+- pedestres atravessam somente em faixas.
+
+Ainda pode ser explorado futuramente:
+
+- semáforo para pedestres;
+- tempo de espera;
+- prioridade de pedestres;
+- travessias elevadas ou passarelas.
+
+### Semáforos
+
+Decidido para o escopo inicial:
+
+- ciclos fixos.
+
+Controle adaptativo pode ser reconsiderado no futuro se congestionamentos e gameplay justificarem a complexidade.
