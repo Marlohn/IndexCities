@@ -4261,36 +4261,57 @@ Uma forma futura pode usar:
 
 Nenhuma delas entra sem decisão explícita.
 
-### Dono versus representante
+### Estrutura de funcionários no primeiro modelo
 
-A empresa **não terá SIM proprietário** no primeiro modelo.
+**Status:** decidido para o primeiro modelo: sem cargos ou profissões formais como mecânica.
 
-Isso não impede que exista um SIM visível ligado à operação.
+A regra vale de forma transversal para empresas e serviços, incluindo comércio, indústria, hospital, escola e demais estruturas com trabalhadores.
 
-Alternativas:
+Exemplo inicial:
 
-**A. Apenas funcionários comuns**
-- mais simples;
-- empresa funciona se preencher as vagas necessárias;
-- não há uma pessoa especial representando a empresa.
+hospital
+→ precisa de 5 funcionários
+→ SIM A trabalha no hospital
+→ SIM B trabalha no hospital
 
-**B. Um cargo real de gerente/responsável**
-- um SIM empregado ocupa a função de gerente/responsável do estabelecimento;
-- recebe salário;
-- não é dono e não recebe automaticamente o lucro;
-- pode ser mostrado na UI como contato humano da operação.
+A engine não precisa distinguir funções profissionais no primeiro modelo. O vínculo relevante é:
+- SIM;
+- local de trabalho;
+- vaga;
+- salário;
+- turno;
+- qualificação quando aplicável.
 
-Prós de B:
-- dá um rosto humano ao comércio/indústria;
-- conecta a empresa aos cidadãos sem abrir dividendos/acionistas;
-- reaproveita o sistema de empregos;
-- falta de gerente pode, se desejado depois, afetar capacidade/abertura de forma concreta.
+### Por que começar assim
 
-Contras de B:
-- adiciona mais uma vaga obrigatória;
-- se não tiver consequência de gameplay, vira detalhe decorativo;
-- pode piorar escassez de mão de obra em estabelecimentos pequenos.
+Prós:
+- reduz bastante o escopo inicial da engine de emprego;
+- evita organograma, promoções e dependências hierárquicas sem gameplay comprovado;
+- permite validar primeiro contratação, salários, deslocamento, turnos e capacidade de pessoal;
+- mantém a simulação concreta: cada trabalhador continua sendo um SIM real ligado a uma vaga real.
 
-**Recomendação atual:** usar **gerente/responsável como cargo de trabalho apenas se ele tiver consequência operacional real**. Não criar "representante" puramente cosmético só para preencher a ausência de dono.
+Contras:
+- perde identidade profissional dos trabalhadores;
+- salários diferentes podem precisar de explicação por qualificação ou turno sem um nome de cargo;
+- alguns serviços ficam mais abstratos no primeiro modelo.
 
-Para uma pequena loja, o gerente pode ser a pessoa que o jogador vê como responsável pelo local sem ser financeiramente proprietário da empresa.
+A abstração é aceitável no início porque não cria dinheiro ou trabalhador mágico; apenas adia a diferenciação funcional entre vagas.
+
+### Evolução futura desejada: cargos e profissões
+
+Fica registrada como evolução interessante uma engine de cargos/profissões.
+
+Ela poderia permitir:
+- vagas nomeadas;
+- salários diferentes por cargo;
+- qualificações específicas;
+- quantidades por função;
+- efeitos operacionais quando faltar determinada função;
+- melhor leitura da carreira e identidade do SIM.
+
+Isso não faz parte do primeiro modelo e só deve virar mecânica quando houver valor de gameplay suficiente para justificar a complexidade.
+
+A ordem desejada é:
+1. emprego simples por estrutura;
+2. validar salários, turnos, deslocamento, capacidade e contratação;
+3. depois avaliar cargos como aprofundamento.
