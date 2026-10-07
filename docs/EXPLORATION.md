@@ -691,3 +691,33 @@ Um detalhe só deve entrar na simulação se produzir ao menos uma consequência
 - criar uma decisão interessante para o jogador.
 
 Se um detalhe não muda nenhum sistema relevante, ele pode permanecer agregado.
+
+
+---
+
+## Capacidade hospitalar e equipe médica
+
+**Status:** em exploração; existência de funcionários reais e capacidade real já está decidida na SPEC.
+
+A direção mais coerente é evitar um hospital com capacidade puramente abstrata.
+
+Modelo a investigar:
+
+- cada hospital/unidade possui um quadro real de funcionários;
+- médicos, enfermeiros e outros profissionais podem ter funções diferentes;
+- capacidade de atendimento depende da equipe disponível, instalações e tempo;
+- leitos podem ser um recurso separado da capacidade de consulta;
+- turnos podem reduzir a equipe disponível em determinados horários;
+- ausência de profissionais pode reduzir capacidade mesmo quando o prédio físico comportaria mais pacientes;
+- emergências, consultas e internações podem competir por recursos diferentes.
+
+### Pergunta em aberto
+
+Ainda precisa ser decidido o nível de granularidade da equipe:
+
+1. apenas "médicos" e "enfermeiros";
+2. especialidades médicas relevantes;
+3. funções hospitalares adicionais;
+4. turnos e escalas individuais.
+
+A regra de profundidade continua a mesma: só detalhar quando isso gerar consequência clara para gameplay, capacidade, custo, deslocamento ou decisão do jogador.
