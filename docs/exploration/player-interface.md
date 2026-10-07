@@ -1,6 +1,6 @@
 # IndexCities — Interface e ferramentas do jogador
 
-> **Revisão humana:** PENDENTE.  
+> **Revisão humana:** PARCIALMENTE REVISADO.  
 > **Auditoria:** classificação conservadora com base no estado anterior à reorganização temática, commit `4b97ace2`. o conteúdo deste documento ainda não foi revisado integralmente pelo responsável e não pode ser tratado como decisão.
 >
 
@@ -836,7 +836,7 @@ Durante o protótipo, medir/observar:
 
 ## Direção atual
 
-> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
 
 
 O caminho mais coerente, neste momento, é uma interface de **mapa limpo + ferramentas contextuais + preview forte**.
