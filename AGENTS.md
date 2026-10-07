@@ -35,6 +35,18 @@ Durante conversas de exploração ou definição com o responsável pelo projeto
 
 ## Arquitetura de especificação
 
+O IndexCities usa deliberadamente **Spec-Driven Development (SDD)** de forma leve: primeiro definimos claramente o que deve existir; depois implementamos.
+
+Aqui isso significa:
+
+- mudança de produto ou comportamento novo entra na `SPEC.md` antes do código;
+- decisão estrutural importante entra na `ARCHITECTURE.md` antes de orientar implementação;
+- dúvidas, pesquisa e alternativas ainda abertas ficam na `EXPLORATION.md`;
+- bugs que apenas restauram comportamento já especificado não exigem mudar a SPEC;
+- experimentos isolados podem existir antes da SPEC, mas só viram produto quando a decisão for registrada.
+
+SDD aqui **não** significa adotar obrigatoriamente Spec Kit, OpenSpec, BMAD ou criar uma cadeia de documentos para cada mudança. A especificação vem antes do desenvolvimento, mas o processo continua proporcional ao risco e ao tamanho da mudança.
+
 O IndexCities usa deliberadamente uma arquitetura de especificação mínima.
 
 ### SPEC
@@ -143,7 +155,7 @@ Sistemas profundos não podem virar caixas-pretas.
 2. Se a decisão ainda estiver aberta, pesquise e registre o raciocínio na EXPLORATION antes de transformá-la em produto.
 3. Inspecione somente o necessário.
 4. Implemente diretamente.
-5. Rode a validação relevante para a mudança.
+5. Rode primeiro os testes mais próximos da área alterada; amplie a validação somente quando a mudança justificar.
 6. Revise o diff final e confirme que não adicionou escopo não pedido.
 7. Atualize a SPEC somente quando o produto mudou.
 
