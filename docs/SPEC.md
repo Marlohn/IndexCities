@@ -220,11 +220,14 @@ A SPEC deve crescer com o produto, **não antes dele**.
 
 - Lotes não precisam ter proprietário individual.
 - Toda construção é colocada pelo jogador.
-- A cidade deve calcular e expor **demanda** para orientar o que faz sentido construir, incluindo os principais fatores que estão aumentando ou reduzindo essa demanda.
+- A cidade deve calcular e expor **demanda por categoria de atividade**, em vez de uma única barra genérica de comércio/indústria.
+- A demanda deve ser **principalmente local**, refletindo a clientela potencial acessível àquele estabelecimento e àquela área da cidade.
+- Os fatores conceituais principais da demanda são população/clientes potenciais, capacidade já existente, acesso/tempo de deslocamento e concorrência entre estabelecimentos equivalentes ou substitutos.
 - **Demanda é informação de gestão, não uma trava de construção:** o jogador pode construir mesmo quando a demanda é baixa.
 - A interface deve alertar claramente quando uma nova atividade econômica estiver entrando em uma situação de baixa demanda ou alto risco de pouca clientela.
-- Múltiplos estabelecimentos equivalentes disputando a mesma clientela, como vários mercados concentrados na mesma área, podem reduzir a demanda/oportunidade econômica percebida para novos estabelecimentos e aumentar o risco de prejuízo.
-- O efeito exato de localização, população atendida, concorrência e distância sobre a demanda ainda precisa ser definido e calibrado; não usar uma barra opaca sem decomposição causal.
+- Na colocação e na leitura normal, a demanda pode ser resumida em estados simples como **boa / média / baixa**; o jogador deve poder abrir os fatores detalhados que produziram esse resultado.
+- Múltiplos estabelecimentos equivalentes disputando a mesma clientela, como vários mercados concentrados na mesma área, podem reduzir a oportunidade econômica para novos estabelecimentos e aumentar o risco de prejuízo.
+- A fórmula exata, os pesos e os limiares continuam sendo parâmetros de calibração; não usar uma barra opaca sem decomposição causal.
 - Cidadãos podem entrar em falência pessoal.
 - Pode existir população sem moradia.
 - Oferta e demanda devem influenciar preços de aluguel e venda, sem exigir um modelo excessivamente complexo.
