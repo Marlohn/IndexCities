@@ -67,7 +67,9 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - Obras dependem de trabalhadores reais da população simulada.
 - Materiais de construção precisam existir em estoque antes de serem consumidos pela obra.
 - No início de uma cidade, materiais podem ser importados pela conexão externa usando o dinheiro inicial.
-- A cidade precisa possuir infraestrutura de armazenamento para materiais de construção.
+- A cidade precisa possuir infraestrutura física de armazenamento, como depósitos/galpões, para materiais de construção.
+- Materiais precisam chegar fisicamente ao canteiro de obras, normalmente por veículos de carga, antes de serem consumidos pela construção.
+- A cidade pode desenvolver produção local de materiais por meio de indústrias/fábricas apropriadas, reduzindo dependência de importações.
 - A lista exata de materiais e cadeias produtivas deve seguir a pesquisa registrada na EXPLORATION.
 
 ### Necessidades e serviços urbanos
@@ -340,3 +342,10 @@ A SPEC deve crescer com o produto, **não antes dele**.
 
 - Demolição de prédios e vias é instantânea no escopo atual.
 - Demolição tem custo configurável.
+
+
+### Estado inicial da cidade
+
+- A cidade começa essencialmente vazia, sem tecido urbano pré-construído.
+- O mapa mantém apenas os elementos estruturais já definidos, como ambiente natural e conexão externa.
+- A possibilidade de fornecer um depósito/galpão inicial gratuito permanece em avaliação e não está decidida.
