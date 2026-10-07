@@ -75,7 +75,7 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - Construções passam por uma fase real de obra.
 - Toda obra possui custo em **dinheiro e materiais**.
 - Obras consomem materiais reais da cidade.
-- Obras dependem de trabalhadores reais da população simulada.
+- Obras dependem de trabalhadores reais. No fluxo normal, as equipes do Pátio Municipal de Obras são formadas por cidadãos empregados pela prefeitura; no bootstrap inicial, uma equipe externa temporária pode executar as primeiras obras.
 - Materiais de construção precisam estar fisicamente disponíveis e reservados para a obra antes de serem consumidos, seja em estoque municipal ou já entregues no canteiro.
 - No início de uma cidade, materiais podem ser importados pela conexão externa usando o dinheiro inicial.
 - O custo apresentado da obra deve indicar explicitamente quando materiais faltantes serão importados e quanto essa importação aumenta o custo monetário.
@@ -437,3 +437,13 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - O Pátio também possui um pequeno estoque físico de materiais de construção.
 - O estoque do Pátio tem capacidade menor que a de um depósito municipal dedicado.
 - Depósitos municipais continuam sendo a infraestrutura principal para armazenamento de grandes quantidades de materiais.
+
+
+### Bootstrap inicial de construção
+
+- A cidade não começa com o Pátio Municipal de Obras pronto.
+- As primeiras obras necessárias para colocar o sistema municipal em funcionamento podem ser executadas por uma **equipe externa temporária**.
+- Essa equipe e seus trabalhadores vêm pela conexão externa e não pertencem à população residente da cidade.
+- A equipe externa pode executar o primeiro Pátio Municipal de Obras e a infraestrutura mínima necessária para viabilizá-lo.
+- Materiais dessas primeiras obras continuam obedecendo às regras normais de custo, importação e entrega física.
+- Depois que o Pátio Municipal de Obras entra em operação, as obras municipais passam ao fluxo normal com trabalhadores públicos da cidade.
