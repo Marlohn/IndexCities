@@ -25,7 +25,7 @@ Não é necessário documentar cada conversa pequena. Use este arquivo quando pr
 
 ### Dor observada
 
-No CityBuilder, adicionar muita cerimônia de processo — múltiplas etapas, papéis, documentos, branches e handoffs — aumentou custo de tokens e tempo sem produzir melhora proporcional no jogo.
+Experiências anteriores mostraram que muita cerimônia de processo — múltiplas etapas, papéis, documentos, branches e handoffs — pode aumentar custo de tokens e tempo sem produzir melhora proporcional no produto.
 
 Ao mesmo tempo, desenvolvimento totalmente sem limites pode causar deriva de escopo, decisões esquecidas e arquitetura desnecessária.
 
@@ -34,7 +34,7 @@ Ao mesmo tempo, desenvolvimento totalmente sem limites pode causar deriva de esc
 - **Spec Kit:** processo forte e completo, mas pesado demais para a fase atual.
 - **OpenSpec:** mais leve e flexível, porém ainda adicionaria proposal/spec/design/tasks e estado próprio antes de existir uma dor que justifique isso.
 - **BMAD:** orientado a vários papéis e etapas; incompatível com a busca atual por velocidade.
-- **Skills estilo Matt Pocock:** ideias úteis de review/retro e execução agentic, mas não há necessidade de adotar o workflow inteiro.
+- **Skills especializadas:** ideias úteis de review, retro e execução assistida, mas sem necessidade de adotar um workflow inteiro.
 - **Sem processo:** máxima velocidade, mas pouca proteção contra deriva de produto.
 - **Spec leve própria:** uma SPEC curta como cerca, com execução agressiva dentro dela.
 
@@ -43,10 +43,10 @@ Ao mesmo tempo, desenvolvimento totalmente sem limites pode causar deriva de esc
 O IndexCities adota por enquanto uma abordagem de **“Go Horse com cerca”**:
 
 - uma única SPEC curta e autoritativa;
-- AGENTS.md com regras técnicas e de trabalho;
+- AGENTS.md com regras de trabalho;
 - EXPLORATION para pesquisa e decisões ainda abertas;
 - implementação rápida dentro desses limites;
-- testes e validação proporcionais ao risco;
+- validação proporcional ao risco;
 - nenhum framework adicional de SDD por enquanto.
 
 ### Princípio de evolução
@@ -65,6 +65,30 @@ Até lá, simplicidade é uma característica do processo, não uma deficiência
 
 ---
 
-## Próximas explorações
+## Ponto de partida do produto
 
-Use esta seção para registrar novos temas ainda não decididos sobre gameplay, visual, simulação, UX, arquitetura ou referências do mundo real.
+**Status:** aberto.
+
+O IndexCities parte de uma folha em branco. Nenhuma decisão de produto de trabalhos anteriores é herdada automaticamente.
+
+Assuntos a explorar e decidir progressivamente podem incluir, entre outros:
+
+- qual é a fantasia central do jogo;
+- qual experiência o jogador deve ter;
+- gênero e loop principal;
+- plataforma e tecnologia;
+- direção visual;
+- escala;
+- simulação;
+- construção;
+- economia;
+- população;
+- trânsito;
+- progressão;
+- interface;
+- performance;
+- persistência.
+
+Essa lista não é roadmap nem compromisso. É apenas um mapa inicial de perguntas possíveis.
+
+Material de projetos anteriores pode ser consultado no futuro como pesquisa, mas deve ser tratado como **evidência externa**, não como requisito.
