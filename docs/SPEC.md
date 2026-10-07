@@ -160,3 +160,13 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Caminhadas fazem parte real das viagens, incluindo trechos até estacionamentos, pontos de ônibus e outros destinos.
 - Bicicletas existirão como modal real de transporte e circularão fisicamente pela cidade.
 - Ciclovias farão parte da infraestrutura viária.
+
+
+### Vias, calçadas e estacionamento
+
+- No escopo atual existirão dois tipos básicos de via: **via urbana comum** e **rodovia**.
+- Vias urbanas comuns terão calçadas por padrão.
+- O sistema viário poderá ser aprofundado futuramente com novos tipos e variações.
+- Vagas de estacionamento na rua ocupam espaço físico real da via.
+- Casas e prédios podem ter vagas/garagens privadas.
+- Vagas privadas reduzem a necessidade de estacionamento na rua.
