@@ -3706,7 +3706,21 @@ Contras:
 - pode gerar especulação e imóveis vazios;
 - external buyer que compra apenas para alugar sem virar entidade local recriaria um landlord invisível.
 
-**Recomendação de segurança:** se houver comprador exterior residencial no primeiro escopo, preferir famílias que compram para **morar e migrar para a cidade**. Investidor exterior que permanece fora da cidade não deve ser introduzido sem uma entidade econômica explícita e auditável.
+**Decisão promovida para a SPEC:** no primeiro modelo, comprador residencial vindo do exterior só pode comprar para **morar e migrar para a cidade**. Investidor residencial externo que permaneça fora da cidade apenas recebendo aluguel fica fora deste primeiro modelo.
+
+
+### Decisão fechada: comprador residencial exterior
+
+Foi aprovado que, no primeiro modelo, um comprador residencial vindo da conexão exterior **só compra para migrar e morar na cidade**.
+
+Consequências:
+- o comprador externo vira família real da simulação;
+- ocupa fisicamente a residência adquirida;
+- passa a participar de emprego, consumo, trânsito, impostos e demais sistemas;
+- não existe proprietário residencial externo invisível recebendo aluguel à distância;
+- investimento imobiliário externo puro fica fora até existir uma entidade e uma justificativa de gameplay claras.
+
+Essa decisão reduz risco de caixa-preta e de entrada monetária sem agente correspondente.
 
 ### Comércio e indústria: usar o mesmo mecanismo, mas não necessariamente a mesma propriedade
 
@@ -3871,3 +3885,30 @@ Por isso, a ideia merece continuar sendo explorada, mas só deve virar requisito
 3. como comércio/indústria tratam aquisição versus operação;
 4. como o preço de compra retorna ao Caixa da Cidade;
 5. como limitar e explicar demanda exterior.
+
+
+---
+
+## Princípio reforçado: evitar abstração sem causa concreta
+
+**Status:** decidido como critério transversal; também registrado em AGENTS e SPEC.
+
+O objetivo não é eliminar toda abstração. Isso seria incompatível com decisões já úteis, como interiores abstratos, UI agregada e sistemas de água/energia por capacidade.
+
+O objetivo é evitar ao máximo **abstrações que substituem entidades e fluxos econômicos reais sem necessidade**.
+
+Preferir:
+- dinheiro com origem e destino;
+- proprietário real quando propriedade gera consequência;
+- materiais em local físico;
+- empresa/família identificável quando recebe ou paga;
+- demanda derivada de clientes, capacidade, acesso e concorrência;
+- migração ligada a famílias reais.
+
+Aceitar abstração quando:
+- evita microgerenciamento sem apagar consequências;
+- reduz custo técnico sem mudar o resultado econômico/físico relevante;
+- é derivada de estado concreto e pode ser decomposta;
+- não cria dinheiro, recurso, proprietário, demanda ou comportamento mágico.
+
+Esse critério deve ser reaplicado em todas as próximas decisões.
