@@ -211,3 +211,10 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Comércio não precisa operar com janelas fixas de entrega; o tempo de chegada pode emergir do tráfego e da logística.
 - A entrada e saída de pessoas dos prédios é simulada fisicamente, enquanto o interior dos edifícios permanece abstrato.
 - Serviços como coleta, carga/descarga e atendimento de emergência levam algum tempo para serem executados, mas não precisam buscar fidelidade temporal extrema.
+
+
+### Atividades internas, lazer e visitas
+
+- Quando um cidadão está dentro de um prédio, sua atividade e estado continuam sendo simulados, mas sua posição interna pode permanecer abstrata.
+- Cidadãos podem sair para alimentação, lazer e socialização.
+- Cidadãos podem visitar amigos e familiares em outras residências.
