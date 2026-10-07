@@ -753,3 +753,81 @@ Para o primeiro modelo, a preferência atual é **sucessão imediata sem entidad
 A regra exata de prioridade entre possíveis herdeiros ainda precisa ser decidida separadamente.
 
 Essa recomendação é uma simplificação de fronteira, não uma decisão oficial até aprovação.
+
+
+### Pesquisa externa — patrimônio sem herdeiro
+
+**Status:** pesquisa concluída para ampliar alternativas; decisão continua aberta.
+
+A comparação de regras reais mostrou um padrão importante: quando não há herdeiro, a solução jurídica costuma terminar em alguma autoridade pública, não em uma redistribuição automática para o mercado.
+
+Referências:
+- Brasil: Código Civil, art. 1.822 — após o período legal, herança vacante é incorporada ao Município/Distrito Federal ou União, conforme o caso: https://normas.leg.br/?urn=urn:lex:br:federal:lei:2002-01-10;10406!art1822
+- Alemanha: BGB § 1936 — sem parentes/cônjuge/parceiro, o Land ou a Federação herda: https://www.gesetze-im-internet.de/bgb/__1936.html
+- Inglaterra e País de Gales: bona vacantia passa à Coroa quando não há testamento nem família conhecida: https://www.gov.uk/unclaimed-estates-bona-vacantia
+- Escócia: bens sem herdeiro são tratados como ultimus haeres; valores líquidos podem ir para o fundo público consolidado: https://www.gov.scot/publications/land-reform-review-group-final-report-land-scotland-common-good/pages/21/
+
+A pesquisa encontrou duas ideias úteis para o jogo além de "vai para o governo":
+
+#### 1. Beneficiário social antes de considerar o patrimônio sem dono
+
+Na Inglaterra e País de Gales, pessoas não aparentadas podem pedir pagamento discricionário da herança quando, por exemplo, viviam com o falecido ou prestavam cuidados/serviços relevantes:
+https://www.gov.uk/unclaimed-estates-bona-vacantia/grants-from-a-deceased-persons-estate
+
+Adaptação possível ao IndexCities:
+- parentes/herdeiros reais têm prioridade;
+- na ausência deles, um coabitante ou relação social muito próxima pode ser elegível;
+- somente se ninguém for elegível o patrimônio vira "não reclamado".
+
+Isso aproveita relações já simuladas e reduz muito os casos terminais sem inventar um herdeiro exterior.
+
+#### 2. Fundo único de patrimônio não reclamado
+
+Em vez de criar um espólio por SIM ou mandar dinheiro ao Caixa da Cidade:
+- existe um único ledger/fundo de patrimônio não reclamado;
+- dinheiro restante é transferido para ele;
+- imóvel sem sucessor entra à venda;
+- valor da venda entra no mesmo fundo;
+- o jogador não controla esse saldo;
+- uma futura regra de reivindicação poderia retirar valores dele se surgir um beneficiário válido.
+
+Há paralelo com sistemas de unclaimed property em que governos mantêm valores não reclamados para possível reivindicação futura:
+https://www.usa.gov/unclaimed-money
+
+Prós:
+- dinheiro não some;
+- não cria receita para o jogador;
+- não precisa de entidade de espólio por falecido;
+- permite reivindicação futura;
+- é apenas um ledger agregado.
+
+Contras:
+- dinheiro fica fora da circulação ativa;
+- ainda é uma abstração administrativa;
+- precisa ficar claro que não é o Caixa da Cidade.
+
+#### 3. Obrigações reais antes de qualquer sucessão
+
+Outra prática real é pagar despesas e dívidas do falecido a partir do patrimônio antes da distribuição. Funeral é um exemplo explícito:
+https://www.gov.uk/government/publications/death-and-bereavement
+
+Adaptação possível:
+- despesas funerárias reais;
+- impostos/taxas pendentes;
+- outras dívidas que já existirem na simulação;
+- apenas o saldo líquido segue para beneficiário ou patrimônio não reclamado.
+
+Isso dá destinos econômicos concretos para parte do dinheiro sem inventar um sumidouro.
+
+### Recomendação após pesquisa
+
+A alternativa mais promissora para testar é uma **cadeia curta de sucessão**:
+
+1. herdeiro familiar real;
+2. se não houver, beneficiário social elegível (coabitante/relação próxima), se fizer sentido;
+3. pagar obrigações reais do falecido;
+4. se ainda não houver destinatário, saldo e produto da venda vão para um **fundo agregado de patrimônio não reclamado**, não controlado pelo jogador.
+
+Essa combinação parece mais coerente com o gameplay do que transferir tudo ao Caixa da Cidade ou criar um espólio individual persistente.
+
+Ainda não é decisão oficial.
