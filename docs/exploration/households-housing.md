@@ -781,6 +781,20 @@ Direção agora preferida para discutir:
 Essa direção ainda não é decisão oficial.
 
 
+### Alternativa: um único fundo com origem por lançamento
+
+> **Revisão humana desta seção:** PENDENTE — simplificação levantada pelo responsável; não é decisão oficial.
+
+Em vez de manter saldos lógicos separados, pode existir **um único fundo técnico** que recebe todos esses valores e registra em cada lançamento a origem/motivo do dinheiro.
+
+Exemplos de origem:
+- patrimônio sem herdeiro;
+- saldo final de empresa encerrada;
+- primeira aquisição de imóvel privado;
+- primeira aquisição de comércio/indústria.
+
+Tecnicamente isso preserva rastreabilidade com menos estrutura. A principal ressalva é semântica: nem todo valor desse pool é literalmente “patrimônio não reclamado”. Se essa opção for adotada, o nome e as regras futuras do fundo precisam refletir que ele é um reservatório técnico de valores fora do Caixa da Cidade, e não apenas heranças sem titular.
+
 ### Ledger técnico compartilhado, saldos lógicos separados
 
 > **Revisão humana desta seção:** PENDENTE — proposta nova em discussão; não é decisão oficial.
