@@ -112,3 +112,12 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Vagas podem exigir níveis de educação e/ou qualificação compatíveis.
 - Cada vaga possui salário real.
 - Salários são pagos periodicamente ao trabalhador.
+
+
+### Moradia e finanças públicas
+
+- Famílias podem se mudar de residência conforme fatores como renda, tamanho da família e localização.
+- Residências têm preço e/ou aluguel real que afetam o orçamento familiar.
+- Cidadãos e empresas pagam impostos reais para a cidade.
+- A cidade possui orçamento municipal real, com receitas e despesas.
+- Empréstimos/dívida municipal ficam fora do escopo inicial.
