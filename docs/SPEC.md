@@ -56,6 +56,15 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - Um casal/família pode somar recursos para viabilizar a compra, mas a propriedade fica registrada em nome de um único SIM; copropriedade fica fora do primeiro modelo.
 - Ao entrar na simulação, cidadãos podem iniciar com um saldo monetário explícito conforme regra de geração/migração; o valor e sua distribuição devem ser configuráveis e auditáveis, sem criação invisível de riqueza.
 
+### Patrimônio não reclamado
+
+- Quando um SIM morre sem herdeiro elegível, seu dinheiro remanescente é transferido para um **Fundo de Patrimônio Não Reclamado** rastreável.
+- Esse fundo é separado do Caixa da Cidade, das carteiras dos SIMs e dos caixas das empresas; o jogador não pode usá-lo para construir ou operar a cidade.
+- Imóveis e outros ativos sem sucessor podem permanecer explicitamente **sem proprietário**, em estado de patrimônio não reclamado, em vez de o fundo tornar-se seu proprietário.
+- Um imóvel residencial sem proprietário pode voltar ao mercado; quando for vendido, o valor recebido entra no Fundo de Patrimônio Não Reclamado.
+- O fundo registra saldo, entradas e saídas, mas sua eventual utilização futura não está definida e não deve ser inventada antes de existir função de gameplay concreta.
+- O Fundo de Patrimônio Não Reclamado não representa nem controla a conexão exterior; são conceitos separados.
+
 ### Empresas e economia
 
 - Empresas serão entidades reais da simulação.
