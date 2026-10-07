@@ -1706,7 +1706,7 @@ Para implementação, o preço deve ser um dado de balanceamento configurável p
 
 ## Bootstrap logístico da primeira construção
 
-**Status:** proposta recomendada; ainda não fechada.
+**Status:** resolvido pelo fluxo de importação acionada por obra.
 
 Problema: se toda obra precisa de material armazenado, mas o primeiro depósito também precisa de material para ser construído, pode surgir um ciclo impossível.
 
@@ -1726,9 +1726,9 @@ Problema: se toda obra precisa de material armazenado, mas o primeiro depósito 
    - reduz infraestrutura especial;
    - mas cria uma exceção em que materiais ignoram o armazenamento obrigatório.
 
-### Recomendação atual
+### Conclusão atual
 
-A alternativa de estoque inicial continua válida como fallback, mas surgiu uma opção potencialmente melhor: permitir compra explícita de material importado no momento da construção, mantendo entrega física. Essa alternativa deve ser comparada no onboarding antes de fechar a regra.
+O bootstrap não exige depósito grátis nem estoque inicial artificial. Quando uma obra exige material inexistente localmente, o jogador vê o custo adicional de importação e a carga pode ser entregue fisicamente diretamente ao canteiro. O depósito municipal continua necessário para estoque geral e materiais produzidos/armazenados localmente.
 
 A conexão externa funciona como origem do lote inicial, não como depósito urbano permanente. O lote deve ser pequeno e dimensionado apenas para colocar a cadeia logística em funcionamento.
 
@@ -1778,9 +1778,9 @@ conexão externa → caminhão externo → destino/depósito/canteiro → descar
 
 A construção só deve avançar quando o material realmente chegar.
 
-### Questão ainda aberta
+### Regra fechada
 
-Definir se a primeira entrega pode ir diretamente ao canteiro ou se, após o primeiro depósito existir, toda importação de materiais deve obrigatoriamente passar por armazenamento municipal.
+Importações acionadas por uma obra específica podem ir diretamente ao canteiro. Importações genéricas de materiais de construção não fazem parte do escopo atual.
 
 
 ---
@@ -1926,3 +1926,91 @@ Nesse caso, a interface calcula e mostra:
 O frete não aparece como cobrança posterior separada: ele já compõe o preço mostrado antes da confirmação.
 
 Mesmo pago antecipadamente, o material continua sujeito à logística física e a obra espera a entrega dos caminhões.
+
+
+---
+
+## Quem executa as obras
+
+**Status:** em exploração; ainda não é requisito.
+
+### Classificação econômica real
+
+Construção não precisa ser encaixada artificialmente como indústria de manufatura ou comércio varejista. O NAICS trata **Construction (setor 23)** como setor econômico próprio. Ele inclui construção de edifícios, obras pesadas/engenharia e empreiteiros especializados. Empreiteiros gerais normalmente assumem a responsabilidade por um projeto inteiro e podem subcontratar partes do trabalho.
+
+Fontes:
+- U.S. Census Bureau — NAICS Sector 23, Construction: https://www.census.gov/naics/resources/archives/sect23.html
+- U.S. Census Bureau — Construction sector profile: https://data.census.gov/profile/23_-_Construction
+
+### Alternativas para o IndexCities
+
+**A. Obras estáticas/abstratas**
+- o município cria a obra;
+- trabalhadores são alocados diretamente;
+- não existe empresa construtora;
+- equipamentos ficam implícitos.
+
+Vantagem: implementação simples.
+Problema: enfraquece a economia de empresas reais já desejada para o jogo.
+
+**B. Construtora totalmente simulada**
+- empresa construtora real;
+- funcionários reais;
+- caixa próprio;
+- contratos de obra;
+- veículos e equipamentos próprios;
+- deslocamento de trabalhadores/equipamentos ao canteiro;
+- capacidade limitada por pessoal e frota.
+
+Vantagem: encaixa fortemente na proposta de simulador.
+Problema: adiciona bastante complexidade cedo.
+
+**C. Modelo híbrido recomendado para POC**
+- construtora é empresa real;
+- recebe pagamento/contrato pela obra;
+- emprega trabalhadores reais;
+- quantidade/qualificação de trabalhadores limita capacidade;
+- trabalhadores se deslocam até o canteiro;
+- equipamentos pesados começam como capacidade agregada da empresa;
+- veículos/equipamentos específicos só viram entidades físicas depois se o gameplay justificar.
+
+Essa opção preserva causa e efeito econômico sem exigir, de início, simular cada escavadeira, guindaste ou betoneira.
+
+### Perguntas ainda abertas
+
+- construtoras são privadas, municipais ou ambas;
+- como surgem as primeiras construtoras numa cidade vazia;
+- se uma construtora externa pode executar as primeiras obras;
+- como preço do contrato é calculado;
+- se equipamentos físicos entram já no primeiro escopo ou depois;
+- se diferentes especializações de construção devem existir.
+
+
+---
+
+## Cancelamento versus demolição
+
+**Status:** parcialmente decidido.
+
+### Cancelamento de obra inacabada
+
+Decidido:
+
+- materiais entregues e ainda recuperáveis retornam ao depósito municipal;
+- materiais reservados e ainda não consumidos são liberados para outras obras.
+
+Ainda em aberto:
+
+- quanto dinheiro, se algum, é devolvido ao cancelar;
+- como tratar trabalho já executado;
+- se parte do material já incorporado à obra é perdida.
+
+### Demolição de construção concluída
+
+Decidido:
+
+- não recupera o dinheiro original da construção;
+- não recupera os materiais originalmente consumidos;
+- a demolição continua tendo seu próprio custo configurável conforme já definido.
+
+Não há sistema de salvage/reciclagem de material no escopo atual.
