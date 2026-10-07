@@ -2534,7 +2534,7 @@ O modelo privado ou híbrido parece mais compatível com empresas terem caixa pr
 
 ## Materiais no modelo híbrido público/privado
 
-**Status:** proposta anterior em revisão. A separação estrita de estoques públicos/privados tende a adicionar complexidade de gameplay sem benefício proporcional.
+**Status:** proposta superada. A separação estrita de estoques públicos/privados foi descartada como modelo principal de gameplay por adicionar microgerenciamento sem benefício proporcional.
 
 Se o IndexCities adotar o modelo híbrido em que serviços/infraestrutura são municipais e atividades econômicas são privadas, os materiais não devem virar um estoque comum sem dono.
 
@@ -2640,9 +2640,20 @@ Não assumir uma dessas alternativas até existir decisão.
 
 ## Revisão de gameplay: disponibilidade da cidade versus propriedade jurídica
 
-**Status:** direção recomendada em exploração; ainda não é requisito.
+**Status:** aprovada e promovida para a SPEC.
 
 A tentativa anterior de separar materiais de construção em estoques públicos e privados é economicamente plausível, mas cria um problema de UX: o jogador já controla diretamente a colocação de todos os edifícios. Exigir que ele também raciocine sobre "este aço é municipal, aquele aço é privado" pode transformar o core material em contabilidade de propriedade, em vez de logística e planejamento urbano.
+
+
+### Decisão aprovada nesta revisão
+
+- a UI usa **Disponível na cidade** como visão agregada dos materiais de construção;
+- localização física real continua existindo;
+- caminhões continuam obrigatórios para transportar materiais até a obra;
+- a antiga nomenclatura **Depósito Municipal** é substituída por **Centro de Materiais de Construção**;
+- o Centro é infraestrutura logística física e não força a interface a separar material público de privado;
+- propriedade econômica pode continuar existindo internamente quando necessário, sem virar dois estoques principais para o jogador.
+
 
 ### Referências de gameplay
 
@@ -2787,3 +2798,40 @@ O próximo POC deveria medir se o jogador consegue entender:
 - quanto produzir localmente está economizando.
 
 Essa direção mantém realismo sistêmico sem transformar o jogo em contabilidade manual.
+
+
+---
+
+## Princípio geral: gameplay antes de microgerenciamento
+
+**Status:** decidido como critério transversal de design; também registrado em AGENTS e SPEC.
+
+Toda decisão de sistema deve ser avaliada em duas dimensões:
+
+1. **qual decisão/consequência interessante o detalhe cria?**
+2. **quanto trabalho manual repetitivo ele exige do jogador?**
+
+O IndexCities deve buscar profundidade sistêmica sem confundir profundidade com quantidade de cliques.
+
+Manter quando gera gameplay:
+- logística física;
+- escassez;
+- capacidade;
+- distâncias;
+- congestionamento;
+- emprego;
+- finanças;
+- produção;
+- falhas e consequências;
+- escolhas com trade-offs.
+
+Abstrair ou automatizar quando tende a virar rotina:
+- contabilidade de propriedade sem decisão útil;
+- transferência manual entre estoques equivalentes;
+- autorizações repetitivas;
+- configuração individual que o sistema pode resolver de forma previsível;
+- tarefas administrativas que não mudam estratégia.
+
+A interface pode ser mais simples que a simulação. O sistema pode saber exatamente onde cada carga está, quem a produziu e como ela se move, enquanto o jogador recebe uma visão agregada suficiente para decidir.
+
+Esse critério deve ser reaplicado a transporte, serviços, empresas, cidadãos, cadeias produtivas, construção, finanças e demais sistemas à medida que forem definidos.
