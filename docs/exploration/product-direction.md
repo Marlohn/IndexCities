@@ -174,7 +174,7 @@ A pesquisa futura deve comparar amplamente:
 
 Critério principal: encontrar **algo distintivo e memorável que dê propósito às decisões sistêmicas do IndexCities**, sem destruir a liberdade de city builder.
 
-O documento [exploration/genre-benchmark.md](exploration/genre-benchmark.md) já contém evidências sobre endgame e progressão e deve ser uma das fontes dessa pesquisa, mas não substitui uma rodada dedicada.
+O documento [exploration/genre-benchmark.md](genre-benchmark.md) já contém evidências sobre endgame e progressão e deve ser uma das fontes dessa pesquisa, mas não substitui uma rodada dedicada.
 
 ---
 
