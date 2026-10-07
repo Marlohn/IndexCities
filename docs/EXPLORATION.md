@@ -1812,13 +1812,17 @@ Esse fluxo elimina o soft-lock do primeiro depósito sem criar um edifício grat
 - A produção agrícola gera alimento real para abastecer a economia da cidade.
 - A produção deve integrar estoque, transporte e consumo já definidos.
 
-Ainda precisa ser pesquisado/decidido:
+Decidido para o primeiro escopo:
 
-- quais tipos de produção agrícola entram primeiro;
-- se haverá matéria-prima agrícola separada de alimento processado;
+- fazendas produzem diretamente a categoria **Alimentos**;
+- produtos agrícolas separados e processamento alimentar ficam para uma etapa posterior.
+
+Ainda precisa ser pesquisado/calibrado:
+
+- quais tipos visuais de produção agrícola entram primeiro;
 - necessidade de água, trabalhadores, veículos e armazenamento;
 - produtividade por área;
-- processamento por indústrias alimentícias.
+- quando vale aprofundar processamento por indústrias alimentícias.
 
 
 ---
@@ -2437,3 +2441,90 @@ A base de oito recursos é compatível com as decisões já existentes:
 - a regra de categorias agregadas continua respeitada: nenhum desses recursos exige SKU individual no escopo inicial.
 
 Não foi identificado conflito com as regras atuais de importação, armazenamento, Pátio Municipal de Obras ou logística física.
+
+
+---
+
+## Abastecimento de alimentos e combustível no primeiro escopo
+
+**Status:** decidido.
+
+### Alimentos
+
+Fluxo inicial:
+
+fazenda → Alimentos → transporte → mercado/comércio → cidadão
+
+Se a cidade não produzir Alimentos suficientes:
+
+conexão externa → caminhão → mercado/comércio → cidadão
+
+A importação automática paga produto + frete. O estoque continua físico e pode acabar.
+
+No primeiro escopo, não é necessário separar colheitas, matéria-prima agrícola e alimento processado. Essa profundidade entra apenas quando gerar gameplay suficiente.
+
+### Combustível
+
+Fluxo inicial:
+
+conexão externa → combustível refinado/pronto → transporte → posto → veículo
+
+Produção/refino local continua desejada como aprofundamento econômico, mas não é pré-requisito para a cidade funcionar no primeiro escopo.
+
+### Armazenamento
+
+- depósito municipal de obras: materiais de construção;
+- mercados/comércios: Alimentos;
+- postos: Combustível;
+- hospitais/farmácias/instalações adequadas: Suprimentos médicos.
+
+Essa separação substitui qualquer interpretação anterior de que um único depósito municipal armazenaria todos os oito recursos.
+
+
+---
+
+## Propriedade e controle: prefeitura versus empresas privadas
+
+**Status:** aberto; não decidido.
+
+"Prefeitura" significa o **setor público municipal controlado pelo jogador**, com orçamento próprio. Já estão claramente municipais:
+
+- Pátio Municipal de Obras;
+- serviços públicos como escolas, hospitais, polícia, bombeiros e infraestrutura municipal;
+- depósitos municipais de materiais de construção.
+
+A dúvida ainda aberta é quem possui e financia atividades econômicas como:
+
+- fazendas;
+- concreteiras;
+- usinas de asfalto;
+- mercados;
+- postos;
+- fábricas;
+- outros comércios e indústrias.
+
+Três modelos possíveis:
+
+**1. Economia municipalizada**
+- a prefeitura constrói, possui e opera essas empresas;
+- paga construção, salários, importações e operação;
+- recebe diretamente toda receita;
+- gameplay mais próximo de uma economia planejada.
+
+**2. Economia privada**
+- empresas privadas possuem dinheiro, custos, salários, estoque e lucro;
+- pagam impostos à prefeitura;
+- o jogador ainda pode decidir a localização, conforme a regra atual de posicionamento direto, mas propriedade e caixa são privados;
+- exige definir quem financia a construção inicial e como uma empresa privada nasce.
+
+**3. Modelo híbrido**
+- prefeitura possui serviços e infraestrutura pública;
+- empresas econômicas são privadas;
+- o jogador controla o desenho/localização da cidade, mas caixa operacional e lucro pertencem às empresas;
+- subsídios, incentivos ou investimento municipal podem ser adicionados apenas se houver necessidade.
+
+Antes de decidir, é preciso preservar coerência com duas regras já existentes:
+- o jogador posiciona diretamente todos os prédios;
+- empresas têm dinheiro e estado econômico próprios e podem falir.
+
+O modelo privado ou híbrido parece mais compatível com empresas terem caixa próprio e poderem falir, mas o financiamento da construção precisa ser definido antes de virar requisito.
