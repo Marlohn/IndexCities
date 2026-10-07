@@ -2473,7 +2473,7 @@ Produção/refino local continua desejada como aprofundamento econômico, mas n�
 
 ### Armazenamento
 
-- depósito municipal de obras: materiais de construção;
+- Centro de Materiais de Construção: materiais de construção;
 - mercados/comércios: Alimentos;
 - postos: Combustível;
 - hospitais/farmácias/instalações adequadas: Suprimentos médicos.
@@ -2756,16 +2756,11 @@ Uma interpretação mais coerente para a gameplay é:
 
 Isso evita tentar fazer a interface obedecer literalmente à propriedade jurídica de cada recurso.
 
-### Depósito municipal precisa ser reavaliado
+### Centro de Materiais de Construção
 
-A decisão atual de chamar o principal armazenamento de materiais de **depósito municipal** pode entrar em tensão com essa visão.
+A revisão foi concluída: o antigo "Depósito Municipal" foi substituído na SPEC por **Centro de Materiais de Construção**.
 
-Alternativas futuras:
-- manter o depósito municipal como reserva estratégica pública, enquanto "Disponível na cidade" inclui também estoques de produtores;
-- transformar o prédio em **Depósito de Materiais de Construção / Centro Logístico**, sem exigir que toda carga armazenada seja propriedade pública;
-- permitir que o depósito seja uma infraestrutura municipal de logística usada pelo mercado local.
-
-Não alterar a SPEC até existir decisão.
+O Centro é infraestrutura física de armazenamento/logística e a visão "Disponível na cidade" pode incluir também materiais em produtores e outras origens elegíveis. Isso evita transformar propriedade jurídica em microgerenciamento.
 
 ### Critério de design
 
@@ -2934,3 +2929,165 @@ Só promover saldo bancário, crédito, dívida empresarial e investidores indiv
 - investimentos privados concorrentes;
 - aquisição/fusão de empresas;
 - políticas municipais de financiamento.
+
+
+
+### Revisão após o princípio de causalidade
+
+A preocupação com caixa-preta muda a recomendação anterior.
+
+Não é suficiente ter apenas um estado abstrato "saudável / pressionada / falindo". O estado econômico precisa ser **derivado de fluxos concretos e auditáveis**.
+
+Direção preferida para POC:
+- vendas/receitas reais;
+- salários reais;
+- custo real de insumos;
+- frete real;
+- impostos reais;
+- demais custos definidos explicitamente;
+- resultado econômico calculado a partir desses fluxos;
+- qualquer reserva financeira/capital de giro, se existir, deve obedecer regra determinística e ser inspecionável.
+
+A UI normal não precisa mostrar toda contabilidade, mas o painel detalhado/debug deve conseguir reconstruir por que a empresa piorou.
+
+Ainda está aberto se haverá um **saldo monetário rígido por empresa**. Antes de decidir, comparar:
+1. caixa explícito real;
+2. capital de giro/reserva simplificada derivada;
+3. apenas lucro/prejuízo acumulado.
+
+Critério principal: qual modelo produz falência, compra de insumos e expansão de forma previsível, calibrável e explicável sem gerar microgerenciamento para o jogador.
+
+---
+
+## Revisão geral: profundidade, legibilidade e dois níveis de leitura
+
+**Status:** princípio aprovado e revisão transversal realizada.
+
+### Objetivo
+
+O IndexCities deve permitir duas formas de interação com **a mesma simulação**:
+
+**Leitura imediata**
+- sinais visuais claros;
+- ícones consistentes;
+- causa curta;
+- próxima ação compreensível;
+- pouca leitura obrigatória.
+
+**Leitura profunda**
+- estatísticas;
+- históricos;
+- decomposição de fatores;
+- fluxos físicos/econômicos;
+- diagnóstico causal;
+- espaço para otimização.
+
+Não são dois jogos e não exigem, neste momento, um "modo infantil" e um "modo avançado". É profundidade progressiva: a superfície resolve orientação; o detalhe resolve investigação.
+
+### Referências externas
+
+A revisão Economy 2.0 de Cities: Skylines II declarou explicitamente que a simulação econômica anterior não era transparente o suficiente e oferecia pouco controle. O objetivo da revisão foi tornar sistemas mais diretos e responsivos, preservando a possibilidade de novos jogadores terem sucesso sem acompanhar cada fluxo e permitindo que jogadores experientes ganhem vantagem por otimização.
+
+As Xbox Accessibility Guidelines reforçam princípios compatíveis:
+- navegação consistente e intuitiva ajuda jogadores novos;
+- telas e elementos precisam fornecer contexto suficiente;
+- objetivos e próximos passos devem ser compreensíveis;
+- símbolos importantes se beneficiam de rótulos/contexto adicional e de mais de um canal de comunicação.
+
+Fontes:
+- Paradox — Economy 2.0 Part 1: https://www.paradoxinteractive.com/games/cities-skylines-ii/news/dev-diary-economy-part-one
+- Microsoft XAG 109 — Objective clarity: https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/109
+- Microsoft XAG 112 — UI navigation: https://learn.microsoft.com/en-us/xbox/accessibility/xbox-accessibility-guidelines/112
+- Microsoft XAG 114 — UI context: https://learn.microsoft.com/en-us/xbox/accessibility/xbox-accessibility-guidelines/114
+- Microsoft XAG 103 — Additional channels for visual/audio cues: https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/103
+
+### Sistemas atualmente bem alinhados
+
+**Materiais e construção**
+- "Disponível na cidade" simplifica leitura;
+- cargas continuam físicas;
+- material reservado/em trânsito/importado pode ser inspecionado;
+- importação e frete são custos explícitos.
+
+**Finanças municipais**
+- entradas e saídas são separadas;
+- salários públicos aparecem explicitamente;
+- evita custos ocultos.
+
+**Logística e trânsito**
+- caminhões, filas, capacidade, estacionamento e congestionamento existem fisicamente;
+- as consequências tendem a ser observáveis no mapa.
+
+**Serviços públicos**
+- funcionários e capacidade são reais;
+- falta de vaga/equipe pode ser ligada a entidades concretas.
+
+### Sistemas com risco de caixa-preta e que exigem regra de explicação antes da implementação
+
+**Economia das empresas**
+- empresa pode falir, mas o modelo financeiro final ainda está aberto;
+- não usar um número abstrato de "saúde financeira" que cai sem causa rastreável;
+- toda deterioração deve decompor receita, salários, insumos, frete, impostos e outras causas reais.
+
+**Demanda**
+- já está decidido que a cidade expõe demanda;
+- a fórmula ainda não está definida;
+- a UI deve mostrar os principais fatores positivos/negativos, não apenas uma barra misteriosa.
+
+**Preço de aluguel/venda**
+- oferta e demanda influenciam preços;
+- antes da implementação, definir fatores e uma explicação legível de por que determinada área ficou cara/barata.
+
+**Migração e saída da cidade**
+- emprego, moradia e qualidade de vida influenciam decisões;
+- evitar um "score de felicidade" opaco;
+- quando alguém sai ou entra, os principais motivos devem ser diagnosticáveis.
+
+**Turismo e atratividade**
+- parques, comércio e atrações aumentam demanda turística;
+- precisa de fatores visíveis antes de virar fórmula.
+
+**Poluição e mudança residencial**
+- cidadãos podem abandonar áreas poluídas;
+- o limiar/efeito precisa ser compreensível e observável.
+
+**Escolha de serviços**
+- o modelo de raio versus custo de viagem continua aberto;
+- qualquer solução precisa mostrar por que um cidadão escolheu/não conseguiu usar determinado serviço.
+
+**Exportação automática**
+- automação reduz microgerenciamento, mas "excedente elegível" precisa de regra clara;
+- o jogador deve conseguir entender o que foi exportado e por quê, evitando exportar algo aparentemente necessário sem explicação.
+
+**Importações automáticas de alimentos**
+- manter automação;
+- quando ela falhar ou ficar cara, mostrar causa: preço, tráfego, distância, capacidade de descarga, falta de caixa ou outra causa real.
+
+### Regra de diagnóstico recomendada
+
+Todo problema relevante deveria seguir, conceitualmente:
+
+**sinal → causa resumida → ação possível → detalhes opcionais**
+
+Exemplo:
+
+ícone de alimento
+→ "Mercado sem estoque"
+→ "Entrega atrasada"
+→ ação: melhorar acesso / aumentar produção / aguardar importação
+→ detalhes: consumo, estoque, caminhão, rota, tempo, fornecedor, custo.
+
+A explicação não pode ser uma dica genérica inventada pela UI. Ela deve apontar para o gargalo real da simulação.
+
+### Consequência para testes e calibração
+
+Para evitar sistemas impossíveis de nivelar:
+
+- entradas e saídas devem ser mensuráveis;
+- parâmetros de balanceamento devem ser explícitos;
+- mudanças precisam produzir resultados reproduzíveis quando possível;
+- entidades/sistemas importantes devem permitir inspeção de estado durante desenvolvimento;
+- falhas devem carregar motivos/códigos causais suficientes para diagnóstico;
+- métricas agregadas devem ser derivadas de dados reais, não funcionar como variáveis mágicas independentes.
+
+Isso permite corrigir balanceamento sem "chutar" o motivo de um comportamento emergente.
