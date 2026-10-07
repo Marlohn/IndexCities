@@ -20,7 +20,7 @@ Não criar documentos por ritual. A pasta temática existe para reduzir conflito
 ## Explorações temáticas
 
 - **Interface e ferramentas do jogador** — ativa: [`exploration/player-interface.md`](exploration/player-interface.md).
-- **Referência comparativa do gênero** — documento especial recorrente: [`GENRE_BENCHMARK.md`](GENRE_BENCHMARK.md).
+- **Referência comparativa do gênero** — documento especial recorrente: [`exploration/genre-benchmark.md`](exploration/genre-benchmark.md).
 
 Outros temas entram nesta lista quando realmente precisarem de arquivo próprio.
 
@@ -29,7 +29,7 @@ Outros temas entram nesta lista quando realmente precisarem de arquivo próprio.
 
 ## Referência comparativa do gênero
 
-A pesquisa comparativa extensa sobre outros city builders, repositórios, post-mortems e comunidades foi consolidada em [GENRE_BENCHMARK.md](GENRE_BENCHMARK.md).
+A pesquisa comparativa extensa sobre outros city builders, repositórios, post-mortems e comunidades foi consolidada em [exploration/genre-benchmark.md](exploration/genre-benchmark.md).
 
 Esse documento deve ser revisitado em marcos relevantes do desenvolvimento para comparar o que está sendo criado com padrões, acertos, falhas e expectativas observados no gênero. O objetivo **não é copiar concorrentes nem transformar padrões externos em requisitos**, mas verificar se as escolhas do IndexCities continuam coerentes com a experiência desejada e se diferenças importantes são deliberadas.
 
@@ -1675,7 +1675,7 @@ A pesquisa futura deve comparar amplamente:
 
 Critério principal: encontrar **algo distintivo e memorável que dê propósito às decisões sistêmicas do IndexCities**, sem destruir a liberdade de city builder.
 
-O documento [GENRE_BENCHMARK.md](GENRE_BENCHMARK.md) já contém evidências sobre endgame e progressão e deve ser uma das fontes dessa pesquisa, mas não substitui uma rodada dedicada.
+O documento [exploration/genre-benchmark.md](exploration/genre-benchmark.md) já contém evidências sobre endgame e progressão e deve ser uma das fontes dessa pesquisa, mas não substitui uma rodada dedicada.
 
 ---
 
@@ -4337,8 +4337,9 @@ docs/
   SPEC.md
   ARCHITECTURE.md
   EXPLORATION.md
-  GENRE_BENCHMARK.md
   exploration/
+    player-interface.md
+    genre-benchmark.md
     <tema>.md
 ```
 
@@ -4354,7 +4355,7 @@ Regras:
 
 A migração é gradual: não é necessário desmontar o conteúdo histórico deste hub de uma vez. Conforme um tema voltar a ser trabalhado, ele pode ser limpo, consolidado e movido para um documento temático.
 
-`GENRE_BENCHMARK.md` permanece fora de `docs/exploration/` porque tem uma função comparativa recorrente e transversal distinta da exploração temática comum.
+`exploration/genre-benchmark.md` também fica em `docs/exploration/`. Apesar de ter uso comparativo recorrente, continua sendo material de pesquisa/referência e não uma fonte canônica.
 
 A primeira migração aplicada foi a interface do jogador para [`exploration/player-interface.md`](exploration/player-interface.md).
 
