@@ -1,6 +1,6 @@
 # IndexCities — Escala, performance e baselines da simulação
 
-> **Revisão humana:** PENDENTE.  
+> **Revisão humana:** PARCIALMENTE REVISADO.  
 > **Auditoria:** classificação conservadora com base no estado anterior à reorganização temática, commit `4b97ace2`. o conteúdo deste documento ainda não foi revisado integralmente pelo responsável e não pode ser tratado como decisão.
 >
 
@@ -19,7 +19,7 @@ Este arquivo é material de exploração temática. Quando houver divergência, 
 
 ## Escala da cidade, profundidade da simulação e tempo
 
-> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
 
 
 **Status:** em exploração.
