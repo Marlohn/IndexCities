@@ -1909,7 +1909,7 @@ Mesmo pago antecipadamente, o material continua sujeito à logística física e 
 
 ## Quem executa as obras
 
-**Status:** Pátio Municipal de Obras e bootstrap externo decididos.
+**Status:** Pátio Municipal de Obras, bootstrap externo e contratação externa por falta de capacidade local decididos.
 
 
 
@@ -1970,14 +1970,14 @@ Máquinas e equipamentos de obra ainda precisam de pesquisa específica para dec
 
 Decidido:
 
-- materiais entregues e ainda recuperáveis retornam ao depósito municipal;
-- materiais reservados e ainda não consumidos são liberados para outras obras.
+- materiais reservados e ainda não entregues são liberados para outras obras;
+- materiais que já chegaram ao canteiro foram consumidos e não retornam ao depósito.
 
 Ainda em aberto:
 
 - quanto dinheiro, se algum, é devolvido ao cancelar;
 - como tratar trabalho já executado;
-- se parte do material já incorporado à obra é perdida.
+- como tratar apenas o dinheiro e o trabalho já executado, pois materiais entregues já são considerados consumidos.
 
 ### Demolição de construção concluída
 
@@ -2137,3 +2137,70 @@ Esse bootstrap preserva:
 - ausência de um edifício inicial gratuito.
 
 A equipe externa é uma exceção apenas de **origem da mão de obra**, não uma exceção às regras de materiais, dinheiro ou transporte.
+
+
+---
+
+## Capacidade do Pátio e contratação externa por obra
+
+**Status:** decidido em nível de comportamento; números ainda precisam de calibração.
+
+A capacidade do Pátio Municipal de Obras não funciona como um limite duro que bloqueia novas construções.
+
+Fluxo:
+
+1. a obra é criada;
+2. o sistema verifica se existe equipe/trabalhadores públicos disponíveis;
+3. se houver, a obra usa capacidade municipal local;
+4. se não houver, uma equipe externa temporária é contratada/importada;
+5. essa contratação aumenta o custo monetário da obra.
+
+Isso cria um trade-off direto:
+
+- manter mais trabalhadores públicos aumenta a capacidade local, mas eleva a folha recorrente da prefeitura;
+- depender de equipes externas evita fila de obras, mas encarece construções individuais.
+
+A regra precisa aparecer com clareza na interface de custo da obra, separando quando possível:
+
+- custo base;
+- materiais;
+- frete/importação de materiais;
+- custo adicional de equipe externa.
+
+A equipe externa pode usar a mesma conexão externa já definida para o bootstrap inicial. Seus trabalhadores não precisam virar residentes da cidade.
+
+### Consequência para o Pátio
+
+O Pátio continua relevante mesmo sem bloquear obras:
+
+- reduz custo de depender de mão de obra externa;
+- gera empregos públicos locais;
+- transforma capacidade de construção em decisão de orçamento;
+- pode manter pequeno estoque próprio;
+- fornece a base operacional municipal da construção.
+
+O número exato de trabalhadores por equipe, produtividade e quantidade de equipes deve ser calibrado posteriormente.
+
+
+---
+
+## Consumo instantâneo de materiais ao chegar ao canteiro
+
+**Status:** decidido.
+
+Para evitar microgestão desnecessária, o jogo não precisa mostrar materiais sendo consumidos gradualmente durante a obra.
+
+Quando a carga necessária chega ao canteiro:
+
+- os materiais daquela entrega são consumidos imediatamente pela obra;
+- a interface pode considerar aquela parcela como incorporada à construção;
+- não existe necessidade de um estoque físico persistente no canteiro durante toda a execução.
+
+### Efeito sobre cancelamento
+
+Essa decisão substitui a ideia anterior de devolver material já entregue:
+
+- material apenas reservado, ainda não entregue, pode ser liberado;
+- material que chegou ao canteiro já foi consumido e é perdido se a obra for cancelada depois.
+
+Isso mantém uma regra simples e coerente com o modelo de consumo imediato.
