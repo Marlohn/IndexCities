@@ -21,6 +21,7 @@ Não criar documentos por ritual. A pasta temática existe para reduzir conflito
 
 - **Interface e ferramentas do jogador** — ativa: [`exploration/player-interface.md`](exploration/player-interface.md).
 - **Referência comparativa do gênero** — documento especial recorrente: [`exploration/genre-benchmark.md`](exploration/genre-benchmark.md).
+- **IA para decisões, simulação e desenvolvimento** — pesquisa concluída para a fase atual; Jev/Laya não são recomendados no core por performance nem como camada geral do workflow, mas podem ser reconsiderados para decisões raras ou classificações especializadas: [`exploration/ai-decision-systems.md`](exploration/ai-decision-systems.md).
 
 Outros temas entram nesta lista quando realmente precisarem de arquivo próprio.
 
@@ -4358,60 +4359,3 @@ A migração é gradual: não é necessário desmontar o conteúdo histórico de
 `exploration/genre-benchmark.md` também fica em `docs/exploration/`. Apesar de ter uso comparativo recorrente, continua sendo material de pesquisa/referência e não uma fonte canônica.
 
 A primeira migração aplicada foi a interface do jogador para [`exploration/player-interface.md`](exploration/player-interface.md).
-
----
-
-## IA local para decisões da simulação
-
-**Status:** pesquisado; não recomendado como estratégia de performance nesta fase.
-
-Foi avaliada a ideia de usar modelos de decisão do tipo Jev e alternativas locais como Laya para decidir ações de cidadãos, famílias ou empresas.
-
-### Conclusão atual
-
-Não adotar esse tipo de modelo no loop central do Simulation Core com o objetivo de melhorar performance, e não priorizar uma POC agora apenas para validar desempenho.
-
-O motivo é estrutural: inferência neural local continua sendo muito mais cara do que regras, funções de utilidade e filtros simples em C# para decisões massivas. Os benchmarks públicos recentes do Laya mostram latência de dezenas de milissegundos por pergunta isolada em GPU e centenas de milissegundos em CPU em algumas configurações, embora batching reduza bastante o custo médio. Isso é interessante para uma IA, mas não para substituir decisões simples de milhares de agentes.
-
-Além disso, usar GPU para inferência durante um jogo 3D disputa recursos com a própria renderização e adiciona memória, runtime e complexidade de distribuição. Fine-tuning também passa a ser parte necessária do produto: os checkpoints base do Laya têm desempenho fraco em tarefas não vistas e os melhores números publicados dependem de especialização para um domínio.
-
-Para o IndexCities, o caminho de performance continua sendo o que a arquitetura já favorece:
-
-- decisões locais simples e auditáveis;
-- atualização somente quando necessário;
-- filtros para reduzir candidatos antes de pontuar;
-- processamento em lotes distribuídos no tempo;
-- estruturas de dados leves e benchmarkadas;
-- regras/Utility AI quando houver múltiplas alternativas com pesos diferentes.
-
-### Possível uso futuro
-
-IA local continua sendo uma opção interessante se surgir um objetivo de **gameplay** que regras explícitas não atendam bem — por exemplo, comportamento deliberadamente menos previsível ou uma camada especial de personalidade/estratégia em decisões raras.
-
-Nesse caso, ela deve ser avaliada como melhora de comportamento, não como otimização de performance, e deve permanecer subordinada ao estado autoritativo e às invariantes do Simulation Core.
-
----
-
-## Modelos de decisão no processo de desenvolvimento
-
-**Status:** pesquisado; não recomendado como camada geral de desenvolvimento ou definição de produto nesta fase.
-
-Foi avaliado o uso de modelos de decisão do tipo Jev e Laya não dentro da gameplay, mas como auxiliares no desenvolvimento, arquitetura e evolução da SPEC.
-
-### Conclusão
-
-Jev/Laya não substituem um modelo generativo ou raciocínio humano/assistido por IA para escrever código, projetar arquitetura ou decidir produto. Esses trabalhos são abertos: exigem criar alternativas, combinar contexto amplo, explicar consequências e produzir código ou texto novo. Modelos System One trabalham melhor quando a resposta já está delimitada a escolha, score ou sim/não.
-
-Há, porém, um nicho útil: **gates e classificações repetitivas e bem definidas**. Exemplos possíveis no desenvolvimento seriam classificar risco de um diff, escolher qual suíte de testes executar, detectar provável violação de uma regra arquitetural explícita, rotear uma tarefa para um módulo ou decidir se um caso deve ser escalado para um modelo maior. Benchmarks públicos recentes mostram Jev competitivo em revisões pequenas quando as regras são explícitas, mas esses resultados não demonstram revisão aberta de PRs ou descoberta geral de bugs. Laya tende a precisar de fine-tuning para ficar forte em domínios específicos, o que exige dataset, treinamento, calibração e manutenção.
-
-Para o IndexCities hoje, adicionar essa camada provavelmente custaria mais complexidade do que economizaria. O volume de decisões de desenvolvimento ainda é baixo, a arquitetura e a SPEC continuam mudando e não existe um conjunto grande e estável de decisões rotuladas que justifique especializar Laya.
-
-### Regra prática
-
-1. **Regra formalizável:** código, teste, analyzer ou outra checagem determinística.
-2. **Julgamento fechado, subjetivo e repetitivo em alto volume:** considerar Jev; considerar Laya quando existir dataset estável e houver vantagem concreta em execução local/especialização.
-3. **Decisão aberta, arquitetura, design de produto, escrita de SPEC ou geração/revisão profunda de código:** usar modelo generativo com acesso ao contexto do repositório e exigir justificativa verificável.
-
-### Critério para reconsiderar
-
-Reavaliar Jev/Laya no processo de desenvolvimento somente quando surgir uma classificação recorrente em volume suficiente para representar custo ou latência relevantes e houver um conjunto de exemplos que permita medir acurácia. Não introduzir a tecnologia apenas como uma segunda opinião genérica.
