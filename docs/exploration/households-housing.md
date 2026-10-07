@@ -716,9 +716,33 @@ Se não existir herdeiro elegível local:
 
 **Não recomendada.**
 
+### Opção E — patrimônio sem herdeiro vai para uma autoridade externa
+
+Em vez de inventar um herdeiro exterior, o patrimônio sem herdeiro passa para uma **autoridade pública externa não controlada pelo jogador**.
+
+Fluxo:
+- SIM morre sem herdeiro;
+- dinheiro remanescente sai da economia local para essa autoridade externa;
+- imóvel fica disponível para venda;
+- o valor líquido da venda também vai para essa autoridade;
+- o Caixa da Cidade recebe apenas impostos/taxas normais aplicáveis.
+
+**Prós**
+- destino concreto e simples;
+- não recompensa o jogador pela morte de cidadãos;
+- evita criar espólio persistente;
+- não exige inventar parentes fora da cidade;
+- preserva a separação entre governo local e restante do mundo.
+
+**Contras**
+- continua usando uma entidade de fronteira não simulada;
+- riqueza sai da cidade quando não há sucessor local.
+
+**Avaliação atual:** alternativa mais limpa que “herdeiro externo genérico” e mais coerente que enviar tudo ao Caixa da Cidade.
+
 ### Recomendação atual
 
-Para o primeiro modelo, preferir **sucessão imediata sem entidade de espólio**:
+Para o primeiro modelo, a preferência atual é **sucessão imediata sem entidade de espólio**; para casos sem herdeiro, a alternativa mais forte em avaliação é transferência para uma autoridade pública externa, não para o Caixa da Cidade:
 
 1. procurar um herdeiro elegível real;
 2. se existir, transferir dinheiro e patrimônio diretamente;
