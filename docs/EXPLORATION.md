@@ -2485,7 +2485,7 @@ Essa separação substitui qualquer interpretação anterior de que um único de
 
 ## Propriedade e controle: prefeitura versus empresas privadas
 
-**Status:** aberto; não decidido.
+**Status:** parcialmente decidido. O jogador financia e coloca as construções; a operação econômica posterior pode ser privada.
 
 "Prefeitura" significa o **setor público municipal controlado pelo jogador**, com orçamento próprio. Já estão claramente municipais:
 
@@ -2875,9 +2875,9 @@ Regras:
 - não existe bailout invisível;
 - crédito e recapitalização ficam fora do escopo até serem decididos explicitamente.
 
-A empresa recebe **capitalização privada inicial** de investidores/setor privado externo agregado. Essa é uma abstração controlada: a entrada monetária é explícita, quantificada e registrada no ledger. O valor exato deve ser um parâmetro de balanceamento e pode variar por tipo/escala de empresa.
+A empresa recebe **capitalização operacional inicial** como parte do custo da construção privada pago pelo caixa da cidade. A transferência é explícita, quantificada e registrada no ledger. O valor exato deve ser um parâmetro de balanceamento e pode variar por tipo/escala de empresa.
 
-A relação entre essa capitalização e **quem financia a construção física inicial** do prédio privado permanece aberta e não deve ser inferida.
+A relação foi fechada: o caixa da cidade financia a construção ordenada pelo jogador e também a capitalização operacional inicial da empresa privada.
 
 ### Por que esta opção venceu
 
@@ -3131,3 +3131,98 @@ Para evitar sistemas impossíveis de nivelar:
 - métricas agregadas devem ser derivadas de dados reais, não funcionar como variáveis mágicas independentes.
 
 Isso permite corrigir balanceamento sem "chutar" o motivo de um comportamento emergente.
+
+
+---
+
+## Revisão: quem paga quando o jogador constrói
+
+**Status:** decidido para o escopo atual.
+
+A discussão sobre "investidor privado paga a construção" estava criando uma camada conceitual que brigava com a regra central já decidida: **o jogador posiciona diretamente todos os prédios**.
+
+A direção escolhida é mais simples e mais coerente com a gameplay:
+
+1. o jogador escolhe o prédio;
+2. o jogo mostra dinheiro + materiais necessários;
+3. o **caixa da cidade** paga o custo monetário;
+4. a oferta de materiais da cidade é reservada/importada;
+5. a obra acontece fisicamente;
+6. se for uma atividade privada, uma empresa privada passa a operar o prédio após a inauguração.
+
+### Construção privada
+
+O custo mostrado para uma construção privada inclui:
+- construção;
+- materiais/frete conforme as regras já definidas;
+- **capitalização operacional inicial** da empresa.
+
+Quando o prédio entra em operação, essa capitalização é transferida para o caixa real da empresa. Não existe um "investidor mágico" criando dinheiro fora do sistema.
+
+Assim, o jogador continua tendo um loop único e previsível:
+
+**construir = gastar dinheiro da cidade + consumir materiais**.
+
+A distinção público/privado começa depois:
+- prédio público: operação e salários continuam saindo do caixa da cidade;
+- prédio privado: operação passa para o caixa da empresa; a cidade recebe efeitos indiretos e impostos.
+
+### Trade-off de realismo
+
+Esse modelo significa que a cidade/jogador financia a implantação de atividades privadas. Não é uma representação literal de uma economia de mercado.
+
+A escolha é consciente porque:
+- o jogador já controla diretamente onde cada prédio nasce;
+- criar um mercado de investidores separado retiraria o controle do jogador ou criaria um segundo sistema monetário de construção;
+- um único custo de construção é mais legível;
+- mantém o pilar dinheiro + materiais;
+- permite que a economia privada fique profunda **na operação**, onde receita, custo, emprego, estoque e falência criam consequências úteis.
+
+Se futuramente o produto adotar desenvolvimento privado autônomo/zoneamento, essa decisão deve ser reavaliada.
+
+### Capitalização inicial
+
+A capitalização não é uma abstração invisível:
+- aparece como parte do custo detalhado da construção privada;
+- tem valor explícito;
+- é transferida do caixa da cidade para o caixa da nova empresa;
+- pode ser calibrada por tipo/escala;
+- entra no ledger da empresa como saldo inicial.
+
+Isso preserva conservação monetária e facilita diagnóstico.
+
+
+---
+
+## Falência empresarial sem simular processo jurídico
+
+**Status:** direção decidida; parâmetros ainda precisam de calibração.
+
+Não é necessário simular legislação de insolvência, credores, tribunais ou processo jurídico.
+
+A empresa tem caixa e ledger reais. Se sua operação se deteriora por causas concretas e ela não consegue se sustentar por um período calibrável, entra em **risco de fechamento**.
+
+O objetivo de design é:
+
+causa econômica real
+→ aviso simples
+→ diagnóstico opcional
+→ tempo para o sistema/jogador reagir
+→ fechamento se o problema persistir
+
+Exemplos de causas:
+- poucos clientes;
+- custo de insumos alto;
+- falta de mercadoria;
+- frete excessivo;
+- salários/custos operacionais incompatíveis com a receita.
+
+A UI deve apontar a causa dominante com base nos dados reais. O detalhamento permite inspecionar a decomposição completa.
+
+Não foi decidido:
+- destino do prédio após fechamento;
+- possibilidade de outro operador assumir;
+- recuperação judicial/crédito;
+- intervenções/subsídios específicos.
+
+Esses temas ficam fora até criarem uma decisão de gameplay relevante.
