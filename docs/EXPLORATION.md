@@ -1072,3 +1072,39 @@ Decidido para o escopo inicial:
 - ciclos fixos.
 
 Controle adaptativo pode ser reconsiderado no futuro se congestionamentos e gameplay justificarem a complexidade.
+
+
+---
+
+## Granularidade operacional de serviços
+
+**Status:** direção parcialmente fechada.
+
+A simulação deve evitar ações instantâneas quando isso destruir causa e consequência, mas também não precisa reproduzir cada segundo do mundo real.
+
+Direção atual:
+
+- carga/descarga leva tempo;
+- coleta de lixo leva tempo;
+- atendimento de emergência leva tempo;
+- embarque/desembarque leva tempo;
+- interior dos prédios permanece abstrato;
+- entradas e saídas continuam físicas e observáveis.
+
+A duração exata deve ser configurável e calibrada durante os testes de ritmo do jogo.
+
+### Entregas sem janelas artificiais
+
+Não haverá, por enquanto, obrigação de janelas horárias fixas de entrega para comércio.
+
+A logística deve emergir principalmente de:
+
+- disponibilidade de estoque;
+- necessidade de reposição;
+- disponibilidade de veículos;
+- capacidade de carga;
+- distância;
+- trânsito;
+- fila/capacidade no ponto de carga e descarga.
+
+Se no futuro restrições de horário gerarem gameplay útil, elas podem ser reavaliadas.
