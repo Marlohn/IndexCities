@@ -850,3 +850,77 @@ Hipótese inicial a avaliar:
 - limites de variação para evitar instabilidade artificial.
 
 A fórmula final só deve ser escolhida depois de testar se o jogador consegue entender por que os preços subiram ou caíram.
+
+
+---
+
+## Transporte público, estacionamento e combustível
+
+**Status:** parcialmente decidido.
+
+### Transporte público
+
+Já está decidido que o sistema não ficará restrito a ônibus.
+
+Princípios já definidos:
+
+- veículos de transporte público são entidades reais;
+- linhas têm percurso real;
+- capacidade importa;
+- funcionários/motoristas reais fazem parte da operação;
+- outros modais além de ônibus devem existir.
+
+Ainda precisa ser explorado quais modais entram primeiro, por exemplo:
+
+- ônibus;
+- vans/micro-ônibus;
+- bonde/VLT;
+- metrô;
+- trem suburbano;
+- táxi/transporte sob demanda.
+
+A seleção deve considerar escala da cidade e custo de simulação, não apenas catálogo de features.
+
+### Estacionamento
+
+O estacionamento será parte real da mobilidade.
+
+Questões em aberto:
+
+- estacionamento na rua;
+- vagas privadas em residências e empresas;
+- estacionamentos públicos;
+- custo de estacionamento;
+- tempo de procura por vaga;
+- efeito da falta de vagas no trânsito e na escolha modal.
+
+O objetivo é manter alto realismo de veículos sem transformar estacionamento em microgestão excessiva para o jogador.
+
+### Cadeia de combustível
+
+Decisão de direção:
+
+produção/refino → distribuição → postos → consumo por veículos.
+
+Pontos a explorar:
+
+- origem da matéria-prima;
+- refinaria/fábrica como unidade produtiva;
+- transporte por caminhões-tanque;
+- estoque real nos postos;
+- preço do combustível;
+- impacto de falta de combustível na mobilidade e economia;
+- consumo diferente por tipo de veículo.
+
+O sistema deve se conectar à logística já decidida, em vez de funcionar como recurso abstrato isolado.
+
+---
+
+## Funcionalidades adiadas
+
+**Status:** fora do escopo atual, mas preservadas para reavaliação futura.
+
+- assistência social municipal, incluindo abrigos e programas de apoio;
+- saúde mental e dependência química.
+
+Esses tópicos não devem ser implementados agora. Podem ser revisitados futuramente quando os sistemas básicos de população, saúde, moradia e orçamento já estiverem maduros.
