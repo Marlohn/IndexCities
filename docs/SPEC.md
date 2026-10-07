@@ -129,3 +129,13 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Estabelecimentos comerciais podem fechar quando não conseguem sustentar sua operação, incluindo falta de clientes.
 - Indústrias precisam receber matéria-prima real e escoar produção real.
 - Caminhões de carga circulam fisicamente entre fornecedores, indústrias, comércio e obras.
+
+
+### Propriedade, demanda e vulnerabilidade social
+
+- Lotes não precisam ter proprietário individual.
+- Toda construção é colocada pelo jogador.
+- A cidade deve calcular e expor **demanda** para orientar o que faz sentido construir.
+- Cidadãos podem entrar em falência pessoal.
+- Pode existir população sem moradia.
+- Oferta e demanda devem influenciar preços de aluguel e venda, sem exigir um modelo excessivamente complexo.
