@@ -1160,3 +1160,52 @@ No futuro, eventos como shows, feiras e festivais podem ser usados para gerar pi
 - segurança e serviços urbanos.
 
 Esses eventos não entram no escopo atual. Devem ser revisitados depois que turismo, mobilidade, hotelaria e capacidade dos serviços estiverem estáveis.
+
+
+---
+
+## Capacidade educacional
+
+**Status:** estrutura decidida; parâmetros ainda em exploração.
+
+A escola não usará apenas um bônus abstrato de "capacidade".
+
+Já está decidido que:
+
+- professores são cidadãos reais;
+- alunos são cidadãos reais;
+- quantidade de professores e quantidade de alunos importam;
+- falta de vaga/acesso pode deixar jovens fora da escola;
+- universidade faz parte do sistema de educação e qualificação.
+
+Ainda precisa ser pesquisado e calibrado:
+
+- razão professor/alunos;
+- capacidade física por escola;
+- necessidade de salas/turmas explícitas ou agregadas;
+- duração das etapas de ensino;
+- efeito da distância e transporte no acesso;
+- relação entre nível educacional, empregos e salário.
+
+Esses valores devem ser baseados em dados reais ou benchmark do jogo, não escolhidos arbitrariamente.
+
+---
+
+## Conexão externa
+
+**Status:** conceito decidido; representação física ainda em exploração.
+
+A conexão externa representa o "mundo fora do mapa".
+
+Ela deve sustentar, conforme os sistemas forem implementados:
+
+- entrada e saída de turistas;
+- imigração e emigração;
+- transporte rodoviário externo;
+- transporte público/interurbano;
+- entrada e saída de cargas;
+- possíveis outros modais externos no futuro.
+
+A conexão externa evita criar agentes ou mercadorias no meio do mapa sem origem observável.
+
+Ainda precisa ser definido se haverá um único ponto físico, múltiplos pontos por modal ou uma camada lógica comum conectada a diferentes terminais.
