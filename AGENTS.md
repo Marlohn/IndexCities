@@ -31,6 +31,7 @@ Durante conversas de exploração ou definição com o responsável pelo projeto
 - antes de formular novas perguntas, consulte `docs/SPEC.md` e `docs/EXPLORATION.md` e evite repetir perguntas já respondidas ou decisões já registradas;
 - antes de implementar um comportamento, parâmetro ou sistema novo, avalie explicitamente se ele deve ser configurável/opcional. Não crie opções por padrão: registre a justificativa e só exponha configuração quando a variabilidade tiver valor real para calibração, acessibilidade, debug ou gameplay;
 - sempre que registrar uma nova decisão, verifique a coerência global com `docs/SPEC.md` e `docs/EXPLORATION.md`, procure conflitos, regras antigas ou consequências contraditórias e corrija a documentação na mesma sessão. Se existir conflito real ou ambiguidade que não possa ser resolvida com segurança, avise explicitamente o responsável antes de assumir uma resposta.
+- Antes de recomendar ou fechar uma alternativa de produto, apresente de forma limpa as opções relevantes, seus principais prós, contras e consequências para gameplay/coerência. Não empurre uma solução apenas porque parece simples; registre também o que ela sacrifica e reabra a decisão quando surgir uma consequência nova relevante.
 
 ## Arquitetura de especificação
 
