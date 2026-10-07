@@ -1706,40 +1706,17 @@ Para implementação, o preço deve ser um dado de balanceamento configurável p
 
 ## Bootstrap logístico da primeira construção
 
-**Status:** resolvido pelo fluxo de importação acionada por obra.
+**Status:** resolvido.
 
-Problema: se toda obra precisa de material armazenado, mas o primeiro depósito também precisa de material para ser construído, pode surgir um ciclo impossível.
+Não existe depósito gratuito nem estoque inicial artificial.
 
-### Alternativas
+Quando uma obra exige material inexistente localmente:
 
-1. **Depósito inicial gratuito**
-   - simples;
-   - porém pula justamente a primeira etapa da cadeia de construção.
+- a interface mostra o custo adicional de importação;
+- materiais podem ser entregues fisicamente diretamente ao canteiro;
+- o pagamento não teletransporta a carga.
 
-2. **Pequeno estoque inicial na conexão externa**
-   - a cidade continua sem tecido urbano pronto;
-   - existe apenas uma quantidade limitada de material de bootstrap disponível no ponto externo;
-   - esse material permite construir o primeiro acesso viário e o primeiro depósito;
-   - depois disso, todo abastecimento segue a logística normal.
-
-3. **Entrega externa direta na primeira obra**
-   - reduz infraestrutura especial;
-   - mas cria uma exceção em que materiais ignoram o armazenamento obrigatório.
-
-### Conclusão atual
-
-O bootstrap não exige depósito grátis nem estoque inicial artificial. Quando uma obra exige material inexistente localmente, o jogador vê o custo adicional de importação e a carga pode ser entregue fisicamente diretamente ao canteiro. O depósito municipal continua necessário para estoque geral e materiais produzidos/armazenados localmente.
-
-A conexão externa funciona como origem do lote inicial, não como depósito urbano permanente. O lote deve ser pequeno e dimensionado apenas para colocar a cadeia logística em funcionamento.
-
-No fluxo normal, caminhões de carga chegam fisicamente do exterior pela rodovia/conexão externa, entregam mercadorias em depósitos/estabelecimentos e depois retornam ao exterior ou seguem sua rota.
-
-Ainda precisa ser confirmado:
-
-- se o estoque inicial fica literalmente em uma área de staging na conexão externa;
-- quantidade suficiente para quais primeiras construções;
-- se também deve cobrir o primeiro trecho de via;
-- quem/qual veículo transporta esse estoque até o primeiro canteiro.
+Para o problema de mão de obra inicial, uma equipe externa temporária entra pela conexão externa e pode executar o primeiro Pátio Municipal de Obras e a infraestrutura mínima necessária. Depois que o Pátio entra em operação, as obras municipais usam o fluxo normal de trabalhadores públicos locais.
 
 
 ---
@@ -1932,7 +1909,7 @@ Mesmo pago antecipadamente, o material continua sujeito à logística física e 
 
 ## Quem executa as obras
 
-**Status:** Pátio Municipal de Obras decidido; bootstrap inicial ainda em aberto.
+**Status:** Pátio Municipal de Obras e bootstrap externo decididos.
 
 
 
@@ -1951,26 +1928,19 @@ Foi escolhido um modelo municipal para o primeiro escopo:
 Construtoras privadas permanecem como possibilidade futura, não como requisito atual.
 
 
-### O que significa "construtora" no jogo
+### Modelo escolhido para o escopo atual
 
-A ideia discutida até aqui seria uma entidade operacional ligada às obras, não simplesmente mais um custo abstrato.
+O modelo inicial não usa uma construtora privada como executora principal das obras municipais.
 
-Ela **poderia** ter um edifício físico colocável pelo jogador, como um escritório/pátio de obras, mas isso não está decidido.
+Foi escolhido:
 
-A pergunta expôs uma ambiguidade importante no produto atual:
+- **Pátio Municipal de Obras** como estrutura operacional municipal;
+- trabalhadores públicos reais;
+- capacidade limitada de execução;
+- pequeno estoque próprio;
+- equipe externa temporária apenas para o bootstrap antes do primeiro Pátio existir.
 
-- a SPEC diz que o jogador coloca diretamente casas, prédios, empresas e serviços;
-- isso não define automaticamente quem **possui** ou **financia** cada edifício depois de colocado;
-- portanto, "o jogador constrói uma construtora" não deve ser interpretado automaticamente como "a prefeitura é dona de uma empresa privada".
-
-Antes de fechar a construtora, precisamos decidir como separar:
-
-- **controle do jogador sobre a colocação**;
-- **propriedade municipal ou privada**;
-- **quem paga a construção**;
-- **quem recebe a receita da operação**.
-
-Uma alternativa coerente é um **Departamento/Pátio Municipal de Obras**, com trabalhadores reais, enquanto construtoras privadas ficam para uma etapa posterior. Outra é uma construtora privada real que recebe contratos. Ambas precisam ser comparadas com o modelo econômico geral para evitar dupla cobrança de salários ou propriedade incoerente.
+Construtoras privadas continuam como possibilidade futura e só devem voltar à discussão se criarem gameplay útil sem duplicar desnecessariamente o sistema municipal.
 
 
 ### Classificação econômica real
@@ -1981,48 +1951,13 @@ Fontes:
 - U.S. Census Bureau — NAICS Sector 23, Construction: https://www.census.gov/naics/resources/archives/sect23.html
 - U.S. Census Bureau — Construction sector profile: https://data.census.gov/profile/23_-_Construction
 
-### Alternativas para o IndexCities
+### Alternativas consideradas
 
-**A. Obras estáticas/abstratas**
-- o município cria a obra;
-- trabalhadores são alocados diretamente;
-- não existe empresa construtora;
-- equipamentos ficam implícitos.
+Foram considerados modelos abstrato, construtora privada totalmente simulada e modelo híbrido.
 
-Vantagem: implementação simples.
-Problema: enfraquece a economia de empresas reais já desejada para o jogo.
+A decisão atual é começar pelo **Pátio Municipal de Obras**, por manter trabalhadores, capacidade e custos reais sem exigir desde já uma economia completa de empreiteiras privadas.
 
-**B. Construtora totalmente simulada**
-- empresa construtora real;
-- funcionários reais;
-- caixa próprio;
-- contratos de obra;
-- veículos e equipamentos próprios;
-- deslocamento de trabalhadores/equipamentos ao canteiro;
-- capacidade limitada por pessoal e frota.
-
-Vantagem: encaixa fortemente na proposta de simulador.
-Problema: adiciona bastante complexidade cedo.
-
-**C. Modelo híbrido anteriormente recomendado para POC**
-- construtora é empresa real;
-- recebe pagamento/contrato pela obra;
-- emprega trabalhadores reais;
-- quantidade/qualificação de trabalhadores limita capacidade;
-- trabalhadores se deslocam até o canteiro;
-- equipamentos pesados começam como capacidade agregada da empresa;
-- veículos/equipamentos específicos só viram entidades físicas depois se o gameplay justificar.
-
-Essa opção preserva causa e efeito econômico sem exigir, de início, simular cada escavadeira, guindaste ou betoneira.
-
-### Perguntas ainda abertas
-
-- construtoras são privadas, municipais ou ambas;
-- como surgem as primeiras construtoras numa cidade vazia;
-- se uma construtora externa pode executar as primeiras obras;
-- como preço do contrato é calculado;
-- se equipamentos físicos entram já no primeiro escopo ou depois;
-- se diferentes especializações de construção devem existir.
+Máquinas e equipamentos de obra ainda precisam de pesquisa específica para decidir o que vale representar fisicamente e o que pode permanecer agregado.
 
 
 ---
@@ -2174,30 +2109,31 @@ Esses detalhes precisam ser testados sem criar movimentação logística redunda
 
 ---
 
-## Conflito de bootstrap: quem constrói o primeiro Pátio
+## Bootstrap do primeiro Pátio
 
-**Status:** aberto; precisa ser resolvido antes da implementação do fluxo inicial.
+**Status:** decidido.
 
-Há uma dependência circular:
+O mapa continua começando sem edifícios municipais.
 
-1. o mapa começa sem edifícios, apenas com a conexão externa e ambiente natural;
-2. obras municipais são executadas pelo Pátio Municipal de Obras;
-3. o Pátio também precisa ser construído.
+Uma equipe externa temporária:
 
-Portanto, o próprio Pátio não pode depender exclusivamente de um Pátio local já existente.
+- entra pela conexão externa;
+- possui trabalhadores externos, não residentes;
+- executa o primeiro Pátio Municipal de Obras;
+- pode executar também a infraestrutura mínima necessária para viabilizar esse Pátio;
+- usa materiais pagos/importados e entregues fisicamente segundo as mesmas regras de construção já definidas.
 
-### Alternativas a avaliar
+Assim que o Pátio entra em operação, a equipe externa deixa de ser necessária para o fluxo municipal normal.
 
-**A. Equipe externa de construção para bootstrap**
-- uma equipe temporária vem pela conexão externa;
-- executa o primeiro Pátio e possivelmente a infraestrutura mínima de acesso;
-- depois o sistema normal passa para trabalhadores municipais.
+### Coerência com as demais regras
 
-**B. Primeira obra abstrata**
-- o primeiro Pátio é uma exceção de onboarding;
-- simples, mas quebra a lógica física justamente no início.
+Esse bootstrap preserva:
 
-**C. Pátio inicial pré-construído**
-- foi rejeitado: a cidade deve começar vazia.
+- cidade inicial vazia;
+- construção não instantânea;
+- materiais físicos;
+- logística pela conexão externa;
+- mão de obra real;
+- ausência de um edifício inicial gratuito.
 
-A alternativa A parece mais coerente com a conexão externa, os trabalhadores externos já aceitos para caminhões e a proposta de simulação física, mas **ainda precisa de confirmação explícita**.
+A equipe externa é uma exceção apenas de **origem da mão de obra**, não uma exceção às regras de materiais, dinheiro ou transporte.
