@@ -10,7 +10,7 @@
 
 O IndexCities está em **fase inicial de definição**.
 
-Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decisões prematuras. Plataforma, engine, direção visual, escala, sistemas de gameplay, simulação, persistência, performance-alvo e demais características serão discutidos e decididos progressivamente.
+Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decisões prematuras. Plataforma, direção visual, escala, sistemas de gameplay, simulação, persistência, performance-alvo e demais características serão discutidos e decididos progressivamente.
 
 ## Regras da SPEC
 
@@ -22,9 +22,9 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 
 ## Decisões de produto confirmadas
 
-Ainda não há decisões de produto suficientes para detalhar esta seção.
+### Tecnologia
 
-Isso é intencional: primeiro explorar e decidir; depois especificar.
+- A engine do jogo será **Godot**.
 
 ## Fora de escopo automático
 
