@@ -1095,14 +1095,31 @@ A ordem desejada é:
 
 ## Encerramento de estabelecimento e continuidade da empresa
 
-**Status:** exploração separada; não confundir com herança de SIM.
+**Status:** decisão promovida para a SPEC; detalhes de estoque e outros ativos específicos permanecem abertos até existirem no modelo.
 
-Hipótese em avaliação:
-- fechar um estabelecimento não mata automaticamente a entidade empresa;
-- imóvel fechado pode continuar pertencendo à empresa enquanto está à venda;
-- outra empresa pode comprar o ativo;
-- o pagamento iria para a empresa vendedora;
-- empresa sem operação pode permanecer temporariamente procurando nova oportunidade enquanto ainda possuir caixa ou ativos;
-- remoção definitiva da empresa exigiria não possuir operação, ativos nem capital economicamente útil.
+### Decisão
 
-Essa hipótese será discutida separadamente antes de qualquer promoção para a SPEC.
+Evitar transformar falência em uma segunda simulação de gestão empresarial.
+
+- **Falência da empresa é terminal.** Depois do período de risco já definido, a empresa não fica como entidade inativa procurando eternamente uma nova oportunidade.
+- Pode existir uma etapa técnica curta de **liquidação**, invisível como microgerenciamento: operações param, imóveis são ofertados automaticamente e recebimentos continuam rastreáveis.
+- Enquanto houver ativos a vender, a entidade pode existir apenas como suporte contábil da liquidação.
+- Quando não houver mais ativos pendentes, saldo remanescente vai para o Fundo de Patrimônio Não Reclamado e a empresa é removida.
+- Se algum ativo perder o titular com o encerramento, ele pode ficar explicitamente sem proprietário; uma venda posterior envia o valor ao fundo.
+- Isso não impede uma empresa saudável com vários estabelecimentos de fechar apenas um local e continuar operando os demais.
+
+### Por que esta versão foi escolhida
+
+**Prós**
+- fecha todos os fluxos sem dinheiro ou propriedade desaparecerem;
+- não exige que o jogador acompanhe liquidação, credores ou processo jurídico;
+- falência continua tendo consequência clara e terminal;
+- evita acumular empresas “zumbis”;
+- reutiliza o mecanismo já decidido de patrimônio não reclamado.
+
+**Contras**
+- existe um pequeno estado técnico de liquidação;
+- detalhes de estoque e outros ativos terão de ser definidos quando esses casos realmente existirem;
+- o fundo passa a servir genericamente para valores sem titular econômico, não apenas heranças.
+
+O objetivo é manter essa camada no mínimo necessário para preservar causalidade. Não adicionar credores, ordem jurídica de pagamento, administrador judicial ou outras regras enquanto não houver gameplay concreto que justifique isso.
