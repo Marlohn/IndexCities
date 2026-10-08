@@ -79,6 +79,8 @@ No futuro, se inclinação tiver consequência viária relevante, a prévia tamb
 
 Snapping deve ajudar, não dominar.
 
+**Direção aprovada na SPEC em 2026-10-08:** a construção adota uma grade lógica interna com posicionamento assistido de vias e prédios e liberdade limitada de ajuste. O grid não força todas as construções a células completas; colisão e acesso funcional real continuam obrigatórios. **Revisão humana desta atualização:** PARCIALMENTE REVISADO — a direção foi escolhida pelo responsável; a síntese operacional e os candidatos abaixo ainda dependem de validação. O encaixe da ferramenta de rua em L deve continuar compatível com a trajetória ortogonal confirmada na SPEC; curvas livres não foram aprovadas como regra geral.
+
 Candidatos a snap:
 
 - centro ou borda de rua existente;
@@ -816,7 +818,7 @@ Na validação integrada, medir/observar:
 > **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
 
 
-1. A ferramenta de rua em L deve usar grid rígido, alinhamento assistido ou ambos?
+1. **Direção já decidida:** grade lógica e alinhamento assistido; ainda validar como o usuário reduz/inverte snapping sem perder precisão nem sugerir ligações viárias falsas.
 2. Como exatamente o jogador inverte o lado do L?
 3. Teremos curvas livres no primeiro escopo ou só depois?
 4. O jogo terá modo de planejamento em lote?
