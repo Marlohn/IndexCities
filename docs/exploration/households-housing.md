@@ -80,14 +80,14 @@ Se um detalhe não muda nenhum sistema relevante, ele pode permanecer agregado.
 
 ## Valor imobiliário e propriedade de lotes
 
-> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — a utilização do valor de mercado como base de impostos foi confirmada pelo responsável; fatores e método de avaliação abaixo seguem **PENDENTES** de revisão.
 
 
 **Status:** em exploração.
 
 Ainda não está decidido se cada lote terá proprietário individual e valor de mercado próprio.
 
-Também não está definido como calcular valor imobiliário.
+Já está decidido na SPEC que a **tributação de imóveis residenciais, comerciais e industriais incide sobre o valor de mercado**, com alíquota da categoria escolhida pelo jogador. Ainda não está definido como calcular ou atualizar esse valor imobiliário; tamanho pode ser um fator de avaliação, mas não é a base direta do imposto.
 
 Fatores candidatos a investigar com dados e referências reais:
 
