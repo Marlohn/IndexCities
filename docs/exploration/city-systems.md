@@ -60,22 +60,30 @@ A regra de profundidade continua a mesma: só detalhar quando isso gerar consequ
 
 **Continuidade operacional condicionada agora aprovada na SPEC (opção C):** quando uma escola, hospital ou outro serviço municipal for realocado, seu prédio antigo **pode continuar prestando o serviço** enquanto existir, funcionar e não precisar liberar a área da intervenção; se a retirada antecipada for necessária, o atendimento/capacidade daquele endereço é interrompido. A nova estrutura exige obra e condições reais, sem transferência física instantânea nem serviço garantido só porque o destino foi escolhido. **Continuidade institucional agora decidida na SPEC (opção C, 2026-10-08):** escola, hospital e demais serviços municipais permanecem sendo a mesma instituição durante a realocação, sem recriação institucional ou compra privada; capacidade e atendimento só existem onde estrutura, funcionários, acesso e recursos de fato permitirem. Vínculos/vagas seguem válidos apenas se realmente existirem; funcionários reavaliam individualmente quando o endereço de trabalho mudar. **Em aberto, sem autorização para suposição:** tratamento particular de vagas/salários nas paralisações prolongadas, capacidade de atendimento temporário, destino operacional fino dos suprimentos e eventual logística de equipamentos não especificados e critérios finos de transição. A recuperação automática de estoques físicos quando viável e perda do remanescente na retirada inevitável, sem nova indenização ou capacidade fictícia, seguem a SPEC e não exigem novas regras de mercado para serviços públicos. Continuidade institucional não garante operação ininterrupta nem serviço fictício.
 
+## Contratação gradual sujeita ao porte do estabelecimento — opção 2B (2026-10-08)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou contratação e redução gradual pela demanda, com **teto físico de pessoal segundo o tamanho/capacidade do negócio**. Parâmetros exatos permanecem para calibração.
+
+O número de vagas e pessoas simultaneamente trabalhando fica limitado pelo edifício e sua capacidade real. Contratar mais turnos não aumenta a capacidade simultânea, embora permita cobertura efetiva em horários diferentes. Receita/caixa não cria vagas sem espaço, nem emprego sem SIM ou salário real. Ajustes por período ou evento significativo, sem contratação/demissão a cada oscilação, sem aprovação manual do jogador e sem varreduras a cada quadro.
+
+---
+
 ## Turnos de trabalho e operação contínua
 
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
 
 
-**Status:** em exploração; suporte a múltiplos turnos já está decidido na SPEC.
+**Status atualizado (2026-10-08):** múltiplos turnos e **horários simples de atendimento por tipo de negócio (1A)** estão aprovados na SPEC; horas exatas, cobertura real por SIMs e parâmetros continuam para calibração. As hipóteses seguintes não autorizam gestão manual de escalas.
 
 A intenção é permitir turnos diferentes para empresas e serviços, inclusive quando houver operação noturna, mas sem transformar escala de funcionários em microgerenciamento manual obrigatório.
 
 Direção a validar:
 
 - cada trabalhador pode ter um horário/turno individual;
-- empresas definem janelas de operação e quantidade de vagas por turno;
+- **regra oficial:** cada tipo de negócio tem janela habitual simples; sua operação real depende de pessoas presentes em turnos, sem otimizador permanente por empresa;
 - serviços críticos podem precisar de cobertura contínua;
 - a simulação pode gerar escalas automaticamente a partir das necessidades da empresa/serviço;
-- o jogador deve intervir apenas quando houver uma decisão relevante, como ampliar capacidade, mudar horário de funcionamento ou lidar com falta de pessoal;
+- **horários e escalas individuais não são configurados pelo jogador na opção 1A**; ele age sobre capacidade e condições urbanas já previstas;
 - horários diferentes devem distribuir ou concentrar tráfego ao longo do dia.
 
 O objetivo é obter consequências reais de horário e escala sem obrigar o jogador a montar manualmente cada escala de trabalho, salvo se isso se provar divertido em protótipo.
@@ -386,7 +394,7 @@ Se no futuro restrições de horário gerarem gameplay útil, elas podem ser rea
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
 
 
-**Status:** documentado para futuro; fora do escopo atual.
+**Status revisado:** filas físicas detalhadas continuam futuras; **horários básicos de funcionamento já foram aprovados posteriormente como opção 1A na SPEC**. A indicação histórica de adiamento não se aplica mais aos horários.
 
 ### Filas físicas em comércio e saúde
 
@@ -404,7 +412,7 @@ Não é necessário implementar isso agora.
 
 ### Horários de funcionamento
 
-Comércio e serviços podem futuramente ter horários reais de abertura e fechamento.
+**Horários básicos foram decididos pela opção 1A:** estabelecimentos têm janelas por tipo de negócio, só atendendo quando efetivamente operacionais, com funcionários e acesso reais.
 
 Possíveis efeitos:
 
@@ -413,7 +421,7 @@ Possíveis efeitos:
 - indisponibilidade temporária de serviços;
 - redistribuição de demanda.
 
-Também fica fora do escopo atual até a simulação básica de rotina, trabalho e mobilidade estar estável.
+**Detalhes adicionais de otimização contínua de horários e filas físicas seguem em pesquisa;** horários simples e múltiplos turnos básicos já constam na SPEC.
 
 
 ---
