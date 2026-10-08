@@ -50,7 +50,7 @@ Há três níveis possíveis:
 
 ### Avaliação provisória
 
-**Decisões fechadas na SPEC:** o modelo inicial será **por categorias de produtos**, não por SKU individual. **As compras de bens de consumo pelos SIMs são presenciais:** o cidadão se desloca fisicamente até o comércio, compra somente categorias disponíveis no estoque com dinheiro real e realiza o deslocamento de saída/retorno, afetando mobilidade e demanda local. A transação transfere dinheiro do SIM à empresa operadora e retira estoque real; não substituir a viagem por uma compra econômica invisível. A visita e compra são automatizadas pela simulação, sem microgerenciamento do jogador. A categoria econômica do produto e a necessidade de deslocamento são duas decisões distintas.
+**Decisões fechadas na SPEC:** o modelo inicial será **por categorias de produtos**, não por SKU individual. **As compras de bens de consumo pelos SIMs são presenciais:** o cidadão se desloca fisicamente até o comércio, compra somente categorias disponíveis no estoque com dinheiro real e realiza o deslocamento de saída/retorno, afetando mobilidade e demanda local. A transação transfere dinheiro do SIM à empresa operadora e retira estoque real; não substituir a viagem por uma compra econômica invisível. A visita e compra são automatizadas pela simulação, sem microgerenciamento do jogador. **A escolha da loja considera preço, distância/acessibilidade e estoque disponível; diante de falta de produto, o SIM pode tentar outro comércio acessível, realizando o deslocamento físico necessário. Sem loja viável, a compra não ocorre e a necessidade fica não atendida**, sem compra ou abastecimento fictício. A categoria econômica do produto, a necessidade de deslocamento e a escolha inteligente de comércio são decisões distintas.
 
 Razões preservadas desta exploração:
 
@@ -60,7 +60,7 @@ Razões preservadas desta exploração:
 - evita explodir o número de entidades com milhares de SKUs que provavelmente não gerariam gameplay proporcional;
 - deixa espaço para aprofundar categorias específicas mais tarde se elas se provarem importantes.
 
-**Em aberto para calibração/protótipos:** periodicidade e agrupamento de compras por viagem, escolha do estabelecimento acessível (inclusive frente a estoque insuficiente), conciliação com trabalho/atividades e custo de movimentação em grande escala. Preservar viagem e transações reais mesmo com otimização de simulação fora da câmera; não exigir uma viagem individual para cada produto comprado.
+**Em aberto para calibração/protótipos:** periodicidade e agrupamento de compras por viagem, pesos de preço/distância/estoque na escolha da loja, alcance e número de tentativas ao procurar alternativas, conciliação com trabalho/atividades e custo de movimentação em grande escala. Não exigir varreduras contínuas de todos os comércios por SIM; preservar viagens e transações reais mesmo com otimização fora da câmera. Não exigir uma viagem individual para cada produto comprado.
 
 ### Regra de profundidade sugerida
 
