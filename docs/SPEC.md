@@ -59,7 +59,7 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 ### Oferta monetária fixa e Reserva Global
 
 - A simulação usa uma **oferta monetária global fixa**: o dinheiro não é criado nem destruído pelos fluxos normais; ele apenas muda de titular.
-- O total monetário global é a soma do **Caixa da Cidade + carteiras dos SIMs + caixas das empresas + Reserva Global**.
+- O total monetário global é a soma do **Caixa da Cidade + carteiras dos SIMs + caixas das empresas + Reserva Global** e deve permanecer constante/auditável durante a simulação.
 - A **Reserva Global** é um saldo técnico por trás das cenas, não controlado nem normalmente exibido ao jogador. Ela representa a parcela do dinheiro global que não está naquele momento com os agentes econômicos locais.
 - Todo lançamento na Reserva Global deve ser rastreável por origem, destino, motivo e entidade/evento relacionado.
 - Quando uma família ou empresa entra a partir do mundo exterior, seu capital inicial sai da Reserva Global; quando um fluxo econômico sai da cidade para uma contraparte externa não modelada, o valor retorna à Reserva Global.
@@ -268,7 +268,7 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - O menu financeiro deve separar claramente entradas e saídas da prefeitura.
 - Salários de todos os trabalhadores públicos devem aparecer explicitamente entre as despesas municipais.
 - A cidade poderá usar empréstimos/dívida municipal para evitar travamentos financeiros e permitir recuperação de caixa.
-- O principal de um empréstimo sai da **Reserva Global** e entra no Caixa da Cidade; pagamentos de principal e juros retornam à Reserva Global. O empréstimo redistribui dinheiro existente e não cria moeda nova.
+- O principal de um empréstimo sai da **Reserva Global** e entra no Caixa da Cidade; amortizações retornam à Reserva Global. Se houver juros, eles também são transferências para a Reserva Global; taxa, prazo e limites continuam em calibração. O empréstimo redistribui dinheiro existente e não cria moeda nova.
 
 
 ### Caixa da cidade e investimento em construções
@@ -424,7 +424,7 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Não haverá, neste primeiro modelo, investidor residencial externo que permaneça fora da cidade comprando imóveis apenas para receber aluguel.
 - A procura exterior não é infinita: deve depender de fatores reais e diagnosticáveis, como emprego, preço, disponibilidade de moradia e atratividade da cidade.
 - Baixa demanda pode manter uma residência vazia por mais tempo; isso é consequência econômica válida e deve ser legível para o jogador.
-- Famílias locais podem comprar imóveis adicionais para aluguel quando tiverem recursos reais; a fórmula de decisão, a prioridade exata de herdeiros, a revenda e as regras do primeiro proprietário de um ativo recém-construído continuam em definição. O caso sem herdeiro já segue as regras da Reserva Global desta SPEC.
+- Famílias locais podem comprar imóveis adicionais para aluguel quando tiverem recursos reais; a fórmula de decisão, a prioridade exata de herdeiros, a revenda e a granularidade de propriedade em apartamentos continuam em definição. A primeira aquisição de um ativo residencial recém-construído já segue as regras da Reserva Global desta SPEC.
 
 ### Turismo e hospedagem
 
