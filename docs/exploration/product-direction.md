@@ -166,18 +166,15 @@ A quantidade final de população, lotes, casas, edifícios, comércio e indúst
 
 ---
 
-## Pesquisa prioritária: objetivo central, progressão e endgame
+## Pesquisa prioritária: desafios opcionais e longevidade do sandbox
 
-> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — **a direção de sandbox livre com desafios opcionais foi aprovada em 2026-10-08 e registrada na SPEC**; a análise e as possibilidades abaixo permanecem PENDENTES de revisão humana, sem virar requisitos.
 
+**Direção aprovada na [SPEC](../SPEC.md):** o jogo permanece livre para construir e desenvolver a cidade sem objetivos ou vitórias obrigatórias. Desafios são opcionais; não bloqueiam a experiência central nem autorizam por si só sistemas de missão, metas, recompensas ou desbloqueios.
 
-**Status:** pesquisa específica e ampla obrigatória antes de fechar a estrutura de objetivos.
+**Em aberto para pesquisa:** quais desafios realmente ampliam decisões interessantes no médio/longo prazo, como comunicá-los sem tarefas repetitivas e se precisam de qualquer recompensa além dos efeitos emergentes da cidade. **Não** tratar uma população-alvo ("chegar a X habitantes") como objetivo decidido.
 
-O IndexCities ainda não tem uma condição de vitória, objetivo central ou modelo de progressão decidido.
-
-Essa decisão não deve ser preenchida com uma meta genérica de "chegar a X habitantes".
-
-A pesquisa futura deve comparar amplamente:
+A pesquisa futura pode confrontar a opção C aprovada com modelos de outros jogos para **extrair aprendizados, não reabrir silenciosamente a direção nem adotar suas mecânicas**:
 
 - sandbox puro;
 - marcos/milestones;
@@ -191,7 +188,7 @@ A pesquisa futura deve comparar amplamente:
 - objetivos de longo prazo/endgame;
 - como outros city builders evitam que o late game vire apenas crescimento numérico.
 
-Critério principal: encontrar **algo distintivo e memorável que dê propósito às decisões sistêmicas do IndexCities**, sem destruir a liberdade de city builder.
+Critério principal: identificar desafios opcionais **distintivos, relevantes para decisões sistêmicas e economicamente coerentes**, sem destruir a liberdade de city builder nem produzir uma lista infinita de tarefas. Exemplos de condições urbanas como desemprego, escassez e congestionamento **são hipóteses de exploração**, não desafios aprovados.
 
 O documento [exploration/genre-benchmark.md](genre-benchmark.md) já contém evidências sobre endgame e progressão e deve ser uma das fontes dessa pesquisa, mas não substitui uma rodada dedicada.
 
