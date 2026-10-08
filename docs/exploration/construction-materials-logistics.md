@@ -665,6 +665,14 @@ A [SPEC](../SPEC.md) passa a permitir que o jogador **mova uma obra incompleta e
 
 **Limites para validação técnica:** recálculo do preço quando muda a distância; atomicidade da troca de reservas para não comprometer o Caixa duas vezes; entrega já despachada/paga; custo de trabalho local já remunerado; feedback claro da prévia. A realocação de **construções concluídas** não está aprovada por essa decisão.
 
+### Realocação de estabelecimento concluído — continuidade condicionada aprovada (2026-10-08)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou a **opção C** de continuidade operacional condicionada durante a realocação; regras finas de compatibilidade entre duas obras, sequência de mudança e destino de estoques continuam não definidas.
+
+Conforme a [SPEC](../SPEC.md), ao acionar **Realocar** para comércio, indústria ou serviço municipal, **a construção antiga pode continuar operando** enquanto sua estrutura, acesso e necessidade espacial da intervenção permitirem. A construção substituta não surge pronta: exige materiais, equipe, transporte e recursos financeiros reais. **Se for necessário retirar o prédio antigo antes de o novo operar, o estabelecimento para naquele endereço**, sem impedir indefinidamente a intervenção. **A ação direta Demolir continua distinta:** a execução física da demolição permanece instantânea quando autorizada e não herda a tentativa de continuidade da ferramenta Realocar. Regras de desocupação residencial seguem independentes.
+
+O ativo privado ainda operando pode já ter sido **indenizado na confirmação**, mas não pode ser revendido ou indenizado novamente. A operação temporária não cria estoque duplicado, recebimentos fictícios nem movimento gratuito para o novo endereço. O destino real de estoque/equipamentos, contratos/obrigações, salários e a continuidade do empregador ou serviço após a retirada ainda exigem decisões adicionais, **sem inventar teletransporte ou pausa financeira automática**. Não adicionar um novo subsistema contínuo de monitoramento; preferir mudanças de estágio e checagens físicas pertinentes. A prévia de intervenção deve comunicar risco de interrupção e impacto agregado para gameplay.
+
 ### Demolição de construção concluída
 
 Decidido:
