@@ -476,6 +476,10 @@ O sistema deve, porém, tornar a consequência legível:
 - deixar o jogador correr o risco econômico conscientemente;
 - se a empresa depois tiver poucos clientes e prejuízo, a deterioração precisa apontar essa causa real.
 
+**Refinamento aprovado na SPEC — alerta operacional de poucos compradores:** o sinal deve comparar vendas/pedidos efetivos com oferta/produção e estoque, inclusive escoamento por exportação; **número absoluto de compradores é insuficiente**, pois um comprador grande pode adquirir toda a produção. Exemplo ilustrativo: produção de 100 unidades e vendas de 40 por período, com estoque acumulando, pode justificar diagnóstico de demanda insuficiente **se o quadro persistir e causar efeito relevante**. Se existem pedidos mas os caminhões não conseguem entregar, a causa correta é gargalo logístico, **não falta de compradores**. Evitar spam de alertas transitórios; usar um resumo por categoria/área e detalhamento da empresa quando útil, mostrando valores e causas reais. Os gatilhos e a UI exata seguem para calibração, sem criar um indicador mágico separado do estado da economia.
+
+**Decisão ainda aberta e independente deste alerta:** a empresa produz continuamente até a capacidade, exclusivamente por pedidos ou de forma adaptativa com estoque de segurança. A recomendação exploratória é testar produção adaptativa simples, mas **nenhuma dessas três opções de política de produção foi aprovada até agora**.
+
 Exemplo conceitual:
 
 cinco mercados concentrados
