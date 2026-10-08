@@ -597,7 +597,7 @@ A SPEC deve crescer com o produto, **não antes dele**.
 
 - Ao cancelar uma obra ainda não concluída, materiais apenas reservados e ainda não entregues/consumidos deixam de ficar reservados.
 - Materiais que já chegaram ao canteiro foram consumidos e não retornam ao depósito.
-- A política de devolução de valores monetários em cancelamento de obra ainda não está definida.
+- A política de devolução de valores monetários em cancelamento de obra ainda não está definida. Qualquer solução futura deve respeitar a oferta monetária fixa: reembolso é transferência de dinheiro existente, nunca criação/destruição de moeda.
 - Demolir uma construção já realizada não devolve o dinheiro nem os materiais originalmente gastos.
 
 
