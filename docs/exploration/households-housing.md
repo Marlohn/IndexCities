@@ -144,7 +144,8 @@ Ainda precisa ser decidido:
 
 - duração do prazo e gatilhos para eventual saída/despejo;
 - parcelamento/pagamento parcial, prioridade de contas e eventual encargo por atraso (nenhum juro está aprovado);
-- se a dívida permanece após a família sair e como identificar os SIMs responsáveis;
+- **Decidido:** a dívida de aluguel **permanece após a família deixar o imóvel ou mudar de residência**; não há perdão automático ao sair. O crédito permanece vinculado ao credor real e o pagamento posterior, quando ocorrer, será transferência monetária entre agentes;
+- **Em aberto:** quais SIMs do domicílio respondem pela dívida, como o crédito é transferido se o credor morre ou deixa de ser titular, condições de cobrança e eventual extinção por falência pessoal;
 - como buscar uma residência mais barata ou assistência, sem transformar a inadimplência em microgerenciamento;
 - consequências de outras despesas não pagas;
 
@@ -457,4 +458,4 @@ Hipótese de benefício: negócios mais variados e sensíveis à urgência dos a
 
 **Possível melhoria futura, não aprovada como funcionalidade atual:** ajuste automático adicional do aluguel conforme procura por locação e vacância, mesmo quando o valor de mercado do imóvel não muda. Poderia reagir mais rapidamente ao mercado de locação, mas adiciona volatilidade, complexidade e risco de duplicar o efeito da demanda já refletido na avaliação. Não há compromisso de implementar.
 
-**Em aberto:** percentual de referência, duração do intervalo de reajuste, periodicidade de pagamento/cobrança, tratamento do início de novas locações e parâmetros da inadimplência (prazo, pagamento parcial, encargos, despejo e destino da dívida). O **princípio de dívida real com prazo antes da possível perda da moradia está decidido**; reajuste periódico também, mas sua duração exata não foi aprovada. Reavaliações do imóvel entre reajustes não alteram imediatamente o aluguel contratado.
+**Em aberto:** percentual de referência, duração do intervalo de reajuste, periodicidade de pagamento/cobrança, tratamento do início de novas locações e parâmetros da inadimplência (prazo, pagamento parcial, encargos, despejo, responsáveis e eventual quitação/extinção). O **princípio de dívida real com prazo antes da possível perda da moradia e sua permanência após a mudança estão decididos**; reajuste periódico também, mas sua duração exata não foi aprovada. Reavaliações do imóvel entre reajustes não alteram imediatamente o aluguel contratado.
