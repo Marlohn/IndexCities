@@ -505,6 +505,21 @@ Podemos futuramente explorar sucata/reciclagem se isso criar gameplay suficiente
 
 **Perguntas de maior valor:** (1) preferência única pelo preço de mercado novo ou desconto/benefício? (2) se a nova obra demorar mais que a desocupação, aceitar transição sem garantia ou definir outra ordem? (3) continuidade empresarial após perda do estabelecimento e emprego/serviço público durante obra, sem fingir que trabalhadores ou estoque se teletransportam?
 
+#### Nova reflexão de 2026-10-08 — decisão de trabalhadores e visibilidade da avaliação imobiliária
+
+> **Revisão humana desta seção: PENDENTE.** O responsável questionou a distinção entre trabalhadores privados e públicos, propôs **oportunidade de escolha global** quando a mudança do estabelecimento altera o emprego e pediu reflexão sobre quanto da valorização/desvalorização do imóvel mostrar ao jogador. É **discussão**, não aprovação da solução da IA. A [SPEC](../SPEC.md) continua definindo venda da nova casa sem preferência; preferência de compra é proposta aberta.
+
+**Hipótese de simetria dos trabalhadores, independentemente do empregador:** em qualquer estabelecimento (escola/hospital, comércio, indústria) cuja localização de trabalho mude, SIMs com vínculo de emprego existente reavaliam automaticamente **se desejam continuar** no trabalho viável, por condições concretas: trajeto/tempo de viagem, salário, turno, acessibilidade e ofertas reais. Mudança de endereço não implica nem demissão obrigatória de todos nem retenção incondicional. **Se a empresa deixar de existir ou a vaga for extinta, não há emprego preservado para aceitar.** A continuidade operacional da empresa/serviço durante a obra permanece indefinida. Aplicar preferencialmente o mecanismo normal de escolha/saída do emprego, disparado pelo evento relevante, evitando nova rotina contínua por SIM. É necessário decidir o tratamento da instituição e da empresa antes de promover o comportamento à SPEC.
+
+**Valoração da casa ao mover — exemplos, não tabela de ganhos:** mesmo tipo de estrutura em outro bairro pode ter preço diferente por acesso, poluição, serviços, demanda e condições locais, conforme avaliação imobiliária dinâmica já aprovada. Indenização da casa original a R$ 100 mil e nova compra a R$ 80 mil deixam R$ 20 mil **em dinheiro** ao SIM, mas a nova propriedade vale R$ 20 mil menos: não se criaram R$ 20 mil de patrimônio líquido. O inverso (nova casa a R$ 130 mil) exige R$ 30 mil de dinheiro adicional. Uma compra pode ser recusada por condições sociais/econômicas além do preço; não pressupor ganho garantido.
+
+**Dilema de interface ainda aberto:**
+- **Valor exato no arrasto:** preço e diferença numéricos a cada posição. Planejamento claro, mas favorece exploração de números como minigame, pode ser caro se reavaliar todo quadro e parece garantir preço futuro.
+- **Prévia contextual em camadas (recomendação da IA, não aprovada):** mostrar tendência **melhor/pior** e motivos (emprego, serviços, acesso, poluição, mercado) durante o reposicionamento; ao inspecionar/confirmar, oferecer **estimativa** de valor e diferença, sem tratar estimativa como preço travado. Recalcular sob interação significativa, não por frame. O preço efetivo da venda permanece o **valor de mercado no momento da transação**, quando a obra nova estiver disponível.
+- **Preço oculto:** preserva descoberta orgânica, mas o jogador pode assumir despesas e causar deslocamentos sem entender consequência financeira crucial, contrariando a legibilidade causal já aprovada na SPEC.
+
+**Alerta sobre gameplay e coerência:** mostrar custos e consequências humanas relevantes antes de confirmação não obriga o jogo a transformar todo arrasto em uma calculadora especulativa. A cidade paga indenização e obra com recursos reais; a valorização do imóvel novo é uma **estimativa de ativo futuro**, não receita automática para a prefeitura ou o antigo dono. Desincentivar min-max artificial com causalidade, custos reais e incerteza de mercado, não escondendo informação essencial. A prioridade de recompra e seu preço ainda dependem de decisão humana explícita.
+
 ### Caso C — prédio concluído e jogador quer apenas mudar de lugar
 
 Não devemos automaticamente obrigar o jogador a:
