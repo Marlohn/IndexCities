@@ -277,7 +277,7 @@ Esse saldo pode ser afetado por:
 - venda futura de patrimônio;
 - demais fluxos econômicos explícitos.
 
-Ao criar/introduzir um cidadão na simulação, ele pode entrar com um saldo inicial explícito. Para migrantes vindos do exterior, esse dinheiro representa patrimônio trazido do restante do mundo.
+Ao criar/introduzir um cidadão na simulação, ele pode entrar com um saldo inicial explícito. Para migrantes vindos do exterior, esse saldo é transferido da **Reserva Global** e representa patrimônio trazido do restante do mundo; não há criação de moeda.
 
 O valor inicial não deve ser mágico nem infinito:
 - precisa seguir uma regra de geração;
