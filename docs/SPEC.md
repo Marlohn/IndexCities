@@ -67,6 +67,7 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - Patrimônio sem sucessor continua podendo permanecer explicitamente **sem proprietário**; a Reserva Global não se torna proprietária do ativo físico.
 - Quando um ativo sem proprietário é vendido, o pagamento entra na Reserva Global com a origem registrada.
 - A Reserva Global não substitui destinatários reais: se existe um SIM, empresa, proprietário, fornecedor ou outro recebedor econômico concreto, o dinheiro deve ir para esse agente.
+- Em importações, o pagador real transfere dinheiro para a Reserva Global; em exportações, o pagamento sai da Reserva Global e vai para o vendedor/recebedor econômico real. Esses fluxos não criam nem destroem moeda.
 - O valor inicial total, sua distribuição inicial e as faixas de capital dadas a novos migrantes/empresas são parâmetros de calibração e devem ser reproduzíveis pela seed.
 
 ### Empresas e economia
@@ -570,7 +571,8 @@ A SPEC deve crescer com o produto, **não antes dele**.
 ### Exportação automática
 
 - No escopo inicial, excedentes elegíveis podem ser exportados automaticamente.
-- Toda receita e movimentação relevante de exportação deve aparecer de forma clara nas finanças da cidade.
+- O pagamento externo sai da Reserva Global e vai para o agente econômico que efetivamente vende a mercadoria; exportação privada não vira automaticamente receita do Caixa da Cidade.
+- Toda receita e movimentação relevante de exportação deve aparecer de forma clara na leitura econômica/financeira da cidade.
 
 
 ### Disponibilidade, reserva e prioridade de materiais de obra
