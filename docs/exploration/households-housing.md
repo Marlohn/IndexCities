@@ -80,14 +80,14 @@ Se um detalhe não muda nenhum sistema relevante, ele pode permanecer agregado.
 
 ## Valor imobiliário e propriedade de lotes
 
-> **Revisão humana desta seção:** PARCIALMENTE REVISADO — a utilização do valor de mercado como base de impostos foi confirmada pelo responsável; fatores e método de avaliação abaixo seguem **PENDENTES** de revisão.
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — o responsável confirmou valor de mercado dinâmico como base de impostos; critérios específicos, pesquisa e método de avaliação abaixo seguem **PENDENTES** de revisão.
 
 
 **Status:** em exploração.
 
 Ainda não está decidido se cada lote terá proprietário individual e valor de mercado próprio.
 
-Já está decidido na SPEC que a **tributação de imóveis residenciais, comerciais e industriais incide sobre o valor de mercado**, com alíquota da categoria escolhida pelo jogador. Ainda não está definido como calcular ou atualizar esse valor imobiliário; tamanho pode ser um fator de avaliação, mas não é a base direta do imposto.
+Já está decidido na SPEC que a **tributação de imóveis residenciais, comerciais e industriais incide sobre o valor de mercado**, com alíquota da categoria escolhida pelo jogador. Também foi confirmado que **o valor dos imóveis é dinâmico**: pode subir ou descer com condições concretas da cidade, como localização, acesso a serviços, poluição e demanda. O modelo deve explicar as causas da variação ao jogador e não criar/destruir moeda: reavaliação patrimonial não é movimentação financeira. Ainda não foram decididos fórmula, pesos, frequência de atualização ou diferenciação precisa entre tipos de imóvel; tamanho pode ser um fator de avaliação, mas não é a base direta do imposto.
 
 Fatores candidatos a investigar com dados e referências reais:
 
