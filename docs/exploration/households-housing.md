@@ -440,6 +440,12 @@ Caixa da Cidade financia a obra + materiais
 → aluguel vai ao proprietário real
 → cidade recebe impostos e outras receitas públicas definidas
 
+### Migração pioneira — decisão aprovada
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — o responsável escolheu explicitamente a entrada por oportunidades concretas (alternativa C) em 2026-10-08; esta síntese complementar da IA não foi revisada integralmente.
+
+A [SPEC](../SPEC.md) agora permite que famílias provenientes do exterior avaliem a migração **sem exigir emprego já garantido**, desde que exista possibilidade real de moradia sob as regras vigentes e que tragam capital próprio explícito, transferido da Reserva Global. A oferta efetiva de vagas e a expectativa de oportunidades influenciam a decisão, mas não se convertem em emprego, salários ou moradores fictícios. Uma família pode perder suas reservas, ficar desempregada ou sair da cidade se as condições não se concretizarem. Moradias disponíveis podem apoiar a avaliação de empresas, **sem serem confundidas com consumidores já presentes**. Critérios de risco, pesos e tempo de avaliação ficam para calibração; não há garantia de migrantes nem gestão manual de entradas.
+
 ### Por que o dinheiro não volta ao Caixa
 
 Enviar o valor da primeira aquisição de volta ao Caixa reciclava o capital de construção e diminuía demais a importância dos impostos. A cidade deve sentir o custo de desenvolver moradia e recuperar capacidade financeira principalmente pela atividade econômica e receitas públicas ao longo do tempo.
