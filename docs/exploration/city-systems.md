@@ -52,11 +52,13 @@ A regra de profundidade continua a mesma: só detalhar quando isso gerar consequ
 
 ---
 
-### Hipótese transversal: escolha do SIM quando emprego muda de endereço (2026-10-08)
+### Decisão transversal: escolha do SIM quando emprego muda de endereço (2026-10-08)
 
-> **Revisão humana desta seção: PENDENTE.** O responsável observou que a possibilidade de continuar ou sair após mudança de local de trabalho deveria valer para funcionários privados **e** públicos. A regra de decisão individual concreta abaixo ainda não foi confirmada e não modifica a SPEC.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou explicitamente a **opção A**, reavaliação automática para trabalhadores **privados e públicos**; a regra de produto foi registrada na SPEC. Os casos de paralisação/continuidade operacional e parâmetros técnicos continuam em exploração.
 
-**Direção em avaliação:** se o **empregador e a vaga continuarem existindo**, cada SIM afetado por uma alteração significativa do endereço pode reavaliar seu vínculo usando condições reais como tempo de viagem, disponibilidade de transporte, salário, turno e alternativas de emprego. Caso contrário, não há vaga garantida a preservar. Disparar essa reavaliação no evento da mudança, com regras usuais de procura por emprego e sem demissão automática universal, rotinas contínuas extras ou gestão individual do jogador. A continuidade da operação enquanto o prédio novo é construído e a frequência da decisão de emprego ainda requerem definição/coerência com a SPEC.
+**Confirmado na SPEC:** quando ocorre mudança efetiva do endereço de trabalho, cada SIM afetado reavalia automaticamente a permanência no emprego, considerando novo trajeto/tempo de viagem, transporte, salário, turno e oportunidades reais. Sem demissão coletiva automática, retenção obrigatória ou seleção manual pelo jogador. **Só é possível continuar se empregador e vaga persistirem**; se o SIM sair, apenas uma vaga que ainda exista volta a ficar disponível para contratação normal. Aplicar a decisão pelos mecanismos normais do mercado de trabalho e em resposta ao evento de mudança, sem varredura contínua por todos os cidadãos. O resultado deve afetar capacidade real de escola, hospital ou outro estabelecimento e produzir deslocamento/efeitos sociais legíveis.
+
+**Em aberto, sem autorização para suposição:** quando a instituição/empresa continua operando durante a obra ou fica temporariamente inativa, o destino de vagas e salários nesse intervalo, e critérios finos de permanência. Não confundir o direito global de reavaliar com garantia de continuidade institucional.
 
 ## Turnos de trabalho e operação contínua
 
