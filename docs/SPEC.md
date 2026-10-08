@@ -229,6 +229,9 @@ A primeira base de recursos físicos do jogo será composta por oito categorias:
 ### Construção e obras
 
 - Prédios e infraestrutura não aparecem instantaneamente prontos.
+- **Ritmo de construção orientado ao gameplay:** quando materiais, acesso e equipe estão disponíveis, a execução da obra deve ser **relativamente rápida e sem espera artificial longa apenas por realismo**. A duração total continua sujeita a entregas físicas, deslocamentos, disponibilidade e capacidade real das equipes, porte da construção e gargalos logísticos; esses fatores produzem atrasos reais e explicáveis, sem teletransporte de materiais ou construção instantânea.
+- Múltiplas obras podem avançar em paralelo **dentro da capacidade real disponível**, enquanto o jogador realiza outras atividades; não exigir gerenciamento manual de cada entrega ou trabalhador para fazer uma obra progredir. Se uma obra parar ou atrasar significativamente, o jogo deve mostrar a causa concreta de forma simples.
+- **Tempos exatos por porte, taxas de progresso e efeito quantitativo das equipes permanecem para calibração e validação do jogo integrado**, sem fixar agora faixas de segundos/minutos nem criar um modo alternativo de construção.
 - Construções passam por uma fase real de obra.
 - Toda obra possui custo em **dinheiro e materiais**.
 - Obras consomem materiais reais da cidade.
