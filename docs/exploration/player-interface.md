@@ -337,6 +337,20 @@ O prédio não aparece magicamente pronto.
 
 Após escolher um modelo no catálogo, **continuar posicionando novos prédios iguais sem reabrir o catálogo** entre confirmações. **Pipeta/copiar:** escolher o modelo de uma construção existente para iniciar posicionamento de **outra obra do mesmo tipo**. Cada novo prédio continua submetido às regras normais de prévia, espaço, acesso, recursos, custos e construção física; o comando **não duplica prédio concluído, empresa, proprietário, funcionários, moradores, estoque ou progresso anterior**. A alternativa de desenhar uma área e criar vários prédios em uma única confirmação **não foi aprovada** por esta decisão. Fonte oficial: [SPEC](../SPEC.md).
 
+#### Pesquisa complementar: ferramentas de construção em escala (2026-10-08)
+
+> **Revisão humana desta subseção: PENDENTE.** **Já aprovado (3B):** repetir posicionamento e usar pipeta para iniciar nova construção do mesmo tipo, com **prévia, confirmação, custo, materiais e obra próprios para cada prédio**. **Não aprovado:** confirmar vários imóveis de uma só vez, planejar lote automático, zoneamento, cópia de proprietários, estoque ou empresa.
+
+**Achado:** o problema de uma cidade grande não é apenas reabrir o catálogo; **snap agressivo, dimensões imprevisíveis, acesso falso, lotes irregulares e dificuldade de corrigir projetos** podem causar mais fricção que a contagem de cliques. Discussões públicas em [Manor Lords (2025)](https://www.reddit.com/r/ManorLords/comments/1ogxg36) e [Manor Lords (2026)](https://www.reddit.com/r/ManorLords/comments/1was5pz) ilustram dores de alinhamento e snapping — **relatos anedóticos**, não desempenho medido de uma solução. [Factorio — ghost (wiki oficial)](https://wiki.factorio.com/Ghost) demonstra que planejamento pode reservar espaço de uma construção futura sem criar instantaneamente o objeto completo: robôs e recursos físicos continuam necessários. A analogia não autoriza copiar blueprints para IndexCities.
+
+**Ordem recomendada de validação, sem requisito novo:**
+1. Fazer a **repetição/pipeta já aprovada** ser confortável, com snap ajustável conforme a SPEC, feedback de acesso e custo no cursor e sem abrir nova janela para cada simples ajuste.
+2. Observar **dez casas diferentes**, **cinquenta iguais**, **rua irregular** e **correção de projetos**. Medir gestos, erros/posicionamentos rejeitados, tempo, retrabalho, clareza de valores e sobrecarga visual — não apenas tamanho da cidade.
+3. Caso ainda haja fricção, pesquisar **prévia assistida de alinhamento/sequência**, inicialmente sem confirmação coletiva. Isso pode preservar uma obra e decisão por prédio, sem automatizar bairro. **A forma exata da nova ferramenta não foi aprovada.**
+4. **Confirmação única de lote** é hipótese posterior que **altera a regra vigente de confirmação individual**; antes de promovê-la, decidir explicitamente orçamento, reserva de materiais, ordem de obras, invalidez parcial, cancelamento e responsabilidade pelo custo total. Não implementá-la como mero detalhe de UI.
+
+**Síntese (PENDENTE):** preservar autoria e economia física, otimizar precisão e fluidez **antes** de criar novos modos de automação. **Confiança alta** nessa ordem de avaliação; **moderada** na necessidade real de construção em lote. Não elevar isso a pergunta P0 se o 3B resolver o problema.
+
 ### 4. Rua
 
 Primeiro modo: L assistido, descrito acima.
