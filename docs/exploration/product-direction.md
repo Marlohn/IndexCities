@@ -192,6 +192,21 @@ Critério principal: identificar desafios opcionais **distintivos, relevantes pa
 
 O documento [exploration/genre-benchmark.md](genre-benchmark.md) já contém evidências sobre endgame e progressão e deve ser uma das fontes dessa pesquisa, mas não substitui uma rodada dedicada.
 
+### Pesquisa adicional: preservar sandbox, dar propósito sem missões artificiais (2026-10-08)
+
+> **Revisão humana desta subseção: PENDENTE.** A direção **C/1A/2A** e a apresentação **3C (aviso discreto + painel opcional)** já estão aprovadas na [SPEC](../SPEC.md); a triagem abaixo é pesquisa/recomendação, **não** uma nova escolha de produto.
+
+**Achado central:** uma cidade economicamente estável pode continuar interessante para jogadores que gostam de construir, planejar e otimizar, mas outros perdem o propósito quando resta apenas crescer numericamente. Evidência qualitativa com opiniões divergentes: [comunidade Anno 1800 — “What's the endgame?”](https://www.reddit.com/r/anno/comments/1cmcu2v/whats_the_endgame_in_anno_1800/) e [expectativa de boa orientação sem punição opaca](https://www.reddit.com/r/anno1800/comments/1latuwi/). Essas discussões **não representam estatística do público**. [Against the Storm — Deeds (wiki oficial)](https://wiki.hoodedhorse.com/Against_the_Storm/Deeds) mostra reconhecimento e metas alternativas, mas seus bônus/desbloqueios e reset das cidades **não são modelos aprovados** para o IndexCities.
+
+**Recomendação comparativa (PENDENTE):** em vez de reabrir sandbox versus campanha ou inventar missões, priorizar qualidade dos **desafios emergentes já escolhidos**:
+1. **Sinal real relevante e durável:** condições verificáveis da cidade (abastecimento, desemprego, acessibilidade, insolvência) que não sejam mero ruído momentâneo.
+2. **Ação possível e cadeia causal:** o jogador consegue entender a origem da condição e como uma intervenção real pode mudar o resultado; desafio não substitui alerta urgente nem presume solução única.
+3. **Conclusão verificável:** evidência observável de mudança efetiva; evitar reconhecer acontecimentos simulados apenas para conceder troféu.
+4. **Memória legível, não rastreamento ilimitado:** investigar histórico resumido de acontecimentos significativos em bairros, famílias, empresas e serviços, com consulta sob demanda; não criar sistema novo de “história” como requisito sem decisão.
+5. **Sem microgestão:** aviso discreto/painel opcional 3C, sem aceitação obrigatória, cobrança extra a cada ciclo, recompensas monetárias ou desbloqueios.
+
+**O que medir no jogo integrado:** após estabilizar emprego/abastecimento, verificar se mudanças urbanísticas continuam produzindo decisões interessantes; se desafios agregam entendimento/propósito ou apenas renomeiam alertas; se o painel é ignorável sem perder diagnóstico. **Confiança alta** na preservação da direção aprovada; **moderada** no valor de histórico e em quais condições específicas merecem ser desafios. Não reabrir essas três escolhas como perguntas P0 de princípio.
+
 ---
 
 ---
