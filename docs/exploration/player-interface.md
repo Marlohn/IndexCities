@@ -259,9 +259,15 @@ Um desafio emergente relevante pode emitir **um aviso discreto**, sem interrompe
 
 ### Modelos visuais compartilhados para negócios — opção 2B aprovada (2026-10-08)
 
-> **Revisão humana da seção: PARCIALMENTE REVISADO.** Reuso de modelos-base e a direção de catálogo com negócios variados e regras econômicas compartilhadas foram aprovados; **um asset universal, lista de atividades, número de modelos e distribuição quantitativa continuam em debate**.
+> **Revisão humana da seção: PARCIALMENTE REVISADO.** Modelos-base compartilhados e **famílias visuais iniciais 4B** (loja pequena, comércio médio e exceções físicas para postos/hotéis quando necessárias) foram aprovados na SPEC, assim como **o catálogo de dez negócios**. Quantidade de modelos/variantes 3D, tamanho dos lotes, apresentação exata e distribuição continuam em pesquisa.
 
 Múltiplos comércios e prestadores podem usar **mesmo volume-base de construção**, com letreiro, fachada, materiais, cor e detalhes personalizados. Trocar ou aprimorar o asset **não** recria empresa, caixa, empregados nem muda automaticamente seu tipo econômico. O usuário levantou que bairros ficam repetitivos tanto com 2–3 modelos como com a mesma silhueta em todos os lotes: considerar **mais de uma proporção e conjunto modular de fachadas**, sem prometer quantidade. Ver [exploração de negócios e assets](companies-markets.md#atualizacao-empresas-diferentes-com-poucos-modelos-base-2026-10-08).
+
+### Falta de verba: priorização automática de infraestrutura — opção 5A aprovada (2026-10-08)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou prioridade automática para serviços essenciais quando faltar recurso; telas e critérios de gravidade ainda não foram especificados.
+
+Mostrar no orçamento/painel de serviços **quais operações essenciais tiveram recursos preservados, quais perderam capacidade e por quê**, com déficit e dependências reais, em **visão agregada e detalhes sob demanda**. O jogo não pede ao jogador para selecionar cada rua ou instalação a manter, nem esconde que um serviço essencial pode falhar se não houver pessoal, insumo ou verba. Evitar popup repetitivo por estrutura.
 
 ### Canto de notificações
 
