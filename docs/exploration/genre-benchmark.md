@@ -8,7 +8,7 @@
 >
 > Este documento é uma **referência comparativa do gênero city builder**.
 >
-> Ele reúne evidências externas sobre o que outros jogos, desenvolvedores e comunidades fizeram, o que funcionou, o que falhou e quais trade-offs apareceram.
+> Ele reúne evidências externas de jogos, desenvolvedores, comunidades **e cidades reais**, comparando acertos, falhas, trade-offs de gameplay e lacunas urbanas. As rodadas de investigação transversal pertencem a esta fonte exploratória, não à SPEC.
 >
 > **Não é uma fonte de requisitos do IndexCities.** A fonte de verdade do produto continua sendo [SPEC.md](../SPEC.md). Hipóteses e decisões ainda abertas continuam em [EXPLORATION.md](../EXPLORATION.md).
 
@@ -40,7 +40,7 @@ Este documento não precisa ser consultado em toda mudança pequena.
 Ele deve ser revisitado especialmente quando houver um marco que altere significativamente a experiência do jogo, por exemplo:
 
 1. **antes de fechar o loop principal**;
-2. **depois do primeiro vertical slice realmente jogável**;
+2. **quando o conjunto integrado já puder ser jogado e observado**;
 3. **quando cidadãos, economia, construção e trânsito começarem a interagir entre si**;
 4. **quando uma cidade média já puder ser jogada por tempo suficiente para aparecer microgestão e repetição**;
 5. **quando o late game começar a existir**;
