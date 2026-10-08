@@ -523,6 +523,22 @@ Podemos futuramente explorar sucata/reciclagem se isso criar gameplay suficiente
 
 **Alerta sobre gameplay e coerência:** mostrar custos e consequências humanas relevantes antes de confirmação não obriga o jogo a transformar todo arrasto em uma calculadora especulativa. A cidade paga indenização e obra com recursos reais; a valorização do imóvel novo é uma **estimativa de ativo futuro**, não receita automática para a prefeitura ou o antigo dono. Desincentivar min-max artificial com causalidade, custos reais e incerteza de mercado, não escondendo informação essencial. A prioridade de recompra e seu preço ainda dependem de decisão humana explícita.
 
+#### Discussão de ritmo de realocação — risco de microgerenciamento interno (2026-10-08)
+
+> **Revisão humana desta seção: PENDENTE.** O responsável **questionou** o tempo real para o jogador e o custo da proposta de manutenção seletiva de salários/vínculos em paralisação, **sem escolher uma nova opção**. A opção C de continuidade condicionada do prédio antigo permanece aprovada na SPEC. **Não promover números, suspensão de salário nem regras adicionais antes de decisão explícita.**
+
+**Ponto central:** diferenciar (1) **tempo total da obra/preparação** de uma construção substituta, sujeito a materiais/entregas/equipes reais já aprovados na SPEC; (2) **tempo em que o estabelecimento antigo ainda pode operar**, já coberto pela continuidade condicionada C; e (3) **tempo efetivo de interrupção** entre o encerramento da operação no antigo endereço e uma eventual retomada viável no destino. A soma de dias/meses do calendário de simulação não equivale a tempo de espera passiva em segundos reais para o jogador, pois a obra ocorre em paralelo às outras decisões.
+
+**Pesquisa externa contextual, não parâmetro do jogo:** em mudanças de escritórios, prestadores descrevem planejamento de várias semanas (um plano de 90 dias é exemplo), com fechamento concentrado entre sexta-feira e segunda-feira: [Mobilix (2026)](https://mobilixmoving.com/blog/office-relocation-timeline-planning) e [Layner Group (2026)](https://laynergroup.com/blog/en/office-relocation-without-stopping-work-an-8-week-plan). Já um projeto complexo de transferência de planta industrial pode durar meses, com etapas de transição e produção parcialmente sobrepostas: [InterimProjects (2026)](https://www.interimprojects.eu/practice-areas/plant-closure-relocation/). **Esses prazos são exemplos comerciais, não dados universais nem alvos de balanceamento**; distinguem preparação prolongada de interrupção produtiva efetiva.
+
+**Hipótese de design para teste, não aprovada:** preparar a obra nova e a logística necessária **enquanto o prédio antigo funciona**, sempre que fisicamente possível; concentrar a interrupção na transição final, **sem pausa artificial apenas para dramatizar uma mudança**. Quando a área original precisar ser liberada antecipadamente, a opção C já admite interrupção real que pode ser maior, inclusive por falta de materiais, acesso, operador ou dinheiro. Não garantir tempo máximo por teletransporte de estoque, empregados, equipamentos, serviços ou edifícios; se a transição rápida requer transferências físicas, considerar se a infraestrutura e a sequência viabilizam essas transferências, sem camada burocrática nova.
+
+**Risco de gameplay:** se o downtime normal for breve, não faz sentido introduzir automaticamente um novo módulo de contratos, manutenção parcial de folha, reservas de vagas, decisões trabalhistas repetidas e várias exceções por empresa. Salários efetivamente devidos, caixa real, falência e vagas existentes continuam regras da SPEC; **salários/vínculos durante paralisações significativas seguem abertos**. Só decidir complexidade adicional se um cenário real de obra bloqueada justificar consequências observáveis que as regras atuais não cubram. A opção A global de reavaliação do emprego no endereço novo continua aprovada.
+
+**Tempo em tela e teste:** a SPEC exige obras relativamente rápidas, mas **não fixou segundos/minutos**. A [exploração de construção](construction-materials-logistics.md#ritmo-de-construção-e-espera--pesquisa-exploratória-2026-10-08) contém faixas de segundos/minutos **propostas pela IA e não aprovadas**; não confundir duração completa de obra com downtime. Avaliar com cronômetro do jogador e ciclos simulados distintos: tempo total, interrupção efetiva, cliques, risco de parada longa, conflitos espaciais, destino de estoque, porcentagem de empresas que reabrem e impacto econômico por tipo. Evitar novos números definitivos sem observação do gameplay.
+
+**Tensão documental a resolver na implementação, sem alterar a decisão:** a antiga hipótese abaixo de que a realocação poderia dispensar “a mesma cadeia logística” **não pode suplantar a SPEC atual**, que já exige obra substituta com custo, materiais, trabalhadores e logística reais. A ferramenta pode compactar **cliques**, não criar transporte ou construção instantâneos.
+
 ### Caso C — prédio concluído e jogador quer apenas mudar de lugar
 
 Não devemos automaticamente obrigar o jogador a:
@@ -552,7 +568,7 @@ Para o jogador, é uma única ação fluida.
 
 Para a apresentação, parece uma mudança física e não um teleporte instantâneo.
 
-Para a simulação, não precisamos obrigatoriamente reproduzir uma reconstrução completa com o mesmo tempo e a mesma cadeia logística de uma obra nova.
+**Hipótese histórica anterior à SPEC atual (não aprovada):** cogitou-se não reproduzir uma reconstrução completa com o mesmo tempo e cadeia logística de uma obra nova. **Isso não autoriza dispensar os custos e fluxos físicos reais definidos posteriormente na SPEC.** Uma experiência de interface abreviada deve continuar compatível com obra e logística reais; a duração exata está em calibração.
 
 ### A realocação pode ser uma abstração deliberada
 
