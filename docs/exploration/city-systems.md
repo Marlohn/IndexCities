@@ -151,7 +151,7 @@ O sistema deve se conectar à logística já decidida, em vez de funcionar como 
 
 **Status:** fora do escopo atual, mas preservadas para reavaliação futura.
 
-- assistência social municipal, incluindo abrigos e programas de apoio;
+- assistência social municipal, incluindo abrigos e programas de apoio — **explicitamente fora do primeiro modelo** após escolha do escopo inicial para população sem moradia; melhorias futuras permanecem em exploração, sem implementação aprovada (ver `households-housing.md`);
 - saúde mental e dependência química.
 
 Esses tópicos não devem ser implementados agora. Podem ser revisitados futuramente quando os sistemas básicos de população, saúde, moradia e orçamento já estiverem maduros.
