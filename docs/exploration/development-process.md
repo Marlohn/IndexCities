@@ -55,6 +55,16 @@ Na prática:
 
 A pesquisa confirmou que SDD normalmente significa colocar intenção e especificação antes da implementação. Ferramentas como Spec Kit estruturam isso em várias etapas, mas o IndexCities adota apenas o princípio necessário, sem copiar a cerimônia inteira.
 
+### SPEC viva durante todo o ciclo do jogo — direção confirmada
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — o responsável confirmou a regra do processo em conversa; a redação consolidada pela IA ainda não foi revisada integralmente. Regras oficiais estão em `AGENTS.md`.
+
+O contrato da SPEC **não termina com a primeira implementação**. Ele vale para cada feature, mudança de regra, correção de bug, refatoração e manutenção futura. Antes de escrever código, a IA deve localizar a regra já documentada que a mudança realiza ou preserva. Encontrar comportamento ausente, ambíguo ou contraditório **bloqueia somente o código dependente da lacuna**: expor o problema, apresentar consequências/opções e obter a decisão humana; registrar a decisão na SPEC antes de implementar. Não há permissão para completar regra de produto por suposição.
+
+Um bug cujo comportamento correto já está claro na SPEC pode ser corrigido usando essa regra, sem gerar alteração cerimonial no documento. Da mesma forma, refatorações e otimizações podem escolher detalhes internos compatíveis com a arquitetura, desde que preservem o comportamento especificado. Uma decisão estrutural pertence à ARCHITECTURE, mas nunca substitui a aprovação de gameplay na SPEC.
+
+**Referência exploratória nova — revisão humana desta nota: PENDENTE.** O GitHub Spec Kit diferencia modelos em que a especificação é descartada após o código, preservada como âncora de mudanças futuras ou mantida como contrato vivo atualizado antes das mudanças. O IndexCities usa a SPEC persistente e viva, mas **não adota o framework** nem artefatos adicionais por isso. Referências: [Spec Persistence Models](https://github.com/github/spec-kit/blob/main/docs/concepts/spec-persistence.md) e [Spec Kit](https://github.github.com/spec-kit/). Essas referências servem como contexto de pesquisa, não como novas regras.
+
 ### Primeira entrega integrada — direção confirmada
 
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — o responsável confirmou **SPEC antes do desenvolvimento**, **primeira implementação integrada** e **validação global posterior**; as considerações técnicas abaixo ainda não foram revisadas integralmente.
