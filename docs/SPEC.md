@@ -556,6 +556,12 @@ A primeira base de recursos físicos do jogo será composta por oito categorias:
 - O mapa mantém apenas os elementos naturais já definidos e a conexão externa; nenhum edifício municipal, incluindo o Pátio Municipal de Obras, começa construído.
 
 
+### Bootstrap sistêmico de moradores e empresas
+
+- **Entrada por oportunidades concretas, sem ordem obrigatória entre moradores e empresas:** no início da cidade, famílias e empresas candidatas vindas do exterior podem considerar oportunidades economicamente plausíveis que ainda não se realizaram por completo. Empresas podem adquirir prédios econômicos concluídos mesmo antes de existir clientela ou mão de obra local suficiente, avaliando **condições observáveis** como moradias disponíveis, acessibilidade, infraestrutura, logística, custos e possibilidade de atrair trabalhadores e compradores. Famílias podem migrar mesmo sem emprego previamente ocupado/garantido, desde que exista uma possibilidade real de moradia conforme as regras de aquisição e que seus recursos monetários explícitos permitam assumir o risco; vagas efetivamente ofertadas, serviços, custos e condições da cidade influenciam a escolha.
+- **Potencial não equivale a demanda realizada:** residências vazias não contam como clientes, vagas sem ocupantes não contam como trabalhadores e nenhuma expectativa autoriza vendas, salários, produção, contratação, migração ou abastecimento fictícios. A chegada de famílias e empresas continua voluntária, condicionada à avaliação econômica, e pode falhar; não existe ocupação, crescimento, rentabilidade ou resgate garantido.
+- Os capitais externos continuam saindo da **Reserva Global**, respeitando saldo disponível e oferta monetária fixa; compra de imóveis, estoque, insumos, água/energia, transporte e demais operações seguem as regras físicas e monetárias normais. O jogador não aprova migrações ou aquisições uma a uma; a simulação deve distinguir **oportunidade potencial** de condições efetivamente atendidas e explicar por que uma entrada ocorreu, não ocorreu ou fracassou. Pesos, periodicidade de avaliação e reservas financeiras mínimas ficam para calibração, sem sistema de promessas ou contratos prévios.
+
 ### Comércio exterior e logística externa
 
 - Caminhões vindos do exterior podem ser operados por motoristas externos, que não pertencem à população simulada da cidade.
