@@ -398,7 +398,7 @@ A primeira categoria deveria ser fácil. A segunda não deve virar uma máquina 
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
 
 
-**Status: exploração de ferramentas de movimentação/realocação ainda aberta.** A regra de **materiais recuperados ao cancelar obras está confirmada na SPEC**: materiais apenas reservados e ainda não entregues são liberados; materiais já entregues ao canteiro foram consumidos e não retornam. **Em 2026-10-08 o responsável reafirmou explicitamente que prefere manter a perda do material entregue**, por considerar baixa a contribuição à gameplay de rastrear e recuperar sobras. O argumento de economia de CPU é uma hipótese, não a razão técnica principal da decisão: a simplificação de estados, devolução logística, UX e implementação é mais robusta. O cenário de recuperação integral abaixo permanece como **alternativa exploratória conflitante e não aprovada**, preservada apenas para histórico, sem autoridade para reabrir a SPEC automaticamente.
+**Status: exploração de ferramentas de movimentação/realocação ainda aberta.** **Dinheiro do cancelamento foi decidido em 2026-10-08:** valor comprometido ainda não pago é liberado no Caixa; pagamentos efetivos não são estornados. A interface deve mostrar quanto será liberado e quanto já foi gasto, sem exigir que o jogador controle pagamentos individualmente. A regra de **materiais recuperados ao cancelar obras está confirmada na SPEC**: materiais apenas reservados e ainda não entregues são liberados; materiais já entregues ao canteiro foram consumidos e não retornam. **Em 2026-10-08 o responsável reafirmou explicitamente que prefere manter a perda do material entregue**, por considerar baixa a contribuição à gameplay de rastrear e recuperar sobras. O argumento de economia de CPU é uma hipótese, não a razão técnica principal da decisão: a simplificação de estados, devolução logística, UX e implementação é mais robusta. O cenário de recuperação integral abaixo permanece como **alternativa exploratória conflitante e não aprovada**, preservada apenas para histórico, sem autoridade para reabrir a SPEC automaticamente.
 
 A prioridade aqui é gameplay. O sistema de obras é profundo, mas corrigir um erro de planejamento não pode exigir que o jogador espere uma longa operação logística ou seja punido por detalhes de materiais parcialmente consumidos que não criam uma decisão interessante.
 
@@ -423,7 +423,7 @@ Isso inclui tanto uma obra que ainda espera materiais quanto uma obra visualment
 
 A simplificação é deliberada: rastrear "material usado versus recuperável" acrescentaria contabilidade e punição, mas provavelmente pouca decisão interessante.
 
-Ainda precisa ser decidido se existe algum custo monetário/trabalho perdido ao cancelar uma obra incompleta. A preferência atual é evitar penalidade relevante enquanto isso não gerar gameplay claro.
+**Essa hipótese não vale como regra atual:** a SPEC decidiu que não há multa fictícia, mas gastos reais já pagos não são devolvidos. Trabalho público já remunerado não gera cobrança duplicada; o detalhamento da liquidação é técnico.
 
 ### Coerência pretendida pela alternativa (não pela regra atual da SPEC)
 
