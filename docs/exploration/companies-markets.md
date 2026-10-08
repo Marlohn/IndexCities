@@ -915,3 +915,17 @@ O principal do empréstimo sai da Reserva Global e entra no Caixa da Cidade. A a
 Nome adotado: **Reserva Global**.
 
 “Oferta monetária global” descreve o total fixo de dinheiro; “Reserva Global” é apenas a parcela que está fora dos agentes econômicos locais naquele momento.
+
+
+## Tributação por categorias — direção confirmada e calibração aberta
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — o responsável confirmou controle de impostos pelo jogador, influência na atratividade e cobrança somente após existir proprietário privado; consequências detalhadas abaixo são apenas hipóteses da IA, pendentes de revisão.
+
+**Decidido na SPEC:** tributos de construções por uso residencial, comercial ou industrial, com diferenciação possível entre densidades baixa/alta; o jogador ajusta as categorias sem administrar contribuintes individualmente. A cobrança começa com proprietário privado real: SIM proprietário residencial ou empresa proprietária de estabelecimento comercial/industrial. Não criar pagador fictício para imóveis sem proprietário.
+
+**Exploração pendente:**
+- Determinar se as seis combinações uso × densidade terão alíquotas independentes ou controles mais agregados, e como evitar excesso de sliders.
+- Avaliar efeitos causais diferenciados: impostos residenciais podem afetar capacidade de pagar moradia e decisão de compra/migração; impostos comerciais/industriais podem afetar margem de operação, demanda por estabelecimentos, contratação e sobrevivência. Efeitos não são regras confirmadas.
+- Definir se imposto tem base fixa por imóvel, valor estimado ou outra grandeza, assim como periodicidade, inadimplência e tratamento de ocupação sem propriedade.
+- Não confundir isenção de imposto em ativo ainda sem proprietário com eventual custo de manutenção: este último não foi decidido.
+- Evitar indicador mágico de atratividade: as consequências devem ser explicáveis por custos e decisões efetivos dos SIMs/empresas.
