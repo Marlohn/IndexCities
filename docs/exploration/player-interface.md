@@ -539,6 +539,8 @@ Podemos futuramente explorar sucata/reciclagem se isso criar gameplay suficiente
 
 **Tensão documental a resolver na implementação, sem alterar a decisão:** a antiga hipótese abaixo de que a realocação poderia dispensar “a mesma cadeia logística” **não pode suplantar a SPEC atual**, que já exige obra substituta com custo, materiais, trabalhadores e logística reais. A ferramenta pode compactar **cliques**, não criar transporte ou construção instantâneos.
 
+> **Nota de atualização da exploração — 2026-10-08:** os exemplos e alternativas a seguir são **hipóteses históricas**, anteriores às regras oficiais atuais. A SPEC já exige intervenção indenizada em propriedade privada, **nova obra física com materiais, equipe, logística e custos reais**, desocupação residencial assistida, continuidade operacional condicionada do prédio antigo (C), reavaliação do emprego na mudança efetiva (A) e abertura da casa substituta ao mercado comum. A opção de realocar **somente por um tempo curto e sem custos**, o teletransporte da identidade/estoque e a operação automática da nova sede **não estão aprovados**. Permanecem por decidir os casos de paralisação, salários/vagas, estoques, continuidade de empresas/serviços e o ritmo percebido da transição. Esta seção serve de histórico, não de fonte para implementar comportamento.
+
 ### Caso C — prédio concluído e jogador quer apenas mudar de lugar
 
 Não devemos automaticamente obrigar o jogador a:
@@ -912,7 +914,7 @@ Na validação integrada, medir/observar:
 6. Realocação de prédio concluído será permitida para todos os tipos ou só alguns?
 7. Realocar preserva a identidade da empresa/serviço?
 8. O que acontece com moradores, funcionários e estoque durante a realocação?
-9. Há motivo de gameplay suficiente para **reabrir** a regra já aprovada de não recuperar materiais entregues ao canteiro ao cancelar uma obra? A demolição concluída continua sem recuperação conforme a SPEC.
+9. **Regra encerrada na SPEC:** materiais entregues ao canteiro não retornam após cancelamento; demolição concluída não recupera materiais. Não fazer nova rodada de escolha sem consequência nova e relevante. Validar apenas o tratamento de cargas pagas/em trânsito.
 10. Quais overlays entram na primeira implementação integrada?
 11. Hotbar será fixa, configurável ou híbrida?
 12. Quais ações merecem confirmação?
