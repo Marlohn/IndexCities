@@ -581,6 +581,16 @@ A Reserva Global **não é um comprador automático**. A procura continua limita
 
 Baixa oportunidade pode deixar ativos vazios. O jogador não escolhe manualmente o comprador. No primeiro modelo, **a primeira aquisição e as revendas de imóveis acontecem pelo valor de mercado calculado**, sem preço negociado automaticamente; não há venda garantida.
 
+### Bootstrap sistêmico — decisão de produto aprovada
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — a alternativa C (entrada por oportunidades concretas em qualquer ordem) foi explicitamente escolhida em 2026-10-08 e promovida à SPEC. A explicação complementar escrita pela IA não foi revisada integralmente.
+
+Para evitar a dependência circular entre moradores, empregos, empresas e clientes, a **SPEC autoriza** que candidatos externos avaliem oportunidades reais ainda não inteiramente concretizadas: um prédio privado concluído pode atrair empresa mesmo sem clientes/trabalhadores atuais, se houver condições observáveis que tornem viável a expectativa de atrair público e equipe. Uma família pode migrar sem emprego já garantido quando a possibilidade de moradia e seus recursos monetários reais sustentarem essa decisão; vagas abertas podem contribuir para a atratividade.
+
+**Não converter expectativa em demanda efetiva.** Moradias vazias não são compradores presentes; população esperada não equivale a transações; vagas não ocupadas não produzem trabalho. Empresas continuam podendo permanecer sem operador, perder dinheiro e falir; famílias podem não vir, ficar sem emprego ou emigrar. Avaliação de oportunidade não garante venda, contratação, produção, clientela ou chegada de migrantes. A entrada externa usa capital finito da Reserva Global e depende de infraestrutura e acesso reais.
+
+**Custo interno e diagnóstico:** considerar condições da cidade na avaliação de candidatos quando houver eventos relevantes (imóvel disponível, vagas, infraestrutura, mudança de condições), em vez de busca/otimização constante por todos os agentes. Distinguir na interface oportunidade de investimento e resultados realizados; explicar fatores e razões da vacância/fracasso. Frequência, limites e pesos ainda exigem calibração. Esta seção preserva o raciocínio; a regra oficial está em [SPEC](../SPEC.md).
+
 ### Riscos já resolvidos
 
 Foram descartados:
