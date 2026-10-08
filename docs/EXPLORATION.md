@@ -20,6 +20,10 @@ O status abaixo é agregado por documento. `PARCIALMENTE REVISADO` significa que
 
 Auditoria reconciliada em **2026-10-07** com o histórico de conversas disponível. A classificação é conservadora: conteúdo discutido pode ser parcial, mas pesquisa/síntese da IA que não foi lida integralmente continua pendente.
 
+## Mapa transversal de prontidão e prioridades
+
+- **Prontidão para a primeira validação integrada/POC e decisões pendentes** — revisão humana: **PENDENTE**; análise de 2026-10-08; percentuais qualitativos, prioridades P0/P1/P2, riscos e inconsistências para orientar as próximas rodadas de definição. Não é fonte de verdade nem altera a SPEC: [`exploration/project-readiness.md`](exploration/project-readiness.md).
+
 ## Explorações temáticas
 
 - **Direção de produto e princípios de simulação** — revisão humana: **PARCIALMENTE REVISADO**; ativa; identidade, loop, profundidade, legibilidade e microgerenciamento: [`exploration/product-direction.md`](exploration/product-direction.md).
