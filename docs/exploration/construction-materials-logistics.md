@@ -1170,3 +1170,25 @@ Essa direção mantém realismo sistêmico sem transformar o jogo em contabilida
 
 
 ---
+
+
+## Ritmo de construção e espera — pesquisa exploratória (2026-10-08)
+
+> **Revisão humana desta seção:** PENDENTE — pesquisa e recomendações produzidas por IA após uma pergunta sobre duração de obras; nenhuma duração, fórmula de velocidade ou política de pagamento foi aprovada como requisito. A SPEC continua definindo construção não instantânea, materiais/entregas/equipes reais, velocidades de jogo e as regras atuais de cancelamento.
+
+### O que os jogos mostram (comparação qualitativa, não experimento controlado)
+
+- **Timberborn:** construtores transportam materiais, trabalham nos canteiros e disputam capacidade conforme prioridades; o gargalo pode estar em suprimento, acesso e disponibilidade de equipes. Fonte: [Wiki oficial, Construction](https://timberborn.wiki.gg/wiki/Construction_sites).
+- **Against the Storm:** colocação de projeto, prioridades e construtores disponíveis; muitos projetos podem ser movidos gratuitamente antes da conclusão, reduzindo punição por planejamento. Fonte: [Wiki oficial, Buildings](https://wiki.hoodedhorse.com/Against_the_Storm/Buildings).
+- **Workers & Resources: Soviet Republic:** construção física pode usar equipes/materiais e o jogo também dispõe de construção rápida financiada, fora do modo realista; a demora é parte relevante da experiência mais sistemática. Fontes: [Wiki oficial, Construction](https://wiki.hoodedhorse.com/Workers_Resources_Soviet_Republic/Construction), [Game settings](https://wiki.hoodedhorse.com/Workers_Resources_Soviet_Republic/Game_settings).
+- **Feedback qualitativo divergente:** alguns jogadores relatam satisfação por construir tudo fisicamente; outros relatam espera longa, gargalos opacos e trabalho repetitivo, especialmente no início de *Workers & Resources*. Não tratar comentários como amostra representativa nem como medição de duração ideal. Exemplos: [satisfação](https://www.reddit.com/r/Workers_And_Resources/comments/123rsn1/realistic_mode_is_the_best_mode/), [frustração](https://www.reddit.com/r/Workers_And_Resources/comments/1lu9a5i/im_giving_up_on_realistic_mode/).
+
+### Hipótese recomendada para calibração no jogo integrado
+
+Separar **tempo de suprimento e deslocamento reais** de **trabalho ativo de construção**. Não adicionar espera fixa longa apenas para simular realismo. O primeiro prédio útil precisa aparecer cedo para que o mapa vazio não vire espera sem decisões; obras maiores podem demorar mais, especialmente se a cidade possui poucos trabalhadores, congestionamento ou importação distante. Permitir que diversas obras evoluam em paralelo enquanto o jogador faz outras decisões; sem microgerenciar ordens de cada caminhão ou trabalhador. Um projeto parado deve mostrar a causa concreta: aguardando material, entrega, acesso ou equipe; progresso de obra deve corresponder a trabalho/capacidade real, sem animação como fonte independente de verdade.
+
+**Faixas para testar, não requisito nem benchmark externo:** em velocidade 1, com insumos já no canteiro e equipe disponível, observar se um prédio pequeno concluir em cerca de **20–60 segundos reais**, um médio em **1–2 minutos** e um grande em **2–4 minutos** dá ritmo suficiente. Essas são apenas propostas de design da IA, não tempos confirmados por testes. Entrega e congestionamento podem estender significativamente a duração total; a aceleração x2/x3 aprovada na SPEC reduz a espera percebida. Revisar com teste de gameplay, sobretudo primeiros minutos de cidade vazia, dezenas de obras em paralelo e diferenças de infraestrutura/quadras. Não escolher tamanho de grade, fórmula, limite rígido, modo especial de construção instantânea ou novas opções configuráveis somente a partir desta pesquisa.
+
+### Decisão separada que segue aberta
+
+A questão monetária de **reservar o custo da obra e pagar somente conforme gastos reais**, liberando o que ainda não foi pago ao cancelar, continua apenas uma **recomendação em discussão**; a SPEC ainda não determina a política de devolução monetária. A Reserva Global não deve ser confundida com dinheiro apenas comprometido no Caixa da Cidade. Se houver pagamentos a fornecedores, transportadores ou empregados, eles obedecem a destinatários reais e à conservação monetária; não presumir reembolso universal após o serviço já ter sido prestado. A regra da SPEC sobre materiais entregues/consumidos permanece vigente.
