@@ -159,6 +159,8 @@ Outras respostas à vulnerabilidade financeira ainda possíveis:
 
 A consequência deve criar dinâmica sistêmica sem virar punição arbitrária.
 
+**Alerta de complexidade interna — revisão humana desta nota: PARCIALMENTE REVISADO.** O responsável reforçou que microgerenciamento não significa apenas cliques do jogador: uma rotina invisível de cobrança com múltiplas exceções, prioridades de despesas, contratos e renegociações pode ser complexa demais para manter e simular em larga escala. A permanência da dívida é decisão oficial; **o mecanismo de cobrança ainda não foi decidido**. Antes de promovê-lo, comparar uma regra pequena e rastreável aplicada em ciclos financeiros com alternativas mais detalhadas, considerando número de estados por SIM, frequência de atualização, custo de diagnóstico e consequências reais. Não assumir que cobrança gradual personalizada ou prioridade complexa de despesas foi aprovada.
+
 ### População sem moradia
 
 A população sem moradia deve existir como estado real da simulação, mas a resposta pública ainda está aberta.
