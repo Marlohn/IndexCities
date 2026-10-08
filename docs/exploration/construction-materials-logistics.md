@@ -657,6 +657,14 @@ A folha salarial periódica do Pátio permanece gasto municipal comum; não dupl
 
 **Detalhes ainda técnicos:** como corrigir previsões de custo durante a execução; tratamento físico de pedido já despachado quando a obra é cancelada; calendário de liquidação de cada contraparte. Validar sem impor créditos fictícios, parcelas de custo duplicadas ou microgerenciamento.
 
+### Mover obra inacabada — decisão oficial (opção C, 2026-10-08)
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — o responsável escolheu explicitamente o reposicionamento assistido com preservação das consequências econômicas. Explicações técnicas abaixo ainda não foram revisadas integralmente.
+
+A [SPEC](../SPEC.md) passa a permitir que o jogador **mova uma obra incompleta em uma ação**, em vez de cancelar e recolocar manualmente. A operação segue economicamente o cancelamento da localização anterior e a confirmação de uma nova obra, com prévia de custos e perdas antes da ação. Antes de gastos ou entregas, não existe penalidade extra. Depois, **pagamentos reais não são revertidos, e materiais entregues já são considerados consumidos**; reservas ainda não consumidas são liberadas/recalculadas. Progresso da estrutura física não é teleportado para o novo local. Os caminhões e materiais eventualmente em trânsito conservam existência/rastreabilidade; escolher se devem concluir a entrega anterior, retornar ou seguir nova rota depende do estado logístico efetivo, sem duplicação nem reembolso artificial.
+
+**Limites para validação técnica:** recálculo do preço quando muda a distância; atomicidade da troca de reservas para não comprometer o Caixa duas vezes; entrega já despachada/paga; custo de trabalho local já remunerado; feedback claro da prévia. A realocação de **construções concluídas** não está aprovada por essa decisão.
+
 ### Demolição de construção concluída
 
 Decidido:
