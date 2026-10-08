@@ -665,6 +665,14 @@ A [SPEC](../SPEC.md) passa a permitir que o jogador **mova uma obra incompleta e
 
 **Limites para validação técnica:** recálculo do preço quando muda a distância; atomicidade da troca de reservas para não comprometer o Caixa duas vezes; entrega já despachada/paga; custo de trabalho local já remunerado; feedback claro da prévia. A realocação de **construções concluídas** não está aprovada por essa decisão.
 
+### Risco de espera na realocação: obra total versus paralisação (2026-10-08)
+
+> **Revisão humana desta seção: PENDENTE.** O responsável questionou se uma realocação poderá durar tanto que tornará irrelevante ou onerosa a discussão de salários/vínculos durante paralisação. É uma pergunta de design **não decidida**; não altera os tempos de obra nem a opção C da SPEC.
+
+O tempo de preparar/construir o destino não precisa coincidir com o tempo sem operação do endereço antigo. Quando as condições espaciais permitirem, a opção C já deixa a atividade antiga funcionando durante a construção real do substituto; o período de transição final pode ser curto se materiais, logística e operador efetivamente estiverem prontos. Em casos de demolição necessária antes da conclusão, a interrupção pode se estender, sem inventar prontidão ou material instantâneo. Recomenda-se **medir separadamente** duração da obra, duração da paralisação, segundos reais de espera perceptível para o jogador e número de ações manuais, em vez de adotar prazo uniforme de mudança. As faixas de duração propostas na pesquisa de ritmo de construção ao fim deste arquivo **não são requisitos** e referem-se à construção ativa, não à paralisação empresarial.
+
+**Atenção ao custo de simulação:** antes de criar mecânicas de folha salarial e retenção seletiva apenas para a realocação, confrontar a duração real de paralisação com regras já existentes de salários periódicos, emprego, caixa e falência. O usuário não aprovou nenhuma alternativa de manutenção de pessoal para o período parado. Estoques, equipamentos e trabalhadores continuam físicos; não justificar teletransporte como atalho para atingir um prazo inventado.
+
 ### Realocação de estabelecimento concluído — continuidade condicionada aprovada (2026-10-08)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou a **opção C** de continuidade operacional condicionada durante a realocação; regras finas de compatibilidade entre duas obras, sequência de mudança e destino de estoques continuam não definidas.
