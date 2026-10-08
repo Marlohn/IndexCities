@@ -259,7 +259,7 @@ Um desafio emergente relevante pode emitir **um aviso discreto**, sem interrompe
 
 ### Modelos visuais compartilhados para negócios — opção 2B aprovada (2026-10-08)
 
-> **Revisão humana da seção: PARCIALMENTE REVISADO.** Reuso de modelos-base foi aprovado; um asset universal, quantos modelos/tipos e como distribui-los permanecem em debate.
+> **Revisão humana da seção: PARCIALMENTE REVISADO.** Reuso de modelos-base e a direção de catálogo com negócios variados e regras econômicas compartilhadas foram aprovados; **um asset universal, lista de atividades, número de modelos e distribuição quantitativa continuam em debate**.
 
 Múltiplos comércios e prestadores podem usar **mesmo volume-base de construção**, com letreiro, fachada, materiais, cor e detalhes personalizados. Trocar ou aprimorar o asset **não** recria empresa, caixa, empregados nem muda automaticamente seu tipo econômico. O usuário levantou que bairros ficam repetitivos tanto com 2–3 modelos como com a mesma silhueta em todos os lotes: considerar **mais de uma proporção e conjunto modular de fachadas**, sem prometer quantidade. Ver [exploração de negócios e assets](companies-markets.md#atualizacao-empresas-diferentes-com-poucos-modelos-base-2026-10-08).
 
