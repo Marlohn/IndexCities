@@ -251,6 +251,18 @@ Camadas seguintes:
 
 Isso segue a decisão da SPEC de leitura em camadas: informação rápida primeiro, cadeia causal quando o jogador quiser investigar.
 
+### Desafios opcionais: aviso discreto + painel — opção 3C aprovada (2026-10-08)
+
+> **Revisão humana da seção: PARCIALMENTE REVISADO.** O aviso discreto mais painel de acompanhamento é decisão do responsável, na SPEC; layout, critérios e exemplos continuam em exploração.
+
+Um desafio emergente relevante pode emitir **um aviso discreto**, sem interromper construção. O jogador consulta **um painel opcional** para entender condição real, andamento e eventual reconhecimento. Não exigir aceitação manual, notificação por pequena oscilação ou gestão de missões. Alertas de falha de serviços/empresas continuam disponíveis **independentemente de acompanhar o desafio**.
+
+### Modelos visuais compartilhados para negócios — opção 2B aprovada (2026-10-08)
+
+> **Revisão humana da seção: PARCIALMENTE REVISADO.** Reuso de modelos-base foi aprovado; um asset universal, quantos modelos/tipos e como distribui-los permanecem em debate.
+
+Múltiplos comércios e prestadores podem usar **mesmo volume-base de construção**, com letreiro, fachada, materiais, cor e detalhes personalizados. Trocar ou aprimorar o asset **não** recria empresa, caixa, empregados nem muda automaticamente seu tipo econômico. O usuário levantou que bairros ficam repetitivos tanto com 2–3 modelos como com a mesma silhueta em todos os lotes: considerar **mais de uma proporção e conjunto modular de fachadas**, sem prometer quantidade. Ver [exploração de negócios e assets](companies-markets.md#atualizacao-empresas-diferentes-com-poucos-modelos-base-2026-10-08).
+
 ### Canto de notificações
 
 Notificação deve significar "isso merece atenção", não ser um feed de tudo que aconteceu.
