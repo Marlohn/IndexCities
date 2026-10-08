@@ -484,7 +484,9 @@ Podemos futuramente explorar sucata/reciclagem se isso criar gameplay suficiente
 
 **Referências para contraste, não requisitos:** [Farthest Frontier — guia oficial](https://www.farthestfrontier.com/guide/gameplay/buildings/) permite realocar edificações com custo de trabalho, mas não representa necessariamente propriedade privada por SIM como no IndexCities; [Cities: Skylines II — Paradox, Signature Buildings](https://www.paradoxinteractive.com/games/cities-skylines-ii/features/zones-signature-buildings) diferencia edificações colocáveis realocáveis; [Workers & Resources — discussão de moradores e demolição](https://steamcommunity.com/app/784150/discussions/0/5568165891211111202/) mostra risco de deslocamento e controles trabalhosos, evidência comunitária não formal.
 
-**Próximos pontos ainda abertos:** a forma operacional de realocar um prédio concluído (sobretudo quando já abriga empresa, funcionários, estoque ou moradores), o destino/titular da construção substituta e os detalhes econômicos e operacionais não cobertos pelo modelo aprovado de desocupação residencial. **A direção do prazo curto de desocupação já está na SPEC**, restando calibrar os dias exatos. **Não reabrir o valor da indenização**, que foi aprovado exatamente ao valor de mercado do imóvel no estado anterior à intervenção. Não transformar esses detalhes em regras arbitrárias por conta de uma preferência geral. O direito de intervenção indenizada, a UX assistida como direção e a exposição dos impactos humanos estão decididos na SPEC. A experiência de obras **inacabadas** permanece aprovada e independente.
+**Decisão residencial adicional confirmada em 2026-10-08 — casa substituta no mercado aberto:** uma casa privada produzida por realocação assistida é imóvel **novo**; após a conclusão física, fica à venda para **todas as famílias elegíveis locais e externas**, sem herdar dono, inquilino ou morador do endereço original. O antigo dono, já indenizado, não recebe prioridade nem casa de graça, mas participa da aquisição normal. A primeira compra paga o preço de mercado à **Reserva Global**; a venda não é garantida. **Revisão humana desta atualização:** PARCIALMENTE REVISADO — escolha de venda aberta confirmada pelo responsável; alinhamento de fluxos é síntese da IA.
+
+**Próximos pontos ainda abertos:** a forma operacional de realocar um prédio concluído (sobretudo quando já abriga empresa, funcionários, estoque ou moradores), continuidade de empresa/serviço, logística e detalhes não cobertos pela desocupação residencial. **O destino econômico da casa substituta foi decidido** e não é mais uma dúvida de propriedade. **A direção do prazo curto de desocupação já está na SPEC**, restando calibrar os dias exatos. **Não reabrir o valor da indenização**, que foi aprovado exatamente ao valor de mercado do imóvel no estado anterior à intervenção. Não transformar esses detalhes em regras arbitrárias por conta de uma preferência geral. O direito de intervenção indenizada, a UX assistida como direção e a exposição dos impactos humanos estão decididos na SPEC. A experiência de obras **inacabadas** permanece aprovada e independente.
 
 ### Caso C — prédio concluído e jogador quer apenas mudar de lugar
 
@@ -569,7 +571,7 @@ Não escolher isso por realismo. Testar qual alternativa produz decisões sem tr
 
 ### O que preservar durante uma realocação
 
-Uma vantagem importante de tratar isso como `Realocar` em vez de demolir + construir é preservar a identidade da entidade.
+Uma vantagem **hipotética e dependente do tipo de edifício** de tratar isso como `Realocar` em vez de demolir + construir é preservar a identidade institucional ou operacional da entidade. **Não aplicar automaticamente à casa privada:** para ela, a SPEC determina nova construção oferecida no mercado residencial, sem titularidade nem moradores transferidos.
 
 Possíveis exemplos:
 
