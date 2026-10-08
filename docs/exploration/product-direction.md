@@ -170,9 +170,9 @@ A quantidade final de população, lotes, casas, edifícios, comércio e indúst
 
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — **a direção de sandbox livre com desafios opcionais foi aprovada em 2026-10-08 e registrada na SPEC**; a análise e as possibilidades abaixo permanecem PENDENTES de revisão humana, sem virar requisitos.
 
-**Direção aprovada na [SPEC](../SPEC.md):** o jogo permanece livre para construir e desenvolver a cidade sem objetivos ou vitórias obrigatórias. Desafios são opcionais; não bloqueiam a experiência central nem autorizam por si só sistemas de missão, metas, recompensas ou desbloqueios.
+**Direção aprovada na [SPEC](../SPEC.md):** o jogo permanece livre para construir e desenvolver a cidade sem objetivos ou vitórias obrigatórias. **Origem aprovada em 2026-10-08 (1A):** desafios opcionais surgem das condições reais da cidade, não de crises inventadas ou todo alerta convertido em missão. **Reconhecimento aprovado (2A):** histórico, conquistas e feedback sem dinheiro, recursos, patrimônio ou desbloqueios de conteúdo. É necessário valor adicional de gameplay, não só dar novo nome a notificações.
 
-**Em aberto para pesquisa:** quais desafios realmente ampliam decisões interessantes no médio/longo prazo, como comunicá-los sem tarefas repetitivas e se precisam de qualquer recompensa além dos efeitos emergentes da cidade. **Não** tratar uma população-alvo ("chegar a X habitantes") como objetivo decidido.
+**Em aberto para pesquisa:** quais condições devem desencadear um desafio, como distinguir desafio opcional de aviso, critérios de conclusão e como apresentar/registrar o reconhecimento sem tarefas repetitivas. **Não** tratar uma população-alvo ("chegar a X habitantes") como objetivo decidido. O reconhecimento **não econômico** foi aprovado; sua forma exata continua aberta.
 
 A pesquisa futura pode confrontar a opção C aprovada com modelos de outros jogos para **extrair aprendizados, não reabrir silenciosamente a direção nem adotar suas mecânicas**:
 
@@ -188,7 +188,7 @@ A pesquisa futura pode confrontar a opção C aprovada com modelos de outros jog
 - objetivos de longo prazo/endgame;
 - como outros city builders evitam que o late game vire apenas crescimento numérico.
 
-Critério principal: identificar desafios opcionais **distintivos, relevantes para decisões sistêmicas e economicamente coerentes**, sem destruir a liberdade de city builder nem produzir uma lista infinita de tarefas. Exemplos de condições urbanas como desemprego, escassez e congestionamento **são hipóteses de exploração**, não desafios aprovados.
+Critério principal: identificar desafios opcionais **distintivos, relevantes para decisões sistêmicas e economicamente coerentes**, sem destruir a liberdade de city builder nem produzir uma lista infinita de tarefas. Exemplos de condições como desemprego, escassez e congestionamento **ilustram a origem real aprovada, mas não são desafios específicos aprovados**.
 
 O documento [exploration/genre-benchmark.md](genre-benchmark.md) já contém evidências sobre endgame e progressão e deve ser uma das fontes dessa pesquisa, mas não substitui uma rodada dedicada.
 
