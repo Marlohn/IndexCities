@@ -219,6 +219,16 @@ Para qualquer decisão de produto, avalie explicitamente o microgerenciamento do
 - Antes de acrescentar um subsistema, verifique se sua consequência relevante pode ser representada com menos estados, menos interações e uma regra clara, preferindo processamento por eventos ou ciclos apropriados a verificações constantes quando viável.
 - Profundidade causal é desejável, mas simular burocracia, contabilidade ou negociações em detalhe só se justifica quando gerar consequência de gameplay relevante e observável. Não empurre complexidade para trás da interface para parecer que o jogo ficou simples.
 
+## Princípio global: decisões do jogador afetam a vida dos SIMs
+
+**Esta é uma orientação permanente para toda IA que pesquisar, especificar, implementar, revisar ou testar o IndexCities.** A regra de produto aprovada está em `docs/SPEC.md`, na seção *Princípio de design: leitura em camadas e causalidade*; este `AGENTS.md` transforma essa direção em critério obrigatório de trabalho.
+
+- **Toda decisão relevante do jogador deve ter consequências reais, coerentes e explicáveis para os SIMs, famílias e, quando pertinente, empresas**: moradia, trabalho, renda, custos de vida, deslocamentos, acesso a serviços, patrimônio e demais sistemas existentes. Não criar punições ou benefícios arbitrários apenas para parecer que há impacto.
+- **Antes de fechar qualquer nova funcionalidade ou alteração de gameplay, verificar quem é afetado, por qual mecanismo real e como o jogador percebe isso.** Se o impacto relevante ficar invisível, opaco ou contraditório, apontar a lacuna e propor diagnóstico simples antes de implementar.
+- Mostrar o importante de modo **contextual e agregado**, com aprofundamento disponível sob demanda; evitar pop-ups por SIM, gestão individual obrigatória, cálculos contínuos globais ou novos estados por pessoa sem ganho demonstrado.
+- **Liberdade de construir e modificar a cidade importa:** não bloquear o jogador com burocracia apenas para simular realismo; preservar, porém, os efeitos reais sobre propriedade, pessoas e economia e os custos monetários/físicos já aprovados.
+- Nas revisões da SPEC e do código, conferir esse princípio **transversalmente**, inclusive em ferramentas de edição, demolição, serviços e tributos. Ele não autoriza que a IA invente consequências ainda não decididas: lacunas de comportamento de produto devem voltar à discussão e entrar na SPEC antes de virar código.
+
 ## Princípio de causalidade e diagnóstico
 
 Sistemas profundos não podem virar caixas-pretas.
