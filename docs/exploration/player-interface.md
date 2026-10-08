@@ -396,7 +396,7 @@ A primeira categoria deveria ser fácil. A segunda não deve virar uma máquina 
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
 
 
-**Status: exploração aberta. Não é requisito oficial ainda.**
+**Status: exploração de ferramentas de movimentação/realocação ainda aberta.** A regra de **materiais recuperados ao cancelar obras não está aberta na SPEC**: materiais apenas reservados e ainda não entregues são liberados; materiais já entregues ao canteiro foram consumidos e não retornam. O cenário de recuperação integral abaixo é uma **alternativa exploratória conflitante e não aprovada**, mantida como registro de uma hipótese de gameplay; não deve orientar a implementação sem decisão explícita que altere a SPEC.
 
 A prioridade aqui é gameplay. O sistema de obras é profundo, mas corrigir um erro de planejamento não pode exigir que o jogador espere uma longa operação logística ou seja punido por detalhes de materiais parcialmente consumidos que não criam uma decisão interessante.
 
@@ -824,7 +824,7 @@ Na validação integrada, medir/observar:
 6. Realocação de prédio concluído será permitida para todos os tipos ou só alguns?
 7. Realocar preserva a identidade da empresa/serviço?
 8. O que acontece com moradores, funcionários e estoque durante a realocação?
-9. Quanto material pode ser recuperado ao cancelar/demolir?
+9. Há motivo de gameplay suficiente para **reabrir** a regra já aprovada de não recuperar materiais entregues ao canteiro ao cancelar uma obra? A demolição concluída continua sem recuperação conforme a SPEC.
 10. Quais overlays entram na primeira implementação integrada?
 11. Hotbar será fixa, configurável ou híbrida?
 12. Quais ações merecem confirmação?
