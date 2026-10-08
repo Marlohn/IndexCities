@@ -182,6 +182,12 @@ Essa separação substitui qualquer interpretação anterior de que um único de
 
 ---
 
+### Intervenção municipal em imóvel de empresa — direção aprovada em 2026-10-08
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — o responsável escolheu permitir intervenção/reurbanização de propriedade privada com indenização automática e consequências humanas visíveis; implicações detalhadas abaixo não foram revisadas integralmente.
+
+Quando uma empresa possui um mercado, fábrica ou outro estabelecimento, a prefeitura pode determinar demolição ou realocação assistida **pagando indenização real à empresa proprietária**; não precisa de negociação individual e não pode utilizar a Reserva Global como pagadora fictícia. A retirada do ativo afeta produção, funcionários, clientes, acesso e estoques físicos. **Indenizar a empresa não faz seus materiais ou funcionários surgirem num endereço novo nem garante continuidade da operação.** O novo endereço exige solução logística/econômica compatível com as regras de aquisição e operação já existentes. Tempo de transição, destino de estoques, continuidade de vínculos e fórmula da indenização ainda estão abertos; a [SPEC](../SPEC.md) é a autoridade para o comportamento aprovado. A experiência deve explicar de forma contextual quem é afetado, sem negociar manualmente por empresa.
+
 ## Propriedade e controle: prefeitura versus empresas privadas
 
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — a direção atual foi discutida e promovida para a SPEC; o histórico de alternativas permanece resumido.
