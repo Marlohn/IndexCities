@@ -11,8 +11,8 @@ A intenção é começar com uma folha em branco: pesquisar, discutir e decidir 
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — **decisões estruturais de software**.
 - [`AGENTS.md`](AGENTS.md) — **como humanos e IAs devem trabalhar e como esses documentos se relacionam**.
 
-Uma funcionalidade nova de produto entra primeiro na SPEC. Decisões estruturais de software vão para a ARCHITECTURE. Pesquisa e discussão ficam na EXPLORATION até a decisão ser fechada.
+A SPEC é o **contrato vivo do jogo**: toda implementação de comportamento deve estar coberta por decisão aprovada ali **antes do código**, desde o início do projeto e em todas as evoluções futuras. O mesmo vale para mudanças e bugs que revelem regras ausentes: a lacuna é discutida com o responsável e registrada na SPEC antes de implementar. Bugs que apenas restauram regras já especificadas e refatorações que preservam o comportamento usam a SPEC existente, sem reescrevê-la por ritual. Decisões estruturais de software vão para a ARCHITECTURE. Pesquisa e discussão ficam na EXPLORATION até a decisão ser fechada.
 
-O desenvolvimento segue **Spec-Driven Development (SDD)**: primeiro são definidas as regras do produto na SPEC, depois o jogo é implementado. A **primeira entrega e sua validação principal serão integradas**, não uma série de POCs isoladas por sistema. A implementação pode evoluir modularmente e incluir verificações técnicas pontuais.
+O desenvolvimento segue **Spec-Driven Development (SDD) contínuo**: primeiro são definidas as regras do produto na SPEC, depois o jogo é implementado. Agentes não podem preencher lacunas de produto com suposições; devem sinalizar a dúvida e obter a decisão antes de codificar a parte indefinida. A **primeira entrega e sua validação principal serão integradas**, não uma série de POCs isoladas por sistema. A implementação pode evoluir modularmente e incluir verificações técnicas pontuais.
 
 O processo é propositalmente leve: estrutura adicional só deve ser criada quando resolver uma necessidade concreta.
