@@ -16,9 +16,9 @@ As prioridades são **orientação revisável**, não um impedimento para experi
 
 ## Diagnóstico geral — fotografia de 2026-10-08
 
-- **75% — preparação estimada para iniciar uma primeira validação integrada/POC**, considerando maturidade documental e capacidade de começar a experimentar sistemas importantes; não é uma medição científica nem significa que 75% do produto foi especificado.
+- **75% — estimativa heurística de preparação documental para iniciar a implementação integrada**, dando maior peso à arquitetura, à economia e à construção, que estão mais amadurecidas. **Não é média aritmética** das categorias, métrica científica, porcentagem da SPEC fechada nem fração do jogo pronta. A validação principal é do conjunto funcional, conforme a SPEC.
 - **0% — implementação de jogo verificada no repositório na data da análise**: a árvore contém documentação e arquivos administrativos, sem código executável do jogo, testes ou medições reais. Isso não é uma estimativa do trabalho já realizado fora do GitHub.
-- **Principal lacuna:** delimitar o cenário integrado que demonstrará que construção, logística, economia e simulação realmente funcionam em conjunto e definir o que observar nele.
+- **Principal lacuna de validação:** preparar cenários reproduzíveis que permitam observar o funcionamento conjunto de construção, logística, economia, serviços e cidadãos, **sem transformar os cenários em cortes do escopo da implementação integrada**.
 - **Principal risco:** sistemas detalhados, isoladamente coerentes, combinarem-se em uma experiência de microgerenciamento, desempenho ruim ou problemas difíceis de diagnosticar.
 - **Importante:** não buscar “100% definido” antes de codificar. Fechar regras causais e comportamentos importantes; deixar fórmulas finas, limiares e otimizações para calibração baseada em evidências.
 
@@ -32,24 +32,25 @@ As prioridades são **orientação revisável**, não um impedimento para experi
 | Mapa e terreno | 65% | Seed, mapa plano, natureza e conexão exterior definidos; dimensões e grid ainda a validar. |
 | Trânsito e movimentação | 60% | Comportamento desejado detalhado; representação, pathfinding e desempenho ainda não comprovados. |
 | Interface e ferramentas | 55% | Intenção de uso clara; grande parte das soluções de interação está em exploração. |
-| Escopo e critérios da POC | 40% | Falta escolher cenário demonstrável e critérios objetivos de avaliação. |
+| Cenários e critérios de validação | 40% | Falta definir como avaliar empiricamente o jogo integrado; não representa escopo de uma POC reduzida. |
 
-**Como ler os percentuais:** são um retrato qualitativo de **prontidão para investigar/construir**, não cobertura de requisitos, conclusão da SPEC, qualidade de código ou porcentagem de um jogo finalizado. Não recalcular por ritual após cada decisão; revisar quando houver mudança material.
+**Como ler os percentuais:** são um retrato qualitativo de **prontidão para investigar/construir**, ponderado por julgamento, **não** uma média matemática, cobertura de requisitos, conclusão da SPEC, qualidade de código ou porcentagem de um jogo finalizado. A soma das categorias não precisa produzir o percentual global. Não recalcular por ritual após cada decisão; revisar quando houver mudança material.
 
 ## Prioridade P0 — tratar primeiro
 
-P0 reúne os maiores riscos ou decisões para dar direção a uma primeira validação integrada. **Nem todos os itens precisam estar fechados antes de qualquer código.** Cada item distingue decisão, calibração e experimento.
+P0 reúne os maiores riscos ou decisões que exigem atenção para **integrar e validar o jogo previsto na SPEC**, não para criar uma POC menor. **Nem todos os itens precisam estar fechados antes de qualquer código.** Cada item distingue decisão, calibração e experimento.
 
 | Categoria | Natureza | Questão / próximo passo | Por quê |
 | --- | --- | --- | --- |
-| Escopo integrado | **Decisão de plano**, não automaticamente requisito de produto | Escolher o cenário observável que caracterizará a primeira validação: do mapa vazio ao fluxo de obras, materiais, dinheiro e, na sequência de integração, agentes econômicos. Estabelecer evidência mínima de funcionamento. | Sem cenário e critério, “POC pronta” não tem significado. |
+| Cenários de validação do conjunto | **Decisão de plano**, não requisito novo | Descrever cenários observáveis do mapa vazio à cidade funcionando, abrangendo dinheiro, obras, materiais, trabalhadores, empresas e serviços, com critérios de diagnóstico. | Sem cenários e evidência, não sabemos se a implementação integrada funciona, mesmo que sistemas isolados pareçam corretos. |
 | Espaço, grid e construção | **Decisão assistida por experimento** | Validar dimensões iniciais, grid lógico, ocupação física e snapping para ruas e prédios; comparar liberdade de posicionamento versus simplicidade de construção. | Mudanças tardias afetam dados, ferramentas e apresentação. |
 | Bootstrap econômico e obras | **Calibração + teste de coerência** | Determinar saldos e custos de um cenário inicial reproduzível, sem violar a oferta monetária fixa, que já é regra; exercitar a primeira obra com equipe externa e a chegada de materiais. | Uma cidade vazia precisa conseguir começar sem soluções artificiais. |
 | Mobilidade e logística | **Experimento técnico** | Selecionar representação provisória da rede, rotas e execução de deslocamentos/entregas reais; medir filas e custo de cálculo. O algoritmo definitivo permanece em aberto. | Caminhões físicos são fundamento de construção e mercados. |
 | Interface mínima | **Decisão de experiência + protótipo** | Validar câmera, seleção, ferramentas de ruas/prédios, prévia de custo, andamento de obra e diagnóstico do motivo de bloqueios. | Profundidade sem leitura e controles fluidos não gera bom gameplay. |
+| Bootstrap sistêmico da cidade vazia | **Risco de integração a validar; regras de desbloqueio ainda não decididas** | Verificar que a interação entre residência, migração, contratação, aquisição de empresas, infraestrutura de água/energia e abastecimento permite a cidade nascer. Não pressupor que “falta de emprego impede migrar” e “falta de trabalhadores impede empresa entrar” se resolvam sozinhas; medir também dependências financeiras da Reserva Global. | Existe risco de ciclo sem moradores → sem trabalhadores/clientes → sem empresas operando → sem empregos/serviços → sem novos moradores. A equipe externa resolve as primeiras **obras**, não necessariamente toda a economia inicial. |
 | Critérios de avaliação | **Decisão de teste / medição** | Verificar invariantes: dinheiro não surge nem desaparece; materiais são realmente entregues; obra não conclui sem recursos; seed reproduz cenário; gargalos são explicáveis; custo de simulação é medido. | Evita declarar êxito apenas porque algo aparece em 3D. |
 
-**Sequência técnica sugerida (não aprovada como plano obrigatório):** mundo e ferramenta de construção → obras, materiais e logística → cidadãos, moradia, empresas e consumo → validação integrada. Essa ordem é de integração e feedback, **não** substitui a SPEC e **não** redefine sozinha o que deve existir na POC global. O responsável pode optar por definir um escopo integrado mais amplo antes da implementação.
+**Possível ordem interna de implementação e feedback (não aprovada como plano obrigatório):** mundo e ferramentas de construção → obras, materiais e logística → cidadãos, moradias, empresas, serviços e consumo → avaliação do conjunto. Trata-se apenas de sequência técnica de desenvolvimento, **sem POCs separadas e sem retirar funcionalidades já previstas na SPEC da primeira entrega integrada**.
 
 ## Prioridade P1 — esclarecer quando os sistemas entrarem na integração
 
@@ -61,24 +62,29 @@ P0 reúne os maiores riscos ou decisões para dar direção a uma primeira valid
 | Moradia e migração | Calibração/protótipo | Fórmulas iniciais de preço imobiliário, compra/ocupação e elegibilidade de famílias externas; respeitar fluxo monetário da Reserva Global. |
 | Demanda e avisos | Calibração de comportamento decidido | Limiar e duração dos alertas de vendas insuficientes, distinguidos de bloqueios logísticos; agregar avisos para evitar ruído. |
 | Escala e performance | Experimento/benchmark | Medir cenários crescentes com SIMs, veículos e empresas antes de escolher população-alvo definitiva, scheduler ou estrutura de dados sofisticada. |
+| Cancelamento, edição e correção de layout | **Decisão de produto ainda aberta + calibração** | A SPEC já fixa a perda do material entregue no cancelamento, mas a devolução monetária e as ferramentas de reposicionamento/realocação seguem abertas. Se a regra de materiais for reaberta, decidir isso explicitamente antes de mudar a SPEC; avaliar número de cliques e custo de gameplay. |
+| Estoque local e pagamento | **Validação de invariantes, detalhes por calibrar** | Ao reservar materiais de fornecedores locais reais, garantir origem física, titularidade, pagamento ao recebedor real, custo e não duplicação de estoque durante transporte e cancelamento. |
+| Direção de gameplay e progressão | **Decisão de produto em aberto, pesquisa pendente** | Não há objetivo central, progressão ou endgame oficial; avaliar alternativas à luz do loop material e econômico, sem impor vitória por população nem tratar isso como requisito já escolhido. |
 
-## Prioridade P2 — não usar como bloqueio da primeira validação
+## Prioridade P2 — não antecipar decisões finas sem evidência
 
-- **Progressão e endgame:** objetivos de longo prazo e condição de vitória seguem em exploração; continuar discutindo quando houver evidência de gameplay.
 - **Mobilidade avançada:** faixas, ultrapassagens e casos complexos de tráfego pertencem à visão do produto, mas a otimização e o detalhamento incremental exigem medição.
 - **Famílias e patrimônio:** refinar exceções de herança, aluguel, titularidade e inadimplência conforme o impacto real.
-- **Serviços urbanos:** detalhamento operacional profundo de hospitais, escolas, saneamento, energia, polícia e emergência não precisa bloquear uma primeira validação do ciclo material.
+- **Serviços urbanos:** calibrar detalhes operacionais de hospitais, escolas, saneamento, energia, polícia e emergências conforme evidências; **os comportamentos já aprovados para esses serviços continuam na implementação integrada**.
 - **Arte e apresentação final:** pipeline de assets, animações complexas e acabamento devem acompanhar necessidades demonstráveis, não antecipar todas as telas.
 - **Arquitetura prematura:** ECS, multithreading, job system, event bus e assemblies adicionais permanecem adiados na ARCHITECTURE até haver necessidade medida.
 
-**P2 não significa “fora do jogo”**: significa que a ausência da decisão final não precisa interromper a exploração e a integração dos sistemas de maior risco. Não apagar requisitos já oficiais.
+**P2 não significa “fora da primeira entrega” nem “fora do jogo”**: apenas orienta a não fixar algoritmos, parâmetros ou exceções de baixo valor antes de haver evidência. O escopo de produto continua sendo o que está na SPEC.
 
-## Inconsistências documentais a tratar
+## Auditoria de consistência — 2026-10-08
 
-1. **Produção adaptativa — inconsistência interna na SPEC.** A seção [Empresas e economia](../SPEC.md) aprova expressamente **produção adaptativa com estoque de segurança**, enquanto a seção *Propriedade, demanda e vulnerabilidade social* ainda afirma que a política de ajuste da produção não foi aprovada. A segunda frase parece desatualizada frente à decisão posterior. **Ação sugerida:** corrigir a redação antiga para remeter ao modelo já decidido, preservando alertas e parâmetros pendentes; não transformar isso em nova entrevista.
-2. **Cancelamento de obras — proposta exploratória diferente da SPEC.** A [SPEC](../SPEC.md) determina que materiais já entregues ao canteiro foram consumidos e não retornam. A proposta em [Interface e ferramentas do jogador](player-interface.md) explora recuperar integralmente materiais de qualquer obra incompleta, para reduzir microgerenciamento. **Ação sugerida:** registrar a proposta claramente como alternativa não aprovada/conflitante; manter a SPEC como comportamento oficial até o responsável decidir explicitamente reabrir a questão. Não fundir as duas regras silenciosamente.
+1. **Corrigido — produção adaptativa.** A SPEC aprovou a **produção adaptativa com estoque de segurança**, mas uma frase posterior alegava que a política ainda não estava aprovada. O trecho foi corrigido para remeter ao modelo decidido; somente os parâmetros seguem para calibração.
+2. **Conflito de proposta explicitado — cancelamento.** A [SPEC](../SPEC.md) determina que material entregue ao canteiro é consumido e não recuperável. A [exploração de interface](player-interface.md) contém uma hipótese de recuperação total para reduzir fricção, **não aprovada e incompatível com a SPEC atual**. O documento agora explicita essa diferença; não alterar o produto sem decisão humana. O reembolso **monetário** por cancelamento também permanece aberto.
+3. **Corrigido — hierarquia da SPEC.** O título *Fora de escopo automático* aparecia antes de dezenas de subseções de produto oficial, fazendo-as parecer subordinadas a um título de exclusão. O bloco foi movido para antes de *Decisões de produto confirmadas*, preservando as decisões.
+4. **Risco ainda não resolvido — bootstrap econômico.** A SPEC exige que a cidade comece vazia, operadores privados avaliem oportunidade econômica, famílias migrem em resposta a oportunidades e serviços dependam de infraestrutura e funcionários reais. **Isso não é uma contradição textual**, mas pode criar dependências circulares no cenário inicial; testar e só então decidir regras de desempate/destravamento, sem gerar recursos fictícios.
+5. **Risco de manutenção — extensão da SPEC.** Ela já reúne muitas regras detalhadas. Não fragmentar por cerimônia, mas revisar legibilidade, seções e referências quando isso começar a causar conflitos ou decisões duplicadas.
 
-Estas são **observações de auditoria**, não mudanças automáticas no comportamento do jogo.
+As correções acima são **editoriais/de consistência** e não aprovam novas funcionalidades. Os pontos 4 e 5 continuam sendo riscos a acompanhar, não regras oficiais adicionais.
 
 ## Revisão humana da exploração — 2026-10-07
 
