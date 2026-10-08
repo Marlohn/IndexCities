@@ -540,7 +540,7 @@ A Reserva Global **não é um comprador automático**. A procura continua limita
 - residencial: preço, emprego, moradia disponível, localização e atratividade;
 - comércio/indústria: clientes, concorrência, trabalhadores, insumos, logística, localização e custos.
 
-Baixa oportunidade pode deixar ativos vazios. O jogador não escolhe manualmente o comprador.
+Baixa oportunidade pode deixar ativos vazios. O jogador não escolhe manualmente o comprador. No primeiro modelo, **a primeira aquisição e as revendas de imóveis acontecem pelo valor de mercado calculado**, sem preço negociado automaticamente; não há venda garantida.
 
 ### Riscos já resolvidos
 
