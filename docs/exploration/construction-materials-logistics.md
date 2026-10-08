@@ -667,7 +667,7 @@ A [SPEC](../SPEC.md) passa a permitir que o jogador **mova uma obra incompleta e
 
 ### Risco de espera na realocação: obra total versus paralisação (2026-10-08)
 
-> **Revisão humana desta seção: PENDENTE.** O responsável questionou se uma realocação poderá durar tanto que tornará irrelevante ou onerosa a discussão de salários/vínculos durante paralisação. É uma pergunta de design **não decidida**; não altera os tempos de obra nem a opção C da SPEC.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável confirmou que a paralisação não é obrigatória durante Realocar e que gameplay e microgerenciamento devem ser avaliados globalmente; a decisão consta na SPEC. Tempos específicos e novas regras salariais permanecem pendentes.
 
 O tempo de preparar/construir o destino não precisa coincidir com o tempo sem operação do endereço antigo. Quando as condições espaciais permitirem, a opção C já deixa a atividade antiga funcionando durante a construção real do substituto; o período de transição final pode ser curto se materiais, logística e operador efetivamente estiverem prontos. Em casos de demolição necessária antes da conclusão, a interrupção pode se estender, sem inventar prontidão ou material instantâneo. Recomenda-se **medir separadamente** duração da obra, duração da paralisação, segundos reais de espera perceptível para o jogador e número de ações manuais, em vez de adotar prazo uniforme de mudança. As faixas de duração propostas na pesquisa de ritmo de construção ao fim deste arquivo **não são requisitos** e referem-se à construção ativa, não à paralisação empresarial.
 
