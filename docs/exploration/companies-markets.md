@@ -138,13 +138,17 @@ Isso também evita dupla cobrança: se um trabalhador do Pátio já recebe salá
 
 ### Alimentos
 
+**Decisão confirmada na SPEC — fornecimento de comércios (opção C):** mercados escolhem fornecedores locais reais ou importação avaliando preço de aquisição, frete/custo total, disponibilidade e prazo de entrega, com **preferência local apenas quando alternativas são economicamente próximas e viáveis**. Podem importar quando não houver fornecedor local capaz de atender ou quando o exterior tiver vantagem econômica significativa; não há preferência absoluta nem compra obrigatória de oferta local cara. A escolha/reposição é automática, baseada em estoques e recursos reais, com transporte físico e pagamento a cada contraparte econômica correta. Preservar a regra independente dos materiais de construção: importação de material para obras só ocorre quando a obra exige falta local, não por reposição genérica de mercado.
+
+**Em calibração/protótipo:** quão pequena deve ser a diferença para privilegiar a produção local, comparação entre custo total e tempo, tamanho/frequência de pedidos e limites da pesquisa de fornecedores. Evitar varreduras contínuas e critérios invisíveis. **Risco de design:** preferência local grande demais vira proteção artificial e pode manter empresas locais ineficientes; pequena demais torna a preferência irrelevante. Não inventar alíquotas, subsídios, taxas ou custos fictícios para obter o resultado.
+
 Fluxo inicial:
 
 fazenda → Alimentos → transporte → mercado/comércio → compra presencial → estoque doméstico por categoria → consumo gradual pelos moradores
 
-Se a cidade não produzir Alimentos suficientes:
+Quando a oferta local for insuficiente **ou a alternativa externa for economicamente significativamente melhor**, o comércio pode recorrer ao fluxo externo:
 
-conexão externa → caminhão → mercado/comércio → cidadão
+conexão externa → caminhão → mercado/comércio → compra presencial → estoque doméstico → consumo da família
 
 A importação automática paga produto + frete. O estoque continua físico e pode acabar.
 
