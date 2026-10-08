@@ -18,6 +18,8 @@ Ela deve continuar pequena. Novas camadas, frameworks, assemblies ou abstraçõe
 
 **Vínculo permanente com a SPEC:** antes de escrever ou alterar código — inclusive para bug, refatoração, performance ou integração entre módulos — identifique a regra de produto que a mudança implementa ou preserva. Se a solução exigir escolher uma regra de simulação, comportamento de UI, exceção ou consequência não definida, suspenda essa parte, reporte a lacuna e obtenha a decisão do responsável registrada na SPEC antes da implementação. A ARCHITECTURE governa a solução estrutural, não substitui a decisão de produto. O procedimento operacional está em [AGENTS.md](../AGENTS.md).
 
+**Autonomia técnica dentro do contrato:** a arquitetura estabelece fronteiras e restrições, não exige especificar previamente classes, nomes, estruturas de dados, algoritmos ou cada ajuste interno. O agente implementador decide esses detalhes sem solicitar aprovação quando forem compatíveis com a SPEC, preservarem o comportamento e respeitarem as fronteiras estruturais já aprovadas. Um detalhe técnico não documentado, por si só, não bloqueia trabalho. Se a escolha exigir nova decisão estrutural relevante, documentá-la nesta ARCHITECTURE antes de orientar a implementação; se alterar regras ou efeitos de produto, obter decisão humana e atualizar a SPEC antes do código.
+
 ---
 
 ## Objetivos
