@@ -189,6 +189,14 @@ https://github.com/aleksandrbelov/Burgage
 
 ---
 
+## Orientação inicial e tutorial adiados — opção 4A (2026-10-08)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável optou por **não definir onboarding/tutoriais agora** e discutir novamente **após a gameplay estar melhor definida e validada**. Não existe tutorial ou assistente inicial aprovado; formato futuro PENDENTE.
+
+A interface básica, os painéis de explicação de problemas e o acompanhamento de desafios opcionais **já aprovados** continuam independentes desse adiamento. Não criar roteiro de primeiras ações, dicas contextuais de onboarding nem sequência obrigatória por antecipação.
+
+---
+
 ## Modelo proposto para a GUI principal
 
 > **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
