@@ -15,4 +15,4 @@ A SPEC é o **contrato vivo do jogo**: toda implementação de comportamento dev
 
 O desenvolvimento segue **Spec-Driven Development (SDD) contínuo**: primeiro são definidas as regras do produto na SPEC, depois o jogo é implementado. Agentes não podem preencher lacunas de produto com suposições; devem sinalizar a dúvida e obter a decisão antes de codificar a parte indefinida. A **primeira entrega e sua validação principal serão integradas**, não uma série de POCs isoladas por sistema. A implementação pode evoluir modularmente e incluir verificações técnicas pontuais.
 
-O processo é propositalmente leve: estrutura adicional só deve ser criada quando resolver uma necessidade concreta.
+A IA tem **autonomia para decisões técnicas internas** compatíveis com a SPEC e a ARCHITECTURE — não é necessário especificar cada classe, algoritmo ou detalhe de código. Ela não pode decidir sozinha novas regras, exceções ou consequências do jogo. O processo é propositalmente leve: estrutura adicional só deve ser criada quando resolver uma necessidade concreta.
