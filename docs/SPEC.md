@@ -265,6 +265,8 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Famílias podem se mudar de residência conforme fatores como renda, tamanho da família e localização.
 - Residências têm preço e/ou aluguel real que afetam o orçamento familiar.
 - Cidadãos e empresas pagam impostos reais para a cidade.
+- O sistema tributário será organizado **por categorias**, diferenciando tipos de incidência para permitir escolhas econômicas legíveis, sem exigir administração individual de cada contribuinte.
+- As categorias específicas, a forma de cobrança, as alíquotas e o grau de controle do jogador permanecem em definição; nenhuma lista de tributos está aprovada ainda.
 - A cidade possui orçamento municipal real, com receitas e despesas.
 - O menu financeiro deve separar claramente entradas e saídas da prefeitura.
 - Salários de todos os trabalhadores públicos devem aparecer explicitamente entre as despesas municipais.
