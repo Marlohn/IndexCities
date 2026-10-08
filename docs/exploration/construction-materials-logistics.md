@@ -986,114 +986,27 @@ Não foi identificado conflito com as regras atuais de importação, armazenamen
 
 ## Materiais no modelo híbrido público/privado
 
-> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — a proposta antiga foi superada; a atualização abaixo segue a decisão atual da SPEC.
 
+**Status:** modelo antigo de financiamento privado da obra superado.
 
-**Status:** proposta superada. A separação estrita de estoques públicos/privados foi descartada como modelo principal de gameplay por adicionar microgerenciamento sem benefício proporcional.
+A separação rígida “obra pública paga pela cidade / obra privada paga por investidor” não vale mais no escopo atual.
 
-Se o IndexCities adotar o modelo híbrido em que serviços/infraestrutura são municipais e atividades econômicas são privadas, os materiais não devem virar um estoque comum sem dono.
+### Regra atual
 
-### Princípio
+- toda obra pública ou privada ordenada pelo jogador é financiada pelo **Caixa da Cidade**;
+- materiais continuam físicos e precisam chegar ao canteiro;
+- pagamentos a fornecedores/trabalhadores locais vão para esses agentes reais;
+- parcelas importadas ou com contraparte externa vão para a **Reserva Global**;
+- a UI continua usando a visão agregada **Disponível na cidade**, sem obrigar o jogador a separar estoque por proprietário;
+- depois da conclusão, ativos privados seguem seus fluxos de aquisição/operação definidos na SPEC.
 
-Todo material físico tem um proprietário ou destino econômico claro.
+A diferença público/privado aparece principalmente **depois da obra**:
+- serviço público continua ligado ao Caixa da Cidade;
+- empresa privada passa a operar com caixa próprio;
+- residência passa à economia privada após a primeira aquisição.
 
-A diferença entre obra pública e privada é principalmente:
-
-- quem paga;
-- quem compra os materiais;
-- de qual estoque/fornecedor eles vêm;
-- quem assume o custo de importação e frete.
-
-A logística física permanece a mesma.
-
-### Obra pública
-
-Fluxo proposto:
-
-prefeitura cria a obra
-→ reserva materiais do estoque municipal quando disponíveis
-→ compra de produtores locais quando necessário
-→ importa faltantes
-→ caminhões entregam no canteiro
-→ material é consumido ao chegar
-
-Custos entram no orçamento municipal:
-
-- materiais;
-- frete;
-- eventual equipe externa;
-- demais custos da obra.
-
-O Pátio Municipal de Obras executa com equipe pública quando houver capacidade.
-
-### Obra privada
-
-Fluxo proposto:
-
-empresa/investidor financia a obra
-→ compra materiais de produtores locais
-→ importa faltantes por sua própria conta
-→ caminhões entregam diretamente no canteiro
-→ material é consumido ao chegar
-
-O custo não sai do orçamento da prefeitura.
-
-A empresa privada paga:
-
-- materiais;
-- frete;
-- mão de obra/serviço de construção;
-- demais custos da obra.
-
-### Mercado local de materiais
-
-Esse modelo cria um elo econômico forte.
-
-Exemplo:
-
-concreteira privada produz concreto
-→ vende para uma obra pública ou privada
-→ recebe dinheiro
-→ precisa repor cimento/areia-brita
-→ contrata trabalhadores
-→ paga salários
-→ paga impostos
-→ gera transporte de carga
-
-Assim, produção local reduz importação sem exigir que a prefeitura seja dona da indústria.
-
-### Estoques
-
-- estoque municipal de materiais de construção pertence à prefeitura;
-- não deve ser consumido automaticamente por empresas privadas;
-- empresas produtoras mantêm seus próprios estoques de insumos e produtos;
-- uma obra privada pode receber materiais diretamente dos fornecedores ou da conexão externa, sem exigir um depósito privado genérico no primeiro escopo.
-
-Isso preserva a decisão atual de não criar depósitos privados genéricos de materiais neste momento.
-
-### Ponto de coerência a corrigir se o híbrido for aprovado
-
-A SPEC atualmente reserva materiais do estoque municipal ao confirmar "uma obra".
-
-Se o modelo híbrido for aprovado, essa regra deve ser especificada como:
-
-- **obra pública:** pode reservar estoque municipal;
-- **obra privada:** compra seus próprios materiais e não usa automaticamente estoque municipal.
-
-### Questão ainda aberta: execução da obra privada
-
-O modelo de materiais funciona independentemente de quem fornece a mão de obra, mas ainda será necessário decidir se uma obra privada:
-
-- contrata uma empresa/equipe privada;
-- contrata equipe externa;
-- ou pode contratar o Pátio Municipal de Obras como serviço pago.
-
-Não assumir uma dessas alternativas até existir decisão.
-
-
----
-
----
+A logística física continua preservando produção, estoque, caminhões, distância, congestionamento e importação sem introduzir financiamento privado da construção.
 
 ## Revisão de gameplay: disponibilidade da cidade versus propriedade jurídica
 
