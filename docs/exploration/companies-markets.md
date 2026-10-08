@@ -148,61 +148,26 @@ Essa separação substitui qualquer interpretação anterior de que um único de
 
 ## Propriedade e controle: prefeitura versus empresas privadas
 
-> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — a direção atual foi discutida e promovida para a SPEC; o histórico de alternativas permanece resumido.
 
+**Status:** decidido no modelo atual.
 
-**Status:** parcialmente decidido. O jogador financia e coloca as construções; a operação econômica posterior pode ser privada.
+O jogador controla o desenvolvimento físico da cidade e financia, pelo **Caixa da Cidade**, as obras públicas e privadas que ele ordena. Depois da conclusão, a operação econômica diverge:
 
-"Prefeitura" significa o **setor público municipal controlado pelo jogador**, com orçamento próprio. Já estão claramente municipais:
+- serviços públicos permanecem ligados ao Caixa da Cidade;
+- comércio e indústria privados passam a ser propriedade/operação de empresas reais com caixa próprio;
+- residências passam para proprietários privados conforme as regras de aquisição residencial.
 
-- Pátio Municipal de Obras;
-- serviços públicos como escolas, hospitais, polícia, bombeiros e infraestrutura municipal;
-- depósitos municipais de materiais de construção.
+O custo de construir atividade privada é deliberadamente responsabilidade do Caixa da Cidade no gameplay. Isso preserva o loop único de construção e evita criar financiamento privado, incorporadoras ou aprovações paralelas.
 
-A dúvida ainda aberta é quem possui e financia atividades econômicas como:
+A empresa privada **não recebe capital operacional do Caixa da Cidade** por padrão. Uma empresa nova vinda do exterior recebe seu capital inicial da **Reserva Global**; empresa local já existente usa o próprio caixa.
 
-- fazendas;
-- concreteiras;
-- usinas de asfalto;
-- mercados;
-- postos;
-- fábricas;
-- outros comércios e indústrias.
+Alternativas históricas consideradas:
+- economia totalmente municipalizada;
+- obra privada financiada por investidor/empresa;
+- modelo híbrido com financiamento privado da implantação.
 
-Três modelos possíveis:
-
-**1. Economia municipalizada**
-- a prefeitura constrói, possui e opera essas empresas;
-- paga construção, salários, importações e operação;
-- recebe diretamente toda receita;
-- gameplay mais próximo de uma economia planejada.
-
-**2. Economia privada**
-- empresas privadas possuem dinheiro, custos, salários, estoque e lucro;
-- pagam impostos à prefeitura;
-- o jogador ainda pode decidir a localização, conforme a regra atual de posicionamento direto, mas propriedade e caixa são privados;
-- exige definir quem financia a construção inicial e como uma empresa privada nasce.
-
-**3. Modelo híbrido**
-- prefeitura possui serviços e infraestrutura pública;
-- empresas econômicas são privadas;
-- o jogador controla o desenho/localização da cidade, mas caixa operacional e lucro pertencem às empresas;
-- subsídios, incentivos ou investimento municipal podem ser adicionados apenas se houver necessidade.
-
-Antes de decidir, é preciso preservar coerência com as regras já existentes:
-- o jogador posiciona diretamente todos os prédios;
-- prédios econômicos colocados pelo jogador passam a ser operados por empresas privadas;
-- empresas têm estado econômico próprio e podem falir;
-- a granularidade exata do dinheiro/caixa empresarial foi reaberta e não deve ser tratada como decisão fechada.
-
-O modelo privado ou híbrido parece mais compatível com empresas terem caixa próprio e poderem falir, mas o financiamento da construção precisa ser definido antes de virar requisito.
-
-
----
-
----
-
----
+Essas alternativas foram superadas para o escopo atual porque adicionavam etapas sem melhorar o loop principal.
 
 ## Dinheiro privado por empresa: validação de gameplay
 
@@ -246,9 +211,10 @@ Regras:
 - não existe bailout invisível;
 - crédito e recapitalização ficam fora do escopo até serem decididos explicitamente.
 
-A empresa recebe **capitalização operacional inicial** como parte do custo da construção privada pago pelo caixa da cidade. A transferência é explícita, quantificada e registrada no ledger. O valor exato deve ser um parâmetro de balanceamento e pode variar por tipo/escala de empresa.
-
-A relação foi fechada: o caixa da cidade financia a construção ordenada pelo jogador e também a capitalização operacional inicial da empresa privada.
+A empresa precisa de capital operacional explícito, mas esse capital **não é transferido pelo Caixa da Cidade por padrão**. No primeiro modelo:
+- empresa nova vinda do exterior recebe capital inicial finito da **Reserva Global**;
+- empresa local já existente usa seu próprio caixa para expandir;
+- criação de empresa nova puramente local continua fora do primeiro modelo até existir uma fonte concreta de capital.
 
 ### Por que esta opção venceu
 
@@ -331,7 +297,7 @@ Não exigir do jogador:
 - aprovar empréstimos empresariais;
 - financiar capital de giro manualmente.
 
-Para nascer, a empresa recebe capital de **investidores privados abstratos**. Isso é coerente com o jogador controlar desenvolvimento urbano sem precisar simular investidores individuais.
+Para entrar como empresa nova vinda do exterior, a entidade recebe capital inicial explícito retirado da **Reserva Global**. Não existe investidor abstrato criando moeda nova.
 
 Se a empresa operar com prejuízo persistente, reduz produção/emprego e eventualmente fecha. Isso preserva consequência econômica real sem fazer a simulação depender de uma contabilidade de caixa completa.
 
@@ -362,7 +328,7 @@ Direção decidida para POC:
 - impostos reais;
 - demais custos definidos explicitamente;
 - resultado econômico e saldo calculados a partir desses fluxos;
-- capitalização inicial explícita e inspecionável.
+- capital inicial explícito e inspecionável, vindo da Reserva Global para empresas externas ou do próprio caixa para empresas locais existentes.
 
 A UI normal não precisa mostrar toda contabilidade, mas o painel detalhado/debug deve conseguir reconstruir por que a empresa piorou.
 
@@ -376,69 +342,39 @@ A comparação foi encerrada em favor de **caixa explícito real**, por ser o mo
 
 ## Revisão: quem paga quando o jogador constrói
 
-> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
-
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — decisão discutida e promovida para a SPEC; calibração de valores continua aberta.
 
 **Status:** decidido para o escopo atual.
 
-A discussão sobre "investidor privado paga a construção" estava criando uma camada conceitual que brigava com a regra central já decidida: **o jogador posiciona diretamente todos os prédios**.
-
-A direção escolhida é mais simples e mais coerente com a gameplay:
+O loop é único:
 
 1. o jogador escolhe o prédio;
-2. o jogo mostra dinheiro + materiais necessários;
-3. o **caixa da cidade** paga o custo monetário;
-4. a oferta de materiais da cidade é reservada/importada;
-5. a obra acontece fisicamente;
-6. se for uma atividade privada, uma empresa privada passa a operar o prédio após a inauguração.
+2. o jogo mostra dinheiro + materiais;
+3. o **Caixa da Cidade** paga a obra;
+4. pagamentos a trabalhadores/fornecedores locais vão para os agentes reais;
+5. parcelas com contraparte externa ou não modelada vão para a **Reserva Global**;
+6. materiais são entregues fisicamente e a obra acontece;
+7. se for um ativo privado, ele entra no fluxo de aquisição correspondente.
 
 ### Construção privada
 
-O custo mostrado para uma construção privada inclui:
-- construção;
-- materiais/frete conforme as regras já definidas;
-- **capitalização operacional inicial** da empresa.
+Construir comércio, indústria ou residência privada continua sendo custo do Caixa da Cidade. Isso é uma escolha de gameplay, não uma representação jurídica literal.
 
-Quando o prédio entra em operação, essa capitalização é transferida para o caixa real da empresa. Não existe um "investidor mágico" criando dinheiro fora do sistema.
+O custo pode incluir:
+- materiais;
+- frete/importação;
+- mão de obra/execução;
+- demais custos de obra já definidos.
 
-Assim, o jogador continua tendo um loop único e previsível:
+Ele **não inclui capitalização operacional automática da futura empresa**.
 
-**construir = gastar dinheiro da cidade + consumir materiais**.
+Quando uma empresa externa entra para adquirir um ativo, seu capital vem da Reserva Global. O preço da primeira aquisição também vai para a Reserva Global, não retorna ao Caixa da Cidade.
 
-A distinção público/privado começa depois:
-- prédio público: operação e salários continuam saindo do caixa da cidade;
-- prédio privado: operação passa para o caixa da empresa; a cidade recebe efeitos indiretos e impostos.
+### Consequência de gameplay
 
-### Trade-off de realismo
+O jogador não recupera automaticamente o custo construindo e revendendo ativos. A recuperação financeira da cidade acontece principalmente por impostos e demais receitas públicas ao longo da operação.
 
-Esse modelo significa que a cidade/jogador financia a implantação de atividades privadas. Não é uma representação literal de uma economia de mercado.
-
-A escolha é consciente porque:
-- o jogador já controla diretamente onde cada prédio nasce;
-- criar um mercado de investidores separado retiraria o controle do jogador ou criaria um segundo sistema monetário de construção;
-- um único custo de construção é mais legível;
-- mantém o pilar dinheiro + materiais;
-- permite que a economia privada fique profunda **na operação**, onde receita, custo, emprego, estoque e falência criam consequências úteis.
-
-Se futuramente o produto adotar desenvolvimento privado autônomo/zoneamento, essa decisão deve ser reavaliada.
-
-### Capitalização inicial
-
-A capitalização não é uma abstração invisível:
-- aparece como parte do custo detalhado da construção privada;
-- tem valor explícito;
-- é transferida do caixa da cidade para o caixa da nova empresa;
-- pode ser calibrada por tipo/escala;
-- entra no ledger da empresa como saldo inicial.
-
-Isso preserva conservação monetária e facilita diagnóstico.
-
-
----
-
----
-
----
+Isso evita transformar o jogo em um simulador de incorporação e mantém o orçamento municipal relevante.
 
 ## Falência empresarial sem simular processo jurídico
 
@@ -554,7 +490,7 @@ jogador decide construir
 Depois da inauguração, a operação pode divergir:
 - serviço público continua ligado às despesas públicas;
 - empresa privada opera com caixa próprio;
-- moradia participa da economia familiar e ainda precisa fechar o destino do aluguel/preço.
+- moradia participa da economia familiar; aluguel vai ao proprietário real e a primeira aquisição segue a Reserva Global.
 
 A abstração evita criar vários bolsos de investimento controlados pelo jogador sem eliminar caixas reais de entidades simuladas quando eles geram gameplay.
 
@@ -567,299 +503,46 @@ A abstração evita criar vários bolsos de investimento controlados pelo jogado
 
 ## Mercado de aquisição ligado à conexão exterior
 
-> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — o modelo atual foi discutido e promovido para a SPEC; fórmulas e preços seguem em calibração.
 
-
-**Status:** parcialmente promovido para a SPEC. Aquisição residencial externa para migração, prédios econômicos vazios aguardando empresa e aquisição por empresas foram decididos; fórmulas, preços e alguns fluxos futuros seguem em calibração/exploração.
-
-### Ideia
-
-Quando o jogador termina uma construção privada, o prédio pode começar **sem proprietário/operador definitivo**.
-
-Ele entra em um mercado automático de aquisição/ocupação.
-
-Candidatos podem vir de:
-- famílias já existentes na cidade;
-- empresas já existentes na cidade;
-- novos candidatos vindos da conexão exterior.
-
-Baixa demanda significa menos candidatos e pode deixar o ativo vazio por mais tempo.
-
-A conexão exterior deixa de servir apenas para pessoas, carga e serviços: ela também pode representar a entrada de **capital, novas famílias e novas empresas** na cidade.
-
-### Referências de gameplay
-
-Cities: Skylines II usa uma lógica próxima em dois pontos, embora não simule compra explícita do imóvel:
-- residências construídas mas desocupadas reduzem demanda residencial; novos cidadãos procuram moradia conforme emprego, educação e atratividade;
-- edifícios econômicos podem ficar desocupados até uma empresa se instalar, e empresas avaliam localização, clientes, trabalhadores, recursos e custos antes de escolher onde operar.
-
-A documentação também usa Outside Connections como origem de novos cidadãos e de recursos/serviços externos.
-
-Fontes:
-- Paradox — Zones & Signature Buildings: https://www.paradoxinteractive.com/games/cities-skylines-ii/features/zones-signature-buildings
-- Paradox — Economy & Production: https://www.paradoxinteractive.com/games/cities-skylines-ii/features/economy-production
-- Paradox — Public & Cargo Transportation: https://www.paradoxinteractive.com/games/cities-skylines-ii/features/public-cargo-transportation
-- Paradox — City Services: https://www.paradoxinteractive.com/games/cities-skylines-ii/features/city-services-districts-policies
-
-Isso valida o princípio de **prédio vazio + agente adequado entra conforme demanda**, mas não valida automaticamente um sistema de propriedade/compra; essa parte é proposta específica do IndexCities.
-
-### Principal vantagem
-
-A proposta conecta sistemas que já existem em vez de criar uma camada isolada:
-
-jogador constrói
-→ capital fica imobilizado no ativo
-→ ativo entra no mercado
-→ demanda define velocidade/interesse
-→ família/empresa local ou externa adquire
-→ dinheiro da aquisição tem origem real
-→ ocupante/empresa entra em operação
-→ cidade passa a receber impostos e efeitos econômicos
-
-Isso transforma vacância em consequência real de uma decisão ruim do jogador.
+**Status:** decidido em nível de fluxo.
 
 ### Residencial
 
-A proposta é especialmente forte para moradia.
-
-Uma residência concluída poderia receber candidatos:
-
-**Família local**
-- já mora na cidade;
-- avalia preço, renda/poupança, tamanho da família, localização e acesso;
-- se comprar para morar, muda de residência e deixa a anterior disponível;
-- se puder comprar como investimento, pode tornar-se proprietária e alugá-la.
-
-**Família exterior**
-- avalia cidade, emprego, preço e moradia;
-- ao concluir a compra para residência própria, entra pela conexão exterior e passa a ser família real da cidade.
-
-Essa dinâmica pode criar cadeias naturais:
-
-família compra casa nova
-→ libera imóvel antigo
-→ outra família ocupa/compra
-→ migração e mobilidade residencial emergem do mesmo mercado.
-
-### Grande ponto em aberto: compra para morar versus comprar para alugar
-
-Permitir que qualquer família compre imóveis extras para renda gera gameplay patrimonial interessante, mas amplia bastante o sistema.
-
-Prós:
-- diferencia riqueza de renda;
-- cria proprietários e locatários reais;
-- dá significado a herança;
-- aluguel tem destino claro;
-- pode produzir concentração patrimonial e vulnerabilidade econômica emergentes.
-
-Contras:
-- exige poupança/riqueza familiar real;
-- pode exigir limite ou lógica de investimento para evitar comportamento absurdo;
-- amplia a importância de preço dos imóveis;
-- pode gerar especulação e imóveis vazios;
-- external buyer que compra apenas para alugar sem virar entidade local recriaria um landlord invisível.
-
-**Decisão promovida para a SPEC:** no primeiro modelo, comprador residencial vindo do exterior só pode comprar para **morar e migrar para a cidade**. Investidor residencial externo que permaneça fora da cidade apenas recebendo aluguel fica fora deste primeiro modelo.
-
-
-### Decisão fechada: comprador residencial exterior
-
-Foi aprovado que, no primeiro modelo, um comprador residencial vindo da conexão exterior **só compra para migrar e morar na cidade**.
-
-Consequências:
-- o comprador externo vira família real da simulação;
-- ocupa fisicamente a residência adquirida;
-- passa a participar de emprego, consumo, trânsito, impostos e demais sistemas;
-- não existe proprietário residencial externo invisível recebendo aluguel à distância;
-- investimento imobiliário externo puro fica fora até existir uma entidade e uma justificativa de gameplay claras.
-
-Essa decisão reduz risco de caixa-preta e de entrada monetária sem agente correspondente.
-
-### Comércio e indústria: usar o mesmo mecanismo, mas não necessariamente a mesma propriedade
-
-Para comércio e indústria, o conceito de **prédio vazio aguardando empresa** é forte.
-
-Candidatos:
-- empresa local existente querendo expandir;
-- nova empresa formada/local;
-- empresa exterior entrando na cidade.
-
-A empresa avalia:
-- demanda/clientes;
-- trabalhadores;
-- insumos;
-- logística;
-- localização;
-- custos.
-
-Baixa oportunidade pode deixar o prédio vazio.
-
-Porém, não é obrigatório separar:
-- proprietário jurídico do prédio;
-- empresa operadora.
-
-No primeiro escopo, pode ser mais simples tratar a empresa que assume o prédio como **proprietária/operadora econômica** daquele ativo.
-
-Isso evita criar mercado imobiliário comercial separado apenas por realismo.
-
-
-### Decisão fechada: comércio e indústria aguardam empresa adquirente
-
-Foi aprovado:
-
-jogador constrói prédio privado
-→ prédio concluído fica vazio/procurando operador
-→ empresas locais ou exteriores avaliam o ativo
-→ uma empresa adquire
-→ pagamento retorna ao Caixa da Cidade
-→ empresa torna-se proprietária + operadora
-→ operação segue com caixa empresarial próprio
-
-No primeiro modelo não haverá separação entre proprietário do imóvel comercial/industrial e a empresa operadora.
-
-A regra anterior de o Caixa da Cidade fornecer **capitalização operacional inicial** para a empresa fica superada por esta decisão. A empresa adquirente precisa chegar ao negócio com capital próprio real.
-
-Ainda permanece aberto **quem é o proprietário humano da empresa** e como o capital de uma empresa nova é formado.
-
-### Grande risco 1: dinheiro infinito vindo do exterior
-
-Se qualquer prédio puder ser vendido instantaneamente a um comprador externo com dinheiro ilimitado, surge um exploit:
-
-importar materiais
-→ construir
-→ vender para exterior
-→ receber mais dinheiro
-→ repetir infinitamente
-
-Portanto, **conexão exterior não pode ser comprador infinito**.
-
-A demanda exterior precisa ser limitada por causas observáveis, por exemplo:
-- empregos disponíveis;
-- qualidade/atratividade;
-- preço;
-- tipo/tamanho de moradia;
-- oportunidade econômica;
-- oferta já vazia na cidade.
-
-A UI deve conseguir mostrar algo como:
-- candidatos locais interessados;
-- candidatos externos interessados;
-- motivo de baixa procura;
-- tempo em vacância.
-
-### Grande risco 2: de onde vem e para onde vai o preço de compra
-
-Se o jogador usa o Caixa da Cidade para construir e depois um agente compra o ativo, o preço de aquisição precisa ter destino explícito.
-
-Hipótese coerente:
-
-Caixa da Cidade paga a construção
-→ prédio concluído é um ativo do desenvolvimento da cidade
-→ comprador paga aquisição
-→ valor retorna ao Caixa da Cidade
-→ depois a receita recorrente da cidade vem principalmente de impostos
-
-Assim, venda de imóvel/prédio funciona como **reciclagem do capital investido**, enquanto impostos continuam sendo a receita recorrente.
-
-Isso também diferencia:
-- fluxo de capital: construir/vender;
-- fluxo fiscal: impostos durante a operação.
-
-### Risco de arbitragem
-
-Se preço de venda for simplesmente maior que custo de construção e a demanda exterior não tiver limite, o jogador vira incorporador com lucro garantido.
-
-Precisam ser testados:
-- custo total da obra;
-- valor de mercado;
-- oferta concorrente;
-- demanda local/exterior;
-- tempo de vacância;
-- orçamento real dos compradores.
-
-Não assumir lucro garantido.
-
-### Pré-requisito oculto: dinheiro das famílias
-
-Compra residencial real exige que famílias tenham alguma forma explícita de:
-- dinheiro/poupança;
-- capacidade de compra.
-
-Hoje renda e orçamento familiar já existem conceitualmente, mas a granularidade de patrimônio/poupança ainda precisa ser fechada.
-
-Sem poupança real, a escolha de comprador vira caixa-preta.
-
-Hipoteca/banco **não precisa** entrar automaticamente. Uma primeira versão pode permitir compra apenas quando a família possui recursos suficientes, deixando financiamento imobiliário para uma decisão futura.
-
-### Apartamentos
-
-Há duas opções conceituais:
-
-1. prédio inteiro tem um proprietário;
-2. cada unidade residencial tem proprietário próprio.
-
-Propriedade por unidade combina melhor com:
-- família proprietária;
-- herança;
-- compra/venda individual;
-- aluguel por unidade.
-
-Mas aumenta estado persistente.
-
-Não decidir ainda; avaliar no POC de moradia.
-
-### Como evitar microgerenciamento
-
-O jogador não precisa:
-- escolher comprador;
-- aprovar propostas;
-- organizar leilão;
-- administrar contratos.
-
-O mercado pode resolver automaticamente.
-
-A superfície mostra:
-- **vazio / à venda / procurando operador**;
-- demanda boa/média/baixa;
-- interesse local/exterior;
-- principal motivo de demora.
-
-A visão detalhada mostra candidatos, preço, capacidade financeira e fatores relevantes.
-
-### Coerência após aprovação
-
-A SPEC foi revisada:
-- o Caixa da Cidade continua pagando a construção;
-- a capitalização operacional automática da empresa foi removida;
-- a empresa adquirente compra o ativo com capital próprio;
-- o valor da aquisição retorna ao Caixa da Cidade.
-
-Ainda precisam ser definidos a origem do capital de empresas novas e o vínculo entre empresa e SIM proprietário.
-
-### Avaliação atual
-
-A hipótese parece mais coerente que o modelo anterior porque:
-- conecta demanda, vacância, migração, empresas e conexão exterior;
-- mantém o jogador no controle da construção;
-- permite que impostos sejam a receita recorrente principal;
-- reduz necessidade de proprietários abstratos;
-- cria consequências visíveis para construir demais.
-
-O maior risco não é complexidade de simulação. É **criar capital externo infinito ou uma disputa de compradores opaca**.
-
-Por isso, a ideia merece continuar sendo explorada, mas só deve virar requisito depois de fechar:
-1. quem pode adquirir residencial;
-2. se comprador exterior precisa entrar/migrar;
-3. como comércio/indústria tratam aquisição versus operação;
-4. como o preço de compra retorna ao Caixa da Cidade;
-5. como limitar e explicar demanda exterior.
-
-
----
-
----
-
----
+- residência privada concluída pode ficar vazia aguardando comprador;
+- família local pode comprar com dinheiro real;
+- família exterior só compra para **migrar e morar**;
+- investimento residencial externo puramente passivo fica fora do primeiro modelo;
+- o pagamento da **primeira aquisição** vai para a Reserva Global;
+- depois disso, revendas normais transferem dinheiro entre proprietários privados e aluguel vai ao proprietário real.
+
+### Comércio e indústria
+
+- prédio concluído pode ficar vazio/procurando empresa;
+- empresa local existente ou empresa nova vinda do exterior pode adquirir;
+- a empresa adquirente vira proprietária + operadora;
+- empresa local usa caixa próprio;
+- empresa externa recebe capital inicial finito da Reserva Global;
+- o pagamento da primeira aquisição vai para a Reserva Global;
+- depois da aquisição, operação, salários, estoque, impostos e falência pertencem ao caixa da empresa.
+
+### Demanda e limite exterior
+
+A Reserva Global **não é um comprador automático**. A procura continua limitada por condições reais e diagnosticáveis:
+- residencial: preço, emprego, moradia disponível, localização e atratividade;
+- comércio/indústria: clientes, concorrência, trabalhadores, insumos, logística, localização e custos.
+
+Baixa oportunidade pode deixar ativos vazios. O jogador não escolhe manualmente o comprador.
+
+### Riscos já resolvidos
+
+Foram descartados:
+- pagamento da primeira aquisição retornando ao Caixa da Cidade, por reciclar capital;
+- comprador exterior com dinheiro criado infinitamente;
+- proprietário residencial exterior invisível apenas para receber aluguel;
+- negociação manual de propostas.
+
+A oferta monetária fixa + Reserva Global fecha a origem/destino do dinheiro sem remover vacância, demanda ou risco econômico.
 
 ## Propriedade humana das empresas
 
@@ -938,7 +621,7 @@ Precisamos distinguir:
 - usa o próprio caixa acumulado para adquirir novo estabelecimento/expandir.
 
 **Empresa nova vinda do exterior**
-- entra com capital inicial explícito proveniente da conexão exterior;
+- entra com capital inicial explícito retirado da Reserva Global;
 - esse valor é finito, configurável e diagnosticável;
 - a procura externa continua limitada pelas condições econômicas da cidade.
 
@@ -978,7 +661,7 @@ Para o primeiro modelo:
 - não existe SIM proprietário modelado;
 - lucro permanece na empresa;
 - empresas existentes expandem com caixa próprio;
-- empresas novas externas podem entrar com capital externo explícito;
+- empresas novas externas podem entrar com capital explícito retirado da Reserva Global;
 - criação de empresa nova local fica aberta até existir fonte concreta de capital.
 
 Reavaliar donos/acionistas somente se surgirem sistemas como empreendedorismo individual, dividendos, herança empresarial, compra/venda de empresas ou concentração de capital que justifiquem o custo.
@@ -1007,7 +690,7 @@ A regra vale para **comércio e indústria** privados.
 5. empresas candidatas avaliam o ativo;
 6. no início da cidade, a fonte normal de novas empresas é a conexão exterior;
 7. uma empresa com capital suficiente compra o ativo;
-8. o valor da compra retorna ao Caixa da Cidade;
+8. o valor da compra vai para a Reserva Global;
 9. a empresa passa a ser proprietária + operadora;
 10. empresa contrata SIMs reais e inicia operação;
 11. dali em diante caixa, estoque, salários, impostos, produção/vendas e falência pertencem à entidade empresa.
@@ -1150,8 +833,8 @@ Evitar transformar falência em uma segunda simulação de gestão empresarial.
 - **Falência da empresa é terminal.** Depois do período de risco já definido, a empresa não fica como entidade inativa procurando eternamente uma nova oportunidade.
 - Pode existir uma etapa técnica curta de **liquidação**, invisível como microgerenciamento: operações param, imóveis são ofertados automaticamente e recebimentos continuam rastreáveis.
 - Enquanto houver ativos a vender, a entidade pode existir apenas como suporte contábil da liquidação.
-- Quando não houver mais ativos pendentes, saldo remanescente vai para o Fundo de Patrimônio Não Reclamado e a empresa é removida.
-- Se algum ativo perder o titular com o encerramento, ele pode ficar explicitamente sem proprietário; uma venda posterior envia o valor ao fundo.
+- Quando não houver mais ativos pendentes, saldo remanescente sem outro titular econômico definido volta para a Reserva Global e a empresa é removida.
+- Se algum ativo perder o titular com o encerramento, ele pode ficar explicitamente sem proprietário; uma venda posterior envia o valor à Reserva Global com a origem registrada.
 - Isso não impede uma empresa saudável com vários estabelecimentos de fechar apenas um local e continuar operando os demais.
 
 ### Por que esta versão foi escolhida
@@ -1166,193 +849,61 @@ Evitar transformar falência em uma segunda simulação de gestão empresarial.
 **Contras**
 - existe um pequeno estado técnico de liquidação;
 - detalhes de estoque e outros ativos terão de ser definidos quando esses casos realmente existirem;
-- o fundo passa a servir genericamente para valores sem titular econômico, não apenas heranças.
+- a Reserva Global também recebe valores sem titular econômico, sempre preservando a origem do lançamento.
 
 O objetivo é manter essa camada no mínimo necessário para preservar causalidade. Não adicionar credores, ordem jurídica de pagamento, administrador judicial ou outras regras enquanto não houver gameplay concreto que justifique isso.
 
 
 ---
 
-## Reavaliação do pagamento da primeira aquisição privada
+## Reserva Global, oferta monetária fixa e primeira aquisição privada
 
-> **Revisão humana desta seção:** PENDENTE — problema reaberto por impacto direto no gameplay; não é decisão oficial.
-
-A regra atual da SPEC em que o Caixa constrói comércio/indústria e recebe de volta o preço pago pela empresa cria o mesmo risco identificado em moradia: capital de construção pode ser reciclado e reduzir demais a importância dos impostos.
-
-Alternativa em discussão:
-- o Caixa da Cidade continua arcando com a construção como parte do diferencial do IndexCities;
-- a empresa que assume o ativo paga com dinheiro real;
-- esse pagamento não volta ao jogador; é liquidado contra a economia exterior;
-- o jogador passa a recuperar o investimento apenas indiretamente, por empregos, atividade econômica e impostos;
-- não criar financiamento, incorporadora ou negociação manual.
-
-**Pró:** mantém o loop de construção simples e evita transformar o jogador em desenvolvedor imobiliário/comercial buscando revenda.
-
-**Contra:** cria saída monetária da economia local e exige calibrar entradas externas para não drenar capital demais.
-
-A regra canônica ainda não foi alterada neste ponto; precisa de confirmação antes de mudar a SPEC.
-
-
-### Alternativa: um único fundo com origem por lançamento
-
-> **Revisão humana desta seção:** PENDENTE — simplificação levantada pelo responsável; não é decisão oficial.
-
-Em vez de manter saldos lógicos separados, pode existir **um único fundo técnico** que recebe todos esses valores e registra em cada lançamento a origem/motivo do dinheiro.
-
-Exemplos de origem:
-- patrimônio sem herdeiro;
-- saldo final de empresa encerrada;
-- primeira aquisição de imóvel privado;
-- primeira aquisição de comércio/indústria.
-
-Tecnicamente isso preserva rastreabilidade com menos estrutura. A principal ressalva é semântica: nem todo valor desse pool é literalmente “patrimônio não reclamado”. Se essa opção for adotada, o nome e as regras futuras do fundo precisam refletir que ele é um reservatório técnico de valores fora do Caixa da Cidade, e não apenas heranças sem titular.
-
-### Ledger técnico compartilhado, saldos lógicos separados
-
-> **Revisão humana desta seção:** PENDENTE — proposta nova em discussão; não é decisão oficial.
-
-Para evitar criar várias entidades financeiras artificiais, uma implementação possível é usar o mesmo mecanismo técnico de ledger para valores fora do Caixa da Cidade, mas com **categorias/saldos lógicos separados**.
-
-Exemplo:
-- `unclaimed_property` — dinheiro que ficou sem titular econômico e pertence ao conceito de Patrimônio Não Reclamado;
-- `external_settlement` — dinheiro que saiu da economia local em uma liquidação com a economia exterior, como a primeira aquisição de um ativo privado.
-
-Cada lançamento deve guardar ao menos valor, origem, motivo e entidade/evento relacionado.
-
-A vantagem é reaproveitar a mesma infraestrutura de rastreamento sem inventar novas “carteiras”. O cuidado é não somar semanticamente esses valores como um único fundo: patrimônio não reclamado pode ter regras futuras próprias, enquanto liquidação exterior é apenas uma fronteira econômica e não deve virar dinheiro utilizável ou reivindicável.
-
-
-
----
-
-## Hipótese: reserva econômica externa como ciclo monetário
-
-> **Revisão humana desta seção:** PARCIALMENTE REVISADO — a ideia-base foi discutida diretamente com o responsável; a modelagem e os riscos abaixo ainda precisam de validação.
-
-### Ideia central
-
-Usar um único fundo genérico por trás da simulação como **reserva econômica externa**. Ele começa com um saldo inicial finito e todo lançamento registra origem, destino, motivo e entidade/evento relacionado.
-
-A intenção é fechar o ciclo monetário sem criar dinheiro do nada nem fazer valores desaparecerem.
-
-### Fluxos candidatos
-
-**Saem da reserva e entram na cidade**
-- saldo inicial de uma família que migra para a cidade;
-- capital inicial de uma nova empresa vinda do exterior;
-- pagamentos externos por exportações, quando esse fluxo existir;
-- outros fluxos cuja contraparte real seja o mundo exterior.
-
-**Voltam da cidade para a reserva**
-- dinheiro levado por moradores/empresas que deixam definitivamente a simulação, quando aplicável;
-- patrimônio sem herdeiro;
-- saldo final de empresa encerrada sem titular;
-- primeira aquisição de ativos privados quando o pagamento não deve retornar ao Caixa da Cidade;
-- pagamentos por importações e outros fluxos cuja contraparte seja o exterior.
-
-### Regra importante
-
-A reserva **não deve virar destino genérico para qualquer valor que ainda não foi modelado**.
-
-Se existe um destinatário real dentro da simulação — trabalhador, empresa, proprietário, fornecedor, prefeitura etc. — o dinheiro deve ir para esse destinatário. A reserva só fecha:
-- fluxos com o mundo exterior;
-- valores efetivamente sem titular econômico modelado.
-
-Isso evita usar o fundo para esconder lacunas da economia.
-
-### Pontos fortes
-
-- cria conservação e rastreabilidade do dinheiro;
-- fornece origem concreta para capital inicial de migrantes e empresas externas;
-- permite que dinheiro retirado da economia volte a ser usado em entradas futuras;
-- reutiliza um único ledger em vez de várias carteiras artificiais;
-- combina com a conexão exterior já existente;
-- facilita debug: é possível explicar de onde veio e para onde foi cada valor.
-
-### Riscos e pontos que faltam fechar
-
-- **saldo inicial:** precisa ser calibrado; não pode ser arbitrário nem baixo a ponto de travar crescimento;
-- **distribuição:** valores entregues a migrantes/empresas não devem ser puro RNG sem limites; usar distribuição configurável e reproduzível pela seed;
-- **esgotamento:** se a reserva puder chegar a zero, é preciso decidir se isso realmente deve impedir migração, novas empresas ou pagamentos externos; isso pode criar um bloqueio de gameplay indesejado;
-- **comércio exterior:** se importações adicionarem dinheiro à reserva e exportações retirarem, ela passa a representar também uma espécie de balanço externo da cidade;
-- **visibilidade:** o jogador provavelmente não precisa gerenciar o fundo, mas debug/diagnóstico deve mostrar saldo e fluxos por origem.
-
-### Avaliação atual da IA
-
-A ideia é coerente e mais forte do que usar o fundo apenas como destino de dinheiro sem titular. Ela pode transformar o fundo em uma fronteira monetária concreta entre a cidade e o mundo exterior.
-
-O maior risco não é conceitual; é de balanceamento: um fundo realmente finito pode virar um limitador invisível da cidade. Antes de promover para a SPEC, deve ser decidido se o saldo pode efetivamente restringir entradas externas ou se funciona apenas como contabilidade conservativa com uma reserva inicial dimensionada para não travar o jogo.
-
-
-### Refinamento: oferta monetária fechada
-
-A proposta pode ser entendida de forma mais precisa como uma **oferta monetária total fechada**.
-
-Exemplo conceitual:
-- existe um total monetário global (M);
-- esse total fica distribuído entre Caixa da Cidade, carteiras dos SIMs, caixas das empresas e a reserva externa;
-- o dinheiro não é criado nem destruído nesses fluxos: apenas muda de titular;
-- quando um migrante ou empresa externa entra, recebe saldo transferido da reserva;
-- quando dinheiro sai da economia local para um fluxo externo ou fica sem titular econômico, ele retorna à reserva.
-
-Importante: se o total global for R$ 1 milhão, não significa que o fundo tem R$ 1 milhão **além** de o player ter R$ 1 milhão. O player, SIMs e empresas já fazem parte desse mesmo R$ 1 milhão. A reserva representa apenas a parcela ainda fora dos agentes locais.
-
-Exemplo:
-- total global: R$ 1.000.000;
-- Caixa da Cidade: R$ 700.000;
-- reserva externa: R$ 300.000;
-- SIMs/empresas: R$ 0 no instante inicial;
-- soma sempre: R$ 1.000.000.
-
-### O que funciona bem nesse modelo
-
-Matematicamente, o dinheiro global não “acaba” enquanto nenhum sistema criar ou destruir moeda. Ele apenas circula. O que pode acabar temporariamente é o dinheiro de um **agente específico** ou a **liquidez disponível na reserva externa**.
-
-Isso é compatível com o gameplay desejado:
-- o jogador pode ficar sem caixa mesmo existindo dinheiro em SIMs, empresas ou na reserva;
-- impostos transferem dinheiro de SIMs/empresas para o Caixa;
-- salários e compras redistribuem dinheiro para SIMs/empresas;
-- importações e entradas/saídas externas movimentam dinheiro entre cidade e reserva.
-
-### Cuidados para fechar o ciclo corretamente
-
-1. **Não mandar todo gasto de construção para a reserva.** Se a obra paga salário a trabalhadores locais ou compra material de empresa local, esse dinheiro deve ir aos agentes reais. Só a parcela cujo destinatário é externo vai para a reserva.
-2. **Liquidez pode travar mesmo com dinheiro total suficiente.** Muito dinheiro pode ficar concentrado em poucos agentes ou fora da cidade; isso é um problema de distribuição, não de quantidade total.
-3. **Crescimento populacional aumenta a demanda por liquidez.** Com oferta monetária fixa, salários, preços e saldo inicial dos novos agentes precisam ser calibrados para que o sistema continue funcionando em cidades grandes.
-4. **A reserva não deve ser usada para esconder destinatários reais.** Sempre que houver um recebedor concreto, o pagamento deve ir para ele.
-5. **A soma monetária global deve ser uma invariável auditável de debug.** Qualquer diferença indica criação/destruição acidental de dinheiro.
-
-### Avaliação atual
-
-A ideia é conceitualmente sólida e especialmente boa para o IndexCities porque reforça causalidade: todo dinheiro tem origem e destino.
-
-O principal risco não é “o dinheiro acabar globalmente”, mas **ficar mal distribuído** entre Caixa, cidadãos, empresas e reserva. Isso precisa ser observado em POC/benchmark antes de fixar valores iniciais.
-
-
----
-
-### Decisão: oferta monetária fixa, Reserva Global e empréstimos
-
-> **Revisão humana desta seção:** PARCIALMENTE REVISADO — a regra central foi confirmada diretamente pelo responsável; valores e calibração ainda não foram revisados/fechados.
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — conceito central confirmado diretamente pelo responsável; números e calibração continuam abertos.
 
 **Status:** decisão promovida para a SPEC.
 
-Decidido:
-- existe uma quantidade total fixa de dinheiro na simulação;
-- esse dinheiro fica distribuído entre Caixa da Cidade, SIMs, empresas e uma **Reserva Global** invisível ao jogador;
-- a Reserva Global funciona como contraparte de entradas/saídas externas e de valores sem titular econômico modelado;
-- migrantes e empresas externas recebem capital retirado dessa reserva;
-- valores que saem da economia local para contrapartes externas ou ficam sem titular voltam para a reserva;
-- a primeira aquisição de um ativo privado construído pela cidade não devolve dinheiro ao player: o pagamento vai para a Reserva Global;
-- empréstimos municipais saem da Reserva Global e retornam a ela por amortização/juros;
-- todo movimento deve guardar origem/motivo para auditoria;
-- a soma monetária global deve ser uma invariável de debug.
+### Regra central
+
+Existe uma **oferta monetária global fixa**. O dinheiro total não é criado nem destruído pelos fluxos normais; ele fica distribuído entre:
+
+- Caixa da Cidade;
+- carteiras dos SIMs;
+- caixas das empresas;
+- **Reserva Global**.
+
+A soma deve permanecer constante e auditável.
+
+### Papel da Reserva Global
+
+A Reserva Global é um saldo técnico de bastidor, não controlado pelo jogador. Todo lançamento registra origem, destino, motivo e entidade/evento associado.
+
+Ela fornece dinheiro para:
+- capital inicial de famílias que entram do exterior;
+- capital inicial de empresas que entram do exterior;
+- principal de empréstimos municipais.
+
+Ela recebe dinheiro de:
+- importações/fluxos cuja contraparte seja externa;
+- patrimônio monetário sem titular econômico definido;
+- saldo final de empresa encerrada sem titular;
+- primeira aquisição de residências, comércios e indústrias construídos pela cidade;
+- amortizações de empréstimos e, se houver, juros.
+
+### Regra de destinatário real
+
+A Reserva Global não é uma lixeira contábil. Se existe um destinatário real modelado — trabalhador, fornecedor, empresa, proprietário ou prefeitura — o pagamento vai para esse agente.
+
+Exemplo de construção:
+- salário de trabalhador local → SIM;
+- compra de concreto local → empresa fornecedora;
+- parte importada → Reserva Global.
+
+### Empréstimos
+
+O principal do empréstimo sai da Reserva Global e entra no Caixa da Cidade. A amortização volta para a Reserva Global. Taxa de juros, prazo, limite e condições ainda são parâmetros de calibração.
 
 ### Nome
 
-Foram considerados:
-- **Fundo Global** — curto, mas pode soar como um fundo que o jogador administra;
-- **Reserva Monetária Global** — preciso, porém mais técnico;
-- **Reserva Global** — curto e comunica melhor que é um saldo de bastidor.
+Nome adotado: **Reserva Global**.
 
-**Recomendação atual:** usar **Reserva Global** no produto/documentação e tratar **oferta monetária global** como o nome do total fixo de dinheiro.
+“Oferta monetária global” descreve o total fixo de dinheiro; “Reserva Global” é apenas a parcela que está fora dos agentes econômicos locais naquele momento.
