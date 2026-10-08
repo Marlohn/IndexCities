@@ -566,7 +566,7 @@ Nesse caso, a interface calcula e mostra:
 
 O frete não aparece como cobrança posterior separada: ele já compõe o preço mostrado antes da confirmação.
 
-Mesmo pago antecipadamente, o material continua sujeito à logística física e a obra espera a entrega dos caminhões.
+Se a importação exigir pagamento antecipado, ele ocorre como transferência real à Reserva Global e não é automaticamente desfeito se a obra for cancelada. O material continua sujeito à logística física e a obra espera a entrega dos caminhões; **a reserva inicial do orçamento no Caixa não equivale a esse pagamento**.
 
 
 ---
@@ -638,20 +638,24 @@ Máquinas e equipamentos de obra ainda precisam de pesquisa específica para dec
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
 
 
-**Status:** parcialmente decidido.
+**Status:** materiais e tratamento monetário do cancelamento decididos na SPEC; logística de pedidos em trânsito, momento contratual de pagamento e balanceamento continuam sendo questões técnicas de integração.
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — o responsável aprovou em 2026-10-08 reservar o custo no Caixa, pagar contrapartes reais conforme despesas e liberar o saldo não pago. Detalhes de transações/roteamento ainda dependem de validação.
 
 ### Cancelamento de obra inacabada
 
 Decidido:
-
 - materiais reservados e ainda não entregues são liberados para outras obras;
-- materiais que já chegaram ao canteiro foram consumidos e não retornam ao depósito.
+- materiais entregues ao canteiro são consumidos e não retornam ao depósito;
+- o custo monetário previsto da obra fica comprometido no Caixa da Cidade na confirmação, **sem transferência monetária**;
+- pagamentos reais deixam o Caixa e reduzem a quantia comprometida quando efetivamente devidos, inclusive pagamentos antecipados de importação quando aplicável;
+- cancelar libera automaticamente a **parcela não paga** do orçamento comprometido, sem estornar pagamentos reais nem criar moeda;
+- o jogador vê o valor que será liberado e os custos já incorridos antes de confirmar cancelamento;
+- a Reserva Global só participa como recebedor real de fluxos externos (ou em seus outros papéis oficiais), nunca como conta de retenção de obras.
 
-Ainda em aberto:
+A folha salarial periódica do Pátio permanece gasto municipal comum; não duplicar a remuneração de seus trabalhadores na contabilização por obra. Diferenciar pagamento antecipado de entrega/consumo: uma carga paga e ainda em trânsito não implica que o dinheiro seja recuperável, mas sua localização física deve continuar rastreável e sem duplicação.
 
-- quanto dinheiro, se algum, é devolvido ao cancelar;
-- como tratar trabalho já executado;
-- como tratar apenas o dinheiro e o trabalho já executado, pois materiais entregues já são considerados consumidos.
+**Detalhes ainda técnicos:** como corrigir previsões de custo durante a execução; tratamento físico de pedido já despachado quando a obra é cancelada; calendário de liquidação de cada contraparte. Validar sem impor créditos fictícios, parcelas de custo duplicadas ou microgerenciamento.
 
 ### Demolição de construção concluída
 
@@ -1180,7 +1184,7 @@ Essa direção mantém realismo sistêmico sem transformar o jogo em contabilida
 
 A SPEC passou a estabelecer obras de execução relativamente ágil quando insumos, acesso e trabalhadores estão presentes, **sem duração longa adicionada artificialmente**. Entregas físicas, escassez, trânsito e capacidade real podem atrasar as obras; o andamento deve ser legível e várias obras podem avançar em paralelo conforme a capacidade existente. O jogador não deve precisar microgerenciar caminhões ou trabalhadores.
 
-**Não foram aprovados** segundos ou minutos por prédio, fórmulas, multiplicadores novos, recuperação dos materiais entregues ou política monetária de cancelamento. Esta última permanece aberta. Materiais entregues ao canteiro seguem consumidos e perdidos em cancelamento conforme a SPEC vigente; liberar materiais ainda não entregues é regra já definida.
+**Não foram aprovados** segundos ou minutos por prédio, fórmulas, multiplicadores novos ou recuperação de materiais entregues. **A política monetária de cancelamento foi aprovada posteriormente**, em 2026-10-08, e está na SPEC: comprometimento no Caixa, pagamento real e liberação do saldo não gasto. Materiais entregues seguem consumidos/perdidos; reservas de materiais não entregues são liberadas.
 
 ### O que os jogos mostram (comparação qualitativa, não experimento controlado)
 
@@ -1197,4 +1201,4 @@ Separar **tempo de suprimento e deslocamento reais** de **trabalho ativo de cons
 
 ### Decisão separada que segue aberta
 
-A questão monetária de **reservar o custo da obra e pagar somente conforme gastos reais**, liberando o que ainda não foi pago ao cancelar, continua apenas uma **recomendação em discussão**; a SPEC ainda não determina a política de devolução monetária. A Reserva Global não deve ser confundida com dinheiro apenas comprometido no Caixa da Cidade. Se houver pagamentos a fornecedores, transportadores ou empregados, eles obedecem a destinatários reais e à conservação monetária; não presumir reembolso universal após o serviço já ter sido prestado. A regra da SPEC sobre materiais entregues/consumidos permanece vigente.
+**Decisão aprovada em 2026-10-08 e registrada na SPEC:** custo previsto comprometido no próprio Caixa, desembolso para destinatário real quando a despesa ocorrer, e liberação do valor comprometido ainda não pago em cancelamento. A Reserva Global não retém dinheiro de obras. A regra dos materiais entregues/consumidos permanece vigente; detalhes de pagamentos antecipados, pedidos em trânsito e calibração são assuntos de validação, não autorizações para estornos fictícios.
