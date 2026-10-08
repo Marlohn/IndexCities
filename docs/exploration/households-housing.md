@@ -19,17 +19,18 @@ Este arquivo é material de exploração temática. A autoridade do produto cont
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
 
 
-**Status:** parcialmente decidido. O saldo monetário individual de todo SIM já é canônico; regras de despesas e decisões financeiras familiares continuam em exploração.
+**Status:** parcialmente decidido. Os saldos monetários individuais e a **cooperação financeira automática entre adultos nas despesas comuns** já são canônicos; a distribuição exata dessas despesas e decisões financeiras familiares continua em exploração.
 
 ### Renda individual e familiar
 
 Direção atual:
 
 - **todo SIM possui saldo monetário individual real**, conforme a SPEC; para crianças esse saldo pode ser zero ou receber apenas fluxos explicitamente definidos;
-- a família/domicílio pode ter métricas agregadas de renda e despesas compartilhadas sem substituir os saldos individuais;
-- ainda precisa ser decidido como despesas comuns, dependentes e decisões financeiras familiares afetam os saldos individuais.
+- **Decidido:** adultos da mesma família podem contribuir automaticamente com recursos reais dos próprios saldos para despesas comuns, sem carteira monetária familiar separada; qualquer movimentação entre SIMs é transferência real, não criação de dinheiro;
+- **Decidido:** cada locação continua tendo **um único SIM titular responsável pelos aluguéis e pelas dívidas de aluguel perante o proprietário**. Contribuições de outros adultos para pagamentos atuais podem ser transferidas ao titular antes da quitação; **os outros adultos não assumem automaticamente as dívidas pessoais dele**, nem passam a sofrer descontos salariais por essas dívidas;
+- **Em aberto para calibração/implementação:** quanto cada adulto contribui, prioridades e momentos de contribuição, tratamento das despesas dos dependentes e casos sem adultos ou sem recursos suficientes.
 
-A leitura familiar pode calcular **renda familiar disponível** e despesas comuns do domicílio como agregados derivados. Isso preserva individualidade sem exigir microgerenciamento bancário.
+A leitura familiar pode calcular **renda familiar disponível** e despesas comuns do domicílio como agregados derivados. Isso preserva individualidade sem exigir microgerenciamento bancário. A cooperação ocorre por decisões automáticas e movimentações entre agentes reais, e não torna dívida pessoal uma dívida coletiva.
 
 ### Até onde simular compras?
 
