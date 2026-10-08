@@ -50,7 +50,7 @@ Há três níveis possíveis:
 
 ### Avaliação provisória
 
-**Decisão fechada:** o modelo inicial será **por categorias de produtos**, não por SKU individual.
+**Decisões fechadas na SPEC:** o modelo inicial será **por categorias de produtos**, não por SKU individual. **As compras de bens de consumo pelos SIMs são presenciais:** o cidadão se desloca fisicamente até o comércio, compra somente categorias disponíveis no estoque com dinheiro real e realiza o deslocamento de saída/retorno, afetando mobilidade e demanda local. A transação transfere dinheiro do SIM à empresa operadora e retira estoque real; não substituir a viagem por uma compra econômica invisível. A visita e compra são automatizadas pela simulação, sem microgerenciamento do jogador. A categoria econômica do produto e a necessidade de deslocamento são duas decisões distintas.
 
 Razões preservadas desta exploração:
 
@@ -59,6 +59,8 @@ Razões preservadas desta exploração:
 - permite que preço e escassez afetem cidadãos e empresas;
 - evita explodir o número de entidades com milhares de SKUs que provavelmente não gerariam gameplay proporcional;
 - deixa espaço para aprofundar categorias específicas mais tarde se elas se provarem importantes.
+
+**Em aberto para calibração/protótipos:** periodicidade e agrupamento de compras por viagem, escolha do estabelecimento acessível (inclusive frente a estoque insuficiente), conciliação com trabalho/atividades e custo de movimentação em grande escala. Preservar viagem e transações reais mesmo com otimização de simulação fora da câmera; não exigir uma viagem individual para cada produto comprado.
 
 ### Regra de profundidade sugerida
 
