@@ -483,6 +483,14 @@ Esses valores devem ser baseados em dados reais ou benchmark do jogo, não escol
 
 ---
 
+## Turismo e atratividade efetiva — opção 2A aprovada (2026-10-08)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou turismo causado pelas condições reais da cidade; fórmulas e taxas de demanda são para calibração.
+
+A chegada de turistas depende da combinação **real e verificável** de hospedagem com capacidade, lazer, comércio/serviços, atrações, acesso viário/transporte pela conexão exterior e condições urbanas. **Não** gerar chegada aleatória independente da cidade nem encher hotel só porque foi construído. Turistas são agentes/viagens reais, consumindo serviços e pagando com dinheiro existente quando efetivamente atendidos. Pernoite exige hospedagem com vaga; a visita de curta duração e a ponderação das atrações ainda são aspectos a definir/calibrar. Mostrar razões de procura/ausência quando relevantes sem criar índice mágico impossível de explicar.
+
+---
+
 ## Trabalho pendular bidirecional — opção 4C (2026-10-08)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável escolheu C, com preocupação explícita sobre custo técnico e equilíbrio. Direção aprovada na SPEC; modelagem do exterior e dos pagamentos continua aberta para validação.
@@ -491,7 +499,7 @@ Esses valores devem ser baseados em dados reais ou benchmark do jogo, não escol
 
 **Benefício para gameplay:** residentes podem trabalhar fora quando há emprego externo realmente acessível, e empresas locais podem contratar trabalhadores externos quando há vagas reais. A entrada e saída pela conexão externa criam tráfego e condições de acesso, sem obrigar o jogador a construir uma segunda cidade. Não contar trabalhadores de fora como moradores nem esconder desemprego dos residentes.
 
-**Custo a medir:** simular todas as casas, empresas e rotinas fora do mapa seria caro e não foi aprovado. Preferir representar vagas/oferta externa de forma leve, com vínculos recorrentes consistentes, tráfego apenas nas vias modeladas e pagamento com origem/destino real. Um pendular não pode ocupar várias vagas incompatíveis nem resolver automaticamente toda falta de pessoal. Contrato externo e saldo entram na contabilidade monetária; pagamentos de/para contrapartes não modeladas seguem a Reserva Global, sem criação de dinheiro. Persistência dos agentes, limites de oferta, regras de decisão e processamento do calendário continuam para exploração técnica antes do código.
+**Opção 4A aprovada depois (2026-10-08):** trabalhadores que residem fora têm **identidade individual e vínculo de emprego persistentes, remuneração e turno coerentes**, com viagens **físicas dentro do mapa** e **vida, casa, família e economia fora do mapa não simuladas detalhadamente**. A opção de empregados externos anônimos foi descartada; **a simulação de uma segunda cidade inteira também não está aprovada**. Um mesmo pendular não pode ocupar vínculos incompatíveis ou preencher automaticamente toda escassez de vagas. **Ainda em pesquisa/calibração:** limite da oferta externa, persistência técnica off-map e save, ritmo do deslocamento (dependente do modelo temporal ainda não decidido) e representação de dinheiro/carteira sem duplicar Reserva Global nem pagamentos. Evitar estado de uma cidade externa e atualização global de agentes a cada frame.
 
 ## Manutenção municipal recorrente — opção 5B (2026-10-08)
 
