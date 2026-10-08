@@ -52,6 +52,12 @@ A regra de profundidade continua a mesma: só detalhar quando isso gerar consequ
 
 ---
 
+### Hipótese transversal: escolha do SIM quando emprego muda de endereço (2026-10-08)
+
+> **Revisão humana desta seção: PENDENTE.** O responsável observou que a possibilidade de continuar ou sair após mudança de local de trabalho deveria valer para funcionários privados **e** públicos. A regra de decisão individual concreta abaixo ainda não foi confirmada e não modifica a SPEC.
+
+**Direção em avaliação:** se o **empregador e a vaga continuarem existindo**, cada SIM afetado por uma alteração significativa do endereço pode reavaliar seu vínculo usando condições reais como tempo de viagem, disponibilidade de transporte, salário, turno e alternativas de emprego. Caso contrário, não há vaga garantida a preservar. Disparar essa reavaliação no evento da mudança, com regras usuais de procura por emprego e sem demissão automática universal, rotinas contínuas extras ou gestão individual do jogador. A continuidade da operação enquanto o prédio novo é construído e a frequência da decisão de emprego ainda requerem definição/coerência com a SPEC.
+
 ## Turnos de trabalho e operação contínua
 
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
