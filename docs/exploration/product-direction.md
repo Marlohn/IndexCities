@@ -172,7 +172,7 @@ A quantidade final de população, lotes, casas, edifícios, comércio e indúst
 
 **Direção aprovada na [SPEC](../SPEC.md):** o jogo permanece livre para construir e desenvolver a cidade sem objetivos ou vitórias obrigatórias. **Origem aprovada (1A), complementada pela opção 5C em 2026-10-08:** desafios opcionais podem surgir tanto de **problemas reais** quanto de **oportunidades econômicas reais e verificáveis**. Não criar crises, oportunidades falsas nem converter todo alerta ou pequena oscilação em missão. **Reconhecimento aprovado (2A):** histórico, conquistas e feedback sem dinheiro, recursos, patrimônio ou desbloqueios de conteúdo. É necessário valor adicional de gameplay, não só dar novo nome a notificações.
 
-**Em aberto para pesquisa:** quais condições persistentes de problemas **ou oportunidades** devem desencadear desafios e seus critérios de conclusão, sem confundir desafio com alerta ou indicador econômico comum. **Não** tratar uma população-alvo ("chegar a X habitantes") como objetivo decidido. O reconhecimento **não econômico** foi aprovado; sua forma exata continua aberta.
+**Conclusão aprovada na SPEC (opção 5A, 2026-10-08):** desafios são concluídos **automaticamente**, quando a solução do problema ou concretização da oportunidade se comprovar por **melhoria real e sustentada da condição original**, sem clique e sem meta fixa global inventada. **Em aberto para pesquisa:** quais condições persistentes desencadeiam desafios, os sinais concretos de conclusão, quanto tempo de estabilidade é significativo e como evitar confundir desafio com alerta/indicador comum. **Não** tratar uma população-alvo ("chegar a X habitantes") como objetivo decidido. O reconhecimento **não econômico** foi aprovado; sua forma exata continua aberta.
 
 A pesquisa futura pode confrontar a opção C aprovada com modelos de outros jogos para **extrair aprendizados, não reabrir silenciosamente a direção nem adotar suas mecânicas**:
 
@@ -201,7 +201,7 @@ O documento [exploration/genre-benchmark.md](genre-benchmark.md) já contém evi
 **Recomendação comparativa (PENDENTE):** em vez de reabrir sandbox versus campanha ou inventar missões, priorizar qualidade dos **desafios emergentes já escolhidos**:
 1. **Sinal real relevante e durável:** condições verificáveis da cidade (abastecimento, desemprego, acessibilidade, insolvência) que não sejam mero ruído momentâneo.
 2. **Ação possível e cadeia causal:** o jogador consegue entender a origem da condição e como uma intervenção real pode mudar o resultado; desafio não substitui alerta urgente nem presume solução única.
-3. **Conclusão verificável:** evidência observável de mudança efetiva; evitar reconhecer acontecimentos simulados apenas para conceder troféu.
+3. **Conclusão verificável — princípio 5A agora APROVADO:** a condição real precisa melhorar e se sustentar para que o desafio feche automaticamente; determinar gatilhos/durações concretos, não reconhecer construções inativas ou projeções como sucesso.
 4. **Memória legível, não rastreamento ilimitado:** investigar histórico resumido de acontecimentos significativos em bairros, famílias, empresas e serviços, com consulta sob demanda; não criar sistema novo de “história” como requisito sem decisão.
 5. **Sem microgestão:** aviso discreto/painel opcional 3C, sem aceitação obrigatória, cobrança extra a cada ciclo, recompensas monetárias ou desbloqueios.
 
