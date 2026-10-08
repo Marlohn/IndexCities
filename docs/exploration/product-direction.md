@@ -310,9 +310,11 @@ Fontes:
 ### Sistemas com risco de caixa-preta e que exigem regra de explicação antes da implementação
 
 **Economia das empresas**
-- empresa pode falir, mas o modelo financeiro final ainda está aberto;
+- o modelo financeiro principal já está definido: cada empresa possui caixa real e auditável;
+- empresa pode falir quando os fluxos concretos não sustentam a operação;
 - não usar um número abstrato de "saúde financeira" que cai sem causa rastreável;
-- toda deterioração deve decompor receita, salários, insumos, frete, impostos e outras causas reais.
+- toda deterioração deve decompor receita, salários, insumos, frete, impostos e outras causas reais;
+- capital inicial de empresa externa sai da Reserva Global, sem criação de moeda.
 
 **Demanda**
 - já está decidido que a cidade expõe demanda;
