@@ -4,7 +4,7 @@
 >
 > Ele descreve **como o software deve ser organizado** para preservar as decisões de produto da [SPEC](SPEC.md), permitir evolução segura e manter partes importantes do jogo testáveis e substituíveis.
 >
-> Não é uma segunda SPEC: regras de gameplay continuam pertencendo à `SPEC.md`; pesquisa e alternativas ainda abertas continuam em `EXPLORATION.md`.
+> Não é uma segunda SPEC: regras de gameplay continuam pertencendo à `SPEC.md`; pesquisa e alternativas ainda abertas continuam em `EXPLORATION.md`. **Nenhuma decisão técnica deste documento autoriza implementar comportamento de produto ainda não aprovado na SPEC.**
 
 ## Estado
 
@@ -15,6 +15,8 @@ O projeto ainda não possui implementação de jogo. Esta arquitetura define fro
 **Premissa de entrega e validação:** a implementação inicial busca um **jogo integrado orientado pela SPEC**; a validação principal de gameplay e integração será **global, após o conjunto estar funcional**. A arquitetura modular não exige POCs por subsistema nem reduz requisitos aprovados. Incrementos técnicos, testes localizados e profiling quando justificados continuam possíveis durante o desenvolvimento — não são POCs de produto independentes.
 
 Ela deve continuar pequena. Novas camadas, frameworks, assemblies ou abstrações só entram quando resolverem uma necessidade observável.
+
+**Vínculo permanente com a SPEC:** antes de escrever ou alterar código — inclusive para bug, refatoração, performance ou integração entre módulos — identifique a regra de produto que a mudança implementa ou preserva. Se a solução exigir escolher uma regra de simulação, comportamento de UI, exceção ou consequência não definida, suspenda essa parte, reporte a lacuna e obtenha a decisão do responsável registrada na SPEC antes da implementação. A ARCHITECTURE governa a solução estrutural, não substitui a decisão de produto. O procedimento operacional está em [AGENTS.md](../AGENTS.md).
 
 ---
 
