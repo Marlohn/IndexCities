@@ -145,7 +145,8 @@ Ainda precisa ser decidido:
 - duração do prazo e gatilhos para eventual saída/despejo;
 - parcelamento/pagamento parcial, prioridade de contas e eventual encargo por atraso (nenhum juro está aprovado);
 - **Decidido:** a dívida de aluguel **permanece após a família deixar o imóvel ou mudar de residência**; não há perdão automático ao sair. O crédito permanece vinculado ao credor real e o pagamento posterior, quando ocorrer, será transferência monetária entre agentes;
-- **Em aberto:** quais SIMs do domicílio respondem pela dívida, destino do saldo devedor quando morre o SIM devedor, sucessão do crédito se o credor morre ou deixa de ser titular, outras cobranças e eventual extinção por falência pessoal;
+- **Decidido:** na morte do SIM devedor, o saldo monetário individual disponível é usado para quitar aluguel atrasado até o limite devido; a parte não paga é encerrada e não passa aos herdeiros/familiares. Eventual dinheiro restante segue o destino patrimonial já definido, inclusive Reserva Global quando não houver herdeiro elegível;
+- **Em aberto:** quais SIMs do domicílio respondem originalmente pela dívida, distribuição quando houver múltiplos credores, sucessão do crédito se o credor morre ou deixa de ser titular, outras cobranças e eventual extinção por falência pessoal;
 - como buscar uma residência mais barata ou assistência, sem transformar a inadimplência em microgerenciamento;
 - consequências de outras despesas não pagas;
 
@@ -159,7 +160,7 @@ Outras respostas à vulnerabilidade financeira ainda possíveis:
 
 A consequência deve criar dinâmica sistêmica sem virar punição arbitrária.
 
-**Alerta de complexidade interna — revisão humana desta nota: PARCIALMENTE REVISADO.** O responsável reforçou que microgerenciamento não significa apenas cliques do jogador: uma rotina invisível de cobrança com múltiplas exceções, prioridades de despesas, contratos e renegociações pode ser complexa demais para manter e simular em larga escala. **Direção escolhida:** descontar um percentual simples da dívida de aluguel **apenas quando o SIM recebe salário**, com limite no valor devido; a porcentagem e a identificação do devedor continuam abertas. Evitar estados/checagens constantes e prioridades complexas de contas. A morte de devedor ou credor ainda precisa de regra explícita.
+**Alerta de complexidade interna — revisão humana desta nota: PARCIALMENTE REVISADO.** O responsável reforçou que microgerenciamento não significa apenas cliques do jogador: uma rotina invisível de cobrança com múltiplas exceções, prioridades de despesas, contratos e renegociações pode ser complexa demais para manter e simular em larga escala. **Direção escolhida:** descontar um percentual simples da dívida de aluguel **apenas quando o SIM recebe salário**, com limite no valor devido; a porcentagem e a identificação do devedor continuam abertas. Evitar estados/checagens constantes e prioridades complexas de contas. A morte do **SIM devedor** já tem regra explícita na SPEC; a morte do **SIM credor** permanece aberta.
 
 ### População sem moradia
 
@@ -403,7 +404,7 @@ A Reserva Global é também a contraparte monetária dos fluxos externos, mas is
 ### Pontos ainda abertos
 
 - quem conta como herdeiro elegível e em qual prioridade;
-- se obrigações já existentes são liquidadas antes da transferência do saldo;
+- **Decidido para aluguel atrasado do SIM falecido:** quitação até o limite de seu saldo monetário disponível antes da herança/Reserva Global, com encerramento do restante devido; o tratamento de outras obrigações ainda está aberto;
 - tratamento de outros ativos quando forem introduzidos.
 
 ## Primeira aquisição de residência recém-construída
@@ -463,12 +464,10 @@ Hipótese de benefício: negócios mais variados e sensíveis à urgência dos a
 **Em aberto:** percentual de referência, duração do intervalo de reajuste, periodicidade de pagamento/cobrança, tratamento do início de novas locações e parâmetros da inadimplência (prazo, pagamento parcial, encargos, despejo, responsáveis e eventual quitação/extinção). O **princípio de dívida real com prazo antes da possível perda da moradia e sua permanência após a mudança estão decididos**; reajuste periódico também, mas sua duração exata não foi aprovada. Reavaliações do imóvel entre reajustes não alteram imediatamente o aluguel contratado.
 
 
-### Dívida de aluguel quando morre o SIM devedor — decisão pendente
+### Dívida de aluguel quando morre o SIM devedor — regra confirmada
 
-> **Revisão humana desta seção:** PARCIALMENTE REVISADO — o responsável levantou a questão da morte e gostou do desconto salarial; **a solução para morte a seguir é proposta da IA, PENDENTE de aprovação humana**.
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — o responsável **confirmou explicitamente** a quitação com dinheiro existente no falecimento e o encerramento do restante sem herdar a dívida. Parâmetros correlatos e outros tipos de obrigação continuam pendentes de revisão/decisão.
 
-**Já decidido (SPEC):** recuperar aluguel atrasado por desconto percentual simples no evento de pagamento de salário, sem dinheiro fictício. A dívida não desaparece pela simples mudança de moradia. Percentual e identificação individual do devedor ainda abertos.
+**Decidido na SPEC:** cobrar aluguel atrasado gradualmente por desconto percentual simples quando um SIM recebe salário, sem dinheiro fictício. A dívida não desaparece pela mudança de moradia. Quando o **SIM devedor morre**, sua dívida de aluguel é paga ao credor real **com o saldo monetário individual disponível no instante da morte**, até o limite devido; o restante não pago é **encerrado sem cobrança automática de familiares ou herdeiros**. Exemplo: dívida R$ 3.000, saldo R$ 800 → o proprietário recebe R$ 800 e os R$ 2.200 restantes deixam de ser exigíveis. Encerrar uma obrigação contábil não cria nem destrói moeda.
 
-**Proposta a confirmar, sem aprovação como regra:** quando o SIM devedor morrer, abater sua dívida de aluguel **com o dinheiro que ele efetivamente possui naquele instante**, transferindo o valor devido ao SIM credor até o limite disponível. O restante não pago seria encerrado, sem cobrança automática de familiares/herdeiros e sem gerar saldo negativo. Exemplo: dívida R$ 3.000, saldo R$ 800 -> credor recebe R$ 800 e R$ 2.200 deixam de ser exigíveis. Cancelar obrigação contábil não cria nem destrói moeda.
-
-**Compatibilidade com regras existentes:** se adotada, a liquidação de dívidas ocorrerá antes de distribuir saldo remanescente por herança ou enviar dinheiro sem herdeiro elegível à Reserva Global. Não pressupor venda compulsória de imóveis para saldar a dívida, herança de débitos ou sucessão do crédito quando o proprietário credor morre; esses comportamentos não foram decididos.
+**Ordem no fluxo de patrimônio:** abater o aluguel atrasado do dinheiro do falecido **antes** de destinar eventual saldo restante à herança ou, sem herdeiro elegível, à Reserva Global. A regra confirmada não determina venda compulsória de ativos físicos para pagar essa obrigação. **Ainda abertos:** titularização da dívida de uma família, múltiplas dívidas e credores, eventual sucessão do crédito quando morre o proprietário credor e tratamento de dívidas de outras naturezas.
