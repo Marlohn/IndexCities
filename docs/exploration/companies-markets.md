@@ -115,7 +115,7 @@ Isso também evita dupla cobrança: se um trabalhador do Pátio já recebe salá
 
 Fluxo inicial:
 
-fazenda → Alimentos → transporte → mercado/comércio → cidadão
+fazenda → Alimentos → transporte → mercado/comércio → compra presencial → estoque doméstico por categoria → consumo gradual pelos moradores
 
 Se a cidade não produzir Alimentos suficientes:
 
