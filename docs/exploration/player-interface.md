@@ -307,13 +307,11 @@ Fluxo preferido:
 
 O prédio não aparece magicamente pronto.
 
-### 3. Pipeta / copiar
+### 3. Repetir construção e pipeta/copiar modelo — opção 3B aprovada em 2026-10-08
 
-Selecionar uma construção existente e entrar diretamente no modo de colocar outra do mesmo tipo.
+> **Revisão humana deste trecho: PARCIALMENTE REVISADO** — o responsável aprovou explicitamente repetição e cópia do modelo de edifício; atalhos, prévias e detalhes visuais ainda requerem calibração da interface.
 
-Ferramenta de alto valor porque elimina navegação repetida pelo catálogo.
-
-Não significa copiar estado, funcionários ou empresa; apenas escolher o mesmo tipo de construção.
+Após escolher um modelo no catálogo, **continuar posicionando novos prédios iguais sem reabrir o catálogo** entre confirmações. **Pipeta/copiar:** escolher o modelo de uma construção existente para iniciar posicionamento de **outra obra do mesmo tipo**. Cada novo prédio continua submetido às regras normais de prévia, espaço, acesso, recursos, custos e construção física; o comando **não duplica prédio concluído, empresa, proprietário, funcionários, moradores, estoque ou progresso anterior**. A alternativa de desenhar uma área e criar vários prédios em uma única confirmação **não foi aprovada** por esta decisão. Fonte oficial: [SPEC](../SPEC.md).
 
 ### 4. Rua
 
@@ -920,7 +918,7 @@ Na validação integrada, medir/observar:
 10. Quais overlays entram na primeira implementação integrada?
 11. Hotbar será fixa, configurável ou híbrida?
 12. Quais ações merecem confirmação?
-13. Teremos "copiar/pipeta" desde o início?
+13. **Resolvido na SPEC:** repetição e pipeta/copiar modelo aprovadas (3B, 2026-10-08); definir somente interface/atalhos concretos.
 14. A posição principal da barra de construção será inferior mesmo após testes de resolução e escala?
 15. Como a UI adapta a densidade de informação em telas menores?
 
