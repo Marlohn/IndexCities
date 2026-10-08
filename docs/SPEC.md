@@ -644,6 +644,14 @@ A primeira base de recursos físicos do jogo será composta por oito categorias:
 - Demolir uma construção já realizada não devolve o dinheiro nem os materiais originalmente gastos.
 
 
+### Reposicionamento de obra ainda não concluída
+
+- O jogador pode selecionar uma **obra inacabada** e usar **Mover** para escolher um novo local ou traçado, com prévia do posicionamento, acessos, custo e consequências antes de confirmar, **sem precisar cancelar manualmente e procurar novamente o item no catálogo**.
+- O reposicionamento equivale, para as regras econômicas e materiais, a **cancelar o projeto no local anterior e criar a obra no novo local em uma única ação assistida**; deve reaproveitar essas regras existentes em vez de criar transporte instantâneo de prédio, mão de obra ou materiais. O novo local inicia sua própria execução e passa pelas validações normais de ocupação, acesso, custos, equipes e logística; trabalho/progresso físico da obra anterior não são transferidos magicamente.
+- **Sem gastos nem entregas efetivas**, mover é gratuito: libera ou reatribui reservas antigas e compromete o orçamento do novo local sem pagar multa ou duplicar retenções. **Com gastos ou entregas já ocorridos**, permanecem as perdas previstas no cancelamento: dinheiro efetivamente pago não é estornado, materiais já entregues ao canteiro foram consumidos; reservas ainda não pagas/entregues são liberadas ou recalculadas para a obra no novo local. O jogo apresenta antes da confirmação as perdas já ocorridas, os custos adicionais e a necessidade de orçamento disponível.
+- Pedidos pagos, caminhões e materiais **já em trânsito** não podem ser duplicados nem teletransportados ao novo endereço: devem continuar rastreáveis e receber tratamento logístico coerente na implementação, sem reembolso fictício nem microgerenciamento do jogador. O mecanismo de redirecionamento/encerramento de entregas e a recalibração detalhada dos custos ficam para validação técnica.
+- **Prédios e infraestrutura já concluídos não são abrangidos por esta regra**. Sua eventual realocação é uma decisão separada, ainda não aprovada.
+
 ### Pátio Municipal de Obras
 
 - A execução das obras municipais depende de um **Pátio Municipal de Obras** construído pelo jogador.
