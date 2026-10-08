@@ -50,6 +50,7 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - A decisão de investir em outro imóvel acontece pela simulação, sem exigir aprovação manual do jogador.
 - Um imóvel adicional pode ser disponibilizado para aluguel a outra família real.
 - O aluguel pago deve ir ao **proprietário real do imóvel**, e não a um recebedor abstrato.
+- No primeiro modelo, **o valor do aluguel residencial é proporcional ao valor de mercado do imóvel**, usando um percentual de referência a calibrar. A procura influencia o aluguel apenas na medida em que afeta o valor de mercado: **não há ajuste adicional independente por oferta/procura** nesta versão. O aluguel é calculado pela simulação, sem negociação manual de cada imóvel.
 - A compra só pode ocorrer com dinheiro real disponível do comprador; a decisão deve considerar fatores econômicos concretos, como preço, demanda e expectativa de ocupação/renda.
 - A fórmula exata de decisão e os limites de investimento continuam em calibração/exploração.
 - No primeiro modelo, cada imóvel residencial **privadamente possuído** tem um único cidadão como proprietário registrado; um imóvel pode ficar temporariamente sem proprietário quando entrar em estado de patrimônio não reclamado.
@@ -319,7 +320,7 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - A fórmula exata, os pesos e os limiares continuam sendo parâmetros de calibração; não usar uma barra opaca sem decomposição causal.
 - Cidadãos podem entrar em falência pessoal.
 - Pode existir população sem moradia.
-- Oferta e demanda devem influenciar o **valor de mercado** dos imóveis e os preços de aluguel, sem exigir um modelo excessivamente complexo. No primeiro modelo, o preço de venda é igual ao valor de mercado calculado, sem negociação de desconto ou acréscimo.
+- Oferta e demanda devem influenciar o **valor de mercado** dos imóveis, com reflexos indiretos no aluguel residencial proporcional a esse valor, sem exigir um modelo excessivamente complexo. No primeiro modelo, não há multiplicador adicional de procura sobre o aluguel e o preço de venda é igual ao valor de mercado calculado, sem negociação de desconto ou acréscimo.
 
 
 ### Transporte público e veículos
