@@ -51,6 +51,7 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - Um imóvel adicional pode ser disponibilizado para aluguel a outra família real.
 - O aluguel pago deve ir ao **proprietário real do imóvel**, e não a um recebedor abstrato.
 - No primeiro modelo, **o valor do aluguel residencial é proporcional ao valor de mercado do imóvel**, usando um percentual de referência a calibrar. A procura influencia o aluguel apenas na medida em que afeta o valor de mercado: **não há ajuste adicional independente por oferta/procura** nesta versão. O aluguel é calculado pela simulação, sem negociação manual de cada imóvel.
+- Para uma locação em andamento, **o aluguel é reajustado periodicamente**, não a cada variação do valor de mercado. Na data de reajuste, a simulação recalcula o aluguel conforme o valor de mercado e o percentual vigente. O intervalo e os detalhes de aplicação ainda serão calibrados; reajuste de valor não deve ser confundido com a frequência dos pagamentos.
 - A compra só pode ocorrer com dinheiro real disponível do comprador; a decisão deve considerar fatores econômicos concretos, como preço, demanda e expectativa de ocupação/renda.
 - A fórmula exata de decisão e os limites de investimento continuam em calibração/exploração.
 - No primeiro modelo, cada imóvel residencial **privadamente possuído** tem um único cidadão como proprietário registrado; um imóvel pode ficar temporariamente sem proprietário quando entrar em estado de patrimônio não reclamado.
