@@ -408,7 +408,7 @@ Isso evita microgerenciamento sem transformar prédios prontos em objetos sem co
 
 ### Caso A — projeto colocado, obra ainda não concluída
 
-Hipótese preferida para teste:
+**Alternativa de gameplay não aprovada, conflitante com a SPEC quanto à devolução de materiais já entregues:**
 
 - o jogador pode cancelar ou reposicionar o projeto;
 - todos os materiais comprometidos com aquela obra retornam ao estoque elegível da cidade;
@@ -423,7 +423,7 @@ A simplificação é deliberada: rastrear "material usado versus recuperável" a
 
 Ainda precisa ser decidido se existe algum custo monetário/trabalho perdido ao cancelar uma obra incompleta. A preferência atual é evitar penalidade relevante enquanto isso não gerar gameplay claro.
 
-### Por que isso continua coerente com a simulação
+### Coerência pretendida pela alternativa (não pela regra atual da SPEC)
 
 Não é necessário fingir que materiais brotam do nada.
 
@@ -547,11 +547,11 @@ Possíveis exemplos:
 
 Isso precisa ser decidido por tipo de entidade, mas provavelmente cria uma experiência muito melhor do que destruir conceitualmente tudo só porque o endereço mudou.
 
-### Princípio provisório
+### Resumo da alternativa exploratória (não aprovada)
 
 A profundidade deve estar **na consequência relevante**, não na quantidade de espera ou cliques.
 
-Portanto, a direção para protótipo é:
+Portanto, a hipótese para avaliação futura — **sem alterar a SPEC atual** — era:
 
 - **obra incompleta:** pode cancelar/mover e recuperar integralmente os materiais;
 - **demolição de prédio pronto:** perde o investimento e precisa reconstruir se quiser outro;
