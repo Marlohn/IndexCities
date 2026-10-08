@@ -16,20 +16,20 @@ Este arquivo é material de exploração temática. A autoridade do produto cont
 
 ## Catálogo inicial aprovado e prestação de serviços B2B (2026-10-08)
 
-> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável **aprovou expressamente os dez negócios e a opção 4B de serviços entre empresas**. A escolha consta na SPEC. Comparações de custos, modelos de demanda, regras específicas de cada ramo e futuras expansões permanecem **PENDENTES**.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável **aprovou expressamente os dez negócios e a opção 4B de serviços entre empresas**. A escolha consta na SPEC. **As opções 1A/2A/3A/4B da rodada seguinte também estão aprovadas na SPEC**: refeição real no local, mercado/mercearia compartilhando categorias com porte e custos diferentes, serviços pessoais com preço/duração/capacidade próprios e famílias visuais reduzidas. Valores de calibração, propostas de arte e futuras expansões permanecem **PENDENTES**.
 
 | Grupo | Tipos aprovados | Fundamento econômico / cuidado |
 | --- | --- | --- |
-| Comércio de mercadorias | **Mercado**, **mercearia**, **posto de combustível** | Revenda de categorias físicas existentes, com estoque e comprador real; mercado/mercearia podem diferir por porte e capacidade, posto segue cadeia física de Combustível. |
-| Alimentação fora de casa | **Café**, **lanchonete**, **restaurante** | Partilhar lógica de Alimentos/atendimento presencial sem inventar SKUs ou consumir a mesma refeição duas vezes; diferenças de operação ainda abertas. |
-| Serviços pessoais e lazer | **Barbearia**, **salão de beleza**, **academia** | Visitas opcionais por preferências, tempo/dinheiro e acesso; funcionários e capacidade reais sem criar necessidade obrigatória por negócio. |
+| Comércio de mercadorias | **Mercado**, **mercearia**, **posto de combustível** | **Mercado e mercearia vendem as mesmas categorias físicas disponíveis**, diferindo em porte, capacidade e custos reais (2A); posto segue a cadeia física de Combustível. |
+| Alimentação fora de casa | **Café**, **lanchonete**, **restaurante** | **Refeição usa estoque físico de Alimentos, é consumida no local e satisfaz a alimentação, com uma única cobrança**; não descontar de novo do domicílio (1A). |
+| Serviços pessoais e lazer | **Barbearia**, **salão de beleza**, **academia** | **Mesma lógica simples de visitas opcionais, diferenciada por preço, duração, capacidade e custos reais** (3A), sem necessidade obrigatória por atividade. |
 | Hospedagem | **Hotel** | Demanda turística, alojamento, ocupação, equipe e dinheiro reais já previstos. |
 
 São **dez identidades comerciais**, não dez empresas garantidas nem dez modelos 3D obrigatórios. Fazendas e fábricas já previstas são atividades de produção fora dessa lista. **Oficina, lavanderia e escritório continuam fora do catálogo inicial.** A empresa escolhe o ramo quando o imóvel for compatível; concorrência entre iguais continua possível e demanda real determina a viabilidade.
 
 **B2B (4B) confirmado:** empresas privadas podem ser clientes de serviços de outras empresas, desde que haja necessidade operacional verdadeira, prestadora capaz, preço e pagamento de caixa para caixa. **Não foram aprovados contratos empresariais complexos nem a inclusão automática de escritórios**; qual serviço concreto cada ramo poderá vender a outra empresa ainda exige definição, para evitar receita fictícia.
 
-**Pendente antes do código:** diferenças entre mercado/mercearia, café/lanchonete/restaurante e barbearia/salão, motivos e frequência de visita, capacidade, custo, estoque quando pertinente, compatibilidade física e número de variantes 3D. A escolha dos nomes está aprovada; essas regras não foram inventadas por inferência.
+**Decidido depois do catálogo (2026-10-08):** 1A: alimentação no local usa Alimentos reais e uma única refeição/pagamento; 2A: mercado/mercearia diferem por porte/capacidade/custo, não produtos exclusivos; 3A: serviços pessoais diferem em preço/duração/capacidade; 4B visual: poucas famílias reutilizáveis (lojas pequenas, comércio médio e exceções funcionais). **Continuam em calibração/definição:** valores, frequência da demanda, custos e insumos próprios, compatibilidade espacial, número de variantes e execução em escala; não transformar inferências em requisitos.
 
 ---
 
@@ -43,7 +43,7 @@ São **dez identidades comerciais**, não dez empresas garantidas nem dez modelo
 
 **Serviços opcionais:** visitas não essenciais podem nascer das preferências, renda, tempo livre, acesso e interesse dos SIMs, usando a infraestrutura de lazer e visita já prevista. **Não** criar uma barra obrigatória de corte de cabelo, academia ou lavanderia por SIM e **não** fabricar clientes para cada negócio; atendimento e dinheiro devem corresponder a escolha real. A demanda de ramos ainda não selecionados segue em exploração.
 
-**Catálogo:** decisão por ramo e variedade comercial estão aprovadas, mas **nomes e quantidades do portfólio não estão fechados**. Fonte de pesquisa logo abaixo; não promover listas antigas sem revisão humana.
+**Catálogo:** a seleção dos **dez ramos foi fechada e registrada na SPEC**; permanecem em pesquisa expansões e parâmetros particulares. A comparação antiga abaixo conserva apenas valor histórico e não substitui as decisões oficiais.
 
 ---
 
@@ -62,7 +62,7 @@ São **dez identidades comerciais**, não dez empresas garantidas nem dez modelo
 | **Distribuição pela demanda real do bairro** | Empresas viáveis se diferenciam pelo que moradores, turistas e outras empresas realmente buscam | Não obrigar alternância periódica de lojas ("um salão a cada seis lotes"), cota estética ou estabelecimento rentável sem compradores |
 | **Assets aprimorados progressivamente** | Um modelo próprio futuro substitui o genérico sem reescrever a atividade | Separar identidade empresarial do visual e não mudar propriedade/caixa ao trocar aparência |
 
-**Exemplos, NÃO aprovados como catálogo:** alimentação fora de casa (café/lanchonete/restaurante), serviços pessoais (salão/barbearia), visita/lazer (academia), comércios de mercadorias (mercado/farmácia se categoria física estiver modelada). Oficina pressuporia demanda econômica genuína por manutenção; lavanderia pressuporia roupas/serviço necessário; escritórios precisariam de compradores de serviços empresariais. **Não introduzir desgaste ou novas necessidades só para justificar uma fachada.**
+**Exemplos discutidos ANTES da escolha do catálogo:** alimentação fora de casa (café/lanchonete/restaurante), serviços pessoais (salão/barbearia), visita/lazer (academia), comércios de mercadorias (mercado/farmácia se categoria física estiver modelada). **Café, lanchonete, restaurante, salão, barbearia, academia e mercado foram posteriormente aprovados; farmácia não integra os dez iniciais.** Oficina pressuporia demanda econômica genuína por manutenção; lavanderia pressuporia roupas/serviço necessário; escritórios precisariam de compradores de serviços empresariais. **Não introduzir desgaste ou novas necessidades só para justificar uma fachada.**
 
 **Evidência adicional:** na [Economy 2.0 do Cities: Skylines II (Paradox, 2024)](https://www.paradoxinteractive.com/games/cities-skylines-ii/news/dev-diary-economy-part-one), a distribuição de atividades comerciais foi alinhada ao consumo das famílias para reduzir repetição de empresas iguais. A [Godot documenta reutilização de cenas](https://docs.godotengine.org/en/stable/tutorials/scripting/nodes_and_scene_instances.html) e [bibliotecas de meshes](https://docs.godotengine.org/en/stable/tutorials/3d/using_gridmaps.html), mas isso não obriga adotar uma implementação específica no IndexCities.
 
@@ -83,7 +83,7 @@ São **dez identidades comerciais**, não dez empresas garantidas nem dez modelo
 
 ### Triagem editorial: popularidade real × gameplay × custo de asset
 
-| Candidato (todos PENDENTES) | Reaproveitamento de regras já aprovadas | Custo relativo de arte* | Julgamento para o primeiro conjunto |
+| Candidato (classificação histórica da pesquisa; status vigente na SPEC) | Reaproveitamento de regras | Custo relativo de arte* | Julgamento histórico, não escopo vigente |
 | --- | --- | --- | --- |
 | **Café / lanchonete (restaurante simples)** | **Alimentos** já é categoria real; cidadãos podem sair para alimentação/lazer; há deslocamento presencial, turismo, empresa real e capacidade de atendimento. Precisa definir se consumo no local difere de compras para casa e como evitar dupla cobrança/consumo. | **Baixo–médio**: fachada comercial pequena, letreiro, alguns elementos externos; interiores abstratos. | **Alta prioridade candidata**: liga economia de alimentos, visitas e vida de rua sem exigir novos recursos físicos/SKUs. Agrupar café/lanchonete/restaurante em **um único arquétipo**, não três prédios iniciais. |
 | **Barbearia / salão de beleza** | Serviço pessoal presencial com empresa, funcionários, limite de atendimento e pagamento; grande relevância nos dados do Sebrae. **Ainda não existe uma necessidade de corte de cabelo/beleza aprovada**, portanto o motivo para o SIM consumir o serviço exige desenho de gameplay (possível lazer, mas não assumir). | **Baixo–médio**: pode usar a mesma base de loja pequena com sinalização e acessórios visuais discretos. | **Alta prioridade candidata pela representatividade e diversidade**, mas depende de definir demanda não fictícia; agrupar barbearia, cabelo e beleza em **um arquétipo**, sem duplicar engine/asset. |
@@ -102,7 +102,7 @@ São **dez identidades comerciais**, não dez empresas garantidas nem dez modelo
 - **Um modelo simples de prestação de serviço**, reaproveitando empresa proprietária/operadora, caixa, vagas, horários/turnos e deslocamentos; cliente real chega, há capacidade de atendimento e transferência monetária real ao prestar o serviço. **Os detalhes exatos de motivação, consumo, receita e capacidade por ramo precisam de decisão na SPEC**. Não criar estoque fictício de serviços, SKU, profissão obrigatória, minigame, animação interior ou simulação per-frame por cliente.
 - **Regra de decisão para novo asset:** cada candidato só deveria entrar quando (1) acrescentar alguma escolha urbana/resultado legível além do catálogo existente; (2) houver fluxo concreto de clientes/demanda/dinheiro; (3) ficar demonstrado o que se reutiliza da malha visual e lógica; (4) o custo adicional de produção 3D e performance for aceitável. Um tipo muito comum na cidade real pode **não** caber no primeiro conjunto se faltar gameplay. Não atribuir pontuação numérica fictícia nem impor limite arbitrário como requisito de produto.
 
-**Pendências para próxima aprovação humana:** os dez nomes já estão aprovados; determinar como cada ramo opera com poucos modelos e regras, evitando despesas ou necessidades fictícias; se cabeleireiro/beleza cria demanda própria ou aproveita lazer; como alimentação fora de casa interage com estoque doméstico e alimentação existente; se academia cria atendimento distinto. A pesquisa deixa deliberadamente esses comportamentos **fora da SPEC** até decisão, conforme AGENTS.
+**Pendências remanescentes (após 1A/2A/3A/4B):** os dez nomes e seus grupos já foram aprovados; refeição no local, diferenciação por porte/capacidade/custo do varejo, atendimento pessoal e famílias de assets também. **Definir apenas parâmetros e lacunas de execução**, como frequência de visitas opcionais, unidades de Alimentos por refeição, efeitos concretos/custos operacionais das atividades, detalhes de capacidade e tamanho de asset, sem criar necessidades ou despesas fictícias. A pesquisa deixa deliberadamente esses comportamentos **fora da SPEC** até decisão, conforme AGENTS.
 
 ---
 
