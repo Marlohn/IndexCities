@@ -205,7 +205,9 @@ Ela vale para:
 - mercados;
 - demais comércios baseados em bens.
 
-Falta definir a granularidade das categorias e a política de reposição para cada tipo de estabelecimento.
+**Decidido na SPEC:** compras de bens de consumo pelos cidadãos exigem **visita física a um comércio**, usando os deslocamentos reais de pedestres e/ou veículos, inclusive fora da câmera. O SIM compra apenas produtos de categorias disponíveis no estoque com pagamento real; o estoque diminui e o dinheiro entra no caixa da empresa operadora. A visita de compra é automática, sem teletransporte ou transação invisível que dispense o trajeto.
+
+A granularidade inicial por **categorias de produtos** já foi decidida na SPEC; a subdivisão concreta dessas categorias, a política de reposição por estabelecimento, a frequência/agrupamento de compras e a seleção automática de loja permanecem para calibração/protótipos.
 
 ---
 
