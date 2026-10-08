@@ -87,7 +87,7 @@ Se um detalhe não muda nenhum sistema relevante, ele pode permanecer agregado.
 
 Ainda não está decidido se cada lote terá proprietário individual e valor de mercado próprio.
 
-Já está decidido na SPEC que a **tributação de imóveis residenciais, comerciais e industriais incide sobre o valor de mercado**, com alíquota da categoria escolhida pelo jogador. Também foi confirmado que **o valor dos imóveis é dinâmico e estimado pelas condições concretas da cidade**: localização, acesso a serviços, poluição, demanda e características do imóvel podem fazer o valor subir ou descer. **A estimativa funciona desde o primeiro imóvel, sem exigir vendas anteriores como referência.** Esse foi o modelo escolhido em vez de basear o valor principalmente nas negociações passadas. O modelo deve explicar as causas da variação ao jogador e não criar/destruir moeda: reavaliação patrimonial não é movimentação financeira. Ainda não foram decididos fórmula, pesos, frequência de atualização, diferenciação precisa entre tipos de imóvel ou a relação entre valor estimado e preço final negociado; tamanho pode ser um fator de avaliação, mas não é a base direta do imposto.
+Já está decidido na SPEC que a **tributação de imóveis residenciais, comerciais e industriais incide sobre o valor de mercado**, com alíquota da categoria escolhida pelo jogador. Também foi confirmado que **o valor dos imóveis é dinâmico e estimado pelas condições concretas da cidade**: localização, acesso a serviços, poluição, demanda e características do imóvel podem fazer o valor subir ou descer. **A estimativa funciona desde o primeiro imóvel, sem exigir vendas anteriores como referência.** Esse foi o modelo escolhido em vez de basear o valor principalmente nas negociações passadas. O modelo deve explicar as causas da variação ao jogador e não criar/destruir moeda: reavaliação patrimonial não é movimentação financeira. No primeiro modelo, **o preço da primeira compra e das revendas é igual ao valor de mercado calculado**, sem desconto/acréscimo negociado; tamanho pode ser um fator de avaliação, mas não é a base direta do imposto. Ainda não foram decididos fórmula, pesos, frequência de atualização nem diferenciação precisa entre tipos de imóvel. A opção de negociações automáticas conforme oferta/demanda foi guardada apenas como **possível melhoria futura**, sem compromisso de implementação.
 
 Fatores candidatos a investigar com dados e referências reais:
 
@@ -196,7 +196,7 @@ Hipótese inicial a avaliar:
 - modificadores de localização e qualidade;
 - limites de variação para evitar instabilidade artificial.
 
-A fórmula final só deve ser escolhida depois de testar se o jogador consegue entender por que os preços subiram ou caíram.
+A fórmula exata do valor de mercado e a do aluguel ainda devem ser testadas para que o jogador compreenda por que esses valores mudam. No primeiro modelo, a venda segue o valor de mercado sem negociação de desconto/acréscimo.
 
 
 ---
@@ -251,7 +251,7 @@ Enquanto um imóvel residencial estiver em propriedade privada:
 - um imóvel pode ficar excepcionalmente sem proprietário quando entrar em estado não reclamado.
 
 Ainda abertos:
-- fórmula de preço e aluguel;
+- fórmula de aluguel e parâmetros do cálculo do valor de mercado (preço de venda já definido como igual à avaliação);
 - prioridade de herdeiros elegíveis;
 - granularidade de propriedade em apartamentos;
 - detalhes de revenda e custos recorrentes quando forem necessários.
@@ -432,4 +432,13 @@ Foram superadas as alternativas de:
 - financiar a obra com capital privado antes de construir;
 - criar fundos/buckets separados para patrimônio sem titular e liquidação exterior.
 
-O ponto ainda aberto é a formação do preço e a seleção automática do comprador, não o destino do pagamento.
+O preço de venda no primeiro modelo já foi definido como igual ao valor de mercado calculado. Continuam abertos os detalhes da avaliação e da seleção automática do comprador, não o destino do pagamento.
+
+
+### Negociação automática de imóveis — possibilidade futura
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — o responsável apontou esta alternativa como possível melhoria futura; vantagens, riscos e critérios descritos pela IA continuam **PENDENTES** de revisão.
+
+**Não faz parte do primeiro modelo:** compras/vendas de imóveis por preços negociados automaticamente acima ou abaixo da avaliação, em resposta a oferta/demanda. O primeiro modelo vende pelo valor de mercado calculado, conforme a SPEC. A negociação automática foi mantida apenas como possibilidade para reavaliação futura, sem compromisso de implementação ou prazo.
+
+Hipótese de benefício: negócios mais variados e sensíveis à urgência dos agentes. Riscos a investigar: complexidade de lógica, volatilidade, legibilidade para o jogador e possíveis distorções tributárias caso o preço pago se afaste do valor estimado.
