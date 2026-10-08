@@ -266,7 +266,7 @@ Enquanto um imóvel residencial estiver em propriedade privada:
 - um imóvel pode ficar excepcionalmente sem proprietário quando entrar em estado não reclamado.
 
 Ainda abertos:
-- percentual de aluguel, periodicidade de cobrança e parâmetros do cálculo do valor de mercado (preço de venda já definido como igual à avaliação);
+- percentual de aluguel, dia de vencimento da cobrança **mensal** e parâmetros do cálculo do valor de mercado (preço de venda já definido como igual à avaliação);
 - prioridade de herdeiros elegíveis;
 - granularidade de propriedade em apartamentos;
 - detalhes de revenda e custos recorrentes quando forem necessários.
@@ -461,13 +461,13 @@ Hipótese de benefício: negócios mais variados e sensíveis à urgência dos a
 
 ## Aluguel residencial — modelo inicial e melhoria possível
 
-> **Revisão humana desta seção:** PARCIALMENTE REVISADO — o responsável confirmou aluguel proporcional ao valor de mercado e **reajuste periódico** dos contratos, além de apontar ajuste adicional pela procura apenas como possível melhoria. Detalhes de calibração e consequências elaborados pela IA permanecem **PENDENTES** de revisão.
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — o responsável confirmou aluguel proporcional ao valor de mercado, **pagamento mensal** e **reajuste periódico** dos contratos, além de apontar ajuste adicional pela procura apenas como possível melhoria. Detalhes de calibração e consequências elaborados pela IA permanecem **PENDENTES** de revisão.
 
-**Decisão oficial (ver SPEC):** no primeiro modelo, cada locação possui **um único SIM responsável pelo aluguel e pela dívida**, sem atribuição automática aos demais adultos. O aluguel residencial é **valor de mercado do imóvel × percentual de aluguel** (a calibrar). O valor de mercado já considera condições da cidade, incluindo demanda; não existe um segundo fator de procura aplicado diretamente ao aluguel. **Contratos em andamento só têm o valor do aluguel recalculado em intervalos periódicos**, e não a cada mudança de avaliação do imóvel. O pagamento continua sendo transferência real do locatário ao SIM proprietário, sem microgerenciamento do jogador.
+**Decisão oficial (ver SPEC):** no primeiro modelo, cada locação possui **um único SIM responsável pelo aluguel e pela dívida**, sem atribuição automática aos demais adultos. O aluguel residencial é **valor de mercado do imóvel × percentual de aluguel** (a calibrar). O valor de mercado já considera condições da cidade, incluindo demanda; não existe um segundo fator de procura aplicado diretamente ao aluguel. **Contratos em andamento só têm o valor do aluguel recalculado em intervalos periódicos**, e não a cada mudança de avaliação do imóvel. **O pagamento do aluguel é mensal, uma vez por mês do calendário da simulação**, por transferência real do SIM responsável ao SIM proprietário, sem microgerenciamento do jogador. O calendário de pagamentos é distinto do intervalo de reajuste.
 
 **Possível melhoria futura, não aprovada como funcionalidade atual:** ajuste automático adicional do aluguel conforme procura por locação e vacância, mesmo quando o valor de mercado do imóvel não muda. Poderia reagir mais rapidamente ao mercado de locação, mas adiciona volatilidade, complexidade e risco de duplicar o efeito da demanda já refletido na avaliação. Não há compromisso de implementar.
 
-**Em aberto:** percentual de referência, duração do intervalo de reajuste, periodicidade de pagamento/cobrança, tratamento do início de novas locações e parâmetros da inadimplência (prazo, pagamento parcial, encargos, despejo, responsáveis e eventual quitação/extinção). O **princípio de dívida real com prazo antes da possível perda da moradia e sua permanência após a mudança estão decididos**; reajuste periódico também, mas sua duração exata não foi aprovada. Reavaliações do imóvel entre reajustes não alteram imediatamente o aluguel contratado.
+**Em aberto:** percentual de referência, duração do intervalo de reajuste, dia do vencimento mensal, tratamento de início/fim de locações no meio do mês e parâmetros da inadimplência (prazo, pagamento parcial, encargos, despejo, responsáveis e eventual quitação/extinção). O **princípio de dívida real com prazo antes da possível perda da moradia e sua permanência após a mudança estão decididos**; reajuste periódico também, mas sua duração exata não foi aprovada. Reavaliações do imóvel entre reajustes não alteram imediatamente o aluguel contratado.
 
 
 ### Dívida de aluguel quando morre o SIM devedor — regra confirmada
