@@ -11,7 +11,7 @@ Estas regras valem para humanos e IAs. O objetivo é maximizar progresso útil s
 - `docs/exploration/genre-benchmark.md` guarda a **referência comparativa externa do gênero**, usada periodicamente para confrontar o IndexCities com aprendizados, falhas e expectativas observados em outros city builders; é exploração temática recorrente e não define requisitos.
 - O código e o histórico deste repositório definem o estado real da implementação.
 
-Antes de uma mudança relevante, leia a SPEC e somente o código necessário para entender o alvo. Consulte a ARCHITECTURE quando a mudança afetar organização técnica, fronteiras ou dependências. Consulte a EXPLORATION quando a tarefa depender de uma discussão ainda aberta ou do raciocínio que levou a uma decisão.
+Antes de **qualquer trabalho em código**, inclusive início do desenvolvimento, correção de bug, refatoração, otimização ou manutenção, consulte a `docs/SPEC.md` e identifique o comportamento do produto que a mudança deve preservar ou realizar. Leia somente o código necessário para entender o alvo. Consulte a `docs/ARCHITECTURE.md` quando houver implicações estruturais e a exploração relevante quando existirem dúvidas ou decisões ainda abertas. **Pedido, código existente e exploração não substituem a SPEC como autorização de comportamento.**
 
 
 ## Mapa de prontidão e prioridades de definição
@@ -73,17 +73,27 @@ Durante conversas de exploração ou definição com o responsável pelo projeto
 
 ## Arquitetura de especificação
 
-O IndexCities usa deliberadamente **Spec-Driven Development (SDD)** de forma leve: primeiro definimos claramente o que deve existir; depois implementamos.
+O IndexCities adota **Spec-Driven Development (SDD) contínuo, com SPEC viva e obrigatória**: o comportamento desejado é decidido e documentado antes de ser codificado. Essa regra vale desde o primeiro código e durante toda a evolução do jogo — novas funcionalidades, alterações de regras, ajustes de gameplay, correções de bugs, refatorações e otimizações.
 
-Aqui isso significa:
+**A `docs/SPEC.md` é o contrato do produto, não apenas um documento de preparação.** Nenhum agente pode decidir por conta própria um comportamento não especificado, preencher lacunas com uma suposição ou tratar como aprovado algo que está só em conversas, pesquisa, código existente ou exemplos de outros projetos.
 
-- mudança de produto ou comportamento novo entra na `SPEC.md` antes do código;
-- decisão estrutural importante entra na `ARCHITECTURE.md` antes de orientar implementação;
-- dúvidas, pesquisa e alternativas ainda abertas ficam na `EXPLORATION.md` ou, quando forem temáticas/extensas, em `docs/exploration/<tema>.md` referenciadas pelo hub;
-- bugs que apenas restauram comportamento já especificado não exigem mudar a SPEC;
-- experimentos técnicos isolados são opcionais para investigar riscos e não criam fases obrigatórias de produto; só viram produto quando a decisão for registrada na SPEC.
+- **Produto e comportamento:** toda regra nova ou alterada precisa estar decidida pelo responsável e registrada na `SPEC.md` **antes** de qualquer código que a implemente.
+- **Bug:** confronte o comportamento observado com a SPEC. Se a regra já estiver clara, corrija para restaurá-la sem modificar a SPEC por ritual. Se a expectativa estiver ausente, ambígua ou contraditória, **não invente o comportamento correto**: esclareça, registre a decisão na SPEC e só então corrija.
+- **Refatoração, desempenho e manutenção:** só podem preservar o contrato de comportamento já documentado. Não são autorização para mudar gameplay, interfaces ou consequências do jogo; se a solução exigir mudança de produto, volte à decisão e à SPEC antes de codificá-la.
+- **Arquitetura:** `docs/ARCHITECTURE.md` governa decisões estruturais aprovadas, mas **não cria requisitos de produto**. Detalhes internos de código podem ser escolhidos tecnicamente dentro das restrições existentes, sem inventar comportamento ou política de produto. Decisão estrutural nova relevante deve ser registrada na ARCHITECTURE antes de orientar código.
+- **Exploração e experimentos:** `docs/EXPLORATION.md` e documentos temáticos guardam hipóteses, alternativas e pesquisas, nunca autorização de implementação de produto. Experimentos técnicos isolados são opcionais, não constituem fase obrigatória nem permitem inserir comportamento não aprovado no jogo. Qualquer código incorporado ao produto continua condicionado à SPEC.
+- **Calibração:** quando a própria SPEC delegar explicitamente valores ou fórmulas de ajuste à calibração, a implementação pode escolher e testar esses detalhes dentro do comportamento aprovado. Essa delegação não permite criar novas regras, exceções, opções de jogador ou efeitos de gameplay.
 
-SDD aqui **não** significa adotar obrigatoriamente Spec Kit, OpenSpec, BMAD ou criar uma cadeia de documentos para cada mudança. A especificação vem antes do desenvolvimento, mas o processo continua proporcional ao risco e ao tamanho da mudança.
+### Porta obrigatória antes e durante qualquer implementação
+
+1. **Localizar a base na SPEC:** identifique a regra ou o comportamento esperado que justifica o trabalho. Para mudanças sem alteração funcional (como refatoração ou otimização), identifique o comportamento já especificado que deve permanecer intacto.
+2. **Checar suficiência e conflitos:** compare o pedido com a SPEC e, quando pertinente, a ARCHITECTURE e o código. Verifique se é possível implementar sem decidir comportamento, exceções ou consequências de produto por conta própria.
+3. **Bloquear a parte indefinida:** se faltar uma definição necessária ou houver ambiguidade/contradição, **não escreva o código que depende dela**. Informe precisamente a lacuna, onde ela aparece e as alternativas/consequências relevantes; peça a decisão do responsável. Trabalho independente já coberto pela SPEC pode continuar.
+4. **Registrar antes de codificar:** depois de o responsável decidir, atualize a SPEC com o comportamento aprovado; ajuste ARCHITECTURE ou referências exploratórias quando necessário. **Só então** implemente a parte antes bloqueada. O agente não pode aprovar sua própria proposta.
+5. **Repetir a checagem durante o trabalho:** se surgir regra ausente, conflito ou necessidade de alterar o comportamento, retorne ao passo 3. Nem urgência de bug, nem conveniência técnica, nem testes que passam autorizam desvio silencioso.
+6. **Validar aderência:** revise implementação, efeitos colaterais e testes contra a SPEC vigente. Se código e SPEC divergirem, não altere a SPEC para justificar código sem uma decisão de produto explícita.
+
+Não é exigido criar issue, plano, PR, checklist ou documento de especificação separado para cada mudança: a exigência é **ter a decisão de produto aprovada na SPEC antes de qualquer implementação dependente dela**.
 
 **Direção da primeira implementação, confirmada pelo responsável:** desenvolver o **jogo integrado definido pela SPEC**, com a **validação principal global depois que o conjunto estiver funcional**. Não estabelecer POCs de sistemas isolados (economia, fazenda, mapa, interface etc.) como entregas obrigatórias, nem usar recomendações históricas de "primeira POC" ou "após a POC" para cortar automaticamente funcionalidades aprovadas. **Implementação integrada não significa um único commit ou integração às cegas:** construir em incrementos técnicos coerentes, com testes locais e verificações proporcionais quando úteis, evita descobrir falhas estruturais só no final. Experimentos técnicos isolados são opcionais, não fases de produto. Qualquer alteração do escopo oficial exige decisão explícita na SPEC.
 
@@ -225,10 +235,11 @@ Sistemas profundos não podem virar caixas-pretas.
 
 ## Regra principal de escopo
 
-- **Funcionalidade nova de produto precisa estar na SPEC antes de ser implementada.**
-- Se uma solicitação introduzir comportamento novo ainda não especificado, atualize a SPEC como parte da mesma mudança e então implemente.
-- Bug que apenas restaura comportamento já especificado pode ser corrigido diretamente.
-- Experimentos técnicos pontuais podem acontecer isoladamente, sem instituir uma sequência de POCs por sistema. Só viram produto quando aceitos e incorporados à SPEC.
+- **Sem comportamento de produto não documentado na SPEC, não há implementação desse comportamento.** Isso vale para o início do projeto e para cada mudança futura.
+- Se o pedido exigir uma decisão ausente, apresente-a ao responsável, registre a escolha explícita na SPEC e só depois codifique.
+- Bug com comportamento esperado já definido na SPEC pode ser corrigido diretamente **com base nessa regra**; bug que revela lacuna ou exige comportamento diferente retorna primeiro à SPEC.
+- Refatorações, ajustes técnicos e testes não podem introduzir regras de produto não aprovadas.
+- Experimentos técnicos isolados não são fases obrigatórias nem autorizam inserir features não aprovadas no jogo.
 - Não invente features, abstrações ou sistemas para um futuro hipotético.
 
 ## Filosofia de desenvolvimento
@@ -243,16 +254,16 @@ Sistemas profundos não podem virar caixas-pretas.
 
 ## Como trabalhar
 
-1. Entenda o comportamento desejado na SPEC e no pedido atual.
-2. Se a decisão ainda estiver aberta, pesquise e registre o raciocínio na EXPLORATION antes de transformá-la em produto.
-3. Inspecione somente o necessário.
-4. Implemente diretamente.
-5. Rode primeiro os testes mais próximos da área alterada; amplie a validação somente quando a mudança justificar.
-6. Revise o diff final e confirme que não adicionou escopo não pedido.
-7. Atualize a SPEC somente quando o produto mudou.
+1. **Leia a SPEC antes de mexer em código** e encontre a decisão vigente pertinente ao trabalho, mesmo em bugs e manutenção.
+2. Compare a solicitação e o comportamento existente com essa decisão. Se houver lacuna, conflito ou regra nova, **pare a implementação dependente**, apresente opções ao responsável e espere a decisão; registre-a na SPEC antes de continuar.
+3. Consulte a ARCHITECTURE para restrições estruturais e a EXPLORATION para contexto aberto; inspecione somente o código necessário.
+4. Implemente apenas o comportamento coberto pela SPEC, sem suposições de gameplay nem expansão de escopo.
+5. Se surgir nova lacuna durante a implementação, volte ao passo 2. Execute primeiro os testes mais próximos da área alterada e amplie quando o risco justificar.
+6. Revise o diff e os testes contra a SPEC: corrigir uma divergência não autoriza mudar silenciosamente o contrato.
+7. Atualize a SPEC **antes**, nunca depois, de codificar alteração de produto. Não a reescreva por mudanças exclusivamente técnicas que já preservam os requisitos existentes.
 
 ## Definição prática de pronto
 
-Uma mudança está pronta quando o comportamento pedido funciona, a validação adequada passa e não existe divergência conhecida entre implementação e SPEC.
+Uma mudança está pronta quando o comportamento implementado está coberto pela SPEC aprovada, funciona conforme esse contrato, passa pela validação adequada e não deixa divergência conhecida entre código e SPEC.
 
 Arquitetura elegante, documentação extra e processo perfeito não são objetivos por si só.
