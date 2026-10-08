@@ -206,6 +206,8 @@ Até isso acontecer, **SPEC + ARCHITECTURE + EXPLORATION hub + este AGENTS.md co
 
 ## Princípio de gameplay, microgerenciamento e custo interno da simulação
 
+**Regra permanente confirmada pelo responsável em 2026-10-08: qualidade de gameplay e controle de microgerenciamento são critérios obrigatórios para TODO sistema do jogo, não apenas construção ou realocação.** A IA deve questionar propostas que criem espera, fricção, controles, estados ou exceções sem benefício proporcional, inclusive quando ela própria sugeriu a complexidade. Preservar causalidade e consequências reais; o objetivo não é transformar profundidade em burocracia.
+
 Para qualquer decisão de produto, avalie explicitamente o microgerenciamento do jogador **e** o custo de manter e executar a lógica nos bastidores contra o valor de gameplay.
 
 - Realismo não é objetivo suficiente por si só: detalhe adicional precisa criar decisão, consequência, leitura sistêmica ou feedback interessante.
@@ -218,6 +220,8 @@ Para qualquer decisão de produto, avalie explicitamente o microgerenciamento do
 - **Automatizar não torna um sistema simples:** muitos estados por SIM, rotinas recorrentes, exceções, dependências e regras de conciliação também são microgerenciamento interno, consumindo performance, memória, manutenção, testes e capacidade de diagnóstico.
 - Antes de acrescentar um subsistema, verifique se sua consequência relevante pode ser representada com menos estados, menos interações e uma regra clara, preferindo processamento por eventos ou ciclos apropriados a verificações constantes quando viável.
 - Profundidade causal é desejável, mas simular burocracia, contabilidade ou negociações em detalhe só se justifica quando gerar consequência de gameplay relevante e observável. Não empurre complexidade para trás da interface para parecer que o jogo ficou simples.
+- **Antes de propor, especificar ou implementar uma mecânica, confronte:** o que ela acrescenta às decisões/consequências interessantes; quantos cliques, etapas e esperas reais impõe ao jogador; quais estados, exceções, consultas e testes acrescenta internamente; e se regras já existentes ou uma transição acionada por eventos entregam o mesmo valor com menos custo. Em caso de baixo ganho, simplifique ou não crie a mecânica.
+- **Calibre a espera pelo ritmo percebido no jogo**, distinguindo tempo simulado, tempo real do jogador e interrupção efetiva de serviços/produção. Não acrescente atrasos ou sistemas auxiliares para resolver problemas hipotéticos antes de verificar se realmente aparecem na gameplay integrada; não use essa diretriz para apagar custos, materiais, deslocamentos ou consequências aprovados.
 
 ## Princípio global: decisões do jogador afetam a vida dos SIMs
 
