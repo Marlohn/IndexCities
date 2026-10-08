@@ -487,6 +487,7 @@ Excedentes podem ser exportados automaticamente para reduzir microgerenciamento.
 Requisito de UI/finanças:
 
 - receita de exportação precisa aparecer separadamente;
+- o pagamento externo sai da **Reserva Global** e vai para o agente que vende a mercadoria;
 - quantidade e tipo de mercadoria exportada devem ser consultáveis;
 - custos logísticos relevantes não devem ficar escondidos;
 - o jogador precisa conseguir entender se a cidade está ganhando dinheiro por produção interna ou dependendo de importações.
@@ -1099,20 +1100,20 @@ jogador coloca a construção
 
 Esse fluxo pode valer para qualquer construção, evitando duas mecânicas diferentes de materiais.
 
-### Dinheiro pode continuar separado
+### Dinheiro continua seguindo agentes reais
 
-A unificação da disponibilidade material **não exige** unificar dinheiro.
+A unificação da disponibilidade material **não unifica o dinheiro**.
 
-Se futuramente houver diferença entre obra pública e privada:
+No modelo atual:
 
-- a prefeitura pode pagar obras/serviços públicos;
-- empresa/investidor pode financiar atividade privada;
-- produtores locais podem receber dinheiro quando seus materiais forem utilizados;
-- importações continuam tendo custo e frete.
+- toda obra pública ou privada ordenada pelo jogador é financiada pelo **Caixa da Cidade**;
+- produtores e trabalhadores locais recebem os pagamentos que lhes cabem;
+- pagamentos de importação vão para a **Reserva Global**;
+- depois da conclusão, empresas privadas operam com caixa próprio e residências seguem a economia de seus proprietários.
 
-Essas transferências podem acontecer na simulação sem obrigar o jogador a administrar estoques por proprietário.
+Essas transferências acontecem na simulação sem obrigar o jogador a administrar estoques por proprietário.
 
-Em outras palavras: **um painel agregado de oferta local não significa que juridicamente todo material pertence à prefeitura**.
+Em outras palavras: **um painel agregado de oferta local não significa que juridicamente todo material pertence à prefeitura nem que todos os pagamentos vão para o mesmo caixa**.
 
 ### Papel do jogador
 
