@@ -84,6 +84,14 @@ Se um detalhe não muda nenhum sistema relevante, ele pode permanecer agregado.
 
 ---
 
+## Intervenções sobre imóvel privado concluído — questão transversal (2026-10-08)
+
+> **Revisão humana desta seção:** PENDENTE — síntese da IA de uma discussão em que o responsável preferiu realocação assistida de prédios concluídos, mas explicitamente pediu reflexão adicional sobre quem comprou a casa e quem mora nela. O mecanismo não foi aprovado na SPEC.
+
+A propriedade residencial está registrada em SIM real, que pode morar no imóvel ou alugá-lo a outra família. Realocar a **estrutura** e realocar o **domicílio** são operações distintas: mudar localização altera potencialmente valor de mercado, acesso e bem-estar; na locação, proprietário e ocupante têm interesses distintos. A [SPEC](../SPEC.md) prevê procura de moradia automática após perda de residência por causas já estabelecidas, mas não autoriza inferir que uma demolição municipal possa despojar um proprietário sem transferência monetária ou compensação. A regra geral de demolição instantânea ainda não resolve os direitos econômicos e o destino de quem ocupa o imóvel.
+
+A análise principal, cenários de propriedade e opções de intervenção ficam no [documento de interface](player-interface.md#realocação-assistida-de-prédios-prontos-preferência-c-propriedade-ainda-sem-solução-2026-10-08). É preciso **decisão humana explícita** antes de incluir uma mecânica de remoção/indenização na SPEC. Não impor reassentamento fictício, compra compulsória, consentimento obrigatório ou relocação grátis por iniciativa da IA.
+
 ## Valor imobiliário e propriedade de lotes
 
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — o responsável confirmou valor de mercado dinâmico como base de impostos; critérios específicos, pesquisa e método de avaliação abaixo seguem **PENDENTES** de revisão.
