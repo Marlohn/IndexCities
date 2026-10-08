@@ -446,10 +446,10 @@ Hipótese de benefício: negócios mais variados e sensíveis à urgência dos a
 
 ## Aluguel residencial — modelo inicial e melhoria possível
 
-> **Revisão humana desta seção:** PARCIALMENTE REVISADO — o responsável confirmou o modelo proporcional ao valor de mercado e apontou o ajuste adicional pela procura apenas como possível melhoria. Detalhes de calibração e consequências elaborados pela IA permanecem **PENDENTES** de revisão.
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — o responsável confirmou aluguel proporcional ao valor de mercado e **reajuste periódico** dos contratos, além de apontar ajuste adicional pela procura apenas como possível melhoria. Detalhes de calibração e consequências elaborados pela IA permanecem **PENDENTES** de revisão.
 
-**Decisão oficial (ver SPEC):** no primeiro modelo, o aluguel residencial é **valor de mercado do imóvel × percentual de aluguel** (a calibrar). O valor de mercado já considera condições da cidade, incluindo demanda; não existe um segundo fator de procura aplicado diretamente ao aluguel. O pagamento continua sendo transferência real do locatário ao SIM proprietário, sem microgerenciamento do jogador.
+**Decisão oficial (ver SPEC):** no primeiro modelo, o aluguel residencial é **valor de mercado do imóvel × percentual de aluguel** (a calibrar). O valor de mercado já considera condições da cidade, incluindo demanda; não existe um segundo fator de procura aplicado diretamente ao aluguel. **Contratos em andamento só têm o valor do aluguel recalculado em intervalos periódicos**, e não a cada mudança de avaliação do imóvel. O pagamento continua sendo transferência real do locatário ao SIM proprietário, sem microgerenciamento do jogador.
 
 **Possível melhoria futura, não aprovada como funcionalidade atual:** ajuste automático adicional do aluguel conforme procura por locação e vacância, mesmo quando o valor de mercado do imóvel não muda. Poderia reagir mais rapidamente ao mercado de locação, mas adiciona volatilidade, complexidade e risco de duplicar o efeito da demanda já refletido na avaliação. Não há compromisso de implementar.
 
-**Em aberto:** percentual de referência, periodicidade de cobrança, atualização do aluguel em contratos existentes quando a avaliação muda e regras de inadimplência. Não pressupor que valor dinâmico altera imediatamente o aluguel contratado.
+**Em aberto:** percentual de referência, duração do intervalo de reajuste, periodicidade de pagamento/cobrança, tratamento do início de novas locações e regras de inadimplência. **Reajuste periódico está decidido**, mas o prazo exato (por exemplo, anual) não foi aprovado. Reavaliações do imóvel entre reajustes não alteram imediatamente o aluguel contratado.
