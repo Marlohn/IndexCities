@@ -26,7 +26,7 @@ Auditoria reconciliada em **2026-10-07** com o histórico de conversas disponív
 
 ## Explorações temáticas
 
-- **Direção de produto e princípios de simulação** — revisão humana: **PARCIALMENTE REVISADO**; ativa; identidade, loop, profundidade, **impactos globais sobre SIMs**, **gameplay e microgerenciamento como critério obrigatório de todo sistema**, legibilidade: [`exploration/product-direction.md`](exploration/product-direction.md).
+- **Direção de produto e princípios de simulação** — revisão humana: **PARCIALMENTE REVISADO**; ativa; identidade, loop, profundidade, **impactos globais sobre SIMs**, **sandbox livre com desafios opcionais aprovado na SPEC (desafios concretos ainda em pesquisa)**, **gameplay e microgerenciamento como critério obrigatório de todo sistema**, legibilidade: [`exploration/product-direction.md`](exploration/product-direction.md).
 - **Escala, performance e baselines** — revisão humana: **PARCIALMENTE REVISADO**; ativa; população, profundidade individual, tempo e referências empíricas para benchmark: [`exploration/simulation-scale.md`](exploration/simulation-scale.md).
 - **Mundo, mapa, terreno e ambiente** — revisão humana: **PARCIALMENTE REVISADO**; ativa; direção visual, seed/reprodutibilidade, terreno, vegetação e **modelo híbrido de grid aprovado na SPEC**, detalhes de posicionamento em calibração: [`exploration/world-map-environment.md`](exploration/world-map-environment.md).
 - **Mobilidade, serviços e infraestrutura urbana** — revisão humana: **PARCIALMENTE REVISADO**; ativa; vias, transporte, saúde, educação, serviços, água, energia, resíduos, conexão externa e **opção A de reavaliação de emprego público/privado após mudança de local aprovada**: [`exploration/city-systems.md`](exploration/city-systems.md).
