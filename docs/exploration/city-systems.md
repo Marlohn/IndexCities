@@ -475,6 +475,26 @@ Esses valores devem ser baseados em dados reais ou benchmark do jogo, não escol
 
 ---
 
+## Trabalho pendular bidirecional — opção 4C (2026-10-08)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável escolheu C, com preocupação explícita sobre custo técnico e equilíbrio. Direção aprovada na SPEC; modelagem do exterior e dos pagamentos continua aberta para validação.
+
+**Evidência:** o [IBGE — Censo 2022, divulgado em 2025](https://educa.ibge.gov.br/jovens/materias-especiais/23064-censo-2022-como-a-populacao-se-desloca-para-estudar-e-trabalhar.html) identifica **9,3 milhões de pessoas (10,7% dos ocupados) trabalhando em município distinto da residência**, sendo 7,9 milhões com deslocamento três ou mais dias por semana. Essa proporção não é parâmetro aprovado do jogo.
+
+**Benefício para gameplay:** residentes podem trabalhar fora quando há emprego externo realmente acessível, e empresas locais podem contratar trabalhadores externos quando há vagas reais. A entrada e saída pela conexão externa criam tráfego e condições de acesso, sem obrigar o jogador a construir uma segunda cidade. Não contar trabalhadores de fora como moradores nem esconder desemprego dos residentes.
+
+**Custo a medir:** simular todas as casas, empresas e rotinas fora do mapa seria caro e não foi aprovado. Preferir representar vagas/oferta externa de forma leve, com vínculos recorrentes consistentes, tráfego apenas nas vias modeladas e pagamento com origem/destino real. Um pendular não pode ocupar várias vagas incompatíveis nem resolver automaticamente toda falta de pessoal. Contrato externo e saldo entram na contabilidade monetária; pagamentos de/para contrapartes não modeladas seguem a Reserva Global, sem criação de dinheiro. Persistência dos agentes, limites de oferta, regras de decisão e processamento do calendário continuam para exploração técnica antes do código.
+
+## Manutenção municipal recorrente — opção 5B (2026-10-08)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou despesas recorrentes reais e leitura agregada, sem reparos manuais. Fórmulas, serviços/destinatários e tratamento de falta de recursos continuam pendentes.
+
+Expandir rua, energia, água e outras redes traz custos permanentes para o **Caixa da Cidade**, além da obra inicial. A **arrecadação de impostos já especificada** ajuda a financiar os custos, mas nunca sobe automaticamente para cobri-los: gastos excessivos podem gerar déficit, empréstimo e pressão para ajustar impostos. O painel financeiro precisa distinguir manutenção de salários e outras operações, sem cobranças duplicadas.
+
+**Regra anti-ficção:** valor cobrado só sai do Caixa se houver causa e destinatário econômico real: trabalho público que já não tenha sido remunerado, insumos, prestação local ou serviço externo efetivamente devido (com conciliação via Reserva Global). Não criar imposto fictício ou pagamento para ninguém e não inventar falhas de manutenção por rua. Calibrar periodicidade, valor, dependência da capacidade/extent e possíveis consequências de falta de pagamento. Referências: [EPA — asset management](https://www.epa.gov/dwcapacity/about-asset-management) e [Paradox — Economy 2.0](https://www.paradoxinteractive.com/games/cities-skylines-ii/news/dev-diary-economy-part-one), apenas para comparação.
+
+---
+
 ## Conexão externa
 
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
