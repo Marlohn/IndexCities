@@ -327,7 +327,7 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Múltiplos estabelecimentos equivalentes disputando a mesma clientela, como vários mercados concentrados na mesma área, podem reduzir a oportunidade econômica para novos estabelecimentos e aumentar o risco de prejuízo.
 - A fórmula exata, os pesos e os limiares continuam sendo parâmetros de calibração; não usar uma barra opaca sem decomposição causal.
 - Cidadãos podem entrar em falência pessoal.
-- Pode existir população sem moradia.
+- **População sem moradia integra o primeiro modelo como consequência real e observável:** a ausência de residência pode afetar indicadores sociais e decisões de migração, com causas legíveis ao jogador. A resposta inicial do jogador é **indireta**, pela ampliação da oferta de moradias e pela melhoria de empregos, serviços e condições da cidade, usando os sistemas urbanos já previstos. **Não incluir no escopo inicial abrigos específicos para população sem moradia, programas municipais de assistência social ou moradia subsidiada como sistemas próprios.** Métricas e efeitos exatos serão calibrados; possíveis sistemas de assistência permanecem apenas em exploração, sem compromisso de implementação.
 - Oferta e demanda devem influenciar o **valor de mercado** dos imóveis, com reflexos indiretos no aluguel residencial proporcional a esse valor, sem exigir um modelo excessivamente complexo. No primeiro modelo, não há multiplicador adicional de procura sobre o aluguel e o preço de venda é igual ao valor de mercado calculado, sem negociação de desconto ou acréscimo.
 
 
