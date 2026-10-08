@@ -23,14 +23,13 @@ Este arquivo é material de exploração temática. A autoridade do produto cont
 
 ### Renda individual e familiar
 
-Direção discutida:
+Direção atual:
 
-- cidadãos adultos podem ter dinheiro individual;
-- crianças não precisam possuir uma conta financeira própria por padrão;
-- a família/domicílio pode ter uma noção agregada de renda e despesas compartilhadas;
-- ainda precisa ser decidido como dividir salário, patrimônio, contas da casa, dependentes e gastos individuais.
+- **todo SIM possui saldo monetário individual real**, conforme a SPEC; para crianças esse saldo pode ser zero ou receber apenas fluxos explicitamente definidos;
+- a família/domicílio pode ter métricas agregadas de renda e despesas compartilhadas sem substituir os saldos individuais;
+- ainda precisa ser decidido como despesas comuns, dependentes e decisões financeiras familiares afetam os saldos individuais.
 
-Uma opção promissora para testar é manter **renda e patrimônio individuais**, mas calcular também métricas de **renda familiar disponível** e despesas comuns do domicílio. Isso preserva individualidade sem obrigar toda decisão econômica a existir em nível bancário extremamente granular.
+A leitura familiar pode calcular **renda familiar disponível** e despesas comuns do domicílio como agregados derivados. Isso preserva individualidade sem exigir microgerenciamento bancário.
 
 ### Até onde simular compras?
 
@@ -108,16 +107,20 @@ O modelo deve ser validado antes de virar regra de produto. Evitar fórmula arbi
 
 ### Dívida municipal
 
-A dívida municipal passa a fazer parte da direção do produto porque uma cidade sem mecanismo de financiamento pode entrar em estado de caixa negativo sem caminho de recuperação.
+A dívida municipal faz parte do produto como mecanismo de recuperação de caixa.
+
+Já está decidido:
+- o principal do empréstimo sai da **Reserva Global** e entra no Caixa da Cidade;
+- amortizações retornam à Reserva Global;
+- se houver juros, eles também são transferidos para a Reserva Global;
+- o empréstimo apenas redistribui a oferta monetária fixa e não cria moeda nova.
 
 Ainda precisa ser decidido:
-
-- quem empresta;
 - limite de endividamento;
-- juros;
+- taxa de juros;
 - prazo;
 - consequências de inadimplência;
-- se empréstimos aparecem automaticamente como ferramenta de emergência ou exigem decisão explícita do jogador.
+- se o empréstimo exige ação explícita do jogador ou pode ser apresentado como ferramenta de emergência.
 
 
 ---
