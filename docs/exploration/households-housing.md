@@ -651,186 +651,64 @@ Depois de migrar e tornar-se residente real, essa família/cidadão pode futuram
 
 ## Morte do SIM e destino do patrimônio
 
-> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — regra principal discutida e promovida para a SPEC; prioridade de herdeiros e obrigações anteriores continuam abertas.
 
-
-**Status:** decisão parcial promovida para a SPEC; regras de herdeiro elegível e usos futuros do fundo continuam abertas.
-
-### Decisão atual
+**Status:** decidido no caso sem herdeiro elegível.
 
 Quando um SIM morre **sem herdeiro elegível**:
 
-- o dinheiro remanescente vai para um **Reserva Global**;
-- o fundo é um ledger financeiro separado e rastreável;
-- ele não faz parte do Caixa da Cidade, das carteiras dos SIMs ou dos caixas das empresas;
-- o jogador não pode gastar esse saldo;
-- imóveis e outros ativos podem ficar explicitamente **sem proprietário / não reclamados**;
-- o fundo não se torna proprietário desses ativos;
-- se um imóvel não reclamado for vendido, o pagamento entra no fundo;
-- o uso futuro do saldo fica aberto;
-- o fundo não representa nem controla a conexão exterior.
+- dinheiro remanescente sem outro titular econômico definido volta para a **Reserva Global**;
+- o lançamento registra que a origem foi patrimônio sem herdeiro;
+- imóvel ou outro ativo físico pode ficar explicitamente **sem proprietário / não reclamado**;
+- a Reserva Global não se torna proprietária do ativo;
+- se esse ativo for vendido depois, o pagamento entra na Reserva Global com a origem registrada.
 
-### Por que não fazer o fundo possuir os imóveis
+A Reserva Global é também a contraparte monetária dos fluxos externos, mas isso não significa que ela controle a conexão física com o exterior. Ela é apenas um ledger monetário de bastidor.
 
-**Prós de deixar o ativo sem dono**
-- mantém o fundo apenas como custódia financeira;
-- evita transformar o fundo em imobiliária;
-- evita perguntas sobre aluguel, manutenção, impostos e operação pelo fundo;
-- cria um estado genérico reutilizável de ativo sem proprietário.
+### Por que não fazer a Reserva Global possuir imóveis
 
-**Contra**
-- sistemas de propriedade precisam aceitar `owner = none` de forma explícita.
-
-Esse custo foi considerado menor que criar um proprietário artificial.
-
-### Alternativas descartadas para o primeiro modelo
-
-- **Espólio individual por falecido:** completo, mas cria entidade e processo jurídico sem gameplay suficiente.
-- **Beneficiário social intermediário:** apenas adiciona outro possível recebedor antes do caso realmente sem sucessor.
-- **Tudo para o Caixa da Cidade:** transforma mortes em receita direta do jogador.
-- **Dinheiro desaparece:** quebra rastreabilidade e causalidade.
-- **Fundo como controlador da conexão exterior:** mistura responsabilidades sem relação direta e cria risco de virar um agente econômico mágico.
-
-### Pesquisa de referência
-
-A pesquisa externa mostrou que sistemas reais frequentemente tratam patrimônio sem herdeiro por mecanismos públicos ou de patrimônio não reclamado. Isso serviu como referência para procurar uma solução rastreável, mas o IndexCities deliberadamente não replica processo jurídico detalhado.
-
-As referências e alternativas pesquisadas permanecem material de contexto; a regra canônica atual está na SPEC.
+- evita transformar a reserva em imobiliária;
+- evita aluguel, manutenção e impostos artificiais para um agente técnico;
+- preserva um estado simples de ativo sem proprietário.
 
 ### Pontos ainda abertos
 
 - quem conta como herdeiro elegível e em qual prioridade;
-- se obrigações já existentes na simulação são liquidadas antes da transferência ao fundo;
-- se o fundo algum dia terá outra função de gameplay;
-- tratamento de outros tipos de ativos além de dinheiro e imóveis quando eles forem introduzidos.
+- se obrigações já existentes são liquidadas antes da transferência do saldo;
+- tratamento de outros ativos quando forem introduzidos.
 
+## Primeira aquisição de residência recém-construída
 
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — fluxo central confirmado diretamente pelo responsável; preço e fórmula de escolha do comprador continuam em calibração.
 
----
+**Status:** decisão promovida para a SPEC.
 
-## Primeira venda de residência recém-construída e papel do Caixa
+Fluxo atual:
 
-> **Revisão humana desta seção:** PENDENTE — análise nova da IA motivada por preocupação explícita do responsável; precisa ser validada antes de virar decisão.
+Caixa da Cidade financia a obra + materiais
+→ residência fica pronta e pode permanecer sem proprietário
+→ família local ou família exterior que vai migrar compra com dinheiro real
+→ pagamento da **primeira aquisição vai para a Reserva Global**
+→ comprador torna-se proprietário
+→ revendas futuras acontecem entre proprietários privados
+→ aluguel vai ao proprietário real
+→ cidade recebe impostos e outras receitas públicas definidas
 
-**Status:** aberto.
+### Por que o dinheiro não volta ao Caixa
 
-Foi levantado um risco de gameplay importante: se o jogador constrói residências com o Caixa da Cidade e recebe integralmente o preço de mercado na primeira venda, o loop pode aproximar o jogo de um simulador de incorporação/especulação imobiliária e reduzir a importância dos impostos como fonte recorrente de receita.
+Enviar o valor da primeira aquisição de volta ao Caixa reciclava o capital de construção e diminuía demais a importância dos impostos. A cidade deve sentir o custo de desenvolver moradia e recuperar capacidade financeira principalmente pela atividade econômica e receitas públicas ao longo do tempo.
 
-### Opção A — primeira venda inteira retorna ao Caixa
+### Por que usar a Reserva Global
 
-**Prós**
-- recicla rapidamente o capital usado para construir;
-- fluxo simples e legível;
-- evita criar outro agente vendedor.
+A Reserva Global fecha a origem/destino sem criar incorporadora, banco ou investidor artificial:
+- o comprador perde dinheiro real;
+- o Caixa não recebe reembolso automático;
+- o dinheiro continua dentro da oferta monetária global fixa;
+- a origem do lançamento fica auditável.
 
-**Contras**
-- se o preço de venda puder superar o custo, cria lucro direto por construir e revender;
-- pode tornar desenvolvimento imobiliário a principal fonte de dinheiro do jogador;
-- entra em tensão com a intenção de impostos sustentarem a cidade.
+Foram superadas as alternativas de:
+- devolver integralmente ou parcialmente a primeira venda ao Caixa;
+- financiar a obra com capital privado antes de construir;
+- criar fundos/buckets separados para patrimônio sem titular e liquidação exterior.
 
-### Opção B — primeira venda não retorna ao Caixa
-
-**Prós**
-- mantém impostos e receitas públicas como fonte principal de recursos;
-- elimina incentivo de especulação imobiliária pelo jogador.
-
-**Contras**
-- o Caixa financia uma propriedade privada e não recupera diretamente o capital;
-- transforma toda moradia privada em subsídio público pesado;
-- pode tornar expansão excessivamente cara ou exigir outra fonte de financiamento.
-
-### Opção C — Caixa recupera apenas o capital adiantado, sem lucro imobiliário
-
-Interpretação:
-- o Caixa financia/adianta a construção porque o jogador controla o desenvolvimento físico da cidade;
-- a residência pronta entra no mercado sem proprietário;
-- o primeiro comprador paga até o valor necessário para recuperar o custo de desenvolvimento definido;
-- esse retorno é registrado como **recuperação de capital**, não como receita operacional/lucro da cidade;
-- não há ganho especulativo na primeira venda;
-- depois do primeiro proprietário, revendas normais transferem dinheiro entre proprietários privados e a cidade recebe apenas impostos/taxas definidos.
-
-**Prós**
-- preserva o modelo atual de construção pelo jogador;
-- evita transformar o Caixa em incorporadora lucrativa;
-- mantém impostos como principal fonte de receita recorrente;
-- permite que capital de desenvolvimento seja reutilizado;
-- não exige empresa imobiliária ou outro agente artificial.
-
-**Contras**
-- a primeira venda tem uma regra diferente das revendas privadas;
-- se o capital for sempre recuperado integralmente, dinheiro vira mais uma restrição de liquidez do que um custo permanente para expansão residencial;
-- ainda é preciso decidir o que acontece quando a demanda não suporta o valor necessário para recuperar o custo.
-
-### Reavaliação após discussão
-
-A opção C foi **rejeitada**: se o Caixa sempre adianta o capital e o recupera integralmente na primeira venda, o dinheiro vira essencialmente reciclável. Com impostos também entrando, o jogador perde boa parte da pressão financeira e o sistema tende a produzir uma fonte circular de capital.
-
-Isso revela que o problema está antes da pergunta “para quem vai o dinheiro da primeira venda?”. A premissa a reavaliar é **quem financia uma construção privada**.
-
-Direção agora preferida para discutir:
-- o jogador continua escolhendo onde construir;
-- uma residência privada não precisa ser financiada pelo Caixa da Cidade por padrão;
-- capital privado real pode financiar a obra: família local, família externa que vai migrar e morar, ou investidor residencial local já permitido;
-- construção só começa quando houver um agente real com capital suficiente para assumir o projeto, salvo política pública explícita de subsídio/moradia pública no futuro;
-- a cidade recebe principalmente impostos e taxas, não o preço integral do imóvel.
-
-**Pró:** elimina a reciclagem infinita de capital e mantém impostos relevantes.
-
-**Contra:** o placement do jogador passa a representar uma proposta/autorização de desenvolvimento privado, não necessariamente uma obra imediatamente paga pelo Caixa; esse fluxo precisa ser testado para não parecer que o jogador constrói casas “de graça”.
-
-Essa direção ainda não é decisão oficial.
-
-
-### Alternativa: um único fundo com origem por lançamento
-
-> **Revisão humana desta seção:** PENDENTE — simplificação levantada pelo responsável; não é decisão oficial.
-
-Em vez de manter saldos lógicos separados, pode existir **um único fundo técnico** que recebe todos esses valores e registra em cada lançamento a origem/motivo do dinheiro.
-
-Exemplos de origem:
-- patrimônio sem herdeiro;
-- saldo final de empresa encerrada;
-- primeira aquisição de imóvel privado;
-- primeira aquisição de comércio/indústria.
-
-Tecnicamente isso preserva rastreabilidade com menos estrutura. A principal ressalva é semântica: nem todo valor desse pool é literalmente “patrimônio não reclamado”. Se essa opção for adotada, o nome e as regras futuras do fundo precisam refletir que ele é um reservatório técnico de valores fora do Caixa da Cidade, e não apenas heranças sem titular.
-
-### Ledger técnico compartilhado, saldos lógicos separados
-
-> **Revisão humana desta seção:** PENDENTE — proposta nova em discussão; não é decisão oficial.
-
-Para evitar criar várias entidades financeiras artificiais, uma implementação possível é usar o mesmo mecanismo técnico de ledger para valores fora do Caixa da Cidade, mas com **categorias/saldos lógicos separados**.
-
-Exemplo:
-- `unclaimed_property` — dinheiro que ficou sem titular econômico e pertence ao conceito de Patrimônio Não Reclamado;
-- `external_settlement` — dinheiro que saiu da economia local em uma liquidação com a economia exterior, como a primeira aquisição de um ativo privado.
-
-Cada lançamento deve guardar ao menos valor, origem, motivo e entidade/evento relacionado.
-
-A vantagem é reaproveitar a mesma infraestrutura de rastreamento sem inventar novas “carteiras”. O cuidado é não somar semanticamente esses valores como um único fundo: patrimônio não reclamado pode ter regras futuras próprias, enquanto liquidação exterior é apenas uma fronteira econômica e não deve virar dinheiro utilizável ou reivindicável.
-
-### Alternativa simples: liquidação pela economia exterior
-
-> **Revisão humana desta seção:** PENDENTE — alternativa nova em discussão; não é decisão oficial.
-
-Hipótese:
-- o jogador/cidade continua pagando e executando a construção, inclusive de residências privadas;
-- quando um primeiro proprietário assume o imóvel, o pagamento de aquisição **não retorna ao Caixa da Cidade**;
-- esse valor é liquidado contra a **economia exterior**, uma fronteira contábil já existente para fluxos que entram e saem da cidade;
-- a economia exterior não é o Reserva Global e não é controlada pelo jogador;
-- depois da primeira aquisição, revendas entre SIMs seguem normalmente entre os agentes privados;
-- a cidade recebe principalmente impostos e taxas.
-
-Vantagens:
-- preserva o diferencial de gameplay em que o jogador constrói toda a cidade e suporta o custo;
-- evita reciclagem infinita do capital de construção;
-- não exige financiamento, incorporadora ou nova etapa de aprovação;
-- comprador converte dinheiro em patrimônio real, sem receber um imóvel grátis;
-- o jogador continua dependendo de impostos/receitas públicas para sustentar novas obras.
-
-Riscos:
-- pagamentos de primeira aquisição por agentes locais retiram dinheiro da economia interna;
-- será necessário observar em POC se esse dreno monetário fica excessivo;
-- a fronteira exterior precisa ser auditável para que o dinheiro não pareça simplesmente desaparecer.
-
-Essa alternativa é atualmente mais promissora que financiamento privado da obra ou recuperação automática do custo pelo Caixa, mas permanece aberta.
+O ponto ainda aberto é a formação do preço e a seleção automática do comprador, não o destino do pagamento.
