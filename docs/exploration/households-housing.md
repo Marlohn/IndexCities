@@ -138,11 +138,12 @@ Ainda precisa ser decidido:
 
 ### Falência pessoal
 
-**Decisão confirmada na SPEC para atraso de aluguel:** famílias podem deixar de pagar por um prazo, acumulando **dívida real perante o SIM proprietário**, antes da possibilidade de perder a moradia. Registrar valor devido não cria dinheiro: só o pagamento efetivo entre agentes altera saldos. Não há necessidade de intervenção do jogador em cada cobrança.
+**Decisão confirmada na SPEC para atraso de aluguel:** famílias que deixam de pagar acumulam **dívida real perante o SIM proprietário** e, após **3 meses de inadimplência**, contados do primeiro aluguel mensal vencido e não quitado, **podem perder a moradia**. A passagem do prazo não obriga despejo automático: gatilhos concretos e efeito de pagamentos parciais ainda serão definidos. Registrar valor devido não cria dinheiro: só o pagamento efetivo entre agentes altera saldos. Não há necessidade de intervenção do jogador em cada cobrança.
 
 **Pontos ainda em exploração:**
 
-- duração do prazo e gatilhos para eventual saída/despejo;
+- **Decidido:** o prazo de inadimplência é de **3 meses** (distinto dos dois prazos de 3 meses por morte sem herdeiro e compra para moradia própria). A partir dele existe possibilidade de perda da moradia, não despejo instantâneo obrigatório;
+- **Em aberto:** critérios de saída após vencidos os 3 meses, efeitos de pagamentos parciais sobre a contagem e critérios de quitação;
 - parcelamento/pagamento parcial, prioridade de contas e eventual encargo por atraso (nenhum juro está aprovado);
 - **Decidido:** a dívida de aluguel **permanece após a família deixar o imóvel ou mudar de residência**; não há perdão automático ao sair. O crédito permanece vinculado ao credor real e o pagamento posterior, quando ocorrer, será transferência monetária entre agentes;
 - **Decidido:** na morte do SIM devedor, o saldo monetário individual disponível é usado para quitar aluguel atrasado até o limite devido; a parte não paga é encerrada e não passa aos herdeiros/familiares. Eventual dinheiro restante segue o destino patrimonial já definido, inclusive Reserva Global quando não houver herdeiro elegível;
@@ -467,7 +468,7 @@ Hipótese de benefício: negócios mais variados e sensíveis à urgência dos a
 
 **Possível melhoria futura, não aprovada como funcionalidade atual:** ajuste automático adicional do aluguel conforme procura por locação e vacância, mesmo quando o valor de mercado do imóvel não muda. Poderia reagir mais rapidamente ao mercado de locação, mas adiciona volatilidade, complexidade e risco de duplicar o efeito da demanda já refletido na avaliação. Não há compromisso de implementar.
 
-**Em aberto:** percentual de referência, referência inicial para contagem dos 12 meses do reajuste anual, dia do vencimento mensal, tratamento de início/fim de locações no meio do mês e parâmetros da inadimplência (prazo, pagamento parcial, encargos, despejo, responsáveis e eventual quitação/extinção). O **princípio de dívida real com prazo antes da possível perda da moradia e sua permanência após a mudança estão decididos**; reajuste **anual a cada 12 meses** também está aprovado. Reavaliações do imóvel entre reajustes não alteram imediatamente o aluguel contratado.
+**Em aberto:** percentual de referência, referência inicial para contagem dos 12 meses do reajuste anual, dia do vencimento mensal, tratamento de início/fim de locações no meio do mês e parâmetros da inadimplência (pagamento parcial, encargos, critérios de perda da moradia após 3 meses, responsáveis e eventual quitação/extinção). O **princípio de dívida real, seu prazo de 3 meses antes da possível perda da moradia e sua permanência após a mudança estão decididos**; reajuste **anual a cada 12 meses** também está aprovado. Reavaliações do imóvel entre reajustes não alteram imediatamente o aluguel contratado.
 
 
 ### Dívida de aluguel quando morre o SIM devedor — regra confirmada
