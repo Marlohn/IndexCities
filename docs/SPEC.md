@@ -4,7 +4,7 @@
 >
 > Ele descreve somente decisões já tomadas para o IndexCities. Não herda requisitos de projetos, protótipos ou conversas anteriores.
 >
-> Nova funcionalidade de produto entra aqui **antes** da implementação. Pesquisa e alternativas ficam em [EXPLORATION.md](EXPLORATION.md) até existir uma decisão.
+> **Toda implementação de comportamento do jogo deve partir de uma decisão já registrada aqui.** Isso inclui a primeira versão, features futuras, mudanças de gameplay e correções de bugs que exijam definir ou alterar uma regra. Pesquisa e alternativas ficam em [EXPLORATION.md](EXPLORATION.md) até existir decisão do responsável. O fluxo obrigatório de trabalho está em [AGENTS.md](../AGENTS.md).
 
 ## Estado atual
 
@@ -15,6 +15,9 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 ## Regras da SPEC
 
 - Só entra aqui aquilo que foi explicitamente decidido para o IndexCities.
+- **Esta é uma especificação viva:** permanece como contrato de comportamento durante todo o desenvolvimento e a manutenção, não apenas antes da primeira implementação.
+- Se um bug, pedido ou dificuldade de implementação revelar comportamento ausente, ambíguo ou contraditório, o responsável decide e a SPEC é corrigida **antes** do código que dependa dessa definição. Não se presumem regras por conveniência técnica.
+- Um bug que apenas restaura uma regra já clara nesta SPEC não exige alterar o texto; a correção precisa segui-la. Refatorações e otimizações também devem preservar esse contrato.
 - Decisão antiga de outro projeto não é requisito deste projeto.
 - Uma hipótese pode ser experimentada sem virar requisito.
 - Quando uma exploração resultar em decisão de produto, esta SPEC deve ser atualizada de forma curta.
