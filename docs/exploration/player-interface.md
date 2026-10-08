@@ -400,6 +400,8 @@ A primeira categoria deveria ser fácil. A segunda não deve virar uma máquina 
 
 **Status: exploração de ferramentas de movimentação/realocação ainda aberta.** **Dinheiro do cancelamento foi decidido em 2026-10-08:** valor comprometido ainda não pago é liberado no Caixa; pagamentos efetivos não são estornados. A interface deve mostrar quanto será liberado e quanto já foi gasto, sem exigir que o jogador controle pagamentos individualmente. A regra de **materiais recuperados ao cancelar obras está confirmada na SPEC**: materiais apenas reservados e ainda não entregues são liberados; materiais já entregues ao canteiro foram consumidos e não retornam. **Em 2026-10-08 o responsável reafirmou explicitamente que prefere manter a perda do material entregue**, por considerar baixa a contribuição à gameplay de rastrear e recuperar sobras. O argumento de economia de CPU é uma hipótese, não a razão técnica principal da decisão: a simplificação de estados, devolução logística, UX e implementação é mais robusta. O cenário de recuperação integral abaixo permanece como **alternativa exploratória conflitante e não aprovada**, preservada apenas para histórico, sem autoridade para reabrir a SPEC automaticamente.
 
+**Decisão oficial adicional em 2026-10-08 — Mover obra inacabada (opção C):** o responsável aprovou reposicionamento assistido em uma ação, gratuito antes de gasto/entrega, e sujeito às perdas já realizadas após pagamentos ou chegada de materiais. A interface mostrará a prévia do novo local, perdas e novo custo; a simulação tratará o evento como cancelar a obra anterior e gerar outra, sem teletransportar material, reproduzir progresso ou estornar despesa real. Entregas em trânsito exigem solução técnica física, sem microgerenciamento. **Revisão humana desta atualização:** PARCIALMENTE REVISADO — a escolha foi confirmada, mas o detalhamento redigido pela IA e hipóteses adjacentes não foram revisados integralmente. A realocação de construção concluída continua aberta na exploração e não foi promovida à SPEC.
+
 A prioridade aqui é gameplay. O sistema de obras é profundo, mas corrigir um erro de planejamento não pode exigir que o jogador espere uma longa operação logística ou seja punido por detalhes de materiais parcialmente consumidos que não criam uma decisão interessante.
 
 A fronteira mais promissora é simples:
@@ -410,7 +412,7 @@ Isso evita microgerenciamento sem transformar prédios prontos em objetos sem co
 
 ### Caso A — projeto colocado, obra ainda não concluída
 
-**Alternativa de gameplay não aprovada, conflitante com a SPEC quanto à devolução de materiais já entregues:**
+**Histórico de alternativa superada pela opção C aprovada na SPEC:** o jogador já tem a ação **Mover** para reposicionar a obra sem cancelamento manual, mas continua sujeito aos gastos efetivos e à perda de material entregue. O cenário abaixo é **não aprovado e conflitante com a SPEC quanto à devolução de materiais já entregues**:
 
 - o jogador pode cancelar ou reposicionar o projeto;
 - todos os materiais comprometidos com aquela obra retornam ao estoque elegível da cidade;
@@ -555,7 +557,7 @@ A profundidade deve estar **na consequência relevante**, não na quantidade de 
 
 Portanto, a hipótese para avaliação futura — **sem alterar a SPEC atual** — era:
 
-- **obra incompleta:** pode cancelar/mover e recuperar integralmente os materiais;
+- **obra incompleta (alternativa rejeitada):** poderia cancelar/mover recuperando integralmente materiais, mas essa hipótese foi substituída pelo **Mover assistido aprovado na SPEC**, sem recuperação de cargas já entregues;
 - **demolição de prédio pronto:** perde o investimento e precisa reconstruir se quiser outro;
 - **realocação de prédio pronto:** ferramenta fluida e abreviada, com transição visual entre origem e destino, sem exigir uma reconstrução completa e demorada;
 - detalhes de custo, duração, paralisação e transferência de ocupantes/estoque continuam em teste.
@@ -822,7 +824,7 @@ Na validação integrada, medir/observar:
 2. Como exatamente o jogador inverte o lado do L?
 3. Teremos curvas livres no primeiro escopo ou só depois?
 4. O jogo terá modo de planejamento em lote?
-5. Blueprint sem obra iniciada poderá sempre ser movido gratuitamente?
+5. **Decidido:** obra inacabada pode ser movida gratuitamente antes de despesas/entregas; ainda testar interação de prévia e reposicionamento, respeitando reservas, custos efetivos e transporte real.
 6. Realocação de prédio concluído será permitida para todos os tipos ou só alguns?
 7. Realocar preserva a identidade da empresa/serviço?
 8. O que acontece com moradores, funcionários e estoque durante a realocação?
