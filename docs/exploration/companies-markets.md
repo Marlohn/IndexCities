@@ -97,6 +97,8 @@ A folha de pagamento dos funcionários públicos não deve ficar escondida dentr
 
 Isso também evita dupla cobrança: se um trabalhador do Pátio já recebe salário da prefeitura, esse salário não deve ser cobrado novamente como se fosse um custo separado da mesma mão de obra na obra.
 
+**Decisão oficial sobre orçamento de obras (2026-10-08):** confirmar uma obra **compromete** dinheiro no Caixa da Cidade, mas não transfere essa quantia para a Reserva Global ou outro agente. Pagamentos a fornecedores, equipes externas e demais destinatários reais saem do Caixa quando a despesa é efetivamente devida, inclusive antecipadamente à entrega quando for o caso. Cancelar libera somente a parcela não paga. A interface diferencia total, comprometido e disponível; a oferta monetária global não muda por simples reserva. A SPEC é a fonte da regra, e a calibração de prazos de liquidação segue aberta.
+
 
 ---
 
