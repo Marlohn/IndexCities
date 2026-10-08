@@ -14,6 +14,14 @@ Este arquivo é material de exploração temática. A autoridade do produto cont
 
 ---
 
+## Salários privados ajustados pelo mercado real — opção 3A (2026-10-08)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** A direção foi aprovada pelo responsável e está na SPEC; frequência, pesos, amplitude e efeitos quantitativos continuam para calibração.
+
+Cada empresa privada pode ajustar salários reais **de forma gradual**, observando trabalhadores acessíveis, concorrência por contratação/retenção e capacidade do próprio caixa. Não há definição salarial privada pelo jogador, tabela rígida por tipo ou garantia de que um aumento atraia alguém. Vínculos e remuneração efetivamente devida continuam reais; SIMs decidem se aceitam ou permanecem, e empresas continuam sujeitas a prejuízo/falência. Não inferir a mesma política para serviços municipais. Reavaliar periodicamente ou em eventos relevantes para evitar leilão/simulação contínuos por vaga ou agente.
+
+---
+
 ## Funcionamento comercial e alimentação: decisões 1A/2B/3B (2026-10-08)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** Horários simples por tipo (**1A**), contratação/redução gradual com teto pelo tamanho/capacidade do negócio (**2B**) e escolha do SIM entre comer em casa ou fora (**3B**) foram **aprovados pelo responsável e documentados na SPEC**. Valores, pesos, frequência e limites numéricos seguem para calibração.
