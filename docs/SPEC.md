@@ -96,7 +96,8 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - Compras reais reduzem estoque real, movimentam dinheiro real e geram necessidade de reposição/logística.
 - Empresas poderão falir quando não conseguirem sustentar suas obrigações econômicas; o jogador deve conseguir identificar as receitas, despesas e eventos concretos que levaram à deterioração e à falência.
 - Fazendas e agricultura produzem diretamente a categoria **Alimentos** no escopo inicial.
-- Mercadorias físicas modeladas como estoque podem ser importadas pela conexão externa quando a oferta local for insuficiente ou inexistente.
+- **Reposição comercial e escolha de fornecedores — preferência local moderada:** comércios que precisam reabastecer categorias de estoque escolhem automaticamente entre produtores/fornecedores locais reais e importação externa, considerando **preço de aquisição, frete/custo total, disponibilidade e prazo de entrega**. Quando alternativas são economicamente próximas e capazes de atender ao pedido, **preferem o fornecedor local**, sem obrigação de comprar localmente independentemente do custo; se o fornecedor externo oferecer vantagem significativa ou não existir oferta local viável, a importação pode ser escolhida mesmo havendo alguma oferta na cidade. O pedido depende de dinheiro real da empresa compradora, quantidade física disponível e entrega por logística real; pagamentos locais vão ao fornecedor real e pagamentos de importação seguem a Reserva Global. O jogador não seleciona manualmente fornecedor ou pedido. **Não criar proteção local absoluta, estoque garantido nem buscas contínuas por todos os fornecedores**: gatilhos de reposição, limites de busca, ponderação de custo/prazo e limiar de diferença pequena ou vantagem significativa ficam para calibração/protótipo, com decisões diagnosticáveis. Esta política é para **abastecimento operacional de comércio**; materiais de construção para obras conservam sua política específica de disponibilidade/reserva e importação acionada por obra.
+- Mercadorias físicas modeladas como estoque podem ser importadas pela conexão externa quando a oferta local for insuficiente ou inexistente, ou quando a comparação econômica da reposição comercial justificar a alternativa externa conforme a regra acima.
 - No escopo inicial, os preços externos de importação permanecem estáveis.
 
 ### Aquisição e operação de comércio e indústria
@@ -668,7 +669,7 @@ A SPEC deve crescer com o produto, **não antes dele**.
 
 ### Abastecimento inicial de alimentos e combustível
 
-- Se a oferta local de Alimentos for insuficiente, mercados/comércios podem importar automaticamente Alimentos pela conexão externa.
+- Mercados/comércios podem importar automaticamente Alimentos quando a oferta local não atender à reposição ou quando a alternativa externa for significativamente melhor na comparação econômica, respeitando a **preferência local moderada** e os critérios de custo total, disponibilidade e prazo já definidos para abastecimento comercial.
 - A importação de Alimentos paga produto e frete e gera entrega física.
 - No escopo inicial, Combustível pode ser importado já refinado/pronto pela conexão externa e distribuído fisicamente aos postos.
 - Refino/produção local de combustível pode ser aprofundado depois, sem ser necessário para o primeiro fluxo funcional da cidade.
