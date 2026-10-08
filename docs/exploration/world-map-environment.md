@@ -159,9 +159,13 @@ Essa decisão reduz complexidade de construção, pathfinding, geração de mapa
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
 
 
-**Status:** proposta de posicionamento híbrido a validar na implementação integrada; não representa POC isolada obrigatória nem promoção automática à SPEC.
+**Status:** **direção de produto decidida na SPEC em 2026-10-08** (alternativa C: grade lógica com posicionamento assistido). A geometria exata, os detalhes de snapping e o custo de consultas espaciais seguem em validação no jogo integrado, sem POC isolada obrigatória.
 
-A proposta atual é testar um modelo **híbrido**, em vez de escolher desde já entre grid rígido e posicionamento totalmente livre.
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — o responsável escolheu explicitamente o modelo híbrido; evidências comparativas, hipóteses de implementação e análise de riscos redigidas pela IA permanecem sem revisão integral.
+
+A escolha rejeita tanto o **encaixe visual rigidamente limitado a células completas** quanto o **posicionamento inteiramente livre como obrigação**. A grade fornece referência lógica para ocupação/consultas espaciais, enquanto a interface oferece encaixes úteis com alguma liberdade de ajuste. A ocupação efetiva, colisões, acessos viários, conexões e demais restrições físicas continuam vinculantes. A confirmação de uma obra não pode depender apenas de alinhamento visual. A rua ortogonal em L, a proibição de ligação direta de edifícios a rodovias e os viadutos em níveis separados permanecem definidos pela SPEC.
+
+**Trade-offs aceitos:** menor rigidez para o jogador e layouts mais variados, ao custo de validar footprints e acessos que podem não coincidir exatamente com células de grade. A implementação deve evitar geometria arbitrária difícil de diagnosticar, rechecagens globais contínuas e falsa conexão visual. A divisão da grade em células menores para mobiliário/detalhes de rua é uma hipótese técnica, **não requisito do produto**.
 
 ### Evidência comparativa
 
@@ -173,6 +177,8 @@ Fontes:
 - Godot 4.5 — GridMap: https://docs.godotengine.org/en/4.5/classes/class_gridmap.html
 
 ### Hipóteses técnicas a verificar na implementação integrada
+
+A **existência de grade lógica e o posicionamento assistido já foram decididos**; os mecanismos abaixo seguem como possibilidades, sem aprovação individual de cada item.
 
 Testar:
 - uma **grade lógica interna** para ocupação, colisão, lotes e consultas espaciais;
