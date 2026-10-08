@@ -303,6 +303,12 @@ Clique em:
 
 A seleção deve funcionar como porta de entrada para entender a simulação, não apenas para editar objetos.
 
+### Escolha comercial do jogador versus decisão empresarial — opção 1C (2026-10-08)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O jogador escolher uma categoria geral e a empresa adquirente decidir o ramo específico é regra aprovada na SPEC. O catálogo da ferramenta, suas subcategorias e elementos exatos de prévia ainda não foram decididos.
+
+Na construção de imóvel econômico privado, mostrar a **categoria geral escolhida pelo jogador** (ex.: comércio/revenda ou serviço), não escolher/garantir café, salão ou outra empresa concreta como parte da colocação. Na inspeção após aquisição, mostrar **empresa real e atividade escolhida**, sua demanda local e principais concorrentes. **Dois estabelecimentos iguais lado a lado são válidos**, desde que resultem das decisões econômicas, com efeitos reais sobre clientela e risco, não de uma engine que ignora competição. A mudança de ramo em imóvel usado por novo comprador (opção 3B) pode exigir adaptação com custos reais; a interface deve dar causa e estado da adaptação sem gestão manual da empresa.
+
 ### 2. Construção de prédio
 
 Fluxo preferido:
