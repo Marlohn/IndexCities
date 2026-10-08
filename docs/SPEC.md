@@ -211,6 +211,13 @@ A primeira base de recursos físicos do jogo será composta por oito categorias:
 - Insumos industriais intermediários só precisam aparecer quando a respectiva cadeia produtiva existir. Exemplos incluem cimento, culturas/produtos agrícolas, madeira em tora, ligante asfáltico/bitume e pedra bruta.
 - Água, eletricidade, esgoto e lixo permanecem sistemas de serviço/capacidade, não recursos de estoque equivalentes a essas categorias.
 
+### Grade lógica e posicionamento assistido
+
+- **Modelo híbrido aprovado:** o mapa usa uma **grade lógica interna** para organizar e consultar ocupação do espaço, validade de posicionamento e relações espaciais relevantes, enquanto a colocação de **prédios e vias pelo jogador é assistida por encaixes e alinhamentos**, sem impor que toda construção esteja visualmente presa a uma célula inteira ou a uma orientação única.
+- O posicionamento permite **liberdade limitada e controlável** de ajuste e orientação, desde que respeite a **ocupação física efetiva**, evite sobreposição inválida e mantenha conexões e acessos coerentes com a simulação. Uma prévia visualmente alinhada não pode ser tratada como acesso viário ou conexão funcional garantidos; quando a colocação for inválida, a interface deve indicar a restrição concreta ao jogador, antes da confirmação da obra.
+- O encaixe deve **ajudar, não dificultar** o controle: a ferramenta deve permitir ajustar a posição sem uma atração excessiva a pontos de snap. Formas exatas de alternar/reduzir o snapping, tamanho da grade, subdivisões para detalhes de vias, geometrias/rotações permitidas e representação interna da ocupação ficam para calibração e validação no jogo integrado, sem introduzir uma ferramenta de desenho totalmente livre como requisito.
+- O modelo híbrido **não substitui** a ferramenta de rua ortogonal em L já aprovada nem autoriza automaticamente curvas livres; também não elimina restrições atuais de rodovias, níveis sobrepostos, acesso e logística. Consultas espaciais e validação devem ser proporcionais às operações relevantes, evitando verificações geométricas globais contínuas sem necessidade.
+
 ### Ferramenta de construção de ruas
 
 - A ferramenta de ruas deve permitir construir um trajeto ortogonal em **L** num único gesto de clique e arraste quando o ponto inicial e o ponto final diferirem nos dois eixos.
