@@ -19,7 +19,7 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - Se um bug, pedido ou dificuldade de implementação revelar comportamento ausente, ambíguo ou contraditório, o responsável decide e a SPEC é corrigida **antes** do código que dependa dessa definição. Não se presumem regras por conveniência técnica.
 - Um bug que apenas restaura uma regra já clara nesta SPEC não exige alterar o texto; a correção precisa segui-la. Refatorações e otimizações também devem preservar esse contrato.
 - Decisão antiga de outro projeto não é requisito deste projeto.
-- Uma hipótese pode ser experimentada sem virar requisito.
+- Uma hipótese pode ser pesquisada ou investigada em experimento técnico **isolado**, sem virar requisito nem código de produto. Para incorporar comportamento ao jogo, é necessária decisão do responsável registrada nesta SPEC antes da implementação.
 - Quando uma exploração resultar em decisão de produto, esta SPEC deve ser atualizada de forma curta.
 - Se uma decisão for substituída, este documento deve refletir o estado desejado atual, não manter versões antigas por histórico.
 
