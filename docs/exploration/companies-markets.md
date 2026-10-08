@@ -14,6 +14,20 @@ Este arquivo é material de exploração temática. A autoridade do produto cont
 
 ---
 
+## Atualização da decisão de ocupação e consumo comercial (2026-10-08)
+
+> **Revisão humana da seção: PARCIALMENTE REVISADO.** O responsável aprovou **1C** (jogador determina a categoria geral, empresa escolhe o ramo concreto), **2B** (serviços opcionais pelas preferências e orçamento do SIM) e **3B** (imóvel pode mudar de ramo após aquisição, com adaptações físicas reais se necessárias). A regra aprovada está na SPEC; exemplos e parâmetros abaixo permanecem para calibração ou pesquisa.
+
+**Problema de repetição levantado:** um bairro com vários salões ou cafés um ao lado do outro **não é um bug automaticamente**. Empresas podem apostar na mesma clientela e concorrer; isso pode reduzir vendas, encerrar atividades ou deixar prédios vazios. **O bug a evitar é a engine ignorar demanda e concorrência ao escolher o ramo**, criando saturação sistemática sem decisão econômica coerente. **Não** alternar negócios por cota, não garantir diversidade artificial e não proibir salões vizinhos: avaliar clientela acessível, empresas equivalentes/substitutas, capacidade existente, custos, lucro esperado, funcionários e acessibilidade, aproveitando a demanda local já prevista.
+
+**Separar decisão e edifício:** construção escolhida pelo jogador tem categoria geral; após conclusão e aquisição, **empresa compradora autônoma escolhe a atividade concreta compatível**. Em venda de imóvel usado (inclusive falência/encerramento), nova empresa pode escolher outro ramo compatível; transformação física necessária exige materiais/dinheiro/trabalho/tempo reais, mas **não** forçar obra decorativa quando a estrutura já serve. A antiga empresa, seus ativos e funcionários não são magicamente transferidos ao comprador.
+
+**Serviços opcionais:** visitas não essenciais podem nascer das preferências, renda, tempo livre, acesso e interesse dos SIMs, usando a infraestrutura de lazer e visita já prevista. **Não** criar uma barra obrigatória de corte de cabelo, academia ou lavanderia por SIM e **não** fabricar clientes para cada negócio; atendimento e dinheiro devem corresponder a escolha real. A demanda de ramos ainda não selecionados segue em exploração.
+
+**Catálogo:** decisão por ramo e variedade comercial estão aprovadas, mas **nomes e quantidades do portfólio não estão fechados**. Fonte de pesquisa logo abaixo; não promover listas antigas sem revisão humana.
+
+---
+
 ## Atualização: empresas diferentes com poucos modelos-base (2026-10-08)
 
 > **Revisão humana da seção: PARCIALMENTE REVISADO.** O responsável **aprovou** separar produção, comércio/revenda e prestação de serviços, reutilizar modelos 3D (2B) e **ampliar a diversidade de negócios sobre poucos comportamentos e modelos compartilhados**, contanto que cada atividade tenha demanda, pagamento e consequências reais. A SPEC é a fonte oficial. A **lista e quantidade de negócios**, o **número de modelos-base** e mecanismos específicos por ramo **continuam PENDENTES**; análises da IA nesta seção não estão automaticamente aprovadas.
