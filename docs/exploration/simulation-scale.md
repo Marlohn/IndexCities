@@ -103,7 +103,7 @@ Uma casa pode conter uma família ou residência; um prédio pode conter múltip
 
 ### 4. Escala de tempo e velocidades
 
-> **Revisão humana desta seção: PARCIALMENTE REVISADO.** A SPEC aprova **pause, velocidades 1, 2 e 3 e escala/multiplicadores configuráveis para calibração**. A pesquisa comparativa e as recomendações seguintes são **PENDENTES de revisão humana** e não criam modelo temporal oficial.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** A SPEC aprova **pause, velocidades 1, 2 e 3 e escala/multiplicadores configuráveis para calibração**. Em **2026-10-08 o responsável adiou explicitamente a escolha de modelo temporal porque realiza pesquisa independente**: **A, B e C continuam não escolhidos**. A pesquisa comparativa abaixo permanece **PENDENTE de revisão humana** e não autoriza escolher ou implementar modelo temporal por suposição.
 
 **Questão P0:** conciliar minutos de deslocamento, turnos diários, compras e alimentação, obras, salários e aluguéis mensais, reajustes anuais, infância, educação, reprodução e envelhecimento **sem que as diferentes escalas deixem a cidade artificial ou tornem o jogo lento**. Números de outras simulações não são parâmetros do IndexCities.
 
@@ -137,7 +137,7 @@ Comparar **A e B primeiro**, guardando **C como alternativa séria caso ambas fa
 
 Medir **legibilidade de viagens, taxas de transações/consumo, tempo de espera percebido, evolução das gerações, conservação monetária, pontualidade dos eventos e custo computacional**. Não fixar agora “12 minutos por dia”, “30 dias por ano”, multiplicadores exatos ou fórmulas de aceleração etária: esses eram **exemplos hipotéticos**, não recomendação final nem decisão aprovada.
 
-**Recomendação atual da IA (PENDENTE):** uma linha temporal de eventos causalmente consistente é desejável; **isso não obriga que calendário, visualização e envelhecimento compartilhem a mesma razão de aceleração**. Manter o modelo final aberto até observação conjunta de gameplay e economia. **Confiança alta** na necessidade de calibração e invariantes; **moderada/baixa** na escolha de um modelo vencedor sem medição.
+**Recomendação histórica da IA (PENDENTE; escolha adiada pela pesquisa independente do responsável):** uma linha temporal de eventos causalmente consistente é desejável; **isso não obriga que calendário, visualização e envelhecimento compartilhem a mesma razão de aceleração**. Manter o modelo final aberto até observação conjunta de gameplay e economia. **Confiança alta** na necessidade de calibração e invariantes; **moderada/baixa** na escolha de um modelo vencedor sem medição.
 
 ### Regra de evidência para decisões futuras
 
