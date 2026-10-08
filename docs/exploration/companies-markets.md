@@ -14,6 +14,20 @@ Este arquivo é material de exploração temática. A autoridade do produto cont
 
 ---
 
+## Funcionamento comercial e alimentação: decisões 1A/2B/3B (2026-10-08)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** Horários simples por tipo (**1A**), contratação/redução gradual com teto pelo tamanho/capacidade do negócio (**2B**) e escolha do SIM entre comer em casa ou fora (**3B**) foram **aprovados pelo responsável e documentados na SPEC**. Valores, pesos, frequência e limites numéricos seguem para calibração.
+
+**Funcionamento 1A:** cada tipo tem janela simples; atendimento e receita dependem de funcionários e insumos reais. Não permitir vendas fora do atendimento efetivo ou gerenciar horários manualmente por empresa.
+
+**Pessoal 2B:** contratar/desligar de maneira gradual conforme demanda, custos, salários e oportunidades; **o porte físico define teto de vagas e de pessoas atuando simultaneamente**. Turnos podem alternar funcionários, não ampliar magicamente a capacidade do prédio. Capacidade real e caixa insuficiente reduzem contratações; evitar decisões incessantes e excesso de microgerenciamento.
+
+**Refeições 3B:** o SIM considera fome, estoque doméstico de Alimentos, dinheiro, tempo livre, distância, horários e preferências antes de optar por comida em casa ou visita a café/lanchonete/restaurante. Fora de casa paga uma única vez e consome estoque **do estabelecimento**; em casa consome o alimento já comprado pela família. Nenhum destino recebe freguesia artificial garantida.
+
+**Em aberto apenas quanto a detalhes ainda necessários:** horários e número de vagas por porte, frequência de revisão de quadro, ponderação da escolha do SIM e distinções operacionais concretas; não tratar esses detalhes como já aprovados.
+
+---
+
 ## Catálogo inicial aprovado e prestação de serviços B2B (2026-10-08)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável **aprovou expressamente os dez negócios e a opção 4B de serviços entre empresas**. A escolha consta na SPEC. **As opções 1A/2A/3A/4B da rodada seguinte também estão aprovadas na SPEC**: refeição real no local, mercado/mercearia compartilhando categorias com porte e custos diferentes, serviços pessoais com preço/duração/capacidade próprios e famílias visuais reduzidas. Valores de calibração, propostas de arte e futuras expansões permanecem **PENDENTES**.
