@@ -178,7 +178,7 @@ Essas alternativas foram superadas para o escopo atual porque adicionavam etapas
 
 Foi confirmado que fazendas, mercados, postos, fábricas e demais atividades econômicas colocadas pelo jogador podem ser operadas por empresas privadas.
 
-A questão em aberto é se cada empresa precisa ter um **saldo bancário explícito e rígido** ou se basta simular receitas, custos, lucro/prejuízo e saúde financeira de forma mais abstrata.
+A questão foi fechada após a exploração abaixo: cada empresa terá **saldo monetário explícito e auditável**. As alternativas mais abstratas permanecem registradas apenas como histórico.
 
 Critério transversal: manter detalhe econômico quando ele cria decisões ou consequências úteis; abstrair quando ele vira contabilidade que o jogador não controla diretamente.
 
@@ -261,7 +261,7 @@ Há três níveis possíveis:
 **A. Caixa bancário explícito por empresa**
 - cada empresa tem saldo em moeda;
 - toda compra e pagamento exige liquidez imediata;
-- empréstimos/capitalização passam a ser necessários para evitar falências artificiais;
+- exige calibrar capital inicial e liquidez para que falências reflitam causas econômicas reais, sem bailout invisível;
 - é o modelo mais realista contabilmente, mas cria grande complexidade e risco de comportamento opaco.
 
 **B. Contabilidade econômica sem caixa rígido — alternativa considerada, não escolhida**
@@ -299,11 +299,11 @@ Não exigir do jogador:
 
 Para entrar como empresa nova vinda do exterior, a entidade recebe capital inicial explícito retirado da **Reserva Global**. Não existe investidor abstrato criando moeda nova.
 
-Se a empresa operar com prejuízo persistente, reduz produção/emprego e eventualmente fecha. Isso preserva consequência econômica real sem fazer a simulação depender de uma contabilidade de caixa completa.
+Se a empresa operar com prejuízo persistente, reduz produção/emprego e eventualmente fecha. Isso preserva consequência econômica real com caixa explícito, mantendo a contabilidade automática para não virar microgerenciamento.
 
 ### Critério para aprofundar depois
 
-Só promover saldo bancário, crédito, dívida empresarial e investidores individuais a sistemas reais se aparecer gameplay que dependa deles, por exemplo:
+Só promover **crédito, dívida empresarial, recapitalização e investidores individuais** a novos sistemas reais se aparecer gameplay que dependa deles, por exemplo:
 - bancos;
 - juros;
 - crises de crédito;
