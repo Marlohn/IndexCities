@@ -14,6 +14,25 @@ Este arquivo é material de exploração temática. A autoridade do produto cont
 
 ---
 
+## Catálogo inicial aprovado e prestação de serviços B2B (2026-10-08)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável **aprovou expressamente os dez negócios e a opção 4B de serviços entre empresas**. A escolha consta na SPEC. Comparações de custos, modelos de demanda, regras específicas de cada ramo e futuras expansões permanecem **PENDENTES**.
+
+| Grupo | Tipos aprovados | Fundamento econômico / cuidado |
+| --- | --- | --- |
+| Comércio de mercadorias | **Mercado**, **mercearia**, **posto de combustível** | Revenda de categorias físicas existentes, com estoque e comprador real; mercado/mercearia podem diferir por porte e capacidade, posto segue cadeia física de Combustível. |
+| Alimentação fora de casa | **Café**, **lanchonete**, **restaurante** | Partilhar lógica de Alimentos/atendimento presencial sem inventar SKUs ou consumir a mesma refeição duas vezes; diferenças de operação ainda abertas. |
+| Serviços pessoais e lazer | **Barbearia**, **salão de beleza**, **academia** | Visitas opcionais por preferências, tempo/dinheiro e acesso; funcionários e capacidade reais sem criar necessidade obrigatória por negócio. |
+| Hospedagem | **Hotel** | Demanda turística, alojamento, ocupação, equipe e dinheiro reais já previstos. |
+
+São **dez identidades comerciais**, não dez empresas garantidas nem dez modelos 3D obrigatórios. Fazendas e fábricas já previstas são atividades de produção fora dessa lista. **Oficina, lavanderia e escritório continuam fora do catálogo inicial.** A empresa escolhe o ramo quando o imóvel for compatível; concorrência entre iguais continua possível e demanda real determina a viabilidade.
+
+**B2B (4B) confirmado:** empresas privadas podem ser clientes de serviços de outras empresas, desde que haja necessidade operacional verdadeira, prestadora capaz, preço e pagamento de caixa para caixa. **Não foram aprovados contratos empresariais complexos nem a inclusão automática de escritórios**; qual serviço concreto cada ramo poderá vender a outra empresa ainda exige definição, para evitar receita fictícia.
+
+**Pendente antes do código:** diferenças entre mercado/mercearia, café/lanchonete/restaurante e barbearia/salão, motivos e frequência de visita, capacidade, custo, estoque quando pertinente, compatibilidade física e número de variantes 3D. A escolha dos nomes está aprovada; essas regras não foram inventadas por inferência.
+
+---
+
 ## Atualização da decisão de ocupação e consumo comercial (2026-10-08)
 
 > **Revisão humana da seção: PARCIALMENTE REVISADO.** O responsável aprovou **1C** (jogador determina a categoria geral, empresa escolhe o ramo concreto), **2B** (serviços opcionais pelas preferências e orçamento do SIM) e **3B** (imóvel pode mudar de ramo após aquisição, com adaptações físicas reais se necessárias). A regra aprovada está na SPEC; exemplos e parâmetros abaixo permanecem para calibração ou pesquisa.
@@ -47,13 +66,13 @@ Este arquivo é material de exploração temática. A autoridade do produto cont
 
 **Evidência adicional:** na [Economy 2.0 do Cities: Skylines II (Paradox, 2024)](https://www.paradoxinteractive.com/games/cities-skylines-ii/news/dev-diary-economy-part-one), a distribuição de atividades comerciais foi alinhada ao consumo das famílias para reduzir repetição de empresas iguais. A [Godot documenta reutilização de cenas](https://docs.godotengine.org/en/stable/tutorials/scripting/nodes_and_scene_instances.html) e [bibliotecas de meshes](https://docs.godotengine.org/en/stable/tutorials/3d/using_gridmaps.html), mas isso não obriga adotar uma implementação específica no IndexCities.
 
-**Direção aprovada na SPEC (2026-10-08):** a antiga sugestão de começar com apenas **dois tipos** de serviço foi superada pela necessidade de **variedade econômica perceptível com poucos modelos e poucas regras compartilhadas**. Empresas autônomas devem continuar submetidas a demanda, concorrência, oportunidades reais, vacância e falência; **sem cotas estéticas ou renda automática**. Continuam em aberto **quais negócios**, **quantos modelos-base** e os comportamentos econômicos de serviços ainda não especificados. Evitar ampliar artificialmente o catálogo de necessidades dos SIMs para justificar novos nomes.
+**Direção aprovada na SPEC (2026-10-08):** a antiga sugestão de começar com apenas **dois tipos** de serviço foi superada pela necessidade de **variedade econômica perceptível com poucos modelos e poucas regras compartilhadas**. Empresas autônomas devem continuar submetidas a demanda, concorrência, oportunidades reais, vacância e falência; **sem cotas estéticas ou renda automática**. Os **dez negócios iniciais agora estão aprovados**; permanecem abertos **quantos modelos-base serão necessários**, os comportamentos próprios de ramos ainda não detalhados e expansões futuras. Evitar ampliar artificialmente o catálogo de necessidades dos SIMs para justificar novos nomes.
 
 ---
 
 ## Pesquisa de portfólio enxuto de serviços privados (2026-10-08)
 
-> **Revisão humana desta seção: PENDENTE quanto à pesquisa, ranking e candidatos específicos.** O responsável **aprovou apenas a categoria de empresas privadas de serviços presenciais (opção 4B)** e exigiu selecionar poucos negócios porque cada novo edifício/asset tem custo de produção. A [SPEC](../SPEC.md) contém essa direção oficial. **Nenhum tipo específico abaixo está aprovado**, nem o número de tipos, necessidades novas ou promessa de entrega de asset.
+> **Revisão humana desta seção: PENDENTE quanto à pesquisa comparativa, ranking e custos estimados.** A seleção dos dez negócios iniciais da SPEC foi **aprovada depois** desta pesquisa. As sugestões de adiar café, salão ou academia, bem como o limite antigo de dois serviços, **foram superadas**; não confundir a lista de candidatos de pesquisa com o catálogo oficial. Demanda específica, necessidades novas e número de assets continuam sem aprovação.
 
 ### Evidência externa conferida
 
@@ -78,12 +97,12 @@ Este arquivo é material de exploração temática. A autoridade do produto cont
 
 ### Recomendação da pesquisa, ainda NÃO APROVADA
 
-- **Recomendação histórica anterior, agora SUPERADA como limite de catálogo (não aprovada):** **dois arquétipos de serviço** — **alimentação fora de casa (café/lanchonete/restaurante simples)** e **cuidados pessoais (salão/barbearia)**. Avaliar **academia** somente como terceiro se a função de lazer for distinta e verificável; não há motivo para criar 3–6 versões de fachada por negócio antes de testar o valor visual e econômico. **A escolha desses dois ou três tipos depende de aprovação do responsável.**
+- **Recomendação histórica anterior, agora SUPERADA como limite de catálogo (não aprovada):** **dois arquétipos de serviço** — **alimentação fora de casa (café/lanchonete/restaurante simples)** e **cuidados pessoais (salão/barbearia)**. Avaliar **academia** somente como terceiro se a função de lazer for distinta e verificável; não há motivo para criar 3–6 versões de fachada por negócio antes de testar o valor visual e econômico. **Esta escolha restrita foi superada pelo catálogo oficial de dez atividades aprovado pelo responsável.**
 - **Uma base visual compartilhada de comércio pequeno**, com variações de placa, textura e fachada, reduz o risco de um asset único para cada descrição de negócio; diferenças de comportamento devem surgir de demanda/capacidade/trabalho reais. Não declarar que fachada genérica serve para hotéis, fábricas ou serviços maiores; diversidade visual também importa.
 - **Um modelo simples de prestação de serviço**, reaproveitando empresa proprietária/operadora, caixa, vagas, horários/turnos e deslocamentos; cliente real chega, há capacidade de atendimento e transferência monetária real ao prestar o serviço. **Os detalhes exatos de motivação, consumo, receita e capacidade por ramo precisam de decisão na SPEC**. Não criar estoque fictício de serviços, SKU, profissão obrigatória, minigame, animação interior ou simulação per-frame por cliente.
 - **Regra de decisão para novo asset:** cada candidato só deveria entrar quando (1) acrescentar alguma escolha urbana/resultado legível além do catálogo existente; (2) houver fluxo concreto de clientes/demanda/dinheiro; (3) ficar demonstrado o que se reutiliza da malha visual e lógica; (4) o custo adicional de produção 3D e performance for aceitável. Um tipo muito comum na cidade real pode **não** caber no primeiro conjunto se faltar gameplay. Não atribuir pontuação numérica fictícia nem impor limite arbitrário como requisito de produto.
 
-**Pendências para próxima aprovação humana:** quais tipos de negócio entram num catálogo diversificado usando poucas regras e poucos assets, sem fixar o limite antigo de dois; se cabeleireiro/beleza cria demanda própria ou aproveita lazer; como alimentação fora de casa interage com estoque doméstico e alimentação existente; se academia cria atendimento distinto. A pesquisa deixa deliberadamente esses comportamentos **fora da SPEC** até decisão, conforme AGENTS.
+**Pendências para próxima aprovação humana:** os dez nomes já estão aprovados; determinar como cada ramo opera com poucos modelos e regras, evitando despesas ou necessidades fictícias; se cabeleireiro/beleza cria demanda própria ou aproveita lazer; como alimentação fora de casa interage com estoque doméstico e alimentação existente; se academia cria atendimento distinto. A pesquisa deixa deliberadamente esses comportamentos **fora da SPEC** até decisão, conforme AGENTS.
 
 ---
 
