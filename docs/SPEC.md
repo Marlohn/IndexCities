@@ -39,6 +39,7 @@ A SPEC deve crescer **com as decisões do produto e antes do código que as impl
 - A apresentação será **3D com câmera isométrica**.
 - A construção será feita na granularidade de **casas e prédios**, sem construção por cômodos.
 - No escopo atual, o jogador posiciona **cada prédio diretamente**; zoneamento automático não faz parte da proposta atual.
+- **Direção de progressão — opção C aprovada (2026-10-08):** a experiência principal é um **sandbox livre, com desafios opcionais**. O jogador pode construir, administrar e desenvolver a cidade no próprio ritmo, **sem missões, objetivos, vitória ou sequência de progressão obrigatórios para acessar a experiência central**. Desafios podem oferecer propósito adicional, mas **não são condição para continuar jogando, crescer ou manter uma cidade funcional**. A escolha não autoriza automaticamente sistema de missões, recompensas, marcos, desbloqueios, rankings, metas numéricas ou eventos artificiais: **origem, formato, apresentação, consequências e eventual recompensa dos desafios permanecem em pesquisa e exigem definição explícita antes de implementação**. Favorecer desafios significativos ligados aos sistemas e decisões reais do jogo, preservando liberdade, clareza e baixo microgerenciamento.
 
 ### Tecnologia
 
