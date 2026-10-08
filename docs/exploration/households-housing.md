@@ -202,340 +202,58 @@ A fórmula final só deve ser escolhida depois de testar se o jogador consegue e
 
 ---
 
-## Destino econômico de aluguel e preço residencial
+## Destino econômico de aluguel, compra e propriedade residencial
 
-> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — fluxo principal discutido e promovido para a SPEC; preço, herança e granularidade de apartamentos ainda têm pontos abertos.
 
+**Status:** decidido em nível de fluxo.
 
-**Status:** parcialmente superado. O destino do aluguel foi decidido: vai ao proprietário real. Este trecho preserva as alternativas discutidas; primeira venda, revenda e herança ainda têm detalhes abertos.
+### Construção e primeira aquisição
 
-Foi decidido que casas e apartamentos seguem o mesmo loop de construção dos demais prédios:
+- o jogador escolhe a residência e a obra é financiada pelo **Caixa da Cidade**;
+- a residência pronta pode permanecer temporariamente sem proprietário;
+- a primeira família compradora paga com dinheiro real;
+- o pagamento da **primeira aquisição vai para a Reserva Global**, não para o Caixa da Cidade;
+- o comprador torna-se proprietário real.
 
-Caixa da Cidade + materiais
-→ obra
-→ residência disponível
-→ família ocupa
-→ aluguel e/ou preço afetam o orçamento familiar
+### Depois da primeira aquisição
 
-A questão restante é **para quem vai o dinheiro pago pela família**.
+- proprietário que mora no próprio imóvel não paga aluguel a si mesmo;
+- locatário paga aluguel ao proprietário real;
+- revenda transfere dinheiro do comprador ao proprietário atual;
+- a cidade recebe impostos/taxas definidos, não aluguel bruto nem o valor integral da venda.
 
-### Opção A — pagamento retorna ao Caixa da Cidade
+### Por que essa direção venceu
 
-**Recomendação anterior, agora em revisão.**
+Ela preserva:
+- dinheiro com origem e destino reais;
+- propriedade e patrimônio dos cidadãos;
+- impostos como principal ponte recorrente de receita para o Caixa da Cidade;
+- o diferencial de gameplay em que o jogador/cidade arca com a construção;
+- ausência de incorporadora, banco ou landlord abstrato obrigatório.
 
-Como o jogador financiou diretamente a construção, aluguel funciona como retorno econômico daquele investimento.
+Foram superadas:
+- aluguel retornando ao Caixa da Cidade;
+- conta econômica do próprio prédio;
+- empresa imobiliária como recebedora padrão;
+- primeira venda devolvendo total ou parcialmente o custo ao Caixa;
+- financiamento privado obrigatório antes de iniciar a obra.
 
-Vantagens:
-- fluxo extremamente legível;
-- nenhuma entidade extra de proprietário/locador;
-- construção residencial deixa de ser apenas despesa e ganha retorno econômico;
-- fácil de balancear e diagnosticar;
-- combina com a interpretação do Caixa da Cidade como capital de desenvolvimento controlado pelo jogador, não como conta jurídica literal da prefeitura.
+### Estado mínimo de propriedade
 
-Risco:
-- é uma abstração forte: em uma economia real, toda moradia privada não pertenceria à cidade/jogador;
-- precisa evitar transformar aluguel em fonte automática de dinheiro sem risco.
+Enquanto um imóvel residencial estiver em propriedade privada:
+- existe um proprietário econômico real;
+- no primeiro modelo, o titular registrado é um único SIM;
+- ocupantes são registrados separadamente;
+- um imóvel pode ficar excepcionalmente sem proprietário quando entrar em estado não reclamado.
 
-Consequências úteis de gameplay podem vir de fatores já existentes:
-- vacância;
-- renda das famílias;
-- localização;
-- preço/aluguel;
-- atratividade;
-- capacidade de pagamento.
+Ainda abertos:
+- fórmula de preço e aluguel;
+- prioridade de herdeiros elegíveis;
+- granularidade de propriedade em apartamentos;
+- detalhes de revenda e custos recorrentes quando forem necessários.
 
-### Opção B — proprietário/investidor privado recebe
-
-É mais realista, mas exigiria criar proprietário, conta ou setor imobiliário separado.
-
-Problemas:
-- nova camada financeira com pouca interação direta do jogador;
-- risco alto de caixa-preta;
-- jogador paga a construção mas o retorno vai para outro agente, o que pode parecer incoerente;
-- exigiria explicar como o investidor nasce e como recupera capital.
-
-Não recomendada para o primeiro escopo.
-
-### Opção C — conta econômica do próprio prédio
-
-Cada residência/prédio teria uma conta operacional que recebe aluguel e paga custos.
-
-É auditável, mas adiciona outra entidade financeira além de famílias, empresas e Caixa da Cidade.
-
-Só vale se manutenção predial, condomínio, proprietário ou investimento imobiliário virarem gameplay real.
-
-### Recomendação anterior — reaberta
-
-A recomendação de começar com **aluguel retornando ao Caixa da Cidade** foi reaberta porque ela entra em tensão com uma economia centrada em impostos e com a possibilidade futura de famílias possuírem ou herdarem moradia.
-
-Interpretação de gameplay:
-
-o jogador investe em moradia
-→ famílias ocupam
-→ pagam aluguel real
-→ o Caixa da Cidade recupera parte do investimento ao longo do tempo
-
-Isso não precisa significar juridicamente que "a prefeitura é dona de todas as casas". O Caixa da Cidade já foi definido como uma abstração de capital de desenvolvimento controlado pelo jogador.
-
-### Compra/venda da residência — orientação histórica superada
-
-A recomendação antiga de adiar compra/venda real foi superada: a SPEC já adota dinheiro individual, propriedade residencial real, investimento local e transferências de propriedade. O ponto que continua aberto é especificamente **como funciona a primeira venda de uma residência construída pelo jogador e para onde vai esse pagamento**.
-
-
----
-
----
-
----
-
-## Revisão de moradia: impostos, aluguel, propriedade e herança
-
-> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
-
-
-**Status:** aberto; a recomendação anterior de enviar todo aluguel ao Caixa da Cidade foi suspensa.
-
-### Novo ponto de partida
-
-A intenção de gameplay é que a receita recorrente controlada pelo jogador venha **principalmente de impostos e outras receitas da cidade**, e não de o jogador funcionar como proprietário universal de moradias e empresas.
-
-Isso combina melhor com a operação privada já decidida para empresas.
-
-### Consequência importante
-
-Se no futuro houver diferença entre uma família que **possui/herdou** uma casa e uma família que **aluga**, mandar todo aluguel direto ao Caixa da Cidade deixa de ser conceitualmente limpo.
-
-A propriedade da moradia passa a ter consequências reais:
-
-- família proprietária: não paga aluguel; possui um ativo; pode pagar imposto sobre propriedade e custos de manutenção; uma herança pode transferir esse ativo;
-- família locatária: paga aluguel recorrente; não possui o imóvel; tende a ter menor barreira de entrada e maior facilidade de mudança;
-- cidade: recebe impostos/tributos definidos, não necessariamente o aluguel bruto.
-
-### Alternativa A — todas as moradias são aluguel no primeiro escopo
-
-**Prós**
-- modelo muito simples;
-- nenhuma lógica de compra, venda, herança ou proprietário individual;
-- fácil de balancear;
-- combina com famílias mudando de residência.
-
-**Contras**
-- enfraquece riqueza patrimonial familiar;
-- herança de imóvel não existe;
-- duas famílias com a mesma renda ficam economicamente parecidas mesmo que, conceitualmente, uma pudesse ter patrimônio;
-- reduz profundidade potencial dos cidadãos persistentes.
-
-### Alternativa B — propriedade residencial real por família + aluguel privado
-
-**Prós**
-- cria diferença concreta entre proprietário e locatário;
-- patrimônio familiar pode afetar vulnerabilidade econômica;
-- herança passa a ter significado real;
-- preço de imóvel deixa de ser apenas um indicador;
-- impostos sobre propriedade podem gerar receita municipal de forma clara;
-- combina com cidadãos/famílias persistentes.
-
-**Contras**
-- exige definir compra, venda e transferência de propriedade;
-- exige resolver quem recebe aluguel de imóveis locados;
-- herança e propriedade adicionam estado persistente;
-- risco de transformar moradia em um sistema grande demais cedo.
-
-### Alternativa C — setor/proprietário imobiliário abstrato
-
-**Prós**
-- aluguel não precisa ir para o Caixa da Cidade;
-- cidade recebe impostos;
-- evita proprietário individual para cada imóvel.
-
-**Contras**
-- alto risco de caixa-preta;
-- adiciona dinheiro circulando para um agente que o jogador não vê;
-- repete exatamente o tipo de abstração econômica difícil de diagnosticar que o projeto quer evitar.
-
-**Não recomendada** sem uma entidade econômica real e inspecionável.
-
-### Alternativa D — empresa imobiliária privada real para imóveis de aluguel
-
-Imóveis locados são operados por uma empresa imobiliária, usando o mesmo modelo econômico já definido para outras empresas.
-
-Fluxo:
-
-família locatária
-→ paga aluguel
-→ caixa da empresa imobiliária
-→ manutenção/custos/impostos
-→ resultado da empresa
-
-**Prós**
-- reaproveita um sistema já existente: empresa privada com caixa e ledger;
-- aluguel tem origem e destino reais;
-- cidade recebe impostos;
-- nenhuma necessidade de um "landlord virtual" invisível;
-- pode operar apartamentos e casas destinadas a aluguel sem microgerenciamento do jogador.
-
-**Contras**
-- cria mais um tipo de empresa;
-- ainda precisa definir como o prédio passa a ser operado por essa empresa;
-- se adotado cedo demais, pode ampliar o escopo de economia imobiliária.
-
-### Evidência de referência
-
-Cities: Skylines II originalmente tinha um landlord virtual na economia de aluguel. Na Economy 2.0, a Paradox removeu esse landlord virtual e passou a dividir o upkeep entre os locatários, junto com uma revisão ampla de aluguel e transparência econômica. Isso é um alerta útil contra introduzir um recebedor abstrato de aluguel apenas para "fechar a conta".
-
-Manor Lords mantém uma separação clara entre riqueza regional e tesouro do jogador, com tributação transferindo riqueza para o tesouro. É um precedente de gameplay em que a economia dos habitantes existe separada da receita controlada pelo jogador.
-
-Fontes:
-- Paradox — Economy 2.0 Part 2: https://www.paradoxinteractive.com/games/cities-skylines-ii/news/dev-diary-economy-part-two
-- Paradox — Zones & Signature Buildings: https://www.paradoxinteractive.com/games/cities-skylines-ii/features/zones-signature-buildings
-- Manor Lords Official Wiki — Regional Wealth: https://wiki.hoodedhorse.com/Manor_Lords/Special%3AMyLanguage/regional_wealth
-
-### Recomendação atual
-
-**Não mandar aluguel bruto para o Caixa da Cidade por padrão.**
-
-A direção mais coerente parece ser:
-
-- Caixa da Cidade recebe principalmente **impostos e receitas públicas**;
-- empresas privadas continuam com caixa próprio;
-- se houver aluguel privado, ele deve ir para uma entidade privada real e auditável, preferencialmente reaproveitando o modelo de empresa;
-- se houver propriedade familiar, a família proprietária não paga aluguel e o imóvel pode se tornar patrimônio/herança;
-- imposto sobre propriedade e/ou outras taxas podem alimentar o Caixa da Cidade.
-
-Porém, **não promover propriedade/herança para a SPEC ainda**. Antes disso, decidir se essa profundidade gera gameplay suficiente para entrar no primeiro escopo ou se deve ser uma evolução posterior.
-
-### Pergunta macro restante
-
-A decisão realmente importante agora não é "quem recebe R$ X de aluguel", mas:
-
-**o primeiro escopo já deve distinguir família proprietária de família locatária, ou todas as famílias começam num modelo de aluguel e propriedade/herança entra depois?**
-
-Essa escolha define o tamanho real do sistema de moradia.
-
-
----
-
----
-
----
-
-## Clarificação: para onde vai o aluguel
-
-> **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
-
-
-**Status:** parcialmente superado. O destino do aluguel foi posteriormente decidido e promovido para a SPEC: o pagamento vai ao proprietário real do imóvel. Este trecho preserva o raciocínio anterior e as questões que ainda permaneceram abertas naquele momento.
-
-A proposta anterior de usar uma "empresa imobiliária" como recebedora padrão de todo aluguel foi considerada insuficientemente clara.
-
-### Regra econômica desejada
-
-**Dinheiro de aluguel não deve desaparecer nem ir para um agente genérico sem dono.**
-
-Se houver aluguel real:
-
-família locatária
-→ paga aluguel
-→ **proprietário real daquela unidade residencial**
-
-O Caixa da Cidade recebe apenas os impostos/taxas aplicáveis.
-
-### Modelo mais coerente em exploração: propriedade por unidade
-
-Cada casa ou unidade de apartamento teria um proprietário econômico explícito.
-
-O proprietário poderia ser:
-
-- uma família;
-- uma entidade privada proprietária/operadora de imóveis;
-- eventualmente o próprio setor público em casos específicos, se houver moradia pública no futuro.
-
-Consequências:
-
-**Família proprietária**
-- mora na própria unidade;
-- não paga aluguel a si mesma;
-- pode pagar imposto/taxas e manutenção;
-- o imóvel é patrimônio;
-- no futuro pode ser transferido por venda ou herança.
-
-**Família locatária**
-- ocupa imóvel de outro proprietário;
-- paga aluguel ao proprietário real;
-- não possui aquele patrimônio.
-
-**Entidade privada proprietária**
-- recebe aluguel das unidades que possui;
-- paga impostos e custos definidos;
-- seu fluxo precisa ser auditável se for modelada como agente econômico real.
-
-### Por que isso é mais limpo
-
-Prós:
-- cada pagamento tem origem e destino;
-- propriedade e aluguel usam a mesma regra;
-- uma futura herança passa a ser uma simples transferência de propriedade;
-- imposto continua sendo a principal ponte de receita para o Caixa da Cidade;
-- não existe "landlord virtual" escondido;
-- a diferença proprietário versus locatário tem consequência real.
-
-Contras:
-- precisamos manter o proprietário de cada unidade;
-- compra/venda e herança ficam conceitualmente conectadas ao sistema;
-- apartamentos podem ter propriedade por unidade, aumentando estado persistente;
-- ainda é necessário decidir quem é o proprietário inicial quando o jogador constrói uma nova moradia.
-
-### Ponto crítico revelado
-
-A pergunta "para quem vai o aluguel?" mostra que **todas as famílias alugarem sem modelar propriedade não é tão simples quanto parecia**.
-
-Ou:
-1. existe um proprietário real;
-2. o Caixa da Cidade vira proprietário/locador;
-3. ou o dinheiro vai para uma abstração/sumidouro.
-
-A opção 3 contradiz o princípio de causalidade do projeto. A opção 2 conflita com a intenção de uma economia centrada principalmente em impostos.
-
-Por isso, a hipótese de **propriedade residencial real, porém automática para o jogador**, ganhou força.
-
-### O que não precisa vir junto
-
-Modelar propriedade não obriga imediatamente a implementar:
-- hipoteca;
-- financiamento bancário;
-- cartório;
-- processo jurídico;
-- escolha manual de proprietário pelo jogador;
-- mercado financeiro imobiliário detalhado.
-
-O estado mínimo pode ser apenas:
-
-unidade residencial
-→ owner entity id
-→ occupant household id
-→ preço/aluguel
-→ impostos/custos aplicáveis
-
-Isso permite profundidade econômica sem obrigar microgestão.
-
-### Questão macro ainda aberta
-
-**Quem recebe a propriedade inicial de uma nova residência construída pelo jogador?**
-
-Alternativas a comparar antes de decidir:
-- fica inicialmente no Caixa da Cidade/desenvolvedor e depois é vendida ou alugada;
-- é adquirida automaticamente por uma família com capacidade financeira;
-- é adquirida por uma entidade privada real de propriedade imobiliária;
-- existe uma regra híbrida conforme demanda e capacidade de compra.
-
-Não decidir esse ponto por conveniência técnica; ele define o fluxo monetário de moradia.
-
-
----
-
----
-
----
+O histórico de alternativas foi consolidado aqui para evitar que propostas já superadas pareçam decisões atuais.
 
 ## Decisão: patrimônio individual e investimento residencial local
 
