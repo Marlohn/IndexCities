@@ -104,6 +104,31 @@ Isso também evita dupla cobrança: se um trabalhador do Pátio já recebe salá
 
 ---
 
+## Formação de preços de recursos e mercadorias — hipótese em aberto
+
+> **Revisão humana desta seção:** PENDENTE — o responsável pediu análise crítica sobre preços globais, locais e a relação entre recursos da cidade e bens de consumo. **As alternativas, inferências e recomendação abaixo foram sintetizadas pela IA e ainda não foram aprovadas como requisitos.**
+
+**Contexto já decidido na SPEC:** os oito recursos físicos iniciais incluem **Alimentos** e materiais de construção. Existe um catálogo de categorias, mas não um estoque único da cidade: materiais de obra usam estoques/logística de construção, enquanto alimentos passam por fazendas, transporte, mercados, compra presencial e estoque doméstico. Empresas e SIMs têm dinheiro real; a Reserva Global movimenta dinheiro para/de conexões externas, **não é formadora de preços nem comerciante fictício**. Preços **externos de importação** são estáveis no primeiro escopo; preços internos de venda ao consumidor **ainda não têm regra fechada**.
+
+**Não confundir quatro conceitos:** categoria de recurso compartilhada pela simulação; propriedade/localização e quantidade física do estoque; preço de referência da categoria; preço cobrado e efetivamente pago em uma transação. Ter um único cadastro de `Alimentos` não exige um preço nem um estoque único, e um índice de mercado não substitui comprador, vendedor ou transferência monetária reais.
+
+| Alternativa | Vantagem | Custo / perda de gameplay |
+| --- | --- | --- |
+| **Preço único municipal por categoria** | Poucos valores e fácil leitura; pode ser estático ou ajustado em ciclos | Distância, custos e concorrência de cada comércio deixam de afetar o preço pago; podem afetar apenas a margem, enfraquecendo a escolha de loja por preço já prevista na SPEC |
+| **Preço dinâmico inteiramente por estabelecimento** | Permite diferenciar custos, escassez local e concorrência | Exige calibrar decisões e evitar oscilações, comportamentos predatórios, ciclos de falência e diagnósticos difíceis; recálculo frequente pode ser desnecessário |
+| **Referência por categoria + preço local simplificado** | Base comparável em toda a cidade, com variações justificadas por abastecimento, frete, operação e concorrência | Duas grandezas precisam ser explicadas e a fórmula precisa ser estável/diagnosticável; exige cuidado para não aplicar escassez e custos duas vezes |
+| **Referências por distrito** | Pode refletir regiões distantes de cidade grande | Mais estados e fronteiras arbitrárias; não há evidência de necessidade na POC inicial |
+
+**Hipótese preferida para experimentar, NÃO aprovada:** separar **referência de preço por recurso/categoria, compartilhada na cidade**, de **preço de venda por comércio/categoria**. Começar com preços locais simples baseados em custo real de aquisição, transporte e margem previsível; investigar ajustes lentos por escassez/concorrência apenas se produzirem melhor gameplay. Usar o mesmo catálogo físico para alimentos e materiais, mas **não** forçar a mesma cadeia de venda nem preço ao consumidor para material de obra. O jogador pode visualizar o preço de referência e as causas do preço local, não um preço misterioso exclusivo de cada SIM. A regra de escolha de comércio considera preço, distância e estoque como já aprovado, mesmo que as diferenças de preço inicialmente sejam pequenas.
+
+**Performance:** preço por estabelecimento/categoria, recalculado em mudanças relevantes de custo/abastecimento ou em ciclos, não precisa ser recalculado para cada SIM ou quadro. O custo maior pode estar nas buscas e viagens físicas de consumidores, que já existem; medir antes de simplificar o mercado exclusivamente por hipótese de performance. Nenhum dos modelos justifica transações sem dinheiro real, estoque artificial, teletransporte ou busca global contínua por consumidor.
+
+**Teste POC sugerido (PENDENTE):** dois mercados com o mesmo alimento, porém frete/custos diferentes; uma região com concorrência e outra com escassez. Comparar clareza para o jogador, escolha de loja, preço final, lucro/sobrevivência dos mercados, estoque e custo de simulação. Decidir depois se a referência deve variar dinamicamente pela oferta/demanda da cidade, se os preços locais merecem ajustes e em que frequência. Preço externo de importação continua estável conforme SPEC.
+
+**Referência externa comparativa, não normativa:** diários da Paradox para *Cities: Skylines II* discutem o preço do recurso separadamente de custos de transporte, rentabilidade e eficiência de comerciantes, inclusive revisões posteriores de fórmulas econômicas: [Economy & Production (2023)](https://www.paradoxinteractive.com/games/cities-skylines-ii/features/economy-production) e [Economy 2.0 (2024)](https://www.paradoxinteractive.com/games/cities-skylines-ii/news/dev-diary-economy-part-one). Esses exemplos demonstram opções e riscos de calibração, **não validam automaticamente o modelo híbrido no IndexCities**.
+
+---
+
 ## Abastecimento de alimentos e combustível no primeiro escopo
 
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
