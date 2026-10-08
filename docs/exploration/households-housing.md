@@ -174,18 +174,16 @@ A consequência deve criar dinâmica sistêmica sem virar punição arbitrária.
 
 **Decidido na SPEC — realocação após perda da moradia:** em casos como inadimplência, vencimento do prazo em imóvel sem proprietário e compra para moradia própria do novo dono, a família procura **automaticamente** uma residência disponível que consiga pagar, sem intervenção manual do jogador. Se não houver opção compatível na cidade, **pode permanecer sem moradia ou emigrar** conforme suas condições e as da cidade; não presumir emigração automática, casa concedida artificialmente nem garantia de realocação. Este é o fluxo geral; prazos e condições particulares continuam os já definidos na SPEC. A lógica fina de seleção de imóvel e de migração fica para calibração/implementação.
 
-A população sem moradia deve existir como estado real da simulação, mas a resposta pública ainda está aberta.
+**Escopo inicial confirmado na SPEC:** a população sem moradia é um estado real, que influencia indicadores sociais e migração e deve ser legível ao jogador. A prefeitura reage **indiretamente** com construção/oferta de moradias, empregos, serviços e condições urbanas melhores. **Abrigamentos e programas próprios de assistência social não entram no primeiro modelo.** A simulação não deve inventar benefício monetário, vaga em abrigo ou moradia para eliminar a consequência.
 
-Opções a pesquisar:
+**Possíveis melhorias futuras — PENDENTES de revisão humana, não aprovadas como funcionalidades:**
 
-- abrigos temporários;
-- assistência social;
-- moradia pública/subsidiada;
-- programas de emprego;
-- saúde e atendimento emergencial;
-- impacto em orçamento municipal e uso do espaço urbano.
+- **Abrigos temporários** com capacidade, ocupação e custos reais, caso a vulnerabilidade sem moradia crie uma lacuna relevante de gameplay;
+- **Assistência social municipal e apoio para obtenção de moradia**, avaliando mecanismos de ajuda e seus custos sem introduzir microgerenciamento por família;
+- **Moradia pública ou subsidiada** e/ou apoio à renda/emprego, se a resposta apenas indireta da cidade se mostrar insuficiente;
+- **Indicadores e políticas adicionais**, para tornar visíveis a quantidade de famílias sem moradia, as causas, o impacto social e a efetividade de intervenções futuras.
 
-A prefeitura deve poder reagir, mas o nível de controle e automação ainda precisa ser decidido.
+Essas ideias **não são requisitos atuais**. Reavaliar com dados e feedback da simulação inicial, considerando interação com orçamento, empregos, serviços e economia monetária de agentes reais antes de aprovar qualquer nova funcionalidade. O cálculo dos impactos sociais e de migração no escopo inicial continua para calibração.
 
 ### Demanda orientando construção
 
