@@ -134,16 +134,21 @@ Ainda precisa ser decidido:
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
 
 
-**Status:** em exploração; existência desses fenômenos já está decidida na SPEC.
+**Status:** em exploração; existência desses fenômenos e o princípio de prazo com dívida real por aluguel atrasado já estão decididos na SPEC.
 
 ### Falência pessoal
 
-Ainda precisa ser definido o que acontece quando um cidadão/família perde capacidade de pagar suas despesas.
+**Decisão confirmada na SPEC para atraso de aluguel:** famílias podem deixar de pagar por um prazo, acumulando **dívida real perante o SIM proprietário**, antes da possibilidade de perder a moradia. Registrar valor devido não cria dinheiro: só o pagamento efetivo entre agentes altera saldos. Não há necessidade de intervenção do jogador em cada cobrança.
 
-Perguntas a investigar:
+**Pontos ainda em exploração:**
 
-- atraso de aluguel;
-- despejo;
+- duração do prazo e gatilhos para eventual saída/despejo;
+- parcelamento/pagamento parcial, prioridade de contas e eventual encargo por atraso (nenhum juro está aprovado);
+- se a dívida permanece após a família sair e como identificar os SIMs responsáveis;
+- como buscar uma residência mais barata ou assistência, sem transformar a inadimplência em microgerenciamento;
+- consequências de outras despesas não pagas;
+
+Outras respostas à vulnerabilidade financeira ainda possíveis:
 - perda de acesso a bens/serviços;
 - mudança para moradia mais barata;
 - busca emergencial de emprego;
@@ -452,4 +457,4 @@ Hipótese de benefício: negócios mais variados e sensíveis à urgência dos a
 
 **Possível melhoria futura, não aprovada como funcionalidade atual:** ajuste automático adicional do aluguel conforme procura por locação e vacância, mesmo quando o valor de mercado do imóvel não muda. Poderia reagir mais rapidamente ao mercado de locação, mas adiciona volatilidade, complexidade e risco de duplicar o efeito da demanda já refletido na avaliação. Não há compromisso de implementar.
 
-**Em aberto:** percentual de referência, duração do intervalo de reajuste, periodicidade de pagamento/cobrança, tratamento do início de novas locações e regras de inadimplência. **Reajuste periódico está decidido**, mas o prazo exato (por exemplo, anual) não foi aprovado. Reavaliações do imóvel entre reajustes não alteram imediatamente o aluguel contratado.
+**Em aberto:** percentual de referência, duração do intervalo de reajuste, periodicidade de pagamento/cobrança, tratamento do início de novas locações e parâmetros da inadimplência (prazo, pagamento parcial, encargos, despejo e destino da dívida). O **princípio de dívida real com prazo antes da possível perda da moradia está decidido**; reajuste periódico também, mas sua duração exata não foi aprovada. Reavaliações do imóvel entre reajustes não alteram imediatamente o aluguel contratado.
