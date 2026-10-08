@@ -926,6 +926,6 @@ Nome adotado: **Reserva Global**.
 **Exploração pendente:**
 - **Decidido:** seis combinações uso × densidade têm controles independentes. Avaliar apresentação enxuta para não transformar os seis ajustes em microgerenciamento.
 - Avaliar efeitos causais diferenciados: impostos residenciais podem afetar capacidade de pagar moradia e decisão de compra/migração; impostos comerciais/industriais podem afetar margem de operação, demanda por estabelecimentos, contratação e sobrevivência. Efeitos não são regras confirmadas.
-- **Base de cálculo decidida:** valor de mercado do imóvel × alíquota da categoria. Ainda definir método de avaliação/atualização desse valor, periodicidade, inadimplência e situações de ocupação sem propriedade.
+- **Base de cálculo decidida:** valor de mercado do imóvel × alíquota da categoria. O valor de mercado é dinâmico e varia com condições reais e explicáveis da cidade; a reavaliação por si só não movimenta dinheiro. Ainda definir método e ritmo de reavaliação, periodicidade da cobrança, inadimplência e situações de ocupação sem propriedade.
 - Não confundir isenção de imposto em ativo ainda sem proprietário com eventual custo de manutenção: este último não foi decidido.
 - Evitar indicador mágico de atratividade: as consequências devem ser explicáveis por custos e decisões efetivos dos SIMs/empresas.
