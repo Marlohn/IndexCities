@@ -28,9 +28,10 @@ Direção atual:
 - **todo SIM possui saldo monetário individual real**, conforme a SPEC; para crianças esse saldo pode ser zero ou receber apenas fluxos explicitamente definidos;
 - **Decidido:** adultos da mesma família podem contribuir automaticamente com recursos reais dos próprios saldos para despesas comuns, sem carteira monetária familiar separada; qualquer movimentação entre SIMs é transferência real, não criação de dinheiro;
 - **Decidido:** cada locação continua tendo **um único SIM titular responsável pelos aluguéis e pelas dívidas de aluguel perante o proprietário**. Contribuições de outros adultos para pagamentos atuais podem ser transferidas ao titular antes da quitação; **os outros adultos não assumem automaticamente as dívidas pessoais dele**, nem passam a sofrer descontos salariais por essas dívidas;
-- **Em aberto para calibração/implementação:** quanto cada adulto contribui, prioridades e momentos de contribuição, tratamento das despesas dos dependentes e casos sem adultos ou sem recursos suficientes.
+- **Decidido:** quando a renda/saldo disponível não bastar para tudo, a família prioriza **necessidades essenciais, incluindo alimentação e moradia**, antes de lazer e consumo não essencial. A redução de consumo não essencial vem primeiro; a falta do essencial provoca consequências reais e observáveis, sem criar dinheiro ou mercadorias;
+- **Em aberto para calibração/implementação:** quanto cada adulto contribui, ordem fina entre necessidades essenciais, momentos de contribuição, efeitos e limiares de necessidades não atendidas, tratamento das despesas dos dependentes e casos sem adultos ou sem recursos suficientes.
 
-A leitura familiar pode calcular **renda familiar disponível** e despesas comuns do domicílio como agregados derivados. Isso preserva individualidade sem exigir microgerenciamento bancário. A cooperação ocorre por decisões automáticas e movimentações entre agentes reais, e não torna dívida pessoal uma dívida coletiva.
+A leitura familiar pode calcular **renda familiar disponível** e despesas comuns do domicílio como agregados derivados. Isso preserva individualidade sem exigir microgerenciamento bancário. A cooperação ocorre por decisões automáticas e movimentações entre agentes reais, e não torna dívida pessoal uma dívida coletiva. A prioridade para moradia não elimina a possibilidade de aluguel atrasado, e a prioridade para alimentação não garante comida sem estoque ou pagamento real.
 
 ### Até onde simular compras?
 
