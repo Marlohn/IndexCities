@@ -266,7 +266,10 @@ A SPEC deve crescer com o produto, **não antes dele**.
 - Residências têm preço e/ou aluguel real que afetam o orçamento familiar.
 - Cidadãos e empresas pagam impostos reais para a cidade.
 - O sistema tributário será organizado **por categorias**, diferenciando tipos de incidência para permitir escolhas econômicas legíveis, sem exigir administração individual de cada contribuinte.
-- As categorias específicas, a forma de cobrança, as alíquotas e o grau de controle do jogador permanecem em definição; nenhuma lista de tributos está aprovada ainda.
+- A tributação das construções é organizada por **uso residencial, comercial e industrial**, podendo diferenciar **baixa e alta densidade**; essa organização serve para oferecer controles agregados ao jogador, sem cobrança manual por prédio.
+- **O jogador ajusta os impostos** no nível dessas categorias. As escolhas tributárias devem produzir consequências econômicas e influenciar a **atratividade** dos agentes/atividades afetados, com causas observáveis, sem criar microgerenciamento individual.
+- O imposto de uma construção privada só começa a ser cobrado **quando ela tem proprietário privado real**. Residências usam o saldo do SIM proprietário; estabelecimentos comerciais e industriais usam o caixa da empresa proprietária. Construção ainda sem proprietário privado não gera esse imposto, e não se cria um pagador fictício.
+- Alíquotas, periodicidade, fórmula por densidade/tamanho, efeitos específicos sobre demanda/atratividade, limites de ajuste e eventual custo de manutenção de imóveis vazios ainda estão em exploração.
 - A cidade possui orçamento municipal real, com receitas e despesas.
 - O menu financeiro deve separar claramente entradas e saídas da prefeitura.
 - Salários de todos os trabalhadores públicos devem aparecer explicitamente entre as despesas municipais.
