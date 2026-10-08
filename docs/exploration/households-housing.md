@@ -145,7 +145,7 @@ Ainda precisa ser decidido:
 - duração do prazo e gatilhos para eventual saída/despejo;
 - parcelamento/pagamento parcial, prioridade de contas e eventual encargo por atraso (nenhum juro está aprovado);
 - **Decidido:** a dívida de aluguel **permanece após a família deixar o imóvel ou mudar de residência**; não há perdão automático ao sair. O crédito permanece vinculado ao credor real e o pagamento posterior, quando ocorrer, será transferência monetária entre agentes;
-- **Em aberto:** quais SIMs do domicílio respondem pela dívida, como o crédito é transferido se o credor morre ou deixa de ser titular, condições de cobrança e eventual extinção por falência pessoal;
+- **Em aberto:** quais SIMs do domicílio respondem pela dívida, destino do saldo devedor quando morre o SIM devedor, sucessão do crédito se o credor morre ou deixa de ser titular, outras cobranças e eventual extinção por falência pessoal;
 - como buscar uma residência mais barata ou assistência, sem transformar a inadimplência em microgerenciamento;
 - consequências de outras despesas não pagas;
 
@@ -159,7 +159,7 @@ Outras respostas à vulnerabilidade financeira ainda possíveis:
 
 A consequência deve criar dinâmica sistêmica sem virar punição arbitrária.
 
-**Alerta de complexidade interna — revisão humana desta nota: PARCIALMENTE REVISADO.** O responsável reforçou que microgerenciamento não significa apenas cliques do jogador: uma rotina invisível de cobrança com múltiplas exceções, prioridades de despesas, contratos e renegociações pode ser complexa demais para manter e simular em larga escala. A permanência da dívida é decisão oficial; **o mecanismo de cobrança ainda não foi decidido**. Antes de promovê-lo, comparar uma regra pequena e rastreável aplicada em ciclos financeiros com alternativas mais detalhadas, considerando número de estados por SIM, frequência de atualização, custo de diagnóstico e consequências reais. Não assumir que cobrança gradual personalizada ou prioridade complexa de despesas foi aprovada.
+**Alerta de complexidade interna — revisão humana desta nota: PARCIALMENTE REVISADO.** O responsável reforçou que microgerenciamento não significa apenas cliques do jogador: uma rotina invisível de cobrança com múltiplas exceções, prioridades de despesas, contratos e renegociações pode ser complexa demais para manter e simular em larga escala. **Direção escolhida:** descontar um percentual simples da dívida de aluguel **apenas quando o SIM recebe salário**, com limite no valor devido; a porcentagem e a identificação do devedor continuam abertas. Evitar estados/checagens constantes e prioridades complexas de contas. A morte de devedor ou credor ainda precisa de regra explícita.
 
 ### População sem moradia
 
@@ -461,3 +461,14 @@ Hipótese de benefício: negócios mais variados e sensíveis à urgência dos a
 **Possível melhoria futura, não aprovada como funcionalidade atual:** ajuste automático adicional do aluguel conforme procura por locação e vacância, mesmo quando o valor de mercado do imóvel não muda. Poderia reagir mais rapidamente ao mercado de locação, mas adiciona volatilidade, complexidade e risco de duplicar o efeito da demanda já refletido na avaliação. Não há compromisso de implementar.
 
 **Em aberto:** percentual de referência, duração do intervalo de reajuste, periodicidade de pagamento/cobrança, tratamento do início de novas locações e parâmetros da inadimplência (prazo, pagamento parcial, encargos, despejo, responsáveis e eventual quitação/extinção). O **princípio de dívida real com prazo antes da possível perda da moradia e sua permanência após a mudança estão decididos**; reajuste periódico também, mas sua duração exata não foi aprovada. Reavaliações do imóvel entre reajustes não alteram imediatamente o aluguel contratado.
+
+
+### Dívida de aluguel quando morre o SIM devedor — decisão pendente
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — o responsável levantou a questão da morte e gostou do desconto salarial; **a solução para morte a seguir é proposta da IA, PENDENTE de aprovação humana**.
+
+**Já decidido (SPEC):** recuperar aluguel atrasado por desconto percentual simples no evento de pagamento de salário, sem dinheiro fictício. A dívida não desaparece pela simples mudança de moradia. Percentual e identificação individual do devedor ainda abertos.
+
+**Proposta a confirmar, sem aprovação como regra:** quando o SIM devedor morrer, abater sua dívida de aluguel **com o dinheiro que ele efetivamente possui naquele instante**, transferindo o valor devido ao SIM credor até o limite disponível. O restante não pago seria encerrado, sem cobrança automática de familiares/herdeiros e sem gerar saldo negativo. Exemplo: dívida R$ 3.000, saldo R$ 800 -> credor recebe R$ 800 e R$ 2.200 deixam de ser exigíveis. Cancelar obrigação contábil não cria nem destrói moeda.
+
+**Compatibilidade com regras existentes:** se adotada, a liquidação de dívidas ocorrerá antes de distribuir saldo remanescente por herança ou enviar dinheiro sem herdeiro elegível à Reserva Global. Não pressupor venda compulsória de imóveis para saldar a dívida, herança de débitos ou sucessão do crédito quando o proprietário credor morre; esses comportamentos não foram decididos.
