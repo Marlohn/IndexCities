@@ -1174,7 +1174,13 @@ Essa direção mantém realismo sistêmico sem transformar o jogo em contabilida
 
 ## Ritmo de construção e espera — pesquisa exploratória (2026-10-08)
 
-> **Revisão humana desta seção:** PENDENTE — pesquisa e recomendações produzidas por IA após uma pergunta sobre duração de obras; nenhuma duração, fórmula de velocidade ou política de pagamento foi aprovada como requisito. A SPEC continua definindo construção não instantânea, materiais/entregas/equipes reais, velocidades de jogo e as regras atuais de cancelamento.
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — em 2026-10-08 o responsável confirmou a **direção de obras relativamente rápidas, sem espera artificial longa, preservando materiais, deslocamentos e mão de obra reais**, agora na SPEC. A pesquisa comparativa, os tempos sugeridos pela IA e a proposta monetária ainda não foram aprovados nem revisados integralmente.
+
+### Direção de produto confirmada em 2026-10-08
+
+A SPEC passou a estabelecer obras de execução relativamente ágil quando insumos, acesso e trabalhadores estão presentes, **sem duração longa adicionada artificialmente**. Entregas físicas, escassez, trânsito e capacidade real podem atrasar as obras; o andamento deve ser legível e várias obras podem avançar em paralelo conforme a capacidade existente. O jogador não deve precisar microgerenciar caminhões ou trabalhadores.
+
+**Não foram aprovados** segundos ou minutos por prédio, fórmulas, multiplicadores novos, recuperação dos materiais entregues ou política monetária de cancelamento. Esta última permanece aberta. Materiais entregues ao canteiro seguem consumidos e perdidos em cancelamento conforme a SPEC vigente; liberar materiais ainda não entregues é regra já definida.
 
 ### O que os jogos mostram (comparação qualitativa, não experimento controlado)
 
@@ -1183,7 +1189,7 @@ Essa direção mantém realismo sistêmico sem transformar o jogo em contabilida
 - **Workers & Resources: Soviet Republic:** construção física pode usar equipes/materiais e o jogo também dispõe de construção rápida financiada, fora do modo realista; a demora é parte relevante da experiência mais sistemática. Fontes: [Wiki oficial, Construction](https://wiki.hoodedhorse.com/Workers_Resources_Soviet_Republic/Construction), [Game settings](https://wiki.hoodedhorse.com/Workers_Resources_Soviet_Republic/Game_settings).
 - **Feedback qualitativo divergente:** alguns jogadores relatam satisfação por construir tudo fisicamente; outros relatam espera longa, gargalos opacos e trabalho repetitivo, especialmente no início de *Workers & Resources*. Não tratar comentários como amostra representativa nem como medição de duração ideal. Exemplos: [satisfação](https://www.reddit.com/r/Workers_And_Resources/comments/123rsn1/realistic_mode_is_the_best_mode/), [frustração](https://www.reddit.com/r/Workers_And_Resources/comments/1lu9a5i/im_giving_up_on_realistic_mode/).
 
-### Hipótese recomendada para calibração no jogo integrado
+### Hipóteses ainda pendentes de calibração no jogo integrado
 
 Separar **tempo de suprimento e deslocamento reais** de **trabalho ativo de construção**. Não adicionar espera fixa longa apenas para simular realismo. O primeiro prédio útil precisa aparecer cedo para que o mapa vazio não vire espera sem decisões; obras maiores podem demorar mais, especialmente se a cidade possui poucos trabalhadores, congestionamento ou importação distante. Permitir que diversas obras evoluam em paralelo enquanto o jogador faz outras decisões; sem microgerenciar ordens de cada caminhão ou trabalhador. Um projeto parado deve mostrar a causa concreta: aguardando material, entrega, acesso ou equipe; progresso de obra deve corresponder a trabalho/capacidade real, sem animação como fonte independente de verdade.
 
