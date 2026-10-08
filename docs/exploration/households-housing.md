@@ -187,16 +187,16 @@ A intenção é usar demanda como **sinal para decisão do jogador**, não como 
 
 ### Oferta e demanda nos preços
 
-Direção desejada: modelo simples, legível e configurável.
+**Decidido na SPEC para o primeiro modelo:** a venda segue o valor de mercado calculado, e o **aluguel residencial é proporcional a esse valor**, sem multiplicador adicional de procura. A procura já pode influenciar indiretamente ambos ao afetar o próprio valor de mercado.
 
-Hipótese inicial a avaliar:
+O método de avaliação e a taxa de aluguel ainda exigem calibração. Hipóteses sobre a avaliação (não sobre negociação adicional de aluguel):
 
-- preço-base do imóvel/aluguel;
-- multiplicador de oferta/demanda;
+- referência de valor imobiliário;
+- efeito de oferta/demanda sobre a avaliação;
 - modificadores de localização e qualidade;
 - limites de variação para evitar instabilidade artificial.
 
-A fórmula exata do valor de mercado e a do aluguel ainda devem ser testadas para que o jogador compreenda por que esses valores mudam. No primeiro modelo, a venda segue o valor de mercado sem negociação de desconto/acréscimo.
+A fórmula de avaliação e o percentual de aluguel proporcional ao valor ainda devem ser calibrados para que o jogador compreenda por que os valores mudam. O primeiro modelo não negocia descontos/acréscimos na venda nem aplica ajuste extra de procura diretamente ao aluguel.
 
 
 ---
@@ -251,7 +251,7 @@ Enquanto um imóvel residencial estiver em propriedade privada:
 - um imóvel pode ficar excepcionalmente sem proprietário quando entrar em estado não reclamado.
 
 Ainda abertos:
-- fórmula de aluguel e parâmetros do cálculo do valor de mercado (preço de venda já definido como igual à avaliação);
+- percentual de aluguel, periodicidade de cobrança e parâmetros do cálculo do valor de mercado (preço de venda já definido como igual à avaliação);
 - prioridade de herdeiros elegíveis;
 - granularidade de propriedade em apartamentos;
 - detalhes de revenda e custos recorrentes quando forem necessários.
@@ -442,3 +442,14 @@ O preço de venda no primeiro modelo já foi definido como igual ao valor de mer
 **Não faz parte do primeiro modelo:** compras/vendas de imóveis por preços negociados automaticamente acima ou abaixo da avaliação, em resposta a oferta/demanda. O primeiro modelo vende pelo valor de mercado calculado, conforme a SPEC. A negociação automática foi mantida apenas como possibilidade para reavaliação futura, sem compromisso de implementação ou prazo.
 
 Hipótese de benefício: negócios mais variados e sensíveis à urgência dos agentes. Riscos a investigar: complexidade de lógica, volatilidade, legibilidade para o jogador e possíveis distorções tributárias caso o preço pago se afaste do valor estimado.
+
+
+## Aluguel residencial — modelo inicial e melhoria possível
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — o responsável confirmou o modelo proporcional ao valor de mercado e apontou o ajuste adicional pela procura apenas como possível melhoria. Detalhes de calibração e consequências elaborados pela IA permanecem **PENDENTES** de revisão.
+
+**Decisão oficial (ver SPEC):** no primeiro modelo, o aluguel residencial é **valor de mercado do imóvel × percentual de aluguel** (a calibrar). O valor de mercado já considera condições da cidade, incluindo demanda; não existe um segundo fator de procura aplicado diretamente ao aluguel. O pagamento continua sendo transferência real do locatário ao SIM proprietário, sem microgerenciamento do jogador.
+
+**Possível melhoria futura, não aprovada como funcionalidade atual:** ajuste automático adicional do aluguel conforme procura por locação e vacância, mesmo quando o valor de mercado do imóvel não muda. Poderia reagir mais rapidamente ao mercado de locação, mas adiciona volatilidade, complexidade e risco de duplicar o efeito da demanda já refletido na avaliação. Não há compromisso de implementar.
+
+**Em aberto:** percentual de referência, periodicidade de cobrança, atualização do aluguel em contratos existentes quando a avaliação muda e regras de inadimplência. Não pressupor que valor dinâmico altera imediatamente o aluguel contratado.
