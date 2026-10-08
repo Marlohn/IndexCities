@@ -455,6 +455,35 @@ Se o jogador simplesmente demolir um prédio pronto:
 
 Podemos futuramente explorar sucata/reciclagem se isso criar gameplay suficiente, mas não precisamos disso para justificar a regra básica.
 
+### Realocação assistida de prédios prontos: preferência C, propriedade ainda sem solução (2026-10-08)
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — o responsável manifestou preferência explícita pela opção C (realocação assistida, para testar no jogo integrado), mas interrompeu a aprovação completa ao reconhecer que uma casa pode já ser propriedade de um SIM e afetar sua vida. A segmentação de casos e as hipóteses abaixo são análise da IA **PENDENTE de decisão humana**; **não** são requisitos oficiais da SPEC.
+
+**Direção de experiência preferida, não regra universal aprovada:** um comando simples de realocação para construções concluídas, com custos e logística reais, sem exigir que o jogador repita toda a sequência de demolição e construção. O custo da simplificação precisa ser medido em gameplay, implementação e processamento. Não existe autorização para mover bens de terceiros, pessoas ou estoques magicamente.
+
+**Separar os casos antes de fechar a elegibilidade:**
+
+| Estado do edifício | Risco central | Hipótese para avaliação, ainda não aprovada |
+| --- | --- | --- |
+| Público/municipal | Interrupção de serviço, funcionários, materiais e custo de reconstrução | Realocação assistida potencialmente adequada; não apagar viagens e capacidade real |
+| Privado concluído ainda não adquirido, desocupado | Custo de reconstrução e logística, mas sem proprietário/ocupante privado | Candidato mais simples para realocação assistida; não confundir com imóvel sem proprietário **ocupado** |
+| Residencial privado com dono, ocupado ou vazio | Propriedade pertence a SIM real; valor muda com localização; se alugado, há dono e locatário distintos | Não assumir que a prefeitura pode mudar localização ou propriedade unilateralmente; compra, compensação e concordância são modelos alternativos ainda não decididos |
+| Comércio/indústria em operação | Empresa é proprietária e operadora, tem caixa, trabalhadores, estoque e acesso | Realocação unilateral também altera patrimônio e atividade empresarial; solução econômica separada da moradia |
+| Residência sem proprietário, mas ocupada | O morador pode ter permanência temporária reconhecida na SPEC | Ser sem dono não é sinônimo de estar vazia/disponível para realocação |
+
+**Inconsistência/lacuna transversal:** a [SPEC](../SPEC.md) já define a demolição de prédios como instantânea, com custo, mas não define direito da prefeitura de demolir patrimônio privado de SIM/empresa, indenização, destino do titular nem desocupação por uma ordem do jogador. A SPEC também mantém mudança de residência por decisão/condições da família, busca automática de moradia compatível e possibilidade de ficar sem moradia ou emigrar, **sem direito automático a moradia gratuita**. Qualquer regra nova de realocação precisa ser compatibilizada com a demolição; caso contrário a ferramenta de demolição pode contornar limitações de propriedade.
+
+**Alternativas de política a deliberar, sem multiplicar estados desnecessários:**
+- **Proteção até transação:** poder mover diretamente apenas prédios públicos ou efetivamente sem proprietário e desocupados; imóvel privado demanda aquisição/saída real antes de intervenção, sem presumir venda garantida. Baixa complexidade, menor liberdade de reurbanização.
+- **Intervenção automática com compensação:** prefeitura pode iniciar obra/intervenção em imóvel privado, mas deve haver titular real, transferência/indenização com dinheiro do Caixa e efeito sobre família/empresa. Mais liberdade, porém risco de deslocamento arbitrário, alta despesa e regras adicionais.
+- **Consentimento/negociação automática:** proposta ao proprietário; pode rejeitar ou exigir condições e deixar a obra travada. Mais agência, mas risco de fricção de gameplay e rotina onerosa de simulação.
+
+**Critério de avaliação:** a propriedade é de uma entidade econômica, não do jogador; mover localização pode alterar valor de mercado e acesso a empregos/serviços. Transferências monetárias precisam de origem/destino reais e preservar a oferta fixa. A decisão do morador de mudar não equivale a autorizar a transferência de sua propriedade; proprietários que alugam precisam ser tratados separadamente dos inquilinos. Não criar menus de negociação por cada SIM nem cálculos contínuos para todo o mapa: se necessário, avaliar apenas quando uma intervenção for solicitada.
+
+**Referências para contraste, não requisitos:** [Farthest Frontier — guia oficial](https://www.farthestfrontier.com/guide/gameplay/buildings/) permite realocar edificações com custo de trabalho, mas não representa necessariamente propriedade privada por SIM como no IndexCities; [Cities: Skylines II — Paradox, Signature Buildings](https://www.paradoxinteractive.com/games/cities-skylines-ii/features/zones-signature-buildings) diferencia edificações colocáveis realocáveis; [Workers & Resources — discussão de moradores e demolição](https://steamcommunity.com/app/784150/discussions/0/5568165891211111202/) mostra risco de deslocamento e controles trabalhosos, evidência comunitária não formal.
+
+**Próxima decisão de maior valor:** até onde o jogador pode intervir no **imóvel privado já adquirido** (inclusive demolição) e qual deve ser o destino econômico do proprietário e do ocupante? Sem essa resposta, a opção C para todos os prédios não foi fechada. A experiência de obras **inacabadas** permanece aprovada na SPEC e não depende desta discussão.
+
 ### Caso C — prédio concluído e jogador quer apenas mudar de lugar
 
 Não devemos automaticamente obrigar o jogador a:
