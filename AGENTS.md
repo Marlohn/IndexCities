@@ -14,6 +14,10 @@ Estas regras valem para humanos e IAs. O objetivo é maximizar progresso útil s
 Antes de uma mudança relevante, leia a SPEC e somente o código necessário para entender o alvo. Consulte a ARCHITECTURE quando a mudança afetar organização técnica, fronteiras ou dependências. Consulte a EXPLORATION quando a tarefa depender de uma discussão ainda aberta ou do raciocínio que levou a uma decisão.
 
 
+## Mapa de prontidão e prioridades de definição
+
+Antes de iniciar uma rodada de **definição da SPEC** ou de **priorização de decisões de produto**, consulte [`docs/exploration/project-readiness.md`](docs/exploration/project-readiness.md) para identificar lacunas, riscos e perguntas de maior valor, depois de conferir a SPEC e o hub de exploração atuais. O mapa é **orientação exploratória revisável**, não fonte de verdade, requisito aprovado, plano obrigatório de POC ou motivo para bloquear experimentos seguros. **Não reabra decisões da SPEC só porque aparecem como pendência numa análise antiga;** diferencie decisão ainda necessária, calibração e validação por protótipo. Atualize o mapa apenas quando uma decisão ou evidência mudar materialmente as prioridades.
+
 ## Auditoria humana de conteúdo produzido por IA
 
 Conteúdo criado por IA não pode ganhar autoridade apenas porque foi escrito, pesquisado, resumido ou organizado no repositório.
