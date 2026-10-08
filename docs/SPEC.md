@@ -20,6 +20,14 @@ Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decis�
 - Quando uma exploração resultar em decisão de produto, esta SPEC deve ser atualizada de forma curta.
 - Se uma decisão for substituída, este documento deve refletir o estado desejado atual, não manter versões antigas por histórico.
 
+## Fora de escopo automático
+
+Nada é considerado obrigatório apenas por ter existido em outro projeto.
+
+Qualquer ideia anterior pode ser revisitada futuramente como material de pesquisa, mas precisa passar novamente pelo processo de exploração e decisão antes de entrar nesta SPEC.
+
+A SPEC deve crescer **com as decisões do produto e antes do código que as implementa**, sem antecipar funcionalidades ainda hipotéticas.
+
 ## Decisões de produto confirmadas
 
 ### Conceito e apresentação
@@ -242,15 +250,6 @@ A primeira base de recursos físicos do jogo será composta por oito categorias:
 - O jogo terá **pause** e velocidades **1, 2 e 3**.
 - A escala de tempo e seus multiplicadores devem ser configuráveis para permitir calibração durante o desenvolvimento.
 
-## Fora de escopo automático
-
-Nada é considerado obrigatório apenas por ter existido em outro projeto.
-
-Qualquer ideia anterior pode ser revisitada futuramente como material de pesquisa, mas precisa passar novamente pelo processo de exploração e decisão antes de entrar nesta SPEC.
-
-A SPEC deve crescer **com as decisões do produto e antes do código que as implementa**, sem antecipar funcionalidades ainda hipotéticas.
-
-
 ### Educação, saúde, segurança e emergências
 
 - Crianças e adolescentes têm idade escolar, matrícula real e deslocamento diário para a escola.
@@ -331,7 +330,7 @@ A SPEC deve crescer **com as decisões do produto e antes do código que as impl
 - Os fatores conceituais principais da demanda são população/clientes potenciais, capacidade já existente, acesso/tempo de deslocamento e concorrência entre estabelecimentos equivalentes ou substitutos.
 - **Demanda é informação de gestão, não uma trava de construção:** o jogador pode construir mesmo quando a demanda é baixa.
 - A interface deve alertar claramente quando uma nova atividade econômica estiver entrando em uma situação de baixa demanda ou alto risco de pouca clientela.
-- **Alerta de falta de compradores durante a operação:** fazendas, indústrias e comércios devem permitir ao jogador perceber quando **vendas/pedidos reais ficam insuficientes em relação à oferta ou produção e a situação persiste com consequências relevantes**, como estoque se acumulando, receita baixa ou risco econômico. O sinal deve se apoiar em **quantidades efetivamente vendidas, produzidas e armazenadas**, inclusive vendas externas quando existirem, **não somente na contagem de compradores**: um único comprador pode adquirir grande volume. **Distinguir demanda insuficiente de falha de entrega** (há pedidos, mas caminhões ou capacidade logística impedem a saída dos produtos), além de outras causas reais, em vez de emitir alerta incorreto de poucos compradores. Mostrar diagnóstico simples, com detalhes ao inspecionar a atividade e sugestões de causas/ações urbanas cabíveis; agregar avisos para evitar excesso de notificações ou alertas por oscilações passageiras. Limiares, duração e apresentação ficam para calibração. **Este alerta não define como a empresa ajusta a produção**, cuja política ainda não foi aprovada.
+- **Alerta de falta de compradores durante a operação:** fazendas, indústrias e comércios devem permitir ao jogador perceber quando **vendas/pedidos reais ficam insuficientes em relação à oferta ou produção e a situação persiste com consequências relevantes**, como estoque se acumulando, receita baixa ou risco econômico. O sinal deve se apoiar em **quantidades efetivamente vendidas, produzidas e armazenadas**, inclusive vendas externas quando existirem, **não somente na contagem de compradores**: um único comprador pode adquirir grande volume. **Distinguir demanda insuficiente de falha de entrega** (há pedidos, mas caminhões ou capacidade logística impedem a saída dos produtos), além de outras causas reais, em vez de emitir alerta incorreto de poucos compradores. Mostrar diagnóstico simples, com detalhes ao inspecionar a atividade e sugestões de causas/ações urbanas cabíveis; agregar avisos para evitar excesso de notificações ou alertas por oscilações passageiras. Limiares, duração e apresentação ficam para calibração. **Este alerta diagnostica a situação econômica, mas não é uma ordem manual de produção:** o ajuste automático da atividade segue a política de **produção adaptativa com estoque de segurança** já definida em *Empresas e economia*; seus parâmetros continuam para calibração.
 - Na colocação e na leitura normal, a demanda pode ser resumida em estados simples como **boa / média / baixa**; o jogador deve poder abrir os fatores detalhados que produziram esse resultado.
 - Múltiplos estabelecimentos equivalentes disputando a mesma clientela, como vários mercados concentrados na mesma área, podem reduzir a oportunidade econômica para novos estabelecimentos e aumentar o risco de prejuízo.
 - A fórmula exata, os pesos e os limiares continuam sendo parâmetros de calibração; não usar uma barra opaca sem decomposição causal.
