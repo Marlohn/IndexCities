@@ -407,13 +407,18 @@ Exemplos de causas:
 
 A UI deve apontar a causa dominante com base nos dados reais. O detalhamento permite inspecionar a decomposição completa.
 
-Não foi decidido:
-- destino do prédio após fechamento;
-- possibilidade de outro operador assumir;
-- recuperação judicial/crédito;
-- intervenções/subsídios específicos.
+O destino principal após falência já foi fechado:
+- a falência da empresa é terminal;
+- pode existir uma liquidação técnica curta e automática;
+- imóveis podem ser ofertados automaticamente enquanto a empresa ainda existe apenas para liquidar ativos;
+- se um ativo ficar sem titular, pode permanecer sem proprietário e uma venda posterior envia o valor à Reserva Global;
+- saldo final sem outro titular econômico definido retorna à Reserva Global.
 
-Esses temas ficam fora até criarem uma decisão de gameplay relevante.
+Continuam fora/abertos:
+- recuperação judicial;
+- crédito empresarial;
+- intervenções ou subsídios específicos;
+- tratamento detalhado de estoques e outros ativos quando esses casos existirem.
 
 
 ---
@@ -734,7 +739,7 @@ No primeiro modelo, uma empresa nova que entra pela conexão exterior é criada 
 - capacidade de pagar a aquisição;
 - capital restante suficiente para iniciar operação segundo regras calibráveis.
 
-O capital inicial representa recursos trazidos do exterior. Deve ser explícito, limitado e diagnosticável.
+O capital inicial é retirado da **Reserva Global**. Deve ser explícito, limitado e diagnosticável; a entrada da empresa redistribui dinheiro existente, sem criar moeda.
 
 Depois de entrar, a empresa deixa de ser apenas "externa": passa a existir na cidade e obedece às mesmas regras de caixa, emprego, estoque, impostos e falência.
 
