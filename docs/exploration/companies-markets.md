@@ -55,6 +55,7 @@ Decidido:
 
 - mercadorias físicas podem ser importadas enquanto a cidade não as produz localmente em quantidade suficiente;
 - importações usam a conexão externa;
+- o pagador real da importação transfere o valor para a **Reserva Global**;
 - preços externos ficam **estáveis no escopo inicial**, sem mercado externo dinâmico.
 
 Para implementação, o preço deve ser um dado de balanceamento configurável pelo projeto, mas isso não implica necessariamente uma opção exposta ao jogador.
@@ -79,8 +80,10 @@ No mínimo, a interface financeira precisa separar categorias como:
 
 **Entradas**
 - impostos;
-- exportações;
+- receitas de exportação que pertençam ao setor público, quando houver;
 - outras receitas municipais que forem adicionadas futuramente.
+
+Exportações privadas pertencem ao agente econômico que vende a mercadoria; o pagamento externo sai da Reserva Global e não entra automaticamente no Caixa da Cidade.
 
 **Saídas**
 - salários de trabalhadores públicos;
@@ -844,7 +847,7 @@ Evitar transformar falência em uma segunda simulação de gestão empresarial.
 - não exige que o jogador acompanhe liquidação, credores ou processo jurídico;
 - falência continua tendo consequência clara e terminal;
 - evita acumular empresas “zumbis”;
-- reutiliza o mecanismo já decidido de patrimônio não reclamado.
+- reutiliza a Reserva Global para valores sem titular, registrando a origem como patrimônio não reclamado quando aplicável.
 
 **Contras**
 - existe um pequeno estado técnico de liquidação;
