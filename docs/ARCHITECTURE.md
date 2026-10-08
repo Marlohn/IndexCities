@@ -12,6 +12,8 @@
 
 O projeto ainda não possui implementação de jogo. Esta arquitetura define fronteiras e direção de dependências antes do primeiro código justamente porque essas escolhas têm alto custo de reversão depois que simulação, apresentação e conteúdo começam a se misturar.
 
+**Premissa de entrega e validação:** a implementação inicial busca um **jogo integrado orientado pela SPEC**; a validação principal de gameplay e integração será **global, após o conjunto estar funcional**. A arquitetura modular não exige POCs por subsistema nem reduz requisitos aprovados. Incrementos técnicos, testes localizados e profiling quando justificados continuam possíveis durante o desenvolvimento — não são POCs de produto independentes.
+
 Ela deve continuar pequena. Novas camadas, frameworks, assemblies ou abstrações só entram quando resolverem uma necessidade observável.
 
 ---
@@ -491,7 +493,7 @@ Não criar um framework de migração antes de existir a primeira mudança de sc
 
 ## 11. Testes
 
-A estratégia segue as fronteiras arquiteturais e deve priorizar **retorno rápido durante o desenvolvimento**.
+A estratégia segue as fronteiras arquiteturais e deve priorizar **retorno rápido durante o desenvolvimento**. A validação abrangente do jogo integrado é o marco principal depois da implementação funcional do conjunto especificado, **sem POCs de produto isoladas obrigatórias**. Testes rápidos e verificações técnicas durante a construção reduzem o risco de descobrir falhas econômicas ou de integração apenas no final.
 
 A regra principal é: **rode o menor conjunto de testes que realmente prova a mudança; aumente o alcance quando o risco aumentar.**
 
@@ -771,7 +773,7 @@ Ainda não estão decididos:
 - scripting externo;
 - divisão de cada domínio em assembly próprio.
 
-Esses assuntos devem ser resolvidos por protótipo, profiling ou necessidade real.
+Esses assuntos devem ser resolvidos por evidência do código integrado, profiling, experimentos técnicos opcionais ou necessidade real, sem exigir uma POC independente.
 
 ---
 

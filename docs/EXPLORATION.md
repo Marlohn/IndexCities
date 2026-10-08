@@ -32,7 +32,7 @@ Auditoria reconciliada em **2026-10-07** com o histórico de conversas disponív
 - **Interface e ferramentas do jogador** — revisão humana: **PARCIALMENTE REVISADO**; ativa; construção, ferramentas, snapping, overlays, realocação e fluxo de interação: [`exploration/player-interface.md`](exploration/player-interface.md).
 - **Referência comparativa do gênero** — revisão humana: **PENDENTE**; recorrente; benchmark externo para confrontar escolhas do IndexCities com outros city builders: [`exploration/genre-benchmark.md`](exploration/genre-benchmark.md).
 - **IA para decisões, simulação e desenvolvimento** — revisão humana: **PENDENTE**; pesquisa concluída para a fase atual; Jev/Laya não são recomendados no core por performance nem como camada geral do workflow: [`exploration/ai-decision-systems.md`](exploration/ai-decision-systems.md).
-- **Processo de desenvolvimento e documentação** — revisão humana: **PARCIALMENTE REVISADO**; decidido para a fase atual; histórico das alternativas e justificativas, enquanto as regras vigentes ficam em `AGENTS.md`: [`exploration/development-process.md`](exploration/development-process.md).
+- **Processo de desenvolvimento e documentação** — revisão humana: **PARCIALMENTE REVISADO**; decidido para a fase atual; **SDD antes do código e primeira entrega/validação globais do jogo integrado, sem POCs setoriais obrigatórias**. Histórico: [`exploration/development-process.md`](exploration/development-process.md); regras vigentes em `AGENTS.md`.
 
 ## Regra de autoridade
 

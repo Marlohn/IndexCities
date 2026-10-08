@@ -27,7 +27,7 @@ A pergunta central não é apenas se a tecnologia funciona, mas se ela resolve m
 > **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
 
 
-**Conclusão atual:** não recomendada como estratégia de performance e não vale priorizar uma POC apenas para esse objetivo.
+**Conclusão atual:** não recomendada como estratégia de performance e não vale criar uma POC separada apenas para esse objetivo.
 
 Foi avaliada a ideia de usar modelos de decisão do tipo Jev e alternativas locais como Laya para decidir ações de cidadãos, famílias ou empresas.
 
@@ -143,7 +143,7 @@ Não introduzir Jev/Laya apenas como uma segunda opinião genérica.
 
 
 - **Jev/Laya no core para ganhar performance:** não.
-- **POC de IA local apenas para performance:** não vale priorizar.
+- **Experimento de IA local apenas para performance:** não vale priorizar nem instituir como fase do produto.
 - **IA local para comportamento raro/especial:** possível no futuro, se houver necessidade concreta de gameplay.
 - **Jev/Laya como ferramenta geral de desenvolvimento ou arquitetura:** não.
 - **Jev/Laya como gate/classificador especializado em alto volume:** possível no futuro.

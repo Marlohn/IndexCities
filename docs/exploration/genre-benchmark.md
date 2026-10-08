@@ -372,7 +372,7 @@ Esta seção registra padrões recorrentes encontrados em post-mortems, entrevis
 - **Performance tardia pode destruir a própria fantasia de escala.** Cities XL mostrou historicamente que cidades grandes com simulação pesada e arquitetura incapaz de usar bem o hardware podem transformar o crescimento, que deveria ser recompensa, em degradação progressiva da experiência.
 - **Profundidade não exige que tudo seja simulado da mesma forma.** Jogos bem-sucedidos variam radicalmente: alguns simulam cidadãos individualmente; outros concentram profundidade em logística, espaço, recursos ou decisões sociais. O nível de fidelidade deve seguir a fantasia central.
 
-### Heurísticas provisórias para futuros protótipos
+### Heurísticas de investigação (não definem POCs obrigatórias do IndexCities)
 
 Estas heurísticas ainda não são decisões de produto:
 
@@ -382,7 +382,7 @@ Estas heurísticas ainda não são decisões de produto:
 4. permitir que o nível de controle do jogador suba conforme a escala cresce, evitando repetir manualmente operações que já foram compreendidas;
 5. separar fidelidade de simulação de fidelidade visual: um cidadão pode ter estado persistente sem exigir atualização completa e renderização permanente;
 6. preferir sistemas cuja causa e consequência possam ser explicadas ao jogador;
-7. prototipar o maior risco técnico e o maior risco de diversão cedo, antes de produzir grande quantidade de conteúdo;
+7. identificar e medir cedo os maiores riscos técnicos e de diversão durante a implementação integrada, recorrendo a experimentos pontuais apenas quando úteis e sem exigir POCs separadas de produto;
 8. observar jogadores em vez de confiar apenas em opinião declarada: comportamento real costuma revelar problemas diferentes dos pedidos explícitos;
 9. manter a possibilidade de cortar ou simplificar sistemas que desviem atenção do city building;
 10. definir explicitamente qual fantasia domina o IndexCities antes de comprar complexidade para sistemas auxiliares.

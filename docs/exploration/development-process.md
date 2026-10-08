@@ -55,6 +55,16 @@ Na prática:
 
 A pesquisa confirmou que SDD normalmente significa colocar intenção e especificação antes da implementação. Ferramentas como Spec Kit estruturam isso em várias etapas, mas o IndexCities adota apenas o princípio necessário, sem copiar a cerimônia inteira.
 
+### Primeira entrega integrada — direção confirmada
+
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — o responsável confirmou **SPEC antes do desenvolvimento**, **primeira implementação integrada** e **validação global posterior**; as considerações técnicas abaixo ainda não foram revisadas integralmente.
+
+**Decidido (regras vigentes em `AGENTS.md`):** não existe roteiro obrigatório de POCs de produção, economia, interface, mapa ou outro sistema. A primeira entrega busca integrar o produto conforme a SPEC; a validação principal de gameplay e interação entre sistemas considera o **conjunto funcional**. Recomendações antigas de "primeira POC" em documentos temáticos são pesquisa histórica, não cortes de escopo autorizados.
+
+**Distinção importante:** entrega integrada **não exige todo o código num único commit nem desenvolvimento sem qualquer teste até o final**. Incrementos técnicos, verificações e testes proporcionais ao risco podem ocorrer durante a implementação. Isso não cria POCs de produto nem marcos burocráticos; ajuda a evitar erros difíceis de localizar na integração global.
+
+**Risco a acompanhar (análise ainda pendente):** integrar muitos sistemas profundos sem observar suas interações pode encarecer correções. Preservar invariantes e diagnóstico causal durante a implementação, sem trocar a estratégia de entrega integrada por etapas de produto isoladas.
+
 ### Princípio de evolução
 
 Só adicionar processo quando for possível apontar uma dor real que ele resolve.

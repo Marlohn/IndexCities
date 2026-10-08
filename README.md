@@ -13,4 +13,6 @@ A intenção é começar com uma folha em branco: pesquisar, discutir e decidir 
 
 Uma funcionalidade nova de produto entra primeiro na SPEC. Decisões estruturais de software vão para a ARCHITECTURE. Pesquisa e discussão ficam na EXPLORATION até a decisão ser fechada.
 
+O desenvolvimento segue **Spec-Driven Development (SDD)**: primeiro são definidas as regras do produto na SPEC, depois o jogo é implementado. A **primeira entrega e sua validação principal serão integradas**, não uma série de POCs isoladas por sistema. A implementação pode evoluir modularmente e incluir verificações técnicas pontuais.
+
 O processo é propositalmente leve: estrutura adicional só deve ser criada quando resolver uma necessidade concreta.

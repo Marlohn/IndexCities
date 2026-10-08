@@ -79,7 +79,7 @@ Para Godot, a documentação oficial estabelece limites arquiteturais relevantes
 
 Isso favorece uma hipótese arquitetural, ainda não decidida: **estado de simulação em estruturas C# leves e independentes da SceneTree, com representação visual no Godot somente quando necessária**. O limite real deve ser medido no hardware-alvo.
 
-**Conclusão da pesquisa:** hoje não existe evidência suficiente para escolher honestamente um limite de 10 mil, 50 mil, 100 mil ou 1 milhão de cidadãos para o IndexCities. O número precisa sair de benchmarks do próprio modelo de simulação.
+**Conclusão da pesquisa:** hoje não existe evidência suficiente para escolher honestamente um limite de 10 mil, 50 mil, 100 mil ou 1 milhão de cidadãos para o IndexCities. O número precisa sair de benchmarks do próprio modelo de simulação. Esses benchmarks podem ser pontuais e técnicos: **não são POCs por subsistema nem substituem a validação global da primeira entrega integrada**.
 
 **Benchmark necessário antes da decisão:**
 1. cidadão apenas com estado demográfico;

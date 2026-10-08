@@ -39,7 +39,7 @@ Fontes principais:
 - worldsteel — Rebar / construction: https://worldsteel.org/wider-sustainability/life-cycle-thinking/lca-eco-profiles-2026-release/global-rebar-construction/
 - USDA Forest Service — Wood Handbook: https://research.fs.usda.gov/fpl/wood-handbook
 
-### Tier 1 recomendado para o primeiro POC
+### Tier 1 da pesquisa histórica (não define POC obrigatória)
 
 #### 1. Agregados
 
@@ -114,7 +114,7 @@ floresta/logs → serraria → madeira serrada/produtos estruturais → depósit
 A USDA documenta madeira, madeira serrada e produtos engenheirados como materiais de engenharia usados em edifícios e pontes.
 
 Recomendação:
-- uma única categoria **madeira** no primeiro POC;
+- uma única categoria **Madeira** na implementação inicial conforme a SPEC;
 - não separar tábuas, vigas, compensado, CLT etc.;
 - decidir separadamente se árvores comuns do mapa podem virar matéria-prima ou se haverá silvicultura própria.
 
@@ -130,7 +130,7 @@ Sinergia importante:
 - o ligante pode futuramente se conectar à cadeia de combustível/refino já planejada;
 - agregados compartilham a mesma cadeia usada por concreto.
 
-### Tier 2 recomendado para depois do POC
+### Tier 2 da pesquisa histórica (não define fase posterior obrigatória)
 
 Esses materiais são reais e importantes, mas acrescentam menos ao primeiro loop material ou criam cadeias muito específicas.
 
@@ -153,7 +153,7 @@ https://www.usgs.gov/centers/national-minerals-information-center/soda-ash-stati
 
 #### Gesso / drywall
 - gesso → processamento → placas/produtos de acabamento.
-- muito usado em interiores, mas tem pouca consequência urbana/logística distinta no primeiro POC.
+- muito usado em interiores, mas com pouca consequência urbana/logística distinta no cenário econômico originalmente estudado.
 - recomendação: adiar ou agregar em acabamento.
 
 Fonte:
@@ -194,7 +194,7 @@ Essa lista é pequena, mas cria quatro cadeias diferentes e conectadas:
 
 Nem todo material precisa ter cadeia completa de extração local desde o primeiro protótipo.
 
-Ordem recomendada de POC:
+Ordem histórica sugerida para investigar cadeias (não define fases obrigatórias da entrega):
 
 1. **concreteira local** usando cimento e agregados importados;
 2. **usina de asfalto local** usando agregados + ligante importados;
@@ -203,7 +203,7 @@ Ordem recomendada de POC:
 5. **fábrica de cimento** depois de decidir calcário/argila e indústria pesada;
 6. **produção de aço** mais tarde, por ser uma cadeia industrial muito mais pesada.
 
-Essa ordem permite testar o loop produção → emprego → estoque → caminhão → obra sem exigir, de saída, geologia de recursos e indústria pesada completa.
+Essa ordem era hipótese de sequenciamento de investigação técnica, **não cronograma aprovado de POCs separadas nem autorização para retirar recursos aprovados na SPEC**. Serve para analisar o loop produção → emprego → estoque → caminhão → obra.
 
 ### Consequência importante para geração de mapa
 
@@ -306,7 +306,7 @@ Outros candidatos para fases seguintes, caso tragam gameplay suficiente:
 
 ### Recomendação atual
 
-Para o primeiro protótipo econômico, começar com alimentos, medicamentos/suprimentos médicos, combustível, materiais de construção e bens gerais. Aprofundar apenas cadeias que criarem decisões interessantes ou gargalos logísticos relevantes.
+Esta foi uma **sugestão histórica de teste econômico reduzido**, não fase de produto: alimentos, medicamentos/suprimentos médicos, combustível, materiais de construção e bens gerais. **A lista oficial da entrega integrada são as oito categorias da SPEC.** Aprofundar cadeias somente se trouxerem consequências interessantes, sem cortes automáticos de escopo.
 
 ---
 
@@ -361,7 +361,7 @@ Para o problema de mão de obra inicial, uma equipe externa temporária entra pe
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
 
 
-**Status:** comportamento principal decidido; detalhes de UI e balanceamento ainda precisam ser prototipados.
+**Status:** comportamento principal decidido; detalhes de UI e balanceamento precisam ser verificados/calibrados no jogo integrado.
 
 Ideia: quando o jogador tenta construir algo e a cidade não possui materiais suficientes em estoque, a interface pode mostrar explicitamente que o material faltante será importado.
 
@@ -722,7 +722,7 @@ Ao avaliar uma nova construção ou infraestrutura, investigar:
 
 ### Validação necessária
 
-Essa direção deve ser prototipada antes de ser tratada como o diferencial definitivo do jogo.
+Essa direção deve ser **validada no gameplay do jogo integrado** antes de ser tratada como diferencial definitivo. Experimentos técnicos isolados podem ajudar, mas não são POCs obrigatórias.
 
 Precisamos verificar se:
 
@@ -921,7 +921,7 @@ Se areia e brita permanecerem agrupadas, usar **Areia e brita**. Internamente po
 **Bens essenciais da cidade**
 - **Alimentos** — consumo dos cidadãos; importação e produção local.
 - **Combustível** — veículos, logística e serviços; já faz parte do produto decidido.
-- **Suprimentos médicos** — medicamentos e consumíveis de saúde em uma categoria agregada; forte candidato, mas pode entrar após o primeiro POC se o escopo precisar ser menor.
+- **Suprimentos médicos** — medicamentos e consumíveis de saúde agregados; o adiamento histórico por causa de uma POC menor está **superado**: já pertencem às oito categorias oficiais da SPEC.
 
 **Materiais consumidos diretamente por obras**
 - **Areia e brita** — base de vias, drenagem e insumo de concreto/asfalto.
@@ -1158,7 +1158,7 @@ Evitar o que tende a virar microgerenciamento contábil:
 
 A melhor direção parece ser **mercado/oferta material da cidade com logística física**, e não um estoque juridicamente único nem estoques públicos/privados expostos ao jogador.
 
-O próximo POC deveria medir se o jogador consegue entender:
+Na validação global do jogo integrado, verificar se o jogador consegue entender:
 - quanto existe na cidade;
 - onde está fisicamente;
 - quanto já está reservado;

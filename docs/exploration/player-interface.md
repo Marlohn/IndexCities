@@ -501,7 +501,7 @@ Não precisamos transformar a realocação em uma simulação detalhada de desmo
 
 Ainda aberto.
 
-Três alternativas merecem POC:
+Três alternativas merecem avaliação no jogo integrado (sem POC independente obrigatória):
 
 **1. custo pequeno + tempo curto**
 
@@ -773,12 +773,12 @@ Confirmação deve existir onde o custo do erro é alto. Se cada rua e blueprint
 
 ---
 
-## Protótipo recomendado
+## Cenário de validação da interface integrada (não é entrega separada)
 
 > **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
 
 
-Primeira fatia de UI a testar:
+Aspectos da interface integrada a observar:
 
 1. HUD mínima;
 2. seleção de entidades;
@@ -793,11 +793,11 @@ Primeira fatia de UI a testar:
 11. um overlay de logística/material;
 12. painel lateral simples de inspeção.
 
-Não implementar dezenas de categorias antes de descobrir se esses fluxos são agradáveis.
+Esta lista é um roteiro de observação e **não reduz o escopo da SPEC**. Verificar usabilidade sem excluir automaticamente funcionalidades oficiais da entrega integrada.
 
 ### Testes observáveis
 
-Durante o protótipo, medir/observar:
+Na validação integrada, medir/observar:
 
 - quantos cliques para construir uma rua em L;
 - quantos cliques para colocar cinco casas iguais;
@@ -825,7 +825,7 @@ Durante o protótipo, medir/observar:
 7. Realocar preserva a identidade da empresa/serviço?
 8. O que acontece com moradores, funcionários e estoque durante a realocação?
 9. Quanto material pode ser recuperado ao cancelar/demolir?
-10. Quais overlays entram no primeiro protótipo?
+10. Quais overlays entram na primeira implementação integrada?
 11. Hotbar será fixa, configurável ou híbrida?
 12. Quais ações merecem confirmação?
 13. Teremos "copiar/pipeta" desde o início?

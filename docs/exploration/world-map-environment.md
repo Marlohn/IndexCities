@@ -159,7 +159,7 @@ Essa decisão reduz complexidade de construção, pathfinding, geração de mapa
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
 
 
-**Status:** direção de protótipo aceita; ainda precisa ser validada em implementação.
+**Status:** proposta de posicionamento híbrido a validar na implementação integrada; não representa POC isolada obrigatória nem promoção automática à SPEC.
 
 A proposta atual é testar um modelo **híbrido**, em vez de escolher desde já entre grid rígido e posicionamento totalmente livre.
 
@@ -172,7 +172,7 @@ Fontes:
 - Crate Entertainment — v1.1.0: https://forums.crateentertainment.com/t/farthest-frontier-v1-1-0/153834
 - Godot 4.5 — GridMap: https://docs.godotengine.org/en/4.5/classes/class_gridmap.html
 
-### Protótipo recomendado
+### Hipóteses técnicas a verificar na implementação integrada
 
 Testar:
 - uma **grade lógica interna** para ocupação, colisão, lotes e consultas espaciais;
@@ -180,7 +180,7 @@ Testar:
 - snap opcional a borda da rua, alinhamento com vizinhos, linhas/células da grade e ângulos úteis;
 - possibilidade de mostrar/ocultar a grade como ajuda visual.
 
-### Riscos a medir no POC
+### Riscos a medir na validação integrada
 
 - footprints irregulares;
 - gaps visuais;

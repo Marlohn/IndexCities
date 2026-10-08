@@ -77,9 +77,11 @@ Aqui isso significa:
 - decisão estrutural importante entra na `ARCHITECTURE.md` antes de orientar implementação;
 - dúvidas, pesquisa e alternativas ainda abertas ficam na `EXPLORATION.md` ou, quando forem temáticas/extensas, em `docs/exploration/<tema>.md` referenciadas pelo hub;
 - bugs que apenas restauram comportamento já especificado não exigem mudar a SPEC;
-- experimentos isolados podem existir antes da SPEC, mas só viram produto quando a decisão for registrada.
+- experimentos técnicos isolados são opcionais para investigar riscos e não criam fases obrigatórias de produto; só viram produto quando a decisão for registrada na SPEC.
 
 SDD aqui **não** significa adotar obrigatoriamente Spec Kit, OpenSpec, BMAD ou criar uma cadeia de documentos para cada mudança. A especificação vem antes do desenvolvimento, mas o processo continua proporcional ao risco e ao tamanho da mudança.
+
+**Direção da primeira implementação, confirmada pelo responsável:** desenvolver o **jogo integrado definido pela SPEC**, com a **validação principal global depois que o conjunto estiver funcional**. Não estabelecer POCs de sistemas isolados (economia, fazenda, mapa, interface etc.) como entregas obrigatórias, nem usar recomendações históricas de "primeira POC" ou "após a POC" para cortar automaticamente funcionalidades aprovadas. **Implementação integrada não significa um único commit ou integração às cegas:** construir em incrementos técnicos coerentes, com testes locais e verificações proporcionais quando úteis, evita descobrir falhas estruturais só no final. Experimentos técnicos isolados são opcionais, não fases de produto. Qualquer alteração do escopo oficial exige decisão explícita na SPEC.
 
 O IndexCities usa deliberadamente uma arquitetura de especificação mínima.
 
@@ -222,7 +224,7 @@ Sistemas profundos não podem virar caixas-pretas.
 - **Funcionalidade nova de produto precisa estar na SPEC antes de ser implementada.**
 - Se uma solicitação introduzir comportamento novo ainda não especificado, atualize a SPEC como parte da mesma mudança e então implemente.
 - Bug que apenas restaura comportamento já especificado pode ser corrigido diretamente.
-- Experimentos e POCs podem acontecer rapidamente fora da SPEC enquanto estiverem isolados. Só viram produto quando forem aceitos e incorporados à SPEC.
+- Experimentos técnicos pontuais podem acontecer isoladamente, sem instituir uma sequência de POCs por sistema. Só viram produto quando aceitos e incorporados à SPEC.
 - Não invente features, abstrações ou sistemas para um futuro hipotético.
 
 ## Filosofia de desenvolvimento
