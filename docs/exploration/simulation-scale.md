@@ -103,21 +103,41 @@ Uma casa pode conter uma família ou residência; um prédio pode conter múltip
 
 ### 4. Escala de tempo e velocidades
 
-Ainda não há base factual suficiente para fixar quanto tempo real corresponde a uma hora ou um dia do jogo.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** A SPEC aprova **pause, velocidades 1, 2 e 3 e escala/multiplicadores configuráveis para calibração**. A pesquisa comparativa e as recomendações seguintes são **PENDENTES de revisão humana** e não criam modelo temporal oficial.
 
-O multiplicador de tempo interfere diretamente em:
+**Questão P0:** conciliar minutos de deslocamento, turnos diários, compras e alimentação, obras, salários e aluguéis mensais, reajustes anuais, infância, educação, reprodução e envelhecimento **sem que as diferentes escalas deixem a cidade artificial ou tornem o jogo lento**. Números de outras simulações não são parâmetros do IndexCities.
 
-- duração percebida de trajetos;
-- jornada de trabalho e escola;
-- congestionamento;
-- consumo e produção;
-- nascimento, envelhecimento e morte;
-- ritmo de construção e economia;
-- legibilidade das velocidades 1x, 2x e 3x.
+#### Três modelos de calendário a comparar (nenhum escolhido)
 
-Portanto, o valor deve começar **configurável** e ser calibrado a partir de uma simulação funcional.
+| Alternativa | Como funcionaria | Benefício | Custo / perigo |
+| --- | --- | --- | --- |
+| **A — calendário único condensado** | Relógio, rotinas, finanças e ciclo de vida avançam na mesma escala lógica, acelerada em relação ao mundo real | Sequência causal e datas intuitivas; menos exceções | Para envelhecer gerações em tempo agradável, pode comprimir trabalho, viagens e vencimentos até perder significado |
+| **B — dia operacional representativo** | Dia/noite e rotinas físicas representam um intervalo maior de calendário, por exemplo um mês | Permite observar a cidade amadurecer em menos sessões | A equivalência entre compras, salários, alimentação, idades e datas torna-se menos literal; exige convenções explícitas |
+| **C — calendário demográfico/histórico separado do ritmo econômico/operacional** | Progressão das idades e marcos do calendário pode avançar de modo diferente das operações comerciais/viárias | Ajuste mais independente do ritmo das gerações e da economia | Datas, periodicidade de aluguéis/salários, educação, gravidez, estoques, vencimentos, estatísticas, replays e saves podem divergir; obriga mapear eventos entre escalas |
 
-**Experimento necessário:** implementar um relógio de simulação parametrizado e medir cenários representativos, como casa → trabalho → compras → casa, até encontrar uma escala em que deslocamentos, jornada diária e decisões do jogador continuem legíveis nas três velocidades. Só depois os multiplicadores devem virar decisão de produto.
+**Evidência de desenvolvedores:**
+- [OpenTTD 14.0 — artigo técnico “The stoppable march of time”](https://www.openttd.org/news/2024/03/23/timekeeping) e [notas da versão](https://www.openttd.org/news/2024/04/13/openttd-14-0): separou **economy time** e **calendar time** para permitir desacelerar evolução histórica sem desacelerar transporte e produção; a equipe descreve dificuldades com estatísticas, datas, interface e compatibilidade. **Importante:** o jogo não modela a combinação completa de família, aluguel, escola e patrimônio do IndexCities; a solução não pode ser copiada diretamente.
+- [Cities: Skylines II — Climate & Seasons, desenvolvedores](https://www.paradoxinteractive.com/games/cities-skylines-ii/features/climate-seasons): um ciclo de dia/noite equivale a um mês e um ano tem 12 ciclos. Demonstra a opção B; **não prova** adequação à economia física dos nossos SIMs.
+- [Banished — mod Faster Aging](https://banishedinfo.com/mods/view/23-Faster-Aging) e [Banished Ventures — Speed Aging](https://www.banishedventures.com/mods/speed-aging/): mudanças comunitárias na taxa de envelhecimento indicam que a **reposição de gerações** é variável importante e discutida; mods são testemunhos de preferências, não estudo controlado de gameplay.
+- [Sapiens — tempo](https://wiki.playsapiens.com/index.php/Time): ano comprimido em poucos dias; referência de solução possível, não baseline.
+- [A/B Street — simulação por eventos](https://a-b-street.github.io/docs/tech/trafficsim/discrete_event/index.html): indivíduos fisicamente presentes podem ter estado persistente e atualizar-se por eventos relevantes, sem processar todos a cada frame. **Frequência de atualização é um problema técnico distinto da semântica do calendário**. Não impor scheduler de eventos global sem medições.
+
+#### Relações causais que não podem se perder na avaliação
+
+- Nenhum salário, aluguel, juro, imposto, benefício, conta ou dívida surge porque *somente a idade/calendário visual* acelerou sem evento econômico correspondente; o recebedor/pagador continua agente real da SPEC.
+- Compra de comida, consumo do estoque doméstico, reposição por carga física e preço têm de permanecer coerentes com horários de mercado, viagens e dinheiro — mesmo se “um dia” representar período maior.
+- SIMs não devem viver ciclos de gravidez, escola, trabalho e envelhecimento incompatíveis entre si; um modelo separado precisaria regras explícitas sobre **qual escala governa cada duração**, sem duplicar pagamentos.
+- Obra, deslocamento e trabalho não podem parecer teletransportados só para compensar a compressão do calendário; nem devem exigir longas esperas artificiais.
+- Mudanças de velocidade, pause, save/reload e replay não devem alterar sequência econômica, idade nem resultados aleatórios por mero artefato do relógio.
+- Tempo simulado, duração de uma obra e **tempo real percebido pelo jogador** são grandezas distintas. Um modelo formalmente consistente pode ser lento ou frustrante.
+
+#### Comparação recomendada — não é nova POC ou decisão de arquitetura
+
+Comparar **A e B primeiro**, guardando **C como alternativa séria caso ambas falhem**. Isso reduz complexidade de implementação sem excluir uma solução comprovadamente viável em outros domínios. Avaliar no **jogo integrado definido pela SPEC**, com parâmetros ajustáveis e cenários reproduzíveis: (1) casa → trabalho → compra → casa, incluindo pico de tráfego; (2) mês de salários, aluguéis, consumo e caixa empresarial; (3) construção e entrega sem demoras artificiais; (4) formação e evolução de famílias durante vários anos; (5) alternância pause/1/2/3, save e replay.
+
+Medir **legibilidade de viagens, taxas de transações/consumo, tempo de espera percebido, evolução das gerações, conservação monetária, pontualidade dos eventos e custo computacional**. Não fixar agora “12 minutos por dia”, “30 dias por ano”, multiplicadores exatos ou fórmulas de aceleração etária: esses eram **exemplos hipotéticos**, não recomendação final nem decisão aprovada.
+
+**Recomendação atual da IA (PENDENTE):** uma linha temporal de eventos causalmente consistente é desejável; **isso não obriga que calendário, visualização e envelhecimento compartilhem a mesma razão de aceleração**. Manter o modelo final aberto até observação conjunta de gameplay e economia. **Confiança alta** na necessidade de calibração e invariantes; **moderada/baixa** na escolha de um modelo vencedor sem medição.
 
 ### Regra de evidência para decisões futuras
 
