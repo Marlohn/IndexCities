@@ -14,6 +14,29 @@ Este arquivo é material de exploração temática. A autoridade do produto cont
 
 ---
 
+## Atualização: empresas diferentes com poucos modelos-base (2026-10-08)
+
+> **Revisão humana da seção: PARCIALMENTE REVISADO.** O responsável **aprovou** separar **produção, comércio/revenda e prestação de serviços**, além da **opção 2B** de modelos visuais compartilhados; ambas estão na SPEC. A proposta de **um asset genérico para muitos negócios, mais identidades comerciais, famílias visuais, catálogo e lógica de distribuição** continua **PENDENTE** de decisão/revisão humana.
+
+**Três dimensões distintas:** **empresa** é o agente econômico com caixa, trabalhadores, propriedade e decisões; **atividade** é produzir mercadoria física, revender estoque ou prestar atendimento pago (podem coexistir quando especificado); **asset** é a aparência do prédio com lote/acesso/capacidade real. Trocar fachada não pode reiniciar empresa, dinheiro, trabalhadores ou histórico, e trocar o tipo de atividade não ocorre magicamente porque mudou a placa.
+
+**Problema real levantado:** três negócios num bairro podem se repetir tanto em letreiros quanto em comportamento. Por outro lado, um catálogo grande com um único mesh é visualmente pobre se toda rua repetir a mesma silhueta. E dez placas com o mesmo cliente, demanda e resultado econômico dão **diversidade apenas cosmética**. Portanto, não basta contar nomes ou modelos: importa variedade de **atividade, demanda e aparência**.
+
+| Ideia a avaliar | Benefício | Risco / limite |
+| --- | --- | --- |
+| **Um prédio-base de loja pequena**, personalizado com letreiro, cor, fachada e peças | Permite muitos negócios sem novo modelo complexo para cada um; modelos próprios entram depois | Mesmo volume/silhueta em dezenas de lotes continua repetitivo; testar **poucas famílias visuais, com proporções distintas**, não impor um asset universal |
+| **Poucos arquétipos econômicos com várias descrições de negócios** | Reaproveita atendimento, emprego, capacidade, pagamento, mercadorias e visitas existentes | Se o SIM não tem motivo real para consumir serviço, visitas e receitas viram ficção; não adicionar uma nova necessidade por profissão |
+| **Distribuição pela demanda real do bairro** | Empresas viáveis se diferenciam pelo que moradores, turistas e outras empresas realmente buscam | Não obrigar alternância periódica de lojas ("um salão a cada seis lotes"), cota estética ou estabelecimento rentável sem compradores |
+| **Assets aprimorados progressivamente** | Um modelo próprio futuro substitui o genérico sem reescrever a atividade | Separar identidade empresarial do visual e não mudar propriedade/caixa ao trocar aparência |
+
+**Exemplos, NÃO aprovados como catálogo:** alimentação fora de casa (café/lanchonete/restaurante), serviços pessoais (salão/barbearia), visita/lazer (academia), comércios de mercadorias (mercado/farmácia se categoria física estiver modelada). Oficina pressuporia demanda econômica genuína por manutenção; lavanderia pressuporia roupas/serviço necessário; escritórios precisariam de compradores de serviços empresariais. **Não introduzir desgaste ou novas necessidades só para justificar uma fachada.**
+
+**Evidência adicional:** na [Economy 2.0 do Cities: Skylines II (Paradox, 2024)](https://www.paradoxinteractive.com/games/cities-skylines-ii/news/dev-diary-economy-part-one), a distribuição de atividades comerciais foi alinhada ao consumo das famílias para reduzir repetição de empresas iguais. A [Godot documenta reutilização de cenas](https://docs.godotengine.org/en/stable/tutorials/scripting/nodes_and_scene_instances.html) e [bibliotecas de meshes](https://docs.godotengine.org/en/stable/tutorials/3d/using_gridmaps.html), mas isso não obriga adotar uma implementação específica no IndexCities.
+
+**Mudança na recomendação:** a antiga sugestão abaixo de começar com **apenas dois tipos** de serviço **não deve ser tratada como limite de catálogo**. O caminho promissor é investigar **mais tipos economicamente justificáveis com menos assets específicos**. O responsável ainda não definiu **quantos negócios, quantos modelos-base, quais atividades e qual distribuição** entram na primeira implementação integrada. Manter aberto até a próxima escolha.
+
+---
+
 ## Pesquisa de portfólio enxuto de serviços privados (2026-10-08)
 
 > **Revisão humana desta seção: PENDENTE quanto à pesquisa, ranking e candidatos específicos.** O responsável **aprovou apenas a categoria de empresas privadas de serviços presenciais (opção 4B)** e exigiu selecionar poucos negócios porque cada novo edifício/asset tem custo de produção. A [SPEC](../SPEC.md) contém essa direção oficial. **Nenhum tipo específico abaixo está aprovado**, nem o número de tipos, necessidades novas ou promessa de entrega de asset.
@@ -41,7 +64,7 @@ Este arquivo é material de exploração temática. A autoridade do produto cont
 
 ### Recomendação da pesquisa, ainda NÃO APROVADA
 
-- **Portfólio curto inicial a validar:** **dois arquétipos de serviço** — **alimentação fora de casa (café/lanchonete/restaurante simples)** e **cuidados pessoais (salão/barbearia)**. Avaliar **academia** somente como terceiro se a função de lazer for distinta e verificável; não há motivo para criar 3–6 versões de fachada por negócio antes de testar o valor visual e econômico. **A escolha desses dois ou três tipos depende de aprovação do responsável.**
+- **Recomendação anterior, agora contestada pela preocupação com repetição (não aprovada):** **dois arquétipos de serviço** — **alimentação fora de casa (café/lanchonete/restaurante simples)** e **cuidados pessoais (salão/barbearia)**. Avaliar **academia** somente como terceiro se a função de lazer for distinta e verificável; não há motivo para criar 3–6 versões de fachada por negócio antes de testar o valor visual e econômico. **A escolha desses dois ou três tipos depende de aprovação do responsável.**
 - **Uma base visual compartilhada de comércio pequeno**, com variações de placa, textura e fachada, reduz o risco de um asset único para cada descrição de negócio; diferenças de comportamento devem surgir de demanda/capacidade/trabalho reais. Não declarar que fachada genérica serve para hotéis, fábricas ou serviços maiores; diversidade visual também importa.
 - **Um modelo simples de prestação de serviço**, reaproveitando empresa proprietária/operadora, caixa, vagas, horários/turnos e deslocamentos; cliente real chega, há capacidade de atendimento e transferência monetária real ao prestar o serviço. **Os detalhes exatos de motivação, consumo, receita e capacidade por ramo precisam de decisão na SPEC**. Não criar estoque fictício de serviços, SKU, profissão obrigatória, minigame, animação interior ou simulação per-frame por cliente.
 - **Regra de decisão para novo asset:** cada candidato só deveria entrar quando (1) acrescentar alguma escolha urbana/resultado legível além do catálogo existente; (2) houver fluxo concreto de clientes/demanda/dinheiro; (3) ficar demonstrado o que se reutiliza da malha visual e lógica; (4) o custo adicional de produção 3D e performance for aceitável. Um tipo muito comum na cidade real pode **não** caber no primeiro conjunto se faltar gameplay. Não atribuir pontuação numérica fictícia nem impor limite arbitrário como requisito de produto.
