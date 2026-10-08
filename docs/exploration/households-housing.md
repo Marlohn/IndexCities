@@ -19,7 +19,7 @@ Este arquivo é material de exploração temática. A autoridade do produto cont
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
 
 
-**Status:** em exploração.
+**Status:** parcialmente decidido. O saldo monetário individual de todo SIM já é canônico; regras de despesas e decisões financeiras familiares continuam em exploração.
 
 ### Renda individual e familiar
 
