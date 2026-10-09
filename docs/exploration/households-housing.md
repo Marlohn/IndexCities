@@ -313,7 +313,7 @@ Enquanto um imóvel residencial estiver em propriedade privada:
 
 Ainda abertos:
 - percentual de aluguel, dia de vencimento da cobrança **mensal** e parâmetros do cálculo do valor de mercado (preço de venda já definido como igual à avaliação);
-- **Classes de herdeiros já aprovadas (3B):** cônjuge/filhos, depois pais/irmãos. **Partilha entre vários elegíveis, moradia e imóvel indivisível permanecem PENDENTES**, ver investigação de herança acima;
+- **Herança simplificada APROVADA em 2026-10-09:** classes 3B; dinheiro igual entre elegíveis; casas, apartamentos, prédios e carros atribuídos integralmente por valor aproximado e preferência de ocupação do herdeiro residente. Sem vendas e compensações obrigatórias. Valores e desempates são calibração;
 - **Resolvido pela opção 2C em 2026-10-09:** propriedade integral do edifício ou por apartamentos individuais, com vários imóveis por SIM conforme capacidade financeira. **A definir:** representação/transação sem titularidade dupla e custos comuns;
 - detalhes de revenda e custos recorrentes quando forem necessários.
 
@@ -439,29 +439,30 @@ Depois de migrar e tornar-se residente real, essa família/cidadão pode futuram
 
 ---
 
-## Herança com múltiplos herdeiros — investigação aberta em 2026-10-09
+## Herança automática e aproximadamente justa — aprovada em 2026-10-09
 
-> **Revisão humana: PENDENTE DE DECISÃO.** O responsável **não aprovou** as antigas alternativas A/B/C para distribuir patrimônio entre vários herdeiros. Apontou corretamente que dividir por quantidade de imóveis pode beneficiar desproporcionalmente quem recebe o único imóvel. Pediu reflexão sobre herdeiros que moram juntos e partilha justa. Tudo abaixo é proposta da IA, não requisito.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** Após questionar o custo de dividir um imóvel indivisível e lembrar a existência de **carros e outros bens**, o responsável aprovou **herança automática, simples e aproximadamente justa**. O princípio está na SPEC; critérios de valor, desempate e implementação são calibração, não um novo sistema jurídico.
 
-**Três problemas distintos:**
+**Regra decidida na SPEC:**
 
-1. **Vínculo e moradia:** herdeiros elegíveis já estão aprovados por classe (cônjuge/filhos e, se ausentes, pais/irmãos). Eles **não precisam morar juntos**: cônjuge pode residir no mesmo imóvel, filhos adultos podem ter outros domicílios. **A continuidade da ocupação da casa não equivale à titularidade nem a dividir patrimônio.** A SPEC já permite famílias/domicílios e propriedade individual; não assumir mudança/expulsão automática de todos ao falecer o dono. Decidir separadamente as condições de permanência.
-2. **Justiça econômica:** valor patrimonial deve ser avaliado como **dinheiro real mais valor de mercado real dos bens**, não número de imóveis; dois herdeiros com direito equivalente não deveriam receber, sem compensação, uma casa de R$ 300 mil e R$ 20 mil em dinheiro. **Proposta:** considerar quotas de valor e priorizar alocação de bens inteiros (titular único por imóvel) de modo a aproximar as quotas, eventualmente compensando diferenças **somente por transferência de dinheiro existente**, sem gerar moeda, dívida automática ou copropriedade.
-3. **Patrimônio indivisível sem dinheiro:** se há uma única casa e dois herdeiros sem dinheiro para compensação, não existe partilha igual de um imóvel sob a regra atual de **um SIM proprietário por imóvel**. Alternativas reais: (A) herdeiro morador tem preferência para ficar com a casa e **pode comprá-la com dinheiro real**, pagando quotas dos outros, senão vender; (B) vender a casa a comprador real quando necessário e repartir dinheiro, preservando intervalo físico de ocupação coerente; (C) deixar imóvel com um herdeiro sem compensação, aceitando partilha desigual (**risco de injustiça estrutural e concentração arbitrária**). A disponibilidade de comprador e o tempo da venda importam: uma venda pode demorar, e a receita só existe quando alguém efetivamente compra. Não fixar prazo de venda nem permitir co-propriedade contábil oculta sem decisão.
+- **Mesma classe de herdeiros já aprovada (3B):** primeiro cônjuge/companheiro e filhos; na ausência de ambos, pais e irmãos. Dinheiro disponível **depois de obrigações com tratamento já aprovado** é **dividido igualmente** entre SIMs elegíveis.
+- **Uma só lógica para bens físicos:** casas, apartamentos, prédios residenciais inteiros, carros e outros bens individuais são atribuídos **inteiros** a um herdeiro elegível por bem. A simulação **tenta aproximar o valor patrimonial total** recebido por cada um, sem garantir ótimo nem igualdade matemática perfeita; operação por evento da morte.
+- **Preferir herdeiro que já mora no imóvel:** quando elegível, tentar preservar sua residência e a continuidade do domicílio, sem transferir titularidade a um não herdeiro por presunção e sem mudança/teletransporte de moradores apenas pela troca patrimonial.
+- **Desigualdade restante é aceitável:** se houver um único imóvel e dois herdeiros, um pode ficar com o imóvel, mesmo sem compensar exatamente o outro. **Não** criar venda obrigatória, copropriedade, dívidas de compensação, empréstimos, inventário judicial ou gestão manual para resolver o caso raro.
+- **Carros também entram:** o veículo muda de proprietário, mas continua fisicamente onde estava, sujeito às regras de acesso e circulação. Na ausência total de herdeiros, dinheiro e bens físicos seguem a regra de patrimônio sem sucessor da SPEC.
+- **Calibração/implementação:** valores estimados dos bens, desempates reprodutíveis, centavos e busca eficiente dos herdeiros elegíveis. Não reabrir divisão exata como requisito sem evidência de problema de gameplay.
 
-**Recomendação para debate, NÃO APROVADA:** primeiro **preservar residência de quem já mora** quando houver titularidade e acordo compensável com dinheiro real; se a propriedade única não puder ser dividida de forma justa e não houver compensação possível, **ofertar o imóvel ao mercado real e repartir o produto da venda quando ela ocorrer**. Para não produzir despejo ou patrimônio em limbo, ainda precisa escolher **quem detém a titularidade temporária enquanto aguarda venda**, se os ocupantes podem continuar morando e como lidar com aluguel/contas nesse intervalo. Não transformar inventário em minijogo ou criar uma conta de espólio com dinheiro fictício.
-
-**Perguntas humanas separadas, sem aprovação por padrão:** (1) herdeiro que já vive no imóvel recebe preferência de aquisição/continuidade? (2) quando o único imóvel não puder ser compensado com dinheiro real, a venda passa a ser o último recurso? (3) como manter moradia e titularidade enquanto o mercado não compra?
+**Alternativas históricas descartadas para o escopo atual:** partilha ideal por preço, compra forçada de quotas entre irmãos, venda compulsória de imóvel indivisível, titularidade provisória e inventário detalhado. Eram hipóteses de pesquisa, **não aprovadas**; o responsável preferiu simplicidade pelo impacto baixo na gameplay.
 
 ---
 
 ## Morte do SIM e destino do patrimônio
 
-> **Revisão humana desta seção:** PARCIALMENTE REVISADO — a regra patrimonial sem herdeiros está na SPEC e o responsável aprovou em 2026-10-09 a **opção B: cônjuge/filhos; sem eles, pais/irmãos**. Desempates de herdeiros múltiplos e tratamento de outras obrigações permanecem em exploração.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** As classes de herdeiros (3B) e a partilha simplificada de dinheiro e bens físicos foram aprovadas em 2026-10-09; desempates e tratamento de obrigações não reguladas continuam para definição proporcional.
 
-**Status:** herdeiros elegíveis decididos em princípio pela opção 3B (2026-10-09), com desempates/calibração pendentes. **Se não houver nenhum elegível**, segue a regra de destino patrimonial sem herdeiros já aprovada.
+**Status:** elegibilidade e comportamento principal da partilha APROVADOS na SPEC; detalhes de desempate/valores ficam para calibração. **Se não houver nenhum elegível**, aplica-se a regra de patrimônio sem herdeiro já aprovada.
 
-**Herdeiros elegíveis:** primeiro cônjuge/companheiro e filhos; na ausência de ambos, pais ou irmãos. Não exigir família estendida neste modelo. Um SIM solteiro e sem filhos **pode ter herdeiros** se tiver pais ou irmãos vivos/elegíveis; só sem nenhum elegível o dinheiro remanescente retorna à Reserva Global e imóveis podem permanecer sem dono. O critério fino entre múltiplos membros elegíveis não foi aprovado; não criar copropriedade de imóvel nem distribuir dinheiro arbitrariamente.
+**Herdeiros elegíveis:** primeiro cônjuge/companheiro e filhos; na ausência de ambos, pais ou irmãos. Não exigir família estendida neste modelo. Um SIM solteiro e sem filhos **pode ter herdeiros** se tiver pais ou irmãos vivos/elegíveis; só sem nenhum elegível o dinheiro remanescente retorna à Reserva Global e imóveis podem permanecer sem dono. Com múltiplos elegíveis, dividir dinheiro igualmente e distribuir bens físicos inteiros de modo aproximadamente equilibrado, conforme regra aprovada, sem copropriedade fictícia nem venda obrigatória.
 
 Quando um SIM morre **sem herdeiro elegível**:
 
@@ -481,7 +482,7 @@ A Reserva Global é também a contraparte monetária dos fluxos externos, mas is
 
 ### Pontos ainda abertos
 
-- **Já aprovado (3B, 2026-10-09):** classe primária de herdeiros (cônjuge/companheiro e filhos), depois pais/irmãos na falta dos primeiros. **PENDENTE após pergunta 10 reaberta:** tratamento separado da moradia de herdeiros ocupantes, equidade por valor total e destino do imóvel indivisível sem dinheiro para compensação; ver seção exploratória acima. Não aprovar divisão por número de imóveis nem venda compulsória como regra automática ainda;
+- **Aprovados (3B + partilha simplificada, 2026-10-09):** classe primária (cônjuge/companheiro e filhos), depois pais/irmãos na ausência; dinheiro dividido igualmente, bens inteiros distribuídos por aproximação de valor, preferência ao herdeiro que já habita o imóvel. Sem igualdade perfeita, venda compulsória ou dívidas de compensação; valores e desempates técnicos ficam para calibração;
 - **Decidido para aluguel atrasado do SIM falecido:** quitação até o limite de seu saldo monetário disponível antes da herança/Reserva Global, com encerramento do restante devido; o tratamento de outras obrigações ainda está aberto;
 - tratamento de outros ativos quando forem introduzidos.
 
