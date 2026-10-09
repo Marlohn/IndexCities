@@ -35,7 +35,7 @@ Este arquivo é material de exploração temática. Quando houver divergência, 
 
 ## Serviços, mobilidade e infraestrutura — rodada 2 aprovada (2026-10-09)
 
-> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou 2B/3A/4A/5B/6B/7B/8B/9A/10B expressamente. A questão 1 sobre imposto em atraso **NÃO foi decidida**; o prazo de três meses pertence às regras de aluguel, não tributação de imóveis. Parâmetros e detalhes técnicos não foram revisados.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou 2B/3A/4A/5B/6B/7B/8B/9A/10B expressamente. A questão 1 sobre imposto em atraso **foi aprovada depois (1A, 2026-10-09), como dívida real recuperável gradualmente**; o prazo de três meses pertence às regras de aluguel, não tributação de imóveis. Parâmetros e detalhes técnicos não foram revisados.
 
 - **2B — estacionamento:** sem vaga no destino, o SIM procura outra vaga real viável nas proximidades e **percorre o restante a pé**; cada vaga tem ocupação física real. **Possível desistência da viagem em casos menores/limites (alternativa C) foi apenas cogitada, NÃO aprovada**: só reavaliar se necessário para performance/realismo.
 - **3A — garagens de ônibus:** jogador constrói estruturas que impõem limite de capacidade de frota; a simulação **distribui ônibus reais disponíveis automaticamente pelas linhas**, sem definir frota manual por linha, comprar ônibus ilimitados ou dispensar equipe e orçamento.
