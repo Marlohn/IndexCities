@@ -369,6 +369,10 @@ Após escolher um modelo no catálogo, **continuar posicionando novos prédios i
 
 ### 4. Rua
 
+> **Revisão humana desta subseção: PARCIALMENTE REVISADO.** Em 2026-10-09 o responsável confirmou que **não há comando de modificar uma rua concluída**: a operação normal é construir ou demolir ruas. A pergunta hipotética da IA sobre faixas parcialmente fechadas durante uma **modificação de avenida** partiu de funcionalidade não existente; foi descartada, sem aprovação de fechamento parcial para essa hipótese.
+
+**Produto confirmado na SPEC:** o jogador **constrói rua nova** (incluindo o gesto assistido em L já aprovado) ou **demole rua existente**, conforme suas regras de custo/obra/impacto. Reformar, modernizar ou substituir rua pronta num gesto não faz parte do modelo atual. Para mudar uma via, pode demolir e construir novamente com os efeitos reais das duas operações, sem inventar uma ferramenta de alteração que a obra mantém parcialmente aberta.
+
 Primeiro modo: L assistido, descrito acima.
 
 Extensões que podem ser testadas depois:
@@ -377,7 +381,7 @@ Extensões que podem ser testadas depois:
 - sequência de múltiplos segmentos antes de confirmar;
 - curva suave;
 - rua paralela;
-- substituir/modernizar tipo de rua;
+- substituir/modernizar tipo de rua (**hipótese não aprovada**; fora do modelo atual construir/demolir, só reavaliar caso exista necessidade real);
 - largura ou variantes;
 - ponte/túnel.
 
