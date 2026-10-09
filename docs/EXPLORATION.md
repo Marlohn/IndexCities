@@ -67,6 +67,17 @@ Referências: [SPEC](SPEC.md), [serviços e infraestrutura](exploration/city-sys
 
 ---
 
+### Rodada: veículos, estacionamentos, apartamentos e temas ainda abertos (2026-10-09)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou **1B, 2A, 3A+B, 5A, 6A, 7A, 9C e 10A**, com o detalhe expresso de que **o proprietário do prédio residencial inteiro pode vender apartamentos separadamente**. As perguntas **4 (cemitério) e 8 (crimes)** ainda estão **PENDENTES** de sua análise; ideias descritas nos documentos temáticos não são requisitos aprovados.
+
+- **Na [SPEC](SPEC.md):** táxis de empresas privadas com motoristas SIM contratados; bicicleta própria comprada por SIM; estacionamento de rua/privado mais **estacionamento público de superfície construído pelo jogador**, sem edifício-garagem aprovado; fábrica de automóveis com recursos físicos agregados já existentes e preferência local quando alternativas econômicas forem parecidas; universitário pode trabalhar se houver horários/deslocamentos compatíveis; turista de bate-volta ou hospedado em vários dias; **venda por apartamento mesmo depois de aquisição integral do prédio residencial**, sem forçar venda de todo o edifício nem duplicar titularidade.
+- **Detalhes e pesquisa em [sistemas urbanos](exploration/city-systems.md):** capacidade de sepultamento versus atendimento e eventual crematório; crimes com vítimas individuais e/ou consequências regionais. **A IA recomendou 4A e 8C, mas essas alternativas NÃO estão aprovadas.**
+- **Famílias e bens:** [exploração de moradia](exploration/households-housing.md) registra a possibilidade real de alienar cada unidade de apartamento. **Mercados:** [exploração de empresas](exploration/companies-markets.md) registra fábricas enxutas com aço/energia/trabalho, preferência econômica moderada por veículos locais e **expansão futura das cadeias de produtos ainda NÃO aprovada para o modelo inicial**.
+- **Pendências de implementação/decisão dependente:** tarifa/operação econômica de táxis, cobrança ou gratuidade de estacionamento público, modelos simples de insumos automotivos e titularidade sem duplicidade de apartamentos. Não assumir detalhes não escolhidos pelo responsável.
+
+---
+
 ## Regra de autoridade
 
 Documentos em `docs/exploration/` **não são requisitos por si só**.
