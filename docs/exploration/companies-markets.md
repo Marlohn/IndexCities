@@ -14,17 +14,21 @@ Este arquivo é material de exploração temática. A autoridade do produto cont
 
 ---
 
-## Proposta de rodada — emprego durante interrupção de realocação (2026-10-08)
+## Emprego durante interrupção de realocação — decisão 1A (2026-10-09)
 
-> **Revisão humana desta seção: PENDENTE.** Estas são alternativas/recomendação da IA, **não decisões aprovadas**. A SPEC já preserva a identidade da empresa se adquirir o substituto, permite continuidade no endereço antigo enquanto viável e mantém a escolha individual dos funcionários quando o endereço de trabalho efetivamente muda. **Não reabrir esses princípios.**
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável **aprovou a opção 1A** em 2026-10-09, reiterando expressamente o direito do SIM de decidir se permanece na empresa quando o trabalho mudar de localização. O resumo aprovado está na SPEC. As alternativas B/C e seus riscos abaixo são histórico exploratório da IA; exemplos, parâmetros e efeitos quantitativos não foram integralmente revisados.
+
+**Decisão atual (1A):** a paralisação de uma **empresa privada** durante realocação não suspende nem encerra automaticamente empregos. Enquanto a empresa manter o vínculo e a vaga, o salário continua devido e deve ser pago com seu caixa real, mesmo sem produção no endereço. Pode reduzir equipe pela gestão econômica normal e falir se não sustentar suas obrigações. O **SIM não é obrigado a permanecer**: pode procurar oportunidade melhor ocasionalmente (5B) e **reavalia individualmente** o emprego quando o endereço efetivo mudar (A). Não criar suspensão sem salário, demissão coletiva obrigatória nem retenção compulsória. **Serviços municipais paralisados são um caso distinto ainda aberto**; salário municipal em operação normal segue sua regra própria recém-aprovada (3A).
+
+**Alternativas históricas (superadas pela 1A):**
 
 **Situação:** uma fábrica fica inoperante por dias ou semanas entre a retirada da antiga instalação e o começo da operação nova. A empresa continua existindo, com caixa e obrigações reais. Qual é a regra para vínculos e salários durante essa lacuna?
 
-- **A — vínculo normalmente ativo enquanto a vaga for mantida:** a empresa continua assumindo os custos salariais reais correspondentes, podendo ajustar vagas/equipe gradualmente conforme finanças e demanda pelas regras gerais; não há capacidade produtiva fictícia. Se não puder pagar, consequências financeiras precisam ser determinadas sem inventar pagamento ou resgate. **Recomendação preliminar da IA:** reutiliza o funcionamento econômico comum e evita um regime especial de suspensão para a ferramenta Mover.
+- **A — vínculo normalmente ativo enquanto a vaga for mantida:** a empresa continua assumindo os custos salariais reais correspondentes, podendo ajustar vagas/equipe gradualmente conforme finanças e demanda pelas regras gerais; não há capacidade produtiva fictícia. Se não puder pagar, consequências financeiras precisam ser determinadas sem inventar pagamento ou resgate. **Agora aprovada na SPEC:** reutiliza o funcionamento econômico comum e evita um regime especial de suspensão para a ferramenta Realocar.
 - **B — suspensão temporária do vínculo sem salário:** mantém o empregado ligado à empresa, mas não paga enquanto a instalação não opera. Reduz custo da empresa, porém exige estados e regras novas de suspensão, renda familiar, duração, retorno e concorrência por vagas.
 - **C — encerramento dos vínculos do estabelecimento ao parar:** empregados ficam livres para buscar emprego, com novo recrutamento quando houver abertura. Simplifica estados, mas pode transformar interrupções curtas em demissões em massa e aumentar fricção social e econômica.
 
-**Risco a validar:** A pode acelerar falência em interrupções longas; B cria microgerenciamento interno; C destrói continuidade de emprego por interrupções pequenas. Qualquer escolha deve respeitar um emprego ativo por SIM, dinheiro real, falência, inexistência de trabalho num prédio retirado e reavaliação individual na mudança efetiva de endereço. **Não especificar dívida salarial, suspensão automática ou garantia de recontratação por inferência.**
+**Risco da escolha aprovada a validar:** A pode acelerar falência em interrupções longas; B criaria microgerenciamento interno; C destruiria continuidade de emprego por interrupções pequenas. Qualquer escolha deve respeitar um emprego ativo por SIM, dinheiro real, falência, inexistência de trabalho num prédio retirado e reavaliação individual na mudança efetiva de endereço. **Não especificar dívida salarial, suspensão automática ou garantia de recontratação por inferência.**
 
 ---
 
