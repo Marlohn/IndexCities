@@ -14,6 +14,12 @@ Este arquivo é material de exploração temática. A autoridade do produto cont
 
 ---
 
+### Lacuna de compatibilidade de categoria na mudança de ramo (2026-10-08)
+
+> **Revisão humana desta subseção: PENDENTE.** A SPEC aprova o jogador escolher uma **categoria geral** (1C) e a empresa trocar de atividade **se categoria e imóvel forem compatíveis** (5A). **Não está definido se uma categoria comercial geral abrange também serviços presenciais**, ou se comércio/revenda e serviços são categorias urbanas distintas.
+
+**Caso concreto que precisa de decisão:** cafeteria → salão de beleza no mesmo imóvel. Podem compartilhar a estrutura visual pequena, mas isso **não prova** que a categoria geral escolhida na construção permita ambos os ramos. Evitar contrariar a promessa de mudança de atividade ou tornar 1C uma classificação complexa demais. Investigar categoria urbana suficientemente ampla, com restrições reais de porte/acesso/instalações, versus categorias excludentes. **Não alterar a SPEC sem aprovação expressa.**
+
 ## Preços próprios de serviços e mudança de ramo sem venda — decisões 3A/5A (2026-10-08)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou preços próprios dos prestadores (**3A**) e a possibilidade de uma empresa **mudar de atividade no próprio imóvel (5A)**. Ambas estão na SPEC. Valores, periodicidade e detalhamento da transição de estoque/equipe ficam **PENDENTES de definição/calibração**.
