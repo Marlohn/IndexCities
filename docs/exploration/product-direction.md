@@ -166,13 +166,23 @@ A quantidade final de população, lotes, casas, edifícios, comércio e indúst
 
 ---
 
+## Alcance de desafios opcionais — cidade e bairros (5B, 2026-10-09)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou B (desafios originados por condições de toda a cidade ou de bairros), pediu registrar C (histórias de empresas/famílias) como possível melhoria futura e sugeriu examinar construção incremental A → B → C. A recomendação técnica de não impor três fases de lançamento é análise da IA, não compromisso de roadmap.
+
+**Decidido na SPEC:** desafios podem nascer de problemas ou oportunidades **reais, relevantes e persistentes** com abrangência **municipal ou de bairro**, com conclusão por melhora sustentada e reconhecimento não econômico já decididos. Um problema do bairro não vira automaticamente missão por existir; a interface deve mostrar de onde vem a condição e não produzir milhares de desafios. **Não aprovado para o primeiro modelo:** transformar trajetória de uma família ou empresa isolada em gerador de desafios (opção C), ideia preservada para evolução futura.
+
+**Estratégia possível de entrega, não requisito:** começar internamente pelo cálculo agregado de situações de toda a cidade (A), depois oferecer a mesma lógica em regiões (B); avaliar C depois de feedback real. **B é o escopo de produto desejado desde já, não uma obrigação de anunciar uma versão A separada.** Não aprovar C silenciosamente apenas porque foi mencionada uma sequência.
+
+---
+
 ## Pesquisa prioritária: desafios opcionais e longevidade do sandbox
 
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — **a direção de sandbox livre com desafios opcionais foi aprovada em 2026-10-08 e registrada na SPEC**; a análise e as possibilidades abaixo permanecem PENDENTES de revisão humana, sem virar requisitos.
 
 **Direção aprovada na [SPEC](../SPEC.md):** o jogo permanece livre para construir e desenvolver a cidade sem objetivos ou vitórias obrigatórias. **Origem aprovada (1A), complementada pela opção 5C em 2026-10-08:** desafios opcionais podem surgir tanto de **problemas reais** quanto de **oportunidades econômicas reais e verificáveis**. Não criar crises, oportunidades falsas nem converter todo alerta ou pequena oscilação em missão. **Reconhecimento aprovado (2A):** histórico, conquistas e feedback sem dinheiro, recursos, patrimônio ou desbloqueios de conteúdo. É necessário valor adicional de gameplay, não só dar novo nome a notificações.
 
-**Conclusão aprovada na SPEC (opção 5A, 2026-10-08):** desafios são concluídos **automaticamente**, quando a solução do problema ou concretização da oportunidade se comprovar por **melhoria real e sustentada da condição original**, sem clique e sem meta fixa global inventada. **Em aberto para pesquisa:** quais condições persistentes desencadeiam desafios, os sinais concretos de conclusão, quanto tempo de estabilidade é significativo e como evitar confundir desafio com alerta/indicador comum. **Não** tratar uma população-alvo ("chegar a X habitantes") como objetivo decidido. O reconhecimento **não econômico** foi aprovado; sua forma exata continua aberta.
+**Conclusão aprovada na SPEC (opção 5A, 2026-10-08):** desafios são concluídos **automaticamente**, quando a solução do problema ou concretização da oportunidade se comprovar por **melhoria real e sustentada da condição original**, sem clique e sem meta fixa global inventada. **Alcance cidade+bairros já aprovado (5B, 2026-10-09); ainda aberto para pesquisa:** quais condições persistentes desencadeiam desafios, sinais de conclusão, duração significativa e como evitar confundir desafio com alerta/indicador comum. **Não** tratar uma população-alvo ("chegar a X habitantes") como objetivo decidido. O reconhecimento **não econômico** foi aprovado; sua forma exata continua aberta.
 
 A pesquisa futura pode confrontar a opção C aprovada com modelos de outros jogos para **extrair aprendizados, não reabrir silenciosamente a direção nem adotar suas mecânicas**:
 
