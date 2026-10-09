@@ -33,6 +33,25 @@ Este arquivo é material de exploração temática. Quando houver divergência, 
 
 ---
 
+## Saúde, ensino, energia e mobilidade — decisões posteriores de 2026-10-09
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou as opções 1A, 2A com ressalva, 3A, 4A, 5A, táxi como modal prioritário, 7A, 8C e 10A. **Pergunta 9 segue em aberto**; não converter pergunta em aprovação. Consequências, parâmetros e detalhes operacionais de IA não foram integralmente revisados.
+
+- **1A — saúde e educação municipais gratuitas:** SIM não paga matrícula, mensalidade, consulta ou atendimento; prefeitura financia custos reais. Saúde privada no primeiro modelo é excluída por **10A**; clínicas/hospitais particulares são **melhoria futura desejada, não aprovada agora**.
+- **2A — emergência médica:** ambulância real pode ser despachada para SIM gravemente doente, com equipe, caminho e capacidade reais; **SIM pode também ir ao hospital pelos próprios meios**, quando sua condição permite. Não obrigar ambulância para todas as consultas nem criar chegada/atendimento garantidos.
+- **3A — escola básico/médio, universidade superior:** etapas amplas compatíveis com níveis simples aprovados; capacidade e matrícula reais, sem exigir cargos ou cursos individuais.
+- **4A — geração termelétrica:** usina consome **combustível físico existente** para complementar as fontes variáveis; depende de entrega, equipe, operação e caixa real; poluição e custos são efeitos reais. Insumo, ritmos e combinação de fontes são calibração sem nova cadeia arbitrária.
+- **5A — eletricidade excedente:** produção potencial acima da demanda fica **sem uso**, não armazenada nem exportada; não contabilizar receita externa de energia, que não é mercadoria exportável aprovada. Custos operacionais reais permanecem.
+- **6 — táxi como próximo modal:** o táxi já estava na SPEC com motorista e passageiro SIMs reais. A decisão atual dá **prioridade de avanço ao táxi depois do ônibus**; VLT, metrô e vans ficam para rodadas posteriores, sem apagar direção de mobilidade variada. Operador, tarifa e despacho de corrida são detalhes de produto a definir antes de código, não preço do ônibus por analogia.
+- **7A — sem acidentes de trânsito no primeiro modelo:** não modelar colisões, ferimentos ou bloqueios causados por acidentes. **Melhoria futura NÃO aprovada:** acidentes ocasionais com efeitos físicos e serviços emergenciais, se trouxerem ganho de gameplay.
+- **8C — automóveis/ônibus importáveis ou produzidos localmente:** importações físicas com dinheiro real asseguram oferta possível na cidade inicial. Quando existir indústria adequada, **fábrica automobilística real** pode produzir veículos com trabalho/insumos/capacidade e vender conforme demanda; ônibus também poderão ter fornecimento local coerente. Não criar carro ou ônibus à vista sem produção, importação, aquisição, transporte e capacidade. A especificação de insumos e fluxo de veículos é pendência legítima antes de implementar o ramo; não multiplicar SKUs por peça.
+- **9 — custo de residência vazia continua PENDENTE:** casa recém-construída **sem proprietário não paga imposto** conforme a SPEC; **casa já comprada por SIM mas sem moradores paga imposto normalmente**. A pergunta desta rodada pretendia decidir se **além do imposto** existe custo de manutenção do imóvel ocioso. O responsável pediu esclarecimento, **não aprovou A/B/C**; a IA recomenda inicialmente só imposto, mas isso não foi votado.
+- **10A — saúde apenas municipal inicialmente:** clínicas e hospitais privados são **melhoria futura**, não surgem agora nem são adicionados ao catálogo privado de dez atividades por inferência.
+
+**Orientação:** decidir e medir operação observável sem microgerenciar SIMs, ambulâncias, fornecedores, empresas, usinas ou viagens. Não transformar serviços gratuitos em receita municipal nem importação em veículo teletransportado.
+
+---
+
 ## Serviços, mobilidade e infraestrutura — rodada 2 aprovada (2026-10-09)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou 2B/3A/4A/5B/6B/7B/8B/9A/10B expressamente. A questão 1 sobre imposto em atraso **foi aprovada depois (1A, 2026-10-09), como dívida real recuperável gradualmente**; o prazo de três meses pertence às regras de aluguel, não tributação de imóveis. Parâmetros e detalhes técnicos não foram revisados.
