@@ -17,6 +17,22 @@ Este arquivo é material de exploração temática. Quando houver divergência, 
 
 ---
 
+## Mobilidade, segurança, resíduos e esgoto — rodada aprovada de 2026-10-09
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou expressamente opções 3B, 4A, 5B, 6B, 7A, 8A e 9B; a regra **incêndio NÃO atravessa ruas** foi condição adicional explícita, não sugestão da IA. Números, frequências e algoritmos técnicos não foram aprovados.
+
+- **3B — linhas de ônibus:** jogador posiciona paradas; simulação organiza linhas e percursos reais a partir da demanda; trajetos/frota/trabalhadores/passageiros/custo continuam físicos. Sem oscilação permanente de linhas a cada mudança pequena de passageiros. Conexão espacial e tamanho operacional a calibrar.
+- **4A — carro próprio:** SIM compra carro com dinheiro e contraparte de origem reais; carro pertence ao SIM e usa vias, combustível e estacionamento físicos. **Melhoria futura solicitada, NÃO APROVADA:** carro compartilhado entre membros da mesma família, sujeito a disponibilidade única e horários reais, sem duplicar veículo.
+- **5B — despachos simultâneos:** gravidade da ocorrência, tempo de percurso real e disponibilidade efetiva de pessoal/veículo governam a prioridade; não apenas chegada cronológica ou distância. A equipe comprometida em uma emergência não pode responder ao mesmo tempo a outra.
+- **6B — propagação de incêndio:** fogo pode passar para edifícios fisicamente próximos no mesmo conjunto/lado, **mas não pode atravessar nenhuma rua**, mesmo de pequeno porte. Observar evolução real e chegada de bombeiros; não modelar vento, incêndios mágicos ou inspeção de todos os pares de edifícios por quadro.
+- **7A — falta de destinação de lixo:** quando aterros/incineradores reais não conseguem receber mais resíduos, coleta falha para parte dos imóveis/áreas, lixo se acumula na origem, afetando ambiente e saúde. Não sumir com lixo, importar capacidade ou criar exportação/depósito intermediário sem aprovação. Viagens de coleta físicas respeitam destino/capacidade.
+- **8A — excesso de esgoto:** parcela não tratada aumenta **poluição regional** ligada a fontes/demanda reais, sem exigir tubulação desenhada manualmente nem penalidade idêntica para toda a cidade. Usar agregação espacial leve. Gravidade, áreas afetadas e recuperação seguem validação.
+- **9B — patrulhamento policial:** policiais percorrem ruas realmente com tempo/equipe/recursos disponíveis; presença pode dissuadir ou detectar crimes. Não substituir patrulha por bônus fixo da delegacia nem avaliar a presença de cada policial contra cada cidadão a cada quadro.
+
+**Cuidado transversal:** essas decisões não aprovam acidentes de trânsito, manutenção mecânica detalhada, vento/vegetação como novas mecânicas, nem desenho manual de rotas policiais. Reaproveitar movimentação, capacidade, infraestrutura, sinalização e processamento por eventos que já estão previstos, aferindo o custo do patrulhamento e propagação.
+
+---
+
 ## Água e energia: mesma distribuição simplificada e distância secundária (2026-10-09)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável confirmou expressamente **o mesmo comportamento inicial para água e eletricidade**, sem transformar a distância das instalações em uma decisão importante do jogador. A preferência original por atender regiões próximas antes de regiões distantes em escassez continua uma direção qualitativa, agora também para energia. **O modelo agregado com redução regional suave foi aprovado explicitamente em seguida (2026-10-09) e está na SPEC; parâmetros e resultados de performance continuam em calibração/validação, não são promessas.**
@@ -231,6 +247,7 @@ Princípios já definidos:
 - veículos de transporte público são entidades reais;
 - linhas têm percurso real;
 - capacidade importa;
+- **linhas organizadas automaticamente pela simulação a partir dos pontos de parada colocados pelo jogador e da demanda real (3B aprovada em 2026-10-09)**;
 - funcionários/motoristas reais fazem parte da operação;
 - outros modais além de ônibus devem existir.
 
@@ -396,6 +413,7 @@ Decidido:
 - estacionamento na rua ocupa espaço físico real;
 - edificações podem oferecer vagas privadas;
 - vagas privadas reduzem pressão por estacionamento público.
+- **SIMs compram e possuem carros particulares com dinheiro e origem reais (4A aprovada em 2026-10-09)**. **Compartilhamento familiar é melhoria futura não aprovada**, sem gerar carro extra ou gratuidade fictícia.
 
 ### Travessias de pedestres
 
@@ -474,7 +492,7 @@ A simulação deve evitar ações instantâneas quando isso destruir causa e con
 Direção atual:
 
 - carga/descarga leva tempo;
-- coleta de lixo leva tempo;
+- coleta de lixo leva tempo, mas **se a destinação está sem capacidade, a coleta não consegue remover o excedente e resíduos acumulam na origem (7A aprovada em 2026-10-09)**;
 - atendimento de emergência leva tempo;
 - embarque/desembarque leva tempo;
 - interior dos prédios permanece abstrato;
@@ -752,6 +770,8 @@ Ainda precisa ser definido:
 - impacto ambiental;
 - distância/logística de coleta;
 - capacidade por instalação.
+
+**Decisão posterior aprovada (7A, 2026-10-09):** se não houver mais destino real para lixo, parte da coleta deixa de funcionar e resíduos se acumulam onde surgiram, causando efeitos ambientais e sanitários. A solução futura de exportação ou armazenamento intermediário **não foi aprovada**. A coleta não é uma transferência mágica a um estoque infinito.
 
 ### Falta de água
 
