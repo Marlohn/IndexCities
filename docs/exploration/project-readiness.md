@@ -93,6 +93,12 @@ P0 reúne os maiores riscos ou decisões que exigem atenção para **integrar e 
 
 ---
 
+### Lacuna pontual: categoria urbana e mudança de atividade — revisão humana PENDENTE (2026-10-08)
+
+A SPEC já aprova **1C (categoria geral pelo jogador)** e **5A (empresa proprietária pode mudar o ramo sem vender, se compatível)**. Ainda falta explicitar se **café e salão** pertencem a uma categoria comercial geral compartilhada ou a categorias incompatíveis. Se a classificação impedir a mudança ilustrada, avisar o responsável antes de codificar; não supor classificação de uso ou conceder alteração livre que desfaça a escolha urbana do jogador. **Essa compatibilidade específica não foi aprovada.**
+
+---
+
 ### Evolução futura explicitamente anotada: dois empregos por SIM (2026-10-08)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável **aprovou um emprego ativo por SIM no primeiro modelo (4A)** e pediu **anotar** como evolução futura a possibilidade de dois vínculos, sem aprová-la agora.
