@@ -118,6 +118,16 @@ A ferramenta de demolição também respeita a indenização. **A indenização 
 
 Os cenários de propriedade e as alternativas anteriores estão no [documento de interface](player-interface.md#realocação-de-prédios-prontos-opção-c-e-intervenção-indenizada-b-aprovadas-2026-10-08). **A intervenção com indenização já foi aprovada e consta na SPEC**, sem consentimento obrigatório do dono e sem assentamento fictício. Não inventar **número exato de dias** para a transição curta aprovada, custo adicional nem realocação gratuita: esses detalhes ainda precisam de calibração ou decisão pertinente. **O critério monetário de indenização já está fechado na SPEC** e não é apenas uma referência aproximada.
 
+## Imóvel vazio versus imóvel sem proprietário — esclarecimento de 2026-10-09
+
+> **Revisão humana: PARCIALMENTE REVISADO.** O responsável questionou corretamente a hipótese de cobrar impostos sobre uma casa que ninguém comprou. A distinção de titularidade **já estava decidida na SPEC**; a pergunta sobre custo extra de manutenção **não foi respondida**, portanto segue **PENDENTE**.
+
+- **Imóvel sem proprietário privado** (por exemplo, residência recém-construída que aguarda a primeira compra): **não há imposto imobiliário privado**, pois falta o SIM pagador; esse caso já está fechado na SPEC.
+- **Imóvel que um SIM já comprou, mas está vazio/sem inquilino:** há proprietário real; o imposto imobiliário normal continua devido **independentemente de ocupação ou aluguel recebido**. Não é tributação fictícia de imóvel sem dono.
+- **Pergunta realmente aberta:** no segundo caso, o SIM dono deve pagar **apenas o imposto**, ou também despesas de manutenção recorrentes além do que já existe? A IA recomenda **apenas imposto por enquanto**, mas o responsável **não escolheu A/B/C**. Não criar manutenção automática ou deterioração por vacância até aprovação, nem marcar como decidido apenas pela explicação.
+
+---
+
 ## Valor imobiliário e propriedade de lotes
 
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — o responsável confirmou valor de mercado dinâmico como base de impostos; critérios específicos, pesquisa e método de avaliação abaixo seguem **PENDENTES** de revisão.
