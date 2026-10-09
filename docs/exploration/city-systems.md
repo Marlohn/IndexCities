@@ -60,6 +60,22 @@ A regra de profundidade continua a mesma: só detalhar quando isso gerar consequ
 
 **Continuidade operacional condicionada agora aprovada na SPEC (opção C):** quando uma escola, hospital ou outro serviço municipal for realocado, seu prédio antigo **pode continuar prestando o serviço** enquanto existir, funcionar e não precisar liberar a área da intervenção; se a retirada antecipada for necessária, o atendimento/capacidade daquele endereço é interrompido. A nova estrutura exige obra e condições reais, sem transferência física instantânea nem serviço garantido só porque o destino foi escolhido. **Continuidade institucional agora decidida na SPEC (opção C, 2026-10-08):** escola, hospital e demais serviços municipais permanecem sendo a mesma instituição durante a realocação, sem recriação institucional ou compra privada; capacidade e atendimento só existem onde estrutura, funcionários, acesso e recursos de fato permitirem. Vínculos/vagas seguem válidos apenas se realmente existirem; funcionários reavaliam individualmente quando o endereço de trabalho mudar. **Em aberto, sem autorização para suposição:** tratamento particular de vagas/salários nas paralisações prolongadas, capacidade de atendimento temporário, destino operacional fino dos suprimentos e eventual logística de equipamentos não especificados e critérios finos de transição. A recuperação automática de estoques físicos quando viável e perda do remanescente na retirada inevitável, sem nova indenização ou capacidade fictícia, seguem a SPEC e não exigem novas regras de mercado para serviços públicos. Continuidade institucional não garante operação ininterrupta nem serviço fictício.
 
+## Passageiro sem dinheiro em transporte municipal pago — opção 4A (2026-10-08)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou que um SIM **não embarca em transporte pago sem saldo suficiente**, precisando caminhar se houver trajeto viável; a regra consta na SPEC. Forma da tarifa continua em pesquisa.
+
+Sem cobrança negativa, dívida de passagem, isenção automática nem receita de viagem não realizada. Quando transporte for gratuito por decisão do jogador, não exigir passagem. Falta de dinheiro pode inviabilizar acesso ao trabalho/serviços; SIMs precisam tomar decisões de deslocamento reais e diagnosticáveis, nunca teletransportar. Caminhada pode ser a solução se existir caminho acessível, sem garantir que qualquer distância seja percorrível.
+
+### Tarifas de água e energia — riscos ainda PENDENTES (2026-10-08)
+
+> **Revisão humana desta subseção: PENDENTE.** O responsável questionou a proposta de permitir tarifas sem limites porque poderia tornar lucrativo cobrar o máximo. **Ainda não aprovou forma de definir valores ou consequências de inadimplência das contas.**
+
+**Risco:** utilidades essenciais têm demanda pouco elástica; aumentar tarifa indiscriminadamente pode parecer fonte de Caixa mesmo ao empobrecer SIMs/empresas. Não basta afirmar que haverá queda de demanda. **Investigar alternativas**: preços baseados em custo real de operação com margem delimitada; escolhas agregadas de subsídio/cobertura de custo; ou valores controlados com consequências reais sobre acessibilidade, dívidas e atratividade. Nenhuma dessas alternativas é decisão. Conservar regra oficial 1B: cobranças por consumo real ao Caixa, sem criar recursos ou dinheiro.
+
+**Paralelo com aluguel (SPEC):** inadimplência de aluguel já registra dívida real ao proprietário, três meses até possível perda de moradia, pagamentos parciais sem reinício do prazo, cobrança gradual quando o SIM recebe salário. Isso **não aprova automaticamente prazo ou corte de água/energia**. É possível reaproveitar princípios de dívida real e recuperação gradual sem copiar a consequência de perda de casa para cortes de serviços essenciais. O responsável pediu rever esse paralelo antes de decidir (questão 3 pendente).
+
+---
+
 ## Cobrança de serviços municipais e opção de tarifa de transporte (2026-10-08)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** As opções **1B para água/energia** e **2C para transporte público** foram aprovadas pelo responsável e registradas na SPEC. Preços, cobrança concreta, inadimplência e modalidades são detalhes ainda não definidos/calibrados, não autorizados por esta pesquisa.
