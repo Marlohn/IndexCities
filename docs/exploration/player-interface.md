@@ -199,9 +199,9 @@ A interface básica, os painéis de explicação de problemas e o acompanhamento
 
 ## Água/energia por consumo e política de passagem — decisões 1B/2C (2026-10-08)
 
-> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável decidiu **cobrança por consumo de água e energia** e **transporte municipal gratuito ou pago à escolha do jogador**. O desenho concreto do painel, valores e modais permanece PENDENTE.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável decidiu **cobrança de água e energia por consumo, preços unitários automáticos 2B e dívida sem corte residencial individual 3B**. Transporte municipal permanece gratuito ou pago por escolha do jogador, com preço automático quando pago. Desenho da tela e parâmetros continuam para definição/calibração.
 
-A consulta do orçamento deve diferenciar receitas reais de água/energia e, quando aplicável, tarifas de passageiros efetivos, das despesas reais para manter redes, equipes e frota. **A decisão gratuita/paga é agregada**, sem editar preço por veículo ou confirmar pagamento por SIM. **Não** mostrar renda por ônibus vazio, nem cobrar por consumo inexistente. Informar efeito fiscal e potencial acesso da população, mantendo interface em camadas. A edição manual de preço unitário de água/energia ou do valor da passagem ainda **não foi escolhida**, somente a cobrança por uso e a política gratuita/paga.
+A consulta do orçamento deve diferenciar receitas reais de água/energia e, quando aplicável, tarifas de passageiros efetivos, das despesas reais para manter redes, equipes e frota. **A decisão gratuita/paga é agregada**, sem editar preço por veículo ou confirmar pagamento por SIM. **Não** mostrar renda por ônibus vazio, nem cobrar por consumo inexistente. Informar efeito fiscal e potencial acesso da população, mantendo interface em camadas. **Não há edição manual de preços unitários** no primeiro modelo; esse controle foi expressamente deixado fora pela opção 2B. O painel deve privilegiar **demanda urbana, produção/fornecimento efetivos, capacidade disponível, necessidade de novas estruturas, ociosidade, orçamento e contas inadimplidas agregadas**. Não exibir crédito vencido como receita recebida nem atribuir corte individual a uma casa inadimplente. Política futura de subsídio/cobertura de custos permanece somente em exploração.
 
 ---
 
