@@ -58,11 +58,11 @@ Referências: [SPEC](SPEC.md), [serviços e infraestrutura](exploration/city-sys
 
 ### Rodada aprovada: serviços públicos, táxi, energia e automóveis (2026-10-09)
 
-> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou explicitamente as opções 1A, 2A (com transporte próprio também possível), 3A, 4A, 5A, 7A, 8C e 10A, além de priorizar **táxis** na pergunta 6. **A pergunta 9 ficou em aberto**, não converter recomendação de IA em requisito.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou explicitamente as opções 1A, 2A (com transporte próprio também possível), 3A, 4A, 5A, 7A, 8C e 10A, além de priorizar **táxis** na pergunta 6. **A pergunta 9 foi aprovada posteriormente como 9A (sem manutenção adicional por vacância)**, não converter recomendação de IA em requisito.
 
 - **Produto na [SPEC](SPEC.md):** escola e hospital municipais gratuitos; ambulância real para urgência, sem eliminar chegada pelos meios do SIM; escolas para básico/médio e universidade para superior; usina térmica com combustível físico e geração excedente sem armazenamento/exportação; táxis como próximo modal (já previstos); ausência de acidentes de trânsito no primeiro modelo; carros/ônibus importados ou fabricados localmente quando houver indústria adequada, com **fábrica de automóveis** como atividade produtiva aprovada; saúde privada adiada.
 - **Melhorias futuras desejadas, NÃO aprovadas para agora:** comércio exterior mais abrangente envolvendo outras categorias/setores, acidentes de trânsito ocasionais, clínicas/hospitais privados, outros modais como VLT/metrô/micro-ônibus.
-- **Moradia — 9 PENDENTE:** imóvel sem dono nunca tem imposto imobiliário privado; imóvel com dono, mesmo vazio, paga imposto normal. Falta decidir se **imóvel residencial comprado, mas desocupado** também exige manutenção adicional. Ver [famílias e moradia](exploration/households-housing.md).
+- **Moradia — 9A APROVADA (2026-10-09):** imóvel sem dono não gera imposto imobiliário privado; imóvel de SIM proprietário continua tributado mesmo vazio, **sem despesa nova de manutenção nem deterioração automática por vacância**. Ver [famílias e moradia](exploration/households-housing.md).
 - **Aprofundamento somente quando necessário:** cadeia leve da indústria automobilística, entrega e aquisição de veículos reais, insumos de térmicas, operação econômica de táxis e atendimento médico, sempre ponderando microgerenciamento e performance. Contexto em [sistemas urbanos](exploration/city-systems.md), [empresas/mercados](exploration/companies-markets.md) e [mapa de prontidão](exploration/project-readiness.md).
 
 ---
