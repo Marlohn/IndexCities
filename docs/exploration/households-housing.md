@@ -120,11 +120,11 @@ Os cenários de propriedade e as alternativas anteriores estão no [documento de
 
 ## Imóvel vazio versus imóvel sem proprietário — esclarecimento de 2026-10-09
 
-> **Revisão humana: PARCIALMENTE REVISADO.** O responsável questionou corretamente a hipótese de cobrar impostos sobre uma casa que ninguém comprou. A distinção de titularidade **já estava decidida na SPEC**; a pergunta sobre custo extra de manutenção **não foi respondida**, portanto segue **PENDENTE**.
+> **Revisão humana: PARCIALMENTE REVISADO.** O responsável questionou corretamente a hipótese de cobrar impostos sobre uma casa que ninguém comprou. A distinção de titularidade **já estava decidida na SPEC**; o responsável **aprovou posteriormente a opção 9A**, de **não acrescentar manutenção recorrente específica pela vacância** de um imóvel já comprado, deixando apenas os impostos e outras despesas realmente existentes.
 
 - **Imóvel sem proprietário privado** (por exemplo, residência recém-construída que aguarda a primeira compra): **não há imposto imobiliário privado**, pois falta o SIM pagador; esse caso já está fechado na SPEC.
 - **Imóvel que um SIM já comprou, mas está vazio/sem inquilino:** há proprietário real; o imposto imobiliário normal continua devido **independentemente de ocupação ou aluguel recebido**. Não é tributação fictícia de imóvel sem dono.
-- **Pergunta realmente aberta:** no segundo caso, o SIM dono deve pagar **apenas o imposto**, ou também despesas de manutenção recorrentes além do que já existe? A IA recomenda **apenas imposto por enquanto**, mas o responsável **não escolheu A/B/C**. Não criar manutenção automática ou deterioração por vacância até aprovação, nem marcar como decidido apenas pela explicação.
+- **Decisão 9A aprovada (2026-10-09):** no segundo caso, o SIM proprietário continua pagando **imposto imobiliário normal, sem nova taxa recorrente de manutenção ou deterioração por vacância** no primeiro modelo. Não criar obrigações extras fictícias nem dispensar custos reais já previstos por motivos diferentes. Caso de imóvel sem comprador continua sem imposto por ausência de titular privado.
 
 ---
 
