@@ -41,7 +41,7 @@ Auditoria reconciliada em **2026-10-07** com o histórico de conversas disponív
 
 ## Decisões adicionais de 2026-10-09 — infraestrutura e acesso
 
-> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou explicitamente 2B, 3A, 4A, 5B, 6B, 7B, 8B, 9A e 10B nesta rodada. A pergunta 1 (inadimplência de imposto imobiliário) **permanece PENDENTE**: os três meses aprovados são de aluguel/desocupação, não de tributo. Detalhes de calibração e soluções técnicas continuam não revistos integralmente.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou explicitamente 2B, 3A, 4A, 5B, 6B, 7B, 8B, 9A e 10B nesta rodada. A pergunta 1 (inadimplência de imposto imobiliário) **foi aprovada depois como 1A**: dívida real recuperável gradualmente, sem prazo de três meses (este pertence a aluguel/desocupação). Detalhes de calibração e soluções técnicas continuam não revistos integralmente.
 
 - **Mobilidade e segurança:** SIM procura vaga alternativa e caminha ao destino (2B); garagem construída pelo jogador limita frota real, distribuída automaticamente pelas linhas de ônibus (3A); incêndio pode danificar/interromper operação de edifício e requer recuperação com recursos reais (4A); prisão lotada busca outra unidade viável (5B).
 - **Infraestrutura:** geração solar/eólica varia simplificadamente com dia/noite e condições pertinentes (6B); aterros sanitários e incineradores são alternativas iniciais com custos, capacidade e impactos próprios (7B).
