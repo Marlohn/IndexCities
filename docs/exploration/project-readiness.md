@@ -199,6 +199,23 @@ O [hub](../EXPLORATION.md) registra 11 documentos temáticos: **9 PARCIALMENTE R
 
 ---
 
+### Rodada seguinte — energia, saúde, táxis e fábrica de automóveis (2026-10-09)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou 1A, 2A com a ressalva de uso de transporte próprio, 3A, 4A, 5A, a **priorização de táxis na questão 6**, 7A, 8C e 10A. **Pergunta 9 (custo extra de imóvel com proprietário mas desocupado) não foi decidida.** Detalhes operacionais não foram revisados integralmente; regras oficiais constam na SPEC.
+
+- **1A/10A — escola e hospital públicos gratuitos, sem saúde privada inicialmente.** Serviços municipais com atendimento e recursos reais, financiados pelo orçamento; clínicas/hospitais privados ficam como possível melhoria futura, NÃO aprovada.
+- **2A com ressalva — ambulâncias reais para emergências graves; SIM também pode ir ao hospital por meios próprios** quando possível. Não despachar ambulância para toda consulta nem forçar modo de viagem único.
+- **3A — escolas atendem básico/médio e universidades ensino superior**, com matrículas e capacidade reais.
+- **4A/5A — termelétricas consomem combustível físico real; oferta elétrica acima da demanda fica ociosa**, sem exportação elétrica ou bateria aprovada. Combustível, logística, capacidade e poluição reais; insumos finos a especificar.
+- **6 — táxis priorizados para próximo modal:** a existência de táxis com motorista/passageiro reais **já estava na SPEC**; rodadas futuras podem abordar VLT, metrô e micro-ônibus. Regras econômicas de operador/corrida ainda são definições dependentes.
+- **7A — acidentes de trânsito não são simulados inicialmente.** Melhoria futura desejada, NÃO aprovada: eventos ocasionais de acidentes.
+- **8C — veículos importados e também produzidos localmente quando houver indústria compatível.** **Fábrica de automóveis** explicitamente aprovada e valorizada pelo responsável; ônibus também podem ter produção local adequada. Chegada, venda, estoque e logística precisam ser físicos e monetariamente conservativos. **Melhoria futura NÃO aprovada agora:** comércio exterior mais amplo envolvendo muitos outros setores; as trocas reais já aprovadas continuam.
+- **9 — sem decisão sobre custo adicional de manutenção de residência vazia:** um imóvel **sem comprador/proprietário não paga imposto**, regra já aprovada; um imóvel **comprado por SIM e desocupado continua tributado**. A pergunta pendente é se também haverá manutenção monetária. Não adotar a recomendação da IA de 'só imposto' sem confirmação.
+
+**Cuidado:** a opção 8C muda o produto mais que as demais e demanda especificação operacional suficiente sobre origem física, venda, entrega e insumos antes de codificar uma fábrica de automóveis; não confundir isso com POC isolada obrigatória nem com exportação geral ilimitada.
+
+---
+
 ### Rodada adicional — decisões e correções de 2026-10-09
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável confirmou água por distância, contratação manual de crédito, obras privadas automáticas e desafios cidade+bairros; confirmou que ruas só são construídas/demolidas. Modelos espaciais, fórmulas e sequência técnica de implementação não foram revisados integralmente e seguem em exploração. As decisões oficiais estão na SPEC.
