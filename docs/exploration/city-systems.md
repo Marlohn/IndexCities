@@ -33,6 +33,29 @@ Este arquivo é material de exploração temática. Quando houver divergência, 
 
 ---
 
+## Mobilidade, turismo, educação e opções pendentes — rodada de 2026-10-09
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou **1B, 2A, 3A+B, 5A, 6A, 7A, 9C e 10A**; 10A é especificamente a venda individual de apartamentos de um prédio residencial inicialmente adquirido inteiro. **Perguntas 4 (cemitérios) e 8 (crimes e vítimas) estão ABERTAS**, pois o responsável pediu esclarecimento. Não promover sugestões da IA para a SPEC.
+
+**Decisões confirmadas:**
+
+- **1B — táxis:** atividade de **empresa privada** com frota e empregados SIM motoristas reais; corrida transporta passageiro real e paga à empresa real. Não taxi municipal nem SIM autônomo como opção principal. Forma de remuneração, solicitação e preço exigem regra antes da implementação do serviço.
+- **2A — bicicletas individuais:** SIM pode comprar bicicleta como patrimônio próprio, com oferta/origem física e dinheiro existente; bicicletas compartilhadas não são exigidas, sem teletransporte na viagem.
+- **3A+B — estacionamentos:** vagas na rua/garagens privadas **e** estacionamento **municipal de superfície construído pelo jogador**, com capacidade real e viagens a pé a partir de vagas alternativas. Não aprovar edifício-garagem. **Se cobrança for paga ou gratuita permanece aberto**, sem aplicar regras da tarifa de ônibus.
+- **5A — fábrica de veículos com insumos já agregados:** usar estoque físico de categorias atuais como **aço**, energia, funcionários e capacidade, sem criar motor/pneu/eletrônica separados nem SKU genérico de componentes automotivos. **O responsável quer possível evolução futura da cadeia de produtos**, NÃO aprovada agora.
+- **6A — preferência econômica moderada por carros/ônibus produzidos localmente:** quando oferta local/importada for economicamente semelhante, agente comprador escolhe local; custo, disponibilidade, prazo e demanda continuam determinantes. Importação legítima segue possível.
+- **7A — estudante universitário pode trabalhar**, respeitando agendas, trabalho único, compromissos/viagens reais, sem sobreposição de presença.
+- **9C — turista visita de dia sem hotel ou fica várias noites com hospedagem física real**, pagando quando consome/ocupa, sem exigência de rotina pessoal completa off-map.
+- **10A — prédios residenciais podem ter venda por apartamento mesmo quando inteiros pertencem a um SIM**; somente a unidade comprada muda de titular. Está na SPEC e no documento de famílias.
+
+**Pergunta 4: cemitério e ocupação física, ainda EM EXPLORAÇÃO.** A SPEC exige cemitério e remoção de corpos, mas não determina o critério de lotação. As alternativas apresentadas ao responsável foram **A** vagas de sepultamento finitas por instalação, **B** apenas capacidade operacional de funerais por período sem contagem de espaço ocupado, **C** vagas finitas com alternativa de crematório. **Nova explicação:** A obriga o jogador a criar novos espaços após saturação, mas é preciso evitar que a cidade cresça criando cemitérios indefinidamente por séculos. Uma possibilidade técnica é contabilizar vaga ocupada por período e liberar/reutilizar após prazo, **não aprovado**; outra seria combinar crematório, **não aprovado**. O jogador não precisa simular túmulos individualmente nem administrar cada sepultamento em nenhuma opção.
+
+**Pergunta 8: crimes e vítimas, ainda EM EXPLORAÇÃO.** Criminalidade e polícia reais já estão na SPEC; falta escolher **o efeito sobre os cidadãos**. **A** ocorrências individuais com vítima SIM e possível perda/efeito real; **B** somente métrica/impacto agregado regional, sem vítima individual; **C** ocorrência individual com vítima e repercussão regional. A alternativa C foi **recomendada pela IA, não escolhida**. Se houver roubo monetário, dinheiro deve mudar de saldo para agente real, nunca desaparecer ou ser criado; tipos de crime, consequências, duração, prevenção e como limitar frequência/custo da simulação continuam abertos. Não inventar assaltos, violência ou cadeia penal detalhada antes da escolha.
+
+**Diagnóstico e performance:** eventos esparsos, agregações por área e respostas reais; evitar checagem contínua de todos os SIMs por todos os policiais, vagas, passeios ou rotas.
+
+---
+
 ## Saúde, ensino, energia e mobilidade — decisões posteriores de 2026-10-09
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou as opções 1A, 2A com ressalva, 3A, 4A, 5A, táxi como modal prioritário, 7A, 8C e 10A. **Pergunta 9 também foi aprovada posteriormente como 9A** (sem manutenção residencial adicional por vacância). Consequências, parâmetros e detalhes operacionais de IA não foram integralmente revisados.
