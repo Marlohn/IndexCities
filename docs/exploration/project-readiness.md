@@ -184,6 +184,21 @@ O [hub](../EXPLORATION.md) registra 11 documentos temáticos: **9 PARCIALMENTE R
 
 ---
 
+### Rodada posterior — decisões 2–10, imposto em aberto (2026-10-09)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou nove opções de produto e rejeitou assumir sem conferir a regra de três meses para tributos. A SPEC está atualizada; calibração e implementação não foram revisadas integralmente.
+
+- **Imposto em atraso — NÃO decidido (pergunta 1):** o prazo de três meses consta na SPEC para inadimplência do **aluguel**, não dos impostos. A proposta de acumular dívida tributária recuperável automaticamente (1A) segue não aprovada, sem apreensão/venda forçada definida; requer decisão de produto se a implementação depender de cobrança não quitada.
+- **Transporte — 2B/3A:** procurar vaga real alternativa e caminhar ao destino; garagens construídas pelo jogador limitam a frota de ônibus e a simulação distribui veículos reais entre as linhas. Desistência de viagem (2C) só foi cogitada como possível exceção futura.
+- **Incêndio e cadeia — 4A/5B:** danos recuperáveis por recursos reais, sem obrigar minigame de reparo; detidos procuram outra prisão com capacidade e acesso reais.
+- **Abastecimento urbano — 6B/7B:** solar/eólica variáveis com condições simplificadas; aterros e incineradores com custos/capacidade/impactos distintos, sem reciclagem implícita.
+- **Educação — 8B/9A:** matrículas em vagas reais por **ordem de solicitação**; se escola estiver lotada, buscar outra mesmo mais distante. Escolaridade básica/média/superior influencia empregos; **profissões específicas foram pedidas como melhoria futura**, não parte do primeiro modelo.
+- **Parques — 10B:** benefícios para visitantes reais mais atratividade regional dos imóveis, sem necessidade de lotação individual como nova mecânica.
+
+**Impactos de integração a validar:** alocação de ônibus sem frota fictícia, origem de peças/recursos de reparo, geração variável real com déficit elétrico, matrículas com fila por ordem de eventos e reuso dos índices espaciais existentes. Não criar novos minigames por inferência.
+
+---
+
 ### Rodada adicional — decisões e correções de 2026-10-09
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável confirmou água por distância, contratação manual de crédito, obras privadas automáticas e desafios cidade+bairros; confirmou que ruas só são construídas/demolidas. Modelos espaciais, fórmulas e sequência técnica de implementação não foram revisados integralmente e seguem em exploração. As decisões oficiais estão na SPEC.
