@@ -42,7 +42,7 @@ Este arquivo é material de exploração temática. Quando houver divergência, 
 
 ### Inadimplência empresarial em água e energia — 2A aprovada
 
-**Decidido:** a empresa deve ao Caixa da Cidade por água e energia efetivamente consumidas. Falta de pagamento não gera receita nem corte individual deliberado no primeiro modelo, mas a dívida real piora sua situação financeira e pode contribuir para falência pelas regras normais. Pagamentos parciais abatem dívida; fornecimento continua sujeito à capacidade e aos recursos físicos da cidade, sem garantia sistêmica. **Em aberto:** periodicidade, prioridade de pagamentos e liquidação de débitos empresariais quando há encerramento.
+**Decidido:** a empresa deve ao Caixa da Cidade por água e energia efetivamente consumidas. Falta de pagamento não gera receita nem corte individual deliberado no primeiro modelo, mas a dívida real piora sua situação financeira e pode contribuir para falência pelas regras normais. Pagamentos parciais abatem dívida; fornecimento continua sujeito à capacidade e aos recursos físicos da cidade, sem garantia sistêmica. **Já resolvido em 2026-10-09 para a falência terminal:** débitos reais de água/energia entram no rateio proporcional entre todos os credores com valores efetivamente disponíveis; crédito não pago é encerrado ao extinguir a empresa, sem receita municipal fictícia. **Ainda aberto:** periodicidade e prioridades de pagamentos durante a operação da empresa ativa, para calibração proporcional.
 
 **Situação que motivou a escolha:** uma fábrica segue consumindo energia, mas não tem caixa para quitar a fatura municipal. **Alternativas históricas:**
 
