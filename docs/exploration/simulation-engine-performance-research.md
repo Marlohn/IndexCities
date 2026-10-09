@@ -6,7 +6,7 @@
 >
 > **Fontes canônicas:** [SPEC](../SPEC.md) (produto), [ARCHITECTURE](../ARCHITECTURE.md) (fronteiras técnicas), [AGENTS](../../AGENTS.md) (regras de trabalho); [EXPLORATION](../EXPLORATION.md) (índice). [Pesquisa anterior de escala/calendário](simulation-scale.md) permanece separada; este arquivo aprofunda especificamente **engenharia de simulação**.
 >
-> **Leitura rápida:** ver [conclusão](#conclusão--o-que-eu-recomendo-para-o-indexcities) ao final. Todas as sugestões abaixo são hipóteses de engenharia, não decisões.
+> **Leitura rápida:** ver a [conclusão atualizada](#conclusão-atualizada--o-que-eu-recomendo-agora-para-o-indexcities) ao final. Todas as sugestões abaixo são hipóteses de engenharia, não decisões.
 
 ## 1. Problema real e restrições
 
@@ -278,7 +278,166 @@ No trecho livre, cálculo por intervalo pode bastar. Perto de interação com ou
 
 **Critério para novas rodadas:** priorizar novos relatos com perfil reproduzível, implementação aberta, condições de hardware e descrição clara das simplificações. Continuar incluindo histórias de fracasso, não somente “x vezes mais rápido”. Não usar números de literatura como garantia de desempenho do IndexCities.
 
-## Conclusão — o que eu recomendo para o IndexCities
+
+## 9. Nova rodada independente — CPU, GPU, vídeo, repositórios e comunidade (2026-10-09)
+
+> **Revisão humana desta seção: PENDENTE.** Nova investigação ampla, solicitada pelo responsável. **Não** transforma conclusões de pesquisa em alterações de SPEC ou ARCHITECTURE. Os resultados e números pertencem às fontes, com suas máquinas e simplificações próprias. Esta rodada testa deliberadamente a possibilidade de a **hipótese anterior (priorizar eventos e deixar GPU em último plano)** estar incompleta.
+
+### 9.1. Onde procuramos e o que significa “evidência”
+
+A nova rodada cruzou **artigos científicos e repositórios de reprodução**, projetos abertos e suas documentações, **canais e vídeos técnicos do YouTube**, comentários de autores e usuários no Reddit, debates do Hacker News, Steam, fóruns Godot e documentação oficial de Godot/.NET. Vídeos de YouTube encontrados por busca foram tratados como **fontes para leitura/visualização posterior**, quando a transcrição não estava disponível; não atribuir citações técnicas ao conteúdo oral que não foi de fato extraído. Comentários de fóruns são evidências sobre dores, hipóteses e relatos, **não benchmark certificado**. Os melhores achados são os acompanhados de paper/código/máquina/limites.
+
+**Mudança de perspectiva:** a melhor solução pode não ser **apenas** “eventos e nada mais”. Há evidência nova de uma **segunda família de soluções**: calcular física microscópica com GPU (ou CPU com dados contíguos) mantendo veículos individualizados. Outra linha estuda **microssimulação por eventos**, sem discretizar todos os passos. Essas famílias precisam ser **comparadas**, não misturadas cegamente.
+
+### 9.2. Descoberta principal: MOSS — GPU para trânsito microscópico, não macrofluxo
+
+**Fontes verificadas:** [artigo técnico de 2024](https://arxiv.org/html/2406.10661v1), [artigo do MOSS](https://arxiv.org/abs/2405.12520), [repositório do MOSS](https://github.com/tsinghua-fib-lab/moss), [ferramentas de geração de mapas/viagens](https://github.com/tsinghua-fib-lab/mosstool) e [roteamento](https://github.com/tsinghua-fib-lab/routing).
+
+- Os autores propõem uma **simulação microscópica de veículos individuais** em GPU, com modelos de seguimento **IDM** e mudanças de faixa **MOBIL** (variante randomizada); não é apenas tráfego como porcentagem agregada por bairro.
+- O artigo reporta **2.464.950 veículos**, **84,09 iterações/s** e aceleração de aproximadamente **88x em relação ao CityFlow** para o cenário de maior escala. O texto apresenta valores numéricos ligeiramente divergentes de fator de aceleração (**88,92x no resumo e 88,09x na seção de experimento**); por isso usamos **~88x**, sem precisão enganosa.
+- O artigo detalha ensaio com **Intel Xeon Platinum 8462Y (64 threads) e GeForce RTX 4090**. Logo, o benchmark principal usa **GPU de consumo de alto desempenho**, não exige necessariamente uma GPU de centro de dados A100. Ainda é muito acima de máquinas básicas.
+- O núcleo da solução usa **duas fases** de leitura/escrita: atributos públicos do passo anterior são consultados num snapshot somente leitura; novos estados são produzidos separadamente. Um índice de vizinhança permite que cada veículo consulte principalmente líder na mesma faixa e líderes/seguidores em faixas vizinhas.
+- No artigo, uma iteração costuma equivaler a **um segundo simulado**: é **simulação por passos altamente paralela**, não simulação por eventos sem atualizações. Uma hora do experimento não contém salários, refeições, escolas, propriedade, compras ou empresas do IndexCities.
+
+**Por que isso importa:** nossa hipótese inicial relegava GPU a pesquisa tardia. A literatura agora oferece uma implementação aberta e quantitativamente expressiva para o **subsistema de maior risco** (trânsito). A GPU merece ser considerada **mais cedo como alternativa técnica de mobilidade**, sem substituir Godot nem o Core C#.
+
+**O que não prova / risco:** readback GPU→CPU para bloqueios, serviços, consumidores, ônibus, funcionários e entregas; disponibilidade e portabilidade de CUDA fora de NVIDIA; limites da camada Godot/Vulkan; tratamento de colisões/caminhões/pedestres/faixas/regras específicas; sincronizar GPU com eventos econômicos num único tempo causal; picos em eventos. **Não** conectar uma GPU apenas porque um benchmark externo é rápido. **Não** atribuir automaticamente 88x ao jogo.
+
+**Hipótese técnica nova (pendente):** se movimento microscópico de veículos for de fato o gargalo dominante em cidade grande, investigar um **backend opcional e isolado de atualização de mobilidade** capaz de executar kernels homogêneos na GPU, com versão CPU autoritativa/correta, ambos preservando a mesma física acordada e as mesmas transições observáveis. A presença de GPU dedicada **não** deve virar condição de existência dos SIMs ou de entrega de mercadorias por inferência.
+
+### 9.3. Alternativa para GPU: CityFlow e dados densos na CPU
+
+**Fonte:** [CityFlow, projeto oficial](https://cityflow-project.github.io/index.html); [repositório CityFlow](https://github.com/cityflow-project/CityFlow).
+
+- O CityFlow declara simulação **microscópica por veículo**, estruturas de dados próprias e multithreading em C++, com comparações de performance contra SUMO em redes 1x1 até 30x30 cruzamentos.
+- O site do projeto informa ganhos **até ~25x sobre SUMO em determinados cenários** e diferenças pequenas no **tempo médio de viagem** para certas configurações. Isso **não é certificação de equivalência individual de viagens/filas** nem de compatibilidade com nossa SPEC.
+- O MOSS compara-se com CityFlow justamente porque este já era alternativa mais eficiente à atualização microscópica tradicional.
+
+**Resultado para IndexCities:** se o processador C# + organização por faixa/índice de vizinhos alcançar custo aceitável, **não será necessário depender de GPU para entregar o jogo**. Vale investigar como o CityFlow organiza *somente os dados de vizinhança necessários*, sem importar framework de RL nem Python.
+
+### 9.4. Alternativa ainda mais próxima do nosso desejo: microssimulação POR EVENTOS
+
+**Fontes:** [Kieu, Hamri e Haghighi — *A New Discrete Event Simulation of Large-Scale Car Traffic at Microscopic Level*, SIGSIM-PADS 2025](https://doi.org/10.1145/3726301.3728409), [código, scripts e dataset de reprodução disponibilizados pelos autores](https://github.com/kieuphuong232/reproducibility-PADS-2025), [Condette, Ramat e Sondi — 2024](https://doi.org/10.1016/j.simpat.2024.102920).
+
+O artigo de 2025 propõe **DEv-CF**, modelo de acompanhamento de veículos por eventos discretos, e fornece implementação de reprodução em Java, experimentos de comparação com IDM/SUMO, dados e instruções de 28 execuções para confrontar exatidão e desempenho. O próprio repositório dos autores declara três objetivos: comparar precisão com IDM em cenários pequenos e médios e verificar execução mais rápida que SUMO usando fwkDEVS. **Não generalizar essa evidência** para transições multilane, semáforos, rotatórias, emergência, estacionamento, ônibus e cidade inteira sem inspecionar resultados e limitações.
+
+Esse caminho evita depender de uma GPU específica e é **mais próximo conceitualmente do produto decidido**: avançar até a próxima interação física relevante. Também se conecta aos estudos de microtráfego por eventos de 2024.
+
+**Experimento comparativo decisivo, não fase obrigatória:** representar o MESMO trecho com **(i) passos microscópicos CPU, (ii) microssimulação por eventos, (iii) kernel microscópico GPU**. Confrontar **resultados por veículo**, fila, prioridade e todas as invalidações. **O melhor algoritmo pode variar conforme densidade e tipos de interação.**
+
+### 9.5. Uma ideia que parecia perfeita, mas tem um limite medido: “adiantar grupos”
+
+**Fonte primária revisada:** [Andelfinger, Eckhoff, Cai, Knoll — *Fast-Forwarding of Vehicle Clusters in Microscopic Traffic Simulations*, SIGSIM-PADS 2020](https://philipp-andelfinger.net/pdfs/andelfinger2020fastforwarding.pdf); [página ACM](https://doi.org/10.1145/3384441.3395975).
+
+Os autores identificam intervalos durante os quais um trecho não pode interagir com tráfego vindo de fora e, dentro deles, tentam avançar **grupos de veículos individualizados** por previsão neural dos seus estados. No cenário relatado com 40 mil veículos, isso **evitou 49,8% das atualizações de estado** da referência de passos, em comparação a **13,7%** para avanço de veículos isolados.
+
+**Porém:** o tempo de viagem teve **erro médio relativo de 2,67%** e **percentil 99 de erro de 6,46%** na configuração de grupos reportada; o avanço de veículos isolados mostrou erro muito menor (0,02%), embora poupasse menos trabalho. Os tempos totais de execução do experimento não equivalem a 49,8% de redução de duração: na tabela do paper, o melhor cenário apresentado aproximou-se de **2x de velocidade**, variando com densidade.
+
+**Interpretação crítica:** manter ID e posição de cada veículo não basta para garantir **mesma consequência causal**. Antecipar estado por rede neural é *aproximação*, mesmo quando o veículo não interage com outros trechos da rede. Para a SPEC atual, investigar primeiro **intervalos cuja solução seja demonstravelmente equivalente**; usar este paper como técnica de isolamento/conferência de horizonte e como **contraexemplo da afirmação de que todo fast-forward é exato**. Não adotar rede neural preditiva como motor de verdade sem decisão explícita sobre tolerância de alterações de comportamento.
+
+### 9.6. GPU em números ainda maiores: LPSim
+
+**Fonte:** [*Large Scale Multi-GPU Based Parallel Traffic Simulation*, artigo de 2024](https://arxiv.org/abs/2406.08496); [repositório LPSim](https://github.com/Xuan-1998/LPSim).
+
+Os autores relatam uma simulação de **2,82 milhões de viagens em 6,28 minutos** numa GPU, e **9,01 milhões de viagens em 21,16 minutos** em duas GPUs, no próprio conjunto de cenários, com comparação favorável a método CPU. **Viagens concluídas**, número de veículos ativos simultaneamente, duração de cada passo e fidelidade de interações são medidas diferentes; não converter “viagens” em “SIMs simultâneos”.
+
+A documentação do repositório trabalha com CUDA e particionamento entre GPUs. **Aprendizado transferível:** mesmo simulações muito grandes fazem particionamento e mudanças de região com cuidado; isso não implica que um city builder pequeno precise de sistemas distribuídos. Mantém-se como **referência alternativa**, abaixo de MOSS e CityFlow por compatibilidade direta a investigar.
+
+### 9.7. Fonte primária surpreendente: criador do Songs of Syx comenta seu gargalo
+
+**Comentário do desenvolvedor no Reddit:** [*The Grand Code-Craft of Songs of Syx*](https://www.reddit.com/r/songsofsyx/comments/rhsurj/the_grand_codecraft_of_songs_of_syx/). **Vídeo localizado** no canal do desenvolvedor: [*Pathfinding in games. How to do it for 30k entities*](https://www.youtube.com/watch?v=anGdYJu_eH4).
+
+O próprio perfil do projeto responde, em discussão de anos anteriores, que:
+
+- sua IA individual era relativamente barata;
+- o custo importante do momento era **percorrer dados de 10 mil entidades 60 vezes por segundo e verificar colisões**;
+- muitos indivíduos empregados permaneciam parados em seus postos; **ociosos circulando** podiam causar bastante custo.
+
+Isso dá suporte direto à métrica de **entidades fisicamente ativas/interações**, não apenas população. Há também comentários recentes na comunidade descrevendo roteamento hierárquico **HPA\\*** e refinamento local A\\* em blocos; o detalhe de **16×16 tiles** vem de **explicação de usuário**, apontando para o vídeo como fonte, e não foi tratado aqui como especificação confirmada pelo desenvolvedor. [Debate com descrição do HPA\\*](https://www.reddit.com/r/songsofsyx/comments/1udgk0c/how_does_syx_handle_so_many_individual_pops/).
+
+**Desafio à hipótese anterior:** a maior vantagem talvez não venha de scheduler sofisticado, e sim de **diminuir colisões/consultas e manter caminhos de movimento mais estáveis**. SIM empregado deve continuar cumprindo jornada e receber salário real, mas não precisa executar centenas de milhares de testes de colisão quando está efetivamente estacionário.
+
+### 9.8. Um vídeo importante, mas não prova: Cities: Skylines II e ECS
+
+**Vídeo técnico localizado:** [*Tapping the Entity Component System for Cities: Skylines II* — Unite 2024](https://www.youtube.com/watch?v=nEkIyWhvq3o). **Confronto externo:** [entrevista da liderança da Colossal Order, março de 2026](https://www.pcgamer.com/games/sim/cities-skylines-2-boss-says-they-completely-overestimated-the-unity-engines-capabilities/).
+
+O vídeo é uma **fonte para estudo arquitetural** sobre utilização de ECS/DOTS em um city builder real; não foi extraída transcrição que permita atribuir métricas ou detalhes técnicos não publicados na descrição. A entrevista de 2026 relata que o estúdio superestimou capacidades de partes da engine ainda incompletas durante o projeto. Não é prova de que ECS falha como técnica nem de que trocar de engine consertaria a lógica de simulação.
+
+**Implicação:** o IndexCities não precisa escolher entre “ECS resolve tudo” e “ECS nunca vale a pena”. A ARCHITECTURE já autoriza migrar **hotspots** para estruturas data-oriented quando perfil justifica; essa continua uma posição sólida.
+
+### 9.9. Godot: um benchmark comunitário promissor, sem transformar em meta
+
+**Discussão e números auto-relatados:** [*Godot CPU Stress Test: 100k Entities at 171 FPS using C# and Friflo ECS* (julho/2026)](https://www.reddit.com/r/godot/comments/1ulp91j/godot_cpu_stress_test_100k_entities_at_171_fps/); [*I made a Godot comparison Demo* (agosto/2026)](https://www.reddit.com/r/godot/comments/1vdgcjf/i_made_a_godot_comparison_demo/); [documentação oficial Godot MultiMesh](https://docs.godotengine.org/en/4.2/tutorials/performance/using_multimesh.html).
+
+Um autor declara aproximadamente **100 mil entidades e 168–171 FPS** em cálculo de atração gravitacional para cinco pontos, com C#, ECS, memória contígua, paralelismo, zero alocações no loop e **uma atualização de buffer MultiMesh**; contrapõe esse resultado a versões próprias em C++/C# OOP/GDScript. **Benchmarks comunitários não auditados e tarefas diferentes não validam superioridade geral do framework**, muito menos uma cidade com economia, tráfego, aluguéis e compras. Outro relato compara flow fields em C# e GDScript em mapa 100×100, mas é igualmente caso específico [experimento de pathfinding](https://www.reddit.com/r/godot/comments/1vc1pw3/gdscript_vs_c_performance/).
+
+**O achado técnico realmente aproveitável:** tornar baratos os **limites de cópia Core → Godot**, com dados contíguos e atualização em lote, pode valer mais do que otimizar micro-objetos gráficos. Godot documenta que MultiMesh pode desenhar enormes números de instâncias, mas precisa de estratégia de culling/particionamento visual; isso não autoriza alterar a simulação.
+
+**Cautela adicional:** um [relato de issue de compute shaders no C# do Godot 4.3 RC3](https://github.com/godotengine/godot/issues/95521) reportou diferenças enormes frente a GDScript ao submeter shaders; era um problema **específico da versão/caminho experimental**, não se pode generalizar para Godot atual. Isso reforça a necessidade de **medir transferências e chamadas reais** caso a opção GPU seja testada, além do tempo do kernel.
+
+### 9.10. Aprendizados de mods e experiências ruins
+
+**RimWorld / RocketMan:** [README do projeto](https://github.com/trotsky1997/RocketMan), [relato de experiência com medição de ticks](https://www.reddit.com/r/RimWorld/comments/15wc024/), [discussão sobre limites de escalabilidade](https://www.reddit.com/r/RimWorld/comments/1ixzcc9/). O RocketMan descreve três famílias de medidas: reduzir frequência de atualização de certos agentes, fazer **cache de estatísticas** e recomputar iluminação apenas na região afetada. **A redução da frequência de ticks de agentes não pode ser copiada automaticamente** porque a SPEC do IndexCities exige que acontecimentos reais não desapareçam: *amostragem mais grossa* não é o mesmo que *eventos corretamente preservados*.
+
+**Godot / fórum de desenvolvedores:** [pergunta sobre city builder com milhares de cidadãos](https://www.reddit.com/r/godot/comments/11i96yu/) e [relato de logística física em city builder](https://www.reddit.com/r/godot/comments/1swz5m8/building_a_physical_logistics_citybuilder_in/). Aparecem ideias recorrentes de separar estado da renderização, agrupar ocupantes de ônibus **sem fundir suas carteiras e destinos**, e usar **reservas atômicas de insumo/equipe** para evitar duas tarefas consumirem a mesma disponibilidade. São relatos de implementadores; não comprovam escala específica.
+
+**Cities: Skylines II, Steam e Reddit:** [relatos históricos de queda na velocidade do calendário](https://www.reddit.com/r/CitiesSkylines/comments/17v5481), [relato no Steam com testes informais de horas simuladas por tempo real](https://steamcommunity.com/app/949230/discussions/0/4041481833163552062/), [benchmark comunitário que mede hora de jogo em vez de FPS](https://www.reddit.com/r/CitiesSkylines2/comments/1iiogys/). Hardware, mods, versões e cidades variam: **não usar como prova de gargalo de pathfinding ou de componente específico**, mas como demonstração de que a métrica correta é **tempo simulado efetivamente processado**. Debate adicional no [Hacker News](https://news.ycombinator.com/item?id=38153573) discute criticamente limites de tecnologias e otimização; comentários não são engenharia reversa verificada do motor.
+
+### 9.11. Dois algoritmos de roteamento que merecem reavaliação
+
+**A — Hierarquia com refinamento local.** Referências: [vídeo do criador de Songs of Syx](https://www.youtube.com/watch?v=anGdYJu_eH4), [explicação técnica da comunidade](https://www.reddit.com/r/songsofsyx/comments/1udgk0c/how_does_syx_handle_so_many_individual_pops/), [OSRM com CH/MLD](https://github.com/Project-OSRM/osrm-backend). A ARCHITECTURE já prevê macro→micro; a oportunidade nova é considerar **não gerar uma rota detalhada inteira antecipadamente** quando a mudança do ambiente a torna rapidamente obsoleta. *Risco:* decisões de faixa/ultrapassagem necessitam antecipação suficiente antes da conversão; refinamento local não pode fazer o motorista errar manobra.
+
+**B — Campos de direção por destino compartilhado.** Referência técnica: [Red Blob Games — flow fields](https://www.redblobgames.com/pathfinding/tower-defense/), [vídeo explicativo com custos dinâmicos](https://www.youtube.com/watch?v=tVGixG_N_Pg). Quando muitos agentes vão ao **mesmo destino ou conjunto limitado de destinos**, uma busca reversa pode servir a vários; não quando cada SIM escolhe destino diferente e custos/preferências individuais variam. **Boa candidata** a certos serviços, centros de emprego ou destino comum de emergência, mas não substitui rotas individuais na rede inteira.
+
+### 9.12. Novas propostas fora da caixa (todas PENDENTES)
+
+| Hipótese | Possível ganho | Exigência para ser compatível | Minha prioridade |
+| --- | --- | --- | --- |
+| **I. Núcleo híbrido evento + passos microscópicos onde necessário** | Poupar atualizações em situações estáveis e manter física fina em conflito | Mesma causalidade/modelo físico; transições de modo verificáveis | **Altíssima para comparação técnica** |
+| **II. Mobilidade com dois executores técnicos CPU e GPU** | Acelerar atividade densa em máquina forte, preservar versão portátil | Mesmo contrato de mobilidade; custo de sincronização sob controle; hardware acessível | **Alta como alternativa, não escolha já feita** |
+| **III. Índice de vizinhos por faixa, com snapshot de leitura e aplicação ordenada** | Reduzir busca espacial e conflitos; serve CPU e GPU | Mudança de faixa, cruzamentos e bloqueios invalidados corretamente | **Altíssima: lição concreta do MOSS** |
+| **IV. Processar próximo evento de conflito, não todo frame** | Redução de trabalho em trechos previsíveis | Modelo de seguimento validado, sem ignorar choques nem prioridades | **Altíssima: linha DEv-CF** |
+| **V. Custos proporcionais a interações ativas, não população** | Métrica e scheduler mais precisos | Manter todos os SIMs, fluxos, idades e contas reais | **Altíssima** |
+| **VI. Estado compartilhado de passageiros e veículos** | Evitar recalcular posição por passageiro de ônibus | Cada SIM conserva ID, embarque real, tarifa, destino e desembarque | Alta onde existir transporte coletivo |
+| **VII. Compartilhar busca de destino (flow field reverso)** | Menos buscas duplicadas | Mesmo conjunto de destinos/custos; cada trajeto continua real | Média, dependente de distribuição |
+| **VIII. Fast-forward neural de comboios** | Reduzir cálculos microscópicos | Exigiria aceitar/justificar desvios mensurados | **Baixa hoje**, estudo de limites |
+| **IX. Escolher backend pela proporção de interações ativas** | Evitar GPU em situação ociosa, usar paralelismo na saturação | Mudança de backend não altera resultado nem exige sincronização cara | Muito experimental; medir antes de projetar |
+| **X. Economia por índices de oportunidades + revalidação atômica** | Reduzir busca de empresa, vaga, estoque e residência | Nunca comprar/vender/contratar duas vezes o mesmo recurso | Alta; reforça pesquisa anterior |
+
+**Combinação conceitual nova:** o tempo do Core teria uma ordem causal única, mas suas tarefas poderiam usar **métodos matemáticos diferentes por tipo de dependência**: prazos e rotinas por eventos; fluxo/consumo contínuo por integração limitada pelos próximos gatilhos; tráfego com estados físicos e vizinhos por faixa; consultas espaciais com índices; pintura via Godot. A combinação não exige **cinco engines**, apenas rotinas técnicas especializadas dentro do mesmo núcleo. Alterar o método de cálculo nunca autoriza substituir operação presencial, dinheiro ou veículo por proxy fictício.
+
+### 9.13. Cinco hipóteses que podem ser refutadas rapidamente por evidência
+
+1. **H1: eventos vencem passos em cidade calma.** Caso contrário, fila/cancelamento/invalidação geram mais custo que o polling, e precisamos reconsiderar.
+2. **H2: o tráfego ativo e colisões são o maior gargalo do calendário nas cidades grandes.** Pode ser falso se seleção de destinos, empregos, economia ou apresentação dominarem: primeiro benchmark deve separar os domínios.
+3. **H3: dados por faixa + leitura de snapshot aceleram tráfego mesmo em CPU.** Se não, o ganho do MOSS pode depender principalmente de largura da GPU/hardware; medir.
+4. **H4: GPU microscópica supera CPU e eventos com sincronização real do Core.** Benchmarks de tráfego isolado não incluem chegada de compra, abastecimento, mudança de rota, estacionamento e ordens da prefeitura; exigir **mesma cidade integrada**.
+5. **H5: a combinação mais rápida muda com a densidade real.** Se o custo de alternar executores for maior que o ganho, manter **um único executor** será melhor.
+
+**Experimentos proporcionais ao risco, não POCs setoriais obrigatórias:** registrar eventos por dia simulado; proporção de SIMs viajando/comprando/trabalhando/ociosos; interações de seguimento por faixa; custo de rotas versus validações; CPU e GPU com **mesma regra física**; percentis de duração de avanço e divergência causal; eficiência sem render. Comparar 10k/25k/50k/100k SIMs **como cenários técnicos**, não como metas oficiais. Primeiro integrar conforme a SPEC; usar instrumentação local sem criar funcionalidades novas.
+
+### 9.14. Leituras concretas para a próxima investigação
+
+| Referência | Tipo e por que é útil | Evidência/limitação |
+| --- | --- | --- |
+| [MOSS — artigo](https://arxiv.org/html/2406.10661v1) / [código](https://github.com/tsinghua-fib-lab/moss) | Paper + GitHub; GPU microscópica e fases read/write | Forte medição em RTX 4090; só trânsito |
+| [CityFlow](https://github.com/cityflow-project/CityFlow) | GitHub + documentação; CPU com multithreading | Comparações condicionadas ao SUMO |
+| [PADS 2025: DEv-CF](https://doi.org/10.1145/3726301.3728409) / [código de reprodução](https://github.com/kieuphuong232/reproducibility-PADS-2025) | Artigo + testes e scripts; microtráfego por eventos | Escopo físico a validar antes de expandir |
+| [Fast-forwarding 2020](https://philipp-andelfinger.net/pdfs/andelfinger2020fastforwarding.pdf) | Paper com erro e tempo medidos | Acelera, mas prevê aproximadamente |
+| [LPSim](https://arxiv.org/abs/2406.08496) / [repo](https://github.com/Xuan-1998/LPSim) | GPU e multi-GPU; viagens de grande escala | Métricas diferentes de população simultânea |
+| [Autor de Songs of Syx](https://www.reddit.com/r/songsofsyx/comments/rhsurj/the_grand_codecraft_of_songs_of_syx/) | Comentários do criador e custo real de colisões | Momento histórico, não benchmark atual |
+| [Vídeo Songs of Syx](https://www.youtube.com/watch?v=anGdYJu_eH4) | YouTube, roteamento de 30 mil entidades | Não atribuir cifras além da descrição sem transcrição |
+| [Vídeo Unite 2024 / C:SII ECS](https://www.youtube.com/watch?v=nEkIyWhvq3o) | YouTube técnico de cidade e ECS | Fonte para aprofundar; não foi transcrito nesta rodada |
+| [RocketMan](https://github.com/trotsky1997/RocketMan) | Código e relato de otimização em RimWorld | Throttling pode suprimir eventos |
+| [Godot stress 100k ECS](https://www.reddit.com/r/godot/comments/1ulp91j/godot_cpu_stress_test_100k_entities_at_171_fps/) | Experiência comunitária comparativa | Sintético, não equivalência econômica |
+| [Godot — MultiMesh](https://docs.godotengine.org/en/4.2/tutorials/performance/using_multimesh.html) | Documentação oficial renderização em lote | Apenas apresentação |
+| [Red Blob flow fields](https://www.redblobgames.com/pathfinding/tower-defense/) | Técnica compartilhada de roteamento | Destinos precisam ser compartilháveis |
+| [CS2 simulação x FPS](https://www.reddit.com/r/CitiesSkylines/comments/17v5481) | Comentários/relatos amplos de jogadores | Anedótico, útil para escolher métricas |
+
+**Resumo da rodada:** não houve evidência de um motor universal que resolva automaticamente todos os sistemas econômicos e físicos do IndexCities. Mas houve duas linhas novas **materialmente fortes**: **GPU microscópica MOSS com código/benchmarks** e **microssimulação de carros por eventos com experimentos reproduzíveis**. As duas podem superar a ideia de simplesmente aumentar a velocidade de um loop de objetos, sem exigir tráfego agregado. A decisão entre elas depende de medições do modelo integrado.
+
+
+## Conclusão da primeira rodada — histórico anterior à pesquisa ampliada
 
 **Recomendação central:** construir o Simulation Core aprovado com **processamento orientado a mudanças e a eventos, cálculo de intervalos comprovadamente equivalentes e estado individual persistente**. Não começar pelo paradigma “um update por objeto a cada frame”, e também não transformar toda a cidade num event bus sofisticado por antecipação.
 
@@ -295,3 +454,27 @@ Minha ordem de preferência **como investigação técnica, não plano obrigató
 O limite honesto: cidades densas com incontáveis interações reais custarão CPU. Não existe garantia de aceleração arbitrária sem custo. O que pode diferenciar o IndexCities é medir e **evitar o trabalho que não acrescenta nenhum acontecimento verdadeiro**, preservando todo o trabalho que acrescenta.
 
 **Status final:** conclusão da IA, **PENDENTE de revisão humana**. Não registrar como decisão da SPEC/ARCHITECTURE; avaliar conforme resultados e decisão do responsável.
+
+
+## Conclusão atualizada — o que eu recomendo agora para o IndexCities
+
+> **Revisão humana desta conclusão: PENDENTE.** Minha recomendação técnica após rever MOSS, CityFlow, trabalhos DEv-CF, GPU, estudos de fast-forward, depoimentos diretos e benchmarks comunitários. **Não aprova mudança na ARCHITECTURE, na SPEC, nem na primeira entrega integrada.**
+
+**Minha escolha atual: o melhor caminho parece ser um único Simulation Core causal em C# com scheduler orientado por eventos e estado persistente, mas com mobilidade especializada capaz de comparar DOIS executores reais: CPU microscópico eficiente e GPU microscópica opcional.** O GPU deixa de ser apenas hipótese distante; merece investigação antecipada **se o trânsito representar o gargalo real**. O scheduler não precisa ser um framework complexo nem um global event bus; continua subordinado às fronteiras da ARCHITECTURE.
+
+**A ideia fora da caixa de maior potencial, agora mais concreta:** combinar **trânsito por eventos nos trechos em que é comprovadamente equivalente**, com **processamento microscópico em lotes por faixa** nas situações com muitas interações, usando índices de vizinhança e snapshots para evitar conflitos. O processamento em lote pode começar em **CPU**; **GPU** entra somente se demonstrar vantagem líquida com todos os custos de comunicação, renderização e economia incluídos.
+
+**O que eu realmente faria, na ordem em que os riscos precisam ser enfrentados:**
+
+1. **Preservar produto e causalidade:** um SIM, uma empresa, um estoque e um veículo continuam reais em qualquer câmera/velocidade. Nunca substituir a cidade por projeção/tempo falso.
+2. **Instrumentar no próprio desenvolvimento integrado:** tempo simulado/segundo real, interações ativas, buscas de rota, atualizações evitáveis, custo de trânsito/emprego/comércio, GC e percentis de atraso. Só a população total não basta.
+3. **Fazer CPU simples, eficiente e reproduzível primeiro:** ids/dados compactos, scheduler leve, estados adormecidos com despertadores confiáveis, índices de dependentes, confirmação econômica atômica, percurso físico correto por vias/faixas.
+4. **Comparar algoritmos de movimento com equivalência:** passos microscópicos de referência **versus** eventos/intervalos verificáveis **versus** computação microscópica em lotes. Usar os cenários de cruzamento, ultrapassagem, rua cortada, ônibus, carga, congestionamento e emergência da SPEC. **Se a técnica muda o resultado aprovado, não é otimização autorizada.**
+5. **Testar GPU cedo caso o perfil justifique:** especialmente inspirada no MOSS, com mesmo modelo e comparações CPU/GPU **incluindo** cópias e mudanças urgentes de estado. Não converter CUDA, GPU proprietária ou ECS completo em dependência inicial por entusiasmo.
+6. **Só então** decidir otimizações estruturais maiores (SoA/ECS localizado, jobs, backends alternativos, estruturas de calendário). Não adotar paralelismo distribuído/rollback/IA preditiva por padrão.
+
+**O que mudou em relação à conclusão anterior:** antes GPU era baixa prioridade quase universal; **agora GPU microscópica é uma opção relevante, testável e com fonte primária forte para tráfego intenso**. **O que não mudou:** eventos, atualizações sob demanda, causalidade, estado individual e diagnóstico continuam a melhor fundação; a GPU não resolve sozinha a economia.
+
+**Maior dúvida real pendente de medição:** quantas interações físicas por segundo simulado ocorrerão no pico de tráfego exigido pelo IndexCities e **quanto custam no hardware real do jogador**, comparadas com a carga econômica? Até responder, não existe base técnica para escolher “um motor excepcionalmente rápido” definitivo nem prometer 100x.
+
+**Decisão de produto não solicitada, portanto não tomada.** Esta pesquisa não é autorização de implementação de recurso novo. **Status: PENDENTE de revisão humana.**
