@@ -210,6 +210,17 @@ Ainda precisa ser pesquisado/calibrado:
 
 ---
 
+## Fábrica de automóveis com materiais existentes, preferência local — decisões 5A/6A (2026-10-09)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou expressamente **5A e 6A** e solicitou registrar **o aprofundamento futuro da cadeia de produtos como possibilidade, NÃO escopo inicial**.
+
+- **5A — produção automobilística inicial enxuta:** a fábrica opera com recursos **agregados que já existem na SPEC**, como aço, além de energia, mão de obra, capacidade instalada, tempo, dinheiro e logística de veículo pronto. Sem criar agora motores, pneus, eletrônicos ou um produto intermediário obrigatório chamado "componentes automotivos". O resultado da produção é veículo real, sujeito a inventário, venda e entrega, não apenas preço ou aparência de fábrica.
+- **6A — origem local preferida moderadamente:** se preço total, disponibilidade e prazo de veículo local forem semelhantes aos importados, compradores elegíveis **tendem a preferir o produzido na cidade**; vantagem externa material e falta de estoque local continuam permitindo importar. Reaproveitar a lógica de preferência local já decidida para outras aquisições, não impor protecionismo absoluto.
+- **Possível melhoria futura:** cadeias de produtos industriais mais ricas, com insumos e famílias de componentes diferenciados quando aumentarem a gameplay. **Não foi aprovado agora**, evitar uma explosão de SKUs e desempenho.
+- A **atividade empresarial de táxi** também foi aprovada (1B): empresas privadas operam frota e contratam SIMs reais; a empresa recebe pagamentos efetivos por corridas reais. Precificação, aquisição da frota e regras de atendimento exigem especificação proporcional antes de código; não transformar táxi em órgão público nem motorista autônomo por suposição.
+
+---
+
 ## Fábrica de automóveis local e comércio exterior ampliado — rodada de 2026-10-09
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou expressamente **8C — veículos importados e também fabricados localmente** e destacou o desejo de **ver uma fábrica de automóveis funcional na cidade**. Também pediu documentar **comércio exterior mais abrangente sobre tudo como melhoria futura, NÃO para agora**. Fórmulas, lista de insumos e interface de comércio não foram revisadas nem viraram requisitos.
