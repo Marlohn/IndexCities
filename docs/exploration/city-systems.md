@@ -17,6 +17,14 @@ Este arquivo é material de exploração temática. Quando houver divergência, 
 
 ---
 
+## Água em escassez: distância da origem de abastecimento — decisão de 2026-10-09
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou o princípio de que as áreas mais distantes da origem efetiva de fornecimento perdem água primeiro quando falta capacidade, independentemente do tipo de consumidor. A formalização técnica e a interpretação da distância como ponto operacional de abastecimento, em vez de corpo d'água isolado, são síntese da IA a validar; detalhes de cálculo continuam em exploração.
+
+**Decidido na SPEC:** em escassez de **água**, considerar localização/alcance das estruturas operacionais de fornecimento de água tratada: bairros próximos têm atendimento antes dos distantes, até o limite da capacidade real. Não repartir automaticamente a falta proporcionalmente entre todos nem priorizar hospitais por classe de consumidor. Rio e lago são fontes de captação, mas a simples proximidade da margem não assegura água potável sem captação e tratamento. O modelo não exige desenhar encanamentos manualmente; a solução espacial (distância, fontes concorrentes, alcance e capacidade regional) ainda precisa de validação para não prometer hidráulica física sem rede real. A regra de **prioridade financeira** dos serviços essenciais não significa prioridade na **alocação hídrica**. O responsável não escolheu ainda distribuição de **energia**.
+
+---
+
 ## Água/energia empresarial e salários municipais — decisões 2A/3A (2026-10-09)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável **aprovou 2A e 3A** em 2026-10-09 e ambas estão na SPEC; comparações, riscos e explicações adicionais da IA seguem sem revisão integral. As opções alternativas abaixo são históricas, não funcionalidades aprovadas. Preservar tarifa automática (2B), cobrança por consumo real (1B), dívida residencial sem corte (3B) e foco do jogador em capacidade de água/energia.
@@ -654,7 +662,7 @@ Direção de modelagem:
 - excesso de demanda pode gerar falta d'água ou esgoto sem atendimento;
 - cobertura pode ser modelada de forma agregada ou por área, sem rede de tubos explícita.
 
-O modelo exato de cobertura ainda precisa ser escolhido.
+**Direção de cobertura da água já aprovada em 2026-10-09:** na insuficiência de capacidade, regiões mais distantes do fornecimento operacional perdem serviço primeiro, sem priorização por tipo de edifício; escolher o algoritmo espacial, o alcance e como interagem múltiplas origens continua aberto. Não estender a regra à energia sem decisão.
 
 ### Energia
 
