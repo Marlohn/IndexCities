@@ -38,13 +38,21 @@ Este arquivo é material de exploração temática. A autoridade do produto cont
 
 **Caso concreto agora decidido:** cafeteria → salão de beleza no mesmo imóvel é **permitido pela categoria comercial ampla**, seja por nova empresa ou pela mesma, desde que seja fisicamente viável; adaptar com custos reais quando necessário. **Isso não permite hotel, posto, fábrica ou fazenda em qualquer prédio** nem libera operações sem infraestrutura apropriada. Critérios exatos de adaptação ficam para calibração, sem inventar nova categoria urbana por serviço.
 
+## Adaptação física financiada/executada pela empresa — decisão 3A (2026-10-09)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** A escolha 3A foi expressamente aprovada pelo responsável; implementação da coordenação de obras e equipe ainda exige definição/validação, não se trata de revisão integral dos parâmetros.
+
+**Decidido na SPEC:** uma empresa que escolhe uma atividade fisicamente compatível com o imóvel que comprou/possui, mas que demanda reforma, **paga e organiza automaticamente a adaptação** com seu próprio caixa e recursos reais, sem autorização de cada obra pelo jogador. Obras só existem quando a atividade realmente requer instalações diferentes; custos, materiais, trabalhadores e tempo precisam ser efetivos. Se faltar recurso, não abre o novo ramo por mágica. **Não** criar outra empresa, transferir a despesa para a prefeitura, permitir atividade fora da categoria urbana ou usar estoques fictícios. Reutilizar os fluxos de obra/logística aprovados; detalhes de equipe, transferência de bens e temporização ficam para calibração proporcional.
+
+---
+
 ## Preços próprios de serviços e mudança de ramo sem venda — decisões 3A/5A (2026-10-08)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou preços próprios dos prestadores (**3A**) e a possibilidade de uma empresa **mudar de atividade no próprio imóvel (5A)**. Ambas estão na SPEC. Valores, periodicidade e detalhamento da transição de estoque/equipe ficam **PENDENTES de definição/calibração**.
 
 **Preços de serviços 3A:** prestador privado define e ajusta de forma gradual preços próprios conforme custo real, concorrentes, demanda e capacidade. Cada cliente paga preço da empresa real que o atendeu; **não** impor um preço único para todos os salões, nem ajustar a cada SIM/instante. Distinto do preço de referência municipal das **mercadorias físicas**: não importar automaticamente esse modelo para serviços imateriais.
 
-**Troca de atividade 5A:** a empresa que já possui imóvel pode decidir abandonar um ramo e começar outro **sem vender o prédio nem mudar a identidade econômica**, respeitando categoria urbana, estrutura, demanda e custos reais de adaptação quando necessários. **Não apagar estoque, duplicar ativo, manter faturamento do negócio fechado ou obrigar funcionários a mudar de profissão sem causa.** Sem reforma fictícia quando o edifício serve e sem flutuações incessantes de atividade. Clientes e funcionários só participam de condições reais; venda/transferência/destino de estoque e intervalo sem operação devem ser especificados se necessário antes do código.
+**Troca de atividade 5A (com execução própria 3A aprovada em 2026-10-09):** a empresa que já possui imóvel pode decidir abandonar um ramo e começar outro **sem vender o prédio nem mudar a identidade econômica**, respeitando categoria urbana, estrutura, demanda e custos reais de adaptação quando necessários. **A empresa decide, paga e coordena a adaptação**, sem intervenção manual do jogador. **Não apagar estoque, duplicar ativo, manter faturamento do negócio fechado ou obrigar funcionários a mudar de profissão sem causa.** Sem reforma fictícia quando o edifício serve e sem flutuações incessantes de atividade. Clientes e funcionários só participam de condições reais; venda/transferência/destino de estoque e intervalo sem operação devem ser especificados se necessário antes do código.
 
 **Expansões não presumidas:** esta regra não autoriza automaticamente transformar indústria em comércio, trocar a categoria urbana fixada pelo jogador ou permitir funcionamento de hotel num asset de lojinha. Mudança significativa deve ser uma reação autônoma verificável ao mercado.
 
