@@ -147,7 +147,7 @@ O modelo deve ser validado antes de virar regra de produto. Evitar fórmula arbi
 
 ### Dívida municipal
 
-> **Revisão humana desta subseção: PARCIALMENTE REVISADO.** O responsável aprovou explicitamente a contratação manual (2A, 2026-10-09), registrada na SPEC. Condições quantitativas e consequências de insolvência ainda não foram revisadas.
+> **Revisão humana desta subseção: PARCIALMENTE REVISADO.** O responsável aprovou expressamente contratação **manual (2A)** e, depois, **inadimplência persistente com suspensão de novos empréstimos até regularizar (1A)** em 2026-10-09. Fórmulas financeiras e prazos ainda não revisados.
 
 A dívida municipal faz parte do produto como mecanismo de recuperação de caixa.
 
@@ -161,7 +161,7 @@ Ainda precisa ser decidido:
 - limite de endividamento;
 - taxa de juros;
 - prazo;
-- consequências de inadimplência;
+- **Inadimplência 1A (2026-10-09) já aprovada:** dívida vencida continua devida à Reserva Global e **bloqueia novos empréstimos enquanto houver atraso não quitado**; sem refinanciamento automático, confisco compulsório de receitas futuras acima da prioridade essencial nem baixa fictícia de dívida. Visibilidade agregada ao jogador. **Ainda aberto:** vencimentos, método de amortização e parâmetros, sem reabrir o comportamento de bloqueio por inadimplência;
 - **Decidido em 2026-10-09 (opção 2A):** empréstimo municipal exige ação e confirmação **manual do jogador**, em vez de contratação automática ou aceite por omissão. Ainda em aberto: apresentação da ferramenta, elegibilidade e parâmetros financeiros concretos.
 
 
@@ -268,7 +268,7 @@ A fórmula de avaliação e o percentual de aluguel proporcional ao valor ainda 
 
 ## Destino econômico de aluguel, compra e propriedade residencial
 
-> **Revisão humana desta seção:** PARCIALMENTE REVISADO — fluxo principal discutido e promovido para a SPEC; preço, herança e granularidade de apartamentos ainda têm pontos abertos.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** Fluxo econômico decidido; **propriedade de prédio integral ou apartamentos individuais 2C aprovada em 2026-10-09**. Detalhes de como representar/vender unidade ou prédio sem duplicar patrimônio e de partilha justa entre múltiplos herdeiros ainda estão abertos.
 
 **Status:** decidido em nível de fluxo.
 
