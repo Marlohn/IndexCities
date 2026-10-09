@@ -518,3 +518,16 @@ A pesquisa original combinou **química de reações exatas** (fila de próximos
 **Conclusão mais recente da IA:** começar com Core C# simples e correto, scheduler, índices de interesses, física verdadeira e métricas; investigar contratos temporais verificáveis como experimento técnico **opcional**; somente se houver ganhos comprovados considerar compilar rotinas localizadas. CPU microscópica continua referência para trânsito, GPU somente se provar vantagem integrada. As fontes e 17 alternativas com riscos estão em [pesquisa radical](simulation-engine-radical-hypotheses.md).
 
 **Status: PENDENTE de revisão humana. SPEC e ARCHITECTURE inalteradas.**
+
+
+## 12. Investigação específica — é viável cachear a maior parte da simulação? (2026-10-09)
+
+> **Revisão humana: PENDENTE.** A hipótese do responsável foi avaliada com fontes primárias, inclusive **cache de código com efeitos reais**. A pesquisa detalhada, custos, cenários de referência e recomendações estão no arquivo complementar [Viabilidade de cache para simulação causal](simulation-cache-feasibility.md).
+
+**Achado forte:** [MemoSim, RWTH Aachen / Stoffers et al. 2018](https://daniel.schemmel.net/publication/2018-automated-memoization/) demonstra como guardar entradas realmente lidas e saídas modificadas de blocos de simulação, com ganho relatado acima de 80× num caso de rede OFDM de estudos paramétricos; [DEVS, 2023](https://doi.org/10.3390/app132312958) registra 7,4–11,7× ao memoizar buscas de agendamento. [Wormhole, USENIX 2026](https://www.usenix.org/conference/nsdi26/presentation/long) usa cache + períodos estáveis e relata 744× no ns-3 de um cenário GPT, **mas com erro de métrica inferior a 1%**, não equivalência estrita da cidade. [Factorio FFF #121](https://www.factorio.com/blog/post/fff-121) guarda rotas, pedaços reutilizáveis e resultados negativos; [Salsa](https://docs.rs/salsa/latest/salsa/) conserva consultas cujos campos dependentes não mudaram.
+
+**Distinção crucial:** **memoizar cálculo** de rotas/decisões/condições é bastante plausível; **memoizar transformações com efeitos** é tecnicamente viável em blocos pequenos com entradas/saídas completas; **reaplicar o histórico de toda a cidade** requer condições idênticas e tratamento de cada efeito, competição e movimento — nenhuma evidência encontrada sustenta cachear a maioria desses acontecimentos do IndexCities.
+
+**Conclusão atualizada:** priorizar como hipótese técnica **cache local de subrotas e consultas puras**, com invalidação por dependências/versões e fallback, depois **trechos físicos temporais seguros**; experimentar cache de transição com efeitos apenas quando os dados do Core permitirem captura/verificação completas, preservando ordem causal. **Ganhos publicados não são previsão de benchmark do jogo**. O que importa medir é **CPU líquido economizado**, não quantidade de SIMs “em cache”.
+
+**Sem alteração da SPEC ou ARCHITECTURE.**
