@@ -147,6 +147,8 @@ O modelo deve ser validado antes de virar regra de produto. Evitar fórmula arbi
 
 ### Dívida municipal
 
+> **Revisão humana desta subseção: PARCIALMENTE REVISADO.** O responsável aprovou explicitamente a contratação manual (2A, 2026-10-09), registrada na SPEC. Condições quantitativas e consequências de insolvência ainda não foram revisadas.
+
 A dívida municipal faz parte do produto como mecanismo de recuperação de caixa.
 
 Já está decidido:
@@ -160,7 +162,7 @@ Ainda precisa ser decidido:
 - taxa de juros;
 - prazo;
 - consequências de inadimplência;
-- se o empréstimo exige ação explícita do jogador ou pode ser apresentado como ferramenta de emergência.
+- **Decidido em 2026-10-09 (opção 2A):** empréstimo municipal exige ação e confirmação **manual do jogador**, em vez de contratação automática ou aceite por omissão. Ainda em aberto: apresentação da ferramenta, elegibilidade e parâmetros financeiros concretos.
 
 
 ---
