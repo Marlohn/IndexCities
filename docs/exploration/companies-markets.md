@@ -16,9 +16,9 @@ Este arquivo é material de exploração temática. A autoridade do produto cont
 
 ### Lacuna de compatibilidade de categoria na mudança de ramo (2026-10-08)
 
-> **Revisão humana desta subseção: PENDENTE.** A SPEC aprova o jogador escolher uma **categoria geral** (1C) e a empresa trocar de atividade **se categoria e imóvel forem compatíveis** (5A). **Não está definido se uma categoria comercial geral abrange também serviços presenciais**, ou se comércio/revenda e serviços são categorias urbanas distintas.
+> **Revisão humana desta subseção: PARCIALMENTE REVISADO.** Em 2026-10-08, o responsável **aprovou a opção 1A**: a categoria urbana comercial é **ampla e abrange revenda e serviços**, desde que estrutura, porte, acesso e instalações permitam a atividade. A regra está registrada na SPEC; parâmetros e tipos de adaptação continuam em pesquisa.
 
-**Caso concreto que precisa de decisão:** cafeteria → salão de beleza no mesmo imóvel. Podem compartilhar a estrutura visual pequena, mas isso **não prova** que a categoria geral escolhida na construção permita ambos os ramos. Evitar contrariar a promessa de mudança de atividade ou tornar 1C uma classificação complexa demais. Investigar categoria urbana suficientemente ampla, com restrições reais de porte/acesso/instalações, versus categorias excludentes. **Não alterar a SPEC sem aprovação expressa.**
+**Caso concreto agora decidido:** cafeteria → salão de beleza no mesmo imóvel é **permitido pela categoria comercial ampla**, seja por nova empresa ou pela mesma, desde que seja fisicamente viável; adaptar com custos reais quando necessário. **Isso não permite hotel, posto, fábrica ou fazenda em qualquer prédio** nem libera operações sem infraestrutura apropriada. Critérios exatos de adaptação ficam para calibração, sem inventar nova categoria urbana por serviço.
 
 ## Preços próprios de serviços e mudança de ramo sem venda — decisões 3A/5A (2026-10-08)
 
@@ -29,6 +29,14 @@ Este arquivo é material de exploração temática. A autoridade do produto cont
 **Troca de atividade 5A:** a empresa que já possui imóvel pode decidir abandonar um ramo e começar outro **sem vender o prédio nem mudar a identidade econômica**, respeitando categoria urbana, estrutura, demanda e custos reais de adaptação quando necessários. **Não apagar estoque, duplicar ativo, manter faturamento do negócio fechado ou obrigar funcionários a mudar de profissão sem causa.** Sem reforma fictícia quando o edifício serve e sem flutuações incessantes de atividade. Clientes e funcionários só participam de condições reais; venda/transferência/destino de estoque e intervalo sem operação devem ser especificados se necessário antes do código.
 
 **Expansões não presumidas:** esta regra não autoriza automaticamente transformar indústria em comércio, trocar a categoria urbana fixada pelo jogador ou permitir funcionamento de hotel num asset de lojinha. Mudança significativa deve ser uma reação autônoma verificável ao mercado.
+
+---
+
+## Mobilidade voluntária de emprego por SIM já empregado — opção 5B (2026-10-08)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável **aprovou 5B** e a regra já consta na SPEC; cadência, pesos e limites de busca continuam pendentes de calibração.
+
+SIM empregado pode **avaliar ocasionalmente vagas reais melhores**, não apenas após demissão ou mudança de endereço. Compara salário, deslocamento, turnos e preferências, sem escolher automaticamente a vaga com maior dinheiro nem varrer todas as vagas o tempo inteiro. Uma troca efetiva encerra o vínculo anterior antes de ocupar o novo; a empresa antiga perde o trabalhador, podendo contratar substituto segundo caixa e capacidade. Reaproveitar avaliações normais e eventos de oportunidades, não introduzir agente especializado de recrutamento, segundo emprego ou desemprego fictício durante busca.
 
 ---
 
