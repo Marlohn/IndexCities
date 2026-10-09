@@ -33,6 +33,24 @@ Este arquivo é material de exploração temática. Quando houver divergência, 
 
 ---
 
+## Serviços, mobilidade e infraestrutura — rodada 2 aprovada (2026-10-09)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou 2B/3A/4A/5B/6B/7B/8B/9A/10B expressamente. A questão 1 sobre imposto em atraso **NÃO foi decidida**; o prazo de três meses pertence às regras de aluguel, não tributação de imóveis. Parâmetros e detalhes técnicos não foram revisados.
+
+- **2B — estacionamento:** sem vaga no destino, o SIM procura outra vaga real viável nas proximidades e **percorre o restante a pé**; cada vaga tem ocupação física real. **Possível desistência da viagem em casos menores/limites (alternativa C) foi apenas cogitada, NÃO aprovada**: só reavaliar se necessário para performance/realismo.
+- **3A — garagens de ônibus:** jogador constrói estruturas que impõem limite de capacidade de frota; a simulação **distribui ônibus reais disponíveis automaticamente pelas linhas**, sem definir frota manual por linha, comprar ônibus ilimitados ou dispensar equipe e orçamento.
+- **4A — incêndio e reparo:** prédio pode ficar danificado ou inoperante; recuperação exige custos/materiais/tempo/trabalho reais, sem minigame individual e sem adicionar destruição total automática.
+- **5B — prisão lotada:** antes de tratar detenção sem vaga, procurar outra unidade acessível com vaga real e transporte/escolta, sem lotação ou detido fictício.
+- **6B — solar/eólica:** geração varia com dia/noite e condições ambientais agregadas pertinentes, sem meteorologia individual de alta frequência ou suprimento inventado.
+- **7B — aterros e incineradores:** duas estruturas distintas, ambas com capacidade, custo e impactos ambientais reais, sem inventar reciclagem, energia de incineração ou cadeia nova não decidida.
+- **8B — escola por ordem de chegada/solicitação:** **quem solicita matrícula antes ocupa primeiro a vaga efetiva daquela escola**. Se lotou, a família procura outra escola acessível, **ainda que fique mais distante**; não estabelecer preferência por distância na lista de vagas, embora distância influencie a escolha da candidata.
+- **9A — qualificação simples:** escolaridade básica/média/superior influencia elegibilidade/salários, sem classes de profissão no primeiro modelo. **Melhoria futura desejada explicitamente:** profissões e formações específicas; **NÃO aprovada para implantação inicial**.
+- **10B — parques e praças:** visitas reais produzem efeitos de lazer; localização também influencia atratividade imobiliária **regional**, sem criar lotação rígida ou bônus monetário.
+ 
+**Risco central:** cálculos por evento/região para reservar matrículas, encontrar vaga, medir efeitos de parques e atualizar energia; nunca obrigar o jogador a gerir cada SIM, prisão, estudante ou veículo.
+
+---
+
 ## Água e energia: mesma distribuição simplificada e distância secundária (2026-10-09)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável confirmou expressamente **o mesmo comportamento inicial para água e eletricidade**, sem transformar a distância das instalações em uma decisão importante do jogador. A preferência original por atender regiões próximas antes de regiões distantes em escassez continua uma direção qualitativa, agora também para energia. **O modelo agregado com redução regional suave foi aprovado explicitamente em seguida (2026-10-09) e está na SPEC; parâmetros e resultados de performance continuam em calibração/validação, não são promessas.**
@@ -763,9 +781,11 @@ Decidido:
 - capacidade de processamento importa;
 - reciclagem fica fora do escopo inicial.
 
+**Tipos iniciais APROVADOS (7B, 2026-10-09):** aterros sanitários e incineradores, com custos, capacidade e efeitos ambientais diferentes. A escolha entre instalações é do jogador; valores finos continuam para calibração.
+
 Ainda precisa ser definido:
 
-- tipos de instalação iniciais;
+- **catálogo inicial fechado em 7B;** detalhes de porte/custos e operação a calibrar;
 - custos operacionais;
 - impacto ambiental;
 - distância/logística de coleta;
