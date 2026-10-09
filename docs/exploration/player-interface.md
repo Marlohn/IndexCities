@@ -197,6 +197,14 @@ A interface básica, os painéis de explicação de problemas e o acompanhamento
 
 ---
 
+## Água/energia por consumo e política de passagem — decisões 1B/2C (2026-10-08)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável decidiu **cobrança por consumo de água e energia** e **transporte municipal gratuito ou pago à escolha do jogador**. O desenho concreto do painel, valores e modais permanece PENDENTE.
+
+A consulta do orçamento deve diferenciar receitas reais de água/energia e, quando aplicável, tarifas de passageiros efetivos, das despesas reais para manter redes, equipes e frota. **A decisão gratuita/paga é agregada**, sem editar preço por veículo ou confirmar pagamento por SIM. **Não** mostrar renda por ônibus vazio, nem cobrar por consumo inexistente. Informar efeito fiscal e potencial acesso da população, mantendo interface em camadas. A edição manual de preço unitário de água/energia ou do valor da passagem ainda **não foi escolhida**, somente a cobrança por uso e a política gratuita/paga.
+
+---
+
 ## Modelo proposto para a GUI principal
 
 > **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
