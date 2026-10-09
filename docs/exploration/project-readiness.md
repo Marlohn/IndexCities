@@ -211,7 +211,7 @@ O [hub](../EXPLORATION.md) registra 11 documentos temáticos: **9 PARCIALMENTE R
 - **9C turismo:** bate-volta sem hotel ou estadia de vários dias com hospedagem real e pagamento real, sem turistas gerados para ocupar hotéis.
 - **10A patrimônio residencial:** dono do prédio inteiro pode vender um apartamento de cada vez e manter o restante; titularidades e valores não se duplicam; não obriga vender o edifício inteiro nem desalojar moradores por teletransporte. Representação sem duplicidade e áreas comuns são detalhes dependentes.
 - **4C aprovada:** cemitérios com vagas limitadas e crematórios operacionais como alternativa, evitando exigir áreas crescentes de cemitérios. Não gerir túmulos individualmente; reutilização de vagas por prazo continua não aprovada.
-- **8 — crime aberto:** escolher ocorrência com vítima SIM concreta, impacto regional abstrato, ou ambos. **A opção 8C foi aprovada depois pelo responsável.** Se bens/dinheiro forem furtados, a simulação deve respeitar conservação e origem/destino real; número de crimes e efeitos ainda requer decisão.
+- **8C — crime aprovado:** ocorrências podem envolver vítima SIM concreta e impacto agregado na segurança da região; minimizar custo e microgerenciamento. **A opção 8C foi aprovada depois pelo responsável.** Se bens/dinheiro forem furtados, a simulação deve respeitar conservação e origem/destino real; catálogo de crimes e efeitos detalhados são definições posteriores, preservando baixo custo de simulação.
 
 **Coerência e custo:** preservar autonomia de empresas e SIMs, economia conservativa, capacidade real e atualizações por evento. Questões 4/8 não entram na SPEC até haver aprovação específica.
 
