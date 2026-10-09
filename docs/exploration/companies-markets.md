@@ -14,6 +14,20 @@ Este arquivo é material de exploração temática. A autoridade do produto cont
 
 ---
 
+## Proposta de rodada — emprego durante interrupção de realocação (2026-10-08)
+
+> **Revisão humana desta seção: PENDENTE.** Estas são alternativas/recomendação da IA, **não decisões aprovadas**. A SPEC já preserva a identidade da empresa se adquirir o substituto, permite continuidade no endereço antigo enquanto viável e mantém a escolha individual dos funcionários quando o endereço de trabalho efetivamente muda. **Não reabrir esses princípios.**
+
+**Situação:** uma fábrica fica inoperante por dias ou semanas entre a retirada da antiga instalação e o começo da operação nova. A empresa continua existindo, com caixa e obrigações reais. Qual é a regra para vínculos e salários durante essa lacuna?
+
+- **A — vínculo normalmente ativo enquanto a vaga for mantida:** a empresa continua assumindo os custos salariais reais correspondentes, podendo ajustar vagas/equipe gradualmente conforme finanças e demanda pelas regras gerais; não há capacidade produtiva fictícia. Se não puder pagar, consequências financeiras precisam ser determinadas sem inventar pagamento ou resgate. **Recomendação preliminar da IA:** reutiliza o funcionamento econômico comum e evita um regime especial de suspensão para a ferramenta Mover.
+- **B — suspensão temporária do vínculo sem salário:** mantém o empregado ligado à empresa, mas não paga enquanto a instalação não opera. Reduz custo da empresa, porém exige estados e regras novas de suspensão, renda familiar, duração, retorno e concorrência por vagas.
+- **C — encerramento dos vínculos do estabelecimento ao parar:** empregados ficam livres para buscar emprego, com novo recrutamento quando houver abertura. Simplifica estados, mas pode transformar interrupções curtas em demissões em massa e aumentar fricção social e econômica.
+
+**Risco a validar:** A pode acelerar falência em interrupções longas; B cria microgerenciamento interno; C destrói continuidade de emprego por interrupções pequenas. Qualquer escolha deve respeitar um emprego ativo por SIM, dinheiro real, falência, inexistência de trabalho num prédio retirado e reavaliação individual na mudança efetiva de endereço. **Não especificar dívida salarial, suspensão automática ou garantia de recontratação por inferência.**
+
+---
+
 ### Lacuna de compatibilidade de categoria na mudança de ramo (2026-10-08)
 
 > **Revisão humana desta subseção: PARCIALMENTE REVISADO.** Em 2026-10-08, o responsável **aprovou a opção 1A**: a categoria urbana comercial é **ampla e abrange revenda e serviços**, desde que estrutura, porte, acesso e instalações permitam a atividade. A regra está registrada na SPEC; parâmetros e tipos de adaptação continuam em pesquisa.
@@ -97,7 +111,7 @@ São **dez identidades comerciais**, não dez empresas garantidas nem dez modelo
 
 ## Atualização: empresas diferentes com poucos modelos-base (2026-10-08)
 
-> **Revisão humana da seção: PARCIALMENTE REVISADO.** O responsável **aprovou** separar produção, comércio/revenda e prestação de serviços, reutilizar modelos 3D (2B) e **ampliar a diversidade de negócios sobre poucos comportamentos e modelos compartilhados**, contanto que cada atividade tenha demanda, pagamento e consequências reais. A SPEC é a fonte oficial. A **lista e quantidade de negócios**, o **número de modelos-base** e mecanismos específicos por ramo **continuam PENDENTES**; análises da IA nesta seção não estão automaticamente aprovadas.
+> **Revisão humana da seção: PARCIALMENTE REVISADO.** O responsável **aprovou** separar produção, comércio/revenda e prestação de serviços, reutilizar modelos 3D (2B) e **ampliar a diversidade de negócios sobre poucos comportamentos e modelos compartilhados**, contanto que cada atividade tenha demanda, pagamento e consequências reais. A SPEC é a fonte oficial. O **catálogo inicial de dez negócios já está decidido**; a **expansão futura do catálogo**, o **número de modelos-base** e mecanismos próprios de novos ramos **continuam PENDENTES**; análises da IA nesta seção não estão automaticamente aprovadas.
 
 **Três dimensões distintas:** **empresa** é o agente econômico com caixa, trabalhadores, propriedade e decisões; **atividade** é produzir mercadoria física, revender estoque ou prestar atendimento pago (podem coexistir quando especificado); **asset** é a aparência do prédio com lote/acesso/capacidade real. Trocar fachada não pode reiniciar empresa, dinheiro, trabalhadores ou histórico, e trocar o tipo de atividade não ocorre magicamente porque mudou a placa.
 
