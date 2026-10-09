@@ -6,7 +6,7 @@
 >
 > **Fontes canônicas:** [SPEC](../SPEC.md) (produto), [ARCHITECTURE](../ARCHITECTURE.md) (fronteiras técnicas), [AGENTS](../../AGENTS.md) (regras de trabalho); [EXPLORATION](../EXPLORATION.md) (índice). [Pesquisa anterior de escala/calendário](simulation-scale.md) permanece separada; este arquivo aprofunda especificamente **engenharia de simulação**.
 >
-> **Leitura rápida:** ver a [conclusão atualizada](#conclusão-atualizada--o-que-eu-recomendo-agora-para-o-indexcities) ao final. Todas as sugestões abaixo são hipóteses de engenharia, não decisões.
+> **Leitura rápida:** ver a [conclusão da terceira rodada](#conclusão-mais-recente--após-pesquisa-transversal) ao final. As conclusões anteriores são histórico, não recomendação mais recente. Todas as sugestões abaixo são hipóteses de engenharia, não decisões.
 
 ## 1. Problema real e restrições
 
@@ -478,3 +478,30 @@ O limite honesto: cidades densas com incontáveis interações reais custarão C
 **Maior dúvida real pendente de medição:** quantas interações físicas por segundo simulado ocorrerão no pico de tráfego exigido pelo IndexCities e **quanto custam no hardware real do jogador**, comparadas com a carga econômica? Até responder, não existe base técnica para escolher “um motor excepcionalmente rápido” definitivo nem prometer 100x.
 
 **Decisão de produto não solicitada, portanto não tomada.** Esta pesquisa não é autorização de implementação de recurso novo. **Status: PENDENTE de revisão humana.**
+
+
+## 10. Síntese da terceira rodada — pesquisa transversal (2026-10-09)
+
+> **Revisão humana desta seção: PENDENTE.** Pesquisa nova, não requisito nem arquitetura aprovada. A investigação foi guardada em documento **complementar separado** para não transformar este arquivo em monólito: **[Técnicas de outros domínios — evidências, riscos e recomendação](simulation-engine-cross-domain-research.md)**.
+
+**O que foi pesquisado além de jogos de cidade:** **LAMMPS, EDMD** (física molecular); **SUNDIALS** (integração numérica e detecção de limiares); **Box2D** (corpos adormecidos e IDs); **ns-3, SimPy, SimGrid, ROSS** (eventos, filas, recursos e paralelismo); **Drools Phreak, Materialize, SQLite, FoundationDB** (regras incrementais, índices, dinheiro atômico e simulação determinística); **Noita, Performance Fish, OpenTTD e GAMA** (outros jogos e agentes); **FLAME GPU 2, RVO2-CS, .NET PGO e SUMO TraCI/Libsumo** (GPU, multidões, compiladores e limites de integração), além de relatos e vídeos de desenvolvedores.
+
+**Cinco conclusões novas ou reforçadas pela evidência:**
+
+1. **Descoberta de vizinhos pode ser um gargalo próprio:** LAMMPS reconstrói lista de pares somente após deslocamento que invalida uma margem de segurança. Inspirar um índice de veículos/pedestres e dependências **com limite de validade**, não busca global a cada tick. [LAMMPS](https://docs.lammps.org/Developer_par_neigh.html).
+2. **Cálculo até o próximo conflito é modelo científico real:** EDMD de esferas rígidas agenda colisões; SUNDIALS detecta cruzamento de limiar. A **combinação para veículos/indústria do IndexCities é hipótese inédita, não validada**. [EDMD](https://github.com/FSmallenburg/EDMD), [SUNDIALS](https://sundials.readthedocs.io/en/v6.1.0/cvode/Mathematics_link.html).
+3. **A economia pode ganhar mais com índices incrementais que com IA paralela:** Materialize atualiza resultados derivados quando dados mudam; Drools adia avaliações, **mas também documenta situações em que a ordem muda** — pagamentos, compra/estoque e disputa por vaga exigem confirmação na ordem correta. [Materialize](https://materialize.com/docs/fundamentals/concepts/arrangements/), [Drools](https://docs.drools.org/6.5.0.Final/drools-docs/html/ch07.html).
+4. **GPU pode perder para o custo de comunicação:** no benchmark oficial SUMO (Bologna, 9k veículos, 5k passos), a execução sem TraCI levou 8 s; consultas simples por posição via TraCI 90 s, e subscrições 42 s. Não são números extrapoláveis a IndexCities, mas mostram que a interface entre núcleos importa tanto quanto a velocidade de cada um. [SUMO](https://sumo.dlr.de/docs/TraCI/).
+5. **A validação de causalidade pode ser tratada com seriedade de banco distribuído:** FoundationDB roda código real em tempo virtual determinístico e reproduz falhas. Preferir execução e comparação de cidades iguais em seeds/comandos, invariantes de moeda, carga, estoque, faixas e empregos, com eventos e cancelamentos auditáveis. [FoundationDB](https://apple.github.io/foundationdb/testing.html).
+
+**A alternativa de maior potencial que esta rodada acrescenta:** **horizonte conservador de validade causal**, inspirado por técnicas de física molecular e de detecção de limites. Para cada trajetória/atividade estável, identificar o **primeiro instante em que algo pode mudar** ou uma dependência tornar a previsão inválida; só integrar o intervalo enquanto for comprovadamente seguro. Para congestionamentos e interações densas sem horizonte útil, usar processamento físico detalhado (CPU/GPU) **sem retirar acontecimentos reais**. **Não é solução pronta, desempenho comprovado ou nova regra de produto**.
+
+## Conclusão mais recente — após pesquisa transversal
+
+> **Revisão humana: PENDENTE.** Recomendação atual da IA, superando em prioridade as avaliações históricas mais acima. Não altera SPEC ou ARCHITECTURE.
+
+**O que eu faria:** manter o **Simulation Core C# com um relógio e uma ordem causal**, eventos e estados individuais persistentes; priorizar **índices de vizinhança/dependências que se invalidam corretamente**; investigar **horizontes de validade** para movimentação e produção; resolver partes imprevisíveis com física microscópica suficiente; organizar economia como decisões individuais sobre consultas incrementais com **transferências reais e atômicas**.
+
+**GPU permanece candidata séria somente para mobilidade se profiling integrado mostrar ganho líquido.** Não substituir o núcleo pelo MOSS, por servidor externo, por um banco, por framework de IA/regras, nem por tráfego agregado. Não criar POC setorial obrigatória, não mudar regras aprovadas, não desligar agentes fora da câmera e não prometer velocidade extrema sem teste.
+
+**Conclusão da rodada:** agora considero **evitar a descoberta e o recálculo repetidos de interações** uma oportunidade **mais transversal e potencialmente maior** do que apenas “colocar SIMs em GPU”. O horizonte de causalidade pode ser o maior diferencial **se** os custos de invalidação forem menores que os cálculos poupados. A hipótese central ainda precisa ser refutada/validada com carga de tráfego, produção e consumidores reais. A documentação detalhada e as fontes estão no [estudo transversal](simulation-engine-cross-domain-research.md).
