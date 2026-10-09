@@ -17,6 +17,32 @@ Este arquivo é material de exploração temática. Quando houver divergência, 
 
 ---
 
+## Propostas de rodada pendentes — serviços municipais e finanças (2026-10-08)
+
+> **Revisão humana desta seção: PENDENTE.** Alternativas e recomendações elaboradas pela IA, **não aprovadas pelo responsável**; não modificam regras da SPEC. Não reabrir tarifa automática (2B), cobrança por consumo real (1B), dívida residencial sem corte (3B), nem o foco do jogador em capacidade de água/energia.
+
+### Inadimplência empresarial em água e energia
+
+**Situação:** uma fábrica segue consumindo energia, mas não tem caixa para quitar a fatura municipal. A SPEC já determina que empresas pagam por consumo real, e deixa esta inadimplência específica em aberto.
+
+- **A — dívida empresarial real sem corte por fatura isolada:** o valor não pago permanece como obrigação com o Caixa da Cidade, comprometendo o resultado/solvência da empresa e podendo culminar no encerramento pelas regras gerais; a prefeitura não registra receita inexistente. **Recomendação preliminar da IA:** evita sistema novo de suspensão/restabelecimento por empresa e usa insolvência já existente; requer que a dívida influencie realmente sua viabilidade, sem serviço eternamente gratuito.
+- **B — dívida e corte do fornecimento por inadimplência persistente:** após prazo de tolerância, o estabelecimento perde fornecimento e capacidade produtiva até regularização. Consequência diretamente visível, mas exige regra de prazo, religação, pagamento parcial, ordem de corte e mais estados internos.
+- **C — cobrança antecipada/prepaga para empresa:** falta de saldo impede consumo futuro. Evita dívida crescente, mas antecipa transações, modifica o fluxo aprovado de cobrança por consumo efetivo e pode interromper produção abruptamente.
+
+**Risco:** A pode esconder empresas inviáveis se os débitos não afetarem insolvência; B/C multiplicam casos de operação e transições. Em qualquer alternativa, escassez física de geração continua separada de inadimplência, sem criar nem destruir dinheiro ou energia.
+
+### Política salarial dos trabalhadores municipais
+
+**Situação:** escola/hospital/serviço de água precisa contratar SIMs reais, enquanto empresas privadas disputam esses mesmos trabalhadores. A SPEC aprova salários públicos pagos pelo Caixa e salários privados adaptativos, mas **não define a política de salário público**.
+
+- **A — remuneração municipal ajustada automaticamente:** valor de referência reage de modo gradual à dificuldade real de contratar/reter, às alternativas de emprego e aos recursos do Caixa. **Recomendação preliminar da IA:** evita gerenciamento de folhas por serviço e preserva concorrência real; exige limites/diagnóstico para não crescer automaticamente além do orçamento.
+- **B — política salarial agregada escolhida pelo jogador:** um controle geral (por exemplo, econômica/equilibrada/competitiva) influencia salários municipais, contratação e custos. Cria uma alavanca fiscal estratégica, mas é mais uma obrigação de administração e requer retorno claro da interface.
+- **C — salários estáveis por tipo de serviço:** valores de referência pouco adaptativos e calibrados. Previsível e barato de simular, mas pode manter serviços sem funcionários mesmo havendo recursos para competir no mercado.
+
+**Risco:** salários não podem atrair funcionários fictícios nem permitir pagamento sem caixa. Qualquer política preserva um emprego por SIM, vagas reais, turnos e impactos orçamentários. Não definir salários municipais pela política privada sem decisão explícita.
+
+---
+
 ## Capacidade hospitalar e equipe médica
 
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
