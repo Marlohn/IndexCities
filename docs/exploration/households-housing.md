@@ -14,6 +14,14 @@ Este arquivo é material de exploração temática. A autoridade do produto cont
 
 ---
 
+## Água e energia como despesas domésticas efetivas — opção 1B (2026-10-08)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou pagamento familiar por consumo real de água e eletricidade ao Caixa municipal; este trecho apenas relaciona essa regra à economia familiar, sem definir devedor contratual em casos especiais ou política de inadimplência.
+
+Famílias/SIMs responsáveis têm despesas de água e energia proporcionais ao consumo físico agregado do imóvel, **sem cobrança de recursos inexistentes**. O dinheiro circula entre saldos reais e o **Caixa da Cidade**. Isso é distinto dos **aluguéis ao proprietário** e dos impostos sobre imóveis privados; não somar cobranças duplicadas. A forma exata de cobrar numa residência com locação ou múltiplos moradores, preço e consequências por falta de saldo ainda carecem de especificação/calibração quando relevantes. Não criar cobrança de esgoto/lixo por analogia.
+
+---
+
 ## Dinheiro, renda familiar e consumo
 
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
