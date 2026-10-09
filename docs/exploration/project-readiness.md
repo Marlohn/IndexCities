@@ -199,6 +199,24 @@ O [hub](../EXPLORATION.md) registra 11 documentos temáticos: **9 PARCIALMENTE R
 
 ---
 
+### Rodada de mobilidade, economia e propriedade — 2026-10-09
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou **1B, 2A, 3A+B, 5A, 6A, 7A, 9C, 10A**; **4 (capacidade de cemitérios) e 8 (crimes com vítimas e efeitos regionais) seguem ABERTAS** para explicação/reflexão. A consolidação da IA e parâmetros de implementação não foram revisados integralmente.
+
+- **1B táxis:** empresas privadas com frota física e SIMs empregados, pagamentos por viagens reais; preço, operação e atribuição de viagem ainda exigem regra proporcional.
+- **2A bicicleta:** SIM compra patrimônio individual com dinheiro e oferta real; aluguel/compartilhamento público não aprovado.
+- **3A+B estacionamento:** vagas de rua e privadas mais estacionamento **municipal de superfície construído pelo jogador**. Adoção de cobrança no estacionamento municipal é decisão distinta ainda em aberto, sem transpor tarifa do ônibus. Edifícios-garagem não aprovados.
+- **5A/6A automóveis:** usar insumos agregados já existentes (como aço), energia e trabalho, sem nova cadeia de motores/pneus/peças; compradores preferem oferta local quando econômica e logisticamente semelhante à importação, sem exclusividade. **Evolução futura de cadeias de produtos** anotada, não aprovada agora.
+- **7A ensino superior + trabalho:** possível quando jornadas, aulas e deslocamentos são viáveis, preservando **um emprego ativo** e presença física real.
+- **9C turismo:** bate-volta sem hotel ou estadia de vários dias com hospedagem real e pagamento real, sem turistas gerados para ocupar hotéis.
+- **10A patrimônio residencial:** dono do prédio inteiro pode vender um apartamento de cada vez e manter o restante; titularidades e valores não se duplicam; não obriga vender o edifício inteiro nem desalojar moradores por teletransporte. Representação sem duplicidade e áreas comuns são detalhes dependentes.
+- **4 — cemitério aberto:** escolher entre capacidade finita de sepultamentos, capacidade só operacional, ou cemitério finito com crematório; explicar efeitos de saturação e evitar inventário de cada túmulo. Reuso futuro de sepulturas é hipótese não aprovada.
+- **8 — crime aberto:** escolher ocorrência com vítima SIM concreta, impacto regional abstrato, ou ambos. **A IA sugeriu ambos, mas não houve aprovação.** Se bens/dinheiro forem furtados, a simulação deve respeitar conservação e origem/destino real; número de crimes e efeitos ainda requer decisão.
+
+**Coerência e custo:** preservar autonomia de empresas e SIMs, economia conservativa, capacidade real e atualizações por evento. Questões 4/8 não entram na SPEC até haver aprovação específica.
+
+---
+
 ### Rodada seguinte — energia, saúde, táxis e fábrica de automóveis (2026-10-09)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou 1A, 2A com a ressalva de uso de transporte próprio, 3A, 4A, 5A, a **priorização de táxis na questão 6**, 7A, 8C e 10A. **Pergunta 9 foi aprovada posteriormente como 9A: sem manutenção adicional por vacância.** Detalhes operacionais não foram revisados integralmente; regras oficiais constam na SPEC.
