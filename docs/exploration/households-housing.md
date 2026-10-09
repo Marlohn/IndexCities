@@ -313,7 +313,7 @@ Enquanto um imóvel residencial estiver em propriedade privada:
 
 Ainda abertos:
 - percentual de aluguel, dia de vencimento da cobrança **mensal** e parâmetros do cálculo do valor de mercado (preço de venda já definido como igual à avaliação);
-- prioridade de herdeiros elegíveis;
+- **Classes de herdeiros já aprovadas (3B):** cônjuge/filhos, depois pais/irmãos. **Partilha entre vários elegíveis, moradia e imóvel indivisível permanecem PENDENTES**, ver investigação de herança acima;
 - **Resolvido pela opção 2C em 2026-10-09:** propriedade integral do edifício ou por apartamentos individuais, com vários imóveis por SIM conforme capacidade financeira. **A definir:** representação/transação sem titularidade dupla e custos comuns;
 - detalhes de revenda e custos recorrentes quando forem necessários.
 
