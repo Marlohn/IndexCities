@@ -60,6 +60,22 @@ A regra de profundidade continua a mesma: só detalhar quando isso gerar consequ
 
 **Continuidade operacional condicionada agora aprovada na SPEC (opção C):** quando uma escola, hospital ou outro serviço municipal for realocado, seu prédio antigo **pode continuar prestando o serviço** enquanto existir, funcionar e não precisar liberar a área da intervenção; se a retirada antecipada for necessária, o atendimento/capacidade daquele endereço é interrompido. A nova estrutura exige obra e condições reais, sem transferência física instantânea nem serviço garantido só porque o destino foi escolhido. **Continuidade institucional agora decidida na SPEC (opção C, 2026-10-08):** escola, hospital e demais serviços municipais permanecem sendo a mesma instituição durante a realocação, sem recriação institucional ou compra privada; capacidade e atendimento só existem onde estrutura, funcionários, acesso e recursos de fato permitirem. Vínculos/vagas seguem válidos apenas se realmente existirem; funcionários reavaliam individualmente quando o endereço de trabalho mudar. **Em aberto, sem autorização para suposição:** tratamento particular de vagas/salários nas paralisações prolongadas, capacidade de atendimento temporário, destino operacional fino dos suprimentos e eventual logística de equipamentos não especificados e critérios finos de transição. A recuperação automática de estoques físicos quando viável e perda do remanescente na retirada inevitável, sem nova indenização ou capacidade fictícia, seguem a SPEC e não exigem novas regras de mercado para serviços públicos. Continuidade institucional não garante operação ininterrupta nem serviço fictício.
 
+## Cobrança de serviços municipais e opção de tarifa de transporte (2026-10-08)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** As opções **1B para água/energia** e **2C para transporte público** foram aprovadas pelo responsável e registradas na SPEC. Preços, cobrança concreta, inadimplência e modalidades são detalhes ainda não definidos/calibrados, não autorizados por esta pesquisa.
+
+**Água/energia 1B:** domicílios e empresas devem pagar **proporcionalmente ao consumo real dos sistemas municipais**, por transferências de dinheiro existente **ao Caixa da Cidade**, com apuração agregada e sem microgerenciar medidores. Isso não transforma água ou eletricidade em mercadoria estocável por SIM, não isenta a prefeitura de custos de operação nem estabelece cobrança adicional para lixo/esgoto por inferência. **Preço unitário, periodicidade, quem paga numa locação e consequências de falta de dinheiro precisam permanecer coerentes com a SPEC e serem decididos/calibrados sem inventar juros ou corte imediato.**
+
+**Transporte público 2C:** a prefeitura/jogador define **gratuito versus pago** para o transporte municipal, em controle agregado; serviço grátis continua consumindo dinheiro e recursos reais. No regime pago, receita decorre **somente de passageiros/viagens efetivas** e transfere dinheiro do SIM ao Caixa, não do veículo vazio. A política pode mudar a escolha de rota/meio de viagem por acessibilidade e custo; **valor exato, cobrança e passageiros sem saldo** não foram decididos. Não assumir automaticamente tarifa para prestadores privados ou modais fora da prefeitura.
+
+## Um vínculo empregatício ativo por SIM — opção 4A (2026-10-08)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou **um emprego ativo por SIM na versão inicial** e solicitou **guardar a possibilidade de dois empregos como melhoria futura**, não requisito.
+
+SIM pode aceitar uma única vaga ativa por vez; vínculos de empresas locais, serviços públicos e trabalho fora da cidade respeitam o limite, sem pagamento duplicado nem turnos simultâneos. Mudança de empregador requer encerrar vínculo anterior. A hipótese de **dois empregos conciliados por turno, disponibilidade e deslocamento** é **PENDENTE para evolução futura**, avaliando impactos sobre descanso, rotinas, calendário ainda em pesquisa e performance — **não desenvolver antecipadamente**.
+
+---
+
 ## Contratação gradual sujeita ao porte do estabelecimento — opção 2B (2026-10-08)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou contratação e redução gradual pela demanda, com **teto físico de pessoal segundo o tamanho/capacidade do negócio**. Parâmetros exatos permanecem para calibração.
