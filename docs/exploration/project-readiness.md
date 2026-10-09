@@ -210,7 +210,7 @@ O [hub](../EXPLORATION.md) registra 11 documentos temáticos: **9 PARCIALMENTE R
 - **7A ensino superior + trabalho:** possível quando jornadas, aulas e deslocamentos são viáveis, preservando **um emprego ativo** e presença física real.
 - **9C turismo:** bate-volta sem hotel ou estadia de vários dias com hospedagem real e pagamento real, sem turistas gerados para ocupar hotéis.
 - **10A patrimônio residencial:** dono do prédio inteiro pode vender um apartamento de cada vez e manter o restante; titularidades e valores não se duplicam; não obriga vender o edifício inteiro nem desalojar moradores por teletransporte. Representação sem duplicidade e áreas comuns são detalhes dependentes.
-- **4 — cemitério aberto:** escolher entre capacidade finita de sepultamentos, capacidade só operacional, ou cemitério finito com crematório; explicar efeitos de saturação e evitar inventário de cada túmulo. Reuso futuro de sepulturas é hipótese não aprovada.
+- **4C aprovada:** cemitérios com vagas limitadas e crematórios operacionais como alternativa, evitando exigir áreas crescentes de cemitérios. Não gerir túmulos individualmente; reutilização de vagas por prazo continua não aprovada.
 - **8 — crime aberto:** escolher ocorrência com vítima SIM concreta, impacto regional abstrato, ou ambos. **A IA sugeriu ambos, mas não houve aprovação.** Se bens/dinheiro forem furtados, a simulação deve respeitar conservação e origem/destino real; número de crimes e efeitos ainda requer decisão.
 
 **Coerência e custo:** preservar autonomia de empresas e SIMs, economia conservativa, capacidade real e atualizações por evento. Questões 4/8 não entram na SPEC até haver aprovação específica.
