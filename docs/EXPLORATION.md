@@ -39,6 +39,19 @@ Auditoria reconciliada em **2026-10-07** com o histórico de conversas disponív
 - **IA para decisões, simulação e desenvolvimento** — revisão humana: **PENDENTE**; pesquisa concluída para a fase atual; Jev/Laya não são recomendados no core por performance nem como camada geral do workflow: [`exploration/ai-decision-systems.md`](exploration/ai-decision-systems.md).
 - **Processo de desenvolvimento e documentação** — revisão humana: **PARCIALMENTE REVISADO**; decidido para a fase atual; **SPEC viva obrigatória antes e durante todo desenvolvimento (features, bugs e manutenção)**, com lacunas decididas pelo responsável antes do código; primeira entrega/validação globais, sem POCs setoriais obrigatórias. Contém referência externa nova **PENDENTE**. Histórico: [`exploration/development-process.md`](exploration/development-process.md); regras vigentes em `AGENTS.md`.
 
+## Decisões adicionais de 2026-10-09 — infraestrutura e acesso
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou explicitamente 2B, 3A, 4A, 5B, 6B, 7B, 8B, 9A e 10B nesta rodada. A pergunta 1 (inadimplência de imposto imobiliário) **permanece PENDENTE**: os três meses aprovados são de aluguel/desocupação, não de tributo. Detalhes de calibração e soluções técnicas continuam não revistos integralmente.
+
+- **Mobilidade e segurança:** SIM procura vaga alternativa e caminha ao destino (2B); garagem construída pelo jogador limita frota real, distribuída automaticamente pelas linhas de ônibus (3A); incêndio pode danificar/interromper operação de edifício e requer recuperação com recursos reais (4A); prisão lotada busca outra unidade viável (5B).
+- **Infraestrutura:** geração solar/eólica varia simplificadamente com dia/noite e condições pertinentes (6B); aterros sanitários e incineradores são alternativas iniciais com custos, capacidade e impactos próprios (7B).
+- **Cidadãos e cidade:** matrícula em escola é **por ordem de solicitação**, sem prioridade por proximidade; se lotar, procurar outra acessível, mesmo distante (8B). Escolaridade por níveis simples (9A), com **profissões específicas desejadas somente para evolução futura, NÃO aprovadas agora**. Parques e praças geram visitas reais e efeito de atratividade imobiliária regional (10B).
+- **Hipótese não aprovada:** desistência de viagem de carro em casos-limite sem vaga (variante C de estacionamento) foi cogitada, não definida. Não criar exceções antes de evidência de necessidade.
+
+Referências: [SPEC](SPEC.md), [serviços e infraestrutura](exploration/city-systems.md), [mercados, profissões futuras e tributação pendente](exploration/companies-markets.md).
+
+---
+
 ## Regra de autoridade
 
 Documentos em `docs/exploration/` **não são requisitos por si só**.
