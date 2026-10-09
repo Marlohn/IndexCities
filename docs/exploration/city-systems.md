@@ -66,12 +66,26 @@ Este arquivo é material de exploração temática. Quando houver divergência, 
 
 ---
 
+## Escolha de serviços próximos com rotas reais — decisão 1C (2026-10-09)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou expressamente a opção C para a escolha de serviços pelos SIMs; filtros, ampliação da busca e critérios finos continuam para calibração.
+
+**Decidido na SPEC:** a simulação encontra um **conjunto reduzido de unidades potencialmente acessíveis por proximidade** e então considera trajetos/tempos reais, capacidade, acesso e disponibilidade. A área de influência não é um corte absoluto; se as candidatas inicialmente próximas não servirem, a busca pode alcançar alternativas mais distantes. Usar eventos, filtros espaciais e rotas existentes, **sem comparar todas as unidades para todos os cidadãos a cada frame**. Não substituir matrícula escolar, trajeto individual nem capacidade real por bônus abstrato; não estender a regra ao despacho de bombeiros/polícia sem escolha específica.
+
+## Hospital lotado: buscar alternativa e aguardar atendimento viável — decisão 5A (2026-10-09)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou A e destacou o valor de alertas de lotação para o gameplay. Espera física detalhada/filas visuais, triagem e parâmetros médicos específicos não foram decididos.
+
+**Decidido na SPEC:** SIM com necessidade real de saúde **procura hospital acessível com capacidade disponível** quando a primeira unidade estiver saturada. Sem alternativa, pode aguardar, com consequências reais da demora e diagnóstico/alerta **agregado de lotação/espera persistente**; não criar atendimento ou viagem fictícios. O tempo, gravidade, periodicidade e capacidade por equipe são calibração/definição proporcional. **Nenhuma fila individual renderizada é obrigatória** apenas por haver espera real.
+
+---
+
 ## Capacidade hospitalar e equipe médica
 
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
 
 
-**Status:** em exploração; existência de funcionários reais e capacidade real já está decidida na SPEC.
+**Status:** em exploração; existência de funcionários e capacidade reais já está decidida na SPEC, assim como escolha eficiente de unidades próximas (1C) e reação a hospital lotado (5A). A possível divisão em médicos/enfermeiros/especialidades continua não aprovada (a SPEC atual não exige cargos profissionais formais).
 
 A direção mais coerente é evitar um hospital com capacidade puramente abstrata.
 
@@ -502,7 +516,7 @@ Se no futuro restrições de horário gerarem gameplay útil, elas podem ser rea
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
 
 
-**Status revisado:** filas físicas detalhadas continuam futuras; **horários básicos de funcionamento já foram aprovados posteriormente como opção 1A na SPEC**. A indicação histórica de adiamento não se aplica mais aos horários.
+**Status revisado:** filas físicas detalhadas continuam futuras; **horários básicos 1A** e **busca de hospital alternativo/espera real com aviso agregado 5A (2026-10-09)** constam na SPEC. Espera real por capacidade não obriga simular graficamente uma fila física longa.
 
 ### Filas físicas em comércio e saúde
 
@@ -757,10 +771,9 @@ Isso permite calibrar o sistema sem transformar uma interrupção momentânea em
 
 ## Alcance, influência e escolha de serviços
 
-> **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou o **modelo híbrido de busca curta por proximidade + escolha por tempo de rota, disponibilidade e capacidade (1C, 2026-10-09)**. As alternativas históricas e uso de círculos apenas decorativos seguem propostas não revistas integralmente.
 
-
-**Status:** em pesquisa; não é uma regra fechada de produto.
+**Status:** princípio de escolha decidido na SPEC; filtros e UI exatos continuam para calibração.
 
 A discussão anterior sobre "não usar círculo de influência" foi fechada cedo demais e fica corrigida aqui.
 
@@ -778,6 +791,6 @@ Modelos a comparar:
 3. **Custo de viagem** — escolha baseada em tempo/distância real de rota.
 4. **Modelo híbrido** — raio para UI/diagnóstico + custo de viagem/capacidade para decisão real.
 
-A decisão deve vir de pesquisa, protótipo e legibilidade para o jogador. Não assumir que "fora do círculo ninguém vem".
+**Opção 1C aprovada posteriormente (2026-10-09):** o filtro espacial rápido gera poucos candidatos e a avaliação real usa rotas, acessibilidade e capacidade; expandir candidatos quando não houver opção viável. O círculo não é bloqueio rígido. Não abrir decisão de raio vs caminho de novo por causa deste histórico; calibração e visualização seguem em exploração.
 
 ---
