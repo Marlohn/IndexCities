@@ -210,6 +210,18 @@ Ainda precisa ser pesquisado/calibrado:
 
 ---
 
+## Fábrica de automóveis local e comércio exterior ampliado — rodada de 2026-10-09
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou expressamente **8C — veículos importados e também fabricados localmente** e destacou o desejo de **ver uma fábrica de automóveis funcional na cidade**. Também pediu documentar **comércio exterior mais abrangente sobre tudo como melhoria futura, NÃO para agora**. Fórmulas, lista de insumos e interface de comércio não foram revisadas nem viraram requisitos.
+
+**Produto já aprovado na SPEC:** o abastecimento inicial de carros particulares e ônibus pode vir da conexão exterior com veículos reais entregues e dinheiro existente. **Fábricas de automóveis da cidade** podem produzir carros quando empresas privadas reais tiverem instalações compatíveis, pessoal, insumos, capacidade, mercado e recursos. Quando houver indústria apropriada também poderá haver fornecimento local de ônibus, sem exigir fábrica própria obrigatória antes de qualquer veículo. Produzir/adquirir não equivale a aparecer magicamente na rua: cada veículo real precisa ter origem física, venda/aquisição e destino/uso. A atividade industrial segue **empresa autônoma** e mercado real, sem controle manual de pedidos ou produção pelo jogador. Veículos são ativos físicos identificáveis; **não converter uma fábrica em geradora infinita de carros ou criar catálogo de peças/SKUs por antecipação**. As dez atividades de comércio/serviços não excluem indústrias e não são alteradas por criar o ramo automobilístico.
+
+**Lacunas proporcionais da produção automobilística:** insumos agregados mínimos, relação com materiais existentes, custo de fabricação, preço de compra/revenda, logística de transporte de veículos prontos, relação com garagem/uso, estoque real sem duplicação e possibilidade física de produção local de ônibus. Resolver quando for implementar, sem amarrar a decisão a novo mercado de concessionárias, fábrica municipal, cargos especializados ou inúmeras cadeias derivadas.
+
+**Melhoria futura desejada, ainda NÃO aprovada como produto atual:** aprofundar o **comércio exterior abrangendo muitos outros produtos/setores** e eventuais opções de interação econômica externa. **Não confundir isso com os fluxos já aprovados de importação/exportação física** para categorias concretas nem com a importação de carros/ônibus decidida em 8C. Não inventar tarifas, tratados, taxas aduaneiras, mercado mundial paralelo, livre comércio irrestrito ou comércio de eletricidade nesta rodada.
+
+---
+
 ## Importação externa e preços iniciais
 
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
