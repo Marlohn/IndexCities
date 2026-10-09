@@ -139,6 +139,43 @@ Medir **legibilidade de viagens, taxas de transações/consumo, tempo de espera 
 
 **Recomendação histórica da IA (PENDENTE; escolha adiada pela pesquisa independente do responsável):** uma linha temporal de eventos causalmente consistente é desejável; **isso não obriga que calendário, visualização e envelhecimento compartilhem a mesma razão de aceleração**. Manter o modelo final aberto até observação conjunta de gameplay e economia. **Confiança alta** na necessidade de calibração e invariantes; **moderada/baixa** na escolha de um modelo vencedor sem medição.
 
+#### Hipótese D — calendário convencional e avanço temporal estratégico (2026-10-08)
+
+> **Revisão humana desta subseção: PENDENTE — ideia documentada a pedido do responsável, mas expressamente NÃO DECIDIDA e sujeita a novas rodadas de pesquisa.** Não converter esta proposta em requisito, plano de implementação, velocidade extra, nova modalidade de jogo ou preferência definitiva.
+
+**Motivação:** o responsável expressou preocupação com a estranheza de um calendário ficcional de poucos dias por mês. A reflexão seguinte questionou uma premissa anterior: **a SPEC determina nascimentos, envelhecimento e ciclo de vida, mas não exige que o jogador observe uma geração inteira em algumas dezenas de horas**. Acelerar toda a economia para alcançar esse objetivo talvez seja otimizar a variável errada.
+
+**Hipótese combinada (D), composta por possibilidades independentes e ainda não aprovadas:**
+
+1. **Calendário familiar/convencional:** estudar dias de 24 horas, meses e anos reconhecíveis (potencialmente próximos ao calendário terrestre), com um relógio lógico causal para acontecimentos operacionais, econômicos e demográficos. **Não** é decisão de usar 365 dias por ano nem duração fixa de dia real; o custo de um ano longo permanece central.
+2. **Migração com idades variadas:** estudar entradas voluntárias de famílias com crianças, adultos em idades distintas e idosos, para criar estrutura etária e necessidades variadas **sem acelerar artificialmente o crescimento de uma criança nascida na cidade**. A **migração de agentes reais** já é aprovada na SPEC; **a distribuição etária de candidatos, a composição concreta das coortes e qualquer política para favorecer diversidade ainda NÃO foram aprovadas**. Continuam obrigatórios oportunidade plausível, vontade do agente, moradia/condições e capital real transferido da Reserva Global; não gerar moradores fictícios nem garantir imigração.
+3. **Avanço temporal estratégico opcional:** explorar avançar a simulação até uma data ou condição observável enquanto o jogador não precisa assistir a cada frame, como alternativa ao acompanhamento normal. **Não é salto de data**: ações de SIMs, deslocamentos e cargas, consumo, produção, pagamentos, restrições, falhas, contratação e decisões autônomas devem continuar causalmente consistentes, com estados reais e sem teletransporte. Uma eventual interrupção em acontecimento importante precisaria critérios e frequência cuidadosos para **não transformar o jogo em alarmes ou cliques repetitivos**. A interface, ações "próximo mês/fim da obra" e modo adicional **não são aprovados**.
+4. **Histórias de curto/médio prazo:** investigar se mudança de emprego, moradia, família, falência de empresas, serviços e bairros já fornecem histórias emergentes em meses/anos, **sem obrigar que nascimento → vida adulta → velhice ocorra durante uma sessão**. Não inventar missões nem acontecimentos roteirizados só para entreter.
+
+**O que esta hipótese realmente resolve — e o que NÃO resolve:**
+
+| Questão | Potencial | Limite não resolvido |
+| --- | --- | --- |
+| Naturalidade de datas | Dias, meses, vencimentos e aniversários familiares são mais intuitivos | Tempo real do jogador por mês/ano pode continuar excessivo |
+| Sensação de cidade viva | Agentes migrantes em idades variadas e trajetórias pessoais produzem acontecimentos desde cedo | Não acelera a maturação real dos recém-nascidos, nem garante chegada de novos moradores |
+| Espera percebida | Jogador poderia não assistir a todos os movimentos durante avanços longos | A simulação integrada continua fazendo trabalho real; **anos em segundos são hipótese sem benchmark**, não promessa |
+| Coerência monetária e logística | Em princípio, preserva as mesmas transações e relações causais em ambos os modos | Otimizar viagens, estoques e operações não pode fabricar transações ou suprimir gargalos |
+| Desempenho e save | Arquitetura já separa tick/renderização, permite scheduler e headless | Isso **não** prova avanço arbitrariamente rápido; eventos de muitos SIMs/veículos podem limitar muito a aceleração |
+
+**Compatibilidade com autoridade existente:** a SPEC só aprova **pause e velocidades 1/2/3**, com parâmetros configuráveis; o avanço estratégico seria **funcionalidade adicional** e exigiria aprovação antes de implementação. A ARCHITECTURE já prevê simulação desacoplada do render, scheduler e headless — **capacidade técnica, não autorização de gameplay nem garantia de performance**. A SPEC ainda determina aluguéis mensais, reajustes anuais, dívidas com prazos, trabalho presencial, estoque doméstico, produção, salários e oferta monetária fixa. D deve preservar essas invariantes.
+
+**Relação com propostas anteriores:** A (calendário único condensado, inclusive variantes de meses muito curtos), B (dia representativo de um período maior) e C (relógios histórico/demográfico e operacional separados) **permanecem abertas**. D **não vence nem substitui** A/B/C por ter sido descrita por último. A antiga indicação de comparar “A e B primeiro” é **recomendação histórica da IA**, não prioridade obrigatória da pesquisa após incluir D; não avançar automaticamente para uma escolha final.
+
+**Próximas rodadas de pesquisa — questões que realmente discriminam propostas:**
+- **Objetivo de tempo percebido:** para o jogador, o essencial é acompanhar **rotinas diárias**, a evolução da **cidade em anos**, ou uma **vida individual completa**? Precisamos de experiências de referência e cenários comparáveis antes de estipular duração.
+- **Viabilidade real do avanço:** quantos eventos, deslocamentos, transações, pathfindings, alterações de estoque e mudanças de emprego ocorrem num mês com população crescente? Qual aceleração sustentável um benchmark headless integrado demonstra? Onde aparecem backlog, quedas de desempenho e perda de legibilidade?
+- **Preservação da história causal:** avançar um mês com e sem renderização/visualização gera resultados compatíveis para dinheiro, mercadorias, vidas dos SIMs e saves? Se usar agrupamento fora da câmera, o que continua fisicamente rastreável?
+- **Risco de interação:** quando parar automaticamente, quando apenas registrar um resumo, e como evitar interromper constantemente o jogador? Avanço entre dois eventos pode criar um ciclo de espera/clicks mais chato que x3.
+- **Idade e coortes:** a variedade de idades dos migrantes ajuda na experiência ou introduz ondas de mortes/aposentadoria, necessidade instantânea de serviços e desequilíbrio de capacidade?
+- **Alternativas adicionais:** aceleração adaptativa baseada no que precisa ser processado; avanço por evento em vez de data; apresentar **histórico/painéis da cidade** sem acelerar o mundo; agregação *somente* para cálculo de estados comprovadamente equivalentes (não agentes fictícios); manter tempo normal e aceitar que uma geração leve várias sessões. Todas exigem confronto com gameplay, causalidade e custo antes de recomendação.
+
+**Status para futuras sessões:** hipótese D **PENDENTE de revisão humana**, **não decidida**, sem percentuais ou metas numéricas aprovados. Investigar criticamente mais opções, inclusive caminhos que dispensem qualquer modo extra; **não perguntar aprovação agora nem iniciar implementação dependente da escala temporal**. Comparar junto à simulação integrada quando houver base observável, sem criar POCs setoriais obrigatórias.
+
 ### Regra de evidência para decisões futuras
 
 Para os assuntos desta seção:
