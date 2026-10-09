@@ -314,7 +314,7 @@ Enquanto um imóvel residencial estiver em propriedade privada:
 Ainda abertos:
 - percentual de aluguel, dia de vencimento da cobrança **mensal** e parâmetros do cálculo do valor de mercado (preço de venda já definido como igual à avaliação);
 - prioridade de herdeiros elegíveis;
-- granularidade de propriedade em apartamentos;
+- **Resolvido pela opção 2C em 2026-10-09:** propriedade integral do edifício ou por apartamentos individuais, com vários imóveis por SIM conforme capacidade financeira. **A definir:** representação/transação sem titularidade dupla e custos comuns;
 - detalhes de revenda e custos recorrentes quando forem necessários.
 
 O histórico de alternativas foi consolidado aqui para evitar que propostas já superadas pareçam decisões atuais.
@@ -431,6 +431,30 @@ Depois de migrar e tornar-se residente real, essa família/cidadão pode futuram
 
 ---
 
+## Propriedade integral ou por apartamentos — decisão 2C (2026-10-09)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou expressamente que um prédio de apartamentos possa pertencer inteiramente a um SIM ou ter apartamentos vendidos a SIMs diferentes; qualquer SIM pode comprar quantas casas e unidades conseguir pagar, inclusive para renda de aluguel. Detalhes de transação e avaliação ainda não foram revisados.
+
+**Decidido na SPEC:** o apartamento é patrimônio real de um SIM individual; o prédio inteiro também pode representar a propriedade de um SIM que mantém suas unidades locáveis. **A titularidade é exclusiva**, sem propriedade dupla simultânea de prédio e unidade: comprar um imóvel usa dinheiro real, e rendas/alugueis/impostos seguem o dono concreto, sem dupla cobrança. Não impor limite arbitrário de unidades por investidor nem moradia automática do comprador. **Ainda em aberto para viabilizar a implementação:** escolher quando um prédio é vendido inteiro versus por apartamentos, se um titular pode vender unidades de um prédio originalmente integral e como manter custos compartilhados sem inventar condomínio/entidade jurídica.
+
+---
+
+## Herança com múltiplos herdeiros — investigação aberta em 2026-10-09
+
+> **Revisão humana: PENDENTE DE DECISÃO.** O responsável **não aprovou** as antigas alternativas A/B/C para distribuir patrimônio entre vários herdeiros. Apontou corretamente que dividir por quantidade de imóveis pode beneficiar desproporcionalmente quem recebe o único imóvel. Pediu reflexão sobre herdeiros que moram juntos e partilha justa. Tudo abaixo é proposta da IA, não requisito.
+
+**Três problemas distintos:**
+
+1. **Vínculo e moradia:** herdeiros elegíveis já estão aprovados por classe (cônjuge/filhos e, se ausentes, pais/irmãos). Eles **não precisam morar juntos**: cônjuge pode residir no mesmo imóvel, filhos adultos podem ter outros domicílios. **A continuidade da ocupação da casa não equivale à titularidade nem a dividir patrimônio.** A SPEC já permite famílias/domicílios e propriedade individual; não assumir mudança/expulsão automática de todos ao falecer o dono. Decidir separadamente as condições de permanência.
+2. **Justiça econômica:** valor patrimonial deve ser avaliado como **dinheiro real mais valor de mercado real dos bens**, não número de imóveis; dois herdeiros com direito equivalente não deveriam receber, sem compensação, uma casa de R$ 300 mil e R$ 20 mil em dinheiro. **Proposta:** considerar quotas de valor e priorizar alocação de bens inteiros (titular único por imóvel) de modo a aproximar as quotas, eventualmente compensando diferenças **somente por transferência de dinheiro existente**, sem gerar moeda, dívida automática ou copropriedade.
+3. **Patrimônio indivisível sem dinheiro:** se há uma única casa e dois herdeiros sem dinheiro para compensação, não existe partilha igual de um imóvel sob a regra atual de **um SIM proprietário por imóvel**. Alternativas reais: (A) herdeiro morador tem preferência para ficar com a casa e **pode comprá-la com dinheiro real**, pagando quotas dos outros, senão vender; (B) vender a casa a comprador real quando necessário e repartir dinheiro, preservando intervalo físico de ocupação coerente; (C) deixar imóvel com um herdeiro sem compensação, aceitando partilha desigual (**risco de injustiça estrutural e concentração arbitrária**). A disponibilidade de comprador e o tempo da venda importam: uma venda pode demorar, e a receita só existe quando alguém efetivamente compra. Não fixar prazo de venda nem permitir co-propriedade contábil oculta sem decisão.
+
+**Recomendação para debate, NÃO APROVADA:** primeiro **preservar residência de quem já mora** quando houver titularidade e acordo compensável com dinheiro real; se a propriedade única não puder ser dividida de forma justa e não houver compensação possível, **ofertar o imóvel ao mercado real e repartir o produto da venda quando ela ocorrer**. Para não produzir despejo ou patrimônio em limbo, ainda precisa escolher **quem detém a titularidade temporária enquanto aguarda venda**, se os ocupantes podem continuar morando e como lidar com aluguel/contas nesse intervalo. Não transformar inventário em minijogo ou criar uma conta de espólio com dinheiro fictício.
+
+**Perguntas humanas separadas, sem aprovação por padrão:** (1) herdeiro que já vive no imóvel recebe preferência de aquisição/continuidade? (2) quando o único imóvel não puder ser compensado com dinheiro real, a venda passa a ser o último recurso? (3) como manter moradia e titularidade enquanto o mercado não compra?
+
+---
+
 ## Morte do SIM e destino do patrimônio
 
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — a regra patrimonial sem herdeiros está na SPEC e o responsável aprovou em 2026-10-09 a **opção B: cônjuge/filhos; sem eles, pais/irmãos**. Desempates de herdeiros múltiplos e tratamento de outras obrigações permanecem em exploração.
@@ -457,7 +481,7 @@ A Reserva Global é também a contraparte monetária dos fluxos externos, mas is
 
 ### Pontos ainda abertos
 
-- **Já aprovado (3B, 2026-10-09):** classe primária de herdeiros (cônjuge/companheiro e filhos), depois pais/irmãos na falta dos primeiros. **Pendente:** preferência entre vários membros da mesma classe, divisão de dinheiro e escolha do titular único de cada imóvel;
+- **Já aprovado (3B, 2026-10-09):** classe primária de herdeiros (cônjuge/companheiro e filhos), depois pais/irmãos na falta dos primeiros. **PENDENTE após pergunta 10 reaberta:** tratamento separado da moradia de herdeiros ocupantes, equidade por valor total e destino do imóvel indivisível sem dinheiro para compensação; ver seção exploratória acima. Não aprovar divisão por número de imóveis nem venda compulsória como regra automática ainda;
 - **Decidido para aluguel atrasado do SIM falecido:** quitação até o limite de seu saldo monetário disponível antes da herança/Reserva Global, com encerramento do restante devido; o tratamento de outras obrigações ainda está aberto;
 - tratamento de outros ativos quando forem introduzidos.
 
