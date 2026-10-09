@@ -17,12 +17,23 @@ Este arquivo é material de exploração temática. Quando houver divergência, 
 
 ---
 
-## Água em escassez: distância da origem de abastecimento — decisão de 2026-10-09
+## Água e energia: mesma distribuição simplificada e distância secundária (2026-10-09)
 
-> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou o princípio de que as áreas mais distantes da origem efetiva de fornecimento perdem água primeiro quando falta capacidade, independentemente do tipo de consumidor. A formalização técnica e a interpretação da distância como ponto operacional de abastecimento, em vez de corpo d'água isolado, são síntese da IA a validar; detalhes de cálculo continuam em exploração.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável confirmou expressamente **o mesmo comportamento inicial para água e eletricidade**, sem transformar a distância das instalações em uma decisão importante do jogador. A preferência original por atender regiões próximas antes de regiões distantes em escassez continua uma direção qualitativa, agora também para energia. **A solução concreta proposta abaixo é PENDENTE de revisão humana e NÃO integra ainda a SPEC.**
 
-**Decidido na SPEC:** em escassez de **água**, considerar localização/alcance das estruturas operacionais de fornecimento de água tratada: bairros próximos têm atendimento antes dos distantes, até o limite da capacidade real. Não repartir automaticamente a falta proporcionalmente entre todos nem priorizar hospitais por classe de consumidor. Rio e lago são fontes de captação, mas a simples proximidade da margem não assegura água potável sem captação e tratamento. O modelo não exige desenhar encanamentos manualmente; a solução espacial (distância, fontes concorrentes, alcance e capacidade regional) ainda precisa de validação para não prometer hidráulica física sem rede real. A regra de **prioridade financeira** dos serviços essenciais não significa prioridade na **alocação hídrica**. O responsável não escolheu ainda distribuição de **energia**.
+**Direção aprovada na SPEC:** manter capacidade e demanda reais **independentes para cada recurso**, com regras compartilhadas de distribuição. Construir usina ou estação distante não deve, isoladamente, provocar falta de serviço numa cidade com oferta total suficiente e infraestrutura funcional. Em escassez, distância pode pesar de modo **leve e gradual** contra regiões mais afastadas das instalações operacionais, sem hierarquia de consumidores por classe (por exemplo, hospitais não recebem prioridade hídrica/energética artificial). Para água, considerar estrutura de abastecimento efetivo de **água tratada**, não mera proximidade do rio. Não exigir desenho manual de canos ou fiação. Preservar a **prioridade financeira** já aprovada para despesas de serviços essenciais: ela é distinta da regra de alocação de água/energia.
 
+**Proposta técnica para avaliação — PENDENTE: "dois reservatórios contábeis + sombra leve de distância".**
+
+- Tratar cada recurso como um **saldo agregado de capacidade de serviço** da cidade: produção operacional real versus demanda real, separadamente para água e energia. **Não** misturar recursos; água não cobre déficit elétrico.
+- Se a capacidade do recurso cobrir a demanda e as instalações estiverem funcionais, **todos os consumidores elegíveis recebem normalmente**, onde quer que estejam. Sem alcance rígido por distância, pagamento de "frete" desses serviços ou propagação individual simulada.
+- Só em **déficit**, calcular um **índice de atendimento por área/bairro**, suavemente menor nas áreas distantes da instalação operacional mais próxima; uma falta de 5% não deveria apagar abruptamente um bairro inteiro. Efeito espacial moderado e calibrável; nem alocação proporcional idêntica obrigatória nem corte instantâneo "longe perde tudo". Sem benefício por classe de prédio. Critérios de gradiente são proposta, não números aprovados.
+- **Performance sugerida, não arquitetura aprovada:** acumular demanda por setor espacial e guardar distância aproximada/instalação ativa mais próxima. Atualizar distâncias quando instalações/topologia relevantes mudarem; recomputar índices quando produção ou demanda agregadas mudarem significativamente, sem rota, hidráulica ou fluxo elétrico individual a cada frame. Não criar uma simulação espacial separada por SIM.
+- **Diagnóstico:** duas barras simples (produção vs demanda por recurso) e mapa/inspeção opcional de áreas com serviço reduzido; consequências de capacidade insuficiente continuam reais (perda de eficiência, interrupções em situações graves) conforme regras já aprovadas.
+
+**Comparação:** capacidade global totalmente uniforme seria ainda mais simples, mas eliminaria o efeito espacial desejado; malhas individualizadas por canos/fios, redes e fluxo por edifício tornariam a distância muito central e criariam estados/cálculos de retorno pouco úteis ao gameplay inicial. **Risco da proposta recomendada:** o modelo é uma abstração de cobertura, não uma previsão fiel de hidráulica ou potência elétrica; fontes múltiplas e critérios para iniciar falha total precisam ser calibrados e testados. Agrupar/cachear é técnica conhecida em simulações de redes, mas não garante custo nulo: o benefício precisa ser medido. Referência técnica comparativa, não requisito: [GameDev SE — agrupamento/cache de redes elétricas](https://gamedev.stackexchange.com/questions/138686/how-should-i-make-realistic-electricity).
+
+**Estado:** só a **simetria água/energia, foco em capacidade e distância sem penalidade pesada** foram registrados oficialmente. **A proposta de capacidade global + efeito espacial leve no déficit continua PENDENTE até resposta do responsável.**
 ---
 
 ## Água/energia empresarial e salários municipais — decisões 2A/3A (2026-10-09)
@@ -662,7 +673,7 @@ Direção de modelagem:
 - excesso de demanda pode gerar falta d'água ou esgoto sem atendimento;
 - cobertura pode ser modelada de forma agregada ou por área, sem rede de tubos explícita.
 
-**Direção de cobertura da água já aprovada em 2026-10-09:** na insuficiência de capacidade, regiões mais distantes do fornecimento operacional perdem serviço primeiro, sem priorização por tipo de edifício; escolher o algoritmo espacial, o alcance e como interagem múltiplas origens continua aberto. Não estender a regra à energia sem decisão.
+**Direção revisada em 2026-10-09:** água e energia usarão a **mesma lógica de distribuição**, com localização pouco penalizadora quando houver capacidade suficiente e preferência espacial leve/gradual quando houver escassez. A versão de corte rígido das regiões mais distantes foi reconsiderada; **modelo global com índice de atendimento por área permanece proposta PENDENTE**. Algoritmo, proximidade com múltiplas fontes e consequências exatas ficam para definição/validação.
 
 ### Energia
 
@@ -673,6 +684,7 @@ Decidido:
 - capacidade limitada;
 - não exigir desenho manual detalhado de linhas/rede elétrica no escopo atual;
 - solar e eólica fazem parte das opções.
+- **Distribuição usa a mesma direção simplificada da água**, decidida em 2026-10-09, mantendo geração/consumo independentes por recurso. O algoritmo de atendimento regional em escassez ainda está PENDENTE; não impor rede elétrica manual ou penalidade espacial permanente pesada.
 
 Ainda em exploração:
 
