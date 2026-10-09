@@ -592,13 +592,23 @@ O jogador não recupera automaticamente o custo construindo e revendendo ativos.
 
 Isso evita transformar o jogo em um simulador de incorporação e mantém o orçamento municipal relevante.
 
+## Falência terminal: liquidação proporcional automática — decisão aprovada (2026-10-09)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável **aprovou expressamente** distribuir proporcionalmente o dinheiro disponível entre credores reais e encerrar as parcelas de dívidas impagáveis na extinção terminal da empresa, mantendo o destino de ativos/dinheiro sem sucessor já aprovado. A mecânica geral está na SPEC; tempo e arredondamentos são parâmetros, não mais uma escolha de prioridade de credores.
+
+**Regra oficial:** após a falência terminal, a empresa não opera mais e uma liquidação **curta, automática e não gerenciada pelo jogador** pode vender ativos a compradores reais. Somar ao dinheiro disponível **somente as vendas efetivamente pagas**, sem inventar liquidez para imóvel que ninguém comprou. Quitar créditos efetivamente devidos a SIMs (salários), fornecedores e Caixa da Cidade (impostos, contas municipais), **integralmente quando o saldo bastar ou proporcionalmente à dívida remanescente quando não bastar**. Com R$ 200 disponíveis para R$ 500 de salários, R$ 300 de fornecedores e R$ 200 do município, pagar R$ 100, R$ 60 e R$ 40 respectivamente. Os créditos que não puderem ser pagos **são encerrados na extinção**, sem fabricar o pagamento ou preservar empresa zumbi. Um saldo remanescente **após quitação** vai à Reserva Global. Bens não vendidos podem permanecer sem dono; venda posterior segue o fluxo patrimonial aprovado para a Reserva, **sem reabrir obrigações encerradas**. A baixa contábil de dívida não cria/destrói moeda; crédito registrado não é receita recebida. Não criar herdeiros corporativos, ordem cronológica, prioridade trabalhista, negociação individual ou processo judicial.
+
+**Custo/risco aceito:** credores perdem dinheiro real que esperavam receber, inclusive trabalhadores e município; falências podem prejudicar consumo, arrecadação e fornecedores. O saldo vendido antes da extinção aumenta recuperação, mas não garante pagamento ou comprador. **Ajustes técnicos:** duração curta e finita, centavos residuais, elegibilidade/validação de dívidas, inventário e pagamentos auditáveis; sem motor judicial nem verificações contínuas de credores após a empresa deixar de existir.
+
+---
+
 ## Encerramento da empresa sem herdeiro — alinhamento com patrimônio sem sucessor (2026-10-09)
 
-> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável pediu que o destino do patrimônio de uma empresa que encerra definitivamente siga a mesma lógica já escolhida para um SIM falecido sem herdeiro. O princípio já constava na SPEC e foi reafirmado. **Não foi aprovada a hierarquia A/B/C de credores proposta pela IA**, nem novo processo judicial.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável pediu que o destino do patrimônio de uma empresa que encerra definitivamente siga a mesma lógica já escolhida para um SIM falecido sem herdeiro. O princípio já constava na SPEC e foi reafirmado. **Foi aprovada depois, nesta mesma data, a distribuição proporcional simples de dívidas reais (sem hierarquia A/B/C anterior)**; nenhum processo judicial novo foi aprovado.
 
 **Regra patrimonial já aprovada na SPEC:** no escopo inicial a empresa **não tem SIM proprietário ou sócio humano modelado**, portanto **não há herança familiar da empresa falida**. Quando a empresa deixa de existir, após os fluxos patrimoniais/obrigações legitimamente tratados, **dinheiro remanescente sem destinatário econômico volta à Reserva Global**. Imóvel que ficar sem titular pode ser vendido posteriormente pelo fluxo normal, com pagamento à Reserva Global se permanecer sem dono. Não inventar pagamento à família de funcionário, acionista inexistente, ou empresa aleatória. Encerramento de um **estabelecimento isolado** de empresa ainda ativa não equivale a falência da entidade.
 
-**Distinção necessária, ainda aberta:** no falecimento de um SIM, **a dívida de aluguel especificamente já foi definida** como paga até o saldo disponível antes da herança, com encerramento da parcela impagável. A empresa pode dever salários, fornecedores, impostos e água/energia. **O destino do saldo sem dono não define sozinho a ordem ou a liquidação desses créditos.** Evitar escolher por inferência rateio, ordem cronológica, prioridade trabalhista ou perdão automático de obrigações. Investigar solução mínima quando a implementação exigir, sem segundo minigame contábil ou microgerenciamento do jogador.
+**Distinção resolvida por escolha expressa posterior (2026-10-09):** o SIM falecido tem regra especial para dívida de aluguel; a **empresa falida** distribui recursos proporcionalmente entre **todos os credores reais ainda não pagos**, encerrando dívidas impagáveis ao extinguir a entidade. Sem hierarquia, sem credores fictícios, sem outra mecânica de microgerenciamento. O patrimônio restante sem destinatário continua indo à Reserva Global.
 
 ---
 
@@ -635,7 +645,8 @@ O destino principal após falência já foi fechado:
 - pode existir uma liquidação técnica curta e automática;
 - imóveis podem ser ofertados automaticamente enquanto a empresa ainda existe apenas para liquidar ativos;
 - se um ativo ficar sem titular, pode permanecer sem proprietário e uma venda posterior envia o valor à Reserva Global;
-- saldo final sem outro titular econômico definido retorna à Reserva Global, **em correspondência à regra de SIM sem herdeiro reafirmada em 2026-10-09**; não confundir esse saldo com pagamentos ainda devidos a credores reais.
+- pagar obrigações reais com o caixa mais valores de ativos efetivamente vendidos durante a liquidação: **pagamento integral se houver recursos, rateio proporcional se insuficientes**, com encerramento do saldo de dívida não pago quando a empresa se extingue (regra aprovada em 2026-10-09);
+- saldo final **após pagamento dos credores** sem outro titular econômico definido retorna à Reserva Global, em correspondência à regra de SIM sem herdeiro; não confundir passivo contábil baixado com caixa transferido.
 
 Continuam fora/abertos:
 - recuperação judicial;
@@ -1100,7 +1111,7 @@ Evitar transformar falência em uma segunda simulação de gestão empresarial.
 - detalhes de estoque e outros ativos terão de ser definidos quando esses casos realmente existirem;
 - a Reserva Global também recebe valores sem titular econômico, sempre preservando a origem do lançamento.
 
-O objetivo é manter essa camada no mínimo necessário para preservar causalidade. **Não foi aprovada hierarquia A/B/C de credores na rodada de 2026-10-09**; não adicionar ordem jurídica de pagamento, administrador judicial ou outras regras enquanto não houver necessidade concreta. **A empresa não tem herdeiros familiares modelados:** dinheiro sem titular retorna à Reserva Global; eventuais dívidas reais exigem tratamento causal próprio, ainda não definido em detalhe.
+O objetivo é manter essa camada no mínimo necessário para preservar causalidade. **Foi aprovado o rateio proporcional simples na rodada de 2026-10-09**, sem adotar as alternativas antigas de privilégio/antiguidade de credores. Não adicionar ordem jurídica específica, administrador judicial ou outros passos. **A empresa não tem herdeiros familiares modelados:** após ratear entre credores, o dinheiro sem titular retorna à Reserva Global; a parte impagável dos créditos é encerrada, com a perda real atribuível ao credor.
 
 
 ---
