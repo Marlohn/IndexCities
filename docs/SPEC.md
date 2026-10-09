@@ -344,6 +344,7 @@ A primeira base de recursos físicos do jogo será composta por oito categorias:
 - **Despacho prioritário de resposta emergencial — opção 5B aprovada (2026-10-09):** quando houver ocorrências simultâneas, a simulação **prioriza automaticamente o atendimento pela gravidade/risco real, tempo de deslocamento viário e equipes/veículos efetivamente disponíveis**, em vez de atender sempre por proximidade pura ou ordem de chegada. O despacho deve usar pessoas, viaturas e rotas reais, com atrasos e consequências de não conseguir atender todos; não duplicar equipes nem deslocar recursos instantaneamente. Critérios de gravidade e reavaliação de ocorrências ficam para calibração/validação, sem o jogador administrar chamadas uma a uma ou algoritmo de roteamento global a cada frame. Aplicar coerentemente aos serviços de emergência operacionais que existirem (bombeiros, polícia e outras respostas), sem inventar novos modais/serviços.
 - Bombeiros precisam deslocar veículos e equipes fisicamente até a ocorrência.
 - Mortes individuais geram consequências reais para a cidade.
+- **4C aprovada (2026-10-09):** cemitérios possuem lotação real limitada; crematórios constituem alternativa de capacidade finita para destinação, evitando que a cidade precise ocupar áreas crescentes com cemitérios. Operação com infraestrutura e trabalhadores reais, sem microgerenciar cerimônias.
 - O sistema funerário/cemitério e a remoção física de corpos fazem parte da simulação.
 
 
