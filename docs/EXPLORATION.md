@@ -52,6 +52,10 @@ Referências: [SPEC](SPEC.md), [serviços e infraestrutura](exploration/city-sys
 
 ---
 
+### Tributos imobiliários (2026-10-09)
+
+**Revisão humana: PARCIALMENTE REVISADO.** Foi aprovada a opção **1A**: imposto imobiliário não pago acumula dívida real do proprietário ao Caixa da Cidade, recuperável gradualmente com dinheiro existente, sem apreensão, venda compulsória nem prazo tributário automático de três meses. O prazo de três meses aprovado pertence a situações de aluguel/desocupação. Produto oficial na [SPEC](SPEC.md), contexto em [empresas e mercados](exploration/companies-markets.md).
+
 ## Regra de autoridade
 
 Documentos em `docs/exploration/` **não são requisitos por si só**.
