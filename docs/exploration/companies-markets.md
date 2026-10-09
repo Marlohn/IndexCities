@@ -592,6 +592,16 @@ O jogador não recupera automaticamente o custo construindo e revendendo ativos.
 
 Isso evita transformar o jogo em um simulador de incorporação e mantém o orçamento municipal relevante.
 
+## Encerramento da empresa sem herdeiro — alinhamento com patrimônio sem sucessor (2026-10-09)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável pediu que o destino do patrimônio de uma empresa que encerra definitivamente siga a mesma lógica já escolhida para um SIM falecido sem herdeiro. O princípio já constava na SPEC e foi reafirmado. **Não foi aprovada a hierarquia A/B/C de credores proposta pela IA**, nem novo processo judicial.
+
+**Regra patrimonial já aprovada na SPEC:** no escopo inicial a empresa **não tem SIM proprietário ou sócio humano modelado**, portanto **não há herança familiar da empresa falida**. Quando a empresa deixa de existir, após os fluxos patrimoniais/obrigações legitimamente tratados, **dinheiro remanescente sem destinatário econômico volta à Reserva Global**. Imóvel que ficar sem titular pode ser vendido posteriormente pelo fluxo normal, com pagamento à Reserva Global se permanecer sem dono. Não inventar pagamento à família de funcionário, acionista inexistente, ou empresa aleatória. Encerramento de um **estabelecimento isolado** de empresa ainda ativa não equivale a falência da entidade.
+
+**Distinção necessária, ainda aberta:** no falecimento de um SIM, **a dívida de aluguel especificamente já foi definida** como paga até o saldo disponível antes da herança, com encerramento da parcela impagável. A empresa pode dever salários, fornecedores, impostos e água/energia. **O destino do saldo sem dono não define sozinho a ordem ou a liquidação desses créditos.** Evitar escolher por inferência rateio, ordem cronológica, prioridade trabalhista ou perdão automático de obrigações. Investigar solução mínima quando a implementação exigir, sem segundo minigame contábil ou microgerenciamento do jogador.
+
+---
+
 ## Falência empresarial sem simular processo jurídico
 
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
@@ -625,7 +635,7 @@ O destino principal após falência já foi fechado:
 - pode existir uma liquidação técnica curta e automática;
 - imóveis podem ser ofertados automaticamente enquanto a empresa ainda existe apenas para liquidar ativos;
 - se um ativo ficar sem titular, pode permanecer sem proprietário e uma venda posterior envia o valor à Reserva Global;
-- saldo final sem outro titular econômico definido retorna à Reserva Global.
+- saldo final sem outro titular econômico definido retorna à Reserva Global, **em correspondência à regra de SIM sem herdeiro reafirmada em 2026-10-09**; não confundir esse saldo com pagamentos ainda devidos a credores reais.
 
 Continuam fora/abertos:
 - recuperação judicial;
@@ -1090,7 +1100,7 @@ Evitar transformar falência em uma segunda simulação de gestão empresarial.
 - detalhes de estoque e outros ativos terão de ser definidos quando esses casos realmente existirem;
 - a Reserva Global também recebe valores sem titular econômico, sempre preservando a origem do lançamento.
 
-O objetivo é manter essa camada no mínimo necessário para preservar causalidade. Não adicionar credores, ordem jurídica de pagamento, administrador judicial ou outras regras enquanto não houver gameplay concreto que justifique isso.
+O objetivo é manter essa camada no mínimo necessário para preservar causalidade. **Não foi aprovada hierarquia A/B/C de credores na rodada de 2026-10-09**; não adicionar ordem jurídica de pagamento, administrador judicial ou outras regras enquanto não houver necessidade concreta. **A empresa não tem herdeiros familiares modelados:** dinheiro sem titular retorna à Reserva Global; eventuais dívidas reais exigem tratamento causal próprio, ainda não definido em detalhe.
 
 
 ---
