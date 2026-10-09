@@ -201,7 +201,7 @@ O [hub](../EXPLORATION.md) registra 11 documentos temáticos: **9 PARCIALMENTE R
 
 ### Rodada de mobilidade, economia e propriedade — 2026-10-09
 
-> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou **1B, 2A, 3A+B, 5A, 6A, 7A, 9C, 10A**; **4 (capacidade de cemitérios) e 8 (crimes com vítimas e efeitos regionais) seguem ABERTAS** para explicação/reflexão. A consolidação da IA e parâmetros de implementação não foram revisados integralmente.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou **1B, 2A, 3A+B, 5A, 6A, 7A, 9C, 10A**; **4C e 8C foram APROVADAS posteriormente**, mantendo simplicidade operacional e custo baixo. A consolidação da IA e parâmetros de implementação não foram revisados integralmente.
 
 - **1B táxis:** empresas privadas com frota física e SIMs empregados, pagamentos por viagens reais; preço, operação e atribuição de viagem ainda exigem regra proporcional.
 - **2A bicicleta:** SIM compra patrimônio individual com dinheiro e oferta real; aluguel/compartilhamento público não aprovado.
