@@ -278,7 +278,7 @@ A fórmula de avaliação e o percentual de aluguel proporcional ao valor ainda 
 
 ## Destino econômico de aluguel, compra e propriedade residencial
 
-> **Revisão humana desta seção: PARCIALMENTE REVISADO.** Fluxo econômico decidido; **propriedade de prédio integral ou apartamentos individuais 2C aprovada em 2026-10-09**. Detalhes de como representar/vender unidade ou prédio sem duplicar patrimônio e de partilha justa entre múltiplos herdeiros ainda estão abertos.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** Fluxo econômico decidido; **propriedade de prédio integral ou apartamentos individuais 2C aprovada em 2026-10-09**. Venda de unidades por proprietário integral **aprovada posteriormente como 10A**, sem duplicar patrimônio; representação e valores finos seguem para calibração. Partilha simplificada de herança também já aprovada.
 
 **Status:** decidido em nível de fluxo.
 
@@ -324,7 +324,7 @@ Enquanto um imóvel residencial estiver em propriedade privada:
 Ainda abertos:
 - percentual de aluguel, dia de vencimento da cobrança **mensal** e parâmetros do cálculo do valor de mercado (preço de venda já definido como igual à avaliação);
 - **Herança simplificada APROVADA em 2026-10-09:** classes 3B; dinheiro igual entre elegíveis; casas, apartamentos, prédios e carros atribuídos integralmente por valor aproximado e preferência de ocupação do herdeiro residente. Sem vendas e compensações obrigatórias. Valores e desempates são calibração;
-- **Resolvido pela opção 2C em 2026-10-09:** propriedade integral do edifício ou por apartamentos individuais, com vários imóveis por SIM conforme capacidade financeira. **A definir:** representação/transação sem titularidade dupla e custos comuns;
+- **Resolvido pela opção 2C em 2026-10-09:** propriedade integral do edifício ou por apartamentos individuais, com vários imóveis por SIM conforme capacidade financeira. **Posteriormente aprovado (10A):** venda de unidades individuais por titular que comprou prédio inteiro, conservando unidades restantes; representação/transação sem duplicidade e custos comuns exigem implementação coerente;
 - detalhes de revenda e custos recorrentes quando forem necessários.
 
 O histórico de alternativas foi consolidado aqui para evitar que propostas já superadas pareçam decisões atuais.
@@ -445,7 +445,7 @@ Depois de migrar e tornar-se residente real, essa família/cidadão pode futuram
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou expressamente que um prédio de apartamentos possa pertencer inteiramente a um SIM ou ter apartamentos vendidos a SIMs diferentes; qualquer SIM pode comprar quantas casas e unidades conseguir pagar, inclusive para renda de aluguel. Detalhes de transação e avaliação ainda não foram revisados.
 
-**Decidido na SPEC:** o apartamento é patrimônio real de um SIM individual; o prédio inteiro também pode representar a propriedade de um SIM que mantém suas unidades locáveis. **A titularidade é exclusiva**, sem propriedade dupla simultânea de prédio e unidade: comprar um imóvel usa dinheiro real, e rendas/alugueis/impostos seguem o dono concreto, sem dupla cobrança. Não impor limite arbitrário de unidades por investidor nem moradia automática do comprador. **Ainda em aberto para viabilizar a implementação:** escolher quando um prédio é vendido inteiro versus por apartamentos, se um titular pode vender unidades de um prédio originalmente integral e como manter custos compartilhados sem inventar condomínio/entidade jurídica.
+**Decidido na SPEC:** o apartamento é patrimônio real de um SIM individual; o prédio inteiro também pode representar a propriedade de um SIM que mantém suas unidades locáveis. **A titularidade é exclusiva**, sem propriedade dupla simultânea de prédio e unidade: comprar um imóvel usa dinheiro real, e rendas/alugueis/impostos seguem o dono concreto, sem dupla cobrança. Não impor limite arbitrário de unidades por investidor nem moradia automática do comprador. **Decidido posteriormente pela opção 10A (2026-10-09):** o titular que comprou o prédio inteiro **PODE vender um ou mais apartamentos separadamente** e conservar os demais, sem venda obrigatória de todo o edifício. A mesma liberdade vale para um SIM que possui duas unidades e deseja vender apenas uma; a transação altera somente a titularidade da unidade vendida e transfere dinheiro real ao vendedor. Um prédio inicialmente integral precisa permitir titularidade por unidade quando começar a vender apartamentos, **sem manter valor/título de prédio inteiro em paralelo com as unidades já distribuídas**. A venda não faz moradores desaparecerem; contratos e transição física seguem regras habitacionais. **Ainda em aberto para viabilizar implementação:** quando o prédio nasce inteiro ou com unidades vendidas, a representação da transição sem titularidade dupla, tributação/avaliação por unidade e áreas comuns sem criar síndico ou condomínio como minijogo.
 
 ---
 
