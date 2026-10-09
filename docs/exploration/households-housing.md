@@ -182,13 +182,13 @@ Ainda precisa ser decidido:
 
 **Decidido na SPEC — primeiro modelo:** a falência pessoal é **uma condição econômica**, derivada do dinheiro real insuficiente perante obrigações e dívidas do SIM, com consequências no consumo financiável, na manutenção dos débitos e na possibilidade de manter ou encontrar moradia. Não exige processo jurídico, liquidação patrimonial compulsória própria, renegociação formal nem perdão automático por falir. A dívida continua obedecendo às regras específicas já aprovadas, inclusive quitação/extinção na morte quando cabível. Sem novos saldos monetários fictícios ou burocracia por cidadão. **Em calibração:** critérios quantitativos de entrada/saída dessa condição; não criar subsistema de falência separado sem nova decisão humana.
 
-**Decisão confirmada na SPEC para atraso de aluguel:** famílias que deixam de pagar acumulam **dívida real perante o SIM proprietário** e, após **3 meses de inadimplência**, contados do primeiro aluguel mensal vencido e não quitado, **podem perder a moradia** caso ainda haja dívida. **Pagamento parcial reduz o saldo devedor, mas não reinicia nem suspende o prazo. Quitação integral encerra a inadimplência e zera a contagem; novo atraso inicia novo prazo.** A passagem dos 3 meses não obriga despejo automático: seus gatilhos de efetivação ainda serão definidos. Registrar valor devido não cria dinheiro: só o pagamento efetivo entre agentes altera saldos. Não há necessidade de intervenção do jogador em cada cobrança.
+**Decisões oficiais de aluguel (3 meses e opção 4A aprovada em 2026-10-09):** famílias que deixam de pagar acumulam **dívida real perante o SIM proprietário**. Após **3 meses completos de inadimplência** desde o primeiro aluguel vencido não quitado, **se ainda houver dívida vencida, a locação termina automaticamente**, sem aprovação do proprietário ou tolerância adicional inventada. **Pagamento parcial reduz o débito, mas não reinicia nem suspende os 3 meses; quitação integral zera o atraso e a contagem.** A família procura outra moradia automaticamente conforme o fluxo já decidido; sem opção acessível, pode ficar sem moradia ou emigrar, **sem teletransporte e sem perdão da dívida apenas por sair**. Registrar dívida não movimenta dinheiro; só pagamento real entre SIMs altera saldos. Não há intervenção manual do jogador por cobrança.
 
 **Pontos ainda em exploração:**
 
-- **Decidido:** o prazo de inadimplência é de **3 meses** (distinto dos dois prazos de 3 meses por morte sem herdeiro e compra para moradia própria). A partir dele existe possibilidade de perda da moradia, não despejo instantâneo obrigatório;
+- **Decidido (4A, 2026-10-09):** o prazo de inadimplência é de **3 meses** (distinto dos outros prazos de três meses). Com dívida vencida restante no vencimento, a **locação termina automaticamente** e a família deve sair seguindo a procura/realocação física normal; não criar uma decisão individual de despejo pelo proprietário;
 - **Decidido:** pagamentos parciais abatem a dívida sem reiniciar ou suspender o prazo de 3 meses. A quitação integral encerra a inadimplência e zera o prazo; um novo atraso abre outra contagem;
-- **Em aberto:** critérios concretos para efetivar a perda da moradia depois dos 3 meses com dívida ainda pendente;
+- **Fechado pela opção 4A:** gatilho do encerramento automático da locação é o término dos três meses com dívida vencida; sequência física de procura/mudança e comportamento sem alternativa seguem as regras da SPEC e calibração técnica;
 - eventual parcelamento formal, prioridade entre contas e encargos por atraso (nenhum juro está aprovado);
 - **Decidido:** a dívida de aluguel **permanece após a família deixar o imóvel ou mudar de residência**; não há perdão automático ao sair. O crédito permanece vinculado ao credor real e o pagamento posterior, quando ocorrer, será transferência monetária entre agentes;
 - **Decidido:** na morte do SIM devedor, o saldo monetário individual disponível é usado para quitar aluguel atrasado até o limite devido; a parte não paga é encerrada e não passa aos herdeiros/familiares. Eventual dinheiro restante segue o destino patrimonial já definido, inclusive Reserva Global quando não houver herdeiro elegível;
@@ -198,7 +198,7 @@ Ainda precisa ser decidido:
 - **Decidido:** se o proprietário credor morrer **sem herdeiro elegível**, os aluguéis atrasados que lhe eram devidos são **perdoados**, sem transferência à Reserva Global ou ao futuro comprador; a dívida contábil é extinta sem alterar a oferta monetária;
 - **Decidido:** após a morte do proprietário sem herdeiro, a família que já alugava o imóvel tem **3 meses do calendário da simulação, desde que o imóvel fica sem proprietário** para continuar morando sem pagar aluguel. Busca nova moradia durante esse prazo; **ao vencer o prazo, se não houver uma nova locação/propriedade que permita a permanência, deve sair desse imóvel**. Sem alternativa residencial na cidade, **pode emigrar**, sem que a emigração seja obrigatória: o estado de população sem moradia permanece possível. Nenhum aluguel/débito referente ao período sem proprietário é criado ou cobrado retroativamente;
 - **Decidido:** o imóvel ainda ocupado pode ser comprado por comprador real elegível, que decide automaticamente se deseja **morar nele ou continuar alugando à família atual**. Na segunda hipótese, ele passa a receber aluguéis futuros; na primeira, a família ocupante tem **3 meses do calendário da simulação, contados da compra**, para procurar outra moradia e sair, sem despejo instantâneo. **Durante esses 3 meses, enquanto a família permanecer no imóvel, o aluguel é pago ao novo proprietário**, sem retroagir ao intervalo em que a casa esteve sem dono. Não assumir reajuste imediato apenas pela aquisição;
-- **Em aberto:** escolha do novo locatário titular, ausência de adulto na residência, múltiplos credores, eventual calibração do prazo inicial de 3 meses, critérios da escolha automática entre emigração e condição sem moradia, outras cobranças e limiares da falência pessoal;
+- **Em aberto:** escolha do novo locatário titular, ausência de adulto na residência, múltiplos credores, eventual calibração do prazo inicial de 3 meses, critérios da escolha automática entre emigração e condição sem moradia, outras cobranças e limiares da falência pessoal. **Não reabrir o gatilho automático 4A da inadimplência.**
 - como buscar uma residência mais barata ou assistência, sem transformar a inadimplência em microgerenciamento;
 - consequências de outras despesas não pagas;
 
@@ -433,9 +433,11 @@ Depois de migrar e tornar-se residente real, essa família/cidadão pode futuram
 
 ## Morte do SIM e destino do patrimônio
 
-> **Revisão humana desta seção:** PARCIALMENTE REVISADO — regra principal discutida e promovida para a SPEC; prioridade de herdeiros e obrigações anteriores continuam abertas.
+> **Revisão humana desta seção:** PARCIALMENTE REVISADO — a regra patrimonial sem herdeiros está na SPEC e o responsável aprovou em 2026-10-09 a **opção B: cônjuge/filhos; sem eles, pais/irmãos**. Desempates de herdeiros múltiplos e tratamento de outras obrigações permanecem em exploração.
 
-**Status:** decidido no caso sem herdeiro elegível.
+**Status:** herdeiros elegíveis decididos em princípio pela opção 3B (2026-10-09), com desempates/calibração pendentes. **Se não houver nenhum elegível**, segue a regra de destino patrimonial sem herdeiros já aprovada.
+
+**Herdeiros elegíveis:** primeiro cônjuge/companheiro e filhos; na ausência de ambos, pais ou irmãos. Não exigir família estendida neste modelo. Um SIM solteiro e sem filhos **pode ter herdeiros** se tiver pais ou irmãos vivos/elegíveis; só sem nenhum elegível o dinheiro remanescente retorna à Reserva Global e imóveis podem permanecer sem dono. O critério fino entre múltiplos membros elegíveis não foi aprovado; não criar copropriedade de imóvel nem distribuir dinheiro arbitrariamente.
 
 Quando um SIM morre **sem herdeiro elegível**:
 
@@ -455,7 +457,7 @@ A Reserva Global é também a contraparte monetária dos fluxos externos, mas is
 
 ### Pontos ainda abertos
 
-- quem conta como herdeiro elegível e em qual prioridade;
+- **Já aprovado (3B, 2026-10-09):** classe primária de herdeiros (cônjuge/companheiro e filhos), depois pais/irmãos na falta dos primeiros. **Pendente:** preferência entre vários membros da mesma classe, divisão de dinheiro e escolha do titular único de cada imóvel;
 - **Decidido para aluguel atrasado do SIM falecido:** quitação até o limite de seu saldo monetário disponível antes da herança/Reserva Global, com encerramento do restante devido; o tratamento de outras obrigações ainda está aberto;
 - tratamento de outros ativos quando forem introduzidos.
 
