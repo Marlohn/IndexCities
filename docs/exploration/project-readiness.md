@@ -188,7 +188,7 @@ O [hub](../EXPLORATION.md) registra 11 documentos temáticos: **9 PARCIALMENTE R
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou nove opções de produto e rejeitou assumir sem conferir a regra de três meses para tributos. A SPEC está atualizada; calibração e implementação não foram revisadas integralmente.
 
-- **Imposto em atraso — NÃO decidido (pergunta 1):** o prazo de três meses consta na SPEC para inadimplência do **aluguel**, não dos impostos. A proposta de acumular dívida tributária recuperável automaticamente (1A) segue não aprovada, sem apreensão/venda forçada definida; requer decisão de produto se a implementação depender de cobrança não quitada.
+- **Imposto em atraso — 1A aprovado depois (2026-10-09):** o prazo de três meses consta na SPEC para inadimplência do **aluguel**, não dos impostos. A dívida tributária imobiliária real é recuperada gradualmente com recursos existentes, sem prazo de três meses, venda forçada ou confisco, como previsto na SPEC.
 - **Transporte — 2B/3A:** procurar vaga real alternativa e caminhar ao destino; garagens construídas pelo jogador limitam a frota de ônibus e a simulação distribui veículos reais entre as linhas. Desistência de viagem (2C) só foi cogitada como possível exceção futura.
 - **Incêndio e cadeia — 4A/5B:** danos recuperáveis por recursos reais, sem obrigar minigame de reparo; detidos procuram outra prisão com capacidade e acesso reais.
 - **Abastecimento urbano — 6B/7B:** solar/eólica variáveis com condições simplificadas; aterros e incineradores com custos/capacidade/impactos distintos, sem reciclagem implícita.
