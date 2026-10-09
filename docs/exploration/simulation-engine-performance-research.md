@@ -6,7 +6,7 @@
 >
 > **Fontes canônicas:** [SPEC](../SPEC.md) (produto), [ARCHITECTURE](../ARCHITECTURE.md) (fronteiras técnicas), [AGENTS](../../AGENTS.md) (regras de trabalho); [EXPLORATION](../EXPLORATION.md) (índice). [Pesquisa anterior de escala/calendário](simulation-scale.md) permanece separada; este arquivo aprofunda especificamente **engenharia de simulação**.
 >
-> **Leitura rápida:** ver a [conclusão da terceira rodada](#conclusão-mais-recente--após-pesquisa-transversal) ao final. As conclusões anteriores são histórico, não recomendação mais recente. Todas as sugestões abaixo são hipóteses de engenharia, não decisões.
+> **Leitura rápida:** a recomendação mais recente está no [estudo de hipóteses radicais](simulation-engine-radical-hypotheses.md#conclusão--minha-recomendação-após-procurar-ideias-improváveis). As conclusões anteriores são histórico, não decisão aprovada. Todas as sugestões abaixo são hipóteses de engenharia, não decisões.
 
 ## 1. Problema real e restrições
 
@@ -505,3 +505,16 @@ O limite honesto: cidades densas com incontáveis interações reais custarão C
 **GPU permanece candidata séria somente para mobilidade se profiling integrado mostrar ganho líquido.** Não substituir o núcleo pelo MOSS, por servidor externo, por um banco, por framework de IA/regras, nem por tráfego agregado. Não criar POC setorial obrigatória, não mudar regras aprovadas, não desligar agentes fora da câmera e não prometer velocidade extrema sem teste.
 
 **Conclusão da rodada:** agora considero **evitar a descoberta e o recálculo repetidos de interações** uma oportunidade **mais transversal e potencialmente maior** do que apenas “colocar SIMs em GPU”. O horizonte de causalidade pode ser o maior diferencial **se** os custos de invalidação forem menores que os cálculos poupados. A hipótese central ainda precisa ser refutada/validada com carga de tráfego, produção e consumidores reais. A documentação detalhada e as fontes estão no [estudo transversal](simulation-engine-cross-domain-research.md).
+
+
+## 11. Quarta rodada — hipóteses radicais além dos motores de jogos (2026-10-09)
+
+> **Revisão humana desta seção: PENDENTE.** A pesquisa detalhada ficou em um [documento complementar de fronteira](simulation-engine-radical-hypotheses.md), para manter temas distintos navegáveis.
+
+A pesquisa original combinou **química de reações exatas** (fila de próximos acontecimentos + grafo de dependências), **controle self-triggered de robôs** (próximo instante necessário de avaliação), **compiladores de circuitos digitais** (redução do custo de scheduling em redes estáveis), **consultas incrementais como Salsa**, **QSS matemático**, **tempo superdenso em Ptolemy**, **RNG reproduzível Random123**, **verificação por Alive2/dReach** e relatos críticos de **Mob City/Omnith**.
+
+**Nova hipótese de maior potencial, NÃO validada:** um **motor causal compilável**, com estado individual e ordem temporal únicos, em que partes estáveis podem registrar dependências, horizontes de validade e sequências curtas reusáveis. Um evento externo invalida imediatamente suas premissas; o Core nunca substitui trajetórias, estoques ou transações por resultados fictícios. Não é um produto pronto nem uma arquitetura a adotar por antecipação.
+
+**Conclusão mais recente da IA:** começar com Core C# simples e correto, scheduler, índices de interesses, física verdadeira e métricas; investigar contratos temporais verificáveis como experimento técnico **opcional**; somente se houver ganhos comprovados considerar compilar rotinas localizadas. CPU microscópica continua referência para trânsito, GPU somente se provar vantagem integrada. As fontes e 17 alternativas com riscos estão em [pesquisa radical](simulation-engine-radical-hypotheses.md).
+
+**Status: PENDENTE de revisão humana. SPEC e ARCHITECTURE inalteradas.**
