@@ -14,6 +14,14 @@ Este arquivo é material de exploração temática. A autoridade do produto cont
 
 ---
 
+## Contas municipais: valor automático e dívida sem corte residencial (2B/3B, 2026-10-08)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou tarifas automáticas de água/energia e dívida real sem suspensão individual de residência na SPEC. Forma de cobrança, ordem entre dívidas e titularidade em locações ainda são detalhes abertos.
+
+Contas de água e eletricidade decorrem apenas do uso real e têm preço automático. Se o responsável familiar não puder pagar, a diferença é **dívida com o Caixa da Cidade**, separada do aluguel devido ao proprietário; não contabilizar como receita recebida. Reaproveitar recuperação gradual simples quando o SIM receber dinheiro, sem descontar duas vezes recursos escassos ou gerenciar cada família manualmente. **A inadimplência não gera corte específico da casa no modelo inicial**; isso não protege contra **falha geral de fornecimento por capacidade, infraestrutura ou recursos insuficientes**. O prazo de três meses associado à possível perda da moradia por aluguel **não se aplica automaticamente**. Percentuais, eventos de recuperação e coexistência de obrigações reais ainda devem ser definidos/calibrados de modo simples.
+
+---
+
 ## Água e energia como despesas domésticas efetivas — opção 1B (2026-10-08)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou pagamento familiar por consumo real de água e eletricidade ao Caixa municipal; este trecho apenas relaciona essa regra à economia familiar, sem definir devedor contratual em casos especiais ou política de inadimplência.
