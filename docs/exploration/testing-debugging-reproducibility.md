@@ -4,6 +4,18 @@
 >
 > **Pergunta:** como descobrir, reproduzir e evitar bugs num jogo em que milhares de SIMs, empresas e veículos agem autonomamente, inclusive com tempo acelerado, sem sobrecarregar a simulação ou criar um processo burocrático?
 
+## Quinta rodada — síntese executiva final (2026-10-10)
+
+> **PENDENTE de revisão humana.** Pesquisa concluída **como exploração de alternativas**, não solução já validada. Os novos mecanismos e sua avaliação crítica estão nas [seções 22–23](#22-quinta-rodada-final--ideias-realmente-novas-vindas-de-outras-áreas).
+
+**Diferença desta rodada:** além de procurar bugs que aconteceram, investigar **por que uma decisão/evento esperado não aconteceu**; medir se os testes realmente exploraram **estados do jogo**, e não somente linhas C#; verificar **fluxo local de dinheiro, propriedade e materiais**; investigar cenários raros, simetrias de grafos e performance adversarial sem transformar tudo em arquitetura obrigatória.
+
+**Ordem sugerida para análise humana:** (1) integridade por transação; (2) diagnóstico focal de **avaliado vs não avaliado**; (3) exploração de estados semânticos; (4) replay/corpus reproduzíveis; (5) buscas sofisticadas só quando casos reais as justificarem. Bots RL, IA como oráculo da SPEC, segunda engine, event sourcing integral e algoritmos evolucionários **não são recomendados para começar**.
+
+**Limite honesto:** a investigação encontrou novas opções sustentadas por pesquisa externa, mas **não mediu ganho, overhead nem funcionamento em IndexCities**. A próxima fonte de confiança deverá vir de código e execuções reais quando existirem, mantendo a implementação fiel à SPEC.
+
+---
+
 ## Quarta rodada — avaliação crítica e novas hipóteses (2026-10-09)
 
 > **Revisão humana: PENDENTE.** A terceira rodada não encerrava a investigação: reunia técnicas, mas ainda não demonstrava confiabilidade do replay, custo de CPU/memória ou capacidade de explicar falhas reais do IndexCities. A quarta rodada confronta propostas com falhas observadas e critérios de refutação. **Não altera SPEC, ARCHITECTURE, AGENTS ou código.**
