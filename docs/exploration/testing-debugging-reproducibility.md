@@ -781,3 +781,101 @@ Esta seleção contém **mecanismos novos e relatos reais** e não substitui o c
 - [JASSS 2024 — nove abordagens de validação de agentes](https://www.jasss.org/27/1/11.html).
 
 **Resultado: quarta rodada documentada, pesquisa PENDENTE de revisão humana.** Nenhum benchmark da engine foi executado; não há código do jogo no repositório. Não promover hipóteses desta seção para SPEC/ARCHITECTURE sem revisão e decisão explícitas.
+
+
+## 22. Quinta rodada final — ideias realmente novas vindas de outras áreas (2026-10-10)
+
+> **Revisão humana: PENDENTE.** Última rodada exploratória solicitada pelo responsável. Análise crítica baseada em pesquisas de segurança, bancos de dados, sistemas concorrentes, matemática industrial e testes de videogame. **NENHUMA destas técnicas foi medida no IndexCities**: o repositório consultado ainda não continha implementação da engine. As evidências provam que existem técnicas e resultados em seus contextos originais, **não** seu desempenho aqui. Nenhuma decisão é promovida a SPEC/ARCHITECTURE.
+
+### 22.1. Maior descoberta: explicar o que **não aconteceu** — why-not provenance
+
+Há uma tradição acadêmica de explicar não só **por que existe** um resultado, mas **por que falta** o resultado esperado. [Why and Where (Buneman, Khanna & Tan)](https://doi.org/10.1007/3-540-44503-X_20), [Efficiently Computing Provenance Graphs for Queries with Negation](https://arxiv.org/abs/1701.05699) e a [demonstração ICDE 2022 de proveniência SQL](https://db.cs.uni-tuebingen.de/publications/2022/how-where-and-why-data-provenance-improves-query-debugging--a-visual-demonstration-of-fine-grained-provenance-analysis-for-sql/) mostram o conceito em consultas, **não** em city builders.
+
+**Nossa adaptação original:** muitos defeitos de SIMs e empresas são **não eventos**: a fábrica nunca procurou insumo, um cidadão elegível jamais considerou um emprego, uma entrega nunca foi despachada, a compra não foi sequer avaliada, o imóvel não voltou a ser ofertado após uma mudança. Um log de decisões realizadas não explica isso.
+
+Em modo de investigação **por entidade e janela de ticks**, observar no Core: (1) momento em que a oportunidade deveria ser reconsiderada; (2) **avaliação aconteceu ou não?**; (3) quais condições foram consultadas de fato; (4) decisão tomada e motivo real; (5) houve agendamento de reavaliação ou o scheduler perdeu o gatilho. A resposta **“a decisão nem chegou a ser avaliada”** é diferente de **“o SIM decidiu não agir”**.
+
+Exemplo: o SIM não foi trabalhar. Possibilidades legítimas incluem falta de emprego, turno não iniciado, rota impossível, ocupação em outra atividade. Uma quinta explicação é bug: **a avaliação do turno não foi agendada**. Não fabricar texto de causa na UI; o diagnóstico deve usar a verdade da engine. [Pesquisa de why-not com negação](https://arxiv.org/abs/1701.05699) também ensina a **recortar só subgrafos relevantes** em vez de calcular todas as explicações possíveis.
+
+**Valor muito alto.** É talvez a melhor técnica nova, porque complementa diretamente causalidade e autonomia dos agentes. **Limite:** explicações completas de ausência em lógica recursiva podem ser caras ([estudo de complexidade](https://arxiv.org/abs/2303.12773)); começar com rastreamento seletivo de chamadas reais, não solver de decisões nem histórico integral.
+
+### 22.2. Cobertura de estados da cidade, em vez de apenas cobertura de linhas C#
+
+[StateFuzz — USENIX Security 2022](https://www.usenix.org/conference/usenixsecurity22/presentation/zhao-bodong) demonstrou que guiar fuzzing apenas por funções/linhas perde estados relevantes: duas execuções da mesma função podem atravessar **estados de negócio diferentes**. [Model-Guided Fuzzing — OOPSLA 2025](https://repository.tudelft.nl/record/uuid:66d18d3c-fead-4df0-8310-5df11370db13) explora cobertura de transições de um modelo abstrato; [StateAFL](https://github.com/stateafl/stateafl) usa feedback de estados de protocolo. **Seus benchmarks são de drivers/protocolos, não da economia de uma cidade.**
+
+**Proposta para IndexCities:** guardar quais **transições semânticas** os testes realmente exercitaram, sem criar enums artificiais como regras do produto. Exemplos: empresa de lucrativa para insolvência com material pendente; imóvel ofertado para disputado e alugado; estoque disponível para reservado e depois entregue; trabalhador em deslocamento para emprego encerrado; entrega esperando rota e depois reagendada; locatário em atraso para três meses vencidos com mudança de proprietário.
+
+O laboratório privilegia seeds/comandos que levam o **mesmo Core** a novas combinações, registra casos úteis como regressões, e deixa casos redundantes para testes mais baratos. Não precisa usar IA nem instalar fuzzer pesado: um conjunto explícito de categorias de **teste** extraídas do estado já implementado pode bastar.
+
+**Oráculo correto:** alcançar transição nova não prova que ela está correta. Sempre cruzar com **invariantes e SPEC**; não tratar como obrigação de gameplay uma transição que apenas apareceu em execuções. Testar ganho contra geração aleatória com **mesmo orçamento**, medindo falhas novas confirmadas, não quantidade bruta de estados.
+
+**Valor muito alto após existir fluxo entre sistemas.** Isso pode dar mais retorno que meta de cobertura percentual de linhas.
+
+### 22.3. Clonar checkpoints promissores para encontrar eventos quase impossíveis
+
+O método de [Adaptive Multilevel Splitting](https://pmc.ncbi.nlm.nih.gov/articles/PMC4440697/) explora eventos raros em simulações científicas fazendo várias continuações de trajetórias que chegaram perto da condição procurada. A [revisão matemática de AMS](https://doi.org/10.1063/1.5082247) discute variantes e limitações.
+
+**Aplicação hipotética:** um teste busca defeito raríssimo causado por inadimplência, morte do proprietário e transferência de titularidade quase simultâneas. Em vez de gerar milhares de cidades desde zero, guardar checkpoint próximo ao evento, variar **somente RNG/comandos externos permitidos** e executar várias continuações. Preservar qualquer falha como pacote reproduzível. Também se aplica a falta de combustível em energia e carga, congestionamento e disputas de material durante obra.
+
+**CRÍTICA ESSENCIAL:** selecionar preferencialmente caminhos raros **altera a distribuição de casos**. Um teste assim pode achar um bug, mas **NÃO** afirmar que ele ocorre com determinada frequência em partidas naturais. Estimativas probabilísticas exigiriam correções estatísticas explícitas. Além disso, toda ramificação deve ser estado **alcançável pelas regras reais**, não inventar SIM com dinheiro impossível ou empresa proprietária de bem inexistente.
+
+**Valor potencial alto, custo alto**, dependente de checkpoint e critérios de proximidade; experimentar com poucas ramificações manuais antes de copiar algoritmos de AMS.
+
+### 22.4. MAP-Elites: um zoológico de cidades extremas, não apenas a pior cidade
+
+[Mouret e Clune — MAP-Elites](https://arxiv.org/abs/1504.04909) mostra busca que mantém resultados diversos em vez de só um ótimo. A ideia foi aplicada à [geração de testes de software em trabalho publicado em 2024](https://research.birmingham.ac.uk/en/publications/automated-test-suite-generation-for-software-product-lines-based-/), com [código de referência](https://github.com/gzhuxiangyi/SPLTestingMAP).
+
+**Proposta:** manter um **corpus enxuto de cidades incomuns** e reprodutíveis em múltiplas dimensões: falta de energia vs. material; mercado residencial congestionado vs. livre; obras simultâneas vs. nenhuma; alta demanda de rota vs. baixa; alta rotatividade de empresas vs. estável. O gerador preferiria **novidade de comportamento e classes distintas de bug**, não “mais caos” ou cidades cada vez maiores.
+
+Uma cidade pequena com poucas casas, um único fornecedor e reservas simultâneas pode ser mais útil para descobrir um bug do que uma cidade com 100 mil habitantes. **Pode começar como biblioteca manual de saves**, sem MAP-Elites instalado. A complexidade de escolher dimensões, medir qualidade e evitar categorias exponenciais torna a abordagem algorítmica prematura.
+
+**Valor médio/alto para selecionar corpus**, baixo para iniciar agora um projeto de algoritmo evolutivo.
+
+### 22.5. Descoberta automática de invariantes (Daikon): saber perguntar, sem criar regras
+
+[Daikon](https://plse.cs.washington.edu/daikon/) observa execuções e infere **invariantes prováveis**, inclusive em [programas C#](https://plse.cs.washington.edu/daikon/download/doc/daikon/Example-usage.html). Não prova propriedades universais; encontra padrões **nas amostras observadas**.
+
+É possível usar isso para descobrir hipóteses difíceis de notar: que determinado sistema nunca considera famílias sem carro; que um fluxo de compra jamais ocorre numa faixa de preço; que entregas sempre usam um mesmo caminho mesmo quando alternativa existe. **Não significa que tudo isso seja bug**.
+
+**Maior risco:** institucionalizar uma falha existente. Se o Core atual tem um bug que impede certa compra, o minerador pode deduzir falsamente “essa compra nunca acontece” e gerar um teste que protege a limitação. Assim, qualquer regra inferida precisa passar por **SPEC, contraexemplos e revisão humana** antes de se tornar expectativa de teste. A mineração é uma **lupa para formular perguntas**, não autorização de comportamento.
+
+**Valor médio, futuro; não prioridade de implantação.**
+
+### 22.6. Rastreamento reverso de causas, inspirado em proveniência e program slicing
+
+[Provenance in Databases: Why, How and Where](https://www.research.ed.ac.uk/en/publications/provenance-in-databases-why-how-and-where/), [Database Queries that Explain their Work](https://arxiv.org/abs/1408.1675) e [Dynamic Program Slicing (PLDI 1990)](https://doi.org/10.1145/93542.93576) estudam **recortar o conjunto de entradas e operações que contribuiu para um resultado**.
+
+**Adaptação:** diante do estado “fábrica 15 sem insumo”, partir dessa entidade e navegar **para trás** só nos fatos relevantes: estoque vazio ← entrega atrasou ← veículo sem acesso ← via bloqueada ← obra iniciada pelo jogador. Isso é mais útil que 100 mil logs cronológicos sem filtro.
+
+Para aproveitar sem event sourcing global, começar por **IDs de causa** em transições relevantes e trace profundo **durante replay**, com retenção limitada e foco por entidade/domínio. Expor uma **linha do tempo causal curta**, não grafo completo permanente de toda a cidade.
+
+**Cuidado:** proveniência de dados e dependência de um cálculo **não provam causalidade contrafactual**; parte dos sistemas da cidade divide recursos comuns e possui múltiplas causas. Evitar alegar que uma única seta explica o comportamento econômico inteiro.
+
+**Valor alto como aprimoramento do diagnóstico já pesquisado.**
+
+### 22.7. Transformações por simetria: bugs escondidos em IDs e coordenadas
+
+Metamorphic testing permite testar relações quando não conhecemos a saída exata ([padrões de relações metamórficas, 2025](https://doi.org/10.1002/stvr.70003)). Algoritmos de grafos reconhecem quando grafos têm a **mesma estrutura com IDs renomeados** ([NetworkX isomorphism](https://networkx.org/documentation/stable/reference/algorithms/isomorphism.html)).
+
+**Teste local novo:** construir um grafo pequeno de ruas ou suprimentos, trocar todos os IDs de nós **preservando atributos, conexões, desempates e prioridades**, rodar o algoritmo e mapear resultado de volta. Se a operação deveria ser independente do nome dos nós e mudou, existe possível bug de ordem de coleção/hash. Outra variação é transladar um cenário geometricamente isolado em coordenadas sem mudar as relações relevantes.
+
+**Não fazer isso para a cidade inteira por padrão:** posição, acesso exterior, topografia, recursos, preços e regras de prioridade podem depender legitimamente da localização e dos IDs. IDs podem fazer parte de um desempate técnico autorizado. **Usar só onde a equivalência realmente é garantida.**
+
+**Valor médio/alto para pathfinding, índices, posição e algoritmos locais.**
+
+### 22.8. Pensar dinheiro e recursos como equações de transição (redes de Petri)
+
+Pesquisas de [PetriDotNet](https://doi.org/10.1016/j.scico.2017.09.003) e [manufatura/estoque em redes de Petri, estudo brasileiro](https://www.scielo.br/j/gp/a/4xzqzggzCy9ZyPzPHvjvczK/?lang=pt) usam transições e invariantes de fluxo para verificar sistemas com estados discretos.
+
+**Abordagem concreta e barata:** para cada operação crítica, especificar **entradas, saídas e condições** como contrato de teste:
+- transferir dinheiro: debitar pagador, creditar recebedor real, preservar oferta monetária total;
+- reservar material: diminuir **disponível** e aumentar **reservado** sem duplicar quantidade física;
+- transportar: estoque sai da origem e vira em trânsito, chega ao destino sem teleporte nem segunda cópia;
+- produzir: transformar insumos em produtos e resíduos **permitidos pelas receitas da SPEC**; não exigir conservação ingênua do mesmo material;
+- importar: material vem da origem externa autorizada e dinheiro segue o fluxo econômico aprovado.
+
+**A vantagem inédita:** a soma global de dinheiro pode fechar mesmo com **recebedor incorreto**; o contrato local acusaria. O total de estoque pode parecer correto mesmo com **lote duplicado e outro perdido**; checagem por lote/transação acusaria.
+
+**Não redesenhar a engine como Petri net completo.** Só aproveitar a ideia matemática para oráculos locais; grafos de estados da cidade inteira explodem.
+
+**Valor alto, custo baixo/moderado: melhor nova recomendação prática.**
