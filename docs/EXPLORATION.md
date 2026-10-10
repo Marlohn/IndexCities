@@ -93,6 +93,17 @@ Referências: [SPEC](SPEC.md), [serviços e infraestrutura](exploration/city-sys
 
 ---
 
+### Rodada seguinte — nove aprovações e duas propostas em análise (2026-10-09)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** A [SPEC](SPEC.md) foi atualizada com **1A (moradia sem abastecimento pleno), 2B (superlotação), 3A (fome pode matar), 4C (licença médica paga e limitada), 5A (compra empresarial de caminhões), 6A (ônibus iniciais pagos no pacote de garagem), 7A (produção agrícola influenciada por área), 8A (viaturas abastecem em postos) e 10C (semáforo/preferência e rua prioritária escolhidos pelo jogador)**. Foram aprovações diretas do responsável, não conclusões inferidas da IA.
+
+- **[Famílias e patrimônio](exploration/households-housing.md):** viver sem água/energia, residência superlotada e fome extrema com consequências reais. Calibração de saúde e qualidade de vida pendente.
+- **[Empresas e mercados](exploration/companies-markets.md):** caminhões reais adquiridos autonomamente por empresas com dinheiro próprio e área das fazendas afetando produção. **Complemento de frota mínima por fábrica continua sendo proposta EM DISCUSSÃO**, não aprovada; recomendação da IA é comprar frota-base efetivamente paga pela empresa ao começar operações.
+- **[Sistemas urbanos](exploration/city-systems.md):** licença médica automática e remunerada pelo empregador; garagens incluem compra física de ônibus iniciais; veículos de serviço abastecem com dinheiro da prefeitura nos postos reais; jogador escolhe semáforo ou preferência e rua prioritária. **Questão 9: caminho exclusivo de bicicletas NÃO definido** — inclinação a 9A, mas o responsável pediu entender o desenho da pista antes de finalizar; proposta de ligação física opcional entre bairros/serviços, sem aprovar implantação fora da rua ou faixa na rua automaticamente.
+- **[Mapa de prontidão](exploration/project-readiness.md):** acompanhar especialmente os dois pontos ainda abertos (frota mínima da empresa e ciclovia) e validar bootstrap com postos de combustível físicos para emergências.
+
+---
+
 ## Regra de autoridade
 
 Documentos em `docs/exploration/` **não são requisitos por si só**.
