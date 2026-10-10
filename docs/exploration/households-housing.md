@@ -14,6 +14,18 @@ Este arquivo é material de exploração temática. A autoridade do produto cont
 
 ---
 
+## Moradia sem abastecimento, superlotação e fome — nova rodada (2026-10-09)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável confirmou **1A, 2B e 3A**. O desenvolvimento deve seguir a SPEC; calibrações quantitativas e decisões adicionais não foram aprovadas.
+
+- **1A — residência sem água/energia:** compra e ocupação por SIM real continuam possíveis, sem impor ligação plena como bloqueio rígido. Falta real de serviço prejudica saúde, bem-estar e rotinas conforme consequências existentes; não se cobra consumo não realizado ou inventa abastecimento. Diferenciar **habitar** de **ter qualidade de vida**.
+- **2B — ocupação acima do conforto:** cada residência tem capacidade confortável, mas **não um limite absoluto que expulse familiares ou impeça nascimento**. Superlotação diminui bem-estar e ajuda a justificar decisão de mudar para imóvel maior, somente quando viável economicamente e com oferta real; sem desenho de cômodos ou gestão de camas pelo jogador.
+- **3A — fome pode ser fatal:** consumir de fato o estoque doméstico e refeições pagas continua obrigatório. Privação por período prolongado reduz saúde gradativamente e pode levar à morte, sem inventar fornecimento, punição instantânea, popup para cada família ou nova rotina de monitoramento per-frame.
+
+Riscos de gameplay para medir: cidade recém-fundada sem água/energia ainda pode atrair pessoas, mas a migração e permanência reagem às condições ruins; impacto de fome não pode matar populações inteiras por desequilíbrio de frequência de compras e duração do dia. **Não adicionar política municipal de assistência alimentar por analogia** com assistência social futura ainda não aprovada.
+
+---
+
 ## Vida familiar, crédito e débitos sucessórios — rodada de 2026-10-09
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou **2A, 4A e 6A**, mas casos de múltiplos credores e de criança sem parente elegível não foram definidos.
