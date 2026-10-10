@@ -1243,23 +1243,23 @@ Separar **tempo de suprimento e deslocamento reais** de **trabalho ativo de cons
 
 ## Jazidas simples e madeira renovável — rodada de 2026-10-10
 
-> **Revisão humana desta seção: PARCIALMENTE REVISADO.** Jazidas de Areia e brita (2B) e a decisão posterior de **madeira de fonte florestal renovável com capacidade limitada** (8 refinada) foram aprovadas pelo responsável e registradas na SPEC. Estender esse modelo a outros recursos permanece **PENDENTE** de revisão humana.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** Jazidas de Areia e brita (2B) e a decisão posterior de **madeira de fonte florestal renovável com capacidade limitada** (8 refinada) foram aprovadas pelo responsável e registradas na SPEC. A regra foi **estendida expressamente a jazidas de Areia e brita sem esgotamento**, conforme a SPEC atual; outras extensões seguem PENDENTES.
 
-**Confirmado 2B:** áreas/depósitos de areia e brita gerados na seed viabilizam extração local física e importação alternativa, sem sistema amplo de mineração ou vários SKUs adicionais. **Exaustão ou inexauribilidade das jazidas ainda não foi decidida**.
+**Confirmado 2B:** áreas/depósitos de areia e brita gerados na seed viabilizam extração local física e importação alternativa, sem sistema amplo de mineração ou vários SKUs adicionais. **Complemento aprovado posteriormente: as jazidas não se esgotam por volume acumulado no primeiro modelo; a produção por período continua finita e exige operação real**.
 
 **Confirmado 8 refinada:** floresta produtiva pode fornecer Madeira continuamente, sem gastar árvores individuais nem exigir replantio manual. A vazão por período depende de área produtiva disponível, trabalho, operação e tempo; unidades produzidas entram em estoques e são transportadas e comercializadas fisicamente. É renovação/manejo agregados, não madeira instantânea ou capacidade/estoque infinitos. Se a área for ocupada por construções, a produção disponível diminui. Plantio/crescimento/colheita explícitos seguem como eventual melhoria futura **não aprovada**. A representação visual deve preservar coerência; não aparentar que a mesma árvore é cortada infinitas vezes.
 
 ### Extender o princípio a outros recursos básicos — PENDENTE (2026-10-10)
 
-> **Revisão humana desta subseção: PENDENTE.** O responsável perguntou se esse princípio deveria valer também para outros materiais básicos; nenhum outro recurso teve exaustão indefinida aprovada.
+> **Revisão humana desta subseção: PARCIALMENTE REVISADO.** O responsável confirmou expressamente que jazidas de Areia e brita não se esgotam no modelo inicial, preservando capacidade produtiva limitada, operação e logística. As demais hipóteses de extensão seguem PENDENTES.
 
 **Princípio em avaliação:** distinguir duração/reposição da **fonte**, capacidade de **produção por período** e quantidade de **estoque físico** existente. Uma fonte persistente não implica estoque ou produção infinitos.
 
 - **Alimentos:** fazendas já produzem recorrentemente com terra, trabalhadores, insumos e tempo reais; não exigem consumo definitivo do solo em cada safra. Não criar estoque infinito.
-- **Areia e brita:** minerais não se regeneram biologicamente. Hipótese de gameplay: depósitos do mapa podem permanecer exploráveis sem esgotamento prático no modelo inicial, com capacidade produtiva limitada por local, funcionários, equipamentos, tempo, custo e transporte; comparar com depósitos que se esgotam. **A regra 2B não escolheu nenhuma das duas.**
+- **Areia e brita — APROVADO:** os depósitos seed-gerados **não se esgotam por contador de reserva no modelo inicial**, embora minerais reais não se regenerem biologicamente. Cada local oferece produção limitada por área, operação, trabalho, tempo, custo e transporte, gerando unidades físicas verdadeiras somente quando produzidas. Não cria produto armazenado infinito, nem elimina escassez econômica e espacial. Esta é uma abstração intencional para evitar reconstrução repetitiva.
 - **Concreto, Aço e Asfalto:** materiais industriais transformados. Produção contínua depende de **insumos efetivamente adquiridos**, fábricas, equipe, energia e logística. Não substituir insumos por geração gratuita nem simular minas de produtos finais.
 - **Combustível e Suprimentos médicos:** preservar obtenção real local/importada, preços, estoques e entrega física. Não criar combustível inesgotável em uma bomba nem suprimentos surgindo num hospital.
 - **Água, eletricidade, esgoto e lixo:** conforme a SPEC, são sistemas agregados de serviço e capacidade, não estoques desses oito materiais. Fontes e capacidade ainda impõem limites.
 
-**Recomendação exploratória:** reduzir esgotamento repetitivo que só gera reconstrução e microgerenciamento, mas preservar escassez econômica e espacial por preço, área produtiva, vazão, trabalhadores, frete e riscos de operação. Primeira decisão candidata relevante: **a jazida de Areia e brita se esgota ou permanece produzindo com limite por período?** Evitar novas decisões sobre cada SKU industrial quando a cadeia produtiva já responde à pergunta.
+**Síntese após decisão:** tanto florestas produtivas quanto jazidas iniciais fornecem matérias-primas continuamente **com vazão real limitada**; edifícios de transformação seguem dependentes de insumos reais, dinheiro, trabalho e transporte. Não generalizar inexauribilidade a todas as matérias-primas sem decisão específica; para produtos industriais, o gargalo é sua cadeia de fornecimento, não um depósito mágico. Parâmetros de vazão e distribuição são calibração de gameplay.
 
