@@ -199,6 +199,21 @@ O [hub](../EXPLORATION.md) registra 11 documentos temáticos: **9 PARCIALMENTE R
 
 ---
 
+### Rodada seguinte — 9 escolhas fechadas, ciclovia e frota-base pendentes (2026-10-09)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** Confirmadas diretamente pelo responsável: **1A, 2B, 3A, 4C, 5A, 6A, 7A, 8A e 10C**. A alternativa **9A teve aceitação condicional (“pode ser A, mas como seria o caminho exclusivo?”)**; detalhes físicos devem ser explicados e confirmados antes de promover à SPEC. O responsável cogitou complemento à **5A** de frota mínima na fábrica, sem aprovar ainda o pacote.
+
+**Produto confirmado na SPEC:** residências ocupáveis sem água/energia (consequências reais), superlotação residencial com bem-estar pior (sem despejo forçado), fome prolongada prejudicando saúde podendo matar, afastamento médico remunerado por tempo limitado e custeado pelo empregador, caminhões comprados automaticamente por empresas com recursos reais, garagem pública com ônibus iniciais incluídos no custo real, fazenda cuja área real influencia capacidade, frota municipal abastecendo em postos com pagamento/combustível físicos, e cruzamentos cujo semáforo ou preferência e rua prioritária são escolhidos pelo jogador. Valores e frequência não são requisitos novos por esta síntese.
+
+**Pendências de alto valor da rodada:**
+- **5 — frota inicial mínima nas fábricas:** recomendação da IA é **5A com investimento inicial em caminhão da própria empresa quando financeiramente viável**, não frota gratuita nem veículo incorporado sem custo à obra municipal. Não aplicar antes de confirmação.
+- **9 — mobilidade de bicicleta:** interpretar caminho exclusivo como trilha/ciclovia física opcional ligada à rede real, além das ruas compartilhadas. Ainda escolher se a solução inicial precisa ter **faixa ao lado da rua, caminho segregado fora da via ou só um desses**, com espaço físico, acesso, cruzamentos e custo proporcionais. **Não alterar o escopo de dois tipos de rua motorizada** nem inventar ciclovia impossível de alcançar.
+- **10 — semáforo e prioridade manual:** estabelecer UX padrão simples e seguro para interseções não editadas e ciclos fixos; especificar somente o mínimo na integração e medir custo de cada configuração sobre trânsito.
+
+**Bootstrap a testar:** se viaturas só podem abastecer em postos com estoque real (8A), serviço emergencial pode falhar numa cidade muito inicial sem posto ou combustível; evidenciar falta de oferta de maneira clara, não criar posto mágico/abastecimento externo automático não aprovado.
+
+---
+
 ### Rodada de 20 perguntas — todas as decisões fechadas (2026-10-09)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou 2A, 3A, 4A, 6A, 7A, 8A, 9A, 10A, 11B, 12A, 13C, 14A, 15A, 16B, 17A, 18A, 19A e 20B. **1 (calendário convencional) e 5A (proprietário responsável pelos reparos) foram aprovadas posteriormente**, completando as 20 decisões da rodada. Síntese da IA não revisada integralmente.
