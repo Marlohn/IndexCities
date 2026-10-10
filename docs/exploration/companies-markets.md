@@ -18,6 +18,15 @@
 
 ---
 
+## Complemento petrolífero — opções 8A e 9A aprovadas (2026-10-10)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** Jazidas de petróleo inesgotáveis **apenas em volume acumulado**, com produção efetiva limitada por período/recursos (8A); importação paga com transporte real de Petróleo bruto para refinarias privadas (9A). Este complemento modifica o que constava como pendência na seção histórica seguinte; detalhes de rendimento/preços seguem calibração.
+
+- **Cadeia válida:** jazida local produtiva **ou** petróleo comprado do exterior → carga/estoque bruto real → refino privado conforme capacidade/energia/trabalho → Combustível → posto/consumo real. A alternativa de importar Combustível acabado segue aberta para abastecimento sem refinaria.
+- **Não criar por implicação** bomba inesgotável, importação automática de insumos para empresa sem caixa, receitas artificiais ou subprodutos químicos adicionais.
+
+---
+
 ## Rodada 2026-10-10 — petróleo, veículos com desgaste e agricultura sem estações
 
 > **Revisão humana: PARCIALMENTE REVISADO.** O responsável aprovou 7C (cadeia petrolífera local), 8B (desgaste simplificado) e 9A (agricultura sem sazonalidade). A SPEC é a autoridade; sugestões e riscos abaixo são reflexão ainda não aprovada integralmente.
