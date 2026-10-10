@@ -297,13 +297,13 @@ Não reabrir essas escolhas como perguntas pendentes. Não alterar os percentuai
 
 ### Rodada adicional de escolhas e lacunas — 2026-10-10
 
-> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou 1A, 2B, 5A, 6A, 9A e 10B; a análise da IA e as propostas 7/8 permanecem PENDENTES.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou 1A, 2B, 5A, 6A, 9A, 10B e posteriormente **Madeira renovável de produção limitada (8 refinada)**; a escolha 7 e a extensão da 8 a outras fontes permanecem PENDENTES.
 
 **Fechadas na SPEC; não reabrir:** crise financeira municipal não encerra partida (1A); areia/brita podem ser extraídas de jazidas do mapa, sem mineração geral obrigatória (2B); furtos/roubos inicialmente transferem dinheiro entre SIMs reais (5A); incêndios nascem segundo contexto real de prédios/atividades (6A); fazendas usam tributo industrial de baixa densidade (9A); SIMs guardam eventos cotidianos e marcos pessoais, com exibição filtrada em camadas (10B). Também confirmadas como já fechadas em outra sessão: aterros de armazenamento finito e alimentos não perecíveis.
 
 **Pontos realmente abertos de produto:**
-- **7 — menores sem responsáveis e exterior:** não definir regra genérica de remeter problemas difíceis ao exterior. Investigar eventual acolhimento fora do mapa **com mecanismo de destino e condições explicáveis**, sem desaparecer com o problema urbano nem inventar recursos gratuitos. A saída de menores não foi aprovada.
-- **8 — madeira e fonte renovável:** avaliar oferta renovável de madeira **limitada por área real e capacidade produtiva**, sem esgotamento de árvores individuais e sem inventário infinito de madeira; ciclos de plantio/crescimento/colheita permanecem evolução eventual, não arquitetura já aprovada.
+- **7 — menores sem responsáveis:** após busca por parentes reais já aprovada, estudar **famílias acolhedoras não aparentadas**, acolhimento municipal simplificado e limites do exterior; o responsável não aprovou ainda uma solução de fallback. Não criar famílias, vagas ou transporte fictícios.
+- **8 — Madeira: FECHADA na SPEC** como fonte florestal renovável de **produção limitada por área, trabalho, tempo e capacidade**, sem esgotamento por árvore ou replantio manual. **Nova escolha aberta:** se jazidas de Areia e brita não se esgotam no primeiro modelo ou têm estoque geológico finito; nenhuma extensão automática a recursos transformados. Silvicultura detalhada permanece evolução futura não aprovada.
 
 **Validação/calibração, não novas votações obrigatórias:** desempenho e retenção do histórico 10B; quantidade/posicionamento/rendimento das jazidas; causas/frequência de ignição por tipo de edifício; custos reais de recuperação fiscal e fluxos de minério. **Melhorias futuras, não aprovadas:** roubo de veículos/bicicletas e alíquota rural própria. Não recalcular os percentuais históricos de prontidão sem auditoria material.
 
