@@ -292,4 +292,17 @@ O [hub](../EXPLORATION.md) registra 11 documentos temáticos: **9 PARCIALMENTE R
 
 Não reabrir essas escolhas como perguntas pendentes. Não alterar os percentuais históricos de prontidão sem novas evidências de validação.
 
+
+### Rodada adicional de escolhas e lacunas — 2026-10-10
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou 1A, 2B, 5A, 6A, 9A e 10B; a análise da IA e as propostas 7/8 permanecem PENDENTES.
+
+**Fechadas na SPEC; não reabrir:** crise financeira municipal não encerra partida (1A); areia/brita podem ser extraídas de jazidas do mapa, sem mineração geral obrigatória (2B); furtos/roubos inicialmente transferem dinheiro entre SIMs reais (5A); incêndios nascem segundo contexto real de prédios/atividades (6A); fazendas usam tributo industrial de baixa densidade (9A); SIMs guardam eventos cotidianos e marcos pessoais, com exibição filtrada em camadas (10B). Também confirmadas como já fechadas em outra sessão: aterros de armazenamento finito e alimentos não perecíveis.
+
+**Pontos realmente abertos de produto:**
+- **7 — menores sem responsáveis e exterior:** não definir regra genérica de remeter problemas difíceis ao exterior. Investigar eventual acolhimento fora do mapa **com mecanismo de destino e condições explicáveis**, sem desaparecer com o problema urbano nem inventar recursos gratuitos. A saída de menores não foi aprovada.
+- **8 — madeira e fonte renovável:** avaliar oferta renovável de madeira **limitada por área real e capacidade produtiva**, sem esgotamento de árvores individuais e sem inventário infinito de madeira; ciclos de plantio/crescimento/colheita permanecem evolução eventual, não arquitetura já aprovada.
+
+**Validação/calibração, não novas votações obrigatórias:** desempenho e retenção do histórico 10B; quantidade/posicionamento/rendimento das jazidas; causas/frequência de ignição por tipo de edifício; custos reais de recuperação fiscal e fluxos de minério. **Melhorias futuras, não aprovadas:** roubo de veículos/bicicletas e alíquota rural própria. Não recalcular os percentuais históricos de prontidão sem auditoria material.
+
 **Próxima revisão recomendada:** após definir um cenário de validação integrado ou obter as primeiras medições de desempenho e gameplay; antes disso, atualizar apenas correções materiais.
