@@ -17,6 +17,76 @@ Este arquivo é material de exploração temática. Quando houver divergência, 
 
 ---
 
+
+## Reavaliação técnica da stack Godot + C#/.NET (2026-10-10)
+
+> **Revisão humana desta seção: PENDENTE.** Avaliação e recomendação produzidas por IA, ainda não revisadas integralmente pelo responsável. **Não é nova decisão de produto nem de arquitetura.** A escolha **Godot como engine e C# como linguagem principal já está aprovada** na [SPEC](../SPEC.md#tecnologia); a separação entre Godot e núcleo de simulação C#/.NET já está aprovada na [ARCHITECTURE](../ARCHITECTURE.md). Este registro apenas avalia sua adequação e seus riscos diante do escopo atual.
+
+### Veredito condicionado
+
+**A recomendação atual é manter Godot + C#/.NET, sem migração preventiva.** A combinação é coerente com o produto planejado **porque o Godot ficará responsável pelo host, visualização 3D isométrica, input, cenas e interface**, enquanto a simulação econômica, social e de mobilidade tem estado e regras **independentes de objetos Godot**, como já estabelece a arquitetura. O conhecimento prévio do responsável em C#/.NET também reduz custo de aprendizado e desenvolvimento do núcleo.
+
+Esta é uma **avaliação de adequação**, não uma comprovação de capacidade máxima. O repositório ainda não possui uma implementação integrada nem benchmarks próprios que provem desempenho com dezenas ou centenas de milhares de SIMs. A maior incerteza não é simplesmente o FPS: é quantos **dias/horas/eventos simulados corretos por segundo real** conseguimos processar na velocidade acelerada aprovada, preservando viagens, transações, consumo, produção e história individual.
+
+### Evidência técnica e implicações para o IndexCities
+
+| Tema | Evidência e leitura técnica | Consequência prática |
+| --- | --- | --- |
+| **C#/.NET e ferramentas** | Godot suporta C# com runtime .NET moderno e integração com IDEs externos como Visual Studio/Rider. A documentação oficial caracteriza C# como opção de bom equilíbrio entre produtividade e velocidade; cálculos intensivos, porém, exigem atenção a alocações e GC. | Boa aderência ao perfil do desenvolvedor e ao núcleo em C# puro; não presumir que qualquer código C# será rápido sem medir. |
+| **Muitas instâncias visuais** | Godot documenta APIs de **Servers** de menor nível para contornar custo da SceneTree e **MultiMesh** para desenhar muitas instâncias em lotes. MultiMesh não realiza culling individual de cada instância; agrupamento espacial/visibilidade precisa ser considerado. | Representar somente o necessário no Godot; avaliar instanciamento em lote, LOD e divisão por regiões conforme perfil real. **Milhões de instâncias desenháveis não equivalem a milhões de agentes simulados.** |
+| **Fronteira C# ↔ engine** | A FAQ oficial adverte que muitas chamadas à API Godot podem anular parte da vantagem computacional do C# devido ao custo de interop/serialização. Acessos de leitura frequentes aos Servers também podem impor sincronização. | Evitar chamada à engine por SIM e por quadro. Medir especialmente a transferência de posições, estados e instâncias em lotes do núcleo para a apresentação. |
+| **Threads e SceneTree** | Godot suporta multithreading, mas a **SceneTree ativa não é thread-safe** e componentes de renderização/física têm restrições/configuração própria. | Paralelismo da simulação deve trabalhar com dados próprios; acesso ao Godot precisa respeitar suas fronteiras. Não assumir arquitetura multithread ou GPU antes de medir gargalos. |
+| **Portabilidade de C#** | A documentação estável registra exportação desktop (Windows/Linux/macOS), mas **Godot 4 + C# ainda não exporta para web**; Android/iOS seguem experimentais. | Não é impedimento identificado para a direção 3D desktop em estudo, **mas não define plataforma-alvo do produto**. Se navegador ou mobile virarem requisitos, reavaliar antes de prometer suporte. |
+| **3D e interface** | Godot dispõe de renderização 3D, câmera, cenas, UI, input e ferramentas de inspeção; as limitações da simulação descritas acima não implicam incapacidade de apresentar uma cidade. | Não há evidência atual de que migrar de engine resolveria os gargalos centrais; desempenho visual em cidades densas ainda precisa de profiling separado. |
+
+**Importante:** a documentação do MultiMesh descreve capacidade de desenho de grande volume, **não um benchmark do IndexCities**. A taxa real de atualização da cena, geometria, materiais, sombras, memória de vídeo, visibilidade e hardware-alvo podem tornar o resultado muito diferente. Algumas páginas de performance da documentação estável ainda têm avisos de atualização para versões recentes: confirmar APIs e custos na versão efetivamente adotada ao implementar.
+
+### Principal risco: tempo acelerado com causalidade real
+
+A [SPEC](../SPEC.md#tempo-de-jogo) exige relógio gregoriano único, pause e velocidades 1/2/3, com **todos os acontecimentos efetivamente simulados**. Não podemos mascarar lentidão simulando apenas a câmera visível, saltando datas ou inventando resultado de transações. A arquitetura atual distingue **tick lógico e frame gráfico**, admite agenda de atualizações, núcleo headless, medições e entidades persistentes sem Node próprio. Isso é apropriado e **não exige trocar Godot**.
+
+Há três custos distintos a medir, sem confundi-los:
+
+1. **CPU da simulação:** decisões de SIMs, economia, estoque, deslocamentos, congestionamento, escolha de rotas, eventos e dependências.
+2. **Comunicação e renderização:** custo de converter/enviar estado C# para o Godot, instâncias visíveis, culling e FPS.
+3. **Memória/persistência:** estados individuais, histórico de viagens e compras, índices, pressão de GC, tamanho e tempo de save/load.
+
+Nenhuma marca de engine, por si só, resolve essas três dimensões. Resultados de outros jogos e demos de instancing ou ECS **não autorizam declarar meta de população, aceleração ou FPS**; os números exploratórios de 10 mil/25 mil/50 mil/100 mil SIMs já existentes neste documento permanecem **cenários de observação, não requisitos aprovados**.
+
+### Alternativas consideradas, sem decisão de migração
+
+| Alternativa | O que potencialmente oferece | Trade-off específico neste projeto |
+| --- | --- | --- |
+| **Manter Godot + núcleo .NET próprio** | Continuidade da stack, domínio C# familiar, ferramentas prontas de UI/3D e fronteira clara de simulação. | Exige disciplina contra excesso de Nodes/chamadas por entidade, além de profiling gráfico e de GC. |
+| **Unity com C#** | Outra combinação de engine e linguagem familiar; diferentes recursos e ecossistema de renderização/data-oriented. | Migração e retrabalho sem benchmark comparável; não dispensa desenvolver o mesmo motor causal de cidade. |
+| **Unreal com C++/Blueprints** | Outra opção de infraestrutura gráfica e ferramentas avançadas. | Custo de mudança de linguagem/integração e de stack; não fornece automaticamente economia, tráfego e rotina de SIMs com aceleração real. |
+| **Engine/renderizador próprio** | Controle fino sobre todas as fronteiras e estruturas. | Alto custo de criar/manter câmera, editor, assets, UI, renderização e ferramentas que o Godot já entrega. |
+
+**Não existe demonstração comparável de que Unity, Unreal ou engine própria executariam a simulação do IndexCities melhor**. Se surgir um limite concreto e repetível de Godot (não um gargalo do C# core), comparar a mesma carga e a mesma fidelidade em alternativas antes de propor mudança estrutural.
+
+### Como validar durante o desenvolvimento integrado
+
+**Sem criar POCs setoriais obrigatórias nem prometer um resultado antes da medição**, usar a execução headless do core e a integração visual à medida que existirem; comparação ideal com a **mesma seed, carga, velocidade e estado**.
+
+- **Simulação:** horas/dias simulados por segundo real, eventos/s, p50/p95/p99 do tempo de atualização, backlog do scheduler, operações de rota, estoque/dinheiro e consistência causal.
+- **Visual:** FPS/tempo de frame, custo de nós/instâncias, draw calls, memória de GPU, picos na atualização de buffers e diferença entre câmera parada e movimentos/zoom.
+- **C#/.NET:** CPU por subsistema, bytes alocados, coleções e pausas de GC, memória total e custo da comunicação com Godot.
+- **Persistência:** tamanho de saves, escrita/leitura, acesso ao histórico individual e crescimento por ano de jogo.
+- **Escala/cenários:** começar por medidas honestas com o que já estiver implementado; variar 10k/25k/50k/100k SIMs como **faixas exploratórias**, sobretudo número de agentes ativos e viagens simultâneas, e não somente residentes inativos.
+
+**Gatilho para reabrir a escolha:** evidência reproduzível de que o host/renderizador Godot (incluindo a fronteira C#↔Godot) é gargalo decisivo **depois de alternativas razoáveis de otimização**, e que outra solução melhora a carga equivalente com custo/portabilidade aceitáveis. Se o gargalo estiver no algoritmo ou nos dados da simulação, mudar de engine provavelmente não o corrige.
+
+### Fontes primárias consultadas (2026-10-10)
+
+- Godot — [C#/.NET e suporte a plataformas](https://docs.godotengine.org/en/stable/tutorials/scripting/c_sharp/index.html) e [C# basics](https://docs.godotengine.org/en/stable/tutorials/scripting/c_sharp/c_sharp_basics.html).
+- Godot — [CPU optimization (linguagens, GC, threads)](https://docs.godotengine.org/en/stable/tutorials/performance/cpu_optimization.html) e [FAQ (custo de chamadas C# ↔ Godot)](https://docs.godotengine.org/en/stable/about/faq.html).
+- Godot — [Optimization using Servers](https://docs.godotengine.org/en/stable/tutorials/performance/using_servers.html), [MultiMesh](https://docs.godotengine.org/en/stable/tutorials/performance/using_multimesh.html) e [Thread-safe APIs](https://docs.godotengine.org/en/stable/tutorials/performance/thread_safe_apis.html).
+- Fontes internas: [SPEC](../SPEC.md), [ARCHITECTURE](../ARCHITECTURE.md), [pesquisa sobre o motor acelerado](simulation-engine-performance-research.md) e [pesquisa transversal de técnicas de simulação](simulation-engine-cross-domain-research.md).
+
+**Síntese:** **manter Godot + C#/.NET é recomendável hoje e consistente com a arquitetura aprovada**, sem garantia de escala. A decisão sensível futura é a capacidade de preservar o mundo acelerado no hardware-alvo, medida separadamente do FPS; não adotar ECS, GPU, threads extras ou trocar engine como solução por antecipação.
+
+---
+
 ## Calendário civil aprovado e alternativa futura de meses curtos (2026-10-09)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável **decidiu depois iniciar com calendário real gregoriano** de dias de 24 horas, meses de 28/29/30/31 dias e anos de 365/366 dias, seguindo relógio único e simulação real. **Se medições de performance e gameplay justificarem, quer revisitar futuramente a hipótese de reduzir dias por mês, sem aprovação antecipada.** A aceleração real de todos os acontecimentos já está aprovada na SPEC; **não reabrir nem relativizar** essa regra.
