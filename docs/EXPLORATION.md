@@ -79,16 +79,16 @@ Referências: [SPEC](SPEC.md), [serviços e infraestrutura](exploration/city-sys
 
 ---
 
-### Rodada de 20 perguntas — decisões e duas lacunas (2026-10-09)
+### Rodada de 20 perguntas — calendário e ruas fechados, reparo pendente (2026-10-09)
 
-> **Revisão humana: PARCIALMENTE REVISADO.** Foram aprovadas **18 das 20 opções**: 2A, 3A, 4A, 6A, 7A, 8A, 9A, 10A, 11B, 12A, 13C, 14A, 15A, 16B, 17A, 18A, 19A e 20B. **Questão 1 de calendário e questão 5 do custeio de reparos de incêndio seguem pendentes**; o primeiro pediu explicação, o segundo contém contradição entre letra A e justificativa sobre despesas do jogador. Apenas decisões efetivas foram promovidas à [SPEC](SPEC.md).
+> **Revisão humana: PARCIALMENTE REVISADO.** **19 das 20 escolhas foram aprovadas**, incluindo depois **1 — calendário gregoriano real**, **20B refinada — ruas de 1+1 e 2+2 faixas**. **Somente a questão 5 (quem paga reparos de incêndio privados) segue PENDENTE**: a IA recomendou A original após pedido de reflexão, mas não houve confirmação humana da recomendação. Apenas decisões efetivas foram promovidas à [SPEC](SPEC.md).
 
 - **[Mapa de prontidão](exploration/project-readiness.md):** índice das 18 regras oficializadas, duas dúvidas de produto e estudos proporcionais restantes. Não reabrir decisões oficiais por números ainda a calibrar.
-- **[Escala e simulação](exploration/simulation-scale.md):** exemplos NÃO decididos de meses com 10/15/30 dias; comparar impacto na passagem dos anos, calendário econômico e aceleração real obrigatória, sem aprovar calendário curto ou dois relógios.
-- **[Sistemas urbanos](exploration/city-systems.md):** reparos de incêndio (A significava proprietário privado paga, mas justificativa pode indicar Caixa da Cidade pagando particulares), saúde com triagem/suprimentos/parto, crimes patrimoniais, táxis, estacionamentos, frota municipal no custo de construção, funeral público, travessias e variação de faixas.
+- **[Escala e simulação](exploration/simulation-scale.md):** **calendário convencional de 24 horas/dia, meses reais e 365/366 dias/ano aprovado**, com todos os acontecimentos físicos/econômicos efetivos. **Meses encurtados por eventual necessidade de performance são melhoria futura a avaliar**, sem aprovação agora; exemplos de 10/15/30 dias são histórico de comparação, não nova regra.
+- **[Sistemas urbanos](exploration/city-systems.md):** **custeio de reparos por incêndio continua PENDENTE**; a IA recomenda proprietário privado pagar pelo seu prédio e Caixa pagar prédios públicos, pois o jogador já sofre efeitos econômicos indiretos da má gestão de bombeiros. Recomendação **não aprovada**. Saúde, crimes, táxis, estacionamentos, frota, funeral, travessias e ruas mantêm decisões da SPEC.
 - **[Famílias e patrimônio](exploration/households-housing.md):** crédito privado ausente, dívida municipal paga apenas com saldo do falecido, menores entregues a parentes reais quando elegíveis. **Assistência social institucional foi pedida como melhoria futura, NÃO aprovada para agora.**
 - **[Empresas e mercados](exploration/companies-markets.md):** preço e chamada física de táxi, venda direta de carros produzidos e revenda de usados; aquisição separada de viaturas como **melhoria futura NÃO aprovada**.
-- **[Construção e materiais](exploration/construction-materials-logistics.md):** asfalto e base viária já são recursos reais; estudar consumo físico proporcional a comprimento/largura das ruas e poucas opções de faixas sem aprovar contagens numéricas ainda.
+- **[Construção e materiais](exploration/construction-materials-logistics.md):** asfalto e base viária já são recursos reais; **ruas urbanas de 1+1 ou 2+2 faixas estão aprovadas**. Custo/entrega material crescem com comprimento/largura reais, com fórmula e dimensões exatas para calibração, sem alargar rua pronta por comando implícito.
 - **Outras melhorias futuras desejadas, NÃO aprovadas agora:** crimes com agressão/ferimentos (10B) e colocação/remoção manual de faixas (19C).
 
 ---
