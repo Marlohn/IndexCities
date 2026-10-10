@@ -8,6 +8,16 @@
 >
 > Concentra a evolução do modelo de construção física, materiais, estoques, importação/exportação, reservas, execução de obras e logística. Alternativas superadas permanecem identificadas para preservar por que o modelo atual foi escolhido.
 
+## Petróleo inicial com vazão finita e comércio exterior — escolhas 8A/9A (2026-10-10)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** O responsável escolheu explicitamente **8A** (jazidas sem esgotamento na versão inicial) e **9A** (petróleo bruto importável para refinarias); regras oficiais na SPEC.
+
+- **Jazida real inesgotável em quantidade acumulada:** não existe contador de reserva que zera com extração, mas **nenhuma mina/refinaria produz sem capacidade, instalação, trabalho, insumos, custo, tempo e estoque real**. Assim, a jazida sustenta desenvolvimento por anos sem microgerenciar esgotamento periódico; espaço, operação e produção por período seguem limitados. É abstração geológica intencional, não regeneração física de petróleo. Reservas finitas podem ser reavaliadas apenas futuramente.
+- **Petróleo bruto pode ser importado:** refinaria privada compra no exterior quando tiver caixa, acesso, estoque e transporte reais; pagamento à Reserva Global e entrega física precedem produção. Alternativas legítimas continuam: extrair petróleo local ou importar Combustível já refinado. Não criar porto, navio, oleoduto ou refinaria municipal sem decisão.
+- **Teste de gameplay sugerido:** comparar cidade que só importa Combustível pronto versus cidade com refino local alimentado por óleo extraído e/ou importado. Deve haver diferença observável de oferta, emprego, tráfego, vulnerabilidade logística, custos e preços, não somente um novo asset sem função.
+
+---
+
 ## Nova cadeia petrolífera local — opção 7C aprovada (2026-10-10)
 
 > **Revisão humana: PARCIALMENTE REVISADO.** O responsável pediu expressamente a cadeia **extração de petróleo → refino → distribuição** já no modelo inicial, com materiais físicos, economia e instalações reais. As variantes e detalhes técnicos abaixo continuam material exploratório e não constituem autorização de recursos extras.
