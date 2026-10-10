@@ -206,3 +206,20 @@ Cenários: (1) cidade muito pequena sem Prefeitura; (2) Prefeitura instalada e s
 **Conclusão de pesquisa, parcialmente superada pela decisão posterior:** a Prefeitura precisa ter **atividades concretas e servidores SIMs empregados no próprio edifício** como papel primário, e oferecer leitura secundária das necessidades humanas. Falta decidir **qual trabalho municipal específico** torna esse emprego útil. A alternativa de deixar apenas um painel informativo como função principal foi descartada pelo responsável; pesquisas sobre tipos de serviço, visitas, obrigatoriedade e custo de capacidade continuam PENDENTES. Reutilizar estado real dos SIMs e serviços, não criar segunda simulação burocrática.
 
 **Nenhuma regra acima altera a SPEC sem decisão explícita do responsável.**
+
+
+## Candidato operacional mais concreto — manutenção extraordinária e contratações (2026-10-10)
+
+> **Revisão humana desta seção: PENDENTE.** É uma recomendação da IA pedida pelo responsável, **não foi aprovada ainda**; a SPEC preserva somente a direção já escolhida: coordenar serviços municipais por funcionários reais, com atendimento pontual e informação das necessidades como complementos.
+
+**Proposta focal:** a Prefeitura atuaria como **central operacional para demandas municipais excepcionais que exigem coordenar recursos e prestadores**, particularmente **reparo de estruturas públicas danificadas**, onde equipe/material/capacidade municipal corrente não atendem à demanda. Não seria uma autorização obrigatória para o funcionamento normal de hospitais, escolas, coleta, polícia, bombeiros, tributos, obras nem manutenção recorrente.
+
+**Fluxo demonstrativo hipotético:** incêndio danifica escola municipal → dano e necessidade física já pertencem ao estado real da simulação → equipe da Prefeitura coordena **contratação complementar real** para reparo quando a capacidade pública não resolve → contratante e prestador reais, orçamento do Caixa e materiais efetivamente disponíveis, trabalhadores e deslocamentos reais executam ação → escola recupera capacidade somente após conclusão física. Sem equipe/insumos/caixa, não há conserto mágico. A Prefeitura não vira um segundo Pátio de Obras nem cria obra paralela inventada; as responsabilidades de execução e contrato ainda carecem definição.
+
+**Diferencial testável:** o serviço exclusivo deve produzir **ação comprovável além da interface** (por exemplo contratação e programação de reforço operacional realmente entregue) sem transformar um serviço que hoje funciona automaticamente em atraso burocrático arbitrário. Se uma operação já está coberta pelo Pátio, despacho automático, manutenção municipal ou compra automática de hospital, não duplicá-la por necessidade de manter o edifício ocupado.
+
+**Atendimento pontual:** ocorrências reais de moradores ou empresas podem ser encaminhadas à Prefeitura só quando existir serviço apropriado, resultado e razão para comparecer. Nunca exigir cada SIM reportar problemas para que o jogo detecte falta de vagas, lixo acumulado ou falha de infraestrutura que já são simulados; a leitura coletiva de demandas segue segunda função.
+
+**Riscos abertos:** extensão do trabalho do Pátio Municipal de Obras versus função da Prefeitura, origem da equipe de reparo/serviço terceirizado e recursos físicos, qual evento justifica contrato extraordinário, efeito da ausência de Prefeitura sem contradizer reparos públicos já definidos, contratação automática sem autorização individual do jogador, custos de pessoal e impacto de capacidade para não introduzir nova taxa administrativa fictícia.
+
+**Próxima decisão candidata:** *A Prefeitura deve organizar contratações e reparos municipais extraordinários quando faltar capacidade operacional local, sem ser requisito para serviços e manutenção rotineiros?* A aprovação dessa opção ainda demandaria separação clara entre coordenar contratos e executar o trabalho, além de definir fluxo econômico e físico.
