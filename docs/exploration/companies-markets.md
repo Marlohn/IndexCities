@@ -18,6 +18,17 @@
 
 ---
 
+## Rodada 2026-10-10 — petróleo, veículos com desgaste e agricultura sem estações
+
+> **Revisão humana: PARCIALMENTE REVISADO.** O responsável aprovou 7C (cadeia petrolífera local), 8B (desgaste simplificado) e 9A (agricultura sem sazonalidade). A SPEC é a autoridade; sugestões e riscos abaixo são reflexão ainda não aprovada integralmente.
+
+- **Petróleo 7C APROVADO:** produtores privados reais exploram jazidas de petróleo presentes na seed, criando estoque de **Petróleo bruto físico**; transportadores efetivos levam material a **refinarias reais**; refino consome petróleo bruto, energia, trabalho, tempo, custos e produz **Combustível** real; mercadoria final segue caminhões, estoques de postos e venda/consumo de veículos. A importação de combustível refinado continua válida inclusive no bootstrap. O intermediário petróleo bruto **não altera retroativamente as oito categorias principais da economia** nem cria combustível sem origem. Novos edifícios de extração e refino podem reutilizar componentes visuais compatíveis, sem serem upgrades de edifícios prontos.
+- **Desgaste 8B APROVADO:** veículos motorizados persistentes de SIMs, empresas e serviços públicos deterioram condição pelo tempo/uso até precisarem de troca real. SIM/empresa compra substituto de fornecedor físico, com dinheiro e entrega; serviços municipais repõem unidades em vez de **crescerem a frota automaticamente**, preservando vagas reais de garagem. Carro usado precisa refletir condição; não criar sucata monetária, oficinas, manutenção individual ou receita falsa automaticamente. **A baixa do veículo aposentado exige descarte simplificado consistente**, a aferir no jogo.
+- **Fazendas 9A APROVADO:** manter produção conforme área física, insumos, pessoas, demanda/estoque, sem ciclos sazonais ou multiplicadores por estação no modelo inicial. **Melhoria futura expressamente desejada, NÃO aprovada:** sazonalidade leve (9B), desde que não force novos assets ou microgestão agrícola.
+- **Pendente quando implementação exigir:** reservas de petróleo finitas ou produção geológica inesgotável com vazão limitada, viabilidade de importação de petróleo bruto como insumo separado, rendimento econômico do refino; cada possibilidade deve ser justificada pelo gameplay e não é presumida na SPEC.
+
+---
+
 ## Como ler este documento
 
 Este arquivo é material de exploração temática. A autoridade do produto continua sendo `docs/SPEC.md`. Trechos históricos podem preservar alternativas já superadas; quando houver divergência, vale a decisão canônica mais recente.
