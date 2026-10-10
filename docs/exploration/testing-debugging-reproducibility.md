@@ -879,3 +879,122 @@ Pesquisas de [PetriDotNet](https://doi.org/10.1016/j.scico.2017.09.003) e [manuf
 **Não redesenhar a engine como Petri net completo.** Só aproveitar a ideia matemática para oráculos locais; grafos de estados da cidade inteira explodem.
 
 **Valor alto, custo baixo/moderado: melhor nova recomendação prática.**
+
+
+### 22.9. Procurar ciclos de espera e progresso impossível
+
+Sistemas de concorrência e manufatura analisam grafos de espera e dependências entre recursos. Para o IndexCities, a adaptação **não é** instalar um detector de deadlock de sistema operacional, e sim analisar uma **cadeia de bloqueios de negócio** quando um cenário fica parado.
+
+Exemplo: fábrica A aguarda material de B, B aguarda caminhão de C, e C aguarda combustível fornecido por A. Aparentemente, ninguém faz nada, embora todas as entidades tenham passado por decisões válidas. Uma execução longa sem crash jamais acusaria esse estado.
+
+**Ferramenta opcional:** em investigação por entidade/área, montar um pequeno grafo com causa de pendência e recurso esperado. Procurar ciclos e identificar **condições de saída legitimamente existentes** (compra externa, novo fornecedor, mudança de rota, cancelamento aprovado, produção própria), além de gatilhos da agenda que esqueceram de reavaliar uma oportunidade.
+
+**Advertência:** ciclos e escassez podem fazer parte da simulação correta. Não impor que toda economia progrida; o que deve ser testado é se o Core **respeitou condições e eventos de reavaliação** exigidos pela SPEC. A ausência de evento do item 22.1 é mais valiosa aqui que um alerta genérico de “cadeia travada”.
+
+**Valor médio:** ferramenta de análise de raros bloqueios logísticos, não invariante sempre ativa.
+
+### 22.10. Bots exploradores e inteligência artificial: ideia forte, momento errado
+
+A [EA SEED — Automatic Gameplay Testing with Curiosity](https://www.ea.com/seed/news/gameplay-testing-curiosity) treinou agentes que exploram ambientes 3D para identificar problemas; [ASE 2022 — agent-based 3D game testing](https://doi.org/10.1145/3551349.3560507) investigou aprendizado por reforço para complementar testes com scripts. **Esses trabalhos não validam um agente capaz de jogar uma economia urbana integrada.**
+
+**Aplicação em etapas, se necessária no futuro:**
+1. Bot simples que emite **comandos de jogador já aprovados**, via mesma camada de comando do jogo: construir, ligar vias, salvar/carregar, alterar velocidade, pesquisar estado. Pode gerar sequências válidas orientadas por cobertura semântica da seção 22.2.
+2. Seleção evolutiva por novidade, corpus diverso de cidades ou busca com restrições.
+3. Só depois, caso bots simples falhem e houver evidência, avaliar agente RL de exploração ou IA que escolha comandos para provocar situações novas.
+
+**Riscos sérios:** treinar pode custar mais que testar, recompensa mal definida leva a *reward hacking* (o bot aprende a bater num contador, não a encontrar bug), sequências bizarras podem alcançar somente estados impossíveis para jogador, e RL introduz mais aleatoriedade/artefatos para reproduzir. Além disso, bot tester **não deve criar nova decisão de produto**.
+
+**Conclusão:** bots simples e buscas baseadas em estado têm potencial; **não recomendar rede neural ou LLM como núcleo de teste** agora.
+
+### 22.11. Um adversário que tenta derrubar a performance, mantendo o jogo correto
+
+Em vez de usar só uma cidade grande “normal” no benchmark, investigar as **piores cidades válidas**: anéis viários que forçam milhares de replanejamentos, caminhos que quase existem mas terminam bloqueados, trabalhadores e empresas fazendo reavaliações sincronizadas, rotas de carga com disputas de vagas, estoque insuficiente disparando novas tentativas no mesmo intervalo.
+
+**Proposta:** um gerador altera topologias e comandos de maneira permitida, executa o **Core real** e procura aumentar métricas como duração de ticks (p95/p99), backlog de eventos, idade de filas, chamadas de pathfinding, alocações, invalidadores de cache e tempo simulado efetivamente processado por segundo real. Preservar e reduzir **o menor cenário que ainda é patológico**. Isso pode complementar pesquisa de [qualidade/diversidade de soluções](https://arxiv.org/abs/1504.04909) e localização histórica de regressão usando [git bisect](https://git-scm.com/docs/git-bisect).
+
+**Não confundir:** cidade muito congestionada por decisões do jogador pode ser gameplay correta. O defeito é o custo computacional desproporcional, fila de scheduler esquecida ou quebra de causalidade sob carga. É essencial medir com hardware/build fixados, múltiplas execuções, warm-up e log do Core; não atribuir flutuação de GC ou sistema operacional a um algoritmo sem confirmação.
+
+**Valor alto quando o jogo integrado existir**, mais forte que benchmark de função isolada; **custo de execução potencialmente alto**, logo fora do ciclo de toda edição.
+
+### 22.12. O que é novidade real versus reciclagem de pesquisa anterior
+
+| Linha de investigação | O que acrescenta de fato | Limite |
+| --- | --- | --- |
+| **Why-not (ausência de decisão)** | Encontra ação omitida e gatilho que **nunca disparou**; só “trace de ações” não detecta | Rastrear por ID/janela; nada de todas as alternativas de todos SIMs |
+| **Cobertura semântica** | Guia os testes a **situações de gameplay inéditas**, não a funções nunca chamadas | Estados instrumentais não podem virar contrato |
+| **Fluxos e contratos de transição** | Aponta **quem recebeu/consumiu indevidamente**, mesmo com total agregado correto | Seguir SPEC, não inventar conservação de recurso transformado |
+| **Eventos raros ramificados** | Explora mais eficientemente condições muito improváveis | Distorce frequência natural; exige replay/checkpoint |
+| **Cidades diversas MAP-Elites** | Mantém corpus de **fenômenos diferentes**, não só seeds redundantes | Dimensões ruins geram arquivo grande e falsa variedade |
+| **Mineração de invariantes** | Descobre perguntas ainda não formuladas por humano | Observação **não é regra aprovada** |
+| **Causas reversas/proveniência** | Explica resultado via pequeno **subconjunto de fatos relevantes** | Não confundir linhagem de dados com causalidade contrafactual |
+| **Simetria/relabeling** | Detecta bugs de algoritmo dependentes de ID ou coordenada irrelevantes | Só em algoritmos cuja simetria é real e verificável |
+| **Ciclos de espera** | Identifica onde cadeia de abastecimento/agenda pode parar | Falha de progresso nem sempre é bug |
+| **Bots e RL** | Exploram escolhas de jogador não antecipadas | RL é custo muito alto para benefício incerto no estágio atual |
+| **Perf adversarial** | Procura piores casos que inviabilizam aceleração | Requer cenário integrado e baseline; não é teste funcional |
+
+### 22.13. Critérios de falsificação: como **rejeitar** ideias atraentes
+
+- **Why-not:** em um cenário de teste, remover o agendamento de uma avaliação que já existe e conferir se o diagnóstico mostra “não avaliado” em vez de inventar “recusou”. Se não distinguir, a ferramenta não entrega a vantagem.
+- **Cobertura semântica:** mesmo orçamento de tempo, comparar geração aleatória, pairwise e guia por estados. Exigir **novas classes de falha confirmadas** e diversidade útil, não mais contagens.
+- **Fluxos de recurso:** alterar em cópia de teste o destinatário de um pagamento, criar reserva dupla, perder lote em transporte. Os testes locais devem acusar **mesmo que o total monetário global permaneça igual**.
+- **Simetria:** renomear grafo de uma rota pequena cuja regra é invariável a ID e checar resultado após inversão do mapeamento. Se regra usar ID legitimamente, **o teste está errado**, não o Core.
+- **Evento raro:** ramificar um estado próximo da inadimplência/herança e conferir replay fiel e diversidade real de continuações. Se quase todas forem equivalentes ou muito caras, rejeitar.
+- **Zoológico de cidades:** comparar corpus diverso versus seeds aleatórias sob mesmo orçamento; rejeitar categorias que só medem mudança de escala ou ruído.
+- **Invariantes aprendidas:** tentar gerar contraexemplos e validar contra a SPEC; descartar hipóteses que apenas descrevem comportamento acidental/errado.
+- **Bot explorador:** comparar bot simples com script padrão antes de gastar recursos treinando agente RL.
+- **Performance adversarial:** comparar pior caso encontrado com benchmark normal e registrar hardware/commit; rejeitar busca se só produzir ruído ou já encontrar o mesmo gargalo trivial.
+
+### 22.14. O que definitivamente NÃO merece ser construído agora
+
+**Não recomendar:** um simulador paralelo para simular o jogo; event sourcing integral de todas as decisões de cada SIM; hash do mundo inteiro em toda frame normal; checkpoints forenses contínuos para toda a população; hipervisor determinístico; monitoramento distribuído; IA/LLM que decida o “comportamento correto” sem SPEC; RL como primeira ferramenta; solver formal da cidade inteira; sistema de métricas que transforma observação em mecânica econômica; migração obrigatória de todos os testes para um novo framework.
+
+Oportunidades mais poderosas **não implicam arquitetura mais complexa desde o primeiro dia**. A arquitetura do projeto já prevê Core C# separado do Godot, execução headless, sementes, persistência, comandos, diagnóstico e testes. A contribuição desta rodada é melhorar **oráculos, seleção de cenários e explicação de omissões**, não adicionar mais uma camada obrigatória ao produto.
+
+### 22.15. Ordem de adoção mais justificável após as cinco rodadas
+
+1. **Já no primeiro domínio implementado:** contratos pré/pós de ações críticas (dinheiro, posse, estoque), IDs e testes unitários focados. Não exigir rollout de ferramenta de mineração/IA.
+2. **Quando scheduler e SIMs existirem:** cenários headless que exercitam a **mesma engine**; distinguir **avaliou/não avaliou/decidiu/aguarda reavaliação** no diagnóstico focado; guardar cobertura semântica de casos realmente importantes.
+3. **Quando persistência existir:** provar reexecução com checkpoint/RNG/agenda/comandos, checar round-trip e sobrevivência a erro de gravação, sem prometer replay perfeito antes dos dados.
+4. **Quando integrações e aceleração existirem:** testes metamórficos de tempo/FPS/câmera/cache, reavaliação de eventos ausentes, monitoramento da fila e testes adversariais de performance.
+5. **Quando falhas raras forem observadas:** ramos de checkpoint, redução de casos, corpus de situações extremas e trace causal reverso — tudo seletivo.
+6. **Só se a geração simples ficar insuficiente:** considerar qualidade/diversidade automática, mineração de invariantes ou bot curioso. A decisão depende de experimentos que mostrem benefícios, não de prestígio das técnicas.
+
+**Parecer final:** a pesquisa ampla pode ser **encerrada como exploração de opções**, sem fechar implementação nem presumir que está provada. A melhor melhoria da última rodada é o trio **(a) teste das transições reais + (b) cobertura de estados significativos + (c) explicações tanto para eventos que aconteceram como para eventos que deixaram de acontecer**.
+
+## 23. Bibliografia nova e proveniência da quinta rodada
+
+Estas fontes, publicadas pelos próprios autores, instituições, conferências ou repositórios dos projetos, acrescentam temas que **não eram o foco** nas seções 1–21. Artigos sobre bancos, segurança ou física sustentam a **existência do método**, não os resultados esperados no jogo. Não há benchmark do IndexCities nesta rodada.
+
+**Explicar o que aconteceu e o que faltou:**
+- [Buneman et al., Why and Where (ICDT 2001)](https://doi.org/10.1007/3-540-44503-X_20)
+- [Why-not provenance por grafos com negação (2017)](https://arxiv.org/abs/1701.05699)
+- [Provenance in Databases — Why, How and Where (2009)](https://www.research.ed.ac.uk/en/publications/provenance-in-databases-why-how-and-where/)
+- [Database Queries that Explain their Work (2014)](https://arxiv.org/abs/1408.1675)
+- [ICDE 2022 — demonstração de proveniência SQL](https://db.cs.uni-tuebingen.de/publications/2022/how-where-and-why-data-provenance-improves-query-debugging--a-visual-demonstration-of-fine-grained-provenance-analysis-for-sql/)
+- [Dynamic program slicing (PLDI 1990)](https://doi.org/10.1145/93542.93576)
+
+**Explorar situações difíceis com menos casos redundantes:**
+- [StateFuzz (USENIX 2022)](https://www.usenix.org/conference/usenixsecurity22/presentation/zhao-bodong)
+- [StateAFL (código aberto)](https://github.com/stateafl/stateafl)
+- [Model-Guided Fuzzing (OOPSLA 2025)](https://repository.tudelft.nl/record/uuid:66d18d3c-fead-4df0-8310-5df11370db13)
+- [Data Coverage for Guided Fuzzing (USENIX 2024)](https://www.usenix.org/conference/usenixsecurity24/presentation/wang-mingzhe)
+- [Adaptive Multilevel Splitting (2019)](https://doi.org/10.1063/1.5082247)
+- [Adaptive Multilevel Splitting — estudo de física molecular](https://pmc.ncbi.nlm.nih.gov/articles/PMC4440697/)
+- [Mouret e Clune — MAP-Elites (2015)](https://arxiv.org/abs/1504.04909)
+- [Quality-diversity aplicado a testes (artigo de 2024)](https://research.birmingham.ac.uk/en/publications/automated-test-suite-generation-for-software-product-lines-based-/)
+- [Código da pesquisa de geração MAP-Elites](https://github.com/gzhuxiangyi/SPLTestingMAP)
+
+**Novos oráculos e ferramentas exploratórias:**
+- [Daikon — inferência dinâmica de prováveis invariantes](https://plse.cs.washington.edu/daikon/)
+- [Daikon — análise de programas C#](https://plse.cs.washington.edu/daikon/download/doc/daikon/Example-usage.html)
+- [NetworkX — isomorfismo](https://networkx.org/documentation/stable/reference/algorithms/isomorphism.html)
+- [Pesquisa de padrões metamórficos (2025)](https://doi.org/10.1002/stvr.70003)
+- [PetriDotNet — aplicações industriais](https://doi.org/10.1016/j.scico.2017.09.003)
+- [Brasil: medição de inventário via redes de Petri](https://www.scielo.br/j/gp/a/4xzqzggzCy9ZyPzPHvjvczK/?lang=pt)
+- [EA SEED — Automatic Gameplay Testing with Curiosity](https://www.ea.com/seed/news/gameplay-testing-curiosity)
+- [ASE 2022 — testar jogos 3D com agentes RL](https://doi.org/10.1145/3551349.3560507)
+- [Git — bisect de regressões](https://git-scm.com/docs/git-bisect)
+
+---
+
+**Quinta rodada encerrada como pesquisa, revisão humana PENDENTE.** Nenhum código, CI, biblioteca, benchmark, nova funcionalidade de gameplay ou alteração canônica foi criado. A única alteração pretendida é esta documentação exploratória e sua entrada no índice. As incertezas fundamentais são mensuráveis **somente quando houver Core real**.
