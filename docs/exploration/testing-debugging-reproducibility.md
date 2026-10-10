@@ -4,6 +4,16 @@
 >
 > **Pergunta:** como descobrir, reproduzir e evitar bugs num jogo em que milhares de SIMs, empresas e veículos agem autonomamente, inclusive com tempo acelerado, sem sobrecarregar a simulação ou criar um processo burocrático?
 
+## Quarta rodada — avaliação crítica e novas hipóteses (2026-10-09)
+
+> **Revisão humana: PENDENTE.** A terceira rodada não encerrava a investigação: reunia técnicas, mas ainda não demonstrava confiabilidade do replay, custo de CPU/memória ou capacidade de explicar falhas reais do IndexCities. A quarta rodada confronta propostas com falhas observadas e critérios de refutação. **Não altera SPEC, ARCHITECTURE, AGENTS ou código.**
+
+**Veredito da pesquisa nesta rodada:** adotar gradualmente uma escada de diagnóstico — **detectar a primeira transição incorreta → salvar estado/causa → reproduzir a partir de checkpoint → repetir com instrumentação profunda → reduzir a sequência → incorporar teste de regressão**. Além disso, testar separadamente comportamento emergente e desempenho. A vantagem dessa direção está em evitar logs de cada SIM e não construir uma segunda engine.
+
+**Novidades mais relevantes:** (1) invariância da divisão do tempo em intervalos; (2) aleatoriedade vinculada a eventos/IDs em vez de uma sequência global — hipótese, não escolha; (3) descobrir o ponto em que o bug se torna inevitável por bifurcações controladas; (4) logs retroativos extraídos de replay; (5) erros de referências a entidades mortas/IDs reutilizados; (6) reconciliação de transações locais, além da soma global; (7) corrupção/interrupção do save; (8) testes de concorrência e modelos formais apenas para casos realmente difíceis. Detalhes e evidências na [seção 19](#19-quarta-rodada-profunda-avaliação-das-lacunas).
+
+---
+
 ## Terceira rodada — novas evidências e mudança de prioridades (2026-10-09)
 
 > **Revisão humana desta rodada: PENDENTE.** Pesquisa complementar de simuladores de agentes/trânsito, agendamento de eventos, experimentação estatística, testes combinatórios e engenharia de regressão. [Evidências e fontes da rodada](#18-evidências-primárias-da-terceira-rodada). É **exploração**, não aprovação técnica nem alteração na SPEC/ARCHITECTURE.
@@ -646,3 +656,128 @@ Fontes consultadas especificamente para acrescentar técnicas **ainda pouco cobe
 ---
 
 **Status: pesquisa PENDENTE de revisão humana.** Esta rodada não introduziu código, bibliotecas, CI, menu visual nem mudanças canônicas. A pesquisa propõe capacidades, **não** aprova detalhes de implementação, metas de desempenho ou novos comportamentos do jogador.
+
+## 19. Quarta rodada profunda: avaliação das lacunas
+
+> **Revisão humana desta seção: PENDENTE.** A literatura pesquisada inclui análises formais, engenharia de jogos, bancos de dados, modelos baseados em agentes e bugs reais. A validade de uma ideia no projeto de origem **não mede seu ganho no IndexCities**.
+
+### 19.1. Antes de tudo: o que a pesquisa anterior ainda não provava
+
+**Ponto fraco 1: replay.** Seed + save + comandos é uma boa receita, mas só produz repetição fiel se todas as entradas relevantes forem controladas: relógio, RNG, ordem de eventos, trabalho assíncrono, estados não salvos, conteúdo e versão. **Não chamar isso de garantia até repetir dois runs reais e comparar.** Evidência: [Factorio — save/load determinístico](https://www.factorio.com/blog/post/fff-270), [SUMO — estado da RNG opcional e limites de save](https://sumo.dlr.de/docs/Simulation/SaveAndLoad.html).
+
+**Ponto fraco 2: oráculo.** Um hash indica que duas cidades estão diferentes, mas não diz qual é correta. Um teste de soma monetária detecta moeda criada, mas não detecta R$ 100 enviados para a pessoa errada. Precisamos de **contratos locais** derivados da SPEC e de comparação das transições que geraram cada efeito; não apenas snapshots ou contadores finais.
+
+**Ponto fraco 3: custo.** Verificações globais, milhões de eventos gravados, checkpoints frequentes e múltiplas seeds podem consumir mais recursos que a simulação. Não temos baseline do jogo. Todas as propostas de frequência, tamanho e ferramenta ficam **a medir**, não aprovadas.
+
+**Ponto fraco 4: correção de jogo versus validação científica.** Estudos de modelos de agentes procuram validar semelhança com fenômenos reais; o IndexCities deve preservar as regras aprovadas e produzir gameplay interessante. Estatísticas econômicas de cidades reais são referências de plausibilidade, **não testes automáticos de lucro, desemprego ou migração sem decisão de produto**. [JASSS — revisão de nove técnicas](https://www.jasss.org/27/1/11.html).
+
+### 19.2. Descoberta importante para aceleração: invariância de particionamento temporal
+
+Comparar velocidade 1 contra 3 ajuda, mas **pode perder um bug que ocorre quando o Core agrupa ou divide trabalho por intervalos**. Novo teste metamórfico proposto: partir do mesmo checkpoint; processar uma janela T inteira pela estratégia de avanço permitida versus duas ou mais janelas que somam T; aplicar comandos externos **nos mesmos instantes simulados**; comparar eventos de negócio e estado autoritativo relevante.
+
+Exemplos: uma cobrança exatamente no limite do mês; dois caminhões competindo por estoque; fábrica operando até faltar energia durante um intervalo; compra e morte de proprietário em eventos contíguos. Se o sistema otimizado disser que ambas as execuções são equivalentes, **não pode pular salários, viagens, limites físicos, reservas ou eventos vencidos**.
+
+**Ressalva:** não exigir igualdade exata de posições em integrações físicas numéricas de passos distintos sem demonstrar essa propriedade. É válido exigir igualdade de eventos discretos e propriedades causais sob regras aprovadas; tolerância física exata requer validação própria. Inspiração: [NIST — metamorphic testing em simulação](https://www.nist.gov/publications/metamorphic-testing-continuum-verification-and-validation-simulation-models), [MathWorks — eventos pontuais e passo temporal](https://www.mathworks.com/help/simevents/ug/discrete-event-chart-precise-timing.html). **Relevância muito alta para a SPEC de aceleração real.**
+
+### 19.3. Ideia ousada: sorteio baseado em evento, não na posição da chamada global
+
+A pesquisa [Random123, dos autores](https://random123.com/) e sua [descrição técnica](https://random123.com/releases/latest/docs/CBRNG.html) demonstram RNGs por chave + contador (Philox/Threefry). Uma mesma combinação produz o mesmo valor, sem avançar um único gerador global. [NumPy Philox](https://numpy.org/doc/stable/reference/random/bit_generators/philox.html) documenta usos com fluxos paralelos.
+
+**Hipótese:** derivar sorteios de elementos estáveis, como seed da cidade, domínio, ID do evento e contador da decisão. Inserir um sorteio irrelevante para outro agente deixaria de mudar automaticamente todos os sorteios posteriores. Isso pode favorecer reprodução, testes de concorrência e manutenção da ordem causal.
+
+**Por que NÃO aprovar agora:** criar e persistir identidades de eventos, garantir contadores estáveis, não duplicar chaves, versionar o algoritmo e não mascarar disputas materiais entre agentes traz custo real. A RNG nunca isola uma escolha de suas **dependências econômicas**; se duas empresas disputam o último lote, a segunda decisão depende legitimamente da primeira. Comparar RNG por domínio versus counter-based no Core real antes de escolher.
+
+### 19.4. Retroceder no diagnóstico sem criar rewind jogável
+
+O [Antithesis — When did the bug start? (2026)](https://antithesis.com/blog/2026/causality_analysis/) demonstra uma investigação curiosa: de uma falha reprodutível, voltar a checkpoints, criar múltiplas continuações controladas e observar a **probabilidade do erro** após cada ponto. Isso ajuda a descobrir onde a falha se tornou quase inevitável — nem sempre quando ocorreu o crash.
+
+O [Antithesis — Retroactive Logging (2026)](https://antithesis.com/blog/2026/retrologging/) descreve reconstruir logs de um trecho **por replay**, em vez de armazenar logs detalhados o tempo inteiro. **Adaptação mínima ao IndexCities:** quando o replay estiver comprovadamente fiel, reexecutar uma janela curta com trace profundo por entidade/tick e procurar primeiro estado divergente. Só investigar ramificações contrafactuais se um bug muito raro justificar CPU e instrumentação extra.
+
+**Limite:** bifurcar não prova automaticamente causa — pode mudar entradas indiretas e resultados aleatórios. E nada disso funciona sem replay robusto. **Não é recomendação de construir hipervisor, histórico completo ou máquina do tempo do jogador.**
+
+### 19.5. Bugs de identidade: referências antigas podem atingir cidadãos novos
+
+Há um [bug concreto de remoção de agentes durante atualização no Mesa](https://github.com/mesa/mesa/issues/302): modificar a coleção em iteração pode impedir outras atualizações. Em [issue do Bevy de 2026](https://github.com/bevyengine/bevy/issues/25416), um índice reutilizado e uma referência obsoleta prejudicaram o processamento de outra entidade. O [debate de serialização no Bevy](https://github.com/bevyengine/bevy/discussions/7235) demonstra o risco de confundir ID, slot e geração.
+
+**Teste que merece destaque:** criar um evento pendente de SIM/empresa; essa entidade sai, morre, perde imóvel ou fecha; o scheduler processa a fila posteriormente. O evento **não** pode atingir outra entidade que reutilizou um slot, transferir pagamento para antigo proprietário, manter vínculo que terminou ou processar o mesmo evento duas vezes. Também conferir ordem de remoção/iteradores.
+
+Possíveis alvos: herança durante aluguel; empresa falida com caminhão em viagem; cidadão falecido com salário agendado; imóvel com novo dono; linha de ônibus alterada com ônibus em circulação. O tratamento concreto da operação deve respeitar SPEC, sem inventar regra geral de cancelamento. **IDs persistentes nunca reutilizados podem ser mais simples que referências geracionais** em alguns domínios; testar antes de adicionar uma camada de handles.
+
+### 19.6. Dois níveis de checagem: operação local e reconciliação global
+
+Na economia do IndexCities, a oferta monetária global é fixa. Mas uma transferência para o destinatário errado **pode preservar o total**. Um bom teste monetário precisa verificar origem, destino, montante, motivo e vínculo real **na própria operação**. O segundo nível recompõe periodicamente saldos do Core e confere Reserva Global + Caixa + SIMs + empresas, sem confiar no índice derivado suspeito.
+
+No estoque físico, **a quantidade global não é constante**: importação, produção, transformação, consumo, perda e descarte mudam as quantidades legitimamente. A auditoria tem de verificar fluxos e origens permitidos, não impor conservação falsa. O mesmo vale para passageiros, vagas e imóveis: verificar ocupação/posse por ID e precondições concretas.
+
+[TigerBeetle — VOPR](https://github.com/tigerbeetle/tigerbeetle/blob/main/docs/internals/vopr.md) destaca verificadores além de asserções; exemplos de [bugs gerados por seed/commit](https://github.com/tigerbeetle/tigerbeetle/issues/1020) mostram como um pacote pode ser reproduzido. **Não transportar sem crítica a política do banco de encerrar o processo em toda inconsistência**: na versão do jogador, preservar dados/diagnóstico e evitar reparos mágicos que gerem dinheiro ou recursos. Checagem agressiva em testes/headless é diferente do tratamento de erro em produção.
+
+### 19.7. Falha de gravação é um problema distinto de salvar/carregar
+
+Até aqui a estratégia testava a continuidade de um save completo. **Faltava testar corrupção/truncamento, schema antigo e interrupção da gravação**. Proposta de cenário de teste: iniciar gravação, injetar falha em pontos controlados, reler último save válido e verificar integridade ou mensagem de erro explícita. Também testar upgrade de schema real quando a primeira mudança existir.
+
+O [.NET File.Replace](https://learn.microsoft.com/en-us/dotnet/api/system.io.file.replace) oferece troca de arquivo e backup com restrições; **não presumir garantia absoluta de durabilidade** entre plataformas, discos, volumes ou desligamento. Técnica concreta só precisa ser escolhida com o formato de persistência real. Não construir um sistema de migração universal antes de existir schema real.
+
+### 19.8. Model checking de pequenos mecanismos é pesquisa; do mundo inteiro, não
+
+[Java PathFinder](https://github.com/javapathfinder/jpf-core/wiki/What-is-JPF) explora ordenações possíveis e gera um caminho para o defeito, mas é Java; a [própria documentação](https://github.com/javapathfinder/jpf-core/wiki/Testing-vs.-Model-Checking) reconhece a **explosão do espaço de estados**. Não há justificativa de adotá-lo no Core C#.
+
+Se um mecanismo pequeno continuar problemático (duas aquisições disputando um bem, cancelamento/reagendamento de uma entrega), pode valer modelar **apenas 2–3 agentes e uma transação** para examinar ordens de execução. Mas modelo correto não garante que a implementação obedece ao modelo. Antes disso, testes com estados pequenos e sequência gerada no próprio Core são mais produtivos.
+
+### 19.9. O custo do diagnóstico também faz parte da correção
+
+A execução normal não deve pagar o custo de armazenar cada decisão. Proposta de **níveis sem obrigação de existir desde o início**: (a) invariantes locais/baratas e métricas agregadas; (b) testes headless profundos com hash/diff; (c) falha rara reproduzida com trace completo em janela estreita; (d) análise contrafactual sob demanda. Medir log OFF, leve e profundo, inclusive sobre FPS, ticks de Core, GC, atraso de scheduler e geração de arquivo.
+
+O [Space Station 14 — iniciativa de testes de integração de 2026](https://github.com/space-wizards/space-station-14/issues/44384) aposta em **simulações curtas** de comportamento real. Seus [relatórios de falha automatizados](https://github.com/space-wizards/space-station-14/issues/44550) ilustram benefício e também custo de investigar falha de regra versus infraestrutura de teste. Não automatizar abertura de issue por cada seed fracassada antes de existir processo que agregue sinal.
+
+### 19.10. Matriz de risco por domínio e o primeiro teste que realmente ajuda
+
+| Domínio | Erro sistêmico | Teste que primeiro merece investimento |
+| --- | --- | --- |
+| Dinheiro/Reserva Global | criação monetária ou pagamento a destinatário errado | verificador por transação + soma independente |
+| Estoque/logística | reserva dupla, entrega fantasma, perda indevida | disputa pelo último item + checkpoint em trânsito |
+| Moradia/herança | dois donos, aluguel para ex-proprietário, ID obsoleto | sequências curtas e limites de calendário |
+| Scheduler | evento vencido esquecido, duplicado ou fora de ordem | dois eventos no mesmo instante + save + execução particionada |
+| SIMs e trânsito | atualização offscreen diferente, teletransporte | câmera/FPS diferente + eventos de entrada/chegada |
+| Cache | resultado desatualizado muda escolha/serviço real | modo otimizado versus referência com entradas equivalentes |
+| Persistência | continua diferente ou arquivo fica irrecuperável | continuidade A/B + injeção de falha de escrita |
+| Escala | backlogs crescentes e velocidade 3 não sustentada | benchmarks separados, piores percentis e atraso de fila |
+
+**A prioridade não é o número de testes; é o tamanho da consequência e a dificuldade de descobrir a causa depois.** Não tornar uma regra econômica em asserção antes de ela existir oficialmente na SPEC.
+
+### 19.11. Critérios falsificáveis: como saber se uma proposta NÃO vale a pena
+
+| Hipótese | Prova necessária quando houver implementação | Motivo para adiar/rejeitar |
+| --- | --- | --- |
+| Replay de checkpoint funciona | reproduções repetidas no mesmo build com evento e estado equivalentes | divergências não controláveis com custo proporcional |
+| Replay retroativo substitui log profundo contínuo | mesmo erro reproduz e trace recupera causa anterior | falta de fidelidade impede reconstrução |
+| RNG por evento melhora manutenção | teste de agente independente + benchmark CPU/memória | complexidade de IDs/streams supera benefício |
+| Teste de divisão do tempo encontra regressão | cenários com fronteira, com/sem otimização | semântica não garante igualdade esperada |
+| Verificador profundo dá sinal cedo | bugs deliberados em cópia de testes são detectados junto à operação | só detecta dias depois e pesa demais |
+| Redução automática vale o custo | diminuir caso **real** sem mudar tipo de falha | sequência fica inválida ou custo é excessivo |
+| Snapshot forense é viável | tamanho, serialização, reprodução e envio medidos | salva demais, atrasa o jogo ou não contém estado suficiente |
+| Suíte estatística multi-seed ajuda gameplay | revela tendências que um humano confirma em cidades integradas | falsos alarmes ou metas que não constam na SPEC |
+
+### 19.12. Conclusão revisada e limites da pesquisa
+
+**Direção mais promissora:** capacidade de reproduzir, observar e auditar o Core real, com testes locais e sistêmicos, sem duas engines, sem event sourcing integral e sem instrumentação sempre profunda. O diferencial para IndexCities é testar o **encadeamento causal** entre sistemas: recursos, dinheiro, imóveis, SIMs, mobilidade e tempo. O melhor diagnóstico é saber **qual foi a primeira operação errada, quais eram suas precondições e quais entidades ela afetou**.
+
+**Ainda não é possível concluir com rigor:** formato de arquivo, escolha de RNG, overhead de rastreamento, escala de simulação, política de checkpoints e metas de aceleração. Só um estado real do Core permitirá medir. A pesquisa anterior não autorizava afirmá-los como resolvidos; esta rodada tampouco.
+
+**Explicitamente NÃO recomendar agora:** hipervisor/time-travel completo, log contínuo de cada SIM, replay jogável, prova formal de toda cidade, 100% de cobertura, novas ferramentas sem uso observado, ou pausas/etapas de POC de produto obrigatórias. A validação global da primeira implementação integrada continua indispensável, especialmente para gameplay e microgerenciamento.
+
+## 20. Novas fontes verificadas e leitura crítica
+
+Esta seleção contém **mecanismos novos e relatos reais** e não substitui o catálogo de 116 links da seção 15. Algumas fontes são documentação de produto ou issue e, portanto, exigem interpretação diferente de artigo com experimento controlado. Links relevantes:
+
+- [NIST — simulações sem oráculo simples](https://www.nist.gov/publications/metamorphic-testing-continuum-verification-and-validation-simulation-models); [MathWorks — timing de eventos](https://www.mathworks.com/help/simevents/ug/discrete-event-chart-precise-timing.html).
+- [Random123 — fonte dos autores](https://random123.com/); [documentação dos geradores counter-based](https://random123.com/releases/latest/docs/CBRNG.html); [NumPy Philox](https://numpy.org/doc/stable/reference/random/bit_generators/philox.html).
+- [Antithesis — ponto de inevitabilidade do bug, 2026](https://antithesis.com/blog/2026/causality_analysis/); [logs retroativos, 2026](https://antithesis.com/blog/2026/retrologging/); [limites de construir hipervisor](https://antithesis.com/blog/deterministic_hypervisor/).
+- [Mesa — bug real de remoção em scheduler](https://github.com/mesa/mesa/issues/302); [Bevy — bug de índice reutilizado de entidade](https://github.com/bevyengine/bevy/issues/25416); [Bevy — discussão de identidade e serialização](https://github.com/bevyengine/bevy/discussions/7235).
+- [TigerBeetle — simulador do código real VOPR](https://github.com/tigerbeetle/tigerbeetle/blob/main/docs/internals/vopr.md); [issue de bug encontrada por seed](https://github.com/tigerbeetle/tigerbeetle/issues/1020).
+- [Factorio — detalhes determinísticos de save/load](https://www.factorio.com/blog/post/fff-270); [testes pequenos e CRC](https://www.factorio.com/blog/post/fff-60).
+- [Java PathFinder — capacidades](https://github.com/javapathfinder/jpf-core/wiki/What-is-JPF); [limites de exploração de estados](https://github.com/javapathfinder/jpf-core/wiki/Testing-vs.-Model-Checking).
+- [Microsoft .NET — FakeTimeProvider](https://learn.microsoft.com/en-us/dotnet/standard/datetime/timeprovider-overview); [File.Replace e backup](https://learn.microsoft.com/en-us/dotnet/api/system.io.file.replace).
+- [Space Station 14 — iniciativa de integração 2026](https://github.com/space-wizards/space-station-14/issues/44384); [falha de teste relatada automaticamente](https://github.com/space-wizards/space-station-14/issues/44550).
+- [JASSS 2024 — nove abordagens de validação de agentes](https://www.jasss.org/27/1/11.html).
+
+**Resultado: quarta rodada documentada, pesquisa PENDENTE de revisão humana.** Nenhum benchmark da engine foi executado; não há código do jogo no repositório. Não promover hipóteses desta seção para SPEC/ARCHITECTURE sem revisão e decisão explícitas.
