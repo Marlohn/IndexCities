@@ -17,6 +17,19 @@ Este arquivo é material de exploração temática. Quando houver divergência, 
 
 ---
 
+## Rodada posterior — mobilidade e serviços com nove confirmações (2026-10-09)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável confirmou **4C (licença médica remunerada), 6A (frota inicial na garagem de ônibus), 8A (viaturas abastecem em postos reais) e 10C (sinalização e prioridade do cruzamento escolhidas pelo jogador)**. **Questão 9 (ciclovias) ainda depende de esclarecimento**: o responsável inclinou-se a A, mas perguntou o que seria um caminho exclusivo; a IA não deve promover uma infraestrutura específica à SPEC sem confirmação. Também foram decididas em outros temas 1A, 2B, 3A, 5A e 7A.
+
+- **4C:** licença médica de duração limitada, remunerada pelo empregador real (privado ou Caixa), sem produção/atendimento pelo ausente e sem gestão individual. **Tempo de licença e solução após esgotamento** não foram decididos.
+- **6A:** construir garagem municipal **inclui no custo a aquisição de ônibus físicos iniciais em quantidade finita**, com entrega real e capacidade operacional condicionada a motorista, combustível e vagas. A garagem limita frota; não gera ônibus de graça nem veículos adicionais a cada aumento de demanda. O pacote inicial é distinto dos veículos municipais de outras instalações (16B), mas segue o mesmo princípio de custo físico.
+- **8A:** veículos municipais abastecem em **postos reais**, pagando ao negócio real com dinheiro do Caixa e reduzindo estoque de Combustível, sem tanque infinito. Falta de oferta pode reduzir atendimento real; buscas automáticas e custo de deslocamento.
+- **10C:** o jogador decide em cada cruzamento **semáforo em ciclo fixo** ou **preferência de passagem**, e, no segundo caso, a rua prioritária. O detalhe de defaults quando ainda não foi editado e de geometrias mais complexas é técnico/UX pendente; **não impor clique obrigatório a todo cruzamento** nem sistema de ajuste contínuo do semáforo. Quando há decisão do jogador, o sistema não altera preferência por demanda arbitrariamente.
+
+**Questão 9 — EM EXPLORAÇÃO, sem nova SPEC:** a opção A contemplava bicicletas circulando pelas **ruas urbanas existentes** e **caminhos exclusivos opcionais** construídos pelo jogador. Explicação da IA, ainda sem confirmação: seria uma conexão física estreita para bicicleta, construída entre áreas (como casas ↔ parque ↔ comércio), sem circulação de automóveis, integrada à malha real e ao acesso dos edifícios; com custo/terreno/travessias reais, e sem teletransporte entre segmentos. **Não confundir com um terceiro tipo de rua motorizada** — vias urbanas e rodovias continuam os dois tipos aprovados. A alternativa de ciclovia demarcada no bordo de ruas urbanas versus pista exclusiva fora da rua, e modo de conexão aos cruzamentos, ainda precisam de escolha proporcional. Não aprovar as duas configurações por inferência.
+
+---
+
 ## Decisões de serviços, trânsito e infraestrutura — rodada de 20 perguntas (2026-10-09)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** Decisões explicitamente aprovadas na SPEC: 7A, 8A, 9A, 10A, 11B, 12A, 13C, 16B, 18A, 19A e 20B. **A pergunta 5 foi aprovada posteriormente como 5A: cada proprietário arca com seus reparos, e o Caixa da Cidade repara apenas instalações municipais.** Os detalhes de execução ficam para calibração.
