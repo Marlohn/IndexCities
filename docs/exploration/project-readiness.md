@@ -14,6 +14,20 @@ Dar às próximas sessões uma visão única do que já está suficientemente de
 
 As prioridades são **orientação revisável**, não um impedimento para experimentar e tampouco autorização para implementar funcionalidades não aprovadas. A direção de trabalho é **Spec-Driven Development leve**: definir comportamentos oficiais na SPEC antes de implementá-los. A eventual POC é uma **validação integrada do jogo**; organizar a implementação em incrementos técnicos não cria uma obrigação de POCs separadas nem altera o escopo aprovado.
 
+## Atualização de decisões e riscos — rodada subsequente de 2026-10-10
+
+> **Revisão humana: PARCIALMENTE REVISADO.** Mudanças de comportamento foram confirmadas e estão na SPEC; a triagem de questões ainda pendentes é proposta da IA e precisa ser considerada apenas quando relevante à implementação.
+
+**Fechado, evitar refazer perguntas:** jazidas de areia/brita **não se esgotam** (decisão em outra sessão, com produção finita por tempo); criminalidade segue oportunidades/condições concretas com SIMs reais (não reabrir 9B por inferência); restituição de dinheiro roubado/furtado até saldo real do autor ao ser capturado (4B); licença médica paga vencida e emprego de preso dependem de decisão autônoma e econômica do empregador (6C e 10C); **incinerador transforma integralmente o lixo efetivamente processado em redução do estoque de resíduos, sem cinzas/rejeitos iniciais (2 atual)**; extração de petróleo → transporte físico → refinaria → Combustível (7C); desgaste agregado e reposição física de veículos motorizados (8B); fazendas sem estações agrícolas (9A).
+
+**Questão realmente aberta de novo produto:** aposentadoria contributiva e sistema previdenciário: quem paga contribuição real, para qual saldo, como é medido o direito futuro, quando pode receber, possibilidade simultânea de salário/aposentadoria, acesso de residentes iniciais e solvência pública. **Confirmado como direção:** velho pode continuar trabalhando e receber salário quando empregado; riqueza/renda imobiliária real podem permitir viver sem trabalho antes da idade previdenciária. **Não criar benefício do nada.** Ver [pesquisa focal](households-housing.md).
+
+**Parâmetros de validação sem obrigar novas decisões de produto:** ritmo de desgaste/vida útil dos veículos, custo e frequência de reposição de frotas municipais, capacidade real de poços/refinarias e distribuição geológica, tempo até esgotar licença paga, forma simples de avaliar ausência do preso, taxas de processamento de lixo. **Questões de produto dependentes de integração:** esgotamento ou não das jazidas de petróleo (não herdar areia/brita automaticamente), garantias transicionais previdenciárias e mercado de combustível se a produção local atrasar.
+
+**Melhorias futuras, NÃO aprovadas:** retorno de rejeitos de incineradores aos aterros, sazonalidade agrícola e modelos detalhados de manutenção. **Não acrescentar essas melhorias no escopo inicial.**
+
+---
+
 ## Atualização de lacunas após escolhas de 2026-10-10
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** As escolhas de produto foram confirmadas e incorporadas à SPEC; esta nova triagem de importância e propostas de calibração são síntese de IA **PENDENTE de revisão integral**. Os percentuais abaixo continuam históricos (2026-10-08).
