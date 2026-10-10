@@ -4,6 +4,26 @@
 >
 > **Pergunta:** como descobrir, reproduzir e evitar bugs num jogo em que milhares de SIMs, empresas e veículos agem autonomamente, inclusive com tempo acelerado, sem sobrecarregar a simulação ou criar um processo burocrático?
 
+## Terceira rodada — novas evidências e mudança de prioridades (2026-10-09)
+
+> **Revisão humana desta rodada: PENDENTE.** Pesquisa complementar de simuladores de agentes/trânsito, agendamento de eventos, experimentação estatística, testes combinatórios e engenharia de regressão. [Evidências e fontes da rodada](#18-evidências-primárias-da-terceira-rodada). É **exploração**, não aprovação técnica nem alteração na SPEC/ARCHITECTURE.
+
+**Síntese:** chegamos a uma distinção que faltava: (a) **reproduzir exatamente uma falha**, com o mesmo código/ambiente e estado suficiente; (b) **validar o comportamento emergente** de muitas cidades, que pode variar legitimamente; e (c) **testar a execução e o desempenho do tempo acelerado**. São objetivos relacionados, mas não devem ter um oráculo único.
+
+| Descoberta nova desta rodada | Consequência para o IndexCities |
+| --- | --- |
+| **Save de jogador ≠ checkpoint forense** | Um save válido pode não preservar todos os estados necessários para replay idêntico. A opção de registro diagnóstico deve ser avaliada sem ampliar o save comum por ritual. |
+| **Logs/monitores podem mudar a simulação** | Instrumentação não pode consumir a mesma aleatoriedade nem modificar a ordem dos eventos; testar *debug ligado vs desligado*. |
+| **Tempo simultâneo precisa de desempate reproduzível** | No mesmo tick, dois compradores ou dois veículos disputando um recurso expõem defeitos de ordem e de prioridade. Não inventar a prioridade de gameplay. |
+| **Testes combinatórios reduzem explosão de casos** | Combinar limites reais (cheio/vazio, com/sem energia, saldo suficiente/insuficiente, deslocamento concluído/pendente) de modo intencional, sem fazer produto cartesiano gigante. |
+| **Múltiplas sementes servem para validar dinâmica, não só achar crash** | Estatísticas, tendências e casos extremos podem apontar comportamento suspeito, **sem aprovar metas numéricas econômicas arbitrárias**. |
+| **Snapshots “verdes” não provam correção** | Gravar a saída como padrão-ouro só verifica que nada mudou; o padrão pode estar errado. Exigir invariantes e expectativas aprovadas para dar significado à comparação. |
+| **Tempo acelerado exige duas avaliações** | Correção temporal (nenhum efeito pulado) **e** capacidade real de acompanhar o tempo simulado (filas, throughput, atraso, memória). |
+
+**Conclusão recomendada, diferente da segunda rodada:** em vez de começar imaginando um único sistema de replay completo, conceber **uma escada de diagnóstico**: invariantes locais + seed/RNG/agenda controladas → saves reexecutáveis → pacote forense de bug quando necessário → comparações multi-seed e cenário adversarial → análise profunda/visual apenas nos erros difíceis. Não presumir instrumentação universal nem arquivos gigantes.
+
+---
+
 ## Complemento da pesquisa: novas conclusões (2026-10-09)
 
 > **Revisão humana desta ampliação: PENDENTE.** Investigação interdisciplinar solicitada após a pesquisa inicial. Referências e técnicas abaixo são **evidência, exemplos ou hipóteses para avaliar**, não decisões de produto, obrigações técnicas nem software já existente. Preservar o que está decidido em SPEC/ARCHITECTURE/AGENTS.
@@ -458,3 +478,171 @@ O cenário demonstra a utilidade do sistema; **não é prova que já o implement
 ---
 
 **Estado final desta ampliação:** revisão humana **PENDENTE**. Nenhuma especificação de comportamento, regra estrutural ou código foi alterado; permanecem a entrega integrada e a validação global aprovadas. O ganho desta investigação é orientar ferramentas e experimentos *quando a implementação existir*, evitando engenharia prematura.
+
+## 16. Terceira rodada: testes de agentes, trânsito, agenda e observadores
+
+### 16.1. Dois conceitos de reprodutibilidade que não devem ser misturados
+
+**Reprodução forense de um bug:** mesma build, mesma configuração, mesmo checkpoint completo (estado primário, relógio, scheduler, RNG, decisões externas em ordem e versões dos dados). Queremos observar o mesmo erro **no mesmo evento/tick**, sujeito às limitações reais de plataforma. Uma mudança legítima de código pode impedir que a sequência antiga seja exatamente igual; o arquivo de reprodução deve reter identificação da versão e, se necessário, ser convertido em teste semântico de regressão.
+
+**Validação de uma cidade emergente:** executar a cidade com **várias sementes e parâmetros** para observar distribuição de desemprego, congestionamento, utilização de água/energia, renda/estoque, falências etc. Não exigir que toda execução e toda atualização do jogo tenham números finais idênticos. **A aleatoriedade legítima não é bug**; valores implausíveis, regressões generalizadas ou efeitos sem causa merecem investigação, não tolerância arbitrária para quebrar a SPEC.
+
+**Exemplo simples:** se a mesma simulação controlada paga aluguel duas vezes no mesmo mês, isso é erro factual; se famílias diferentes procuram estabelecimentos diferentes em seeds distintas, isso pode ser resultado legítimo; se trocar a velocidade de apresentação altera quem recebeu uma casa sem mudança causal permitida, pode ser erro de scheduler.
+
+Fontes: [SUMO — Randomness](https://sumo.dlr.de/docs/Simulation/Randomness.html), [NetLogo — BehaviorSpace](https://docs.netlogo.org/behaviorspace), [Mesa — batch runner](https://mesa.readthedocs.io/stable/apis/batchrunner.html).
+
+### 16.2. A lição surpreendente do SUMO: um save pode estar correto para continuar, mas insuficiente para repetir
+
+O [SUMO — SaveAndLoad](https://sumo.dlr.de/docs/Simulation/SaveAndLoad.html) documenta que o estado das fontes aleatórias **não é salvo por padrão**; uma opção separada inclui esse estado. Também documenta modelos internos que não são integralmente persistidos, dependência de certos arquivos de entrada e limitações entre plataformas. O [tutorial de 2026](https://eclipse.dev/sumo/docs/Tutorials/2026.html) reforça que continuar após carregar com nova aleatoriedade e repetir com RNG restaurada são **duas operações úteis, com objetivos diferentes**.
+
+**Lição para IndexCities:** diferenciar explicitamente, durante o desenvolvimento, **qual contrato é exigido do save normal** e **que informação adicional um pacote de reprodução precisa**. O save normal já precisa preservar todas as consequências persistentes e não perder eventos reais segundo a SPEC; não pode ser “incompleto” a ponto de perder dívidas, empregos, viagens ou estoques. O diagnóstico pode necessitar ainda de elementos como **estado exato da RNG, ordem da agenda, versão executável, comandos subsequentes e assinaturas de comparação**, sem impor ao jogador retenção de log contínuo ou histórico de cada decisão.
+
+**Não antecipar dois formatos de arquivo complexos.** Um manifesto que acompanha o save ou metadados adicionais em modo debug podem bastar. Medir custo de serializar RNG+fila e a possibilidade real de reconstruir índices. **Reprodução exata não é garantida por apenas carregar um save aparentemente íntegro.**
+
+### 16.3. O observador não pode mudar a cidade (*heisenbug de telemetria*)
+
+O [guia de programação do NetLogo](https://docs.netlogo.org/programming) explica que monitores usam gerador aleatório auxiliar para não interferir na RNG principal, e oferece mecanismo de aleatoriedade local. O [SUMO — Randomness](https://sumo.dlr.de/docs/Simulation/Randomness.html) usa fontes aleatórias separadas por aspecto (carregamento, fluxos, direção, dispositivos) para evitar que uma operação não relacionada altere outra sequência.
+
+**Novo teste metamórfico:** mesma build/seed/inputs, com logging/tracing/overlays ativados e desativados → **mesma sequência de transições autoritativas**, salvo overhead de CPU (comparado no mesmo horizonte de **tempo simulado**, não pelo tempo real). Abrir um painel de diagnóstico, pedir informação de uma fábrica ou capturar um contador não deveria consumir a RNG usada nas decisões econômicas.
+
+Riscos: instrumentar com callbacks que alteram filas, enumerar coleções e inadvertidamente mudar a ordem, RNG de UI compartilhada com engine, hashes instáveis e logs que bloqueiam threads. Conclusão: **inspecionar deve ser uma operação somente de leitura**, e a auditoria de causalidade deve capturar variáveis já avaliadas pela regra, nunca recalcular decisões com outra fonte aleatória.
+
+Esta proposta **não impõe** RNG por SIM; um conjunto pequeno de fluxos explícitos já pode ser suficiente. Importante também testar que o **modo profundo** de diagnóstico não esconde um bug por alterar sua temporização.
+
+### 16.4. SimPy mostra que “mesmo tick” não significa “mesmo efeito”
+
+O [SimPy — Time and Scheduling](https://simpy.readthedocs.io/en/latest/topical_guides/time_and_scheduling.html) destaca que resolução de tempo pode fundir eventos distintos no mesmo instante e demonstra uma fila por tempo e identificador de sequência para desempate reproduzível. O [guia de monitoramento](https://simpy.readthedocs.io/en/stable/topical_guides/monitoring.html) mostra instrumentar **agendamento e execução** separadamente — uma pista importante para encontrar eventos perdidos.
+
+**Roteiro técnico para testar a agenda**, sem decidir regras de produto:
+- Mesmo tempo lógico, **dois comandos concorrentes para um recurso exclusivo**: uma compra não pode produzir dois proprietários; o vencedor respeita a prioridade **quando houver regra aprovada**, não uma prioridade inventada por teste.
+- Dois eventos agendados com o mesmo timestamp precisam ser executados numa **ordem suficientemente definida para reprodução**, ao menos no cenário controlado; ordem técnica não equivale a prioridade social do produto.
+- O mesmo evento não pode ser **executado duas vezes** após salvar, carregar, pausar ou acelerar.
+- Cancelar/reagendar deve deixar filas e referências coerentes, sem executar evento fantasma.
+- Um evento válido e já vencido não deve desaparecer se a simulação continua avançando.
+- O trace deve distinguir **agendado → cancelado/reagendado → executado**, não simplesmente “evento criado”.
+
+Testes explícitos de **véspera de vencimento, virada de mês, fim de prazo de três meses, reentrada de entidades e ordem de faturamento** podem encontrar bugs que milhares de seeds comuns não atingem. Não confundir data civil, tempo simulado e tick físico.
+
+### 16.5. Matriz de testes combinatórios *pairwise* para fronteiras econômicas
+
+[Microsoft PICT](https://github.com/microsoft/pict) gera combinações representativas dos valores de parâmetros e pode cobrir pares ou trios sem enumerar todo o produto cartesiano. Aplicação como **método de criação de cenários**, não dependência obrigatória:
+
+| Dimensão representativa | Valores de teste, dentro de estados legais da simulação |
+| --- | --- |
+| Saldo do responsável | insuficiente / exatamente suficiente / acima |
+| Infraestrutura | capacidade folgada / no limite / deficitária |
+| Estoque da empresa | vazio / totalmente reservado / disponível |
+| Situação de imóvel | sem dono / ocupação vigente / oferta elegível |
+| Agenda | antes do vencimento / no vencimento / imediatamente depois |
+| Transporte | rota livre / rota congestionada / via indisponível |
+| Execução | sequência normal / checkpoint+reload / velocidade acelerada |
+
+Combinar pares/trios **prioritariamente quando houver dependência causal**; alguns valores são incompatíveis entre si e o gerador deve rejeitar estados impossíveis. Pairwise não encontra todos os bugs de sequência temporal nem interação de quatro fatores. **Combinatórios complementam** casos explícitos de risco (herança + aluguel em atraso + imóvel ocupado + migração, por exemplo) e testes generativos longos.
+
+### 16.6. Um laboratório de experimentos, não só um laboratório de exceções
+
+[NetLogo BehaviorSpace](https://docs.netlogo.org/behaviorspace) varia sistematicamente parâmetros, repete cenários e coleta resultados; [Mesa batch runner](https://mesa.readthedocs.io/stable/tutorials/11_batch_run.html) executa lotes por combinações e sementes. [SUMO — FAQ](https://sumo.dlr.de/docs/FAQ.html) recomenda múltiplas sementes porque uma execução única pode ser enviesada pela aleatoriedade específica; [SUMO — testes](https://sumo.dlr.de/docs/Developer/Tests.html) também explica os limites dos resultados congelados como oráculo.
+
+**Adaptação potencial:** para calibrações **delegadas pela SPEC**, construir um pequeno conjunto de cidades e medir métricas **que já existam no Core**, como empregos reais, tempos de deslocamento, compras, saldo e capacidade atendida, distribuição de causas, fila de eventos. O pesquisador/jogador avalia se há equilíbrio/experiência convincente; nenhum valor estatístico sozinho autoriza alterar gameplay.
+
+**Distinção crítica:** usar mesma seed numa implementação comparada não garante as mesmas decisões se uma mudança alterar a quantidade/ordem de chamadas aleatórias; comparar **propriedades e tendências** sem falsificar igualdade. Técnicas de comparação por **common random numbers** podem reduzir variância em condições compatíveis, mas sincronização das fontes aleatórias teria de ser demonstrada, não presumida ([Winter Simulation Conference, 1990](https://ieeexplore.ieee.org/document/129543/)).
+
+### 16.7. O problema do “teste passou porque estava errado desde o início”
+
+[SUMO — Developer Tests](https://sumo.dlr.de/docs/Developer/Tests.html) usa arquivos de saída aprovados como referência, mas reconhece expressamente que esses resultados também podem estar errados. A literatura de [validação de agent-based models](https://www.jasss.org/27/1/11.html) distingue comparação com modelos de referência, validação empírica, amostragem e análise causal.
+
+**Oráculos em ordem de robustez para nosso caso:**
+1. **Contrato explícito** (SPEC) + invariantes de saldo/capacidade/posse: a regra é verificável.
+2. **Relação metamórfica**: mudar só FPS, pausar ou interpor save não deve criar efeito econômico.
+3. **Casos manuais revisados**: poucos cenários com resultado esperado compreensível, não gigantescos snapshots.
+4. **Baseline estatístico multi-seed**: detectar mudanças de tendência e pedir investigação humana, **não afirmar automaticamente “jogo quebrado”**.
+5. **Saída inteira congelada**: evidência de regressão potencial, mas pode congelar bugs. Exigir revisão em mudanças legítimas.
+
+Um modelo de referência independente *pequeno* pode servir para conferir cálculo de dinheiro/contabilidade, lote ou desempate já especificado. **Não manter segunda engine completa de cidade**: custo, divergências, falsa confiança e duplicação da SPEC.
+
+### 16.8. Testar a aceleração em duas dimensões que parecem iguais, mas não são
+
+**A — Correção causal:** para chegar ao mesmo tempo simulado, a mesma sequência de comandos e mesmas pré-condições reais precisa produzir transições equivalentes; não pode concluir obra/viagem/pagamento pelo simples avanço do calendário. Testes de velocidade 1 vs 3, render ligado/desligado, cache on/off e pause-save-load.
+
+**B — Capacidade operacional:** o jogo precisa conseguir acompanhar o relógio sob a carga alvo, sem filas atrasadas se acumularem indefinidamente, UI congelar, GC explodir ou o scheduler deslocar eventos para compensar artificialmente a lentidão. Medir **tempo por tick e percentis**, backlog e **idade** das filas, eventos processados por segundo real, ocupação de CPU/memória, custo de rota, custo da telemetria e o **tempo simulado efetivamente processado por segundo real**. Não inventar tolerâncias antes de um baseline representativo.
+
+A [documentação do Godot sobre jitter e stutter](https://docs.godotengine.org/en/stable/tutorials/rendering/jitter_stutter.html) diferencia problemas de apresentação e física; [interpolação física](https://docs.godotengine.org/en/stable/tutorials/physics/interpolation/physics_interpolation_introduction.html) esclarece por que FPS e ticks podem divergir. **Não copiar sem crítica a integração de física Godot**: pelo ARCHITECTURE, o Core C# é autoridade; Godot é host/apresentação.
+
+**Teste adicional proposto:** medir debug leve vs profundo, porque um sistema de diagnóstico que inviabiliza a aceleração 3 **não pode ficar profundo sempre ligado**. Benchmarks headless avaliam Core; testes visuais verificam se o que aparece na tela não contradiz o estado da cidade.
+
+### 16.9. Observabilidade não é só log: monitorar cadeia causal sem invadir as decisões
+
+O [SimPy — Monitoring](https://simpy.readthedocs.io/en/stable/topical_guides/monitoring.html) distingue inspeção **por tempo**, **por mudança de estado** e **por evento**. Isso inspira um desenho barato:
+
+- **Contador/medida** global por domínio para detectar tendência (ex.: eventos atrasados, materiais reservados).
+- **Transição local** com campos explicáveis e código de causa sempre que uma decisão *relevante* falhar (fábrica parada por falta de energia).
+- **Trace com alvo** quando a investigação exigir seguir uma cadeia específica de efeitos, com janela curta e buffer limitado.
+- **Exportar somente artefato suficiente** e evitar copiar o estado inteiro de cada entidade por tick.
+
+Um sistema de logs pode revelar *quando* e *quem*, mas a pergunta *por que* exige capturar **entradas/precondições reais da função decisória**, e não gerar explicação posterior pela UI. Mais verbosidade não necessariamente traz mais diagnóstico.
+
+### 16.10. “Um teste detectou alguma diferença”: triagem em três possíveis categorias
+
+Ao comparar builds, seeds ou opções, um resultado diferente pode ser:
+
+1. **Bug factual / quebra da SPEC** (dinheiro criado, ação duplicada, tempo saltado, decisão contrária à prioridade aprovada) → falha de teste.
+2. **Mudança legítima de algoritmo/calibração dentro da SPEC** (escolha de destino mudou, sem quebrar causalidade) → registrar evidências, atualizar baseline se fizer sentido.
+3. **Ausência de comportamento decidido na SPEC** (duas ações simultâneas sem regra de prioridade material) → **não impor regra por teste**. Sinalizar lacuna para decisão humana **se ela alterar gameplay**; detalhe técnico neutro/reversível continua com autonomia do implementador.
+
+Essa triagem protege o processo SDD de virar burocracia ou de criar requisitos acidentais por causa da suíte.
+
+## 17. Comparação de estratégias e proposta revisada
+
+| Estratégia | O que ganha | Custo/armadilha | Recomendação da pesquisa |
+| --- | --- | --- | --- |
+| **Seed + testes de Core** | cenário rápido e repetível no início | não captura história da cidade | primeira camada |
+| **Save comum + comandos** | reexecução prática perto da falha | pode faltar estado RNG/agenda/metadados | validar suficiência, não presumir |
+| **Checkpoint de diagnóstico seletivo** | contexto forense sem gravar toda vida do SIM | serialização e versões custam memória/I/O | avaliar quando aparecer bug difícil |
+| **Registro de cada decisão de todos SIMs** | forte auditabilidade em teoria | CPU, memória, arquivo e segunda fonte de verdade | **não** por padrão |
+| **Multi-seed e cenários combinatórios** | descobre estados que ninguém antecipou | comparação estatística não prova gameplay correta | alto potencial, separar de testes de contrato |
+| **Duas engines completas para comparar** | oráculo diferencial independente | manter duas implementações é caríssimo | **não** |
+| **Referência pequena de regra monetária/estoque** | facilita descobrir bug em cálculo crítico | pode duplicar lógica se mal desenhada | apenas para regra específica valiosa |
+| **Validação de toda cidade a cada alteração** | cobre integração ampla | atrasa desenvolvimento, resultados podem ser ambíguos | marcos e execuções programadas conforme custo |
+| **Testes por mudanças afetadas + smoke global barato** | feedback rápido com proteção transversal | seleção errada omite impacto indireto | avaliar quando CI crescer; scheduler, dinheiro, estado compartilhado exigem alcance amplo |
+
+**Recomendação em linguagem simples:** testar primeiro as regras que **nunca** podem ser violadas. Garantir que a engine possa executar e repetir cenários **sem abrir o Godot**. Criar casos combinatórios de alto risco. Quando surgir um erro obscuro, exportar um save + manifesto com todos os elementos necessários para reconstruí-lo. Quando o jogo integrado estiver funcionando, comparar famílias de cidades e observar gameplay real. Separar verificação de causalidade e benchmark da aceleração.
+
+**O mais importante que ainda não sabemos:** o custo real de salvar toda informação forense, quanto debug perturba o desempenho, quão reproduzível é o scheduler/RNG e quais combinações de sistemas mais quebram primeiro. Esses pontos pedem medição com código **quando existir** — não uma arquitetura elaborada no escuro.
+
+## 18. Evidências primárias da terceira rodada
+
+Fontes consultadas especificamente para acrescentar técnicas **ainda pouco cobertas nas rodadas anteriores**; não repetir o catálogo extenso da seção 15. Aqui há **fontes oficiais, código de referência e estudos metodológicos**; nem todas são experiências controladas equivalentes ao IndexCities. Evitar atribuir métricas de outros simuladores ao nosso jogo.
+
+**Simulação de trânsito e seus limites de reprodução:**
+- [SUMO — Randomness: fontes RNG separadas, seed e reprodutibilidade](https://sumo.dlr.de/docs/Simulation/Randomness.html)
+- [SUMO — SaveAndLoad: RNG opcional e limites conhecidos de estado salvo](https://sumo.dlr.de/docs/Simulation/SaveAndLoad.html)
+- [SUMO — FAQ: replicações multi-seed e resultados comparativos](https://sumo.dlr.de/docs/FAQ.html)
+- [SUMO — Developer Tests: comparação com saídas de referência e limitações](https://sumo.dlr.de/docs/Developer/Tests.html)
+- [SUMO — Tutorial 2026: escolher replay da RNG ou nova aleatoriedade](https://eclipse.dev/sumo/docs/Tutorials/2026.html)
+- [SUMO — opções RNG para simulação multithread](https://sumo.dlr.de/userdoc/sumo.html)
+
+**Modelos de agentes e desenho de experimentos:**
+- [NetLogo — BehaviorSpace: explorar parâmetros e replicar simulações](https://docs.netlogo.org/behaviorspace)
+- [NetLogo — Programming Guide: seed, RNG local e monitor que não muda o Core](https://docs.netlogo.org/programming)
+- [Mesa — Batch Runner: combinações de cenários com RNG explícita](https://mesa.readthedocs.io/stable/apis/batchrunner.html)
+- [Mesa — Tutorial de experimentos batch](https://mesa.readthedocs.io/stable/tutorials/11_batch_run.html)
+- [Mesa — boas práticas de RNG](https://mesa.readthedocs.io/stable/best-practices.html)
+- [JASSS (2024) — métodos de validação de modelos baseados em agentes](https://www.jasss.org/27/1/11.html)
+- [Pesquisa sobre comparação de modelos independentes (*docking*)](https://pmc.ncbi.nlm.nih.gov/articles/PMC9731510/)
+
+**Eventos, testes combinatórios e regressão:**
+- [SimPy — Time and Scheduling: ordem estável no mesmo timestamp](https://simpy.readthedocs.io/en/latest/topical_guides/time_and_scheduling.html)
+- [SimPy — Monitoring: rastrear eventos criados, agendados e executados](https://simpy.readthedocs.io/en/stable/topical_guides/monitoring.html)
+- [Microsoft PICT — geração pairwise de combinações](https://github.com/microsoft/pict)
+- [PICT — formatos, constraints e cobertura combinatória](https://github.com/microsoft/pict/blob/main/doc/pict.md)
+- [OSS-Fuzz — corpus mínimo, casos de regressão e cobertura](https://google.github.io/oss-fuzz/advanced-topics/ideal-integration/)
+- [OSS-Fuzz — arquivo reprodutor de falha](https://google.github.io/oss-fuzz/advanced-topics/reproducing/)
+- [Winter Simulation Conference — *common random numbers* para comparação](https://ieeexplore.ieee.org/document/129543/)
+
+**Godot e separação entre visualização e simulação:**
+- [Godot — explicação de física vs rendering ticks](https://docs.godotengine.org/en/stable/tutorials/physics/interpolation/physics_interpolation_introduction.html)
+- [Godot — jitter, stutter e input lag](https://docs.godotengine.org/en/stable/tutorials/rendering/jitter_stutter.html)
+
+---
+
+**Status: pesquisa PENDENTE de revisão humana.** Esta rodada não introduziu código, bibliotecas, CI, menu visual nem mudanças canônicas. A pesquisa propõe capacidades, **não** aprova detalhes de implementação, metas de desempenho ou novos comportamentos do jogador.
