@@ -1011,9 +1011,9 @@ Modelos a comparar:
 
 ## Prefeitura como construção municipal — decisão parcial de 2026-10-10
 
-> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou **a existência física de uma construção de Prefeitura**; suas funções e mecânicas continuam inteiramente **PENDENTES**, sem autorização de implementação além do objeto.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou **Prefeitura física e a direção funcional de ser principalmente operacional, com SIMs trabalhando de verdade, e secundariamente reveladora de demandas reais dos moradores**. Exatamente quais serviços, fluxos, capacidades e dependências continua PENDENTE.
 
-**Confirmado na SPEC:** o jogador poderá construir o edifício da Prefeitura no mapa, com custo, materiais, obra e espaço físico normais. A cidade **já possui Caixa da Cidade, impostos, trabalhadores e serviços municipais decididos independentemente**. Não condicionar silenciosamente o início da cidade, cobrança de impostos ou menus à construção deste prédio.
+**Confirmado na SPEC:** o jogador pode construir a Prefeitura com espaço, custo e obra reais. **SIMs municipais serão empregados e trabalharão no edifício em atividades concretas ainda a decidir, enquanto os problemas reais da população serão apresentados complementarmente**. Caixa, impostos e demais serviços municipais já aprovados não podem ser condicionados ao edifício sem nova decisão; não criar trabalho figurativo ou bônus artificiais.
 
 **Opções de gameplay para discutir, não aprovadas:**
 - **Marco administrativo/visual:** prédio central que representa a administração, com painel de informações da cidade e sem bônus físico arbitrário; risco de ser apenas asset decorativo caro.
@@ -1024,4 +1024,4 @@ Modelos a comparar:
 
 **Questão orientadora:** o que um SIM ou o jogador ganha/consegue fazer de fato graças à construção física da Prefeitura, que já não exista no painel ou em outro serviço? Priorizar distinção observável, baixo microgerenciamento e estabilidade da economia.
 
-**Pesquisa focal posterior (2026-10-10):** [Prefeitura: comparação de 14 jogos, serviços municipais reais e modelos alternativos](city-hall.md). **Revisão humana da pesquisa: PENDENTE**; a recomendação da IA de unir papel cívico/observatório de problemas concretos e eventualmente funções de funcionários reais **não representa aprovação de produto**. Não modificar SPEC até decisão explícita.
+**Pesquisa focal de 2026-10-10:** [Prefeitura: comparação de 14 jogos e alternativas de gameplay](city-hall.md). **Decisão posterior:** papel operacional com SIMs empregados aprovado como principal e informação das demandas reais como secundário. **Pendente:** escolher trabalho concreto e atendimento, sem deduzir sistema novo de burocracia, filas ou taxa.
