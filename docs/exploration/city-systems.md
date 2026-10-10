@@ -8,6 +8,19 @@
 >
 > Concentra pesquisa e raciocínio sobre serviços urbanos, mobilidade, vias, educação, saúde, infraestrutura técnica, conexão externa e capacidades operacionais. A SPEC continua sendo a autoridade sobre o que já foi decidido.
 
+## Rodada de 20 perguntas — combustível, segurança, ambiente e captação de água (2026-10-10)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** Opções **10B, 14A, 15A e 18A** aprovadas na SPEC. Na **19**, preferência preliminar por **B**, mas o responsável pediu alternativas: **PENDENTE** até escolha explícita.
+
+- **10B — combustível de emergência:** a prefeitura pode comprar e guardar fisicamente **reserva finita e custeada** para bombeiros/ambulâncias e outros serviços essenciais; estoque só entra no tanque se transferido por logística/abastecimento viável. Complementa postos reais, sem gerar combustível, prédio obrigatório ou prioridade mágica sobre estoque privado.
+- **14A — período simples de prisão:** detenção efetiva gera pena finita e automática conforme **gravidade do delito e reincidência individual real**, sem sistema de julgamento complexo, sentenças fictícias nem vigiar os SIMs a cada quadro.
+- **15A — sem vaga em prisão alguma:** buscar outras cadeias reais acessíveis conforme 5B; sem capacidade em todas, **liberar a custódia**, preservar o evento criminal e alertar o problema de lotação/incapacidade de forma agregada; não alojar em prisão sem vaga ou mandar a um exterior fictício.
+- **18A — recuperação ambiental simples:** quando a indústria de fato deixa de emitir, a parte de poluição que deixou acumulada **diminui gradualmente**, não imediatamente; outras fontes ativas mantêm seus efeitos. Não afirmar que solo tóxico persistente se descontamina sozinho nem impor obra de remediação por inferência.
+- **19 — POR DECIDIR, não promover à SPEC:** o responsável inclina a 19B (a poluição real da **fonte de captação** pode aumentar custo/diminuir a eficiência do tratamento), mas perguntou se há outra saída. **Modelo multibarreira sugerido, NÃO aprovado:** (1) **prevenção** reduzindo a fonte de poluição que já existe — esgoto, indústria, resíduos —, (2) **tratamento municipal mais exigido** se captação estiver contaminada (sem permitir distribuir água insegura ficticiamente, conforme qualidade/limites definidos), (3) **outra captação real mais limpa**, se existir no mapa e puder ser construída/operada. Caso grave demais para a estrutura existente, parte da oferta pode ficar inviável; dano de qualidade e atendimento são derivados de fontes reais, não número arbitrário de penalidade regional. Reaproveitar demanda/capacidade de água já modeladas, sem novos SKUs, plantas de química ou desenho de tubulações.
+- **Evidência externa de referência, não regra do jogo:** EPA explica que proteger a água na origem reduz custo/complexidade do tratamento (https://www.epa.gov/sourcewaterprotection/basic-information-about-source-water-protection); também descreve tratamento centralizado e **opções de trocar a fonte** quando viável (https://www.epa.gov/sdwa/overview-drinking-water-treatment-technologies). Essas são vias **complementares**, não evidência de que somente 19B seja correta. A combinação precisa de decisão humana sobre gameplay antes de implementar.
+
+---
+
 ## Rodada 2026-10-10 — frota, rotas, resíduos, segurança, saúde e poluição
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável escolheu explicitamente 3C, 4B, 5B, 6A, 8A, 9B e 10B; a análise e as alternativas futuras abaixo **não foram aprovadas integralmente**. Decisões oficiais resumidas em [SPEC](../SPEC.md).
