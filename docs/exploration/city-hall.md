@@ -18,6 +18,28 @@
 
 ---
 
+## Feedback sobre central de governo, pautas da população e papelada — 2026-10-10
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável descreveu a Prefeitura como **menu central e possivelmente completo de gestão municipal**, com impostos, transporte e muitos outros controles, somado a **pautas ou solicitações da população que o jogador pode atender ou não**; observou que solicitações **podem ser inadequadas ou ignorar consequências coletivas**. Sugeriu **papelada administrativa feita pelos servidores SIMs**, mas explicitou incerteza e pediu análise, não aprovou uma atribuição concreta, nova tributação, zoneamento nem funcionalidade nova. As recomendações abaixo seguem **PENDENTES**.
+
+**Leitura da intenção:** concentrar decisões de gestão em um único lugar legível (um *cockpit* administrativo), conservando **interação direta com mapa** para construir/alterar localização física e **acesso aos controles existentes mesmo durante o bootstrap**, até resolução explícita da escolha verbal 3B sobre Prefeitura ausente. Não impor abrir um processo para cada ajuste municipal.
+
+**Modelo de pauta para debater:** (1) condição observada na simulação; (2) grupo/famílias/empresas reais afetados e interesse; (3) solicitação ou proposta com possíveis preferências parciais; (4) consequências e custos previstos sem garantia; (5) jogador decide atender, propor outra ação ou não agir; (6) alterações físicas/econômicas e impactos reais são medidos ao longo do tempo. **Não é missão obrigatória, ação instantânea nem decisão de felicidade por clique.**
+
+**Distinção de honestidade de simulação:** *necessidade detectada pelos indicadores* **não é sinônimo** de *pedido enviado pelo cidadão*. Se quiser **petições/solicitações expressas por SIMs**, precisará aprovar origem/agente reais, motivo, canal e processamento, preferindo agregação por tema e baixa frequência em vez de tickets diários individuais. Sem comunicação simulada, intitular honestamente o card de *demanda observada*, *problema detectado* ou *recomendação administrativa*. Solicitações podem ser parciais, conflitantes e economicamente mal fundamentadas; o sistema não deve tratá-las como diagnóstico infalível.
+
+**Exemplo crítico 1 — "queremos mais áreas industriais":** na SPEC, **não existe zoneamento automático**; o jogador posiciona edifícios e escolhe sua categoria urbana, empresas autônomas decidem atividade quando compram/operam. A pauta concreta seria *falta de empregos industriais acessíveis*, *desemprego* ou *espaço para atividade econômica*, com ações possíveis de **construir imóveis industriais**, resolver mobilidade/abastecimento ou não intervir. Não gerar indústria nem emprego automaticamente ao "aceitar".
+
+**Exemplo crítico 2 — "reduzir impostos dos empregados":** a SPEC prevê **seis alíquotas de imposto imobiliário** por densidade/tipo (residencial, comercial, industrial); não aprovou imposto geral sobre a renda do trabalhador, e contribuição previdenciária do SIM tem parâmetros automáticos no modelo inicial. Uma pauta válida com controles atuais poderia tratar **carga de imposto residencial**, mas não apresentar redução de imposto salarial como botão já disponível. Qualquer novo tributo ou liberdade previdenciária exige decisão separada.
+
+**Papel dos funcionários, a avaliar:** recepcionar e consolidar **solicitações realmente apresentadas** e executar providências administrativas **que tenham efeito distinto do próprio botão**. Uma capacidade de atendimento poderia limitar serviço específico, caso escolhido, mas **não criar fila burocrática artificial, pontos administrativos, espera para mudar alíquota ou bloqueio global de menus** para justificar equipe. Se a única tarefa for "gerar cards a partir de estatísticas", o trabalho não tem consequência operativa suficiente, apesar da plausibilidade narrativa da papelada. Vagas e salário reais da Prefeitura continuam aprovados; sua tarefa exata, não.
+
+**Riscos e proteção do gameplay:** não duplicar o painel de desafios emergentes (pauta = discussão/decisão, desafio = oportunidade ou meta opcional real), não inundar a interface com solicitações repetitivas, não transformar interesse individual em vontade de 100% da cidade, não exigir eleições/facções, não aceitar solução como trabalho concluído automaticamente e não esconder alertas urgentes atrás da pauta. Exibir ganhadores/perdedores e incerteza relevante, em vez de dar ao pedido aparência de verdade moral/econômica.
+
+**Recomendação da IA, PENDENTE:** apostar em **Prefeitura = painel central de gestão + caixa de pautas contextualizadas + prestação de contas dos efeitos**. Avaliar pautas primeiro como forma de apresentar decisões já aprovadas (transporte gratuito/pago, impostos imobiliários, investimento físico), e só depois perguntar se há novos pedidos, normas e funções de servidores que acrescentem gameplay suficiente. A ideia amplia a interação cívica, **não aprova novos sistemas**.
+
+---
+
 ## Ideia de pautas políticas — exploração inicial (2026-10-10)
 
 > **Revisão humana desta seção: PENDENTE.** O responsável perguntou **"e se tivesse o formato de pautas políticas?"** e explicitou **"ideia apenas"**. **Não é aprovação de modelo, votação, conselho, eleições, atores políticos, nova UI, regras ou programas.** O núcleo da Prefeitura na SPEC continua sendo centro de escolhas estratégicas com efeitos reais, presença de SIMs funcionários e leitura agregada das necessidades.
