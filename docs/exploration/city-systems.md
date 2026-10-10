@@ -1012,3 +1012,5 @@ Modelos a comparar:
 - **Construção obrigatória ou não:** ainda não decidir se será opcional, quando estará disponível ou como se integra ao início da cidade; não criar dependência agora.
 
 **Questão orientadora:** o que um SIM ou o jogador ganha/consegue fazer de fato graças à construção física da Prefeitura, que já não exista no painel ou em outro serviço? Priorizar distinção observável, baixo microgerenciamento e estabilidade da economia.
+
+**Pesquisa focal posterior (2026-10-10):** [Prefeitura: comparação de 14 jogos, serviços municipais reais e modelos alternativos](city-hall.md). **Revisão humana da pesquisa: PENDENTE**; a recomendação da IA de unir papel cívico/observatório de problemas concretos e eventualmente funções de funcionários reais **não representa aprovação de produto**. Não modificar SPEC até decisão explícita.
