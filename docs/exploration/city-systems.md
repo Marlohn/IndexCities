@@ -17,16 +17,29 @@ Este arquivo é material de exploração temática. Quando houver divergência, 
 
 ---
 
+## Defaults de cruzamentos — proposta de gameplay NÃO APROVADA (2026-10-10)
+
+> **Revisão humana desta seção: PENDENTE.** Após escolher 10C (jogador pode editar semáforos/preferência), o responsável perguntou se o padrão seria semáforo. A IA **recomenda NÃO colocar sinaleiro universalmente**, por causa de paradas artificiais e perda de fluidez em ruas locais. A recomendação abaixo **não foi confirmada** e não pertence à SPEC.
+
+- **Rua urbana 1+1 × 1+1:** inicialmente sem semáforo; em equivalência de prioridade, dar preferência ao veículo vindo pela direita.
+- **Rua 2+2 × rua 1+1:** inicialmente sem semáforo; rua de maior capacidade tem preferência.
+- **Rua 2+2 × rua 2+2:** inicialmente com semáforo de **ciclo fixo**, sem ajuste manual de segundos/fases.
+- **Jogador pode editar cada cruzamento** e manter a decisão tomada; na ausência de configuração manual o cruzamento deve funcionar com default coerente sem exigir cliques.
+
+**Riscos a testar:** semáforo por tipo de via não garante melhor fluidez em cruzamentos 2+2 vazios, e preferência por direita exige sinais/precedência corretos também em conversões e travessias. A hierarquia é uma **heurística inicial proposta**, não lei universal ou inferência automática de largura para cada configuração viária. Alternativa simples seria padrão semaforizado para todos os cruzamentos, mas gera paradas desnecessárias até em bairros residenciais. A escolha final exige aprovação explícita do responsável.
+
+---
+
 ## Rodada posterior — mobilidade e serviços com nove confirmações (2026-10-09)
 
-> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável confirmou **4C (licença médica remunerada), 6A (frota inicial na garagem de ônibus), 8A (viaturas abastecem em postos reais) e 10C (sinalização e prioridade do cruzamento escolhidas pelo jogador)**. **Questão 9 (ciclovias) ainda depende de esclarecimento**: o responsável inclinou-se a A, mas perguntou o que seria um caminho exclusivo; a IA não deve promover uma infraestrutura específica à SPEC sem confirmação. Também foram decididas em outros temas 1A, 2B, 3A, 5A e 7A.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável confirmou **4C (licença médica remunerada), 6A (frota inicial na garagem de ônibus), 8A (viaturas abastecem em postos reais) e 10C (sinalização e prioridade do cruzamento escolhidas pelo jogador)**. **Questão 9 foi resolvida depois (2026-10-10): bicicletas compartilham as ruas comuns perto do meio-fio, sem ocupar calçadas; ferramenta/rede de ciclovias dedicadas foram expressamente ADIADAS para evolução futura, retirando-as do escopo inicial oficial**. Também foram decididas em outros temas 1A, 2B, 3A, 5A e 7A.
 
 - **4C:** licença médica de duração limitada, remunerada pelo empregador real (privado ou Caixa), sem produção/atendimento pelo ausente e sem gestão individual. **Tempo de licença e solução após esgotamento** não foram decididos.
 - **6A:** construir garagem municipal **inclui no custo a aquisição de ônibus físicos iniciais em quantidade finita**, com entrega real e capacidade operacional condicionada a motorista, combustível e vagas. A garagem limita frota; não gera ônibus de graça nem veículos adicionais a cada aumento de demanda. O pacote inicial é distinto dos veículos municipais de outras instalações (16B), mas segue o mesmo princípio de custo físico.
 - **8A:** veículos municipais abastecem em **postos reais**, pagando ao negócio real com dinheiro do Caixa e reduzindo estoque de Combustível, sem tanque infinito. Falta de oferta pode reduzir atendimento real; buscas automáticas e custo de deslocamento.
 - **10C:** o jogador decide em cada cruzamento **semáforo em ciclo fixo** ou **preferência de passagem**, e, no segundo caso, a rua prioritária. O detalhe de defaults quando ainda não foi editado e de geometrias mais complexas é técnico/UX pendente; **não impor clique obrigatório a todo cruzamento** nem sistema de ajuste contínuo do semáforo. Quando há decisão do jogador, o sistema não altera preferência por demanda arbitrariamente.
 
-**Questão 9 — EM EXPLORAÇÃO, sem nova SPEC:** a opção A contemplava bicicletas circulando pelas **ruas urbanas existentes** e **caminhos exclusivos opcionais** construídos pelo jogador. Explicação da IA, ainda sem confirmação: seria uma conexão física estreita para bicicleta, construída entre áreas (como casas ↔ parque ↔ comércio), sem circulação de automóveis, integrada à malha real e ao acesso dos edifícios; com custo/terreno/travessias reais, e sem teletransporte entre segmentos. **Não confundir com um terceiro tipo de rua motorizada** — vias urbanas e rodovias continuam os dois tipos aprovados. A alternativa de ciclovia demarcada no bordo de ruas urbanas versus pista exclusiva fora da rua, e modo de conexão aos cruzamentos, ainda precisam de escolha proporcional. Não aprovar as duas configurações por inferência.
+**Questão 9 — DECISÃO SIMPLIFICADA E ADIAMENTO APROVADOS (2026-10-10):** o responsável avaliou que a construção de ciclovias exclusivas custaria muito desenvolvimento para pouco ganho de gameplay agora. **Bicicletas continuam físicas, na rua urbana junto ao bordo da faixa externa próximo ao meio-fio, compartilhando tráfego real; NÃO trafegam pela calçada dos pedestres e NÃO exigem ciclovia para uma viagem viável**. Novas ferramentas, caminhos segregados, ciclovias pintadas/segregadas na via e suas regras de cruzamento/conexão ficam **fora do modelo inicial**, guardadas para possível evolução futura, sem apagar a intenção geral de desenvolver infraestrutura cicloviária se merecer gameplay. Sem simulação de colisão, nova terceira rua de veículos ou teletransporte de bicicleta. **A 9A original foi substituída por este recorte explícito**, não interpretá-la como aprovação de pista exclusiva opcional.
 
 ---
 
@@ -436,6 +449,8 @@ A intenção é de alto realismo de deslocamento:
 O nível exato de animação, detecção de obstáculos e priorização de travessias ainda precisa ser prototipado.
 
 ### Bicicletas
+
+> **Atualização de 2026-10-10:** ciclovias dedicadas, seus custos, geometria e ferramenta própria foram **adiados pelo responsável**; bicicleta circula na pista das ruas comuns, próxima ao meio-fio, respeitando tráfego real e sem ocupar calçada. Trechos históricos abaixo sobre implantação de ciclovias são alternativas anteriores, **NÃO requisitos atuais**. Fonte de verdade: SPEC.
 
 Decidido:
 
