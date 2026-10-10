@@ -24,6 +24,21 @@
 
 ---
 
+## Direção de aprofundamento confirmada pelo responsável — 2026-10-10
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável **concordou com a recomendação de priorizar coordenação real dos serviços municipais (opção C da rodada seguinte), com elementos pontuais de atendimento aos cidadãos (opção B)**. Isso complementa a decisão anterior de Prefeitura operacional com SIMs empregados e leitura secundária de demandas reais. **Não foram aprovados processos específicos nem obrigação de visitar presencialmente.**
+
+**Na SPEC, diretriz agora confirmada:** a Prefeitura deve coordenar *serviços municipais reais* por trabalho de servidores SIMs reais, e pode incluir atendimentos pontuais que tenham objeto concreto. Apresentar demandas agregadas da população é papel secundário já aprovado. Evitar equipes de fachada, filas, licenças obrigatórias sem gameplay, bônus passivos e 'pontos de administração'.
+
+**Pesquisa/propostas pendentes de escolha (não são regras):**
+- Coordenação de trabalho municipal de **manutenção, solicitações e operações** que já ocorrem: decidir o que exatamente o servidor faz e que resultado observável cria, sem contradizer a priorização automática de manutenção, despacho de emergência ou trabalho do Pátio Municipal de Obras já aprovados.
+- **Atendimento excepcional aos SIMs:** se um atendimento realmente justificar viagem, equipe, espera e resultado, escolher uma situação já modelada ou aprovar novo evento que agregue gameplay. Sem isso, não modelar visitas apenas por estética.
+- **Escala e falta de servidores:** o trabalho deve possuir demanda/capacidade reais, mas não se presume paralisar funções municipais essenciais já definidas ou impor uma fila de autorizações a cada obra por ausência da Prefeitura.
+
+**Próximo passo de alto valor:** escolher **um processo municipal específico** que dependa de coordenação humana real e produza efeito concreto demonstrável; só então decidir se e por que algum SIM precisará de atendimento presencial no edifício.
+
+---
+
 ## Pergunta de produto
 
 **Por que construir uma Prefeitura no mapa agrega valor que não seria entregue por um botão de finanças ou uma tela geral?**
