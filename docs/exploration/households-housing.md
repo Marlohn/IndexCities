@@ -622,7 +622,7 @@ Hipótese de benefício: negócios mais variados e sensíveis à urgência dos a
 
 ## Nova análise — acolhimento local sem parentes (2026-10-10)
 
- > **Revisão humana desta seção: PARCIALMENTE REVISADO.** A análise comparativa antecede a **aprovação posterior de acolhimento municipal infantil em construção física**, registrada na SPEC. A busca opcional por famílias voluntárias, contratos externos e a solução a partir dos 18 anos continuam PENDENTES.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** A análise comparativa antecede a **aprovação posterior de acolhimento municipal infantil em construção física**, registrada na SPEC. A busca opcional por famílias voluntárias, contratos externos e a solução a partir dos 18 anos continuam PENDENTES.
 
 **Alternativas a considerar:**
 
