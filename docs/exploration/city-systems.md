@@ -17,6 +17,30 @@ Este arquivo é material de exploração temática. Quando houver divergência, 
 
 ---
 
+## Decisões de serviços, trânsito e infraestrutura — rodada de 20 perguntas (2026-10-09)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** Decisões explicitamente aprovadas na SPEC: 7A, 8A, 9A, 10A, 11B, 12A, 13C, 16B, 18A, 19A e 20B. **O pagador de reparos por incêndio (pergunta 5) permanece CONTRADITÓRIO na mesma resposta**, portanto **NÃO foi aprovado nessa rodada**; sem alterar o dono/devedor dos reparos na SPEC.
+
+**Saúde:** parto fora de hospital quando não houver atendimento acessível (7A), sem suspensão indefinida de nascimento; pacientes graves têm prioridade clínica real sobre consultas simples quando disputam capacidade (8A); hospitais compram/repõem **Suprimentos médicos** físicos automaticamente com dinheiro da cidade, fornecedores/entrega reais e estoque efetivo (9A).
+
+**Segurança:** iniciar crimes apenas com furtos/roubos patrimoniais simples (10A), aproveitando autoria e vítimas reais e impacto regional 8C já aprovado. **Melhoria posterior explicitamente desejada, NÃO aprovada agora:** acrescentar agressões/ferimentos com consequências físicas e hospitalares (antiga opção 10B). Frequência e detalhamento da apuração devem continuar baratos, sem nova engine policial.
+
+**Táxis:** preço de corrida automático segundo distância, tempo ocupado e custos verdadeiros da empresa (11B); chamada automática faz motorista+veículo disponíveis **irem fisicamente buscar** o passageiro (12A). Sem ponto de táxi obrigatório ou tarifa municipal manual. A operação por empresa privada com empregados já era 1B.
+
+**Estacionamento municipal:** política de cidade **gratuito ou pago** escolhida pelo jogador (13C) apenas para vagas públicas; se pago, receita municipal corresponde a ocupação e dinheiro real, preço e cobrança definidos automaticamente sem administrar vagas individuais.
+
+**Frotas municipais (16B):** quando jogador constrói estruturas municipais que usam veículos (bombeiros, ambulância, patrulha, lixo), **o pacote de construção inclui uma frota inicial finita e com custo pago**. O recebimento e entrada operacional de cada veículo exigem origem física e logística real, apesar de não haver compra manual isolada por unidade; quantidade inicial e adequação ao porte são especificação/calibração. **Não aplicar a uma garagem de ônibus a geração gratuita/infinita de ônibus**, pois a SPEC limita capacidade, frota e recursos reais. **Melhoria futura desejada, NÃO aprovada agora:** aquisição/gestão de frota pública como ação própria separada da construção (antiga alternativa 16A).
+
+**Funerais:** sepultamento e cremação municipais gratuitos ao cidadão (18A), mas com equipe, combustível/insumos operacionais e Caixa reais. A infraestrutura precisa atender capacidade efetiva; não há atendimento quando indisponível.
+
+**Travessia e faixas:** a simulação insere faixas de pedestres em cruzamentos e locais pertinentes automaticamente (19A). **Possível upgrade futuro explicitamente citado, NÃO aprovado agora:** permitir que o jogador adicione/remova faixas manualmente (19C). Os SIMs continuam atravessando somente onde houver faixa válida.
+
+**Perfis viários (20B):** jogador escolhe entre **poucas larguras/quantidades de faixas ao construir ruas urbanas**, com geometria, terreno ocupado e capacidade reais; **quantidade de faixas NÃO foi definida**. A IA sugere estudar inicialmente **1+1 e 2+2 faixas por sentido de tráfego**, sem aprovar essas duas opções como catálogo final. Não criar categoria extra de via nem upgrade/edição direta de via pronta — a SPEC só prevê construção/demolição. A distribuição de calçadas, vagas e travessias deve caber na largura; mais faixas não garantem mobilidade melhor em todos os cruzamentos.
+
+**Pergunta 5 — QUEM PAGA A REPARAÇÃO POR INCÊNDIO: PENDENTE DE ESCLARECIMENTO.** O responsável respondeu textualmente **"Vamos fazer A"**, cuja alternativa apresentada era **proprietário privado repara seu prédio e prefeitura repara os prédios municipais**. Na mesma frase, disse **"o player precisa pagar os prédios com reparo pois foi ele que não colocou bombeiros"**, o que indica **Caixa da Cidade reparando também imóveis privados**, mais próximo da alternativa B original. **É conflito real de responsabilidade financeira**, não apenas escolha de implementação. Não presumir seguro privado, culpa automática, rateio, despesa da prefeitura ou do dono. A SPEC já aprova dano e recuperação com dinheiro, materiais e trabalho, mas **não define o pagador**. Pergunta objetiva para próximo turno: prefeitura arca também com reparos em imóveis privados? Em caso afirmativo, é sempre ou apenas quando o dano decorre de cobertura de bombeiros insuficiente?
+
+---
+
 ## Mobilidade, segurança, resíduos e esgoto — rodada aprovada de 2026-10-09
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou expressamente opções 3B, 4A, 5B, 6B, 7A, 8A e 9B; a regra **incêndio NÃO atravessa ruas** foi condição adicional explícita, não sugestão da IA. Números, frequências e algoritmos técnicos não foram aprovados.
