@@ -974,3 +974,14 @@ Modelos a comparar:
 **Opção 1C aprovada posteriormente (2026-10-09):** o filtro espacial rápido gera poucos candidatos e a avaliação real usa rotas, acessibilidade e capacidade; expandir candidatos quando não houver opção viável. O círculo não é bloqueio rígido. Não abrir decisão de raio vs caminho de novo por causa deste histórico; calibração e visualização seguem em exploração.
 
 ---
+
+---
+
+## Crimes patrimoniais e origem de incêndios — decisões de 2026-10-10
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** Opções 5A (dinheiro roubado) e 6A (origem do fogo dependente de uso real) confirmadas pelo responsável e registradas na SPEC. Possibilidades futuras abaixo não foram aprovadas.
+
+**5A:** no primeiro modelo, furto/roubo entre SIMs transfere **apenas saldo monetário real** da vítima ao autor, sem criação/destruição de dinheiro e sem nova inventariação de bens furtados. **Evolução futura desejada, ainda não aprovada:** roubo de bens físicos individuais (por exemplo bicicleta, carro) com titularidade, localização, uso, destinação e eventual recuperação efetivos. Avaliar o ganho de gameplay contra a complexidade de propriedade, mercado e atuação policial; não antecipar investigação obrigatória.
+
+**6A:** risco ocasional de início de incêndio deriva de características e atividades reais do edifício, em lugar de sorteio uniforme para todos. A regra é separada da propagação local limitada por ruas, dos recursos dos bombeiros e dos reparos por proprietário, que já estão fechados. Calibrar taxas e fatores sem inventar instalações elétricas individuais, requisito de culpa ou varredura per-frame.
+
