@@ -8,6 +8,20 @@
 >
 > Concentra pesquisa e raciocínio sobre serviços urbanos, mobilidade, vias, educação, saúde, infraestrutura técnica, conexão externa e capacidades operacionais. A SPEC continua sendo a autoridade sobre o que já foi decidido.
 
+## Rodada 2026-10-10 — frota, rotas, resíduos, segurança, saúde e poluição
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável escolheu explicitamente 3C, 4B, 5B, 6A, 8A, 9B e 10B; a análise e as alternativas futuras abaixo **não foram aprovadas integralmente**. Decisões oficiais resumidas em [SPEC](../SPEC.md).
+
+- **Ônibus 3C, aprovado:** expansão de frota por solicitação agregada do jogador, limitada pela capacidade livre **das garagens físicas já aprovadas**, dinheiro, compra/entrega real, motoristas e operação. Nenhuma compra automática por demanda; distribuição pelas linhas continua automática.
+- **Rotas 5B, aprovado:** reavaliar percurso em caso de bloqueio, mudança material da rede ou congestionamento persistente; não recalcular sem necessidade a cada oscilação. **Melhoria futura solicitada:** avaliar replanejamento continuamente adaptativo (antiga opção C) se houver benefício claro de gameplay/performance. Preparar possibilidade de evolução por desenho reversível e testes, **sem criar antecipadamente sistema ou custo de manutenção para C**.
+- **Combustível inicial 6A, aprovado:** viaturas municipais chegam com combustível no tanque, **obtido e pago no pacote real**; abastecimento posterior exige postos reais como a SPEC já determina. Medir se dá tempo de construir a primeira oferta sem serviço de emergência magicamente abastecido.
+- **Aterro 4B, aprovado:** capacidade **total acumulada** de disposição, não só vazão diária; depósito ocupa espaço permanente e instalação cheia recusa resíduos. Incineração efetiva ajuda a atender o **lixo novo** e evita mais deposição, mas não faz lixo antigo desaparecer. **Questão levantada pelo responsável, ainda sem decisão fechada:** permitir que unidades de incineração retirem lixo previamente depositado, gradualmente, usando coleta/carregamento, transporte e custos reais, para liberar espaço; possível reciclagem foi citada como alternativa. **Reciclagem segue NÃO aprovada e fora do escopo inicial** na SPEC. Investigar se a retirada ativa gera bom gameplay ou custo/complexidade sem ganho.
+- **Doenças 8A, aprovado:** doenças individuais no modelo inicial, **sem transmissão SIM–SIM**. **Possível melhoria futura expressamente solicitada:** contágio, epidemias e até pandemias, a reavaliar pelo ganho sistêmico, custo e necessidade de novas decisões de saúde pública; nada disso é requisito atual.
+- **Crime 9B, aprovado somente em princípio:** ocorrências emergem de riscos e oportunidades regionais concretos e resultam em episódios com SIMs reais, sem varredura contínua por pares. **Detalhes pedidos pelo responsável (PENDENTES):** quais condições contam, quando um SIM pode ser autor/vítima, como patrulha reduz oportunidade e como distinguir risco territorial de culpa individual. **Hipóteses para debate, não aprovadas:** disponibilidade de alvos/oportunidades reais, fluxo de pessoas e bens, contextos de horários e isolamento, policiamento patrulhando efetivamente, repetição de oportunidades; desemprego ou dificuldades financeiras podem ser contexto econômico, mas **não determinam culpabilidade** por renda/classe. Evitar crime ao acaso sem causa, injustiça sistemática e custos per-frame. É necessário explicitar o mecanismo antes de implementar.
+- **Poluição 10B, aprovado:** impacto espacial gradual derivado de fontes reais, acumulável entre fontes próximas, sem vento/partículas detalhados. Calibrar distância/intensidade e mostrar causas e regiões afetadas, mantendo a regra anterior de esgoto não tratado regional.
+
+---
+
 ## Como ler este documento
 
 Este arquivo é material de exploração temática. Quando houver divergência, use:
