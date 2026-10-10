@@ -199,16 +199,16 @@ O [hub](../EXPLORATION.md) registra 11 documentos temáticos: **9 PARCIALMENTE R
 
 ---
 
-### Rodada seguinte — 9 escolhas fechadas, ciclovia e frota-base pendentes (2026-10-09)
+### Rodada seguinte — frota-base e adiamento de ciclovias fechados (2026-10-09/10)
 
-> **Revisão humana desta seção: PARCIALMENTE REVISADO.** Confirmadas diretamente pelo responsável: **1A, 2B, 3A, 4C, 5A, 6A, 7A, 8A e 10C**. A alternativa **9A teve aceitação condicional (“pode ser A, mas como seria o caminho exclusivo?”)**; detalhes físicos devem ser explicados e confirmados antes de promover à SPEC. O responsável cogitou complemento à **5A** de frota mínima na fábrica, sem aprovar ainda o pacote.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** Confirmadas diretamente pelo responsável: **1A, 2B, 3A, 4C, 5A, 6A, 7A, 8A e 10C**. **Em 2026-10-10, o responsável aprovou a frota-base inicial comprada com caixa da empresa ao abrir fábrica com logística necessária e ADIOU ciclovias dedicadas como baixa relação gameplay/custo; bicicletas circularão nas ruas junto ao meio-fio, sem ocupar calçadas.** As duas mudanças foram promovidas à SPEC. **O padrão de cruzamento sem intervenção do jogador continua ABERTO:** há proposta da IA, não aprovada.
 
 **Produto confirmado na SPEC:** residências ocupáveis sem água/energia (consequências reais), superlotação residencial com bem-estar pior (sem despejo forçado), fome prolongada prejudicando saúde podendo matar, afastamento médico remunerado por tempo limitado e custeado pelo empregador, caminhões comprados automaticamente por empresas com recursos reais, garagem pública com ônibus iniciais incluídos no custo real, fazenda cuja área real influencia capacidade, frota municipal abastecendo em postos com pagamento/combustível físicos, e cruzamentos cujo semáforo ou preferência e rua prioritária são escolhidos pelo jogador. Valores e frequência não são requisitos novos por esta síntese.
 
-**Pendências de alto valor da rodada:**
-- **5 — frota inicial mínima nas fábricas:** recomendação da IA é **5A com investimento inicial em caminhão da própria empresa quando financeiramente viável**, não frota gratuita nem veículo incorporado sem custo à obra municipal. Não aplicar antes de confirmação.
-- **9 — mobilidade de bicicleta:** interpretar caminho exclusivo como trilha/ciclovia física opcional ligada à rede real, além das ruas compartilhadas. Ainda escolher se a solução inicial precisa ter **faixa ao lado da rua, caminho segregado fora da via ou só um desses**, com espaço físico, acesso, cruzamentos e custo proporcionais. **Não alterar o escopo de dois tipos de rua motorizada** nem inventar ciclovia impossível de alcançar.
-- **10 — semáforo e prioridade manual:** estabelecer UX padrão simples e seguro para interseções não editadas e ciclos fixos; especificar somente o mínimo na integração e medir custo de cada configuração sobre trânsito.
+**Decisões adicionais e uma lacuna:**
+- **5 — frota inicial APROVADA (2026-10-10):** fábricas com demanda de entrega entram em operação com **plano de aquisição automática de frota-base pequena**, paga pelo caixa empresarial real, sem caminhão gratuito, com oferta e entrega física. Expansão futura é autônoma e sujeita a recursos reais.
+- **9 — ciclovias ADIADAS e bicicleta compartilhando rua APROVADOS (2026-10-10):** bicicleta usa pista urbana perto do meio-fio, sem ocupar calçada; não haverá ferramenta/rede dedicada de ciclovias no escopo inicial. Ciclovias laterais ou segregadas ficam como melhoria futura não aprovada.
+- **10 — padrão do cruzamento NÃO DECIDIDO:** 10C manual foi aprovado, mas qual configuração nasce como padrão ainda não. A IA recomenda 1+1 × 1+1 = preferência à direita; 2+2 × 1+1 = via maior preferencial; 2+2 × 2+2 = semáforo de ciclo fixo. Não introduzir isso na SPEC sem aprovação, nem semáforo universal automaticamente.
 
 **Bootstrap a testar:** se viaturas só podem abastecer em postos com estoque real (8A), serviço emergencial pode falhar numa cidade muito inicial sem posto ou combustível; evidenciar falta de oferta de maneira clara, não criar posto mágico/abastecimento externo automático não aprovado.
 
