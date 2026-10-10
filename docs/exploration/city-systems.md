@@ -474,7 +474,7 @@ O sistema deve se conectar à logística já decidida, em vez de funcionar como 
 
 **Status:** fora do escopo atual, mas preservadas para reavaliação futura.
 
-- assistência social municipal, incluindo abrigos e programas de apoio — **explicitamente fora do primeiro modelo** após escolha do escopo inicial para população sem moradia; melhorias futuras permanecem em exploração, sem implementação aprovada (ver `households-housing.md`);
+- assistência social municipal **geral** (abrigos de adultos sem moradia, auxílio de renda e moradia subsidiada) permanece fora do primeiro modelo. **Exceção aprovada posteriormente em 2026-10-10:** construção municipal específica para acolher crianças/adolescentes sem responsável quando não houver parente apto, com vagas, cuidadores e despesas reais. Outras funções da unidade e a saída aos 18 anos ainda estão em discussão (ver `households-housing.md` e SPEC).
 - saúde mental e dependência química.
 
 Esses tópicos não devem ser implementados agora. Podem ser revisitados futuramente quando os sistemas básicos de população, saúde, moradia e orçamento já estiverem maduros.
@@ -997,3 +997,18 @@ Modelos a comparar:
 
 **6A:** risco ocasional de início de incêndio deriva de características e atividades reais do edifício, em lugar de sorteio uniforme para todos. A regra é separada da propagação local limitada por ruas, dos recursos dos bombeiros e dos reparos por proprietário, que já estão fechados. Calibrar taxas e fatores sem inventar instalações elétricas individuais, requisito de culpa ou varredura per-frame.
 
+
+## Prefeitura como construção municipal — decisão parcial de 2026-10-10
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou **a existência física de uma construção de Prefeitura**; suas funções e mecânicas continuam inteiramente **PENDENTES**, sem autorização de implementação além do objeto.
+
+**Confirmado na SPEC:** o jogador poderá construir o edifício da Prefeitura no mapa, com custo, materiais, obra e espaço físico normais. A cidade **já possui Caixa da Cidade, impostos, trabalhadores e serviços municipais decididos independentemente**. Não condicionar silenciosamente o início da cidade, cobrança de impostos ou menus à construção deste prédio.
+
+**Opções de gameplay para discutir, não aprovadas:**
+- **Marco administrativo/visual:** prédio central que representa a administração, com painel de informações da cidade e sem bônus físico arbitrário; risco de ser apenas asset decorativo caro.
+- **Sede de gestão cívica:** mostrar finanças, indicadores, prioridades e alertas municipais pela Prefeitura, sem exigir que a presença do prédio crie autoridade/pagamentos ou destrave menus; risco de duplicação com interface normal.
+- **Atendimento presencial aos SIMs:** oferece serviço concreto municipal com trabalhadores, capacidade, deslocamentos reais e demanda verificável; risco de inventar burocracia e filas por processo sem valor de gameplay.
+- **Influência urbana limitada:** edifício institucional pode influenciar fatores locais reais quando existir causa e mecanismo claros, mas **não atribuir bônus de felicidade/imposto/raio apenas por colocá-lo**.
+- **Construção obrigatória ou não:** ainda não decidir se será opcional, quando estará disponível ou como se integra ao início da cidade; não criar dependência agora.
+
+**Questão orientadora:** o que um SIM ou o jogador ganha/consegue fazer de fato graças à construção física da Prefeitura, que já não exista no painel ou em outro serviço? Priorizar distinção observável, baixo microgerenciamento e estabilidade da economia.
