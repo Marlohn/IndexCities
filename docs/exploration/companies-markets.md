@@ -210,6 +210,18 @@ Ainda precisa ser pesquisado/calibrado:
 
 ---
 
+## Compra de carros, operação de empresas e frota — decisões adicionais (2026-10-09)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável confirmou 2A (sem crédito privado inicialmente), 11B, 12A, 14A e 15A; operação pública 16B pertence à SPEC/serviços urbanos. Preços/quantidades/entregas detalhados continuam para especificação proporcional, não são aprovação de IA.
+
+- **2A:** famílias e empresas **não terão sistema de empréstimos próprios** nem financiamento de imóveis/carros/negócios inicialmente. O crédito municipal já aprovado não é afetado.
+- **11B/12A — táxis:** empresas privadas cobram automaticamente conforme distância, tempo e custos reais da corrida; SIM pede táxi e motorista SIM real precisa se deslocar até a origem. Não há corrida ou faturamento se faltar motorista, veículo, pagamento, capacidade ou acesso. Não criar taxímetro gerenciado pelo jogador ou ponto de táxi obrigatório.
+- **14A — venda de automóveis diretamente pela fabricante:** sem criar concessionária/revendedora como elo obrigatório no modelo inicial. Cada carro produzido tem estoque/origem concreta, comprador/pagamento real e deslocamento/entrega física.
+- **15A — carros usados:** SIM pode vender o veículo individual que já possui a outro SIM comprador, com transferência do mesmo ativo existente e dinheiro real, sem fabricar carro ao vendê-lo ou reaparecer no endereço do novo proprietário. Fórmula de preço/depreciação de veículos usados não foi aprovada por esta rodada.
+- **16B:** construir instalação municipal com veículos inclui pacote inicial **finito e com custo/entrega reais**, em vez de comprar/administrar cada viatura individualmente. **Melhoria futura explicitamente desejada, ainda NÃO aprovada:** permitir compras separadas/expansão de frotas municipais. Garagens de ônibus mantêm regras próprias de limite e aquisição real.
+
+---
+
 ## Fábrica de automóveis com materiais existentes, preferência local — decisões 5A/6A (2026-10-09)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou expressamente **5A e 6A** e solicitou registrar **o aprofundamento futuro da cadeia de produtos como possibilidade, NÃO escopo inicial**.
