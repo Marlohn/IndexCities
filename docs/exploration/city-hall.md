@@ -210,6 +210,8 @@ Cenários: (1) cidade muito pequena sem Prefeitura; (2) Prefeitura instalada e s
 
 ## Candidato operacional mais concreto — manutenção extraordinária e contratações (2026-10-10)
 
+> **Feedback humano posterior:** **REJEITADO como proposta principal em 2026-10-10**: o responsável considera que essa coordenação de reparos gera **pouco gameplay**. O restante da seção é histórico de hipótese superada, não opção aprovada.
+
 > **Revisão humana desta seção: PENDENTE.** É uma recomendação da IA pedida pelo responsável, **não foi aprovada ainda**; a SPEC preserva somente a direção já escolhida: coordenar serviços municipais por funcionários reais, com atendimento pontual e informação das necessidades como complementos.
 
 **Proposta focal:** a Prefeitura atuaria como **central operacional para demandas municipais excepcionais que exigem coordenar recursos e prestadores**, particularmente **reparo de estruturas públicas danificadas**, onde equipe/material/capacidade municipal corrente não atendem à demanda. Não seria uma autorização obrigatória para o funcionamento normal de hospitais, escolas, coleta, polícia, bombeiros, tributos, obras nem manutenção recorrente.
@@ -223,3 +225,21 @@ Cenários: (1) cidade muito pequena sem Prefeitura; (2) Prefeitura instalada e s
 **Riscos abertos:** extensão do trabalho do Pátio Municipal de Obras versus função da Prefeitura, origem da equipe de reparo/serviço terceirizado e recursos físicos, qual evento justifica contrato extraordinário, efeito da ausência de Prefeitura sem contradizer reparos públicos já definidos, contratação automática sem autorização individual do jogador, custos de pessoal e impacto de capacidade para não introduzir nova taxa administrativa fictícia.
 
 **Próxima decisão candidata:** *A Prefeitura deve organizar contratações e reparos municipais extraordinários quando faltar capacidade operacional local, sem ser requisito para serviços e manutenção rotineiros?* A aprovação dessa opção ainda demandaria separação clara entre coordenar contratos e executar o trabalho, além de definir fluxo econômico e físico.
+
+
+## Feedback do responsável — reparos burocráticos rejeitados; investigar programas de governo (2026-10-10)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável **rejeitou explicitamente** a recomendação de usar reparos extraordinários e contratação de reforço como função principal da Prefeitura porque **gera pouco gameplay**. A nova alternativa de programas públicos abaixo foi proposta pela IA, **PENDENTE de avaliação/aprovação**.
+
+**Proposta rejeitada:** transformar a Prefeitura em intermediária para manutenção, conserto de escola após incêndio ou contratação extraordinária de prestador não acrescenta escolha estratégica proporcional à burocracia simulada. **Não insistir nessa função como solução principal**, nem transformar em requisito; manter o histórico da hipótese para não reabri-la sem nova evidência.
+
+**Reorientação sugerida (não aprovada):** sair de "dar tarefas aos empregados para justificar o prédio" e buscar **decisões agregadas de política pública com efeitos econômicos e humanos concretos**. A Prefeitura seria local de execução/coordenação de **programas municipais escolhidos pelo jogador**; funcionários SIMs trabalham de verdade onde existir um serviço concreto, sem pontos de governo, buff automático ou visitas desnecessárias. Informar demandas reais segue função secundária já definida na SPEC. **Não substituir a direção oficial de trabalho operacional real sem decisão do responsável.**
+
+**Candidatos ilustrativos, todos PENDENTES:**
+- **Qualificação de desempregados:** interação real com escola/universidade, SIMs participantes e oferta de vagas existentes; financiamento, capacidade de formação e efeitos sobre qualificação/contratação precisariam ser definidos. Não criar vaga de emprego ou diploma pelo clique.
+- **Apoio direcionado às passagens de ônibus:** simular pagamento do Caixa pela viagem real de certos SIMs com critérios agregados. **Não confundir com política já aprovada gratuito versus pago nem com tarifa automática**; é ampliação social não aprovada, não obrigação escondida do sistema atual.
+- **Incentivo econômico territorial/setorial:** eventual redução fiscal ou transferência real condicionada a atividades/empresas existentes; deve conciliar com seis alíquotas imobiliárias atuais, titular e devedor reais, preço/produção e autonomia das empresas. Sem isenção geral ou lucro garantido por colocar prédio.
+
+**Crítica forte a testar:** "programas" também podem virar **simples botões de bônus**, especialmente se não possuírem prestação de serviço, equipes e limites concretos. O valor para gameplay precisa surgir de **escolhas mutuamente custosas, prioridades concorrentes, recursos existentes e efeitos de longo prazo mensuráveis nos SIMs**. Investigar sobreposição com a futura assistência social — a unidade infantil já está aprovada e não deve ser absorvida pela Prefeitura automaticamente.
+
+**Próxima decisão relevante:** o responsável quer que o núcleo da Prefeitura ofereça **políticas públicas selecionáveis** (com trabalho e orçamento reais) em vez de tarefas técnicas de manutenção? Se sim, selecionar **um programa real de alto impacto** e confrontar com regras já aprovadas antes de detalhar funcionários ou UI. Caso contrário, continuar investigação de mecânicas que gerem decisões emergentes reais.
