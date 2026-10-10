@@ -79,13 +79,13 @@ Referências: [SPEC](SPEC.md), [serviços e infraestrutura](exploration/city-sys
 
 ---
 
-### Rodada de 20 perguntas — calendário e ruas fechados, reparo pendente (2026-10-09)
+### Rodada de 20 perguntas — todas as escolhas fechadas (2026-10-09)
 
-> **Revisão humana: PARCIALMENTE REVISADO.** **19 das 20 escolhas foram aprovadas**, incluindo depois **1 — calendário gregoriano real**, **20B refinada — ruas de 1+1 e 2+2 faixas**. **Somente a questão 5 (quem paga reparos de incêndio privados) segue PENDENTE**: a IA recomendou A original após pedido de reflexão, mas não houve confirmação humana da recomendação. Apenas decisões efetivas foram promovidas à [SPEC](SPEC.md).
+> **Revisão humana: PARCIALMENTE REVISADO.** **Todas as 20 escolhas foram aprovadas**, incluindo **1 — calendário gregoriano real**, **20B refinada — ruas de 1+1 e 2+2 faixas**, e **5A — cada proprietário privado arca com os próprios reparos por incêndio; Caixa da Cidade paga somente instalações municipais**. A 5A foi confirmada expressamente após discussão do gameplay. As regras oficiais estão na [SPEC](SPEC.md).
 
 - **[Mapa de prontidão](exploration/project-readiness.md):** índice das 18 regras oficializadas, duas dúvidas de produto e estudos proporcionais restantes. Não reabrir decisões oficiais por números ainda a calibrar.
 - **[Escala e simulação](exploration/simulation-scale.md):** **calendário convencional de 24 horas/dia, meses reais e 365/366 dias/ano aprovado**, com todos os acontecimentos físicos/econômicos efetivos. **Meses encurtados por eventual necessidade de performance são melhoria futura a avaliar**, sem aprovação agora; exemplos de 10/15/30 dias são histórico de comparação, não nova regra.
-- **[Sistemas urbanos](exploration/city-systems.md):** **custeio de reparos por incêndio continua PENDENTE**; a IA recomenda proprietário privado pagar pelo seu prédio e Caixa pagar prédios públicos, pois o jogador já sofre efeitos econômicos indiretos da má gestão de bombeiros. Recomendação **não aprovada**. Saúde, crimes, táxis, estacionamentos, frota, funeral, travessias e ruas mantêm decisões da SPEC.
+- **[Sistemas urbanos](exploration/city-systems.md):** **custeio de reparos por incêndio 5A APROVADO**: SIMs e empresas proprietários pagam recuperação de seus imóveis privados; Caixa da Cidade paga edifícios municipais. A má cobertura de bombeiros afeta a cidade indiretamente, sem cobertura pública automática. Saúde, crimes, táxis, estacionamentos, frota, funeral, travessias e ruas mantêm decisões da SPEC.
 - **[Famílias e patrimônio](exploration/households-housing.md):** crédito privado ausente, dívida municipal paga apenas com saldo do falecido, menores entregues a parentes reais quando elegíveis. **Assistência social institucional foi pedida como melhoria futura, NÃO aprovada para agora.**
 - **[Empresas e mercados](exploration/companies-markets.md):** preço e chamada física de táxi, venda direta de carros produzidos e revenda de usados; aquisição separada de viaturas como **melhoria futura NÃO aprovada**.
 - **[Construção e materiais](exploration/construction-materials-logistics.md):** asfalto e base viária já são recursos reais; **ruas urbanas de 1+1 ou 2+2 faixas estão aprovadas**. Custo/entrega material crescem com comprimento/largura reais, com fórmula e dimensões exatas para calibração, sem alargar rua pronta por comando implícito.
