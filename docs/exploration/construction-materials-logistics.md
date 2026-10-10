@@ -1245,7 +1245,7 @@ Separar **tempo de suprimento e deslocamento reais** de **trabalho ativo de cons
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** Jazidas locais de Areia e brita foram aprovadas diretamente como 2B e constam da SPEC. A hipótese de madeira renovável abaixo foi proposta pelo responsável, mas seu comportamento final **não foi aprovado**. Recomendações da IA são PENDENTES.
 
-**Confirmado 2B:** áreas/depostos de areia e brita gerados com a seed podem sustentar extração local física, além de importação e das fábricas que transformam materiais reais. Não converter isso em mineração abrangente, dezenas de SKUs ou obrigatoriedade de extrair tudo localmente. Ainda não há decisão sobre exaustão dos depósitos, número de jazidas, rendimento nem detalhamento de lavra.
+**Confirmado 2B:** áreas/depósitos de areia e brita gerados com a seed podem sustentar extração local física, além de importação e das fábricas que transformam materiais reais. Não converter isso em mineração abrangente, dezenas de SKUs ou obrigatoriedade de extrair tudo localmente. Ainda não há decisão sobre exaustão dos depósitos, número de jazidas, rendimento nem detalhamento de lavra.
 
 **Problema em discussão para Madeira (questão 8):** o responsável observa corretamente que obrigar reposição manual ou procurar incessantemente florestas finitas para obter um material básico pode gerar microgerenciamento e inviabilizar cidades duradouras. Sugeriu produção efetivamente inesgotável no primeiro modelo, deixando evolução posterior para silvicultura com plantio/crescimento/colheita.
 
