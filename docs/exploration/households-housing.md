@@ -633,3 +633,35 @@ Hipótese de benefício: negócios mais variados e sensíveis à urgência dos a
 
 **Recomendação preliminar (não aprovada):** explorar primeiro **família acolhedora local não aparentada**, sem obrigatoriedade de aceitar e sem criar recursos. Resolver explicitamente o caso limite sem família disponível antes de aprovar essa opção como comportamento completo. Considerar serviço municipal pequeno como último recurso se a simulação local não conseguir garantir cuidado. Não transformar hipótese em SPEC sem escolha expressa.
 
+
+## Pesquisa comparativa de acolhimento e alternativas extras — 2026-10-10
+
+> **Revisão humana desta seção: PENDENTE.** Pesquisa e recomendações de IA ainda não aprovadas. A SPEC já define busca por parentes reais; a ausência deles continua sem regra oficial. O responsável solicitou novas possibilidades e não fechou solução.
+
+### Evidência externa pertinente
+
+- **UNICEF — Alternative care:** priorizar soluções familiares/seguras, evitar institucionalização como resposta padrão e, quando necessário, oferecer alternativas adequadas à idade e circunstâncias. https://data.unicef.org/topic/child-protection/children-alternative-care/
+- **Better Care Network — Continuum of Care:** descreve cuidado por parentes e conhecidos, famílias acolhedoras, pequenos grupos e moradia independente supervisionada para adolescentes em situações adequadas; não tratar todos os menores como caso idêntico. https://bettercarenetwork.org/library/the-continuum-of-care
+- **MDS Brasil — Serviços de acolhimento de crianças e adolescentes:** apresenta família acolhedora (com seleção/apoio), casa-lar com cuidador residente e vagas limitadas, abrigo, e oferta regionalizada para municípios menores; **os números/categorias reais são referência, não parâmetros aprovados para o jogo**. https://www.gov.br/mds/pt-br/acoes-e-programas/suas/unidades-de-atendimento/servicos-de-acolhimento-para-criancas-adolescentes-e-jovens
+- **Secretaria de Desenvolvimento Social do PR — Família Acolhedora:** famílias precisam ser previamente selecionadas, preparadas e acompanhadas; o acolhimento familiar é provisório e distinto de adoção. https://www.desenvolvimentosocial.pr.gov.br/Pagina/Servico-de-Acolhimento-em-Familia-Acolhedora
+- **Better Care Network — Ending Child Institutionalization:** pequenas unidades são exceção preferencialmente temporária, priorizando manutenção de vínculos e integração à comunidade. https://bettercarenetwork.org/library/principles-of-good-care-practices/ending-child-institutionalization
+
+### Modelos candidatos, problemas e custo para o jogo
+
+| Caminho | Fluxo possível sem microgerenciamento | Lacuna principal |
+| --- | --- | --- |
+| Adultos de confiança conhecidos (amigos/padrinhos/vizinhos com vínculo real) | SIM conhecido e elegível aceita cuidar; criança muda para residência real, preservando relação, necessidades e escola | Não inventar vínculo nem atribuir guarda a qualquer vizinho, falta de adulto elegível |
+| Família acolhedora voluntária | Domicílio/SIM real com disposição e capacidade assume acolhimento temporário, sem adoção automática | Critério de seleção, vagas e custo de suporte, possibilidade de zero famílias |
+| Casa-lar municipal pequena | Espaço residencial físico, SIM(s) cuidadores em turnos/residência e custos reais, vagas finitas; alocação automática | Exige decisão de incluir serviço público inicial, edifício e orçamento; não ampliar para política social geral |
+| Cuidado temporário na casa existente do menor | Profissional SIM real presta cuidados no domicílio real, enquanto se busca solução mais estável | Titularidade de imóvel, deslocamento/turnos e casa nem sempre disponível/segura; custo por criança pode explodir |
+| Serviço regional pactuado | Contrato municipal com vagas externas limitadas, dinheiro efetivamente transferido, transporte físico; não apagar eventos do SIM | Como representar capacidade/contraparte e vida posterior fora do mapa sem segunda cidade |
+| Moradia apoiada para adolescente elegível | Em casos de maturidade/idade apropriada, moradia física e supervisão/custos reais, sem tutela fictícia | Não atende bebês/crianças; obriga definição de idade e disponibilidade |
+| Evitar separação evitável | Se houver adulto responsável elegível e ajuda viável, apoiar continuidade em família real | Não resolve morte de todos os responsáveis; prevenção não substitui último recurso |
+
+**Insight de implementação/produto:** uma **casa-lar simples em edifício residencial visualmente reutilizável** poderia atender poucos menores com cuidador empregado, sem catálogo de assets exclusivos nem tarefa manual por criança. Também poderia funcionar como último recurso se famílias acolhedoras não existirem. **Isto é proposta, não arquitetura nem serviço aprovado.** Checar compatibilidade com a regra atual de não ampliar construções e com a prioridade de salário/custos reais.
+
+**Recomendação exploratória, não decisão:** manter a prioridade aprovada de parentes reais; testar camada intermediária de **adultos de confiança/famílias acolhedoras reais** e fallback de **casa-lar pequena com custo e capacidade físicos**, acionado automaticamente quando houver vagas. Preservar irmãos juntos quando possível e não fingir vagas indisponíveis. O jogador receberia diagnóstico agregado de **menores sem acolhimento / vagas ocupadas / falta de cuidadores**, administrando oferta e orçamento, jamais ordens individualizadas.
+
+**Teste de consistência indispensável antes de aprovar:** cidade pequena sem parentes, sem família acolhedora, sem casa-lar construída, orçamento quebrado, ou duas crianças irmãs e somente uma vaga: nenhuma opção pode registrar acolhimento inexistente. Decidir tratamento temporário realmente possível sem prometer guarda, suprimentos, renda ou moradia gratuitos. O sistema regional é alternativa opcional de estudo, não solução mágica obrigatória. Abrigo institucional grande como padrão é menos alinhado às referências.
+
+**Status:** decisão 7 continua aberta. As modalidades e capacidades acima são pesquisa de referência, não implementação autorizada.
