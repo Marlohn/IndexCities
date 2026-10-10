@@ -8,6 +8,16 @@
 >
 > A autoridade de produto continua sendo `docs/SPEC.md`. Este documento concentra pesquisa, alternativas, referências e hipóteses sobre interface e ferramentas do jogador. Quando uma decisão fecha, o resultado oficial deve ser promovido para `docs/SPEC.md`; este arquivo preserva o raciocínio e o material ainda em formação.
 
+## Sem upgrades físicos de prédios concluídos na implementação inicial — decisão de 2026-10-10
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável confirmou o adiamento de ampliações/evoluções de edificações, principalmente pelo custo de novos assets e controle de upgrades. Explicações e melhorias futuras abaixo permanecem hipóteses não revisadas integralmente; a regra oficial consta na [SPEC](../SPEC.md).
+
+- **Produto decidido:** nenhuma ferramenta de evoluir, melhorar porte, ampliar área ou capacidade estrutural de edifício **já concluído** no modelo inicial. O jogador pode **construir novas unidades** com recursos reais, preservando reparos, demolição, realocação e adaptações empresariais compatíveis sem upgrade de porte já aprovados.
+- **Exemplo obrigatório:** garagem de ônibus com 20 vagas e 20 ônibus **não pode ser ampliada para 30**; para aumentar a frota além de 20, constrói-se outra garagem com capacidade própria. O controle agregado 3C para comprar ônibus ainda cabe onde existirem vagas.
+- **Possível melhoria futura, NÃO aprovada:** ampliação/evolução visual de edifícios prontos, com novos assets, custos, obras e impacto operacional. Reavaliar somente se oferecer ganho claro de gameplay suficiente para justificar arte, interface, estados e simulação.
+
+---
+
 ## Objetivo
 
 > **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
