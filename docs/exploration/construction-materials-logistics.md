@@ -8,6 +8,18 @@
 >
 > Concentra a evolução do modelo de construção física, materiais, estoques, importação/exportação, reservas, execução de obras e logística. Alternativas superadas permanecem identificadas para preservar por que o modelo atual foi escolhido.
 
+## Nova cadeia petrolífera local — opção 7C aprovada (2026-10-10)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** O responsável pediu expressamente a cadeia **extração de petróleo → refino → distribuição** já no modelo inicial, com materiais físicos, economia e instalações reais. As variantes e detalhes técnicos abaixo continuam material exploratório e não constituem autorização de recursos extras.
+
+**Fluxo aprovado na SPEC:** jazida geográfica da seed → instalação extratora com trabalhadores/empresa/capacidade → estoque real de **Petróleo bruto** (intermediário adicional) → caminhão/veículo de carga e motorista reais → refinaria física empresarial que consome petróleo bruto, energia e trabalho/tempo → estoque de **Combustível** real → entrega a postos e outros compradores → abastecimento e consumo efetivos. Sem criar combustível na refinaria apenas por sua existência. **Combustível refinado importado segue disponível**, de modo que iniciar numa cidade vazia não depende de construir toda a indústria. Nenhuma produção é garantida sem operador privado, insumos, operação e caixa.
+
+**Custo de escopo conscientemente aceito:** adiciona ao menos **dois tipos de instalação físicos** (extração e refino), intermediário com estoque/logística, negócios e empregos, além de recursos de mapa. Não introduzir automaticamente navios, portos, oleodutos, refinarias públicas, profissão especializada ou grupo grande de produtos petroquímicos. Pode reutilizar componentes 3D quando adequado, sem upgrade de prédio existente. **A eventual necessidade de petróleo no asfalto** é hipótese a reavaliar quando a cadeia do Asfalto entrar na implementação; a decisão 7C não autoriza alterar silenciosamente outras receitas industriais.
+
+**Lacunas antes de implementar o detalhe:** jazidas finitas versus produção geologicamente persistente limitada; extração em terreno terrestre/apoio técnico, acesso e logística compatíveis com mapa plano; capacidade/rendimento da refinaria e balanço físico dos estoques; viabilidade de importar Petróleo bruto separadamente; participação das empresas privadas e escolha automática de fornecedores. Confrontar valor do gameplay com assets/performance; números e taxas são calibração, não rodada longa de perguntas.
+
+---
+
 ## Como ler este documento
 
 Este arquivo é material de exploração temática. Quando houver divergência, use:
