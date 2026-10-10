@@ -1,10 +1,31 @@
 # IndexCities — Pesquisa de Prefeitura como construção e gameplay
 
-> **Revisão humana: PARCIALMENTE REVISADO** — o responsável aprovou a **direção operacional principal da Prefeitura, com funcionários SIMs reais, e leitura secundária das necessidades reais da população (2026-10-10)**. As comparações, serviços candidatos, justificativas e detalhes criados por IA permanecem **PENDENTES** de revisão/aprovação. 
+> **Revisão humana: PARCIALMENTE REVISADO** — o responsável aprovou o edifício da Prefeitura com SIMs funcionários reais, leitura de demandas da população e, **como direção de gameplay mais recente, a Prefeitura como centro de escolhas estratégicas de governo que afetam o padrão de vida dos SIMs (2026-10-10)**. Os funcionários continuam sem tarefas operacionais específicas aprovadas; comparações e propostas da IA seguem **PENDENTES** de revisão/aprovação. 
 >
-> **Fonte de verdade:** [SPEC](../SPEC.md) aprova uma **Prefeitura construída fisicamente, com papel principalmente operacional e SIMs empregados de verdade no edifício**, além de leitura complementar e agregada das demandas reais da população. **Serviços concretos, capacidade, presença de usuários, requisito de construção, efeitos sobre sistemas existentes e demais regras operacionais permanecem por decidir**. Esta pesquisa não aprova implementá-los.
+> **Fonte de verdade:** [SPEC](../SPEC.md) aprova a **Prefeitura como construção física com SIMs empregados e como centro de decisões estratégicas do jogador**, com efeitos reais sobre a cidade; leitura agregada das necessidades populacionais complementa essas escolhas. **O catálogo de políticas, trabalho concreto dos servidores, capacidades, visitas de SIMs e consequências da ausência/inoperância do prédio permanecem por decidir**. Esta pesquisa não aprova implementá-los.
 >
 > **Critério de leitura:** diferenciar mecânica observada em outro jogo, hipótese proposta para IndexCities, exigências já aprovadas na SPEC e vantagens alegadas/experiências comunitárias. Fontes oficiais/de desenvolvedores preferidas; wiki de fãs e comunidades rotuladas como tal. Jogos de épocas diferentes são comparados quanto ao *padrão de gameplay*, não copiados.
+
+## Direção atual: Prefeitura como centro de decisões de governo — 2026-10-10
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável expressou preferência por colocar **as escolhas estratégicas do jogador sobre como a cidade funciona** no centro da Prefeitura, buscando consequências de **qualidade de vida e economia dos SIMs**. Os exemplos, hipóteses e separação de funções abaixo são propostas da IA ainda **PENDENTES** de aprovação concreta.
+
+**Promovido à SPEC:** a Prefeitura será principalmente um **ponto de tomada e compreensão de decisões municipais relevantes para o gameplay**, não uma central de reparos ou uma vitrine de estatísticas. As decisões devem afetar condições reais da população, do orçamento e dos serviços; o catálogo concreto de novas políticas **ainda não foi escolhido**. O jogador já controla impostos por seis categorias, transporte coletivo gratuito/pago, estacionamento municipal gratuito/pago e orçamento/obras; reunir ou explicar esses controles no edifício não pode bloqueá-los arbitrariamente nem duplicar tributos/efeitos.
+
+**A exigência de SIMs funcionários reais no prédio foi mantida**, mas o próprio responsável observou que um painel de decisões **ainda não justifica, por si, esse emprego**. Logo, não preencher a lacuna com contratações fictícias, burocracia por clique, "pontos administrativos" ou processo artificial que só atrasa o jogador. Coordenação/execução de programas municipais concretos e atendimento pontual são candidatos para esse trabalho, mas nenhuma atribuição foi oficialmente escolhida.
+
+**Três faixas de conteúdo para explorar (NÃO APROVADAS como novos controles):**
+- **Gestão econômica/fiscal:** exibir e contextualizar os controles tributários já aprovados e decisões de financiamento; novas políticas de incentivo regional/temporal exigem regras, alvos, perda de receita e autonomia empresarial reais, sem duplicar os seis controles.
+- **Acesso e padrão de vida:** comparar desigualdade de acesso a escola, saúde, mobilidade e moradia e possíveis programas públicos direcionados. A gratuidade municipal de saúde/escolas, tarifa de ônibus gratuita/paga e acolhimento infantil já têm suas próprias regras. Subsídio seletivo e qualificação especial são **ideias a discutir**, não direitos/gratuidades aprovados.
+- **Prioridades e pactos territoriais:** políticas e compromissos agregados com efeitos locais e custos reais, justificados por problemas verificáveis de bairros, sem virar missões, bônus globais de felicidade ou orçamento mágico.
+
+**Exemplo hipotético para discutir:** o jogador escolhe fortalecer o acesso de famílias de baixa renda a deslocamentos, assumindo gasto real do Caixa, alterando quem consegue de fato ir a emprego, escola ou serviços. Uma política que não mude nenhuma viagem, renda, necessidade ou resultado real não seria útil para o IndexCities. **Isso não aprova subsídio de passagem nem modifica a regra vigente de ônibus pago/gratuito.**
+
+**Filtro de valor de gameplay:** cada política candidata precisa responder: (1) qual escolha relevante o jogador faz; (2) quem ganha/perde e por quê, com SIMs/empresas existentes; (3) qual fluxo/capacidade física ou monetária paga o efeito; (4) por que a decisão não é mera duplicação de impostos/serviços/obras; (5) o que a Prefeitura/equipe realiza além do menu, se de fato realiza algo; (6) qual risco de micro, exploit, efeitos de troca constante e performance.
+
+**Questão de próximo alto valor:** identificar as primeiras **duas ou três escolhas de governo com trade-offs verdadeiros**, priorizando decisões que alterem o padrão de vida dos SIMs sem transformar o edifício em painel de bônus. Só depois definir operações concretas de funcionários, se as políticas selecionadas gerarem trabalho real.
+
+---
 
 ## Direção de produto aprovada posteriormente — 2026-10-10
 
