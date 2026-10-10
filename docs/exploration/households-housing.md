@@ -14,6 +14,18 @@ Este arquivo é material de exploração temática. A autoridade do produto cont
 
 ---
 
+## Vida familiar, crédito e débitos sucessórios — rodada de 2026-10-09
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou **2A, 4A e 6A**, mas casos de múltiplos credores e de criança sem parente elegível não foram definidos.
+
+- **2A — sem empréstimos privados inicialmente:** não há bancos/financiamentos pessoais, imobiliários ou empresariais como sistema próprio. Empréstimos do jogador ao Caixa da Cidade continuam válidos conforme regras já existentes.
+- **4A — imposto imobiliário e água/energia de SIM falecido:** abater as dívidas municipais **do dinheiro do falecido efetivamente disponível**, depois de respeitar a precedência já definida para aluguel atrasado; encerrar o restante não pago como crédito contábil, sem cobrar herdeiros, vender compulsoriamente imóvel ou atribuir renda fictícia ao município. **Ordem/rateio entre múltiplos credores municipais, se dinheiro insuficiente, permanece lacuna dependente**, não assumir proporcionalidade por analogia com falência de empresas.
+- **6A — menor sem adulto responsável:** procurar **parentes reais elegíveis já representados**, sem criar novas pessoas, imóveis, pagamentos, tempo de viagem ou assistência fictícios. O caso sem parente viável permanece **PENDENTE** e requer decisão antes do código correspondente. **O responsável quer assistência social/acolhimento público como expansão futura** — registrar como hipótese desejada, **NÃO aprovada agora**.
+
+Risco a validar: sem crédito privado, imóveis caros podem ficar com poucos compradores; se isso ocorrer no teste integrado, reexaminar financiamento sem criar moeda ou forçar compradores.
+
+---
+
 ## Contas municipais: valor automático e dívida sem corte residencial (2B/3B, 2026-10-08)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou tarifas automáticas de água/energia e dívida real sem suspensão individual de residência na SPEC. Forma de cobrança, ordem entre dívidas e titularidade em locações ainda são detalhes abertos.
