@@ -8,6 +8,40 @@
 >
 > Reúne renda e consumo familiar, valor imobiliário, vulnerabilidade financeira, aluguel, propriedade, herança e investimento residencial por cidadãos.
 
+## Aposentadoria e renda de SIMs — investigação focal (2026-10-10)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável manifestou interesse explícito em **previdência contributiva durante a vida de trabalho**, com aposentadoria paga, liberdade de **continuar trabalhando e receber salário junto à aposentadoria** e possibilidade de independência financeira **antes** da idade de aposentadoria. A liberdade de trabalhar na velhice e viver de rendas patrimoniais reais já foi promovida à SPEC. **Nenhum modelo de financiamento previdenciário, benefício mensal ou fórmula foi aprovado ainda.** Fontes e análise abaixo continuam **PENDENTES de revisão humana**.
+
+### O que estamos tentando conseguir
+
+- **Durante a vida ativa:** o SIM trabalha e recebe salário real. O sistema pode cobrar contribuição real e registrar direito a benefício futuro; não inventar saldo ou retorno financeiro sem contrapartida.
+- **Independência financeira antecipada:** um SIM que já tem dinheiro, patrimônio e **aluguéis de imóveis reais** pode decidir deixar o mercado de trabalho antes de qualquer direito previdenciário, desde que consiga cobrir despesas. **Não inventar ações, juros ou dividendos que ainda não foram modelados.**
+- **Benefício na velhice:** elegibilidade, valor mensal e financiamento precisam de relação verificável com trabalho/contribuições e saldos reais. O benefício pode ser insuficiente; não garantir moradia, saúde e comida sem receita.
+- **Trabalhar depois de aposentado:** continuar em emprego real se quiser e houver capacidade/vaga, acumulando **salário efetivo + benefício efetivamente pago**; avaliar contribuição adicional e eventual recálculo de benefício, evitando uma proibição arbitrária do trabalho na velhice. Não usar uma segunda vaga fictícia.
+- **Crise da cidade:** pagamentos de benefício jamais aparecem de saldo inexistente. Se financiados pelo Caixa da Cidade, competir por dinheiro com polícia, água, hospitais e manutenção é consequência de gameplay que precisa de regra própria; não garantir aposentadoria paga quando o Caixa não pode pagar.
+
+### Modelos a comparar — alternativas, NÃO decisões oficiais
+
+| Alternativa | Contribuição efetiva | Quem paga aposentadoria | Força de gameplay | Principal custo/risco |
+| --- | --- | --- | --- | --- |
+| **A — Previdência pública contributiva (repartição)** | Parcela real de salários dos SIMs ativos vai para o **Caixa da Cidade**, com histórico individual compacto de contribuição | Caixa paga mensalmente benefício definido conforme histórico e regras aprovadas, quando houver recursos | Política demográfica/fiscal e equilíbrio entre trabalhadores e aposentados; independente do valor de reservas individuais | Dívida/obrigação pública, insuficiência de caixa e transição dos SIMs que já começam velhos |
+| **B — Poupança previdenciária individual capitalizada** | Parcela do salário vai para saldo verdadeiro, bloqueado para aposentadoria, de cada SIM | Renda na aposentadoria sai daquele saldo até esgotar; sem juros inventados | Cada SIM guarda sua própria acumulação; sem obrigação coletiva por definição | Carteiras extras, regras de herança/saldo zerado e trabalhadores pobres sem reserva |
+| **C — Híbrido leve** | Contribuição social real para Caixa + poupança individual opcional com dinheiro real | Benefício da prefeitura mais retiradas da reserva pessoal | Une proteção social e escolhas patrimoniais individuais | Duplica fluxos/estados, riscos de dinheiro fictício, mais complexidade de implementação |
+
+**Recomendação preliminar da IA, sujeita a aprovação:** começar por **A** com **taxa automática** de contribuição calculada por salário real (sem criar novo imposto ajustado manualmente de imediato), direito futuro derivado do histórico contributivo, aposentadoria paga pelo Caixa e possibilidade real de trabalhar simultaneamente. Manter a escolha de **parar cedo por renda imobiliária** independente da previdência. O modelo A pode tornar a cidade fiscalmente vulnerável ao envelhecimento; é justamente uma possível consequência interessante, mas não pode bloquear a cidade no primeiro dia por uma população pré-criada de aposentados sem histórico.
+
+**Perguntas de produto para discussão posterior (não assumir respostas):** (1) contribuição pública de empregados, empregadores ou ambos; (2) idade mínima/anos mínimos de contribuição para benefício e como tratar cidadãos inicialmente idosos; (3) como calcular valor, permitir trabalho simultâneo e se contribuições depois de aposentado elevam benefício; (4) como tratar falta de recursos do Caixa, atraso, beneficiário emigrado ou morte e se pensão a dependentes é parte do primeiro modelo; (5) se o jogador controla algo relevante ou se é política automática visível no painel, para não gerar microgerenciamento.
+
+### Evidências comparativas, não transplante automático de legislação
+
+- **OCDE, *Pensions at a Glance 2025*, arquitetura de pensões:** distingue repartição pública, benefício definido e regimes contributivos individuais, inclusive contas fictícias de direitos (sem saldo financeiro separado) e contas efetivamente capitalizadas. https://www.oecd.org/en/publications/pensions-at-a-glance-2025_e40274c1-en/full-report/architecture-of-national-pension-systems_2850d0fe.html
+- **OCDE, reformas e trabalho depois da aposentadoria:** países combinam trabalho e benefício com limites variados; não existe regra universal de proibição de trabalho ao aposentar. https://www.oecd.org/en/publications/pensions-at-a-glance-2025_e40274c1-en/full-report/recent-pension-reforms_146d2687.html
+- **US Social Security Administration, regras 2026:** no modelo americano é possível receber aposentadoria e trabalhar; renda acima dos limites pode reduzir benefícios antes da idade plena, e a partir dela não há redução salarial. https://www.ssa.gov/faqs/en/questions/KA-01921.html
+
+A pesquisa externa informa alternativas, mas o IndexCities **não precisa copiar idade, alíquota, direito trabalhista ou complexidade legal de qualquer país**. Importa a conservação monetária, a coerência dos SIMs e decisões significativas para o jogador.
+
+---
+
 ## Como ler este documento
 
 Este arquivo é material de exploração temática. A autoridade do produto continua sendo `docs/SPEC.md`. Trechos históricos podem preservar alternativas já superadas; quando houver divergência, vale a decisão canônica mais recente.
