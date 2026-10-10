@@ -1,10 +1,28 @@
 # IndexCities — Pesquisa de Prefeitura como construção e gameplay
 
-> **Revisão humana: PENDENTE** — pesquisa, comparações, síntese, riscos e recomendações produzidos por IA em 2026-10-10. O responsável pediu investigação abrangente, mas **não aprovou nenhuma função da Prefeitura**. 
+> **Revisão humana: PARCIALMENTE REVISADO** — o responsável aprovou a **direção operacional principal da Prefeitura, com funcionários SIMs reais, e leitura secundária das necessidades reais da população (2026-10-10)**. As comparações, serviços candidatos, justificativas e detalhes criados por IA permanecem **PENDENTES** de revisão/aprovação. 
 >
-> **Fonte de verdade:** [SPEC](../SPEC.md) aprova apenas a **existência física de uma construção da Prefeitura**, colocada pelo jogador e sujeita aos custos/obra normais. Sua operação, trabalhadores, obrigatoriedade, benefícios, atendimento, ações, UI e regras de crescimento ainda estão **PENDENTES**. Este estudo **não** autoriza implementá-los.
+> **Fonte de verdade:** [SPEC](../SPEC.md) aprova uma **Prefeitura construída fisicamente, com papel principalmente operacional e SIMs empregados de verdade no edifício**, além de leitura complementar e agregada das demandas reais da população. **Serviços concretos, capacidade, presença de usuários, requisito de construção, efeitos sobre sistemas existentes e demais regras operacionais permanecem por decidir**. Esta pesquisa não aprova implementá-los.
 >
 > **Critério de leitura:** diferenciar mecânica observada em outro jogo, hipótese proposta para IndexCities, exigências já aprovadas na SPEC e vantagens alegadas/experiências comunitárias. Fontes oficiais/de desenvolvedores preferidas; wiki de fãs e comunidades rotuladas como tal. Jogos de épocas diferentes são comparados quanto ao *padrão de gameplay*, não copiados.
+
+## Direção de produto aprovada posteriormente — 2026-10-10
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável escolheu explicitamente o papel primário **operacional, concreto, com SIMs funcionários reais**; a Prefeitura deverá **em segunda instância informar necessidades reais da população**. O detalhamento da IA abaixo sobre funções e opções ainda não foi revisado.
+
+**Decisão oficial na SPEC:** a Prefeitura não pode limitar-se a um painel ou edifício simbólico. É um **local de trabalho municipal real**, com SIMs que ocupam empregos legítimos no prédio, comparecem conforme a simulação e recebem salários reais, para prestar atividades que precisam ser especificadas antes de código. Como segunda função, mostra problemas e demandas humanas **já existentes de verdade** no jogo, com leitura agregada por área e causa, sem criar reclamações ou serviços por animação.
+
+**Lacuna central remanescente:** *que trabalho real é feito ali?* A existência de servidores não decide automaticamente a natureza do serviço. Alternativas que merecem contraste:
+- **Administração de serviços municipais/contratos/obras reais:** servidores poderiam atuar no funcionamento agregado de processos que já existem, sem nova moeda burocrática nem atrasar arbitrariamente obras/tributos. É preciso escolher **uma tarefa concreta e causal**, não colocar funcionários apenas para autorizar cada clique.
+- **Atendimento presencial excepcional a SIMs/empresas reais:** demanda relacionada a eventos específicos (não pagar impostos pessoalmente todo mês), com funcionários, tempo e acesso reais. Falta definir qual evento precisa de atendimento e por que isso ajuda o jogador.
+- **Ouvidoria pública operacional ligada a problemas reais:** funcionários consolidam, analisam ou tratam solicitações ligadas a condições concretas, com diferença prática além do relatório que a UI já sabe gerar. Evitar criar tickets artificiais ou exigir cada SIM reclamar para um alerta existir.
+- **Composição enxuta:** reunir uma atividade municipal interna concreta e atendimento cidadão **somente quando fizer sentido**, com informação agregada como complemento.
+
+**Atenção a conflito já resolvido:** trabalhadores SIMs reais **foram aprovados**; a recomendação histórica abaixo de manter o prédio apenas informativo caso não se identifique trabalho útil **não representa a intenção vigente**. O próximo passo é definir tarefas com efeito verdadeiro e operação legível, não questionar novamente se a Prefeitura deve ter funcionários.
+
+**Questões pendentes sem assumir resposta:** obrigatoriedade de construir, número e tipo de vagas, trabalho presencial versus balcão para público, limite por área ou global, consequências quando prédio está fechado/sem equipe, ocupação e custo, uso ou não de visitas de SIMs.
+
+---
 
 ## Pergunta de produto
 
@@ -124,7 +142,7 @@ Ancorar referências visuais de vida pública ao redor do edifício: trabalhador
 
 ## Modelo combinado que merece debate, não aprovação
 
-**"Prefeitura: administração visível + observatório humano de problemas reais"** (A + C + elementos muito selecionados de B e F):
+**"Prefeitura: administração visível + observatório humano de problemas reais"** (A + C + elementos muito selecionados de B e F), **hipótese histórica parcialmente substituída** pela prioridade operacional aprovada depois:
 
 1. **O prédio existe** como uma instituição municipal física, construível segundo SPEC, sem gerar capacidade/vantagem monetária fictícia.
 2. **O jogador continua administrando** cidade, obras, impostos e emergências sem bloqueio na ausência de Prefeitura. Se o prédio for construído, selecioná-lo permite acessar um **painel cívico unificado**, reaproveitando interfaces existentes e uma *priorização de problemas por persistência e impacto* se esse diferencial for aprovado.
@@ -148,7 +166,7 @@ Ancorar referências visuais de vida pública ao redor do edifício: trabalhador
 
 ## Três decisões que realmente destravam a direção da Prefeitura
 
-**Pergunta 1 — Valor principal do edifício (escolher o eixo, não aprovar cada detalhe junto):**
+**Pergunta 1 — Valor principal do edifício (RESOLVIDA posteriormente: operacional primeiro, observatório de necessidades em segundo):**
 - **A:** paço cívico e histórico + navegação administrativa, sobretudo papel visual e informativo;
 - **B:** sede de empregados e **atendimento administrativo físico com serviço real** ainda a selecionar;
 - **C:** **observatório de problemas e demandas humanas reais por bairro**, como diferencial forte, podendo evoluir para presença/atendimento real.
@@ -170,6 +188,6 @@ Ancorar referências visuais de vida pública ao redor do edifício: trabalhador
 
 Cenários: (1) cidade muito pequena sem Prefeitura; (2) Prefeitura instalada e sem atendimento próprio — verificar se benefício não é só atalho para UI; (3) bairro sem escola e crise de coleta — observatório deve apontar situações reais, não número genérico; (4) cidade com milhares de SIMs — custo de agregação e consultas sob demanda; (5) prédio demolido — impostos, construção, alertas essenciais continuam; (6) serviços municipais colapsados por caixa — Prefeitura não deve fabricar solução.
 
-**Conclusão de pesquisa, PENDENTE:** a maior oportunidade do IndexCities não é imitar departamentos, perks ou leis de outros jogos. É fazer a Prefeitura funcionar como **um lugar físico que deixa a administração e as consequências humanas da cidade visíveis**, reutilizando o estado rico dos SIMs e serviços em vez de criar uma segunda simulação administrativa. Antes de aprovar empregados/visitas, identificar **uma tarefa concreta exclusiva** do edifício. Sem ela, admitir que a função inicial é cívica/informativa e medir se basta.
+**Conclusão de pesquisa, parcialmente superada pela decisão posterior:** a Prefeitura precisa ter **atividades concretas e servidores SIMs empregados no próprio edifício** como papel primário, e oferecer leitura secundária das necessidades humanas. Falta decidir **qual trabalho municipal específico** torna esse emprego útil. A alternativa de deixar apenas um painel informativo como função principal foi descartada pelo responsável; pesquisas sobre tipos de serviço, visitas, obrigatoriedade e custo de capacidade continuam PENDENTES. Reutilizar estado real dos SIMs e serviços, não criar segunda simulação burocrática.
 
 **Nenhuma regra acima altera a SPEC sem decisão explícita do responsável.**
