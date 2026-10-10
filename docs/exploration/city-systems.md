@@ -19,7 +19,7 @@ Este arquivo é material de exploração temática. Quando houver divergência, 
 
 ## Pesquisa focal: controle de cruzamentos e bicicletas no bordo (2026-10-10)
 
-> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável **aprovou anteriormente 10C** (escolher semáforos ou preferência por cruzamento) e **confirmou nesta conversa que bicicletas pedalam perto do meio-fio, como fluxo próprio sem travar carros nos trechos em que podem circular em paralelo**. **As recomendações e avaliações de fontes abaixo são síntese da IA PENDENTE**, não autorizam mudar defaults nem adicionar ferramentas/leis à SPEC.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável **aprovou anteriormente 10C** (escolher semáforos ou preferência por cruzamento) e **confirmou nesta conversa que bicicletas pedalam perto do meio-fio, como fluxo próprio sem travar carros nos trechos em que podem circular em paralelo**. **A pesquisa e as avaliações das fontes abaixo continuam como síntese da IA PENDENTE de revisão humana.** O responsável aprovou depois o **padrão inicial B ajustado** para cruzamentos urbanos comuns, já registrado na SPEC; a pesquisa não autoriza ampliar essa decisão nem impor leis/ferramentas novas.
 
 ### Evidências externas (pesquisa, não norma obrigatória do jogo)
 
@@ -35,26 +35,28 @@ Este arquivo é material de exploração temática. Quando houver divergência, 
 
 6. **Convivência bicicletas × carros nos cruzamentos:** orientação técnica de NACTO mostra conflitos inevitáveis de conversão à direita, entradas/saídas de garagens, estacionamento e visibilidade, mesmo quando bicicletas circulam paralelamente aos carros. Fontes: https://nacto.org/publication/urban-bikeway-design-guide/designing-safe-intersections/improve-visibility-at-turn-conflicts/ e https://nacto.org/publication/urban-bikeway-design-guide/designing-safe-intersections/dont-give-up-at-the-intersection/ . **Lição:** fluxo lateral próprio evita que a diferença de velocidade de bicicleta por si crie fila de carro no trecho reto, **mas não pode atravessar conflitos nem bloquear/ignorar calçadas, carros estacionados ou as regras de preferência**. Não é ciclovia dedicada gratuita.
 
-### Conclusão crítica para o gameplay, ainda PENDENTE de revisão humana
+### Avaliação crítica da pesquisa — síntese de IA PENDENTE de revisão humana
 
 **10C faz sentido e deve ser preservada.** Um menu de cruzamento bastaria com **semáforo em ciclo fixo** ou **preferência de passagem com via principal escolhida**. O jogo fornece um estado inicial coerente; a preferência editada pelo jogador permanece estável. **Não exigir selecionar toda esquina**, tempo verde/vermelho, seta por faixa, direção de conversão, temporização semafórica ou várias classes de placas no primeiro modelo. Recursos avançados podem ser cogitados se surgirem problemas reais de fluxo.
 
-**Ponto a não simplificar demais:** se uma avenida muito congestionada ganha preferência absoluta, ruas laterais podem esperar indefinidamente; se todo cruzamento recebe semáforo, a cidade perde fluidez mesmo vazia. Recomenda-se testar diagnóstico de filas nos dois sentidos e permitir que o jogador mude um cruzamento com um clique. Uma proposta de default por geometria/uso está na seção seguinte; **não é decisão aprovada**. Em particular, semáforo fixo para todo encontro 2+2 × 2+2, independente da demanda, **é arriscado**; avaliar por tipo, relevância e uso.
+**Ponto a não simplificar demais:** se uma avenida muito congestionada ganha preferência absoluta, ruas laterais podem esperar indefinidamente; se todo cruzamento recebe semáforo, a cidade perde fluidez mesmo vazia. Recomenda-se testar diagnóstico de filas nos dois sentidos e permitir que o jogador mude um cruzamento com um clique. O responsável aprovou depois o **B ajustado**, explicitado na seção seguinte. A possibilidade de semáforos de ciclo fixo gerarem paradas desnecessárias nos cruzamentos 2+2 × 2+2 vazios **permanece um risco de gameplay a validar**, não uma autorização para substituir automaticamente a decisão por outra política.
 
 **Bicicletas:** a nuance confirmada agora é **fluxo lateral lógico**, ocupando espaço físico no bordo da via urbana para não se misturarem como automóveis na fila nos trechos livres. Isso **não** aprova pista segregada, ciclovia, faixa extra ou remoção mágica de vagas de estacionamento. Testar interações de cruzamento, conversão, ônibus e estacionamento apenas por elementos próximos e eventos relevantes. Algoritmo de escolha da velocidade, largura lateral mínima e interferência pontual ainda dependem de calibração.
 
 ---
 
-## Defaults de cruzamentos — proposta de gameplay NÃO APROVADA (2026-10-10)
+## Defaults de cruzamentos — B ajustado APROVADO (2026-10-10)
 
-> **Revisão humana desta seção: PENDENTE.** Após escolher 10C (jogador pode editar semáforos/preferência), o responsável perguntou se o padrão seria semáforo. A IA **recomenda NÃO colocar sinaleiro universalmente**, por causa de paradas artificiais e perda de fluidez em ruas locais. A recomendação abaixo **não foi confirmada** e não pertence à SPEC.
+> **Revisão humana desta decisão: REVISADO quanto às quatro regras abaixo**, confirmadas expressamente pelo responsável após avaliar as alternativas e a pesquisa. **Análises, recomendações e riscos associados: PENDENTE de revisão humana.** Fonte oficial: [SPEC](../SPEC.md), seção de circulação viária.
 
-- **Rua urbana 1+1 × 1+1:** inicialmente sem semáforo; em equivalência de prioridade, dar preferência ao veículo vindo pela direita.
-- **Rua 2+2 × rua 1+1:** inicialmente sem semáforo; rua de maior capacidade tem preferência.
-- **Rua 2+2 × rua 2+2:** inicialmente com semáforo de **ciclo fixo**, sem ajuste manual de segundos/fases.
-- **Jogador pode editar cada cruzamento** e manter a decisão tomada; na ausência de configuração manual o cruzamento deve funcionar com default coerente sem exigir cliques.
+- **Quatro entradas, duas ruas urbanas 1+1:** sem semáforo inicialmente, com **preferência do veículo vindo pela direita**.
+- **Quatro entradas, rua 2+2 × rua 1+1:** sem semáforo inicialmente, com **preferência da via 2+2**.
+- **Quatro entradas, duas vias 2+2:** **semáforo inicial automático de ciclo fixo**, ainda que a demanda seja baixa.
+- **Encontro em T:** sem semáforo por padrão e com **preferência da via que continua**, independentemente do perfil das ruas; o caso em T tem precedência sobre as regras de quatro entradas.
 
-**Riscos a testar:** semáforo por tipo de via não garante melhor fluidez em cruzamentos 2+2 vazios, e preferência por direita exige sinais/precedência corretos também em conversões e travessias. A hierarquia é uma **heurística inicial proposta**, não lei universal ou inferência automática de largura para cada configuração viária. Alternativa simples seria padrão semaforizado para todos os cruzamentos, mas gera paradas desnecessárias até em bairros residenciais. A escolha final exige aprovação explícita do responsável.
+**Preservar o 10C:** o jogador pode trocar semáforo/preferência ou escolher a via prioritária manualmente; sua configuração persiste e **não** é substituída por crescimento, redução de tráfego, recálculo da rede ou mudança de geometria inferida sem nova decisão manual pertinente. Sem instalar ou retirar semáforos dinamicamente por demanda, sem obrigar o jogador a editar cada esquina, sem controle adaptativo ou edição detalhada de fases por esta decisão.
+
+**Risco de gameplay — síntese de IA PENDENTE:** vias 2+2 vazias podem gerar espera desnecessária no vermelho, e prioridades fixas podem dificultar travessias de vias laterais sob alta demanda. Verificar efeitos no jogo integrado, sem trocar o default aprovado silenciosamente. Durações de ciclo, geometrias especiais, critérios finos de precedência, interação com pedestres/bicicletas e parâmetros ainda precisam de calibração coerente com a SPEC; não extrapolar os quatro casos aprovados para cruzamentos complexos.
 
 ---
 
@@ -65,7 +67,7 @@ Este arquivo é material de exploração temática. Quando houver divergência, 
 - **4C:** licença médica de duração limitada, remunerada pelo empregador real (privado ou Caixa), sem produção/atendimento pelo ausente e sem gestão individual. **Tempo de licença e solução após esgotamento** não foram decididos.
 - **6A:** construir garagem municipal **inclui no custo a aquisição de ônibus físicos iniciais em quantidade finita**, com entrega real e capacidade operacional condicionada a motorista, combustível e vagas. A garagem limita frota; não gera ônibus de graça nem veículos adicionais a cada aumento de demanda. O pacote inicial é distinto dos veículos municipais de outras instalações (16B), mas segue o mesmo princípio de custo físico.
 - **8A:** veículos municipais abastecem em **postos reais**, pagando ao negócio real com dinheiro do Caixa e reduzindo estoque de Combustível, sem tanque infinito. Falta de oferta pode reduzir atendimento real; buscas automáticas e custo de deslocamento.
-- **10C:** o jogador decide em cada cruzamento **semáforo em ciclo fixo** ou **preferência de passagem**, e, no segundo caso, a rua prioritária. O detalhe de defaults quando ainda não foi editado e de geometrias mais complexas é técnico/UX pendente; **não impor clique obrigatório a todo cruzamento** nem sistema de ajuste contínuo do semáforo. Quando há decisão do jogador, o sistema não altera preferência por demanda arbitrariamente.
+- **10C:** o jogador decide em cada cruzamento **semáforo em ciclo fixo** ou **preferência de passagem**, e, no segundo caso, a rua prioritária. Os **defaults dos quatro casos comuns foram aprovados no B ajustado** e registrados na SPEC; apenas geometrias especiais e calibração fina continuam pendentes. **Não impor clique obrigatório a todo cruzamento** nem sistema de ajuste contínuo do semáforo. Quando há decisão do jogador, o sistema não altera preferência por demanda arbitrariamente.
 
 **Questão 9 — DECISÃO SIMPLIFICADA E REFINAMENTO APROVADOS (2026-10-10):** o responsável avaliou que a construção de ciclovias exclusivas custaria muito desenvolvimento para pouco ganho de gameplay agora. **Bicicletas continuam físicas, na rua urbana junto ao meio-fio, com fluxo lateral próprio nos trechos livres para não formar filas de carros por diferença de velocidade**, compartilhando a mesma infraestrutura real; **conflitos físicos de curva, cruzamento, parada/estacionamento e falta de largura ainda importam**. NÃO trafegam pela calçada dos pedestres e NÃO exigem ciclovia para uma viagem viável. Novas ferramentas, caminhos segregados, ciclovias pintadas/segregadas na via e suas regras de cruzamento/conexão ficam **fora do modelo inicial**, guardadas para possível evolução futura, sem apagar a intenção geral de desenvolver infraestrutura cicloviária se merecer gameplay. Sem simulação de colisão, nova terceira rua de veículos ou teletransporte de bicicleta. **A 9A original foi substituída por este recorte explícito**, não interpretá-la como aprovação de pista exclusiva opcional.
 
