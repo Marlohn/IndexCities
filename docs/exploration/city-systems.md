@@ -1011,9 +1011,9 @@ Modelos a comparar:
 
 ## Prefeitura como construção municipal — decisão parcial de 2026-10-10
 
-> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou **Prefeitura física e a direção funcional de ser principalmente operacional, com SIMs trabalhando de verdade, e secundariamente reveladora de demandas reais dos moradores**. Exatamente quais serviços, fluxos, capacidades e dependências continua PENDENTE.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável confirmou Prefeitura física com funcionários SIMs reais, acesso secundário às demandas dos moradores e, como prioridade de gameplay mais recente, **um centro de escolhas de governo com efeitos econômicos e sociais efetivos sobre os SIMs**. Os serviços executados pelos funcionários, políticas específicas e dependências operacionais continuam PENDENTES.
 
-**Confirmado na SPEC:** o jogador pode construir a Prefeitura com espaço, custo e obra reais. **SIMs municipais serão empregados e trabalharão no edifício em atividades concretas ainda a decidir, enquanto os problemas reais da população serão apresentados complementarmente**. Caixa, impostos e demais serviços municipais já aprovados não podem ser condicionados ao edifício sem nova decisão; não criar trabalho figurativo ou bônus artificiais.
+**Confirmado na SPEC:** o jogador pode construir o edifício municipal com espaço, custo e obra reais. A Prefeitura é **central de decisões estratégicas de governo** e as escolhas relevantes devem produzir efeitos sociais/econômicos reais; os diagnósticos das necessidades populacionais fundamentam essas decisões. SIMs municipais trabalham no edifício, mas suas atribuições concretas ainda não foram escolhidas. Impostos, Caixa da Cidade e serviços já definidos continuam válidos e não ficam bloqueados pela ausência de Prefeitura por inferência.
 
 **Opções de gameplay para discutir, não aprovadas:**
 - **Marco administrativo/visual:** prédio central que representa a administração, com painel de informações da cidade e sem bônus físico arbitrário; risco de ser apenas asset decorativo caro.
@@ -1026,4 +1026,4 @@ Modelos a comparar:
 
 **Questão orientadora:** o que um SIM ou o jogador ganha/consegue fazer de fato graças à construção física da Prefeitura, que já não exista no painel ou em outro serviço? Priorizar distinção observável, baixo microgerenciamento e estabilidade da economia.
 
-**Pesquisa focal de 2026-10-10:** [Prefeitura: comparação de 14 jogos e alternativas de gameplay](city-hall.md). **Decisão posterior:** papel operacional com SIMs empregados aprovado como principal e informação das demandas reais como secundário. **Pendente:** escolher trabalho concreto e atendimento, sem deduzir sistema novo de burocracia, filas ou taxa.
+**Pesquisa focal de 2026-10-10:** ver [comparação de jogos e evolução da Prefeitura para políticas públicas com gameplay real](city-hall.md). O responsável **descartou reparos extraordinários por acrescentarem pouco gameplay** e expressou preferência por um **centro de decisões municipais que moldam a vida dos SIMs**, mantendo o trabalho dos servidores como lacuna explícita. Qualquer programa, incentivo, subsídio, nova tarifa, procedimento, bônus ou visita ainda demanda decisão própria.
