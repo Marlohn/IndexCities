@@ -17,6 +17,22 @@ Este arquivo é material de exploração temática. Quando houver divergência, 
 
 ---
 
+## Calendário — pergunta 1 ainda aberta (2026-10-09)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável **pediu esclarecer** quantos dias compõem um mês curto (alternativa B), mas **NÃO aprovou** B nem nenhum número. A aceleração real de todos os acontecimentos já está aprovada na SPEC; **não reabrir nem relativizar** essa regra.
+
+**Exemplos matemáticos, NÃO parâmetros decididos:**
+
+| Dias por mês | Dias por ano (12 meses) | Prazo de três meses |
+| --- | --- | --- |
+| 10 | 120 | 30 dias da simulação |
+| 15 | 180 | 45 dias da simulação |
+| 30 | 360 | 90 dias da simulação |
+
+Um mês mais curto **não torna mais eficiente simular cada dia**; apenas faz haver menos jornadas reais por ano fictício. Aluguéis mensais, salários e despesas recorrentes passariam a vencer mais frequentemente em relação aos dias de rotina. Envelhecimento e nascimento mudariam sua proporção com deslocamentos/consumo. O responsável já expressou anteriormente receio de calendários fictícios com poucos dias por mês; portanto a IA **não deve declarar 10 ou 15 dias aprovados** nem criar dois relógios divergentes para mascarar o impacto. **Sugestão não aprovada:** comparar 15 e 30 dias por mês quanto a ritmo de vida, viabilidade da economia, jogabilidade e performance; pode-se manter meses convencionais com aceleração real eficiente se a compressão prejudicar a coerência.
+
+---
+
 ## Escala da cidade, profundidade da simulação e tempo
 
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
