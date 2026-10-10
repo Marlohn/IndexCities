@@ -199,9 +199,9 @@ O [hub](../EXPLORATION.md) registra 11 documentos temáticos: **9 PARCIALMENTE R
 
 ---
 
-### Rodada de 20 perguntas — 19 decisões, custeio de reparos pendente (2026-10-09)
+### Rodada de 20 perguntas — todas as decisões fechadas (2026-10-09)
 
-> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou 2A, 3A, 4A, 6A, 7A, 8A, 9A, 10A, 11B, 12A, 13C, 14A, 15A, 16B, 17A, 18A, 19A e 20B. **1 (calendário convencional) foi aprovada depois; 5 (pagador do reparo por incêndio) continua PENDENTE de decisão**. Síntese da IA não revisada integralmente.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou 2A, 3A, 4A, 6A, 7A, 8A, 9A, 10A, 11B, 12A, 13C, 14A, 15A, 16B, 17A, 18A, 19A e 20B. **1 (calendário convencional) e 5A (proprietário responsável pelos reparos) foram aprovadas posteriormente**, completando as 20 decisões da rodada. Síntese da IA não revisada integralmente.
 
 **Economia e família — na SPEC:** sem empréstimos privados (2A); saldo individual persistente de trabalhador pendular externo (3A), incluído na oferta monetária global; dívidas municipais de falecido quitadas só até seu saldo real, sem herdar dívida remanescente (4A); parente real assume cuidado de menor sem adulto quando elegível (6A). **Melhoria futura desejada:** assistência social institucional. Caso sem parentes e rateio de créditos concorrentes continuam definições dependentes, sem criar solução fictícia.
 
@@ -209,9 +209,9 @@ O [hub](../EXPLORATION.md) registra 11 documentos temáticos: **9 PARCIALMENTE R
 
 **Transporte, comércio e serviços — na SPEC:** táxis com preço por distância/tempo/custos (11B) e chamada automática com busca física do passageiro (12A); estacionamentos públicos gratuitos/pagos por política agregada do jogador (13C); veículos vendidos diretamente pelas fábricas (14A) e carros usados negociados entre SIMs (15A); viaturas municipais iniciais incorporadas como **custo/obtenção física do pacote de construção** (16B), não compra manual, sem alterar limite de ônibus. **Melhoria futura desejada:** adquirir veículos públicos separadamente (16A). Sem condomínio financeiro em apartamentos (17A). Funeral público gratuito para família, operação paga pela cidade (18A). Faixas de pedestres geradas automaticamente (19A), com edição manual **19C somente futura**. **Perfis urbanos 1+1 e 2+2 faixas foram aprovados posteriormente (20B refinada)**, com espaço, capacidade, custos e materiais reais; parâmetros em metros e quantidades continuam para calibração.
 
-**Fechamentos posteriores e pendência relevante:**
+**Fechamentos posteriores:**
 - **1 — calendário APROVADO:** calendário real de dias de 24 horas, meses gregorianos de 28/29/30/31 dias e anos de 365/366 dias, num relógio único. **Meses com menos dias são opção de reavaliação futura expressamente anotada se testes mostrarem benefício**, NÃO aprovada atualmente. Encurtar mês muda o ritmo de compromissos e gerações, não reduz o custo de um dia simulado. Duração em minutos reais por dia segue para calibração.
-- **5 — quem paga danos por incêndio, ainda PENDENTE:** resposta textual escolheu A, mas sua justificativa poderia indicar prefeitura pagando reparos privados. Após pedir reflexão, **a IA recomendou a opção A original** (dono privado paga seu reparo; Caixa paga próprios edifícios), pois má cobertura gera perdas econômicas e fiscais indiretas à cidade, e pagar todos os reparos privados sobrecarregaria duplamente o Caixa. **O responsável ainda não confirmou essa recomendação.**
+- **5A — reparos por incêndio APROVADOS:** SIM ou empresa proprietária paga a recuperação do **próprio imóvel privado**; o Caixa da Cidade paga reparos somente de **estruturas municipais**. Má cobertura de bombeiros impõe perdas econômicas indiretas ao jogador sem subsídio público automático a propriedade privada. Recuperação requer recursos, equipe, materiais e dinheiro reais, sem gerenciar cada reparo individualmente.
 - **20 — perfis viários APROVADOS:** **1+1 e 2+2 faixas, uma ou duas por sentido** em rua urbana de mão dupla, escolhidas na construção. Maior largura implica mais materiais físicos, custo e ocupação do solo, conforme a SPEC; quantidades exatas são calibração sem nova ferramenta de reforma de rua pronta.
 
 **Não misturar:** proposta pendente/contraditória não entra na SPEC; detalhes de calibração não justificam nova rodada de escolhas se testes integrados puderem resolvê-los.
