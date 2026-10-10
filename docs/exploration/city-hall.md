@@ -6,6 +6,18 @@
 >
 > **Critério de leitura:** diferenciar mecânica observada em outro jogo, hipótese proposta para IndexCities, exigências já aprovadas na SPEC e vantagens alegadas/experiências comunitárias. Fontes oficiais/de desenvolvedores preferidas; wiki de fãs e comunidades rotuladas como tal. Jogos de épocas diferentes são comparados quanto ao *padrão de gameplay*, não copiados.
 
+## Retorno da rodada de 20 perguntas — Prefeitura ADIADA e ausência do prédio em conflito (2026-10-10)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável pediu expressamente **adiar as perguntas 1, 2, 4, 5 e 20** (primeiro programa social, elegibilidade dos programas, papel da equipe em programas, permanência da política e escolha de prioridades gerais de orçamento). **Não aprovar essas novas políticas ou controles por inferência.** Na pergunta **3**, escolheu verbalmente **B — toda a administração municipal para sem Prefeitura**, mas há **conflito com SPEC vigente** a ser resolvido antes de declarar nova regra oficial.
+
+**Conflito preciso:** a SPEC aprova uma **cidade inicialmente vazia**, com **nenhuma Prefeitura construída**, mas permite ao jogador construir prédios, ruas e gerir Caixa, impostos, serviços e empréstimos conforme as regras econômicas já decididas. Parar toda a administração sem Prefeitura poderia impedir realizar a primeira construção, pagar as primeiras obras/funcionários, arrecadar depois ou viabilizar a própria Prefeitura, criando um bloqueio circular. Uma sugestão anterior de restringir apenas serviços novos exclusivos da Prefeitura **não equivale à 3B escolhida**. **Não alterar silenciosamente a intenção do responsável**.
+
+**Duas saídas viáveis a esclarecer futuramente, NÃO aprovadas:** (a) manter **bootstrap excepcional** só com construção/financiamento mínimos para erguer a primeira Prefeitura; depois exigir prédio operacional para administração de governo, definindo quais serviços continuam independentes e como lidar com destruição/inoperância; (b) parar apenas **programas/políticas exclusivos da Prefeitura**, mantendo os sistemas municipais já aprovados antes do prédio — solução mais simples, mas muda o alcance literal de 3B. A opção de começar com Prefeitura pré-construída **contraria diretamente** o início vazio e também exigiria revisão explícita da SPEC.
+
+**Direção que não mudou:** Prefeitura é instituição física estratégica com SIMs funcionários reais e políticas que deverão alterar economia/qualidade de vida com causas/recursos concretos; **a definição dos programas e atribuições foi intencionalmente adiada**. Não criar reparos burocráticos, bônus gratuitos ou empregos decorativos enquanto isso não for decidido.
+
+---
+
 ## Direção atual: Prefeitura como centro de decisões de governo — 2026-10-10
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável expressou preferência por colocar **as escolhas estratégicas do jogador sobre como a cidade funciona** no centro da Prefeitura, buscando consequências de **qualidade de vida e economia dos SIMs**. Os exemplos, hipóteses e separação de funções abaixo são propostas da IA ainda **PENDENTES** de aprovação concreta.
