@@ -1240,3 +1240,12 @@ Nome adotado: **Reserva Global**.
 - **Base de cálculo decidida:** valor de mercado do imóvel × alíquota da categoria. O valor de mercado é dinâmico e varia com condições reais e explicáveis da cidade; a reavaliação por si só não movimenta dinheiro. Ainda definir método e ritmo de reavaliação, periodicidade da cobrança, inadimplência e situações de ocupação sem propriedade. **Decisão posterior aprovada em 2026-10-09 — imposto imobiliário 1A:** o responsável confirmou **dívida tributária real do SIM ou empresa proprietária ao Caixa da Cidade**, com pagamento/recuperação gradual em recursos efetivamente disponíveis e receita municipal apenas quando dinheiro entra. **Não há prazo tributário de três meses** (pertence a regras distintas de aluguel/desocupação), nem apreensão, despejo, venda forçada ou novo sistema de cobrança manual. Em falência terminal empresarial, a dívida municipal integra o rateio de credores já aprovado. Cadência, outros créditos pessoais e prioridade financeira técnica seguem definição/calibração conforme SPEC.
 - Não confundir isenção de imposto em ativo ainda sem proprietário com eventual custo de manutenção: este último não foi decidido.
 - Evitar indicador mágico de atratividade: as consequências devem ser explicáveis por custos e decisões efetivos dos SIMs/empresas.
+
+---
+
+## Enquadramento tributário rural inicial — decisão de 2026-10-10
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou explicitamente a opção 9A; a melhoria posterior ainda é apenas possibilidade de evolução.
+
+**Decidido na SPEC:** fazendas/imóveis produtivos rurais tributáveis usam, inicialmente, a alíquota **industrial de baixa densidade** já existente, sobre valor de mercado e com caixa do proprietário real, sem novo controle tributário. **Melhoria futura desejada, NÃO aprovada:** criar categoria rural própria e alíquota específica para fins de política agrícola, somente se trouxer decisões econômicas úteis e justificar um sétimo controle ao jogador. Não presumir isenção, subsídio ou imposto por produção.
+
