@@ -17,6 +17,18 @@ Este arquivo é material de exploração temática. Quando houver divergência, 
 
 ---
 
+## Asfalto e material por largura de rua — reflexão de 2026-10-09
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável perguntou se **construir asfalto deve gastar material físico**, enquanto aprovou **20B (escolher quantidade de faixas de rua durante a construção)** com **pesquisa ainda pendente sobre o número ideal de faixas**. Nenhuma fórmula ou catálogo de perfis foi aprovado.
+
+**Já é produto oficial na SPEC:** Asfalto é uma das oito categorias físicas iniciais de recursos, com destino em vias/superfícies pavimentadas. Areia e brita servem à base viária. **Toda obra, incluindo rua, paga dinheiro, utiliza materiais e exige trabalho e logística reais**. A pergunta do responsável portanto **reforça um fundamento existente**; não inventar sistema de pavimentação abstrata que contorne estoque e caminhões.
+
+**Definição proporcional ainda não aprovada:** ao construir rua pavimentada, **a quantidade de Asfalto e de base de Areia e brita poderia crescer com comprimento e largura**, e portanto com número de faixas, sem obrigar o jogador a dosar insumo trecho a trecho. O custo mostrado antes da confirmação deve refletir os recursos a reservar/entregar e a faixa escolhida, sem duplicar cobrança do mesmo material ou permitir obra materializar pavimento sem carga real. O perfil de via urbana atual pode estudar **1 faixa por sentido (1+1)** e **2 por sentido (2+2)**; são **hipóteses**, não escolhas finais. Avaliar largura de calçadas, estacionamento, conexões e eventual necessidade de faixas adicionais com gameplay/medição, não por catálogo amplo a priori.
+
+Não presumir neste estágio **ruas de terra, pavimentação como uma segunda obra ou alargamento de via pronta**, que contrariam ou extrapolam o escopo atual de rua urbana/rodovia e construir/demolir.
+
+---
+
 ## Materiais de construção, importação e estoque
 
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
