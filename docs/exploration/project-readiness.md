@@ -14,6 +14,20 @@ Dar às próximas sessões uma visão única do que já está suficientemente de
 
 As prioridades são **orientação revisável**, não um impedimento para experimentar e tampouco autorização para implementar funcionalidades não aprovadas. A direção de trabalho é **Spec-Driven Development leve**: definir comportamentos oficiais na SPEC antes de implementá-los. A eventual POC é uma **validação integrada do jogo**; organizar a implementação em incrementos técnicos não cria uma obrigação de POCs separadas nem altera o escopo aprovado.
 
+## Nova rodada — decisões 6–18 e dois bloqueios de produto (2026-10-10)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** As escolhas humanas da rodada foram registradas na SPEC; prioridades e soluções sugeridas abaixo são investigação da IA, não regras aprovadas.
+
+**Fechado, não reabrir sem motivo:** acolhimento familiar real alternativo na ausência de vaga institucional e alerta grave se o menor ficar sem moradia/cuidado (6B/7B complementada); petróleo não se esgota por volume acumulado, mas tem vazão e logística finitas (8A); importação física paga de petróleo bruto para refinaria (9A); reserva municipal física e paga de combustível emergencial (10B); rateio de verba previdenciária entre aposentadorias atuais/atrasadas (11C); crédito previdenciário vencido não pago extingue-se na morte, sem transferência de moeda ou herança (12B); prioridade fiscal serviços críticos → previdência → despesas não essenciais (13A); penas simples por gravidade e reincidência (14A); ausência total de vagas penitenciárias implica soltura, após busca já aprovada (15A); benefício previdenciário contributivo por incapacidade (16B); sem seguro-desemprego inicial (17A); poluição de indústria desativada dissipa gradualmente (18A). Fontes oficiais detalhadas na SPEC.
+
+**Duas questões de produto ainda relevantes desta rodada:**
+1. **Prefeitura:** opções **1/2/4/5/20 adiadas**; **3B escolhida verbalmente**, mas paralisar *toda* a administração conflita com cidade vazia e controles de construção/finanças já aprovados operantes sem Prefeitura. Precisamos decidir qual mecanismo inicial permite construir a própria Prefeitura (se administração só começar depois dela) e se impostos/serviços já existentes realmente se desligam, ou se a opção B é reinterpretada restrita aos novos programas. **Não aplicar 3B no código/SPEC sem resolver a divergência.** A Prefeitura segue direção estratégica com empregos reais; política concreta ainda não aprovada.
+2. **Água poluída:** **19B é inclinação, não decisão**. Avaliar tratamento mais caro/lento quando fonte estiver contaminada, fonte alternativa verdadeiramente disponível e remoção da poluição na origem, sem introduzir filtros, reservatórios, química ou redes físicas adicionais sem valor de gameplay; recomendar mecanismo combinado simples após aprovação humana.
+
+**Detalhes de validação/implementação:** capacidade da reserva municipal de combustível e transferência real aos veículos; extração/compra de Petróleo bruto; elegibilidade e coexistência do benefício por incapacidade com salário/licença/aposentadoria; liberação de custódia sem vagas; rateio entre atrasados e benefícios novos; poluição residual gradualmente decrescente. Nada disso justifica microgerenciar SIMs ou frotas.
+
+---
+
 ## Atualização de decisões e riscos — rodada subsequente de 2026-10-10
 
 > **Revisão humana: PARCIALMENTE REVISADO.** Mudanças de comportamento foram confirmadas e estão na SPEC; a triagem de questões ainda pendentes é proposta da IA e precisa ser considerada apenas quando relevante à implementação.
