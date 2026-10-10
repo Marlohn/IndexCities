@@ -1238,3 +1238,18 @@ Separar **tempo de suprimento e deslocamento reais** de **trabalho ativo de cons
 ### Decisão separada que segue aberta
 
 **Decisão aprovada em 2026-10-08 e registrada na SPEC:** custo previsto comprometido no próprio Caixa, desembolso para destinatário real quando a despesa ocorrer, e liberação do valor comprometido ainda não pago em cancelamento. A Reserva Global não retém dinheiro de obras. A regra dos materiais entregues/consumidos permanece vigente; detalhes de pagamentos antecipados, pedidos em trânsito e calibração são assuntos de validação, não autorizações para estornos fictícios.
+
+---
+
+## Jazidas simples e madeira renovável — rodada de 2026-10-10
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** Jazidas locais de Areia e brita foram aprovadas diretamente como 2B e constam da SPEC. A hipótese de madeira renovável abaixo foi proposta pelo responsável, mas seu comportamento final **não foi aprovado**. Recomendações da IA são PENDENTES.
+
+**Confirmado 2B:** áreas/depostos de areia e brita gerados com a seed podem sustentar extração local física, além de importação e das fábricas que transformam materiais reais. Não converter isso em mineração abrangente, dezenas de SKUs ou obrigatoriedade de extrair tudo localmente. Ainda não há decisão sobre exaustão dos depósitos, número de jazidas, rendimento nem detalhamento de lavra.
+
+**Problema em discussão para Madeira (questão 8):** o responsável observa corretamente que obrigar reposição manual ou procurar incessantemente florestas finitas para obter um material básico pode gerar microgerenciamento e inviabilizar cidades duradouras. Sugeriu produção efetivamente inesgotável no primeiro modelo, deixando evolução posterior para silvicultura com plantio/crescimento/colheita.
+
+**Distinção crítica:** *fonte renovável* não significa *produção, estoque ou transporte infinitos*. Uma proposta intermediária seria permitir extração contínua **com produção máxima proporcional à área florestal/instalação efetivamente disponível, trabalho, tempo e logística**, sem gastar unidades individuais de árvores nem exigir replantio manual. A produção cria unidades físicas rastreáveis de Madeira por processo produtivo, não estoque sem origem. Se a área produtiva desaparecer por construções, sua capacidade é afetada. Ciclo visível de plantio/crescimento/colheita (C) seria evolução possível, **não obrigação de arquitetura preparada antecipadamente**.
+
+**Risco da proposta:** uma mesma árvore parecer cortada repetidamente pode quebrar o realismo; é preferível explicar como manejo/regeneração agregados e representar visuais coerentes, sem alegar que o estoque de madeira surge do nada. **Pendente de confirmação:** aprovar ou não o modelo de fonte florestal renovável com vazão limitada por área, no lugar de madeira por árvores consumidas e finitas.
+
