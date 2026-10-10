@@ -14,6 +14,18 @@ Dar às próximas sessões uma visão única do que já está suficientemente de
 
 As prioridades são **orientação revisável**, não um impedimento para experimentar e tampouco autorização para implementar funcionalidades não aprovadas. A direção de trabalho é **Spec-Driven Development leve**: definir comportamentos oficiais na SPEC antes de implementá-los. A eventual POC é uma **validação integrada do jogo**; organizar a implementação em incrementos técnicos não cria uma obrigação de POCs separadas nem altera o escopo aprovado.
 
+## Atualização de lacunas após escolhas de 2026-10-10
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** As escolhas de produto foram confirmadas e incorporadas à SPEC; esta nova triagem de importância e propostas de calibração são síntese de IA **PENDENTE de revisão integral**. Os percentuais abaixo continuam históricos (2026-10-08).
+
+**Fechadas, não repetir como perguntas novas:** cadeia inicial curta de materiais físicos (1A), três portes/áreas reais de fazendas (2A), ampliação manual agregada da frota de ônibus com teto já aprovado por garagem (3C), lotação total finita de aterro (4B), mudança de rota em eventos relevantes (5B), combustível inicial pago de viaturas (6A), alimentos sem perecibilidade (7A), ausência inicial de contágio (8A), ocorrência de crimes emergindo das condições/oportunidades locais (9B) e poluição espacial gradual (10B).
+
+**Questões de produto ainda merecendo explicação/decisão proporcional:** (a) se e como uma incineradora futura pode **retirar e queimar lixo já depositado**, liberando espaço real do aterro, sem consumo fictício e com logística física; reciclagem segue fora de escopo até decisão explícita; (b) quais fatores concretos geram oportunidades de crime e como escolher autor/vítima com causalidade e sem estereótipo; (c) reconhecer que a ideia de replanejamento constante de tráfego (C) é apenas melhoria futura desejada, **não arquitetura aprovada**.
+
+**Apenas calibração/validação:** dimensões exatas das fazendas, rendimento, limite numérico por garagem, tempo e limiar de recalcular rota, taxas de poluição e de ocorrências criminais, volume total de aterros, escala de combustível inicial e impactos da simplificação alimentar. Não transformar tudo em perguntas antes do teste integrado.
+
+---
+
 ## Diagnóstico geral — fotografia de 2026-10-08
 
 - **75% — estimativa heurística de preparação documental para iniciar a implementação integrada**, dando maior peso à arquitetura, à economia e à construção, que estão mais amadurecidas. **Não é média aritmética** das categorias, métrica científica, porcentagem da SPEC fechada nem fração do jogo pronta. A validação principal é do conjunto funcional, conforme a SPEC.
