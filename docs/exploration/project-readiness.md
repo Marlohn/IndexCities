@@ -199,6 +199,25 @@ O [hub](../EXPLORATION.md) registra 11 documentos temáticos: **9 PARCIALMENTE R
 
 ---
 
+### Rodada de 20 perguntas — 18 decisões, 2 pendências (2026-10-09)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou 2A, 3A, 4A, 6A, 7A, 8A, 9A, 10A, 11B, 12A, 13C, 14A, 15A, 16B, 17A, 18A, 19A e 20B. **1 (calendário) e 5 (pagador do reparo por incêndio) não estão fechadas**. Síntese da IA não revisada integralmente.
+
+**Economia e família — na SPEC:** sem empréstimos privados (2A); saldo individual persistente de trabalhador pendular externo (3A), incluído na oferta monetária global; dívidas municipais de falecido quitadas só até seu saldo real, sem herdar dívida remanescente (4A); parente real assume cuidado de menor sem adulto quando elegível (6A). **Melhoria futura desejada:** assistência social institucional. Caso sem parentes e rateio de créditos concorrentes continuam definições dependentes, sem criar solução fictícia.
+
+**Saúde e segurança — na SPEC:** parto fora do hospital quando inacessível, sem adiar nascimento (7A); triagem hospitalar por gravidade (8A); suprimentos médicos físicos repostos automaticamente por dinheiro/logística reais (9A); crimes iniciais de furto e roubo patrimonial simples (10A), sem ampliar catálogo por inferência. **Melhoria futura desejada:** crimes com agressões/ferimentos e consequências médicas (alternativa 10B).
+
+**Transporte, comércio e serviços — na SPEC:** táxis com preço por distância/tempo/custos (11B) e chamada automática com busca física do passageiro (12A); estacionamentos públicos gratuitos/pagos por política agregada do jogador (13C); veículos vendidos diretamente pelas fábricas (14A) e carros usados negociados entre SIMs (15A); viaturas municipais iniciais incorporadas como **custo/obtenção física do pacote de construção** (16B), não compra manual, sem alterar limite de ônibus. **Melhoria futura desejada:** adquirir veículos públicos separadamente (16A). Sem condomínio financeiro em apartamentos (17A). Funeral público gratuito para família, operação paga pela cidade (18A). Faixas de pedestres geradas automaticamente (19A), com edição manual **19C somente futura**. Perfis de largura/faixas ao construir rua (20B), mas **o número de faixas e opções exatas ainda NÃO foram aprovados**.
+
+**Pendências relevantes:**
+- **1 — calendário:** responsável pediu **quantos dias por mês** na alternativa B. 10/15/30 dias por mês são **exemplos comparativos**, não decisões. Reavaliar impactos em envelhecimento e recorrência de salários/aluguel; aceleração real continua aprovada sem mudanças.
+- **5 — quem paga danos por incêndio:** resposta textual escolheu **A (dono privado paga, prefeitura paga prédios próprios)** mas a justificativa atribui a **prefeitura/jogador os custos** por falta de cobertura de bombeiros, possivelmente inclusive dos imóveis privados (**B**). **Não decidir unilateralmente a titularidade do débito de reparação.**
+- **20 — perfis viários:** avaliar início enxuto com uma ou duas faixas por sentido, largura/custo/capacidade/estacionamento reais. A proposta de consumir asfalto **já está coberta conceitualmente pelas categorias e custos físicos de obra da SPEC**; fórmulas proporcionais a comprimento/largura e catálogos são investigação/calibração, sem nova ferramenta para editar rua pronta.
+
+**Não misturar:** proposta pendente/contraditória não entra na SPEC; detalhes de calibração não justificam nova rodada de escolhas se testes integrados puderem resolvê-los.
+
+---
+
 ### Rodada de mobilidade, economia e propriedade — 2026-10-09
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou **1B, 2A, 3A+B, 5A, 6A, 7A, 9C, 10A**; **4C e 8C foram APROVADAS posteriormente**, mantendo simplicidade operacional e custo baixo. A consolidação da IA e parâmetros de implementação não foram revisados integralmente.
