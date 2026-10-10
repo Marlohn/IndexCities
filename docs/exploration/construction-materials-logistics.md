@@ -1243,13 +1243,23 @@ Separar **tempo de suprimento e deslocamento reais** de **trabalho ativo de cons
 
 ## Jazidas simples e madeira renovável — rodada de 2026-10-10
 
-> **Revisão humana desta seção: PARCIALMENTE REVISADO.** Jazidas locais de Areia e brita foram aprovadas diretamente como 2B e constam da SPEC. A hipótese de madeira renovável abaixo foi proposta pelo responsável, mas seu comportamento final **não foi aprovado**. Recomendações da IA são PENDENTES.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** Jazidas de Areia e brita (2B) e a decisão posterior de **madeira de fonte florestal renovável com capacidade limitada** (8 refinada) foram aprovadas pelo responsável e registradas na SPEC. Estender esse modelo a outros recursos permanece **PENDENTE** de revisão humana.
 
-**Confirmado 2B:** áreas/depósitos de areia e brita gerados com a seed podem sustentar extração local física, além de importação e das fábricas que transformam materiais reais. Não converter isso em mineração abrangente, dezenas de SKUs ou obrigatoriedade de extrair tudo localmente. Ainda não há decisão sobre exaustão dos depósitos, número de jazidas, rendimento nem detalhamento de lavra.
+**Confirmado 2B:** áreas/depósitos de areia e brita gerados na seed viabilizam extração local física e importação alternativa, sem sistema amplo de mineração ou vários SKUs adicionais. **Exaustão ou inexauribilidade das jazidas ainda não foi decidida**.
 
-**Problema em discussão para Madeira (questão 8):** o responsável observa corretamente que obrigar reposição manual ou procurar incessantemente florestas finitas para obter um material básico pode gerar microgerenciamento e inviabilizar cidades duradouras. Sugeriu produção efetivamente inesgotável no primeiro modelo, deixando evolução posterior para silvicultura com plantio/crescimento/colheita.
+**Confirmado 8 refinada:** floresta produtiva pode fornecer Madeira continuamente, sem gastar árvores individuais nem exigir replantio manual. A vazão por período depende de área produtiva disponível, trabalho, operação e tempo; unidades produzidas entram em estoques e são transportadas e comercializadas fisicamente. É renovação/manejo agregados, não madeira instantânea ou capacidade/estoque infinitos. Se a área for ocupada por construções, a produção disponível diminui. Plantio/crescimento/colheita explícitos seguem como eventual melhoria futura **não aprovada**. A representação visual deve preservar coerência; não aparentar que a mesma árvore é cortada infinitas vezes.
 
-**Distinção crítica:** *fonte renovável* não significa *produção, estoque ou transporte infinitos*. Uma proposta intermediária seria permitir extração contínua **com produção máxima proporcional à área florestal/instalação efetivamente disponível, trabalho, tempo e logística**, sem gastar unidades individuais de árvores nem exigir replantio manual. A produção cria unidades físicas rastreáveis de Madeira por processo produtivo, não estoque sem origem. Se a área produtiva desaparecer por construções, sua capacidade é afetada. Ciclo visível de plantio/crescimento/colheita (C) seria evolução possível, **não obrigação de arquitetura preparada antecipadamente**.
+### Extender o princípio a outros recursos básicos — PENDENTE (2026-10-10)
 
-**Risco da proposta:** uma mesma árvore parecer cortada repetidamente pode quebrar o realismo; é preferível explicar como manejo/regeneração agregados e representar visuais coerentes, sem alegar que o estoque de madeira surge do nada. **Pendente de confirmação:** aprovar ou não o modelo de fonte florestal renovável com vazão limitada por área, no lugar de madeira por árvores consumidas e finitas.
+> **Revisão humana desta subseção: PENDENTE.** O responsável perguntou se esse princípio deveria valer também para outros materiais básicos; nenhum outro recurso teve exaustão indefinida aprovada.
+
+**Princípio em avaliação:** distinguir duração/reposição da **fonte**, capacidade de **produção por período** e quantidade de **estoque físico** existente. Uma fonte persistente não implica estoque ou produção infinitos.
+
+- **Alimentos:** fazendas já produzem recorrentemente com terra, trabalhadores, insumos e tempo reais; não exigem consumo definitivo do solo em cada safra. Não criar estoque infinito.
+- **Areia e brita:** minerais não se regeneram biologicamente. Hipótese de gameplay: depósitos do mapa podem permanecer exploráveis sem esgotamento prático no modelo inicial, com capacidade produtiva limitada por local, funcionários, equipamentos, tempo, custo e transporte; comparar com depósitos que se esgotam. **A regra 2B não escolheu nenhuma das duas.**
+- **Concreto, Aço e Asfalto:** materiais industriais transformados. Produção contínua depende de **insumos efetivamente adquiridos**, fábricas, equipe, energia e logística. Não substituir insumos por geração gratuita nem simular minas de produtos finais.
+- **Combustível e Suprimentos médicos:** preservar obtenção real local/importada, preços, estoques e entrega física. Não criar combustível inesgotável em uma bomba nem suprimentos surgindo num hospital.
+- **Água, eletricidade, esgoto e lixo:** conforme a SPEC, são sistemas agregados de serviço e capacidade, não estoques desses oito materiais. Fontes e capacidade ainda impõem limites.
+
+**Recomendação exploratória:** reduzir esgotamento repetitivo que só gera reconstrução e microgerenciamento, mas preservar escassez econômica e espacial por preço, área produtiva, vazão, trabalhadores, frete e riscos de operação. Primeira decisão candidata relevante: **a jazida de Areia e brita se esgota ou permanece produzindo com limite por período?** Evitar novas decisões sobre cada SKU industrial quando a cadeia produtiva já responde à pergunta.
 
