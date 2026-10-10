@@ -27,6 +27,95 @@
 
 ---
 
+## Revisão crítica adicional — escolhas de governo, SIMs reais e gameplay (2026-10-10)
+
+> **Revisão humana desta seção: PENDENTE.** Pesquisa e recomendação solicitadas **antes de aprovar qualquer mecânica concreta**. A direção geral da Prefeitura como centro de decisões estratégicas, SIMs empregados e leitura das demandas reais já está na SPEC; o conteúdo desta seção **não cria regras**. Fontes externas documentam casos, não aprovam resultados de design para IndexCities.
+
+### Veredito da revisão
+
+**A direção tem alto potencial, mas "um cardápio de políticas" sozinho não resolve gameplay nem emprego na Prefeitura.** Uma política precisa mudar **uma regra que os SIMs e os serviços realmente utilizam** ou financiar **um programa que pessoas e prédios existentes realizam**, com custo e resultado verificáveis. Só alterar "felicidade +5" ou "taxa de produtividade +10%" não é a simulação desejada. Um edifício de governo com trabalho simulado ficticiamente também não é solução.
+
+**Modelo recomendado para discussão:** *Prefeitura = escolhas de governo + execução humana/financeira quando necessária + diagnóstico causal das consequências*.
+
+1. **Regras municipais:** o jogador altera um critério/condição de funcionamento concreto (por exemplo, o transporte coletivo já pode ser gratuito ou pago, conforme a SPEC). Um regime pode mudar comportamento diretamente **sem depender de funcionários da Prefeitura processarem cada decisão individual**.
+2. **Programas municipais reais:** o jogador financia/define um objetivo de acesso ou serviço, mas o resultado exige **vagas, instalações operacionais, equipe, deslocamentos, tempo, orçamento e SIMs que de fato participem**. Esses programas são a hipótese mais legítima para **servidores reais** no edifício, cuja função específica deve ser escolhida, não inventada.
+3. **Diagnóstico e prestação de contas:** mostrar necessidades reais por região, população efetivamente atendida/não atendida, custo pago, quem ganhou/perdeu e gargalos. Reutilizar alertas e histórico já decididos, não criar um segundo motor de reclamações.
+4. **Escala de escolhas:** começar com poucas decisões amplas de efeitos diferentes, sem impor limite numérico permanente, árvore de desbloqueio, política por SIM, manutenção manual de programas, ministérios, eleições ou parlamento por tradição.
+
+**Cadeia obrigatória para avaliar cada candidato:** decisão do jogador → regra de elegibilidade/prioridade/uso de recurso → dinheiro e capacidade efetivamente existentes → SIMs/empresas e instalações que realmente agem → resultados humanos/econômicos concretos → painel com causa e efeitos. Se uma etapa for só um multiplicador de benefício genérico, reavaliar.
+
+### O que a pesquisa externa mostrou, inclusive casos que contradizem intuições
+
+| Referência | Mecânica / evidência | Aplicação prudente ao IndexCities |
+| --- | --- | --- |
+| [Cities: Skylines II — serviços e políticas](https://www.paradoxinteractive.com/games/cities-skylines-ii/features/city-services-districts-policies) | Políticas locais alteram fluxos de trânsito, custos de estacionamento, acesso e poluição; alguns edifícios oferecem efeitos globais. | **Copiar o vínculo com deslocamentos e rotas**, não um bônus automático de bem-estar. A SPEC ainda não aprova restrições viárias ou divisão formal em distritos. |
+| [Frostpunk 2 — página do desenvolvedor](https://store.steampowered.com/app/1601580/Frostpunk_2/?l=brazilian) | O Conselho decide leis com interesses conflitantes e implicações sociais. | **Trade-offs sociais**, não importar facções/elegibilidade eleitoral nem impasses periódicos em sandbox. |
+| [Victoria 3 — dev diary sobre instituições e burocracia](https://www.paradoxinteractive.com/games/victoria-3/news/dev-diary-57-the-journey-so-far) | Equipe explicou a dificuldade de dar funcionários reais às instituições sem mandar o jogador construir microinstalações; resolveu em parte com moeda de burocracia abstrata. | A lacuna de emprego é legítima; **não copiar a nova moeda genérica**. Preferir trabalho real em programas específicos, sem fazer funcionários bloquearem impostos por regra nova. |
+| [Democracy 4 — modelo de políticas pelo desenvolvedor](https://www.democracygame.com/mod_policies.html) | Política possui custos, entradas/saídas e tempo de implementação; efeitos são ligações causais entre indicadores do simulador. | Útil como **método de formular decisões**, mas substituir saídas abstratas por SIMs, serviços e dinheiro físico efetivo. Não construir um segundo jogo de governo em cima do city builder. |
+| [Workers & Resources — City Hall/Accounting Office](https://wiki.hoodedhorse.com/Workers_Resources_Soviet_Republic/City_Hall_/_Accounting_office) | Prefeitura/contabilidade exige construção e trabalhadores e informa estatísticas por região; wiki oficial contém aviso de revisão de conteúdo. | Prova que prédio e emprego podem coexistir com estatísticas, **não que isso produza gameplay suficiente**. |
+| [Cities II — Economy 2.0](https://www.paradoxinteractive.com/games/cities-skylines-ii/news/dev-diary-economy-part-one) | Desenvolvedores removeram **subsídios monetários automáticos externos** que faziam déficit perder consequência. | Nunca cobrir custos de programa com injeção automática de dinheiro ou financiamento do nada. |
+| [Constituição brasileira, art. 30](https://www4.planalto.gov.br/legislacao/legis-federal/constituicao) | Municípios atuam em tributos locais, transporte público, educação básica e saúde em cooperação e ordenamento urbano. | Boas famílias de escolhas **plausíveis** para uma Prefeitura; não importar automaticamente legislação, eleições ou atribuições nacionais para o universo fictício. |
+| [OECD — descentralização e capacidade administrativa](https://www.oecd.org/en/publications/making-decentralisation-work_g2g9faa7-en/full-report/component-8.html) | Capacidade municipal envolve pessoal, coordenação entre órgãos, execução de programas e gestão financeira. | Emprego público faz sentido quando há **entrega verificável**, não papelada simulada só por realismo estético. |
+| [Transporte gratuito — estudo com cidades brasileiras](https://www.sciencedirect.com/science/article/pii/S0095069625001238) | Evidência causal em idosos: transporte gratuito elevou viagens em ônibus, mas substituiu principalmente caminhadas, **sem efeito significativo em automóveis** naquele estudo. | **Não assumir** que tarifa grátis reduz carro, congestionamento e poluição automaticamente. A escolha altera a restrição monetária real, depois decisões de rota/viagem determinam os impactos. |
+| [Banco Mundial — políticas regionais e incentivos](https://documents1.worldbank.org/curated/en/785411605819935532/pdf/The-Employment-Effect-of-Place-Based-Policies-Evidence-from-India.pdf) | Resultados de incentivos territoriais são heterogêneos, com evidência empírica mista. | Isenção a empresas/bairros não deve gerar novos empregos automaticamente; pode reduzir arrecadação sem atrair investimento real. Documento PDF listado como referência contextual, não reproduzido aqui. |
+| [Reddit — discussão sobre burocracia de Victoria 3](https://www.reddit.com/r/victoria3/comments/1g4inv4) | Relatos/opiniões comunitárias divergem sobre efeito prático de certas leis de burocracia versus seu custo. | Alerta anedótico, **não evidência quantitativa**: efeito pouco perceptível + custo alto prejudicam a satisfação de governar. |
+
+### Três tipos de experiência para **avaliar**, sem criar políticas novas automaticamente
+
+**1 — Política já aprovada, usada como padrão de qualidade: ônibus gratuito ou pago.**
+- **Escolha concreta:** tarifa por passageiro ou transporte gratuito para todos, já decidida na SPEC.
+- **Mecanismo:** somente SIMs reais com rota, tempo e capacidade adequados viajam; no modo pago, precisam de saldo e transferem dinheiro ao Caixa por uso; no gratuito, não pagam passagem e a frota segue custando orçamento.
+- **Consequências:** acesso ao emprego/escola/saúde, saldo familiar, demanda de ônibus, pressão orçamentária; nenhuma garantia de que carro diminua ou de que quem não tem linha se beneficie.
+- **Cuidado:** usar a Prefeitura como centro de leitura dessas consequências **não pode retirar os controles gerais já aprovados**.
+
+**2 — Candidato novo prioritário: educação de adultos vinculada a oportunidades reais de emprego (PENDENTE).**
+- **Escolha:** oferecer ou não um programa municipal de escolarização/requalificação acessível a SIMs adultos; público elegível, duração e custos ainda por definir.
+- **Execução verificável:** usar escolas/estrutura educacional com docentes, vagas, horários, trajetos, frequência e progressão real nos **níveis amplos de escolaridade já decididos**; não introduzir profissões/cursos/skills numéricas na versão inicial. SIM desempregado pode acessar, mas não recebe emprego nem salário automático ao terminar.
+- **Trade-off:** ocupa recursos/capacidade e custa salários/tempo; pode ampliar elegibilidade a vagas existentes ao longo do calendário. Sem docentes, acesso, vagas ou dinheiro, não há formação efetiva. Funcionários da Prefeitura só se justificados por atividade real de execução de programa — ainda a decidir.
+- **Risco:** se a educação de adultos exigir educação profissional especializada ainda fora da SPEC ou for apenas "nível escolar +1 por política", não adotar sem escopo/serviço próprios.
+
+**3 — Candidato novo alternativo: regras de circulação de carga em áreas sensíveis (PENDENTE).**
+- **Escolha:** restringir passagem de caminhões em uma área/horário (se território e sinalização forem definidos) para melhorar condições urbanas observáveis.
+- **Execução verificável:** veículos usam a malha real e calculam rotas legais, distâncias, combustível, entregas e atrasos; comerciantes podem perder disponibilidade de produtos, afetando moradores e empregos. Benefícios só se houver externalidade realmente modelada — não inventar ruído ou felicidade para justificar a medida.
+- **Trade-off:** logística mais cara/lenta, restrição a acesso para entregas locais e possibilidade de rota inexistente. Exigiria regras de exceção/acesso e medição de efeito; **pode acrescentar complexidade de roteamento desproporcional**. Não adotar apenas por ter funcionado em outro game.
+- **Alternativa mais distante:** benefício municipal direcionado de ônibus por viagens de SIMs elegíveis, mas isso modificaria a regra vigente **sem passe social ou isenção automática** e deveria explicitar pagamento real pelo Caixa; a SPEC **não aprova** o programa hoje. Útil para debate posterior, não colocar silenciosamente na primeira versão.
+
+### Ideia menos convencional: programas-piloto de governo, sem obrigação de fazer experimentos
+
+Quando existir um programa financiado com um efeito bem definido, avaliar se o jogador poderia **aplicá-lo primeiro a uma área já identificável**, com custo, duração e participantes reais, ver resultados e só então expandi-lo. Aproveita o alcance regional dos diagnósticos **sem inventar departamentos/distritos administrativos obrigatórios**, e a medição seria *observacional*, não promessa de causalidade exata entre bairros diferentes.
+
+**Vantagem:** cada partida pode desenvolver um estilo de governo por aprendizagem e trade-offs, não por cardápio de bônus. **Riscos:** delimitação geográfica, desigualdades artificiais, comparar bairros incomparáveis, custo de simulação e microgerenciamento. **Status:** ideia futura PENDENTE; não criar sistema de A/B test, interface extra ou fase obrigatória de piloto sem evidência de gameplay.
+
+### Qual é a função legítima dos servidores da Prefeitura?
+
+**Não atrelar cada clique de política a uma fila, licença, "pontos de burocracia", tempo de prefeito ou funcionário figurativo.** Um regime local pode ser decidido sem precisar de funcionários operando cada pagamento, rota ou tributo.
+
+**Hipótese a testar:** servidores SIMs no edifício coordenam a **execução física de programas de fato ativos** (por exemplo oferta real de vagas, atendimento e encaminhamento para instituições existentes, acompanhamento de contratos efetivamente pagos), respeitando jornada, salário e capacidade que tenham **resultado operativo distinto da interface**. Se o programa escolhido não precisar desse serviço, ele não justifica inventar uma equipe correspondente; a necessidade de função real dos funcionários permanece aberta e é uma lacuna de produto assumida, não defeito a esconder com abstração.
+
+**É possível haver duas capacidades separadas:** (a) decisões/regras selecionadas pelo jogador sempre consultáveis; (b) programas com oferta de atendimento limitada pela existência de meios e trabalhadores reais. **Essa divisão não autoriza implementá-la** antes de o responsável escolher políticas e relação com o prédio.
+
+### Antipadrões, conflitos com SPEC e critério de qualidade
+
+- **Não transformar IndexCities em Democracy 4/Frostpunk 2:** política não pode substituir construção física, mercado, deslocamento e famílias reais. Eleições, facções, aprovação parlamentar e capital político não foram decididos.
+- **Não copiar competências nacionais literalmente:** a SPEC decidiu que a previdência funciona com regras automáticas; não reabrir cálculo, elegibilidade ou alíquotas da previdência pela Prefeitura sem aprovação específica.
+- **Não antecipar assistência social geral:** a SPEC exclui inicialmente abrigos de adultos, moradia subsidiada e programas gerais de assistência; o acolhimento municipal infantil é exceção aprovada, não argumento para novo benefício automático. Educação de adultos, passes sociais e incentivos territoriais não foram aprovados.
+- **Não burlar tarifas automáticas:** valores de água, energia e passagem paga são automáticos; política geral de ônibus gratuito/pago já é escolha do jogador. Não introduzir slider de preço unitário disfarçado.
+- **Não invalidar soluções automáticas já aprovadas:** emergência/triagem clínica, serviços municipais essenciais, geração/distribuição de energia/água e Pátio mantêm regras e prioridades; nova política precisa explicitar se muda alguma regra existente e obter aprovação específica.
+- **Não presumir melhoria de todo mundo:** decisões diferentes mudam cidadãos e empresas de modos distintos; avaliação deve mostrar impactos distributivos (saldo, tempo, acesso, saúde/educação real), além do caixa municipal.
+- **Não permitir multiplicador de dinheiro ou benefício imediato sem ação:** incentivo fiscal reduz receita real antes de supostamente atrair empresa; programa usa equipe/instalação para mudar acesso ou escolaridade; resultado depende de decisões autônomas de SIMs e firmas.
+- **Não incentivar troca de política por segundo para explorar simulação:** preservar despesas já incorridas, matrículas, vínculos e efeitos reais; eventual transição deve refletir ação/tempo reais, não cooldown arbitrário por jogo.
+- **Performance/legibilidade:** política é regra consultada por eventos reais ou agregação periódica, não uma varredura política de todos os SIMs a cada quadro. UI acessível em camadas: escolha, custo/quem atinge, efeitos observados e razões dos gargalos. Não criar indicador de "padrão de vida" abstrato como substituto das necessidades reais.
+
+### Conclusão da IA (PENDENTE) e ordem da discussão
+
+**Sim, a Prefeitura como central de escolhas parece a melhor direção até aqui.** O melhor diferencial não é uma lei nova a cada cinco minutos: é mostrar como **uma mudança pequena de regra ou um programa real** altera ao longo de dias, meses e anos **vidas persistentes e uma economia com recursos finitos**.
+
+**Recomendação ajustada:** escolher primeiro *o padrão de política* e depois 1–2 decisões demonstráveis antes de prometer dezenas de programas. Usar **ônibus gratuito/pago**, já aprovado, como referência de efeito causal; avaliar **programa de escolarização adulta** como primeiro candidato novo e **uma política de circulação de carga** apenas se o valor de gameplay superar o custo. A Prefeitura como edifício e trabalho real dos SIMs permanece decidida; **não atribuir tarefas artificiais a funcionários** enquanto não houver programa implementável que precise delas. Programas-piloto regionais são hipótese opcional e não fase obrigatória.
+
+**Nenhuma política, subsídio, novo serviço, fiscalização, lei, profissões, capacidade ou nova interface acima foi aprovada; a SPEC não é alterada nesta revisão.**
+
+---
+
 ## Direção de produto aprovada posteriormente — 2026-10-10
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável escolheu explicitamente o papel primário **operacional, concreto, com SIMs funcionários reais**; a Prefeitura deverá **em segunda instância informar necessidades reais da população**. O detalhamento da IA abaixo sobre funções e opções ainda não foi revisado.
