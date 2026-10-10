@@ -8,6 +8,16 @@
 >
 > Reúne empresas privadas, demanda, aquisição de ativos, caixa empresarial, falência, abastecimento, conexão econômica externa e interpretação do Caixa da Cidade.
 
+## Rodada 2026-10-10 — cadeias curtas, fazendas e alimentos
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** As opções **1A, 2A e 7A** foram aprovadas pelo responsável e promovidas à [SPEC](../SPEC.md); os caminhos de evolução abaixo são hipóteses solicitadas/registradas, **não requisitos aprovados**.
+
+- **1A (aprovado):** materiais de construção podem ser produzidos localmente por fábricas com **insumos físicos reais** disponíveis via fornecedores ou importação, sem exigir que toda extração/beneficiamento seja local. **Possível melhoria futura pedida:** cadeias intermediárias ou completas, com extração, processamento e mais relações entre empresas, somente após provar ganho de gameplay e viabilidade econômica/performance. Não confundir simplicidade da cadeia com produção sem matéria-prima.
+- **2A (aprovado):** fazendas com porte pequeno/médio/grande e **área cultivável física predefinida**, verificadas no posicionamento; não há desenho manual do campo ou ocupação automática de solo vizinho. Quantidade de área, funcionários e rendimento ficam para calibração, mantendo a produção adaptativa e os recursos reais.
+- **7A (aprovado):** alimentos **não estragam** por tempo em estoque no primeiro modelo. **Possível melhoria futura pedida:** perecibilidade agregada por estoque, desperdício e eventuais impactos de logística/conservação, evitando lote/SKU e microgestão sem ganho demonstrado. Não inserir agora descarte automático, refrigeração obrigatória ou vencimentos fictícios.
+
+---
+
 ## Como ler este documento
 
 Este arquivo é material de exploração temática. A autoridade do produto continua sendo `docs/SPEC.md`. Trechos históricos podem preservar alternativas já superadas; quando houver divergência, vale a decisão canônica mais recente.
