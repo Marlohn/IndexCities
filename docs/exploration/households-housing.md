@@ -28,11 +28,11 @@ Riscos de gameplay para medir: cidade recém-fundada sem água/energia ainda pod
 
 ## Vida familiar, crédito e débitos sucessórios — rodada de 2026-10-09
 
-> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou **2A, 4A e 6A**, mas casos de múltiplos credores e de criança sem parente elegível não foram definidos.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou **2A, 4A e 6A** e, posteriormente em 2026-10-10, **uma unidade municipal de acolhimento infantil para casos sem parentes elegíveis**. Permanecem abertas a transição dos jovens ao completar 18 anos, indisponibilidade de vagas/cuidadores e os múltiplos credores.
 
 - **2A — sem empréstimos privados inicialmente:** não há bancos/financiamentos pessoais, imobiliários ou empresariais como sistema próprio. Empréstimos do jogador ao Caixa da Cidade continuam válidos conforme regras já existentes.
 - **4A — imposto imobiliário e água/energia de SIM falecido:** abater as dívidas municipais **do dinheiro do falecido efetivamente disponível**, depois de respeitar a precedência já definida para aluguel atrasado; encerrar o restante não pago como crédito contábil, sem cobrar herdeiros, vender compulsoriamente imóvel ou atribuir renda fictícia ao município. **Ordem/rateio entre múltiplos credores municipais, se dinheiro insuficiente, permanece lacuna dependente**, não assumir proporcionalidade por analogia com falência de empresas.
-- **6A — menor sem adulto responsável:** procurar **parentes reais elegíveis já representados**, sem criar novas pessoas, imóveis, pagamentos, tempo de viagem ou assistência fictícios. O caso sem parente viável permanece **PENDENTE** e requer decisão antes do código correspondente. **O responsável quer assistência social/acolhimento público como expansão futura** — registrar como hipótese desejada, **NÃO aprovada agora**.
+- **6A — menor sem adulto responsável:** procurar **parentes reais elegíveis já representados**, sem criar novas pessoas, imóveis, pagamentos ou assistência fictícios. **Complemento posterior APROVADO (2026-10-10):** sem parente elegível, criança pode viver na **unidade municipal de acolhimento** com vagas, cuidadores e custos reais; a falta de capacidade não cria acolhimento imaginário.
 
 Risco a validar: sem crédito privado, imóveis caros podem ficar com poucos compradores; se isso ocorrer no teste integrado, reexaminar financiamento sem criar moeda ou forçar compradores.
 
@@ -252,7 +252,7 @@ A consequência deve criar dinâmica sistêmica sem virar punição arbitrária.
 
 **Decidido na SPEC — realocação após perda da moradia:** em casos como inadimplência, vencimento do prazo em imóvel sem proprietário e compra para moradia própria do novo dono, a família procura **automaticamente** uma residência disponível que consiga pagar, sem intervenção manual do jogador. Se não houver opção compatível na cidade, **pode permanecer sem moradia ou emigrar** conforme suas condições e as da cidade; não presumir emigração automática, casa concedida artificialmente nem garantia de realocação. Este é o fluxo geral; prazos e condições particulares continuam os já definidos na SPEC. A lógica fina de seleção de imóvel e de migração fica para calibração/implementação.
 
-**Escopo inicial confirmado na SPEC:** a população sem moradia é um estado real, que influencia indicadores sociais e migração e deve ser legível ao jogador. A prefeitura reage **indiretamente** com construção/oferta de moradias, empregos, serviços e condições urbanas melhores. **Abrigamentos e programas próprios de assistência social não entram no primeiro modelo.** A simulação não deve inventar benefício monetário, vaga em abrigo ou moradia para eliminar a consequência.
+**Escopo inicial confirmado na SPEC (atualizado em 2026-10-10):** a população adulta sem moradia é um estado real, que afeta indicadores e migração; resposta da prefeitura permanece indireta por emprego, habitação e serviços. **Exceção nova e específica aprovada:** uma **unidade municipal de acolhimento para crianças/adolescentes sem responsável e sem parente apto**; não aprova abrigos adultos, renda assistencial, moradia subsidiada ou serviço universal de assistência social. Métricas, suporte posterior e efeitos exatos ainda dependem de decisão/calibração.
 
 **Possíveis melhorias futuras — PENDENTES de revisão humana, não aprovadas como funcionalidades:**
 
@@ -614,7 +614,7 @@ Hipótese de benefício: negócios mais variados e sensíveis à urgência dos a
 
 > **Revisão humana desta seção: PENDENTE.** O responsável pediu avaliar a ideia de remeter ao exterior os casos difíceis de resolver no primeiro modelo; não aprovou a regra geral nem a saída automática de menores sem responsáveis.
 
-**Caso concreto:** a SPEC já procura parentes reais para crianças/adolescentes sem adultos no domicílio. Na falta deles, a decisão continua aberta; assistência social municipal própria está adiada.
+**Caso concreto (histórico anterior à decisão posterior):** a SPEC primeiro exigiu procura por parentes reais. **Em 2026-10-10, o responsável aprovou a unidade municipal de acolhimento infantil quando não houver parente apto**; a hipótese geral de descartar casos difíceis para o exterior continua rejeitada/não aprovada.
 
 **Hipótese em discussão:** uma criança sem responsável local poderia sair pela conexão exterior **apenas se houver destino/acolhimento externo definido pelo modelo**, sem inventar parente local, dinheiro, veículo, capacidade infinita ou desaparecimento instantâneo. O evento deveria preservar identidade e histórico já aplicáveis, possuir origem, saída física/temporal coerente e razão observável ao jogador. Não foi decidido que essa infraestrutura externa exista, quem oferece cuidado, seu custo ou se a saída será garantida.
 
@@ -622,7 +622,7 @@ Hipótese de benefício: negócios mais variados e sensíveis à urgência dos a
 
 ## Nova análise — acolhimento local sem parentes (2026-10-10)
 
-> **Revisão humana desta seção: PENDENTE.** O responsável não ficou satisfeito com o envio ao exterior como fallback para crianças/adolescentes sem parentes; pediu outra possibilidade. **Não aprovou ainda nenhuma solução complementar** à busca por parentes reais da SPEC.
+ > **Revisão humana desta seção: PARCIALMENTE REVISADO.** A análise comparativa antecede a **aprovação posterior de acolhimento municipal infantil em construção física**, registrada na SPEC. A busca opcional por famílias voluntárias, contratos externos e a solução a partir dos 18 anos continuam PENDENTES.
 
 **Alternativas a considerar:**
 
@@ -664,4 +664,22 @@ Hipótese de benefício: negócios mais variados e sensíveis à urgência dos a
 
 **Teste de consistência indispensável antes de aprovar:** cidade pequena sem parentes, sem família acolhedora, sem casa-lar construída, orçamento quebrado, ou duas crianças irmãs e somente uma vaga: nenhuma opção pode registrar acolhimento inexistente. Decidir tratamento temporário realmente possível sem prometer guarda, suprimentos, renda ou moradia gratuitos. O sistema regional é alternativa opcional de estudo, não solução mágica obrigatória. Abrigo institucional grande como padrão é menos alinhado às referências.
 
-**Status:** decisão 7 continua aberta. As modalidades e capacidades acima são pesquisa de referência, não implementação autorizada.
+**Status atualizado (2026-10-10):** a **construção municipal de acolhimento infantil está aprovada na SPEC**, mas a ausência de vagas, a transição aos 18 anos e outras formas de assistência ainda são questões abertas. Esta pesquisa de modalidades continua exploratória e não autoriza sistemas adicionais.
+
+
+## Decisão posterior de acolhimento infantil e pontos abertos — 2026-10-10
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** A construção de assistência social com **acolhimento de menores sem responsáveis** foi escolhida diretamente pelo responsável; o raciocínio sobre transição de vida adulta, ampliação de serviços e casos sem vagas ainda é pesquisa PENDENTE.
+
+**Decidido e promovido à SPEC:** procurar parentes reais aptos primeiro. Sem parentes viáveis, a criança ou adolescente pode morar temporariamente numa **unidade municipal física** que o jogador constrói, com capacidade/vagas reais, cuidadores SIMs, custos de pessoal e manutenção/alimentação reais; o atendimento ocorre automaticamente, sem gestão individual pelo jogador. O SIM mantém identidade, saúde, escolarização e histórico. Durante a permanência pode encontrar parentes aptos ou ser acolhido por outra família **real e viável**, sem criar novos agentes por conveniência. O foco atual são crianças/adolescentes **menores de 18 anos**.
+
+**Discussão não encerrada:**
+- **Completar 18 anos:** o responsável propôs ficar na unidade até 18 anos. Não foi decidida **expulsão imediata**, estada prolongada, garantia de moradia ou transferência automática externa se ainda não houver casa/emprego. Uma transição graduada compatível com renda, trabalho e moradia reais seria mais crível, mas exige definição proporcional.
+- **Unidade inexistente, cheia ou sem equipe/recursos:** acolhimento não ocorre ficticiamente; ainda falta decidir como a cidade lida com o menor até haver vaga, sem teletransporte nem adulto inventado. Avaliar atendimento regional condicionado ou solução emergencial temporária, sem tornar exterior um sumidouro mágico.
+- **Nova família:** não foi aprovada adoção jurídica detalhada nem um algoritmo específico de cadastro de famílias; deve haver adultos SIMs elegíveis, viabilidade de moradia, aceitação e transferência real do cuidado.
+- **Outros casos de assistência social:** o responsável deseja investigar aproveitamento da mesma construção para outras situações futuras (moradores sem moradia, idosos vulneráveis, crises familiares, acolhimento emergencial etc.). **Nada além do acolhimento infantil foi aprovado**. Serviços diferentes podem precisar de áreas, equipes e capacidades distintas; não converter automaticamente todas as vagas infantis em leitos multiuso.
+- **Reutilização visual de construção:** construir uma unidade municipal própria não obriga asset 3D exclusivo; investigar reutilização de modelo residencial/cívico com identidade visual própria, coerente com a regra já aprovada de compartilhar assets. Essa é possibilidade técnica, não dispensa vaga e equipe real.
+
+**Evidência de referência (não regra legal a reproduzir no jogo):** o MDS brasileiro distingue casa-lar para até 10 menores, abrigo para até 20 e acolhimento em **república para jovens egressos entre 18 e 21 anos**. Esse último modelo demonstra que o aniversário de 18 anos não precisa equivaler a desabrigo instantâneo. Fonte: https://www.gov.br/mds/pt-br/acoes-e-programas/suas/unidades-de-atendimento/servicos-de-acolhimento-para-criancas-adolescentes-e-jovens (atualizado 2023). **Nenhum limite numérico, faixa até 21 anos ou serviço de república foi aprovado no IndexCities.**
+
+**Recomendação da IA, PENDENTE:** manter uma única unidade de acolhimento infantil por tipo de serviço com administração agregada; depois decidir explicitamente o tratamento do jovem sem alternativa de moradia aos 18 anos e como sinalizar incapacidade/vagas indisponíveis ao jogador. Evitar upgrades de construção pronta sem decisão, especialmente porque a SPEC exige nova unidade para aumentar capacidade.
