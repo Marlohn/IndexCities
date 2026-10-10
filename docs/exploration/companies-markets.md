@@ -210,6 +210,18 @@ Ainda precisa ser pesquisado/calibrado:
 
 ---
 
+## Logística empresarial e fazendas — rodada posterior (2026-10-09)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou **5A (empresas compram autonomamente caminhões reais)** e **7A (área agrícola influencia capacidade produtiva)**. A sugestão adicional de fábrica iniciar com frota mínima integrada à aquisição **ainda está EM DISCUSSÃO**, portanto não foi oficializada na SPEC.
+
+**Caminhões 5A:** cada fornecedor precisa possuir/operar caminhão efetivamente disponível, comprado com seu **próprio caixa empresarial**, de oferta local ou importação real, com motorista, combustível, origem e entrega. Sem aumentar frotas gratuitamente para manter volume de pedidos. A compra é decisão econômica da empresa, não gerência manual de frota pelo jogador.
+
+**Complemento proposto pelo responsável, NÃO APROVADO automaticamente:** ao uma empresa assumir/ativar uma fábrica, **se houver dinheiro e caminhão físico à venda**, adquirir uma pequena frota-base automaticamente como parte dos investimentos iniciais (por exemplo, um caminhão quando realmente necessário). O custo deve sair do **caixa da empresa**, não novamente do Caixa municipal que já custeou a construção, respeitando compra, chegada, matrícula/identidade do veículo, origem e motorista reais. **Não assegurar capacidade de entrega** antes de veículo estar disponível ou incluir caminhão em todos os tipos de negócios sem necessidade. Essa opção tem potencial de reduzir arranque lento sem virar caminhão mágico; o responsável perguntou a opinião da IA, **ainda não aprovou** o pacote.
+
+**Fazendas 7A:** produção/limite de **Alimentos** se relaciona à **área cultivável física** e ao conjunto real de trabalhadores/equipamentos/capacidade. Mais área não garante mais vendas, comida automática ou operação acima de pessoal/recursos, preservando produção adaptativa. Não criar fertilidade variável do solo nem selecionar culturas por lote como requisito.
+
+---
+
 ## Compra de carros, operação de empresas e frota — decisões adicionais (2026-10-09)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável confirmou 2A (sem crédito privado inicialmente), 11B, 12A, 14A e 15A; operação pública 16B pertence à SPEC/serviços urbanos. Preços/quantidades/entregas detalhados continuam para especificação proporcional, não são aprovação de IA.
