@@ -435,3 +435,14 @@ Esse critério deve ser reaplicado em todas as próximas decisões.
 
 
 ---
+
+---
+
+## História consultável dos SIMs — decisão 10B e risco de escala (2026-10-10)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou o histórico individual detalhado (10B) com **apresentação inteligente**. Estratégias de armazenamento, limites e eventuais compactações ainda não foram aprovadas como arquitetura.
+
+**Produto na SPEC:** preservar acontecimentos importantes e eventos cotidianos reais, inclusive viagens, compras e atividades; apresentar primeiro resumos significativos, marcos e filtros temporais, com consulta sob demanda aos detalhes. Não bombardear o jogador com eventos banais nem transformar a seleção do SIM num log técnico.
+
+**Risco principal:** guardar muitos eventos por SIM ao longo de anos simulados pode inflar saves, memória, indexação e consultas. Investigar representação compacta orientada por eventos, índices por SIM/período, agregação visual que não falsifique nem descarte o detalhe exigido e carregamento sob demanda. Não guardar posição a cada quadro (isso não é uma viagem/evento) nem prometer retenção ilimitada barata sem benchmarks. Antes de implementar, medir crescimento de armazenamento, consulta e persistência em cidades grandes; se a opção B se provar inviável, voltar ao responsável para ajustar a SPEC — **não reduzi-la silenciosamente à opção A**.
+
