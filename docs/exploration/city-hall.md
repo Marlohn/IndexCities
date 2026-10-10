@@ -18,6 +18,28 @@
 
 ---
 
+## Ideia de pautas políticas — exploração inicial (2026-10-10)
+
+> **Revisão humana desta seção: PENDENTE.** O responsável perguntou **"e se tivesse o formato de pautas políticas?"** e explicitou **"ideia apenas"**. **Não é aprovação de modelo, votação, conselho, eleições, atores políticos, nova UI, regras ou programas.** O núcleo da Prefeitura na SPEC continua sendo centro de escolhas estratégicas com efeitos reais, presença de SIMs funcionários e leitura agregada das necessidades.
+
+**Hipótese central:** em vez de um catálogo plano de políticas, usar **pautas municipais** como unidade inteligível de decisão: *assunto → situação concreta → interesses e alternativas → decisão voluntária → execução real → consequências observadas*. Não transformar em missões, leis automáticas ou menu de bônus.
+
+**Duas origens complementares para uma pauta:**
+- **Demandas emergentes da cidade:** problemas ou tensões mensuráveis em SIMs, empresas e serviços reais (ex.: famílias incapazes de pagar viagens, sobrecarga escolar, déficit fiscal). Agregar tema e região, sem criar movimentos políticos/assinaturas/votos fictícios ou novas varreduras por SIM a cada quadro.
+- **Agenda proativa do jogador:** assuntos que a administração quer discutir sem esperar crise (ex.: revisar o regime de transporte gratuito/pago). O sandbox não pode forçar uma pauta por vez, nem impor governo reativo.
+
+**Exemplo conceitual com mecanismos já decididos na SPEC:** pauta "mobilidade e acesso ao emprego" exibe os SIMs com dificuldades efetivas de viagem, causas e orçamento. O jogador pode **manter o ônibus pago** ou **adotar ônibus gratuito** (decisão agregada 2C já aprovada), ou agir pela **infraestrutura e rede de paradas** já prevista; as alternativas não são exatamente o mesmo tipo de ação, e a pauta deve distingui-las. O resultado não é "felicidade +X": envolve saldo real do passageiro, receita/custo real do transporte, rotas disponíveis, acesso a vagas, tempo e participação efetiva do SIM. Não obrigar a abrir pauta para usar os controles já aprovados.
+
+**O que a ideia poderia acrescentar:** conexão entre demandas humanas, decisões estratégicas e acompanhamento de consequências ao longo do tempo; um fio narrativo de governo gerado por causalidade real, sem precisar de partidos, eleições, votos, facções, promessas ou políticos novos. Um tema pode ter **nenhuma solução perfeita** e o jogador pode escolher manter o status quo. Histórico cívico registra decisões e efeitos se aprovado depois.
+
+**Ponto crítico — não duplicar os desafios emergentes já aprovados:** desafios opcionais identificam **condições e oportunidades** e dão reconhecimento não econômico por melhora sustentada; **pautas seriam decisões de governo**, e não objetivos ou recompensas. Podem olhar para o mesmo sinal da simulação, porém não devem produzir duas notificações, missões, gamificação de discursos ou escolhas obrigatórias. Uma pauta também pode ser proativa e não se originar de crise.
+
+**Riscos e perguntas ainda abertos:** (1) pauta é apenas organização/apresentação dos controles existentes ou habilita novos regimes jurídicos/programas concretos? (2) surge automaticamente ou o jogador escolhe abrir? (3) incluir reação coletiva dos SIMs só quando houver comportamento/interesse modelado, **sem opinião fabricada**? (4) pautas podem ser debatidas por representantes/voto? **Nada disso foi proposto como requisito.** (5) Como evitar que pauta se torne tarefa repetitiva e que o jogador fique mudando regimes sem custos já realizados? (6) **Trabalho real dos funcionários da Prefeitura continua sem explicação**: criar pauta não exige, por si, servidor físico, e não autoriza inventar burocracia para justificar cargos. (7) Existência/ausência da Prefeitura já tem conflito de bootstrap e opção 3B verbal pendente: a pauta não resolve isso nem altera a SPEC.
+
+**Recomendação de design — para discussão, não aprovação:** experimentar conceitualmente uma **agenda híbrida e opcional**, alimentada por fatos reais e escolhas proativas; apresentar **poucas alternativas verdadeiramente diferentes**, seus custos e afetados; observar o que acontece de fato, sem transformar pautas em eleições ou missões. **Separar apresentação do assunto do mecanismo do sistema**: não aprovar um novo sistema de governo quando bastar uma interface melhor sobre decisões já aprovadas.
+
+---
+
 ## Direção atual: Prefeitura como centro de decisões de governo — 2026-10-10
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável expressou preferência por colocar **as escolhas estratégicas do jogador sobre como a cidade funciona** no centro da Prefeitura, buscando consequências de **qualidade de vida e economia dos SIMs**. Os exemplos, hipóteses e separação de funções abaixo são propostas da IA ainda **PENDENTES** de aprovação concreta.
