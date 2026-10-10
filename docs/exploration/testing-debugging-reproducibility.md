@@ -6,7 +6,7 @@
 
 ## Quinta rodada — síntese executiva final (2026-10-10)
 
-> **PENDENTE de revisão humana.** Pesquisa concluída **como exploração de alternativas**, não solução já validada. Os novos mecanismos e sua avaliação crítica estão nas [seções 22–23](#22-quinta-rodada-final--ideias-realmente-novas-vindas-de-outras-áreas).
+> **PENDENTE de revisão humana.** Pesquisa concluída **como exploração de alternativas**, não solução já validada. Os novos mecanismos e sua avaliação crítica estão nas [seções 22–23](#22-quinta-rodada-final--ideias-realmente-novas-vindas-de-outras-áreas-2026-10-10).
 
 **Diferença desta rodada:** além de procurar bugs que aconteceram, investigar **por que uma decisão/evento esperado não aconteceu**; medir se os testes realmente exploraram **estados do jogo**, e não somente linhas C#; verificar **fluxo local de dinheiro, propriedade e materiais**; investigar cenários raros, simetrias de grafos e performance adversarial sem transformar tudo em arquitetura obrigatória.
 
