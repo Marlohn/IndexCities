@@ -51,6 +51,19 @@ Auditoria reconciliada em **2026-10-07** com o histórico de conversas disponív
 
 ---
 
+
+### Rodada de produto — finanças, recursos, crime e memória individual (2026-10-10)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável confirmou 1A/2B/5A/6A/9A/10B; 3 (aterro finito) e 4 (alimentos sem perecibilidade) já tinham sido aprovadas noutra sessão e constam da SPEC. As reflexões sobre 7 e 8 ainda são **PENDENTES** de aprovação e revisão integral.
+
+- **[SPEC](SPEC.md):** crise fiscal municipal não termina a partida automaticamente (1A); jazidas simples de Areia e brita extraíveis localmente (2B); furto/roubo monetário por transferência real entre SIMs (5A); risco de origem de incêndio segundo uso/atividade do prédio (6A); fazendas tributadas como indústria de baixa densidade (9A); história individual detalhada com apresentação inteligente e consulta por camadas (10B).
+- **Melhorias futuras NÃO aprovadas:** roubo de bens físicos individuais ([sistemas urbanos](exploration/city-systems.md)) e tributação rural própria ([empresas e mercados](exploration/companies-markets.md)).
+- **Dúvida 7 — exterior como resposta automática a problemas difíceis:** [famílias e moradia](exploration/households-housing.md) guarda análise de riscos e da situação concreta de menores sem parentes. Evitar exterior como fonte ilimitada de vagas, assistência, dinheiro, mercadorias ou eliminação de problemas urbanos. **Nada aprovado.**
+- **Dúvida 8 — madeira renovável com área/capacidade reais:** [construção e logística](exploration/construction-materials-logistics.md) compara exploração de árvores finitas com manejo agregado de fonte renovável e futuro ciclo florestal. **Nada aprovado** sobre extração inesgotável, plantio/crescimento e capacidade de regeneração.
+- **Desempenho do histórico de SIMs:** [direção de produto](exploration/product-direction.md) registra risco de tamanho de saves e consultas; a decisão 10B não autoriza armazenar movimento por quadro nem reduzir silenciosamente a opção B.
+
+---
+
 ## Decisões adicionais de 2026-10-09 — infraestrutura e acesso
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou explicitamente 2B, 3A, 4A, 5B, 6B, 7B, 8B, 9A e 10B nesta rodada. A pergunta 1 (inadimplência de imposto imobiliário) **foi aprovada depois como 1A**: dívida real recuperável gradualmente, sem prazo de três meses (este pertence a aluguel/desocupação). Detalhes de calibração e soluções técnicas continuam não revistos integralmente.
