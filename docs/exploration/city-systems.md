@@ -1022,6 +1022,8 @@ Modelos a comparar:
 - **Influência urbana limitada:** edifício institucional pode influenciar fatores locais reais quando existir causa e mecanismo claros, mas **não atribuir bônus de felicidade/imposto/raio apenas por colocá-lo**.
 - **Construção obrigatória ou não:** ainda não decidir se será opcional, quando estará disponível ou como se integra ao início da cidade; não criar dependência agora.
 
+**Refinamento posterior aprovado em 2026-10-10:** o responsável concordou em priorizar **coordenação de serviços municipais reais**, realizada por SIMs funcionários, com **atendimento presencial pontual apenas quando tiver utilidade concreta**, e leitura das necessidades da população como papel secundário. Nenhum processo de coordenação, atendimento, visita obrigatória ou dependência operacional específica foi aprovado ainda; comparar [pesquisa focal](city-hall.md). Verificar para não duplicar Pátio Municipal de Obras, despachos já automáticos, manutenção e seus custos reais.
+
 **Questão orientadora:** o que um SIM ou o jogador ganha/consegue fazer de fato graças à construção física da Prefeitura, que já não exista no painel ou em outro serviço? Priorizar distinção observável, baixo microgerenciamento e estabilidade da economia.
 
 **Pesquisa focal de 2026-10-10:** [Prefeitura: comparação de 14 jogos e alternativas de gameplay](city-hall.md). **Decisão posterior:** papel operacional com SIMs empregados aprovado como principal e informação das demandas reais como secundário. **Pendente:** escolher trabalho concreto e atendimento, sem deduzir sistema novo de burocracia, filas ou taxa.
