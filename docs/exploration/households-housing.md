@@ -620,3 +620,16 @@ Hipótese de benefício: negócios mais variados e sensíveis à urgência dos a
 
 **Crítica à regra universal "tudo difícil vai para fora":** o exterior já ajuda com importação, trabalho pendular, comércio e migração, mas transformá-lo em solução automática de crise (crianças sem responsáveis, moradores sem teto, falta de hospital, lixo, falências) esconderia consequências urbanas, diluiria responsabilidade do jogador e introduziria oferta externa fictícia. Cada integração exterior precisa de condições, capacidade/economia próprias proporcionais ao caso, sem simular uma segunda cidade inteira. **Recomendação de pesquisa, não decisão:** exterior como fallback explícito e limitado, jamais descarte universal de problemas. Comparar saída tutelada para menores com permanência vulnerável ou assistência local apenas quando a solução afetar a implementação.
 
+## Nova análise — acolhimento local sem parentes (2026-10-10)
+
+> **Revisão humana desta seção: PENDENTE.** O responsável não ficou satisfeito com o envio ao exterior como fallback para crianças/adolescentes sem parentes; pediu outra possibilidade. **Não aprovou ainda nenhuma solução complementar** à busca por parentes reais da SPEC.
+
+**Alternativas a considerar:**
+
+- **Famílias acolhedoras reais e sem parentesco:** buscar domicílios de adultos SIMs existentes, com capacidade e disposição para assumir cuidado, moradia, despesas, educação e deslocamentos verdadeiros; decisões automáticas, sem gerenciar cada criança. **Risco:** nenhuma família adequada pode estar disponível, especialmente numa cidade pequena. O sistema não pode criar uma família fictícia; a elegibilidade e custos/consentimento precisam de regra.
+- **Acolhimento municipal simplificado:** serviço com vagas finitas, equipe, recursos e custos municipais reais, alocação automática, sem minijogo de adoção. **Risco:** novo serviço, instalação/asset e complexidade econômica; não equivale a aprovar toda uma rede de assistência social.
+- **Exterior com destino plausível:** transferência real a serviço externo apenas quando existir alternativa legitimamente disponível, sem desaparecimento automático. **Risco:** fallback infinito oculto; o responsável expressou insatisfação com esta abordagem.
+- **Permanência sem acolhimento:** preserva criança real na cidade e efeitos de vulnerabilidade, mas não fornece cuidado adequado. **Risco:** consequências graves e pouca ação significativa do jogador; não recomendar como solução normal.
+
+**Recomendação preliminar (não aprovada):** explorar primeiro **família acolhedora local não aparentada**, sem obrigatoriedade de aceitar e sem criar recursos. Resolver explicitamente o caso limite sem família disponível antes de aprovar essa opção como comportamento completo. Considerar serviço municipal pequeno como último recurso se a simulação local não conseguir garantir cuidado. Não transformar hipótese em SPEC sem escolha expressa.
+
