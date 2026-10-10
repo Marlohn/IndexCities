@@ -34,6 +34,17 @@
 
 ---
 
+## Regras adicionais de 2026-10-10 — restituição, licença, prisão e incineração
+
+> **Revisão humana: PARCIALMENTE REVISADO.** O responsável escolheu explicitamente **2 atual (incineração integral), 4B, 6C e 10C**. As escolhas oficiais estão na SPEC; a avaliação de custos internos e hipóteses futuras abaixo ainda não recebeu aprovação integral.
+
+- **Incineração:** a regra de gerar cinzas/rejeitos reais e remetê-los a aterro (antiga 2A) foi solicitada **apenas como possível evolução futura, NÃO aprovada agora**. O produto atual **elimina 100% do lixo realmente processado no incinerador**, poupando subinventário, retorno e destino de rejeitos. A coleta, o transporte de aterros antigos, a capacidade por tempo, o custo, os funcionários e a poluição permanecem reais. Não reproduz a conservação física de massa: é abstração de gameplay expressamente autorizada, **não alegação de que incineradores reais não produzem cinzas**. Corrigir leituras antigas desta exploração que exigiam sobra sólida desde o lançamento.
+- **Restituição 4B:** se o autor de furto/roubo em dinheiro é de fato capturado, pode-se tirar de seu **saldo atual real** até o valor efetivamente roubado para devolver ao SIM vítima. Sem dinheiro suficiente, recuperação parcial/zero; não indenizar com prefeitura nem criar dívida nova automaticamente. Evitar rotina de rastreamento de todas as notas; um vínculo entre ocorrência, autor, vítima e perda basta para esse evento.
+- **Licença médica 6C:** quando terminar o direito ao período de licença paga, trabalhador ainda incapacitado não recebe salário por trabalho que não existe; empregador privado ou serviço municipal decide por manter vínculo sem remuneração ou dispensar, sujeito a necessidade operacional/caixa. Não estender licença eternamente nem pedir ao jogador demissão individual.
+- **Emprego no encarceramento 10C:** preso não pode comparecer ao serviço e empresa/instituição decide autonomamente preservação do vínculo ou desligamento, com custos e necessidade de pessoal efetivos. Se mantiver vaga durante prisão, não criar trabalhador substituto grátis nem pagamento por atividade inexistente. Como a cidade já tem **um emprego ativo por SIM**, impedir vínculos simultâneos sem nova decisão.
+
+---
+
 ## Como ler este documento
 
 Este arquivo é material de exploração temática. Quando houver divergência, use:
