@@ -607,3 +607,16 @@ Hipótese de benefício: negócios mais variados e sensíveis à urgência dos a
 **Decidido:** durante o prazo de 3 meses após aquisição para moradia própria, a família ocupante **paga aluguel ao novo dono real** enquanto continuar morando no imóvel, sem retroatividade pelo período anterior sem proprietário. O valor/reajuste segue as regras gerais do aluguel na SPEC; não se introduz reajuste automático por mudança de dono.
 
 **Em aberto:** eventual calibração futura dos 3 meses, critérios concretos da escolha automática entre emigrar e permanecer na cidade sem moradia, e prioridade/elegibilidade de herdeiros. **Risco a evitar:** criar aluguel para a Reserva Global, comprador garantido, emigrar automaticamente todas as famílias ou simular reintegração jurídica complexa. A desocupação ao vencer a tolerância está decidida; a saída após compra para moradia própria tem prazo aprovado de 3 meses, contado da aquisição.
+
+---
+
+## Exterior como válvula de escape — análise ainda não aprovada (2026-10-10)
+
+> **Revisão humana desta seção: PENDENTE.** O responsável pediu avaliar a ideia de remeter ao exterior os casos difíceis de resolver no primeiro modelo; não aprovou a regra geral nem a saída automática de menores sem responsáveis.
+
+**Caso concreto:** a SPEC já procura parentes reais para crianças/adolescentes sem adultos no domicílio. Na falta deles, a decisão continua aberta; assistência social municipal própria está adiada.
+
+**Hipótese em discussão:** uma criança sem responsável local poderia sair pela conexão exterior **apenas se houver destino/acolhimento externo definido pelo modelo**, sem inventar parente local, dinheiro, veículo, capacidade infinita ou desaparecimento instantâneo. O evento deveria preservar identidade e histórico já aplicáveis, possuir origem, saída física/temporal coerente e razão observável ao jogador. Não foi decidido que essa infraestrutura externa exista, quem oferece cuidado, seu custo ou se a saída será garantida.
+
+**Crítica à regra universal "tudo difícil vai para fora":** o exterior já ajuda com importação, trabalho pendular, comércio e migração, mas transformá-lo em solução automática de crise (crianças sem responsáveis, moradores sem teto, falta de hospital, lixo, falências) esconderia consequências urbanas, diluiria responsabilidade do jogador e introduziria oferta externa fictícia. Cada integração exterior precisa de condições, capacidade/economia próprias proporcionais ao caso, sem simular uma segunda cidade inteira. **Recomendação de pesquisa, não decisão:** exterior como fallback explícito e limitado, jamais descarte universal de problemas. Comparar saída tutelada para menores com permanência vulnerável ou assistência local apenas quando a solução afetar a implementação.
+
