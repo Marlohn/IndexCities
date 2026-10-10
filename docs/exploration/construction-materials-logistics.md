@@ -26,7 +26,7 @@
 
 **Custo de escopo conscientemente aceito:** adiciona ao menos **dois tipos de instalação físicos** (extração e refino), intermediário com estoque/logística, negócios e empregos, além de recursos de mapa. Não introduzir automaticamente navios, portos, oleodutos, refinarias públicas, profissão especializada ou grupo grande de produtos petroquímicos. Pode reutilizar componentes 3D quando adequado, sem upgrade de prédio existente. **A eventual necessidade de petróleo no asfalto** é hipótese a reavaliar quando a cadeia do Asfalto entrar na implementação; a decisão 7C não autoriza alterar silenciosamente outras receitas industriais.
 
-**Lacunas antes de implementar o detalhe:** jazidas finitas versus produção geologicamente persistente limitada; extração em terreno terrestre/apoio técnico, acesso e logística compatíveis com mapa plano; capacidade/rendimento da refinaria e balanço físico dos estoques; viabilidade de importar Petróleo bruto separadamente; participação das empresas privadas e escolha automática de fornecedores. Confrontar valor do gameplay com assets/performance; números e taxas são calibração, não rodada longa de perguntas.
+**Decisões posteriores APROVADAS na SPEC (8A e 9A):** jazidas de Petróleo bruto não se esgotam por produção acumulada no primeiro modelo, mas sua vazão e trabalho real são finitos; refinarias privadas podem importar Petróleo bruto com dinheiro e transporte reais. **Lacunas remanescentes de calibração/integridade:** área/acesso físico das instalações, capacidade/rendimento da refinaria, balanço dos estoques, escolha automática de fornecedores e desempenho em mapa plano; não tratar a existência de jazida ou refinaria como estoque gratuito.
 
 ---
 
