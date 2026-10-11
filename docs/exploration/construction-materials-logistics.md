@@ -10,6 +10,15 @@
 
 ## Petróleo inicial com vazão finita e comércio exterior — escolhas 8A/9A (2026-10-10)
 
+### Obra desconectada e aviso causal — pergunta 6 (2026-10-11)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou o comportamento registrado na SPEC; sugestões de interface/teste continuam PENDENTES.
+
+**Regra oficial:** um prédio em posição fisicamente válida **pode ter obra confirmada sem ligação viária**, mas **não recebe caminhões, materiais ou equipes por uma rota que não existe e não avança** até haver acesso e entrega real. A interface avisa «Obra parada: sem acesso para entrega de materiais». Ao construir a rua que conecte efetivamente a origem logística à obra, transporte/trabalho/progresso retomam **quando também existirem materiais, equipes, dinheiro e condições operacionais reais**. **A primeira Prefeitura**, colocada no começo antes da liberação das ruas, também pode ter sua posição confirmada e liberar catálogo mesmo sem conseguir concluir a obra naquele instante.
+
+**Separar 2 casos:** (1) sobreposição ou footprint/posição fisicamente inválidos **impedem confirmar**; (2) falta temporária de rua deixa **projeto confirmável com obra parada** e alerta. Rua translúcida apenas planejada não abre acesso. Não confundir falta de caminhão, equipe ou estoque com falta de rota quando a rede já conecta. Implementação proporcional: usar checagem de conectividade/rota já necessária ao transporte, invalidando quando vias mudarem, sem varrer canteiros a cada frame. Validar entrega física e retomada antes de sofisticar UI.
+
+
 > **Revisão humana: PARCIALMENTE REVISADO.** O responsável escolheu explicitamente **8A** (jazidas sem esgotamento na versão inicial) e **9A** (petróleo bruto importável para refinarias); regras oficiais na SPEC.
 
 - **Jazida real inesgotável em quantidade acumulada:** não existe contador de reserva que zera com extração, mas **nenhuma mina/refinaria produz sem capacidade, instalação, trabalho, insumos, custo, tempo e estoque real**. Assim, a jazida sustenta desenvolvimento por anos sem microgerenciar esgotamento periódico; espaço, operação e produção por período seguem limitados. É abstração geológica intencional, não regeneração física de petróleo. Reservas finitas podem ser reavaliadas apenas futuramente.
