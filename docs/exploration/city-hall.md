@@ -6,13 +6,13 @@
 >
 > **Critério de leitura:** diferenciar mecânica observada em outro jogo, hipótese proposta para IndexCities, exigências já aprovadas na SPEC e vantagens alegadas/experiências comunitárias. Fontes oficiais/de desenvolvedores preferidas; wiki de fãs e comunidades rotuladas como tal. Jogos de épocas diferentes são comparados quanto ao *padrão de gameplay*, não copiados.
 
-## Auxílio-aluguel, iluminação e possível van escolar — decisões de 2026-10-11
+## Auxílio-aluguel, iluminação e van escolar municipal B — decisões de 2026-10-11
 
-> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou **4A** e **5A**; os contornos do serviço de van escolar são apenas pesquisa **PENDENTE**.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou **4A**, **5A** e posteriormente **transporte escolar B para escolas e creches com acompanhamento real**; detalhes quantitativos e de implantação seguem em pesquisa **PENDENTE**.
 
 - **4A aprovada:** quando o Caixa não permitir pagar o auxílio-aluguel a todos os beneficiários elegíveis, **priorizar risco de desocupação/perda de moradia concreto** com regras automáticas baseadas no contexto financeiro e prazo real, registrando gastos pagos/beneficiários/impedimentos. Não confundir seleção com valor garantido, nem alterar o contrato sem transferência.
 - **5A aprovada:** iluminação pública faz parte da rua urbana, depende de energia real, gera despesa do Caixa e precisa constar nas finanças da Prefeitura sem duplicar despesas existentes. Posicionamento individual de postes não é obrigatório.
-- **Serviço de van escolar — ideia em discussão, NÃO aprovada:** se escolhido, deve ser uma **oferta municipal opcional/ajustável por decisão agregada** ou infraestrutura/serviço normal, não gerência de rotas por família. Poderia reduzir faltas por acesso e necessidade de acompanhante, mas demanda veículo, motorista, combustível, assentos, eventual monitor de creche e custo no orçamento. **Decidir escopo A/B/C com responsável antes da SPEC.**
+- **Van escolar municipal — B APROVADA:** oferta opcional administrada pela Prefeitura **para escolas e creches**, com veículo real, motorista SIM real, **monitor SIM adicional quando transportar crianças pequenas**, combustível, vagas, rotas e horários existentes, sem gerência por família. **Todas as despesas efetivas do serviço devem constar detalhadamente no Caixa**, e o jogador pode observar oferta/cobertura, demanda e ausências escolares reais sem inventar alunos transportados, tarifa, vagas, agentes ou receitas. Forma de ativação/expansão, aquisição/guarda e cadência de operação são para detalhamento proporcional, sem nova garagem por inferência.
 
 ---
 
