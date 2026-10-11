@@ -10,12 +10,15 @@
 
 ## Novas escolhas de construção e apresentação — Convencional (2026-10-11)
 
+**Esclarecimento 6 confirmado para o Convencional (2026-10-11):** prédio em posição fisicamente válida é **confirmável mesmo sem rua de entrega**, mas fica **«Obra parada: sem acesso para entrega de materiais»** até que exista rota real para caminhões, materiais e equipes, sem progresso fictício. Mostrar aviso na prévia. Usar estados visualmente distintos para **inválido fisicamente (não confirma)** e **válido mas sem acesso (confirma/aguarda)**. Uma rua apenas planejada não desbloqueia logística.
+
+
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** As opções 9B e 10, além das escolhas de história urbana e edifícios mistos, foram registradas na SPEC; comentários de interface continuam PENDENTES.
 
 - **9B aprovado:** pincel/área para vários pequenos ornamentos/vegetação com prévia, contagem/custo agregado e itens realmente posicionados, sem construção de edifícios em lote e sem ignorar custos/logística do Convencional.
 - **10 aprovado:** noite e dia acompanham o horário do próprio relógio da cidade; não criar um relógio visual paralelo.
-- **8 EM DISCUSSÃO:** trocar a aparência de prédio pronto **não está aprovado**. Avaliar se dá mais liberdade de construção sem assumir alteração estrutural; caso exista, preservar tipo/lotação/entrada/proprietário e esclarecer o pagador real/custo/execução. Não permitir que uma variante visual mude valor do imóvel por magia.
-- **19 PENDENTE:** delimitar e nomear bairros não foi aprovado; overlays territoriais e desafios com área afetada já funcionam conceitualmente sem desenhar distritos.
+- **8B APROVADA PARA TESTE:** trocar a aparência de prédio pronto por **variante pré-composta compatível, com custo real**, preservando lote, porte, capacidade, acesso, atividade, proprietário e histórico. Ainda requer decisão específica sobre **autorização/pagador de alteração solicitada em imóvel privado de SIM/empresa**, além de custo/tempo/material coerentes. Não alterar valor imobiliário automaticamente por trocar cor.
+- **19 ADIADA EXPRESSAMENTE:** sem ferramenta própria de desenhar/nomear bairros no modelo inicial; overlays territoriais e desafios podem continuar indicando áreas afetadas sem distritos manuais.
 - **17B aprovado no produto:** algumas construções prontas combinam lojas e residências reais; as interfaces de seleção/diagnóstico devem identificar as partes distintas, sem impor editor de pavimentos.
 
 ---
@@ -38,7 +41,7 @@
 
 - **Produto decidido:** nenhuma ferramenta de evoluir, melhorar porte, ampliar área ou capacidade estrutural de edifício **já concluído** no modelo inicial. O jogador pode **construir novas unidades** com recursos reais, preservando reparos, demolição, realocação e adaptações empresariais compatíveis sem upgrade de porte já aprovados.
 - **Exemplo obrigatório:** garagem de ônibus com 20 vagas e 20 ônibus **não pode ser ampliada para 30**; para aumentar a frota além de 20, constrói-se outra garagem com capacidade própria. O controle agregado 3C para comprar ônibus ainda cabe onde existirem vagas.
-- **Possível melhoria futura, NÃO aprovada:** ampliação/evolução visual de edifícios prontos, com novos assets, custos, obras e impacto operacional. Reavaliar somente se oferecer ganho claro de gameplay suficiente para justificar arte, interface, estados e simulação.
+- **Possível melhoria futura, NÃO aprovada:** ampliação estrutural/evolução de porte de edifícios prontos, com novas obras, custos e impacto operacional. **Não confundir com a troca apenas estética 8B**, aprovada para teste com custo real e sem upgrade de capacidade.
 
 ---
 
