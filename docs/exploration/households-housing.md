@@ -22,6 +22,19 @@
 
 ---
 
+## Complementos aprovados — família, moradia e migração (2026-10-11)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** Escolhas 1A, 2A, 5A, 8C e 9A já constam da SPEC.
+
+- **1A:** creches municipais gratuitas; atendimento real continua sujeito a vagas, acesso, pessoal e custos públicos.
+- **2A:** separação de casal gera um **responsável principal elegível** para filhos menores segundo cuidado/moradia reais; outro responsável pode visitar fisicamente, sem processo jurídico detalhado. Substitui a pendência anterior sobre definição geral de moradia dos filhos.
+- **5A:** após incêndio, permanência na casa somente se habitável; caso contrário, busca automática por moradia real e possibilidade de falta de moradia. Proprietário real mantém obrigação do reparo, sem compensação fictícia.
+- **8C:** adultos podem emigrar independentemente; menores seguem seus responsáveis efetivos, respeitando guarda, vínculos e deslocamentos. Não presumir saída de todos os familiares nem menor emigrando sozinho.
+- **9A:** eventos pessoais positivos reais podem melhorar temporariamente satisfação conforme contexto, sem bônus monetário nem obrigatoriedade de festa.
+- **Validação proporcional:** acesso à creche, escolha de responsável e visitas, habitabilidade após fogo, movimentação da família e tempo/intensidade de satisfação. Não introduzir pensão alimentícia, guarda judicial ou indenização adicional sem aprovação.
+
+---
+
 ## Escolhas adicionais aprovadas (2026-10-11)
 
 > **Revisão humana: PARCIALMENTE REVISADO.** Dez escolhas foram aprovadas; este documento resume oito ligadas a famílias e finanças. A SPEC permanece oficial.
