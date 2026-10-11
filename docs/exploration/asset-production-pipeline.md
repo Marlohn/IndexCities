@@ -8,7 +8,7 @@
 
 **Produção já pode começar** com linguagem visual, modelos provisórios e uma cena representativa. **Produção em massa, não**, até validar câmera, escala, vias/calçadas, portas, colisão/ocupação e desempenho. Não precisamos conhecer a quantidade definitiva de edifícios para fazer esse primeiro trabalho.
 
-**Mudança importante desde a pesquisa anterior:** a SPEC de 2026-10-11 aprovou **dois modos, Criativo e Convencional**, e valoriza **construção compreensível sem leitura, variedade estética e feedback visual**. Isso aumenta a importância de silhuetas fáceis de reconhecer, miniaturas consistentes, variantes visuais e acessos perceptíveis; **não** aprova automaticamente todos os novos objetos decorativos nem como funcionam SIMs/economia no Criativo.
+**Mudança importante desde a pesquisa anterior:** a SPEC de 2026-10-11 aprovou **dois modos, Criativo e Convencional**, e valoriza **construção compreensível sem leitura, variedade estética e feedback visual**. Isso aumenta a importância de silhuetas fáceis de reconhecer, miniaturas consistentes, variantes visuais e acessos perceptíveis. **Após a rodada de 2026-10-11**, a SPEC já aprovou moradores persistentes com rotinas simplificadas no Criativo e decoração com efeitos locais no Convencional. **Continuam abertos** o catálogo concreto de ornamentos, número de variantes e qualquer editor modular de peças pelo jogador.
 
 ## Viabilidade de modularidade no lançamento — reavaliação de 2026-10-11
 
