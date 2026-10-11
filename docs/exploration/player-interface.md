@@ -8,6 +8,18 @@
 >
 > A autoridade de produto continua sendo `docs/SPEC.md`. Este documento concentra pesquisa, alternativas, referências e hipóteses sobre interface e ferramentas do jogador. Quando uma decisão fecha, o resultado oficial deve ser promovido para `docs/SPEC.md`; este arquivo preserva o raciocínio e o material ainda em formação.
 
+## Novas escolhas de construção e apresentação — Convencional (2026-10-11)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** As opções 9B e 10, além das escolhas de história urbana e edifícios mistos, foram registradas na SPEC; comentários de interface continuam PENDENTES.
+
+- **9B aprovado:** pincel/área para vários pequenos ornamentos/vegetação com prévia, contagem/custo agregado e itens realmente posicionados, sem construção de edifícios em lote e sem ignorar custos/logística do Convencional.
+- **10 aprovado:** noite e dia acompanham o horário do próprio relógio da cidade; não criar um relógio visual paralelo.
+- **8 EM DISCUSSÃO:** trocar a aparência de prédio pronto **não está aprovado**. Avaliar se dá mais liberdade de construção sem assumir alteração estrutural; caso exista, preservar tipo/lotação/entrada/proprietário e esclarecer o pagador real/custo/execução. Não permitir que uma variante visual mude valor do imóvel por magia.
+- **19 PENDENTE:** delimitar e nomear bairros não foi aprovado; overlays territoriais e desafios com área afetada já funcionam conceitualmente sem desenhar distritos.
+- **17B aprovado no produto:** algumas construções prontas combinam lojas e residências reais; as interfaces de seleção/diagnóstico devem identificar as partes distintas, sem impor editor de pavimentos.
+
+---
+
 ## Rodada aprovada de experiência e ferramentas (2026-10-11)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** A decisão humana foi promovida à SPEC; as sugestões de UI abaixo seguem PENDENTES de validação.
