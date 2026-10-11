@@ -1,8 +1,8 @@
 # IndexCities — Pesquisa de Prefeitura como construção e gameplay
 
-> **Revisão humana: PARCIALMENTE REVISADO** — **decidido pelo responsável em 2026-10-11:** direção C (gestão + programas concretos + maior participação de moradores), Prefeitura como primeira construção, liberação do restante após confirmação de posicionamento, funcionários administrativos SIMs com função genérica, sem burocracia obrigatória, e ausência posterior sem bloqueio da cidade. A pesquisa histórica e os detalhes novos ainda não discutidos continuam **PENDENTES**.
+> **Revisão humana: PARCIALMENTE REVISADO** — **decidido pelo responsável em 2026-10-11:** direção C (gestão + programas concretos + maior participação de moradores), Prefeitura como primeira construção, liberação do restante após confirmação de posicionamento, funcionários administrativos SIMs com função genérica, sem burocracia obrigatória, e ausência posterior sem bloqueio da cidade. O responsável também aprovou **1B/2A/3B/4A** (solicitações originadas por SIMs, liberdade de resposta, interesses divergentes e apresentação inicial das políticas existentes); a pesquisa histórica e detalhes não discutidos continuam **PENDENTES**.
 >
-> **Fonte de verdade:** [SPEC](../SPEC.md) contém as decisões vigentes. As partes antigas desta pesquisa sobre necessidade de cargos operacionais específicos, Prefeitura não obrigatória na abertura e conflito não resolvido da opção 3B são **históricas e foram superadas**. Catálogo de programas, transmissão de pedidos/opiniões, participação organizada, interface e efeitos específicos **ainda não foram aprovados**.
+> **Fonte de verdade:** [SPEC](../SPEC.md) contém as decisões vigentes. As partes antigas desta pesquisa sobre necessidade de cargos operacionais específicos, Prefeitura não obrigatória na abertura e conflito não resolvido da opção 3B são **históricas e foram superadas**. O fato de **SIMs reais poderem fazer solicitações** está aprovado; **canais e frequência dessas solicitações**, apresentação de interesses divergentes, catálogo de programas, interfaces e efeitos específicos **permanecem em aberto**.
 >
 > **Critério de leitura:** diferenciar mecânica observada em outro jogo, hipótese proposta para IndexCities, exigências já aprovadas na SPEC e vantagens alegadas/experiências comunitárias. Fontes oficiais/de desenvolvedores preferidas; wiki de fãs e comunidades rotuladas como tal. Jogos de épocas diferentes são comparados quanto ao *padrão de gameplay*, não copiados.
 
@@ -16,9 +16,27 @@
 - **Menus e operação:** concentrar gestão da cidade, impostos, Caixa, crédito, serviços, transporte, políticas e visão humana dos efeitos; **programas específicos só entrarão na SPEC após decisão própria**. Sem multiplicadores abstratos, sistema eleitoral/facções ou minigames por inferência. Compra pública com prioridade para comércio local foi citada apenas como hipótese e **não aprovada**.
 - **Conflito histórico 3B resolvido:** a preferência antiga de paralisar toda administração sem Prefeitura foi substituída pela **obrigatoriedade da colocação inicial, com liberação imediata e sem bloqueio posterior**. Sistemas básicos existentes não param por ausência de prédio/equipe; dependências de futuros programas precisam de definição própria.
 
-**Ainda em discussão, não implementação autorizada:** origem e forma dos pedidos/opiniões e eventuais conflitos entre grupos, que consequências uma resposta cria, seleção de programas sociais/econômicos específicos, interfaces das pautas e visitas presenciais. O nível de participação **C é aprovado como direção**, não como aprovação dessas mecânicas particulares.
+**Agora aprovados:** origem de pedidos em SIMs reais (não só alertas), liberdade do jogador de agir ou ignorar sem promessa/aceite formal obrigatório, apresentação de interesses conflitantes de grupos afetados e uso inicial das políticas municipais já decididas. **Ainda em discussão:** como SIMs enviam e agrupam pedidos, como expressam opiniões, acompanhamento e interface das pautas, programas novos e visitas presenciais. O nível de participação **C é aprovado como direção**, não como aprovação dessas mecânicas particulares.
 
 **Leitura histórica:** as seções abaixo preservam pesquisas e alternativas anteriores (incluindo afirmações de que a Prefeitura estava adiada ou que faltava justificar cada servidor). **Nesses pontos, prevalecem as decisões acima e a SPEC**, não o estado histórico registrado na data de cada estudo.
+
+---
+
+## Quatro escolhas confirmadas — 1B, 2A, 3B e 4A (2026-10-11)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** As quatro escolhas foram explicitamente aprovadas; a redação de riscos e oportunidades é síntese da IA ainda não revisada integralmente. Regras vigentes estão na [SPEC](../SPEC.md).
+
+- **1B — solicitações de SIMs reais:** moradores podem apresentar pedidos baseados em situações que eles próprios vivenciam. Ex.: pai ou mãe sem vaga escolar para seu filho solicita providências. Mostrar pedidos relacionados de forma agregada e rastreável, sem inventar autor ou requerimento quando apenas um indicador detectou a dificuldade. Não foi definido se o envio é remoto, presencial ou por outro meio, nem sua cadência; **1C (visita obrigatória) não foi escolhida**.
+- **2A — jogador decide livremente:** a pauta informa o problema e as pessoas afetadas; o jogador pode agir pelos meios já existentes, escolher outra solução ou ignorar. Não há aceite/recusa formal, promessa, prazo ou punição especial pelo simples pedido sem resposta. Os efeitos reais da necessidade continuam naturalmente; não confundir pedido atendido com problema solucionado. As alternativas 2B/2C **não foram aprovadas**.
+- **3B — diferentes interesses:** SIMs e grupos realmente afetados podem ter interesses divergentes sobre a mesma decisão; revelar consequências e grupos afetados sem declarar que todos de uma categoria concordam. Sem votação, facções ou parlamento por inferência; a opção 3C **não foi aprovada**.
+- **4A — primeiras políticas:** organizar na Prefeitura as escolhas já definidas (impostos imobiliários por seis categorias, ônibus gratuito/pago, estacionamento público gratuito/pago) e observar seus custos, afetados e resultados, preservando os controles já existentes. **Não é liberação automática de novas políticas**.
+
+### Ideias registradas para avaliar depois — NÃO aprovadas
+
+- **4B — educação/escolarização de adultos:** possibilidade de o jogador financiar formação real para adultos, usando profissionais, vagas, turnos e estrutura escolar conforme capacidades e custos verdadeiros. **A avaliar:** se muda oportunidades de emprego de forma interessante sem criar profissões/habilidades fictícias, formação instantânea ou emprego garantido; se deve ser uma política opcional ou comportamento educacional normal. Nenhuma regra de programa nem direito novo foi aprovado.
+- **4C — compras públicas:** possibilidade de uma política municipal que altere o critério de escolha entre fornecedores locais e menor custo total nas compras efetivamente realizadas com o Caixa. **A avaliar:** escopo das compras, opções economicamente comparáveis, contratos/estoque/logística real e impacto na economia da cidade; evitar duplicar a preferência local já aprovada para reposição de **empresas privadas**. Não existe ainda um controle municipal aprovado de preferência de compras.
+
+**Próximos detalhes de alto valor:** (a) canal e seleção não repetitiva dos pedidos reais; (b) como mostrar interesses sem inventar opiniões; (c) tela enxuta ligando pedido → causas → ferramentas/decisões existentes → resultado real. Os programas 4B e 4C ficam como candidatos, não exigem definição imediata. O restante das propostas abaixo é pesquisa histórica, não uma reabertura das quatro escolhas.
 
 ---
 
