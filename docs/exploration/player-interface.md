@@ -8,6 +8,16 @@
 >
 > A autoridade de produto continua sendo `docs/SPEC.md`. Este documento concentra pesquisa, alternativas, referências e hipóteses sobre interface e ferramentas do jogador. Quando uma decisão fecha, o resultado oficial deve ser promovido para `docs/SPEC.md`; este arquivo preserva o raciocínio e o material ainda em formação.
 
+## Projetos persistentes, região e conquistas — rodada de 30 (2026-10-11)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** Escolhas 26A, 29A e 30A registradas na SPEC; detalhes de UI permanecem PENDENTES.
+
+- **26A:** planejamento visual não confirmado persiste em save e autosave configurável existentes, sem comprometer recursos nem virar obra física ao carregar.
+- **29A:** desafios emergentes podem agregar mesma causa regional sem requerer ferramenta para desenhar/nomear bairros, que continua adiada.
+- **30A:** reconhecer desafios opcionais pela linha do tempo de eventos reais já aprovada, com registro visual discreto e detalhes sob demanda; sem outro sistema de troféus duplicados.
+- **Prefeitura:** organizar menu em políticas, gestão e consulta (candidato de apresentação ainda não aprovado), sem criar decisões individuais por SIM ou tornar relatórios ferramentas exclusivas de leitura obrigatória.
+
+
 ## Identidade comercial e ambiente visual — decisões 5A, 9B, 10A (2026-10-11)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** Aprovações do responsável estão na SPEC; detalhes visuais abaixo são **PENDENTES** para experimento.
