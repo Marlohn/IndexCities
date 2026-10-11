@@ -53,6 +53,54 @@ Material de projetos anteriores pode ser consultado no futuro como pesquisa, mas
 
 ---
 
+## Público amplo e dois modos de jogo — decisão de 2026-10-11
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável **aprovou** a existência dos modos **Criativo/Convencional** e cinco direções de experiência: liberdade criativa sem bloqueio econômico/logístico; construção visual intuitiva; cidade viva; expressão estética; interface em camadas. Isso já está na [SPEC](../SPEC.md). **As alternativas técnicas, trade-offs, exemplos e critérios de teste abaixo são proposta da IA, PENDENTES de revisão.** Não são arquitetura ou regras de gameplay aprovadas.
+
+### O objetivo real
+
+Atender tanto quem quer criar uma cidade sem ler, administrar ou otimizar (inclusive crianças pré-alfabetizadas) quanto quem quer experimentar a cadeia completa de consequências urbanas. Não associar automaticamente idade a modo: um adulto pode preferir Criativo e uma criança pode mais tarde descobrir o Convencional. **Uma experiência profunda não obriga todo jogador a lidar com a profundidade.**
+
+| Camada | Criativo: resultado desejado | Convencional: resultado desejado |
+| --- | --- | --- |
+| Construir | Selecionar, posicionar e ver a composição crescer sem dinheiro, entrega, equipe ou espera logística bloqueantes | Mesma ferramenta visual, mas o resultado respeita custo, materiais, obra, acesso, direitos e simulação |
+| Explorar | Reconhecer imediatamente o que foi construído, personalizar e observar atividade | Observar consequências físicas, humanas e econômicas verdadeiras |
+| Entender | Nenhuma leitura obrigatória para montar a cidade | Primeiro ícone/sinal claro, depois causas e dados consultáveis |
+| Corrigir | Reverter erros de manipulação com pouco atrito | Corrigir erro de interface sem reverter gratuitamente obras, transações ou impactos efetivamente realizados |
+
+### Como construir isso sem duplicar o jogo — proposta, não decisão
+
+**Base compartilhada:** mesmo mundo 3D, terreno, câmera, assets, catálogo, posicionamento assistido, desenho de ruas e apresentação. As diferenças de regra devem estar concentradas onde importam para a experiência; não espalhar dezenas de verificações de modo por cada SIM, empresa e edifício.
+
+**Ponto decisivo:** o Criativo **não é apenas** o Convencional com uma carteira infinita. Se ele continuar exigindo entrega de materiais, equipe e espera, a criança não consegue construir; se receber dinheiro/recursos do nada enquanto a economia integral roda, quebramos a causalidade do modelo convencional. Essas abordagens precisam ser distinguidas.
+
+**Três caminhos para o funcionamento interno do Criativo (todos ainda abertos):**
+
+1. **Simulação convencional inteira, construção livre:** reaproveita a maior parte dos sistemas, mas pode gerar empresas quebradas, prédios vazios e operações economicamente incoerentes. Alto risco de excesso de exceções.
+2. **Cidade principalmente visual, com circulação/atividade ambiental:** entrega construção e movimento facilmente; sacrifica histórias e causalidade individual reais no Criativo. Não chamar personagens decorativos de SIMs econômicos persistentes.
+3. **Simulação seletiva compartilhada:** preservar circulação e funcionamento de parte da cidade, sem obrigar subsistemas econômicos para a criação funcionar. Equilíbrio potencialmente melhor, **mas** maior custo de fronteiras, integração e testes; não inventar esse subsistema sem evidência.
+
+**Recomendação de investigação:** uma cidade nova escolhe um perfil de regras; o **editor e os assets permanecem os mesmos** e a exceção de construção fica bem delimitada. Comparar a opção visual e a opção seletiva com cenas de bairro, tráfego e serviços antes de decidir o que constitui "cidade viva" no Criativo. **Escolha por cidade, troca de modo e separação de saves são recomendações, não decisões aprovadas**; não adicionar conversão ou herança especial para um segundo jogador.
+
+**Não fazer agora:** engine paralela, economia fictícia para viabilizar animações, camada genérica de perfis configuráveis, modos de dificuldade adicionais, tutorial obrigatório, reconstrução da cidade para um pai "assumir" o save (ele já pode continuar jogando normalmente).
+
+### Experiências de referência e limite da comparação
+
+- [Townscaper](https://www.townscapergame.com/) e [Tiny Glade](https://www.tinyglade.com/): construção satisfatória pode sustentar engajamento sem missão ou economia. **Não** copiar a mecânica de construção por cômodos ou ferramentas incompatíveis com a SPEC.
+- [Minecraft — modo Criativo](https://www.minecraft.net/en-us/about-minecraft): separar barreiras de sobrevivência da atividade de construir, sem obrigar o jogo a ser simplório.
+- [Xbox Accessibility Guidelines — narração e leitura](https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/106): a incapacidade de ler pode vir da idade; feedback, pictogramas, hierarquia e alternativas ao texto precisam permitir agir.
+- [Godot — Containers](https://docs.godotengine.org/en/stable/tutorials/ui/gui_containers.html): ferramentas de composição responsiva de UI, úteis mas sem impor implementação.
+
+### Validação pequena e observável — proposta
+
+- **Criança sem leitura:** entregar o controle sem explicação e observar se acha uma casa, posiciona, vê o resultado, ajusta um erro e continua por vontade própria. Registrar onde pede ajuda; não medir sucesso por capacidade de decifrar instruções.
+- **Adulto:** construir um bairro no Convencional, identificar um bloqueio de materiais ou serviço **pelo sinal visual** e, se quiser, aprofundar o diagnóstico e resolver a causa real.
+- **Critério qualitativo:** construir nunca deve parecer preencher um formulário; aprofundar nunca deve parecer investigar uma caixa-preta; jogar um modo não deve exigir conhecer o outro.
+
+**Pendências de decisão com impacto real:** (a) quanto da simulação social, econômica e de trânsito existe no Criativo; (b) momento de escolha e eventual troca de modo; (c) semântica do desfazer depois da confirmação no Convencional; (d) catálogo inicial mínimo e limites de personalização. Só fechar após comparar custos e consequências.
+
+---
+
 ## Direção atual do jogo
 
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
