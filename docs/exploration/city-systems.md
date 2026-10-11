@@ -8,6 +8,16 @@
 >
 > Concentra pesquisa e raciocínio sobre serviços urbanos, mobilidade, vias, educação, saúde, infraestrutura técnica, conexão externa e capacidades operacionais. A SPEC continua sendo a autoridade sobre o que já foi decidido.
 
+## Efeitos reais do lazer e deslocamentos — escolhas 9A/10B (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** Duas escolhas aprovadas na SPEC.
+
+- **9A:** academia, salão e barbearia podem elevar temporariamente a satisfação conforme preferência do SIM, mas apenas após atendimento realmente realizado, com tempo, equipe, capacidade e pagamento reais. Nenhum bônus por mera presença ou proximidade.
+- **10B:** deslocamentos recorrentes muito longos ou congestionados podem reduzir satisfação individual e influenciar troca voluntária de emprego/moradia. Uma única viagem ruim não desencadeia penalidade obrigatória nem desligamento do trabalho.
+- **Validação:** observar se a qualidade de vida muda por causas explicáveis e se o cálculo aproveita eventos de viagens/visitas já existentes, sem varredura global a cada quadro. Pesos e duração são calibração.
+
+---
+
 ## Rodada de 20 perguntas — combustível, segurança, ambiente e captação de água (2026-10-10)
 
 > **Revisão humana: PARCIALMENTE REVISADO.** Opções **10B, 14A, 15A e 18A** aprovadas na SPEC. A **19B ampliada foi APROVADA posteriormente (2026-10-11) como direção inicial a testar no jogo integrado**: resposta por redução da fonte poluidora, tratamento real com custo/capacidade e captação alternativa mais limpa onde existir.
