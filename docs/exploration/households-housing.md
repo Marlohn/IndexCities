@@ -8,6 +8,16 @@
 >
 > Reúne renda e consumo familiar, valor imobiliário, vulnerabilidade financeira, aluguel, propriedade, herança e investimento residencial por cidadãos.
 
+## Locação, herança e assistência — escolhas da rodada de 30 (2026-10-11)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** As escolhas 20A, 21A e 22A foram aprovadas e registradas na SPEC; critérios de custódia, datas e parâmetros menores seguem calibração.
+
+- **20A:** quando faltar adulto responsável pelo aluguel, procurar outro adulto real elegível; se não houver, encerrar contrato preservando o cuidado e acolhimento real de menores, sem criança assumindo dívida por inferência.
+- **21A:** após a precedência de aluguel atrasado na morte, dividir saldo remanescente insuficiente **proporcionalmente** entre dívidas municipais exigíveis de imposto/água/energia. A parcela não paga segue a extinção pessoal sem transmitir dívida a herdeiros.
+- **22A:** após separação e saída do devedor atual, adulto elegível remanescente assume apenas aluguéis futuros, enquanto obrigações pessoais anteriores pertencem ao devedor real.
+- **Auxílio 4B/5A/6A/7C:** elegibilidade por insuficiência real de recursos/risco de atraso antes da primeira dívida, valor complementa a parcela que falta até um teto e é pago ao proprietário real; **revisão mensal obrigatória** da necessidade; permite quitar aluguel vigente e atraso prévio com pagamento efetivo. Sem quitação integral, prazo de inadimplência não reinicia magicamente. A decisão 4A de prioridade aos maiores riscos permanece vigente.
+
+
 ## Rateio de reparo misto e assistência infantil à creche (2026-10-11)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** As opções **2A, 6C e 7A** foram confirmadas e promovidas à SPEC; cálculo e logística fina seguem PENDENTES.
