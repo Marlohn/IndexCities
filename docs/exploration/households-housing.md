@@ -22,6 +22,23 @@
 
 ---
 
+## Escolhas adicionais aprovadas (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** Dez escolhas foram aprovadas; este documento resume oito ligadas a famílias e finanças. A SPEC permanece oficial.
+
+- **1B:** creches municipais, com edifício físico, funcionários, vagas e custos reais.
+- **2B:** casais podem se separar, preservando propriedade individual e reorganizando moradia.
+- **3A:** mudança residencial voluntária por oportunidade real.
+- **4A:** perder a residência não causa demissão automática.
+- **5A:** benefício por incapacidade requer impedimento prolongado e contribuições reais mínimas.
+- **6B:** quando elegível a aposentadoria e benefício por incapacidade, somente o maior é devido.
+- **7A:** emigração não extingue dívidas exigíveis.
+- **8A:** propriedade e aluguel continuam vinculados ao SIM emigrado e sua carteira individual persistente.
+
+Detalhes de cálculos, transição familiar e elegibilidade permanecem para calibração e validação, sem novas funcionalidades presumidas.
+
+---
+
 ## Rodada posterior — acolhimento infantil, dívidas previdenciárias e incapacidade (2026-10-10)
 
 > **Revisão humana: PARCIALMENTE REVISADO.** O responsável aprovou expressamente 6B, 7B com fallback, 11C, 12B, 13A, 16B e 17A. A SPEC é a fonte do comportamento; parâmetros e cenários de exceção não foram todos revistos.
