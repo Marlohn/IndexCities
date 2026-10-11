@@ -26,6 +26,18 @@ As prioridades são **orientação revisável**, não um impedimento para experi
 
 ---
 
+## Dez novas escolhas — integração e riscos (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** O responsável aprovou **1B, 2B, 3A, 4A, 5A, 6B, 7A, 8A, 9A, 10B**, incorporadas à SPEC. Os riscos abaixo são avaliação de IA, não novos requisitos.
+
+**Fechado:** creche municipal real com vagas/equipe/custos; separação de casal sem partilha judicial automática; mudança de residência voluntária; SIM sem moradia pode trabalhar; incapacidade prolongada e contributiva; não acumulação de aposentadoria com benefício por incapacidade; dívidas continuam após emigração; imóveis e aluguéis de emigrados permanecem vinculados ao SIM real; serviços opcionais aumentam bem-estar após uso efetivo; deslocamentos longos recorrentes podem reduzir satisfação.
+
+**Validar na integração:** capacidade real e demanda das creches; atribuição coerente de nova residência e cuidados familiares quando ocorre separação; mudanças voluntárias sem oscilação excessiva; benefício maior sem dupla despesa pública; carteira e dívida persistentes de proprietário externo sem desvio de aluguéis à Reserva Global; impactos do lazer/trânsito sem varreduras caras ou bônus abstratos.
+
+**Não reabrir automaticamente:** as escolhas da Prefeitura continuam adiadas e a incompatibilidade da 3B permanece. A 19B ampliada de água está aprovada para teste integrado. Não criar arquitetura nem parâmetros numéricos por antecipação.
+
+---
+
 ## Nova rodada — decisões 6–18 e dois bloqueios de produto (2026-10-10)
 
 > **Revisão humana: PARCIALMENTE REVISADO.** As escolhas humanas da rodada foram registradas na SPEC; prioridades e soluções sugeridas abaixo são investigação da IA, não regras aprovadas.
