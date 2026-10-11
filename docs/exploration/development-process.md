@@ -250,6 +250,34 @@ O **orquestrador não precisa ser o mais caro sempre**: delegação simples, con
 
 ---
 
+## Reavaliação — Hermes Agent, Hindsight e economia de tokens (2026-10-11)
+
+> **Revisão humana desta seção: PENDENTE.** Pesquisa técnica, não decisão vigente. Corrige a identificação anterior: o responsável possui **Hermes Agent**, não Amp. Não houve benchmark executado no IndexCities.
+
+### Recomendação revista
+
+**Stack candidata:** Orca como interface de worktrees/sessões; Codex CLI como implementador inicial; Claude Code como revisor para mudanças arriscadas e executor de tarefas independentes; OpenCode/DeepSeek para tarefas econômicas; **Hermes Agent** para pesquisa, busca histórica e automações ocasionais; **Hindsight** como experimento de memória compartilhada com limites de custo. Não manter todos trabalhando continuamente nem construir orquestrador próprio ainda.
+
+- **Hermes Agent:** memória curta própria (MEMORY.md/USER.md), busca de sessões FTS5 local, skills sob demanda, subagentes, modelos auxiliares para atividades baratas, comando `/usage`. A busca de texto não faz chamadas adicionais a LLM; já pode responder muitas questões de continuidade sem uma memória externa. Hermes dispõe de plugin Hindsight com instalação `hermes plugins install hindsight` e seleção `hermes memory setup`. Isso pode coexistir com memória nativa, mas pode duplicar retenção e contexto.
+- **Hindsight Coding Agents:** pacote `@vectorize-io/hindsight-coding-agents` integra Codex, Claude Code, OpenCode, DeepSeek Harness e outros, com banco por repositório compartilhado entre os agentes e worktrees. Recomendo conectar **um agente primeiro** e só expandir se houver economia medida, em vez de `install all`.
+- **Custo escondido nos defaults do Hindsight:** `autoInject: reflect`, `codebaseSurvey: true`, `retainSessions: true`, cinco páginas de conhecimento com síntese recorrente e `autoUpdate: true`. Podem melhorar memória, mas também causar chamadas, atrasos e mudanças invisíveis. Teste de baixo custo: no arquivo local `~/.hindsight/coding-agent.json`, habilitar `optInOnly: true` e `optInPaths` apenas para o IndexCities; experimentar `autoInject: none`, `codebaseSurvey: false`, `pageTriggerType: manual`, `gitIngest: message`, `retainExtractionMode: concise`, `autoUpdate: false`. Captura de sessões e consolidação são custos adicionais: controlar e comparar o que se ganha com o que se gasta.
+- **Evidência do fornecedor:** a integração publica 61 tarefas × 3 execuções, com menos correções e custos médios Codex (US$ 0,577→0,276), Claude (US$ 0,445→0,338) e OpenCode (US$ 0,634→0,553), sem ganho material na taxa de conclusão. **Não é estudo feito no jogo**; medir memória + tokens de execução + retrabalho.
+- **Maior ganho de tokens pode ser contexto menor:** SPEC ultrapassa 1.000 linhas e AGENTS.md tem 286. A OpenAI relata que `AGENTS.md` monolítico dificulta recuperação e eleva custo. **Hipótese para aprovação:** auditar tamanho e redundância, conservar todas as regras canônicas, facilitar leitura seletiva da SPEC por título/assunto e tornar AGENTS um mapa compacto que preserve os limites obrigatórios. Não alterar a fonte canônica sem revisão humana.
+- **Opções novas pesquisadas:** **QMD** (busca Markdown local com BM25/índice semântico, útil se `rg` deixar de ser suficiente); **Serena MCP** (localizar/editar símbolos de código com menor leitura de arquivos, especialmente C# quando o Core crescer). Não ligar as duas nem vários MCPs por padrão: cada ferramenta tem custo operacional e ocupa contexto.
+- **Guardrail urgente:** Orca informa lançamento padrão com bypass de permissões. Recomendo **Settings → Agents → Agent Permissions → Manual**, revisando flags personalizadas, antes de agentes terem acesso amplo à máquina. Worktree não contém efeitos sobre rede, segredos e arquivos fora do checkout.
+- **Outra economia:** no Hermes, rotear modelos auxiliares simples a modelos baratos e usar busca diferida de ferramentas; no OpenCode, restringir permissões por agente e remover outputs antigos de ferramentas/compactar quando útil. Cache de prefixos da API pode diminuir custo, mas regras API não se transferem automaticamente a assinaturas de CLIs.
+- **Arquitetura para anos de manutenção:** Git, SPEC, ARCHITECTURE, testes, seed/log de reprodução e código são memória operacional; Hindsight é memória auxiliar sujeita a erro/desatualização. Cada sessão deve identificar objetivo, contrato, diff e teste e encerrar ao completar a unidade. Uma revisão independente só quando risco/custo justificarem. Orquestrar paralelamente apenas trabalho desacoplado.
+
+### Teste econômico sugerido
+
+Começar com **um executor e sem serviços extras**; preparar build/testes C# e validações objetivas do Godot conforme a tarefa. Comparar tarefas representativas primeiro com Git + instruções canônicas + busca Hermes, depois com Hindsight restrito em um agente; registrar sucesso, correções, custo total inclusive de memória, tempo e violações de SPEC. Se Hindsight compensar, conectar outros agentes à mesma memória por repo. Só testar QMD/Serena se houver custo de busca real. Não instalar um segundo orquestrador sem esse sinal.
+
+### Fontes
+
+[Hermes Agent](https://github.com/NousResearch/hermes-agent) · [Hermes memory](https://hermes-agent.nousresearch.com/docs/user-guide/features/memory) · [Hermes/Hindsight](https://hermes-agent.nousresearch.com/docs/plugins/hindsight) · [Hindsight coding agents](https://github.com/vectorize-io/hindsight/blob/main/hindsight-integrations/coding-agents/README.md) · [Orca permissions](https://www.onorca.dev/docs/agents/supported) · [OpenCode permissions](https://opencode.ai/docs/agents/) · [QMD](https://github.com/tobi/qmd) · [Serena](https://github.com/oraios/serena) · [OpenAI Harness Engineering](https://openai.com/index/harness-engineering/).
+
+---
+
 ## Arquitetura de desenvolvimento
 
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
