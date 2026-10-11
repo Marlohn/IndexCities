@@ -22,7 +22,7 @@ Auditoria reconciliada em **2026-10-07** com o histórico de conversas disponív
 
 ## Mapa transversal de prontidão e prioridades
 
-- **Mapa de prontidão, lacunas e prioridades de pesquisa** — revisão humana: **PENDENTE**; triagem transversal com P0/P1/P2, riscos e questões consolidadas da pesquisa externa de 2026-10-08, **atualizada com as decisões até 2026-10-09: crédito municipal inadimplente 1A, apartamentos 2C, ônibus 3B, carros 4A, emergências 5B, propagação de incêndio limitada por ruas 6B, lixo 7A, esgoto 8A e patrulhamento 9B; **partilha de herança simplificada APROVADA em 2026-10-09 (dinheiro igual e bens inteiros por valor aproximado)**; além das decisões anteriores sobre empresas e serviços**, sem recalcular percentuais heurísticos. Não é fonte de verdade nem altera a SPEC: [`exploration/project-readiness.md`](exploration/project-readiness.md).
+- **Mapa de prontidão, lacunas e prioridades de pesquisa** — revisão humana: **PENDENTE**; estimativa heurística atualizada em **2026-10-11 para 81% de prontidão documental do levantamento para o Convencional** (75% na fotografia de 08/10), **não** proporção de decisões contadas ou jogo implementado. Prioridades P0/P1/P2, lacunas reais e distinção entre decisão, calibração e validação. Não é fonte de verdade: [`exploration/project-readiness.md`](exploration/project-readiness.md).
 
 ## Explorações temáticas
 
