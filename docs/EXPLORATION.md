@@ -44,13 +44,13 @@ Auditoria reconciliada em **2026-10-07** com o histórico de conversas disponív
 
 ## Rodada de oito decisões de produto — modos, experiência e atrações (2026-10-11)
 
-> **Revisão humana: PARCIALMENTE REVISADO.** O responsável escolheu **1B, 2A, 5C (direção para experimentar), 6A, 7A+B, 8B, 9B e 10B**. As oito escolhas foram promovidas à [SPEC](SPEC.md). A análise técnica adicional, inclusive sobre viabilidade de personalização modular, segue **PENDENTE** de revisão.
+> **Revisão humana: PARCIALMENTE REVISADO.** O responsável escolheu **1B, 2A, 3A, 4A, 5C (direção para experimentar), 6A, 7A+B, 8B, 9B e 10B**. Todas as dez escolhas foram promovidas à [SPEC](SPEC.md). A análise técnica adicional, inclusive sobre viabilidade de personalização modular e cálculo do efeito ambiental, segue **PENDENTE** de revisão.
 
 - **Dois modos:** Criativo mantém moradores persistentes e deslocamentos/visitas simplificados, sem economia completa; modo escolhido ao criar cada cidade e fixo nesse save, sem conversão.
 - **Ambiente e educação:** decoração realmente colocada pode influenciar bem-estar/atratividade/valor **de modo local e contextual**, com custos coerentes no Convencional e sem acúmulo ilimitado de bônus; adultos podem estudar nos níveis existentes conforme vaga, acesso, horário e frequência reais.
 - **Turismo e inspeção:** atrações dedicadas reais somam-se aos parques/comércios já relevantes; câmera segue SIM selecionado sem controlá-lo; mapas temáticos expõem condições já simuladas, sem inventar dados no Criativo.
 - **Construção:** esboçar vários prédios/ruas em projeto visual sem reservar recursos, para confirmar **cada obra individualmente** conforme suas condições reais.
-- **Ainda em aberto:** **3 (desfazer/refazer)** — o responsável pediu explicação; **4 (personalização modular)** — questionou viabilidade na primeira versão. **Não aprovar automaticamente B ou A** nessas duas. Recomendação revisada da IA para 4: variantes visuais prontas no lançamento e pipeline de assets reutilizáveis, com montagem modular pelo jogador apenas se a experiência justificar. [Direção](exploration/product-direction.md), [interface](exploration/player-interface.md), [assets](exploration/asset-production-pipeline.md) e [prontidão](exploration/project-readiness.md).
+- **Duas escolhas adicionais FECHADAS (2026-10-11): 3A** — cancelar/corrigir prévias antes de confirmar, mas sem histórico de desfazer ações já confirmadas; correções usam ferramentas normais com consequências reais. **4A** — personalização inicial por modelos e variantes de aparência prontas, com componentes reutilizáveis na produção artística, **sem editor modular de prédios pelo jogador no primeiro modelo**. Catálogo/quantidades dependem de produção e calibração, não aprovam automaticamente editor futuro. [Direção](exploration/product-direction.md), [interface](exploration/player-interface.md), [assets](exploration/asset-production-pipeline.md) e [prontidão](exploration/project-readiness.md).
 
 ---
 
