@@ -32,7 +32,7 @@ A proposta antes descrita aqui foi consolidada no documento temático [**Qualida
 
 **Status:** direção visual em exploração; a apresentação 3D isométrica já está confirmada na SPEC.
 
-Foram fornecidas imagens de referência produzidas a partir de assets já existentes do projeto/autor. Elas devem ser consideradas nas futuras decisões de direção visual, escala de câmera, densidade urbana e legibilidade.
+Foram fornecidas referências visuais e, posteriormente, **duas capturas de uma cena low-poly produzida por IA via código na Godot, em outro projeto**. Elas ajudam a avaliar linguagem visual, câmera, densidade e legibilidade, **mas não são assets implementados do IndexCities, nem prova de desempenho, medidas ou pipeline já aprovado**. A avaliação técnica está no [estudo de assets](asset-production-pipeline.md).
 
 Características observáveis nas referências:
 
@@ -48,9 +48,7 @@ As imagens são referência de exploração, não especificação dimensional. M
 
 ### Pipeline de assets
 
-A intenção atual é produzir boa parte dos assets visuais com uma ferramenta/IA externa especializada e integrá-los ao jogo depois. O pipeline exato de formatos, importação, LODs, colisões, materiais e validação ainda não foi definido.
-
----
+**Hipótese atual após o teste visual de 2026-10-11:** validar primeiro **IA criando geometria paramétrica na própria Godot**, gerar/salvar as variantes e reutilizá-las; **Blender e IA 3D externa ficam opcionais** para casos que não funcionarem bem por código. O formato, a escala detalhada, a gestão das malhas, LOD e desempenho ainda exigem teste. Esta é **pesquisa PENDENTE**, não ferramenta ou arquitetura aprovada. Ver [estudo de assets](asset-production-pipeline.md).
 
 ---
 
