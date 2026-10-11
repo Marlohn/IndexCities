@@ -6,6 +6,93 @@
 >
 > **Critério de leitura:** diferenciar mecânica observada em outro jogo, hipótese proposta para IndexCities, exigências já aprovadas na SPEC e vantagens alegadas/experiências comunitárias. Fontes oficiais/de desenvolvedores preferidas; wiki de fãs e comunidades rotuladas como tal. Jogos de épocas diferentes são comparados quanto ao *padrão de gameplay*, não copiados.
 
+## Nova revisão transversal — o que acrescentar à Prefeitura sem criar outro jogo (2026-10-11)
+
+> **Revisão humana desta seção: PENDENTE.** Pesquisa e recomendação elaboradas a pedido do responsável antes de escolher mecânicas. **Nada abaixo aprova políticas, eleitores, facções, satisfação política, pesquisas de opinião, votação, geração de pedidos, nova burocracia ou alteração da SPEC.** Direção vigente: Prefeitura física como central de decisões de governo, com SIMs funcionários reais e diagnóstico de necessidades reais.
+
+### Conclusão e distinção principal
+
+**Recomendação da pesquisa:** manter **um menu central amplo de gestão** e acrescentar **uma agenda de pautas contextuais**, mas **não** transformar todas as ações de gestão em pautas, nem transformar as pautas em lista de missões. O ganho original do IndexCities seria a ligação entre **pedidos parciais de moradores/empresas reais, diagnóstico das causas, decisões do jogador e mudanças verificáveis na vida dos mesmos SIMs**. A papelada administrativa e os trabalhadores da Prefeitura devem ter uso concreto próprio quando houver serviço real — não servir como atrasos inventados para impor um menu.
+
+Uma pauta não tem de ser sempre correta; o requerente conhece sua situação/interesse, **não necessariamente custos públicos, cadeias logísticas, o que outros bairros precisam ou quem seria prejudicado**. Entretanto, um pedido incorreto **não deve ser gerado aleatoriamente** para provocar erro do jogador; precisa ser coerente com alguma situação e um interesse efetivamente existente.
+
+### Revisão de benchmarks adicionais e fontes
+
+| Evidência | O que aprender | Não copiar automaticamente |
+| --- | --- | --- |
+| [Citystate II, desenvolvedor — FAQ](https://steamcommunity.com/app/1352850/discussions/0/2999920878442882200/) e [loja oficial](https://store.steampowered.com/app/1352850/Citystate_II/) | 51 políticas/204 alternativas anunciadas; pode existir city builder **sem exigir** intervenção política contínua. O desenvolvedor esclarece que o motor prioriza **estatísticas macro, não cada agente individual**. | Catálogo enorme como finalidade; multiplicadores macro como substituto das famílias, empresas, vagas, fluxos físicos e dinheiro real do IndexCities. |
+| [Foundation — Mandates, wiki oficial](https://wiki.polymorph.games/foundation/Bailiff), [Edicts](https://wiki.polymorph.games/foundation/Edicts_%26_Privileges) e [Quests](https://wiki.polymorph.games/foundation/Quests) | Há atos administrativos **executados por personagens** designados na sede de governo, além de conselhos dos moradores que podem ser dispensados. | Bônus de funcionários, exigência de mandar gestor fazer trabalho fictício para cada lei ou tarefas simples com timer arbitrário. |
+| [Tropico 7, dev-log de agosto de 2026](https://www.kalypsomedia.com/post/tropico-7-dev-log-2) e [Political Matrix](https://www.kalypsomedia.com/post/tropico-7-dev-log-1-part-1) | Os desenvolvedores explicitam que políticas importam porque **cada cidadão vive, se desloca e tem necessidades próprias**. A posição dos moradores e grupos informa decisões. | Facções ideológicas, eleições, mídia manipulativa, bônus de proximidade sem visitas reais e a seleção **aleatória de estabelecimentos** usada por Tropico 7 para distribuir clientela — contrária à autonomia e causas concretas já decididas no IndexCities. Os dev-logs descrevem **desenvolvimento/anúncios**, não resultados validados de lançamento. |
+| [Suzerain, desenvolvedor](https://www.suzeraingame.com/) e [Urban Empire, avaliação crítica](https://wolfsgamingblog.com/2017/01/26/urban-empire-review-council-votes-no/) | Dilemas e interesses conflitantes fazem decisões ter significado; Urban Empire foi criticado por leis com pouco conflito efetivo e pouca construção urbana. | História política roteirizada de um país, debates longos, eleições/partidos/conselho para autorizar cada ação do city builder. |
+| [Against the Storm, entrevista com desenvolvedor](https://www.gamedeveloper.com/business/how-against-the-storm-managed-to-mix-city-building-and-roguelite-play) | "Ordens" podem dar orientação para quem quer objetivos e o jogador pode escolher maneiras alternativas de progredir. | Missões, recompensas econômicas ou progressão obrigatória: a SPEC do IndexCities é sandbox com desafios opcionais sem prêmio econômico. |
+| [Tropico 6 — reclamações comunitárias](https://www.reddit.com/r/tropico/comments/1qh8oa9/superpowers_factions_spam_demands_nonstop/) e [discussões de tarefas repetitivas](https://www.reddit.com/r/tropico/comments/1mxpgbp/why_do_people_dislike_tropico6/) | **Risco real de fadiga:** pedidos demais fazem alguns jogadores sentir que respondem a missões em vez de construir. São relatos individuais, não estudo de frequência nem consenso universal. | Notificação para cada oscilação, punição automática por "ignorar" qualquer solicitação e tarefas de colocar/remover prédio por recompensa. |
+| [NYC 311 — relatórios oficiais](https://www.nyc.gov/site/311reporting/311-reports/service-requests.page) e [limitação dos dados](https://www.nyc.gov/site/311reporting/index.page) | Solicitações são agrupadas por **categoria, região, mês e órgão**. A própria cidade ressalva que representam **somente parte** das demandas/atividade total. | Tratar os cidadãos que reclamaram como amostra perfeita de toda a população, ou uma ocorrência encerrada como problema da cidade resolvido. |
+| [Decide Madrid — propostas municipais, 2026](https://transparencia.madrid.es/portales/transparencia/es/Relacion-con-la-ciudadania/Participacion-de-la-ciudadania/Propuestas-ciudadanas/?vgnextchannel=73c9508929a56510VgnVCM1000008a4a900aRCRD&vgnextoid=800704cd08637810VgnVCM1000001d4a900aRCRD) | Iniciativa → apoios → possível votação → **análise de viabilidade pelo governo**. Uma ideia bem apoiada não se converte automaticamente em realização. | Percentuais de assinaturas, votação pública e quorum obrigatórios em todo pedido. |
+| [Paris — orçamento participativo](https://www.paris.fr/pages/budget-participatif-2024-recrutement-pour-la-phase-de-vote-27721) e [Boston — projetos em execução](https://content.boston.gov/departments/participatory-budgeting/ideas-action-project-implementation) | Separar **pedido, elegibilidade, custo, financiamento e execução acompanhada**. Funcionários municipais podem executar projetos reais. | Criar um orçamento paralelo, premiar clique de aprovação e repetir contabilidade de obras já incluídas no Caixa da Cidade. |
+| [OECD — Citizen Participation Guidelines](https://www.oecd.org/en/publications/oecd-guidelines-for-citizen-participation-processes_f765caf6-en.html) | Métodos de participação são diferentes; considerar representatividade, inclusão e acompanhamento de resultados. | Pressupor que todo SIM queira participar ou que o volume de reclamações representa apoio da cidade inteira. |
+
+### Sete oportunidades reais de gameplay (todas HIPÓTESES)
+
+**1. Três origens diferentes de pauta, com proveniência explícita.**
+- **Demanda detectada:** o jogo observou muitos SIMs com problema material, mas ninguém necessariamente solicitou nada.
+- **Pedido de um SIM/grupo existente:** um requerente *efetivamente modelado* apresenta seu interesse situado, com causa concreta e sem representar toda a cidade.
+- **Iniciativa do jogador:** o governo apresenta a questão por escolha própria, sem esperar crise.
+- **Valor:** permite governar pró-ativamente, escutar vozes reais e distinguir estatística de opinião. **Risco:** simular fala/opinião coletiva que não existe ou exigir custo alto de pesquisa contínua. Pode-se começar pelo primeiro e terceiro tipos, sem fingir pedido real.
+
+**2. Interesses que se chocam sem facções políticas abstratas.**
+- Proprietários/comerciantes querem manter acesso de caminhões; moradores querem reduzir fluxo pesado. Famílias com pouco dinheiro querem menor tributo residencial; serviços públicos exigem financiamento.
+- Identificar grupos por **situação real** (residência, trabalho, renda, trânsito, propriedade, acesso), sem deduzir automaticamente sua ideologia, voto ou desejo expresso. **Conflito não torna ninguém malvado nem a "maioria" sempre certa.**
+- Valor: escolha com beneficiados/prejudicados observáveis. Sem medir o efeito concreto no motor, não introduzir a pauta.
+
+**3. Diagnóstico que pode contradizer a solução pedida.**
+- "Construam mais indústrias para empregar nossos SIMs": confrontar com **vagas industriais já disponíveis**, escolaridade dos desempregados, deslocamento, capacidade de abastecimento, viabilidade econômica e poluição.
+- Respostas podem ser **atender**, **resolver por outro meio já disponível** ou **não intervir**. A aprovação de pauta **não cria** empregos, indústrias ou zoneamento automático: na SPEC as obras são posicionadas manualmente e empresas escolhem atividade autônoma.
+- Valor: o desafio é **entender a cidade** em vez de obedecer à lista de pedidos.
+
+**4. Estado de uma pauta separado do resultado da cidade.**
+- *Recebida → analisada → decisão do jogador → execução municipal quando existir ação real → resultados observados*. Não é obrigatório implementar pipeline completo.
+- Aceitar pedido **não equivale** a construir o serviço; construir edifício **não equivale** a ter equipes/estoques/acesso. Encerrar a solicitação **não equivale** a resolver a causa. Inação é escolha válida, sem timer punitivo universal.
+- Valor: histórias de governo e acompanhamento verificável, ao invés de missões que premiam um clique.
+
+**5. Histórico de decisões e efeitos ("memória administrativa").**
+- Pauta pode referenciar a taxa de tributo ou política do ônibus antes/depois e o que aconteceu de fato com saldo, viagens, aluguel, empregos, orçamento e serviços. O sistema não promete relação causal perfeita quando houve outras mudanças simultâneas.
+- **Nova capacidade sugerida:** voltar a ver o caso de um bairro e SIMs afetados por uma escolha anterior, reaproveitando histórico e diagnóstico existentes. Não criar "reputação do prefeito", bônus político ou armazenamento contínuo de toda decisão cotidiana sem necessidade.
+- Valor: quem joga vê a cidade que criou e pode rever escolhas por aprendizado, não recompensa.
+
+**6. Disputa por recursos reais entre pautas, sem orçamento paralelo.**
+- Pedidos por expansão de escola, ônibus e novos imóveis industriais competem **indiretamente pelo mesmo Caixa da Cidade, terrenos, trabalhadores, materiais e serviços**. Não é preciso adicionar "pontos de prioridade" ou orçamento por secretaria. Se um dia existir orçamento participativo, tem de ser decisão explícita com dinheiro realmente comprometido.
+- Valor: *não é possível atender a todos imediatamente*, mas o limite vem do mundo simulado, não de uma barreira arbitrária.
+
+**7. Capacidade municipal de ouvir e executar, sem burocracia fabricada.**
+- **Hipótese de função para SIMs na Prefeitura:** manter um **serviço de atendimento/processamento de pedidos verdadeiramente apresentados**, com registro, classificação, encaminhamento e retorno ao requerente, ou realizar tarefas concretas de programas municipais escolhidos. A equipe e seu custo podem limitar **esse serviço**, não impostos, construção básica ou emergência por inferência.
+- **Risco importante:** receber/organizar tickets **por si só** pode gerar pouca gameplay; só justificar servidores quando sua ausência produzir diferença legítima na ação prestada, sem ocultar dados essenciais nem criar atraso administrativo para cada clique. O papel operacional específico segue **não resolvido**. Atendimento presencial de todos os SIMs não deve ser suposto.
+
+### Combinação que vale tentar conceitualmente
+
+**Prefeitura com duas áreas conectadas, não dois jogos:**
+- **Gestão da Cidade (permanente):** controles que já existem — impostos imobiliários por seis classes, política de ônibus pago/gratuito, estacionamentos públicos, empréstimos, finanças e atalhos para serviços e construção física. A interface pode ser concentrada na Prefeitura **sem obrigar presença do prédio para comandos existentes** enquanto conflito da 3B verbal com o mapa inicialmente vazio não for resolvido.
+- **Pautas da Cidade (contextual):** poucos assuntos relevantes agrupados pelo motivo e região; cada pauta explica **quem precisa/quem solicitou, causa conhecida, outras partes afetadas, meios de ação e resultados posteriores**. Algumas apontam para controles existentes; outras apenas informam um problema ou motivam exploração de nova política ainda não oficial.
+- **Leitura regional/humana:** detalhes sob demanda; sem simular preferências ou recalcular agenda de todos os SIMs a cada frame.
+
+**Exemplo completo, sem política nova:** famílias de dois bairros têm viagem inviável por custo ou tempo; o cartão separa quantos **não têm dinheiro para passagem** e quantos **não têm conexão/capacidade**. Uma solicitação hipotética pede ônibus gratuito. O jogador pode alterar a política paga/gratuita **já aprovada**, ampliar paradas e frota pelos meios já previstos, combinar ações ou não agir. Após algum tempo, a Prefeitura apresenta viagens realmente viabilizadas, tarifas reais recebidas/deixadas de cobrar, custos públicos, gargalos de frota e efeitos sobre acesso aos empregos. **Ninguém ganha emprego, renda ou felicidade automaticamente pelo "aceitar".**
+
+### Três decisões de design que realmente destravam a próxima discussão
+
+1. **Formato do pedido:** inicialmente somente temas detectados + agenda do jogador, ou haverá **requerentes SIMs reais com pedidos originados por comportamento modelado**? A segunda alternativa é mais viva, porém exige evento/serviço de comunicação aprovado e pode aumentar custo.
+2. **Responsabilidade pela resposta:** pautas serão **orientações não vinculantes** que podem ser ignoradas/atendidas por múltiplos caminhos, ou abrir uma pauta e "assumir compromisso" terá consequências próprias? Evitar nova regra de promessa/reputação escondida.
+3. **Função do prédio e da equipe:** distinguir interface de gestão, atendimento cívico real e operação de programas específicos; resolver a **opção 3B verbal** de paralisação da administração sem Prefeitura, que conflita com bootstrap da cidade vazia e com comandos municipais já aprovados. **Não preencher sozinho a lacuna.**
+
+### Recomendações finais desta pesquisa (não aprovadas)
+
+- **Manter a direção principal**, mas **não aprovar uma "simulação política" completa**: a melhoria potencial vem da *contextualização por pessoas, conflito e causa*, não de facções, eleições, votação ou lista de leis.
+- **Começar a discussão com uma pauta reproduzível de transporte ou tributos** usando controles já decididos; ela precisa demonstrar valor que um alerta ou desafio emergente sozinho não entrega.
+- **Não confundir agenda com desafios opcionais:** desafios já reconhecem condições e melhorias sem dinheiro; pauta é a *decisão e sua história*. Reusar um sinal/evento, não notificar duas vezes.
+- **Não forçar trabalho administrativo inventado:** a interface não depende automaticamente de emprego no edifício; há lacuna explícita e devem ser comparadas soluções operacionais concretas só depois de escolher o formato do atendimento.
+- **Outros sistemas da SPEC preservados:** cidade inicialmente vazia e obras sem Prefeitura; sem zoneamento automático; empresas decidem ramo; tributos atuais são imobiliários, não alíquota de salário; contribuição previdenciária é automática; salários, dinheiro e capacidade continuam reais; nenhuma assistência geral, passe social, incentivos ou controle extra pode surgir por inferência.
+- **Nenhuma mudança na SPEC decorrente desta rodada:** todas as novas mecânicas, inclusive gerador de pautas e tratamento de pedidos, continuam **PENDENTES de revisão e decisão humana**.
+
+---
+
 ## Retorno da rodada de 20 perguntas — Prefeitura ADIADA e ausência do prédio em conflito (2026-10-10)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável pediu expressamente **adiar as perguntas 1, 2, 4, 5 e 20** (primeiro programa social, elegibilidade dos programas, papel da equipe em programas, permanência da política e escolha de prioridades gerais de orçamento). **Não aprovar essas novas políticas ou controles por inferência.** Na pergunta **3**, escolheu verbalmente **B — toda a administração municipal para sem Prefeitura**, mas há **conflito com SPEC vigente** a ser resolvido antes de declarar nova regra oficial.
