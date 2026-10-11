@@ -42,6 +42,20 @@ Auditoria reconciliada em **2026-10-07** com o histórico de conversas disponív
 - **Processo de desenvolvimento e documentação** — revisão humana: **PARCIALMENTE REVISADO**; decidido para a fase atual; **SPEC viva obrigatória antes e durante todo desenvolvimento (features, bugs e manutenção)**, com lacunas decididas pelo responsável antes do código; primeira entrega/validação globais, sem POCs setoriais obrigatórias. Contém referência externa nova **PENDENTE**. Histórico: [`exploration/development-process.md`](exploration/development-process.md); regras vigentes em `AGENTS.md`.
 - **Testes, debug e reprodução de bugs** — revisão humana: **PENDENTE**. Pesquisa temática em **cinco rodadas**, com rodada final em 2026-10-10. Investiga replay/checkpoints, logs causais, invariantes, cenário adversarial, performance, **ausência de decisão (why-not provenance)**, cobertura dos estados semânticos, fluxo de dinheiro/materiais, eventos raros, cidades extremas, simetrias e bots exploradores. Classifica valor, riscos e estratégias rejeitadas. **Pesquisa, não aprovação de arquitetura ou produto**: [documento temático](exploration/testing-debugging-reproducibility.md).
 
+## Rodada de dez escolhas de produto aprovada (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** O responsável escolheu e aprovou **1B, 2B, 3A, 4A, 5A, 6B, 7A, 8A, 9A e 10B**. Essas escolhas constam da [SPEC](SPEC.md).
+
+- **Famílias:** creches públicas municipais físicas com vagas, equipe SIM e custos reais (1B); separação de casal com reorganização de moradia e família, sem divisão judicial de bens (2B); mudança voluntária para outra moradia viável (3A); SIM que perde moradia pode continuar empregado quando realmente conseguir trabalhar (4A).
+- **Benefícios:** incapacidade duradoura e contribuições municipais mínimas para elegibilidade (5A); quando aposentadoria e incapacidade coincidirem, apenas o benefício elegível de maior valor é devido (6B), sem pagar os dois.
+- **Emigração:** dívidas exigíveis não desaparecem com a saída (7A); SIM emigrado continua dono de imóveis locais, recebendo aluguel real na carteira individual persistente, não na Reserva Global por ausência física (8A).
+- **Bem-estar:** visitas facultativas realmente realizadas a salões, barbearias e academias podem aumentar temporariamente a satisfação (9A); trajetos cotidianos persistentemente demorados podem reduzi-la (10B), sem demissão automática.
+- **A validar:** critérios de creche/cuidado infantil; reorganização de filhos e residência após separação; duração e valor do benefício por incapacidade; coerência monetária e persistência do proprietário emigrado; desempenho da escolha de moradia e satisfação. Esses detalhes não autorizam novas regras sem decisão. [Famílias](exploration/households-housing.md); [serviços](exploration/city-systems.md); [prontidão](exploration/project-readiness.md).
+
+**Prefeitura permanece adiada**, inclusive a questão 3B; água 19B ampliada já aprovada para teste integrado.
+
+---
+
 ## Rodada de 20 perguntas — escolhas 6–18 fechadas; Prefeitura e água pendentes (2026-10-10)
 
 > **Revisão humana: PARCIALMENTE REVISADO.** O responsável aprovou expressamente as opções **6B, 7B com complemento, 8A, 9A, 10B, 11C, 12B, 13A, 14A, 15A, 16B, 17A e 18A**, já promovidas à [SPEC](SPEC.md). As **perguntas 1, 2, 4, 5 e 20**, sobre a Prefeitura, foram adiadas pelo responsável; a **pergunta 3B** foi escolhida, mas está **PENDENTE de ajuste por conflito de bootstrap com regras já aprovadas**; a **19B ampliada foi posteriormente APROVADA em 2026-10-11 como direção inicial para teste integrado**, com prevenção na fonte, tratamento com custos/capacidade reais e captação alternativa viável. **A 3B sobre ausência da Prefeitura continua pendente de ajuste**, e as escolhas 1/2/4/5/20 da Prefeitura continuam adiadas.
