@@ -8,6 +8,20 @@
 >
 > Reúne renda e consumo familiar, valor imobiliário, vulnerabilidade financeira, aluguel, propriedade, herança e investimento residencial por cidadãos.
 
+## Rodada aprovada — creche, separação, moradia, benefícios e emigrantes (2026-10-11)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** Escolhas humanas **1B, 2B, 3A, 4A, 5A, 6B, 7A e 8A** promovidas à SPEC. Consequências de implementação e testes abaixo são análise de IA ainda não revisada por completo.
+
+**Crianças e famílias.** **1B:** creches municipais construídas e pagas pelo Caixa têm equipe SIM, vagas, turnos/acesso e atendimento reais; sem cuidado viável de criança pequena, disponibilidade familiar para trabalhar pode diminuir, sem gerar babá fictícia. Creche não é abrigo de órfãos ou escola básica. **2B:** relacionamentos podem terminar, exigindo reorganizar os domicílios e o cuidado dos filhos; cada patrimônio permanece no proprietário individual real, sem divórcio judicial/partilha automática. **3A:** família pode escolher mudança residencial vantajosa, com imóvel real e dinheiro/tempo/deslocamento válidos, não só por perda da casa; reavaliar esporadicamente. **4A:** SIM sem moradia não perde emprego por regra, mas pode faltar ou sofrer perdas reais de qualidade de vida/acesso.
+
+**Previdência por incapacidade.** **5A:** incapacidade precisa ser real e prolongada e o SIM ter histórico contributivo municipal mínimo; não precisa ser irreversível. **6B:** SIM elegível à aposentadoria e incapacidade recebe **o maior benefício elegível no período, nunca dois**, com cálculo e Caixa reais. Não pagar benefício duplicado junto com licença remunerada do empregador pelo mesmo afastamento; detalhes de transição, contribuição mínima, elegibilidade e recuperação exigem calibrar/definir antes do código.
+
+**Emigração.** **7A:** dívida pessoal exigível permanece vinculada a identidade e credor real após saída; não impedir migração nem perdoar dívida sem regra própria. **8A:** propriedade de imóveis e contratos locais continua com o SIM emigrado; recebimentos de aluguel em sua carteira persistente individual seguem como **transferências reais do locatário**, não retorno da renda à Reserva Global nem duplicação ao emigrar/voltar. A economia exterior detalhada não é simulada; impostos e demais obrigações reais de proprietário exigem tratamento coerente.
+
+**Testar cenários:** família com bebê, creche lotada e dois adultos empregados; separação com imóvel pertencente a um cônjuge e filhos reais; mudança residencial voluntária sem duplicar aluguel; SIM sem moradia ainda comparecendo ao turno; previdência por incapacidade e aposentadoria simultaneamente elegíveis; SIM com imóvel alugado e dívida pessoal que emigra e volta. Nenhum item deve criar recursos, vagas ou patrimônio por conveniência.
+
+---
+
 ## Rodada posterior — acolhimento infantil, dívidas previdenciárias e incapacidade (2026-10-10)
 
 > **Revisão humana: PARCIALMENTE REVISADO.** O responsável aprovou expressamente 6B, 7B com fallback, 11C, 12B, 13A, 16B e 17A. A SPEC é a fonte do comportamento; parâmetros e cenários de exceção não foram todos revistos.
