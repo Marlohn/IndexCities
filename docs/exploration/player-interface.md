@@ -8,6 +8,16 @@
 >
 > A autoridade de produto continua sendo `docs/SPEC.md`. Este documento concentra pesquisa, alternativas, referências e hipóteses sobre interface e ferramentas do jogador. Quando uma decisão fecha, o resultado oficial deve ser promovido para `docs/SPEC.md`; este arquivo preserva o raciocínio e o material ainda em formação.
 
+## Identidade comercial e ambiente visual — decisões 5A, 9B, 10A (2026-10-11)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** Aprovações do responsável estão na SPEC; detalhes visuais abaixo são **PENDENTES** para experimento.
+
+- **5A:** postes/luzes de iluminação incorporados à aparência/estrutura da rua urbana, conforme tipo/geometria, com consumo e despesa municipal sem duplicação; **sem ferramenta manual para cada luminária** e sem aumentar escopo com rede elétrica desenhada.
+- **9B:** efeitos ocasionais de chuva e áudio coerentes com low-poly, **somente apresentação**, sem impacto físico/econômico na primeira versão; medir legibilidade da câmera/construção, visibilidade, custo gráfico e transições de clima antes de adicionar complexidade.
+- **10A:** usar **texto/cores/placas simples por empresa operadora** com componentes reutilizáveis. Fachada muda a identificação quando muda a empresa (inclusive imóvel comercial alugado), sem recriar mesh de toda cidade, adicionar loja nova ou alterar atividade e propriedade por magia.
+
+---
+
 ## Refinamentos de interface aprovados e a validar — 2026-10-11
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** As decisões estão na SPEC; soluções de apresentação abaixo são propostas **PENDENTES**.
