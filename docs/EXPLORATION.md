@@ -42,6 +42,18 @@ Auditoria reconciliada em **2026-10-07** com o histórico de conversas disponív
 - **Processo de desenvolvimento e documentação** — revisão humana: **PARCIALMENTE REVISADO**; processo leve e SPEC viva já definidos. **Pesquisa nova de 2026-10-11 PENDENTE de revisão:** desenvolvimento quase 100% por IA, guardrails executáveis, tarefas pequenas, contexto seletivo, roteamento econômico/intermediário/avançado, validação e custo real; propostas não viram regras automaticamente. [Pesquisa e histórico](exploration/development-process.md); regras vigentes em `AGENTS.md`.
 - **Testes, debug e reprodução de bugs** — revisão humana: **PENDENTE**. Pesquisa temática em **cinco rodadas**, com rodada final em 2026-10-10. Investiga replay/checkpoints, logs causais, invariantes, cenário adversarial, performance, **ausência de decisão (why-not provenance)**, cobertura dos estados semânticos, fluxo de dinheiro/materiais, eventos raros, cidades extremas, simetrias e bots exploradores. Classifica valor, riscos e estratégias rejeitadas. **Pesquisa, não aprovação de arquitetura ou produto**: [documento temático](exploration/testing-debugging-reproducibility.md).
 
+## Rodada de oito decisões de produto — modos, experiência e atrações (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** O responsável escolheu **1B, 2A, 5C (direção para experimentar), 6A, 7A+B, 8B, 9B e 10B**. As oito escolhas foram promovidas à [SPEC](SPEC.md). A análise técnica adicional, inclusive sobre viabilidade de personalização modular, segue **PENDENTE** de revisão.
+
+- **Dois modos:** Criativo mantém moradores persistentes e deslocamentos/visitas simplificados, sem economia completa; modo escolhido ao criar cada cidade e fixo nesse save, sem conversão.
+- **Ambiente e educação:** decoração realmente colocada pode influenciar bem-estar/atratividade/valor **de modo local e contextual**, com custos coerentes no Convencional e sem acúmulo ilimitado de bônus; adultos podem estudar nos níveis existentes conforme vaga, acesso, horário e frequência reais.
+- **Turismo e inspeção:** atrações dedicadas reais somam-se aos parques/comércios já relevantes; câmera segue SIM selecionado sem controlá-lo; mapas temáticos expõem condições já simuladas, sem inventar dados no Criativo.
+- **Construção:** esboçar vários prédios/ruas em projeto visual sem reservar recursos, para confirmar **cada obra individualmente** conforme suas condições reais.
+- **Ainda em aberto:** **3 (desfazer/refazer)** — o responsável pediu explicação; **4 (personalização modular)** — questionou viabilidade na primeira versão. **Não aprovar automaticamente B ou A** nessas duas. Recomendação revisada da IA para 4: variantes visuais prontas no lançamento e pipeline de assets reutilizáveis, com montagem modular pelo jogador apenas se a experiência justificar. [Direção](exploration/product-direction.md), [interface](exploration/player-interface.md), [assets](exploration/asset-production-pipeline.md) e [prontidão](exploration/project-readiness.md).
+
+---
+
 ## Dez novas decisões aprovadas — escola, família, incêndio e trabalho (2026-10-11)
 
 > **Revisão humana: PARCIALMENTE REVISADO.** O responsável aprovou integralmente **1A/2A/3A/4A/5A/6B/7A/8C/9A/10A**. Regras oficiais em [SPEC](SPEC.md). Esta síntese não acrescenta funcionalidades além das escolhas.
