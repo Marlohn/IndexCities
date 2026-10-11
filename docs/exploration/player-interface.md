@@ -30,9 +30,13 @@
 
 ---
 
-## Construir com pouca leitura nos dois modos — decisão e propostas (2026-10-11)
+## Construir com pouca leitura — foco atual no Convencional (2026-10-11)
 
-> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou as cinco direções de experiência e os modos Criativo/Convencional; a [SPEC](../SPEC.md) contém o comportamento oficial. Os fluxos, componentes e critérios sugeridos abaixo são **PENDENTES** de revisão e não aprovam alterações de regras por inferência.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável confirmou a **construção visual intuitiva para quem ainda não lê como critério transversal desde já**, manteve a intenção de dois modos **para o futuro** e **adiou o desenvolvimento do Criativo**. A [SPEC](../SPEC.md) e o [AGENTS](../../AGENTS.md) definem o foco vigente no Convencional. Fluxos e componentes específicos abaixo continuam hipóteses **PENDENTES** de revisão, não requisitos adicionais.
+
+**Prioridade vigente:** a ferramenta de construção no modo Convencional deve ser intuitiva, visual e prazerosa desde o início, sem exigir leitura para escolher/posicionar, ainda que custos, materiais, equipes e demais consequências permaneçam reais. A presença futura do modo Criativo **não é justificativa para novas camadas de abstração ou simuladores paralelos agora**. Critérios para todo sistema: feedback visual reconhecível, poucos cliques, prévia clara e satisfação ao acompanhar resultado. Não impor a uma criança o entendimento de painéis econômicos; não retirar informação aprofundada de adultos.
+
+**Os exemplos de dois modos abaixo são históricos e estão congelados para revisão futura; apenas o fluxo Convencional orienta a investigação atual.**
 
 ### Experiência comum que vale construir uma única vez
 
@@ -46,7 +50,7 @@
 
 - **Criativo:** abrir catálogo por imagem → tocar em casa → mover prévia → colocar → ver casa imediatamente ou após efeito visual **não bloqueante** → escolher outra casa ou mudar aparência. Não exigir consultar dinheiro, entregas ou equipe para construir.
 - **Convencional:** abrir o **mesmo** catálogo → tocar em casa → prévia mostra posição/acesso + custo/recursos disponíveis em camada simples → confirmar pedido de obra → acompanhar execução física → se parar, ícone contextual mostra causa e permite abrir diagnóstico. Não transpor instantaneidade criativa para a economia convencional.
-- **Observação:** chamar a cidade de "viva" exige decisões específicas para o Criativo. No Convencional, movimento/atividade devem ser reais conforme SPEC. No Criativo, **não** pressupor trabalhadores, moradores, salários ou veículos fictícios; comparar propostas na [direção do produto](product-direction.md).
+- **Observação (histórica quanto ao Criativo):** no Convencional, movimento e atividade devem refletir a simulação real. A experiência Criativa e eventuais diferenças de atividade foram adiadas; quando retomadas, considerar o desejo de preservar ao máximo a experiência compartilhada. Ver [direção do produto](product-direction.md).
 
 ### Painéis por camadas
 
@@ -58,7 +62,7 @@
 
 ### Teste de usabilidade proposto
 
-Testar primeiro apenas **selecionar, posicionar, repetir, girar, corrigir e observar** com alguém que não lê; observar ajuda requerida, erros e abandono espontâneo, sem roteiro obrigatório. Depois testar o mesmo editor no Convencional com um gargalo real e verificar se o adulto encontra a causa em um ou dois aprofundamentos. Isso é sugestão de validação proporcional, não fase/POC obrigatória nem requisito de tutorial.
+No **Convencional**, observar uma pessoa que ainda não lê tentando **selecionar, posicionar, repetir, girar, corrigir uma prévia e acompanhar visualmente o resultado**, sem roteiro obrigatório; anotar onde precisa de ajuda ou perde interesse. Também testar com um adulto se a causa de um gargalo real pode ser investigada sem poluir a tela de construção. Isso é uma sugestão de validação proporcional, não fase/POC obrigatória nem requisito de tutorial. **Não depende de implementar o Criativo.**
 
 ---
  
