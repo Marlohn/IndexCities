@@ -14,6 +14,18 @@ Dar às próximas sessões uma visão única do que já está suficientemente de
 
 As prioridades são **orientação revisável**, não um impedimento para experimentar e tampouco autorização para implementar funcionalidades não aprovadas. A direção de trabalho é **Spec-Driven Development leve**: definir comportamentos oficiais na SPEC antes de implementá-los. A eventual POC é uma **validação integrada do jogo**; organizar a implementação em incrementos técnicos não cria uma obrigação de POCs separadas nem altera o escopo aprovado.
 
+## Modos Criativo/Convencional — nova direção de experiência (2026-10-11)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou explicitamente dois modos e cinco pilares de experiência na SPEC. O levantamento de riscos e prioridades abaixo é **PENDENTE** de revisão humana e não define implementação.
+
+**Já fechado:** Criativo permite construir sem bloqueios econômicos/logísticos; Convencional mantém regras reais de simulação, obras e recursos. Ambos devem priorizar construção visual intuitiva, atividade urbana perceptível, liberdade estética e interface em camadas. Construir no Criativo não depende de leitura. Não tratar o Criativo como mera carteira infinita nem impor ao Convencional construção instantânea. Ver [SPEC](../SPEC.md), [direção de produto](product-direction.md) e [interface](player-interface.md).
+
+**Lacuna de maior impacto antes de implementar o modo:** definir o que funciona como simulação de cidadãos, tráfego, empresas, serviços e economia dentro do Criativo; sem isso, não se deve inventar identidade/atividade fictícia nem decidir silenciosamente que tudo será cosmético. Comparar cena visual, simulação parcial e simulação completa para equilibrar diversão, clareza causal e custo técnico.
+
+**Demais pontos abertos, sem antecipar decisão:** criar/alternar modos no mesmo save; escopo seguro de desfazer no Convencional; catálogo de variantes/ornamentos e seus efeitos econômicos; detalhes da UI e das interações. Validar visualmente com uma pessoa sem leitura e um adulto, sem criar POC obrigatória nem processo extra.
+
+---
+
 ## Rodada de dez escolhas aprovada — impactos para integração (2026-10-11)
 
 > **Revisão humana: PARCIALMENTE REVISADO.** O responsável escolheu **1B/2B/3A/4A/5A/6B/7A/8A/9A/10B**, todos promovidos à SPEC; os riscos de integração abaixo são triagem da IA, não novos requisitos.
