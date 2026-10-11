@@ -29,6 +29,18 @@ As prioridades são **orientação revisável**, não um impedimento para experi
 
 ---
 
+## Nova rodada de 10 escolhas — integrações prioritárias e van escolar PENDENTE (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** As dez escolhas expressas constam na SPEC; riscos e proposta de van são triagem da IA PENDENTE.
+
+**Aprovadas 1B/2A/3A/4A/5A/6C/7A/8B/9B/10A:** aluguel comercial entre empresas (dono ≠ operadora), rateio proporcional automático de reparos compartilhados de imóvel misto, abastecimento interno entre filiais da mesma empresa com logística física e sem venda para si, prioridade por risco de perder moradia em verba insuficiente para auxílio-aluguel, iluminação pública das vias com energia/custo reais, adulto acompanhando menores à creche e escolar com autonomia viável, carona de familiares no carro único com lotação real, ônibus noturno adaptativo, chuva atmosférica sem efeito sistêmico e letreiro da empresa operadora.
+
+**Maiores cuidados de integração:** aluguel comercial modifica a restrição antiga de empresário sempre operador, implica caixa/contrato e falências distintos e merece especificação mínima antes do código; rateio de reparo do imóvel misto é **exceção específica** ao não rateio dos prédios exclusivamente residenciais, com falta de caixa e repartição pendentes; transferência interna não pode gerar vendas autodeclaradas; van escolar deve reduzir risco escolar e necessidade de deslocamento parental **apenas quando existir serviço físico real**, sem mascarar falta de transporte, pessoal ou horário.
+
+**Ainda NÃO decidido:** van escolar, levantada pelo responsável ao aprovar 6C. Comparar oferta somente a escolares (A), oferta também a creches com monitor real (B) e adiamento mantendo transporte já previsto (C). Pesquisar ganho de gameplay/custo antes de criar serviço, nova garagem ou política. **Não recalcular percentuais históricos apenas por esta rodada.**
+
+---
+
 ## Complemento da rodada de 10 decisões — aprovações e dependências (2026-10-11)
 
 > **Revisão humana: PARCIALMENTE REVISADO.** Decisões expressas registradas na SPEC; apontamentos de risco abaixo são PENDENTES.
