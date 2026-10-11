@@ -17,6 +17,25 @@ Este arquivo é material de exploração temática. Quando houver divergência, 
 
 ---
 
+## Proposta para calcular a influência ambiental percebida pelos SIMs — 2026-10-11
+
+> **Revisão humana desta seção: PENDENTE.** O comportamento de produto 5C **já foi aprovado na SPEC**: decoração colocada fisicamente pode contribuir, de forma local e contextual, para bem-estar/atratividade/valor imobiliário. A **fórmula e a organização da simulação abaixo são hipóteses técnicas**, não requisitos aprovados, nem sistema novo obrigatório.
+
+**Modelo mínimo sugerido:**
+
+1. **Dados espaciais existentes.** Particionar a cidade em pequenas áreas de consulta espacial (quadras/células ou outra estrutura conforme medição), reaproveitando as buscas e regiões de influência já necessárias a poluição, prédios, parques, serviços e avaliação imobiliária. Cada objeto decorativo relevante contribui para a **presença/qualidade ambiental efetiva perto dele**, não para uma soma mundial de felicidade.
+2. **Sem somar itens um por um infinitamente.** Uma área com alguma vegetação melhora em relação à mesma área totalmente asfaltada, mas árvores/canteiros repetidos dentro da mesma área têm **retorno decrescente/teto**. Quantidades de árvores, pontos, raio, pesos, relevância de cerca/banco e aparência de fachadas são calibração/decisão de catálogo, sem assumir que todo objeto tem bônus.
+3. **Exposição real do SIM.** Usar como início o entorno da **residência efetivamente ocupada** e, quando justificado, ambientes onde o SIM de fato permaneceu (trabalho, parque, visita) com tempo/contexto; não atribuir a felicidade de um jardim do outro lado da cidade. Amostrar passagem por trechos relevantes apenas se valer o custo, não a cada frame nem inspecionando cada objeto. Se ficar em casa, seu entorno residencial importa; se mudar, o ambiente novo pode gradualmente mudar a contribuição.
+4. **Não duplicar causas já simuladas.** Poluição ambiental já influencia saúde/atratividade e parques usados já oferecem benefício de lazer; a contribuição visual/local deve **complementar**, não somar duas vezes a mesma poluição, o mesmo acesso ao parque ou a mesma visita. Lixo acumulado que já afeta atratividade não precisa de penalidade decorativa separada. Não introduzir poluição sonora, clima ou manutenção estética como efeito novo por inferência.
+5. **Atualização econômica.** Recalcular apenas áreas impactadas quando houver colocação/remoção relevante, alteração de espaço público, mudança ambiental já existente ou troca do local efetivamente vivido pelo SIM. Derivar indicadores visuais e valor imobiliário de forma compartilhada; não iterar todos os pares objeto × SIM continuamente.
+6. **Feedback legível.** Na inspeção de moradia/SIM, explicar influência local por causas entendíveis: «vegetação no entorno», «praça acessível» (se aplicável), «poluição existente», sem exibir fórmula. Se útil, reaproveitar mapas temáticos 9B da SPEC; no Criativo, não fingir uma economia/felicidade equivalente à simulação convencional.
+
+**Exemplo qualitativo:** três árvores e um jardim distribuídos pelo entorno de várias casas podem ajudar mais do que vinte vasos concentrados num mesmo canto sem acesso/uso; um bairro arborizado não neutraliza automaticamente falta de água, fome ou poluição industrial. A regra exata de saturação, alcance, tempo de exposição e relevância por objeto depende de experimento de gameplay e desempenho. **Recomendo começar pela exposição residencial e ampliar para trajetos apenas se o teste demonstrar valor.**
+
+**Evidência, não parametrização literal:** [OMS, espaços verdes e saúde (2016)](https://www.who.int/europe/publications/i/item/WHO-EURO-2016-3352-43111-60341), [OMS, espaços verdes e saúde (2025)](https://www.who.int/publications/i/item/B09366), [revisão de espaços verdes e bem-estar (2021)](https://pubmed.ncbi.nlm.nih.gov/34066187/). As associações não fornecem percentuais automaticamente transferíveis para pontos de felicidade de um jogo.
+
+---
+
 ## Referência visual fornecida
 
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
@@ -79,7 +98,7 @@ Direção decidida:
 - árvores e outros elementos naturais podem ser removidos para construção;
 - variedade, densidade e integração com ruas/lotes devem receber atenção visual.
 
-Ainda pode ser explorado no futuro se vegetação terá efeitos sistêmicos adicionais além de apresentação e uso de espaços públicos.
+**Atualização:** a SPEC já aprovou que elementos decorativos/vegetação colocados possam contribuir localmente para bem-estar, atratividade e valor imobiliário (5C). A forma de calcular alcance/exposição e objetos elegíveis permanece em exploração nesta seção, sem efeitos automáticos idênticos por árvore.
 
 ### Parques, amenidades e serviços
 
