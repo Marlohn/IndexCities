@@ -8,6 +8,16 @@
 >
 > Reúne renda e consumo familiar, valor imobiliário, vulnerabilidade financeira, aluguel, propriedade, herança e investimento residencial por cidadãos.
 
+## Rateio de reparo misto e assistência infantil à creche (2026-10-11)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** As opções **2A, 6C e 7A** foram confirmadas e promovidas à SPEC; cálculo e logística fina seguem PENDENTES.
+
+- **2A (novo nesta rodada):** proprietários de apartamentos e da loja de edifício misto dividem **proporcionalmente** custos de reparo real de parte estrutural compartilhada, sem taxa genérica recorrente, empresa condominial ou “síndico”. **Não altera automaticamente prédios exclusivamente residenciais** com múltiplos donos e sem taxa/rateio condominial já aprovados. Definir peso de participação e insuficiência de dinheiro sem reparo gratuito antes de implementar.
+- **6C:** criança pequena de creche não pode aparecer sozinha na instituição: precisa de adulto responsável físico que a leve e busque. Estudantes escolares podem realizar trajeto sozinhos quando fase de vida, rota e horário realmente permitirem. **Van escolar proposta ainda NÃO aprovada**; se estendida à creche, exigirá acompanhante/monitor adulto real, para substituir a escolta familiar sem fingir adulto inexistente.
+- **7A:** familiares podem ocupar simultaneamente carro de propriedade individual, respeitando lugares e rota real. Carona reduz viagens quando trajetos/horários coincidirem, sem mudar dono, carteira econômica ou transformar passageiros em motoristas.
+
+---
+
 ## Auxílio temporário ao aluguel e propriedade separada em edifício misto (2026-10-11)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** **7B e 2A aprovadas** na SPEC; critérios concretos e cenários são investigação ainda **PENDENTE**.
