@@ -53,6 +53,20 @@ Material de projetos anteriores pode ser consultado no futuro como pesquisa, mas
 
 ---
 
+## Foco vigente e reavaliação futura — atualização do responsável em 2026-10-11
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável confirmou o **adiamento do modo Criativo**, a execução inicial **somente no Convencional**, o desejo de **minimizar diferenças desnecessárias entre os modos no futuro** e a **obrigação permanente de considerar a experiência de uma criança que ainda não lê e gosta sobretudo de construir**. Essas decisões estão na [SPEC](../SPEC.md) e no [AGENTS](../../AGENTS.md). As sugestões de como avaliar/testar ainda são hipóteses da IA, **PENDENTES** de revisão humana.
+
+- **Foco agora:** implementar o jogo Convencional integrado com profundidade econômica e social real; construir deve ser agradável, visual, com passos simples, prévias compreensíveis e possibilidade de observar uma cidade viva **sem exigir leitura para o gesto básico de escolher e posicionar**.
+- **Intenção futura mantida:** experiência Convencional e Criativa, mas **sem implementar agora qualquer modo Criativo, simulação paralela, seletor de modo ou arquitetura preparada apenas para ele**.
+- **Registro histórico, não tarefa atual:** as escolhas **1B (moradores persistentes com rotina simplificada no Criativo)** e **2A (modo fixo por save)** foram feitas na rodada anterior e continuam preservadas nas notas abaixo; diante do adiamento e da preocupação com diferenças grandes, **devem ser reavaliadas quando se decidir implementar o Criativo**, não utilizadas agora como requisitos para código. Isso não desfaz **3A (cancelamento de prévias, sem Ctrl+Z após confirmação)** nem **4A (variantes visuais prontas)** e outras decisões transversais que seguem aprovadas para o Convencional.
+- **Pergunta obrigatória em toda revisão futura:** uma pessoa que quer apenas criar consegue escolher, colocar, alterar a prévia, entender o resultado visual e obter satisfação ao ver a cidade funcionar? Uma pessoa interessada em gestão consegue investigar causas e consequências? Não exigir que a primeira entenda impostos; não amputar a simulação para a segunda.
+- **Teste quando houver jogo utilizável:** observar uma pessoa pré-alfabetizada tentando construir, sem depender de instruções de leitura, e um adulto usando diagnósticos reais. Propor melhorias guiadas por fricção observável, sem tornar isso uma POC obrigatória.
+
+**As comparações e recomendações antigas abaixo são histórico da investigação anterior, não o plano vigente.**
+
+---
+
 ## Público amplo e dois modos de jogo — decisão de 2026-10-11
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável **aprovou** a existência dos modos **Criativo/Convencional** e cinco direções de experiência: liberdade criativa sem bloqueio econômico/logístico; construção visual intuitiva; cidade viva; expressão estética; interface em camadas. Isso já está na [SPEC](../SPEC.md). **As alternativas técnicas, trade-offs, exemplos e critérios de teste abaixo são proposta da IA, PENDENTES de revisão.** Não são arquitetura ou regras de gameplay aprovadas.
@@ -109,7 +123,7 @@ Atender tanto quem quer criar uma cidade sem ler, administrar ou otimizar (inclu
 - **Adulto:** construir um bairro no Convencional, identificar um bloqueio de materiais ou serviço **pelo sinal visual** e, se quiser, aprofundar o diagnóstico e resolver a causa real.
 - **Critério qualitativo:** construir nunca deve parecer preencher um formulário; aprofundar nunca deve parecer investigar uma caixa-preta; jogar um modo não deve exigir conhecer o outro.
 
-**Atualização de 2026-10-11:** os quatro temas historicamente levantados acima foram resolvidos quanto à direção oficial: Criativo com simulação seletiva, modo fixo por cidade, sem desfazer pós-confirmação (3A) e personalização inicial por variantes prontas (4A). Apenas quantidades de catálogo, detalhes de UI e calibração proporcional seguem abertos; eventuais expansões precisam de decisão específica.
+**Atualização posterior de escopo (2026-10-11):** a simulação seletiva do Criativo (1B) e o modo fixo por cidade (2A) são escolhas **históricas para reavaliação futura**, não requisitos ativos da implementação atual. Continuam vigentes no Convencional a regra de prévia/sem desfazer pós-confirmação (3A), variantes prontas (4A) e demais escolhas transversais da SPEC. A estrutura exata do futuro Criativo não deve ser decidida nem implementada antecipadamente.
 
 ---
 
