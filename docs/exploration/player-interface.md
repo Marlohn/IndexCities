@@ -8,6 +8,18 @@
 >
 > A autoridade de produto continua sendo `docs/SPEC.md`. Este documento concentra pesquisa, alternativas, referências e hipóteses sobre interface e ferramentas do jogador. Quando uma decisão fecha, o resultado oficial deve ser promovido para `docs/SPEC.md`; este arquivo preserva o raciocínio e o material ainda em formação.
 
+## Refinamentos de interface aprovados e a validar — 2026-10-11
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** As decisões estão na SPEC; soluções de apresentação abaixo são propostas **PENDENTES**.
+
+- **Reforma estética de imóvel privado 1A:** disponível como ferramenta de alteração de variante visual compatível, **com custo real pago pelo Caixa da Cidade**; apresentação deve mostrar custo e distinguir a ação de demolição/reforma estrutural, sem pedir aceitação do proprietário nem tirar seu dinheiro.
+- **Edifício misto 2A:** ao selecionar, permitir distinguir unidade residencial de espaço comercial **reais** e seus titulares diferentes, sem inserir modelo econômico adicional só por existir um asset 3D único. Partes comuns e intervenções ainda exigem definição.
+- **Demolir rua 9A:** mostrar alerta contextual e consequências prováveis sobre ligações reais antes da remoção; não impedir decisão do jogador apenas pela falta de alternativa e não inventar desvio.
+- **Finanças municipais — exigência geral aprovada:** painel inicial com despesa agregada por categorias reais e **filtro/expansão sob demanda por período, serviço, programa e transação**; valores e destinatários reais, com compromisso/pago/dívida distintos. **Auxílio-aluguel (7B)** aparece entre despesas sociais, com valores/beneficiários reais e sem mostrar pagamento inexistente.
+- **Perguntas 4 e 5 desta nova rodada permanecem sem resposta:** não presumir botão de encerramento de pedido ou nova política de compras públicas na interface.
+
+---
+
 ## Novas escolhas de construção e apresentação — Convencional (2026-10-11)
 
 **Esclarecimento 6 confirmado para o Convencional (2026-10-11):** prédio em posição fisicamente válida é **confirmável mesmo sem rua de entrega**, mas fica **«Obra parada: sem acesso para entrega de materiais»** até que exista rota real para caminhões, materiais e equipes, sem progresso fictício. Mostrar aviso na prévia. Usar estados visualmente distintos para **inválido fisicamente (não confirma)** e **válido mas sem acesso (confirma/aguarda)**. Uma rua apenas planejada não desbloqueia logística.
