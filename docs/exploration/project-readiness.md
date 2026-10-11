@@ -29,6 +29,18 @@ As prioridades são **orientação revisável**, não um impedimento para experi
 
 ---
 
+## Complemento da rodada de 10 decisões — aprovações e dependências (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** Decisões expressas registradas na SPEC; apontamentos de risco abaixo são PENDENTES.
+
+**Aprovados 1A/2A/3A/6B/7B/8B/9A/10B:** mudança cosmética em patrimônio privado pelo jogador com pagamento municipal; propriedade por unidades de prédio misto; empresa mantém imóvel vazio e vende/reutiliza; política municipal geral de ingressos grátis/pagos; auxílio temporário ao aluguel para famílias reais; semana com folgas e fins de semana; demolição livre com alerta de isolamento; carro individual utilizável por outros adultos da família quando livre. **Obrigação global aprovada:** detalhar **todos** os gastos reais do Caixa sob demanda, distinguindo comprometimentos, pagamentos e dívidas.
+
+**Questões de produto ainda abertas:** perguntas **4 (encerrar pedidos de SIMs solucionados)** e **5 (política de preferências nas compras públicas)** não foram respondidas; **locação comercial** foi sugerida pelo responsável mas não aprovada. As regras atuais mantêm mesma empresa dona e operadora comercial, apesar da 3A que permite imóvel vazio retido. **Partes comuns/intervenção** de edifício misto e parâmetros de **auxílio-aluguel** precisam de especificação antes do código.
+
+**Validação proporcional:** transparência da contabilidade sem painel obrigatório a cada transação; não confundir ajuda paga ao locador com pagamento completo de aluguel da família; escala semanal sem empregar pessoas inexistentes; acesso viário após demolir segmento; evitar duplicar identidade/carro quando familiares compartilham veículo. Não criar frentes técnicas paralelas apenas para preencher checklist.
+
+---
+
 ## Revisão de 20 questões: escolhas Convencionais e cautelas (2026-10-11)
 
 > **Revisão humana: PARCIALMENTE REVISADO.** Aprovações do responsável estão na SPEC; riscos e prioridades abaixo são **PENDENTES** de revisão humana.
