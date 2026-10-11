@@ -65,7 +65,7 @@ Material de projetos anteriores pode ser consultado no futuro como pesquisa, mas
 - **Modo fixo por cidade**, sem transformação de save entre Criativo e Convencional. Ambos compartilham a linguagem visual; câmera de acompanhamento de SIM também funciona com o nível de informação existente no modo.
 - No Convencional, decoração física paga influencia ambiente e felicidade de forma **local, contextual e não ilimitadamente acumulável**, coexistindo com a regra já aprovada de visitas reais a parques. Adultos podem voltar a estudar e atrações dedicadas ampliam o turismo, respeitando instituições, vagas, visitas e custos verdadeiros.
 - A interface poderá mostrar mapas temáticos baseados nos estados verdadeiros do respectivo modo e manter esboços transparentes de várias construções sem custo/reserva; **cada obra se confirma separadamente** antes de qualquer compromisso econômico.
-- **Permanecem em aberto as perguntas 3 e 4:** política exata de desfazer/refazer e nível inicial de personalização modular pelo jogador. Não tratar variantes geradas no pipeline como aprovação de um editor de fachadas/telhados no jogo.
+- **As perguntas 3 e 4 foram fechadas na SPEC:** **3A** cancela/corrige prévias sem desfazer histórico de obras confirmadas; **4A** permite variantes visuais de prédios pré-compostas, **sem editor de módulos por peça no primeiro modelo**. Não tratar variantes geradas no pipeline como aprovação de um futuro editor modular.
 
 **Nota histórica:** as três alternativas comparadas abaixo foram pesquisadas antes dessa escolha. A opção aprovada não é cidade exclusivamente decorativa nem simulação econômica integral disfarçada.
 
@@ -109,7 +109,7 @@ Atender tanto quem quer criar uma cidade sem ler, administrar ou otimizar (inclu
 - **Adulto:** construir um bairro no Convencional, identificar um bloqueio de materiais ou serviço **pelo sinal visual** e, se quiser, aprofundar o diagnóstico e resolver a causa real.
 - **Critério qualitativo:** construir nunca deve parecer preencher um formulário; aprofundar nunca deve parecer investigar uma caixa-preta; jogar um modo não deve exigir conhecer o outro.
 
-**Pendências de decisão com impacto real:** (a) quanto da simulação social, econômica e de trânsito existe no Criativo; (b) momento de escolha e eventual troca de modo; (c) semântica do desfazer depois da confirmação no Convencional; (d) catálogo inicial mínimo e limites de personalização. Só fechar após comparar custos e consequências.
+**Atualização de 2026-10-11:** os quatro temas historicamente levantados acima foram resolvidos quanto à direção oficial: Criativo com simulação seletiva, modo fixo por cidade, sem desfazer pós-confirmação (3A) e personalização inicial por variantes prontas (4A). Apenas quantidades de catálogo, detalhes de UI e calibração proporcional seguem abertos; eventuais expansões precisam de decisão específica.
 
 ---
 
