@@ -8,6 +8,17 @@
 >
 > Reúne empresas privadas, demanda, aquisição de ativos, caixa empresarial, falência, abastecimento, conexão econômica externa e interpretação do Caixa da Cidade.
 
+## Contratos comerciais — rodada de 30 confirmada e prazo ainda aberto (2026-10-11)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** As escolhas 8A, 9A, 10A, 11A, 12A, 13A (com retomada solicitada pelo novo proprietário), 14A e 15A estão na SPEC. A sugestão de adotar **3 meses também no comércio** foi levantada como dúvida, **não é decisão**.
+
+- **Modelo econômico:** aluguel comercial calculado automaticamente como percentual do valor imobiliário do ativo, pagamento mensal, reajuste anual no mesmo princípio residencial, com percentuais calibráveis por categoria, sem negociação de preços a cada operação.
+- **Contrato:** contínuo/renovável com aviso, sem administração manual do jogador; dívida do operador não paga pelo proprietário, inadimplência persistente causa encerramento, mas **prazo comercial permanece aberto**. Igualar o prazo de três meses do aluguel residencial reduz sistemas, mas pode deixar operador inviável acumular perdas; escolher após consequência concreta, não inferir da escolha 10A.
+- **Responsabilidades:** locador paga imposto imobiliário e estrutura que lhe pertence; operadora paga água/energia usadas, adaptações e dano de sua própria operação, com reparos compartilhados de prédio misto conforme outra regra.
+- **Venda e falência:** locação permanece na venda, inclusive em liquidação do imóvel de uma empresa falida; novo proprietário **pode pedir o imóvel para uso próprio**, mas encerramento deve permitir transição/retirada real e aviso sem retirada instantânea. Locatária que fecha filial pode pedir saída sem extinguir empresa inteira, e mantém obrigações reais.
+- **Casos de teste:** loja saudável em imóvel cujo dono faliu; proprietário comprou loja ocupada e pediu uso próprio; indústria locatária encerrou unidade com equipamentos/estoque próprios; locatária sem recursos e prazo de despejo comercial; imóvel misto com unidade comercial locada. Nenhum teste é requisito de minijogo jurídico.
+
+
 ## Aluguel comercial entre empresas, filiais e identidade do operador — 2026-10-11
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** As escolhas **1B, 2A, 3A e 10A** foram expressas pelo responsável e estão na SPEC. Riscos/modelagem abaixo permanecem avaliação da IA, não aprovação de regras numéricas.
