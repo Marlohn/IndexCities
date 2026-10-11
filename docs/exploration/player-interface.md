@@ -8,6 +8,18 @@
 >
 > A autoridade de produto continua sendo `docs/SPEC.md`. Este documento concentra pesquisa, alternativas, referências e hipóteses sobre interface e ferramentas do jogador. Quando uma decisão fecha, o resultado oficial deve ser promovido para `docs/SPEC.md`; este arquivo preserva o raciocínio e o material ainda em formação.
 
+## Rodada aprovada de experiência e ferramentas (2026-10-11)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** A decisão humana foi promovida à SPEC; as sugestões de UI abaixo seguem PENDENTES de validação.
+
+- **8B — acompanhar SIM:** a seleção permite seguir sua posição com câmera e voltar à câmera livre; sem comandar escolhas, compatível com circulação simplificada no Criativo.
+- **9B — mapas temáticos:** camadas visuais contextuais para congestionamento, poluição, serviços e temas econômicos somente onde a simulação do modo efetivamente gerar dados, com causas consultáveis sem avalanche de avisos.
+- **10B — planejamento de bairro:** desenhar e rever vários *fantasmas* de prédios/ruas sem construir, reservar ou gastar nada; **cada item exige confirmação individual** para virar obra Convencional efetiva. Objetos apenas planejados não dão acesso, capacidade ou vantagens urbanas. Isto **não** aprova execução automática por lote.
+- **Pendente 3:** o responsável pediu explicação de desfazer/refazer. Sem histórico de rollback pós-obra aprovado em qualquer modo; a distinção entre prévia e execução real permanece.
+- **Pendente 4:** o responsável questionou a viabilidade de modularidade B já no começo. Variantes prontas e assets modulares *na produção* são hipótese de menor risco, mas **não há nova decisão de editor modular no jogo**. [Pesquisa de assets](asset-production-pipeline.md).
+
+---
+
 ## Sem upgrades físicos de prédios concluídos na implementação inicial — decisão de 2026-10-10
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável confirmou o adiamento de ampliações/evoluções de edificações, principalmente pelo custo de novos assets e controle de upgrades. Explicações e melhorias futuras abaixo permanecem hipóteses não revisadas integralmente; a regra oficial consta na [SPEC](../SPEC.md).
