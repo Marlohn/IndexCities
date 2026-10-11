@@ -86,7 +86,7 @@ Atender tanto quem quer criar uma cidade sem ler, administrar ou otimizar (inclu
 
 **Ponto decisivo:** o Criativo **não é apenas** o Convencional com uma carteira infinita. Se ele continuar exigindo entrega de materiais, equipe e espera, a criança não consegue construir; se receber dinheiro/recursos do nada enquanto a economia integral roda, quebramos a causalidade do modelo convencional. Essas abordagens precisam ser distinguidas.
 
-**Três caminhos para o funcionamento interno do Criativo (todos ainda abertos):**
+**Três caminhos originalmente comparados (registro histórico; escolha seletiva simplificada 1B já aprovada acima):**
 
 1. **Simulação convencional inteira, construção livre:** reaproveita a maior parte dos sistemas, mas pode gerar empresas quebradas, prédios vazios e operações economicamente incoerentes. Alto risco de excesso de exceções.
 2. **Cidade principalmente visual, com circulação/atividade ambiental:** entrega construção e movimento facilmente; sacrifica histórias e causalidade individual reais no Criativo. Não chamar personagens decorativos de SIMs econômicos persistentes.
