@@ -10,6 +10,14 @@
 
 **Mudança importante desde a pesquisa anterior:** a SPEC de 2026-10-11 aprovou **dois modos, Criativo e Convencional**, e valoriza **construção compreensível sem leitura, variedade estética e feedback visual**. Isso aumenta a importância de silhuetas fáceis de reconhecer, miniaturas consistentes, variantes visuais e acessos perceptíveis; **não** aprova automaticamente todos os novos objetos decorativos nem como funcionam SIMs/economia no Criativo.
 
+## Viabilidade de modularidade no lançamento — reavaliação de 2026-10-11
+
+> **Revisão humana desta seção: PENDENTE.** O responsável **não aprovou** o editor modular da alternativa 4B; perguntou se é viável no primeiro momento. Esta é uma análise/recomendação para discussão, não nova funcionalidade da SPEC.
+
+**Conclusão:** famílias de meshes e peças modulares **na autoria de assets** são tecnicamente viáveis e já estão recomendadas no pipeline; **não equivalem** a oferecer no lançamento um editor in-game de fachadas, telhados, cercas e peças compatíveis. Este último exige catálogo de encaixes, controle de colisão/footprint/acesso, UI sem leitura, persistência de combinações e testes de desempenho em escala, além de produção artística. Na Godot, [instanciamento/otimização 3D](https://docs.godotengine.org/en/stable/tutorials/performance/optimizing_3d_performance.html) ajuda a renderizar repetições, mas não resolve experiência de autoria ou regras de encaixe. O jogo [Foundation](https://wiki.polymorph.games/foundation/Buildings) demonstra modularidade seletiva em construções específicas, enquanto o criador de [Tiny Glade relatou](https://steamcommunity.com/app/2198150/discussions/0/4844273660400957331/) que até controlar os adereços individuais exigiu limitar escopo no lançamento.
+
+**Proposta proporcional para decidir depois:** oferecer **variantes completas prontas** (silhuetas/cores/fachadas/telhados produzidos e validados fora da simulação) e decoração colocável, preservando estrutura de assets reutilizáveis que permita testar modularidade pelo jogador posteriormente. Não prometer que o editor virá, nem transformar pipeline de arte em requisito de gameplay. A decisão de decoração com efeitos locais (5C) já está na SPEC; **catálogo/quantidade e editor modular da pergunta 4 continuam abertos**.
+
 ## 1. Evidências externas comparadas (e limites)
 
 | Caso / fonte verificável | Aprendizado específico que vale aproveitar | NÃO copiar |
