@@ -150,6 +150,60 @@ Após existir um pequeno conjunto de tarefas reais e repetíveis, comparar **doi
 
 ---
 
+## Pesquisa — orquestração multiagente e sessões longas (2026-10-11)
+
+> **Revisão humana desta seção: PENDENTE.** Recomendação exploratória, não é regra oficial de trabalho. `AGENTS.md`, `docs/SPEC.md` e `docs/ARCHITECTURE.md` permanecem autoritativos. Estudo externo, **não experimento medido no IndexCities**.
+
+### Recomendação em uma frase
+
+**Orquestração leve e seletiva, não enxame permanente:** uma sessão/agent responsável por integrar o trabalho, **um implementador de cada mudança dependente**, revisor independente conforme o risco e **paralelo somente para tarefas com fronteiras estáveis e verificáveis**. Um orquestrador pode inicialmente ser apenas a IA principal consultando Git/CI e delegando quando oportuno; **não precisa ser serviço, framework ou agente sempre ligado**. Usar modelos de fornecedores diferentes é viável **se** o ambiente/integrações permitirem executá-los, cada um operar sobre o mesmo commit-base e a revisão/integração não depender de conversas privadas. Nenhuma plataforma específica foi escolhida.
+
+### Evidência, limites e alternativas
+
+- **Agente único, sequencial:** menor custo de coordenação e melhor continuidade local; para uma mudança curta e acoplada, geralmente preferível.
+- **Paralelismo irrestrito no mesmo código:** pode reduzir tempo de calendário, mas multiplica mudanças incompatíveis, repetição, custo de tokens e trabalho de merge. **Anthropic Research (2025)** relata ~15 vezes os tokens de chat em seu sistema multiagente; ressalta que **pesquisa é mais paralelizável que a maior parte da programação**. Esse número **não se aplica diretamente** ao IndexCities.
+- **Paralelismo isolado:** no experimento de **16 agentes construindo um compilador C (Anthropic, fev. 2026)**, tarefas independentes progrediram bem, mas todos tentando resolver um único bloqueio da compilação do kernel produziam correções concorrentes e sobrescritas. O experimento consumiu ~US$ 20 mil em API: prova de viabilidade **não de custo/benefício para um jogo**. Isolar agentes e aplicar testes fortes foram decisivos.
+- **Planejador → implementador → avaliador:** experimento da Anthropic (mar. 2026) ganhou robustez ao separar execução de avaliação e ao usar handoffs verificáveis. Porém sua versão com 3 agentes podia consumir muito mais tempo e custo (exemplo de $9 / 20 min vs $200 / 6 h). Não adotar três papéis para todo commit. **No IndexCities, nenhum planejador pode ampliar a SPEC por conta própria.**
+- **Sessões longas:** estudos da Anthropic (nov. 2025/mar. 2026) apontam falhas quando o contexto cresce: tentar tudo num único prompt, parar no meio ou declarar tudo concluído. Reiniciar contexto com **handoff estruturado e estado real do repositório** pode ser melhor que insistir na mesma conversa; compaction ajuda mas não substitui checar Git/testes. Experimento OpenAI Codex (fev. 2026) também enfatiza memória durável **fora do chat**.
+
+**Não confundir duas formas de paralelismo:** (a) *paralelo de leitura/pesquisa/revisão*, frequentemente seguro e barato de integrar; (b) *paralelo de código*, apropriado somente com contratos e arquivos/domínios suficientemente separados. **Nunca tratar consenso entre modelos como teste de correção.**
+
+### Fluxo recomendado para começar (proposta)
+
+1. **Um responsável pela integração** (agente principal; pode ser modelo mais capaz no planejamento de mudanças complexas). Lê regras atuais, seleciona uma mudança pequena coberta pela SPEC e explicita entradas, saídas e dependências. Não há permissão para inventar funcionalidade.
+2. **Executar prioritariamente em série:** uma IA implementa a menor parte coerente em branch/worktree, roda os testes pertinentes e entrega diff, resultado e pendências. Agente barato quando a tarefa tiver aceitação clara; modelo mais forte quando envolver causalidade cruzada ou investigação complexa.
+3. **Revisão independente por risco:** outro modelo **somente lê** regras/alterações/testes, busca violações de SPEC, quebra de invariantes e dependências proibidas. Revisão de IA não substitui teste nem validação de gameplay. Se encontrar algo, devolver ao implementador, sem dois agentes corrigindo o mesmo arquivo às cegas.
+4. **Integrar uma mudança por vez:** testes locais, integração dos contratos afetados, checks de CI quando existirem, regressões reproduzíveis. `main` deve permanecer recuperável. Para trabalho paralelo, cada escritor trabalha numa branch ou `git worktree` separado, em commit-base identificado, sem acesso irrestrito a mudanças dos outros; integrar apenas após atualizar a base, resolver conflitos e validar novamente.
+5. **Aumentar paralelismo por evidência:** começar com 1 implementador e revisor sob demanda; experimentar 2 implementadores somente quando houver tarefas de baixo acoplamento e baseline que compila. Não fixar N agentes/etapas como regra permanente.
+
+**Exemplos IndexCities:** produzir catálogo/validação de assets ou UI demonstrativa **sobre um contrato já fechado** em paralelo a testes independentes do Core pode fazer sentido. Duas IAs alterando simultaneamente transferência de dinheiro, Reserva Global, propriedade e tributação **não**: esses subsistemas partilham invariantes, mesmo que estejam em arquivos diferentes. No começo, contratos mínimos e infraestrutura de compilação vêm antes de delegar amplamente sobre interfaces ainda móveis. Isso **não altera** a primeira entrega integrada definida na SPEC.
+
+### Problema dos prompts one-shot e como atravessar sessões
+
+**One-shot por unidade de trabalho, não one-shot do jogo inteiro.** Uma tarefa boa já chega com comportamento da SPEC, arquivos/fronteiras prováveis, critérios verificáveis e condição de parada. O agente deve primeiro confirmar o estado de Git e testes, depois executar. Ao acabar, não pedir novo código genérico em sequência no contexto já carregado: encerrar a unidade com resultado verificável e iniciar outra sessão quando a tarefa ou o contexto tiver mudado materialmente.
+
+**Fonte de continuidade:** (1) SPEC/ARCHITECTURE/AGENTS vigentes; (2) código e commits; (3) testes e saídas da CI; (4) **handoff curto da tarefa corrente** — em descrição de PR/issue ou nota temporária no branch quando realmente necessário — contendo apenas *commit/base, objetivo e seção da SPEC, arquivos/contratos tocados, o que foi validado, estado real, falhas e próximo passo*. Não usar resumo de conversa como autoridade nem copiar histórico de raciocínio. Remover/encerrar notas temporárias após integração; se handoffs recorrentes falharem, considerar um registro leve de estado de implementação, **sem criar agora uma segunda SPEC ou uma esteira obrigatória**.
+
+**Ao iniciar nova sessão:** conferir branch/HEAD e diff; ler regras pertinentes e handoff; executar um comando curto de validação; confrontar o estado descrito com o existente; escolher **uma** mudança. Se o agente disser que concluiu sem teste, divergir da SPEC ou solicitar decisão já registrada, não confiar na narrativa — voltar às fontes e evidências.
+
+### Qual modelo coordena? E quando escalar?
+
+O **orquestrador não precisa ser o mais caro sempre**: delegação simples, controle de status e coleta de diffs podem ser determinísticos ou feitos por modelo econômico. Usar um modelo mais forte para decompor tarefa inédita/ambígua ou revisar risco alto, nunca para **autorizar gameplay** ausente. Modelos diferentes servem também como revisão independente, embora seus erros possam ser correlacionados. Escalar diante de tentativas repetidas, diff crescente, mudança de contratos centrais, erro sem reprodução, resultado sem teste ou suspeita de incompatibilidade entre módulos. **O ganho relevante é custo/tempo por mudança integrada e correta**, não tokens ou linhas de código por minuto.
+
+**Teste de adoção após o primeiro código real:** comparar pequeno conjunto de tarefas representativas resolvidas com agente único vs implementador+revisor vs duas tarefas independentes em paralelo, usando custo completo, tempo até integração, conflitos e defeitos encontrados. Se os ganhos não superarem a coordenação, manter agentes sequenciais. **Não automatizar orquestração complexa antes de essa comparação indicar necessidade.**
+
+### Fontes primárias
+
+- [Anthropic — How we built our multi-agent research system (jun. 2025)](https://www.anthropic.com/engineering/multi-agent-research-system): forte paralelismo em pesquisa; custo de tokens e limitações em código.
+- [Anthropic — Building a C compiler with a team of parallel Claudes (fev. 2026)](https://www.anthropic.com/engineering/building-c-compiler): isolamento, colisões, testes e custo real.
+- [Anthropic — Effective harnesses for long-running agents (nov. 2025)](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents): initializer, handoff e retomar por Git/validação.
+- [Anthropic — Harness design for long-running application development (mar. 2026)](https://www.anthropic.com/engineering/harness-design-long-running-apps): resets de contexto, avaliação separada e custo.
+- [OpenAI — Run long horizon tasks with Codex (fev. 2026)](https://developers.openai.com/blog/run-long-horizon-tasks-with-codex) e [Harness engineering (fev. 2026)](https://openai.com/index/harness-engineering/): memória externa, verificações e worktrees.
+- [OpenAI — Orchestration and handoffs](https://developers.openai.com/api/docs/guides/agents/orchestration): agente gestor e especialistas como ferramentas.
+- [Git — git-worktree](https://git-scm.com/docs/git-worktree): múltiplas árvores isoladas do mesmo repositório.
+
+---
+
 ## Arquitetura de desenvolvimento
 
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
