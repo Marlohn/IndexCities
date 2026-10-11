@@ -8,6 +8,17 @@
 >
 > Reúne empresas privadas, demanda, aquisição de ativos, caixa empresarial, falência, abastecimento, conexão econômica externa e interpretação do Caixa da Cidade.
 
+## Complemento de produto: lojas alternativas, várias unidades e uso misto (2026-10-11)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou 14B, 17B e 18A na SPEC; a comparação da 16 e riscos abaixo são exploração PENDENTE.
+
+- **14B:** SIM que não consegue concluir uma compra num estabelecimento pode procurar automaticamente **outra loja real viável**; estoque, preço, capacidade, horário, dinheiro e viagem continuam concretos. Sem compra instantânea importada, loops de busca ou clientes duplicados.
+- **17B:** aprovada a existência de **alguns edifícios com comércio no térreo e moradias acima**, com famílias/unidades residenciais reais e empresa real em espaço distinto. **Risco relevante não decidido:** propriedade de partes comuns, primeira venda, tributos, indenização e transição/realocação; é incorreto atribuir o mesmo prédio inteiro simultaneamente a SIM e empresa. Resolver antes da implementação correspondente sem introduzir estrutura de condomínio formal.
+- **18A:** estocagem privada em cada fábrica/loja/fazenda; **não** criar armazém privado independente ou centro logístico empresarial adicional no primeiro modelo. Centro de Materiais e entregas físicas já aprovados permanecem.
+- **16 ficou em esclarecimento, não nova escolha:** na SPEC, **fechar somente um estabelecimento enquanto a empresa continua operando outros já é possível**, implicando um único agente econômico com caixa empresarial próprio. **B** significa vários estabelecimentos de **uma empresa** (não dinheiro separado por filial); **C** significaria **várias empresas distintas sob um grupo controlador**, cada uma com caixa/dívidas/falência, e exigiria a nova camada de propriedade empresarial que foi excluída do primeiro modelo. Não criar sociedades/holdings por inferência.
+
+---
+
 ## Salário atrasado e escolha do SIM empregado — opção 6B (2026-10-11)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** A opção 6B foi aprovada e consta da SPEC.
