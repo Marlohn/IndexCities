@@ -6,6 +6,16 @@
 >
 > **Critério de leitura:** diferenciar mecânica observada em outro jogo, hipótese proposta para IndexCities, exigências já aprovadas na SPEC e vantagens alegadas/experiências comunitárias. Fontes oficiais/de desenvolvedores preferidas; wiki de fãs e comunidades rotuladas como tal. Jogos de épocas diferentes são comparados quanto ao *padrão de gameplay*, não copiados.
 
+## Auxílio-aluguel, iluminação e possível van escolar — decisões de 2026-10-11
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou **4A** e **5A**; os contornos do serviço de van escolar são apenas pesquisa **PENDENTE**.
+
+- **4A aprovada:** quando o Caixa não permitir pagar o auxílio-aluguel a todos os beneficiários elegíveis, **priorizar risco de desocupação/perda de moradia concreto** com regras automáticas baseadas no contexto financeiro e prazo real, registrando gastos pagos/beneficiários/impedimentos. Não confundir seleção com valor garantido, nem alterar o contrato sem transferência.
+- **5A aprovada:** iluminação pública faz parte da rua urbana, depende de energia real, gera despesa do Caixa e precisa constar nas finanças da Prefeitura sem duplicar despesas existentes. Posicionamento individual de postes não é obrigatório.
+- **Serviço de van escolar — ideia em discussão, NÃO aprovada:** se escolhido, deve ser uma **oferta municipal opcional/ajustável por decisão agregada** ou infraestrutura/serviço normal, não gerência de rotas por família. Poderia reduzir faltas por acesso e necessidade de acompanhante, mas demanda veículo, motorista, combustível, assentos, eventual monitor de creche e custo no orçamento. **Decidir escopo A/B/C com responsável antes da SPEC.**
+
+---
+
 ## Novas políticas e prestação de contas — escolhas 1A, 6B, 7B e gastos públicos (2026-10-11)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** Direção aprovada pelo responsável, registrada na [SPEC](../SPEC.md). Apresentação, parâmetros e riscos descritos abaixo continuam proposta/validação **PENDENTES**.
