@@ -15,8 +15,8 @@
 - **8B — acompanhar SIM:** a seleção permite seguir sua posição com câmera e voltar à câmera livre; sem comandar escolhas, compatível com circulação simplificada no Criativo.
 - **9B — mapas temáticos:** camadas visuais contextuais para congestionamento, poluição, serviços e temas econômicos somente onde a simulação do modo efetivamente gerar dados, com causas consultáveis sem avalanche de avisos.
 - **10B — planejamento de bairro:** desenhar e rever vários *fantasmas* de prédios/ruas sem construir, reservar ou gastar nada; **cada item exige confirmação individual** para virar obra Convencional efetiva. Objetos apenas planejados não dão acesso, capacidade ou vantagens urbanas. Isto **não** aprova execução automática por lote.
-- **Pendente 3:** o responsável pediu explicação de desfazer/refazer. Sem histórico de rollback pós-obra aprovado em qualquer modo; a distinção entre prévia e execução real permanece.
-- **Pendente 4:** o responsável questionou a viabilidade de modularidade B já no começo. Variantes prontas e assets modulares *na produção* são hipótese de menor risco, mas **não há nova decisão de editor modular no jogo**. [Pesquisa de assets](asset-production-pipeline.md).
+- **3A — APROVADA:** prévias podem ser corrigidas ou canceladas antes da confirmação; ações confirmadas não podem ser revertidas por histórico de desfazer. A correção posterior usa ferramentas normais conforme as regras do modo.
+- **4A — APROVADA:** edifícios terão variantes visuais completas pré-compostas e decoração independente; sem editor de módulos por peças pelo jogador no primeiro modelo. [Pesquisa de assets](asset-production-pipeline.md).
 
 ---
 
@@ -39,7 +39,7 @@
 1. **Catálogo ilustrado:** grupos curtos e reconhecíveis (casas, ruas, serviços, natureza), miniaturas reais dos modelos e alvos generosos. Texto curto serve a leitores; **a imagem precisa permitir escolher sem ler**. Não presumir categorias definitivas ou telas prontas.
 2. **Escolha e colocação:** escolher imagem, mover prévia translúcida sobre o terreno, girar/ajustar com controle simples, confirmar e visualizar a mudança. Usar a grade/encaixes e validação física já aprovados, sem exigir arrastar precisamente um objeto minúsculo. A mesma ação deve servir à repetição/pipeta já especificadas.
 3. **Feedback multimodal:** forma, movimento e sinal visual da prévia distinguem posição possível/impossível; texto contextual explica a causa para leitores. Não depender apenas de vermelho/verde. Confirmação deve produzir resposta visual inequívoca; animações/sons opcionais ajudam sem sobrecarregar.
-4. **Correção:** cancelar prévia e voltar à seleção deve ser trivial. Um histórico curto de desfazer/refazer é candidato forte para o Criativo, **mas** no Convencional o desfazer de obra confirmada não pode apagar pagamentos, propriedade ou efeitos reais sem regra expressa. Priorizar prévia/confirmação e cancelamento seguro antes de inventar rollback de toda a simulação.
+4. **Correção — regra 3A atual:** cancelar/corrigir prévias e esboços não confirmados é permitido. Um histórico de desfazer ações confirmadas **não existe**, nem no Criativo, nem no Convencional; para corrigir o mundo utilizam-se as ferramentas normais sem apagar consequências econômicas.
 5. **Personalização estética:** considerar variantes visuais de prédios, cores compatíveis, árvores, vegetação, jardins, praças e objetos decorativos pelo mesmo editor. Reutilizar componentes e assets modulares; catálogo, colisão e regras de custo/obra no Convencional não estão decididos especificamente para cada item.
 
 ### Dois exemplos de fluxo para comparação — não aprovados em detalhe
