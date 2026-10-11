@@ -8,6 +8,13 @@
 >
 > Concentra a evolução do modelo de construção física, materiais, estoques, importação/exportação, reservas, execução de obras e logística. Alternativas superadas permanecem identificadas para preservar por que o modelo atual foi escolhido.
 
+## Cargas de obras canceladas — escolha 27B (2026-10-11)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** Escolha B confirmada e registrada na SPEC; alternativa A de devolução ao fornecedor foi considerada útil **quando propriedade/contrato/transferência real permitirem**, não como restituição universal aprovada.
+
+Materiais **já pertencentes ao município** em veículo rumo a obra cancelada devem ter destino físico viável em estoque municipal, com tempo, capacidade e acesso verdadeiros. Carga **ainda de propriedade do fornecedor** não vira propriedade municipal só pelo pagamento planejado; eventual devolução comercial requer ajuste contratual e monetário real. Os compromissos monetários não pagos são liberados pelas regras existentes; valores pagos a terceiros não são reembolsados automaticamente. Testar mercadoria já paga, não paga, entregue, em transporte e sem depósito, sem somar dois estoques.
+
+
 ## Petróleo inicial com vazão finita e comércio exterior — escolhas 8A/9A (2026-10-10)
 
 ### Obra desconectada e aviso causal — pergunta 6 (2026-10-11)
