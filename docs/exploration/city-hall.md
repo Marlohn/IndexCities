@@ -6,6 +6,19 @@
 >
 > **Critério de leitura:** diferenciar mecânica observada em outro jogo, hipótese proposta para IndexCities, exigências já aprovadas na SPEC e vantagens alegadas/experiências comunitárias. Fontes oficiais/de desenvolvedores preferidas; wiki de fãs e comunidades rotuladas como tal. Jogos de épocas diferentes são comparados quanto ao *padrão de gameplay*, não copiados.
 
+## Novas políticas e prestação de contas — escolhas 1A, 6B, 7B e gastos públicos (2026-10-11)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** Direção aprovada pelo responsável, registrada na [SPEC](../SPEC.md). Apresentação, parâmetros e riscos descritos abaixo continuam proposta/validação **PENDENTES**.
+
+- **1A, alteração cosmética privada:** quando o jogador troca uma variante estética compatível de prédio pertencente a SIM/empresa, o **Caixa da Cidade paga** o custo real; não há substituição da propriedade, upgrade, expropriação ou cobrança escondida do proprietário. Registrar a despesa de obra/reforma na visão financeira municipal. Ainda calibrar materiais/equipe/tempo de mudança visual sem burocracia.
+- **6B, ingressos de atrações municipais:** Prefeitura pode escolher política **geral** de entrada gratuita ou paga em atrações dedicadas (museu/mirante etc.); preço automático quando pago, sem controle por instalação, visitantes de verdade e receita só quando houver ingresso efetivamente cobrado. Não estender automaticamente essa política a parques, saúde ou escola.
+- **7B, auxílio ao aluguel residencial:** política **opcional** de suporte **temporário e elegível** a famílias com dificuldade real, com **pagamento do Caixa diretamente ao locador registrado** e abatimento da obrigação de aluguel daquela família. Registrar gastos segregados, famílias assistidas e resultado consultável; sem garantia permanente, crédito invisível, quitação fictícia ou regra de contrato residencial alterada por inferência. Valores, duração, quem tem prioridade se faltar verba, interação com dívidas e despejo exigem refinamento antes de implementar.
+- **Regra transversal aprovada:** **todo gasto real da Prefeitura deve ser rastreável**, por categoria, período, serviço/programa e lançamento com valor, causa e beneficiário/recebedor quando existir; distinguir compromisso, pagamento e dívida. Resumo simples inicial, detalhamento consultável sob demanda, sem dezenas de notificações ou contabilidade duplicada. Essa exigência vale também para escolas, saúde, salários, manutenção, indenizações, empréstimos e quaisquer despesas futuras, não só auxílio-aluguel.
+
+**Ainda abertos nesta rodada:** **pergunta 4**, encerramento/apresentação automática dos pedidos reais após resolver o problema; **pergunta 5**, eventual **política de compras públicas** privilegiando menor custo ou fornecedores locais. O responsável não respondeu essas duas: não as incluir na SPEC. Essas questões são distintas do acompanhamento de resultados e das compras privadas já aprovadas.
+
+---
+
 ## Direção vigente após a escolha C — 2026-10-11
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O núcleo das escolhas abaixo foi confirmado pelo responsável; distinções, restrições e ressalvas redigidas pela IA são síntese ainda sujeita a revisão. Ver a [SPEC](../SPEC.md).
