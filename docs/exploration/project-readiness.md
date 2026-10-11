@@ -22,7 +22,7 @@ As prioridades são **orientação revisável**, não um impedimento para experi
 
 **Escolha de produto agora fechada (2026-10-11, 1B):** no Criativo existem moradores identificáveis e persistentes com casas, circulação e visitas simplificadas, **sem simulação monetária/econômica completa**. **Risco de integração, não decisão adicional:** fazer origem, identidade, deslocamentos e saves funcionarem sem inventar salários, comércio pago, estoque ou simular cidades exteriores; verificar desempenho e se a cidade parece viva. O **modo é fixo por cidade/save (2A)**, sem conversão entre perfis.
 
-**Demais pontos abertos, sem antecipar decisão:** criar/alternar modos no mesmo save; escopo seguro de desfazer no Convencional; catálogo de variantes/ornamentos e seus efeitos econômicos; detalhes da UI e das interações. Validar visualmente com uma pessoa sem leitura e um adulto, sem criar POC obrigatória nem processo extra.
+**Ainda aberto, sem antecipar decisão:** desfazer/refazer no Convencional e Criativo (pergunta 3), alcance inicial da personalização modular (pergunta 4), catálogo concreto de decoração/atrações e desenho fino da UI. **Já fechados:** modo fixo por cidade, moradores persistentes simplificados no Criativo, efeito local de decoração com custos no Convencional, câmera de acompanhamento, mapas temáticos e planejamento sem compromisso econômico. Validar estes comportamentos com uma pessoa sem leitura e um adulto, sem criar POC obrigatória nem processo extra.
 
 ---
 
