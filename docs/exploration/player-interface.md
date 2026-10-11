@@ -18,6 +18,38 @@
 
 ---
 
+## Construir com pouca leitura nos dois modos — decisão e propostas (2026-10-11)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou as cinco direções de experiência e os modos Criativo/Convencional; a [SPEC](../SPEC.md) contém o comportamento oficial. Os fluxos, componentes e critérios sugeridos abaixo são **PENDENTES** de revisão e não aprovam alterações de regras por inferência.
+
+### Experiência comum que vale construir uma única vez
+
+1. **Catálogo ilustrado:** grupos curtos e reconhecíveis (casas, ruas, serviços, natureza), miniaturas reais dos modelos e alvos generosos. Texto curto serve a leitores; **a imagem precisa permitir escolher sem ler**. Não presumir categorias definitivas ou telas prontas.
+2. **Escolha e colocação:** escolher imagem, mover prévia translúcida sobre o terreno, girar/ajustar com controle simples, confirmar e visualizar a mudança. Usar a grade/encaixes e validação física já aprovados, sem exigir arrastar precisamente um objeto minúsculo. A mesma ação deve servir à repetição/pipeta já especificadas.
+3. **Feedback multimodal:** forma, movimento e sinal visual da prévia distinguem posição possível/impossível; texto contextual explica a causa para leitores. Não depender apenas de vermelho/verde. Confirmação deve produzir resposta visual inequívoca; animações/sons opcionais ajudam sem sobrecarregar.
+4. **Correção:** cancelar prévia e voltar à seleção deve ser trivial. Um histórico curto de desfazer/refazer é candidato forte para o Criativo, **mas** no Convencional o desfazer de obra confirmada não pode apagar pagamentos, propriedade ou efeitos reais sem regra expressa. Priorizar prévia/confirmação e cancelamento seguro antes de inventar rollback de toda a simulação.
+5. **Personalização estética:** considerar variantes visuais de prédios, cores compatíveis, árvores, vegetação, jardins, praças e objetos decorativos pelo mesmo editor. Reutilizar componentes e assets modulares; catálogo, colisão e regras de custo/obra no Convencional não estão decididos especificamente para cada item.
+
+### Dois exemplos de fluxo para comparação — não aprovados em detalhe
+
+- **Criativo:** abrir catálogo por imagem → tocar em casa → mover prévia → colocar → ver casa imediatamente ou após efeito visual **não bloqueante** → escolher outra casa ou mudar aparência. Não exigir consultar dinheiro, entregas ou equipe para construir.
+- **Convencional:** abrir o **mesmo** catálogo → tocar em casa → prévia mostra posição/acesso + custo/recursos disponíveis em camada simples → confirmar pedido de obra → acompanhar execução física → se parar, ícone contextual mostra causa e permite abrir diagnóstico. Não transpor instantaneidade criativa para a economia convencional.
+- **Observação:** chamar a cidade de "viva" exige decisões específicas para o Criativo. No Convencional, movimento/atividade devem ser reais conforme SPEC. No Criativo, **não** pressupor trabalhadores, moradores, salários ou veículos fictícios; comparar propostas na [direção do produto](product-direction.md).
+
+### Painéis por camadas
+
+- **Superfície:** ferramentas de construir, câmera, selecionar, remover/cancelar e sinais pertinentes à ação; evitar planilhas, imposto, estoque e texto extenso como porta de entrada.
+- **Detalhe ao selecionar:** nome, função visual, estado (e problema relevante no Convencional), miniatura e ações locais.
+- **Investigação optativa:** finanças, capacidade, fluxo de materiais, deslocamentos, histórico dos SIMs e explicação causal já aprovada — acessível sem fazer parte do gesto básico de construir.
+
+**Não confundir ausência de leitura obrigatória com ausência de acessibilidade:** ícones também podem ser ambíguos. Manter rótulo de texto, estados além de cores, tamanho/contraste apropriados e considerar alternativas de áudio/narração depois de validar necessidade. Referência: [Xbox — narração para quem não lê](https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/106) e [diretrizes gerais](https://learn.microsoft.com/en-us/xbox/accessibility/guidelines).
+
+### Teste de usabilidade proposto
+
+Testar primeiro apenas **selecionar, posicionar, repetir, girar, corrigir e observar** com alguém que não lê; observar ajuda requerida, erros e abandono espontâneo, sem roteiro obrigatório. Depois testar o mesmo editor no Convencional com um gargalo real e verificar se o adulto encontra a causa em um ou dois aprofundamentos. Isso é sugestão de validação proporcional, não fase/POC obrigatória nem requisito de tutorial.
+
+---
+ 
 ## Objetivo
 
 > **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
