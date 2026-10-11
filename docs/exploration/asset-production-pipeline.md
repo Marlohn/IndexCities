@@ -4,7 +4,7 @@
 
 ## Resposta final em poucas linhas
 
-**Recomendação: um catálogo semântico de construções + uma biblioteca pequena de modelos-base e componentes artísticos + variantes geradas/compostas fora do runtime + poucos edifícios especializados.** Produção externa com Blender/IA ou diretamente na Godot conforme o custo real de cada classe de asset. O visual continua substituível sem afetar a simulação. **Não** criar editor procedural completo, dezenas de meshes exclusivas por atividade ou um sistema sofisticado de gestão antes de existir necessidade.
+**Recomendação: um catálogo semântico de construções + uma biblioteca pequena de modelos-base e componentes artísticos + variantes geradas/compostas fora do runtime + poucos edifícios especializados.** **Para o estilo low-poly já demonstrado**, a primeira rota a validar é **IA gerando geometria paramétrica diretamente na Godot e salvando assets reutilizáveis**. Blender/geradores 3D externos são alternativas opcionais para famílias que não funcionem bem assim. O visual continua substituível sem afetar a simulação. **Não** criar editor procedural completo, dezenas de meshes exclusivas por atividade ou um sistema sofisticado de gestão antes de existir necessidade.
 
 **Produção já pode começar** com linguagem visual, modelos provisórios e uma cena representativa. **Produção em massa, não**, até validar câmera, escala, vias/calçadas, portas, colisão/ocupação e desempenho. Não precisamos conhecer a quantidade definitiva de edifícios para fazer esse primeiro trabalho.
 
