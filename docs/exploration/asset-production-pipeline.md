@@ -1,144 +1,118 @@
-# IndexCities — Pesquisa final sobre assets 3D, criação e gestão
+# IndexCities — Assets 3D: revisão do pipeline e evidência procedural
 
-> **EXPLORAÇÃO — NÃO é SPEC nem regra aprovada. Revisão humana: PENDENTE.** Síntese atualizada em **2026-10-11**. Inclui estudos de casos, palestras, relatos de desenvolvedores, documentação técnica e verificações de licença. **Recomendações, medidas e experimentos abaixo são hipóteses**, não decisões do responsável. Consulte [SPEC](../SPEC.md), [ARCHITECTURE](../ARCHITECTURE.md) e [mundo/mapa](world-map-environment.md).
+> **EXPLORAÇÃO — não é fonte de verdade. Revisão humana: PENDENTE.** Auditoria técnica de 2026-10-11. As decisões aprovadas são apontadas na [SPEC](../SPEC.md) e na [ARCHITECTURE](../ARCHITECTURE.md); propostas técnicas, custos e medidas abaixo **não** são requisitos aprovados.
 
-## Resposta final em poucas linhas
+## Resumo executivo
 
-**Recomendação: um catálogo semântico de construções + uma biblioteca pequena de modelos-base e componentes artísticos + variantes geradas/compostas fora do runtime + poucos edifícios especializados.** **Para o estilo low-poly já demonstrado**, a primeira rota a validar é **IA gerando geometria paramétrica diretamente na Godot e salvando assets reutilizáveis**. Blender/geradores 3D externos são alternativas opcionais para famílias que não funcionem bem assim. O visual continua substituível sem afetar a simulação. **Não** criar editor procedural completo, dezenas de meshes exclusivas por atividade ou um sistema sofisticado de gestão antes de existir necessidade.
+**Primeira rota a experimentar para o estilo low-poly do IndexCities: IA gerando modelos paramétricos diretamente na Godot, com geometria produzida uma vez, recursos reutilizáveis e variantes prontas para o jogador.** O teste visual apresentado pelo responsável mostrou potencial concreto para casas, comércio, rua, vegetação e mobiliário. **Blender não é necessário nesse fluxo**; pode ser usado pontualmente se um tipo de modelo não ficar bom por código. Geradores text-to-3D externos também são alternativas, não dependências.
 
-**Produção já pode começar** com linguagem visual, modelos provisórios e uma cena representativa. **Produção em massa, não**, até validar câmera, escala, vias/calçadas, portas, colisão/ocupação e desempenho. Não precisamos conhecer a quantidade definitiva de edifícios para fazer esse primeiro trabalho.
+**Não confundir:**
+- **Modelagem procedural na autoria** = scripts que criam/atualizam meshes e cenas antes do uso ou sob demanda controlada. **Recomendada para experimentar**.
+- **Geração procedural da cidade durante a partida** = criação/alteração dinâmica de geometria e layout quando o mundo precisar. **Não está sendo aprovada ou exigida aqui**.
+- **Editor modular para o jogador** = combinar peças de cada edifício dentro do jogo. **Não integra o primeiro modelo**: a SPEC aprovou modelos completos e variantes prontas.
 
-**Mudança importante desde a pesquisa anterior:** a SPEC de 2026-10-11 aprovou **dois modos, Criativo e Convencional**, e valoriza **construção compreensível sem leitura, variedade estética e feedback visual**. Isso aumenta a importância de silhuetas fáceis de reconhecer, miniaturas consistentes, variantes visuais e acessos perceptíveis. **Após a rodada de 2026-10-11**, a SPEC já aprovou moradores persistentes com rotinas simplificadas no Criativo e decoração com efeitos locais no Convencional. **Continuam abertos** o catálogo concreto de ornamentos, número de variantes e qualquer editor modular de peças pelo jogador.
+É possível preparar e produzir assets **sem conhecer a contagem final de edifícios**. A produção em volume deve esperar uma validação curta de escala, integração, diversidade e desempenho. **Não existe POC isolada obrigatória**: pode acontecer em incrementos do jogo integrado.
 
-## Viabilidade de modularidade no lançamento — reavaliação de 2026-10-11
+## 1. O que o IndexCities já decidiu
 
-> **Revisão humana desta seção: PENDENTE.** O responsável **não aprovou** o editor modular da alternativa 4B; perguntou se é viável no primeiro momento. Esta é uma análise/recomendação para discussão, não nova funcionalidade da SPEC.
+| Oficial na SPEC/ARCHITECTURE | Consequência na produção |
+| --- | --- |
+| Jogo 3D com câmera isométrica; cidade legível e construções individuais | Testar edifícios e ruas no enquadramento do jogo, não somente em close-up |
+| Grade lógica com posicionamento assistido; acessos, ocupação e vias reais | O desenho do prédio **não define sozinho** seu footprint, a validade da posição nem a conexão viária |
+| Reuso de modelos-base para comércio; exceções físicas quando necessárias | Dez atividades comerciais **não exigem** dez meshes exclusivos; posto/hotel podem precisar de estrutura própria |
+| Modos **Criativo e Convencional** com a mesma apresentação básica | Miniaturas/silhuetas reconhecíveis sem leitura, estados coerentes com cada modo |
+| No primeiro modelo, **variantes visuais prontas**, sem montagem livre por peças pelo jogador | Peças e regras podem ser modulares **nos bastidores**, mas o catálogo entrega modelos/variantes completos |
+| Sem upgrade/ampliação estrutural de edifício pronto | Não produzir por inferência cadeias de estágios de ampliação |
+| Simulação independente de cenas/meshes/arquivos de arte | Trocar `VisualId` ou a mesh não deve recriar empresa, propriedade, empregados, moradores ou regras |
 
-**Conclusão:** famílias de meshes e peças modulares **na autoria de assets** são tecnicamente viáveis e já estão recomendadas no pipeline; **não equivalem** a oferecer no lançamento um editor in-game de fachadas, telhados, cercas e peças compatíveis. Este último exige catálogo de encaixes, controle de colisão/footprint/acesso, UI sem leitura, persistência de combinações e testes de desempenho em escala, além de produção artística. Na Godot, [instanciamento/otimização 3D](https://docs.godotengine.org/en/stable/tutorials/performance/optimizing_3d_performance.html) ajuda a renderizar repetições, mas não resolve experiência de autoria ou regras de encaixe. O jogo [Foundation](https://wiki.polymorph.games/foundation/Buildings) demonstra modularidade seletiva em construções específicas, enquanto o criador de [Tiny Glade relatou](https://steamcommunity.com/app/2198150/discussions/0/4844273660400957331/) que até controlar os adereços individuais exigiu limitar escopo no lançamento.
+**Ainda aberto:** estilo final aprovado, câmera/zoom exatos, medidas de ruas/calçadas e footprints por família, número de modelos/variantes, custo gráfico por cena, ferramenta de autoria definitiva e catálogo exato de decoração. Isso **não** reabre decisões já fechadas.
 
-**Direção de produto aprovada depois da pesquisa — 4A (2026-10-11):** o primeiro modelo oferecerá **modelos completos e variantes visuais prontas** (silhuetas/cores/fachadas/telhados compatíveis conforme catálogo), além de decoração. A biblioteca pode usar módulos **na produção** de variantes offline, mas **não haverá editor modular de montagem de peças pelo jogador no primeiro modelo**. Eventual editor futuro não está aprovado. Número e conteúdo exato de variantes/ornamentos seguem para produção/calibração. A decoração com efeitos locais 5C também já está na SPEC; seu cálculo concreto segue em exploração.
+## 2. O que o teste visual realmente demonstrou
 
-## Nova evidência prática: cena low-poly gerada integralmente por código na Godot (2026-10-11)
+**Origem da evidência:** duas capturas enviadas pelo responsável de **cena estática criada por IA em outro projeto**, mais descrição das funções em `cena.gd`. **O script e o projeto executável não foram disponibilizados nesta auditoria**, então não houve inspeção do código, benchmark nem verificação de animação/exportação.
 
-> **Revisão humana desta seção: PENDENTE.** O responsável apresentou duas capturas de um **experimento de outro projeto**, gerado por prompt de IA, e descreveu o funcionamento de um `cena.gd`. As capturas e a descrição são **evidência de viabilidade estética**, não benchmark de desempenho nem código auditado do IndexCities. Não herdar sistemas ou comportamento do projeto anterior.
+**Observável nas capturas:** quarteirão com café, casas, cruzamento, calçadas proporcionais, vegetação coerente, mobiliário, janelas iluminadas e iluminação quente. A cena tem linguagem consistente, integração dos lotes com a rua e acabamento low-poly suficientemente convincente para **validar essa direção estética como candidata forte** — não garante por si qualidade de todos os tipos futuros nem desempenho de uma cidade inteira.
 
-A cena mostra uma rua/esquina, comércio/café, casas, árvores, calçadas, mobiliário, carro e SIMs simples em um **low-poly estilizado consistente e visualmente convincente**. A descrição apresenta três níveis: (1) primitivas geométricas construídas por triângulos — caixas chanfradas, icosferas facetadas, cilindros, prismas, extrusões; (2) funções paramétricas de objetos — `window()`, `roof()`, `house()`, `tree()`; (3) paleta compartilhada, shaders sutis e agrupamento das meshes por material. A boa composição, proporções, vegetação e iluminação contam tanto quanto a geometria. Capturas não provam FPS, número de draw calls, RAM/VRAM, custo de geração, limpeza do código ou generalização para dezenas de famílias.
+**Técnica relatada:** (a) primitivas de triângulos: caixas chanfradas, icosferas facetadas, cilindros, cones, prismas, polígonos extrudados; (b) composição paramétrica: `window()`, `roof()`, `house()`, `tree()`; (c) paleta compartilhada, materiais e shaders de superfície. O resultado resulta também de **proporções, colocação dos objetos e iluminação**, não só da geometria.
 
-**Recomendação revisada:** para **edifícios estáticos low-poly, ruas, vegetação e props simples**, priorizar agora **IA escrevendo geradores paramétricos diretamente na Godot**, sem exigir Blender ou IA text-to-3D. O resultado prático já visto torna essa rota o **primeiro candidato para medir** neste estilo, acima de impor um pipeline externo genérico. Blender continua **ferramenta opcional de correção/importação ou saída especializada**, não etapa obrigatória nem requisito aprovado; objetos orgânicos complexos, personagens com esqueleto/animações e construções muito exclusivas talvez precisem de outro fluxo — avaliar quando ocorrer.
+**Não foi demonstrado:** custo de geração, tempo de manutenção ao crescer o catálogo, tamanho em disco/memória, capacidade de editar centenas de variantes, draw calls, FPS, seleção individual de edifícios, acessos de SIMs/cargas, colisões, LOD, licenças e animação avançada. Não herdar mecânicas ou a arquitetura do projeto externo.
 
-**Como escalar o experimento sem transformá-lo em uma única função gigante:**
-- Preservar **biblioteca de primitivas**, **funções por família** (`house`, `store`, `tree`), **dados de parâmetros/variantes** e **paleta/materiais compartilhados** como partes separadas de autoria. A IA muda parâmetros/geradores para produzir novas formas, sem duplicar milhares de linhas nem reescrever toda a cena.
-- Separar o **gerador (editor/offline)** do **asset gerado e reutilizável**. Construir geometria *uma vez*, salvar/cachar mesh e cena (por exemplo `.res`/`.tscn`, quando apropriado) e **instanciar no jogo**; gerar/atualizar proceduralmente *durante o gameplay* somente o que realmente depende do mapa e precisa disso (por exemplo, trechos de rua). A `SPEC` **não** exige gerar todas as casas proceduralmente durante a partida. Fonte: [Godot — procedural geometry](https://docs.godotengine.org/en/stable/tutorials/3d/procedural_geometry/index.html), [ArrayMesh](https://docs.godotengine.org/en/stable/tutorials/3d/procedural_geometry/arraymesh.html) e [ResourceSaver](https://docs.godotengine.org/en/stable/classes/class_resourcesaver.html).
-- **Não combinar a cidade inteira em uma mesh única por material.** Agrupar partes estáticas *dentro de um edifício/trecho* pode ser útil, mas os prédios precisam permanecer individualmente localizáveis/selecionáveis e ocultáveis por câmera. Para árvores/props repetidos, testar instanciamento por região + família; [MultiMesh](https://docs.godotengine.org/en/stable/tutorials/performance/using_multimesh.html) perde culling por instância dentro do mesmo grupo.
-- **LOD não é automático para toda malha gerada por código.** O LOD automático é uma etapa de importação de cenas 3D; para geometria procedural salva como mesh, medir distância/zoom e avaliar variantes simplificadas, faixas de visibilidade ou fluxo de exportação/importação *apenas quando necessário*. Fonte: [Godot — Mesh LOD](https://docs.godotengine.org/en/stable/tutorials/3d/mesh_lod.html).
-- Fazer um único teste de **escala da autoria**: gerar, alterar e reconstruir três famílias (casa, comércio, árvore) em variantes consistentes e medir **tempo total por modelo aceito**, tamanho da malha, materiais, draw calls, estabilidade de IDs e facilidade de alteração. Comparar Blender/IA externa só se o fluxo direto não atender uma família.
-- No IndexCities, preservar tipo funcional, footprint, conexões físicas e estado da simulação separados do `VisualId` e do mesh, como já exige a [ARCHITECTURE](../ARCHITECTURE.md); **não importar** decisões de gameplay do experimento externo.
+## 3. Alternativas e decisão técnica recomendada
 
-**Síntese:** o experimento mostrou um caminho com ótimo potencial para o **estilo exato de cena que buscamos**, sem aprendizagem manual de Blender. O risco principal migra para **manutenção dos geradores, organização das variantes, consistência funcional e rendering em escala**, não falta de ferramenta de modelagem. Não declarar todo o catálogo coberto por essa técnica antes de testá-lo.
+| Rota | Onde tende a ser útil | Limitação principal | Ordem de preferência |
+| --- | --- | --- | --- |
+| **IA + geradores Godot (GDScript/C#)** | Low-poly geométrico, casas, comércios, fachadas, ruas, vegetação, props e veículos estilizados simples | Código dos geradores pode ficar difícil de manter; precisa validar repetição/otimização | **Primeira candidata** por evidência prática |
+| **Blender automatizado ou manual** | Malhas que exijam edição/UV/rigging especializado, exportação interoperável | Mais um ambiente e mais passos, apesar de o software ser gratuito | **Opcional conforme necessidade** |
+| **Serviços de IA que entregam 3D pronto** | Rascunhos/objetos específicos e formas difíceis de obter por primitivas | Limpeza da malha, estilo, custo por asset aceito e licença | **Experimento pontual**, não padrão |
+| **Montagem procedural em runtime** | Geometria que realmente dependa da edição/mudança do mapa (ex.: determinados segmentos viários) | Custo de CPU, cache, atualização e integração | **Só quando houver necessidade concreta** |
 
-## 1. Evidências externas comparadas (e limites)
+**Blender vs. Godot não é uma decisão de qualidade universal.** Para o estilo observado, o fluxo direto é especialmente promissor. Se personagens articulados, animações complexas ou construções difíceis exigirem outra ferramenta, escolhê-la pela necessidade **não invalida o restante do catálogo**.
 
-| Caso / fonte verificável | Aprendizado específico que vale aproveitar | NÃO copiar |
+## 4. Como produzir e manter os modelos sem construir um framework
+
+Um conjunto mínimo de responsabilidades, sem impor novas camadas arquiteturais:
+
+1. **Biblioteca de formas e famílias:** poucas primitivas confiáveis; funções por família (casa, loja, árvore, etc.); composição por parâmetros de dimensões, telhado, aberturas, acabamento e paleta. Evitar duplicar scripts inteiros a cada variante ou concentrar toda a cidade num `cena.gd` monolítico.
+2. **Receitas e variantes:** produzir as variantes com parâmetros controlados e, se houver aleatoriedade estética, registrar seed/versão **daquela variante**. A seed artística é distinta da seed de mundo e não cria variação econômica. Revisar visualmente o resultado antes de incluí-lo no catálogo.
+3. **Resultado reutilizável:** preferir **geração na ferramenta/editor** e salvar meshes (`.tres`/`.res`) e cenas (`.tscn`/`.scn`) quando adequado. Instâncias da mesma variante reutilizam recursos, sem recalcular triângulos a cada prédio colocado. Geradores e dados continuam disponíveis para correção/regeneração; não usar um export descartável como única fonte.
+4. **Vínculo com o jogo:** separar **tipo funcional**, **área de ocupação/portas/pontos de operação**, **família gráfica** e **variante**. A ARCHITECTURE já prevê tipos de construção e `VisualId`; não introduzir camadas extras por ritual. Guardar identificador visual estável e tratar atualizações sem destruir identidade em saves.
+5. **Prévia e origem:** manter miniatura no mesmo ângulo/iluminação, dimensões, ID, versão/receita, referência/ licença e estado da variante. Uma lista versionada pequena basta; não criar um sistema de gestão de arte separado antes de existir gargalo.
+
+**Correção importante da documentação anterior:** **GLB não é obrigatório** para meshes criadas e utilizadas dentro da Godot. A engine permite salvar recursos próprios. **glTF/GLB é alternativa de interoperabilidade** se um item for feito ou exportado por ferramenta externa. O validador glTF só se aplica a arquivos glTF/GLB, não aos recursos nativos da Godot. [Godot: ArrayMesh e ResourceSaver](https://docs.godotengine.org/en/stable/tutorials/3d/procedural_geometry/arraymesh.html); [ResourceSaver](https://docs.godotengine.org/en/stable/classes/class_resourcesaver.html); [formatos de importação](https://docs.godotengine.org/en/stable/tutorials/assets_pipeline/importing_3d_scenes/available_formats.html).
+
+## 5. Escala e contrato físico
+
+**Referência técnica recomendada: 1 unidade 3D = 1 metro, Y para cima**, em linha com a [documentação da Godot](https://docs.godotengine.org/en/stable/tutorials/3d/introduction_to_3d.html). Essa unidade **não** determina o tamanho do grid ou dos lotes.
+
+Definir por família (quando implementada) uma medida verificável e um pivô/orientação consistente, por exemplo no solo. **Não fixar por antecipação um lote universal**. Diferenciar:
+- **Mesh desenhada:** pode ter beiral, jardim, floreira e detalhes que não definem área comercial/capacidade.
+- **Footprint/ocupação válida:** regra do mundo, colisão e área efetiva.
+- **Entradas e zonas operacionais:** local onde SIM, carro, caminhão, passageiro ou serviço realmente pode chegar/manobrar. Uma porta pintada não cria acesso.
+- **Prédios especializados:** dimensionar posto, hospital, garagem, depósito, fazenda etc. segundo função e espaço; não apenas multiplicar uma loja por escala.
+
+Para começar, montar **uma relação coerente entre SIM, carro, ônibus, faixa, calçada e edifício** e conferir em câmera isométrica e próxima. Referências urbanísticas (ex.: [NACTO — faixa viária](https://nacto.org/publication/urban-street-design-guide/street-design-elements/lane-width/)) podem ajudar proporção, mas **não obrigam** dimensões da cidade fictícia. As capturas têm rua/calçada bem proporcionadas; **não fornecem cotas métricas confiáveis**, logo não justificam travar números com base em pixels.
+
+## 6. Performance: riscos verdadeiros e o que medir
+
+**A geração de geometria procedural em Godot via ArrayMesh/SurfaceTool usa CPU.** Por isso, os edifícios estáticos podem ser gerados uma vez e compartilhados. O peso posterior de desenhá-los depende de **malhas, materiais/superfícies, sombras, luzes, instâncias visíveis, transparências, resolução e câmera**, além do número de triângulos.
+
+- **Reusar meshes e materiais** sempre que fizer sentido. **Agrupar por material dentro do edifício** pode ser bom, mas **não unir a cidade inteira em uma mesh**: perderíamos oportunidades de ocultação por câmera e atualização/seleção de imóveis.
+- Para árvores/pequenos objetos repetidos, **testar MultiMesh por região e família**; não existe culling individual dentro de um mesmo MultiMesh. Deixar identidade e interação independentes do desenho.
+- **LOD automático é gerado no processo de importação de cenas 3D**; não assumir que uma mesh criada por código e salva em `.res` recebeu LOD. Se houver gargalo, experimentar versões simples por distância/zoom e faixas de visibilidade (HLOD); decidir com medições.
+- Medir separadamente **tempo de criação/regeneração** de modelos e **CPU/GPU da cena renderizada**. Medir também draw calls, materiais, memória, carregamento e transição de zoom no hardware-alvo. Mil instâncias por si só não provam nem refutam viabilidade; depende de como são construídas/exibidas.
+- **Nunca substituir as regras reais dos SIMs do modo Convencional por animações decorativas para baratear renderização.** A apresentação pode ocultar ou simplificar o visual de entidades fora da câmera sem desligar a simulação exigida.
+
+Fontes primárias: [Godot — geometria procedural](https://docs.godotengine.org/en/stable/tutorials/3d/procedural_geometry/index.html), [ArrayMesh](https://docs.godotengine.org/en/stable/tutorials/3d/procedural_geometry/arraymesh.html), [MultiMesh](https://docs.godotengine.org/en/stable/tutorials/performance/using_multimesh.html), [Mesh LOD](https://docs.godotengine.org/en/stable/tutorials/3d/mesh_lod.html) e [faixas de visibilidade](https://docs.godotengine.org/en/stable/tutorials/3d/visibility_ranges.html).
+
+## 7. O que vale aprender dos outros jogos (sem copiar a gameplay)
+
+| Evidência | Aplicação prática | Limite |
 | --- | --- | --- |
-| [SimCity — GDC: arte a serviço da simulação](https://www.gdcvault.com/play/1019107/Building-SimCity-Art-in-the) | Edifícios, vias e estados devem **comunicar processos**, não só decorar | Arte que exige mais dados de gameplay do que a SPEC já permite |
-| [Foundation — discussões de criação modular](https://steamcommunity.com/app/690830/discussions/2/4361247613257623565/) | Kits reutilizáveis e leitura de estruturas diferentes | Construção por peças pelo jogador ou upgrades de prédios prontos, fora do escopo |
-| [Workers & Resources — guia de modelagem](https://wiki.hoodedhorse.com/Workers_Resources_Soviet_Republic/Modelling) e [editor de edifícios](https://wiki.hoodedhorse.com/Workers_Resources_Soviet_Republic/Building_editor) | Modelos 3D têm **acesso e área operacional** reais, além da fachada | Reaproveitar sistema proprietário ou um lote universal |
-| [Transport Fever 2 — formatos e LOD](https://www.transportfever2.com/wiki/doku.php?id=modding%3Aresourcetypes%3Amdl) | Mesh, identidade, configurações e níveis de detalhe podem ser separados | Um tipo de negócio = um novo conjunto de assets exclusivos |
-| [Tiny Glade — entrevista técnica](https://80.lv/articles/exclusive-tiny-glade-developers-discuss-bevy-proceduralism-publishers-cozy-games) | Artista cria peças/regras para combinar formas com coerência | Replicar o sistema inteiro de construção dinâmica |
-| [Manor Lords — entrevista com desenvolvedor solo](https://www.unrealengine.com/developer-interviews/solo-dev-makes-sophisticated-sim-manor-lords-using-unreal-engine) e [relato sobre lotes](https://store.steampowered.com/news/posts/?appgroupname=Codemasters&enddate=1657372501&feed=steam_community_announcements) | Prédio e terreno devem parecer **integrados ao bairro**; fachada isolada não resolve | Sistema de lotes residenciais automático, não aprovado no IndexCities |
-| [Cities: Skylines II — melhorias de editor, 11/08/2026](https://www.paradoxinteractive.com/games/cities-skylines-ii/news/expanding-the-modding-tools) | A dor real é **encontrar, editar, substituir e testar** assets, não só criá-los | Editor completo de mods/assets antes de demanda |
-| [Factorio — produção artística](https://www.factorio.com/blog/post/fff-146) e [renderização](https://www.factorio.com/blog/post/fff-227) | Arte provisória primeiro; consistência e texturas compartilhadas importam | Copiar solução de sprites 2D para o 3D sem medir |
-| [GDC — Building Blocks: Artist Driven Procedural Buildings](https://gdcvault.com/play/1012219/Building-Blocks-Artist-Driven-Procedural) | **Gramática de fachadas**: regras simples organizam portas, janelas e pavimentos com peças desenhadas por artistas | Um sistema procedural completo na engine do jogo |
-| [Projeto Houdini — Shape Grammar](https://github.com/kiryha/Houdini/wiki/procedural-city) e [estudo de fachadas, 22/05/2026](https://jonasmeyerohle.dev/blog/2026/05/city-planning-5/) | As mesmas regras de fachada se aplicam a várias larguras/alturas **na autoria** | Gerar centenas de nós/CSG por prédio a cada frame |
+| [GDC / Maxis: *Building SimCity — Art in the Service of Simulation*](https://www.gdcvault.com/play/1019107/Building-SimCity-Art-in-the) | **A apresentação deve explicar a cidade**: tipos e estados dos imóveis reconhecíveis | Palestra indica direção; não comprova escala/custo na Godot |
+| [Foundation — edifícios modulares, wiki oficial](https://wiki.polymorph.games/foundation/Buildings) | O **vocabulário de componentes** pode criar variedade | Não trazer montagem de edifícios por peças para o jogador |
+| [Workers & Resources — guia oficial de modelagem](https://wiki.hoodedhorse.com/Workers_Resources_Soviet_Republic/Modelling) | Pensar em **espaço e pontos funcionais** dos edifícios | Não importar formato nem sistemas desse outro jogo |
+| [GDC: *Building Blocks — Artist Driven Procedural Buildings*](https://gdcvault.com/play/1012219/Building-Blocks-Artist-Driven-Procedural) | Compor silhuetas/fachadas a partir de regras | Não exige Houdini nem geração procedural em runtime |
+| [Godot — infraestrutura para geometria, cache e LOD](https://docs.godotengine.org/en/stable/tutorials/3d/procedural_geometry/index.html) | Solução acessível sem DCC obrigatória, **mas** com limites claros de desempenho | Manuais demonstram APIs, não benchmarks do IndexCities |
 
-**Comunidade, evidência anedótica, não benchmark:** [artista de ambientes no r/godot, ago/2026](https://www.reddit.com/r/godot/comments/1vubyyp/what_do_your_art_pipelines_look_like_both_2d_and/) enfatiza paleta, iluminação e densidade consistentes acima da quantidade de packs; [desenvolvedor Godot, mai/2026](https://www.reddit.com/r/godot/comments/1toda72/building_a_tiny_open_world_in_godot_with_blender/) usa Blender para modelos e ferramentas, Godot para cenário jogável e IA para tarefas de fluxo; [criadores de Cities: Skylines II, dez/2025](https://www.reddit.com/r/CitiesSkylines2/comments/1pdxzry/official_update_patch_152f1_released_asset_editor/) alertaram sobre incompatibilidade potencial de assets antigos em atualização de pipeline. Esses relatos não provam qual ferramenta será mais barata para nós.
+**Cuidado com evidência:** a pesquisa anterior incluiu notícias, posts de Reddit, vídeos e exemplos de ferramentas. Eles são úteis para levantar hipóteses, **mas não foram benchmarks reproduzíveis nem substituem a cena já demonstrada**. Mantemos aqui os exemplos diretamente relevantes e documentação primária; não alegamos ter assistido integralmente às palestras ou executado projetos de terceiros. Relatos individuais e comparadores comerciais não justificam adotar um fornecedor específico.
 
-**Palestras em vídeo:** as apresentações GDC acima são referências técnicas úteis; **não afirmamos ter assistido/transcrito integralmente as gravações**. Priorizamos descrições oficiais e conteúdos escritos verificáveis.
+**Direitos de uso:** modelos e shaders escritos para o projeto, modelos baixados, ferramentas de IA, texturas e referências externas podem ter **situações jurídicas diferentes**. Registrar origem e termos aplicáveis aos recursos de terceiros; não inferir que um asset é automaticamente livre para redistribuição porque foi gerado por IA. Não reproduzir literalmente elementos protegidos de uma imagem de referência.
 
-## 2. Seis achados que alteram a estratégia
+## 8. Validação pequena, integrada e objetiva
 
-### A. Uma construção tem 4 identidades, não apenas um arquivo
+**Sem POC isolada obrigatória.** Dentro dos primeiros incrementos visuais do jogo, usar uma **cena de referência pequena**, com casa, comércio, trecho de via/esquina, calçada, vegetação e um agente/veículo para comparação. O objetivo não é refazer por ritual o teste externo; é verificar **compatibilidade com o IndexCities**.
 
-1. **Tipo funcional** definido na SPEC (capacidade, economia, vagas, materiais).
-2. **Envelope espacial e pontos de operação** (ocupação, entrada de SIM, doca, estacionamento, saída/chegada de frota, colisões).
-3. **Família visual** (casa, loja pequena, comércio médio, apartamentos, indústria, serviço etc.).
-4. **Variante visual** (telhado, parede, placa, cor, detalhes, estado visível).
+**Observar:**
+1. **Qualidade:** reconhecer por miniatura/câmera comum; proporções, composição, paleta, luz, densidade e oclusão; não depender de texto no Criativo.
+2. **Regeneração:** modificar telhado, largura, cor ou posição de porta em uma família e atualizar as variantes sem trabalho manual em dezenas de arquivos.
+3. **Integração:** visual não invade footprint inválido; porta corresponde a acesso; orientação, seleção e variantes preservam o tipo funcional e a entidade real.
+4. **Repetição:** comparar várias dezenas e depois centenas de instâncias com alterações de câmera; medir draw calls, CPU/GPU/memória e decidir se batching/LOD realmente ajudam.
+5. **Manutenção:** custo real por **asset aceito** = prompt/geração + revisão + correção + integração + nova geração após mudança. Se uma família ficar difícil de gerar bem, só então avaliar Blender ou serviço 3D externo para aquele caso.
 
-A ARCHITECTURE já separa identificadores de edifício e visual; essa distinção é **direção aprovada**. **Hipótese de produção:** registrar dimensões e posições dos conectores num contrato pequeno e verificável, sem derivar capacidade automaticamente do tamanho da mesh. Acesso invisível/incompatível vira erro observável na integração. Uma troca de `VisualId` não deve recriar empresa/moradores nem quebrar saves antigos; caso uma variante desapareça, o sistema de apresentação deve ter mapeamento/fallback visual estável **a validar**, preservando a entidade real.
+**Liberar produção em lotes** quando a primeira família for visualmente coerente, editável, importável/usável, identificável e tiver comportamento de desempenho conhecido. A quantidade exata de famílias e variantes será derivada do catálogo físico aprovado e da diversidade visual necessária, **não de um número arbitrário de modelos**.
 
-### B. Dois modos aumentam valor da legibilidade, não de meshes exclusivos
+## Parecer ao responsável — ainda NÃO aprovado
 
-O Criativo aprovado permite construir sem depender de leitura ou administração financeira; o Convencional mantém economia física. Ambos compartilham apresentação e ferramentas. **Hipóteses a testar no jogo:**
-- miniatura grande e padronizada, silhueta identificável, cor/placa como reforço (não depender só de texto ou cor);
-- reconhecimento de casa/loja/hospital/posto/garagem no **zoom de construção**, não só num render próximo;
-- ao selecionar, prévia/realce mostra footprint, orientação e **entrada física efetiva**; prédio alto não pode esconder indefinidamente objeto/rua selecionada (investigar transparência contextual/contorno somente se ocorrer);
-- estados de obra, dano, falta de operação e funcionamento podem reutilizar andaime, sinalização, efeitos e materiais em vez de criar **uma mesh por estado**; representar fatos reais no Convencional, sem assumir simulação completa no Criativo;
-- paisagem/vegetação/decoração e pequenas opções de aparência têm valor próprio mesmo sem efeito econômico; **catálogo exato continua aberto**.
+**Priorizar Godot procedural assistida por IA como caminho inicial para assets estáticos low-poly**, com recursos gerados/salvos/reutilizados e parâmetros/versionamento enxutos. **Blender é uma alternativa pontual, não parte do caminho crítico.** Não criar editor modular no jogo nem geração procedural indiscriminada durante a partida. Não prometer desempenho, custo ou adequação a personagens/animações complexas antes de medir.
 
-**Nova prioridade:** incluir **teste de identificação por imagem sem ler texto** e teste de escolha/posicionamento com poucos passos na validação do asset — não apenas avaliação estética adulta.
-
-### C. Geração procedural **offline**, como um compilador visual
-
-Em vez de escolher entre "100 modelos manuais" e "cidade procedural em runtime": criar 1–2 famílias experimentais compostas por **massa simples + módulos de janelas/portas/telhados + paleta + regras de encaixe**. Blender Geometry Nodes/scripting, ou alternativa local, gera um lote de modelos exportáveis e prévias; selecionar/revisar versões boas e distribuir como assets estáveis. O [estudo Houdini](https://github.com/kiryha/Houdini/wiki/procedural-city) e a [palestra GDC](https://gdcvault.com/play/1012219/Building-Blocks-Artist-Driven-Procedural) sustentam a técnica; **não** provam vantagem de custo para o nosso caso sem experimento.
-
-**Ideia de baixo custo:** cada variante guarda **receita + seed artística + versão do gerador + fonte dos módulos**, de modo que possa ser reconstruída se a direção visual mudar. **Não confundir** essa seed visual com a seed determinística do mundo/simulação da SPEC. Gerar variante em lote fora do jogo evita depender de execução procedural a cada construção.
-
-### D. Mais variedade pode custar menos que mais materiais
-
-Variar **silhueta e agrupamento de detalhes** quando útil, mas buscar materiais reutilizados e, onde combinar com o estilo, paleta/trim sheet/atlas compartilhados. Em [produção de mapas na MY.GAMES](https://mygames_dev.artstation.com/blog/dRWD/trim-sheets-tilemaps-and-terrain-how-we-remaster-game-maps), mini-atlases e densidade de texels coerente simplificam materiais; é caso de outro gênero, portanto hipótese aplicável, não métrica nossa. Para cores por instância, a Godot suporta [uniformes por instância](https://docs.godotengine.org/en/stable/tutorials/shaders/shader_reference/shading_language.html) ou [MultiMesh por instância](https://docs.godotengine.org/en/stable/classes/class_multimesh.html), evitando clonar material para cada telhado colorido. **Cautela:** paleta única não deve apagar silhuetas nem diferenças de função.
-
-### E. O gargalo pode ser **organização dos objetos renderizados**, não triângulos
-
-A Godot possui [LOD automático](https://docs.godotengine.org/en/stable/tutorials/3d/mesh_lod.html), [HLOD/faixas de visibilidade](https://docs.godotengine.org/en/stable/tutorials/3d/visibility_ranges.html), [occlusion culling](https://docs.godotengine.org/en/stable/tutorials/3d/occlusion_culling.html) e [MultiMesh](https://docs.godotengine.org/en/stable/tutorials/performance/using_multimesh.html). **Detalhe decisivo:** instâncias muito espalhadas no mesmo MultiMesh não são descartadas individualmente; compartilharão a mesma seleção de LOD. **Candidato:** agrupar árvores e detalhes repetidos por **região + família**; separar prédios interativos e agentes/veículos conforme observabilidade, atualização e seleção necessárias. Testar dezenas/centenas/milhares em **hardware de referência**, medindo tempo de GPU, CPU da apresentação, draw calls, VRAM, carregamento e troca de zoom; **não** fixar limites de triângulos por ritual.
-
-### F. IA 3D em 2026: três rotas, não uma aposta em fornecedor
-
-| Rota | Melhor aplicação provável | Maior risco |
-| --- | --- | --- |
-| **Blender/Geometry Nodes + IA auxiliar** | Modelos-base, famílias padronizadas, variações editáveis, exportação em lote | Precisa inicializar templates e conferir modelos |
-| **Gerador externo de 3D (ex.: Meshy/Tripo)** | Referência volumétrica, props, árvores, rascunhos de objeto exclusivo | Malhas/topologia, UV, estilos divergentes, custo oculto de limpeza e direitos |
-| **Geometria nativa da Godot + agente** | Primitivas, prototipagem rápida, peças low-poly muito simples | Dependência de ferramentas específicas, limite de qualidade/portabilidade e pipeline menos uniforme |
-
-**Caso novo de automação em Godot:** [godot-create-3d-assets](https://github.com/LuigiDeFacci/godot-create-3d-assets) (repositório MIT, julho de 2026) propõe fluxo de agentes para criar/revisar assets estilizados na engine, incluindo escala, colisão e multiângulos. É **experimento de comunidade pequeno**, não ferramenta validada no IndexCities. Em [relato de setembro de 2026](https://www.reddit.com/r/aigamedev/comments/1weswib/i_built_a_fully_local_text_3d_game_asset_pipeline/), outro desenvolvedor demonstrou proposta de geração local com GLB, LOD, colisão e validação, mas usando hardware de ponta; **não há evidência independente de custo ou qualidade para nossa produção**.
-
-**Não escolher por velocidade do prompt.** Comparar custo total por asset *aceito*: **geração + limpeza + adaptação artística + exportação + QA + integração + retrabalho**. Em [comparação com uma única imagem (set/2026)](https://fuser.studio/articles/meshy-vs-rodin-vs-tripo), ferramentas entregaram diferenças muito grandes de triângulos e materiais; é um exemplo de risco, **não benchmark geral**.
-
-**Licença é bloqueio real de produção comercial:** [Meshy — termos atualizados em setembro de 2026](https://www.meshy.ai/terms-of-use) e [guia oficial de direitos](https://help.meshy.ai/en/articles/9992001-can-i-use-meshy-assets-commercially-license-copyright-explained) distinguem pago (direitos conforme termos e fontes legítimas) de gratuito (**CC BY 4.0 com atribuição**); [Tripo — regras oficiais](https://www.tripo3d.ai/help/privacy-policy/how-to-use-tripo-models-commercially) indica direitos comerciais no pago, **não equivalentes no gratuito**. Upload de referência protegida não é saneado porque a ferramenta gerou a mesh. Registrar **fornecedor, plano/termo vigente, data, origem da referência, licença, direitos de distribuição e editabilidade**; preservar cópia local, pois conteúdo hospedado pode expirar.
-
-## 3. Contrato mínimo de produção (uma ficha, não burocracia)
-
-**Um registro por modelo-base/variante, não por prédio colocado na cidade.** Campos candidatos: `visual_id`, `family`, `compatible_types`, `source_path`, `export_path`, `size_m`, `front/pivot`, `entry_markers`, `license/provenance`, `status`, `thumbnail`. Acessos e ocupação de gameplay continuam controlados pelo núcleo/contrato espacial correspondente, não pelo asset arbitrário.
-
-**Convenção técnica candidata:**
-- **1 unidade 3D = 1 metro** como escala de autoria, Y vertical, frente e pivô explícitos; validar carros/SIMs/ruas **junto** com as edificações antes de fixar largura/altura dos modelos.
-- Fonte editável (ex.: `.blend`) + exportação preferencial **glTF 2.0/GLB**; padronizar material, imagem, transform, nome, orientation e miniatura. [Godot — formatos](https://docs.godotengine.org/en/stable/tutorials/assets_pipeline/importing_3d_scenes/available_formats.html).
-- Primeiro usar configuração de importação da Godot; só se houver tarefa repetida fazer **pós-importação automática** via [EditorScenePostImport](https://docs.godotengine.org/en/stable/classes/class_editorscenepostimport.html) (inclusive C#), sem criar nova ferramenta de pipeline completa.
-- **Gate barato de QA:** arquivo abre, escala/orientação plausíveis, não faltam texturas, front/pivot/entradas conferem, ID e origem válidos, imagem nos mesmos ângulos/zooms, e validação no [Khronos glTF Validator](https://github.com/KhronosGroup/glTF-Validator). Quando já houver rotina repetida, usar [Godot headless](https://docs.godotengine.org/en/stable/tutorials/editor/command_line_tutorial.html) para detectar erro de importação. Não prometer que validador de GLB garanta arte, licença ou acesso funcional.
-- **Versionamento:** arquivos de autoria e exports estáveis sob controle/versionamento ou armazenamento referenciado; manter `.import` versionado quando pertinente e ignorar cache `.godot/` conforme [orientação oficial](https://docs.godotengine.org/en/stable/tutorials/assets_pipeline/import_process.html). Git LFS **só se** arquivos binários pesados passarem a justificar. IDs estáveis e fallback visual ajudam saves continuarem abrindo após troca de assets.
-
-**Gerenciamento econômico de arte:** antes de criar mesh nova, perguntar **"muda silhueta, escala física, uso visível, acesso ou clareza de construção?"**. Se não, preferir variar cor/telhado/placa/módulo. Distribuir tempo de produção conforme **frequência de aparição × área visível × importância para o jogador × risco de incompatibilidade**, em vez de dar mesmo esforço a um banco de praça e uma garagem de ônibus.
-
-## 4. Escala, dimensões e contagem: o que está aberto
-
-A SPEC já decidiu **3D isométrico, grade lógica híbrida, posicionamento assistido, prédio individual, ruas em L, pontes/viadutos, 10 atividades comerciais com modelos compartilháveis e ausência de upgrades estruturais de prédio pronto**. Também decidiu **Criativo/Convencional** em 2026-10-11. **A opção 4A agora estabelece variantes completas prontas, sem edição modular pelo jogador no modelo inicial**; ainda não decidiu número de modelos/variantes, formatos obrigatórios, escala espacial definitiva, lotes, zoom e conjunto visual final.
-
-**Referências para apenas um blockout de teste**, não requisitos: adulto ~1,7–1,8 m; carro ~4–5 m de comprimento; ônibus ~10–13 m; faixa urbana ~3,0–3,3 m; faixa livre de calçada ~1,8–2,4 m. Para 2 faixas e duas calçadas livres, seção ilustrativa ~9,6–11,4 m, **sem estacionamento/canteiros/mobiliário**. Fontes urbanísticas orientativas: [NACTO — lane width](https://nacto.org/publication/urban-street-design-guide/street-design-elements/lane-width/) e [calçada](https://nacto.org/publication/urban-street-design-guide/street-design-elements/sidewalks/sidewalk-design/). **Não fixar um lote universal de 8×12 m ou 16×24 m**; verificar famílias funcionais reais, recuos operacionais, estrada, curvas, entradas, área de carga, garagens e câmera.
-
-Quantidades diferentes: (1) tipos funcionais do jogo, (2) famílias gráficas, (3) variantes, (4) instâncias renderizadas. Um **comércio pequeno** com módulos e uma variante de fachada pode servir a atividades diferentes sem criar nova economia; **posto/hotel/refinaria** têm requisitos físicos diferentes. A escolha do negócio não deve alterar magicamente o imóvel. Número exato só após matriz **tipo → família → envelope/acessos → variantes possíveis** baseada na SPEC e teste visual.
-
-## 5. Experimento curto que realmente decide a estratégia
-
-**Executar no jogo integrado, sem fase obrigatória de POC isolada:**
-
-1. **Escolher art bible de 1 página e câmera em 2–3 distâncias**: cinco imagens de referência e exemplos de bom/ruim, paleta/material, estilo de telhado, tamanho legível de portas/placas. A cena de teste deve servir ao Criativo (seleção por imagem) e ao Convencional (funcionamento real).
-2. **Kit provisório ~10–15 modelos** (tamanho de experimento, não escopo oficial): SIM, carro, ônibus, ruas/calçadas/esquinas, casa, prédio residencial, loja pequena, comércio médio, uma construção especializada, árvore/vegetação e detalhes. Montar **um quarteirão com repetição intencional** e conexão real.
-3. Para uma **única família (ex.: comércio pequeno)** comparar três fluxos: **A** modelo manual/reusado no Blender; **B** montagem de peças/regra offline; **C** IA 3D com limpeza e exportação. Medir **tempo total para ficar aceito**, clareza nas miniaturas, compatibilidade com entradas, licença e qualidade após alterar a paleta/escala. Testar geometria direta na Godot apenas para props/volumes simples em que faça sentido.
-4. Conferir **10, 100 e, se útil, ~1000 instâncias renderizadas** e 2–3 níveis de zoom. Medir CPU/GPU, draw calls/VRAM e ocorrência de objetos ilegíveis/oclusão; são cenários de comparação, **não metas oficiais de FPS**.
-5. **Critério para liberar produção em lotes:** proporções e câmera não exigem refazer tudo; SIMs/veículos acessam prédios; miniaturas reconhecíveis sem texto; GLB/fonte/referência/licença confiáveis; importações reproduzíveis; ganho visual compensa custo; gargalos de render conhecidos. Se falhar, corrigir **uma família** antes de gerar 100 arquivos.
-6. Só então montar catálogo leve de prioridades (tipos que aparecem mais, prédios funcionalmente únicos, ruas/veículos/vegetação, estados visuais realmente necessários), produzir em lotes pequenos e reavaliar com screenshots do bairro.
-
-## Decisão recomendada ao responsável (não aprovada)
-
-**Aceitar a direção híbrida de produção** e liberar o kit de validação de escala/arte; **não** fechar agora contagem final de modelos, orçamento universal de polígonos/texturas nem fornecedor de IA; **não** autorizar sistemas novos de gameplay apenas porque um asset permite. O maior risco não é faltar prédio bonito, mas acumular **arte incompatível com espaço, estilo, simulação, saves ou direitos comerciais**.
-
-O ganho mais promissor **fora da caixa** é construir a *variedade* como **produto de um pequeno vocabulário artístico controlado**, usando um "compilador de variantes" **fora do jogo** só se o teste medir vantagem; **não** transformar a cidade numa rede de geometrias dinâmicas. O maior aprendizado dessa última rodada é acrescentar ao padrão visual **legibilidade para quem não lê, contrato físico estável, rastreio de licença, portabilidade e custo total de manutenção**.
+A evidência visual existente é forte o bastante para **avançar para validação de produção**, mas não para declarar a abordagem definitiva para 100% dos assets. Isso **não altera a SPEC nem a ARCHITECTURE**.
