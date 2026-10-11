@@ -57,6 +57,18 @@ Material de projetos anteriores pode ser consultado no futuro como pesquisa, mas
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável **aprovou** a existência dos modos **Criativo/Convencional** e cinco direções de experiência: liberdade criativa sem bloqueio econômico/logístico; construção visual intuitiva; cidade viva; expressão estética; interface em camadas. Isso já está na [SPEC](../SPEC.md). **As alternativas técnicas, trade-offs, exemplos e critérios de teste abaixo são proposta da IA, PENDENTES de revisão.** Não são arquitetura ou regras de gameplay aprovadas.
 
+### Decisões complementares da rodada (2026-10-11)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** Escolhas explícitas do responsável **1B, 2A, 5C, 6A, 7A+B, 8B, 9B e 10B** estão na SPEC. As explicações/hipóteses técnicas nesta seção permanecem PENDENTES de revisão.
+
+- O **Criativo** usa a alternativa **simulação seletiva simplificada**: moradores identificáveis e persistentes ocupam casas e circulam/visitam lugares, **sem os saldos, salários, estoques, falências e transações do Convencional**. Essas atividades não devem ser representadas como eventos econômicos completos. A implantação deve compartilhar quanto for viável do mundo/rotas/câmera com o Convencional, sem criar segunda engine como obrigação.
+- **Modo fixo por cidade**, sem transformação de save entre Criativo e Convencional. Ambos compartilham a linguagem visual; câmera de acompanhamento de SIM também funciona com o nível de informação existente no modo.
+- No Convencional, decoração física paga influencia ambiente e felicidade de forma **local, contextual e não ilimitadamente acumulável**, coexistindo com a regra já aprovada de visitas reais a parques. Adultos podem voltar a estudar e atrações dedicadas ampliam o turismo, respeitando instituições, vagas, visitas e custos verdadeiros.
+- A interface poderá mostrar mapas temáticos baseados nos estados verdadeiros do respectivo modo e manter esboços transparentes de várias construções sem custo/reserva; **cada obra se confirma separadamente** antes de qualquer compromisso econômico.
+- **Permanecem em aberto as perguntas 3 e 4:** política exata de desfazer/refazer e nível inicial de personalização modular pelo jogador. Não tratar variantes geradas no pipeline como aprovação de um editor de fachadas/telhados no jogo.
+
+**Nota histórica:** as três alternativas comparadas abaixo foram pesquisadas antes dessa escolha. A opção aprovada não é cidade exclusivamente decorativa nem simulação econômica integral disfarçada.
+
 ### O objetivo real
 
 Atender tanto quem quer criar uma cidade sem ler, administrar ou otimizar (inclusive crianças pré-alfabetizadas) quanto quem quer experimentar a cadeia completa de consequências urbanas. Não associar automaticamente idade a modo: um adulto pode preferir Criativo e uma criança pode mais tarde descobrir o Convencional. **Uma experiência profunda não obriga todo jogador a lidar com a profundidade.**
