@@ -8,6 +8,14 @@
 >
 > Reúne empresas privadas, demanda, aquisição de ativos, caixa empresarial, falência, abastecimento, conexão econômica externa e interpretação do Caixa da Cidade.
 
+## Salário atrasado e escolha do SIM empregado — opção 6B (2026-10-11)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** A opção 6B foi aprovada e consta da SPEC.
+
+Quando empresa real atrasa salário já devido, **não contabilizar pagamento nem renda recebida sem dinheiro transferido**. A obrigação com aquele SIM permanece no passivo efetivo e, se a empresa falir, participa da **liquidação proporcional** já aprovada. O trabalhador avalia atraso em valor/duração e oportunidades reais; pode continuar temporariamente, procurar vaga e sair, mas não é forçado a pedir demissão pelo primeiro atraso. Reutilizar busca ocasional de empregos e vínculos existentes, sem ações do jogador para salários individuais. Limiar e cadência são calibração.
+
+---
+
 ## Rodada 2026-10-10 — cadeias curtas, fazendas e alimentos
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** As opções **1A, 2A e 7A** foram aprovadas pelo responsável e promovidas à [SPEC](../SPEC.md); os caminhos de evolução abaixo são hipóteses solicitadas/registradas, **não requisitos aprovados**.
