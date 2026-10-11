@@ -204,6 +204,52 @@ O **orquestrador não precisa ser o mais caro sempre**: delegação simples, con
 
 ---
 
+## Pesquisa — escolha de ferramentas para começar (2026-10-11)
+
+> **Revisão humana desta seção: PENDENTE.** Avaliação de mercado e recomendação operacional da IA, não processo aprovado. Preços, autenticação, limites e compatibilidade de ferramentas podem mudar; conferir os links oficiais antes de pagar. Não altera a SPEC nem a ARCHITECTURE.
+
+### Escolha concreta proposta: Orca como ambiente + Codex e Claude Code oficiais + OpenCode econômico
+
+**Para começar:** usar **Orca** como central visual de agentes/terminais/diffs/worktrees, **Codex CLI** (login ChatGPT) como implementador principal, **Claude Code** (login Claude Pro/Max) para revisão independente e tarefas complexas, e **OpenCode** com chave **DeepSeek API** ou modelos gratuitos disponíveis para tarefas baratas e delimitadas. **GitHub + AGENTS + SPEC + ARCHITECTURE + testes** continuam sendo as autoridades duráveis, não a memória das ferramentas.
+
+**Por quê:** essas ferramentas já estão ao alcance do responsável, permitem usar assinaturas existentes sem necessariamente contratar novas, e separam **coordenação visual** (Orca) da **inteligência do agente** (Codex/Claude/OpenCode). Orca oferece suporte declarado a CLI Codex, Claude Code, OpenCode e outros, worktrees e visualização de diffs. **Não é garantia de orquestração automática inteligente:** no início, a IA implementadora ou o responsável coordena as tarefas. Uma sessão/branch por escritor; revisão pode ser só leitura.
+
+| Ferramenta | Valor real | Limite e decisão recomendada |
+| --- | --- | --- |
+| **[Orca](https://www.onorca.dev/)** | Central gratuita/open source para worktrees, vários CLI agents, diffs, GitHub e terminais (Windows/macOS/Linux) | **Principal para operação**; não confundir interface de múltiplos agentes com planejador correto |
+| **[Codex](https://openai.com/codex/)** | Ferramenta oficial de código incluída em planos ChatGPT, CLI/IDE e cloud em contas elegíveis | **Principal implementador** inicialmente, com quotas do plano; não presumir API ilimitada |
+| **[Claude Code](https://support.claude.com/en/articles/11145838-use-claude-code-with-your-pro-or-max-plan)** | CLI oficial usando assinatura Pro/Max dentro das cotas | **Revisor e segundo executor independente**; conferir para não acionar cobrança de API por `ANTHROPIC_API_KEY` no ambiente |
+| **[OpenCode](https://opencode.ai/docs/providers/)** | Cliente multi-provedor e subagentes; conectividade oficial com DeepSeek API, OpenAI/ChatGPT e modelos gratuitos sujeitos a mudança | **Operação econômica**; chave DeepSeek gera consumo no saldo da API |
+| **[DeepSeek Harness](https://www.deepseek.com/en/harness/)** | Ferramenta plugável com sessões rastreáveis, subagentes e equipes experimentais | **Alternativa experimental**, não adicionar sobre Orca sem problema demonstrado; produto em preview |
+| **[Amp](https://ampcode.com/news/free-agent)** | Sistema de agentes com runners próprios (modalidade gratuita anunciada em set. 2026), assinaturas/chaves externas e opção de computadores remotos | **Alternativa séria ao fluxo principal** se Orca for insuficiente; nome "Arms" informado pelo responsável não foi identificado inequivocamente — confirmar se era "Amp" |
+| **[Google Antigravity](https://www.antigravity.google/pricing)** | Ambiente de agentes e cota individual gratuita | **Opção para benchmark** sem nova assinatura, não criar segundo fluxo permanente |
+| **[Oh My OpenCode](https://github.com/code-yeongyu/oh-my-opencode)** | Especialistas, tarefas paralelas, orquestrador sobre OpenCode | **Adiar**: mais automação/complexidade do que o repositório vazio necessita |
+| **[Cursor](https://www.cursor.com/pricing)** | IDE comercial com agentes e multitarefa | Bom produto, mas **sem argumento para outra assinatura agora** |
+| **[Vibe Kanban](https://www.vibekanban.com/blog)** | Painel para agentes em worktrees | **Não escolher** como nova base: projeto comercial encerrado, manutenção repassada à comunidade em abr. 2026 |
+
+**Ressalva de autenticação que evita gastos e problemas:** Codex via cliente oficial com login ChatGPT e Claude Code via cliente oficial com login Claude são o caminho recomendado para aproveitar assinaturas. O OpenCode declara que uso de **Claude Pro/Max por plugins não oficiais é proibido pela Anthropic**; usar Claude Code no Orca, e não OAuth Claude dentro de OpenCode. OpenCode conecta DeepSeek pela **API key**, com cobrança ao saldo da API; as assinaturas de chat não são automaticamente créditos API. Alguns agentes e modelos gratuitos mudam de disponibilidade; não montar dependências críticas sobre promoções temporárias.
+
+### Configuração inicial, sem novo framework
+
+1. Abrir o repositório **IndexCities** no Orca e conferir branch/estado limpo do Git. Instalar/atualizar **Codex CLI** e autenticá-lo pelo login ChatGPT; abrir um terminal Codex dentro do projeto. Instalar/atualizar **Claude Code** e fazer login no plano Pro/Max; deixá-lo como revisor quando preciso. No **OpenCode**, usar `/connect` → DeepSeek → API key, depois `/models`; impor limite de gasto pela conta DeepSeek. Não colocar segredos no repositório.
+2. **Primeira tarefa sugerida (técnica, sem nova gameplay):** com base em AGENTS/SPEC/ARCHITECTURE, criar o mínimo de solução/projetos Godot .NET/C# com Simulation Core independente e base de build/testes; nenhuma regra nova de produto ou framework adiantado. Codex implementa; Claude revisa apenas fronteiras/diff; resolver falhas e integrar. Isso é **fundação da implementação integrada**, não POC isolada obrigatória.
+3. **Sessões seguintes:** um objetivo pequeno coberto pela SPEC, um escritor, evidência de `dotnet build`/`dotnet test` e teste Godot apenas se tocou a engine. Agentes secundários para revisão, busca de documentação, scripts de assets e código sem acoplamento. Paralelizar dois escritores **somente** depois de interfaces estáveis, em worktrees isolados, revalidando no merge.
+4. **Handoff curto:** commit/branch atual, referência à seção da SPEC, alterado, testes, falhas, próximo passo. Nova sessão compara resumo com Git real; a memória da conversa não substitui arquivos nem testes. Handoff em issue/PR/branch temporário só se necessário; não criar uma nova documentação canônica.
+5. **Reconsiderar ferramentas depois de tarefas reais:** se a coordenação manual do Orca virar gargalo, testar Amp ou agentes/subagentes nativos do OpenCode, ou experimentar DeepSeek Harness. Medir resultado correto integrado, tempo, custo e conflito, não número de agentes rodando.
+
+### Links de verificação
+
+- [Orca — integrações, worktrees e diff](https://www.onorca.dev/)
+- [OpenAI — Codex com plano ChatGPT](https://help.openai.com/en/articles/11369540-using-codex-with-your-chatgpt-plan)
+- [Anthropic — Claude Code com Pro/Max](https://support.claude.com/en/articles/11145838-use-claude-code-with-your-pro-or-max-plan)
+- [OpenCode — provedores e observação de restrição Claude Pro/Max](https://opencode.ai/docs/providers/)
+- [DeepSeek Harness — estado de preview](https://github.com/deepseek-ai/deepseek-harness)
+- [Amp — anúncio de uso gratuito com runners próprios](https://ampcode.com/news/free-agent)
+- [Antigravity — planos](https://www.antigravity.google/pricing)
+- [Vibe Kanban — anúncio de encerramento da empresa e manutenção comunitária](https://www.vibekanban.com/blog)
+
+---
+
 ## Arquitetura de desenvolvimento
 
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
