@@ -22,7 +22,7 @@ Auditoria reconciliada em **2026-10-07** com o histórico de conversas disponív
 
 ## Mapa transversal de prontidão e prioridades
 
-- **Mapa de prontidão, lacunas e prioridades de pesquisa** — revisão humana: **PENDENTE**; estimativa heurística atualizada em **2026-10-11 para 81% de prontidão documental do levantamento para o Convencional** (75% na fotografia de 08/10), **não** proporção de decisões contadas ou jogo implementado. Prioridades P0/P1/P2, lacunas reais e distinção entre decisão, calibração e validação. Não é fonte de verdade: [`exploration/project-readiness.md`](exploration/project-readiness.md).
+- **Mapa de prontidão, lacunas e prioridades de pesquisa** — revisão humana: **PENDENTE**; em 2026-10-11 a avaliação passou a **separar 89% de maturidade das definições de produto do Convencional (nova linha de base, estimativa qualitativa)** de **81% de prontidão técnica/documental para integração (indicador anterior)**. O primeiro acompanha as decisões das entrevistas, e o segundo depende também de implementação/validação; nenhuma nota é porcentagem de funcionalidades concluídas nem contagem exata de perguntas. Pendências prioritárias classificadas como decisão de gameplay, calibração ou teste: [`exploration/project-readiness.md`](exploration/project-readiness.md).
 
 ## Explorações temáticas
 
