@@ -8,6 +8,17 @@
 >
 > Concentra pesquisa e raciocínio sobre serviços urbanos, mobilidade, vias, educação, saúde, infraestrutura técnica, conexão externa e capacidades operacionais. A SPEC continua sendo a autoridade sobre o que já foi decidido.
 
+## Vans escolares e emergência externa — respostas da rodada de 30 (2026-10-11)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** As escolhas **24B**, **25A** e **28C** foram confirmadas na SPEC; a **23A foi indicada inicialmente, mas a própria resposta solicitou reavaliar gratuidade como política da Prefeitura**. Portanto, **a tarifa das vans segue em exploração, não definida como regra definitiva**. A gratuidade das creches permanece decisão da SPEC até uma revisão explícita.
+
+- **24B:** solicitações de vagas de transporte escolar atendidas por **ordem de pedido**, desde que sejam viagens efetivamente possíveis com alunos, horários, monitor quando necessário, assento, frota e acesso reais. Sem confundir matrícula escolar com reserva de assento na van.
+- **25A:** trajetos e atendimento das vans são montados automaticamente pela simulação, sem marcação de paradas por aluno pelo jogador. Checar reservas inviáveis e mudanças reais de horário sem varredura por frame.
+- **23 em discussão:** comparar gratuidade fixa versus **política municipal agregada de van gratuita/paga**, e compatibilidade com acesso ao ensino e creche, famílias pobres e capacidade real. Nenhuma tarifa ou cobrança de van foi aprovada definitivamente nesta rodada.
+- **28C:** permitir por política municipal ajuda externa emergencial, se houver veículos/equipe realmente disponíveis fora e tempo de chegada via conexão real, com custo/contabilidade municipal e risco de falha. Não adicionar corpo de bombeiros infinito e não substituir automaticamente serviços locais.
+- **Checagem transversal:** serviço de vans é opcional como capacidade municipal, mas não gerar cobrança por creche gratuita sem uma nova decisão. Interface deve mostrar viagens atendidas, não atendidas e gastos efetivos sem dashboard paralelo.
+
+
 ## Transporte escolar municipal B aprovado, caronas, ônibus noturno e ambiente (2026-10-11)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** Decisões aprovadas **5A, 6C, 7A, 8B e 9B** estão na SPEC. **Van escolar para escolas e creches com monitor real (B) aprovada posteriormente.**
