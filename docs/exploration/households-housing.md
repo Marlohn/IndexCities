@@ -23,7 +23,7 @@
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** **7B e 2A aprovadas** na SPEC; critérios concretos e cenários são investigação ainda **PENDENTE**.
 
 - **7B:** Prefeitura pode optar por programa **temporário** para ajudar com o aluguel residencial de famílias reais em dificuldade econômica, com **pagamento do Caixa ao locador de contrato existente** e abatimento da obrigação correspondente. Exibir custo efetivo e alcance do programa nas despesas municipais **sem duplicar dinheiro ou quitar dívidas sem pagamento**. Elegibilidade, valor, prazo, prioridade em escassez, dívidas anteriores e prazo de despejo continuam por definir antes do código; não tratar assistência como receita fictícia, seguro-desemprego ou moradia municipal automática.
-- **2A:** apartamentos de prédio misto podem pertencer a SIMs distintos da empresa dona da unidade comercial do térreo; **impostos, aluguel residencial, valor e indenizações** vinculados a cada unidade real, não ao volume 3D inteiro somado uma segunda vez. Não criar locação comercial por inferência.
+- **2A:** apartamentos de prédio misto podem pertencer a SIMs distintos da empresa dona da unidade comercial do térreo; **impostos, aluguel residencial, valor e indenizações** vinculados a cada unidade real, não ao volume 3D inteiro somado uma segunda vez. **Locação comercial entre empresas foi aprovada posteriormente como 1B**, sem autorizar imóvel comercial em propriedade de SIM por inferência.
 - **Interação com salário/semana:** a semana de dias úteis/fins de semana 8B foi aprovada para rotina, mas **não altera automaticamente data mensal do aluguel, regra anual de reajuste, vencimentos, trabalho remunerado ou benefício previdenciário**. Configuração de folgas continua simplificada.
 
 ---
