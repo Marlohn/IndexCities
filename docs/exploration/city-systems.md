@@ -70,6 +70,16 @@
 
 ---
 
+## Complemento: turismo e atrações municipais (2026-10-11)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou **11A e 12B** na SPEC. Regras operacionais não explícitas continuam PENDENTES.
+
+- **11A:** atrações dedicadas como museu/mirante entram **inicialmente como serviço/instalação municipal**, não como empresa privada sem identidade. Custos, equipe e capacidade reais quando aplicáveis. A opção não decidiu cobrança de ingresso e não gera turistas automaticamente.
+- **12B:** um visitante real pode passar por alguns lugares distintos na mesma viagem à cidade, respeitando horários, acesso, capacidade, tempo, meios físicos e pagamento/estoques efetivos. Visitantes não se duplicam a cada parada; bate-volta e hospedagem preservam a regra já aprovada.
+- **9B de decoração e 10 de iluminação:** decisões de interface/ambiente não alteram regras de circulação nem horário comercial efetivo.
+
+---
+
 ## Regras adicionais de 2026-10-10 — restituição, licença, prisão e incineração
 
 > **Revisão humana: PARCIALMENTE REVISADO.** O responsável escolheu explicitamente **2 atual (incineração integral), 4B, 6C e 10C**. As escolhas oficiais estão na SPEC; a avaliação de custos internos e hipóteses futuras abaixo ainda não recebeu aprovação integral.
