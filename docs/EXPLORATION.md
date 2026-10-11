@@ -42,6 +42,18 @@ Auditoria reconciliada em **2026-10-07** com o histórico de conversas disponív
 - **Processo de desenvolvimento e documentação** — revisão humana: **PARCIALMENTE REVISADO**; decidido para a fase atual; **SPEC viva obrigatória antes e durante todo desenvolvimento (features, bugs e manutenção)**, com lacunas decididas pelo responsável antes do código; primeira entrega/validação globais, sem POCs setoriais obrigatórias. Contém referência externa nova **PENDENTE**. Histórico: [`exploration/development-process.md`](exploration/development-process.md); regras vigentes em `AGENTS.md`.
 - **Testes, debug e reprodução de bugs** — revisão humana: **PENDENTE**. Pesquisa temática em **cinco rodadas**, com rodada final em 2026-10-10. Investiga replay/checkpoints, logs causais, invariantes, cenário adversarial, performance, **ausência de decisão (why-not provenance)**, cobertura dos estados semânticos, fluxo de dinheiro/materiais, eventos raros, cidades extremas, simetrias e bots exploradores. Classifica valor, riscos e estratégias rejeitadas. **Pesquisa, não aprovação de arquitetura ou produto**: [documento temático](exploration/testing-debugging-reproducibility.md).
 
+## Dez novas decisões aprovadas — escola, família, incêndio e trabalho (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** O responsável aprovou integralmente **1A/2A/3A/4A/5A/6B/7A/8C/9A/10A**. Regras oficiais em [SPEC](SPEC.md). Esta síntese não acrescenta funcionalidades além das escolhas.
+
+- **Infância, escola e família:** creches municipais sem cobrança às famílias, custeadas pelo Caixa (1A); após separação, um adulto real elegível assume cuidado principal e o outro pode visitar (2A); **frequência real** determina avanço na escola, e matrícula isolada não basta (3A); imigrantes podem chegar com nível de escolaridade básico, médio ou superior prévio (4A), sem reconhecer contribuições previdenciárias externas; criança que muda de bairro mantém escola enquanto o acesso funcionar e busca vaga real em outra se deixar de funcionar (10A).
+- **Eventos e trabalho:** incêndio permite permanência na moradia ainda habitável e exige busca por outra moradia real se inabitável (5A), sem mudar quem paga reparos; atraso persistente de salário pode levar o SIM a procurar outro emprego, mantendo o crédito salarial real (6B); ser vítima real de furto/roubo pode reduzir felicidade e sensação de segurança temporariamente (7A); nascimento, casamento ou nova moradia podem melhorar satisfação temporariamente em contexto apropriado (9A).
+- **Migração:** adultos de uma família podem emigrar separadamente; menores acompanham seus responsáveis reais, respeitando o cuidado já definido (8C), sem emigração independente de criança, troca fictícia de guarda, dinheiro ou patrimônio.
+- **Ainda para calibração/teste:** impacto da presença escolar; distribuição inicial de escolaridade de imigrantes; habitabilidade de casa danificada; reação do trabalhador ao atraso; intensidade/duração de satisfação; regras simples de continuidade de cuidado e viagens de responsáveis/menores. Nenhum ponto pede microgestão por SIM ou novo sistema jurídico.
+- **Prefeitura segue adiada**, inclusive a 3B ainda em conflito com a cidade inicialmente vazia.
+
+---
+
 ## Rodada de dez escolhas de produto aprovada (2026-10-11)
 
 > **Revisão humana: PARCIALMENTE REVISADO.** O responsável escolheu e aprovou **1B, 2B, 3A, 4A, 5A, 6B, 7A, 8A, 9A e 10B**. Essas escolhas constam da [SPEC](SPEC.md).
