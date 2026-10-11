@@ -1,10 +1,10 @@
 # IndexCities — Mapa de prontidão e decisões pendentes
 
-> **Revisão humana:** PENDENTE — análise, percentuais e prioridades propostos por IA em 2026-10-08; o responsável aprovou registrar o mapa, **não** aprovou automaticamente suas conclusões.
+> **Revisão humana:** PENDENTE — análise e percentuais produzidos por IA, reavaliados em 2026-10-11; o responsável aprovou registrar o mapa, **não** aprovou automaticamente suas conclusões.
 >
 > **Status:** instrumento de orientação para definição progressiva do produto e planejamento técnico, **não é fonte de verdade** nem checklist obrigatório de implementação.
 >
-> **Última auditoria cruzada:** 2026-10-08, incluindo pesquisa comparativa ampliada sobre cidades reais, jogos, comunidades e gameplay. Os percentuais continuam **históricos/heurísticos**, sem qualquer implementação medida. [Evidências e 24 frentes de investigação](genre-benchmark.md#pesquisa-transversal-ampliada--cidade-real-jogos-e-lacunas-de-gameplay-2026-10-08).
+> **Última reavaliação dos percentuais:** 2026-10-11, considerando a SPEC e a exploração vigentes; estimativa qualitativa ainda sem validação de jogo. **Pesquisa comparativa de base:** 2026-10-08. [Evidências e 24 frentes de investigação](genre-benchmark.md#pesquisa-transversal-ampliada--cidade-real-jogos-e-lacunas-de-gameplay-2026-10-08).
 
 ## Para que serve
 
@@ -129,7 +129,7 @@ As prioridades são **orientação revisável**, não um impedimento para experi
 
 ## Atualização de lacunas após escolhas de 2026-10-10
 
-> **Revisão humana desta seção: PARCIALMENTE REVISADO.** As escolhas de produto foram confirmadas e incorporadas à SPEC; esta nova triagem de importância e propostas de calibração são síntese de IA **PENDENTE de revisão integral**. Os percentuais abaixo continuam históricos (2026-10-08).
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** As escolhas de produto foram confirmadas e incorporadas à SPEC; esta nova triagem de importância e propostas de calibração são síntese de IA **PENDENTE de revisão integral**. A fotografia de 2026-10-08 foi substituída pela reavaliação de 2026-10-11 na seção *Diagnóstico geral*.
 
 **Fechadas, não repetir como perguntas novas:** cadeia inicial curta de materiais físicos (1A), três portes/áreas reais de fazendas (2A), ampliação manual agregada da frota de ônibus com teto já aprovado por garagem (3C), lotação total finita de aterro (4B), mudança de rota em eventos relevantes (5B), combustível inicial pago de viaturas (6A), alimentos sem perecibilidade (7A), ausência inicial de contágio (8A), ocorrência de crimes emergindo das condições/oportunidades locais (9B) e poluição espacial gradual (10B).
 
@@ -141,27 +141,34 @@ As prioridades são **orientação revisável**, não um impedimento para experi
 
 ---
 
-## Diagnóstico geral — fotografia de 2026-10-08
+## Diagnóstico geral — reavaliação de 2026-10-11
 
-- **75% — estimativa heurística de preparação documental para iniciar a implementação integrada**, dando maior peso à arquitetura, à economia e à construção, que estão mais amadurecidas. **Não é média aritmética** das categorias, métrica científica, porcentagem da SPEC fechada nem fração do jogo pronta. A validação principal é do conjunto funcional, conforme a SPEC.
-- **0% — implementação de jogo verificada no repositório na data da análise**: a árvore contém documentação e arquivos administrativos, sem código executável do jogo, testes ou medições reais. Isso não é uma estimativa do trabalho já realizado fora do GitHub.
-- **Principal lacuna de validação:** preparar cenários reproduzíveis que permitam observar o funcionamento conjunto de construção, logística, economia, serviços e cidadãos, **sem transformar os cenários em cortes do escopo da implementação integrada**.
-- **Principal risco:** sistemas detalhados, isoladamente coerentes, combinarem-se em uma experiência de microgerenciamento, desempenho ruim ou problemas difíceis de diagnosticar.
-- **Importante:** não buscar “100% definido” antes de codificar. Fechar regras causais e comportamentos importantes; deixar fórmulas finas, limiares e otimizações para calibração baseada em evidências.
+> **Revisão humana desta seção: PENDENTE.** As notas, pesos e prioridades abaixo são avaliação da IA sobre as decisões já registradas na [SPEC](../SPEC.md), não novos requisitos nem conclusões aprovadas pelo responsável.
 
-| Categoria | Prontidão estimada | Interpretação |
-| --- | ---: | --- |
-| Arquitetura e tecnologia | 90% | Godot/C#, monólito modular, Simulation Core separado, testes e observabilidade orientados. |
-| Economia e finanças | 85% | Reserva Global, oferta monetária fixa e transações reais definidas; parâmetros iniciais pendentes. |
-| Construção e materiais | 85% | Fluxo físico de obras, materiais, importação e equipes bem detalhado; calibração pendente. |
-| Empresas e produção | 80% | Operadores, caixa real, preços híbridos, produção adaptativa e abastecimento decididos; ajuste fino pendente. |
-| Cidadãos e moradias | 75% | SIMs reais, rotinas, patrimônio, consumo e moradia definidos em princípio; algoritmos e parâmetros pendentes. |
-| Mapa e terreno | 65% | Seed, mapa plano, natureza e conexão exterior definidos; dimensões e grid ainda a validar. |
-| Trânsito e movimentação | 60% | Comportamento desejado detalhado; representação, pathfinding e desempenho ainda não comprovados. |
-| Interface e ferramentas | 55% | Intenção de uso clara; grande parte das soluções de interação está em exploração. |
-| Cenários e critérios de validação | 40% | Falta definir como avaliar empiricamente o jogo integrado; não representa escopo de uma POC reduzida. |
+- **81% — estimativa heurística de prontidão do levantamento de especificações para orientar a implementação integrada do modo Convencional**, contra **75% na fotografia de 2026-10-08**. O avanço reflete principalmente novas decisões sobre Prefeitura, participação, interface, famílias, finanças municipais, imóveis, empresas e mobilidade. Os **6 pontos percentuais de diferença indicam tendência**, não melhoria mensurada por testes nem comparação estatística estrita; os pesos do modelo estão agora explícitos.
+- **0% — implementação do jogo verificada no repositório em 2026-10-11**: a raiz atual do GitHub contém documentação/arquivos administrativos, sem código executável do jogo. Isso não mede trabalho fora do repositório.
+- **Não é 81% de funcionalidades implementadas, requisitos contados, escolhas individuais aprovadas ou progresso até o lançamento.** Não existe inventário atômico estável que permita dividir o número de decisões fechadas pelo total futuro; surgem dependências quando os sistemas se conectam. O índice avalia **maturidade documental para desenvolver e validar**, sem exigir 100% antes de começar.
+- **Escopo considerado:** apenas o **Convencional**. O modo Criativo continua como direção futura, com regras e implementação adiadas; não o tratar como débito do levantamento atual.
 
-**Como ler os percentuais:** são um retrato qualitativo de **prontidão para investigar/construir**, ponderado por julgamento, **não** uma média matemática, cobertura de requisitos, conclusão da SPEC, qualidade de código ou porcentagem de um jogo finalizado. A soma das categorias não precisa produzir o percentual global. Não recalcular por ritual após cada decisão; revisar quando houver mudança material.
+**Método reproduzível da estimativa:** atribuir uma nota qualitativa de 0 a 100 a cada domínio considerando (a) comportamentos centrais já decididos na SPEC, (b) dependências e exceções de produto ainda abertas antes do código correspondente e (c) necessidade de validação técnica/uso real. Aplicar os pesos de importância relativa para a integração, cuja soma é 100%; **nota global = Σ(peso × nota atual) / 100 = 81,05%**, arredondada para **81%**. Os números expressam julgamento documentado, não levantamento quantitativo de requisitos. As notas de 08/10 são **referência histórica não recalculada** com estes pesos.
+
+| Área | Peso | 08/10 | 11/10 | Leitura atual |
+| --- | ---: | ---: | ---: | --- |
+| Arquitetura e tecnologia | 10% | 90% | 90% | Godot/C# e arquitetura modular definidos; execução e medições ainda ausentes. |
+| Economia e finanças | 15% | 85% | 90% | Tributos, previdência, escassez fiscal, auxílio-aluguel e rastreabilidade monetária mais claros; fórmulas/programas a completar. |
+| Construção e materiais | 15% | 85% | 90% | Obras sem rua, ferramentas visuais, demolição, produção e logística mais decididas; ergonomia e fluxo integrado sem prova. |
+| Empresas e produção | 12% | 80% | 85% | Múltiplos imóveis, uso misto, locação comercial 1B e reuso aprovados; detalhes contratuais e de transição ainda abertos. |
+| Cidadãos e moradias | 15% | 75% | 85% | Creche, educação, famílias, mudanças residenciais, saúde e benefícios mais claros; calibração e casos de integração pendentes. |
+| Mapa e terreno | 8% | 65% | 70% | Grade, vegetação e uso urbano previstos; escala, dimensões, renderização e custo espacial dependem de teste. |
+| Trânsito e movimentação | 10% | 60% | 70% | Ônibus, frota, viagens, compartilhamento de carro e efeitos de demolição definidos; roteamento e escala não validados. |
+| Interface e ferramentas | 10% | 55% | 75% | Prefeitura, painéis/custos, feedback, esboços, pincel e mapas temáticos decididos; fluxo de uso real ainda não testado. |
+| Cenários e critérios de validação | 5% | 40% | 40% | Há critérios conceituais, mas não há jogo integrado nem cenários executados/medidos. |
+
+**Pendências de produto com maior valor para as próximas decisões, sem reabrir escolhas fechadas:** definir como pedidos municipais resolvidos deixam de aparecer ou mudam de estado; decidir **se** a hipótese de preferência em compras públicas realmente merece virar política (ela não é requisito aprovado); fechar regras essenciais de contrato, inadimplência e encerramento da **locação comercial já aprovada em 1B**; resolver cobrança/execução de reparos compartilhados e intervenção conjunta nos prédios mistos; fechar elegibilidade, limites e duração do auxílio-aluguel antes da implementação desse programa. Critérios de geração/expressão das solicitações e opiniões exigem definição proporcional, não uma burocracia nova.
+
+**Calibração e validação — não novas votações automáticas:** parâmetros previdenciários e de incapacidade, tempo de obras e ritmos, população/escala, algoritmos de tráfego/rotas, experiência de construção para quem ainda não lê, interface da Prefeitura, desempenho, conservação de dinheiro/materiais e bootstrap da cidade vazia. Testar o conjunto integrado quando estiver utilizável; não impor POCs por subsistema nem uma meta artificial de 100% da SPEC antes de codificar.
+
+**Principal risco restante:** regras isoladamente coerentes podem criar interações caras, confusas ou difíceis de explicar na cidade real. O próximo salto de confiança virá de validação observável, não de aumentar a nota por mais perguntas.
 
 ## Prioridade P0 — tratar primeiro
 
@@ -267,7 +274,7 @@ O [hub](../EXPLORATION.md) registra 11 documentos temáticos: **9 PARCIALMENTE R
 2. Antes de propor novas rodadas de perguntas da SPEC, verificar aqui a prioridade e conferir na **SPEC atual** se a decisão já foi tomada. Evitar repetir perguntas e distinguir decisão real de calibração.
 3. Para cada item selecionado, pesquisar/consultar apenas o documento temático relevante. Explicar alternativas e consequências para **gameplay, microgerenciamento, performance e causalidade**, sem concordância automática.
 4. Após decisão humana explícita, atualizar a fonte oficial adequada e ajustar a prioridade/estado deste mapa quando houver mudança relevante. Propostas e conteúdo gerado sem revisão ficam **PENDENTE**.
-5. Tratar a fotografia e os percentuais como **históricos** até nova auditoria. Não declarar automaticamente que a prontidão aumentou porque uma tabela foi editada.
+5. Tratar a fotografia de 2026-10-08 como **histórica** e consultar a reavaliação de 2026-10-11; não declarar automaticamente avanço adicional porque uma tabela foi editada.
 
 ## Fontes desta avaliação
 
