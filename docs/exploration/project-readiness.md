@@ -29,6 +29,18 @@ As prioridades são **orientação revisável**, não um impedimento para experi
 
 ---
 
+## Revisão de 20 questões: escolhas Convencionais e cautelas (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** Aprovações do responsável estão na SPEC; riscos e prioridades abaixo são **PENDENTES** de revisão humana.
+
+**Fechado:** pincel de decoração/vegetação com objetos/custos reais (9B); luz diurna/noturna acompanhando o calendário/hora simulados (10); atrações turísticas dedicadas municipais (11A); passeio turístico com vários destinos físicos (12B); autoria de crime individual reforçada (13A, já contemplada por 9B anterior); alternativa de compra presencial quando falha (14B); sem coabitação não familiar automatizada neste modelo (15A); edifícios mistos de modelos prontos (17B); sem depósitos empresariais independentes novos (18A); cronologia de eventos da cidade (20B). **Não induzir definição do Criativo:** perguntas 1–5, 7 adiadas e 6 explicada, sem decisão.
+
+**Maior risco novo de integração:** 17B exige compatibilizar **estrutura física única** com unidades residenciais SIM e parte comercial empresa, titulares, venda, aluguel, tributos, indenização/intervenção e operação sem duplicar patrimônio, fluxo econômico ou acessos. Antes do código dependente, registrar na SPEC o comportamento de propriedade que realmente precisar de escolha. **9B** preserva construção/confirmar edifícios um a um, sem fazer ornamentação virar construção gratuita por pincel. **10** mede custo visual de iluminação; **12B/14B** limitam buscas de destinos mantendo trajetos reais; **20B** reutiliza eventos relevantes para não inflar saves.
+
+**Ainda em discussão:** alteração estética de prédio já concluído com custo (8; proprietário/pagador/regras físicas), organização de empresas (16: uma empresa com vários estabelecimentos **já é compatível com SPEC**; grupo societário C não aprovado) e eventual definição manual de bairros (19; sugestão IA: adiar). Não tratar recomendação ou pergunta como escolha humana.
+
+---
+
 ## Complemento de dez escolhas — educação, cuidado e consequências (2026-10-11)
 
 > **Revisão humana: PARCIALMENTE REVISADO.** Aprovadas e promovidas à SPEC: **1A creche gratuita, 2A responsável principal após separação, 3A frequência real para progredir na escola, 4A escolaridade prévia dos imigrantes, 5A desocupação de imóvel incendiado inabitável, 6B reação gradual a salário atrasado, 7A impacto emocional temporário em vítima de roubo, 8C migração autônoma dos adultos com menores sob cuidados reais, 9A eventos pessoais positivos afetando satisfação, 10A manutenção de escola após mudança de bairro enquanto acesso for viável**.
