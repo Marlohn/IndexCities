@@ -14,6 +14,18 @@ Dar às próximas sessões uma visão única do que já está suficientemente de
 
 As prioridades são **orientação revisável**, não um impedimento para experimentar e tampouco autorização para implementar funcionalidades não aprovadas. A direção de trabalho é **Spec-Driven Development leve**: definir comportamentos oficiais na SPEC antes de implementá-los. A eventual POC é uma **validação integrada do jogo**; organizar a implementação em incrementos técnicos não cria uma obrigação de POCs separadas nem altera o escopo aprovado.
 
+## Rodada de dez escolhas aprovada — impactos para integração (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** O responsável escolheu **1B/2B/3A/4A/5A/6B/7A/8A/9A/10B**, todos promovidos à SPEC; os riscos de integração abaixo são triagem da IA, não novos requisitos.
+
+**Fechados, não perguntar novamente sem evidência:** creche municipal com SIMs funcionários, capacidade e custo real (1B); separação de casal com reorganização familiar/financeira simples, sem sistema judicial (2B); mudança voluntária de famílias buscando melhor imóvel (3A); SIM desabrigado pode manter emprego quando viável (4A); benefício por incapacidade exige duração relevante e contribuições reais mínimas (5A), e não acumula com aposentadoria, pagando o maior valor elegível (6B); migrante mantém obrigações vencidas não extintas por regra (7A) e pode continuar proprietário, recebendo aluguel real em carteira individual persistente fora do mapa (8A); atendimentos opcionais geram satisfação temporária mediante visita real (9A); trajetos recorrentes muito demorados reduzem satisfação sem demissão compulsória (10B).
+
+**Integração/validação proporcional, não novas rodadas de perguntas por ritual:** creche e cuidados infantis influenciam a disponibilidade de adultos, com capacidade real; separação/novos domicílios não podem gerar propriedades ou dinheiro e devem manter filhos sob cuidado possível; mudanças residenciais e trajetos longos não devem causar busca em massa e oscilação contínua; incapacidade deve se reconciliar com licença médica, aposentadoria e Caixa sem benefício duplicado; guardar identidade, saldos reais, propriedade e dívidas de proprietário expatriado sem teletransporte de aluguéis nem redirecionamento incorreto à Reserva Global. Testar ganho de gameplay do lazer sem forçar necessidade artificial.
+
+**Pendências de Prefeitura anteriores (incluindo 3B conflitante) continuam ADIADAS**; a água 19B ampliada foi aprovada para teste e não se reabre aqui. Não transformar esses pontos numa POC separada ou em novos sistemas de processo.
+
+---
+
 ## Nova rodada — decisões 6–18 e dois bloqueios de produto (2026-10-10)
 
 > **Revisão humana: PARCIALMENTE REVISADO.** As escolhas humanas da rodada foram registradas na SPEC; prioridades e soluções sugeridas abaixo são investigação da IA, não regras aprovadas.
