@@ -8,6 +8,19 @@
 >
 > Reúne empresas privadas, demanda, aquisição de ativos, caixa empresarial, falência, abastecimento, conexão econômica externa e interpretação do Caixa da Cidade.
 
+## Aluguel comercial entre empresas, filiais e identidade do operador — 2026-10-11
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** As escolhas **1B, 2A, 3A e 10A** foram expressas pelo responsável e estão na SPEC. Riscos/modelagem abaixo permanecem avaliação da IA, não aprovação de regras numéricas.
+
+- **1B aprovada:** **empresa proprietária pode alugar comércio/indústria a outra empresa operadora**, mediante aluguel real e periódico. Na operação própria, proprietária e operadora podem coincidir; na locação, são agentes distintos, com caixa, obrigações e patrimônio separados. Isto substitui a antiga regra absoluta **dona sempre operadora**. Locação **não** cria propriedade comercial por SIMs, não duplica prédio nem transfere estoque da empresa anterior. Inadimplência, término do contrato, responsabilidades sobre reforma e impostos, venda com contrato em curso e falências exigem solução proporcional antes de implementar a nova operação.
+- **3A aprovada (abastecimento intragrupo da mesma empresa, sem grupo societário):** mercadorias podem sair de fábrica/fazenda e chegar às lojas **da mesma empresa** com entregas físicas de caminhões, estoques, tempo e custos reais. **Não existe venda contábil da empresa a si mesma** nem caixa por filial: transferir estoque entre duas unidades é movimentação física dentro da identidade empresarial única; gastos externos continuam gastos reais.
+- **10A aprovada:** letreiro/nome simples da empresa **que opera efetivamente** o ponto comercial; no imóvel alugado, não exibir obrigatoriamente o nome da proprietária como marca da loja. A identificação muda com operador real, sem gerar asset 3D exclusivo, renda extra ou clientela fictícia.
+- **2A aprovada (edifício misto):** reparos efetivos em estrutura física comum de apartamentos e loja são pagos proporcionalmente pelos proprietários reais **das unidades**, sem criar novo patrimônio condominial, taxa fixa ou caixa invisível. A participação concreta, falta de dinheiro e intervenção física conjunta ainda exigem desenho cuidadoso; não reabrir a regra de ausência de taxa condominial em prédios puramente residenciais.
+
+**Escolhas de produto para especificar antes da implementação dependente:** contrato enxuto entre empresas, quem paga por reparos da unidade alugada versus estrutura compartilhada, como registrar aluguel vencido sem caixa negativo, encerramento e leilão/venda com locatário, e fonte de capital de empresas locatárias novas da Reserva Global; evitar transformar tudo em menus de gestão ou “sócio/holding”. A fórmula e periodicidade precisas não foram aprovadas nesta rodada.
+
+---
+
 ## Propriedade de edifícios mistos, imóveis vazios e aluguel comercial — 2026-10-11
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** **2A e 3A estão aprovadas** na [SPEC](../SPEC.md). A discussão de locação empresarial, pesquisas externas e detalhes técnicos **não estão aprovados**.
