@@ -42,7 +42,7 @@ Auditoria reconciliada em **2026-10-07** com o histórico de conversas disponív
 - **Processo de desenvolvimento e documentação** — revisão humana: **PARCIALMENTE REVISADO**; SPEC viva, implementação integrada e processo leve são decisões vigentes. **Pesquisas novas de 2026-10-11 PENDENTES de revisão humana:** guardrails para código criado por IA, modelos conforme risco, e **orquestração híbrida (sequencial por padrão; paralelo apenas para tarefas independentes), resets/handoffs para múltiplas sessões, isolamento Git e revisão proporcional**; ainda não são regras oficiais. [Pesquisa e histórico](exploration/development-process.md); regras vigentes em `AGENTS.md`.
 - **Testes, debug e reprodução de bugs** — revisão humana: **PENDENTE**. Pesquisa temática em **cinco rodadas**, com rodada final em 2026-10-10. Investiga replay/checkpoints, logs causais, invariantes, cenário adversarial, performance, **ausência de decisão (why-not provenance)**, cobertura dos estados semânticos, fluxo de dinheiro/materiais, eventos raros, cidades extremas, simetrias e bots exploradores. Classifica valor, riscos e estratégias rejeitadas. **Pesquisa, não aprovação de arquitetura ou produto**: [documento temático](exploration/testing-debugging-reproducibility.md).
 
-## Rodada de oito decisões de produto — modos, experiência e atrações (2026-10-11)
+## Rodada de dez decisões de produto — modos, experiência e atrações (2026-10-11)
 
 > **Revisão humana: PARCIALMENTE REVISADO.** O responsável escolheu **1B, 2A, 3A, 4A, 5C (direção para experimentar), 6A, 7A+B, 8B, 9B e 10B**. Todas as dez escolhas foram promovidas à [SPEC](SPEC.md). A análise técnica adicional, inclusive sobre viabilidade de personalização modular e cálculo do efeito ambiental, segue **PENDENTE** de revisão.
 
