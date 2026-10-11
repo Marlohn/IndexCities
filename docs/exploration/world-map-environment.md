@@ -32,7 +32,7 @@ A proposta antes descrita aqui foi consolidada no documento temático [**Qualida
 
 **Status:** direção visual em exploração; a apresentação 3D isométrica já está confirmada na SPEC.
 
-Foram fornecidas referências visuais e, posteriormente, **duas capturas de uma cena low-poly produzida por IA via código na Godot, em outro projeto**. Elas ajudam a avaliar linguagem visual, câmera, densidade e legibilidade, **mas não são assets implementados do IndexCities, nem prova de desempenho, medidas ou pipeline já aprovado**. A avaliação técnica está no [estudo de assets](asset-production-pipeline.md).
+**Revisão humana desta nova análise visual: PENDENTE.** Foram fornecidas referências visuais e, posteriormente, **duas capturas de uma cena low-poly produzida por IA via código na Godot, em outro projeto**. Elas ajudam a avaliar linguagem visual, câmera, densidade e legibilidade, **mas não são assets implementados do IndexCities, nem prova de desempenho, medidas ou pipeline já aprovado**. A avaliação técnica está no [estudo de assets](asset-production-pipeline.md).
 
 Características observáveis nas referências:
 
