@@ -1,10 +1,26 @@
 # IndexCities — Pesquisa de Prefeitura como construção e gameplay
 
-> **Revisão humana: PARCIALMENTE REVISADO** — o responsável aprovou o edifício da Prefeitura com SIMs funcionários reais, leitura de demandas da população e, **como direção de gameplay mais recente, a Prefeitura como centro de escolhas estratégicas de governo que afetam o padrão de vida dos SIMs (2026-10-10)**. Os funcionários continuam sem tarefas operacionais específicas aprovadas; comparações e propostas da IA seguem **PENDENTES** de revisão/aprovação. 
+> **Revisão humana: PARCIALMENTE REVISADO** — **decidido pelo responsável em 2026-10-11:** direção C (gestão + programas concretos + maior participação de moradores), Prefeitura como primeira construção, liberação do restante após confirmação de posicionamento, funcionários administrativos SIMs com função genérica, sem burocracia obrigatória, e ausência posterior sem bloqueio da cidade. A pesquisa histórica e os detalhes novos ainda não discutidos continuam **PENDENTES**.
 >
-> **Fonte de verdade:** [SPEC](../SPEC.md) aprova a **Prefeitura como construção física com SIMs empregados e como centro de decisões estratégicas do jogador**, com efeitos reais sobre a cidade; leitura agregada das necessidades populacionais complementa essas escolhas. **O catálogo de políticas, trabalho concreto dos servidores, capacidades, visitas de SIMs e consequências da ausência/inoperância do prédio permanecem por decidir**. Esta pesquisa não aprova implementá-los.
+> **Fonte de verdade:** [SPEC](../SPEC.md) contém as decisões vigentes. As partes antigas desta pesquisa sobre necessidade de cargos operacionais específicos, Prefeitura não obrigatória na abertura e conflito não resolvido da opção 3B são **históricas e foram superadas**. Catálogo de programas, transmissão de pedidos/opiniões, participação organizada, interface e efeitos específicos **ainda não foram aprovados**.
 >
 > **Critério de leitura:** diferenciar mecânica observada em outro jogo, hipótese proposta para IndexCities, exigências já aprovadas na SPEC e vantagens alegadas/experiências comunitárias. Fontes oficiais/de desenvolvedores preferidas; wiki de fãs e comunidades rotuladas como tal. Jogos de épocas diferentes são comparados quanto ao *padrão de gameplay*, não copiados.
+
+## Direção vigente após a escolha C — 2026-10-11
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O núcleo das escolhas abaixo foi confirmado pelo responsável; distinções, restrições e ressalvas redigidas pela IA são síntese ainda sujeita a revisão. Ver a [SPEC](../SPEC.md).
+
+- **Começo da cidade:** mapa vazio, só Prefeitura no catálogo; escolher posição, confirmar e liberar de imediato as demais ferramentas, **sem aguardar a obra terminar**. Prévia cancelada não libera. O prédio continua tendo obra e custo físicos normais e pode orientar visualmente a expansão, mas sem raio de crescimento. Não voltar a travar a cidade se o edifício for demolido/parar. É uma única exceção inicial à liberdade do sandbox, **não tutorial nem árvore de desbloqueios**. A equipe externa temporária de bootstrap já está prevista na SPEC; acesso/logística reais continuam necessários para terminar a obra.
+- **Modelo C escolhido:** administração municipal abrangente + decisões/programas com consequências concretas + **participação cidadã mais importante**, com necessidades, solicitações e interesses divergentes de SIMs/grupos reais. Manter separadas **condição detectada**, **pedido efetivo de cidadão** e **iniciativa do jogador**; ainda não foi definido como o SIM envia pedidos, opina ou influencia decisões. O jogador segue livre para construir, investigar, decidir ou não agir; nenhuma pauta gera automaticamente obra, emprego, verba ou felicidade.
+- **Servidores simplificados:** funcionários SIMs com trabalho administrativo genérico, trajetos, salários e vínculos reais, **sem especificar processos individuais para justificar o emprego**. Não gerar dependência artificial de funcionários, papeis, filas, indicadores de burocracia ou autorizações para ações normais. Isso substitui a busca anterior por *um processo operacional concreto obrigatório* como pré-requisito da Prefeitura.
+- **Menus e operação:** concentrar gestão da cidade, impostos, Caixa, crédito, serviços, transporte, políticas e visão humana dos efeitos; **programas específicos só entrarão na SPEC após decisão própria**. Sem multiplicadores abstratos, sistema eleitoral/facções ou minigames por inferência. Compra pública com prioridade para comércio local foi citada apenas como hipótese e **não aprovada**.
+- **Conflito histórico 3B resolvido:** a preferência antiga de paralisar toda administração sem Prefeitura foi substituída pela **obrigatoriedade da colocação inicial, com liberação imediata e sem bloqueio posterior**. Sistemas básicos existentes não param por ausência de prédio/equipe; dependências de futuros programas precisam de definição própria.
+
+**Ainda em discussão, não implementação autorizada:** origem e forma dos pedidos/opiniões e eventuais conflitos entre grupos, que consequências uma resposta cria, seleção de programas sociais/econômicos específicos, interfaces das pautas e visitas presenciais. O nível de participação **C é aprovado como direção**, não como aprovação dessas mecânicas particulares.
+
+**Leitura histórica:** as seções abaixo preservam pesquisas e alternativas anteriores (incluindo afirmações de que a Prefeitura estava adiada ou que faltava justificar cada servidor). **Nesses pontos, prevalecem as decisões acima e a SPEC**, não o estado histórico registrado na data de cada estudo.
+
+---
 
 ## Nova revisão transversal — o que acrescentar à Prefeitura sem criar outro jogo (2026-10-11)
 
