@@ -26,6 +26,16 @@ As prioridades são **orientação revisável**, não um impedimento para experi
 
 ---
 
+## Complemento de dez escolhas — educação, cuidado e consequências (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** Aprovadas e promovidas à SPEC: **1A creche gratuita, 2A responsável principal após separação, 3A frequência real para progredir na escola, 4A escolaridade prévia dos imigrantes, 5A desocupação de imóvel incendiado inabitável, 6B reação gradual a salário atrasado, 7A impacto emocional temporário em vítima de roubo, 8C migração autônoma dos adultos com menores sob cuidados reais, 9A eventos pessoais positivos afetando satisfação, 10A manutenção de escola após mudança de bairro enquanto acesso for viável**.
+
+**Riscos de integração, não novas escolhas:** conciliar creche gratuita com custos efetivos; ligação entre separação, guarda e emigração; progresso escolar somente com presença e vaga reais, mas sem simular avaliação acadêmica detalhada; escolaridade anterior do imigrante sem criar histórico previdenciário; incêndio sem casa substituta fictícia; crédito salarial separado de moeda recebida e aplicação do rateio da falência; felicidade individual derivada de eventos reais, sem multiplicadores arbitrários permanentes; transferência de escola conforme vaga e ordem de matrícula. Testar comportamentos via eventos existentes e diagnóstico agregado.
+
+**Prefeitura continua adiada.** Regras anteriores de construção, escola e economia continuam válidas; fórmulas/limiares são calibração do jogo integrado.
+
+---
+
 ## Rodada de dez escolhas aprovada — impactos para integração (2026-10-11)
 
 > **Revisão humana: PARCIALMENTE REVISADO.** O responsável escolheu **1B/2B/3A/4A/5A/6B/7A/8A/9A/10B**, todos promovidos à SPEC; os riscos de integração abaixo são triagem da IA, não novos requisitos.
