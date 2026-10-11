@@ -8,6 +8,19 @@
 >
 > Concentra pesquisa e raciocínio sobre serviços urbanos, mobilidade, vias, educação, saúde, infraestrutura técnica, conexão externa e capacidades operacionais. A SPEC continua sendo a autoridade sobre o que já foi decidido.
 
+## Transporte escolar em análise, caronas, ônibus noturno e ambiente (2026-10-11)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** Decisões aprovadas **5A, 6C, 7A, 8B e 9B** estão na SPEC. **Van escolar apenas sugerida pelo responsável, PENDENTE.**
+
+- **5A:** iluminação visual de vias urbanas junto da construção da rua, consumindo energia operacional realmente disponível e tendo custos municipais contabilizados sem duplicar contas/infraestrutura; sem instalar cada poste nem criar rede manual.
+- **6C:** crianças pequenas exigem acompanhamento real à creche; estudantes escolares podem ir sozinhos quando trajeto, horário e fase de vida permitirem. Frequência real continua exigida, sem presença fictícia, viagem mágica ou pais forçados a abandonar turnos por simples falta de sistema.
+- **7A:** adulto pode dirigir **familiares como passageiros simultâneos** com lotação de assentos, embarques e paradas reais, inclusive levar criança escolar antes do trabalho; preservar identidade única do veículo e economizar deslocamentos físicos quando compatíveis.
+- **8B:** ônibus à noite ajustam-se a demanda, frota, motoristas SIM, turnos e custos disponíveis, com frequência menor quando coerente, mas sem proibir embarque noturno por regra arbitrária; não equivale a nova política manual.
+- **9B:** chuva eventual só como atmosfera visual/sonora para teste low-poly; sem criar alagamento, acidente, trânsito mais lento, produtividade agrícola, manutenção de drenagem ou clima operacional. Reavaliar performance gráfica/legibilidade na cena real.
+- **Van escolar — pesquisa PENDENTE:** serviço municipal opcional poderia operar como veículos pequenos comprados e dirigidos por SIMs reais, com capacidade, combustível, horários de escola, embarques e trajetos seguros automáticos e despesas identificáveis na Prefeitura. **Alternativa A** somente escolares, famílias levam menores à creche; **B** cobre escola e creche **com monitor/acompanhar real** para não contradizer 6C; **C** adiar usando caronas, ônibus e familiares já aprovados. Recomendação exploratória B se custo/resultado compensarem; eventualmente começar por A. **Não criar van, motorista, cuidador, garagem, tarifa, rota ou política por inferência.** Fonte externa de princípio operacional: [FNDE — itinerários](https://www.gov.br/fnde/pt-br/acesso-a-informacao/legislacao/resolucoes/2013/resolucao-cd-fnde-no-45-de-20-de-novembro-de-2013), [Detran/PR — monitor escolar](https://www.detran.pr.gov.br/Noticia/Volta-Aulas-Cuidados-no-transporte-escolar).
+
+---
+
 ## Fins de semana, carros familiares e isolamento por demolição — 2026-10-11
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** As opções **8B, 9A e 10B** foram aprovadas na SPEC; mecânica de atualização e detalhes de escala permanecem para calibração.
