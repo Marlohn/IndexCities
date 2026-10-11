@@ -6,6 +6,55 @@
 >
 > **Critério de leitura:** diferenciar mecânica observada em outro jogo, hipótese proposta para IndexCities, exigências já aprovadas na SPEC e vantagens alegadas/experiências comunitárias. Fontes oficiais/de desenvolvedores preferidas; wiki de fãs e comunidades rotuladas como tal. Jogos de épocas diferentes são comparados quanto ao *padrão de gameplay*, não copiados.
 
+## Auditoria transversal de políticas municipais — rodada de 30 (2026-10-11)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** As escolhas explícitas 1A, 2A, 3B, 4B, 5A, 6A (reavaliação mensal), 7C e 28C foram registradas na SPEC. **A classificação de possíveis novas políticas abaixo é pesquisa/síntese da IA PENDENTE de revisão e não autoriza modificar outras escolhas anteriores.** A escolha inicial 23A (van escolar gratuita) foi **questionada pelo próprio responsável** ao pedir revisar se o jogador deve controlar a gratuidade; fica **provisória em exploração**, não aprovada na SPEC como tarifa definitiva. **As creches gratuitas 1A anteriores continuam aprovadas**, salvo revisão explícita futura.
+
+### Resultado confirmado: Prefeitura / pedidos / assistência
+
+- **Pedidos 1A:** encerramento automático somente quando a necessidade real correspondente deixa de existir; histórico consultável, sem botão de aceitação, arquivamento obrigatório nem fechamento da causa por construção inativa.
+- **Opiniões 2A:** manifestação possível de SIMs reais quando medida municipal lhes afetar de maneira significativa; opinião expressa não é pesquisa geral, impacto estimado não é opinião.
+- **Compras municipais 3B:** nova **política agregada opcional** de preferência local moderada dentro de tolerância real de custo/prazo e estoque/entrega existentes; diferente da preferência de compra empresarial autônoma.
+- **Auxílio-aluguel 4B/5A/6A/7C:** dificuldade real com risco de inadimplência, mesmo antes do primeiro atraso; complementação do valor faltante até teto, sempre paga ao locador real; revisão **todo mês**; pode cobrir aluguel corrente e atrasos sem perdoar dívida ou zerar contagem sem quitação; prioridade fiscal a famílias sob risco de despejo já era decisão aprovada. Teto e duração máxima ficam para calibração proporcional.
+- **Cooperação externa para emergências 28C:** nova política agregada de permitir ajuda limitada, física e custeada, sujeita à capacidade real fora da cidade. Não é concessão de frota infinita, nem adoção de compra de todos os serviços no exterior.
+
+### Pente-fino dos controles municipais — triagem, NÃO novas decisões
+
+Regra de avaliação: só propor uma **política** quando o jogador tem pelo menos duas escolhas coletivas legítimas, com custo e efeitos reais para SIMs/empresas, e quando a variação faz diferença de gameplay. Operação de rotina, lei já fixada ou preferência privada não vira opção por ritual. Exigir transparência financeira já aprovada para cada custo do Caixa.
+
+| Tema | Situação oficial vigente | Direção da auditoria de IA, ainda PENDENTE |
+| --- | --- | --- |
+| Seis alíquotas imobiliárias | **Controles aprovados do jogador** | Manter no menu; taxas reais, sem nova categoria tributária inventada |
+| Empréstimo municipal com a Reserva Global | **Ação manual de gestão aprovada** | Manter como ferramenta financeira, não como política de juros arbitrários |
+| Ônibus municipal grátis/pago | **Política aprovada** | Manter opção; preço automático quando pago e sem embarque sem saldo |
+| Estacionamentos públicos de superfície grátis/pagos | **Política aprovada** | Manter separado de ônibus, pois usuários, custos e efeitos são diferentes |
+| Atrações municipais dedicadas, ingresso grátis/pago | **Política aprovada** | Manter; não estender a parques, saúde ou educação por inferência |
+| Auxílio-aluguel temporário | **Política aprovada e detalhada nesta rodada** | Manter toggle e métricas de recursos e famílias realmente beneficiadas |
+| Preferência em compras municipais | **Nova política 3B aprovada** | Manter tolerância limitada de custo/entrega, sem obrigar fornecedor local |
+| Apoio externo a emergências | **Nova política 28C aprovada** | Só quando externo real puder chegar/pagar; testar se há escolha interessante |
+| Serviço de vans escolares e de creche | **Oferta opcional municipal aprovada; tarifa não definitivamente encerrada nesta rodada** | Revisar **gratuito/pago como possível política** antes de editar SPEC; requer tarifas, capacidade, monitor e efeito de acesso coerentes |
+| Creches municipais | **Gratuitas às famílias por decisão 1A anterior** | **Possível revisão explícita:** gratuita/paga como política; risco de reduzir emprego e cuidado infantil. Não alterar ainda |
+| Ensino básico/médio e saúde pública | **Sem cobrança ao cidadão por decisão 1A anterior** | Preservar por ora; rever somente com benefício forte, porque cobrança pode barrar acesso essencial |
+| Serviço funerário municipal | **Gratuito às famílias por decisão 18A anterior** | Preservar; tarifa opcional teria pouco valor e alta carga social |
+| Água e energia | **Cobrança por consumo com tarifa automática e inadimplência sem corte individual** | **Não** tornar cada tarifa editável; eventual subsídio agregado é ideia futura NÃO aprovada e só justificaria decisão concreta |
+| Salários municipais | **Ajuste automático aprovado** | Manter; não oferecer salário de cada funcionário no menu |
+| Previdência | **Parâmetros/benefícios automáticos aprovados, evolução de política adiada** | Não reabrir contribuição/benefício agora; risco de violar direitos e cálculo contributivo |
+| Transporte privado, táxis, lojas, fábricas | **Preço, contratação e investimento privados autônomos** | Não transformar em comando/política municipal sem aprovar intervenção econômica nova |
+| Garagens, frota, veículos operacionais | **Ações de construção/ampliação de capacidade já aprovadas** | Continuar como ferramentas/gestão de serviço, não política abstrata |
+| Serviços municipais críticos, manutenção e orçamento escasso | **Prioridade essencial automática aprovada** | Manter execução causal; transparência e controles de verba existentes bastam inicialmente |
+| Educação de adultos nos níveis existentes | **Escolarização adulta já aprovada** | Não duplicar como “programa” ou bônus municipal separado sem outra finalidade |
+| Parques, vegetação, iluminação pública e decoração | **Objetos e funcionamento físicos já aprovados** | Construção/função automática; evitar programa de felicidade ou regulamento cosmético sem mecanismo real |
+| Reciclagem/resíduos, poluição, água contaminada | **Serviços e consequências físicas decididos** | Preferir construir/operar capacidade e corrigir causas; política nova só após identificar efeito e custo distintos |
+| Licença médica, previdência por incapacidade e acolhimento de menores | **Direitos/comportamentos vigentes aprovados** | Não tornar direitos individuais interruptores para melhorar Caixa ou gerar cliques |
+| Desafios, opiniões e pedidos de moradores | **Acompanhamento e diagnóstico já aprovados** | Não confundir com políticas nem permitir concluir problemas com um clique |
+
+**Conclusão provisória:** o centro da Prefeitura deve distinguir **políticas (escolhas de regras municipais)**, **gestão (impostos, empréstimos, frota, construção, capacidades, balanço)** e **consulta (pedidos, opiniões, estatísticas e histórico)**. Integrar essas áreas num menu não significa adicionar dezenas de interruptores. A análise favorece discutir primeiro as duas decisões com consequência concreta: **(a) creche gratuita como regra fixa ou gratuita/paga como política**, e **(b) van escolar gratuita como regra fixa ou gratuita/paga como política**. Não há aprovação para alterar atendimento escolar/hospitalar ou previdenciário.
+
+### Referência comparativa e limites da analogia
+
+A [wiki oficial de Foundation — Edicts & Privileges](https://wiki.polymorph.games/foundation/Edicts_%26_Privileges) demonstra um sistema de escolhas municipais de efeitos amplos; a [wiki oficial — Mandates](https://wiki.polymorph.games/foundation/Bailiff) mostra o custo de ordens administrativas adicionais. Útil para diferenciar políticas de rotina, **não** copiar bônus percentuais mágicos, mandato obrigando espera para alterar política, influência/facções ou burocracia para cada botão. Fonte do próprio projeto: [SPEC](../SPEC.md), não a comparação externa. Síntese da IA **PENDENTE**.
+
+
 ## Auxílio-aluguel, iluminação e van escolar municipal B — decisões de 2026-10-11
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou **4A**, **5A** e posteriormente **transporte escolar B para escolas e creches com acompanhamento real**; detalhes quantitativos e de implantação seguem em pesquisa **PENDENTE**.
