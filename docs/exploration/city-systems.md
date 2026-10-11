@@ -8,6 +8,19 @@
 >
 > Concentra pesquisa e raciocínio sobre serviços urbanos, mobilidade, vias, educação, saúde, infraestrutura técnica, conexão externa e capacidades operacionais. A SPEC continua sendo a autoridade sobre o que já foi decidido.
 
+## Escola efetiva, educação externa e consequências pessoais (2026-10-11)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** Escolhas **3A, 4A, 5A, 7A e 10A** aprovadas na SPEC; só parâmetros e compatibilidade técnica seguem em pesquisa.
+
+- **3A:** estudar exige frequência real, não apenas matrícula; falta persistente de presença atrasa progressão. Transporte e atendimento escolar efetivos influenciam resultado.
+- **4A:** imigrantes podem chegar com escolaridade básica, média ou superior prévia; isso não equivale a crédito de contribuição previdenciária externa.
+- **5A:** residência incendiada habitável continua utilizável; se inabitável, moradores procuram outro imóvel real sem transferência gratuita de propriedade.
+- **7A:** SIM vítima real de furto/roubo monetário pode perder temporariamente felicidade e sensação de segurança, além de seu dinheiro; restituição posterior não apaga o evento vivido.
+- **10A:** mudança de bairro não desmatricula criança com acesso viável à escola atual; se o trajeto inviabilizar a frequência, busca outra vaga real respeitando solicitação e capacidade existentes.
+- **Calibração:** gravidade e duração da falta escolar, limites de distância/tempo, habitabilidade de dano e efeitos de roubo. Evitar verificar todas as escolas ou SIMs a cada frame.
+
+---
+
 ## Efeitos reais do lazer e deslocamentos — escolhas 9A/10B (2026-10-11)
 
 > **Revisão humana: PARCIALMENTE REVISADO.** Duas escolhas aprovadas na SPEC.
