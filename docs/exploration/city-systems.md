@@ -8,6 +8,16 @@
 >
 > Concentra pesquisa e raciocínio sobre serviços urbanos, mobilidade, vias, educação, saúde, infraestrutura técnica, conexão externa e capacidades operacionais. A SPEC continua sendo a autoridade sobre o que já foi decidido.
 
+## Fins de semana, carros familiares e isolamento por demolição — 2026-10-11
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** As opções **8B, 9A e 10B** foram aprovadas na SPEC; mecânica de atualização e detalhes de escala permanecem para calibração.
+
+- **8B:** o calendário simulado distingue dias úteis e fins de semana. **Escolas e parte dos empregos** respeitam uma semana simplificada, enquanto serviços essenciais e comércios elegíveis podem trabalhar fora dos dias úteis, **somente com equipe e turnos reais**. O jogo deve permitir ver diferenças naturais em viagens, clientes e lazer, sem planilhas de folga por SIM nem salário fictício por dia fechado. Não criar calendário de feriados ou férias individualizadas por implicação.
+- **9A:** demolição de rua pode **remover acesso de casas/empresas/serviços**, com aviso de isolamento/efeitos na prévia, mas **sem veto automático**. Depois de demolida, a rede deixa de conter o segmento e rota, entrega, obra, serviço e viagens seguem consequências reais; uma conexão futura pode restaurar acesso, com condições normais.
+- **10B:** **um mesmo carro particular** é propriedade de um SIM, mas pode ser **usado por outros adultos da família** quando realmente disponível e acessível. A agenda de utilização precisa respeitar localização, estacionamento, combustível e ocupação única. **Não criar segundo carro para resolver conflito de horário**: pessoa procura alternativa ou aguarda conforme necessidades/rotas existentes. Sem propriedade compartilhada formal, aluguel de carros ou escalas manuais.
+
+---
+
 ## Escola efetiva, educação externa e consequências pessoais (2026-10-11)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** Escolhas **3A, 4A, 5A, 7A e 10A** aprovadas na SPEC; só parâmetros e compatibilidade técnica seguem em pesquisa.
