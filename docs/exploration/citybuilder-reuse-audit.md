@@ -114,7 +114,7 @@ Os arquivos foram apresentados como **assets autorais fornecidos pelo proprietá
 - **v3:** testar materiais semanticamente identificados (parede, telhado, vidro etc.), câmera ortográfica versus perspectiva estreita e calçadas derivadas da vizinhança; [issue #318](https://github.com/Marlohn/CityBuilder/issues/318). É referência para experimentação visual, **não decisão atual de câmera**.
 - **v4:** pacote mais coerente de ruas/calçadas/lotes com PBR e iluminação, porém ainda pequeno e com risco de custo gráfico; [issue #319](https://github.com/Marlohn/CityBuilder/issues/319). Isolamento do ambiente facilita comparar o mesmo visual sem confundir renderização com simulação.
 
-A [exploração de assets já existente no IndexCities](asset-production-pipeline.md) considera promissora a produção **paramétrica/procedural na Godot**, gerando recursos uma vez e reutilizando variantes. Os arquivos do CityBuilder podem ser **referência documental sobre problemas visuais**, nunca complemento ou insumo temporário do IndexCities. Estudos comparativos novos podem usar ativos próprios ou fontes externas escolhidas de modo independente.
+A [exploração de assets já existente no IndexCities](asset-production-pipeline.md) considera promissora a produção **paramétrica/procedural na Godot**, criando **assets novos e próprios** e gerando recursos uma vez para variar a aparência. Os arquivos do CityBuilder podem ser **referência documental sobre problemas visuais**, nunca complemento ou insumo temporário do IndexCities. Estudos comparativos novos podem usar ativos próprios ou fontes externas escolhidas de modo independente.
 
 ## 5. Achado especialmente valioso: experimento de escala que NÃO está na main
 
@@ -202,7 +202,7 @@ A [issue #322](https://github.com/Marlohn/CityBuilder/issues/322) registrou para
 - Nenhum teste foi rodado nesta pesquisa; resultados de FPS, CI e contagens acima são históricos reportados nas issues/experimentos, não benchmark reproduzido no IndexCities.
 - Os 17 GLBs da POC v4 exigem confirmação de titularidade e condições de redistribuição; licença dos kits Kenney é distinta.
 - A branch de performance não faz parte da main; **não consultar só a main** quando pesquisar otimização visual.
-- Esta auditoria não aprova qualquer mudança em `SPEC.md`, `ARCHITECTURE.md` ou `AGENTS.md`. A partir de agora, a maior economia provável virá de consultar **trechos específicos deste catálogo**, não de criar mais documentação sobre o projeto antigo.
+- Esta auditoria não aprova mudanças de produto, arquitetura, processo, código ou assets. A consulta pontual a evidências históricas serve apenas para responder dúvidas concretas, não para importar nada nem criar documentação adicional por ritual.
 
 ## 12. Segunda passagem crítica — riscos concretos e oportunidades não evidentes (2026-10-11)
 
@@ -242,12 +242,12 @@ O [comparativo da POC v3](https://github.com/Marlohn/CityBuilder/issues/317) tam
 
 A [issue #322](https://github.com/Marlohn/CityBuilder/issues/322) propôs migrar o próprio CityBuilder inteiro preservando regras e equivalência com TypeScript. **Não executar esse plano no IndexCities.** Ele foi desenhado para preservar **um produto diferente**, inclusive grade 256 × 256, 16 m, zoneamento e outros elementos que o IndexCities não aprovou.
 
-Ao implementar um domínio já definido na SPEC, fazer somente este circuito:
+Se uma comparação com o CityBuilder realmente ajudar a esclarecer uma dúvida de implementação, **um possível roteiro de investigação, não obrigatório**, é:
 
-1. **SPEC atual primeiro**: identificar comportamento, efeitos sobre SIMs, dinheiro, logística e limites de apresentação. A ARCHITECTURE orienta fronteiras técnicas.
+1. **Partir da SPEC atual**: identificar comportamento, efeitos sobre SIMs, dinheiro, logística e limites de apresentação; consultar a ARCHITECTURE conforme necessário.
 2. **Consultar uma evidência histórica apenas se houver dúvida concreta**, com caminho fixo nas seções 3 ou 12.1, verificando o contexto e o que efetivamente foi demonstrado.
 3. **Projetar do zero a solução do IndexCities**: decidir estruturas, entradas, saídas e verificações a partir das regras oficiais; **não portar nem adaptar diretamente o mecanismo antigo**.
-4. **Reproduzir o caso crítico novo**: por exemplo, passagem em viaduto sem conexão; nova estrada que libera oportunidade; entrega cancelada em trânsito; pagamento parcial sem criação de dinheiro; SIM realmente visível durante a viagem; save de projeto ainda não aprovado.
+4. **Se o risco justificar, formular teste independente**: por exemplo, passagem em viaduto sem conexão; nova estrada que libera oportunidade; entrega cancelada em trânsito; pagamento parcial sem criação de dinheiro; SIM realmente visível durante a viagem; save de projeto ainda não aprovado.
 5. **Não exigir uma POC por sistema nem testes de paridade com CityBuilder**: são evidências opcionais para tarefas de risco, não gates obrigatórios nem novas decisões oficiais.
 
 **Prioridade revisada deste material:** o ganho imediato maior continua em **testes e diagnóstico + determinismo**, seguido de **rotas/conectividade refeitas para a SPEC**, **histórico individual escalável** e **composição procedural do visual**; o código financeiro e a lógica de imigração antiga permanecem **anti-exemplos de comportamento**. Performance Web é referência de problema/medição, **não prova de que Godot já resolveu a escala**. Na [branch de performance](https://github.com/Marlohn/CityBuilder/tree/038b506a21d0ffcd1e5726601b8497f79c2f40dc), a medição automatizada após as correções não foi seguida por um resultado independente de **FPS em GPU real** documentado nesta auditoria.
@@ -299,7 +299,7 @@ A [documentação atual de MultiMesh da Godot](https://docs.godotengine.org/en/s
 
 **Olhar quando houver implementação integrada suficiente (valor condicionado):** gerador headless de cidades para testes reais, monitor de ritmo efetivo de simulação e relatórios de custo por sistema. São aplicações práticas das fronteiras de simulação já adotadas; não constituem novas POCs obrigatórias ou frameworks de QA.
 
-**Não gastar tempo agora:** reabrir modo Criativo, copiar painel de Realismo como um placar novo, adotar o ranking RICE/roadmap automático, usar bot como prefeito jogável, acrescentar tutoriais (explicitamente adiados pela SPEC), imitar o mecanismo antigo de previsões de crescimento, incorporar *Director* com LLM ao gameplay, ou importar todos os GLBs sem seleção.
+**Não transformar esta pesquisa em tarefas:** reabrir modo Criativo, copiar painel de Realismo, adotar ranking RICE/roadmap automático, usar bot como prefeito jogável, acrescentar tutoriais (adiados pela SPEC), imitar previsões antigas de crescimento ou incorporar *Director* com LLM não foram aprovados por esta auditoria. **Nenhum GLB/asset do CityBuilder pode ser importado, com ou sem seleção.**
 
 **O que realmente é novo nesta terceira rodada:** amostra geográfica e seus vieses; ligação entre censo/sinais/desafios aprovados; UX com `Preview.valid` que não assegura validação e a necessidade de confirmações; estatísticas com denominadores incompatíveis; aleatoriedade diária; supervisão do ritmo efetivo do relógio; diferenciação de árvores físicas versus aparência; testes que falham por cenário inválido; ZIP v4 possivelmente mais rico; e versões **atuais e oficiais** dos kits Kenney. O restante confirma conclusões anteriores, sem justificar novas camadas de processo.
 
