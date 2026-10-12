@@ -6,6 +6,14 @@
 >
 > **Última reavaliação de avanço:** 2026-10-11, distinguindo **89% de maturidade de decisões do Convencional (nova linha de base)** e **81% de prontidão documental/técnica para integração (estimativa anterior)**; ambos são avaliações qualitativas ainda sem validação de jogo. **Pesquisa comparativa de base:** 2026-10-08. [Evidências e 24 frentes de investigação](genre-benchmark.md#pesquisa-transversal-ampliada--cidade-real-jogos-e-lacunas-de-gameplay-2026-10-08).
 
+## Rodada de nove respostas e revisão de tarifas (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO quanto à documentação.** Escolhas 1B, 3C, 4A, 5A, 6B, 7C, 8A e 9A foram aprovadas e promovidas à SPEC; 2B apenas confirmou o comportamento já aprovado de isenção familiar na próxima cobrança/uso; **10 não foi decisão nova**. A água e energia permanece com tarifas unitárias automáticas e cobrança por consumo, enquanto a pergunta sobre o jogador controlar níveis tarifários não foi aprovada.
+
+**Prioridades resolvidas de gameplay:** auxílio-aluguel sem limite fixo de duração por família, com avaliação e teto mensal reais; ampliação da cooperação externa a incêndio, urgência médica e apoio policial, todos dependentes de disponibilidade, deslocamento e Caixa; locatária comercial pode buscar substituto na janela de retomada; oferta individual das unidades de prédios mistos desde a conclusão; material de obra cancelada em trânsito mantém titularidade e destino físico; pedidos persistentes compactos; poucos desafios simultâneos destacados; estudo adulto apenas com horário compatível. Manter aviso de retomada comercial, condições concretas de importação de serviços externos e destino quando depósito está indisponível em calibração/definição antes do código correspondente; **não são novas escolhas de produto criadas por esta análise**.
+
+**Atenção de consistência:** menções históricas ao auxílio-aluguel com prazo máximo deixam de descrever a regra atual; período ilimitado **não** é pagamento garantido nem supera elegibilidade, verba do programa, Caixa, contratos ou prioridade de risco. **Percentuais 89%/81% preservados** como estimativas qualitativas anteriores, sem recalcular por contagem de respostas.
+
 ## Duas revisoes concluídas: vulnerabilidade economica e fila de vans (2026-10-11)
 
 > **Revisão humana: DECIDIDO.** 1A e 2A aprovadas e registradas na SPEC. **1A:** reavaliar gratuitamente a isenção de creche e van na próxima cobrança/uso quando renda familiar mudar, usando o critério econômico compartilhado, sem avaliação por quadro. **2A:** quem não possui alternativa realmente segura/viável tem prioridade em assentos escassos da van; ordem de solicitação só desempata necessidade equivalente. **O antigo 24B foi explicitamente substituído**; 25A (roteamento automático) e 8B (matrícula escolar por ordem de pedido) permanecem.
