@@ -8,9 +8,9 @@
 
 ## Estado atual
 
-O IndexCities está em **fase inicial de definição**. A **primeira implementação será do jogo integrado conforme esta SPEC**, com validação principal do conjunto funcional; **não há POCs isoladas por sistema como entregas obrigatórias**. A implementação pode ser modular e incluir testes técnicos pontuais, sem reduzir o escopo oficial. Processo e testes são regidos pelo `AGENTS.md` e pela `ARCHITECTURE.md`.
+O IndexCities está em **preparação para a primeira implementação**. A **primeira implementação será do jogo integrado conforme esta SPEC**, com validação principal do conjunto funcional; **não há POCs isoladas por sistema como entregas obrigatórias**. A implementação pode ser modular e incluir testes técnicos pontuais, sem reduzir o escopo oficial. Processo e testes são regidos pelo `AGENTS.md` e pela `ARCHITECTURE.md`.
 
-Neste momento, o objetivo é deliberadamente não preencher esta SPEC com decisões prematuras. Plataforma, direção visual, escala, sistemas de gameplay, simulação, persistência, performance-alvo e demais características serão discutidos e decididos progressivamente.
+As decisões confirmadas estão nas seções abaixo. Parâmetros e comportamentos ainda abertos devem ser esclarecidos somente quando forem necessários ao desenvolvimento, preservando a SPEC como contrato vivo e sem antecipar requisitos.
 
 ## Regras da SPEC
 
@@ -39,6 +39,7 @@ A SPEC deve crescer **com as decisões do produto e antes do código que as impl
 
 
 - O IndexCities será um **city builder**.
+- **Plataforma prioritária da primeira versão — escolha A confirmada (2026-10-11):** desenvolver inicialmente para **computador**, com **mouse e teclado** como controles de referência e **Windows como plataforma inicial prioritária**. Isso orienta a implementação da câmera, das ferramentas de construção e da interface, sem reduzir a experiência de construção intuitiva já aprovada. **Linux, macOS, dispositivos móveis e outros controles não são compromissos da primeira versão**; eventual suporte será avaliado depois, sem criar agora interfaces paralelas ou abstrações exclusivas para plataformas futuras.
 - A apresentação será **3D com câmera isométrica**.
 - A construção será feita na granularidade de **casas e prédios**, sem construção por cômodos.
 - No escopo atual, o jogador posiciona **cada prédio diretamente**; zoneamento automático não faz parte da proposta atual.
