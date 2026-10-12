@@ -8,10 +8,10 @@
 
 ## Financiamento mensal continuado e patrulhamento físico — rodada aprovada (2026-10-11)
 
-> **Revisão humana: PARCIALMENTE REVISADO.** 1A foi escolhida expressamente; pergunta 7 continua sem aprovação de nova política de patrulhamento.
+> **Revisão humana: PARCIALMENTE REVISADO.** A verba mensal 1A foi aprovada e **a questão policial 7A foi posteriormente confirmada**, preservando patrulha automática e a influência real das delegacias.
 
 - **1A verba pública:** o teto/financiamento real definido por área no menu da Prefeitura **se repete a cada mês simulado até o jogador mudar o valor**, preservando gastos já vencidos, prioridades essenciais e caixa realmente disponível. Não exige aprovação mensal, não é um saldo pré-pago total e não transfere moeda para «contas internas» fictícias. O modelo de verba por serviço **continua aprovado para teste de gameplay**, com visual e valores a calibrar.
-- **7 em aberto:** o responsável ressaltou o papel da **localização de cada delegacia**. A regra atual já exige policiais e viaturas físicos, patrulhas preventivas e resposta por rede viária; delegacia não gera proteção em raio abstrato. Uma opção extra de «priorizar bairro» **não foi aprovada** e pode duplicar a decisão espacial de onde construir delegacias. Observar cobertura, distância, patrulhamento e indisponibilidade antes de propor outro controle.
+- **7A confirmada — patrulhamento automático:** a localização de cada delegacia determina sua origem/acesso e influencia tempos de deslocamento, junto com as equipes, viaturas e ocorrências realmente disponíveis. A simulação escolhe trajetos e cobertura segundo necessidades efetivas, **sem raio mágico de segurança**, sem definir bairros prioritários manualmente e sem roteirização individual pelo jogador. A escolha reforça a patrulha física já aprovada pela 9B; testar cobertura e capacidade antes de cogitar ferramenta adicional.
 
 ## Atualizacao aprovada: isencao no proximo uso e prioridade real nas vans (2026-10-11)
 
