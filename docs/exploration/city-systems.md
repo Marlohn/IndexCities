@@ -8,13 +8,21 @@
 >
 > Concentra pesquisa e raciocínio sobre serviços urbanos, mobilidade, vias, educação, saúde, infraestrutura técnica, conexão externa e capacidades operacionais. A SPEC continua sendo a autoridade sobre o que já foi decidido.
 
+## Atualizacao da gratuidade e fila de vans escolares — 1A/2A (2026-10-11)
+
+> **Revisão humana: DECIDIDO.** As respostas **1A e 2A** foram promovidas à SPEC. A antiga fila **24B apenas por ordem de pedido foi explicitamente substituída** pela prioridade de necessidade real; a regra 25A de rotas automáticas permanece.
+
+- **1A, reação à perda de renda:** reavaliar elegibilidade de isenção de creche e van **na próxima cobrança ou tentativa concreta de uso após mudança financeira**, usando renda/recursos/despesas essenciais do mesmo domicílio, sem cálculo global por quadro, atraso mensal obrigatório ou perdão de dívida legitimamente vencida no passado.
+- **2A, vaga escassa de van:** priorizar crianças sem **alternativa real, segura e viável** de comparecer à escola/creche, considerando idade, caminho, horários e adulto acompanhante quando necessário. **Empate de necessidade: ordem de pedido do transporte**, não ordem de matrícula escolar. Não inferir que pobreza isolada garante assento nem ignorar que falta de alternativa pode repercutir em trabalho e renda da família.
+- **Causalidade:** dinheiro do responsável, comparecimento escolar, tempo de cuidado familiar, possibilidade de trabalhar, trajetos físicos, vagas, motoristas/monitores e operação municipal; observável nos painéis agregados, sem serviço ou efeito fictício.
+
 ## Transporte escolar municipal: cobrança opcional com isenção — B aprovada (2026-10-11)
 
 > **Revisão humana: REVISADO quanto à política aprovada.** A proposta de cobrar passagem de famílias capazes de pagar, mantendo isenção para famílias sem recursos, **foi expressamente escolhida como B** e registrada na SPEC. A discussão anterior que chamava a tarifa de hipótese está superada.
 
 - A Prefeitura pode manter as vans **gratuitas para todos** ou ativar cobrança **somente das famílias capazes de pagar**. O mesmo critério econômico familiar aprovado para creche deve ser reaproveitado, evitando classificação repetida.
 - Responsável adulto/família real é o pagador, não a criança. Receita só existe por transporte prestado e pagamento real; **sem viagem ou sem saldo efetivamente transferido, não há receita**.
-- Motoristas SIMs, monitores SIMs para crianças pequenas, assentos, horários, roteiros e combustível continuam reais. A fila de utilização é por **ordem de solicitação** (24B), e rotas automáticas (25A); a isenção não garante vaga ou transporte mágico.
+- Motoristas SIMs, monitores SIMs para crianças pequenas, assentos, horários, roteiros e combustível continuam reais. A fila foi **revisada pela escolha 2A** para priorizar crianças sem acesso alternativo viável, com ordem de solicitação só no empate; rotas seguem automáticas (25A); a isenção não garante vaga ou transporte mágico.
 - **Consequências reais para SIMs:** custos alteram saldo familiar, acesso ao transporte e alternativas; viagem não atendida pode provocar falta escolar, menor progresso acadêmico e dificuldade de frequentar creche. Sem cuidado/acompanhamento viável, adultos da família podem perder tempo de trabalho e renda; custos e viagens repercutem no Caixa sem duplicações ou bônus arbitrários.
 - O painel da Prefeitura deve separar SIMs e famílias em dificuldade financeira, usuários isentos, viagens solicitadas/atendidas/não atendidas por motivo, receitas recebidas, gastos de frota/equipe e impacto de frequência/acesso, sem alerta por passageiro.
 - **Ainda exigem definição/calibração:** tarifa e periodicidade efetivas, reavaliação de condição econômica entre cobranças, dívida vencida e transição quando família anteriormente capaz de pagar perde renda; isso não autoriza excluir criança instantaneamente.
@@ -46,7 +54,7 @@ O responsável pediu voltar a olhar **ônibus, estacionamento, atrações, assis
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** As escolhas **24B**, **25A** e **28C** foram confirmadas na SPEC; a **23A foi indicada inicialmente, mas a própria resposta solicitou reavaliar gratuidade como política da Prefeitura**. Portanto, **esta pendência histórica foi resolvida pela aprovação posterior B: gratuito para todos ou tarifa com isenção econômica**. A gratuidade das creches permanece decisão da SPEC até uma revisão explícita.
 
-- **24B:** solicitações de vagas de transporte escolar atendidas por **ordem de pedido**, desde que sejam viagens efetivamente possíveis com alunos, horários, monitor quando necessário, assento, frota e acesso reais. Sem confundir matrícula escolar com reserva de assento na van.
+- **24B — histórico, SUBSTITUÍDO pela decisão posterior 2A:** a ordem do pedido não é mais a prioridade principal quando faltam vans; priorizar dependência de transporte e usar ordem de pedido só para casos de necessidade equivalente. Não confundir matrícula escolar com reserva de assento na van.
 - **25A:** trajetos e atendimento das vans são montados automaticamente pela simulação, sem marcação de paradas por aluno pelo jogador. Checar reservas inviáveis e mudanças reais de horário sem varredura por frame.
 - **23 em discussão:** comparar gratuidade fixa versus **política municipal agregada de van gratuita/paga**, e compatibilidade com acesso ao ensino e creche, famílias pobres e capacidade real. Nenhuma tarifa ou cobrança de van foi aprovada definitivamente nesta rodada.
 - **28C:** permitir por política municipal ajuda externa emergencial, se houver veículos/equipe realmente disponíveis fora e tempo de chegada via conexão real, com custo/contabilidade municipal e risco de falha. Não adicionar corpo de bombeiros infinito e não substituir automaticamente serviços locais.
