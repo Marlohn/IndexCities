@@ -1,6 +1,6 @@
 # IndexCities — Primeira versão jogável (V1): recorte e dependências
 
-> **EXPLORAÇÃO — não é fonte de verdade. Revisão humana: PENDENTE.** Proposta de recorte preparada pela IA em 2026-10-12 **a pedido do responsável**, que autorizou a análise/documentação, mas ainda não confirmou individualmente as funcionalidades selecionadas. A autorização para preparar o recorte **não deve ser confundida com aprovação humana do seu conteúdo**. A `docs/SPEC.md` é a autoridade de produto; o `AGENTS.md` exige aprovação do escopo de cada versão antes da implementação dependente. **Não tratar este texto como ordem de implementar a V1 sem essa aprovação.**
+> **EXPLORAÇÃO — não é fonte de verdade. Revisão humana: PARCIALMENTE REVISADO.** O responsável **aprovou expressamente em 2026-10-12 o recorte funcional da V1** proposto neste documento; a seção *V1 — primeira versão jogável integrada* da [SPEC](../SPEC.md) passou a ser seu contrato oficial. Esta exploração permanece material de apoio: explicações, sequências técnicas, cenários de teste e propostas de integração produzidas pela IA **não foram todas revisadas nem transformadas em requisitos**. Em caso de divergência, prevalece a SPEC.
 
 ## Intenção
 
@@ -8,14 +8,14 @@
 
 **Critério de escolha:** menor ciclo que contém construção física + agentes reais + dinheiro finito + emprego/consumo + abastecimento/logística + leitura de causa e efeito, sem mecanismos mágicos para fingir os sistemas ainda não implementados. O objetivo não é obrigar a implementação simultânea: entregar incrementos integrados e verificáveis durante a construção da V1.
 
-## Proposta de funcionalidades da V1 — depende de confirmação humana
+## Funcionalidades da V1 — recorte aprovado na SPEC
 
-| Grupo | Recorte proposto para a primeira entrega | Limite explícito |
+| Grupo | Recorte funcional aprovado para a primeira entrega | Limite explícito |
 | --- | --- | --- |
 | Mundo/controles | Mapa plano determinístico por seed, vegetação simples, rio/lago, conexão externa com rodovia existente; Godot 3D isométrico, câmera e seleção por mouse/teclado | Sem edição de relevo ou expansão de bordas; sem versão móvel/Criativo |
 | Início/catálogo | Mapa urbano vazio; Prefeitura única opção inicial; confirmação de sua posição libera ferramentas imediatamente, sem concluir a obra | Sem missões/desbloqueios posteriores, em conformidade com a SPEC |
 | Construção e ruas | Prévia/snap híbrido e validação de espaço; traçado de rua urbana 1+1 em linha/L com calçadas, postes; obras com custos, materiais reservados/importados, caminhões e mão de obra externa ou do Pátio; causas de paralisação e cancelamento | O perfil urbano 2+2, obras especiais e Centro de Materiais ficam para versões posteriores; a entrega direta de importação ao canteiro é **regra já aprovada**, não estoque global fictício |
-| Catálogo de edifícios | Prefeitura; Pátio Municipal de Obras; casa residencial simples de baixa densidade; mercearia pequena; fazenda pequena; posto de combustível; instalações essenciais de captação/tratamento de água, tratamento de esgoto e **uma fonte eólica** de energia | São **tipos funcionais candidatos**, não número de modelos finais. Edifícios e funções futuros da SPEC permanecem aprovados para expansão. Água captada deve ser tratada; não presumir que captação e tratamento sejam um único prédio sem verificar a SPEC/obter decisão |
+| Catálogo de edifícios | Prefeitura; Pátio Municipal de Obras; casa residencial simples de baixa densidade; mercearia pequena; fazenda pequena; posto de combustível; instalações essenciais de captação/tratamento de água, tratamento de esgoto e **uma fonte eólica** de energia | São **tipos funcionais aprovados para a V1**, não o número final de modelos visuais. Edifícios e funções futuros da SPEC permanecem aprovados para expansão. Água captada deve ser tratada; não presumir que captação e tratamento sejam um único prédio sem verificar a SPEC/obter decisão |
 | Dinheiro/agentes | Caixa da Cidade, compromissos e pagamentos reais, Reserva Global e invariância da oferta monetária; SIMs e empresas persistentes com dinheiro próprio, contratação, salários, consumo, propriedade e impostos aplicáveis; migrantes/empresas externas avaliam oportunidade sem garantia | Nenhum morador, comprador, empresa ou salário artificial para completar a cena; decisões avançadas de família, previdência, aluguéis empresariais, imóveis mistos etc. serão integradas mais tarde |
 | Operação privada | Compra real de imóvel novo; empresa autônoma opera mercearia, fazenda, posto; fazenda produz Alimentos com terreno, trabalho, tempo, capacidade e estoque; mercearia compra localmente ou importa, recebe carga física; SIMs viajam para trabalhar/comprar e pagam com saldo real | Sem catálogo amplo de negócios, hotéis, indústria pesada, mineração, refinarias ou produção local de material de construção nesta entrega. Não inventar demanda/venda por existir prédio |
 | Logística e mobilidade | Pedestres e rotas viárias reais para viagens disponíveis, caminhões externos de obra/mercadoria, caminhões locais de carga e abastecimento físico de Combustível importado com estoque de posto e custo; veículos com combustível real e restrições de acesso | Não incluir ainda ônibus, táxis, emergência, bicicletas/ciclovias, aeroporto ou rodovias novas. Não simplificar deslocamento real para teletransporte |
@@ -55,9 +55,9 @@
 
 Catálogo completo de dez atividades privadas, alta densidade, prédios mistos, locação comercial, indústria/extração/refino, serviços públicos extensos (escolas, saúde, segurança, emergências, creches), transporte coletivo/sob demanda, veículos e meios adicionais, programas municipais, parques/atrações/turismo, ciclo familiar avançado, desafios e conquistas, modificações estéticas posteriores, pontes/viadutos, infraestrutura avançada, poluição/ambiente aprofundados e modo Criativo. **Isto é fila de integração, não cancelamento de decisões.** Se uma regra dessas for indispensável para o fluxo escolhido, revisar explicitamente a fronteira antes de codificar sua dependência.
 
-## Questões que exigem confirmação ou teste cedo
+## Validações e lacunas a tratar durante a integração
 
-- **Aprovação humana do recorte** antes de tratá-lo como V1 oficial na SPEC. A lista acima é recomendação da IA, não aprovação presumida.
+- **Recorte aprovado em 2026-10-12** e registrado oficialmente na [SPEC](../SPEC.md). Detalhes ainda não decididos, mudanças de escopo e conflitos materiais devem seguir o fluxo de decisão do AGENTS antes da implementação dependente; esta lista não é autorização para inventar exceções.
 - **Contrato espacial/câmera de referência com a IA de assets:** dimensões, pivôs, vias, acessos e slots precisam ser pactuados antes de produção em massa; ver [briefing de assets V1](first-playable-assets.md).
 - **Instalações de água e esgoto e efeito de ausência de utilidades:** conferir exatamente quais edifícios/etapas são necessários no catálogo do recorte, sem inventar estação universal; separar o que é escolha de produto do que é detalhe técnico reversível.
 - **Escala e economia de bootstrap:** validar custo real das primeiras obras e capital de famílias/empresas. Se o modelo impedir iniciar uma pequena cidade com dinheiro físico legítimo, ajustar parâmetros delegados à calibração; não criar moeda, cidadãos ou produção falsos.
@@ -67,4 +67,4 @@ Catálogo completo de dez atividades privadas, alta densidade, prédios mistos, 
 
 - **IA do jogo:** desenvolve apenas o que a SPEC autorizar, testa entradas/saídas físicas/econômicas, publica cedo o contrato de escala, pontos funcionais e IDs visuais; não toma decisões de produto por conta da IA de arte.
 - **IA de assets:** pode preparar referências originais, paleta, silhuetas, protótipos de famílias e modelos candidatos em paralelo **desde já**; só produzir catálogo dimensional definitivo após validação do contrato e integração de uma amostra. Não copiar assets nem herdar código ou desenhos de projetos externos.
-- **Responsável:** aprova o recorte de versão e, quando necessária, uma escolha de produto ausente; revisa entregas visuais no jogo, não apenas imagens isoladas.
+- **Responsável:** já aprovou o recorte V1 na SPEC; decide eventuais mudanças de escopo e comportamentos importantes ausentes, além de revisar as entregas visuais no jogo, não apenas imagens isoladas.
