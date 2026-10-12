@@ -282,7 +282,9 @@ Esta lista não é exaustiva; ela preserva as referências de maior utilidade en
 - Farthest Frontier — free build 360°: https://forums.crateentertainment.com/t/v1-1-patch-preview/152189
 - SimCity / GlassBox retrospective: https://simscommunity.info/2013/10/04/blog-post-state-of-simcity/
 
-### Código e arquitetura aberta
+### Repositórios públicos usados para comparar abordagens — não são fontes de implementação
+
+**Estes links são evidências externas para confrontar ideias e entender limitações do gênero, não uma lista de códigos, técnicas, dados, assets ou arquiteturas a adotar.** Não consultar implementações desses projetos por padrão para escrever código do IndexCities; a solução deve partir da SPEC/ARCHITECTURE e ser própria. Qualquer nova ideia de produto depende de aprovação humana.
 
 - Citybound: https://github.com/citybound/citybound
 - A/B Street: https://github.com/a-b-street/abstreet
