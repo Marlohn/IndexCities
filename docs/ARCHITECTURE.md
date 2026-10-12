@@ -12,7 +12,7 @@
 
 O projeto ainda não possui implementação de jogo. Esta arquitetura define fronteiras e direção de dependências antes do primeiro código justamente porque essas escolhas têm alto custo de reversão depois que simulação, apresentação e conteúdo começam a se misturar.
 
-**Premissa de entrega e validação (revisada em 2026-10-11):** desenvolver o Convencional em **versões menores, jogáveis e integradas**, validando os primeiros ciclos reais de gameplay, interoperabilidade e desempenho desde cedo. A SPEC preserva a visão completa; o recorte de cada versão requer aprovação do responsável, e **a primeira entrega ainda não foi delimitada**. Não impor POCs isoladas nem usar comportamento econômico/logístico fictício para aparentar integração. Testes técnicos pontuais, execução headless e profiling continuam proporcionais ao risco.
+**Premissa de entrega e validação (revisada em 2026-10-11):** desenvolver o Convencional em **versões menores, jogáveis e integradas**, validando os primeiros ciclos reais de gameplay, interoperabilidade e desempenho desde cedo. A SPEC preserva a visão completa; o recorte da **V1 foi aprovado pelo responsável em 2026-10-12 e consta na SPEC**. O recorte de versões futuras continua exigindo aprovação. Não impor POCs isoladas nem usar comportamento econômico/logístico fictício para aparentar integração. Testes técnicos pontuais, execução headless e profiling continuam proporcionais ao risco.
 
 Ela deve continuar pequena. Novas camadas, frameworks, assemblies ou abstrações só entram quando resolverem uma necessidade observável.
 
