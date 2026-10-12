@@ -8,12 +8,19 @@
 >
 > Reúne empresas privadas, demanda, aquisição de ativos, caixa empresarial, falência, abastecimento, conexão econômica externa e interpretação do Caixa da Cidade.
 
+## Atualização posterior da inadimplência comercial — confirmação do responsável (2026-10-11)
+
+> **Revisão humana: REVISADO neste refinamento.** Após indagar se a regra empresarial não deveria ser igual à residencial, o responsável confirmou posteriormente “10 ok”. A SPEC passou a fixar **três meses de atraso comercial** para encerramento automático de locação, abatendo apenas dívida realmente paga. A dívida subsiste contra a empresa e a saída respeita estoques, pessoas e contratos reais, sem expulsão/teletransporte.
+
+A escolha 8 também foi confirmada: aluguel mensal proporcional ao preço da propriedade com reajuste anual, no mesmo **mecanismo**, não a mesma alíquota numérica residencial. O novo proprietário pode pedir o imóvel para uso próprio (13), mas com aviso e saída reais; prazo exato de aviso continua para calibração/definição. A frase histórica “prazo comercial permanece aberto” em seções anteriores está **superada por esta confirmação e pela SPEC**.
+
+
 ## Contratos comerciais — rodada de 30 confirmada e prazo ainda aberto (2026-10-11)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** As escolhas 8A, 9A, 10A, 11A, 12A, 13A (com retomada solicitada pelo novo proprietário), 14A e 15A estão na SPEC. A sugestão de adotar **3 meses também no comércio** foi levantada como dúvida, **não é decisão**.
 
 - **Modelo econômico:** aluguel comercial calculado automaticamente como percentual do valor imobiliário do ativo, pagamento mensal, reajuste anual no mesmo princípio residencial, com percentuais calibráveis por categoria, sem negociação de preços a cada operação.
-- **Contrato:** contínuo/renovável com aviso, sem administração manual do jogador; dívida do operador não paga pelo proprietário, inadimplência persistente causa encerramento, mas **prazo comercial permanece aberto**. Igualar o prazo de três meses do aluguel residencial reduz sistemas, mas pode deixar operador inviável acumular perdas; escolher após consequência concreta, não inferir da escolha 10A.
+- **Contrato:** contínuo/renovável com aviso, sem administração manual do jogador; dívida do operador não paga pelo proprietário, inadimplência persistente causa encerramento, e o **prazo comercial de três meses foi confirmado posteriormente pelo responsável**, como registrado na SPEC. A escolha reduz sistemas, embora permita ao operador acumular dívida e perder a ocupação; a saída física continua real.
 - **Responsabilidades:** locador paga imposto imobiliário e estrutura que lhe pertence; operadora paga água/energia usadas, adaptações e dano de sua própria operação, com reparos compartilhados de prédio misto conforme outra regra.
 - **Venda e falência:** locação permanece na venda, inclusive em liquidação do imóvel de uma empresa falida; novo proprietário **pode pedir o imóvel para uso próprio**, mas encerramento deve permitir transição/retirada real e aviso sem retirada instantânea. Locatária que fecha filial pode pedir saída sem extinguir empresa inteira, e mantém obrigações reais.
 - **Casos de teste:** loja saudável em imóvel cujo dono faliu; proprietário comprou loja ocupada e pediu uso próprio; indústria locatária encerrou unidade com equipamentos/estoque próprios; locatária sem recursos e prazo de despejo comercial; imóvel misto com unidade comercial locada. Nenhum teste é requisito de minijogo jurídico.
