@@ -8,6 +8,13 @@
 >
 > Concentra pesquisa e raciocínio sobre serviços urbanos, mobilidade, vias, educação, saúde, infraestrutura técnica, conexão externa e capacidades operacionais. A SPEC continua sendo a autoridade sobre o que já foi decidido.
 
+## Vagas universitárias e atrações iniciais — escolhas 5A/6A (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** 5A e 6A aprovadas; calendário, volume de vagas, visita e custos concretos dependem de calibração.
+
+- **5A universidade:** candidatos reais elegíveis, incluindo adultos e jovens, disputam vagas efetivamente disponíveis **pela ordem de solicitação**; sem cotas por idade nem preferência automática por recém-formados. Não eliminar requisitos de etapa prévia, deslocamento, horários, frequência e capacidade; o restante segue a escolha automática de instituições.
+- **6A turismo:** catálogo dedicado inicial = **museu e mirante municipais**. Parques, praças, hotéis, comércio e lazer continuam seus tipos existentes e podem atrair/atender turistas reais. Outras atrações dedicadas não entram por associação com termos genéricos como «centro cultural», sem decisão expressa.
+
 ## Atualizacao da gratuidade e fila de vans escolares — 1A/2A (2026-10-11)
 
 > **Revisão humana: DECIDIDO.** As respostas **1A e 2A** foram promovidas à SPEC. A antiga fila **24B apenas por ordem de pedido foi explicitamente substituída** pela prioridade de necessidade real; a regra 25A de rotas automáticas permanece.
