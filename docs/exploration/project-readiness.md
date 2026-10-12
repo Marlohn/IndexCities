@@ -292,7 +292,7 @@ As prioridades são **orientação revisável**, não impedimento para experimen
 
 **Conta ponderada:** 10% × 90% + 15% × 92% + 15% × 92% + 12% × 88% + 15% × 88% + 8% × 70% + 10% × 72% + 10% × 78% + 5% × 40% = **82,96%**, arredondado para **83%**. A base anterior usava as mesmas nove frentes/pesos e correspondia a 81,05% (81% arredondados); o número histórico de 75% vinha de avaliação ainda anterior, não idêntica em método.
 
-### O que realmente deve acontecer agora
+### Direção já aprovada e próximas verificações sugeridas
 
 1. **Começar ou avançar a implementação integrada do Convencional em incrementos pequenos**, respeitando a SPEC. Não criar POCs independentes obrigatórias nem exigir 100% de decisões.
 2. **Testar causalidade**, não quantidade de menus: família empobrece → isenção de creche/van → deslocamento/frequência real → tempo/renda do adulto; tarifa de ônibus → custo/rota/acesso; verba de hospital → compras, empregados, capacidade real, dívidas.
@@ -301,7 +301,7 @@ As prioridades são **orientação revisável**, não impedimento para experimen
 
 **Risco dominante:** especificação relativamente madura com **zero implementação de jogo verificável neste GitHub**; a prova que falta não é mais texto, é interação entre economia, SIMs, logística, construção e interface executada em conjunto. O modo Criativo permanece fora desta avaliação.
 
-## Prioridade P0 — tratar primeiro
+## Riscos de maior valor (P0 exploratório — não é backlog aprovado)
 
 P0 reúne os maiores riscos ou decisões que exigem atenção para **integrar e validar o jogo previsto na SPEC**, não para criar uma POC menor. **Nem todos os itens precisam estar fechados antes de qualquer código.** Cada item distingue decisão, calibração e experimento.
 
@@ -321,7 +321,7 @@ P0 reúne os maiores riscos ou decisões que exigem atenção para **integrar e 
 
 **Possível ordem interna de implementação e feedback (não aprovada como plano obrigatório):** mundo e ferramentas de construção → obras, materiais e logística → cidadãos, moradias, empresas, serviços e consumo → avaliação do conjunto. Trata-se apenas de sequência técnica de desenvolvimento, **sem POCs separadas e sem retirar funcionalidades já previstas na SPEC da primeira entrega integrada**.
 
-## Prioridade P1 — esclarecer quando os sistemas entrarem na integração
+## Riscos e lacunas por sistema (P1 exploratório — não é backlog aprovado)
 
 | Categoria | Natureza | Ponto em aberto |
 | --- | --- | --- |
@@ -372,7 +372,7 @@ Revisitar **após validar gameplay e modelo temporal** se a segunda ocupação c
 
 ---
 
-## Prioridade P2 — não antecipar decisões finas sem evidência
+## Assuntos que podem esperar evidência (P2 exploratório — não é backlog aprovado)
 
 - **Mobilidade avançada:** faixas, ultrapassagens e casos complexos de tráfego pertencem à visão do produto, mas a otimização e o detalhamento incremental exigem medição.
 - **Famílias e patrimônio:** refinar exceções de herança, aluguel, titularidade e inadimplência conforme o impacto real.
