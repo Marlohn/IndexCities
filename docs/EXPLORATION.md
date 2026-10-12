@@ -4,6 +4,16 @@
 >
 > Ele não é fonte de verdade do produto. Decisões oficiais de produto pertencem a [SPEC.md](SPEC.md), decisões estruturais a [ARCHITECTURE.md](ARCHITECTURE.md) e regras de trabalho a [../AGENTS.md](../AGENTS.md).
 
+## Nova rodada — oito escolhas aprovadas, duas questões sem aprovação (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** Escolhas explícitas promovidas à SPEC: **1A** (verbas mensais persistem até alteração), **2B** (empresas comparam comprar/alugar), **3B** (mensalidade de creche vencida vira dívida real sem exclusão automática de criança), **4A** (empregos viáveis preservados ao mudar ramo), **5A** (fila universitária por pedido), **6A** (museu e mirante como atrações dedicadas iniciais), **8A** (sem nova ferramenta de caminhos exclusivos de pedestres agora; rever depois), **9A** (carga/descarga limitada pelo espaço físico do estabelecimento).
+
+**7 — não decidido:** responsável questionou se priorização policial por bairro seria redundante, já que a localização das delegacias e as patrulhas físicas importam. A SPEC **já exige patrulhas com pessoas, viaturas, caminhos e tempo reais**, sem bônus circular abstrato da delegacia. Preferir inicialmente observar sua cobertura sem criar política regional adicional. **Não aprovar 7A/7B/7C por inferência.**
+
+**10 — não decidido:** materiais **já entregues/consumidos** numa obra **não podem ser redistribuídos** por mudança de prioridade. A fila de criação já aprovada controla apenas a disputa por **materiais ainda disponíveis/não comprometidos**; materiais reservados, pagos ou em trânsito exigem preservação da titularidade e dos compromissos existentes. O responsável pediu explicação, **não aprovou uma ferramenta para reorganizar obras**; manter FIFO vigente e avaliar necessidade real no jogo antes de reabrir.
+
+As notas exploratórias por tema permanecem **parcialmente revisadas**, sem converter recomendações de IA em decisões de produto: [Prefeitura](exploration/city-hall.md), [empresas](exploration/companies-markets.md), [moradia/famílias](exploration/households-housing.md), [sistemas](exploration/city-systems.md), [logística](exploration/construction-materials-logistics.md), [interface](exploration/player-interface.md), [prontidão](exploration/project-readiness.md).
+
 ## Rodada seguinte — oito decisões novas, uma confirmação e uma regra já vigente (2026-10-11)
 
 > **Revisão humana: PARCIALMENTE REVISADO.** O responsável escolheu explicitamente 1B, 2B, 3C, 4A, 5A, 6B, 7C, 8A e 9A. **2B já estava atendida pela regra atual da SPEC** de isenção na próxima cobrança/uso, de uma rodada anterior chamada 1A; não duplicar a regra. Na pergunta 10, pediu conferir a decisão anterior, **sem aprovar nova política**: água e energia continuam cobradas por consumo, com **preço unitário automático**, sem faixas municipais novas.
