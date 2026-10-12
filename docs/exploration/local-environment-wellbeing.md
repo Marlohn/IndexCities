@@ -2,7 +2,7 @@
 
 > **EXPLORAÇÃO. Revisão humana: PARCIALMENTE REVISADO (direção de produto aprovada; pesquisa, fórmula e recomendações técnicas PENDENTES).** Estudo de 2026-10-11. A regra oficial está na [SPEC](../SPEC.md#terreno-vegetação-e-espaços-públicos), escolha **5C**; este documento **não substitui a SPEC nem aprova uma arquitetura específica**.
 
-## Resumo e decisão
+## Resumo: direção aprovada versus implementação ainda hipotética
 
 **Vale manter, de maneira enxuta.** Árvores, jardins e áreas verdes reais podem melhorar moderadamente o ambiente local onde SIMs moram, contribuindo para bem-estar e, quando coerente, atratividade/valor da região. **Não** transformar cada objeto decorativo em um bônus individual de felicidade.
 
@@ -26,7 +26,7 @@
 | [Salsa — algoritmo incremental](https://github.com/salsa-rs/salsa/blob/master/book/src/reference/algorithm.md) | Dados derivados podem reutilizar resultado quando entradas não mudam; mudanças de entrada não exigem refazer todo o sistema. | É referência conceitual: **não** acrescentar framework de dependências/caching por causa desta mecânica. |
 | [Godot — MultiMesh](https://docs.godotengine.org/en/stable/tutorials/performance/using_multimesh.html), [LOD/visibilidade](https://docs.godotengine.org/en/stable/tutorials/performance/optimizing_3d_performance.html), [perfilador](https://docs.godotengine.org/en/stable/tutorials/scripting/debug/debugger_panel.html) | Instanciamento, LOD e perfilagem ajudam a medir e controlar muitos objetos visuais; um MultiMesh grande não faz *culling* individual. | Custo da **GPU/renderização** é separado do custo de calcular bem-estar; não há benchmark do jogo. |
 
-## Modelo funcional mínimo proposto
+## Modelo funcional possível — proposta não aprovada
 
 1. **Fonte concreta.** A vegetação existente no mapa e a que foi realmente colocada/removida pode contribuir para um ambiente residencial mais verde. Contar apenas o que existe fisicamente, com localização e tipo compatíveis. Bancos, cercas, placas, vasos e detalhes pequenos podem ser **somente visuais** no começo; nem tudo recebe pontos.
 2. **Consulta local.** Para cada casa ocupada, obter a condição ambiental **no entorno imediato**, por agregados regionais/células já utilizados ou uma busca espacial simples, **sem introduzir um grid novo por obrigação**. Considerar vizinhanças entre regiões para evitar saltos artificiais na borda de uma célula. Não exige que o SIM enxergue cada árvore pela câmera.
@@ -49,7 +49,7 @@
 
 **Cuidado de implementação:** efeitos regionais são um *resultado derivado*, não um novo estado que muda por conta própria. Se uma alteração modificar muitas áreas verdadeiras, essas áreas devem ser processadas; não esconder consequências. Se as consultas simples já forem rápidas, **não implementar cache, filas ou índices complexos** apenas pela hipótese de ganho.
 
-## Custos reais e decisão de escopo
+## Comparação exploratória de custos e alternativas de escopo
 
 | Caminho | CPU da simulação | Manutenção/complexidade | Gameplay | Avaliação |
 | --- | --- | --- | --- | --- |
