@@ -4,7 +4,7 @@
 > **Auditoria:** classificação conservadora com base no estado anterior à reorganização temática, commit `4b97ace2`. o documento mistura conteúdo discutido/confirmado com pesquisa, síntese ou redação da IA ainda não revisada integralmente.
 >
 
-> **Status:** decidido para a fase atual; histórico e justificativas preservados aqui — não é fonte de verdade.
+> **Status:** histórico de decisões já registradas nas fontes canônicas e de propostas de operação ainda não aprovadas. **Este arquivo não é fonte de verdade, checklist de implantação nem instrução obrigatória para IAs.**
 >
 > Este documento preserva a pesquisa que levou ao processo leve de desenvolvimento, às fronteiras documentais e à arquitetura de trabalho. Regras vigentes para humanos e IAs pertencem a `AGENTS.md`; decisões estruturais vigentes pertencem a `docs/ARCHITECTURE.md`.
 
@@ -116,7 +116,7 @@ Até lá, simplicidade é uma característica do processo, não uma deficiência
 9. **Custos de modelos:** distinguir assinatura do ChatGPT/Claude, **cotas de CLIs**, créditos API do DeepSeek e despesas do Hindsight. Não assumir que um login dá API ilimitada ou que monitor de uso de uma ferramenta mostra todas as cobranças. Regra de orçamento sugerida: **sem fallback silencioso para API paga**, limitar tentativas repetidas e subir para modelo forte diante de falha reproduzível complexa. Medir **custo por alteração correta integrada**, não tokens por mensagem; incluir revisão, memória, retrabalho e CI quando cobrado.
 10. **Não substituir validação visual e de gameplay por testes automatizados.** O núcleo C# testável não demonstra cena 3D correta, fluidez de edição, leitura visual para criança nem integração sistêmica. Preservar a decisão de validação principal global ao completar o jogo integrado, com verificações técnicas/visuais proporcionais ao longo da construção.
 
-### Plano concreto (em ordem, sem novos frameworks)
+### Possível roteiro avaliado na pesquisa — não aprovado como plano de execução
 
 - **Antes do primeiro agente escrever:** verificar versão real das instalações e contas/cotas; alterar permissões no Orca e revisar segurança de credenciais; registrar que *não existe ainda* build/CI no repositório padrão.
 - **Primeira unidade técnica:** usar a SPEC/ARCHITECTURE para estruturar somente a solução mínima de Godot .NET + Core C# sem `Godot.*`, build/testes reais e o menor CI que os reproduza. Um executor; revisão separada se risco justificar. Isso é início do **jogo integrado aprovado**, não POC setorial obrigatória.
@@ -243,9 +243,9 @@ O **orquestrador não precisa ser o mais caro sempre**: delegação simples, con
 
 > **Revisão humana desta seção: PENDENTE.** Avaliação de mercado e recomendação operacional da IA, não processo aprovado. Preços, autenticação, limites e compatibilidade de ferramentas podem mudar; conferir os links oficiais antes de pagar. Não altera a SPEC nem a ARCHITECTURE.
 
-### Escolha concreta proposta: Orca como ambiente + Codex e Claude Code oficiais + OpenCode econômico
+### Alternativa de ferramentas estudada — não é configuração aprovada
 
-**Para começar:** usar **Orca** como central visual de agentes/terminais/diffs/worktrees, **Codex CLI** (login ChatGPT) como implementador principal, **Claude Code** (login Claude Pro/Max) para revisão independente e tarefas complexas, e **OpenCode** com chave **DeepSeek API** ou modelos gratuitos disponíveis para tarefas baratas e delimitadas. **GitHub + AGENTS + SPEC + ARCHITECTURE + testes** continuam sendo as autoridades duráveis, não a memória das ferramentas.
+**Hipótese formulada na época da pesquisa (não aprovada):** usar **Orca** como central visual de agentes/terminais/diffs/worktrees, **Codex CLI** (login ChatGPT) como implementador principal, **Claude Code** (login Claude Pro/Max) para revisão independente e tarefas complexas, e **OpenCode** com chave **DeepSeek API** ou modelos gratuitos disponíveis para tarefas baratas e delimitadas. **GitHub + AGENTS + SPEC + ARCHITECTURE + testes** continuam sendo as autoridades duráveis, não a memória das ferramentas.
 
 **Por quê:** essas ferramentas já estão ao alcance do responsável, permitem usar assinaturas existentes sem necessariamente contratar novas, e separam **coordenação visual** (Orca) da **inteligência do agente** (Codex/Claude/OpenCode). Orca oferece suporte declarado a CLI Codex, Claude Code, OpenCode e outros, worktrees e visualização de diffs. **Não é garantia de orquestração automática inteligente:** no início, a IA implementadora ou o responsável coordena as tarefas. Uma sessão/branch por escritor; revisão pode ser só leitura.
 
@@ -264,7 +264,7 @@ O **orquestrador não precisa ser o mais caro sempre**: delegação simples, con
 
 **Ressalva de autenticação que evita gastos e problemas:** Codex via cliente oficial com login ChatGPT e Claude Code via cliente oficial com login Claude são o caminho recomendado para aproveitar assinaturas. O OpenCode declara que uso de **Claude Pro/Max por plugins não oficiais é proibido pela Anthropic**; usar Claude Code no Orca, e não OAuth Claude dentro de OpenCode. OpenCode conecta DeepSeek pela **API key**, com cobrança ao saldo da API; as assinaturas de chat não são automaticamente créditos API. Alguns agentes e modelos gratuitos mudam de disponibilidade; não montar dependências críticas sobre promoções temporárias.
 
-### Configuração inicial, sem novo framework
+### Exemplo de configuração pesquisada — não executar automaticamente
 
 1. Abrir o repositório **IndexCities** no Orca e conferir branch/estado limpo do Git. Instalar/atualizar **Codex CLI** e autenticá-lo pelo login ChatGPT; abrir um terminal Codex dentro do projeto. Instalar/atualizar **Claude Code** e fazer login no plano Pro/Max; deixá-lo como revisor quando preciso. No **OpenCode**, usar `/connect` → DeepSeek → API key, depois `/models`; impor limite de gasto pela conta DeepSeek. Não colocar segredos no repositório.
 2. **Primeira tarefa sugerida (técnica, sem nova gameplay):** com base em AGENTS/SPEC/ARCHITECTURE, criar o mínimo de solução/projetos Godot .NET/C# com Simulation Core independente e base de build/testes; nenhuma regra nova de produto ou framework adiantado. Codex implementa; Claude revisa apenas fronteiras/diff; resolver falhas e integrar. Isso é **fundação da implementação integrada**, não POC isolada obrigatória.
