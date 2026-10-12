@@ -4,6 +4,16 @@
 >
 > Ele não é fonte de verdade do produto. Decisões oficiais de produto pertencem a [SPEC.md](SPEC.md), decisões estruturais a [ARCHITECTURE.md](ARCHITECTURE.md) e regras de trabalho a [../AGENTS.md](../AGENTS.md).
 
+## Rodada seguinte — oito decisões novas, uma confirmação e uma regra já vigente (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** O responsável escolheu explicitamente 1B, 2B, 3C, 4A, 5A, 6B, 7C, 8A e 9A. **2B já estava atendida pela regra atual da SPEC** de isenção na próxima cobrança/uso, de uma rodada anterior chamada 1A; não duplicar a regra. Na pergunta 10, pediu conferir a decisão anterior, **sem aprovar nova política**: água e energia continuam cobradas por consumo, com **preço unitário automático**, sem faixas municipais novas.
+
+**Nova revisão 1B:** auxílio-aluguel deixa de ter prazo máximo fixo por família; avaliação e elegibilidade mensais, limite mensal definido pelo jogador, verba real, prioridade por risco e pagamento efetivo ao locador continuam obrigatórios. A aprovação do B não cria auxílio garantido, moradia grátis nem benefícios por situação de pobreza sem contrato elegível.
+
+**Outras escolhas promovidas à SPEC:** 3C cooperação externa opcional pode abranger bombeiros, urgência médica e apoio policial conforme capacidade e custo reais; 4A locatária comercial procura novo imóvel durante aviso de retomada; 5A apartamentos e comércio de prédio misto podem ser oferecidos individualmente desde a conclusão; 6B materiais em trânsito de obra cancelada seguem destino físico conforme proprietário real; 7C pedidos persistentes são consultáveis e compactados, com casos graves destacados; 8A poucos desafios simultâneos recebem destaque discreto sem ocultar os demais; 9A adulto só estuda quando agenda real for compatível com trabalho. **Detalhes de calibração não foram aprovados por inferência.**
+
+Explorações reconciliadas: [Prefeitura](exploration/city-hall.md), [famílias](exploration/households-housing.md), [serviços](exploration/city-systems.md), [empresas](exploration/companies-markets.md), [logística](exploration/construction-materials-logistics.md), [direção do produto](exploration/product-direction.md) e [prontidão](exploration/project-readiness.md).
+
 ## Refinamento de creches/vans — escolhas 1A e 2A confirmadas (2026-10-11)
 
 > **Revisão humana: DECIDIDO e incluído na SPEC.** **1A:** isenção da cobrança de creche e van é recalculada automaticamente na **próxima cobrança ou tentativa de uso depois de mudança nas condições econômicas familiares**, não somente no próximo mês nem per-frame. **2A:** quando vans não tiverem capacidade para todos, **priorizar quem realmente não dispõe de meio viável e seguro de chegar à escola/creche**, considerando idade, rotas, horários e acompanhamento. **Empate em necessidade: ordem de pedido**. A antiga decisão **24B por ordem simples de solicitação foi substituída**, mas **25A rotas automáticas** e **8B matrículas escolares por ordem de inscrição** não mudaram.
