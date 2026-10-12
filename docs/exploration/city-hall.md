@@ -6,6 +6,13 @@
 >
 > **Critério de leitura:** diferenciar mecânica observada em outro jogo, hipótese proposta para IndexCities, exigências já aprovadas na SPEC e vantagens alegadas/experiências comunitárias. Fontes oficiais/de desenvolvedores preferidas; wiki de fãs e comunidades rotuladas como tal. Jogos de épocas diferentes são comparados quanto ao *padrão de gameplay*, não copiados.
 
+## Financiamento mensal continuado e patrulhamento físico — rodada aprovada (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** 1A foi escolhida expressamente; pergunta 7 continua sem aprovação de nova política de patrulhamento.
+
+- **1A verba pública:** o teto/financiamento real definido por área no menu da Prefeitura **se repete a cada mês simulado até o jogador mudar o valor**, preservando gastos já vencidos, prioridades essenciais e caixa realmente disponível. Não exige aprovação mensal, não é um saldo pré-pago total e não transfere moeda para «contas internas» fictícias. O modelo de verba por serviço **continua aprovado para teste de gameplay**, com visual e valores a calibrar.
+- **7 em aberto:** o responsável ressaltou o papel da **localização de cada delegacia**. A regra atual já exige policiais e viaturas físicos, patrulhas preventivas e resposta por rede viária; delegacia não gera proteção em raio abstrato. Uma opção extra de «priorizar bairro» **não foi aprovada** e pode duplicar a decisão espacial de onde construir delegacias. Observar cobertura, distância, patrulhamento e indisponibilidade antes de propor outro controle.
+
 ## Atualizacao aprovada: isencao no proximo uso e prioridade real nas vans (2026-10-11)
 
 > **Revisão humana: DECIDIDO.** O responsável escolheu **1A** para reavaliar gratuidade de creches/vans na próxima cobrança ou uso concreto após mudança na condição financeira, e **2A** para dar prioridade em vans lotadas a quem não possui deslocamento alternativo viável. O **24B anterior (apenas ordem de solicitação) foi SUBSTITUÍDO**; a ordem permanece apenas em empate de necessidade. As duas regras estão na SPEC.
