@@ -8,6 +8,12 @@
 >
 > Concentra a evolução do modelo de construção física, materiais, estoques, importação/exportação, reservas, execução de obras e logística. Alternativas superadas permanecem identificadas para preservar por que o modelo atual foi escolhido.
 
+## Caminhão de obra cancelada — revisão 6B aprovada (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** O responsável escolheu 6B para resolver a antiga pergunta 27 reaberta; logística fina e tratamento quando não existir destino acessível ainda requerem calibração.
+
+**Explicação simples da regra:** se os tijolos que estão no caminhão **já pertencem à Prefeitura**, o veículo busca levar a carga a um depósito municipal real com espaço e acesso, não a apaga e não a devolve automaticamente como se ainda fosse do vendedor. **Se a mercadoria ainda pertence ao fornecedor**, o destino/retorno depende de contrato e logística reais; não passa ao município só porque houve pedido ou intenção de pagamento. Cancelar libera verbas comprometidas não pagas, mas **não desfaz pagamentos já feitos**. Materiais que já chegaram ao canteiro seguem consumidos pela regra antiga. Se o destino estiver lotado ou desconectado, não contar carga como armazenada sem descarregamento real; a solução operacional proporcional permanece por validar. A hipótese histórica reaberta abaixo foi substituída por esta escolha aprovada.
+
 ## Pendência reaberta: caminhão de obra cancelada — pergunta 27 (2026-10-11)
 
 > **Revisão humana: PENDENTE.** Na primeira resposta o responsável indicou “B, mas A também faz sentido”, e depois afirmou explicitamente **não ter entendido o cenário**. Portanto, a anterior redação “27B aprovado” desta pesquisa é **supersededa como aprovação**: removida da SPEC, sem nova política de devolução ou reembolso aprovada. As hipóteses são apenas possibilidades de comportamento até confirmação humana.
