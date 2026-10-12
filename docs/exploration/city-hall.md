@@ -6,6 +6,41 @@
 >
 > **Critério de leitura:** diferenciar mecânica observada em outro jogo, hipótese proposta para IndexCities, exigências já aprovadas na SPEC e vantagens alegadas/experiências comunitárias. Fontes oficiais/de desenvolvedores preferidas; wiki de fãs e comunidades rotuladas como tal. Jogos de épocas diferentes são comparados quanto ao *padrão de gameplay*, não copiados.
 
+## Revisão de tarifas e orçamento por controles do jogador — respostas 1–11 (2026-10-11)
+
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** Escolhas **1B, 2B, 3B, 4B, 5B e 11B foram aprovadas** e registradas na SPEC. As perguntas **6, 7, 8, 9 e 10 continuam abertas**; a preferência expressa por uma interface padronizada é pesquisa/direção de UX, **não confirmação de cobrança nas cinco áreas**.
+
+**1B — ônibus:** política geral de passagem **Grátis / Barata / Normal / Cara**, substituindo somente grátis/paga com preço automático; valor real calculado dentro da faixa, receita somente de viagens concretas e acesso de passageiros com dinheiro verdadeiro.
+
+**2B — estacionamento público:** as mesmas quatro faixas, aplicadas aos estacionamentos municipais, não a garagens privadas ou vagas inexistentes. Preços mudam procura e receita conforme uso real.
+
+**3B — museus/atrações:** as mesmas quatro faixas de ingresso geral para atrações municipais pagáveis, sem cobrar praças/parques por inferência nem criar visitantes fictícios.
+
+**4B — auxílio-aluguel:** jogador **liga/desliga e fixa quanto dinheiro real do Caixa pode ser destinado ao programa por mês simulado**; atendimento e prioridade continuam automáticos e vinculados a locadores reais, sem seleção manual de famílias ou gasto maior que teto/caixa.
+
+**5B — creches:** **grátis/pagas** como política geral da Prefeitura, substituindo gratuidade obrigatória. Cobrança de mensalidade efetiva só de responsável real pelo uso/atendimento verdadeiro; como a falta de dinheiro afeta cuidado e trabalho, consequência para inadimplência e transição ainda precisam de escolha curta antes do código. **O jogador NÃO aprovou automaticamente quatro preços para creches.**
+
+**11B — orçamentos municipais:** prioridades/financiamento **por área de serviço** definidos pelo jogador, mantendo recursos físicos, salários/obrigações, prioridade fiscal essencial, autonomia dos SIMs e limites do Caixa. Na própria tela de cada serviço mostrar **gasto real corrente, detalhamento, receita, compromissos, dívida, capacidade e efeito**. **Barras percentuais** para financiamento e **barra de quatro posições** para tarifas foram sugeridas, mas não fixadas como design final. Duas variáveis separadas: faixa do preço cobrado do SIM ≠ percentual de verba/nível de serviço bancado pela Prefeitura. O percentual **não deve presumir que aumentar 50% o gasto fabrica 50% mais atendimento**.
+
+### Questões realmente ainda abertas após o pedido de padronização
+
+| Pergunta | Situação aprovada anterior | Candidato de IA / pedido explícito de reavaliar (NÃO aprovado ainda) | Problema a decidir antes do código |
+| --- | --- | --- | --- |
+| **6 — vans** | Serviço municipal físico opcional; 23A ressalvada e tarifa pendente | Mesmas **Grátis / Barata / Normal / Cara**, sem cobrança por criança individual/rota | Se crianças podem ficar sem transporte por falta de saldo familiar; quem é o pagador real |
+| **7 — escolas/universidades** | Ensino municipal gratuito | Faixas de mensalidade iguais, talvez **separadas** por escola e universidade para refletir acesso distinto | Se ensino básico vira inacessível, frequência/progressão e família se alteram; decidir regra de ausência de saldo |
+| **8 — hospitais** | Saúde municipal gratuita | Faixas de tarifa por atendimento similares, sem precificar cada doença | Atendimento de urgência quando SIM não pode pagar: negar acesso, atender e criar dívida, ou preservar gratuidade de urgência são decisões diferentes e importantes |
+| **9 — água/energia** | Consumo tarifado por valores unitários automáticos | Faixas de preço por recurso, **Grátis / Barata / Normal / Cara**, mantendo consumo real | “Grátis” deixa de gerar cobrança por consumo mas Caixa suporta custos; se cobrança cara gera dívida, não criar corte residencial individual sem nova escolha |
+| **10 — previdência** | Contribuição, elegibilidade e benefícios contributivos automáticos não editáveis pelo jogador | Discutir política agregada de longo prazo, sem aplicar barra de preço a benefício previdenciário | Direitos adquiridos, transição entre contribuições e aposentadorias, gestão de Caixa e consentimento humano pendentes |
+
+### UX candidata de controles, não requisito adicional
+
+**Preço para moradores:** barra discreta de quatro posições rotuladas **Grátis, Barato, Normal, Caro** (rótulos conforme gênero da tarifa), com faixa selecionada legível e valor monetário efetivo resultante. Não é barra contínua de preço livre. Quando serviço não for tarifável, o painel não finge cobrar.
+
+**Orçamento de serviço:** barra de percentual **da referência orçamentária definida e explicada**, não simplesmente “% de todo o dinheiro da cidade” nem multiplicador mágico de médicos/carros. Exemplos exploratórios: 100% como financiamento de referência e valores menores/maiores como prioridade/limite planejado; **intervalo, fórmula, limites para serviços críticos e dinâmica de saldo ainda NÃO decididos**. Exibir no mesmo painel **gasto real até agora, previsão, verba planejada, receitas, dívidas e resultado efetivamente servido**, com números que se reconciliam com o razão geral da Prefeitura. Para auxílio-aluguel, controle financeiro mensal pode ser **teto monetário**, mesmo se a UI usar slider, não forçar conversão a porcentagem de orçamento total.
+
+**Benchmark verificável, não requisito:** [Diário oficial de serviços de Cities: Skylines II](https://store.steampowered.com/news/posts/?enddate=1689602510&feed=steam_community_announcements) separa controles de *service fees* dos de *service budget* e explicita gastos de operação no painel. Isso apoia **separar faixa de preço e financiamento**, mas não importar “eficiência mágica” do outro jogo: o IndexCities precisa de SIMs, recursos, veículos e serviços reais.
+
+
 ## Revisão do poder decisório da Prefeitura — preferência humana expressa (2026-10-11)
 
 > **Revisão humana:** PARCIALMENTE REVISADO quanto ao **princípio de aumentar a decisão do jogador**, confirmado pelo responsável. **Todas as opções concretas abaixo são pesquisa/propostas da IA, PENDENTES de escolha humana.** Não revogar automaticamente regras aprovadas na SPEC.
