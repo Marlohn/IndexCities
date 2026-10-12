@@ -4,7 +4,7 @@
 
 ## Resumo executivo
 
-**Primeira rota a experimentar para o estilo low-poly do IndexCities: IA gerando modelos paramétricos diretamente na Godot, com geometria produzida uma vez, recursos reutilizáveis e variantes prontas para o jogador.** O teste visual apresentado pelo responsável mostrou potencial concreto para casas, comércio, rua, vegetação e mobiliário. **Blender não é necessário nesse fluxo**; pode ser usado pontualmente se um tipo de modelo não ficar bom por código. Geradores text-to-3D externos também são alternativas, não dependências.
+**Hipótese de pipeline técnico da pesquisa, ainda não aprovada: produzir modelos paramétricos novos diretamente na Godot com auxílio de IA, gerar a geometria uma vez e manter recursos e variantes reutilizáveis.** O teste visual apresentado pelo responsável mostrou potencial concreto para casas, comércio, rua, vegetação e mobiliário. **Blender não é necessário nesse fluxo**; pode ser usado pontualmente se um tipo de modelo não ficar bom por código. Geradores text-to-3D externos também são alternativas, não dependências.
 
 **Não confundir:**
 - **Modelagem procedural na autoria** = scripts que criam/atualizam meshes e cenas antes do uso ou sob demanda controlada. **Recomendada para experimentar**.
@@ -37,7 +37,7 @@
 
 **Não foi demonstrado:** custo de geração, tempo de manutenção ao crescer o catálogo, tamanho em disco/memória, capacidade de editar centenas de variantes, draw calls, FPS, seleção individual de edifícios, acessos de SIMs/cargas, colisões, LOD, licenças e animação avançada. Não herdar mecânicas ou a arquitetura do projeto externo.
 
-## 3. Alternativas e decisão técnica recomendada
+## 3. Alternativas e preferência técnica exploratória — sem decisão
 
 | Rota | Onde tende a ser útil | Limitação principal | Ordem de preferência |
 | --- | --- | --- | --- |
@@ -48,7 +48,7 @@
 
 **Blender vs. Godot não é uma decisão de qualidade universal.** Para o estilo observado, o fluxo direto é especialmente promissor. Se personagens articulados, animações complexas ou construções difíceis exigirem outra ferramenta, escolhê-la pela necessidade **não invalida o restante do catálogo**.
 
-## 4. Como produzir e manter os modelos sem construir um framework
+## 4. Exemplo de fluxo possível para produzir e manter modelos — não obrigatório
 
 Um conjunto mínimo de responsabilidades, sem impor novas camadas arquiteturais:
 
@@ -98,7 +98,7 @@ Fontes primárias: [Godot — geometria procedural](https://docs.godotengine.org
 
 **Direitos de uso:** modelos e shaders escritos para o projeto, modelos baixados, ferramentas de IA, texturas e referências externas podem ter **situações jurídicas diferentes**. Registrar origem e termos aplicáveis aos recursos de terceiros; não inferir que um asset é automaticamente livre para redistribuição porque foi gerado por IA. Não reproduzir literalmente elementos protegidos de uma imagem de referência.
 
-## 8. Validação pequena, integrada e objetiva
+## 8. Possível validação pequena e integrada — sugestão
 
 **Sem POC isolada obrigatória.** Dentro dos primeiros incrementos visuais do jogo, usar uma **cena de referência pequena**, com casa, comércio, trecho de via/esquina, calçada, vegetação e um agente/veículo para comparação. O objetivo não é refazer por ritual o teste externo; é verificar **compatibilidade com o IndexCities**.
 
