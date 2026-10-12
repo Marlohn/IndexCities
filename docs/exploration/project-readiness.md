@@ -6,6 +6,13 @@
 >
 > **Última reavaliação de avanço:** 2026-10-11, distinguindo **89% de maturidade de decisões do Convencional (nova linha de base)** e **81% de prontidão documental/técnica para integração (estimativa anterior)**; ambos são avaliações qualitativas ainda sem validação de jogo. **Pesquisa comparativa de base:** 2026-10-08. [Evidências e 24 frentes de investigação](genre-benchmark.md#pesquisa-transversal-ampliada--cidade-real-jogos-e-lacunas-de-gameplay-2026-10-08).
 
+## Correção de rumo: validar valor das políticas antes de multiplicar sliders (2026-10-11)
+
+> **Pesquisa/opinião da IA: PENDENTE de revisão humana.** A direção humanamente aprovada de **mais agência estratégica do jogador** segue válida. Reanálise crítica: a IA foi excessivamente favorável a propor os mesmos níveis Grátis/Barato/Normal/Caro em todos os serviços; é preciso separar **preço**, **financiamento real**, **serviço essencial**, **demanda afetada**, **capacidade física** e **custos internos**. A pesquisa detalhada e recomendações divergentes estão em [Prefeitura](city-hall.md#reavaliacao-critica-das-tarifas-e-do-orcamento--pesquisa-e-parecer-independentes-2026-10-11).
+
+**Prioridade revisada proposta:** manter opções que alterem causalmente mobilidade e gasto efetivo; reavaliar 2B estacionamento e 3B museu de quatro faixas frente a grátis/pago; reabrir 5B creche paga com risco de excluir família que precisa trabalhar; saúde e ensino básico sem cobrança como direção de baixo risco, universidade separada; água/energia com tarifa e proteção; previdência sem slider precoce; orçamento como **decisão de alocação de verba real**, não porcentagem abstrata convertida em eficiência. **Sem alterar a SPEC por sugestão não aprovada.** Não recalcular 89%/81% por esta auditoria.
+
+
 ## Resposta da rodada municipal e pendências 6–10 (2026-10-11)
 
 > **Revisão humana: PARCIALMENTE REVISADO.** Foram aprovadas para SPEC as opções **1B** (tarifa ônibus em quatro faixas), **2B** (tarifa estacionamento municipal em quatro faixas), **3B** (ingressos em quatro faixas), **4B** (limite mensal de despesa do auxílio-aluguel definido pelo jogador), **5B** (política creche grátis/paga) e **11B** (financiamento/prioridade por áreas de serviço e gastos reais na mesma tela). Não confundir com pendências sobre **6–9** (pergunta do responsável: por que não aplicar exatamente os quatro níveis?) ou **10** (previdência exige pensar melhor).
