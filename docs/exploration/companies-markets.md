@@ -8,6 +8,13 @@
 >
 > Reúne empresas privadas, demanda, aquisição de ativos, caixa empresarial, falência, abastecimento, conexão econômica externa e interpretação do Caixa da Cidade.
 
+## Retomada comercial e venda inicial de edifício misto — escolhas 4A/5A (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** A busca de outro ponto durante o aviso de retomada e a oferta de unidades individuais desde a conclusão foram aprovadas. Exemplos de logística e validação ainda dependem de implementação.
+
+- **4A:** quando novo proprietário pedir legitimamente o imóvel locado para uso próprio, a empresa locatária **procura automaticamente outro imóvel de operação compatível enquanto o aviso está em curso**. Pode continuar no atual durante a transição permitida, mas não recebe direito de ficar indefinidamente se não achar outro; estoque, equipe, contratos, pagamentos e saída física seguem as regras reais. Não exigir que o jogador escolha endereço de cada empresa e não garantir compra de ponto substituto.
+- **5A:** concluído um prédio misto, **cada apartamento e cada unidade comercial podem ser ofertados e adquiridos individualmente desde a primeira venda**, mesmo que outras unidades permaneçam vagas. Uma unidade tem titularidade econômica própria sem vender também «o prédio inteiro» como segundo patrimônio. SIMs compram residências e empresas compram espaços comerciais; contrato, imposto, estrutura compartilhada e reparos seguem associados à titularidade real. Não proíbe titularidade integral economicamente coerente prevista no produto, mas impede duplicações.
+
 ## Atualização posterior da inadimplência comercial — confirmação do responsável (2026-10-11)
 
 > **Revisão humana: REVISADO neste refinamento.** Após indagar se a regra empresarial não deveria ser igual à residencial, o responsável confirmou posteriormente “10 ok”. A SPEC passou a fixar **três meses de atraso comercial** para encerramento automático de locação, abatendo apenas dívida realmente paga. A dívida subsiste contra a empresa e a saída respeita estoques, pessoas e contratos reais, sem expulsão/teletransporte.
