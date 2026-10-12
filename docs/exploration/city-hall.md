@@ -6,6 +6,33 @@
 >
 > **Critério de leitura:** diferenciar mecânica observada em outro jogo, hipótese proposta para IndexCities, exigências já aprovadas na SPEC e vantagens alegadas/experiências comunitárias. Fontes oficiais/de desenvolvedores preferidas; wiki de fãs e comunidades rotuladas como tal. Jogos de épocas diferentes são comparados quanto ao *padrão de gameplay*, não copiados.
 
+## Decisões posteriores: creche por condição financeira e orçamento real em teste (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** Decisões expressas do responsável **1B creches por condição financeira com contagem visível de pobres, 2A hospitais municipais gratuitos, 3B financiamento por verba real PARA TESTE** promovidas à [SPEC](../SPEC.md). **Vans escolares com gratuidade/isenção conforme renda é uma possibilidade levantada (“poderia ser igual”), NÃO decisão aprovada.**
+
+### O que significava o “limite de gastos do jogador”?
+
+**Não é teto de todas as despesas da cidade.** A escolha **4B do auxílio-aluguel** autoriza o jogador a fixar **o máximo de dinheiro do Caixa que um programa específico pode efetivamente pagar em um mês simulado**, além de ligar/desligar o programa. Exemplo puramente ilustrativo: verba do auxílio-aluguel de 10.000 para necessidades elegíveis somadas de 15.000 — pagamentos do programa não excedem 10.000 e dependem do dinheiro efetivamente disponível; elegibilidade, priorização e pagamento direto ao locador são automáticos. A parcela não atendida não gera benefício pago nem apaga dívida do aluguel. Distinguir **teto aprovado, gasto já executado, compromissos, saldo e famílias não atendidas**. Outros serviços têm limites/regras próprios, não copiar esse teto por padrão.
+
+### 1B — creche proporcional à capacidade de pagar, substitui 5B simples
+
+O usuário escolheu **a alternativa B da revisão crítica**, não a anterior 5B “grátis/paga para todos”. O primeiro modelo de política considera famílias **sem capacidade econômica efetiva** como isentas, e famílias **capazes de pagar** como financiadoras parciais por mensalidade real se a Prefeitura optar por cobrá-la. Alternativa de deixar creches gratuitamente disponíveis a todas permanece na direção de gestão. Sem imposto/filiação burocrática ou avaliação individual manual.
+
+**Indicadores obrigatórios do painel:** quantidade **real de SIMs e famílias em pobreza/insuficiência econômica**, resultado de critério explícito de renda, recursos e despesas essenciais; **quantas famílias/crianças são elegíveis à isenção da creche** e **quantas efetivamente frequentam**, inclusive fila/vagas não atendidas e consequências no trabalho familiar. **Pobreza da cidade ≠ elegibilidade para creche**: uma família pobre sem criança em idade de atendimento entra no primeiro indicador, não no segundo. Critério, periodicidade e limite de renda são calibração/definição proporcional ainda abertos; não inventar “20% pobres” para preencher UI. Mostrar despesa pública, mensalidades realmente recebidas, custo por criança atendida calculável, sem prometer gratuidade com creche inoperante.
+
+### 2A — saúde pública permanece gratuita
+
+Confirmou expressamente **gratuidade dos hospitais municipais**, independente de consulta/urgência; cobertura depende de vagas, médicos, suprimentos, tempo e deslocamento reais. O jogador controla construção, investimentos e verba, não barra financeira individual do paciente. Gratuidade de escola e universidade permanece aprovada anteriormente, mas **a reavaliação 2A se refere aos hospitais**.
+
+### 3B — orçamento por dinheiro real, testar com jogo integrado
+
+Foi aprovado **testar** verba efetivamente designada por área municipal com visão de **custo estimado, verba destinada, gasto real, receita efetiva, compromissos e dívidas, além do número de atendimentos/serviços viáveis**. Barra de percentual ou controle monetário são opções de interface pendentes; aumentar 50% não melhora magicamente produtividade. Verba planejada não cancela salários já devidos nem obrigações contratuais e não garante dinheiro se Caixa insuficiente. Manter a prioridade mínima crítica e a regra fiscal previdenciária existentes, explicitando restrições e consequências.
+
+### Próxima questão específica ainda pendente: vans
+
+O responsável sugeriu que a gratuidade/cobrança das **vans escolares para escola e creche** “poderia ser igual” às creches. **Não promover a sugestão à SPEC sem confirmação.** Comparar numa pergunta simples **A vans sempre gratuitas**, **B vans pagas com isenção para famílias sem condições** (política opcional), **C vans grátis/pagas para todos**, lembrando que não transportar uma criança por falta de dinheiro pode causar faltas escolares ou impedir trabalho de adultos, e que motoristas/monitores, assentos, rotas, combustível e custo real permanecem. Se B escolhido, propor uso do **mesmo indicador de capacidade econômica domiciliar** para evitar duplicar cálculos, não obrigar cobrança nem inventar subsídio por viagem não realizada.
+
+
 ## Reavaliação crítica das tarifas e do orçamento — pesquisa e parecer independentes (2026-10-11)
 
 > **Revisão humana: PENDENTE.** A pedido expresso do responsável, esta é uma **auditoria crítica da recomendação anterior da IA**, não mais uma rodada de aceitação automática de ideias. Todas as regras explicitamente aprovadas permanecem **vigentes na SPEC até uma substituição humana expressa**. Em especial, **1B ônibus, 2B estacionamento, 3B atrações, 4B auxílio, 5B creche e 11B orçamento continuam decisões oficiais** neste momento; recomendar reconsiderar 2B/3B/5B não as revoga. As perguntas 6–10 não foram confirmadas.
