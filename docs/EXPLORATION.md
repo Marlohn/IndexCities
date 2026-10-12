@@ -6,6 +6,12 @@
 >
 > **Conteúdo ainda sem aprovação humana é apenas pesquisa.** Seções e documentos **PENDENTE** (ou trechos não revisados de conteúdo **PARCIALMENTE REVISADO**) não criam tarefas, planos obrigatórios, requisitos nem permissão para copiar componentes de outros projetos, mesmo quando sugerem “implementar”, “usar” ou “reaproveitar”. A regra operacional está no [AGENTS.md](../AGENTS.md).
 
+## Direção de desenvolvimento incremental e autonomia de IA (2026-10-11)
+
+> **Revisão humana: REVISADO quanto à direção expressamente aprovada.** O responsável decidiu preservar a visão completa da [SPEC](SPEC.md), desenvolver o **Convencional em entregas menores, jogáveis e integradas** e delegar somente **pequenas decisões reversíveis de produto à IA**, com registro obrigatório na SPEC antes do código e estado de revisão humana pendente. As regras oficiais agora estão na SPEC e a execução no [AGENTS.md](../AGENTS.md) e na [ARCHITECTURE.md](ARCHITECTURE.md); este bloco é apenas índice, não fonte concorrente.
+
+**Ainda por definir e aprovar:** o recorte efetivo da primeira versão jogável. Sua escolha deve respeitar as dependências entre os sistemas da SPEC e demonstrar um ciclo real de construção, economia, SIMs e consequências relevantes **na medida em que cada sistema for incluído**; não inferir que todos esses sistemas ou uma lista arbitrária de prédios já foram aprovados para a V0.1. Pesquisa e alternativas ficam pendentes de revisão humana no [mapa de prontidão](exploration/project-readiness.md). Versões menores não revogam decisões futuras e não autorizam fluxos fictícios de dinheiro, materiais ou agentes.
+
 ## Nova rodada — dez escolhas aprovadas, 7A/10A confirmadas depois (2026-10-11)
 
 > **Revisão humana: PARCIALMENTE REVISADO.** Escolhas explícitas promovidas à SPEC: **1A** (verbas mensais persistem até alteração), **2B** (empresas comparam comprar/alugar), **3B** (mensalidade de creche vencida vira dívida real sem exclusão automática de criança), **4A** (empregos viáveis preservados ao mudar ramo), **5A** (fila universitária por pedido), **6A** (museu e mirante como atrações dedicadas iniciais), **8A** (sem nova ferramenta de caminhos exclusivos de pedestres agora; rever depois), **9A** (carga/descarga limitada pelo espaço físico do estabelecimento). **Posteriormente, 7A e 10A foram confirmadas expressamente pelo responsável e adicionadas à SPEC.**
