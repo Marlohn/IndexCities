@@ -8,6 +8,12 @@
 >
 > Reúne renda e consumo familiar, valor imobiliário, vulnerabilidade financeira, aluguel, propriedade, herança e investimento residencial por cidadãos.
 
+## Creche: dívida real sem exclusão instantânea — escolha 3B (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** O responsável escolheu manter a criança atendida quando a família ainda não isenta não puder quitar a mensalidade; dívida e atendimento precisam ser separados.
+
+No serviço real com vaga, equipe, horário e acesso, inadimplência **não retira automaticamente a criança**. Cobrança devida vira **dívida real do responsável perante a Prefeitura**, que só vira receita quando efetivamente paga; não criar perdão, dinheiro, atendimento ou subsídio fictícios. Se houve queda de renda, a **isenção aprovada é verificada na próxima cobrança/uso**; nova isenção não apaga débito que foi legitimamente constituído antes. Rever tratamento de cobranças apenas quando surgir efeito real não coberto.
+
 ## Continuidade mensal do auxílio-aluguel — revisão 1B (2026-10-11)
 
 > **Revisão humana: PARCIALMENTE REVISADO.** O responsável aprovou a alternativa de continuar ajudando enquanto houver necessidade real e verba disponível, em vez de cortar a família após número fixo de meses.
