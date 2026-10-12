@@ -8,6 +8,12 @@
 >
 > Reúne renda e consumo familiar, valor imobiliário, vulnerabilidade financeira, aluguel, propriedade, herança e investimento residencial por cidadãos.
 
+## Continuidade mensal do auxílio-aluguel — revisão 1B (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** O responsável aprovou a alternativa de continuar ajudando enquanto houver necessidade real e verba disponível, em vez de cortar a família após número fixo de meses.
+
+**Modelo vigente na SPEC:** todo mês simulado a família é reavaliada. Se continuar elegível ao programa escolhido pelo jogador, com contrato real, dinheiro no Caixa e teto mensal disponível, o pagamento de ajuda pode ocorrer **sem prazo máximo fixo por família**. O beneficiário não tem garantia de pagamento quando a verba acabar: famílias sob maior risco de perder moradia seguem tendo prioridade; dinheiro real sai do Caixa para o locador real e abate obrigação de aluguel vigente ou vencida conforme as regras já aprovadas. Sem pagamento, o aluguel em atraso e risco de despejo não desaparecem. «Auxílio temporário» em seções históricas refere-se à intenção anterior de limitar meses por família e **foi substituído no aspecto de duração**; a avaliação mensal e a condição econômica permanecem.
+
 ## Locação, herança e assistência — escolhas da rodada de 30 (2026-10-11)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** As escolhas 20A, 21A e 22A foram aprovadas e registradas na SPEC; critérios de custódia, datas e parâmetros menores seguem calibração.
