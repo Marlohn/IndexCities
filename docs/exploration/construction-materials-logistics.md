@@ -8,7 +8,20 @@
 >
 > Concentra a evolução do modelo de construção física, materiais, estoques, importação/exportação, reservas, execução de obras e logística. Alternativas superadas permanecem identificadas para preservar por que o modelo atual foi escolhido.
 
-## Cargas de obras canceladas — escolha 27B (2026-10-11)
+## Pendência reaberta: caminhão de obra cancelada — pergunta 27 (2026-10-11)
+
+> **Revisão humana: PENDENTE.** Na primeira resposta o responsável indicou “B, mas A também faz sentido”, e depois afirmou explicitamente **não ter entendido o cenário**. Portanto, a anterior redação “27B aprovado” desta pesquisa é **supersededa como aprovação**: removida da SPEC, sem nova política de devolução ou reembolso aprovada. As hipóteses são apenas possibilidades de comportamento até confirmação humana.
+
+**Exemplo concreto simples:** Prefeitura encomendou tijolos para construir uma escola. Um caminhão já está indo entregar. O jogador cancela a escola. Onde ficam os tijolos?
+
+- **A — voltar ao vendedor:** o caminhão retorna à empresa fornecedora real; **não significa devolver dinheiro automaticamente**, pois restituição só pode existir com pagamento real em sentido inverso e autorização/contrato.
+- **B — ir a um depósito da Prefeitura quando os tijolos já forem dela:** preservar estoque municipal realmente adquirido, com espaço, tempo de transporte e material suficiente, sem duplicação. Se ainda forem do fornecedor, continuam com ele, sem apropriação pública.
+- **C — descartar material:** não criar perda de material físico só para simplificar; a propriedade e seu destino econômico precisam ficar coerentes.
+
+**Melhor hipótese de IA para discutir:** B para material efetivamente comprado/transferido, e retorno ao fornecedor para material ainda não entregue/vendido conforme contrato já existente. **Mas é preciso diferenciar posse do caminhão, propriedade econômica e pagamento já realizado**; não assumir restituição automática nem controlar cada caminhão como minijogo. Pergunta permanece aberta.
+
+
+## Cargas de obras canceladas — hipótese histórica 27B, aprovação reaberta (2026-10-11)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** Escolha B confirmada e registrada na SPEC; alternativa A de devolução ao fornecedor foi considerada útil **quando propriedade/contrato/transferência real permitirem**, não como restituição universal aprovada.
 
