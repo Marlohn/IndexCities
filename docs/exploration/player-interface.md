@@ -8,6 +8,10 @@
 >
 > A autoridade de produto continua sendo `docs/SPEC.md`. Este documento concentra pesquisa, alternativas, referências e hipóteses sobre interface e ferramentas do jogador. Quando uma decisão fecha, o resultado oficial deve ser promovido para `docs/SPEC.md`; este arquivo preserva o raciocínio e o material ainda em formação.
 
+## Caminhos exclusivos para pedestres adiados — opção 8A (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** O responsável prefere manter nesta etapa calçadas e acessos já aprovados, sem ferramenta adicional para desenhar caminhos exclusivos de pedestres. A ideia poderá ser reavaliada futuramente após observar o jogo integrado.
+
 ## Projetos persistentes, região e conquistas — rodada de 30 (2026-10-11)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** Escolhas 26A, 29A e 30A registradas na SPEC; detalhes de UI permanecem PENDENTES.
