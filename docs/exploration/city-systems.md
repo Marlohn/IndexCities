@@ -8,6 +8,15 @@
 >
 > Concentra pesquisa e raciocínio sobre serviços urbanos, mobilidade, vias, educação, saúde, infraestrutura técnica, conexão externa e capacidades operacionais. A SPEC continua sendo a autoridade sobre o que já foi decidido.
 
+## Reabertura transversal das políticas de serviços públicos (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO** quanto à intenção explícita de ampliar decisão do jogador; recomendações de alteração concreta **PENDENTES**.
+
+O responsável pediu voltar a olhar **ônibus, estacionamento, atrações, assistência, creche, vans, escolas, hospitais, água/energia e previdência**, mesmo quando já tinham decisões fechadas. **Não revogar gratuidade escolar/hospitalar/de creche, tarifa automática de utilidades, fórmula previdenciária ou opção ônibus gratuito/pago por inferência**: são regras vigentes enquanto a revisão não produzir alternativa aprovada na SPEC.
+
+**Hipóteses a comparar sem criar micromanagement:** (a) tarifa de utilidades controlável por 3 níveis, com efeitos de receita/fatura/inadimplência, em vez de cada conta; (b) verba ou prioridade de educação/saúde por serviço, com custo e cobertura reais, sem inventar leitos/professores via slider; (c) política de transporte de vans, mantendo ocupação/monitor/rotas reais; (d) tornar tarifa dos ônibus e estacionamento opções de valores simples além de grátis/pago. Ver matriz e fontes em [Prefeitura](city-hall.md#revisao-do-poder-decisorio-da-prefeitura--preferencia-humana-expressa-2026-10-11).
+
+
 ## Vans escolares e emergência externa — respostas da rodada de 30 (2026-10-11)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** As escolhas **24B**, **25A** e **28C** foram confirmadas na SPEC; a **23A foi indicada inicialmente, mas a própria resposta solicitou reavaliar gratuidade como política da Prefeitura**. Portanto, **a tarifa das vans segue em exploração, não definida como regra definitiva**. A gratuidade das creches permanece decisão da SPEC até uma revisão explícita.
