@@ -4,7 +4,7 @@ Estas regras valem para humanos e IAs. O objetivo é maximizar progresso útil s
 
 ## Fonte de verdade
 
-- `docs/SPEC.md` define o **produto decidido** e o escopo atual.
+- `docs/SPEC.md` define o **produto aprovado**, o escopo vigente e o registro explícito de pequenas decisões provisórias delegadas à IA.
 - `docs/EXPLORATION.md` é o **hub/índice central da exploração**: aponta temas ativos, status e documentos temáticos relevantes.
 - `docs/exploration/*.md` guarda **pesquisa temática, ideias, alternativas, referências e decisões ainda em discussão** quando o assunto merece documento próprio.
 - `docs/ARCHITECTURE.md` define **as decisões estruturais de software**: fronteiras, responsabilidades e direção de dependências.
@@ -80,28 +80,40 @@ Durante conversas de exploração ou definição com o responsável pelo projeto
 
 O IndexCities adota **Spec-Driven Development (SDD) contínuo, com SPEC viva e obrigatória**: o comportamento desejado é decidido e documentado antes de ser codificado. Essa regra vale desde o primeiro código e durante toda a evolução do jogo — novas funcionalidades, alterações de regras, ajustes de gameplay, correções de bugs, refatorações e otimizações.
 
-**A `docs/SPEC.md` é o contrato do produto, não apenas um documento de preparação.** Nenhum agente pode decidir por conta própria um comportamento não especificado, preencher lacunas com uma suposição ou tratar como aprovado algo que está só em conversas, pesquisa, código existente ou exemplos de outros projetos.
+**A `docs/SPEC.md` é o contrato do produto, não apenas um documento de preparação.** Nenhum agente pode tratar como aprovado comportamento que esteja só em conversas, pesquisa, código ou exemplos externos. A única exceção de autonomia de produto é a **pequena decisão delegada, reversível, previamente registrada na SPEC e marcada PENDENTE DE REVISÃO HUMANA**. Sem esses requisitos, a lacuna depende de decisão do responsável.
 
-- **Produto e comportamento:** toda regra nova ou alterada precisa estar decidida pelo responsável e registrada na `SPEC.md` **antes** de qualquer código que a implemente.
+- **Produto e comportamento:** toda regra nova ou alterada precisa estar registrada na `SPEC.md` **antes** do código, com **aprovação humana** ou como **decisão pequena provisória expressamente delegável**, identificada para revisão. O segundo caso nunca substitui uma regra já aprovada nem permite criar mecânica relevante.
 - **Bug:** confronte o comportamento observado com a SPEC. Se a regra já estiver clara, corrija para restaurá-la sem modificar a SPEC por ritual. Se a expectativa estiver ausente, ambígua ou contraditória, **não invente o comportamento correto**: esclareça, registre a decisão na SPEC e só então corrija.
 - **Refatoração, desempenho e manutenção:** só podem preservar o contrato de comportamento já documentado. Não são autorização para mudar gameplay, interfaces ou consequências do jogo; se a solução exigir mudança de produto, volte à decisão e à SPEC antes de codificá-la.
 - **Autonomia técnica sem microespecificação:** dentro da SPEC e das decisões estruturais vigentes, a IA **pode e deve resolver autonomamente detalhes de implementação**, como organização interna de código, nomes, estruturas de dados, algoritmos, testes e otimizações locais. Não precisa pedir aprovação nem registrar esses detalhes na SPEC quando preservarem integralmente as regras e consequências do produto. **Ausência de uma decisão sobre detalhe puramente técnico não é lacuna de produto.** Se uma escolha alterar comportamento, interface, exceções, causalidade, escopo ou qualquer decisão já aprovada, deixa de ser apenas detalhe técnico e exige o fluxo de decisão/documentação antes do código.
 - **Arquitetura:** `docs/ARCHITECTURE.md` governa decisões estruturais aprovadas, mas **não cria requisitos de produto**. Dentro dessas fronteiras, soluções técnicas locais e reversíveis são responsabilidade de quem implementa. Mudanças estruturais relevantes devem ser discutidas e registradas na ARCHITECTURE antes de orientar o código, sem substituir a aprovação na SPEC de qualquer alteração de produto.
 - **Exploração e experimentos:** `docs/EXPLORATION.md` e documentos temáticos guardam hipóteses, alternativas e pesquisas, nunca autorização de implementação de produto. Experimentos técnicos isolados são opcionais, não constituem fase obrigatória nem permitem inserir comportamento não aprovado no jogo. Qualquer código incorporado ao produto continua condicionado à SPEC.
-- **Calibração:** quando a própria SPEC delegar explicitamente valores ou fórmulas de ajuste à calibração, a implementação pode escolher e testar esses detalhes dentro do comportamento aprovado. Essa delegação não permite criar novas regras, exceções, opções de jogador ou efeitos de gameplay.
+- **Calibração:** quando a própria SPEC delegar explicitamente valores ou fórmulas de ajuste à calibração, a implementação pode escolher e testar esses detalhes dentro do comportamento aprovado. Tentativas transitórias não são decisões incorporadas ao produto; se uma escolha efetiva criar ou alterar comportamento perceptível não coberto pelo contrato, registrar decisão delegada se elegível ou pedir aprovação humana. Calibração não permite criar silenciosamente novas regras, exceções, opções do jogador ou efeitos de gameplay.
+
+### Autonomia delegada da IA e registro na SPEC
+
+**Delegação confirmada pelo responsável em 2026-10-11.** A IA pode resolver sem interrupção detalhes técnicos locais; e pode escolher **pequenos detalhes de produto** somente se forem locais, reversíveis, de baixo impacto, não criarem mecânica/opção nova e não alterarem nenhuma regra aprovada. Exemplos possíveis: ordenação de lista secundária e apresentação não crítica de dados já existentes. **Não delegar** regras econômicas, patrimoniais, materiais, logísticas, dos SIMs/empresas, serviços, políticas, acessos, consequências causais, construção básica, UX/acessibilidade relevante, escopo de versão ou arquitetura estrutural. Menor quantidade de código não torna uma decisão de produto pequena.
+
+**Teste obrigatório antes de decidir:** (1) já existe regra aprovada? respeitá-la; (2) a mudança toca resultados, regras, usuários ou sistemas importantes? exigir decisão humana; (3) é realmente pequena e reversível? somente então delegar; (4) registrar comportamento, justificativa sucinta, origem IA, ID e status **PENDENTE DE REVISÃO HUMANA** na seção própria da SPEC **antes de implementar**. Na dúvida, consultar o responsável. Não esconder mudança de produto como calibração, estética, bug, refatoração ou decisão técnica.
+
+**Registro obrigatório de 100% das decisões de produto tomadas pela IA**, inclusive listas, alertas e pequenos padrões visíveis. Não registrar cada variável, método, algoritmo ou teste quando forem puramente técnicos e preservarem o contrato; decisões técnicas estruturais relevantes seguem a ARCHITECTURE. Uma decisão IA pendente é **implementável apenas por causa da delegação e de seu baixo impacto**, não é uma decisão aprovada pelo responsável. A revisão posterior pode aprovar, modificar ou rejeitar e exige sincronizar código e SPEC; a IA nunca pode marcar sua própria escolha como aprovada pelo humano.
+
+### Desenvolvimento incremental do Convencional
+
+**Direção confirmada pelo responsável em 2026-10-11:** preservar a visão completa já aprovada na SPEC, mas desenvolver em **versões menores, integradas e jogáveis**, com validação de gameplay e integração desde os primeiros ciclos. Não esperar todo o conteúdo futuro para testar; não impor POCs isoladas, protótipos descartáveis nem testes cerimoniais como etapas obrigatórias. **A primeira versão ainda não tem funcionalidades delimitadas e aprovadas:** mapear dependências, propor o menor ciclo verdadeiro na exploração e obter aprovação do recorte na SPEC antes do código dependente. Limitar o catálogo não autoriza criar dinheiro, estoques, agentes, deslocamentos ou consequências fictícias; o comportamento incorporado deve seguir as regras aprovadas. Reavaliar o recorte de cada versão sem apagar decisões futuras.
 
 ### Porta obrigatória antes e durante qualquer implementação
 
 1. **Localizar a base na SPEC:** identifique a regra ou o comportamento esperado que justifica o trabalho. Para mudanças sem alteração funcional (como refatoração ou otimização), identifique o comportamento já especificado que deve permanecer intacto.
 2. **Checar suficiência e conflitos:** compare o pedido com a SPEC e, quando pertinente, a ARCHITECTURE e o código. Verifique se é possível implementar sem decidir comportamento, exceções ou consequências de produto por conta própria. **Não bloqueie por decisões técnicas locais que possam ser tomadas dentro do contrato vigente.**
-3. **Bloquear a parte indefinida:** se faltar uma definição necessária ou houver ambiguidade/contradição, **não escreva o código que depende dela**. Informe precisamente a lacuna, onde ela aparece e as alternativas/consequências relevantes; peça a decisão do responsável. Trabalho independente já coberto pela SPEC pode continuar.
-4. **Registrar antes de codificar:** depois de o responsável decidir, atualize a SPEC com o comportamento aprovado; ajuste ARCHITECTURE ou referências exploratórias quando necessário. **Só então** implemente a parte antes bloqueada. O agente não pode aprovar sua própria proposta.
+3. **Bloquear a parte indefinida:** se faltar definição relevante, houver ambiguidade/contradição ou a escolha não passar no filtro de delegação, **não escreva o código dependente**. Explique a lacuna e solicite decisão humana; continue trabalho independente já autorizado.
+4. **Registrar antes de codificar:** insira a decisão humana aprovada na SPEC **ou**, se estritamente delegável, registre a pequena escolha como **IA — PENDENTE DE REVISÃO HUMANA**, com ID e comportamento verificável. Ajuste a ARCHITECTURE quando pertinente. **Só então** implemente; a IA não aprova sua própria decisão.
 5. **Repetir a checagem durante o trabalho:** se surgir regra ausente, conflito ou necessidade de alterar o comportamento, retorne ao passo 3. Nem urgência de bug, nem conveniência técnica, nem testes que passam autorizam desvio silencioso.
 6. **Validar aderência:** revise implementação, efeitos colaterais e testes contra a SPEC vigente. Se código e SPEC divergirem, não altere a SPEC para justificar código sem uma decisão de produto explícita.
 
-Não é exigido criar issue, plano, PR, checklist ou documento de especificação separado para cada mudança: a exigência é **ter a decisão de produto aprovada na SPEC antes de qualquer implementação dependente dela**.
+Não é exigido criar issue, plano, PR, checklist ou documento de especificação separado para cada mudança: é obrigatório que o comportamento esteja **aprovado na SPEC ou estritamente autorizado por delegação provisória e registrado antes do código**.
 
-**Direção da primeira implementação, confirmada pelo responsável:** desenvolver o **jogo integrado definido pela SPEC**, com a **validação principal global depois que o conjunto estiver funcional**. Não estabelecer POCs de sistemas isolados (economia, fazenda, mapa, interface etc.) como entregas obrigatórias, nem usar recomendações históricas de "primeira POC" ou "após a POC" para cortar automaticamente funcionalidades aprovadas. **Implementação integrada não significa um único commit ou integração às cegas:** construir em incrementos técnicos coerentes, com testes locais e verificações proporcionais quando úteis, evita descobrir falhas estruturais só no final. Experimentos técnicos isolados são opcionais, não fases de produto. Qualquer alteração do escopo oficial exige decisão explícita na SPEC.
+**Direção de entrega vigente:** construir o **Convencional em versões menores, jogáveis e integradas**, seguindo o recorte aprovado para cada versão e validando desde cedo economia, ações do jogador, consequências e dependências reais. Manter a visão completa da SPEC, sem tentar codificá-la integralmente antes da primeira partida utilizável. Não impor POCs independentes nem justificar atalhos fictícios na simulação. O conteúdo exato da primeira versão continua **por aprovar**, não pode ser inferido de exemplos da exploração. Mudança de escopo exige decisão humana explícita e atualização prévia da SPEC.
 
 O IndexCities usa deliberadamente uma arquitetura de especificação mínima.
 
@@ -111,7 +123,7 @@ O IndexCities usa deliberadamente uma arquitetura de especificação mínima.
 
 Ela deve:
 
-- descrever somente o estado desejado já decidido;
+- descrever decisões humanas aprovadas e, em seção separada, pequenas decisões provisórias de IA explicitamente identificadas;
 - permanecer curta, legível e útil;
 - registrar requisitos e limites de produto, não detalhes acidentais de implementação;
 - deixar explícito quando algo ainda não foi decidido.
@@ -279,10 +291,10 @@ Sistemas profundos não podem virar caixas-pretas.
 
 ## Regra principal de escopo
 
-- **Sem comportamento de produto não documentado na SPEC, não há implementação desse comportamento.** Isso vale para o início do projeto e para cada mudança futura.
-- Se o pedido exigir uma decisão ausente, apresente-a ao responsável, registre a escolha explícita na SPEC e só depois codifique.
-- Bug com comportamento esperado já definido na SPEC pode ser corrigido diretamente **com base nessa regra**; bug que revela lacuna ou exige comportamento diferente retorna primeiro à SPEC.
-- Refatorações, ajustes técnicos e testes não podem introduzir regras de produto não aprovadas.
+- **Sem comportamento de produto documentado e autorizado na SPEC, não há implementação desse comportamento.** Isso vale para o início do projeto e para cada mudança futura.
+- Se o pedido exigir decisão ausente, obtenha aprovação humana; somente decisão comprovadamente pequena e delegável pode ser registrada como IA pendente antes do código.
+- Bug com comportamento esperado já definido na SPEC pode ser corrigido diretamente **com base nessa regra**; bug que revela conflito ou regra significativa ausente exige decisão humana antes do código dependente.
+- Refatorações, ajustes técnicos e testes não podem introduzir silenciosamente regras de produto nem contornar o registro obrigatório.
 - Experimentos técnicos isolados não são fases obrigatórias nem autorizam inserir features não aprovadas no jogo.
 - Não invente features, abstrações ou sistemas para um futuro hipotético.
 
@@ -299,15 +311,15 @@ Sistemas profundos não podem virar caixas-pretas.
 ## Como trabalhar
 
 1. **Leia a SPEC antes de mexer em código** e encontre a decisão vigente pertinente ao trabalho, mesmo em bugs e manutenção.
-2. Compare a solicitação e o comportamento existente com essa decisão. Se houver lacuna, conflito ou regra nova, **pare a implementação dependente**, apresente opções ao responsável e espere a decisão; registre-a na SPEC antes de continuar.
+2. Confira se a funcionalidade pertence ao recorte aprovado da versão e se a SPEC define seu comportamento. Lacuna, conflito ou mudança significativa exige parar essa parte e consultar o responsável; somente detalhe pequeno que passe integralmente pelo teste de delegação pode ser decidido pela IA e registrado antes do código.
 3. Consulte a ARCHITECTURE para restrições estruturais e a EXPLORATION para contexto aberto; inspecione somente o código necessário.
-4. Implemente apenas o comportamento coberto pela SPEC, sem suposições de gameplay nem expansão de escopo.
-5. Se surgir nova lacuna durante a implementação, volte ao passo 2. Execute primeiro os testes mais próximos da área alterada e amplie quando o risco justificar.
-6. Revise o diff e os testes contra a SPEC: corrigir uma divergência não autoriza mudar silenciosamente o contrato.
-7. Atualize a SPEC **antes**, nunca depois, de codificar alteração de produto. Não a reescreva por mudanças exclusivamente técnicas que já preservam os requisitos existentes.
+4. Implemente o comportamento autorizado pela SPEC para a entrega, sem novos atalhos, simulações fictícias ou expansão de escopo.
+5. Se surgir nova lacuna durante a implementação, volte ao passo 2. Execute primeiro os testes mais próximos da área alterada e amplie quando o risco justificar; valide o ciclo integrado desde cedo.
+6. Revise o diff e os testes contra a SPEC, inclusive os registros IA pendentes; corrigir divergência não autoriza alterar silenciosamente o contrato.
+7. Atualize a SPEC **antes**, nunca depois, de codificar qualquer decisão de produto (humana ou delegada). Não a reescreva por detalhes exclusivamente técnicos que já preservam os requisitos existentes.
 
 ## Definição prática de pronto
 
-Uma mudança está pronta quando o comportamento implementado está coberto pela SPEC aprovada, funciona conforme esse contrato, passa pela validação adequada e não deixa divergência conhecida entre código e SPEC.
+Uma mudança está pronta quando o comportamento implementado está coberto pela SPEC (decisão humana aprovada ou pequena decisão IA autorizada e explicitamente pendente), pertence ao recorte vigente, funciona conforme esse contrato, passa pela validação adequada e não deixa divergência conhecida entre código e SPEC.
 
 Arquitetura elegante, documentação extra e processo perfeito não são objetivos por si só.
