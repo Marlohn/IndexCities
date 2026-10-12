@@ -6,9 +6,22 @@
 >
 > **Critério de leitura:** diferenciar mecânica observada em outro jogo, hipótese proposta para IndexCities, exigências já aprovadas na SPEC e vantagens alegadas/experiências comunitárias. Fontes oficiais/de desenvolvedores preferidas; wiki de fãs e comunidades rotuladas como tal. Jogos de épocas diferentes são comparados quanto ao *padrão de gameplay*, não copiados.
 
+## Vans escolares: politica B aprovada e consequencias para a familia (2026-10-11)
+
+> **Revisão humana: REVISADO quanto ao B explicitamente escolhido.** A Prefeitura pode manter o serviço de van escolar **gratuito para todos** ou cobrar das famílias com capacidade econômica, **isentando as que não podem pagar**. Esta escolha substitui a hipótese ainda pendente de cobrança do transporte. O critério de capacidade econômica é o mesmo já aprovado para creches. A definição de valores e de situações de inadimplência permanece pendente de calibração/decisão curta antes do código.
+
+**Efeitos reais que o menu da Prefeitura deve permitir observar:**
+- custo de viagem pago por responsável/família real versus receita recebida no Caixa, sem criar pagamento de criança;
+- custo total municipal com veículos, combustível, motoristas e monitores SIMs efetivos;
+- famílias e crianças isentas, crianças realmente transportadas e não atendidas (por falta de assento, rota, motorista, monitor, horário ou condição de pagamento conforme regra definida);
+- frequência escolar efetiva, acesso real à creche e consequência indireta para horas de trabalho, renda e situação familiar;
+- situação financeira da família utilizada na análise de elegibilidade (quantidade real de SIMs/famílias em pobreza e de famílias elegíveis à isenção), sem números demográficos fictícios.
+
+**Não confundir:** a política financeira não cria novas vans, vagas nem transportes. A prioridade aprovada da fila de pedidos por ordem (24B) continua em vigor; a gratuidade não garante serviço sem capacidade física. A ação do jogador é a **política agregada**, não decidir cada embarque. Valores/critério temporal da elegibilidade, saldo insuficiente inesperado e cobranças atrasadas são **casos a resolver coerentemente**.
+
 ## Decisões posteriores: creche por condição financeira e orçamento real em teste (2026-10-11)
 
-> **Revisão humana: PARCIALMENTE REVISADO.** Decisões expressas do responsável **1B creches por condição financeira com contagem visível de pobres, 2A hospitais municipais gratuitos, 3B financiamento por verba real PARA TESTE** promovidas à [SPEC](../SPEC.md). **Vans escolares com gratuidade/isenção conforme renda é uma possibilidade levantada (“poderia ser igual”), NÃO decisão aprovada.**
+> **Revisão humana: PARCIALMENTE REVISADO.** Decisões expressas do responsável **1B creches por condição financeira com contagem visível de pobres, 2A hospitais municipais gratuitos, 3B financiamento por verba real PARA TESTE** promovidas à [SPEC](../SPEC.md). **ATUALIZAÇÃO POSTERIOR: vans escolares com isenção por capacidade econômica foram aprovadas como B e registradas na SPEC.**
 
 ### O que significava o “limite de gastos do jogador”?
 
@@ -30,7 +43,7 @@ Foi aprovado **testar** verba efetivamente designada por área municipal com vis
 
 ### Próxima questão específica ainda pendente: vans
 
-O responsável sugeriu que a gratuidade/cobrança das **vans escolares para escola e creche** “poderia ser igual” às creches. **Não promover a sugestão à SPEC sem confirmação.** Comparar numa pergunta simples **A vans sempre gratuitas**, **B vans pagas com isenção para famílias sem condições** (política opcional), **C vans grátis/pagas para todos**, lembrando que não transportar uma criança por falta de dinheiro pode causar faltas escolares ou impedir trabalho de adultos, e que motoristas/monitores, assentos, rotas, combustível e custo real permanecem. Se B escolhido, propor uso do **mesmo indicador de capacidade econômica domiciliar** para evitar duplicar cálculos, não obrigar cobrança nem inventar subsídio por viagem não realizada.
+O responsável sugeriu que a gratuidade/cobrança das **vans escolares para escola e creche** “poderia ser igual” às creches. **Esta pendência histórica foi confirmada posteriormente como B e promovida à SPEC.** Comparar numa pergunta simples **A vans sempre gratuitas**, **B vans pagas com isenção para famílias sem condições** (política opcional), **C vans grátis/pagas para todos**, lembrando que não transportar uma criança por falta de dinheiro pode causar faltas escolares ou impedir trabalho de adultos, e que motoristas/monitores, assentos, rotas, combustível e custo real permanecem. Se B escolhido, propor uso do **mesmo indicador de capacidade econômica domiciliar** para evitar duplicar cálculos, não obrigar cobrança nem inventar subsídio por viagem não realizada.
 
 
 ## Reavaliação crítica das tarifas e do orçamento — pesquisa e parecer independentes (2026-10-11)
