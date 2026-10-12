@@ -4,6 +4,12 @@
 >
 > Ele não é fonte de verdade do produto. Decisões oficiais de produto pertencem a [SPEC.md](SPEC.md), decisões estruturais a [ARCHITECTURE.md](ARCHITECTURE.md) e regras de trabalho a [../AGENTS.md](../AGENTS.md).
 
+## Refinamento de creches/vans — escolhas 1A e 2A confirmadas (2026-10-11)
+
+> **Revisão humana: DECIDIDO e incluído na SPEC.** **1A:** isenção da cobrança de creche e van é recalculada automaticamente na **próxima cobrança ou tentativa de uso depois de mudança nas condições econômicas familiares**, não somente no próximo mês nem per-frame. **2A:** quando vans não tiverem capacidade para todos, **priorizar quem realmente não dispõe de meio viável e seguro de chegar à escola/creche**, considerando idade, rotas, horários e acompanhamento. **Empate em necessidade: ordem de pedido**. A antiga decisão **24B por ordem simples de solicitação foi substituída**, mas **25A rotas automáticas** e **8B matrículas escolares por ordem de inscrição** não mudaram.
+
+O efeito esperado não é bônus abstrato: custo/isenção real para a família, uso efetivo da van/creche, frequência/progressão da criança e tempo/renda dos adultos, com gasto, arrecadação e motivos de atendimento/não atendimento visíveis na Prefeitura. Não inventar veículos, vagas, transporte, caixa, dívida perdoada ou empregos. Pesquisa e ajustes temáticos: [Prefeitura](exploration/city-hall.md), [sistemas urbanos](exploration/city-systems.md), [prontidão](exploration/project-readiness.md).
+
 ## Van escolar com isenção por condição financeira — confirmação B (2026-10-11)
 
 > **Revisão humana: REVISADO quanto à decisão B.** O responsável aprovou a opção da Prefeitura de deixar o transporte escolar municipal **gratuito para todos** ou cobrá-lo de famílias com condições financeiras, preservando **isenção a famílias sem condições**, reutilizando o critério econômico familiar definido para creches. A regra de produto já está na [SPEC](SPEC.md); detalhes financeiros ainda pendem de calibração.
