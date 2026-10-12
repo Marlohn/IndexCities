@@ -2,6 +2,12 @@
 
 > **EXPLORAÇÃO — não é fonte de verdade. Revisão humana: PENDENTE.** Auditoria técnica de 2026-10-11. As decisões aprovadas são apontadas na [SPEC](../SPEC.md) e na [ARCHITECTURE](../ARCHITECTURE.md); propostas técnicas, custos e medidas abaixo **não** são requisitos aprovados.
 
+## Aplicação à primeira versão jogável (2026-10-12)
+
+> **Revisão humana desta seção: PENDENTE.** Para a colaboração entre IAs, o inventário candidato, a separação de trabalho em duas ondas e as interfaces visuais/funcionais estão no [briefing de assets V1](first-playable-assets.md); o recorte que os motiva está em [first-playable-scope.md](first-playable-scope.md). **Ainda não são um catálogo de produto nem pipeline aprovado pelo responsável.**
+
+A IA de arte pode começar **imediatamente** pela direção visual original, amostra pequena e proposta de escala/pivôs/acessos. A IA integradora precisa pactuar cedo esse contrato; produção dimensional em lote só após a amostra funcionar no jogo. Não usar/copy-portar recursos de outros projetos, inclusive do teste visual externo descrito abaixo. Este documento continua sendo pesquisa de opções, não ordem para adotar Godot procedural, Blender, GLB ou outra ferramenta.
+
 ## Resumo executivo
 
 **Hipótese de pipeline técnico da pesquisa, ainda não aprovada: produzir modelos paramétricos novos diretamente na Godot com auxílio de IA, gerar a geometria uma vez e manter recursos e variantes reutilizáveis.** O teste visual apresentado pelo responsável mostrou potencial concreto para casas, comércio, rua, vegetação e mobiliário. **Blender não é necessário nesse fluxo**; pode ser usado pontualmente se um tipo de modelo não ficar bom por código. Geradores text-to-3D externos também são alternativas, não dependências.
