@@ -6,19 +6,19 @@
 >
 > **Conteúdo ainda sem aprovação humana é apenas pesquisa.** Seções e documentos **PENDENTE** (ou trechos não revisados de conteúdo **PARCIALMENTE REVISADO**) não criam tarefas, planos obrigatórios, requisitos nem permissão para copiar componentes de outros projetos, mesmo quando sugerem “implementar”, “usar” ou “reaproveitar”. A regra operacional está no [AGENTS.md](../AGENTS.md).
 
-## Proposta de V1 e produção paralela de assets (2026-10-12)
+## V1 aprovada e produção paralela de assets (2026-10-12)
 
-> **Revisão humana: PENDENTE** quanto ao recorte funcional e às recomendações de produção da IA. O responsável pediu uma varredura para preparar a primeira versão jogável e antecipar o trabalho de outra IA de assets; **não aprovou ainda cada item proposto para a V1**. A regra de autorização está na [SPEC](SPEC.md); material exploratório não permite implementar comportamentos não aprovados.
+> **Revisão humana: PARCIALMENTE REVISADO.** Em 2026-10-12, o responsável **aprovou o recorte funcional proposto para a V1**, agora incluído como contrato oficial na [SPEC](SPEC.md). O estudo de dependências e as recomendações técnicas de produção de assets continuam sendo material de IA **PENDENTE** de revisão integral: aprovação do recorte não aprova ferramentas, medidas ou modelos específicos.
 
-- [**Primeira versão jogável — recorte e dependências**](exploration/first-playable-scope.md): candidato a primeira entrega integrada (Prefeitura, ruas/obras, moradia, empresas/emprego, alimentação local/importada, logística, abastecimento e utilidades básicas), dependências, validações e o que permanece para depois. **Não é escopo oficial até revisão humana.**
-- [**Briefing V1 para outra IA de assets**](exploration/first-playable-assets.md): inventário candidato, duas ondas de produção paralela, escala/encaixes/IDs a pactuar cedo, material original e critérios de integração. **É possível começar agora pelas amostras de visual/contrato, sem presumir catálogo ou medidas aprovadas.**
+- [**Primeira versão jogável — recorte e dependências**](exploration/first-playable-scope.md): explicação do **recorte aprovado**, com Prefeitura, ruas/obras, moradia, empresas/emprego, alimentação local/importada, logística, abastecimento, utilidades básicas e validações. **A versão oficial do escopo é a seção V1 da SPEC**, não este documento exploratório.
+- [**Briefing V1 para outra IA de assets**](exploration/first-playable-assets.md): inventário visual derivado dos **tipos funcionais aprovados na SPEC**, duas ondas de produção paralela, escala/encaixes/IDs a pactuar cedo, material original e critérios de integração. **A IA pode iniciar as amostras; ferramentas, medidas, paleta e variantes não foram aprovadas automaticamente.**
 - [**Pesquisa de pipeline de assets**](exploration/asset-production-pipeline.md): alternativas Godot procedural, Blender opcional, formato, reutilização e risco de performance; recomendações técnicas ainda **PENDENTES**, não requisito de ferramenta.
 
 ## Direção de desenvolvimento incremental e autonomia de IA (2026-10-11)
 
 > **Revisão humana: REVISADO quanto à direção expressamente aprovada.** O responsável decidiu preservar a visão completa da [SPEC](SPEC.md), desenvolver o **Convencional em entregas menores, jogáveis e integradas** e delegar somente **pequenas decisões reversíveis de produto à IA**, com registro obrigatório na SPEC antes do código e estado de revisão humana pendente. As regras oficiais agora estão na SPEC e a execução no [AGENTS.md](../AGENTS.md) e na [ARCHITECTURE.md](ARCHITECTURE.md); este bloco é apenas índice, não fonte concorrente.
 
-**Ainda por definir e aprovar:** o recorte efetivo da primeira versão jogável. Sua escolha deve respeitar as dependências entre os sistemas da SPEC e demonstrar um ciclo real de construção, economia, SIMs e consequências relevantes **na medida em que cada sistema for incluído**; não inferir que todos esses sistemas ou uma lista arbitrária de prédios já foram aprovados para a V0.1. Pesquisa e alternativas ficam pendentes de revisão humana no [mapa de prontidão](exploration/project-readiness.md). Versões menores não revogam decisões futuras e não autorizam fluxos fictícios de dinheiro, materiais ou agentes.
+**Recorte da V1 aprovado em 2026-10-12:** o conjunto de sistemas e edifícios da primeira versão jogável está agora na seção própria da SPEC. O [mapa de prontidão](exploration/project-readiness.md) segue como orientação exploratória de dependências/risco, não define escopo alternativo. Versões menores não revogam decisões futuras e não autorizam fluxos fictícios de dinheiro, materiais ou agentes.
 
 ## Nova rodada — dez escolhas aprovadas, 7A/10A confirmadas depois (2026-10-11)
 
