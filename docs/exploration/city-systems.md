@@ -8,6 +8,13 @@
 >
 > Concentra pesquisa e raciocínio sobre serviços urbanos, mobilidade, vias, educação, saúde, infraestrutura técnica, conexão externa e capacidades operacionais. A SPEC continua sendo a autoridade sobre o que já foi decidido.
 
+## Creche proporcional à renda, saúde gratuita e hipótese para vans (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** A Prefeitura adota como política geral para creches a **isenção de famílias sem recursos financeiros suficientes** e a possibilidade de cobrança das demais (opção atual **1B**). A alternativa anterior **5B grátis/paga indistinta** foi substituída, conforme SPEC. O jogo precisa informar pobreza real da população/quantidade de famílias, elegibilidade da gratuidade de creche, demanda não atendida, mensalidades efetivamente arrecadadas e despesas municipais de equipe/instalações. Número e critério de pobreza não podem ser inventados. **Hospitais continuam gratuitos por escolha 2A**, com atendimento limitado por capacidade, funcionários e suprimentos. **Orçamento por verba real 3B** é teste sem bônus de eficiência abstrata.
+
+**Vans escolares:** o responsável sugeriu que o serviço de van opcional possa ser **grátis/pago com proteção de famílias sem condição de pagar**, por analogia à política de creche; não aprovou ainda. O desenho deve decidir quem é devedor (responsável adulto, não a criança), a proteção de acesso escolar, o efeito de tarifa em matrícula/frequência e transporte físico. Não inventar mensalidade do transporte, assentos nem novos cargos. O status de gratuidade/cobrança das vans permanece **PENDENTE**.
+
+
 ## Controles municipais de tarifa e orçamento — escolhas revistas (2026-10-11)
 
 > **Revisão humana: PARCIALMENTE REVISADO.** A SPEC agora aprova **1B** ônibus em Grátis/Barata/Normal/Cara, **2B** estacionamentos municipais com quatro faixas e **3B** atrações em quatro faixas. **11B** permite prioridade de investimento por serviço. Não há aprovação de quatro níveis para **vans escolares (6), escolas/universidades (7), hospitais (8) nem água/energia (9)**: o responsável pediu discutir a padronização e suas consequências.
