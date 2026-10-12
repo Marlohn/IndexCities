@@ -6,15 +6,21 @@
 >
 > **Última reavaliação de avanço:** 2026-10-11, distinguindo **89% de maturidade de decisões do Convencional (nova linha de base)** e **81% de prontidão documental/técnica para integração (estimativa anterior)**; ambos são avaliações qualitativas ainda sem validação de jogo. **Pesquisa comparativa de base:** 2026-10-08. [Evidências e 24 frentes de investigação](genre-benchmark.md#pesquisa-transversal-ampliada--cidade-real-jogos-e-lacunas-de-gameplay-2026-10-08).
 
+## Duas revisoes concluídas: vulnerabilidade economica e fila de vans (2026-10-11)
+
+> **Revisão humana: DECIDIDO.** 1A e 2A aprovadas e registradas na SPEC. **1A:** reavaliar gratuitamente a isenção de creche e van na próxima cobrança/uso quando renda familiar mudar, usando o critério econômico compartilhado, sem avaliação por quadro. **2A:** quem não possui alternativa realmente segura/viável tem prioridade em assentos escassos da van; ordem de solicitação só desempata necessidade equivalente. **O antigo 24B foi explicitamente substituído**; 25A (roteamento automático) e 8B (matrícula escolar por ordem de pedido) permanecem.
+
+**Progresso de definição:** prioridade e momento de isenção esclarecidos; preço exato, período de cobrança e inadimplência podem ser calibrados com atenção a famílias recém-empobrecidas. Testar efeito causal em orçamento doméstico, comparecimento e evolução escolar, possibilidade real de adulto trabalhar, uso efetivo de serviço, contratação de motoristas/monitores e fluxo financeiro da Prefeitura. Não estimar novo percentual de prontidão só com essas respostas.
+
 ## Politica escolar por renda: B aprovada e checagens finais (2026-10-11)
 
-> **Revisão humana: PARCIALMENTE REVISADO.** A política de vans municipais com **gratuidade universal opcional ou cobrança das famílias economicamente capazes com isenção automática das demais** foi escolhida como **B** e inserida na SPEC. Prioridade de fila por ordem (24B), roteamento automático (25A) e acompanhamento de menores na creche permanecem aprovados. O critério familiar de renda/recursos/despesas essenciais deve ser o mesmo das creches, sem duplicar cadastro ou classificar crianças individualmente como pagadoras.
+> **Revisão humana: PARCIALMENTE REVISADO.** A política de vans municipais com **gratuidade universal opcional ou cobrança das famílias economicamente capazes com isenção automática das demais** foi escolhida como **B** e inserida na SPEC. Prioridade de fila **revisada para necessidade real (2A), com ordem em empate**; roteamento automático (25A) e acompanhamento de menores na creche permanecem aprovados. O critério familiar de renda/recursos/despesas essenciais deve ser o mesmo das creches, sem duplicar cadastro ou classificar crianças individualmente como pagadoras.
 
 **Única nova lacuna funcional relevante do serviço antes do código:** caso a renda de um domicílio caia abruptamente, definir quando passa a ter isenção e o que ocorre com cobrança pendente; não transformar demora de ajuste em perda instantânea do cuidado/acesso escolar nem criar perdão automático de dívida realmente contraída antes da isenção. Valores, frequência e preços concretos podem ser calibrados em implementação, se não mudarem decisões relevantes.
 
 **Testar causalmente os SIMs:** responsável perde trabalho → renda/condição econômica muda → isenção efetiva do transporte (e da creche quando elegível) → deslocamento da criança só se houver van e vaga → comparecimento real à escola/creche → possibilidade de o adulto procurar/manter trabalho e recuperar renda. Painel da Prefeitura mostra elegíveis, atendidos, não atendidos, gasto, receita e efeitos observáveis sem inventar trabalho, viagens ou satisfação.
 
-**Questão de produto que pode valer reavaliar se surgir problema em teste:** a prioridade da fila de vans por ordem de pedido 24B já está aprovada, mas pode não maximizar acesso quando criança sem alternativa solicita depois de uma com transporte próprio disponível. Não revogar a regra por inferência; qualquer mudança exige decisão humana específica. Outros pormenores ficam para calibração, não exigem rodada de perguntas extensa.
+**Questão de produto resolvida posteriormente:** a regra 24B de fila apenas por pedido foi **substituída pela opção 2A**, que prioriza quem não tem acesso alternativo viável e usa ordem de pedido apenas como desempate. Outros pormenores ficam para calibração, não exigem rodada de perguntas extensa.
 
 ## Fechamento das três decisões pós-auditoria (2026-10-11)
 
