@@ -4,6 +4,12 @@
 >
 > Ele não é fonte de verdade do produto. Decisões oficiais de produto pertencem a [SPEC.md](SPEC.md), decisões estruturais a [ARCHITECTURE.md](ARCHITECTURE.md) e regras de trabalho a [../AGENTS.md](../AGENTS.md).
 
+## Van escolar com isenção por condição financeira — confirmação B (2026-10-11)
+
+> **Revisão humana: REVISADO quanto à decisão B.** O responsável aprovou a opção da Prefeitura de deixar o transporte escolar municipal **gratuito para todos** ou cobrá-lo de famílias com condições financeiras, preservando **isenção a famílias sem condições**, reutilizando o critério econômico familiar definido para creches. A regra de produto já está na [SPEC](SPEC.md); detalhes financeiros ainda pendem de calibração.
+
+**Consequências causais obrigatórias:** gasto e renda real da família, acesso à escola e creche por viagem física, presença e progressão escolar, necessidade de acompanhante e disponibilidade efetiva do adulto para trabalhar, salários/renda decorrentes, e gasto/arrecadação real da Prefeitura. **Não confundir política com entrega garantida:** ônibus/van, veículo, motorista, monitor, combustível, tempo e vaga precisam existir; fila de vans continua por ordem de solicitação (24B), rotas automáticas (25A). O painel usa SIMs/famílias realmente existentes para mostrar pobreza, isentos, atendidos e excluídos por capacidade; dinheiro somente se move em pagamentos efetivos. Detalhes de tarifa/vencimento e ajuste quando renda familiar muda ainda não foram decididos. Fontes temáticas: [Prefeitura](exploration/city-hall.md#vans-escolares-politica-b-aprovada-e-consequencias-para-a-familia-2026-10-11), [mobilidade](exploration/city-systems.md#transporte-escolar-municipal-cobranca-opcional-com-isencao--b-aprovada-2026-10-11).
+
 ## Refinamentos confirmados: assistência, creches, hospitais e orçamento (2026-10-11)
 
 > **Revisão humana: PARCIALMENTE REVISADO.** Após a auditoria crítica, o responsável perguntou pelo “limite de gastos” e confirmou **1B** creches com cobrança conforme condições financeiras reais, **2A** hospitais municipais gratuitos e **3B** testar orçamento por verba monetária real. As três decisões estão na [SPEC](SPEC.md).
@@ -12,7 +18,7 @@
 
 **Creches 1B substitui a 5B simples:** famílias sem capacidade econômica efetiva ficam isentas, outras podem pagar em política municipal de mensalidade. A Prefeitura deve mostrar **quantos SIMs e famílias estão em situação de pobreza/insuficiência econômica**, critério explícito, elegíveis à gratuidade da creche e efetivamente atendidos; não fabricar percentuais nem confundir todas as pessoas pobres com crianças de creche. **HOSPITAIS 2A:** permanecem gratuitos para pacientes, sujeitos a operação/capacidade reais. **VERBA 3B:** teste de limite/financiamento por serviço usando dinheiro real, custos devidos, gasto pago e resultados; slider percentual continua proposta, não decisão definitiva.
 
-**Vans escolares:** o usuário aventou “grátis/pago poderia ser igual” à proteção por condição econômica das creches, mas **não confirmou alternativa**; assunto permanece em [Prefeitura](exploration/city-hall.md#decisoes-posteriores-creche-por-condicao-financeira-e-orcamento-real-em-teste-2026-10-11) e [sistemas urbanos](exploration/city-systems.md). Saúde pública não ganhou tarifa.
+**Vans escolares:** o usuário aventou “grátis/pago poderia ser igual” à proteção por condição econômica das creches, e **confirmou posteriormente a alternativa B como decisão oficial**; detalhes ainda abertos permanecem em [Prefeitura](exploration/city-hall.md#decisoes-posteriores-creche-por-condicao-financeira-e-orcamento-real-em-teste-2026-10-11) e [sistemas urbanos](exploration/city-systems.md). Saúde pública não ganhou tarifa.
 
 
 ## Auditoria crítica da Prefeitura — reinício da avaliação (2026-10-11)
