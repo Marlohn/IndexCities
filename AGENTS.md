@@ -100,7 +100,7 @@ O IndexCities adota **Spec-Driven Development (SDD) contínuo, com SPEC viva e o
 
 ### Desenvolvimento incremental do Convencional
 
-**Direção confirmada pelo responsável em 2026-10-11:** preservar a visão completa já aprovada na SPEC, mas desenvolver em **versões menores, integradas e jogáveis**, com validação de gameplay e integração desde os primeiros ciclos. Não esperar todo o conteúdo futuro para testar; não impor POCs isoladas, protótipos descartáveis nem testes cerimoniais como etapas obrigatórias. **A primeira versão ainda não tem funcionalidades delimitadas e aprovadas:** mapear dependências, propor o menor ciclo verdadeiro na exploração e obter aprovação do recorte na SPEC antes do código dependente. Limitar o catálogo não autoriza criar dinheiro, estoques, agentes, deslocamentos ou consequências fictícias; o comportamento incorporado deve seguir as regras aprovadas. Reavaliar o recorte de cada versão sem apagar decisões futuras.
+**Direção confirmada pelo responsável em 2026-10-11, com recorte V1 aprovado em 2026-10-12:** preservar a visão completa já aprovada na SPEC, mas desenvolver em **versões menores, integradas e jogáveis**, com validação desde os primeiros ciclos. **A V1 já tem escopo funcional aprovado na seção *V1 — primeira versão jogável integrada* da SPEC.** Implementar em incrementos coerentes, respeitando dependências, sem impor POCs isoladas, protótipos descartáveis ou testes cerimoniais. Limitar o catálogo não autoriza criar dinheiro, estoques, agentes, deslocamentos ou consequências fictícias. A IA de assets pode trabalhar em paralelo conforme briefing exploratório, mas nem a frente visual nem a implementação podem introduzir novas regras de produto fora da SPEC. O recorte de versões futuras continua sujeito à aprovação humana.
 
 ### Porta obrigatória antes e durante qualquer implementação
 
@@ -113,7 +113,7 @@ O IndexCities adota **Spec-Driven Development (SDD) contínuo, com SPEC viva e o
 
 Não é exigido criar issue, plano, PR, checklist ou documento de especificação separado para cada mudança: é obrigatório que o comportamento esteja **aprovado na SPEC ou estritamente autorizado por delegação provisória e registrado antes do código**.
 
-**Direção de entrega vigente:** construir o **Convencional em versões menores, jogáveis e integradas**, seguindo o recorte aprovado para cada versão e validando desde cedo economia, ações do jogador, consequências e dependências reais. Manter a visão completa da SPEC, sem tentar codificá-la integralmente antes da primeira partida utilizável. Não impor POCs independentes nem justificar atalhos fictícios na simulação. O conteúdo exato da primeira versão continua **por aprovar**, não pode ser inferido de exemplos da exploração. Mudança de escopo exige decisão humana explícita e atualização prévia da SPEC.
+**Direção de entrega vigente:** construir o **Convencional em versões menores, jogáveis e integradas**, seguindo o recorte aprovado para cada versão e validando desde cedo economia, ações do jogador, consequências e dependências reais. Manter a visão completa da SPEC, sem tentar codificá-la integralmente antes da primeira partida utilizável. Não impor POCs independentes nem justificar atalhos fictícios na simulação. O conteúdo exato da **V1 está aprovado na SPEC**; exemplos da exploração não ampliam seu escopo. Mudança de escopo exige decisão humana explícita e atualização prévia da SPEC.
 
 O IndexCities usa deliberadamente uma arquitetura de especificação mínima.
 
