@@ -6,6 +6,14 @@
 >
 > **Última reavaliação de avanço:** 2026-10-11: **93% de maturidade das definições do Convencional** (antes 89%) e **83% de prontidão documental/técnica para integração** (antes 81%). Ambos são **estimativas qualitativas, não progresso de programação nem validação do jogo**. **Implementação do jogo verificável neste GitHub: 0%**, sem excluir trabalho externo. **Pesquisa comparativa de base:** 2026-10-08. [Evidências e 24 frentes de investigação](genre-benchmark.md#pesquisa-transversal-ampliada--cidade-real-jogos-e-lacunas-de-gameplay-2026-10-08).
 
+## Próximo passo: recorte da primeira versão integrada — revisão de direção (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** O responsável aprovou o **desenvolvimento incremental do Convencional em versões jogáveis integradas**, mantendo toda a visão de produto da SPEC e o registro prévio de decisões pequenas delegadas à IA. **O recorte concreto da primeira versão ainda não foi aprovado**; a análise de prioridades e dependências abaixo é apenas orientação da IA **PENDENTE de revisão humana**, não autorização de implementação.
+
+**Recomendação exploratória — não é lista oficial da V0.1:** escolher o menor ciclo contínuo capaz de demonstrar ações do jogador, construção/entrega física, consequências para SIMs e fluxos econômicos reais nas partes incluídas. Avaliar dependências incontornáveis, especialmente bootstrap da Prefeitura, materiais, acesso viário, mão de obra, dinheiro/propriedade, operação de edifícios, interface e persistência. Reduzir tipos de edifícios e amplitude de casos, **sem criar simulação fictícia ou enfraquecer causalidade**. Antes de codificar a entrega, obter aprovação de seu conjunto de sistemas/limites e inscrevê-lo na SPEC; as demais funcionalidades aprovadas permanecem no destino de produto e podem entrar em versões seguintes.
+
+**Percentuais preservados:** os 93% de definições e 83% de prontidão documental/técnica são estimativas anteriores e não medem implementação nem qualidade de uma V0.1. Esta alteração de estratégia, por si só, não os recalcula. O planejamento de versões deve ser revisado com a experiência integrada real, sem transformar o mapa em cronograma obrigatório.
+
 ## Rodada seguinte: dez decisões, com confirmação posterior 7A/10A (2026-10-11)
 
 > **Revisão humana: PARCIALMENTE REVISADO.** 1A, 2B, 3B, 4A, 5A, 6A, 8A e 9A foram aprovadas inicialmente. **7A e 10A foram expressamente confirmadas depois** e promovidas à SPEC; a rodada está encerrada com dez escolhas.
@@ -98,13 +106,13 @@ Dar às próximas sessões uma visão única do que já está suficientemente de
 
 **Ordem de autoridade:** [SPEC](../SPEC.md) determina o produto; [ARCHITECTURE](../ARCHITECTURE.md) determina as fronteiras de software; [AGENTS](../../AGENTS.md) determina como trabalhar; o código mostra o que está implementado. O [hub de exploração](../EXPLORATION.md) e este mapa registram pensamento não oficial. Se este mapa divergir da SPEC, **não** promover sua recomendação silenciosamente; identificar a divergência e corrigir a fonte apropriada conforme a decisão humana.
 
-As prioridades são **orientação revisável**, não um impedimento para experimentar e tampouco autorização para implementar funcionalidades não aprovadas. A direção de trabalho é **Spec-Driven Development leve**: definir comportamentos oficiais na SPEC antes de implementá-los. A eventual POC é uma **validação integrada do jogo**; organizar a implementação em incrementos técnicos não cria uma obrigação de POCs separadas nem altera o escopo aprovado.
+As prioridades são **orientação revisável**, não impedimento para experimentar nem autorização para implementar funcionalidades sem base na SPEC. A direção vigente é **Spec-Driven Development leve com entregas progressivas integradas**: o comportamento de produto deve estar registrado antes do código, sob aprovação humana ou, apenas quando permitido, como pequena decisão IA pendente de revisão. POCs isoladas não são obrigatórias; o escopo concreto de cada versão requer aprovação do responsável na SPEC, sem revogar funcionalidades futuras.
 
 ## Escopo atual: Convencional; Criativo adiado — revisão de 2026-10-11
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável decidiu **adiar a implementação do Criativo**, manter a intenção de dois modos para depois e aplicar, em **todas as decisões de jogo**, o critério de diversão e construção intuitiva para quem ainda não sabe ler. A priorização técnica e o teste abaixo são propostas da IA, **PENDENTES de revisão humana**.
 
-**P0 vigente:** construir o **IndexCities Convencional integrado** com economia e simulação completas previstas na [SPEC](../SPEC.md). Tratar **capacidade de brincar construindo, feedback no mundo, interface visual sem leitura obrigatória para ações básicas, variedade estética, prévias simples e exploração por camadas** como critérios de gameplay agora — não só depois de existir um Criativo.
+**P0 vigente:** delimitar com aprovação humana a primeira entrega do **IndexCities Convencional integrado** e desenvolvê-la como ciclo jogável real, expandindo progressivamente rumo à economia e à simulação completas previstas na [SPEC](../SPEC.md). Tratar **capacidade de brincar construindo, feedback no mundo, interface visual sem leitura obrigatória para ações básicas, variedade estética, prévias simples e exploração por camadas** como critérios de gameplay desde a primeira entrega, não só depois de existir um Criativo. A lista de sistemas da V0.1 ainda não está decidida.
 
 **Adiado, não bloqueante:** desenvolvimento do Criativo, escolha de modos, salvamento condicionado ao modo, simulação seletiva, diferenças de regras econômicas e infraestrutura técnica exclusiva para outro modo. O objetivo de **dois modos futuros continua confirmado**, com preferência atual do responsável por **minimizar diferenças desnecessárias**. A antiga escolha **1B** (SIMs persistentes simplificados) e a **2A** (modo fixo por cidade) permanecem na [exploração histórica](product-direction.md) para **reavaliação quando o Criativo voltar à pauta**; não constituem pré-requisito de implementação do Convencional.
 
