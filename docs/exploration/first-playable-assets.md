@@ -1,6 +1,6 @@
 # IndexCities — V1: briefing e entrega paralela de assets
 
-> **EXPLORAÇÃO — não é fonte de verdade. Revisão humana: PENDENTE.** Briefing operacional da IA (2026-10-12) para **outra IA dedicada à arte**, solicitado pelo responsável. O recorte funcional da V1 ainda depende de confirmação humana em [first-playable-scope.md](first-playable-scope.md). Itens abaixo são **inventário candidato**, não catálogo oficial nem especificação de medidas aprovada. Direção de produto: [SPEC](../SPEC.md); fronteiras de renderização/dados: [ARCHITECTURE](../ARCHITECTURE.md); pesquisa de ferramentas, riscos e fontes: [asset-production-pipeline.md](asset-production-pipeline.md).
+> **EXPLORAÇÃO — não é fonte de verdade. Revisão humana: PARCIALMENTE REVISADO.** Briefing operacional preparado pela IA (2026-10-12) para uma frente independente de assets. O **recorte funcional da V1 foi aprovado pelo responsável em 2026-10-12 e está na [SPEC](../SPEC.md)**. As famílias visuais abaixo derivam desse recorte, mas **prioridades A/B/C, escolhas de ferramenta, dimensões, paleta, quantidade de variantes e soluções de pipeline continuam recomendações técnicas da IA pendentes de validação**, não decisões de produto automaticamente aprovadas. Fronteiras: [ARCHITECTURE](../ARCHITECTURE.md); pesquisa: [asset-production-pipeline.md](asset-production-pipeline.md).
 
 ## Objetivo e limite da equipe de arte
 
@@ -8,9 +8,9 @@ Preparar **assets originais, legíveis em câmera 3D isométrica e reutilizávei
 
 **Começar já** pela identidade visual e amostra pequena. **Produção em quantidade espera apenas o contrato mínimo de escala/encaixe com a IA do jogo**, e não a implementação integral do simulador. Se esse contrato ainda não existir, a IA de arte deve **prepará-lo e submeter uma proposta à IA integradora o quanto antes**, deixando medidas e conectores como **pendentes de compatibilização**, sem inventá-los como requisitos.
 
-## Inventário candidato de assets físicos para a V1
+## Inventário visual derivado do recorte aprovado da V1
 
-| Prioridade | Família / assets candidatos | Como abordar e o que comunicar |
+| Prioridade proposta | Família / assets para cobrir a V1 | Como abordar e o que comunicar |
 | --- | --- | --- |
 | A | **Terreno plano + borda, rio/lago e transição com rodovia externa** | Recursos simples e repetíveis; mapa gerado pela seed, não cenário urbano pronto. Água e borda precisam ser reconhecíveis na câmera normal; não entregar mapa completo estático. |
 | A | **Via urbana 1+1 com calçadas, postes e sinais básicos** | Kit visual compatível com trechos retos, cantos em L, T e cruzamentos; vias e conectividade são definidas pelo simulador. Luz de poste responde ao relógio/energia efetivos; não inventar infraestrutura gratuita. |
@@ -28,7 +28,7 @@ Preparar **assets originais, legíveis em câmera 3D isométrica e reutilizávei
 | C | **Vegetação e detalhes de ambiente** | Poucas famílias de árvores/arbustos/grama, decoração urbana mínima e superfícies; priorizar diversidade em zoom normal, sem exigir dezenas de meshes por árvore. |
 | C | **Ícones e miniaturas do catálogo** | Uma miniatura legível por tipo funcional da entrega, ícones de materiais (Areia e brita, Concreto, Aço, Madeira, Asfalto), Alimentos, Combustível, dinheiro, trabalhadores, operações, status e controles básicos de câmera/tempo/save. Não exigir leitura para selecionar a ação básica. |
 
-**Prioridades A/B/C indicam ordem do trabalho visual, não desbloqueios do jogador.** O catálogo funcional ainda precisa de aprovação; a IA de arte pode experimentar opções candidatas em paralelo sem inseri-las como produto oficial.
+**Prioridades A/B/C são sugestão de sequência do trabalho visual, não desbloqueios do jogador.** Os tipos funcionais estão aprovados na SPEC; escala, medidas, técnicas e número de variantes precisam ser acordados com a implementação, sem introduzir novas categorias de produto.
 
 ### Estados e identidade — tão importantes quanto o modelo
 
@@ -36,7 +36,7 @@ Para cada tipo visual que se aplique: **prévia válida/inválida, obra em andam
 
 ### O que NÃO produzir em lote para a V1
 
-Polícia/bombeiros/ambulâncias, ônibus/vans/táxis, trens, escola/hospital, prédios altos/mistos, museu, mirante, aeroporto, refinaria/extrator de petróleo, fábrica de automóveis, dezenas de estabelecimentos diferentes, pontes/viadutos, rede de encanamento manual, fachadas de upgrades estruturais ou conteúdos do modo Criativo. Esses elementos podem estar na SPEC completa, mas **não foram incluídos no recorte candidato V1**. Não produzir conteúdo de outra origem apenas porque está disponível.
+Polícia/bombeiros/ambulâncias, ônibus/vans/táxis, trens, escola/hospital, prédios altos/mistos, museu, mirante, aeroporto, refinaria/extrator de petróleo, fábrica de automóveis, dezenas de estabelecimentos diferentes, pontes/viadutos, rede de encanamento manual, fachadas de upgrades estruturais ou conteúdos do modo Criativo. Esses elementos podem estar na SPEC completa, mas **não foram incluídos no recorte aprovado da V1**. Não produzir conteúdo de outra origem apenas porque está disponível.
 
 ## Contrato de integração a fechar cedo com a IA do jogo
 
