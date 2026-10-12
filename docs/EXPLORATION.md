@@ -4,6 +4,17 @@
 >
 > Ele não é fonte de verdade do produto. Decisões oficiais de produto pertencem a [SPEC.md](SPEC.md), decisões estruturais a [ARCHITECTURE.md](ARCHITECTURE.md) e regras de trabalho a [../AGENTS.md](../AGENTS.md).
 
+## Rodada de políticas — respostas 1–11 e proposta de sliders (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** As escolhas **1B, 2B, 3B, 4B, 5B e 11B** estão na SPEC; **6–9 seguem em revisão quanto a padronizar tarifa Grátis/Barato/Normal/Caro; 10 (previdência) foi deixada para análise posterior.** Desenho de slider e intervalos numéricos são hipóteses da IA ainda PENDENTES.
+
+**Revisões aprovadas:** faixas gerais de preço em ônibus, estacionamentos municipais e atrações (antes eram apenas grátis/pago com valor fixado pela simulação); teto monetário mensal escolhido pelo jogador para auxílio-aluguel; creche com política geral grátis/paga em vez de sempre gratuita; financiamento/prioridade por área de serviço no orçamento, mantendo dinheiro real e prioridades críticas. **Toda tela de política/serviço com decisão financeira deve mostrar o gasto real da Prefeitura relacionado àquela área**, conciliado ao painel fiscal detalhado já aprovado.
+
+**Recomendação ainda exploratória de UX:** controles compactos de quatro posições para preço e percentuais para orçamento, distinguindo valor pago pelo usuário de investimento municipal; o responsável sugeriu sliders como caminho possível, não exigiu mecanismo definitivo. Para água/energia, saúde, educação e vans, quatro faixas foram propostas/questionadas, **não aprovadas**; preservar as regras atuais até escolha inequívoca. Para previdência, não inferir corte, mudança de benefício ou tarifa.
+
+**Auditoria e questões:** [Prefeitura e política de preços](exploration/city-hall.md#revisao-de-tarifas-e-orcamento-por-controles-do-jogador--respostas-111-2026-10-11), [prontidão](exploration/project-readiness.md#resposta-da-rodada-municipal-e-pendencias-6-10-2026-10-11), [sistemas e serviços](exploration/city-systems.md), [interface](exploration/player-interface.md).
+
+
 ## Direção revista: dar ao jogador escolhas municipais reais — 2026-10-11
 
 > **Revisão humana: PARCIALMENTE REVISADO.** O responsável confirmou a preferência por **mais poder decisório estratégico na Prefeitura** e pediu reavaliar até regras antes fechadas, de maneira simples, explicando consequências concretas. Políticas específicas continuam **PENDENTES de aprovação**, com decisões anteriores vigentes até substituição expressa. Diretriz registrada no [AGENTS](../AGENTS.md) e na [SPEC](SPEC.md).
