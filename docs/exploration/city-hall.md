@@ -12,6 +12,15 @@
 
 **No painel da Prefeitura:** distinguir pobreza real, famílias e crianças isentas, viagens solicitadas/atendidas/negadas, causas físicas da falta de serviço, gasto público e receita recebida. Consequências reais: trabalho dos responsáveis, orçamento familiar, frequência e progressão escolar, cuidado infantil. Não inferir renda artificial, prioridade por pobreza isolada, vaga garantida, extinção retroativa de dívida ou cobrança em viagem não realizada. Preferir atualização por evento/cobrança e não varredura global constante.
 
+## Revisão da rodada — auxílio continuado, pedidos persistentes e confirmação de tarifas (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** 1B e 7C são escolhas expressas do responsável; notas explicativas e comparações de IA exigem revisão proporcional. A pergunta 10 solicitou verificação, **não escolha de nova tarifa**.
+
+- **Auxílio-aluguel (1B):** o limite de verba **mensal real** escolhido na Prefeitura permite manter o apoio da mesma família por vários meses **sem prazo máximo por família**, mas somente enquanto elegível, após reavaliação mensal, com contrato e locador reais, política ligada, prioridade por risco e dinheiro efetivamente transferido. Sem caixa/verba, não há cobertura fictícia; se melhorar a renda, a elegibilidade deixa de valer. A antiga descrição «temporário com duração máxima» está superada **quanto ao teto de tempo**, não quanto à necessidade de reavaliação.
+- **Solicitações não resolvidas (7C):** pedidos efetivamente apresentados continuam consultáveis, mas são mostrados de modo compacto, agrupados por tema/área; situações graves podem continuar destacadas. Não encerrar pedidos por idade, não criar um aviso por SIM nem missão por pedido. Encerramento por **solução real** já estava aprovado e permanece separado.
+- **Creches e vans (2B da rodada):** a reavaliação da isenção **na próxima cobrança/uso após mudança econômica** já estava aprovada na SPEC em decisão chamada 1A. A alternativa de esperar até a virada do mês não corresponde à regra vigente.
+- **Água/energia (pergunta 10, só conferência):** a SPEC já exige cobrança por consumo real e preço unitário automático. Nenhuma opção de Grátis/Barata/Normal/Cara ou Baixa/Normal/Alta foi aprovada nesta rodada; o jogador segue controlando infraestrutura e verba pelas regras existentes. A antiga lista exploratória de tarifas editáveis **não define requisito**.
+
 ## Vans escolares: politica B aprovada e consequencias para a familia (2026-10-11)
 
 > **Revisão humana: REVISADO quanto ao B explicitamente escolhido.** A Prefeitura pode manter o serviço de van escolar **gratuito para todos** ou cobrar das famílias com capacidade econômica, **isentando as que não podem pagar**. Esta escolha substitui a hipótese ainda pendente de cobrança do transporte. O critério de capacidade econômica é o mesmo já aprovado para creches. A definição de valores e de situações de inadimplência permanece pendente de calibração/decisão curta antes do código.
