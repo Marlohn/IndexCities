@@ -6,6 +6,13 @@
 >
 > **Última reavaliação de avanço:** 2026-10-11, distinguindo **89% de maturidade de decisões do Convencional (nova linha de base)** e **81% de prontidão documental/técnica para integração (estimativa anterior)**; ambos são avaliações qualitativas ainda sem validação de jogo. **Pesquisa comparativa de base:** 2026-10-08. [Evidências e 24 frentes de investigação](genre-benchmark.md#pesquisa-transversal-ampliada--cidade-real-jogos-e-lacunas-de-gameplay-2026-10-08).
 
+## Fechamento das três decisões pós-auditoria (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** Foram promovidos à SPEC **1B creche com isenção a famílias sem capacidade real de pagar e informação de quantos são pobres**, **2A atendimento hospitalar gratuito mantido** e **3B teste de limite/financiamento de áreas por verbas monetárias reais**. A decisão anterior 5B creches grátis/pagas indistintamente foi substituída por 1B atual, não pelas quatro faixas “grátis/barato/normal/caro”.
+
+O **teto de auxílio-aluguel** que o usuário pediu explicar é **limite mensal específico de despesa efetivamente paga pelo programa**, separando autorização de transferência. **Contagem de pobreza e elegibilidade de creche** precisa partir de renda, dinheiro e gastos essenciais de SIMs/domicílios existentes, com indicador explícito, não porcentagem sintética; regra quantitativa a calibrar. **Vans por condição econômica** foram sugeridas, sem escolha definitiva. **Teste 3B** exige comparar custo devido/estimado, verba destinada e gasto pago, mantendo contratos/dívidas e capacidade física verdadeira. Não alterar porcentagens qualitativas históricas do projeto por esses refinamentos.
+
+
 ## Correção de rumo: validar valor das políticas antes de multiplicar sliders (2026-10-11)
 
 > **Pesquisa/opinião da IA: PENDENTE de revisão humana.** A direção humanamente aprovada de **mais agência estratégica do jogador** segue válida. Reanálise crítica: a IA foi excessivamente favorável a propor os mesmos níveis Grátis/Barato/Normal/Caro em todos os serviços; é preciso separar **preço**, **financiamento real**, **serviço essencial**, **demanda afetada**, **capacidade física** e **custos internos**. A pesquisa detalhada e recomendações divergentes estão em [Prefeitura](city-hall.md#reavaliacao-critica-das-tarifas-e-do-orcamento--pesquisa-e-parecer-independentes-2026-10-11).
