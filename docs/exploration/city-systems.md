@@ -15,6 +15,12 @@
 - **5A universidade:** candidatos reais elegíveis, incluindo adultos e jovens, disputam vagas efetivamente disponíveis **pela ordem de solicitação**; sem cotas por idade nem preferência automática por recém-formados. Não eliminar requisitos de etapa prévia, deslocamento, horários, frequência e capacidade; o restante segue a escolha automática de instituições.
 - **6A turismo:** catálogo dedicado inicial = **museu e mirante municipais**. Parques, praças, hotéis, comércio e lazer continuam seus tipos existentes e podem atrair/atender turistas reais. Outras atrações dedicadas não entram por associação com termos genéricos como «centro cultural», sem decisão expressa.
 
+## Confirmação 7A — cobertura policial automática sem prioridades manuais (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** O responsável confirmou a alternativa 7A, preservando as patrulhas físicas da decisão anterior 9B.
+
+A localização real das delegacias, policiais e viaturas disponíveis, ruas/tempos de deslocamento, ocorrências e riscos locais orientam **automaticamente** a cobertura policial. O jogador não precisa desenhar rotas ou assinalar bairros prioritários; aumentar ou reposicionar infraestrutura municipal disponível segue sendo escolha estratégica real. Não gerar bônus de segurança só por distância em linha reta até a delegacia.
+
 ## Atualizacao da gratuidade e fila de vans escolares — 1A/2A (2026-10-11)
 
 > **Revisão humana: DECIDIDO.** As respostas **1A e 2A** foram promovidas à SPEC. A antiga fila **24B apenas por ordem de pedido foi explicitamente substituída** pela prioridade de necessidade real; a regra 25A de rotas automáticas permanece.
