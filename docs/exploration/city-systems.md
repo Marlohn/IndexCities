@@ -52,7 +52,7 @@ O responsável pediu voltar a olhar **ônibus, estacionamento, atrações, assis
 
 ## Vans escolares e emergência externa — respostas da rodada de 30 (2026-10-11)
 
-> **Revisão humana desta seção: PARCIALMENTE REVISADO.** As escolhas **24B**, **25A** e **28C** foram confirmadas na SPEC; a **23A foi indicada inicialmente, mas a própria resposta solicitou reavaliar gratuidade como política da Prefeitura**. Portanto, **esta pendência histórica foi resolvida pela aprovação posterior B: gratuito para todos ou tarifa com isenção econômica**. A gratuidade das creches permanece decisão da SPEC até uma revisão explícita.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** Historicamente, as escolhas **24B**, **25A** e **28C** foram confirmadas; **24B foi posteriormente substituída pela revisão 2A**, enquanto 25A e 28C permanecem na SPEC; a **23A foi indicada inicialmente, mas a própria resposta solicitou reavaliar gratuidade como política da Prefeitura**. Portanto, **esta pendência histórica foi resolvida pela aprovação posterior B: gratuito para todos ou tarifa com isenção econômica**. A gratuidade das creches permanece decisão da SPEC até uma revisão explícita.
 
 - **24B — histórico, SUBSTITUÍDO pela decisão posterior 2A:** a ordem do pedido não é mais a prioridade principal quando faltam vans; priorizar dependência de transporte e usar ordem de pedido só para casos de necessidade equivalente. Não confundir matrícula escolar com reserva de assento na van.
 - **25A:** trajetos e atendimento das vans são montados automaticamente pela simulação, sem marcação de paradas por aluno pelo jogador. Checar reservas inviáveis e mudanças reais de horário sem varredura por frame.
