@@ -6,6 +6,16 @@
 >
 > **Última reavaliação de avanço:** 2026-10-11: **93% de maturidade das definições do Convencional** (antes 89%) e **83% de prontidão documental/técnica para integração** (antes 81%). Ambos são **estimativas qualitativas, não progresso de programação nem validação do jogo**. **Implementação do jogo verificável neste GitHub: 0%**, sem excluir trabalho externo. **Pesquisa comparativa de base:** 2026-10-08. [Evidências e 24 frentes de investigação](genre-benchmark.md#pesquisa-transversal-ampliada--cidade-real-jogos-e-lacunas-de-gameplay-2026-10-08).
 
+## Rodada seguinte: oito decisões e duas dúvidas sobre valor de novos controles (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** 1A, 2B, 3B, 4A, 5A, 6A, 8A e 9A são decisões explícitas e agora estão na SPEC. As perguntas **7 (polícia por região)** e **10 (prioridade editável de obras)** não receberam escolha A/B/C nem aprovação de funcionalidade.
+
+**Fechamentos concretos:** orçamento de serviço conserva limite mensal até mudança do jogador; compra versus aluguel comercial depende de viabilidade econômica; creche mantém atendimento real após inadimplência familiar quando ainda há capacidade, registrando dívida e receita apenas quando paga; empresa retém empregados viáveis ao mudar de ramo; universidade usa ordem de solicitação; atrações dedicadas iniciais são museu e mirante; caminhos exclusivos de pedestres ficam para depois; acesso de caminhões à carga/descarga respeita capacidade física e espera real.
+
+**Duas boas reduções de escopo:** a localização das delegacias, a movimentação de policiais e viaturas e o risco observado já oferecem escolhas espaciais; **controle manual de regiões policiais não foi aprovado**. Materiais entregues/consumidos não participam de filas futuras; **ordem inicial de criação de obras permanece**, e mudar prioridade manualmente é hipótese para testar utilidade, não requisito. Não inventar devolução de material, transferência de reserva irreversível ou cancelamento de compromissos para atender nova obra.
+
+**Percentuais históricos 89%/81% preservados**: respostas melhoram coerência descritiva, mas não são teste de economia, circulação e desempenho integrado. Prioridade real de implementação é validar os fluxos novos no jogo existente/integrado, não abrir entrevistas de parâmetros.
+
 ## Rodada de nove respostas e revisão de tarifas (2026-10-11)
 
 > **Revisão humana: PARCIALMENTE REVISADO quanto à documentação.** Escolhas 1B, 3C, 4A, 5A, 6B, 7C, 8A e 9A foram aprovadas e promovidas à SPEC; 2B apenas confirmou o comportamento já aprovado de isenção familiar na próxima cobrança/uso; **10 não foi decisão nova**. A água e energia permanece com tarifas unitárias automáticas e cobrança por consumo, enquanto a pergunta sobre o jogador controlar níveis tarifários não foi aprovada.
