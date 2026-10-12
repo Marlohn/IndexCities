@@ -6,6 +6,52 @@
 >
 > **Critério de leitura:** diferenciar mecânica observada em outro jogo, hipótese proposta para IndexCities, exigências já aprovadas na SPEC e vantagens alegadas/experiências comunitárias. Fontes oficiais/de desenvolvedores preferidas; wiki de fãs e comunidades rotuladas como tal. Jogos de épocas diferentes são comparados quanto ao *padrão de gameplay*, não copiados.
 
+## Reavaliação crítica das tarifas e do orçamento — pesquisa e parecer independentes (2026-10-11)
+
+> **Revisão humana: PENDENTE.** A pedido expresso do responsável, esta é uma **auditoria crítica da recomendação anterior da IA**, não mais uma rodada de aceitação automática de ideias. Todas as regras explicitamente aprovadas permanecem **vigentes na SPEC até uma substituição humana expressa**. Em especial, **1B ônibus, 2B estacionamento, 3B atrações, 4B auxílio, 5B creche e 11B orçamento continuam decisões oficiais** neste momento; recomendar reconsiderar 2B/3B/5B não as revoga. As perguntas 6–10 não foram confirmadas.
+
+### Hipótese anterior criticada
+
+A IA recomendou aplicar **Grátis / Barato / Normal / Caro** a quase todo serviço e sugeriu percentuais para o orçamento, acompanhando muito de perto a ideia do responsável. **Isso foi análise insuficiente.** Padrão de UI não implica equivalência econômica, legal e social dos serviços. Se o preço não altera acesso/demanda/contas significativamente, níveis extras são *sliders de decoração*. Se altera acesso a necessidade essencial, pode gerar uma barreira com impacto e custo de implementação desproporcionais. Um orçamento percentual também não deve criar *eficiência abstrata* sem empregados, insumos e capacidade efetivos. Separar **acessibilidade para criança construtora** de **opções avançadas relevantes para adulto**.
+
+### Parecer por política, NÃO APROVADO
+
+| Tema | Status no produto | Recomendação crítica IA | Cuidado sistêmico |
+| --- | --- | --- | --- |
+| Ônibus | **1B aprovado**, quatro faixas | **Manter provisoriamente** quatro opções, se preço mudar viagens, acesso ao emprego e Caixa; apresentação em menu é suficiente | Passageiro precisa pagar, capacidade/frequência dependem de ônibus/motorista/combustível, demanda não é fixa |
+| Estacionamento público | **2B aprovado**, quatro faixas | **Reconsiderar** se grátis/pago seria suficiente até haver escolha real entre vagas e outros modais | Sem mudança real de uso/ocupação, quatro preços só complicam |
+| Museus/atrações | **3B aprovado**, quatro faixas | **Reconsiderar** grátis/pago como modelo inicial; níveis pagos extras dependem de resposta real dos visitantes | Museu não é sistema econômico principal, receitas dependem de visitantes reais |
+| Auxílio-aluguel | **4B aprovado**, teto mensal | **Manter**, com painel de famílias atendidas, não atendidas e saídas reais | Limite de gasto não é receita nem direito garantido; pagamentos sempre ao locador |
+| Creche | **5B aprovado**, grátis/pago | **Reabrir antes de implementar**: mensalidade sem proteção para família pobre pode impedir trabalho parental e atendimento da criança; comparar grátis universal com cobrança ajustada por capacidade de pagar | Necessita regra explícita para quando falta saldo e devedor real; possível subsídio não aprovado |
+| Van escolar | Oferta física aprovada; tarifa em aberto | **Preferir gratuita** inicialmente, mantendo como escolha municipal disponibilizar/investir no serviço | Van/monitor/horários/assentos já trazem escassez; tarifa acrescenta barreira e custo causal |
+| Escola básica/média | **Gratuita**, cobrança nova não aprovada | **Manter gratuita** e investir em capacidade, docentes reais e acesso | Cobrança pode impedir comparecimento e progresso escolar, crianças sem saldo |
+| Universidade | **Gratuita**, cobrança nova não aprovada | **Discutir separadamente** eventual gratuidade ou contribuição, com proteção de oportunidade de ascensão e trabalho | Não atrelar política universitária automaticamente à escolar |
+| Hospitais | **Gratuitos**, cobrança nova não aprovada | **Manter atendimento sem cobrança**; decisões de capacidade, cobertura física e financiamento são mais úteis | Doença não é escolha de consumo; criar dívida/negação de urgência exige sistema novo |
+| Água/energia | Tarifas por consumo, valor automático | **Reconsiderar controle agregado limitado** de tarifa, mas não adotar gratis/barato/normal/caro automaticamente: proteger acesso, dívida já registrada e caixa | Se grátis, custo ao Caixa continua; se mais caro, inadimplência pode aumentar; demanda essencial pode reagir pouco no curto prazo |
+| Previdência | Contribuições/regras automáticas, sem ajuste do jogador | **Adiar a política editável** até haver simulação integrada e regra de direitos adquiridos/transição, pois qualquer slider afeta gerações e dívida municipal | Não trocar fórmula de benefício sem regra de validade temporal e obrigação já contraída |
+| Prioridade/orçamento municipal | **11B aprovado**, nível por área | **Manter agência estratégica, revisar representação**: preferir verbas/limites explícitos e custo real a slider “50–150% = eficiência” copiado | Obrigações vencidas e manutenção crítica não desaparecem com barra; dinheiro finito, funcionários e insumos reais |
+
+### Lição dos benchmarks
+
+- **Paradox Interactive, Cities: Skylines II — [City Services](https://www.paradoxinteractive.com/games/cities-skylines-ii/features/city-services-districts-policies):** separa *service fees* de orçamento e descreve a eficiência dos prédios variando com um controle de manutenção. **Adotar a separação conceitual, não criar multiplicador mágico de eficiência por percentual no IndexCities**.
+- **Paradox Interactive, [Economy 2.0](https://www.paradoxinteractive.com/games/cities-skylines-ii/news/dev-diary-economy-part-one):** os devs relatam que salvaguardas e fluxos pouco transparentes reduziam a percepção de controle; removeram subsídios de governo para devolver consequências. **Relevância:** agência é efeito observável e causa real, não número de controles.
+- **UITP, [Transporte público gratuito](https://www.uitp.org/publications/full-free-fare-public-transport-objectives-and-alternatives/):** tarifa zero ao usuário não elimina custo; serviço e infraestrutura permanecem centrais. Usar tarifas junto com frequência e frota reais.
+- **OCDE, [Educação e cuidado infantil](https://www.oecd.org/en/publications/reducing-inequalities-by-investing-in-early-childhood-education-and-care_b78f8b25-en/full-report/supporting-participation-in-early-childhood-education-and-care-for-all-children_3d65804a.html):** pagamento pode afastar famílias de baixa renda e alterar incentivo/possibilidade de trabalhar; cuidado infantil deve cruzar rotinas familiares e renda no jogo.
+- **OMS, [Financial Protection](https://www.who.int/health-topics/financial-protection) e [Free Health Care Policies](https://www.who.int/news-room/fact-sheets/detail/free-health-care-policies):** cobrança no ponto de atendimento pode impedir cuidado e causar dificuldade financeira. Não transforma a pesquisa em proibição de política, mas alerta que efeito no jogo exigiria consequências e casos-limite complexos.
+- **OCDE, [Tarifas de água e seus efeitos sociais](https://www.oecd.org/en/publications/addressing-the-social-consequences-of-tariffs-for-water-supply-and-sanitation_afede7d6-en.html):** recuperar custo versus acessibilidade é uma tensão real; conta alta para família não equivale automaticamente a menor consumo proporcional. Recurso não é produto discricionário como museu.
+- **Banco Mundial, [Abordagem de educação básica gratuita](https://documents.worldbank.org/curated/en/368451468340870142/pdf/471860NWP0Box31c0Education01PUBLIC1.pdf):** remover mensalidades amplia acesso, mas exige capacidade e financiamento reais para não prejudicar qualidade. Não inferir matrícula/frequência mágica quando grátis.
+
+### Recomendações de sequência e teste de valor
+
+1. **Decisão de princípio:** em serviços essenciais e de cuidado, o jogador influencia principalmente **investimento, cobertura e financiamento**, enquanto **preços são escolhas mais apropriadas para transporte, estacionamento, atrações e utilidades**, com cuidado econômico. Não criar taxa somente para oferecer escolha.
+2. **Reconsiderar decisões recentes** de estacionamento 2B, atrações 3B e creche 5B em bloco separado, com opções claras e consequências; **manter 1B ônibus, 4B assistência e direção 11B com validação**, sem tratar isso como aprovação final.
+3. **Não tratar “Grátis/Barato/Normal/Caro” como requisito transversal.** Mesmo que o layout do controle seja reutilizado, a pergunta precisa identificar quem usa, quando paga, quem fica sem atendimento e qual problema o jogador resolve.
+4. **Orçamento:** antes de especificar uma barra de 50–150%, definir o que 100% significa em dinheiro e capacidade, se a prioridade afeta verba discricionária ou interrompe contratos/obrigações, e como concilia proteção dos serviços essenciais e dos benefícios previdenciários com a escolha do jogador. Mostrar **plano, gasto real, receita, saldo comprometido e não atendidos** na mesma página.
+5. **Estudo/experiência mínima:** pedir ao jogador para resolver um caso concreto (ônibus lotados; creches que atrapalham trabalho; hospital sem médico; família endividada com água; Caixa deficitário) e observar se o controle muda resultado físico/econômico. Se não mudar, eliminar a política ou substituí-la por construção/investimento visível.
+
+**Não ajustar números percentuais, valor de tarifas, proteção de renda, desenho de slider ou conjunto oficial de políticas só com esta análise.** A próxima conversa deve primeiro discutir os **princípios** e reabrir apenas opções de alto valor, em vez de começar outra entrevista de 30 perguntas por inércia.
+
+
 ## Revisão de tarifas e orçamento por controles do jogador — respostas 1–11 (2026-10-11)
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** Escolhas **1B, 2B, 3B, 4B, 5B e 11B foram aprovadas** e registradas na SPEC. As perguntas **6, 7, 8, 9 e 10 continuam abertas**; a preferência expressa por uma interface padronizada é pesquisa/direção de UX, **não confirmação de cobrança nas cinco áreas**.
