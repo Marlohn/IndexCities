@@ -6,6 +6,12 @@
 >
 > **Critério de leitura:** diferenciar mecânica observada em outro jogo, hipótese proposta para IndexCities, exigências já aprovadas na SPEC e vantagens alegadas/experiências comunitárias. Fontes oficiais/de desenvolvedores preferidas; wiki de fãs e comunidades rotuladas como tal. Jogos de épocas diferentes são comparados quanto ao *padrão de gameplay*, não copiados.
 
+## Atualizacao aprovada: isencao no proximo uso e prioridade real nas vans (2026-10-11)
+
+> **Revisão humana: DECIDIDO.** O responsável escolheu **1A** para reavaliar gratuidade de creches/vans na próxima cobrança ou uso concreto após mudança na condição financeira, e **2A** para dar prioridade em vans lotadas a quem não possui deslocamento alternativo viável. O **24B anterior (apenas ordem de solicitação) foi SUBSTITUÍDO**; a ordem permanece apenas em empate de necessidade. As duas regras estão na SPEC.
+
+**No painel da Prefeitura:** distinguir pobreza real, famílias e crianças isentas, viagens solicitadas/atendidas/negadas, causas físicas da falta de serviço, gasto público e receita recebida. Consequências reais: trabalho dos responsáveis, orçamento familiar, frequência e progressão escolar, cuidado infantil. Não inferir renda artificial, prioridade por pobreza isolada, vaga garantida, extinção retroativa de dívida ou cobrança em viagem não realizada. Preferir atualização por evento/cobrança e não varredura global constante.
+
 ## Vans escolares: politica B aprovada e consequencias para a familia (2026-10-11)
 
 > **Revisão humana: REVISADO quanto ao B explicitamente escolhido.** A Prefeitura pode manter o serviço de van escolar **gratuito para todos** ou cobrar das famílias com capacidade econômica, **isentando as que não podem pagar**. Esta escolha substitui a hipótese ainda pendente de cobrança do transporte. O critério de capacidade econômica é o mesmo já aprovado para creches. A definição de valores e de situações de inadimplência permanece pendente de calibração/decisão curta antes do código.
@@ -17,7 +23,7 @@
 - frequência escolar efetiva, acesso real à creche e consequência indireta para horas de trabalho, renda e situação familiar;
 - situação financeira da família utilizada na análise de elegibilidade (quantidade real de SIMs/famílias em pobreza e de famílias elegíveis à isenção), sem números demográficos fictícios.
 
-**Não confundir:** a política financeira não cria novas vans, vagas nem transportes. A prioridade aprovada da fila de pedidos por ordem (24B) continua em vigor; a gratuidade não garante serviço sem capacidade física. A ação do jogador é a **política agregada**, não decidir cada embarque. Valores/critério temporal da elegibilidade, saldo insuficiente inesperado e cobranças atrasadas são **casos a resolver coerentemente**.
+**Não confundir:** a política financeira não cria novas vans, vagas nem transportes. A prioridade anterior por ordem (24B) foi **substituída pela revisão 2A**, que prioriza dependência real e usa ordem só em empate; a gratuidade não garante serviço sem capacidade física. A ação do jogador é a **política agregada**, não decidir cada embarque. Valores/critério temporal da elegibilidade, saldo insuficiente inesperado e cobranças atrasadas são **casos a resolver coerentemente**.
 
 ## Decisões posteriores: creche por condição financeira e orçamento real em teste (2026-10-11)
 
