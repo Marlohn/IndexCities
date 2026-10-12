@@ -4,7 +4,7 @@
 
 ## Aplicação à primeira versão jogável (2026-10-12)
 
-> **Revisão humana desta seção: PENDENTE.** Para a colaboração entre IAs, o inventário candidato, a separação de trabalho em duas ondas e as interfaces visuais/funcionais estão no [briefing de assets V1](first-playable-assets.md); o recorte que os motiva está em [first-playable-scope.md](first-playable-scope.md). **Ainda não são um catálogo de produto nem pipeline aprovado pelo responsável.**
+> **Revisão humana desta seção: PENDENTE.** Para a colaboração entre IAs, o inventário de famílias visuais e as duas ondas sugeridas estão no [briefing de assets V1](first-playable-assets.md); o **recorte funcional foi aprovado em 2026-10-12 na SPEC** e está explicado em [first-playable-scope.md](first-playable-scope.md). **Ferramenta de autoria, quantidade de variantes, medidas e pipeline continuam recomendações de IA pendentes**, não decisões humanas.
 
 A IA de arte pode começar **imediatamente** pela direção visual original, amostra pequena e proposta de escala/pivôs/acessos. A IA integradora precisa pactuar cedo esse contrato; produção dimensional em lote só após a amostra funcionar no jogo. Não usar/copy-portar recursos de outros projetos, inclusive do teste visual externo descrito abaixo. Este documento continua sendo pesquisa de opções, não ordem para adotar Godot procedural, Blender, GLB ou outra ferramenta.
 
