@@ -4,6 +4,17 @@
 >
 > Ele não é fonte de verdade do produto. Decisões oficiais de produto pertencem a [SPEC.md](SPEC.md), decisões estruturais a [ARCHITECTURE.md](ARCHITECTURE.md) e regras de trabalho a [../AGENTS.md](../AGENTS.md).
 
+## Auditoria crítica da Prefeitura — reinício da avaliação (2026-10-11)
+
+> **Revisão humana: PENDENTE.** O responsável apontou que as recomendações anteriores de aplicar quatro faixas de preço a quase todos os serviços foram excessivamente concordantes e pediu uma **pesquisa com opinião crítica independente, incluindo revisão de escolhas já aprovadas**. O parecer de pesquisa está em [Prefeitura — reavaliação crítica](exploration/city-hall.md#reavaliacao-critica-das-tarifas-e-do-orcamento--pesquisa-e-parecer-independentes-2026-10-11).
+
+**Diagnóstico:** padronizar o **visual** de controles não implica padronizar a **política econômica** de museu, ônibus, água, creche, escola e hospital. Cobrar mais nem sempre gera mais receita; atendimento essencial pode ser barrado sem criar gameplay bom; barra de 50–150% de orçamento não pode converter porcentagem diretamente em capacidade/médicos. Usar evidências de Paradox, UITP, OCDE, OMS e Banco Mundial, sem importar suas mecânicas como requisitos.
+
+**Nova recomendação de IA, ainda NÃO aprovada:** manter como boas direções 1B tarifa ônibus com efeito em mobilidade, 4B teto real de auxílio e controle agregado 11B com gastos detalhados; **reconsiderar a necessidade** das quatro faixas aprovadas para estacionamento 2B e atrações 3B; **reconsiderar 5B creche paga sem proteção por renda**; preferir van escolar e educação básica gratuitas inicialmente, hospitais sem tarifa de entrada, universidade como discussão separada; água/energia com preços agregados mas sem gratuidade universal automática; adiar controle previdenciário até tratar direitos adquiridos. Reabrir 2B/3B/5B exige decisão expressa posterior; **todas permanecem atualmente na SPEC**, não alterada por esta pesquisa.
+
+**Próximo passo:** discutir primeiro o princípio **quais escolhas melhoram causalidade e agência**, em seguida casos concretos de cobrança e financiamento, evitando criar sliders que só mudam números sem consequências físicas. O parecer mais recente da IA **substitui recomendações anteriores da IA**, não aprova revisão de produto por conta própria.
+
+
 ## Rodada de políticas — respostas 1–11 e proposta de sliders (2026-10-11)
 
 > **Revisão humana: PARCIALMENTE REVISADO.** As escolhas **1B, 2B, 3B, 4B, 5B e 11B** estão na SPEC; **6–9 seguem em revisão quanto a padronizar tarifa Grátis/Barato/Normal/Caro; 10 (previdência) foi deixada para análise posterior.** Desenho de slider e intervalos numéricos são hipóteses da IA ainda PENDENTES.
