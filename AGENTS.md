@@ -48,6 +48,10 @@ Quando um documento misturar conteúdo com estados diferentes, use o estado agre
 
 O objetivo é simples: a IA pode pesquisar, propor, comparar e documentar, mas **não decide pelo responsável**. A auditoria deve tornar evidente o que ainda precisa de leitura/discussão humana antes de ganhar autoridade.
 
+**Regra operacional geral para qualquer documento ou trecho não aprovado por humano:** conteúdo marcado **PENDENTE** ou a parte não revisada de material **PARCIALMENTE REVISADO** serve somente de informação para avaliar. Não é requisito, decisão, backlog, plano obrigatório, instrução para agentes, recomendação aceita, autorização de implementação, autorização de copiar recursos nem aprovação tácita — **mesmo que o texto use verbos como "implementar", "usar", "adaptar", "reaproveitar", "importar", "priorizar" ou "próxima etapa"**. Um documento histórico sem status explícito também não ganha aprovação por omissão: conferir a decisão humana e a fonte canônica antes de agir. O rótulo **REVISADO** indica revisão humana do conteúdo, não promove automaticamente cada ideia citada a requisito; para comportamento de produto, vale a SPEC, e para arquitetura, a ARCHITECTURE. Decisões pontuais já confirmadas pelo responsável e registradas na fonte canônica continuam válidas independentemente do status agregado do documento exploratório.
+
+Ao atualizar exploração pendente, escrever hipóteses e possibilidades como **opções de estudo**, não como ordens de execução. Quando uma pesquisa anterior sugeriu copiar, portar ou usar algo sem aprovação, corrigir sua linguagem e não iniciar essa ação. A autonomia técnica do agente segue válida **dentro das decisões canônicas**, mas não permite inferir autorização de reutilização de acervos externos ou antigos.
+
 ## Fluxo contínuo de conversa e documentação
 
 Durante conversas de exploração ou definição com o responsável pelo projeto:
@@ -188,7 +192,9 @@ Antes de criar um novo arquivo:
 
 Nada de outro projeto, protótipo, conversa antiga ou implementação anterior vale automaticamente no IndexCities.
 
-Material externo pode ser consultado como pesquisa quando ajudar, mas qualquer conceito só vira requisito daqui depois de ser reavaliado e decidido para este projeto.
+**Diretriz expressa do responsável sobre o CityBuilder:** o IndexCities nasce do zero, e **não deve copiar, portar, importar nem reutilizar diretamente nada do repositório CityBuilder**, incluindo código-fonte, algoritmos em forma de implementação, testes, arquivos, assets/modelos 3D, texturas, dados, configurações, interfaces, pipelines e documentos. O CityBuilder pode ser lido **somente como material de pesquisa e aprendizado**: identificar alternativas, erros, limitações, práticas e perguntas úteis para chegar a **soluções novas, próprias e coerentes com a SPEC**. Nem licença permissiva, nem aparente compatibilidade, nem recomendação num documento de exploração constituem autorização de reutilização. Qualquer eventual exceção futura exigiria decisão humana **expressa e específica**; não presumir que o responsável deseja reaproveitar os assets ou qualquer outro componente.
+
+Material externo ou histórico pode ser consultado como pesquisa quando ajudar, mas **não** deve ser herdado como funcionalidade, arquitetura, dependência, recurso ou plano de implementação. Qualquer novo conceito de produto só vira requisito daqui depois de ser reavaliado, expressamente decidido pelo responsável e registrado na SPEC; decisões estruturais seguem a ARCHITECTURE. **Esta distinção vale para todos os documentos exploratórios ainda não aprovados por humano, não apenas para a auditoria do CityBuilder.**
 
 ### Evolução futura
 
