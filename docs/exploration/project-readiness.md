@@ -6,6 +6,15 @@
 >
 > **Última reavaliação de avanço:** 2026-10-11, distinguindo **89% de maturidade de decisões do Convencional (nova linha de base)** e **81% de prontidão documental/técnica para integração (estimativa anterior)**; ambos são avaliações qualitativas ainda sem validação de jogo. **Pesquisa comparativa de base:** 2026-10-08. [Evidências e 24 frentes de investigação](genre-benchmark.md#pesquisa-transversal-ampliada--cidade-real-jogos-e-lacunas-de-gameplay-2026-10-08).
 
+## Resposta da rodada municipal e pendências 6–10 (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** Foram aprovadas para SPEC as opções **1B** (tarifa ônibus em quatro faixas), **2B** (tarifa estacionamento municipal em quatro faixas), **3B** (ingressos em quatro faixas), **4B** (limite mensal de despesa do auxílio-aluguel definido pelo jogador), **5B** (política creche grátis/paga) e **11B** (financiamento/prioridade por áreas de serviço e gastos reais na mesma tela). Não confundir com pendências sobre **6–9** (pergunta do responsável: por que não aplicar exatamente os quatro níveis?) ou **10** (previdência exige pensar melhor).
+
+**Maior ganho:** controla preços e prioridades econômicas que mudam escolhas de SIMs e saldo real, sem configurar cada atendido. **Maior risco:** padronizar visualmente quatro níveis de pagamento mas **não analisar custo de excluir criança da escola ou paciente do hospital**; a UX padronizada não substitui decisão sobre cobrança, devedor, inadimplência e acesso. Água/energia gratuita exige que o Caixa subsidie consumo real sem duplicar despesa; manter a regra antiga de consumo e sem corte individual até revisão explícita.
+
+**Detalhes para testes e calibração, não nova rodada de decisões salvo efeito relevante:** intervalo do slider de financiamento, interpretação do percentual versus custos de referência, limites de gastos essenciais/obrigações, valor real de cada faixa paga, efeito do preço sobre demanda, consistência entre teto de programa e alocação de orçamento, agregação em mesmo painel de custo/receita/atendimento. Manter a estimativa qualitativa 89% do Convencional e 81% técnico como linha de base histórica, sem recalcular só por ter respostas novas. [Pesquisa](city-hall.md#revisao-de-tarifas-e-orcamento-por-controles-do-jogador--respostas-111-2026-10-11).
+
+
 ## Reavaliação orientada a agência municipal e fechamento P3/P4 (2026-10-11)
 
 > **Revisão humana: PARCIALMENTE REVISADO** quanto à preferência por mais decisões coletivas na Prefeitura e às escolhas P3C/P4A; análise de prioridade de IA **PENDENTE**. **Estimativas 89%/81% anteriores não foram recalculadas**: revisão das regras já fechadas não é progresso linear por contagem de perguntas.
