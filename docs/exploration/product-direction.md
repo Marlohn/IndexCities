@@ -8,6 +8,12 @@
 >
 > Reúne a direção geral do jogo, questões de identidade/loop, princípios de profundidade sistêmica, legibilidade e microgerenciamento. Quando um trecho já foi promovido para a SPEC ou para AGENTS, ele permanece aqui apenas como histórico e justificativa.
 
+## Exibição seletiva de desafios opcionais simultâneos — escolha 8A (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** A escolha de destacar poucos desafios reais relevantes sem esconder os outros foi expressamente aprovada. Critérios quantitativos e apresentação ainda demandam teste visual.
+
+Quando vários desafios emergentes nascerem de condições reais de cidade/bairros, somente **alguns dos mais relevantes** recebem destaque discreto; todos os demais **permanecem acessíveis no painel opcional**. Isso não adiciona metas obrigatórias nem recompensas, não substitui diagnósticos urgentes e não exige que uma criança construtora leia/feche cartões para construir. A seleção deve reutilizar gravidade, persistência e sinais que a simulação já registra; não inventar importância artificial nem varrer todos os SIMs por quadro. Número exato e ordenação são calibração de interface.
+
 ## Como ler este documento
 
 Este arquivo é material de exploração temática. Quando houver divergência, use:
