@@ -65,15 +65,11 @@ Um bug cujo comportamento correto já está claro na SPEC pode ser corrigido usa
 
 **Referência exploratória nova — revisão humana desta nota: PENDENTE.** O GitHub Spec Kit diferencia modelos em que a especificação é descartada após o código, preservada como âncora de mudanças futuras ou mantida como contrato vivo atualizado antes das mudanças. O IndexCities usa a SPEC persistente e viva, mas **não adota o framework** nem artefatos adicionais por isso. Referências: [Spec Persistence Models](https://github.com/github/spec-kit/blob/main/docs/concepts/spec-persistence.md) e [Spec Kit](https://github.github.com/spec-kit/). Essas referências servem como contexto de pesquisa, não como novas regras.
 
-### Primeira entrega integrada — direção confirmada
+### Entrega integrada — decisão histórica substituída por desenvolvimento incremental
 
-> **Revisão humana desta seção:** PARCIALMENTE REVISADO — o responsável confirmou **SPEC antes do desenvolvimento**, **primeira implementação integrada** e **validação global posterior**; as considerações técnicas abaixo ainda não foram revisadas integralmente.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** Houve uma decisão anterior de desenvolver o conjunto integrado e concentrar a validação principal depois de concluído. **Essa orientação de esperar o conjunto completo foi substituída em 2026-10-11 por outra decisão expressa do responsável:** produzir **versões menores, integradas e jogáveis**, testando gameplay e consequências reais desde cedo. As regras vigentes estão em [AGENTS.md](../../AGENTS.md), [SPEC](../SPEC.md) e [ARCHITECTURE](../ARCHITECTURE.md). Esta seção é somente contexto histórico, **não instrução de trabalho**.
 
-**Decidido (regras vigentes em `AGENTS.md`):** não existe roteiro obrigatório de POCs de produção, economia, interface, mapa ou outro sistema. A primeira entrega busca integrar o produto conforme a SPEC; a validação principal de gameplay e interação entre sistemas considera o **conjunto funcional**. Recomendações antigas de "primeira POC" em documentos temáticos são pesquisa histórica, não cortes de escopo autorizados.
-
-**Distinção importante:** entrega integrada **não exige todo o código num único commit nem desenvolvimento sem qualquer teste até o final**. Incrementos técnicos, verificações e testes proporcionais ao risco podem ocorrer durante a implementação. Isso não cria POCs de produto nem marcos burocráticos; ajuda a evitar erros difíceis de localizar na integração global.
-
-**Risco a acompanhar (análise ainda pendente):** integrar muitos sistemas profundos sem observar suas interações pode encarecer correções. Preservar invariantes e diagnóstico causal durante a implementação, sem trocar a estratégia de entrega integrada por etapas de produto isoladas.
+A intenção que permanece é **não impor POCs isoladas obrigatórias** e **não substituir a simulação aprovada por dinheiro, agentes, materiais ou efeitos fictícios**. O recorte de cada versão — inclusive o primeiro — requer aprovação humana na SPEC antes do código dependente. As decisões futuras da visão completa continuam preservadas na SPEC; elas não precisam estar todas implementadas para que o primeiro ciclo possa ser jogado, observado e corrigido.
 
 ### Princípio de evolução
 
