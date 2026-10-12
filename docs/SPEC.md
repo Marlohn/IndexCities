@@ -30,6 +30,7 @@ O IndexCities está em **preparação para a primeira implementação**. O desen
 - **Sem fingir integração:** nas funcionalidades que entram na entrega, preservar as regras de dinheiro, propriedade, materiais, trabalho, produção, deslocamento, capacidade e causalidade pertinentes. Não substituir obrigações reais por saldo, agentes, entregas ou efeitos mágicos para produzir uma demo. Redução do **catálogo e dos casos cobertos** pode ser proposta, mas requer delimitação aprovada; placeholders visuais e experimentos técnicos isolados são permitidos quando não falsificarem gameplay incorporada.
 - **Validação desde os primeiros ciclos:** verificar interações reais entre sistemas, diagnóstico de causas, save/load quando fizer parte do recorte, desempenho proporcional e a experiência de construir e observar, inclusive com pessoas que ainda não leem. Não aguardar todo o escopo futuro ficar pronto para testar jogabilidade e integração; POCs isoladas continuam opcionais.
 - **Mudança de escopo entre versões:** o conteúdo exato de cada versão jogável deve estar explicitamente aprovado e registrado nesta SPEC **antes da implementação dependente**. A IA pode propor recortes na exploração, mas não aprovar sozinha a inclusão/exclusão de sistemas ou a remoção de regras. Não é necessário criar uma segunda SPEC ou burocracia de aprovação por tarefa.
+- **Leitura das regras históricas:** expressões como *modelo inicial*, *primeira implementação* ou *primeira versão*, dentro de uma seção temática, descrevem o comportamento inicial **quando aquele sistema entrar numa entrega aprovada**; não adicionam automaticamente esse sistema à V0.1. Caso uma regra explicite dependência real entre sistemas, respeitar a dependência antes de integrar o comportamento. Se houver dúvida material, esclarecer o recorte na SPEC, sem reescrever silenciosamente decisões antigas.
 
 **Primeira versão jogável:** **recorte ainda pendente de definição e aprovação humana** após mapear dependências da SPEC. Nenhum exemplo de ciclo inicial escrito na exploração é automaticamente uma lista de funcionalidades obrigatórias.
 
@@ -46,6 +47,10 @@ O IndexCities está em **preparação para a primeira implementação**. O desen
 ### Registro de decisões delegadas
 
 *Nenhuma decisão de produto tomada autonomamente por IA foi registrada sob esta delegação até o momento.* Adicionar novas entradas no formato compacto: `IA-001 — [área] comportamento concreto; motivo; status: PENDENTE DE REVISÃO HUMANA`. Numeração única e crescente; não reutilizar identificadores.
+
+## Navegação rápida da especificação
+
+Para implementar uma mudança, leia primeiro **Estado atual**, **Regras da SPEC**, **Estratégia de entregas integradas** e o registro de decisões delegadas; depois localize as **seções temáticas pertinentes** em *Decisões de produto confirmadas*. Confira também as consequências nos sistemas dependentes, sem precisar carregar todos os temas não relacionados em cada tarefa. A divisão por títulos facilita busca e leitura seletiva, mas **não revoga regras transversais**.
 
 ## Fora de escopo automático
 
