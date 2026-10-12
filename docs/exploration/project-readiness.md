@@ -4,7 +4,7 @@
 >
 > **Status:** instrumento de orientação para definição progressiva do produto e planejamento técnico, **não é fonte de verdade** nem checklist obrigatório de implementação.
 >
-> **Última reavaliação de avanço:** 2026-10-11, distinguindo **89% de maturidade de decisões do Convencional (nova linha de base)** e **81% de prontidão documental/técnica para integração (estimativa anterior)**; ambos são avaliações qualitativas ainda sem validação de jogo. **Pesquisa comparativa de base:** 2026-10-08. [Evidências e 24 frentes de investigação](genre-benchmark.md#pesquisa-transversal-ampliada--cidade-real-jogos-e-lacunas-de-gameplay-2026-10-08).
+> **Última reavaliação de avanço:** 2026-10-11: **93% de maturidade das definições do Convencional** (antes 89%) e **83% de prontidão documental/técnica para integração** (antes 81%). Ambos são **estimativas qualitativas, não progresso de programação nem validação do jogo**. **Implementação do jogo verificável neste GitHub: 0%**, sem excluir trabalho externo. **Pesquisa comparativa de base:** 2026-10-08. [Evidências e 24 frentes de investigação](genre-benchmark.md#pesquisa-transversal-ampliada--cidade-real-jogos-e-lacunas-de-gameplay-2026-10-08).
 
 ## Rodada de nove respostas e revisão de tarifas (2026-10-11)
 
@@ -217,71 +217,71 @@ As prioridades são **orientação revisável**, não um impedimento para experi
 
 ---
 
-## Diagnóstico de avanço — definições de produto vs. prontidão técnica (2026-10-11)
+## Diagnóstico de avanço — reestimativa por evidências atuais (2026-10-11)
 
-> **Revisão humana desta seção: PENDENTE.** As estimativas, classificação de pendências e interpretação a seguir são avaliação da IA, **não** decisão de produto, medida exata de cobertura ou validação aceita pelo responsável.
+> **Revisão humana: PENDENTE.** Percentuais são **estimativas qualitativas de IA**, com critérios e contas reproduzíveis abaixo, **não** medições precisas de trabalho concluído nem aprovação de novos requisitos. A comparação utiliza a SPEC/AGENTS/ARCHITECTURE/EXPLORATION mais recentes e o estado público verificável do repositório. **Modo Criativo adiado fora do escopo.**
 
-### Leitura rápida: dois números que medem coisas diferentes
+### Resumo atualizado — cada número responde a uma pergunta diferente
 
-- **89% — estimativa de maturidade das definições de produto do modo Convencional**, isto é, até que ponto as regras centrais e as principais consequências de gameplay já têm direção aprovada na [SPEC](../SPEC.md). **Este é o número mais adequado para acompanhar o progresso das rodadas de perguntas.**
-- **81% — índice anterior de prontidão documental/técnica para avançar à integração e validação**, que leva em conta também riscos de engenharia, desempenho, interface e ausência de evidências do jogo funcionando. **Não substitui nem contradiz os 89%**, pois mede outra dimensão.
-- **0% de implementação do jogo verificada na árvore do GitHub nesta auditoria**: somente arquivos de documentação/administrativos foram encontrados; isso **não** afirma inexistência de trabalho fora do repositório.
+| Indicador | Linha de base anterior | Revisão atual | O que significa |
+| --- | ---: | ---: | --- |
+| **Definições de produto do Convencional** | 89% | **93%** | Direção, regras importantes e efeitos de gameplay **documentados e aprovados** na SPEC |
+| **Prontidão documental/técnica para integrar** | 81% | **83%** | Clareza estrutural e das dependências para começar/integrar; **não significa jogo pronto** |
+| **Implementação do jogo verificada neste repositório** | 0% | **0% verificável** | A ARCHITECTURE/README ainda dizem que não existe implementação de jogo e a pesquisa no GitHub não encontrou `project.godot`/scripts; pode existir trabalho em outros locais |
 
-**Não comparar diretamente 75% → 89% como crescimento do mesmo indicador.** Os **75% históricos (2026-10-08)** e os **81% (11/10)** pertencem à família de estimativas de prontidão para integração, com pesos/revisões não estritamente comparáveis. Os **89% são a primeira linha de base de maturidade das decisões de produto**, não recontagem objetiva de todas as perguntas possíveis. Não é necessário nem realista definir 100% dos pormenores antes do desenvolvimento.
+**Por que o primeiro índice subiu mais:** depois da linha de base anterior, foram fechadas decisões que afetavam diretamente o jogo: política municipal de creche/van com isenção financeira, atualização da elegibilidade quando a renda muda, prioridade real na fila das vans, hospitais públicos gratuitos, controle de **verba monetária** em teste, auxílio-aluguel com limite mensal e **sem prazo máximo fixo por família**, logística de obra cancelada por propriedade legítima, serviços de emergência externos mais explícitos, locação e unidades de prédios mistos, entre outras. A SPEC e explorações também tiveram conflitos corrigidos. **Não converter quantidade de perguntas respondidas em porcentagem:** ganhos dependem de importância e integração das regras, não de volume textual.
 
-**Evidência concreta de avanço em 2026-10-11:** a leitura atual da SPEC encontrou **75 itens de regra cujo título associa 2026-10-11 a escolha, aprovação, confirmação ou decisão**. Contagem reproduzível: linhas de item iniciadas por `- **`, com data `2026-10-11` e termos de escolha/aprovação no primeiro título destacado. **Não são 75 perguntas independentes:** há desdobramentos da mesma escolha, reafirmações, uma decisão de adiamento e regras que registram ajustes de decisões anteriores. Mesmo com essas ressalvas, o volume mostra por que o antigo percentual de prontidão subrepresentava o progresso das entrevistas. Exemplos: Prefeitura e participação; locação comercial, edifícios mistos e transferências entre filiais; creches, vans, educação e famílias; previdência e transparência dos gastos municipais; ferramentas visuais, decoração, mapas temáticos e mobilidade.
+**Por que o técnico subiu pouco:** esclarecer fluxos ajuda a implementar, mas **nenhum teste de gameplay integrado, benchmark de desempenho, avaliação infantil de UX ou partida executável foi demonstrado no repositório**. A confiança técnica não pode crescer na mesma velocidade das entrevistas. **Não confundir 83% de prontidão documental/técnica com 83% de desenvolvimento concluído.**
 
-### 1. Maturidade das definições de produto — indicador principal das entrevistas
+### 1. Maturidade de produto — 10 blocos, mesmo peso
 
-**Método explícito e proporcional:** dividir **apenas o Convencional atual** em 10 macroblocos estáveis de produto, avaliar de 0 a 100 a presença de (a) direção oficial de comportamento, (b) regras centrais e impactos causais na SPEC e (c) exceções de gameplay realmente necessárias antes do código dependente. Cada bloco recebe **o mesmo peso** para que volume de texto, quantidade de perguntas ou dificuldade técnica não faça uma área dominar o progresso de definição. A nota é **julgamento qualitativo por bloco, não fração matemática de decisões contadas**; revisar quando surgir mudança material de escopo ou lacuna relevante, e não após cada resposta isolada.
+**Método:** para cada macrobloco do modo Convencional, pontuar de 0 a 100 se (a) a direção do comportamento está oficial na SPEC, (b) regras essenciais e consequências humanas/físicas/econômicas estão coerentes e (c) não restam lacunas de gameplay graves para o primeiro código pertinente. Mesmos 10 blocos e pesos da linha de base, para facilitar comparação. **Julgamento qualitativo por domínio**, não fração de tarefas.
 
-| Bloco de produto (Convencional) | Definição estimada | Evidências e ressalvas |
-| --- | ---: | --- |
-| Conceito, progressão e tempo de jogo | 95% | Sandbox Convencional, calendário e desafios decididos; gatilhos finos e ritmo ficam para definição/calibração. |
-| Mapa, construção e ferramentas | 90% | Posicionamento, obras, logística de construção e interação visual decididos; exceções e ergonomia a validar. |
-| Economia, Caixa e previdência | 95% | Dinheiro conservado, tributos, pagamentos, insolvência e benefícios definidos; valores e convivência de obrigações a ajustar. |
-| Empresas, produção e imóveis comerciais | 85% | Operação, estoque, múltiplas unidades e locação comercial aprovados; inadimplência/saída da locação e ativos mistos a concluir. |
-| SIMs, famílias, moradia e patrimônio | 90% | Ciclo familiar, residência, herança, migração e trabalho definidos; casos de transição e benefícios ainda a ajustar. |
-| Educação, saúde, segurança e serviços | 90% | Capacidade real, frequência escolar, creches, vans, saúde e emergências aprovadas; operação fina e atendimento a calibrar. |
-| Prefeitura, participação e políticas | 80% | Gestão, pedidos/opiniões reais e políticas iniciais decididos; ciclo dos pedidos e regras essenciais de alguns programas abertos. |
-| Mobilidade, trânsito e transporte | 90% | Rede, ônibus, carros, caronas, tráfego e circulação definidos; táxis, itinerários e capacidade exigem ajustes específicos. |
-| Água, energia, resíduos e ambiente | 85% | Capacidade/escassez, poluição, lixo e atividades produtivas aprovados; efeitos ambientais e parâmetros a testar. |
-| Interface, diagnóstico, saves e experiência | 90% | Leitura em camadas, visual para quem não lê, mapas temáticos, rastreabilidade e persistência decididos; UX real a validar. |
+| Macrobloco | Anterior | Novo | Evidência e limite |
+| --- | ---: | ---: | --- |
+| Conceito, progressão e tempo | 95% | **96%** | Sandbox, objetivos opcionais e tempo definidos; ritmo exato em calibração. |
+| Mapa, construção e ferramentas | 90% | **92%** | Obras, materiais, entregas e posicionamento decididos; UX e integração ainda não testadas. |
+| Economia, Caixa e previdência | 95% | **96%** | Dinheiro, obrigações, impostos, previdência e ajuda ao aluguel coerentes; parâmetros e falhas reais a calibrar. |
+| Empresas, produção e imóveis | 85% | **91%** | Locação comercial, unidades mistas e saída/insolvência esclarecidas; situações cruzadas exigem validação. |
+| SIMs, famílias e patrimônio | 90% | **94%** | Trabalho, migração, moradia, herança e reações familiares bem cobertos; transições complexas a testar. |
+| Educação, saúde e serviços públicos | 90% | **95%** | Gratuidade hospitalar, creches, vans, frequência e socorro reais definidos; operação combinada a testar. |
+| Prefeitura, políticas e participação | 80% | **94%** | Preços, verbas reais em teste, pedidos, participação, programas e transparência já decididos; validar utilidade dos controles. |
+| Mobilidade e trânsito | 90% | **93%** | Ônibus, filas de vans, veículos e roteamento definidos; oferta específica de táxis e capacidade a detalhar quando necessário. |
+| Água, energia, resíduos e ambiente | 85% | **88%** | Produção/consumo, inadimplência e escassez definidos; efeitos e desempenho da infraestrutura ainda a verificar. |
+| Interface, saves e experiência | 90% | **93%** | Interfaces em camadas, construção com pouca leitura e diagnóstico aprovados; testes de uso inexistentes. |
 
-**Estimativa agregada:** (95 + 90 + 95 + 85 + 90 + 90 + 80 + 90 + 85 + 90) / 10 = **89%**. É uma aproximação de maturidade dos macroblocos, não um limite fixo de 11% de decisões que necessariamente restam nem uma promessa de conclusão. **Modo Criativo explicitamente adiado não compõe o denominador**; não penalizar a definição do Convencional por um modo futuro.
+**Conta:** (96 + 92 + 96 + 91 + 94 + 95 + 94 + 93 + 88 + 93) / 10 = **93,2%**, apresentado como **93%**.
 
-**Pendências que ainda representam escolhas de produto de verdade, quando a implementação dependente estiver próxima:**
-1. **Prefeitura:** estado/apresentação de pedidos quando a necessidade é atendida, sem transformar pedidos em missões; critérios essenciais de elegibilidade, duração e cobertura do auxílio-aluguel. Critérios finos de frequência e visualização podem ser calibrados sem novas rodadas genéricas.
-2. **Locação comercial entre empresas já aprovada:** contrato e pagamento, inadimplência, saída/encerramento e repercussão de falência/intervenção; **não** voltar a perguntar se locação pode existir.
-3. **Edifícios mistos:** execução e falta de pagamento no reparo compartilhado e intervenção/demolição de conjunto físico com ativos distintos, sem propriedade, despesa ou indenização duplicadas.
-4. **Operação particular dos táxis e outras dependências de serviço ainda indicadas na SPEC:** definir apenas o comportamento indispensável que de fato faltar ao implementar cada serviço, sem abrir catálogos hipotéticos.
-5. **Compras públicas com preferência local:** proposta **não aprovada**, a avaliar se acrescenta escolha municipal real; **não** contar automaticamente como requisito obrigatório nem pendência impeditiva.
+**O que NÃO falta decidir só para subir esse índice:** detalhes numéricos de preços, renda-limite, parâmetros previdenciários, duração exata de ciclos, algoritmos, formato final de sliders e casos raros não comprovadamente necessários. A SPEC delega vários desses parâmetros à calibração. Reabrir quando existir conflito de comportamento ou teste com consequência concreta.
 
-**Já fechado — não perguntar novamente sem motivo:** princípios de educação/creche e **vans escolares B**, Prefeitura como primeiro posicionamento, tratamento de pedidos/opiniões reais, regras de água contaminada 19B para teste, patrimônio empresarial, tarifa e oferta de ônibus, interação visual com objetos, gastos reais rastreáveis e os demais comportamentos que constam da SPEC. O Criativo e a delimitação manual de bairros estão **adiados expressamente**, não são pendências do Convencional.
+**Pendências de produto relevantes apenas quando chegar ao respectivo sistema:** (1) comportamento econômico e operacional concreto de táxis ainda com campos a definir na SPEC; (2) tratamento de pagamento vencido e transição de renda em creches/vans sem perder proteção e sem apagar dívida, se o comportamento não puder ser derivado das regras vigentes; (3) conflitos demonstrados em orçamento prioritário/obrigações essenciais ou compartilhamento de imóveis. Não supor por ausência de fórmula que toda área está indecisa. **Auxílio-aluguel, gratuidade hospitalar, isenção das crianças, fila das vans, materiais cancelados, preferência local de compras e escopo do apoio externo já foram decididos; não reapresentar como perguntas abertas.**
 
-**Não contar como decisões ainda não tomadas:** fórmulas numéricas finas, escala populacional e taxas, parâmetros previdenciários, duração do dia em segundos, algoritmos de pathfinding, medições de GPU/CPU, acabamento de assets, ergonomia, testes de UX e cenários reproduzíveis. Esses pontos pertencem à **calibração/implementação/validação**, salvo se um teste expuser nova consequência de produto que realmente exija aprovação na SPEC.
+### 2. Prontidão documental/técnica — nove frentes com pesos existentes
 
-**Orientação para a próxima etapa (recomendação da IA, PENDENTE):** as rodadas de perguntas já deram cobertura ampla à gameplay central. **Não continuar entrevistas apenas para aumentar percentual.** Priorizar integrar o Convencional por incrementos técnicos, testar os fluxos e voltar ao responsável somente com uma alternativa de produto concreta que mude comportamento ou cause conflito real; permanecer conforme [AGENTS](../../AGENTS.md), sem exigir 100% definido para começar nem POCs por sistema.
+**Método:** manter as nove frentes e os pesos da análise anterior, considerando maturidade de documentação/risco técnico para a primeira integração; incrementar apenas onde decisões ou reconciliação documentais reduziram ambiguidades. As notas **não** são desempenho observado.
 
-### 2. Prontidão para integrar e validar — indicador técnico separado
-
-**81,05%, arredondados para 81%,** preservados da avaliação anterior (11/10), frente à estimativa histórica de **75% (08/10)**. Esse índice **não mede quantas perguntas já foram respondidas**: premia a maturidade de conceitos, mas permanece limitado quando ainda não há medição de desempenho, jogo integrado ou testes com perfis distintos de usuário.
-
-**Método desse índice:** notas qualitativas de 0 a 100 em nove frentes, com pesos relativos à integração (soma 100%); cálculo ponderado = **81,05%**. Os percentuais de 08/10 são referência histórica, não recalculada pelo mesmo método. Não interpretar a diferença de 6 pontos como medição estatística de esforço.
-
-| Frente | Peso | 08/10 (histórico) | 11/10 | Justificativa |
+| Frente | Peso | Avaliação anterior | Reavaliação | Evidência/limite |
 | --- | ---: | ---: | ---: | --- |
-| Arquitetura e tecnologia | 10% | 90% | 90% | Direção estrutural definida; custo real e execução sem medição. |
-| Economia e finanças | 15% | 85% | 90% | Regras avançadas; integração e parâmetros ainda não testados. |
-| Construção e materiais | 15% | 85% | 90% | Fluxo físico especificado; ergonomia e logística não validadas no jogo. |
-| Empresas e produção | 12% | 80% | 85% | Novas regras de empresas e imóveis; contratos e casos cruzados a fechar. |
-| Cidadãos e moradias | 15% | 75% | 85% | Família, creche, previdência e propriedade; transições a integrar. |
-| Mapa e terreno | 8% | 65% | 70% | Grade e composição aprovadas; escala, representação e desempenho abertos. |
-| Trânsito e movimentação | 10% | 60% | 70% | Gameplay decidido em grande parte; simulação e roteamento não medidos. |
-| Interface e ferramentas | 10% | 55% | 75% | Fluxos e recursos desejados bem definidos; ainda falta testar usabilidade. |
-| Cenários e critérios de validação | 5% | 40% | 40% | Critérios conceituais existentes, sem sistema integrado executado. |
+| Arquitetura e tecnologia | 10% | 90% | **90%** | Fronteiras documentadas; integração real não executada. |
+| Economia e finanças | 15% | 90% | **92%** | Regras consolidadas, execução não aferida. |
+| Construção e materiais | 15% | 90% | **92%** | Tratamento de materiais em trânsito esclarecido; falta testar entregas físicas. |
+| Empresas e produção | 12% | 85% | **88%** | Contratos, propriedade e ativos mistos mais bem definidos. |
+| Cidadãos e moradias | 15% | 85% | **88%** | Critério econômico familiar e políticas integrados no papel. |
+| Mapa e terreno | 8% | 70% | **70%** | Sem nova medição visual, espacial ou de desempenho. |
+| Trânsito e movimentação | 10% | 70% | **72%** | Critério de van melhor definido, algoritmo e escala sem validação. |
+| Interface e ferramentas | 10% | 75% | **78%** | Painéis e controles com decisões claras, mas sem teste com jogador. |
+| Cenários e critérios de validação | 5% | 40% | **40%** | Sem execução integrada nem resultado reproduzível. |
 
-**Risco principal aqui:** sistemas individualmente coerentes podem se revelar caros, difíceis de usar ou de diagnosticar quando interagem. O avanço dessa dimensão exige **experimentos e evidências de execução**, não mais dezenas de perguntas. Preservar a implementação integrada como alvo, sem criar POCs independentes obrigatórias.
+**Conta ponderada:** 10% × 90% + 15% × 92% + 15% × 92% + 12% × 88% + 15% × 88% + 8% × 70% + 10% × 72% + 10% × 78% + 5% × 40% = **82,96%**, arredondado para **83%**. A base anterior usava as mesmas nove frentes/pesos e correspondia a 81,05% (81% arredondados); o número histórico de 75% vinha de avaliação ainda anterior, não idêntica em método.
+
+### O que realmente deve acontecer agora
+
+1. **Começar ou avançar a implementação integrada do Convencional em incrementos pequenos**, respeitando a SPEC. Não criar POCs independentes obrigatórias nem exigir 100% de decisões.
+2. **Testar causalidade**, não quantidade de menus: família empobrece → isenção de creche/van → deslocamento/frequência real → tempo/renda do adulto; tarifa de ônibus → custo/rota/acesso; verba de hospital → compras, empregados, capacidade real, dívidas.
+3. **Simplificar controles que não tiverem efeito útil observável.** Faixas de museu/estacionamento e barras de verba só justificam permanência se melhorarem decisões; uma eventual mudança de produto exigirá aprovação humana e atualização da SPEC.
+4. **Reestimar os índices quando houver evidência nova**, por exemplo protótipo jogável, integração, teste de desempenho ou mudança material de escopo. Mais uma rodada de perguntas, sem impacto concreto, não deve elevar os números automaticamente.
+
+**Risco dominante:** especificação relativamente madura com **zero implementação de jogo verificável neste GitHub**; a prova que falta não é mais texto, é interação entre economia, SIMs, logística, construção e interface executada em conjunto. O modo Criativo permanece fora desta avaliação.
 
 ## Prioridade P0 — tratar primeiro
 
