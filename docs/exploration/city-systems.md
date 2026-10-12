@@ -16,6 +16,14 @@
 - **2A, vaga escassa de van:** priorizar crianças sem **alternativa real, segura e viável** de comparecer à escola/creche, considerando idade, caminho, horários e adulto acompanhante quando necessário. **Empate de necessidade: ordem de pedido do transporte**, não ordem de matrícula escolar. Não inferir que pobreza isolada garante assento nem ignorar que falta de alternativa pode repercutir em trabalho e renda da família.
 - **Causalidade:** dinheiro do responsável, comparecimento escolar, tempo de cuidado familiar, possibilidade de trabalhar, trajetos físicos, vagas, motoristas/monitores e operação municipal; observável nos painéis agregados, sem serviço ou efeito fictício.
 
+## Apoio externo emergencial C, educação adulta A e isenção escolar já vigente (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** A ampliação de abrangência para 3C e a compatibilidade trabalho/estudo 9A foram aprovadas; o 2B da nova rodada reafirma a regra já aprovada de recalcular isenção na próxima cobrança/uso.
+
+- **3C cooperação externa:** a política municipal já opcional pode solicitar capacidade **real e finita** do exterior para bombeiros, socorro médico emergencial e apoio policial quando houver ocorrência e insuficiência local. O apoio depende de equipe/veículo disponível, rota física pela conexão exterior, tempo e pagamento reais; não criar prisões, leitos, patrulheiros ou socorro instantâneos. Tipo de ocorrência e disponibilidade dos serviços externos são detalhamento proporcional futuro.
+- **9A educação adulta:** adulto com emprego ativo só escolhe aulas com vaga e horários realmente compatíveis com jornada, família e deslocamentos; sem janela viável, adia o estudo. Não conceder escolaridade por matrícula sem frequência, inventar trabalho em tempo parcial nem dar dois empregos ao SIM.
+- **2B confirmação:** perda real de renda passa a ser considerada para a isenção de creche e van na próxima cobrança/uso. Não esperar mês seguinte por padrão, não perdoar faturas passadas automaticamente e não cobrar criança individualmente.
+
 ## Transporte escolar municipal: cobrança opcional com isenção — B aprovada (2026-10-11)
 
 > **Revisão humana: REVISADO quanto à política aprovada.** A proposta de cobrar passagem de famílias capazes de pagar, mantendo isenção para famílias sem recursos, **foi expressamente escolhida como B** e registrada na SPEC. A discussão anterior que chamava a tarifa de hipótese está superada.
