@@ -4,6 +4,17 @@
 >
 > Ele não é fonte de verdade do produto. Decisões oficiais de produto pertencem a [SPEC.md](SPEC.md), decisões estruturais a [ARCHITECTURE.md](ARCHITECTURE.md) e regras de trabalho a [../AGENTS.md](../AGENTS.md).
 
+## Refinamentos confirmados: assistência, creches, hospitais e orçamento (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** Após a auditoria crítica, o responsável perguntou pelo “limite de gastos” e confirmou **1B** creches com cobrança conforme condições financeiras reais, **2A** hospitais municipais gratuitos e **3B** testar orçamento por verba monetária real. As três decisões estão na [SPEC](SPEC.md).
+
+**O teto mensal de auxílio-aluguel 4B continua aprovado:** é o máximo de **pagamentos reais do programa naquele mês**, não limite de gasto de todo o município nem dinheiro automaticamente desembolsado. Elegibilidade e prioridade seguem automáticas e pagamentos exigem Caixa verdadeiro.
+
+**Creches 1B substitui a 5B simples:** famílias sem capacidade econômica efetiva ficam isentas, outras podem pagar em política municipal de mensalidade. A Prefeitura deve mostrar **quantos SIMs e famílias estão em situação de pobreza/insuficiência econômica**, critério explícito, elegíveis à gratuidade da creche e efetivamente atendidos; não fabricar percentuais nem confundir todas as pessoas pobres com crianças de creche. **HOSPITAIS 2A:** permanecem gratuitos para pacientes, sujeitos a operação/capacidade reais. **VERBA 3B:** teste de limite/financiamento por serviço usando dinheiro real, custos devidos, gasto pago e resultados; slider percentual continua proposta, não decisão definitiva.
+
+**Vans escolares:** o usuário aventou “grátis/pago poderia ser igual” à proteção por condição econômica das creches, mas **não confirmou alternativa**; assunto permanece em [Prefeitura](exploration/city-hall.md#decisoes-posteriores-creche-por-condicao-financeira-e-orcamento-real-em-teste-2026-10-11) e [sistemas urbanos](exploration/city-systems.md). Saúde pública não ganhou tarifa.
+
+
 ## Auditoria crítica da Prefeitura — reinício da avaliação (2026-10-11)
 
 > **Revisão humana: PENDENTE.** O responsável apontou que as recomendações anteriores de aplicar quatro faixas de preço a quase todos os serviços foram excessivamente concordantes e pediu uma **pesquisa com opinião crítica independente, incluindo revisão de escolhas já aprovadas**. O parecer de pesquisa está em [Prefeitura — reavaliação crítica](exploration/city-hall.md#reavaliacao-critica-das-tarifas-e-do-orcamento--pesquisa-e-parecer-independentes-2026-10-11).
