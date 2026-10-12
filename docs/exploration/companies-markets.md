@@ -8,6 +8,13 @@
 >
 > Reúne empresas privadas, demanda, aquisição de ativos, caixa empresarial, falência, abastecimento, conexão econômica externa e interpretação do Caixa da Cidade.
 
+## Decisões empresariais — compra/aluguel e continuidade de empregados (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** Escolhas 2B e 4A aprovadas e incluídas na SPEC; detalhes quantitativos e casos de operação ficam para calibração.
+
+- **2B:** quando considerar abrir/ocupar um ponto, a empresa autônoma compara **compra versus locação realmente disponíveis**, segundo capital, preço, aluguel, custos operacionais, acesso, receita possível e risco. Sem comprar por padrão se houver dinheiro, sem alugar por padrão e sem contrato/mercadoria/dinheiro surgindo sem agente real. Reutilizar decisões por oportunidade, não analisar todos os estabelecimentos continuamente.
+- **4A:** se uma empresa mudar legitimamente o ramo de unidade existente, funcionários com **vagas e turnos realmente compatíveis** podem permanecer; postos que deixam de existir geram ajuste/encerramento de vínculos e obrigações trabalhistas reais conforme as regras gerais. Não exigir demissão coletiva ou manter uma vaga fictícia só para preservar identidade. Profissões especializadas não foram aprovadas e não devem ser criadas para decidir a continuidade.
+
 ## Retomada comercial e venda inicial de edifício misto — escolhas 4A/5A (2026-10-11)
 
 > **Revisão humana: PARCIALMENTE REVISADO.** A busca de outro ponto durante o aviso de retomada e a oferta de unidades individuais desde a conclusão foram aprovadas. Exemplos de logística e validação ainda dependem de implementação.
