@@ -8,6 +8,13 @@
 >
 > Concentra pesquisa e raciocínio sobre serviços urbanos, mobilidade, vias, educação, saúde, infraestrutura técnica, conexão externa e capacidades operacionais. A SPEC continua sendo a autoridade sobre o que já foi decidido.
 
+## Controles municipais de tarifa e orçamento — escolhas revistas (2026-10-11)
+
+> **Revisão humana: PARCIALMENTE REVISADO.** A SPEC agora aprova **1B** ônibus em Grátis/Barata/Normal/Cara, **2B** estacionamentos municipais com quatro faixas e **3B** atrações em quatro faixas. **11B** permite prioridade de investimento por serviço. Não há aprovação de quatro níveis para **vans escolares (6), escolas/universidades (7), hospitais (8) nem água/energia (9)**: o responsável pediu discutir a padronização e suas consequências.
+
+A faixas pagas correspondem a **transferência monetária de usuário real ao Caixa por uso real**, sem garantir aumento de arrecadação, diminuir custo de frota ou aumentar oferta automaticamente. Em saúde/escola, **não extrapolar cobrança sem decidir regras de acesso/inadimplência**, pois frequência e atendimento afetam vida e satisfação. A categoria de orçamento municipal da revisão 11B governa **limites/apoio financeiramente viáveis**, não capacidade instantânea criada por barra. Preferir diagnóstico de gastos e atendimentos no mesmo painel já aprovado, sem novo ledger fictício.
+
+
 ## Reabertura transversal das políticas de serviços públicos (2026-10-11)
 
 > **Revisão humana: PARCIALMENTE REVISADO** quanto à intenção explícita de ampliar decisão do jogador; recomendações de alteração concreta **PENDENTES**.
