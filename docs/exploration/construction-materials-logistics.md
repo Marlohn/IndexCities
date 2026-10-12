@@ -569,6 +569,10 @@ No futuro pode ser avaliado controle manual por categoria, limites mínimos de e
 ---
 
 ## Reserva de materiais e fila de obras
+### Confirmação posterior 10A — fila automática sem reordenação (2026-10-11)
+
+**Revisão humana desta subseção: PARCIALMENTE REVISADO.** O responsável confirmou manter a prioridade por ordem de criação e não adicionar comando manual para mudar essa fila no primeiro modelo. A prioridade ordena a alocação de material que ainda estiver livre: não retira material já reservado para outra obra nem material entregue/consumido. Transportes e compromissos financeiros reais não são revertidos por nova prioridade. A seção de evolução futura abaixo permanece hipótese, não requisito.
+
 
 > **Revisão humana desta seção:** PARCIALMENTE REVISADO — há decisão/discussão humana associada, mas o texto e/ou a pesquisa da IA não foram revisados integralmente.
 
