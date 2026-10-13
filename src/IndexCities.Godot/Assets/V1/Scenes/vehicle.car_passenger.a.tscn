@@ -1,0 +1,29 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/vehicle.car_passenger.a.body.tres" id="1_kl57i"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/vehicle.car_passenger.a.wheel.tres" id="2_xbh3w"]
+
+[node name="CarPassenger" type="Node3D" unique_id=1544328367]
+metadata/visual_id = "vehicle.car_passenger.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-0.93, 0, -2.1)
+metadata/visual_envelope_size = Vector3(1.86, 1.48, 4.2)
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=958381514]
+mesh = ExtResource("1_kl57i")
+
+[node name="Wheel_FL" type="MeshInstance3D" parent="." unique_id=1043142355]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.79, 0.3, -1.3)
+mesh = ExtResource("2_xbh3w")
+
+[node name="Wheel_FR" type="MeshInstance3D" parent="." unique_id=1438056002]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.79, 0.3, -1.3)
+mesh = ExtResource("2_xbh3w")
+
+[node name="Wheel_RL" type="MeshInstance3D" parent="." unique_id=1886777582]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.79, 0.3, 1.3)
+mesh = ExtResource("2_xbh3w")
+
+[node name="Wheel_RR" type="MeshInstance3D" parent="." unique_id=1982661637]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.79, 0.3, 1.3)
+mesh = ExtResource("2_xbh3w")

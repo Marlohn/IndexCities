@@ -23,6 +23,7 @@ As imagens em `Preview/Captures/` e `Thumbnails/` são **capturas reais da Godot
 | `vegetation.tree_broadleaf.a` — árvore | `Scenes/vegetation.tree_broadleaf.a.tscn` | `TreeBroadleaf` | `Body` | 312 | 3 | 4,40 × 6,49 × 4,38 |
 | `agent.sim_pedestrian.a` — SIM pedestre | `Scenes/agent.sim_pedestrian.a.tscn` | `SimPedestrian` | `Rig/Hips/{Torso,Head,ArmL,ArmR,LegL,LegR}`, `AnimationPlayer` (`idle`, `walk`) | 606 | 9 | 0,64 × 1,75 × 0,36 |
 | `vehicle.truck_cargo.a` — caminhão de carga | `Scenes/vehicle.truck_cargo.a.tscn` | `TruckCargo` | `Body`, `Wheel_FL/FR/RL/RR` (malha compartilhada), `Candidate_CargoDoor` | 1 992 | 7 + 4 × 2 | 2,90 × 3,30 × 7,20 |
+| `vehicle.car_passenger.a` — carro de passeio compacto (candidato; revisão PENDENTE) | `Scenes/vehicle.car_passenger.a.tscn` | `CarPassenger` | `Body`, `Wheel_FL/FR/RL/RR` (malha compartilhada) | 1 200 | 5 + 4 × 2 | 1,86 × 1,48 × 4,20 |
 
 Os números vêm do último build completo (`manifest.v1.json`). O envelope é a caixa da malha visível; ele inclui beirais, escadas, toldo, retrovisores etc. e **não é footprint**.
 
@@ -67,6 +68,10 @@ Os números vêm do último build completo (`manifest.v1.json`). O envelope é a
   - As rodas `Wheel_*` compartilham uma malha, com origem no centro do eixo: eixo dianteiro em z = −2,55 e traseiro em z = +1,75; bitola de 1,96 m; raio de 0,47 m.
   - Rolagem: rotação em X local; andar para −Z equivale a ângulo negativo (−distância ÷ raio). Esterço das rodas dianteiras: compor `Basis(Y, esterço) * Basis(X, rolagem)`.
   - Faróis e lanternas não são emissivos. `Candidate_CargoDoor` fica em z = +3,90, com *forward* +Z.
+- **Carro de passeio** (`vehicle.car_passenger.a`, candidato PENDENTE). Mesmo contrato do caminhão: frente em −Z, pivô no solo no centro do veículo, `Body` + `Wheel_FL/FR/RL/RR` com malha compartilhada (raio 0,30 m, largura 0,20 m, bitola 1,58 m, eixos em z = ∓1,30).
+  - A pintura é a superfície própria **`car_paint`** do `Body`; o host varia a cor com `set_surface_override_material` usando `car_paint_red`, `car_paint_blue`, `car_paint_white`, `car_paint_yellow` ou `car_paint_green` (em `Materials/`, prefixo `car_`). A cor de cada veículo não é decidida aqui.
+  - Demais superfícies do `Body`: `glass_dark`, `metal_dark`, `car_headlight_off` e `car_taillight` (não emissivos). Sem interior, placa, marca ou texto, e sem marcadores candidatos.
+  - Miniatura gerada com `render_v1_previews.gd -- --thumb=res://Assets/V1/Scenes/vehicle.car_passenger.a.tscn`; o carro ainda não consta da prancha, do lineup nem da folha de contato.
 
 ## 4. Medidas propostas e conectores (CANDIDATOS)
 
