@@ -62,7 +62,8 @@ public sealed class ConstructionDispatchTests
         Assert.True(house.Completed);
         Assert.NotNull(house.OwnerAccount);
         Assert.NotEmpty(sim.State.Citizens);
-        Assert.All(sim.State.Citizens,c=>Assert.True(c.Moving));
+        // Arrival is physical either on foot or in the family's imported car.
+        Assert.All(sim.State.Citizens,c=>Assert.True(c.Moving||sim.State.Vehicles.Any(v=>v.Id==c.VehicleId&&v.PassengerCar&&v.Status==VehicleStatus.Travelling)));
         Assert.All(sim.State.Citizens,c=>Assert.True(c.Position.Distance(house.Door)>5));
         Assert.Contains(sim.State.Ledger,l=>l.Category=="Aquisição residencial"&&l.EntityId==house.Id);
         Assert.Equal(before,sim.MonetaryTotal);

@@ -27,6 +27,7 @@ public sealed partial class CitySimulation
             if(!Transfer(buyer.Account,"global",price,"Aquisição residencial","Primeira aquisição pelo valor de mercado",house.Id))throw new InvalidOperationException("Compra aprovada sem capital");
             house.OwnerAccount=buyer.Account;house.FamilyId=family.Id;State.Families.Add(family);candidate.Migrated=true;candidate.Cause="Moradia acessível, capital, imposto anual e risco de oportunidades avaliados";
             foreach(var c in State.Citizens.Where(c=>c.FamilyId==family.Id)){c.Resident=true;Personal(c,"Decidiu migrar; moradia adquirida com recursos reais");StartJourney(c,house,JourneyPurpose.Arriving);}
+            BuyCarOnMigration(family,house,candidate);
             Event("Família adquiriu casa e iniciou viagem física de chegada");break;
         }
         foreach(var b in State.Buildings.Where(b=>b.Completed&&!b.Removed&&b.Definition.Private&&b.Kind!=BuildingKind.House&&b.OwnerAccount==null)){
@@ -108,7 +109,7 @@ public sealed partial class CitySimulation
     }
     void AcquireFarmTruck(Building farm)
     {
-        if(State.Vehicles.Any(v=>v.HomeBuildingId==farm.Id)||State.Shipments.Any(s=>s.Purpose==ShipmentPurpose.Vehicle&&s.DestinationBuildingId==farm.Id&&!s.Complete)||Access(farm)==null||State.Vehicles.Count(v=>!v.External)>=State.Tuning.ExternalCompanyCandidates)return;
+        if(State.Vehicles.Any(v=>v.HomeBuildingId==farm.Id)||State.Shipments.Any(s=>s.Purpose==ShipmentPurpose.Vehicle&&s.DestinationBuildingId==farm.Id&&!s.Complete)||Access(farm)==null||State.Vehicles.Count(v=>!v.External&&!v.PassengerCar)>=State.Tuning.ExternalCompanyCandidates)return;
         var account="company:"+farm.CompanyId;var fuel=State.Tuning.FuelTank;var price=State.Tuning.TruckPrice+(decimal)fuel*State.Tuning.ImportPrices[ResourceKind.Fuel]+State.Tuning.FreightBase;
         if(Spendable(account)<price+500||State.OutsideStock[ResourceKind.Fuel]<fuel||BusinessOpportunity(farm)<.2)return;var route=FindRoadRoute(EntryNode().Id,Access(farm)!.Id);if(route.Count==0)return;
         if(!Transfer(account,"global",price,"Veículos","Aquisição/importação real de caminhão e combustível inicial",farm.Id))return;State.OutsideStock[ResourceKind.Fuel]-=fuel;
@@ -149,6 +150,7 @@ public sealed partial class CitySimulation
         var debts=State.Obligations.Where(o=>o.Debtor==c.Account&&o.Outstanding>0&&o.Creditor=="city").ToList();var total=debts.Sum(o=>o.Outstanding);var funds=Math.Min(total,Balance(c.Account));foreach(var debt in debts){var amount=total==0?0:Math.Min(Balance(c.Account),Money(funds*debt.Outstanding/total));Transfer(c.Account,"city",amount,"Dívidas pessoais","Quitação proporcional com saldo do falecido",debt.BuildingId);debt.Outstanding=0;}
         var heir=State.Citizens.FirstOrDefault(x=>x.Id!=c.Id&&x.FamilyId==c.FamilyId&&x.Alive);if(heir!=null)Transfer(c.Account,heir.Account,Balance(c.Account),"Herança","Dinheiro existente do falecido",c.Id);else Transfer(c.Account,"global",Balance(c.Account),"Patrimônio não reclamado","Saldo sem sucessor elegível",c.Id);
         foreach(var b in State.Buildings.Where(b=>b.OwnerAccount==c.Account))b.OwnerAccount=heir?.Account;
+        foreach(var v in State.Vehicles.Where(v=>v.OwnerAccount==c.Account))v.OwnerAccount=heir?.Account??"unclaimed";
         foreach(var f in State.Families.Where(f=>f.Members.Contains(c.Id))){if(f.Members.All(id=>!State.Citizens.First(s=>s.Id==id).Alive)){if(BuildingById(f.HomeId) is {} house)house.FamilyId=null;f.HomeId=null;}}
         Event("Falecimento registrado; patrimônio, dívidas e saldo conciliados");
     }
@@ -156,7 +158,8 @@ public sealed partial class CitySimulation
     {
         foreach(var family in State.Families.Where(f=>!f.Emigrating&&f.HomeId!=null)){
             var members=family.Members.Select(id=>State.Citizens.First(c=>c.Id==id)).Where(c=>c.Alive&&c.Resident).ToList();if(members.Count==0)continue;
-            if(members.All(c=>c.HungerHours>48&&c.WorkplaceId==null&&Balance(c.Account)<20)&&State.ElapsedSeconds-family.LastMigrationReview>3*86400){var home=BuildingById(family.HomeId);var start=home==null?null:Access(home);if(start==null)continue;var route=FindRoadRoute(start.Id,EntryNode().Id);if(route.Count==0)continue;family.Emigrating=true;
+            if(members.All(c=>c.HungerHours>48&&c.WorkplaceId==null&&Balance(c.Account)<20)&&State.ElapsedSeconds-family.LastMigrationReview>3*86400){var home=BuildingById(family.HomeId);var start=home==null?null:Access(home);if(start==null)continue;var route=FindRoadRoute(start.Id,EntryNode().Id);if(route.Count==0)continue;family.Emigrating=true;var car=FamilyCar(family);var carHome=home==null||car==null?(ParkingSpot?)null:ParkingSpots(home).FirstOrDefault(s=>s.Key==car.ParkingSpot);
+                if(car!=null&&car.Status==VehicleStatus.Parked&&car.DriverId==null&&carHome?.Key!=null&&members.All(m=>m.Position.Distance(home!.Door)<3&&!m.Moving)&&FindRoadRoute((NearestRoad(car.Position,false)??start).Id,EntryNode().Id) is {Count:>0} carRoute){car.Route=carRoute;car.RouteIndex=0;car.DockPosition=State.Entry;car.ParkingSpot=null;car.TripPurpose=JourneyPurpose.Leaving;car.DriverId=members[0].Id;car.Passengers=members.Skip(1).Select(m=>m.Id).ToList();car.Status=VehicleStatus.Travelling;car.Cause="Família emigrando de carro";foreach(var m in members){m.VehicleId=car.Id;m.Path.Clear();m.PathIndex=0;m.Purpose=JourneyPurpose.Leaving;m.Activity="Emigrando de carro";Personal(m,"Decidiu sair por falta persistente de renda e alimentação");}if(home!=null)home.FamilyId=null;family.HomeId=null;continue;}
                 foreach(var c in members){c.Path=route.Select(id=>_roads[id].Position+new Point(0,State.Tuning.RoadWidth/2+1)).ToList();c.Path.Add(State.Entry);c.PathIndex=0;c.Purpose=JourneyPurpose.Leaving;c.PathRoadRevision=State.RoadRevision;c.Activity="Emigrando por condições reais";Personal(c,"Decidiu sair por falta persistente de renda e alimentação");}if(home!=null)home.FamilyId=null;family.HomeId=null;
             }
         }
