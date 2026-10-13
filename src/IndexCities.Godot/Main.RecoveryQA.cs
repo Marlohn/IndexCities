@@ -699,7 +699,22 @@ public partial class Main
 
             // Ferramentas fluidas: entrada vira para a rua, R é override manual e a fileira encomenda obras independentes.
             await RecoveryKey(Key.Escape);
+            var beforeSnap = _sim.SaveToJson();
+            foreach (var kind in new[] { BuildingKind.House, BuildingKind.Grocery }) {
+                await RecoveryButton(RecoveryCatalog(kind));
+                var free = new Point(-184, kind == BuildingKind.House ? -22 : -24);
+                await RecoveryPreviewWorldPoint(free);
+                Require(_cursor.Distance(free) <= 8.01 && _sim.QuoteBuilding(kind, _cursor, _rotation) is { PhysicallyValid: true, Accessible: true }, "Encaixe alcança a rua dentro do ajuste permitido, mesmo com a porta livre ainda sem acesso: " + kind);
+                Require(_sim.SaveToJson() == beforeSnap, "Encaixe não cria obra, acesso ou compromisso na simulação");
+                await RecoveryCaptureOnce("snap-" + kind.ToString().ToLowerInvariant(), GetViewport());
+            }
             await RecoveryButton(RecoveryCatalog(BuildingKind.House));
+            await RecoveryPreviewWorldPoint(new(-184, -36));
+            Require(_cursor.Distance(new(-184, -36)) < .01 && !_sim.QuoteBuilding(BuildingKind.House, _cursor, _rotation).Accessible, "Fora do alcance de ajuste a posição continua livre e sem acesso");
+            await RecoveryPreviewWorldPoint(hall.Position);
+            var blockedProjects = _sim.State.Projects.Count;
+            await RecoveryClick(_camera.UnprojectPosition(ToV(hall.Position)));
+            Require(_sim.State.Projects.Count == blockedProjects, "Encaixe preserva o bloqueio físico de prédio existente");
             await RecoveryPreviewWorldPoint(new(-184, -12));
             Require(Math.Abs(_rotation - Math.PI) < .000001 && _sim.QuoteBuilding(BuildingKind.House, _cursor, _rotation) is { PhysicallyValid: true, Accessible: true }, "Casa ao norte da rua vira a entrada para a rua e encaixa com acesso");
             await RecoveryPreviewWorldPoint(new(-184, 12));
@@ -715,11 +730,11 @@ public partial class Main
             var spacing = Math.Ceiling((Catalog.Definitions[BuildingKind.House].Width + .5) / 2) * 2;
             var rowProjects = _sim.State.Projects.Count;
             var availableBefore = _sim.Available;
-            var rowStart = await RecoveryMove(_camera.UnprojectPosition(ToV(new(-184, -12))));
+            var rowStart = await RecoveryMove(_camera.UnprojectPosition(ToV(new(-184, -22))));
             var startCursor = _cursor;
             RecoveryInput(new InputEventMouseButton { ButtonIndex = MouseButton.Left, ButtonMask = MouseButtonMask.Left, Pressed = true, Position = rowStart, GlobalPosition = rowStart });
             await RecoveryFrame();
-            var rowEnd = await RecoveryMove(_camera.UnprojectPosition(ToV(new(startCursor.X + 2 * spacing, -12))));
+            var rowEnd = await RecoveryMove(_camera.UnprojectPosition(ToV(new(startCursor.X + 2 * spacing, -22))));
             await RecoveryFrame();
             Require(_dragStart != null && _row.Count == 3 && _rowValid == 3 && _toolHint.Text.Contains("×3", StringComparison.Ordinal) && _toolHint.Text.Contains(Cash(_rowTotal), StringComparison.Ordinal), "Arrastar mostra fileira de 3 casas com quantidade e custo total: " + _toolHint.Text);
             Require(_confirmation.Visible && _previewName.Text.Contains("×3") && _previewCost.Text == Cash(_rowTotal), "Resumo visual acompanha quantidade e custo agregado reais da fileira");
