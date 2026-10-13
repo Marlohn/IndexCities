@@ -18,17 +18,19 @@ public partial class Main
         var panel = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         panel.SetAnchor(Side.Left, 1);
         panel.SetAnchor(Side.Right, 1);
-        panel.OffsetLeft = -560;
+        panel.SetAnchor(Side.Top, 1);
+        panel.SetAnchor(Side.Bottom, 1);
+        panel.OffsetLeft = -640;
         panel.OffsetRight = -16;
-        panel.OffsetTop = 132;
-        panel.OffsetBottom = 168;
+        panel.OffsetTop = -15;
+        panel.OffsetBottom = -1;
         panel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
             BgColor = new Color(.08f, .13f, .14f, .76f),
             ContentMarginLeft = 10,
             ContentMarginRight = 10,
-            ContentMarginTop = 5,
-            ContentMarginBottom = 5,
+            ContentMarginTop = 0,
+            ContentMarginBottom = 0,
             CornerRadiusTopLeft = 6,
             CornerRadiusTopRight = 6,
             CornerRadiusBottomLeft = 6,
@@ -38,6 +40,7 @@ public partial class Main
         {
             MouseFilter = Control.MouseFilterEnum.Pass,
             AutowrapMode = TextServer.AutowrapMode.Off,
+            ClipText = true,
             Text = ""
         };
         _versionHud.AddThemeFontSizeOverride("font_size", 12);

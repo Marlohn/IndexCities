@@ -15,7 +15,8 @@ public sealed class PedestrianCrossingTests
         var home=sim.State.Buildings.Single(b=>b.Id==placed.Id);Assert.True(home.Completed);
         var citizen=sim.State.Citizens.First();
         var corner=sim.State.Roads.Single(r=>r.Position==new Point(-192,132));
-        var access=sim.Access(home)!;Assert.True(corner.Crosswalk);Assert.True(access.Crosswalk);
+        var access=sim.Access(home)!;Assert.False(corner.Crosswalk);
+        Assert.Contains(sim.State.Roads,n=>n.Crosswalk&&!n.Highway&&n.Position.Distance(home.Door)<20);
         var truck=sim.State.Vehicles.First();truck.Position=new(-190.35,132);truck.Status=VehicleStatus.Travelling;
         truck.Route=[corner.Id,access.Id];truck.RouteIndex=1;truck.DockPosition=null;truck.ShipmentId=null;
         truck.Fuel=40;truck.Heading=2.1829488237399826;truck.IntersectionClaim=corner.Id;

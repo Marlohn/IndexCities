@@ -38,7 +38,7 @@ public sealed class ConstructionAndRoutingTests
     {
         var sim=new CitySimulation(42);sim.PlaceBuilding(BuildingKind.CityHall,new(-152,16));Assert.True(sim.PlaceRoad(new(-192,0),new(-184,44)).Success);var placed=sim.PlaceBuilding(BuildingKind.House,new(-184,58));Assert.True(placed.Success);sim.Advance(7200);var house=sim.State.Buildings.First(b=>b.Id==placed.Id);Assert.True(house.Completed);
         var path=sim.PedestrianRoute(sim.State.Entry,house);Assert.NotEmpty(path);foreach(var pair in path.Zip(path.Skip(1)).Where(p=>p.First.X>-186&&p.First.Z<43))Assert.True(pair.Second.Z>=pair.First.Z-.01,$"Backtracking: {pair.First} -> {pair.Second}");
-        Assert.Contains(sim.State.Roads,n=>n.Crosswalk&&n.Position.Distance(new(-184,0))<.1);
+        Assert.DoesNotContain(sim.State.Roads,n=>n.Crosswalk&&n.Position.Distance(new(-184,0))<.1);
     }
     [Fact] public void Crew_on_inner_corner_sidewalk_can_return_home_without_crossing_an_unmarked_lane()
     {
@@ -52,6 +52,6 @@ public sealed class ConstructionAndRoutingTests
     }
     [Fact] public void Replanning_inside_an_existing_corner_crosswalk_does_not_strand_the_pedestrian()
     {
-        var sim=new CitySimulation(42);Assert.True(sim.PlaceBuilding(BuildingKind.CityHall,new(-152,16)).Success);Assert.True(sim.PlaceRoad(new(-192,0),new(0,0)).Success);sim.Advance(7200);Assert.True(sim.PlaceRoad(new(-184,0),new(-120,44),true).Success);var house=sim.PlaceBuilding(BuildingKind.House,new(-100,14));Assert.True(house.Success);sim.Advance(7200);var origin=new Point(-179.8,43.8);var nearest=sim.State.Roads.MinBy(r=>r.Position.Distance(origin))!;Assert.False(nearest.Crosswalk);Assert.Contains(sim.State.Roads,r=>r.Crosswalk&&r.Position.Distance(new(-184,44))<.1);var path=sim.PedestrianRoute(origin,sim.State.Buildings.Single(b=>b.Id==house.Id));Assert.NotEmpty(path);Assert.Equal(origin,path[0]);sim.CheckInvariants();
+        var sim=new CitySimulation(42);Assert.True(sim.PlaceBuilding(BuildingKind.CityHall,new(-152,16)).Success);Assert.True(sim.PlaceRoad(new(-192,0),new(0,0)).Success);sim.Advance(7200);Assert.True(sim.PlaceRoad(new(-184,0),new(-120,44),true).Success);var house=sim.PlaceBuilding(BuildingKind.House,new(-100,14));Assert.True(house.Success);sim.Advance(7200);var origin=new Point(-179.8,43.8);var nearest=sim.State.Roads.MinBy(r=>r.Position.Distance(origin))!;Assert.False(nearest.Crosswalk);Assert.DoesNotContain(sim.State.Roads,r=>r.Crosswalk&&r.Position.Distance(new(-184,44))<.1);var path=sim.PedestrianRoute(origin,sim.State.Buildings.Single(b=>b.Id==house.Id));Assert.NotEmpty(path);Assert.Equal(origin,path[0]);sim.CheckInvariants();
     }
 }

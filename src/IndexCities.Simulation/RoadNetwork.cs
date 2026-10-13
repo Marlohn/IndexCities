@@ -36,7 +36,7 @@ public sealed partial class CitySimulation
     public List<Point> PedestrianRoute(Point from,Building destination)=>PedestrianPath(from,destination.Door,Access(destination));
     List<Point> PedestrianPath(Point from,Point door,RoadNode? b)
     {
-        var originalFrom=from;Point? crossingApproach=null;var a=NearestRoad(from);
+        var originalFrom=from;Point? crossingApproach=null;var laneApproach=new List<Point>();var a=NearestRoad(from);
         if(a!=null&&!a.Highway&&!a.Crosswalk){
             var horizontal=a.Neighbours.Any(id=>Math.Abs(_roads[id].Position.X-a.Position.X)>.1);var vertical=a.Neighbours.Any(id=>Math.Abs(_roads[id].Position.Z-a.Position.Z)>.1);
             var withinCarriageway=horizontal&&Math.Abs(from.Z-a.Position.Z)<=3.3||vertical&&Math.Abs(from.X-a.Position.X)<=3.3;
@@ -44,22 +44,41 @@ public sealed partial class CitySimulation
                 // Old paths could leave a walker inside a straight carriageway.
                 // Approach an actual crosswalk along that same road first, then
                 // cross it physically instead of jumping sideways to a curb.
-                var straight=State.Roads.Where(r=>r.Crosswalk&&!r.Highway&&r.Position.Distance(from)<=24&&((vertical&&!horizontal&&Math.Abs(r.Position.X-a.Position.X)<.1&&r.Neighbours.All(id=>Math.Abs(_roads[id].Position.X-r.Position.X)<.1))||(horizontal&&!vertical&&Math.Abs(r.Position.Z-a.Position.Z)<.1&&r.Neighbours.All(id=>Math.Abs(_roads[id].Position.Z-r.Position.Z)<.1)))).MinBy(r=>CrosswalkCentre(r,State).Distance(from));
+                var straight=State.Roads.Where(r=>r.Crosswalk&&!r.Highway&&r.Position.Distance(from)<=Math.Max(24,State.Tuning.CrosswalkSpacing+State.Tuning.RoadStep)&&((vertical&&!horizontal&&Math.Abs(r.Position.X-a.Position.X)<.1&&r.Neighbours.All(id=>Math.Abs(_roads[id].Position.X-r.Position.X)<.1))||(horizontal&&!vertical&&Math.Abs(r.Position.Z-a.Position.Z)<.1&&r.Neighbours.All(id=>Math.Abs(_roads[id].Position.Z-r.Position.Z)<.1)))).MinBy(r=>CrosswalkCentre(r,State).Distance(from));
                 if(straight!=null){var centre=CrosswalkCentre(straight,State);crossingApproach=vertical?new Point(from.X,centre.Z):new Point(centre.X,from.Z);from=crossingApproach.Value;a=straight;}
-                else a=State.Roads.Where(r=>r.Crosswalk&&r.Position.Distance(from)<=State.Tuning.RoadWidth/2+.5).MinBy(r=>r.Position.Distance(from))??a;
+                else {
+                    var recovery=State.Roads.Where(r=>r.Crosswalk&&!r.Highway).Select(r=>(Node:r,Route:FindRoadRoute(a.Id,r.Id))).Where(r=>r.Route.Count>0&&RouteLength(r.Route)<=State.Tuning.CrosswalkSpacing*3+State.Tuning.RoadWidth).OrderBy(r=>RouteLength(r.Route)).ThenBy(r=>r.Node.Id).FirstOrDefault();
+                    if(recovery.Node!=null){laneApproach.AddRange(recovery.Route.Select(id=>_roads[id].Position));a=recovery.Node;crossingApproach=CrosswalkCentre(a,State);from=crossingApproach.Value;}
+                }
             }
         }
         if(a==null||b==null||a.Position.Distance(from)>24)return [];var ids=FindRoadRoute(a.Id,b.Id);if(ids.Count==0)return [];var offset=State.Tuning.RoadWidth/2-.7;
         var anchors=new List<RoadNode>{_roads[ids[0]]};
         for(var i=1;i<ids.Count-1;i++){var prior=_roads[ids[i-1]];var n=_roads[ids[i]];var next=_roads[ids[i+1]];var incoming=n.Position-prior.Position;var outgoing=next.Position-n.Position;if(Math.Abs(incoming.X*outgoing.Z-incoming.Z*outgoing.X)>.01||(prior.Highway&&n.Highway)!=(n.Highway&&next.Highway))anchors.Add(n);}
         if(ids.Count>1)anchors.Add(_roads[ids[^1]]);
-        Point Side(Point direction,bool highway,bool opposite=false)=>highway?new(0,State.Tuning.RoadWidth/2+1+(direction.X>=0?-.35:.35)):Math.Abs(direction.X)>=Math.Abs(direction.Z)?new(0,(opposite?-offset:offset)+(direction.X>=0?-.35:.35)):new((opposite?-offset:offset)+(direction.Z>=0?.35:-.35),0);
-        var directions=anchors.Zip(anchors.Skip(1)).Select(pair=>pair.Second.Position-pair.First.Position).ToList();if(directions.Count==0)directions.Add(new(1,0));var firstDirection=directions[0];var fromLateral=Math.Abs(firstDirection.X)>=Math.Abs(firstDirection.Z)?from.Z-a.Position.Z:from.X-a.Position.X;var keepSourceSide=!a.Highway&&!a.Crosswalk&&fromLateral< -3.3;var firstHighway=a.Highway&&(anchors.Count==1||anchors[1].Highway);var firstSide=Side(firstDirection,firstHighway,keepSourceSide);var startCentre=crossingApproach!=null?CrosswalkCentre(a,State):a.Position;var walk=new List<Point>{startCentre+firstSide};
+        var directions=anchors.Zip(anchors.Skip(1)).Select(pair=>pair.Second.Position-pair.First.Position).ToList();if(directions.Count==0)directions.Add(new(1,0));
+        var firstDirection=directions[0];var perpendicular=new Point(firstDirection.Z,-firstDirection.X);var lateral=from-a.Position;
+        var sideSign=lateral.X*perpendicular.X+lateral.Z*perpendicular.Z<0?-1:1;
+        Point Side(Point direction,bool highway){if(highway)return new(0,State.Tuning.RoadWidth/2+1+(direction.X>=0?-.35:.35));var length=direction.Distance(new(0,0));return length<.001?new(0,offset):new Point(direction.Z/length,-direction.X/length)*(sideSign*offset);}
+        var firstHighway=a.Highway&&(anchors.Count==1||anchors[1].Highway);var firstSide=Side(firstDirection,firstHighway);
+        var startCentre=crossingApproach!=null?CrosswalkCentre(a,State):a.Position;var walk=new List<Point>{startCentre+firstSide};
         for(var i=1;i<anchors.Count-1;i++){var node=anchors[i];var incoming=directions[i-1];var outgoing=directions[i];var before=i==1?firstSide:Side(incoming,anchors[i-1].Highway&&node.Highway);var after=Side(outgoing,node.Highway&&anchors[i+1].Highway);
             if(Math.Abs(incoming.X*outgoing.Z-incoming.Z*outgoing.X)>.01)walk.Add(node.Position+before+after);else {walk.Add(node.Position+before);if(before!=after)walk.Add(node.Position+after);}}
-        if(anchors.Count>1)walk.Add(b.Position+(keepSourceSide&&anchors.Count==2?firstSide:Side(directions[^1],anchors[^2].Highway&&b.Highway)));var points=new List<Point>{originalFrom};
+        if(anchors.Count>1)walk.Add(b.Position+Side(directions[^1],anchors[^2].Highway&&b.Highway));var points=new List<Point>{originalFrom};
         void Add(Point point){if(points[^1].Distance(point)>.001)points.Add(point);}
-        bool Crossing(RoadNode node,Point start,Point finish){if(!CrossesLane(start,finish,node)){Add(finish);return true;}if(!node.Crosswalk&&!node.Highway)return false;var delta=finish-start;var length=delta.Distance(new(0,0));var lane=new Point(delta.Z/length,-delta.X/length)*.4;Add(start+lane);Add(finish+lane);return true;}
+        bool Crossing(RoadNode node,Point start,Point finish){
+            if(!CrossesLane(start,finish,node)){Add(finish);return true;}
+            if(node.Highway){Add(finish);return true;}
+            var horizontal=Math.Abs(finish.Z-start.Z)>=Math.Abs(finish.X-start.X);
+            if(SharedCrossing(node,horizontal,start,finish) is not {} crossing)return false;
+            var startSign=Math.Sign(horizontal?start.Z-node.Position.Z:start.X-node.Position.X);if(startSign==0)startSign=1;
+            var finishSign=Math.Sign(horizontal?finish.Z-node.Position.Z:finish.X-node.Position.X);if(finishSign==0)finishSign=-startSign;
+            var source=horizontal?crossing.Centre+new Point(0,startSign*offset):crossing.Centre+new Point(startSign*offset,0);
+            var target=horizontal?crossing.Centre+new Point(0,finishSign*offset):crossing.Centre+new Point(finishSign*offset,0);
+            var delta=target-source;var length=delta.Distance(new(0,0));var lane=length<.001?new Point(0,0):new Point(delta.Z/length,-delta.X/length)*.25;
+            Add(source+lane);Add(target+lane);Add(finish);return true;
+        }
+        foreach(var point in laneApproach)Add(point);
         if(crossingApproach!=null)Add(crossingApproach.Value);
         var startSide=SideTowards(startCentre,from,offset);if(CrossesLane(from,walk[0],a)){if(crossingApproach==null)Add(startCentre+startSide);if(!Crossing(a,points[^1],walk[0]))return [];}else Add(walk[0]);
         foreach(var point in walk.Skip(1))Add(point);var entry=b.Position+SideTowards(b.Position,door,offset);if(!Crossing(b,points[^1],entry))return [];Add(door);return points;
@@ -72,9 +91,6 @@ public sealed partial class CitySimulation
         if(!_roads.TryGetValue(id,out var node)||node.Highway||node.Neighbours.Count<3)return new(false,"Selecione um cruzamento urbano");node.Control=control;node.PlayerEdited=true;return new(true,"Controle do cruzamento atualizado");
     }
     void SetDefaultJunctions(){UpdateCrosswalks();foreach(var n in State.Roads.Where(n=>!n.PlayerEdited&&!n.Highway&&n.Neighbours.Count>=3)){if(n.Neighbours.Count>=4){n.Control=JunctionControl.RightHand;continue;}var ns=n.Neighbours.Select(id=>_roads[id]).ToArray();n.Control=ns.Any(a=>ns.Any(b=>a.Id!=b.Id&&Math.Abs(a.Position.Z-n.Position.Z)<.1&&Math.Abs(b.Position.Z-n.Position.Z)<.1))?JunctionControl.ThroughX:JunctionControl.ThroughZ;}}
-    void UpdateCrosswalks()
-    {var marked=State.Roads.Where(n=>!n.Highway&&(n.Neighbours.Any(id=>_roads[id].Highway)||n.Neighbours.Count>=3||n.Neighbours.Count==2&&Math.Abs((_roads[n.Neighbours[0]].Position-n.Position).X*(_roads[n.Neighbours[1]].Position-n.Position).Z-(_roads[n.Neighbours[0]].Position-n.Position).Z*(_roads[n.Neighbours[1]].Position-n.Position).X)>.01)).Select(n=>n.Id).ToHashSet();foreach(var b in State.Buildings.Where(b=>!b.Removed))if(Access(b) is {} n)marked.Add(n.Id);var changed=false;foreach(var n in State.Roads){var value=marked.Contains(n.Id);if(n.Crosswalk!=value){n.Crosswalk=value;changed=true;}}if(changed)State.RoadRevision++;}
-
     public static Point CrosswalkCentre(RoadNode node,CityState state)
     {
         var highway=node.Highway?null:state.Roads.FirstOrDefault(r=>r.Highway&&node.Neighbours.Contains(r.Id));
