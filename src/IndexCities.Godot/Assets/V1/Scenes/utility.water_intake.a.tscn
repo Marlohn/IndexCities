@@ -1,0 +1,31 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/utility.water_intake.a.tres" id="1_6nu53"]
+
+[node name="WaterIntake" type="Node3D" unique_id=1926675197]
+metadata/visual_id = "utility.water_intake.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/lot_candidate_m = Vector2(14, 16)
+metadata/visual_envelope_min = Vector3(-6.753273, 0, -7.21)
+metadata/visual_envelope_size = Vector3(13.703273, 4.953848, 15.190001)
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=874454461]
+mesh = ExtResource("1_6nu53")
+
+[node name="Candidate_PedestrianEntry" type="Marker3D" parent="." unique_id=1756568264]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -7.61)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "entrada de pedestre candidata diante da porta dupla da casa de bombas; acesso real e da integracao"
+
+[node name="Candidate_WaterSource" type="Marker3D" parent="." unique_id=1495662388]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 8)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "tomada d'agua candidata na borda +Z do lote (lado candidato voltado ao rio/lago do terreno); fonte real e da simulacao"
+
+[node name="Candidate_PipeOutlet" type="Marker3D" parent="." unique_id=1688807974]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 7, 0, -4.1)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "saida candidata da adutora de agua bruta na borda +X (o tubo desce para o solo na caixa de registro, eixo y = 1,0 antes da descida); rede real e da integracao"

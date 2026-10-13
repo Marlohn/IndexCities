@@ -1,0 +1,466 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://Assets/V1/Scenes/civic.works_depot.a.tscn" id="1_8jsmi"]
+[ext_resource type="PackedScene" path="res://Assets/V1/Scenes/commercial.fuel_station.a.tscn" id="2_nsvo0"]
+[ext_resource type="PackedScene" path="res://Assets/V1/Scenes/agriculture.farm_small.a.tscn" id="3_od2ye"]
+[ext_resource type="PackedScene" path="res://Assets/V1/Scenes/utility.wind_power.a.tscn" id="4_opr7l"]
+[ext_resource type="PackedScene" path="res://Assets/V1/Scenes/utility.water_intake.a.tscn" id="5_jakun"]
+[ext_resource type="PackedScene" path="res://Assets/V1/Scenes/utility.water_treatment.a.tscn" id="6_1y1kx"]
+[ext_resource type="PackedScene" path="res://Assets/V1/Scenes/utility.sewage_treatment.a.tscn" id="7_8mx2b"]
+[ext_resource type="PackedScene" path="res://Assets/V1/Scenes/road.urban_1x1.a.straight.tscn" id="8_24wmc"]
+
+[sub_resource type="Environment" id="Environment_0ljvm"]
+background_mode = 1
+background_color = Color(0.8117647, 0.87058824, 0.9098039, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.7882353, 0.8352941, 0.8745098, 1)
+ambient_light_energy = 0.55
+tonemap_mode = 2
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_c235m"]
+shading_mode = 0
+albedo_color = Color(1, 0.99215686, 0.9490196, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_2itgp"]
+material = SubResource("StandardMaterial3D_c235m")
+size = Vector2(24, 0.25)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_7bsny"]
+material = SubResource("StandardMaterial3D_c235m")
+size = Vector2(24, 0.25)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_owffq"]
+material = SubResource("StandardMaterial3D_c235m")
+size = Vector2(0.25, 22)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_fna1p"]
+material = SubResource("StandardMaterial3D_c235m")
+size = Vector2(0.25, 22)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_nuuno"]
+material = SubResource("StandardMaterial3D_c235m")
+size = Vector2(24, 0.25)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_4uahj"]
+material = SubResource("StandardMaterial3D_c235m")
+size = Vector2(24, 0.25)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_4gabc"]
+material = SubResource("StandardMaterial3D_c235m")
+size = Vector2(0.25, 24)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_kosyf"]
+material = SubResource("StandardMaterial3D_c235m")
+size = Vector2(0.25, 24)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_l8rsy"]
+material = SubResource("StandardMaterial3D_c235m")
+size = Vector2(36, 0.25)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_c14w6"]
+material = SubResource("StandardMaterial3D_c235m")
+size = Vector2(36, 0.25)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_tr6mo"]
+material = SubResource("StandardMaterial3D_c235m")
+size = Vector2(0.25, 40)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_7toet"]
+material = SubResource("StandardMaterial3D_c235m")
+size = Vector2(0.25, 40)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_g8foe"]
+material = SubResource("StandardMaterial3D_c235m")
+size = Vector2(18, 0.25)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_u3e6y"]
+material = SubResource("StandardMaterial3D_c235m")
+size = Vector2(18, 0.25)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_kwepq"]
+material = SubResource("StandardMaterial3D_c235m")
+size = Vector2(0.25, 18)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_anuqh"]
+material = SubResource("StandardMaterial3D_c235m")
+size = Vector2(0.25, 18)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_t8jrl"]
+material = SubResource("StandardMaterial3D_c235m")
+size = Vector2(14, 0.25)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_g0xa6"]
+material = SubResource("StandardMaterial3D_c235m")
+size = Vector2(14, 0.25)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_cskkr"]
+material = SubResource("StandardMaterial3D_c235m")
+size = Vector2(0.25, 16)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_5ctha"]
+material = SubResource("StandardMaterial3D_c235m")
+size = Vector2(0.25, 16)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_fxic5"]
+material = SubResource("StandardMaterial3D_c235m")
+size = Vector2(24, 0.25)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_i4qla"]
+material = SubResource("StandardMaterial3D_c235m")
+size = Vector2(24, 0.25)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_incil"]
+material = SubResource("StandardMaterial3D_c235m")
+size = Vector2(0.25, 26)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_rgok3"]
+material = SubResource("StandardMaterial3D_c235m")
+size = Vector2(0.25, 26)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_11m4u"]
+material = SubResource("StandardMaterial3D_c235m")
+size = Vector2(26, 0.25)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_yl1vc"]
+material = SubResource("StandardMaterial3D_c235m")
+size = Vector2(26, 0.25)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_a2jfk"]
+material = SubResource("StandardMaterial3D_c235m")
+size = Vector2(0.25, 28)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_d5vbn"]
+material = SubResource("StandardMaterial3D_c235m")
+size = Vector2(0.25, 28)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_45m4v"]
+albedo_color = Color(0.56078434, 0.68235296, 0.43137255, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_jiv57"]
+material = SubResource("StandardMaterial3D_45m4v")
+size = Vector2(154, 130)
+
+[node name="V1Wave2Board" type="Node3D" unique_id=341187335]
+metadata/purpose = "preview tecnico da segunda onda; lotes do host desenhados; nao e partida"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+
+[node name="PreviewEnvironment" type="WorldEnvironment" parent="." unique_id=1281168075]
+environment = SubResource("Environment_0ljvm")
+
+[node name="PreviewSun" type="DirectionalLight3D" parent="." unique_id=207025534]
+transform = Transform3D(-0.87157553, 0.3611801, -0.33151925, 0, 0.6762094, 0.7367095, 0.49026123, 0.64209795, -0.58936757, 0, 30, 0)
+light_color = Color(1, 0.9529412, 0.8862745, 1)
+light_energy = 1.15
+shadow_enabled = true
+directional_shadow_max_distance = 800.0
+
+[node name="Facilities" type="Node3D" parent="." unique_id=1192294797]
+
+[node name="WorksDepot" type="Node3D" parent="Facilities" unique_id=773676721 instance=ExtResource("1_8jsmi")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, 16.85)
+metadata/visual_id = "civic.works_depot.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/lot_candidate_m = Vector2(24, 22)
+metadata/visual_envelope_min = Vector3(-11.95, 0, -10.95)
+metadata/visual_envelope_size = Vector3(23.9, 7.29, 21.9)
+
+[node name="FuelStation" type="Node3D" parent="Facilities" unique_id=2100693289 instance=ExtResource("2_nsvo0")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 39, 0, 17.85)
+metadata/visual_id = "commercial.fuel_station.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/lot_candidate_m = Vector2(24, 24)
+metadata/visual_envelope_min = Vector3(-12, 0, -12)
+metadata/visual_envelope_size = Vector3(24, 6.06, 24)
+
+[node name="FarmSmall" type="Node3D" parent="Facilities" unique_id=281709858 instance=ExtResource("3_od2ye")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 72, 0, 25.85)
+metadata/visual_id = "agriculture.farm_small.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/lot_candidate_m = Vector2(36, 40)
+metadata/visual_envelope_min = Vector3(-17.4, 0, -19.9)
+metadata/visual_envelope_size = Vector3(34.8, 9.55, 39.4)
+
+[node name="WindPower" type="Node3D" parent="Facilities" unique_id=574210699 instance=ExtResource("4_opr7l")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 102, 0, 14.85)
+metadata/visual_id = "utility.wind_power.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/lot_candidate_m = Vector2(18, 18)
+metadata/visual_envelope_min = Vector3(-8.888757, 0, -8.888757)
+metadata/visual_envelope_size = Vector3(17.777514, 31.5, 17.777514)
+
+[node name="WaterIntake" type="Node3D" parent="Facilities" unique_id=1926675197 instance=ExtResource("5_jakun")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 7, 0, -13.85)
+metadata/visual_id = "utility.water_intake.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/lot_candidate_m = Vector2(14, 16)
+metadata/visual_envelope_min = Vector3(-6.753273, 0, -7.21)
+metadata/visual_envelope_size = Vector3(13.703273, 4.953848, 15.190001)
+
+[node name="WaterTreatment" type="Node3D" parent="Facilities" unique_id=1366883683 instance=ExtResource("6_1y1kx")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 29, 0, -18.85)
+metadata/visual_id = "utility.water_treatment.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/lot_candidate_m = Vector2(24, 26)
+metadata/visual_envelope_min = Vector3(-11.949999, 0, -12.55)
+metadata/visual_envelope_size = Vector3(23.349998, 6.13, 25.5)
+
+[node name="SewageTreatment" type="Node3D" parent="Facilities" unique_id=899004806 instance=ExtResource("7_8mx2b")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 57, 0, -19.85)
+metadata/visual_id = "utility.sewage_treatment.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/lot_candidate_m = Vector2(26, 28)
+metadata/visual_envelope_min = Vector3(-12.98, 0, -13.56)
+metadata/visual_envelope_size = Vector3(25.96, 7.34, 27.260002)
+
+[node name="LotOutlines" type="Node3D" parent="." unique_id=234601110]
+
+[node name="Lot_WorksDepot" type="Node3D" parent="LotOutlines" unique_id=233018594]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0.03, 16.85)
+
+[node name="Edge0" type="MeshInstance3D" parent="LotOutlines/Lot_WorksDepot" unique_id=1414084368]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -10.875)
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_2itgp")
+
+[node name="Edge1" type="MeshInstance3D" parent="LotOutlines/Lot_WorksDepot" unique_id=1978203000]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 10.875)
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_7bsny")
+
+[node name="Edge2" type="MeshInstance3D" parent="LotOutlines/Lot_WorksDepot" unique_id=749233051]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.875, 0, 0)
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_owffq")
+
+[node name="Edge3" type="MeshInstance3D" parent="LotOutlines/Lot_WorksDepot" unique_id=187442750]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.875, 0, 0)
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_fna1p")
+
+[node name="Lot_FuelStation" type="Node3D" parent="LotOutlines" unique_id=561029933]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 39, 0.03, 17.85)
+
+[node name="Edge0" type="MeshInstance3D" parent="LotOutlines/Lot_FuelStation" unique_id=291048763]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -11.875)
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_nuuno")
+
+[node name="Edge1" type="MeshInstance3D" parent="LotOutlines/Lot_FuelStation" unique_id=1758603353]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 11.875)
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_4uahj")
+
+[node name="Edge2" type="MeshInstance3D" parent="LotOutlines/Lot_FuelStation" unique_id=1131923551]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.875, 0, 0)
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_4gabc")
+
+[node name="Edge3" type="MeshInstance3D" parent="LotOutlines/Lot_FuelStation" unique_id=245908469]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.875, 0, 0)
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_kosyf")
+
+[node name="Lot_FarmSmall" type="Node3D" parent="LotOutlines" unique_id=1743914880]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 72, 0.03, 25.85)
+
+[node name="Edge0" type="MeshInstance3D" parent="LotOutlines/Lot_FarmSmall" unique_id=1478666440]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -19.875)
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_l8rsy")
+
+[node name="Edge1" type="MeshInstance3D" parent="LotOutlines/Lot_FarmSmall" unique_id=1572650341]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 19.875)
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_c14w6")
+
+[node name="Edge2" type="MeshInstance3D" parent="LotOutlines/Lot_FarmSmall" unique_id=677703592]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17.875, 0, 0)
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_tr6mo")
+
+[node name="Edge3" type="MeshInstance3D" parent="LotOutlines/Lot_FarmSmall" unique_id=42988536]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17.875, 0, 0)
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_7toet")
+
+[node name="Lot_WindPower" type="Node3D" parent="LotOutlines" unique_id=97787247]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 102, 0.03, 14.85)
+
+[node name="Edge0" type="MeshInstance3D" parent="LotOutlines/Lot_WindPower" unique_id=288815905]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -8.875)
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_g8foe")
+
+[node name="Edge1" type="MeshInstance3D" parent="LotOutlines/Lot_WindPower" unique_id=1751439748]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 8.875)
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_u3e6y")
+
+[node name="Edge2" type="MeshInstance3D" parent="LotOutlines/Lot_WindPower" unique_id=2116813105]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.875, 0, 0)
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_kwepq")
+
+[node name="Edge3" type="MeshInstance3D" parent="LotOutlines/Lot_WindPower" unique_id=1696019740]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.875, 0, 0)
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_anuqh")
+
+[node name="Lot_WaterIntake" type="Node3D" parent="LotOutlines" unique_id=2113186097]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0.03, -13.85)
+
+[node name="Edge0" type="MeshInstance3D" parent="LotOutlines/Lot_WaterIntake" unique_id=1766890773]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -7.875)
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_t8jrl")
+
+[node name="Edge1" type="MeshInstance3D" parent="LotOutlines/Lot_WaterIntake" unique_id=1642914658]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 7.875)
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_g0xa6")
+
+[node name="Edge2" type="MeshInstance3D" parent="LotOutlines/Lot_WaterIntake" unique_id=989000590]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.875, 0, 0)
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_cskkr")
+
+[node name="Edge3" type="MeshInstance3D" parent="LotOutlines/Lot_WaterIntake" unique_id=923333878]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.875, 0, 0)
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_5ctha")
+
+[node name="Lot_WaterTreatment" type="Node3D" parent="LotOutlines" unique_id=645804250]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 29, 0.03, -18.85)
+
+[node name="Edge0" type="MeshInstance3D" parent="LotOutlines/Lot_WaterTreatment" unique_id=708003171]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -12.875)
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_fxic5")
+
+[node name="Edge1" type="MeshInstance3D" parent="LotOutlines/Lot_WaterTreatment" unique_id=895718656]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 12.875)
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_i4qla")
+
+[node name="Edge2" type="MeshInstance3D" parent="LotOutlines/Lot_WaterTreatment" unique_id=1678472803]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.875, 0, 0)
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_incil")
+
+[node name="Edge3" type="MeshInstance3D" parent="LotOutlines/Lot_WaterTreatment" unique_id=737493906]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.875, 0, 0)
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_rgok3")
+
+[node name="Lot_SewageTreatment" type="Node3D" parent="LotOutlines" unique_id=1506089106]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 57, 0.03, -19.85)
+
+[node name="Edge0" type="MeshInstance3D" parent="LotOutlines/Lot_SewageTreatment" unique_id=1550979733]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -13.875)
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_11m4u")
+
+[node name="Edge1" type="MeshInstance3D" parent="LotOutlines/Lot_SewageTreatment" unique_id=1680653785]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 13.875)
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_yl1vc")
+
+[node name="Edge2" type="MeshInstance3D" parent="LotOutlines/Lot_SewageTreatment" unique_id=1571500776]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.875, 0, 0)
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_a2jfk")
+
+[node name="Edge3" type="MeshInstance3D" parent="LotOutlines/Lot_SewageTreatment" unique_id=2084846591]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.875, 0, 0)
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_d5vbn")
+
+[node name="Road" type="Node3D" parent="." unique_id=985583132]
+
+[node name="Straight00" type="Node3D" parent="Road" unique_id=499432568 instance=ExtResource("8_24wmc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.25, 0, 0)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Straight01" type="Node3D" parent="Road" unique_id=1972823302 instance=ExtResource("8_24wmc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.25, 0, 0)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Straight02" type="Node3D" parent="Road" unique_id=425467117 instance=ExtResource("8_24wmc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.75, 0, 0)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Straight03" type="Node3D" parent="Road" unique_id=792210443 instance=ExtResource("8_24wmc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26.25, 0, 0)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Straight04" type="Node3D" parent="Road" unique_id=1214008828 instance=ExtResource("8_24wmc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 36.75, 0, 0)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Straight05" type="Node3D" parent="Road" unique_id=1985978338 instance=ExtResource("8_24wmc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 47.25, 0, 0)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Straight06" type="Node3D" parent="Road" unique_id=2049062571 instance=ExtResource("8_24wmc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 57.75, 0, 0)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Straight07" type="Node3D" parent="Road" unique_id=1495695043 instance=ExtResource("8_24wmc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 68.25, 0, 0)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Straight08" type="Node3D" parent="Road" unique_id=1479501090 instance=ExtResource("8_24wmc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 78.75, 0, 0)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Straight09" type="Node3D" parent="Road" unique_id=1474731664 instance=ExtResource("8_24wmc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 89.25, 0, 0)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Straight10" type="Node3D" parent="Road" unique_id=2000416193 instance=ExtResource("8_24wmc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 99.75, 0, 0)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Straight11" type="Node3D" parent="Road" unique_id=962783351 instance=ExtResource("8_24wmc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 110.25, 0, 0)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="PreviewGround" type="MeshInstance3D" parent="." unique_id=456070743]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 57, -0.01, 0)
+mesh = SubResource("PlaneMesh_jiv57")

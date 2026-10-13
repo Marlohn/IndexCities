@@ -8,6 +8,12 @@
 >
 > Concentra pesquisa e raciocínio sobre serviços urbanos, mobilidade, vias, educação, saúde, infraestrutura técnica, conexão externa e capacidades operacionais. A SPEC continua sendo a autoridade sobre o que já foi decidido.
 
+## Diagnóstico de água na partida V1 — 2026-10-12
+
+> **Revisão humana desta seção: PENDENTE.** Análise da IA do save; não altera regras de contratação, turnos ou abastecimento.
+
+Na cidade com 17 moradores, todos empregados, a captação estava concluída, com acesso exterior e fonte natural válida a 10,59 m da margem (limite calibrado de 22 m). Seu único empregado folgava sexta/sábado. O tratamento tinha dois empregados, ambos com folga no domingo. Na continuação isolada de 48 horas, a captação chegou a 500 de capacidade no domingo, mas o tratamento não tinha presença naquele período; água potável permaneceu zerada. Energia era recebida quando havia equipe presente. Isso confirma um gargalo de pessoal/cobertura nessa cidade, não falha da posição da captação nem exigência de desenhar canos. Evidências: `artifacts/verification/player-water-audit-report.json` e `player-water-audit.log`. Em outra continuação isolada, seis casas construídas normalmente junto à rua próxima da captação/tratamento reservaram 11.845,20 de orçamento e atraíram moradores por compras e chegada físicas: população 17 → 26; captação 1 → 6 empregados; tratamento 2 → 6. O primeiro fornecimento ocorreu após 12 min 56 s simulados; em menos de uma hora, a água bruta chegou a 500 e a potável a 394,85. Evidência do ensaio: `artifacts/verification/player-water-houses-report.json`. A oferta monetária permaneceu preservada. Isso comprova uma solução naquela configuração, sem garantir migração ou contratação em qualquer cidade. As casas do ensaio não foram acrescentadas à partida aberta do responsável.
+
 ## Vagas universitárias e atrações iniciais — escolhas 5A/6A (2026-10-11)
 
 > **Revisão humana: PARCIALMENTE REVISADO.** 5A e 6A aprovadas; calendário, volume de vagas, visita e custos concretos dependem de calibração.
@@ -967,7 +973,7 @@ A chegada de turistas depende da combinação **real e verificável** de hospeda
 
 ## Manutenção municipal recorrente — opção 5B (2026-10-08)
 
-> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou despesas recorrentes reais e leitura agregada, sem reparos manuais. Fórmulas, serviços/destinatários e tratamento de falta de recursos continuam pendentes.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável aprovou despesas recorrentes reais e leitura agregada, sem reparos manuais. **Na V1, confirmou em 2026-10-12 equipes reais do Pátio, com apoio externo quando faltar capacidade local**, trabalho/materiais/entregas pagos e perda gradual de capacidade quando faltarem recursos. A regra oficial está na [SPEC](../SPEC.md); intervalos, intensidade e custos seguem para calibração dentro desse contrato, e as análises restantes não foram revistas integralmente.
 
 Expandir rua, energia, água e outras redes traz custos permanentes para o **Caixa da Cidade**, além da obra inicial. A **arrecadação de impostos já especificada** ajuda a financiar os custos, mas nunca sobe automaticamente para cobri-los: gastos excessivos podem gerar déficit, empréstimo e pressão para ajustar impostos. O painel financeiro precisa distinguir manutenção de salários e outras operações, sem cobranças duplicadas.
 

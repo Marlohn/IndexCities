@@ -4,7 +4,17 @@
 >
 > **Status:** instrumento de orientação para definição progressiva do produto e planejamento técnico, **não é fonte de verdade** nem checklist obrigatório de implementação.
 >
-> **Última reavaliação de avanço:** 2026-10-11: **93% de maturidade das definições do Convencional** (antes 89%) e **83% de prontidão documental/técnica para integração** (antes 81%). Ambos são **estimativas qualitativas, não progresso de programação nem validação do jogo**. **Implementação do jogo verificável neste GitHub: 0%**, sem excluir trabalho externo. **Pesquisa comparativa de base:** 2026-10-08. [Evidências e 24 frentes de investigação](genre-benchmark.md#pesquisa-transversal-ampliada--cidade-real-jogos-e-lacunas-de-gameplay-2026-10-08).
+> **Última reavaliação de avanço:** 2026-10-11: **93% de maturidade das definições do Convencional** (antes 89%) e **83% de prontidão documental/técnica para integração** (antes 81%). Ambos são **estimativas qualitativas, não progresso de programação nem validação do jogo**. **Registro histórico de implementação: 0% na avaliação anterior.** Não é uma medição atual do checkout nem exclui trabalho externo. **Pesquisa comparativa de base:** 2026-10-08. [Evidências e 24 frentes de investigação](genre-benchmark.md#pesquisa-transversal-ampliada--cidade-real-jogos-e-lacunas-de-gameplay-2026-10-08).
+
+## Revisão para a V1 — 2026-10-12
+
+> **Revisão humana desta seção: PENDENTE.** Conferência documental da IA; não altera requisitos, não recalcula os percentuais acima e não aprova escolhas de produto.
+
+A SPEC já delimita a V1; não é necessário reabrir o catálogo para começar. Nesta rodada, a coordenação e a frente exclusiva de assets foram definidas pelo responsável no [AGENTS](../../AGENTS.md#coordenação-da-v1-e-frente-de-assets--2026-10-12). No início da revisão, o checkout continha documentação, sem projeto do jogo. Ao fim da rodada de 2026-10-12, a V1 está integrada e executável localmente, com verificações da simulação, interface, assets e persistência. Os percentuais históricos acima continuam referentes à avaliação documental anterior; não medem a implementação atual.
+
+**Riscos a conferir no ciclo integrado:** bootstrap de obras e caminhões, conservação monetária e pagamentos, aquisição/autonomia dos agentes, acesso físico, combustível e dependências de água/esgoto/energia. A amostra visual ajuda a verificar integração artística; não resolve esses riscos de simulação. Regras já canônicas permanecem válidas; dimensões, ritmo, valores/fórmulas expressamente calibráveis e apresentação devem ser validados quando seu incremento entrar.
+
+**Evidência da primeira partida (2026-10-12):** o responsável relatou dificuldades de construção, interface e percepção de atividade. A integração técnica não encerra a V1; a jogabilidade continua em validação. O [registro de interface](player-interface.md#primeira-partida-da-v1--2026-10-12) distingue problemas verificados, reparos e análise **PENDENTE**. Não recalcular percentuais de qualidade a partir da quantidade de testes.
 
 ## Próximo passo: integração da V1 aprovada (2026-10-12)
 

@@ -1,0 +1,81 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/commercial.fuel_station.a.tres" id="1_6jauk"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/commercial.fuel_station.a.sign_panel.tres" id="2_kui5k"]
+
+[node name="FuelStation" type="Node3D" unique_id=2100693289]
+metadata/visual_id = "commercial.fuel_station.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/lot_candidate_m = Vector2(24, 24)
+metadata/visual_envelope_min = Vector3(-12, 0, -12)
+metadata/visual_envelope_size = Vector3(24, 6.06, 24)
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=444639080]
+mesh = ExtResource("1_6jauk")
+
+[node name="Sign" type="Node3D" parent="." unique_id=1324668876]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.1, 3.75, 6.935)
+metadata/replaceable = true
+metadata/panel_size_m = Vector2(5.4, 0.9)
+metadata/note = "letreiro substituivel na testeira da loja; SignText e preenchido pela integracao com o nome da empresa REAL operadora (sem precos)"
+
+[node name="SignPanel" type="MeshInstance3D" parent="Sign" unique_id=1823487345]
+mesh = ExtResource("2_kui5k")
+
+[node name="SignText" type="Label3D" parent="Sign" unique_id=994866925]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0, -0.152)
+pixel_size = 0.01
+double_sided = false
+modulate = Color(0.16862746, 0.19215687, 0.21176471, 1)
+font_size = 48
+outline_size = 0
+autowrap_mode = 3
+width = 510.0
+
+[node name="Candidate_VehicleEntry" type="Marker3D" parent="." unique_id=1845922960]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.4, 0, -11.8)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "entrada de veiculos candidata no rebaixo -X da borda frontal; acesso real e da integracao"
+
+[node name="Candidate_VehicleExit" type="Marker3D" parent="." unique_id=1978746699]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.4, 0, -11.8)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "saida de veiculos candidata no rebaixo +X da borda frontal; acesso real e da integracao"
+
+[node name="Candidate_PumpStop_1" type="Marker3D" parent="." unique_id=482090294]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -2.4, 0, -6.3)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "parada candidata ao lado da bomba (face -Z da ilha), circulacao em +X; nao define fila nem capacidade"
+
+[node name="Candidate_PumpStop_2" type="Marker3D" parent="." unique_id=1908897002]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 2.4, 0, -6.3)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "parada candidata ao lado da bomba (face -Z da ilha), circulacao em +X; nao define fila nem capacidade"
+
+[node name="Candidate_PumpStop_3" type="Marker3D" parent="." unique_id=213313421]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -2.4, 0, -1.3)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "parada candidata ao lado da bomba (face -Z da ilha), circulacao em +X; nao define fila nem capacidade"
+
+[node name="Candidate_PumpStop_4" type="Marker3D" parent="." unique_id=2083744664]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 2.4, 0, -1.3)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "parada candidata ao lado da bomba (face -Z da ilha), circulacao em +X; nao define fila nem capacidade"
+
+[node name="Candidate_FuelDelivery" type="Marker3D" parent="." unique_id=1852417838]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.6, 0, 6.4)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "descarga candidata do caminhao-tanque diante das tampas do tanque subterraneo; forward para fora da laje"
+
+[node name="Candidate_PedestrianEntry" type="Marker3D" parent="." unique_id=333269919]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 0, 5.6)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "entrada de pedestre candidata diante da porta de vidro da loja; acesso real e da integracao"

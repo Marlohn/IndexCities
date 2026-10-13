@@ -1,0 +1,35 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/vehicle.truck_cargo.a.body.tres" id="1_6da3y"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/vehicle.truck_cargo.a.wheel.tres" id="2_12qbv"]
+
+[node name="TruckCargo" type="Node3D" unique_id=478526375]
+metadata/visual_id = "vehicle.truck_cargo.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-1.45, 0, -3.6)
+metadata/visual_envelope_size = Vector3(2.9, 3.3000002, 7.2)
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=1434438746]
+mesh = ExtResource("1_6da3y")
+
+[node name="Wheel_FL" type="MeshInstance3D" parent="." unique_id=663919821]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.98, 0.47, -2.55)
+mesh = ExtResource("2_12qbv")
+
+[node name="Wheel_FR" type="MeshInstance3D" parent="." unique_id=1734386604]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.98, 0.47, -2.55)
+mesh = ExtResource("2_12qbv")
+
+[node name="Wheel_RL" type="MeshInstance3D" parent="." unique_id=389283387]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.98, 0.47, 1.75)
+mesh = ExtResource("2_12qbv")
+
+[node name="Wheel_RR" type="MeshInstance3D" parent="." unique_id=2014245337]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.98, 0.47, 1.75)
+mesh = ExtResource("2_12qbv")
+
+[node name="Candidate_CargoDoor" type="Marker3D" parent="." unique_id=131109233]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 3.9)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "CANDIDATO: ponto no solo atras das portas traseiras (fechadas). Nao e acesso funcional."

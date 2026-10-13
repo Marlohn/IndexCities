@@ -1,0 +1,6 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[resource]
+resource_name = "truck_cab"
+albedo_color = Color(0.9137255, 0.92156863, 0.92941177, 1)
+roughness = 0.55

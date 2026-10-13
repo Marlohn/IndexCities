@@ -1,0 +1,39 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/utility.water_treatment.a.tres" id="1_ermsj"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/utility.water_treatment.a.water.tres" id="2_l8tcd"]
+
+[node name="WaterTreatment" type="Node3D" unique_id=1366883683]
+metadata/visual_id = "utility.water_treatment.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/lot_candidate_m = Vector2(24, 26)
+metadata/visual_envelope_min = Vector3(-11.949999, 0, -12.55)
+metadata/visual_envelope_size = Vector3(23.349998, 6.13, 25.5)
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=621763118]
+mesh = ExtResource("1_ermsj")
+
+[node name="State_Water" type="Node3D" parent="." unique_id=1515417813]
+visible = false
+metadata/state = "laminas de agua limpa nos decantadores e filtros; o host liga somente com operacao REAL (agua em tratamento)"
+
+[node name="WaterSurfaces" type="MeshInstance3D" parent="State_Water" unique_id=884984100]
+mesh = ExtResource("2_l8tcd")
+
+[node name="Candidate_PedestrianEntry" type="Marker3D" parent="." unique_id=892285350]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -12.86)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "entrada de pedestre candidata diante da porta da casa de controle (x = 0, borda -Z); acesso real e da integracao"
+
+[node name="Candidate_PipeInlet" type="Marker3D" parent="." unique_id=847739973]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 13)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "entrada candidata de agua bruta nos FUNDOS (+Z), na caixa de chegada; rede real e da integracao"
+
+[node name="Candidate_PipeOutlet" type="Marker3D" parent="." unique_id=1737586136]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -12, 0, -7.4)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "saida candidata de agua tratada na lateral -X, junto a caixa onde o tubo desce para o solo; rede real e da integracao"

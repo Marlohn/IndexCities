@@ -1,0 +1,18 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/civic.city_hall.a.tres" id="1_qw1ev"]
+
+[node name="CityHall" type="Node3D" unique_id=688041410]
+metadata/visual_id = "civic.city_hall.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-12.3, 0, -10.199999)
+metadata/visual_envelope_size = Vector3(24.6, 17.94437, 17.8)
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=275367555]
+mesh = ExtResource("1_qw1ev")
+
+[node name="Candidate_PedestrianEntry" type="Marker3D" parent="." unique_id=76688200]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -10.6)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "porta principal candidata; acesso real e definido pela integracao"

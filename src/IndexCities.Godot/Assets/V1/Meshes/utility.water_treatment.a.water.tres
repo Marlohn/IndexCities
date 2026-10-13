@@ -1,0 +1,19 @@
+[gd_resource type="ArrayMesh" format=4]
+
+[ext_resource type="Material" path="res://Assets/V1/Materials/water_clean.tres" id="1_7arg3"]
+
+[resource]
+resource_name = "utility.water_treatment.a.water"
+_surfaces = [{
+"aabb": AABB(-10.730826, 1.15, -1.85, 21.461653, 0.39999998, 13.780827),
+"attribute_data": PackedByteArray("utNqwFlT9kD3ZabAwwOtQF2dhsBdzMxA8+zPwEPQm0DZ3/zAQ9CbQGozE8HDA61AuBcjwV3MzEB3sSvBWVP2QHexK8EfoxFBuBcjwZ1mJkFqMxPB60o2Qdnf/MCq5D5B8+zPwKrkPkH3ZabA60o2QV2dhsCdZiZButNqwFlT9kC602rAH6MRQV2dhsCdZiZBd7ErQVlT9kBqMxNBwwOtQLgXI0FdzMxA2d/8QEPQm0Dz7M9AQ9CbQPdlpkDDA61AXZ2GQF3MzEC602pAWVP2QLrTakAfoxFBXZ2GQJ1mJkH3ZaZA60o2QfPsz0Cq5D5B2d/8QKrkPkFqMxNB60o2QbgXI0GdZiZBd7ErQVlT9kB3sStBH6MRQbgXI0GdZiZBmpnRwAAAEEBmZmLAzczsv2ZmYsAAABBAmpnRwAAAEECamdHAzczsv2ZmYsDNzOy/AABMwAAAEEAzMzO+zczsvzMzM74AABBAAABMwAAAEEAAAEzAzczsvzMzM77NzOy/MzMzPgAAEEAAAExAzczsvwAATEAAABBAMzMzPgAAEEAzMzM+zczsvwAATEDNzOy/ZmZiQAAAEECamdFAzczsv5qZ0UAAABBAZmZiQAAAEEBmZmJAzczsv5qZ0UDNzOy/"),
+"format": 34359742487,
+"index_count": 108,
+"index_data": PackedByteArray("AAABAAIAAAADAAEAAAAEAAMAAAAFAAQAAAAGAAUAAAAHAAYAAAAIAAcAAAAJAAgAAAAKAAkAAAALAAoAAAAMAAsAAAANAAwAAAAOAA0ADwAQABEAEgATABQAEgAVABMAEgAWABUAEgAXABYAEgAYABcAEgAZABgAEgAaABkAEgAbABoAEgAcABsAEgAdABwAEgAeAB0AEgAfAB4AEgAgAB8AIQAiACMAJAAlACYAJwAoACkAKgArACwALQAuAC8AMAAxADIAMwA0ADUANgA3ADgAOQA6ADsA"),
+"material": ExtResource("1_7arg3"),
+"name": "water_clean",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 60,
+"vertex_data": PackedByteArray("utNqwGZmxj9ZU/ZA92WmwGZmxj/DA61AXZ2GwGZmxj9dzMxA8+zPwGZmxj9D0JtA2d/8wGZmxj9D0JtAajMTwWZmxj/DA61AuBcjwWZmxj9dzMxAd7ErwWZmxj9ZU/ZAd7ErwWZmxj8foxFBuBcjwWZmxj+dZiZBajMTwWZmxj/rSjZB2d/8wGZmxj+q5D5B8+zPwGZmxj+q5D5B92WmwGZmxj/rSjZBXZ2GwGZmxj+dZiZButNqwGZmxj9ZU/ZAutNqwGZmxj8foxFBXZ2GwGZmxj+dZiZBd7ErQWZmxj9ZU/ZAajMTQWZmxj/DA61AuBcjQWZmxj9dzMxA2d/8QGZmxj9D0JtA8+zPQGZmxj9D0JtA92WmQGZmxj/DA61AXZ2GQGZmxj9dzMxAutNqQGZmxj9ZU/ZAutNqQGZmxj8foxFBXZ2GQGZmxj+dZiZB92WmQGZmxj/rSjZB8+zPQGZmxj+q5D5B2d/8QGZmxj+q5D5BajMTQWZmxj/rSjZBuBcjQWZmxj+dZiZBd7ErQWZmxj9ZU/ZAd7ErQWZmxj8foxFBuBcjQWZmxj+dZiZBmpnRwDMzkz8AABBAZmZiwDMzkz/NzOy/ZmZiwDMzkz8AABBAmpnRwDMzkz8AABBAmpnRwDMzkz/NzOy/ZmZiwDMzkz/NzOy/AABMwDMzkz8AABBAMzMzvjMzkz/NzOy/MzMzvjMzkz8AABBAAABMwDMzkz8AABBAAABMwDMzkz/NzOy/MzMzvjMzkz/NzOy/MzMzPjMzkz8AABBAAABMQDMzkz/NzOy/AABMQDMzkz8AABBAMzMzPjMzkz8AABBAMzMzPjMzkz/NzOy/AABMQDMzkz/NzOy/ZmZiQDMzkz8AABBAmpnRQDMzkz/NzOy/mpnRQDMzkz8AABBAZmZiQDMzkz8AABBAZmZiQDMzkz/NzOy/mpnRQDMzkz/NzOy//3///wAA/7//f///AAD/v/9///8AAP+//3///wAA/7//f///AAD/v/9///8AAP+//3///wAA/7//f///AAD/v/9///8AAP+//3///wAA/7//f///AAD/v/9///8AAP+//3///wAA/7//f///AAD/v/9///8AAP+//3///wAA/7//f///AAD/v/9///8AAP+//3///wAA/7//f///AAD/v/9///8AAP+//3///wAA/7//f///AAD/v/9///8AAP+//3///wAA/7//f///AAD/v/9///8AAP+//3///wAA/7//f///AAD/v/9///8AAP+//3///wAA/7//f///AAD/v/9///8AAP+//3///wAA/7//f///AAD/v/9///8AAP+//3///wAA/7//f///AAD/v/9///8AAP+//3///wAA/7//f///AAD/v/9///8AAP+//3///wAA/7//f///AAD/v/9///8AAP+//3///wAA/7//f///AAD/v/9///8AAP+//3///wAA/7//f///AAD/v/9///8AAP+//3///wAA/7//f///AAD/v/9///8AAP+//3///wAA/7//f///AAD/v/9///8AAP+//3///wAA/7//f///AAD/v/9///8AAP+/")
+}]

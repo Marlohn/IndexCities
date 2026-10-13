@@ -1,0 +1,7 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[resource]
+resource_name = "civic_dome"
+albedo_color = Color(0.3529412, 0.6039216, 0.54901963, 1)
+metallic = 0.1
+roughness = 0.6

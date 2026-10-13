@@ -1,0 +1,135 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/agent.sim_pedestrian.a.torso.tres" id="1_ysa47"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/agent.sim_pedestrian.a.head.tres" id="2_qeuw5"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/agent.sim_pedestrian.a.arm.tres" id="3_0f3un"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/agent.sim_pedestrian.a.leg.tres" id="4_e3owr"]
+
+[sub_resource type="Animation" id="Animation_uc41t"]
+loop_mode = 1
+tracks/0/type = "position_3d"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Rig/Hips")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = PackedFloat32Array(0, 1, 0, 0.88, 0)
+tracks/1/type = "rotation_3d"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Rig/Hips/LegL")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = PackedFloat32Array(0, 1, 0, 0, 0, 1)
+tracks/2/type = "rotation_3d"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Rig/Hips/LegR")
+tracks/2/interp = 2
+tracks/2/loop_wrap = true
+tracks/2/keys = PackedFloat32Array(0, 1, 0, 0, 0, 1)
+tracks/3/type = "rotation_3d"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("Rig/Hips/ArmL")
+tracks/3/interp = 2
+tracks/3/loop_wrap = true
+tracks/3/keys = PackedFloat32Array(0, 1, 0, 0, 0, 1)
+tracks/4/type = "rotation_3d"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("Rig/Hips/ArmR")
+tracks/4/interp = 2
+tracks/4/loop_wrap = true
+tracks/4/keys = PackedFloat32Array(0, 1, 0, 0, 0, 1)
+
+[sub_resource type="Animation" id="Animation_fv1hj"]
+loop_mode = 1
+tracks/0/type = "position_3d"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Rig/Hips")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = PackedFloat32Array(0, 1, 0, 0.8406581, 0, 0.0625, 1, 0, 0.8491421, 0, 0.125, 1, 0, 0.86772287, 0, 0.1875, 1, 0, 0.87982374, 0, 0.25, 1, 0, 0.8799912, 0, 0.3125, 1, 0, 0.87982374, 0, 0.375, 1, 0, 0.86772287, 0, 0.4375, 1, 0, 0.8491421, 0, 0.5, 1, 0, 0.8406581, 0, 0.5625, 1, 0, 0.8491421, 0, 0.625, 1, 0, 0.86772287, 0, 0.6875, 1, 0, 0.87982374, 0, 0.75, 1, 0, 0.8799912, 0, 0.8125, 1, 0, 0.87982374, 0, 0.875, 1, 0, 0.86772287, 0, 0.9375, 1, 0, 0.8491421, 0)
+tracks/1/type = "rotation_3d"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Rig/Hips/LegL")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = PackedFloat32Array(0, 1, 0.19936793, 0, 0, 0.9799247, 0.0625, 1, 0.18241459, 0, 0, 0.9832217, 0.125, 1, 0.13385452, 0, 0, 0.991001, 0.1875, 1, 0.060611006, 0, 0, 0.99816144, 0.25, 1, -0.02617695, 0, 0, 0.99965733, 0.3125, 1, -0.112767674, 0, 0, 0.9936214, 0.375, 1, -0.18553607, 0, 0, 0.98263747, 0.4375, 1, -0.23362245, 0, 0, 0.9723274, 0.5, 1, -0.25038, 0, 0, 0.96814764, 0.5625, 1, -0.23362245, 0, 0, 0.9723274, 0.625, 1, -0.18553607, 0, 0, 0.98263747, 0.6875, 1, -0.112767674, 0, 0, 0.9936214, 0.75, 1, -0.02617695, 0, 0, 0.99965733, 0.8125, 1, 0.060611006, 0, 0, 0.99816144, 0.875, 1, 0.13385452, 0, 0, 0.991001, 0.9375, 1, 0.18241459, 0, 0, 0.9832217)
+tracks/2/type = "rotation_3d"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Rig/Hips/LegR")
+tracks/2/interp = 2
+tracks/2/loop_wrap = true
+tracks/2/keys = PackedFloat32Array(0, 1, -0.25038, 0, 0, 0.96814764, 0.0625, 1, -0.23362245, 0, 0, 0.9723274, 0.125, 1, -0.18553607, 0, 0, 0.98263747, 0.1875, 1, -0.112767674, 0, 0, 0.9936214, 0.25, 1, -0.02617695, 0, 0, 0.99965733, 0.3125, 1, 0.060611006, 0, 0, 0.99816144, 0.375, 1, 0.13385452, 0, 0, 0.991001, 0.4375, 1, 0.18241459, 0, 0, 0.9832217, 0.5, 1, 0.19936793, 0, 0, 0.9799247, 0.5625, 1, 0.18241459, 0, 0, 0.9832217, 0.625, 1, 0.13385452, 0, 0, 0.991001, 0.6875, 1, 0.060611006, 0, 0, 0.99816144, 0.75, 1, -0.02617695, 0, 0, 0.99965733, 0.8125, 1, -0.112767674, 0, 0, 0.9936214, 0.875, 1, -0.18553607, 0, 0, 0.98263747, 0.9375, 1, -0.23362245, 0, 0, 0.9723274)
+tracks/3/type = "rotation_3d"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("Rig/Hips/ArmL")
+tracks/3/interp = 2
+tracks/3/loop_wrap = true
+tracks/3/keys = PackedFloat32Array(0, 1, -0.17364818, 0, 0, 0.9848077, 0.0625, 1, -0.16054955, 0, 0, 0.98702776, 0.125, 1, -0.12310037, 0, 0, 0.9923942, 0.1875, 1, -0.066741206, 0, 0, 0.9977703, 0.25, 1, -1.0686706e-17, 0, 0, 1, 0.3125, 1, 0.066741206, 0, 0, 0.9977703, 0.375, 1, 0.12310037, 0, 0, 0.9923942, 0.4375, 1, 0.16054955, 0, 0, 0.98702776, 0.5, 1, 0.17364818, 0, 0, 0.9848077, 0.5625, 1, 0.16054955, 0, 0, 0.98702776, 0.625, 1, 0.12310037, 0, 0, 0.9923942, 0.6875, 1, 0.066741206, 0, 0, 0.9977703, 0.75, 1, 3.206012e-17, 0, 0, 1, 0.8125, 1, -0.066741206, 0, 0, 0.9977703, 0.875, 1, -0.12310037, 0, 0, 0.9923942, 0.9375, 1, -0.16054955, 0, 0, 0.98702776)
+tracks/4/type = "rotation_3d"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("Rig/Hips/ArmR")
+tracks/4/interp = 2
+tracks/4/loop_wrap = true
+tracks/4/keys = PackedFloat32Array(0, 1, 0.17364818, 0, 0, 0.9848077, 0.0625, 1, 0.16054955, 0, 0, 0.98702776, 0.125, 1, 0.12310037, 0, 0, 0.9923942, 0.1875, 1, 0.066741206, 0, 0, 0.9977703, 0.25, 1, 1.0686706e-17, 0, 0, 1, 0.3125, 1, -0.066741206, 0, 0, 0.9977703, 0.375, 1, -0.12310037, 0, 0, 0.9923942, 0.4375, 1, -0.16054955, 0, 0, 0.98702776, 0.5, 1, -0.17364818, 0, 0, 0.9848077, 0.5625, 1, -0.16054955, 0, 0, 0.98702776, 0.625, 1, -0.12310037, 0, 0, 0.9923942, 0.6875, 1, -0.066741206, 0, 0, 0.9977703, 0.75, 1, -3.206012e-17, 0, 0, 1, 0.8125, 1, 0.066741206, 0, 0, 0.9977703, 0.875, 1, 0.12310037, 0, 0, 0.9923942, 0.9375, 1, 0.16054955, 0, 0, 0.98702776)
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_uv75e"]
+_data = {
+&"idle": SubResource("Animation_uc41t"),
+&"walk": SubResource("Animation_fv1hj")
+}
+
+[node name="SimPedestrian" type="Node3D" unique_id=1720612037]
+metadata/visual_id = "agent.sim_pedestrian.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-0.3220917, 0, -0.192)
+metadata/visual_envelope_size = Vector3(0.6441834, 1.749018, 0.3643772)
+
+[node name="Rig" type="Node3D" parent="." unique_id=2052772145]
+
+[node name="Hips" type="Node3D" parent="Rig" unique_id=2132702065]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.88, 0)
+
+[node name="Torso" type="MeshInstance3D" parent="Rig/Hips" unique_id=1676499420]
+mesh = ExtResource("1_ysa47")
+
+[node name="Head" type="MeshInstance3D" parent="Rig/Hips" unique_id=1579212086]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.47, 0)
+mesh = ExtResource("2_qeuw5")
+
+[node name="ArmL" type="Node3D" parent="Rig/Hips" unique_id=1192383694]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.205, 0.378, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="Rig/Hips/ArmL" unique_id=1442817228]
+transform = Transform3D(0.99254614, 0.12186935, 0, -0.12186935, 0.99254614, 0, 0, 0, 1, 0, 0, 0)
+mesh = ExtResource("3_0f3un")
+
+[node name="ArmR" type="Node3D" parent="Rig/Hips" unique_id=402020413]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.205, 0.378, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="Rig/Hips/ArmR" unique_id=1683316395]
+transform = Transform3D(0.99254614, -0.12186935, 0, 0.12186935, 0.99254614, 0, 0, 0, 1, 0, 0, 0)
+mesh = ExtResource("3_0f3un")
+
+[node name="LegL" type="Node3D" parent="Rig/Hips" unique_id=2092706272]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.082, 0, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="Rig/Hips/LegL" unique_id=1857339819]
+mesh = ExtResource("4_e3owr")
+
+[node name="LegR" type="Node3D" parent="Rig/Hips" unique_id=802082718]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.082, 0, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="Rig/Hips/LegR" unique_id=149160772]
+mesh = ExtResource("4_e3owr")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1389849117]
+libraries/ = SubResource("AnimationLibrary_uv75e")

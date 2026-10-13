@@ -1,0 +1,6 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[resource]
+resource_name = "sewage_sludge"
+albedo_color = Color(0.35686275, 0.2901961, 0.20784314, 1)
+roughness = 0.95

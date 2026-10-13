@@ -6,7 +6,17 @@
 
 Preparar **assets originais, legíveis em câmera 3D isométrica e reutilizáveis** para a primeira cidade com dinheiro, construção e SIMs reais. A IA de arte trabalha em paralelo, mas **não altera comportamento de gameplay, footprints, capacidades, preços, emprego ou a SPEC** por conveniência visual. As cenas do Godot são apresentação; o Simulation Core é dono da lógica. Não usar nem portar assets de outros projetos antigos ou imagens de referência como fonte de malhas copiadas. Registre origem e licenças de dependências/recursos externos.
 
-**Começar já** pela identidade visual e amostra pequena. **Produção em quantidade espera apenas o contrato mínimo de escala/encaixe com a IA do jogo**, e não a implementação integral do simulador. Se esse contrato ainda não existir, a IA de arte deve **prepará-lo e submeter uma proposta à IA integradora o quanto antes**, deixando medidas e conectores como **pendentes de compatibilização**, sem inventá-los como requisitos.
+**Coordenação definida pelo responsável em 2026-10-12:** Codex administra a V1, decide os assets necessários ao incremento, envia pedidos e cuida de integração/validação. Claude Opus 5.5 com ultracode fica exclusivamente na frente de assets. A regra de trabalho está no [AGENTS](../../AGENTS.md#coordenação-da-v1-e-frente-de-assets--2026-10-12). **Este inventário é contexto, não uma ordem para produzir todo o catálogo.**
+
+**Amostra inicial solicitada pelo coordenador (histórico):** Prefeitura, casa, mercearia, via 1+1 reta/em L com calçada/poste, árvore, pedestre e caminhão, com ícones e preview. A entrega fica em `src/IndexCities.Godot/Assets/V1/`; serve para verificar encaixes e linguagem visual, sem criar uma partida ou definir gameplay. Medidas, conectores e estética candidatos permanecem **PENDENTES de revisão humana** e de compatibilização. O coordenador solicitou posteriormente Pátio, fazenda, posto, captação, tratamento de água, tratamento de esgoto e eólica. O pacote foi entregue e integrado em 2026-10-12, com 1.044 verificações técnicas sem falhas no Godot do projeto. Essa validação técnica não aprova a estética nem transforma marcadores candidatos em regras de acesso.
+
+## Referência visual enviada nesta rodada
+
+> **Revisão humana desta seção: PENDENTE.** O responsável enviou uma imagem isométrica de referência durante a produção da amostra e perguntou sobre alcançar qualidade semelhante ou melhor. A análise abaixo é da IA; não é aprovação de estilo final, de modelos específicos ou de novas funcionalidades.
+
+**Referência preservada no repositório:** [imagem enviada pelo responsável](../../references/visual/v1-neighborhood.png). **Cópia remota enviada por solicitação expressa:** [GitHub — referência visual V1](https://github.com/Marlohn/IndexCities/blob/references/v1-neighborhood/references/visual/v1-neighborhood.png), na branch dedicada `references/v1-neighborhood`; upload e SHA do blob foram conferidos. Uso como referência de autoria; a origem e os direitos de redistribuição da imagem não foram verificados, e ela não é um asset do jogo.
+
+A imagem orienta candidatos de acabamento: proporções coerentes de rua/calçada/SIM, copas facetadas com volumes variados, fachadas e janelas legíveis, paleta coesa, detalhes de entorno e iluminação quente com sombras suaves. A comparação precisa ser feita em render da engine e no jogo, incluindo repetição e custo gráfico. A referência não é recurso para distribuir, malha a copiar nem autorização para adicionar café, prédio misto ou bicicleta à V1. Seu uso nesta frente é observação visual para autoria original.
 
 ## Inventário visual derivado do recorte aprovado da V1
 
@@ -51,7 +61,7 @@ O responsável pela implementação e a IA de assets precisam alinhar, **antes d
 
 **Regra para trabalho paralelo:** a IA responsável pela arte **não edita arquivos de gameplay nem altera SPEC/ARCHITECTURE** para adaptar a malha. Ela entrega recursos sob caminho próprio; a IA integradora valida e conecta os IDs, acessos e comportamento. Conflitos de dimensões/interface são discutidos cedo, sem rebase acidental em arquivos comuns.
 
-## Como produzir — duas ondas, sem pipeline obrigatório inventado
+## Opções de produção — duas ondas exploratórias
 
 **Onda 1 — começar imediatamente, mesmo sem projeto jogável:** reunir referências de estilo **sem copiar**, definir uma paleta candidata, produzir um *style sheet* original com silhuetas de Prefeitura, casa, mercearia e estrada; esboçar ícones básicos e **um exemplar técnico editável** de casa, via e SIM/caminhão com escala relativa. Sinalizar `PENDENTE` para tamanho, porta, colisão e material ainda não validados. A visão low-poly é candidata forte no estudo atual, mas **não está aprovada como estilo final imutável**.
 
@@ -67,7 +77,9 @@ O responsável pela implementação e a IA de assets precisam alinhar, **antes d
 - Foi carregado numa cena Godot, medido no conjunto mínimo (casa + via + mercearia + vegetação + SIM/caminhão), com nota de gargalos/reutilização; testar em build exportada antes de considerar a família finalizada.
 - Os recursos estão disponíveis em pasta própria da frente de arte e as interfaces com a implementação estão documentadas no mesmo trabalho, sem mudanças surpreendentes nos arquivos de simulação.
 
-## Primeiro pedido que a outra IA de assets deve receber
+## Exemplo de pedido — referência exploratória
+
+**O texto abaixo é exemplo histórico da IA, PENDENTE de revisão humana; não substitui um pedido atual e delimitado do coordenador.** A ampliação para o inventário completo citada nele não está autorizada automaticamente.
 
 > Trabalhe no IndexCities consultando `AGENTS.md`, `docs/SPEC.md`, `docs/ARCHITECTURE.md`, `docs/exploration/first-playable-scope.md`, este briefing e `docs/exploration/asset-production-pipeline.md`. Sua frente é visual, sem alterar gameplay. Inicie imediatamente uma amostra original de casa, via urbana e mercearia com linguagem 3D isométrica simples e legível, acompanhada de sugestão de paleta, silhuetas e contrato de escala/pivô/entradas a validar com a IA integradora. Não copie recursos de outros projetos nem trate hipóteses pendentes como decisões humanas. Depois de validar a amostra em Godot, amplie para o inventário V1 aprovado, fornecendo fontes editáveis, IDs visuais estáveis, cenas/meshes/ícones e instruções de integração, com critérios de desempenho, licenças e estados visuais comandados pela simulação.
 

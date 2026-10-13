@@ -109,13 +109,13 @@ Fontes primárias: [Godot — geometria procedural](https://docs.godotengine.org
 **Sem POC isolada obrigatória.** Dentro dos primeiros incrementos visuais do jogo, usar uma **cena de referência pequena**, com casa, comércio, trecho de via/esquina, calçada, vegetação e um agente/veículo para comparação. O objetivo não é refazer por ritual o teste externo; é verificar **compatibilidade com o IndexCities**.
 
 **Observar:**
-1. **Qualidade:** reconhecer por miniatura/câmera comum; proporções, composição, paleta, luz, densidade e oclusão; não depender de texto no Criativo.
+1. **Qualidade:** reconhecer por miniatura/câmera comum; proporções, composição, paleta, luz, densidade e oclusão; não depender de texto nas ações básicas de construção do Convencional; o Criativo continua adiado.
 2. **Regeneração:** modificar telhado, largura, cor ou posição de porta em uma família e atualizar as variantes sem trabalho manual em dezenas de arquivos.
 3. **Integração:** visual não invade footprint inválido; porta corresponde a acesso; orientação, seleção e variantes preservam o tipo funcional e a entidade real.
 4. **Repetição:** comparar várias dezenas e depois centenas de instâncias com alterações de câmera; medir draw calls, CPU/GPU/memória e decidir se batching/LOD realmente ajudam.
 5. **Entrega e manutenção:** o recurso funciona no **jogo exportado**, preserva nós/componentes e referências, não exige geração de arquivos dentro de `res://` quando a aplicação já está empacotada e pode ser regenerado a partir do código/receita. Custo real por **asset aceito** = prompt/geração + revisão + correção + integração + nova geração após mudança. Se uma família ficar difícil de gerar bem, só então avaliar Blender ou serviço 3D externo para aquele caso.
 
-**Liberar produção em lotes** quando a primeira família for visualmente coerente, editável, importável/usável, identificável e tiver comportamento de desempenho conhecido. A quantidade exata de famílias e variantes será derivada do catálogo físico aprovado e da diversidade visual necessária, **não de um número arbitrário de modelos**.
+**Critério exploratório para avaliar lotes adicionais:** verificar se a primeira família é visualmente coerente, editável, importável/usável, identificável e tem comportamento de desempenho conhecido. Um lote depende de pedido do coordenador, não desta recomendação. A quantidade exata de famílias e variantes será derivada do catálogo físico aprovado e da diversidade visual necessária, **não de um número arbitrário de modelos**.
 
 ## Parecer ao responsável — ainda NÃO aprovado
 

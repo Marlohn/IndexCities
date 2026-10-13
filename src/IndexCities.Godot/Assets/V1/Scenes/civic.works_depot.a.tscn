@@ -1,0 +1,55 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/civic.works_depot.a.tres" id="1_mut1f"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/civic.works_depot.a.stock_sand_gravel.tres" id="2_o5kgl"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/civic.works_depot.a.stock_concrete.tres" id="3_yutig"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/civic.works_depot.a.stock_steel.tres" id="4_5lyxn"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/civic.works_depot.a.stock_wood.tres" id="5_4gclc"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/civic.works_depot.a.stock_asphalt.tres" id="6_oiw8g"]
+
+[node name="WorksDepot" type="Node3D" unique_id=773676721]
+metadata/visual_id = "civic.works_depot.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/lot_candidate_m = Vector2(24, 22)
+metadata/visual_envelope_min = Vector3(-11.95, 0, -10.95)
+metadata/visual_envelope_size = Vector3(23.9, 7.29, 21.9)
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=845549889]
+mesh = ExtResource("1_mut1f")
+
+[node name="State_Stock" type="Node3D" parent="." unique_id=1418799212]
+visible = false
+metadata/note = "estoque fisico REAL do patio; o host liga State_Stock e cada filho conforme o estoque de cada material (nada aqui e estoque infinito)"
+
+[node name="SandGravel" type="MeshInstance3D" parent="State_Stock" unique_id=350052446]
+mesh = ExtResource("2_o5kgl")
+
+[node name="Concrete" type="MeshInstance3D" parent="State_Stock" unique_id=2017758070]
+mesh = ExtResource("3_yutig")
+
+[node name="Steel" type="MeshInstance3D" parent="State_Stock" unique_id=46225743]
+mesh = ExtResource("4_5lyxn")
+
+[node name="Wood" type="MeshInstance3D" parent="State_Stock" unique_id=604932873]
+mesh = ExtResource("5_4gclc")
+
+[node name="Asphalt" type="MeshInstance3D" parent="State_Stock" unique_id=576281850]
+mesh = ExtResource("6_oiw8g")
+
+[node name="Candidate_PedestrianEntry" type="Marker3D" parent="." unique_id=470404857]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.4, 0, 0.25)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "CANDIDATO: diante da porta do escritorio (degrau incluido), frente -Z; acesso real e da integracao"
+
+[node name="Candidate_VehicleGate" type="Marker3D" parent="." unique_id=279149240]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -10.825)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "CANDIDATO: centro da abertura do patio na borda -Z (sem portao movel); acesso real e da integracao"
+
+[node name="Candidate_CargoPoint" type="Marker3D" parent="." unique_id=1337034809]
+transform = Transform3D(0.69122267, 0, -0.7226419, 0, 1.0000001, 0, 0.7226419, 0, 0.69122267, -6.9, 0, -4.35)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "CANDIDATO: no patio junto as baias, onde um caminhao descarregaria; frente apontando para a abertura"

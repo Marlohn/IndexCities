@@ -1,0 +1,18 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/residential.small_house.a.tres" id="1_agd51"]
+
+[node name="SmallHouse" type="Node3D" unique_id=1134949909]
+metadata/visual_id = "residential.small_house.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-4.39, 0, -4.6)
+metadata/visual_envelope_size = Vector3(8.78, 6.57, 8.59)
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=55741078]
+mesh = ExtResource("1_agd51")
+
+[node name="Candidate_PedestrianEntry" type="Marker3D" parent="." unique_id=1058738156]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.3, 0, -4.66)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "entrada de pedestre candidata diante do degrau da porta; acesso real e da integracao"
