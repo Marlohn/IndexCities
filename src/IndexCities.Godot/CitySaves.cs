@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using IndexCities.Simulation;
 using Godot;
 namespace IndexCities.Game;
@@ -39,10 +40,30 @@ public static class CitySaves
         }
     }
     public static void Save(string id,CitySave save)
+        =>WriteJson(id,JsonSerializer.Serialize(save));
+    static void WriteJson(string id,string json)
     {
         ValidateId(id);
         System.IO.Directory.CreateDirectory(DirectoryPath);var target=System.IO.Path.Combine(DirectoryPath,id+".json");var temp=target+".tmp";
-        System.IO.File.WriteAllText(temp,JsonSerializer.Serialize(save));System.IO.File.Move(temp,target,true);
+        System.IO.File.WriteAllText(temp,json);System.IO.File.Move(temp,target,true);
+    }
+    public static string NormalizeName(string name)
+    {
+        var value=name.Trim();
+        if(value.Any(char.IsControl))throw new ArgumentException("Use um nome em uma única linha");
+        return value;
+    }
+    public static string Rename(string id,string name)
+    {
+        ValidateId(id);var value=NormalizeName(name);
+        if(value.Length==0)throw new ArgumentException("Digite o nome da cidade");
+        var path=System.IO.Path.Combine(DirectoryPath,id+".json");
+        var save=JsonNode.Parse(System.IO.File.ReadAllText(path))?.AsObject()??throw new InvalidOperationException("Save vazio");
+        var city=JsonNode.Parse(save[nameof(CitySave.CityJson)]?.GetValue<string>()??"")?.AsObject()??throw new InvalidOperationException("Cidade vazia");
+        // Change only the name, preserving legacy/unknown fields and all host
+        // preferences. Deserializing the simulation here would migrate its state.
+        city[nameof(CityState.Name)]=value;save[nameof(CitySave.CityJson)]=city.ToJsonString();
+        WriteJson(id,save.ToJsonString());return value;
     }
     public static CitySave Load(string id){ValidateId(id);return JsonSerializer.Deserialize<CitySave>(System.IO.File.ReadAllText(System.IO.Path.Combine(DirectoryPath,id+".json")))??throw new InvalidOperationException("Save vazio");}
 }

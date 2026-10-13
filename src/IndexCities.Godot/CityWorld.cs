@@ -17,6 +17,7 @@ public partial class CityWorld:Node3D
     readonly List<Rect2> _roadFootprints=new(),_roadCarriageways=new();int? _labelLayoutKey;
     readonly List<PreviewRectangle> _crosswalkStripes=new();Node3D? _crosswalkPaint;
     const float RoadAsphaltTop=.03f,RoadSidewalkTop=.18f,RoadVisualLift=.01f;
+    ShaderMaterial? _lakeMaterial;double _lakePresentationTime;
     sealed record MotionBefore(Point Position,object Path,int Index,List<Point> Remaining);
     sealed class MotionTrace
     {
@@ -41,8 +42,9 @@ public partial class CityWorld:Node3D
         _activityLabels.Clear();_activityIcons.Clear();_insideCounts.Clear();_cargoCounts.Clear();_previewAccess=null;_previewAccessKey=null;
         _motionState=null;_peopleBefore.Clear();_vehiclesBefore.Clear();_peopleMotion.Clear();_vehicleMotion.Clear();_motionBuiltAt=double.NaN;
         _static=new Node3D();AddChild(_static);_preview=new Node3D();AddChild(_preview);_previewKey="";_previewBuildingKind=null;_previewPool.Clear();
-        var half=(float)state.Tuning.MapHalfSize;Box(_static,new(half*2,1,half*2),new(0,-.56f,0),"7d9b52");Box(_static,new(half*2+6,4,half*2+6),new(0,-3,0),"917656");
-        var water=new MeshInstance3D{Mesh=new CylinderMesh{TopRadius=(float)state.LakeRadius,BottomRadius=(float)state.LakeRadius+1,Height=.15f,RadialSegments=64},Position=P(state.LakeCentre,-.04f),MaterialOverride=Material("6bb3bd")};_static.AddChild(water);
+        var half=(float)state.Tuning.MapHalfSize;var ground=Box(_static,new(half*2,1,half*2),new(0,-.56f,0),"7d9b52");ground.MaterialOverride=GD.Load<Material>("res://Assets/RecoveryEnvironment/Materials/env_grass_soft.tres");Box(_static,new(half*2+6,4,half*2+6),new(0,-3,0),"917656");
+        _lakeMaterial=(ShaderMaterial)GD.Load<ShaderMaterial>("res://Assets/RecoveryEnvironment/Materials/env_lake_water.tres").Duplicate();_lakePresentationTime=0;_lakeMaterial.SetShaderParameter("host_time_s",0.0);
+        var water=new MeshInstance3D{Name="LakeSurface",Mesh=new CylinderMesh{TopRadius=(float)state.LakeRadius,BottomRadius=(float)state.LakeRadius+1,Height=.15f,RadialSegments=64},Position=P(state.LakeCentre,-.04f),MaterialOverride=_lakeMaterial};_static.AddChild(water);
         var random=new Random(state.Seed^123451);for(var i=0;i<145;i++){var p=new Point((random.NextDouble()*2-1)*(half-10),(random.NextDouble()*2-1)*(half-10));if(p.Distance(state.LakeCentre)<state.LakeRadius+9||Math.Abs(p.Z)<10)continue;var tree=Scene("vegetation.tree_broadleaf.a")??FallbackTree();tree.Position=P(p);tree.Scale=Vector3.One*(float)(.6+random.NextDouble()*.45);tree.RotationDegrees=new(0,random.Next(360),0);tree.SetMeta("tree_position",new Vector2((float)p.X,(float)p.Z));_static.AddChild(tree);_trees.Add((tree,p));}
         foreach(var a in new[]{new Vector3(-half,.2f,0),new Vector3(half,.2f,0),new Vector3(0,.2f,-half),new Vector3(0,.2f,half)}){var alongX=Math.Abs(a.Z)>.01;Box(_static,alongX?new(half*2,.12f,.25f):new(.25f,.12f,half*2),a,"dce8b9");}
         Sync(state);
@@ -59,7 +61,7 @@ public partial class CityWorld:Node3D
     {
         var mesh=new MeshInstance3D{Mesh=new BoxMesh{Size=size},Position=at,MaterialOverride=material,CastShadow=GeometryInstance3D.ShadowCastingSetting.Off};parent.AddChild(mesh);return mesh;
     }
-    static void Box(Node3D parent,Vector3 size,Vector3 at,string hex,float alpha=1){parent.AddChild(new MeshInstance3D{Mesh=new BoxMesh{Size=size},Position=at,MaterialOverride=Material(hex,alpha)});}
+    static MeshInstance3D Box(Node3D parent,Vector3 size,Vector3 at,string hex,float alpha=1){var mesh=new MeshInstance3D{Mesh=new BoxMesh{Size=size},Position=at,MaterialOverride=Material(hex,alpha)};parent.AddChild(mesh);return mesh;}
     // Paint variety is presentation only: a stable color per real vehicle.
     static readonly string[] CarPaints=["car_paint","car_paint_red","car_paint_blue","car_paint_white","car_paint_yellow","car_paint_green"];
     static void PaintCar(Node3D car,int id){if(car.GetNodeOrNull<MeshInstance3D>("Body") is not {Mesh:ArrayMesh mesh} body)return;var file="res://Assets/V1/Materials/"+CarPaints[(int)((uint)(id*2654435761u)%CarPaints.Length)]+".tres";if(!ResourceLoader.Exists(file))return;var paint=GD.Load<Material>(file);for(var i=0;i<mesh.GetSurfaceCount();i++)if(mesh.SurfaceGetName(i)=="car_paint")body.SetSurfaceOverrideMaterial(i,paint);}
@@ -105,8 +107,9 @@ public partial class CityWorld:Node3D
             var points=new List<Point>{before.Position};points.AddRange(before.Remaining.Take(count));points.Add(vehicle.Position);_vehicleMotion[vehicle.Id]=new(points);
         }
     }
-    public void Sync(CityState state,double? interpolation=null)
+    public void Sync(CityState state,double? interpolation=null,double environmentSeconds=0)
     {
+        if(_lakeMaterial!=null&&environmentSeconds>0){_lakePresentationTime=(_lakePresentationTime+environmentSeconds)%3600;_lakeMaterial.SetShaderParameter("host_time_s",_lakePresentationTime);}
         _state=state;if(_static==null)return;
         var renderTime=interpolation is {} blend&&ReferenceEquals(_motionState,state)&&state.ElapsedSeconds>_motionBeforeAt?_motionBeforeAt+(state.ElapsedSeconds-_motionBeforeAt)*Math.Clamp(blend,0,1):state.ElapsedSeconds;
         var visualSeconds=Math.Max(0,renderTime-_lastVisualTime);_lastVisualTime=renderTime;
