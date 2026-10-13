@@ -1,0 +1,38 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/agriculture.farm_small.a.tres" id="1_1ylr0"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/agriculture.farm_small.a.crop.tres" id="2_kbmkp"]
+
+[node name="FarmSmall" type="Node3D" unique_id=281709858]
+metadata/visual_id = "agriculture.farm_small.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/lot_candidate_m = Vector2(36, 40)
+metadata/visual_envelope_min = Vector3(-17.4, 0, -19.9)
+metadata/visual_envelope_size = Vector3(34.8, 9.55, 39.4)
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=1257589766]
+mesh = ExtResource("1_1ylr0")
+
+[node name="State_Crop" type="Node3D" parent="." unique_id=1801631494]
+visible = false
+
+[node name="Crop" type="MeshInstance3D" parent="State_Crop" unique_id=225366883]
+mesh = ExtResource("2_kbmkp")
+
+[node name="Candidate_PedestrianEntry" type="Marker3D" parent="." unique_id=1851220727]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.4, 0, -15.86)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "CANDIDATO: diante do portao (fechado) do celeiro; nao e acesso funcional"
+
+[node name="Candidate_CargoPoint" type="Marker3D" parent="." unique_id=587491590]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -4.4, 0, -16.8)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "CANDIDATO: carga de Alimentos no terreiro ao lado do celeiro, voltado para o acesso de terra"
+
+[node name="Candidate_FieldAccess" type="Marker3D" parent="." unique_id=341975658]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -4.8)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "CANDIDATO: entrada do campo (vao da cerca) no fim do acesso de terra; forward para fora do campo"

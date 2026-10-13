@@ -1,0 +1,6 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[resource]
+resource_name = "tree_foliage"
+albedo_color = Color(0.3372549, 0.47058824, 0.24705882, 1)
+roughness = 0.9

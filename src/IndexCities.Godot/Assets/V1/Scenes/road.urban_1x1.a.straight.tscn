@@ -1,0 +1,30 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/road.urban_1x1.a.straight.tres" id="1_ighle"]
+
+[node name="RoadUrban1x1Straight" type="Node3D" unique_id=499432568]
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=124122198]
+mesh = ExtResource("1_ighle")
+
+[node name="Connector_West" type="Marker3D" parent="." unique_id=820662064]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -5.25, 0, 0)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "conector candidato: secao 1+1 identica em todas as pecas; nao define rede viaria"
+
+[node name="Connector_East" type="Marker3D" parent="." unique_id=596810568]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 5.25, 0, 0)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "conector candidato: secao 1+1 identica em todas as pecas; nao define rede viaria"
+
+[node name="Candidate_LampSlot" type="Marker3D" parent="." unique_id=296330328]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.18, 3.7)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "posicao candidata de poste (calcada +Z, centro da faixa de servico); espacamento real e calibracao"

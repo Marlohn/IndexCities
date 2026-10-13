@@ -1,0 +1,182 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1420" height="830" viewBox="0 0 1420 830">
+<rect width="100%" height="100%" fill="#f4f2ed"/>
+<text x="20" y="34" font-family="sans-serif" font-size="20" fill="#2b2f33">IndexCities V1 - paleta CANDIDATA da amostra (revisao humana PENDENTE)</text>
+<text x="20" y="58" font-family="sans-serif" font-size="13" fill="#5b6066">Gerado de Assets/V1/Materials/*.tres. Sem prefixo = compartilhado; prefixo = familia. (on) = alternativo emissivo NAO aplicado por padrao.</text>
+<rect x="20" y="76" width="56" height="56" rx="6" fill="#3a62a0" stroke="#00000033"/>
+<text x="86" y="100" font-family="monospace" font-size="13" fill="#2b2f33">civic_accent</text>
+<text x="86" y="120" font-family="monospace" font-size="12" fill="#5b6066">#3a62a0</text>
+<rect x="250" y="76" width="56" height="56" rx="6" fill="#5a9a8c" stroke="#00000033"/>
+<text x="316" y="100" font-family="monospace" font-size="13" fill="#2b2f33">civic_dome</text>
+<text x="316" y="120" font-family="monospace" font-size="12" fill="#5b6066">#5a9a8c</text>
+<rect x="480" y="76" width="56" height="56" rx="6" fill="#5f6b75" stroke="#00000033"/>
+<text x="546" y="100" font-family="monospace" font-size="13" fill="#2b2f33">civic_roof</text>
+<text x="546" y="120" font-family="monospace" font-size="12" fill="#5b6066">#5f6b75</text>
+<rect x="710" y="76" width="56" height="56" rx="6" fill="#c9c1af" stroke="#00000033"/>
+<text x="776" y="100" font-family="monospace" font-size="13" fill="#2b2f33">civic_stone</text>
+<text x="776" y="120" font-family="monospace" font-size="12" fill="#5b6066">#c9c1af</text>
+<rect x="940" y="76" width="56" height="56" rx="6" fill="#bdb8ae" stroke="#00000033"/>
+<text x="1006" y="100" font-family="monospace" font-size="13" fill="#2b2f33">concrete</text>
+<text x="1006" y="120" font-family="monospace" font-size="12" fill="#5b6066">#bdb8ae</text>
+<rect x="1170" y="76" width="56" height="56" rx="6" fill="#8f8c86" stroke="#00000033"/>
+<text x="1236" y="100" font-family="monospace" font-size="13" fill="#2b2f33">concrete_dark</text>
+<text x="1236" y="120" font-family="monospace" font-size="12" fill="#5b6066">#8f8c86</text>
+<rect x="20" y="150" width="56" height="56" rx="6" fill="#837e74" stroke="#00000033"/>
+<text x="86" y="174" font-family="monospace" font-size="13" fill="#2b2f33">depot_pave</text>
+<text x="86" y="194" font-family="monospace" font-size="12" fill="#5b6066">#837e74</text>
+<rect x="250" y="150" width="56" height="56" rx="6" fill="#c7a46f" stroke="#00000033"/>
+<text x="316" y="174" font-family="monospace" font-size="13" fill="#2b2f33">depot_sand</text>
+<text x="316" y="194" font-family="monospace" font-size="12" fill="#5b6066">#c7a46f</text>
+<rect x="480" y="150" width="56" height="56" rx="6" fill="#b8773f" stroke="#00000033"/>
+<text x="546" y="174" font-family="monospace" font-size="13" fill="#2b2f33">depot_timber</text>
+<text x="546" y="194" font-family="monospace" font-size="12" fill="#5b6066">#b8773f</text>
+<rect x="710" y="150" width="56" height="56" rx="6" fill="#d4b064" stroke="#00000033"/>
+<text x="776" y="174" font-family="monospace" font-size="13" fill="#2b2f33">depot_wall</text>
+<text x="776" y="194" font-family="monospace" font-size="12" fill="#5b6066">#d4b064</text>
+<rect x="940" y="150" width="56" height="56" rx="6" fill="#9c3d34" stroke="#00000033"/>
+<text x="1006" y="174" font-family="monospace" font-size="13" fill="#2b2f33">farm_barn</text>
+<text x="1006" y="194" font-family="monospace" font-size="12" fill="#5b6066">#9c3d34</text>
+<rect x="1170" y="150" width="56" height="56" rx="6" fill="#b8996f" stroke="#00000033"/>
+<text x="1236" y="174" font-family="monospace" font-size="13" fill="#2b2f33">farm_dirt</text>
+<text x="1236" y="194" font-family="monospace" font-size="12" fill="#5b6066">#b8996f</text>
+<rect x="20" y="224" width="56" height="56" rx="6" fill="#55504c" stroke="#00000033"/>
+<text x="86" y="248" font-family="monospace" font-size="13" fill="#2b2f33">farm_roof</text>
+<text x="86" y="268" font-family="monospace" font-size="12" fill="#5b6066">#55504c</text>
+<rect x="250" y="224" width="56" height="56" rx="6" fill="#6e4b32" stroke="#00000033"/>
+<text x="316" y="248" font-family="monospace" font-size="13" fill="#2b2f33">farm_soil</text>
+<text x="316" y="268" font-family="monospace" font-size="12" fill="#5b6066">#6e4b32</text>
+<rect x="480" y="224" width="56" height="56" rx="6" fill="#b8343f" stroke="#00000033"/>
+<text x="546" y="248" font-family="monospace" font-size="13" fill="#2b2f33">fuel_accent</text>
+<text x="546" y="268" font-family="monospace" font-size="12" fill="#5b6066">#b8343f</text>
+<rect x="710" y="224" width="56" height="56" rx="6" fill="#d9cdb8" stroke="#00000033"/>
+<text x="776" y="248" font-family="monospace" font-size="13" fill="#2b2f33">fuel_wall</text>
+<text x="776" y="268" font-family="monospace" font-size="12" fill="#5b6066">#d9cdb8</text>
+<rect x="940" y="224" width="56" height="56" rx="6" fill="#3b5468" stroke="#00000033"/>
+<text x="1006" y="248" font-family="monospace" font-size="13" fill="#2b2f33">glass_dark</text>
+<text x="1006" y="268" font-family="monospace" font-size="12" fill="#5b6066">#3b5468</text>
+<rect x="1170" y="224" width="56" height="56" rx="6" fill="#b5543a" stroke="#00000033"/>
+<text x="1236" y="248" font-family="monospace" font-size="13" fill="#2b2f33">house_roof</text>
+<text x="1236" y="268" font-family="monospace" font-size="12" fill="#5b6066">#b5543a</text>
+<rect x="20" y="298" width="56" height="56" rx="6" fill="#ebcb98" stroke="#00000033"/>
+<text x="86" y="322" font-family="monospace" font-size="13" fill="#2b2f33">house_wall</text>
+<text x="86" y="342" font-family="monospace" font-size="12" fill="#5b6066">#ebcb98</text>
+<rect x="250" y="298" width="56" height="56" rx="6" fill="#c9cdc8" stroke="#00000033"/>
+<text x="316" y="322" font-family="monospace" font-size="13" fill="#2b2f33">intake_concrete</text>
+<text x="316" y="342" font-family="monospace" font-size="12" fill="#5b6066">#c9cdc8</text>
+<rect x="480" y="298" width="56" height="56" rx="6" fill="#2f6fa8" stroke="#00000033"/>
+<text x="546" y="322" font-family="monospace" font-size="13" fill="#2b2f33">intake_pipe</text>
+<text x="546" y="342" font-family="monospace" font-size="12" fill="#5b6066">#2f6fa8</text>
+<rect x="710" y="298" width="56" height="56" rx="6" fill="#5f87b0" stroke="#00000033"/>
+<text x="776" y="322" font-family="monospace" font-size="13" fill="#2b2f33">intake_roof</text>
+<text x="776" y="342" font-family="monospace" font-size="12" fill="#5b6066">#5f87b0</text>
+<rect x="940" y="298" width="56" height="56" rx="6" fill="#3e454d" stroke="#00000033"/>
+<text x="1006" y="322" font-family="monospace" font-size="13" fill="#2b2f33">metal_dark</text>
+<text x="1006" y="342" font-family="monospace" font-size="12" fill="#5b6066">#3e454d</text>
+<rect x="1170" y="298" width="56" height="56" rx="6" fill="#a3aab1" stroke="#00000033"/>
+<text x="1236" y="322" font-family="monospace" font-size="13" fill="#2b2f33">metal_light</text>
+<text x="1236" y="342" font-family="monospace" font-size="12" fill="#5b6066">#a3aab1</text>
+<rect x="20" y="372" width="56" height="56" rx="6" fill="#a19b91" stroke="#00000033"/>
+<text x="86" y="396" font-family="monospace" font-size="13" fill="#2b2f33">plinth_stone</text>
+<text x="86" y="416" font-family="monospace" font-size="12" fill="#5b6066">#a19b91</text>
+<rect x="250" y="372" width="56" height="56" rx="6" fill="#4a4e54" stroke="#00000033"/>
+<text x="316" y="396" font-family="monospace" font-size="13" fill="#2b2f33">road_asphalt</text>
+<text x="316" y="416" font-family="monospace" font-size="12" fill="#5b6066">#4a4e54</text>
+<rect x="480" y="372" width="56" height="56" rx="6" fill="#d2cdc2" stroke="#00000033"/>
+<text x="546" y="396" font-family="monospace" font-size="13" fill="#2b2f33">road_curb</text>
+<text x="546" y="416" font-family="monospace" font-size="12" fill="#5b6066">#d2cdc2</text>
+<rect x="710" y="372" width="56" height="56" rx="6" fill="#8d918f" stroke="#00000033"/>
+<text x="776" y="396" font-family="monospace" font-size="13" fill="#2b2f33">road_lamp_glass_off</text>
+<text x="776" y="416" font-family="monospace" font-size="12" fill="#5b6066">#8d918f</text>
+<rect x="940" y="372" width="56" height="56" rx="6" fill="#fff1cf" stroke="#00000033"/>
+<text x="1006" y="396" font-family="monospace" font-size="13" fill="#2b2f33">road_lamp_glass_on (on)</text>
+<text x="1006" y="416" font-family="monospace" font-size="12" fill="#5b6066">#fff1cf</text>
+<rect x="1170" y="372" width="56" height="56" rx="6" fill="#e0b23d" stroke="#00000033"/>
+<text x="1236" y="396" font-family="monospace" font-size="13" fill="#2b2f33">road_marking_yellow</text>
+<text x="1236" y="416" font-family="monospace" font-size="12" fill="#5b6066">#e0b23d</text>
+<rect x="20" y="446" width="56" height="56" rx="6" fill="#bdb7ab" stroke="#00000033"/>
+<text x="86" y="470" font-family="monospace" font-size="13" fill="#2b2f33">road_sidewalk</text>
+<text x="86" y="490" font-family="monospace" font-size="12" fill="#5b6066">#bdb7ab</text>
+<rect x="250" y="446" width="56" height="56" rx="6" fill="#a49a89" stroke="#00000033"/>
+<text x="316" y="470" font-family="monospace" font-size="13" fill="#2b2f33">road_sidewalk_service</text>
+<text x="316" y="490" font-family="monospace" font-size="12" fill="#5b6066">#a49a89</text>
+<rect x="480" y="446" width="56" height="56" rx="6" fill="#2a2c2f" stroke="#00000033"/>
+<text x="546" y="470" font-family="monospace" font-size="13" fill="#2b2f33">rubber</text>
+<text x="546" y="490" font-family="monospace" font-size="12" fill="#5b6066">#2a2c2f</text>
+<rect x="710" y="446" width="56" height="56" rx="6" fill="#7d7444" stroke="#00000033"/>
+<text x="776" y="470" font-family="monospace" font-size="13" fill="#2b2f33">sewage_effluent</text>
+<text x="776" y="490" font-family="monospace" font-size="12" fill="#5b6066">#7d7444</text>
+<rect x="940" y="446" width="56" height="56" rx="6" fill="#b08a4a" stroke="#00000033"/>
+<text x="1006" y="470" font-family="monospace" font-size="13" fill="#2b2f33">sewage_ochre</text>
+<text x="1006" y="490" font-family="monospace" font-size="12" fill="#5b6066">#b08a4a</text>
+<rect x="1170" y="446" width="56" height="56" rx="6" fill="#7a5a3a" stroke="#00000033"/>
+<text x="1236" y="470" font-family="monospace" font-size="13" fill="#2b2f33">sewage_pipe</text>
+<text x="1236" y="490" font-family="monospace" font-size="12" fill="#5b6066">#7a5a3a</text>
+<rect x="20" y="520" width="56" height="56" rx="6" fill="#5b4a35" stroke="#00000033"/>
+<text x="86" y="544" font-family="monospace" font-size="13" fill="#2b2f33">sewage_sludge</text>
+<text x="86" y="564" font-family="monospace" font-size="12" fill="#5b6066">#5b4a35</text>
+<rect x="250" y="520" width="56" height="56" rx="6" fill="#d39b35" stroke="#00000033"/>
+<text x="316" y="544" font-family="monospace" font-size="13" fill="#2b2f33">shop_awning</text>
+<text x="316" y="564" font-family="monospace" font-size="12" fill="#5b6066">#d39b35</text>
+<rect x="480" y="520" width="56" height="56" rx="6" fill="#f7f4ec" stroke="#00000033"/>
+<text x="546" y="544" font-family="monospace" font-size="13" fill="#2b2f33">shop_sign_blank</text>
+<text x="546" y="564" font-family="monospace" font-size="12" fill="#5b6066">#f7f4ec</text>
+<rect x="710" y="520" width="56" height="56" rx="6" fill="#a9c6a6" stroke="#00000033"/>
+<text x="776" y="544" font-family="monospace" font-size="13" fill="#2b2f33">shop_wall</text>
+<text x="776" y="564" font-family="monospace" font-size="12" fill="#5b6066">#a9c6a6</text>
+<rect x="940" y="520" width="56" height="56" rx="6" fill="#3a414b" stroke="#00000033"/>
+<text x="1006" y="544" font-family="monospace" font-size="13" fill="#2b2f33">sim_bottom</text>
+<text x="1006" y="564" font-family="monospace" font-size="12" fill="#5b6066">#3a414b</text>
+<rect x="1170" y="520" width="56" height="56" rx="6" fill="#4b3427" stroke="#00000033"/>
+<text x="1236" y="544" font-family="monospace" font-size="13" fill="#2b2f33">sim_hair</text>
+<text x="1236" y="564" font-family="monospace" font-size="12" fill="#5b6066">#4b3427</text>
+<rect x="20" y="594" width="56" height="56" rx="6" fill="#2a2a2a" stroke="#00000033"/>
+<text x="86" y="618" font-family="monospace" font-size="13" fill="#2b2f33">sim_shoes</text>
+<text x="86" y="638" font-family="monospace" font-size="12" fill="#5b6066">#2a2a2a</text>
+<rect x="250" y="594" width="56" height="56" rx="6" fill="#c58c67" stroke="#00000033"/>
+<text x="316" y="618" font-family="monospace" font-size="13" fill="#2b2f33">sim_skin</text>
+<text x="316" y="638" font-family="monospace" font-size="12" fill="#5b6066">#c58c67</text>
+<rect x="480" y="594" width="56" height="56" rx="6" fill="#3f7db3" stroke="#00000033"/>
+<text x="546" y="618" font-family="monospace" font-size="13" fill="#2b2f33">sim_top</text>
+<text x="546" y="638" font-family="monospace" font-size="12" fill="#5b6066">#3f7db3</text>
+<rect x="710" y="594" width="56" height="56" rx="6" fill="#7a5a3f" stroke="#00000033"/>
+<text x="776" y="618" font-family="monospace" font-size="13" fill="#2b2f33">tree_bark</text>
+<text x="776" y="638" font-family="monospace" font-size="12" fill="#5b6066">#7a5a3f</text>
+<rect x="940" y="594" width="56" height="56" rx="6" fill="#56783f" stroke="#00000033"/>
+<text x="1006" y="618" font-family="monospace" font-size="13" fill="#2b2f33">tree_foliage</text>
+<text x="1006" y="638" font-family="monospace" font-size="12" fill="#5b6066">#56783f</text>
+<rect x="1170" y="594" width="56" height="56" rx="6" fill="#3f6b3a" stroke="#00000033"/>
+<text x="1236" y="618" font-family="monospace" font-size="13" fill="#2b2f33">tree_foliage_dark</text>
+<text x="1236" y="638" font-family="monospace" font-size="12" fill="#5b6066">#3f6b3a</text>
+<rect x="20" y="668" width="56" height="56" rx="6" fill="#f2eee6" stroke="#00000033"/>
+<text x="86" y="692" font-family="monospace" font-size="13" fill="#2b2f33">trim_white</text>
+<text x="86" y="712" font-family="monospace" font-size="12" fill="#5b6066">#f2eee6</text>
+<rect x="250" y="668" width="56" height="56" rx="6" fill="#c3c8ce" stroke="#00000033"/>
+<text x="316" y="692" font-family="monospace" font-size="13" fill="#2b2f33">truck_box</text>
+<text x="316" y="712" font-family="monospace" font-size="12" fill="#5b6066">#c3c8ce</text>
+<rect x="480" y="668" width="56" height="56" rx="6" fill="#e9ebed" stroke="#00000033"/>
+<text x="546" y="692" font-family="monospace" font-size="13" fill="#2b2f33">truck_cab</text>
+<text x="546" y="712" font-family="monospace" font-size="12" fill="#5b6066">#e9ebed</text>
+<rect x="710" y="668" width="56" height="56" rx="6" fill="#f1eedc" stroke="#00000033"/>
+<text x="776" y="692" font-family="monospace" font-size="13" fill="#2b2f33">truck_light_front_off</text>
+<text x="776" y="712" font-family="monospace" font-size="12" fill="#5b6066">#f1eedc</text>
+<rect x="940" y="668" width="56" height="56" rx="6" fill="#a2433a" stroke="#00000033"/>
+<text x="1006" y="692" font-family="monospace" font-size="13" fill="#2b2f33">truck_light_rear_off</text>
+<text x="1006" y="712" font-family="monospace" font-size="12" fill="#5b6066">#a2433a</text>
+<rect x="1170" y="668" width="56" height="56" rx="6" fill="#5aa9d6" stroke="#00000033"/>
+<text x="1236" y="692" font-family="monospace" font-size="13" fill="#2b2f33">water_clean</text>
+<text x="1236" y="712" font-family="monospace" font-size="12" fill="#5b6066">#5aa9d6</text>
+<rect x="20" y="742" width="56" height="56" rx="6" fill="#c9cdc8" stroke="#00000033"/>
+<text x="86" y="766" font-family="monospace" font-size="13" fill="#2b2f33">water_concrete</text>
+<text x="86" y="786" font-family="monospace" font-size="12" fill="#5b6066">#c9cdc8</text>
+<rect x="250" y="742" width="56" height="56" rx="6" fill="#2f6fa8" stroke="#00000033"/>
+<text x="316" y="766" font-family="monospace" font-size="13" fill="#2b2f33">water_pipe</text>
+<text x="316" y="786" font-family="monospace" font-size="12" fill="#5b6066">#2f6fa8</text>
+<rect x="480" y="742" width="56" height="56" rx="6" fill="#b4473b" stroke="#00000033"/>
+<text x="546" y="766" font-family="monospace" font-size="13" fill="#2b2f33">wind_tip</text>
+<text x="546" y="786" font-family="monospace" font-size="12" fill="#5b6066">#b4473b</text>
+<rect x="710" y="742" width="56" height="56" rx="6" fill="#e6e4de" stroke="#00000033"/>
+<text x="776" y="766" font-family="monospace" font-size="13" fill="#2b2f33">wind_tower</text>
+<text x="776" y="786" font-family="monospace" font-size="12" fill="#5b6066">#e6e4de</text>
+<rect x="940" y="742" width="56" height="56" rx="6" fill="#6f4a33" stroke="#00000033"/>
+<text x="1006" y="766" font-family="monospace" font-size="13" fill="#2b2f33">wood_door</text>
+<text x="1006" y="786" font-family="monospace" font-size="12" fill="#5b6066">#6f4a33</text>
+</svg>

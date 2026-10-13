@@ -1,0 +1,6 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[resource]
+resource_name = "wind_tip"
+albedo_color = Color(0.7058824, 0.2784314, 0.23137255, 1)
+roughness = 0.6

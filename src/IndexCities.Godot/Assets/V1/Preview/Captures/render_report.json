@@ -1,0 +1,399 @@
+{
+  "lineup_front_wave2": [
+    {
+      "id": "civic.works_depot.a",
+      "x_from": 0,
+      "width": 23.9,
+      "height": 7.29
+    },
+    {
+      "id": "agriculture.farm_small.a",
+      "x_from": 26.4,
+      "width": 34.8,
+      "height": 9.55
+    },
+    {
+      "id": "commercial.fuel_station.a",
+      "x_from": 63.7,
+      "width": 24,
+      "height": 6.06
+    },
+    {
+      "id": "utility.water_intake.a",
+      "x_from": 90.2,
+      "width": 13.7,
+      "height": 4.95
+    },
+    {
+      "id": "utility.water_treatment.a",
+      "x_from": 106.4,
+      "width": 23.35,
+      "height": 6.13
+    },
+    {
+      "id": "utility.sewage_treatment.a",
+      "x_from": 132.25,
+      "width": 25.96,
+      "height": 7.34
+    },
+    {
+      "id": "utility.wind_power.a",
+      "x_from": 160.71,
+      "width": 14.72,
+      "height": 31.4
+    }
+  ],
+  "thumbnails": [
+    "res://Assets/V1/Thumbnails/agent.sim_pedestrian.a.png",
+    "res://Assets/V1/Thumbnails/agriculture.farm_small.a.png",
+    "res://Assets/V1/Thumbnails/civic.city_hall.a.png",
+    "res://Assets/V1/Thumbnails/civic.works_depot.a.png",
+    "res://Assets/V1/Thumbnails/commercial.fuel_station.a.png",
+    "res://Assets/V1/Thumbnails/commercial.grocery_small.a.png",
+    "res://Assets/V1/Thumbnails/residential.small_house.a.png",
+    "res://Assets/V1/Thumbnails/road.urban_1x1.a.corner_l.png",
+    "res://Assets/V1/Thumbnails/road.urban_1x1.a.lamp.png",
+    "res://Assets/V1/Thumbnails/road.urban_1x1.a.straight.png",
+    "res://Assets/V1/Thumbnails/utility.sewage_treatment.a.png",
+    "res://Assets/V1/Thumbnails/utility.water_intake.a.png",
+    "res://Assets/V1/Thumbnails/utility.water_treatment.a.png",
+    "res://Assets/V1/Thumbnails/utility.wind_power.a.png",
+    "res://Assets/V1/Thumbnails/vegetation.tree_broadleaf.a.png",
+    "res://Assets/V1/Thumbnails/vehicle.truck_cargo.a.png"
+  ],
+  "materials": [
+    {
+      "name": "civic_accent",
+      "albedo": "#3a62a0",
+      "emissive": false
+    },
+    {
+      "name": "civic_dome",
+      "albedo": "#5a9a8c",
+      "emissive": false
+    },
+    {
+      "name": "civic_roof",
+      "albedo": "#5f6b75",
+      "emissive": false
+    },
+    {
+      "name": "civic_stone",
+      "albedo": "#c9c1af",
+      "emissive": false
+    },
+    {
+      "name": "concrete",
+      "albedo": "#bdb8ae",
+      "emissive": false
+    },
+    {
+      "name": "concrete_dark",
+      "albedo": "#8f8c86",
+      "emissive": false
+    },
+    {
+      "name": "depot_pave",
+      "albedo": "#837e74",
+      "emissive": false
+    },
+    {
+      "name": "depot_sand",
+      "albedo": "#c7a46f",
+      "emissive": false
+    },
+    {
+      "name": "depot_timber",
+      "albedo": "#b8773f",
+      "emissive": false
+    },
+    {
+      "name": "depot_wall",
+      "albedo": "#d4b064",
+      "emissive": false
+    },
+    {
+      "name": "farm_barn",
+      "albedo": "#9c3d34",
+      "emissive": false
+    },
+    {
+      "name": "farm_dirt",
+      "albedo": "#b8996f",
+      "emissive": false
+    },
+    {
+      "name": "farm_roof",
+      "albedo": "#55504c",
+      "emissive": false
+    },
+    {
+      "name": "farm_soil",
+      "albedo": "#6e4b32",
+      "emissive": false
+    },
+    {
+      "name": "fuel_accent",
+      "albedo": "#b8343f",
+      "emissive": false
+    },
+    {
+      "name": "fuel_wall",
+      "albedo": "#d9cdb8",
+      "emissive": false
+    },
+    {
+      "name": "glass_dark",
+      "albedo": "#3b5468",
+      "emissive": false
+    },
+    {
+      "name": "house_roof",
+      "albedo": "#b5543a",
+      "emissive": false
+    },
+    {
+      "name": "house_wall",
+      "albedo": "#ebcb98",
+      "emissive": false
+    },
+    {
+      "name": "intake_concrete",
+      "albedo": "#c9cdc8",
+      "emissive": false
+    },
+    {
+      "name": "intake_pipe",
+      "albedo": "#2f6fa8",
+      "emissive": false
+    },
+    {
+      "name": "intake_roof",
+      "albedo": "#5f87b0",
+      "emissive": false
+    },
+    {
+      "name": "metal_dark",
+      "albedo": "#3e454d",
+      "emissive": false
+    },
+    {
+      "name": "metal_light",
+      "albedo": "#a3aab1",
+      "emissive": false
+    },
+    {
+      "name": "plinth_stone",
+      "albedo": "#a19b91",
+      "emissive": false
+    },
+    {
+      "name": "road_asphalt",
+      "albedo": "#4a4e54",
+      "emissive": false
+    },
+    {
+      "name": "road_curb",
+      "albedo": "#d2cdc2",
+      "emissive": false
+    },
+    {
+      "name": "road_lamp_glass_off",
+      "albedo": "#8d918f",
+      "emissive": false
+    },
+    {
+      "name": "road_lamp_glass_on",
+      "albedo": "#fff1cf",
+      "emissive": true
+    },
+    {
+      "name": "road_marking_yellow",
+      "albedo": "#e0b23d",
+      "emissive": false
+    },
+    {
+      "name": "road_sidewalk",
+      "albedo": "#bdb7ab",
+      "emissive": false
+    },
+    {
+      "name": "road_sidewalk_service",
+      "albedo": "#a49a89",
+      "emissive": false
+    },
+    {
+      "name": "rubber",
+      "albedo": "#2a2c2f",
+      "emissive": false
+    },
+    {
+      "name": "sewage_effluent",
+      "albedo": "#7d7444",
+      "emissive": false
+    },
+    {
+      "name": "sewage_ochre",
+      "albedo": "#b08a4a",
+      "emissive": false
+    },
+    {
+      "name": "sewage_pipe",
+      "albedo": "#7a5a3a",
+      "emissive": false
+    },
+    {
+      "name": "sewage_sludge",
+      "albedo": "#5b4a35",
+      "emissive": false
+    },
+    {
+      "name": "shop_awning",
+      "albedo": "#d39b35",
+      "emissive": false
+    },
+    {
+      "name": "shop_sign_blank",
+      "albedo": "#f7f4ec",
+      "emissive": false
+    },
+    {
+      "name": "shop_wall",
+      "albedo": "#a9c6a6",
+      "emissive": false
+    },
+    {
+      "name": "sim_bottom",
+      "albedo": "#3a414b",
+      "emissive": false
+    },
+    {
+      "name": "sim_hair",
+      "albedo": "#4b3427",
+      "emissive": false
+    },
+    {
+      "name": "sim_shoes",
+      "albedo": "#2a2a2a",
+      "emissive": false
+    },
+    {
+      "name": "sim_skin",
+      "albedo": "#c58c67",
+      "emissive": false
+    },
+    {
+      "name": "sim_top",
+      "albedo": "#3f7db3",
+      "emissive": false
+    },
+    {
+      "name": "tree_bark",
+      "albedo": "#7a5a3f",
+      "emissive": false
+    },
+    {
+      "name": "tree_foliage",
+      "albedo": "#56783f",
+      "emissive": false
+    },
+    {
+      "name": "tree_foliage_dark",
+      "albedo": "#3f6b3a",
+      "emissive": false
+    },
+    {
+      "name": "trim_white",
+      "albedo": "#f2eee6",
+      "emissive": false
+    },
+    {
+      "name": "truck_box",
+      "albedo": "#c3c8ce",
+      "emissive": false
+    },
+    {
+      "name": "truck_cab",
+      "albedo": "#e9ebed",
+      "emissive": false
+    },
+    {
+      "name": "truck_light_front_off",
+      "albedo": "#f1eedc",
+      "emissive": false
+    },
+    {
+      "name": "truck_light_rear_off",
+      "albedo": "#a2433a",
+      "emissive": false
+    },
+    {
+      "name": "water_clean",
+      "albedo": "#5aa9d6",
+      "emissive": false
+    },
+    {
+      "name": "water_concrete",
+      "albedo": "#c9cdc8",
+      "emissive": false
+    },
+    {
+      "name": "water_pipe",
+      "albedo": "#2f6fa8",
+      "emissive": false
+    },
+    {
+      "name": "wind_tip",
+      "albedo": "#b4473b",
+      "emissive": false
+    },
+    {
+      "name": "wind_tower",
+      "albedo": "#e6e4de",
+      "emissive": false
+    },
+    {
+      "name": "wood_door",
+      "albedo": "#6f4a33",
+      "emissive": false
+    }
+  ],
+  "measure_wave2_board": {
+    "viewport": [
+      1920,
+      1080
+    ],
+    "visible_objects": 154,
+    "visible_primitives": 16629,
+    "visible_draw_calls": 104,
+    "shadow_draw_calls": 127,
+    "avg_viewport_cpu_ms": 0.296,
+    "avg_viewport_gpu_ms": 2.401
+  },
+  "measure_board": {
+    "viewport": [
+      1920,
+      1080
+    ],
+    "visible_objects": 137,
+    "visible_primitives": 11496,
+    "visible_draw_calls": 62,
+    "shadow_draw_calls": 117,
+    "avg_viewport_cpu_ms": 0.266,
+    "avg_viewport_gpu_ms": 1.914,
+    "note": "medido na execucao --final de 2026-10-12 ~13:05 (amostra 1)"
+  },
+  "measure_grid_400_houses_400_trees": {
+    "viewport": [
+      1920,
+      1080
+    ],
+    "visible_objects": 3600,
+    "visible_primitives": 440800,
+    "visible_draw_calls": 36,
+    "shadow_draw_calls": 120,
+    "avg_viewport_cpu_ms": 0.993,
+    "avg_viewport_gpu_ms": 3.212,
+    "note": "medido na execucao --final de 2026-10-12 ~13:05"
+  }
+}

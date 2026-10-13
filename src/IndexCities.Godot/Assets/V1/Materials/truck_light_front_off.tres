@@ -1,0 +1,6 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[resource]
+resource_name = "truck_light_front_off"
+albedo_color = Color(0.94509804, 0.93333334, 0.8627451, 1)
+roughness = 0.25

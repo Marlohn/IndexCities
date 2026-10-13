@@ -1,0 +1,251 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://Assets/V1/Scenes/road.urban_1x1.a.straight.tscn" id="1_jsvh6"]
+[ext_resource type="PackedScene" path="res://Assets/V1/Scenes/road.urban_1x1.a.corner_l.tscn" id="2_csmn8"]
+[ext_resource type="PackedScene" path="res://Assets/V1/Scenes/road.urban_1x1.a.lamp.tscn" id="3_2m33e"]
+[ext_resource type="PackedScene" path="res://Assets/V1/Scenes/vegetation.tree_broadleaf.a.tscn" id="4_7jnam"]
+[ext_resource type="PackedScene" path="res://Assets/V1/Scenes/civic.city_hall.a.tscn" id="5_m6uqy"]
+[ext_resource type="PackedScene" path="res://Assets/V1/Scenes/residential.small_house.a.tscn" id="6_3tt35"]
+[ext_resource type="PackedScene" path="res://Assets/V1/Scenes/commercial.grocery_small.a.tscn" id="7_awtvl"]
+[ext_resource type="PackedScene" path="res://Assets/V1/Scenes/agent.sim_pedestrian.a.tscn" id="8_rjiqk"]
+[ext_resource type="PackedScene" path="res://Assets/V1/Scenes/vehicle.truck_cargo.a.tscn" id="9_32sts"]
+
+[sub_resource type="Environment" id="Environment_q8lb4"]
+background_mode = 1
+background_color = Color(0.8117647, 0.87058824, 0.9098039, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.7882353, 0.8352941, 0.8745098, 1)
+ambient_light_energy = 0.55
+tonemap_mode = 2
+ssao_enabled = true
+ssao_radius = 1.2
+ssao_intensity = 1.6
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wy0ol"]
+albedo_color = Color(0.56078434, 0.68235296, 0.43137255, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_1bkvc"]
+material = SubResource("StandardMaterial3D_wy0ol")
+size = Vector2(150, 110)
+
+[node name="V1SampleBoard" type="Node3D" unique_id=191266454]
+metadata/purpose = "preview de revisao visual da amostra V1; nao e partida, nao povoa o jogo, posicoes arbitrarias"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+
+[node name="PreviewEnvironment" type="WorldEnvironment" parent="." unique_id=903696011]
+environment = SubResource("Environment_q8lb4")
+
+[node name="PreviewSun" type="DirectionalLight3D" parent="." unique_id=175791316]
+transform = Transform3D(-0.87157553, 0.3611801, -0.33151925, 0, 0.6762094, 0.7367095, 0.49026123, 0.64209795, -0.58936757, 0, 30, 0)
+light_color = Color(1, 0.9529412, 0.8862745, 1)
+light_energy = 1.15
+shadow_enabled = true
+directional_shadow_max_distance = 600.0
+
+[node name="PreviewGround" type="MeshInstance3D" parent="." unique_id=908709268]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, -0.01, 0)
+mesh = SubResource("PlaneMesh_1bkvc")
+
+[node name="Road" type="Node3D" parent="." unique_id=2110128547]
+
+[node name="Straight00" type="Node3D" parent="Road" unique_id=499432568 instance=ExtResource("1_jsvh6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -42, 0, 0)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Straight01" type="Node3D" parent="Road" unique_id=1398875643 instance=ExtResource("1_jsvh6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -31.5, 0, 0)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Straight02" type="Node3D" parent="Road" unique_id=1860453386 instance=ExtResource("1_jsvh6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -21, 0, 0)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Straight03" type="Node3D" parent="Road" unique_id=255245476 instance=ExtResource("1_jsvh6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.5, 0, 0)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Straight04" type="Node3D" parent="Road" unique_id=1989772298 instance=ExtResource("1_jsvh6")]
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Straight05" type="Node3D" parent="Road" unique_id=209233877 instance=ExtResource("1_jsvh6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.5, 0, 0)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Straight06" type="Node3D" parent="Road" unique_id=1799732320 instance=ExtResource("1_jsvh6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 0, 0)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Straight07" type="Node3D" parent="Road" unique_id=1942053979 instance=ExtResource("1_jsvh6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 31.5, 0, 0)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Straight08" type="Node3D" parent="Road" unique_id=421341995 instance=ExtResource("1_jsvh6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42, 0, 0)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="CornerL" type="Node3D" parent="Road" unique_id=1019155660 instance=ExtResource("2_csmn8")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 52.5, 0, 0)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Side00" type="Node3D" parent="Road" unique_id=93535711 instance=ExtResource("1_jsvh6")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 52.5, 0, -10.5)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Side01" type="Node3D" parent="Road" unique_id=2069048954 instance=ExtResource("1_jsvh6")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 52.5, 0, -21)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Lamps" type="Node3D" parent="." unique_id=2144447144]
+
+[node name="Lamp00" type="Node3D" parent="Lamps" unique_id=1135056246 instance=ExtResource("3_2m33e")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -42, 0.18, 3.7)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-0.21, 0, -2.05)
+metadata/visual_envelope_size = Vector3(0.42, 6.6799994, 2.25)
+
+[node name="Lamp02" type="Node3D" parent="Lamps" unique_id=1429703985 instance=ExtResource("3_2m33e")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -21, 0.18, 3.7)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-0.21, 0, -2.05)
+metadata/visual_envelope_size = Vector3(0.42, 6.6799994, 2.25)
+
+[node name="Lamp04" type="Node3D" parent="Lamps" unique_id=2145939397 instance=ExtResource("3_2m33e")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.18, 3.7)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-0.21, 0, -2.05)
+metadata/visual_envelope_size = Vector3(0.42, 6.6799994, 2.25)
+
+[node name="Lamp06" type="Node3D" parent="Lamps" unique_id=1412933365 instance=ExtResource("3_2m33e")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 0.18, 3.7)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-0.21, 0, -2.05)
+metadata/visual_envelope_size = Vector3(0.42, 6.6799994, 2.25)
+
+[node name="Lamp08" type="Node3D" parent="Lamps" unique_id=1156326473 instance=ExtResource("3_2m33e")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42, 0.18, 3.7)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-0.21, 0, -2.05)
+metadata/visual_envelope_size = Vector3(0.42, 6.6799994, 2.25)
+
+[node name="LampCorner" type="Node3D" parent="Lamps" unique_id=1363702414 instance=ExtResource("3_2m33e")]
+transform = Transform3D(0.7071068, 0, 0.7071068, 0, 1, 0, -0.7071068, 0, 0.7071068, 53.578606, 0.18, 1.0786057)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-0.21, 0, -2.05)
+metadata/visual_envelope_size = Vector3(0.42, 6.6799994, 2.25)
+
+[node name="Buildings" type="Node3D" parent="." unique_id=1552323722]
+
+[node name="Tree01" type="Node3D" parent="Buildings" unique_id=1468404352 instance=ExtResource("4_7jnam")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -37.82081, 0, 8.700403)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="CityHall" type="Node3D" parent="Buildings" unique_id=688041410 instance=ExtResource("5_m6uqy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -21.302383, 0, 16.249998)
+metadata/visual_id = "civic.city_hall.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-12.3, 0, -10.199999)
+metadata/visual_envelope_size = Vector3(24.6, 17.94437, 17.8)
+
+[node name="Tree02" type="Node3D" parent="Buildings" unique_id=484858770 instance=ExtResource("4_7jnam")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.8231924, 0, 8.700403)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="SmallHouse" type="Node3D" parent="Buildings" unique_id=1134949909 instance=ExtResource("6_3tt35")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.785233, 0, 10.65)
+metadata/visual_id = "residential.small_house.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-4.39, 0, -4.6)
+metadata/visual_envelope_size = Vector3(8.78, 6.57, 8.59)
+
+[node name="Tree03" type="Node3D" parent="Buildings" unique_id=147182378 instance=ExtResource("4_7jnam")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.3544235, 0, 8.700403)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="GrocerySmall" type="Node3D" parent="Buildings" unique_id=455121754 instance=ExtResource("7_awtvl")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23.77285, 0, 13.35)
+metadata/visual_id = "commercial.grocery_small.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.2000003, 0, -7.3)
+metadata/visual_envelope_size = Vector3(10.400001, 6.15, 13.5)
+
+[node name="Tree04" type="Node3D" parent="Buildings" unique_id=440476859 instance=ExtResource("4_7jnam")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 33.152042, 0, 8.700403)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="ScaleProps" type="Node3D" parent="." unique_id=1006533668]
+
+[node name="SimPedestrian" type="Node3D" parent="ScaleProps" unique_id=1720612037 instance=ExtResource("8_rjiqk")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 12, 0.18, 4.25)
+metadata/visual_id = "agent.sim_pedestrian.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-0.3220917, 0, -0.192)
+metadata/visual_envelope_size = Vector3(0.6441834, 1.749018, 0.3643772)
+
+[node name="TruckCargo" type="Node3D" parent="ScaleProps" unique_id=478526375 instance=ExtResource("9_32sts")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 24, 0.03, 1.625)
+metadata/visual_id = "vehicle.truck_cargo.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-1.45, 0, -3.6)
+metadata/visual_envelope_size = Vector3(2.9, 3.3000002, 7.2)
+
+[node name="PreviewCameraIso" type="Camera3D" parent="." unique_id=1738868878]
+transform = Transform3D(-0.70710677, -0.4082483, 0.5773503, 0, 0.8164966, 0.5773503, -0.70710677, 0.4082483, -0.5773503, 123.470055, 115.470055, -113.470055)
+projection = 1
+current = true
+size = 62.0
+near = 0.1
+far = 1000.0

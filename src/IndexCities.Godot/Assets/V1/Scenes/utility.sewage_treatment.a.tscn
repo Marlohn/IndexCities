@@ -1,0 +1,53 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/utility.sewage_treatment.a.tres" id="1_4agip"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/utility.sewage_treatment.a.clarifier_bridge.tres" id="2_k3d7b"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/utility.sewage_treatment.a.state_water.tres" id="3_xst73"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/utility.sewage_treatment.a.state_sludge.tres" id="4_57em1"]
+
+[node name="SewageTreatment" type="Node3D" unique_id=899004806]
+metadata/visual_id = "utility.sewage_treatment.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/lot_candidate_m = Vector2(26, 28)
+metadata/visual_envelope_min = Vector3(-12.98, 0, -13.56)
+metadata/visual_envelope_size = Vector3(25.96, 7.34, 27.260002)
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=1082662933]
+mesh = ExtResource("1_4agip")
+
+[node name="ClarifierBridge" type="MeshInstance3D" parent="." unique_id=331809748]
+transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, 7.8, 0, -8)
+mesh = ExtResource("2_k3d7b")
+metadata/moving_part = "ponte radial do decantador: gira em torno do Y local (eixo do decantador); sem animacao, o host decide com estado real"
+
+[node name="State_Water" type="Node3D" parent="." unique_id=1221807123]
+visible = false
+metadata/state = "efluente em tratamento: raias de aeracao (com espuma), canal de chegada e decantador; ligar so com estado real"
+
+[node name="Effluent" type="MeshInstance3D" parent="State_Water" unique_id=1702248979]
+mesh = ExtResource("3_xst73")
+
+[node name="State_Sludge" type="Node3D" parent="." unique_id=864672200]
+visible = false
+metadata/state = "torta de lodo nos leitos de secagem; ligar so com estado real"
+
+[node name="SludgeCake" type="MeshInstance3D" parent="State_Sludge" unique_id=1716400094]
+mesh = ExtResource("4_57em1")
+
+[node name="Candidate_PedestrianEntry" type="Marker3D" parent="." unique_id=645845085]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -13.91)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "entrada de pedestre candidata diante da porta da casa de controle (centro da borda frontal); acesso real e da integracao"
+
+[node name="Candidate_PipeInlet" type="Marker3D" parent="." unique_id=466661878]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -12.98, 0.55, 4.3)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "chegada candidata do coletor de esgoto (borda -X, canal de chegada); conexao real e da integracao"
+
+[node name="Candidate_PipeOutlet" type="Marker3D" parent="." unique_id=2115354378]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 12.98, 0.45, -8)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "saida candidata do efluente tratado para o corpo d'agua (borda +X, caixa de saida do decantador); conexao real e da integracao"

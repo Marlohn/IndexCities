@@ -1,0 +1,2201 @@
+{
+  "schema": "indexcities.assets.v1.sample_manifest/1",
+  "status": "amostra V1 para compatibilizacao - revisao humana PENDENTE",
+  "conventions": {
+    "up_axis": "+Y",
+    "unit": "1 unidade = 1 metro (candidato, nao aprova escala de gameplay)",
+    "facade_candidate": "-Z",
+    "pivot": "no solo (y = 0)",
+    "marker_forward": "eixo -Z local do Marker3D aponta para 'forward'"
+  },
+  "entries": [
+    {
+      "visual_id": "agent.sim_pedestrian.a",
+      "family_id": "agent.sim_pedestrian.a",
+      "piece": "",
+      "title_pt": "SIM pedestre (adulto estilizado)",
+      "scene": "res://Assets/V1/Scenes/agent.sim_pedestrian.a.tscn",
+      "root_node": "SimPedestrian",
+      "envelope": {
+        "min": [
+          -0.322,
+          0.0,
+          -0.192
+        ],
+        "max": [
+          0.322,
+          1.749,
+          0.172
+        ],
+        "size": [
+          0.644,
+          1.749,
+          0.364
+        ]
+      },
+      "markers": [],
+      "meshes": [
+        {
+          "node": "Rig/Hips/Torso",
+          "mesh": "res://Assets/V1/Meshes/agent.sim_pedestrian.a.torso.tres",
+          "surfaces": [
+            "sim_top"
+          ],
+          "triangles": 168.0,
+          "visible_by_default": true
+        },
+        {
+          "node": "Rig/Hips/Head",
+          "mesh": "res://Assets/V1/Meshes/agent.sim_pedestrian.a.head.tres",
+          "surfaces": [
+            "sim_skin",
+            "sim_hair"
+          ],
+          "triangles": 182.0,
+          "visible_by_default": true
+        },
+        {
+          "node": "Rig/Hips/ArmL/Mesh",
+          "mesh": "res://Assets/V1/Meshes/agent.sim_pedestrian.a.arm.tres",
+          "surfaces": [
+            "sim_skin"
+          ],
+          "triangles": 52.0,
+          "visible_by_default": true
+        },
+        {
+          "node": "Rig/Hips/ArmR/Mesh",
+          "mesh": "res://Assets/V1/Meshes/agent.sim_pedestrian.a.arm.tres",
+          "surfaces": [
+            "sim_skin"
+          ],
+          "triangles": 52.0,
+          "visible_by_default": true
+        },
+        {
+          "node": "Rig/Hips/LegL/Mesh",
+          "mesh": "res://Assets/V1/Meshes/agent.sim_pedestrian.a.leg.tres",
+          "surfaces": [
+            "sim_bottom",
+            "sim_shoes"
+          ],
+          "triangles": 76.0,
+          "visible_by_default": true
+        },
+        {
+          "node": "Rig/Hips/LegR/Mesh",
+          "mesh": "res://Assets/V1/Meshes/agent.sim_pedestrian.a.leg.tres",
+          "surfaces": [
+            "sim_bottom",
+            "sim_shoes"
+          ],
+          "triangles": 76.0,
+          "visible_by_default": true
+        }
+      ],
+      "triangles_total": 606.0,
+      "mesh_surfaces_total": 9.0,
+      "proposed": {
+        "altura_total_m": 1.75,
+        "altura_quadril_m": 0.88,
+        "largura_ombros_m": 0.57,
+        "proporcao_cabecas": 5.8,
+        "ciclo_walk_s": 1.0,
+        "avanco_por_ciclo_walk_m": 1.58
+      },
+      "parts": {
+        "Rig": "Node3D raiz do rig (identidade). O host move/gira a RAIZ SimPedestrian no mundo.",
+        "Rig/Hips": "Node3D na altura do quadril; 'walk' anima so a posicao Y (oscilacao leve).",
+        "Rig/Hips/Torso": "MeshInstance3D; 1 superficie sim_top (camiseta, inclui as mangas curtas fixas no tronco).",
+        "Rig/Hips/Head": "MeshInstance3D com origem na base do pescoco; superficies sim_skin (rosto/pescoco), sim_hair (cabelo curto).",
+        "Rig/Hips/ArmL, ArmR": "Node3D com pivo no ombro (o host/animacao gira em X local; + = mao para a frente); filho 'Mesh' (abertura fixa de 7 graus em Z) com malha compartilhada .arm (1 superficie sim_skin).",
+        "Rig/Hips/LegL, LegR": "Node3D com pivo na articulacao do quadril (gira em X local; + = pe para a frente); filho 'Mesh' com malha compartilhada .leg (superficies sim_bottom, sim_shoes).",
+        "AnimationPlayer": "biblioteca padrao '' com 'idle' (pose neutra, loop) e 'walk' (loop 1,0 s); autoplay vazio."
+      },
+      "notes": [
+        "Frente voltada a -Z; pivo no solo entre os pes. Rotacao positiva em X leva pe/mao para a frente (-Z).",
+        "Sem script, sem autoplay, sem animacao autonoma: o host toca 'walk' somente quando um SIM real se desloca e 'idle' quando para.",
+        "'walk' em speed_scale 1,0 avanca ~1.58 m por ciclo (estimativa geometrica do passo sem deslizar: pernas +23/-29 graus, sola em arco); o host pode usar speed_scale = velocidade_real / 1.58. A velocidade e o trajeto sao do SIM real, nao da animacao.",
+        "Variacao visual por SIM real (a cargo do host, a partir de dados reais): Torso e ArmL/ArmR/Mesh tem 1 superficie, entao material_override por parte basta (roupa de cima; pele dos bracos). Head e LegL/LegR/Mesh tem 2 superficies: usar set_surface_override_material(mesh.surface_find_by_name(slot), material) para trocar so sim_skin/sim_hair ou sim_bottom/sim_shoes. Nenhuma regra de diversidade e decidida aqui.",
+        "Sem acessorios que impliquem trabalho/atividade (bolsas, maletas, celulares, uniformes).",
+        "'walk': Hips oscila entre ~0.841 e 0.88 m (calculado da sola: o ponto mais baixo dos sapatos fica rente ao solo em cada chave; erro <= 2 mm entre chaves).",
+        "Mangas fixas no tronco (limite de 10 superficies impede manga no braco); a boca da manga e mais funda em Z para o braco a +-20 graus nao atravessar o tecido."
+      ],
+      "status": "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+    },
+    {
+      "visual_id": "agriculture.farm_small.a",
+      "family_id": "agriculture.farm_small.a",
+      "piece": "",
+      "title_pt": "Fazenda pequena",
+      "scene": "res://Assets/V1/Scenes/agriculture.farm_small.a.tscn",
+      "root_node": "FarmSmall",
+      "envelope": {
+        "min": [
+          -17.4,
+          0.0,
+          -19.9
+        ],
+        "max": [
+          17.4,
+          9.55,
+          19.5
+        ],
+        "size": [
+          34.8,
+          9.55,
+          39.4
+        ]
+      },
+      "markers": [
+        {
+          "node": "Candidate_PedestrianEntry",
+          "position": [
+            -11.4,
+            0.0,
+            -15.86
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "note": "CANDIDATO: diante do portao (fechado) do celeiro; nao e acesso funcional"
+        },
+        {
+          "node": "Candidate_CargoPoint",
+          "position": [
+            -4.4,
+            0.0,
+            -16.8
+          ],
+          "forward": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "note": "CANDIDATO: carga de Alimentos no terreiro ao lado do celeiro, voltado para o acesso de terra"
+        },
+        {
+          "node": "Candidate_FieldAccess",
+          "position": [
+            0.0,
+            0.0,
+            -4.8
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "note": "CANDIDATO: entrada do campo (vao da cerca) no fim do acesso de terra; forward para fora do campo"
+        }
+      ],
+      "meshes": [
+        {
+          "node": "Body",
+          "mesh": "res://Assets/V1/Meshes/agriculture.farm_small.a.tres",
+          "surfaces": [
+            "concrete",
+            "farm_barn",
+            "farm_roof",
+            "trim_white",
+            "metal_light",
+            "farm_dirt",
+            "farm_soil"
+          ],
+          "triangles": 1625,
+          "visible_by_default": true
+        },
+        {
+          "node": "State_Crop/Crop",
+          "mesh": "res://Assets/V1/Meshes/agriculture.farm_small.a.crop.tres",
+          "surfaces": [
+            "tree_foliage_dark",
+            "tree_foliage"
+          ],
+          "triangles": 1204,
+          "visible_by_default": true
+        }
+      ],
+      "triangles_total": 2829,
+      "mesh_surfaces_total": 9,
+      "proposed": {
+        "lote_x_z_m": [
+          36.0,
+          40.0
+        ],
+        "celeiro_corpo_x_z_m": [
+          10.0,
+          8.0
+        ],
+        "celeiro_centro_x_z_m": [
+          -11.4,
+          -11.0
+        ],
+        "celeiro_parede_m": 4.2,
+        "celeiro_cumeeira_m": 7.88,
+        "celeiro_lanternim_topo_m": 9.55,
+        "portao_l_x_a_m": [
+          4.4,
+          3.45
+        ],
+        "silo_diametro_m": 3.0,
+        "silo_topo_m": 7.7,
+        "acesso_terra_largura_m": 3.6,
+        "campo_x_m": [
+          -17.4,
+          17.4
+        ],
+        "campo_z_principal_m": [
+          -4.4,
+          19.5
+        ],
+        "campo_z_bloco_direito_m": [
+          -17.4,
+          19.5
+        ],
+        "canteiro_base_crista_altura_passo_m": [
+          1.4,
+          0.5,
+          0.32,
+          1.8
+        ],
+        "cerca_altura_m": 0.95
+      },
+      "parts": {
+        "Body": "malha unica (7 superficies = slots): farm_barn (paredes e paineis do celeiro), farm_roof (cobertura metalica, cumeeira, lanternim, chapeu do silo, fundo das venezianas), trim_white (testeiras, cantoneiras, molduras e X dos portoes, venezianas, cerca), concrete (plinto do celeiro e base do silo), metal_light (corpo do silo), farm_dirt (terreiro/acesso de terra e borda clara do campo), farm_soil (solo preparado e canteiros em fileiras)",
+        "State_Crop": "Node3D OCULTO; malha State_Crop/Crop (tree_foliage + tree_foliage_dark): fileiras de plantacao verde generica sobre os canteiros. So o host liga a partir de producao REAL (cultivo em andamento).",
+        "Candidate_PedestrianEntry": "Marker3D candidato diante do portao do celeiro, forward -Z",
+        "Candidate_CargoPoint": "Marker3D candidato no terreiro a direita do celeiro (carga de Alimentos), forward +X para o acesso de terra",
+        "Candidate_FieldAccess": "Marker3D candidato na entrada do campo (fim do acesso de terra, vao da cerca), forward -Z"
+      },
+      "notes": [
+        "Pivo no centro do lote 36 x 40 m (solo). Celeiro 10 x 8 m na faixa frontal esquerda (x de -16,4 a -6,4; fachada em z = -15); silo em (-4,1; -10,2); acesso de terra do centro da borda frontal (z = -20) ate o campo (z = -4,4).",
+        "Campo em L: bloco principal de z = -4,4 a 19,5 em toda a largura e bloco direito ate z = -17,4 (x >= 2,6). Canteiros de solo preparado ao longo de Z no Body (estrutura permanente); a plantacao e ESTADO (State_Crop).",
+        "Plantacao generica (montes verdes sem cultura identificavel). Sem menu de culturas, tratores, animais, pessoas, caixas ou estoque a mostra. Silo e estrutura vazia (nao indica estoque).",
+        "Cerca baixa branca opcional (pedido de compatibilizacao) com vao na entrada do campo; nao delimita o lote e nao e acesso funcional. Pode ser removida com FENCE_ON = false.",
+        "Portao do celeiro sempre fechado; detalhes desenhados nao sao acessos funcionais (somente os Marker3D candidatos)."
+      ],
+      "lot_m": [
+        36.0,
+        40.0
+      ],
+      "state_nodes": [
+        {
+          "node": "State_Crop",
+          "visible_by_default": false
+        }
+      ],
+      "status": "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+    },
+    {
+      "visual_id": "civic.city_hall.a",
+      "family_id": "civic.city_hall.a",
+      "piece": "",
+      "title_pt": "Prefeitura",
+      "scene": "res://Assets/V1/Scenes/civic.city_hall.a.tscn",
+      "root_node": "CityHall",
+      "envelope": {
+        "min": [
+          -12.3,
+          0.0,
+          -10.2
+        ],
+        "max": [
+          12.3,
+          17.944,
+          7.6
+        ],
+        "size": [
+          24.6,
+          17.944,
+          17.8
+        ]
+      },
+      "markers": [
+        {
+          "node": "Candidate_PedestrianEntry",
+          "position": [
+            0.0,
+            0.0,
+            -10.6
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "note": "porta principal candidata; acesso real e definido pela integracao"
+        }
+      ],
+      "meshes": [
+        {
+          "node": "Body",
+          "mesh": "res://Assets/V1/Meshes/civic.city_hall.a.tres",
+          "surfaces": [
+            "plinth_stone",
+            "trim_white",
+            "civic_stone",
+            "civic_roof",
+            "glass_dark",
+            "civic_accent",
+            "civic_dome"
+          ],
+          "triangles": 3790.0,
+          "visible_by_default": true
+        }
+      ],
+      "triangles_total": 3790.0,
+      "mesh_surfaces_total": 7.0,
+      "proposed": {
+        "corpo_x_m": 24.5,
+        "corpo_z_m": 15.2,
+        "profundidade_paredes_alas_m": 11.1,
+        "profundidade_paredes_pavilhao_m": 12.3,
+        "escadaria_avanco_m": 2.6,
+        "avanco_portico_alem_da_porta_m": 3.01,
+        "avanco_total_alem_da_porta_m": 5.2,
+        "avanco_total_alem_fachada_alas_m": 5.8,
+        "eixo_cupula_z_m": 1.15,
+        "embasamento_m": 1.0,
+        "cornija_alas_m": 8.8,
+        "cornija_pavilhao_central_m": 10.3,
+        "apice_frontao_m": 12.05,
+        "topo_atico_m": 12.6,
+        "topo_cupula_casca_m": 17.12,
+        "topo_lanternim_m": 17.94
+      },
+      "parts": {
+        "Body": "malha unica estatica; 7 superficies (slot = material): plinth_stone embasamento/escadaria, civic_stone paredes/atico/tambor/friso, trim_white colunas/cornijas/molduras/pilastras/bocel dos degraus/lanternim, civic_roof coberturas, glass_dark vidros, civic_accent porta/timpano, civic_dome cupula/capa do lanternim",
+        "Candidate_PedestrianEntry": "marcador candidato no solo 0,5 m diante do primeiro degrau, eixo central, frente -Z"
+      },
+      "notes": [
+        "Pivo no solo, no centro do embasamento (sem a escadaria). O eixo do atico/tambor/cupula fica em z = +1,15 m (atras do pivo).",
+        "Medidas em Z (candidatas): o 'corpo ~15 m' inclui o portico aberto sobre o embasamento (z -7,6 a +7,6). Paredes: alas 11,1 m (z -4,4 a +6,7), pavilhao 12,3 m (z -5,0 a +7,3).",
+        "Leituras do limite 'escadaria <= 3 m': medido da borda do embasamento = 2,6 m; da parede da porta (z -5,0) ate a frente da escadaria = 5,2 m (portico 3,0 m + escadaria); da fachada das alas (z -4,4) = 5,8 m. A referencia de lote/pivo e decisao da integracao.",
+        "Desvio candidato do guia de estilo: embasamento de 1,0 m (guia: 0,2-0,45 m) para sustentar a escadaria larga de 5 degraus, sinal de entrada principal. A porta desenhada fica a +1,0 m, sem rampa; representacao de acessibilidade nao e decidida no asset. Pendente de revisao humana.",
+        "Sem relogio, bandeira, texto ou simbolo; portas fechadas; vidros escuros sem interior.",
+        "Desenho de porta/escadaria nao e acesso funcional: so o marcador candidato, a confirmar na integracao.",
+        "civic_stone #c9c1af (pedra cinza-quente, mais escura que a sugestao): a sugestao #e3dccd apagava molduras/colunas brancas e o #d9c8a9 anterior ficava proximo da parede creme da casa. civic_accent #3a62a0 (sugestao #2e4e72) para a porta/timpano nao se confundirem com o vidro escuro. Cores pendentes de compatibilizacao entre familias.",
+        "civic_dome mantida na sugestao #5a9a8c (patina verde-azulada). Tem matiz proximo ao do toldo/parede da mercearia: compatibilizacao entre familias pendente (alternativa testada: #5b949c, mais azulada, le menos como patina e se aproxima da ardosia).",
+        "Variante com nervuras brancas na cupula existe na receita (DOME_RIBS), desligada: em tamanho pequeno fragmenta a massa patinada.",
+        "Triangulos (build): total 3790; por parte { \"embasamento_escadaria\": 168, \"alas\": 2062, \"pavilhao\": 698, \"portico\": 320, \"atico_tambor_cupula_lanternim\": 542 }; janelas de fachada (ja contadas nas partes) 51 x 48 = 2448, primeiro corte de uma eventual LOD."
+      ],
+      "status": "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+    },
+    {
+      "visual_id": "civic.works_depot.a",
+      "family_id": "civic.works_depot.a",
+      "piece": "",
+      "title_pt": "Patio Municipal de Obras",
+      "scene": "res://Assets/V1/Scenes/civic.works_depot.a.tscn",
+      "root_node": "WorksDepot",
+      "envelope": {
+        "min": [
+          -11.95,
+          0.0,
+          -10.95
+        ],
+        "max": [
+          11.95,
+          7.29,
+          10.95
+        ],
+        "size": [
+          23.9,
+          7.29,
+          21.9
+        ]
+      },
+      "markers": [
+        {
+          "node": "Candidate_PedestrianEntry",
+          "position": [
+            8.4,
+            0.0,
+            0.25
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "note": "CANDIDATO: diante da porta do escritorio (degrau incluido), frente -Z; acesso real e da integracao"
+        },
+        {
+          "node": "Candidate_VehicleGate",
+          "position": [
+            0.0,
+            0.0,
+            -10.825
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "note": "CANDIDATO: centro da abertura do patio na borda -Z (sem portao movel); acesso real e da integracao"
+        },
+        {
+          "node": "Candidate_CargoPoint",
+          "position": [
+            -6.9,
+            0.0,
+            -4.35
+          ],
+          "forward": [
+            0.723,
+            0.0,
+            -0.691
+          ],
+          "note": "CANDIDATO: no patio junto as baias, onde um caminhao descarregaria; frente apontando para a abertura"
+        }
+      ],
+      "meshes": [
+        {
+          "node": "Body",
+          "mesh": "res://Assets/V1/Meshes/civic.works_depot.a.tres",
+          "surfaces": [
+            "depot_pave",
+            "concrete",
+            "trim_white",
+            "depot_wall",
+            "civic_roof",
+            "glass_dark",
+            "civic_accent"
+          ],
+          "triangles": 1676,
+          "visible_by_default": true
+        },
+        {
+          "node": "State_Stock/SandGravel",
+          "mesh": "res://Assets/V1/Meshes/civic.works_depot.a.stock_sand_gravel.tres",
+          "surfaces": [
+            "depot_sand"
+          ],
+          "triangles": 50,
+          "visible_by_default": true
+        },
+        {
+          "node": "State_Stock/Concrete",
+          "mesh": "res://Assets/V1/Meshes/civic.works_depot.a.stock_concrete.tres",
+          "surfaces": [
+            "depot_timber",
+            "concrete_dark"
+          ],
+          "triangles": 140,
+          "visible_by_default": true
+        },
+        {
+          "node": "State_Stock/Steel",
+          "mesh": "res://Assets/V1/Meshes/civic.works_depot.a.stock_steel.tres",
+          "surfaces": [
+            "concrete",
+            "metal_light"
+          ],
+          "triangles": 240,
+          "visible_by_default": true
+        },
+        {
+          "node": "State_Stock/Wood",
+          "mesh": "res://Assets/V1/Meshes/civic.works_depot.a.stock_wood.tres",
+          "surfaces": [
+            "depot_timber"
+          ],
+          "triangles": 290,
+          "visible_by_default": true
+        },
+        {
+          "node": "State_Stock/Asphalt",
+          "mesh": "res://Assets/V1/Meshes/civic.works_depot.a.stock_asphalt.tres",
+          "surfaces": [
+            "road_asphalt"
+          ],
+          "triangles": 50,
+          "visible_by_default": true
+        }
+      ],
+      "triangles_total": 2446,
+      "mesh_surfaces_total": 14,
+      "proposed": {
+        "lote_x_m": 24.0,
+        "lote_z_m": 22.0,
+        "pavimento_x_m": 23.9,
+        "pavimento_z_m": 21.9,
+        "galpao_x_m": 14.0,
+        "galpao_z_m": 8.0,
+        "galpao_beiral_m": 5.2,
+        "galpao_cumeeira_m": 6.22,
+        "galpao_topo_lanternim_m": 7.29,
+        "portoes_veiculo_l_x_a_m": [
+          4.0,
+          4.3
+        ],
+        "portoes_veiculo_qtd": 2,
+        "porta_pessoal_galpao_l_x_a_m": [
+          1.0,
+          2.2
+        ],
+        "escritorio_x_m": 5.8,
+        "escritorio_z_m": 6.0,
+        "escritorio_topo_platibanda_m": 4.12,
+        "porta_escritorio_l_x_a_m": [
+          1.1,
+          2.3
+        ],
+        "baias_qtd": 4,
+        "baia_vao_z_m": 2.4,
+        "baia_profundidade_x_m": 2.7,
+        "baia_altura_divisor_m": 1.3,
+        "baia_altura_fundo_m": 1.6,
+        "mureta_altura_m": 0.7,
+        "abertura_patio_m": 7.2,
+        "pilar_abertura_altura_m": 1.5
+      },
+      "parts": {
+        "Body": "malha unica estatica; 7 superficies (slot = material): depot_pave piso de concreto do patio, concrete mureta/pilares/baias/area do asfalto/embasamentos/degrau/juntas do piso, depot_wall paredes do galpao e do escritorio, civic_roof coberturas, trim_white lanternim/bordas da cobertura/cornija/molduras/marquise, glass_dark vidros, civic_accent portoes e portas (fechados)",
+        "State_Stock": "Node3D OCULTO por padrao: estoque fisico REAL; o host liga o no e cada filho conforme o estoque de cada material",
+        "State_Stock/SandGravel": "monte de areia/brita na 1a baia (frente)",
+        "State_Stock/Concrete": "blocos pre-moldados (concrete_dark) empilhados em dois estrados de madeira na 2a baia",
+        "State_Stock/Steel": "feixe de barras sobre dois calcos na 4a baia (junto ao galpao)",
+        "State_Stock/Wood": "pilha de tabuas/caibros com separadores na 3a baia",
+        "State_Stock/Asphalt": "monte escuro pequeno de massa asfaltica na area elevada diante da 1a baia",
+        "Candidate_PedestrianEntry": "Marker3D candidato diante da porta do escritorio, forward -Z",
+        "Candidate_VehicleGate": "Marker3D candidato no centro da abertura do patio (z ~ -10,8), forward -Z",
+        "Candidate_CargoPoint": "Marker3D candidato no patio junto as baias, forward para a abertura"
+      },
+      "notes": [
+        "Pivo no solo, no CENTRO do lote logico 24 x 22 m; pavimento ocupa 23.9 x 21.9 m (escala do host ~1).",
+        "Portoes, portas e baias sao desenho; acessos/carga reais sao so os Marker3D candidatos, a confirmar na integracao.",
+        "Baias VAZIAS no Body. O estoque (State_Stock) so aparece quando o host liga a partir de estoque REAL; cada filho e pequeno (menor que um Centro de Materiais). Thumbnails/pranchas podem ligar State_Stock so para ilustrar.",
+        "Juntas do piso (faixas claras ~4 m) indicam piso de concreto; nao sao vagas, faixas de trafego nem acesso funcional.",
+        "Icone (draw_icon): layout simplificado proprio (patio mais raso, 3 baias com estoque mais alto, divisores baixos) para leitura em 64 px; nao e medida do modelo.",
+        "Identidade civica discreta: civic_roof (ardosia) e civic_accent (azul) reutilizados da Prefeitura; sem bandeira, brasao, texto ou simbolo.",
+        "Triangulos (build): Body 1676; por parte { \"patio_mureta\": 442, \"baias_area_asfalto\": 294, \"galpao\": 584, \"escritorio\": 356 }; estoque por material { \"SandGravel\": 50, \"Concrete\": 140, \"Steel\": 240, \"Wood\": 290, \"Asphalt\": 50 }."
+      ],
+      "lot_m": [
+        24.0,
+        22.0
+      ],
+      "state_nodes": [
+        {
+          "node": "State_Stock",
+          "visible_by_default": false
+        }
+      ],
+      "status": "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+    },
+    {
+      "visual_id": "commercial.fuel_station.a",
+      "family_id": "commercial.fuel_station.a",
+      "piece": "",
+      "title_pt": "Posto de combustivel",
+      "scene": "res://Assets/V1/Scenes/commercial.fuel_station.a.tscn",
+      "root_node": "FuelStation",
+      "envelope": {
+        "min": [
+          -12.0,
+          0.0,
+          -12.0
+        ],
+        "max": [
+          12.0,
+          6.06,
+          12.0
+        ],
+        "size": [
+          24.0,
+          6.06,
+          24.0
+        ]
+      },
+      "markers": [
+        {
+          "node": "Candidate_VehicleEntry",
+          "position": [
+            -9.4,
+            0.0,
+            -11.8
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "note": "entrada de veiculos candidata no rebaixo -X da borda frontal; acesso real e da integracao"
+        },
+        {
+          "node": "Candidate_VehicleExit",
+          "position": [
+            9.4,
+            0.0,
+            -11.8
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "note": "saida de veiculos candidata no rebaixo +X da borda frontal; acesso real e da integracao"
+        },
+        {
+          "node": "Candidate_PumpStop_1",
+          "position": [
+            -2.4,
+            0.0,
+            -6.3
+          ],
+          "forward": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "note": "parada candidata ao lado da bomba (face -Z da ilha), circulacao em +X; nao define fila nem capacidade"
+        },
+        {
+          "node": "Candidate_PumpStop_2",
+          "position": [
+            2.4,
+            0.0,
+            -6.3
+          ],
+          "forward": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "note": "parada candidata ao lado da bomba (face -Z da ilha), circulacao em +X; nao define fila nem capacidade"
+        },
+        {
+          "node": "Candidate_PumpStop_3",
+          "position": [
+            -2.4,
+            0.0,
+            -1.3
+          ],
+          "forward": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "note": "parada candidata ao lado da bomba (face -Z da ilha), circulacao em +X; nao define fila nem capacidade"
+        },
+        {
+          "node": "Candidate_PumpStop_4",
+          "position": [
+            2.4,
+            0.0,
+            -1.3
+          ],
+          "forward": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "note": "parada candidata ao lado da bomba (face -Z da ilha), circulacao em +X; nao define fila nem capacidade"
+        },
+        {
+          "node": "Candidate_FuelDelivery",
+          "position": [
+            9.6,
+            0.0,
+            6.4
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "note": "descarga candidata do caminhao-tanque diante das tampas do tanque subterraneo; forward para fora da laje"
+        },
+        {
+          "node": "Candidate_PedestrianEntry",
+          "position": [
+            0.6,
+            0.0,
+            5.6
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "note": "entrada de pedestre candidata diante da porta de vidro da loja; acesso real e da integracao"
+        }
+      ],
+      "meshes": [
+        {
+          "node": "Body",
+          "mesh": "res://Assets/V1/Meshes/commercial.fuel_station.a.tres",
+          "surfaces": [
+            "road_asphalt",
+            "concrete",
+            "trim_white",
+            "metal_dark",
+            "fuel_accent",
+            "glass_dark",
+            "fuel_wall"
+          ],
+          "triangles": 1928,
+          "visible_by_default": true
+        },
+        {
+          "node": "Sign/SignPanel",
+          "mesh": "res://Assets/V1/Meshes/commercial.fuel_station.a.sign_panel.tres",
+          "surfaces": [
+            "shop_sign_blank",
+            "metal_dark"
+          ],
+          "triangles": 42,
+          "visible_by_default": true
+        }
+      ],
+      "triangles_total": 1970,
+      "mesh_surfaces_total": 9,
+      "proposed": {
+        "lote_x_z_m": [
+          24.0,
+          24.0
+        ],
+        "cobertura_x_z_m": [
+          14.8,
+          9.4
+        ],
+        "altura_livre_cobertura_m": 5.0,
+        "topo_cobertura_m": 6.06,
+        "testeira_altura_m": 1.0,
+        "pilares": 4,
+        "ilhas": {
+          "quantidade": 2,
+          "comprimento_m": 11.2,
+          "largura_m": 1.2,
+          "altura_m": 0.18,
+          "centros_z_m": [
+            -4.2,
+            0.8
+          ],
+          "pontas": "arredondadas (meio-octogono, raio = meia largura)"
+        },
+        "bombas": {
+          "quantidade": 4,
+          "l_x_p_x_a_m": [
+            1.18,
+            0.64,
+            2.3
+          ],
+          "x_m": [
+            -2.4,
+            2.4
+          ]
+        },
+        "loja_x_z_m": [
+          9.0,
+          4.6
+        ],
+        "loja_topo_platibanda_m": 4.47,
+        "letreiro_l_x_a_m": [
+          5.52,
+          1.02
+        ],
+        "laje_tanque_x_z_m": [
+          4.0,
+          4.6
+        ],
+        "respiros_altura_m": 4.12,
+        "rebaixos_centro_x_m": [
+          -9.4,
+          9.4
+        ],
+        "rebaixo_largura_livre_m": 3.6,
+        "meio_fio_altura_m": 0.18
+      },
+      "parts": {
+        "Body": "estrutura (7 superficies = slots): road_asphalt (patio, laje da loja), concrete (piso sob a cobertura, meio-fio e rebaixos, calcada da loja, laje do tanque), trim_white (ilhas de pontas arredondadas, corpo das bombas, pilares, forro/capa da cobertura, capa da platibanda, molduras, aneis das tampas, respiros, caixa do ar-condicionado), fuel_accent (testeira da cobertura, cabecas das bombas, protecao dos pilares, faixa da loja), metal_dark (bases das bombas, mangueiras/bicos, caixilhos, tampas, terminais dos respiros, base/ventilador do ar-condicionado), glass_dark (vitrine, porta, janelas, visores lisos), fuel_wall (paredes da loja, painel superior da cobertura)",
+        "Sign": "Node3D substituivel/removivel na testeira -Z da loja (pode ser trocado inteiro pela integracao)",
+        "Sign/SignPanel": "painel liso shop_sign_blank + moldura metal_dark (malha commercial.fuel_station.a.sign_panel)",
+        "Sign/SignText": "Label3D VAZIO, centralizado no painel, voltado a -Z; preencher com o nome da empresa REAL operadora; sem precos",
+        "Candidate_VehicleEntry": "Marker3D candidato no rebaixo -X da borda frontal, forward -Z",
+        "Candidate_VehicleExit": "Marker3D candidato no rebaixo +X da borda frontal, forward -Z",
+        "Candidate_PumpStop_1..4": "Marker3D candidatos no solo ao lado de cada bomba (face -Z de cada ilha), forward +X (circulacao)",
+        "Candidate_FuelDelivery": "Marker3D candidato diante das tampas do tanque, forward -Z (para fora da laje)",
+        "Candidate_PedestrianEntry": "Marker3D candidato diante da porta da loja, forward -Z"
+      },
+      "notes": [
+        "Pivo no solo, no centro do lote 24 x 24 m; o patio pavimentado ocupa o lote inteiro (escala do host ~1).",
+        "Circulacao candidata: entra pelo rebaixo -X, percorre as faixas ao longo das ilhas em +X e sai pelo rebaixo +X (trafego pela direita). Nao ha setas pintadas; a regra real de fluxo e da integracao.",
+        "A cobertura (altura livre 5,0 m) esconde a ilha de tras na vista isometrica frente-direita; a ilha da frente e visivel inteira. Se a integracao precisar ver veiculos sob a cobertura, a cobertura pode virar no proprio (nao feito: aumenta superficies).",
+        "Sem no State_*: o combustivel fica no tanque enterrado e nao ha luzes; nivel/abastecimento sao mostrados pela integracao (UI/veiculos), nao pela malha.",
+        "Painel superior da cobertura em fuel_wall (creme areia), um tom acima do piso concrete sob ela: em concrete os dois tinham o mesmo tom e se fundiam na planta. Caixa de ar-condicionado neutra na laje da loja (mesma linguagem da mercearia), sem estado.",
+        "Icone: composicao propria e exagerada para 64 px (sem o lote inteiro; patio em L, loja 1,6 m mais perto, testeira 1,9 m, bombas ~1,5x, ilha da frente em z = -5,3); nao e planta nem medida.",
+        "SignText: font_size 48, pixel_size 0,01 (altura de corpo ~0,48 m), largura util 5,1 m: uma linha de ~16 caracteres no painel 5,4 x 0,9 m. Nomes maiores: a integracao reduz pixel_size.",
+        "Meio-fio frontal a 0,18 m (mesma cota da calcada da rua da amostra); nos rebaixos o meio-fio desce em rampas de 0,5 m ate 0,05 m e o asfalto do patio (0,04 m) segue ate a borda do lote (vao livre de 3,6 m).",
+        "Sem precos, logos, nomes, veiculos, pessoas, luzes acesas, oficina, lava-rapido ou conveniencia ampliada. Portas fechadas; detalhes desenhados nao sao acessos funcionais (somente os Marker3D candidatos)."
+      ],
+      "lot_m": [
+        24.0,
+        24.0
+      ],
+      "state_nodes": [],
+      "status": "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+    },
+    {
+      "visual_id": "commercial.grocery_small.a",
+      "family_id": "commercial.grocery_small.a",
+      "piece": "",
+      "title_pt": "Mercearia pequena",
+      "scene": "res://Assets/V1/Scenes/commercial.grocery_small.a.tscn",
+      "root_node": "GrocerySmall",
+      "envelope": {
+        "min": [
+          -5.2,
+          0.0,
+          -7.3
+        ],
+        "max": [
+          5.2,
+          6.15,
+          6.2
+        ],
+        "size": [
+          10.4,
+          6.15,
+          13.5
+        ]
+      },
+      "markers": [
+        {
+          "node": "Candidate_PedestrianEntry",
+          "position": [
+            3.2,
+            0.0,
+            -7.0
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "note": "entrada de pedestre candidata diante da porta de vidro; acesso real e da integracao"
+        },
+        {
+          "node": "Candidate_CargoPoint",
+          "position": [
+            6.05,
+            0.0,
+            3.8
+          ],
+          "forward": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "note": "ponto de carga candidato; acesso real e da integracao"
+        }
+      ],
+      "meshes": [
+        {
+          "node": "Body",
+          "mesh": "res://Assets/V1/Meshes/commercial.grocery_small.a.tres",
+          "surfaces": [
+            "plinth_stone",
+            "shop_wall",
+            "concrete_dark",
+            "trim_white",
+            "metal_dark",
+            "glass_dark",
+            "shop_awning"
+          ],
+          "triangles": 788.0,
+          "visible_by_default": true
+        },
+        {
+          "node": "Sign/SignPanel",
+          "mesh": "res://Assets/V1/Meshes/commercial.grocery_small.a.sign_panel.tres",
+          "surfaces": [
+            "shop_sign_blank",
+            "metal_dark"
+          ],
+          "triangles": 44.0,
+          "visible_by_default": true
+        }
+      ],
+      "triangles_total": 832.0,
+      "mesh_surfaces_total": 9.0,
+      "proposed": {
+        "corpo_x_m": 10.0,
+        "corpo_z_m": 12.0,
+        "plinto_m": 0.2,
+        "parede_sobre_plinto_m": 4.4,
+        "platibanda_m": 0.5,
+        "topo_platibanda_com_capa_m": 5.2,
+        "topo_letreiro_m": 5.78,
+        "letreiro_l_x_a_m": [
+          6.16,
+          1.66
+        ],
+        "toldo_profundidade_m": 1.3,
+        "toldo_largura_m": 9.4,
+        "porta_servico_l_x_a_m": [
+          1.3,
+          2.4
+        ]
+      },
+      "parts": {
+        "Body": "estrutura (7 superficies = slots): plinth_stone (plinto, mureta, soleira), shop_wall (paredes, platibanda, frontao), concrete_dark (laje e porta de servico), trim_white (capas, friso, molduras, listras claras do toldo, caixa do ar-condicionado), metal_dark (caixilhos, base do ar-condicionado), glass_dark (vitrine, porta de vidro, janelas), shop_awning (listras de cor e abas do toldo)",
+        "Sign": "Node3D substituivel/removivel separado da estrutura (pode ser trocado inteiro pela integracao)",
+        "Sign/SignPanel": "painel liso shop_sign_blank + moldura/costas metal_dark (malha commercial.grocery_small.a.sign_panel)",
+        "Sign/SignText": "Label3D VAZIO, centralizado no painel, voltado a -Z; preencher com o nome da empresa REAL operadora",
+        "Candidate_PedestrianEntry": "Marker3D candidato diante da porta de vidro, forward -Z",
+        "Candidate_CargoPoint": "Marker3D candidato fora da porta de servico (lateral +X), forward +X"
+      },
+      "notes": [
+        "Pivo no solo, centrado no corpo 10 x 12 m. Envelope excede o corpo em -Z pelo toldo (1,3 m a partir da parede; borda em z = -7,3) e em +-X/+-Z pelo plinto (0,05 m) e capas (0,05 m).",
+        "SignText: font_size 48, pixel_size 0,01 (altura de corpo ~0,48 m), largura util 5,6 m com quebra de palavra: cabem ~2 linhas de ~18 caracteres no painel 6,0 x 1,5 m (verificado com texto de teste fora do repo). Nomes maiores: a integracao reduz pixel_size.",
+        "Sem o no Sign o frontao fica liso e a estrutura continua visualmente completa (o letreiro nao e parte da malha Body).",
+        "Toldo em superficie propria shop_awning (listras = shop_awning + trim_white): a integracao PODERA trocar a cor do toldo por override de superficie caso a identidade do operador use isso (NAO decidido).",
+        "Sem nome, logo, emblema, pictograma de ramo, produtos, carrinhos ou paletes: modelo-base reutilizavel por outro ramo varejista.",
+        "Portas sempre fechadas; detalhes desenhados nao sao acessos funcionais (somente os Marker3D candidatos)."
+      ],
+      "status": "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+    },
+    {
+      "visual_id": "residential.small_house.a",
+      "family_id": "residential.small_house.a",
+      "piece": "",
+      "title_pt": "Casa simples terrea",
+      "scene": "res://Assets/V1/Scenes/residential.small_house.a.tscn",
+      "root_node": "SmallHouse",
+      "envelope": {
+        "min": [
+          -4.39,
+          0.0,
+          -4.6
+        ],
+        "max": [
+          4.39,
+          6.57,
+          3.99
+        ],
+        "size": [
+          8.78,
+          6.57,
+          8.59
+        ]
+      },
+      "markers": [
+        {
+          "node": "Candidate_PedestrianEntry",
+          "position": [
+            2.3,
+            0.0,
+            -4.66
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "note": "entrada de pedestre candidata diante do degrau da porta; acesso real e da integracao"
+        }
+      ],
+      "meshes": [
+        {
+          "node": "Body",
+          "mesh": "res://Assets/V1/Meshes/residential.small_house.a.tres",
+          "surfaces": [
+            "plinth_stone",
+            "house_wall",
+            "house_roof",
+            "trim_white",
+            "wood_door",
+            "glass_dark"
+          ],
+          "triangles": 790.0,
+          "visible_by_default": true
+        }
+      ],
+      "triangles_total": 790.0,
+      "mesh_surfaces_total": 6.0,
+      "proposed": {
+        "corpo_x_m": 8.0,
+        "corpo_z_m": 7.0,
+        "plinto_m": 0.3,
+        "parede_sobre_plinto_m": 3.1,
+        "cumeeira_m": 5.98,
+        "beiral_frente_fundos_m": 0.45,
+        "beiral_empenas_m": 0.35,
+        "porta_l_x_a_m": [
+          0.95,
+          2.1
+        ],
+        "degrau_m": 0.15,
+        "degrau_patamar_l_x_p_m": [
+          1.5,
+          0.7
+        ],
+        "cobertura_entrada_l_x_p_m": [
+          1.7,
+          1.05
+        ],
+        "cobertura_entrada_cumeeira_m": 3.08,
+        "chamine_topo_m": 6.57
+      },
+      "parts": {
+        "Body": "malha unica (6 superficies = slots): house_wall (paredes e empenas), house_roof (telhado ceramico, cumeeira, cobertura da entrada, chamine), trim_white (testeiras, molduras, peitoris, veneziana, capa da chamine, maos-francesas), wood_door (porta frontal), glass_dark (vidros das janelas e fundo da veneziana), plinth_stone (plinto e degrau)",
+        "Candidate_PedestrianEntry": "Marker3D candidato diante do degrau, forward -Z"
+      },
+      "notes": [
+        "Pivo no solo, centrado no corpo 8 x 7 m. Envelope excede o corpo em -Z ate z = -4,60 (cobertura da entrada 1,05 m + testeira; degrau/patamar ate z = -4,26) e pelos beirais (0,45 m frente/fundos; 0,35 m + testeira nas empenas).",
+        "Cobertura da entrada em duas aguas (cumeeira perpendicular a fachada) fica SOB o beiral principal (folga >= 0,03 m); le como \"telhadinho da porta\" no isometrico.",
+        "Variantes de cor por troca de material (override de superficie) em house_wall (paredes/empenas), house_roof (telhado, cobertura da entrada, chamine), wood_door (porta) e, se desejado, trim_white (compartilhado: trocar por um material local, nao editar o compartilhado).",
+        "Sem lote, cerca, jardim, garagem, moradores ou janelas acesas. Porta sempre fechada; a porta desenhada nao e acesso funcional."
+      ],
+      "status": "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+    },
+    {
+      "visual_id": "road.urban_1x1.a",
+      "family_id": "road.urban_1x1.a",
+      "piece": "corner_l",
+      "title_pt": "Rua urbana 1+1 - esquina em L",
+      "scene": "res://Assets/V1/Scenes/road.urban_1x1.a.corner_l.tscn",
+      "root_node": "RoadUrban1x1CornerL",
+      "envelope": {
+        "min": [
+          -5.25,
+          0.0,
+          -5.25
+        ],
+        "max": [
+          5.25,
+          0.18,
+          5.25
+        ],
+        "size": [
+          10.5,
+          0.18,
+          10.5
+        ]
+      },
+      "markers": [
+        {
+          "node": "Connector_West",
+          "position": [
+            -5.25,
+            0.0,
+            0.0
+          ],
+          "forward": [
+            -1.0,
+            0.0,
+            0.0
+          ],
+          "note": "conector candidato: secao 1+1 identica a reta"
+        },
+        {
+          "node": "Connector_North",
+          "position": [
+            0.0,
+            0.0,
+            -5.25
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "note": "conector candidato: secao 1+1 identica a reta"
+        },
+        {
+          "node": "Candidate_LampSlot",
+          "position": [
+            1.079,
+            0.18,
+            1.079
+          ],
+          "forward": [
+            -0.707,
+            0.0,
+            -0.707
+          ],
+          "note": "posicao candidata de poste (calcada externa, meio do arco), voltada ao centro do arco"
+        }
+      ],
+      "meshes": [
+        {
+          "node": "Body",
+          "mesh": "res://Assets/V1/Meshes/road.urban_1x1.a.corner_l.tres",
+          "surfaces": [
+            "road_asphalt",
+            "road_curb",
+            "road_sidewalk_service",
+            "road_sidewalk",
+            "road_marking_yellow"
+          ],
+          "triangles": 314.0,
+          "visible_by_default": true
+        }
+      ],
+      "triangles_total": 314.0,
+      "mesh_surfaces_total": 5.0,
+      "proposed": {
+        "faixas": "2 x 3.25 m = 6.50 m de asfalto",
+        "calcada_m": 2.0,
+        "largura_total_m": 10.5,
+        "meio_fio_largura_m": 0.2,
+        "meio_fio_altura_m": 0.15,
+        "topo_asfalto_y": 0.03,
+        "topo_calcada_y": 0.18,
+        "linha_central": "amarela tracejada, 0.20 m de largura, traco 2.0 m, periodo 5.25 m na reta; no arco, traco e periodo escalados na mesma proporcao (candidata)",
+        "faixa_de_servico_m": "0.70 (meio-fio 0.20 + faixa 0.50)",
+        "faixa_livre_m": 1.3,
+        "recuo_poste_m": 0.45,
+        "status": "CANDIDATO - revisao humana PENDENTE",
+        "quadrado_m": "10.50 x 10.50",
+        "centro_do_arco": "(-5.250, 0, -5.250)",
+        "raio_asfalto_m": "2.00 -> 8.50",
+        "raio_linha_central_m": 5.25,
+        "segmentos_por_arco": 12.0
+      },
+      "parts": {
+        "Body": "malha unica; superficies road_asphalt, road_curb, road_sidewalk_service, road_sidewalk, road_marking_yellow"
+      },
+      "notes": [
+        "Pivo no centro do quadrado, no solo. Liga a borda -X (Connector_West) a borda -Z (Connector_North).",
+        "Calcada interna = quarto de disco r = 2,0 m; calcada externa = restante do quadrado, com meio-fio curvo.",
+        "Tracejado no arco: 2 periodos de ~4,12 m (o arco de r = 5,25 m mede ~8,25 m) com traco proporcional de ~1,57 m; vaos de 2,55 m no arco e 2,90 m na junta com a reta (3,25 m entre retas). Nenhum traco cruza junta.",
+        "Para outras orientacoes, girar a cena em multiplos de 90 graus em torno de Y."
+      ],
+      "status": "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+    },
+    {
+      "visual_id": "road.urban_1x1.a",
+      "family_id": "road.urban_1x1.a",
+      "piece": "lamp",
+      "title_pt": "Poste urbano (iluminacao publica)",
+      "scene": "res://Assets/V1/Scenes/road.urban_1x1.a.lamp.tscn",
+      "root_node": "StreetLamp",
+      "envelope": {
+        "min": [
+          -0.21,
+          0.0,
+          -2.05
+        ],
+        "max": [
+          0.21,
+          6.68,
+          0.2
+        ],
+        "size": [
+          0.42,
+          6.68,
+          2.25
+        ]
+      },
+      "markers": [
+        {
+          "node": "Candidate_LightSource",
+          "position": [
+            0.0,
+            6.495,
+            -1.6
+          ],
+          "forward": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "note": "origem candidata de luz; a integracao so liga com noite efetiva E energia atendida"
+        }
+      ],
+      "meshes": [
+        {
+          "node": "Body",
+          "mesh": "res://Assets/V1/Meshes/road.urban_1x1.a.lamp.tres",
+          "surfaces": [
+            "metal_dark",
+            "metal_light"
+          ],
+          "triangles": 154.0,
+          "visible_by_default": true
+        },
+        {
+          "node": "LampGlass",
+          "mesh": "res://Assets/V1/Meshes/road.urban_1x1.a.lamp_glass.tres",
+          "surfaces": [
+            "road_lamp_glass_off"
+          ],
+          "triangles": 38.0,
+          "visible_by_default": true
+        }
+      ],
+      "triangles_total": 192.0,
+      "mesh_surfaces_total": 3.0,
+      "proposed": {
+        "altura_haste_m": 6.5,
+        "alcance_braco_m": 1.6,
+        "altura_luminaria_m": 6.44,
+        "altura_total_m": 6.68,
+        "carcaca_m": "0,42 x 0,13 x 0,90",
+        "difusor_m": "0,37 x 0,11 x 0,84 (aparente abaixo da carcaca)",
+        "status": "CANDIDATO - revisao humana PENDENTE"
+      },
+      "parts": {
+        "Body": "haste + braco + carcaca (metal_dark, metal_light)",
+        "LampGlass": "difusor separado (road_lamp_glass_off); trocavel por road_lamp_glass_on pela integracao"
+      },
+      "notes": [
+        "Pivo no centro da base da haste (y = 0); braco projeta para -Z: alinhar -Z do poste ao forward do Candidate_LampSlot.",
+        "Sem Light3D e sem emissao aplicada: o asset NAO acende sozinho.",
+        "road_lamp_glass_on existe em Materials/ apenas para a integracao trocar quando houver estado real."
+      ],
+      "status": "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+    },
+    {
+      "visual_id": "road.urban_1x1.a",
+      "family_id": "road.urban_1x1.a",
+      "piece": "straight",
+      "title_pt": "Rua urbana 1+1 - reta (modulo)",
+      "scene": "res://Assets/V1/Scenes/road.urban_1x1.a.straight.tscn",
+      "root_node": "RoadUrban1x1Straight",
+      "envelope": {
+        "min": [
+          -5.25,
+          0.0,
+          -5.25
+        ],
+        "max": [
+          5.25,
+          0.18,
+          5.25
+        ],
+        "size": [
+          10.5,
+          0.18,
+          10.5
+        ]
+      },
+      "markers": [
+        {
+          "node": "Connector_West",
+          "position": [
+            -5.25,
+            0.0,
+            0.0
+          ],
+          "forward": [
+            -1.0,
+            0.0,
+            0.0
+          ],
+          "note": "conector candidato: secao 1+1 identica em todas as pecas; nao define rede viaria"
+        },
+        {
+          "node": "Connector_East",
+          "position": [
+            5.25,
+            0.0,
+            0.0
+          ],
+          "forward": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "note": "conector candidato: secao 1+1 identica em todas as pecas; nao define rede viaria"
+        },
+        {
+          "node": "Candidate_LampSlot",
+          "position": [
+            0.0,
+            0.18,
+            3.7
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "note": "posicao candidata de poste (calcada +Z, centro da faixa de servico); espacamento real e calibracao"
+        }
+      ],
+      "meshes": [
+        {
+          "node": "Body",
+          "mesh": "res://Assets/V1/Meshes/road.urban_1x1.a.straight.tres",
+          "surfaces": [
+            "road_asphalt",
+            "road_curb",
+            "road_sidewalk_service",
+            "road_sidewalk",
+            "road_marking_yellow"
+          ],
+          "triangles": 70.0,
+          "visible_by_default": true
+        }
+      ],
+      "triangles_total": 70.0,
+      "mesh_surfaces_total": 5.0,
+      "proposed": {
+        "faixas": "2 x 3.25 m = 6.50 m de asfalto",
+        "calcada_m": 2.0,
+        "largura_total_m": 10.5,
+        "meio_fio_largura_m": 0.2,
+        "meio_fio_altura_m": 0.15,
+        "topo_asfalto_y": 0.03,
+        "topo_calcada_y": 0.18,
+        "linha_central": "amarela tracejada, 0.20 m de largura, traco 2.0 m, periodo 5.25 m na reta; no arco, traco e periodo escalados na mesma proporcao (candidata)",
+        "faixa_de_servico_m": "0.70 (meio-fio 0.20 + faixa 0.50)",
+        "faixa_livre_m": 1.3,
+        "recuo_poste_m": 0.45,
+        "status": "CANDIDATO - revisao humana PENDENTE",
+        "comprimento_modulo_m": 10.5,
+        "eixo": "X (x de -5.250 a +5.250)"
+      },
+      "parts": {
+        "Body": "malha unica; superficies road_asphalt, road_curb, road_sidewalk_service, road_sidewalk, road_marking_yellow"
+      },
+      "notes": [
+        "Pivo no centro do modulo, no solo (y = 0). Nada abaixo de y = 0; faces -y omitidas.",
+        "Sem faixa de pedestres, setas, texto, vagas ou carros: travessias e vagas sao geradas pela integracao/simulacao.",
+        "Comprimento gerado por funcao parametrizada (_straight_mesh), com tracejado de periodo fixo 5,25 m ancorado na ponta oeste: retas de comprimento multiplo de 5,25 m mantem o ritmo; outros comprimentos geram aviso no build.",
+        "Slot de poste em x = 0 vale para o modulo de 10,5 m; posicao e quantidade de slots em outros comprimentos ficam para a integracao.",
+        "Paginacao da calcada (so visual): meio-fio 0,20 + faixa road_sidewalk_service 0,50 = 0,70 m; faixa livre 1,30 m. Nao e canteiro nem define ocupacao; SERVICE_STRIP = false a remove.",
+        "Slot de poste so no lado +Z (iluminacao unilateral tipica de via 1+1); girar a peca 180 graus inverte o lado.",
+        "Poste NAO embutido na cena: Candidate_LampSlot indica uma posicao candidata; a integracao instancia road.urban_1x1.a.lamp."
+      ],
+      "status": "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+    },
+    {
+      "visual_id": "utility.sewage_treatment.a",
+      "family_id": "utility.sewage_treatment.a",
+      "piece": "",
+      "title_pt": "Tratamento de esgoto",
+      "scene": "res://Assets/V1/Scenes/utility.sewage_treatment.a.tscn",
+      "root_node": "SewageTreatment",
+      "envelope": {
+        "min": [
+          -12.98,
+          0.0,
+          -13.56
+        ],
+        "max": [
+          12.98,
+          7.34,
+          13.7
+        ],
+        "size": [
+          25.96,
+          7.34,
+          27.26
+        ]
+      },
+      "markers": [
+        {
+          "node": "Candidate_PedestrianEntry",
+          "position": [
+            0.0,
+            0.0,
+            -13.91
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "note": "entrada de pedestre candidata diante da porta da casa de controle (centro da borda frontal); acesso real e da integracao"
+        },
+        {
+          "node": "Candidate_PipeInlet",
+          "position": [
+            -12.98,
+            0.55,
+            4.3
+          ],
+          "forward": [
+            -1.0,
+            0.0,
+            0.0
+          ],
+          "note": "chegada candidata do coletor de esgoto (borda -X, canal de chegada); conexao real e da integracao"
+        },
+        {
+          "node": "Candidate_PipeOutlet",
+          "position": [
+            12.98,
+            0.45,
+            -8.0
+          ],
+          "forward": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "note": "saida candidata do efluente tratado para o corpo d'agua (borda +X, caixa de saida do decantador); conexao real e da integracao"
+        }
+      ],
+      "meshes": [
+        {
+          "node": "Body",
+          "mesh": "res://Assets/V1/Meshes/utility.sewage_treatment.a.tres",
+          "surfaces": [
+            "concrete",
+            "concrete_dark",
+            "metal_light",
+            "sewage_ochre",
+            "metal_dark",
+            "sewage_pipe",
+            "glass_dark"
+          ],
+          "triangles": 2476,
+          "visible_by_default": true
+        },
+        {
+          "node": "ClarifierBridge",
+          "mesh": "res://Assets/V1/Meshes/utility.sewage_treatment.a.clarifier_bridge.tres",
+          "surfaces": [
+            "metal_dark",
+            "sewage_ochre"
+          ],
+          "triangles": 160,
+          "visible_by_default": true
+        },
+        {
+          "node": "State_Water/Effluent",
+          "mesh": "res://Assets/V1/Meshes/utility.sewage_treatment.a.state_water.tres",
+          "surfaces": [
+            "sewage_effluent",
+            "concrete"
+          ],
+          "triangles": 280,
+          "visible_by_default": true
+        },
+        {
+          "node": "State_Sludge/SludgeCake",
+          "mesh": "res://Assets/V1/Meshes/utility.sewage_treatment.a.state_sludge.tres",
+          "surfaces": [
+            "sewage_sludge"
+          ],
+          "triangles": 320,
+          "visible_by_default": true
+        }
+      ],
+      "triangles_total": 3236,
+      "mesh_surfaces_total": 12,
+      "proposed": {
+        "lote_x_z_m": [
+          26.0,
+          28.0
+        ],
+        "raias_aeracao": {
+          "quantidade": 3,
+          "largura_util_m": 2.6,
+          "comprimento_m": 17.0,
+          "borda_m": 1.3,
+          "passarela_m": 1.0
+        },
+        "decantador": {
+          "diametro_m": 9.0,
+          "borda_m": 1.2
+        },
+        "biodigestor": {
+          "diametro_m": 7.6,
+          "parede_m": 3.6,
+          "topo_cupula_m": 6.28
+        },
+        "leitos_secagem": {
+          "quantidade": 4,
+          "l_x_c_m": [
+            2.8,
+            8.7
+          ],
+          "meio_fio_m": 0.5
+        },
+        "casa_controle_l_x_p_m": [
+          4.2,
+          3.8
+        ],
+        "porta_l_x_a_m": [
+          1.0,
+          2.2
+        ]
+      },
+      "parts": {
+        "Body": "estrutura permanente (7 superficies = slots): concrete (paredes das raias, canal, decantador, leitos, casa, cintas e base do biodigestor), concrete_dark (fundos vazios, piso da passarela, calha do decantador, plinto/degrau, calcos), sewage_ochre (guarda-corpos, corpo do biodigestor, testeira, molduras de porta/janelas, topo do acionamento), sewage_pipe (tubulacao, cupula do biodigestor, telhado), metal_dark (porta, gradeamento, acionamento, escada de marinheiro, respiro), metal_light (coletor e descidas dos difusores de ar), glass_dark (janelas)",
+        "ClarifierBridge": "parte movel separada: ponte radial (metal_dark + guarda-corpo sewage_ochre), pivo no eixo do decantador, sem animacao",
+        "State_Water": "Node3D oculto: efluente marrom-oliva (sewage_effluent) nas raias, canal e decantador + espuma de aeracao bege-acinzentada (concrete) sobre os difusores",
+        "State_Sludge": "Node3D oculto: torta de lodo rachada (sewage_sludge) nos leitos de secagem",
+        "Candidate_PedestrianEntry": "Marker3D candidato diante da porta da casa de controle, forward -Z",
+        "Candidate_PipeInlet": "Marker3D candidato na chegada do esgoto (borda -X), forward -X",
+        "Candidate_PipeOutlet": "Marker3D candidato na saida do efluente tratado (borda +X), forward +X"
+      },
+      "notes": [
+        "Pivo no centro do lote 26 x 28 m, no solo; fachada/porta da casa de controle em -Z, centrada em x = 0.",
+        "Distinta da agua potavel: raias RETANGULARES com espuma, biodigestor terroso e leitos de lodo; paleta ocre/castanho/oliva + concreto, sem azul.",
+        "Tanques acima do solo (envelope y >= 0): borda das raias a 1,3 m, decantador a 1,2 m. Sem estado, os fundos aparecem vazios (concrete_dark).",
+        "Capacidade, vazao, emissao, operacao e conexoes sao dados de simulacao/integracao; a tubulacao desenhada so sugere o fluxo.",
+        "Escada da passarela e escada de marinheiro sao detalhes visuais, nao acessos funcionais (somente os Marker3D candidatos)."
+      ],
+      "lot_m": [
+        26.0,
+        28.0
+      ],
+      "state_nodes": [
+        {
+          "node": "State_Water",
+          "visible_by_default": false
+        },
+        {
+          "node": "State_Sludge",
+          "visible_by_default": false
+        }
+      ],
+      "status": "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+    },
+    {
+      "visual_id": "utility.water_intake.a",
+      "family_id": "utility.water_intake.a",
+      "piece": "",
+      "title_pt": "Captacao de agua",
+      "scene": "res://Assets/V1/Scenes/utility.water_intake.a.tscn",
+      "root_node": "WaterIntake",
+      "envelope": {
+        "min": [
+          -6.753,
+          0.0,
+          -7.21
+        ],
+        "max": [
+          6.95,
+          4.954,
+          7.98
+        ],
+        "size": [
+          13.703,
+          4.954,
+          15.19
+        ]
+      },
+      "markers": [
+        {
+          "node": "Candidate_PedestrianEntry",
+          "position": [
+            0.0,
+            0.0,
+            -7.61
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "note": "entrada de pedestre candidata diante da porta dupla da casa de bombas; acesso real e da integracao"
+        },
+        {
+          "node": "Candidate_WaterSource",
+          "position": [
+            0.0,
+            0.0,
+            8.0
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "note": "tomada d'agua candidata na borda +Z do lote (lado candidato voltado ao rio/lago do terreno); fonte real e da simulacao"
+        },
+        {
+          "node": "Candidate_PipeOutlet",
+          "position": [
+            7.0,
+            0.0,
+            -4.1
+          ],
+          "forward": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "note": "saida candidata da adutora de agua bruta na borda +X (o tubo desce para o solo na caixa de registro, eixo y = 1,0 antes da descida); rede real e da integracao"
+        }
+      ],
+      "meshes": [
+        {
+          "node": "Body",
+          "mesh": "res://Assets/V1/Meshes/utility.water_intake.a.tres",
+          "surfaces": [
+            "concrete_dark",
+            "intake_concrete",
+            "intake_roof",
+            "trim_white",
+            "intake_pipe",
+            "metal_dark",
+            "glass_dark"
+          ],
+          "triangles": 1702,
+          "visible_by_default": true
+        }
+      ],
+      "triangles_total": 1702,
+      "mesh_surfaces_total": 7,
+      "proposed": {
+        "lote_x_z_m": [
+          14.0,
+          16.0
+        ],
+        "casa_bombas_x_z_m": [
+          6.0,
+          5.0
+        ],
+        "casa_bombas_parede_m": 3.0,
+        "casa_bombas_cumeeira_m": 4.97,
+        "porta_dupla_l_x_a_m": [
+          2.0,
+          2.4
+        ],
+        "tomada_dagua_x_z_a_m": [
+          6.0,
+          3.3,
+          1.98
+        ],
+        "guias_grade_topo_m": 3.35,
+        "alas_cabeceira_ate_x_m": 4.80000019073486,
+        "succao_diametro_m": 0.56,
+        "adutora_diametro_m": 0.5
+      },
+      "parts": {
+        "Body": "malha unica (7 superficies = slots): intake_concrete (paredes, tomada d'agua, alas, selas, caixa de registro), intake_roof (telhado metalico azul, nervuras, cumeeira), intake_pipe (succao, adutora, flanges, corpo do registro, folhas da porta dupla, faixa azul da tomada), trim_white (testeiras, molduras, capa da tomada), concrete_dark (plinto, patamar, laje sob os tubos), metal_dark (junta e puxadores da porta, grades, guias, volante do registro), glass_dark (janelas, venezianas, aberturas da tomada)",
+        "Candidate_PedestrianEntry": "Marker3D candidato diante da porta (x = 0, junto a borda -Z), forward -Z",
+        "Candidate_WaterSource": "Marker3D candidato na tomada d'agua, borda +Z do lote, forward +Z (lado do rio/lago)",
+        "Candidate_PipeOutlet": "Marker3D candidato onde a adutora sai do lote, borda +X, forward +X"
+      },
+      "notes": [
+        "Pivo no centro do lote 14 x 16 m (solo). Casa de bombas centrada em X, de z = -6,6 a -1,6; tomada d'agua de z = 4,6 a 7,9 com alas ate x = +-6,6; caixa de registro ate x = 6,95.",
+        "Lado +Z CANDIDATO voltado ao rio/lago: as aberturas gradeadas da tomada ficam na face +Z. Nao ha agua modelada; o terreno fornece a margem. Margem/cota/talude reais sao compatibilizacao pendente com o terreno.",
+        "Somente captacao: sem tanques, decantadores, filtros ou reservatorio (tratamento e a familia utility.water_treatment.a).",
+        "Telhado metalico azul + tubos azuis + faixa azul na tomada + concreto claro = codigo de cor da agua potavel (esgoto usa ocre/oliva/castanho).",
+        "Icone: mostra uma lamina de agua (rio/lago) atras da tomada SO para leitura de catalogo; a cena nao modela agua. Cor lida de water_clean (familia utility.water_treatment.a).",
+        "Sem estado de operacao no visual (sem bombas girando, luzes ou agua corrente): nada a ligar pelo host nesta familia.",
+        "Porta sempre fechada; detalhes desenhados nao sao acessos funcionais (somente os Marker3D candidatos)."
+      ],
+      "lot_m": [
+        14.0,
+        16.0
+      ],
+      "state_nodes": [],
+      "status": "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+    },
+    {
+      "visual_id": "utility.water_treatment.a",
+      "family_id": "utility.water_treatment.a",
+      "piece": "",
+      "title_pt": "Tratamento de agua potavel",
+      "scene": "res://Assets/V1/Scenes/utility.water_treatment.a.tscn",
+      "root_node": "WaterTreatment",
+      "envelope": {
+        "min": [
+          -11.95,
+          0.0,
+          -12.55
+        ],
+        "max": [
+          11.4,
+          6.13,
+          12.95
+        ],
+        "size": [
+          23.35,
+          6.13,
+          25.5
+        ]
+      },
+      "markers": [
+        {
+          "node": "Candidate_PedestrianEntry",
+          "position": [
+            0.0,
+            0.0,
+            -12.86
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "note": "entrada de pedestre candidata diante da porta da casa de controle (x = 0, borda -Z); acesso real e da integracao"
+        },
+        {
+          "node": "Candidate_PipeInlet",
+          "position": [
+            0.0,
+            0.0,
+            13.0
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "note": "entrada candidata de agua bruta nos FUNDOS (+Z), na caixa de chegada; rede real e da integracao"
+        },
+        {
+          "node": "Candidate_PipeOutlet",
+          "position": [
+            -12.0,
+            0.0,
+            -7.4
+          ],
+          "forward": [
+            -1.0,
+            0.0,
+            0.0
+          ],
+          "note": "saida candidata de agua tratada na lateral -X, junto a caixa onde o tubo desce para o solo; rede real e da integracao"
+        }
+      ],
+      "meshes": [
+        {
+          "node": "Body",
+          "mesh": "res://Assets/V1/Meshes/utility.water_treatment.a.tres",
+          "surfaces": [
+            "concrete_dark",
+            "water_concrete",
+            "trim_white",
+            "water_pipe",
+            "metal_dark",
+            "glass_dark"
+          ],
+          "triangles": 2832,
+          "visible_by_default": true
+        },
+        {
+          "node": "State_Water/WaterSurfaces",
+          "mesh": "res://Assets/V1/Meshes/utility.water_treatment.a.water.tres",
+          "surfaces": [
+            "water_clean"
+          ],
+          "triangles": 36,
+          "visible_by_default": true
+        }
+      ],
+      "triangles_total": 2868,
+      "mesh_surfaces_total": 7,
+      "proposed": {
+        "lote_x_z_m": [
+          24.0,
+          26.0
+        ],
+        "decantadores_diametro_m": 7.8,
+        "decantadores_borda_m": 1.8,
+        "decantadores_canaleta_largura_m": 0.5,
+        "decantadores_poco_central_diametro_m": 2.3,
+        "decantadores_centros_xz_m": [
+          [
+            -7.19999980926514,
+            8.39999961853027
+          ],
+          [
+            7.19999980926514,
+            8.39999961853027
+          ]
+        ],
+        "filtros_x_z_m": [
+          13.8,
+          4.8
+        ],
+        "filtros_celulas": 4,
+        "filtros_borda_m": 1.5,
+        "reservatorio_diametro_m": 7.2,
+        "reservatorio_altura_parede_m": 5.0,
+        "reservatorio_topo_m": 6.13,
+        "casa_controle_x_z_m": [
+          6.0,
+          4.4
+        ],
+        "casa_controle_platibanda_m": 4.13,
+        "ala_quimica_x_z_m": [
+          5.3,
+          3.6
+        ],
+        "porta_l_x_a_m": [
+          1.2,
+          2.3
+        ],
+        "tubos_diametro_m": 0.48,
+        "agua_bruta_diametro_m": 0.56
+      },
+      "parts": {
+        "Body": "estrutura permanente com tanques VAZIOS (6 superficies = slots): water_concrete (paredes dos decantadores e filtros, fundo da canaleta periferica, poco de alimentacao central, coluna central, casa, cobertura do reservatorio, selas, caixas), trim_white (bordas, parede interna da canaleta periferica, capas, guarda-corpos, calhas, corpo do reservatorio, molduras), concrete_dark (fundos dos tanques, plintos, lajes, degrau), water_pipe (tubos, flanges, faixa do reservatorio, faixa da casa, porta), metal_dark (passarelas, acionamentos, escada, exaustor), glass_dark (janelas)",
+        "State_Water": "Node3D OCULTO por padrao: laminas de agua limpa (water_clean) nos 2 decantadores e nas 4 celulas de filtro (malha utility.water_treatment.a.water); o host liga somente com operacao real",
+        "Candidate_PedestrianEntry": "Marker3D candidato diante da porta (x = 0, junto a borda -Z), forward -Z",
+        "Candidate_PipeInlet": "Marker3D candidato da entrada de agua bruta nos fundos (+Z), forward +Z",
+        "Candidate_PipeOutlet": "Marker3D candidato da saida de agua tratada na lateral -X, forward -X"
+      },
+      "notes": [
+        "Pivo no centro do lote 24 x 26 m (solo). Decantadores nos fundos (centros x = +-7,2, z = 8,4), filtros no meio (z = -2,2 a 2,6), reservatorio a frente-esquerda (centro -6,8, -7,4), casa de controle/quimica a frente com a porta em x = 0.",
+        "Fluxo de leitura: fundos (agua bruta, 'T') -> decantadores -> filtros -> coletor -> reservatorio -> saida -X. Tubos ilustrativos: nao definem rede hidraulica, vazao nem capacidade.",
+        "Passarelas dos decantadores sao FIXAS (estrutura); nenhuma parte movel ou rotacao e representada. Canaleta periferica + poco central + parede externa formam aneis concentricos (leitura de decantador com ou sem agua).",
+        "Somente tratamento de agua potavel: captacao e esgoto sao familias separadas (utility.water_intake.a, utility.sewage_treatment.a).",
+        "Sem luzes de operacao, produtos quimicos expostos, estoque ou pessoas. Porta sempre fechada; detalhes desenhados nao sao acessos funcionais (somente os Marker3D candidatos)."
+      ],
+      "lot_m": [
+        24.0,
+        26.0
+      ],
+      "state_nodes": [
+        {
+          "node": "State_Water",
+          "visible_by_default": false
+        }
+      ],
+      "status": "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+    },
+    {
+      "visual_id": "utility.wind_power.a",
+      "family_id": "utility.wind_power.a",
+      "piece": "",
+      "title_pt": "Energia eolica (aerogerador)",
+      "scene": "res://Assets/V1/Scenes/utility.wind_power.a.tscn",
+      "root_node": "WindPower",
+      "envelope": {
+        "min": [
+          -8.889,
+          0.0,
+          -8.889
+        ],
+        "max": [
+          8.889,
+          31.5,
+          8.889
+        ],
+        "size": [
+          17.778,
+          31.5,
+          17.778
+        ]
+      },
+      "markers": [
+        {
+          "node": "Candidate_ServiceEntry",
+          "position": [
+            0.0,
+            0.0,
+            -3.549
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "note": "CANDIDATO: no solo diante da laje, alinhado a porta da torre (fechada); nao e acesso funcional"
+        }
+      ],
+      "meshes": [
+        {
+          "node": "Body",
+          "mesh": "res://Assets/V1/Meshes/utility.wind_power.a.tres",
+          "surfaces": [
+            "concrete",
+            "wind_tower",
+            "concrete_dark",
+            "metal_dark"
+          ],
+          "triangles": 334,
+          "visible_by_default": true
+        },
+        {
+          "node": "Nacelle/NacelleMesh",
+          "mesh": "res://Assets/V1/Meshes/utility.wind_power.a.nacelle.tres",
+          "surfaces": [
+            "wind_tower"
+          ],
+          "triangles": 98,
+          "visible_by_default": true
+        },
+        {
+          "node": "Nacelle/Rotor/RotorMesh",
+          "mesh": "res://Assets/V1/Meshes/utility.wind_power.a.rotor.tres",
+          "surfaces": [
+            "wind_tower",
+            "wind_tip"
+          ],
+          "triangles": 248,
+          "visible_by_default": true
+        }
+      ],
+      "triangles_total": 680,
+      "mesh_surfaces_total": 7,
+      "proposed": {
+        "lote_x_z_m": [
+          18.0,
+          18.0
+        ],
+        "laje_raio_vertice_m": 3.3,
+        "torre_raio_base_topo_m": [
+          1.0,
+          0.62
+        ],
+        "torre_topo_pivo_guinada_m": 21.95,
+        "cubo_altura_m": 23.0,
+        "cubo_avanco_z_m": -2.25,
+        "raio_pa_m": 8.4,
+        "disco_varrido_diametro_m": 16.8,
+        "envelope_varrido_raio_xz_m": 8.889,
+        "porta_torre_l_x_a_m": [
+          0.9,
+          2.1
+        ],
+        "cabine_x_z_a_m": [
+          2.3,
+          1.8,
+          2.78
+        ]
+      },
+      "parts": {
+        "Body": "malha (4 superficies = slots): concrete (laje octogonal, degrau, corpo da cabine), wind_tower (torre afunilada, flanges, moldura da porta), concrete_dark (base da torre, base e cobertura da cabine, venezianas), metal_dark (portas fechadas da torre e da cabine)",
+        "Nacelle": "Node3D no topo da torre (y = 21.95), pivo no eixo de guinada Y; malha Nacelle/NacelleMesh (wind_tower): coroa, corpo e carenagem do eixo",
+        "Nacelle/Rotor": "Node3D com pivo no CENTRO DO CUBO (local da nacele (0.0, 1.05, -2.25)), eixo de rotacao = Z local; malha Nacelle/Rotor/RotorMesh (wind_tower + wind_tip): cubo com nariz voltado a -Z e 3 pas (pose padrao: uma pa para cima)",
+        "Candidate_ServiceEntry": "Marker3D candidato no solo diante da laje, alinhado a porta da torre, forward -Z (a cabine tem porta propria tambem voltada a -Z)"
+      },
+      "notes": [
+        "Pivo no centro do lote 18 x 18 m, no eixo da torre (solo). Cubo a 23.00 m; disco varrido de 16.8 m de diametro no plano XY, a frente da nacele (z = -2.25).",
+        "envelope_include = cilindro varrido pelo rotor em QUALQUER guinada (raio 8.889 m em XZ, y de 14.50 a 31.50): o envelope cobre rotacao do rotor e guinada da nacele e cabe no lote.",
+        "SEM AnimationPlayer, luzes de balizamento ou material emissivo. Girar Nacelle (Y) e Nacelle/Rotor (Z local) e decisao do host a partir de estado REAL (vento/geracao); a pose parada nao indica nada e nenhuma animacao autonoma sugere geracao garantida.",
+        "Faixa vermelha estatica nas pontas das pas (material wind_tip, nao emissivo).",
+        "Portas fechadas; detalhes desenhados nao sao acessos funcionais (somente o Marker3D candidato)."
+      ],
+      "lot_m": [
+        18.0,
+        18.0
+      ],
+      "state_nodes": [],
+      "status": "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+    },
+    {
+      "visual_id": "vegetation.tree_broadleaf.a",
+      "family_id": "vegetation.tree_broadleaf.a",
+      "piece": "",
+      "title_pt": "Arvore de copa larga",
+      "scene": "res://Assets/V1/Scenes/vegetation.tree_broadleaf.a.tscn",
+      "root_node": "TreeBroadleaf",
+      "envelope": {
+        "min": [
+          -2.179,
+          0.0,
+          -2.05
+        ],
+        "max": [
+          2.218,
+          6.49,
+          2.331
+        ],
+        "size": [
+          4.398,
+          6.49,
+          4.381
+        ]
+      },
+      "markers": [],
+      "meshes": [
+        {
+          "node": "Body",
+          "mesh": "res://Assets/V1/Meshes/vegetation.tree_broadleaf.a.tres",
+          "surfaces": [
+            "tree_bark",
+            "tree_foliage",
+            "tree_foliage_dark"
+          ],
+          "triangles": 312.0,
+          "visible_by_default": true
+        }
+      ],
+      "triangles_total": 312.0,
+      "mesh_surfaces_total": 3.0,
+      "proposed": {
+        "altura_total_m": 6.5,
+        "diametro_copa_m": 4.3,
+        "copa_largura_planta_m": {
+          "min": 4.0,
+          "max": 4.4,
+          "media": 4.25
+        },
+        "copa_envelope_xz_m": [
+          4.4,
+          4.38
+        ],
+        "altura_livre_sob_copa_m": 2.9,
+        "tronco_diametro_m": {
+          "colo": 0.52,
+          "sob_copa": 0.36
+        }
+      },
+      "parts": {
+        "Body": "malha unica (tronco + galhos + copa), 3 superficies: tree_bark, tree_foliage, tree_foliage_dark"
+      },
+      "notes": [
+        "Pivo no centro da base do tronco. Sem colisao, ocupacao ou efeito ambiental: tudo isso e da integracao/simulacao.",
+        "Copa em planta quase redonda (largura 4,0-4,4 m conforme a direcao); envelope da copa levemente deslocado para +Z (~0,14 m).",
+        "O tronco continua ate y=3,9 dentro da copa (sem tampa); a altura livre visivel sob a copa e ~2,9 m.",
+        "Faces de uma massa da copa totalmente enterradas em outra sao omitidas na geracao: a superficie externa e a silhueta nao mudam; a malha so fica aberta dentro do volume da copa.",
+        "Altura livre ~2,9 m com copa de raio ~2,2 m: recuo em relacao a pista/fachadas, altura livre maior ou variante menor sao compatibilizacao pendente com a integracao.",
+        "Candidata a MultiMesh por regiao na integracao (nao medido nesta amostra)."
+      ],
+      "status": "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+    },
+    {
+      "visual_id": "vehicle.truck_cargo.a",
+      "family_id": "vehicle.truck_cargo.a",
+      "piece": "",
+      "title_pt": "Caminhao bau medio (carga local)",
+      "scene": "res://Assets/V1/Scenes/vehicle.truck_cargo.a.tscn",
+      "root_node": "TruckCargo",
+      "envelope": {
+        "min": [
+          -1.45,
+          0.0,
+          -3.6
+        ],
+        "max": [
+          1.45,
+          3.3,
+          3.6
+        ],
+        "size": [
+          2.9,
+          3.3,
+          7.2
+        ]
+      },
+      "markers": [
+        {
+          "node": "Candidate_CargoDoor",
+          "position": [
+            0.0,
+            0.0,
+            3.9
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "note": "CANDIDATO: ponto no solo atras das portas traseiras (fechadas). Nao e acesso funcional."
+        }
+      ],
+      "meshes": [
+        {
+          "node": "Body",
+          "mesh": "res://Assets/V1/Meshes/vehicle.truck_cargo.a.body.tres",
+          "surfaces": [
+            "truck_cab",
+            "glass_dark",
+            "metal_dark",
+            "truck_light_front_off",
+            "truck_box",
+            "metal_light",
+            "truck_light_rear_off"
+          ],
+          "triangles": 1144.0,
+          "visible_by_default": true
+        },
+        {
+          "node": "Wheel_FL",
+          "mesh": "res://Assets/V1/Meshes/vehicle.truck_cargo.a.wheel.tres",
+          "surfaces": [
+            "metal_light",
+            "rubber"
+          ],
+          "triangles": 212.0,
+          "visible_by_default": true
+        },
+        {
+          "node": "Wheel_FR",
+          "mesh": "res://Assets/V1/Meshes/vehicle.truck_cargo.a.wheel.tres",
+          "surfaces": [
+            "metal_light",
+            "rubber"
+          ],
+          "triangles": 212.0,
+          "visible_by_default": true
+        },
+        {
+          "node": "Wheel_RL",
+          "mesh": "res://Assets/V1/Meshes/vehicle.truck_cargo.a.wheel.tres",
+          "surfaces": [
+            "metal_light",
+            "rubber"
+          ],
+          "triangles": 212.0,
+          "visible_by_default": true
+        },
+        {
+          "node": "Wheel_RR",
+          "mesh": "res://Assets/V1/Meshes/vehicle.truck_cargo.a.wheel.tres",
+          "surfaces": [
+            "metal_light",
+            "rubber"
+          ],
+          "triangles": 212.0,
+          "visible_by_default": true
+        }
+      ],
+      "triangles_total": 1992.0,
+      "mesh_surfaces_total": 15.0,
+      "proposed": {
+        "comprimento_m": 7.2,
+        "largura_bau_m": 2.45,
+        "largura_com_retrovisores_m": 2.9,
+        "altura_m": 3.3,
+        "raio_roda_m": 0.47,
+        "largura_roda_m": 0.3,
+        "eixo_dianteiro_z_m": -2.55,
+        "eixo_traseiro_z_m": 1.75,
+        "entre_eixos_m": 4.3,
+        "bitola_m": 1.96,
+        "bau_m": {
+          "x": 2.45,
+          "y": [
+            1.12,
+            3.3
+          ],
+          "z": [
+            -1.45,
+            3.535
+          ]
+        }
+      },
+      "parts": {
+        "Body": "cabine + bau + chassi + para-choques + portas traseiras fechadas (<= 7 superficies)",
+        "Wheel_FL, Wheel_FR, Wheel_RL, Wheel_RR": "MeshInstance3D com UMA malha compartilhada (.wheel; superficies metal_light, rubber), origem no centro do eixo. Rolagem: rotacao em X local (andar para a frente, -Z, = angulo negativo = -distancia / raio). Dianteiras podem ser estercadas em Y local (compor Basis(Y, esterco) * Basis(X, rolagem)).",
+        "Candidate_CargoDoor": "Marker3D CANDIDATO no solo, 0,30 m atras do ponto mais traseiro (z = +3,90), forward +Z (para fora das portas). Nao e acesso funcional nem vaga."
+      },
+      "notes": [
+        "Frente (cabine) voltada a -Z; esquerda = -X. Pivo no solo, centrado na projecao do veiculo (comprimento -3,60..+3,60).",
+        "Rodas: centro em y = 0.47; eixo dianteiro z = -2.55, traseiro z = 1.75, x = +-0.98. Roda simetrica (serve dos dois lados sem espelhar).",
+        "Farois (truck_light_front_off) e lanternas (truck_light_rear_off) NAO emissivos; a integracao pode trocar a superficie por material 'ligado' a partir de estado real.",
+        "Cores por superficie (truck_cab, truck_box) podem ser trocadas por variante sem regenerar a malha. Sem logos, texto ou marca.",
+        "Sem carga a mostra: o bau e fechado; o que o veiculo transporta e estado da simulacao."
+      ],
+      "status": "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+    }
+  ],
+  "built_families": [
+    "civic.city_hall.a",
+    "residential.small_house.a",
+    "commercial.grocery_small.a",
+    "road.urban_1x1.a",
+    "vegetation.tree_broadleaf.a",
+    "agent.sim_pedestrian.a",
+    "vehicle.truck_cargo.a",
+    "preview.sample_board",
+    "civic.works_depot.a",
+    "agriculture.farm_small.a",
+    "commercial.fuel_station.a",
+    "utility.water_intake.a",
+    "utility.water_treatment.a",
+    "utility.sewage_treatment.a",
+    "utility.wind_power.a",
+    "preview.wave2_board"
+  ]
+}

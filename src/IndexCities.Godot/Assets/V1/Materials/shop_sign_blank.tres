@@ -1,0 +1,6 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[resource]
+resource_name = "shop_sign_blank"
+albedo_color = Color(0.96862745, 0.95686275, 0.9254902, 1)
+roughness = 0.7

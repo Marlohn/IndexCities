@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/vegetation.tree_broadleaf.a.tres" id="1_skg7n"]
+
+[node name="TreeBroadleaf" type="Node3D" unique_id=1468404352]
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=335474374]
+mesh = ExtResource("1_skg7n")

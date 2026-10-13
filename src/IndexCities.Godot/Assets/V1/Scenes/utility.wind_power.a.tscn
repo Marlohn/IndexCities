@@ -1,0 +1,33 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/utility.wind_power.a.tres" id="1_xqvkx"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/utility.wind_power.a.nacelle.tres" id="2_xi48y"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/utility.wind_power.a.rotor.tres" id="3_h2ijk"]
+
+[node name="WindPower" type="Node3D" unique_id=574210699]
+metadata/visual_id = "utility.wind_power.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/lot_candidate_m = Vector2(18, 18)
+metadata/visual_envelope_min = Vector3(-8.888757, 0, -8.888757)
+metadata/visual_envelope_size = Vector3(17.777514, 31.5, 17.777514)
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=1815779846]
+mesh = ExtResource("1_xqvkx")
+
+[node name="Nacelle" type="Node3D" parent="." unique_id=901958635]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 21.95, 0)
+
+[node name="NacelleMesh" type="MeshInstance3D" parent="Nacelle" unique_id=684066579]
+mesh = ExtResource("2_xi48y")
+
+[node name="Rotor" type="Node3D" parent="Nacelle" unique_id=302546844]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.05, -2.25)
+
+[node name="RotorMesh" type="MeshInstance3D" parent="Nacelle/Rotor" unique_id=1781601207]
+mesh = ExtResource("3_h2ijk")
+
+[node name="Candidate_ServiceEntry" type="Marker3D" parent="." unique_id=2006620672]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -3.5488024)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "CANDIDATO: no solo diante da laje, alinhado a porta da torre (fechada); nao e acesso funcional"

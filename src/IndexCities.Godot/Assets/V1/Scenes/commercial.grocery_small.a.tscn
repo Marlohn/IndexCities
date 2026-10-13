@@ -1,0 +1,44 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/commercial.grocery_small.a.tres" id="1_t6ovh"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/commercial.grocery_small.a.sign_panel.tres" id="2_tlwet"]
+
+[node name="GrocerySmall" type="Node3D" unique_id=455121754]
+metadata/visual_id = "commercial.grocery_small.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.2000003, 0, -7.3)
+metadata/visual_envelope_size = Vector3(10.400001, 6.15, 13.5)
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=1103120468]
+mesh = ExtResource("1_t6ovh")
+
+[node name="Sign" type="Node3D" parent="." unique_id=696455619]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.95, -6.07)
+metadata/replaceable = true
+metadata/panel_size_m = Vector2(6, 1.5)
+metadata/note = "letreiro substituivel; SignText e preenchido pela integracao com o nome da empresa REAL operadora"
+
+[node name="SignPanel" type="MeshInstance3D" parent="Sign" unique_id=72869599]
+mesh = ExtResource("2_tlwet")
+
+[node name="SignText" type="Label3D" parent="Sign" unique_id=1727713840]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0, -0.172)
+pixel_size = 0.01
+double_sided = false
+modulate = Color(0.16862746, 0.19215687, 0.21176471, 1)
+font_size = 48
+outline_size = 0
+autowrap_mode = 3
+width = 560.0
+
+[node name="Candidate_PedestrianEntry" type="Marker3D" parent="." unique_id=379648333]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.2, 0, -7)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "entrada de pedestre candidata diante da porta de vidro; acesso real e da integracao"
+
+[node name="Candidate_CargoPoint" type="Marker3D" parent="." unique_id=1624052301]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 6.05, 0, 3.8)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "ponto de carga candidato; acesso real e da integracao"
