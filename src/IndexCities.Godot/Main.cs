@@ -1,4 +1,4 @@
-using Godot;
+﻿using Godot;
 using IndexCities.Simulation;
 using Environment=Godot.Environment;
 namespace IndexCities.Game;
@@ -7,7 +7,7 @@ public partial class Main:Node3D
     CitySimulation _sim=null!;CityWorld _world=null!;Camera3D _camera=null!;DirectionalLight3D _sun=null!;
     CanvasLayer _canvas=null!;HBoxContainer _catalog=null!;Label _clock=null!,_money=null!,_status=null!;
     PanelContainer _inspector=null!,_confirmation=null!;VBoxContainer _inspection=null!,_confirmBody=null!;
-    BuildingKind? _building=BuildingKind.CityHall;bool _roadTool,_reverse,_roadFixed,_hoverPreview,_holdLoadedPreview;Point? _anchor,_roadStart,_roadEnd;double _rotation;
+    BuildingKind? _building=BuildingKind.CityHall;bool _roadTool,_reverse,_roadFixed,_hoverPreview,_holdLoadedPreview;Point? _anchor,_roadStart,_roadEnd;double _rotation;bool _manualRotation;Point? _dragStart;readonly List<(Point At,PlacementQuote Quote)> _row=new();decimal _rowTotal;int _rowValid;
     Vector2? _pointerPixel;Point _cursor;Vector3 _focus=new(-144,0,0);float _yaw=45,_zoom=110;int _speed=1;double _clockBudget,_uiAt,_autosaveAt,_autosaveMinutes=5;
     string _cityId="";string? _capturePath;double _captureTimer;int? _selectedBuilding,_selectedCitizen,_selectedVehicle,_selectedRoad,_selectedProject,_movingProject;Window? _modal;
     public override void _Ready()
@@ -54,6 +54,7 @@ public partial class Main:Node3D
             if(Input.IsMouseButtonPressed(MouseButton.Middle)){var current=Ground(motion.Position);var previous=Ground(motion.Position-motion.Relative);_focus+=ToV(previous-current);UpdateCamera();}
             _cursor=Snap(Ground(motion.Position));if(_roadTool&&_roadStart!=null&&!_roadFixed){_roadEnd=_cursor;UpdateConfirmation();}
         }
+        if(input is InputEventMouseButton{ButtonIndex:MouseButton.Left,Pressed:false} released)ReleaseLeft(released.Position);
         if(input is InputEventMouseButton mouse&&mouse.Pressed){_pointerPixel=mouse.Position;
             if(mouse.ButtonIndex==MouseButton.WheelUp){_holdLoadedPreview=false;_zoom=Mathf.Clamp(_zoom*.9f,35,500);UpdateCamera();}
             if(mouse.ButtonIndex==MouseButton.WheelDown){_holdLoadedPreview=false;_zoom=Mathf.Clamp(_zoom/.9f,35,500);UpdateCamera();}
@@ -62,13 +63,13 @@ public partial class Main:Node3D
                 _holdLoadedPreview=false;_hoverPreview=true;
                 _cursor=Snap(Ground(mouse.Position));
                 if(_roadTool){if(_roadStart==null){_roadStart=_cursor;_roadEnd=_cursor;_roadFixed=false;}else{_roadEnd=_cursor;_roadFixed=true;Confirm();}}
-                else if(_building!=null){_anchor=_cursor;Confirm();}else SelectAt(Ground(mouse.Position),mouse.Position);
+                else if(_building!=null){if(_sim.State.CityHallPlaced&&_movingProject==null)_dragStart=_cursor;else{_anchor=_cursor;Confirm();}}else SelectAt(Ground(mouse.Position),mouse.Position);
                 UpdateConfirmation();
             }
         }
         if(input is InputEventKey key&&key.Pressed&&!key.Echo){switch(key.Keycode){
             case Key.Escape:ClearTool();break;
-            case Key.R:_rotation=(_rotation+Math.PI/2)%(Math.PI*2);UpdateConfirmation();break;
+            case Key.R:if(_dragStart!=null)break;_manualRotation=true;_rotation=(_rotation+Math.PI/2)%(Math.PI*2);UpdateConfirmation();break;
             case Key.Tab:_reverse=!_reverse;UpdateConfirmation();break;
             case Key.Enter:if(_building!=null&&_hoverPreview){_anchor=_cursor;Confirm();}else if(_roadTool&&_roadStart!=null&&_roadEnd!=null)Confirm();break;
             case Key.Space:_speed=_speed==0?1:0;break;
@@ -82,13 +83,52 @@ public partial class Main:Node3D
     {
         var step=_sim.State.Tuning.RoadStep/(_building!=null?2:1);var snapped=new Point(Math.Round(p.X/step)*step,Math.Round(p.Z/step)*step);
         if(_roadTool){var near=_sim.State.Roads.Where(r=>r.Position.Distance(p)<=_sim.State.Tuning.RoadWidth/2+_sim.State.Tuning.RoadStep).OrderBy(r=>r.Position.Distance(p)).FirstOrDefault();if(near!=null&&_camera.UnprojectPosition(ToV(near.Position)).DistanceTo(_camera.UnprojectPosition(ToV(p)))<=20)return near.Position;}
-        if(_building is {} kind){var definition=Catalog.Definitions[kind];var face=new Point(-Math.Sin(_rotation),-Math.Cos(_rotation));var door=snapped+face*(definition.Depth/2);var road=_sim.State.Roads.Where(r=>!r.Highway&&r.Position.Distance(door)<=_sim.State.Tuning.RoadWidth/2+3).OrderBy(r=>r.Position.Distance(door)).FirstOrDefault();if(road!=null){var gap=Math.Ceiling((definition.Depth/2+_sim.State.Tuning.RoadWidth/2+.75)/step)*step;var horizontal=road.Neighbours.Any(id=>Math.Abs(_sim.State.Roads.First(r=>r.Id==id).Position.X-road.Position.X)>.1);var vertical=road.Neighbours.Any(id=>Math.Abs(_sim.State.Roads.First(r=>r.Id==id).Position.Z-road.Position.Z)>.1);var aligned=horizontal&&Math.Abs(face.Z)>.9?new Point(snapped.X,road.Position.Z-face.Z*gap):vertical&&Math.Abs(face.X)>.9?new Point(road.Position.X-face.X*gap,snapped.Z):snapped;if(aligned.Distance(snapped)<=4&&_sim.QuoteBuilding(kind,aligned,_rotation,_movingProject).PhysicallyValid)return aligned;}}
+        if(_building is {} kind){
+            var rotation=_rotation;var tolerance=4.0;
+            // Auto-orientação: perto de rua urbana a entrada vira para a rua; R vale como manual até sair da proximidade; durante o arrasto a rotação fica travada.
+            if(_dragStart==null){var near=_sim.State.Roads.Where(r=>!r.Highway&&r.Position.Distance(p)<=_sim.State.Tuning.RoadWidth/2+Catalog.Definitions[kind].Depth/2+6).OrderBy(r=>r.Position.Distance(p)).FirstOrDefault();
+                if(near==null)_manualRotation=false;else if(!_manualRotation){rotation=_rotation=FaceRoad(near,p);tolerance=8;}}
+            if(AlignToRoad(kind,snapped,rotation,step,tolerance) is {} aligned)return aligned;
+        }
         return snapped;
+    }
+    double FaceRoad(RoadNode road,Point p)
+    {
+        bool Arm(bool alongX)=>road.Neighbours.Any(id=>{var d=_sim.State.Roads.First(r=>r.Id==id).Position-road.Position;return Math.Abs(alongX?d.X:d.Z)>.1;});
+        var horizontal=Arm(true);var vertical=Arm(false);var dx=p.X-road.Position.X;var dz=p.Z-road.Position.Z;
+        var sideOnZ=horizontal&&!vertical||horizontal==vertical&&Math.Abs(dz)>=Math.Abs(dx);
+        return sideOnZ?(dz>=0?0:Math.PI):(dx>=0?Math.PI/2:Math.PI*1.5);
+    }
+    Point? AlignToRoad(BuildingKind kind,Point snapped,double rotation,double step,double tolerance)
+    {
+        var definition=Catalog.Definitions[kind];var face=new Point(-Math.Sin(rotation),-Math.Cos(rotation));var door=snapped+face*(definition.Depth/2);var road=_sim.State.Roads.Where(r=>!r.Highway&&r.Position.Distance(door)<=_sim.State.Tuning.RoadWidth/2+3).OrderBy(r=>r.Position.Distance(door)).FirstOrDefault();if(road==null)return null;
+        var gap=Math.Ceiling((definition.Depth/2+_sim.State.Tuning.RoadWidth/2+.75)/step)*step;var horizontal=road.Neighbours.Any(id=>Math.Abs(_sim.State.Roads.First(r=>r.Id==id).Position.X-road.Position.X)>.1);var vertical=road.Neighbours.Any(id=>Math.Abs(_sim.State.Roads.First(r=>r.Id==id).Position.Z-road.Position.Z)>.1);
+        var aligned=horizontal&&Math.Abs(face.Z)>.9?new Point(snapped.X,road.Position.Z-face.Z*gap):vertical&&Math.Abs(face.X)>.9?new Point(road.Position.X-face.X*gap,snapped.Z):snapped;
+        return aligned.Distance(snapped)<=tolerance&&_sim.QuoteBuilding(kind,aligned,rotation,_movingProject).PhysicallyValid?aligned:null;
+    }
+    // Fileira por arrastar: prévias lado a lado ao longo da rua, espaçamento mínimo fisicamente válido; menos de 2 posições = clique simples.
+    void ComputeRow()
+    {
+        _row.Clear();_rowTotal=0;_rowValid=0;if(_dragStart is not {} start||_building is not {} kind)return;
+        var definition=Catalog.Definitions[kind];var step=_sim.State.Tuning.RoadStep/2;var alongX=Math.Abs(Math.Sin(_rotation))<.1;var delta=alongX?_cursor.X-start.X:_cursor.Z-start.Z;
+        var spacing=Math.Ceiling((definition.Width+.5)/step)*step;var count=(int)(Math.Abs(delta)/spacing)+1;if(count<2)return;var direction=Math.Sign(delta);
+        for(var i=0;i<count;i++){var raw=i==0?start:alongX?new Point(start.X+direction*i*spacing,start.Z):new Point(start.X,start.Z+direction*i*spacing);var at=i==0?start:AlignToRoad(kind,raw,_rotation,step,4)??raw;var quote=_sim.QuoteBuilding(kind,at,_rotation);_row.Add((at,quote));if(quote.PhysicallyValid){_rowValid++;_rowTotal+=quote.Total;}}
+    }
+    public override void _Input(InputEvent input){if(input is InputEventMouseButton{ButtonIndex:MouseButton.Left,Pressed:false} released)ReleaseLeft(released.Position);}
+    void ReleaseLeft(Vector2 position)
+    {
+        if(_dragStart is not {} start||_building is not {} kind){_dragStart=null;return;}
+        _pointerPixel=position;_cursor=Snap(Ground(position));ComputeRow();var row=_row.ToList();var total=_rowTotal;var valid=_rowValid;_dragStart=null;_row.Clear();
+        if(row.Count<2){_anchor=start;Confirm();UpdateConfirmation();return;}
+        if(valid==0){SetStatus("Nenhuma posição válida na fileira");return;}
+        if(total>_sim.Available){SetStatus("Saldo insuficiente · disponível "+Cash(_sim.Available)+" · falta "+Cash(total-_sim.Available));return;}
+        var ordered=0;var last="";foreach(var item in row.Where(i=>i.Quote.PhysicallyValid)){var result=_sim.PlaceBuilding(kind,item.At,_rotation);last=result.Message;if(result.Success)ordered++;}
+        SetStatus(ordered==valid?$"{ordered} obras de {Catalog.Definitions[kind].Name} encomendadas · custo {Cash(total)}":$"{ordered} de {valid} obras encomendadas · "+last);_hoverPreview=false;_world.Sync(_sim.State);RefreshHud();
     }
     void UpdateCamera(){_camera.Size=_zoom;_camera.Position=_focus+new Vector3(300,330,300).Rotated(Vector3.Up,Mathf.DegToRad(_yaw-45));_camera.LookAt(_focus,Vector3.Up);}
     void ClearSelection(){_selectedBuilding=null;_selectedCitizen=null;_selectedVehicle=null;_selectedRoad=null;_selectedProject=null;}
-    void ClearTool(){_movingProject=null;_building=null;_roadTool=false;_anchor=null;_roadStart=null;_roadEnd=null;_roadFixed=false;_hoverPreview=false;_holdLoadedPreview=false;_confirmation.Visible=false;_world.ClearPreview();RefreshHud();}
-    void Choose(BuildingKind kind){ClearSelection();ClearTool();_building=kind;_rotation=0;_selectedBuilding=null;_inspector.Visible=false;}
+    void ClearTool(){_dragStart=null;_row.Clear();_manualRotation=false;_movingProject=null;_building=null;_roadTool=false;_anchor=null;_roadStart=null;_roadEnd=null;_roadFixed=false;_hoverPreview=false;_holdLoadedPreview=false;_confirmation.Visible=false;_world.ClearPreview();RefreshHud();}
+    void Choose(BuildingKind kind){ClearSelection();ClearTool();_building=kind;_rotation=0;_manualRotation=false;_selectedBuilding=null;_inspector.Visible=false;}
     void ChooseRoad(){if(!_sim.State.CityHallPlaced)return;ClearSelection();ClearTool();_roadTool=true;_inspector.Visible=false;}
     void Confirm()
     {
@@ -96,7 +136,7 @@ public partial class Main:Node3D
         CommandResult? result=null;if(_building is {} kind&&_anchor is {} p)result=_movingProject is {} moving?_sim.MoveBuildingProject(moving,p,_rotation):_sim.PlaceBuilding(kind,p,_rotation);else if(_roadTool&&_roadStart is {} a&&_roadEnd is {} b)result=_movingProject is {} roadMoving?_sim.MoveRoadProject(roadMoving,a,b,_reverse):_sim.PlaceRoad(a,b,_reverse);
         if(result==null)return;SetStatus(result.Message);_anchor=null;_roadFixed=false;if(result.Success){_hoverPreview=false;_movingProject=null;_roadStart=null;_roadEnd=null;_confirmation.Visible=false;_world.Sync(_sim.State);if(!catalogWasUnlocked&&_sim.State.CityHallPlaced)BuildCatalog();}RefreshHud();
     }
-    void UpdatePreview(){if(_building is {} kind){if(_anchor==null){if(!_hoverPreview||_modal!=null||!_holdLoadedPreview&&GetViewport().GuiGetHoveredControl()!=null){_world.ClearPreview();return;}if(!_holdLoadedPreview)_cursor=Snap(Ground(_pointerPixel??GetViewport().GetMousePosition()));}var p=_anchor??_cursor;var q=_movingProject is {} moving?_sim.QuoteMoveBuilding(moving,p,_rotation):_sim.QuoteBuilding(kind,p,_rotation);_world.PreviewBuilding(kind,p,_rotation,q.PhysicallyValid,q.Accessible);}else if(_roadTool&&_roadStart is {} a&&_roadEnd is {} b){if(!_roadFixed&&!_holdLoadedPreview&&_hoverPreview&&_modal==null&&GetViewport().GuiGetHoveredControl()==null){_cursor=Snap(Ground(_pointerPixel??GetViewport().GetMousePosition()));if(b.Distance(_cursor)>.001){b=_cursor;_roadEnd=b;UpdateConfirmation();}}var q=_sim.QuoteRoad(a,b,_reverse,_movingProject);_world.PreviewRoad(_sim.RoadShape(a,b,_reverse),q.PhysicallyValid,_sim.State.Tuning.RoadWidth,q.Accessible);}else _world.ClearPreview();}
+    void UpdatePreview(){if(_building is {} kind){if(_dragStart is {} dragStart){ComputeRow();if(_row.Count>=2){_world.PreviewBuildings(kind,_row.Select(r=>(r.At,r.Quote.PhysicallyValid,(bool?)r.Quote.Accessible)).ToList(),_rotation);return;}var single=_sim.QuoteBuilding(kind,dragStart,_rotation);_world.PreviewBuilding(kind,dragStart,_rotation,single.PhysicallyValid,single.Accessible);return;}if(_anchor==null){if(!_hoverPreview||_modal!=null||!_holdLoadedPreview&&GetViewport().GuiGetHoveredControl()!=null){_world.ClearPreview();return;}if(!_holdLoadedPreview)_cursor=Snap(Ground(_pointerPixel??GetViewport().GetMousePosition()));}var p=_anchor??_cursor;var q=_movingProject is {} moving?_sim.QuoteMoveBuilding(moving,p,_rotation):_sim.QuoteBuilding(kind,p,_rotation);_world.PreviewBuilding(kind,p,_rotation,q.PhysicallyValid,q.Accessible);}else if(_roadTool&&_roadStart is {} a&&_roadEnd is {} b){if(!_roadFixed&&!_holdLoadedPreview&&_hoverPreview&&_modal==null&&GetViewport().GuiGetHoveredControl()==null){_cursor=Snap(Ground(_pointerPixel??GetViewport().GetMousePosition()));if(b.Distance(_cursor)>.001){b=_cursor;_roadEnd=b;UpdateConfirmation();}}var q=_sim.QuoteRoad(a,b,_reverse,_movingProject);_world.PreviewRoad(_sim.RoadShape(a,b,_reverse),q.PhysicallyValid,_sim.State.Tuning.RoadWidth,q.Accessible);}else _world.ClearPreview();}
     void SelectAt(Point p,Vector2? screen=null){_selectedBuilding=screen is {} pixel?_world.PickBuilding(_camera.ProjectRayOrigin(pixel),_camera.ProjectRayNormal(pixel)):_sim.State.Buildings.Where(b=>!b.Removed&&b.Position.Distance(p)<Math.Max(b.Definition.Width,b.Definition.Depth)*.65).OrderBy(b=>b.Position.Distance(p)).Select(b=>(int?)b.Id).FirstOrDefault();_selectedCitizen=null;_selectedVehicle=null;_selectedRoad=null;_selectedProject=null;
         var c=_sim.State.Citizens.Where(c=>c.Alive&&c.InsideMap&&c.VehicleId==null&&(c.Moving||!_sim.State.Buildings.Any(b=>b.Completed&&!b.Removed&&b.Door.Distance(c.Position)<1))&&c.Position.Distance(p)<3).OrderBy(c=>c.Position.Distance(p)).FirstOrDefault();var v=_sim.State.Vehicles.Where(v=>v.Status!=VehicleStatus.Outside&&v.Position.Distance(p)<4).OrderBy(v=>v.Position.Distance(p)).FirstOrDefault();if(c!=null){_selectedCitizen=c.Id;_selectedBuilding=null;}else if(v!=null){_selectedVehicle=v.Id;_selectedBuilding=null;}else if(_selectedBuilding==null){_selectedProject=_sim.State.Projects.Where(project=>project.Status is WorkStatus.Waiting or WorkStatus.InProgress&&project.RoadPoints.Any(point=>point.Distance(p)<6)).Select(project=>(int?)project.Id).FirstOrDefault();if(_selectedProject==null)_selectedRoad=_sim.State.Roads.Where(r=>r.Position.Distance(p)<6).OrderBy(r=>r.Position.Distance(p)).Select(r=>(int?)r.Id).FirstOrDefault();}RefreshInspection();}
     void BeginMove(WorkProject project){ClearSelection();ClearTool();_movingProject=project.Id;if(project.BuildingId is {} id&&_sim.State.Buildings.FirstOrDefault(b=>b.Id==id) is {} building){_building=building.Kind;_rotation=building.Rotation;}else _roadTool=true;_inspector.Visible=false;CloseModal();}
