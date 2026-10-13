@@ -300,6 +300,20 @@ Sistemas profundos não podem virar caixas-pretas.
 - Experimentos técnicos isolados não são fases obrigatórias nem autorizam inserir features não aprovadas no jogo.
 - Não invente features, abstrações ou sistemas para um futuro hipotético.
 
+## Coordenação da V1 e frente de assets — 2026-10-12
+
+**Divisão de trabalho expressamente definida pelo responsável:** Codex administra e orquestra a criação da primeira versão jogável, revisa a documentação e cuida da implementação, integração e validação. Claude Opus 5.5, com `ultracode` solicitado, trabalha exclusivamente na produção de assets.
+
+- Codex decide quais assets são necessários ao incremento dentro do catálogo aprovado na SPEC e envia pedidos delimitados ao Claude. O inventário exploratório não é uma ordem automática para produzir tudo.
+- Claude pode criar recursos visuais originais, fontes/geradores de arte, cenas de apresentação, ícones e prévias técnicas dentro da pasta de assets indicada no pedido. Não implementa simulação, ferramentas do jogador, economia, persistência ou regras de produto; não edita SPEC, ARCHITECTURE nem arquivos compartilhados sem pedido específico do coordenador.
+- Escala, orientação, pivôs e conectores são compatibilizados com Codex antes de produzir um lote definitivo. Dimensões candidatas de uma amostra visual não aprovam footprints, acessos, capacidades ou custos de gameplay.
+- Codex verifica cada entrega, solicita correções ao Claude e integra os recursos ao jogo. Uma amostra visual não comprova funcionamento da simulação nem conclusão da V1.
+- Confirmar modelo e configuração efetivamente usados pelo runtime. Se houver indisponibilidade ou substituição, comunicar a diferença; não afirmar que o pedido foi atendido apenas porque as opções foram enviadas.
+
+**Autorização operacional nesta sessão:** o responsável pediu aprovar os próximos requests do Orca relacionados ao trabalho, sem novas perguntas de confirmação. Essa autorização cobre a coordenação e os pedidos necessários aos assets; comportamentos do jogo continuam regidos pela SPEC e pelas regras de decisão acima.
+
+**Continuidade sem o Codex — pedido do responsável em 2026-10-12 (noite):** com os créditos do Codex esgotados, o responsável pediu que Claude continue o trabalho de implementação, integração e validação que o Codex vinha fazendo. Enquanto durar essa substituição, Claude segue as mesmas regras do Codex (SPEC antes do código, delegação limitada, validação proporcional) e não herda autorização para decisões de produto; quando o Codex voltar, a divisão acima volta a valer, salvo nova decisão.
+
 ## Filosofia de desenvolvimento
 
 - Priorize resultado observável e feedback rápido.

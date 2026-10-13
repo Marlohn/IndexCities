@@ -10,7 +10,7 @@
 
 **Decisão arquitetural inicial.**
 
-O projeto ainda não possui implementação de jogo. Esta arquitetura define fronteiras e direção de dependências antes do primeiro código justamente porque essas escolhas têm alto custo de reversão depois que simulação, apresentação e conteúdo começam a se misturar.
+A implementação da V1 começou em 2026-10-12 com a biblioteca C# pura `IndexCities.Simulation`, o host/apresentação `IndexCities.Godot` e testes de integração em `IndexCities.Simulation.Tests`. A V1 está integrada e executável localmente. As fronteiras e a direção de dependências abaixo continuam vigentes; o código e suas verificações definem o estado efetivo.
 
 **Premissa de entrega e validação (revisada em 2026-10-11):** desenvolver o Convencional em **versões menores, jogáveis e integradas**, validando os primeiros ciclos reais de gameplay, interoperabilidade e desempenho desde cedo. A SPEC preserva a visão completa; o recorte da **V1 foi aprovado pelo responsável em 2026-10-12 e consta na SPEC**. O recorte de versões futuras continua exigindo aprovação. Não impor POCs isoladas nem usar comportamento econômico/logístico fictício para aparentar integração. Testes técnicos pontuais, execução headless e profiling continuam proporcionais ao risco.
 
