@@ -314,6 +314,15 @@ Sistemas profundos não podem virar caixas-pretas.
 
 **Continuidade sem o Codex — pedido do responsável em 2026-10-12 (noite):** com os créditos do Codex esgotados, o responsável pediu que Claude continue o trabalho de implementação, integração e validação que o Codex vinha fazendo. Enquanto durar essa substituição, Claude segue as mesmas regras do Codex (SPEC antes do código, delegação limitada, validação proporcional) e não herda autorização para decisões de produto; quando o Codex voltar, a divisão acima volta a valer, salvo nova decisão.
 
+## Recuperação integrada da V1 — orientação operacional de 2026-10-13
+
+- Codex coordena, implementa, integra e joga cada entrega. A missão permanece aberta até validação humana da experiência global, inclusive após PRs intermediários.
+- Cada entrega integrada passa por reprodução com evidências, desenvolvimento, testes e cenários reais no Godot, revisão crítica independente, correções e nova verificação proporcional. Preservar os saves do jogador e usar saves isolados nos cenários de validação.
+- Revisor obrigatório: **DeepSeek V4.1 Flash**. Se houver falta de créditos, limite ou indisponibilidade operacional, utilizar automaticamente **Claude Haiku 5.5**, quando disponível. Registrar modelo efetivo, limitações, achados e correções. Se ambos falharem, comunicar e buscar alternativa independente; não declarar entrega validada sem revisão real.
+- A revisão recebe diff, SPEC aplicável, relato humano e evidências; verifica regressões, integração, clareza, gameplay e soluções superficiais. Após duas rodadas com problema importante persistente, expor pendência e alternativas.
+- Trabalho independente pode ocorrer em paralelo em workspaces isoladas, com fronteiras explícitas. Opus 5.5 continua restrito a assets solicitados e compatíveis com Godot, escala, pivôs e conectores.
+- Estas são regras de trabalho autorizadas pelo responsável, **não alterações de gameplay**. A SPEC continua exigindo decisão humana prévia para mudanças relevantes de produto.
+
 ## Filosofia de desenvolvimento
 
 - Priorize resultado observável e feedback rápido.
