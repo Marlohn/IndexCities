@@ -189,6 +189,10 @@ public sealed partial class CitySimulation
         if(junction.Neighbours.Count>=3&&State.Vehicles.Any(o=>o.Id!=v.Id&&o.IntersectionClaim==junction.Id&&o.Position.Distance(junction.Position)<9))return false;
         // Only a walker physically at this crossing holds traffic back.
         if(State.Citizens.Any(c=>c.Alive&&c.VehicleId==null&&c.Moving&&c.CrossingNodeId==junction.Id&&c.Position.Distance(junction.Position)<State.Tuning.RoadWidth/2+1.5))return false;
+        // A straight loading access/crosswalk is not a road intersection.
+        // Applying right-hand priority there can make the road vehicle yield
+        // forever to a truck that is itself waiting for the road to clear.
+        if(junction.Neighbours.Count<3)return true;
         var horizontal=Math.Abs(Math.Sin(v.Heading))>.7;
         if(junction.Control==JunctionControl.Signal&&((State.ElapsedSeconds%60<30)!=horizontal))return false;
         var competitors=State.Vehicles.Where(o=>o.Id!=v.Id&&o.Status==VehicleStatus.Travelling&&o.RouteIndex<o.Route.Count&&o.Route[o.RouteIndex]==junction.Id&&o.Position.Distance(junction.Position)<14).ToList();

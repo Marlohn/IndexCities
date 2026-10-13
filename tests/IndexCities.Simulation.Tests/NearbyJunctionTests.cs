@@ -1,3 +1,4 @@
+using System.Reflection;
 using IndexCities.Simulation;
 using Xunit;
 
@@ -5,6 +6,27 @@ namespace IndexCities.Simulation.Tests;
 
 public sealed class NearbyJunctionTests
 {
+    [Fact]
+    public void Straight_crosswalk_still_yields_to_a_walker_physically_crossing()
+    {
+        var initial=new CitySimulation(42);var crossing=new RoadNode{Id=1000,Position=new(0,0),Crosswalk=true};
+        initial.State.Roads.AddRange([crossing,new(){Id=1001,Position=new(-4,0)},new(){Id=1002,Position=new(4,0)}]);var sim=new CitySimulation(initial.State);
+        var walker=new Citizen{Id=1100,Position=new(0,2),Path=[new(0,2),new(0,8)],CrossingNodeId=crossing.Id};sim.State.Citizens.Add(walker);
+        var vehicle=sim.State.Vehicles[0];vehicle.Position=new(-6,-1.65);vehicle.Heading=Math.PI/2;vehicle.IntersectionClaim=null;
+        var enter=typeof(CitySimulation).GetMethod("MayEnterJunction",BindingFlags.Instance|BindingFlags.NonPublic)!;
+        Assert.False((bool)enter.Invoke(sim,[vehicle,crossing])!);walker.Position=new(0,20);Assert.True((bool)enter.Invoke(sim,[vehicle,crossing])!);sim.CheckInvariants();
+    }
+    [Fact]
+    public void Straight_crosswalk_does_not_apply_junction_priority_to_a_truck_leaving_a_loading_bay()
+    {
+        var initial=new CitySimulation(42);var south=new RoadNode{Id=1000,Position=new(-184,216)};var tee=new RoadNode{Id=1001,Position=new(-184,220),Control=JunctionControl.ThroughX,Crosswalk=true};
+        var west=new RoadNode{Id=1002,Position=new(-188,220)};var crossing=new RoadNode{Id=1003,Position=new(-180,220),Crosswalk=true};var east=new RoadNode{Id=1004,Position=new(-176,220)};
+        initial.State.Roads.AddRange([south,tee,west,crossing,east]);var sim=new CitySimulation(initial.State);
+        var entering=sim.State.Vehicles[0];entering.Position=new(-182.35,220);entering.Heading=2.1829488237399826;entering.Status=VehicleStatus.Travelling;entering.Fuel=40;entering.Route=[south.Id,tee.Id,crossing.Id,east.Id];entering.RouteIndex=2;entering.IntersectionClaim=tee.Id;entering.Cargo=new(){{ResourceKind.Wood,10}};
+        var leaving=sim.State.Vehicles[1];leaving.Position=new(-180,226.75);leaving.Heading=Math.PI;leaving.Status=VehicleStatus.Travelling;leaving.Fuel=40;leaving.Route=[crossing.Id,tee.Id,south.Id];
+        Assert.Equal(2,crossing.Neighbours.Count);sim.State.EconomyNextAt=86400;var position=entering.Position;var fuel=entering.Fuel;sim.Advance(2);
+        Assert.True(entering.Position.Distance(position)>1,entering.Cause);Assert.True(entering.Fuel<fuel);Assert.Equal(10,entering.Cargo[ResourceKind.Wood]);sim.CheckInvariants();
+    }
     static (CitySimulation Sim,RoadNode First,RoadNode Second,Vehicle Outbound,Vehicle Returning) City()
     {
         var sim=new CitySimulation(42);
