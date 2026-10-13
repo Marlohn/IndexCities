@@ -1,4 +1,4 @@
-using Godot;
+﻿using Godot;
 using IndexCities.Simulation;
 using System.Globalization;
 namespace IndexCities.Game;
@@ -47,7 +47,8 @@ public partial class Main
         var state=_roadTool?"road":_building?.ToString()??"select";if(state!=_toolState){_toolState=state;foreach(var item in _toolButtons){var active=item.Road?_roadTool:item.Select?!_roadTool&&_building==null:!_roadTool&&item.Kind==_building;var normal=(StyleBoxFlat)item.Button.GetThemeStylebox("normal").Duplicate();normal.BgColor=new Color(active?"527d66":"345055");normal.BorderColor=new Color(active?"e5efb6":"5b7475");item.Button.AddThemeStyleboxOverride("normal",normal);}}
         if(_toolHint==null)return;string text;
         if(_roadTool){if(_roadStart==null)text="Rua 1+1 · clique no início · botão direito cancela";else if(_roadEnd is {} end){var quote=_sim.QuoteRoad(_roadStart.Value,end,_reverse,_movingProject);text="Rua 1+1 · clique para construir · custo "+Cash(quote.Total)+" · "+QuoteFeedback(quote)+" · Tab alterna o L · botão direito cancela";}else text="Rua 1+1 · aponte o fim · botão direito cancela";}
-        else if(_building is {} kind){text=Catalog.Definitions[kind].Name+" · clique para construir · R gira · botão direito cancela";if(_hoverPreview&&_modal==null&&GetViewport().GuiGetHoveredControl()==null){var quote=_movingProject is {} moving?_sim.QuoteMoveBuilding(moving,_cursor,_rotation):_sim.QuoteBuilding(kind,_cursor,_rotation);text=Catalog.Definitions[kind].Name+" · custo "+Cash(quote.Total)+" · "+QuoteFeedback(quote)+" · clique para construir · R gira · botão direito cancela";}}
+        else if(_building is {} rowKind&&_dragStart!=null&&_row.Count>=2){var invalid=_row.Count-_rowValid;text=Catalog.Definitions[rowKind].Name+" ×"+_rowValid+" · custo total "+Cash(_rowTotal)+(invalid>0?" · "+invalid+" inválida(s) pulada(s) em vermelho":"")+(_rowValid==0?" · nenhuma posição válida":_rowTotal>_sim.Available?" · Saldo insuficiente · disponível "+Cash(_sim.Available)+" · falta "+Cash(_rowTotal-_sim.Available)+" · nada será encomendado":" · solte para encomendar")+" · botão direito cancela";}
+        else if(_building is {} kind){text=Catalog.Definitions[kind].Name+" · clique ou arraste para construir · R gira · botão direito cancela";if(_hoverPreview&&_modal==null&&GetViewport().GuiGetHoveredControl()==null){var quote=_movingProject is {} moving?_sim.QuoteMoveBuilding(moving,_cursor,_rotation):_sim.QuoteBuilding(kind,_cursor,_rotation);text=Catalog.Definitions[kind].Name+" · custo "+Cash(quote.Total)+" · "+QuoteFeedback(quote)+" · clique ou arraste para construir · R gira · botão direito cancela";}}
         else text="Selecionar · clique em prédio, obra, pessoa ou veículo";
         if(_toolHint.Text!=text)_toolHint.Text=text;
     }

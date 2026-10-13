@@ -24,6 +24,7 @@ const RECIPES := [
 	"res://Assets/V1/Source/recipes/vegetation_tree_broadleaf.gd",
 	"res://Assets/V1/Source/recipes/agent_sim_pedestrian.gd",
 	"res://Assets/V1/Source/recipes/vehicle_truck_cargo.gd",
+	"res://Assets/V1/Source/recipes/vehicle_car_passenger.gd",
 	# Segunda onda (2026-10-12): funcoes restantes do catalogo V1.
 	"res://Assets/V1/Source/recipes/civic_works_depot.gd",
 	"res://Assets/V1/Source/recipes/agriculture_farm_small.gd",

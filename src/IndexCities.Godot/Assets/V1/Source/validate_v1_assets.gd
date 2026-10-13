@@ -49,6 +49,11 @@ const SCENES := {
 		"nodes": ["Body", "Wheel_FL", "Wheel_FR", "Wheel_RL", "Wheel_RR", "Candidate_CargoDoor"],
 		"shared_mesh": ["Wheel_FL", "Wheel_FR", "Wheel_RL", "Wheel_RR"],
 	},
+	"res://Assets/V1/Scenes/vehicle.car_passenger.a.tscn": {
+		"visual_id": "vehicle.car_passenger.a",
+		"nodes": ["Body", "Wheel_FL", "Wheel_FR", "Wheel_RL", "Wheel_RR"],
+		"shared_mesh": ["Wheel_FL", "Wheel_FR", "Wheel_RL", "Wheel_RR"],
+	},
 	# --- Segunda onda (lote logico do host em X x Z; envelope precisa caber) ---------
 	"res://Assets/V1/Scenes/civic.works_depot.a.tscn": {
 		"visual_id": "civic.works_depot.a", "lot": Vector2(24, 22),
