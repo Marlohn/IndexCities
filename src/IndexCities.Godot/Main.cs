@@ -105,7 +105,7 @@ public partial class Main:Node3D
         if(_building is {} kind){
             var rotation=_rotation;var tolerance=4.0;
             // Auto-orientação: perto de rua urbana a entrada vira para a rua; R vale como manual até sair da proximidade; durante o arrasto a rotação fica travada.
-            if(_dragStart==null){var near=_sim.State.Roads.Where(r=>!r.Highway&&r.Position.Distance(p)<=_sim.State.Tuning.RoadWidth/2+Catalog.Definitions[kind].Depth/2+6).OrderBy(r=>r.Position.Distance(p)).FirstOrDefault();
+            if(_dragStart==null){var gap=Math.Ceiling((Catalog.Definitions[kind].Depth/2+_sim.State.Tuning.RoadWidth/2+.75)/step)*step;var near=_sim.State.Roads.Where(r=>!r.Highway&&r.Position.Distance(snapped)<=gap+8).OrderBy(r=>r.Position.Distance(snapped)).FirstOrDefault();
                 if(near==null)_manualRotation=false;else if(!_manualRotation){rotation=_rotation=FaceRoad(near,p);tolerance=8;}}
             if(AlignToRoad(kind,snapped,rotation,step,tolerance) is {} aligned)return aligned;
         }
@@ -120,10 +120,12 @@ public partial class Main:Node3D
     }
     Point? AlignToRoad(BuildingKind kind,Point snapped,double rotation,double step,double tolerance)
     {
-        var definition=Catalog.Definitions[kind];var face=new Point(-Math.Sin(rotation),-Math.Cos(rotation));var door=snapped+face*(definition.Depth/2);var road=_sim.State.Roads.Where(r=>!r.Highway&&r.Position.Distance(door)<=_sim.State.Tuning.RoadWidth/2+3).OrderBy(r=>r.Position.Distance(door)).FirstOrDefault();if(road==null)return null;
+        // Procura também a rua alcançável pelo ajuste: a porta ainda está na posição livre.
+        var definition=Catalog.Definitions[kind];var face=new Point(-Math.Sin(rotation),-Math.Cos(rotation));var door=snapped+face*(definition.Depth/2);var road=_sim.State.Roads.Where(r=>!r.Highway&&r.Position.Distance(door)<=_sim.State.Tuning.RoadWidth/2+3+tolerance).OrderBy(r=>r.Position.Distance(door)).FirstOrDefault();if(road==null)return null;
         var gap=Math.Ceiling((definition.Depth/2+_sim.State.Tuning.RoadWidth/2+.75)/step)*step;var horizontal=road.Neighbours.Any(id=>Math.Abs(_sim.State.Roads.First(r=>r.Id==id).Position.X-road.Position.X)>.1);var vertical=road.Neighbours.Any(id=>Math.Abs(_sim.State.Roads.First(r=>r.Id==id).Position.Z-road.Position.Z)>.1);
         var aligned=horizontal&&Math.Abs(face.Z)>.9?new Point(snapped.X,road.Position.Z-face.Z*gap):vertical&&Math.Abs(face.X)>.9?new Point(road.Position.X-face.X*gap,snapped.Z):snapped;
-        return aligned.Distance(snapped)<=tolerance&&_sim.QuoteBuilding(kind,aligned,rotation,_movingProject).PhysicallyValid?aligned:null;
+        var candidate=new Building{Kind=kind,Position=aligned,Rotation=rotation};
+        return aligned.Distance(snapped)<=tolerance&&_sim.Access(candidate)!=null&&_sim.QuoteBuilding(kind,aligned,rotation,_movingProject).PhysicallyValid?aligned:null;
     }
     // Fileira por arrastar: prévias lado a lado ao longo da rua, espaçamento mínimo fisicamente válido; menos de 2 posições = clique simples.
     void ComputeRow()
