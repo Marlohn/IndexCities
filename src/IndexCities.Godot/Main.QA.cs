@@ -62,6 +62,29 @@ public partial class Main
             GD.Print("INDEXCITIES_REAL_CLOCK_OK long-frames=real-time pause=preserved");GetTree().Quit();
         }catch(Exception exception){GD.PushError(exception.ToString());GetTree().Quit(1);}
     }
+    async void TrafficRecoverySmoke()
+    {
+        try {
+            Require(DisplayServer.GetName()!="headless"&&OS.GetCmdlineUserArgs().Any(a=>a.StartsWith("--fixture=")),"Reprodução do trânsito usa cópia de save em janela renderizada");
+            SetSpeed(0);_autosaveMinutes=0;
+            var trucks=_sim.State.Vehicles.Where(v=>v.External&&v.Status!=VehicleStatus.Outside).ToDictionary(v=>v.Id,v=>(v.Position,v.Fuel));
+            Require(trucks.Count>0,"O checkpoint contém caminhões externos ativos para reproduzir a paralisação");
+            var money=_sim.MonetaryTotal;var initialCompleted=_sim.State.Projects.Count(p=>p.Status==WorkStatus.Completed);
+            await RecoveryAdvance(6*3600);
+            var frozen=trucks.Where(item=>{var vehicle=_sim.State.Vehicles.Single(v=>v.Id==item.Key);return vehicle.Position.Distance(item.Value.Position)<.001&&Math.Abs(vehicle.Fuel-item.Value.Fuel)<.000001;}).Select(item=>item.Key).ToArray();
+            Require(frozen.Length==0,"Caminhões do checkpoint deixaram a paralisação por deslocamento real: "+string.Join(",",frozen));
+            Require(_sim.MonetaryTotal==money,"A recuperação do trânsito preserva a oferta monetária");
+            var completed=_sim.State.Projects.Count(p=>p.Status==WorkStatus.Completed);
+            Require(completed>initialCompleted,"Entregas e equipes reais permitiram avançar as obras do checkpoint");
+            _world.Sync(_sim.State,1);RefreshHud();
+            var folder=ProjectSettings.GlobalizePath("res://../../artifacts/verification");
+            System.IO.Directory.CreateDirectory(folder);
+            System.IO.File.WriteAllText(System.IO.Path.Combine(folder,"traffic-engine-city.json"),_sim.SaveToJson());
+            await RecoveryCapture(System.IO.Path.Combine(folder,"traffic-engine-recovered.png"),GetViewport());
+            GD.Print("INDEXCITIES_TRAFFIC_RECOVERY_OK trucks="+trucks.Count+" newCompleted="+(completed-initialCompleted)+" money="+_sim.MonetaryTotal);
+            GetTree().Quit();
+        }catch(Exception exception){GD.PushError(exception.ToString());GetTree().Quit(1);}
+    }
     bool _performanceSmoke;int _performanceFrames;ulong _performanceAt;readonly List<double> _frameMs=new(),_simulationMs=new(),_presentationMs=new(),_focusedFrameMs=new(),_engineDeltaMs=new();
     void RecordPerformance(double delta,double simulationMs,double presentationMs)
     {

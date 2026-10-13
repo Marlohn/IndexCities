@@ -35,6 +35,7 @@ public partial class Main:Node3D
         if(args.Contains("--interaction-regressions-smoke"))CallDeferred(MethodName.InteractionRegressionSmoke);
         if(args.Contains("--presentation-smoke"))CallDeferred(MethodName.PresentationSmoke);
         if(args.Contains("--real-clock-smoke"))CallDeferred(MethodName.RealClockSmoke);
+        if(args.Contains("--traffic-recovery-smoke"))CallDeferred(MethodName.TrafficRecoverySmoke);
         if(args.Contains("--smoke"))CallDeferred(MethodName.Smoke);
         _clockAt=_frameAt=Time.GetTicksUsec();
     }

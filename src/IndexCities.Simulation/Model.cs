@@ -252,6 +252,7 @@ public sealed class Vehicle
     public string Cause {get;set;}="No exterior";
     public double WaitingSince {get;set;}
     public int? IntersectionClaim {get;set;}
+    public double? IntersectionEnteredAt {get;set;}
     public bool CrewAboard {get;set;}
     public int CrewCount {get;set;}
     public bool PassengerCar {get;set;}
