@@ -14,7 +14,7 @@ A [V1 aprovada](SPEC.md#v1--primeira-versão-jogável-integrada-escopo-aprovado-
 
 | Tema de entrada | Revisão humana do documento | Escopo / estado |
 | --- | --- | --- |
-| [Recorte e dependências V1](exploration/first-playable-scope.md) | PARCIALMENTE REVISADO | Recorte aprovado na SPEC; sequência e cenários técnicos são apoio exploratório. |
+| [Recorte e dependências V1](exploration/first-playable-scope.md) | PARCIALMENTE REVISADO | Recorte aprovado na SPEC; sequência e cenários técnicos são apoio exploratório. Inclui a investigação de problemas de 2026-10-13 (PENDENTE). |
 | [Briefing de assets V1](exploration/first-playable-assets.md) | PARCIALMENTE REVISADO | Pacote produzido e integrado à V1; estética e propostas visuais permanecem pendentes de revisão humana. |
 | [Mapa de prontidão](exploration/project-readiness.md) | PENDENTE | Riscos/lacunas para orientar investigação; percentuais históricos não medem implementação. |
 | [Pipeline de assets](exploration/asset-production-pipeline.md) | PENDENTE | Alternativas de autoria, formatos, recursos compartilhados e validação gráfica. |

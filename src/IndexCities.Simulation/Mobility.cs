@@ -107,7 +107,12 @@ public sealed partial class CitySimulation
     bool SeekFood(Citizen c,int? excluded=null)
     {
         if(excluded!=null&&!c.TriedShops.Contains(excluded.Value))c.TriedShops.Add(excluded.Value);
-        foreach(var shop in State.Buildings.Where(b=>b.Kind==BuildingKind.Grocery&&b.Completed&&!b.Removed&&b.CompanyId!=null&&!c.TriedShops.Contains(b.Id)).OrderBy(b=>b.Position.Distance(c.Position))){
+        // Choose by the family's real total cost: shelf price for what it needs plus
+        // a calibrated round-trip cost; a shop that cannot fill the basket costs
+        // another trip elsewhere.
+        var family=FamilyById(c.FamilyId);var wanted=Math.Max(1,(family?.Members.Count??1)*State.Tuning.PurchaseFoodPerPerson-(family?.Pantry??0));
+        decimal TripCost(Building shop)=>(decimal)(shop.Position.Distance(c.Position)*2)*State.Tuning.ShoppingTripCostPerMetre;
+        foreach(var shop in State.Buildings.Where(b=>b.Kind==BuildingKind.Grocery&&b.Completed&&!b.Removed&&b.CompanyId!=null&&!c.TriedShops.Contains(b.Id)).OrderBy(b=>b.SalePrice*(decimal)wanted+TripCost(b)*(b.Quantity(ResourceKind.Food)>=wanted?1:2)).ThenBy(b=>b.Id)){
             if(!Open(shop)||shop.OperationalCapacity<=0||shop.Quantity(ResourceKind.Food)<.5)continue;
             if(StartJourney(c,shop,JourneyPurpose.Shopping))return true;
         }
@@ -141,7 +146,7 @@ public sealed partial class CitySimulation
             if(v.Route.Count==0||v.Route.Any(id=>!_roads.ContainsKey(id))){v.Status=VehicleStatus.Waiting;v.Cause="Rota interrompida; aguarda ligação viária";continue;}
             var remaining=dt;
             while(remaining>.000001&&v.Status==VehicleStatus.Travelling){
-                if(v.RouteIndex>=v.Route.Count){var carSpot=v.PassengerCar&&v.RefuellingAt==null;if(v.DockPosition is {} dock&&v.Position.Distance(dock)>.01){var blocked=!carSpot&&State.Vehicles.Any(o=>o.Id!=v.Id&&o.Status is VehicleStatus.Unloading or VehicleStatus.Parked&&o.Position.Distance(dock)<4);if(blocked){v.Cause="Fila para acesso de carga";break;}var distance=v.Position.Distance(dock);var moved=Math.Min(distance,State.Tuning.VehicleSpeed*remaining);if(v.Fuel<moved*FuelRate(v)){v.Status=VehicleStatus.Stranded;break;}var toDock=dock-v.Position;if(v.PassengerCar&&distance>.01)v.Heading=Math.Atan2(toDock.X,toDock.Z);v.Position=v.Position.MoveTowards(dock,moved);v.Fuel-=moved*FuelRate(v);v.FuelBurnedLastStep+=moved*FuelRate(v);remaining-=moved/State.Tuning.VehicleSpeed;if(moved<distance-.01)break;}if(carSpot){CarReachedSpot(v);break;}v.Status=VehicleStatus.Unloading;v.LoadTimer=15;v.IntersectionClaim=null;break;}
+                if(v.RouteIndex>=v.Route.Count){var carSpot=v.PassengerCar&&v.RefuellingAt==null;if(v.DockPosition is {} dock&&v.Position.Distance(dock)>.01){var blocked=!carSpot&&State.Vehicles.Any(o=>o.Id!=v.Id&&!(o.PassengerCar&&o.Status==VehicleStatus.Parked)&&o.Status is VehicleStatus.Unloading or VehicleStatus.Parked&&o.Position.Distance(dock)<4);if(blocked){v.Cause="Fila para acesso de carga";break;}var distance=v.Position.Distance(dock);var moved=Math.Min(distance,State.Tuning.VehicleSpeed*remaining);if(v.Fuel<moved*FuelRate(v)){v.Status=VehicleStatus.Stranded;break;}var toDock=dock-v.Position;if(v.PassengerCar&&distance>.01)v.Heading=Math.Atan2(toDock.X,toDock.Z);v.Position=v.Position.MoveTowards(dock,moved);v.Fuel-=moved*FuelRate(v);v.FuelBurnedLastStep+=moved*FuelRate(v);remaining-=moved/State.Tuning.VehicleSpeed;if(moved<distance-.01)break;}if(carSpot){CarReachedSpot(v);break;}v.Status=VehicleStatus.Unloading;v.LoadTimer=15;v.IntersectionClaim=null;break;}
                 var node=_roads[v.Route[v.RouteIndex]];if(!node.Highway&&node.MaintenanceRatio<=.05){v.Status=VehicleStatus.Waiting;v.Cause="Via sem capacidade por manutenção não realizada";break;}var previous=v.RouteIndex>0?_roads[v.Route[v.RouteIndex-1]].Position:v.Position;
                 var delta=v.RouteIndex==0&&v.Route.Count>1?_roads[v.Route[1]].Position-node.Position:node.Position-previous;var len=delta.Distance(new(0,0));var target=node.Position;
                 if(len>.01)target+=new Point(delta.Z/len*1.65,-delta.X/len*1.65);
@@ -199,7 +204,7 @@ public sealed partial class CitySimulation
         if(s==null){if(v.External&&v.Position.Distance(State.Entry)<8){v.Position=State.Entry;v.Status=VehicleStatus.Outside;v.CrewAboard=false;v.CrewCount=0;v.Route.Clear();v.IntersectionClaim=null;v.Cause="Disponível no exterior";}else {v.Status=VehicleStatus.Parked;ReleaseDriver(v);}return;}
         if(s.Complete&&v.CrewAboard){v.Status=VehicleStatus.Parked;v.Cause="Equipe externa no canteiro";return;}
         if(s.Cancelled){RedirectCancelled(v,s);return;}
-        if(!s.PickedUp&&s.SourceBuildingId is {} sourceId){var source=BuildingById(sourceId);if(source==null||s.Cargo.Any(kv=>source.Quantity(kv.Key)<kv.Value)){v.Status=VehicleStatus.Waiting;v.Cause="Carga reservada indisponível na origem";return;}foreach(var kv in s.Cargo)source.AddStock(kv.Key,-kv.Value);v.Cargo=new(s.Cargo);s.PickedUp=true;
+        if(!s.PickedUp&&s.SourceBuildingId is {} sourceId){var source=BuildingById(sourceId);if(source==null||s.Cargo.Any(kv=>source.Quantity(kv.Key)<kv.Value)){v.Status=VehicleStatus.Waiting;v.Cause="Carga reservada indisponível na origem";return;}foreach(var kv in s.Cargo)source.AddStock(kv.Key,-kv.Value);if(source.Kind==BuildingKind.Farm)source.FoodSoldToday+=s.Cargo.GetValueOrDefault(ResourceKind.Food);v.Cargo=new(s.Cargo);s.PickedUp=true;
             if(s.ProjectId is {} pi&&State.Projects.FirstOrDefault(p=>p.Id==pi) is {} project)foreach(var kv in s.Cargo)project.LocalReserved[kv.Key]=Math.Max(0,project.LocalReserved.GetValueOrDefault(kv.Key)-kv.Value);
             var target=s.ProjectId is {} pId?WorkAccess(State.Projects.First(p=>p.Id==pId)):Access(BuildingById(s.DestinationBuildingId)!);var start=NearestRoad(v.Position);if(start==null||target==null){v.Status=VehicleStatus.Waiting;v.Cause="Destino sem via";return;}if(!EnsureFuel(v,target.Id)){v.Status=VehicleStatus.Waiting;return;}if(v.RefuellingAt==null)v.DockPosition=DockAt(target,BuildingById(s.DestinationBuildingId),v.CrewAboard);v.Status=VehicleStatus.Travelling;return;
         }
@@ -254,7 +259,11 @@ public sealed partial class CitySimulation
     {
         var station=BuildingById(stationId);if(station==null||station.OperationalCapacity<=0||station.CompanyId==null||station.Quantity(ResourceKind.Fuel)<=0){v.LoadTimer=60;v.Status=VehicleStatus.Unloading;v.Cause="Posto sem operação/estoque";return;}
         var amount=Math.Min(State.Tuning.FuelTank-v.Fuel,Math.Min(station.Quantity(ResourceKind.Fuel),(double)(Balance(v.OwnerAccount)/station.SalePrice)));
-        if(amount<=.001){v.Status=VehicleStatus.Stranded;v.Cause="Sem dinheiro/combustível para abastecer";return;}
+        if(amount<=.001){
+            // A private car that cannot pay stays parked at the station, still
+            // usable once the family has money; it is not stranded on the lane.
+            if(v.PassengerCar){v.RefuellingAt=null;v.SavedRoute=[];v.Status=VehicleStatus.Parked;LeaveCar(v,"Carro parado no posto: sem dinheiro para abastecer");return;}
+            v.Status=VehicleStatus.Stranded;v.Cause="Sem dinheiro/combustível para abastecer";return;}
         var price=Money((decimal)amount*station.SalePrice);if(!Transfer(v.OwnerAccount,"company:"+station.CompanyId,price,"Combustível","Abastecimento físico no posto",v.Id))return;
         station.AddStock(ResourceKind.Fuel,-amount);v.Fuel+=amount;v.RefuellingAt=null;v.Route=v.SavedRoute;v.SavedRoute=[];if(v.Route.Count>0){var shipment=State.Shipments.FirstOrDefault(s=>s.Id==v.ShipmentId);var destination=BuildingById(shipment?.PickedUp==false?shipment.SourceBuildingId:shipment?.DestinationBuildingId??v.HomeBuildingId);v.DockPosition=DockAt(_roads[v.Route[^1]],destination,false);}if(v.PassengerCar&&SpotByKey(v.ParkingSpot) is {} carSpot)v.DockPosition=carSpot.Position;v.RouteIndex=0;v.Status=VehicleStatus.Travelling;v.Cause="Abastecido com combustível real";
     }

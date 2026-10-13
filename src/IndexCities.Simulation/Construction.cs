@@ -61,7 +61,8 @@ public sealed partial class CitySimulation
     }
     RoadNode? WorkAccess(WorkProject p)
     {
-        if(p.IsMaintenance&&p.MaintenanceRoadIds.Count>0){var targetId=p.MaintenanceRoadIds[Math.Min(p.MaintenanceRoadIds.Count-1,(int)(p.Progress*p.MaintenanceRoadIds.Count))];if(!_roads.TryGetValue(targetId,out var target))return null;return State.Roads.Where(r=>_exteriorConnected.Contains(r.Id)&&r.Position.Distance(target.Position)<=State.Tuning.RoadStep+.05).MinBy(r=>r.Position.Distance(target.Position));}
+        // A demolished stretch is skipped: maintenance continues on the remaining network.
+        if(p.IsMaintenance&&p.MaintenanceRoadIds.Count>0){var remaining=p.MaintenanceRoadIds.Where(_roads.ContainsKey).ToList();if(remaining.Count==0)return null;var target=_roads[remaining[Math.Min(remaining.Count-1,(int)(p.Progress*remaining.Count))]];return State.Roads.Where(r=>_exteriorConnected.Contains(r.Id)&&r.Position.Distance(target.Position)<=State.Tuning.RoadStep+.05).MinBy(r=>r.Position.Distance(target.Position));}
         if(p.BuildingId!=null)return BuildingById(p.BuildingId) is {} b?Access(b):null;
         return State.Roads.Where(r=>p.RoadPoints.Any(a=>a.Distance(r.Position)<=State.Tuning.RoadStep+.05)&&_exteriorConnected.Contains(r.Id)).OrderBy(r=>r.Position.Distance(p.Position)).FirstOrDefault();
     }

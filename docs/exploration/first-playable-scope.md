@@ -68,3 +68,26 @@ Catálogo completo de dez atividades privadas, alta densidade, prédios mistos, 
 - **IA do jogo:** desenvolve apenas o que a SPEC autorizar, testa entradas/saídas físicas/econômicas, publica cedo o contrato de escala, pontos funcionais e IDs visuais; não toma decisões de produto por conta da IA de arte.
 - **IA de assets:** pode preparar referências originais, paleta, silhuetas, protótipos de famílias e modelos candidatos em paralelo **desde já**; só produzir catálogo dimensional definitivo após validação do contrato e integração de uma amostra. Não copiar assets nem herdar código ou desenhos de projetos externos.
 - **Responsável:** já aprovou o recorte V1 na SPEC; decide eventuais mudanças de escopo e comportamentos importantes ausentes, além de revisar as entregas visuais no jogo, não apenas imagens isoladas.
+
+## Investigação dos problemas apontados em revisões — 2026-10-13
+
+> **Revisão humana desta seção: PENDENTE.** Registro da IA (Claude) sobre a investigação das hipóteses levantadas em revisões anteriores. Os itens corrigidos restauram regras já escritas na SPEC; os demais são **opções para decisão humana**, não backlog nem autorização de implementação.
+
+**Corrigido por violar regra já aprovada (sem mudar a SPEC):**
+
+- **Escolha de loja (SPEC, *Compras de bens de consumo*):** o SIM ia sempre à mercearia mais próxima. Passou a comparar o custo total da compra (preço de prateleira × quantidade desejada) com um custo calibrável de ida e volta, penalizando loja sem estoque suficiente. O peso da distância (`ShoppingTripCostPerMetre`) é calibração.
+- **Produção da fazenda (SPEC, *Produção adaptativa com estoque de segurança*):** a meta era `máx(16, população × 4)`, sem relação com vendas. Agora a reserva é `máx(16, 1,5 × demanda estimada)`, com a estimativa formada por alimentos efetivamente despachados e por pedidos de mercearias que encontraram a fazenda competitiva mas sem estoque; sem vendas, decai dia a dia.
+- **Falência (SPEC, *Falência e encerramento*):** (a) a empresa em risco agora mostra o estado, a maior dívida real e o prazo antes do encerramento; (b) o caminhão que ficou sem titular após a falência continuava vinculado à fazenda e era usado de graça pelo novo dono, que nunca comprava o próprio veículo. Agora só a empresa titular usa/compra o caminhão. O estoque remanescente no imóvel sem dono segue com o imóvel — ponto **ambíguo** na SPEC, deixado para decisão.
+- **Ritmo de migração (SPEC, *Aquisição residencial pela conexão exterior*):** havia uma trava fixa de uma família por revisão de mercado (30 min simulados), sem base em fator real. Agora todas as casas vagas são ofertadas a cada revisão, com moradores ainda em viagem contando contra as mesmas vagas de emprego.
+- **Confiabilidade:** (a) carro particular estacionado na garagem bloqueava a doca de caminhões de obra/manutenção vizinha para sempre; no ensaio de 14 dias isso travou as 25 manutenções e levou água e energia a zero no dia 10; (b) manutenção viária ficava parada com verba comprometida quando um dos trechos era demolido; (c) carro sem dinheiro no posto virava "parado na via" para sempre — agora fica estacionado no posto e volta a ser usado quando houver dinheiro.
+
+**Medições:** com 141 SIMs, 47 veículos e 244 nós de rua, a simulação em Release custa ~1,75 s de CPU por hora simulada (60x ≈ 3% de um núcleo). O custo crescente observado no ensaio vinha das obras travadas. Save → load → continuação foi idêntico. Não foi testada cidade muito maior (centenas de casas).
+
+**Dependem de decisão humana (opções, não decisões):**
+
+1. **Interface textual / construção pouco intuitiva:** os fluxos de rua e prédio seguem a SPEC; o problema é de linguagem visual (custo, estado e causa ainda em texto). Redesenhar exige decisão de UX.
+2. **Cidade sem vida:** todos os SIMs e veículos são desenhados, mas quem está a menos de 1 m de uma porta fica invisível (trabalho, compra, casa); não há sinal visual de atividade nos negócios. Possíveis caminhos: indicadores no prédio (clientes, fila, entrega) ou mostrar pessoas na porta.
+3. **Ritmo:** salários são pagos uma vez por dia, à meia-noite (≈18 h reais em 1x para o primeiro salário); a SPEC diz só "periodicamente". A 60x, pedestres e caminhões ficam difíceis de acompanhar.
+4. **Estoque em imóvel após falência:** fica com o próximo comprador do imóvel, ou deve ser liquidado/sem titular?
+5. **Vagas de emprego que atraem migração:** prédios públicos (inclusive a Prefeitura) e prédios privados ainda sem dono contam como "empregos potenciais"; a cidade pode atrair famílias sem emprego privado real.
+6. **Plausíveis, não reproduzidos:** carro de família falecida sem herdeiro ocupa a vaga da casa para sempre; manutenção de prédio público isolado por demolição mantém a verba comprometida até a rua ser refeita; manutenção viária cujos trechos foram **todos** demolidos continua parada.

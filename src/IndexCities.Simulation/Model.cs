@@ -85,6 +85,7 @@ public sealed class SimulationTuning
     public double CarFuelPerMetre {get;set;}=.006;
     public double CarMinimumTripMetres {get;set;}=120;
     public double OutingChancePerMinute {get;set;}=.025;
+    public decimal ShoppingTripCostPerMetre {get;set;}=.004m;
     public Dictionary<ResourceKind,decimal> ImportPrices {get;set;}=new(){[ResourceKind.Aggregate]=14,[ResourceKind.Concrete]=25,[ResourceKind.Steel]=50,[ResourceKind.Wood]=24,[ResourceKind.Asphalt]=22,[ResourceKind.Food]=2,[ResourceKind.Fuel]=5};
 }
 public sealed class Building
@@ -122,6 +123,7 @@ public sealed class Building
     public decimal PaidMaintenance {get;set;}
     public bool OperationClosed {get;set;}
     public double FoodSoldToday {get;set;}
+    public double FoodDemandEstimate {get;set;}
     [JsonIgnore] public BuildingDefinition Definition=>Catalog.Definitions[Kind];
     [JsonIgnore] public Point Door=>Position+new Point(-Math.Sin(Rotation)*Definition.Depth/2,-Math.Cos(Rotation)*Definition.Depth/2);
     public double Quantity(ResourceKind k)=>Stock.GetValueOrDefault(k);
