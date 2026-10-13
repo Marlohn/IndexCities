@@ -60,8 +60,8 @@ public partial class Main
                 if (shipment == null) continue;
                 var truck = _sim.State.Vehicles.Single(v => v.Id == shipment.VehicleId);
                 var label = (Label3D)_world.FindChild("BuildingActivity" + hall.Id, true, false);
-                if (truck.Status == VehicleStatus.Travelling) { Require(!label.Text.Contains("Carga:"), "Pedido em trânsito não parece descarga"); travellingChecked = true; }
-                if (truck.Status == VehicleStatus.Unloading) { Require(label.Visible && label.Text.Contains("Carga:"), "Descarga física é perceptível no destino"); unloadingChecked = true; }
+                if (truck.Status == VehicleStatus.Travelling) { Require(!label.Text.Contains("Caminhões:"), "Pedido em trânsito não parece descarga"); travellingChecked = true; }
+                if (truck.Status == VehicleStatus.Unloading) { Require(label.Visible && label.Text.Contains("Caminhões:"), "Descarga física é perceptível no destino"); unloadingChecked = true; }
             }
             Require(travellingChecked && unloadingChecked, "Cenário percorreu viagem e descarga reais");
             _focus = ToV(hall.Position); UpdateCamera();

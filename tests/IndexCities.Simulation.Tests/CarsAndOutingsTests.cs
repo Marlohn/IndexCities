@@ -4,6 +4,20 @@ using Xunit;
 namespace IndexCities.Simulation.Tests;
 public sealed class CarsAndOutingsTests
 {
+    [Fact] public void Failed_food_search_preserves_the_actual_visit_and_its_shortage_diagnosis()
+    {
+        var sim=new CitySimulation(42);sim.State.ElapsedSeconds=7200;sim.State.Now=sim.State.Now.AddHours(2);
+        var home=new Building{Id=10000,Kind=BuildingKind.House,Position=new(-100,14),Completed=true};
+        var host=new Building{Id=10001,Kind=BuildingKind.House,Position=new(-80,14),Completed=true};
+        var citizen=new Citizen{Id=10002,FamilyId=10003,Age=30,Alive=true,Resident=true,InsideMap=true,Position=host.Door,DestinationId=host.Id,Purpose=JourneyPurpose.Visit,OutingUntil=9000,Activity="Visitando família em Casa"};
+        sim.State.Buildings.AddRange([home,host]);sim.State.Citizens.Add(citizen);
+        var family=new Family{Id=10003,HomeId=home.Id,Members=[citizen.Id],Pantry=0};sim.State.Families.Add(family);
+        var routine=typeof(CitySimulation).GetMethod("CitizenRoutine",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic)!;
+        var before=sim.MonetaryTotal;routine.Invoke(sim,[citizen]);
+        Assert.StartsWith("Visitando família",citizen.Activity);Assert.Contains("Não existe loja",citizen.Decision);
+        Assert.Equal(host.Door,citizen.Position);Assert.Equal(JourneyPurpose.Visit,citizen.Purpose);Assert.False(citizen.Moving);
+        Assert.Equal(0,family.Pantry);Assert.Equal(before,sim.MonetaryTotal);
+    }
     static CitySimulation Founded()
     {
         var sim=new CitySimulation(42);

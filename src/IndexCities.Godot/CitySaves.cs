@@ -19,6 +19,7 @@ public sealed class CitySave
     public bool DraftReverse {get;set;}
     public bool? DraftRoadFixed {get;set;}
     public bool RoadTool {get;set;}
+    public bool DemolitionTool {get;set;}
     public int Speed {get;set;}=1;
     public double AutosaveMinutes {get;set;}=5;
 }

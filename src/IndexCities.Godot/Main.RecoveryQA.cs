@@ -69,7 +69,7 @@ public partial class Main
 
     async Task<Vector2> RecoveryAlignNativeMouse(Vector2 position, Viewport viewport)
     {
-        var modes = new[] { "--ui-input-smoke", "--recovery-smoke", "--visual-review-smoke", "--real-time-start-smoke", "--interaction-regressions-smoke" };
+        var modes = new[] { "--ui-input-smoke", "--recovery-smoke", "--road-recovery-smoke", "--visual-review-smoke", "--real-time-start-smoke", "--interaction-regressions-smoke" };
         Require(OS.GetCmdlineUserArgs().Any(modes.Contains), "Foco e cursor nativos são usados somente na janela de QA isolada");
         Require(viewport.GetVisibleRect().HasPoint(position), "Cursor de QA permanece dentro do viewport conhecido");
         var nativeWindow = viewport is Window window ? window : viewport.GetWindow();
@@ -449,6 +449,7 @@ public partial class Main
             var building = _sim.State.Buildings.FirstOrDefault(building => building.Kind == BuildingKind.Grocery && !building.Removed) ?? _sim.State.Buildings.First(building => !building.Removed);
             await RecoveryWorldPoint(building.Position);
             Require(_inspector.Visible, "Inspeção aberta pelo mapa");
+            Require(_inspector.GetGlobalRect().End.Y<=_services.GetGlobalRect().Position.Y,"Inspector cabe acima dos avisos e do catálogo");
             await RecoveryCaptureOnce("inspection", GetViewport());
             foreach (var tooltip in new[] { "Finanças e impostos", "SIMs e empresas", "Causas, obras e entregas", "Controles", "Cidades e autosave" }) {
                 await RecoveryButton(RecoveryHudButton(tooltip));

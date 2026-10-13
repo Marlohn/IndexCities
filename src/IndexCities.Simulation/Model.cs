@@ -47,6 +47,7 @@ public sealed class SimulationTuning
     public double MapHalfSize {get;set;}=256;
     public double RoadStep {get;set;}=4;
     public double RoadWidth {get;set;}=10.5;
+    public double CrosswalkSpacing {get;set;}=40;
     public double WalkingSpeed {get;set;}=1.4;
     public double VehicleSpeed {get;set;}=7;
     public double HighwaySpeed {get;set;}=12;
