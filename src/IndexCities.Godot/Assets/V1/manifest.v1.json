@@ -2044,6 +2044,115 @@
       "status": "amostra V1 para compatibilizacao - revisao humana PENDENTE"
     },
     {
+      "visual_id": "vehicle.car_passenger.a",
+      "family_id": "vehicle.car_passenger.a",
+      "piece": "",
+      "title_pt": "Carro de passeio compacto",
+      "scene": "res://Assets/V1/Scenes/vehicle.car_passenger.a.tscn",
+      "root_node": "CarPassenger",
+      "envelope": {
+        "min": [
+          -0.93,
+          0.0,
+          -2.1
+        ],
+        "max": [
+          0.93,
+          1.48,
+          2.1
+        ],
+        "size": [
+          1.86,
+          1.48,
+          4.2
+        ]
+      },
+      "markers": [],
+      "meshes": [
+        {
+          "node": "Body",
+          "mesh": "res://Assets/V1/Meshes/vehicle.car_passenger.a.body.tres",
+          "surfaces": [
+            "car_paint",
+            "glass_dark",
+            "metal_dark",
+            "car_headlight_off",
+            "car_taillight"
+          ],
+          "triangles": 480,
+          "visible_by_default": true
+        },
+        {
+          "node": "Wheel_FL",
+          "mesh": "res://Assets/V1/Meshes/vehicle.car_passenger.a.wheel.tres",
+          "surfaces": [
+            "metal_light",
+            "rubber"
+          ],
+          "triangles": 180,
+          "visible_by_default": true
+        },
+        {
+          "node": "Wheel_FR",
+          "mesh": "res://Assets/V1/Meshes/vehicle.car_passenger.a.wheel.tres",
+          "surfaces": [
+            "metal_light",
+            "rubber"
+          ],
+          "triangles": 180,
+          "visible_by_default": true
+        },
+        {
+          "node": "Wheel_RL",
+          "mesh": "res://Assets/V1/Meshes/vehicle.car_passenger.a.wheel.tres",
+          "surfaces": [
+            "metal_light",
+            "rubber"
+          ],
+          "triangles": 180,
+          "visible_by_default": true
+        },
+        {
+          "node": "Wheel_RR",
+          "mesh": "res://Assets/V1/Meshes/vehicle.car_passenger.a.wheel.tres",
+          "surfaces": [
+            "metal_light",
+            "rubber"
+          ],
+          "triangles": 180,
+          "visible_by_default": true
+        }
+      ],
+      "triangles_total": 1200,
+      "mesh_surfaces_total": 13,
+      "proposed": {
+        "comprimento_m": 4.2,
+        "largura_m": 1.8,
+        "largura_com_retrovisores_m": 1.86,
+        "altura_m": 1.48,
+        "raio_roda_m": 0.3,
+        "largura_roda_m": 0.2,
+        "eixo_dianteiro_z_m": -1.3,
+        "eixo_traseiro_z_m": 1.3,
+        "entre_eixos_m": 2.6,
+        "bitola_m": 1.58
+      },
+      "parts": {
+        "Body": "carroceria + cabine + vidros + para-choques + farois/lanternas (<= 5 superficies: car_paint, glass_dark, metal_dark, car_headlight_off, car_taillight)",
+        "Wheel_FL, Wheel_FR, Wheel_RL, Wheel_RR": "MeshInstance3D com UMA malha compartilhada (.wheel; superficies metal_light, rubber), origem no centro do eixo. Rolagem: rotacao em X local (andar para a frente, -Z, = angulo negativo = -distancia / raio). Dianteiras podem ser estercadas em Y local (compor Basis(Y, esterco) * Basis(X, rolagem))."
+      },
+      "notes": [
+        "Frente voltada a -Z; esquerda = -X. Pivo no solo, centrado na projecao do veiculo (comprimento -2,10..+2,10).",
+        "Rodas: centro em y = 0.30; eixo dianteiro z = -1.30, traseiro z = 1.30, x = +-0.79. Roda simetrica (serve dos dois lados sem espelhar).",
+        "Pintura: superficie 'car_paint' do Body. Variante de cor = set_surface_override_material na superficie car_paint com car_paint_red/blue/white/yellow/green (a malha nao muda). A cor e do veiculo real, nao decidida aqui.",
+        "Farois (car_headlight_off) e lanternas (car_taillight) NAO emissivos; a integracao pode trocar a superficie por material 'ligado' a partir de estado real.",
+        "Sem interior, sem placa, sem logos ou texto."
+      ],
+      "lot_m": [],
+      "state_nodes": [],
+      "status": "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+    },
+    {
       "visual_id": "vehicle.truck_cargo.a",
       "family_id": "vehicle.truck_cargo.a",
       "piece": "",
@@ -2196,6 +2305,7 @@
     "utility.water_treatment.a",
     "utility.sewage_treatment.a",
     "utility.wind_power.a",
-    "preview.wave2_board"
+    "preview.wave2_board",
+    "vehicle.car_passenger.a"
   ]
 }

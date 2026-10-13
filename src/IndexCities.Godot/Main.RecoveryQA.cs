@@ -142,7 +142,7 @@ public partial class Main
         await RecoveryClick(rectangle.GetCenter(), button.GetViewport());
     }
 
-    Button RecoveryCatalog(BuildingKind kind) => RecoveryNodes<Button>(_catalog).Single(button => button.TooltipText == Catalog.Definitions[kind].Name);
+    Button RecoveryCatalog(BuildingKind kind) => RecoveryNodes<Button>(_catalog).Single(button => button.TooltipText.Split('\n')[0] == Catalog.Definitions[kind].Name);
     Button RecoveryRoadButton() => RecoveryNodes<Button>(_catalog).Single(button => button.TooltipText.StartsWith("Rua 1+1", StringComparison.Ordinal));
     Button RecoveryHudButton(string tooltip) => RecoveryNodes<Button>(_canvas).Single(button => button.TooltipText == tooltip);
     Button RecoverySpeedButton(int speed) => _speedButtons.Single(item => item.Speed == speed).Button;
@@ -688,6 +688,47 @@ public partial class Main
             await RecoveryCaptureOnce("building-roof-selection", GetViewport());
             Require(_sim.SaveToJson() == before, "Inspeção não modifica simulação");
             milestones.Add("via adjacente e superfície elevada selecionadas pelo elemento real");
+
+            // Ferramentas fluidas: entrada vira para a rua, R é override manual e a fileira encomenda obras independentes.
+            await RecoveryKey(Key.Escape);
+            await RecoveryButton(RecoveryCatalog(BuildingKind.House));
+            await RecoveryPreviewWorldPoint(new(-184, -12));
+            Require(Math.Abs(_rotation - Math.PI) < .000001 && _sim.QuoteBuilding(BuildingKind.House, _cursor, _rotation) is { PhysicallyValid: true, Accessible: true }, "Casa ao norte da rua vira a entrada para a rua e encaixa com acesso");
+            await RecoveryPreviewWorldPoint(new(-184, 12));
+            Require(Math.Abs(_rotation) < .000001, "Casa ao sul da rua vira a entrada para a rua");
+            await RecoveryKey(Key.R);
+            var manual = _rotation;
+            await RecoveryMove(_camera.UnprojectPosition(ToV(new(-182, 12))));
+            Require(_manualRotation && Math.Abs(_rotation - manual) < .000001, "R vale como rotação manual enquanto o cursor segue perto da rua");
+            await RecoveryPreviewWorldPoint(new(-184, -60));
+            Require(!_manualRotation, "Sair da proximidade da rua encerra o override manual");
+            await RecoveryPreviewWorldPoint(new(-184, -12));
+            Require(Math.Abs(_rotation - Math.PI) < .000001, "Voltar à rua retoma a auto-orientação");
+            var spacing = Math.Ceiling((Catalog.Definitions[BuildingKind.House].Width + .5) / 2) * 2;
+            var rowProjects = _sim.State.Projects.Count;
+            var availableBefore = _sim.Available;
+            var rowStart = await RecoveryMove(_camera.UnprojectPosition(ToV(new(-184, -12))));
+            var startCursor = _cursor;
+            RecoveryInput(new InputEventMouseButton { ButtonIndex = MouseButton.Left, ButtonMask = MouseButtonMask.Left, Pressed = true, Position = rowStart, GlobalPosition = rowStart });
+            await RecoveryFrame();
+            var rowEnd = await RecoveryMove(_camera.UnprojectPosition(ToV(new(startCursor.X + 2 * spacing, -12))));
+            await RecoveryFrame();
+            Require(_dragStart != null && _row.Count == 3 && _rowValid == 3 && _toolHint.Text.Contains("×3", StringComparison.Ordinal) && _toolHint.Text.Contains(Cash(_rowTotal), StringComparison.Ordinal), "Arrastar mostra fileira de 3 casas com quantidade e custo total: " + _toolHint.Text);
+            await RecoveryCaptureOnce("building-row-preview", GetViewport());
+            RecoveryInput(new InputEventMouseButton { ButtonIndex = MouseButton.Left, Pressed = false, Position = rowEnd, GlobalPosition = rowEnd });
+            await RecoveryFrame();
+            var ordered = _sim.State.Projects.Skip(rowProjects).ToList();
+            Require(ordered.Count == 3 && ordered.Select(project => project.Position.X).Distinct().Count() == 3 && ordered.All(project => project.BuildingId != null) && _sim.Available < availableBefore, "Soltar encomenda 3 obras de casa independentes: " + ordered.Count);
+            Require(ordered.Select(project => _sim.State.Buildings.Single(b => b.Id == project.BuildingId)).All(b => Math.Abs(b.Rotation - Math.PI) < .000001 && !_sim.State.Buildings.Where(o => o.Id != b.Id && !o.Removed).Any(o => o.Position.Distance(b.Position) < 1)), "Casas da fileira ficam alinhadas à rua e sem sobreposição");
+            await RecoveryPreviewWorldPoint(new(-100, -70));
+            var roadless = _sim.QuoteBuilding(BuildingKind.House, _cursor, _rotation);
+            Require(roadless is { PhysicallyValid: true, Accessible: false } && _world.FindChild("NoRoadWarning", true, false) is Label3D { Visible: true }, "Prévia válida sem rua mostra o aviso forte de obra parada");
+            await RecoveryCaptureOnce("building-no-road-warning", GetViewport());
+            await RecoveryClick(_camera.UnprojectPosition(ToV(_cursor)));
+            await RecoveryFrame(); await RecoveryFrame();
+            await RecoveryCaptureOnce("roadless-site-marker", GetViewport());
+            milestones.Add("auto-orientação para a rua e fileira por arrastar de 3 casas; aviso forte sem rua");
+            await RecoveryKey(Key.Escape);
 
             // This is a deliberately poor test city created through the same
             // constructor and monetary distribution, without editing wallets.

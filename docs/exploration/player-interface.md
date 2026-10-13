@@ -30,6 +30,36 @@ O responsável relatou construção difícil, ferramentas pouco intuitivas, menu
 
 **Opções de estudo:** informação contextual mais próxima da ação, indicação visual de ferramenta ativa/entrada/conexão e menor dependência de janelas para consultas frequentes. Avaliar essas possibilidades contra a SPEC antes de adotar mudança relevante de UX; não são funcionalidades aprovadas. O critério já canônico é conseguir fundar, construir, operar, diagnosticar e retomar uma cidade jogável, com fluxos reais.
 
+## Cidade parecendo morta — análise de 2026-10-12 (noite)
+
+> **Revisão humana desta seção: PENDENTE.** Medições e leitura da IA. As decisões tomadas a partir dela já estão na SPEC (*Ferramentas de construção mais fluidas* e *Cidade viva na V1*).
+
+- **Medido no save do responsável** (83 moradores, 84 prédios, 24h simuladas): 0,24 pedestre visível em média, 97% dos minutos sem ninguém na rua e nenhum veículo em movimento. Em 3 dias não houve nenhum acontecimento novo, porque todas as casas estavam ocupadas, embora 104 famílias de fora tivessem capital para comprar.
+- **Causas:** cada SIM passa cerca de 1% do dia na rua (3 a 4 viagens curtas); não havia carro particular na V1; não havia motivo para sair além de trabalho e comida; o crescimento depende de casas colocadas uma a uma.
+- **Depois das mudanças** (cidade de teste com 52 moradores): 35 carros comprados ao migrar, estacionados de verdade; cerca de 30 viagens de carro por dia; passeios e visitas fazem o pico de pedestres no fim da tarde. A média de gente andando continua baixa (~0,35), porque é proporcional à população. Mais vida visível depende principalmente de a cidade crescer.
+- **Travamento encontrado e corrigido:** com mais veículos, filas de carros e pedestres podiam esperar uns pelos outros para sempre nas faixas (caminhões presos havia mais de 9h simuladas).
+- **Vagas no meio-fio:** adiadas para revisão; ver a seção abaixo.
+- **Outros pontos para avaliar:** déficit de água sem destaque (agora marcado no HUD, IA-012); rótulos de texto soltos sobre o mapa (IA-013); a escala de 1,7 m dos SIMs deixa pedestres com poucos pixels no zoom padrão.
+
+## Vagas de carro no meio-fio — pendente de revisão
+
+> **Revisão humana desta seção: PENDENTE.** Levantamento da IA. A decisão vigente (adiar) está na SPEC, em *Cidade viva na V1*.
+
+**Situação:** o responsável escolheu, no pacote "cidade viva", ter vagas também na rua. Na implementação apareceu um limite físico, e ele pediu em 2026-10-12 para documentar e revisar depois. Hoje existem só a garagem da casa (1 vaga) e as vagas de lote dos outros prédios.
+
+**Por que não coube:** a rua 1+1 tem 10,5 m de largura no total. São 6,6 m de pista, duas faixas de 3,3 m com os carros no centro de cada uma, e cerca de 1,95 m de calçada de cada lado, onde os pedestres andam a ~4,5 m do eixo. Um carro tem 1,8 m de largura. Estacionado junto ao meio-fio, ele ocuparia uns 0,8 m da faixa: os carros em movimento passariam por cima dele no desenho ou ficariam presos atrás dele na fila.
+
+**Alternativas para decidir:**
+
+| Opção | Como fica | A favor | Contra |
+| --- | --- | --- | --- |
+| **A. Rua 1+1 mais larga** (~14 m, com faixa de estacionamento de cada lado) | Carros parados ao longo da rua, como num bairro real | É a rua que mais parece viva; o estacionamento disputa espaço de verdade | Precisa de asset novo da rua, de rever recuos, faixas e cruzamentos, e o código tem medidas fixas (3,3 m) a revisar. A rua passa a ocupar mais terreno. Saves antigos mantêm a largura gravada. |
+| **B. Só na futura via 2+2** | A 1+1 continua sem vaga; a 2+2, quando entrar, já nasce com faixa de estacionamento | Não mexe na V1 agora | A V1 continua sem carros parados na rua |
+| **C. Baias recuadas** | Recortes na calçada em trechos sem entrada de prédio, com o carro fora da faixa | Mantém a largura da rua | A calçada fica estreita nesses trechos e os pedestres precisam desviar; geometria e asset mais complexos |
+| **D. Escolher por rua** | Ao construir, a rua 1+1 sai com ou sem estacionamento (custa mais e ocupa mais espaço) | Dá uma escolha urbana real ao jogador | Seria uma opção nova de ferramenta, com dois perfis para manter |
+
+**Perguntas para a revisão:** vale ocupar mais terreno por rua para ter carros na rua? A vaga na rua seria livre ou ligada à política de tarifas de estacionamento já aprovada (Grátis/Barata/Normal/Cara)? Pedestres atravessam entre carros parados ou só nas faixas?
+
 ## Caminhos exclusivos para pedestres adiados — opção 8A (2026-10-11)
 
 > **Revisão humana: PARCIALMENTE REVISADO.** O responsável prefere manter nesta etapa calçadas e acessos já aprovados, sem ferramenta adicional para desenhar caminhos exclusivos de pedestres. A ideia poderá ser reavaliada futuramente após observar o jogo integrado.

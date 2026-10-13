@@ -10,8 +10,9 @@ public sealed partial class CitySimulation
         valid&=!State.Projects.Any(p=>p.Id!=ignoredProject&&p.Status is WorkStatus.Waiting or WorkStatus.InProgress&&p.RoadPoints.Any(pt=>Inside(candidate,pt,State.Tuning.RoadWidth/2-.05)));
         var allowed=State.CityHallPlaced||kind==BuildingKind.CityHall;
         if(!State.CityHallPlaced&&kind!=BuildingKind.CityHall)valid=false;
+        var duplicateHall=kind==BuildingKind.CityHall&&State.Buildings.Any(b=>!b.Removed&&b.Kind==BuildingKind.CityHall&&b.ProjectId!=ignoredProject);
         var accessible=HasExteriorAccess(candidate);var quote=QuoteMaterials(d.Materials,position,d.WorkSeconds);
-        return new(valid&&allowed,accessible,quote,new(d.Materials),!valid?"Sobreposição, água ou limite do mapa":!accessible?"Sem rua urbana: a obra aguardará acesso":kind==BuildingKind.WaterIntake&&Math.Abs(position.Distance(State.LakeCentre)-State.LakeRadius)>22?"A captação precisará alcançar a fonte natural":"Posição válida");
+        return new(valid&&allowed&&!duplicateHall,accessible,quote,new(d.Materials),duplicateHall?"A cidade já tem uma Prefeitura":!valid?"Sobreposição, água ou limite do mapa":!accessible?"Sem rua urbana: a obra aguardará acesso":kind==BuildingKind.WaterIntake&&Math.Abs(position.Distance(State.LakeCentre)-State.LakeRadius)>22?"A captação precisará alcançar a fonte natural":"Posição válida");
     }
     decimal QuoteMaterials(Dictionary<ResourceKind,double> materials,Point position,double workSeconds)
     {

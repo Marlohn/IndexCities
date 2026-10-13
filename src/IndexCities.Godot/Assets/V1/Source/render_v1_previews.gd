@@ -67,11 +67,14 @@ func _run() -> void:
 	var out_dir := ""
 	var final_mode := false
 	var wave2_only := false
+	var thumb_scene := ""
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--review="):
 			review = a.substr(9).split(",", false)
 		elif a.begins_with("--out="):
 			out_dir = a.substr(6)
+		elif a.begins_with("--thumb="):
+			thumb_scene = a.substr(8)
 		elif a == "--final":
 			final_mode = true
 		elif a == "--final-wave2":
@@ -90,7 +93,12 @@ func _run() -> void:
 			ok = (await _render_review(p, out_dir)) and ok
 	if final_mode:
 		ok = (await _render_final(wave2_only)) and ok
-	if review.is_empty() and not final_mode:
+	if thumb_scene != "":
+		# Somente a miniatura de UMA cena (nao refaz capturas nem miniaturas das demais).
+		var impl = load("res://Assets/V1/Source/kit/final_previews.gd").new()
+		var vid: String = thumb_scene.get_file().get_basename()
+		ok = (await impl._thumbnails(self, [[vid, thumb_scene, "", 0.0]])) and ok
+	if review.is_empty() and not final_mode and thumb_scene == "":
 		printerr("[render] nada a fazer: use --review=... --out=... ou --final")
 		ok = false
 	quit(0 if ok else 1)

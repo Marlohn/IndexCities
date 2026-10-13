@@ -13,7 +13,7 @@ public readonly record struct Point(double X, double Z)
 public enum BuildingKind { CityHall, WorksDepot, House, Grocery, Farm, FuelStation, WaterIntake, WaterTreatment, SewageTreatment, WindPower }
 public enum ResourceKind { Aggregate, Concrete, Steel, Wood, Asphalt, Food, Fuel }
 public enum WorkStatus { Waiting, InProgress, Completed, Cancelled }
-public enum JourneyPurpose { Arriving, Work, Home, Shopping, Leaving, Construction, Boarding }
+public enum JourneyPurpose { Arriving, Work, Home, Shopping, Leaving, Construction, Boarding, Visit, Stroll }
 public enum VehicleStatus { Outside, Travelling, Unloading, Parked, Waiting, Stranded }
 public enum ShipmentPurpose { Construction, Food, Fuel, Vehicle, Maintenance }
 public enum JunctionControl { RightHand, ThroughX, ThroughZ, Signal }
@@ -80,6 +80,11 @@ public sealed class SimulationTuning
     public int ExternalTruckCount {get;set;}=6;
     public int ExternalFamilyCandidates {get;set;}=160;
     public int ExternalCompanyCandidates {get;set;}=24;
+    public decimal CarPrice {get;set;}=9000;
+    public decimal CarPurchaseReserve {get;set;}=6000;
+    public double CarFuelPerMetre {get;set;}=.006;
+    public double CarMinimumTripMetres {get;set;}=120;
+    public double OutingChancePerMinute {get;set;}=.025;
     public Dictionary<ResourceKind,decimal> ImportPrices {get;set;}=new(){[ResourceKind.Aggregate]=14,[ResourceKind.Concrete]=25,[ResourceKind.Steel]=50,[ResourceKind.Wood]=24,[ResourceKind.Asphalt]=22,[ResourceKind.Food]=2,[ResourceKind.Fuel]=5};
 }
 public sealed class Building
@@ -195,6 +200,7 @@ public sealed class Citizen
     public string Activity {get;set;}="Chegando";
     public string Decision {get;set;}="";
     public List<PersonalEvent> History {get;set;}=[];
+    public double OutingUntil {get;set;}
     [JsonIgnore] public string Account=>"sim:"+Id;
     [JsonIgnore] public bool Moving=>PathIndex<Path.Count;
 }
@@ -246,6 +252,10 @@ public sealed class Vehicle
     public int? IntersectionClaim {get;set;}
     public bool CrewAboard {get;set;}
     public int CrewCount {get;set;}
+    public bool PassengerCar {get;set;}
+    public string? ParkingSpot {get;set;}
+    public List<int> Passengers {get;set;}=[];
+    public JourneyPurpose TripPurpose {get;set;}
 }
 public sealed class Shipment
 {
