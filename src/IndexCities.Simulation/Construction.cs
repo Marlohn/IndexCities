@@ -5,14 +5,16 @@ public sealed partial class CitySimulation
     public PlacementQuote QuoteBuilding(BuildingKind kind,Point position,double rotation=0,int? ignoredProject=null)
     {
         var d=Catalog.Definitions[kind];var candidate=new Building{Kind=kind,Position=position,Rotation=rotation};
-        var valid=Corners(candidate).All(p=>InMap(p)&&!InWater(p))&&!InWater(position)&&!State.Buildings.Any(b=>!b.Removed&&b.ProjectId!=ignoredProject&&Overlap(candidate,b));
-        valid&=!State.Roads.Any(n=>Inside(candidate,n.Position,State.Tuning.RoadWidth/2-.05));
-        valid&=!State.Projects.Any(p=>p.Id!=ignoredProject&&p.Status is WorkStatus.Waiting or WorkStatus.InProgress&&p.RoadPoints.Any(pt=>Inside(candidate,pt,State.Tuning.RoadWidth/2-.05)));
+        var corners=Corners(candidate).ToList();var outside=corners.Any(p=>!InMap(p));var water=InWater(position)||corners.Any(p=>InWater(p));
+        var building=State.Buildings.FirstOrDefault(b=>!b.Removed&&b.ProjectId!=ignoredProject&&Overlap(candidate,b));
+        var road=State.Roads.FirstOrDefault(n=>Inside(candidate,n.Position,State.Tuning.RoadWidth/2-.05));
+        var roadWork=State.Projects.FirstOrDefault(p=>p.Id!=ignoredProject&&p.Status is WorkStatus.Waiting or WorkStatus.InProgress&&p.RoadPoints.Any(pt=>Inside(candidate,pt,State.Tuning.RoadWidth/2-.05)));
+        var valid=!outside&&!water&&building==null&&road==null&&roadWork==null;
         var allowed=State.CityHallPlaced||kind==BuildingKind.CityHall;
-        if(!State.CityHallPlaced&&kind!=BuildingKind.CityHall)valid=false;
         var duplicateHall=kind==BuildingKind.CityHall&&State.Buildings.Any(b=>!b.Removed&&b.Kind==BuildingKind.CityHall&&b.ProjectId!=ignoredProject);
         var accessible=HasExteriorAccess(candidate);var quote=QuoteMaterials(d.Materials,position,d.WorkSeconds);
-        return new(valid&&allowed&&!duplicateHall,accessible,quote,new(d.Materials),duplicateHall?"A cidade já tem uma Prefeitura":!valid?"Sobreposição, água ou limite do mapa":!accessible?"Sem rua urbana: a obra aguardará acesso":kind==BuildingKind.WaterIntake&&Math.Abs(position.Distance(State.LakeCentre)-State.LakeRadius)>22?"A captação precisará alcançar a fonte natural":"Posição válida");
+        var message=duplicateHall?"A cidade já tem uma Prefeitura":!allowed?"Posicione a Prefeitura primeiro":outside?"O edifício ultrapassa o limite do mapa":water?"O edifício invade a água":building!=null?$"Sobreposição com {building.Definition.Name} #{building.Id}":road!=null?"O edifício invade uma via pronta":roadWork!=null?$"Sobreposição com obra de rua #{roadWork.Id} ainda não concluída":!accessible?"Sem rua urbana: a obra aguardará acesso":kind==BuildingKind.WaterIntake&&Math.Abs(position.Distance(State.LakeCentre)-State.LakeRadius)>22?"A captação precisará alcançar a fonte natural":"Posição válida";
+        return new(valid&&allowed&&!duplicateHall,accessible,quote,new(d.Materials),message);
     }
     decimal QuoteMaterials(Dictionary<ResourceKind,double> materials,Point position,double workSeconds)
     {
@@ -61,7 +63,8 @@ public sealed partial class CitySimulation
     }
     RoadNode? WorkAccess(WorkProject p)
     {
-        if(p.IsMaintenance&&p.MaintenanceRoadIds.Count>0){var targetId=p.MaintenanceRoadIds[Math.Min(p.MaintenanceRoadIds.Count-1,(int)(p.Progress*p.MaintenanceRoadIds.Count))];if(!_roads.TryGetValue(targetId,out var target))return null;return State.Roads.Where(r=>_exteriorConnected.Contains(r.Id)&&r.Position.Distance(target.Position)<=State.Tuning.RoadStep+.05).MinBy(r=>r.Position.Distance(target.Position));}
+        // A demolished stretch is skipped: maintenance continues on the remaining network.
+        if(p.IsMaintenance&&p.MaintenanceRoadIds.Count>0){var remaining=p.MaintenanceRoadIds.Where(_roads.ContainsKey).ToList();if(remaining.Count==0)return null;var target=_roads[remaining[Math.Min(remaining.Count-1,(int)(p.Progress*remaining.Count))]];return State.Roads.Where(r=>_exteriorConnected.Contains(r.Id)&&r.Position.Distance(target.Position)<=State.Tuning.RoadStep+.05).MinBy(r=>r.Position.Distance(target.Position));}
         if(p.BuildingId!=null)return BuildingById(p.BuildingId) is {} b?Access(b):null;
         return State.Roads.Where(r=>p.RoadPoints.Any(a=>a.Distance(r.Position)<=State.Tuning.RoadStep+.05)&&_exteriorConnected.Contains(r.Id)).OrderBy(r=>r.Position.Distance(p.Position)).FirstOrDefault();
     }
@@ -127,6 +130,7 @@ public sealed partial class CitySimulation
     {
         var completedConstruction=false;
         foreach(var p in State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress)){
+            if(RetireMaintenanceWithoutTargets(p))continue;
             var access=WorkAccess(p);if(access==null){p.Cause="Sem acesso viário";continue;}
             var completeMaterials=p.Required.All(kv=>p.Delivered.GetValueOrDefault(kv.Key)+.001>=kv.Value);if(!completeMaterials){
                 // Old saves can contain a crew parked with the first load and
@@ -162,12 +166,16 @@ public sealed partial class CitySimulation
     public CommandResult CancelProject(int projectId)
     {
         var p=State.Projects.FirstOrDefault(p=>p.Id==projectId);if(p==null||p.IsMaintenance||p.Status is WorkStatus.Completed or WorkStatus.Cancelled)return new(false,"Obra não cancelável");
-        if(p.CrewCostDue>0){ProjectPay(p,Money(p.CrewCostDue),"Equipe externa","Trabalho realizado antes do cancelamento");p.CrewCostDue=0;}
+        CancelWork(p);Event("Obra cancelada; pagamentos efetivos preservados");return new(true,State.LastMessage);
+    }
+    void CancelWork(WorkProject p)
+    {
+        if(p.CrewCostDue>0){ProjectPay(p,Money(p.CrewCostDue),p.IsMaintenance?MaintenanceCategory(p):"Equipe externa","Trabalho realizado antes do cancelamento");p.CrewCostDue=0;}
         p.Status=WorkStatus.Cancelled;p.BudgetRemaining=0;p.LocalReserved.Clear();p.Cause="Cancelada; gastos pagos e material consumido não voltam";
-        if(BuildingById(p.BuildingId) is {} b)b.Removed=true;
+        if(!p.IsMaintenance&&BuildingById(p.BuildingId) is {} b)b.Removed=true;
         foreach(var s in State.Shipments.Where(s=>s.ProjectId==p.Id&&!s.Complete)){s.Cancelled=true;var v=State.Vehicles.First(x=>x.Id==s.VehicleId);RedirectCancelled(v,s);}
         if(p.CrewVehicleId is {} vid&&State.Vehicles.FirstOrDefault(v=>v.Id==vid) is {} crew&&crew.Status==VehicleStatus.Parked){crew.CrewAboard=false;crew.CrewCount=0;ReturnExternal(crew);}
-        foreach(var id in p.LocalCrew){var c=State.Citizens.First(c=>c.Id==id);c.ConstructionProjectId=null;if(BuildingById(c.WorkplaceId) is {} workplace)StartJourney(c,workplace,JourneyPurpose.Work);}p.LocalCrew.Clear();ReserveLocalMaterials();Event("Obra cancelada; pagamentos efetivos preservados");return new(true,State.LastMessage);
+        foreach(var id in p.LocalCrew){var c=State.Citizens.First(c=>c.Id==id);c.ConstructionProjectId=null;if(BuildingById(c.WorkplaceId) is {} workplace)StartJourney(c,workplace,JourneyPurpose.Work);}p.LocalCrew.Clear();ReserveLocalMaterials();
     }
     public PlacementQuote QuoteMoveBuilding(int projectId,Point position,double rotation)
     {

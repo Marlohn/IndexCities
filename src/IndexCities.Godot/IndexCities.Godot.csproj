@@ -1,4 +1,75 @@
 <Project Sdk="Godot.NET.Sdk/4.7.2">
-  <PropertyGroup><TargetFramework>net8.0</TargetFramework><EnableDynamicLoading>true</EnableDynamicLoading><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings></PropertyGroup>
-  <ItemGroup><ProjectReference Include="../IndexCities.Simulation/IndexCities.Simulation.csproj" /></ItemGroup>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../IndexCities.Simulation/IndexCities.Simulation.csproj" />
+  </ItemGroup>
+
+  <Target Name="GenerateEmbeddedBuildIdentity" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <_CityBuildRepo>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\..'))</_CityBuildRepo>
+      <_CityBuildBranch Condition="'$(SourceBranchName)' != ''">$(SourceBranchName)</_CityBuildBranch>
+      <_CityBuildBranch Condition="'$(_CityBuildBranch)' == ''">unknown</_CityBuildBranch>
+      <_CityBuildCommit Condition="'$(SourceRevisionId)' != ''">$(SourceRevisionId)</_CityBuildCommit>
+      <_CityBuildCommit Condition="'$(_CityBuildCommit)' == ''">unknown</_CityBuildCommit>
+      <_CityBuildDirty>false</_CityBuildDirty>
+      <_CityBuildTrackedChanges>0</_CityBuildTrackedChanges>
+      <_CityBuildUntrackedChanges>0</_CityBuildUntrackedChanges>
+      <_CityBuildUtc>$([System.DateTime]::UtcNow.ToString('yyyy-MM-dd HH:mm:ss'))</_CityBuildUtc>
+    </PropertyGroup>
+    <Exec Command="git -C &quot;$(_CityBuildRepo)&quot; branch --show-current" ConsoleToMSBuild="true" IgnoreExitCode="true">
+      <Output TaskParameter="ConsoleOutput" ItemName="_CityGitBranch" />
+    </Exec>
+    <Exec Command="git -C &quot;$(_CityBuildRepo)&quot; rev-parse HEAD" ConsoleToMSBuild="true" IgnoreExitCode="true">
+      <Output TaskParameter="ConsoleOutput" ItemName="_CityGitCommit" />
+    </Exec>
+    <Exec Command="git -c core.safecrlf=false -C &quot;$(_CityBuildRepo)&quot; diff --name-only HEAD -- src/IndexCities.Godot src/IndexCities.Simulation 2&gt;NUL" ConsoleToMSBuild="true" IgnoreExitCode="true">
+      <Output TaskParameter="ConsoleOutput" ItemName="_CityGitTrackedChanges" />
+    </Exec>
+    <Exec Command="git -C &quot;$(_CityBuildRepo)&quot; ls-files --others --exclude-standard -- src/IndexCities.Godot src/IndexCities.Simulation" ConsoleToMSBuild="true" IgnoreExitCode="true">
+      <Output TaskParameter="ConsoleOutput" ItemName="_CityGitUntrackedChanges" />
+    </Exec>
+    <PropertyGroup>
+      <_CityBuildBranch Condition="'@(_CityGitBranch)' != ''">@(_CityGitBranch)</_CityBuildBranch>
+      <_CityBuildCommit Condition="'@(_CityGitCommit)' != ''">@(_CityGitCommit)</_CityBuildCommit>
+      <_CityBuildDirty Condition="'@(_CityGitTrackedChanges)' != '' or '@(_CityGitUntrackedChanges)' != ''">true</_CityBuildDirty>
+      <_CityBuildTrackedChanges Condition="'@(_CityGitTrackedChanges)' != ''">@(_CityGitTrackedChanges->Count())</_CityBuildTrackedChanges>
+      <_CityBuildUntrackedChanges Condition="'@(_CityGitUntrackedChanges)' != ''">@(_CityGitUntrackedChanges->Count())</_CityBuildUntrackedChanges>
+      <_CityBuildMetadataFile>$(IntermediateOutputPath)CityBuildIdentity.g.cs</_CityBuildMetadataFile>
+    </PropertyGroup>
+    <ItemGroup>
+      <_CityBuildMetadata Include="System.Reflection.AssemblyMetadataAttribute">
+        <_Parameter1>CityBuildBranch</_Parameter1>
+        <_Parameter2>$(_CityBuildBranch)</_Parameter2>
+      </_CityBuildMetadata>
+      <_CityBuildMetadata Include="System.Reflection.AssemblyMetadataAttribute">
+        <_Parameter1>CityBuildCommit</_Parameter1>
+        <_Parameter2>$(_CityBuildCommit)</_Parameter2>
+      </_CityBuildMetadata>
+      <_CityBuildMetadata Include="System.Reflection.AssemblyMetadataAttribute">
+        <_Parameter1>CityBuildDirty</_Parameter1>
+        <_Parameter2>$(_CityBuildDirty)</_Parameter2>
+      </_CityBuildMetadata>
+      <_CityBuildMetadata Include="System.Reflection.AssemblyMetadataAttribute">
+        <_Parameter1>CityBuildTrackedChanges</_Parameter1>
+        <_Parameter2>$(_CityBuildTrackedChanges)</_Parameter2>
+      </_CityBuildMetadata>
+      <_CityBuildMetadata Include="System.Reflection.AssemblyMetadataAttribute">
+        <_Parameter1>CityBuildUntrackedChanges</_Parameter1>
+        <_Parameter2>$(_CityBuildUntrackedChanges)</_Parameter2>
+      </_CityBuildMetadata>
+      <_CityBuildMetadata Include="System.Reflection.AssemblyMetadataAttribute">
+        <_Parameter1>CityBuildUtc</_Parameter1>
+        <_Parameter2>$(_CityBuildUtc) UTC</_Parameter2>
+      </_CityBuildMetadata>
+    </ItemGroup>
+    <WriteCodeFragment AssemblyAttributes="@(_CityBuildMetadata)" Language="C#" OutputFile="$(_CityBuildMetadataFile)" />
+    <ItemGroup>
+      <Compile Include="$(_CityBuildMetadataFile)" />
+    </ItemGroup>
+  </Target>
 </Project>

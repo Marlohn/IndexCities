@@ -87,7 +87,15 @@ public partial class Main
         Input.WarpMouse(nativePosition);
         await RecoveryFrame();
         var actual = viewport.GetMousePosition();
-        Require(actual.DistanceTo(position) <= 2.5f, "Cursor nativo e evento de QA concordam no viewport: pedido=" + position + " atual=" + actual + " transformação=" + viewport.GetScreenTransform());
+        // Native cursor updates can lag a rendered frame after focus/layout.
+        // Retry only this known window, retaining the same strict position check.
+        var cursorWatch = System.Diagnostics.Stopwatch.StartNew();
+        while (actual.DistanceTo(position) > 2.5f && cursorWatch.Elapsed.TotalSeconds < 1) {
+            Input.WarpMouse(nativePosition);
+            await RecoveryFrame();
+            actual = viewport.GetMousePosition();
+        }
+        Require(actual.DistanceTo(position) <= 2.5f, "Cursor nativo e evento de QA concordam no viewport: pedido=" + position + " atual=" + actual + " transformação=" + viewport.GetScreenTransform() + " físico=" + DisplayServer.MouseGetPosition() + " origem=" + nativeWindow.Position + " foco=" + nativeWindow.HasFocus() + " modo=" + Input.MouseMode);
         return actual;
     }
 
@@ -714,6 +722,7 @@ public partial class Main
             var rowEnd = await RecoveryMove(_camera.UnprojectPosition(ToV(new(startCursor.X + 2 * spacing, -12))));
             await RecoveryFrame();
             Require(_dragStart != null && _row.Count == 3 && _rowValid == 3 && _toolHint.Text.Contains("×3", StringComparison.Ordinal) && _toolHint.Text.Contains(Cash(_rowTotal), StringComparison.Ordinal), "Arrastar mostra fileira de 3 casas com quantidade e custo total: " + _toolHint.Text);
+            Require(_confirmation.Visible && _previewName.Text.Contains("×3") && _previewCost.Text == Cash(_rowTotal), "Resumo visual acompanha quantidade e custo agregado reais da fileira");
             await RecoveryCaptureOnce("building-row-preview", GetViewport());
             RecoveryInput(new InputEventMouseButton { ButtonIndex = MouseButton.Left, Pressed = false, Position = rowEnd, GlobalPosition = rowEnd });
             await RecoveryFrame();
@@ -724,6 +733,7 @@ public partial class Main
             var roadless = _sim.QuoteBuilding(BuildingKind.House, _cursor, _rotation);
             Require(roadless is { PhysicallyValid: true, Accessible: false } && _world.FindChild("NoRoadWarning", true, false) is Label3D { Visible: true }, "Prévia válida sem rua mostra o aviso forte de obra parada");
             await RecoveryCaptureOnce("building-no-road-warning", GetViewport());
+            Require(_confirmation.Visible && _previewSignals[1].Label.Text.Contains("obra parada"), "Resumo visual distingue posição válida sem ligação viária");
             await RecoveryClick(_camera.UnprojectPosition(ToV(_cursor)));
             await RecoveryFrame(); await RecoveryFrame();
             await RecoveryCaptureOnce("roadless-site-marker", GetViewport());
@@ -744,6 +754,7 @@ public partial class Main
             var diagnosis = RecoveryDiagnostic();
             Require(diagnosis.Contains("Saldo insuficiente", StringComparison.Ordinal) && diagnosis.Contains(Cash(_sim.Available), StringComparison.Ordinal) && diagnosis.Contains(Cash(quote.Total - _sim.Available), StringComparison.Ordinal), "Diagnóstico informa caixa disponível e falta real");
             await RecoveryCaptureOnce("insufficient-budget-preview", GetViewport());
+            Require(_confirmation.Visible && _previewSignals[2].Label.Text.Contains("Falta " + Cash(quote.Total - _sim.Available)), "Resumo visual mostra a diferença real de saldo sem cobrança");
             await RecoveryClick(_camera.UnprojectPosition(ToV(new(-152, 16))));
             Require(_sim.SaveToJson() == poorBefore && _sim.MonetaryTotal == _sim.State.Tuning.TotalMoney, "Prévia recusada preserva estado e oferta monetária");
             milestones.Add("recusa financeira apresenta causa, disponível e diferença reais");

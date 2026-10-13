@@ -3,6 +3,18 @@ namespace IndexCities.Simulation;
 public sealed partial class CitySimulation
 {
     double MaintenanceInterval=>State.Tuning.PublicMaintenanceIntervalHours*3600;
+    void RetireMaintenanceWithoutTargets()
+    {
+        // A disconnected target still needs maintenance. A demolished target no
+        // longer exists; release only unpaid commitments using normal cancellation.
+        foreach(var project in State.Projects.Where(p=>p.IsMaintenance&&p.Status is WorkStatus.Waiting or WorkStatus.InProgress).ToList())RetireMaintenanceWithoutTargets(project);
+    }
+    bool RetireMaintenanceWithoutTargets(WorkProject project)
+    {
+        if(!project.IsMaintenance||!(project.MaintenanceRoadIds.Count>0?project.MaintenanceRoadIds.All(id=>!_roads.ContainsKey(id)):project.BuildingId!=null&&BuildingById(project.BuildingId)==null))return false;
+        CancelWork(project);project.Cause="Manutenção encerrada: infraestrutura removida; pagamentos e carga preservados";
+        Event("Manutenção sem infraestrutura existente encerrada; compromisso não pago liberado");return true;
+    }
     static string MaintenanceCategory(WorkProject project)=>project.MaintenanceRoadIds.Count>0?"Manutenção / ruas":"Manutenção / instalações";
     int MaintenancePriority(WorkProject project)=>BuildingById(project.BuildingId)?.Kind switch{BuildingKind.WindPower or BuildingKind.WaterIntake or BuildingKind.WaterTreatment or BuildingKind.SewageTreatment=>0,BuildingKind.WorksDepot=>1,_=>project.MaintenanceRoadIds.Count>0?1:2};
     void UpdateMaintenanceCondition(double dt)

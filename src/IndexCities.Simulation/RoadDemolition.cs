@@ -23,6 +23,7 @@ public sealed partial class CitySimulation
         State.Roads.Remove(_roads[nodeId]);RebuildRoadGraph();SetDefaultJunctions();
         foreach(var vehicle in State.Vehicles.Where(v=>v.Status!=VehicleStatus.Outside)){if(vehicle.IntersectionClaim==nodeId)vehicle.IntersectionClaim=null;if(vehicle.Route.Skip(vehicle.RouteIndex).Contains(nodeId)){vehicle.Status=VehicleStatus.Waiting;vehicle.Cause="Via removida; aguarda rota física pela rede remanescente";}}
         foreach(var citizen in State.Citizens.Where(c=>c.CrossingNodeId==nodeId))citizen.CrossingNodeId=null;
+        RetireMaintenanceWithoutTargets();
         Event("Rua removida; custo pago, sem restituição, "+quote.IsolatedBuildingIds.Count+" construções perderam conexão exterior");return new(true,State.LastMessage);
     }
 }

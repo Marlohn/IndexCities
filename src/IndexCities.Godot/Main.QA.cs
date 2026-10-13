@@ -40,11 +40,57 @@ public partial class Main
         }catch(Exception ex){GD.PushError(ex.ToString());GetTree().Quit(1);}
     }
     void WorldClick(Point point,bool pressed)=>_UnhandledInput(new InputEventMouseButton{ButtonIndex=MouseButton.Left,Pressed=pressed,Position=_camera.UnprojectPosition(ToV(point))});
-    bool _performanceSmoke;int _performanceFrames;readonly List<double> _frameMs=new(),_simulationMs=new(),_presentationMs=new();
+    async void RealClockSmoke()
+    {
+        try {
+            Require(DisplayServer.GetName()!="headless","Relógio real exige janela renderizada");
+            SetSpeed(0);_autosaveMinutes=0;_clockBudget=0;await RecoveryFrame();
+            foreach(var speed in new[]{1,2,3}){
+                SetSpeed(speed);var elapsed=_sim.State.ElapsedSeconds;var budget=_clockBudget;var at=_clockAt;var watch=System.Diagnostics.Stopwatch.StartNew();
+                while(watch.Elapsed.TotalSeconds<(speed==1?6:2)){System.Threading.Thread.Sleep(180);await RecoveryFrame();}
+                SetSpeed(0);var real=(_clockAt-at)/1_000_000.0;var advanced=_sim.State.ElapsedSeconds-elapsed;var represented=advanced+_clockBudget-budget;
+                var expected=real*_sim.State.Tuning.SimulationSecondsPerRealSecond*_sim.State.Tuning.SpeedMultipliers[speed];
+                GD.Print($"INDEXCITIES_REAL_CLOCK_SAMPLE speed={speed} real={real:F3} simulated={advanced:F3} including-budget={represented:F3}");
+                Require(Math.Abs(represented-expected)<.1,"Velocidade conserva tempo real inclusive com frames longos e saldo do passo de 2s");
+            }
+            var paused=_sim.SaveToJson();System.Threading.Thread.Sleep(400);await RecoveryFrame();
+            Require(_sim.SaveToJson()==paused,"Pausa não avança tempo nem altera cidade");
+            var pausedBudget=_clockBudget;System.Threading.Thread.Sleep(400);SetSpeed(1);
+            Require(_sim.SaveToJson()==paused&&Math.Abs(_clockBudget-pausedBudget)<.000001,"Retomar não cobra o intervalo que estava pausado");
+            var begin=_clockAt;var before=_sim.State.ElapsedSeconds;var beforeBudget=_clockBudget;System.Threading.Thread.Sleep(350);SetSpeed(0);
+            Require(Math.Abs((_sim.State.ElapsedSeconds-before+_clockBudget-beforeBudget)-(_clockAt-begin)/1_000_000.0)<.001,"Pausar entre frames conserva o tempo ativo anterior");
+            GD.Print("INDEXCITIES_REAL_CLOCK_OK long-frames=real-time pause=preserved");GetTree().Quit();
+        }catch(Exception exception){GD.PushError(exception.ToString());GetTree().Quit(1);}
+    }
+    async void TrafficRecoverySmoke()
+    {
+        try {
+            Require(DisplayServer.GetName()!="headless"&&OS.GetCmdlineUserArgs().Any(a=>a.StartsWith("--fixture=")),"Reprodução do trânsito usa cópia de save em janela renderizada");
+            SetSpeed(0);_autosaveMinutes=0;
+            var trucks=_sim.State.Vehicles.Where(v=>v.External&&v.Status!=VehicleStatus.Outside).ToDictionary(v=>v.Id,v=>(v.Position,v.Fuel));
+            Require(trucks.Count>0,"O checkpoint contém caminhões externos ativos para reproduzir a paralisação");
+            var money=_sim.MonetaryTotal;var initialCompleted=_sim.State.Projects.Count(p=>p.Status==WorkStatus.Completed);
+            await RecoveryAdvance(6*3600);
+            var frozen=trucks.Where(item=>{var vehicle=_sim.State.Vehicles.Single(v=>v.Id==item.Key);return vehicle.Position.Distance(item.Value.Position)<.001&&Math.Abs(vehicle.Fuel-item.Value.Fuel)<.000001;}).Select(item=>item.Key).ToArray();
+            Require(frozen.Length==0,"Caminhões do checkpoint deixaram a paralisação por deslocamento real: "+string.Join(",",frozen));
+            Require(_sim.MonetaryTotal==money,"A recuperação do trânsito preserva a oferta monetária");
+            var completed=_sim.State.Projects.Count(p=>p.Status==WorkStatus.Completed);
+            Require(completed>initialCompleted,"Entregas e equipes reais permitiram avançar as obras do checkpoint");
+            _world.Sync(_sim.State,1);RefreshHud();
+            var folder=ProjectSettings.GlobalizePath("res://../../artifacts/verification");
+            System.IO.Directory.CreateDirectory(folder);
+            System.IO.File.WriteAllText(System.IO.Path.Combine(folder,"traffic-engine-city.json"),_sim.SaveToJson());
+            await RecoveryCapture(System.IO.Path.Combine(folder,"traffic-engine-recovered.png"),GetViewport());
+            GD.Print("INDEXCITIES_TRAFFIC_RECOVERY_OK trucks="+trucks.Count+" newCompleted="+(completed-initialCompleted)+" money="+_sim.MonetaryTotal);
+            GetTree().Quit();
+        }catch(Exception exception){GD.PushError(exception.ToString());GetTree().Quit(1);}
+    }
+    bool _performanceSmoke;int _performanceFrames;ulong _performanceAt;readonly List<double> _frameMs=new(),_simulationMs=new(),_presentationMs=new(),_focusedFrameMs=new(),_engineDeltaMs=new();
     void RecordPerformance(double delta,double simulationMs,double presentationMs)
     {
-        if(++_performanceFrames<=60)return;_frameMs.Add(delta*1000);_simulationMs.Add(simulationMs);_presentationMs.Add(presentationMs);if(_frameMs.Count<240)return;
-        var ordered=_frameMs.Order().ToArray();var metrics=new{frames=_frameMs.Count,frameIntervalMeanMs=_frameMs.Average(),frameIntervalP95Ms=ordered[(int)Math.Floor((ordered.Length-1)*.95)],simulationMeanMs=_simulationMs.Average(),presentationMeanMs=_presentationMs.Average(),drawCalls=Performance.GetMonitor(Performance.Monitor.RenderTotalDrawCallsInFrame),nodes=Performance.GetMonitor(Performance.Monitor.ObjectNodeCount),buildings=_sim.State.Buildings.Count(b=>b.Completed&&!b.Removed),residents=_sim.Population,roads=_sim.State.Roads.Count,renderer="gl_compatibility",speed=_speed};
+        var at=Time.GetTicksUsec();var interval=_performanceAt==0?delta*1000:(at-_performanceAt)/1000.0;_performanceAt=at;
+        if(++_performanceFrames<=60)return;_frameMs.Add(interval);_engineDeltaMs.Add(delta*1000);if(GetWindow().HasFocus())_focusedFrameMs.Add(interval);_simulationMs.Add(simulationMs);_presentationMs.Add(presentationMs);if(_frameMs.Count<240)return;
+        var ordered=_frameMs.Order().ToArray();var metrics=new{frames=_frameMs.Count,engineDeltaMeanMs=_engineDeltaMs.Average(),fps=Engine.GetFramesPerSecond(),focusedFrames=_focusedFrameMs.Count,focusedFrameIntervalMeanMs=_focusedFrameMs.Count>0?(double?)_focusedFrameMs.Average():null,frameIntervalMeanMs=_frameMs.Average(),frameIntervalP95Ms=ordered[(int)Math.Floor((ordered.Length-1)*.95)],simulationMeanMs=_simulationMs.Average(),presentationMeanMs=_presentationMs.Average(),drawCalls=Performance.GetMonitor(Performance.Monitor.RenderTotalDrawCallsInFrame),nodes=Performance.GetMonitor(Performance.Monitor.ObjectNodeCount),buildings=_sim.State.Buildings.Count(b=>b.Completed&&!b.Removed),residents=_sim.Population,roads=_sim.State.Roads.Count,renderer=RenderingServer.GetCurrentRenderingMethod(),speed=_speed};
         var file=ProjectSettings.GlobalizePath("res://../../artifacts/verification/game-performance.json");System.IO.File.WriteAllText(file,System.Text.Json.JsonSerializer.Serialize(metrics,new System.Text.Json.JsonSerializerOptions{WriteIndented=true}));GD.Print("INDEXCITIES_PERFORMANCE_OK "+System.Text.Json.JsonSerializer.Serialize(metrics));_sim.CheckInvariants();_performanceSmoke=false;GetTree().Quit();
     }
     static void Require(bool condition,string message){if(!condition)throw new InvalidOperationException("Verificação do jogo: "+message);}

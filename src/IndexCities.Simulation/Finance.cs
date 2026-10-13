@@ -12,6 +12,7 @@ public sealed partial class CitySimulation
             if(b.OwnerAccount!=null&&b.OwnerAccount!="city"){
                 var water=Money((decimal)b.WaterConsumedToday*State.WaterUnitPrice);var power=Money((decimal)b.ElectricityConsumedToday*State.ElectricityUnitPrice);var paidWater=Pay(b.OwnerAccount,"city",water,"Água","Consumo efetivo de água potável",b.Id,b.Kind==BuildingKind.House);Owe(b.OwnerAccount,"city",water-paidWater,"Água",b.Id);var paidPower=Pay(b.OwnerAccount,"city",power,"Energia","Consumo efetivo de eletricidade",b.Id,b.Kind==BuildingKind.House);Owe(b.OwnerAccount,"city",power-paidPower,"Energia",b.Id);
             }
+            if(b.Kind==BuildingKind.Farm)ReviewFarmDemand(b);
             b.WaterConsumedToday=0;b.ElectricityConsumedToday=0;b.FoodSoldToday=0;
         }
         State.WaterUnitPrice=StableUtilityPrice(State.WaterUnitPrice,State.Tuning.WaterUnitPrice,waterCost,State.WaterAvailableToday);State.ElectricityUnitPrice=StableUtilityPrice(State.ElectricityUnitPrice,State.Tuning.ElectricityUnitPrice,powerCost,State.ElectricityAvailableToday);
@@ -64,7 +65,11 @@ public sealed partial class CitySimulation
     {
         foreach(var company in State.Companies.Where(c=>c.Active).ToList()){
             var debt=State.Obligations.Where(o=>o.Debtor==company.Account&&o.Outstanding>0).ToList();var total=debt.Sum(o=>o.Outstanding);
-            if(total==0||Balance(company.Account)>total){company.LossStartedAt=0;continue;}if(company.LossStartedAt==0)company.LossStartedAt=State.ElapsedSeconds;
+            if(total==0||Balance(company.Account)>total){if(company.LossStartedAt!=0)company.Decision="Saiu do risco: caixa voltou a cobrir as dívidas";company.LossStartedAt=0;continue;}
+            if(company.LossStartedAt==0){company.LossStartedAt=State.ElapsedSeconds;Event(company.Name+" em risco de falência: dívidas maiores que o caixa");}
+            // The risk period is visible with the real main cause before any closure.
+            var main=debt.GroupBy(o=>o.Kind).OrderByDescending(g=>g.Sum(o=>o.Outstanding)).First();var daysLeft=Math.Max(0,14-(State.ElapsedSeconds-company.LossStartedAt)/86400);
+            company.Decision="Em risco de falência: dívidas "+Money(total)+" contra caixa "+Balance(company.Account)+"; maior dívida: "+main.Key+" ("+Money(main.Sum(o=>o.Outstanding))+"); pode encerrar em "+daysLeft.ToString("F0")+" dia(s) se não se recuperar";
             if(State.ElapsedSeconds-company.LossStartedAt<14*86400||Balance(company.Account)>20)continue;
             foreach(var b in State.Buildings.Where(b=>b.CompanyId==company.Id)){
                 foreach(var c in State.Citizens.Where(c=>c.WorkplaceId==b.Id)){Owe(company.Account,c.Account,Money(c.WagesAccrued),"Salário",b.Id);c.WagesAccrued=0;c.WorkplaceId=null;Personal(c,"Empresa encerrada; crédito participa da liquidação real");}
