@@ -9,7 +9,7 @@ public partial class Main:Node3D
     PanelContainer _inspector=null!,_confirmation=null!;VBoxContainer _inspection=null!,_confirmBody=null!;
     BuildingKind? _building=BuildingKind.CityHall;bool _roadTool,_reverse,_roadFixed,_hoverPreview,_holdLoadedPreview;Point? _anchor,_roadStart,_roadEnd;double _rotation;bool _manualRotation;Point? _dragStart;readonly List<(Point At,PlacementQuote Quote)> _row=new();decimal _rowTotal;int _rowValid;
     Vector2? _pointerPixel;Point _cursor;Vector3 _focus=new(-144,0,0);float _yaw=45,_zoom=110;int _speed=1;double _clockBudget,_uiAt,_autosaveAt,_autosaveMinutes=5;
-    string _cityId="";string? _capturePath;double _captureTimer;int? _selectedBuilding,_selectedCitizen,_selectedVehicle,_selectedRoad,_selectedProject,_movingProject;Window? _modal;
+    ulong _frameAt,_clockAt;string _cityId="";string? _capturePath;double _captureTimer;int? _selectedBuilding,_selectedCitizen,_selectedVehicle,_selectedRoad,_selectedProject,_movingProject;Window? _modal;
     public override void _Ready()
     {
         GetViewport().Msaa3D=Viewport.Msaa.Msaa4X;
@@ -34,21 +34,36 @@ public partial class Main:Node3D
         if(args.Contains("--real-time-start-smoke"))CallDeferred(MethodName.RealTimeStartSmoke);
         if(args.Contains("--interaction-regressions-smoke"))CallDeferred(MethodName.InteractionRegressionSmoke);
         if(args.Contains("--presentation-smoke"))CallDeferred(MethodName.PresentationSmoke);
+        if(args.Contains("--real-clock-smoke"))CallDeferred(MethodName.RealClockSmoke);
         if(args.Contains("--smoke"))CallDeferred(MethodName.Smoke);
+        _clockAt=_frameAt=Time.GetTicksUsec();
     }
     public override void _Process(double delta)
     {
+        var frameAt=Time.GetTicksUsec();var frameSeconds=_frameAt==0?delta:(frameAt-_frameAt)/1_000_000.0;_frameAt=frameAt;
         if(_modal==null){var movement=new Vector3((Input.IsPhysicalKeyPressed(Key.D)?1:0)-(Input.IsPhysicalKeyPressed(Key.A)?1:0),0,(Input.IsPhysicalKeyPressed(Key.S)?1:0)-(Input.IsPhysicalKeyPressed(Key.W)?1:0));if(movement!=Vector3.Zero){_holdLoadedPreview=false;_focus+=movement.Rotated(Vector3.Up,Mathf.DegToRad(_yaw))*_zoom*(float)delta*.45f;UpdateCamera();}}
         var simulationStarted=System.Diagnostics.Stopwatch.GetTimestamp();
-        _clockBudget+=delta*_sim.State.Tuning.SimulationSecondsPerRealSecond*_sim.State.Tuning.SpeedMultipliers[_speed];
-        while(_clockBudget>=2){_world.CaptureMotionBeforeStep(_sim.State);_sim.Advance(2);_clockBudget-=2;}
+        AdvanceRealClock(frameAt);
         var simulationMs=System.Diagnostics.Stopwatch.GetElapsedTime(simulationStarted).TotalMilliseconds;var presentationStarted=System.Diagnostics.Stopwatch.GetTimestamp();
         var hour=(float)_sim.State.Now.TimeOfDay.TotalHours;var daylight=Mathf.Clamp(Mathf.Sin((hour-6)/12*Mathf.Pi),0,1);_sun.LightEnergy=.12f+daylight*.88f;_sun.RotationDegrees=new(-15-daylight*45,-30,0);
-        _world.Sync(_sim.State,_speed==0?1:Math.Clamp(_clockBudget/2,0,1));UpdatePreview();RefreshToolHint();_uiAt+=delta;_autosaveAt+=delta;
+        _world.Sync(_sim.State,_speed==0?1:Math.Clamp(_clockBudget/2,0,1));UpdatePreview();RefreshToolHint();_uiAt+=frameSeconds;_autosaveAt+=frameSeconds;
         if(_uiAt>.4){_uiAt=0;RefreshHud();}
         if(_autosaveMinutes>0&&_autosaveAt>=_autosaveMinutes*60){SaveCity();_autosaveAt=0;}
         if(_performanceSmoke)RecordPerformance(delta,simulationMs,System.Diagnostics.Stopwatch.GetElapsedTime(presentationStarted).TotalMilliseconds);
-        if(_capturePath!=null){_captureTimer+=delta;if(_captureTimer>1){var file=_capturePath;_capturePath=null;Capture(file);}}
+        if(_capturePath!=null){_captureTimer+=frameSeconds;if(_captureTimer>1){var file=_capturePath;_capturePath=null;Capture(file);}}
+    }
+    void AdvanceRealClock(ulong at)
+    {
+        // Godot may clamp delta on slow frames. Execute every simulation step
+        // belonging to this wall-clock interval at its actual selected speed.
+        var elapsed=_clockAt==0?0:(at-_clockAt)/1_000_000.0;_clockAt=at;
+        _clockBudget+=elapsed*_sim.State.Tuning.SimulationSecondsPerRealSecond*_sim.State.Tuning.SpeedMultipliers[_speed];
+        while(_clockBudget>=2){_world.CaptureMotionBeforeStep(_sim.State);_sim.Advance(2);_clockBudget-=2;}
+    }
+    void SetSpeed(int speed)
+    {
+        speed=Math.Clamp(speed,0,3);if(speed==_speed)return;
+        AdvanceRealClock(Time.GetTicksUsec());_speed=speed;
     }
     public override void _UnhandledInput(InputEvent input)
     {
@@ -75,8 +90,8 @@ public partial class Main:Node3D
             case Key.R:if(_dragStart!=null)break;_manualRotation=true;_rotation=(_rotation+Math.PI/2)%(Math.PI*2);UpdateConfirmation();break;
             case Key.Tab:_reverse=!_reverse;UpdateConfirmation();break;
             case Key.Enter:if(_building!=null&&_hoverPreview){_anchor=_cursor;Confirm();}else if(_roadTool&&_roadStart!=null&&_roadEnd!=null)Confirm();break;
-            case Key.Space:_speed=_speed==0?1:0;break;
-            case Key.Key1:_speed=1;break;case Key.Key2:_speed=2;break;case Key.Key3:_speed=3;break;
+            case Key.Space:SetSpeed(_speed==0?1:0);break;
+            case Key.Key1:SetSpeed(1);break;case Key.Key2:SetSpeed(2);break;case Key.Key3:SetSpeed(3);break;
             case Key.Q:_holdLoadedPreview=false;_yaw-=90;UpdateCamera();break;case Key.E:_holdLoadedPreview=false;_yaw+=90;UpdateCamera();break;case Key.F5:SaveCity();break;
         }}
     }
@@ -176,8 +191,8 @@ public partial class Main:Node3D
     void BeginMove(WorkProject project){ClearSelection();ClearTool();_movingProject=project.Id;if(project.BuildingId is {} id&&_sim.State.Buildings.FirstOrDefault(b=>b.Id==id) is {} building){_building=building.Kind;_rotation=building.Rotation;}else _roadTool=true;_inspector.Visible=false;CloseModal();}
     void SaveCity()=>TrySaveCity();
     bool TrySaveCity(){try{CitySaves.Save(_cityId,new CitySave{CityJson=_sim.SaveToJson(),CameraX=_focus.X,CameraZ=_focus.Z,CameraYaw=_yaw,CameraZoom=_zoom,DraftBuilding=_building,DraftAnchor=_anchor,DraftCursor=_hoverPreview?_cursor:null,DraftRoadStart=_roadStart,DraftRoadEnd=_roadEnd,DraftReverse=_reverse,DraftRotation=_rotation,DraftMoveProject=_movingProject,DraftRoadFixed=_roadFixed,RoadTool=_roadTool,Speed=_speed,AutosaveMinutes=_autosaveMinutes});_autosaveAt=0;SetStatus("Cidade salva");return true;}catch(Exception ex){SetStatus("Falha ao salvar: "+ex.Message);GD.PushError(ex.ToString());return false;}}
-    void LoadCity(string id){try{var s=CitySaves.Load(id);var sim=CitySimulation.FromJson(s.CityJson);sim.State.Tuning.SimulationSecondsPerRealSecond=1;sim.State.Tuning.SpeedMultipliers=[0,1,15,60];_sim=sim;_cityId=id;ClearSelection();_focus=new(s.CameraX,0,s.CameraZ);_yaw=s.CameraYaw;_zoom=s.CameraZoom;_building=s.DraftBuilding;_anchor=null;_cursor=s.DraftCursor??s.DraftAnchor??s.DraftRoadEnd??_cursor;_hoverPreview=s.DraftCursor!=null||s.DraftAnchor!=null||s.DraftRoadEnd!=null;_holdLoadedPreview=_hoverPreview;_roadStart=s.DraftRoadStart;_roadEnd=s.DraftRoadEnd;_rotation=s.DraftRotation;_reverse=s.DraftReverse;_movingProject=s.DraftMoveProject;_roadTool=s.RoadTool;_roadFixed=false;_speed=Math.Clamp(s.Speed,0,3);_autosaveMinutes=s.AutosaveMinutes;_clockBudget=0;_autosaveAt=0;_world.Reset(_sim.State);UpdateCamera();BuildCatalog();RefreshHud();UpdateConfirmation();CloseModal();}catch(Exception ex){SetStatus("Falha ao carregar: "+ex.Message);}}
-    void NewCity(int seed){if(!TrySaveCity())return;ClearSelection();_sim=new CitySimulation(seed);_cityId=CitySaves.NewId();_clockBudget=0;_autosaveAt=0;_focus=new((float)_sim.State.Entry.X+112,0,8);_yaw=45;_zoom=110;ClearTool();_building=BuildingKind.CityHall;_world.Reset(_sim.State);UpdateCamera();BuildCatalog();RefreshHud();CloseModal();}
+    void LoadCity(string id){try{var s=CitySaves.Load(id);var sim=CitySimulation.FromJson(s.CityJson);sim.State.Tuning.SimulationSecondsPerRealSecond=1;sim.State.Tuning.SpeedMultipliers=[0,1,15,60];_sim=sim;_cityId=id;ClearSelection();_focus=new(s.CameraX,0,s.CameraZ);_yaw=s.CameraYaw;_zoom=s.CameraZoom;_building=s.DraftBuilding;_anchor=null;_cursor=s.DraftCursor??s.DraftAnchor??s.DraftRoadEnd??_cursor;_hoverPreview=s.DraftCursor!=null||s.DraftAnchor!=null||s.DraftRoadEnd!=null;_holdLoadedPreview=_hoverPreview;_roadStart=s.DraftRoadStart;_roadEnd=s.DraftRoadEnd;_rotation=s.DraftRotation;_reverse=s.DraftReverse;_movingProject=s.DraftMoveProject;_roadTool=s.RoadTool;_roadFixed=false;_speed=Math.Clamp(s.Speed,0,3);_autosaveMinutes=s.AutosaveMinutes;_clockBudget=0;_autosaveAt=0;_world.Reset(_sim.State);UpdateCamera();BuildCatalog();RefreshHud();UpdateConfirmation();CloseModal();_clockAt=_frameAt=Time.GetTicksUsec();}catch(Exception ex){SetStatus("Falha ao carregar: "+ex.Message);}}
+    void NewCity(int seed){if(!TrySaveCity())return;ClearSelection();_sim=new CitySimulation(seed);_cityId=CitySaves.NewId();_clockBudget=0;_autosaveAt=0;_focus=new((float)_sim.State.Entry.X+112,0,8);_yaw=45;_zoom=110;ClearTool();_building=BuildingKind.CityHall;_world.Reset(_sim.State);UpdateCamera();BuildCatalog();RefreshHud();CloseModal();_clockAt=_frameAt=Time.GetTicksUsec();}
     async void Capture(string file){await ToSignal(RenderingServer.Singleton,RenderingServer.SignalName.FramePostDraw);var error=GetViewport().GetTexture().GetImage().SavePng(file);GD.Print("INDEXCITIES_CAPTURE "+error+" "+file);GetTree().Quit(error==Error.Ok?0:1);}
     void Smoke(){try{_sim.CheckInvariants();_world.Sync(_sim.State);GD.Print("INDEXCITIES_SMOKE_OK buildings="+_sim.State.Buildings.Count+" roads="+_sim.State.Roads.Count);}catch(Exception ex){GD.PushError(ex.ToString());GetTree().Quit(1);return;}GetTree().Quit();}
 }

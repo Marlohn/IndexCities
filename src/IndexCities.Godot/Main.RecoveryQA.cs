@@ -87,6 +87,14 @@ public partial class Main
         Input.WarpMouse(nativePosition);
         await RecoveryFrame();
         var actual = viewport.GetMousePosition();
+        // Native cursor updates can lag a rendered frame after focus/layout.
+        // Retry only this known window, retaining the same strict position check.
+        var cursorWatch = System.Diagnostics.Stopwatch.StartNew();
+        while (actual.DistanceTo(position) > 2.5f && cursorWatch.Elapsed.TotalSeconds < 1) {
+            Input.WarpMouse(nativePosition);
+            await RecoveryFrame();
+            actual = viewport.GetMousePosition();
+        }
         Require(actual.DistanceTo(position) <= 2.5f, "Cursor nativo e evento de QA concordam no viewport: pedido=" + position + " atual=" + actual + " transformação=" + viewport.GetScreenTransform());
         return actual;
     }
