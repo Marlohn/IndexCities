@@ -26,6 +26,7 @@ A [V1 aprovada](SPEC.md#v1--primeira-versão-jogável-integrada-escopo-aprovado-
 - Bootstrap: a confirmação da Prefeitura libera ferramentas; materiais, equipe, dinheiro e acesso continuam reais. Conferir o fluxo sem concluir obras ou criar entregas artificialmente.
 - Economia/logística: observar conservação monetária, compromissos versus pagamentos, titularidade e transporte efetivo; moradia/atividade disponível não garante migração, emprego ou venda.
 - Infraestrutura: conferir captação e tratamento de água, esgoto e variabilidade eólica na SPEC. Reduzir modelos visuais não funde funções físicas nem apaga déficit ou consequências pertinentes.
+- **Para revisar com o responsável — vagas de carro no meio-fio:** adiadas porque a rua 1+1 não tem largura para elas; alternativas em [Interface e ferramentas](exploration/player-interface.md#vagas-de-carro-no-meio-fio--pendente-de-revisão).
 - Arte/interface: validar amostra na engine, compatibilizar escala/pivôs/acessos e reconhecer construções sem leitura obrigatória. Uma prévia técnica não comprova gameplay.
 
 ## Explorações temáticas
