@@ -1,0 +1,1134 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://Assets/RecoveryEnvironment/Materials/env_grass_soft.tres" id="1_ibha2"]
+[ext_resource type="Material" path="res://Assets/RecoveryEnvironment/Materials/env_lake_water.tres" id="2_khaqh"]
+[ext_resource type="PackedScene" path="res://Assets/V1/Scenes/road.urban_1x1.a.straight.tscn" id="3_1g322"]
+[ext_resource type="PackedScene" path="res://Assets/V1/Scenes/residential.small_house.a.tscn" id="4_blukc"]
+[ext_resource type="PackedScene" path="res://Assets/V1/Scenes/vegetation.tree_broadleaf.a.tscn" id="5_jv50e"]
+
+[sub_resource type="Environment" id="Environment_63bb5"]
+background_mode = 1
+background_color = Color(0.7254902, 0.7882353, 0.8352941, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.6862745, 0.77254903, 0.80784315, 1)
+ambient_light_energy = 0.32
+
+[sub_resource type="BoxMesh" id="BoxMesh_8amjt"]
+size = Vector3(512, 1, 512)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8i88s"]
+albedo_color = Color(0.5686275, 0.4627451, 0.3372549, 1)
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="BoxMesh_cx3v5"]
+size = Vector3(518, 4, 518)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_wjsuq"]
+top_radius = 28.3783
+bottom_radius = 29.3783
+height = 0.15
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ufeag"]
+albedo_color = Color(0.8627451, 0.9098039, 0.7254902, 1)
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="BoxMesh_d5vg2"]
+size = Vector3(0.25, 0.12, 512)
+
+[sub_resource type="BoxMesh" id="BoxMesh_acgk7"]
+size = Vector3(0.25, 0.12, 512)
+
+[sub_resource type="BoxMesh" id="BoxMesh_k2x0w"]
+size = Vector3(512, 0.12, 0.25)
+
+[sub_resource type="BoxMesh" id="BoxMesh_84402"]
+size = Vector3(512, 0.12, 0.25)
+
+[node name="RecoveryEnvironmentPreview" type="Node3D" unique_id=1731466140]
+metadata/asset_status = "amostra RecoveryEnvironment - revisao humana PENDENTE"
+metadata/purpose = "vitrine de materiais de grama e agua; nao e partida nem estado do jogo"
+metadata/parity = "camera/luz/ambiente de Main.cs; chao, saia, lago e borda de CityWorld.cs"
+metadata/lake_centre_xz = Vector2(152.6085, 86.0368)
+metadata/lake_radius_m = 28.3783
+metadata/preview_hour = 10.0
+metadata/context_trees = 133
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1230410809]
+environment = SubResource("Environment_63bb5")
+
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=1622101600]
+transform = Transform3D(0.8660254, 0.4043604, -0.29409635, 0, 0.5881927, 0.8087208, 0.5, -0.70037276, 0.5093898, 0, 0, 0)
+light_color = Color(1, 0.9411765, 0.8156863, 1)
+light_energy = 0.8821024
+shadow_enabled = true
+directional_shadow_max_distance = 650.0
+
+[node name="GameCamera" type="Camera3D" parent="." unique_id=1419052309]
+transform = Transform3D(0.70710677, -0.43413535, 0.5581456, 0, 0.78933704, 0.6139601, -0.70710677, -0.43413535, 0.5581456, 445, 330, 372)
+projection = 1
+current = true
+size = 110.0
+far = 2000.0
+metadata/focus = Vector3(145, 0, 72)
+metadata/yaw = 45.0
+
+[node name="World" type="Node3D" parent="." unique_id=595742185]
+
+[node name="Ground" type="MeshInstance3D" parent="World" unique_id=1894611440]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.56, 0)
+material_override = ExtResource("1_ibha2")
+mesh = SubResource("BoxMesh_8amjt")
+
+[node name="GroundSkirt" type="MeshInstance3D" parent="World" unique_id=1591705630]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -3, 0)
+material_override = SubResource("StandardMaterial3D_8i88s")
+mesh = SubResource("BoxMesh_cx3v5")
+
+[node name="Lake" type="MeshInstance3D" parent="World" unique_id=856199040]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 152.6085, -0.04, 86.0368)
+material_override = ExtResource("2_khaqh")
+mesh = SubResource("CylinderMesh_wjsuq")
+
+[node name="MapBorder0" type="MeshInstance3D" parent="World" unique_id=524092807]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -256, 0.2, 0)
+material_override = SubResource("StandardMaterial3D_ufeag")
+mesh = SubResource("BoxMesh_d5vg2")
+
+[node name="MapBorder1" type="MeshInstance3D" parent="World" unique_id=640787759]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 256, 0.2, 0)
+material_override = SubResource("StandardMaterial3D_ufeag")
+mesh = SubResource("BoxMesh_acgk7")
+
+[node name="MapBorder2" type="MeshInstance3D" parent="World" unique_id=1084182660]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, -256)
+material_override = SubResource("StandardMaterial3D_ufeag")
+mesh = SubResource("BoxMesh_k2x0w")
+
+[node name="MapBorder3" type="MeshInstance3D" parent="World" unique_id=938329224]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 256)
+material_override = SubResource("StandardMaterial3D_ufeag")
+mesh = SubResource("BoxMesh_84402")
+
+[node name="Context" type="Node3D" parent="." unique_id=1985429742]
+
+[node name="Road00" type="Node3D" parent="Context" unique_id=499432568 instance=ExtResource("3_1g322")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 105.25, 0, 30)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Road01" type="Node3D" parent="Context" unique_id=2139704395 instance=ExtResource("3_1g322")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 115.75, 0, 30)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Road02" type="Node3D" parent="Context" unique_id=868010209 instance=ExtResource("3_1g322")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 126.25, 0, 30)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Road03" type="Node3D" parent="Context" unique_id=1957142813 instance=ExtResource("3_1g322")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 136.75, 0, 30)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Road04" type="Node3D" parent="Context" unique_id=550380056 instance=ExtResource("3_1g322")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 147.25, 0, 30)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Road05" type="Node3D" parent="Context" unique_id=1193646871 instance=ExtResource("3_1g322")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 157.75, 0, 30)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Road06" type="Node3D" parent="Context" unique_id=627134364 instance=ExtResource("3_1g322")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 168.25, 0, 30)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Road07" type="Node3D" parent="Context" unique_id=1825133734 instance=ExtResource("3_1g322")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 178.75, 0, 30)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Road08" type="Node3D" parent="Context" unique_id=442949994 instance=ExtResource("3_1g322")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 189.25, 0, 30)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Road09" type="Node3D" parent="Context" unique_id=1294835366 instance=ExtResource("3_1g322")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 199.75, 0, 30)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="House0" type="Node3D" parent="Context" unique_id=1134949909 instance=ExtResource("4_blukc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 125, 0, 40.25)
+metadata/visual_id = "residential.small_house.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-4.39, 0, -4.6)
+metadata/visual_envelope_size = Vector3(8.78, 6.57, 8.59)
+
+[node name="House1" type="Node3D" parent="Context" unique_id=6575266 instance=ExtResource("4_blukc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 140, 0, 40.25)
+metadata/visual_id = "residential.small_house.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-4.39, 0, -4.6)
+metadata/visual_envelope_size = Vector3(8.78, 6.57, 8.59)
+
+[node name="House2" type="Node3D" parent="Context" unique_id=841694345 instance=ExtResource("4_blukc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 155, 0, 40.25)
+metadata/visual_id = "residential.small_house.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-4.39, 0, -4.6)
+metadata/visual_envelope_size = Vector3(8.78, 6.57, 8.59)
+
+[node name="Tree000" type="Node3D" parent="Context" unique_id=1468404352 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.6184571, 0, -0.6404311, 0, 0.89030397, 0, 0.6404311, 0, 0.6184571, -221.07721, 0, 65.6812)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree001" type="Node3D" parent="Context" unique_id=312276253 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.77909225, 0, -0.4318577, 0, 0.89077824, 0, 0.4318577, 0, 0.77909225, -23.351122, 0, 138.67224)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree002" type="Node3D" parent="Context" unique_id=1515455753 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.58735067, 0, 0.41126737, 0, 0.7170228, 0, -0.41126737, 0, 0.58735067, 186.07129, 0, -234.81546)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree003" type="Node3D" parent="Context" unique_id=597409850 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.24894552, 0, -0.76617515, 0, 0.8056043, 0, 0.76617515, 0, 0.24894552, 173.19455, 0, -155.08385)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree004" type="Node3D" parent="Context" unique_id=503452748 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.16255626, 0, -0.6519775, 0, 0.67193687, 0, 0.6519775, 0, -0.16255626, -13.887436, 0, 245.69974)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree005" type="Node3D" parent="Context" unique_id=1421346471 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.9726598, 0, -0.33491352, 0, 1.0287051, 0, 0.33491352, 0, -0.9726598, 178.15472, 0, -132.39195)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree006" type="Node3D" parent="Context" unique_id=940756861 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.23416327, 0, 0.64335823, 0, 0.68464756, 0, -0.64335823, 0, 0.23416327, -221.58752, 0, 91.4017)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree007" type="Node3D" parent="Context" unique_id=49838722 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.5795869, 0, 0.69072473, 0, 0.90167713, 0, -0.69072473, 0, 0.5795869, -117.64607, 0, 117.53053)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree008" type="Node3D" parent="Context" unique_id=901631912 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.1931923, 0, -0.673742, 0, 0.7008934, 0, 0.673742, 0, -0.1931923, 240.0125, 0, 28.858624)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree009" type="Node3D" parent="Context" unique_id=1036298253 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.10949121, 0, 0.6913002, 0, 0.6999173, 0, -0.6913002, 0, 0.10949121, -131.77507, 0, -71.43687)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree010" type="Node3D" parent="Context" unique_id=1751266585 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.76302046, 0, -0.3887784, 0, 0.8563579, 0, 0.3887784, 0, -0.76302046, -205.00183, 0, 117.062325)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree011" type="Node3D" parent="Context" unique_id=831497243 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.09163359, 0, 0.7462958, 0, 0.7519004, 0, -0.7462958, 0, 0.09163359, 203.4579, 0, 216.66284)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree012" type="Node3D" parent="Context" unique_id=962410810 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.54871964, 0, -0.63122976, 0, 0.83638763, 0, 0.63122976, 0, -0.54871964, -218.89742, 0, -89.22857)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree013" type="Node3D" parent="Context" unique_id=2020406872 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.86232024, 0, -0.49786082, 0, 0.9957217, 0, 0.49786082, 0, -0.86232024, 85.61133, 0, 69.91301)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree014" type="Node3D" parent="Context" unique_id=1935479298 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.2901576, 0, 0.84267896, 0, 0.89123464, 0, -0.84267896, 0, -0.2901576, -20.554438, 0, -69.62121)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree015" type="Node3D" parent="Context" unique_id=1060839705 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.74436486, 0, -0.71882486, 0, 1.034789, 0, 0.71882486, 0, -0.74436486, 143.30432, 0, -69.9681)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree016" type="Node3D" parent="Context" unique_id=1805819607 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.93926907, 0, -8.211351e-08, 0, 0.93926907, 0, 8.211351e-08, 0, -0.93926907, 210.261, 0, -26.37669)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree017" type="Node3D" parent="Context" unique_id=1072047167 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.4093914, 0, -0.63040733, 0, 0.75167465, 0, 0.63040733, 0, 0.4093914, 139.4623, 0, -177.10287)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree018" type="Node3D" parent="Context" unique_id=1630019416 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.8416979, 0, 0.22553226, 0, 0.87138975, 0, -0.22553226, 0, 0.8416979, 231.18637, 0, 133.0107)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree019" type="Node3D" parent="Context" unique_id=476708191 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.07615631, 0, -0.72457975, 0, 0.72857094, 0, 0.72457975, 0, -0.07615631, -152.57407, 0, -177.77805)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree020" type="Node3D" parent="Context" unique_id=2107897906 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.3071914, 0, 0.7236975, 0, 0.7861963, 0, -0.7236975, 0, 0.3071914, -169.9524, 0, 32.05466)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree021" type="Node3D" parent="Context" unique_id=1438792772 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.61911315, 0, -0.41759714, 0, 0.7467854, 0, 0.41759714, 0, -0.61911315, 53.74725, 0, -140.27248)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree022" type="Node3D" parent="Context" unique_id=728236960 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.98776245, 0, 0.06907107, 0, 0.9901744, 0, -0.06907107, 0, -0.98776245, 166.82016, 0, -120.2917)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree023" type="Node3D" parent="Context" unique_id=1159045928 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.43259746, 0, 0.4976465, 0, 0.65938807, 0, -0.4976465, 0, -0.43259746, -131.40411, 0, -148.24112)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree024" type="Node3D" parent="Context" unique_id=522037624 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.8968223, 0, 0.47684887, 0, 1.015714, 0, -0.47684887, 0, 0.8968223, 241.87892, 0, 208.78581)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree025" type="Node3D" parent="Context" unique_id=193467253 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.728223, 0, -0.3242257, 0, 0.79713935, 0, 0.3242257, 0, -0.728223, 108.601685, 0, 107.68289)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree026" type="Node3D" parent="Context" unique_id=1001836243 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.6263317, 0, 0.24042617, 0, 0.670892, 0, -0.24042617, 0, -0.6263317, 15.876378, 0, 55.829655)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree027" type="Node3D" parent="Context" unique_id=524882725 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.64548516, 0, 0.52270365, 0, 0.8305843, 0, -0.52270365, 0, 0.64548516, 196.3456, 0, 87.92238)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree028" type="Node3D" parent="Context" unique_id=554094659 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.2707479, 0, 0.94421, 0, 0.9822611, 0, -0.94421, 0, 0.2707479, -170.32295, 0, 103.92917)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree029" type="Node3D" parent="Context" unique_id=1394726948 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.7489961, 0, -0.18674561, 0, 0.77192557, 0, 0.18674561, 0, -0.7489961, 23.794054, 0, -226.5241)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree030" type="Node3D" parent="Context" unique_id=1788579541 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.9411762, 0, 0.2172877, 0, 0.96593297, 0, -0.2172877, 0, -0.9411762, -53.105007, 0, 226.15251)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree031" type="Node3D" parent="Context" unique_id=644829202 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.9847441, 0, -0.051608257, 0, 0.9860955, 0, 0.051608257, 0, 0.9847441, -77.42014, 0, 171.06271)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree032" type="Node3D" parent="Context" unique_id=1182023010 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.013611827, 0, -0.7798249, 0, 0.7799437, 0, 0.7798249, 0, 0.013611827, 241.5861, 0, 47.750072)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree033" type="Node3D" parent="Context" unique_id=23908302 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.55393386, 0, 0.27017155, 0, 0.61630785, 0, -0.27017155, 0, -0.55393386, -113.355316, 0, 225.41698)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree034" type="Node3D" parent="Context" unique_id=974687699 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.65590024, 0, -0.20052887, 0, 0.6858695, 0, 0.20052887, 0, 0.65590024, 48.98447, 0, 97.03243)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree035" type="Node3D" parent="Context" unique_id=562388687 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.8065726, 0, -0.41096932, 0, 0.9052376, 0, 0.41096932, 0, -0.8065726, -158.81186, 0, 14.8198395)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree036" type="Node3D" parent="Context" unique_id=9243296 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.45621818, 0, -0.7592749, 0, 0.88579535, 0, 0.7592749, 0, 0.45621818, -75.764565, 0, -199.29448)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree037" type="Node3D" parent="Context" unique_id=522049177 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.41542923, 0, -0.46138078, 0, 0.62084913, 0, 0.46138078, 0, 0.41542923, 71.50621, 0, -132.17134)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree038" type="Node3D" parent="Context" unique_id=1827040778 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.59476143, 0, -0.29008445, 0, 0.6617327, 0, 0.29008445, 0, -0.59476143, -56.08087, 0, 171.51889)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree039" type="Node3D" parent="Context" unique_id=476940914 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.8963078, 0, -0.09420592, 0, 0.901245, 0, 0.09420592, 0, 0.8963078, 176.97346, 0, -146.84213)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree040" type="Node3D" parent="Context" unique_id=1394322572 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.4637308, 0, -0.77177805, 0, 0.9003819, 0, 0.77177805, 0, 0.4637308, 51.023586, 0, -91.82855)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree041" type="Node3D" parent="Context" unique_id=1704725673 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.86948884, 0, -0.16901165, 0, 0.8857628, 0, 0.16901165, 0, 0.86948884, -1.1433274, 0, 194.52104)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree042" type="Node3D" parent="Context" unique_id=107721573 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.25474268, 0, -0.6998999, 0, 0.7448179, 0, 0.6998999, 0, -0.25474268, 15.375704, 0, -18.917255)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree043" type="Node3D" parent="Context" unique_id=913003810 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.8279466, 0, 0.04339092, 0, 0.82908285, 0, -0.04339092, 0, -0.8279466, 82.04766, 0, 186.39572)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree044" type="Node3D" parent="Context" unique_id=1596688649 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.5844097, 0, 0.77553785, 0, 0.9710786, 0, -0.77553785, 0, 0.5844097, -162.49734, 0, 214.5593)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree045" type="Node3D" parent="Context" unique_id=216413116 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.92873234, 0, 0.09761373, 0, 0.933848, 0, -0.09761373, 0, -0.92873234, 17.715672, 0, 41.756912)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree046" type="Node3D" parent="Context" unique_id=525008761 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.69971114, 0, -0.3878563, 0, 0.80001765, 0, 0.3878563, 0, -0.69971114, -192.62532, 0, 11.189814)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree047" type="Node3D" parent="Context" unique_id=2023255539 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.72159314, 0, -0.12723655, 0, 0.7327249, 0, 0.12723655, 0, 0.72159314, -23.0925, 0, 87.028625)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree048" type="Node3D" parent="Context" unique_id=1591888189 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.13573843, 0, -0.5879473, 0, 0.60341275, 0, 0.5879473, 0, 0.13573843, -10.932893, 0, 91.60214)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree049" type="Node3D" parent="Context" unique_id=273412661 instance=ExtResource("5_jv50e")]
+transform = Transform3D(1.0314484, 0, -0.108409785, 0, 1.0371299, 0, 0.108409785, 0, 1.0314484, 39.31744, 0, -193.15796)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree050" type="Node3D" parent="Context" unique_id=1864328402 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.6434464, 0, 0.3278524, 0, 0.7221568, 0, -0.3278524, 0, -0.6434464, -234.91202, 0, 38.873894)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree051" type="Node3D" parent="Context" unique_id=1628182089 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.61855197, 0, 0.20097975, 0, 0.65038407, 0, -0.20097975, 0, -0.61855197, -142.44447, 0, 221.06789)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree052" type="Node3D" parent="Context" unique_id=1580202641 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.31034675, 0, -0.76813567, 0, 0.82846093, 0, 0.76813567, 0, 0.31034675, -219.96239, 0, -86.246864)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree053" type="Node3D" parent="Context" unique_id=1162878446 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.6675795, 0, 0.7158913, 0, 0.9788579, 0, -0.7158913, 0, 0.6675795, 161.65022, 0, -121.99324)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree054" type="Node3D" parent="Context" unique_id=235950917 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.8908208, 0, -0.35991502, 0, 0.9607812, 0, 0.35991502, 0, -0.8908208, -93.74421, 0, -131.77216)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree055" type="Node3D" parent="Context" unique_id=1854501014 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.7768658, 0, 0.17935358, 0, 0.7973005, 0, -0.17935358, 0, 0.7768658, -22.157852, 0, 210.70003)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree056" type="Node3D" parent="Context" unique_id=945292963 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.79131037, 0, -0.3037557, 0, 0.84760815, 0, 0.3037557, 0, 0.79131037, -1.2783272, 0, 100.76665)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree057" type="Node3D" parent="Context" unique_id=127255188 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.5664044, 0, 0.25217944, 0, 0.6200068, 0, -0.25217944, 0, -0.5664044, -185.75293, 0, 75.8738)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree058" type="Node3D" parent="Context" unique_id=356096993 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.086515486, 0, -0.7046133, 0, 0.7099048, 0, 0.7046133, 0, 0.086515486, 71.14732, 0, 68.99293)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree059" type="Node3D" parent="Context" unique_id=1011855588 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.98059934, 0, 0.08579132, 0, 0.9843451, 0, -0.08579132, 0, 0.98059934, -2.7893229, 0, -132.20667)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree060" type="Node3D" parent="Context" unique_id=239898867 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.49570844, 0, 0.38728985, 0, 0.629063, 0, -0.38728985, 0, -0.49570844, -233.43909, 0, 41.11072)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree061" type="Node3D" parent="Context" unique_id=307580349 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.7514712, 0, 0.15973008, 0, 0.7682595, 0, -0.15973008, 0, -0.7514712, 160.30612, 0, -109.860405)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree062" type="Node3D" parent="Context" unique_id=295362271 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.83367306, 0, -0.14699928, 0, 0.84653383, 0, 0.14699928, 0, 0.83367306, 239.43806, 0, -225.49327)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree063" type="Node3D" parent="Context" unique_id=1840597185 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.03134116, 0, 0.8974943, 0, 0.89804137, 0, -0.8974943, 0, -0.03134116, 47.80594, 0, -240.11595)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree064" type="Node3D" parent="Context" unique_id=523877554 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.99678504, 0, 0.21187311, 0, 1.0190538, 0, -0.21187311, 0, -0.99678504, -5.571549, 0, 35.637268)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree065" type="Node3D" parent="Context" unique_id=655676597 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.15676631, 0, -0.6790291, 0, 0.69689035, 0, 0.6790291, 0, -0.15676631, 91.37944, 0, 132.60431)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree066" type="Node3D" parent="Context" unique_id=1252878083 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.57814837, 0, 0.61998826, 0, 0.84772694, 0, -0.61998826, 0, 0.57814837, -87.01379, 0, -237.65865)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree067" type="Node3D" parent="Context" unique_id=453608045 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.27148065, 0, 0.83553165, 0, 0.87852997, 0, -0.83553165, 0, -0.27148065, -181.60765, 0, -122.217834)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree068" type="Node3D" parent="Context" unique_id=1099568820 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.9527914, 0, 0.23755755, 0, 0.9819598, 0, -0.23755755, 0, -0.9527914, -38.880623, 0, 238.96185)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree069" type="Node3D" parent="Context" unique_id=1537261594 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.7528941, 0, -0.35108027, 0, 0.8307267, 0, 0.35108027, 0, -0.7528941, -138.85147, 0, -219.29381)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree070" type="Node3D" parent="Context" unique_id=85455359 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.1591099, 0, -0.63815486, 0, 0.6576911, 0, 0.63815486, 0, -0.1591099, -236.5848, 0, -233.37065)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree071" type="Node3D" parent="Context" unique_id=1778878218 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.68899655, 0, -0.7388583, 0, 1.0102613, 0, 0.7388583, 0, 0.68899655, 208.5086, 0, -226.3661)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree072" type="Node3D" parent="Context" unique_id=1217794228 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.09307544, 0, -0.7580371, 0, 0.7637298, 0, 0.7580371, 0, -0.09307544, 179.78925, 0, -233.2784)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree073" type="Node3D" parent="Context" unique_id=1789351071 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.2715754, 0, 0.8882828, 0, 0.92887, 0, -0.8882828, 0, 0.2715754, -46.735176, 0, 137.44492)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree074" type="Node3D" parent="Context" unique_id=1674133343 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.50312346, 0, 0.7185348, 0, 0.877169, 0, -0.7185348, 0, 0.50312346, -110.93743, 0, -41.057144)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree075" type="Node3D" parent="Context" unique_id=594871135 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.5833772, 0, -0.16728069, 0, 0.606887, 0, 0.16728069, 0, -0.5833772, -95.711334, 0, -29.749664)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree076" type="Node3D" parent="Context" unique_id=608139073 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.55546945, 0, 0.25901967, 0, 0.61289275, 0, -0.25901967, 0, 0.55546945, 85.40687, 0, 219.17169)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree077" type="Node3D" parent="Context" unique_id=1577057996 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.035438042, 0, -1.014805, 0, 1.0154235, 0, 1.014805, 0, -0.035438042, 236.7268, 0, 216.40489)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree078" type="Node3D" parent="Context" unique_id=497410885 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.63377166, 0, 0.077817336, 0, 0.6385312, 0, -0.077817336, 0, -0.63377166, 23.30426, 0, 116.12617)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree079" type="Node3D" parent="Context" unique_id=608494658 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.44886425, 0, 0.5163592, 0, 0.6841827, 0, -0.5163592, 0, 0.44886425, 219.41202, 0, 174.91467)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree080" type="Node3D" parent="Context" unique_id=89755159 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.75967693, 0, -0.38707474, 0, 0.85260534, 0, 0.38707474, 0, 0.75967693, 222.8155, 0, -204.16537)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree081" type="Node3D" parent="Context" unique_id=2041059275 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.59727556, 0, -0.06277617, 0, 0.6005655, 0, 0.06277617, 0, -0.59727556, -127.461815, 0, 87.16789)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree082" type="Node3D" parent="Context" unique_id=392410733 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.13401242, 0, 0.7600221, 0, 0.7717467, 0, -0.7600221, 0, -0.13401242, -127.28794, 0, -234.12505)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree083" type="Node3D" parent="Context" unique_id=1368458876 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.15819535, 0, -0.8971705, 0, 0.9110108, 0, 0.8971705, 0, 0.15819535, 9.107088, 0, 26.280914)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree084" type="Node3D" parent="Context" unique_id=1544574426 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.2403496, 0, -0.62613237, 0, 0.67067856, 0, 0.62613237, 0, 0.2403496, -10.60738, 0, 114.072945)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree085" type="Node3D" parent="Context" unique_id=670071027 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.678587, 0, 0.30212644, 0, 0.742806, 0, -0.30212644, 0, 0.678587, 46.792595, 0, 10.102512)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree086" type="Node3D" parent="Context" unique_id=1777454938 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.15416507, 0, 0.66776246, 0, 0.68532735, 0, -0.66776246, 0, -0.15416507, 199.61491, 0, 101.19407)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree087" type="Node3D" parent="Context" unique_id=567543206 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.46700418, 0, -0.53722686, 0, 0.7118326, 0, 0.53722686, 0, -0.46700418, 106.64937, 0, -116.235756)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree088" type="Node3D" parent="Context" unique_id=2136913100 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.07877799, 0, 0.90043634, 0, 0.9038758, 0, -0.90043634, 0, -0.07877799, -105.05672, 0, -240.06264)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree089" type="Node3D" parent="Context" unique_id=1155359460 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.31852418, 0, 0.75039583, 0, 0.8152003, 0, -0.75039583, 0, 0.31852418, 176.52745, 0, -190.80753)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree090" type="Node3D" parent="Context" unique_id=490310445 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.60044, 0, 0.7155765, 0, 0.9341188, 0, -0.7155765, 0, 0.60044, -117.41331, 0, -189.87172)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree091" type="Node3D" parent="Context" unique_id=658962334 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.50748163, 0, 0.75237244, 0, 0.9075252, 0, -0.75237244, 0, 0.50748163, 67.877914, 0, -168.51225)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree092" type="Node3D" parent="Context" unique_id=802339029 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.8405097, 0, 0.46590212, 0, 0.9610002, 0, -0.46590212, 0, 0.8405097, 62.32097, 0, 55.56543)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree093" type="Node3D" parent="Context" unique_id=1870369958 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.7718604, 0, -0.122250594, 0, 0.78148174, 0, 0.122250594, 0, 0.7718604, 191.41777, 0, -178.09268)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree094" type="Node3D" parent="Context" unique_id=209220629 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.97774523, 0, -0.22573026, 0, 1.003464, 0, 0.22573026, 0, 0.97774523, 101.154335, 0, 158.60704)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree095" type="Node3D" parent="Context" unique_id=934321410 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.3806643, 0, 0.78047746, 0, 0.86836076, 0, -0.78047746, 0, -0.3806643, -213.0988, 0, -163.92778)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree096" type="Node3D" parent="Context" unique_id=691756917 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.31757376, 0, 0.5285315, 0, 0.6166025, 0, -0.5285315, 0, 0.31757376, 84.272415, 0, -173.34581)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree097" type="Node3D" parent="Context" unique_id=1393632783 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.839052, 0, -0.37356985, 0, 0.9184567, 0, 0.37356985, 0, 0.839052, -115.14637, 0, 46.28321)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree098" type="Node3D" parent="Context" unique_id=414269016 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.40655544, 0, -0.48451406, 0, 0.6324881, 0, 0.48451406, 0, -0.40655544, 129.04648, 0, -49.267593)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree099" type="Node3D" parent="Context" unique_id=1130061735 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.49364746, 0, 0.5293721, 0, 0.723825, 0, -0.5293721, 0, 0.49364746, -130.21623, 0, 93.14601)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree100" type="Node3D" parent="Context" unique_id=1364831966 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.45413357, 0, 0.6732808, 0, 0.81212336, 0, -0.6732808, 0, -0.45413357, -137.10005, 0, -81.60539)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree101" type="Node3D" parent="Context" unique_id=70703017 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.55872446, 0, 0.71513474, 0, 0.907519, 0, -0.71513474, 0, -0.55872446, -219.59003, 0, -17.241318)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree102" type="Node3D" parent="Context" unique_id=1436388933 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.8059232, 0, -0.11326511, 0, 0.8138435, 0, 0.11326511, 0, 0.8059232, 72.74383, 0, -40.66263)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree103" type="Node3D" parent="Context" unique_id=1538814544 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.7050369, 0, -0.09908646, 0, 0.7119657, 0, 0.09908646, 0, 0.7050369, -29.445646, 0, 139.0819)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree104" type="Node3D" parent="Context" unique_id=1725338106 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.19901006, 0, -0.7427159, 0, 0.768916, 0, 0.7427159, 0, -0.19901006, 52.01828, 0, -91.05031)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree105" type="Node3D" parent="Context" unique_id=1756544916 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.38548383, 0, 0.8266728, 0, 0.9121325, 0, -0.8266728, 0, 0.38548383, -72.37689, 0, -240.93132)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree106" type="Node3D" parent="Context" unique_id=1672809553 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.03298713, 0, 0.9446287, 0, 0.9452045, 0, -0.9446287, 0, -0.03298713, -113.077896, 0, -23.651619)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree107" type="Node3D" parent="Context" unique_id=422552685 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.3394535, 0, 0.93264085, 0, 0.99249566, 0, -0.93264085, 0, -0.3394535, 21.02432, 0, -218.18877)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree108" type="Node3D" parent="Context" unique_id=1633166932 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.67235017, 0, 0.023478955, 0, 0.67276, 0, -0.023478955, 0, -0.67235017, -9.9279375, 0, 158.76012)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree109" type="Node3D" parent="Context" unique_id=596625935 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.90383226, 0, 0.40241206, 0, 0.9893676, 0, -0.40241206, 0, 0.90383226, -219.07724, 0, -76.2845)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree110" type="Node3D" parent="Context" unique_id=815387330 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.06587635, 0, 0.9420752, 0, 0.94437563, 0, -0.9420752, 0, 0.06587635, 53.46628, 0, 179.14836)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree111" type="Node3D" parent="Context" unique_id=1248381423 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.4979711, 0, 0.59345883, 0, 0.77470547, 0, -0.59345883, 0, 0.4979711, -103.358376, 0, 23.764757)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree112" type="Node3D" parent="Context" unique_id=1072535972 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-1.0376619, 0, 0.1274088, 0, 1.0454546, 0, -0.1274088, 0, -1.0376619, -168.08524, 0, -232.47612)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree113" type="Node3D" parent="Context" unique_id=1197596446 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.26489237, 0, 0.65563154, 0, 0.7071214, 0, -0.65563154, 0, 0.26489237, -209.40863, 0, 191.46835)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree114" type="Node3D" parent="Context" unique_id=1218309341 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.83988756, 0, 0.28919646, 0, 0.8882825, 0, -0.28919646, 0, 0.83988756, -19.75507, 0, -145.77884)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree115" type="Node3D" parent="Context" unique_id=881659870 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.5069241, 0, -0.6727108, 0, 0.8423252, 0, 0.6727108, 0, -0.5069241, -41.257763, 0, -68.314026)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree116" type="Node3D" parent="Context" unique_id=2039594829 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.83384, 0, 0.1620821, 0, 0.8494468, 0, -0.1620821, 0, -0.83384, -132.60704, 0, -177.8064)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree117" type="Node3D" parent="Context" unique_id=894700097 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.95733684, 0, 0.3110576, 0, 1.0066035, 0, -0.3110576, 0, 0.95733684, -132.45367, 0, -12.615179)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree118" type="Node3D" parent="Context" unique_id=343674817 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.6485957, 0, 0.17379074, 0, 0.67147565, 0, -0.17379074, 0, -0.6485957, 187.05914, 0, 132.04648)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree119" type="Node3D" parent="Context" unique_id=437913922 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.9775981, 0, -0.03413837, 0, 0.97819394, 0, 0.03413837, 0, -0.9775981, 225.61694, 0, 192.94148)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree120" type="Node3D" parent="Context" unique_id=318637046 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.4388884, 0, -0.54198205, 0, 0.69740057, 0, 0.54198205, 0, 0.4388884, 233.87045, 0, -182.64177)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree121" type="Node3D" parent="Context" unique_id=2018825704 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.5427294, 0, 0.3800232, 0, 0.6625502, 0, -0.3800232, 0, -0.5427294, -226.8293, 0, -62.80645)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree122" type="Node3D" parent="Context" unique_id=171374332 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.48951942, 0, 0.48951942, 0, 0.692285, 0, -0.48951942, 0, 0.48951942, 10.539345, 0, 218.88701)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree123" type="Node3D" parent="Context" unique_id=344799309 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.20460826, 0, 0.9626065, 0, 0.98411167, 0, -0.9626065, 0, -0.20460826, -93.07345, 0, 164.26448)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree124" type="Node3D" parent="Context" unique_id=1506774179 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.24576761, 0, -0.98571986, 0, 1.0158963, 0, 0.98571986, 0, 0.24576761, 81.586494, 0, -45.971245)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree125" type="Node3D" parent="Context" unique_id=1729028737 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.25863233, 0, 0.79598856, 0, 0.83695185, 0, -0.79598856, 0, 0.25863233, -115.14165, 0, 241.95753)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree126" type="Node3D" parent="Context" unique_id=1392953830 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.8399705, 0, -0.13303816, 0, 0.85044086, 0, 0.13303816, 0, 0.8399705, -12.027071, 0, 158.05908)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree127" type="Node3D" parent="Context" unique_id=82774836 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.5895182, 0, -0.5124604, 0, 0.7811193, 0, 0.5124604, 0, -0.5895182, 208.42488, 0, 129.0892)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree128" type="Node3D" parent="Context" unique_id=907793596 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.2188265, 0, -0.94784117, 0, 0.9727733, 0, 0.94784117, 0, -0.2188265, -192.85735, 0, 129.57324)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree129" type="Node3D" parent="Context" unique_id=804401001 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.58494073, 0, -0.28529474, 0, 0.65080625, 0, 0.28529474, 0, 0.58494073, 159.41026, 0, -90.120636)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree130" type="Node3D" parent="Context" unique_id=1286351206 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.74701756, 0, -0.104986474, 0, 0.75435895, 0, 0.104986474, 0, -0.74701756, 155.63141, 0, 203.00435)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree131" type="Node3D" parent="Context" unique_id=981761593 instance=ExtResource("5_jv50e")]
+transform = Transform3D(-0.45443237, 0, 0.64899665, 0, 0.79227865, 0, -0.64899665, 0, -0.45443237, -27.354328, 0, 81.80919)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Tree132" type="Node3D" parent="Context" unique_id=1498254648 instance=ExtResource("5_jv50e")]
+transform = Transform3D(0.80696005, 0, -0.4111667, 0, 0.90567243, 0, 0.4111667, 0, 0.80696005, -109.51126, 0, -13.82355)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)

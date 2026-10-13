@@ -69,7 +69,7 @@ public partial class Main
 
     async Task<Vector2> RecoveryAlignNativeMouse(Vector2 position, Viewport viewport)
     {
-        var modes = new[] { "--ui-input-smoke", "--recovery-smoke", "--road-recovery-smoke", "--visual-review-smoke", "--real-time-start-smoke", "--interaction-regressions-smoke" };
+        var modes = new[] { "--ui-input-smoke", "--recovery-smoke", "--road-recovery-smoke", "--city-names-smoke", "--visual-review-smoke", "--real-time-start-smoke", "--interaction-regressions-smoke" };
         Require(OS.GetCmdlineUserArgs().Any(modes.Contains), "Foco e cursor nativos são usados somente na janela de QA isolada");
         Require(viewport.GetVisibleRect().HasPoint(position), "Cursor de QA permanece dentro do viewport conhecido");
         var nativeWindow = viewport is Window window ? window : viewport.GetWindow();

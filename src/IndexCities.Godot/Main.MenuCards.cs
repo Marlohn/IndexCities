@@ -44,17 +44,39 @@ public partial class Main
         var saves = CitySaves.List().ToList();
         var load = Card(box, "Abrir uma cidade salva", "Cada partida tem seu próprio arquivo. Escolha a cidade que deseja retomar.");
         if (saves.Count == 0) Muted(load, "Nenhuma cidade salva ainda.");
-        foreach (var saved in saves) { var copy = saved; Button(load, copy.Name + " • " + copy.At.ToString("dd/MM/yyyy HH:mm"), () => LoadCity(copy.Id)); }
-        var saving = Card(box, "Salvar esta partida", "Cidade atual: " + _sim.State.Name);
+        foreach (var saved in saves) { var copy = saved;var savedRow=ResponsiveRow(load);Button(savedRow, copy.Name + " • " + copy.At.ToString("dd/MM/yyyy HH:mm"), () => LoadCity(copy.Id));var rename=Button(savedRow,"Renomear",()=>ShowCityRename(copy.Id,copy.Name));rename.CustomMinimumSize=new(104,40);rename.SizeFlagsHorizontal=Control.SizeFlags.Fill; }
+        var saving = Card(box, "Salvar esta partida", "Cidade atual: " + _sim.State.Name + " · código do mapa: " + _sim.State.Seed);
         Button(saving, "▣ Salvar agora", SaveCity);
         var autosaveRow = new HBoxContainer(); saving.AddChild(autosaveRow);
         Text(autosaveRow, "Salvamento automático · minutos (0 desliga)", 14);
         var autosave = new SpinBox { MinValue = 0, MaxValue = 60, Step = 1, Value = _autosaveMinutes, CustomMinimumSize = new(120, 40) };
         autosaveRow.AddChild(autosave); autosave.ValueChanged += value => _autosaveMinutes = value;
         var creation = Card(box, "Criar outra cidade", "A partida atual será salva antes de abrir uma cidade vazia. O código gera o mapa; ele não carrega um save.");
+        Text(creation,"Nome da cidade (opcional)",14);
+        var name=new LineEdit { Name="NewCityName", PlaceholderText="Ex.: Vale Verde", CustomMinimumSize=new(0,40), SizeFlagsHorizontal=Control.SizeFlags.ExpandFill };creation.AddChild(name);
         var row = new HBoxContainer(); creation.AddChild(row); Text(row, "Código do mapa", 14);
         var seed = new SpinBox { MinValue = 0, MaxValue = int.MaxValue, Value = 42, CustomMinimumSize = new(140, 40) }; row.AddChild(seed);
-        Button(row, "+ Criar", () => NewCity((int)seed.Value));
+        Button(row, "+ Criar", () => NewCity((int)seed.Value,name.Text));
+    }
+
+    void ShowCityRename(string id,string previousName)
+    {
+        var box=Modal("Renomear cidade");Text(box,"O mapa, a partida e o arquivo serão mantidos.",16);
+        var name=new LineEdit { Name="RenameCityName", Text=previousName, CustomMinimumSize=new(0,40), SizeFlagsHorizontal=Control.SizeFlags.ExpandFill };box.AddChild(name);
+        var feedback=Text(box,"",14);var actions=ModalActions();
+        void Rename()
+        {
+            try {
+                var value=CitySaves.NormalizeName(name.Text);if(value.Length==0){feedback.Text="Digite o nome da cidade";return;}
+                if(id==_cityId&&!TrySaveCity()){feedback.Text="A partida atual não pôde ser salva. O nome foi mantido.";return;}
+                value=CitySaves.Rename(id,value);
+                if(id==_cityId)_sim.State.Name=value;
+                ShowCities();SetStatus("Cidade renomeada para "+value+" · partida e arquivo mantidos");
+            }catch(Exception exception){feedback.Text="Não foi possível renomear: "+exception.Message;}
+        }
+        var confirm=Button(actions,"Confirmar nome",Rename);confirm.Disabled=string.IsNullOrWhiteSpace(name.Text);
+        name.TextChanged+=value=>confirm.Disabled=string.IsNullOrWhiteSpace(value);name.TextSubmitted+=_=>Rename();
+        Button(actions,"Cancelar",ShowCities);name.GrabFocus();name.SelectAll();
     }
 
     void ShowPeople()

@@ -1,0 +1,122 @@
+{
+  "renderer": "gl_compatibility",
+  "driver": "opengl3",
+  "adapter": "NVIDIA / NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+  "api": "3.3.0 NVIDIA 546.18",
+  "viewport": [
+    1440,
+    900
+  ],
+  "msaa_3d": "4x",
+  "shots": {
+    "env_before_z110_h10": {
+      "before": true,
+      "cpu_ms": 0.6,
+      "gpu_ms": 0.919
+    },
+    "env_after_z110_h10": {
+      "cpu_ms": 0.56,
+      "gpu_ms": 1.029
+    },
+    "env_before_z250_h10": {
+      "before": true,
+      "zoom": 250.0,
+      "cpu_ms": 0.718,
+      "gpu_ms": 0.943
+    },
+    "env_after_z250_h10": {
+      "zoom": 250.0,
+      "cpu_ms": 0.695,
+      "gpu_ms": 0.912
+    },
+    "env_after_z45_shore_h10": {
+      "zoom": 45.0,
+      "focus": [
+        150.0,
+        0.0,
+        60.0
+      ],
+      "cpu_ms": 0.45,
+      "gpu_ms": 0.994
+    },
+    "env_after_z110_yaw135_h10": {
+      "yaw": 135.0,
+      "cpu_ms": 0.541,
+      "gpu_ms": 0.873
+    },
+    "env_after_z110_h17": {
+      "hour": 17.0,
+      "cpu_ms": 0.564,
+      "gpu_ms": 0.864
+    },
+    "env_after_z110_h21_night": {
+      "hour": 21.0,
+      "cpu_ms": 0.542,
+      "gpu_ms": 0.817
+    },
+    "env_alt_facet2_z110_h10": {
+      "water": {
+        "facet_size_m": 2.0
+      },
+      "cpu_ms": 0.577,
+      "gpu_ms": 0.918
+    },
+    "env_after_z45_lake_t0": {
+      "zoom": 45.0,
+      "focus": [
+        152.608505249023,
+        0.0,
+        86.0367965698242
+      ],
+      "water_time": 12.0,
+      "cpu_ms": 0.474,
+      "gpu_ms": 2.924
+    },
+    "env_after_z45_lake_t1": {
+      "zoom": 45.0,
+      "focus": [
+        152.608505249023,
+        0.0,
+        86.0367965698242
+      ],
+      "water_time": 12.4,
+      "cpu_ms": 0.473,
+      "gpu_ms": 2.442
+    },
+    "env_after_z45_lake_t2": {
+      "zoom": 45.0,
+      "focus": [
+        152.608505249023,
+        0.0,
+        86.0367965698242
+      ],
+      "water_time": 12.8,
+      "cpu_ms": 0.484,
+      "gpu_ms": 1.33
+    }
+  },
+  "motion_0_4s": {
+    "mean_rgb_sum": 3.62,
+    "max_rgb_sum": 20.0,
+    "samples": 15400
+  },
+  "motion_0_8s": {
+    "mean_rgb_sum": 5.85,
+    "max_rgb_sum": 30.0,
+    "samples": 15400
+  },
+  "perf_1440x900_msaa4x": {
+    "z45_lake": {
+      "before_gpu_ms": 1.265,
+      "after_gpu_ms": 1.538,
+      "before_cpu_ms": 0.466,
+      "after_cpu_ms": 0.491
+    },
+    "z110": {
+      "before_gpu_ms": 1.489,
+      "after_gpu_ms": 1.573,
+      "before_cpu_ms": 0.538,
+      "after_cpu_ms": 0.563
+    }
+  }
+}
