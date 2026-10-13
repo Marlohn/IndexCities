@@ -67,6 +67,18 @@ Após a análise da primeira partida (ferramentas que irritam, obras paradas sem
 - **Fileira por arrastar:** com um tipo de prédio selecionado, segurar o botão esquerdo e arrastar ao longo de uma rua mostra uma fileira de prévias encaixadas lado a lado, com quantidade e custo total. Soltar encomenda cada prédio como uma obra normal e independente, com o próprio custo, reserva, materiais e equipe; nada é concluído ou ocupado por isso. Um clique simples sem arrastar continua encomendando um único prédio.
 - **Aviso forte de obra sem rua:** continua permitido encomendar um prédio fisicamente válido sem acesso viário (regra da pergunta 6 mantida), mas a prévia e o canteiro deixam esse estado claramente visível como obra parada até haver rua.
 
+### Cidade viva na V1 — escolhas do responsável em 2026-10-12 (noite)
+
+A análise da primeira partida mediu menos de 1 pedestre visível em média, nenhum carro e 97% dos minutos sem ninguém na rua. O responsável ampliou o recorte da V1 com o pacote "3", **dentro das regras completas já aprovadas** de carros, estacionamento, visitas e combustível:
+
+- **Carro particular entra na V1, comprado ao migrar:** a família migrante que tem dinheiro suficiente pode decidir comprar um carro no exterior ao se mudar, pagando o preço real à Reserva Global, e chega dirigindo pela rodovia. O carro é patrimônio individual de um adulto e pode ser usado pelos outros adultos da família conforme a regra 10B. Quem não pode pagar chega sem carro. A compra posterior por quem já mora na cidade fica para uma entrega futura.
+- **Uso do carro:** o SIM decide sozinho entre ir a pé ou de carro conforme a distância, a disponibilidade do carro e o combustível. O carro gasta combustível real e abastece no posto em operação, pagando a empresa dona com dinheiro real. Sem combustível, posto ou rota, ele vai a pé ou fica parado, com a causa visível.
+- **Vagas reais:** cada casa tem 1 vaga privada no lote. Os outros prédios têm poucas vagas próprias no lote, conforme o porte. As ruas urbanas 1+1 têm vagas no meio-fio que ocupam espaço físico real da via. Se não houver vaga livre perto do destino, vale a regra 2B: o SIM procura outra vaga real próxima e completa o trajeto a pé.
+- **Visitas e passeios:** na folga ou no fim da tarde, SIMs podem decidir visitar outra família da cidade (escolhida entre vizinhos e conhecidos, sem sistema de amizade nesta entrega) ou dar uma volta a pé pelo bairro. As saídas são viagens físicas reais; não movimentam dinheiro nem criam bônus.
+- **Prefeitura única:** depois que a primeira Prefeitura é encomendada, o catálogo não permite encomendar outra e explica o motivo. Cancelar a obra da Prefeitura antes de concluí-la volta a permitir uma nova.
+
+Preço do carro, consumo, limite de distância para ir a pé, número de vagas por lote, espaçamento das vagas na rua e frequência de visitas e passeios são calibração.
+
 ## Decisões pequenas delegadas à IA — autorização provisória e rastreabilidade
 
 **Exceção autorizada pelo responsável (2026-10-11):** a IA pode escolher sem consulta prévia **somente pequenos detalhes de comportamento de produto**, quando forem locais, facilmente reversíveis, de baixo impacto e não contrariarem nenhuma regra aprovada. Exemplos elegíveis: ordem padrão de uma lista secundária ou apresentação não crítica de informação já existente. A delegação **não equivale a aprovação humana da escolha concreta**.
