@@ -95,7 +95,7 @@ public partial class Main
             await RecoveryFrame();
             actual = viewport.GetMousePosition();
         }
-        Require(actual.DistanceTo(position) <= 2.5f, "Cursor nativo e evento de QA concordam no viewport: pedido=" + position + " atual=" + actual + " transformação=" + viewport.GetScreenTransform());
+        Require(actual.DistanceTo(position) <= 2.5f, "Cursor nativo e evento de QA concordam no viewport: pedido=" + position + " atual=" + actual + " transformação=" + viewport.GetScreenTransform() + " físico=" + DisplayServer.MouseGetPosition() + " origem=" + nativeWindow.Position + " foco=" + nativeWindow.HasFocus() + " modo=" + Input.MouseMode);
         return actual;
     }
 
