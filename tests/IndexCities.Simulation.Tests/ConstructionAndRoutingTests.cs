@@ -3,6 +3,17 @@ using Xunit;
 namespace IndexCities.Simulation.Tests;
 public sealed class ConstructionAndRoutingTests
 {
+    [Fact] public void Building_preview_reports_the_actual_placement_cause_without_creating_work_or_payment()
+    {
+        var sim=new CitySimulation(42);Assert.Contains("Prefeitura primeiro",sim.QuoteBuilding(BuildingKind.House,new(-100,40)).Message);
+        Assert.True(sim.PlaceBuilding(BuildingKind.CityHall,new(-100,40)).Success);var hall=sim.State.Buildings.Single();
+        Assert.True(sim.PlaceRoad(new(-140,80),new(-60,80)).Success);var street=sim.State.Projects.Single(p=>p.RoadPoints.Count>0);var before=sim.SaveToJson();
+        var cases=new (Point Position,string Cause)[]{(new(-255,40),"limite do mapa"),(sim.State.LakeCentre,"água"),(hall.Position,"Prefeitura #"+hall.Id),(new(-228,0),"via pronta"),(new(-100,80),"obra de rua #"+street.Id)};
+        foreach(var (position,cause) in cases){var quote=sim.QuoteBuilding(BuildingKind.House,position);Assert.False(quote.PhysicallyValid);Assert.Contains(cause,quote.Message);}
+        Assert.Contains("já tem uma Prefeitura",sim.QuoteBuilding(BuildingKind.CityHall,new(-40,40)).Message);
+        var isolated=sim.QuoteBuilding(BuildingKind.House,new(-100,120));Assert.True(isolated.PhysicallyValid);Assert.False(isolated.Accessible);Assert.Contains("aguardará acesso",isolated.Message);
+        Assert.Equal(before,sim.SaveToJson());sim.CheckInvariants();
+    }
     [Fact] public void Moving_unpaid_work_releases_old_commitment_and_keeps_total_money()
     {
         var sim=new CitySimulation(9);var first=sim.PlaceBuilding(BuildingKind.CityHall,new(-100,40));Assert.True(first.Success);var old=sim.State.Projects.Single();var balance=sim.CityBalance;
