@@ -142,7 +142,7 @@ public partial class Main
         await RecoveryClick(rectangle.GetCenter(), button.GetViewport());
     }
 
-    Button RecoveryCatalog(BuildingKind kind) => RecoveryNodes<Button>(_catalog).Single(button => button.TooltipText == Catalog.Definitions[kind].Name);
+    Button RecoveryCatalog(BuildingKind kind) => RecoveryNodes<Button>(_catalog).Single(button => button.TooltipText.Split('\n')[0] == Catalog.Definitions[kind].Name);
     Button RecoveryRoadButton() => RecoveryNodes<Button>(_catalog).Single(button => button.TooltipText.StartsWith("Rua 1+1", StringComparison.Ordinal));
     Button RecoveryHudButton(string tooltip) => RecoveryNodes<Button>(_canvas).Single(button => button.TooltipText == tooltip);
     Button RecoverySpeedButton(int speed) => _speedButtons.Single(item => item.Speed == speed).Button;

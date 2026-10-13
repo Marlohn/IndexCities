@@ -22,6 +22,8 @@ public partial class Main:Node3D
         var review=args.FirstOrDefault(a=>a.StartsWith("--review-save-dir="));if(review!=null){var path=System.IO.Path.GetFullPath(review[18..]);var verification=System.IO.Path.GetFullPath(ProjectSettings.GlobalizePath("res://../../artifacts/verification"))+System.IO.Path.DirectorySeparatorChar;if(!path.StartsWith(verification,StringComparison.OrdinalIgnoreCase))throw new ArgumentException("A revisão isolada deve guardar saves em artifacts/verification");CitySaves.VerificationDirectory=path;}
         var fixture=args.FirstOrDefault(a=>a.StartsWith("--fixture="));if(fixture!=null){_sim=CitySimulation.FromJson(System.IO.File.ReadAllText(fixture[10..]));_building=null;_speed=0;_focus=new(-40,0,0);_zoom=250;_world.Reset(_sim.State);BuildCatalog();UpdateCamera();RefreshHud();}
         if(args.Contains("--closeup")){_focus=ToV(_sim.State.Buildings.FirstOrDefault(b=>b.Kind==BuildingKind.CityHall&&!b.Removed)?.Position??new(-100,0));_zoom=110;UpdateCamera();}
+        // Capture-only camera framing: --focus=x,z[,zoom]
+        if(args.FirstOrDefault(a=>a.StartsWith("--focus=")) is {} focusArg){var parts=focusArg[8..].Split(',').Select(s=>float.Parse(s,System.Globalization.CultureInfo.InvariantCulture)).ToArray();_focus=new(parts[0],0,parts[1]);if(parts.Length>2)_zoom=parts[2];UpdateCamera();}
         if(args.Contains("--inspect-first")){ClearSelection();_selectedBuilding=_sim.State.Buildings.FirstOrDefault(b=>!b.Removed)?.Id;RefreshInspection();}
         if(args.Contains("--performance-smoke")){_performanceSmoke=true;_speed=1;_autosaveMinutes=0;}
         if(args.Contains("--persistence-smoke"))CallDeferred(MethodName.PersistenceSmoke);

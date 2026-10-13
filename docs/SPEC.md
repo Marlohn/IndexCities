@@ -112,6 +112,11 @@ Preço do carro, consumo, limite de distância para ir a pé, número de vagas p
 
 - **IA-011 — Detalhes da fileira por arrastar:** a fileira vale para qualquer tipo de prédio do catálogo, mas não para a Prefeitura enquanto ela for a única obra disponível. Posições fisicamente inválidas na fileira são puladas e mostradas em vermelho, sem impedir as demais. Se o saldo disponível não cobrir a fileira inteira, nenhuma obra é encomendada e a prévia mostra quanto falta, igual à recusa já existente por falta de saldo. O espaçamento entre prédios é o mínimo fisicamente válido. Justificativa: completar o gesto aprovado com o comportamento mais previsível e sem cobrança parcial surpresa. Origem: IA; status: **PENDENTE DE REVISÃO HUMANA**.
 
+- **IA-012 — Déficit de serviço visível no HUD:** quando a demanda atual de água, energia ou esgoto passa da capacidade atual, a linha de serviços do HUD marca aquele serviço com "⚠ falta" e muda de cor. São os mesmos números já mostrados (IA-006); não cria regra de atendimento, prioridade nem ação. Justificativa: na primeira partida a água estava em 403/548 sem nenhum destaque. Origem: IA; status: **PENDENTE DE REVISÃO HUMANA**.
+- **IA-013 — Fundo legível para os textos do HUD sobre o mapa:** as linhas de serviços, de acontecimentos e de dica da ferramenta ganham um fundo escuro translúcido, para não sumirem sobre a grama ou os prédios. É só apresentação. Origem: IA; status: **PENDENTE DE REVISÃO HUMANA**.
+- **IA-014 — Procura por moradia no HUD:** a linha de serviços mostra quantas casas prontas estão vazias e quantas famílias candidatas de fora ainda têm capital para comprar uma casa simples. A migração continua decidida pelas mesmas regras (preço, emprego, risco); o número é informativo, não promete chegada. Justificativa: quando as casas lotam, a cidade parava sem indicar que mais casas poderiam atrair moradores. Origem: IA; status: **PENDENTE DE REVISÃO HUMANA**.
+- **IA-015 — Cor dos carros:** cada carro particular recebe uma de seis cores, fixa e derivada do próprio veículo, só para distinguir carros no mapa. Origem: IA; status: **PENDENTE DE REVISÃO HUMANA**.
+
 Adicionar entradas com numeração única e crescente; não reutilizar identificadores.
 
 ## Navegação rápida da especificação
