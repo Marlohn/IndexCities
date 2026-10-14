@@ -12,6 +12,8 @@ A [V1 aprovada](SPEC.md#v1--primeira-versão-jogável-integrada-escopo-aprovado-
 
 **Avaliação humana mais recente (2026-10-14):** o [relato detalhado da partida V1](exploration/v1-human-playtest-2026-10-13.md#nova-partida-e-avaliação-crítica-do-relatório-processado--2026-10-14) agora inclui o novo feedback processado, a comparação inicial com o protótipo local e verificações em cópias dos saves. Ruas continuam sendo a maior insatisfação relatada. Observações, causas verificadas e propostas sem aprovação estão separadas. A organização por IA segue **PENDENTE de revisão humana**, sem criar requisitos ou autorizar novas regras.
 
+**Direção visual — rechecagem independente (2026-10-14):** [estudo de direção visual](exploration/visual-direction.md) confronta referências, pranchas reais da Godot, escala/portas/lotes, renderizador GL, desempenho e limites da V1. **Revisão humana: PENDENTE; não aprova implementação ou novo escopo.**
+
 **Divisão de trabalho definida pelo responsável em 2026-10-12:** Codex coordena e cuida de documentação, jogo, integração e validação. Claude Opus 5.5 com ultracode produz somente assets pedidos por Codex. A regra operacional está no [AGENTS](../AGENTS.md#coordenação-da-v1-e-frente-de-assets--2026-10-12); o [briefing visual](exploration/first-playable-assets.md) organiza famílias e limites, sem autorizar produção indiscriminada do inventário.
 
 | Tema de entrada | Revisão humana do documento | Escopo / estado |
@@ -39,6 +41,7 @@ Os estados são agregados por documento. Em material parcialmente revisado, cons
 | --- | --- | --- |
 | [Direção de produto](exploration/product-direction.md) | PARCIALMENTE REVISADO | Identidade, causalidade, profundidade, públicos e histórico do Criativo adiado. |
 | [Mundo, mapa e ambiente](exploration/world-map-environment.md) | PARCIALMENTE REVISADO | Seed, terreno, vegetação, representação espacial e posicionamento. |
+| [Direção visual — estudo independente](exploration/visual-direction.md) | PENDENTE | Rechecagem com evidências de assets/código e Godot oficial: escala, composição de lotes, vegetação, GL, riscos e validação futura; sem novas ordens de assets. |
 | [Construção, materiais e logística](exploration/construction-materials-logistics.md) | PARCIALMENTE REVISADO | Obras, reservas, importação/exportação, estoques, Pátio e transporte. |
 | [Famílias, moradia e patrimônio](exploration/households-housing.md) | PARCIALMENTE REVISADO | Aquisição, renda/consumo, migração, contratos e sistemas familiares futuros. |
 | [Empresas e mercados](exploration/companies-markets.md) | PARCIALMENTE REVISADO | Autonomia, propriedade/operação, emprego, produção, caixa e falência. |
