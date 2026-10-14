@@ -82,33 +82,58 @@ public partial class Main
 
     void ShowPeople()
     {
-        var box = Modal("SIMs e empresas"); var state = _sim.State;
-        Text(box, "Moradores · " + _sim.Population, 23);
-        foreach (var family in state.Families.Where(f => f.Members.Any(id => state.Citizens.Any(c => c.Id == id && c.Alive)))) {
+        var box = Modal("SIMs e empresas"); var window = _modal!; var state = _sim.State;
+        var content = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill }; content.AddThemeConstantOverride("separation", 8); box.AddChild(content);
+        var updates = new List<Action>(); string? structure = null;
+        void LiveText(Node parent, Func<string> read, int size = 14) { var label = Text(parent, read(), size); updates.Add(() => label.Text = read()); }
+        void LiveButton(Node parent, Func<string> read, Action action, Func<string>? tooltip = null) {
+            var button = Button(parent, read(), action, tooltip?.Invoke() ?? "");
+            updates.Add(() => { button.Text = read(); if (tooltip != null) button.TooltipText = tooltip(); });
+        }
+        string Structure() => string.Join(";", state.Families.Select(f => f.Id + ":" + f.HomeId + ":" + string.Join(",", f.Members)))
+            + "|" + string.Join(";", state.Citizens.Select(c => c.Id + ":" + c.Alive + ":" + c.FamilyId))
+            + "|" + string.Join(";", state.Companies.Select(c => c.Id + ":" + string.Join(",", c.Buildings)))
+            + "|" + string.Join(",", state.Buildings.Where(b => !b.Removed).Select(b => b.Id));
+        void Populate() {
+        LiveText(content, () => "Moradores · " + _sim.Population, 23);
+        var alive = state.Citizens.Where(c => c.Alive).ToDictionary(c => c.Id);
+        var familyMembers = state.Families.SelectMany(f => f.Members).ToHashSet();
+        foreach (var family in state.Families.Where(f => f.Members.Any(alive.ContainsKey))) {
             var home = state.Buildings.FirstOrDefault(b => b.Id == family.HomeId && !b.Removed);
-            var members = state.Citizens.Where(c => c.Alive && family.Members.Contains(c.Id)).ToList();
-            var group = Card(box, home == null ? "Família · sem residência na cidade" : "Família · " + home.Definition.Name + " #" + home.Id);
-            foreach (var citizen in members) {
-                var id = citizen.Id; Button(group, citizen.Name + " · " + citizen.Activity, () => InspectCitizen(id), "Inspecionar pessoa · carteira " + Cash(_sim.Balance(citizen.Account)));
-                Muted(group, "Carteira: " + Cash(_sim.Balance(citizen.Account)));
+            var group = Card(content, home == null ? "Família · sem residência na cidade" : "Família · " + home.Definition.Name + " #" + home.Id);
+            foreach (var citizen in state.Citizens.Where(c => c.Alive && family.Members.Contains(c.Id))) {
+                var id = citizen.Id; LiveButton(group, () => citizen.Name + " · " + citizen.Activity, () => InspectCitizen(id), () => "Inspecionar pessoa · carteira " + Cash(_sim.Balance(citizen.Account)));
+                LiveText(group, () => "Carteira: " + Cash(_sim.Balance(citizen.Account)));
             }
         }
         // Keep agents without a family record inspectable, including external workers.
-        foreach (var citizen in state.Citizens.Where(c => c.Alive && !state.Families.Any(f => f.Members.Contains(c.Id)))) {
-            var id = citizen.Id; Button(box, citizen.Name + " · " + citizen.Activity + " · carteira " + Cash(_sim.Balance(citizen.Account)), () => InspectCitizen(id));
+        foreach (var citizen in state.Citizens.Where(c => c.Alive && !familyMembers.Contains(c.Id))) {
+            var id = citizen.Id; LiveButton(content, () => citizen.Name + " · " + citizen.Activity + " · carteira " + Cash(_sim.Balance(citizen.Account)), () => InspectCitizen(id));
         }
-        Text(box, "Empresas", 23);
+        Text(content, "Empresas", 23);
         foreach (var company in state.Companies) {
-            var group = Card(box, company.Name, company.Active ? "Em atividade" : "Encerrada");
-            Text(group, "Caixa: " + Cash(_sim.Balance(company.Account)), 20); Text(group, company.Decision, 14);
+            var group = Card(content, company.Name);
+            LiveText(group, () => company.Active ? "Em atividade" : "Encerrada");
+            LiveText(group, () => "Caixa: " + Cash(_sim.Balance(company.Account)), 20); LiveText(group, () => company.Decision);
             foreach (var id in company.Buildings) {
                 var building = state.Buildings.FirstOrDefault(b => b.Id == id && !b.Removed); if (building == null) continue;
                 var target = id; Button(group, building.Definition.Name, () => { ClearTool(); _selectedBuilding = target; RefreshInspection(); CloseModal(); });
             }
         }
-        var candidates = Card(box, "Candidatos externos", "A possibilidade de chegar depende da decisão e do dinheiro de cada família ou empresa.");
-        Text(candidates, "Famílias aguardando: " + state.FamilyCandidates.Count(c => !c.Migrated) + " · empresas aguardando: " + state.CompanyCandidates.Count(c => !c.Entered));
-        foreach (var cause in state.FamilyCandidates.Where(c => !c.Migrated).Select(c => c.Cause).Distinct()) Muted(candidates, cause);
+        var candidates = Card(content, "Candidatos externos", "A possibilidade de chegar depende da decisão e do dinheiro de cada família ou empresa.");
+        LiveText(candidates, () => "Famílias aguardando: " + state.FamilyCandidates.Count(c => !c.Migrated) + " · empresas aguardando: " + state.CompanyCandidates.Count(c => !c.Entered), 16);
+        LiveText(candidates, () => string.Join("\n", state.FamilyCandidates.Where(c => !c.Migrated).Select(c => c.Cause).Distinct()));
+        }
+        void Refresh() {
+            if (!GodotObject.IsInstanceValid(window) || window.IsQueuedForDeletion() || _modal != window) return;
+            var current = Structure();
+            if (current != structure) { updates.Clear(); Clear(content); Populate(); structure = current; }
+            foreach (var update in updates) update();
+        }
+        Refresh();
+        // Only structural changes rebuild the list. Activity and money update
+        // in place, keeping the existing window and scroll container.
+        var timer = new Godot.Timer { WaitTime = .4, Autostart = true }; timer.Timeout += Refresh; box.AddChild(timer);
     }
 
     void ShowAlerts()
