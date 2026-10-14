@@ -199,8 +199,9 @@ public sealed partial class CitySimulation
                     if(other.Status!=VehicleStatus.Stranded&&Math.Abs(direction)<.5&&other.PassengerCar&&other.RouteIndex==0&&Math.Abs(fromSide)<=half&&other.Id>v.Id)return false;
                     var approaching=other.Status==VehicleStatus.Travelling&&gap*direction<0;
                     // The approaching route can still be a highway while the
-                    // lot's access is a slower street. Bound its speed across
-                    // the route it could cover during the full manoeuvre.
+                    // lot's access is a slower street. Use nominal speeds
+                    // (without maintenance slowdown) across the route it could
+                    // cover before this car reaches its first lane point.
                     var approachSpeed=State.Tuning.VehicleSpeed;
                     if(approaching){
                         var ahead=Math.Max(State.Tuning.VehicleSpeed,State.Tuning.HighwaySpeed)*d/speed;

@@ -141,7 +141,7 @@ public sealed class VehicleMergeTests
         Westbound(exiting,new(0,33.25),10);
         exiting.Route=exiting.Route.Skip(10).ToList();exiting.RouteIndex=0;
         oncoming.PassengerCar=true;oncoming.Position=new(-distance,38.35);oncoming.Heading=Math.PI/2;
-        oncoming.Route=Enumerable.Range(0,21).Select(n=>960+n*4).ToList();oncoming.RouteIndex=(int)((40-distance)/4);
+        oncoming.Route=Enumerable.Range(0,21).Select(n=>960+n*4).ToList();oncoming.RouteIndex=(int)Math.Ceiling((40-distance)/4);
         return(sim,exiting,oncoming);
     }
 
@@ -223,5 +223,26 @@ public sealed class VehicleMergeTests
             }
             Assert.True(joined,exiting.Cause);Assert.True(exiting.Fuel<40);sim.CheckInvariants();
         }
+    }
+
+    [Theory]
+    [InlineData(-16,18)][InlineData(-16,20)]
+    [InlineData(-24,18)][InlineData(-24,20)]
+    public void Entry_prediction_includes_a_faster_segment_between_the_other_car_and_the_access(double highwayStart,double distance)
+    {
+        var (sim,exiting,oncoming)=Crossing(distance);
+        foreach(var road in sim.State.Roads.Where(r=>r.Id is >=960 and <=1040))road.Highway=road.Position.X>=highwayStart&&road.Position.X<0;
+        var origin=exiting.Position;sim.Advance(.1);
+        Assert.Equal(origin,exiting.Position);Assert.Equal(40,exiting.Fuel);
+        var joined=false;
+        for(var step=0;step<200;step++){
+            sim.Advance(.1);
+            if(exiting.RouteIndex>0)joined=true;
+            if(exiting.RouteIndex==0&&exiting.Position.Z>34.75&&exiting.Position.Z<41.15){
+                Assert.NotEqual("Aguardando espaço para acessar a faixa",exiting.Cause);
+                if(oncoming.Status==VehicleStatus.Travelling)Assert.True(exiting.Position.Distance(oncoming.Position)>=6);
+            }
+        }
+        Assert.True(joined,exiting.Cause);sim.CheckInvariants();
     }
 }
