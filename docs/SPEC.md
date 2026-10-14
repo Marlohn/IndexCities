@@ -1044,7 +1044,8 @@ As regras desta seção sobre **custos, materiais, trabalhadores, entregas e obr
 
 - O mapa é gerado/reproduzido a partir de uma **seed determinística**.
 - A mesma seed deve permitir reproduzir o mesmo mapa/cidade-base para facilitar debug e testes.
-- O mapa inicial será **plano** e já virá com vegetação, rio e/ou lago e conexão externa preparados.
+- O terreno edificável do mapa inicial será **plano**, com vegetação, rio e/ou lago e conexão externa preparados. A exceção aprovada abaixo permite relevo natural nas margens do novo lago, sem ferramenta de edição de terreno.
+- **Recuperação do lago — decisão do responsável em 2026-10-14:** cidades novas passam a ter lago de contorno irregular e margens em relevo. A água visível deve coincidir com a área considerada água na validação de construção e vias; não desenhar terra seca dentro de uma área proibida apenas para esconder o contorno circular. O mapa continua determinístico por seed e não recebe rio adicional, edição manual, recurso, fluxo hidráulico ou atividade econômica fictícia por inferência. Partidas já salvas preservam sua geografia, construções, acessos e funcionamento dos serviços, sem regeneração automática do mapa. A implementação deve distinguir os mapas novos dos anteriores e verificar save/load, posições válidas, captação e desempenho antes da entrega integrada. Alturas, forma e materiais são calibrados nessa direção, com avaliação visual no Godot e sem garantir aprovação estética apenas pelos testes.
 - Não haverá compra/desbloqueio progressivo de novas áreas no escopo atual.
 - O mapa começa com **borda fixa**.
 - Não há recuo mínimo obrigatório entre construções e a margem de rios/lagos no escopo atual.
