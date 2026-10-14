@@ -15,6 +15,20 @@ Este arquivo é material de exploração temática. Quando houver divergência, 
 - `docs/ARCHITECTURE.md` para decisões estruturais de software;
 - `AGENTS.md` para regras de trabalho e documentação.
 
+## Integração do lago irregular — 2026-10-14
+
+**Revisão humana desta seção: PENDENTE.** A direção de cidades novas com contorno irregular e relevo foi aprovada pelo responsável e registrada na SPEC antes da implementação original (`5ebd3f6`, na frente de estudo). A aprovação da direção não aprova a estética final. A entrega está na branch `Marlohn/recuperacao-v1-lago`, baseada na `main` que integrou as PRs #14 e #11; os estudos A/B/C/D permanecem separados dessa entrega.
+
+O lago novo salva 128 vértices, usados pela água, pela validação de lotes/vias e pela distância de captação. Os mapas circulares continuam no esquema antigo, sem conversão. A malha e os materiais derivam da amostra D original do **Claude Opus 5.5**, com modelo/esforço `max` confirmados no Orca. O coordenador integrou picking sobre os triângulos renderizados, grade na superfície e apoio visual sob construções na margem (IA-023, **PENDENTE de revisão humana**), preservando as posições e obrigações reais. Não foi adicionado rio, recuo obrigatório, edição de terreno ou atividade fictícia.
+
+**Evidência do coordenador:** 169 testes passaram antes do delta estreito que repôs literalmente as expressões de borda do mapa antigo; depois, 19 testes pertinentes passaram. Build Godot sem avisos/erros. Cenário renderizado nas seeds 42/1412/2877: área da água e vértices coincidem com o contorno, 240 projeções de clique sobre água/margens, pausa, obras reais concluídas por caminhões/equipes, casa na margem com acesso, save/load e continuação de 20 minutos com JSON idêntico. Uma cópia isolada da cidade humana com 200 habitantes manteve círculo, geografia e consultas de captação. Logs em `artifacts/verification/water-integrated`; execução principal `rendered-19cf91962b0e46e7a5f96c2d4a0ce8b8`.
+
+Na janela nativa, o coordenador conferiu a prévia vermelha sobre água, a recusa do clique, Esc, G fora da construção, giro por E e salvamento pelo HUD. O JSON da simulação salvo permaneceu estruturalmente idêntico ao inicial, com duas edificações. A ferramenta nativa não ofereceu F5 nem arrasto direito; esses gestos não foram declarados testados nesta rodada. Os saves normais do jogador não foram usados como destino.
+
+**Desempenho local:** em duas rodadas sequenciais de 15 segundos, a mesma cidade pequena (2 prédios, 126 nós viários, 1 morador), câmera e velocidade 60x ficou em aproximadamente 165 FPS, tanto na referência circular quanto no lago novo; intervalo médio de quadro 6,06 ms e p95 aproximadamente 6,31 ms. A referência foi uma cópia técnica do cenário convertida apenas para comparação, não uma migração de partida humana. A montagem do lago novo levou 331–479 ms nas três seeds medidas. Não é certificação para cidades grandes, outras GPUs ou build exportada.
+
+**Revisão independente:** em andamento com Claude Haiku 5.5, modelo efetivo confirmado pelo Orca, em fallback automático. O preflight do DeepSeek falhou com `MISSING_CREDENTIAL` na rota local; não foi confirmada falta de créditos. Parecer e eventuais correções serão registrados na entrega integrada. A beleza da água, a leitura das margens e a experiência global continuam dependendo da partida humana.
+
 ## Estudo de água e margens após a partida — 2026-10-14
 
 **Revisão humana desta seção: PENDENTE.** O responsável voltou a considerar rio/lago visualmente insatisfatórios após a integração dos materiais. O coordenador solicitou amostras originais ao **Claude Opus 5.5**, com esforço `max` confirmado no Orca; `ultracode` não é uma opção efetivamente disponível nesse runtime. O estudo está isolado na branch `Marlohn/recuperacao-v1-agua-estudo`, commit `01ef5f7`, sem alteração de gameplay ou integração ao jogo.
