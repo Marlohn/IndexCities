@@ -29,6 +29,12 @@ Na janela nativa, o coordenador conferiu a prévia vermelha sobre água, a recus
 
 **Revisão independente:** em andamento com Claude Haiku 5.5, modelo efetivo confirmado pelo Orca, em fallback automático. O preflight do DeepSeek falhou com `MISSING_CREDENTIAL` na rota local; não foi confirmada falta de créditos. Parecer e eventuais correções serão registrados na entrega integrada. A beleza da água, a leitura das margens e a experiência global continuam dependendo da partida humana.
 
+Comparação técnica controlada, com a mesma cidade pequena, câmera e horário: referência circular e mapa novo. Não são uma migração da cidade do jogador. O FPS no rodapé dessas capturas inclui a inicialização e não representa a medição estabilizada acima.
+
+![Referência circular no cenário controlado](evidence/recovery-v8/lake-reference.png)
+![Lago novo no mesmo cenário controlado](evidence/recovery-v8/lake-new.png)
+![Janela nativa: clique sobre a água recusado e causa legível](evidence/recovery-v8/invalid-water-placement.png)
+
 ## Estudo de água e margens após a partida — 2026-10-14
 
 **Revisão humana desta seção: PENDENTE.** O responsável voltou a considerar rio/lago visualmente insatisfatórios após a integração dos materiais. O coordenador solicitou amostras originais ao **Claude Opus 5.5**, com esforço `max` confirmado no Orca; `ultracode` não é uma opção efetivamente disponível nesse runtime. O estudo está isolado na branch `Marlohn/recuperacao-v1-agua-estudo`, commit `01ef5f7`, sem alteração de gameplay ou integração ao jogo.
