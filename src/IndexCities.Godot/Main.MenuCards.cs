@@ -138,43 +138,76 @@ public partial class Main
 
     void ShowAlerts()
     {
-        var box = Modal("Causas, obras e entregas"); var state = _sim.State;
-        var serviceRow = ResponsiveRow(box);
-        void Service(string name, double capacity, double demand, string detail)
+        var box = Modal("Obras e serviços"); var state = _sim.State;var window=_modal!;
+        var updates=new List<Action>();var summary=new VBoxContainer();box.AddChild(summary);var treatmentPotential=_sim.CurrentWaterTreatmentPotential;
+        var details=new VBoxContainer();box.AddChild(details);var history=new VBoxContainer();box.AddChild(history);string structure="";var eventCount=-1;
+        Label LiveText(Node parent,Func<string> read,int size=14){var label=Text(parent,read(),size);updates.Add(()=>label.Text=read());return label;}
+        Button LiveButton(Node parent,Func<string> read,Action action){var button=Button(parent,read(),action);updates.Add(()=>button.Text=read());return button;}
+        LiveText(summary,()=>WaterServiceDiagnosis(treatmentPotential),16).Name="WaterServiceDiagnosis";
+        var serviceRow = ResponsiveRow(summary);
+        double Installed(BuildingKind kind)=>state.Buildings.Where(b=>b.Completed&&!b.Removed&&b.Kind==kind).Sum(b=>b.Definition.Capacity);
+        void Service(string name, Func<double> capacity, Func<double> demand, Func<string> detail)
         {
-            var group = Card(serviceRow, name); var value = Text(group, capacity.ToString("N0", Pt) + " / " + demand.ToString("N0", Pt), 23);
-            value.AddThemeColorOverride("font_color", new Color(demand > capacity + .5 ? "ffc58a" : "deeedc"));
-            Muted(group, "Capacidade / demanda"); Muted(group, detail);
+            var group = Card(serviceRow, name); var value = LiveText(group,()=>capacity().ToString("N0", Pt) + " / " + demand().ToString("N0", Pt),23);
+            updates.Add(()=>value.AddThemeColorOverride("font_color",new Color(demand()>capacity()+.5?"ffc58a":"deeedc")));
+            Muted(group,"Operacional / demanda · último cálculo");LiveText(group,detail,13);
         }
-        Service("Água", state.PotableCapacity, state.WaterDemand, "Captação: " + state.RawWaterCapacity.ToString("N1", Pt));
-        Service("Energia", state.ElectricityCapacity, state.ElectricityDemand, "Vento: " + state.WindFactor.ToString("P0", Pt));
-        Service("Esgoto", state.SewageCapacity, state.SewageDemand, "Sem tratamento: " + state.UntreatedSewage.ToString("N1", Pt));
-        Muted(box, "Poluição da fonte natural: " + state.LakePollution.ToString("P1", Pt));
+        Service("Água tratada",()=>state.PotableCapacity,()=>state.WaterDemand,()=>"Captação · último cálculo: "+state.RawWaterCapacity.ToString("N0",Pt)+"\nPotencial atual de tratamento: "+treatmentPotential.ToString("N0",Pt));
+        Service("Energia",()=>state.ElectricityCapacity,()=>state.ElectricityDemand,()=>"Instalada: "+Installed(BuildingKind.WindPower).ToString("N0",Pt)+" · vento "+state.WindFactor.ToString("P0",Pt));
+        Service("Esgoto",()=>state.SewageCapacity,()=>state.SewageDemand,()=>"Sem tratamento: "+state.UntreatedSewage.ToString("N1",Pt));
+        LiveText(summary,()=>"Água: "+Installed(BuildingKind.WaterIntake).ToString("N0",Pt)+" de captação instalada → "+Installed(BuildingKind.WaterTreatment).ToString("N0",Pt)+" de tratamento instalado",14);
+        LiveText(summary,()=>"Poluição da fonte: índice "+state.LakePollution.ToString("N1",Pt)+" · tratamento a "+_sim.WaterPollutionTreatmentFactor.ToString("P0",Pt)+" após equipe, manutenção e energia",13);
+        Muted(summary,"Operacional/demanda: último cálculo. Potencial/equipe: condições atuais; não garantem produção.",13);
+        var fixedUpdates=updates.Count;
+        string Structure()=>string.Join("|",state.Buildings.Where(b=>!b.Removed).Select(b=>$"b{b.Id}:{b.Completed}:{b.Kind}"))+
+            string.Join("|",state.Projects.Where(p=>p.Status!=WorkStatus.Completed).Select(p=>$"p{p.Id}:{p.Status}"))+
+            string.Join("|",state.Shipments.Where(s=>!s.Complete).Select(s=>$"s{s.Id}:{s.VehicleId}"));
+        void Populate(){
+        var utilities=state.Buildings.Where(b=>!b.Removed&&b.Definition.Utility).OrderBy(b=>b.Kind).ThenBy(b=>b.Id).ToArray();
+        Text(details,"Instalações e equipe",23);
+        if(utilities.Length==0)Muted(details,"Nenhuma instalação de serviço encomendada.");
+        foreach(var building in utilities){
+            var group=Card(details,building.Definition.Name+" · #"+building.Id);
+            LiveText(group,()=>building.Completed?building.OperationalCapacity.ToString("N0",Pt)+" operacional / "+building.Definition.Capacity.ToString("N0",Pt)+" instalada":"Obra ainda não concluída",18).Name="ServiceCapacity"+building.Id;
+            LiveText(group,()=>ServiceStaff(building),14).Name="ServiceStaff"+building.Id;
+            LiveText(group,()=>{var factors=ServiceFactors(building,treatmentPotential).ToArray();return factors.Length==0?building.Cause:string.Join("\n",factors);},14).Name="ServiceFactors"+building.Id;
+            var id=building.Id;LiveButton(group,()=>"Inspecionar "+building.Definition.Name+" #"+id,()=>{ClearTool();ClearSelection();_selectedBuilding=id;RefreshInspection();CloseModal();}).Name="InspectService"+id;
+        }
         var projects = state.Projects.Where(p => p.Status != WorkStatus.Completed).ToList();
-        Text(box, "Obras · " + projects.Count, 23);
-        if (projects.Count == 0) Muted(box, "Nenhuma obra pendente.");
+        Text(details, "Obras e cancelamentos · " + projects.Count, 23);
+        if (projects.Count == 0) Muted(details, "Nenhuma obra pendente ou cancelada.");
         foreach (var project in projects) {
             var id = project.Id; var building = state.Buildings.FirstOrDefault(b => b.Id == project.BuildingId);
-            var group = Card(box, (project.IsMaintenance ? "Manutenção" : building?.Definition.Name ?? "Rua 1+1") + " · " + project.Progress.ToString("P0", Pt));
-            Text(group, project.Cause, 16);
+            var group = Card(details, project.IsMaintenance ? "Manutenção" : building?.Definition.Name ?? "Rua 1+1");
+            LiveText(group,()=>project.Progress.ToString("P0",Pt)+" · "+project.Cause,16);
             var progress = new ProgressBar { MinValue = 0, MaxValue = 100, Value = project.Progress * 100, ShowPercentage = false, CustomMinimumSize = new(0, 8) }; group.AddChild(progress);
-            Muted(group, "Pago: " + Cash(project.CostPaid) + " · compromisso: " + Cash(project.BudgetRemaining));
-            Button(group, "Inspecionar obra #" + id, () => { ClearTool(); ClearSelection(); _selectedProject = id; RefreshInspection(); CloseModal(); });
+            updates.Add(()=>progress.Value=project.Progress*100);
+            LiveText(group,()=>"Pago: " + Cash(project.CostPaid) + " · compromisso: " + Cash(project.BudgetRemaining),13);
+            Button(group, "Inspecionar obra #" + id, () => { ClearTool(); ClearSelection(); _selectedProject = id; RefreshInspection(); CloseModal(); }).Name="InspectProject"+id;
         }
-        var shipments = state.Shipments.Where(s => !s.Complete).ToList(); Text(box, "Entregas em trânsito · " + shipments.Count, 23);
-        if (shipments.Count == 0) Muted(box, "Nenhuma entrega em trânsito.");
+        var shipments = state.Shipments.Where(s => !s.Complete).ToList(); Text(details, "Entregas em trânsito · " + shipments.Count, 23);
+        if (shipments.Count == 0) Muted(details, "Nenhuma entrega em trânsito.");
         foreach (var shipment in shipments) {
             var vehicle = state.Vehicles.First(v => v.Id == shipment.VehicleId); var id = vehicle.Id;
-            var group = Card(box, "Entrega #" + shipment.Id); Text(group, vehicle.Cause);
-            Muted(group, string.Join(" · ", shipment.Cargo.Select(k => ResourceName(k.Key) + " " + k.Value.ToString("N1", Pt))));
-            Button(group, "Inspecionar caminhão #" + id, () => { ClearTool(); ClearSelection(); _selectedVehicle = id; RefreshInspection(); CloseModal(); });
+            var group = Card(details, "Entrega #" + shipment.Id); LiveText(group,()=>vehicle.Cause);
+            LiveText(group,()=>string.Join(" · ", shipment.Cargo.Select(k => ResourceName(k.Key) + " " + k.Value.ToString("N1", Pt))),13);
+            Button(group, "Inspecionar caminhão #" + id, () => { ClearTool(); ClearSelection(); _selectedVehicle = id; RefreshInspection(); CloseModal(); }).Name="InspectShipment"+shipment.Id;
         }
-        var buildings = Card(box, "Construções");
-        foreach (var building in state.Buildings.Where(b => !b.Removed).OrderBy(b => b.Completed ? 1 : 0).ThenBy(b => b.Definition.Private ? 1 : 0)) {
-            var id = building.Id; Button(buildings, building.Definition.Name + " · " + building.Cause, () => { ClearTool(); ClearSelection(); _selectedBuilding = id; RefreshInspection(); CloseModal(); });
+        var buildings = Card(details, "Outras construções");
+        foreach (var building in state.Buildings.Where(b => !b.Removed&&!b.Definition.Utility).OrderBy(b => b.Completed ? 1 : 0).ThenBy(b => b.Definition.Private ? 1 : 0)) {
+            var id = building.Id; LiveButton(buildings,()=>building.Definition.Name + " · " + building.Cause, () => { ClearTool(); ClearSelection(); _selectedBuilding = id; RefreshInspection(); CloseModal(); }).Name="InspectBuilding"+id;
         }
-        var events = Card(box, "História da cidade");
-        foreach (var entry in state.CityEvents.TakeLast(20).Reverse()) Muted(events, entry.At.ToString("dd/MM HH:mm") + " · " + entry.Description);
+        }
+        void Refresh(){
+            if(!GodotObject.IsInstanceValid(window)||window.IsQueuedForDeletion()||_modal!=window)return;
+            treatmentPotential=_sim.CurrentWaterTreatmentPotential;
+            var key=Structure();if(key!=structure&&!Input.IsMouseButtonPressed(MouseButton.Left)){
+                updates.RemoveRange(fixedUpdates,updates.Count-fixedUpdates);Clear(details);Populate();structure=key;
+            }
+            if(state.CityEvents.Count!=eventCount){Clear(history);var events=Card(history,"História da cidade");foreach(var entry in state.CityEvents.TakeLast(20).Reverse())Muted(events,entry.At.ToString("dd/MM HH:mm")+" · "+entry.Description);eventCount=state.CityEvents.Count;}
+            foreach(var update in updates)update();
+        }
+        Refresh();var timer=new Godot.Timer{WaitTime=.4,Autostart=true};timer.Timeout+=Refresh;box.AddChild(timer);
     }
 
     void ShowFinances()

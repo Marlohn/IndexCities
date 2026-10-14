@@ -2,13 +2,25 @@ namespace IndexCities.Simulation;
 
 public sealed partial class CitySimulation
 {
+    // Read-only conditions shared by inspection and the actual calculation.
+    // Jobs and shift membership never imply that a person reached the building.
+    public IEnumerable<Citizen> ScheduledWorkers(Building building)=>State.Citizens.Where(c=>c.WorkplaceId==building.Id&&ShiftActive(c));
+    public int WorkersScheduled(Building building)=>ScheduledWorkers(building).Count();
+    public bool HasNaturalWaterSource(Building building)=>building.Kind==BuildingKind.WaterIntake&&Math.Abs(building.Position.Distance(State.LakeCentre)-State.LakeRadius)<=22;
+    public static double ServiceStaffReference(Building building)=>Math.Max(1.0,building.Definition.Utility?building.Definition.Jobs/3.0:building.Definition.Jobs);
+    static double InfrastructureStaffFactor(Building building,int present)=>Math.Clamp(present/ServiceStaffReference(building),0,1);
+    public double ServiceStaffFactor(Building building)=>InfrastructureStaffFactor(building,WorkersPresent(building));
+    double InfrastructureTreatmentPotential(Building building,int present)=>building.Definition.Capacity*InfrastructureStaffFactor(building,present)*building.MaintenanceRatio*building.ElectricityRatio/(1+State.LakePollution*.65);
+    public double WaterPollutionTreatmentFactor=>1/(1+State.LakePollution*.65);
+    public double WaterTreatmentPotential(Building building)=>building.Completed&&!building.Removed&&building.Kind==BuildingKind.WaterTreatment&&HasExteriorAccess(building)?InfrastructureTreatmentPotential(building,WorkersPresent(building)):0;
+    public double CurrentWaterTreatmentPotential=>State.Buildings.Sum(WaterTreatmentPotential);
     void UpdateInfrastructure(double dt)
     {
         var active=State.Buildings.Where(b=>b.Completed&&!b.Removed).ToList();
         // Presence does not change inside this calculation. Keep the public
         // query live, but avoid scanning the same citizens for every consumer.
         var present=active.ToDictionary(b=>b.Id,b=>WorkersPresent(b));
-        double StaffFactor(Building b)=>Math.Clamp(present[b.Id]/Math.Max(1.0,b.Definition.Utility?b.Definition.Jobs/3.0:b.Definition.Jobs),0,1);
+        double StaffFactor(Building b)=>InfrastructureStaffFactor(b,present[b.Id]);
         State.WindFactor=Math.Clamp(.55+.25*Math.Sin(State.ElapsedSeconds/21600+State.Seed)+.15*Math.Sin(State.ElapsedSeconds/172800+State.Seed*.3),.15,.95);
         foreach(var b in active){
             var occupied=b.Kind==BuildingKind.House&&FamilyById(b.FamilyId) is {} f?f.Members.Count(id=>State.Citizens.Any(c=>c.Id==id&&c.Alive&&c.Resident)):0;
@@ -25,15 +37,15 @@ public sealed partial class CitySimulation
         var allocation=AllocateCapacity(active.Select(b=>(b.Id,b.Position,b.ElectricityDemand)).Concat(State.Roads.Where(r=>!r.Highway).Select(r=>(-r.Id,r.Position,streetDemands[r.Id]))).ToList(),State.ElectricityCapacity,wind.Select(b=>b.Position).ToList());
         foreach(var b in active){b.ElectricityRatio=b.ElectricityDemand<=0?0:allocation.GetValueOrDefault(b.Id)/b.ElectricityDemand;b.ElectricityConsumedToday+=b.ElectricityDemand*b.ElectricityRatio*dt/86400;}
         foreach(var n in State.Roads.Where(n=>!n.Highway)){n.ElectricityRatio=streetDemands[n.Id]<=0?0:allocation.GetValueOrDefault(-n.Id)/streetDemands[n.Id];State.StreetElectricityConsumedToday+=streetDemands[n.Id]*n.ElectricityRatio*dt/86400;}
-        var intakes=active.Where(b=>b.Kind==BuildingKind.WaterIntake&&HasExteriorAccess(b)&&Math.Abs(b.Position.Distance(State.LakeCentre)-State.LakeRadius)<=22).ToList();
+        var intakes=active.Where(b=>b.Kind==BuildingKind.WaterIntake&&HasExteriorAccess(b)&&HasNaturalWaterSource(b)).ToList();
         foreach(var b in active.Where(b=>b.Kind==BuildingKind.WaterIntake))b.OperationalCapacity=intakes.Contains(b)?b.Definition.Capacity*StaffFactor(b)*b.MaintenanceRatio*b.ElectricityRatio:0;
         State.RawWaterCapacity=intakes.Sum(b=>b.OperationalCapacity);
         var treatments=active.Where(b=>b.Kind==BuildingKind.WaterTreatment&&HasExteriorAccess(b)).ToList();
-        var nominal=treatments.Sum(b=>b.Definition.Capacity*StaffFactor(b)*b.MaintenanceRatio*b.ElectricityRatio/(1+State.LakePollution*.65));
+        var nominal=treatments.Sum(b=>InfrastructureTreatmentPotential(b,present[b.Id]));
         State.PotableCapacity=Math.Min(State.RawWaterCapacity,nominal);State.WaterAvailableToday+=State.PotableCapacity*dt/86400;State.WaterDemand=active.Sum(b=>b.WaterDemand);
         var water=AllocateCapacity(active.Select(b=>(b.Id,b.Position,b.WaterDemand)).ToList(),State.PotableCapacity,treatments.Select(b=>b.Position).ToList());
         foreach(var b in active){b.WaterRatio=b.WaterDemand<=0?0:water.GetValueOrDefault(b.Id)/b.WaterDemand;b.WaterConsumedToday+=b.WaterDemand*b.WaterRatio*dt/86400;b.SewageProduced=b.WaterDemand*b.WaterRatio*.8;}
-        foreach(var b in treatments)b.OperationalCapacity=nominal==0?0:State.PotableCapacity*(b.Definition.Capacity*StaffFactor(b)*b.MaintenanceRatio*b.ElectricityRatio/(1+State.LakePollution*.65))/nominal;
+        foreach(var b in treatments)b.OperationalCapacity=nominal==0?0:State.PotableCapacity*InfrastructureTreatmentPotential(b,present[b.Id])/nominal;
         var sewage=active.Where(b=>b.Kind==BuildingKind.SewageTreatment&&HasExteriorAccess(b)).ToList();foreach(var b in sewage)b.OperationalCapacity=b.Definition.Capacity*StaffFactor(b)*b.MaintenanceRatio*b.ElectricityRatio;
         State.SewageCapacity=sewage.Sum(b=>b.OperationalCapacity);State.SewageDemand=active.Sum(b=>b.SewageProduced);State.UntreatedSewage=Math.Max(0,State.SewageDemand-State.SewageCapacity);
         var sewageAllocation=AllocateCapacity(active.Select(b=>(b.Id,b.Position,b.SewageProduced)).ToList(),State.SewageCapacity,sewage.Select(b=>b.Position).ToList());

@@ -27,7 +27,7 @@ public partial class Main
 
     static string RecoveryMenuName(string tooltip) => tooltip switch {
         "Finanças e impostos" => "menu-finances", "SIMs e empresas" => "menu-people",
-        "Causas, obras e entregas" => "menu-alerts", "Controles" => "menu-controls", _ => "menu-cities"
+        "Obras e serviços · capacidade, equipe e entregas" => "menu-alerts", "Controles" => "menu-controls", _ => "menu-cities"
     };
     // An engine/input integration check. It does not certify human usability.
     // Placement uses viewport events and GUI hit testing, never handler calls.
@@ -332,7 +332,7 @@ public partial class Main
             Require(_selectedBuilding == inspected.Id && _inspector.Visible, "Clique no modelo abre inspeção da mercearia");
             Require(RecoveryNodes<Label>(_inspection).Any(label => label.Text.Contains(inspected.Cause, StringComparison.Ordinal)), "Inspeção apresenta a causa atual");
             await RecoveryCaptureOnce("inspection", GetViewport());
-            foreach (var tooltip in new[] { "Finanças e impostos", "SIMs e empresas", "Causas, obras e entregas", "Controles" }) {
+            foreach (var tooltip in new[] { "Finanças e impostos", "SIMs e empresas", "Obras e serviços · capacidade, equipe e entregas", "Controles" }) {
                 await RecoveryButton(RecoveryHudButton(tooltip));
                 Require(RecoveryNodes<Label>(_modal!).Any(), "Menu contém dados legíveis: " + tooltip);
                 await RecoveryCaptureOnce(RecoveryMenuName(tooltip), _modal!);
@@ -451,7 +451,7 @@ public partial class Main
             Require(_inspector.Visible, "Inspeção aberta pelo mapa");
             Require(_inspector.GetGlobalRect().End.Y<=_services.GetGlobalRect().Position.Y,"Inspector cabe acima dos avisos e do catálogo");
             await RecoveryCaptureOnce("inspection", GetViewport());
-            foreach (var tooltip in new[] { "Finanças e impostos", "SIMs e empresas", "Causas, obras e entregas", "Controles", "Cidades e autosave" }) {
+            foreach (var tooltip in new[] { "Finanças e impostos", "SIMs e empresas", "Obras e serviços · capacidade, equipe e entregas", "Controles", "Cidades e autosave" }) {
                 await RecoveryButton(RecoveryHudButton(tooltip));
                 await RecoveryCaptureOnce(RecoveryMenuName(tooltip), _modal!);
                 await RecoveryCloseModal();
