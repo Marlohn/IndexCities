@@ -1,105 +1,95 @@
 # IndexCities — estudo independente de direção visual
 
-> **EXPLORAÇÃO — revisão humana: PENDENTE.** Estudo da IA em 2026-10-14, baseado nas referências fornecidas pelo responsável, nos documentos canônicos e no código da branch `main` consultado nessa data (HEAD `2a75a4ba`). **Não é direção artística aprovada, requisito adicional, backlog, pedido de assets ou autorização para implementar.** A [SPEC](../SPEC.md) define o produto e o recorte da V1; [AGENTS](../../AGENTS.md) define como trabalhar; [ARCHITECTURE](../ARCHITECTURE.md) governa decisões estruturais.
+> **EXPLORAÇÃO — revisão humana: PENDENTE.** Segunda auditoria crítica da IA concluída em **2026-10-14**. Comparação das imagens fornecidas pelo responsável com a [SPEC](../SPEC.md), o [AGENTS](../../AGENTS.md), a [ARCHITECTURE](../ARCHITECTURE.md), os assets, o código da `main` (commit `2a75a4ba`), capturas reais de prévias na Godot e documentação oficial da engine. **Pesquisa e recomendações ainda não foram aprovadas pelo responsável.**
 >
-> **Escopo desta entrega:** somente estudo e documentação, sem modificar código, cenas, assets, shaders, SPEC, arquitetura ou coordenação do Orca. Nenhuma build, benchmark gráfico ou nova partida foi executada nesta análise; informações sobre a implementação vêm da inspeção do repositório e de relatos já registrados.
+> **Limites:** este documento **não cria requisitos, backlog obrigatório, aceitação formal da V1, ordem de produzir assets nem autorização para mudar código, gameplay ou arquitetura**. Nenhuma nova build, partida ou medição foi executada nesta auditoria. A frente Orca continua independente; o código pode avançar depois do commit examinado.
 
-## Meta visual e limites da referência
+## 1. Objetivo e significado das referências
 
-**Preferência expressa pelo responsável nesta conversa:** as imagens enviadas, produzidas por IA, representam um **piso de qualidade estética desejada**: buscar resultado igual ou melhor, **não inferior**. Não são desenho técnico perfeito, ordem para copiar elementos, prova de implementação em Godot, métricas de desempenho, escala ou licença de redistribuição. O julgamento de “igual ou melhor” ainda é qualitativo e depende de comparação humana em capturas reais do jogo; não se considera satisfeito por semelhança de cor ou quantidade de polígonos.
+**Preferência expressa pelo responsável:** as imagens de bairros low-poly geradas por IA são o **piso de qualidade visual desejada**; o resultado almejado deve ser tão bom ou melhor, **não uma imitação literal**. Essa é uma ambição qualitativa para a apresentação do jogo, **não a declaração de que a V1 funcional já precisa reproduzir todos os elementos das imagens**. A [SPEC da V1](../SPEC.md#v1--primeira-versão-jogável-integrada-escopo-aprovado-em-2026-10-12) permite expressamente um mundo visualmente enxuto e não inclui pontes, parques especializados, prédios mistos ou edição de terreno.
 
-Características a perseguir como direção candidata: bairros isométricos acolhedores, casas com silhuetas e telhados variados, ruas e calçadas contínuas, vegetação abundante mas organizada, entorno dos lotes detalhado, água/terreno integrados, materiais coerentes e luz agradável. **Não copiar** incoerências das imagens geradas: geometrias irreais, encaixes impossíveis, pontes sem rede funcional, cruzamentos inconsistentes e composição feita apenas para um ângulo de câmera.
+O valor das referências está na **composição urbana**: proporções convincentes, variedade controlada, transição rua–lote, vegetação, luz, cores e espaços vazios intencionais. As imagens também têm problemas típicos da geração por IA (cruzamentos/encaixes incoerentes, pontes sem lógica física, detalhes impraticáveis). **Aprovar o visual requer capturas e partida reais do IndexCities**, não apenas imagens conceituais ou um screenshot de ângulo favorável.
 
-Há duas classes de imagens no estudo: referências urbanas geradas por IA e capturas de um experimento visual externo com café, casas e props. **O experimento externo não é implementação do IndexCities e não concede permissão de reutilização de assets/código.** O briefing anterior preserva [uma referência em branch específica](https://github.com/Marlohn/IndexCities/blob/references/v1-neighborhood/references/visual/v1-neighborhood.png); outras imagens anexadas à conversa não foram incorporadas a este commit.
+A cena com café, pessoas, carros e mobiliário mostrada na conversa é um **experimento visual externo**, não implementação do IndexCities, benchmark do jogo ou fonte autorizada de malhas/código. Uma referência anterior está [preservada para consulta em branch própria](https://github.com/Marlohn/IndexCities/blob/references/v1-neighborhood/references/visual/v1-neighborhood.png). As demais imagens desta conversa não foram adicionadas ao repositório.
 
-## Onde o projeto está — evidências e lacunas
+## 2. Estado verificado: o que já temos e o que falta demonstrar
 
-Evidência conferida no repositório; **estado atual da branch de desenvolvimento pode avançar em paralelo**:
+Fontes: [assets V1](../../src/IndexCities.Godot/Assets/V1/README.md), [prancha V1](../../src/IndexCities.Godot/Assets/V1/Preview/Captures/v1_board_iso.png), [close da prancha](../../src/IndexCities.Godot/Assets/V1/Preview/Captures/v1_board_closeup.png), [prancha de instalações](../../src/IndexCities.Godot/Assets/V1/Preview/Captures/v1_wave2_board_iso.png), [antes/depois de grama e água](../../src/IndexCities.Godot/Assets/RecoveryEnvironment/Preview/Captures/env_compare_z110_h10.png), [`CityWorld.cs`](../../src/IndexCities.Godot/CityWorld.cs), [`Main.cs`](../../src/IndexCities.Godot/Main.cs), [primeiro playtest humano](v1-human-playtest-2026-10-13.md).
 
-| Área | Base encontrada | Lacuna visual ou incerteza |
+| Elemento | Evidência concreta na `main` | Lacuna ou ressalva |
 | --- | --- | --- |
-| Edifícios | Dez tipos funcionais da V1 com cenas, meshes, materiais e miniaturas. Alguns modelos e ícones agradaram no [playtest humano](v1-human-playtest-2026-10-13.md). | Ainda não há evidência de que o conjunto alcance a referência na composição urbana e em zooms variados. |
-| Casas | `CityWorld.Visual` mapeia a casa para `residential.small_house.a`; a receita oferece telhado, esquadrias e acabamento. | Uma silhueta principal tende a repetir-se; a receita não inclui jardim/cerca/garagem. Apenas variar cor não garante diversidade convincente. |
-| Comércio | Mercearia com toldo, fachada e letreiro intercambiável, preenchido com a empresa operadora real. | O entorno, a relação com a calçada e o reconhecimento da operação precisam ser avaliados no bairro completo. |
-| Vegetação | Uma família principal `vegetation.tree_broadleaf.a`; `CityWorld.Reset` tenta distribuir até 145 árvores por seed, mudando escala e giro, e oculta conflitos de ocupação. | Distribuição majoritariamente aleatória e silhuetas parecidas não formam, por si, paisagismo natural. |
-| Ruas | `CityWorld.RoadSurface.cs` compõe superfícies contínuas de asfalto e calçada; existem marcações, travessias e postes. | Cruzamentos, limites entre lote/calçada, meio-fio e faixas precisam de validação visual integrada; parte já está sob revisão do Orca. |
-| Luz | Sol direcional com sombras, câmera ortográfica e ambiente definidos em `Main.cs`; postes respondem à noite e ao fornecimento elétrico real. | Qualidade da luz e contraste nas diferentes horas/zooms não foram comparados sistematicamente às referências. |
-| Terreno e água | Shaders recentes `RecoveryEnvironment` variam a grama e a superfície d'água, integrados sob decisão provisória IA-020 na SPEC. | O terreno permanece plano; o lago usa um cilindro de contorno circular. Shader melhora aparência, **não** sua silhueta geométrica. |
+| Prédios e ícones | Os **10 tipos funcionais V1** têm cenas/miniaturas. Prefeitura, casa e mercearia apresentam volumes e detalhes legíveis nas prévias. | Prévia é vitrine, **não uma cidade jogada**. Não há prova atual de qualidade do conjunto num bairro. |
+| Variedade residencial | `CityWorld.Visual` usa **uma** cena `residential.small_house.a` para a casa. Receita permite trocar materiais na autoria. | **Não há seleção/uso efetivo de variantes residenciais pelo host** no código inspecionado. Repetição de silhueta e telhado permanece. |
+| Ocupação e escala | Casa visual: envelope aproximado **8,78 × 8,59 m** no chão; lote lógico da casa: **12 × 16 m**. Mercearia: **10,4 × 13,5 m** para lote **16 × 18 m**. Prefeitura: envelope **24,6 × 17,8 m**, lote lógico **20 × 18 m**. | O código **reduz uniformemente** o modelo que ultrapassa o lote. Na Prefeitura a redução calculável é ~0,81; na casa e mercearia sobra área considerável no lote. Isso pode afetar proporção, composição e distância visual à porta. **Não afirmar defeito reproduzido sem capturar no jogo.** |
+| Entrada de SIM/carga | A simulação calcula `Building.Door` pelo centro da frente do **lote lógico**; assets guardam marcadores `Candidate_PedestrianEntry` / `Candidate_CargoPoint`. | O host não usa esses marcadores para redefinir a `Door` na integração examinada. **Verificar** se pedestres desaparecem antes de alcançar a porta desenhada e se a entrega aparenta ocorrer no lugar correto. Não mudar acesso funcional por estética. |
+| Ruas e postes | `CityWorld.RoadSurface.cs` já desenha asfalto/calçadas contínuos; há cruzamentos, faixas, postes, prévias e ligações reais. Postes acendem conforme noite/energia; luzes locais existentes **não projetam sombra**. | Validar esquina, meio-fio, travessias e ligação com lote no jogo; **Orca já atua nessa área**. A referência não justifica alargar vias ou inventar estacionamento. |
+| Árvores | Uma família de árvore; `CityWorld.Reset` gera **até 145 candidatas** por seed, varia escala/giro e oculta as que conflitam visualmente com vias e prédios. | Uma família e distribuição majoritariamente aleatória explicam parte da paisagem rarefeita. Não pressupor que árvores de cenário já sejam árvores econômicas/ambientais simuladas. |
+| Água e terreno | Materiais `RecoveryEnvironment` já aplicados: grama com variação de cor; água com faixa rasa e ondulação no sombreamento. | O mapa continua plano; o lago é um `CylinderMesh` de contorno circular. **Shader melhora a superfície, mas não cria margem orgânica física.** |
+| Iluminação e câmera | Câmera ortográfica com zoom e giro; sol direcional com sombra e intensidade ligada ao horário; iluminação ambiente. | A qualidade em manhã/noite, diferentes rotações, zoom de construção e GL Compatibility precisa ser **julgada na mesma renderização usada para jogar**. |
 
-Arquivos-chave: [`CityWorld.cs`](../../src/IndexCities.Godot/CityWorld.cs), [`CityWorld.RoadSurface.cs`](../../src/IndexCities.Godot/CityWorld.RoadSurface.cs), [`Main.cs`](../../src/IndexCities.Godot/Main.cs), [receitas e cenas V1](../../src/IndexCities.Godot/Assets/V1/README.md) e [`RecoveryEnvironment`](../../src/IndexCities.Godot/Assets/RecoveryEnvironment/README.md). O [playtest de 2026-10-13](v1-human-playtest-2026-10-13.md) registra problemas observados no mundo/água/ruas, mas não substitui uma avaliação do estado mais recente.
+**Correção importante da primeira versão deste estudo:** não se deve partir da hipótese de que “faltam modelos bons”. O [playtest humano](v1-human-playtest-2026-10-13.md) elogia parte dos modelos e ícones; as capturas do kit mostram acabamento individual razoável. A diferença mais evidente para as referências está em **integração dos lotes, densidade/composição do ambiente e repetição**, seguida por compatibilidade de escala e iluminação. Isto é um **parecer visual**, não medição ou diagnóstico definitivo da build atual.
 
-**Distância atual da referência:** significativa no **acabamento do conjunto e da paisagem**, mesmo com bons recursos individuais. Esta é uma avaliação qualitativa baseada no código e no playtest, **não** um percentual medido ou certificação visual da build atual.
+**Outra limitação de evidência:** as pranchas de assets foram renderizadas originalmente em **Forward+/Vulkan**; o `project.godot` principal usa **GL Compatibility/OpenGL**. O kit já teve checagens também em GL, que registraram cores mais claras/lavadas. Avaliar a paleta com a prancha Forward+ como se fosse o resultado em jogo seria incorreto.
 
-## Direção artística candidata — ainda não aprovada
+## 3. Linguagem artística candidata — ainda não aprovada
 
-**“Urbanismo acolhedor estilizado”**: 3D low-poly de geometria clara, mas com composição, proporção e acabamento deliberados. Evitar tanto o realismo pesado quanto a aparência de peças soltas sobre um plano uniforme.
+**Urbanismo acolhedor estilizado:** geometria low-poly limpa e legível, paleta harmonizada, silhuetas variadas sem perder a família visual e composição de bairro que pareça habitado **quando a simulação realmente tiver moradores e operações**.
 
-- **Formas e escala:** silhuetas diferenciáveis a distância; portas compatíveis com SIMs e acessos reais; altura, telhados e volumes coordenados entre vizinhos. A variação deve ser controlada por famílias, não sorteio irrestrito.
-- **Paleta:** verdes moderados com contraste entre grama, copas e arbustos; fachadas quentes e claras; telhados em terracota, tons neutros e alguns frios; asfalto e calçada contrastantes sem dominar o bairro; água azul-esverdeada menos saturada. **Cores exatas não estão aprovadas**; preservar e refinar materiais que já funcionam antes de substituí-los.
-- **Iluminação:** sombras que ajudem a ler volume, luz natural agradável e visibilidade em diferentes horários. Efeito emissivo, postes e sinais operacionais devem obedecer às condições físicas aprovadas.
-- **Densidade visual em camadas:** longe, ler bairro/rua/vegetação; no zoom comum, perceber fachadas, acesso e jardins; perto, ver detalhes limpos sem interseções grosseiras. Decoração não pode prejudicar prévias nem inspeção.
-- **Natureza:** combinar árvores de famílias/tamanhos e arbustos em grupos plausíveis, bordas, espaços abertos e vizinhanças; não confundir densidade de vegetação com distribuir muitos objetos ao acaso.
-- **Água e relevo:** no escopo V1, buscar integração visual compatível com lago e terreno **planos** existentes; geometria orgânica nova deve ser investigada separadamente, pois pode alterar construção, captação, limites e geração do mapa.
+- **Primeiro encaixe e proporção; depois detalhe.** Porta desenhada, acesso lógico, calçada, degraus, recuos, caminhões e SIMs precisam parecer compatíveis. O modelo bonito isolado não compensa um morador que desaparece longe da fachada.
+- **Variedade com curadoria, não ruído aleatório.** Fachadas, telhados e árvores podem mudar de forma e cor sem parecer objetos de estilos incompatíveis. A Prefeitura é arquitetonicamente mais elaborada que a casa; avaliar se isso cria hierarquia cívica desejada ou desunião estética.
+- **Paisagem com composição.** Espaços verdes livres, concentração de árvores, bordas e lotes bem resolvidos importam mais que simplesmente elevar a contagem de props. Verificar a visibilidade de portas, acessos e veículos sob copas.
+- **Paleta e luz condicionadas ao renderizador real.** Experimentar variações sutis dos materiais existentes antes de reescrever a biblioteca; evitar grama excessivamente uniforme, verdes fluorescentes, sombras pesadas e contraste que apague prévias/ícones. Nenhum código hexadecimal fica fixado aqui como estilo aprovado.
+- **Detalhe por distância.** De longe: malha urbana, silhuetas, manchas verdes. Zoom normal: acesso, fachadas, lotes, calçadas. De perto: portas, acabamentos e objetos sem sobreposição grosseira. Não preencher a tela de rótulos ou efeitos para compensar falta de atividade.
 
-## Onde o ganho tende a ser maior
+Não é necessário adicionar **texturas fotográficas, iluminação global avançada, reflexos caros, complexidade arquitetônica extrema ou centenas de modelos exclusivos** para testar a direção. Também não existe evidência de que uma troca integral de pipeline produza automaticamente uma cidade melhor.
 
-Estimativas **relativas, para avaliar**, não fila de trabalho autorizada:
+## 4. Prioridades recomendadas para estudar (não é backlog)
 
-| Experimento candidato | Benefício visual esperado | Esforço/risco estimado | Cuidado |
-| --- | --- | --- | --- |
-| Jardins, caminhos e pequenos elementos de entorno em lotes existentes | Muito alto | Baixo–médio | Respeitar footprint, acesso, custo e natureza funcional/decorativa; não autoriza nova ferramenta de decoração V1. |
-| Duas ou mais silhuetas residenciais *candidatas* compatíveis | Muito alto | Médio | Reusar famílias e materiais; variante visual não altera família, propriedade, capacidade ou construção. Quantidade a testar, não aprovada. |
-| Vegetação mais variada e distribuição com intenção | Muito alto | Médio | Não obstruir rua/obra; medir desenho e custo de muitas instâncias. |
-| Calibração de luz, sombras e contraste do conjunto | Alto | Baixo–médio | Conferir manhã, tarde/noite, sombras, legibilidade e renderizador real. |
-| Integração lote–calçada e acabamento de cruzamentos | Muito alto | Médio–alto | Área já trabalhada no Orca; não criar mudança concorrente nem alterar conectividade por estética. |
-| Margens e ambientação do lago atual sem alterar geometria funcional | Alto | Médio | Evitar margem que indique terra física onde ainda é água/área não posicionável. |
-| Forma orgânica de rio/lago e eventual relevo | Muito alto potencial | Alto, transversal | **Pesquisa futura separada**; não é melhoria gratuita de asset nem requisito V1. |
-| Mobiliário e animações/indicadores urbanos | Médio–alto | Variável | Atividades humanas/veiculares devem vir de entidades/eventos reais; não simular figurantes. |
+| Ordem de investigação | O que comparar primeiro | Motivo / limite |
+| --- | --- | --- |
+| **1. Escala e acessos visuais** | Mesmo prédio em lote real, posição da porta, trajetória dos SIMs e entrega; Prefeitura reduzida pelo host; recuo casa/mercearia. | **Pré-requisito de qualidade** identificado no código e no briefing. Corrigir representação sem alterar acesso, footprint ou gameplay sem decisão correspondente. |
+| **2. Composição dos lotes existentes** | Casa + mercearia + calçada + área livre: variação visual de caminhos, jardins, pequenos detalhes e materiais **compatíveis com a área efetiva**. | Provável maior ganho por esforço no bairro. **Distinguir detalhe incorporado ao modelo (puramente visual)** de árvore/jardim/objeto físico comprável que tem custos e possíveis efeitos previstos na SPEC; não criar esse sistema na V1 por inferência. |
+| **3. Vegetação e distribuição** | Uma única árvore repetida versus poucas formas coerentes e agrupamentos de cenário, com distância segura das ruas. | Alto potencial de ganho; distribuição e visibilidade podem importar mais que novas malhas. Não atribuir benefícios ambientais fictícios. |
+| **4. Repetição de casas e linguagem comum** | Só então testar poucas variações compatíveis de telhado, volume e cor, na mesma rua e em vários zooms. | Evitar produzir dez modelos antes de descobrir se o problema principal era o entorno. Sem troca de propriedade, capacidade ou histórico por variante. |
+| **5. Luz e materiais na cena integrada** | Sol/ambiente/postes em GL, manhã/tarde/noite, zoom e rotação equivalentes. | Ajuste potencialmente econômico, mas exige medição e cuidado com leitura dos estados reais. |
+| **6. Acabamento viário, lago e futuro relevo** | Avaliar entrega Orca em ruas; testar marginalia do lago **sem alterar a geometria física**; estudar forma orgânica/relevo só separadamente. | Rua é fundamental, mas **não duplicar trabalho em andamento**. Contorno novo de água pode exigir decisões transversais de mapa, captação e construção; pontes/terraplanagem não pertencem à V1. |
 
-**Ordem sugerida para um teste visual futuro:** trabalhar primeiro composição de casas/lotes/vegetação e contraste em um bairro pequeno, enquanto a equipe atual resolve vias/água. A priorização muda conforme o estado real do jogo e resultados medidos.
+A ordem é uma **hipótese de melhor custo-benefício**, sujeita ao resultado visual e ao desenvolvimento simultâneo. Não iniciar projeto de paisagismo amplo, sistema modular de edifícios ou ferramentas novas para validar essas ideias.
 
-## Bairro exemplar para avaliação — sem mecânica nova
+## 5. Uma comparação pequena, mas fiel ao jogo
 
-Um **cenário de comparação**, não um mapa predefinido ou geração automática obrigatória:
+No futuro, aproveitar um **save real pequeno** com Prefeitura colocada, via urbana conectada, algumas casas simples, mercearia e vegetação; Pátio/fazenda apenas se couberem naturalmente na partida. Nenhuma quantidade fixa de casas, arruamento ideal ou bairro pré-fabricado é requisito.
 
-- Rua 1+1 conectada fisicamente à rede externa, com trechos retos/esquina em L e calçadas/cruzamentos que correspondam à topologia real.
-- Aproximadamente **6–10 casas simples** colocadas individualmente, com propostas de acabamentos visuais variados e escala consistente; quantidade meramente ilustrativa.
-- **Uma mercearia pequena** com acesso de pessoas e entregas coerente e nome da empresa operadora real; **não adicionar café/restaurante** por aparecer na referência.
-- **Prefeitura** como marco visual e **Pátio de Obras** em área operacional compatível, quando forem parte da cidade efetivamente construída; fazenda pode aparecer na borda sem virar paisagismo falso.
-- Árvores em grupos, áreas livres e elementos de jardim que deem leitura de bairro **sem depender de lago, ponte ou terreno editável**.
-- Pedestres, carros e entregas somente quando derivados da simulação. Casas vazias e serviços parados continuam possíveis e precisam ser visualmente honestos.
+- **A = situação atual; B = proposta visual:** mesmo save, câmera, resolução, horário, seed e estado da simulação. Capturar **zoom distante, zoom normal de construir e zoom próximo**, de mais de uma direção. Repetir também com uma rua contendo várias casas iguais.
+- Observar **entrada lógica versus entrada desenhada**, escadas e calçadas, recuos, sobreposição de copas, faixas, contraste da prévia e seleção de imóveis. Uma cena do editor só serve para triagem; **validar novamente na cidade jogável**.
+- Comparar qualidade com as imagens do responsável, **sem exigir ponte, café, edifício misto, parque especializado ou lago ao lado do bairro**. A referência é padrão de acabamento, não catálogo V1.
+- Verificar cidade efetivamente viva **somente quando há SIMs/empresas/viagens reais**. Casas vazias, obras paradas e falta de energia não devem ser mascaradas por figurantes ou animações inventadas.
+- Se aprovado como marco visual, a aceitação humana é: “o bairro real do IndexCities transmite qualidade igual ou superior à referência, inclusive na câmera normal do jogador?”. **Não há percentual de semelhança, métrica estética automática nem aprovação antecipada.**
 
-Julgar em **três escalas** (distante, zoom normal de construção, próximo) e mais de um horário; comparar o mesmo save, ângulo, iluminação e resolução antes/depois. Uma prancha estática bonita pode orientar o estilo, mas não comprova legibilidade, construção, jogabilidade nem escala real.
+## 6. Performance: cuidado com inferências do protótipo
 
-## Critérios propostos para futura validação
+O [README dos assets V1](../../src/IndexCities.Godot/Assets/V1/README.md) registra **medição sintética** em Forward+/RTX 3050: uma grade com 400 casas e 400 árvores apresentou aproximadamente **36 draw calls e 3,2 ms de GPU**. Isso é evidência de que o **kit isolado** pode desenhar instâncias repetidas de modo eficiente **naquele renderizador** — **não** um benchmark de uma cidade simulada no **GL Compatibility**. A [documentação oficial da Godot sobre desempenho 3D](https://docs.godotengine.org/en/stable/tutorials/performance/optimizing_3d_performance.html) informa que o *automatic instancing* de `MeshInstance3D` idênticos é recurso do **Forward+**, não do Compatibility. Logo, não transportar os números para o jogo.
 
-São **critérios candidatos**, sem constituir aceite formal ou meta de desempenho já acordada:
+O `Main.QA.cs` já possui um **performance smoke** que registra FPS, percentil 95 de frame, tempo de simulação/apresentação e draw calls. Quando houver experimento autorizado, começar por essa medição existente num save representativo, sem instrumentação nova por ritual.
 
-1. O responsável considera o bairro real renderizado na Godot **não inferior em qualidade percebida** às referências de IA, levando em conta suas imperfeições; não basta reproduzir uma imagem em ângulo único.
-2. Casas e árvores repetidas não parecem clones; os lotes e acessos formam ruas coerentes.
-3. Não existem defeitos graves de encaixe, interseção, sombras ou escala em zoom normal e próximo.
-4. Interface de seleção, construção e diagnóstico continua clara; efeitos decorativos não encobrem informações críticas.
-5. Não há novos SIMs, tráfego, estoques, iluminação funcional nem eventos fictícios introduzidos para dar “vida” à cena.
-6. Medir FPS, tempo de atualização, draw calls, uso de memória e variação entre zooms no renderizador/hardware realmente usado. **Nenhuma meta numérica foi definida ou comprovada**; cidades maiores exigem amostra com muitos edifícios/agentes reais.
-7. Observar custo de malhas/material/sombras/luzes/objetos, e testar reutilização, MultiMesh por região e níveis de detalhe **somente onde houver gargalo medido**. Recursos Godot procedurais não recebem LOD automático por suposição.
+- Luzes `OmniLight3D` dos postes **não lançam sombras** no host atual; o sol lança. Não tratá-las como dezenas de shadow maps já ativos, mas observar quantidade de luzes visíveis e limites do Compatibility ([Godot: renderizadores](https://docs.godotengine.org/en/stable/tutorials/rendering/renderers.html), [luzes](https://docs.godotengine.org/en/stable/tutorials/3d/lights_and_shadows.html)).
+- Medir custo de cenas/instâncias, materiais, sombras, transparências, rótulos, regeneração viária, memória e CPU/GPU **com SIMs, UI e trânsito reais**, inclusive zoom longe e noite. Não existe meta de FPS ou hardware-alvo de aceite definida neste estudo.
+- Reaproveitar cenas/meshes e otimizar por evidência. `MultiMesh` pode ajudar instâncias repetidas, mas **não faz culling individual**; se usado, testar por regiões ([Godot: MultiMesh](https://docs.godotengine.org/en/stable/tutorials/performance/using_multimesh.html)). Não pressupor LOD automático em malhas nativas geradas por código.
+- A pesquisa externa fundamenta **limitações técnicas**, não comprova custo ou qualidade estética do IndexCities. Trocar renderizador ou reescrever toda a arte é decisão de impacto maior, sem justificativa demonstrada aqui.
 
-## Orientação para pedido futuro à IA de assets
+## 7. Orientação futura e fronteiras da SPEC
 
-Usar [briefing V1](first-playable-assets.md) e [pesquisa do pipeline](asset-production-pipeline.md) como base; **este estudo não é um pedido de produção**. Quando o coordenador solicitar um experimento delimitado:
+O [briefing de assets](first-playable-assets.md) e o [pipeline](asset-production-pipeline.md) já descrevem receitas editáveis, versões, escala, pivôs, materiais, IDs e marcadores. Não criar outro pipeline ou produzir um lote por causa deste estudo. Um futuro pedido delimitado do coordenador deve incluir **comparação renderizada na cena do jogo**, fontes originais, compatibilidade física, capturas em múltiplos zooms e custo mensurado.
 
-- Partir das receitas, cenas, IDs e materiais originais já existentes; variantes compatíveis podem compartilhar malhas/materiais. Blender/GLB só quando resolver necessidade comprovada.
-- Propor poucas alternativas originais de silhueta e paisagismo, com paleta coerente, em vez de produção indiscriminada de todo o catálogo.
-- Entregar fontes editáveis, `VisualId` estável, pivôs, dimensões candidatas, marcadores de acesso, licenças/origem e capturas lado a lado na câmera do jogo.
-- Testar repetição de modelos, oclusão, sombra e custo de renderização no conjunto; visual não decide footprint, lógica, custos, empresa, moradores nem acesso.
-- Não copiar meshes, códigos, arquivos ou interfaces de outro projeto nem usar imagens geradas como assets finais por inferência.
-- Integração e qualquer mudança de comportamento/escopo continuam sob a SPEC e a coordenação vigente.
+A [SPEC — apresentação](../SPEC.md#conceito-e-apresentação) já aprova em sua **visão mais ampla** variantes prontas, vegetação, jardins e decoração com regras pertinentes; [terreno e espaços públicos](../SPEC.md#terreno-vegetação-e-espaços-públicos) inclui efeitos ambientais locais de objetos **reais**. **Essas decisões não inserem automaticamente novas ferramentas, despesas, árvores plantáveis ou benefícios na V1 reduzida.** Um detalhe pintado/incorporado à fachada não vira árvore funcional; uma árvore real plantada e cobrada não é mero shader.
 
-## Dependências e decisões ainda abertas
+Regras de fronteira para qualquer experimento visual: conservar identidade de prédios, SIMs e empresas; não deslocar pontos de acesso lógico sem autorização; respeitar colisão/footprints e saves; não falsificar veículos, clientes, produção, água, energia, iluminação ou ecologia; não copiar malhas de projetos anteriores ou imagens de IA. O Orca é responsável pelas melhorias integradas em andamento.
 
-- **Aprovação humana pendente:** linguagem visual proposta, paleta, diversidade desejada, custo gráfico aceitável e critérios concretos de comparação.
-- **Experimento, não decisão:** qual combinação mínima de variantes, lotes e vegetação oferece o melhor ganho na Godot real.
-- **Trabalho externo em andamento:** vias, UI, câmera, SIMs, circulação e água são responsabilidade do Orca neste momento. Não interferir, alterar esses recursos em paralelo ou declarar sua conclusão.
-- **Fora da V1 aprovada:** pontes/viadutos, parques especializados, prédios mistos, edição de terreno, novos serviços e cenas com atividades não modeladas. Futuras propostas precisam de recorte e decisão na SPEC antes de entrar no produto.
-- **Fonte de verdade:** uma escolha estética aceita pelo responsável pode orientar produção; se criar comportamento, ferramenta, custo, interação ou escopo novo, registrar primeiro a regra na SPEC. Este documento permanece exploração até revisão explícita.
+## 8. Decisões e evidências ainda necessárias
 
-Este estudo é deliberadamente independente e limitado a **direção visual passível de comparação futura**, não plano obrigatório de implementação.
+- **Humano:** aprovar/ajustar a linguagem artística candidata após comparar imagens **do próprio jogo**, incluindo Prefeitura, casas, mercearia e entorno; dizer se o “piso de qualidade” foi atingido **no marco visual futuro**. A preferência estética já expressa não aprova esta redação integral.
+- **Teste técnico:** verificar em Godot os possíveis desencontros de escala/portas, quarteirão repetitivo, paleta sob GL, cenário com vegetação e custo visual real. O código sugere riscos; **não alegamos que os defeitos foram reproduzidos nesta sessão**.
+- **Produto:** somente se uma solução exigir novos controles, variantes escolhidas pelo jogador, itens decorativos compráveis, custos, efeitos ambientais ou mudanças de regra, esclarecer e registrar na SPEC **antes** de implementação.
+- **Futuro:** geometria natural nova para lagos/rios, edição de relevo, pontes e serviços extras precisam ser avaliados pelo seu próprio benefício/custo; **não são condições para uma boa cidade V1 de terreno plano**.
+
+**Conclusão da rechecagem independente:** preservar o investimento existente em modelos e receitas; priorizar **consistência visual–física e composição do bairro** antes de multiplicar assets; comparar no **GL Compatibility do jogo** e em uma partida verdadeira. A direção é viável como hipótese artística, **sem promessa de qualidade ou desempenho antes dessa validação**.
