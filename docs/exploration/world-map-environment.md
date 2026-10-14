@@ -15,6 +15,20 @@ Este arquivo é material de exploração temática. Quando houver divergência, 
 - `docs/ARCHITECTURE.md` para decisões estruturais de software;
 - `AGENTS.md` para regras de trabalho e documentação.
 
+## Estudo de água e margens após a partida — 2026-10-14
+
+**Revisão humana desta seção: PENDENTE.** O responsável voltou a considerar rio/lago visualmente insatisfatórios após a integração dos materiais. O coordenador solicitou amostras originais ao **Claude Opus 5.5**, com esforço `max` confirmado no Orca; `ultracode` não é uma opção efetivamente disponível nesse runtime. O estudo está isolado na branch `Marlohn/recuperacao-v1-agua-estudo`, commit `01ef5f7`, sem alteração de gameplay ou integração ao jogo.
+
+![Estado atual, material com a mesma malha e geometria conceitual](evidence/water-study/compare-day.jpg)
+
+O código atual coloca a tampa do lago 9,5 cm acima do chão e usa um cilindro circular. A amostra A preserva a malha e pinta margens irregulares; a B apresenta uma bacia rebaixada e uma ligação a rio apenas na cena de assets. O coordenador conferiu imagens de dia, de noite e da margem de perto. A pintura de terra dentro da área circular bloqueada de A pode confundir o posicionamento, então não é recomendação de integração. B permanece proposta visual; não comprova captação, recursos, profundidade, fluxo ou operação urbana.
+
+![Amostra B: bacia e rio somente na prévia](evidence/water-study/concept-b-day.png)
+
+O Opus executou importação e renderização GL Compatibility com 29 capturas e validador com **1.593 verificações, zero falhas**. A comparação local de custo da prévia não mede FPS nem desempenho da cidade integrada; não foi executada build exportada ou testada outra GPU. O [README e os recursos do estudo](https://github.com/Marlohn/IndexCities/blob/01ef5f71fed550cbef286c2c647a58589c0ab39a/src/IndexCities.Godot/Assets/WaterStudy/README.md) registram dimensões, materiais, cenários e limitações. A avaliação estética humana continua pendente.
+
+Antes de integrar uma geometria diferente, é necessário decidir sua relação com a área física de água, captação, validade das construções, mapas/saves existentes e eventual rio sem pontes na V1. Não há aprovação dessas mudanças nesta seção. A investigação visual deve ajudar a decidir com imagens; não transformar pintura de margem em prova de correção da experiência.
+
 ---
 
 ## Qualidade ambiental local — referência temática (2026-10-11)

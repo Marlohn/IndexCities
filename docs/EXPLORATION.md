@@ -38,7 +38,7 @@ Os estados são agregados por documento. Em material parcialmente revisado, cons
 | Domínio | Revisão humana | Escopo / estado |
 | --- | --- | --- |
 | [Direção de produto](exploration/product-direction.md) | PARCIALMENTE REVISADO | Identidade, causalidade, profundidade, públicos e histórico do Criativo adiado. |
-| [Mundo, mapa e ambiente](exploration/world-map-environment.md) | PARCIALMENTE REVISADO | Seed, terreno, vegetação, representação espacial e posicionamento. |
+| [Mundo, mapa e ambiente](exploration/world-map-environment.md) | PARCIALMENTE REVISADO | Seed, terreno, vegetação e posicionamento; estudo visual de água/margens concluído em prévia isolada, estética e geometria pendentes. |
 | [Construção, materiais e logística](exploration/construction-materials-logistics.md) | PARCIALMENTE REVISADO | Obras, reservas, importação/exportação, estoques, Pátio e transporte. |
 | [Famílias, moradia e patrimônio](exploration/households-housing.md) | PARCIALMENTE REVISADO | Aquisição, renda/consumo, migração, contratos e sistemas familiares futuros. |
 | [Empresas e mercados](exploration/companies-markets.md) | PARCIALMENTE REVISADO | Autonomia, propriedade/operação, emprego, produção, caixa e falência. |

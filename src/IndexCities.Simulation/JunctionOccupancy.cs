@@ -24,20 +24,30 @@ public sealed partial class CitySimulation
     {
         if(vehicle.IntersectionClaim is {} held&&(!_roads.TryGetValue(held,out var road)||vehicle.Position.Distance(road.Position)>JunctionClearance))vehicle.IntersectionClaim=null;
         if(vehicle.IntersectionClaim==null)vehicle.IntersectionEnteredAt=null;
-        else if(_junctionAreas.ContainsKey(vehicle.IntersectionClaim.Value))vehicle.IntersectionEnteredAt??=vehicle.WaitingSince>0?vehicle.WaitingSince:State.ElapsedSeconds;
+        else if(_junctionAreas.ContainsKey(vehicle.IntersectionClaim.Value))vehicle.IntersectionEnteredAt??=vehicle.WaitingSince>0?vehicle.WaitingSince:VehicleMovementTime;
     }
-    Vehicle? NearbyAreaOwner(HashSet<int> area,RoadNode requested)
+    Vehicle? NearbyAreaOwner(HashSet<int> area,RoadNode requested,Vehicle requester)
     {
         // A chain of adjacent junctions can be long. Only bodies close to the
         // requested crossing reserve this local pavement, not the entire chain.
-        return State.Vehicles.Where(v=>v.IntersectionClaim is {} claim&&area.Contains(claim)&&v.Position.Distance(requested.Position)<9)
-            .OrderBy(v=>v.IntersectionEnteredAt??(v.WaitingSince>0?v.WaitingSince:State.ElapsedSeconds)).ThenBy(v=>v.Id).FirstOrDefault();
+        bool FollowingBehind(Vehicle other){
+            // An admitted car must finish clearing its own crossing. A follower
+            // queued behind it can hold the previous crossing, but cannot make
+            // the leader yield backwards and deadlock the same physical lane.
+            if(requester.IntersectionClaim!=requested.Id||other.IntersectionClaim==requested.Id||requester.Position.Distance(requested.Position)>JunctionClearance||Math.Cos(other.Heading-requester.Heading)<.999999)return false;
+            var relative=other.Position-requester.Position;
+            var forward=relative.X*Math.Sin(requester.Heading)+relative.Z*Math.Cos(requester.Heading);
+            var lateral=Math.Abs(relative.X*Math.Cos(requester.Heading)-relative.Z*Math.Sin(requester.Heading));
+            return forward<-.1&&lateral<2.6;
+        }
+        return State.Vehicles.Where(v=>v.IntersectionClaim is {} claim&&area.Contains(claim)&&v.Position.Distance(requested.Position)<9&&!FollowingBehind(v))
+            .OrderBy(v=>v.IntersectionEnteredAt??(v.WaitingSince>0?v.WaitingSince:VehicleMovementTime)).ThenBy(v=>v.Id).FirstOrDefault();
     }
     void ReserveJunction(Vehicle vehicle,RoadNode junction,HashSet<int>? area)
     {
         var continuing=area!=null&&vehicle.IntersectionClaim is {} old&&area.Contains(old);
-        if(area==null)vehicle.IntersectionEnteredAt=null;else if(!continuing)vehicle.IntersectionEnteredAt=State.ElapsedSeconds;
-        else vehicle.IntersectionEnteredAt??=vehicle.WaitingSince>0?vehicle.WaitingSince:State.ElapsedSeconds;
+        if(area==null)vehicle.IntersectionEnteredAt=null;else if(!continuing)vehicle.IntersectionEnteredAt=VehicleMovementTime;
+        else vehicle.IntersectionEnteredAt??=vehicle.WaitingSince>0?vehicle.WaitingSince:VehicleMovementTime;
         vehicle.IntersectionClaim=junction.Id;
     }
 }
