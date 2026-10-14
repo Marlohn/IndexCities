@@ -81,8 +81,11 @@ public sealed class VehicleMergeTests
             var origin=entering.Position;sim.Advance(.1);
             Assert.Equal(origin,entering.Position);Assert.Equal(40,entering.Fuel);
             Assert.Equal("Aguardando espaço para acessar a faixa",entering.Cause);
-            sim.Advance(2);Assert.Equal(origin,entering.Position);
-            sim.Advance(1);Assert.True(entering.Position.Distance(origin)>.1,entering.Cause);
+            // The opposite vehicle reaches the 8 m clearance at ~1.743 s.
+            // Keep waiting before that physical instant, then use its slot
+            // inside the next 2 s step instead of asserting the old sampling delay.
+            sim.Advance(1.4);Assert.Equal(origin,entering.Position);Assert.Equal(40,entering.Fuel);
+            sim.Advance(2);Assert.True(entering.Position.Distance(origin)>.1,entering.Cause);
             Assert.True(entering.Fuel<40);sim.CheckInvariants();
         }
     }

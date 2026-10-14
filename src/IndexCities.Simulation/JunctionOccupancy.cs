@@ -24,20 +24,20 @@ public sealed partial class CitySimulation
     {
         if(vehicle.IntersectionClaim is {} held&&(!_roads.TryGetValue(held,out var road)||vehicle.Position.Distance(road.Position)>JunctionClearance))vehicle.IntersectionClaim=null;
         if(vehicle.IntersectionClaim==null)vehicle.IntersectionEnteredAt=null;
-        else if(_junctionAreas.ContainsKey(vehicle.IntersectionClaim.Value))vehicle.IntersectionEnteredAt??=vehicle.WaitingSince>0?vehicle.WaitingSince:State.ElapsedSeconds;
+        else if(_junctionAreas.ContainsKey(vehicle.IntersectionClaim.Value))vehicle.IntersectionEnteredAt??=vehicle.WaitingSince>0?vehicle.WaitingSince:VehicleMovementTime;
     }
     Vehicle? NearbyAreaOwner(HashSet<int> area,RoadNode requested)
     {
         // A chain of adjacent junctions can be long. Only bodies close to the
         // requested crossing reserve this local pavement, not the entire chain.
         return State.Vehicles.Where(v=>v.IntersectionClaim is {} claim&&area.Contains(claim)&&v.Position.Distance(requested.Position)<9)
-            .OrderBy(v=>v.IntersectionEnteredAt??(v.WaitingSince>0?v.WaitingSince:State.ElapsedSeconds)).ThenBy(v=>v.Id).FirstOrDefault();
+            .OrderBy(v=>v.IntersectionEnteredAt??(v.WaitingSince>0?v.WaitingSince:VehicleMovementTime)).ThenBy(v=>v.Id).FirstOrDefault();
     }
     void ReserveJunction(Vehicle vehicle,RoadNode junction,HashSet<int>? area)
     {
         var continuing=area!=null&&vehicle.IntersectionClaim is {} old&&area.Contains(old);
-        if(area==null)vehicle.IntersectionEnteredAt=null;else if(!continuing)vehicle.IntersectionEnteredAt=State.ElapsedSeconds;
-        else vehicle.IntersectionEnteredAt??=vehicle.WaitingSince>0?vehicle.WaitingSince:State.ElapsedSeconds;
+        if(area==null)vehicle.IntersectionEnteredAt=null;else if(!continuing)vehicle.IntersectionEnteredAt=VehicleMovementTime;
+        else vehicle.IntersectionEnteredAt??=vehicle.WaitingSince>0?vehicle.WaitingSince:VehicleMovementTime;
         vehicle.IntersectionClaim=junction.Id;
     }
 }
