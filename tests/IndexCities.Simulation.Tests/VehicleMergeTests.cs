@@ -133,4 +133,62 @@ public sealed class VehicleMergeTests
         Assert.True(replanned.Position.Distance(origin)>.1,replanned.Cause);
         Assert.Equal("Em viagem",replanned.Cause);Assert.True(replanned.Fuel<40);sim.CheckInvariants();
     }
+
+    static (CitySimulation Sim,Vehicle Exiting,Vehicle Oncoming) Crossing(double distance,double maintenance=1)
+    {
+        var (sim,exiting,oncoming)=Pair(0);
+        foreach(var road in sim.State.Roads.Where(r=>r.Id is >=960 and <=1040))road.MaintenanceRatio=maintenance;
+        Westbound(exiting,new(0,33.25),10);
+        exiting.Route=exiting.Route.Skip(10).ToList();exiting.RouteIndex=0;
+        oncoming.PassengerCar=true;oncoming.Position=new(-distance,38.35);oncoming.Heading=Math.PI/2;
+        oncoming.Route=Enumerable.Range(0,21).Select(n=>960+n*4).ToList();oncoming.RouteIndex=(int)((40-distance)/4);
+        return(sim,exiting,oncoming);
+    }
+
+    [Theory]
+    [InlineData(2,20)][InlineData(.5,20)]
+    [InlineData(2,24)][InlineData(.5,24)]
+    [InlineData(2,28)][InlineData(.5,28)]
+    public void A_lot_exit_uses_a_real_gap_in_repeated_opposite_traffic(double dt,double spacing)
+    {
+        var (sim,exiting,_)=Crossing(20);var origin=exiting.Position;
+        var traffic=sim.State.Vehicles.Where(v=>v.Id!=exiting.Id&&v.PassengerCar).ToList();
+        var period=spacing/sim.State.Tuning.VehicleSpeed;var next=0.0;var elapsed=0.0;
+        for(var step=0;step<12/dt;step++){
+            if(elapsed>=next){
+                var car=new Vehicle{Id=sim.State.Vehicles.Max(v=>v.Id)+1,External=true,ExternalDriverId="controlled-test",PassengerCar=true,
+                    Position=new(-40,38.35),Heading=Math.PI/2,Status=VehicleStatus.Travelling,Fuel=40,
+                    Route=Enumerable.Range(0,21).Select(n=>960+n*4).ToList(),RouteIndex=0};
+                sim.State.Vehicles.Add(car);traffic.Add(car);next+=period;
+            }
+            var previous=exiting.Position;sim.Advance(dt);elapsed+=dt;
+            Assert.True(exiting.Position.Distance(previous)<=dt*sim.State.Tuning.VehicleSpeed+.000001);
+            if(step==0){Assert.True(exiting.Position.Distance(origin)>.1,exiting.Cause);Assert.True(exiting.Fuel<40);}
+            // This samples the opposite lane while the exit crosses it; the
+            // normal 3.3 m spacing BETWEEN lanes is not an 8 m queue violation.
+            if(Math.Abs(exiting.Position.Z-38.35)<1)
+                Assert.All(traffic.Where(v=>v.Status==VehicleStatus.Travelling),v=>Assert.True(Math.Abs(exiting.Position.X-v.Position.X)>=6));
+        }
+        Assert.True(exiting.Position.X< -20,exiting.Cause);sim.CheckInvariants();
+        var restored=CitySimulation.FromJson(sim.SaveToJson());sim.Advance(2);restored.Advance(2);
+        Assert.Equal(sim.SaveToJson(),restored.SaveToJson());
+    }
+
+    [Theory]
+    [InlineData(.5,12,1)][InlineData(2,12,1)]
+    [InlineData(.5,16,1)][InlineData(2,16,1)]
+    [InlineData(.5,20,.5)][InlineData(2,20,.5)]
+    public void A_lot_exit_waits_for_close_traffic_even_with_a_short_step_or_slow_road(double dt,double distance,double maintenance)
+    {
+        var (sim,exiting,oncoming)=Crossing(distance,maintenance);var origin=exiting.Position;
+        sim.Advance(dt);
+        Assert.Equal(origin,exiting.Position);Assert.Equal(40,exiting.Fuel);
+        Assert.Equal("Aguardando espaço para acessar a faixa",exiting.Cause);
+        for(var elapsed=dt;elapsed<12;elapsed+=dt){
+            sim.Advance(dt);
+            if(Math.Abs(exiting.Position.Z-38.35)<1&&oncoming.Status==VehicleStatus.Travelling)
+                Assert.True(Math.Abs(exiting.Position.X-oncoming.Position.X)>=6);
+        }
+        Assert.True(exiting.Position.Distance(origin)>10,exiting.Cause);Assert.True(exiting.Fuel<40);sim.CheckInvariants();
+    }
 }
