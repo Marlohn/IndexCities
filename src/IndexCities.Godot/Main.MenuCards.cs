@@ -296,7 +296,8 @@ public partial class Main
         var box = Modal("Controles");
         var construction = Card(box, "Construir", "Escolha uma imagem no catálogo. Confira o modelo e o custo antes de clicar. A ferramenta permanece pronta para repetir.");
         Text(construction, "Prédio · clique para encomendar ou arraste para formar uma fileira.", 16);
-        Text(construction, "Rua · clique no início e depois no fim. Tab troca o lado do L.", 16);
+        Text(construction, "Rua · clique no início e depois nos próximos fins para continuar. Tab troca o lado do L.", 16);
+        Text(construction, "G ou botão Grade · mostrar/ocultar alinhamento, inclusive fora da construção. Linhas não garantem terreno válido.", 16);
         Muted(construction, "R gira o prédio · Enter também encomenda a prévia válida · Esc ou clique curto com botão direito cancela a ferramenta. A prévia não gasta dinheiro.");
         Text(construction, "Demolir · escolha a ferramenta no catálogo e clique na rua. Confira orçamento e efeitos antes de confirmar.", 16);
         var camera = Card(box, "Olhar a cidade"); Text(camera, "W A S D ou botão central · mover\nRoda · aproximar\nQ / E ou arrastar com botão direito · girar", 16);

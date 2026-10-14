@@ -69,7 +69,7 @@ public partial class Main
 
     async Task<Vector2> RecoveryAlignNativeMouse(Vector2 position, Viewport viewport)
     {
-        var modes = new[] { "--ui-input-smoke", "--recovery-smoke", "--road-recovery-smoke", "--city-names-smoke", "--visual-review-smoke", "--real-time-start-smoke", "--interaction-regressions-smoke" };
+        var modes = new[] { "--ui-input-smoke", "--recovery-smoke", "--road-recovery-smoke", "--city-names-smoke", "--visual-review-smoke", "--real-time-start-smoke", "--interaction-regressions-smoke", "--neighbourhood-smoke" };
         Require(OS.GetCmdlineUserArgs().Any(modes.Contains), "Foco e cursor nativos são usados somente na janela de QA isolada");
         Require(viewport.GetVisibleRect().HasPoint(position), "Cursor de QA permanece dentro do viewport conhecido");
         var nativeWindow = viewport is Window window ? window : viewport.GetWindow();
@@ -205,10 +205,10 @@ public partial class Main
 
     async Task<WorkProject> RecoveryRoad(Point start, Point end, bool reverse = false, bool choose = false)
     {
-        if (choose) await RecoveryButton(RecoveryRoadButton());
+        if (choose || _roadStart != null && _roadStart != start) await RecoveryButton(RecoveryRoadButton());
         Require(_roadTool, "Ferramenta de rua permanece ativa");
         var before = _sim.SaveToJson();
-        await RecoveryWorldPoint(start);
+        if(_roadStart==null)await RecoveryWorldPoint(start);
         Require(_roadStart == start, "Primeiro clique inicia a rua");
         Require(_sim.SaveToJson() == before, "Primeiro clique não cria obra");
         _focus = ToV(end); UpdateCamera(); await RecoveryFrame();
@@ -216,14 +216,14 @@ public partial class Main
         Require(_roadEnd == end, "Cursor acompanha o fim da rua");
         if (_reverse != reverse) await RecoveryKey(Key.Tab);
         Require(_sim.SaveToJson() == before, "Primeiro clique e prévia não alteram dinheiro ou obras");
-        var shape = _sim.RoadShape(start, end, _reverse).Where(point => _sim.State.Roads.All(road => road.Position.Distance(point) > .05)).ToArray();
+        var shape = _sim.RoadShape(start, end, _reverse).Where(point => _sim.State.Roads.All(road => road.Position.Distance(point) > .05)&&_sim.State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress).All(p=>p.RoadPoints.All(other=>other.Distance(point)>=.1))).ToArray();
         await RecoveryCaptureOnce("road-before-order", GetViewport());
         var ids = _sim.State.Projects.Select(project => project.Id).ToHashSet();
         await RecoveryClick(_camera.UnprojectPosition(ToV(end)));
         var project = _sim.State.Projects.Single(project => !ids.Contains(project.Id));
         Require(project.RoadPoints.Count > 0 && project.Status != WorkStatus.Completed, "A rua nasce como obra real");
         Require(project.RoadPoints.SequenceEqual(shape), "Segundo clique encomenda exatamente o traçado que estava na prévia");
-        Require(_roadTool && _roadStart == null && _roadEnd == null, "Pode iniciar a próxima rua sem reabrir o catálogo");
+        Require(_roadTool && _roadStart == end && _roadEnd == null, "Extremidade continua a próxima rua sem reabrir o catálogo");
         return project;
     }
 

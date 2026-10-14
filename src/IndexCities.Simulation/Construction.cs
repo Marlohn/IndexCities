@@ -33,22 +33,26 @@ public sealed partial class CitySimulation
         State.Buildings.Add(b);State.Projects.Add(p);if(kind==BuildingKind.CityHall)State.CityHallPlaced=true;
         UpdateCrosswalks();ReserveLocalMaterials();Event("Obra de "+b.Definition.Name+" confirmada; orçamento reservado"+(q.Accessible?"; aguardando materiais e equipe":"; conecte uma rua urbana à entrada"));return new(true,State.LastMessage,b.Id);
     }
+    List<Point> NewRoadPoints(Point start,Point end,bool reverse,int? ignoredProject=null)
+    {
+        var planned=State.Projects.Where(p=>p.Id!=ignoredProject&&!p.IsMaintenance&&p.Status is WorkStatus.Waiting or WorkStatus.InProgress).SelectMany(p=>p.RoadPoints).ToArray();
+        return RoadShape(start,end,reverse).Where(point=>State.Roads.All(road=>road.Position.Distance(point)>.05)&&planned.All(other=>other.Distance(point)>=.1)).ToList();
+    }
     public PlacementQuote QuoteRoad(Point start,Point end,bool reverse=false,int? ignoredProject=null)
     {
-        var points=RoadShape(start,end,reverse).Where(p=>State.Roads.All(r=>r.Position.Distance(p)>.05)).ToList();
+        var points=NewRoadPoints(start,end,reverse,ignoredProject);
         var outside=points.Any(p=>!InMap(p,State.Tuning.RoadWidth/2));var water=points.Any(p=>InWater(p,State.Tuning.RoadWidth/2));
         var building=State.Buildings.FirstOrDefault(b=>!b.Removed&&points.Any(p=>Inside(b,p,State.Tuning.RoadWidth/2-.05)));
-        var overlapping=State.Projects.FirstOrDefault(p=>p.Id!=ignoredProject&&p.Status is WorkStatus.Waiting or WorkStatus.InProgress&&p.RoadPoints.Any(a=>points.Any(b=>a.Distance(b)<.1)));
-        var valid=State.CityHallPlaced&&points.Count>0&&!outside&&!water&&building==null&&overlapping==null;
+        var valid=State.CityHallPlaced&&points.Count>0&&!outside&&!water&&building==null;
         var length=points.Count*State.Tuning.RoadStep;var materials=new Dictionary<ResourceKind,double>{{ResourceKind.Aggregate,length*State.Tuning.RoadWidth*.04},{ResourceKind.Asphalt,length*State.Tuning.RoadWidth*.02}};
         var access=points.Any(p=>State.Roads.Any(r=>r.Position.Distance(p)<=State.Tuning.RoadStep+.05&&_exteriorConnected.Contains(r.Id)));
-        var message=!State.CityHallPlaced?"Confirme o projeto da Prefeitura para liberar ruas":points.Count==0?"Este traçado não adiciona trecho novo à via pronta":outside?"O traçado ultrapassa o limite do mapa":water?"O traçado invade a água":building!=null?$"O traçado invade {building.Definition.Name} #{building.Id}":overlapping!=null?$"Sobreposição com obra de rua #{overlapping.Id} ainda não concluída; ajuste o traçado ou mova a obra existente":!access?"Sem ligação com via pronta conectada ao exterior: a obra aguardará acesso":"Trecho válido; ligação exterior disponível";
-        return new(valid,access,QuoteMaterials(materials,start,Math.Max(120,length*2)),materials,message);
+        var message=!State.CityHallPlaced?"Confirme o projeto da Prefeitura para liberar ruas":points.Count==0?"Este traçado não adiciona trecho novo às ruas prontas ou em obra":outside?"O traçado ultrapassa o limite do mapa":water?"O traçado invade a água":building!=null?$"O traçado invade {building.Definition.Name} #{building.Id}":!access?"Sem ligação pronta ao exterior: a obra aguardará acesso; ligação planejada não libera entregas":"Trecho válido; ligação exterior disponível";
+        return new(valid,access,points.Count==0?0:QuoteMaterials(materials,start,Math.Max(120,length*2)),materials,message);
     }
     public CommandResult PlaceRoad(Point start,Point end,bool reverse=false)
     {
         var q=QuoteRoad(start,end,reverse);if(!q.PhysicallyValid)return new(false,q.Message);if(q.Total>Available)return new(false,"Caixa disponível insuficiente");
-        var points=RoadShape(start,end,reverse).Where(p=>State.Roads.All(r=>r.Position.Distance(p)>.05)).ToList();
+        var points=NewRoadPoints(start,end,reverse);
         var p=new WorkProject{Id=Id(),Position=points[0],RoadPoints=points,Required=q.Materials,WorkSeconds=Math.Max(120,points.Count*State.Tuning.RoadStep*2),BudgetRemaining=q.Total,Cause=q.Message};State.Projects.Add(p);ReserveLocalMaterials();Event("Obra de rua confirmada; orçamento reservado"+(q.Accessible?"; materiais e equipe serão enviados":"; conecte o trecho a uma via pronta"));return new(true,State.LastMessage,p.Id);
     }
     void ReserveLocalMaterials()
@@ -150,7 +154,7 @@ public sealed partial class CitySimulation
             var factor=external!=null?1:local.Count/3.0;var used=Math.Min(dt*factor,p.WorkSeconds*(1-p.Progress));
             if(external!=null){var due=Money((decimal)(used/3600)*State.Tuning.ExternalCrewHourlyPrice);if(due>p.BudgetRemaining){p.Cause="Sem orçamento para pagar equipe externa";continue;}p.CrewCostDue+=(decimal)(used/3600)*State.Tuning.ExternalCrewHourlyPrice;if(p.CrewCostDue>=1||p.Progress+used/p.WorkSeconds>=.999999){var amount=Money(p.CrewCostDue);if(!ProjectPay(p,amount,p.IsMaintenance?MaintenanceCategory(p):"Equipe externa",p.IsMaintenance?"Manutenção efetivamente realizada por equipe externa":"Trabalho efetivamente realizado na obra")){p.Cause="Equipe externa aguardando pagamento";continue;}p.CrewCostDue=0;}}
             
-            p.Status=WorkStatus.InProgress;p.Progress=Math.Min(1,p.Progress+used/p.WorkSeconds);p.Cause=p.IsMaintenance?"Manutenção em andamento":"Construção em andamento";
+            p.Status=WorkStatus.InProgress;p.Progress=Math.Min(1,p.Progress+used/p.WorkSeconds);if(p.Progress>=.999999)p.Progress=1;p.Cause=p.IsMaintenance?"Manutenção em andamento":"Construção em andamento";
             if(p.IsMaintenance)ProgressRoadMaintenance(p);
             if(!p.IsMaintenance&&p.RoadPoints.Count>0){var count=(int)Math.Floor(p.Progress*p.RoadPoints.Count);var changed=false;while(p.BuiltRoadNodes.Count<count){p.BuiltRoadNodes.Add(AddRoad(p.RoadPoints[p.BuiltRoadNodes.Count]).Id);changed=true;}if(changed){RebuildRoadGraph();SetDefaultJunctions();}}
             if(p.Progress<.999999)continue;p.Progress=1;p.Status=WorkStatus.Completed;p.CompletedAt=State.Now;p.BudgetRemaining=0;p.Cause="Concluído";
