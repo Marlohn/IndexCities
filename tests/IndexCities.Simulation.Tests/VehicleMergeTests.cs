@@ -149,7 +149,7 @@ public sealed class VehicleMergeTests
     [InlineData(2,20)][InlineData(.5,20)]
     [InlineData(2,24)][InlineData(.5,24)]
     [InlineData(2,28)][InlineData(.5,28)]
-    public void A_lot_exit_uses_a_real_gap_in_repeated_opposite_traffic(double dt,double spacing)
+    public void A_lot_exit_uses_the_initial_gap_then_continues_through_repeated_opposite_traffic(double dt,double spacing)
     {
         var (sim,exiting,_)=Crossing(20);var origin=exiting.Position;
         var traffic=sim.State.Vehicles.Where(v=>v.Id!=exiting.Id&&v.PassengerCar).ToList();
@@ -190,5 +190,38 @@ public sealed class VehicleMergeTests
                 Assert.True(Math.Abs(exiting.Position.X-oncoming.Position.X)>=6);
         }
         Assert.True(exiting.Position.Distance(origin)>10,exiting.Cause);Assert.True(exiting.Fuel<40);sim.CheckInvariants();
+    }
+
+    [Theory]
+    [InlineData(.1,18,1)][InlineData(.5,18,1)][InlineData(2,18,1)]
+    [InlineData(.1,20,1)][InlineData(.5,20,1)][InlineData(2,20,1)]
+    [InlineData(.1,28,.5)][InlineData(.5,28,.5)][InlineData(2,28,.5)]
+    [InlineData(.1,30,.5)][InlineData(.5,30,.5)][InlineData(2,30,.5)]
+    [InlineData(.1,32,.5)][InlineData(.5,32,.5)][InlineData(2,32,.5)]
+    public void A_street_exit_finishes_crossing_without_stopping_in_front_of_faster_highway_traffic(double dt,double distance,double maintenance)
+    {
+        foreach(var rotated in new[]{false,true}){
+            var (sim,exiting,oncoming)=Crossing(distance);
+            foreach(var road in sim.State.Roads.Where(r=>r.Id is >=960 and <=1040)){
+                road.Highway=road.Position.X<0;road.MaintenanceRatio=road.Id==1000?maintenance:1;
+            }
+            if(rotated){
+                foreach(var node in sim.State.Roads.Where(r=>r.Id is >=960 and <=1040))node.Position=new(-node.Position.X,80-node.Position.Z);
+                foreach(var vehicle in new[]{exiting,oncoming}){vehicle.Position=new(-vehicle.Position.X,80-vehicle.Position.Z);vehicle.Heading+=Math.PI;}
+            }
+            var origin=exiting.Position;sim.Advance(dt);
+            Assert.Equal(origin,exiting.Position);Assert.Equal(40,exiting.Fuel);
+            var joined=false;
+            for(var elapsed=dt;elapsed<20;elapsed+=dt){
+                sim.Advance(dt);
+                if(exiting.RouteIndex>0)joined=true;
+                var z=rotated?80-exiting.Position.Z:exiting.Position.Z;
+                if(exiting.RouteIndex==0&&z>34.75&&z<41.15){
+                    Assert.NotEqual("Aguardando espaço para acessar a faixa",exiting.Cause);
+                    if(oncoming.Status==VehicleStatus.Travelling)Assert.True(exiting.Position.Distance(oncoming.Position)>=6);
+                }
+            }
+            Assert.True(joined,exiting.Cause);Assert.True(exiting.Fuel<40);sim.CheckInvariants();
+        }
     }
 }

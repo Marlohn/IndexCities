@@ -198,11 +198,20 @@ public sealed partial class CitySimulation
                     // An occupant already driving along either lane has priority.
                     if(other.Status!=VehicleStatus.Stranded&&Math.Abs(direction)<.5&&other.PassengerCar&&other.RouteIndex==0&&Math.Abs(fromSide)<=half&&other.Id>v.Id)return false;
                     var approaching=other.Status==VehicleStatus.Travelling&&gap*direction<0;
-                    // Keep road traffic's priority over the full remaining
-                    // access manoeuvre, independent of the current step size.
-                    // The nominal road speed is a conservative bound when
-                    // maintenance slows the approaching vehicle.
-                    var clearance=8+(approaching?d*(node.Highway?State.Tuning.HighwaySpeed:State.Tuning.VehicleSpeed)/speed:0);
+                    // The approaching route can still be a highway while the
+                    // lot's access is a slower street. Bound its speed across
+                    // the route it could cover during the full manoeuvre.
+                    var approachSpeed=State.Tuning.VehicleSpeed;
+                    if(approaching){
+                        var ahead=Math.Max(State.Tuning.VehicleSpeed,State.Tuning.HighwaySpeed)*d/speed;
+                        var position=other.Position;
+                        for(var index=other.RouteIndex;index<other.Route.Count&&ahead>=0;index++){
+                            if(!_roads.TryGetValue(other.Route[index],out var upcoming))break;
+                            approachSpeed=Math.Max(approachSpeed,upcoming.Highway?State.Tuning.HighwaySpeed:State.Tuning.VehicleSpeed);
+                            ahead-=position.Distance(upcoming.Position);position=upcoming.Position;
+                        }
+                    }
+                    var clearance=8+(approaching?d*approachSpeed/speed:0);
                     return Math.Abs(gap)<clearance;
                 }
                 // Apply the existing ID tie-break to the whole coincidence case.
