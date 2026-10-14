@@ -35,6 +35,7 @@ public partial class Main:Node3D
         if(args.Contains("--city-names-smoke"))CallDeferred(MethodName.CityNamesSmoke);
         if(args.Contains("--finances-smoke"))CallDeferred(MethodName.FinancesSmoke);
         if(args.Contains("--activity-smoke")||args.Contains("--activity-before"))CallDeferred(MethodName.ActivitySmoke);
+        if(args.Contains("--circulation-smoke"))CallDeferred(MethodName.CirculationSmoke);
         if(args.Contains("--environment-smoke"))CallDeferred(MethodName.EnvironmentSmoke);
         if(args.Contains("--visual-review-smoke"))CallDeferred(MethodName.VisualReviewSmoke);
         if(args.Contains("--real-time-start-smoke"))CallDeferred(MethodName.RealTimeStartSmoke);

@@ -10,7 +10,7 @@
 
 A [V1 aprovada](SPEC.md#v1--primeira-versão-jogável-integrada-escopo-aprovado-em-2026-10-12) é uma entrega integrada do **Convencional**: fundar, construir, operar o catálogo reduzido, acompanhar fluxos reais e salvar/retomar a cidade. A visão completa permanece na SPEC; sistemas futuros não entram automaticamente por aparecerem numa pesquisa. A primeira partida do responsável expôs dificuldades de uso; a V1 continua em validação de jogabilidade. O relato e a análise pendente estão em [Interface e ferramentas](exploration/player-interface.md#primeira-partida-da-v1--2026-10-12).
 
-**Avaliação humana mais recente (2026-10-13):** [relato detalhado da partida V1](exploration/v1-human-playtest-2026-10-13.md) reúne o feedback espontâneo sobre ruas, UI/UX, ritmo, atividade urbana e acabamento visual, com pontos positivos e limites da evidência. A organização por IA segue **PENDENTE de revisão humana**, sem criar requisitos ou autorizar novas regras.
+**Avaliação humana mais recente (2026-10-14):** [relato detalhado da partida V1](exploration/v1-human-playtest-2026-10-13.md) reúne o feedback sobre ruas, UI/UX, ritmo, atividade urbana e acabamento visual. O retorno mais recente mantém rio/lago insatisfatórios após a entrega de materiais; um estudo visual isolado começou, sem aprovar mudança de geografia. A organização por IA segue **PENDENTE de revisão humana**, sem criar requisitos ou autorizar novas regras.
 
 **Divisão de trabalho definida pelo responsável em 2026-10-12:** Codex coordena e cuida de documentação, jogo, integração e validação. Claude Opus 5.5 com ultracode produz somente assets pedidos por Codex. A regra operacional está no [AGENTS](../AGENTS.md#coordenação-da-v1-e-frente-de-assets--2026-10-12); o [briefing visual](exploration/first-playable-assets.md) organiza famílias e limites, sem autorizar produção indiscriminada do inventário.
 
@@ -38,7 +38,7 @@ Os estados são agregados por documento. Em material parcialmente revisado, cons
 | Domínio | Revisão humana | Escopo / estado |
 | --- | --- | --- |
 | [Direção de produto](exploration/product-direction.md) | PARCIALMENTE REVISADO | Identidade, causalidade, profundidade, públicos e histórico do Criativo adiado. |
-| [Mundo, mapa e ambiente](exploration/world-map-environment.md) | PARCIALMENTE REVISADO | Seed, terreno, vegetação, representação espacial e posicionamento. |
+| [Mundo, mapa e ambiente](exploration/world-map-environment.md) | PARCIALMENTE REVISADO | Seed, terreno, vegetação e posicionamento; estudo visual de água/margens concluído em prévia isolada, estética e geometria pendentes. |
 | [Construção, materiais e logística](exploration/construction-materials-logistics.md) | PARCIALMENTE REVISADO | Obras, reservas, importação/exportação, estoques, Pátio e transporte. |
 | [Famílias, moradia e patrimônio](exploration/households-housing.md) | PARCIALMENTE REVISADO | Aquisição, renda/consumo, migração, contratos e sistemas familiares futuros. |
 | [Empresas e mercados](exploration/companies-markets.md) | PARCIALMENTE REVISADO | Autonomia, propriedade/operação, emprego, produção, caixa e falência. |

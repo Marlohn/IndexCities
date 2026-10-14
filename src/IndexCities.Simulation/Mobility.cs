@@ -154,14 +154,70 @@ public sealed partial class CitySimulation
                 var delta=v.RouteIndex==0&&v.Route.Count>1?_roads[v.Route[1]].Position-node.Position:node.Position-previous;var len=delta.Distance(new(0,0));var target=node.Position;
                 if(len>.01)target+=new Point(delta.Z/len*1.65,-delta.X/len*1.65);
                 var d=v.Position.Distance(target);var speed=(node.Highway?State.Tuning.HighwaySpeed:State.Tuning.VehicleSpeed)*Math.Max(.15,node.MaintenanceRatio);
+                var approachHeading=v.Heading;
                 var facing=target-v.Position;if(d>.01)v.Heading=Math.Atan2(facing.X,facing.Z);
                 // The exterior gateway is a staging origin (all external trucks
                 // start there). A waiting cargo outside the map must not prevent
                 // another real truck leaving to repair its broken road route.
                 var insideMap=InMap(v.Position);
-                var leaderDistance=State.Vehicles.Where(o=>o.Id!=v.Id&&o.Status is VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded).Where(o=>Math.Cos(o.Heading-v.Heading)>.5||insideMap&&o.Position.Distance(v.Position)<.1&&o.Id<v.Id).Select(o=>{var r=o.Position-v.Position;return (Forward:r.X*Math.Sin(v.Heading)+r.Z*Math.Cos(v.Heading),Side:Math.Abs(r.X*Math.Cos(v.Heading)-r.Z*Math.Sin(v.Heading)),SamePosition:insideMap&&r.Distance(new(0,0))<.1&&o.Id<v.Id);}).Where(o=>(o.Forward>0||o.SamePosition)&&o.Side<2.6).Select(o=>o.SamePosition?0:o.Forward).DefaultIfEmpty(double.MaxValue).Min();
+                double RoadSide(Point p)=>((p.X-node.Position.X)*delta.Z-(p.Z-node.Position.Z)*delta.X)/len;
+                double RoadAlong(Point p)=>((p.X-node.Position.X)*delta.X+(p.Z-node.Position.Z)*delta.Z)/len;
+                var fromSide=len>.01?RoadSide(v.Position):0;var toSide=len>.01?RoadSide(target):0;
+                bool AlreadyFollowingLane()
+                {
+                    // At a corner the newly planned segment has another axis.
+                    // Recognize the physical incoming lane before turning the
+                    // heading toward the new target, using this node's neighbours.
+                    foreach(var neighbour in node.Neighbours){
+                        if(!_roads.TryGetValue(neighbour,out var adjacent))continue;
+                        var edge=adjacent.Position-node.Position;var length=edge.Distance(new(0,0));if(length<.01)continue;
+                        var direction=(Math.Sin(approachHeading)*edge.X+Math.Cos(approachHeading)*edge.Z)/length;
+                        if(Math.Abs(direction)<.9)continue;
+                        var relative=v.Position-node.Position;
+                        var along=(relative.X*edge.X+relative.Z*edge.Z)/length;
+                        var side=(relative.X*edge.Z-relative.Z*edge.X)/length;
+                        if(along>=-State.Tuning.RoadWidth/2&&along<=length+State.Tuning.RoadWidth/2&&Math.Abs(side*Math.Sign(direction)-1.65)<.35)return true;
+                    }
+                    return false;
+                }
+                // RouteIndex 0 also occurs after replanning on the road. Only
+                // an approach crossing sideways into the lane is a lot entry.
+                var enteringLane=v.PassengerCar&&v.RouteIndex==0&&insideMap&&len>.01&&Math.Abs(fromSide-toSide)>.1&&!AlreadyFollowingLane();
+                bool BlocksEntry(Vehicle other)
+                {
+                    if(!enteringLane)return false;
+                    var side=RoadSide(other.Position);var half=State.Tuning.RoadWidth/2;
+                    if(Math.Abs(side)>half||side<Math.Min(fromSide,toSide)-.9||side>Math.Max(fromSide,toSide)+.9)return false;
+                    var fraction=Math.Clamp((side-fromSide)/(toSide-fromSide),0,1);
+                    var crossAlong=RoadAlong(v.Position)*(1-fraction)+RoadAlong(target)*fraction;
+                    var gap=RoadAlong(other.Position)-crossAlong;
+                    var direction=(Math.Sin(other.Heading)*delta.X+Math.Cos(other.Heading)*delta.Z)/len;
+                    // Two cars still crossing into the road use the existing
+                    // stable ID tie-break once both have entered its pavement.
+                    // An occupant already driving along either lane has priority.
+                    if(other.Status!=VehicleStatus.Stranded&&Math.Abs(direction)<.5&&other.PassengerCar&&other.RouteIndex==0&&Math.Abs(fromSide)<=half&&other.Id>v.Id)return false;
+                    var approaching=other.Status==VehicleStatus.Travelling&&gap*direction<0;
+                    var clearance=8+(approaching?speed*remaining:0);
+                    return Math.Abs(gap)<clearance;
+                }
+                // Apply the existing ID tie-break to the whole coincidence case.
+                // A tiny positive forward projection must not make its winner
+                // yield back to the other vehicle and freeze both indefinitely.
+                var leaderDistance=double.MaxValue;Vehicle? blocker=null;
+                void HoldFor(Vehicle other,double distance){if(distance<leaderDistance){leaderDistance=distance;blocker=other;}}
+                foreach(var other in State.Vehicles){
+                    if(other.Id==v.Id||other.Status is not (VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded))continue;
+                    var relative=other.Position-v.Position;
+                    if(insideMap&&relative.Distance(new(0,0))<.1){if(other.Status==VehicleStatus.Stranded||other.Id<v.Id)HoldFor(other,0);continue;}
+                    // Entry occupancy is measured along the ROAD axis, including
+                    // the opposite lane, rather than the diagonal lot heading.
+                    if(BlocksEntry(other)){HoldFor(other,0);continue;}
+                    var forward=relative.X*Math.Sin(v.Heading)+relative.Z*Math.Cos(v.Heading);
+                    var side=Math.Abs(relative.X*Math.Cos(v.Heading)-relative.Z*Math.Sin(v.Heading));
+                    if(Math.Cos(other.Heading-v.Heading)>.5&&forward>0&&side<2.6)HoldFor(other,forward);
+                }
                 var step=Math.Min(d,Math.Min(speed*remaining,Math.Max(0,leaderDistance-8)));
-                if(step<.00001&&d>.00001){v.Cause="Fila na faixa";if(v.WaitingSince==0)v.WaitingSince=State.ElapsedSeconds;break;}
+                if(step<.00001&&d>.00001){v.Cause=blocker?.Status==VehicleStatus.Stranded?$"Aguardando veículo {blocker.Id} sem combustível na via":enteringLane?"Aguardando espaço para acessar a faixa":"Fila na faixa";if(v.WaitingSince==0)v.WaitingSince=State.ElapsedSeconds;break;}
                 if((node.Neighbours.Count>=3||node.Crosswalk)&&d<9&&!MayEnterJunction(v,node)){if(v.WaitingSince==0)v.WaitingSince=State.ElapsedSeconds;break;}
                 if(v.Fuel<=.000001){v.Status=VehicleStatus.Stranded;v.Cause="Sem combustível; nenhuma viagem fictícia";break;}
                 step=Math.Min(step,v.Fuel/FuelRate(v));v.Position=v.Position.MoveTowards(target,step);v.Fuel=Math.Max(0,v.Fuel-step*FuelRate(v));v.FuelBurnedLastStep+=step*FuelRate(v);remaining-=step/speed;v.WaitingSince=0;v.Cause="Em viagem";

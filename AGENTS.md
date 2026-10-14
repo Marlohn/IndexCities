@@ -322,6 +322,7 @@ Sistemas profundos não podem virar caixas-pretas.
 - A revisão recebe diff, SPEC aplicável, relato humano e evidências; verifica regressões, integração, clareza, gameplay e soluções superficiais. Após duas rodadas com problema importante persistente, expor pendência e alternativas.
 - Trabalho independente pode ocorrer em paralelo em workspaces isoladas, com fronteiras explícitas. Opus 5.5 continua restrito a assets solicitados e compatíveis com Godot, escala, pivôs e conectores.
 - Estas são regras de trabalho autorizadas pelo responsável, **não alterações de gameplay**. A SPEC continua exigindo decisão humana prévia para mudanças relevantes de produto.
+- **Continuidade solicitada em 2026-10-14:** se faltarem créditos do Codex, preservar o estado e continuar a recuperação quando a execução voltar a estar disponível. Esgotamento de créditos não conclui a missão nem aprova pendências; registrar trabalho concluído, validações reais e tarefas restantes para a retomada.
 
 ## Filosofia de desenvolvimento
 
