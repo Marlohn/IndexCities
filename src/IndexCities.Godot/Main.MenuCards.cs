@@ -33,9 +33,10 @@ public partial class Main
         var label = Text(parent, value, size); label.AddThemeColorOverride("font_color", new Color("b5c8c9")); return label;
     }
 
-    static void Metric(Node parent, string name, string value)
+    static Label Metric(Node parent, string name, string value)
     {
         var box = Card(parent, name); var label = Text(box, value, 26); label.AddThemeColorOverride("font_color", new Color("fff0ba"));
+        return label;
     }
 
     void ShowCities()
@@ -153,24 +154,29 @@ public partial class Main
 
     void ShowFinances()
     {
-        var box = Modal("Finanças municipais"); var state = _sim.State;
+        var box = Modal("Finanças municipais"); var window = _modal!; var state = _sim.State;
         var balances = ResponsiveRow(box);
-        Metric(balances, "Disponível", Cash(_sim.Available)); Metric(balances, "Reservado", Cash(_sim.Committed)); Metric(balances, "Caixa total", Cash(_sim.CityBalance));
+        var available = Metric(balances, "Disponível", Cash(_sim.Available));
+        var committed = Metric(balances, "Reservado", Cash(_sim.Committed));
+        var total = Metric(balances, "Caixa total", Cash(_sim.CityBalance));
+        available.Name = "FinanceAvailable"; committed.Name = "FinanceCommitted"; total.Name = "FinanceTotal";
         Muted(box, "O valor reservado já está comprometido com obras. Não é dinheiro livre para novas encomendas.");
         var calendar = Card(box, "Quando o dinheiro entra e sai", "As cobranças dependem de consumo e pagamentos reais; não há receita garantida.");
-        Text(calendar, "Água, energia e salários · próxima apuração: " + state.NextDaily.ToString("dd/MM/yyyy HH:mm"), 14);
-        Text(calendar, "Impostos sobre imóveis · próxima cobrança: " + state.NextTaxDate.ToString("dd/MM/yyyy HH:mm"), 14);
-        Muted(calendar, "Salários essenciais acumulados: " + Cash(_sim.MunicipalCriticalWagesPending) + ". São preservados antes de cobrar empréstimos e outras dívidas.");
-        Text(calendar, "Tarifa por consumo · água: " + Cash(state.WaterUnitPrice) + " · energia: " + Cash(state.ElectricityUnitPrice), 14);
+        var daily = Text(calendar, "", 14); var taxDate = Text(calendar, "", 14);
+        var wages = Muted(calendar, ""); var tariffs = Text(calendar, "", 14);
         Muted(calendar, "Referência de custo operacional; só consumo efetivo gera conta. Capacidade ociosa não vira tarifa infinita.");
+        var borrowing = Card(box, "Empréstimo manual", "Limite de principal em aberto: " + Cash(state.Tuning.LoanLimit) + " · prazo: " + state.Tuning.LoanMonths + " meses");
+        Muted(borrowing, "Juros: " + (state.Tuning.LoanMonthlyInterest * 100).ToString("N1", Pt) + "% ao mês sobre o principal restante. Atraso impede novo empréstimo.");
+        var contracts = new VBoxContainer { Name = "FinanceContracts" }; borrowing.AddChild(contracts);
+        var loan = new SpinBox { Name = "FinanceLoanAmount", MinValue = .01, MaxValue = (double)state.Tuning.LoanLimit, Step = .01, Value = 10000 }; borrowing.AddChild(loan);
+        Action refresh = () => { };
+        var feedback = Text(borrowing, "", 14); Button(borrowing, "Contratar empréstimo", () => {
+            var result = _sim.Borrow((decimal)loan.Value); feedback.Text = result.Message;
+            refresh();
+        });
         var municipal = state.Ledger.Where(l => l.From == "city" || l.To == "city").ToList();
         var flows = Card(box, "Entradas e saídas efetivas", "Acumulado dos registros da cidade, desde " + (municipal.Count == 0 ? state.Now : municipal.Min(l => l.At)).ToString("dd/MM/yyyy HH:mm"));
-        var table = new GridContainer { Columns = 3, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill }; table.AddThemeConstantOverride("h_separation", 22); flows.AddChild(table);
-        Text(table, "Categoria", 14); Text(table, "Entrou", 14); Text(table, "Saiu", 14);
-        foreach (var group in municipal.GroupBy(l => l.Category)) {
-            Text(table, group.Key, 14); Text(table, Cash(group.Where(l => l.To == "city").Sum(l => l.Amount)), 14); Text(table, Cash(group.Where(l => l.From == "city").Sum(l => l.Amount)), 14);
-        }
-        if (municipal.Count == 0) Muted(flows, "Nenhuma transação municipal ainda.");
+        var table = new GridContainer { Name = "FinanceFlows", Columns = 3, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill }; table.AddThemeConstantOverride("h_separation", 22); flows.AddChild(table);
         var taxes = Card(box, "Impostos patrimoniais anuais (%)", "Cobrança mensal: valor de mercado atual × alíquota anual ÷ 12.");
         var categories = new[] { "Residencial · baixa densidade", "Residencial · alta densidade", "Comercial · baixa densidade", "Comercial · alta densidade", "Industrial · baixa densidade", "Industrial · alta densidade" };
         for (var i = 0; i < 6; i++) {
@@ -178,16 +184,53 @@ public partial class Main
             var rate = new SpinBox { MinValue = 0, MaxValue = 8, Step = .1, Value = (double)state.TaxRates[i] * 100, CustomMinimumSize = new(120, 36) }; row.AddChild(rate);
             rate.ValueChanged += value => _sim.SetTax(index, (decimal)value / 100);
         }
-        var borrowing = Card(box, "Empréstimo manual", "Limite de principal em aberto: " + Cash(state.Tuning.LoanLimit) + " · prazo: " + state.Tuning.LoanMonths + " meses");
-        Muted(borrowing, "Juros: " + (state.Tuning.LoanMonthlyInterest * 100).ToString("N1", Pt) + "% ao mês sobre o principal restante. Atraso impede novo empréstimo.");
-        foreach (var contract in state.Loans.Where(l => l.Principal > 0)) Muted(borrowing, "Contrato #" + contract.Id + " · principal " + Cash(contract.Principal) + " · " + contract.RemainingMonths + " parcelas restantes · próximo vencimento " + contract.NextDue.ToString("dd/MM/yyyy"));
-        var loan = new SpinBox { MinValue = .01, MaxValue = (double)state.Tuning.LoanLimit, Step = .01, Value = 10000 }; borrowing.AddChild(loan);
-        var feedback = Text(borrowing, "", 14); Button(borrowing, "Contratar empréstimo", () => { var result = _sim.Borrow((decimal)loan.Value); feedback.Text = result.Message; });
         var debts = Card(box, "Dívidas existentes");
-        foreach (var debt in state.Obligations.Where(d => d.Outstanding > 0)) Muted(debts, AccountName(debt.Debtor) + " → " + AccountName(debt.Creditor) + " · " + debt.Kind + " · " + Cash(debt.Outstanding));
-        if (!state.Obligations.Any(d => d.Outstanding > 0)) Muted(debts, "Nenhuma dívida pendente.");
+        var debtRows = new VBoxContainer { Name = "FinanceDebts" }; debts.AddChild(debtRows);
         var transactions = Card(box, "Últimas transações");
-        foreach (var entry in state.Ledger.TakeLast(20).Reverse()) Muted(transactions, entry.At.ToString("dd/MM HH:mm") + " · " + AccountName(entry.From) + " → " + AccountName(entry.To) + " · " + Cash(entry.Amount) + " · " + entry.Reason);
+        var transactionRows = new VBoxContainer { Name = "FinanceTransactions" }; transactions.AddChild(transactionRows);
+        var ledgerCount = -1;
+        (int Id, decimal Principal, int Months, DateTime Due)[] previousLoans = [];
+        (int Id, string Debtor, string Creditor, string Kind, decimal Outstanding)[] previousDebts = [];
+        refresh = () => {
+            if (!GodotObject.IsInstanceValid(window) || window.IsQueuedForDeletion() || _modal != window) return;
+            available.Text = Cash(_sim.Available); committed.Text = Cash(_sim.Committed); total.Text = Cash(_sim.CityBalance);
+            daily.Text = "Água, energia e salários · próxima apuração: " + state.NextDaily.ToString("dd/MM/yyyy HH:mm");
+            taxDate.Text = "Impostos sobre imóveis · próxima cobrança: " + state.NextTaxDate.ToString("dd/MM/yyyy HH:mm");
+            wages.Text = "Salários essenciais acumulados: " + Cash(_sim.MunicipalCriticalWagesPending) + ". São preservados antes de cobrar empréstimos e outras dívidas.";
+            tariffs.Text = "Tarifa por consumo · água: " + Cash(state.WaterUnitPrice) + " · energia: " + Cash(state.ElectricityUnitPrice);
+            var currentLoans = state.Loans.Where(l => l.Principal > 0).Select(l => (l.Id, l.Principal, l.RemainingMonths, l.NextDue)).ToArray();
+            if (!currentLoans.SequenceEqual(previousLoans)) {
+                ClearFinanceRows(contracts);
+                foreach (var contract in state.Loans.Where(l => l.Principal > 0)) Muted(contracts, "Contrato #" + contract.Id + " · principal " + Cash(contract.Principal) + " · " + contract.RemainingMonths + " parcelas restantes · próximo vencimento " + contract.NextDue.ToString("dd/MM/yyyy"));
+                previousLoans = currentLoans;
+            }
+            var currentDebts = state.Obligations.Where(d => d.Outstanding > 0).Select(d => (d.Id, d.Debtor, d.Creditor, d.Kind, d.Outstanding)).ToArray();
+            if (!currentDebts.SequenceEqual(previousDebts) || debtRows.GetChildCount() == 0) {
+                ClearFinanceRows(debtRows);
+                foreach (var debt in state.Obligations.Where(d => d.Outstanding > 0)) Muted(debtRows, AccountName(debt.Debtor) + " → " + AccountName(debt.Creditor) + " · " + debt.Kind + " · " + Cash(debt.Outstanding));
+                if (currentDebts.Length == 0) Muted(debtRows, "Nenhuma dívida pendente.");
+                previousDebts = currentDebts;
+            }
+            if (ledgerCount != state.Ledger.Count) {
+                ClearFinanceRows(table); Text(table, "Categoria", 14); Text(table, "Entrou", 14); Text(table, "Saiu", 14);
+                foreach (var group in state.Ledger.Where(l => l.From == "city" || l.To == "city").GroupBy(l => l.Category)) {
+                    Text(table, group.Key, 14); Text(table, Cash(group.Where(l => l.To == "city").Sum(l => l.Amount)), 14); Text(table, Cash(group.Where(l => l.From == "city").Sum(l => l.Amount)), 14);
+                }
+                if (!state.Ledger.Any(l => l.From == "city" || l.To == "city")) Muted(table, "Nenhuma transação municipal ainda.");
+                ClearFinanceRows(transactionRows);
+                foreach (var entry in state.Ledger.TakeLast(20).Reverse()) Muted(transactionRows, entry.At.ToString("dd/MM HH:mm") + " · " + AccountName(entry.From) + " → " + AccountName(entry.To) + " · " + Cash(entry.Amount) + " · " + entry.Reason);
+                ledgerCount = state.Ledger.Count;
+            }
+        };
+        refresh();
+        // Refresh only while this modal exists. Rebuild lists only when their
+        // displayed data changes; preserve the loan editor and scroll container.
+        var timer = new Godot.Timer { WaitTime = .4, Autostart = true }; timer.Timeout += refresh; box.AddChild(timer);
+    }
+
+    static void ClearFinanceRows(Node parent)
+    {
+        foreach (var child in parent.GetChildren()) { parent.RemoveChild(child); child.QueueFree(); }
     }
 
     void ShowHelp()
