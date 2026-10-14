@@ -85,6 +85,8 @@ public partial class Main
         foreach (var item in items.Where(i => i.Valid)) {
             var candidate = new Building { Kind = kind, Position = item.At, Rotation = _rotation };
             if (_sim.Access(candidate) is {} access) links.Add((candidate.Door, access.Position, item.Connected));
+            else if (PlacementRoadGuides().Where(guide => guide.Position.Distance(candidate.Door) <= _sim.State.Tuning.RoadWidth / 2 + 3).MinBy(guide => guide.Position.Distance(candidate.Door)) is {} planned)
+                links.Add((candidate.Door, planned.Position, false));
         }
         _world.PreviewAccessLinks(links);
     }

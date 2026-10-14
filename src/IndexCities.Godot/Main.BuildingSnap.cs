@@ -26,15 +26,15 @@ public partial class Main
             Add(road.Position, road.Neighbours.Any(id => Math.Abs(roads[id].Position.X - road.Position.X) > .1), road.Neighbours.Any(id => Math.Abs(roads[id].Position.Z - road.Position.Z) > .1));
         // Confirmed work is only a spatial guide. Quotes and Access remain the
         // authoritative checks; no planned point enters the traffic graph.
-        foreach (var project in state.Projects.Where(p => p.Id != _movingProject && p.RoadPoints.Count > 0 && p.Status is WorkStatus.Waiting or WorkStatus.InProgress)) {
-            for (var i = 0; i < project.RoadPoints.Count; i++) {
-                var position = project.RoadPoints[i]; var horizontal = false; var vertical = false;
-                foreach (var neighbour in new[] { i - 1, i + 1 }.Where(n => n >= 0 && n < project.RoadPoints.Count)) {
-                    var difference = project.RoadPoints[neighbour] - position;
-                    horizontal |= Math.Abs(difference.X) > .1; vertical |= Math.Abs(difference.Z) > .1;
-                }
-                Add(position, horizontal, vertical);
-            }
+        var planned = state.Projects.Where(p => p.Id != _movingProject && p.RoadPoints.Count > 0 && p.Status is WorkStatus.Waiting or WorkStatus.InProgress).SelectMany(p => p.RoadPoints).ToArray();
+        var geometry = state.Roads.Select(r => r.Position).Concat(planned).ToHashSet();
+        var step = state.Tuning.RoadStep;
+        foreach (var position in planned) {
+            // A shared corner can belong to another work. List neighbours may
+            // then be diagonal; only actual cardinal adjacency defines a guide.
+            var horizontal = geometry.Contains(position + new Point(step, 0)) || geometry.Contains(position - new Point(step, 0));
+            var vertical = geometry.Contains(position + new Point(0, step)) || geometry.Contains(position - new Point(0, step));
+            Add(position, horizontal, vertical);
         }
         _placementRoadGuides.AddRange(points.Select(p => new PlacementRoadGuide(p.Key, p.Value.Horizontal, p.Value.Vertical)));
         return _placementRoadGuides;
