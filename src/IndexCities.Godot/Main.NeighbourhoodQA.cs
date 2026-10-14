@@ -1,0 +1,128 @@
+using Godot;
+using IndexCities.Simulation;
+namespace IndexCities.Game;
+
+public partial class Main
+{
+    async void NeighbourhoodSmoke()
+    {
+        var directory=System.IO.Path.GetFullPath(ProjectSettings.GlobalizePath("res://../../artifacts/verification/road-reference/rendered-"+Guid.NewGuid().ToString("N")));
+        System.IO.Directory.CreateDirectory(directory);
+        try{
+            Require(DisplayServer.GetName()!="headless","Bairro exige Godot renderizado");
+            _speed=0;_autosaveMinutes=0;
+            CitySaves.VerificationDirectory=System.IO.Path.Combine(directory,"cities");
+            _sim=new CitySimulation(42,new(){ExternalFamilyCandidates=0,ExternalCompanyCandidates=0});
+            _cityId=CitySaves.NewId();_world.Reset(_sim.State);Choose(BuildingKind.CityHall);BuildCatalog();
+            await RecoveryWorldPoint(new(-100,-60));
+            Require(_sim.State.CityHallPlaced,"Prefeitura encomendada pelo gesto normal");
+            await RecoveryButton(RecoveryRoadButton());
+            Require(_placementGridVisible,"Grade automática na ferramenta de rua");
+            await RecoveryWorldPoint(new(-192,0));
+            await RecoveryPreviewWorldPoint(new(-192,48));
+            await RecoveryClick(_camera.UnprojectPosition(ToV(new(-192,48))));
+            Require(_roadStart==new Point(-192,48)&&_roadEnd==null,"Extremidade inicia próximo trecho sem primeiro clique");
+            await RecoveryMove(_camera.UnprojectPosition(ToV(new(-192,48))));
+            Require(_roadEnd==null&&!_confirmation.Visible,"Cursor na extremidade recém-confirmada não acusa traçado inválido");
+            var projectsBeforeClick=_sim.State.Projects.Count;
+            await RecoveryClick(_camera.UnprojectPosition(ToV(new(-192,48))));
+            Require(_sim.State.Projects.Count==projectsBeforeClick&&_roadStart==new Point(-192,48),"Clique na extremidade sem ponto novo não cria obra e conserva início");
+            var first=_sim.State.Projects.Last();
+            Require(first.RoadPoints.Count>0&&first.Progress==0,"Encomenda não conclui obra");
+            await RecoveryPreviewWorldPoint(new(-144,72));
+            var before=_sim.SaveToJson();
+            var shape=_sim.RoadShape(_roadStart!.Value,_roadEnd!.Value,_reverse).ToArray();
+            await RecoveryKey(Key.Tab);
+            Require(!shape.SequenceEqual(_sim.RoadShape(_roadStart!.Value,_roadEnd!.Value,_reverse)),"Tab muda a dobra da prévia");
+            Require(before==_sim.SaveToJson(),"Trocar dobra não cria recursos ou obras");
+            var quote=_sim.QuoteRoad(_roadStart.Value,_roadEnd.Value,_reverse);
+            Require(quote.PhysicallyValid&&!quote.Accessible,"Ligação em obra é válida, sem acesso funcional antecipado");
+            await RecoveryCapture(System.IO.Path.Combine(directory,"pending-L-preview.png"),GetViewport());
+            await RecoveryClick(_camera.UnprojectPosition(ToV(new(-144,72))));
+            Require(_roadStart==new Point(-144,72),"L confirmado mantém sequência");
+            await RecoveryPreviewWorldPoint(new(-120,72));
+            await RecoveryClick(_camera.UnprojectPosition(ToV(new(-120,72))));
+            Require(_roadStart==new Point(-120,72),"Extensão usa um único clique no próximo fim");
+            var count=_sim.State.Projects.Count;before=_sim.SaveToJson();
+            await RecoveryKey(Key.G);
+            Require(!_placementGridVisible&&_roadStart==new Point(-120,72),"Ocultar grade preserva sequência");
+            Require(before==_sim.SaveToJson(),"Grade não altera simulação");
+            await RecoveryKey(Key.G);await RecoveryKey(Key.F5);
+            var start=_roadStart;var end=_roadEnd;LoadCity(_cityId);await RecoveryFrame();
+            Require(_sim.SaveToJson()==before&&_roadStart==start&&_roadEnd==end&&_roadTool,"Save/load mantém sequência sem encomendar");
+            Require(_sim.State.Projects.Count==count,"Retomar não cria obra extra");
+            await RecoveryKey(Key.Escape);
+            Require(!_roadTool&&!_placementGridVisible,"Esc encerra sequência e grade automática");
+            await RecoveryKey(Key.G);
+            Require(_placementGridVisible&&_building==null&&!_roadTool,"G funciona fora de construção");
+            await RecoveryCapture(System.IO.Path.Combine(directory,"grid-outside-construction.png"),GetViewport());
+            await RecoveryKey(Key.G);
+            await RecoveryButton(RecoveryRoadButton());
+            await RecoveryWorldPoint(new(-200,16));
+            var rightPixel=_camera.UnprojectPosition(ToV(new(-200,16)));
+            RecoveryInput(new InputEventMouseButton{ButtonIndex=MouseButton.Right,Pressed=true,Position=rightPixel,GlobalPosition=rightPixel});await RecoveryFrame();
+            RecoveryInput(new InputEventMouseButton{ButtonIndex=MouseButton.Right,Pressed=false,Position=rightPixel,GlobalPosition=rightPixel});await RecoveryFrame();
+            Require(!_roadTool&&_roadStart==null&&!_placementGridVisible,"Clique direito curto encerra sequência e grade");
+            await RecoveryButton(RecoveryRoadButton());
+            await RecoveryWorldPoint(new(-216,32));
+            await RecoveryPreviewWorldPoint(new(-168,32));
+            await RecoveryClick(_camera.UnprojectPosition(ToV(new(-168,32))));
+            var points=_sim.State.Projects.SelectMany(p=>p.RoadPoints).ToArray();
+            Require(points.Length==points.Distinct().Count(),"Cruzamento entre obras não duplica ponto ou material");
+            await RecoveryKey(Key.Escape);
+            await RecoveryButton(RecoveryCatalog(BuildingKind.House));
+            await RecoveryPreviewWorldPoint(new(-168,86));
+            quote=_sim.QuoteBuilding(BuildingKind.House,_cursor,_rotation);
+            Require(quote.PhysicallyValid&&!quote.Accessible,"Casa encaixa na rua em obra sem acesso falso");
+            Require(quote.Message.Contains("Rua em obra"),"Prévia distingue ligação planejada de ausência de rua");
+            await RecoveryCapture(System.IO.Path.Combine(directory,"house-planned-access.png"),GetViewport());
+            await RecoveryClick(_camera.UnprojectPosition(ToV(new(-168,86))));
+            Require(_sim.State.Buildings.Count==2,"Casa criada como projeto real");
+            ClearTool();var moving=_sim.State.Projects.Single(project=>project.Id==first.Id);BeginMove(moving);
+            await RecoveryWorldPoint(new(-192,0));
+            await RecoveryPreviewWorldPoint(new(-192,48));
+            await RecoveryClick(_camera.UnprojectPosition(ToV(new(-192,48))));
+            Require(moving.Status==WorkStatus.Cancelled&&_movingProject==null&&_roadTool&&_roadStart==null,"Mover encerra sua ação sem iniciar encomenda encadeada");
+            count=_sim.State.Projects.Count;
+            await RecoveryWorldPoint(new(-192,48));
+            Require(_sim.State.Projects.Count==count&&_roadStart==new Point(-192,48),"Primeiro clique depois de Mover apenas marca novo início");
+            ClearTool();var saved=_sim.SaveToJson();var loaded=CitySimulation.FromJson(saved);
+            _sim.Advance(14400);loaded.Advance(14400);
+            Require(_sim.SaveToJson()==loaded.SaveToJson(),"Continuação preserva JSON completo");
+            Require(_sim.State.Projects.Where(p=>p.RoadPoints.Count>0&&p.Status!=WorkStatus.Cancelled).All(p=>p.Status==WorkStatus.Completed),"Caminhões e equipes concluíram ruas reais");
+            Require(points.All(point=>_sim.State.Roads.Count(node=>node.Position==point)==1),"Todo ponto encomendado foi construído exatamente uma vez");
+            var crossing=_sim.State.Roads.Single(node=>node.Position==new Point(-192,32));
+            Require(crossing.Neighbours.Count==4,"Cruzamento concluído possui quatro ligações reais");
+            Require(_sim.MonetaryTotal==_sim.State.Tuning.TotalMoney,"Oferta monetária preservada");
+            _sim.CheckInvariants();_world.Sync(_sim.State);_focus=new(-168,0,44);_zoom=125;UpdateCamera();
+            System.IO.File.WriteAllText(System.IO.Path.Combine(directory,"after-city.json"),_sim.SaveToJson());
+            await RecoveryCapture(System.IO.Path.Combine(directory,"completed-neighbourhood.png"),GetViewport());
+            // Independent synthetic topology, with ordinary orders/logistics.
+            // Expose the exact dependency reported by the independent reviewer.
+            _sim=new CitySimulation(42,new(){ExternalFamilyCandidates=0,ExternalCompanyCandidates=0});
+            Require(_sim.PlaceBuilding(BuildingKind.CityHall,new(-100,-60)).Success,"Prefeitura da fixture de dependência");
+            var ownerResult=_sim.PlaceRoad(new(-180,-16),new(-180,16));
+            var dependentResult=_sim.PlaceRoad(new(-192,0),new(-160,0));
+            Require(ownerResult.Success&&dependentResult.Success,"Traçados dependentes válidos");
+            var dependent=_sim.State.Projects.Single(p=>p.Id==dependentResult.Id);
+            for(var step=0;step<3600&&dependent.Progress<1;step++)_sim.Advance(2);
+            Require(dependent.Progress==1&&dependent.Status==WorkStatus.Waiting&&dependent.CompletedAt==null,"Trabalho físico completo aguarda ligação, sem conclusão antecipada");
+            Require(dependent.CrewVehicleId==null,"Caminhão da equipe foi liberado fisicamente");
+            _world.Reset(_sim.State);ClearTool();_selectedProject=dependent.Id;RefreshInspection();
+            _focus=new(-180,0,0);_zoom=90;UpdateCamera();
+            await RecoveryCapture(System.IO.Path.Combine(directory,"awaiting-crossing-connection.png"),GetViewport());
+            var paid=dependent.CostPaid;Require(_sim.CancelProject(ownerResult.Id!.Value).Success,"Cancelar dona não inventa conexão");
+            saved=_sim.SaveToJson();loaded=CitySimulation.FromJson(saved);_sim.Advance(600);loaded.Advance(600);
+            Require(_sim.SaveToJson()==loaded.SaveToJson()&&dependent.Status==WorkStatus.Waiting,"Save/load preserva espera após cancelamento");
+            Require(_sim.PlaceRoad(new(-184,0),new(-176,0)).Success,"Ponto cancelado pode ser encomendado de novo com custo real");
+            _sim.Advance(3600);
+            Require(dependent.Status==WorkStatus.Completed&&dependent.CostPaid==paid,"Ligação pronta conclui dependente sem cobrar novamente o trabalho");
+            _sim.CheckInvariants();Require(_sim.MonetaryTotal==_sim.State.Tuning.TotalMoney,"Dinheiro preservado no reparo");
+            _world.Sync(_sim.State);RefreshInspection();
+            System.IO.File.WriteAllText(System.IO.Path.Combine(directory,"restored-connection-city.json"),_sim.SaveToJson());
+            await RecoveryCapture(System.IO.Path.Combine(directory,"restored-crossing-connection.png"),GetViewport());
+            GD.Print("INDEXCITIES_NEIGHBOURHOOD_OK saved=isolated shared-points=unique money="+_sim.MonetaryTotal+" directory="+directory);
+            GetTree().Quit();
+        }catch(Exception error){System.IO.File.WriteAllText(System.IO.Path.Combine(directory,"failure.txt"),error.ToString());GD.PushError(error.ToString());GetTree().Quit(1);}
+    }
+}

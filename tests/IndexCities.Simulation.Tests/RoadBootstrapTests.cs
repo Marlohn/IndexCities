@@ -5,7 +5,7 @@ namespace IndexCities.Simulation.Tests;
 public sealed class RoadBootstrapTests
 {
     [Fact]
-    public void Disconnected_road_identifies_overlap_and_a_real_short_connection_unblocks_repeated_construction()
+    public void Pending_road_accepts_a_shared_connection_and_a_real_short_connection_unblocks_construction()
     {
         var sim=new CitySimulation(42);
         Assert.True(sim.PlaceBuilding(BuildingKind.CityHall,new(-200,16)).Success);
@@ -15,9 +15,9 @@ public sealed class RoadBootstrapTests
         var work=sim.State.Projects.Single(p=>p.Id==pending.Id);
         Assert.Equal(0,work.Progress);
         Assert.Empty(work.Delivered);
-        var blocked=sim.QuoteRoad(new(-192,0),new(-128,0));
-        Assert.False(blocked.PhysicallyValid);
-        Assert.Contains("obra de rua #"+work.Id,blocked.Message);
+        var connection=sim.QuoteRoad(new(-192,0),new(-128,0));
+        Assert.True(connection.PhysicallyValid,connection.Message);
+        Assert.True(connection.Materials[ResourceKind.Asphalt]>0);
         var bridge=sim.PlaceRoad(new(-192,0),new(-188,0));
         Assert.True(bridge.Success);
         sim.Advance(3600);

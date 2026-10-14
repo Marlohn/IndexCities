@@ -15,6 +15,8 @@ public partial class CityWorld:Node3D
     readonly Dictionary<int,(Sprite3D People,Sprite3D Cargo)> _activityIcons=new();
     Node3D? _previewAccess;int? _previewAccessKey;
     readonly List<Rect2> _roadFootprints=new(),_roadCarriageways=new();int? _labelLayoutKey;
+    readonly List<Rect2> _workLabelOverlayRects=new();
+    public void SetWorkLabelOverlayRects(IEnumerable<Rect2> rectangles){_workLabelOverlayRects.Clear();_workLabelOverlayRects.AddRange(rectangles);}
     readonly List<PreviewRectangle> _crosswalkStripes=new();Node3D? _crosswalkPaint;
     const float RoadAsphaltTop=.03f,RoadSidewalkTop=.18f,RoadVisualLift=.01f;
     ShaderMaterial? _lakeMaterial;double _lakePresentationTime;
@@ -206,14 +208,20 @@ public partial class CityWorld:Node3D
     void LayoutWorkLabels()
     {
         var camera=GetViewport().GetCamera3D();var labels=_causes.Where(pair=>!_finished.GetValueOrDefault(pair.Key)).Select(pair=>pair.Value).Concat(_roadWorkLabels.Values).ToList();if(camera==null){foreach(var label in labels)label.Visible=!string.IsNullOrEmpty(label.Text);return;}
-        var viewport=GetViewport().GetVisibleRect();var key=HashCode.Combine(camera.GlobalTransform,camera.Size,viewport);foreach(var label in labels)key=HashCode.Combine(key,label.GetInstanceId(),label.GlobalPosition,label.Text,label.FontSize,label.PixelSize,label.GetAabb());
-        if(_labelLayoutKey==key)return;_labelLayoutKey=key;var occupied=new List<Rect2>();
-        foreach(var label in labels.OrderBy(label=>camera.GlobalPosition.DistanceSquaredTo(label.GlobalPosition))){
-            if(string.IsNullOrEmpty(label.Text)||camera.IsPositionBehind(label.GlobalPosition)){label.Visible=false;continue;}
+        var previewLabels=_previewPool.SelectMany(marker=>new[]{marker.Validity,marker.Warning}).Where(label=>label.IsVisibleInTree()&&!string.IsNullOrEmpty(label.Text)).ToList();
+        var viewport=GetViewport().GetVisibleRect();var key=HashCode.Combine(camera.GlobalTransform,camera.Size,viewport);foreach(var label in labels.Concat(previewLabels))key=HashCode.Combine(key,label.GetInstanceId(),label.GlobalPosition,label.Text,label.FontSize,label.PixelSize,label.GetAabb());
+        foreach(var rectangle in _workLabelOverlayRects)key=HashCode.Combine(key,rectangle);
+        if(_labelLayoutKey==key)return;_labelLayoutKey=key;
+        Rect2 ProjectLabel(Label3D label){
             var bounds=label.GetAabb();var centre=label.GlobalPosition+camera.GlobalBasis.X*bounds.GetCenter().X+camera.GlobalBasis.Y*bounds.GetCenter().Y;
             var a=camera.UnprojectPosition(centre-camera.GlobalBasis.X*bounds.Size.X/2-camera.GlobalBasis.Y*bounds.Size.Y/2);var b=camera.UnprojectPosition(centre+camera.GlobalBasis.X*bounds.Size.X/2+camera.GlobalBasis.Y*bounds.Size.Y/2);
-            var rect=new Rect2(new Vector2(Math.Min(a.X,b.X),Math.Min(a.Y,b.Y)),new Vector2(Math.Abs(b.X-a.X),Math.Abs(b.Y-a.Y))).Grow(4);
-            label.Visible=rect.Intersects(viewport)&&!occupied.Any(other=>other.Intersects(rect));if(label.Visible)occupied.Add(rect);
+            return new Rect2(new Vector2(Math.Min(a.X,b.X),Math.Min(a.Y,b.Y)),new Vector2(Math.Abs(b.X-a.X),Math.Abs(b.Y-a.Y))).Grow(4);
+        }
+        var occupied=_workLabelOverlayRects.Concat(previewLabels.Where(label=>!camera.IsPositionBehind(label.GlobalPosition)).Select(ProjectLabel)).ToList();
+        foreach(var label in labels.OrderBy(label=>camera.GlobalPosition.DistanceSquaredTo(label.GlobalPosition))){
+            if(string.IsNullOrEmpty(label.Text)||camera.IsPositionBehind(label.GlobalPosition)){label.Visible=false;continue;}
+            var rect=ProjectLabel(label);
+            label.Visible=viewport.Encloses(rect)&&!occupied.Any(other=>other.Intersects(rect));if(label.Visible)occupied.Add(rect);
         }
     }
     void SyncRoadWorks(CityState state)
@@ -223,10 +231,13 @@ public partial class CityWorld:Node3D
         if(_roadWorkGeometry!=geometry){foreach(var id in _roadWorks.Keys.ToList())Remove(_roadWorks,id);_roadWorkLabels.Clear();
             foreach(var work in works){var root=new Node3D{Name="RoadWork"+work.Id};AddChild(root);_roadWorks[work.Id]=root;
                 for(var i=0;i<work.RoadPoints.Count;i++){var at=work.RoadPoints[i];if(state.Roads.Any(r=>r.Position.Distance(at)<.05))continue;Box(root,RoadCellSize(work.RoadPoints,i,(float)state.Tuning.RoadWidth,(float)state.Tuning.RoadStep),P(at,.18f),"c7ae78",.45f);}
-                var label=new Label3D{FontSize=32,PixelSize=.075f,Billboard=BaseMaterial3D.BillboardModeEnum.Enabled,Modulate=new Color("fff5d4"),Position=P(work.Position,3),OutlineSize=4};root.AddChild(label);_roadWorkLabels[work.Id]=label;
+                var label=new Label3D{FontSize=32,PixelSize=.06f,Width=360,AutowrapMode=TextServer.AutowrapMode.WordSmart,Billboard=BaseMaterial3D.BillboardModeEnum.Enabled,NoDepthTest=true,Modulate=new Color("fff5d4"),Position=P(work.Position,3),OutlineSize=4};root.AddChild(label);_roadWorkLabels[work.Id]=label;
             }_roadWorkGeometry=geometry;
         }
-        foreach(var work in works){var text=$"Obra de rua #{work.Id}\n{(int)(work.Progress*100)}% • {work.Cause}";if(_roadWorkLabels[work.Id].Text!=text)_roadWorkLabels[work.Id].Text=text;}
+        foreach(var work in works){
+            var cause=work.Cause.StartsWith("Sem ligação pronta ao exterior",StringComparison.Ordinal)?"Aguarda ligação pronta":work.Cause switch{"Trecho válido; ligação exterior disponível"=>"Ligação exterior disponível","Trecho construído; aguardando ligação ao exterior"=>"Aguarda ligação real","Construção em andamento"=>"Em construção",_=>work.Cause};
+            var text=$"Obra de rua #{work.Id}\n{(int)(work.Progress*100)}% • {cause}";if(_roadWorkLabels[work.Id].Text!=text)_roadWorkLabels[work.Id].Text=text;
+        }
     }
     Vector3 RoadCellSize(IReadOnlyList<Point> points,int i,float width,float step)
     {
@@ -323,7 +334,7 @@ public partial class CityWorld:Node3D
         node.AddChild(new MeshInstance3D{Name="EntranceDirection",Mesh=arrow,MaterialOverride=PreviewMaterial("fff1a3"),CastShadow=GeometryInstance3D.ShadowCastingSetting.Off});
         marker.Validity=new Label3D{Position=new(0,1.5f,-depth/2),FontSize=48,PixelSize=.065f,Billboard=BaseMaterial3D.BillboardModeEnum.Enabled,NoDepthTest=true,RenderPriority=11,OutlineSize=6};node.AddChild(marker.Validity);
         // Válido porém sem rua urbana: aviso inconfundível de obra parada (apenas apresentação).
-        marker.Warning=new Label3D{Name="NoRoadWarning",Text="Sem rua: obra ficará parada",Position=new(0,9,0),FontSize=40,PixelSize=.06f,Billboard=BaseMaterial3D.BillboardModeEnum.Enabled,NoDepthTest=true,RenderPriority=12,OutlineSize=12,Modulate=new Color("ffc247"),OutlineModulate=new Color("4a2800"),Visible=false};node.AddChild(marker.Warning);
+        marker.Warning=new Label3D{Name="NoRoadWarning",Text="Sem ligação pronta\nobra aguardará acesso",Position=new(0,9,0),FontSize=40,PixelSize=.06f,Billboard=BaseMaterial3D.BillboardModeEnum.Enabled,NoDepthTest=true,RenderPriority=12,OutlineSize=12,Modulate=new Color("ffc247"),OutlineModulate=new Color("4a2800"),Visible=false};node.AddChild(marker.Warning);
         return marker;
     }
     public void PreviewBuilding(BuildingKind kind,Point at,double rotation,bool valid,bool? connected=null){_singlePreview[0]=(at,valid,connected);PreviewBuildings(kind,_singlePreview,rotation);}

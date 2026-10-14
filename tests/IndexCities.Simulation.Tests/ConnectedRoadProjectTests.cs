@@ -1,0 +1,149 @@
+using IndexCities.Simulation;
+using Xunit;
+
+namespace IndexCities.Simulation.Tests;
+
+// SPEC: human-approved pending connections, 2026-10-14.
+// Synthetic seed/candidate settings; all works, materials and payments use real APIs.
+public sealed class ConnectedRoadProjectTests
+{
+    static CitySimulation NewCity()
+    {
+        var sim=new CitySimulation(42,new(){ExternalFamilyCandidates=0,ExternalCompanyCandidates=0});
+        Assert.True(sim.PlaceBuilding(BuildingKind.CityHall,new(-100,-60)).Success);
+        return sim;
+    }
+
+    static WorkProject Order(CitySimulation sim,Point from,Point to,bool reverse=false)
+    {
+        var quote=sim.QuoteRoad(from,to,reverse);var before=sim.SaveToJson();
+        Assert.True(quote.PhysicallyValid,quote.Message);
+        Assert.Equal(before,sim.SaveToJson());
+        var result=sim.PlaceRoad(from,to,reverse);Assert.True(result.Success,result.Message);
+        var work=sim.State.Projects.Single(p=>p.Id==result.Id);
+        Assert.Equal(quote.Total,work.BudgetRemaining);
+        Assert.Equal(quote.Materials.OrderBy(p=>p.Key),work.Required.OrderBy(p=>p.Key));
+        return work;
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Crossing_and_extending_pending_roads_enqueues_each_point_once(bool reverse)
+    {
+        var sim=NewCity();
+        var first=Order(sim,new(-192,0),new(-192,48));
+        var crossing=Order(sim,new(-216,32),new(-144,32),reverse);
+        var extension=Order(sim,new(-192,48),new(-144,72),reverse);
+        Assert.All(new[]{crossing,extension},work=>Assert.False(sim.QuoteRoad(work.RoadPoints[0],work.RoadPoints[^1]).Accessible));
+        var points=sim.State.Projects.SelectMany(p=>p.RoadPoints).ToArray();
+        Assert.Equal(points.Length,points.Distinct().Count());
+        Assert.Contains(new Point(-192,32),first.RoadPoints);
+        Assert.DoesNotContain(new Point(-192,32),crossing.RoadPoints);
+        Assert.DoesNotContain(new Point(-192,48),extension.RoadPoints);
+        foreach(var resource in new[]{ResourceKind.Asphalt,ResourceKind.Aggregate}){
+            var ratio=resource==ResourceKind.Asphalt?.02:.04;
+            Assert.Equal(points.Length*sim.State.Tuning.RoadStep*sim.State.Tuning.RoadWidth*ratio,
+                sim.State.Projects.Sum(p=>p.RoadPoints.Count>0?p.Required[resource]:0),7);
+        }
+        var loaded=CitySimulation.FromJson(sim.SaveToJson());
+        Assert.Equal(sim.SaveToJson(),loaded.SaveToJson());
+        sim.Advance(14400);loaded.Advance(14400);
+        Assert.All(new[]{first,crossing,extension},work=>Assert.Equal(WorkStatus.Completed,work.Status));
+        Assert.All(points,point=>Assert.Single(sim.State.Roads,n=>n.Position==point));
+        Assert.Equal(sim.SaveToJson(),loaded.SaveToJson());
+        Assert.Equal(sim.State.Tuning.TotalMoney,sim.MonetaryTotal);sim.CheckInvariants();
+    }
+
+    [Fact]
+    public void A_duplicate_pending_trace_creates_no_work_or_commitment()
+    {
+        var sim=NewCity();Order(sim,new(-192,0),new(-192,48));
+        var before=sim.SaveToJson();
+        var quote=sim.QuoteRoad(new(-192,0),new(-192,48));
+        Assert.False(quote.PhysicallyValid);Assert.Equal(0,quote.Total);
+        Assert.False(sim.PlaceRoad(new(-192,0),new(-192,48)).Success);
+        Assert.Equal(before,sim.SaveToJson());
+    }
+
+    [Fact]
+    public void Planned_building_access_is_described_without_granting_a_delivery_route()
+    {
+        var sim=NewCity();var road=Order(sim,new(-192,48),new(-144,48));
+        var before=sim.SaveToJson();
+        var quote=sim.QuoteBuilding(BuildingKind.House,new(-168,62));
+        Assert.True(quote.PhysicallyValid,quote.Message);Assert.False(quote.Accessible);
+        Assert.Contains("Rua em obra",quote.Message);Assert.Equal(before,sim.SaveToJson());
+        Assert.True(sim.CancelProject(road.Id).Success);
+        quote=sim.QuoteBuilding(BuildingKind.House,new(-168,62));
+        Assert.DoesNotContain("Rua em obra",quote.Message);Assert.False(quote.Accessible);
+        sim.CheckInvariants();
+    }
+
+    [Fact]
+    public void A_partially_built_dependency_keeps_its_real_nodes_when_cancelled()
+    {
+        var sim=NewCity();var first=Order(sim,new(-192,0),new(-192,48));
+        for(var step=0;step<3600&&first.BuiltRoadNodes.Count==0;step++)sim.Advance(2);
+        Assert.NotEmpty(first.BuiltRoadNodes);Assert.True(first.BuiltRoadNodes.Count<first.RoadPoints.Count);
+        var realNodes=first.BuiltRoadNodes.ToArray();
+        var second=Order(sim,new(-192,48),new(-144,48));
+        Assert.DoesNotContain(new Point(-192,48),second.RoadPoints);
+        Assert.True(sim.CancelProject(first.Id).Success);sim.Advance(600);
+        Assert.All(realNodes,id=>Assert.Single(sim.State.Roads,node=>node.Id==id));
+        Assert.Equal(0,second.Progress);Assert.Empty(second.Delivered);
+        var replacement=Order(sim,new(-192,0),new(-192,48));
+        Assert.Equal(first.RoadPoints.Where(point=>sim.State.Roads.All(node=>node.Position.Distance(point)>.05)),replacement.RoadPoints);
+        Assert.Equal(sim.State.Tuning.TotalMoney,sim.MonetaryTotal);sim.CheckInvariants();
+    }
+
+    [Fact]
+    public void Cancelling_a_dependency_does_not_grant_physical_access_or_invent_materials()
+    {
+        var sim=NewCity();var first=Order(sim,new(-112,80),new(-112,112));
+        var second=Order(sim,new(-112,112),new(-80,112));
+        Assert.True(sim.CancelProject(first.Id).Success);sim.Advance(600);
+        Assert.Equal(0,second.Progress);Assert.Empty(second.Delivered);
+        Assert.DoesNotContain(sim.State.Shipments,s=>s.ProjectId==second.Id);
+        Assert.DoesNotContain(sim.State.Roads,n=>second.RoadPoints.Contains(n.Position));
+        // The cancelled trace no longer owns its still-unbuilt points.
+        var replacement=Order(sim,new(-112,80),new(-112,112));
+        Assert.Equal(first.RoadPoints,replacement.RoadPoints);
+        Assert.Equal(sim.State.Tuning.TotalMoney,sim.MonetaryTotal);sim.CheckInvariants();
+    }
+
+    [Theory]
+    [InlineData(false,false)]
+    [InlineData(true,false)]
+    [InlineData(true,true)]
+    public void A_built_crossing_waits_for_its_real_connection_without_repaying_or_holding_its_crew(bool cancelOwner,bool demolishOwnPoint)
+    {
+        var sim=NewCity();var owner=Order(sim,new(-180,-16),new(-180,16));
+        var crossing=Order(sim,new(-192,0),new(-160,0));
+        for(var step=0;step<3600&&crossing.Progress<1;step++)sim.Advance(2);
+        Assert.Equal(1,crossing.Progress);Assert.Equal(WorkStatus.Waiting,crossing.Status);
+        Assert.Contains("aguardando ligação",crossing.Cause);Assert.Null(crossing.CompletedAt);
+        Assert.Null(crossing.CrewVehicleId);Assert.Empty(crossing.LocalCrew);
+        Assert.DoesNotContain(sim.State.Roads,node=>node.Position==new Point(-180,0));
+        var paid=crossing.CostPaid;var shipments=sim.State.Shipments.Count(s=>s.ProjectId==crossing.Id);
+        if(cancelOwner){
+            Assert.True(sim.CancelProject(owner.Id).Success);
+            if(demolishOwnPoint)Assert.True(sim.DemolishRoad(sim.State.Roads.Single(node=>node.Position==new Point(-176,0)).Id).Success);
+            var budget=crossing.BudgetRemaining;var loaded=CitySimulation.FromJson(sim.SaveToJson());
+            sim.Advance(600);loaded.Advance(600);
+            Assert.Equal(sim.SaveToJson(),loaded.SaveToJson());
+            Assert.Equal(WorkStatus.Waiting,crossing.Status);Assert.Equal(budget,crossing.BudgetRemaining);
+            Assert.Equal(paid,crossing.CostPaid);Assert.Equal(shipments,sim.State.Shipments.Count(s=>s.ProjectId==crossing.Id));
+            var repair=Order(sim,new(-184,0),new(-172,0));
+            Assert.Equal(demolishOwnPoint?new[]{new Point(-180,0),new Point(-176,0)}:new[]{new Point(-180,0)},repair.RoadPoints);
+            Assert.True(repair.Required[ResourceKind.Asphalt]>0);
+        }
+        for(var step=0;step<3600&&crossing.Status!=WorkStatus.Completed;step++)sim.Advance(2);
+        Assert.True(crossing.Status==WorkStatus.Completed,string.Join("; ",sim.State.Projects.Select(p=>$"#{p.Id} {p.Status} {p.Progress}: {p.Cause}"))+" | "+string.Join("; ",sim.State.Vehicles.Select(v=>$"V{v.Id} {v.Status} {v.Position}: {v.Cause}")));Assert.NotNull(crossing.CompletedAt);
+        Assert.Equal(paid,crossing.CostPaid);Assert.Equal(0,crossing.BudgetRemaining);
+        Assert.Equal(shipments,sim.State.Shipments.Count(s=>s.ProjectId==crossing.Id));
+        var entry=sim.State.Roads.Single(node=>node.Highway&&node.Position==sim.State.Entry);
+        Assert.All(crossing.RoadPoints,point=>Assert.NotEmpty(sim.FindRoadRoute(entry.Id,sim.State.Roads.Single(node=>node.Position==point).Id)));
+        Assert.Equal(sim.State.Tuning.TotalMoney,sim.MonetaryTotal);sim.CheckInvariants();
+    }
+}
