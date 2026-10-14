@@ -67,6 +67,20 @@ public sealed class ConnectedRoadProjectTests
     }
 
     [Fact]
+    public void Planned_building_access_is_described_without_granting_a_delivery_route()
+    {
+        var sim=NewCity();var road=Order(sim,new(-192,48),new(-144,48));
+        var before=sim.SaveToJson();
+        var quote=sim.QuoteBuilding(BuildingKind.House,new(-168,62));
+        Assert.True(quote.PhysicallyValid,quote.Message);Assert.False(quote.Accessible);
+        Assert.Contains("Rua em obra",quote.Message);Assert.Equal(before,sim.SaveToJson());
+        Assert.True(sim.CancelProject(road.Id).Success);
+        quote=sim.QuoteBuilding(BuildingKind.House,new(-168,62));
+        Assert.DoesNotContain("Rua em obra",quote.Message);Assert.False(quote.Accessible);
+        sim.CheckInvariants();
+    }
+
+    [Fact]
     public void A_partially_built_dependency_keeps_its_real_nodes_when_cancelled()
     {
         var sim=NewCity();var first=Order(sim,new(-192,0),new(-192,48));
@@ -95,6 +109,41 @@ public sealed class ConnectedRoadProjectTests
         // The cancelled trace no longer owns its still-unbuilt points.
         var replacement=Order(sim,new(-112,80),new(-112,112));
         Assert.Equal(first.RoadPoints,replacement.RoadPoints);
+        Assert.Equal(sim.State.Tuning.TotalMoney,sim.MonetaryTotal);sim.CheckInvariants();
+    }
+
+    [Theory]
+    [InlineData(false,false)]
+    [InlineData(true,false)]
+    [InlineData(true,true)]
+    public void A_built_crossing_waits_for_its_real_connection_without_repaying_or_holding_its_crew(bool cancelOwner,bool demolishOwnPoint)
+    {
+        var sim=NewCity();var owner=Order(sim,new(-180,-16),new(-180,16));
+        var crossing=Order(sim,new(-192,0),new(-160,0));
+        for(var step=0;step<3600&&crossing.Progress<1;step++)sim.Advance(2);
+        Assert.Equal(1,crossing.Progress);Assert.Equal(WorkStatus.Waiting,crossing.Status);
+        Assert.Contains("aguardando ligação",crossing.Cause);Assert.Null(crossing.CompletedAt);
+        Assert.Null(crossing.CrewVehicleId);Assert.Empty(crossing.LocalCrew);
+        Assert.DoesNotContain(sim.State.Roads,node=>node.Position==new Point(-180,0));
+        var paid=crossing.CostPaid;var shipments=sim.State.Shipments.Count(s=>s.ProjectId==crossing.Id);
+        if(cancelOwner){
+            Assert.True(sim.CancelProject(owner.Id).Success);
+            if(demolishOwnPoint)Assert.True(sim.DemolishRoad(sim.State.Roads.Single(node=>node.Position==new Point(-176,0)).Id).Success);
+            var budget=crossing.BudgetRemaining;var loaded=CitySimulation.FromJson(sim.SaveToJson());
+            sim.Advance(600);loaded.Advance(600);
+            Assert.Equal(sim.SaveToJson(),loaded.SaveToJson());
+            Assert.Equal(WorkStatus.Waiting,crossing.Status);Assert.Equal(budget,crossing.BudgetRemaining);
+            Assert.Equal(paid,crossing.CostPaid);Assert.Equal(shipments,sim.State.Shipments.Count(s=>s.ProjectId==crossing.Id));
+            var repair=Order(sim,new(-184,0),new(-172,0));
+            Assert.Equal(demolishOwnPoint?new[]{new Point(-180,0),new Point(-176,0)}:new[]{new Point(-180,0)},repair.RoadPoints);
+            Assert.True(repair.Required[ResourceKind.Asphalt]>0);
+        }
+        for(var step=0;step<3600&&crossing.Status!=WorkStatus.Completed;step++)sim.Advance(2);
+        Assert.True(crossing.Status==WorkStatus.Completed,string.Join("; ",sim.State.Projects.Select(p=>$"#{p.Id} {p.Status} {p.Progress}: {p.Cause}"))+" | "+string.Join("; ",sim.State.Vehicles.Select(v=>$"V{v.Id} {v.Status} {v.Position}: {v.Cause}")));Assert.NotNull(crossing.CompletedAt);
+        Assert.Equal(paid,crossing.CostPaid);Assert.Equal(0,crossing.BudgetRemaining);
+        Assert.Equal(shipments,sim.State.Shipments.Count(s=>s.ProjectId==crossing.Id));
+        var entry=sim.State.Roads.Single(node=>node.Highway&&node.Position==sim.State.Entry);
+        Assert.All(crossing.RoadPoints,point=>Assert.NotEmpty(sim.FindRoadRoute(entry.Id,sim.State.Roads.Single(node=>node.Position==point).Id)));
         Assert.Equal(sim.State.Tuning.TotalMoney,sim.MonetaryTotal);sim.CheckInvariants();
     }
 }

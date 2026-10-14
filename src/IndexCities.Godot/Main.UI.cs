@@ -17,6 +17,7 @@ public partial class Main
     static Label Text(Node parent,string text,int size=16){var label=new Label{Text=text,AutowrapMode=TextServer.AutowrapMode.WordSmart,SizeFlagsHorizontal=Control.SizeFlags.ExpandFill};label.AddThemeFontSizeOverride("font_size",size);parent.AddChild(label);return label;}
     static PanelContainer Panel(Node parent,Vector2 position,Vector2 size){var p=new PanelContainer{Position=position,CustomMinimumSize=size};var style=new StyleBoxFlat{BgColor=new Color("24393a",.94f),CornerRadiusTopLeft=12,CornerRadiusTopRight=12,CornerRadiusBottomLeft=12,CornerRadiusBottomRight=12,ContentMarginLeft=16,ContentMarginRight=16,ContentMarginTop=12,ContentMarginBottom=12};p.AddThemeStyleboxOverride("panel",style);parent.AddChild(p);return p;}
     readonly List<Button> _managementButtons=new();
+    readonly List<Control> _workLabelOccluders=new();
     Label _toolHint=null!,_services=null!;readonly List<(Button Button,BuildingKind? Kind,bool Road,bool Select)> _toolButtons=new();string _toolState="";
     readonly List<(Button Button,int Speed)> _speedButtons=new();int _speedState=-1;
     string _feedback="";ulong _feedbackUntil;
@@ -35,6 +36,7 @@ public partial class Main
         _status=new Label{MouseFilter=Control.MouseFilterEnum.Ignore,AutowrapMode=TextServer.AutowrapMode.WordSmart};_status.SetAnchor(Side.Top,1);_status.SetAnchor(Side.Bottom,1);_status.SetAnchor(Side.Right,1);_status.OffsetLeft=24;_status.OffsetRight=-24;_status.OffsetTop=-224;_status.OffsetBottom=-182;_status.AddThemeFontSizeOverride("font_size",15);_status.AddThemeColorOverride("font_color",new Color("fff6d7"));root.AddChild(_status);
         _toolHint=new Label{MouseFilter=Control.MouseFilterEnum.Ignore,AutowrapMode=TextServer.AutowrapMode.WordSmart};_toolHint.SetAnchor(Side.Top,1);_toolHint.SetAnchor(Side.Bottom,1);_toolHint.SetAnchor(Side.Right,1);_toolHint.OffsetLeft=24;_toolHint.OffsetRight=-24;_toolHint.OffsetTop=-178;_toolHint.OffsetBottom=-144;_toolHint.AddThemeFontSizeOverride("font_size",14);_toolHint.AddThemeColorOverride("font_color",new Color("deeedc"));root.AddChild(_toolHint);foreach(var line in new[]{_services,_status,_toolHint})line.AddThemeStyleboxOverride("normal",new StyleBoxFlat{BgColor=new Color(.08f,.13f,.14f,.62f),ContentMarginLeft=10,ContentMarginRight=10,ContentMarginTop=3,ContentMarginBottom=3,CornerRadiusTopLeft=6,CornerRadiusTopRight=6,CornerRadiusBottomLeft=6,CornerRadiusBottomRight=6});RefreshToolHint();
         BuildVersionHud(root);
+        _workLabelOccluders.AddRange(new Control[]{top,catalogPanel,_inspector,_confirmation,_services,_status,_toolHint});
     }
     void BuildCatalog()
     {

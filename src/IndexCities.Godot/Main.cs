@@ -58,6 +58,7 @@ public partial class Main:Node3D
         AdvanceRealClock(frameAt);
         var simulationMs=System.Diagnostics.Stopwatch.GetElapsedTime(simulationStarted).TotalMilliseconds;var presentationStarted=System.Diagnostics.Stopwatch.GetTimestamp();
         var hour=(float)_sim.State.Now.TimeOfDay.TotalHours;var daylight=Mathf.Clamp(Mathf.Sin((hour-6)/12*Mathf.Pi),0,1);_sun.LightEnergy=.12f+daylight*.88f;_sun.RotationDegrees=new(-15-daylight*45,-30,0);
+        _world.SetWorkLabelOverlayRects(_workLabelOccluders.Where(control=>control.IsVisibleInTree()).Select(control=>control.GetGlobalRect()));
         _world.Sync(_sim.State,_speed==0?1:Math.Clamp(_clockBudget/2,0,1),_speed==0?0:frameSeconds);UpdatePreview();RefreshToolHint();UpdateVersionHud();_uiAt+=frameSeconds;_autosaveAt+=frameSeconds;
         if(_uiAt>.4){_uiAt=0;RefreshHud();}
         if(_autosaveMinutes>0&&_autosaveAt>=_autosaveMinutes*60){SaveCity();_autosaveAt=0;}
@@ -161,7 +162,7 @@ public partial class Main:Node3D
     {
         var catalogWasUnlocked=_sim.State.CityHallPlaced;
         CommandResult? result=null;if(_building is {} kind&&_anchor is {} p)result=_movingProject is {} moving?_sim.MoveBuildingProject(moving,p,_rotation):_sim.PlaceBuilding(kind,p,_rotation);else if(_roadTool&&_roadStart is {} a&&_roadEnd is {} b)result=_movingProject is {} roadMoving?_sim.MoveRoadProject(roadMoving,a,b,_reverse):_sim.PlaceRoad(a,b,_reverse);
-        if(result==null)return;SetStatus(result.Message);_anchor=null;_roadFixed=false;if(result.Success){var nextStart=_roadTool?_roadEnd:null;_hoverPreview=false;_movingProject=null;_roadStart=nextStart;_roadEnd=null;_confirmation.Visible=false;_world.Sync(_sim.State);if(!catalogWasUnlocked&&_sim.State.CityHallPlaced)BuildCatalog();}RefreshHud();
+        if(result==null)return;SetStatus(result.Message);_anchor=null;_roadFixed=false;if(result.Success){var nextStart=_roadTool&&_movingProject==null?_roadEnd:null;_hoverPreview=false;_movingProject=null;_roadStart=nextStart;_roadEnd=null;_confirmation.Visible=false;_world.Sync(_sim.State);if(!catalogWasUnlocked&&_sim.State.CityHallPlaced)BuildCatalog();}RefreshHud();
     }
     void UpdatePreview()
     {
