@@ -300,7 +300,7 @@ Capturas do mesmo checkpoint e câmera. O contador durante a captura não é med
 
 ## Entrega 5 — saída das vagas, fila e travessia (2026-10-14)
 
-**Revisão humana desta seção: PENDENTE.** Base: `main` atualizada em `528d30d`, após o PR #9. As revisões independentes foram concluídas para o reparo delimitado da fila; a margem do acesso e as limitações abaixo mantêm esta etapa em preparação. A recuperação global continua aberta.
+**Revisão humana desta seção: PENDENTE.** Base inicial `528d30d`, após o PR #9, atualizada para `05d76e0` após o merge do PR #10. Os conflitos da integração preservam os cenários de atividade e circulação e os registros das duas entregas. Os dois cenários combinados passaram no Godot: fila real liberada e atividade/histórico acompanhando os SIMs, com dinheiro e persistência conferidos. As revisões independentes cobrem o reparo delimitado da fila; a margem do acesso e as limitações abaixo mantêm esta etapa em preparação. A recuperação global continua aberta.
 
 **Causa reproduzida:** na cópia de um save real com 204 moradores, dois carros saem das vagas distintas da fazenda 1274 ao terminar o turno. O filtro de direção deixa o segundo convergir para apenas 0,05 m do primeiro; depois, os critérios de fila fazem ambos esperar um pelo outro. A investigação partiu do save anterior à saída, com avanços normais de dois segundos, sem editar agentes, vagas, posições ou combustível. A fila posterior prende outros veículos e pedestres em uma travessia, afetando também a presença de trabalhadores. Isso não prova que toda ausência de atividade ou falta de água tenha essa causa.
 
