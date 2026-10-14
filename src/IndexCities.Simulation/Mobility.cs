@@ -218,7 +218,7 @@ public sealed partial class CitySimulation
     {
         v.Cause="Aguardando preferência/semáforo/travessia";var area=_junctionAreas.GetValueOrDefault(junction.Id);
         var continuing=area!=null&&v.IntersectionClaim is {} held&&area.Contains(held);
-        if(area!=null){var owner=NearbyAreaOwner(area,junction);if(owner!=null&&owner.Id!=v.Id){v.Cause="Aguardando liberação do cruzamento pelo veículo "+owner.Id;return false;}}
+        if(area!=null){var owner=NearbyAreaOwner(area,junction,v);if(owner!=null&&owner.Id!=v.Id){v.Cause="Aguardando liberação do cruzamento pelo veículo "+owner.Id;return false;}}
         if(v.IntersectionClaim==junction.Id)return true;
         if(area==null&&junction.Neighbours.Count>=3&&State.Vehicles.FirstOrDefault(o=>o.Id!=v.Id&&o.IntersectionClaim==junction.Id&&o.Position.Distance(junction.Position)<9) is {} occupant){v.Cause="Aguardando liberação do cruzamento pelo veículo "+occupant.Id;return false;}
         // Only a walker physically at this crossing holds traffic back.

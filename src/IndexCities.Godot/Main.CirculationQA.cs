@@ -39,6 +39,7 @@ public partial class Main
                 await RecoveryFrame();
             }
             Require(minimumGap<double.MaxValue,"Distância entre carros foi conferida na faixa");
+            System.IO.File.WriteAllText(System.IO.Path.Combine(directory,"after-120s-city.json"),_sim.SaveToJson());
             foreach(var vehicle in observed) {
                 Require(vehicle.Position.Distance(positions[vehicle.Id])>100,"Veículo completou deslocamento físico: "+vehicle.Id);
                 Require(vehicle.Fuel<fuel[vehicle.Id],"Deslocamento consumiu combustível real: "+vehicle.Id);
