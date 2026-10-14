@@ -31,7 +31,7 @@ public sealed class ServiceDiagnosticsTests
 
     [Fact] public void Water_source_query_uses_the_same_real_band_and_does_not_confer_access_or_capacity()
     {
-        var sim=new CitySimulation(42);sim.State.LakeCentre=new(0,0);sim.State.LakeRadius=40;
+        var sim=new CitySimulation(42);sim.State.SchemaVersion=1;sim.State.LakeBoundary=null;sim.State.LakeCentre=new(0,0);sim.State.LakeRadius=40;
         var intake=new Building{Id=1000,Kind=BuildingKind.WaterIntake,Completed=true,Position=new(62,0)};
         sim.State.Buildings.Add(intake);var before=sim.SaveToJson();
         Assert.True(sim.HasNaturalWaterSource(intake));Assert.False(sim.HasExteriorAccess(intake));Assert.Equal(0,intake.OperationalCapacity);

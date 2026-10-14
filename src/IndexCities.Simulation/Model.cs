@@ -335,6 +335,8 @@ public sealed class CityState
     public Point Entry {get;set;}
     public Point LakeCentre {get;set;}
     public double LakeRadius {get;set;}
+    [JsonIgnore(Condition=JsonIgnoreCondition.WhenWritingNull)]
+    public List<Point>? LakeBoundary {get;set;}
     public double LakePollution {get;set;}
     public Dictionary<long,double> PollutionCells {get;set;}=new();
     public bool CityHallPlaced {get;set;}

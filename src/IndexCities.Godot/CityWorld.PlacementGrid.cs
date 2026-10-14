@@ -19,10 +19,8 @@ public partial class CityWorld
         // These are alignment lines, not a buildability or access overlay.
         // Construct once per spacing/map change; toggling only changes visibility.
         for(var coordinate=Math.Ceiling(-half/step)*step;coordinate<=half;coordinate+=step){
-            mesh.SurfaceAddVertex(new((float)coordinate,.015f,(float)-half));
-            mesh.SurfaceAddVertex(new((float)coordinate,.015f,(float)half));
-            mesh.SurfaceAddVertex(new((float)-half,.015f,(float)coordinate));
-            mesh.SurfaceAddVertex(new((float)half,.015f,(float)coordinate));
+            Line(new(coordinate,-half),new(coordinate,half));
+            Line(new(-half,coordinate),new(half,coordinate));
         }
         mesh.SurfaceEnd();
         var material=new StandardMaterial3D{AlbedoColor=new Color(.72f,.82f,.74f,.14f),
@@ -31,5 +29,17 @@ public partial class CityWorld
         _placementGrid=new MeshInstance3D{Name="PlacementGrid",Mesh=mesh,MaterialOverride=material,
             CastShadow=GeometryInstance3D.ShadowCastingSetting.Off};
         AddChild(_placementGrid);_placementGridGeometry=geometry;
+        void Line(Point a,Point b){
+            var alongX=a.Z==b.Z;var fixedCoordinate=alongX?a.Z:a.X;
+            if(state.SchemaVersion==1||fixedCoordinate<(alongX?_lakeWindow.Position.Y:_lakeWindow.Position.X)||fixedCoordinate>(alongX?_lakeWindow.End.Y:_lakeWindow.End.X)){Segment(a,b);return;}
+            var start=Math.Max(-half,alongX?_lakeWindow.Position.X:_lakeWindow.Position.Y);var end=Math.Min(half,alongX?_lakeWindow.End.X:_lakeWindow.End.Y);
+            Point At(double v)=>alongX?new(v,fixedCoordinate):new(fixedCoordinate,v);
+            var prior=At(start);Segment(a,prior);
+            for(var v=start+1;v<end;v++){var next=At(v);Segment(prior,next);prior=next;}Segment(prior,At(end));Segment(At(end),b);
+        }
+        void Segment(Point a,Point b){
+            mesh.SurfaceAddVertex(P(a,state.SchemaVersion==1?.015f:VisibleTerrainHeight(a)+.075f));
+            mesh.SurfaceAddVertex(P(b,state.SchemaVersion==1?.015f:VisibleTerrainHeight(b)+.075f));
+        }
     }
 }
