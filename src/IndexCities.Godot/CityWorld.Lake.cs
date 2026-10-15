@@ -94,7 +94,7 @@ public partial class CityWorld
     void BuildingBankBase(Node3D parent,Building b)
     {
         if(OnBank(b.Position,b.Definition.Width,b.Definition.Depth,b.Rotation)){
-            var foundation=Box(parent,new((float)b.Definition.Width,.77f,(float)b.Definition.Depth),new(0,-.44f,0),"a6a08b");foundation.Name="ShoreFoundation";
+            var foundation=Box(parent,new((float)b.Definition.Width,.82f,(float)b.Definition.Depth),new(0,-.415f,0),"a6a08b");foundation.Name="ShoreFoundation";
         }
     }
 }

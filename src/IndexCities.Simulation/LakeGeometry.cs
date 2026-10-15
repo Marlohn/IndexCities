@@ -6,10 +6,15 @@ public static class LakeGeometry
 {
     public static List<Point> GenerateBoundary(int seed,Point centre,double radius)
     {
-        var phase=(uint)seed%97/97.0*Math.Tau;
+        // A local stream derived from all 32 seed bits. It does not advance
+        // State.RandomState, and saved contours are never regenerated.
+        var bits=(uint)seed;
+        double Sample(){unchecked{bits+=0x9e3779b9;var x=bits;x=(x^(x>>16))*0x85ebca6b;x=(x^(x>>13))*0xc2b2ae35;return (x^(x>>16))/4294967296.0;}}
+        var phase2=Sample()*Math.Tau;var phase3=Sample()*Math.Tau;var phase5=Sample()*Math.Tau;
+        var amplitude2=.085+.035*Sample();var amplitude3=.10+.04*Sample();var amplitude5=.035+.02*Sample();
         return Enumerable.Range(0,128).Select(i=>{
             var a=Math.Tau*i/128;
-            var r=radius*(1+.12*Math.Cos(2*a+phase)+.14*Math.Sin(3*a-1.3*phase)+.055*Math.Cos(5*a+.7*phase));
+            var r=radius*(1+amplitude2*Math.Cos(2*a+phase2)+amplitude3*Math.Sin(3*a+phase3)+amplitude5*Math.Cos(5*a+phase5));
             // Store the same precision the Godot mesh receives, including after load.
             return new Point((float)(centre.X+Math.Cos(a)*r),(float)(centre.Z+Math.Sin(a)*r));
         }).ToList();

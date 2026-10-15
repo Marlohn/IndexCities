@@ -36,7 +36,8 @@ public partial class Main
                 GD.Print($"LAKE_GEOMETRY seed={seed} vertices={boundary.Count} area={area:F3} build_ms={_world.LakeBuildMilliseconds:F2}");
             }
             // A real build sequence, with ordinary costs, crews and deliveries.
-            _sim=new CitySimulation(42);_world.Reset(_sim.State);_cityId=CitySaves.NewId();
+            foreach(var seed in new[]{42,1412,2877}){
+            _sim=new CitySimulation(seed);_world.Reset(_sim.State);_cityId=CitySaves.NewId();
             Require(_sim.PlaceBuilding(BuildingKind.CityHall,new(-152,16)).Success,"Prefeitura real");
             var west=_sim.State.LakeBoundary!.MinBy(p=>p.X);var north=_sim.State.LakeBoundary!.MinBy(p=>p.Z);
             var house=new Point(Math.Floor((west.X-8-.1)/2)*2,Math.Round(west.Z/2)*2);
@@ -46,18 +47,22 @@ public partial class Main
             Require(_sim.PlaceRoad(new(roadX,0),new(shoreX,shoreZ),true).Success,"Rua real junto à margem norte");
             var result=_sim.PlaceBuilding(BuildingKind.House,house,Math.PI/2);Require(result.Success,"Casa válida na margem: "+result.Message);
             var houseId=result.Id;_world.Sync(_sim.State);BuildCatalog();RefreshHud();
-            _focus=ToV(_sim.State.LakeCentre);_zoom=150;UpdateCamera();await RecoveryCapture(System.IO.Path.Combine(directory,"shore-orders.png"),GetViewport());
+            _focus=ToV(_sim.State.LakeCentre);_zoom=150;UpdateCamera();await RecoveryCapture(System.IO.Path.Combine(directory,$"shore-orders-{seed}.png"),GetViewport());
             _sim.Advance(14400);_world.Sync(_sim.State);await ToSignal(GetTree().CreateTimer(1.25),SceneTreeTimer.SignalName.Timeout);RefreshHud();
             Require(_sim.State.Projects.All(p=>p.Status==WorkStatus.Completed),"Caminhões e equipes concluíram as obras, sem conclusão artificial");
             var building=_sim.State.Buildings.Single(b=>b.Id==houseId);Require(_sim.HasExteriorAccess(building),"Casa da margem tem acesso real");
             Require(_world.FindChild("ShoreFoundation",true,false)!=null,"Casa da margem possui apoio visual");
-            _focus=ToV(house+new Point(8,0));_zoom=55;UpdateCamera();await RecoveryCapture(System.IO.Path.Combine(directory,"house-supported.png"),GetViewport());
-            _focus=ToV(new(north.X,shoreZ+8));_zoom=55;UpdateCamera();await RecoveryCapture(System.IO.Path.Combine(directory,"road-supported.png"),GetViewport());
-            _placementGridVisible=true;_world.ShowPlacementGrid(_sim.State,true,4);await RecoveryCapture(System.IO.Path.Combine(directory,"shore-grid.png"),GetViewport());
+            _focus=ToV(house+new Point(8,0));_zoom=55;UpdateCamera();await RecoveryCapture(System.IO.Path.Combine(directory,$"house-supported-{seed}.png"),GetViewport());
+            // Diagnostic close view only; this does not add a camera control.
+            _camera.Size=28;_camera.Position=ToV(house)+new Vector3(20,7,18);_camera.LookAt(ToV(house)+new Vector3(0,.2f,0));
+            await RecoveryCapture(System.IO.Path.Combine(directory,$"house-contact-{seed}.png"),GetViewport());
+            _focus=ToV(new(north.X,shoreZ+8));_zoom=55;UpdateCamera();await RecoveryCapture(System.IO.Path.Combine(directory,$"road-supported-{seed}.png"),GetViewport());
+            _placementGridVisible=true;_world.ShowPlacementGrid(_sim.State,true,4);await RecoveryCapture(System.IO.Path.Combine(directory,$"shore-grid-{seed}.png"),GetViewport());
             _placementGridVisible=false;_world.ShowPlacementGrid(_sim.State,false,4);
             var saved=_sim.SaveToJson();SaveCity();LoadCity(_cityId);Require(_sim.SaveToJson()==saved,"Save/load do host preserva toda a cidade e geografia");
             var loaded=CitySimulation.FromJson(saved);_sim.Advance(1200);loaded.Advance(1200);Require(_sim.SaveToJson()==loaded.SaveToJson(),"Continuação após save/load é idêntica");
-            System.IO.File.WriteAllText(System.IO.Path.Combine(directory,"after-city.json"),_sim.SaveToJson());
+            System.IO.File.WriteAllText(System.IO.Path.Combine(directory,$"after-city-{seed}.json"),_sim.SaveToJson());
+            }
             var legacyArg=OS.GetCmdlineUserArgs().FirstOrDefault(a=>a.StartsWith("--legacy-water-fixture="));
             if(legacyArg!=null){
                 _sim=CitySimulation.FromJson(System.IO.File.ReadAllText(legacyArg[23..]));var before=_sim.SaveToJson();

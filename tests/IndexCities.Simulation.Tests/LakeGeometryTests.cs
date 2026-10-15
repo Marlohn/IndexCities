@@ -5,6 +5,13 @@ namespace IndexCities.Simulation.Tests;
 
 public sealed class LakeGeometryTests
 {
+    [Fact] public void Seeds_congruent_modulo_97_do_not_repeat_the_same_contour()
+    {
+        var first=LakeGeometry.GenerateBoundary(42,new(100,100),30);
+        Assert.False(first.SequenceEqual(LakeGeometry.GenerateBoundary(139,new(100,100),30)));
+        Assert.False(LakeGeometry.GenerateBoundary(-1,new(100,100),30).SequenceEqual(LakeGeometry.GenerateBoundary(int.MaxValue,new(100,100),30)));
+    }
+
     [Fact] public void New_lake_is_irregular_deterministic_and_does_not_consume_simulation_randomness()
     {
         foreach(var seed in new[]{int.MinValue,-1,0,42,1412,2877,int.MaxValue}){

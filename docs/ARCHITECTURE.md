@@ -489,7 +489,7 @@ Requisitos arquiteturais:
 - possibilidade de migração entre versões;
 - separação entre save de gameplay e preferências puramente visuais.
 
-A V1 implementa JSON sobre o estado próprio da simulação, separado do envelope de câmera, preferências e esboços do host. O leitor distingue o mapa circular do esquema 1 e o contorno persistido do esquema 2; cidades antigas continuam no esquema 1, sem regeneração geográfica ao carregar ou salvar. O contorno novo é dado da simulação consumido pela apresentação, não estado autoritativo da SceneTree.
+O formato concreto — JSON, binário ou outro — **não está decidido** e deve ser escolhido quando houver um primeiro estado real para persistir.
 
 Não criar um framework de migração antes de existir a primeira mudança de schema. Quando o primeiro schema mudar, preferir migrações pequenas e explícitas de versões anteriores para a versão atual, preservando testes com saves antigos relevantes.
 
