@@ -16,6 +16,8 @@ A [V1 aprovada](SPEC.md#v1--primeira-versão-jogável-integrada-escopo-aprovado-
 
 **Divisão de trabalho definida pelo responsável em 2026-10-12:** Codex coordena e cuida de documentação, jogo, integração e validação. Claude Opus 5.5 com ultracode produz somente assets pedidos por Codex. A regra operacional está no [AGENTS](../AGENTS.md#coordenação-da-v1-e-frente-de-assets--2026-10-12); o [briefing visual](exploration/first-playable-assets.md) organiza famílias e limites, sem autorizar produção indiscriminada do inventário.
 
+**Piloto paralelo autorizado em 2026-10-14:** Claude implementa somente a apresentação dos indicadores reais de pessoas dentro dos prédios; Codex corrige rotas pedonais, integra e valida jogando. Revisão independente em outro contexto. A exceção delimitada está no AGENTS e não amplia regras de produto. Resultados e avaliação do piloto serão registrados no relato V1, com análise da IA pendente de revisão humana.
+
 | Tema de entrada | Revisão humana do documento | Escopo / estado |
 | --- | --- | --- |
 | [Recorte e dependências V1](exploration/first-playable-scope.md) | PARCIALMENTE REVISADO | Recorte aprovado na SPEC; sequência e cenários técnicos são apoio exploratório. Investigação e continuidade da validação de jogabilidade, trânsito e partidas prolongadas em 2026-10-13 (PENDENTES). |
