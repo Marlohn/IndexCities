@@ -61,4 +61,19 @@ public sealed class PedestrianReplanningTests
         sim.State.Roads.Single(r=>r.Id==1010).Crosswalk=true;
         Assert.Empty(sim.PedestrianRoute(new(-.6,68.6),home));
     }
+
+    [Fact]
+    public void Opposite_curbs_at_the_same_access_node_walk_to_paint_before_crossing()
+    {
+        var (sim,home,_)=Straight(0);
+        var access=sim.Access(home)!;var origin=access.Position+new Point(4.55,0);
+        var route=sim.PedestrianRoute(origin,home);Assert.NotEmpty(route);
+        foreach(var pair in route.Zip(route.Skip(1))) {
+            if(Math.Abs(pair.First.X-pair.Second.X)>.05&&Math.Min(pair.First.X,pair.Second.X)<3.3&&Math.Max(pair.First.X,pair.Second.X)>-3.3){
+                Assert.InRange(pair.First.Z,44-1.95,44+1.95);Assert.InRange(pair.Second.Z,44-1.95,44+1.95);
+            }
+        }
+        var sameCurb=sim.PedestrianRoute(access.Position-new Point(4.55,0),home);
+        Assert.Equal(2,sameCurb.Count);Assert.Equal(home.Door,sameCurb[^1]);
+    }
 }

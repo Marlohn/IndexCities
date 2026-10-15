@@ -57,7 +57,10 @@ public sealed partial class CitySimulation
         var anchors=new List<RoadNode>{_roads[ids[0]]};
         for(var i=1;i<ids.Count-1;i++){var prior=_roads[ids[i-1]];var n=_roads[ids[i]];var next=_roads[ids[i+1]];var incoming=n.Position-prior.Position;var outgoing=next.Position-n.Position;if(Math.Abs(incoming.X*outgoing.Z-incoming.Z*outgoing.X)>.01||(prior.Highway&&n.Highway)!=(n.Highway&&next.Highway))anchors.Add(n);}
         if(ids.Count>1)anchors.Add(_roads[ids[^1]]);
-        var directions=anchors.Zip(anchors.Skip(1)).Select(pair=>pair.Second.Position-pair.First.Position).ToList();if(directions.Count==0)directions.Add(new(1,0));
+        var directions=anchors.Zip(anchors.Skip(1)).Select(pair=>pair.Second.Position-pair.First.Position).ToList();
+        // A route with one graph node still has a real sidewalk axis. Using
+        // an arbitrary X direction put its first waypoint inside vertical lanes.
+        if(directions.Count==0)directions.Add(StraightRoad(a,out var onlyHorizontal)&&!onlyHorizontal?new(0,1):new(1,0));
         var firstDirection=directions[0];var perpendicular=new Point(firstDirection.Z,-firstDirection.X);var lateral=from-a.Position;
         var sideSign=lateral.X*perpendicular.X+lateral.Z*perpendicular.Z<0?-1:1;
         Point Side(Point direction,bool highway){if(highway)return new(0,State.Tuning.RoadWidth/2+1+(direction.X>=0?-.35:.35));var length=direction.Distance(new(0,0));return length<.001?new(0,offset):new Point(direction.Z/length,-direction.X/length)*(sideSign*offset);}
