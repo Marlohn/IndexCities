@@ -58,6 +58,7 @@ public partial class Main
             System.IO.File.WriteAllText(System.IO.Path.Combine(directory,"movement.json"),JsonSerializer.Serialize(walkers.Select(c=>new{c.Id,origin=origins[c.Id],c.Position,c.Activity,c.DestinationId,furthest=furthest[c.Id]}),new JsonSerializerOptions{WriteIndented=true}));
             System.IO.File.WriteAllText(System.IO.Path.Combine(directory,"after-city.json"),_sim.SaveToJson());
             Require(furthest.All(pair=>pair.Value>10),"Os seis pedestres retomam deslocamento pelas rotinas normais");
+            Require(walkers.All(c=>!c.Moving&&_sim.State.Buildings.Any(b=>b.Id==c.DestinationId&&!b.Removed&&c.Position.Distance(b.Door)<.001)),"Os seis pedestres chegam fisicamente à porta do destino");
             Require(_sim.MonetaryTotal==money,"Oferta monetária preservada");_sim.CheckInvariants();
             Require(TrySaveCity(),"Save isolado gravado");
             var restored=CitySimulation.FromJson(CitySaves.Load(_cityId).CityJson);

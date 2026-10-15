@@ -16,7 +16,7 @@ A [V1 aprovada](SPEC.md#v1--primeira-versão-jogável-integrada-escopo-aprovado-
 
 **Divisão de trabalho definida pelo responsável em 2026-10-12:** Codex coordena e cuida de documentação, jogo, integração e validação. Claude Opus 5.5 com ultracode produz somente assets pedidos por Codex. A regra operacional está no [AGENTS](../AGENTS.md#coordenação-da-v1-e-frente-de-assets--2026-10-12); o [briefing visual](exploration/first-playable-assets.md) organiza famílias e limites, sem autorizar produção indiscriminada do inventário.
 
-**Piloto paralelo autorizado em 2026-10-14:** Claude implementa somente a apresentação dos indicadores reais de pessoas dentro dos prédios; Codex corrige rotas pedonais, integra e valida jogando. Revisão independente em outro contexto. A exceção delimitada está no AGENTS e não amplia regras de produto. Resultados e avaliação do piloto serão registrados no relato V1, com análise da IA pendente de revisão humana.
+**Piloto paralelo de 2026-10-14:** Claude produziu os indicadores reais nos prédios enquanto Codex corrigia as rotas; Haiku concluiu a revisão independente. Os seis casos de pessoas paradas melhoraram, mas a revisão confirmou travessias fora das faixas em segmentos intermediários. A PR #16 permanece em rascunho, com essa falha relevante aberta. Resultados e limites no [relato V1](exploration/v1-human-playtest-2026-10-13.md#pedestres-e-leitura-da-presença--entrega-9-2026-10-14), análise da IA pendente de revisão humana. Conforme pedido posterior, autor e revisor encerrados, sem novas tarefas delegadas.
 
 | Tema de entrada | Revisão humana do documento | Escopo / estado |
 | --- | --- | --- |
