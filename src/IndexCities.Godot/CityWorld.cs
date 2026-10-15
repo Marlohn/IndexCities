@@ -11,8 +11,6 @@ public partial class CityWorld:Node3D
     sealed class BuildingPreviewMarker{public Node3D Node=null!;public readonly List<MeshInstance3D> Footprint=new();public Label3D Validity=null!,Warning=null!;public string? Color;}
     readonly List<BuildingPreviewMarker> _previewPool=new();readonly (Point At,bool Valid,bool? Connected)[] _singlePreview=new (Point,bool,bool?)[1];
     readonly Dictionary<int,List<MeshInstance3D>> _buildingPickMeshes=new();
-    readonly Dictionary<int,Label3D> _activityLabels=new();readonly Dictionary<int,int> _insideCounts=new(),_cargoCounts=new();
-    readonly Dictionary<int,(Sprite3D People,Sprite3D Cargo)> _activityIcons=new();
     Node3D? _previewAccess;int? _previewAccessKey;
     readonly List<Rect2> _roadFootprints=new(),_roadCarriageways=new();int? _labelLayoutKey;
     readonly List<Rect2> _workLabelOverlayRects=new();
@@ -41,7 +39,7 @@ public partial class CityWorld:Node3D
         foreach(var child in GetChildren()){RemoveChild(child);child.QueueFree();}_buildings.Clear();_roads.Clear();_people.Clear();_trucks.Clear();_finished.Clear();_lamps.Clear();_lampGlass.Clear();_causes.Clear();_companySigns.Clear();_rotors.Clear();_waterStates.Clear();_stockStates.Clear();_stockMarkers.Clear();_trees.Clear();_vegetationGeometry=null;_lastVisualTime=state.ElapsedSeconds;_roadRevision=-1;_state=state;
         _roadWorks.Clear();_roadWorkLabels.Clear();_roadWorkGeometry=null;_roadSurface=null;_sidewalkSurface.Clear();
         _buildingPickMeshes.Clear();_roadFootprints.Clear();_roadCarriageways.Clear();_crosswalkStripes.Clear();_crosswalkPaint=null;_labelLayoutKey=null;
-        _activityLabels.Clear();_activityIcons.Clear();_insideCounts.Clear();_cargoCounts.Clear();_previewAccess=null;_previewAccessKey=null;
+        ClearActivityBadges();_previewAccess=null;_previewAccessKey=null;
         _motionState=null;_peopleBefore.Clear();_vehiclesBefore.Clear();_peopleMotion.Clear();_vehicleMotion.Clear();_motionBuiltAt=double.NaN;
         _static=new Node3D();AddChild(_static);_preview=new Node3D();AddChild(_preview);_previewKey="";_previewBuildingKind=null;_previewPool.Clear();
         var half=(float)state.Tuning.MapHalfSize;BuildLakeEnvironment(state);Box(_static,new(half*2+6,4,half*2+6),new(0,-3,0),"917656");
@@ -117,7 +115,7 @@ public partial class CityWorld:Node3D
         if(interpolation==null||interpolation>=1)_motionState=null;
         var interpolate=interpolation is {} fraction&&fraction<1&&ReferenceEquals(_motionState,state)&&state.ElapsedSeconds>_motionBeforeAt;if(interpolate)BuildMotionTraces(state);
         foreach(var b in state.Buildings){if(b.Removed){Remove(_buildings,b.Id);Remove(_causes,b.Id);ForgetVisual(b.Id);continue;}
-            if(!_buildings.TryGetValue(b.Id,out var node)||_finished.GetValueOrDefault(b.Id)!=b.Completed){Remove(_buildings,b.Id);node=new Node3D();AddChild(node);node.Position=P(b.Position);node.Rotation=new(0,(float)b.Rotation,0);ForgetVisual(b.Id);if(b.Completed){var visual=BuildingVisual(b);node.AddChild(visual);BindVisual(b.Id,visual);var activity=new Label3D{Name="BuildingActivity"+b.Id,FontSize=30,PixelSize=.05f,Billboard=BaseMaterial3D.BillboardModeEnum.Enabled,OutlineSize=6,Modulate=new Color("eef5d8"),Position=new(0,ModelTop(node,visual)+2.2f,-(float)b.Definition.Depth/2-.35f),Visible=false};node.AddChild(activity);_activityLabels[b.Id]=activity;_activityIcons[b.Id]=(ActivityIcon(activity,"PeopleIcon","agent.sim_pedestrian.a"),ActivityIcon(activity,"CargoIcon","vehicle.truck_cargo.a"));}else{Box(node,new((float)b.Definition.Width,.22f,(float)b.Definition.Depth),new(0,.15f,0),"c7ae78");for(var x=-1;x<=1;x+=2)for(var z=-1;z<=1;z+=2)Box(node,new(.3f,3,.3f),new(x*(float)b.Definition.Width/2,1.5f,z*(float)b.Definition.Depth/2),"d7a355");} _buildings[b.Id]=node;_finished[b.Id]=b.Completed;
+            if(!_buildings.TryGetValue(b.Id,out var node)||_finished.GetValueOrDefault(b.Id)!=b.Completed){Remove(_buildings,b.Id);node=new Node3D();AddChild(node);node.Position=P(b.Position);node.Rotation=new(0,(float)b.Rotation,0);ForgetVisual(b.Id);if(b.Completed){var visual=BuildingVisual(b);node.AddChild(visual);BindVisual(b.Id,visual);CreateActivityBadge(b,node,visual);}else{Box(node,new((float)b.Definition.Width,.22f,(float)b.Definition.Depth),new(0,.15f,0),"c7ae78");for(var x=-1;x<=1;x+=2)for(var z=-1;z<=1;z+=2)Box(node,new(.3f,3,.3f),new(x*(float)b.Definition.Width/2,1.5f,z*(float)b.Definition.Depth/2),"d7a355");} _buildings[b.Id]=node;_finished[b.Id]=b.Completed;
                 BuildingBankBase(node,b);_buildingPickMeshes[b.Id]=MeshesIn(node).ToList();var cause=new Label3D{FontSize=32,PixelSize=.06f,Width=260,AutowrapMode=TextServer.AutowrapMode.WordSmart,Billboard=BaseMaterial3D.BillboardModeEnum.Enabled,NoDepthTest=false,Modulate=new Color("fff5d4"),Position=P(b.Position,b.Completed?10:4),OutlineSize=4};AddChild(cause);Remove(_causes,b.Id);_causes[b.Id]=cause;}
             if(!b.Completed){var project=state.Projects.First(p=>p.Id==b.ProjectId);var stopped=project.Cause!="Construção em andamento"&&!string.IsNullOrWhiteSpace(project.Cause);var text=((int)(project.Progress*100))+"%"+(stopped?"\n"+BriefWorkCause(project.Cause):"");
                 var roadless=stopped&&(project.Cause.StartsWith("Sem rua")||project.Cause.StartsWith("Sem acesso"));if(roadless)text=((int)(project.Progress*100))+"%\nSEM RUA: obra parada";
@@ -150,10 +148,6 @@ public partial class CityWorld:Node3D
     }
     public bool IsCitizenVisible(int id)=>_people.TryGetValue(id,out var node)&&node.Visible;
     public Point? VisibleCitizenPosition(int id)=>_people.TryGetValue(id,out var node)&&node.Visible?new Point(node.GlobalPosition.X,node.GlobalPosition.Z):null;
-    static Sprite3D ActivityIcon(Label3D parent,string name,string visual)
-    {
-        var icon=new Sprite3D{Name=name,Texture=GD.Load<Texture2D>("res://Assets/V1/Thumbnails/"+visual+".png"),PixelSize=.004f,Billboard=BaseMaterial3D.BillboardModeEnum.Enabled,NoDepthTest=false,Shaded=false,Offset=new(-1100,0),Visible=false,CastShadow=GeometryInstance3D.ShadowCastingSetting.Off};parent.AddChild(icon);return icon;
-    }
     // Measured once when the building visual is created, including nested mesh
     // transforms and the imported model's actual scale. The marker stays above
     // its roof without drawing through other buildings or changing the lot.
@@ -176,8 +170,7 @@ public partial class CityWorld:Node3D
             var id=!shipment.PickedUp?shipment.SourceBuildingId:shipment.DestinationBuildingId??(shipment.ProjectId is {} projectId?state.Projects.FirstOrDefault(p=>p.Id==projectId)?.BuildingId:null);
             if(id is {} buildingId)_cargoCounts[buildingId]=_cargoCounts.GetValueOrDefault(buildingId)+1;
         }
-        foreach(var (id,label) in _activityLabels){var people=_insideCounts.GetValueOrDefault(id);var cargo=_cargoCounts.GetValueOrDefault(id);var text=(people>0?"Dentro: "+people:"")+(people>0&&cargo>0?"\n":"")+(cargo>0?"Caminhões: "+cargo:"");if(label.Text!=text)label.Text=text;label.Visible=text.Length>0;
-            var icons=_activityIcons[id];icons.People.Visible=people>0;icons.Cargo.Visible=cargo>0;icons.People.Offset=new(-1100,people>0&&cargo>0?200:0);icons.Cargo.Offset=new(-1100,people>0&&cargo>0?-200:0);}
+        PresentActivityBadges();
     }
     float RoadSurfaceAt(Point point)
     {
@@ -242,7 +235,7 @@ public partial class CityWorld:Node3D
         var at=points[i];var adjacent=new List<Point>();if(i>0)adjacent.Add(points[i-1]);if(i+1<points.Count)adjacent.Add(points[i+1]);if(adjacent.Count==0)adjacent.AddRange(_state.Roads.Where(r=>r.Position.Distance(at)<=step+.05).Select(r=>r.Position));
         var horizontal=adjacent.Any(p=>Math.Abs(p.X-at.X)>.1);var vertical=adjacent.Any(p=>Math.Abs(p.Z-at.Z)>.1);return horizontal&&vertical?new(width,.05f,width):vertical?new(width,.05f,step):new(step,.05f,width);
     }
-    void ForgetVisual(int id){_companySigns.Remove(id);_rotors.Remove(id);_waterStates.Remove(id);_stockStates.Remove(id);_stockMarkers.Remove(id);_buildingPickMeshes.Remove(id);_activityLabels.Remove(id);_activityIcons.Remove(id);}
+    void ForgetVisual(int id){_companySigns.Remove(id);_rotors.Remove(id);_waterStates.Remove(id);_stockStates.Remove(id);_stockMarkers.Remove(id);_buildingPickMeshes.Remove(id);_activityBadges.Remove(id);}
     static string BriefWorkCause(string cause)=>cause switch{
         "Aguardando equipe física no canteiro"=>"Aguardando equipe",
         "Sem orçamento para pagar equipe externa"=>"Sem orçamento para equipe",

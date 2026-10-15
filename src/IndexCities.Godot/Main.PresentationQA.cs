@@ -25,7 +25,7 @@ public partial class Main
             resident.Activity = "Em casa";
             var atHome = _sim.SaveToJson(); _world.Sync(_sim.State);
             Require(!_world.IsCitizenVisible(resident.Id), "Interior real permanece interior");
-            Require(_world.FindChild("BuildingActivity" + home.Id, true, false) is Label3D { Visible: true }, "Presença no interior aparece no edifício");
+            Require(_world.ActivityIndicator(home.Id) is { Visible: true, People: > 0 }, "Presença no interior aparece no edifício");
             Require(_sim.SaveToJson() == atHome, "Indicador não altera pessoas, recursos ou dinheiro");
 
             resident.Activity = "Sem rota";
@@ -59,9 +59,9 @@ public partial class Main
                 var shipment = _sim.State.Shipments.FirstOrDefault(s => !s.Complete && !s.Cancelled && s.DestinationBuildingId == hall.Id && s.Cargo.Values.Sum() > 0);
                 if (shipment == null) continue;
                 var truck = _sim.State.Vehicles.Single(v => v.Id == shipment.VehicleId);
-                var label = (Label3D)_world.FindChild("BuildingActivity" + hall.Id, true, false);
-                if (truck.Status == VehicleStatus.Travelling) { Require(!label.Text.Contains("Caminhões:"), "Pedido em trânsito não parece descarga"); travellingChecked = true; }
-                if (truck.Status == VehicleStatus.Unloading) { Require(label.Visible && label.Text.Contains("Caminhões:"), "Descarga física é perceptível no destino"); unloadingChecked = true; }
+                var shown = _world.ActivityIndicator(hall.Id);
+                if (truck.Status == VehicleStatus.Travelling) { Require(shown.Cargo == 0, "Pedido em trânsito não parece descarga"); travellingChecked = true; }
+                if (truck.Status == VehicleStatus.Unloading) { Require(shown.Visible && shown.Cargo > 0, "Descarga física é perceptível no destino"); unloadingChecked = true; }
             }
             Require(travellingChecked && unloadingChecked, "Cenário percorreu viagem e descarga reais");
             _focus = ToV(hall.Position); UpdateCamera();

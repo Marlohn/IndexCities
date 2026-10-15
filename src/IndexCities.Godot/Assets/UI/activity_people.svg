@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Flat pictogram (not a 3D figure): people inside the building. -->
+  <circle cx="32" cy="14" r="6" fill="#a9cbb8"/>
+  <path d="M22,40 C22,30 26,24 32,24 C38,24 42,30 42,40 Z" fill="#a9cbb8"/>
+  <circle cx="18" cy="15" r="7.5" fill="#ffffff"/>
+  <path d="M5,43 C5,32 10,26 18,26 C26,26 31,32 31,43 Z" fill="#ffffff"/>
+</svg>
