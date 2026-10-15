@@ -2,31 +2,30 @@ using Godot;
 using IndexCities.Simulation;
 namespace IndexCities.Game;
 
-// IA-017: discreet information badge over each building entrance with the
-// number of SIMs really inside and of trucks really loading/unloading there.
-// Flat pictograms on a dark pill keep it readable as information, never as a
-// physical person or vehicle standing on the roof.
 public partial class CityWorld
 {
     sealed class ActivityBadge
     {
         public Node3D Anchor=null!;
-        public (Sprite3D Pill,Sprite3D Icon,Label3D Count) People,Cargo;
-        public int ShownPeople=-1,ShownCargo=-1;public float Unit;
+        public (Sprite3D Pill,Sprite3D Icon,Label3D Count) Cargo;
+        public int ShownCargo=-1;public float Unit;
     }
     readonly Dictionary<int,ActivityBadge> _activityBadges=new();
-    readonly Dictionary<int,int> _insideCounts=new(),_cargoCounts=new();
+    readonly Dictionary<int,int> _cargoCounts=new();
     // Badge artwork is authored at 2x: one design pixel = two texture pixels.
-    const float BadgeTailToCenter=41,BadgeBodyCenter=49,BadgeIconX=-28,BadgeCountX=-4,BadgeSideBySide=72;
+    const float BadgeTailToCenter=41,BadgeBodyCenter=49,BadgeIconX=-28,BadgeCountX=-4;
     const float BadgeMaxHeight=5f;
 
+    // Only real loading/unloading keeps an information badge over the entrance.
+    // The presence balloon was removed (IA-017 human review, 2026-10-15) and
+    // replaced by the problem alerts in CityWorld.ProblemAlerts.cs.
     void CreateActivityBadge(Building b,Node3D node,Node3D visual)
     {
         // Anchored in front of the entrance (local -Z is the door side), low
         // enough to belong to the door even on tall models like wind turbines.
         var anchor=new Node3D{Name="BuildingActivity"+b.Id,Position=new(0,Math.Min(ModelTop(node,visual)+.5f,BadgeMaxHeight),-(float)b.Definition.Depth/2-.3f),Visible=false};
         node.AddChild(anchor);
-        _activityBadges[b.Id]=new ActivityBadge{Anchor=anchor,People=BadgePart(anchor,"People","activity_people"),Cargo=BadgePart(anchor,"Cargo","activity_cargo")};
+        _activityBadges[b.Id]=new ActivityBadge{Anchor=anchor,Cargo=BadgePart(anchor,"Cargo","activity_cargo")};
     }
     static (Sprite3D,Sprite3D,Label3D) BadgePart(Node3D anchor,string name,string icon)
     {
@@ -47,13 +46,11 @@ public partial class CityWorld
     {
         var unit=BadgeUnit();
         foreach(var (id,badge) in _activityBadges){
-            var people=_insideCounts.GetValueOrDefault(id);var cargo=_cargoCounts.GetValueOrDefault(id);
-            if(people==badge.ShownPeople&&cargo==badge.ShownCargo&&Math.Abs(unit-badge.Unit)<=badge.Unit*.01f)continue;
-            badge.ShownPeople=people;badge.ShownCargo=cargo;badge.Unit=unit;
-            badge.Anchor.Visible=people>0||cargo>0;
-            var both=people>0&&cargo>0;
-            LayoutBadgePart(badge.People,people,both?-BadgeSideBySide:0,unit);
-            LayoutBadgePart(badge.Cargo,cargo,both?BadgeSideBySide:0,unit);
+            var cargo=_cargoCounts.GetValueOrDefault(id);
+            if(cargo==badge.ShownCargo&&Math.Abs(unit-badge.Unit)<=badge.Unit*.01f)continue;
+            badge.ShownCargo=cargo;badge.Unit=unit;
+            badge.Anchor.Visible=cargo>0;
+            LayoutBadgePart(badge.Cargo,cargo,0,unit);
         }
     }
     static void LayoutBadgePart((Sprite3D Pill,Sprite3D Icon,Label3D Count) part,int value,float shift,float unit)
@@ -65,14 +62,13 @@ public partial class CityWorld
         part.Icon.Offset=new(shift+BadgeIconX,BadgeBodyCenter);
         part.Count.Offset=new(shift+BadgeCountX,BadgeBodyCenter);
     }
-    void ClearActivityBadges(){_activityBadges.Clear();_insideCounts.Clear();_cargoCounts.Clear();}
+    void ClearActivityBadges(){_activityBadges.Clear();_cargoCounts.Clear();}
 
-    // Read-only view of what the badge currently displays, for QA.
-    public (int People,int Cargo,bool Visible) ActivityIndicator(int buildingId)
+    // Read-only view of the real cargo step, for QA.
+    public (int Cargo,bool Visible) ActivityIndicator(int buildingId)
     {
-        if(!_activityBadges.TryGetValue(buildingId,out var badge))return (0,0,false);
-        static int Shown(Label3D count)=>count.Visible?int.Parse(count.Text):0;
-        return (Shown(badge.People.Count),Shown(badge.Cargo.Count),badge.Anchor.Visible);
+        if(!_activityBadges.TryGetValue(buildingId,out var badge))return (0,false);
+        return (badge.Cargo.Count.Visible?int.Parse(badge.Cargo.Count.Text):0,badge.Anchor.Visible);
     }
     public int VisibleCitizenCount=>_people.Values.Count(n=>n.Visible);
     public int CitizenNodeCount=>_people.Count;
