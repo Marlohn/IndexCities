@@ -39,6 +39,8 @@ public partial class Main:Node3D
         if(args.Contains("--interior-arrival-smoke"))CallDeferred(MethodName.InteriorArrivalSmoke);
         if(args.Contains("--pedestrian-before")||args.Contains("--pedestrian-recovery-smoke"))CallDeferred(MethodName.PedestrianRecoverySmoke);
         if(args.Contains("--activity-indicators-smoke"))CallDeferred(MethodName.ActivityIndicatorsSmoke);
+        if(args.Contains("--problem-alerts-smoke"))CallDeferred(MethodName.ProblemAlertsSmoke);
+        if(args.Contains("--problem-alerts-playtest"))CallDeferred(MethodName.ProblemAlertsPlaytest);
         if(args.Contains("--services-before")||args.Contains("--services-smoke"))CallDeferred(MethodName.ServicesSmoke);
         if(args.Contains("--environment-smoke"))CallDeferred(MethodName.EnvironmentSmoke);
         if(args.Contains("--lake-recovery-smoke"))CallDeferred(MethodName.LakeRecoverySmoke);
@@ -64,7 +66,7 @@ public partial class Main:Node3D
         var simulationMs=System.Diagnostics.Stopwatch.GetElapsedTime(simulationStarted).TotalMilliseconds;var presentationStarted=System.Diagnostics.Stopwatch.GetTimestamp();
         var hour=(float)_sim.State.Now.TimeOfDay.TotalHours;var daylight=Mathf.Clamp(Mathf.Sin((hour-6)/12*Mathf.Pi),0,1);_sun.LightEnergy=.12f+daylight*.88f;_sun.RotationDegrees=new(-15-daylight*45,-30,0);
         _world.SetWorkLabelOverlayRects(_workLabelOccluders.Where(control=>control.IsVisibleInTree()).Select(control=>control.GetGlobalRect()));
-        _world.Sync(_sim.State,_speed==0?1:Math.Clamp(_clockBudget/2,0,1),_speed==0?0:frameSeconds);UpdatePreview();RefreshToolHint();UpdateVersionHud();_uiAt+=frameSeconds;_autosaveAt+=frameSeconds;
+        _world.Sync(_sim.State,_speed==0?1:Math.Clamp(_clockBudget/2,0,1),_speed==0?0:frameSeconds,_sim);UpdatePreview();RefreshToolHint();UpdateVersionHud();_uiAt+=frameSeconds;_autosaveAt+=frameSeconds;
         if(_uiAt>.4){_uiAt=0;RefreshHud();}
         if(_autosaveMinutes>0&&_autosaveAt>=_autosaveMinutes*60){SaveCity();_autosaveAt=0;}
         if(_performanceSmoke)RecordPerformance(delta,simulationMs,System.Diagnostics.Stopwatch.GetElapsedTime(presentationStarted).TotalMilliseconds);

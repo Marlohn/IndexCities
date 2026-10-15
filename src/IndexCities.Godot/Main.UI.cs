@@ -76,7 +76,7 @@ public partial class Main
         if(key==_inspectionKey){foreach(var item in _inspectionTexts){item.Label.Text=item.Read();if(item.HideEmpty)item.Label.Visible=item.Label.Text.Length>0;}foreach(var item in _inspectionButtons)item.Button.Text=item.Read();foreach(var item in _inspectionTooltips)item.Control.TooltipText=item.Read();return;}
         _inspectionKey=key;_inspectionTexts.Clear();_inspectionButtons.Clear();_inspectionTooltips.Clear();Clear(_inspection);
         if(_selectedBuilding is {} id&&s.Buildings.FirstOrDefault(b=>b.Id==id&&!b.Removed) is {} b){
-            _inspector.Visible=true;var summary=Card(_inspection,b.Definition.Name);InspectionText(summary,()=>b.Cause,18);
+            _inspector.Visible=true;var summary=Card(_inspection,b.Definition.Name);InspectionText(summary,()=>b.Cause,18);InspectionText(summary,()=>_world.BuildingProblemText(b.Id),16,hideEmpty:true);
             if(b.Kind==BuildingKind.House){var occupants=InspectionText(summary,()=>"Moradores: "+s.Citizens.Count(c=>c.Alive&&c.Resident&&s.Families.Any(f=>f.Id==c.FamilyId&&f.HomeId==b.Id)),18);InspectionTooltip(occupants,()=>"Capacidade de produção/serviço: "+b.OperationalCapacity.ToString("N1")+". Residências abrigam famílias; esse indicador não mede moradores.");}
             else InspectionText(summary,()=>"Capacidade operacional: "+b.OperationalCapacity.ToString("N1"),18);
             if(b.Definition.Utility)ServiceInspection(_inspection,b);
