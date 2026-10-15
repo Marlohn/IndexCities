@@ -37,11 +37,12 @@ public sealed partial class CitySimulation
     List<Point> PedestrianPath(Point from,Point door,RoadNode? b)
     {
         var originalFrom=from;Point? crossingApproach=null;var laneApproach=new List<Point>();var a=NearestRoad(from);
-        if(a!=null&&!a.Highway&&!a.Crosswalk){
+        if(a!=null&&!a.Highway&&(!a.Crosswalk||StraightRoad(a,out _))){
             var horizontal=a.Neighbours.Any(id=>Math.Abs(_roads[id].Position.X-a.Position.X)>.1);var vertical=a.Neighbours.Any(id=>Math.Abs(_roads[id].Position.Z-a.Position.Z)>.1);
             var withinCarriageway=horizontal&&Math.Abs(from.Z-a.Position.Z)<=3.3||vertical&&Math.Abs(from.X-a.Position.X)<=3.3;
             if(withinCarriageway){
-                // Old paths could leave a walker inside a straight carriageway.
+                // Old paths could leave a walker inside a straight carriageway,
+                // including at a marked node whose paint is offset near a highway.
                 // Approach an actual crosswalk along that same road first, then
                 // cross it physically instead of jumping sideways to a curb.
                 var straight=State.Roads.Where(r=>r.Crosswalk&&!r.Highway&&r.Position.Distance(from)<=Math.Max(24,State.Tuning.CrosswalkSpacing+State.Tuning.RoadStep)&&((vertical&&!horizontal&&Math.Abs(r.Position.X-a.Position.X)<.1&&r.Neighbours.All(id=>Math.Abs(_roads[id].Position.X-r.Position.X)<.1))||(horizontal&&!vertical&&Math.Abs(r.Position.Z-a.Position.Z)<.1&&r.Neighbours.All(id=>Math.Abs(_roads[id].Position.Z-r.Position.Z)<.1)))).MinBy(r=>CrosswalkCentre(r,State).Distance(from));
@@ -69,7 +70,8 @@ public sealed partial class CitySimulation
         bool Crossing(RoadNode node,Point start,Point finish){
             if(!CrossesLane(start,finish,node)){Add(finish);return true;}
             if(node.Highway){Add(finish);return true;}
-            var horizontal=Math.Abs(finish.Z-start.Z)>=Math.Abs(finish.X-start.X);
+            // A diagonal approach does not determine the carriageway's axis.
+            var horizontal=StraightRoad(node,out var roadHorizontal)?roadHorizontal:Math.Abs(finish.Z-start.Z)>=Math.Abs(finish.X-start.X);
             if(SharedCrossing(node,horizontal,start,finish) is not {} crossing)return false;
             var startSign=Math.Sign(horizontal?start.Z-node.Position.Z:start.X-node.Position.X);if(startSign==0)startSign=1;
             var finishSign=Math.Sign(horizontal?finish.Z-node.Position.Z:finish.X-node.Position.X);if(finishSign==0)finishSign=-startSign;
@@ -80,7 +82,9 @@ public sealed partial class CitySimulation
         }
         foreach(var point in laneApproach)Add(point);
         if(crossingApproach!=null)Add(crossingApproach.Value);
-        var startSide=SideTowards(startCentre,from,offset);if(CrossesLane(from,walk[0],a)){if(crossingApproach==null)Add(startCentre+startSide);if(!Crossing(a,points[^1],walk[0]))return [];}else Add(walk[0]);
+        // Crossing constructs the approach to real paint. A radial curb point
+        // inserted beforehand could already cross the lane outside that paint.
+        if(CrossesLane(from,walk[0],a)){if(!Crossing(a,points[^1],walk[0]))return [];}else Add(walk[0]);
         foreach(var point in walk.Skip(1))Add(point);var entry=b.Position+SideTowards(b.Position,door,offset);if(!Crossing(b,points[^1],entry))return [];Add(door);return points;
     }
 
