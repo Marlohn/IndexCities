@@ -53,4 +53,12 @@ public sealed class PedestrianReplanningTests
         var unmarked=Straight(0,painted:false);Assert.Empty(unmarked.Sim.PedestrianRoute(unmarked.Origin,unmarked.Home));
         var disconnected=Straight(0,connected:false);Assert.Empty(disconnected.Sim.PedestrianRoute(disconnected.Origin,disconnected.Home));
     }
+
+    [Fact]
+    public void Lane_recovery_does_not_approach_paint_on_a_disconnected_collinear_fragment()
+    {
+        var (sim,home,_)=Straight(0,painted:false,connected:false);
+        sim.State.Roads.Single(r=>r.Id==1010).Crosswalk=true;
+        Assert.Empty(sim.PedestrianRoute(new(-.6,68.6),home));
+    }
 }
