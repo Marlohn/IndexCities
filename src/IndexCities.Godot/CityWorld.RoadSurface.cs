@@ -74,6 +74,8 @@ public partial class CityWorld
         _roadSurface = new Node3D { Name = "ContinuousRoadSurface" }; AddChild(_roadSurface);
         var asphalt = RoadSurfacePartition(_roadCarriageways);
         _sidewalkSurface.Clear(); _sidewalkSurface.AddRange(RoadSurfacePartition(_roadFootprints, _roadCarriageways));
+        var banks=RoadSurfacePartition(_roadFootprints).Where(r=>OnBank(new(r.GetCenter().X,r.GetCenter().Y),r.Size.X,r.Size.Y));
+        SurfaceMesh(_roadSurface,banks,RoadVisualLift+RoadAsphaltTop-.005f,Material("a6a08b"),-.825f);
         SurfaceMesh(_roadSurface, asphalt, RoadVisualLift + RoadAsphaltTop, GD.Load<Material>("res://Assets/V1/Materials/road_asphalt.tres"));
         SurfaceMesh(_roadSurface, _sidewalkSurface, RoadVisualLift + RoadSidewalkTop, GD.Load<Material>("res://Assets/V1/Materials/road_sidewalk.tres"), -.06f);
         var junctions = state.Roads.Where(r => r.Neighbours.Count > 2).ToArray();

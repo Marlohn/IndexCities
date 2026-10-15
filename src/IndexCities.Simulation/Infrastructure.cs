@@ -6,7 +6,7 @@ public sealed partial class CitySimulation
     // Jobs and shift membership never imply that a person reached the building.
     public IEnumerable<Citizen> ScheduledWorkers(Building building)=>State.Citizens.Where(c=>c.WorkplaceId==building.Id&&ShiftActive(c));
     public int WorkersScheduled(Building building)=>ScheduledWorkers(building).Count();
-    public bool HasNaturalWaterSource(Building building)=>building.Kind==BuildingKind.WaterIntake&&Math.Abs(building.Position.Distance(State.LakeCentre)-State.LakeRadius)<=22;
+    public bool HasNaturalWaterSource(Building building)=>building.Kind==BuildingKind.WaterIntake&&DistanceToLakeShore(building.Position)<=22;
     public static double ServiceStaffReference(Building building)=>Math.Max(1.0,building.Definition.Utility?building.Definition.Jobs/3.0:building.Definition.Jobs);
     static double InfrastructureStaffFactor(Building building,int present)=>Math.Clamp(present/ServiceStaffReference(building),0,1);
     public double ServiceStaffFactor(Building building)=>InfrastructureStaffFactor(building,WorkersPresent(building));

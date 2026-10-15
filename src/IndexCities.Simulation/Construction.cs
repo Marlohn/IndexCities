@@ -5,7 +5,7 @@ public sealed partial class CitySimulation
     public PlacementQuote QuoteBuilding(BuildingKind kind,Point position,double rotation=0,int? ignoredProject=null)
     {
         var d=Catalog.Definitions[kind];var candidate=new Building{Kind=kind,Position=position,Rotation=rotation};
-        var corners=Corners(candidate).ToList();var outside=corners.Any(p=>!InMap(p));var water=InWater(position)||corners.Any(p=>InWater(p));
+        var corners=Corners(candidate).ToList();var outside=corners.Any(p=>!InMap(p));var water=State.SchemaVersion==1?InWater(position)||corners.Any(p=>InWater(p)):LakeGeometry.OverlapsRectangle(State,position,d.Width,d.Depth,rotation);
         var building=State.Buildings.FirstOrDefault(b=>!b.Removed&&b.ProjectId!=ignoredProject&&Overlap(candidate,b));
         var road=State.Roads.FirstOrDefault(n=>Inside(candidate,n.Position,State.Tuning.RoadWidth/2-.05));
         var roadWork=State.Projects.FirstOrDefault(p=>p.Id!=ignoredProject&&p.Status is WorkStatus.Waiting or WorkStatus.InProgress&&p.RoadPoints.Any(pt=>Inside(candidate,pt,State.Tuning.RoadWidth/2-.05)));
@@ -15,7 +15,7 @@ public sealed partial class CitySimulation
         var accessible=HasExteriorAccess(candidate);var quote=QuoteMaterials(d.Materials,position,d.WorkSeconds);
         var plannedAccess=!accessible&&State.Projects.Any(p=>p.Id!=ignoredProject&&!p.IsMaintenance&&p.Status is WorkStatus.Waiting or WorkStatus.InProgress&&p.RoadPoints.Any(point=>point.Distance(candidate.Door)<=State.Tuning.RoadWidth/2+3));
         var accessMessage=plannedAccess?"Rua em obra junto à entrada: aguardando ligação pronta":Access(candidate)!=null?"Rua sem ligação ao exterior: a obra aguardará acesso":"Sem rua urbana: a obra aguardará acesso";
-        var message=duplicateHall?"A cidade já tem uma Prefeitura":!allowed?"Posicione a Prefeitura primeiro":outside?"O edifício ultrapassa o limite do mapa":water?"O edifício invade a água":building!=null?$"Sobreposição com {building.Definition.Name} #{building.Id}":road!=null?"O edifício invade uma via pronta":roadWork!=null?$"Sobreposição com obra de rua #{roadWork.Id} ainda não concluída":!accessible?accessMessage:kind==BuildingKind.WaterIntake&&Math.Abs(position.Distance(State.LakeCentre)-State.LakeRadius)>22?"A captação precisará alcançar a fonte natural":"Posição válida";
+        var message=duplicateHall?"A cidade já tem uma Prefeitura":!allowed?"Posicione a Prefeitura primeiro":outside?"O edifício ultrapassa o limite do mapa":water?"O edifício invade a água":building!=null?$"Sobreposição com {building.Definition.Name} #{building.Id}":road!=null?"O edifício invade uma via pronta":roadWork!=null?$"Sobreposição com obra de rua #{roadWork.Id} ainda não concluída":!accessible?accessMessage:kind==BuildingKind.WaterIntake&&DistanceToLakeShore(position)>22?"A captação precisará alcançar a fonte natural":"Posição válida";
         return new(valid&&allowed&&!duplicateHall,accessible,quote,new(d.Materials),message);
     }
     decimal QuoteMaterials(Dictionary<ResourceKind,double> materials,Point position,double workSeconds)
@@ -46,13 +46,26 @@ public sealed partial class CitySimulation
     public PlacementQuote QuoteRoad(Point start,Point end,bool reverse=false,int? ignoredProject=null)
     {
         var points=NewRoadPoints(start,end,reverse,ignoredProject);
-        var outside=points.Any(p=>!InMap(p,State.Tuning.RoadWidth/2));var water=points.Any(p=>InWater(p,State.Tuning.RoadWidth/2));
+        var outside=points.Any(p=>!InMap(p,State.Tuning.RoadWidth/2));var water=State.SchemaVersion==1?points.Any(p=>InWater(p,State.Tuning.RoadWidth/2)):RoadOverlapsLake(RoadShape(start,end,reverse));
         var building=State.Buildings.FirstOrDefault(b=>!b.Removed&&points.Any(p=>Inside(b,p,State.Tuning.RoadWidth/2-.05)));
         var valid=State.CityHallPlaced&&points.Count>0&&!outside&&!water&&building==null;
         var length=points.Count*State.Tuning.RoadStep;var materials=new Dictionary<ResourceKind,double>{{ResourceKind.Aggregate,length*State.Tuning.RoadWidth*.04},{ResourceKind.Asphalt,length*State.Tuning.RoadWidth*.02}};
         var access=points.Any(p=>State.Roads.Any(r=>r.Position.Distance(p)<=State.Tuning.RoadStep+.05&&_exteriorConnected.Contains(r.Id)));
         var message=!State.CityHallPlaced?"Confirme o projeto da Prefeitura para liberar ruas":points.Count==0?"Este traçado não adiciona trecho novo às ruas prontas ou em obra":outside?"O traçado ultrapassa o limite do mapa":water?"O traçado invade a água":building!=null?$"O traçado invade {building.Definition.Name} #{building.Id}":!access?"Sem ligação pronta ao exterior: a obra aguardará acesso; ligação planejada não libera entregas":"Trecho válido; ligação exterior disponível";
         return new(valid,access,points.Count==0?0:QuoteMaterials(materials,start,Math.Max(120,length*2)),materials,message);
+    }
+    bool RoadOverlapsLake(IReadOnlyList<Point> shape)
+    {
+        var existing=State.Roads.Select(r=>r.Position).Concat(State.Projects.Where(p=>!p.IsMaintenance&&p.Status is WorkStatus.Waiting or WorkStatus.InProgress).SelectMany(p=>p.RoadPoints)).ToArray();
+        foreach(var point in shape){
+            var neighbours=shape.Concat(existing).Where(p=>p.Distance(point)>.05&&p.Distance(point)<=State.Tuning.RoadStep+.01).ToArray();
+            var horizontal=neighbours.Any(p=>Math.Abs(p.X-point.X)>.1);var vertical=neighbours.Any(p=>Math.Abs(p.Z-point.Z)>.1);
+            if(!horizontal&&!vertical)horizontal=true;
+            var width=horizontal&&vertical||vertical?State.Tuning.RoadWidth:State.Tuning.RoadStep;
+            var depth=horizontal?State.Tuning.RoadWidth:State.Tuning.RoadStep;
+            if(LakeGeometry.OverlapsRectangle(State,point,width,depth))return true;
+        }
+        return false;
     }
     public CommandResult PlaceRoad(Point start,Point end,bool reverse=false)
     {

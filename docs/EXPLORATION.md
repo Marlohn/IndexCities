@@ -12,6 +12,8 @@ A [V1 aprovada](SPEC.md#v1--primeira-versão-jogável-integrada-escopo-aprovado-
 
 **Avaliação humana mais recente (2026-10-14):** o [relato detalhado da partida V1](exploration/v1-human-playtest-2026-10-13.md#nova-partida-e-avaliação-crítica-do-relatório-processado--2026-10-14) agora inclui o novo feedback processado, a comparação inicial com o protótipo local e verificações em cópias dos saves. Ruas continuam sendo a maior insatisfação relatada. Observações, causas verificadas e propostas sem aprovação estão separadas. A organização por IA segue **PENDENTE de revisão humana**, sem criar requisitos ou autorizar novas regras.
 
+**Lago irregular em integração (2026-10-14):** mapas novos e compatibilidade dos antigos já têm implementação e cenários Godot; duas rodadas de revisão independente concluídas, avaliação estética humana em aberto. Evidências e limites em [Mundo, mapa e ambiente](exploration/world-map-environment.md#integração-do-lago-irregular--2026-10-14), com a síntese da IA **PENDENTE de revisão humana**.
+
 **Divisão de trabalho definida pelo responsável em 2026-10-12:** Codex coordena e cuida de documentação, jogo, integração e validação. Claude Opus 5.5 com ultracode produz somente assets pedidos por Codex. A regra operacional está no [AGENTS](../AGENTS.md#coordenação-da-v1-e-frente-de-assets--2026-10-12); o [briefing visual](exploration/first-playable-assets.md) organiza famílias e limites, sem autorizar produção indiscriminada do inventário.
 
 | Tema de entrada | Revisão humana do documento | Escopo / estado |
@@ -38,7 +40,7 @@ Os estados são agregados por documento. Em material parcialmente revisado, cons
 | Domínio | Revisão humana | Escopo / estado |
 | --- | --- | --- |
 | [Direção de produto](exploration/product-direction.md) | PARCIALMENTE REVISADO | Identidade, causalidade, profundidade, públicos e histórico do Criativo adiado. |
-| [Mundo, mapa e ambiente](exploration/world-map-environment.md) | PARCIALMENTE REVISADO | Seed, terreno, vegetação e posicionamento; estudo visual de água/margens concluído em prévia isolada, estética e geometria pendentes. |
+| [Mundo, mapa e ambiente](exploration/world-map-environment.md) | PARCIALMENTE REVISADO | Lago irregular integrado em mapas novos, com cenários Godot e compatibilidade de mapas antigos; revisão independente concluída e estética humana pendente. |
 | [Construção, materiais e logística](exploration/construction-materials-logistics.md) | PARCIALMENTE REVISADO | Obras, reservas, importação/exportação, estoques, Pátio e transporte. |
 | [Famílias, moradia e patrimônio](exploration/households-housing.md) | PARCIALMENTE REVISADO | Aquisição, renda/consumo, migração, contratos e sistemas familiares futuros. |
 | [Empresas e mercados](exploration/companies-markets.md) | PARCIALMENTE REVISADO | Autonomia, propriedade/operação, emprego, produção, caixa e falência. |

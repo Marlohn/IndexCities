@@ -100,7 +100,8 @@ public sealed partial class CitySimulation
         var direction=node.Position-highway.Position;var length=direction.Distance(new(0,0));
         return length<.001?node.Position:highway.Position+direction*((state.Tuning.RoadWidth/2+1)/length);
     }
-    bool InWater(Point p,double margin=0)=>p.Distance(State.LakeCentre)<State.LakeRadius+margin;
+    bool InWater(Point p,double margin=0)=>State.SchemaVersion==1?p.Distance(State.LakeCentre)<State.LakeRadius+margin:LakeGeometry.SignedDistance(State,p)<margin;
+    public double DistanceToLakeShore(Point p)=>Math.Abs(LakeGeometry.SignedDistance(State,p));
     bool InMap(Point p,double margin=0)=>Math.Abs(p.X)+margin<State.Tuning.MapHalfSize&&Math.Abs(p.Z)+margin<State.Tuning.MapHalfSize;
     static bool Inside(Building b,Point p,double padding=0)
     {

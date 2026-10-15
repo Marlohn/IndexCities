@@ -39,6 +39,7 @@ public partial class Main:Node3D
         if(args.Contains("--interior-arrival-smoke"))CallDeferred(MethodName.InteriorArrivalSmoke);
         if(args.Contains("--services-before")||args.Contains("--services-smoke"))CallDeferred(MethodName.ServicesSmoke);
         if(args.Contains("--environment-smoke"))CallDeferred(MethodName.EnvironmentSmoke);
+        if(args.Contains("--lake-recovery-smoke"))CallDeferred(MethodName.LakeRecoverySmoke);
         if(args.Contains("--visual-review-smoke"))CallDeferred(MethodName.VisualReviewSmoke);
         if(args.Contains("--real-time-start-smoke"))CallDeferred(MethodName.RealTimeStartSmoke);
         if(args.Contains("--interaction-regressions-smoke"))CallDeferred(MethodName.InteractionRegressionSmoke);
@@ -113,7 +114,7 @@ public partial class Main:Node3D
         }}
     }
     static Vector3 ToV(Point p,float y=0)=>new((float)p.X,y,(float)p.Z);
-    Point Ground(Vector2 screen){var origin=_camera.ProjectRayOrigin(screen);var direction=_camera.ProjectRayNormal(screen);if(Math.Abs(direction.Y)<.001)return _cursor;var p=origin+direction*(-origin.Y/direction.Y);return new(p.X,p.Z);}
+    Point Ground(Vector2 screen){var origin=_camera.ProjectRayOrigin(screen);var direction=_camera.ProjectRayNormal(screen);if(Math.Abs(direction.Y)<.001)return _cursor;return _world.GroundPoint(origin,direction);}
     Point Snap(Point p)
     {
         var step=_sim.State.Tuning.RoadStep/(_building!=null?2:1);var snapped=new Point(Math.Round(p.X/step)*step,Math.Round(p.Z/step)*step);

@@ -1,0 +1,7 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://Assets/RecoveryEnvironment/Lake/Shaders/ws_d_shore.gdshader" id="1_shader"]
+
+[resource]
+resource_name = "ws_d_shore"
+shader = ExtResource("1_shader")
