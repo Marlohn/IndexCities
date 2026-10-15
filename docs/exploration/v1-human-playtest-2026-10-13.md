@@ -501,6 +501,8 @@ Codex executou novamente os indicadores na integração: `integrated-3f232588618
 
 **Limitação da interação nativa:** a tentativa de mouse/teclado no Windows não foi confirmada: a janela não ganhou foco, a captura mostrava o desktop sobreposto e o teclado retornou `window_not_focused`. A janela própria de QA foi encerrada; isso não foi contado como teste nativo nem atribuído ao jogo. Os cenários e as imagens válidos acima foram executados/capturados dentro dos viewports do Godot. Saves permaneceram isolados; os hashes dos arquivos do jogador registrados antes dessa tentativa continuaram iguais depois.
 
+**Atalhos de teste:** a auditoria encontrou ausência de `--` nos atalhos locais `Testar-pedestres.ps1` e `Testar-lago.ps1`; ambos foram corrigidos. A execução efetiva do primeiro confirmou build/import, argumentos `-- --review-save-dir=...human-test-cities` e encerramento com código 0. Também foi registrado o UID ausente do script de QA de chegada, eliminando o aviso de importação. Isso não altera os cenários diretos desta entrega, que já passavam os argumentos do jogo depois de `--`. `-DryRun` isoladamente não comprova destino de saves.
+
 ![Pessoa parada sem caminho na faixa real](evidence/recovery-v9/pedestrian-before.png)
 ![A mesma pessoa retoma a viagem pela faixa](evidence/recovery-v9/pedestrian-departure.png)
 ![Miniatura antiga sobre o telhado](evidence/recovery-v9/indicator-before.png)
