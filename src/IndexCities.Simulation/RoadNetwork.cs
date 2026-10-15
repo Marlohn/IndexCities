@@ -4,7 +4,7 @@ public sealed partial class CitySimulation
 {
     Dictionary<int,RoadNode> _roads=new();
     HashSet<int> _exteriorConnected=new();Dictionary<(BuildingKind,Point,double),int?> _accessCache=new();
-    void RebuildRoadGraph(bool changed=true){_roads=State.Roads.ToDictionary(r=>r.Id);foreach(var n in State.Roads){n.Neighbours=State.Roads.Where(r=>r.Id!=n.Id&&r.Position.Distance(n.Position)<=State.Tuning.RoadStep+.01).Select(r=>r.Id).ToList();}RebuildJunctionAreas();if(changed)State.RoadRevision++;_accessCache.Clear();_exteriorConnected.Clear();var q=new Queue<int>();q.Enqueue(EntryNode().Id);while(q.Count>0){var id=q.Dequeue();if(!_exteriorConnected.Add(id))continue;foreach(var next in _roads[id].Neighbours)if(_roads[next].MaintenanceRatio>.05)q.Enqueue(next);}}
+    void RebuildRoadGraph(bool changed=true){_roads=State.Roads.ToDictionary(r=>r.Id);foreach(var n in State.Roads){n.Neighbours=State.Roads.Where(r=>r.Id!=n.Id&&r.Position.Distance(n.Position)<=State.Tuning.RoadStep+.01).Select(r=>r.Id).ToList();}RebuildJunctionAreas();if(changed)State.RoadRevision++;_accessCache.Clear();_walkSurface=null;_exteriorConnected.Clear();var q=new Queue<int>();q.Enqueue(EntryNode().Id);while(q.Count>0){var id=q.Dequeue();if(!_exteriorConnected.Add(id))continue;foreach(var next in _roads[id].Neighbours)if(_roads[next].MaintenanceRatio>.05)q.Enqueue(next);}}
     RoadNode AddRoad(Point point,bool highway=false)
     {
         var existing=State.Roads.FirstOrDefault(r=>r.Position.Distance(point)<.05);if(existing!=null)return existing;
@@ -39,7 +39,9 @@ public sealed partial class CitySimulation
         var originalFrom=from;Point? crossingApproach=null;var laneApproach=new List<Point>();var a=NearestRoad(from);
         if(a!=null&&!a.Highway&&(!a.Crosswalk||StraightRoad(a,out _))){
             var horizontal=a.Neighbours.Any(id=>Math.Abs(_roads[id].Position.X-a.Position.X)>.1);var vertical=a.Neighbours.Any(id=>Math.Abs(_roads[id].Position.Z-a.Position.Z)>.1);
-            var withinCarriageway=horizontal&&Math.Abs(from.Z-a.Position.Z)<=3.3||vertical&&Math.Abs(from.X-a.Position.X)<=3.3;
+            // On the axis is not enough: beyond a road end or a corner the
+            // walker is on the curb or grass, not in a lane to walk along.
+            var withinCarriageway=(horizontal&&Math.Abs(from.Z-a.Position.Z)<=3.3||vertical&&Math.Abs(from.X-a.Position.X)<=3.3)&&InAsphalt(Surface(),from);
             if(withinCarriageway){
                 // Old paths could leave a walker inside a straight carriageway,
                 // including at a marked node whose paint is offset near a highway.
@@ -85,10 +87,15 @@ public sealed partial class CitySimulation
         }
         foreach(var point in laneApproach)Add(point);
         if(crossingApproach!=null)Add(crossingApproach.Value);
+        // This walk keeps one side of the route and crosses only at its ends.
+        // Where a highway end, a nearby road or a corner breaks that, it would
+        // cut asphalt outside paint: walk the real sidewalks from here instead.
+        var prefix=points.ToList();
+        List<Point> Sidewalks(){var path=SidewalkWalk(prefix[^1],a,door,b);if(path.Count==0)return [];var result=prefix.ToList();foreach(var point in path.Skip(1))if(result[^1].Distance(point)>.001)result.Add(point);return result;}
         // Crossing constructs the approach to real paint. A radial curb point
         // inserted beforehand could already cross the lane outside that paint.
-        if(CrossesLane(from,walk[0],a)){if(!Crossing(a,points[^1],walk[0]))return [];}else Add(walk[0]);
-        foreach(var point in walk.Skip(1))Add(point);var entry=b.Position+SideTowards(b.Position,door,offset);if(!Crossing(b,points[^1],entry))return [];Add(door);return points;
+        if(CrossesLane(from,walk[0],a)){if(!Crossing(a,points[^1],walk[0]))return Sidewalks();}else Add(walk[0]);
+        foreach(var point in walk.Skip(1))Add(point);var entry=b.Position+SideTowards(b.Position,door,offset);if(!Crossing(b,points[^1],entry))return Sidewalks();Add(door);return LegalWalk(points)?points:Sidewalks();
     }
 
     static Point SideTowards(Point road,Point door,double offset){var delta=door-road;var d=delta.Distance(new(0,0));return d<.01?new(0,offset):new(delta.X/d*offset,delta.Z/d*offset);}
