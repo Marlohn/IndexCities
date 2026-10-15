@@ -37,6 +37,8 @@ public partial class Main:Node3D
         if(args.Contains("--activity-smoke")||args.Contains("--activity-before"))CallDeferred(MethodName.ActivitySmoke);
         if(args.Contains("--circulation-smoke"))CallDeferred(MethodName.CirculationSmoke);
         if(args.Contains("--interior-arrival-smoke"))CallDeferred(MethodName.InteriorArrivalSmoke);
+        if(args.Contains("--pedestrian-before")||args.Contains("--pedestrian-recovery-smoke"))CallDeferred(MethodName.PedestrianRecoverySmoke);
+        if(args.Contains("--activity-indicators-smoke"))CallDeferred(MethodName.ActivityIndicatorsSmoke);
         if(args.Contains("--services-before")||args.Contains("--services-smoke"))CallDeferred(MethodName.ServicesSmoke);
         if(args.Contains("--environment-smoke"))CallDeferred(MethodName.EnvironmentSmoke);
         if(args.Contains("--lake-recovery-smoke"))CallDeferred(MethodName.LakeRecoverySmoke);

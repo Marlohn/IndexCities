@@ -95,6 +95,12 @@ public partial class CityWorld
 
     internal bool RaisedSidewalkAt(Point p) => _sidewalkSurface.Any(r => r.HasPoint(new((float)p.X, (float)p.Z)));
 
+    // QA oracle on what is drawn: asphalt outside the painted stripes. The
+    // .1 m gaps between stripes count as paint; curb edges are not asphalt.
+    internal bool OnUnpaintedAsphalt(Point p) =>
+        _roadCarriageways.Any(r => p.X > r.Position.X + .001 && p.X < r.End.X - .001 && p.Z > r.Position.Y + .001 && p.Z < r.End.Y - .001) &&
+        !_crosswalkStripes.Any(s => p.X >= s.MinX - .06 && p.X <= s.MaxX + .06 && p.Z >= s.MinZ - .06 && p.Z <= s.MaxZ + .06);
+
     void PreviewRoadPoint(Point point, string name, float radius, string color)
     {
         _preview.AddChild(new MeshInstance3D { Name = name, Position = P(point, .43f), Mesh = new CylinderMesh { TopRadius = radius, BottomRadius = radius, Height = .07f, RadialSegments = 24 }, MaterialOverride = PreviewMaterial(color), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });

@@ -16,6 +16,8 @@ A [V1 aprovada](SPEC.md#v1--primeira-versão-jogável-integrada-escopo-aprovado-
 
 **Divisão de trabalho definida pelo responsável em 2026-10-12:** Codex coordena e cuida de documentação, jogo, integração e validação. Claude Opus 5.5 com ultracode produz somente assets pedidos por Codex. A regra operacional está no [AGENTS](../AGENTS.md#coordenação-da-v1-e-frente-de-assets--2026-10-12); o [briefing visual](exploration/first-playable-assets.md) organiza famílias e limites, sem autorizar produção indiscriminada do inventário.
 
+**Piloto paralelo de 2026-10-14:** Claude produziu os indicadores reais nos prédios enquanto Codex corrigia as rotas; Haiku concluiu a revisão independente. Os seis casos de pessoas paradas melhoraram, mas a revisão confirmou travessias fora das faixas em segmentos intermediários. Por repasse autorizado no [AGENTS](../AGENTS.md), o Claude Opus corrigiu essa falha (F1): as rotas pedonais agora atravessam a via só nas faixas reais em todo o percurso. A revisão independente do DeepSeek V4.1 Flash não encontrou regressão. A experiência ainda depende de avaliação humana. Resultados e limites no [relato V1](exploration/v1-human-playtest-2026-10-13.md#pedestres-e-leitura-da-presença--entrega-9-2026-10-14); a análise da IA segue pendente de revisão humana.
+
 | Tema de entrada | Revisão humana do documento | Escopo / estado |
 | --- | --- | --- |
 | [Recorte e dependências V1](exploration/first-playable-scope.md) | PARCIALMENTE REVISADO | Recorte aprovado na SPEC; sequência e cenários técnicos são apoio exploratório. Investigação e continuidade da validação de jogabilidade, trânsito e partidas prolongadas em 2026-10-13 (PENDENTES). |

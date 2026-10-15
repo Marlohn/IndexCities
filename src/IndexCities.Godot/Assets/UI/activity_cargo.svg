@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Flat pictogram: cargo being loaded or unloaded by a real truck. -->
+  <rect x="5" y="9" width="38" height="31" rx="2.5" fill="#f2c25c" stroke="#ffffff" stroke-width="2.5"/>
+  <path d="M5,19 H43" stroke="#9a6a24" stroke-width="2.5"/>
+  <rect x="19.5" y="9" width="9" height="12" fill="#9a6a24"/>
+</svg>

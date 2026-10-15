@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="136" height="88" viewBox="0 0 136 88">
+  <!-- Information badge for IA-017: pill with a short tail pointing down to the building entrance. -->
+  <path d="M36,3 H100 A33,33 0 0 1 100,69 H80 L68,85 L56,69 H36 A33,33 0 0 1 36,3 Z" fill="#20323a" fill-opacity="0.92" stroke="#e6eed6" stroke-width="3" stroke-linejoin="round"/>
+</svg>
