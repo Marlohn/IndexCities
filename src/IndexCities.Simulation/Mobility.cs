@@ -208,7 +208,15 @@ public sealed partial class CitySimulation
                     if(BlocksEntry(other)){HoldFor(other,0);continue;}
                     var forward=relative.X*Math.Sin(v.Heading)+relative.Z*Math.Cos(v.Heading);
                     var side=Math.Abs(relative.X*Math.Cos(v.Heading)-relative.Z*Math.Sin(v.Heading));
-                    if(Math.Cos(other.Heading-v.Heading)>.5&&forward>0&&side<2.6)HoldFor(other,forward);
+                    if(Math.Cos(other.Heading-v.Heading)>.5&&forward>0&&side<2.6){
+                        // Side by side with converging headings (adjacent lot
+                        // spaces), each is "ahead" of the other: only the higher
+                        // ID yields, as in the coincidence case above.
+                        var back=-relative.X*Math.Sin(other.Heading)-relative.Z*Math.Cos(other.Heading);
+                        var backSide=Math.Abs(-relative.X*Math.Cos(other.Heading)+relative.Z*Math.Sin(other.Heading));
+                        if(back>0&&backSide<2.6&&other.Id>v.Id)continue;
+                        HoldFor(other,forward);
+                    }
                 }
                 var step=Math.Min(d,Math.Min(speed*remaining,Math.Max(0,leaderDistance-8)));
                 if(step<.00001&&d>.00001){v.Cause=blocker?.Status==VehicleStatus.Stranded?$"Aguardando veículo {blocker.Id} sem combustível na via":enteringLane?"Aguardando espaço para acessar a faixa":"Fila na faixa";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}

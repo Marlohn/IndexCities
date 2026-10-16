@@ -111,6 +111,26 @@ public sealed class VehicleMergeTests
         Assert.True(east.Fuel<40);Assert.True(west.Fuel<40);sim.CheckInvariants();
     }
 
+    // Adjacent lot spaces 2.4 m apart (sewage treatment lot) on both sides of the
+    // access node: both cars head to the same lane target between them, so each
+    // saw the other a few centimetres "ahead" and waited for 8 m forever. The ID
+    // tie-break must decide who leaves first.
+    [Fact] public void Cars_leaving_adjacent_lot_spaces_together_do_not_wait_for_each_other_forever()
+    {
+        var (sim,first,second)=Pair(0);
+        foreach(var (car,x) in new[]{(first,-0.4),(second,2.0)}){
+            car.PassengerCar=true;car.RouteIndex=0;car.Position=new(x,31);
+            var toTarget=new Point(0,38.35)-car.Position;car.Heading=Math.Atan2(toTarget.X,toTarget.Z);
+        }
+        var checkedLane=false;
+        for(var step=0;step<60;step++){
+            sim.Advance(.1);
+            if(first.RouteIndex>0&&second.RouteIndex>0){checkedLane=true;Assert.True(first.Position.Distance(second.Position)>=8-.000001);}
+        }
+        Assert.True(checkedLane,first.Cause+" / "+second.Cause);Assert.True(first.Position.X>10,first.Cause);Assert.True(second.Position.X>10,second.Cause);
+        sim.CheckInvariants();
+    }
+
     [Fact] public void Nearby_farm_parking_exits_keep_normal_clearance_after_joining_the_lane()
     {
         var (sim,first,second)=Pair(0);
