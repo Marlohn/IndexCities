@@ -360,7 +360,7 @@ Proposta **para avaliação humana**, não nova fase mandatória: curto *stress 
 |---|---|---|---|---|---|
 | A, original | 47 | 42 / ~200 | 10,6 | ~8.100x | ~86 h |
 | A, sonda | 47 | 42 / ~200 | 5,2 | ~16.600x | ~42 h |
-| Grade 3×400 m, original | 109 | 97 / 400 | 30 | ~2.900x | ~240 h |
+| Grade 3×400 m, original | 109 | 97 / 400 | 30 | ~2.900x | ~244 h |
 | Grade 3×400 m, sonda | 109 | 97 / 400 | 14 | ~6.100x | ~114 h |
 | Grade 5×800 m, sonda | 400 chegando (91 dentro do mapa) | 337 / 1.214 | 197 | ~440x | ~1.600 h |
 
@@ -379,9 +379,9 @@ Meta pedida (80 anos em 20–40 h) equivale a **2,5–4,9 s reais por dia simula
 
 ### Leitura
 
-1. **Com o passo fixo atual a meta é inviável**, inclusive na cidade de 47 SIMs (86 h; 42 h com a sonda). Para milhares de SIMs faltam duas a três ordens de grandeza.
+1. **Com o passo fixo atual a meta é inviável**, inclusive na cidade de 47 SIMs (86 h; 42 h com a sonda). Com 400 SIMs a sonda já está ~40–80x acima da meta e o custo cresce mais que linearmente; para milhares de SIMs a distância tende a ser maior, mas não foi medida.
 2. Otimizações locais equivalentes dão ~2x e são válidas por si (menos CPU em qualquer velocidade), mas **não mudam a conclusão**.
-3. A meta só parece alcançável se o custo passar a depender de **acontecimentos** e não de **entidades × tempo**: em 3,7 s por dia, 10.000 SIMs com ~20 eventos/dia são ~55 mil eventos por segundo, volume normal para um motor de eventos. O obstáculo é o movimento e a interação física (filas, travessias, cruzamentos) hoje resolvidos a cada 2 s para cada agente. **Não há evidência ainda de que isso possa ser feito com equivalência causal.**
+3. A meta só parece alcançável se o custo passar a depender de **acontecimentos** e não de **entidades × tempo**: no meio da faixa da meta (~3,7 s por dia, 30 h para 80 anos), 10.000 SIMs com ~20 eventos/dia são ~54 mil eventos por segundo, volume normal para um motor de eventos. O obstáculo é o movimento e a interação física (filas, travessias, cruzamentos) hoje resolvidos a cada 2 s para cada agente. **Não há evidência ainda de que isso possa ser feito com equivalência causal.**
 4. Sistemas futuros da SPEC (nascimento/envelhecimento, educação, saúde, indústria, transporte coletivo) acrescentam entidades e viagens; com o modelo atual o custo cresce junto.
 
 ### Próximo experimento sugerido (proposta, não aprovado)

@@ -87,7 +87,7 @@ Nenhuma marca de engine, por si só, resolve essas três dimensões. Resultados 
 
 ---
 
-## Calendário civil aprovado e alternativa futura de meses curtos (2026-10-09)
+## Calendário civil aprovado (2026-10-09); meses curtos descartados em 2026-10-16
 
 > **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável **decidiu depois iniciar com calendário real gregoriano** de dias de 24 horas, meses de 28/29/30/31 dias e anos de 365/366 dias, seguindo relógio único e simulação real. **Em 2026-10-16, o responsável confirmou que não aceita encurtar dias, meses, anos ou separar a evolução da vida do relógio real; a evolução de gerações em algumas horas/sessões exige aceleração verdadeira.** A aceleração real de todos os acontecimentos já está aprovada na SPEC; **não reabrir nem relativizar** essa regra.
 
@@ -251,7 +251,7 @@ Medir **legibilidade de viagens, taxas de transações/consumo, tempo de espera 
 
 > **Revisão humana desta subseção: PENDENTE — ideia documentada a pedido do responsável, mas expressamente NÃO DECIDIDA e sujeita a novas rodadas de pesquisa.** Não converter esta proposta em requisito, plano de implementação, velocidade extra, nova modalidade de jogo ou preferência definitiva.
 
-**Motivação:** o responsável expressou preocupação com a estranheza de um calendário ficcional de poucos dias por mês. A reflexão seguinte questionou uma premissa anterior: **a SPEC determina nascimentos, envelhecimento e ciclo de vida, mas não exige que o jogador observe uma geração inteira em algumas dezenas de horas**. Acelerar toda a economia para alcançar esse objetivo talvez seja otimizar a variável errada.
+**Motivação (histórica; superada em 2026-10-16, quando o responsável definiu o acompanhamento geracional como meta — ver SPEC):** o responsável expressou preocupação com a estranheza de um calendário ficcional de poucos dias por mês. A reflexão seguinte questionou uma premissa anterior: **a SPEC determina nascimentos, envelhecimento e ciclo de vida, mas não exige que o jogador observe uma geração inteira em algumas dezenas de horas**. Acelerar toda a economia para alcançar esse objetivo talvez seja otimizar a variável errada.
 
 **Hipótese combinada (D), composta por possibilidades independentes e ainda não aprovadas:**
 
