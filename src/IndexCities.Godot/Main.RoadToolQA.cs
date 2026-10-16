@@ -101,6 +101,7 @@ public partial class Main
 
     async void RoadToolVerifyNative()
     {
+        if(!QaPrecondition(new[]{new Point(-104,32),new Point(-128,32),new Point(-128,48),new Point(-40,44)}.All(point=>_sim.State.Projects.Any(p=>!p.IsMaintenance&&p.Status!=WorkStatus.Cancelled&&p.RoadPoints.Contains(point))),"road-tool-verify","uma cidade preparada por --road-tool-playtest/fixture (obras viárias encomendadas em -104,32 / -128,32 / -128,48 / -40,44)","-- --road-tool-playtest e depois --road-tool-verify com a mesma fixture (--fixture=<native-placement-fixture.json>)"))return;
         try{
             Require(CitySaves.VerificationDirectory!=null,"Verificação usa saves isolados");
             var expected=_sim.State.Projects.Where(p=>!p.IsMaintenance&&p.Status!=WorkStatus.Cancelled).SelectMany(p=>p.RoadPoints).Distinct().ToArray();

@@ -6,6 +6,7 @@ public partial class Main
 {
     async void InteriorArrivalSmoke()
     {
+        if(!QaPrecondition(_sim.State.Citizens.Any(c=>c.Alive&&c.Resident&&c.InsideMap&&!c.Moving&&c.VehicleId==null&&c.BoardingVehicleId==null&&c.ConstructionProjectId==null&&c.Activity=="Em casa"&&_sim.State.Families.Any(f=>f.Id==c.FamilyId&&f.HomeId!=null)),"interior-arrival-smoke","uma cidade real com um morador em casa numa residência concluída","-- --fixture=<cidade-povoada>"))return;
         var directory=System.IO.Path.GetFullPath(ProjectSettings.GlobalizePath("res://../../artifacts/verification/circulation/interior-"+Guid.NewGuid().ToString("N")));
         System.IO.Directory.CreateDirectory(directory);
         try{
