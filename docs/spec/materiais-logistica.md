@@ -13,7 +13,7 @@
 
 ### Recursos físicos iniciais
 
-- A primeira base de recursos físicos do jogo é composta por oito categorias:
+- A primeira base de recursos físicos do jogo é composta por **oito categorias**. As categorias abaixo estão no recorte V1; **Suprimentos médicos**, a oitava categoria, permanece descrita em [Recursos físicos iniciais da Visão aprovada](#recursos-físicos-iniciais-1):
 - Alimentos — consumo da população.
 - Combustível — veículos, logística e serviços.
 - Areia e brita — base viária, drenagem e insumo de concreto/asfalto.
@@ -126,7 +126,7 @@
 
 ## Visão aprovada (ainda não implementada)
 
-### Recursos físicos iniciais (verificar se já está no jogo)
+### Recursos físicos iniciais
 
 - Abastecimento hospitalar automático com estoque físico: hospitais públicos consomem Suprimentos médicos reais quando aplicáveis e repõem seus estoques automaticamente por aquisição efetiva de fornecedores locais ou importação exterior, com Caixa da Cidade, preço, capacidade, transporte e entrega física, sem pedido manual por hospital.
 - Suprimentos ausentes podem limitar o atendimento conforme operação real, sem reposição gratuita ou teletransporte.
@@ -165,40 +165,40 @@
 - Essa opção complementa, não substitui, a extração local e a importação vigente de Combustível pronto.
 - Não importar petróleo gratuitamente, teletransportar matéria-prima para a usina, garantir oferta infinita de caminhões ou transformar o refino em atividade gerenciada por cada pedido do jogador.
 
-### Comércio exterior e logística externa (verificar se já está no jogo)
+### Comércio exterior e logística externa
 
 - A cidade pode exportar excedentes produzidos localmente pela conexão externa.
 - Exportações e importações usam fluxos físicos pela conexão externa.
 
-### Centro de Materiais de Construção (verificar se já está no jogo)
+### Centro de Materiais de Construção
 
 - O armazenamento principal de materiais de construção é tratado como Centro de Materiais de Construção, evitando que a interface force uma distinção de propriedade pública/privada.
 - O Pátio Municipal de Obras pode manter um estoque pequeno; o Centro de Materiais oferece capacidade significativamente maior.
 - O Centro funciona como infraestrutura física de armazenamento e logística da cidade; sua existência não implica que todo material armazenado pertença juridicamente à prefeitura.
 
-### Capacidade e operação do Centro de Materiais (verificar se já está no jogo)
+### Capacidade e operação do Centro de Materiais
 
 - Centros de Materiais de Construção possuem capacidade física limitada.
 - No escopo inicial, um mesmo Centro pode armazenar todos os tipos de materiais de construção.
 - Centros possuem capacidade limitada de carga e descarga simultânea.
 - Saturação de carga/descarga pode gerar fila física de caminhões.
 
-### Exportação automática (verificar se já está no jogo)
+### Exportação automática
 
 - No escopo inicial, excedentes elegíveis podem ser exportados automaticamente.
 - O pagamento externo sai da Reserva Global e vai para o agente econômico que efetivamente vende a mercadoria; exportação privada não vira automaticamente receita do Caixa da Cidade.
 - Toda receita e movimentação relevante de exportação deve aparecer de forma clara na leitura econômica/financeira da cidade.
 
-### Pátio Municipal de Obras (verificar se já está no jogo)
+### Pátio Municipal de Obras
 
 - O estoque do Pátio tem capacidade menor que a de um Centro de Materiais de Construção.
 - Centros de Materiais continuam sendo a infraestrutura principal para armazenamento de grandes quantidades de materiais.
 
-### Armazenamento por tipo de recurso (verificar se já está no jogo)
+### Armazenamento por tipo de recurso
 
 - Centros de Materiais de Construção armazenam materiais de construção: areia e brita, concreto, aço, madeira e asfalto.
 
-### Abastecimento inicial de alimentos e combustível (verificar se já está no jogo)
+### Abastecimento inicial de alimentos e combustível
 
 - Combustível inicial real nos veículos municipais: ambulâncias, viaturas, caminhões de coleta, bombeiros e outros veículos municipais adquiridos no pacote inicial da instalação entram em operação com combustível real em seus tanques, cujo custo e obtenção estão incluídos no investimento efetivo; não são abastecidos gratuitamente nem recebem autonomia infinita.
 - Isso permite a primeira utilização mesmo sem posto operante.

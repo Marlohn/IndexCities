@@ -14,7 +14,7 @@
 - Esc encerra a ferramenta.
 - Essas ações não cancelam obras já encomendadas.
 - O arrasto direito continua girando a câmera.
-- Materiais, orçamento, acesso e construção física continuam reais; a continuidade não encomenda trecho sem outro clique e o esboço continua sujeito à persistência vigente.
+- Materiais, orçamento, acesso e construção física continuam reais; a continuidade não encomenda trecho sem outro clique e o esboço continua sujeito à persistência já aprovada.
 - Ligações entre ruas em obra: permitir ligações e cruzamentos entre traçados já encomendados, cobrando e construindo cada ponto uma única vez.
 - O encaixe e a prévia consideram tanto ruas prontas quanto traçados reais de obras ativas, distinguindo ligação planejada de acesso funcional.
 - Pontos já pertencentes a outra obra ativa não são novamente encomendados ou cobrados no novo trecho.
@@ -40,7 +40,7 @@
 - Um clique no terreno encomenda a obra na posição exibida, sem confirmação separada; o mesmo tipo e rotação ficam ativos para repetir a construção.
 - Um clique inválido ou sem saldo só informa a causa, sem criar obra/cobrança.
 - Botão direito ou Esc cancela a ferramenta.
-- Reposicionamento de esboços usa a mesma prévia/custo antes do clique e mantém as obrigações e limites físicos vigentess.
+- Reposicionamento de esboços usa a mesma prévia/custo antes do clique e mantém as obrigações e limites físicos vigentes.
 - O gesto não elimina entregas, equipe, tempo ou pagamentos reais.
 - 1x em tempo real: um segundo real avança um segundo simulado na velocidade normal.
 - Movimento físico, relógio, obras, turnos, produção e consumo seguem a mesma escala; as velocidades rápidas permitem avançar.
@@ -248,13 +248,13 @@
 
 ## Visão aprovada (ainda não implementada)
 
-### Construção e obras (verificar se já está no jogo)
+### Construção e obras
 
 - A cidade precisa possuir infraestrutura física de armazenamento, como Centros de Materiais de Construção, para materiais de construção.
 - A cidade pode desenvolver produção local de materiais por meio de indústrias/fábricas apropriadas, reduzindo dependência de importações.
 - As cadeias produtivas e a ordem de introdução dos insumos intermediários continuam em estudo na [EXPLORATION](../EXPLORATION.md).
 
-### Intervenção municipal sobre propriedades privadas e realocação de prédios concluídos (verificar se já está no jogo)
+### Intervenção municipal sobre propriedades privadas e realocação de prédios concluídos
 
 - Intervenção no edifício misto: um edifício de uso misto é uma estrutura física única para intervenção/demolição municipal: a ordem sobre a estrutura pode afetar todas as unidades residenciais e comerciais, cada uma com proprietário e indenização devida pelo seu ativo real, exatamente uma vez, ao preço de mercado anterior à intervenção e mediante Caixa disponível.
 - Respeitar desocupação residencial assistida, locações comerciais válidas, interrupção/realocação empresarial, pessoas, estoques e acesso reais, sem cancelar contratos silenciosamente nem exigir veto coletivo dos proprietários.
@@ -339,8 +339,8 @@
 - A prévia de preço não altera nem cria prioridade de compra: vale a primeira oferta ao proprietário antigo (SIM ou empresa) vigente acima, sem aquisição garantida ou mudança automática de propriedade.
 - Para serviços e construções não privadas, informar custos e efeitos pertinentes, sem inventar preço de venda imobiliária ou comprador privado.
 
-### Pontes, viadutos e sobreposição viária (verificar se já está no jogo)
+### Pontes, viadutos e sobreposição viária
 
 - O jogador pode construir pontes.
 - Ruas podem passar por cima de outras ruas por meio de viadutos/níveis sobrepostos.
-- A malha viária permite cruzamentos em níveis diferentes sem exigir interseção no mesmo plano.
+- A malha viária deve permitir cruzamentos em níveis diferentes sem exigir interseção no mesmo plano.

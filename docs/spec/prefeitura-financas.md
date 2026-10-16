@@ -62,7 +62,7 @@
 
 - Não aplicar automaticamente os três meses da inadimplência do aluguel, nem impor despejo, apreensão, venda forçada do imóvel, transferência de titularidade, multas/juros ou anistia fictícia por atraso de imposto; esses eventos não decorrem da inadimplência de imposto imobiliário.
 
-- Para SIM falecido, aplica-se o tratamento de dívidas municipais pessoais na morte, em economia; não cobrar herdeiros nem exigir quitação compulsória por ativos físicos.
+- Para SIM falecido, não inventar uma regra de cobrança contra herdeiros nem quitação compulsória de ativos físicos: o tratamento sucessório de outras dívidas pessoais continua dependente de definição própria quando necessário.
 
 - Cadência de lançamento, pagamentos, recuperação, coexistência de credores e arredondamentos são calibração/definição técnica proporcional, sem mudar os efeitos de produto aqui aprovados.
 
@@ -118,7 +118,7 @@
 
 - O principal de um empréstimo sai da Reserva Global e entra no Caixa da Cidade; amortizações e juros retornam à Reserva Global.
 
-- **Em aberto:** Pacote de empréstimo da V1: limite de 100.000 de principal municipal em aberto, prazo de 12 meses e juros de 0,3% ao mês sobre o principal restante.
+- **Pacote de empréstimo da V1 aprovado pelo responsável em 2026-10-12:** limite de 100.000 de principal municipal em aberto, prazo de 12 meses e juros de 0,3% ao mês sobre o principal restante.
 
 - A distribuição das amortizações dentro do prazo permanece em calibração.
 
@@ -302,7 +302,7 @@
 
 ### Prefeitura — construção física, administração e participação cidadã
 
-> Programas avançados ficam fora da V1. Participação cidadã, verbas por área e preferência local municipal: (verificar se já está no jogo).
+> Programas avançados ficam fora da V1.
 
 #### Auxílio-aluguel com teto mensal definido pelo jogador
 

@@ -1,0 +1,18 @@
+Verificando links locais em Markdown...
+Raiz:      C:\Users\Marlohn\orca\workspaces\IndexCities\Claude-orquestrador
+Ignoradas: bin, obj, .godot, .git, src\IndexCities.Godot\Assets\V1\Source
+
+artifacts\verification\spec-migracao\revisao-RM3.md:77 -> construcao.md
+artifacts\verification\spec-migracao\SPEC-antiga.md:7 -> EXPLORATION.md
+artifacts\verification\spec-migracao\SPEC-antiga.md:7 -> ../AGENTS.md
+artifacts\verification\spec-migracao\SPEC-antiga.md:37 -> exploration/first-playable-scope.md
+artifacts\verification\spec-migracao\SPEC-antiga.md:53 -> exploration/first-playable-assets.md
+artifacts\verification\spec-migracao\SPEC-antiga.md:85 -> exploration/player-interface.md#vagas-de-carro-no-meio-fio--pendente-de-revisão
+artifacts\verification\spec-migracao\SPEC-antiga.md:193 -> exploration/product-direction.md
+artifacts\verification\spec-migracao\SPEC-antiga.md:333 -> exploration/companies-markets.md#pesquisa-de-portfolio-enxuto-de-servicos-privados-2026-10-08
+artifacts\verification\spec-migracao\SPEC-antiga.md:335 -> exploration/companies-markets.md#atualizacao-empresas-diferentes-com-poucos-modelos-base-2026-10-08
+artifacts\verification\spec-migracao\SPEC-antiga.md:577 -> exploration/simulation-scale.md#4-escala-de-tempo-e-velocidades
+artifacts\verification\spec-migracao\SPEC-antiga.md:1039 -> exploration/local-environment-wellbeing.md
+
+Resumo: 71 arquivo(s) Markdown, 352 link(s) local(is) verificado(s), 11 quebrado(s).
+Há links locais quebrados.

@@ -22,7 +22,7 @@
 
 - SIMs e empresas compram bens, imóveis, instalações e insumos com dinheiro realmente disponível, sem criar agora bancos, financiamentos imobiliários, empréstimos pessoais ou crédito empresarial.
 
-- Esta regra preserva os empréstimos municipais entre Caixa da Cidade e Reserva Global nem permite saldo privado negativo fictício.
+- Esta regra não altera os empréstimos municipais entre Caixa da Cidade e Reserva Global nem permite saldo privado negativo fictício.
 
 - Se compras grandes ficarem inviáveis na economia, avaliar em testes antes de aprovar financiamento futuro.
 
@@ -172,7 +172,6 @@
 
 - As quantidades só mudam por operações já definidas, como produção, entrega, compra e consumo; perecibilidade pode ser avaliada futuramente, sem novo sistema de refrigeração ou rastreamento por lote agora.
 
-- Empresas podem falir quando não conseguirem sustentar suas obrigações econômicas; o jogador deve conseguir identificar as receitas, despesas e eventos concretos que levaram à deterioração e à falência.
 
 - Fazendas e agricultura produzem diretamente a categoria Alimentos no escopo inicial.
 
@@ -354,6 +353,8 @@
 
 ### Falência e encerramento de empresas
 
+- Empresas podem falir quando não conseguirem sustentar suas obrigações econômicas; o jogador deve conseguir identificar as receitas, despesas e eventos concretos que levaram à deterioração e à falência.
+
 - O jogo não precisa simular legislação ou processo jurídico detalhado de falência.
 
 - Para gameplay, falência significa que uma empresa não consegue sustentar sua operação por tempo suficiente e encerra definitivamente como empresa; ela não permanece indefinidamente tentando recomeçar.
@@ -372,7 +373,7 @@
 
 - Ativos não vendidos podem ficar sem proprietário conforme a regra existente, sem impedir eternamente o encerramento.
 
-#### Liquidação empresarial proporcional, simples e automática —
+#### Liquidação empresarial proporcional, simples e automática
 
 - Após a falência terminal, a empresa interrompe operações e utiliza o dinheiro real que ainda possuir, incluindo valores efetivamente recebidos de vendas de imóveis/ativos durante a curta etapa de liquidação já prevista, para quitar dívidas efetivamente registradas e ainda devidas a credores reais (por exemplo, salários de SIMs, fornecedores e Caixa da Cidade por impostos, água ou energia).
 
@@ -513,8 +514,6 @@
 ## Visão aprovada (ainda não implementada)
 
 ### Patrimônio e investimento residencial dos cidadãos
-
-> (verificar se já está no jogo) O recorte V1 não explicita estes desdobramentos.
 
 #### Rateio entre créditos municipais na morte
 
@@ -694,7 +693,7 @@
 
 - Pagamentos parciais abatem o saldo devido, mas não reiniciam nem suspendem a contagem dos 3 meses enquanto restar dívida vencida.
 
-- A quitação integral do débito encerra a inadimplência e zera sua contagem; um novo atraso inicia novo prazo. ao completar os 3 meses com dívida vencida ainda pendente, a locação termina automaticamente por inadimplência; não há votação/decisão adicional do SIM proprietário, autorização do jogador ou tolerância extra por padrão.
+- A quitação integral do débito encerra a inadimplência e zera sua contagem; um novo atraso inicia novo prazo. Ao completar os 3 meses com dívida vencida ainda pendente, a locação termina automaticamente por inadimplência; não há votação/decisão adicional do SIM proprietário, autorização do jogador ou tolerância extra por padrão.
 
 - A família entra no processo automático de procura e saída da moradia definido; a ocupação e a mudança seguem caminhos físicos/tempos reais viáveis, sem teletransporte nem garantia de casa nova.
 
@@ -702,7 +701,7 @@
 
 - O gatilho é o vencimento dos 3 meses, não uma ordem manual ou um despejo com novo prazo arbitrário.
 
-- A dívida de aluguel não é perdoada automaticamente quando a família deixa o imóvel ou se muda; permanece como obrigação devida ao credor real, com recuperação salarial gradual e tratamento na morte definidos nesta seção.
+- A dívida de aluguel não é perdoada automaticamente quando a família deixa o imóvel ou se muda; permanece como obrigação devida ao credor real até ocorrer uma forma de quitação ou resolução ainda a definir.
 
 - A dívida é uma obrigação rastreável, não saldo monetário criado: apenas um pagamento efetivo transfere dinheiro dos SIMs devedores ao SIM credor.
 
@@ -958,6 +957,9 @@
 
 #### Locação comercial entre empresas
 
+- A empresa dona também pode alugar a outra empresa operadora, que não se torna proprietária pela locação.
+- Não misturar a titularidade do imóvel ao estoque/caixa/funcionários da locatária e não introduzir propriedade de imóveis comerciais por SIMs.
+
 - A empresa proprietária de um imóvel comercial/industrial pode alugá-lo a outra empresa economicamente distinta, que passa a ser sua operadora quando a atividade for viável.
 
 - O contrato registra proprietário e locatária reais, imóvel físico único e aluguel periódico monetário real da empresa locatária à proprietária, sem compra disfarçada, aluguel para si mesma, dinheiro, emprego, clientes ou patrimônio fictícios.
@@ -1091,15 +1093,9 @@
 
 ### Aquisição e operação de comércio e indústria
 
-#### Locação comercial entre empresas
-
-- A empresa dona também pode alugar a outra empresa operadora, que não se torna proprietária pela locação.
-
-- Não misturar a titularidade do imóvel ao estoque/caixa/funcionários da locatária e não introduzir propriedade de imóveis comerciais por SIMs.
+Ver [Locação comercial entre empresas](#locação-comercial-entre-empresas).
 
 ### Ciclo inicial de um prédio econômico privado
-
-> (verificar se já está no jogo) O recorte V1 não explicita estes desdobramentos.
 
 #### Expansão patrimonial orgânica da mesma empresa
 
@@ -1126,8 +1122,6 @@
 - No primeiro modelo, nenhum minigame de transferências ou ordem logística por filial ao jogador; decisões são automáticas conforme disponibilidade e necessidades reais.
 
 ### Propriedade, demanda e vulnerabilidade social
-
-> (verificar se já está no jogo) O recorte V1 não explicita estes desdobramentos.
 
 - Falência pessoal no primeiro modelo é uma condição econômica simples e derivada, quando o SIM não dispõe de dinheiro suficiente para sustentar suas obrigações e possui dívidas.
 

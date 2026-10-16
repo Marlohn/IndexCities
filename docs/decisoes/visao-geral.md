@@ -25,7 +25,7 @@
 - 2026-10-11 — Cancelamento de prévia sem histórico de desfazer após confirmação (escolha 3A) → Experiência para diferentes públicos e modos.
 - 2026-10-11 — Critério transversal: gestão profunda para adultos e construção agradável para quem ainda não lê (prioridade revista) → Experiência para diferentes públicos e modos.
 - 2026-10-12 — Recorte funcional da V1 aprovado (escopo da primeira versão jogável integrada) → Experiência para diferentes públicos e modos / V1.
-- 2026-10-12 (noite) — Pacote "3" (Cidade viva na V1): carro particular comprado ao migrar, uso, vagas reais e visitas/passeios (escolhas do responsável) → Cidade viva na V1.
+- 2026-10-12 (noite) — Pacote "3" (Cidade viva na V1): carro particular comprado ao migrar, uso, vagas reais e visitas/passeios (escolhas do responsável) → Cidade viva na V1. A análise da primeira partida mediu menos de 1 pedestre visível em média, nenhum carro e 97% dos minutos sem ninguém na rua. O responsável ampliou o recorte da V1 com o pacote "3", **dentro das regras completas já aprovadas** de carros, estacionamento, visitas e combustível.
 - 2026-10-14 — Saída do lote e ingresso lateral na faixa: tráfego na rua mantém prioridade (decisão do responsável) → Cidade viva na V1.
 - 2026-10-15 — Início com Rua e Prefeitura em qualquer ordem, sem raio obrigatório de crescimento (alteração aprovada) → Conceito e apresentação.
 - 2026-10-15 — Alertas de problemas sobre os prédios substituem o balão de pessoas (decisão do responsável) → Cidade viva na V1.
