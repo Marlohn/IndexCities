@@ -3,6 +3,7 @@
 > Só registro histórico; as regras vigentes estão em [docs/spec/materiais-logistica.md](../spec/materiais-logistica.md).
 
 - 2026-10-16 — Responsável aprovou documentar e implementar a diferenciação dos caminhões por material, após gostar da proposta: basculante para Areia e brita/Asfalto, betoneira para Concreto e carroceria aberta para Aço/Madeira, mantendo identidade no retorno vazio e regras logísticas existentes. Modelagem solicitada expressamente em GPT-6.1-sol com esforço xhigh; padrão de qualidade do projeto. → seção Caminhões reconhecíveis pelo material.
+- 2026-10-16 — Ao esclarecer a reutilização externa, responsável escolheu que cada caminhão conserva seu modelo também nas próximas entregas. A frota deve respeitar compatibilidade por carga sem trocar a carroceria do mesmo veículo no exterior. → seção Caminhões reconhecíveis pelo material.
 
 - 2026-10-09 — Hospitais repõem Suprimentos médicos automaticamente com compra e entrega reais, sem pedido manual por unidade (opção 9A) → seção Recursos físicos iniciais
 - 2026-10-10 — Areia e brita usam jazidas sem contador de esgotamento, com produção limitada, evitando reposição manual de minas (opção 2B complementada) → seção Recursos físicos iniciais

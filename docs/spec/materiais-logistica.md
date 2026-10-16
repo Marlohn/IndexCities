@@ -48,7 +48,7 @@
 ### Caminhões reconhecíveis pelo material
 
 - Entregas de Areia e brita usam caminhão basculante com carga visível; Asfalto usa basculante com carga escura e cobertura; Concreto usa caminhão-betoneira; Aço e Madeira usam carroceria aberta com feixes ou peças presos. O caminhão fechado permanece nas entregas de mercadorias compatíveis com sua função.
-- A carroceria pertence ao veículo físico e permanece durante a viagem e o retorno vazio; não trocar o modelo apenas porque a carga foi descarregada. A apresentação de carga acompanha o material e a quantidade realmente transportados.
+- Cada caminhão físico conserva seu modelo e sua carroceria também entre entregas, inclusive após retornar ao exterior: uma betoneira continua betoneira, um basculante continua basculante e uma carroceria aberta continua aberta. A frota é organizada automaticamente conforme compatibilidade real de material, sem transformar um mesmo veículo em outro modelo, duplicar capacidade ou exigir escolha manual. Variações de carga e cobertura compatíveis com a mesma carroceria acompanham o material e a quantidade realmente transportados; o retorno vazio não muda o modelo.
 - Caçamba, descarga e betoneira só apresentam trabalho de entrega quando a operação correspondente realmente ocorre. Peças móveis são controladas pelo estado da simulação, sem descarga decorativa, carga fictícia ou animação que faça a obra avançar por si.
 - A diferenciação inicial preserva capacidades, custos e regras logísticas existentes. Não exige que o jogador compre, escolha ou despache cada modelo; não acrescenta perecibilidade do concreto, temperatura do asfalto, novas receitas ou gestão manual de frota.
 
