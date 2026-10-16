@@ -95,6 +95,31 @@ public partial class CityWorld
 
     internal bool RaisedSidewalkAt(Point p) => _sidewalkSurface.Any(r => r.HasPoint(new((float)p.X, (float)p.Z)));
 
+    HashSet<Point> PlannedRoadLayout(IEnumerable<Point>? extra=null,int? ignoredProject=null) => _state.Roads.Select(r=>r.Position)
+        .Concat(_state.Projects.Where(p=>p.Id!=ignoredProject&&!p.IsMaintenance&&p.Status is WorkStatus.Waiting or WorkStatus.InProgress).SelectMany(p=>p.RoadPoints))
+        .Concat(extra??[]).ToHashSet();
+
+    void DrawRoadDraft(Node3D parent,IEnumerable<Point> points,IReadOnlySet<Point> layout,string color,float top)
+    {
+        var footprints=new List<Rect2>();var asphalt=new List<Rect2>();
+        var width=(float)_state.Tuning.RoadWidth;var step=(float)_state.Tuning.RoadStep;var lane=width*(6.5f/10.5f);
+        foreach(var at in points){
+            var footprint=RoadGeometry.Footprint(at,layout,width,step);Add(footprints,at,(float)footprint.Width,(float)footprint.Depth);
+            var (horizontal,vertical)=RoadGeometry.Directions(at,layout,step);if(!horizontal&&!vertical)horizontal=true;
+            if(horizontal&&vertical){
+                Add(asphalt,at,lane,lane);var side=(width-lane)/2;
+                foreach(var alongX in new[]{true,false})foreach(var sign in new[]{-1,1}){
+                    if(!layout.Contains(at+(alongX?new Point(sign*step,0):new Point(0,sign*step))))continue;
+                    var offset=sign*(lane/2+side/2);
+                    Add(asphalt,at+(alongX?new Point(offset,0):new Point(0,offset)),alongX?side:lane,alongX?lane:side);
+                }
+            }else Add(asphalt,at,horizontal?step:lane,horizontal?lane:step);
+        }
+        SurfaceMesh(parent,RoadSurfacePartition(asphalt),top,PreviewMaterial(color,.34f));
+        SurfaceMesh(parent,RoadSurfacePartition(footprints,asphalt),top+.025f,PreviewMaterial(color,.65f));
+        static void Add(List<Rect2> target,Point p,float w,float d)=>target.Add(new((float)p.X-w/2,(float)p.Z-d/2,w,d));
+    }
+
     // QA oracle on what is drawn: asphalt outside the painted stripes. The
     // .1 m gaps between stripes count as paint; curb edges are not asphalt.
     internal bool OnUnpaintedAsphalt(Point p) =>

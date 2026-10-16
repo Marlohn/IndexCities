@@ -62,7 +62,10 @@ public partial class Main
             var rightPixel=_camera.UnprojectPosition(ToV(new(-200,16)));
             RecoveryInput(new InputEventMouseButton{ButtonIndex=MouseButton.Right,Pressed=true,Position=rightPixel,GlobalPosition=rightPixel});await RecoveryFrame();
             RecoveryInput(new InputEventMouseButton{ButtonIndex=MouseButton.Right,Pressed=false,Position=rightPixel,GlobalPosition=rightPixel});await RecoveryFrame();
-            Require(!_roadTool&&_roadStart==null&&!_placementGridVisible,"Clique direito curto encerra sequência e grade");
+            Require(_roadTool&&_roadStart==null&&_placementGridVisible,"Primeiro clique direito cancela só o traçado");
+            RecoveryInput(new InputEventMouseButton{ButtonIndex=MouseButton.Right,Pressed=true,Position=rightPixel,GlobalPosition=rightPixel});await RecoveryFrame();
+            RecoveryInput(new InputEventMouseButton{ButtonIndex=MouseButton.Right,Pressed=false,Position=rightPixel,GlobalPosition=rightPixel});await RecoveryFrame();
+            Require(!_roadTool&&!_placementGridVisible,"Segundo clique direito sem traçado volta à seleção");
             await RecoveryButton(RecoveryRoadButton());
             await RecoveryWorldPoint(new(-216,32));
             await RecoveryPreviewWorldPoint(new(-168,32));

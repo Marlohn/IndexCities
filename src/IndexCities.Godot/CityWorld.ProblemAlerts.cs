@@ -49,12 +49,13 @@ public partial class CityWorld
     const double ProblemStaffPersistSeconds=300; // staff persists much longer, so shift handovers never flicker
     const double ProblemStockPersistSeconds=60;  // stock flickers on every sale/restock without a short delay
     const double ProblemRecoverFactor=5;        // recovery clears the icon this much faster
-    const float ProblemTileY=34,ProblemTileStep=76,ProblemMaxHeight=7.2f;
+    const float ProblemTileY=34,ProblemTileStep=76,ProblemRoofClearance=2.2f;
     double _problemClock,_problemElapsedAt;bool _problemDirty=true;
 
     void CreateProblemAlerts(Building b,Node3D node,Node3D visual)
     {
-        var anchor=new Node3D{Name="BuildingProblems"+b.Id,Position=new(0,Math.Min(ModelTop(node,visual)+2.2f,ProblemMaxHeight),-(float)b.Definition.Depth/2-.3f),Visible=false};
+        // Centred above the roof: the problem belongs to the whole building, reads the same from any camera yaw and stays clear of the street and of the cargo badge at the entrance.
+        var anchor=new Node3D{Name="BuildingProblems"+b.Id,Position=new(0,ModelTop(node,visual)+ProblemRoofClearance,0),Visible=false};
         node.AddChild(anchor);
         _problemAlerts[b.Id]=new ProblemAlert{Anchor=anchor};
         _problemDirty=true;

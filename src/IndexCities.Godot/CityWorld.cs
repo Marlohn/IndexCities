@@ -221,8 +221,10 @@ public partial class CityWorld:Node3D
         var works=state.Projects.Where(p=>!p.IsMaintenance&&p.RoadPoints.Count>0&&p.Status is WorkStatus.Waiting or WorkStatus.InProgress).ToList();
         var geometry=works.Aggregate(state.RoadRevision,(hash,p)=>HashCode.Combine(hash,p.Id,p.RoadPoints.Count,p.BuiltRoadNodes.Count,p.Status));
         if(_roadWorkGeometry!=geometry){foreach(var id in _roadWorks.Keys.ToList())Remove(_roadWorks,id);_roadWorkLabels.Clear();
+            var layout=PlannedRoadLayout();
             foreach(var work in works){var root=new Node3D{Name="RoadWork"+work.Id};AddChild(root);_roadWorks[work.Id]=root;
-                for(var i=0;i<work.RoadPoints.Count;i++){var at=work.RoadPoints[i];if(state.Roads.Any(r=>r.Position.Distance(at)<.05))continue;Box(root,RoadCellSize(work.RoadPoints,i,(float)state.Tuning.RoadWidth,(float)state.Tuning.RoadStep),P(at,.18f),"c7ae78",.45f);}
+                var remaining=work.RoadPoints.Where(at=>state.Roads.All(r=>r.Position.Distance(at)>.05)).ToArray();
+                DrawRoadDraft(root,remaining,layout,"c7ae78",.18f);
                 var label=new Label3D{FontSize=32,PixelSize=.06f,Width=360,AutowrapMode=TextServer.AutowrapMode.WordSmart,Billboard=BaseMaterial3D.BillboardModeEnum.Enabled,NoDepthTest=true,Modulate=new Color("fff5d4"),Position=P(work.Position,3),OutlineSize=4};root.AddChild(label);_roadWorkLabels[work.Id]=label;
             }_roadWorkGeometry=geometry;
         }
@@ -230,11 +232,6 @@ public partial class CityWorld:Node3D
             var cause=work.Cause.StartsWith("Sem ligação pronta ao exterior",StringComparison.Ordinal)?"Aguarda ligação pronta":work.Cause switch{"Trecho válido; ligação exterior disponível"=>"Ligação exterior disponível","Trecho construído; aguardando ligação ao exterior"=>"Aguarda ligação real","Construção em andamento"=>"Em construção",_=>work.Cause};
             var text=$"Obra de rua #{work.Id}\n{(int)(work.Progress*100)}% • {cause}";if(_roadWorkLabels[work.Id].Text!=text)_roadWorkLabels[work.Id].Text=text;
         }
-    }
-    Vector3 RoadCellSize(IReadOnlyList<Point> points,int i,float width,float step)
-    {
-        var at=points[i];var adjacent=new List<Point>();if(i>0)adjacent.Add(points[i-1]);if(i+1<points.Count)adjacent.Add(points[i+1]);if(adjacent.Count==0)adjacent.AddRange(_state.Roads.Where(r=>r.Position.Distance(at)<=step+.05).Select(r=>r.Position));
-        var horizontal=adjacent.Any(p=>Math.Abs(p.X-at.X)>.1);var vertical=adjacent.Any(p=>Math.Abs(p.Z-at.Z)>.1);return horizontal&&vertical?new(width,.05f,width):vertical?new(width,.05f,step):new(step,.05f,width);
     }
     void ForgetVisual(int id){_companySigns.Remove(id);_rotors.Remove(id);_waterStates.Remove(id);_stockStates.Remove(id);_stockMarkers.Remove(id);_buildingPickMeshes.Remove(id);_activityBadges.Remove(id);_problemAlerts.Remove(id);_problemPersistence.Remove(id);}
     static string BriefWorkCause(string cause)=>cause switch{
@@ -268,8 +265,13 @@ public partial class CityWorld:Node3D
         if(vertical&&!horizontal){SurfaceRect(road.Position,half*2,step,false);SurfaceRect(road.Position,asphalt,step,true);}
         if(!road.Highway&&road.Id%8==0){var lamp=Scene("road.urban_1x1.a.lamp")??new Node3D();lamp.Position=horizontal&&vertical?new(half-.7f,RoadSidewalkTop,half-.7f):horizontal?new(0,RoadSidewalkTop,half-.7f):new(half-.7f,RoadSidewalkTop,0);lamp.Rotation=new(0,horizontal?0:Mathf.Pi/2,0);n.AddChild(lamp);if(lamp.GetChildCount()==0)Box(lamp,new(.22f,6,.22f),new(0,3,0),"45535a");var source=lamp.GetNodeOrNull<Marker3D>("Candidate_LightSource");var light=new OmniLight3D{Position=source?.Position??new(0,5,0),LightColor=new Color("ffd793"),OmniRange=17,ShadowEnabled=false};lamp.AddChild(light);_lamps[road.Id]=light;if(lamp.GetNodeOrNull<MeshInstance3D>("LampGlass") is {} glass){_lampOn??=GD.Load<Material>("res://Assets/V1/Materials/road_lamp_glass_on.tres");_lampOff??=GD.Load<Material>("res://Assets/V1/Materials/road_lamp_glass_off.tres");_lampGlass[road.Id]=glass;}}
         if(road.Crosswalk&&!road.Highway){
-            foreach(var crossing in CitySimulation.CrosswalkLocations(road,state))for(var i=-2;i<=2;i++)
-                CrosswalkStroke(crossing.Centre,crossing.HorizontalRoad?new(.7f,0,asphalt):new(asphalt,0,.7f),crossing.HorizontalRoad?new(i*.8f,0,0):new(0,0,i*.8f));
+            // Zebra bars run along traffic and repeat across the carriageway.
+            // Preserve the 3.9 m crossing band used by pedestrian routing.
+            var stripes=Math.Max(1,(int)Math.Round(asphalt/.8f));var pitch=asphalt/stripes;
+            foreach(var crossing in CitySimulation.CrosswalkLocations(road,state))for(var i=0;i<stripes;i++){
+                var across=(i-(stripes-1)/2f)*pitch;
+                CrosswalkStroke(crossing.Centre,crossing.HorizontalRoad?new(3.9f,0,pitch-.1f):new(pitch-.1f,0,3.9f),crossing.HorizontalRoad?new(0,0,across):new(across,0,0));
+            }
             n.AddChild(new MeshInstance3D{Name="Signal",Mesh=new BoxMesh{Size=new(.3f,.7f,.3f)},Position=new(-4,3,4),MaterialOverride=Material("6ca56b")});
         }
         return n;
@@ -368,13 +370,15 @@ public partial class CityWorld:Node3D
             if(!edges.TryGetValue((vertical,line,positive),out var list)){list=new();edges[(vertical,line,positive)]=list;}list.AddRange(segments);
         }
     }
-    public void PreviewRoad(IEnumerable<Point> points,bool valid,double width,bool? connected=null)
+    public void PreviewRoad(IEnumerable<Point> points,bool valid,double width,bool? connected=null,int? ignoredProject=null)
     {
-        var p=points.ToList();var key=$"road:{p.FirstOrDefault()}:{p.LastOrDefault()}:{p.Count}:{valid}:{connected}:{width}:{p.ElementAtOrDefault(p.Count/2)}";if(_previewKey==key)return;ClearPreview();_previewKey=key;
+        var p=points.ToList();var key=$"road:{p.FirstOrDefault()}:{p.LastOrDefault()}:{p.Count}:{valid}:{connected}:{width}:{p.ElementAtOrDefault(p.Count/2)}:{_state.RoadRevision}:{_roadWorkGeometry}:{ignoredProject}";if(_previewKey==key)return;ClearPreview();_previewKey=key;
         var color=!valid?"df8577":connected==false?"e6bc64":"93cf97";var rectangles=new List<PreviewRectangle>();
-        for(var i=0;i<p.Count;i++){var size=RoadCellSize(p,i,(float)width,(float)_state.Tuning.RoadStep);var position=P(p[i],.25f);rectangles.Add(new(position.X-size.X/2,position.X+size.X/2,position.Z-size.Z/2,position.Z+size.Z/2));}
-        SurfaceMesh(_preview,RoadSurfacePartition(rectangles.Select(r=>new Rect2(r.MinX,r.MinZ,r.MaxX-r.MinX,r.MaxZ-r.MinZ))),.25f,PreviewMaterial(color,.48f));
+        var layout=PlannedRoadLayout(p,ignoredProject);
+        foreach(var point in p){var r=RoadGeometry.Footprint(point,layout,width,_state.Tuning.RoadStep);rectangles.Add(new((float)(point.X-r.Width/2),(float)(point.X+r.Width/2),(float)(point.Z-r.Depth/2),(float)(point.Z+r.Depth/2)));}
+        DrawRoadDraft(_preview,p,layout,color,.25f);
         PreviewRoadOutline(rectangles,color);
+        for(var i=1;i<p.Count;i++){var delta=p[i]-p[i-1];PreviewBox(_preview,Math.Abs(delta.X)>.1?new((float)Math.Abs(delta.X),.025f,.12f):new(.12f,.025f,(float)Math.Abs(delta.Z)),P((p[i]+p[i-1])*.5,.37f),PreviewMaterial("fff1a3"));}
         if(p.Count>0){PreviewRoadPoint(p[0],"RoadStart",.8f,"fff1a3");PreviewRoadPoint(p[^1],"RoadEnd",1.05f,color);PreviewValidity(_preview,P(p[^1],1.5f),valid);}
         for(var i=1;i<p.Count-1;i++){var a=p[i]-p[i-1];var b=p[i+1]-p[i];if(Math.Abs(a.X*b.Z-a.Z*b.X)>.01)PreviewRoadPoint(p[i],"RoadCorner",.7f,"fff1a3");}
     }

@@ -18,12 +18,24 @@ public partial class CityWorld
         var mesh=new ImmediateMesh();mesh.SurfaceBegin(Mesh.PrimitiveType.Lines);
         // These are alignment lines, not a buildability or access overlay.
         // Construct once per spacing/map change; toggling only changes visibility.
-        for(var coordinate=Math.Ceiling(-half/step)*step;coordinate<=half;coordinate+=step){
+        var interval=step;var major=state.Tuning.RoadStep*4;var offset=state.Tuning.RoadStep/2;
+        // Road nodes remain unchanged. Put cell boundaries half a road step
+        // away, so the existing nearest-node snap selects the hovered cell.
+        // Building lines subdivide those same cells and match lot edges.
+        for(var coordinate=Math.Ceiling((-half-offset)/interval)*interval+offset;coordinate<=half;coordinate+=interval){
+            mesh.SurfaceSetColor(new Color(.72f,.82f,.74f,Math.Abs((coordinate-offset)%major)<.01?.16f:.1f));
             Line(new(coordinate,-half),new(coordinate,half));
             Line(new(-half,coordinate),new(half,coordinate));
         }
+        if(step>=state.Tuning.RoadStep){
+            mesh.SurfaceSetColor(new Color(.72f,.82f,.74f,.15f));
+            for(var x=Math.Ceiling(-half/interval)*interval;x<=half;x+=interval)
+                for(var z=Math.Ceiling(-half/interval)*interval;z<=half;z+=interval){
+                    Segment(new(x-.12,z),new(x+.12,z));Segment(new(x,z-.12),new(x,z+.12));
+                }
+        }
         mesh.SurfaceEnd();
-        var material=new StandardMaterial3D{AlbedoColor=new Color(.72f,.82f,.74f,.14f),
+        var material=new StandardMaterial3D{AlbedoColor=Colors.White,VertexColorUseAsAlbedo=true,
             Transparency=BaseMaterial3D.TransparencyEnum.Alpha,
             ShadingMode=BaseMaterial3D.ShadingModeEnum.Unshaded};
         _placementGrid=new MeshInstance3D{Name="PlacementGrid",Mesh=mesh,MaterialOverride=material,

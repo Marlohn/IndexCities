@@ -14,6 +14,8 @@
 
 ## Para que este documento existe
 
+**Consulta direcionada — 2026-10-15 (PENDENTE de revisão humana):** a [comparação de grade, perfis viários e expansão](player-interface.md#pesquisa-comparativa-grade-perfis-viários-e-expansão--2026-10-15) reúne fontes primárias de Anno, Cities: Skylines II e Transport Fever 2 para avaliar o construtor atual. Distingue ocupação por células, largura/composição da via e conexão do grafo, com efeitos de vias maiores e infraestrutura cicloviária. É investigação, sem aprovar mudanças na SPEC nem reutilização de código/assets.
+
 > **Revisão humana desta seção:** PENDENTE — pesquisa/síntese da IA ainda não revisada pelo responsável.
 
 

@@ -22,7 +22,14 @@ public sealed class SharedCrosswalkTests
     {
         var sim=NewFixtureCity();
         BuildRoad(sim,new(-224,0),new(-224,4));
-        BuildRoad(sim,new(-224,4),new(-216,4));
+        Assert.False(sim.PlaceRoad(new(-224,4),new(-216,4)).Success);
+        // Old cities may still contain the former close bend. Load that legacy
+        // geometry explicitly so the crossing regression keeps its original
+        // subject without ordering a shape the current tool now rejects.
+        sim.State.Roads.Add(new(){Id=sim.State.NextId++,Position=new(-220,4),MaintenanceDueAt=sim.State.ElapsedSeconds+86400});
+        sim.State.Roads.Add(new(){Id=sim.State.NextId++,Position=new(-216,4),MaintenanceDueAt=sim.State.ElapsedSeconds+86400});
+        sim=CitySimulation.FromJson(sim.SaveToJson());
+        sim.Advance(2); // The normal first mobility tick refreshes legacy paint.
         var corner=sim.State.Roads.Single(r=>r.Position==new Point(-224,4));
         Assert.False(corner.Crosswalk);
         Assert.Empty(CitySimulation.CrosswalkLocations(corner,sim.State));
