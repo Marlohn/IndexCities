@@ -99,3 +99,34 @@ Todos derivam do mesmo estado que a simulação usa em `b.Cause` (`Infrastructur
 - Executada nesta máquina/obra; os smokes de GUI (`--recovery-smoke`, `--ui-smoke`) são instáveis por natureza de interação, e nesta máquina o ponto de parada do `--recovery-smoke` diferiu do citado pelo autor ("fundação pela GUI"), mas falha **igualmente** em `origin/main` e na branch — não é regressão da feature.
 - Não repeti os cenários `--circulation-smoke`/`--finances-smoke` (dependem de cidade-checkpoint ausente) nem medições formais de desempenho em cidade cheia.
 - O worktree temporário de `origin/main` foi removido ao final; nenhum commit de código foi feito.
+
+## Segunda rodada (2026-10-15)
+
+Revisão desta seção: **PENDENTE DE REVISÃO HUMANA**. Revisor: DeepSeek V4.1 Flash (opencode), mesmo contexto independente. Diff revisado: `96ea238..2589784` (autor Muse Spark 1.3), incluindo o relato novo em `problem-alerts-playtest-2026-10-15.md`.
+
+Comandos executados: `scripts/Build.ps1` → build OK, **184 testes, 0 falhas**; `--problem-alerts-smoke` e `--problem-alerts-playtest` no Godot 4.7.2 mono (argumentos da engine antes de `--`, jogo depois, `--review-save-dir` isolado em `artifacts/verification/review2-*`) → **exit 0 nos dois**, marcadores no stdout (`PROBLEM_ALERTS_QA … directory=…\smoke-50a0f193…`, `PROBLEM_ALERTS_PLAYTEST_OK waterAlertsAppearedAndCleared buildings=16 population=17`, diretório `playtest-ca1ba30a…`). Nada foi corrigido no código. Após as execuções o working tree seguiu limpo (nenhum `.import`/`.uid` regravado).
+
+### Veredito por achado
+
+| Achado da 1ª rodada | Veredito | Evidência |
+| --- | --- | --- |
+| BLOQUEANTE-1 — tooltip no hover | **RESOLVIDO** | `Main.AlertTooltip.cs` (painel com nome + texto da inspeção) acionado por movimento real do mouse e em movimento de câmera, suprimido com ferramenta/modal/HUD/construção. Smoke: `newcauses tooltip=balloon+building` e `newcauses tooltip hidden-with-tool-and-away`; captura `newcauses-tooltip.png` conferida mostra `Mercearia / Problemas: Sem funcionários · Estoque vazio` idêntico à inspeção, ao lado dos 2 ícones. |
+| IMPORTANTE-1 — falso-positivo de equipe | **RESOLVIDO** (ratificação da SPEC pendente, ver N-1) | Predicado novo `Present==0&&(OnShift>0\|Hired==0)` em `CityWorld.ProblemAlerts.cs:100-106`. Playtest real: Prefeitura (25) `clean` às 15:10 e às 06:55, **nenhum** `25:staff` no log novo; `before-families other=0` (antes 1–2); `city-healthy other=0`. |
+| MENOR-1 — O(prédios×cidadãos) | **RESOLVIDO** | `CitySimulation.WorkforceByBuilding()` conta presente/em-turno/contratados numa passada por update; `ShiftActiveIn` remove o `BuildingById` por SIM do caminho de turno. Residual aceitável em N-3. |
+| MENOR-2 — horário literal no marcador | **RESOLVIDO** | stdout agora `time=01/01 06:55` (interpolado) em todos os marcadores do playtest. |
+| MENOR-5 — parada após falta persistente sem alerta | **RESOLVIDO** | Alerta de água inclui `WaterOutageSeconds>=WaterClosureHours*3600` para não-casas; QA `real outage-tail water-appeared-and-cleared` aparece e limpa com o contador zerado. |
+| MENOR-3 / MENOR-4 (1ª rodada) | inalterados | MENOR-3 era esclarecimento do revisor (sem ação); MENOR-4 continua encaminhamento de revisão humana (limiares/eólica fora da seção de delegação da SPEC), sem código. |
+
+### `Mobility.cs` é só leitura/refatoração?
+
+Sim. `ShiftActive` passou a delegar para `ShiftActiveIn` preservando a mesma ordem de condições (o teste de `null` foi movido para o chamador, como já era) e `WorkforceByBuilding` é API nova de leitura: snapshot por update, nada serializado, nenhum caminho de decisão/transição alterado. Os 184 testes passam sem nenhuma alteração de teste.
+
+### Novos achados (2ª rodada)
+
+- **N-1 (MENOR — documentação/ratificação humana):** duas mudanças visíveis de apresentação foram além da letra da SPEC e seguem documentadas só no relatório exploratório: (a) o alerta de equipe silencia fora de turno mesmo com o prédio "aberto" (ex.: Prefeitura 15–19h) — a intenção bate com os achados, mas a SPEC ainda diz "em horário de funcionamento sem nenhum funcionário presente"; (b) a cauda "Parada após falta persistente" entrou no alerta de água mesmo com o abastecimento já restaurado, enquanto a SPEC descreve o alerta como "abastecimento recebido abaixo da demanda". Nenhuma das duas é defeito de código, mas a ratificação humana deve atualizar a SPEC (junto de MENOR-4) para código e letra voltarem a coincidir.
+- **N-2 (MENOR — qualidade):** aviso novo `CS8629` em `Main.ProblemAlertsQA.cs:198` (`balloon.Value`); único aviso do build, sem efeito em runtime, trivial de silenciar.
+- **N-3 (MENOR — desempenho residual):** dentro do snapshot, `WorkerPresentAt` ainda chama `ShiftActive`→`BuildingById` (busca linear) por cidadão contratado; uma variante com `ShiftActiveIn` eliminaria o resto do custo se a escala um dia exigir.
+
+### Recomendação final
+
+**Pronto para PR**, com o merge carregando a ratificação humana de N-1 e MENOR-4. Motivos: bloqueante e importâncias resolvidos com evidência real (build, smoke, playtest e captura conferidos nesta revisão); nenhuma regressão de comportamento nova encontrada nos cenários executados; a simulação permanece só com leitura nova e os saves permanecem intactos. As pendências restantes são de documentação/ratificação de apresentação, já sinalizadas pelo autor, não defeitos de engenharia.
