@@ -22,6 +22,7 @@ Antes de iniciar uma rodada de **definição da SPEC** ou de **priorização de 
 
 **Decisão do responsável em 2026-10-16:** `docs/EXPLORATION.md` e `docs/exploration/*.md` são **documentos de pesquisa** registrados por IAs. Não são fonte de verdade e, em geral, não serão revisados por humano; por isso não se exige mais rótulo de revisão (PENDENTE/PARCIALMENTE REVISADO/REVISADO) por documento ou seção. Rótulos antigos podem permanecer, sem efeito.
 
+- **Serve para consulta:** antes de pesquisar um tema, propor uma mecânica ou decidir algo, procure no hub se já existe pesquisa, alternativas descartadas ou evidência sobre o assunto e aproveite-a, para não refazer trabalho nem repetir caminhos rejeitados. Confira se ainda vale: o conteúdo pode estar desatualizado em relação à SPEC e ao código, que prevalecem.
 - Nada da exploração vira requisito, decisão, backlog, plano obrigatório, instrução para agentes ou autorização de implementação/cópia de recursos — **mesmo que o texto use verbos como "implementar", "usar", "reaproveitar" ou "próxima etapa"**.
 - Algo só ganha autoridade quando o responsável aprova explicitamente na conversa e a conclusão é registrada na fonte canônica (`SPEC`, `ARCHITECTURE` ou `AGENTS`). Na dúvida sobre se houve aprovação, trate como não aprovado.
 - Termos como **decidido**, **aprovado** ou **confirmado** só descrevem decisão do responsável ou o que já está na fonte canônica; nunca uma recomendação da IA.
