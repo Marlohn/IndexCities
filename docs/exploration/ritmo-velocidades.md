@@ -169,3 +169,84 @@ Portanto, **aumentar a velocidade da simulação NÃO resolve o problema de o jo
    - Apresentar na interface rótulos visuais limpos (`▶ 1×`, `▶▶ Médio`, `▶▶▶ Rápido`), desvinculando a expectativa do jogador de um multiplicador literal gigantesco.
 4. **Implementar trava anti-espiral (clamp de passos por frame) no host Godot:**
    - Em `AdvanceRealClock`, limitar o número máximo de passos que podem rodar em um único frame (ex.: máximo de 10 a 15 iterações de 2s por frame). Se o computador do jogador tiver uma queda brusca de FPS, o jogo temporariamente desacelera o relógio em vez de entrar no loop infinito de acumulação de `_clockBudget`.
+
+---
+
+## Verificação independente (GPT-6.1) — PENDENTE de revisão humana
+
+> **Revisão humana desta seção: PENDENTE.** Medição e análise independentes em 2026-10-16; não aprovam mudanças de produto. As seções anteriores foram preservadas. Base do código: `2131b4e2e5692b44c8b5835f8849dcb577cc2dde`.
+
+### Método e diferenças de cenário
+
+Ambiente: Windows, Intel Core i5-13420H (8 núcleos/12 threads), Godot 4.7.2 mono, .NET 8, build Debug. Execuções sequenciais, headless, com `--max-fps 144`. Havia outras instâncias Godot no computador; não houve isolamento de CPU. Os valores são amostras locais, não capacidade garantida para outras máquinas/cidades.
+
+Recriei a cidade pelo teste `Entire_v1_catalog_can_be_built_and_operate_with_real_people_and_payments`, sem usar instrumentação do autor original. O snapshot final reproduziu **42 prédios, 245 nós, 47 SIMs, 37 veículos e 45 projetos**. Correções de composição: são **32 residências**, não 34; os outros 10 prédios incluem duas eólicas. Além disso, os 45 projetos do snapshot final estavam concluídos: quantidade de projetos não comprova obras em andamento.
+
+Para atender ao cenário com obra ativa, gerei também um checkpoint imediatamente após `CityCycleTests.City()`, antes das 48 horas adicionais do teste: mesmas contagens, **uma obra ainda ativa**, horário 01/01/2026 16:00. Essa fixture foi obtida por teste temporário e validada com `CheckInvariants`; SHA-256: `6A2879A045C16650D76DCEB5984EC543EB3B7618EC975536C2F8B69DE8E44AB7`.
+
+Cada multiplicador começou em processo novo, carregando a mesma fixture, sem aquecimento descartado. A instrumentação temporária substituiu somente o multiplicador experimental do slot 3, desligou autosave e contou chamadas reais a `Advance(2)`. Mediu o custo de `AdvanceRealClock` com `Stopwatch` e o intervalo real com `Time.GetTicksUsec`, mantendo `CaptureMotionBeforeStep`, `Sync` e HUD. O encerramento ocorreu no primeiro frame completo após 10 segundos reais; por isso há amostras maiores em sobrecarga. O tempo real inclui o custo do último frame, sem parar o cronômetro antes do processamento caro.
+
+Definições: **ticks/s = passos concluídos / tempo real**; **FPS = chamadas completas a `_Process` / tempo real**; **razão = segundos simulados / (tempo real × multiplicador)**. FPS headless mede o host, não renderização/GPU. `CheckInvariants` rodou ao final de cada amostra e, na rodada com obra ativa, nos relatórios intermediários de aproximadamente um segundo. Instrumentação e teste temporário foram revertidos antes do commit; nenhum código do jogo integra esta entrega.
+
+### Resultados com obra ativa
+
+| Velocidade | Real (s) | Simulado (s) | Ticks/s | Simulação/frame (ms) | Apresentação/frame (ms) | FPS do host | Simulado/alvo | Atraso | Maior processamento de frame (ms) | Invariantes |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | :---: |
+| 60x | 10,000 | 598 | 29,90 | 0,280 | 1,851 | 141,99 | 0,9966 | 0,34% | 65,36 | OK |
+| 300x | 10,005 | 3.000 | 149,93 | 0,874 | 1,891 | 141,13 | 0,9995 | 0,05% | 65,39 | OK |
+| 1000x | 10,003 | 9.996 | 499,63 | 2,872 | 2,208 | 130,56 | 0,9993 | 0,07% | 82,00 | OK |
+| 3000x | 10,253 | 29.828 | 1.454,56 | 918,859 | 9,371 | 1,07 | 0,9697 | 3,03% | 1.983,56 | OK |
+| 6000x | 14,222 | 56.436 | 1.984,17 | 1.765,606 | 8,305 | 0,56 | 0,6614 | 33,86% | 4.815,27 | OK |
+
+Em 3000x houve apenas **11 frames completos**; em 6000x, **8**. Ambos terminaram normalmente e passaram nos invariantes, mas os frames de segundos representam pausas graves de resposta. A razão próxima de 1 em 3000x **não significa interface fluida**. Os pequenos déficits nas velocidades menores incluem a quantização de 2 segundos e o custo do último frame.
+
+Como controle mais próximo do snapshot descrito originalmente, repeti as cinco velocidades também com todas as obras concluídas:
+
+| Velocidade | Real (s) | Simulado (s) | Ticks/s | Simulação/frame (ms) | FPS do host | Simulado/alvo |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 60x | 10,006 | 600 | 29,98 | 0,289 | 141,92 | 0,9994 |
+| 300x | 10,005 | 3.000 | 149,93 | 1,222 | 137,73 | 0,9995 |
+| 1000x | 10,001 | 9.996 | 499,76 | 2,813 | 136,59 | 0,9995 |
+| 3000x | 10,058 | 29.860 | 1.484,45 | 24,714 | 36,49 | 0,9896 |
+| 6000x | 13,349 | 56.440 | 2.114,00 | 1.660,978 | 0,60 | 0,7047 |
+
+Todos passaram em `CheckInvariants`. As diferenças entre checkpoints e a ausência de aquecimento impedem atribuir a queda de FPS exclusivamente à obra ativa. Não reproduzi os **144 FPS em 3000x** do estudo: mesmo o controle ficou em 36,49 FPS. Tampouco reproduzi congelamento permanente em 6000x: houve progresso, frames muito longos e encerramento normal.
+
+### Estabilidade e movimento: o que foi e não foi verificado
+
+- Não houve exceção, timeout de 60 segundos ou falha de invariantes nas dez amostras válidas. Os invariantes cobrem oferta monetária/saldos, estoques, combustível/carga, compromissos/obras, IDs, propriedade e famílias (`src/IndexCities.Simulation/CitySimulation.cs:82`). Não são uma auditoria completa de colisões, semáforos ou continuidade visual.
+- Na fixture com obra ativa, a maior distância entre posições **da simulação** de um mesmo veículo em estado `Travelling` em dois frames consecutivos foi **46,38 m em 60x**, **147,35 m em 300x** e **312,58 m em 1000x**. Não são posições interpoladas do modelo visual. A métrica não separa um quantum físico normal de uma chegada/saída ou frame lento; não prova teletransporte físico. Em 3000x/6000x não houve deslocamento positivo capturado por esse filtro, com pouquíssimos frames; isso não comprova ausência de saltos.
+- O risco de perder legibilidade entre frames permanece fundamentado: `CaptureMotionBeforeStep` sobrescreve a amostra anterior a cada passo (`src/IndexCities.Godot/CityWorld.cs:78`), e `Sync` calcula a apresentação a partir dessa última amostra (`src/IndexCities.Godot/CityWorld.cs:110`). Muitos passos por quadro reduzem a sequência apresentada. **Veículos visualmente “pulando” não foram confirmados por observação renderizada nesta verificação headless.**
+
+### Conferência das três afirmações no código
+
+1. **Passo de 2 segundos: confirmado na implementação atual.** `src/IndexCities.Godot/Main.cs:84` executa `while(_clockBudget>=2)` e chama `_sim.Advance(2)`. `src/IndexCities.Simulation/CitySimulation.cs:11` define `Quantum=>2`; `:65` fatia chamadas maiores em `Math.Min(Quantum,remaining)`. A velocidade aumenta a quantidade de passos, não o tamanho deles. Isso não demonstra, por si só, que 2 segundos seja um limite físico universal ou que todo defeito hipotético com outro `dt` já tenha sido reproduzido.
+2. **Imposto mensal com alíquota anual: confirmado; atribuição a `DailyFinance`: incorreta para o lançamento do imposto atual.** A SPEC, linha 660, aprova valor de mercado × alíquota anual ÷ 12 por mês. `CitySimulation.cs:24` inicializa `NextTaxDate=State.Now.Date.AddMonths(1)`; `:79` chama `PropertyTaxes` quando `Now>=NextTaxDate` e avança a data com `AddMonths(1)`. `Finance.cs:38` contém `PropertyTaxes`, e `:41` cobra `MarketValue × TaxRates / 12m`, transfere o pagamento à cidade e registra a parte não paga como dívida. Não há lançamento anual integral nem rateio diário `/365` nesse caminho. Meses seguem o calendário, não duração fixa de 30 dias.
+3. **`DailyFinance` existe, mas já há receitas municipais fora do imposto mensal.** O evento diário dispara em `CitySimulation.cs:78`, com datas inicializadas em `:24`. `Finance.cs:13` cobra água e energia efetivamente consumidas para a conta `city`; `:19` recupera dívidas. `RecoverDebt` também é chamado no ciclo econômico (`CitySimulation.cs:77`). Portanto, “esperar o mês para qualquer entrada no caixa” não descreve todos os fluxos existentes. Receita efetiva continua dependendo de consumo, serviço e dinheiro disponível dos devedores; a medição não identificou a causa de uma crise fiscal concreta.
+4. **Limite de passos por frame: não existe no caminho atual.** Em `Main.cs:78–84` não há teto de iterações, prazo de CPU ou descarte/clamp do saldo. Porém, o `while` não acrescenta tempo real dentro dele: recebe um orçamento finito no começo da chamada e subtrai 2 por passo. Assim, a descrição original de “loop que não consegue terminar” é imprecisa. O risco confirmado é realimentação **entre frames**: o frame longo aumenta o intervalo cobrado na chamada seguinte, podendo produzir degradação progressiva. Não foi demonstrado loop literalmente infinito.
+
+### Conclusões que permanecem e que precisam ser retiradas ou limitadas
+
+- **Permanecem:** o modelo atual custa mais passos quando acelerado; falta proteção por frame; sobrecarga prejudica resposta e leitura; um mês idealizado de 30 dias exige 12 h em 60x, 43,2 min em 1000x e 14,4 min em 3000x, se o alvo for sustentado. Esses tempos são aritmética, não garantia de throughput nem diagnóstico de diversão.
+- **Não se sustentam como afirmações gerais:** 3000x a 144 FPS; 6000x necessariamente a 0 FPS ou congelado para sempre; teto universal de 1.950 ticks/s; suavidade visual garantida em 180x/300x; ausência de defeitos físicos apenas porque invariantes passaram. O controle integrado chegou a 2.114 ticks/s, mas não repeti o `MonthlySoak` puro: isso não substitui um novo benchmark do núcleo nem estabelece outro teto fixo.
+- **Precisam de nova avaliação de produto:** a tese de que falta de caixa tem como causa única a cobrança mensal, de que o jogador necessariamente fica passivo e de que cobrança diária resolve sua liquidez. Não foram medidos caixa disponível, compromissos, arrecadação líquida nem capacidade financeira dos pagadores ao longo de um mês. As alternativas diária/híbrida seguem opções de estudo, sujeitas a decisão humana e SPEC; não são implementação autorizada. A existência de `DailyFinance` não comprova custo adicional zero nem benefício econômico/UX.
+- **Limites:** uma amostra por velocidade/checkpoint, sem aquecimento, sem isolamento de CPU, sem cidades maiores, sem soak mensal e sem renderização. São resultados independentes suficientes para contestar certezas do texto original, não para aprovar uma velocidade máxima ou política tributária.
+
+### Validação e comandos
+
+Comandos executados a partir da raiz da worktree; os caminhos completos dos argumentos do jogo evitam depender do diretório de trabalho adotado pela engine:
+
+```powershell
+$root = (Get-Location).Path
+$godot = 'C:/Users/Marlohn/Tools/Godot/Godot_v4.7.2-stable_mono_win64_console.exe'
+dotnet test tests/IndexCities.Simulation.Tests --filter FullyQualifiedName~Entire_v1_catalog --logger 'console;verbosity=normal'
+# 1 teste aprovado; cenário integrado e snapshot gerados.
+dotnet build src/IndexCities.Godot/IndexCities.Godot.csproj
+# Após reverter a instrumentação: 0 erros; 1 aviso preexistente CS8629 em Main.ProblemAlertsQA.cs:198.
+& $godot --headless --editor --import --path src/IndexCities.Godot --quit
+# Importação concluída; arquivos .import/UID gerados foram revertidos/removidos.
+& $godot --headless --path src/IndexCities.Godot --max-fps 144 -- "--fixture=$root/artifacts/verification/ritmo-independent/fixture-active.json" "--review-save-dir=$root/artifacts/verification/ritmo-independent/saves-qa" --performance-smoke --performance-speed=3
+# Código restaurado, velocidade aprovada 60x: INDEXCITIES_PERFORMANCE_OK; 900 s simulados / 15,002793 s reais; invariantes OK.
+```
+
+Nas medições experimentais, o comando headless foi o mesmo formato, usando `--independent-speed=60`, `300`, `1000`, `3000` ou `6000` **em vez** das flags `--performance-*`, com uma pasta de saves isolada por velocidade. Essa flag existiu somente na instrumentação temporária removida; não é opção do jogo entregue. O checkpoint ativo foi gerado por `dotnet test tests/IndexCities.Simulation.Tests --filter FullyQualifiedName~Independent_fixture --logger 'console;verbosity=normal'` (1 aprovado), também removido. Logs, fixtures, cópias de segurança e JSONs brutos permanecem apenas em `artifacts/verification/ritmo-independent/`, ignorado pelo Git; os resultados duráveis estão nas tabelas desta seção.
