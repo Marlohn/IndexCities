@@ -45,7 +45,7 @@ public partial class CityWorld
         }
     }
 
-    static void SurfaceMesh(Node3D parent, IEnumerable<Rect2> rectangles, float top, Material material, float? bottom = null)
+    void SurfaceMesh(Node3D parent, IEnumerable<Rect2> rectangles, float top, Material material, float? bottom = null)
     {
         var cells = rectangles.ToArray(); if (cells.Length == 0) return;
         var mesh = new ImmediateMesh(); mesh.SurfaceBegin(Mesh.PrimitiveType.Triangles);
@@ -59,7 +59,13 @@ public partial class CityWorld
             Quad(c, d, new(d.X, low, d.Z), new(c.X, low, c.Z), Vector3.Back);
             Quad(d, a, new(a.X, low, a.Z), new(d.X, low, d.Z), Vector3.Left);
         }
-        mesh.SurfaceEnd(); parent.AddChild(new MeshInstance3D { Mesh = mesh, MaterialOverride = material, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
+        mesh.SurfaceEnd(); var instance=new MeshInstance3D { Mesh = mesh, MaterialOverride = material, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };parent.AddChild(instance);
+        // Plans already share the ground plane. Moving the pointer must not
+        // rebuild the map-wide grid; only physical road surfaces invalidate it.
+        if(material is not StandardMaterial3D {NoDepthTest:true}){
+            _placementGridSurfaces.RemoveAll(s=>!GodotObject.IsInstanceValid(s.Mesh)||!s.Mesh.IsInsideTree());
+            _placementGridSurfaces.Add((instance,cells,top));
+        }
         void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 normal)
         {
             // Godot uses clockwise front faces, independent of the supplied normal.
@@ -99,7 +105,7 @@ public partial class CityWorld
         .Concat(_state.Projects.Where(p=>p.Id!=ignoredProject&&!p.IsMaintenance&&p.Status is WorkStatus.Waiting or WorkStatus.InProgress).SelectMany(p=>p.RoadPoints))
         .Concat(extra??[]).ToHashSet();
 
-    void DrawRoadDraft(Node3D parent,IEnumerable<Point> points,IReadOnlySet<Point> layout,string color,float top)
+    void DrawRoadDraft(Node3D parent,IEnumerable<Point> points,IReadOnlySet<Point> layout,string color)
     {
         var footprints=new List<Rect2>();var asphalt=new List<Rect2>();
         var width=(float)_state.Tuning.RoadWidth;var step=(float)_state.Tuning.RoadStep;var lane=width*(6.5f/10.5f);
@@ -115,8 +121,10 @@ public partial class CityWorld
                 }
             }else Add(asphalt,at,horizontal?step:lane,horizontal?lane:step);
         }
-        SurfaceMesh(parent,RoadSurfacePartition(asphalt),top,PreviewMaterial(color,.34f));
-        SurfaceMesh(parent,RoadSurfacePartition(footprints,asphalt),top+.025f,PreviewMaterial(color,.65f));
+        // A plan is a ground footprint, not a raised physical road. Transparency
+        // and render priority already separate it from the terrain and grid.
+        SurfaceMesh(parent,RoadSurfacePartition(asphalt),PlacementPlane,PreviewMaterial(color,.34f));
+        SurfaceMesh(parent,RoadSurfacePartition(footprints,asphalt),PlacementPlane,PreviewMaterial(color,.65f));
         static void Add(List<Rect2> target,Point p,float w,float d)=>target.Add(new((float)p.X-w/2,(float)p.Z-d/2,w,d));
     }
 
@@ -128,7 +136,7 @@ public partial class CityWorld
 
     void PreviewRoadPoint(Point point, string name, float radius, string color)
     {
-        _preview.AddChild(new MeshInstance3D { Name = name, Position = P(point, .43f), Mesh = new CylinderMesh { TopRadius = radius, BottomRadius = radius, Height = .07f, RadialSegments = 24 }, MaterialOverride = PreviewMaterial(color), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
+        _preview.AddChild(new MeshInstance3D { Name = name, Position = P(point, PlacementPlane-.001f), Mesh = new CylinderMesh { TopRadius = radius, BottomRadius = radius, Height = .002f, RadialSegments = 24 }, MaterialOverride = PreviewMaterial(color), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
     }
 
     public void PreviewDemolition(RoadNode road)
