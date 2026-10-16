@@ -189,6 +189,40 @@ public partial class Main
         Require(RecoveryNodes<Label>(_inspection).Any(label=>label.Text=="Problemas: Sem funcionários · Estoque vazio"),"Inspeção acusa os mesmos problemas dos ícones");
         await RecoveryCapture(System.IO.Path.Combine(ProblemAlertDirectory!,"newcauses-inspection.png"),GetViewport());
         log.Add("newcauses inspection problems=staff+stock");
+        // Tooltip: same text as the inspection, only in selection mode (no
+        // construction tool). Warps the real OS cursor because the hover reads
+        // the same viewport state the player produces.
+        ClearTool();
+        var balloon=_world.AlertAnchorScreen(grocery.Id,_camera);
+        Require(balloon!=null,"Balão com alertas projetado na tela");
+        Input.WarpMouse(balloon.Value);await RecoveryFrame();await RecoveryFrame();
+        UpdateAlertTooltip(balloon.Value);
+        Require(_alertTooltip.Visible,"Tooltip aparece sobre o balão com alertas");
+        Require(_alertTooltipLabel.Text=="Mercearia\nProblemas: Sem funcionários · Estoque vazio","Tooltip igual à inspeção: "+_alertTooltipLabel.Text);
+        UpdateAlertTooltip(_camera.UnprojectPosition(ToV(grocery.Position,2)));
+        Require(_alertTooltip.Visible,"Tooltip aparece sobre o prédio com alertas");
+        log.Add("newcauses tooltip=balloon+building");
+        await RecoveryCapture(System.IO.Path.Combine(ProblemAlertDirectory!,"newcauses-tooltip.png"),GetViewport());
+        _building=BuildingKind.House;
+        UpdateAlertTooltip(balloon.Value);
+        Require(!_alertTooltip.Visible,"Tooltip some com ferramenta ativa");
+        ClearTool();
+        UpdateAlertTooltip(_camera.UnprojectPosition(ToV(new Point(0,-100),0)));
+        Require(!_alertTooltip.Visible,"Tooltip some longe de alertas");
+        log.Add("newcauses tooltip hidden-with-tool-and-away");
+        // Staff rule: a hired crew between shifts is normal, not an alert.
+        // One resident hire at CityHall on this never-saved copy, then to
+        // 16:00: shift 7-15 over, Open until 19h, nobody present, no alert.
+        // (The morning asserts above already prove a building with no hires
+        // does alert.)
+        var hireId=_sim.State.NextId++;
+        _sim.State.Citizens.Add(new Citizen{Id=hireId,Name="QA",FamilyId=0,Age=30,WorkplaceId=hall.Id,Shift=0,Position=hall.Door,Resident=true,Alive=true,InsideMap=false,WeeklyDayOff=(int)DayOfWeek.Sunday});
+        for(var i=0;i<200&&_sim.State.Now.Hour!=16;i++)_sim.Advance(600);
+        Require(_sim.State.Now.Hour==16,"Cenário de novas causas às 16h: "+_sim.State.Now.ToString("dd/MM HH:mm"));
+        _sim.Advance(60);await ProblemPresent(null);
+        _sim.Advance(60);await ProblemPresent(null);
+        Require(_world.ProblemAlertIcons(hall.Id)=="","Prefeitura com contratados fora do turno não alerta às 16h: "+_world.ProblemAlertIcons(hall.Id));
+        log.Add("newcauses 16h hired-crew-between-shifts silent");
         // Night: opening-hours kinds go quiet; utilities keep their staff
         // alert because their shifts cover the whole day.
         for(var i=0;i<200&&_sim.State.Now.Hour!=23;i++)_sim.Advance(600);
@@ -338,6 +372,17 @@ public partial class Main
         ClearSelection();_selectedBuilding=occupied[0].Id;RefreshInspection();await RecoveryFrame();
         Require(!RecoveryNodes<Label>(_inspection).Any(label=>label.Text.Contains("Falta de água")),"Inspeção deixa de acusar problema resolvido");
         log.Add($"real cleared buildings={string.Join(",",occupied.Select(h=>h.Id))} potable={_sim.State.PotableCapacity:N0} houseWater={string.Join(" ",occupied.Select(h=>h.WaterRatio.ToString("P0")))}");
+        // Same water family: a building stopped after a persistent shortage
+        // keeps the water icon briefly once the supply returns, while its
+        // outage counter is still at the closure threshold. Outage forced on
+        // this never-saved copy (the real shortage never reaches 72 h).
+        treatment.WaterOutageSeconds=_sim.State.Tuning.WaterClosureHours*3600+3600;
+        _sim.Advance(60);await ProblemPresent(null);
+        Require(_world.ProblemAlertIcons(treatment.Id).Contains("water"),"Parada após falta persistente mantém água: "+_world.ProblemAlertIcons(treatment.Id));
+        treatment.WaterOutageSeconds=0;
+        _sim.Advance(60);await ProblemPresent(null);
+        Require(!_world.ProblemAlertIcons(treatment.Id).Contains("water"),"Contador zerado apaga a água: "+_world.ProblemAlertIcons(treatment.Id));
+        log.Add("real outage-tail water-appeared-and-cleared");
         await ProblemPresent("real-water-recovered");
         await ProblemPresentDetail("real-water-recovered-detail",occupied[0]);
     }
@@ -438,7 +483,7 @@ public partial class Main
                 if(!force&&snapshot==previous)return;
                 var detail=string.Join(" ",_sim.State.Buildings.Where(b=>b.Completed&&!b.Removed).Select(b=>$"{b.Id}:{(_world.ProblemAlertIcons(b.Id)==""?"clean":_world.ProblemAlertIcons(b.Id))}"));
                 log.Add($"playtest {moment} road={snapshot.Road} water={snapshot.Water} power={snapshot.Power} other={snapshot.Other} clean={snapshot.Clean} time={_sim.State.Now:dd/MM HH:mm} pop={_sim.Population} potable={_sim.State.PotableCapacity:N0} power={_sim.State.ElectricityCapacity:N0} staff={string.Join(" ",capacity)} | {detail}");
-                GD.Print("PROBLEM_ALERTS_PLAYTEST "+moment+" road="+snapshot.Road+" water="+snapshot.Water+" power="+snapshot.Power+" other="+snapshot.Other+" clean="+snapshot.Clean+" time={_sim.State.Now:dd/MM HH:mm}"+" pop="+_sim.Population+" potable="+_sim.State.PotableCapacity.ToString("N0")+" powerCap="+_sim.State.ElectricityCapacity.ToString("N0"));
+                GD.Print("PROBLEM_ALERTS_PLAYTEST "+moment+" road="+snapshot.Road+" water="+snapshot.Water+" power="+snapshot.Power+" other="+snapshot.Other+" clean="+snapshot.Clean+" time="+_sim.State.Now.ToString("dd/MM HH:mm")+" pop="+_sim.Population+" potable="+_sim.State.PotableCapacity.ToString("N0")+" powerCap="+_sim.State.ElectricityCapacity.ToString("N0"));
                 previous=snapshot;
             }
             Observe("before-families",force:true);

@@ -68,14 +68,20 @@ public partial class CityWorld
 
     // Same conditions the simulation uses for the matching b.Cause, read
     // independently so several problems show side by side (the Cause chain
-    // itself keeps only the first one).
-    static bool ProblemAlertActive(string name,Building b,CityState state,CitySimulation simulation)
+    // itself keeps only the first one). Workforce counts come from a single
+    // snapshot per update, never from a scan per building.
+    static bool ProblemAlertActive(string name,Building b,CityState state,CitySimulation simulation,Dictionary<int,(int Present,int OnShift,int Hired)> workforce)
     {
         switch(name){
             // "Sem acesso viário": same test the simulation uses for the cause
             // and for real delivery, crew and vehicle routes.
             case "road":return !simulation.HasExteriorAccess(b);
-            case "water":return b.WaterDemand>0&&b.WaterRatio<.5;
+            // Lack of water, plus the "stopped after a persistent shortage"
+            // tail: same family, kept while the outage counter is still at
+            // the closure threshold after the supply returns. Houses never
+            // carry that cause, so they only alert on a live shortage.
+            case "water":return b.WaterDemand>0&&b.WaterRatio<.5
+                ||b.Kind!=BuildingKind.House&&b.WaterOutageSeconds>=state.Tuning.WaterClosureHours*3600;
             case "power":return b.ElectricityDemand>0&&b.ElectricityRatio<.5&&b.Kind!=BuildingKind.WindPower;
             // "Captação sem água por perto": completed intake far from a viable
             // natural source, the same distance rule the simulation uses.
@@ -87,11 +93,17 @@ public partial class CityWorld
             // opening hours. Utilities run shifts around the clock, so they
             // count as open; houses have no crew; a private shop still
             // looking for a company and a deliberately closed operation are
-            // informative states, not staff alerts.
-            case "staff":return b.Kind!=BuildingKind.House
-                &&(b.Definition.Utility||simulation.BuildingOpen(b))
-                &&!b.OperationClosed&&!(b.Definition.Private&&b.CompanyId==null)
-                &&simulation.WorkersPresent(b)==0;
+            // informative states, not staff alerts. Only an actionable
+            // shortage alerts: someone is scheduled on shift right now but
+            // nobody is present, or nobody is hired at all. A hired crew
+            // between shifts (e.g. CityHall 15-19h) is normal, not a problem.
+            case "staff":{
+                if(b.Kind==BuildingKind.House)return false;
+                if(!b.Definition.Utility&&!simulation.BuildingOpen(b))return false;
+                if(b.OperationClosed||(b.Definition.Private&&b.CompanyId==null))return false;
+                var crew=workforce.GetValueOrDefault(b.Id);
+                return crew.Present==0&&(crew.OnShift>0||crew.Hired==0);
+            }
             // "Estoque insuficiente": grocery or fuel station with a company,
             // open and really out of the product it sells.
             case "stock":return b.Kind is BuildingKind.Grocery or BuildingKind.FuelStation
@@ -110,12 +122,15 @@ public partial class CityWorld
         if(!_problemDirty&&_problemClock<ProblemUpdateSeconds)return;
         var step=_problemClock;_problemClock=0;_problemDirty=false;
         var unit=BadgeUnit();
+        // One workforce pass per update for every building, instead of one
+        // citizen scan per building.
+        var workforce=simulation.WorkforceByBuilding();
         foreach(var b in state.Buildings){
             if(!_problemAlerts.TryGetValue(b.Id,out var alert))continue;
             if(!_problemPersistence.TryGetValue(b.Id,out var accumulated)){accumulated=new();_problemPersistence[b.Id]=accumulated;}
             var shown=new List<string>();
             foreach(var def in ProblemAlertDefs){
-                var active=ProblemAlertActive(def.Name,b,state,simulation);
+                var active=ProblemAlertActive(def.Name,b,state,simulation,workforce);
                 if(def.PersistSeconds<=0){
                     // Structural or slow conditions alert at once and clear at once.
                     if(active)shown.Add(def.Name);
@@ -166,6 +181,19 @@ public partial class CityWorld
     {
         if(!_problemAlerts.TryGetValue(buildingId,out var alert))return "";
         return string.Join(",",alert.Shown);
+    }
+    public IEnumerable<int> BuildingsWithProblemAlerts()
+    {
+        foreach(var pair in _problemAlerts)if(pair.Value.Shown.Count>0)yield return pair.Key;
+    }
+    // Screen position of a drawn alert balloon, for the hover tooltip. Null
+    // when the building shows nothing or the anchor is behind the camera.
+    public Vector2? AlertAnchorScreen(int buildingId,Camera3D camera)
+    {
+        if(!_problemAlerts.TryGetValue(buildingId,out var alert)||alert.Shown.Count==0)return null;
+        var at=alert.Anchor.GlobalPosition;
+        if(camera.IsPositionBehind(at))return null;
+        return camera.UnprojectPosition(at);
     }
     public string BuildingProblemText(int buildingId)
     {

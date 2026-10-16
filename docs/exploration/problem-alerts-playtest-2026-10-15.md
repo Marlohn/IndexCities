@@ -405,3 +405,81 @@ reverificados), `--circulation-smoke`, `--finances-smoke` (exigem cidade-checkpo
   humana, como a SPEC já previa.
 - Falhas pré-existentes citadas pelo Step 5 (`--recovery-smoke`, `--ui-smoke`) não foram
   rechecadas aqui.
+
+---
+
+## Correções pós-revisão independente (Muse Spark 1.3) — revisão humana pendente
+
+Revisor: DeepSeek V4.1 Flash, em `problem-alerts-review-2026-10-15.md` (commit `96ea238`).
+Corrigidos nesta seção: BLOQUEANTE-1, IMPORTANTE-1, MENOR-1, MENOR-2 e MENOR-5. MENOR-3 e
+MENOR-4 ignorados por orientação (o 3 já foi esclarecido pelo revisor como artefato do QA;
+o 4 é encaminhamento de revisão humana, sem código).
+
+### O que foi implementado
+
+- **BLOQUEANTE-1 — tooltip no hover** (`Main.AlertTooltip.cs` novo; ganchos em `Main.cs`,
+  `Main.UI.cs`, `Main.RoadTools.cs`; projeção em `CityWorld.ProblemAlerts.cs`):
+  com o cursor sobre um prédio **ou** sobre o balão que tem alertas, aparece um painel flutuante
+  com o nome do prédio + o mesmo texto da inspeção (`BuildingProblemText`). Reaproveita o
+  `PickBuilding` do clique de seleção mais a projeção da âncora do balão (raio de 64 px);
+  avaliado só em movimento do mouse (e reposicionado em movimento de câmera com o último
+  pixel, sem varredura por quadro); suprimido com qualquer ferramenta ativa (construção, rua,
+  demolir, mover), com modal aberto e sobre controles da HUD.
+- **IMPORTANTE-1 — equipe só quando pede ação** (`ProblemAlertActive`, sem tocar a `Cause`):
+  só alerta com ninguém presente quando há turno ativo previsto para alguém (`OnShift>0`)
+  ou ninguém contratado (`Hired==0`); equipe contratada fora de turno (ex.: Prefeitura 15–19h)
+  é estado normal e silencia. Persistência de 300 s mantida.
+- **MENOR-1 — sem O(prédios×cidadãos)**: `CitySimulation.WorkforceByBuilding()` (novo,
+  leitura) conta presente/em-turno/contratados por prédio numa passada só; `ShiftActive`
+  foi dividido sem mudar comportamento (`ShiftActiveIn` recebe o prédio, eliminando o
+  `BuildingById` linear por SIM). O update dos alertas consome o snapshot; nenhum scan por
+  prédio resta nos alertas.
+- **MENOR-2**: marcador do playtest agora interpola o horário de verdade.
+- **MENOR-5**: o alerta de água cobre também `WaterOutageSeconds>=WaterClosureHours` (a
+  "parada após falta persistente", mesma família); casas nunca carregam essa causa, então só
+  vale para não-casas, igual à cadeia da simulação.
+- `src/IndexCities.Simulation` continua só com leitura nova (`BuildingOpen`,
+  `WorkforceByBuilding`, refatoração interna idêntica de `ShiftActive`); nenhuma regra mudou
+  (184 testes passam sem alteração).
+
+### Comandos e resultados
+
+`scripts/Build.ps1` → build OK, **184 testes, 0 falhas**.
+
+- `--problem-alerts-smoke` — passou (dir. `smoke-d5db700f26ac4a26acd544629d310209`).
+  Marcadores novos: `newcauses tooltip=balloon+building` (cursor real com `WarpMouse`,
+  texto `Mercearia\nProblemas: Sem funcionários · Estoque vazio` igual à inspeção),
+  `newcauses tooltip hidden-with-tool-and-away`, `newcauses 16h hired-crew-between-shifts
+  silent` (contratado residente na Prefeitura, 16h sem alerta), `real outage-tail
+  water-appeared-and-cleared` (contador forçado no tratamento recuperado). Captura nova:
+  `newcauses-tooltip.png` (balão + inspeção + tooltip com o mesmo texto).
+- `--problem-alerts-playtest` — passou (`playtest-b21ef045d75241f2acf176d192d74d7a`,
+  `PROBLEM_ALERTS_PLAYTEST_OK`, marcadores de horário agora interpolados). Efeito da nova
+  regra no jogo real: Prefeitura (25) às 15:10 `clean` (antes `staff`), sem `staff` às 6:55;
+  `other=0` no arranque (antes 1–2); cidade saudável e recuperação com `other==0`.
+- `--presentation-smoke` OK; `--activity-indicators-smoke` OK com a mesma cópia real
+  (`cargo-indicator=(1, True)`).
+
+### Cobertura e limites desta correção
+
+- Afirmado: tooltip aparece no balão e no prédio, some com ferramenta e longe de alertas;
+  16h sem alerta com contratados + alerta com zero contratados (manhã do mesmo cenário);
+  outage→água aparece e limpa; snapshot único (por construção, sem scan por prédio).
+- Não coberto: tooltip sobre controles da HUD (mesmo padrão não-determinístico do preview);
+  transição equipe 0→presente apagando ícone ativo (caminho compartilhado, exercitado com
+  equipe real no playtest saudável); combinações de 3+ ícones (máx. observado continua 2).
+
+### Feedback honesto (Muse Spark 1.3, após a correção)
+
+- O falso-positivo das 15–19h sumiu de verdade no playtest, e o arranque ficou silencioso
+  (`other=0` onde era 1–2). O preço: à noite, com turnos vagos e ninguém presente, os
+  utilitários ainda alertam — correto pela regra (ninguém contratado/escalado), mas vai
+  parecer "obra acusando de madrugada" para quem joga; é o comportamento que a tarefa pediu,
+  e a calibração (ou uma noção de "turno previsto vs. quadro vazio") segue aberta.
+- O tooltip ficou legível e no lugar certo, mas numa captura ele sobrepõe o painel de
+  inspeção aberto — inevitável quando os dois mostram a mesma coisa ao mesmo tempo; sem
+  inspeção aberta ele flutua limpo ao lado do cursor. Posição e raio (64 px) são calibração.
+- A divergência `Cause` × alerta ficou explícita e intencional: às 16h a inspeção diz
+  "Sem funcionários presentes no turno" (causa real da simulação) sem balão. É o que a
+  tarefa mandou (alerta = pede ação), mas o jogador que ler a inspeção pode estranhar a
+  ausência do ícone — vale decisão humana sobre o texto da causa ou do alerta.

@@ -42,7 +42,7 @@ public partial class Main
     void ChooseDemolition()
     {
         if(!_sim.State.CityHallPlaced)return;
-        ClearSelection();ClearTool();_demolitionTool=true;_inspector.Visible=false;RefreshToolHint();
+        ClearSelection();ClearTool();HideAlertTooltip();_demolitionTool=true;_inspector.Visible=false;RefreshToolHint();
     }
     void DemolishAt(Point position)
     {
