@@ -303,7 +303,7 @@ public partial class Main
         Muted(construction, "R gira o prédio · Enter também encomenda a prévia válida · Esc sai da ferramenta. Na rua, o primeiro clique direito cancela só o traçado; sem traçado, volta à seleção. Nos prédios, clique direito cancela a ferramenta. A prévia não gasta dinheiro.");
         Text(construction, "Demolir · escolha a ferramenta no catálogo e clique na rua. Confira orçamento e efeitos antes de confirmar.", 16);
         var camera = Card(box, "Olhar a cidade"); Text(camera, "W A S D ou botão central · mover\nRoda · aproximar\nQ / E ou arrastar com botão direito · girar", 16);
-        var time = Card(box, "Tempo e salvamento"); Text(time, "Espaço · pausar\n1 · tempo real\n2 · 15x\n3 · 60x\nF5 · salvar", 16);
+        var time = Card(box, "Tempo e salvamento"); Text(time, "Espaço · pausar\n1 · tempo real\n2 · 30x\n3 · 1000x\nF5 · salvar", 16);
         var inspection = Card(box, "Entender o que está acontecendo");
         Text(inspection, "Clique em prédios, pessoas e caminhões para inspecionar. Os painéis mostram causas, dinheiro e entregas reais.", 16);
         Muted(inspection, "As obras precisam de ruas conectadas ao exterior. Casas e negócios não garantem moradores ou compradores. Rua e Prefeitura estão disponíveis desde o início. Confirmar o projeto da Prefeitura libera as demais construções e a gestão. Água e energia dependem das instalações e trabalhadores reais.");

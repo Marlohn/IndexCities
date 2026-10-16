@@ -17,6 +17,7 @@ public partial class CityWorld:Node3D
     public void SetWorkLabelOverlayRects(IEnumerable<Rect2> rectangles){_workLabelOverlayRects.Clear();_workLabelOverlayRects.AddRange(rectangles);}
     readonly List<PreviewRectangle> _crosswalkStripes=new();Node3D? _crosswalkPaint;
     const float RoadAsphaltTop=.03f,RoadSidewalkTop=.18f,RoadVisualLift=.01f;
+    const float PlacementPlane=-.06f;
     ShaderMaterial? _lakeMaterial;double _lakePresentationTime;
     sealed record MotionBefore(Point Position,object Path,int Index,List<Point> Remaining);
     sealed class MotionTrace
@@ -36,6 +37,8 @@ public partial class CityWorld:Node3D
     public static string Visual(BuildingKind kind)=>kind switch{BuildingKind.CityHall=>"civic.city_hall.a",BuildingKind.WorksDepot=>"civic.works_depot.a",BuildingKind.House=>"residential.small_house.a",BuildingKind.Grocery=>"commercial.grocery_small.a",BuildingKind.Farm=>"agriculture.farm_small.a",BuildingKind.FuelStation=>"commercial.fuel_station.a",BuildingKind.WaterIntake=>"utility.water_intake.a",BuildingKind.WaterTreatment=>"utility.water_treatment.a",BuildingKind.SewageTreatment=>"utility.sewage_treatment.a",_=>"utility.wind_power.a"};
     public void Reset(CityState state)
     {
+        _placementGridSurfaces.Clear();
+        _waterIntakeRanges.Clear();_waterIntakeJobs.Clear();_waterIntakeRange=null;
         foreach(var child in GetChildren()){RemoveChild(child);child.QueueFree();}_buildings.Clear();_roads.Clear();_people.Clear();_trucks.Clear();_finished.Clear();_lamps.Clear();_lampGlass.Clear();_causes.Clear();_companySigns.Clear();_rotors.Clear();_waterStates.Clear();_stockStates.Clear();_stockMarkers.Clear();_trees.Clear();_vegetationGeometry=null;_lastVisualTime=state.ElapsedSeconds;_roadRevision=-1;_state=state;
         _roadWorks.Clear();_roadWorkLabels.Clear();_roadWorkGeometry=null;_roadSurface=null;_sidewalkSurface.Clear();
         _buildingPickMeshes.Clear();_roadFootprints.Clear();_roadCarriageways.Clear();_crosswalkStripes.Clear();_crosswalkPaint=null;_labelLayoutKey=null;
@@ -224,7 +227,7 @@ public partial class CityWorld:Node3D
             var layout=PlannedRoadLayout();
             foreach(var work in works){var root=new Node3D{Name="RoadWork"+work.Id};AddChild(root);_roadWorks[work.Id]=root;
                 var remaining=work.RoadPoints.Where(at=>state.Roads.All(r=>r.Position.Distance(at)>.05)).ToArray();
-                DrawRoadDraft(root,remaining,layout,"c7ae78",.18f);
+                DrawRoadDraft(root,remaining,layout,"c7ae78");
                 var label=new Label3D{FontSize=32,PixelSize=.06f,Width=360,AutowrapMode=TextServer.AutowrapMode.WordSmart,Billboard=BaseMaterial3D.BillboardModeEnum.Enabled,NoDepthTest=true,Modulate=new Color("fff5d4"),Position=P(work.Position,3),OutlineSize=4};root.AddChild(label);_roadWorkLabels[work.Id]=label;
             }_roadWorkGeometry=geometry;
         }
@@ -320,11 +323,11 @@ public partial class CityWorld:Node3D
         var definition=Catalog.Definitions[kind];var width=(float)definition.Width;var depth=(float)definition.Depth;
         var marker=new BuildingPreviewMarker{Node=new Node3D{Name=index==0?"BuildingPreview":"BuildingPreview"+index}};_preview.AddChild(marker.Node);var node=marker.Node;
         var model=BuildingVisual(kind);model.Name="TransparentModel";MakeTransparent(model);node.AddChild(model);
-        PreviewBoundary(marker,new(width,.12f,.4f),new(0,.25f,-depth/2+.2f));PreviewBoundary(marker,new(width,.12f,.4f),new(0,.25f,depth/2-.2f));
-        PreviewBoundary(marker,new(.4f,.12f,depth),new(-width/2+.2f,.25f,0));PreviewBoundary(marker,new(.4f,.12f,depth),new(width/2-.2f,.25f,0));
-        PreviewBox(node,new(3,.14f,.6f),new(0,.35f,-depth/2),PreviewMaterial("fff1a3"));
-        PreviewBox(node,new(.7f,.12f,2.4f),new(0,.28f,-depth/2-1.6f),PreviewMaterial("fff1a3"));
-        var arrow=new ImmediateMesh();arrow.SurfaceBegin(Mesh.PrimitiveType.Triangles);arrow.SurfaceSetNormal(Vector3.Up);arrow.SurfaceAddVertex(new(-1.5f,.28f,-depth/2-2));arrow.SurfaceAddVertex(new(0,.28f,-depth/2-3.8f));arrow.SurfaceAddVertex(new(1.5f,.28f,-depth/2-2));arrow.SurfaceEnd();
+        PreviewBoundary(marker,new(width,.002f,.4f),new(0,0,-depth/2+.2f));PreviewBoundary(marker,new(width,.002f,.4f),new(0,0,depth/2-.2f));
+        PreviewBoundary(marker,new(.4f,.002f,depth),new(-width/2+.2f,0,0));PreviewBoundary(marker,new(.4f,.002f,depth),new(width/2-.2f,0,0));
+        PreviewBox(node,new(3,.002f,.6f),new(0,PlacementPlane-.021f,-depth/2),PreviewMaterial("fff1a3"));
+        PreviewBox(node,new(.7f,.002f,2.4f),new(0,PlacementPlane-.021f,-depth/2-1.6f),PreviewMaterial("fff1a3"));
+        var arrow=new ImmediateMesh();arrow.SurfaceBegin(Mesh.PrimitiveType.Triangles);arrow.SurfaceSetNormal(Vector3.Up);arrow.SurfaceAddVertex(new(-1.5f,PlacementPlane-.02f,-depth/2-2));arrow.SurfaceAddVertex(new(0,PlacementPlane-.02f,-depth/2-3.8f));arrow.SurfaceAddVertex(new(1.5f,PlacementPlane-.02f,-depth/2-2));arrow.SurfaceEnd();
         node.AddChild(new MeshInstance3D{Name="EntranceDirection",Mesh=arrow,MaterialOverride=PreviewMaterial("fff1a3"),CastShadow=GeometryInstance3D.ShadowCastingSetting.Off});
         marker.Validity=new Label3D{Position=new(0,1.5f,-depth/2),FontSize=48,PixelSize=.065f,Billboard=BaseMaterial3D.BillboardModeEnum.Enabled,NoDepthTest=true,RenderPriority=11,OutlineSize=6};node.AddChild(marker.Validity);
         // Válido porém sem rua urbana: aviso inconfundível de obra parada (apenas apresentação).
@@ -343,6 +346,7 @@ public partial class CityWorld:Node3D
         for(var i=0;i<_previewPool.Count;i++){
             var marker=_previewPool[i];if(i>=items.Count){marker.Node.Visible=false;continue;}
             var (at,valid,connected)=items[i];marker.Node.Visible=true;marker.Node.Position=P(at,.02f);marker.Node.Rotation=new(0,(float)rotation,0);
+            foreach(var edge in marker.Footprint)edge.Position=new(edge.Position.X,VisibleTerrainHeight(at)-.021f,edge.Position.Z);
             var color=!valid?"df8577":connected==false?"e6bc64":"93cf97";
             if(marker.Color!=color){marker.Color=color;foreach(var edge in marker.Footprint)edge.MaterialOverride=PreviewMaterial(color);marker.Validity.Text=valid?"✓":"×";marker.Validity.Modulate=new Color(color);}
             marker.Warning.Visible=valid&&connected==false;
@@ -358,7 +362,7 @@ public partial class CityWorld:Node3D
         }
         foreach(var entry in edges){var ordered=entry.Value.OrderBy(interval=>interval.Start).ToList();if(ordered.Count==0)continue;var start=ordered[0].Start;var end=ordered[0].End;
             for(var i=1;i<=ordered.Count;i++){if(i<ordered.Count&&ordered[i].Start<=end+.001f){end=Math.Max(end,ordered[i].End);continue;}
-                var vertical=entry.Key.Vertical;var line=entry.Key.Line+(entry.Key.Positive?-.15f:.15f);PreviewBox(_preview,vertical?new(.3f,.05f,end-start):new(end-start,.05f,.3f),vertical?new(line,.34f,(start+end)/2):new((start+end)/2,.34f,line),PreviewMaterial(color));if(i<ordered.Count){start=ordered[i].Start;end=ordered[i].End;}}
+                var vertical=entry.Key.Vertical;var line=entry.Key.Line+(entry.Key.Positive?-.15f:.15f);PreviewBox(_preview,vertical?new(.3f,.002f,end-start):new(end-start,.002f,.3f),vertical?new(line,PlacementPlane-.001f,(start+end)/2):new((start+end)/2,PlacementPlane-.001f,line),PreviewMaterial(color));if(i<ordered.Count){start=ordered[i].Start;end=ordered[i].End;}}
         }
         void AddEdge(bool vertical,float line,float start,float end,bool positive)
         {
@@ -376,9 +380,9 @@ public partial class CityWorld:Node3D
         var color=!valid?"df8577":connected==false?"e6bc64":"93cf97";var rectangles=new List<PreviewRectangle>();
         var layout=PlannedRoadLayout(p,ignoredProject);
         foreach(var point in p){var r=RoadGeometry.Footprint(point,layout,width,_state.Tuning.RoadStep);rectangles.Add(new((float)(point.X-r.Width/2),(float)(point.X+r.Width/2),(float)(point.Z-r.Depth/2),(float)(point.Z+r.Depth/2)));}
-        DrawRoadDraft(_preview,p,layout,color,.25f);
+        DrawRoadDraft(_preview,p,layout,color);
         PreviewRoadOutline(rectangles,color);
-        for(var i=1;i<p.Count;i++){var delta=p[i]-p[i-1];PreviewBox(_preview,Math.Abs(delta.X)>.1?new((float)Math.Abs(delta.X),.025f,.12f):new(.12f,.025f,(float)Math.Abs(delta.Z)),P((p[i]+p[i-1])*.5,.37f),PreviewMaterial("fff1a3"));}
+        for(var i=1;i<p.Count;i++){var delta=p[i]-p[i-1];PreviewBox(_preview,Math.Abs(delta.X)>.1?new((float)Math.Abs(delta.X),.002f,.12f):new(.12f,.002f,(float)Math.Abs(delta.Z)),P((p[i]+p[i-1])*.5,PlacementPlane-.001f),PreviewMaterial("fff1a3"));}
         if(p.Count>0){PreviewRoadPoint(p[0],"RoadStart",.8f,"fff1a3");PreviewRoadPoint(p[^1],"RoadEnd",1.05f,color);PreviewValidity(_preview,P(p[^1],1.5f),valid);}
         for(var i=1;i<p.Count-1;i++){var a=p[i]-p[i-1];var b=p[i+1]-p[i];if(Math.Abs(a.X*b.Z-a.Z*b.X)>.01)PreviewRoadPoint(p[i],"RoadCorner",.7f,"fff1a3");}
     }
