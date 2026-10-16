@@ -5,7 +5,9 @@
 
 ---
 
-## Contexto e hipótese do responsável
+> **Atualização de 2026-10-16:** os trechos iniciais deste arquivo documentam um experimento anterior com velocidades 15x/60x e propostas de cobrança diária/limite de 300x. **Não descrevem mais a calibração vigente (1x/30x/1000x) nem uma recomendação aceita.** A verificação independente no final do estudo prevalece sobre afirmações empíricas conflitantes da rodada original. A decisão humana atual de calendário real e observação de gerações está na SPEC; a nova análise pendente vem na seção final deste arquivo.
+
+## Contexto histórico do estudo inicial (antes da confirmação geracional de 2026-10-16)
 
 - **Regra vigente na SPEC (linha ~64):** *"1x em tempo real: um segundo real avança um segundo simulado na velocidade normal. Movimento físico, relógio, obras, turnos, produção e consumo seguem a mesma escala; as velocidades rápidas permitem avançar. ... Os dois multiplicadores rápidos continuam sendo calibração técnica; nesta rodada, a calibração é 15x e 60x."*
 - **Problema de ritmo identificado:** em velocidade 60x, 1 mês simulado leva aproximadamente 12 horas reais (`2.592.000 s / 60 = 43.200 s = 12 h`). No início de uma partida, o jogador investe o caixa municipal nas obras iniciais (Prefeitura, primeira rua, pátio de obras ou serviços) e rapidamente fica sem saldo disponível, entrando em uma longa espera passiva até a cobrança mensal do imposto imobiliário.
@@ -156,7 +158,7 @@ Portanto, **aumentar a velocidade da simulação NÃO resolve o problema de o jo
 
 ---
 
-## 5. Recomendação justificada
+## 5. Recomendação histórica do estudo inicial (não aprovada)
 
 1. **Não tentar resolver a falta de caixa aumentando a simulação para 1.000x ou 3.000x:**
    - As medições mostram que a física em passos de 2s impõe um teto severo. Mesmo no teto de 3.000x, 1 mês ainda exige quase 15 minutos de espera passiva, enquanto a experiência visual de trânsito é arruinada e o risco de congelamento por espiral da morte em cidades maiores se torna iminente.
@@ -250,3 +252,43 @@ dotnet build src/IndexCities.Godot/IndexCities.Godot.csproj
 ```
 
 Nas medições experimentais, o comando headless foi o mesmo formato, usando `--independent-speed=60`, `300`, `1000`, `3000` ou `6000` **em vez** das flags `--performance-*`, com uma pasta de saves isolada por velocidade. Essa flag existiu somente na instrumentação temporária removida; não é opção do jogo entregue. O checkpoint ativo foi gerado por `dotnet test tests/IndexCities.Simulation.Tests --filter FullyQualifiedName~Independent_fixture --logger 'console;verbosity=normal'` (1 aprovado), também removido. Logs, fixtures, cópias de segurança e JSONs brutos permanecem apenas em `artifacts/verification/ritmo-independent/`, ignorado pelo Git; os resultados duráveis estão nas tabelas desta seção.
+
+---
+
+## Revisão de engenharia e pesquisa externa — 2026-10-16 (PENDENTE)
+
+> **Revisão humana desta seção: PENDENTE.** Revisão de código da `main` após merge da PR #19 (`b75be2f`), confronto com os benchmarks registrados acima e pesquisa em fontes técnicas primárias. Não foram executados novos benchmarks, nem aprovada nova arquitetura ou funcionalidade.
+
+### Direção do produto confirmada pelo responsável
+
+- **Calendário civil único e literal**, com dias de 24 horas, anos gregorianos e todos os efeitos físicos, financeiros e pessoais reais. Não encurtar meses, não criar relógios divergentes nem acelerar apenas a idade.
+- O jogador deve poder **acompanhar uma geração inteira em algumas horas ou sessões**, usando aceleração opcional. O número concreto de horas, o tamanho da cidade e o hardware-alvo ainda precisam ser medidos/definidos. A SPEC é a fonte autorizada desta decisão.
+- Essa meta **não está demonstrada** por 1000x, e não pode ser declarada concluída antes de implementar/validar nascimento, envelhecimento e morte natural na simulação.
+
+### Dimensão quantitativa do problema
+
+Usando 80 anos como horizonte ilustrativo (não idade fixa obrigatória de morte): a 1000x são cerca de **701 horas reais**; para 80 anos em 40 horas de partidas seriam necessários aproximadamente **17.500x**, e em 20 horas cerca de **35.100x** efetivos. Esses fatores são aritmética, **não capacidade comprovada**. Com a arquitetura atual `Quantum=2`, o último alvo exigiria ~17.500 passos completos por segundo real, contra ~500 passos/s efetivos no benchmark de 1000x com 47 SIMs e 42 edifícios. Mudar só o multiplicador não atende ao objetivo; crescer a cidade tende a ampliar a carga, mas quanto ainda não foi medido.
+
+A verificação independente mediu em cenário ativo aproximadamente **130,56 FPS do host em 1000x**, **1,07 FPS em 3000x**, sem aquecimento, isolamento de CPU, validação gráfica ou execução longa. A descrição anterior de 3000x a 144 FPS não foi reproduzida. O loop `while(_clockBudget>=2)` tem orçamento finito **por chamada**, portanto não é um loop necessariamente infinito; o problema é retroalimentação de atrasos **entre frames**, bloqueio da interface e perda da velocidade efetiva. O quantum de 2s é uma **restrição da implementação atual**, não uma lei que impeça integrar intervalos estáveis por um algoritmo equivalente.
+
+### Evidências primárias externas e limites de transferência
+
+1. **A/B Street — simulação de tráfego por eventos:** movimentos previsíveis de pedestres tornam-se estados temporais interpoláveis até a próxima interação; cruzamentos acordam veículos quando a passagem fica disponível. O próprio autor documenta simplificações na física dos veículos e limites com ultrapassagem e congestionamento. **Aplicável como conceito**, não como motor de trânsito substituto sem conferir equivalência. https://a-b-street.github.io/docs/tech/trafficsim/discrete_event/index.html
+2. **Factorio FFF-421 e FFF-148:** entidades inativas podem dormir; a otimização dos roboports caiu de ~1 ms/tick para ~0,025 ms/tick **naquele subsistema e save específico**, não 40x para o jogo inteiro. Transporte por segmentos e índices reduzem operações repetidas sem abandonar a realidade dos itens. https://www.factorio.com/blog/post/fff-421 ; https://www.factorio.com/blog/post/fff-148
+3. **SUMO MESO:** documenta até 100x no trânsito mesoscópico, **mudando detalhes** de faixas, ultrapassagem e cinemática. Não é prova de ganho compatível com a microssimulação aprovada. https://sumo.dlr.de/docs/Simulation/Meso.html
+4. **Godot e .NET:** orientam medir gargalos antes de otimizar: CPU, GC, estruturas de dados, algoritmos, apresentação, custos de thread. RenderingServer/MultiMesh aceleram visualização, mas **não executam o mundo econômico**. https://docs.godotengine.org/pt-br/4.x/tutorials/performance/general_optimization.html ; https://learn.microsoft.com/en-us/dotnet/core/diagnostics/debug-highcpu
+5. **OpenTTD 14:** separar calendário da economia foi uma mudança estrutural de longo alcance com risco de datas incoerentes. Não corresponde à decisão atual do IndexCities de manter relógio único. https://www.openttd.org/news/2024/03/23/timekeeping
+
+### Leitura do código e direção de investigação proposta (não aprovada)
+
+- **Primeiro, perfil por subsistema e duração real:** no `CitySimulation.Step` tudo passa por uma sequência de loops a cada 2s; `MoveCitizens`, `MoveVehicles`, `OperateBusinesses`, `UpdateNeeds` e `UpdateInfrastructure` são alvos observáveis. Em `OperateBusinesses`, cada prédio percorre a lista de cidadãos para trabalhadores; infraestrutura também procura pessoas presentes por prédio. Medir antes de escolher índices ou caches específicos.
+- **Depois, tornar o trabalho proporcional a mudanças reais:** considerar índices de quem trabalha/mora em cada imóvel, agenda de próxima decisão e eventos de transação/limiar, cálculo de consumo/produção/salários em intervalos estáveis e só reavaliar trajetórias quando interação ou invalidação exigir. Preservar pagamento com pagador real, ordem de disputa por estoque/vaga, rota e presença física, juros, salário, aluguel e dívida em suas datas corretas. Priorizar cortes locais reversíveis antes de um scheduler universal.
+- **Eliminar travamento visual sem falsificar tempo:** orçamento máximo de processamento por frame com backlog contabilizado e velocidade efetiva exibida; a cidade não pode acumular tempo fictício só porque a UI continuou fluida. Estudar execução rápida em blocos sem renderizar cada passo intermediário, mas **com todos os eventos reais**, histórico consultável e alternância voluntária para velocidades baixas ao acompanhar uma pessoa. Modo novo de avanço exige decisão humana; render menos não significa simular menos acontecimentos.
+- **Não apostar primeiro em multithreading/GPU/ECS/troca de engine:** podem fazer sentido após profiling, mas também adicionam ordem concorrente, sincronização e risco de alterar causalidade.
+- **Validar com cidade crescente e horizontes progressivos**, mesma seed/estado, código otimizado versus referência, ciclos de uma semana/mês/ano, Release e Debug separados, com e sem Godot, aquecimento, percentis, GC, tempo real total, interatividade e comportamento de diferentes SIMs. Além de invariantes de dinheiro/estoque, conferir trajetórias, pagamentos, nascimento/envelhecimento/morte, eventos e save/load. Um teste de poucos segundos a 1000x não verifica viabilidade de um ciclo de vida inteiro.
+
+### Economia: imposto diário é uma hipótese distinta
+
+O imposto imobiliário atual é **lançado mensalmente** em `PropertyTaxes` como alíquota anual / 12; salários e água/energia já têm liquidações diárias. Cobrar diariamente mudaria liquidez e possivelmente decisões e inadimplência — portanto precisa de aprovação humana separada na SPEC. **Não há evidência de que só mudar a periodicidade resolva o caixa**: exemplo ilustrativo de 30 imóveis privados a 40.000 cada e 1% ao ano gera apenas ~32,9 unidades monetárias/dia, se tudo for efetivamente pago. Valor real, compromissos e receitas líquidas devem ser medidos na cidade do playtest antes de recomendar a mudança. Evitar dividir por 365 indiscriminadamente sem considerar ano bissexto, valor de mercado variável, arredondamento e diferença em relação à base mensal corrente.
+
+**Síntese pendente:** a opção mais fiel à decisão humana é otimizar a **execução real dos acontecimentos** (menos varreduras e passos desnecessários, especialmente em intervalos estáveis), combinar apresentação legível com execução rápida e medir um objetivo geracional explícito. A magnitude do ganho necessária **não está comprovada**. Se benchmarks mostrarem limite persistente, expor o trade-off e pedir nova decisão; não alterar silenciosamente o calendário, criar gerações fictícias ou declarar sucesso com FPS apenas.
