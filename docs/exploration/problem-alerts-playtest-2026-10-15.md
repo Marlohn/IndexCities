@@ -2,6 +2,12 @@
 
 Revisão humana: **PENDENTE — não é fonte de verdade.**
 
+**Autoria deste documento:** as seções até *Limites desta entrega* foram escritas pelo
+**Step 5 Preview** (3 primeiros alertas: estrada, água, energia). A seção
+*Extensão para 8 alertas* foi escrita por **Muse Spark 1.3 (opencode)**, que também
+estendeu o código, o QA e as evidências. Nada aqui cria, altera ou amplia requisito;
+produto vigente continua sendo a SPEC.
+
 Documento de trabalho da IA: registra o que foi implementado, os comandos efetivamente executados, os
 resultados observados e o feedback honesto de jogabilidade. A decisão de produto que autoriza esta
 feature está na [SPEC](../SPEC.md), na seção *Alertas de problemas sobre os prédios — decisão do
@@ -178,10 +184,224 @@ Verificadas também na árvore limpa (`git stash`), falhando igual:
   (verificado na árvore limpa); a recuperação da V1 portanto continua sem validação integrada
   automatizada aqui.
 
-## Limites desta entrega
+## Limites desta entrega (Step 5 Preview)
 
 - Nenhuma regra de simulação, economia, save ou consequência foi alterada; a feature é apresentação.
 - Canteiros de obra mantêm o aviso forte de obra sem rua já aprovado.
 - A parte de carga/descarga do IA-017 continua como estava (pendente de revisão humana na SPEC).
 - A supressão do alerta de energia em usinas eólicas e os limiares/tamanhos/estilo são calibração
   desta implementação e estão pendentes de confirmação humana.
+
+---
+
+## Extensão para 8 alertas (Muse Spark 1.3) — revisão humana pendente
+
+### Contexto
+
+A SPEC ampliou a entrada *Alertas de problemas sobre os prédios* para 8 alertas mais a regra
+geral (toda causa futura por prédio que pedir ação do jogador também vira balão). Os 3 primeiros
+alertas (estrada, água, energia) continuam exatamente como o Step 5 os deixou; nenhum
+comportamento deles foi alterado além da refatoração interna descrita abaixo, e o cenário
+controlado original continua passando sem modificação.
+
+### O que foi implementado
+
+Apresentação apenas, na camada `IndexCities.Godot`, mais um acessor de leitura na simulação:
+
+- `src/IndexCities.Simulation/Mobility.cs`: novo `BuildingOpen(Building)` público, que só expõe
+  a regra de horário que a simulação já usa para `b.Cause`. Nenhuma regra, fórmula ou transição
+  foi alterada; é leitura para apresentação, no sentido permitido da dependência
+  (Godot → Simulation). Sem isso, o alerta de equipe/estoque precisaria duplicar a regra de
+  horário na apresentação e poderia divergir dela (a ARCHITECTURE proíbe a UI de inferir causa
+  com lógica própria).
+- `CityWorld.ProblemAlerts.cs` reescrito como tabela: `ProblemAlertDefs` (nome, textura, texto
+  curto, persistência) + predicado `ProblemAlertActive` por nome, lendo o mesmo estado que a
+  simulação usa em `Infrastructure.cs`. Adicionar uma causa futura como alerta agora é: uma linha
+  na tabela, um `case` no predicado e um SVG em `Assets/UI`. Estados informativos nunca viram
+  alerta: casas não alertam por equipe; loja `Procurando empresa` (sem companhia) e operação
+  encerrada de propósito não geram alertas de equipe/estoque; fora do horário não gera
+  equipe/estoque (utilitários operam em 3 turnos e contam como abertos, igual à causa).
+- Persistência por tipo (calibração, pendente de confirmação humana): acesso/manutenção/captação
+  imediatos (condição estrutural ou lenta/monotônica); água/energia/tratamento 20 s simulados
+  (como antes); estoque 60 s (evita piscar a cada venda/reposição); equipe 300 s (evita piscar
+  na troca de turno). Recuperação 5x mais rápida em todos, como antes.
+- 5 SVGs novos no mesmo padrão (tile escuro com contorno vermelho + pictograma plano):
+  `problem_intake.svg` (gota riscada, como a SPEC sugere), `problem_noraw.svg` (gota vazada),
+  `problem_staff.svg` (pessoa riscada), `problem_stock.svg` (engradado riscado),
+  `problem_maintenance.svg` (chave de boca).
+- `Main.ProblemAlertsQA.cs`: novo cenário `ProblemAlertsNewCauses` (cópia nunca salva, seed 91)
+  com captação seca, captação úmida (controle negativo), tratamento sem água bruta, mercearia
+  com empresa real sem saldo/estoque e Prefeitura sem funcionários; `ProblemAlertSnapshot`
+  ganhou a coluna `other` (soma dos 5 novos); cenário real e playtest ganharam asserções para
+  os novos alertas (tratamento `noraw` no corte, `other==0` na cidade saudável e na recuperação).
+
+### Comandos executados (Godot 4.7.2 mono, Windows)
+
+Engine: `C:\Users\Marlohn\Tools\Godot\Godot_v4.7.2-stable_mono_win64.exe`. Mesmo padrão de
+isolamento do Step 5 (argumentos da engine antes de `--`, do jogo depois; saves em
+`artifacts/verification`).
+
+1. Build + testes da simulação
+   `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Build.ps1`
+   → build OK; **184 testes aprovados, 0 falhas** (várias rodadas, inclusive após cada correção).
+2. Importação dos SVGs novos
+   `Godot… --headless --path src/IndexCities.Godot --editor --import --quit`
+   (a reimportação reescreveu `.import` antigos sem diff de conteúdo; só os 5 novos entram no commit).
+3. QA dos alertas (3 tentativas até o verde; ver *Falhas do cenário novo e correções* abaixo)
+   `Godot… --path src/IndexCities.Godot -- --problem-alerts-smoke --review-save-dir=<abs>/artifacts/verification/problem-alerts/review-smoke`
+4. Playtest roteirizado (relógio real do host em 60x)
+   `Godot… --path src/IndexCities.Godot -- --problem-alerts-playtest --review-save-dir=<abs>/artifacts/verification/problem-alerts/review-playtest`
+5. Regressões: `--presentation-smoke`, `--smoke` (headless), `--interaction-regressions-smoke`,
+   `--real-time-start-smoke`, `--activity-indicators-smoke` (com a cópia real
+   `artifacts/verification/activity-indicators/city.json` deixada no workspace pelo Step 5),
+   `--environment-smoke`, `--persistence-smoke`, `--city-names-smoke`, `--neighbourhood-smoke`,
+   `--road-recovery-smoke` — todas OK (detalhes na tabela abaixo).
+
+### Resultados observados
+
+#### QA dos alertas (`--problem-alerts-smoke`) — passou
+
+Diretório final: `artifacts/verification/problem-alerts/smoke-0afe0ca094d64645bc167c9ab1e3e2cf/`.
+
+```
+PROBLEM_ALERTS_QA ok building=29 alerts=road
+PROBLEM_ALERTS_QA ok building=31 alerts=water
+PROBLEM_ALERTS_QA ok building=33 alerts=power
+PROBLEM_ALERTS_QA ok building=35 alerts=
+...
+newcauses dry=137 treatment=133 shop=135 hall=25
+PROBLEM_ALERTS_QA ok building=137 alerts=intake
+PROBLEM_ALERTS_QA ok building=133 alerts=noraw
+PROBLEM_ALERTS_QA ok building=135 alerts=stock
+PROBLEM_ALERTS_QA ok building=25 alerts=staff
+PROBLEM_ALERTS_QA ok building=165 alerts=staff
+newcauses inspection problems=staff+stock
+PROBLEM_ALERTS_QA ok night hall= shop= dry=intake,staff treatment=noraw,staff
+newcauses maintenance appeared-and-cleared
+newcauses stock cleared-by-real-goods
+PROBLEM_ALERTS_QA ok buildings=29,31,…,51 alerts=none pop=17 potable=424
+PROBLEM_ALERTS_QA ok intake=237 alerts=road,water treatment=239 alerts=water,noraw
+PROBLEM_ALERTS_QA ok buildings=29,31,…,51 alerts=water cause="Abastecimento de água insuficiente" potable=0 power=926
+```
+
+- Cenário controlado original: inalterado e verde (os 3 ícones antigos não quebraram).
+- Cenário de novas causas: cada ícone aparece para a causa certa e na ordem de persistência
+  (captação imediata; tratamento/estoque após 1 min apresentado; equipe só após 5 min);
+  captação úmida nunca alerta por localização; à noite Prefeitura e mercearia silenciam e os
+  utilitários mantêm equipe; manutenção aparece/restaura de imediato; estoque real apaga o
+  ícone; inspeção mostra `Problemas: Sem funcionários · Estoque vazio` igual aos ícones.
+- Cenário real: cidade saudável sem nenhum ícone (inclusive captação/tratamento); após o corte,
+  a captação isolada mostra `road,water` e o tratamento `water,noraw` lado a lado; tudo limpa
+  na recuperação.
+- Capturas novas: `newcauses-baseline.png`, `newcauses-flows.png`,
+  `newcauses-flows-detail.png` (mercearia com pessoa + engradado riscados, legíveis),
+  `newcauses-inspection.png` (inspeção igual aos ícones), `newcauses-maintenance.png`
+  (chave de boca sobre a Prefeitura).
+
+#### Playtest roteirizado (`--problem-alerts-playtest`) — passou
+
+Diretório final: `artifacts/verification/problem-alerts/playtest-f82ecba357c04e0e8565449f5544e5ac/`.
+A coluna nova `other` (soma dos 5 alertas novos) aparece em todo o log; destaques:
+
+```
+before-families      road=0 water=0  power=0 other=0 clean=16
+real-clock-60x       road=0 water=14 power=0 other=2 clean=0
+water-chain-starting road=0 water=15 power=0 other=3 clean=0  (pico: 176:water,staff 178:water,staff)
+water-chain-starting road=0 water=0  power=0 other=0 clean=16  (ciclo operando, equipe real presente)
+city-healthy         road=0 water=0  power=0 other=0 clean=16  (asserção other==0 nova)
+after-cutting        road=1 water=15 power=0 other=1 clean=1   (178:road,water 180:water,noraw)
+water-recovery       road=0 water=0  power=0 other=0 clean=16  (asserção other==0 nova)
+PROBLEM_ALERTS_PLAYTEST_OK waterAlertsAppearedAndCleared buildings=16 population=17
+```
+
+#### Outros cenários
+
+| Cenário | Resultado |
+| --- | --- |
+| `--presentation-smoke` | OK |
+| `--smoke` (headless) | OK (`buildings=0 roads=17`) |
+| `--interaction-regressions-smoke` | OK |
+| `--real-time-start-smoke` | OK (fundação, rua, casa, família chegando de carro) |
+| `--activity-indicators-smoke` (cópia real) | OK (casa 2 pessoas, eólica 2 pessoas, vazia sem indicador, carga só real) |
+| `--environment-smoke` | OK |
+| `--persistence-smoke` | OK |
+| `--city-names-smoke` | OK (a linha `UnauthorizedAccessException` no log faz parte do próprio teste de falha de escrita) |
+| `--neighbourhood-smoke` | OK |
+| `--road-recovery-smoke` | OK |
+
+Não repetidos nesta entrega: `--recovery-smoke`, `--ui-smoke` (falhavam antes desta feature
+segundo o Step 5; sem `git stash` disponível para reconferir na árvore limpa, não foram
+reverificados), `--circulation-smoke`, `--finances-smoke` (exigem cidade-checkpoint ausente).
+
+#### Falhas do cenário novo e correções (só afetaram o QA, nunca o jogo)
+
+1. Rua da margem nascendo desconectada (seed 91 tem o lago em x≈172, fora da rua principal
+   que ia até x=100): a obra nunca recebia material. Correção só no QA: a rua principal agora
+   se estende até a coluna da margem. Achado via reprodução headless com teste temporário
+   (depois apagado), não no Godot.
+2. Captação úmida sem posição válida: a rua terminava em z=40 mas a faixa de fonte natural
+   (regra real ≤22 da margem) só começa em z≈60. Correção só no QA: rua até `shoreZ-10`
+   (ainda longe da água) em vez de `shoreZ-14`.
+3. Asserção de manutenção lia antes do refresh (ícones reavaliam com tempo simulado):
+   correção só no QA: avançar 60 s antes de cada leitura. Também reposicionada a câmera para
+   a Prefeitura na captura da manutenção.
+
+### Cobertura determinística: o que foi e o que não foi
+
+- Afirmado no QA: cada um dos 8 aparece pela causa certa; captação úmida nunca alerta por
+  localização; tratamento com água bruta nunca alerta `noraw`; noite silencia equipe/estoque
+  fora de horário; manutenção e estoque limpam (restauração forçada e mercadoria real);
+  estrada/água/energia limpam (cenário original); cidade saudável e recuperação com `other==0`
+  para os 5 novos (playtest, com equipe real presente).
+- Não demonstrado deterministicamente: a transição `equipe 0 → presente` apagando um ícone
+  de equipe ativo (exigiria contratar e caminhar um SIM até a porta, frágil por natureza); o
+  caminho de limpeza é o mesmo código dos demais (histerese + layout compartilhados), e o
+  playtest saudável exercita `presente>0 ⇒ sem alerta` com equipe real.
+- Visual com 3+ ícones simultâneos: o layout suporta N lado a lado, mas o máximo observado
+  foi 2 (ex.: `road,water`, `staff,stock`); vale uma captura futura se combinações triplas
+  ficarem comuns.
+
+### Feedback honesto de jogabilidade (Muse Spark 1.3, sessão roteirizada + capturas)
+
+**O que ficou bom**
+
+- Os 5 ícones novos se distinguem entre si e dos 3 antigos sem ler nada: gota riscada
+  (captação), gota vazada (tratamento), pessoa riscada (equipe), engradado riscado (estoque) e
+  chave de boca (manutenção). No detalhe ficam bem legíveis; na visão de cidade o tile
+  vermelho cumpre o papel de "tem problema aqui, aproxime o zoom".
+- As combinações lado a lado funcionam na prática (`road,water` na captação isolada,
+  `water,noraw` no tratamento, `staff,stock` na mercearia) e a inspeção repete exatamente os
+  mesmos problemas — o jogador que não decifrar o desenho descobre clicando.
+- A cidade saudável zerando os 8 (playtest `other==0` com equipe real nos turnos) mostra que
+  o sistema não gera ruído quando está tudo bem; o barulho aparece só na fase de arranque.
+
+**O que me incomodou (para decisão humana, sem ação tomada)**
+
+- O alerta de equipe pisca nas trocas de turno de cidade pequena: com 1–2 funcionários por
+  prédio, qualquer buraco acima de 5 min simulados vira ícone (observado `other=1..3`
+  durante o arranque e prédios inteiros sem ninguém às 22h). É o que a causa da simulação
+  diz, mas como leitura de jogo parece acusação por algo que o jogador ainda está montando —
+  mesmo efeito que o Step 5 notou para água/energia no início.
+- Previsão não observada, mas decorrente da regra: fazenda (e Prefeitura/Pátio) tem turno
+  único 7–15h e fica "aberta" até as 19h — deve alertar `Sem funcionários` todo fim de tarde
+  mesmo com equipe completa. Se isso for considerado falso-positivo, a definição de "horário
+  de funcionamento" do alerta precisa de decisão humana (o código atual segue a letra da tarefa).
+- Com 6+ tipos possíveis, prédios utilitários em crise podem empilhar vários ícones; com 2
+  ficou bom, com 3+ ainda não há evidência visual.
+- A explicação curta "ao passar o mouse" exigida pela SPEC continua sem implementação (herdado
+  do Step 5): hoje a explicação está no clique (inspeção), não no hover. Sprite3D não tem
+  tooltip nativo; fazer hover 3D real é trabalho novo de apresentação.
+- Numa captura do playtest a barra de catálogo apareceu parcialmente renderizada
+  (`playtest-water-shortage.png` mostra só 2 ferramentas). O código do catálogo não foi
+  tocado e as demais capturas estão normais; parece artefato transitório da captura, mas
+  merece um olhar separado.
+
+### Limites desta extensão
+
+- `src/IndexCities.Simulation` ganhou só o acessor de leitura `BuildingOpen`; nenhuma regra,
+  economia, save ou consequência mudou. A feature continua sendo apresentação.
+- Limiares (0,5 de água/energia; 0,1 de energia na causa; 0,1 de estoque; 0,9 de manutenção) e
+  persistências (0/20/60/300 s) são calibração desta implementação, pendentes de confirmação
+  humana, como a SPEC já previa.
+- Falhas pré-existentes citadas pelo Step 5 (`--recovery-smoke`, `--ui-smoke`) não foram
+  rechecadas aqui.

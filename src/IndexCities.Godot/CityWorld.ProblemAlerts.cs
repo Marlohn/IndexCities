@@ -4,11 +4,35 @@ namespace IndexCities.Game;
 
 public partial class CityWorld
 {
-    // Problem alerts over completed buildings (owner decision, 2026-10-15).
+    // Problem alerts over completed buildings (owner decision, 2026-10-15,
+    // extended with 5 more causes in the same session).
     // Each icon is read from the very state the simulation already uses for
-    // those causes: exterior access, water received/demand and electricity
-    // received/demand. Nothing is computed per SIM and no consequence changes;
-    // thresholds and persistence are presentation calibration only.
+    // those causes (see b.Cause in Infrastructure.cs): exterior access, water
+    // received/demand, electricity received/demand, natural water source,
+    // raw water capacity, workers present in opening hours, shop stock and
+    // municipal maintenance ratio. Nothing is computed per SIM and no
+    // consequence changes; thresholds and persistence are presentation
+    // calibration only.
+    //
+    // General rule from SPEC: every new per-building problem cause the
+    // simulation detects that asks for a player action must also become a
+    // balloon alert. To add one, append a row to ProblemAlertDefs (name,
+    // texture, short text, persistence), add its predicate to
+    // ProblemAlertActive and drop the matching pictogram in Assets/UI.
+    // Informative states (out of hours, looking for a company, operating)
+    // never become alerts.
+    sealed record ProblemAlertDef(string Name,string Texture,string Text,double PersistSeconds);
+    static readonly ProblemAlertDef[] ProblemAlertDefs=
+    [
+        new("road","problem_road","Sem acesso viário",0),
+        new("water","problem_water","Falta de água",ProblemPersistSeconds),
+        new("power","problem_energy","Falta de energia",ProblemPersistSeconds),
+        new("intake","problem_intake","Captação sem água por perto",0),
+        new("noraw","problem_noraw","Tratamento sem água bruta",ProblemPersistSeconds),
+        new("staff","problem_staff","Sem funcionários",ProblemStaffPersistSeconds),
+        new("stock","problem_stock","Estoque vazio",ProblemStockPersistSeconds),
+        new("maintenance","problem_maintenance","Manutenção pendente",0),
+    ];
     sealed class ProblemAlert
     {
         public Node3D Anchor=null!;
@@ -17,14 +41,13 @@ public partial class CityWorld
         public readonly List<string> Shown=new();
     }
     readonly Dictionary<int,ProblemAlert> _problemAlerts=new();
-    readonly Dictionary<int,(double Water,double Power)> _problemPersistence=new();
-    // Alert kinds in the fixed priority order: road access, then water, then power.
-    static readonly (string Name,string Texture,string Text)[] ProblemKinds=
-        [("road","problem_road","Sem acesso viário"),("water","problem_water","Falta de água"),("power","problem_energy","Falta de energia")];
+    readonly Dictionary<int,Dictionary<string,double>> _problemPersistence=new();
     static readonly Dictionary<string,Texture2D?> ProblemTextures=new();
     const string ProblemTileTexture="problem_alert_tile";
     const double ProblemUpdateSeconds=.5;      // moderate refresh, never per frame
-    const double ProblemPersistSeconds=20;     // water/power must persist this long before alerting
+    const double ProblemPersistSeconds=20;     // water/power/raw must persist this long before alerting
+    const double ProblemStaffPersistSeconds=300; // staff persists much longer, so shift handovers never flicker
+    const double ProblemStockPersistSeconds=60;  // stock flickers on every sale/restock without a short delay
     const double ProblemRecoverFactor=5;        // recovery clears the icon this much faster
     const float ProblemTileY=34,ProblemTileStep=76,ProblemMaxHeight=7.2f;
     double _problemClock,_problemElapsedAt;bool _problemDirty=true;
@@ -41,7 +64,45 @@ public partial class CityWorld
         if(!ProblemTextures.TryGetValue(file,out var texture))texture=ProblemTextures[file]=GD.Load<Texture2D>("res://Assets/UI/"+file+".svg");
         return texture;
     }
-    static (string Name,string Texture,string Text) ProblemKind(string name)=>ProblemKinds.First(kind=>kind.Name==name);
+    static ProblemAlertDef ProblemKind(string name)=>ProblemAlertDefs.First(kind=>kind.Name==name);
+
+    // Same conditions the simulation uses for the matching b.Cause, read
+    // independently so several problems show side by side (the Cause chain
+    // itself keeps only the first one).
+    static bool ProblemAlertActive(string name,Building b,CityState state,CitySimulation simulation)
+    {
+        switch(name){
+            // "Sem acesso viário": same test the simulation uses for the cause
+            // and for real delivery, crew and vehicle routes.
+            case "road":return !simulation.HasExteriorAccess(b);
+            case "water":return b.WaterDemand>0&&b.WaterRatio<.5;
+            case "power":return b.ElectricityDemand>0&&b.ElectricityRatio<.5&&b.Kind!=BuildingKind.WindPower;
+            // "Captação sem água por perto": completed intake far from a viable
+            // natural source, the same distance rule the simulation uses.
+            case "intake":return b.Kind==BuildingKind.WaterIntake&&!simulation.HasNaturalWaterSource(b);
+            // "Falta captação de água bruta": completed treatment with no raw
+            // water available at all.
+            case "noraw":return b.Kind==BuildingKind.WaterTreatment&&state.RawWaterCapacity<=0;
+            // "Sem funcionários presentes no turno": nobody present during
+            // opening hours. Utilities run shifts around the clock, so they
+            // count as open; houses have no crew; a private shop still
+            // looking for a company and a deliberately closed operation are
+            // informative states, not staff alerts.
+            case "staff":return b.Kind!=BuildingKind.House
+                &&(b.Definition.Utility||simulation.BuildingOpen(b))
+                &&!b.OperationClosed&&!(b.Definition.Private&&b.CompanyId==null)
+                &&simulation.WorkersPresent(b)==0;
+            // "Estoque insuficiente": grocery or fuel station with a company,
+            // open and really out of the product it sells.
+            case "stock":return b.Kind is BuildingKind.Grocery or BuildingKind.FuelStation
+                &&simulation.BuildingOpen(b)&&!b.OperationClosed&&b.CompanyId!=null
+                &&b.Quantity(b.Kind==BuildingKind.Grocery?ResourceKind.Food:ResourceKind.Fuel)<.1;
+            // "Manutenção pendente": municipal installation with reduced
+            // capacity from overdue maintenance.
+            case "maintenance":return !b.Definition.Private&&b.MaintenanceRatio<.9;
+            default:return false;
+        }
+    }
 
     void UpdateProblemAlerts(CityState state,CitySimulation simulation,double elapsed)
     {
@@ -51,22 +112,25 @@ public partial class CityWorld
         var unit=BadgeUnit();
         foreach(var b in state.Buildings){
             if(!_problemAlerts.TryGetValue(b.Id,out var alert))continue;
-            var persistent=_problemPersistence.GetValueOrDefault(b.Id);
-            // Exterior access is the same test the simulation uses for the cause
-            // "Sem acesso viário" and for real delivery, crew and vehicle routes.
-            var road=!simulation.HasExteriorAccess(b);
-            var water=b.WaterDemand>0&&b.WaterRatio<.5;
-            var power=b.ElectricityDemand>0&&b.ElectricityRatio<.5&&b.Kind!=BuildingKind.WindPower;
-            // Asymmetric hysteresis: the shortage must persist before alerting,
-            // but the icon leaves shortly after the problem ends. The accumulated
-            // time is capped, so a long outage never delays the recovery signal.
-            persistent.Water=water?Math.Min(ProblemPersistSeconds,persistent.Water+step):Math.Max(0,persistent.Water-step*ProblemRecoverFactor);
-            persistent.Power=power?Math.Min(ProblemPersistSeconds,persistent.Power+step):Math.Max(0,persistent.Power-step*ProblemRecoverFactor);
-            if(persistent==(0,0))_problemPersistence.Remove(b.Id);else _problemPersistence[b.Id]=persistent;
+            if(!_problemPersistence.TryGetValue(b.Id,out var accumulated)){accumulated=new();_problemPersistence[b.Id]=accumulated;}
             var shown=new List<string>();
-            if(road)shown.Add(ProblemKinds[0].Name);
-            if(water&&persistent.Water>=ProblemPersistSeconds)shown.Add(ProblemKinds[1].Name);
-            if(power&&persistent.Power>=ProblemPersistSeconds)shown.Add(ProblemKinds[2].Name);
+            foreach(var def in ProblemAlertDefs){
+                var active=ProblemAlertActive(def.Name,b,state,simulation);
+                if(def.PersistSeconds<=0){
+                    // Structural or slow conditions alert at once and clear at once.
+                    if(active)shown.Add(def.Name);
+                    continue;
+                }
+                // Asymmetric hysteresis: the shortage must persist before
+                // alerting, but the icon leaves shortly after the problem
+                // ends. The accumulated time is capped, so a long outage
+                // never delays the recovery signal.
+                var time=accumulated.GetValueOrDefault(def.Name);
+                time=active?Math.Min(def.PersistSeconds,time+step):Math.Max(0,time-step*ProblemRecoverFactor);
+                if(time<=0)accumulated.Remove(def.Name);else accumulated[def.Name]=time;
+                if(active&&time>=def.PersistSeconds)shown.Add(def.Name);
+            }
+            if(accumulated.Count==0)_problemPersistence.Remove(b.Id);
             LayoutProblemAlerts(alert,shown,unit);
         }
     }

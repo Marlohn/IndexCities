@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Flat pictogram (not a 3D object): no staff present during opening hours (slashed person). -->
+  <circle cx="24" cy="14" r="8" fill="#ffd9a0"/>
+  <path d="M10,44 C10,32 16,27 24,27 C32,27 38,32 38,44 Z" fill="#ffd9a0"/>
+  <path d="M10,38 L38,10" stroke="#ff5a4e" stroke-width="6" stroke-linecap="round"/>
+</svg>

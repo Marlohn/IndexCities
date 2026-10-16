@@ -12,6 +12,9 @@ public sealed partial class CitySimulation
         return b.Kind is BuildingKind.Grocery or BuildingKind.FuelStation?(c.Shift==0?hour>=7&&hour<15:hour>=14&&hour<22):hour>=7&&hour<15;
     }
     bool Open(Building b)=>b.Kind is BuildingKind.Grocery or BuildingKind.FuelStation?State.Now.Hour>=7&&State.Now.Hour<22:State.Now.Hour>=6&&State.Now.Hour<19;
+    // Read-only opening hours for presentation (problem alerts over buildings).
+    // Same rule the simulation already uses for building causes; no behaviour change.
+    public bool BuildingOpen(Building building)=>Open(building);
     public bool WorkerPresentAt(Citizen c,Building b)=>c.Alive&&c.WorkplaceId==b.Id&&c.VehicleId==null&&c.ConstructionProjectId==null&&!c.Moving&&c.Position.Distance(b.Door)<3&&ShiftActive(c);
     public int WorkersPresent(Building b)=>State.Citizens.Count(c=>WorkerPresentAt(c,b));
     List<Point> CitizenRoute(Citizen citizen,Building destination)

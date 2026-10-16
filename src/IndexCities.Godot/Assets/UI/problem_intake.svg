@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Flat pictogram (not a 3D object): water intake far from any viable natural source (slashed droplet). -->
+  <path d="M24,3 C24,3 8,21 8,30 A16,16 0 0 0 40,30 C40,21 24,3 24,3 Z" fill="#7fc9ff"/>
+  <ellipse cx="17" cy="32" rx="4.5" ry="7" fill="#dff2ff" fill-opacity="0.85"/>
+  <path d="M10,38 L38,10" stroke="#ff5a4e" stroke-width="6" stroke-linecap="round"/>
+</svg>

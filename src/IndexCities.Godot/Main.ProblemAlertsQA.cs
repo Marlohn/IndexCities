@@ -7,10 +7,15 @@ public partial class Main
     string? ProblemAlertDirectory;
 
     // Visual review of the problem alerts over completed buildings (owner
-    // decision, 2026-10-15). Two kinds of evidence, never mixed:
+    // decision, 2026-10-15, extended with 5 more causes in the same session).
+    // Three kinds of evidence, never mixed:
     //  * controlled scenario — exact per-building state set on a city copy that
     //    is never saved, to prove which icon belongs to which real state and
     //    that every icon disappears once the state is fixed;
+    //  * new causes scenario — a city copy (never saved) with a dry intake, a
+    //    treatment without raw water, a shop with a company but no stock and
+    //    municipal buildings without staff, proving each new icon, its
+    //    persistence, its night suppression and its clearing;
     //  * real scenario — a city without potable infrastructure really alerts
     //    for water, and the alert really ends after real intake and treatment
     //    buildings are built and start delivering water.
@@ -25,6 +30,7 @@ public partial class Main
             _speed=0;_autosaveMinutes=0;_clockBudget=0;
             CitySaves.VerificationDirectory=System.IO.Path.Combine(ProblemAlertDirectory,"saves");
             await ProblemAlertsControlled(log);
+            await ProblemAlertsNewCauses(log);
             await ProblemAlertsRealWater(log);
             System.IO.File.WriteAllLines(System.IO.Path.Combine(ProblemAlertDirectory,"log.txt"),log);
             GD.Print("PROBLEM_ALERTS_QA ok "+string.Join(" | ",log)+" directory="+ProblemAlertDirectory);
@@ -103,6 +109,154 @@ public partial class Main
         log.Add("controlled cleared=all inspection-consistent");
     }
 
+    // New problem causes (owner extension, 2026-10-15): a dry intake, a
+    // treatment without raw water, municipal buildings without staff, a shop
+    // with a company but no stock, and pending municipal maintenance. All on
+    // a city copy that is never saved. The empty city has no citizens, so no
+    // worker is ever present; water/power demands stay at zero and only the
+    // new icons can appear besides the forced ones.
+    async Task ProblemAlertsNewCauses(List<string> log)
+    {
+        _sim=new CitySimulation(91);
+        Require(_sim.PlaceBuilding(BuildingKind.CityHall,new(-152,16)).Success,"Prefeitura do cenário de novas causas");
+        // The lake moves with the seed: the main road must reach the shore
+        // column, or the shore road would start disconnected and never
+        // receive materials.
+        var lake=_sim.State.LakeCentre;
+        var shoreZ=Math.Round((lake.Z-_sim.State.LakeRadius-18)/4)*4;
+        var intakeX=Math.Round(lake.X/4)*4;
+        var mainRoad=_sim.PlaceRoad(new(Math.Min(-192,intakeX-24),0),new(Math.Min(248,Math.Max(100,intakeX+24)),0));
+        Require(mainRoad.Success,"Rua principal do cenário de novas causas: "+mainRoad.Message);
+        await ProblemWaitWorks([mainRoad.Id!.Value]);
+        // Shore road first, so the wet intake (negative control) and any hint
+        // near the lake adapt to this seed; the dry intake search then avoids
+        // that column and any natural source. It reaches shoreZ-10 (still
+        // clear of the water) so a viable intake spot is both near the water
+        // and within reach of the last street node.
+        var shoreRoad=_sim.PlaceRoad(new(intakeX,0),new(intakeX,shoreZ-10));
+        Require(shoreRoad.Success,"Rua até a margem no cenário de novas causas: "+shoreRoad.Message);
+        var treatment=ProblemPlaceAccessible(BuildingKind.WaterTreatment,
+            [new(intakeX+40,20),new(intakeX-40,20),new(intakeX+80,20),new(intakeX-80,20),new(0,20)]);
+        var grocery=ProblemPlaceAccessible(BuildingKind.Grocery,
+            [new(intakeX-80,16),new(intakeX+80,16),new(intakeX-120,16),new(intakeX+120,16)]);
+        var dryIntake=ProblemPlaceDryIntake(intakeX);
+        // A shop with a real company but no money and no stock: the company
+        // stays active (no debts, only days of complaints), restocking fails
+        // gracefully on zero balance, and the stock stays really empty.
+        var companyId=_sim.State.NextId++;
+        var company=new Company{Id=companyId,Name="Mercado QA "+companyId,Active=true};
+        _sim.State.Companies.Add(company);
+        _sim.State.Wallets[company.Account]=0;
+        grocery.CompanyId=company.Id;grocery.OwnerAccount=company.Account;company.Buildings.Add(grocery.Id);
+        log.Add($"newcauses dry={dryIntake.Id} treatment={treatment.Id} shop={grocery.Id} hall={_sim.State.Buildings.Single(b=>b.Kind==BuildingKind.CityHall).Id}");
+        await ProblemWaitWorks([shoreRoad.Id!.Value]);
+        var wetIntake=await ProblemPlaceNear(BuildingKind.WaterIntake,new(intakeX,shoreZ));
+        await ProblemWaitWorks([treatment.ProjectId,grocery.ProjectId,dryIntake.ProjectId,wetIntake.ProjectId]);
+        var hall=_sim.State.Buildings.Single(b=>b.Kind==BuildingKind.CityHall);
+        _world.Reset(_sim.State);BuildCatalog();ClearTool();ClearSelection();
+        _focus=ToV(new(-40,20));_zoom=150;_yaw=45;UpdateCamera();
+        // Morning, opening hours for every kind. Reset after aligning the
+        // clock so every persistence starts from zero.
+        for(var i=0;i<200&&_sim.State.Now.Hour!=8;i++)_sim.Advance(600);
+        Require(_sim.State.Now.Hour==8,"Cenário de novas causas às 8h: "+_sim.State.Now.ToString("dd/MM HH:mm"));
+        _world.Reset(_sim.State);
+        await ProblemPresent("newcauses-baseline");
+        Require(_world.ProblemAlertIcons(dryIntake.Id)=="intake","Captação longe da água alerta sem espera: "+_world.ProblemAlertIcons(dryIntake.Id));
+        Require(_world.ProblemAlertIcons(wetIntake.Id)=="","Captação perto da água não alerta por localização: "+_world.ProblemAlertIcons(wetIntake.Id));
+        // One minute presented: raw-water (20 s) and stock (60 s) appear,
+        // staff (300 s) still waits, proving the persistence order.
+        _sim.Advance(60);await ProblemPresent(null);
+        Require(_world.ProblemAlertIcons(treatment.Id)=="noraw","Tratamento sem água bruta: "+_world.ProblemAlertIcons(treatment.Id));
+        Require(_world.ProblemAlertIcons(grocery.Id)=="stock","Mercearia com empresa e sem estoque: "+_world.ProblemAlertIcons(grocery.Id));
+        Require(_world.ProblemAlertIcons(hall.Id)=="","Prefeitura ainda sem alerta de equipe (persistência longa): "+_world.ProblemAlertIcons(hall.Id));
+        Require(_world.ProblemAlertIcons(dryIntake.Id)=="intake","Captação seca ainda só por localização: "+_world.ProblemAlertIcons(dryIntake.Id));
+        Require(_world.ProblemAlertIcons(wetIntake.Id)=="","Captação úmida ainda sem nada: "+_world.ProblemAlertIcons(wetIntake.Id));
+        log.Add($"PROBLEM_ALERTS_QA ok building={dryIntake.Id} alerts={_world.ProblemAlertIcons(dryIntake.Id)}");
+        log.Add($"PROBLEM_ALERTS_QA ok building={treatment.Id} alerts={_world.ProblemAlertIcons(treatment.Id)}");
+        log.Add($"PROBLEM_ALERTS_QA ok building={grocery.Id} alerts={_world.ProblemAlertIcons(grocery.Id)}");
+        await ProblemPresent("newcauses-flows");
+        // Five minutes presented: no staff anywhere, so every staff icon joins.
+        for(var i=0;i<4;i++){_sim.Advance(60);await ProblemPresent(null);}
+        Require(_world.ProblemAlertIcons(hall.Id)=="staff","Prefeitura sem funcionários de manhã: "+_world.ProblemAlertIcons(hall.Id));
+        Require(_world.ProblemAlertIcons(grocery.Id)=="staff,stock","Mercearia sem equipe e sem estoque: "+_world.ProblemAlertIcons(grocery.Id));
+        Require(_world.ProblemAlertIcons(dryIntake.Id)=="intake,staff","Captação seca sem equipe: "+_world.ProblemAlertIcons(dryIntake.Id));
+        Require(_world.ProblemAlertIcons(treatment.Id)=="noraw,staff","Tratamento sem água bruta e sem equipe: "+_world.ProblemAlertIcons(treatment.Id));
+        Require(_world.ProblemAlertIcons(wetIntake.Id)=="staff","Captação úmida só sem equipe: "+_world.ProblemAlertIcons(wetIntake.Id));
+        log.Add($"PROBLEM_ALERTS_QA ok building={hall.Id} alerts={_world.ProblemAlertIcons(hall.Id)}");
+        log.Add($"PROBLEM_ALERTS_QA ok building={wetIntake.Id} alerts={_world.ProblemAlertIcons(wetIntake.Id)}");
+        _focus=ToV(grocery.Position);_zoom=45;_yaw=45;UpdateCamera();await ProblemPresent("newcauses-flows-detail");
+        ClearSelection();_selectedBuilding=grocery.Id;RefreshInspection();await RecoveryFrame();
+        Require(RecoveryNodes<Label>(_inspection).Any(label=>label.Text=="Problemas: Sem funcionários · Estoque vazio"),"Inspeção acusa os mesmos problemas dos ícones");
+        await RecoveryCapture(System.IO.Path.Combine(ProblemAlertDirectory!,"newcauses-inspection.png"),GetViewport());
+        log.Add("newcauses inspection problems=staff+stock");
+        // Night: opening-hours kinds go quiet; utilities keep their staff
+        // alert because their shifts cover the whole day.
+        for(var i=0;i<200&&_sim.State.Now.Hour!=23;i++)_sim.Advance(600);
+        Require(_sim.State.Now.Hour==23,"Cenário de novas causas às 23h: "+_sim.State.Now.ToString("dd/MM HH:mm"));
+        _sim.Advance(60);await ProblemPresent(null);
+        _sim.Advance(60);await ProblemPresent(null);
+        Require(_world.ProblemAlertIcons(hall.Id)=="","Prefeitura fora do horário não alerta: "+_world.ProblemAlertIcons(hall.Id));
+        Require(_world.ProblemAlertIcons(grocery.Id)=="","Mercearia fechada não alerta: "+_world.ProblemAlertIcons(grocery.Id));
+        Require(_world.ProblemAlertIcons(dryIntake.Id).Contains("intake"),"Captação seca segue sem fonte à noite: "+_world.ProblemAlertIcons(dryIntake.Id));
+        Require(_world.ProblemAlertIcons(treatment.Id).Contains("noraw"),"Tratamento segue sem água bruta à noite: "+_world.ProblemAlertIcons(treatment.Id));
+        log.Add($"PROBLEM_ALERTS_QA ok night hall={_world.ProblemAlertIcons(hall.Id)} shop={_world.ProblemAlertIcons(grocery.Id)} dry={_world.ProblemAlertIcons(dryIntake.Id)} treatment={_world.ProblemAlertIcons(treatment.Id)}");
+        // Maintenance: a municipal ratio forced low alerts at once (slow,
+        // monotonic condition) and clears as soon as it is restored. Each
+        // check presents after advancing the clock, since the icons refresh
+        // on simulated time.
+        hall.MaintenanceRatio=.5;
+        _focus=ToV(hall.Position);_zoom=45;_yaw=45;UpdateCamera();
+        _sim.Advance(60);await ProblemPresent("newcauses-maintenance");
+        Require(_world.ProblemAlertIcons(hall.Id)=="maintenance","Manutenção pendente: "+_world.ProblemAlertIcons(hall.Id));
+        hall.MaintenanceRatio=1;
+        _sim.Advance(60);await ProblemPresent(null);
+        Require(_world.ProblemAlertIcons(hall.Id)=="","Manutenção em dia não alerta: "+_world.ProblemAlertIcons(hall.Id));
+        log.Add("newcauses maintenance appeared-and-cleared");
+        // Real goods clear the stock icon; the staff icon keeps waiting for
+        // someone present, proving each icon follows its own state.
+        for(var i=0;i<200&&_sim.State.Now.Hour!=8;i++)_sim.Advance(600);
+        _world.Reset(_sim.State);
+        _sim.Advance(60);await ProblemPresent(null);
+        Require(_world.ProblemAlertIcons(grocery.Id)=="stock","Mercearia ainda sem estoque de manhã: "+_world.ProblemAlertIcons(grocery.Id));
+        grocery.AddStock(ResourceKind.Food,60);
+        _sim.Advance(60);await ProblemPresent(null);
+        Require(_world.ProblemAlertIcons(grocery.Id)=="","Estoque real apaga o alerta: "+_world.ProblemAlertIcons(grocery.Id));
+        log.Add("newcauses stock cleared-by-real-goods");
+        _sim.CheckInvariants();
+    }
+
+    // First accessible position from the hints, with the same physical
+    // validity and real street access the player sees.
+    Building ProblemPlaceAccessible(BuildingKind kind,Point[] hints)
+    {
+        foreach(var at in hints){
+            var quote=_sim.QuoteBuilding(kind,at,0);
+            if(!quote.PhysicallyValid||!quote.Accessible)continue;
+            var placed=_sim.PlaceBuilding(kind,at,0);
+            Require(placed.Success,"Colocação de "+Catalog.Definitions[kind].Name+" em "+at+": "+placed.Message);
+            return _sim.State.Buildings.Single(b=>b.Id==placed.Id);
+        }
+        throw new InvalidOperationException("Nenhuma posição acessível para "+Catalog.Definitions[kind].Name);
+    }
+
+    // A water intake far from any viable natural source: physically valid
+    // with a warning and accessible, but never productive.
+    Building ProblemPlaceDryIntake(double shoreX)
+    {
+        foreach(var z in new[]{14.0,-24.0,-64.0})
+            foreach(var x in new[]{-120.0,-104.0,-88.0,-72.0,-56.0,-40.0,-24.0,-8.0,16.0,32.0,48.0,64.0,96.0,120.0}){
+                if(Math.Abs(x-shoreX)<24)continue;
+                var at=new Point(x,z);
+                var quote=_sim.QuoteBuilding(BuildingKind.WaterIntake,at,0);
+                if(!quote.PhysicallyValid||!quote.Accessible)continue;
+                if(_sim.HasNaturalWaterSource(new Building{Kind=BuildingKind.WaterIntake,Position=at}))continue;
+                var placed=_sim.PlaceBuilding(BuildingKind.WaterIntake,at,0);
+                Require(placed.Success,"Captação seca em "+at+": "+placed.Message);
+                return _sim.State.Buildings.Single(b=>b.Id==placed.Id);
+            }
+        throw new InvalidOperationException("Nenhuma posição seca acessível para a captação");
+    }
+
     // A real working city: potable water really reaches the occupied houses and
     // no icon is shown. Then a real player action (cutting the street that
     // serves the intake) really stops the water, and reconnecting that street
@@ -144,6 +298,8 @@ public partial class Main
         Require(occupied.Length>0&&WaterDelivered(),"Água potável realmente entregue às casas ocupadas: capacidade "+_sim.State.PotableCapacity.ToString("N0")+" · "+string.Join(" ",occupied.Select(h=>h.WaterRatio.ToString("P0"))));
         for(var step=0;step<3;step++){_sim.Advance(60);await ProblemPresent(null);}
         Require(occupied.All(h=>_world.ProblemAlertIcons(h.Id)==""),"Cidade com água potável não mostra alerta: "+string.Join(" ",occupied.Select(h=>h.Id+":"+_world.ProblemAlertIcons(h.Id))));
+        Require(!_world.ProblemAlertIcons(intake.Id).Contains("intake"),"Captação perto da água não alerta por localização: "+_world.ProblemAlertIcons(intake.Id));
+        Require(!_world.ProblemAlertIcons(treatment.Id).Contains("noraw"),"Tratamento com água bruta não alerta: "+_world.ProblemAlertIcons(treatment.Id));
         log.Add($"PROBLEM_ALERTS_QA ok buildings={string.Join(",",occupied.Select(h=>h.Id))} alerts=none pop={_sim.Population} potable={_sim.State.PotableCapacity:N0}");
         await ProblemPresent("real-water-healthy");
         await ProblemPresentDetail("real-water-healthy-detail",occupied[0]);
@@ -157,6 +313,10 @@ public partial class Main
         Require(_sim.State.PotableCapacity<=0,"A captação realmente parou: capacidade "+_sim.State.PotableCapacity.ToString("N0"));
         Require(occupied.All(h=>_world.ProblemAlertIcons(h.Id).Contains("water")),"Casas sem água potável alertam: "+string.Join(" ",occupied.Select(h=>h.Id+":"+_world.ProblemAlertIcons(h.Id))));
         Require(occupied.All(h=>h.Cause=="Abastecimento de água insuficiente"),"Causa exibida na inspeção é a mesma do alerta");
+        Require(_world.ProblemAlertIcons(treatment.Id).Contains("noraw"),"Tratamento sem água bruta alerta: "+_world.ProblemAlertIcons(treatment.Id));
+        Require(_world.ProblemAlertIcons(intake.Id).Contains("road"),"Captação isolada alerta sem acesso: "+_world.ProblemAlertIcons(intake.Id));
+        Require(!_world.ProblemAlertIcons(intake.Id).Contains("intake"),"Captação isolada não alerta por localização: "+_world.ProblemAlertIcons(intake.Id));
+        log.Add($"PROBLEM_ALERTS_QA ok intake={intake.Id} alerts={_world.ProblemAlertIcons(intake.Id)} treatment={treatment.Id} alerts={_world.ProblemAlertIcons(treatment.Id)}");
         var powerObserved=occupied.Select(h=>_world.ProblemAlertIcons(h.Id).Contains("power")).ToArray();
         log.Add($"PROBLEM_ALERTS_QA ok buildings={string.Join(",",occupied.Select(h=>h.Id))} alerts=water cause=\"Abastecimento de água insuficiente\" potable=0 power={_sim.State.ElectricityCapacity:N0} powerAlertsToo={powerObserved.Count(p=>p)}/{occupied.Length}");
         await ProblemPresent("real-water-shortage");
@@ -271,14 +431,14 @@ public partial class Main
             await ProblemWaitWorks(works);
             log.Add($"playtest completed buildings money={_sim.Available} population={_sim.Population}");
             bool WaterDelivered()=>_sim.State.PotableCapacity>0&&houses.Where(h=>h.FamilyId!=null).ToArray() is {Length:>0} occupied&&occupied.All(h=>h.WaterRatio>=.5);
-            (int Road,int Water,int Power,int Clean) previous=(0,0,0,0);
+            (int Road,int Water,int Power,int Other,int Clean) previous=(0,0,0,0,0);
             void Observe(string moment,bool force=false){
                 var snapshot=ProblemAlertSnapshot();
                 var capacity=_sim.State.Buildings.Where(b=>!b.Removed&&b.Definition.Utility).Select(b=>$"{b.Kind}:{_sim.WorkersPresent(b)}/{b.Definition.Jobs}").ToList();
                 if(!force&&snapshot==previous)return;
                 var detail=string.Join(" ",_sim.State.Buildings.Where(b=>b.Completed&&!b.Removed).Select(b=>$"{b.Id}:{(_world.ProblemAlertIcons(b.Id)==""?"clean":_world.ProblemAlertIcons(b.Id))}"));
-                log.Add($"playtest {moment} road={snapshot.Road} water={snapshot.Water} power={snapshot.Power} clean={snapshot.Clean} time={_sim.State.Now:dd/MM HH:mm} pop={_sim.Population} potable={_sim.State.PotableCapacity:N0} power={_sim.State.ElectricityCapacity:N0} staff={string.Join(" ",capacity)} | {detail}");
-                GD.Print("PROBLEM_ALERTS_PLAYTEST "+moment+" road="+snapshot.Road+" water="+snapshot.Water+" power="+snapshot.Power+" clean="+snapshot.Clean+" time={_sim.State.Now:dd/MM HH:mm}"+" pop="+_sim.Population+" potable="+_sim.State.PotableCapacity.ToString("N0")+" powerCap="+_sim.State.ElectricityCapacity.ToString("N0"));
+                log.Add($"playtest {moment} road={snapshot.Road} water={snapshot.Water} power={snapshot.Power} other={snapshot.Other} clean={snapshot.Clean} time={_sim.State.Now:dd/MM HH:mm} pop={_sim.Population} potable={_sim.State.PotableCapacity:N0} power={_sim.State.ElectricityCapacity:N0} staff={string.Join(" ",capacity)} | {detail}");
+                GD.Print("PROBLEM_ALERTS_PLAYTEST "+moment+" road="+snapshot.Road+" water="+snapshot.Water+" power="+snapshot.Power+" other="+snapshot.Other+" clean="+snapshot.Clean+" time={_sim.State.Now:dd/MM HH:mm}"+" pop="+_sim.Population+" potable="+_sim.State.PotableCapacity.ToString("N0")+" powerCap="+_sim.State.ElectricityCapacity.ToString("N0"));
                 previous=snapshot;
             }
             Observe("before-families",force:true);
@@ -295,6 +455,7 @@ public partial class Main
             Require(WaterDelivered(),"O ciclo real de água potável entrou em operação na cidade");
             for(var step=0;step<3;step++){_sim.Advance(60);await ProblemPresent(null);}
             Require(ProblemAlertSnapshot().Water==0,"Cidade com água potável não mostra alerta");
+            Require(ProblemAlertSnapshot().Other==0,"Cidade saudável não mostra nenhum dos outros alertas: "+string.Join(" ",_sim.State.Buildings.Where(b=>b.Completed&&!b.Removed).Select(b=>b.Id+":"+_world.ProblemAlertIcons(b.Id))));
             Observe("city-healthy",force:true);
             await ProblemPresent("playtest-healthy");
             // Player action: cut the street that serves the intake.
@@ -324,6 +485,7 @@ public partial class Main
             Observe("water-recovery",force:true);
             Require(WaterDelivered(),"Água potável realmente restabelecida pela reconexão da rua: capacidade "+_sim.State.PotableCapacity.ToString("N0")+" brutas "+_sim.State.RawWaterCapacity.ToString("N0")+" · "+string.Join(" ",houses.Where(h=>h.FamilyId!=null).Select(h=>h.WaterRatio.ToString("P0"))));
             Require(ProblemAlertSnapshot().Water==0,"Alertas de água somem quando a água volta");
+            Require(ProblemAlertSnapshot().Other==0,"Outros alertas somem quando a água volta: "+string.Join(" ",_sim.State.Buildings.Where(b=>b.Completed&&!b.Removed).Select(b=>b.Id+":"+_world.ProblemAlertIcons(b.Id))));
             Observe("after-water-recovery",force:true);
             await ProblemPresent("playtest-recovered");
             _sim.CheckInvariants();
@@ -337,16 +499,17 @@ public partial class Main
         }finally{CitySaves.VerificationDirectory=null;}
     }
 
-    (int Road,int Water,int Power,int Clean) ProblemAlertSnapshot()
+    (int Road,int Water,int Power,int Other,int Clean) ProblemAlertSnapshot()
     {
-        int road=0,water=0,power=0,clean=0;
+        int road=0,water=0,power=0,other=0,clean=0;
         foreach(var b in _sim.State.Buildings.Where(b=>b.Completed&&!b.Removed)){
             var icons=_world.ProblemAlertIcons(b.Id);
             if(icons=="")clean++;
             if(icons.Contains("road"))road++;
             if(icons.Contains("water"))water++;
             if(icons.Contains("power"))power++;
+            if(icons.Split(',',StringSplitOptions.RemoveEmptyEntries).Any(kind=>kind is "intake" or "noraw" or "staff" or "stock" or "maintenance"))other++;
         }
-        return (road,water,power,clean);
+        return (road,water,power,other,clean);
     }
 }
