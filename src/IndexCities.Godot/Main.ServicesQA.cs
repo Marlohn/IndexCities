@@ -6,6 +6,7 @@ public partial class Main
 {
     async void ServicesSmoke()
     {
+        if(!QaPrecondition(_sim.State.Buildings.Any(b=>b.Completed&&!b.Removed&&b.Definition.Utility),"services-smoke","uma cidade real com utilitários/serviços concluídos","-- --fixture=<cidade-com-servicos>"))return;
         var baseline=OS.GetCmdlineUserArgs().Contains("--services-before");
         var directory=System.IO.Path.GetFullPath(ProjectSettings.GlobalizePath("res://../../artifacts/verification/services-ui/"+(baseline?"before-":"after-")+Guid.NewGuid().ToString("N")));
         try{
@@ -90,7 +91,7 @@ public partial class Main
                 GD.Print("INDEXCITIES_SERVICES_CONTROLLED_UI_OK raw-limit=true vehicle-and-walking=true event-keeps-button=true rebuilt-inspection=true synthetic=true");
                 GD.Print("INDEXCITIES_SERVICES_UI_OK live=true scroll=200 inspection=true save-load=identical money="+_sim.MonetaryTotal);
             }
-            GD.Print("INDEXCITIES_SERVICES_CAPTURE baseline="+baseline+" money="+_sim.MonetaryTotal+" directory="+directory);
+            GD.Print((baseline?"BASELINE: sem verificações ":"")+"INDEXCITIES_SERVICES_CAPTURE baseline="+baseline+" money="+_sim.MonetaryTotal+" directory="+directory);
             GetTree().Quit();
         }catch(Exception exception){GD.PushError(exception.ToString());GetTree().Quit(1);}
         finally{CitySaves.VerificationDirectory=null;}

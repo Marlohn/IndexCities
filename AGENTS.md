@@ -18,39 +18,15 @@ Antes de **qualquer trabalho em código**, inclusive início do desenvolvimento,
 
 Antes de iniciar uma rodada de **definição da SPEC** ou de **priorização de decisões de produto**, consulte [`docs/exploration/project-readiness.md`](docs/exploration/project-readiness.md) para identificar lacunas, riscos e perguntas de maior valor, depois de conferir a SPEC e o hub de exploração atuais. O mapa é **orientação exploratória revisável**, não fonte de verdade, requisito aprovado, plano obrigatório de POC ou motivo para bloquear experimentos seguros. **Não reabra decisões da SPEC só porque aparecem como pendência numa análise antiga;** diferencie decisão ainda necessária, calibração e validação por protótipo. Atualize o mapa apenas quando uma decisão ou evidência mudar materialmente as prioridades.
 
-## Auditoria humana de conteúdo produzido por IA
+## Exploração é pesquisa, não autoridade
 
-Conteúdo criado por IA não pode ganhar autoridade apenas porque foi escrito, pesquisado, resumido ou organizado no repositório.
+**Decisão do responsável em 2026-10-16:** `docs/EXPLORATION.md` e `docs/exploration/*.md` são **documentos de pesquisa** registrados por IAs. Não são fonte de verdade e, em geral, não serão revisados por humano; por isso não se exige mais rótulo de revisão (PENDENTE/PARCIALMENTE REVISADO/REVISADO) por documento ou seção. Rótulos antigos podem permanecer, sem efeito.
 
-### Status obrigatório de revisão humana
-
-Todo documento temático de exploração criado ou ampliado por IA deve declarar de forma visível, logo no topo, um destes estados:
-
-- **PENDENTE** — o conteúdo ainda não foi revisado pelo responsável;
-- **PARCIALMENTE REVISADO** — parte do conteúdo ou das decisões foi discutida/confirmada, mas o documento ainda contém pesquisa, síntese, proposta ou redação da IA que não foi revisada integralmente;
-- **REVISADO** — o responsável revisou explicitamente o conteúdo atual daquele documento ou seção.
-
-Quando um documento misturar conteúdo com estados diferentes, use o estado agregado mais conservador no topo e marque também as seções relevantes com `Revisão humana desta seção`.
-
-### Regras
-
-- toda pesquisa, proposta, recomendação, hipótese, benchmark, síntese ou conclusão produzida pela IA começa como **PENDENTE**, salvo quando a conversa atual já contém revisão explícita daquele conteúdo;
-- conteúdo criado a partir de uma decisão discutida com o responsável, mas expandido ou sintetizado pela IA sem revisão integral do texto, deve ser **PARCIALMENTE REVISADO**, não `REVISADO`;
-- reorganizar, resumir, mover ou reformatar conteúdo **não conta como revisão humana**;
-- adicionar conteúdo novo não revisado a um documento previamente revisado exige marcar a nova seção como `PENDENTE` ou reduzir o status agregado do documento para `PARCIALMENTE REVISADO`;
-- conteúdo **PENDENTE** não pode ser promovido para `docs/SPEC.md`, `docs/ARCHITECTURE.md` nem virar regra em `AGENTS.md`;
-- em conteúdo **PARCIALMENTE REVISADO**, somente a parte explicitamente discutida e confirmada pode ser promovida; a pesquisa/síntese restante continua sem autoridade;
-- somente após discussão explícita e confirmação do responsável a conclusão correspondente pode ser promovida para a fonte canônica adequada;
-- quando houver dúvida sobre se algo foi realmente aprovado pelo responsável, trate como **PENDENTE**;
-- termos como **decidido**, **aprovado**, **confirmado** ou equivalentes só devem descrever uma decisão do responsável ou algo já registrado na fonte canônica; não podem transformar uma recomendação da IA em decisão;
-- durante a conversa, sempre que a IA registrar pesquisa ou análise nova que ainda não foi revisada pelo responsável, deve avisar de forma breve que o material foi salvo como **revisão humana pendente**;
-- `docs/EXPLORATION.md` deve mostrar o status agregado de revisão humana de cada documento temático, para que o responsável consiga localizar rapidamente o que ainda precisa revisar.
-
-O objetivo é simples: a IA pode pesquisar, propor, comparar e documentar, mas **não decide pelo responsável**. A auditoria deve tornar evidente o que ainda precisa de leitura/discussão humana antes de ganhar autoridade.
-
-**Regra operacional geral para qualquer documento ou trecho não aprovado por humano:** conteúdo marcado **PENDENTE** ou a parte não revisada de material **PARCIALMENTE REVISADO** serve somente de informação para avaliar. Não é requisito, decisão, backlog, plano obrigatório, instrução para agentes, recomendação aceita, autorização de implementação, autorização de copiar recursos nem aprovação tácita — **mesmo que o texto use verbos como "implementar", "usar", "adaptar", "reaproveitar", "importar", "priorizar" ou "próxima etapa"**. Um documento histórico sem status explícito também não ganha aprovação por omissão: conferir a decisão humana e a fonte canônica antes de agir. O rótulo **REVISADO** indica revisão humana do conteúdo, não promove automaticamente cada ideia citada a requisito; para comportamento de produto, vale a SPEC, e para arquitetura, a ARCHITECTURE. Decisões pontuais já confirmadas pelo responsável e registradas na fonte canônica continuam válidas independentemente do status agregado do documento exploratório.
-
-Ao atualizar exploração pendente, escrever hipóteses e possibilidades como **opções de estudo**, não como ordens de execução. Quando uma pesquisa anterior sugeriu copiar, portar ou usar algo sem aprovação, corrigir sua linguagem e não iniciar essa ação. A autonomia técnica do agente segue válida **dentro das decisões canônicas**, mas não permite inferir autorização de reutilização de acervos externos ou antigos.
+- **Serve para consulta:** antes de pesquisar um tema, propor uma mecânica ou decidir algo, procure no hub se já existe pesquisa, alternativas descartadas ou evidência sobre o assunto e aproveite-a, para não refazer trabalho nem repetir caminhos rejeitados. Confira se ainda vale: o conteúdo pode estar desatualizado em relação à SPEC e ao código, que prevalecem.
+- Nada da exploração vira requisito, decisão, backlog, plano obrigatório, instrução para agentes ou autorização de implementação/cópia de recursos — **mesmo que o texto use verbos como "implementar", "usar", "reaproveitar" ou "próxima etapa"**.
+- Algo só ganha autoridade quando o responsável aprova explicitamente na conversa e a conclusão é registrada na fonte canônica (`SPEC`, `ARCHITECTURE` ou `AGENTS`). Na dúvida sobre se houve aprovação, trate como não aprovado.
+- Termos como **decidido**, **aprovado** ou **confirmado** só descrevem decisão do responsável ou o que já está na fonte canônica; nunca uma recomendação da IA.
+- Escreva hipóteses como **opções de estudo**, não como ordens. Ao apresentar uma pesquisa nova, diga em uma frase que é material de pesquisa, não decisão.
 
 ## Fluxo contínuo de conversa e documentação
 
@@ -208,7 +184,7 @@ Nada de outro projeto, protótipo, conversa antiga ou implementação anterior v
 
 **Relatos históricos são apenas lições autossuficientes, não pistas para mineração de componentes.** Sem solicitação específica do responsável, não pesquisar, abrir ou consultar repositórios antigos, commits, issues, código, testes ou acervos de experiências anteriores por iniciativa própria. Ler uma nota informal de aprendizados não autoriza reconstruir sua procedência nem tentar adaptar a implementação de origem. Em vez disso, partir da SPEC e da ARCHITECTURE, criar a solução própria e considerar uma lição apenas como alerta quando ela for pertinente.
 
-Material externo ou histórico de pesquisa pode informar uma investigação concreta quando permitido, mas **não** deve ser herdado como funcionalidade, arquitetura, dependência, recurso ou plano de implementação. Qualquer conceito novo de produto só vira requisito após decisão explícita do responsável registrada na SPEC; decisões estruturais seguem a ARCHITECTURE. **Esta distinção vale para todos os documentos exploratórios sem revisão humana integral.**
+Material externo ou histórico de pesquisa pode informar uma investigação concreta quando permitido, mas **não** deve ser herdado como funcionalidade, arquitetura, dependência, recurso ou plano de implementação. Qualquer conceito novo de produto só vira requisito após decisão explícita do responsável registrada na SPEC; decisões estruturais seguem a ARCHITECTURE. **Esta distinção vale para todos os documentos exploratórios.**
 
 ### Evolução futura
 
@@ -310,6 +286,7 @@ Sistemas profundos não podem virar caixas-pretas.
 - Trabalho independente pode ocorrer em paralelo em workspaces isoladas, com fronteiras explícitas.
 - **Ajuste de processo confirmado em 2026-10-14:** manter uma entrega integrada principal, sem limitar trabalhos independentes úteis. Reproduzir cedo o cenário original e integrar amostras visuais cedo; tentativas sem melhora pedem reavaliar a direção, sem transformar um limite de iterações em teto de qualidade. Reutilizar evidências de código inalterado e repetir verificações conforme o risco, preservando os testes exigidos e a revisão independente de cada entrega integrada. Evitar ciclos separados de revisão de amostra que apenas repetem a revisão da integração.
 - **Execução de QA no Godot:** argumentos da engine (`--path`, `--position`, `--resolution`) vêm antes de `--`; argumentos do jogo (`--*-smoke`, `--review-save-dir=...`) vêm depois. O banner da engine não prova início do cenário. Se faltarem os marcadores/capturas esperados, verificar chamada e fase antes de continuar esperando ou declarar um teste executado.
+- Para listar os cenários de QA, o que cada um verifica, se exige janela real e de que cidade precisa, rode o jogo com `-- --qa-list`; a pasta `--review-save-dir` deve ser caminho absoluto dentro de `<raiz>/artifacts/verification`.
 - Atalhos de teste que chamam `scripts/Play.ps1` também precisam incluir o separador: `-GodotArguments '--',('--review-save-dir='+$saveFolder)`. Conferir os argumentos da engine iniciada antes de afirmar isolamento; `-DryRun` sozinho não prova a execução nem o destino efetivo de saves.
 - Estas são regras de trabalho autorizadas pelo responsável, **não alterações de gameplay**. A SPEC continua exigindo decisão humana prévia para mudanças relevantes de produto.
 - **Orquestração multiagente (lições de 2026-10-16), vale para qualquer orquestrador:**

@@ -13,6 +13,7 @@ public partial class Main
     async void ActivityIndicatorsSmoke()
     {
         var args=OS.GetCmdlineUserArgs();
+        if(!QaPrecondition(args.Any(a=>a.StartsWith("--activity-indicators-save=")),"activity-indicators-smoke","uma cópia isolada indicada por --activity-indicators-save= (save sob artifacts/verification/activity-indicators)","-- --activity-indicators-save=<copia-isolada>"))return;
         var root=System.IO.Path.GetFullPath(ProjectSettings.GlobalizePath("res://../../artifacts/verification/activity-indicators"));
         var phase=args.FirstOrDefault(a=>a.StartsWith("--activity-indicators-phase="))?[28..]??"after";
         var directory=System.IO.Path.Combine(root,phase+"-"+Guid.NewGuid().ToString("N"));

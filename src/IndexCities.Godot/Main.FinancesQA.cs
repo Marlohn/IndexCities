@@ -5,6 +5,7 @@ public partial class Main
 {
     async void FinancesSmoke()
     {
+        if(!QaPrecondition(_sim.Population>0&&_sim.State.CityHallPlaced,"finances-smoke","uma cidade povoada real com Prefeitura","-- --fixture=<cidade-povoada>"))return;
         var directory=System.IO.Path.GetFullPath(ProjectSettings.GlobalizePath("res://../../artifacts/verification/simulation-perf/finances-"+Guid.NewGuid().ToString("N")));
         try {
             Require(DisplayServer.GetName()!="headless","Finanças exigem interface renderizada");

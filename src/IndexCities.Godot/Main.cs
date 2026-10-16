@@ -10,9 +10,11 @@ public partial class Main:Node3D
     BuildingKind? _building=BuildingKind.CityHall;bool _roadTool,_reverse,_roadFixed,_hoverPreview,_holdLoadedPreview;Point? _anchor,_roadStart,_roadEnd;double _rotation;bool _manualRotation;Point? _dragStart;readonly List<(Point At,PlacementQuote Quote)> _row=new();decimal _rowTotal;int _rowValid;
     Vector2? _pointerPixel;Point _cursor;Vector3 _focus=new(-144,0,0);float _yaw=45,_zoom=110;int _speed=1;double _clockBudget,_uiAt,_autosaveAt,_autosaveMinutes=5;
     (Vector3 Focus,float Yaw,float Zoom)? _captureCamera;
-    ulong _frameAt,_clockAt;string _cityId="";string? _capturePath;double _captureTimer;int? _selectedBuilding,_selectedCitizen,_selectedVehicle,_selectedRoad,_selectedProject,_movingProject;Window? _modal;
+    ulong _frameAt,_clockAt;string _cityId="";string? _capturePath;string? _reviewSaveDir;double _captureTimer;int? _selectedBuilding,_selectedCitizen,_selectedVehicle,_selectedRoad,_selectedProject,_movingProject;Window? _modal;
     public override void _Ready()
     {
+        var args=OS.IsDebugBuild()?OS.GetCmdlineUserArgs():System.Array.Empty<string>();
+        if(OS.IsDebugBuild()&&args.Contains("--qa-list")){PrintQaList();SetProcess(false);SetProcessInput(false);SetProcessUnhandledInput(false);GetTree().Quit(0);return;}
         if(!EnsureImportCachePresent())return;
         GetViewport().Msaa3D=Viewport.Msaa.Msaa4X;
         _sim=new CitySimulation(42);_cityId=CitySaves.NewId();_focus=new((float)_sim.State.Entry.X+112,0,8);_world=new CityWorld();AddChild(_world);
@@ -20,46 +22,24 @@ public partial class Main:Node3D
         AddChild(new WorldEnvironment{Environment=new Environment{BackgroundMode=Environment.BGMode.Color,BackgroundColor=new Color("b9c9d5"),AmbientLightSource=Environment.AmbientSource.Color,AmbientLightColor=new Color("afc5ce"),AmbientLightEnergy=.32f}});
         _camera=new Camera3D{Projection=Camera3D.ProjectionType.Orthogonal,Size=_zoom,Far=2000,Current=true};AddChild(_camera);UpdateCamera();
         BuildHud();_world.Reset(_sim.State);RefreshHud();
-        var args=OS.GetCmdlineUserArgs();var capture=args.FirstOrDefault(a=>a.StartsWith("--capture="));if(capture!=null)_capturePath=capture[10..];
-        var review=args.FirstOrDefault(a=>a.StartsWith("--review-save-dir="));if(review!=null){var path=System.IO.Path.GetFullPath(review[18..]);var verification=System.IO.Path.GetFullPath(ProjectSettings.GlobalizePath("res://../../artifacts/verification"))+System.IO.Path.DirectorySeparatorChar;if(!path.StartsWith(verification,StringComparison.OrdinalIgnoreCase))throw new ArgumentException("A revisão isolada deve guardar saves em artifacts/verification");CitySaves.VerificationDirectory=path;}
+        var capture=args.FirstOrDefault(a=>a.StartsWith("--capture="));if(capture!=null)_capturePath=capture[10..];
+        var review=args.FirstOrDefault(a=>a.StartsWith("--review-save-dir="));if(review!=null){var path=System.IO.Path.GetFullPath(review[18..]);var verification=System.IO.Path.GetFullPath(ProjectSettings.GlobalizePath("res://../../artifacts/verification"))+System.IO.Path.DirectorySeparatorChar;if(!path.StartsWith(verification,StringComparison.OrdinalIgnoreCase))throw new ArgumentException("A revisão isolada deve guardar saves em artifacts/verification");_reviewSaveDir=path;CitySaves.VerificationDirectory=path;}
         var fixture=args.FirstOrDefault(a=>a.StartsWith("--fixture="));if(fixture!=null){_sim=CitySimulation.FromJson(System.IO.File.ReadAllText(fixture[10..]));_building=null;_speed=0;_focus=new(-40,0,0);_zoom=250;_world.Reset(_sim.State);BuildCatalog();UpdateCamera();RefreshHud();}
         if(args.Contains("--closeup")){_focus=ToV(_sim.State.Buildings.FirstOrDefault(b=>b.Kind==BuildingKind.CityHall&&!b.Removed)?.Position??new(-100,0));_zoom=110;UpdateCamera();}
         // Capture-only camera framing: --focus=x,z[,zoom]
         if(args.FirstOrDefault(a=>a.StartsWith("--focus=")) is {} focusArg){var parts=focusArg[8..].Split(',').Select(s=>float.Parse(s,System.Globalization.CultureInfo.InvariantCulture)).ToArray();_focus=new(parts[0],0,parts[1]);if(parts.Length>2)_zoom=parts[2];UpdateCamera();}
         if(args.Contains("--inspect-first")){ClearSelection();_selectedBuilding=_sim.State.Buildings.FirstOrDefault(b=>!b.Removed)?.Id;RefreshInspection();}
-        if(args.Contains("--performance-smoke")){_performanceSmoke=true;_speed=1;_autosaveMinutes=0;var speedArg=args.FirstOrDefault(a=>a.StartsWith("--performance-speed="));if(speedArg!=null&&(!int.TryParse(speedArg[20..],out _speed)||_speed is <1 or >3))throw new ArgumentException("Performance usa somente velocidades aprovadas 1, 2 e 3");}
-        if(args.Contains("--bar-capture")){_speed=0;_sim.PlaceBuilding(BuildingKind.CityHall,new(-152,16));_world.Reset(_sim.State);BuildCatalog();RefreshHud();}
-        if(args.Contains("--persistence-smoke"))CallDeferred(MethodName.PersistenceSmoke);
-        if(args.Contains("--ui-smoke"))CallDeferred(MethodName.UiSmoke);
-        if(args.Contains("--ui-input-smoke"))CallDeferred(MethodName.UiInputSmoke);
-        if(args.Contains("--recovery-smoke"))CallDeferred(MethodName.RecoverySmoke);
-        if(args.Contains("--road-recovery-smoke"))CallDeferred(MethodName.RoadRecoverySmoke);
-        if(args.Contains("--road-tool-playtest"))CallDeferred(MethodName.RoadToolPlaytest);
-        if(args.Contains("--grid-alignment-smoke"))CallDeferred(MethodName.GridAlignmentSmoke);
-        if(args.Contains("--placement-performance-smoke"))CallDeferred(MethodName.PlacementPerformanceSmoke);
-        if(args.Contains("--road-tool-verify"))CallDeferred(MethodName.RoadToolVerifyNative);
-        if(args.Contains("--city-names-smoke"))CallDeferred(MethodName.CityNamesSmoke);
-        if(args.Contains("--finances-smoke"))CallDeferred(MethodName.FinancesSmoke);
-        if(args.Contains("--activity-smoke")||args.Contains("--activity-before"))CallDeferred(MethodName.ActivitySmoke);
-        if(args.Contains("--circulation-smoke"))CallDeferred(MethodName.CirculationSmoke);
-        if(args.Contains("--interior-arrival-smoke"))CallDeferred(MethodName.InteriorArrivalSmoke);
-        if(args.Contains("--pedestrian-before")||args.Contains("--pedestrian-recovery-smoke"))CallDeferred(MethodName.PedestrianRecoverySmoke);
-        if(args.Contains("--activity-indicators-smoke"))CallDeferred(MethodName.ActivityIndicatorsSmoke);
-        if(args.Contains("--problem-alerts-smoke"))CallDeferred(MethodName.ProblemAlertsSmoke);
-        if(args.Contains("--problem-alerts-playtest"))CallDeferred(MethodName.ProblemAlertsPlaytest);
-        if(args.Contains("--services-before")||args.Contains("--services-smoke"))CallDeferred(MethodName.ServicesSmoke);
-        if(args.Contains("--environment-smoke"))CallDeferred(MethodName.EnvironmentSmoke);
-        if(args.Contains("--lake-recovery-smoke"))CallDeferred(MethodName.LakeRecoverySmoke);
-        if(args.Contains("--water-intake-range-smoke"))CallDeferred(MethodName.WaterIntakeRangeSmoke);
-        if(args.Contains("--work-cause-smoke"))CallDeferred(MethodName.WorkCauseSmoke);
-        if(args.Contains("--visual-review-smoke"))CallDeferred(MethodName.VisualReviewSmoke);
-        if(args.Contains("--real-time-start-smoke"))CallDeferred(MethodName.RealTimeStartSmoke);
-        if(args.Contains("--interaction-regressions-smoke"))CallDeferred(MethodName.InteractionRegressionSmoke);
-        if(args.Contains("--presentation-smoke"))CallDeferred(MethodName.PresentationSmoke);
-        if(args.Contains("--real-clock-smoke"))CallDeferred(MethodName.RealClockSmoke);
-        if(args.Contains("--traffic-recovery-smoke"))CallDeferred(MethodName.TrafficRecoverySmoke);
-        if(args.Contains("--smoke"))CallDeferred(MethodName.Smoke);
-        if(args.Contains("--neighbourhood-smoke"))CallDeferred(MethodName.NeighbourhoodSmoke);
+        // Roteamento dos cenários de QA a partir do registro único (Main.QARegistry.cs).
+        // Só é ativado em builds de editor/debug; em build release as flags são
+        // ignoradas e o jogo abre normal. Nenhuma regra do jogo depende disto.
+        if(OS.IsDebugBuild())foreach(var scenario in QaScenarios){
+            if(!scenario.Flags.Any(args.Contains))continue;
+            switch(scenario.Trigger){
+                case QaTrigger.Performance:EnablePerformanceSmoke(args);break;
+                case QaTrigger.BarCapture:EnableBarCapture();break;
+                default:CallDeferred(scenario.Method!);break;
+            }
+        }
         if(_capturePath!=null)_captureCamera=(_focus,_yaw,_zoom);
         _placementGridVisible=_building!=null||_roadTool;
         _clockAt=_frameAt=Time.GetTicksUsec();

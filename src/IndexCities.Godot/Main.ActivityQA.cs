@@ -6,6 +6,7 @@ public partial class Main
 {
     async void ActivitySmoke()
     {
+        if(!QaPrecondition(_sim.Population>0,"activity-smoke","uma cidade real povoada","-- --fixture=<cidade-povoada>"))return;
         var baseline=OS.GetCmdlineUserArgs().Contains("--activity-before");
         var directory=System.IO.Path.GetFullPath(ProjectSettings.GlobalizePath("res://../../artifacts/verification/activity-ui/"+(baseline?"before-":"after-")+Guid.NewGuid().ToString("N")));
         try {
@@ -93,7 +94,7 @@ public partial class Main
                 CloseModal();await ToSignal(GetTree().CreateTimer(.6),SceneTreeTimer.SignalName.Timeout);
                 GD.Print("INDEXCITIES_ACTIVITY_MIGRATION_OK population="+_sim.Population+" menu=same closed=clean");
             }
-            GD.Print("INDEXCITIES_ACTIVITY_"+(baseline?"BEFORE":"OK")+" stalePeople="+stale+" staleHistory="+staleHistory+" money="+_sim.MonetaryTotal+" directory="+directory);GetTree().Quit();
+            GD.Print((baseline?"BASELINE: sem verificações ":"")+"INDEXCITIES_ACTIVITY_"+(baseline?"BEFORE":"OK")+" stalePeople="+stale+" staleHistory="+staleHistory+" money="+_sim.MonetaryTotal+" directory="+directory);GetTree().Quit();
         } catch(Exception exception) { GD.PushError(exception.ToString());GetTree().Quit(1); }
         finally {CitySaves.VerificationDirectory=null;}
     }
