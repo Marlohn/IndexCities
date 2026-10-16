@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Flat pictogram (not a 3D object): urban street connection missing. -->
+  <path d="M12,3 H36 A5,5 0 0 1 41,8 V40 A5,5 0 0 1 36,45 H12 A5,5 0 0 1 7,40 V8 A5,5 0 0 1 12,3 Z" fill="#ffb15e"/>
+  <rect x="22.4" y="10" width="3.2" height="7" rx="1.4" fill="#43301a"/>
+  <rect x="22.4" y="20" width="3.2" height="7" rx="1.4" fill="#43301a"/>
+  <rect x="22.4" y="30" width="3.2" height="7" rx="1.4" fill="#43301a"/>
+</svg>

@@ -25,7 +25,7 @@ public partial class Main
             resident.Activity = "Em casa";
             var atHome = _sim.SaveToJson(); _world.Sync(_sim.State);
             Require(!_world.IsCitizenVisible(resident.Id), "Interior real permanece interior");
-            Require(_world.ActivityIndicator(home.Id) is { Visible: true, People: > 0 }, "Presença no interior aparece no edifício");
+            Require(!_world.ActivityIndicator(home.Id).Visible, "Sem balão de presença: edifício sem caminhão real não mostra indicador");
             Require(_sim.SaveToJson() == atHome, "Indicador não altera pessoas, recursos ou dinheiro");
 
             resident.Activity = "Sem rota";
@@ -43,7 +43,7 @@ public partial class Main
             _world.Sync(_sim.State, .5);
             Require(_world.IsCitizenVisible(resident.Id), "Chegada interpolada continua visível até alcançar interior");
             _world.Sync(_sim.State);
-            Require(!_world.IsCitizenVisible(resident.Id), "Ao terminar chegada o interior fica representado pelo indicador");
+            Require(!_world.IsCitizenVisible(resident.Id), "Ao terminar chegada o interior continua representado pela pessoa oculta");
             var directory = System.IO.Path.GetFullPath(ProjectSettings.GlobalizePath("res://../../artifacts/verification/presentation-visual"));
             System.IO.Directory.CreateDirectory(directory);
             await RecoveryCapture(System.IO.Path.Combine(directory, "people-inside.png"), GetViewport());

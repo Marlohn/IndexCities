@@ -64,6 +64,7 @@ Os estados são agregados por documento. Em material parcialmente revisado, cons
 | [IA para decisões e desenvolvimento](exploration/ai-decision-systems.md) | PENDENTE | Pesquisa de alternativas; não adota dependências nem uma IA no núcleo. |
 | [Processo e ferramentas](exploration/development-process.md) | PARCIALMENTE REVISADO | Histórico/raciocínio de workflow; regras atuais pertencem ao AGENTS. |
 | [Lições de experiência anterior](exploration/lessons-from-earlier-experiment.md) | PENDENTE | Nota autossuficiente; sem permissão para consultar ou reutilizar a origem. |
+| [Alertas de problemas nos prédios (playtest 2026-10-15)](exploration/problem-alerts-playtest-2026-10-15.md) | PENDENTE | Implementação e evidências da feature aprovada na SPEC; feedback de jogabilidade e limites para avaliação humana. |
 
 ## Como usar e manter este hub
 

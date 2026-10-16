@@ -36,6 +36,7 @@ public partial class Main
         _status=new Label{MouseFilter=Control.MouseFilterEnum.Ignore,AutowrapMode=TextServer.AutowrapMode.WordSmart};_status.SetAnchor(Side.Top,1);_status.SetAnchor(Side.Bottom,1);_status.SetAnchor(Side.Right,1);_status.OffsetLeft=24;_status.OffsetRight=-24;_status.OffsetTop=-224;_status.OffsetBottom=-182;_status.AddThemeFontSizeOverride("font_size",15);_status.AddThemeColorOverride("font_color",new Color("fff6d7"));root.AddChild(_status);
         _toolHint=new Label{MouseFilter=Control.MouseFilterEnum.Ignore,AutowrapMode=TextServer.AutowrapMode.WordSmart};_toolHint.SetAnchor(Side.Top,1);_toolHint.SetAnchor(Side.Bottom,1);_toolHint.SetAnchor(Side.Right,1);_toolHint.OffsetLeft=24;_toolHint.OffsetRight=-24;_toolHint.OffsetTop=-178;_toolHint.OffsetBottom=-144;_toolHint.AddThemeFontSizeOverride("font_size",14);_toolHint.AddThemeColorOverride("font_color",new Color("deeedc"));root.AddChild(_toolHint);foreach(var line in new[]{_services,_status,_toolHint})line.AddThemeStyleboxOverride("normal",new StyleBoxFlat{BgColor=new Color(.08f,.13f,.14f,.62f),ContentMarginLeft=10,ContentMarginRight=10,ContentMarginTop=3,ContentMarginBottom=3,CornerRadiusTopLeft=6,CornerRadiusTopRight=6,CornerRadiusBottomLeft=6,CornerRadiusBottomRight=6});RefreshToolHint();
         BuildVersionHud(root);
+        BuildAlertTooltip();
         _workLabelOccluders.AddRange(new Control[]{top,catalogPanel,_inspector,_confirmation,_services,_status,_toolHint});
     }
     void BuildCatalog()
@@ -76,7 +77,7 @@ public partial class Main
         if(key==_inspectionKey){foreach(var item in _inspectionTexts){item.Label.Text=item.Read();if(item.HideEmpty)item.Label.Visible=item.Label.Text.Length>0;}foreach(var item in _inspectionButtons)item.Button.Text=item.Read();foreach(var item in _inspectionTooltips)item.Control.TooltipText=item.Read();return;}
         _inspectionKey=key;_inspectionTexts.Clear();_inspectionButtons.Clear();_inspectionTooltips.Clear();Clear(_inspection);
         if(_selectedBuilding is {} id&&s.Buildings.FirstOrDefault(b=>b.Id==id&&!b.Removed) is {} b){
-            _inspector.Visible=true;var summary=Card(_inspection,b.Definition.Name);InspectionText(summary,()=>b.Cause,18);
+            _inspector.Visible=true;var summary=Card(_inspection,b.Definition.Name);InspectionText(summary,()=>b.Cause,18);InspectionText(summary,()=>_world.BuildingProblemText(b.Id),16,hideEmpty:true);
             if(b.Kind==BuildingKind.House){var occupants=InspectionText(summary,()=>"Moradores: "+s.Citizens.Count(c=>c.Alive&&c.Resident&&s.Families.Any(f=>f.Id==c.FamilyId&&f.HomeId==b.Id)),18);InspectionTooltip(occupants,()=>"Capacidade de produção/serviço: "+b.OperationalCapacity.ToString("N1")+". Residências abrigam famílias; esse indicador não mede moradores.");}
             else InspectionText(summary,()=>"Capacidade operacional: "+b.OperationalCapacity.ToString("N1"),18);
             if(b.Definition.Utility)ServiceInspection(_inspection,b);
@@ -107,7 +108,7 @@ public partial class Main
     static string ResourceName(ResourceKind r)=>r switch{ResourceKind.Aggregate=>"Areia e brita",ResourceKind.Concrete=>"Concreto",ResourceKind.Steel=>"Aço",ResourceKind.Wood=>"Madeira",ResourceKind.Asphalt=>"Asfalto",ResourceKind.Food=>"Alimentos",_=>"Combustível"};
     VBoxContainer Modal(string title)
     {
-        CloseModal();var viewport=GetViewport().GetVisibleRect().Size;var width=(int)Math.Min(720,viewport.X-64);var height=(int)Math.Min(600,viewport.Y-72);_modal=new Window{Title=title,Size=new(width,height),MinSize=new(420,220),Transient=true,Exclusive=true,Unresizable=false};AddChild(_modal);_modal.CloseRequested+=CloseModal;
+        CloseModal();HideAlertTooltip();var viewport=GetViewport().GetVisibleRect().Size;var width=(int)Math.Min(720,viewport.X-64);var height=(int)Math.Min(600,viewport.Y-72);_modal=new Window{Title=title,Size=new(width,height),MinSize=new(420,220),Transient=true,Exclusive=true,Unresizable=false};AddChild(_modal);_modal.CloseRequested+=CloseModal;
         var layout=new VBoxContainer();layout.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);layout.OffsetLeft=16;layout.OffsetTop=16;layout.OffsetRight=-16;layout.OffsetBottom=-16;_modal.AddChild(layout);var heading=new HBoxContainer();layout.AddChild(heading);Text(heading,title,22);var close=Button(heading,"× Fechar",CloseModal,"Fechar janela");close.CustomMinimumSize=new(104,40);close.AutowrapMode=TextServer.AutowrapMode.Off;close.SizeFlagsHorizontal=Control.SizeFlags.Fill;
         var scroll=new ScrollContainer{HorizontalScrollMode=ScrollContainer.ScrollMode.Disabled,SizeFlagsVertical=Control.SizeFlags.ExpandFill,SizeFlagsHorizontal=Control.SizeFlags.ExpandFill};layout.AddChild(scroll);var box=new VBoxContainer{SizeFlagsHorizontal=Control.SizeFlags.ExpandFill};box.AddThemeConstantOverride("separation",8);scroll.AddChild(box);_modal.PopupCentered();FitModal(_modal,box);return box;
     }
@@ -115,5 +116,5 @@ public partial class Main
     {
         await ToSignal(GetTree(),SceneTree.SignalName.ProcessFrame);await ToSignal(GetTree(),SceneTree.SignalName.ProcessFrame);if(_modal!=window||!GodotObject.IsInstanceValid(window))return;var viewport=GetViewport().GetVisibleRect().Size;var wanted=(int)Math.Ceiling(body.GetCombinedMinimumSize().Y+100+(window.FindChild("ModalActions",true,false)!=null?48:0));window.Size=new(window.Size.X,Math.Clamp(wanted,220,(int)viewport.Y-72));window.PopupCentered();
     }
-    void CloseModal(){if(_modal!=null){_modal.Hide();_modal.QueueFree();_modal=null;}}
+    void CloseModal(){HideAlertTooltip();if(_modal!=null){_modal.Hide();_modal.QueueFree();_modal=null;}}
 }

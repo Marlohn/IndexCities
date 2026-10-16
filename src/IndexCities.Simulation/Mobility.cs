@@ -3,17 +3,39 @@ namespace IndexCities.Simulation;
 public sealed partial class CitySimulation
 {
     bool _pedestrianCrossingsChecked;
-    bool ShiftActive(Citizen c)
+    bool ShiftActive(Citizen c)=>BuildingById(c.WorkplaceId) is {} b&&ShiftActiveIn(c,b);
+    bool ShiftActiveIn(Citizen c,Building b)
     {
-        var b=BuildingById(c.WorkplaceId);if(b==null||!b.Completed||!c.Alive||!c.Resident)return false;
+        if(!b.Completed||!c.Alive||!c.Resident)return false;
         var day=(int)State.Now.DayOfWeek;if(day==c.WeeklyDayOff||day==(c.WeeklyDayOff+1)%7)return false;
         var hour=State.Now.TimeOfDay.TotalHours;
         if(b.Kind is BuildingKind.WaterIntake or BuildingKind.WaterTreatment or BuildingKind.SewageTreatment or BuildingKind.WindPower)return c.Shift switch{0=>hour>=6&&hour<14,1=>hour>=14&&hour<22,_=>hour>=22||hour<6};
         return b.Kind is BuildingKind.Grocery or BuildingKind.FuelStation?(c.Shift==0?hour>=7&&hour<15:hour>=14&&hour<22):hour>=7&&hour<15;
     }
     bool Open(Building b)=>b.Kind is BuildingKind.Grocery or BuildingKind.FuelStation?State.Now.Hour>=7&&State.Now.Hour<22:State.Now.Hour>=6&&State.Now.Hour<19;
+    // Read-only opening hours for presentation (problem alerts over buildings).
+    // Same rule the simulation already uses for building causes; no behaviour change.
+    public bool BuildingOpen(Building building)=>Open(building);
     public bool WorkerPresentAt(Citizen c,Building b)=>c.Alive&&c.WorkplaceId==b.Id&&c.VehicleId==null&&c.ConstructionProjectId==null&&!c.Moving&&c.Position.Distance(b.Door)<3&&ShiftActive(c);
     public int WorkersPresent(Building b)=>State.Citizens.Count(c=>WorkerPresentAt(c,b));
+    // Single-pass workforce counts per building for presentation (problem
+    // alerts): present at the door on shift, scheduled with an active shift,
+    // and hired. Read-only; same rules as WorkerPresentAt/ShiftActiveIn, no
+    // behaviour change.
+    public Dictionary<int,(int Present,int OnShift,int Hired)> WorkforceByBuilding()
+    {
+        var buildings=State.Buildings.Where(b=>b.Completed&&!b.Removed).ToDictionary(b=>b.Id);
+        var result=buildings.Keys.ToDictionary(id=>id,_=>(Present:0,OnShift:0,Hired:0));
+        foreach(var c in State.Citizens){
+            if(c.WorkplaceId is not {} site||!buildings.TryGetValue(site,out var building))continue;
+            var row=result[site];
+            if(c.Alive)row.Hired++;
+            if(ShiftActiveIn(c,building))row.OnShift++;
+            if(WorkerPresentAt(c,building))row.Present++;
+            result[site]=row;
+        }
+        return result;
+    }
     List<Point> CitizenRoute(Citizen citizen,Building destination)
     {
         // Replanning beside the destination door must not take the walker to

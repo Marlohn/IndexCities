@@ -5,9 +5,11 @@ namespace IndexCities.Game;
 
 public partial class Main
 {
-    // Visual review of the in-building presence/cargo indicator (IA-017) on a
-    // copied real city. Nothing is fabricated: counts are compared with the
-    // citizens and trucks the simulation already has; the save is never written.
+    // Visual review of the real cargo badge and of citizens disappearing only
+    // inside a real interior (IA-017). The presence balloon was removed on
+    // 2026-10-15 and replaced by the problem alerts in Main.ProblemAlertsQA.cs.
+    // Nothing is fabricated: counts are compared with the trucks the simulation
+    // already has; the save is never written.
     async void ActivityIndicatorsSmoke()
     {
         var args=OS.GetCmdlineUserArgs();
@@ -31,9 +33,8 @@ public partial class Main
                 Require(_world.CitizenNodeCount==walkers.Count,"Um nó físico por SIM a pé ("+moment+")");
                 Require(_world.VisibleCitizenCount==walkers.Count-inside.Values.Sum(),"Somente quem está num interior real some ("+moment+")");
                 foreach(var b in state.Buildings.Where(b=>b.Completed&&!b.Removed)){
-                    var shown=_world.ActivityIndicator(b.Id);var expected=inside.GetValueOrDefault(b.Id);
-                    Require(shown.People==expected,"Contagem real no edifício "+b.Id+" ("+moment+")");
-                    Require(shown.Visible==(expected>0||shown.Cargo>0),"Indicador oculto sem presença nem carga no edifício "+b.Id+" ("+moment+")");
+                    var shown=_world.ActivityIndicator(b.Id);
+                    Require(shown.Visible==(shown.Cargo>0),"Indicador de carga oculto sem caminhão real no edifício "+b.Id+" ("+moment+")");
                     if(shown.Cargo>0)Require(state.Vehicles.Count(v=>v.Status==VehicleStatus.Unloading&&!v.PassengerCar&&v.ShipmentId is {} sid&&state.Shipments.Any(s=>s.Id==sid&&(s.PickedUp?s.DestinationBuildingId==b.Id||state.Projects.Any(p=>p.Id==s.ProjectId&&p.BuildingId==b.Id):s.SourceBuildingId==b.Id)))>=shown.Cargo,"Carga mostrada corresponde a caminhão real em operação no edifício "+b.Id);
                 }
             }
