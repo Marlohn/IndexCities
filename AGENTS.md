@@ -4,7 +4,7 @@ Estas regras valem para humanos e IAs. O objetivo é maximizar progresso útil s
 
 ## Fonte de verdade
 
-- `docs/SPEC.md` define o **produto aprovado**, o escopo vigente e o registro explícito de pequenas decisões provisórias delegadas à IA.
+- `docs/SPEC.md` é o hub do **produto aprovado**: estado atual, regras da SPEC, recorte da versão vigente, princípios de design, decisões provisórias delegadas à IA e índice dos sistemas. As regras de cada sistema ficam em `docs/spec/<sistema>.md`, com a mesma autoridade; o histórico das decisões fica em `docs/decisoes/<sistema>.md`, só como registro.
 - `docs/EXPLORATION.md` é o **hub/índice central da exploração**: aponta temas ativos, status e documentos temáticos relevantes.
 - `docs/exploration/*.md` guarda **pesquisa temática, ideias, alternativas, referências e decisões ainda em discussão** quando o assunto merece documento próprio.
 - `docs/ARCHITECTURE.md` define **as decisões estruturais de software**: fronteiras, responsabilidades e direção de dependências.
@@ -36,7 +36,7 @@ Durante conversas de exploração ou definição com o responsável pelo projeto
 - quando houver afirmação factual verificável, pesquise e confirme antes de registrá-la como fato;
 - prefira fontes primárias, documentação oficial, dados públicos e benchmarks reproduzíveis; não use suposição como substituto de evidência;
 - quando houver uma decisão explícita, atualize a fonte de verdade apropriada imediatamente, sem esperar um pedido separado de documentação;
-- decisões de produto vão para `docs/SPEC.md`;
+- decisões de produto vão para o arquivo do sistema em `docs/spec/` (no presente, sem histórico), com o histórico em `docs/decisoes/`; mudanças de escopo, regras gerais e decisões delegadas vão para `docs/SPEC.md`;
 - hipóteses, ideias, alternativas, referências, dúvidas e resultados de pesquisa ficam em `docs/EXPLORATION.md` quando forem curtos; quando o tema crescer ou estiver sendo trabalhado em paralelo, use `docs/exploration/<tema>.md` e mantenha `docs/EXPLORATION.md` como índice/status;
 - regras de desenvolvimento e de trabalho vão para `AGENTS.md`;
 - se a documentação existente ficar desatualizada, contraditória ou incompleta à luz da conversa atual, corrija-a na mesma sessão;
@@ -162,7 +162,7 @@ O objetivo não é produzir mais documentação. É tornar o contexto **mais bar
 
 Antes de criar ou editar documentação, escolha o destino pelo conteúdo:
 
-- **Decisão de produto já fechada** → `docs/SPEC.md`.
+- **Decisão de produto já fechada** → `docs/spec/<sistema>.md` (regra) + `docs/decisoes/<sistema>.md` (histórico); escopo e regras gerais → `docs/SPEC.md`.
 - **Decisão estrutural de software já fechada** → `docs/ARCHITECTURE.md`.
 - **Pesquisa/ideia curta ou questão transversal** → `docs/EXPLORATION.md`.
 - **Pesquisa extensa ou tema trabalhado em paralelo** → `docs/exploration/<tema>.md`, com link/status no hub.
