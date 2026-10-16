@@ -29,7 +29,7 @@ public partial class Main
             }
             System.IO.File.WriteAllText(System.IO.Path.Combine(directory,"route-queries.json"),JsonSerializer.Serialize(queries,new JsonSerializerOptions{WriteIndented=true}));
             Require(_sim.SaveToJson()==original,"Consultas de caminho não alteram a partida");
-            _focus=ToV(walkers.First(c=>c.Id==1175).Position);_zoom=38;UpdateCamera();_world.Reset(_sim.State);
+            Require(walkers.Any(c=>c.Id==1175),"Cidadão 1175 deve estar entre os pedestres recuperados");_focus=ToV(walkers.First(c=>c.Id==1175).Position);_zoom=38;UpdateCamera();_world.Reset(_sim.State);
             ClearSelection();_selectedCitizen=1175;RefreshInspection();RefreshHud();
             await RecoveryCapture(System.IO.Path.Combine(directory,"original-position.png"),GetViewport());
             var before=OS.GetCmdlineUserArgs().Contains("--pedestrian-before");

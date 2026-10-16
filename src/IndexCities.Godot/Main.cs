@@ -13,7 +13,7 @@ public partial class Main:Node3D
     ulong _frameAt,_clockAt;string _cityId="";string? _capturePath;string? _reviewSaveDir;double _captureTimer;int? _selectedBuilding,_selectedCitizen,_selectedVehicle,_selectedRoad,_selectedProject,_movingProject;Window? _modal;
     public override void _Ready()
     {
-        var args=OS.GetCmdlineUserArgs();
+        var args=OS.IsDebugBuild()?OS.GetCmdlineUserArgs():System.Array.Empty<string>();
         if(OS.IsDebugBuild()&&args.Contains("--qa-list")){PrintQaList();SetProcess(false);SetProcessInput(false);SetProcessUnhandledInput(false);GetTree().Quit(0);return;}
         if(!EnsureImportCachePresent())return;
         GetViewport().Msaa3D=Viewport.Msaa.Msaa4X;
