@@ -64,20 +64,28 @@ public sealed partial class CitySimulation
         if(!double.IsFinite(seconds)||seconds<0)throw new ArgumentOutOfRangeException(nameof(seconds));
         var remaining=seconds;while(remaining>1e-8){var dt=Math.Min(Quantum,remaining);Step(dt);remaining-=dt;}
     }
+    // EXPERIMENT (branch experimento/agenda-estacionaria only, never merged as is):
+    // stationary systems run every StationaryInterval seconds with the whole
+    // elapsed interval, instead of every 2 s step. 2 = current behaviour.
+    public static double ExperimentStationaryInterval {get;set;}=2;
+    double _stationaryPending;
     void Step(double dt)
     {
-        MoveVehicles(dt);MoveCitizens(dt);var completedConstruction=ProgressConstruction(dt);UpdateMaintenanceCondition(dt);UpdateInfrastructure(dt);OperateBusinesses(dt);UpdateNeeds(dt);
+        var t=Prof.T();MoveVehicles(dt);t=Prof.Add(0,t);MoveCitizens(dt);t=Prof.Add(1,t);var completedConstruction=ProgressConstruction(dt);t=Prof.Add(2,t);
+        _stationaryPending+=dt;
+        var boundary=State.Now.AddSeconds(dt)>=State.NextDaily||State.Now.AddSeconds(dt)>=State.NextTaxDate;
+        if(_stationaryPending>=ExperimentStationaryInterval-1e-9||boundary){var sdt=_stationaryPending;_stationaryPending=0;UpdateMaintenanceCondition(sdt);t=Prof.Add(3,t);UpdateInfrastructure(sdt);t=Prof.Add(4,t);OperateBusinesses(sdt);t=Prof.Add(5,t);UpdateNeeds(sdt);t=Prof.Add(6,t);}
         State.ElapsedSeconds+=dt;State.Now=State.Now.AddSeconds(dt);
         // Construction is physical work, not a periodic market decision. Dispatch
         // available vehicles and crews on the next simulated step, including when
         // a vehicle returns or a newly completed street restores access.
         var reviewEconomy=completedConstruction||State.ElapsedSeconds>=State.EconomyNextAt;
         if(reviewEconomy){State.EconomyNextAt=State.ElapsedSeconds+State.Tuning.EconomyInterval;ReviewMarkets();ReviewJobs();ScheduleMaintenance();}
-        OrderConstruction();
+        t=Prof.Add(7,t);OrderConstruction();t=Prof.Add(2,t);
         if(reviewEconomy){RestockBusinesses();ReviewEmigration();RecoverDebt();}
         while(State.Now>=State.NextDaily){DailyFinance();State.NextDaily=State.NextDaily.AddDays(1);}
         while(State.Now>=State.NextTaxDate){PropertyTaxes();State.NextTaxDate=State.NextTaxDate.AddMonths(1);}
-        ProcessLoans();
+        ProcessLoans();Prof.Add(8,t);
     }
     public void CheckInvariants()
     {

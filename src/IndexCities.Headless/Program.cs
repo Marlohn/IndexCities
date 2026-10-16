@@ -9,19 +9,20 @@ using IndexCities.Simulation;
 //   census cycle|grid [same options]   per-step movement census (free vs. waiting)
 // Results are measurements, not product rules: see docs/exploration/ritmo-velocidades.md.
 Console.OutputEncoding=Encoding.UTF8;
-var known=new HashSet<string>{"rows","length","days","cap","signals","seed"};
+var known=new HashSet<string>{"rows","length","days","cap","signals","seed","interval"};
 var opts=new Dictionary<string,string>();foreach(var p in args.Skip(2).Select(a=>a.TrimStart('-').Split('=',2)))opts[p[0]]=p.Length>1?p[1]:"1";
 string Opt(string k,string d)=>opts.GetValueOrDefault(k,d);
 if(opts.Keys.FirstOrDefault(k=>!known.Contains(k)) is {} unknown){Console.Error.WriteLine("opção desconhecida: --"+unknown);return 2;}
 if(args.Length<2||args[0] is not ("scale" or "census")||args[1] is not ("cycle" or "grid")){Console.Error.WriteLine("uso: scale|census cycle|grid [--rows=3] [--length=400] [--days=7] [--cap=600] [--signals=1] [--seed=42]");return 2;}
 var seed=int.Parse(Opt("seed","42"));var days=int.Parse(Opt("days","7"));var cap=double.Parse(Opt("cap","600"),System.Globalization.CultureInfo.InvariantCulture);
+CitySimulation.ExperimentStationaryInterval=double.Parse(Opt("interval","2"),System.Globalization.CultureInfo.InvariantCulture);
 var sw=Stopwatch.StartNew();CitySimulation sim;string info;
 if(args[1]=="cycle"){sim=Fixtures.Cycle(seed);info="cycle (CityCycleTests.City, obras reais)";}
 else (sim,info)=Fixtures.Grid(seed,int.Parse(Opt("rows","3")),double.Parse(Opt("length","400"),System.Globalization.CultureInfo.InvariantCulture),Opt("signals","1")=="1");
 Console.WriteLine($"FIXTURE {info} build={sw.Elapsed.TotalSeconds:F1}s .NET={Environment.Version} cpu={Environment.ProcessorCount} release={!Debugger.IsAttached}");
 sw.Restart();sim.Advance(2*86400);
 Console.WriteLine($"WARMUP 2d wall={sw.Elapsed.TotalSeconds:F1}s {Stats(sim)}");
-var census=args[0]=="census"?new Census():null;
+var census=args[0]=="census"?new Census():null;Prof.Reset();
 var total=0.0;var gc0=GC.CollectionCount(0);var gc2=GC.CollectionCount(2);var alloc0=GC.GetTotalAllocatedBytes();var done=0;
 for(var d=1;d<=days;d++){
     sw.Restart();
@@ -32,6 +33,12 @@ for(var d=1;d<=days;d++){
 }
 if(done>0)Console.WriteLine($"SUMMARY days={done} perDay={total/done:F2}s eff={86400*done/total:F0}x hours80y={total/done*29220/3600:F0} gen0={GC.CollectionCount(0)-gc0} gen2={GC.CollectionCount(2)-gc2} allocMB/day={(GC.GetTotalAllocatedBytes()-alloc0)/1e6/done:F0} workingSetMB={Process.GetCurrentProcess().WorkingSet64/1e6:F0}");
 census?.Print(done);
+{var ticks=Prof.Ticks.Sum();if(ticks>0)for(var i=0;i<Prof.Names.Length;i++)Console.WriteLine($"  PROF {Prof.Names[i],-22} {100.0*Prof.Ticks[i]/ticks,5:F1}%");}
+{
+    var st=sim.State;var alive=st.Citizens.Where(c=>c.Alive).ToList();
+    Console.WriteLine($"AGG interval={CitySimulation.ExperimentStationaryInterval} pop={sim.Population} deaths={st.Citizens.Count(c=>!c.Alive)} emigrated={st.Citizens.Count(c=>c.Alive&&!c.Resident)} meals={st.Citizens.Sum(c=>c.History.Count(h=>h.Description.StartsWith("Consumiu",StringComparison.Ordinal)))} history={st.Citizens.Sum(c=>c.History.Count)} healthAvg={alive.Select(c=>c.Health).DefaultIfEmpty(0).Average():F2} satisfactionAvg={alive.Select(c=>c.Satisfaction).DefaultIfEmpty(0).Average():F2} cityBalance={sim.CityBalance}");
+    foreach(var g in st.Ledger.GroupBy(l=>l.Category.StartsWith("Salários",StringComparison.Ordinal)?"Salários":l.Category).OrderByDescending(g=>g.Count()).Take(12))Console.WriteLine($"  LEDGER {g.Key}: n={g.Count()} total={g.Sum(l=>l.Amount)}");
+}
 sw.Restart();var json=sim.SaveToJson();var save=sw.Elapsed.TotalSeconds;sw.Restart();CitySimulation.FromJson(json);
 Console.WriteLine($"SAVE {json.Length/1e6:F1}MB save={save:F2}s load={sw.Elapsed.TotalSeconds:F2}s sha256={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(json)))[..16]}");
 sim.CheckInvariants();Console.WriteLine("INVARIANTS OK");
