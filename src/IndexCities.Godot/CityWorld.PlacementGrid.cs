@@ -18,6 +18,18 @@ public partial class CityWorld
         var half=state.Tuning.MapHalfSize;
         _placementGridSurfaces.RemoveAll(s=>!GodotObject.IsInstanceValid(s.Mesh)||!s.Mesh.IsInsideTree());
         var surfaces=_placementGridSurfaces.Where(s=>s.Mesh.IsVisibleInTree()).SelectMany(s=>s.Cells.Select(cell=>(Cell:cell,s.Top))).ToArray();
+        // Conservative spatial buckets. Inclusive bounds deliberately retain
+        // contacts on cell edges; the exact segment predicates below decide.
+        const double bucketSize=16;
+        var buckets=new Dictionary<(int X,int Z),List<int>>();
+        for(var i=0;i<surfaces.Length;i++){
+            var rect=surfaces[i].Cell;
+            for(var x=Bucket(rect.Position.X);x<=Bucket(rect.End.X);x++)
+                for(var z=Bucket(rect.Position.Y);z<=Bucket(rect.End.Y);z++){
+                    if(!buckets.TryGetValue((x,z),out var list))buckets[(x,z)]=list=new();list.Add(i);
+                }
+        }
+        static int Bucket(double coordinate)=>(int)Math.Floor(coordinate/bucketSize);
         var mesh=new ImmediateMesh();mesh.SurfaceBegin(Mesh.PrimitiveType.Lines);
         // These are alignment lines, not a buildability or access overlay.
         // Rebuild only for spacing, map or physical roads; moving a plan and
@@ -56,7 +68,11 @@ public partial class CityWorld
         void Segment(Point a,Point b){
             var alongX=a.Z==b.Z;var start=alongX?a.X:a.Z;var end=alongX?b.X:b.Z;
             var fixedCoordinate=alongX?a.Z:a.X;
-            var patches=surfaces.Where(s=>fixedCoordinate>=(alongX?s.Cell.Position.Y:s.Cell.Position.X)&&fixedCoordinate<=(alongX?s.Cell.End.Y:s.Cell.End.X)
+            var candidates=new HashSet<int>();
+            for(var bucket=Bucket(start);bucket<=Bucket(end);bucket++)
+                if(buckets.TryGetValue(alongX?(bucket,Bucket(fixedCoordinate)):(Bucket(fixedCoordinate),bucket),out var list))
+                    foreach(var index in list)candidates.Add(index);
+            var patches=candidates.Select(i=>surfaces[i]).Where(s=>fixedCoordinate>=(alongX?s.Cell.Position.Y:s.Cell.Position.X)&&fixedCoordinate<=(alongX?s.Cell.End.Y:s.Cell.End.X)
                 &&(alongX?s.Cell.End.X:s.Cell.End.Y)>start&&(alongX?s.Cell.Position.X:s.Cell.Position.Y)<end).ToArray();
             var cuts=patches.SelectMany(s=>new[]{(double)(alongX?s.Cell.Position.X:s.Cell.Position.Y),(double)(alongX?s.Cell.End.X:s.Cell.End.Y)})
                 .Where(v=>v>start&&v<end).Append(start).Append(end).Distinct().Order().ToArray();

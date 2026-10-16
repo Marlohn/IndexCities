@@ -42,7 +42,7 @@ public partial class Main
                 samples.Add(new {Yaw=yaw,GridY=cross.Y,AsphaltY=asphalt,ResidualPixels=residual,ApparentLeftGapMetres=gap});
                 if(label!="before"){
                     Require(residual<.03f,"Grade e obra concordam na projeção: "+residual+" px");
-                    Require(Math.Abs(gap-.75f)<.002f,"Borda mantém folga real de 0,75 m em todas as rotações");
+                    Require(Math.Abs(gap-.75f)<.001f,"Borda mantém folga real de 0,75 m com erro menor que 1 mm em todas as rotações");
                 }
                 await RecoveryCapture(System.IO.Path.Combine(directory,$"road-work-yaw-{yaw}.png"),GetViewport());
                 Require(_sim.SaveToJson()==before,"Rotação e grade preservam o estado lógico");
