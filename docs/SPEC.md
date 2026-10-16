@@ -115,6 +115,7 @@ As regras de produto de cada sistema ficam em `docs/spec/`, com **a mesma autori
 
 | Sistema | Regras | Histórico |
 |---|---|---|
+| Princípios de design e critérios de avaliação | [spec/principios.md](spec/principios.md) | — |
 | Visão geral, públicos, tecnologia e cidade viva | [spec/visao-geral.md](spec/visao-geral.md) | [decisoes/visao-geral.md](decisoes/visao-geral.md) |
 | Construção, ruas, obras, demolição e realocação | [spec/construcao.md](spec/construcao.md) | [decisoes/construcao.md](decisoes/construcao.md) |
 | Materiais, logística, Pátio e comércio exterior | [spec/materiais-logistica.md](spec/materiais-logistica.md) | [decisoes/materiais-logistica.md](decisoes/materiais-logistica.md) |
@@ -139,33 +140,11 @@ A SPEC deve crescer **com as decisões do produto e antes do código que as impl
 
 ## Princípios de design
 
-### Profundidade sem microgerenciamento
+Valem para todos os sistemas e para toda definição, implementação, revisão e teste. O texto completo está em [spec/principios.md](spec/principios.md):
 
-- O jogo deve priorizar **decisões sistêmicas e consequências observáveis**, não tarefas repetitivas de administração.
-- Realismo deve ser mantido quando cria gameplay; detalhes que apenas adicionam cliques, contabilidade ou manutenção manual podem ser agregados ou automatizados.
-- A interface pode apresentar informações agregadas enquanto a simulação mantém localização, transporte, capacidade, escassez e demais consequências físicas internamente.
-- Esse princípio vale para todos os sistemas do produto.
-- **Gameplay e microgerenciamento como critério global obrigatório (reafirmado em 2026-10-08):** toda mecânica deve justificar seu impacto sobre a experiência do jogador, considerando **cliques, etapas, esperas e decisões repetitivas**, mas também o **microgerenciamento invisível** de estados por SIM/empresa, regras especiais, exceções, buscas contínuas, memória e custo de processamento. A profundidade só vale o custo quando produz consequências, escolhas ou diagnóstico relevantes; antes de adicionar subsistemas, preferir aproveitar as regras existentes e processamento por eventos quando suficientes, **sem eliminar economia física, dinheiro, logística ou efeitos reais**. Não criar esperas artificiais nem sistemas de manutenção complexos para problemas que possam ser resolvidos pelo fluxo normal. O ritmo percebido e a necessidade de exceções devem ser avaliados com o jogo integrado.
-
-### Leitura em camadas e causalidade
-
-- A mesma simulação deve servir tanto a jogadores que preferem feedback direto quanto a jogadores que gostam de investigar estatísticas e otimizar sistemas.
-- Problemas importantes devem aparecer primeiro por sinais visuais claros e consistentes, com uma causa resumida e uma ação compreensível.
-- O jogador deve poder aprofundar o mesmo problema e ver dados, fatores e cadeia causal quando quiser.
-- Consequências relevantes, como falência, falta de recurso, mudança de demanda ou interrupção de serviço, não podem depender de caixas-pretas impossíveis de explicar.
-- Informações importantes não devem depender apenas de cor ou de um ícone sem contexto; texto curto, tooltip ou outro canal de explicação deve estar disponível.
-- Simplificar a interface não significa simplificar artificialmente a simulação: o detalhe pode continuar existindo internamente desde que seja legível e diagnosticável.
-- A experiência atual é o **Convencional**, com profundidade progressiva na mesma interface. O futuro Criativo permanece como direção adiada, sem exigir agora duplicação de telas, simulação ou infraestrutura.
-- **Mapas temáticos de diagnóstico — escolha 9B aprovada (2026-10-11):** o jogador pode ativar **sobreposições visuais no mapa da cidade** para ler condições urbanas já simuladas, como congestionamento, acesso/capacidade de serviços, poluição e concentração de dificuldades econômicas ou de emprego quando esses dados de fato existirem. As camadas destacam locais afetados e permitem consultar explicações e causas reais ao selecionar a região/elemento, sem transformar toda variação em alerta e sem sugerir automaticamente ordens de construção. Mapas temáticos derivados não criam serviços, cobertura ou satisfação por si; o emprego de mapas no futuro Criativo não faz parte do escopo atual. Legenda, filtros e atualização proporcional são detalhes de interface e calibração.
-- **Sem ferramenta específica de delimitação/nomeação de bairros no primeiro modelo — pergunta 19 adiada pelo responsável (2026-10-11):** não implementar agora desenho manual de fronteiras, cadastro de distritos, nomes/estatísticas de bairros definidos pelo jogador nem administração territorial nova. A cidade **continua podendo exibir condições por áreas realmente afetadas** nos mapas temáticos, desafios regionais e diagnósticos aprovados, sem exigir distrito cadastrado; essa decisão **não proíbe** referências descritivas a regiões/bairros no texto. Revisar a conveniência de uma ferramenta de bairros apenas quando houver ganho concreto de organização/consulta no jogo utilizável.
-- **Consequências humanas das decisões do jogador — princípio global:** intervenções urbanas, impostos, serviços, empregos, transporte e outras decisões devem produzir efeitos reais sobre os SIMs e suas famílias conforme os sistemas existentes; quando esses efeitos forem relevantes, o jogo deve permitir ao jogador **perceber quem ou quantas pessoas foram afetadas, de que maneira e por quê**. Em ações de grande impacto previsível, apresentar uma prévia curta das consequências antes da confirmação, sem prometer resultados incertos.
-- A leitura deve funcionar em camadas: resumo agregado e contextual primeiro, inspeção de SIMs/famílias/empresas e causas quando necessário. **Não criar confirmação ou notificação individual por cidadão**, alertas a cada pequena oscilação, ou rotinas extras de cálculo por SIM sem ganho observável de gameplay. As consequências continuam sendo estados/eventos reais da simulação, não indicadores artificiais criados apenas para exibir impacto.
-
-### Concretude antes de abstração
-
-- O IndexCities deve preferir, sempre que viável, **entidades, propriedade, dinheiro, recursos e fluxos concretos** a proxies abstratos criados apenas para simplificar a simulação.
-- Uma abstração só deve permanecer quando reduzir microgerenciamento, custo técnico ou complexidade visual sem esconder a causa real do sistema.
-- Estados agregados de interface podem existir, mas devem ser derivados de entidades e fluxos reais e inspecionáveis.
-- Dinheiro, recursos, demanda e propriedade não devem surgir, desaparecer ou mudar de mãos sem uma origem e um destino economicamente explicáveis.
-- Esse princípio não proíbe abstrações já úteis ao produto, como interiores não renderizados, visões agregadas de materiais ou redes de serviço por capacidade; ele exige que essas abstrações preservem causalidade e diagnóstico.
-
+- **Profundidade sem microgerenciamento** — decisões sistêmicas e consequências observáveis; simplificar a operação manual, não a simulação; pesar também o custo interno de estados, exceções e rotinas.
+- **Leitura em camadas e causalidade** — sinal visual claro primeiro, causa e ação sob demanda, derivadas do estado real; consequências humanas das decisões do jogador.
+- **Concretude antes de abstração** — entidades, dinheiro, recursos e fluxos concretos; nada surge ou some sem origem e destino.
+- **Diversão de construir para diferentes públicos** — profundidade para adultos e diversão para quem só quer construir (inclusive uma criança que ainda não lê), sem falsificar sistemas.
+- **Decisões do jogador afetam a vida dos SIMs** — consequências reais e explicáveis; SIMs e empresas decidem por conta própria.
+- **Causalidade e diagnóstico** — nada de caixa-preta: o jogo responde o que aconteceu, por que e o que resolve, com as mesmas variáveis da simulação.
