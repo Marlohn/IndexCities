@@ -488,7 +488,7 @@ public partial class Main
             }
             Observe("before-families",force:true);
             await ProblemPresent("playtest-start");
-            // Real host clock at 60x: families move in and real demand appears.
+            // Real host clock at 1000x: families move in and real demand appears.
             SetSpeed(3);
             var watch=System.Diagnostics.Stopwatch.StartNew();
             while(watch.Elapsed.TotalSeconds<45){await ToSignal(GetTree(),SceneTree.SignalName.ProcessFrame);Observe("real-clock-60x");}

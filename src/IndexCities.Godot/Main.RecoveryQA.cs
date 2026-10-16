@@ -274,6 +274,9 @@ public partial class Main
             Require(_sim.State.Buildings.Single().Completed, "A Prefeitura foi concluída por execução física");
 
             var beforeInvalid = _sim.SaveToJson();
+            // A encomenda bem-sucedida deixa a extremidade final como início (SPEC, continuidade de 2026-10-14).
+            // Reabrir a ferramenta inicia um trecho novo para testar a recusa com início próprio.
+            await RecoveryButton(RecoveryRoadButton());
             await RecoveryWorldPoint(new(-192, 0)); await RecoveryWorldPoint(new(-128, 0));
             Require(_roadStart == new Point(-192, 0), "Rua recusada mantém início para corrigir fim");
             var refused = _sim.QuoteRoad(new(-192, 0), new(-128, 0));
@@ -557,13 +560,13 @@ public partial class Main
             await NormalClockSample("normal-clock-before-road-completion");
             Require(movedVehicles.Count > 0, "Caminhões deslocaram-se nos frames normais a 1x");
             await RecoveryButton(RecoverySpeedButton(2));
-            Require(_speed == 2, "Botão 15x acelera a obra através do relógio do host");
+            Require(_speed == 2, "Botão 30x acelera a obra através do relógio do host");
             await WaitFor("road-physically-completed", () => road.Status == WorkStatus.Completed);
             await RecoveryButton(RecoverySpeedButton(0));
             var houseProject = await RecoveryPlace(BuildingKind.House, new(-120, 14));
             var house = _sim.State.Buildings.Single(building => building.Id == houseProject.BuildingId);
             await RecoveryButton(RecoverySpeedButton(3));
-            Require(_speed == 3, "Botão 60x acelera a casa através do relógio do host");
+            Require(_speed == 3, "Botão 1000x acelera a casa através do relógio do host");
             await WaitFor("house-completed-and-bought", () => house.Completed && house.FamilyId != null);
             await NormalClockSample("normal-clock-with-physical-resident-arrival");
             Require(movedCitizens.Count > 0, "Moradores mudam de posição fisicamente antes de chegar à casa");
@@ -703,8 +706,11 @@ public partial class Main
             var beforeSnap = _sim.SaveToJson();
             foreach (var kind in new[] { BuildingKind.House, BuildingKind.Grocery }) {
                 await RecoveryButton(RecoveryCatalog(kind));
-                var free = new Point(-184, kind == BuildingKind.House ? -22 : -24);
+                // Stay inside the assist range, with room for terrain picking
+                // and native pixel rounding; the free door still has no access.
+                var free = new Point(-184, kind == BuildingKind.House ? -20 : -21);
                 await RecoveryPreviewWorldPoint(free);
+                Require(!_sim.QuoteBuilding(kind, free, _rotation).Accessible, "Porta livre ainda sem acesso antes do auxílio: " + kind);
                 Require(_cursor.Distance(free) <= 8.01 && _sim.QuoteBuilding(kind, _cursor, _rotation) is { PhysicallyValid: true, Accessible: true }, "Encaixe alcança a rua dentro do ajuste permitido, mesmo com a porta livre ainda sem acesso: " + kind);
                 Require(_sim.SaveToJson() == beforeSnap, "Encaixe não cria obra, acesso ou compromisso na simulação");
                 await RecoveryCaptureOnce("snap-" + kind.ToString().ToLowerInvariant(), GetViewport());
@@ -713,6 +719,11 @@ public partial class Main
             await RecoveryPreviewWorldPoint(new(-184, -36));
             Require(_cursor.Distance(new(-184, -36)) < .01 && !_sim.QuoteBuilding(BuildingKind.House, _cursor, _rotation).Accessible, "Fora do alcance de ajuste a posição continua livre e sem acesso");
             await RecoveryPreviewWorldPoint(hall.Position);
+            var blockedQuote = _sim.QuoteBuilding(BuildingKind.House, _cursor, _rotation);
+            Require(_cursor.Distance(new(hall.Position.X, 14)) < .01 && !blockedQuote.PhysicallyValid,
+                "Lote ocupado permanece na fachada da rua, sem cair na grade para procurar uma posição válida");
+            Require(_confirmation.Visible && RecoveryDiagnostic().Contains(blockedQuote.Message),
+                "Orçamento da prévia informa a causa real da posição alinhada inválida");
             var blockedProjects = _sim.State.Projects.Count;
             await RecoveryClick(_camera.UnprojectPosition(ToV(hall.Position)));
             Require(_sim.State.Projects.Count == blockedProjects, "Encaixe preserva o bloqueio físico de prédio existente");

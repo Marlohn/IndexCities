@@ -12,7 +12,7 @@ public sealed partial class CitySimulation
     bool RetireMaintenanceWithoutTargets(WorkProject project)
     {
         if(!project.IsMaintenance||!(project.MaintenanceRoadIds.Count>0?project.MaintenanceRoadIds.All(id=>!_roads.ContainsKey(id)):project.BuildingId!=null&&BuildingById(project.BuildingId)==null))return false;
-        CancelWork(project);project.Cause="Manutenção encerrada: infraestrutura removida; pagamentos e carga preservados";
+        CancelWork(project);project.Cause=WorkCause.MaintenanceEndedRemoved;
         Event("Manutenção sem infraestrutura existente encerrada; compromisso não pago liberado");return true;
     }
     static string MaintenanceCategory(WorkProject project)=>project.MaintenanceRoadIds.Count>0?"Manutenção / ruas":"Manutenção / instalações";
@@ -42,7 +42,7 @@ public sealed partial class CitySimulation
     WorkProject? CreateMaintenance(Point location,Dictionary<ResourceKind,double> materials,double labour)
     {
         var quote=QuoteMaterials(materials,location,labour);if(quote>Available)return null;
-        var project=new WorkProject{Id=Id(),IsMaintenance=true,Position=location,Required=materials,WorkSeconds=labour,BudgetRemaining=quote,Cause="Manutenção aguardando materiais e equipe reais"};State.Projects.Add(project);return project;
+        var project=new WorkProject{Id=Id(),IsMaintenance=true,Position=location,Required=materials,WorkSeconds=labour,BudgetRemaining=quote,Cause=WorkCause.MaintenanceAwaitingMaterials};State.Projects.Add(project);return project;
     }
     void RelocateMaintenanceCrew(WorkProject project,RoadNode access)
     {
@@ -58,6 +58,6 @@ public sealed partial class CitySimulation
     void CompleteMaintenance(WorkProject project)
     {
         ProgressRoadMaintenance(project);if(BuildingById(project.BuildingId) is {} building){building.MaintenanceRatio=1;building.MaintenanceDueAt=State.ElapsedSeconds+MaintenanceInterval;building.PaidMaintenance+=project.CostPaid;}
-        project.Cause="Manutenção realizada com materiais e trabalho efetivos";Event(project.MaintenanceRoadIds.Count>0?"Manutenção viária concluída":"Manutenção de instalação municipal concluída");
+        project.Cause=WorkCause.MaintenanceDone;Event(project.MaintenanceRoadIds.Count>0?"Manutenção viária concluída":"Manutenção de instalação municipal concluída");
     }
 }

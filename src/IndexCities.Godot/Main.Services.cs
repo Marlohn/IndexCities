@@ -11,9 +11,10 @@ public partial class Main
         if(building.Kind==BuildingKind.WaterIntake&&!_sim.HasNaturalWaterSource(building))yield return "Fora da faixa de captação da fonte natural";
         var hired=_sim.State.Citizens.Count(c=>c.Alive&&c.WorkplaceId==building.Id);
         var scheduled=_sim.WorkersScheduled(building);var present=_sim.WorkersPresent(building);
-        if(hired==0)yield return "Nenhum funcionário contratado";
-        else if(scheduled==0)yield return "Nenhum funcionário previsto na escala atual";
+        if(hired==0)yield return "Ninguém contratado ainda: a instalação precisa de funcionários no local durante o turno para operar";
+        else if(scheduled==0)yield return "Há "+hired+" contratados, mas ninguém previsto na escala atual. A capacidade depende de funcionários no local durante o turno";
         else if(present<scheduled){
+            if(present==0)yield return "Sem funcionários no local agora: 0 de "+scheduled+" previstos no turno presentes. A capacidade depende da chegada dos contratados ao posto e das demais condições do serviço";
             string Situation(Citizen citizen){
                 if(citizen.VehicleId is {} id){var vehicle=_sim.State.Vehicles.FirstOrDefault(v=>v.Id==id);return "Em veículo #"+id+(vehicle==null?"":" · "+vehicle.Cause);}
                 if(citizen.ConstructionProjectId is {} project)return "Designado à obra #"+project;
