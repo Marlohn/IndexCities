@@ -54,7 +54,7 @@ public sealed class SimulationTuning
     public double FuelPerMetre {get;set;}=.015;
     public double FuelTank {get;set;}=40;
     public double SimulationSecondsPerRealSecond {get;set;}=1;
-    public double[] SpeedMultipliers {get;set;}=[0,1,15,1000];
+    public double[] SpeedMultipliers {get;set;}=[0,1,30,1000];
     public double EconomyInterval {get;set;}=1800;
     public double PurchaseFoodPerPerson {get;set;}=4;
     public double HungerDamageAfterHours {get;set;}=30;
