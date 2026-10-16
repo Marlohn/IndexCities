@@ -19,6 +19,10 @@ public partial class Main
                 for(var turn=0;turn<4;turn++){
                     _rotation=turn*Math.PI/2;_manualRotation=true;var started=System.Diagnostics.Stopwatch.GetTimestamp();
                     _world.ShowWaterIntakeRange(_sim,true,_rotation);
+                    while(!_world.GetChildren().OfType<MeshInstance3D>().Any(n=>n.Name.ToString().StartsWith("WaterIntakeRange")&&n.Visible)){
+                        Require(System.Diagnostics.Stopwatch.GetElapsedTime(started).TotalSeconds<30,"Faixa fica pronta sem bloquear frames");
+                        await ToSignal(GetTree(),SceneTree.SignalName.ProcessFrame);_world.ShowWaterIntakeRange(_sim,true,_rotation);
+                    }
                     var range=_world.GetChildren().OfType<MeshInstance3D>().Single(n=>n.Name.ToString().StartsWith("WaterIntakeRange")&&n.Visible);
                     var mesh=(ArrayMesh)range.Mesh;meshes.Add(mesh);Require(mesh.GetSurfaceCount()==1,"Faixa não vazia");
                     var vertices=mesh.SurfaceGetArrays(0)[(int)Mesh.ArrayType.Vertex].AsVector3Array();

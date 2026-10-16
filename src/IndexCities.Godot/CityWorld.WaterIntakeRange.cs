@@ -8,6 +8,7 @@ public partial class CityWorld
     // Reset invalidates the cache when the saved geography changes.
     internal const double WaterIntakeRangeCellSize=.5;
     readonly Dictionary<double,MeshInstance3D> _waterIntakeRanges=new();
+    readonly Dictionary<double,Task<List<Point>>> _waterIntakeJobs=new();
     MeshInstance3D? _waterIntakeRange;
     internal int WaterIntakeRangeBuilds {get;private set;}
 
@@ -17,13 +18,26 @@ public partial class CityWorld
     {
         if(!selected){HideWaterIntakeRange();return;}
         if(!_waterIntakeRanges.TryGetValue(rotation,out var range)){
-            range=BuildWaterIntakeRange(simulation,rotation);_waterIntakeRanges.Add(rotation,range);AddChild(range);WaterIntakeRangeBuilds++;
+            HideWaterIntakeRange();
+            if(!_waterIntakeJobs.TryGetValue(rotation,out var job)){
+                // Only immutable geography is needed by IsWaterIntakeSite. The
+                // worker owns this simulation; it never reads the live city or
+                // touches Godot nodes/resources. Reset discards pending results.
+                var state=simulation.State;
+                var snapshot=new CitySimulation(0,new SimulationTuning{MapHalfSize=state.Tuning.MapHalfSize});
+                snapshot.State.SchemaVersion=state.SchemaVersion;snapshot.State.LakeCentre=state.LakeCentre;
+                snapshot.State.LakeRadius=state.LakeRadius;snapshot.State.LakeBoundary=state.LakeBoundary?.ToList();
+                _waterIntakeJobs[rotation]=Task.Run(()=>RasterWaterIntakeRange(snapshot,rotation));return;
+            }
+            if(!job.IsCompleted)return;
+            var cells=job.GetAwaiter().GetResult();_waterIntakeJobs.Remove(rotation);
+            range=BuildWaterIntakeRange(cells);_waterIntakeRanges.Add(rotation,range);AddChild(range);WaterIntakeRangeBuilds++;
         }
         if(_waterIntakeRange!=range)HideWaterIntakeRange();
         _waterIntakeRange=range;range.Visible=true;
     }
 
-    MeshInstance3D BuildWaterIntakeRange(CitySimulation simulation,double rotation)
+    static List<Point> RasterWaterIntakeRange(CitySimulation simulation,double rotation)
     {
         var state=simulation.State;var reach=CitySimulation.NaturalWaterSourceReach;var cell=WaterIntakeRangeCellSize;
         var boundary=state.LakeBoundary;
@@ -34,11 +48,20 @@ public partial class CityWorld
         var valid=new bool[maxX-minX+1,maxZ-minZ+1];
         for(var x=minX;x<=maxX;x++)for(var z=minZ;z<=maxZ;z++)
             valid[x-minX,z-minZ]=simulation.IsWaterIntakeSite(new(x*cell,z*cell),rotation);
-        var vertices=new List<Vector3>();
+        var cells=new List<Point>();
         for(var x=minX;x<maxX;x++)for(var z=minZ;z<maxZ;z++){
             if(!valid[x-minX,z-minZ]||!valid[x-minX+1,z-minZ]||!valid[x-minX,z-minZ+1]||!valid[x-minX+1,z-minZ+1]
                 ||!simulation.IsWaterIntakeSite(new((x+.5)*cell,(z+.5)*cell),rotation))continue;
-            var a=Vertex(x,z);var b=Vertex(x+1,z);var c=Vertex(x+1,z+1);var d=Vertex(x,z+1);
+            cells.Add(new(x*cell,z*cell));
+        }
+        return cells;
+    }
+
+    MeshInstance3D BuildWaterIntakeRange(List<Point> cells)
+    {
+        var vertices=new List<Vector3>(cells.Count*6);var cell=WaterIntakeRangeCellSize;
+        foreach(var p in cells){
+            var a=Vertex(p);var b=Vertex(new(p.X+cell,p.Z));var c=Vertex(new(p.X+cell,p.Z+cell));var d=Vertex(new(p.X,p.Z+cell));
             vertices.AddRange([a,c,b,a,d,c]);
         }
         var mesh=new ArrayMesh();
@@ -47,6 +70,6 @@ public partial class CityWorld
             CastShadow=GeometryInstance3D.ShadowCastingSetting.Off,MaterialOverride=new StandardMaterial3D{
                 AlbedoColor=new Color("45df73",.42f),ShadingMode=BaseMaterial3D.ShadingModeEnum.Unshaded,
                 Transparency=BaseMaterial3D.TransparencyEnum.Alpha,CullMode=BaseMaterial3D.CullModeEnum.Disabled}};
-        Vector3 Vertex(int x,int z){var p=new Point(x*cell,z*cell);return P(p,VisibleTerrainHeight(p)+.045f);}
+        Vector3 Vertex(Point p)=>P(p,VisibleTerrainHeight(p)+.045f);
     }
 }
