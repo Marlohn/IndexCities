@@ -292,3 +292,50 @@ A verificação independente mediu em cenário ativo aproximadamente **130,56 FP
 O imposto imobiliário atual é **lançado mensalmente** em `PropertyTaxes` como alíquota anual / 12; salários e água/energia já têm liquidações diárias. Cobrar diariamente mudaria liquidez e possivelmente decisões e inadimplência — portanto precisa de aprovação humana separada na SPEC. **Não há evidência de que só mudar a periodicidade resolva o caixa**: exemplo ilustrativo de 30 imóveis privados a 40.000 cada e 1% ao ano gera apenas ~32,9 unidades monetárias/dia, se tudo for efetivamente pago. Valor real, compromissos e receitas líquidas devem ser medidos na cidade do playtest antes de recomendar a mudança. Evitar dividir por 365 indiscriminadamente sem considerar ano bissexto, valor de mercado variável, arredondamento e diferença em relação à base mensal corrente.
 
 **Síntese pendente:** a opção mais fiel à decisão humana é otimizar a **execução real dos acontecimentos** (menos varreduras e passos desnecessários, especialmente em intervalos estáveis), combinar apresentação legível com execução rápida e medir um objetivo geracional explícito. A magnitude do ganho necessária **não está comprovada**. Se benchmarks mostrarem limite persistente, expor o trade-off e pedir nova decisão; não alterar silenciosamente o calendário, criar gerações fictícias ou declarar sucesso com FPS apenas.
+
+
+---
+
+## Análise adversarial da viabilidade geracional e escala futura — 2026-10-16 (PENDENTE)
+
+> **Revisão humana desta seção: PENDENTE.** Nova bateria crítica solicitada porque a recomendação de eventos/otimização não demonstrou ainda que suportará a cidade completa. Consulta à SPEC, à V1 e a pesquisas externas primárias. **Nenhum novo benchmark foi executado nesta rodada.** Não é decisão de arquitetura, mudança de produto ou autorização para implementar.
+
+### Pergunta correta e limites do que já medimos
+
+**É possível manter o calendário gregoriano literal, cada SIM, viagem e transação com causalidade real, e acompanhar gerações ao longo de algumas sessões, mesmo quando toda a visão futura do produto estiver implementada?** A resposta sustentada hoje é **desconhecida, com risco alto e não resolvido**. Um teste de 10 segundos em 47 SIMs não valida anos de uma cidade de 15 mil a 50 mil pessoas; essas populações são apenas cenários exploratórios, **não meta aprovada**. A V1 ainda não implementa nascimento/envelhecimento natural e omite educação, saúde, polícia, indústria ampla, família avançada e muitos outros sistemas aprovados para o jogo completo. Assim, **não se pode prometer que otimizações locais, agenda de eventos, paralelismo, GPU ou uma troca de engine bastarão**.
+
+Para 80 anos de referência (sem impor morte aos 80, 365,2425 dias/ano em média), o calendário contém aproximadamente 2,5246 bilhões de segundos e o motor de passo fixo exigiria cerca de **1,262 bilhão de passos de 2 segundos**. Para cumprir 80 anos em 20 horas reais são necessários **35.063x efetivos**, ou **17.532 passos/s** com o motor atual. Em 40 horas: 17.532x e 8.766 passos/s. O benchmark de 1000x com 47 SIMs executou ~500 passos/s. Essas contas exigem reduzir fortemente trabalho por unidade de tempo simulado, não apenas aumentar multiplicador.
+
+### Piso ilustrativo de acontecimentos inevitáveis
+
+**Exemplo, não previsão de comportamento:** com duas viagens realizadas por SIM por dia, ao longo dos mesmos 80 anos:
+- 1.000 moradores: aproximadamente 58,4 milhões de viagens (811 viagens por segundo real num horizonte de 20h);
+- 10.000 moradores: 584,4 milhões (~8.117 viagens/s);
+- 50.000 moradores: 2,92 bilhões (~40.583 viagens/s).
+
+Cada viagem real demanda pelo menos partida e chegada, e potencialmente múltiplos conflitos, decisões de trajeto, combustível e compras. Os números excluem salários, abastecimento, estoques, emergências, educação, história pessoal e moradia; também não incluem variações de população/rotina, nem afirmam que todos viajem duas vezes todos os dias. Eventos discretos **evitam rechecagens desnecessárias, mas não apagam o custo dos eventos obrigatórios**.
+
+### Evidência externa que favorece e que limita
+
+- **ParSim (Heidary et al., 2025, Applied Sciences)**: simulou 1 milhão de viagens de 24h em Bologna em ~41s; cenário maior de 18 milhões de viagens em San Francisco Bay Area consumiu ~26 min; o estudo também reporta configuração com 28 milhões em outras descrições. Isso prova velocidade especializada notável em GPU, **não simulação integrada de finanças, serviços e gerações**. A discussão reconhece que o tratamento simplificado de cruzamentos pode superestimar vazão. Fonte: https://www.mdpi.com/2076-3417/15/13/6960
+- **MOSS (Zhang et al., 2024)**: simulação GPU de tráfego microscópico com mais de 2 milhões de veículos e até ~100x sobre CityFlow naquele teste, usando modelo próprio e hardware específico. Um passo padrão é 1s; não extrapolar multiplicador 100x comparativo como anos do IndexCities em tempo de jogo. Fonte: https://arxiv.org/html/2405.12520v1
+- **A/B Street (Carlino)**: processamento por eventos permite interpolar caminhada, mas o projeto assume pedestres sem colisão e movimento simplificado de carros; a equivalência com regras atuais do IndexCities exige provas, e congestionamentos podem invalidar previsões. Fonte: https://a-b-street.github.io/docs/tech/trafficsim/discrete_event/index.html
+- **Factorio FFF-421**: paralelismo em um save real deu ~9,5% na rodada citada, enquanto um benchmark sintético específico teve ganho de 14,9x; paralelizar rede elétrica falhou em melhorar o tempo total porque o gargalo era memória. Ganhos setoriais são importantes, mas não viram garantia de aceleração global. Fonte: https://www.factorio.com/blog/post/fff-421
+- **SimMobility/MATSim, pesquisa de agentes de tráfego**: modelos eficazes de larga escala diferenciam granularidades curtas, médias e longas e frequentemente usam um modelo de transporte especializado, não a combinação completa de sistema social, propriedades, consumo físico, política urbana e décadas com as exigências do IndexCities. Não tomar a existência de milhões de agentes como prova da meta geracional. Revisão: https://arxiv.org/html/2102.07505v2
+- **Godot, documentação oficial**: perfilar CPU/GC e atenção a restrições de threads; mudar linguagem, GPU ou engine não remove automaticamente o trabalho causal. Fonte: https://docs.godotengine.org/en/stable/tutorials/performance/cpu_optimization.html
+
+### Três caminhos de engenharia ainda sob teste (nenhum aprovado nesta rodada)
+
+1. **Execução orientada a eventos e intervalos analíticos equivalentes**, inclusive em sistemas não visuais, sem novas decisões por SIM enquanto nada mudou. Hipótese com maior potencial de reduzir trabalho vazio; **pode perder eficiência com interações contínuas e elevada taxa de invalidação**.
+2. **Motor de dados compactos e índices + kernels paralelos nas partes efetivamente independentes**. Combina estruturas de dados locais, memória contígua e, somente se perfil indicar, threads ou GPU para trânsito/infraestrutura. Requer manter ordem de disputa por recursos e mesmo resultado causal; dependências fortes, sincronização e cópias entre CPU/GPU podem anular o ganho.
+3. **Execução rápida em blocos sem desenhar cada instante, com histórico persistente de acontecimentos reais e observação detalhada quando jogador desacelera**. Ajuda custo visual e legibilidade, mas **não substitui nem simplifica o custo físico/econômico do core**. Controles novos dependem de aprovação própria.
+
+**Rejeitar como solução baseada na evidência atual:** só dobrar multiplicadores; prometer 3000x/35000x; usar FPS de 47 SIMs como escala futura; simular somente cidadãos visíveis; substituir viagens por médias sem validação; distribuir threads universalmente; declarar que GPU ou ECS produzirão ganhos de papers especializados na cidade inteira.
+
+### Experimento decisivo de risco antes de refatoração ampla
+
+Proposta **para avaliação humana**, não nova fase mandatória: curto *stress test* reprodutível do core, executando a mesma cidade durante uma semana e um mês, e checkpoint de ano quando custo permitir. Instrumentar CPU e GC por subsistema; tempo real, segundos simulados por segundo, memória, fila de eventos, número efetivo de viagens/transações, latência ao alterar velocidade e invariantes físicos/econômicos. Executar em Release e Debug separadamente, CPU isolada quando possível, com e sem host Godot, e em estados de **47, 1.000, 10.000, 50.000 habitantes** em uma progressão que interrompa antecipadamente os cenários inviáveis. Usar fixtures tecnicamente coerentes e documentar funcionalidades ausentes; fixtures artificiais não provam realismo de futuras populações. O tamanho de cidade e infraestrutura sintéticos precisam refletir um futuro plausível, não apenas multiplicar cópias dos mesmos moradores.
+
+**Critério de decisão:** medir custo por dia simulado (não FPS apenas), tendência do custo por morador/empresa/viagem, total de acontecimentos e picos; identificar quais partes podem dormir, quais devem acontecer realmente e se as otimizações reduzem os custos reais. Antes de uma refatoração grande, exigir um ganho mensurado end-to-end em caso representativo e conferir o custo de integrar novos sistemas. Se o throughput por dia, extrapolado com **margem explícita** para sistemas ainda não implementados, não permitir chegar à meta geracional, não insistir indefinidamente em otimizações micro. Levar ao responsável opções reais de escala/nível de interação/hardware como novo trade-off, **sem mudar o calendário ou os eventos aprovados por conta própria**.
+
+**Conclusão adversarial:** a tese de eventos continua plausível para otimizar, mas **a hipótese de que será suficiente para todo o IndexCities não está demonstrada e deve ser tratada como risco central**. A próxima ação útil é um teste falsificável de escalabilidade, e não mais uma pesquisa genérica ou reescrita antecipada.
