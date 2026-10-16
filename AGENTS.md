@@ -27,6 +27,7 @@ Antes de iniciar uma rodada de **definição da SPEC** ou de **priorização de 
 - Algo só ganha autoridade quando o responsável aprova explicitamente na conversa e a conclusão é registrada na fonte canônica (`SPEC`, `ARCHITECTURE` ou `AGENTS`). Na dúvida sobre se houve aprovação, trate como não aprovado.
 - Termos como **decidido**, **aprovado** ou **confirmado** só descrevem decisão do responsável ou o que já está na fonte canônica; nunca uma recomendação da IA.
 - Escreva hipóteses como **opções de estudo**, não como ordens. Ao apresentar uma pesquisa nova, diga em uma frase que é material de pesquisa, não decisão.
+
 ## Fluxo contínuo de conversa e documentação
 
 Durante conversas de exploração ou definição com o responsável pelo projeto:
