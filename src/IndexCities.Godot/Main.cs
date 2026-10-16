@@ -36,6 +36,7 @@ public partial class Main:Node3D
         if(args.Contains("--road-recovery-smoke"))CallDeferred(MethodName.RoadRecoverySmoke);
         if(args.Contains("--road-tool-playtest"))CallDeferred(MethodName.RoadToolPlaytest);
         if(args.Contains("--grid-alignment-smoke"))CallDeferred(MethodName.GridAlignmentSmoke);
+        if(args.Contains("--placement-performance-smoke"))CallDeferred(MethodName.PlacementPerformanceSmoke);
         if(args.Contains("--road-tool-verify"))CallDeferred(MethodName.RoadToolVerifyNative);
         if(args.Contains("--city-names-smoke"))CallDeferred(MethodName.CityNamesSmoke);
         if(args.Contains("--finances-smoke"))CallDeferred(MethodName.FinancesSmoke);
