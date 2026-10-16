@@ -87,11 +87,11 @@ Nenhuma marca de engine, por si só, resolve essas três dimensões. Resultados 
 
 ---
 
-## Calendário civil aprovado e alternativa futura de meses curtos (2026-10-09)
+## Calendário civil aprovado (2026-10-09); meses curtos descartados em 2026-10-16
 
-> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável **decidiu depois iniciar com calendário real gregoriano** de dias de 24 horas, meses de 28/29/30/31 dias e anos de 365/366 dias, seguindo relógio único e simulação real. **Se medições de performance e gameplay justificarem, quer revisitar futuramente a hipótese de reduzir dias por mês, sem aprovação antecipada.** A aceleração real de todos os acontecimentos já está aprovada na SPEC; **não reabrir nem relativizar** essa regra.
+> **Revisão humana desta seção: PARCIALMENTE REVISADO.** O responsável **decidiu depois iniciar com calendário real gregoriano** de dias de 24 horas, meses de 28/29/30/31 dias e anos de 365/366 dias, seguindo relógio único e simulação real. **Em 2026-10-16, o responsável confirmou que não aceita encurtar dias, meses, anos ou separar a evolução da vida do relógio real; a evolução de gerações em algumas horas/sessões exige aceleração verdadeira.** A aceleração real de todos os acontecimentos já está aprovada na SPEC; **não reabrir nem relativizar** essa regra.
 
-**Exemplos de calendário condensado para futura comparação — NÃO aprovados para o jogo inicial:**
+**Exemplos históricos de calendário condensado — NÃO aprovados e incompatíveis com a confirmação humana de 2026-10-16:**
 
 | Dias por mês | Dias por ano (12 meses) | Prazo de três meses |
 | --- | --- | --- |
@@ -99,7 +99,7 @@ Nenhuma marca de engine, por si só, resolve essas três dimensões. Resultados 
 | 15 | 180 | 45 dias da simulação |
 | 30 | 360 | 90 dias da simulação |
 
-Um mês mais curto **não torna mais eficiente simular cada dia**; apenas faz haver menos jornadas reais por ano fictício. Aluguéis mensais, salários e despesas recorrentes passariam a vencer mais frequentemente em relação aos dias de rotina. Envelhecimento e nascimento mudariam sua proporção com deslocamentos/consumo. O responsável já expressou anteriormente receio de calendários fictícios com poucos dias por mês; portanto a IA **não deve declarar 10 ou 15 dias aprovados** nem criar dois relógios divergentes para mascarar o impacto. **Direção aprovada agora: calendário convencional.** Se surgir dificuldade comprovada, considerar meses encurtados como **mudança de produto sujeita a nova aprovação**, comparando ritmo da vida, economia e custo de avançar anos completos. A redução de dias por mês não reduz o custo de cada dia simulado.
+Um mês mais curto **não torna mais eficiente simular cada dia**; apenas faz haver menos jornadas reais por ano fictício. Aluguéis mensais, salários e despesas recorrentes passariam a vencer mais frequentemente em relação aos dias de rotina. Envelhecimento e nascimento mudariam sua proporção com deslocamentos/consumo. O responsável já expressou anteriormente receio de calendários fictícios com poucos dias por mês; portanto a IA **não deve declarar 10 ou 15 dias aprovados** nem criar dois relógios divergentes para mascarar o impacto. **Direção confirmada em 2026-10-16: calendário convencional como na vida real, sem exceção para acelerar o ciclo de vida.** As alternativas de meses encurtados permanecem apenas como histórico da exploração, não como opção recomendada ou solução de desempenho. A redução de dias por mês não reduz o custo de cada dia simulado.
 
 ---
 
@@ -197,7 +197,7 @@ Uma casa pode conter uma família ou residência; um prédio pode conter múltip
 
 **Fonte de verdade: [SPEC](../SPEC.md#tempo-de-jogo).** Aumentar a velocidade deve fazer o **mesmo mundo efetivamente avançar**, preservando identidades individuais, viagens/cargas físicas, trabalho, empresas, produção, necessidades, saldos, transações, dívidas e envelhecimento. Não basta alterar números do calendário, ocultar operações ou trocar resultados por estimativas. **Processar eventos de maneira mais eficiente não significa perder acontecimentos**: intervalos estáveis podem ser calculados sem atualizar cada frame se o estado e as consequências permanecerem equivalentes.
 
-**Decidido posteriormente: calendário civil real (dias de 24 horas, meses e anos gregorianos). O que NÃO foi decidido:** quanto tempo real dura um dia simulado, multiplicadores numéricos exatos, qualquer velocidade além das 1/2/3 previstas, modelo técnico de atualização, garantias de desempenho ou hardware-alvo. Estratégias de operação, calendário compacto/representativo, relógios separados, replay e projeções são **histórico de pesquisa**, não escolhas atuais. Modelos que substituem eventos por dias/produção/salários fictícios conflitam com o princípio agora aprovado. A prioridade da investigação muda para **capacidade de executar a simulação causal mais rapidamente**, sem abandonar a legibilidade do jogador.
+**Situação vigente após 2026-10-16:** calendário civil real e 1x igual a 1 segundo simulado por segundo real; velocidades provisórias de 30x/1000x. Não há aprovação de desempenho garantido, velocidade geracional máxima, controles adicionais ou modelo técnico específico. Estratégias de operação, calendário compacto/representativo, relógios separados, replay e projeções são **histórico de pesquisa**, não escolhas atuais. Modelos que substituem eventos por dias/produção/salários fictícios conflitam com o princípio agora aprovado. A prioridade da investigação muda para **capacidade de executar a simulação causal mais rapidamente**, sem abandonar a legibilidade do jogador.
 
 #### Como buscar performance excepcional — hipóteses técnicas, NÃO arquitetura aprovada
 
@@ -251,7 +251,7 @@ Medir **legibilidade de viagens, taxas de transações/consumo, tempo de espera 
 
 > **Revisão humana desta subseção: PENDENTE — ideia documentada a pedido do responsável, mas expressamente NÃO DECIDIDA e sujeita a novas rodadas de pesquisa.** Não converter esta proposta em requisito, plano de implementação, velocidade extra, nova modalidade de jogo ou preferência definitiva.
 
-**Motivação:** o responsável expressou preocupação com a estranheza de um calendário ficcional de poucos dias por mês. A reflexão seguinte questionou uma premissa anterior: **a SPEC determina nascimentos, envelhecimento e ciclo de vida, mas não exige que o jogador observe uma geração inteira em algumas dezenas de horas**. Acelerar toda a economia para alcançar esse objetivo talvez seja otimizar a variável errada.
+**Motivação (histórica; superada em 2026-10-16, quando o responsável definiu o acompanhamento geracional como meta — ver SPEC):** o responsável expressou preocupação com a estranheza de um calendário ficcional de poucos dias por mês. A reflexão seguinte questionou uma premissa anterior: **a SPEC determina nascimentos, envelhecimento e ciclo de vida, mas não exige que o jogador observe uma geração inteira em algumas dezenas de horas**. Acelerar toda a economia para alcançar esse objetivo talvez seja otimizar a variável errada.
 
 **Hipótese combinada (D), composta por possibilidades independentes e ainda não aprovadas:**
 
@@ -313,7 +313,7 @@ Medir **legibilidade de viagens, taxas de transações/consumo, tempo de espera 
 - **Interrupções e autonomia:** ritmo contextual não deve assumir que “madrugada é vazia”; possíveis desacelerações precisam respeitar escolhas do jogador e não virar burocracia invisível.
 - **Previsão versus verdade:** toda projeção hipotética, caso um dia aprovada, precisa declarar premissas e incerteza e **não** substituir transações concretas, produção física ou decisões autônomas por números mágicos.
 
-**O que permanece realmente em aberto:** duração do dia simulado em tempo real, eventual reavaliação futura do número de dias no mês se houver evidência; objetivo de acompanhar vida inteira versus evolução de cidade; se avanço estratégico acrescenta diversão; custo medido de eventos sob congestionamento; se histórico de SIMs merece sistema próprio; valor efetivo de ritmo contextual e projeções. **Não iniciar implementação ou criar subsistemas extras com base nesta pesquisa.** A validação pode ocorrer nos cenários do jogo integrado definidos na SPEC e na ARCHITECTURE, sem POCs independentes obrigatórias.
+**O que permanece realmente em aberto após 2026-10-16:** como tornar possível observar uma vida completa em algumas horas/sessões preservando calendário real e eventos causais; duração real-alvo, tamanho de cidade e eficiência sob congestionamento; eventual valor de avanço estratégico, ritmo contextual e projeções (não aprovados). **Não iniciar implementação ou criar subsistemas extras com base nesta pesquisa.** A validação pode ocorrer nos cenários do jogo integrado definidos na SPEC e na ARCHITECTURE, sem POCs independentes obrigatórias.
 
 ### Regra de evidência para decisões futuras
 

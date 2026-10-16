@@ -5,7 +5,9 @@
 
 ---
 
-## Contexto e hipótese do responsável
+> **Atualização de 2026-10-16:** os trechos iniciais deste arquivo documentam um experimento anterior com velocidades 15x/60x e propostas de cobrança diária/limite de 300x. **Não descrevem mais a calibração vigente (1x/30x/1000x) nem uma recomendação aceita.** A verificação independente no final do estudo prevalece sobre afirmações empíricas conflitantes da rodada original. A decisão humana atual de calendário real e observação de gerações está na SPEC; a nova análise pendente vem na seção final deste arquivo.
+
+## Contexto histórico do estudo inicial (antes da confirmação geracional de 2026-10-16)
 
 - **Regra vigente na SPEC (linha ~64):** *"1x em tempo real: um segundo real avança um segundo simulado na velocidade normal. Movimento físico, relógio, obras, turnos, produção e consumo seguem a mesma escala; as velocidades rápidas permitem avançar. ... Os dois multiplicadores rápidos continuam sendo calibração técnica; nesta rodada, a calibração é 15x e 60x."*
 - **Problema de ritmo identificado:** em velocidade 60x, 1 mês simulado leva aproximadamente 12 horas reais (`2.592.000 s / 60 = 43.200 s = 12 h`). No início de uma partida, o jogador investe o caixa municipal nas obras iniciais (Prefeitura, primeira rua, pátio de obras ou serviços) e rapidamente fica sem saldo disponível, entrando em uma longa espera passiva até a cobrança mensal do imposto imobiliário.
@@ -156,7 +158,7 @@ Portanto, **aumentar a velocidade da simulação NÃO resolve o problema de o jo
 
 ---
 
-## 5. Recomendação justificada
+## 5. Recomendação histórica do estudo inicial (não aprovada)
 
 1. **Não tentar resolver a falta de caixa aumentando a simulação para 1.000x ou 3.000x:**
    - As medições mostram que a física em passos de 2s impõe um teto severo. Mesmo no teto de 3.000x, 1 mês ainda exige quase 15 minutos de espera passiva, enquanto a experiência visual de trânsito é arruinada e o risco de congelamento por espiral da morte em cidades maiores se torna iminente.
@@ -250,3 +252,138 @@ dotnet build src/IndexCities.Godot/IndexCities.Godot.csproj
 ```
 
 Nas medições experimentais, o comando headless foi o mesmo formato, usando `--independent-speed=60`, `300`, `1000`, `3000` ou `6000` **em vez** das flags `--performance-*`, com uma pasta de saves isolada por velocidade. Essa flag existiu somente na instrumentação temporária removida; não é opção do jogo entregue. O checkpoint ativo foi gerado por `dotnet test tests/IndexCities.Simulation.Tests --filter FullyQualifiedName~Independent_fixture --logger 'console;verbosity=normal'` (1 aprovado), também removido. Logs, fixtures, cópias de segurança e JSONs brutos permanecem apenas em `artifacts/verification/ritmo-independent/`, ignorado pelo Git; os resultados duráveis estão nas tabelas desta seção.
+
+---
+
+## Revisão de engenharia e pesquisa externa — 2026-10-16 (PENDENTE)
+
+> **Revisão humana desta seção: PENDENTE.** Revisão de código da `main` após merge da PR #19 (`b75be2f`), confronto com os benchmarks registrados acima e pesquisa em fontes técnicas primárias. Não foram executados novos benchmarks, nem aprovada nova arquitetura ou funcionalidade.
+
+### Direção do produto confirmada pelo responsável
+
+- **Calendário civil único e literal**, com dias de 24 horas, anos gregorianos e todos os efeitos físicos, financeiros e pessoais reais. Não encurtar meses, não criar relógios divergentes nem acelerar apenas a idade.
+- O jogador deve poder **acompanhar uma geração inteira em algumas horas ou sessões**, usando aceleração opcional. O número concreto de horas, o tamanho da cidade e o hardware-alvo ainda precisam ser medidos/definidos. A SPEC é a fonte autorizada desta decisão.
+- Essa meta **não está demonstrada** por 1000x, e não pode ser declarada concluída antes de implementar/validar nascimento, envelhecimento e morte natural na simulação.
+
+### Dimensão quantitativa do problema
+
+Usando 80 anos como horizonte ilustrativo (não idade fixa obrigatória de morte): a 1000x são cerca de **701 horas reais**; para 80 anos em 40 horas de partidas seriam necessários aproximadamente **17.500x**, e em 20 horas cerca de **35.100x** efetivos. Esses fatores são aritmética, **não capacidade comprovada**. Com a arquitetura atual `Quantum=2`, o último alvo exigiria ~17.500 passos completos por segundo real, contra ~500 passos/s efetivos no benchmark de 1000x com 47 SIMs e 42 edifícios. Mudar só o multiplicador não atende ao objetivo; crescer a cidade tende a ampliar a carga, mas quanto ainda não foi medido.
+
+A verificação independente mediu em cenário ativo aproximadamente **130,56 FPS do host em 1000x**, **1,07 FPS em 3000x**, sem aquecimento, isolamento de CPU, validação gráfica ou execução longa. A descrição anterior de 3000x a 144 FPS não foi reproduzida. O loop `while(_clockBudget>=2)` tem orçamento finito **por chamada**, portanto não é um loop necessariamente infinito; o problema é retroalimentação de atrasos **entre frames**, bloqueio da interface e perda da velocidade efetiva. O quantum de 2s é uma **restrição da implementação atual**, não uma lei que impeça integrar intervalos estáveis por um algoritmo equivalente.
+
+### Evidências primárias externas e limites de transferência
+
+1. **A/B Street — simulação de tráfego por eventos:** movimentos previsíveis de pedestres tornam-se estados temporais interpoláveis até a próxima interação; cruzamentos acordam veículos quando a passagem fica disponível. O próprio autor documenta simplificações na física dos veículos e limites com ultrapassagem e congestionamento. **Aplicável como conceito**, não como motor de trânsito substituto sem conferir equivalência. https://a-b-street.github.io/docs/tech/trafficsim/discrete_event/index.html
+2. **Factorio FFF-421 e FFF-148:** entidades inativas podem dormir; a otimização dos roboports caiu de ~1 ms/tick para ~0,025 ms/tick **naquele subsistema e save específico**, não 40x para o jogo inteiro. Transporte por segmentos e índices reduzem operações repetidas sem abandonar a realidade dos itens. https://www.factorio.com/blog/post/fff-421 ; https://www.factorio.com/blog/post/fff-148
+3. **SUMO MESO:** documenta até 100x no trânsito mesoscópico, **mudando detalhes** de faixas, ultrapassagem e cinemática. Não é prova de ganho compatível com a microssimulação aprovada. https://sumo.dlr.de/docs/Simulation/Meso.html
+4. **Godot e .NET:** orientam medir gargalos antes de otimizar: CPU, GC, estruturas de dados, algoritmos, apresentação, custos de thread. RenderingServer/MultiMesh aceleram visualização, mas **não executam o mundo econômico**. https://docs.godotengine.org/pt-br/4.x/tutorials/performance/general_optimization.html ; https://learn.microsoft.com/en-us/dotnet/core/diagnostics/debug-highcpu
+5. **OpenTTD 14:** separar calendário da economia foi uma mudança estrutural de longo alcance com risco de datas incoerentes. Não corresponde à decisão atual do IndexCities de manter relógio único. https://www.openttd.org/news/2024/03/23/timekeeping
+
+### Leitura do código e direção de investigação proposta (não aprovada)
+
+- **Primeiro, perfil por subsistema e duração real:** no `CitySimulation.Step` tudo passa por uma sequência de loops a cada 2s; `MoveCitizens`, `MoveVehicles`, `OperateBusinesses`, `UpdateNeeds` e `UpdateInfrastructure` são alvos observáveis. Em `OperateBusinesses`, cada prédio percorre a lista de cidadãos para trabalhadores; infraestrutura também procura pessoas presentes por prédio. Medir antes de escolher índices ou caches específicos.
+- **Depois, tornar o trabalho proporcional a mudanças reais:** considerar índices de quem trabalha/mora em cada imóvel, agenda de próxima decisão e eventos de transação/limiar, cálculo de consumo/produção/salários em intervalos estáveis e só reavaliar trajetórias quando interação ou invalidação exigir. Preservar pagamento com pagador real, ordem de disputa por estoque/vaga, rota e presença física, juros, salário, aluguel e dívida em suas datas corretas. Priorizar cortes locais reversíveis antes de um scheduler universal.
+- **Eliminar travamento visual sem falsificar tempo:** orçamento máximo de processamento por frame com backlog contabilizado e velocidade efetiva exibida; a cidade não pode acumular tempo fictício só porque a UI continuou fluida. Estudar execução rápida em blocos sem renderizar cada passo intermediário, mas **com todos os eventos reais**, histórico consultável e alternância voluntária para velocidades baixas ao acompanhar uma pessoa. Modo novo de avanço exige decisão humana; render menos não significa simular menos acontecimentos.
+- **Não apostar primeiro em multithreading/GPU/ECS/troca de engine:** podem fazer sentido após profiling, mas também adicionam ordem concorrente, sincronização e risco de alterar causalidade.
+- **Validar com cidade crescente e horizontes progressivos**, mesma seed/estado, código otimizado versus referência, ciclos de uma semana/mês/ano, Release e Debug separados, com e sem Godot, aquecimento, percentis, GC, tempo real total, interatividade e comportamento de diferentes SIMs. Além de invariantes de dinheiro/estoque, conferir trajetórias, pagamentos, nascimento/envelhecimento/morte, eventos e save/load. Um teste de poucos segundos a 1000x não verifica viabilidade de um ciclo de vida inteiro.
+
+### Economia: imposto diário é uma hipótese distinta
+
+O imposto imobiliário atual é **lançado mensalmente** em `PropertyTaxes` como alíquota anual / 12; salários e água/energia já têm liquidações diárias. Cobrar diariamente mudaria liquidez e possivelmente decisões e inadimplência — portanto precisa de aprovação humana separada na SPEC. **Não há evidência de que só mudar a periodicidade resolva o caixa**: exemplo ilustrativo de 30 imóveis privados a 40.000 cada e 1% ao ano gera apenas ~32,9 unidades monetárias/dia, se tudo for efetivamente pago. Valor real, compromissos e receitas líquidas devem ser medidos na cidade do playtest antes de recomendar a mudança. Evitar dividir por 365 indiscriminadamente sem considerar ano bissexto, valor de mercado variável, arredondamento e diferença em relação à base mensal corrente.
+
+**Síntese pendente:** a opção mais fiel à decisão humana é otimizar a **execução real dos acontecimentos** (menos varreduras e passos desnecessários, especialmente em intervalos estáveis), combinar apresentação legível com execução rápida e medir um objetivo geracional explícito. A magnitude do ganho necessária **não está comprovada**. Se benchmarks mostrarem limite persistente, expor o trade-off e pedir nova decisão; não alterar silenciosamente o calendário, criar gerações fictícias ou declarar sucesso com FPS apenas.
+
+
+---
+
+## Análise adversarial da viabilidade geracional e escala futura — 2026-10-16 (PENDENTE)
+
+> **Revisão humana desta seção: PENDENTE.** Nova bateria crítica solicitada porque a recomendação de eventos/otimização não demonstrou ainda que suportará a cidade completa. Consulta à SPEC, à V1 e a pesquisas externas primárias. **Nenhum novo benchmark foi executado nesta rodada.** Não é decisão de arquitetura, mudança de produto ou autorização para implementar.
+
+### Pergunta correta e limites do que já medimos
+
+**É possível manter o calendário gregoriano literal, cada SIM, viagem e transação com causalidade real, e acompanhar gerações ao longo de algumas sessões, mesmo quando toda a visão futura do produto estiver implementada?** A resposta sustentada hoje é **desconhecida, com risco alto e não resolvido**. Um teste de 10 segundos em 47 SIMs não valida anos de uma cidade de 15 mil a 50 mil pessoas; essas populações são apenas cenários exploratórios, **não meta aprovada**. A V1 ainda não implementa nascimento/envelhecimento natural e omite educação, saúde, polícia, indústria ampla, família avançada e muitos outros sistemas aprovados para o jogo completo. Assim, **não se pode prometer que otimizações locais, agenda de eventos, paralelismo, GPU ou uma troca de engine bastarão**.
+
+Para 80 anos de referência (sem impor morte aos 80, 365,2425 dias/ano em média), o calendário contém aproximadamente 2,5246 bilhões de segundos e o motor de passo fixo exigiria cerca de **1,262 bilhão de passos de 2 segundos**. Para cumprir 80 anos em 20 horas reais são necessários **35.063x efetivos**, ou **17.532 passos/s** com o motor atual. Em 40 horas: 17.532x e 8.766 passos/s. O benchmark de 1000x com 47 SIMs executou ~500 passos/s. Essas contas exigem reduzir fortemente trabalho por unidade de tempo simulado, não apenas aumentar multiplicador.
+
+### Piso ilustrativo de acontecimentos inevitáveis
+
+**Exemplo, não previsão de comportamento:** com duas viagens realizadas por SIM por dia, ao longo dos mesmos 80 anos:
+- 1.000 moradores: aproximadamente 58,4 milhões de viagens (811 viagens por segundo real num horizonte de 20h);
+- 10.000 moradores: 584,4 milhões (~8.117 viagens/s);
+- 50.000 moradores: 2,92 bilhões (~40.583 viagens/s).
+
+Cada viagem real demanda pelo menos partida e chegada, e potencialmente múltiplos conflitos, decisões de trajeto, combustível e compras. Os números excluem salários, abastecimento, estoques, emergências, educação, história pessoal e moradia; também não incluem variações de população/rotina, nem afirmam que todos viajem duas vezes todos os dias. Eventos discretos **evitam rechecagens desnecessárias, mas não apagam o custo dos eventos obrigatórios**.
+
+### Evidência externa que favorece e que limita
+
+- **ParSim (Heidary et al., 2025, Applied Sciences)**: simulou 1 milhão de viagens de 24h em Bologna em ~41s; cenário maior de 18 milhões de viagens em San Francisco Bay Area consumiu ~26 min; o estudo também reporta configuração com 28 milhões em outras descrições. Isso prova velocidade especializada notável em GPU, **não simulação integrada de finanças, serviços e gerações**. A discussão reconhece que o tratamento simplificado de cruzamentos pode superestimar vazão. Fonte: https://www.mdpi.com/2076-3417/15/13/6960
+- **MOSS (Zhang et al., 2024)**: simulação GPU de tráfego microscópico com mais de 2 milhões de veículos e até ~100x sobre CityFlow naquele teste, usando modelo próprio e hardware específico. Um passo padrão é 1s; não extrapolar multiplicador 100x comparativo como anos do IndexCities em tempo de jogo. Fonte: https://arxiv.org/html/2405.12520v1
+- **A/B Street (Carlino)**: processamento por eventos permite interpolar caminhada, mas o projeto assume pedestres sem colisão e movimento simplificado de carros; a equivalência com regras atuais do IndexCities exige provas, e congestionamentos podem invalidar previsões. Fonte: https://a-b-street.github.io/docs/tech/trafficsim/discrete_event/index.html
+- **Factorio FFF-421**: paralelismo em um save real deu ~9,5% na rodada citada, enquanto um benchmark sintético específico teve ganho de 14,9x; paralelizar rede elétrica falhou em melhorar o tempo total porque o gargalo era memória. Ganhos setoriais são importantes, mas não viram garantia de aceleração global. Fonte: https://www.factorio.com/blog/post/fff-421
+- **SimMobility/MATSim, pesquisa de agentes de tráfego**: modelos eficazes de larga escala diferenciam granularidades curtas, médias e longas e frequentemente usam um modelo de transporte especializado, não a combinação completa de sistema social, propriedades, consumo físico, política urbana e décadas com as exigências do IndexCities. Não tomar a existência de milhões de agentes como prova da meta geracional. Revisão: https://arxiv.org/html/2102.07505v2
+- **Godot, documentação oficial**: perfilar CPU/GC e atenção a restrições de threads; mudar linguagem, GPU ou engine não remove automaticamente o trabalho causal. Fonte: https://docs.godotengine.org/en/stable/tutorials/performance/cpu_optimization.html
+
+### Três caminhos de engenharia ainda sob teste (nenhum aprovado nesta rodada)
+
+1. **Execução orientada a eventos e intervalos analíticos equivalentes**, inclusive em sistemas não visuais, sem novas decisões por SIM enquanto nada mudou. Hipótese com maior potencial de reduzir trabalho vazio; **pode perder eficiência com interações contínuas e elevada taxa de invalidação**.
+2. **Motor de dados compactos e índices + kernels paralelos nas partes efetivamente independentes**. Combina estruturas de dados locais, memória contígua e, somente se perfil indicar, threads ou GPU para trânsito/infraestrutura. Requer manter ordem de disputa por recursos e mesmo resultado causal; dependências fortes, sincronização e cópias entre CPU/GPU podem anular o ganho.
+3. **Execução rápida em blocos sem desenhar cada instante, com histórico persistente de acontecimentos reais e observação detalhada quando jogador desacelera**. Ajuda custo visual e legibilidade, mas **não substitui nem simplifica o custo físico/econômico do core**. Controles novos dependem de aprovação própria.
+
+**Rejeitar como solução baseada na evidência atual:** só dobrar multiplicadores; prometer 3000x/35000x; usar FPS de 47 SIMs como escala futura; simular somente cidadãos visíveis; substituir viagens por médias sem validação; distribuir threads universalmente; declarar que GPU ou ECS produzirão ganhos de papers especializados na cidade inteira.
+
+### Experimento decisivo de risco antes de refatoração ampla
+
+Proposta **para avaliação humana**, não nova fase mandatória: curto *stress test* reprodutível do core, executando a mesma cidade durante uma semana e um mês, e checkpoint de ano quando custo permitir. Instrumentar CPU e GC por subsistema; tempo real, segundos simulados por segundo, memória, fila de eventos, número efetivo de viagens/transações, latência ao alterar velocidade e invariantes físicos/econômicos. Executar em Release e Debug separadamente, CPU isolada quando possível, com e sem host Godot, e em estados de **47, 1.000, 10.000, 50.000 habitantes** em uma progressão que interrompa antecipadamente os cenários inviáveis. Usar fixtures tecnicamente coerentes e documentar funcionalidades ausentes; fixtures artificiais não provam realismo de futuras populações. O tamanho de cidade e infraestrutura sintéticos precisam refletir um futuro plausível, não apenas multiplicar cópias dos mesmos moradores.
+
+**Critério de decisão:** medir custo por dia simulado (não FPS apenas), tendência do custo por morador/empresa/viagem, total de acontecimentos e picos; identificar quais partes podem dormir, quais devem acontecer realmente e se as otimizações reduzem os custos reais. Antes de uma refatoração grande, exigir um ganho mensurado end-to-end em caso representativo e conferir o custo de integrar novos sistemas. Se o throughput por dia, extrapolado com **margem explícita** para sistemas ainda não implementados, não permitir chegar à meta geracional, não insistir indefinidamente em otimizações micro. Levar ao responsável opções reais de escala/nível de interação/hardware como novo trade-off, **sem mudar o calendário ou os eventos aprovados por conta própria**.
+
+**Conclusão adversarial:** a tese de eventos continua plausível para otimizar, mas **a hipótese de que será suficiente para todo o IndexCities não está demonstrada e deve ser tratada como risco central**. A próxima ação útil é um teste falsificável de escalabilidade, e não mais uma pesquisa genérica ou reescrita antecipada.
+
+
+---
+
+## Medição de escala do núcleo — 2026-10-16 (PENDENTE)
+
+> **Pesquisa, não fonte de verdade.** Primeira medição real de custo por dia simulado, feita fora do repositório (cópia do núcleo `IndexCities.Simulation` da `main` em `90c0f72`, num projeto de bancada descartável), sem alterar código, regras ou o jogo. Atualiza a seção anterior, que não tinha benchmarks novos.
+
+### Método
+
+- Release, .NET 8, console sem Godot nem renderização, uma thread, Windows 11, CPU desktop de 12 threads. Cronômetro por subsistema dentro de `Step`. Aquecimento de 2 dias simulados antes de medir; depois, dia a dia.
+- **Cidade A:** exatamente o roteiro de `CityCycleTests.City()` (47 SIMs, obras reais).
+- **Cidades em grade:** sintéticas, colocadas com os comandos públicos (mesma validação) e **concluídas instantaneamente** em vez de obra física. Capacidade das instalações de água, esgoto e energia multiplicada por 50 só para poucas instalações atenderem a cidade (não muda o custo de cálculo). Lago reposicionado ao lado da grade. Cruzamentos de 4 vias receberam semáforo (ação disponível ao jogador; ver achado abaixo).
+- **Sonda de otimização:** segunda cópia com índices por ID (no lugar de `FirstOrDefault` lineares em prédios, famílias, empresas, SIMs e veículos) e agrupamento de trabalhadores por prédio em uma passada. **Equivalência verificada:** o save JSON depois de 2 dias tem o mesmo SHA-256 da versão original (cidade A e grade de 109 SIMs).
+
+### Resultados
+
+| Cenário | SIMs | Prédios / nós de rua | s reais por dia simulado | Velocidade efetiva | 80 anos (29.220 dias) |
+|---|---|---|---|---|---|
+| A, original | 47 | 42 / ~200 | 10,6 | ~8.100x | ~86 h |
+| A, sonda | 47 | 42 / ~200 | 5,2 | ~16.600x | ~42 h |
+| Grade 3×400 m, original | 109 | 97 / 400 | 30 | ~2.900x | ~244 h |
+| Grade 3×400 m, sonda | 109 | 97 / 400 | 14 | ~6.100x | ~114 h |
+| Grade 5×800 m, sonda | 400 chegando (91 dentro do mapa) | 337 / 1.214 | 197 | ~440x | ~1.600 h |
+
+Meta pedida (80 anos em 20–40 h) equivale a **2,5–4,9 s reais por dia simulado**.
+
+- **Distribuição do custo (A, original):** infraestrutura 53%, necessidades 24%, operação de empresas 14%, movimento de SIMs 5%, veículos 2%; economia periódica, finanças diárias e impostos <1%. Na grade de 400, com trânsito parado, **veículos 70%**.
+- **Crescimento:** de 47 para 109 SIMs o custo triplicou. Varreduras "todos os prédios × todos os SIMs", busca de pedestre contra todos os pedestres, de travessia contra todas as ruas, e poluição local somando todas as células do mapa por casa **a cada 2 s** tornam o custo superlinear.
+- **Trabalho desperdiçado:** a cidade A gera ~15 registros de história pessoal e ~3 lançamentos financeiros por SIM por dia, mas o passo fixo recalcula todos os SIMs, prédios e ruas 43.200 vezes por dia. Alocações: 4–6 GB por dia simulado mesmo com 47 SIMs.
+- **Memória e saves:** histórico pessoal e livro-caixa crescem sem limite (~15 e ~3 itens por SIM/dia). Para 10.000 SIMs em 80 anos seriam ~4 bilhões de registros de história, o que não cabe em memória nem em save JSON. Guardar a história consultável a longo prazo exige uma decisão de produto sobre retenção/resumo.
+
+### Achados colaterais (possíveis bugs, não confirmados no jogo)
+
+- Grade com cruzamentos de 4 vias em preferência à direita (padrão de `SetDefaultJunctions`): carros ficaram em "Fila na faixa" / "Aguardando preferência" por dias; trabalhadores de água não chegaram; SIMs morreram de fome. Com semáforo o trânsito fluiu.
+- 400 famílias migrando de uma vez, todas de carro, pela única rodovia: ~240 carros parados na entrada e no eixo principal por 3 dias; 41–51 mortes.
+- Alguns caminhões de empresa ficaram em "Aguardando motorista embarcar" indefinidamente.
+
+### Leitura
+
+1. **Com o passo fixo atual a meta é inviável**, inclusive na cidade de 47 SIMs (86 h; 42 h com a sonda). Com 400 SIMs a sonda já está ~40–80x acima da meta e o custo cresce mais que linearmente; para milhares de SIMs a distância tende a ser maior, mas não foi medida.
+2. Otimizações locais equivalentes dão ~2x e são válidas por si (menos CPU em qualquer velocidade), mas **não mudam a conclusão**.
+3. A meta só parece alcançável se o custo passar a depender de **acontecimentos** e não de **entidades × tempo**: no meio da faixa da meta (~3,7 s por dia, 30 h para 80 anos), 10.000 SIMs com ~20 eventos/dia são ~54 mil eventos por segundo, volume normal para um motor de eventos. O obstáculo é o movimento e a interação física (filas, travessias, cruzamentos) hoje resolvidos a cada 2 s para cada agente. **Não há evidência ainda de que isso possa ser feito com equivalência causal.**
+4. Sistemas futuros da SPEC (nascimento/envelhecimento, educação, saúde, indústria, transporte coletivo) acrescentam entidades e viagens; com o modelo atual o custo cresce junto.
+
+### Próximo experimento sugerido (proposta, não aprovado)
+
+Experimento isolado e falsificável **só de mobilidade**: um protótipo de pedestres/carros orientado a eventos (andar por trecho, acordar ao liberar fila, cruzamento ou travessia) rodando a mesma rede e as mesmas viagens da cidade de 109 SIMs e da grade de 400. Comparar contra o motor atual: chegadas, tempos de viagem, filas e ordem nos cruzamentos. **Critério de sucesso:** ≤ 1 s por dia simulado a 1.000 SIMs com trajetórias equivalentes dentro de tolerância definida antes. Se falhar, a decisão volta ao responsável (tamanho de cidade, nível de detalhe do trânsito ou meta de tempo), sem mexer no calendário.
