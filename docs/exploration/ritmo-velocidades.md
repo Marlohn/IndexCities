@@ -162,7 +162,7 @@ Portanto, **aumentar a velocidade da simulação NÃO resolve o problema de o jo
    - As medições mostram que a física em passos de 2s impõe um teto severo. Mesmo no teto de 3.000x, 1 mês ainda exige quase 15 minutos de espera passiva, enquanto a experiência visual de trânsito é arruinada e o risco de congelamento por espiral da morte em cidades maiores se torna iminente.
 2. **Atacar a causa-raiz através da receita contínua (Cobrança diária pro-rata):**
    - Alterar a apuração do imposto imobiliário na Prefeitura para regime diário pro-rata (`ValorAnual / 365`), processado no evento já existente `DailyFinance`.
-   - Isso transforma o fluxo financeiro de uma "espera de 12 horas por uma bolha mensal" em um gotejamento diário contínuo: em velocidade 60x, uma nova receita entra a cada 24 segundos reais; em 180x, a cada 8 segundos reais.
+   - Isso transforma o fluxo financeiro de uma "espera de 12 horas por uma bolha mensal" em um gotejamento diário contínuo: em velocidade 60x, uma nova receita entra a cada 24 minutos reais; em 180x, a cada 8 minutos reais (correção do coordenador: 1 dia simulado = 86.400 s; ÷60 = 24 min).
    - Isso desbloqueia a gameplay da criança construtora, que passa a ver o dinheiro acumulando aos poucos e pode planejar sua próxima obra sem ficar bloqueada.
 3. **Adotar uma velocidade máxima segura e estável (ex.: 180x ou 300x) com rótulos `▶`, `▶▶`, `▶▶▶`:**
    - Adicionar uma velocidade rápida calibrada entre 180x (90 ticks/s) e 300x (150 ticks/s), onde o consumo de CPU é de apenas ~1 ms por frame e a física/interpolação permanecem suaves.
