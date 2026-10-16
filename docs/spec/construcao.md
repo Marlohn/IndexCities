@@ -159,6 +159,16 @@
 - O custo apresentado da obra indica explicitamente quando materiais faltantes são importados e quanto essa importação aumenta o custo monetário.
 - Materiais precisam chegar fisicamente ao canteiro de obras, normalmente por veículos de carga, antes de serem consumidos pela construção.
 
+### Pavimentação física das ruas
+
+- A obra de rua inclui entrega de Asfalto por basculante, aplicação por pavimentadora e acabamento por rolo compactador. As máquinas e a equipe executam trabalho real no canteiro: o pavimento aparece atrás da pavimentadora conforme a execução efetiva, e o rolo finaliza o trecho aplicado. Não concluir por animação independente de materiais, equipe, máquinas ou acesso.
+- No início, as máquinas vêm com uma equipe externa pela conexão exterior, com deslocamento e disponibilidade físicos e custo incluído e discriminado na obra. Não exigir aquisição de máquinas municipais para construir a primeira rua. Uma futura frota própria do Pátio não integra esta decisão.
+- Máquinas externas mantêm identidade, localização, ocupação e recursos operacionais reais durante chegada, trabalho e saída. Não criar máquinas adicionais para aparentar atividade nem atender duas obras incompatíveis com o mesmo equipamento. Custos efetivos de contratação/operação usam dinheiro real e destinatário econômico legítimo; não cobrar novamente despesas já incluídas na equipe, no frete ou nos materiais.
+- A logística de chegada respeita o acesso de obra já aprovado; circular e trabalhar dentro do canteiro não torna a rua em construção utilizável pelo tráfego normal. Não atravessar trechos desconectados por inferência nem abrir uma rua de terra intermediária.
+- O jogador desenha e confirma a rua; fornecimento, máquinas e execução são automáticos. Falta de material, equipe, equipamento, verba ou acesso limita o avanço e mostra a causa concreta. A rua abre ao trânsito somente ao concluir a obra, preservando as regras de ligação e de trechos compartilhados.
+- Marcação de canteiro, base, aplicação de asfalto e acabamento tornam o progresso real perceptível no mundo, sem confirmações manuais por etapa nem espera extra apenas para prolongar a animação. Materiais continuam consumidos uma única vez na chegada ao canteiro, conforme a regra vigente; essas aparências não criam um segundo estoque ou consumo.
+- Duração e distribuição do trabalho, porte das máquinas e valores de contratação/operação são calibração dentro deste contrato: execução ágil quando os meios reais estão presentes, sem controle de temperatura de asfalto ou nova cadeia industrial obrigatória na V1.
+
 ### Demolição
 
 - A execução física da demolição de prédios e vias é instantânea no escopo atual.

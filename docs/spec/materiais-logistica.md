@@ -45,6 +45,13 @@
 - Importações continuam usando veículos e motoristas externos pela conexão com o exterior, conforme suas regras próprias.
 - Origem/disponibilização da frota inicial, custos operacionais específicos, escala de entregas e detalhes de alocação de motoristas ficam para prototipagem, sem novo sistema formal de cargos.
 
+### Caminhões reconhecíveis pelo material
+
+- Entregas de Areia e brita usam caminhão basculante com carga visível; Asfalto usa basculante com carga escura e cobertura; Concreto usa caminhão-betoneira; Aço e Madeira usam carroceria aberta com feixes ou peças presos. O caminhão fechado permanece nas entregas de mercadorias compatíveis com sua função.
+- A carroceria pertence ao veículo físico e permanece durante a viagem e o retorno vazio; não trocar o modelo apenas porque a carga foi descarregada. A apresentação de carga acompanha o material e a quantidade realmente transportados.
+- Caçamba, descarga e betoneira só apresentam trabalho de entrega quando a operação correspondente realmente ocorre. Peças móveis são controladas pelo estado da simulação, sem descarga decorativa, carga fictícia ou animação que faça a obra avançar por si.
+- A diferenciação inicial preserva capacidades, custos e regras logísticas existentes. Não exige que o jogador compre, escolha ou despache cada modelo; não acrescenta perecibilidade do concreto, temperatura do asfalto, novas receitas ou gestão manual de frota.
+
 ### Comércio exterior e logística externa
 
 - Caminhões vindos do exterior podem ser operados por motoristas externos, que não pertencem à população simulada da cidade.
