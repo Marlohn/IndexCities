@@ -55,7 +55,7 @@ Os estados são agregados por documento. Em material parcialmente revisado, cons
 | [Interface e ferramentas](exploration/player-interface.md) | PARCIALMENTE REVISADO | Primeira partida com dificuldades de uso; construção visual, inspeção/diagnóstico e controles em avaliação. |
 | [Qualidade ambiental local](exploration/local-environment-wellbeing.md) | PARCIALMENTE REVISADO | Direção humana registrada na SPEC; fórmulas e medições ainda exploratórias. |
 | [Escala e baselines](exploration/simulation-scale.md) | PARCIALMENTE REVISADO | Calendário, aceleração real e referências de calibração/desempenho. |
-| [Ritmo e velocidades de simulação](exploration/ritmo-velocidades.md) | PENDENTE | Benchmarks da PR #19, pesquisa sobre gerações com calendário real e medição de escala do núcleo (2026-10-16: passo fixo inviável para a meta; experimento de mobilidade por eventos proposto, não aprovado). |
+| [Ritmo e velocidades de simulação](exploration/ritmo-velocidades.md) | PENDENTE | Benchmarks da PR #19, pesquisa sobre gerações com calendário real e medição de escala e censo de movimento (2026-10-16: passo fixo inviável para a meta; custo dominante é recalcular agentes parados; experimento de agenda para sistemas estacionários proposto, não aprovado). |
 | [Motor de simulação](exploration/simulation-engine-performance-research.md) | PENDENTE | Pesquisa de CPU/GPU, eventos e alternativas de cálculo. |
 | [Técnicas de outros domínios](exploration/simulation-engine-cross-domain-research.md) | PENDENTE | Investigação transversal de aceleração causal. |
 | [Hipóteses radicais do motor](exploration/simulation-engine-radical-hypotheses.md) | PENDENTE | Alternativas especulativas; nenhuma decisão de arquitetura. |
