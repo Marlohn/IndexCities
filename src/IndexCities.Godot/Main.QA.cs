@@ -6,7 +6,7 @@ public partial class Main
     void PersistenceSmoke()
     {
         try{
-            var artifactRoot=System.IO.Path.GetFullPath(ProjectSettings.GlobalizePath("res://../../artifacts/verification"));CitySaves.VerificationDirectory=System.IO.Path.Combine(artifactRoot,"saves-"+Guid.NewGuid().ToString("N"));
+            var artifactRoot=_reviewSaveDir??System.IO.Path.GetFullPath(ProjectSettings.GlobalizePath("res://../../artifacts/verification"));CitySaves.VerificationDirectory=System.IO.Path.Combine(artifactRoot,"saves-"+Guid.NewGuid().ToString("N"));
             Require(_sim.PlaceBuilding(BuildingKind.CityHall,new(-152,16)).Success,"Fundação");Require(_sim.PlaceRoad(new(-192,0),new(-80,0)).Success,"Rua física");_sim.Advance(7200);
             _building=BuildingKind.House;_anchor=null;_cursor=new(-120,14);_hoverPreview=true;_rotation=Math.PI/2;_roadStart=null;_roadEnd=null;_roadTool=false;_speed=2;_autosaveMinutes=3;var first=_cityId;var expected=_sim.SaveToJson();var free=_sim.Available;SaveCity();
             _sim=new CitySimulation(99);_cityId=CitySaves.NewId();ClearSelection();_anchor=null;_building=BuildingKind.CityHall;_speed=0;SaveCity();Require(CitySaves.List().Count()==2,"Duas cidades independentes");
@@ -64,6 +64,7 @@ public partial class Main
     }
     async void TrafficRecoverySmoke()
     {
+        if(!QaPrecondition(OS.GetCmdlineUserArgs().Any(a=>a.StartsWith("--fixture="))&&_sim.State.Vehicles.Any(v=>v.External&&v.Status!=VehicleStatus.Outside),"traffic-recovery-smoke","uma cidade-checkpoint com caminhões externos ativos","-- --fixture=<caminho-do-checkpoint>"))return;
         try {
             Require(DisplayServer.GetName()!="headless"&&OS.GetCmdlineUserArgs().Any(a=>a.StartsWith("--fixture=")),"Reprodução do trânsito usa cópia de save em janela renderizada");
             SetSpeed(0);_autosaveMinutes=0;
@@ -93,7 +94,7 @@ public partial class Main
         if(++_performanceFrames<=60)return;if(_performanceStarted==0){_performanceStarted=at;_performanceStartingSimulation=_sim.State.ElapsedSeconds;}
         _frameMs.Add(interval);_engineDeltaMs.Add(delta*1000);if(GetWindow().HasFocus())_focusedFrameMs.Add(interval);_simulationMs.Add(simulationMs);_presentationMs.Add(presentationMs);if(_frameMs.Count<240||at-_performanceStarted<15_000_000)return;
         var ordered=_frameMs.Order().ToArray();var metrics=new{frames=_frameMs.Count,realSeconds=(at-_performanceStarted)/1_000_000.0,simulatedSeconds=_sim.State.ElapsedSeconds-_performanceStartingSimulation,engineDeltaMeanMs=_engineDeltaMs.Average(),fps=Engine.GetFramesPerSecond(),focusedFrames=_focusedFrameMs.Count,focusedFrameIntervalMeanMs=_focusedFrameMs.Count>0?(double?)_focusedFrameMs.Average():null,frameIntervalMeanMs=_frameMs.Average(),frameIntervalP95Ms=ordered[(int)Math.Floor((ordered.Length-1)*.95)],simulationMeanMs=_simulationMs.Average(),presentationMeanMs=_presentationMs.Average(),drawCalls=Performance.GetMonitor(Performance.Monitor.RenderTotalDrawCallsInFrame),nodes=Performance.GetMonitor(Performance.Monitor.ObjectNodeCount),buildings=_sim.State.Buildings.Count(b=>b.Completed&&!b.Removed),residents=_sim.Population,roads=_sim.State.Roads.Count,renderer=RenderingServer.GetCurrentRenderingMethod(),speed=_speed};
-        var file=ProjectSettings.GlobalizePath("res://../../artifacts/verification/recovery-v1/game-performance-speed"+_speed+"-"+DateTime.UtcNow.ToString("yyyyMMdd-HHmmss")+".json");System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(file)!);System.IO.File.WriteAllText(file,System.Text.Json.JsonSerializer.Serialize(metrics,new System.Text.Json.JsonSerializerOptions{WriteIndented=true}));GD.Print("INDEXCITIES_PERFORMANCE_OK "+System.Text.Json.JsonSerializer.Serialize(metrics));_sim.CheckInvariants();_performanceSmoke=false;GetTree().Quit();
+        var file=System.IO.Path.Combine(_reviewSaveDir??ProjectSettings.GlobalizePath("res://../../artifacts/verification"),"recovery-v1","game-performance-speed"+_speed+"-"+DateTime.UtcNow.ToString("yyyyMMdd-HHmmss")+".json");System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(file)!);System.IO.File.WriteAllText(file,System.Text.Json.JsonSerializer.Serialize(metrics,new System.Text.Json.JsonSerializerOptions{WriteIndented=true}));GD.Print("INDEXCITIES_PERFORMANCE_OK "+System.Text.Json.JsonSerializer.Serialize(metrics));_sim.CheckInvariants();_performanceSmoke=false;GetTree().Quit();
     }
     static void Require(bool condition,string message){if(!condition)throw new InvalidOperationException("Verificação do jogo: "+message);}
 }

@@ -1,0 +1,67 @@
+# Histórico de decisões — Serviços
+
+> Só registro histórico; as regras vigentes estão em docs/spec/servicos.md.
+
+- 2026-10-08 — Inadimplência de água e energia sem corte residencial individual: dívida real com o Caixa, recuperação gradual automática, sem interromper o fornecimento individual no primeiro modelo (opção 3B) → seção Água, esgoto, energia e poluição. Justificativa: cobrar dívida real sem exigir gestão por morador nem punir a residência com corte individual.
+- 2026-10-08 — Principal decisão urbana: dimensionar oferta e capacidade de água/energia pela demanda (direção reforçada) → seção Água, esgoto, energia e poluição. Justificativa: o foco de gameplay é planejar e expandir capacidade frente à demanda, não otimizar preço de contas.
+- 2026-10-08 — Cobrança por consumo real de água e energia, do saldo do responsável/empresa para o Caixa (opção 1B) → seção Água, esgoto, energia e poluição. Justificativa: cobrar pelo consumo efetivo sem tratar água/eletricidade como estoque transportável.
+- 2026-10-08 — Um emprego ativo por SIM no primeiro modelo (opção 4A) → [Trabalho, emprego e renda](../spec/populacao.md#trabalho-emprego-e-renda). Justificativa: simplifica trabalho, disponibilidade, deslocamentos e custos sem impedir concorrência real por trabalhadores.
+- 2026-10-09 — Escolas e hospitais públicos sem cobrança ao cidadão (opção 1A) → seção Serviços públicos.
+- 2026-10-09 — Veículos operacionais municipais incluídos no pacote de construção (opção 16B) → seção Serviços públicos.
+- 2026-10-09 — Escolha eficiente de serviços pelos SIMs por proximidade como filtro e comparação real (opção 1C) → seção Serviços públicos.
+- 2026-10-09 — Tipos iniciais de ocorrência criminal: furto e roubo patrimonial simples (opção 10A) → seção Necessidades e serviços urbanos.
+- 2026-10-09 — Ocorrências criminais podem ter vítimas SIMs reais e influenciar indicadores regionais de segurança (opção 8C) → seção Necessidades e serviços urbanos.
+- 2026-10-09 — Patrulhamento policial físico e preventivo por policiais SIMs reais (opção 9B) → seção Necessidades e serviços urbanos.
+- 2026-10-09 — Emergência médica e transporte de pacientes com ambulância real, mantendo o transporte próprio do SIM (opção 2A com ressalva) → seção Educação, saúde, segurança e emergências.
+- 2026-10-09 — Prioridade clínica de pacientes na fila por gravidade (opção 8A) → seção Educação, saúde, segurança e emergências.
+- 2026-10-09 — Hospital lotado: procurar outra unidade acessível e alertar o jogador de forma agregada (opção 5A) → seção Educação, saúde, segurança e emergências.
+- 2026-10-09 — Redirecionamento de detidos entre unidades penitenciárias acessíveis (opção 5B) → seção Educação, saúde, segurança e emergências.
+- 2026-10-09 — Propagação local de incêndios sem atravessar ruas em nenhuma circunstância (opção 6B com restrição expressa) → seção Educação, saúde, segurança e emergências.
+- 2026-10-09 — Responsabilidade pelo custo dos reparos por incêndio recai sobre o proprietário real (opção 5A) → seção Educação, saúde, segurança e emergências.
+- 2026-10-09 — Danos recuperáveis causados por incêndio exigem recursos, trabalho, custos e tempo reais (opção 4A) → seção Educação, saúde, segurança e emergências.
+- 2026-10-09 — Despacho prioritário de resposta emergencial por gravidade, tempo e recursos disponíveis (opção 5B) → seção Educação, saúde, segurança e emergências.
+- 2026-10-09 — Serviço funerário municipal gratuito para famílias, sem tarifa individual (opção 18A) → seção Educação, saúde, segurança e emergências.
+- 2026-10-09 — Cemitérios com lotação real limitada e crematórios como alternativa de capacidade finita (opção 4C) → seção Educação, saúde, segurança e emergências.
+- 2026-10-09 — Instituições de ensino por grandes etapas: escolas (básico/médio) e universidades (superior) (opção 3A) → seção Educação e qualificação.
+- 2026-10-09 — Escolaridade por níveis simples, sem profissões formais no primeiro modelo (opção 9A) → seção Educação e qualificação.
+- 2026-10-09 — Matrícula escolar por ordem de solicitação (opção 8B) → seção Educação e qualificação.
+- 2026-10-09 — Inadimplência empresarial de água e energia como dívida real da empresa, sem corte individual (opção 2A) → seção Água, esgoto, energia e poluição.
+- 2026-10-09 — Modelo inicial de capacidade global por recurso com escassez regional suave (opção confirmada) → seção Água, esgoto, energia e poluição.
+- 2026-10-09 — Excedente de esgoto não tratado causa poluição regional (opção 8A) → seção Água, esgoto, energia e poluição.
+- 2026-10-09 — Variação operacional simplificada de fontes solar e eólica (opção 6B) → seção Água, esgoto, energia e poluição.
+- 2026-10-09 — Usinas térmicas movidas a combustível físico real (opção 4A) → seção Água, esgoto, energia e poluição.
+- 2026-10-09 — Excedente elétrico sem exportação nem armazenamento (opção 5A) → seção Água, esgoto, energia e poluição.
+- 2026-10-09 — Destino do lixo quando acaba a capacidade: acúmulo local, sem sumiço nem aterro infinito (opção 7A) → seção Resíduos e falhas de infraestrutura.
+- 2026-10-09 — Instalações iniciais de destinação de resíduos: aterros e incineradores (opção 7B) → seção Resíduos e falhas de infraestrutura.
+- 2026-10-10 — Doenças individuais sem transmissão entre SIMs (opção 8A) → seção Necessidades e serviços urbanos.
+- 2026-10-10 — Furto e roubo patrimonial inicialmente restritos a dinheiro (opção 5A) → seção Necessidades e serviços urbanos.
+- 2026-10-10 — Restituição de dinheiro à vítima após captura do autor (opção 4B) → seção Necessidades e serviços urbanos.
+- 2026-10-10 — Origem de crimes por condições e oportunidades locais (opção 9B) → seção Necessidades e serviços urbanos.
+- 2026-10-10 — Sem vagas em todas as prisões acessíveis: liberação da custódia como consequência negativa (opção 15A) → seção Educação, saúde, segurança e emergências.
+- 2026-10-10 — Emprego do SIM preso decidido automaticamente pelo empregador (opção 10C) → seção Educação, saúde, segurança e emergências.
+- 2026-10-10 — Duração simples e finita de prisão, proporcional à gravidade e reincidência (opção 14A) → seção Educação, saúde, segurança e emergências.
+- 2026-10-10 — Origem de incêndios ligada ao uso real do edifício (opção 6A) → seção Educação, saúde, segurança e emergências.
+- 2026-10-10 — Poluição com influência espacial gradual (opção 10B) → seção Água, esgoto, energia e poluição.
+- 2026-10-10 — Redução gradual da poluição após cessar a fonte (opção 18A) → seção Água, esgoto, energia e poluição.
+- 2026-10-10 — Lotação permanente de aterros por volume acumulado (opção 4B) → seção Resíduos e falhas de infraestrutura.
+- 2026-10-10 — Retirada e incineração de lixo já depositado, liberando capacidade do aterro (opção 4B adicional) → seção Resíduos e falhas de infraestrutura.
+- 2026-10-10 — Incineração sem rejeitos sólidos no primeiro modelo: abstração consciente de massa (revisão explícita 2) → seção Resíduos e falhas de infraestrutura.
+- 2026-10-11 — Padrão visual de controles municipais em Grátis/Barato/Normal/Caro, como hipótese sujeita a revisão visual/testes (observação) → seção Serviços públicos.
+- 2026-10-11 — Direção de agência municipal: mais escolhas estratégicas agregadas ao jogador, sem mais microgerenciamento (orientação expressa) → seção Serviços públicos.
+- 2026-10-11 — Atendimento hospitalar público gratuito reconfirmado, em vez de tarifa por consulta/doença (opção 2A) → seção Serviços públicos.
+- 2026-10-11 — Efeito emocional individual de furto/roubo: queda temporária de satisfação e sensação de segurança da vítima (opção 7A) → seção Necessidades e serviços urbanos.
+- 2026-10-11 — Critério individual para autoria de crime, sem sorteio nem classificação por atributo isolado (opção 13A reafirmada) → seção Necessidades e serviços urbanos.
+- 2026-10-11 — Distribuição automática do patrulhamento policial pela simulação (opção 7A) → seção Necessidades e serviços urbanos.
+- 2026-10-11 — Vans escolares com isenção por capacidade econômica, reavaliada automaticamente (escolha B, refinamento 1A) → seção Educação, saúde, segurança e emergências.
+- 2026-10-11 — Prioridade por necessidade real no transporte escolar, com ordem de pedido só como desempate (revisão 2A, substitui a prioridade universal 24B) → seção Educação, saúde, segurança e emergências.
+- 2026-10-11 — Progressão escolar exige frequência efetiva, não apenas matrícula (opção 3A) → seção Educação, saúde, segurança e emergências.
+- 2026-10-11 — Acompanhamento de crianças pequenas à creche e autonomia escolar gradual (pergunta 6C) → seção Educação, saúde, segurança e emergências.
+- 2026-10-11 — Vans escolares municipais para escolas e creches, oferta opcional de gestão agregada (opção B) → seção Educação, saúde, segurança e emergências.
+- 2026-10-11 — Ocupação residencial após incêndio: permanecer se habitável, procurar outra residência se inabitável (opção 5A) → seção Educação, saúde, segurança e emergências.
+- 2026-10-11 — Escolarização também na vida adulta, com frequência real (opção 6A) → seção Educação e qualificação.
+- 2026-10-11 — Conciliação automática de estudo adulto com o único emprego ativo (revisão 9A) → seção Educação e qualificação.
+- 2026-10-11 — Escolaridade prévia de imigrantes, sem exigir escola local antes da chegada (opção 4A) → seção Educação e qualificação.
+- 2026-10-11 — Prioridade de vagas universitárias por ordem de solicitação de matrícula (opção 5A) → seção Educação e qualificação.
+- 2026-10-11 — Continuidade da escola após mudança de bairro, sem transferência compulsória (opção 10A) → seção Educação e qualificação.
+- 2026-10-11 — Preço automático de água e energia mantido; tarifa de ônibus passa a faixas Grátis/Barata/Normal/Cara (regra 2B parcialmente substituída) → seção Água, esgoto, energia e poluição.
+- 2026-10-11 — Captação em fonte poluída com três caminhos de resposta, aprovada para teste inicial de gameplay (opção 19B ampliada) → seção Água, esgoto, energia e poluição.

@@ -1,0 +1,38 @@
+# Histórico de decisões — Transporte e circulação
+
+> Só registro histórico; as regras vigentes estão em [docs/spec/transporte-circulacao.md](../spec/transporte-circulacao.md).
+
+- 2026-10-09 — Linhas de ônibus criadas de forma assistida: jogador posiciona pontos de parada e a simulação organiza linhas/trajetos reais (opção 3B) → Transporte público e veículos.
+- 2026-10-09 — Frota inicial de ônibus finita incluída no custo da garagem municipal, com compra pelo Caixa (opção 6A) → Transporte público e veículos.
+- 2026-10-09 — Garagens municipais limitam fisicamente a frota; simulação distribui ônibus entre linhas automaticamente (opção 3A) → Transporte público e veículos.
+- 2026-10-09 — Táxis reais priorizados como próximo modal de passageiros; VLT/metrô/micro-ônibus ficam para depois (escolha expressa) → Transporte público e veículos.
+- 2026-10-09 — Revenda de automóveis usados entre SIMs com transferência real do mesmo veículo físico (opção 15A) → Transporte público e veículos.
+- 2026-10-09 — Propriedade individual de automóveis pelos SIMs, com dinheiro real e patrimônio registrado (opção 4A) → Transporte público e veículos.
+- 2026-10-09 — Procura de estacionamento em vagas reais próximas ao destino e caminhada final (opção 2B) → Transporte público e veículos.
+- 2026-10-09 — Carros e ônibus vêm de importação pela conexão exterior ou produção local real (opção 8C) → Transporte público e veículos.
+- 2026-10-09 — Veículos de serviço municipal abastecem em postos reais, com combustível e Caixa reais (opção 8A) → Transporte público e veículos.
+- 2026-10-09 — Bicicletas de propriedade individual compradas com dinheiro real (opção 2A) → Mobilidade ativa e circulação de pedestres.
+- 2026-10-09 — Dois perfis iniciais de rua urbana: 1+1 e 2+2, com custos e materiais coerentes (opção 20B refinada) → Vias, calçadas e estacionamento.
+- 2026-10-09 — Faixas de pedestres geradas automaticamente pela malha viária (opção 19A) → Regras de circulação viária.
+- 2026-10-09 — Jogador decide semáforo ou preferência por cruzamento, escolhendo a via prioritária (opção 10C) → Regras de circulação viária.
+- 2026-10-09 — Acidentes de trânsito ficam fora do modelo inicial (opção 7A) → Operação física de serviços e embarque.
+- 2026-10-09 — Tarifa privada de táxi calculada por distância e tempo (opção 11B) → Transporte público e veículos.
+- 2026-10-09 — Chamada automática de táxi pelo SIM, sem pontos de táxi obrigatórios (opção 12A) → Transporte público e veículos.
+- 2026-10-09 — Táxis operados por empresas privadas com frota, motoristas e pagamento reais (opção 1B) → Transporte público e veículos.
+- 2026-10-09 — Estacionamento misto: vagas na rua, vagas privadas e estacionamentos públicos de superfície; edifícios-garagem não aprovados (opções 3A+B) → Vias, calçadas e estacionamento.
+- 2026-10-10 — Ampliação de frota de ônibus por solicitação agregada, até o limite livre das garagens (opção 3C) → Transporte público e veículos.
+- 2026-10-10 — Desgaste simples e substituição real de veículos motorizados, sem manutenção por peça (opção 8B) → Transporte público e veículos.
+- 2026-10-10 — Reserva física municipal de combustível para veículos essenciais (opção 10B) → Transporte público e veículos.
+- 2026-10-10 — Bicicletas circulam na pista junto ao meio-fio em fluxo lateral próprio (refinamento) → Mobilidade ativa e circulação de pedestres.
+- 2026-10-10 — Padrão automático inicial de cruzamentos urbanos conforme perfis de via e encontro em T (B ajustado) → Regras de circulação viária.
+- 2026-10-10 — Replanejamento viário por bloqueio, mudança relevante ou congestionamento persistente (opção 5B) → Operação física de serviços e embarque.
+- 2026-10-10 — Ciclovias dedicadas adiadas para evolução futura (escolha explícita de escopo) → Mobilidade ativa e circulação de pedestres.
+- 2026-10-11 — Oferta noturna adaptativa de ônibus conforme demanda e recursos reais (pergunta 8B) → Transporte público e veículos.
+- 2026-10-11 — Compartilhamento real de carro particular entre adultos da família (pergunta 10B) → Transporte público e veículos.
+- 2026-10-11 — Carona simultânea de membros da mesma família no mesmo carro (pergunta 7A) → Transporte público e veículos.
+- 2026-10-11 — Deslocamentos recorrentes longos reduzem gradualmente a satisfação do SIM (opção 10B) → Operação física de serviços e embarque.
+- 2026-10-11 — Capacidade física limitada de carga/descarga por estabelecimento (escolha 9A) → Operação física de serviços e embarque.
+- 2026-10-11 — Iluminação pública embutida automaticamente nas vias urbanas, com energia real (pergunta 5A) → Vias, calçadas e estacionamento.
+- 2026-10-11 — Caminhos exclusivos para pedestres adiados (escolha 8A) → Vias, calçadas e estacionamento.
+- 2026-10-11 — Tarifas de estacionamentos municipais em quatro faixas: Grátis, Barata, Normal, Cara (revisão expressa 2B) → Vias, calçadas e estacionamento.
+- 2026-10-13 — Faixas compartilhadas: travessias em cruzamentos e faixas compartilhadas nos trechos retos (aprovação humana) → Regras de circulação viária.
