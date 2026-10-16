@@ -7,9 +7,10 @@ namespace IndexCities.Game;
 // cada causa de obra parada/atrasada vira uma frase curta com a ação que
 // resolve, no lugar do texto tecnico de diagnostico. Cada frase deriva da
 // causa real ja calculada (project.Cause, ver Construction.cs/Maintenance.cs);
-// nada e recalculado aqui. O detalhe tecnico continua no tooltip do rotulo.
-// O icone reutiliza pictogramas ja existentes em Assets/UI; quando nao ha
-// pictograma proprio, usa-se um simbolo simples como prefixo. So apresentacao.
+// nada e recalculado aqui. As causas sao as constantes de WorkCause, para que
+// toda causa gravada pela simulacao tenha frase. O detalhe tecnico continua no
+// tooltip do rotulo. O icone reutiliza pictogramas ja existentes em Assets/UI;
+// quando nao ha pictograma adequado, a frase fica sem icone. So apresentacao.
 public partial class Main
 {
     static readonly Dictionary<string,Texture2D?> WorkCauseTextures=new();
@@ -23,73 +24,99 @@ public partial class Main
     }
 
     // Texto curto exibido + arquivo de icone (sem extensao) quando existe.
-    // Icon==null: o proprio texto ja comeca com um simbolo simples ("⚠", "●").
-    static (string Text,string? Icon) WorkCauseView(string cause)=>cause switch{
+    // Icon==null: a frase fica so com texto (sem pictograma adequado em Assets/UI).
+    static (string Text,string? Icon) WorkCauseView(string cause,bool isMaintenance)=>
+        WorkCauseViewOrNull(cause,isMaintenance)??(cause,null);
+
+    // null quando a causa nao tem traducao (fallback mostra o texto tecnico).
+    static (string Text,string? Icon)? WorkCauseViewOrNull(string cause,bool isMaintenance)=>cause switch{
         // Acesso/rua: sem rota pronta ate o canteiro.
-        "Sem acesso para materiais/equipe" => ("Sem acesso à obra — ligue uma rua","problem_road"),
-        "Sem acesso viário" => ("Sem rua até a obra — construa uma rua","problem_road"),
-        "Sem rua urbana: a obra aguardará acesso" => ("Sem rua até a obra — construa uma rua","problem_road"),
-        "Rua sem ligação ao exterior: a obra aguardará acesso" => ("Sem ligação ao exterior — conecte a rua","problem_road"),
-        "Rua em obra junto à entrada: aguardando ligação pronta" => ("Rua em obra na entrada — aguarde a ligação","problem_road"),
-        "Sem ligação pronta ao exterior: a obra aguardará acesso; ligação planejada não libera entregas" => ("Rua sem ligação — conecte a uma via pronta","problem_road"),
-        "Trecho construído; aguardando ligação ao exterior" => ("Rua pronta sem ligação — conecte ao exterior","problem_road"),
-        "Rota de obra interrompida" => ("Rota interrompida — reconecte a rua","problem_road"),
+        WorkCause.NoMaterialsAccess => ("Sem caminho pela rua até a obra — ligue a obra à rede que sai da cidade","problem_road"),
+        WorkCause.NoRoadAccess => ("Sem rua até a obra — construa uma rua","problem_road"),
+        WorkCause.NoUrbanRoad => ("Sem rua até a obra — construa uma rua","problem_road"),
+        WorkCause.RoadWithoutExterior => ("Sem ligação ao exterior — conecte a rua","problem_road"),
+        WorkCause.RoadWorkAtEntrance => ("Rua em obra na entrada — aguarde a ligação","problem_road"),
+        WorkCause.NoReadyExteriorLink => ("Rua sem ligação — conecte a uma via pronta","problem_road"),
+        WorkCause.RoadBuiltAwaitingLink => ("Rua pronta sem ligação — conecte ao exterior","problem_road"),
+        WorkCause.WorkRouteInterrupted => ("Rota interrompida — reconecte a rua","problem_road"),
         // Transporte e materiais.
-        "Aguardando caminhão externo disponível" => ("Sem caminhão livre — aguarde a entrega","activity_cargo"),
-        "Aguardando entrega física" => ("Entrega a caminho — aguarde o caminhão","activity_cargo"),
-        "Materiais em trânsito" => ("Materiais a caminho — aguarde a entrega","activity_cargo"),
-        "Fornecedor externo sem material disponível" => ("Fornecedor sem material — aguarde reposição","problem_stock"),
-        "Faltam materiais" => ("Falta material — aguardando entrega","problem_stock"),
-        "Fornecedor externo sem combustível" => ("Fornecedor sem combustível — aguarde","problem_energy"),
+        WorkCause.AwaitingExternalTruck => ("Sem caminhão livre — aguarde a entrega","activity_cargo"),
+        WorkCause.AwaitingPhysicalDelivery => ("Entrega a caminho — aguarde o caminhão","activity_cargo"),
+        WorkCause.MaterialsInTransit => ("Materiais a caminho — aguarde a entrega","activity_cargo"),
+        WorkCause.SupplierOutOfMaterial => ("Fornecedor sem material — aguarde reposição","problem_stock"),
+        WorkCause.MissingMaterials => ("Falta material — aguardando entrega","problem_stock"),
+        WorkCause.SupplierOutOfFuel => ("Fornecedor sem combustível — aguarde reposição","problem_stock"),
         // Equipe.
-        "Aguardando equipe física no canteiro" => ("Sem equipe no canteiro — aguarde trabalhadores","problem_staff"),
-        // Verba da obra: acao e cancelar; sem pictograma proprio.
-        "Compromisso restante insuficiente" => ("⚠ Verba da obra esgotada — cancele a obra",null),
-        "Compromisso insuficiente para transportar equipe externa" => ("⚠ Sem verba p/ trazer equipe — cancele a obra",null),
-        "Sem orçamento para pagar equipe externa" => ("⚠ Sem verba p/ a equipe — cancele a obra",null),
-        "Equipe externa aguardando pagamento" => ("⚠ Equipe sem pagamento — cancele a obra",null),
-        // Estados informativos (obra segue normalmente).
-        "Construção em andamento" => ("● Em construção",null),
-        "Trecho válido; ligação exterior disponível" => ("● Trecho válido — enviando material e equipe",null),
-        "Posição válida" => ("● Obra encomendada — enviando material e equipe",null),
-        "A captação precisará alcançar a fonte natural" => ("Distante da água — aproxime a captação","problem_intake"),
+        WorkCause.AwaitingCrewOnSite => ("Sem equipe no canteiro — aguarde trabalhadores","problem_staff"),
+        // Verba da obra. Numa obra comum a acao disponivel e cancelar; numa
+        // manutencao nao ha cancelamento (CancelProject recusa manutencao), entao
+        // a frase informa que a manutencao e automatica.
+        WorkCause.RemainingCommitmentInsufficient => isMaintenance
+            ? ("Verba da manutenção esgotada — manutenção automática","problem_maintenance")
+            : ("Sem verba restante para a obra — cancele a obra","demolish"),
+        WorkCause.CommitmentInsufficientForCrew => isMaintenance
+            ? ("Sem verba para trazer a equipe — manutenção automática","problem_maintenance")
+            : ("Sem verba para trazer a equipe — cancele a obra","demolish"),
+        WorkCause.NoBudgetForExternalCrew => isMaintenance
+            ? ("Sem verba para pagar a equipe — manutenção automática","problem_maintenance")
+            : ("Sem verba para pagar a equipe — cancele a obra","demolish"),
+        WorkCause.ExternalCrewAwaitingPayment => isMaintenance
+            ? ("Equipe sem pagamento — manutenção automática","problem_maintenance")
+            : ("Equipe sem pagamento — cancele a obra","demolish"),
+        // Estados informativos (obra segue normalmente; sem pictograma proprio).
+        WorkCause.UnderConstruction => ("Em construção",null),
+        WorkCause.ValidStretchExteriorAvailable => ("Trecho válido — enviando material e equipe",null),
+        WorkCause.ValidPosition => ("Obra encomendada — aguardando material e equipe",null),
+        WorkCause.IntakeNeedsNaturalSource => ("Distante da água — aproxime a captação","problem_intake"),
         // Manutencao.
-        "Manutenção aguardando materiais e equipe reais" => ("Manutenção parada — aguarda material e equipe","problem_maintenance"),
-        "Manutenção em andamento" => ("Manutenção em andamento","problem_maintenance"),
-        "Manutenção encerrada: infraestrutura removida; pagamentos e carga preservados" => ("Manutenção encerrada — infraestrutura removida","problem_maintenance"),
-        "Manutenção realizada com materiais e trabalho efetivos" => ("Manutenção concluída","problem_maintenance"),
+        WorkCause.MaintenanceAwaitingMaterials => ("Manutenção parada — aguarda material e equipe","problem_maintenance"),
+        WorkCause.MaintenanceInProgress => ("Manutenção em andamento","problem_maintenance"),
+        WorkCause.MaintenanceEndedRemoved => ("Manutenção encerrada — infraestrutura removida","problem_maintenance"),
+        WorkCause.MaintenanceDone => ("Manutenção concluída","problem_maintenance"),
         // Cancelamento.
-        "Cancelada; gastos pagos e material consumido não voltam" => ("Cancelada — gastos pagos não voltam","demolish"),
+        WorkCause.Cancelled => ("Cancelada — gastos pagos não voltam","demolish"),
+        // Obra concluida (nao aparece no menu; mantida para o QA de cobertura).
+        WorkCause.Completed => ("Concluída",null),
         // Causa desconhecida: mantem o texto tecnico (sem inventar traducao).
-        _ => (cause,null),
+        _ => null,
     };
 
     // Cenário de QA do menu de Obras: a obra sem acesso viario tem causa real e
     // deve aparecer como frase curta com icone, mantendo o texto tecnico no
-    // tooltip. Nao altera a simulacao; apenas le e verifica a apresentacao.
+    // tooltip. Tambem percorre TODAS as causas de obra da simulacao (WorkCause.All)
+    // e exige uma frase para cada uma, nas duas variantes (obra e manutencao), para
+    // que uma causa nova sem traducao falhe em vez de cair em silencio no fallback.
+    // Nao altera a simulacao; apenas le e verifica a apresentacao.
     void WorkCauseSmoke()
     {
         try{
             _speed=0;_autosaveMinutes=0;
+            foreach(var cause in WorkCause.All){
+                Require(WorkCauseViewOrNull(cause,false)!=null,"Causa de obra sem frase: "+cause);
+                Require(WorkCauseViewOrNull(cause,true)!=null,"Causa de manutenção sem frase: "+cause);
+            }
             var placed=_sim.PlaceBuilding(BuildingKind.CityHall,new(-152,16));
             Require(placed.Success,"Prefeitura encomendada");
             var project=_sim.State.Projects.Single();
             Require(project.Status!=WorkStatus.Completed,"Obra pendente aparece no menu");
-            Require(project.Cause=="Sem rua urbana: a obra aguardará acesso","Causa real de obra sem rua: "+project.Cause);
+            Require(project.Cause==WorkCause.NoUrbanRoad,"Causa real de obra sem rua: "+project.Cause);
             var before=_sim.SaveToJson();
             ShowAlerts();
             var modal=_modal;Require(modal!=null,"Menu de Obras abre");
-            var expected=((int)(project.Progress*100))+"% · Sem rua até a obra — construa uma rua";
+            var expected=project.Progress.ToString("P0",Pt)+" · Sem rua até a obra — construa uma rua";
             var label=RecoveryNodes<Label>(modal!).Single(l=>l.Name.ToString()=="ProjectCause"+project.Id);
             Require(label.Text==expected,"Frase curta para obra sem rua: "+label.Text);
             Require(label.TooltipText==project.Cause,"Tooltip preserva o texto técnico");
             var icon=RecoveryNodes<TextureRect>(modal!).Single(i=>i.Name.ToString()=="ProjectCauseIcon"+project.Id);
             Require(icon.Visible&&icon.Texture!=null,"Ícone reconhecível de rua");
-            Require(WorkCauseView("Causa nova sem tradução").Text=="Causa nova sem tradução"
-                &&WorkCauseView("Causa nova sem tradução").Icon==null,"Causa desconhecida não inventa frase");
-            Require(WorkCauseView("Cancelada; gastos pagos e material consumido não voltam").Icon=="demolish","Cancelada usa ícone de demolição");
+            Require(WorkCauseView("Causa nova sem tradução",false).Text=="Causa nova sem tradução"
+                &&WorkCauseView("Causa nova sem tradução",false).Icon==null,"Causa desconhecida não inventa frase");
+            Require(WorkCauseView(WorkCause.Cancelled,false).Icon=="demolish","Cancelada usa ícone de demolição");
+            Require(WorkCauseView(WorkCause.RemainingCommitmentInsufficient,true).Text.Contains("manutenção automática")
+                &&WorkCauseView(WorkCause.RemainingCommitmentInsufficient,false).Text.Contains("cancele a obra"),
+                "Verba de manutenção não manda cancelar; verba de obra manda");
             Require(_sim.SaveToJson()==before,"Abrir o menu não altera a cidade");
-            GD.Print("INDEXCITIES_WORK_CAUSE_OK phrase="+label.Text+" tooltip="+label.TooltipText+" icon=problem_road");
+            GD.Print("INDEXCITIES_WORK_CAUSE_OK causes="+WorkCause.All.Length+" phrase="+label.Text+" tooltip="+label.TooltipText+" icon=problem_road");
             GetTree().Quit();
         }catch(Exception exception){GD.PushError(exception.ToString());GetTree().Quit(1);}
     }
