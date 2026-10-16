@@ -79,7 +79,7 @@ public partial class Main
             _world.Sync(_sim.State);
             measurements.Add(new {Kind="building-work",Meshes=RecoveryNodes<MeshInstance3D>(_world).Where(m=>m.Mesh is BoxMesh box&&box.Size.Y==.22f).Select(Bounds).ToArray()});
             System.IO.File.WriteAllText(System.IO.Path.Combine(directory,"measurements.json"),System.Text.Json.JsonSerializer.Serialize(new {TerrainY=_world.VisibleTerrainHeight(new(-192,24)),CameraElevationDegrees=Math.Atan2(330,Math.Sqrt(300*300+300*300))*180/Math.PI,Measurements=measurements},new System.Text.Json.JsonSerializerOptions{WriteIndented=true}));
-            GD.Print("GRID_ALIGNMENT_SMOKE_OK "+directory);GetTree().Quit();
+            GD.Print((label=="before"?"BASELINE: sem verificações ":"")+"GRID_ALIGNMENT_SMOKE_OK "+directory);GetTree().Quit();
         } catch(Exception error) {GD.PrintErr("GRID_ALIGNMENT_SMOKE_FAIL "+error);GetTree().Quit(1);}
     }
 }
