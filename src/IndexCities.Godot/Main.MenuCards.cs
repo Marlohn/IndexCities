@@ -179,9 +179,12 @@ public partial class Main
         foreach (var project in projects) {
             var id = project.Id; var building = state.Buildings.FirstOrDefault(b => b.Id == project.BuildingId);
             var group = Card(details, project.IsMaintenance ? "Manutenção" : building?.Definition.Name ?? "Rua 1+1");
-            var causeLabel=LiveText(group,()=>project.Progress.ToString("P0",Pt)+" · "+WorkCauseShort(project.Cause),16);
-            causeLabel.MouseFilter=Control.MouseFilterEnum.Stop;causeLabel.TooltipText=project.Cause;causeLabel.Name="ProjectCause"+id;
-            updates.Add(()=>causeLabel.TooltipText=project.Cause);
+            var causeRow=new HBoxContainer{Name="ProjectCauseRow"+id};causeRow.AddThemeConstantOverride("separation",6);group.AddChild(causeRow);
+            var causeIcon=new TextureRect{Name="ProjectCauseIcon"+id,CustomMinimumSize=new(20,20),SizeFlagsVertical=Control.SizeFlags.ShrinkCenter,MouseFilter=Control.MouseFilterEnum.Ignore,ExpandMode=TextureRect.ExpandModeEnum.IgnoreSize,StretchMode=TextureRect.StretchModeEnum.KeepAspectCentered};
+            causeRow.AddChild(causeIcon);
+            var causeLabel=Text(causeRow,"",16);causeLabel.MouseFilter=Control.MouseFilterEnum.Stop;causeLabel.Name="ProjectCause"+id;
+            void UpdateCause(){var view=WorkCauseView(project.Cause);var texture=WorkCauseTexture(view.Icon);causeIcon.Texture=texture;causeIcon.Visible=texture!=null;causeLabel.Text=project.Progress.ToString("P0",Pt)+" · "+view.Text;causeLabel.TooltipText=project.Cause;}
+            UpdateCause();updates.Add(UpdateCause);
             var progress = new ProgressBar { MinValue = 0, MaxValue = 100, Value = project.Progress * 100, ShowPercentage = false, CustomMinimumSize = new(0, 8) }; group.AddChild(progress);
             updates.Add(()=>progress.Value=project.Progress*100);
             LiveText(group,()=>"Pago: " + Cash(project.CostPaid) + " · compromisso: " + Cash(project.BudgetRemaining),13);

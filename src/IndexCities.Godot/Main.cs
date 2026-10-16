@@ -51,6 +51,7 @@ public partial class Main:Node3D
         if(args.Contains("--environment-smoke"))CallDeferred(MethodName.EnvironmentSmoke);
         if(args.Contains("--lake-recovery-smoke"))CallDeferred(MethodName.LakeRecoverySmoke);
         if(args.Contains("--water-intake-range-smoke"))CallDeferred(MethodName.WaterIntakeRangeSmoke);
+        if(args.Contains("--work-cause-smoke"))CallDeferred(MethodName.WorkCauseSmoke);
         if(args.Contains("--visual-review-smoke"))CallDeferred(MethodName.VisualReviewSmoke);
         if(args.Contains("--real-time-start-smoke"))CallDeferred(MethodName.RealTimeStartSmoke);
         if(args.Contains("--interaction-regressions-smoke"))CallDeferred(MethodName.InteractionRegressionSmoke);
