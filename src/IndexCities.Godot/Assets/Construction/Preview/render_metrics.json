@@ -1,0 +1,54 @@
+{
+  "adapter": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+  "metrics": [
+    {
+      "capture": "board_urban_loaded_iso",
+      "draw_calls": 641,
+      "objects": 641,
+      "primitives": 57096
+    },
+    {
+      "capture": "board_urban_loaded_back",
+      "draw_calls": 537,
+      "objects": 537,
+      "primitives": 47536
+    },
+    {
+      "capture": "detail_paver_hopper",
+      "draw_calls": 57,
+      "objects": 57,
+      "primitives": 3060
+    },
+    {
+      "capture": "detail_paver_screed",
+      "draw_calls": 57,
+      "objects": 57,
+      "primitives": 3060
+    },
+    {
+      "capture": "detail_mixer_front_iso",
+      "draw_calls": 77,
+      "objects": 77,
+      "primitives": 5872
+    },
+    {
+      "capture": "lineup_front_operation",
+      "draw_calls": 319,
+      "objects": 319,
+      "primitives": 27932
+    },
+    {
+      "capture": "lineup_back_operation",
+      "draw_calls": 319,
+      "objects": 319,
+      "primitives": 27932
+    }
+  ],
+  "note": "Local preview counts, not gameplay performance benchmark; no FPS/GPU-time conclusion",
+  "renderer": "gl_compatibility",
+  "viewport": [
+    2000.0,
+    1200.0,
+    0.0
+  ]
+}

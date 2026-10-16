@@ -1,0 +1,32 @@
+[gd_resource type="ArrayMesh" format=4]
+
+[ext_resource type="Material" path="res://Assets/Construction/Materials/construction_ochre.tres" id="1_2genu"]
+[ext_resource type="Material" path="res://Assets/Construction/Materials/construction_ochre_dark.tres" id="2_4gorj"]
+
+[resource]
+resource_name = "vehicle.asphalt_paver.a.hopper_1"
+_surfaces = [{
+"aabb": AABB(-0.035496216, -0.05, -0.72, 0.4779962, 0.95000005, 1.44),
+"attribute_data": PackedByteArray("AAAAAHsULj/NzMw+exQuv83MzD57FC4/AAAAAHsULj8AAAAAexQuv83MzD57FC6/exQuP4/C9b57FC6/Urhev3sULj9SuF6/exQuP4/C9b57FC6/KVyPvnsULr9SuF6/AAAAAI/C9b3NzMw+KVyPvs3MzD6uR+G+AAAAAM3MTD2uR8E+7FE4P1yP4j7sUTi/XI/iPuxROD+uR8E+7FE4P65HwT7sUTi/XI/iPuxROL+uR8E+7FE4v1yP4j7sUTg/XI/iPuxROL+uR8E+7FE4P+xROD+F61G/7FE4v2dmZr/sUTi/hetRv+xROD+F61G/7FE4P2dmZr/sUTi/Z2Zmv+xROL+F61G/7FE4P2dmZr/sUTg/hetRv+xROL9nZma/rkfBPoXrUb9cj+I+Z2Zmv1yP4j6F61G/rkfBPmdmZr9cj+I+hetRv65HwT5nZma/rkfBPoXrUb9cj+I+Z2Zmv1z53j7sUTg/PqC6PgrXIz9c+d4+CtcjPz6guj7sUTg/e2QRvexROD97ZBE9CtcjP3tkEb0K1yM/e2QRvexROD97ZBE97FE4P3tkET0K1yM/e2QRPSUJp70+oLo+x3Bjv3tkEb11kPK9XPnePt3/Wb97ZBG9dZDyvVz53j7d/1m/e2QRPSUJp717ZBG9dZDyvT6guj7HcGO/XPnePt3/Wb/sUTg/JQmnvQrXIz/d/1m/CtcjPyUJp73sUTg/3f9ZvwrXIz91kPK97FE4P8dwY7/sUTg/dZDyvQrXIz/HcGO/"),
+"format": 34359742487,
+"index_count": 90,
+"index_data": PackedByteArray("AAABAAIAAwAEAAUABgAHAAgACQAKAAsADAANAA4ADAAPAA0AEAARABIAEwAUABUAFgAXABgAFgAZABcAGgAbABwAHQAeAB8AIAAhACIAIAAjACEAJAAlACYAJAAnACUAKAApACoAKAArACkALAAtAC4ALAAvAC0AMAAxADIAMwA0ADUANgA3ADgANgA5ADcAOgA7ADwAPQA+AD8AQABBAEIAQABDAEEARABFAEYARABHAEUA"),
+"material": ExtResource("1_2genu"),
+"name": "construction_ochre",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 72,
+"vertex_data": PackedByteArray("AAAAAM3MzD17FC4/zczMPilcjz57FC6/zczMPo/C9T57FC4/AAAAAM3MzD17FC4/AAAAAM3MTL17FC6/zczMPilcjz57FC6/7FG4Po/C9T57FC4/7FG4PlK4Xj97FC6/7FG4PlK4Xj97FC4/7FG4Po/C9T57FC4/7FG4Pilcjz57FC6/7FG4PlK4Xj97FC6/AAAAAI/C9T17FC6/zczMPilcjz57FC6/zczMPq5H4T57FC6/AAAAAM3MTL17FC6/rkfBPmdmZj/sUTg/XI/iPmdmZj/sUTi/XI/iPmdmZj/sUTg/rkfBPmdmZj/sUTg/rkfBPmdmZj/sUTi/XI/iPmdmZj/sUTi/rkfBPoXrUT/sUTi/XI/iPoXrUT/sUTg/XI/iPoXrUT/sUTi/rkfBPoXrUT/sUTg/XI/iPoXrUT/sUTg/XI/iPmdmZj/sUTi/XI/iPoXrUT/sUTi/XI/iPoXrUT/sUTg/XI/iPmdmZj/sUTg/XI/iPmdmZj/sUTi/rkfBPoXrUT/sUTi/rkfBPmdmZj/sUTg/rkfBPoXrUT/sUTg/rkfBPmdmZj/sUTi/rkfBPoXrUT/sUTg/XI/iPmdmZj/sUTg/XI/iPoXrUT/sUTg/rkfBPmdmZj/sUTg/XI/iPoXrUT/sUTi/rkfBPmdmZj/sUTi/rkfBPoXrUT/sUTi/XI/iPmdmZj/sUTi/XPnePt3/WT/sUTg/PqC6PsdwYz8K1yM/XPnePt3/WT8K1yM/PqC6PsdwYz/sUTg/e2QRvXWQ8j3sUTg/e2QRPSUJpz0K1yM/e2QRvXWQ8j0K1yM/e2QRvXWQ8j3sUTg/e2QRPSUJpz3sUTg/e2QRPSUJpz0K1yM/e2QRPSUJpz0K1yM/PqC6PsdwYz8K1yM/e2QRvXWQ8j0K1yM/XPnePt3/WT8K1yM/e2QRvXWQ8j3sUTg/XPnePt3/WT/sUTg/e2QRPSUJpz3sUTg/e2QRvXWQ8j3sUTg/PqC6PsdwYz/sUTg/XPnePt3/WT/sUTg/e2QRPSUJpz3sUTg/XPnePt3/WT8K1yM/e2QRPSUJpz0K1yM/XPnePt3/WT/sUTg/e2QRvXWQ8j0K1yM/PqC6PsdwYz/sUTg/e2QRvXWQ8j3sUTg/PqC6PsdwYz8K1yM/CT0CxhxNTqoJPQLGHE1Oqgk9AsYcTU6qI0JuyRtIjaojQm7JG0iNqiNCbskbSI2qAAD/f/9//78AAP9//3//vwAA/3//f/+/AAD/f/9//78AAP9//3//vwAA/3//f/+///////9/AID//////38AgP//////fwCA//////9/AID/f///AAD/v/9///8AAP+//3///wAA/7//f///AAD/v/9///8AAP+//3///wAA/7//fwAAAAD/v/9/AAAAAP+//38AAAAA/7//fwAAAAD/v////3//f/+/////f/9//7////9//3//v////3//f/+/////f/9//7////9//3//vwAA/3//f/+/AAD/f/9//78AAP9//3//vwAA/3//f/+//3//f/9/AID/f/9//38AgP9//3//fwCA/3//f/9/AID//////38AgP//////fwCA//////9/AID//////38AgMKrPNR2OJPSwqs81HY4k9LCqzzUdjiT0sKrPNR2OJPSPFTCK3Y4k9I8VMIrdjiT0jxUwit2OJPSPFTCK3Y4k9I8VMIrdjiT0jxUwit2OJPS//////9/AID//////38AgP//////fwCA//////9/AID/f/9//38AgP9//3//fwCA/3//f/9/AID/f/9//38AgP9//3//fwCA/3//f/9/AIA81DxUsWxqrTzUPFSxbGqtPNQ8VLFsaq081DxUsWxqrcIrwquxbGqtwivCq7Fsaq3CK8KrsWxqrcIrwquxbGqt")
+}, {
+"aabb": AABB(0.4, 0.28, -0.68, 1e-05, 0.59000003, 1.36),
+"attribute_data": PackedByteArray("exQuvylcj757FC4/Urhev3sULr9SuF6/exQuP4/C9b4="),
+"format": 34359742487,
+"index_count": 6,
+"index_data": PackedByteArray("AAABAAIAAAADAAEA"),
+"material": ExtResource("2_4gorj"),
+"name": "construction_ochre_dark",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 4,
+"vertex_data": PackedByteArray("zczMPilcjz57FC6/zczMPlK4Xj97FC4/zczMPlK4Xj97FC6/zczMPo/C9T57FC4/////f/9//7////9//3//v////3//f/+/////f/9//78=")
+}]

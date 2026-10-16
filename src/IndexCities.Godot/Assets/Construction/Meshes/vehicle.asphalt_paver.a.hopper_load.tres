@@ -1,0 +1,19 @@
+[gd_resource type="ArrayMesh" format=4]
+
+[ext_resource type="Material" path="res://Assets/Construction/Materials/construction_asphalt.tres" id="1_y5eg8"]
+
+[resource]
+resource_name = "vehicle.asphalt_paver.a.hopper_load"
+_surfaces = [{
+"aabb": AABB(-0.81, 0, -1.99, 1.62, 0.44, 1.1700001),
+"attribute_data": PackedByteArray("Ctcjvh+Fq78pXE+/Urj+vylcTz9SuP6/Ctcjvh+Fq78pXE8/hetRv3sULj6PwrW/Ctcjvh+Fq78pXE8/Urj+vylcTz+F61G/exQuPo/Ctb8pXE8/hetRvylcT7+F61G/exQuPo/Ctb8pXE+/Urj+vwrXI74fhau/exQuPo/Ctb8pXE+/hetRvylcT79SuP6/KVxPv8zMTL4pXE8/AAAAgClcTz/MzEy+KVxPvwAAAIBSuP6/zMxMvoXrUb8AAACAhetRv8zMTL5SuP6/zMxMvlK4/r8AAACAhetRvwAAAIApXE8/zMxMvilcT78AAACAKVxPv8zMTL4pXE8/AAAAgIXrUb/MzEy+Urj+vwAAAIBSuP6/zMxMvoXrUb/MzEy+hetRvwAAAIBSuP6/AAAAgA=="),
+"format": 34359742487,
+"index_count": 42,
+"index_data": PackedByteArray("AAABAAIAAwAEAAUABgAHAAgACQAKAAsADAANAA4ADwAQABEAEgATABQAEgAVABMAFgAXABgAGQAaABsAHAAdAB4AHAAfAB0AIAAhACIAIwAkACUA"),
+"material": ExtResource("1_y5eg8"),
+"name": "construction_asphalt",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 38,
+"vertex_data": PackedByteArray("Ctcjvq5H4T4fhau/KVxPv8zMTD5SuP6/KVxPP8zMTD5SuP6/Ctcjvq5H4T4fhau/KVxPP8zMTD6F61G/exQuPqoT0D6PwrW/Ctcjvq5H4T4fhau/KVxPP8zMTD5SuP6/KVxPP8zMTD6F61G/exQuPqoT0D6PwrW/KVxPP8zMTD6F61G/KVxPv8zMTD6F61G/exQuPqoT0D6PwrW/KVxPv8zMTD5SuP6/Ctcjvq5H4T4fhau/exQuPqoT0D6PwrW/KVxPv8zMTD6F61G/KVxPv8zMTD5SuP6/KVxPv8zMTD5SuP6/KVxPPwAAAABSuP6/KVxPP8zMTD5SuP6/KVxPvwAAAABSuP6/KVxPP8zMTD5SuP6/KVxPPwAAAACF61G/KVxPP8zMTD6F61G/KVxPP8zMTD5SuP6/KVxPPwAAAABSuP6/KVxPPwAAAACF61G/KVxPP8zMTD6F61G/KVxPvwAAAACF61G/KVxPv8zMTD6F61G/KVxPPwAAAACF61G/KVxPv8zMTD6F61G/KVxPvwAAAABSuP6/KVxPv8zMTD5SuP6/KVxPv8zMTD6F61G/KVxPvwAAAACF61G/KVxPvwAAAABSuP6/g6L//5cLgaqDov//lwuBqoOi//+XC4Gq718eDnUeUsXvXx4OdR5Sxe9fHg51HlLFYpmb5jAeGMximZvmMB4YzGKZm+YwHhjM/38833co0br/fzzfdyjRuv9/PN93KNG6FX/ZI1oLP6oVf9kjWgs/qhV/2SNaCz+qumm66QEaQbW6abrpARpBtbppuukBGkG1//////9/AID//////38AgP//////fwCA//////9/AID///9//3//v////3//f/+/////f/9//7////9//3//v////3//f/+/////f/9//7//f/9//38AgP9//3//fwCA/3//f/9/AID/f/9//38AgAAA/3//f/+/AAD/f/9//78AAP9//3//vwAA/3//f/+/AAD/f/9//78AAP9//3//vw==")
+}]

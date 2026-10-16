@@ -1,0 +1,19 @@
+[gd_resource type="ArrayMesh" format=4]
+
+[ext_resource type="Material" path="res://Assets/Construction/Materials/construction_asphalt.tres" id="1_6jf5o"]
+
+[resource]
+resource_name = "vehicle.truck_dump.a.load_asphalt"
+_surfaces = [{
+"aabb": AABB(-1.075, 1.1920929e-07, -4.05, 2.15, 1.07, 4.24),
+"attribute_data": PackedByteArray("CtcjvpqZWcCamYm/mpmBwJqZiT+amYHACtcjvpqZWcCamYk/UI9CPnsULj6I69G+CtcjvpqZWcCamYk/mpmBwJqZiT9Qj0I+exQuPojr0b6amYk/UI9CPpqZib9Qj0I+exQuPojr0b6amYm/mpmBwArXI76amVnAexQuPojr0b6amYm/UI9CPpqZib+amYHAmpmJv0AKV7+amYk/AAAAtJqZiT9ACle/mpmJvwAAALSamYHAQApXv1CPQj4AAAC0UI9CPkAKV7+amYHAQApXv5qZgcAAAAC0UI9CPgAAALSamYk/QApXv5qZib8AAAC0mpmJv0AKV7+amYk/AAAAtFCPQj5ACle/mpmBwAAAALSamYHAQApXv1CPQj5ACle/UI9CPgAAALSamYHAAAAAtA=="),
+"format": 34359742487,
+"index_count": 42,
+"index_data": PackedByteArray("AAABAAIAAwAEAAUABgAHAAgACQAKAAsADAANAA4ADwAQABEAEgATABQAEgAVABMAFgAXABgAGQAaABsAHAAdAB4AHAAfAB0AIAAhACIAIwAkACUA"),
+"material": ExtResource("1_6jf5o"),
+"name": "construction_asphalt",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 38,
+"vertex_data": PackedByteArray("CtcjvsT1iD+amVnAmpmJv0AKVz+amYHAmpmJP0AKVz+amYHACtcjvsT1iD+amVnAmpmJP0AKVz9Qj0I+exQuPqLWhD+I69G+CtcjvsT1iD+amVnAmpmJP0AKVz+amYHAmpmJP0AKVz9Qj0I+exQuPqLWhD+I69G+mpmJP0AKVz9Qj0I+mpmJv0AKVz9Qj0I+exQuPqLWhD+I69G+mpmJv0AKVz+amYHACtcjvsT1iD+amVnAexQuPqLWhD+I69G+mpmJv0AKVz9Qj0I+mpmJv0AKVz+amYHAmpmJv0AKVz+amYHAmpmJPwAAADSamYHAmpmJP0AKVz+amYHAmpmJvwAAADSamYHAmpmJP0AKVz+amYHAmpmJPwAAADRQj0I+mpmJP0AKVz9Qj0I+mpmJP0AKVz+amYHAmpmJPwAAADSamYHAmpmJPwAAADRQj0I+mpmJP0AKVz9Qj0I+mpmJvwAAADRQj0I+mpmJv0AKVz9Qj0I+mpmJPwAAADRQj0I+mpmJv0AKVz9Qj0I+mpmJvwAAADSamYHAmpmJv0AKVz+amYHAmpmJv0AKVz9Qj0I+mpmJvwAAADRQj0I+mpmJvwAAADSamYHAc6H//9UKRKtzof//1QpEq3Oh///VCkSr+5h/6O0ajcv7mH/o7RqNy/uYf+jtGo3LF5Tm6ykXwskXlObrKRfCyReU5uspF8LJ/39C4AInKbv/f0LgAicpu/9/QuACJym7zWTC4B0l/rLNZMLgHSX+ss1kwuAdJf6yc25y7uYTabdzbnLu5hNpt3Nucu7mE2m3//////9/AID//////38AgP//////fwCA//////9/AID///9//3//v////3//f/+/////f/9//7////9//3//v////3//f/+/////f/9//7//f/9//38AgP9//3//fwCA/3//f/9/AID/f/9//38AgAAA/3//f/+/AAD/f/9//78AAP9//3//vwAA/3//f/+/AAD/f/9//78AAP9//3//vw==")
+}]
