@@ -2,6 +2,17 @@
 
 > Parte da SPEC do IndexCities — fonte de verdade de produto. Índice e regras gerais em [docs/SPEC.md](../SPEC.md). Histórico das decisões em [docs/decisoes/prefeitura-financas.md](../decisoes/prefeitura-financas.md).
 
+## Direção de revisão — preferência do responsável (2026-10-11)
+
+**Preferência expressa do responsável:** ampliar a **agência de decisão agregada do jogador** sobre a administração e a política municipal no Convencional, inclusive **reavaliando decisões anteriores**, em vez de confiar automaticamente à simulação escolhas de financiamento, cobrança, prioridade e acesso que poderiam gerar gameplay interessante.
+
+- Ao revisar educação (creches, escolas/universidades), saúde, transporte, estacionamento, atrações, assistência, água/energia, previdência e demais serviços municipais, **não tratar gratuidade, tarifas automáticas, benefícios e escolhas antigas como imunes a reavaliação**. Identificar opções concretas para o jogador e seus efeitos reais sobre saldo municipal, utilização, capacidade, renda, saúde, acesso a trabalho e rotina familiar.
+- **Reavaliação não revoga requisitos:** a SPEC vigente continua valendo enquanto o responsável não escolher expressamente alternativa substituta. Documentar candidatos e análises pendentes na exploração; só depois da aprovação promover mudança à SPEC e corrigir contradições.
+- Distinguir **política estratégica agregada** (gratuito/pago/subsidiado, prioridade, nível de financiamento quando realmente significativo), **ferramenta de gestão** (construir, ajustar capacidade, empréstimos, orçamento) e **automação operacional necessária** (pagar contas devidas, cobrar tarifas aprovadas, transportar material, despachar equipe, decidir autonomamente cada SIM/empresa). Mais controle não significa microgerenciar pessoas, rotas e transações.
+- Confrontar cada proposta com o valor de gameplay: **quem decide, qual é o exemplo concreto, o que acontece se escolher A ou B, quem ganha/perde, qual despesa/receita real muda, que risco de frustração para criança construtora e que custo de simulação adicional existem?** Se opções só diferem de nome, descartá-las.
+- **Perguntas ao responsável precisam ser autoexplicativas.** Começar com um caso real simples (por exemplo: escola gratuita custeada pelo Caixa versus escola paga que pode excluir famílias sem saldo); formular a diferença das alternativas A/B/C sem abstrações e sem presumir familiaridade com conceitos técnicos; indicar recomendação e desvantagem claramente. Não rotular como “decidido” uma resposta expressamente condicionada a dúvida, incompreensão ou revisão de valor (“não entendi”, “e daí?”); mantenha-a em exploração até confirmação inequívoca.
+- Não usar benchmarking de outros jogos como autorização automática para copiar políticas, subsídios, multas, programas ou burocracia. Preservar dinheiro finito, fluxos físicos, autonomia de SIMs e empresas e diagnóstico causal.
+
 ## Em vigor no jogo (V1)
 
 ### Moradia e finanças públicas

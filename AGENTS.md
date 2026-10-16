@@ -2,322 +2,104 @@
 
 Estas regras valem para humanos e IAs. O objetivo é maximizar progresso útil sem transformar desenvolvimento em burocracia.
 
-## Fonte de verdade
+## 1. Fontes de verdade e onde registrar
 
-- `docs/SPEC.md` é o hub do **produto aprovado**: estado atual, regras da SPEC, recorte da versão vigente, princípios de design, decisões provisórias delegadas à IA e índice dos sistemas. As regras de cada sistema ficam em `docs/spec/<sistema>.md`, com a mesma autoridade; o histórico das decisões fica em `docs/decisoes/<sistema>.md`, só como registro.
-- `docs/EXPLORATION.md` é o **hub/índice central da exploração**: aponta temas ativos, status e documentos temáticos relevantes.
-- `docs/exploration/*.md` guarda **pesquisa temática, ideias, alternativas, referências e decisões ainda em discussão** quando o assunto merece documento próprio.
-- `docs/ARCHITECTURE.md` define **as decisões estruturais de software**: fronteiras, responsabilidades e direção de dependências.
-- `docs/exploration/genre-benchmark.md` guarda a **referência comparativa externa do gênero**, usada periodicamente para confrontar o IndexCities com aprendizados, falhas e expectativas observados em outros city builders; é exploração temática recorrente e não define requisitos.
-- O código e o histórico deste repositório definem o estado real da implementação.
+| Conteúdo | Onde fica | Autoridade |
+|---|---|---|
+| Produto aprovado: estado atual, regras gerais, recorte da versão, decisões delegadas à IA, índice | `docs/SPEC.md` (hub) | Fonte de verdade |
+| Regras de produto de cada sistema, princípios de design | `docs/spec/<sistema>.md`, `docs/spec/principios.md` | Mesma da SPEC |
+| Histórico das decisões (opções, datas, rodadas) | `docs/decisoes/<sistema>.md` | Só registro |
+| Decisões estruturais de software (fronteiras, responsabilidades, dependências) | `docs/ARCHITECTURE.md` | Fonte de verdade estrutural; não cria requisito de produto |
+| Pesquisa, ideias, alternativas, referências, benchmark do gênero | `docs/EXPLORATION.md` (hub) e `docs/exploration/<tema>.md` | Nenhuma — só consulta |
+| Regras de trabalho para humanos e IAs | `AGENTS.md` | Fonte de verdade de processo |
+| Estado real da implementação | código e histórico do repositório | — |
 
-Antes de **qualquer trabalho em código**, inclusive início do desenvolvimento, correção de bug, refatoração, otimização ou manutenção, consulte a `docs/SPEC.md` e identifique o comportamento do produto que a mudança deve preservar ou realizar. Leia somente o código necessário para entender o alvo. Consulte a `docs/ARCHITECTURE.md` quando houver implicações estruturais e a exploração relevante quando existirem dúvidas ou decisões ainda abertas. **Pedido, código existente e exploração não substituem a SPEC como autorização de comportamento.**
+- Decisão de produto fechada → regra no presente, sem histórico, no arquivo do sistema; histórico em `docs/decisoes/`; mudança de escopo, regras gerais e decisões delegadas → `docs/SPEC.md`.
+- A SPEC registra requisitos e limites de produto, deixa explícito o que não foi decidido e não vira diário, depósito de ideias, lista de tarefas, especificação de classes ou previsão do futuro.
+- Raiz de `docs/` só para as fontes canônicas; pesquisa nova vai para `docs/exploration/`. Antes de criar arquivo, prefira atualizar o existente; nunca duplique a mesma decisão em dois lugares como se ambos fossem autoritativos. Revise links ao mover conteúdo (`scripts/Validate-Docs.ps1`).
+- Não adote OpenSpec, Spec Kit, BMAD ou outro framework de processo só por parecer mais completo; a estrutura só cresce diante de dor concreta e recorrente.
 
+## 2. SPEC antes do código
 
-## Mapa de prontidão e prioridades de definição
+**SDD contínuo:** nenhum comportamento de produto é implementado sem estar na SPEC antes — vale para funcionalidades, ajustes de gameplay, bugs, refatorações e otimizações. Pedido, conversa, código existente, exploração ou exemplo externo **não** autorizam comportamento.
 
-Antes de iniciar uma rodada de **definição da SPEC** ou de **priorização de decisões de produto**, consulte [`docs/exploration/project-readiness.md`](docs/exploration/project-readiness.md) para identificar lacunas, riscos e perguntas de maior valor, depois de conferir a SPEC e o hub de exploração atuais. O mapa é **orientação exploratória revisável**, não fonte de verdade, requisito aprovado, plano obrigatório de POC ou motivo para bloquear experimentos seguros. **Não reabra decisões da SPEC só porque aparecem como pendência numa análise antiga;** diferencie decisão ainda necessária, calibração e validação por protótipo. Atualize o mapa apenas quando uma decisão ou evidência mudar materialmente as prioridades.
+- **Bug:** se a regra já está clara na SPEC, corrija para restaurá-la sem editar a SPEC por ritual. Se a expectativa está ausente, ambígua ou contraditória, **não invente o comportamento correto**: esclareça, registre e só então corrija.
+- **Refatoração, desempenho, testes, manutenção:** só preservam o contrato; não introduzem regra de produto. Se a solução exigir mudar produto, volte à decisão.
+- **Autonomia técnica:** dentro da SPEC e da ARCHITECTURE, a IA **resolve sozinha** organização de código, nomes, estruturas de dados, algoritmos, testes e otimizações locais, sem pedir aprovação nem registrar. Ausência de decisão sobre detalhe puramente técnico não é lacuna de produto. Se a escolha alterar comportamento, interface, exceções, causalidade ou escopo, deixa de ser técnica.
+- **Arquitetura:** mudanças estruturais relevantes são discutidas e registradas na ARCHITECTURE antes de orientar o código.
+- **Calibração:** quando a SPEC delega valores/fórmulas à calibração, a implementação escolhe e testa dentro do comportamento aprovado; calibração não cria regras, exceções, opções do jogador ou efeitos novos.
+- **Experimentos técnicos isolados** são opcionais, não são fase obrigatória e não inserem comportamento não aprovado no jogo. Não invente features, abstrações ou sistemas para um futuro hipotético.
 
-## Exploração é pesquisa, não autoridade
+### Decisões pequenas delegadas à IA (confirmado pelo responsável em 2026-10-11)
 
-**Decisão do responsável em 2026-10-16:** `docs/EXPLORATION.md` e `docs/exploration/*.md` são **documentos de pesquisa** registrados por IAs. Não são fonte de verdade e, em geral, não serão revisados por humano; por isso não se exige mais rótulo de revisão (PENDENTE/PARCIALMENTE REVISADO/REVISADO) por documento ou seção. Rótulos antigos podem permanecer, sem efeito.
+A IA pode escolher **pequenos detalhes de produto** só se forem locais, reversíveis, de baixo impacto, não criarem mecânica/opção nova e não alterarem regra aprovada (ex.: ordenação de lista secundária, apresentação não crítica de dados existentes). **Não delegar:** regras econômicas, patrimoniais, materiais, logísticas, de SIMs/empresas, serviços, políticas, acessos, consequências causais, construção básica, UX/acessibilidade relevante, escopo de versão ou arquitetura estrutural. Menos código não torna uma decisão de produto pequena.
 
-- **Serve para consulta:** antes de pesquisar um tema, propor uma mecânica ou decidir algo, procure no hub se já existe pesquisa, alternativas descartadas ou evidência sobre o assunto e aproveite-a, para não refazer trabalho nem repetir caminhos rejeitados. Confira se ainda vale: o conteúdo pode estar desatualizado em relação à SPEC e ao código, que prevalecem.
-- Nada da exploração vira requisito, decisão, backlog, plano obrigatório, instrução para agentes ou autorização de implementação/cópia de recursos — **mesmo que o texto use verbos como "implementar", "usar", "reaproveitar" ou "próxima etapa"**.
-- Algo só ganha autoridade quando o responsável aprova explicitamente na conversa e a conclusão é registrada na fonte canônica (`SPEC`, `ARCHITECTURE` ou `AGENTS`). Na dúvida sobre se houve aprovação, trate como não aprovado.
-- Termos como **decidido**, **aprovado** ou **confirmado** só descrevem decisão do responsável ou o que já está na fonte canônica; nunca uma recomendação da IA.
-- Escreva hipóteses como **opções de estudo**, não como ordens. Ao apresentar uma pesquisa nova, diga em uma frase que é material de pesquisa, não decisão.
+Teste antes de decidir: (1) existe regra aprovada? respeite; (2) toca resultados, regras, usuários ou sistemas importantes? decisão humana; (3) é pequena e reversível? só então delegue; (4) registre na seção própria da SPEC, **antes de implementar**, comportamento, justificativa, origem IA, ID e status **PENDENTE DE REVISÃO HUMANA**. Na dúvida, consulte o responsável. Registre 100% das decisões de produto da IA (inclusive listas, alertas e pequenos padrões visíveis), nunca as puramente técnicas. Decisão IA pendente é implementável só pela delegação; não é aprovação humana, e a IA nunca marca a própria escolha como aprovada. A revisão posterior pode aprovar, modificar ou rejeitar e exige sincronizar código e SPEC. Não esconda mudança de produto como calibração, estética, bug, refatoração ou decisão técnica.
 
-## Fluxo contínuo de conversa e documentação
+### Porta obrigatória antes e durante a implementação
 
-Durante conversas de exploração ou definição com o responsável pelo projeto:
+1. **Localize a base na SPEC** (ou o comportamento que deve permanecer intacto, em refatoração/otimização) e confira se pertence ao recorte aprovado da versão. Leia só o código necessário para entender o alvo.
+2. **Cheque suficiência e conflitos** com a SPEC e, quando pertinente, ARCHITECTURE e código. Não bloqueie por decisões técnicas locais.
+3. **Bloqueie a parte indefinida:** se faltar definição, houver ambiguidade/contradição ou a escolha não passar na delegação, não escreva o código dependente; explique a lacuna e peça decisão; continue o trabalho independente já autorizado.
+4. **Registre antes de codificar** (decisão humana na SPEC ou decisão IA pendente com ID); ajuste a ARCHITECTURE se pertinente.
+5. **Repita a checagem durante o trabalho.** Urgência, conveniência técnica ou testes passando não autorizam desvio silencioso.
+6. **Valide aderência:** rode primeiro os testes mais próximos da área alterada e amplie conforme o risco, validando o ciclo integrado desde cedo; revise diff, efeitos colaterais e testes contra a SPEC, inclusive decisões IA pendentes. Se código e SPEC divergirem, não altere a SPEC para justificar o código sem decisão de produto.
 
-- trate o que ele disser como entrada ativa de produto, não apenas como contexto de conversa;
-- quando houver afirmação factual verificável, pesquise e confirme antes de registrá-la como fato;
-- prefira fontes primárias, documentação oficial, dados públicos e benchmarks reproduzíveis; não use suposição como substituto de evidência;
-- quando houver uma decisão explícita, atualize a fonte de verdade apropriada imediatamente, sem esperar um pedido separado de documentação;
-- decisões de produto vão para o arquivo do sistema em `docs/spec/` (no presente, sem histórico), com o histórico em `docs/decisoes/`; mudanças de escopo, regras gerais e decisões delegadas vão para `docs/SPEC.md`;
-- hipóteses, ideias, alternativas, referências, dúvidas e resultados de pesquisa ficam em `docs/EXPLORATION.md` quando forem curtos; quando o tema crescer ou estiver sendo trabalhado em paralelo, use `docs/exploration/<tema>.md` e mantenha `docs/EXPLORATION.md` como índice/status;
-- regras de desenvolvimento e de trabalho vão para `AGENTS.md`;
-- se a documentação existente ficar desatualizada, contraditória ou incompleta à luz da conversa atual, corrija-a na mesma sessão;
-- não transforme suposição em requisito: quando não houver evidência ou decisão suficiente, registre como aberto e indique o que precisa ser pesquisado ou medido;
-- mantenha a documentação enxuta: atualize o que mudou em vez de acumular transcrições da conversa;
-- quando a conversa estiver sendo usada como entrevista de definição do produto, faça perguntas curtas em sequência, registre cada rodada e continue em loop enquanto existirem decisões relevantes, conflitos ou riscos reais a esclarecer; encerre naturalmente quando o plano estiver maduro e as novas perguntas passarem a ter baixo valor, repetir temas já resolvidos ou apenas "encher linguiça", mesmo que o responsável não tenha pedido explicitamente para parar;
-- antes de formular novas perguntas, consulte `docs/SPEC.md` e `docs/EXPLORATION.md` e evite repetir perguntas já respondidas ou decisões já registradas;
-- **seja preciso e econômico na entrevista de produto:** diferencie explicitamente casos parecidos já decididos antes de propor uma nova escolha; agrupe decisões realmente relacionadas em perguntas ou pacotes coerentes, com alternativas e consequências claras, em vez de fragmentar cada detalhe em uma rodada; não agrupe escolhas independentes de modo que uma única resposta aprove requisitos distintos por acidente;
-- **priorize fechar lacunas que alterem o comportamento, a gameplay ou a coerência sistêmica**. Não prolongue indefinidamente a revisão com perguntas sobre parâmetros pequenos, exceções hipotéticas e pormenores de implementação: quando seguro, deixe-os explicitamente para calibração/implementação na exploração e avance para outro bloco significativo, ou encerre a revisão;
-- antes de implementar um comportamento, parâmetro ou sistema novo, avalie explicitamente se ele deve ser configurável/opcional. Não crie opções por padrão: registre a justificativa e só exponha configuração quando a variabilidade tiver valor real para calibração, acessibilidade, debug ou gameplay;
-- **Avalie novas funcionalidades também como possíveis políticas municipais:** sempre que surgir uma ideia de produto, regra ou alteração de gameplay, considere se ela fica melhor como uma **política opcional decidida na Prefeitura** (com alternativas relevantes, afetados, custos e efeitos reais), como uma **regra automática da simulação**, como uma **ação direta de construção/gestão** ou como algo a **não incluir**. Não transformar tudo em política nem criar uma opção só para aumentar o menu; política precisa de escolha interessante e consequência verificável, sem reproduzir controles já aprovados, burocracia ou bônus arbitrários. Identifique claramente a melhor classificação ao apresentar novas ideias ao responsável; **avaliar não é aprovar** uma política. Qualquer política nova ou mudança de regra existente depende de aprovação explícita e registro na SPEC antes da implementação;
-- sempre que registrar uma nova decisão, verifique a coerência global com `docs/SPEC.md` e `docs/EXPLORATION.md`, procure conflitos, regras antigas ou consequências contraditórias e corrija a documentação na mesma sessão. Se existir conflito real ou ambiguidade que não possa ser resolvida com segurança, avise explicitamente o responsável antes de assumir uma resposta.
-- Antes de recomendar ou fechar uma alternativa de produto, apresente de forma limpa as opções relevantes, seus principais prós, contras e consequências para gameplay/coerência. Não empurre uma solução apenas porque parece simples; registre também o que ela sacrifica e reabra a decisão quando surgir uma consequência nova relevante.
-- **Raciocine criticamente além das alternativas apresentadas:** não valide uma hipótese só porque o responsável a sugeriu; questione suas premissas, confrontando-a com a SPEC, os fluxos econômicos e o custo de simulação, explicite consequências negativas e investigue modelos híbridos ou opções não mencionadas quando puderem oferecer resultado melhor. Diferencie simplicidade conceitual de custo efetivo de execução e manutenção. Recomende com justificativa e deixe explícito o que ainda depende de decisão ou protótipo, sem promover uma sugestão da IA a requisito.
+Não é exigido issue, plano, PR, ADR, TDD ou documento extra por mudança — é exigido que o comportamento esteja aprovado ou estritamente delegado e registrado antes do código.
 
-## Arquitetura de especificação
+**Pronto** = comportamento coberto pela SPEC, dentro do recorte vigente, funcionando conforme o contrato, validado adequadamente e sem divergência conhecida entre código e SPEC.
 
-O IndexCities adota **Spec-Driven Development (SDD) contínuo, com SPEC viva e obrigatória**: o comportamento desejado é decidido e documentado antes de ser codificado. Essa regra vale desde o primeiro código e durante toda a evolução do jogo — novas funcionalidades, alterações de regras, ajustes de gameplay, correções de bugs, refatorações e otimizações.
+### Entrega incremental
 
-**A `docs/SPEC.md` é o contrato do produto, não apenas um documento de preparação.** Nenhum agente pode tratar como aprovado comportamento que esteja só em conversas, pesquisa, código ou exemplos externos. A única exceção de autonomia de produto é a **pequena decisão delegada, reversível, previamente registrada na SPEC e marcada PENDENTE DE REVISÃO HUMANA**. Sem esses requisitos, a lacuna depende de decisão do responsável.
+Construir o **Convencional** em versões menores, integradas e jogáveis (direção de 2026-10-11; recorte V1 aprovado em 2026-10-12 na SPEC), respeitando dependências e validando cedo economia, ações do jogador e consequências reais. Manter a visão completa sem tentar codificá-la antes da primeira partida utilizável. Limitar o catálogo não autoriza dinheiro, estoques, agentes, deslocamentos ou consequências fictícias, nem POCs isoladas obrigatórias. Exemplos da exploração não ampliam o escopo; mudança de escopo exige decisão humana e SPEC atualizada antes. O modo **Criativo** é intenção futura: não implementar, especificar nem criar camadas técnicas para ele agora. A frente de assets segue o pedido do coordenador e não introduz regras de produto.
 
-- **Produto e comportamento:** toda regra nova ou alterada precisa estar registrada na `SPEC.md` **antes** do código, com **aprovação humana** ou como **decisão pequena provisória expressamente delegável**, identificada para revisão. O segundo caso nunca substitui uma regra já aprovada nem permite criar mecânica relevante.
-- **Bug:** confronte o comportamento observado com a SPEC. Se a regra já estiver clara, corrija para restaurá-la sem modificar a SPEC por ritual. Se a expectativa estiver ausente, ambígua ou contraditória, **não invente o comportamento correto**: esclareça, registre a decisão na SPEC e só então corrija.
-- **Refatoração, desempenho e manutenção:** só podem preservar o contrato de comportamento já documentado. Não são autorização para mudar gameplay, interfaces ou consequências do jogo; se a solução exigir mudança de produto, volte à decisão e à SPEC antes de codificá-la.
-- **Autonomia técnica sem microespecificação:** dentro da SPEC e das decisões estruturais vigentes, a IA **pode e deve resolver autonomamente detalhes de implementação**, como organização interna de código, nomes, estruturas de dados, algoritmos, testes e otimizações locais. Não precisa pedir aprovação nem registrar esses detalhes na SPEC quando preservarem integralmente as regras e consequências do produto. **Ausência de uma decisão sobre detalhe puramente técnico não é lacuna de produto.** Se uma escolha alterar comportamento, interface, exceções, causalidade, escopo ou qualquer decisão já aprovada, deixa de ser apenas detalhe técnico e exige o fluxo de decisão/documentação antes do código.
-- **Arquitetura:** `docs/ARCHITECTURE.md` governa decisões estruturais aprovadas, mas **não cria requisitos de produto**. Dentro dessas fronteiras, soluções técnicas locais e reversíveis são responsabilidade de quem implementa. Mudanças estruturais relevantes devem ser discutidas e registradas na ARCHITECTURE antes de orientar o código, sem substituir a aprovação na SPEC de qualquer alteração de produto.
-- **Exploração e experimentos:** `docs/EXPLORATION.md` e documentos temáticos guardam hipóteses, alternativas e pesquisas, nunca autorização de implementação de produto. Experimentos técnicos isolados são opcionais, não constituem fase obrigatória nem permitem inserir comportamento não aprovado no jogo. Qualquer código incorporado ao produto continua condicionado à SPEC.
-- **Calibração:** quando a própria SPEC delegar explicitamente valores ou fórmulas de ajuste à calibração, a implementação pode escolher e testar esses detalhes dentro do comportamento aprovado. Tentativas transitórias não são decisões incorporadas ao produto; se uma escolha efetiva criar ou alterar comportamento perceptível não coberto pelo contrato, registrar decisão delegada se elegível ou pedir aprovação humana. Calibração não permite criar silenciosamente novas regras, exceções, opções do jogador ou efeitos de gameplay.
+## 3. Critérios de produto em toda decisão
 
-### Autonomia delegada da IA e registro na SPEC
+Antes de propor, especificar, implementar ou revisar algo, aplique os princípios de [`docs/spec/principios.md`](docs/spec/principios.md) e responda explicitamente:
 
-**Delegação confirmada pelo responsável em 2026-10-11.** A IA pode resolver sem interrupção detalhes técnicos locais; e pode escolher **pequenos detalhes de produto** somente se forem locais, reversíveis, de baixo impacto, não criarem mecânica/opção nova e não alterarem nenhuma regra aprovada. Exemplos possíveis: ordenação de lista secundária e apresentação não crítica de dados já existentes. **Não delegar** regras econômicas, patrimoniais, materiais, logísticas, dos SIMs/empresas, serviços, políticas, acessos, consequências causais, construção básica, UX/acessibilidade relevante, escopo de versão ou arquitetura estrutural. Menor quantidade de código não torna uma decisão de produto pequena.
+- **Gameplay x microgerenciamento x custo interno:** o que acrescenta a decisões e consequências interessantes? Quantos cliques, etapas e esperas impõe? Quantos estados, exceções e testes cria por dentro? Regras existentes ou eventos entregam o mesmo com menos?
+- **Diversão de construir:** como a consequência aparece no mundo para quem só quer construir, sem ler texto? Onde controle, espera ou erro frustram? (sem falsificar sistemas para parecer infantil)
+- **Vida dos SIMs e empresas:** quem é afetado, por qual mecanismo real, e como o jogador percebe?
+- **Causalidade e diagnóstico:** existe caixa-preta, automação invisível ou agregado que não se decompõe? Se sim, a decisão fica em exploração até haver diagnóstico.
+- **Classificação:** melhor como **política municipal opcional** (escolha interessante e consequência verificável), **regra automática da simulação**, **ação direta de construção/gestão** ou **não incluir**? Avaliar não é aprovar.
+- **Configurável?** Só expor opção quando houver valor real para calibração, acessibilidade, debug ou gameplay; registrar a justificativa.
 
-**Teste obrigatório antes de decidir:** (1) já existe regra aprovada? respeitá-la; (2) a mudança toca resultados, regras, usuários ou sistemas importantes? exigir decisão humana; (3) é realmente pequena e reversível? somente então delegar; (4) registrar comportamento, justificativa sucinta, origem IA, ID e status **PENDENTE DE REVISÃO HUMANA** na seção própria da SPEC **antes de implementar**. Na dúvida, consultar o responsável. Não esconder mudança de produto como calibração, estética, bug, refatoração ou decisão técnica.
+A direção da Prefeitura (ampliar escolhas estratégicas do jogador e reavaliar gratuidades/tarifas antigas) está em [`docs/spec/prefeitura-financas.md`](docs/spec/prefeitura-financas.md).
 
-**Registro obrigatório de 100% das decisões de produto tomadas pela IA**, inclusive listas, alertas e pequenos padrões visíveis. Não registrar cada variável, método, algoritmo ou teste quando forem puramente técnicos e preservarem o contrato; decisões técnicas estruturais relevantes seguem a ARCHITECTURE. Uma decisão IA pendente é **implementável apenas por causa da delegação e de seu baixo impacto**, não é uma decisão aprovada pelo responsável. A revisão posterior pode aprovar, modificar ou rejeitar e exige sincronizar código e SPEC; a IA nunca pode marcar sua própria escolha como aprovada pelo humano.
+## 4. Conversa com o responsável
 
-### Desenvolvimento incremental do Convencional
+- Trate o que ele disser como entrada ativa de produto. Afirmação factual verificável: pesquise antes de registrar; prefira fontes primárias, documentação oficial, dados públicos e benchmarks reproduzíveis.
+- Decisão explícita → atualize a fonte de verdade na hora, verifique coerência global (conflitos, regras antigas, consequências contraditórias) e corrija na mesma sessão; conflito que não dá para resolver com segurança → avise antes de assumir. Documentação desatualizada → corrija; atualize o que mudou em vez de acumular transcrição.
+- Sem evidência ou decisão suficiente, registre como aberto e diga o que precisa ser pesquisado ou medido.
+- **Perguntas autoexplicativas:** comece com um caso real simples, mostre A/B/C sem abstrações nem jargão, com recomendação e desvantagem claras. Antes de perguntar, confira SPEC e exploração para não repetir o que já foi decidido; diferencie casos parecidos já decididos.
+- Agrupe decisões realmente relacionadas em pacotes coerentes; não agrupe escolhas independentes de modo que uma resposta aprove requisitos distintos por acidente.
+- Priorize lacunas que alterem comportamento, gameplay ou coerência sistêmica; deixe parâmetros pequenos para calibração. Em entrevista de definição, siga em rodadas curtas enquanto houver decisões relevantes e encerre quando as perguntas passarem a ter baixo valor.
+- Apresente opções com prós, contras e o que cada uma sacrifica; reabra a decisão se surgir consequência nova relevante. **Raciocine criticamente:** não valide uma hipótese só porque o responsável sugeriu; questione premissas, confronte com SPEC, fluxos econômicos e custo de simulação, procure híbridos; diferencie simplicidade conceitual de custo real.
+- "Decidido/aprovado/confirmado" só descreve decisão do responsável ou o que está na fonte canônica. Resposta condicionada a dúvida ("não entendi", "e daí?") não é decisão. Benchmark de outros jogos não autoriza copiar políticas, subsídios, multas ou burocracia.
 
-**Direção confirmada pelo responsável em 2026-10-11, com recorte V1 aprovado em 2026-10-12:** preservar a visão completa já aprovada na SPEC, mas desenvolver em **versões menores, integradas e jogáveis**, com validação desde os primeiros ciclos. **A V1 já tem escopo funcional aprovado na seção *V1 — primeira versão jogável integrada* da SPEC.** Implementar em incrementos coerentes, respeitando dependências, sem impor POCs isoladas, protótipos descartáveis ou testes cerimoniais. Limitar o catálogo não autoriza criar dinheiro, estoques, agentes, deslocamentos ou consequências fictícias. A IA de assets pode trabalhar em paralelo conforme briefing exploratório, mas nem a frente visual nem a implementação podem introduzir novas regras de produto fora da SPEC. O recorte de versões futuras continua sujeito à aprovação humana.
+## 5. Exploração é pesquisa, não autoridade
 
-### Porta obrigatória antes e durante qualquer implementação
+**Decisão do responsável em 2026-10-16:** `docs/EXPLORATION.md` e `docs/exploration/*.md` são documentos de pesquisa registrados por IAs, não fonte de verdade, e em geral não serão revisados por humano; não se exige rótulo de revisão por documento (rótulos antigos ficam sem efeito).
 
-1. **Localizar a base na SPEC:** identifique a regra ou o comportamento esperado que justifica o trabalho. Para mudanças sem alteração funcional (como refatoração ou otimização), identifique o comportamento já especificado que deve permanecer intacto.
-2. **Checar suficiência e conflitos:** compare o pedido com a SPEC e, quando pertinente, a ARCHITECTURE e o código. Verifique se é possível implementar sem decidir comportamento, exceções ou consequências de produto por conta própria. **Não bloqueie por decisões técnicas locais que possam ser tomadas dentro do contrato vigente.**
-3. **Bloquear a parte indefinida:** se faltar definição relevante, houver ambiguidade/contradição ou a escolha não passar no filtro de delegação, **não escreva o código dependente**. Explique a lacuna e solicite decisão humana; continue trabalho independente já autorizado.
-4. **Registrar antes de codificar:** insira a decisão humana aprovada na SPEC **ou**, se estritamente delegável, registre a pequena escolha como **IA — PENDENTE DE REVISÃO HUMANA**, com ID e comportamento verificável. Ajuste a ARCHITECTURE quando pertinente. **Só então** implemente; a IA não aprova sua própria decisão.
-5. **Repetir a checagem durante o trabalho:** se surgir regra ausente, conflito ou necessidade de alterar o comportamento, retorne ao passo 3. Nem urgência de bug, nem conveniência técnica, nem testes que passam autorizam desvio silencioso.
-6. **Validar aderência:** revise implementação, efeitos colaterais e testes contra a SPEC vigente. Se código e SPEC divergirem, não altere a SPEC para justificar código sem uma decisão de produto explícita.
+- **Serve para consulta:** antes de pesquisar um tema, propor uma mecânica ou decidir, procure no hub pesquisa, alternativas descartadas ou evidência existentes e aproveite-as; confira se ainda valem, pois SPEC e código prevalecem. Para definição/priorização de produto, consulte também [`docs/exploration/project-readiness.md`](docs/exploration/project-readiness.md), sem reabrir decisões da SPEC só porque aparecem como pendência antiga (diferencie decisão necessária, calibração e validação por protótipo; atualize o mapa só quando uma decisão mudar as prioridades).
+- Nada da exploração vira requisito, decisão, backlog, plano, instrução para agentes ou autorização de implementação/cópia — **mesmo que o texto diga "implementar", "usar", "reaproveitar" ou "próxima etapa"**. Só ganha autoridade com aprovação explícita do responsável registrada na fonte canônica; na dúvida, não aprovado.
+- Escreva hipóteses como opções de estudo e diga, em uma frase, quando apresentar material de pesquisa.
+- Organização: comece pelo hub (só nome, status curto, escopo e link); atualize o documento temático existente; agrupe por domínio durável, não por conversa; não crie arquivo cedo demais nem deixe um crescer misturando domínios; preserve evidências e alternativas rejeitadas, não transcrições; marque o que foi decidido, superado ou segue aberto; ao promover algo, registre o resultado conciso na fonte canônica e aponte para ela.
 
-Não é exigido criar issue, plano, PR, checklist ou documento de especificação separado para cada mudança: é obrigatório que o comportamento esteja **aprovado na SPEC ou estritamente autorizado por delegação provisória e registrado antes do código**.
+## 6. Sem herança automática
 
-**Direção de entrega vigente:** construir o **Convencional em versões menores, jogáveis e integradas**, seguindo o recorte aprovado para cada versão e validando desde cedo economia, ações do jogador, consequências e dependências reais. Manter a visão completa da SPEC, sem tentar codificá-la integralmente antes da primeira partida utilizável. Não impor POCs independentes nem justificar atalhos fictícios na simulação. O conteúdo exato da **V1 está aprovado na SPEC**; exemplos da exploração não ampliam seu escopo. Mudança de escopo exige decisão humana explícita e atualização prévia da SPEC.
+O IndexCities nasce do zero (diretriz expressa do responsável). **Não copiar, portar, importar ou reutilizar** código, algoritmos, testes, arquivos, assets/modelos, texturas, dados, configurações, interfaces, pipelines ou documentos de projetos ou experiências anteriores; licença permissiva, compatibilidade ou sugestão em exploração não autorizam — exceção só por decisão humana expressa e específica. Sem pedido específico, não pesquisar repositórios, commits, issues ou acervos antigos; relatos históricos são só lições, não pistas para minerar componentes. Material externo pode informar uma investigação permitida, mas não é herdado como funcionalidade, arquitetura, dependência ou recurso.
 
-O IndexCities usa deliberadamente uma arquitetura de especificação mínima.
-
-### SPEC
-
-`docs/SPEC.md` é a autoridade sobre **o que o produto deve ser agora**.
-
-Ela deve:
-
-- descrever decisões humanas aprovadas e, em seção separada, pequenas decisões provisórias de IA explicitamente identificadas;
-- permanecer curta, legível e útil;
-- registrar requisitos e limites de produto, não detalhes acidentais de implementação;
-- deixar explícito quando algo ainda não foi decidido.
-
-Ela não deve virar:
-
-- diário de desenvolvimento;
-- histórico de discussões;
-- depósito de ideias;
-- lista de tarefas;
-- especificação detalhada de classes e arquivos;
-- documento gigante tentando prever o futuro.
-
-### EXPLORATION
-
-`docs/EXPLORATION.md` é o **hub central do pensamento ainda não oficial**. Ele deve permanecer navegável e indicar:
-- temas ativos;
-- status resumido;
-- links para documentos temáticos;
-- questões transversais que ainda não justificam arquivo próprio.
-
-Use `docs/exploration/<tema>.md` quando:
-- a pesquisa ficar extensa;
-- houver muitas alternativas/evidências;
-- o tema estiver sendo trabalhado em paralelo por conversas diferentes;
-- manter tudo no hub piorar leitura ou aumentar conflito de edição.
-
-Regras dos documentos temáticos:
-- devem declarar no topo que **não são fonte de verdade**;
-- devem indicar status quando útil;
-- preservam pesquisa, alternativas, referências, prós/contras e raciocínio;
-- quando uma decisão fecha, **o resultado oficial entra resumido na SPEC**;
-- o documento pode continuar como histórico/raciocínio, mas deve marcar o que foi decidido, superado ou ainda está aberto;
-- não criar subpastas adicionais ou novos documentos por ritual; só separar quando houver volume ou paralelismo real.
-
-Evite criar novos arquivos Markdown soltos em `docs/` para exploração. A raiz de `docs/` fica reservada às fontes canônicas (`SPEC.md`, `ARCHITECTURE.md`, `EXPLORATION.md`) e a eventuais documentos que sejam explicitamente aprovados como canônicos.
-
-### Padrão de organização da exploração para IAs
-
-Este padrão existe para evitar que `docs/EXPLORATION.md` volte a se tornar um arquivo monolítico com centenas ou milhares de linhas, difícil de navegar, caro para carregar em contexto e propenso a conflitos quando várias sessões trabalham em paralelo.
-
-Ao trabalhar com exploração:
-
-1. **Comece pelo hub.** Leia `docs/EXPLORATION.md` para localizar o domínio relevante antes de criar ou editar conteúdo.
-2. **Atualize o documento temático existente.** Se o assunto já pertence claramente a um domínio listado no hub, escreva em `docs/exploration/<tema>.md`; não replique a pesquisa no hub.
-3. **Use o hub apenas para navegação e estado.** Mantenha ali nome do tema, status curto, uma frase de escopo e link. Pesquisa extensa, benchmarks, alternativas, histórico e raciocínio pertencem ao documento temático.
-4. **Agrupe por domínio durável, não por conversa.** Prefira documentos como `construction-materials-logistics.md` ou `companies-markets.md` em vez de arquivos por sessão, data, pergunta ou rodada de pesquisa.
-5. **Não crie um arquivo novo cedo demais.** Se a observação for curta, transversal e não tiver domínio natural, ela pode ficar temporariamente no hub. Separe somente quando o conteúdo ganhar volume real, referências, alternativas ou trabalho paralelo.
-6. **Não deixe documentos temáticos crescerem sem limite.** Se um arquivo passar a misturar domínios que podem evoluir independentemente, divida por fronteira conceitual estável e atualize o hub. Não fragmente apenas por tamanho.
-7. **Preserve o histórico útil, não a transcrição.** Conserve evidências, alternativas rejeitadas, trade-offs e motivo de decisões quando ajudarem trabalho futuro. Remova repetição, conversa cronológica e texto que não acrescenta contexto reutilizável.
-8. **Marque o estado do conhecimento.** Quando algo for decidido, superado, reaberto ou continuar em exploração, deixe isso claro no documento temático. Não mantenha uma recomendação antiga parecendo vigente.
-9. **Promova sem duplicar autoridade.** Se uma exploração virar decisão oficial, registre o resultado conciso na `SPEC.md`, `ARCHITECTURE.md` ou `AGENTS.md` e mantenha no documento temático apenas o raciocínio/histórico, apontando que a fonte canônica é outra.
-10. **Revise links após mover conteúdo.** Documentos em `docs/exploration/` têm caminho relativo diferente do hub; corrija referências e verifique que nenhum link ficou apontando para arquivo removido ou localização antiga.
-
-O objetivo não é produzir mais documentação. É tornar o contexto **mais barato de localizar, mais fácil de carregar seletivamente e menos sujeito a conflito**, para humanos e IAs. Uma IA futura deve conseguir ler o hub, abrir somente os temas necessários para a tarefa e chegar ao contexto relevante sem precisar consumir todo o histórico de exploração.
-
-
-
-### Roteamento rápido de documentação
-
-Antes de criar ou editar documentação, escolha o destino pelo conteúdo:
-
-- **Decisão de produto já fechada** → `docs/spec/<sistema>.md` (regra) + `docs/decisoes/<sistema>.md` (histórico); escopo e regras gerais → `docs/SPEC.md`.
-- **Decisão estrutural de software já fechada** → `docs/ARCHITECTURE.md`.
-- **Pesquisa/ideia curta ou questão transversal** → `docs/EXPLORATION.md`.
-- **Pesquisa extensa ou tema trabalhado em paralelo** → `docs/exploration/<tema>.md`, com link/status no hub.
-- **Regra de trabalho para humanos/IAs** → `AGENTS.md`.
-
-Não trate nenhum arquivo em `docs/exploration/` como requisito só porque ele contém uma conclusão ou recomendação. Uma decisão de produto só é oficial depois de aparecer na SPEC; uma decisão estrutural só é oficial depois de aparecer na ARCHITECTURE.
-
-Antes de criar um novo arquivo:
-1. verifique se já existe documento temático equivalente;
-2. prefira atualizar o existente;
-3. só crie outro quando separar o assunto reduzir conflito ou melhorar claramente a leitura;
-4. nunca duplique a mesma decisão em dois documentos exploratórios como se ambos fossem autoritativos.
-
-### Sem herança automática
-
-Nada de outro projeto, protótipo, conversa antiga ou implementação anterior vale automaticamente no IndexCities.
-
-**Diretriz expressa do responsável sobre projetos anteriores:** o IndexCities nasce do zero. **Não copiar, portar, importar ou reutilizar diretamente código-fonte, algoritmos implementados, testes, arquivos, assets/modelos 3D, texturas, dados, configurações, interfaces, pipelines ou documentos de experiências anteriores.** Licença permissiva, compatibilidade aparente ou sugestão em exploração não constitui autorização de uso; qualquer exceção futura depende de decisão humana expressa e específica.
-
-**Relatos históricos são apenas lições autossuficientes, não pistas para mineração de componentes.** Sem solicitação específica do responsável, não pesquisar, abrir ou consultar repositórios antigos, commits, issues, código, testes ou acervos de experiências anteriores por iniciativa própria. Ler uma nota informal de aprendizados não autoriza reconstruir sua procedência nem tentar adaptar a implementação de origem. Em vez disso, partir da SPEC e da ARCHITECTURE, criar a solução própria e considerar uma lição apenas como alerta quando ela for pertinente.
-
-Material externo ou histórico de pesquisa pode informar uma investigação concreta quando permitido, mas **não** deve ser herdado como funcionalidade, arquitetura, dependência, recurso ou plano de implementação. Qualquer conceito novo de produto só vira requisito após decisão explícita do responsável registrada na SPEC; decisões estruturais seguem a ARCHITECTURE. **Esta distinção vale para todos os documentos exploratórios.**
-
-### Evolução futura
-
-Não adote OpenSpec, Spec Kit, BMAD ou outro framework de processo apenas por parecer mais completo.
-
-A arquitetura só deve ficar mais sofisticada quando existir uma dor concreta e recorrente, por exemplo:
-
-- a SPEC única ficou grande demais para continuar clara;
-- agentes perdem contexto importante entre sessões;
-- implementação e SPEC divergem repetidamente;
-- múltiplas frentes paralelas começam a conflitar;
-- rastreabilidade adicional passa a economizar mais tempo do que custa.
-
-Até isso acontecer, **SPEC + ARCHITECTURE + EXPLORATION hub + este AGENTS.md continuam sendo a arquitetura central**. Documentos em `docs/exploration/` são extensões da exploração, não novas fontes de verdade. O benchmark do gênero também vive ali, apesar de ter uso recorrente.
-
-
-## Direção da Prefeitura: mais escolhas estratégicas do jogador — 2026-10-11
-
-**Preferência expressa do responsável:** ampliar a **agência de decisão agregada do jogador** sobre a administração e a política municipal no Convencional, inclusive **reavaliando decisões anteriores**, em vez de confiar automaticamente à simulação escolhas de financiamento, cobrança, prioridade e acesso que poderiam gerar gameplay interessante.
-
-- Ao revisar educação (creches, escolas/universidades), saúde, transporte, estacionamento, atrações, assistência, água/energia, previdência e demais serviços municipais, **não tratar gratuidade, tarifas automáticas, benefícios e escolhas antigas como imunes a reavaliação**. Identificar opções concretas para o jogador e seus efeitos reais sobre saldo municipal, utilização, capacidade, renda, saúde, acesso a trabalho e rotina familiar.
-- **Reavaliação não revoga requisitos:** a SPEC vigente continua valendo enquanto o responsável não escolher expressamente alternativa substituta. Documentar candidatos e análises pendentes na exploração; só depois da aprovação promover mudança à SPEC e corrigir contradições.
-- Distinguir **política estratégica agregada** (gratuito/pago/subsidiado, prioridade, nível de financiamento quando realmente significativo), **ferramenta de gestão** (construir, ajustar capacidade, empréstimos, orçamento) e **automação operacional necessária** (pagar contas devidas, cobrar tarifas aprovadas, transportar material, despachar equipe, decidir autonomamente cada SIM/empresa). Mais controle não significa microgerenciar pessoas, rotas e transações.
-- Confrontar cada proposta com o valor de gameplay: **quem decide, qual é o exemplo concreto, o que acontece se escolher A ou B, quem ganha/perde, qual despesa/receita real muda, que risco de frustração para criança construtora e que custo de simulação adicional existem?** Se opções só diferem de nome, descartá-las.
-- **Perguntas ao responsável precisam ser autoexplicativas.** Começar com um caso real simples (por exemplo: escola gratuita custeada pelo Caixa versus escola paga que pode excluir famílias sem saldo); formular a diferença das alternativas A/B/C sem abstrações e sem presumir familiaridade com conceitos técnicos; indicar recomendação e desvantagem claramente. Não rotular como “decidido” uma resposta expressamente condicionada a dúvida, incompreensão ou revisão de valor (“não entendi”, “e daí?”); mantenha-a em exploração até confirmação inequívoca.
-- Não usar benchmarking de outros jogos como autorização automática para copiar políticas, subsídios, multas, programas ou burocracia. Preservar dinheiro finito, fluxos físicos, autonomia de SIMs e empresas e diagnóstico causal.
-
-## Princípio de gameplay, microgerenciamento e custo interno da simulação
-
-**Regra permanente confirmada pelo responsável em 2026-10-08: qualidade de gameplay e controle de microgerenciamento são critérios obrigatórios para TODO sistema do jogo, não apenas construção ou realocação.** A IA deve questionar propostas que criem espera, fricção, controles, estados ou exceções sem benefício proporcional, inclusive quando ela própria sugeriu a complexidade. Preservar causalidade e consequências reais; o objetivo não é transformar profundidade em burocracia.
-
-Para qualquer decisão de produto, avalie explicitamente o microgerenciamento do jogador **e** o custo de manter e executar a lógica nos bastidores contra o valor de gameplay.
-
-- Realismo não é objetivo suficiente por si só: detalhe adicional precisa criar decisão, consequência, leitura sistêmica ou feedback interessante.
-- Preserve profundidade sistêmica quando ela gera causa e efeito observável, especialmente produção, logística, emprego, trânsito, capacidade, escassez e finanças.
-- Abstraia ou automatize tarefas repetitivas que exigem cliques/contabilidade sem produzir decisões significativas.
-- Prefira interfaces agregadas para leitura e decisão quando a simulação puder manter o detalhe físico internamente.
-- Não remova logística, escassez ou consequências apenas para simplificar; simplifique a operação manual, não necessariamente a simulação.
-- Ao comparar alternativas, registre quando uma opção é mais realista porém pior de jogar, ou mais simples porém destrói consequências importantes.
-- Aplique este critério de forma genérica a todos os sistemas, não apenas a materiais e construção.
-- **Automatizar não torna um sistema simples:** muitos estados por SIM, rotinas recorrentes, exceções, dependências e regras de conciliação também são microgerenciamento interno, consumindo performance, memória, manutenção, testes e capacidade de diagnóstico.
-- Antes de acrescentar um subsistema, verifique se sua consequência relevante pode ser representada com menos estados, menos interações e uma regra clara, preferindo processamento por eventos ou ciclos apropriados a verificações constantes quando viável.
-- Profundidade causal é desejável, mas simular burocracia, contabilidade ou negociações em detalhe só se justifica quando gerar consequência de gameplay relevante e observável. Não empurre complexidade para trás da interface para parecer que o jogo ficou simples.
-- **Antes de propor, especificar ou implementar uma mecânica, confronte:** o que ela acrescenta às decisões/consequências interessantes; quantos cliques, etapas e esperas reais impõe ao jogador; quais estados, exceções, consultas e testes acrescenta internamente; e se regras já existentes ou uma transição acionada por eventos entregam o mesmo valor com menos custo. Em caso de baixo ganho, simplifique ou não crie a mecânica.
-- **Calibre a espera pelo ritmo percebido no jogo**, distinguindo tempo simulado, tempo real do jogador e interrupção efetiva de serviços/produção. Não acrescente atrasos ou sistemas auxiliares para resolver problemas hipotéticos antes de verificar se realmente aparecem na gameplay integrada; não use essa diretriz para apagar custos, materiais, deslocamentos ou consequências aprovados.
-
-## Critério permanente: diversão de construir para diferentes públicos
-
-**Decisão expressa do responsável em 2026-10-11:** o IndexCities deve oferecer profundidade de gestão para adultos **e** levar em conta quem, como uma criança que ainda não lê, se diverte prioritariamente construindo. **Esse critério deve estar presente em TODA revisão, definição de funcionalidade, interface, avaliação de gameplay e teste**, mesmo quando o assunto técnico/econômico não parecer direcionado a crianças.
-
-- Em cada sistema ou decisão relevante, pergunte: **como a consequência aparece no mundo?** O jogador que só quer construir consegue identificar, posicionar, experimentar e observar algo interessante **sem depender de ler textos ou dominar a gestão**? Onde o controle, a espera ou o erro se tornam frustrantes?
-- Preserve a profundidade aprovada de dinheiro, materiais, SIMs, empresas, logística e causalidade **no modo Convencional**. Não desative nem falsifique sistemas para parecer infantil; procure fluidez de construção, prévia, feedback visual, iconografia reconhecível, poucas etapas, personalização estética e informações em camadas.
-- **Um sistema avançado não precisa ser operado por uma criança.** Avalie o impacto dele na diversão de construir, e não imponha a exigência impossível de tornar cada painel econômico legível sem texto. Não confunda interface acessível com ausência de regras econômicas.
-- Valide o que for possível com observação de usuários com perfis distintos, incluindo uma pessoa que ainda não lê; priorize evidência de uso real ao invés de decidir dificuldade apenas por hipótese. Não transforme todo sistema em teste/POC obrigatório.
-- **Escopo vigente:** desenvolver o jogo **Convencional**. Ter os modos **Convencional e Criativo** é uma intenção de produto confirmada **para o futuro**, com desenho e implementação do Criativo adiados. **Não implemente, especifique ou crie camadas técnicas extras para o Criativo agora**, nem force a solução histórica de uma segunda simulação. Os detalhes anteriormente discutidos foram preservados na exploração para eventual reavaliação. A diretriz de pensar na experiência infantil **vale desde já**, independentemente do modo futuro.
-
-## Princípio global: decisões do jogador afetam a vida dos SIMs
-
-**Esta é uma orientação permanente para toda IA que pesquisar, especificar, implementar, revisar ou testar o IndexCities.** A regra de produto aprovada está em `docs/SPEC.md`, na seção *Princípio de design: leitura em camadas e causalidade*; este `AGENTS.md` transforma essa direção em critério obrigatório de trabalho.
-
-- **Toda decisão relevante do jogador deve ter consequências reais, coerentes e explicáveis para os SIMs, famílias e, quando pertinente, empresas**: moradia, trabalho, renda, custos de vida, deslocamentos, acesso a serviços, patrimônio e demais sistemas existentes. Não criar punições ou benefícios arbitrários apenas para parecer que há impacto.
-- **Não confundir intervenção sobre estruturas com decisão dos agentes:** SIMs e empresas são entidades reais que tomam decisões econômicas próprias; o jogador escolher onde construir/realocar não decide automaticamente quem vai ocupar, adquirir ou operar o imóvel. Em especial, empresas avaliam autonomamente a oportunidade de continuar no endereço novo; SIMs empregados avaliam independentemente permanecer no emprego. Consulte as regras específicas da SPEC: **em realocação assistida privada, o proprietário original (SIM ou empresa) tem a primeira oportunidade de comprar o substituto pelo valor de mercado novo**, quando elegível e interessado; isso não autoriza transferência automática de propriedade/estoque, aquisição gratuita ou continuidade garantida. Preservar gameplay fluido e evitar criar uma camada adicional de IA por agente sem necessidade.
-- **Antes de fechar qualquer nova funcionalidade ou alteração de gameplay, verificar quem é afetado, por qual mecanismo real e como o jogador percebe isso.** Se o impacto relevante ficar invisível, opaco ou contraditório, apontar a lacuna e propor diagnóstico simples antes de implementar.
-- Mostrar o importante de modo **contextual e agregado**, com aprofundamento disponível sob demanda; evitar pop-ups por SIM, gestão individual obrigatória, cálculos contínuos globais ou novos estados por pessoa sem ganho demonstrado.
-- **Liberdade de construir e modificar a cidade importa:** não bloquear o jogador com burocracia apenas para simular realismo; preservar, porém, os efeitos reais sobre propriedade, pessoas e economia e os custos monetários/físicos já aprovados.
-- Nas revisões da SPEC e do código, conferir esse princípio **transversalmente**, inclusive em ferramentas de edição, demolição, serviços e tributos. Ele não autoriza que a IA invente consequências ainda não decididas: lacunas de comportamento de produto devem voltar à discussão e entrar na SPEC antes de virar código.
-
-## Princípio de causalidade e diagnóstico
-
-Sistemas profundos não podem virar caixas-pretas.
-
-- Toda consequência relevante para o jogador deve ser explicável a partir do estado real da simulação.
-- Quando algo falhar, o sistema deve conseguir responder **o que aconteceu, por que aconteceu e qual ação pode resolver**, usando as mesmas variáveis que realmente produziram o resultado.
-- Evite variáveis vagas de "saúde", "felicidade" ou "economia" quando elas apenas escondem causas reais. Agregados podem existir para UI, mas precisam ser derivados de fatores inspecionáveis.
-- Automação e abstração de interface não autorizam lógica invisível sem rastreabilidade.
-- Para calibração e debug, prefira fórmulas determinísticas, parâmetros explícitos e estados observáveis. Aleatoriedade só deve ser usada quando tiver função clara de gameplay e continuar diagnosticável.
-- Ao implementar sistemas sistêmicos, mantenha uma forma proporcional de inspecionar entradas, saídas e causas — por UI de diagnóstico, debug ou telemetria conforme a fase do projeto.
-- O feedback superficial deve ser simples e acionável; o detalhamento deve estar disponível sob demanda sem exigir que todos os jogadores o leiam.
-- Não crie uma explicação separada da simulação: a explicação exibida deve ser derivada da causa real.
-- Em toda nova conversa, sessão ou decisão de produto, aplique explicitamente este princípio antes de fechar o sistema: procure caixas-pretas, causas não rastreáveis, automações invisíveis e estados agregados que não possam ser decompostos. Se existirem, mantenha a decisão em exploração até haver uma forma clara de diagnóstico.
-- Prefira o máximo possível **entidades, fluxos e estados concretos da simulação** em vez de variáveis ou agentes abstratos criados apenas para fechar uma conta. Abstrações continuam permitidas quando reduzem microgerenciamento ou custo técnico sem destruir causalidade, mas devem ser derivadas de estado real, auditáveis e não podem virar fonte ou sumidouro mágico de dinheiro, recursos, demanda ou comportamento.
-
-## Regra principal de escopo
-
-- **Sem comportamento de produto documentado e autorizado na SPEC, não há implementação desse comportamento.** Isso vale para o início do projeto e para cada mudança futura.
-- Se o pedido exigir decisão ausente, obtenha aprovação humana; somente decisão comprovadamente pequena e delegável pode ser registrada como IA pendente antes do código.
-- Bug com comportamento esperado já definido na SPEC pode ser corrigido diretamente **com base nessa regra**; bug que revela conflito ou regra significativa ausente exige decisão humana antes do código dependente.
-- Refatorações, ajustes técnicos e testes não podem introduzir silenciosamente regras de produto nem contornar o registro obrigatório.
-- Experimentos técnicos isolados não são fases obrigatórias nem autorizam inserir features não aprovadas no jogo.
-- Não invente features, abstrações ou sistemas para um futuro hipotético.
-
-## Entregas, revisão e QA
+## 7. Entregas, revisão e QA
 
 - Quem coordena (qualquer agente designado pelo responsável) implementa ou delega, integra e joga cada entrega. A missão permanece aberta até validação humana da experiência global, inclusive após PRs intermediários.
-- Cada entrega integrada passa por reprodução com evidências, desenvolvimento, testes e cenários reais no Godot, revisão crítica independente, correções e nova verificação proporcional. Preservar os saves do jogador e usar saves isolados nos cenários de validação.
-- **Cidades descartáveis nesta fase inicial — orientação do responsável em 2026-10-15:** as cidades usadas nas avaliações atuais podem ser perdidas. Não interromper o trabalho para pedir salvamento, insistir em backups ou recuperar uma cidade de teste sem necessidade concreta. Priorizar a melhoria jogável; continuar usando os diretórios de teste existentes quando conveniente. Essa preferência operacional não remove os requisitos futuros de persistência da SPEC nem autoriza apagar outros arquivos por iniciativa própria.
-- O revisor deve ser de um modelo diferente do autor da entrega. Revisor obrigatório: **DeepSeek V4.1 Flash**. Se houver falta de créditos, limite ou indisponibilidade operacional, utilizar automaticamente **Claude Haiku 5.5**, quando disponível. Registrar modelo efetivo, limitações, achados e correções. Se ambos falharem, comunicar e buscar alternativa independente; não declarar entrega validada sem revisão real.
-- A revisão recebe diff, SPEC aplicável, relato humano e evidências; verifica regressões, integração, clareza, gameplay e soluções superficiais. Após duas rodadas com problema importante persistente, expor pendência e alternativas.
-- Trabalho independente pode ocorrer em paralelo em workspaces isoladas, com fronteiras explícitas.
-- **Ajuste de processo confirmado em 2026-10-14:** manter uma entrega integrada principal, sem limitar trabalhos independentes úteis. Reproduzir cedo o cenário original e integrar amostras visuais cedo; tentativas sem melhora pedem reavaliar a direção, sem transformar um limite de iterações em teto de qualidade. Reutilizar evidências de código inalterado e repetir verificações conforme o risco, preservando os testes exigidos e a revisão independente de cada entrega integrada. Evitar ciclos separados de revisão de amostra que apenas repetem a revisão da integração.
-- **Execução de QA no Godot:** argumentos da engine (`--path`, `--position`, `--resolution`) vêm antes de `--`; argumentos do jogo (`--*-smoke`, `--review-save-dir=...`) vêm depois. O banner da engine não prova início do cenário. Se faltarem os marcadores/capturas esperados, verificar chamada e fase antes de continuar esperando ou declarar um teste executado.
-- Para listar os cenários de QA, o que cada um verifica, se exige janela real e de que cidade precisa, rode o jogo com `-- --qa-list`; a pasta `--review-save-dir` deve ser caminho absoluto dentro de `<raiz>/artifacts/verification`.
-- Atalhos de teste que chamam `scripts/Play.ps1` também precisam incluir o separador: `-GodotArguments '--',('--review-save-dir='+$saveFolder)`. Conferir os argumentos da engine iniciada antes de afirmar isolamento; `-DryRun` sozinho não prova a execução nem o destino efetivo de saves.
-- Estas são regras de trabalho autorizadas pelo responsável, **não alterações de gameplay**. A SPEC continua exigindo decisão humana prévia para mudanças relevantes de produto.
-- **Orquestração multiagente (lições de 2026-10-16), vale para qualquer orquestrador:**
-  - uma worktree isolada por worker e uma branch integrada; remover worktrees e fechar terminais após o merge;
-  - acompanhar progresso real (commits/arquivos/tela do terminal), não só o aviso de conclusão: ~15 min sem mudança → cutucar uma vez, depois reatribuir; detectar pedidos de permissão pendentes;
-  - escolher o modelo pela dificuldade, conferir cota antes de despachar e registrar o modelo efetivamente usado;
-  - exigir no pedido alvo, limites e aceitação verificável, incluindo cenário Godot executado de verdade (ver `--qa-list` quando disponível);
-  - estudo que embasa decisão do responsável passa por verificação de um segundo modelo.
+- Cada entrega integrada passa por reprodução com evidências, desenvolvimento, testes e cenários reais no Godot, revisão crítica independente, correções e nova verificação proporcional.
+- **Revisão independente:** revisor de **modelo diferente do autor** (preferência atual: DeepSeek V4.1 Flash; se indisponível, Claude Haiku 5.5). Recebe diff, SPEC aplicável, relato humano e evidências; verifica regressões, integração, clareza, gameplay e soluções superficiais. Registrar modelo efetivo, limitações, achados e correções; sem revisão real, a entrega não está validada. Após duas rodadas com problema importante persistente, expor pendência e alternativas.
+- Manter uma entrega integrada principal, sem limitar trabalhos independentes úteis em workspaces isoladas com fronteiras explícitas. Reproduzir cedo o cenário original e integrar amostras visuais cedo; tentativas sem melhora pedem reavaliar a direção. Reutilizar evidências de código inalterado e repetir verificações conforme o risco; evitar revisões separadas que só repetem a da integração.
+- **Saves:** preservar os saves do jogador e usar saves isolados na validação. As cidades de avaliação atuais são descartáveis (orientação de 2026-10-15): não interromper para pedir backup; isso não remove requisitos de persistência nem autoriza apagar outros arquivos.
+- **QA no Godot:** argumentos da engine (`--path`, `--position`, `--resolution`) antes de `--`; argumentos do jogo (`--*-smoke`, `--review-save-dir=...`) depois. Liste os cenários, o que verificam, se exigem janela real e de que cidade precisam com `-- --qa-list`; `--review-save-dir` deve ser caminho absoluto dentro de `<raiz>/artifacts/verification`. Atalhos via `scripts/Play.ps1` também usam o separador: `-GodotArguments '--',('--review-save-dir='+$saveFolder)`. O banner da engine ou `-DryRun` não provam o cenário: confira marcadores/capturas e o destino dos saves antes de declarar teste executado.
+- **Orquestração multiagente** (lições de 2026-10-16, para qualquer orquestrador): uma worktree isolada por worker e uma branch integrada; remover worktrees e fechar terminais após o merge; acompanhar progresso real, não só o aviso de conclusão (~15 min sem mudança → cutucar uma vez, depois reatribuir; detectar pedidos de permissão); escolher o modelo pela dificuldade, conferir cota antes de despachar e registrar o modelo efetivo; pedido com alvo, limites e aceitação verificável, incluindo cenário Godot executado de verdade; estudo que embasa decisão do responsável passa por verificação de um segundo modelo.
 
-## Filosofia de desenvolvimento
+## 8. Filosofia
 
-- Priorize resultado observável e feedback rápido.
-- Prefira a menor mudança coerente.
-- Não existe obrigação de criar issue, PR, branch especial, plano, ADR, TDD ou documento extra para toda mudança.
-- Use testes quando eles protegem comportamento ou evitam regressão; não crie testes cerimoniais.
-- Não crie handoffs artificiais entre papéis de IA.
-- Processo novo só entra quando resolve uma dor recorrente e observável.
-- Planejamento deve ser proporcional ao risco.
-
-## Como trabalhar
-
-1. **Leia a SPEC antes de mexer em código** e encontre a decisão vigente pertinente ao trabalho, mesmo em bugs e manutenção.
-2. Confira se a funcionalidade pertence ao recorte aprovado da versão e se a SPEC define seu comportamento. Lacuna, conflito ou mudança significativa exige parar essa parte e consultar o responsável; somente detalhe pequeno que passe integralmente pelo teste de delegação pode ser decidido pela IA e registrado antes do código.
-3. Consulte a ARCHITECTURE para restrições estruturais e a EXPLORATION para contexto aberto; inspecione somente o código necessário.
-4. Implemente o comportamento autorizado pela SPEC para a entrega, sem novos atalhos, simulações fictícias ou expansão de escopo.
-5. Se surgir nova lacuna durante a implementação, volte ao passo 2. Execute primeiro os testes mais próximos da área alterada e amplie quando o risco justificar; valide o ciclo integrado desde cedo.
-6. Revise o diff e os testes contra a SPEC, inclusive os registros IA pendentes; corrigir divergência não autoriza alterar silenciosamente o contrato.
-7. Atualize a SPEC **antes**, nunca depois, de codificar qualquer decisão de produto (humana ou delegada). Não a reescreva por detalhes exclusivamente técnicos que já preservam os requisitos existentes.
-
-## Definição prática de pronto
-
-Uma mudança está pronta quando o comportamento implementado está coberto pela SPEC (decisão humana aprovada ou pequena decisão IA autorizada e explicitamente pendente), pertence ao recorte vigente, funciona conforme esse contrato, passa pela validação adequada e não deixa divergência conhecida entre código e SPEC.
-
-Arquitetura elegante, documentação extra e processo perfeito não são objetivos por si só.
+Resultado observável e feedback rápido; a menor mudança coerente; planejamento proporcional ao risco; testes quando protegem comportamento, nunca cerimoniais; sem handoffs artificiais entre papéis de IA; processo novo só para dor recorrente e observável. Arquitetura elegante, documentação extra e processo perfeito não são objetivos por si só.
