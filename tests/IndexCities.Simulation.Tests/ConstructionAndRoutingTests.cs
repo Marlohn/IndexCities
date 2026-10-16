@@ -3,6 +3,39 @@ using Xunit;
 namespace IndexCities.Simulation.Tests;
 public sealed class ConstructionAndRoutingTests
 {
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void Building_quote_uses_the_rotated_door_and_actual_construction_access(bool roadReady,bool backwards)
+    {
+        var sim=new CitySimulation(42);
+        Assert.True(sim.PlaceBuilding(BuildingKind.CityHall,new(-100,40)).Success);
+        Assert.True(sim.PlaceRoad(new(-192,0),new(-120,0)).Success);
+        if(roadReady)sim.Advance(7200);
+        var position=new Point(-168,14);var rotation=backwards?Math.PI:0;
+        var before=sim.SaveToJson();
+        var quote=sim.QuoteBuilding(BuildingKind.House,position,rotation);
+        var candidate=new Building{Kind=BuildingKind.House,Position=position,Rotation=rotation};
+        Assert.True(quote.PhysicallyValid,quote.Message);
+        Assert.Equal(roadReady&&!backwards,quote.Accessible);
+        Assert.Equal(sim.HasExteriorAccess(candidate),quote.Accessible);
+        if(!quote.Accessible)Assert.Contains("aguard",quote.Message);
+        if(!roadReady&&!backwards)Assert.Contains("Rua em obra",quote.Message);
+        Assert.Equal(before,sim.SaveToJson());
+        var placed=sim.PlaceBuilding(BuildingKind.House,position,rotation);
+        Assert.True(placed.Success,placed.Message);
+        var project=sim.State.Projects.Single(p=>p.BuildingId==placed.Id);
+        sim.Advance(2);
+        if(!quote.Accessible){
+            Assert.Contains("Sem acesso",project.Cause);
+            Assert.DoesNotContain(sim.State.Shipments,s=>s.ProjectId==project.Id);
+            Assert.Equal(0,project.Progress);
+        }else Assert.Contains(sim.State.Shipments,s=>s.ProjectId==project.Id);
+        sim.CheckInvariants();
+    }
+
     [Fact] public void Building_preview_reports_the_actual_placement_cause_without_creating_work_or_payment()
     {
         var sim=new CitySimulation(42);Assert.Contains("Prefeitura primeiro",sim.QuoteBuilding(BuildingKind.House,new(-100,40)).Message);
