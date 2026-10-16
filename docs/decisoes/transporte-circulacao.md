@@ -36,3 +36,4 @@
 - 2026-10-11 — Caminhos exclusivos para pedestres adiados (escolha 8A) → Vias, calçadas e estacionamento.
 - 2026-10-11 — Tarifas de estacionamentos municipais em quatro faixas: Grátis, Barata, Normal, Cara (revisão expressa 2B) → Vias, calçadas e estacionamento.
 - 2026-10-13 — Faixas compartilhadas: travessias em cruzamentos e faixas compartilhadas nos trechos retos (aprovação humana) → Regras de circulação viária.
+- 2026-10-16 — Empate na preferência pela direita: quando todos esperam uns pelos outros, passa quem espera há mais tempo, depois volta a regra da direita (escolha "passa quem chegou antes", entre uma direção fixa, semáforo por padrão e manter o travamento; motivo: na cidade de teste quatro carros ficavam parados indefinidamente) → Regras de circulação viária.

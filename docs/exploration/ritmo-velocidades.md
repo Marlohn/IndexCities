@@ -362,7 +362,7 @@ Proposta **para avaliação humana**, não nova fase mandatória: curto *stress 
 | A, sonda | 47 | 42 / ~200 | 5,2 | ~16.600x | ~42 h |
 | Grade 3×400 m, original | 109 | 97 / 400 | 30 | ~2.900x | ~244 h |
 | Grade 3×400 m, sonda | 109 | 97 / 400 | 14 | ~6.100x | ~114 h |
-| Grade 5×800 m, sonda | 400 chegando (91 dentro do mapa) | 337 / 1.214 | 197 | ~440x | ~1.600 h |
+| Grade 5×800 m, sonda (inválida: ver abaixo) | 400 chegando (91 dentro do mapa) | 337 / 1.214 | 197 | ~440x | ~1.600 h |
 
 Meta pedida (80 anos em 20–40 h) equivale a **2,5–4,9 s reais por dia simulado**.
 
@@ -374,7 +374,7 @@ Meta pedida (80 anos em 20–40 h) equivale a **2,5–4,9 s reais por dia simula
 ### Achados colaterais (possíveis bugs, não confirmados no jogo)
 
 - Grade com cruzamentos de 4 vias em preferência à direita (padrão de `SetDefaultJunctions`): carros ficaram em "Fila na faixa" / "Aguardando preferência" por dias; trabalhadores de água não chegaram; SIMs morreram de fome. Com semáforo o trânsito fluiu.
-- 400 famílias migrando de uma vez, todas de carro, pela única rodovia: ~240 carros parados na entrada e no eixo principal por 3 dias; 41–51 mortes.
+- ~~400 famílias migrando de uma vez: ~240 carros parados na entrada por 3 dias; 41–51 mortes.~~ **Corrigido em 2026-10-16: artefato da cidade de teste.** A meia-largura do mapa (606 m) não era múltipla de 4, e a rodovia ficou desalinhada das ruas, com nós a 2 m formando vários cruzamentos colados na entrada. Com a grade alinhada, as 400 pessoas chegam sem travar. A linha "Grade 5×800" da tabela acima também foi afetada por isso e não deve ser usada. A grade 3×400 (406 m) tinha o mesmo desalinhamento, sem travamento visível; seus números serão refeitos com a grade alinhada.
 - Alguns caminhões de empresa ficaram em "Aguardando motorista embarcar" indefinidamente.
 
 ### Leitura

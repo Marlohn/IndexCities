@@ -32,13 +32,15 @@ public sealed partial class CitySimulation
         if(key==null||!key.StartsWith("b:",StringComparison.Ordinal))return null;var parts=key.Split(':');if(parts.Length!=3||!int.TryParse(parts[1],out var id))return null;
         var b=BuildingById(id);if(b==null)return null;foreach(var spot in ParkingSpots(b))if(spot.Key==key)return spot;return null;
     }
-    bool SpotFree(string key,int exceptVehicle)=>!State.Vehicles.Any(v=>v.Id!=exceptVehicle&&v.PassengerCar&&v.Status!=VehicleStatus.Outside&&v.ParkingSpot==key);
+    // A car still physically in the space (its driver already chose another
+    // destination) keeps occupying it until it actually leaves.
+    bool SpotFree(ParkingSpot spot,int exceptVehicle)=>!State.Vehicles.Any(v=>v.Id!=exceptVehicle&&v.PassengerCar&&v.Status!=VehicleStatus.Outside&&(v.ParkingSpot==spot.Key||v.Position.Distance(spot.Position)<2));
     public Vehicle? FamilyCar(Family? family)=>family==null?null:State.Vehicles.FirstOrDefault(v=>v.PassengerCar&&v.Status!=VehicleStatus.Outside&&family.Members.Any(id=>v.OwnerAccount=="sim:"+id));
     // Strangers do not use private house garages; other lots serve trips to that building.
     ParkingSpot? FreeSpot(Building destination,Family family,Vehicle car)
     {
         if(destination.Kind==BuildingKind.House&&destination.FamilyId!=family.Id)return null;
-        foreach(var spot in ParkingSpots(destination))if(SpotFree(spot.Key,car.Id))return spot;return null;
+        foreach(var spot in ParkingSpots(destination))if(SpotFree(spot,car.Id))return spot;return null;
     }
     // Reaching the car must not mean walking across a carriageway outside a crossing.
     bool WalkCrossesRoad(Point a,Point b)=>State.Roads.Any(n=>{var ab=b-a;var len2=ab.X*ab.X+ab.Z*ab.Z;var t=len2<1e-9?0:Math.Clamp(((n.Position.X-a.X)*ab.X+(n.Position.Z-a.Z)*ab.Z)/len2,0,1);return n.Position.Distance(a+ab*t)<State.Tuning.RoadWidth/2-.6;});
@@ -92,7 +94,7 @@ public sealed partial class CitySimulation
         var members=family.Members.Select(id=>State.Citizens.First(c=>c.Id==id)).ToList();var buyer=members[0];
         var fuel=State.Tuning.FuelTank;var price=State.Tuning.CarPrice+(decimal)fuel*State.Tuning.ImportPrices[ResourceKind.Fuel];
         var funds=members.Sum(c=>Balance(c.Account));var access=Access(house);var spot=ParkingSpots(house).FirstOrDefault();
-        if(funds<price+State.Tuning.CarPurchaseReserve||access==null||spot.Key==null||State.OutsideStock[ResourceKind.Fuel]<fuel||!SpotFree(spot.Key,-1))return;
+        if(funds<price+State.Tuning.CarPurchaseReserve||access==null||spot.Key==null||State.OutsideStock[ResourceKind.Fuel]<fuel||!SpotFree(spot,-1))return;
         var route=FindRoadRoute(EntryNode().Id,access.Id);if(route.Count==0)return;
         foreach(var other in members.Skip(1))if(Balance(buyer.Account)<price)Transfer(other.Account,buyer.Account,Math.Min(Balance(other.Account),price-Balance(buyer.Account)),"Cooperação familiar","Contribuição para compra do carro com titular único",null);
         if(!Transfer(buyer.Account,"global",price,"Veículos","Compra/importação real de carro particular e combustível inicial ao migrar",house.Id))return;State.OutsideStock[ResourceKind.Fuel]-=fuel;
