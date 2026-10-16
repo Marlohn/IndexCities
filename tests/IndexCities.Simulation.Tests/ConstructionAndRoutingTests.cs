@@ -36,9 +36,11 @@ public sealed class ConstructionAndRoutingTests
     }
     [Fact] public void Pedestrian_path_turns_without_backtracking_into_its_own_queue()
     {
-        var sim=new CitySimulation(42);sim.PlaceBuilding(BuildingKind.CityHall,new(-152,16));Assert.True(sim.PlaceRoad(new(-192,0),new(-184,44)).Success);var placed=sim.PlaceBuilding(BuildingKind.House,new(-184,58));Assert.True(placed.Success);sim.Advance(7200);var house=sim.State.Buildings.First(b=>b.Id==placed.Id);Assert.True(house.Completed);
-        var path=sim.PedestrianRoute(sim.State.Entry,house);Assert.NotEmpty(path);foreach(var pair in path.Zip(path.Skip(1)).Where(p=>p.First.X>-186&&p.First.Z<43))Assert.True(pair.Second.Z>=pair.First.Z-.01,$"Backtracking: {pair.First} -> {pair.Second}");
-        Assert.DoesNotContain(sim.State.Roads,n=>n.Crosswalk&&n.Position.Distance(new(-184,0))<.1);
+        // Keep the pedestrian corner case, with arms that fit the real street
+        // width: the former 8 m arm is intentionally refused by the road tool.
+        var sim=new CitySimulation(42);sim.PlaceBuilding(BuildingKind.CityHall,new(-152,16));var road=sim.PlaceRoad(new(-192,0),new(-180,44));Assert.True(road.Success,road.Message);var placed=sim.PlaceBuilding(BuildingKind.House,new(-180,58));Assert.True(placed.Success);sim.Advance(7200);var house=sim.State.Buildings.First(b=>b.Id==placed.Id);Assert.True(house.Completed);
+        var path=sim.PedestrianRoute(sim.State.Entry,house);Assert.NotEmpty(path);foreach(var pair in path.Zip(path.Skip(1)).Where(p=>p.First.X>-182&&p.First.Z<43))Assert.True(pair.Second.Z>=pair.First.Z-.01,$"Backtracking: {pair.First} -> {pair.Second}");
+        Assert.DoesNotContain(sim.State.Roads,n=>n.Crosswalk&&n.Position.Distance(new(-180,0))<.1);
     }
     [Fact] public void Crew_on_inner_corner_sidewalk_can_return_home_without_crossing_an_unmarked_lane()
     {

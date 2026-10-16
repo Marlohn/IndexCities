@@ -318,6 +318,7 @@ Sistemas profundos não podem virar caixas-pretas.
 
 - Codex coordena, implementa, integra e joga cada entrega. A missão permanece aberta até validação humana da experiência global, inclusive após PRs intermediários.
 - Cada entrega integrada passa por reprodução com evidências, desenvolvimento, testes e cenários reais no Godot, revisão crítica independente, correções e nova verificação proporcional. Preservar os saves do jogador e usar saves isolados nos cenários de validação.
+- **Cidades descartáveis nesta fase inicial — orientação do responsável em 2026-10-15:** as cidades usadas nas avaliações atuais podem ser perdidas. Não interromper o trabalho para pedir salvamento, insistir em backups ou recuperar uma cidade de teste sem necessidade concreta. Priorizar a melhoria jogável; continuar usando os diretórios de teste existentes quando conveniente. Essa preferência operacional não remove os requisitos futuros de persistência da SPEC nem autoriza apagar outros arquivos por iniciativa própria.
 - Revisor obrigatório: **DeepSeek V4.1 Flash**. Se houver falta de créditos, limite ou indisponibilidade operacional, utilizar automaticamente **Claude Haiku 5.5**, quando disponível. Registrar modelo efetivo, limitações, achados e correções. Se ambos falharem, comunicar e buscar alternativa independente; não declarar entrega validada sem revisão real.
 - A revisão recebe diff, SPEC aplicável, relato humano e evidências; verifica regressões, integração, clareza, gameplay e soluções superficiais. Após duas rodadas com problema importante persistente, expor pendência e alternativas.
 - Trabalho independente pode ocorrer em paralelo em workspaces isoladas, com fronteiras explícitas. Opus 5.5 continua restrito a assets solicitados e compatíveis com Godot, escala, pivôs e conectores.
@@ -332,6 +333,8 @@ Sistemas profundos não podem virar caixas-pretas.
 
 ## Filosofia de desenvolvimento
 
+- **Recuperação isolada do construtor de ruas, 2026-10-15:** Codex implementa e valida no Godot com cenário pequeno, testes focados e saves isolados. Entregar cedo uma versão local jogável para avaliação humana; somente após aprovação da experiência concluir a regressão necessária e a revisão independente DeepSeek V4.1 Flash, com Haiku 5.5 se indisponível, antes do PR final. Não envolver Opus para assets nesta tarefa. Se a investigação crescer sem melhoria visível, apresentar diagnóstico e alternativas em vez de prolongar a rodada.
+- **Consulta adicional ao Claude, solicitada em 2026-10-15:** abrir contexto novo para um parecer crítico sobre grade, ocupação, larguras futuras e conexões do construtor. A consulta é somente leitura, sem implementação nem assets; suas conclusões são análise pendente de revisão humana, não aprovação de produto. Não substitui a avaliação jogável nem a revisão técnica final DeepSeek/Haiku prevista acima.
 - Priorize resultado observável e feedback rápido.
 - Prefira a menor mudança coerente.
 - Não existe obrigação de criar issue, PR, branch especial, plano, ADR, TDD ou documento extra para toda mudança.

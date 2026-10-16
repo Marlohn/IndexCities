@@ -48,10 +48,18 @@ public sealed partial class CitySimulation
         var points=NewRoadPoints(start,end,reverse,ignoredProject);
         var outside=points.Any(p=>!InMap(p,State.Tuning.RoadWidth/2));var water=State.SchemaVersion==1?points.Any(p=>InWater(p,State.Tuning.RoadWidth/2)):RoadOverlapsLake(RoadShape(start,end,reverse));
         var building=State.Buildings.FirstOrDefault(b=>!b.Removed&&points.Any(p=>Inside(b,p,State.Tuning.RoadWidth/2-.05)));
-        var valid=State.CityHallPlaced&&points.Count>0&&!outside&&!water&&building==null;
+        var contact=points.Count>0?RoadContactProblem(RoadShape(start,end,reverse),ignoredProject):null;
+        var snappedStart=SnapRoad(start);var snappedEnd=SnapRoad(end);var delta=snappedEnd-snappedStart;
+        var corner=reverse?new Point(snappedStart.X,snappedEnd.Z):new Point(snappedEnd.X,snappedStart.Z);
+        // Following an already ordered/built street after reaching its junction
+        // does not construct a new tiny bend. Keep those real T connections.
+        var shortCorner=Math.Abs(delta.X)>.01&&Math.Abs(delta.Z)>.01&&Math.Min(Math.Abs(delta.X),Math.Abs(delta.Z))<State.Tuning.RoadWidth&&points.Contains(corner);
+        var valid=points.Count>0&&!outside&&!water&&building==null&&contact==null&&!shortCorner;
         var length=points.Count*State.Tuning.RoadStep;var materials=new Dictionary<ResourceKind,double>{{ResourceKind.Aggregate,length*State.Tuning.RoadWidth*.04},{ResourceKind.Asphalt,length*State.Tuning.RoadWidth*.02}};
         var access=points.Any(p=>State.Roads.Any(r=>r.Position.Distance(p)<=State.Tuning.RoadStep+.05&&_exteriorConnected.Contains(r.Id)));
-        var message=!State.CityHallPlaced?"Confirme o projeto da Prefeitura para liberar ruas":points.Count==0?"Este traçado não adiciona trecho novo às ruas prontas ou em obra":outside?"O traçado ultrapassa o limite do mapa":water?"O traçado invade a água":building!=null?$"O traçado invade {building.Definition.Name} #{building.Id}":!access?"Sem ligação pronta ao exterior: a obra aguardará acesso; ligação planejada não libera entregas":"Trecho válido; ligação exterior disponível";
+        var message=points.Count==0?"Este traçado não adiciona trecho novo às ruas prontas ou em obra":outside?"O traçado ultrapassa o limite do mapa":water?"O traçado invade a água":building!=null?$"O traçado invade {building.Definition.Name} #{building.Id}":!access?"Sem ligação pronta ao exterior: a obra aguardará acesso; ligação planejada não libera entregas":"Trecho válido; ligação exterior disponível";
+        if(contact!=null&&!outside&&!water&&building==null)message=contact;
+        if(shortCorner&&points.Count>0&&!outside&&!water&&building==null&&contact==null)message="Curva muito curta. Alinhe a rua ou afaste a esquina.";
         return new(valid,access,points.Count==0?0:QuoteMaterials(materials,start,Math.Max(120,length*2)),materials,message);
     }
     bool RoadOverlapsLake(IReadOnlyList<Point> shape)

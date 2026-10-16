@@ -32,6 +32,8 @@ public partial class Main:Node3D
         if(args.Contains("--ui-input-smoke"))CallDeferred(MethodName.UiInputSmoke);
         if(args.Contains("--recovery-smoke"))CallDeferred(MethodName.RecoverySmoke);
         if(args.Contains("--road-recovery-smoke"))CallDeferred(MethodName.RoadRecoverySmoke);
+        if(args.Contains("--road-tool-playtest"))CallDeferred(MethodName.RoadToolPlaytest);
+        if(args.Contains("--road-tool-verify"))CallDeferred(MethodName.RoadToolVerifyNative);
         if(args.Contains("--city-names-smoke"))CallDeferred(MethodName.CityNamesSmoke);
         if(args.Contains("--finances-smoke"))CallDeferred(MethodName.FinancesSmoke);
         if(args.Contains("--activity-smoke")||args.Contains("--activity-before"))CallDeferred(MethodName.ActivitySmoke);
@@ -119,22 +121,23 @@ public partial class Main:Node3D
     Point Ground(Vector2 screen){var origin=_camera.ProjectRayOrigin(screen);var direction=_camera.ProjectRayNormal(screen);if(Math.Abs(direction.Y)<.001)return _cursor;return _world.GroundPoint(origin,direction);}
     Point Snap(Point p)
     {
-        var step=_sim.State.Tuning.RoadStep/(_building!=null?2:1);var snapped=new Point(Math.Round(p.X/step)*step,Math.Round(p.Z/step)*step);
-        if(_roadTool){var near=_sim.State.Roads.Select(r=>r.Position).Concat(PlacementRoadGuides().Select(r=>r.Position)).Where(point=>point.Distance(p)<=step*.6).OrderBy(point=>point.Distance(p)).Select(point=>(Point?)point).FirstOrDefault();if(near is {} at&&_camera.UnprojectPosition(ToV(at)).DistanceTo(_camera.UnprojectPosition(ToV(p)))<=12)return at;}
+        var step=_sim.State.Tuning.RoadStep/2;
+        if(_roadTool)return SnapRoadTool(p,_sim.SnapRoad(p));
         if(_building is {} kind){
             var rotation=_rotation;var tolerance=4.0;
             // Auto-orientação: perto de rua urbana a entrada vira para a rua; R vale como manual até sair da proximidade; durante o arrasto a rotação fica travada.
-            if(_dragStart==null){var gap=Math.Ceiling((Catalog.Definitions[kind].Depth/2+_sim.State.Tuning.RoadWidth/2+.75)/step)*step;var near=PlacementRoadGuides().Where(r=>r.Position.Distance(snapped)<=gap+8).OrderBy(r=>r.Position.Distance(snapped)).FirstOrDefault();
+            if(_dragStart==null){var gap=Catalog.Definitions[kind].Depth/2+FrontageOffset(step);var near=PlacementRoadGuides().Where(r=>r.Position.Distance(p)<=gap+8).OrderBy(r=>r.Position.Distance(p)).FirstOrDefault();
                 if(near==null)_manualRotation=false;else if(!_manualRotation){rotation=_rotation=FacePlacementGuide(near,p);tolerance=8;}}
-            if(AlignToRoad(kind,snapped,rotation,step,tolerance) is {} aligned)return aligned;
+            var snapped=SnapBuildingBounds(kind,p,rotation,step);
+            return AlignToRoad(kind,snapped,rotation,step,tolerance)??snapped;
         }
-        return snapped;
+        return _sim.SnapRoad(p);
     }
     Point? AlignToRoad(BuildingKind kind,Point snapped,double rotation,double step,double tolerance)
     {
-        var definition=Catalog.Definitions[kind];var face=new Point(-Math.Sin(rotation),-Math.Cos(rotation));var door=snapped+face*(definition.Depth/2);
+        var definition=Catalog.Definitions[kind];var face=new Point(-Math.Round(Math.Sin(rotation)),-Math.Round(Math.Cos(rotation)));var door=snapped+face*(definition.Depth/2);
         var guide=PlacementRoadGuides().Where(r=>r.Position.Distance(door)<=_sim.State.Tuning.RoadWidth/2+3+tolerance).MinBy(r=>r.Position.Distance(door));if(guide==null)return null;
-        var gap=Math.Ceiling((definition.Depth/2+_sim.State.Tuning.RoadWidth/2+.75)/step)*step;
+        var gap=definition.Depth/2+FrontageOffset(step);
         var aligned=guide.Horizontal&&Math.Abs(face.Z)>.9?new Point(snapped.X,guide.Position.Z-face.Z*gap):guide.Vertical&&Math.Abs(face.X)>.9?new Point(guide.Position.X-face.X*gap,snapped.Z):snapped;
         var candidate=new Building{Kind=kind,Position=aligned,Rotation=rotation};
         return aligned.Distance(snapped)<=tolerance&&guide.Position.Distance(candidate.Door)<=_sim.State.Tuning.RoadWidth/2+3&&_sim.QuoteBuilding(kind,aligned,rotation,_movingProject).PhysicallyValid?aligned:null;
@@ -162,7 +165,7 @@ public partial class Main:Node3D
     void ClearSelection(){_selectedBuilding=null;_selectedCitizen=null;_selectedVehicle=null;_selectedRoad=null;_selectedProject=null;}
     void ClearTool(){if(_building!=null||_roadTool)_placementGridVisible=false;_rightPress=null;_rightDragging=false;_demolitionTool=false;_dragStart=null;_row.Clear();_manualRotation=false;_movingProject=null;_building=null;_roadTool=false;_anchor=null;_roadStart=null;_roadEnd=null;_roadFixed=false;_hoverPreview=false;_holdLoadedPreview=false;_confirmation.Visible=false;_world.ClearPreview();RefreshHud();}
     void Choose(BuildingKind kind){ClearSelection();ClearTool();_building=kind;_placementGridVisible=true;_rotation=0;_manualRotation=false;_selectedBuilding=null;_inspector.Visible=false;}
-    void ChooseRoad(){if(!_sim.State.CityHallPlaced)return;ClearSelection();ClearTool();_roadTool=true;_placementGridVisible=true;_inspector.Visible=false;}
+    void ChooseRoad(){ClearSelection();ClearTool();_roadTool=true;_placementGridVisible=true;_inspector.Visible=false;}
     void Confirm()
     {
         var catalogWasUnlocked=_sim.State.CityHallPlaced;
@@ -201,8 +204,13 @@ public partial class Main:Node3D
             }
             var q = _sim.QuoteRoad(a, b, _reverse, _movingProject);
             if(a.Distance(b)<.01&&q.Materials.Values.All(amount=>amount==0)){_roadEnd=null;_world.PreviewRoad([a],true,_sim.State.Tuning.RoadWidth,false);UpdateConfirmation();return;}
-            _world.PreviewRoad(_sim.RoadShape(a, b, _reverse), q.PhysicallyValid, _sim.State.Tuning.RoadWidth, q.Accessible);
+            _world.PreviewRoad(_sim.RoadShape(a, b, _reverse), q.PhysicallyValid, _sim.State.Tuning.RoadWidth, q.Accessible,_movingProject);
         } else if(_roadTool&&_roadStart is {} start)_world.PreviewRoad([start],true,_sim.State.Tuning.RoadWidth,false);
+        else if(_roadTool&&_hoverPreview&&_modal==null&&GetViewport().GuiGetHoveredControl()==null){
+            _cursor=Snap(Ground(_pointerPixel??GetViewport().GetMousePosition()));
+            var quote=_sim.QuoteRoad(_cursor,_cursor,false,_movingProject);
+            _world.PreviewRoad([_cursor],quote.PhysicallyValid||quote.Materials.Values.All(amount=>amount==0),_sim.State.Tuning.RoadWidth,quote.Accessible);
+        }
         else _world.ClearPreview();
     }
     void SelectAt(Point p,Vector2? screen=null){_selectedBuilding=screen is {} pixel?_world.PickBuilding(_camera.ProjectRayOrigin(pixel),_camera.ProjectRayNormal(pixel)):_sim.State.Buildings.Where(b=>!b.Removed&&b.Position.Distance(p)<Math.Max(b.Definition.Width,b.Definition.Depth)*.65).OrderBy(b=>b.Position.Distance(p)).Select(b=>(int?)b.Id).FirstOrDefault();_selectedCitizen=null;_selectedVehicle=null;_selectedRoad=null;_selectedProject=null;

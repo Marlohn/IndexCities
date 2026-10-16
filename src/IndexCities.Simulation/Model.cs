@@ -374,7 +374,7 @@ public sealed class CityState
     public decimal WaterUnitPrice {get;set;}=.04m;
     public decimal ElectricityUnitPrice {get;set;}=.03m;
     public double MaintenanceNextAt {get;set;}
-    public string LastMessage {get;set;}="Posicione a Prefeitura";
+    public string LastMessage {get;set;}="Comece por uma rua ou posicione a Prefeitura";
     public List<PersonalEvent> CityEvents {get;set;}=[];
 }
 public sealed record CommandResult(bool Success,string Message,int? Id=null);

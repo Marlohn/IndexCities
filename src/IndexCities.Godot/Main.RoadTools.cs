@@ -10,6 +10,7 @@ public partial class Main
     Vector2? _rightPress;
     bool _rightDragging;
     float _rightTravel;
+    Vector2 _rightLast;
 
     void ConfirmRoadDemolition(int roadId,RoadDemolitionQuote displayed,Node feedback)
     {
@@ -24,15 +25,23 @@ public partial class Main
     bool RightCameraInput(InputEvent input)
     {
         if(input is InputEventMouseButton { ButtonIndex:MouseButton.Right } button) {
-            if(button.Pressed){_rightPress=button.Position;_rightDragging=false;_rightTravel=0;return true;}
+            if(button.Pressed){_rightPress=button.Position;_rightLast=button.Position;_rightDragging=false;_rightTravel=0;return true;}
             if(_rightPress==null)return false;
             var dragged=_rightDragging;_rightPress=null;_rightDragging=false;
-            if(!dragged)ClearTool();return true;
+            if(!dragged){
+                if(_roadTool&&_roadStart!=null){
+                    _roadStart=null;_roadEnd=null;_roadFixed=false;_hoverPreview=false;_holdLoadedPreview=false;
+                    _confirmation.Visible=false;_world.ClearPreview();RefreshToolHint();
+                }else ClearTool();
+            }return true;
         }
         if(input is InputEventMouseMotion motion&&_rightPress!=null) {
-            _rightTravel+=motion.Relative.Length();
+            // A delayed relative event can include travel before the button
+            // press. Only actual positions after the press belong to this drag.
+            var movement=motion.Position-_rightLast;_rightLast=motion.Position;
+            _rightTravel+=movement.Length();
             if(_rightTravel>5)_rightDragging=true;
-            if(_rightDragging){_holdLoadedPreview=false;_yaw+=motion.Relative.X*.3f;UpdateCamera();_pointerPixel=motion.Position;UpdatePreview();}
+            if(_rightDragging){_holdLoadedPreview=false;_yaw+=movement.X*.3f;UpdateCamera();_pointerPixel=motion.Position;UpdatePreview();}
             return true;
         }
         return false;
@@ -41,7 +50,6 @@ public partial class Main
     RoadNode? RoadUnderPointer(Point position)=>_sim.State.Roads.Where(r=>r.Position.Distance(position)<=_sim.State.Tuning.RoadWidth/2+_sim.State.Tuning.RoadStep/2).MinBy(r=>r.Position.Distance(position));
     void ChooseDemolition()
     {
-        if(!_sim.State.CityHallPlaced)return;
         ClearSelection();ClearTool();_demolitionTool=true;_inspector.Visible=false;RefreshToolHint();
     }
     void DemolishAt(Point position)
