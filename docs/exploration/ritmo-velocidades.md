@@ -381,9 +381,36 @@ Meta pedida (80 anos em 20–40 h) equivale a **2,5–4,9 s reais por dia simula
 
 1. **Com o passo fixo atual a meta é inviável**, inclusive na cidade de 47 SIMs (86 h; 42 h com a sonda). Com 400 SIMs a sonda já está ~40–80x acima da meta e o custo cresce mais que linearmente; para milhares de SIMs a distância tende a ser maior, mas não foi medida.
 2. Otimizações locais equivalentes dão ~2x e são válidas por si (menos CPU em qualquer velocidade), mas **não mudam a conclusão**.
-3. A meta só parece alcançável se o custo passar a depender de **acontecimentos** e não de **entidades × tempo**: no meio da faixa da meta (~3,7 s por dia, 30 h para 80 anos), 10.000 SIMs com ~20 eventos/dia são ~54 mil eventos por segundo, volume normal para um motor de eventos. O obstáculo é o movimento e a interação física (filas, travessias, cruzamentos) hoje resolvidos a cada 2 s para cada agente. **Não há evidência ainda de que isso possa ser feito com equivalência causal.**
+3. A meta só parece alcançável se o custo passar a depender de **acontecimentos** e não de **entidades × tempo**: no meio da faixa da meta (~3,7 s por dia, 30 h para 80 anos), 10.000 SIMs com ~20 eventos/dia são ~54 mil eventos por segundo, volume normal para um motor de eventos. **Não há evidência ainda de que isso possa ser feito com equivalência causal.** (O censo abaixo mostrou que o maior custo não é o movimento.)
 4. Sistemas futuros da SPEC (nascimento/envelhecimento, educação, saúde, indústria, transporte coletivo) acrescentam entidades e viagens; com o modelo atual o custo cresce junto.
+
+### Ferramenta de medição
+
+`src/IndexCities.Headless` reproduz estas medições sem Godot, usando o núcleo real (não uma cópia):
+
+```powershell
+dotnet build src/IndexCities.Headless -c Release
+dotnet src/IndexCities.Headless/bin/Release/net8.0/IndexCities.Headless.dll scale cycle --days=7
+dotnet src/IndexCities.Headless/bin/Release/net8.0/IndexCities.Headless.dll scale grid --rows=3 --length=400 --days=3
+dotnet src/IndexCities.Headless/bin/Release/net8.0/IndexCities.Headless.dll census grid --rows=3 --length=400 --days=3
+```
+
+Imprime tempo real por dia simulado, horas estimadas para 80 anos, GC, memória, tamanho/tempo de save e o SHA-256 do save final. Mesmo SHA antes e depois de uma otimização indica comportamento idêntico (`scale cycle --days=2` deu `5ED4C3E031A41342` na `main` de 2026-10-16). A grade conclui as obras na hora via métodos privados do núcleo, então **não mede construção**. A divisão do custo por subsistema citada acima veio de uma cópia instrumentada temporária, que não está no repositório.
+
+### Censo de movimento — 2026-10-16 (PENDENTE)
+
+`census` classifica cada SIM e veículo após cada passo de 2 s (3 dias medidos após 2 de aquecimento):
+
+| Cidade | SIMs parados | andando | em veículo | caminhada livre | caminhadas/dia | viagens de veículo/dia |
+|---|---|---|---|---|---|---|
+| A (47 SIMs) | 98,8% | 1,2% | 0,1% | 99,9% | 617 | 47 |
+| Grade 3×400 (109 SIMs) | 97,3% | 0,9% | 1,8% | 99,5% | 569 | 82 |
+
+- Na cidade A, 98% dos passos de veículos em viagem são livres. Na grade, só 1,2%: o restante são **três caminhões presos indefinidamente** ("Aguardando espaço para acessar a faixa" 64%, "Aguardando motorista embarcar" 34%). Isso parece bug, não carga real.
+- **Correção da leitura anterior:** nessas escalas o custo dominante **não é o movimento** (5–7% do tempo na cidade A). É recalcular a cada 2 s necessidades, infraestrutura e operação de empresas de agentes parados, cujo estado só muda em poucos momentos do dia: chegada, saída, compra, troca de turno, refeição, falta de água/energia. Movimento e interação só dominam com trânsito travado (grade de 400).
 
 ### Próximo experimento sugerido (proposta, não aprovado)
 
-Experimento isolado e falsificável **só de mobilidade**: um protótipo de pedestres/carros orientado a eventos (andar por trecho, acordar ao liberar fila, cruzamento ou travessia) rodando a mesma rede e as mesmas viagens da cidade de 109 SIMs e da grade de 400. Comparar contra o motor atual: chegadas, tempos de viagem, filas e ordem nos cruzamentos. **Critério de sucesso:** ≤ 1 s por dia simulado a 1.000 SIMs com trajetórias equivalentes dentro de tolerância definida antes. Se falhar, a decisão volta ao responsável (tamanho de cidade, nível de detalhe do trânsito ou meta de tempo), sem mexer no calendário.
+1. **Primeiro, agenda para sistemas estacionários.** Protótipo isolado no qual necessidades, consumo de água/energia, salário por hora e operação de empresas são integrados entre mudanças de estado, em vez de somados a cada 2 s. Recalcula só quando algo muda: chegada/saída, turno, compra, limiar de fome/saúde, capacidade de serviço. Comparar com o motor atual na cidade A e na grade de 109: mesmos eventos pessoais e lançamentos financeiros, saldos finais e mortes/migrações. Diferenças só de arredondamento de ponto flutuante exigem uma **tolerância definida antes**: por exemplo, mesmo conjunto de eventos e horários com diferença de no máximo um passo (2 s), saldos iguais ao centavo. **Critério de sucesso:** ≤ 1 s por dia simulado na grade de 109 SIMs.
+2. **Depois, mobilidade por eventos**, só se o passo 1 deixar o movimento como gargalo medido.
+3. **Separadamente,** investigar como bugs os travamentos de cruzamento de 4 vias e de caminhões parados, que distorcem qualquer medição em cidades maiores.

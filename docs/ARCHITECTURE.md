@@ -716,6 +716,8 @@ src/
   IndexCities.Godot/
 ```
 
+`IndexCities.Headless` existe desde 2026-10-16: console sem Godot que referencia o núcleo para medir desempenho (custo por dia simulado, censo de movimento, SHA do save). Ferramenta de medição, não parte do jogo, sem regras próprias; o núcleo não depende dela. Usa reflexão para concluir obras instantaneamente nas cidades de medição e, por isso, quebra de forma explícita se esses métodos privados mudarem.
+
 Outros assemblies devem exigir justificativa concreta.
 
 ---
