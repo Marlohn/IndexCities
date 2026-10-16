@@ -560,7 +560,7 @@ public partial class Main
             await NormalClockSample("normal-clock-before-road-completion");
             Require(movedVehicles.Count > 0, "Caminhões deslocaram-se nos frames normais a 1x");
             await RecoveryButton(RecoverySpeedButton(2));
-            Require(_speed == 2, "Botão 15x acelera a obra através do relógio do host");
+            Require(_speed == 2, "Botão 30x acelera a obra através do relógio do host");
             await WaitFor("road-physically-completed", () => road.Status == WorkStatus.Completed);
             await RecoveryButton(RecoverySpeedButton(0));
             var houseProject = await RecoveryPlace(BuildingKind.House, new(-120, 14));
