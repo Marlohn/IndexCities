@@ -36,6 +36,7 @@ public partial class CityWorld:Node3D
     public static string Visual(BuildingKind kind)=>kind switch{BuildingKind.CityHall=>"civic.city_hall.a",BuildingKind.WorksDepot=>"civic.works_depot.a",BuildingKind.House=>"residential.small_house.a",BuildingKind.Grocery=>"commercial.grocery_small.a",BuildingKind.Farm=>"agriculture.farm_small.a",BuildingKind.FuelStation=>"commercial.fuel_station.a",BuildingKind.WaterIntake=>"utility.water_intake.a",BuildingKind.WaterTreatment=>"utility.water_treatment.a",BuildingKind.SewageTreatment=>"utility.sewage_treatment.a",_=>"utility.wind_power.a"};
     public void Reset(CityState state)
     {
+        _waterIntakeRanges.Clear();_waterIntakeRange=null;
         foreach(var child in GetChildren()){RemoveChild(child);child.QueueFree();}_buildings.Clear();_roads.Clear();_people.Clear();_trucks.Clear();_finished.Clear();_lamps.Clear();_lampGlass.Clear();_causes.Clear();_companySigns.Clear();_rotors.Clear();_waterStates.Clear();_stockStates.Clear();_stockMarkers.Clear();_trees.Clear();_vegetationGeometry=null;_lastVisualTime=state.ElapsedSeconds;_roadRevision=-1;_state=state;
         _roadWorks.Clear();_roadWorkLabels.Clear();_roadWorkGeometry=null;_roadSurface=null;_sidewalkSurface.Clear();
         _buildingPickMeshes.Clear();_roadFootprints.Clear();_roadCarriageways.Clear();_crosswalkStripes.Clear();_crosswalkPaint=null;_labelLayoutKey=null;
