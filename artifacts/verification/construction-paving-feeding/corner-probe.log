@@ -1,0 +1,15 @@
+CommandResult { Success = True, Message = Obra de Prefeitura confirmada; orçamento reservado; conecte uma rua urbana à entrada, Id = 25 }
+CommandResult { Success = True, Message = Obra de rua confirmada; orçamento reservado; materiais e equipe serão enviados, Id = 26 }
+CommandResult { Success = True, Message = Obra de Casa confirmada; orçamento reservado; conecte uma rua urbana à entrada, Id = 28 }
+P24 Waiting 0 Sem acesso para materiais/equipe
+P26 InProgress 1 Aplicação e acabamento de asfalto em andamento
+P27 Waiting 0 Aguardando caminhão externo disponível
+V18 None Available Outside Point { X = -256, Z = 0 } Disponível no exterior
+V19 None Available Outside Point { X = -256, Z = 0 } Disponível no exterior
+V20 None Available Outside Point { X = -256, Z = 0 } No exterior
+V21 None Available Outside Point { X = -256, Z = 0 } Disponível no exterior
+V22 None Available Travelling Point { X = -193,65, Z = 119,43834480835794 } Fila na faixa
+V23 None Available Outside Point { X = -256, Z = 0 } No exterior
+V29 Paver Available Outside Point { X = -256, Z = 1,65 } Máquina no exterior; respeita vínculo da equipe contratada
+V30 Roller LeavingSite Parked Point { X = -196,4, Z = 116 } Aguardando espaço ocupado no canteiro
+CORNER_REPRO_SAVED C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-paving-feeding\corner-stalled.json

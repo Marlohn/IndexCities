@@ -1,0 +1,12 @@
+﻿using IndexCities.Simulation;
+var sim=new CitySimulation(42);
+Console.WriteLine(sim.PlaceBuilding(BuildingKind.CityHall,new(-152,16)));
+Console.WriteLine(sim.PlaceRoad(new(-192,0),new(-128,132),true));
+Console.WriteLine(sim.PlaceBuilding(BuildingKind.House,new(-190,146)));
+sim.Advance(7200);
+var output=Path.Combine(AppContext.BaseDirectory,"../../../../corner-stalled.json");
+File.WriteAllText(Path.GetFullPath(output),sim.SaveToJson());
+foreach(var p in sim.State.Projects)Console.WriteLine($"P{p.Id} {p.Status} {p.Progress} {p.Cause}");
+foreach(var v in sim.State.Vehicles)Console.WriteLine($"V{v.Id} {v.Machine} {v.MachinePhase} {v.Status} {v.Position} {v.Cause}");
+sim.CheckInvariants();
+Console.WriteLine("CORNER_REPRO_SAVED "+Path.GetFullPath(output));

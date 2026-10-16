@@ -1,0 +1,27 @@
+  Determinando os projetos a serem restaurados...
+  Todos os projetos estão atualizados para restauração.
+  IndexCities.Simulation -> C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\src\IndexCities.Simulation\bin\Debug\net8.0\IndexCities.Simulation.dll
+  Marlohn/pavimentacao-integracao
+  bcd5ad72374637bd9c9d203ae0e8cc25206e812e
+  src/IndexCities.Godot/CityWorld.Construction.cs
+  src/IndexCities.Godot/Main.ConstructionPavingQA.cs
+  src/IndexCities.Godot/Main.NeighbourhoodQA.cs
+  src/IndexCities.Godot/Main.WorkCauseText.cs
+  src/IndexCities.Simulation/CitySimulation.cs
+  src/IndexCities.Simulation/Construction.Fleet.cs
+  src/IndexCities.Simulation/Construction.Paving.cs
+  src/IndexCities.Simulation/Construction.cs
+  src/IndexCities.Simulation/Mobility.cs
+  src/IndexCities.Simulation/Model.cs
+  src/IndexCities.Simulation/WorkCause.cs
+  src/IndexCities.Simulation/Construction.Feeding.cs
+C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\src\IndexCities.Godot\Main.ProblemAlertsQA.cs(198,25): warning CS8629: O tipo de valor de nulidade pode ser nulo. [C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\src\IndexCities.Godot\IndexCities.Godot.csproj]
+  IndexCities.Godot -> C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\src\IndexCities.Godot\.godot\mono\temp\bin\Debug\IndexCities.Godot.dll
+
+Compilação com êxito.
+
+C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\src\IndexCities.Godot\Main.ProblemAlertsQA.cs(198,25): warning CS8629: O tipo de valor de nulidade pode ser nulo. [C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\src\IndexCities.Godot\IndexCities.Godot.csproj]
+    1 Aviso(s)
+    0 Erro(s)
+
+Tempo Decorrido 00:00:07.51

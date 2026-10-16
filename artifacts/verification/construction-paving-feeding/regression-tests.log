@@ -1,0 +1,40 @@
+Execução de teste para C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\tests\IndexCities.Simulation.Tests\bin\Debug\net8.0\IndexCities.Simulation.Tests.dll (.NETCoreApp,Version=v8.0)
+1 arquivos de teste no total corresponderam ao padrão especificado.
+dotnet : [xUnit.net 00:00:01.99]     IndexCities.Simulation.Tests.PedestrianCrossingTests.Curb_beyond_the_end_of_a_corn
+er_is_not_another_carriageway_crossing [FAIL]
+No linha:2 caractere:1
++ dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([xUnit.net 00:0...crossing [FAIL]:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Com falha IndexCities.Simulation.Tests.PedestrianCrossingTests.Curb_beyond_the_end_of_a_corner_is_not_another_carriageway_crossing [1 s]
+  Mensagem de erro:
+   P24 Waiting 0: Sem acesso para materiais/equipe, 0/0, verba 2112,00; P26 InProgress 1: Aplicação e acabamento de asfalto em andamento, 49/49, verba 28,58; P27 Waiting 0: Aguardando caminhão externo disponível, 0/0, verba 962,90 | V18 None Available Outside Point { X = -256, Z = 0 } route 50/0: Disponível no exterior; V19 None Available Outside Point { X = -256, Z = 0 } route 10/0: Disponível no exterior; V20 None Available Outside Point { X = -256, Z = 0 } route 0/0: No exterior; V21 None Available Outside Point { X = -256, Z = 0 } route 50/0: Disponível no exterior; V22 None Available Travelling Point { X = -193,65, Z = 119,43834480835794 } route 4/50: Fila na faixa; V23 None Available Outside Point { X = -256, Z = 0 } route 0/0: No exterior; V29 Paver Available Outside Point { X = -256, Z = 1,65 } route 17/0: Máquina no exterior; respeita vínculo da equipe contratada; V30 Roller LeavingSite Parked Point { X = -196,4, Z = 116 } route 10/10: Aguardando espaço ocupado no canteiro
+  Rastreamento de pilha:
+     at IndexCities.Simulation.Tests.PedestrianCrossingTests.CornerCity() in C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\tests\IndexCities.Simulation.Tests\PedestrianCrossingTests.cs:line 15
+   at IndexCities.Simulation.Tests.PedestrianCrossingTests.Curb_beyond_the_end_of_a_corner_is_not_another_carriageway_crossing() in C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\tests\IndexCities.Simulation.Tests\PedestrianCrossingTests.cs:line 43
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+[xUnit.net 00:00:07.44]     IndexCities.Simulation.Tests.PedestrianCrossingTests.Saved_detour_beside_the_destination_do
+or_resumes_without_crossing_the_road_and_back [FAIL]
+  Com falha IndexCities.Simulation.Tests.PedestrianCrossingTests.Saved_detour_beside_the_destination_door_resumes_without_crossing_the_road_and_back [5 s]
+  Mensagem de erro:
+   P24 Waiting 0: Sem acesso para materiais/equipe, 0/0, verba 2112,00; P26 InProgress 1: Aplicação e acabamento de asfalto em andamento, 49/49, verba 28,58; P27 Waiting 0: Aguardando caminhão externo disponível, 0/0, verba 962,90 | V18 None Available Outside Point { X = -256, Z = 0 } route 50/0: Disponível no exterior; V19 None Available Outside Point { X = -256, Z = 0 } route 10/0: Disponível no exterior; V20 None Available Outside Point { X = -256, Z = 0 } route 0/0: No exterior; V21 None Available Outside Point { X = -256, Z = 0 } route 50/0: Disponível no exterior; V22 None Available Travelling Point { X = -193,65, Z = 119,43834480835794 } route 4/50: Fila na faixa; V23 None Available Outside Point { X = -256, Z = 0 } route 0/0: No exterior; V29 Paver Available Outside Point { X = -256, Z = 1,65 } route 17/0: Máquina no exterior; respeita vínculo da equipe contratada; V30 Roller LeavingSite Parked Point { X = -196,4, Z = 116 } route 10/10: Aguardando espaço ocupado no canteiro
+  Rastreamento de pilha:
+     at IndexCities.Simulation.Tests.PedestrianCrossingTests.CornerCity() in C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\tests\IndexCities.Simulation.Tests\PedestrianCrossingTests.cs:line 15
+   at IndexCities.Simulation.Tests.PedestrianCrossingTests.Saved_detour_beside_the_destination_door_resumes_without_crossing_the_road_and_back() in C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\tests\IndexCities.Simulation.Tests\PedestrianCrossingTests.cs:line 56
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+[xUnit.net 00:00:10.50]     IndexCities.Simulation.Tests.PedestrianCrossingTests.Distant_crossing_does_not_stop_a_walke
+r_on_a_seventy_metre_sidewalk_approach [FAIL]
+  Com falha IndexCities.Simulation.Tests.PedestrianCrossingTests.Distant_crossing_does_not_stop_a_walker_on_a_seventy_metre_sidewalk_approach [3 s]
+  Mensagem de erro:
+   P24 Waiting 0: Sem acesso para materiais/equipe, 0/0, verba 2112,00; P26 InProgress 1: Aplicação e acabamento de asfalto em andamento, 49/49, verba 28,58; P27 Waiting 0: Aguardando caminhão externo disponível, 0/0, verba 962,90 | V18 None Available Outside Point { X = -256, Z = 0 } route 50/0: Disponível no exterior; V19 None Available Outside Point { X = -256, Z = 0 } route 10/0: Disponível no exterior; V20 None Available Outside Point { X = -256, Z = 0 } route 0/0: No exterior; V21 None Available Outside Point { X = -256, Z = 0 } route 50/0: Disponível no exterior; V22 None Available Travelling Point { X = -193,65, Z = 119,43834480835794 } route 4/50: Fila na faixa; V23 None Available Outside Point { X = -256, Z = 0 } route 0/0: No exterior; V29 Paver Available Outside Point { X = -256, Z = 1,65 } route 17/0: Máquina no exterior; respeita vínculo da equipe contratada; V30 Roller LeavingSite Parked Point { X = -196,4, Z = 116 } route 10/10: Aguardando espaço ocupado no canteiro
+  Rastreamento de pilha:
+     at IndexCities.Simulation.Tests.PedestrianCrossingTests.CornerCity() in C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\tests\IndexCities.Simulation.Tests\PedestrianCrossingTests.cs:line 15
+   at IndexCities.Simulation.Tests.PedestrianCrossingTests.Distant_crossing_does_not_stop_a_walker_on_a_seventy_metre_sidewalk_approach() in C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\tests\IndexCities.Simulation.Tests\PedestrianCrossingTests.cs:line 32
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+Com falha! – Com falha:     3, Aprovado:   214, Ignorado:     0, Total:   217, Duração: 1 m 13 s - IndexCities.Simulation.Tests.dll (net8.0)

@@ -1,0 +1,28 @@
+dotnet : FAIL PedestrianCrossingTests.Distant_crossing_does_not_stop_a_walker_on_a_seventy_metre_sidewalk_approach
+No linha:2 caractere:191
++ ... tests.log"; dotnet run --no-build --project tests/IndexCities.Simulat ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (FAIL Pedestrian...dewalk_approach:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Xunit.Sdk.TrueException: P24 Waiting 0: Sem acesso para materiais/equipe, 0/0, verba 2112,00; P26 InProgress 1: 
+Aplicação e acabamento de asfalto em andamento, 49/49, verba 28,58; P27 Waiting 0: Aguardando caminhão externo 
+disponível, 0/0, verba 962,90 | V18 None Available Outside Point { X = -256, Z = 0 } route 50/0: Disponível no 
+exterior; V19 None Available Outside Point { X = -256, Z = 0 } route 10/0: Disponível no exterior; V20 None Available 
+Outside Point { X = -256, Z = 0 } route 0/0: No exterior; V21 None Available Outside Point { X = -256, Z = 0 } route 
+50/0: Disponível no exterior; V22 None Available Travelling Point { X = -193,65, Z = 119,43834480835794 } route 4/50: 
+Fila na faixa; V23 None Available Outside Point { X = -256, Z = 0 } route 0/0: No exterior; V29 Paver Available 
+Outside Point { X = -256, Z = 1,65 } route 17/0: Máquina no exterior; respeita vínculo da equipe contratada; V30 
+Roller LeavingSite Parked Point { X = -196,4, Z = 116 } route 10/10: Aguardando espaço ocupado no canteiro
+   at Xunit.Assert.True(Nullable`1 condition, String userMessage) in 
+/_/src/xunit.assert/Asserts/BooleanAsserts.cs:line 141
+   at Xunit.Assert.True(Boolean condition, String userMessage) in /_/src/xunit.assert/Asserts/BooleanAsserts.cs:line 
+123
+   at IndexCities.Simulation.Tests.PedestrianCrossingTests.CornerCity() in C:\Users\Marlohn\orca\workspaces\IndexCities
+\pavimentacao-integracao\tests\IndexCities.Simulation.Tests\PedestrianCrossingTests.cs:line 15
+   at IndexCities.Simulation.Tests.PedestrianCrossingTests.Distant_crossing_does_not_stop_a_walker_on_a_seventy_metre_s
+idewalk_approach() in C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\tests\IndexCities.Simulation
+.Tests\PedestrianCrossingTests.cs:line 32
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+Assertions locais: 0 passaram, 1 falharam
