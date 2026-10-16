@@ -339,3 +339,51 @@ Proposta **para avaliação humana**, não nova fase mandatória: curto *stress 
 **Critério de decisão:** medir custo por dia simulado (não FPS apenas), tendência do custo por morador/empresa/viagem, total de acontecimentos e picos; identificar quais partes podem dormir, quais devem acontecer realmente e se as otimizações reduzem os custos reais. Antes de uma refatoração grande, exigir um ganho mensurado end-to-end em caso representativo e conferir o custo de integrar novos sistemas. Se o throughput por dia, extrapolado com **margem explícita** para sistemas ainda não implementados, não permitir chegar à meta geracional, não insistir indefinidamente em otimizações micro. Levar ao responsável opções reais de escala/nível de interação/hardware como novo trade-off, **sem mudar o calendário ou os eventos aprovados por conta própria**.
 
 **Conclusão adversarial:** a tese de eventos continua plausível para otimizar, mas **a hipótese de que será suficiente para todo o IndexCities não está demonstrada e deve ser tratada como risco central**. A próxima ação útil é um teste falsificável de escalabilidade, e não mais uma pesquisa genérica ou reescrita antecipada.
+
+
+---
+
+## Medição de escala do núcleo — 2026-10-16 (PENDENTE)
+
+> **Pesquisa, não fonte de verdade.** Primeira medição real de custo por dia simulado, feita fora do repositório (cópia do núcleo `IndexCities.Simulation` da `main` em `90c0f72`, num projeto de bancada descartável), sem alterar código, regras ou o jogo. Atualiza a seção anterior, que não tinha benchmarks novos.
+
+### Método
+
+- Release, .NET 8, console sem Godot nem renderização, uma thread, Windows 11, CPU desktop de 12 threads. Cronômetro por subsistema dentro de `Step`. Aquecimento de 2 dias simulados antes de medir; depois, dia a dia.
+- **Cidade A:** exatamente o roteiro de `CityCycleTests.City()` (47 SIMs, obras reais).
+- **Cidades em grade:** sintéticas, colocadas com os comandos públicos (mesma validação) e **concluídas instantaneamente** em vez de obra física. Capacidade das instalações de água, esgoto e energia multiplicada por 50 só para poucas instalações atenderem a cidade (não muda o custo de cálculo). Lago reposicionado ao lado da grade. Cruzamentos de 4 vias receberam semáforo (ação disponível ao jogador; ver achado abaixo).
+- **Sonda de otimização:** segunda cópia com índices por ID (no lugar de `FirstOrDefault` lineares em prédios, famílias, empresas, SIMs e veículos) e agrupamento de trabalhadores por prédio em uma passada. **Equivalência verificada:** o save JSON depois de 2 dias tem o mesmo SHA-256 da versão original (cidade A e grade de 109 SIMs).
+
+### Resultados
+
+| Cenário | SIMs | Prédios / nós de rua | s reais por dia simulado | Velocidade efetiva | 80 anos (29.220 dias) |
+|---|---|---|---|---|---|
+| A, original | 47 | 42 / ~200 | 10,6 | ~8.100x | ~86 h |
+| A, sonda | 47 | 42 / ~200 | 5,2 | ~16.600x | ~42 h |
+| Grade 3×400 m, original | 109 | 97 / 400 | 30 | ~2.900x | ~240 h |
+| Grade 3×400 m, sonda | 109 | 97 / 400 | 14 | ~6.100x | ~114 h |
+| Grade 5×800 m, sonda | 400 chegando (91 dentro do mapa) | 337 / 1.214 | 197 | ~440x | ~1.600 h |
+
+Meta pedida (80 anos em 20–40 h) equivale a **2,5–4,9 s reais por dia simulado**.
+
+- **Distribuição do custo (A, original):** infraestrutura 53%, necessidades 24%, operação de empresas 14%, movimento de SIMs 5%, veículos 2%; economia periódica, finanças diárias e impostos <1%. Na grade de 400, com trânsito parado, **veículos 70%**.
+- **Crescimento:** de 47 para 109 SIMs o custo triplicou. Varreduras "todos os prédios × todos os SIMs", busca de pedestre contra todos os pedestres, de travessia contra todas as ruas, e poluição local somando todas as células do mapa por casa **a cada 2 s** tornam o custo superlinear.
+- **Trabalho desperdiçado:** a cidade A gera ~15 registros de história pessoal e ~3 lançamentos financeiros por SIM por dia, mas o passo fixo recalcula todos os SIMs, prédios e ruas 43.200 vezes por dia. Alocações: 4–6 GB por dia simulado mesmo com 47 SIMs.
+- **Memória e saves:** histórico pessoal e livro-caixa crescem sem limite (~15 e ~3 itens por SIM/dia). Para 10.000 SIMs em 80 anos seriam ~4 bilhões de registros de história, o que não cabe em memória nem em save JSON. Guardar a história consultável a longo prazo exige uma decisão de produto sobre retenção/resumo.
+
+### Achados colaterais (possíveis bugs, não confirmados no jogo)
+
+- Grade com cruzamentos de 4 vias em preferência à direita (padrão de `SetDefaultJunctions`): carros ficaram em "Fila na faixa" / "Aguardando preferência" por dias; trabalhadores de água não chegaram; SIMs morreram de fome. Com semáforo o trânsito fluiu.
+- 400 famílias migrando de uma vez, todas de carro, pela única rodovia: ~240 carros parados na entrada e no eixo principal por 3 dias; 41–51 mortes.
+- Alguns caminhões de empresa ficaram em "Aguardando motorista embarcar" indefinidamente.
+
+### Leitura
+
+1. **Com o passo fixo atual a meta é inviável**, inclusive na cidade de 47 SIMs (86 h; 42 h com a sonda). Para milhares de SIMs faltam duas a três ordens de grandeza.
+2. Otimizações locais equivalentes dão ~2x e são válidas por si (menos CPU em qualquer velocidade), mas **não mudam a conclusão**.
+3. A meta só parece alcançável se o custo passar a depender de **acontecimentos** e não de **entidades × tempo**: em 3,7 s por dia, 10.000 SIMs com ~20 eventos/dia são ~55 mil eventos por segundo, volume normal para um motor de eventos. O obstáculo é o movimento e a interação física (filas, travessias, cruzamentos) hoje resolvidos a cada 2 s para cada agente. **Não há evidência ainda de que isso possa ser feito com equivalência causal.**
+4. Sistemas futuros da SPEC (nascimento/envelhecimento, educação, saúde, indústria, transporte coletivo) acrescentam entidades e viagens; com o modelo atual o custo cresce junto.
+
+### Próximo experimento sugerido (proposta, não aprovado)
+
+Experimento isolado e falsificável **só de mobilidade**: um protótipo de pedestres/carros orientado a eventos (andar por trecho, acordar ao liberar fila, cruzamento ou travessia) rodando a mesma rede e as mesmas viagens da cidade de 109 SIMs e da grade de 400. Comparar contra o motor atual: chegadas, tempos de viagem, filas e ordem nos cruzamentos. **Critério de sucesso:** ≤ 1 s por dia simulado a 1.000 SIMs com trajetórias equivalentes dentro de tolerância definida antes. Se falhar, a decisão volta ao responsável (tamanho de cidade, nível de detalhe do trânsito ou meta de tempo), sem mexer no calendário.
