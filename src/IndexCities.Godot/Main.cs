@@ -13,6 +13,7 @@ public partial class Main:Node3D
     ulong _frameAt,_clockAt;string _cityId="";string? _capturePath;double _captureTimer;int? _selectedBuilding,_selectedCitizen,_selectedVehicle,_selectedRoad,_selectedProject,_movingProject;Window? _modal;
     public override void _Ready()
     {
+        if(!EnsureImportCachePresent())return;
         GetViewport().Msaa3D=Viewport.Msaa.Msaa4X;
         _sim=new CitySimulation(42);_cityId=CitySaves.NewId();_focus=new((float)_sim.State.Entry.X+112,0,8);_world=new CityWorld();AddChild(_world);
         _sun=new DirectionalLight3D{RotationDegrees=new(-48,-30,0),LightColor=new Color("fff0d0"),LightEnergy=1f,ShadowEnabled=true,DirectionalShadowMaxDistance=650};AddChild(_sun);
