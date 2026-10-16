@@ -7,6 +7,7 @@ public partial class Main
 {
     async void PedestrianRecoverySmoke()
     {
+        if(!QaPrecondition(_sim.State.Citizens.Count(c=>c.Alive&&c.Activity.StartsWith("Sem rota",StringComparison.Ordinal))==6&&_sim.State.Citizens.Any(c=>c.Id==1175),"pedestrian-recovery-smoke","uma cidade-checkpoint com exatamente 6 pedestres 'Sem rota' e o cidadão 1175","-- --fixture=<caminho-do-checkpoint>"))return;
         var directory=System.IO.Path.GetFullPath(ProjectSettings.GlobalizePath("res://../../artifacts/verification/pedestrian-recovery/rendered-"+Guid.NewGuid().ToString("N")));
         System.IO.Directory.CreateDirectory(directory);
         try {
@@ -28,12 +29,12 @@ public partial class Main
             }
             System.IO.File.WriteAllText(System.IO.Path.Combine(directory,"route-queries.json"),JsonSerializer.Serialize(queries,new JsonSerializerOptions{WriteIndented=true}));
             Require(_sim.SaveToJson()==original,"Consultas de caminho não alteram a partida");
-            _focus=ToV(walkers.First(c=>c.Id==1175).Position);_zoom=38;UpdateCamera();_world.Reset(_sim.State);
+            Require(walkers.Any(c=>c.Id==1175),"Cidadão 1175 deve estar entre os pedestres recuperados");_focus=ToV(walkers.First(c=>c.Id==1175).Position);_zoom=38;UpdateCamera();_world.Reset(_sim.State);
             ClearSelection();_selectedCitizen=1175;RefreshInspection();RefreshHud();
             await RecoveryCapture(System.IO.Path.Combine(directory,"original-position.png"),GetViewport());
             var before=OS.GetCmdlineUserArgs().Contains("--pedestrian-before");
             if(before) {
-                GD.Print($"INDEXCITIES_PEDESTRIAN_BASELINE queries={queries.Count} unavailable={unavailable} citizens={walkers.Length} state=unchanged directory={directory}");GetTree().Quit();return;
+                GD.Print($"BASELINE: sem verificações INDEXCITIES_PEDESTRIAN_BASELINE queries={queries.Count} unavailable={unavailable} citizens={walkers.Length} state=unchanged directory={directory}");GetTree().Quit();return;
             }
             Require(unavailable==0,"Destinos conectados possuem caminho pedonal físico");
             // Every queried walk and every walk taken is checked against the

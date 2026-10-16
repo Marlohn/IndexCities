@@ -6,6 +6,7 @@ public partial class Main
 {
     async void CirculationSmoke()
     {
+        if(!QaPrecondition(_sim.State.Vehicles.Any(v=>v.Id==1139)&&_sim.State.Vehicles.Any(v=>v.Id==1145)&&_sim.State.Vehicles.Any(v=>v.Id==505)&&_sim.State.Roads.Any(r=>r.Id==619),"circulation-smoke","uma cidade-checkpoint com os veículos 1139/1145/505 e a rua 619","-- --fixture=<caminho-do-checkpoint>"))return;
         var directory=System.IO.Path.GetFullPath(ProjectSettings.GlobalizePath("res://../../artifacts/verification/circulation/rendered-"+Guid.NewGuid().ToString("N")));
         try {
             Require(DisplayServer.GetName()!="headless","Circulação exige Godot renderizado");
