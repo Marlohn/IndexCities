@@ -65,9 +65,12 @@ public sealed partial class CitySimulation
             var target=vehicle.SitePath[vehicle.SitePathIndex];var delta=target-vehicle.Position;var distance=delta.Distance(default);
             var travel=Math.Min(distance,Math.Min(speed*remaining,vehicle.Fuel/State.Tuning.FuelPerMetre));
             if(travel<=.000001&&distance>.001){vehicle.Cause="Sem combustível para manobra no canteiro";return false;}
+            // A blocked body keeps its verified pose: turning in place toward the
+            // next point is untested occupancy and can lock an adjacent vehicle.
+            var previousHeading=vehicle.Heading;
             if(distance>.001)vehicle.Heading=vehicle.SiteDockHeading is {} heading&&vehicle.SitePathIndex==vehicle.SitePath.Count-1?heading:Math.Atan2(delta.X,delta.Z);
             travel=SafeSiteTravel(vehicle,target,travel);
-            if(travel<=.000001&&distance>.001){vehicle.Cause=WorkCause.PavingSiteOccupied;return false;}
+            if(travel<=.000001&&distance>.001){vehicle.Heading=previousHeading;vehicle.Cause=WorkCause.PavingSiteOccupied;return false;}
             vehicle.Position=vehicle.Position.MoveTowards(target,travel);vehicle.Fuel=Math.Max(0,vehicle.Fuel-travel*State.Tuning.FuelPerMetre);vehicle.FuelBurnedLastStep+=travel*State.Tuning.FuelPerMetre;remaining-=travel/speed;
             if(travel>=distance-.000001)vehicle.SitePathIndex++;else return false;
         }

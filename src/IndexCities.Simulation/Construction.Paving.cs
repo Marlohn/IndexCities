@@ -150,8 +150,8 @@ public sealed partial class CitySimulation
             var due=Money(p.CrewCostDue+(executing?(decimal)(travel/speed/3600)*hourly:0));
             if(due>p.BudgetRemaining){p.Cause=WorkCause.NoBudgetForPaving;machine.Cause=p.Cause;break;}
             if(machine.Fuel<travel*State.Tuning.FuelPerMetre){p.Cause=WorkCause.PavingOutOfFuel;machine.Cause=p.Cause;break;}
-            machine.Heading=Math.Atan2(delta.X,delta.Z);travel=SafeSiteTravel(machine,target,travel);
-            if(travel<=.000001){p.Cause=WorkCause.PavingSiteOccupied;machine.Cause=p.Cause;break;}
+            var previousHeading=machine.Heading;machine.Heading=Math.Atan2(delta.X,delta.Z);travel=SafeSiteTravel(machine,target,travel);
+            if(travel<=.000001){machine.Heading=previousHeading;p.Cause=WorkCause.PavingSiteOccupied;machine.Cause=p.Cause;break;}
             machine.Position=machine.Position.MoveTowards(target,travel);remaining-=travel/speed;
             machine.Fuel-=travel*State.Tuning.FuelPerMetre;machine.FuelBurnedLastStep+=travel*State.Tuning.FuelPerMetre;
             if(executing){p.CrewCostDue+=(decimal)(travel/speed/3600)*hourly;

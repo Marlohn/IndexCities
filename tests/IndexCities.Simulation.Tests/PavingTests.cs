@@ -148,6 +148,30 @@ public sealed class PavingTests
         Assert.All(sim.State.Vehicles.Where(v=>v.Machine!=PavingMachine.None),v=>Assert.Equal(VehicleStatus.Outside,v.Status));sim.CheckInvariants();
     }
 
+    [Theory]
+    [InlineData(2.0)]
+    [InlineData(1.0)]
+    public void Blocked_leaving_roller_keeps_its_pose_so_a_passing_truck_and_the_corner_street_finish(double step)
+    {
+        // Inverted-elbow street beside a house: the leaving roller once turned in
+        // place into a passing truck and both waited on each other forever.
+        var sim=new CitySimulation(42);
+        Assert.True(sim.PlaceBuilding(BuildingKind.CityHall,new(-152,16)).Success);
+        var road=sim.PlaceRoad(new(-192,0),new(-128,132),true);Assert.True(road.Success);
+        var house=sim.PlaceBuilding(BuildingKind.House,new(-190,146));Assert.True(house.Success);
+        var p=sim.State.Projects.Single(x=>x.Id==road.Id);
+        for(var t=0.0;t<7200;t+=step){
+            var before=sim.State.Vehicles.Where(v=>v.Machine!=PavingMachine.None&&v.MachinePhase==MachinePhase.LeavingSite).ToDictionary(v=>v.Id,v=>(v.Position,v.Heading));
+            sim.Advance(step);
+            foreach(var v in sim.State.Vehicles.Where(v=>before.ContainsKey(v.Id)&&v.MachinePhase==MachinePhase.LeavingSite&&v.Position==before[v.Id].Position))
+                Assert.True(v.Heading==before[v.Id].Heading,$"t={sim.State.ElapsedSeconds}: V{v.Id} turned in place while blocked | {Diagnostic(sim)}");
+        }
+        Assert.True(p.Status==WorkStatus.Completed,Diagnostic(sim));
+        Assert.True(sim.State.Buildings.Single(b=>b.Id==house.Id).Completed,Diagnostic(sim));
+        Assert.All(sim.State.Vehicles.Where(v=>v.Machine!=PavingMachine.None),v=>Assert.Equal(VehicleStatus.Outside,v.Status));
+        sim.CheckInvariants();
+    }
+
     [Fact]
     public void Two_teams_never_reassign_a_returned_paver_while_its_roller_is_still_working()
     {
