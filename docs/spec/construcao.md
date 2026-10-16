@@ -168,6 +168,7 @@
 - O jogador desenha e confirma a rua; fornecimento, máquinas e execução são automáticos. Falta de material, equipe, equipamento, verba ou acesso limita o avanço e mostra a causa concreta. A rua abre ao trânsito somente ao concluir a obra, preservando as regras de ligação e de trechos compartilhados.
 - Marcação de canteiro, base, aplicação de asfalto e acabamento tornam o progresso real perceptível no mundo, sem confirmações manuais por etapa nem espera extra apenas para prolongar a animação. Materiais continuam consumidos uma única vez na chegada ao canteiro, conforme a regra vigente; essas aparências não criam um segundo estoque ou consumo.
 - Duração e distribuição do trabalho, porte das máquinas e valores de contratação/operação são calibração dentro deste contrato: execução ágil quando os meios reais estão presentes, sem controle de temperatura de asfalto ou nova cadeia industrial obrigatória na V1.
+- **Em aberto:** o destino dos trechos já compactados quando o jogador cancela uma rua antes da conclusão integral ainda depende de decisão humana. Abrir a parte pronta, conservá-la fechada para obras ou removê-la são alternativas em discussão; o comportamento provisório de um checkpoint não aprova nenhuma delas. As regras vigentes de pagamentos, reservas e materiais consumidos continuam valendo.
 
 ### Demolição
 
