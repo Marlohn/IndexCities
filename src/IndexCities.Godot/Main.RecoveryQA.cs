@@ -563,7 +563,7 @@ public partial class Main
             var houseProject = await RecoveryPlace(BuildingKind.House, new(-120, 14));
             var house = _sim.State.Buildings.Single(building => building.Id == houseProject.BuildingId);
             await RecoveryButton(RecoverySpeedButton(3));
-            Require(_speed == 3, "Botão 60x acelera a casa através do relógio do host");
+            Require(_speed == 3, "Botão 1000x acelera a casa através do relógio do host");
             await WaitFor("house-completed-and-bought", () => house.Completed && house.FamilyId != null);
             await NormalClockSample("normal-clock-with-physical-resident-arrival");
             Require(movedCitizens.Count > 0, "Moradores mudam de posição fisicamente antes de chegar à casa");
