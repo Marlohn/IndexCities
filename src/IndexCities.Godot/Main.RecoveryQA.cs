@@ -274,6 +274,9 @@ public partial class Main
             Require(_sim.State.Buildings.Single().Completed, "A Prefeitura foi concluída por execução física");
 
             var beforeInvalid = _sim.SaveToJson();
+            // A encomenda bem-sucedida deixa a extremidade final como início (SPEC, continuidade de 2026-10-14).
+            // Reabrir a ferramenta inicia um trecho novo para testar a recusa com início próprio.
+            await RecoveryButton(RecoveryRoadButton());
             await RecoveryWorldPoint(new(-192, 0)); await RecoveryWorldPoint(new(-128, 0));
             Require(_roadStart == new Point(-192, 0), "Rua recusada mantém início para corrigir fim");
             var refused = _sim.QuoteRoad(new(-192, 0), new(-128, 0));
