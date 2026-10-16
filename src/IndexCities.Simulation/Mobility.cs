@@ -214,7 +214,7 @@ public sealed partial class CitySimulation
                         // ID yields, as in the coincidence case above.
                         var back=-relative.X*Math.Sin(other.Heading)-relative.Z*Math.Cos(other.Heading);
                         var backSide=Math.Abs(-relative.X*Math.Cos(other.Heading)+relative.Z*Math.Sin(other.Heading));
-                        if(back>0&&backSide<2.6&&other.Id>v.Id)continue;
+                        if(back>0&&backSide<2.6&&other.Id>v.Id&&other.Status!=VehicleStatus.Stranded)continue;
                         HoldFor(other,forward);
                     }
                 }
