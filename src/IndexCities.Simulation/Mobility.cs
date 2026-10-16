@@ -265,7 +265,18 @@ public sealed partial class CitySimulation
         var competitors=State.Vehicles.Where(o=>o.Id!=v.Id&&o.Status==VehicleStatus.Travelling&&o.RouteIndex<o.Route.Count&&o.Route[o.RouteIndex]==junction.Id&&o.Position.Distance(junction.Position)<14).ToList();
         if(junction.Control==JunctionControl.ThroughX&&!horizontal&&competitors.Any(o=>Math.Abs(Math.Sin(o.Heading))>.7))return false;
         if(junction.Control==JunctionControl.ThroughZ&&horizontal&&competitors.Any(o=>Math.Abs(Math.Cos(o.Heading))>.7))return false;
-        if(junction.Control==JunctionControl.RightHand){var right=new Point(-Math.Cos(v.Heading),Math.Sin(v.Heading));if(competitors.Any(o=>{var p=o.Position-junction.Position;return p.X*right.X+p.Z*right.Z>2;}))return false;}
+        if(junction.Control==JunctionControl.RightHand){
+            bool YieldsRight(Vehicle a,IEnumerable<Vehicle> others){var right=new Point(-Math.Cos(a.Heading),Math.Sin(a.Heading));return others.Any(o=>o.Id!=a.Id&&(o.Position-junction.Position) is var p&&p.X*right.X+p.Z*right.Z>2);}
+            if(YieldsRight(v,competitors)){
+                // SPEC: when everyone approaching yields to someone on the right,
+                // the one waiting longest crosses (fixed ID tie-break), then the
+                // right-hand rule applies again.
+                var waiting=competitors.Append(v).ToList();
+                if(!waiting.All(a=>YieldsRight(a,waiting)))return false;
+                double Since(Vehicle a)=>a.WaitingSince>0?a.WaitingSince:double.MaxValue;
+                if(waiting.OrderBy(Since).ThenBy(a=>a.Id).First().Id!=v.Id)return false;
+            }
+        }
         ReserveJunction(v,junction,area);return true;
     }
     void VehicleArrived(Vehicle v)
