@@ -179,7 +179,9 @@ public partial class Main
         foreach (var project in projects) {
             var id = project.Id; var building = state.Buildings.FirstOrDefault(b => b.Id == project.BuildingId);
             var group = Card(details, project.IsMaintenance ? "Manutenção" : building?.Definition.Name ?? "Rua 1+1");
-            LiveText(group,()=>project.Progress.ToString("P0",Pt)+" · "+project.Cause,16);
+            var causeLabel=LiveText(group,()=>project.Progress.ToString("P0",Pt)+" · "+WorkCauseShort(project.Cause),16);
+            causeLabel.MouseFilter=Control.MouseFilterEnum.Stop;causeLabel.TooltipText=project.Cause;causeLabel.Name="ProjectCause"+id;
+            updates.Add(()=>causeLabel.TooltipText=project.Cause);
             var progress = new ProgressBar { MinValue = 0, MaxValue = 100, Value = project.Progress * 100, ShowPercentage = false, CustomMinimumSize = new(0, 8) }; group.AddChild(progress);
             updates.Add(()=>progress.Value=project.Progress*100);
             LiveText(group,()=>"Pago: " + Cash(project.CostPaid) + " · compromisso: " + Cash(project.BudgetRemaining),13);
