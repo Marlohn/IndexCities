@@ -17,7 +17,7 @@ public sealed class PedestrianSidewalkTests
         Assert.True(sim.PlaceRoad(new(-228, 0), new(-228, 40)).Success);
         var placed = sim.PlaceBuilding(BuildingKind.House, new(-243, 18), -Math.PI / 2); Assert.True(placed.Success);
         sim.Advance(7200);
-        var home = sim.State.Buildings.Single(b => b.Id == placed.Id); Assert.True(home.Completed);
+        var home = sim.State.Buildings.Single(b => b.Id == placed.Id); Assert.True(home.Completed,PavingTests.Diagnostic(sim));
         var origin = new Point(-188, -4.5); var before = sim.SaveToJson();
 
         var route = sim.PedestrianRoute(origin, home);

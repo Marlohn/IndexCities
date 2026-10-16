@@ -72,7 +72,7 @@ public sealed class MaintenanceTests
         var crew=sim.State.Vehicles.Single(v=>v.Id==project.CrewVehicleId);var position=crew.Position;var paid=project.CostPaid;var due=decimal.Round(project.CrewCostDue,2,MidpointRounding.AwayFromZero);
         Assert.True(sim.DemolishRoad(road.Id).Success);Assert.Equal(WorkStatus.Cancelled,project.Status);Assert.Equal(paid+due,project.CostPaid);Assert.Equal(0,project.CrewCostDue);Assert.Equal(position,crew.Position);
         Assert.Equal(VehicleStatus.Waiting,crew.Status);sim.Advance(60);Assert.Equal(position,crew.Position);
-        Assert.True(sim.PlaceRoad(road.Position,road.Position).Success);sim.Advance(7200);Assert.Equal(VehicleStatus.Outside,crew.Status);Assert.False(crew.CrewAboard);sim.CheckInvariants();
+        Assert.True(sim.PlaceRoad(road.Position,road.Position).Success);sim.Advance(7200);Assert.True(crew.Status==VehicleStatus.Outside,PavingTests.Diagnostic(sim));Assert.False(crew.CrewAboard);sim.CheckInvariants();
     }
     [Fact] public void Obsolete_maintenance_returns_crew_only_trip_without_reserving_a_cargo_holding_space()
     {

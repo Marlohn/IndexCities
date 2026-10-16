@@ -116,7 +116,7 @@ public partial class Main
             await RecoveryCapture(System.IO.Path.Combine(directory,"awaiting-crossing-connection.png"),GetViewport());
             var paid=dependent.CostPaid;Require(_sim.CancelProject(ownerResult.Id!.Value).Success,"Cancelar dona não inventa conexão");
             saved=_sim.SaveToJson();loaded=CitySimulation.FromJson(saved);_sim.Advance(600);loaded.Advance(600);
-            Require(_sim.SaveToJson()==loaded.SaveToJson()&&dependent.Status==WorkStatus.Waiting,"Save/load preserva espera após cancelamento");
+            Require(_sim.SaveToJson()==loaded.SaveToJson()&&(dependent.Status is WorkStatus.Waiting or WorkStatus.InProgress)&&dependent.Progress>0&&dependent.Progress<1&&dependent.CompletedAt==null&&dependent.BuiltRoadNodes.All(id=>_sim.State.Roads.Any(road=>road.Id==id&&road.ConstructionOnly)),"Save/load preserva trecho parcial exclusivo de obras sem concluir através da lacuna cancelada");
             Require(_sim.PlaceRoad(new(-184,0),new(-176,0)).Success,"Ponto cancelado pode ser encomendado de novo com custo real");
             _sim.Advance(3600);
             Require(dependent.Status==WorkStatus.Completed&&dependent.CostPaid>=paid,"Ligação pronta permite concluir o trabalho restante com custos reais");

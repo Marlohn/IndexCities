@@ -38,6 +38,7 @@ public partial class Main
                         var shipment=_sim.State.Shipments.FirstOrDefault(s=>s.Id==truck.ShipmentId);
                         if(shipment is not {PickedUp:true,Complete:false})continue;
                         var kind=truck.Cargo.First().Key;if(!seenMaterials.Add(kind))continue;
+                        if(kind==ResourceKind.Asphalt){var receiver=_sim.State.Vehicles.Single(v=>v.Id==shipment.ReceivingMachineId);Require(receiver is {MachinePhase:MachinePhase.OnSite,FeedingReady:true,CrewAboard:true}&&receiver.Position.Distance(truck.Position)>6.5&&receiver.Position.Distance(truck.Position)<6.7&&Math.Cos(receiver.Heading-truck.Heading)>.99,"Asfalto descarrega no funil da pavimentadora efetivamente presente");}
                         await Shot(shape+"-unload-"+kind,truck.Position,38);
                         Require(_world.RenderedVehicle(truck.Id)==(truck.Body switch{TruckBody.Dump=>"vehicle.truck_dump.a",TruckBody.Mixer=>"vehicle.truck_mixer.a",TruckBody.Flatbed=>"vehicle.truck_flatbed.a",_=>"vehicle.truck_cargo.a"}),"Modelo corresponde à carroceria persistente");
                     }

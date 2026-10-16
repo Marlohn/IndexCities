@@ -28,12 +28,12 @@ public sealed partial class CitySimulation
         var building=new Building{Kind=BuildingKind.WaterIntake,Position=position,Rotation=rotation};
         return HasNaturalWaterSource(building)&&Corners(building).All(point=>InMap(point))&&!BuildingOverlapsWater(building);
     }
-    decimal QuoteMaterials(Dictionary<ResourceKind,double> materials,Point position,double workSeconds)
+    decimal QuoteMaterials(Dictionary<ResourceKind,double> materials,Point position,double workSeconds,bool crew=true)
     {
         var goods=materials.Sum(kv=>Money((decimal)kv.Value*State.Tuning.ImportPrices[kv.Key]));
         var distance=Math.Abs(position.X-State.Entry.X)+Math.Abs(position.Z-State.Entry.Z);
-        var trips=1+Math.Max(1,materials.Values.Sum(quantity=>(int)Math.Ceiling(quantity/150)));
-        return Money(goods+trips*(State.Tuning.FreightBase+(decimal)(distance*2)*State.Tuning.FreightPerMetre+State.Tuning.ImportPrices[ResourceKind.Fuel]*(decimal)State.Tuning.FuelTank)+State.Tuning.ExternalCrewHourlyPrice*(decimal)(workSeconds/3600)+20);
+        var trips=(crew?1:0)+Math.Max(1,materials.Values.Sum(quantity=>(int)Math.Ceiling(quantity/150)));
+        return Money(goods+trips*(State.Tuning.FreightBase+(decimal)(distance*2)*State.Tuning.FreightPerMetre+State.Tuning.ImportPrices[ResourceKind.Fuel]*(decimal)State.Tuning.FuelTank)+(crew?State.Tuning.ExternalCrewHourlyPrice*(decimal)(workSeconds/3600):0)+20);
     }
     public CommandResult PlaceBuilding(BuildingKind kind,Point position,double rotation=0)
     {
@@ -71,7 +71,7 @@ public sealed partial class CitySimulation
         if(contact!=null&&!outside&&!water&&building==null)message=contact;
         if(shortCorner&&points.Count>0&&!outside&&!water&&building==null&&contact==null)message="Curva muito curta. Alinhe a rua ou afaste a esquina.";
         var machinery=points.Count==0?0:QuoteMachinery(start,Math.Max(120,length*2))*PavingComponents(points);
-        return new(valid,access,points.Count==0?0:QuoteMaterials(materials,start,Math.Max(120,length*2))+machinery,materials,message){MachineryEstimate=machinery};
+        return new(valid,access,points.Count==0?0:QuoteMaterials(materials,start,Math.Max(120,length*2),false)+machinery,materials,message){MachineryEstimate=machinery};
     }
     bool RoadOverlapsLake(IReadOnlyList<Point> shape)
     {
@@ -121,11 +121,14 @@ public sealed partial class CitySimulation
         foreach(var p in State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress).OrderBy(p=>p.IsMaintenance?MaintenancePriority(p):4).ThenBy(p=>p.Id)){
             if(RoadPhysicalWorkDone(p))continue;
             var access=WorkAccess(p);if(access==null||!_workExteriorConnected.Contains(access.Id)){p.Cause=WorkCause.NoMaterialsAccess;continue;}
-            if(!IsPaving(p))AssignLocalCrew(p,access);
+            if(IsPaving(p))OrderPavingMachines(p,access);else AssignLocalCrew(p,access);
             foreach(var k in p.Required.Keys.ToList()){
                 var inflight=State.Shipments.Where(s=>s.ProjectId==p.Id&&!s.Complete).Sum(s=>s.Cargo.GetValueOrDefault(k));
                 var missing=p.Required[k]-p.Delivered.GetValueOrDefault(k)-inflight;
                 if(missing<=.001)continue;
+                var receiver=IsPaving(p)&&k==ResourceKind.Asphalt?AsphaltReceiver(p):null;
+                if(receiver!=null&&inflight>.001)continue;
+                if(IsPaving(p)&&k==ResourceKind.Asphalt&&receiver==null){p.Cause=WorkCause.AwaitingPavingMachines;continue;}
                 var vehicle=AvailableTruck(k);if(vehicle==null){p.Cause=WorkCause.AwaitingExternalTruck;break;}
                 var amount=Math.Min(missing,vehicle.CargoCapacity);
                 var local=p.LocalReserved.GetValueOrDefault(k);var depot=State.Buildings.FirstOrDefault(b=>b.Kind==BuildingKind.WorksDepot&&b.Completed&&!b.Removed&&HasExteriorAccess(b));
@@ -139,13 +142,14 @@ public sealed partial class CitySimulation
                 if(!ProjectPay(p,price+fee,p.IsMaintenance?MaintenanceCategory(p):"Obras e materiais",(source==null?"Importação de ":"Transporte municipal de ")+k+"; produto, frete e combustível")){p.Cause=WorkCause.RemainingCommitmentInsufficient;continue;}
                 if(source==null)State.OutsideStock[k]-=amount;State.OutsideStock[ResourceKind.Fuel]-=fuel;vehicle.Fuel+=fuel;
                 var shipment=new Shipment{Id=Id(),Purpose=p.IsMaintenance?ShipmentPurpose.Maintenance:ShipmentPurpose.Construction,ProjectId=p.Id,SourceBuildingId=source?.Id,DestinationBuildingId=p.BuildingId,Destination=access.Position,VehicleId=vehicle.Id,Cargo=new(){{k,amount}},PricePaid=Money(price+fee),PickedUp=source==null};
-                State.Shipments.Add(shipment);vehicle.ConstructionAccess=true;vehicle.ShipmentId=shipment.Id;vehicle.Cargo=source==null?new(shipment.Cargo):new();vehicle.Route=route;vehicle.RouteIndex=0;vehicle.DockPosition=DockAt(source==null?access:Access(source)!,source??BuildingById(p.BuildingId),vehicle.CrewAboard);vehicle.Status=VehicleStatus.Travelling;vehicle.Position=State.Entry;vehicle.Cause="Entrega para obra "+p.Id;
+                shipment.ReceivingMachineId=receiver?.Id;State.Shipments.Add(shipment);vehicle.ConstructionAccess=true;vehicle.ShipmentId=shipment.Id;vehicle.Cargo=source==null?new(shipment.Cargo):new();vehicle.Route=route;vehicle.RouteIndex=0;vehicle.DockPosition=DockAt(source==null?access:Access(source)!,source??BuildingById(p.BuildingId),vehicle.CrewAboard);vehicle.Status=VehicleStatus.Travelling;vehicle.Position=State.Entry;vehicle.Cause="Entrega para obra "+p.Id;
                 // A crew truck waits at the site. Bringing the crew with the
                 // first load can occupy the only free truck while more loads
                 // remain. Bring it with the final committed delivery instead.
                 var allMaterialsDispatched=p.Required.All(required=>p.Delivered.GetValueOrDefault(required.Key)+State.Shipments.Where(s=>s.ProjectId==p.Id&&!s.Complete).Sum(s=>s.Cargo.GetValueOrDefault(required.Key))+.001>=required.Value);
                 if(!IsPaving(p)&&p.CrewVehicleId==null&&p.LocalCrew.Count==0&&allMaterialsDispatched){vehicle.CrewAboard=true;vehicle.CrewCount=3;p.CrewVehicleId=vehicle.Id;}
                 vehicle.DockPosition=DockAt(source==null?access:Access(source)!,source??BuildingById(p.BuildingId),vehicle.CrewAboard);
+                if(source==null&&receiver!=null)ConfigureAsphaltApproach(vehicle,shipment);
                 p.Cause=WorkCause.MaterialsInTransit;
             }
             if(!IsPaving(p))AssignLocalCrew(p,access);
@@ -176,6 +180,7 @@ public sealed partial class CitySimulation
             if(RetireMaintenanceWithoutTargets(p))continue;
             if(IsPaving(p)&&!RoadPhysicalWorkDone(p)){if(ProgressPaving(p,dt)){if(!WaitForRoadConnection(p))completedConstruction|=CompleteConstructionProject(p);}continue;}
             if(RoadPhysicalWorkDone(p)){
+                if(!PavingSiteCleared(p)){p.Cause=WorkCause.PavingInProgress;continue;}
                 if(!WaitForRoadConnection(p))completedConstruction|=CompleteConstructionProject(p);
                 continue;
             }
@@ -195,7 +200,7 @@ public sealed partial class CitySimulation
                 // road across the gap must not become its departure node.
                 var atKnownBay=crew.DockPosition is {} dock&&crew.Position.Distance(dock)<.1&&crew.Route.Count>0&&crew.RouteIndex>=crew.Route.Count&&_roads.ContainsKey(crew.Route[^1]);
                 var start=atKnownBay?_roads[crew.Route[^1]]:NearestRoad(crew.Position);
-                if(start!=null){var route=FindRoadRoute(start.Id,access.Id);if(route.Count>0){crew.Route=route;crew.RouteIndex=0;crew.DockPosition=DockAt(access,BuildingById(p.BuildingId),true);crew.Status=VehicleStatus.Travelling;}}
+                if(start!=null){var route=FindRoadRoute(start.Id,access.Id,true);if(route.Count>0){crew.Route=route;crew.RouteIndex=0;crew.DockPosition=DockAt(access,BuildingById(p.BuildingId),true);crew.Status=VehicleStatus.Travelling;}}
             }
             var external=crew is {Status:VehicleStatus.Parked}&&crew.Position.Distance(DockAt(access,BuildingById(p.BuildingId),true))<=2.5?crew:null;
             RelocateMaintenanceCrew(p,access);

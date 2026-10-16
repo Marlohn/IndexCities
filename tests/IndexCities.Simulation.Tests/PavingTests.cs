@@ -6,7 +6,7 @@ public sealed class PavingTests
 {
     static CitySimulation City()=>new(42,new(){ExternalFamilyCandidates=0,ExternalCompanyCandidates=0});
     static WorkProject Road(CitySimulation sim,Point start,Point end){var result=sim.PlaceRoad(start,end);Assert.True(result.Success,result.Message);return sim.State.Projects.Single(p=>p.Id==result.Id);}
-    static string Diagnostic(CitySimulation sim)=>string.Join("; ",sim.State.Projects.Select(p=>$"P{p.Id} {p.Status} {p.Progress}: {p.Cause}, {p.AppliedRoadPoints.Count}/{p.RolledRoadPoints.Count}, verba {p.BudgetRemaining}"))+" | "+string.Join("; ",sim.State.Vehicles.Select(v=>$"V{v.Id} {v.Machine} {v.MachinePhase} {v.Status} {v.Position} route {v.RouteIndex}/{v.Route.Count}: {v.Cause}"));
+    internal static string Diagnostic(CitySimulation sim)=>string.Join("; ",sim.State.Projects.Select(p=>$"P{p.Id} {p.Status} {p.Progress}: {p.Cause}, {p.AppliedRoadPoints.Count}/{p.RolledRoadPoints.Count}, verba {p.BudgetRemaining}"))+" | "+string.Join("; ",sim.State.Vehicles.Select(v=>$"V{v.Id} {v.Machine} {v.MachinePhase} {v.Status} {v.Position} route {v.RouteIndex}/{v.Route.Count}: {v.Cause}"));
 
     [Fact]
     public void Bootstrap_paves_and_rolls_with_paid_external_equipment_and_no_depot()
@@ -76,7 +76,7 @@ public sealed class PavingTests
         var paid=first.CostPaid;var clone=CitySimulation.FromJson(sim.SaveToJson());
         sim.Advance(3600);clone.Advance(3600);Assert.Equal(sim.SaveToJson(),clone.SaveToJson());
         Assert.True(budget>due);Assert.Equal(paid,first.CostPaid);Assert.All(consumed,k=>Assert.Equal(k.Value,first.Delivered[k.Key]));
-        Assert.Equal(WorkStatus.Completed,second.Status);Assert.Equal(machines.Keys.OrderBy(id=>id),sim.State.Vehicles.Where(v=>v.Machine!=PavingMachine.None).Select(v=>v.Id).OrderBy(id=>id));
+        Assert.True(second.Status==WorkStatus.Completed,Diagnostic(sim));Assert.Equal(machines.Keys.OrderBy(id=>id),sim.State.Vehicles.Where(v=>v.Machine!=PavingMachine.None).Select(v=>v.Id).OrderBy(id=>id));
         Assert.All(sim.State.Vehicles.Where(v=>v.Machine!=PavingMachine.None),v=>Assert.Equal(VehicleStatus.Outside,v.Status));sim.CheckInvariants();
     }
 
@@ -107,10 +107,55 @@ public sealed class PavingTests
         foreach(var v in vehicles){v!.AsObject().Remove("Body");v.AsObject().Remove("ConstructionAccess");}
         foreach(var node in legacy["Roads"]!.AsArray()){node!.AsObject().Remove("ConstructionOnly");node.AsObject().Remove("WorkProjectId");}
         foreach(var p in legacy["Projects"]!.AsArray())foreach(var key in new[]{"PavingVersion","PaverId","RollerId","AppliedRoadPoints","RolledRoadPoints","MachineryQuoted","MachineryPaid"})p!.AsObject().Remove(key);
-        var balance=sim.CityBalance;var ids=work.BuiltRoadNodes.ToArray();var paid=work.CostPaid;var consumed=work.Delivered.ToDictionary(k=>k.Key,k=>k.Value);
+        var balance=sim.CityBalance;var remainingBudget=work.BudgetRemaining;var ids=work.BuiltRoadNodes.ToArray();var paid=work.CostPaid;var consumed=work.Delivered.ToDictionary(k=>k.Key,k=>k.Value);
         sim=CitySimulation.FromJson(legacy.ToJsonString());var restored=sim.State.Projects.Single(p=>p.Id==work.Id);
-        Assert.Equal(balance,sim.CityBalance);Assert.Equal(paid,restored.CostPaid);Assert.All(ids,id=>Assert.Contains(sim.State.Roads,r=>r.Id==id&&!r.ConstructionOnly));
+        Assert.Equal(balance,sim.CityBalance);Assert.Equal(remainingBudget,restored.BudgetRemaining);Assert.Equal(paid,restored.CostPaid);Assert.All(ids,id=>Assert.Contains(sim.State.Roads,r=>r.Id==id&&r.ConstructionOnly));
         Assert.All(consumed,k=>Assert.Equal(k.Value,restored.Delivered[k.Key]));var clone=CitySimulation.FromJson(sim.SaveToJson());sim.Advance(3600);clone.Advance(3600);
-        Assert.Equal(sim.SaveToJson(),clone.SaveToJson());Assert.True(restored.Status==WorkStatus.Completed,Diagnostic(sim));Assert.All(ids,id=>Assert.Contains(sim.State.Roads,r=>r.Id==id));sim.CheckInvariants();
+        Assert.Equal(sim.SaveToJson(),clone.SaveToJson());Assert.Equal(WorkCause.NoBudgetForPaving,restored.Cause);Assert.All(ids,id=>Assert.Contains(sim.State.Roads,r=>r.Id==id));sim.CheckInvariants();
+    }
+
+    [Fact]
+    public void Asphalt_is_unloaded_into_the_present_paver_and_consumed_once_after_real_docking()
+    {
+        var sim=City();var p=Road(sim,new(-192,0),new(-188,0));sim.Advance(2);
+        Assert.NotNull(p.PaverId);Assert.DoesNotContain(sim.State.Shipments,s=>s.ProjectId==p.Id&&s.Cargo.ContainsKey(ResourceKind.Asphalt));
+        Shipment? shipment=null;Vehicle? truck=null;
+        for(var i=0;i<2000;i++){sim.Advance(2);shipment=sim.State.Shipments.FirstOrDefault(s=>s.ProjectId==p.Id&&s.Cargo.ContainsKey(ResourceKind.Asphalt));truck=sim.State.Vehicles.FirstOrDefault(v=>v.ShipmentId==shipment?.Id);if(truck is {Status:VehicleStatus.Unloading,LoadTimer:<=9})break;}
+        Assert.NotNull(shipment);Assert.NotNull(truck);Assert.Equal(VehicleStatus.Unloading,truck.Status);
+        var paver=sim.State.Vehicles.Single(v=>v.Id==shipment.ReceivingMachineId);Assert.True(paver.FeedingReady);Assert.Equal(p.Id,paver.MachineProjectId);
+        Assert.InRange(truck.Position.Distance(paver.Position),6.59,6.61);Assert.InRange(Math.Cos(truck.Heading-paver.Heading),.999,1.001);
+        var cargo=truck.Cargo[ResourceKind.Asphalt];Assert.Equal(0,p.Delivered.GetValueOrDefault(ResourceKind.Asphalt));paver.CrewAboard=false;sim.Advance(20);
+        Assert.False(shipment.Complete);Assert.Equal(cargo,truck.Cargo[ResourceKind.Asphalt]);Assert.Equal(0,p.Progress);
+        paver.CrewAboard=true;var clone=CitySimulation.FromJson(sim.SaveToJson());sim.Advance(3600);clone.Advance(3600);Assert.Equal(sim.SaveToJson(),clone.SaveToJson());
+        Assert.True(p.Status==WorkStatus.Completed,Diagnostic(sim));Assert.Equal(cargo,p.Delivered[ResourceKind.Asphalt]);Assert.Empty(truck.Cargo);sim.CheckInvariants();
+    }
+
+    [Fact]
+    public void Specialist_bodies_do_not_add_trucks_and_loading_does_not_reserve_more_money()
+    {
+        var sim=City();var ids=sim.State.Vehicles.Select(v=>v.Id).ToArray();Assert.Equal(6,ids.Length);
+        Assert.Equal(3,sim.State.Vehicles.Count(v=>v.Body==TruckBody.Dump));Assert.All(new[]{TruckBody.Mixer,TruckBody.Flatbed,TruckBody.Cargo},body=>Assert.Single(sim.State.Vehicles,v=>v.Body==body));
+        var p=Road(sim,new(-192,0),new(-192,24));var balance=sim.CityBalance;var commitment=sim.Committed;var restored=CitySimulation.FromJson(sim.SaveToJson());
+        Assert.Equal(ids,restored.State.Vehicles.Select(v=>v.Id));Assert.Equal(balance,restored.CityBalance);Assert.Equal(commitment,restored.Committed);
+        restored.Advance(3600);Assert.Equal(ids,restored.State.Vehicles.Where(v=>v.Machine==PavingMachine.None).Select(v=>v.Id));restored.CheckInvariants();
+    }
+
+    [Fact]
+    public void Insufficient_round_trip_range_never_hires_or_dispatches_the_machines()
+    {
+        var sim=new CitySimulation(42,new(){ExternalFamilyCandidates=0,ExternalCompanyCandidates=0,FuelTank=1});var p=Road(sim,new(-192,0),new(-192,24));sim.Advance(2);
+        Assert.Equal(WorkCause.PavingInsufficientRange,p.Cause);Assert.Null(p.PaverId);Assert.Null(p.RollerId);Assert.Equal(0,p.MachineryPaid);
+        Assert.All(sim.State.Vehicles.Where(v=>v.Machine!=PavingMachine.None),v=>Assert.Equal(VehicleStatus.Outside,v.Status));sim.CheckInvariants();
+    }
+
+    [Fact]
+    public void Two_teams_never_reassign_a_returned_paver_while_its_roller_is_still_working()
+    {
+        var sim=new CitySimulation(42,new(){ExternalFamilyCandidates=0,ExternalCompanyCandidates=0,ExternalPavingTeams=2});var first=Road(sim,new(-192,0),new(-192,96));
+        for(var i=0;i<3000;i++){sim.Advance(2);if(first.PaverId is {} id&&sim.State.Vehicles.Single(v=>v.Id==id).Status==VehicleStatus.Outside&&first.Progress<1)break;}
+        var paver=sim.State.Vehicles.Single(v=>v.Id==first.PaverId);Assert.Equal(VehicleStatus.Outside,paver.Status);Assert.Equal(first.Id,paver.MachineProjectId);Assert.True(first.Progress<1,Diagnostic(sim));
+        var second=Road(sim,new(-212,0),new(-212,-48));sim.Advance(2);Assert.NotNull(second.PaverId);Assert.NotEqual(first.PaverId,second.PaverId);Assert.NotEqual(first.RollerId,second.RollerId);
+        Assert.Equal(first.Id,paver.MachineProjectId);var loaded=CitySimulation.FromJson(sim.SaveToJson());sim.Advance(3600);loaded.Advance(3600);
+        Assert.Equal(sim.SaveToJson(),loaded.SaveToJson());Assert.True(first.Status==WorkStatus.Completed&&second.Status==WorkStatus.Completed,Diagnostic(sim));Assert.Equal(4,sim.State.Vehicles.Count(v=>v.Machine!=PavingMachine.None));sim.CheckInvariants();
     }
 }

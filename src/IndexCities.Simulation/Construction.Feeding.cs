@@ -1,0 +1,117 @@
+namespace IndexCities.Simulation;
+
+public sealed partial class CitySimulation
+{
+    (RoadNode Road,Point Position) PavingBay(RoadNode access,PavingMachine kind)
+    {
+        var route=FindRoadRoute(EntryNode().Id,access.Id,true);
+        var index=Math.Max(1,route.Count-1-(kind==PavingMachine.Paver?4:7));index=Math.Min(index,route.Count-1);
+        for(var i=index;i>=0;i--){var road=_roads[route[i]];var dock=DockAt(road,null,false);if(kind==PavingMachine.Roller)dock=road.Position*2-dock;
+            var axis=i>0?road.Position-_roads[route[i-1]].Position:new Point(1,0);
+            if(!MachineBayBlocksRoad(dock,Math.Abs(axis.X)>.01)&&State.Buildings.All(b=>b.Removed||!Inside(b,dock,2.5))&&State.Vehicles.All(v=>v.Status==VehicleStatus.Outside||v.DockPosition is not {} occupied||occupied.Distance(dock)>7))return(road,dock);
+        }
+        // Exterior staging origin already exists in the road model. Equipment
+        // still travels to/from it and retains its position while waiting.
+        var entry=EntryNode();return(entry,entry.Position+new Point(0,kind==PavingMachine.Paver?6.75:-6.75));
+    }
+
+    bool MachineBayBlocksRoad(Point bay,bool horizontalMachine)
+    {
+        var halfX=horizontalMachine?2.31:1.27;var halfZ=horizontalMachine?1.27:2.31;
+        var lane=State.Tuning.RoadWidth*(6.5/10.5)/2;var step=State.Tuning.RoadStep/2;
+        foreach(var road in State.Roads){
+            var horizontal=road.Highway||road.Neighbours.Any(id=>Math.Abs(_roads[id].Position.X-road.Position.X)>.01);
+            var vertical=road.Neighbours.Any(id=>Math.Abs(_roads[id].Position.Z-road.Position.Z)>.01);
+            var roadX=vertical?lane:step;var roadZ=horizontal?lane:step;
+            if(Math.Abs(bay.X-road.Position.X)<halfX+roadX+.2&&Math.Abs(bay.Z-road.Position.Z)<halfZ+roadZ+.2)return true;
+        }
+        return false;
+    }
+
+    List<Point> PavingApproachRoute(WorkProject p,Point from,Point target)
+    {
+        var route=PavingSiteRoute(p,from,target);var result=new List<Point>();
+        for(var i=0;i<route.Count;i++){
+            var axis=i==0?(route.Count>1?route[1]-route[0]:route[0]-from):route[i]-route[i-1];var length=axis.Distance(default);
+            result.Add(i<route.Count-1&&length>.01&&!p.RoadPoints.Contains(route[i])?route[i]+new Point(axis.Z/length,-axis.X/length)*1.65:route[i]);
+        }
+        return result;
+    }
+
+    Vehicle? AsphaltReceiver(WorkProject p)=>State.Vehicles.FirstOrDefault(v=>v.Id==p.PaverId&&v.MachineProjectId==p.Id&&v.MachinePhase==MachinePhase.OnSite&&v.FeedingReady&&v.CrewAboard&&v.CrewCount>0&&v.Fuel>0);
+
+    (List<int> Route,List<Point> Site,Point Dock) AsphaltApproach(Vehicle paver,List<int> route)
+    {
+        var forward=new Point(Math.Sin(paver.Heading),Math.Cos(paver.Heading));var side=new Point(forward.Z,-forward.X)*(State.Tuning.RoadWidth/2-1.5);
+        route=FindRoadRoute(route[0],paver.Route[^1],true);
+        var dock=paver.Position+forward*6.6;
+        while(route.Count>1&&_roads[route[^1]].Position.Distance(paver.Position)<12)route.RemoveAt(route.Count-1);
+        var at=_roads[route[^1]].Position;
+        var bayOffset=paver.Position-_roads[paver.Route[^1]].Position;
+        return(route,[at,at+bayOffset,dock+forward*4,dock],dock);
+    }
+
+    void ConfigureAsphaltApproach(Vehicle truck,Shipment shipment)
+    {
+        if(shipment.ReceivingMachineId is not {} id)return;
+        var paver=State.Vehicles.First(v=>v.Id==id);var approach=AsphaltApproach(paver,truck.Route);
+        truck.Route=approach.Route;truck.SitePath=approach.Site;truck.SitePathIndex=0;truck.SitePathBeforeRoad=false;
+        truck.SiteProjectId=shipment.ProjectId;truck.SiteDockHeading=paver.Heading;truck.DockPosition=approach.Dock;
+    }
+
+    bool MoveConstructionSitePath(Vehicle vehicle,ref double remaining,double speed)
+    {
+        while(remaining>.000001&&vehicle.SitePathIndex<vehicle.SitePath.Count){
+            var target=vehicle.SitePath[vehicle.SitePathIndex];var delta=target-vehicle.Position;var distance=delta.Distance(default);
+            var travel=Math.Min(distance,Math.Min(speed*remaining,vehicle.Fuel/State.Tuning.FuelPerMetre));
+            if(travel<=.000001&&distance>.001){vehicle.Cause="Sem combustível para manobra no canteiro";return false;}
+            if(distance>.001)vehicle.Heading=vehicle.SiteDockHeading is {} heading&&vehicle.SitePathIndex==vehicle.SitePath.Count-1?heading:Math.Atan2(delta.X,delta.Z);
+            travel=SafeSiteTravel(vehicle,target,travel);
+            if(travel<=.000001&&distance>.001){vehicle.Cause=WorkCause.PavingSiteOccupied;return false;}
+            vehicle.Position=vehicle.Position.MoveTowards(target,travel);vehicle.Fuel=Math.Max(0,vehicle.Fuel-travel*State.Tuning.FuelPerMetre);vehicle.FuelBurnedLastStep+=travel*State.Tuning.FuelPerMetre;remaining-=travel/speed;
+            if(travel>=distance-.000001)vehicle.SitePathIndex++;else return false;
+        }
+        return vehicle.SitePathIndex>=vehicle.SitePath.Count;
+    }
+
+    double SafeSiteTravel(Vehicle vehicle,Point target,double distance,bool machinesOnly=false)
+    {
+        if(machinesOnly&&!State.Vehicles.Any(other=>other.Machine!=PavingMachine.None&&other.Status!=VehicleStatus.Outside&&other.Position.Distance(vehicle.Position)<=distance+12))return distance;
+        var safe=0.0;
+        while(safe<distance-.000001){var next=Math.Min(distance,safe+.5);var at=vehicle.Position.MoveTowards(target,next);
+            if(State.Vehicles.Any(other=>other.Id!=vehicle.Id&&other.Status!=VehicleStatus.Outside&&(!machinesOnly||other.Machine!=PavingMachine.None&&other.Status==VehicleStatus.Parked)&&other.Position.Distance(at)<12&&VehicleBodiesOverlap(vehicle,at,other)))break;
+            safe=next;
+        }
+        return safe;
+    }
+
+    static bool VehicleBodiesOverlap(Vehicle a,Point at,Vehicle b)
+    {
+        static double HalfLength(Vehicle v)=>v.PassengerCar?2.1:v.Machine==PavingMachine.Paver?2.31:v.Machine==PavingMachine.Roller?1.99:3.6;
+        static double HalfWidth(Vehicle v)=>v.PassengerCar?.9:v.Machine==PavingMachine.Paver?1.27:v.Machine==PavingMachine.Roller?1.16:1.45;
+        static double Dot(Point x,Point y)=>x.X*y.X+x.Z*y.Z;
+        var af=new Point(Math.Sin(a.Heading),Math.Cos(a.Heading));var ar=new Point(af.Z,-af.X);
+        var bf=new Point(Math.Sin(b.Heading),Math.Cos(b.Heading));var br=new Point(bf.Z,-bf.X);var delta=b.Position-at;
+        foreach(var axis in new[]{af,ar,bf,br})if(Math.Abs(Dot(delta,axis))>=HalfLength(a)*Math.Abs(Dot(af,axis))+HalfWidth(a)*Math.Abs(Dot(ar,axis))+HalfLength(b)*Math.Abs(Dot(bf,axis))+HalfWidth(b)*Math.Abs(Dot(br,axis))+.1)return false;
+        return true;
+    }
+
+    List<Point> PavingExitRoute(WorkProject p,Point from,Point target)
+    {
+        var route=PavingSiteRoute(p,from,target);var result=new List<Point>();
+        for(var i=0;i<route.Count;i++){
+            var axis=i==0?(route.Count>1?route[1]-route[0]:route[0]-from):route[i]-route[i-1];var length=axis.Distance(default);
+            var offset=1.65;
+            var frontage=State.Buildings.Where(b=>!b.Removed&&b.Door.Distance(route[i])<State.Tuning.RoadWidth+12).MinBy(b=>b.Door.Distance(route[i]));
+            if(frontage!=null&&length>.01){var normal=new Point(axis.Z/length,-axis.X/length);var side=frontage.Door-route[i];offset=(side.X*normal.X+side.Z*normal.Z>=0?-1:1)*(State.Tuning.RoadWidth/2-.85);}
+            result.Add(length>.01&&State.Roads.Any(r=>r.Position==route[i])?route[i]+new Point(axis.Z/length,-axis.X/length)*offset:route[i]);
+        }
+        return result;
+    }
+
+    void PrepareConstructionSiteDeparture(Vehicle v)
+    {
+        if(v.Machine!=PavingMachine.None||v.SitePathBeforeRoad||v.SitePathIndex==0)return;
+        v.SitePath=v.SitePath.Take(v.SitePathIndex).Reverse().ToList();v.SitePathIndex=0;v.SitePathBeforeRoad=true;v.SiteDockHeading=null;
+    }
+}

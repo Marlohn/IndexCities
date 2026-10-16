@@ -97,7 +97,7 @@ public sealed class ConnectedRoadProjectTests
         var tee=Order(sim,new(-192,32),new(-144,32));
         var crossing=Order(sim,new(-216,48),new(-160,48));
         sim.Advance(14400);
-        Assert.Equal(WorkStatus.Completed,tee.Status);Assert.Equal(WorkStatus.Completed,crossing.Status);
+        Assert.True(tee.Status==WorkStatus.Completed&&crossing.Status==WorkStatus.Completed,string.Join("; ",sim.State.Projects.Select(p=>$"P{p.Id} {p.Status} {p.Progress}: {p.Cause}"))+" | "+string.Join("; ",sim.State.Vehicles.Where(v=>v.Status!=VehicleStatus.Outside).Select(v=>$"V{v.Id} {v.Machine} {v.MachinePhase} {v.Status} {v.Position} -> {v.DockPosition}: {v.Cause}")));
         var a=sim.State.Roads.Single(r=>r.Position==new Point(-192,32));
         var b=sim.State.Roads.Single(r=>r.Position==new Point(-144,32));
         Assert.NotEmpty(sim.FindRoadRoute(a.Id,b.Id));sim.CheckInvariants();
@@ -120,7 +120,7 @@ public sealed class ConnectedRoadProjectTests
         Assert.Equal(before,sim.SaveToJson());
         // A short T remains a real junction, with no returning parallel arm.
         var tee=Order(sim,new(-192,32),new(-184,32));
-        sim.Advance(14400);Assert.Equal(WorkStatus.Completed,tee.Status);
+        sim.Advance(14400);Assert.True(tee.Status==WorkStatus.Completed,PavingTests.Diagnostic(sim));
         Assert.Equal(3,sim.State.Roads.Single(r=>r.Position==new Point(-192,32)).Neighbours.Count);
         sim.CheckInvariants();Assert.Equal(sim.State.Tuning.TotalMoney,sim.MonetaryTotal);
     }
@@ -152,7 +152,7 @@ public sealed class ConnectedRoadProjectTests
         var sim=NewCity();var trunk=Order(sim,new(-192,0),new(-160,48));
         if(completed){sim.Advance(14400);Assert.Equal(WorkStatus.Completed,trunk.Status);}
         var tee=Order(sim,new(-160,offset),new(-152,offset));
-        sim.Advance(14400);Assert.Equal(WorkStatus.Completed,tee.Status);
+        sim.Advance(14400);Assert.True(tee.Status==WorkStatus.Completed,PavingTests.Diagnostic(sim));
         Assert.Equal(3,sim.State.Roads.Single(r=>r.Position==new Point(-160,offset)).Neighbours.Count);
         Assert.Equal(sim.State.Tuning.TotalMoney,sim.MonetaryTotal);sim.CheckInvariants();
     }

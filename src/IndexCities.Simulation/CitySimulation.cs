@@ -18,18 +18,19 @@ public sealed partial class CitySimulation
         State.Entry=new(-State.Tuning.MapHalfSize,0);
         State.LakeCentre=new(State.Tuning.MapHalfSize*.64+(NextRandom()-.5)*24,State.Tuning.MapHalfSize*.38+(NextRandom()-.5)*24);
         State.LakeRadius=28+NextRandom()*12;
-        State.SchemaVersion=2;State.LakeBoundary=LakeGeometry.GenerateBoundary(seed,State.LakeCentre,State.LakeRadius);
+        State.ConstructionStateVersion=1;State.SchemaVersion=2;State.LakeBoundary=LakeGeometry.GenerateBoundary(seed,State.LakeCentre,State.LakeRadius);
         State.Wallets["global"]=State.Tuning.TotalMoney;State.Wallets["city"]=0;
         Transfer("global","city",State.Tuning.CityInitialMoney,"Capital inicial","Distribuição da oferta monetária",null);
         State.NextDaily=State.Now.Date.AddDays(1);State.NextTaxDate=State.Now.Date.AddMonths(1);
         foreach(var k in Enum.GetValues<ResourceKind>())State.OutsideStock[k]=k is ResourceKind.Food or ResourceKind.Fuel?100000:1000000;
         for(var x=State.Entry.X;x<=State.Entry.X+64+.01;x+=State.Tuning.RoadStep)AddRoad(new(x,0),true);
-        for(var i=0;i<State.Tuning.ExternalTruckCount;i++)State.Vehicles.Add(new(){Id=Id(),External=true,ExternalDriverId="motorista externo "+(i+1),Status=VehicleStatus.Outside,Position=State.Entry});
+        var truckBodies=new[]{TruckBody.Dump,TruckBody.Dump,TruckBody.Dump,TruckBody.Mixer,TruckBody.Flatbed,TruckBody.Cargo};
+        for(var i=0;i<State.Tuning.ExternalTruckCount;i++)State.Vehicles.Add(new(){Id=Id(),Body=truckBodies[i%truckBodies.Length],External=true,ExternalDriverId="motorista externo "+(i+1),Status=VehicleStatus.Outside,Position=State.Entry});
         for(var i=0;i<State.Tuning.ExternalFamilyCandidates;i++)State.FamilyCandidates.Add(new(){Id=i+1,Adults=NextRandom()<.55?2:1,Capital=Money(State.Tuning.MigrantCapitalMinimum+(decimal)NextRandom()*(State.Tuning.MigrantCapitalMaximum-State.Tuning.MigrantCapitalMinimum)),RiskTolerance=.35+NextRandom()*.65});
         for(var i=0;i<State.Tuning.ExternalCompanyCandidates;i++)State.CompanyCandidates.Add(new(){Id=i+1,Capital=Money(State.Tuning.CompanyCapitalMinimum+(decimal)NextRandom()*(State.Tuning.CompanyCapitalMaximum-State.Tuning.CompanyCapitalMinimum)),RiskTolerance=.25+NextRandom()*.75});
         RebuildRoadGraph();MigrateConstructionState();CheckInvariants();
     }
-    public CitySimulation(CityState state){State=state;LakeGeometry.Validate(state);RebuildRoadGraph(false);MigrateConstructionState();CheckInvariants();}
+    public CitySimulation(CityState state){State=state;LakeGeometry.Validate(state);MigrateConstructionState();RebuildRoadGraph(false);CheckInvariants();}
     int Id()=>State.NextId++;
     double NextRandom(){var x=State.RandomState;x^=x>>12;x^=x<<25;x^=x>>27;State.RandomState=x;return (x*2685821657736338717UL>>11)*(1.0/(1UL<<53));}
     public decimal Balance(string account)=>State.Wallets.GetValueOrDefault(account);

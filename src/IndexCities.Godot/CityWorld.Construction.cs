@@ -39,6 +39,7 @@ public partial class CityWorld
         // consumes it once, in the core; no visual callback changes the stock.
         var shipment=state.Shipments.FirstOrDefault(s=>s.Id==v.ShipmentId);
         var unloading=v.Status==VehicleStatus.Unloading&&v.RefuellingAt==null&&shipment is {Complete:false,Cancelled:false,PickedUp:true}&&v.Cargo.Values.Sum()>.001;
+        if(shipment?.ReceivingMachineId is {} receiverId)unloading=unloading&&state.Vehicles.Any(receiver=>receiver.Id==receiverId&&receiver.MachinePhase==MachinePhase.OnSite&&receiver.FeedingReady&&receiver.CrewAboard&&receiver.CrewCount>0&&receiver.Fuel>0&&receiver.Position.Distance(v.Position)<=7);
         var fraction=Math.Clamp(v.Cargo.Values.Sum()/Math.Max(1,v.CargoCapacity),0,1);
         foreach(var (kind,path) in new[]{(ResourceKind.Aggregate,"BedPivot/LoadSandGravel"),(ResourceKind.Asphalt,"BedPivot/LoadAsphalt"),(ResourceKind.Steel,"LoadSteel"),(ResourceKind.Wood,"LoadWood")}){
             var load=n.GetNodeOrNull<Node3D>(path);
@@ -61,7 +62,7 @@ public partial class CityWorld
         var work=state.Projects.FirstOrDefault(p=>p.Id==v.MachineProjectId);
         var working=v.MachinePhase==MachinePhase.OnSite&&v.WorkTarget!=null&&v.CrewAboard&&v.FuelBurnedLastStep>0&&work?.Cause==WorkCause.PavingInProgress;
         if(n.GetNodeOrNull<Node3D>("ScreedPivot") is {} screed)screed.Position=new(screed.Position.X,working?.42f:.5f,screed.Position.Z);
-        if(n.GetNodeOrNull<Node3D>("HopperLoad") is {} hopper){var remaining=work==null?0:Math.Max(0,1-work.AppliedRoadPoints.Count/(double)work.RoadPoints.Count);hopper.Visible=working&&remaining>0;hopper.Scale=new(1,(float)Math.Max(.02,remaining),1);}
+        if(n.GetNodeOrNull<Node3D>("HopperLoad") is {} hopper){var remaining=work==null?0:Math.Max(0,1-work.AppliedRoadPoints.Count/(double)work.RoadPoints.Count);hopper.Visible=(working||v.MachinePhase==MachinePhase.OnSite&&v.FeedingReady&&work?.Delivered.GetValueOrDefault(ResourceKind.Asphalt)>0)&&remaining>0;hopper.Scale=new(1,(float)Math.Max(.02,remaining),1);}
         n.SetMeta("working",working);
         n.SetMeta("cargo_fraction",fraction);n.SetMeta("unloading",unloading);
     }

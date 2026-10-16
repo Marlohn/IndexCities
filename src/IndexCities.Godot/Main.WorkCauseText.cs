@@ -68,6 +68,8 @@ public partial class Main
         WorkCause.AwaitingPavingMachines => ("Sem máquinas livres — aguarde a equipe externa","problem_staff"),
         WorkCause.PavingMachinesInTransit => ("Máquinas a caminho — aguarde a chegada","activity_cargo"),
         WorkCause.PavingInProgress => ("Pavimentando e compactando",null),
+        WorkCause.PavingSiteOccupied => ("Canteiro ocupado — aguarde os veículos liberarem espaço","activity_cargo"),
+        WorkCause.PavingInsufficientRange => ("Máquinas sem autonomia de ida e volta — encurte o acesso à obra","problem_stock"),
         WorkCause.PavingAwaitingSiteLink => ("Canteiro interrompido — conecte os trechos","problem_road"),
         WorkCause.PavingOutOfFuel => ("Máquina sem combustível — obra parada","problem_stock"),
         WorkCause.NoBudgetForPaving => ("Sem verba para máquinas — obra parada","problem_staff"),

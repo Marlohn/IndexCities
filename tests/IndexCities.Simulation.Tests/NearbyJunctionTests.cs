@@ -105,9 +105,10 @@ public sealed class NearbyJunctionTests
         Assert.True(sim.PlaceRoad(new(-192,0),new(-192,24)).Success);
         Assert.True(sim.PlaceRoad(new(-192,0),new(-192,-24)).Success);sim.Advance(7200);
         Assert.True(sim.PlaceRoad(new(-192,-12),new(-144,-12)).Success);sim.Advance(7200);
+        Assert.True(sim.State.Projects.Where(p=>p.RoadPoints.Count>0).All(p=>p.Status==WorkStatus.Completed),PavingTests.Diagnostic(sim));
         var first=sim.State.Roads.Single(r=>r.Position==new Point(-192,0));
         var second=sim.State.Roads.Single(r=>r.Position==new Point(-192,-12));
-        Assert.Equal(JunctionControl.ThroughZ,second.Control);
+        Assert.True(second.Control==JunctionControl.ThroughZ,PavingTests.Diagnostic(sim));
         var fuelled=sim.State.Vehicles.Where(v=>v.Machine==PavingMachine.None&&v.Fuel>0).ToArray();var outbound=fuelled[0];var returning=fuelled[1];
         outbound.Position=new(-193.65,-8);outbound.Status=VehicleStatus.Travelling;outbound.Heading=Math.PI;
         outbound.Route=sim.FindRoadRoute(sim.State.Roads.Single(r=>r.Position==new Point(-192,-8)).Id,sim.State.Roads.Single(r=>r.Position==new Point(-144,-12)).Id);

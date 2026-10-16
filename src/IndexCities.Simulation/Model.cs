@@ -252,6 +252,10 @@ public sealed class Vehicle
     public List<Point> SitePath {get;set;}=[];
     public int SitePathIndex {get;set;}
     public Point? WorkTarget {get;set;}
+    public bool FeedingReady {get;set;}
+    public bool SitePathBeforeRoad {get;set;}
+    public int? SiteProjectId {get;set;}
+    public double? SiteDockHeading {get;set;}
     public string OwnerAccount {get;set;}="global";
     public bool External {get;set;}
     public Point Position {get;set;}
@@ -287,6 +291,7 @@ public sealed class Vehicle
 public sealed class Shipment
 {
     public int Id {get;set;}
+    public int? ReceivingMachineId {get;set;}
     public ShipmentPurpose Purpose {get;set;}
     public int? ProjectId {get;set;}
     public int? OriginalProjectId {get;set;}

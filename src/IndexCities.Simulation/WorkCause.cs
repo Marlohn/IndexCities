@@ -32,6 +32,8 @@ public static class WorkCause
     public const string PavingAwaitingSiteLink="Aguardando ligação física do canteiro";
     public const string PavingOutOfFuel="Máquina de pavimentação sem combustível";
     public const string NoBudgetForPaving="Sem verba restante para máquinas e operadores";
+    public const string PavingSiteOccupied="Aguardando espaço ocupado no canteiro";
+    public const string PavingInsufficientRange="Autonomia insuficiente para chegar, trabalhar e voltar";
     public const string ValidStretchExteriorAvailable="Trecho válido; ligação exterior disponível";
     public const string ValidPosition="Posição válida";
     public const string IntakeNeedsNaturalSource="A captação precisará alcançar a fonte natural";
@@ -53,6 +55,6 @@ public static class WorkCause
         UnderConstruction,ValidStretchExteriorAvailable,ValidPosition,IntakeNeedsNaturalSource,
         MaintenanceAwaitingMaterials,MaintenanceInProgress,MaintenanceEndedRemoved,
         MaintenanceDone,Cancelled,Completed,AwaitingPavingMachines,PavingMachinesInTransit,
-        PavingInProgress,PavingAwaitingSiteLink,PavingOutOfFuel,NoBudgetForPaving,
+        PavingInProgress,PavingAwaitingSiteLink,PavingOutOfFuel,NoBudgetForPaving,PavingSiteOccupied,PavingInsufficientRange,
     };
 }

@@ -8,8 +8,7 @@ public sealed partial class CitySimulation
 
     Vehicle? AvailableTruck(ResourceKind? resource=null)
     {
-        // Specialist bodies share the pre-existing finite dispatch capacity.
-        // Extra parked supplier bodies do not multiply drivers or active trips.
+        // Fixed specialist vehicles; the original fleet count is unchanged.
         var trucks=State.Vehicles.Where(v=>v.External&&!v.PassengerCar&&v.Machine==PavingMachine.None&&v.HomeBuildingId==null).ToList();
         if(trucks.Count(v=>v.Status!=VehicleStatus.Outside)>=State.Tuning.ExternalTruckCount)return null;
         return trucks.FirstOrDefault(v=>v.Status==VehicleStatus.Outside&&(resource==null||v.Body==BodyFor(resource.Value)));
@@ -18,23 +17,24 @@ public sealed partial class CitySimulation
     void MigrateConstructionState()
     {
         if(State.ConstructionStateVersion>=1)return;
-        var bodies=new[]{TruckBody.Dump,TruckBody.Mixer,TruckBody.Flatbed,TruckBody.Cargo,TruckBody.Dump,TruckBody.Cargo};var i=0;
+        var bodies=new[]{TruckBody.Dump,TruckBody.Dump,TruckBody.Dump,TruckBody.Mixer,TruckBody.Flatbed,TruckBody.Cargo};var unassigned=new List<Vehicle>();
         foreach(var v in State.Vehicles.Where(v=>!v.PassengerCar&&v.Machine==PavingMachine.None)){
-            var cargo=v.Cargo.Count>0?v.Cargo:State.Shipments.LastOrDefault(s=>s.VehicleId==v.Id&&s.Cargo.Count>0)?.Cargo;
-            v.Body=cargo is {Count:>0}?BodyFor(cargo.First().Key):v.External&&v.HomeBuildingId==null?bodies[i++%bodies.Length]:TruckBody.Cargo;
+            var cargo=v.Cargo.Count>0?v.Cargo:v.Status!=VehicleStatus.Outside?State.Shipments.LastOrDefault(s=>s.VehicleId==v.Id&&s.Cargo.Count>0)?.Cargo:null;
+            if(cargo is {Count:>0})v.Body=BodyFor(cargo.First().Key);
+            else if(v.External&&v.HomeBuildingId==null)unassigned.Add(v);else v.Body=TruckBody.Cargo;
         }
-        foreach(var body in Enum.GetValues<TruckBody>()){
-            var count=State.Vehicles.Count(v=>v.External&&v.HomeBuildingId==null&&!v.PassengerCar&&v.Machine==PavingMachine.None&&v.Body==body);
-            for(;count<State.Tuning.ExternalTruckCount;count++)
-                State.Vehicles.Add(new(){Id=Id(),Body=body,External=true,ExternalDriverId=$"motorista externo especializado {body} {count+1}",Position=State.Entry,Status=VehicleStatus.Outside});
+        var pendingIds=unassigned.Select(v=>v.Id).ToHashSet();
+        foreach(var v in unassigned){
+            var assigned=State.Vehicles.Where(a=>a.External&&a.HomeBuildingId==null&&!a.PassengerCar&&a.Machine==PavingMachine.None&&!pendingIds.Contains(a.Id)).ToList();
+            var body=bodies.FirstOrDefault(body=>assigned.Count(a=>a.Body==body)<bodies.Count(target=>target==body));
+            v.Body=body;pendingIds.Remove(v.Id);
         }
         foreach(var p in State.Projects.Where(IsPaving)){
             p.AppliedRoadPoints=p.RoadPoints.Where(point=>State.Roads.Any(r=>p.BuiltRoadNodes.Contains(r.Id)&&r.Position==point)).ToList();
             p.RolledRoadPoints=p.AppliedRoadPoints.ToList();p.PavingVersion=1;
             if(p.Status is WorkStatus.Completed or WorkStatus.Cancelled)continue;
+            foreach(var road in State.Roads.Where(r=>p.BuiltRoadNodes.Contains(r.Id))){road.ConstructionOnly=true;road.WorkProjectId=p.Id;}
             p.MachineryQuoted=QuoteMachinery(p.Position,p.WorkSeconds);
-            // Real uncommitted city money only; never mint money to migrate a work.
-            p.BudgetRemaining+=Math.Min(Available,p.MachineryQuoted);
         }
         State.ConstructionStateVersion=1;
     }
