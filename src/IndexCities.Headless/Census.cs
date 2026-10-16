@@ -26,7 +26,7 @@ sealed class Census
             if(_driving.Add(v.Id))_driveStarts++;
             var held=v.Cause.StartsWith("Fila",StringComparison.Ordinal)||v.Cause.StartsWith("Aguardando",StringComparison.Ordinal);
             if(!held){_driveFree++;continue;}
-            var key=v.Cause.StartsWith("Aguardando liberação do cruzamento",StringComparison.Ordinal)?"Aguardando liberação do cruzamento":v.Cause;
+            var key=System.Text.RegularExpressions.Regex.Replace(v.Cause,@"\d+","N");
             _driveHeld[key]=_driveHeld.GetValueOrDefault(key)+1;
         }
     }

@@ -399,7 +399,7 @@ Imprime tempo real por dia simulado, horas estimadas para 80 anos, GC, memória,
 
 ### Censo de movimento — 2026-10-16 (PENDENTE)
 
-`census` classifica cada SIM e veículo após cada passo de 2 s (3 dias medidos após 2 de aquecimento):
+`census` classifica cada SIM e veículo após cada passo de 2 s (`--days=3`: 3 dias medidos após 2 de aquecimento; janelas diferentes mudam as proporções dos veículos presos):
 
 | Cidade | SIMs parados | andando | em veículo | caminhada livre | caminhadas/dia | viagens de veículo/dia |
 |---|---|---|---|---|---|---|
@@ -407,7 +407,7 @@ Imprime tempo real por dia simulado, horas estimadas para 80 anos, GC, memória,
 | Grade 3×400 (109 SIMs) | 97,3% | 0,9% | 1,8% | 99,5% | 569 | 82 |
 
 - Na cidade A, 98% dos passos de veículos em viagem são livres. Na grade, só 1,2%: o restante são **três caminhões presos indefinidamente** ("Aguardando espaço para acessar a faixa" 64%, "Aguardando motorista embarcar" 34%). Isso parece bug, não carga real.
-- **Correção da leitura anterior:** nessas escalas o custo dominante **não é o movimento** (5–7% do tempo na cidade A). É recalcular a cada 2 s necessidades, infraestrutura e operação de empresas de agentes parados, cujo estado só muda em poucos momentos do dia: chegada, saída, compra, troca de turno, refeição, falta de água/energia. Movimento e interação só dominam com trânsito travado (grade de 400).
+- **Correção da leitura anterior:** nessas escalas o custo dominante **não é o movimento** (5–7% do tempo de CPU na cidade A, pela cópia instrumentada citada acima; o censo mede estados, não tempo). É recalcular a cada 2 s necessidades, infraestrutura e operação de empresas de agentes parados, cujo estado só muda em poucos momentos do dia: chegada, saída, compra, troca de turno, refeição, falta de água/energia. Movimento e interação só dominam com trânsito travado (grade de 400).
 
 ### Próximo experimento sugerido (proposta, não aprovado)
 

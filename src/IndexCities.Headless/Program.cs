@@ -8,8 +8,11 @@ using IndexCities.Simulation;
 //   scale  cycle|grid [--rows=3] [--length=400] [--days=7] [--cap=600] [--signals=1] [--seed=42]
 //   census cycle|grid [same options]   per-step movement census (free vs. waiting)
 // Results are measurements, not product rules: see docs/exploration/ritmo-velocidades.md.
-var opts=args.Skip(2).Select(a=>a.TrimStart('-').Split('=',2)).ToDictionary(p=>p[0],p=>p.Length>1?p[1]:"1");
+Console.OutputEncoding=Encoding.UTF8;
+var known=new HashSet<string>{"rows","length","days","cap","signals","seed"};
+var opts=new Dictionary<string,string>();foreach(var p in args.Skip(2).Select(a=>a.TrimStart('-').Split('=',2)))opts[p[0]]=p.Length>1?p[1]:"1";
 string Opt(string k,string d)=>opts.GetValueOrDefault(k,d);
+if(opts.Keys.FirstOrDefault(k=>!known.Contains(k)) is {} unknown){Console.Error.WriteLine("opção desconhecida: --"+unknown);return 2;}
 if(args.Length<2||args[0] is not ("scale" or "census")||args[1] is not ("cycle" or "grid")){Console.Error.WriteLine("uso: scale|census cycle|grid [--rows=3] [--length=400] [--days=7] [--cap=600] [--signals=1] [--seed=42]");return 2;}
 var seed=int.Parse(Opt("seed","42"));var days=int.Parse(Opt("days","7"));var cap=double.Parse(Opt("cap","600"),System.Globalization.CultureInfo.InvariantCulture);
 var sw=Stopwatch.StartNew();CitySimulation sim;string info;

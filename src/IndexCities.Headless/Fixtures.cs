@@ -7,6 +7,7 @@ namespace IndexCities.Headless;
 // and scales utility capacities so a few plants serve a large synthetic city.
 static class Fixtures
 {
+    static bool _scaled;
     // Same layout as CityCycleTests.City(), with real construction until done.
     public static CitySimulation Cycle(int seed)
     {
@@ -31,6 +32,8 @@ static class Fixtures
     // south of it; lake east of the main street for the intakes.
     public static (CitySimulation Sim,string Info) Grid(int seed,int rows,double length,bool signals,double utilityScale=50)
     {
+        // Mutates the static catalog of this process only; guarded against scaling twice.
+        if(_scaled)throw new InvalidOperationException("Grid só pode ser criada uma vez por processo");_scaled=true;
         var defs=(Dictionary<BuildingKind,BuildingDefinition>)Catalog.Definitions;
         foreach(var k in new[]{BuildingKind.WaterIntake,BuildingKind.WaterTreatment,BuildingKind.SewageTreatment,BuildingKind.WindPower})defs[k]=defs[k] with {Capacity=defs[k].Capacity*utilityScale};
         const double rowGap=60;var half=(rows-1)/2;
