@@ -1,0 +1,62 @@
+# Histórico de decisões — População
+
+> Só registro histórico; as regras vigentes estão em [docs/spec/populacao.md](../spec/populacao.md).
+
+- 2026-10-08 — Salários privados adaptativos decididos pela própria empresa, com pagamentos e limites reais (opção 3A) → Trabalho, emprego e renda.
+- 2026-10-08 — Reavaliação individual do vínculo quando o local de trabalho muda efetivamente (opção A) → Trabalho, emprego e renda.
+- 2026-10-08 — Procura opcional de serviços privados de lazer e conveniência, com pagamento e deslocamento reais (opção 2B) → Atividades internas, lazer e visitas.
+- 2026-10-08 — Escolha autônoma entre comer em casa ou fora, com compra e viagem reais (opção 3B) → Atividades internas, lazer e visitas.
+- 2026-10-08 — Trabalho pendular com o exterior aprovado como direção de produto (opção 4C) → Trabalho pendular com o exterior.
+- 2026-10-08 — Identidade persistente de trabalhador pendular e exterior simplificado, sem simular outra cidade (opção 4A) → Trabalho pendular com o exterior.
+- 2026-10-08 — Atração turística derivada das condições reais da cidade, sem fluxo aleatório (opção 2A) → Turismo e hospedagem.
+- 2026-10-09 — Salários municipais ajustados automaticamente pela simulação conforme contratação e Caixa (opção 3A) → Trabalho, emprego e renda.
+- 2026-10-09 — Licença médica remunerada limitada, paga pelo empregador real (opção 4C) → Trabalho, emprego e renda.
+- 2026-10-09 — Vínculos e salários de empresa privada mantidos durante paralisação de realocação (opção 1A) → Trabalho, emprego e renda.
+- 2026-10-09 — Vínculos e salários de servidores municipais mantidos durante paralisação por realocação (opção A) → Trabalho, emprego e renda.
+- 2026-10-09 — Trabalho durante o ensino superior permitido se horários e deslocamentos forem compatíveis (opção 7A) → Trabalho, emprego e renda.
+- 2026-10-09 — Carteiras monetárias persistentes de trabalhadores externos incluídas na oferta fixa (opção 3A) → Trabalho pendular com o exterior.
+- 2026-10-09 — Fome prolongada reduz saúde e pode levar à morte em situação extrema (opção 3A) → Atividades internas, lazer e visitas.
+- 2026-10-09 — Parto pode ocorrer fora do hospital quando não houver acesso ou vaga (opção 7A) → Relacionamentos, família e ciclo de vida.
+- 2026-10-09 — Turismo com visitas diurnas de bate-volta e estadias com hospedagem real (opção 9C) → Turismo e hospedagem.
+- 2026-10-10 — Após a licença médica paga, empregador decide entre manter sem remuneração ou encerrar o vínculo (opção 6C) → Trabalho, emprego e renda.
+- 2026-10-10 — Sem seguro-desemprego público no modelo inicial (opção 17A) → Trabalho, emprego e renda.
+- 2026-10-10 — Trabalho na velhice e independência por renda patrimonial como direção de produto (direção confirmada) → Cidadãos e simulação.
+- 2026-10-10 — Previdência pública municipal por repartição (opção 5A) → Cidadãos e simulação — previdência e benefícios.
+- 2026-10-10 — Contribuição previdenciária somente do trabalhador, sem contribuição do empregador (refinamento 1A) → Cidadãos e simulação — previdência e benefícios.
+- 2026-10-10 — Elegibilidade previdenciária cumulativa: idade mínima E tempo de contribuição (escolha 2C) → Cidadãos e simulação — previdência e benefícios.
+- 2026-10-10 — Benefício previdenciário com teto, refletindo histórico de salários e contribuição (escolha 3B) → Cidadãos e simulação — previdência e benefícios.
+- 2026-10-10 — Aposentado pode continuar empregado e contribuindo, com ajuste gradual do benefício (escolha 4A) → Cidadãos e simulação — previdência e benefícios.
+- 2026-10-10 — Benefício previdenciário por incapacidade para o trabalho (opção 16B) → Cidadãos e simulação — previdência e benefícios.
+- 2026-10-10 — Contribuições do exterior não reconhecidas inicialmente (escolha 5C) → Cidadãos e simulação — previdência e benefícios.
+- 2026-10-10 — Caixa insuficiente distribui pagamentos previdenciários proporcionalmente, mantendo dívida (opção 6A) → Cidadãos e simulação — previdência e benefícios.
+- 2026-10-10 — Quitação de atrasos previdenciários proporcional aos créditos exigíveis quando houver verba (opção 11C) → Cidadãos e simulação — previdência e benefícios.
+- 2026-10-10 — Crédito previdenciário não pago encerra-se com a morte e não integra herança (opção 12B) → Cidadãos e simulação — previdência e benefícios.
+- 2026-10-10 — Sem pensão previdenciária por morte no primeiro modelo (escolha 7A) → Cidadãos e simulação — previdência e benefícios.
+- 2026-10-10 — Aposentadoria municipal suspensa durante residência externa (escolha 8A) → Cidadãos e simulação — previdência e benefícios.
+- 2026-10-10 — Previdência com parâmetros automáticos, sem edição livre pelo jogador (escolha 9A) → Cidadãos e simulação — previdência e benefícios.
+- 2026-10-10 — Criança sem adulto responsável: parentes reais primeiro e acolhimento municipal como alternativa (opção 6A) → Atividades internas, lazer e visitas.
+- 2026-10-10 — Transição aos 18 anos para jovem antes acolhido, com período limitado (opção 6B) → Atividades internas, lazer e visitas.
+- 2026-10-10 — Acolhimento familiar de emergência quando não houver vaga municipal (opção 7B) → Atividades internas, lazer e visitas.
+- 2026-10-10 — Menor sem qualquer solução de acolhimento permanece visível com alerta grave (complemento à opção 7) → Atividades internas, lazer e visitas.
+- 2026-10-10 — Histórico individual detalhado com apresentação inteligente (opção 10B) → Cidadãos e simulação.
+- 2026-10-11 — Câmera de acompanhamento individual do SIM (escolha 8B) → Cidadãos e simulação.
+- 2026-10-11 — Busca ocasional de emprego melhor por SIM já empregado (opção 5B) → Trabalho, emprego e renda.
+- 2026-10-11 — Reação autônoma do trabalhador a salário atrasado (opção 6B) → Trabalho, emprego e renda.
+- 2026-10-11 — Semana útil, fins de semana e folgas simplificadas (pergunta 8B) → Trabalho, emprego e renda.
+- 2026-10-11 — Elegibilidade ao benefício por incapacidade prolongada com contribuição mínima (opção 5A) → Cidadãos e simulação — previdência e benefícios.
+- 2026-10-11 — Não acumular aposentadoria e benefício por incapacidade; paga-se o maior (opção 6B) → Cidadãos e simulação — previdência e benefícios.
+- 2026-10-11 — Sem moradia compartilhada entre adultos sem vínculo familiar (opção 15A) → Cidadãos e simulação.
+- 2026-10-11 — Satisfação por acontecimentos pessoais positivos reais (opção 9A) → Relacionamentos, família e ciclo de vida.
+- 2026-10-11 — Separação de casais com reorganização familiar, sem partilha judicial (opção 2B) → Relacionamentos, família e ciclo de vida.
+- 2026-10-11 — Filhos menores após separação ficam com responsável principal automático (opção 2A) → Relacionamentos, família e ciclo de vida.
+- 2026-10-11 — Emigração não perdoa automaticamente dívidas pessoais (opção 7A) → Migração, turismo e crescimento populacional.
+- 2026-10-11 — Imóveis de SIM emigrado permanecem sob sua propriedade (opção 8A) → Migração, turismo e crescimento populacional.
+- 2026-10-11 — Decisões de emigração de adultos e acompanhamento dos filhos menores (opção 8C) → Migração, turismo e crescimento populacional.
+- 2026-10-11 — Creches municipais físicas para crianças pequenas (opção 1B) → Atividades internas, lazer e visitas.
+- 2026-10-11 — Creches com contribuição conforme capacidade econômica da família (revisão 1B e atualização 1A) → Atividades internas, lazer e visitas.
+- 2026-10-11 — Mensalidade de creche não quitada não tira acesso da criança (escolha 3B) → Atividades internas, lazer e visitas.
+- 2026-10-11 — Atrações turísticas dedicadas complementares às existentes (escolha 7A+B) → Turismo e hospedagem.
+- 2026-10-11 — Atrações dedicadas inicialmente municipais (opção 11A) → Turismo e hospedagem.
+- 2026-10-11 — Catálogo inicial enxuto de atrações: museu e mirante (opção 6A) → Turismo e hospedagem.
+- 2026-10-11 — Turistas com múltiplas visitas na mesma viagem (opção 12B) → Turismo e hospedagem.
+- 2026-10-11 — Benefício temporário de bem-estar por atendimento opcional real (opção 9A) → Atividades internas, lazer e visitas.
