@@ -27,6 +27,7 @@ public partial class Main:Node3D
         if(args.FirstOrDefault(a=>a.StartsWith("--focus=")) is {} focusArg){var parts=focusArg[8..].Split(',').Select(s=>float.Parse(s,System.Globalization.CultureInfo.InvariantCulture)).ToArray();_focus=new(parts[0],0,parts[1]);if(parts.Length>2)_zoom=parts[2];UpdateCamera();}
         if(args.Contains("--inspect-first")){ClearSelection();_selectedBuilding=_sim.State.Buildings.FirstOrDefault(b=>!b.Removed)?.Id;RefreshInspection();}
         if(args.Contains("--performance-smoke")){_performanceSmoke=true;_speed=1;_autosaveMinutes=0;var speedArg=args.FirstOrDefault(a=>a.StartsWith("--performance-speed="));if(speedArg!=null&&(!int.TryParse(speedArg[20..],out _speed)||_speed is <1 or >3))throw new ArgumentException("Performance usa somente velocidades aprovadas 1, 2 e 3");}
+        if(args.Contains("--bar-capture")){_speed=0;_sim.PlaceBuilding(BuildingKind.CityHall,new(-152,16));_world.Reset(_sim.State);BuildCatalog();RefreshHud();}
         if(args.Contains("--persistence-smoke"))CallDeferred(MethodName.PersistenceSmoke);
         if(args.Contains("--ui-smoke"))CallDeferred(MethodName.UiSmoke);
         if(args.Contains("--ui-input-smoke"))CallDeferred(MethodName.UiInputSmoke);
