@@ -21,6 +21,7 @@ public partial class Main
 
     public static readonly QaScenario[] QaScenarios =
     {
+        new("--construction-paving-smoke",new[]{"--construction-paving-smoke"},"Caminhões por material, pavimentadora/rolo reais em reta/L, custos, parada causal, cancelamento e save/load",true,"nenhuma (cria cidades; saves isolados em artifacts/verification; modelos Construction obrigatórios na validação final)",nameof(ConstructionPavingSmoke)),
         new("--performance-smoke",new[]{"--performance-smoke"},"FPS e ms de simulação/apresentação; só métricas, sem asserção de correção",false,"opcional via --fixture= (ignora --review-save-dir antes desta correção)",null,QaTrigger.Performance),
         new("--bar-capture",new[]{"--bar-capture"},"Posiciona a Prefeitura e espera --capture= para capturar a barra; não é teste",true,"nenhuma",null,QaTrigger.BarCapture),
         new("--persistence-smoke",new[]{"--persistence-smoke"},"Round-trip de save/load, esboços e migração legada de relógio",false,"nenhuma (cria a cidade)",nameof(PersistenceSmoke)),

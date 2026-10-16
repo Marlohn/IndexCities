@@ -65,6 +65,12 @@ public partial class Main
             : ("Equipe sem pagamento — cancele a obra","demolish"),
         // Estados informativos (obra segue normalmente; sem pictograma proprio).
         WorkCause.UnderConstruction => ("Em construção",null),
+        WorkCause.AwaitingPavingMachines => ("Sem máquinas livres — aguarde a equipe externa","problem_staff"),
+        WorkCause.PavingMachinesInTransit => ("Máquinas a caminho — aguarde a chegada","activity_cargo"),
+        WorkCause.PavingInProgress => ("Pavimentando e compactando",null),
+        WorkCause.PavingAwaitingSiteLink => ("Canteiro interrompido — conecte os trechos","problem_road"),
+        WorkCause.PavingOutOfFuel => ("Máquina sem combustível — obra parada","problem_stock"),
+        WorkCause.NoBudgetForPaving => ("Sem verba para máquinas — obra parada","problem_staff"),
         WorkCause.ValidStretchExteriorAvailable => ("Trecho válido — enviando material e equipe",null),
         WorkCause.ValidPosition => ("Obra encomendada — aguardando material e equipe",null),
         WorkCause.IntakeNeedsNaturalSource => ("Distante da água — aproxime a captação","problem_intake"),

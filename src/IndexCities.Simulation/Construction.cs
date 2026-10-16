@@ -50,7 +50,7 @@ public sealed partial class CitySimulation
         // Already built points are excluded by the physical network above. If
         // demolished, they require a fresh paid order rather than remaining
         // reserved forever by a work that is waiting for its connection.
-        var planned=State.Projects.Where(p=>p.Id!=ignoredProject&&!p.IsMaintenance&&p.Status is WorkStatus.Waiting or WorkStatus.InProgress).SelectMany(p=>p.RoadPoints.Skip(p.BuiltRoadNodes.Count)).ToArray();
+        var planned=State.Projects.Where(p=>p.Id!=ignoredProject&&!p.IsMaintenance&&p.Status is WorkStatus.Waiting or WorkStatus.InProgress).SelectMany(p=>p.RoadPoints.Where(point=>!p.RolledRoadPoints.Contains(point))).ToArray();
         return RoadShape(start,end,reverse).Where(point=>State.Roads.All(road=>road.Position.Distance(point)>.05)&&planned.All(other=>other.Distance(point)>=.1)).ToList();
     }
     public PlacementQuote QuoteRoad(Point start,Point end,bool reverse=false,int? ignoredProject=null)
@@ -66,11 +66,12 @@ public sealed partial class CitySimulation
         var shortCorner=Math.Abs(delta.X)>.01&&Math.Abs(delta.Z)>.01&&Math.Min(Math.Abs(delta.X),Math.Abs(delta.Z))<State.Tuning.RoadWidth&&points.Contains(corner);
         var valid=points.Count>0&&!outside&&!water&&building==null&&contact==null&&!shortCorner;
         var length=points.Count*State.Tuning.RoadStep;var materials=new Dictionary<ResourceKind,double>{{ResourceKind.Aggregate,length*State.Tuning.RoadWidth*.04},{ResourceKind.Asphalt,length*State.Tuning.RoadWidth*.02}};
-        var access=points.Any(p=>State.Roads.Any(r=>r.Position.Distance(p)<=State.Tuning.RoadStep+.05&&_exteriorConnected.Contains(r.Id)));
+        var access=points.Any(p=>State.Roads.Any(r=>r.Position.Distance(p)<=State.Tuning.RoadStep+.05&&_workExteriorConnected.Contains(r.Id)));
         var message=points.Count==0?"Este traçado não adiciona trecho novo às ruas prontas ou em obra":outside?"O traçado ultrapassa o limite do mapa":water?"O traçado invade a água":building!=null?$"O traçado invade {building.Definition.Name} #{building.Id}":!access?WorkCause.NoReadyExteriorLink:WorkCause.ValidStretchExteriorAvailable;
         if(contact!=null&&!outside&&!water&&building==null)message=contact;
         if(shortCorner&&points.Count>0&&!outside&&!water&&building==null&&contact==null)message="Curva muito curta. Alinhe a rua ou afaste a esquina.";
-        return new(valid,access,points.Count==0?0:QuoteMaterials(materials,start,Math.Max(120,length*2)),materials,message);
+        var machinery=points.Count==0?0:QuoteMachinery(start,Math.Max(120,length*2))*PavingComponents(points);
+        return new(valid,access,points.Count==0?0:QuoteMaterials(materials,start,Math.Max(120,length*2))+machinery,materials,message){MachineryEstimate=machinery};
     }
     bool RoadOverlapsLake(IReadOnlyList<Point> shape)
     {
@@ -89,7 +90,7 @@ public sealed partial class CitySimulation
     {
         var q=QuoteRoad(start,end,reverse);if(!q.PhysicallyValid)return new(false,q.Message);if(q.Total>Available)return new(false,"Caixa disponível insuficiente");
         var points=NewRoadPoints(start,end,reverse);
-        var p=new WorkProject{Id=Id(),Position=points[0],RoadPoints=points,Required=q.Materials,WorkSeconds=Math.Max(120,points.Count*State.Tuning.RoadStep*2),BudgetRemaining=q.Total,Cause=q.Message};State.Projects.Add(p);ReserveLocalMaterials();Event("Obra de rua confirmada; orçamento reservado"+(q.Accessible?"; materiais e equipe serão enviados":"; conecte o trecho a uma via pronta"));return new(true,State.LastMessage,p.Id);
+        var p=new WorkProject{Id=Id(),Position=points[0],RoadPoints=points,PavingVersion=1,MachineryQuoted=QuoteMachinery(start,Math.Max(120,points.Count*State.Tuning.RoadStep*2))*PavingComponents(points),Required=q.Materials,WorkSeconds=Math.Max(120,points.Count*State.Tuning.RoadStep*2),BudgetRemaining=q.Total,Cause=q.Message};State.Projects.Add(p);ReserveLocalMaterials();Event("Obra de rua confirmada; orçamento reservado"+(q.Accessible?"; materiais e equipe serão enviados":"; conecte o trecho a uma via pronta"));return new(true,State.LastMessage,p.Id);
     }
     void ReserveLocalMaterials()
     {
@@ -104,9 +105,9 @@ public sealed partial class CitySimulation
     RoadNode? WorkAccess(WorkProject p)
     {
         // A demolished stretch is skipped: maintenance continues on the remaining network.
-        if(p.IsMaintenance&&p.MaintenanceRoadIds.Count>0){var remaining=p.MaintenanceRoadIds.Where(_roads.ContainsKey).ToList();if(remaining.Count==0)return null;var target=_roads[remaining[Math.Min(remaining.Count-1,(int)(p.Progress*remaining.Count))]];return State.Roads.Where(r=>_exteriorConnected.Contains(r.Id)&&r.Position.Distance(target.Position)<=State.Tuning.RoadStep+.05).MinBy(r=>r.Position.Distance(target.Position));}
-        if(p.BuildingId!=null)return BuildingById(p.BuildingId) is {} b?Access(b):null;
-        return State.Roads.Where(r=>p.RoadPoints.Any(a=>a.Distance(r.Position)<=State.Tuning.RoadStep+.05)&&_exteriorConnected.Contains(r.Id)).OrderBy(r=>r.Position.Distance(p.Position)).FirstOrDefault();
+        if(p.IsMaintenance&&p.MaintenanceRoadIds.Count>0){var remaining=p.MaintenanceRoadIds.Where(_roads.ContainsKey).ToList();if(remaining.Count==0)return null;var target=_roads[remaining[Math.Min(remaining.Count-1,(int)(p.Progress*remaining.Count))]];return State.Roads.Where(r=>_workExteriorConnected.Contains(r.Id)&&r.Position.Distance(target.Position)<=State.Tuning.RoadStep+.05).MinBy(r=>r.Position.Distance(target.Position));}
+        if(p.BuildingId!=null)return BuildingById(p.BuildingId) is {} b?ConstructionAccess(b):null;
+        return State.Roads.Where(r=>p.RoadPoints.Any(a=>a.Distance(r.Position)<=State.Tuning.RoadStep+.05)&&_workExteriorConnected.Contains(r.Id)).OrderBy(r=>r.Position.Distance(p.Position)).FirstOrDefault();
     }
     bool ProjectPay(WorkProject p,decimal value,string category,string reason)
     {
@@ -119,44 +120,45 @@ public sealed partial class CitySimulation
         ReserveLocalMaterials();
         foreach(var p in State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress).OrderBy(p=>p.IsMaintenance?MaintenancePriority(p):4).ThenBy(p=>p.Id)){
             if(RoadPhysicalWorkDone(p))continue;
-            var access=WorkAccess(p);if(access==null||!_exteriorConnected.Contains(access.Id)){p.Cause=WorkCause.NoMaterialsAccess;continue;}
-            AssignLocalCrew(p,access);
+            var access=WorkAccess(p);if(access==null||!_workExteriorConnected.Contains(access.Id)){p.Cause=WorkCause.NoMaterialsAccess;continue;}
+            if(!IsPaving(p))AssignLocalCrew(p,access);
             foreach(var k in p.Required.Keys.ToList()){
                 var inflight=State.Shipments.Where(s=>s.ProjectId==p.Id&&!s.Complete).Sum(s=>s.Cargo.GetValueOrDefault(k));
                 var missing=p.Required[k]-p.Delivered.GetValueOrDefault(k)-inflight;
                 if(missing<=.001)continue;
-                var vehicle=State.Vehicles.FirstOrDefault(v=>v.External&&v.HomeBuildingId==null&&v.Status==VehicleStatus.Outside);if(vehicle==null){p.Cause=WorkCause.AwaitingExternalTruck;break;}
+                var vehicle=AvailableTruck(k);if(vehicle==null){p.Cause=WorkCause.AwaitingExternalTruck;break;}
                 var amount=Math.Min(missing,vehicle.CargoCapacity);
                 var local=p.LocalReserved.GetValueOrDefault(k);var depot=State.Buildings.FirstOrDefault(b=>b.Kind==BuildingKind.WorksDepot&&b.Completed&&!b.Removed&&HasExteriorAccess(b));
                 var source=local>.001&&depot!=null?depot:null;if(source!=null)amount=Math.Min(amount,local);
                 if(source==null&&State.OutsideStock.GetValueOrDefault(k)<amount){p.Cause=WorkCause.SupplierOutOfMaterial;continue;}
-                var route=FindRoadRoute(EntryNode().Id,(source==null?access:Access(source)!).Id);if(route.Count==0)continue;
-                var travel=RouteLength(route)+(source==null?0:RouteLength(FindRoadRoute(Access(source)!.Id,access.Id)));
+                var route=FindRoadRoute(EntryNode().Id,(source==null?access:Access(source)!).Id,true);if(route.Count==0)continue;
+                var travel=RouteLength(route)+(source==null?0:RouteLength(FindRoadRoute(Access(source)!.Id,access.Id,true)));
                 var fuel=Math.Max(0,State.Tuning.FuelTank-vehicle.Fuel);if(State.OutsideStock[ResourceKind.Fuel]<fuel){p.Cause=WorkCause.SupplierOutOfFuel;continue;}
                 var fee=State.Tuning.FreightBase+(decimal)(travel*2)*State.Tuning.FreightPerMetre+(decimal)fuel*State.Tuning.ImportPrices[ResourceKind.Fuel];
                 var price=source==null?(decimal)amount*State.Tuning.ImportPrices[k]:0;
                 if(!ProjectPay(p,price+fee,p.IsMaintenance?MaintenanceCategory(p):"Obras e materiais",(source==null?"Importação de ":"Transporte municipal de ")+k+"; produto, frete e combustível")){p.Cause=WorkCause.RemainingCommitmentInsufficient;continue;}
                 if(source==null)State.OutsideStock[k]-=amount;State.OutsideStock[ResourceKind.Fuel]-=fuel;vehicle.Fuel+=fuel;
                 var shipment=new Shipment{Id=Id(),Purpose=p.IsMaintenance?ShipmentPurpose.Maintenance:ShipmentPurpose.Construction,ProjectId=p.Id,SourceBuildingId=source?.Id,DestinationBuildingId=p.BuildingId,Destination=access.Position,VehicleId=vehicle.Id,Cargo=new(){{k,amount}},PricePaid=Money(price+fee),PickedUp=source==null};
-                State.Shipments.Add(shipment);vehicle.ShipmentId=shipment.Id;vehicle.Cargo=source==null?new(shipment.Cargo):new();vehicle.Route=route;vehicle.RouteIndex=0;vehicle.DockPosition=DockAt(source==null?access:Access(source)!,source??BuildingById(p.BuildingId),vehicle.CrewAboard);vehicle.Status=VehicleStatus.Travelling;vehicle.Position=State.Entry;vehicle.Cause="Entrega para obra "+p.Id;
+                State.Shipments.Add(shipment);vehicle.ConstructionAccess=true;vehicle.ShipmentId=shipment.Id;vehicle.Cargo=source==null?new(shipment.Cargo):new();vehicle.Route=route;vehicle.RouteIndex=0;vehicle.DockPosition=DockAt(source==null?access:Access(source)!,source??BuildingById(p.BuildingId),vehicle.CrewAboard);vehicle.Status=VehicleStatus.Travelling;vehicle.Position=State.Entry;vehicle.Cause="Entrega para obra "+p.Id;
                 // A crew truck waits at the site. Bringing the crew with the
                 // first load can occupy the only free truck while more loads
                 // remain. Bring it with the final committed delivery instead.
                 var allMaterialsDispatched=p.Required.All(required=>p.Delivered.GetValueOrDefault(required.Key)+State.Shipments.Where(s=>s.ProjectId==p.Id&&!s.Complete).Sum(s=>s.Cargo.GetValueOrDefault(required.Key))+.001>=required.Value);
-                if(p.CrewVehicleId==null&&p.LocalCrew.Count==0&&allMaterialsDispatched){vehicle.CrewAboard=true;vehicle.CrewCount=3;p.CrewVehicleId=vehicle.Id;}
+                if(!IsPaving(p)&&p.CrewVehicleId==null&&p.LocalCrew.Count==0&&allMaterialsDispatched){vehicle.CrewAboard=true;vehicle.CrewCount=3;p.CrewVehicleId=vehicle.Id;}
                 vehicle.DockPosition=DockAt(source==null?access:Access(source)!,source??BuildingById(p.BuildingId),vehicle.CrewAboard);
                 p.Cause=WorkCause.MaterialsInTransit;
             }
-            AssignLocalCrew(p,access);
+            if(!IsPaving(p))AssignLocalCrew(p,access);
+            if(IsPaving(p)){OrderPavingMachines(p,access);continue;}
             if(p.CrewVehicleId==null&&p.LocalCrew.Count==0&&p.Required.All(k=>p.Delivered.GetValueOrDefault(k.Key)+.001>=k.Value))SendExternalCrew(p,access);
         }
     }
     void SendExternalCrew(WorkProject project,RoadNode access)
     {
-        var vehicle=State.Vehicles.FirstOrDefault(v=>v.External&&v.HomeBuildingId==null&&v.Status==VehicleStatus.Outside);if(vehicle==null)return;var route=FindRoadRoute(EntryNode().Id,access.Id);if(route.Count==0)return;
+        var vehicle=AvailableTruck();if(vehicle==null)return;var route=FindRoadRoute(EntryNode().Id,access.Id,true);if(route.Count==0)return;
         var fuel=Math.Max(0,State.Tuning.FuelTank-vehicle.Fuel);if(State.OutsideStock[ResourceKind.Fuel]<fuel)return;var fee=State.Tuning.FreightBase+(decimal)(RouteLength(route)*2)*State.Tuning.FreightPerMetre+(decimal)fuel*State.Tuning.ImportPrices[ResourceKind.Fuel];
         if(!ProjectPay(project,fee,project.IsMaintenance?MaintenanceCategory(project):"Equipe externa","Transporte físico e combustível da equipe externa")){project.Cause=WorkCause.CommitmentInsufficientForCrew;return;}
-        State.OutsideStock[ResourceKind.Fuel]-=fuel;vehicle.Fuel+=fuel;var shipment=new Shipment{Id=Id(),Purpose=project.IsMaintenance?ShipmentPurpose.Maintenance:ShipmentPurpose.Construction,ProjectId=project.Id,DestinationBuildingId=project.BuildingId,VehicleId=vehicle.Id,PickedUp=true,PricePaid=Money(fee)};State.Shipments.Add(shipment);vehicle.ShipmentId=shipment.Id;vehicle.Cargo.Clear();vehicle.Route=route;vehicle.RouteIndex=0;vehicle.Position=State.Entry;vehicle.Status=VehicleStatus.Travelling;vehicle.CrewAboard=true;vehicle.CrewCount=3;vehicle.DockPosition=DockAt(access,BuildingById(project.BuildingId),true);project.CrewVehicleId=vehicle.Id;
+        State.OutsideStock[ResourceKind.Fuel]-=fuel;vehicle.Fuel+=fuel;var shipment=new Shipment{Id=Id(),Purpose=project.IsMaintenance?ShipmentPurpose.Maintenance:ShipmentPurpose.Construction,ProjectId=project.Id,DestinationBuildingId=project.BuildingId,VehicleId=vehicle.Id,PickedUp=true,PricePaid=Money(fee)};State.Shipments.Add(shipment);vehicle.ConstructionAccess=true;vehicle.ShipmentId=shipment.Id;vehicle.Cargo.Clear();vehicle.Route=route;vehicle.RouteIndex=0;vehicle.Position=State.Entry;vehicle.Status=VehicleStatus.Travelling;vehicle.CrewAboard=true;vehicle.CrewCount=3;vehicle.DockPosition=DockAt(access,BuildingById(project.BuildingId),true);project.CrewVehicleId=vehicle.Id;
     }
     void AssignLocalCrew(WorkProject p,RoadNode access)
     {
@@ -172,6 +174,7 @@ public sealed partial class CitySimulation
         var completedConstruction=false;
         foreach(var p in State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress)){
             if(RetireMaintenanceWithoutTargets(p))continue;
+            if(IsPaving(p)&&!RoadPhysicalWorkDone(p)){if(ProgressPaving(p,dt)){if(!WaitForRoadConnection(p))completedConstruction|=CompleteConstructionProject(p);}continue;}
             if(RoadPhysicalWorkDone(p)){
                 if(!WaitForRoadConnection(p))completedConstruction|=CompleteConstructionProject(p);
                 continue;
@@ -204,7 +207,7 @@ public sealed partial class CitySimulation
             
             p.Status=WorkStatus.InProgress;p.Progress=Math.Min(1,p.Progress+used/p.WorkSeconds);if(p.Progress>=.999999)p.Progress=1;p.Cause=p.IsMaintenance?WorkCause.MaintenanceInProgress:WorkCause.UnderConstruction;
             if(p.IsMaintenance)ProgressRoadMaintenance(p);
-            if(!p.IsMaintenance&&p.RoadPoints.Count>0){var count=(int)Math.Floor(p.Progress*p.RoadPoints.Count);var changed=false;while(p.BuiltRoadNodes.Count<count){p.BuiltRoadNodes.Add(AddRoad(p.RoadPoints[p.BuiltRoadNodes.Count]).Id);changed=true;}if(changed){RebuildRoadGraph();SetDefaultJunctions();}}
+
             if(p.Progress<.999999)continue;
             if(RoadPhysicalWorkDone(p)&&WaitForRoadConnection(p))continue;
             completedConstruction|=CompleteConstructionProject(p);
@@ -218,9 +221,9 @@ public sealed partial class CitySimulation
         for(var i=0;i<p.RoadPoints.Count;i++){
             // Usual case: linear in this work, with existing graph lookups.
             // A demolished/rebuilt point can have a different real node ID.
-            var node=_roads.GetValueOrDefault(p.BuiltRoadNodes[i]);
+            var node=State.Roads.FirstOrDefault(road=>road.Position.Distance(p.RoadPoints[i])<.05);
             if(node==null||node.Position.Distance(p.RoadPoints[i])>=.05)node=State.Roads.FirstOrDefault(road=>road.Position.Distance(p.RoadPoints[i])<.05);
-            if(node==null||!_exteriorConnected.Contains(node.Id)){connected=false;break;}
+            if(node==null||!_workExteriorConnected.Contains(node.Id)){connected=false;break;}
         }
         if(connected)return false;
         p.Status=WorkStatus.Waiting;p.Cause=WorkCause.RoadBuiltAwaitingLink;
@@ -230,18 +233,21 @@ public sealed partial class CitySimulation
     }
     void ReleaseConstructionCrew(WorkProject p)
     {
+        ReleasePavingMachines(p);
         if(p.CrewVehicleId is {} id&&State.Vehicles.FirstOrDefault(v=>v.Id==id&&v.CrewAboard) is {} crew){crew.CrewAboard=false;crew.CrewCount=0;ReturnExternal(crew);}
         p.CrewVehicleId=null;
         foreach(var citizenId in p.LocalCrew){var c=State.Citizens.First(c=>c.Id==citizenId);c.ConstructionProjectId=null;var job=BuildingById(c.WorkplaceId);if(job!=null)StartJourney(c,job,JourneyPurpose.Work);}p.LocalCrew.Clear();
     }
     bool CompleteConstructionProject(WorkProject p)
     {
+        if(p.CrewCostDue>0){var due=Money(p.CrewCostDue);if(!ProjectPay(p,due,IsPaving(p)?"Máquinas de pavimentação":"Equipe externa","Saldo do trabalho efetivamente realizado")){p.Cause=WorkCause.NoBudgetForPaving;return false;}if(IsPaving(p))p.MachineryPaid+=due;p.CrewCostDue=0;}
+        if(IsPaving(p)){foreach(var road in State.Roads.Where(r=>r.WorkProjectId==p.Id))road.ConstructionOnly=false;RebuildRoadGraph();SetDefaultJunctions();}
         p.Progress=1;p.Status=WorkStatus.Completed;p.CompletedAt=State.Now;p.BudgetRemaining=0;p.Cause=WorkCause.Completed;
         if(p.IsMaintenance)CompleteMaintenance(p);
         else if(BuildingById(p.BuildingId) is {} b){b.Completed=true;if(!b.Definition.Private)b.OwnerAccount="city";b.Cause=b.Definition.Private?"Procurando adquirente":"Aguardando funcionários";b.MaintenanceDueAt=State.ElapsedSeconds+State.Tuning.PublicMaintenanceIntervalHours*3600;UpdateCrosswalks();Event(b.Definition.Name+" concluída");}else Event("Rua concluída");
         ReleaseConstructionCrew(p);return !p.IsMaintenance;
     }
-    bool HasExteriorWorkAccess(WorkProject p)=>WorkAccess(p) is {} n&&_exteriorConnected.Contains(n.Id);
+    bool HasExteriorWorkAccess(WorkProject p)=>WorkAccess(p) is {} n&&_workExteriorConnected.Contains(n.Id);
     public CommandResult CancelProject(int projectId)
     {
         var p=State.Projects.FirstOrDefault(p=>p.Id==projectId);if(p==null||p.IsMaintenance||p.Status is WorkStatus.Completed or WorkStatus.Cancelled)return new(false,"Obra não cancelável");
@@ -250,6 +256,7 @@ public sealed partial class CitySimulation
     void CancelWork(WorkProject p)
     {
         if(p.CrewCostDue>0){ProjectPay(p,Money(p.CrewCostDue),p.IsMaintenance?MaintenanceCategory(p):"Equipe externa","Trabalho realizado antes do cancelamento");p.CrewCostDue=0;}
+        ReleasePavingMachines(p);
         p.Status=WorkStatus.Cancelled;p.BudgetRemaining=0;p.LocalReserved.Clear();p.Cause=WorkCause.Cancelled;
         if(!p.IsMaintenance&&BuildingById(p.BuildingId) is {} b)b.Removed=true;
         foreach(var s in State.Shipments.Where(s=>s.ProjectId==p.Id&&!s.Complete)){s.Cancelled=true;var v=State.Vehicles.First(x=>x.Id==s.VehicleId);RedirectCancelled(v,s);}

@@ -27,9 +27,9 @@ public sealed partial class CitySimulation
         for(var i=0;i<State.Tuning.ExternalTruckCount;i++)State.Vehicles.Add(new(){Id=Id(),External=true,ExternalDriverId="motorista externo "+(i+1),Status=VehicleStatus.Outside,Position=State.Entry});
         for(var i=0;i<State.Tuning.ExternalFamilyCandidates;i++)State.FamilyCandidates.Add(new(){Id=i+1,Adults=NextRandom()<.55?2:1,Capital=Money(State.Tuning.MigrantCapitalMinimum+(decimal)NextRandom()*(State.Tuning.MigrantCapitalMaximum-State.Tuning.MigrantCapitalMinimum)),RiskTolerance=.35+NextRandom()*.65});
         for(var i=0;i<State.Tuning.ExternalCompanyCandidates;i++)State.CompanyCandidates.Add(new(){Id=i+1,Capital=Money(State.Tuning.CompanyCapitalMinimum+(decimal)NextRandom()*(State.Tuning.CompanyCapitalMaximum-State.Tuning.CompanyCapitalMinimum)),RiskTolerance=.25+NextRandom()*.75});
-        RebuildRoadGraph();CheckInvariants();
+        RebuildRoadGraph();MigrateConstructionState();CheckInvariants();
     }
-    public CitySimulation(CityState state){State=state;LakeGeometry.Validate(state);RebuildRoadGraph(false);CheckInvariants();}
+    public CitySimulation(CityState state){State=state;LakeGeometry.Validate(state);RebuildRoadGraph(false);MigrateConstructionState();CheckInvariants();}
     int Id()=>State.NextId++;
     double NextRandom(){var x=State.RandomState;x^=x>>12;x^=x<<25;x^=x>>27;State.RandomState=x;return (x*2685821657736338717UL>>11)*(1.0/(1UL<<53));}
     public decimal Balance(string account)=>State.Wallets.GetValueOrDefault(account);
@@ -66,7 +66,7 @@ public sealed partial class CitySimulation
     }
     void Step(double dt)
     {
-        MoveVehicles(dt);MoveCitizens(dt);var completedConstruction=ProgressConstruction(dt);UpdateMaintenanceCondition(dt);UpdateInfrastructure(dt);OperateBusinesses(dt);UpdateNeeds(dt);
+        MoveVehicles(dt);ReturnPavingMachines(dt);MoveCitizens(dt);var completedConstruction=ProgressConstruction(dt);UpdateMaintenanceCondition(dt);UpdateInfrastructure(dt);OperateBusinesses(dt);UpdateNeeds(dt);
         State.ElapsedSeconds+=dt;State.Now=State.Now.AddSeconds(dt);
         // Construction is physical work, not a periodic market decision. Dispatch
         // available vehicles and crews on the next simulated step, including when

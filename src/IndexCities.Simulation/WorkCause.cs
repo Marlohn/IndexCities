@@ -26,6 +26,12 @@ public static class WorkCause
     public const string NoBudgetForExternalCrew="Sem orçamento para pagar equipe externa";
     public const string ExternalCrewAwaitingPayment="Equipe externa aguardando pagamento";
     public const string UnderConstruction="Construção em andamento";
+    public const string AwaitingPavingMachines="Aguardando pavimentadora e rolo disponíveis";
+    public const string PavingMachinesInTransit="Máquinas e operadores em trânsito";
+    public const string PavingInProgress="Aplicação e acabamento de asfalto em andamento";
+    public const string PavingAwaitingSiteLink="Aguardando ligação física do canteiro";
+    public const string PavingOutOfFuel="Máquina de pavimentação sem combustível";
+    public const string NoBudgetForPaving="Sem verba restante para máquinas e operadores";
     public const string ValidStretchExteriorAvailable="Trecho válido; ligação exterior disponível";
     public const string ValidPosition="Posição válida";
     public const string IntakeNeedsNaturalSource="A captação precisará alcançar a fonte natural";
@@ -46,6 +52,7 @@ public static class WorkCause
         CommitmentInsufficientForCrew,NoBudgetForExternalCrew,ExternalCrewAwaitingPayment,
         UnderConstruction,ValidStretchExteriorAvailable,ValidPosition,IntakeNeedsNaturalSource,
         MaintenanceAwaitingMaterials,MaintenanceInProgress,MaintenanceEndedRemoved,
-        MaintenanceDone,Cancelled,Completed,
+        MaintenanceDone,Cancelled,Completed,AwaitingPavingMachines,PavingMachinesInTransit,
+        PavingInProgress,PavingAwaitingSiteLink,PavingOutOfFuel,NoBudgetForPaving,
     };
 }

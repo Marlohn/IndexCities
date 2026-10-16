@@ -82,7 +82,8 @@ public partial class CityWorld:Node3D
         _motionState=state;_motionBeforeAt=state.ElapsedSeconds;_motionBuiltAt=double.NaN;_peopleBefore.Clear();_vehiclesBefore.Clear();
         foreach(var citizen in state.Citizens.Where(c=>c.Alive&&c.InsideMap&&c.VehicleId==null&&c.Moving))_peopleBefore[citizen.Id]=new(citizen.Position,citizen.Path,citizen.PathIndex,citizen.Path.Skip(citizen.PathIndex).ToList());
         var roads=state.Roads.ToDictionary(r=>r.Id);
-        foreach(var vehicle in state.Vehicles.Where(v=>v.Status==VehicleStatus.Travelling)){
+        foreach(var vehicle in state.Vehicles.Where(v=>v.Status==VehicleStatus.Travelling||v.Machine!=PavingMachine.None&&v.MachinePhase is MachinePhase.OnSite or MachinePhase.LeavingSite)){
+            if(vehicle.Machine!=PavingMachine.None&&vehicle.MachinePhase is MachinePhase.OnSite or MachinePhase.LeavingSite){_vehiclesBefore[vehicle.Id]=new(vehicle.Position,vehicle.SitePath,vehicle.SitePathIndex,vehicle.SitePath.Skip(vehicle.SitePathIndex).ToList());continue;}
             var remaining=new List<Point>();
             for(var i=vehicle.RouteIndex;i<vehicle.Route.Count;i++){
                 if(!roads.TryGetValue(vehicle.Route[i],out var node)){remaining.Clear();break;}
@@ -104,8 +105,8 @@ public partial class CityWorld:Node3D
             if(count<0)continue;var points=new List<Point>{before.Position};points.AddRange(before.Remaining.Take(count));points.Add(citizen.Position);_peopleMotion[citizen.Id]=new(points);
         }
         foreach(var vehicle in state.Vehicles){
-            if(!_vehiclesBefore.TryGetValue(vehicle.Id,out var before)||before.Position.Distance(vehicle.Position)<.00001||!ReferenceEquals(before.Path,vehicle.Route))continue;
-            var count=vehicle.RouteIndex-before.Index;if(count<0||count>before.Remaining.Count)continue;
+            if(!_vehiclesBefore.TryGetValue(vehicle.Id,out var before)||before.Position.Distance(vehicle.Position)<.00001||!ReferenceEquals(before.Path,vehicle.Machine!=PavingMachine.None&&vehicle.MachinePhase is MachinePhase.OnSite or MachinePhase.LeavingSite?vehicle.SitePath:vehicle.Route))continue;
+            var count=(vehicle.Machine!=PavingMachine.None&&vehicle.MachinePhase is MachinePhase.OnSite or MachinePhase.LeavingSite?vehicle.SitePathIndex:vehicle.RouteIndex)-before.Index;if(count<0||count>before.Remaining.Count)continue;
             var points=new List<Point>{before.Position};points.AddRange(before.Remaining.Take(count));points.Add(vehicle.Position);_vehicleMotion[vehicle.Id]=new(points);
         }
     }
@@ -133,7 +134,7 @@ public partial class CityWorld:Node3D
         foreach(var c in state.Citizens){if(!c.Alive||!c.InsideMap||c.VehicleId!=null){Remove(_people,c.Id);continue;}if(!_people.TryGetValue(c.Id,out var n)){n=Scene("agent.sim_pedestrian.a")??new Node3D();n.Name="Citizen"+c.Id;if(n.GetChildCount()==0)Box(n,new(.6f,1.7f,.5f),new(0,.85f,0),"d7a359");AddChild(n);_people[c.Id]=n;}
             var pose=interpolate&&_peopleMotion.TryGetValue(c.Id,out var motion)?motion.At(interpolation!.Value):(c.Position,(double?)null);n.Position=P(pose.Item1,RoadSurfaceAt(pose.Item1));var interior=pose.Item2!=null?null:InteriorBuildingId(state,c,pose.Item1);n.Visible=interior==null;
             var anim=n.GetNodeOrNull<AnimationPlayer>("AnimationPlayer");if(anim!=null){var animation=c.Moving||pose.Item2!=null?"walk":"idle";if(anim.HasAnimation(animation)&&anim.CurrentAnimation!=animation)anim.Play(animation);}if(pose.Item2 is {} heading)n.Rotation=new(0,(float)heading,0);else if(c.Moving){var target=c.Path[c.PathIndex];n.Rotation=new(0,(float)Math.Atan2(c.Position.X-target.X,c.Position.Z-target.Z),0);}}
-        foreach(var v in state.Vehicles){if(v.Status==VehicleStatus.Outside){Remove(_trucks,v.Id);continue;}if(!_trucks.TryGetValue(v.Id,out var n)){n=Scene(v.PassengerCar?"vehicle.car_passenger.a":"vehicle.truck_cargo.a")??new Node3D();if(n.GetChildCount()==0){if(v.PassengerCar)Box(n,new(1.8f,1.4f,4.2f),new(0,.75f,0),"5a7fa8");else Box(n,new(2.3f,2.2f,4.5f),new(0,1.4f,0),"b8704b");}else if(v.PassengerCar)PaintCar(n,v.Id);AddChild(n);_trucks[v.Id]=n;}var pose=interpolate&&_vehicleMotion.TryGetValue(v.Id,out var motion)?motion.At(interpolation!.Value):(v.Position,(double?)null);n.Position=P(pose.Item1,RoadSurfaceAt(pose.Item1));n.Rotation=new(0,(float)(pose.Item2??v.Heading+Math.PI),0);}
+        SyncVehicleVisuals(state,interpolate,interpolation);
         SyncBuildingActivity(state,interpolate,interpolation);
         if(simulation!=null)UpdateProblemAlerts(state,simulation,state.ElapsedSeconds);
         var geometry=state.Buildings.Aggregate(state.RoadRevision,(hash,b)=>HashCode.Combine(hash,b.Id,b.Removed));if(_vegetationGeometry!=geometry){_vegetationGeometry=geometry;foreach(var tree in _trees){var p=tree.Position;tree.Node.Visible=!state.Buildings.Any(b=>!b.Removed&&Math.Abs(p.X-b.Position.X)<Math.Max(b.Definition.Width,b.Definition.Depth)/2+4&&Math.Abs(p.Z-b.Position.Z)<Math.Max(b.Definition.Width,b.Definition.Depth)/2+4)&&!state.Roads.Any(r=>r.Position.Distance(p)<state.Tuning.RoadWidth/2+3);}}
@@ -222,17 +223,19 @@ public partial class CityWorld:Node3D
     void SyncRoadWorks(CityState state)
     {
         var works=state.Projects.Where(p=>!p.IsMaintenance&&p.RoadPoints.Count>0&&p.Status is WorkStatus.Waiting or WorkStatus.InProgress).ToList();
-        var geometry=works.Aggregate(state.RoadRevision,(hash,p)=>HashCode.Combine(hash,p.Id,p.RoadPoints.Count,p.BuiltRoadNodes.Count,p.Status));
+        var geometry=works.Aggregate(state.RoadRevision,(hash,p)=>HashCode.Combine(hash,p.Id,p.RoadPoints.Count,p.BuiltRoadNodes.Count,p.AppliedRoadPoints.Count,p.Status));
         if(_roadWorkGeometry!=geometry){foreach(var id in _roadWorks.Keys.ToList())Remove(_roadWorks,id);_roadWorkLabels.Clear();
             var layout=PlannedRoadLayout();
             foreach(var work in works){var root=new Node3D{Name="RoadWork"+work.Id};AddChild(root);_roadWorks[work.Id]=root;
-                var remaining=work.RoadPoints.Where(at=>state.Roads.All(r=>r.Position.Distance(at)>.05)).ToArray();
+                var remaining=work.RoadPoints.Where(at=>!work.AppliedRoadPoints.Contains(at)&&state.Roads.All(r=>r.Position.Distance(at)>.05)).ToArray();
                 DrawRoadDraft(root,remaining,layout,"c7ae78");
-                var label=new Label3D{FontSize=32,PixelSize=.06f,Width=360,AutowrapMode=TextServer.AutowrapMode.WordSmart,Billboard=BaseMaterial3D.BillboardModeEnum.Enabled,NoDepthTest=true,Modulate=new Color("fff5d4"),Position=P(work.Position,3),OutlineSize=4};root.AddChild(label);_roadWorkLabels[work.Id]=label;
+                DrawAppliedAsphalt(root,work,state);
+                var label=new Label3D{FontSize=32,PixelSize=.06f,Width=360,AutowrapMode=TextServer.AutowrapMode.WordSmart,Billboard=BaseMaterial3D.BillboardModeEnum.Enabled,NoDepthTest=true,Modulate=new Color("fff5d4"),Position=P(work.Position+(work.RoadPoints.Count<2||Math.Abs(work.RoadPoints[1].X-work.Position.X)>.1?new Point(0,-state.Tuning.RoadWidth*1.5):new Point(state.Tuning.RoadWidth*1.5,0)),3),OutlineSize=4};root.AddChild(label);_roadWorkLabels[work.Id]=label;
             }_roadWorkGeometry=geometry;
         }
         foreach(var work in works){
             var cause=work.Cause.StartsWith("Sem ligação pronta ao exterior",StringComparison.Ordinal)?"Aguarda ligação pronta":work.Cause switch{"Trecho válido; ligação exterior disponível"=>"Ligação exterior disponível","Trecho construído; aguardando ligação ao exterior"=>"Aguarda ligação real","Construção em andamento"=>"Em construção",_=>work.Cause};
+            if(cause==WorkCause.PavingInProgress)cause="Pavimentando";
             var text=$"Obra de rua #{work.Id}\n{(int)(work.Progress*100)}% • {cause}";if(_roadWorkLabels[work.Id].Text!=text)_roadWorkLabels[work.Id].Text=text;
         }
     }

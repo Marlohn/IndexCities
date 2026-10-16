@@ -108,7 +108,7 @@ public sealed class NearbyJunctionTests
         var first=sim.State.Roads.Single(r=>r.Position==new Point(-192,0));
         var second=sim.State.Roads.Single(r=>r.Position==new Point(-192,-12));
         Assert.Equal(JunctionControl.ThroughZ,second.Control);
-        var outbound=sim.State.Vehicles[0];var returning=sim.State.Vehicles[1];
+        var fuelled=sim.State.Vehicles.Where(v=>v.Machine==PavingMachine.None&&v.Fuel>0).ToArray();var outbound=fuelled[0];var returning=fuelled[1];
         outbound.Position=new(-193.65,-8);outbound.Status=VehicleStatus.Travelling;outbound.Heading=Math.PI;
         outbound.Route=sim.FindRoadRoute(sim.State.Roads.Single(r=>r.Position==new Point(-192,-8)).Id,sim.State.Roads.Single(r=>r.Position==new Point(-144,-12)).Id);
         outbound.RouteIndex=1;outbound.DockPosition=null;outbound.ShipmentId=null;outbound.IntersectionClaim=first.Id;
