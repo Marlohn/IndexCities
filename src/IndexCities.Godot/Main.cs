@@ -143,7 +143,9 @@ public partial class Main:Node3D
         var gap=definition.Depth/2+FrontageOffset(step);
         var aligned=guide.Horizontal&&Math.Abs(face.Z)>.9?new Point(snapped.X,guide.Position.Z-face.Z*gap):guide.Vertical&&Math.Abs(face.X)>.9?new Point(guide.Position.X-face.X*gap,snapped.Z):snapped;
         var candidate=new Building{Kind=kind,Position=aligned,Rotation=rotation};
-        return aligned.Distance(snapped)<=tolerance&&guide.Position.Distance(candidate.Door)<=_sim.State.Tuning.RoadWidth/2+3&&_sim.QuoteBuilding(kind,aligned,rotation,_movingProject).PhysicallyValid?aligned:null;
+        // Near a guide the frontage line is the only cursor reference: an invalid spot stays there and the quote shows why,
+        // instead of falling back to the plain grid, which can sit ~1 m inside the (future) road bed.
+        return aligned.Distance(snapped)<=tolerance&&guide.Position.Distance(candidate.Door)<=_sim.State.Tuning.RoadWidth/2+3?aligned:null;
     }
     // Fileira por arrastar: prévias lado a lado ao longo da rua, espaçamento mínimo fisicamente válido; menos de 2 posições = clique simples.
     void ComputeRow()
