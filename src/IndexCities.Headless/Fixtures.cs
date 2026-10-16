@@ -37,7 +37,9 @@ static class Fixtures
         var defs=(Dictionary<BuildingKind,BuildingDefinition>)Catalog.Definitions;
         foreach(var k in new[]{BuildingKind.WaterIntake,BuildingKind.WaterTreatment,BuildingKind.SewageTreatment,BuildingKind.WindPower})defs[k]=defs[k] with {Capacity=defs[k].Capacity*utilityScale};
         const double rowGap=60;var half=(rows-1)/2;
-        var H=Math.Max(256,Math.Max((half+1)*rowGap+60,(72+length+260)/2+40));var x0=-H+72;
+        // Road nodes sit on a 4 m grid from the entry: keep the half-size a multiple
+        // of 4 so the highway aligns with city streets (as in the default 256 m map).
+        var H=Math.Ceiling(Math.Max(256,Math.Max((half+1)*rowGap+60,(72+length+260)/2+40))/4)*4;var x0=-H+72;
         var houses=(int)(rows*length/20*1.6)+50;
         var tuning=new SimulationTuning{MapHalfSize=H,TotalMoney=100_000_000_000m,CityInitialMoney=2_000_000_000m,ExternalFamilyCandidates=(int)(houses*1.5)+40,ExternalCompanyCandidates=houses,ExternalTruckCount=Math.Max(6,houses/12)};
         var sim=new CitySimulation(seed,tuning);var s=sim.State;
