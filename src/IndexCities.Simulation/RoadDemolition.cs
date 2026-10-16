@@ -6,7 +6,7 @@ public sealed partial class CitySimulation
 {
     public RoadDemolitionQuote QuoteRoadDemolition(int nodeId)
     {
-        if(!State.CityHallPlaced||!_roads.TryGetValue(nodeId,out var node)||node.Highway)return new(false,0,[],0,0,"Selecione um trecho urbano; a rodovia externa é preservada na V1");
+        if(!_roads.TryGetValue(nodeId,out var node)||node.Highway)return new(false,0,[],0,0,"Selecione um trecho urbano; a rodovia externa é preservada na V1");
         var connected=new HashSet<int>();var queue=new Queue<int>();queue.Enqueue(EntryNode().Id);
         while(queue.Count>0){var id=queue.Dequeue();if(id==nodeId||!connected.Add(id))continue;foreach(var neighbour in _roads[id].Neighbours)if(neighbour!=nodeId&&_roads[neighbour].MaintenanceRatio>.05)queue.Enqueue(neighbour);}
         bool BuildingConnected(Building building){var access=State.Roads.Where(r=>r.Id!=nodeId&&!r.Highway&&r.MaintenanceRatio>.05&&r.Position.Distance(building.Door)<=State.Tuning.RoadWidth/2+3).MinBy(r=>r.Position.Distance(building.Door));return access!=null&&connected.Contains(access.Id);}
