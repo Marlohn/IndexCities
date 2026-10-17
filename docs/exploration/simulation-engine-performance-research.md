@@ -579,3 +579,54 @@ Laço com `PriorityQueue` em .NET 8, Release, um núcleo, Intel Core i5-13420H, 
 1. Reforça a direção das rodadas 9–12: agenda de acontecimentos por SIM, índices de dependência e horizontes de validade. Paralelismo e GPU entram como multiplicadores posteriores.
 2. Acrescenta que, **nos jogos verificados, a idade é acelerada**, e não encontrei jogo com calendário literal (o que não prova que não exista). Não há atalho conhecido a copiar, e a validação precisa ser nossa.
 3. Para decisões futuras do responsável, sem propor nenhuma: se o protótipo de trânsito por acontecimentos falhar, as alavancas que restam são de produto (tamanho de cidade-alvo da meta geracional, hardware de referência, horas aceitas), nunca o calendário.
+
+## 14. Sexta rodada — o passo fixo talvez não seja o vilão; quantidades exatas permitem pular tempo sem mudar o resultado (2026-10-17)
+
+> **Revisão humana: PENDENTE.** Pesquisa e contas da IA, sem autoridade de produto. Parte das medições de 400 e 1.000 SIMs ([ritmo-velocidades](ritmo-velocidades.md#resultado-do-item-2--400-e-1000-sims-após-corrigir-os-travamentos-2026-10-17-pendente)). Não altera SPEC nem ARCHITECTURE.
+
+### 14.1. Reenquadramento: o caro pode ser visitar todos a cada passo, não o passo de 2 s em si
+
+Na meta (30 h para 80 anos, 3,70 s por dia simulado) cabem **~86 µs por passo de 2 s para a cidade inteira**. A rodada 13.4 dividiu isso por todos os SIMs (~17 ns cada, com 5.000) e concluiu que o passo fixo é inviável. Mas o censo das cidades pequenas mostra só ~1,3–2,7% dos passos de SIM em movimento (andando 0,9–1,2%, em veículo 0,1–1,8%, este inflado por caminhões presos); a fração em cidades de 1.000+ não foi medida. Se **só quem se move for visitado a cada passo** e o resto passar a ser calculado por acontecimento (14.2), e supondo ~3% em movimento, o orçamento por agente em movimento fica:
+
+| SIMs | em movimento (~3%) | orçamento por agente em movimento por passo |
+|---|---|---|
+| 1.000 | ~30 | ~2,9 µs |
+| 2.000 | ~60 | ~1,4 µs |
+| 5.000 | ~150 | ~0,6 µs |
+
+Referência externa: busca de vizinhos com árvore k-d (nanoflann) processa **100.000 agentes em ~35 ms** num "PC de consumo rápido", segundo o resumo de [Vermeulen, Hillebrand e Geraerts, CASA 2017](https://webspace.science.uu.nl/~gerae101/UU_crowd_simulation_publications_comparative_study_nearest_neighbors.html): ~0,35 µs por consulta de vizinhos, não por passo completo de movimento. Os slides do mesmo estudo citariam ~16 s para busca linear no mesmo caso (não verificado: o PDF não pôde ser lido).
+
+**Distância medida até esse orçamento:** com 1.037 SIMs, `MoveCitizens` gastou ~3.724 s por dia simulado, ~86 ms por passo; para ~30 agentes em movimento, **~2,9 ms por agente por passo, cerca de 1.000x o orçamento de 2,9 µs**. O salto de ~100x entre 400 e 1.000 SIMs **ainda não está explicado**: uma busca de todos contra todos cresceria ~6x para 2,5x mais SIMs. Candidatos: pedestre contra todos os pedestres, varreduras de todos os SIMs/prédios por agente em movimento, buscas lineares por Id e alocações. Falta perfil por função (tarefa do worker da opção B).
+
+**Hipótese, não conclusão:** manter o **movimento em passo fixo de 2 s, idêntico ao atual**, talvez caiba na meta até ~1.000–2.000 SIMs se só os ativos forem visitados e a busca for local. Hoje a distância é ~1.000x, então isso depende de as otimizações que preservam o SHA eliminarem quase todo o custo atual. Se der certo, sai do caminho crítico o maior risco das rodadas anteriores: **trânsito e pedestres por acontecimentos com resultado equivalente** (9.4, 13.4) deixariam de ser pré-requisito e virariam melhoria posterior. O worker da opção B deve medir o custo por agente em movimento depois das otimizações.
+
+### 14.2. Quantidades exatas: pular tempo com o mesmo resultado, bit a bit
+
+O problema do intervalo fixo (60 s) foi mudar resultados: satisfação ~3 pontos acima em todas as sementes. O problema da agenda de acontecimentos exata é **provar** que ela dá o mesmo que o passo a passo: somar `dt/3600` 30 vezes em ponto flutuante não dá os mesmos bits que somar `30*dt/3600` uma vez, então o SHA muda e cai-se na comparação estatística, sujeita ao efeito borboleta.
+
+Ideia nova desta rodada: **guardar as quantidades acumuladas em unidades inteiras** (ponto fixo), como o dinheiro já é (`decimal` arredondado em centavos, `CitySimulation.Money`). Exemplos: fome em segundos inteiros em vez de `HungerHours` em `double`; saúde em milésimos de ponto; combustível em mililitros. Com inteiros:
+
+- N passos de 2 s viram **uma multiplicação com os mesmos bits** (`fome += N*2`).
+- O passo exato em que um limiar é cruzado sai por divisão inteira: "às 12 h de fome come do estoque" vira "acontece no passo k = (12 h − fome atual)/2 s", sem varrer.
+- A perda de saúde por fome, que cresce com a fome, só tem soma fechada exata **dentro de cada trecho sem mudança de regime**. A fórmula atual tem três regimes: perde acima de 30 h de fome, recupera abaixo de 18 h e não muda entre os dois. Também há os limites 0 e 100. A saúde precisaria de um acumulador exato (por exemplo, inteiro com escala fina o bastante para que cada parcela por passo seja inteira), usado igual no motor passo a passo; arredondar a cada passo e somar de uma vez não dá os mesmos bits.
+- **Prova barata:** roda-se o mesmo save no motor passo a passo e no motor que pula, e o SHA tem que ser idêntico. A bancada headless já imprime esse SHA.
+- **Bônus para vários núcleos:** soma de inteiros não depende da ordem, então juntar resultados de threads em paralelo dá o mesmo valor (13.3 exigia ordem fixa justamente por causa do ponto flutuante).
+
+**Armadilhas reais no código atual (`UpdateNeeds`, `Economy.cs`):** comer do estoque exige o SIM parado a menos de 3 m da porta, e o estoque é dividido pela família, então a ordem entre membros importa; a fome cai 12 h no meio do passo e a perda de saúde usa o valor já reduzido; a falta de água/energia (`WaterRatio`, `ElectricityRatio`) é reescrita pela infraestrutura a cada passo e só é constante enquanto as entradas não mudam; a morte e a revisão de emigração (fome > 48 h) leem a fome em instantes exatos; os registros pessoais usam a hora do passo. Cada um vira um **acontecimento agendado** (chegar em casa, cruzar 12/18/30/48 h, mudar a infraestrutura) em que o estado é materializado antes de ser lido.
+
+Posição de veículos e pedestres em ponto fixo talvez permita o mesmo para o movimento livre (99,5% dos passos de caminhada da grade foram livres): calcular a posição por fórmula só quando alguém precisar lê-la. Não verificado; fica para depois de 14.1.
+
+Fontes: bibliotecas de ponto fixo existem para simulação reproduzível bit a bit, por exemplo [mas-bandwidth/fixed](https://github.com/mas-bandwidth/fixed), com hash idêntico entre arm64 e x86-64 segundo os autores, e [FixedMathSharp](https://feed.nuget.org/packages/FixedMathSharp/2.1.1) em .NET. Não encontrei fonte que use ponto fixo especificamente para **pular** passos com igualdade de bits; a propriedade decorre da aritmética inteira, não de evidência externa. As bibliotecas citadas não seriam copiadas (AGENTS.md §6); o uso aqui seria só `long` com escala própria.
+
+**Custo e limite:** trocar `double` por inteiro muda os arredondamentos **uma vez** (a cidade passa a divergir do motor atual logo no início). Isso muda resultados de saúde, fome e combustível, então **é mudança de regra que exige decisão do responsável**, não calibração nem decisão técnica. Depois dessa troca, todas as otimizações por acontecimento seguintes podem ser provadas por SHA. A bancada já imprime o SHA do save. Fórmulas recalculadas a partir do estado (satisfação, frações) não acumulam e não precisam mudar.
+
+### 14.3. Precedentes no gênero
+
+- **RimWorld** atualiza coisas em três frequências: tick normal (1/60 s), *rare tick* a cada 250 ticks e *long tick* a cada 2.000 ([wiki de modding](https://rimworldwiki.com/wiki/Ticks)). É o atalho do intervalo fixo, num jogo comercial; não achei fonte sobre o ganho de desempenho nem sobre efeito nos resultados.
+- **Jogos incrementais (idle)** resolvem "tempo passado sem o jogador" de duas formas: aproximação por média (renda média × tempo) ou simulação de todos os ticks, como relatam jogadores de *Melvor Idle* ([discussão](https://steamcommunity.com/app/1267910/discussions/0/591762563949134719); [relato de desenvolvedor no itch.io](https://itch.io/post/14654594)). Fontes comunitárias. Nenhum dos dois exemplos usa salto exato; o gênero aceita aproximação, que o IndexCities rejeitou.
+
+### 14.4. O que esta rodada muda (opções de estudo, nada aprovado)
+
+1. **Ordem sugerida:** (a) otimizações que preservam SHA e visitam só ativos (em andamento, opção B); (b) decisão do responsável sobre unidades inteiras para fome, saúde e combustível; (c) sistemas estacionários por acontecimento provados por SHA contra o passo a passo; (d) só então paralelismo e movimento livre por fórmula.
+2. O alvo realista com essa ordem **não foi medido**. Se as otimizações fecharem a distância de ~1.000x do movimento, a hipótese é 1.000–2.000 SIMs dentro da meta; 5.000+ provavelmente exige (d).
+3. Ainda sem resposta: o custo por SIM em movimento depois das otimizações (sai do worker da opção B) e quanto da revisão econômica (3,5% em 1.000 SIMs) também cresce mais que linearmente.
