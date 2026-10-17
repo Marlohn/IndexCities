@@ -65,7 +65,10 @@ public sealed partial class CitySimulation
     {
         v.Status=VehicleStatus.Parked;v.Route.Clear();v.RouteIndex=0;v.IntersectionClaim=null;v.WaitingSince=0;
         var occupants=new List<int>();if(v.DriverId is {} driver)occupants.Add(driver);occupants.AddRange(v.Passengers);v.DriverId=null;v.Passengers.Clear();
-        if(v.TripPurpose==JourneyPurpose.Leaving){v.Status=VehicleStatus.Outside;v.ParkingSpot=null;v.Position=State.Entry;v.Cause="No exterior com a família emigrada";
+        if(v.TripPurpose==JourneyPurpose.Leaving){
+            // The family leaves its home only now that the car actually left the city.
+            foreach(var family in occupants.Select(id=>FamilyById(State.Citizens.First(x=>x.Id==id).FamilyId)).OfType<Family>().Distinct()){if(BuildingById(family.HomeId) is {} house&&house.FamilyId==family.Id)house.FamilyId=null;family.HomeId=null;}
+            v.Status=VehicleStatus.Outside;v.ParkingSpot=null;v.Position=State.Entry;v.Cause="No exterior com a família emigrada";
             foreach(var c in occupants.Select(id=>State.Citizens.First(x=>x.Id==id))){c.VehicleId=null;c.Position=State.Entry;c.Path.Clear();c.PathIndex=0;c.Resident=false;c.InsideMap=false;c.Activity="Residindo no exterior";c.WorkplaceId=null;Personal(c,"Saiu de carro da cidade; dinheiro, patrimônio e dívidas persistem");}return;}
         if(SpotByKey(v.ParkingSpot) is {} spot){v.Position=spot.Position;v.Heading=spot.Heading;}v.Cause="Estacionado";
         var destination=BuildingById(v.DestinationBuildingId);

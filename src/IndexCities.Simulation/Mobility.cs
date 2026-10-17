@@ -346,15 +346,25 @@ public sealed partial class CitySimulation
     }
     Point DockAt(RoadNode road,Building? building,bool crew)
     {var normal=road.Highway||road.Neighbours.Any(id=>Math.Abs(_roads[id].Position.X-road.Position.X)>.1)?new Point(0,1):new Point(1,0);var delta=building==null?normal:building.Door-road.Position;var length=delta.Distance(new(0,0));var side=length<.01?normal:delta*(1/length);return road.Position+side*(State.Tuning.RoadWidth/2+1.5)+(crew?new Point(side.Z,-side.X)*8.5:new Point(0,0));}
+    // SPEC populacao: an emigrating family that cannot refuel enough leaves the car
+    // parked at the station (off the pump) and walks back home, where it waits and
+    // reconsiders; its home was kept until the car actually left the city.
+    void ReturnEmigrantHome(Vehicle v)
+    {
+        if(v.DriverId is int driverId&&State.Citizens.FirstOrDefault(c=>c.Id==driverId) is {} driver&&FamilyById(driver.FamilyId) is {} family){family.Emigrating=false;v.DestinationBuildingId=family.HomeId;}
+        v.TripPurpose=JourneyPurpose.Home;v.RefuellingAt=null;v.SavedRoute=[];v.Status=VehicleStatus.Parked;
+        LeaveCar(v,"Carro parado no posto: sem dinheiro ou combustível para emigrar; família volta para casa");
+    }
     void Refuel(Vehicle v,int stationId)
     {
-        var station=BuildingById(stationId);if(station==null||station.OperationalCapacity<=0||station.CompanyId==null||station.Quantity(ResourceKind.Fuel)<=0){v.LoadTimer=60;v.Status=VehicleStatus.Unloading;v.Cause="Posto sem operação/estoque";return;}
+        var leaving=v.PassengerCar&&v.TripPurpose==JourneyPurpose.Leaving;
+        var station=BuildingById(stationId);if(station==null||station.OperationalCapacity<=0||station.CompanyId==null||station.Quantity(ResourceKind.Fuel)<=0){if(leaving){ReturnEmigrantHome(v);return;}v.LoadTimer=60;v.Status=VehicleStatus.Unloading;v.Cause="Posto sem operação/estoque";return;}
         var amount=Math.Min(State.Tuning.FuelTank-v.Fuel,Math.Min(station.Quantity(ResourceKind.Fuel),(double)(Balance(v.OwnerAccount)/station.SalePrice)));
+        // An emigrating family never leaves with less than the exit needs.
+        if(leaving&&v.Fuel+amount<RouteLength(v.SavedRoute)*FuelRate(v)+1){ReturnEmigrantHome(v);return;}
         if(amount<=.001){
             // A private car that cannot pay stays parked at the station, still
             // usable once the family has money; it is not stranded on the lane.
-            // An emigrating family waits at the station with its car (SPEC populacao).
-            if(v.PassengerCar&&v.TripPurpose==JourneyPurpose.Leaving){v.LoadTimer=60;v.Status=VehicleStatus.Unloading;v.Cause="Família emigrando aguarda dinheiro para abastecer";return;}
             if(v.PassengerCar){v.RefuellingAt=null;v.SavedRoute=[];v.Status=VehicleStatus.Parked;LeaveCar(v,"Carro parado no posto: sem dinheiro para abastecer");return;}
             v.Status=VehicleStatus.Stranded;v.Cause="Sem dinheiro/combustível para abastecer";return;}
         var price=Money((decimal)amount*station.SalePrice);if(!Transfer(v.OwnerAccount,"company:"+station.CompanyId,price,"Combustível","Abastecimento físico no posto",v.Id))return;
@@ -364,7 +374,7 @@ public sealed partial class CitySimulation
     {
         var start=NearestRoad(v.Position);if(start==null)return false;var normal=FindRoadRoute(start.Id,destination);if(normal.Count==0)return false;
         var need=RouteLength(normal)*FuelRate(v)+(v.PassengerCar?1:4);if(v.Fuel>=need){v.Route=normal;v.RouteIndex=0;return true;}
-        foreach(var station in State.Buildings.Where(b=>b.Kind==BuildingKind.FuelStation&&b.Completed&&b.OperationalCapacity>0&&b.Quantity(ResourceKind.Fuel)>0&&Access(b)!=null).OrderBy(b=>b.Position.Distance(v.Position))){var n=Access(station)!;var toStation=FindRoadRoute(start.Id,n.Id);if(toStation.Count==0||RouteLength(toStation)*FuelRate(v)>v.Fuel)continue;v.SavedRoute=FindRoadRoute(n.Id,destination);if(v.SavedRoute.Count==0)continue;v.RefuellingAt=station.Id;v.DockPosition=DockAt(n,station,false);v.Route=toStation;v.RouteIndex=0;return true;}
+        foreach(var station in State.Buildings.Where(b=>b.Kind==BuildingKind.FuelStation&&b.Completed&&b.OperationalCapacity>0&&b.Quantity(ResourceKind.Fuel)>0&&Access(b)!=null).OrderBy(b=>b.Position.Distance(v.Position))){var n=Access(station)!;var toStation=FindRoadRoute(start.Id,n.Id);if(toStation.Count==0||RouteLength(toStation)*FuelRate(v)+(v.PassengerCar?1:0)>v.Fuel)continue;v.SavedRoute=FindRoadRoute(n.Id,destination);if(v.SavedRoute.Count==0)continue;v.RefuellingAt=station.Id;v.DockPosition=DockAt(n,station,false);v.Route=toStation;v.RouteIndex=0;return true;}
         v.Cause="Combustível insuficiente; não há posto viável no alcance";return false;
     }
 }
