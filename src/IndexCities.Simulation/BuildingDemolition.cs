@@ -16,14 +16,21 @@ public sealed partial class CitySimulation
         var workers=State.Citizens.Where(c=>c.Alive&&c.WorkplaceId==building.Id).Select(c=>c.Id).ToList();
         var stock=building.Stock.Where(entry=>entry.Value>0).ToDictionary(entry=>entry.Key,entry=>entry.Value);
         var ownerAccount=building.OwnerAccount;
-        var ownerName=ReadableOwnerName(ownerAccount);
-        var compensation=building.Definition.Private&&ownerAccount!=null?MarketValue(building):0m;
+        var realOwner=HasRealEconomicOwner(ownerAccount);
+        var ownerName=realOwner?ReadableOwnerName(ownerAccount):"";
+        var compensation=building.Definition.Private&&realOwner?MarketValue(building):0m;
         var removalCost=Money(Math.Max(0,State.Tuning.RoadDemolitionCostPerSquareMetre)*(decimal)(building.Definition.Width*building.Definition.Depth));
         var totalCost=Money(removalCost+compensation);
         var quote=new BuildingDemolitionQuote(buildingId,true,removalCost,compensation,totalCost,ownerAccount,ownerName,residents,workers,stock,building.OperationalCapacity,residents.Count>0,Describe(building,removalCost,compensation,totalCost,ownerName,residents,workers,stock));
         return totalCost>Available?quote with{Allowed=false,Message="Caixa livre insuficiente para a demolição: total "+Cash(totalCost)+" e disponível "+Cash(Available)}:quote;
     }
     static BuildingDemolitionQuote Reject(int buildingId,string message)=>new(buildingId,false,0,0,0,null,"",[],[],new(),0,false,message);
+    bool HasRealEconomicOwner(string? account)=>account switch
+    {
+        var a when a is not null&&a.StartsWith("sim:")=>State.Citizens.Any(c=>c.Account==a),
+        var a when a is not null&&a.StartsWith("company:")=>State.Companies.Any(c=>c.Account==a),
+        _=>false,
+    };
     string Cash(decimal value)=>value.ToString("0.00",System.Globalization.CultureInfo.InvariantCulture);
     string ReadableOwnerName(string? account)=>account switch
     {
@@ -42,6 +49,6 @@ public sealed partial class CitySimulation
         if(residents.Count>0)parts.Add(residents.Count+" morador(es) aguardam desocupação antes da retirada");
         if(workers.Count>0)parts.Add(workers.Count+" emprego(s) real(is) afetado(s)");
         if(stock.Count>0)parts.Add("estoque existente no prédio");
-        return string.Join("; ",parts)+". Estimativa de leitura; a ordem aplica custos e consequências reais, sem reembolso de obra ou materiais e sem promessa de nova moradia.";
+        return string.Join("; ",parts)+". A demolição retira o prédio definitivamente, sem reembolso de obra ou materiais e sem garantia de nova moradia.";
     }
 }

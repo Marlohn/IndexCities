@@ -72,4 +72,13 @@ public sealed class BuildingDemolitionQuoteTests
         var quote=sim.QuoteBuildingDemolition(house.Id);
         Assert.True(quote.Allowed);Assert.Equal(before,sim.SaveToJson());Assert.Equal(wallets.Count,sim.State.Wallets.Count);Assert.All(wallets,entry=>Assert.Equal(entry.Value,sim.State.Wallets[entry.Key]));Assert.Equal(balance,sim.CityBalance);
     }
+    [Fact] public void Unbacked_accounts_do_not_produce_fictitious_indemnity()
+    {
+        var sim=City();
+        foreach(var account in new[]{"global","city","sim:999","company:999"})
+        {
+            var house=Add(sim,BuildingKind.House,owner:account);var quote=sim.QuoteBuildingDemolition(house.Id);
+            Assert.True(quote.Allowed);Assert.Equal(0m,quote.Compensation);Assert.Equal(quote.RemovalCost,quote.TotalCost);Assert.Equal(account,quote.OwnerAccount);Assert.Equal("",quote.OwnerName);Assert.Contains("sem indenização",quote.Message);
+        }
+    }
 }
