@@ -67,16 +67,17 @@ public partial class Main
                 await Shot(shape+"-completed",new(-156,-12),110);
             }
             _sim=new CitySimulation(42,new(){ExternalFamilyCandidates=0,ExternalCompanyCandidates=0});var cancelResult=_sim.PlaceRoad(new(-192,0),new(-192,48));var cancelled=_sim.State.Projects.Single(p=>p.Id==cancelResult.Id);
-            for(var i=0;i<2000&&cancelled.AppliedRoadPoints.Count<3;i++)_sim.Advance(2);
-            Require(cancelled.AppliedRoadPoints.Count>=3,"Cancelamento exercita máquinas já no canteiro");
+            for(var i=0;i<2000&&(cancelled.AppliedRoadPoints.Count<3||cancelled.RolledRoadPoints.Count<2);i++)_sim.Advance(2);
+            Require(cancelled.AppliedRoadPoints.Count>=3&&cancelled.RolledRoadPoints.Count>=2&&cancelled.Status!=WorkStatus.Completed,"Cancelamento exercita máquinas já no canteiro e trechos compactados");
             var ids=_sim.State.Vehicles.Where(v=>v.Machine!=PavingMachine.None).Select(v=>v.Id).ToArray();var materials=cancelled.Delivered.ToDictionary(k=>k.Key,k=>k.Value);
-            Require(_sim.CancelProject(cancelled.Id).Success,"Cancelamento real");var cost=cancelled.CostPaid;var roundTrip=CitySimulation.FromJson(_sim.SaveToJson());
+            Require(_sim.CancelProject(cancelled.Id).Success,"Cancelamento real");
+            var opened=_sim.State.Roads.Where(r=>r.WorkProjectId==cancelled.Id).ToArray();Require(opened.Length>0&&opened.All(r=>!r.ConstructionOnly)&&_sim.FindRoadRoute(_sim.State.Roads.First().Id,opened.Last().Id).Count>0,"Trechos compactados abrem ao trânsito no cancelamento");var cost=cancelled.CostPaid;var roundTrip=CitySimulation.FromJson(_sim.SaveToJson());
             _sim.Advance(3600);roundTrip.Advance(3600);Require(_sim.SaveToJson()==roundTrip.SaveToJson(),"Cancelamento e retorno persistem sem duplicação");
             Require(cancelled.CostPaid==cost&&materials.All(k=>cancelled.Delivered[k.Key]==k.Value),"Cancelar não cobra novamente nem devolve material consumido");
             Require(ids.All(id=>_sim.State.Vehicles.Single(v=>v.Id==id).Status==VehicleStatus.Outside),"Máquinas canceladas retornam fisicamente");
             _world.Reset(_sim.State);await Shot("cancelled-returned",cancelled.Position,95);_sim.CheckInvariants();
             File.WriteAllText(Path.Combine(directory,"evidence.txt"),string.Join(System.Environment.NewLine,captures));
-            GD.Print($"INDEXCITIES_CONSTRUCTION_PAVING_OK models={(missing.Length==0?"final":"fallback-NOT-FINAL")} captures={captures.Count} directory={directory} straight=L=physical money=conserved save-load=deterministic cancel=physical-return");
+            GD.Print($"INDEXCITIES_CONSTRUCTION_PAVING_OK models={(missing.Length==0?"final":"fallback-NOT-FINAL")} captures={captures.Count} directory={directory} straight=L=physical money=conserved save-load=deterministic cancel=physical-return compacted=opened");
             GetTree().Quit();
         }catch(Exception exception){GD.PushError(exception.ToString());GetTree().Quit(1);}
     }

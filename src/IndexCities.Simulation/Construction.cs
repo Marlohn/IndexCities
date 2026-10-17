@@ -246,12 +246,14 @@ public sealed partial class CitySimulation
     bool CompleteConstructionProject(WorkProject p)
     {
         if(p.CrewCostDue>0){var due=Money(p.CrewCostDue);if(!ProjectPay(p,due,IsPaving(p)?"Máquinas de pavimentação":"Equipe externa","Saldo do trabalho efetivamente realizado")){p.Cause=WorkCause.NoBudgetForPaving;return false;}if(IsPaving(p))p.MachineryPaid+=due;p.CrewCostDue=0;}
-        if(IsPaving(p)){foreach(var road in State.Roads.Where(r=>r.WorkProjectId==p.Id))road.ConstructionOnly=false;RebuildRoadGraph();SetDefaultJunctions();}
+        if(IsPaving(p))OpenCompactedRoads(p);
         p.Progress=1;p.Status=WorkStatus.Completed;p.CompletedAt=State.Now;p.BudgetRemaining=0;p.Cause=WorkCause.Completed;
         if(p.IsMaintenance)CompleteMaintenance(p);
         else if(BuildingById(p.BuildingId) is {} b){b.Completed=true;if(!b.Definition.Private)b.OwnerAccount="city";b.Cause=b.Definition.Private?"Procurando adquirente":"Aguardando funcionários";b.MaintenanceDueAt=State.ElapsedSeconds+State.Tuning.PublicMaintenanceIntervalHours*3600;UpdateCrosswalks();Event(b.Definition.Name+" concluída");}else Event("Rua concluída");
         ReleaseConstructionCrew(p);return !p.IsMaintenance;
     }
+    // Only cells the roller compacted carry WorkProjectId; planned points never became roads.
+    void OpenCompactedRoads(WorkProject p){foreach(var road in State.Roads.Where(r=>r.WorkProjectId==p.Id))road.ConstructionOnly=false;RebuildRoadGraph();SetDefaultJunctions();}
     bool HasExteriorWorkAccess(WorkProject p)=>WorkAccess(p) is {} n&&_workExteriorConnected.Contains(n.Id);
     public CommandResult CancelProject(int projectId)
     {
@@ -262,6 +264,7 @@ public sealed partial class CitySimulation
     {
         if(p.CrewCostDue>0){ProjectPay(p,Money(p.CrewCostDue),p.IsMaintenance?MaintenanceCategory(p):"Equipe externa","Trabalho realizado antes do cancelamento");p.CrewCostDue=0;}
         ReleasePavingMachines(p);
+        if(IsPaving(p))OpenCompactedRoads(p);
         p.Status=WorkStatus.Cancelled;p.BudgetRemaining=0;p.LocalReserved.Clear();p.Cause=WorkCause.Cancelled;
         if(!p.IsMaintenance&&BuildingById(p.BuildingId) is {} b)b.Removed=true;
         foreach(var s in State.Shipments.Where(s=>s.ProjectId==p.Id&&!s.Complete)){s.Cancelled=true;var v=State.Vehicles.First(x=>x.Id==s.VehicleId);RedirectCancelled(v,s);}

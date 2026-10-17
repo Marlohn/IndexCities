@@ -25,3 +25,11 @@ Capturas inspecionadas pelo coordenador: `L-unload-Asphalt.png` (basculante desc
 - Decisão humana em aberto: destino dos trechos compactados quando a rua é cancelada antes da conclusão (`docs/spec/construcao.md`).
 - Folga lateral de 4 cm na saída do rolo em CornerCity (traçado preexistente) e padrão análogo de giro em `Mobility.cs` não generalizado — sem falha observada.
 - Validação humana da experiência.
+
+## Revisão DeepSeek V4.1 Flash e correção (rodada 1)
+
+Revisor: `opencode/deepseek-v4.1-flash-free`, executado via `opencode run -m` porque o Orca não fixa modelo no OpenCode (a tentativa anterior abriu "Big Pickle"). Relatório: `../construction-review-deepseek/report.md`. 225/225 confirmados pelo revisor; sem edição de código por ele.
+
+- Achado 1 (médio, cancelamento deixa trecho compactado fechado): corrigido conforme decisão humana A registrada em `40d1b34`. `CancelWork` usa o mesmo `OpenCompactedRoads` da conclusão. Teste novo `PavingTests.Cancelling_a_partial_street_opens_only_the_compacted_cells`; smoke Godot passou a exigir o trecho aberto (`compacted=opened`). Regressão sem soak: 226/0. Smoke renderizado: `cancel-opens/engine-paving.log`, captura `cancel-opens/godot-paving2/cancelled-returned.png`. Observação visual: asfalto aplicado mas não compactado continua visível depois do trecho aberto, sem virar rua.
+- Achado 2 (médio, save antigo de pavimentação sem verba de máquinas fica travado em `NoBudgetForPaving`): decisão de produto pendente com o responsável.
+- Baixos 3 a 5: anotados, sem correção nesta rodada.

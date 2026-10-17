@@ -35,6 +35,21 @@ public sealed class PavingTests
     }
 
     [Fact]
+    public void Cancelling_a_partial_street_opens_only_the_compacted_cells()
+    {
+        var sim=City();var p=Road(sim,new(-192,0),new(-192,48));
+        for(var i=0;i<1800&&p.RolledRoadPoints.Count<2;i++)sim.Advance(2);
+        Assert.True(p.RolledRoadPoints.Count>=2&&p.Status!=WorkStatus.Completed,Diagnostic(sim));
+        var rolled=p.RolledRoadPoints.ToList();var pending=p.RoadPoints.Except(rolled).ToList();Assert.NotEmpty(pending);
+        var node=sim.State.Roads.Single(r=>r.Position==rolled.Last());var entry=sim.State.Roads.First();var roads=sim.State.Roads.Count;
+        Assert.True(sim.CancelProject(p.Id).Success);
+        Assert.False(node.ConstructionOnly);Assert.NotEmpty(sim.FindRoadRoute(entry.Id,node.Id));Assert.Equal(roads,sim.State.Roads.Count);
+        Assert.DoesNotContain(sim.State.Roads,r=>pending.Contains(r.Position)&&r.WorkProjectId==p.Id);
+        var clone=CitySimulation.FromJson(sim.SaveToJson());sim.Advance(3600);clone.Advance(3600);Assert.Equal(sim.SaveToJson(),clone.SaveToJson());
+        Assert.All(sim.State.Roads.Where(r=>r.WorkProjectId==p.Id),r=>Assert.False(r.ConstructionOnly));sim.CheckInvariants();
+    }
+
+    [Fact]
     public void Equipment_shortage_and_fuel_shortage_cannot_advance_paving()
     {
         var sim=new CitySimulation(42,new(){ExternalFamilyCandidates=0,ExternalCompanyCandidates=0,ExternalPavingTeams=0});var p=Road(sim,new(-192,0),new(-192,24));
