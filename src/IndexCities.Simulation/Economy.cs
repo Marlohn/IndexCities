@@ -24,7 +24,7 @@ public sealed partial class CitySimulation
             if(candidate==null){house.Cause="Sem família com capital e oportunidade viáveis";continue;}
             var family=new Family{Id=Id(),HomeId=house.Id};
             for(var i=0;i<candidate.Adults;i++){var c=new Citizen{Id=Id(),Name=new[]{"Ana","Bruno","Clara","Daniel","Eva","Felipe","Lia","Miguel"}[(candidate.Id+i)%8]+" "+candidate.Id,FamilyId=family.Id,Age=22+(int)(NextRandom()*28),Position=State.Entry+new Point(0,State.Tuning.RoadWidth/2+1),WeeklyDayOff=(candidate.Id+i)%7,Shift=0};State.Wallets[c.Account]=0;family.Members.Add(c.Id);State.Citizens.Add(c);}
-            var buyer=State.Citizens.First(c=>c.Id==family.Members[0]);var other=family.Members.Count==2?State.Citizens.First(c=>c.Id==family.Members[1]):null;
+            var buyer=CitizenWithId(family.Members[0]);var other=family.Members.Count==2?CitizenWithId(family.Members[1]):null;
             var share=other==null?candidate.Capital:Money(candidate.Capital*.7m);Transfer("global",buyer.Account,share,"Migração","Capital externo explícito",buyer.Id);if(other!=null)Transfer("global",other.Account,candidate.Capital-share,"Migração","Capital externo explícito",other.Id);
             if(Balance(buyer.Account)<price&&other!=null)Transfer(other.Account,buyer.Account,price-Balance(buyer.Account),"Cooperação familiar","Contribuição para compra com titular único",house.Id);
             if(!Transfer(buyer.Account,"global",price,"Aquisição residencial","Primeira aquisição pelo valor de mercado",house.Id))throw new InvalidOperationException("Compra aprovada sem capital");
@@ -66,21 +66,42 @@ public sealed partial class CitySimulation
     }
     void ReviewJobs()
     {
+        // The road graph does not change during a review, and workplaces change
+        // only below: keep each origin's reachable roads (the same rule as
+        // FindRoadRoute) and live counts of alive workers per workplace.
+        var reach=new Dictionary<int,HashSet<int>>();
+        bool RouteExists(int from,int to){if(!_roads.ContainsKey(from)||!_roads.ContainsKey(to)||_roads[from].ConstructionOnly||_roads[to].ConstructionOnly)return false;if(!reach.TryGetValue(from,out var reached))reach[from]=reached=RoadReach(from);return reached.Contains(to);}
+        var hired=new Dictionary<int,int>();foreach(var x in State.Citizens)if(x.Alive&&x.WorkplaceId is {} w)hired[w]=hired.GetValueOrDefault(w)+1;
         foreach(var c in State.Citizens.Where(c=>c.Alive&&c.Resident&&c.Age>=18&&c.InsideMap)){
-            var current=BuildingById(c.WorkplaceId);if(current!=null&&(current.Removed||current.OperationClosed||current.CompanyId is {} ci&&!CompanyById(ci)!.Active)){SettleWages(c,current);c.WorkplaceId=null;current=null;Personal(c,"Vínculo encerrado: operação deixou de existir");}
+            var current=BuildingById(c.WorkplaceId);if(current!=null&&(current.Removed||current.OperationClosed||current.CompanyId is {} ci&&!CompanyById(ci)!.Active)){SettleWages(c,current);hired[current.Id]--;c.WorkplaceId=null;current=null;Personal(c,"Vínculo encerrado: operação deixou de existir");}
             var home=BuildingById(FamilyById(c.FamilyId)?.HomeId);if(home==null)continue;
-            var options=State.Buildings.Where(b=>b.Completed&&!b.Removed&&b.Kind!=BuildingKind.House&&!b.OperationClosed&&(!b.Definition.Private||b.CompanyId!=null&&CompanyById(b.CompanyId)!.Active)&&Access(b)!=null&&State.Citizens.Count(x=>x.Alive&&x.WorkplaceId==b.Id)<b.Definition.Jobs).Where(b=>FindRoadRoute(Access(home)?.Id??-1,Access(b)!.Id).Count>0).Where(b=>Spendable(b.CompanyId==null?"city":"company:"+b.CompanyId)>b.SalaryOffer*8*3).OrderByDescending(b=>b.SalaryOffer-(decimal)(home.Position.Distance(b.Position)/400)).ToList();
-            var best=options.FirstOrDefault();if(best==null){if(current==null)c.Decision="Sem vaga real com rota e empregador viável";continue;}
+            // First of the highest score in building order, as a stable descending sort.
+            Building? best=null;var bestScore=0m;
+            foreach(var b in State.Buildings.Where(b=>b.Completed&&!b.Removed&&b.Kind!=BuildingKind.House&&!b.OperationClosed&&(!b.Definition.Private||b.CompanyId!=null&&CompanyById(b.CompanyId)!.Active)&&Access(b)!=null&&hired.GetValueOrDefault(b.Id)<b.Definition.Jobs).Where(b=>RouteExists(Access(home)?.Id??-1,Access(b)!.Id)).Where(b=>Spendable(b.CompanyId==null?"city":"company:"+b.CompanyId)>b.SalaryOffer*8*3)){
+                var score=b.SalaryOffer-(decimal)(home.Position.Distance(b.Position)/400);if(best==null||score>bestScore){best=b;bestScore=score;}
+            }
+            if(best==null){if(current==null)c.Decision="Sem vaga real com rota e empregador viável";continue;}
             if(current!=null&&best.Id!=current.Id&&best.SalaryOffer<current.SalaryOffer*1.15m&&!State.Obligations.Any(o=>o.Debtor==current.OwnerAccount&&o.Creditor==c.Account&&o.Kind=="Salário"&&o.Outstanding>0))continue;
-            if(current?.Id==best.Id)continue;var old=c.WorkplaceId;if(current!=null)SettleWages(c,current);c.WorkplaceId=best.Id;c.Shift=State.Citizens.Count(x=>x.Alive&&x.WorkplaceId==best.Id&&x.Id!=c.Id)%(best.Definition.Utility?3:best.Kind is BuildingKind.Grocery or BuildingKind.FuelStation?2:1);c.NextDecisionAt=State.ElapsedSeconds;
+            if(current?.Id==best.Id)continue;var old=c.WorkplaceId;if(current!=null)SettleWages(c,current);if(old is {} previous)hired[previous]--;hired[best.Id]=hired.GetValueOrDefault(best.Id)+1;c.WorkplaceId=best.Id;c.Shift=State.Citizens.Count(x=>x.Alive&&x.WorkplaceId==best.Id&&x.Id!=c.Id)%(best.Definition.Utility?3:best.Kind is BuildingKind.Grocery or BuildingKind.FuelStation?2:1);c.NextDecisionAt=State.ElapsedSeconds;
             Personal(c,(old==null?"Contratado":"Mudou autonomamente de emprego")+" em "+best.Definition.Name+"; salário e rota avaliados");
         }
     }
     void AccrueWage(Citizen c,double seconds){var job=BuildingById(c.WorkplaceId);if(job==null)return;var earned=(decimal)(seconds/3600)*job.SalaryOffer;c.WagesAccrued+=earned;if(job.Kind is BuildingKind.WaterIntake or BuildingKind.WaterTreatment)State.WaterWageCostToday+=earned;else if(job.Kind==BuildingKind.WindPower)State.ElectricityWageCostToday+=earned;}
+    // Citizens grouped by WorkplaceId in list order; lists are reused per step.
+    readonly Dictionary<int,List<Citizen>> _staff=new();
+    Dictionary<int,List<Citizen>> StaffByWorkplace()
+    {
+        foreach(var list in _staff.Values)list.Clear();
+        foreach(var c in State.Citizens)if(c.WorkplaceId is {} site){if(!_staff.TryGetValue(site,out var list))_staff[site]=list=[];list.Add(c);}
+        return _staff;
+    }
     void OperateBusinesses(double dt)
     {
+        // Workplaces do not change during this loop: group the citizens once,
+        // keeping building order and citizen order within each building.
+        var staff=StaffByWorkplace();
         foreach(var b in State.Buildings.Where(b=>b.Completed&&!b.Removed)){
-            foreach(var c in State.Citizens.Where(c=>c.Alive&&c.WorkplaceId==b.Id&&c.VehicleId==null&&c.ConstructionProjectId==null&&!c.Moving&&c.Position.Distance(b.Door)<3&&ShiftActive(c))){c.WorkSecondsToday+=dt;AccrueWage(c,dt);}
+            if(staff.TryGetValue(b.Id,out var workers))foreach(var c in workers.Where(c=>c.Alive&&c.VehicleId==null&&c.ConstructionProjectId==null&&!c.Moving&&c.Position.Distance(b.Door)<3&&ShiftActive(c))){c.WorkSecondsToday+=dt;AccrueWage(c,dt);}
             if(b.Kind!=BuildingKind.Farm||b.CompanyId==null||b.OperationalCapacity<=0||!Open(b))continue;
             var target=FarmReserveTarget(b);if(b.Quantity(ResourceKind.Food)>=target){b.Cause="Estoque de segurança completo; produção acompanha pedidos reais";continue;}
             var amount=Math.Min(target-b.Quantity(ResourceKind.Food),b.OperationalCapacity*dt/43200);if(amount<=0)continue;b.AddStock(ResourceKind.Food,amount);b.FoodProduced+=amount;
@@ -96,7 +117,7 @@ public sealed partial class CitySimulation
         if(shop.CompanyId==null||!Open(shop)||shop.OperationalCapacity<=0||shop.Quantity(ResourceKind.Food)<.1){Personal(c,"Compra não realizada: operação/estoque indisponíveis");return false;}
         var family=FamilyById(c.FamilyId)!;var desired=Math.Max(0,family.Members.Count*State.Tuning.PurchaseFoodPerPerson-family.Pantry);if(desired<=.1)return true;
         var need=Money((decimal)Math.Min(desired,shop.Quantity(ResourceKind.Food))*shop.SalePrice);
-        foreach(var helper in family.Members.Select(id=>State.Citizens.First(s=>s.Id==id)).Where(s=>s.Id!=c.Id&&s.Alive)){var shortage=Math.Max(0,need-Balance(c.Account));if(shortage<=0)break;Transfer(helper.Account,c.Account,Math.Min(shortage,Balance(helper.Account)),"Cooperação familiar","Contribuição real para alimentação",c.Id);}
+        foreach(var helper in family.Members.Select(id=>CitizenWithId(id)).Where(s=>s.Id!=c.Id&&s.Alive)){var shortage=Math.Max(0,need-Balance(c.Account));if(shortage<=0)break;Transfer(helper.Account,c.Account,Math.Min(shortage,Balance(helper.Account)),"Cooperação familiar","Contribuição real para alimentação",c.Id);}
         var amount=Math.Min(desired,Math.Min(shop.Quantity(ResourceKind.Food),(double)(Balance(c.Account)/shop.SalePrice)));amount=Math.Floor(amount*100)/100;if(amount<.1){Personal(c,"Compra não realizada: família sem saldo para alimentos");return false;}
         var price=Money((decimal)amount*shop.SalePrice);if(!Transfer(c.Account,"company:"+shop.CompanyId,price,"Alimentos","Compra presencial de alimento existente",shop.Id))return false;
         shop.AddStock(ResourceKind.Food,-amount);shop.FoodSoldToday+=amount;shop.LastCustomerAt=State.ElapsedSeconds;c.BagFood+=amount;Personal(c,"Comprou "+amount.ToString("F2")+" alimentos por "+price+"; transportando à residência");return true;
@@ -147,12 +168,17 @@ public sealed partial class CitySimulation
         var s=new Shipment{Id=Id(),Purpose=resource==ResourceKind.Food?ShipmentPurpose.Food:ShipmentPurpose.Fuel,DestinationBuildingId=destination.Id,Destination=n.Position,VehicleId=vehicle.Id,PickedUp=true,GoodsOwnerAccount=account,Cargo=new(){{resource,amount}},PricePaid=price};State.Shipments.Add(s);vehicle.Fuel+=fuel;vehicle.Cargo=new(s.Cargo);vehicle.ShipmentId=s.Id;vehicle.Route=route;vehicle.RouteIndex=0;vehicle.DockPosition=DockAt(n,destination,false);vehicle.Status=VehicleStatus.Travelling;vehicle.Position=State.Entry;vehicle.Cause="Importação comercial em trânsito";
         destination.InventoryUnitCost=Money(price/(decimal)amount);destination.SalePrice=Money(destination.InventoryUnitCost*1.4m);return true;
     }
+    readonly Dictionary<Point,double> _homePollution=new();readonly List<Point> _homePoints=[];
     void UpdateNeeds(double dt)
     {
         // Pollution is unchanged during this routine, and residents in the same
         // home use exactly the same point. Retain every per-citizen calculation.
-        var pollution=new Dictionary<Point,double>();
-        double HomePollution(Point position){if(!pollution.TryGetValue(position,out var value)){value=LocalPollution(position);pollution.Add(position,value);}return value;}
+        SnapshotPollution();var pollution=_homePollution;pollution.Clear();
+        // Every home this loop can sample, computed together up front (a home the
+        // loop no longer reaches only costs time; a missing one is computed below).
+        _homePoints.Clear();foreach(var c in State.Citizens)if(c.Alive&&c.Resident&&c.InsideMap&&BuildingById(FamilyById(c.FamilyId)?.HomeId) is {} h&&pollution.TryAdd(h.Position,0))_homePoints.Add(h.Position);
+        SampledPollution(_homePoints,pollution);
+        double HomePollution(Point position){if(!pollution.TryGetValue(position,out var value)){value=SampledPollution(position);pollution.Add(position,value);}return value;}
         foreach(var c in State.Citizens.Where(c=>c.Alive&&c.Resident&&c.InsideMap)){
             c.HungerHours+=dt/3600;var family=FamilyById(c.FamilyId)!;var home=BuildingById(family.HomeId);
             if(home!=null&&!c.Moving&&c.VehicleId==null&&c.Position.Distance(home.Door)<3&&c.HungerHours>=12&&family.Pantry>=1){family.Pantry-=1;c.HungerHours=Math.Max(0,c.HungerHours-12);Personal(c,"Consumiu 1 alimento do estoque físico da residência");}
@@ -169,13 +195,13 @@ public sealed partial class CitySimulation
         var heir=State.Citizens.FirstOrDefault(x=>x.Id!=c.Id&&x.FamilyId==c.FamilyId&&x.Alive);if(heir!=null)Transfer(c.Account,heir.Account,Balance(c.Account),"Herança","Dinheiro existente do falecido",c.Id);else Transfer(c.Account,"global",Balance(c.Account),"Patrimônio não reclamado","Saldo sem sucessor elegível",c.Id);
         foreach(var b in State.Buildings.Where(b=>b.OwnerAccount==c.Account))b.OwnerAccount=heir?.Account;
         foreach(var v in State.Vehicles.Where(v=>v.OwnerAccount==c.Account))v.OwnerAccount=heir?.Account??"unclaimed";
-        foreach(var f in State.Families.Where(f=>f.Members.Contains(c.Id))){if(f.Members.All(id=>!State.Citizens.First(s=>s.Id==id).Alive)){if(BuildingById(f.HomeId) is {} house)house.FamilyId=null;f.HomeId=null;}}
+        foreach(var f in State.Families.Where(f=>f.Members.Contains(c.Id))){if(f.Members.All(id=>!CitizenWithId(id).Alive)){if(BuildingById(f.HomeId) is {} house)house.FamilyId=null;f.HomeId=null;}}
         Event("Falecimento registrado; patrimônio, dívidas e saldo conciliados");
     }
     void ReviewEmigration()
     {
         foreach(var family in State.Families.Where(f=>!f.Emigrating&&f.HomeId!=null)){
-            var members=family.Members.Select(id=>State.Citizens.First(c=>c.Id==id)).Where(c=>c.Alive&&c.Resident).ToList();if(members.Count==0)continue;
+            var members=family.Members.Select(id=>CitizenWithId(id)).Where(c=>c.Alive&&c.Resident).ToList();if(members.Count==0)continue;
             if(members.All(c=>c.HungerHours>48&&c.WorkplaceId==null&&Balance(c.Account)<20)&&State.ElapsedSeconds-family.LastMigrationReview>3*86400){var home=BuildingById(family.HomeId);var start=home==null?null:Access(home);if(start==null)continue;var route=FindRoadRoute(start.Id,EntryNode().Id);if(route.Count==0)continue;var car=FamilyCar(family);
                 // SPEC (populacao): a family with a car leaves with it, never on foot
                 // abandoning it. It waits until the car is home with fuel for the exit,

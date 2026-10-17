@@ -15,9 +15,37 @@ public sealed partial class CitySimulation
         var route=FindRoadRoute(from.Id,to.Id);
         return route.Count>0 && route.All(id=>!_roads[id].Highway && Math.Abs(horizontal?_roads[id].Position.Z-from.Position.Z:_roads[id].Position.X-from.Position.X)<.01);
     }
+    // SameRoadLine(from,to,horizontal) after its coordinate check, for any `to`,
+    // from one breadth-first visit resumed only as far as each query needs. The
+    // visit assigns FindRoadRoute's parents (stopping early never changes one),
+    // and a node qualifies when it and every node before it on that route are
+    // city roads on from's line: once no qualifying node is left to expand, no
+    // undiscovered node can qualify.
+    sealed class RoadLine
+    {
+        readonly CitySimulation _sim;readonly RoadNode _from;readonly bool _horizontal;
+        readonly Dictionary<int,bool> _onRoute=new();readonly Queue<int> _queue=new();int _queuedOnRoute;
+        public RoadLine(CitySimulation sim,RoadNode from,bool horizontal)
+        {
+            _sim=sim;_from=from;_horizontal=horizontal;
+            if(sim._roads.TryGetValue(from.Id,out var start)&&!start.ConstructionOnly)Discover(from.Id,OnLine(start));
+        }
+        bool OnLine(RoadNode n)=>!n.Highway&&Math.Abs(_horizontal?n.Position.Z-_from.Position.Z:n.Position.X-_from.Position.X)<.01;
+        void Discover(int id,bool valid){_onRoute[id]=valid;_queue.Enqueue(id);if(valid)_queuedOnRoute++;}
+        public bool Contains(int to)
+        {
+            var roads=_sim._roads;
+            while(!_onRoute.ContainsKey(to)&&_queuedOnRoute>0){
+                var id=_queue.Dequeue();var valid=_onRoute[id];if(valid)_queuedOnRoute--;
+                foreach(var next in roads[id].Neighbours){if(_onRoute.ContainsKey(next)||roads[next].MaintenanceRatio<=.05||roads[next].ConstructionOnly)continue;Discover(next,valid&&OnLine(roads[next]));}
+            }
+            return _onRoute.TryGetValue(to,out var result)&&result;
+        }
+    }
 
     void UpdateCrosswalks()
     {
+        _roadEpoch++;
         var marked=State.Roads.Where(n=>!n.Highway&&(n.Neighbours.Any(id=>_roads[id].Highway)||n.Neighbours.Count>=3)&&CrosswalkGeometry(n,State).Any()).Select(n=>n.Id).ToHashSet();
         // A curve alone is not a crossing. Accesses on the same straight run
         // share a physical crossing; all accesses are considered in a stable order.
@@ -44,6 +72,18 @@ public sealed partial class CitySimulation
         foreach(var band in CrosswalkGeometry(node,state))yield return band;
     }
 
+    // CrosswalkLocations(node,State), kept only while Advance runs: there the
+    // inputs (road list, neighbours, crossings) change only through code that
+    // moves the road epoch. Outside it, or across calls, always recomputed.
+    readonly Dictionary<RoadNode,(Point Centre,bool HorizontalRoad)[]> _crosswalkBands=new(ReferenceEqualityComparer.Instance);
+    bool _crosswalkBandsActive;int _crosswalkBandsEpoch;
+    IEnumerable<(Point Centre,bool HorizontalRoad)> CrosswalkBands(RoadNode node)
+    {
+        if(!_crosswalkBandsActive)return CrosswalkLocations(node,State);
+        if(_crosswalkBandsEpoch!=_roadEpoch){_crosswalkBands.Clear();_crosswalkBandsEpoch=_roadEpoch;}
+        if(!_crosswalkBands.TryGetValue(node,out var bands))_crosswalkBands[node]=bands=CrosswalkLocations(node,State).ToArray();
+        return bands;
+    }
     static IEnumerable<(Point Centre,bool HorizontalRoad)> CrosswalkGeometry(RoadNode node,CityState state)
     {
         if(node.Highway)yield break;
@@ -71,9 +111,17 @@ public sealed partial class CitySimulation
 
     (RoadNode Node,Point Centre)? SharedCrossing(RoadNode node,bool horizontal,Point start,Point finish)
     {
-        return State.Roads.Where(r=>r.Crosswalk&&!r.Highway&&SameRoadLine(node,r,horizontal))
-            .SelectMany(r=>CrosswalkLocations(r,State).Where(p=>p.HorizontalRoad==horizontal&&Math.Abs(horizontal?p.Centre.Z-node.Position.Z:p.Centre.X-node.Position.X)<.01).Select(p=>(Node:r,Centre:p.Centre)))
-            .OrderBy(p=>p.Centre.Distance(start)+p.Centre.Distance(finish)).ThenBy(p=>p.Node.Id)
-            .Select(p=>((RoadNode Node,Point Centre)?)p).FirstOrDefault();
+        // Bands on this road line, nearest first: distance, then Id, then road
+        // and band order (the stable sort's order). The first whose road passes
+        // SameRoadLine wins, so the route visit only goes as far as it needs.
+        var candidates=new List<(RoadNode Node,Point Centre,double Distance,int Order)>();
+        foreach(var r in State.Roads){
+            if(!r.Crosswalk||r.Highway||Math.Abs(horizontal?node.Position.Z-r.Position.Z:node.Position.X-r.Position.X)>.01)continue;
+            foreach(var p in CrosswalkBands(r))if(p.HorizontalRoad==horizontal&&Math.Abs(horizontal?p.Centre.Z-node.Position.Z:p.Centre.X-node.Position.X)<.01)candidates.Add((r,p.Centre,p.Centre.Distance(start)+p.Centre.Distance(finish),candidates.Count));
+        }
+        candidates.Sort(static (a,b)=>a.Distance.CompareTo(b.Distance) is var d and not 0?d:a.Node.Id.CompareTo(b.Node.Id) is var i and not 0?i:a.Order.CompareTo(b.Order));
+        RoadLine? line=null;
+        foreach(var candidate in candidates)if((line??=new RoadLine(this,node,horizontal)).Contains(candidate.Node.Id))return (candidate.Node,candidate.Centre);
+        return null;
     }
 }
