@@ -102,7 +102,7 @@ public sealed partial class CitySimulation
     List<(Vehicle Machine,Point Position,double Heading)> MachineReservation(Vehicle machine)
     {
         var poses=new List<(Vehicle,Point,double)>();
-        if(machine.Machine==PavingMachine.None||machine.Status!=VehicleStatus.Parked||machine.MachinePhase is not (MachinePhase.OnSite or MachinePhase.LeavingSite)||machine.SitePathIndex>=machine.SitePath.Count||machine.Cause is WorkCause.PavingOutOfFuel or WorkCause.NoBudgetForPaving)return poses;
+        if(machine.Machine==PavingMachine.None||machine.Status!=VehicleStatus.Parked||machine.MachinePhase is not (MachinePhase.OnSite or MachinePhase.LeavingSite)||machine.SitePathIndex>=machine.SitePath.Count||machine.Fuel<=.000001||machine.Cause is WorkCause.PavingOutOfFuel or WorkCause.NoBudgetForPaving)return poses;
         var at=machine.Position;
         for(var index=machine.SitePathIndex;index<machine.SitePath.Count;index++){
             var target=machine.SitePath[index];var length=at.Distance(target);if(length<=.001)continue;

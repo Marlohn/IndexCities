@@ -1,0 +1,8 @@
+﻿Godot Engine v4.7.2.stable.mono.official.ed1daf0bf - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 546.18 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 3050 6GB Laptop GPU
+
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\exit-accept\construction-corner-smoke\corner-ordered.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\exit-accept\construction-corner-smoke\corner-truck-yields.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\exit-accept\construction-corner-smoke\corner-roller-passed.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\exit-accept\construction-corner-smoke\corner-completed.png
+INDEXCITIES_CONSTRUCTION_CORNER_OK models=final captures=4 directory=C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\exit-accept\construction-corner-smoke street=completed house=completed roller=entered-first-truck-followed overlap=none turn-in-place=none

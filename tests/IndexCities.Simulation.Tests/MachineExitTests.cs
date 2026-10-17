@@ -68,6 +68,20 @@ public sealed class MachineExitTests
     }
 
     [Fact]
+    public void A_machine_stranded_without_fuel_while_leaving_holds_no_path()
+    {
+        // Cancelling a street whose paver ran dry sends it to LeavingSite; with
+        // no fuel it can never move, so it must not hold its whole exit path.
+        var sim=Build("corner",42)!;Vehicle? Paver()=>sim.State.Vehicles.FirstOrDefault(v=>v.Machine==PavingMachine.Paver&&v.MachinePhase==MachinePhase.OnSite);
+        for(var i=0;i<4000&&Paver()==null;i++)sim.Advance(1);
+        var paver=Paver();Assert.True(paver!=null,PavingTests.Diagnostic(sim));
+        paver.Fuel=0;Assert.True(sim.CancelProject(paver.MachineProjectId!.Value).Success);sim.Advance(2);
+        Assert.Equal(MachinePhase.LeavingSite,paver.MachinePhase);Assert.True(paver.SitePathIndex<paver.SitePath.Count,PavingTests.Diagnostic(sim));
+        var reservation=typeof(CitySimulation).GetMethod("MachineReservation",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance)!;
+        Assert.Empty((System.Collections.ICollection)reservation.Invoke(sim,[paver])!);
+    }
+
+    [Fact]
     public void A_truck_following_the_leaving_roller_waits_clear_of_its_turn_and_the_lake_streets_finish()
     {
         // Seed 2877 of --lake-recovery-smoke: the dump truck closed up behind
