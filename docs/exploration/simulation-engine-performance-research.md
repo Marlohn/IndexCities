@@ -711,34 +711,28 @@ Para veículos, "≥ 10 s" quase só acontece quando não há nenhum outro agent
 
 ### 16.4. Teto CPU × GPU para movimento (teste isolado, não o jogo)
 
-`tools/gpu-ceiling` simula N carros em pistas circulares de 50 carros, cada um seguindo o da frente (modelo IDM, passo de 2 s). Não há busca de vizinhos, cruzamentos, faixas, pedestres nem ultrapassagem. Cada configuração rodou 4.320 passos, uma única vez, e o resultado foi extrapolado para 43.200 passos (um dia de jogo).
+`tools/gpu-ceiling` simula N carros em pistas circulares de 50 carros. Cada carro segue o da frente (modelo IDM, passo de 2 s), sem busca de vizinhos, cruzamentos, faixas, pedestres nem ultrapassagem. Cada configuração roda 300 passos de aquecimento e depois 3 medidas de 4.320 passos; vale a mediana, extrapolada para 43.200 passos (um dia de jogo). Máquina do responsável, **livre de outros processos**: Intel Core i5-13420H (4 núcleos de desempenho + 4 de eficiência, 12 threads, `Vector<float>` de 8) e NVIDIA GeForce RTX 3050 6 GB Laptop; .NET 8, ILGPU 1.5.1 (CUDA). Uma primeira rodada, feita com outros benchmarks na máquina e com CPU só escalar, exagerava a vantagem da GPU ("~37x") e foi substituída por esta.
 
-Máquina do responsável: Intel Core i5-13420H (4 núcleos de desempenho e 4 de eficiência, 12 threads) e NVIDIA GeForce RTX 3050 6 GB Laptop; .NET 8 e ILGPU 1.5.1 (CUDA). **Todas as linhas foram medidas com outros benchmarks rodando na mesma máquina.** Serão refeitas com a máquina livre e com repetições.
+| Carros em movimento | CPU escalar, 1 núcleo | CPU vetorizada, 1 núcleo | CPU vetorizada, todos os núcleos | GPU, espera a cada passo | GPU, espera a cada 30 passos |
+|---|---|---|---|---|---|
+| 1.000 | 0,31 s/dia | **0,16** | 0,35 | 1,00 | 0,30 |
+| 10.000 | 2,60 | **0,32** | 0,40 | 0,90 | **0,32** |
+| 50.000 | 24,7 | 5,86 | 2,00 | 2,50 | **0,85** |
+| 200.000 | 100,3 | 23,7 | 6,59 | 2,32 | **1,32** |
 
-| Carros em movimento | CPU 1 núcleo | CPU, laço paralelo simples | GPU, sincroniza a cada passo | GPU, sincroniza a cada 30 passos |
-|---|---|---|---|---|
-| 1.000 | 0,39 s/dia | 0,59 | 1,01 | 0,30 |
-| 10.000 | 3,18 | 1,08 | 1,09 | 0,31 |
-| 50.000 | 15,70 | 14,85 | 1,45 | 0,42 |
-| 200.000 | 97,2 | 71,3 | 5,43 | 1,40 |
+- **CPU bem programada chega perto.** Vetorizar (SIMD) deu 2–8x sobre o laço escalar, com resultado idêntico ao escalar, bit a bit. Com todos os núcleos, um laço paralelo por passo só compensa a partir de dezenas de milhares de carros; abaixo disso, o custo de sincronizar as threads a cada passo (~5–8 µs) domina.
+- **A GPU só ganha com muitos carros ao mesmo tempo e conversando pouco.** Esperando a GPU só a cada 30 passos, ela empata com a CPU vetorizada até 10 mil carros e fica ~2,4x à frente com 50 mil e ~5x com 200 mil. Esperando a cada passo, ela **perde** para a CPU com 50 mil (2,50 contra 2,00 s/dia) e só ganha ~2,8x com 200 mil. Os ~7 µs por passo da GPU são o custo de lançamento deste desenho (um kernel por passo), não um limite da placa.
+- **A GPU não dá o mesmo resultado que a CPU.** Depois de 4.320 passos, a posição dos carros diferia em até **5,4 cm** entre GPU e CPU, com a mesma conta em `float`. Como a SPEC exige que nada mude conforme o hardware, uma GPU "acelerador opcional" só seria aceitável com aritmética que dê os mesmos bits nos dois lados (inteiros ou ponto fixo, 14.2). Sem isso, a cidade de quem tem placa divergiria da de quem não tem.
+- **Limites do teste:** regras reais (preferência, semáforo, ultrapassagem, meia-volta, pedestres) são ramificadas, e isso piora tanto a vetorização na CPU quanto a GPU. O caso simples mostra tetos, não o custo do jogo. A meta de estudo é de 2,5–4,9 s por dia de jogo para o jogo **inteiro** (meta pedida em [ritmo-velocidades](ritmo-velocidades.md#resultados), não fixada na SPEC). Com 50 mil carros em movimento, nem a CPU otimizada (2,0 s só neste movimento trivial) nem a GPU (0,85 s) deixam muita folga.
 
-- **A CPU é uma base ingênua.** O laço é escalar, sem SIMD, e a versão paralela abre um `Parallel.For` por passo. Com 50 mil carros, ela quase não escalou (1,06x), seja pela concorrência com os outros benchmarks, seja pelo próprio desenho. Uma CPU vetorizada e bem paralelizada reduziria parte da distância; não foi medida.
-- **Os dois modos da GPU lançam um kernel por passo.** A diferença é só que o segundo não espera a GPU nem lê 64 valores de volta a cada passo. Os ~7 µs por passo são o custo de lançamento deste desenho, não um limite da placa; lançar vários passos de uma vez reduziria. Esperar e ler a cada passo custou ~3x mais.
-- **Onde cada um ganha.** Sincronizando a cada 30 passos, a GPU já empatou ou ganhou a partir de 1.000 carros. Sincronizando a cada passo, só a partir de ~10 mil. Com 50 mil carros, a GPU ficou ~11x à frente da CPU de 1 núcleo sincronizando a cada passo e ~37x sincronizando a cada 30, **sempre contra a CPU ingênua**.
-- Na CPU ingênua, 50 mil carros já gastam ~15 s por dia de jogo neste caso simples. A meta de estudo é de 2,5–4,9 s para o jogo inteiro (meta pedida em [ritmo-velocidades](ritmo-velocidades.md#resultados), não fixada na SPEC). O jogo real faz mais conta por veículo, então estouraria ainda mais nessa forma de CPU.
-- **O que não se sabe:**
-  - quanto a GPU perde com as regras reais (preferência, semáforo, ultrapassagem, meia-volta, pedestres), que são ramificadas, justamente o que ela faz pior;
-  - se os resultados da GPU batem com os da CPU, o que este teste não comparou (os inteiros de 14.2 ajudariam);
-  - como fica numa máquina sem placa dedicada.
-
-  A GPU seria acelerador opcional, com a versão CPU sempre completa (9.2).
+**Leitura:** a GPU é um multiplicador modesto (~2–5x) e tardio: só para dezenas ou centenas de milhares de veículos em movimento simultâneo, conversando raramente, e só com aritmética exata. Antes dela vêm CPU vetorizada, dados contíguos e os núcleos (16.5).
 
 ### 16.5. Ideias que sobrevivem ao critério de 16.1 (propostas de estudo, nada aprovado)
 
 1. **Consulta só à vizinhança no movimento** (índice espacial por faixa, calçada e cruzamento): pedestres e veículos interagem com quem está perto. Redes de água e energia e a economia continuam ligando a cidade inteira e precisam de outras técnicas. É o que o worker da opção B começou.
 2. **Regiões em vários núcleos com junção em ordem fixa** (13.3): quanto mais o jogo faz, mais trabalho há para dividir. Na máquina medida, o ganho real tende a ficar bem abaixo de 12x (4 núcleos de desempenho e 4 de eficiência).
 3. **Quantidades inteiras** (14.2): permitem provar a equivalência de qualquer otimização, seja qual for o conteúdo.
-4. **Agenda de cada SIM com movimento na GPU em lotes:** a agenda diz de antemão quem sai e quando; a GPU avança o trânsito vários passos por vez e devolve as chegadas com horário exato. Pelo teste, ganha mais quanto mais veículos houver em movimento.
+4. **Agenda de cada SIM com movimento na GPU em lotes:** a agenda diz de antemão quem sai e quando; a GPU avança o trânsito vários passos por vez e devolve as chegadas com horário exato. Pelo teste de 16.4, só compensa com dezenas de milhares de veículos em movimento simultâneo (~2–5x sobre a CPU vetorizada) e exige aritmética exata para não divergir da CPU. Multiplicador tardio, não base da solução.
 5. **Rotas pré-processadas** (Contraction Hierarchies, como no OSRM [F14]): quanto mais viagens, maior o ganho.
 6. **Avanço sem o jogador olhando** (ideia de produto, que dependeria de decisão do responsável): simulação completa, sem renderização, enquanto o computador fica ligado, com pausa automática em acontecimentos importantes. Separa horas de jogo de horas de computador.
 7. **Orçamento de desempenho por sistema:** cada sistema novo (escola, ônibus, saúde) declara seu custo por SIM por dia, medido na bancada, e a bancada reprova se passar. Assim a expansão não consome a meta sem que se perceba.
