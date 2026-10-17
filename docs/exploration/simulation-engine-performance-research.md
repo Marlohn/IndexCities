@@ -633,40 +633,42 @@ Fontes: bibliotecas de ponto fixo existem para simulação reproduzível bit a b
 
 ## 15. Sétima rodada — 10 mil e 50 mil SIMs: o que outras áreas fazem (2026-10-17)
 
-> **Revisão humana: PENDENTE.** Pesquisa e contas da IA, sem autoridade de produto. Nada aqui está aprovado.
+> **Revisão humana: PENDENTE.** Pesquisa e contas da IA, sem autoridade de produto. Nada aqui está aprovado; as ideias avaliadas em 15.3 são propostas de estudo. Verificada por Claude Haiku 5.5, com correções aplicadas.
 
 ### 15.1. A conta para cidades grandes
 
-Meta: 80 anos em ~30 h, ou seja, **3,7 s de computador por dia de jogo**.
+A meta de estudo é 80 anos em 20–40 h ([ritmo-velocidades](ritmo-velocidades.md#resultados)): **2,5–4,9 s de computador por dia de jogo**. A tabela usa o meio da faixa (30 h, 3,7 s); com 20 h tudo fica ~1,5x mais apertado, com 40 h ~1,3x mais folgado. Premissas, não medições: ~3% dos SIMs em movimento (censo das cidades pequenas) e **~40 acontecimentos por SIM por dia**. A rodada 13.4 usou ~20; aqui dobrei porque cada viagem passa a contar também cada rua percorrida.
 
-| SIMs | Tempo por SIM por dia de jogo | Movimento a cada 2 s (supondo 3% se movendo) | Por acontecimento (supondo ~40 acontecimentos por SIM/dia, incluindo cada rua de cada viagem) |
+| SIMs | Tempo por SIM por dia de jogo | Movimento a cada 2 s (3% se movendo), por atualização | Por acontecimento (~40 por SIM/dia), num núcleo |
 |---|---|---|---|
-| 1.000 | 3,7 ms | ~2,9 µs por atualização | ~93 µs por acontecimento |
-| 10.000 | 370 µs | ~290 ns por atualização | ~9 µs por acontecimento |
-| 50.000 | 74 µs | ~57 ns por atualização | ~1,9 µs por acontecimento |
+| 1.000 | 3,7 ms | ~2,9 µs | ~93 µs |
+| 10.000 | 370 µs | ~290 ns | ~9 µs |
+| 50.000 | 74 µs | ~57 ns | ~1,9 µs |
 
-Uns 57 ns equivalem a uma ou duas leituras de memória fora do cache, sem espaço para busca de vizinhos e regras de trânsito; uma atualização de veículo no SUMO custaria ~10 µs, segundo fonte secundária (~100 mil atualizações por segundo num núcleo, [resumo comunitário](https://pyshine.com/Eclipse-SUMO-Microscopic-Multi-Modal-Traffic-Simulation/), não verificado). **Conclusão de conta, não medição:** com 10 mil e principalmente 50 mil SIMs, **atualizar cada pessoa e cada carro a cada 2 s não cabe na meta em nenhuma linguagem**, mesmo com 12 núcleos (que dariam no máximo ~8x). Por acontecimento, 1,9–9 µs num núcleo (multiplicados por ~4–8 com vários núcleos) é apertado mas plausível; a maquinaria da fila custa 0,1–0,5 µs (13.4).
+Uns 57 ns são menos que uma leitura da memória principal fora do cache (~80–100 ns), sem espaço para busca de vizinhos e regras de trânsito. Uma atualização de veículo no SUMO custaria ~10 µs, segundo fonte comunitária não verificada ([resumo](https://pyshine.com/Eclipse-SUMO-Microscopic-Multi-Modal-Traffic-Simulation/)). **Leitura, por estas contas e sem medição:** com 50 mil SIMs, atualizar cada agente em movimento a cada 2 s, um objeto por agente na CPU, fica muito longe da meta; com 10 mil, também parece fora. Vários núcleos têm teto ideal de 12x com 12 núcleos; estimo 4–8x na prática (memória, sincronização, junção em ordem fixa), sem medição. Por acontecimento, 1,9–9 µs num núcleo, multiplicados pelos núcleos, é apertado mas plausível; a maquinaria da fila custa 0,1–0,5 µs (13.4).
 
 ### 15.2. Quem simula populações inteiras faz assim
 
-- **MATSim (planejamento de transporte, usado pela SBB, ferrovias suíças):** cada pessoa tem um **plano do dia** (casa → trabalho às 7h30 → loja → casa) e as ruas são **filas com capacidade**: o carro entra na rua, espera a vez se ela está cheia, sai depois do tempo de percurso. Não há posição a cada segundo. O simulador **Hermes** só processa acontecimentos e foi 2,5x mais rápido que o anterior (QSim) na Suíça com 10% da população, com resultados próximos mas não idênticos ([MATSim, 2020](https://matsim.org/news/2020/introducing-hermes/)). O modelo da SBB representa a mobilidade diária de 8,5 milhões de pessoas ([FOSDEM 2024](https://archive.fosdem.org/2024/events/attachments/fosdem-2024-2203-matsim-at-sbb-using-and-contributing-to-the-open-source-transport-simulation-for-advanced-passenger-demand-modeling-/slides/22143/MATSim_at_SBB_FOSDEM_0rxDIl2.pdf)).
-- **SUMO:** o modo "mesoscópico" (ruas como filas) roda **até 100x mais rápido** que o microscópico, segundo a documentação oficial ([SUMO Meso](https://sumo.dlr.de/docs/Simulation/Meso.html)); num caso da Baía de São Francisco, a razão estimada foi ~70x ([MANTA, 2020](https://arxiv.org/pdf/2007.03614), conta minha sobre números extrapolados).
-- **Replanejar só quando algo muda:** extensões do MATSim recalculam a rota durante a viagem só quando há incidente; os outros seguem o plano ([10.3141/2302-15](https://doi.org/10.3141/2302-15)). Num sistema híbrido recente, recalcular rotas foi ~10x mais caro que atualizar o plano de atividades ([MobiVerse, 2025](https://arxiv.org/pdf/2506.21784)), o que favorece **guardar rotas prontas**.
+- **MATSim (planejamento de transporte):** cada pessoa tem um **plano do dia** (casa → trabalho às 7h30 → loja → casa) e as ruas são **filas com capacidade**: o carro entra na rua, espera a vez se ela está cheia e sai depois do tempo de percurso, sem posição a cada segundo. O simulador **Hermes** só processa acontecimentos. A página do MATSim relata "2,5x" por iteração contra o QSim (3:33 contra 8:45) e também "40% a menos de tempo total", números que não batem entre si porque o total inclui replanejamento. O teste foi na Suíça com 10% da população, com resultados próximos mas não idênticos ([MATSim, 2020](https://matsim.org/news/2020/introducing-hermes/)). O modelo SIMBA MOBi da SBB (ferrovias suíças) representa a mobilidade diária de 8,5 milhões de pessoas na Suíça ([FOSDEM 2024](https://archive.fosdem.org/2024/events/attachments/fosdem-2024-2203-matsim-at-sbb-using-and-contributing-to-the-open-source-transport-simulation-for-advanced-passenger-demand-modeling-/slides/22143/MATSim_at_SBB_FOSDEM_0rxDIl2.pdf)).
+- **SUMO:** o modo mesoscópico (ruas como filas) roda **até 100x mais rápido** que o microscópico, segundo a documentação oficial ([SUMO Meso](https://sumo.dlr.de/docs/Simulation/Meso.html)). Num caso da Baía de São Francisco, a razão foi ~70x ([MANTA, 2020](https://arxiv.org/pdf/2007.03614); conta minha, sobre um tempo microscópico extrapolado pelos autores).
+- **Replanejar só quando algo muda:** extensões do MATSim recalculam a rota durante a viagem quando há incidente ([10.3141/2302-15](https://doi.org/10.3141/2302-15), não verificado diretamente). Num sistema híbrido recente, a vazão de re-roteamento foi ~200 agentes/min contra ~2.050 agentes/min de atualização de planos ([MobiVerse, 2025](https://arxiv.org/pdf/2506.21784)). É vazão do sistema deles, não custo por agente, mas sugere que guardar rotas prontas compensa.
 - **GPU** para trânsito microscópico (MOSS, LPSim) já está em 9.2 e 9.6.
 
-### 15.3. As ideias do responsável, avaliadas uma a uma
+Ruas como filas são o padrão nessas ferramentas, mas **não são uma regra aprovada no IndexCities** (ver 15.4).
 
-- **"Vida pré-programada":** é o plano do dia do MATSim, feito pelas regras reais do jogo (fome, turno, estoque, dinheiro) e **refeito só quando algo muda** (loja vazia, emprego perdido, rua fechada). Não é atalho se o plano for calculado pelas mesmas regras e invalidado por qualquer mudança que o afete. É a forma honesta da agenda por acontecimentos.
-- **"Duplicar vidas":** copiar o resultado de um SIM para outro seria inventar o que não aconteceu (contra a SPEC). A forma honesta é **reaproveitar cálculo com entradas idênticas**: rota casa → trabalho igual todo dia enquanto a malha não mudar; mesma decisão para quem está no mesmo estado. É cache, não clone.
-- **Cache:** sim, de rotas, planos e consultas espaciais (13.4, 12). Precisa de regra clara de invalidação.
-- **Threads (vários núcleos):** sim, mas multiplicam por ~4–8x no máximo com 12 núcleos, e só mantêm o mesmo resultado com divisão por família ou região e junção em ordem fixa (13.3). É multiplicador, não solução sozinha.
-- **Outra linguagem ou plataforma (Java, C++, Rust):** C# moderno fica na mesma faixa de Java; C++/Rust ganham talvez 1,5–3x. Não muda a ordem de grandeza.
-- **"Acelerar só o visual":** essa é a chave da arquitetura por acontecimentos. A verdade do jogo vira "saiu de casa 7h30, entrou na rua X 7h33, chegou 7h52"; o desenho do SIM andando é **calculado só para o que a câmera mostra**, a partir desses horários. Na velocidade máxima a tela nem consegue mostrar cada passo. O cuidado: a interação (fila, cruzamento, carro parado) precisa estar nos acontecimentos, senão o visual mente.
+### 15.3. Ideias levantadas pelo responsável, avaliadas como propostas de estudo (nenhuma aprovada)
+
+- **"Vida pré-programada":** corresponde ao plano do dia do MATSim. Só seria fiel se o plano fosse feito pelas regras reais do jogo (fome, turno, estoque, dinheiro) e refeito sempre que algo que o afeta mudar (loja vazia, emprego perdido, rua fechada). Muda a forma de calcular os SIMs, então a adoção é decisão do responsável.
+- **"Duplicar vidas":** copiar o resultado de um SIM para outro fabricaria acontecimentos que não ocorreram, no mesmo espírito das regras que proíbem duplicar unidades físicas, dinheiro ou contratos ([economia](../spec/economia.md)); não é opção válida. Já **reaproveitar cálculo com entradas idênticas** é técnico: rota casa → trabalho igual enquanto a malha não mudar; mesma consulta para quem está no mesmo estado. É cache, não clone.
+- **Cache:** de rotas, planos e consultas espaciais (12, 13.4). Exige regra clara de invalidação.
+- **Threads:** multiplicador estimado de 4–8x (teto 12x), só com divisão por família ou região e junção em ordem fixa (13.3). Não resolve sozinho.
+- **Outra linguagem:** não medi nem achei fonte comparando para este caso. A ordem de grandeza que falta (centenas a milhares de vezes) não vem de trocar de linguagem.
+- **"Acelerar só o visual":** num motor por acontecimentos, a verdade do jogo seria "saiu de casa 7h30, entrou na rua X 7h33, chegou 7h52", e o desenho do SIM andando seria calculado a partir desses horários só para o que a câmera mostra. Só é fiel se fila, cruzamento e veículo parado estiverem nos acontecimentos; senão o visual mente. Mudaria o que o jogador vê na velocidade máxima, então também é decisão do responsável.
 
 ### 15.4. O que isso significa para a meta (opções de estudo)
 
-1. **Até ~1.000–2.000 SIMs:** talvez caiba mantendo o movimento atual, se as otimizações da opção B e os acontecimentos para quem está parado funcionarem (14).
-2. **10 mil:** exige que **todo** o jogo trabalhe por acontecimento, inclusive as viagens, com rotas e planos guardados e vários núcleos.
-3. **50 mil:** além disso, o trânsito provavelmente precisa ser modelado como **filas por rua** (cada carro continua individual, ocupa a rua e espera a vez, mas sem posição a cada 2 s) ou ir para a GPU. Ruas como filas mudam regras de trânsito já aprovadas (ultrapassagem pela contramão, meia-volta, faixas), então seria **decisão de produto** do responsável, com o que se perde descrito antes.
+1. **Até ~1.000–2.000 SIMs:** talvez caiba mantendo o movimento atual, se as otimizações da opção B e os acontecimentos para quem está parado funcionarem (14). Com a meta de 20 h, o teto cai.
+2. **10 mil:** pelas contas, exige que **todo** o jogo trabalhe por acontecimento, inclusive as viagens, com rotas e planos guardados e vários núcleos.
+3. **50 mil:** além disso, o trânsito provavelmente precisaria ser modelado como **filas por rua** (cada carro continua individual, ocupa a rua e espera a vez, sem posição a cada 2 s) ou ir para a GPU. Ruas como filas mudariam regras aprovadas em [transporte e circulação](../spec/transporte-circulacao.md), como ultrapassar veículo parado pela contramão, meia-volta e entrada na faixa. Seria **decisão de produto** do responsável, com o que se perde descrito antes.
 
-Nada disso foi medido no IndexCities; os números de 15.1 são contas sobre premissas (30 h, 3% em movimento, ~40 acontecimentos por SIM/dia).
+Nada disso foi medido no IndexCities; os números de 15.1 são contas sobre premissas.
