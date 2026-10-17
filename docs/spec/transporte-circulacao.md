@@ -53,6 +53,7 @@
 - Veículos escolhem a faixa adequada antes de conversões.
 - Filas são mantidas por faixa e afetam o fluxo de forma independente.
 - Mudanças de faixa e ultrapassagens fazem parte da simulação.
+- **Veículo parado na via não trava a rua:** antes de partir, carros e caminhões conferem se o combustível basta para a viagem planejada (incluindo, para caminhões externos, a volta ao exterior) e abastecem antes, no posto ou na importação, quando faltar; se não for possível, não partem e a causa fica visível. Quem fica atrás de um veículo parado na via (por exemplo, sem combustível) ultrapassa pela contramão quando ela está livre com folga suficiente, fora de cruzamentos e travessias; se a contramão não abrir após alguns minutos, faz meia-volta e segue por outra rota. O veículo parado continua no lugar até seu dono resolver (sem remoção fictícia). Tempos de espera e folgas são calibração.
 - Rotatórias, cruzamentos e acessos respeitam regras reais de preferência.
 - Congestionamentos podem bloquear cruzamentos e gerar efeitos em cascata na malha viária.
 
@@ -85,6 +86,10 @@
 - A forma exata da conexão externa e quantos pontos físicos ela terá ainda podem evoluir, mas o conceito é obrigatório.
 
 ## Visão aprovada (ainda não implementada)
+
+### Socorro a veículos parados
+
+- **Guincho (intenção do responsável para depois da contornagem):** um serviço de guincho, inicialmente vindo do exterior, atende veículo parado na via: o dono paga com dinheiro real (Reserva Global, como nas importações), o guincho chega fisicamente e leva o veículo (carro particular para a vaga do dono; caminhão externo para o exterior). Uma empresa local de guincho pode substituir o serviço externo no futuro. Detalhes de chamada, preço e prazos ainda não foram especificados.
 
 ### Tempo de execução dos serviços adiados
 
