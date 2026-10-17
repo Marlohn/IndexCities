@@ -598,7 +598,9 @@ Referência externa: busca de vizinhos com árvore k-d (nanoflann) processa **10
 
 **Distância medida até esse orçamento:** com 1.037 SIMs, `MoveCitizens` gastou ~3.724 s por dia simulado, ~86 ms por passo; para ~30 agentes em movimento, **~2,9 ms por agente por passo, cerca de 1.000x o orçamento de 2,9 µs**. O salto de ~100x entre 400 e 1.000 SIMs **ainda não está explicado**: uma busca de todos contra todos cresceria ~6x para 2,5x mais SIMs. Candidatos: pedestre contra todos os pedestres, varreduras de todos os SIMs/prédios por agente em movimento, buscas lineares por Id e alocações. Falta perfil por função (tarefa do worker da opção B).
 
-**Hipótese, não conclusão:** manter o **movimento em passo fixo de 2 s, idêntico ao atual**, talvez caiba na meta até ~1.000–2.000 SIMs se só os ativos forem visitados e a busca for local. Hoje a distância é ~1.000x, então isso depende de as otimizações que preservam o SHA eliminarem quase todo o custo atual. Se der certo, sai do caminho crítico o maior risco das rodadas anteriores: **trânsito e pedestres por acontecimentos com resultado equivalente** (9.4, 13.4) deixariam de ser pré-requisito e virariam melhoria posterior. O worker da opção B deve medir o custo por agente em movimento depois das otimizações.
+**Correção (2026-10-17, perfil da opção B, PR #32):** o perfil com `dotnet-trace` mostrou que quase todo esse `MoveCitizens` era **planejamento de rota no início de cada caminhada** (`StartJourney` → `PedestrianPath`, com uma busca de rota por faixa de pedestre do mapa), não o andar a cada passo. Os ~2,9 ms "por agente por passo" e a "distância de ~1.000x" partiram dessa leitura errada e não valem como custo do movimento. Depois das otimizações equivalentes, pedestres custaram 0,29 s por dia com 108 SIMs e 1,67 s por dia com 400 SIMs (seção "Otimizações equivalentes do núcleo" de ritmo-velocidades, PR #32). Na grade de ~1.000 SIMs, 96% do tempo passou a ficar em veículos no modo de subpassos de entrada em faixa, provavelmente veículo preso.
+
+**Hipótese, não conclusão:** manter o **movimento em passo fixo de 2 s, idêntico ao atual**, talvez caiba na meta até ~1.000–2.000 SIMs se só os ativos forem visitados e a busca for local. A "distância de ~1.000x" citada antes estava errada (ver a correção acima); o custo real por agente em movimento ainda precisa ser medido separado do planejamento de rota. Se der certo, sai do caminho crítico o maior risco das rodadas anteriores: **trânsito e pedestres por acontecimentos com resultado equivalente** (9.4, 13.4) deixariam de ser pré-requisito e virariam melhoria posterior. O worker da opção B deve medir o custo por agente em movimento depois das otimizações.
 
 ### 14.2. Quantidades exatas: pular tempo com o mesmo resultado, bit a bit
 
@@ -628,7 +630,7 @@ Fontes: bibliotecas de ponto fixo existem para simulação reproduzível bit a b
 ### 14.4. O que esta rodada muda (opções de estudo, nada aprovado)
 
 1. **Ordem sugerida:** (a) otimizações que preservam SHA e visitam só ativos (em andamento, opção B); (b) decisão do responsável sobre unidades inteiras para fome, saúde e combustível; (c) sistemas estacionários por acontecimento provados por SHA contra o passo a passo; (d) só então paralelismo e movimento livre por fórmula.
-2. O alvo realista com essa ordem **não foi medido**. Se as otimizações fecharem a distância de ~1.000x do movimento, a hipótese é 1.000–2.000 SIMs dentro da meta; 5.000+ provavelmente exige (d).
+2. Com as otimizações equivalentes da PR #32, 47 e 108 SIMs já ficam em ~18 h e ~38 h para 80 anos, e 400 SIMs em ~156 h. A hipótese de 1.000–2.000 SIMs dentro da meta continua sem medição; 5.000+ provavelmente exige (d).
 3. Ainda sem resposta: o custo por SIM em movimento depois das otimizações (sai do worker da opção B) e quanto da revisão econômica (3,5% em 1.000 SIMs) também cresce mais que linearmente.
 
 ## 15. Sétima rodada — 10 mil e 50 mil SIMs: o que outras áreas fazem (2026-10-17)
