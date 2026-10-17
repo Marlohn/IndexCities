@@ -249,7 +249,9 @@ public sealed partial class CitySimulation
     void ReplanVehicle(Vehicle v,Shipment s)
     {
         var start=NearestRoad(v.Position);if(start==null||start.Position.Distance(v.Position)>State.Tuning.RoadWidth/2+3)return;
-        var target=!s.PickedUp?Access(BuildingById(s.SourceBuildingId)!):s.ProjectId is {} pId?WorkAccess(State.Projects.First(p=>p.Id==pId)):Access(BuildingById(s.DestinationBuildingId)!);
+        // A demolished origin/destination keeps the truck waiting with its cargo and titular preserved.
+        var endpoint=BuildingById(!s.PickedUp?s.SourceBuildingId:s.DestinationBuildingId);if(s.ProjectId==null&&endpoint==null){v.Cause="Destino indisponível: carga preservada";return;}
+        var target=s.ProjectId is {} pId&&s.PickedUp?WorkAccess(State.Projects.First(p=>p.Id==pId)):endpoint==null?null:Access(endpoint);
         if(target==null)return;var route=FindRoadRoute(start.Id,target.Id,ConstructionTrip(v));if(route.Count==0)return;v.Route=route;v.RouteIndex=0;v.Status=VehicleStatus.Travelling;
     }
     bool CrossesLane(Point from,Point to,RoadNode n)

@@ -15,7 +15,7 @@ public sealed class BuildingDemolitionQuoteTests
     static Citizen AddCitizen(CitySimulation sim,int id,string name,int familyId,bool resident)
     {
         var citizen=new Citizen{Id=id,Name=name,FamilyId=familyId,Resident=resident,Age=30,Alive=true};
-        sim.State.Citizens.Add(citizen);return citizen;
+        sim.State.Citizens.Add(citizen);sim.State.Wallets[citizen.Account]=0;return citizen;
     }
     static void Home(CitySimulation sim,int familyId,int houseId,IEnumerable<int> members)
     {
@@ -39,7 +39,7 @@ public sealed class BuildingDemolitionQuoteTests
     }
     [Fact] public void Private_business_with_company_owner_indemnifies_the_company()
     {
-        var sim=City();var shop=Add(sim,BuildingKind.Grocery,owner:"company:3");sim.State.Companies.Add(new Company{Id=3,Name="Mercado 3"});
+        var sim=City();var shop=Add(sim,BuildingKind.Grocery,owner:"company:3");sim.State.Companies.Add(new Company{Id=3,Name="Mercado 3"});sim.State.Wallets["company:3"]=0;
         AddCitizen(sim,901,"Bruno 9",6,true).WorkplaceId=shop.Id;var market=sim.MarketValue(shop);var quote=sim.QuoteBuildingDemolition(shop.Id);
         Assert.True(quote.Allowed);Assert.Equal(market,quote.Compensation);Assert.Equal(quote.RemovalCost+market,quote.TotalCost);
         Assert.Equal("Mercado 3",quote.OwnerName);Assert.Equal(new List<int>{901},quote.WorkerIds);Assert.Empty(quote.ResidentIds);

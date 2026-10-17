@@ -1,0 +1,132 @@
+using Godot;
+using IndexCities.Simulation;
+namespace IndexCities.Game;
+
+// Cenário de QA da ordem Demolir de prédio concluído pela interface real:
+// prévia, cancelamento sem mutação, revalidação, pendência de desocupação,
+// avanço real até a retirada, save/load e mudança para casa existente à venda.
+public partial class Main
+{
+    async void BuildingDemolitionSmoke()
+    {
+        try {
+            Require(DisplayServer.GetName() != "headless", "A ordem Demolir exige janela renderizada real");
+            _speed = 0; _autosaveMinutes = 0;
+            var directory = _reviewSaveDir ?? System.IO.Path.GetFullPath(ProjectSettings.GlobalizePath("res://../../artifacts/verification/building-demolition"));
+            System.IO.Directory.CreateDirectory(directory);
+            _recoveryCaptureDirectory = directory; _recoveryCaptures.Clear();
+            await RecoveryFrame();
+
+            Require(_sim.PlaceBuilding(BuildingKind.CityHall, new(-152, 16)).Success, "Prefeitura encomendada na fixture");
+            Require(_sim.PlaceRoad(new(-192, 0), new(100, 0)).Success, "Rua conectada ao exterior na fixture");
+            await RecoveryAdvance(7200);
+            var hall = _sim.State.Buildings.Single(b => b.Kind == BuildingKind.CityHall);
+            Require(hall.Completed, "Prefeitura concluída fisicamente");
+            var placed = _sim.PlaceBuilding(BuildingKind.House, new(-100, 14));
+            Require(placed.Success, "Casa encomendada junto à rua");
+            var house = _sim.State.Buildings.Single(b => b.Id == placed.Id);
+            for (var i = 0; i < 48 && !_sim.State.Families.Any(f => f.HomeId == house.Id); i++) await RecoveryAdvance(1800);
+            var family = _sim.State.Families.Single(f => f.HomeId == house.Id);
+            var owner = house.OwnerAccount!;
+            Require(owner.StartsWith("sim:"), "Família migrante comprou a casa com recursos reais");
+            _focus = ToV(house.Position); _zoom = 90; UpdateCamera();
+
+            // Prefeitura concluída não oferece Demolir.
+            ClearSelection(); _selectedBuilding = hall.Id; _inspectionKey = ""; RefreshInspection(); await RecoveryFrame();
+            Require(!RecoveryNodes<Button>(_inspection!).Any(b => b.Text.Contains("Demolir")), "Prefeitura concluída não mostra Demolir");
+
+            ClearSelection(); _selectedBuilding = house.Id; _inspectionKey = ""; RefreshInspection(); await RecoveryFrame();
+            var action = RecoveryNodes<Button>(_inspection!).Single(b => b.Text == "× Demolir com indenização");
+            var quote = _sim.QuoteBuildingDemolition(house.Id);
+            Require(quote.Allowed && quote.Compensation > 0 && quote.WaitsForResidents, "Orçamento real com indenização e moradores");
+            var before = _sim.SaveToJson();
+            action.EmitSignal(Godot.Button.SignalName.Pressed);
+            Require(_modal != null && _modal.Visible, "Prévia abre a partir da ação na inspeção");
+            await RecoveryFrame(); await RecoveryFrame(); await RecoveryFrame();
+            var texts = RecoveryNodes<Label>(_modal!).Select(label => label.Text).ToArray();
+            bool Has(string fragment) => texts.Any(text => text.Contains(fragment, StringComparison.Ordinal));
+            Require(Has("Alvo: Casa #" + house.Id), "Prévia identifica o alvo");
+            Require(Has("Custo de remoção: " + Cash(quote.RemovalCost)), "Prévia separa o custo de remoção");
+            Require(Has("Indenização (100% do valor de mercado): " + Cash(quote.Compensation) + " → " + quote.OwnerName), "Prévia mostra indenização e titular");
+            Require(Has("Total que sai do Caixa: " + Cash(quote.TotalCost)), "Prévia mostra o total");
+            Require(Has("Caixa livre: " + Cash(_sim.Available)), "Prévia mostra Caixa livre e compromissos");
+            Require(Has("⌂ 1 família(s), " + quote.ResidentIds.Count + " morador(es)"), "Prévia agrega famílias e moradores");
+            Require(Has("Não há casa garantida"), "Prévia não promete nova moradia");
+            Require(Has("Sem reembolso de obra ou materiais"), "Prévia avisa ausência de reembolso");
+            Require(_sim.SaveToJson() == before, "Abrir a prévia não altera a cidade");
+            await RecoveryCaptureOnce("building-demolition-preview", _modal!);
+            RecoveryNodes<Button>(_modal!).Single(b => b.Text == "× Cancelar").EmitSignal(Godot.Button.SignalName.Pressed);
+            await RecoveryFrame();
+            Require(_modal == null && _sim.SaveToJson() == before, "Cancelar fecha a prévia sem alterar dinheiro nem a cidade");
+
+            // Revalidação: o valor muda depois da prévia; confirmar reapresenta sem cobrar.
+            ShowBuildingDemolition(house.Id); await RecoveryFrame();
+            house.WaterRatio = Math.Max(0, house.WaterRatio - .5); var changed = _sim.QuoteBuildingDemolition(house.Id);
+            Require(changed.Compensation != quote.Compensation, "Valor de mercado mudou depois da prévia");
+            var cityBefore = _sim.CityBalance; var ownerBefore = _sim.Balance(owner); var total = _sim.MonetaryTotal;
+            RecoveryNodes<Button>(_modal!).Single(b => b.Text == "✓ Confirmar demolição").EmitSignal(Godot.Button.SignalName.Pressed);
+            await RecoveryFrame();
+            Require(_modal != null && _sim.CityBalance == cityBefore && house.Demolition == null, "Prévia desatualizada é reapresentada sem cobrança");
+            Require(RecoveryNodes<Label>(_modal!).Any(l => l.Text.Contains(CitySimulation.StaleDemolitionPreview)), "Reapresentação explica a mudança");
+            Require(RecoveryNodes<Label>(_modal!).Any(l => l.Text.Contains(Cash(changed.Compensation))), "Prévia reapresentada traz o novo valor");
+            RecoveryNodes<Button>(_modal!).Single(b => b.Text == "✓ Confirmar demolição").EmitSignal(Godot.Button.SignalName.Pressed);
+            await RecoveryFrame();
+            Require(_modal == null && house.Demolition != null && !house.Removed, "Confirmação abre a desocupação assistida");
+            Require(_sim.Balance(owner) == ownerBefore + changed.Compensation && _sim.CityBalance == cityBefore - changed.TotalCost && _sim.MonetaryTotal == total, "Indenização paga ao titular real e dinheiro conservado");
+
+            _inspectionKey = ""; RefreshInspection(); await RecoveryFrame();
+            var pending = RecoveryNodes<Label>(_inspection!).Select(l => l.Text).ToArray();
+            Require(pending.Any(t => t.Contains("Indenização paga: " + Cash(changed.Compensation))), "Inspeção mostra indenização paga");
+            Require(pending.Any(t => t.Contains("Famílias ainda no imóvel: 1 de 1")), "Inspeção mostra famílias aguardando");
+            Require(!RecoveryNodes<Button>(_inspection!).Any(b => b.Text.Contains("Demolir")), "Pendência não oferece nova demolição/indenização");
+            await RecoveryCaptureOnce("building-demolition-pending-inspection", GetViewport());
+
+            // Save/load com a pendência, sem repetir pagamentos.
+            var pendingSave = System.IO.Path.Combine(directory, "building-demolition-pending.json");
+            System.IO.File.WriteAllText(pendingSave, _sim.SaveToJson());
+            _sim = CitySimulation.FromJson(System.IO.File.ReadAllText(pendingSave)); _world.Reset(_sim.State);
+            house = _sim.State.Buildings.Single(b => b.Id == house.Id);
+            Require(house.Demolition is { CompensationPaid: > 0 }, "Pendência carregada do save");
+            ClearSelection(); _selectedBuilding = house.Id; _inspectionKey = ""; RefreshInspection();
+
+            // Avanço real até o fim do prazo: sem casa à venda, a família fica sem moradia.
+            await RecoveryAdvance(_sim.State.Tuning.AssistedVacatingDays * 86400 + 3600);
+            Require(house.Removed && _sim.State.Families.Single(f => f.Id == family.Id).HomeId == null, "Ao fim do prazo a casa é retirada e a família fica sem moradia");
+            Require(_sim.State.Ledger.Count(m => m.Category == "Indenização" && m.EntityId == house.Id) == 1, "Indenização paga uma única vez após save/load e avanço");
+            for (var i = 0; i < 6; i++) await RecoveryFrame();
+            Require(_world.PickBuilding(_camera.ProjectRayOrigin(_camera.UnprojectPosition(ToV(house.Position))), _camera.ProjectRayNormal(_camera.UnprojectPosition(ToV(house.Position)))) != house.Id, "Prédio retirado some do mundo renderizado");
+            await RecoveryCaptureOnce("building-demolition-after-deadline", GetViewport());
+
+            // Moradia alternativa real: sem novos migrantes, a casa vaga à venda é comprada pela família deslocada.
+            var second = _sim.PlaceBuilding(BuildingKind.House, new(-60, 14)); Require(second.Success, "Segunda casa encomendada");
+            var occupied = _sim.State.Buildings.Single(b => b.Id == second.Id);
+            for (var i = 0; i < 48 && !_sim.State.Families.Any(f => f.HomeId == occupied.Id); i++) await RecoveryAdvance(1800);
+            var moving = _sim.State.Families.Single(f => f.HomeId == occupied.Id);
+            foreach (var candidate in _sim.State.FamilyCandidates) candidate.Migrated = true;
+            var third = _sim.PlaceBuilding(BuildingKind.House, new(-20, 14)); Require(third.Success, "Casa vaga encomendada");
+            var vacant = _sim.State.Buildings.Single(b => b.Id == third.Id);
+            for (var i = 0; i < 48 && !vacant.Completed; i++) await RecoveryAdvance(1800);
+            Require(vacant.Completed && vacant.OwnerAccount == null, "Casa vaga concluída e à venda");
+            _focus = ToV(occupied.Position); UpdateCamera();
+            ClearSelection(); _selectedBuilding = occupied.Id; _inspectionKey = ""; RefreshInspection(); await RecoveryFrame();
+            RecoveryNodes<Button>(_inspection!).Single(b => b.Text == "× Demolir com indenização").EmitSignal(Godot.Button.SignalName.Pressed);
+            await RecoveryFrame();
+            RecoveryNodes<Button>(_modal!).Single(b => b.Text == "✓ Confirmar demolição").EmitSignal(Godot.Button.SignalName.Pressed);
+            await RecoveryFrame();
+            var deadline = occupied.Demolition!.DeadlineSeconds;
+            for (var i = 0; i < 4 && !occupied.Removed; i++) await RecoveryAdvance(1800);
+            Require(occupied.Removed && _sim.State.ElapsedSeconds < deadline, "Família comprou casa existente e a retirada ocorreu antes do prazo");
+            Require(moving.HomeId == vacant.Id && vacant.OwnerAccount is { } bought && moving.Members.Any(id => bought == "sim:" + id), "Compra real pela família deslocada");
+            for (var i = 0; i < 6; i++) await RecoveryFrame();
+            await RecoveryCaptureOnce("building-demolition-family-moved", GetViewport());
+
+            _sim.CheckInvariants();
+            System.IO.File.WriteAllText(System.IO.Path.Combine(directory, "building-demolition-final.json"), _sim.SaveToJson());
+            GD.Print("INDEXCITIES_BUILDING_DEMOLITION_OK compensation=" + Cash(changed.Compensation) + " removal=" + Cash(changed.RemovalCost) + " stale-revalidated=true cancel=no-change deadline-homeless=true moved-before-deadline=true directory=" + directory);
+            GetTree().Quit();
+        } catch (Exception exception) {
+            GD.PushError("Building demolition: " + exception);
+            GetTree().Quit(1);
+        } finally { _recoveryCaptureDirectory = null; }
+    }
+}

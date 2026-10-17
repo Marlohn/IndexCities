@@ -15,7 +15,7 @@ public sealed partial class CitySimulation
     public string MarketExplanation(Building b)=>"Valor: porte "+b.Definition.BaseValue+", acesso "+(HasExteriorAccess(b)?"viável":"indisponível")+", água "+b.WaterRatio.ToString("P0")+", energia "+b.ElectricityRatio.ToString("P0")+", poluição local "+LocalPollution(b.Position).ToString("F2")+" e procura financeiramente viável";
     void ReviewMarkets()
     {
-        var houses=State.Buildings.Where(b=>b.Kind==BuildingKind.House&&b.Completed&&!b.Removed&&b.OwnerAccount==null&&b.FamilyId==null&&HasExteriorAccess(b)).OrderBy(b=>b.Id).ToList();
+        var houses=State.Buildings.Where(b=>b.Kind==BuildingKind.House&&b.Completed&&!b.Removed&&b.Demolition==null&&b.OwnerAccount==null&&b.FamilyId==null&&HasExteriorAccess(b)).OrderBy(b=>b.Id).ToList();
         // Every vacant house is offered each review; residents still travelling in
         // count against the same jobs, so demand stays bounded by real factors.
         var residents=State.Citizens.Count(c=>c.Alive&&c.Resident);
@@ -33,7 +33,7 @@ public sealed partial class CitySimulation
             BuyCarOnMigration(family,house,candidate);
             residents+=candidate.Adults;Event("Família adquiriu casa e iniciou viagem física de chegada");
         }
-        foreach(var b in State.Buildings.Where(b=>b.Completed&&!b.Removed&&b.Definition.Private&&b.Kind!=BuildingKind.House&&b.OwnerAccount==null)){
+        foreach(var b in State.Buildings.Where(b=>b.Completed&&!b.Removed&&b.Demolition==null&&b.Definition.Private&&b.Kind!=BuildingKind.House&&b.OwnerAccount==null)){
             if(!HasExteriorAccess(b)){b.Cause="Sem rota para funcionários e mercadorias";continue;}
             var score=BusinessOpportunity(b);var price=MarketValue(b);var carryingCost=AnnualPropertyTax(b);
             var company=State.Companies.FirstOrDefault(c=>c.Active&&Balance(c.Account)>price+3000+carryingCost&&score>.35);

@@ -76,6 +76,7 @@ public sealed partial class CitySimulation
         if(reviewEconomy){State.EconomyNextAt=State.ElapsedSeconds+State.Tuning.EconomyInterval;ReviewMarkets();ReviewJobs();ScheduleMaintenance();}
         OrderConstruction();
         if(reviewEconomy){RestockBusinesses();ReviewEmigration();RecoverDebt();}
+        ProgressBuildingDemolitions(reviewEconomy);
         while(State.Now>=State.NextDaily){DailyFinance();State.NextDaily=State.NextDaily.AddDays(1);}
         while(State.Now>=State.NextTaxDate){PropertyTaxes();State.NextTaxDate=State.NextTaxDate.AddMonths(1);}
         ProcessLoans();

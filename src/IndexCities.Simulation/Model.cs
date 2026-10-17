@@ -73,6 +73,8 @@ public sealed class SimulationTuning
     public decimal HourlySalary {get;set;}=2.5m;
     public decimal ExternalCrewHourlyPrice {get;set;}=180;
     public decimal RoadDemolitionCostPerSquareMetre {get;set;}=1.5m;
+    // Short assisted vacating of an occupied residence ordered demolished (SPEC construcao: calibration).
+    public double AssistedVacatingDays {get;set;}=1;
     public decimal FreightBase {get;set;}=24;
     public decimal FreightPerMetre {get;set;}=.06m;
     public decimal TruckPrice {get;set;}=3500;
@@ -133,10 +135,25 @@ public sealed class Building
     public bool OperationClosed {get;set;}
     public double FoodSoldToday {get;set;}
     public double FoodDemandEstimate {get;set;}
+    [JsonIgnore(Condition=JsonIgnoreCondition.WhenWritingNull)]
+    public BuildingDemolitionOrder? Demolition {get;set;}
     [JsonIgnore] public BuildingDefinition Definition=>Catalog.Definitions[Kind];
     [JsonIgnore] public Point Door=>Position+new Point(-Math.Sin(Rotation)*Definition.Depth/2,-Math.Cos(Rotation)*Definition.Depth/2);
     public double Quantity(ResourceKind k)=>Stock.GetValueOrDefault(k);
     public void AddStock(ResourceKind k,double amount)=>Stock[k]=Math.Max(0,Quantity(k)+amount);
+}
+// A confirmed demolition: removal cost and indemnity were paid once at
+// confirmation; the structure stays only while its residents vacate.
+public sealed class BuildingDemolitionOrder
+{
+    public DateTime OrderedAt {get;set;}
+    public double DeadlineSeconds {get;set;}
+    public decimal RemovalCostPaid {get;set;}
+    public decimal CompensationPaid {get;set;}
+    public string? Beneficiary {get;set;}
+    public string BeneficiaryName {get;set;}="";
+    public int FamiliesAtOrder {get;set;}
+    public int FamiliesRelocated {get;set;}
 }
 public sealed class RoadNode
 {
