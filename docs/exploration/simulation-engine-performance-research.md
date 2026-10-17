@@ -531,3 +531,51 @@ A pesquisa original combinou **química de reações exatas** (fila de próximos
 **Conclusão atualizada:** priorizar como hipótese técnica **cache local de subrotas e consultas puras**, com invalidação por dependências/versões e fallback, depois **trechos físicos temporais seguros**; experimentar cache de transição com efeitos apenas quando os dados do Core permitirem captura/verificação completas, preservando ordem causal. **Ganhos publicados não são previsão de benchmark do jogo**. O que importa medir é **CPU líquido economizado**, não quantidade de SIMs “em cache”.
 
 **Sem alteração da SPEC ou ARCHITECTURE.**
+
+
+## 13. Quinta rodada — gerações no gênero, paralelismo determinístico e custo medido de um acontecimento (2026-10-17)
+
+> **Revisão humana: PENDENTE.** Pesquisa e medição da IA, sem autoridade de produto. Complementa a [medição de escala do núcleo](ritmo-velocidades.md#medição-de-escala-do-núcleo--2026-10-16-pendente), feita depois das rodadas anteriores. Não altera SPEC nem ARCHITECTURE.
+
+### 13.1. Nos jogos verificados a idade é acelerada; nenhum encontrado acompanha gerações com calendário literal
+
+- **Banished:** a wiki comunitária indica envelhecimento **5 vezes por ano de jogo**; existem mods nas duas direções, inclusive 1:1 ([wiki](https://banished-wiki.com/wiki/Health), [mod 1:1](https://www.nexusmods.com/banished/mods/15?tab=docs)).
+- **Workers & Resources: Soviet Republic:** a wiki da editora descreve envelhecimento de **12 anos por ano de jogo**, um ano de idade por mês, morte natural por volta dos 70–80 anos ([wiki, via busca; a página recusou acesso direto](https://wiki.hoodedhorse.com/Workers_Resources_Soviet_Republic/Citizens)).
+- **Cities: Skylines:** jogadores relatam vidas de poucos anos de jogo e ajustes por mod ([comunidade](https://steamcommunity.com/sharedfiles/filedetails/comments/409070218); não verificado).
+- **Songs of Syx:** dezenas de milhares de cidadãos individuais, motor próprio; nenhuma fonte técnica sobre envelhecimento ou custo, não verificado ([GamingOnLinux](https://www.gamingonlinux.com/2020/03/epic-city-state-simulator-songs-of-syx-is-very-promising-and-now-on-kickstarter)).
+
+**Leitura:** nos dois jogos verificados (Banished e Workers & Resources), o atalho é exatamente o que o responsável rejeitou em 2026-10-16: idade separada do calendário. Em buscas sobre envelhecimento e simulação de cidadãos em city builders e colony sims (Banished, Workers & Resources, Cities: Skylines, RimWorld, Dwarf Fortress, Songs of Syx, Ostriv, Foundation), **não encontrei** jogo com relógio único e gerações com acontecimentos reais, o que não prova que não exista. Sem receita pronta para copiar, o risco técnico deve ser tratado como alto. Fontes comunitárias, não oficiais; números de envelhecimento não verificados no jogo.
+
+### 13.2. Populações por décadas fora dos jogos: eventos por agente
+
+- **GEPOC ABM (2025):** modelo populacional por agentes em que cada agente executa sua **própria agenda de acontecimentos** (aniversário reagendado a cada ano, transições em instantes sorteados entre aniversários), sincronizados em macro-passos; os autores apontam custo superlinear em número de eventos e agentes e paralelismo limitado porque qualquer evento pode alterar outros, mas argumentam que os macro-passos "abrem um caminho natural para paralelização" ([arXiv 2511.05637](https://arxiv.org/html/2511.05637)). Sem números de desempenho publicados.
+- **Sociedade de um bilhão de agentes (2025):** fila única ordenada por tempo, prioridade e sequência; estado em colunas para atualizações vetorizadas ([arXiv 2506.12078](https://arxiv.org/pdf/2506.12078)).
+- **Pacote R ABM:** modelos de tempo contínuo com milhões de agentes, eventos em ordem cronológica e estágios de vida ([CRAN](https://packages.oit.ncsu.edu/cran/web/packages/ABM/refman/ABM.html)).
+
+**Leitura:** a área que simula vidas inteiras usa **agenda de acontecimentos por indivíduo**, não passo fixo; confirma a direção das rodadas anteriores (fila de próximos acontecimentos, SIM "adormecido" até o próximo). Esses modelos não têm trânsito físico nem economia integrada do IndexCities, então não provam a meta.
+
+### 13.3. Vários núcleos sem perder o mesmo resultado
+
+- Simulação paralela por eventos tem duas famílias: **conservadora**, que avança cada parte até onde é seguro (exige "olhar à frente", ou *lookahead*), e **otimista**, que desfaz o que der errado; há híbridos ([Virtual Time III](https://dl.acm.org/doi/10.1145/3505248), [Devastator](https://dl.acm.org/doi/fullHtml/10.1145/3615979.3656061), [PARSIR](https://arxiv.org/pdf/2410.00644)).
+- **Mesmo resultado independente de número de threads geralmente fica a cargo de cada implementação**, não é garantia desses sistemas ([RepliCore, 2026](https://arxiv.org/pdf/2607.02529)). Receita recorrente em motores determinísticos: conjuntos de leitura/escrita explícitos, fases independentes, **fusão em ordem fixa** (por ID) e ordem fixa de somas de ponto flutuante ([notas de projeto](https://dev.to/mendolatech/design-notes-for-a-deterministic-c-simulation-framework-56fo), [Yade](https://arxiv.org/pdf/2301.00611), [PhysX](https://forums.developer.nvidia.com/t/sims-are-no-longer-deterministic-when-multi-threading-is-enabled-and-rigidbodies-overlap/62643)).
+- Em jogos não encontrei fonte técnica primária sobre paralelismo determinístico da simulação. No Factorio, o post citado ([Factorio Staff, fórum, sem link oficial](https://forums.factorio.com/viewtopic.php?p=550174)) propõe workers Lua isolados que não acessam entidades; não encontrei relato confirmado de redes elétricas ou fluidos em paralelo no jogo.
+
+**Leitura para o IndexCities:** um núcleo por sistema (pessoas num, trânsito noutro) esbarra nas interações a cada passo e fica limitado pelo sistema mais pesado (~3x no perfil medido com 400 SIMs). O caminho mais promissor é **dividir o trabalho dentro de um mesmo sistema** (por família ou por região), com fusão em ordem fixa; estimativa de 2–6x com 12 threads, **não medida**. Vale mais depois de o núcleo trabalhar por acontecimentos.
+
+### 13.4. Medição: custo da maquinaria de eventos em .NET
+
+Laço com `PriorityQueue` em .NET 8, Release, um núcleo, Intel Core i5-13420H, 32 GB, Windows 11: cada evento retira o próximo agente, atualiza três campos (fome acumulada, dinheiro, último horário) e o reagenda. 20 milhões de eventos:
+
+| Agentes | Eventos/s | ns por evento |
+|---|---|---|
+| 10.000 | 8,7 milhões | 115 |
+| 100.000 | 3,9 milhões | 257 |
+| 1.000.000 | 2,2 milhões | 456 |
+
+**Mede só a maquinaria de fila e a atualização de três campos, sem lógica de jogo, rotas, trânsito ou gravação de histórico.** Supondo 80 anos em ~30 h (3,70 s por dia simulado) e ~20 acontecimentos por SIM por dia, 5.000 SIMs dão orçamento de **~37 µs por acontecimento**, cerca de **80–320 vezes** a maquinaria medida (115–456 ns). No motor de passo fixo, o mesmo orçamento vira ~17 ns por SIM a cada passo de 2 s. **Conclusão:** se o custo real de um acontecimento ficar dentro dessa folga, a meta cabe numa arquitetura por eventos e é inviável no passo fixo. **O custo real de um acontecimento do jogo ainda não foi medido**, e ele depende das premissas acima (30 h, 20 acontecimentos por dia). O que ainda não tem evidência é **trânsito e pedestres por acontecimentos com resultado equivalente**, o risco central já apontado na [rodada 9.4](#94-alternativa-ainda-mais-próxima-do-nosso-desejo-microssimulação-por-eventos).
+
+### 13.5. O que esta rodada muda
+
+1. Reforça a direção das rodadas 9–12: agenda de acontecimentos por SIM, índices de dependência e horizontes de validade. Paralelismo e GPU entram como multiplicadores posteriores.
+2. Acrescenta que, **nos jogos verificados, a idade é acelerada**, e não encontrei jogo com calendário literal (o que não prova que não exista). Não há atalho conhecido a copiar, e a validação precisa ser nossa.
+3. Para decisões futuras do responsável, sem propor nenhuma: se o protótipo de trânsito por acontecimentos falhar, as alavancas que restam são de produto (tamanho de cidade-alvo da meta geracional, hardware de referência, horas aceitas), nunca o calendário.
