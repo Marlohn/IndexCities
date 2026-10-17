@@ -30,14 +30,24 @@ public static class CitySaves
     public static string DirectoryPath=>VerificationDirectory??ProjectSettings.GlobalizePath("user://cities");
     static void ValidateId(string id){if(id.Length!=32||id.Any(c=>!char.IsAsciiHexDigit(c)))throw new InvalidOperationException("Identificador de cidade inválido");}
     public static string NewId()=>Guid.NewGuid().ToString("N");
-    public static IEnumerable<(string Id,string Name,DateTime At)> List()
+    public static IEnumerable<(string Id,string Name,DateTime At)> List()=>ListAll().Where(saved=>!saved.Outdated).Select(saved=>(saved.Id,saved.Name,saved.At));
+    // Outdated: the file is a readable city envelope that this build refuses to
+    // load (no conversion until a stable version); listed so opening it warns.
+    public static IEnumerable<(string Id,string Name,DateTime At,bool Outdated)> ListAll()
     {
         if(!System.IO.Directory.Exists(DirectoryPath))yield break;
         foreach(var path in System.IO.Directory.EnumerateFiles(DirectoryPath,"*.json").OrderByDescending(System.IO.File.GetLastWriteTimeUtc)){
-            CitySave? save=null;CitySimulation? sim=null;
+            CitySave? save=null;CitySimulation? sim=null;var id=System.IO.Path.GetFileNameWithoutExtension(path);
             try{save=JsonSerializer.Deserialize<CitySave>(System.IO.File.ReadAllText(path));if(save!=null)sim=CitySimulation.FromJson(save.CityJson);}catch(Exception){ }
-            if(sim!=null)yield return(System.IO.Path.GetFileNameWithoutExtension(path),sim.State.Name,sim.State.Now);
+            if(sim!=null)yield return(id,sim.State.Name,sim.State.Now,false);
+            else if(save!=null&&OutdatedSummary(save.CityJson) is {} old)yield return(id,old.Name,old.At,true);
         }
+    }
+    static (string Name,DateTime At)? OutdatedSummary(string cityJson)
+    {
+        try{var city=System.Text.Json.Nodes.JsonNode.Parse(cityJson)!.AsObject();
+            return (city["Name"]?.GetValue<string>() is {Length:>0} name?name:"Cidade sem nome",city["Now"]?.GetValue<DateTime>()??DateTime.MinValue);}
+        catch(Exception){return null;}
     }
     public static void Save(string id,CitySave save)
         =>WriteJson(id,JsonSerializer.Serialize(save));

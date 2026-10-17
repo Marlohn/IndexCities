@@ -113,20 +113,10 @@ public sealed class PavingTests
     }
 
     [Fact]
-    public void Legacy_partial_streets_keep_their_nodes_money_and_consumed_materials()
+    public void Saves_from_before_material_trucks_are_refused_instead_of_converted()
     {
-        var sim=City();var work=Road(sim,new(-192,0),new(-192,48));
-        for(var i=0;i<2000&&work.RolledRoadPoints.Count<2;i++)sim.Advance(2);
-        var legacy=System.Text.Json.Nodes.JsonNode.Parse(sim.SaveToJson())!.AsObject();legacy.Remove("ConstructionStateVersion");legacy.Remove("PavingFleetInitialized");
-        var vehicles=legacy["Vehicles"]!.AsArray();foreach(var machine in vehicles.Where(v=>v!["Machine"]!.GetValue<string>()!="None").ToArray())vehicles.Remove(machine);
-        foreach(var v in vehicles){v!.AsObject().Remove("Body");v.AsObject().Remove("ConstructionAccess");}
-        foreach(var node in legacy["Roads"]!.AsArray()){node!.AsObject().Remove("ConstructionOnly");node.AsObject().Remove("WorkProjectId");}
-        foreach(var p in legacy["Projects"]!.AsArray())foreach(var key in new[]{"PavingVersion","PaverId","RollerId","AppliedRoadPoints","RolledRoadPoints","MachineryQuoted","MachineryPaid"})p!.AsObject().Remove(key);
-        var balance=sim.CityBalance;var remainingBudget=work.BudgetRemaining;var ids=work.BuiltRoadNodes.ToArray();var paid=work.CostPaid;var consumed=work.Delivered.ToDictionary(k=>k.Key,k=>k.Value);
-        sim=CitySimulation.FromJson(legacy.ToJsonString());var restored=sim.State.Projects.Single(p=>p.Id==work.Id);
-        Assert.Equal(balance,sim.CityBalance);Assert.Equal(remainingBudget,restored.BudgetRemaining);Assert.Equal(paid,restored.CostPaid);Assert.All(ids,id=>Assert.Contains(sim.State.Roads,r=>r.Id==id&&r.ConstructionOnly));
-        Assert.All(consumed,k=>Assert.Equal(k.Value,restored.Delivered[k.Key]));var clone=CitySimulation.FromJson(sim.SaveToJson());sim.Advance(3600);clone.Advance(3600);
-        Assert.Equal(sim.SaveToJson(),clone.SaveToJson());Assert.Equal(WorkCause.NoBudgetForPaving,restored.Cause);Assert.All(ids,id=>Assert.Contains(sim.State.Roads,r=>r.Id==id));sim.CheckInvariants();
+        var legacy=System.Text.Json.Nodes.JsonNode.Parse(City().SaveToJson())!.AsObject();legacy.Remove("ConstructionStateVersion");
+        Assert.Throws<InvalidDataException>(()=>CitySimulation.FromJson(legacy.ToJsonString()));
     }
 
     [Fact]

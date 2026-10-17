@@ -1,0 +1,42 @@
+﻿Godot Engine v4.7.2.stable.mono.official.ed1daf0bf - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 546.18 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 3050 6GB Laptop GPU
+
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\water-integrated\rendered-9d6a11f32a024c839575ad98f15c9b1e\lake-42-day.png
+LAKE_GEOMETRY seed=42 vertices=128 area=2597,291 build_ms=328,37
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\water-integrated\rendered-9d6a11f32a024c839575ad98f15c9b1e\lake-1412-day.png
+LAKE_GEOMETRY seed=1412 vertices=128 area=2522,399 build_ms=330,66
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\water-integrated\rendered-9d6a11f32a024c839575ad98f15c9b1e\lake-2877-day.png
+LAKE_GEOMETRY seed=2877 vertices=128 area=5068,901 build_ms=494,57
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\water-integrated\rendered-9d6a11f32a024c839575ad98f15c9b1e\shore-orders-42.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\water-integrated\rendered-9d6a11f32a024c839575ad98f15c9b1e\house-supported-42.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\water-integrated\rendered-9d6a11f32a024c839575ad98f15c9b1e\house-contact-42.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\water-integrated\rendered-9d6a11f32a024c839575ad98f15c9b1e\road-supported-42.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\water-integrated\rendered-9d6a11f32a024c839575ad98f15c9b1e\shore-grid-42.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\water-integrated\rendered-9d6a11f32a024c839575ad98f15c9b1e\shore-orders-1412.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\water-integrated\rendered-9d6a11f32a024c839575ad98f15c9b1e\house-supported-1412.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\water-integrated\rendered-9d6a11f32a024c839575ad98f15c9b1e\house-contact-1412.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\water-integrated\rendered-9d6a11f32a024c839575ad98f15c9b1e\road-supported-1412.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\water-integrated\rendered-9d6a11f32a024c839575ad98f15c9b1e\shore-grid-1412.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\water-integrated\rendered-9d6a11f32a024c839575ad98f15c9b1e\shore-orders-2877.png
+Godot_v4.7.2-stable_mono_win64_console.exe : ERROR: System.InvalidOperationException: Verificação do jogo: Caminhões e 
+equipes concluíram as obras, sem conclusão artificial
+No linha:1 caractere:752
++ ... | Out-Null; & $g --path src/IndexCities.Godot --resolution 1440x960 - ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (ERROR: System.I...usão artificial:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+   at IndexCities.Game.Main.Require(Boolean condition, String message) in 
+C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\src\IndexCities.Godot\Main.QA.cs:line 99
+   at IndexCities.Game.Main.LakeRecoverySmoke() in 
+C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\src\IndexCities.Godot\Main.LakeQA.cs:line 52
+   at: void IndexCities.Game.Main+<LakeRecoverySmoke>d__111.MoveNext() (res://Main.LakeQA.cs:52)
+   C# backtrace (most recent call first):
+       [0] void Godot.GD.PushError(string) (/root/godot/modules/mono/glue/GodotSharp/GodotSharp/Core/GD.cs:366)
+       [1] void IndexCities.Game.Main+<LakeRecoverySmoke>d__111.MoveNext() 
+(C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\src\IndexCities.Godot\Main.LakeQA.cs:52)
+       [2] void System.Threading.ExecutionContext.RunInternal(System.Threading.ExecutionContext, 
+System.Threading.ContextCallback, object)
+       [3] void System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1.MoveNext()
+       [4] void Godot.SignalAwaiter.SignalCallback(nint, Godot.NativeInterop.godot_variant**, int, 
+Godot.NativeInterop.godot_bool*) (/root/godot/modules/mono/glue/GodotSharp/GodotSharp/Core/SignalAwaiter.cs:65)

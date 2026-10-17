@@ -25,7 +25,7 @@ public partial class Main
         new("--construction-corner-smoke",new[]{"--construction-corner-smoke"},"Rua em L invertido com casa: rolo saindo cede ao caminhão sem girar sobre ele; rua e casa concluem (quantum 2 s)",true,"nenhuma (cria a cidade CornerCity seed 42; saves isolados em artifacts/verification)",nameof(ConstructionCornerSmoke)),
         new("--performance-smoke",new[]{"--performance-smoke"},"FPS e ms de simulação/apresentação; só métricas, sem asserção de correção",false,"opcional via --fixture= (ignora --review-save-dir antes desta correção)",null,QaTrigger.Performance),
         new("--bar-capture",new[]{"--bar-capture"},"Posiciona a Prefeitura e espera --capture= para capturar a barra; não é teste",true,"nenhuma",null,QaTrigger.BarCapture),
-        new("--persistence-smoke",new[]{"--persistence-smoke"},"Round-trip de save/load, esboços e migração legada de relógio",false,"nenhuma (cria a cidade)",nameof(PersistenceSmoke)),
+        new("--persistence-smoke",new[]{"--persistence-smoke"},"Round-trip de save/load, esboços, migração legada de relógio e aviso de save de versão antiga",false,"nenhuma (cria a cidade)",nameof(PersistenceSmoke)),
         new("--ui-smoke",new[]{"--ui-smoke"},"Fundação 1 clique, catálogo=10, rua 2 cliques, cancelar e inspeção",false,"nenhuma (cria a cidade)",nameof(UiSmoke)),
         new("--ui-input-smoke",new[]{"--ui-input-smoke"},"Gestos reais de mouse/tecla sobre a GUI",true,"nenhuma (cria a cidade)",nameof(UiInputSmoke)),
         new("--recovery-smoke",new[]{"--recovery-smoke"},"Construção completa por GUI, menus e save/load",true,"nenhuma (cria a cidade)",nameof(RecoverySmoke)),

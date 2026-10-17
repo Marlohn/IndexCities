@@ -1,0 +1,61 @@
+﻿Godot Engine v4.7.2.stable.mono.official.ed1daf0bf - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 546.18 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 3050 6GB Laptop GPU
+
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\recovery-v2\names-cf27e672ec1b4227889db45c4fb65200\cities-before-rename.png
+RECOVERY_GUI_HIT button=/root/IndexCities/@Window@241/@VBoxContainer@242/@ScrollContainer@248/@VBoxContainer@249/@PanelContainer@250/@VBoxContainer@251/@BoxContainer@254/@Button@256 text=Renomear rect=(586, 133), (104, 40) viewport=/root/IndexCities/@Window@241 windowId=0 embedded=True windowPosition=(360, 162) hovered=/root/IndexCities/@Window@241/@VBoxContainer@242/@ScrollContainer@248/@VBoxContainer@249/@PanelContainer@250/@VBoxContainer@251/@BoxContainer@254/@Button@256 hoveredRect=(586, 133), (104, 40) mouseFilter=Stop handleLocally=True guiDisabled=False finalTransform=[X: (1, 0), Y: (0, 1), O: (0, 0)]
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@241 position=(998, 315) pressed=True handled=True
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@241 position=(998, 315) pressed=False handled=True
+RECOVERY_GUI_HIT button=/root/IndexCities/@Window@278/@VBoxContainer@279/ModalActions/@Button@290 text=Cancelar rect=(364, 191), (340, 40) viewport=/root/IndexCities/@Window@278 windowId=0 embedded=True windowPosition=(360, 356) hovered=/root/IndexCities/@Window@278/@VBoxContainer@279/ModalActions/@Button@290 hoveredRect=(364, 191), (340, 40) mouseFilter=Stop handleLocally=True guiDisabled=False finalTransform=[X: (1, 0), Y: (0, 1), O: (0, 0)]
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@278 position=(894, 567) pressed=True handled=True
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@278 position=(894, 567) pressed=False handled=True
+RECOVERY_GUI_HIT button=/root/IndexCities/@Window@291/@VBoxContainer@292/@ScrollContainer@298/@VBoxContainer@299/@PanelContainer@300/@VBoxContainer@301/@BoxContainer@304/@Button@306 text=Renomear rect=(586, 133), (104, 40) viewport=/root/IndexCities/@Window@291 windowId=0 embedded=True windowPosition=(360, 162) hovered=/root/IndexCities/@Window@291/@VBoxContainer@292/@ScrollContainer@298/@VBoxContainer@299/@PanelContainer@300/@VBoxContainer@301/@BoxContainer@304/@Button@306 hoveredRect=(586, 133), (104, 40) mouseFilter=Stop handleLocally=True guiDisabled=False finalTransform=[X: (1, 0), Y: (0, 1), O: (0, 0)]
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@291 position=(998, 315) pressed=True handled=True
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@291 position=(998, 315) pressed=False handled=True
+RECOVERY_GUI_HIT button=/root/IndexCities/@Window@328/@VBoxContainer@329/ModalActions/@Button@339 text=Confirmar nome rect=(16, 191), (340, 40) viewport=/root/IndexCities/@Window@328 windowId=0 embedded=True windowPosition=(360, 356) hovered=/root/IndexCities/@Window@328/@VBoxContainer@329/ModalActions/@Button@339 hoveredRect=(16, 191), (340, 40) mouseFilter=Stop handleLocally=True guiDisabled=False finalTransform=[X: (1, 0), Y: (0, 1), O: (0, 0)]
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@328 position=(546, 567) pressed=True handled=True
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@328 position=(546, 567) pressed=False handled=True
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\recovery-v2\names-cf27e672ec1b4227889db45c4fb65200\cities-after-rename.png
+RECOVERY_GUI_HIT button=/root/IndexCities/@Window@341/@VBoxContainer@342/@ScrollContainer@348/@VBoxContainer@349/@PanelContainer@350/@VBoxContainer@351/@BoxContainer@354/@Button@356 text=Renomear rect=(586, 133), (104, 40) viewport=/root/IndexCities/@Window@341 windowId=0 embedded=True windowPosition=(360, 162) hovered=/root/IndexCities/@Window@341/@VBoxContainer@342/@ScrollContainer@348/@VBoxContainer@349/@PanelContainer@350/@VBoxContainer@351/@BoxContainer@354/@Button@356 hoveredRect=(586, 133), (104, 40) mouseFilter=Stop handleLocally=True guiDisabled=False finalTransform=[X: (1, 0), Y: (0, 1), O: (0, 0)]
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@341 position=(998, 315) pressed=True handled=True
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@341 position=(998, 315) pressed=False handled=True
+RECOVERY_GUI_HIT button=/root/IndexCities/@Window@378/@VBoxContainer@379/ModalActions/@Button@389 text=Confirmar nome rect=(16, 191), (340, 40) viewport=/root/IndexCities/@Window@378 windowId=0 embedded=True windowPosition=(360, 356) hovered=/root/IndexCities/@Window@378/@VBoxContainer@379/ModalActions/@Button@389 hoveredRect=(16, 191), (340, 40) mouseFilter=Stop handleLocally=True guiDisabled=False finalTransform=[X: (1, 0), Y: (0, 1), O: (0, 0)]
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@378 position=(546, 567) pressed=True handled=True
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@378 position=(546, 567) pressed=False handled=True
+Godot_v4.7.2-stable_mono_win64_console.exe : ERROR: System.UnauthorizedAccessException: Access to the path is denied.
+No linha:1 caractere:752
++ ... | Out-Null; & $g --path src/IndexCities.Godot --resolution 1440x960 - ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (ERROR: System.U...path is denied.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+   at System.IO.FileSystem.MoveFile(String sourceFullPath, String destFullPath, Boolean overwrite)
+   at IndexCities.Game.CitySaves.WriteJson(String id, String json) in 
+C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\src\IndexCities.Godot\CitySaves.cs:line 48
+   at IndexCities.Game.CitySaves.Save(String id, CitySave save) in 
+C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\src\IndexCities.Godot\CitySaves.cs:line 43
+   at IndexCities.Game.Main.TrySaveCity() in 
+C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\src\IndexCities.Godot\Main.cs:line 211
+   at: bool IndexCities.Game.Main.TrySaveCity() (res://Main.cs:211)
+   C# backtrace (most recent call first):
+       [0] void Godot.GD.PushError(string) (/root/godot/modules/mono/glue/GodotSharp/GodotSharp/Core/GD.cs:366)
+       [1] bool IndexCities.Game.Main.TrySaveCity() 
+(C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\src\IndexCities.Godot\Main.cs:211)
+       [2] void IndexCities.Game.Main+<>c__DisplayClass118_0.<ShowCityRename>g__Rename|0() 
+(C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\src\IndexCities.Godot\Main.MenuCards.cs:72)
+       [3] void Godot.Callable.<From>g__Trampoline|1_0(object, Godot.NativeInterop.NativeVariantPtrArgs, 
+Godot.NativeInterop.godot_variant&) (/root/godot/modules/mono/glue/GodotSharp/GodotSharp/Core/Callable.generics.cs:39)
+       [4] void Godot.DelegateUtils.InvokeWithVariantArgs(nint, System.Void*, Godot.NativeInterop.godot_variant**, 
+int, Godot.NativeInterop.godot_variant*) (/root/godot/modules/mono/glue/GodotSharp/GodotSharp/Core/DelegateUtils.cs:86)
+RECOVERY_GUI_HIT button=/root/IndexCities/@Window@378/@VBoxContainer@379/ModalActions/@Button@390 text=Cancelar rect=(364, 191), (340, 40) viewport=/root/IndexCities/@Window@378 windowId=0 embedded=True windowPosition=(360, 356) hovered=/root/IndexCities/@Window@378/@VBoxContainer@379/ModalActions/@Button@390 hoveredRect=(364, 191), (340, 40) mouseFilter=Stop handleLocally=True guiDisabled=False finalTransform=[X: (1, 0), Y: (0, 1), O: (0, 0)]
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@378 position=(894, 567) pressed=True handled=True
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@378 position=(894, 567) pressed=False handled=True
+RECOVERY_GUI_HIT button=/root/IndexCities/@Window@391/@VBoxContainer@392/@HBoxContainer@393/@Button@395 text=× Fechar rect=(600, 16), (104, 40) viewport=/root/IndexCities/@Window@391 windowId=0 embedded=True windowPosition=(360, 138) hovered=/root/IndexCities/@Window@391/@VBoxContainer@392/@HBoxContainer@393/@Button@395 hoveredRect=(600, 16), (104, 40) mouseFilter=Stop handleLocally=True guiDisabled=False finalTransform=[X: (1, 0), Y: (0, 1), O: (0, 0)]
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@391 position=(1012, 174) pressed=True handled=True
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@391 position=(1012, 174) pressed=False handled=True
+RECOVERY_GUI_HIT button=/root/IndexCities/@Window@438/@VBoxContainer@439/@ScrollContainer@445/@VBoxContainer@446/@PanelContainer@467/@VBoxContainer@468/@HBoxContainer@472/@Button@477 text=+ Criar rect=(434, 592), (256, 40) viewport=/root/IndexCities/@Window@438 windowId=0 embedded=True windowPosition=(360, 138) hovered=/root/IndexCities/@Window@438/@VBoxContainer@439/@ScrollContainer@445/@VBoxContainer@446/@PanelContainer@467/@VBoxContainer@468/@HBoxContainer@472/@Button@477 hoveredRect=(434, 592), (256, 40) mouseFilter=Stop handleLocally=True guiDisabled=False finalTransform=[X: (1, 0), Y: (0, 1), O: (0, 0)]
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@438 position=(922, 750) pressed=True handled=True
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@438 position=(922, 750) pressed=False handled=True
+RECOVERY_GUI_HIT button=/root/IndexCities/@Window@651/@VBoxContainer@652/@ScrollContainer@658/@VBoxContainer@659/@PanelContainer@660/@VBoxContainer@661/@BoxContainer@667/@Button@668 text=São Bento • 01/01/2026 06:00 rect=(30, 181), (548, 40) viewport=/root/IndexCities/@Window@651 windowId=0 embedded=True windowPosition=(360, 114) hovered=/root/IndexCities/@Window@651/@VBoxContainer@652/@ScrollContainer@658/@VBoxContainer@659/@PanelContainer@660/@VBoxContainer@661/@BoxContainer@667/@Button@668 hoveredRect=(30, 181), (548, 40) mouseFilter=Stop handleLocally=True guiDisabled=False finalTransform=[X: (1, 0), Y: (0, 1), O: (0, 0)]
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@651 position=(664, 315) pressed=True handled=True
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@651 position=(664, 315) pressed=False handled=True
+INDEXCITIES_CITY_NAMES_OK rename=same-file state=preserved unknown-fields=preserved cancel=preserved write-failure=preserved create=optional load=preserved directory=C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\recovery-v2\names-cf27e672ec1b4227889db45c4fb65200
