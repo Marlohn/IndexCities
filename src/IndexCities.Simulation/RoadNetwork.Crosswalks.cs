@@ -58,6 +58,18 @@ public sealed partial class CitySimulation
         foreach(var band in CrosswalkGeometry(node,state))yield return band;
     }
 
+    // CrosswalkLocations(node,State), kept only while Advance runs: there the
+    // inputs (road list, neighbours, crossings) change only through code that
+    // moves the road epoch. Outside it, or across calls, always recomputed.
+    readonly Dictionary<RoadNode,(Point Centre,bool HorizontalRoad)[]> _crosswalkBands=new(ReferenceEqualityComparer.Instance);
+    bool _crosswalkBandsActive;int _crosswalkBandsEpoch;
+    IEnumerable<(Point Centre,bool HorizontalRoad)> CrosswalkBands(RoadNode node)
+    {
+        if(!_crosswalkBandsActive)return CrosswalkLocations(node,State);
+        if(_crosswalkBandsEpoch!=_roadEpoch){_crosswalkBands.Clear();_crosswalkBandsEpoch=_roadEpoch;}
+        if(!_crosswalkBands.TryGetValue(node,out var bands))_crosswalkBands[node]=bands=CrosswalkLocations(node,State).ToArray();
+        return bands;
+    }
     static IEnumerable<(Point Centre,bool HorizontalRoad)> CrosswalkGeometry(RoadNode node,CityState state)
     {
         if(node.Highway)yield break;
@@ -88,7 +100,7 @@ public sealed partial class CitySimulation
         // SameRoadLine(node,r,horizontal), with one route visit for all r.
         HashSet<int>? line=null;
         return State.Roads.Where(r=>r.Crosswalk&&!r.Highway&&!(Math.Abs(horizontal?node.Position.Z-r.Position.Z:node.Position.X-r.Position.X)>.01)&&(line??=RoadLineFrom(node,horizontal)).Contains(r.Id))
-            .SelectMany(r=>CrosswalkLocations(r,State).Where(p=>p.HorizontalRoad==horizontal&&Math.Abs(horizontal?p.Centre.Z-node.Position.Z:p.Centre.X-node.Position.X)<.01).Select(p=>(Node:r,Centre:p.Centre)))
+            .SelectMany(r=>CrosswalkBands(r).Where(p=>p.HorizontalRoad==horizontal&&Math.Abs(horizontal?p.Centre.Z-node.Position.Z:p.Centre.X-node.Position.X)<.01).Select(p=>(Node:r,Centre:p.Centre)))
             .OrderBy(p=>p.Centre.Distance(start)+p.Centre.Distance(finish)).ThenBy(p=>p.Node.Id)
             .Select(p=>((RoadNode Node,Point Centre)?)p).FirstOrDefault();
     }
