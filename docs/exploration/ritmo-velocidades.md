@@ -468,3 +468,80 @@ Os números ficaram dentro da faixa natural, e o dinheiro se conservou em todas 
 - A rodada de 1.000 SIMs com o motor atual (2 s) não foi medida até o fim: só o crescimento já passava de uma hora.
 
 **Leitura:** o intervalo fixo ajuda até algumas centenas de SIMs, mas muda resultados (satisfação) e não resolve a escala de 1.000+, onde a caminhada domina com custo que cresce mais que linearmente (verificações de distância contra todos os pedestres e consultas lineares por prédio, ver medição de escala acima). O próximo passo técnico que não muda regra nenhuma é atacar esse custo — índice espacial para pedestres, dicionário por Id para prédios, menos alocação por passo — cada um com prova de SHA idêntico pela bancada. Só depois disso faz sentido decidir entre intervalo maior, agenda de próximos acontecimentos ou outra arquitetura.
+
+### Otimizações equivalentes do núcleo — 2026-10-17 (PENDENTE)
+
+> **Pesquisa, não decisão.** Branch `Marlohn/otimizacao-caminhada`. Opção B aprovada pelo responsável em 2026-10-17: só otimizações de desempenho que preservam o comportamento. Nenhuma regra, tuning, ordem de eventos, causa exibida ou formato de save mudou; o SHA-256 do save da bancada é **idêntico antes e depois** em todas as cidades medidas. Nada aqui decide intervalo maior, agenda de eventos ou threads.
+
+**Onde estava o custo** (perfil por amostragem com `dotnet-trace`, motor atual de 2 s, antes das mudanças):
+
+| Cidade | Pontos quentes |
+|---|---|
+| Grade 3×400, 108 SIMs | infraestrutura 45%, veículos 21% (cópia e ordenação de todos os veículos a cada passo), necessidades 15%, operação de empresas 12% |
+| Grade 5×800 crescendo, ~300–400 SIMs | infraestrutura 41%, necessidades 37%, operação de empresas 9%: buscas lineares por Id (`FamilyById`, `BuildingById`), trabalhadores presentes contados prédio × todos os SIMs, dicionários alocados a cada passo |
+| Grade 7×1500, ~1.000 SIMs | revisão de empregos 75% (uma busca de rota por SIM × prédio e contagem de vagas sobre todos os SIMs); depois dela, `PedestrianPath` 92% |
+
+O "`MoveCitizens` 94,6%" da seção anterior era quase todo **planejamento de rota no início de cada caminhada** (`CitizenRoutine` → `StartJourney` → `PedestrianPath`), não o andar a cada passo: a recuperação de quem está dentro da faixa de rolamento fazia uma busca de rota completa por faixa de pedestre do mapa (centenas por caminhada), e a escolha da travessia compartilhada fazia outra busca e um recálculo de geometria (varredura de todas as ruas) por faixa candidata. Por isso o custo crescia muito mais que linearmente.
+
+**O que mudou** (cada item verificado com SHA idêntico antes de seguir):
+
+1. Índices por Id validados na consulta para prédios, famílias, empresas, SIMs e veículos, no lugar de `FirstOrDefault` linear (ver `docs/ARCHITECTURE.md` §8).
+2. Trabalhadores presentes e equipe no trabalho contados numa passada sobre os SIMs, em vez de prédio × SIMs.
+3. Infraestrutura com buffers reutilizados; a divisão de capacidade (`CapacityAllocation`) usa arrays por posição com as mesmas somas na mesma ordem.
+4. Poluição: fator `exp(−d/64)` em cache por ponto amostrado e por posição das células; casas somadas em lotes de quatro com acumuladores independentes, cada soma na ordem das células; decaimento sem buscas repetidas.
+5. Pedestres: travessia procurada só na lista de faixas do passo; fila de pedestres num laço simples que ignora quem está longe demais para limitar o passo.
+6. Veículos: ordenação por `Array.Sort` com chave total no lugar de `OrderBy(...).ThenBy(...)`.
+7. Revisão de empregos: alcance viário calculado uma vez por origem (mesma regra de `FindRoadRoute`) e contagem viva de vagas.
+8. Planejamento de caminhada: uma árvore de busca por origem para a faixa mais próxima (mesmas rotas e comprimentos, parando quando uma camada inteira passa do limite); travessia compartilhada testando os candidatos do mais próximo ao mais distante com uma busca retomável; geometria das faixas em cache só durante `Advance`, invalidada por mudança da rede viária.
+
+**Prova de equivalência** (16 primeiros hex do SHA-256 do save JSON ao fim da rodada; "antes" = commit `620b770`, núcleo igual ao da `main`; "depois" = cabeça da branch):
+
+| Cidade | SIMs | Semente | Dias (aquecimento + medidos) | Antes | Depois |
+|---|---|---|---|---|---|
+| `cycle` (obras reais) | 47 | 42 | 2 + 2 | `E1B7DAE87D62EB41` | `E1B7DAE87D62EB41` |
+| `cycle` | 50 | 7 | 2 + 2 | `A18A692CC553ECE9` | `A18A692CC553ECE9` |
+| Grade 3×400 | 108 | 42 | 2 + 2 | `A584C1D808CCA8B3` | `A584C1D808CCA8B3` |
+| Grade 3×400 | 107 | 7 | 2 + 2 | `A38AFBEF2B813E57` | `A38AFBEF2B813E57` |
+| Grade 5×800, `--growth=10` | 400 | 42 | 25 h + 2 + 1 | `F980C11F933AD247` | `F980C11F933AD247` |
+| Grade 5×800, `--growth=10` (1 morte) | 408 | 43 | 25 h + 2 + 1 | `EE1B03B8512D4343` | `EE1B03B8512D4343` |
+
+Também: `dotnet test` 244/244; Godot 4.7.2 com `INDEXCITIES_SMOKE_OK`, `INDEXCITIES_PERFORMANCE_OK` e `INDEXCITIES_PERSISTENCE_OK`.
+
+**Tempos** (Release, .NET 8, Windows 11, CPU de 12 threads; rodadas **sequenciais** com a máquina livre, semente 42; "s/dia" é tempo real por dia simulado nos dias medidos, depois do aquecimento):
+
+| Cidade | SIMs | Antes: s/dia (h para 80 anos) | Depois: s/dia (h para 80 anos) | Ganho | Alocação/dia antes → depois |
+|---|---|---|---|---|---|
+| `cycle` | 47 | 11,0 (90) | 2,22 (18) | 5,0× | 6,3 GB → 0,49 GB |
+| Grade 3×400 | 108 | 31,5 (256) | 4,62 (38) | 6,8× | 9,6 GB → 0,94 GB |
+| Grade 5×800 com crescimento | 400 | 361 (2.930) | 19,3 (156) | 18,7× | 36,6 GB → 3,1 GB |
+
+Na grade de 400 SIMs, o crescimento (25 h simuladas) caiu de 166 s para 17 s, e o aquecimento de 2 dias, de 705 s para 38 s. A grade de 1.000 SIMs está registrada abaixo.
+
+**Divisão por subsistema depois** (cronômetros temporários em `Step`, fora do repositório; mesmos SHAs), em s/dia:
+
+| Subsistema | 108 SIMs antes | 108 SIMs depois | 400 SIMs depois |
+|---|---|---|---|
+| Infraestrutura | 14,1 | 2,15 | 7,29 |
+| Necessidades (inclui poluição das casas) | 11,3 | 0,92 | 4,74 |
+| Operação de empresas | 5,67 | 0,56 | 1,88 |
+| Veículos | 0,61 | 0,27 | 1,72 |
+| Pedestres | 1,51 | 0,29 | 1,67 |
+| Condição de manutenção | 0,22 | 0,22 | 0,69 |
+| Revisão econômica | 0,31 | 0,12 | 0,44 |
+
+**Grade de 1.000 SIMs** (Grade 7×1500, `--growth=10 --warmup=1 --days=1`, semente 42, só depois e com os cronômetros temporários; o "antes" não foi medido nesse tamanho; o crescimento agora leva 307 s): 1.076 SIMs depois de 69 h de crescimento, 1.084 SIMs com 585 veículos ao fim do aquecimento de 1 dia (140 s). O dia medido levou **3.236 s** (~26.000 h para 80 anos), com **96% em veículos**: a cidade entra no modo de subpassos de entrada em faixa (veículos aguardando a entrada se reavaliam a cada subpasso; reservas de canteiro e o quadro de entrada a cada fatia) e aloca ~460 GB por dia. Os demais sistemas somam ~67 s/dia (pedestres), ~24 s (infraestrutura), ~23 s (necessidades), ~11 s (revisão econômica) e ~6 s (operação). Esse modo é efeito do tráfego daquela cidade, não custo fixo por SIM; reduzi-lo sem mudar a ordem dos eventos pede estudo próprio e ficou fora desta rodada.
+
+**Leitura:**
+
+1. Sem mudar uma regra, o motor de 2 s ficou **5–19× mais rápido** nestas cidades, e o ganho cresce com o tamanho, porque o que foi removido eram custos quadráticos ou cúbicos (entidades × entidades, rotas × faixas). A cidade de 47 SIMs chega a ~18 h para 80 anos, dentro da meta de 20–40 h. A de 400 SIMs fica em ~156 h, ainda 4–8× acima da meta.
+2. O que sobra é, em maior parte, trabalho **linear por passo** sobre todos os prédios e SIMs: infraestrutura, necessidades e operação recalculadas a cada 2 s para agentes parados (ver censo acima). Daqui em diante, ganhos grandes pedem mudar **quando** se calcula (intervalo, agenda de acontecimentos), e isso já é decisão de produto (ver experimento 1).
+3. A soma de poluição por casa (casas × células) é o único termo ainda quadrático nos sistemas estacionários. Somá-la noutra ordem mudaria o resultado no último bit (portanto o SHA) e ficou fora desta rodada.
+4. Ficaram de fora, por não serem custo por passo: `UpdateCrosswalks` (varre todas as ruas para cada rua; roda ao confirmar ou concluir obras e domina o crescimento da grade de 1.000 SIMs) e a fila de entrada em faixa (abaixo).
+
+**Ferramenta:** a bancada ganhou `--growth=N` (casas novas por hora simulada até ocupar a grade, vinda da branch experimental, sem o `--interval`; escala o tanque como lá, só nesse modo) e `--warmup=N` (dias de aquecimento, padrão 2):
+
+```powershell
+dotnet src/IndexCities.Headless/bin/Release/net8.0/IndexCities.Headless.dll scale grid --rows=5 --length=800 --growth=10 --days=1 --cap=100000
+```
+
+**Revisão independente:** DeepSeek V4.1 Flash (`opencode/deepseek-v4.1-flash-free`), em duas rodadas e sem achados Alto ou Médio. O revisor reproduziu os SHAs (6/6 depois; 5/6 antes, porque o sexto não terminou no tempo dele) e rodou sondas próprias contra reimplementações literais do código removido (≈2 milhões de checagens, 0 divergências). As notas que ele deixou foram corrigidas: redação da ARCHITECTURE, premissa de Id único documentada e buffer esvaziado ao fim do lote. Relatórios em `artifacts/verification/otimizacao-caminhada/review-deepseek/`.

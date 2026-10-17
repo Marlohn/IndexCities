@@ -84,7 +84,8 @@ public sealed partial class CitySimulation
         // lane) would wait for the machine while the machine waits for it.
         // The hold stops at the first body already on the path: space behind a
         // blocked machine is not held, and whoever stands on the path may leave.
-        var reserved=vehicle.Machine!=PavingMachine.None?[]:State.Vehicles.Where(m=>m.Id!=vehicle.Id).Select(MachineReservation)
+        // Only a paving machine has reserved poses (MachineReservation is empty otherwise).
+        var reserved=vehicle.Machine!=PavingMachine.None?[]:State.Vehicles.Where(m=>m.Id!=vehicle.Id&&m.Machine!=PavingMachine.None).Select(MachineReservation)
             .SelectMany(poses=>poses).Where(pose=>pose.Position.Distance(vehicle.Position)<=distance+12).ToList();
         if(machinesOnly&&reserved.Count==0&&!State.Vehicles.Any(other=>other.Machine!=PavingMachine.None&&other.Status!=VehicleStatus.Outside&&other.Position.Distance(vehicle.Position)<=distance+12))return distance;
         var safe=0.0;
