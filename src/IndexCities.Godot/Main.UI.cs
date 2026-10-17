@@ -103,7 +103,19 @@ public partial class Main
     void ProjectControls(Node parent,WorkProject project){if(project.MachineryQuoted>0){InspectionText(parent,()=>"Máquinas externas · previsto "+Cash(project.MachineryQuoted)+" · pago "+Cash(project.MachineryPaid),14);}if(project.IsMaintenance){Text(parent,"Manutenção automática; materiais e equipe municipal ou externa têm execução real.",14);return;}if(project.Status is not (WorkStatus.Waiting or WorkStatus.InProgress))return;InspectionText(parent,()=>"Cancelar libera "+Cash(Math.Max(0,project.BudgetRemaining-decimal.Round(project.CrewCostDue,2,MidpointRounding.AwayFromZero)))+"; gastos pagos/devidos ("+Cash(project.CostPaid+decimal.Round(project.CrewCostDue,2,MidpointRounding.AwayFromZero))+") e materiais entregues/consumidos não voltam.",14);Button(parent,"× Cancelar obra",()=>{_sim.CancelProject(project.Id);RefreshHud();});Button(parent,"↗ Mover obra",()=>BeginMove(project));}
     void ShowRoadDemolition(int roadId,string feedback="")
     {
-        var quote=_sim.QuoteRoadDemolition(roadId);var box=Modal("Remover trecho de rua");if(feedback.Length>0)Text(box,feedback,16);Text(box,"Custo da remoção: "+Cash(quote.Cost),22);Text(box,quote.Message);Text(box,"Construções que perderão conexão exterior: "+quote.IsolatedBuildingIds.Count);foreach(var id in quote.IsolatedBuildingIds){var building=_sim.State.Buildings.First(b=>b.Id==id);Text(box,building.Definition.Name+" • "+building.Position.X.ToString("N0")+", "+building.Position.Z.ToString("N0"),14);}Text(box,"Obras com acesso interrompido: "+quote.InterruptedWorks+" • rotas atuais pelo trecho: "+quote.AffectedVehicleRoutes,14);Text(box,"Gastos originais e materiais não voltam. Pessoas e cargas permanecem nas posições reais.",14);var row=ModalActions();var confirm=Button(row,"✓ Confirmar remoção",()=>ConfirmRoadDemolition(roadId,quote,box));confirm.Disabled=!quote.Allowed||quote.Cost>_sim.Available;Button(row,"× Cancelar",CloseModal);
+        var quote=_sim.QuoteRoadDemolition(roadId);var box=Modal("Remover trecho de rua");if(feedback.Length>0)Text(box,feedback,16);
+        if(!quote.Allowed){Text(box,quote.Message);var refused=ModalActions();Button(refused,"× Cancelar",CloseModal);return;}
+        Text(box,"Custo de remoção: "+Cash(quote.Cost),22);
+        Text(box,"Indenização: não se aplica a esta rua municipal",14);
+        Text(box,"Total: "+Cash(quote.Cost),18);
+        Text(box,"Caixa disponível: "+Cash(_sim.Available),14);
+        Text(box,"Retirada imediata após confirmar. Sem reembolso de dinheiro ou materiais.",14);
+        Text(box,quote.Message);
+        Text(box,"Construções que perderão conexão exterior: "+quote.IsolatedBuildingIds.Count);
+        foreach(var id in quote.IsolatedBuildingIds){var building=_sim.State.Buildings.First(b=>b.Id==id);Text(box,building.Definition.Name+" • "+building.Position.X.ToString("N0")+", "+building.Position.Z.ToString("N0"),14);}
+        Text(box,"Obras com acesso interrompido: "+quote.InterruptedWorks+" • rotas atuais pelo trecho: "+quote.AffectedVehicleRoutes,14);
+        if(quote.Cost>_sim.Available)Text(box,"Caixa livre insuficiente: falta "+Cash(quote.Cost-_sim.Available)+" para confirmar. Libere reservas ou aumente o Caixa.",14);
+        var row=ModalActions();var confirm=Button(row,"✓ Confirmar remoção",()=>ConfirmRoadDemolition(roadId,quote,box));confirm.Disabled=!quote.Allowed||quote.Cost>_sim.Available;Button(row,"× Cancelar",CloseModal);
     }
     void InspectCitizen(int id){ClearSelection();ClearTool();_selectedCitizen=id;_selectedBuilding=null;_selectedVehicle=null;_selectedRoad=null;RefreshInspection();CloseModal();}
     static string ResourceName(ResourceKind r)=>r switch{ResourceKind.Aggregate=>"Areia e brita",ResourceKind.Concrete=>"Concreto",ResourceKind.Steel=>"Aço",ResourceKind.Wood=>"Madeira",ResourceKind.Asphalt=>"Asfalto",ResourceKind.Food=>"Alimentos",_=>"Combustível"};

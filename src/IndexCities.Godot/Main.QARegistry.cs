@@ -30,6 +30,7 @@ public partial class Main
         new("--ui-input-smoke",new[]{"--ui-input-smoke"},"Gestos reais de mouse/tecla sobre a GUI",true,"nenhuma (cria a cidade)",nameof(UiInputSmoke)),
         new("--recovery-smoke",new[]{"--recovery-smoke"},"Construção completa por GUI, menus e save/load",true,"nenhuma (cria a cidade)",nameof(RecoverySmoke)),
         new("--road-recovery-smoke",new[]{"--road-recovery-smoke"},"Rua: acesso pela porta, demolição e calçadas",true,"nenhuma (cria a cidade)",nameof(RoadRecoverySmoke)),
+        new("--demolition-preview-smoke",new[]{"--demolition-preview-smoke"},"Confirmação de rua: custo, indenização inexistente, total, caixa, retirada imediata, ausência de reembolso, locais isolados/obras/viagens, insuficiência de caixa e cancelamento sem alterar a cidade",true,"nenhuma (cria a cidade)",nameof(DemolitionPreviewSmoke)),
         new("--road-tool-playtest",new[]{"--road-tool-playtest"},"Playtest humano do construtor de ruas; produz a fixture do verify",true,"nenhuma (cria a cidade)",nameof(RoadToolPlaytest)),
         new("--grid-alignment-smoke",new[]{"--grid-alignment-smoke"},"Grade × obra na projeção, folga real de 0,75 m",true,"nenhuma (cria a cidade)",nameof(GridAlignmentSmoke)),
         new("--placement-performance-smoke",new[]{"--placement-performance-smoke"},"Desempenho da faixa e da grade; só métricas/hashes, sem asserção de geometria",false,"nenhuma (fixture sintética)",nameof(PlacementPerformanceSmoke)),
