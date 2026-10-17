@@ -54,6 +54,8 @@ A **V1 possui implementação integrada e executável localmente em Windows**, p
 
 ### Decisões de interação e cidade viva da V1
 
+Mover/Cancelar obras, Mover sede da Prefeitura concluída sem Demolir, Mover/Demolir outros prédios municipais e demolição privada indenizada fazem parte da V1. A realocação de prédios privados concluídos fica adiada para reavaliação da experiência. As confirmações tornam custos, beneficiários, ocupantes e consequências pertinentes claros antes da ordem, com acompanhamento posterior. Contrato em [construção](spec/construcao.md#demolição), incluindo [mudança municipal](spec/construcao.md#mudança-de-prédios-municipais-concluídos). Decisão humana de 2026-10-17.
+
 As escolhas de 2026-10-12 sobre recuperação da interação, ferramentas de construção e cidade viva estão nos arquivos de sistema: construção e ferramentas em [spec/construcao.md](spec/construcao.md); cidade viva, alertas e apresentação em [spec/visao-geral.md](spec/visao-geral.md).
 
 ## Decisões pequenas delegadas à IA — autorização provisória e rastreabilidade

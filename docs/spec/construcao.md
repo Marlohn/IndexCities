@@ -172,6 +172,8 @@
 
 ### Demolição
 
+- **Ferramentas por estado e propriedade (decisão humana de 2026-10-17):** prévias não confirmadas podem ser ajustadas ou descartadas livremente; obras incompletas oferecem Mover e Cancelar pelas regras vigentes. Depois de concluída, a Prefeitura oferece somente **Mover sede**, sem Demolir isoladamente. Outros prédios municipais oferecem **Mover** e **Demolir**. Prédios privados oferecem **Demolir com indenização**, quando houver proprietário real; a realocação de imóveis privados fica adiada para reavaliação da experiência, preservando as regras da visão futura sem implementá-las na V1.
+- **Consequências claras antes de confirmar:** identificar o alvo e apresentar custo de remoção, indenização separada, proprietário beneficiário ou ausência de indenização, total que sairá do Caixa e disponibilidade real. Mostrar famílias/moradores, atividade e empregos afetados, estoque e risco de perda, impactos sobre capacidade dos serviços e acesso/entregas quando pertinentes e calculáveis. Explicar se a retirada é imediata ou aguarda desocupação, sem prometer nova moradia, continuidade empresarial ou reembolso. Ícones e destaque do alvo acompanham frases curtas; detalhes ficam consultáveis sem confirmação por SIM. Cancelar a prévia não gasta nem altera a cidade. Confirmar revalida orçamento, propriedade, ocupação e impactos relevantes; se mudaram, reapresentar a prévia antes de executar. Depois da ordem, a inspeção mostra andamento e resultados reais, inclusive indenização paga e eventual espera pela saída dos moradores.
 - A execução física da demolição de prédios e vias é instantânea no escopo atual.
 - A ordem sobre uma residência ocupada pode, porém, abrir o período de desocupação assistida definido abaixo: a remoção física só ocorre depois da transição, sem exigir uma obra de demolição prolongada.
 - Remoção de rua que isola construções: o jogador pode demolir uma via mesmo que ela seja o único acesso viário de casas, atividades ou serviços, sem exigir rua alternativa construída antes da confirmação.
@@ -206,12 +208,20 @@
 - Pedidos pagos, caminhões e materiais já em trânsito não podem ser duplicados nem teletransportados ao novo endereço: devem continuar rastreáveis e receber tratamento logístico coerente na implementação, sem reembolso fictício nem microgerenciamento do jogador.
 - **Em aberto:** O mecanismo de redirecionamento/encerramento de entregas e a recalibração detalhada dos custos ficam para validação técnica.
 - Prédios e infraestrutura já concluídos não são abrangidos pelas regras de Mover obra inacabada.
-- **Em aberto:** Para esses ativos, a SPEC estabelece intervenção com indenização e realocação assistida como direção de experiência a validar; os detalhes operacionais, especialmente continuidade de serviços/empresas e destino da nova construção, permanecem abertos.
+- Para prédios municipais concluídos, vale Mover conforme a seção abaixo. A realocação de prédios privados concluídos está adiada para reavaliação; não é requisito de implementação da V1.
 - A retirada de moradores de residências ocupadas já segue a regra de desocupação assistida vigente, com duração curta ainda a calibrar; isso não define automaticamente a mudança de estoque ou funcionários.
+
+### Mudança de prédios municipais concluídos
+
+- Mover organiza uma substituição física em outro endereço numa ação guiada: selecionar o prédio, escolher o destino, conferir custos e consequências e confirmar. O novo prédio exige obra, materiais, equipe, acesso, dinheiro e tempo reais. Não transportar instantaneamente a estrutura nem cobrar indenização por patrimônio municipal.
+- A Prefeitura mantém ferramentas de construção e gestão liberadas durante a mudança de sede. A sede antiga e a substituta representam uma única instituição em transição; a substituição não permite encomendar Prefeituras independentes adicionais. A interface de gestão não cria capacidade administrativa ou atendimento fictícios.
+- O serviço antigo continua funcionando enquanto estrutura, acesso, recursos e necessidade espacial da intervenção permitirem. A transição preserva identidade institucional, com capacidade e salários/vagas condicionados aos recursos e à presença física reais, sem duplicar atendimento, funcionários ou estoque. A mudança efetiva do trabalho permite a reavaliação autônoma dos empregados já aprovada.
+- A retirada do endereço antigo aplica custos de remoção e regras físicas/econômicas vigentes; a prévia apresenta separadamente construção, remoção, compromissos e perdas previsíveis. Eventual interrupção tem causa e capacidade perdida visíveis. Não inserir fechamento ou espera artificial quando a continuidade for viável.
+- Estoques e cargas seguem recuperação/transporte físico possível e perda residual real conforme as regras vigentes; não surgem no destino automaticamente. A prévia informa os riscos pertinentes. Transição e obrigações persistem no save/load sem repetir cobranças nem criar uma segunda sede.
 
 ### Intervenção municipal sobre propriedades privadas e realocação de prédios concluídos
 
-- Intervenção com indenização automática: para preservar a liberdade de redesenhar a cidade, o jogador pode determinar a intervenção, demolição ou realocação assistida de uma construção concluída mesmo quando ela já pertence a um SIM ou empresa privada, sem precisar solicitar aprovação ou negociar individualmente com o proprietário.
+- Intervenção com indenização automática: para preservar a liberdade de redesenhar a cidade, o jogador pode determinar a demolição de uma construção concluída mesmo quando ela já pertence a um SIM ou empresa privada, sem precisar solicitar aprovação ou negociar individualmente com o proprietário. Realocação privada permanece na visão aprovada, adiada para reavaliação; não é uma ferramenta disponível na V1.
 - Isso é uma intervenção municipal, não uma movimentação gratuita do patrimônio de terceiros.
 - Propriedade e dinheiro reais: antes da retirada de um imóvel privado, a cidade deve pagar indenização monetária ao proprietário econômico registrado (SIM ou empresa), usando dinheiro disponível do Caixa da Cidade.
 - Indenização = 100% do valor de mercado atual do imóvel, calculado imediatamente antes da intervenção, com as condições da localização original ainda válidas.
