@@ -175,7 +175,7 @@ public sealed partial class CitySimulation
                 if(v.Machine!=PavingMachine.None&&v.Status==VehicleStatus.Waiting){ReplanPavingMachine(v);continue;}
                 if(v.PassengerCar&&v.Status==VehicleStatus.Waiting){ReplanCar(v);continue;}
                 if(v.PassengerCar&&v.Status==VehicleStatus.Stranded&&(v.DriverId!=null||v.Passengers.Count>0)){LeaveCar(v,"Carro sem combustível parado na via");continue;}
-                if(v.Status==VehicleStatus.Waiting){if(v.ShipmentId is {} si&&State.Shipments.FirstOrDefault(s=>s.Id==si) is {} shipment){if(shipment.Cancelled)RedirectCancelled(v,shipment);else ReplanVehicle(v,shipment);}else if(v.External)ReturnExternal(v);continue;}
+                if(v.Status==VehicleStatus.Waiting){if(v.ShipmentId is {} si&&State.Shipments.FirstOrDefault(s=>s.Id==si) is {} shipment){if(shipment.Cancelled)RedirectCancelled(v,shipment);else ReplanVehicle(v,shipment);}else if(v.External)ReturnExternal(v);else if(v.HomeBuildingId!=null&&v.DestinationBuildingId==v.HomeBuildingId)ReturnLocal(v);continue;}
                 if(v.Status!=VehicleStatus.Travelling)continue;
                 if(v.Route.Count==0||v.Route.Any(id=>!_roads.ContainsKey(id))){v.Status=VehicleStatus.Waiting;v.Cause="Rota interrompida; aguarda ligação viária";continue;}
                 _vehicleMovementBatch?.Add(v.Id);
@@ -319,7 +319,11 @@ public sealed partial class CitySimulation
     }
     void ReturnLocal(Vehicle v)
     {
-        var source=BuildingById(v.HomeBuildingId);var start=NearestRoad(v.Position);var target=source==null?null:Access(source);if(start==null||target==null){v.Status=VehicleStatus.Waiting;v.Cause="Sem acesso para retorno";return;}v.Route=FindRoadRoute(start.Id,target.Id);v.RouteIndex=0;v.ShipmentId=null;v.DockPosition=DockAt(target,source,false);v.Status=v.Route.Count>0?VehicleStatus.Travelling:VehicleStatus.Waiting;v.DestinationBuildingId=source!.Id;
+        var source=BuildingById(v.HomeBuildingId);var start=NearestRoad(v.Position);var target=source==null?null:Access(source);if(start==null||target==null){v.Status=VehicleStatus.Waiting;v.Cause="Sem acesso para retorno";return;}v.ShipmentId=null;v.DestinationBuildingId=source!.Id;
+        // SPEC transporte-circulacao: the way back is a departure too; it refuels
+        // at a station first when the tank does not cover it, or waits at the bay.
+        if(!EnsureFuel(v,target.Id)){v.Route.Clear();v.RouteIndex=0;v.Status=VehicleStatus.Waiting;return;}
+        if(v.RefuellingAt==null)v.DockPosition=DockAt(target,source,false);v.Status=VehicleStatus.Travelling;
     }
     void ReleaseDriver(Vehicle v){if(v.DriverId is {} id&&State.Citizens.FirstOrDefault(c=>c.Id==id) is {} c){c.VehicleId=null;c.Position=v.Position;var workplace=BuildingById(c.WorkplaceId);if(workplace!=null)StartJourney(c,workplace,JourneyPurpose.Work);}v.DriverId=null;}
     void RedirectCancelled(Vehicle v,Shipment s)

@@ -93,6 +93,48 @@ public sealed class StoppedVehicleTests
         Assert.Empty(other.Detour);Assert.InRange(other.RouteIndex,1,other.Route.Count);replanned.CheckInvariants();
         follower.Status=VehicleStatus.Parked;sim.Advance(.1);Assert.Empty(follower.Detour);sim.CheckInvariants();
     }
+    // Two parallel streets 60 m apart joined only at their west end, both inside
+    // one 64 m maintenance cell: the crew zigzags between them (the grid case).
+    static CitySimulation ZigzagMaintenance(SimulationTuning? tuning=null)
+    {
+        var founded=new CitySimulation(42,tuning);Assert.True(founded.PlaceBuilding(BuildingKind.CityHall,new(-152,16)).Success);Assert.True(founded.PlaceRoad(new(-192,0),new(-80,0)).Success);founded.Advance(7200);
+        var state=founded.State;
+        for(var z=4;z<=60;z+=4)state.Roads.Add(new(){Id=90000+z,Position=new(-192,z)});
+        for(var x=-188;x<=-80;x+=4)state.Roads.Add(new(){Id=91000-x,Position=new(x,60)});
+        var sim=new CitySimulation(state);var now=sim.State.ElapsedSeconds;
+        foreach(var road in sim.State.Roads.Where(r=>!r.Highway))road.MaintenanceDueAt=road.Position.X>=-128&&road.Position.Z is 0 or 60?now-1:now+1e7;
+        foreach(var b in sim.State.Buildings)b.MaintenanceDueAt=now+1e7;
+        sim.State.EconomyNextAt=now;return sim;
+    }
+    [Fact] public void A_maintenance_crew_moves_on_only_with_fuel_for_the_next_stretch_and_the_way_out()
+    {
+        var sim=ZigzagMaintenance();var refuelReturn=false;
+        for(var i=0;i<20000&&(i<10||sim.State.Projects.Any(p=>p.IsMaintenance&&p.Status!=WorkStatus.Completed));i++){
+            sim.Advance(5);
+            Assert.DoesNotContain(sim.State.Vehicles,v=>v.Status==VehicleStatus.Stranded);
+            refuelReturn|=sim.State.Vehicles.Any(v=>v.Cause.StartsWith("Retorno ao exterior para reabastecer"));
+        }
+        var maintenance=sim.State.Projects.Where(p=>p.IsMaintenance).ToList();Assert.NotEmpty(maintenance);
+        Assert.All(maintenance,p=>Assert.True(p.Status==WorkStatus.Completed,p.Cause));Assert.True(refuelReturn);
+        Assert.All(sim.State.Roads.Where(r=>!r.Highway&&r.Position.X>=-128&&r.Position.Z is 0 or 60),r=>Assert.Equal(1,r.MaintenanceRatio));sim.CheckInvariants();
+    }
+    static T Private<T>(CitySimulation sim,string name,params object[] args)=>(T)typeof(CitySimulation).GetMethod(name,System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance)!.Invoke(sim,args)!;
+    [Fact] public void A_lot_entry_held_by_a_stranded_vehicle_and_its_queue_needs_no_motion_substeps()
+    {
+        var initial=new CitySimulation(42);for(var x=-60;x<=60;x+=4)initial.State.Roads.Add(new(){Id=1000+x,Position=new(x,40)});
+        var sim=new CitySimulation(initial.State);sim.State.Vehicles.Clear();sim.State.EconomyNextAt=1e9;
+        var east=Enumerable.Range(0,31).Select(n=>940+n*4).ToList();
+        var stopped=new Vehicle{Id=1,External=true,ExternalDriverId="fixture",Position=new(2,38.35),Heading=Math.PI/2,Status=VehicleStatus.Stranded,Fuel=0,Route=east,RouteIndex=16,Cause="Sem combustível; nenhuma viagem fictícia"};
+        var queued=new Vehicle{Id=2,External=true,ExternalDriverId="fixture",PassengerCar=true,Position=new(-6,38.35),Heading=Math.PI/2,Status=VehicleStatus.Travelling,Fuel=40,Route=east,RouteIndex=15};
+        var exit=new Vehicle{Id=3,External=true,ExternalDriverId="fixture",PassengerCar=true,Position=new(0,33.25),Heading=-Math.PI/2,Status=VehicleStatus.Travelling,Fuel=40,Route=Enumerable.Range(0,11).Select(n=>1000-n*4).ToList()};
+        sim.State.Vehicles.AddRange([stopped,queued,exit]);
+        // Control: the same entry next to a vehicle that can move is a live entry.
+        stopped.Status=VehicleStatus.Travelling;Assert.True(Private<bool>(sim,"LiveLaneEntry",exit));stopped.Status=VehicleStatus.Stranded;
+        sim.Advance(4);Assert.True(queued.WaitingSince>0,queued.Cause);Assert.Equal(0,exit.RouteIndex);
+        Assert.True(Private<bool>(sim,"HeldBehindStranded",queued));Assert.False(Private<bool>(sim,"LiveLaneEntry",exit));
+        var restored=CitySimulation.FromJson(sim.SaveToJson());sim.Advance(4);restored.Advance(4);Assert.Equal(sim.SaveToJson(),restored.SaveToJson());
+        Assert.Equal(new Point(2,38.35),stopped.Position);sim.CheckInvariants();
+    }
     [Fact] public void A_truck_does_not_leave_for_a_work_whose_round_trip_exceeds_its_tank()
     {
         var sim=new CitySimulation(42,new SimulationTuning{FuelTank=3});
