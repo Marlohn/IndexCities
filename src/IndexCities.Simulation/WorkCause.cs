@@ -20,6 +20,7 @@ public static class WorkCause
     public const string SupplierOutOfMaterial="Fornecedor externo sem material disponível";
     public const string MissingMaterials="Faltam materiais";
     public const string SupplierOutOfFuel="Fornecedor externo sem combustível";
+    public const string RouteBeyondTruckRange="Rota de ida e volta maior que a autonomia do caminhão";
     public const string AwaitingCrewOnSite="Aguardando equipe física no canteiro";
     public const string RemainingCommitmentInsufficient="Compromisso restante insuficiente";
     public const string CommitmentInsufficientForCrew="Compromisso insuficiente para transportar equipe externa";
@@ -42,7 +43,7 @@ public static class WorkCause
         NoMaterialsAccess,NoRoadAccess,NoUrbanRoad,RoadWithoutExterior,RoadWorkAtEntrance,
         NoReadyExteriorLink,RoadBuiltAwaitingLink,WorkRouteInterrupted,AwaitingExternalTruck,
         AwaitingPhysicalDelivery,MaterialsInTransit,SupplierOutOfMaterial,MissingMaterials,
-        SupplierOutOfFuel,AwaitingCrewOnSite,RemainingCommitmentInsufficient,
+        SupplierOutOfFuel,RouteBeyondTruckRange,AwaitingCrewOnSite,RemainingCommitmentInsufficient,
         CommitmentInsufficientForCrew,NoBudgetForExternalCrew,ExternalCrewAwaitingPayment,
         UnderConstruction,ValidStretchExteriorAvailable,ValidPosition,IntakeNeedsNaturalSource,
         MaintenanceAwaitingMaterials,MaintenanceInProgress,MaintenanceEndedRemoved,

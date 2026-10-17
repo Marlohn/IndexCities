@@ -46,6 +46,7 @@ public partial class Main
         WorkCause.SupplierOutOfMaterial => ("Fornecedor sem material — aguarde reposição","problem_stock"),
         WorkCause.MissingMaterials => ("Falta material — aguardando entrega","problem_stock"),
         WorkCause.SupplierOutOfFuel => ("Fornecedor sem combustível — aguarde reposição","problem_stock"),
+        WorkCause.RouteBeyondTruckRange => ("Caminhão não tem combustível para ir e voltar — aproxime a obra da entrada","problem_road"),
         // Equipe.
         WorkCause.AwaitingCrewOnSite => ("Sem equipe no canteiro — aguarde trabalhadores","problem_staff"),
         // Verba da obra. Numa obra comum a acao disponivel e cancelar; numa

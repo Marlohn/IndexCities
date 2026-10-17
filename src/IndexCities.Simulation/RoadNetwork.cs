@@ -25,11 +25,12 @@ public sealed partial class CitySimulation
     RoadNode? NearestRoad(Point p,bool allowHighway=true)=>State.Roads.Where(r=>allowHighway||!r.Highway).MinBy(r=>r.Position.Distance(p));
     public bool HasExteriorAccess(Building b)=>Access(b) is { } n&&_exteriorConnected.Contains(n.Id);
     RoadNode EntryNode()=>State.Roads.First(r=>r.Highway&&r.Position.Distance(State.Entry)<.1);
-    public List<int> FindRoadRoute(int from,int to)
+    public List<int> FindRoadRoute(int from,int to)=>FindRoadRoute(from,to,null);
+    List<int> FindRoadRoute(int from,int to,HashSet<int>? avoid)
     {
         if(!_roads.ContainsKey(from)||!_roads.ContainsKey(to))return [];
         var queue=new Queue<int>();var parent=new Dictionary<int,int>{{from,-1}};queue.Enqueue(from);
-        while(queue.Count>0){var id=queue.Dequeue();if(id==to)break;foreach(var next in _roads[id].Neighbours){if(parent.ContainsKey(next)||_roads[next].MaintenanceRatio<=.05)continue;parent[next]=id;queue.Enqueue(next);}}
+        while(queue.Count>0){var id=queue.Dequeue();if(id==to)break;foreach(var next in _roads[id].Neighbours){if(parent.ContainsKey(next)||_roads[next].MaintenanceRatio<=.05||avoid!=null&&avoid.Contains(next))continue;parent[next]=id;queue.Enqueue(next);}}
         if(!parent.ContainsKey(to))return [];var result=new List<int>();for(var id=to;id!=-1;id=parent[id])result.Add(id);result.Reverse();return result;
     }
     double RouteLength(IReadOnlyList<int> route){double length=0;for(var i=1;i<route.Count;i++)length+=_roads[route[i-1]].Position.Distance(_roads[route[i]].Position);return length;}

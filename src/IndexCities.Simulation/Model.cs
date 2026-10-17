@@ -86,6 +86,8 @@ public sealed class SimulationTuning
     public double CarFuelPerMetre {get;set;}=.006;
     public double CarMinimumTripMetres {get;set;}=120;
     public double OutingChancePerMinute {get;set;}=.025;
+    public double BypassWaitSeconds {get;set;}=10;
+    public double UTurnWaitSeconds {get;set;}=180;
     public decimal ShoppingTripCostPerMetre {get;set;}=.004m;
     public Dictionary<ResourceKind,decimal> ImportPrices {get;set;}=new(){[ResourceKind.Aggregate]=14,[ResourceKind.Concrete]=25,[ResourceKind.Steel]=50,[ResourceKind.Wood]=24,[ResourceKind.Asphalt]=22,[ResourceKind.Food]=2,[ResourceKind.Fuel]=5};
 }
@@ -260,6 +262,10 @@ public sealed class Vehicle
     public string? ParkingSpot {get;set;}
     public List<int> Passengers {get;set;}=[];
     public JourneyPurpose TripPurpose {get;set;}
+    // Physical bypass of a vehicle stopped on the road: remaining waypoints and
+    // the route index to resume once back in the lane.
+    public List<Point> Detour {get;set;}=[];
+    public int DetourResumeIndex {get;set;}
 }
 public sealed class Shipment
 {
