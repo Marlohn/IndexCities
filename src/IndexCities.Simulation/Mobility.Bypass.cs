@@ -11,29 +11,13 @@ public sealed partial class CitySimulation
     bool TryBypassStopped(Vehicle v,Vehicle blocker)
     {
         if(v.Detour.Count>0||v.WaitingSince<=0||v.RouteIndex<1||v.RouteIndex>=v.Route.Count)return false;
-        var stopped=blocker.Status==VehicleStatus.Stranded?blocker:StoppedAtQueueHead(blocker);if(stopped==null)return false;
+        // Only the vehicle right behind the stopped one acts; the queue behind it
+        // moves up and repeats, so a blocked queue unwinds from its front.
+        if(blocker.Status!=VehicleStatus.Stranded)return false;
         var waited=VehicleMovementTime-v.WaitingSince;
-        if(stopped==blocker&&waited>=State.Tuning.BypassWaitSeconds&&TryOvertake(v,blocker))return true;
-        if(waited>=State.Tuning.UTurnWaitSeconds&&TryUTurn(v,stopped))return true;
+        if(waited>=State.Tuning.BypassWaitSeconds&&TryOvertake(v,blocker))return true;
+        if(waited>=State.Tuning.UTurnWaitSeconds&&TryUTurn(v,blocker))return true;
         return false;
-    }
-    // Follows a queue forward (nearest same-direction vehicle ahead in the lane,
-    // as the queue rule sees it) and returns the stopped vehicle at its head.
-    Vehicle? StoppedAtQueueHead(Vehicle start)
-    {
-        var current=start;
-        for(var hops=0;hops<64;hops++){
-            if(current.Status==VehicleStatus.Stranded)return current;
-            if(current.WaitingSince<=0)return null;
-            Vehicle? next=null;var best=double.MaxValue;var heading=new Point(Math.Sin(current.Heading),Math.Cos(current.Heading));
-            foreach(var o in State.Vehicles){
-                if(o.Id==current.Id||o.Status is not (VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded)||Math.Cos(o.Heading-current.Heading)<=.5)continue;
-                var r=o.Position-current.Position;var forward=r.X*heading.X+r.Z*heading.Z;var side=Math.Abs(r.X*heading.Z-r.Z*heading.X);
-                if(forward>0&&forward<16&&side<2.6&&forward<best){best=forward;next=o;}
-            }
-            if(next==null)return null;current=next;
-        }
-        return null;
     }
     bool RoadAxis(Vehicle v,out Point dir,out Point left)
     {
@@ -89,12 +73,9 @@ public sealed partial class CitySimulation
         var alternative=FindRoadRoute(behind,v.Route[^1],avoid);
         if(alternative.Count==0){v.Cause="Rua bloqueada por veículo parado; sem rota alternativa";return false;}
         if(!OppositeLaneClear(v,blocker,dir,left,8,returnsToLane:false))return false;
-        // Turning crosses the space just behind it: a queued follower must leave first,
-        // so a blocked queue unwinds from its tail.
-        var behindDistance=_roads[behind].Position.Distance(v.Position)+8;
-        if(State.Vehicles.FirstOrDefault(o=>o.Id!=v.Id&&o.Status is VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded&&(o.Position-v.Position) is var r&&r.X*dir.X+r.Z*dir.Z<0&&r.X*dir.X+r.Z*dir.Z>-behindDistance&&Math.Abs(r.X*left.X+r.Z*left.Z)<2) is {} behindVehicle){v.Cause=behindVehicle.Status==VehicleStatus.Stranded?"Rua bloqueada por veículos parados à frente e atrás":"Rua bloqueada por veículo parado; aguardando a fila de trás para meia-volta";return false;}
-        // The first entry only gives the reversed lane geometry; motion starts at the node behind.
-        v.Route=[ahead,..alternative];v.RouteIndex=1;v.IntersectionClaim=null;v.WaitingSince=0;v.Cause="Meia-volta: rua bloqueada por veículo parado";
+        // It moves into the lane beside it and drives back along that lane; the
+        // first route entry only gives the reversed lane geometry.
+        v.Route=[ahead,..alternative];v.RouteIndex=1;v.Detour=[v.Position+dir*2+left*OppositeLaneOffset];v.DetourResumeNode=behind;v.IntersectionClaim=null;v.WaitingSince=0;v.Cause="Meia-volta: rua bloqueada por veículo parado";
         return true;
     }
     // Motion along committed bypass waypoints. Only a same-direction vehicle on

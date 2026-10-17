@@ -65,7 +65,7 @@ public sealed class StoppedVehicleTests
         for(var z=44;z<=76;z+=4){initial.Roads.Add(new(){Id=3000+z,Position=new(-60,z)});initial.Roads.Add(new(){Id=4000+z,Position=new(60,z)});}
         return new CitySimulation(initial);
     }
-    [Fact] public void A_blocked_queue_turns_back_from_its_tail_without_vehicles_overlapping()
+    [Fact] public void A_blocked_queue_turns_back_from_its_front_through_the_side_lane_without_overlapping()
     {
         var (street,_,_,_)=Street(junctionAtStop:true);var sim=Ring(street);
         var cars=sim.State.Vehicles.OrderBy(v=>v.Id).Take(3).ToArray();var front=cars[1];var rear=cars[2];
@@ -78,7 +78,7 @@ public sealed class StoppedVehicleTests
             if(frontTurned==null&&front.Route.Any(id=>id is >=1940 and <=2060))frontTurned=sim.State.ElapsedSeconds;
             if(front.Status==VehicleStatus.Travelling&&rear.Status==VehicleStatus.Travelling&&Math.Abs(front.Position.Z-rear.Position.Z)<1.5&&Math.Cos(front.Heading-rear.Heading)>.5)Assert.True(front.Position.Distance(rear.Position)>=4,$"{front.Position} {rear.Position}");
         }
-        Assert.True(rearTurned!=null,$"rear {rear.Position} {rear.Status} {rear.Cause} idx={rear.RouteIndex}");Assert.True(frontTurned!=null,$"front {front.Position} {front.Status} {front.Cause} idx={front.RouteIndex}");Assert.True(rearTurned<=frontTurned,$"{rearTurned} {frontTurned}");
+        Assert.True(rearTurned!=null,$"rear {rear.Position} {rear.Status} {rear.Cause} idx={rear.RouteIndex}");Assert.True(frontTurned!=null,$"front {front.Position} {front.Status} {front.Cause} idx={front.RouteIndex}");Assert.True(frontTurned<rearTurned,$"{frontTurned} {rearTurned}");
         Assert.All(new[]{front,rear},c=>Assert.Contains(c.Route,id=>id is >=1940 and <=2060));sim.CheckInvariants();
     }
     [Fact] public void A_bypass_is_dropped_when_the_vehicle_stops_and_survives_a_replanned_route()

@@ -176,8 +176,24 @@ public sealed partial class CitySimulation
     {
         foreach(var family in State.Families.Where(f=>!f.Emigrating&&f.HomeId!=null)){
             var members=family.Members.Select(id=>State.Citizens.First(c=>c.Id==id)).Where(c=>c.Alive&&c.Resident).ToList();if(members.Count==0)continue;
-            if(members.All(c=>c.HungerHours>48&&c.WorkplaceId==null&&Balance(c.Account)<20)&&State.ElapsedSeconds-family.LastMigrationReview>3*86400){var home=BuildingById(family.HomeId);var start=home==null?null:Access(home);if(start==null)continue;var route=FindRoadRoute(start.Id,EntryNode().Id);if(route.Count==0)continue;family.Emigrating=true;var car=FamilyCar(family);var carHome=home==null||car==null?(ParkingSpot?)null:ParkingSpots(home).FirstOrDefault(s=>s.Key==car.ParkingSpot);
-                if(car!=null&&car.Status==VehicleStatus.Parked&&car.DriverId==null&&carHome?.Key!=null&&members.All(m=>m.Position.Distance(home!.Door)<3&&!m.Moving)&&FindRoadRoute((NearestRoad(car.Position,false)??start).Id,EntryNode().Id) is {Count:>0} carRoute&&car.Fuel>=RouteLength(carRoute)*FuelRate(car)+1){car.Route=carRoute;car.RouteIndex=0;car.DockPosition=State.Entry;car.ParkingSpot=null;car.TripPurpose=JourneyPurpose.Leaving;car.DriverId=members[0].Id;car.Passengers=members.Skip(1).Select(m=>m.Id).ToList();car.Status=VehicleStatus.Travelling;car.Cause="Família emigrando de carro";foreach(var m in members){m.VehicleId=car.Id;m.Path.Clear();m.PathIndex=0;m.Purpose=JourneyPurpose.Leaving;m.Activity="Emigrando de carro";Personal(m,"Decidiu sair por falta persistente de renda e alimentação");}if(home!=null)home.FamilyId=null;family.HomeId=null;continue;}
+            if(members.All(c=>c.HungerHours>48&&c.WorkplaceId==null&&Balance(c.Account)<20)&&State.ElapsedSeconds-family.LastMigrationReview>3*86400){var home=BuildingById(family.HomeId);var start=home==null?null:Access(home);if(start==null)continue;var route=FindRoadRoute(start.Id,EntryNode().Id);if(route.Count==0)continue;var car=FamilyCar(family);
+                // SPEC (populacao): a family with a car leaves with it, never on foot
+                // abandoning it. It waits until the car is home with fuel for the exit,
+                // refuelling first when the owner can pay for what the trip needs.
+                if(car!=null){
+                    void Wait(string reason){foreach(var m in members){m.Activity=reason;m.Decision=reason;}}
+                    var carHome=home==null?(ParkingSpot?)null:ParkingSpots(home).FirstOrDefault(s=>s.Key==car.ParkingSpot);
+                    if(car.Status!=VehicleStatus.Parked||car.DriverId!=null||carHome?.Key==null||!members.All(m=>m.Position.Distance(home!.Door)<3&&!m.Moving)){Wait("Família aguardando o carro em casa para emigrar");continue;}
+                    if(FindRoadRoute((NearestRoad(car.Position,false)??start).Id,EntryNode().Id) is not {Count:>0} carRoute){Wait("Família aguardando rota de carro até a saída");continue;}
+                    var missing=RouteLength(carRoute)*FuelRate(car)+1-car.Fuel;
+                    if(missing>0){
+                        var spot=car.DockPosition;
+                        var planned=EnsureFuel(car,EntryNode().Id)&&BuildingById(car.RefuellingAt) is {} station&&station.Quantity(ResourceKind.Fuel)>=missing&&Balance(car.OwnerAccount)>=Money((decimal)missing*station.SalePrice);
+                        if(!planned){car.RefuellingAt=null;car.SavedRoute=[];car.Route.Clear();car.RouteIndex=0;car.DockPosition=spot;Wait("Família aguardando dinheiro para o combustível da saída");continue;}
+                    }else{car.Route=carRoute;car.RouteIndex=0;car.DockPosition=State.Entry;}
+                    family.Emigrating=true;car.ParkingSpot=null;car.TripPurpose=JourneyPurpose.Leaving;car.DriverId=members[0].Id;car.Passengers=members.Skip(1).Select(m=>m.Id).ToList();car.Status=VehicleStatus.Travelling;car.Cause="Família emigrando de carro";foreach(var m in members){m.VehicleId=car.Id;m.Path.Clear();m.PathIndex=0;m.Purpose=JourneyPurpose.Leaving;m.Activity="Emigrando de carro";Personal(m,"Decidiu sair por falta persistente de renda e alimentação");}if(home!=null)home.FamilyId=null;family.HomeId=null;continue;
+                }
+                family.Emigrating=true;
                 foreach(var c in members){c.Path=route.Select(id=>_roads[id].Position+new Point(0,State.Tuning.RoadWidth/2+1)).ToList();c.Path.Add(State.Entry);c.PathIndex=0;c.Purpose=JourneyPurpose.Leaving;c.PathRoadRevision=State.RoadRevision;c.Activity="Emigrando por condições reais";Personal(c,"Decidiu sair por falta persistente de renda e alimentação");}if(home!=null)home.FamilyId=null;family.HomeId=null;
             }
         }
