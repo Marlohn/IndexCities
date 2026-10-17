@@ -362,7 +362,7 @@ Proposta **para avaliação humana**, não nova fase mandatória: curto *stress 
 | A, sonda | 47 | 42 / ~200 | 5,2 | ~16.600x | ~42 h |
 | Grade 3×400 m, original | 109 | 97 / 400 | 30 | ~2.900x | ~244 h |
 | Grade 3×400 m, sonda | 109 | 97 / 400 | 14 | ~6.100x | ~114 h |
-| Grade 5×800 m, sonda | 400 chegando (91 dentro do mapa) | 337 / 1.214 | 197 | ~440x | ~1.600 h |
+| Grade 5×800 m, sonda (inválida: ver abaixo) | 400 chegando (91 dentro do mapa) | 337 / 1.214 | 197 | ~440x | ~1.600 h |
 
 Meta pedida (80 anos em 20–40 h) equivale a **2,5–4,9 s reais por dia simulado**.
 
@@ -374,16 +374,72 @@ Meta pedida (80 anos em 20–40 h) equivale a **2,5–4,9 s reais por dia simula
 ### Achados colaterais (possíveis bugs, não confirmados no jogo)
 
 - Grade com cruzamentos de 4 vias em preferência à direita (padrão de `SetDefaultJunctions`): carros ficaram em "Fila na faixa" / "Aguardando preferência" por dias; trabalhadores de água não chegaram; SIMs morreram de fome. Com semáforo o trânsito fluiu.
-- 400 famílias migrando de uma vez, todas de carro, pela única rodovia: ~240 carros parados na entrada e no eixo principal por 3 dias; 41–51 mortes.
+- ~~400 famílias migrando de uma vez: ~240 carros parados na entrada por 3 dias; 41–51 mortes.~~ **Corrigido em 2026-10-16: artefato da cidade de teste.** A meia-largura do mapa (606 m) não era múltipla de 4, e a rodovia ficou desalinhada das ruas, com nós a 2 m formando vários cruzamentos colados na entrada. Com a grade alinhada, as 400 pessoas chegam sem travar. A linha "Grade 5×800" da tabela acima também foi afetada por isso e não deve ser usada. A grade 3×400 (406 m) tinha o mesmo desalinhamento, sem travamento visível; seus números serão refeitos com a grade alinhada.
 - Alguns caminhões de empresa ficaram em "Aguardando motorista embarcar" indefinidamente.
 
 ### Leitura
 
 1. **Com o passo fixo atual a meta é inviável**, inclusive na cidade de 47 SIMs (86 h; 42 h com a sonda). Com 400 SIMs a sonda já está ~40–80x acima da meta e o custo cresce mais que linearmente; para milhares de SIMs a distância tende a ser maior, mas não foi medida.
 2. Otimizações locais equivalentes dão ~2x e são válidas por si (menos CPU em qualquer velocidade), mas **não mudam a conclusão**.
-3. A meta só parece alcançável se o custo passar a depender de **acontecimentos** e não de **entidades × tempo**: no meio da faixa da meta (~3,7 s por dia, 30 h para 80 anos), 10.000 SIMs com ~20 eventos/dia são ~54 mil eventos por segundo, volume normal para um motor de eventos. O obstáculo é o movimento e a interação física (filas, travessias, cruzamentos) hoje resolvidos a cada 2 s para cada agente. **Não há evidência ainda de que isso possa ser feito com equivalência causal.**
+3. A meta só parece alcançável se o custo passar a depender de **acontecimentos** e não de **entidades × tempo**: no meio da faixa da meta (~3,7 s por dia, 30 h para 80 anos), 10.000 SIMs com ~20 eventos/dia são ~54 mil eventos por segundo, volume normal para um motor de eventos. **Não há evidência ainda de que isso possa ser feito com equivalência causal.** (O censo abaixo mostrou que o maior custo não é o movimento.)
 4. Sistemas futuros da SPEC (nascimento/envelhecimento, educação, saúde, indústria, transporte coletivo) acrescentam entidades e viagens; com o modelo atual o custo cresce junto.
+
+### Ferramenta de medição
+
+`src/IndexCities.Headless` reproduz estas medições sem Godot, usando o núcleo real (não uma cópia):
+
+```powershell
+dotnet build src/IndexCities.Headless -c Release
+dotnet src/IndexCities.Headless/bin/Release/net8.0/IndexCities.Headless.dll scale cycle --days=7
+dotnet src/IndexCities.Headless/bin/Release/net8.0/IndexCities.Headless.dll scale grid --rows=3 --length=400 --days=3
+dotnet src/IndexCities.Headless/bin/Release/net8.0/IndexCities.Headless.dll census grid --rows=3 --length=400 --days=3
+```
+
+Imprime tempo real por dia simulado, horas estimadas para 80 anos, GC, memória, tamanho/tempo de save e o SHA-256 do save final. Mesmo SHA antes e depois de uma otimização indica comportamento idêntico (`scale cycle --days=2` deu `5ED4C3E031A41342` na `main` de 2026-10-16). A grade conclui as obras na hora via métodos privados do núcleo, então **não mede construção**. A divisão do custo por subsistema citada acima veio de uma cópia instrumentada temporária, que não está no repositório.
+
+### Censo de movimento — 2026-10-16 (PENDENTE)
+
+`census` classifica cada SIM e veículo após cada passo de 2 s (`--days=3`: 3 dias medidos após 2 de aquecimento; janelas diferentes mudam as proporções dos veículos presos):
+
+| Cidade | SIMs parados | andando | em veículo | caminhada livre | caminhadas/dia | viagens de veículo/dia |
+|---|---|---|---|---|---|---|
+| A (47 SIMs) | 98,8% | 1,2% | 0,1% | 99,9% | 617 | 47 |
+| Grade 3×400 (109 SIMs) | 97,3% | 0,9% | 1,8% | 99,5% | 569 | 82 |
+
+- Na cidade A, 98% dos passos de veículos em viagem são livres. Na grade, só 1,2%: o restante são **três caminhões presos indefinidamente** ("Aguardando espaço para acessar a faixa" 64%, "Aguardando motorista embarcar" 34%). Isso parece bug, não carga real.
+- **Correção da leitura anterior:** nessas escalas o custo dominante **não é o movimento** (5–7% do tempo de CPU na cidade A, pela cópia instrumentada citada acima; o censo mede estados, não tempo). É recalcular a cada 2 s necessidades, infraestrutura e operação de empresas de agentes parados, cujo estado só muda em poucos momentos do dia: chegada, saída, compra, troca de turno, refeição, falta de água/energia. Movimento e interação só dominam com trânsito travado (grade de 400).
 
 ### Próximo experimento sugerido (proposta, não aprovado)
 
-Experimento isolado e falsificável **só de mobilidade**: um protótipo de pedestres/carros orientado a eventos (andar por trecho, acordar ao liberar fila, cruzamento ou travessia) rodando a mesma rede e as mesmas viagens da cidade de 109 SIMs e da grade de 400. Comparar contra o motor atual: chegadas, tempos de viagem, filas e ordem nos cruzamentos. **Critério de sucesso:** ≤ 1 s por dia simulado a 1.000 SIMs com trajetórias equivalentes dentro de tolerância definida antes. Se falhar, a decisão volta ao responsável (tamanho de cidade, nível de detalhe do trânsito ou meta de tempo), sem mexer no calendário.
+1. **Primeiro, agenda para sistemas estacionários.** Protótipo isolado no qual necessidades, consumo de água/energia, salário por hora e operação de empresas são integrados entre mudanças de estado, em vez de somados a cada 2 s. Recalcula só quando algo muda: chegada/saída, turno, compra, limiar de fome/saúde, capacidade de serviço. Comparar com o motor atual na cidade A e na grade de 109: mesmos eventos pessoais e lançamentos financeiros, saldos finais e mortes/migrações. Diferenças só de arredondamento de ponto flutuante exigem uma **tolerância definida antes**: por exemplo, mesmo conjunto de eventos e horários com diferença de no máximo um passo (2 s), saldos iguais ao centavo. **Critério de sucesso:** ≤ 1 s por dia simulado na grade de 109 SIMs.
+2. **Depois, mobilidade por eventos**, só se o passo 1 deixar o movimento como gargalo medido.
+3. **Separadamente,** investigar como bugs os travamentos de cruzamento de 4 vias e de caminhões parados, que distorcem qualquer medição em cidades maiores.
+
+### Resultado do experimento 1 — sistemas estacionários em intervalo maior (2026-10-16, PENDENTE)
+
+> **Pesquisa, não decisão.** Branch `experimento/agenda-estacionaria`, que **não deve ser mesclada como está**. Necessidades, infraestrutura, operação de empresas e condição de manutenção rodam a cada `--interval` segundos com o intervalo inteiro, em vez de a cada passo de 2 s. Movimento, obras, economia periódica e finanças continuam iguais, e o acumulado é sempre descarregado antes da virada do dia e da cobrança mensal. Com `--interval=2` o save tem o mesmo SHA do motor atual.
+
+**Velocidade** (rodadas sequenciais, 2 dias medidos):
+
+| Cidade | 2 s (atual) | 60 s | 300 s |
+|---|---|---|---|
+| A (47 SIMs) | 9,6 s/dia (78 h para 80 anos) | 0,96 s/dia (8 h) | 0,72 s/dia (6 h) |
+| Grade 109 SIMs | 36,5 s/dia | dia 1: 4,8 s; dia 2: 64 s | 4,0 s/dia |
+
+Na grade, o salto do dia 2 com 60 s não vem do protótipo. Três caminhões presos em "Aguardando espaço para acessar a faixa" mantêm `MoveVehicles` no modo de subpassos de entrada na faixa (`Mobility.LaneEntry.cs`), que passou a ocupar 92% do tempo. É um custo por passo que nunca termina porque o caminhão nunca entra. **Corrigir esse travamento é pré-requisito para medir cidades maiores.**
+
+**Fidelidade:** 7 dias na grade de 109 SIMs. Motor atual com sementes 42/43/44 (variação natural) contra intervalos de 10/30/60/300 s com semente 42:
+
+| Agregado em 7 dias | Motor atual (3 sementes) | Intervalos 10–300 s |
+|---|---|---|
+| Mortes | 0 – 7 | 3 – 6 |
+| Refeições | 1.592 – 1.882 | 1.555 – 1.676 |
+| Salários pagos | 11.225 – 12.952 | 11.213 – 12.031 |
+| Contas de água / energia (valor) | 192–241 / 217–247 | 189–209 / 205–232 |
+| Saúde média | 83,6 – 98,5 | 82,8 – 90,8 |
+
+Os números ficaram dentro da faixa natural, e o dinheiro se conservou em todas as rodadas (invariantes OK). **Isso não prova equivalência:** foi uma semente por intervalo, 7 dias e uma cidade pequena. A comparação acontecimento a acontecimento não é possível, porque diferenças mínimas de horário mudam decisões seguintes (efeito borboleta) e as cidades divergem em poucos dias, inclusive entre sementes do próprio motor atual.
+
+**O que o intervalo maior muda de fato:** um SIM que chega ao trabalho no meio do intervalo só começa a ganhar salário na avaliação seguinte; a refeição e a falta de água são percebidas com até um intervalo de atraso; os valores de água/energia do HUD se atualizam a cada intervalo. Com 60 s, isso dá até 1 minuto em turnos de 8 horas. **Se algo assim for adotado no jogo, é decisão do responsável**, porque afeta o que a SPEC chama de efeitos equivalentes.
+
+**Leitura:** para a cidade pequena e sem veículos presos, o ganho de ~10x põe 80 anos na faixa de algumas horas headless. É a primeira evidência de que a meta pode não ser impossível. Para escalas maiores, faltam: corrigir os veículos presos; medir de novo 400+ SIMs sem travamento; repetir com várias sementes por intervalo; e só então decidir sobre uma versão orientada a eventos (recalcular ao chegar, sair ou trocar de turno) em vez de intervalo fixo.

@@ -212,7 +212,15 @@ public sealed partial class CitySimulation
                     if(BlocksEntry(other)){HoldFor(other,0);continue;}
                     var forward=relative.X*Math.Sin(v.Heading)+relative.Z*Math.Cos(v.Heading);
                     var side=Math.Abs(relative.X*Math.Cos(v.Heading)-relative.Z*Math.Sin(v.Heading));
-                    if(Math.Cos(other.Heading-v.Heading)>.5&&forward>0&&side<2.6)HoldFor(other,forward);
+                    if(Math.Cos(other.Heading-v.Heading)>.5&&forward>0&&side<2.6){
+                        // Side by side with converging headings (adjacent lot
+                        // spaces), each is "ahead" of the other: only the higher
+                        // ID yields, as in the coincidence case above.
+                        var back=-relative.X*Math.Sin(other.Heading)-relative.Z*Math.Cos(other.Heading);
+                        var backSide=Math.Abs(-relative.X*Math.Cos(other.Heading)+relative.Z*Math.Sin(other.Heading));
+                        if(back>0&&backSide<2.6&&other.Id>v.Id&&other.Status!=VehicleStatus.Stranded)continue;
+                        HoldFor(other,forward);
+                    }
                 }
                 var step=Math.Min(d,Math.Min(speed*remaining,Math.Max(0,leaderDistance-8)));
                 step=SafeSiteTravel(v,target,step,true);
@@ -265,7 +273,18 @@ public sealed partial class CitySimulation
         var competitors=State.Vehicles.Where(o=>o.Id!=v.Id&&o.Status==VehicleStatus.Travelling&&o.RouteIndex<o.Route.Count&&o.Route[o.RouteIndex]==junction.Id&&o.Position.Distance(junction.Position)<14).ToList();
         if(junction.Control==JunctionControl.ThroughX&&!horizontal&&competitors.Any(o=>Math.Abs(Math.Sin(o.Heading))>.7))return false;
         if(junction.Control==JunctionControl.ThroughZ&&horizontal&&competitors.Any(o=>Math.Abs(Math.Cos(o.Heading))>.7))return false;
-        if(junction.Control==JunctionControl.RightHand){var right=new Point(-Math.Cos(v.Heading),Math.Sin(v.Heading));if(competitors.Any(o=>{var p=o.Position-junction.Position;return p.X*right.X+p.Z*right.Z>2;}))return false;}
+        if(junction.Control==JunctionControl.RightHand){
+            bool YieldsRight(Vehicle a,IEnumerable<Vehicle> others){var right=new Point(-Math.Cos(a.Heading),Math.Sin(a.Heading));return others.Any(o=>o.Id!=a.Id&&(o.Position-junction.Position) is var p&&p.X*right.X+p.Z*right.Z>2);}
+            if(YieldsRight(v,competitors)){
+                // SPEC: when everyone approaching yields to someone on the right,
+                // the one waiting longest crosses (fixed ID tie-break), then the
+                // right-hand rule applies again.
+                var waiting=competitors.Append(v).ToList();
+                if(!waiting.All(a=>YieldsRight(a,waiting)))return false;
+                double Since(Vehicle a)=>a.WaitingSince>0?a.WaitingSince:double.MaxValue;
+                if(waiting.OrderBy(Since).ThenBy(a=>a.Id).First().Id!=v.Id)return false;
+            }
+        }
         ReserveJunction(v,junction,area);return true;
     }
     void VehicleArrived(Vehicle v)
