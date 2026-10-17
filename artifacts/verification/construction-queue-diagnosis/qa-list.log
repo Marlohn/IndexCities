@@ -1,0 +1,39 @@
+﻿Godot Engine v4.7.2.stable.mono.official.ed1daf0bf - https://godotengine.org
+
+CENÁRIOS DE QA (35) · passe as flags depois de --
+flag | verifica | janela real | cidade/fixture | método
+--construction-paving-smoke | Caminhões por material, pavimentadora/rolo reais em reta/L, custos, parada causal, cancelamento e save/load | sim | nenhuma (cria cidades; saves isolados em artifacts/verification; modelos Construction obrigatórios na validação final) | ConstructionPavingSmoke
+--construction-corner-smoke | Rua em L invertido com casa: rolo saindo cede ao caminhão sem girar sobre ele; rua e casa concluem (quantum 2 s) | sim | nenhuma (cria a cidade CornerCity seed 42; saves isolados em artifacts/verification) | ConstructionCornerSmoke
+--performance-smoke | FPS e ms de simulação/apresentação; só métricas, sem asserção de correção | não | opcional via --fixture= (ignora --review-save-dir antes desta correção) | (embutido)
+--bar-capture | Posiciona a Prefeitura e espera --capture= para capturar a barra; não é teste | sim | nenhuma | (embutido)
+--persistence-smoke | Round-trip de save/load, esboços e migração legada de relógio | não | nenhuma (cria a cidade) | PersistenceSmoke
+--ui-smoke | Fundação 1 clique, catálogo=10, rua 2 cliques, cancelar e inspeção | não | nenhuma (cria a cidade) | UiSmoke
+--ui-input-smoke | Gestos reais de mouse/tecla sobre a GUI | sim | nenhuma (cria a cidade) | UiInputSmoke
+--recovery-smoke | Construção completa por GUI, menus e save/load | sim | nenhuma (cria a cidade) | RecoverySmoke
+--road-recovery-smoke | Rua: acesso pela porta, demolição e calçadas | sim | nenhuma (cria a cidade) | RoadRecoverySmoke
+--road-tool-playtest | Playtest humano do construtor de ruas; produz a fixture do verify | sim | nenhuma (cria a cidade) | RoadToolPlaytest
+--grid-alignment-smoke | Grade × obra na projeção, folga real de 0,75 m | sim | nenhuma (cria a cidade) | GridAlignmentSmoke
+--placement-performance-smoke | Desempenho da faixa e da grade; só métricas/hashes, sem asserção de geometria | não | nenhuma (fixture sintética) | PlacementPerformanceSmoke
+--road-tool-verify | Concluir obras encomendadas com mouse e conferir graus de nó | não | cidade preparada por --road-tool-playtest (fixture com as obras encomendadas) | RoadToolVerifyNative
+--city-names-smoke | Nomear/renomear/criar cidade e arquivo único | sim | nenhuma (cria a cidade) | CityNamesSmoke
+--finances-smoke | Empréstimos, saldos e atualização periódica | sim | cidade povoada com Prefeitura | FinancesSmoke
+--activity-smoke --activity-before | Menu Pessoas ao vivo, morte e migração | sim | cidade real povoada | ActivitySmoke
+--circulation-smoke | Fila na faixa, gap ≥8 m e consumo de combustível | sim | cidade-checkpoint com veículos 1139/1145/505 e rua 619 | CirculationSmoke
+--interior-arrival-smoke | SIM some só dentro de um interior real | sim | cidade real com morador em casa | InteriorArrivalSmoke
+--pedestrian-before --pedestrian-recovery-smoke | Seis pedestres 'Sem rota' recuperam caminho pela pintura real | sim | cidade-checkpoint com 6 pedestres 'Sem rota' e o cidadão 1175 | PedestrianRecoverySmoke
+--activity-indicators-smoke | Indicador de carga real; interior esconde o SIM | sim | cópia isolada indicada por --activity-indicators-save= | ActivityIndicatorsSmoke
+--problem-alerts-smoke | Oito causas de alerta, histerese e inspeção por tooltip | sim | nenhuma (cria a cidade) | ProblemAlertsSmoke
+--problem-alerts-playtest | Playtest scriptado dos alertas sob relógio real | sim | nenhuma (cria a cidade) | ProblemAlertsPlaytest
+--services-before --services-smoke | Capacidade, equipe e fatores dos serviços | sim | cidade real com utilitários concluídos | ServicesSmoke
+--environment-smoke | Malha de água × simulação e pausa da ondulação | sim | nenhuma (cria a cidade) | EnvironmentSmoke
+--lake-recovery-smoke | Geometria do lago, margem e caso legado | sim | nenhuma (seeds 42/1412/2877/1) | LakeRecoverySmoke
+--water-intake-range-smoke | Faixa válida da captação × regra | sim | nenhuma (cria a cidade) | WaterIntakeRangeSmoke
+--work-cause-smoke | Toda WorkCause tem frase e ícone no menu de Obras | não | nenhuma (cria a cidade) | WorkCauseSmoke
+--visual-review-smoke | Capturas de menus, inspeção e prévias | sim | cópia via --fixture= | VisualReviewSmoke
+--real-time-start-smoke | 1x = tempo real e obra comprada fisicamente | sim | cidade vazia | RealTimeStartSmoke
+--interaction-regressions-smoke | Câmera, prévia, fileira e orçamento insuficiente | sim | cidade vazia | InteractionRegressionSmoke
+--presentation-smoke | Interior e carga reais; sem balão de presença | sim | nenhuma (cria a cidade) | PresentationSmoke
+--real-clock-smoke | Relógio real por velocidade e pausa | sim | nenhuma (cria a cidade) | RealClockSmoke
+--traffic-recovery-smoke | Caminhões saem da paralisação e a oferta é preservada | sim | cidade-checkpoint via --fixture= com caminhões externos ativos | TrafficRecoverySmoke
+--smoke | Invariantes e sincronização do mundo numa cidade vazia | não | nenhuma (cria a cidade) | Smoke
+--neighbourhood-smoke | Continuidade de ruas, conexões e obra dependente | sim | nenhuma (cria a cidade) | NeighbourhoodSmoke

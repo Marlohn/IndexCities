@@ -1,0 +1,31 @@
+﻿Godot Engine v4.7.2.stable.mono.official.ed1daf0bf - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 546.18 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 3050 6GB Laptop GPU
+
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\godot-construction-paving\straight-ordered.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\godot-construction-paving\straight-unload-Aggregate.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\godot-construction-paving\straight-empty-return-Dump.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\godot-construction-paving\straight-unload-Asphalt.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\godot-construction-paving\straight-applying.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\godot-construction-paving\straight-stopped-no-fuel.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\godot-construction-paving\straight-rolling.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\godot-construction-paving\straight-unload-Concrete.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\godot-construction-paving\straight-empty-return-Mixer.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\godot-construction-paving\straight-unload-Steel.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\godot-construction-paving\straight-empty-return-Flatbed.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\godot-construction-paving\straight-unload-Wood.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\godot-construction-paving\straight-completed.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\godot-construction-paving\L-ordered.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\godot-construction-paving\L-unload-Aggregate.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\godot-construction-paving\L-empty-return-Dump.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\godot-construction-paving\L-unload-Asphalt.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\godot-construction-paving\L-applying.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\godot-construction-paving\L-stopped-no-fuel.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\godot-construction-paving\L-rolling.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\godot-construction-paving\L-unload-Concrete.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\godot-construction-paving\L-empty-return-Mixer.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\godot-construction-paving\L-unload-Steel.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\godot-construction-paving\L-empty-return-Flatbed.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\godot-construction-paving\L-unload-Wood.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\godot-construction-paving\L-completed.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\godot-construction-paving\cancelled-returned.png
+INDEXCITIES_CONSTRUCTION_PAVING_OK models=final captures=27 directory=C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\godot-construction-paving straight=L=physical money=conserved save-load=deterministic cancel=physical-return

@@ -1,0 +1,40 @@
+﻿Godot Engine v4.7.2.stable.mono.official.ed1daf0bf - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 546.18 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 3050 6GB Laptop GPU
+
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\recovery-visual\building-preview.png
+RECOVERY_STAGE founding-complete
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\recovery-visual\road-before-order.png
+RECOVERY_STAGE repeat-straight-L-roads-complete
+RECOVERY_STAGE full-catalog-placement-complete
+RECOVERY_CYCLE hour=12 complete=42 population=47 water=0,0 power=1.022,1
+RECOVERY_CYCLE hour=24 complete=42 population=47 water=316,6 power=834,9
+RECOVERY_CYCLE hour=36 complete=42 population=47 water=500,0 power=735,9
+RECOVERY_CYCLE hour=48 complete=42 population=47 water=500,0 power=1.128,6
+RECOVERY_STAGE actual-operation-complete
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\recovery-visual\city.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\recovery-visual\inspection.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\recovery-visual\menu-finances.png
+RECOVERY_GUI_HIT button=/root/IndexCities/@Window@6513/@VBoxContainer@6514/@HBoxContainer@6515/@Button@6517 text=× Fechar rect=(600, 16), (104, 40) viewport=/root/IndexCities/@Window@6513 windowId=0 embedded=True windowPosition=(360, 36) hovered=/root/IndexCities/@Window@6513/@VBoxContainer@6514/@HBoxContainer@6515/@Button@6517 hoveredRect=(600, 16), (104, 40) mouseFilter=Stop handleLocally=True guiDisabled=False finalTransform=[X: (1, 0), Y: (0, 1), O: (0, 0)]
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@6513 position=(1012, 72) pressed=True handled=True
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@6513 position=(1012, 72) pressed=False handled=True
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\recovery-visual\menu-people.png
+RECOVERY_GUI_HIT button=/root/IndexCities/@Window@6666/@VBoxContainer@6667/@HBoxContainer@6668/@Button@6670 text=× Fechar rect=(600, 16), (104, 40) viewport=/root/IndexCities/@Window@6666 windowId=0 embedded=True windowPosition=(360, 36) hovered=/root/IndexCities/@Window@6666/@VBoxContainer@6667/@HBoxContainer@6668/@Button@6670 hoveredRect=(600, 16), (104, 40) mouseFilter=Stop handleLocally=True guiDisabled=False finalTransform=[X: (1, 0), Y: (0, 1), O: (0, 0)]
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@6666 position=(1012, 72) pressed=True handled=True
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@6666 position=(1012, 72) pressed=False handled=True
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\recovery-visual\menu-alerts.png
+RECOVERY_GUI_HIT button=/root/IndexCities/@Window@6884/@VBoxContainer@6885/@HBoxContainer@6886/@Button@6888 text=× Fechar rect=(600, 16), (104, 40) viewport=/root/IndexCities/@Window@6884 windowId=0 embedded=True windowPosition=(360, 36) hovered=/root/IndexCities/@Window@6884/@VBoxContainer@6885/@HBoxContainer@6886/@Button@6888 hoveredRect=(600, 16), (104, 40) mouseFilter=Stop handleLocally=True guiDisabled=False finalTransform=[X: (1, 0), Y: (0, 1), O: (0, 0)]
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@6884 position=(1012, 72) pressed=True handled=True
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@6884 position=(1012, 72) pressed=False handled=True
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\recovery-visual\menu-controls.png
+RECOVERY_GUI_HIT button=/root/IndexCities/@Window@7023/@VBoxContainer@7024/@HBoxContainer@7025/@Button@7027 text=× Fechar rect=(600, 16), (104, 40) viewport=/root/IndexCities/@Window@7023 windowId=0 embedded=True windowPosition=(360, 36) hovered=/root/IndexCities/@Window@7023/@VBoxContainer@7024/@HBoxContainer@7025/@Button@7027 hoveredRect=(600, 16), (104, 40) mouseFilter=Stop handleLocally=True guiDisabled=False finalTransform=[X: (1, 0), Y: (0, 1), O: (0, 0)]
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@7023 position=(1012, 72) pressed=True handled=True
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@7023 position=(1012, 72) pressed=False handled=True
+RECOVERY_STAGE inspection-and-menus-complete
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\recovery-visual\menu-cities.png
+RECOVERY_GUI_HIT button=/root/IndexCities/@Window@7064/@VBoxContainer@7065/@ScrollContainer@7071/@VBoxContainer@7072/@PanelContainer@7090/@VBoxContainer@7091/@HBoxContainer@7095/@Button@7100 text=+ Criar rect=(434, 544), (256, 40) viewport=/root/IndexCities/@Window@7064 windowId=0 embedded=True windowPosition=(360, 162) hovered=/root/IndexCities/@Window@7064/@VBoxContainer@7065/@ScrollContainer@7071/@VBoxContainer@7072/@PanelContainer@7090/@VBoxContainer@7091/@HBoxContainer@7095/@Button@7100 hoveredRect=(434, 544), (256, 40) mouseFilter=Stop handleLocally=True guiDisabled=False finalTransform=[X: (1, 0), Y: (0, 1), O: (0, 0)]
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@7064 position=(922, 726) pressed=True handled=True
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@7064 position=(922, 726) pressed=False handled=True
+RECOVERY_GUI_HIT button=/root/IndexCities/@Window@7274/@VBoxContainer@7275/@ScrollContainer@7281/@VBoxContainer@7282/@PanelContainer@7283/@VBoxContainer@7284/@BoxContainer@7287/@Button@7288 text=Cidade 42 • 03/01/2026 18:00 rect=(30, 133), (548, 40) viewport=/root/IndexCities/@Window@7274 windowId=0 embedded=True windowPosition=(360, 162) hovered=/root/IndexCities/@Window@7274/@VBoxContainer@7275/@ScrollContainer@7281/@VBoxContainer@7282/@PanelContainer@7283/@VBoxContainer@7284/@BoxContainer@7287/@Button@7288 hoveredRect=(30, 133), (548, 40) mouseFilter=Stop handleLocally=True guiDisabled=False finalTransform=[X: (1, 0), Y: (0, 1), O: (0, 0)]
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@7274 position=(664, 315) pressed=True handled=True
+RECOVERY_GUI_EVENT viewport=/root/IndexCities/@Window@7274 position=(664, 315) pressed=False handled=True
+INDEXCITIES_RECOVERY_OK {"status":"technical-input-check-passed","humanUsabilityReview":"pending","milestones":["funda\u00E7\u00E3o pela GUI","ruas retas repetidas, L, recusa causal e cancelamento","cat\u00E1logo completo colocado com mouse e confirma\u00E7\u00E3o","cidade operando com pessoas, empresas, servi\u00E7os e pagamentos reais","inspe\u00E7\u00E3o e menus abertos/fechados pela GUI","salvar, criar outra cidade, retomar pr\u00E9via e continuar"],"buildings":42,"population":47,"companies":1,"monetaryTotal":20000000.00,"savesDirectory":"C:\\Users\\Marlohn\\orca\\workspaces\\IndexCities\\pavimentacao-integracao\\artifacts\\verification\\recovery-saves-c9124d3afb6d42308c3fde4112364623"}

@@ -45,7 +45,7 @@ public sealed partial class CitySimulation
             var box=new WalkSurface.Box(c.X-width/2,c.X+width/2,c.Z-depth/2,c.Z+depth/2);s.Boxes[kind].Add(box);
             foreach(var cell in WalkCells(box.X0,box.X1,box.Z0,box.Z1)){if(!s.Cells.TryGetValue(cell,out var list))s.Cells[cell]=list=new();list.Add((kind,s.Boxes[kind].Count-1));}
         }
-        foreach(var road in State.Roads){
+        foreach(var road in State.Roads.Where(r=>!r.ConstructionOnly)){
             var kind=road.Highway?WalkSurface.Highway:WalkSurface.Urban;
             var horizontal=road.Highway||road.Neighbours.Any(id=>Math.Abs(_roads[id].Position.X-road.Position.X)>.1);var vertical=road.Neighbours.Any(id=>Math.Abs(_roads[id].Position.Z-road.Position.Z)>.1);
             if(!horizontal&&!vertical)horizontal=true;
@@ -73,7 +73,7 @@ public sealed partial class CitySimulation
             if(!Walkable(p))return;s.Vertices.Add((p,road,partner));
             if(!s.RoadVertices.TryGetValue(road,out var own))s.RoadVertices[road]=own=new();own.Add(s.Vertices.Count-1);
         }
-        foreach(var road in State.Roads){
+        foreach(var road in State.Roads.Where(r=>!r.ConstructionOnly)){
             var deltas=road.Neighbours.Select(id=>_roads[id].Position-road.Position).ToArray();
             var horizontal=road.Highway||deltas.Any(d=>Math.Abs(d.X)>.1);var vertical=deltas.Any(d=>Math.Abs(d.Z)>.1);
             if(horizontal&&vertical||deltas.Length<2){
@@ -84,7 +84,7 @@ public sealed partial class CitySimulation
             else if(horizontal){if(!road.Highway)Vertex(road.Position+new Point(0,-side),road.Id);Vertex(road.Position+new Point(0,side),road.Id);}
             else {Vertex(road.Position+new Point(-side,0),road.Id);Vertex(road.Position+new Point(side,0),road.Id);}
         }
-        foreach(var road in State.Roads)foreach(var band in CrosswalkLocations(road,State)){
+        foreach(var road in State.Roads.Where(r=>!r.ConstructionOnly))foreach(var band in CrosswalkLocations(road,State)){
             var across=band.HorizontalRoad?new Point(0,side):new Point(side,0);var first=band.Centre-across;var second=band.Centre+across;
             if(!Walkable(first)||!Walkable(second))continue;
             var index=s.Vertices.Count;Vertex(first,road.Id,index+1);Vertex(second,road.Id,index);

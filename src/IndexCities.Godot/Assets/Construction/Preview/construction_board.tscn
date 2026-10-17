@@ -1,0 +1,1049 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://Assets/V1/Scenes/road.urban_1x1.a.straight.tscn" id="1_76kwr"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/road.urban_1x1.a.straight.tres" id="2_rb8cj"]
+[ext_resource type="PackedScene" path="res://Assets/V1/Scenes/residential.small_house.a.tscn" id="3_suflc"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/residential.small_house.a.tres" id="4_1vrdw"]
+[ext_resource type="PackedScene" path="res://Assets/V1/Scenes/commercial.grocery_small.a.tscn" id="5_mgckp"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/commercial.grocery_small.a.tres" id="6_b3rvt"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/commercial.grocery_small.a.sign_panel.tres" id="7_abrk8"]
+[ext_resource type="PackedScene" path="res://Assets/V1/Scenes/vegetation.tree_broadleaf.a.tscn" id="8_dyvq2"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/vegetation.tree_broadleaf.a.tres" id="9_g4dth"]
+[ext_resource type="PackedScene" path="res://Assets/V1/Scenes/vehicle.truck_cargo.a.tscn" id="10_pf0jp"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/vehicle.truck_cargo.a.body.tres" id="11_66xpy"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/vehicle.truck_cargo.a.wheel.tres" id="12_8uhud"]
+[ext_resource type="PackedScene" path="res://Assets/V1/Scenes/agent.sim_pedestrian.a.tscn" id="13_tpdt8"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/agent.sim_pedestrian.a.torso.tres" id="14_c5jto"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/agent.sim_pedestrian.a.head.tres" id="15_edb0g"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/agent.sim_pedestrian.a.arm.tres" id="16_pliua"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/agent.sim_pedestrian.a.leg.tres" id="17_h2vag"]
+[ext_resource type="PackedScene" path="res://Assets/Construction/Scenes/vehicle.truck_dump.a.tscn" id="18_460pk"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_dump.a.body.tres" id="19_c4u5v"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres" id="20_84yte"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_dump.a.bed.tres" id="21_ghyj3"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_dump.a.tailgate.tres" id="22_1vio0"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_dump.a.load_sand_gravel.tres" id="23_scxh5"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_dump.a.load_asphalt.tres" id="24_oquml"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_dump.a.cover.tres" id="25_5qpal"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_dump.a.hydraulic_base.tres" id="26_v2qxd"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_dump.a.hydraulic_rod.tres" id="27_psvmf"]
+[ext_resource type="PackedScene" path="res://Assets/Construction/Scenes/vehicle.truck_mixer.a.tscn" id="28_m0d4w"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_mixer.a.body.tres" id="29_2n3ag"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_mixer.a.frame.tres" id="30_mkolx"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_mixer.a.drum.tres" id="31_bvxwm"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_mixer.a.chute.tres" id="32_k21es"]
+[ext_resource type="PackedScene" path="res://Assets/Construction/Scenes/vehicle.truck_flatbed.a.tscn" id="33_qxufk"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_flatbed.a.body.tres" id="34_1b3rv"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_flatbed.a.bed.tres" id="35_nhv8k"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_flatbed.a.load_steel.tres" id="36_d3ylc"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_flatbed.a.load_wood.tres" id="37_bb803"]
+[ext_resource type="PackedScene" path="res://Assets/Construction/Scenes/vehicle.asphalt_paver.a.tscn" id="38_m3dbt"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.asphalt_paver.a.body.tres" id="39_jv1c2"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.asphalt_paver.a.track.tres" id="40_pd3uy"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.asphalt_paver.a.hopper_-1.tres" id="41_4ofn8"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.asphalt_paver.a.hopper_1.tres" id="42_idpg5"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.asphalt_paver.a.hopper_load.tres" id="43_46eep"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.asphalt_paver.a.screed.tres" id="44_kmbuk"]
+[ext_resource type="PackedScene" path="res://Assets/Construction/Scenes/vehicle.road_roller.a.tscn" id="45_2750g"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.road_roller.a.body.tres" id="46_o28f3"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.road_roller.a.front_fork.tres" id="47_phbtm"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.road_roller.a.drum.tres" id="48_28443"]
+
+[sub_resource type="Environment" id="Environment_l33hs"]
+background_mode = 1
+background_color = Color(0.7254902, 0.7882353, 0.8352941, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.6862745, 0.77254903, 0.80784315, 1)
+ambient_light_energy = 0.32
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_j7qvx"]
+albedo_color = Color(0.4745098, 0.5647059, 0.4, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_qqwe4"]
+material = SubResource("StandardMaterial3D_j7qvx")
+size = Vector3(160, 0.25, 100)
+
+[sub_resource type="Animation" id="Animation_uc41t"]
+loop_mode = 1
+tracks/0/type = "position_3d"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Rig/Hips")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = PackedFloat32Array(0, 1, 0, 0.88, 0)
+tracks/1/type = "rotation_3d"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Rig/Hips/LegL")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = PackedFloat32Array(0, 1, 0, 0, 0, 1)
+tracks/2/type = "rotation_3d"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Rig/Hips/LegR")
+tracks/2/interp = 2
+tracks/2/loop_wrap = true
+tracks/2/keys = PackedFloat32Array(0, 1, 0, 0, 0, 1)
+tracks/3/type = "rotation_3d"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("Rig/Hips/ArmL")
+tracks/3/interp = 2
+tracks/3/loop_wrap = true
+tracks/3/keys = PackedFloat32Array(0, 1, 0, 0, 0, 1)
+tracks/4/type = "rotation_3d"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("Rig/Hips/ArmR")
+tracks/4/interp = 2
+tracks/4/loop_wrap = true
+tracks/4/keys = PackedFloat32Array(0, 1, 0, 0, 0, 1)
+
+[sub_resource type="Animation" id="Animation_fv1hj"]
+loop_mode = 1
+tracks/0/type = "position_3d"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Rig/Hips")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = PackedFloat32Array(0, 1, 0, 0.8406581, 0, 0.0625, 1, 0, 0.8491421, 0, 0.125, 1, 0, 0.86772287, 0, 0.1875, 1, 0, 0.87982374, 0, 0.25, 1, 0, 0.8799912, 0, 0.3125, 1, 0, 0.87982374, 0, 0.375, 1, 0, 0.86772287, 0, 0.4375, 1, 0, 0.8491421, 0, 0.5, 1, 0, 0.8406581, 0, 0.5625, 1, 0, 0.8491421, 0, 0.625, 1, 0, 0.86772287, 0, 0.6875, 1, 0, 0.87982374, 0, 0.75, 1, 0, 0.8799912, 0, 0.8125, 1, 0, 0.87982374, 0, 0.875, 1, 0, 0.86772287, 0, 0.9375, 1, 0, 0.8491421, 0)
+tracks/1/type = "rotation_3d"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Rig/Hips/LegL")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = PackedFloat32Array(0, 1, 0.19936793, 0, 0, 0.9799247, 0.0625, 1, 0.18241459, 0, 0, 0.9832217, 0.125, 1, 0.13385452, 0, 0, 0.991001, 0.1875, 1, 0.060611006, 0, 0, 0.99816144, 0.25, 1, -0.02617695, 0, 0, 0.99965733, 0.3125, 1, -0.112767674, 0, 0, 0.9936214, 0.375, 1, -0.18553607, 0, 0, 0.98263747, 0.4375, 1, -0.23362245, 0, 0, 0.9723274, 0.5, 1, -0.25038, 0, 0, 0.96814764, 0.5625, 1, -0.23362245, 0, 0, 0.9723274, 0.625, 1, -0.18553607, 0, 0, 0.98263747, 0.6875, 1, -0.112767674, 0, 0, 0.9936214, 0.75, 1, -0.02617695, 0, 0, 0.99965733, 0.8125, 1, 0.060611006, 0, 0, 0.99816144, 0.875, 1, 0.13385452, 0, 0, 0.991001, 0.9375, 1, 0.18241459, 0, 0, 0.9832217)
+tracks/2/type = "rotation_3d"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Rig/Hips/LegR")
+tracks/2/interp = 2
+tracks/2/loop_wrap = true
+tracks/2/keys = PackedFloat32Array(0, 1, -0.25038, 0, 0, 0.96814764, 0.0625, 1, -0.23362245, 0, 0, 0.9723274, 0.125, 1, -0.18553607, 0, 0, 0.98263747, 0.1875, 1, -0.112767674, 0, 0, 0.9936214, 0.25, 1, -0.02617695, 0, 0, 0.99965733, 0.3125, 1, 0.060611006, 0, 0, 0.99816144, 0.375, 1, 0.13385452, 0, 0, 0.991001, 0.4375, 1, 0.18241459, 0, 0, 0.9832217, 0.5, 1, 0.19936793, 0, 0, 0.9799247, 0.5625, 1, 0.18241459, 0, 0, 0.9832217, 0.625, 1, 0.13385452, 0, 0, 0.991001, 0.6875, 1, 0.060611006, 0, 0, 0.99816144, 0.75, 1, -0.02617695, 0, 0, 0.99965733, 0.8125, 1, -0.112767674, 0, 0, 0.9936214, 0.875, 1, -0.18553607, 0, 0, 0.98263747, 0.9375, 1, -0.23362245, 0, 0, 0.9723274)
+tracks/3/type = "rotation_3d"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("Rig/Hips/ArmL")
+tracks/3/interp = 2
+tracks/3/loop_wrap = true
+tracks/3/keys = PackedFloat32Array(0, 1, -0.17364818, 0, 0, 0.9848077, 0.0625, 1, -0.16054955, 0, 0, 0.98702776, 0.125, 1, -0.12310037, 0, 0, 0.9923942, 0.1875, 1, -0.066741206, 0, 0, 0.9977703, 0.25, 1, -1.0686706e-17, 0, 0, 1, 0.3125, 1, 0.066741206, 0, 0, 0.9977703, 0.375, 1, 0.12310037, 0, 0, 0.9923942, 0.4375, 1, 0.16054955, 0, 0, 0.98702776, 0.5, 1, 0.17364818, 0, 0, 0.9848077, 0.5625, 1, 0.16054955, 0, 0, 0.98702776, 0.625, 1, 0.12310037, 0, 0, 0.9923942, 0.6875, 1, 0.066741206, 0, 0, 0.9977703, 0.75, 1, 3.206012e-17, 0, 0, 1, 0.8125, 1, -0.066741206, 0, 0, 0.9977703, 0.875, 1, -0.12310037, 0, 0, 0.9923942, 0.9375, 1, -0.16054955, 0, 0, 0.98702776)
+tracks/4/type = "rotation_3d"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("Rig/Hips/ArmR")
+tracks/4/interp = 2
+tracks/4/loop_wrap = true
+tracks/4/keys = PackedFloat32Array(0, 1, 0.17364818, 0, 0, 0.9848077, 0.0625, 1, 0.16054955, 0, 0, 0.98702776, 0.125, 1, 0.12310037, 0, 0, 0.9923942, 0.1875, 1, 0.066741206, 0, 0, 0.9977703, 0.25, 1, 1.0686706e-17, 0, 0, 1, 0.3125, 1, -0.066741206, 0, 0, 0.9977703, 0.375, 1, -0.12310037, 0, 0, 0.9923942, 0.4375, 1, -0.16054955, 0, 0, 0.98702776, 0.5, 1, -0.17364818, 0, 0, 0.9848077, 0.5625, 1, -0.16054955, 0, 0, 0.98702776, 0.625, 1, -0.12310037, 0, 0, 0.9923942, 0.6875, 1, -0.066741206, 0, 0, 0.9977703, 0.75, 1, -3.206012e-17, 0, 0, 1, 0.8125, 1, 0.066741206, 0, 0, 0.9977703, 0.875, 1, 0.12310037, 0, 0, 0.9923942, 0.9375, 1, 0.16054955, 0, 0, 0.98702776)
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_uv75e"]
+_data = {
+&"idle": SubResource("Animation_uc41t"),
+&"walk": SubResource("Animation_fv1hj")
+}
+
+[node name="@Node3D@7" type="Node3D" unique_id=1684925361]
+
+[node name="@WorldEnvironment@8" type="WorldEnvironment" parent="." unique_id=974237833]
+environment = SubResource("Environment_l33hs")
+
+[node name="@DirectionalLight3D@9" type="DirectionalLight3D" parent="." unique_id=1784226812]
+transform = Transform3D(0.8660254, 0.37157243, -0.33456528, 0, 0.66913056, 0.74314487, 0.5, -0.64358234, 0.57948405, 0, 0, 0)
+light_color = Color(1, 0.9411765, 0.8156863, 1)
+shadow_enabled = true
+directional_shadow_max_distance = 650.0
+
+[node name="@Camera3D@10" type="Camera3D" parent="." unique_id=152540145]
+transform = Transform3D(0.70710677, -0.43413538, 0.5581456, 0, 0.78933704, 0.61396015, -0.70710677, -0.43413538, 0.5581456, 83.72184, 92.79401, 84.72184)
+projection = 1
+current = true
+size = 55.0
+far = 2000.0
+
+[node name="@MeshInstance3D@11" type="MeshInstance3D" parent="." unique_id=656872412]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.17, 0)
+mesh = SubResource("BoxMesh_qqwe4")
+
+[node name="@Node3D@12" type="Node3D" parent="." unique_id=1633783258]
+
+[node name="RoadUrban1x1Straight" type="Node3D" parent="@Node3D@12" unique_id=499432568 instance=ExtResource("1_76kwr")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -31.5, 0, 0)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Body" type="MeshInstance3D" parent="@Node3D@12/RoadUrban1x1Straight" unique_id=124122198]
+mesh = ExtResource("2_rb8cj")
+
+[node name="Connector_West" type="Marker3D" parent="@Node3D@12/RoadUrban1x1Straight" unique_id=820662064]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -5.25, 0, 0)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "conector candidato: secao 1+1 identica em todas as pecas; nao define rede viaria"
+
+[node name="Connector_East" type="Marker3D" parent="@Node3D@12/RoadUrban1x1Straight" unique_id=596810568]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 5.25, 0, 0)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "conector candidato: secao 1+1 identica em todas as pecas; nao define rede viaria"
+
+[node name="Candidate_LampSlot" type="Marker3D" parent="@Node3D@12/RoadUrban1x1Straight" unique_id=296330328]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.18, 3.7)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "posicao candidata de poste (calcada +Z, centro da faixa de servico); espacamento real e calibracao"
+
+[node name="@Node3D@13" type="Node3D" parent="@Node3D@12" unique_id=1880879345 instance=ExtResource("1_76kwr")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -21, 0, 0)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Body" type="MeshInstance3D" parent="@Node3D@12/@Node3D@13" unique_id=1539906715]
+mesh = ExtResource("2_rb8cj")
+
+[node name="Connector_West" type="Marker3D" parent="@Node3D@12/@Node3D@13" unique_id=181948692]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -5.25, 0, 0)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "conector candidato: secao 1+1 identica em todas as pecas; nao define rede viaria"
+
+[node name="Connector_East" type="Marker3D" parent="@Node3D@12/@Node3D@13" unique_id=1092988057]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 5.25, 0, 0)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "conector candidato: secao 1+1 identica em todas as pecas; nao define rede viaria"
+
+[node name="Candidate_LampSlot" type="Marker3D" parent="@Node3D@12/@Node3D@13" unique_id=1594688767]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.18, 3.7)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "posicao candidata de poste (calcada +Z, centro da faixa de servico); espacamento real e calibracao"
+
+[node name="@Node3D@14" type="Node3D" parent="@Node3D@12" unique_id=1501296642 instance=ExtResource("1_76kwr")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.5, 0, 0)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Body" type="MeshInstance3D" parent="@Node3D@12/@Node3D@14" unique_id=454717887]
+mesh = ExtResource("2_rb8cj")
+
+[node name="Connector_West" type="Marker3D" parent="@Node3D@12/@Node3D@14" unique_id=1112511728]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -5.25, 0, 0)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "conector candidato: secao 1+1 identica em todas as pecas; nao define rede viaria"
+
+[node name="Connector_East" type="Marker3D" parent="@Node3D@12/@Node3D@14" unique_id=783594855]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 5.25, 0, 0)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "conector candidato: secao 1+1 identica em todas as pecas; nao define rede viaria"
+
+[node name="Candidate_LampSlot" type="Marker3D" parent="@Node3D@12/@Node3D@14" unique_id=1914277647]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.18, 3.7)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "posicao candidata de poste (calcada +Z, centro da faixa de servico); espacamento real e calibracao"
+
+[node name="@Node3D@15" type="Node3D" parent="@Node3D@12" unique_id=1165576673 instance=ExtResource("1_76kwr")]
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Body" type="MeshInstance3D" parent="@Node3D@12/@Node3D@15" unique_id=579951672]
+mesh = ExtResource("2_rb8cj")
+
+[node name="Connector_West" type="Marker3D" parent="@Node3D@12/@Node3D@15" unique_id=1819375720]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -5.25, 0, 0)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "conector candidato: secao 1+1 identica em todas as pecas; nao define rede viaria"
+
+[node name="Connector_East" type="Marker3D" parent="@Node3D@12/@Node3D@15" unique_id=1363527811]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 5.25, 0, 0)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "conector candidato: secao 1+1 identica em todas as pecas; nao define rede viaria"
+
+[node name="Candidate_LampSlot" type="Marker3D" parent="@Node3D@12/@Node3D@15" unique_id=1763672883]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.18, 3.7)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "posicao candidata de poste (calcada +Z, centro da faixa de servico); espacamento real e calibracao"
+
+[node name="@Node3D@16" type="Node3D" parent="@Node3D@12" unique_id=687356848 instance=ExtResource("1_76kwr")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.5, 0, 0)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Body" type="MeshInstance3D" parent="@Node3D@12/@Node3D@16" unique_id=179763040]
+mesh = ExtResource("2_rb8cj")
+
+[node name="Connector_West" type="Marker3D" parent="@Node3D@12/@Node3D@16" unique_id=372243527]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -5.25, 0, 0)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "conector candidato: secao 1+1 identica em todas as pecas; nao define rede viaria"
+
+[node name="Connector_East" type="Marker3D" parent="@Node3D@12/@Node3D@16" unique_id=1876306481]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 5.25, 0, 0)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "conector candidato: secao 1+1 identica em todas as pecas; nao define rede viaria"
+
+[node name="Candidate_LampSlot" type="Marker3D" parent="@Node3D@12/@Node3D@16" unique_id=1600790041]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.18, 3.7)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "posicao candidata de poste (calcada +Z, centro da faixa de servico); espacamento real e calibracao"
+
+[node name="@Node3D@17" type="Node3D" parent="@Node3D@12" unique_id=1585658672 instance=ExtResource("1_76kwr")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 0, 0)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Body" type="MeshInstance3D" parent="@Node3D@12/@Node3D@17" unique_id=1357670605]
+mesh = ExtResource("2_rb8cj")
+
+[node name="Connector_West" type="Marker3D" parent="@Node3D@12/@Node3D@17" unique_id=367367232]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -5.25, 0, 0)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "conector candidato: secao 1+1 identica em todas as pecas; nao define rede viaria"
+
+[node name="Connector_East" type="Marker3D" parent="@Node3D@12/@Node3D@17" unique_id=1486762375]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 5.25, 0, 0)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "conector candidato: secao 1+1 identica em todas as pecas; nao define rede viaria"
+
+[node name="Candidate_LampSlot" type="Marker3D" parent="@Node3D@12/@Node3D@17" unique_id=1355932343]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.18, 3.7)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "posicao candidata de poste (calcada +Z, centro da faixa de servico); espacamento real e calibracao"
+
+[node name="@Node3D@18" type="Node3D" parent="@Node3D@12" unique_id=1383346195 instance=ExtResource("1_76kwr")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 31.5, 0, 0)
+metadata/visual_id = "road.urban_1x1.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.25, 0, -5.25)
+metadata/visual_envelope_size = Vector3(10.5, 0.18001, 10.5)
+
+[node name="Body" type="MeshInstance3D" parent="@Node3D@12/@Node3D@18" unique_id=305566056]
+mesh = ExtResource("2_rb8cj")
+
+[node name="Connector_West" type="Marker3D" parent="@Node3D@12/@Node3D@18" unique_id=1968894651]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -5.25, 0, 0)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "conector candidato: secao 1+1 identica em todas as pecas; nao define rede viaria"
+
+[node name="Connector_East" type="Marker3D" parent="@Node3D@12/@Node3D@18" unique_id=1462949955]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 5.25, 0, 0)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "conector candidato: secao 1+1 identica em todas as pecas; nao define rede viaria"
+
+[node name="Candidate_LampSlot" type="Marker3D" parent="@Node3D@12/@Node3D@18" unique_id=305941500]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.18, 3.7)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "posicao candidata de poste (calcada +Z, centro da faixa de servico); espacamento real e calibracao"
+
+[node name="SmallHouse" type="Node3D" parent="@Node3D@12" unique_id=1134949909 instance=ExtResource("3_suflc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 0, 12)
+metadata/visual_id = "residential.small_house.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-4.39, 0, -4.6)
+metadata/visual_envelope_size = Vector3(8.78, 6.57, 8.59)
+
+[node name="Body" type="MeshInstance3D" parent="@Node3D@12/SmallHouse" unique_id=55741078]
+mesh = ExtResource("4_1vrdw")
+
+[node name="Candidate_PedestrianEntry" type="Marker3D" parent="@Node3D@12/SmallHouse" unique_id=1058738156]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.3, 0, -4.66)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "entrada de pedestre candidata diante do degrau da porta; acesso real e da integracao"
+
+[node name="GrocerySmall" type="Node3D" parent="@Node3D@12" unique_id=455121754 instance=ExtResource("5_mgckp")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 15)
+metadata/visual_id = "commercial.grocery_small.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-5.2000003, 0, -7.3)
+metadata/visual_envelope_size = Vector3(10.400001, 6.15, 13.5)
+
+[node name="Body" type="MeshInstance3D" parent="@Node3D@12/GrocerySmall" unique_id=1103120468]
+mesh = ExtResource("6_b3rvt")
+
+[node name="Sign" type="Node3D" parent="@Node3D@12/GrocerySmall" unique_id=696455619]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.95, -6.07)
+metadata/replaceable = true
+metadata/panel_size_m = Vector2(6, 1.5)
+metadata/note = "letreiro substituivel; SignText e preenchido pela integracao com o nome da empresa REAL operadora"
+
+[node name="SignPanel" type="MeshInstance3D" parent="@Node3D@12/GrocerySmall/Sign" unique_id=72869599]
+mesh = ExtResource("7_abrk8")
+
+[node name="SignText" type="Label3D" parent="@Node3D@12/GrocerySmall/Sign" unique_id=1727713840]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0, -0.172)
+pixel_size = 0.01
+double_sided = false
+modulate = Color(0.16862746, 0.19215687, 0.21176471, 1)
+font_size = 48
+outline_size = 0
+autowrap_mode = 3
+width = 560.0
+
+[node name="Candidate_PedestrianEntry" type="Marker3D" parent="@Node3D@12/GrocerySmall" unique_id=379648333]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.2, 0, -7)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "entrada de pedestre candidata diante da porta de vidro; acesso real e da integracao"
+
+[node name="Candidate_CargoPoint" type="Marker3D" parent="@Node3D@12/GrocerySmall" unique_id=1624052301]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 6.05, 0, 3.8)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "ponto de carga candidato; acesso real e da integracao"
+
+[node name="TreeBroadleaf" type="Node3D" parent="@Node3D@12" unique_id=1468404352 instance=ExtResource("8_dyvq2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, 9)
+metadata/visual_id = "vegetation.tree_broadleaf.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-2.1791909, 0, -2.0504029)
+metadata/visual_envelope_size = Vector3(4.3976164, 6.490197, 4.3809843)
+
+[node name="Body" type="MeshInstance3D" parent="@Node3D@12/TreeBroadleaf" unique_id=335474374]
+mesh = ExtResource("9_g4dth")
+
+[node name="TruckCargo" type="Node3D" parent="@Node3D@12" unique_id=478526375 instance=ExtResource("10_pf0jp")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 5, 0, 1.625)
+metadata/visual_id = "vehicle.truck_cargo.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-1.45, 0, -3.6)
+metadata/visual_envelope_size = Vector3(2.9, 3.3000002, 7.2)
+
+[node name="Body" type="MeshInstance3D" parent="@Node3D@12/TruckCargo" unique_id=1434438746]
+mesh = ExtResource("11_66xpy")
+
+[node name="Wheel_FL" type="MeshInstance3D" parent="@Node3D@12/TruckCargo" unique_id=663919821]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.98, 0.47, -2.55)
+mesh = ExtResource("12_8uhud")
+
+[node name="Wheel_FR" type="MeshInstance3D" parent="@Node3D@12/TruckCargo" unique_id=1734386604]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.98, 0.47, -2.55)
+mesh = ExtResource("12_8uhud")
+
+[node name="Wheel_RL" type="MeshInstance3D" parent="@Node3D@12/TruckCargo" unique_id=389283387]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.98, 0.47, 1.75)
+mesh = ExtResource("12_8uhud")
+
+[node name="Wheel_RR" type="MeshInstance3D" parent="@Node3D@12/TruckCargo" unique_id=2014245337]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.98, 0.47, 1.75)
+mesh = ExtResource("12_8uhud")
+
+[node name="Candidate_CargoDoor" type="Marker3D" parent="@Node3D@12/TruckCargo" unique_id=131109233]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 3.9)
+gizmo_extents = 0.4
+metadata/candidate = true
+metadata/note = "CANDIDATO: ponto no solo atras das portas traseiras (fechadas). Nao e acesso funcional."
+
+[node name="SimPedestrian" type="Node3D" parent="@Node3D@12" unique_id=1720612037 instance=ExtResource("13_tpdt8")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22, 0.18, 4.2)
+metadata/visual_id = "agent.sim_pedestrian.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-0.3220917, 0, -0.192)
+metadata/visual_envelope_size = Vector3(0.6441834, 1.749018, 0.3643772)
+
+[node name="Rig" type="Node3D" parent="@Node3D@12/SimPedestrian" unique_id=2052772145]
+
+[node name="Hips" type="Node3D" parent="@Node3D@12/SimPedestrian/Rig" unique_id=2132702065]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.88, 0)
+
+[node name="Torso" type="MeshInstance3D" parent="@Node3D@12/SimPedestrian/Rig/Hips" unique_id=1676499420]
+mesh = ExtResource("14_c5jto")
+
+[node name="Head" type="MeshInstance3D" parent="@Node3D@12/SimPedestrian/Rig/Hips" unique_id=1579212086]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.47, 0)
+mesh = ExtResource("15_edb0g")
+
+[node name="ArmL" type="Node3D" parent="@Node3D@12/SimPedestrian/Rig/Hips" unique_id=1192383694]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.205, 0.378, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="@Node3D@12/SimPedestrian/Rig/Hips/ArmL" unique_id=1442817228]
+transform = Transform3D(0.99254614, 0.12186935, 0, -0.12186935, 0.99254614, 0, 0, 0, 1, 0, 0, 0)
+mesh = ExtResource("16_pliua")
+
+[node name="ArmR" type="Node3D" parent="@Node3D@12/SimPedestrian/Rig/Hips" unique_id=402020413]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.205, 0.378, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="@Node3D@12/SimPedestrian/Rig/Hips/ArmR" unique_id=1683316395]
+transform = Transform3D(0.99254614, -0.12186935, 0, 0.12186935, 0.99254614, 0, 0, 0, 1, 0, 0, 0)
+mesh = ExtResource("16_pliua")
+
+[node name="LegL" type="Node3D" parent="@Node3D@12/SimPedestrian/Rig/Hips" unique_id=2092706272]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.082, 0, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="@Node3D@12/SimPedestrian/Rig/Hips/LegL" unique_id=1857339819]
+mesh = ExtResource("17_h2vag")
+
+[node name="LegR" type="Node3D" parent="@Node3D@12/SimPedestrian/Rig/Hips" unique_id=802082718]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.082, 0, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="@Node3D@12/SimPedestrian/Rig/Hips/LegR" unique_id=149160772]
+mesh = ExtResource("17_h2vag")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="@Node3D@12/SimPedestrian" unique_id=1389849117]
+libraries/ = SubResource("AnimationLibrary_uv75e")
+
+[node name="@Node3D@19" type="Node3D" parent="@Node3D@12" unique_id=1826922598 instance=ExtResource("13_tpdt8")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0.18, 4.2)
+metadata/visual_id = "agent.sim_pedestrian.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-0.3220917, 0, -0.192)
+metadata/visual_envelope_size = Vector3(0.6441834, 1.749018, 0.3643772)
+
+[node name="Rig" type="Node3D" parent="@Node3D@12/@Node3D@19" unique_id=1918160871]
+
+[node name="Hips" type="Node3D" parent="@Node3D@12/@Node3D@19/Rig" unique_id=1852762434]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.88, 0)
+
+[node name="Torso" type="MeshInstance3D" parent="@Node3D@12/@Node3D@19/Rig/Hips" unique_id=1072950123]
+mesh = ExtResource("14_c5jto")
+
+[node name="Head" type="MeshInstance3D" parent="@Node3D@12/@Node3D@19/Rig/Hips" unique_id=150752468]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.47, 0)
+mesh = ExtResource("15_edb0g")
+
+[node name="ArmL" type="Node3D" parent="@Node3D@12/@Node3D@19/Rig/Hips" unique_id=2073450253]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.205, 0.378, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="@Node3D@12/@Node3D@19/Rig/Hips/ArmL" unique_id=1431955271]
+transform = Transform3D(0.99254614, 0.12186935, 0, -0.12186935, 0.99254614, 0, 0, 0, 1, 0, 0, 0)
+mesh = ExtResource("16_pliua")
+
+[node name="ArmR" type="Node3D" parent="@Node3D@12/@Node3D@19/Rig/Hips" unique_id=1480406043]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.205, 0.378, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="@Node3D@12/@Node3D@19/Rig/Hips/ArmR" unique_id=639998200]
+transform = Transform3D(0.99254614, -0.12186935, 0, 0.12186935, 0.99254614, 0, 0, 0, 1, 0, 0, 0)
+mesh = ExtResource("16_pliua")
+
+[node name="LegL" type="Node3D" parent="@Node3D@12/@Node3D@19/Rig/Hips" unique_id=1797728446]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.082, 0, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="@Node3D@12/@Node3D@19/Rig/Hips/LegL" unique_id=1441596521]
+mesh = ExtResource("17_h2vag")
+
+[node name="LegR" type="Node3D" parent="@Node3D@12/@Node3D@19/Rig/Hips" unique_id=1714179796]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.082, 0, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="@Node3D@12/@Node3D@19/Rig/Hips/LegR" unique_id=1473912664]
+mesh = ExtResource("17_h2vag")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="@Node3D@12/@Node3D@19" unique_id=1977329528]
+libraries/ = SubResource("AnimationLibrary_uv75e")
+
+[node name="@Node3D@20" type="Node3D" parent="@Node3D@12" unique_id=128777646 instance=ExtResource("13_tpdt8")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17, 0.18, 4.2)
+metadata/visual_id = "agent.sim_pedestrian.a"
+metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
+metadata/visual_envelope_min = Vector3(-0.3220917, 0, -0.192)
+metadata/visual_envelope_size = Vector3(0.6441834, 1.749018, 0.3643772)
+
+[node name="Rig" type="Node3D" parent="@Node3D@12/@Node3D@20" unique_id=813041823]
+
+[node name="Hips" type="Node3D" parent="@Node3D@12/@Node3D@20/Rig" unique_id=2086046604]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.88, 0)
+
+[node name="Torso" type="MeshInstance3D" parent="@Node3D@12/@Node3D@20/Rig/Hips" unique_id=365306996]
+mesh = ExtResource("14_c5jto")
+
+[node name="Head" type="MeshInstance3D" parent="@Node3D@12/@Node3D@20/Rig/Hips" unique_id=399838617]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.47, 0)
+mesh = ExtResource("15_edb0g")
+
+[node name="ArmL" type="Node3D" parent="@Node3D@12/@Node3D@20/Rig/Hips" unique_id=1979205247]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.205, 0.378, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="@Node3D@12/@Node3D@20/Rig/Hips/ArmL" unique_id=1846832380]
+transform = Transform3D(0.99254614, 0.12186935, 0, -0.12186935, 0.99254614, 0, 0, 0, 1, 0, 0, 0)
+mesh = ExtResource("16_pliua")
+
+[node name="ArmR" type="Node3D" parent="@Node3D@12/@Node3D@20/Rig/Hips" unique_id=1856725410]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.205, 0.378, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="@Node3D@12/@Node3D@20/Rig/Hips/ArmR" unique_id=2043397502]
+transform = Transform3D(0.99254614, -0.12186935, 0, 0.12186935, 0.99254614, 0, 0, 0, 1, 0, 0, 0)
+mesh = ExtResource("16_pliua")
+
+[node name="LegL" type="Node3D" parent="@Node3D@12/@Node3D@20/Rig/Hips" unique_id=2129516862]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.082, 0, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="@Node3D@12/@Node3D@20/Rig/Hips/LegL" unique_id=725133250]
+mesh = ExtResource("17_h2vag")
+
+[node name="LegR" type="Node3D" parent="@Node3D@12/@Node3D@20/Rig/Hips" unique_id=250018331]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.082, 0, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="@Node3D@12/@Node3D@20/Rig/Hips/LegR" unique_id=1404604072]
+mesh = ExtResource("17_h2vag")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="@Node3D@12/@Node3D@20" unique_id=213995005]
+libraries/ = SubResource("AnimationLibrary_uv75e")
+
+[node name="TruckDump" type="Node3D" parent="@Node3D@12" unique_id=1792706996 instance=ExtResource("18_460pk")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -25.5, 0, -1.625)
+metadata/visual_id = "vehicle.truck_dump.a"
+metadata/asset_status = "PENDENTE de revisao humana"
+metadata/visual_envelope_min = Vector3(-1.45, 0, -3.6)
+metadata/visual_envelope_size = Vector3(2.9, 2.7799997, 7.2)
+
+[node name="Body" type="MeshInstance3D" parent="@Node3D@12/TruckDump" unique_id=293336939]
+mesh = ExtResource("19_c4u5v")
+
+[node name="Wheel_FL" type="MeshInstance3D" parent="@Node3D@12/TruckDump" unique_id=1342423441]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 0.47, -2.55)
+mesh = ExtResource("20_84yte")
+
+[node name="Wheel_FR" type="MeshInstance3D" parent="@Node3D@12/TruckDump" unique_id=2040997954]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 0.47, -2.55)
+mesh = ExtResource("20_84yte")
+
+[node name="Wheel_ML" type="MeshInstance3D" parent="@Node3D@12/TruckDump" unique_id=1900396495]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 0.47, 1.45)
+mesh = ExtResource("20_84yte")
+
+[node name="Wheel_MR" type="MeshInstance3D" parent="@Node3D@12/TruckDump" unique_id=621957537]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 0.47, 1.45)
+mesh = ExtResource("20_84yte")
+
+[node name="Wheel_RL" type="MeshInstance3D" parent="@Node3D@12/TruckDump" unique_id=1369285002]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 0.47, 2.65)
+mesh = ExtResource("20_84yte")
+
+[node name="Wheel_RR" type="MeshInstance3D" parent="@Node3D@12/TruckDump" unique_id=650549034]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 0.47, 2.65)
+mesh = ExtResource("20_84yte")
+
+[node name="Candidate_Discharge" type="Marker3D" parent="@Node3D@12/TruckDump" unique_id=595080997]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3.9)
+
+[node name="BedPivot" type="Node3D" parent="@Node3D@12/TruckDump" unique_id=485707196]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.18, 2.9)
+
+[node name="Bed" type="MeshInstance3D" parent="@Node3D@12/TruckDump/BedPivot" unique_id=1958741164]
+mesh = ExtResource("21_ghyj3")
+
+[node name="TailgatePivot" type="Node3D" parent="@Node3D@12/TruckDump/BedPivot" unique_id=1878390067]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.04, 0.34)
+
+[node name="Tailgate" type="MeshInstance3D" parent="@Node3D@12/TruckDump/BedPivot/TailgatePivot" unique_id=1594814663]
+mesh = ExtResource("22_1vio0")
+
+[node name="LoadSandGravel" type="MeshInstance3D" parent="@Node3D@12/TruckDump/BedPivot" unique_id=545196381]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.14, 0)
+mesh = ExtResource("23_scxh5")
+
+[node name="LoadAsphalt" type="MeshInstance3D" parent="@Node3D@12/TruckDump/BedPivot" unique_id=881387934]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.14, 0)
+visible = false
+mesh = ExtResource("24_oquml")
+
+[node name="Cover" type="MeshInstance3D" parent="@Node3D@12/TruckDump/BedPivot" unique_id=2037301751]
+visible = false
+mesh = ExtResource("25_5qpal")
+
+[node name="HydraulicTarget" type="Marker3D" parent="@Node3D@12/TruckDump/BedPivot" unique_id=874285847]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, -2.7)
+
+[node name="HydraulicAnchor" type="Marker3D" parent="@Node3D@12/TruckDump" unique_id=871875548]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.89, -0.65)
+
+[node name="HydraulicBase" type="MeshInstance3D" parent="@Node3D@12/TruckDump" unique_id=1229384488]
+transform = Transform3D(1, 0, 0, 0, 0.57357645, 0.81915206, 0, -0.81915206, 0.57357645, 0, 0.85, -0.55)
+mesh = ExtResource("26_v2qxd")
+
+[node name="HydraulicRod" type="MeshInstance3D" parent="@Node3D@12/TruckDump" unique_id=284590740]
+transform = Transform3D(1, 0, 0, 0, 0.57357645, 0.81915206, 0, -0.81915206, 0.57357645, 0, 0.85, -0.55)
+mesh = ExtResource("27_psvmf")
+
+[node name="@Label3D@21" type="Label3D" parent="@Node3D@12" unique_id=1795482549]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25.5, 0.5, -6.5)
+pixel_size = 0.011
+billboard = 1
+no_depth_test = true
+modulate = Color(0.9607843, 0.94509804, 0.9098039, 1)
+outline_modulate = Color(0.14901961, 0.2, 0.23921569, 1)
+text = "AREIA / BRITA"
+
+[node name="@Node3D@22" type="Node3D" parent="@Node3D@12" unique_id=485093892 instance=ExtResource("18_460pk")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -17.2, 0, -1.625)
+metadata/visual_id = "vehicle.truck_dump.a"
+metadata/asset_status = "PENDENTE de revisao humana"
+metadata/visual_envelope_min = Vector3(-1.45, 0, -3.6)
+metadata/visual_envelope_size = Vector3(2.9, 2.7799997, 7.2)
+
+[node name="Body" type="MeshInstance3D" parent="@Node3D@12/@Node3D@22" unique_id=1048420329]
+mesh = ExtResource("19_c4u5v")
+
+[node name="Wheel_FL" type="MeshInstance3D" parent="@Node3D@12/@Node3D@22" unique_id=1778967407]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 0.47, -2.55)
+mesh = ExtResource("20_84yte")
+
+[node name="Wheel_FR" type="MeshInstance3D" parent="@Node3D@12/@Node3D@22" unique_id=413676921]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 0.47, -2.55)
+mesh = ExtResource("20_84yte")
+
+[node name="Wheel_ML" type="MeshInstance3D" parent="@Node3D@12/@Node3D@22" unique_id=1085665517]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 0.47, 1.45)
+mesh = ExtResource("20_84yte")
+
+[node name="Wheel_MR" type="MeshInstance3D" parent="@Node3D@12/@Node3D@22" unique_id=1256945909]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 0.47, 1.45)
+mesh = ExtResource("20_84yte")
+
+[node name="Wheel_RL" type="MeshInstance3D" parent="@Node3D@12/@Node3D@22" unique_id=1345755303]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 0.47, 2.65)
+mesh = ExtResource("20_84yte")
+
+[node name="Wheel_RR" type="MeshInstance3D" parent="@Node3D@12/@Node3D@22" unique_id=1840757358]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 0.47, 2.65)
+mesh = ExtResource("20_84yte")
+
+[node name="Candidate_Discharge" type="Marker3D" parent="@Node3D@12/@Node3D@22" unique_id=1389097124]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3.9)
+
+[node name="BedPivot" type="Node3D" parent="@Node3D@12/@Node3D@22" unique_id=1188162251]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.18, 2.9)
+
+[node name="Bed" type="MeshInstance3D" parent="@Node3D@12/@Node3D@22/BedPivot" unique_id=828171074]
+mesh = ExtResource("21_ghyj3")
+
+[node name="TailgatePivot" type="Node3D" parent="@Node3D@12/@Node3D@22/BedPivot" unique_id=162365019]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.04, 0.34)
+
+[node name="Tailgate" type="MeshInstance3D" parent="@Node3D@12/@Node3D@22/BedPivot/TailgatePivot" unique_id=1649794161]
+mesh = ExtResource("22_1vio0")
+
+[node name="LoadSandGravel" type="MeshInstance3D" parent="@Node3D@12/@Node3D@22/BedPivot" unique_id=783979555]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.14, 0)
+visible = false
+mesh = ExtResource("23_scxh5")
+
+[node name="LoadAsphalt" type="MeshInstance3D" parent="@Node3D@12/@Node3D@22/BedPivot" unique_id=139400681]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.14, 0)
+mesh = ExtResource("24_oquml")
+
+[node name="Cover" type="MeshInstance3D" parent="@Node3D@12/@Node3D@22/BedPivot" unique_id=1586686979]
+mesh = ExtResource("25_5qpal")
+
+[node name="HydraulicTarget" type="Marker3D" parent="@Node3D@12/@Node3D@22/BedPivot" unique_id=1373453492]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, -2.7)
+
+[node name="HydraulicAnchor" type="Marker3D" parent="@Node3D@12/@Node3D@22" unique_id=1166823415]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.89, -0.65)
+
+[node name="HydraulicBase" type="MeshInstance3D" parent="@Node3D@12/@Node3D@22" unique_id=512240284]
+transform = Transform3D(1, 0, 0, 0, 0.57357645, 0.81915206, 0, -0.81915206, 0.57357645, 0, 0.85, -0.55)
+mesh = ExtResource("26_v2qxd")
+
+[node name="HydraulicRod" type="MeshInstance3D" parent="@Node3D@12/@Node3D@22" unique_id=1903737549]
+transform = Transform3D(1, 0, 0, 0, 0.57357645, 0.81915206, 0, -0.81915206, 0.57357645, 0, 0.85, -0.55)
+mesh = ExtResource("27_psvmf")
+
+[node name="@Label3D@23" type="Label3D" parent="@Node3D@12" unique_id=1033630699]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17.2, 0.5, -6.5)
+pixel_size = 0.011
+billboard = 1
+no_depth_test = true
+modulate = Color(0.9607843, 0.94509804, 0.9098039, 1)
+outline_modulate = Color(0.14901961, 0.2, 0.23921569, 1)
+text = "ASFALTO + LONA"
+
+[node name="TruckMixer" type="Node3D" parent="@Node3D@12" unique_id=2048396467 instance=ExtResource("28_m0d4w")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -8.9, 0, -1.625)
+metadata/visual_id = "vehicle.truck_mixer.a"
+metadata/asset_status = "PENDENTE de revisao humana"
+metadata/visual_envelope_min = Vector3(-1.45, 0, -3.6)
+metadata/visual_envelope_size = Vector3(2.9, 3.2828834, 7.2)
+
+[node name="Body" type="MeshInstance3D" parent="@Node3D@12/TruckMixer" unique_id=2026465829]
+mesh = ExtResource("29_2n3ag")
+
+[node name="Wheel_FL" type="MeshInstance3D" parent="@Node3D@12/TruckMixer" unique_id=1580869375]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 0.47, -2.55)
+mesh = ExtResource("20_84yte")
+
+[node name="Wheel_FR" type="MeshInstance3D" parent="@Node3D@12/TruckMixer" unique_id=789503719]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 0.47, -2.55)
+mesh = ExtResource("20_84yte")
+
+[node name="Wheel_ML" type="MeshInstance3D" parent="@Node3D@12/TruckMixer" unique_id=2132495655]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 0.47, 1.45)
+mesh = ExtResource("20_84yte")
+
+[node name="Wheel_MR" type="MeshInstance3D" parent="@Node3D@12/TruckMixer" unique_id=618706997]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 0.47, 1.45)
+mesh = ExtResource("20_84yte")
+
+[node name="Wheel_RL" type="MeshInstance3D" parent="@Node3D@12/TruckMixer" unique_id=2060358771]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 0.47, 2.65)
+mesh = ExtResource("20_84yte")
+
+[node name="Wheel_RR" type="MeshInstance3D" parent="@Node3D@12/TruckMixer" unique_id=1356255932]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 0.47, 2.65)
+mesh = ExtResource("20_84yte")
+
+[node name="Candidate_Discharge" type="Marker3D" parent="@Node3D@12/TruckMixer" unique_id=286327810]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3.9)
+
+[node name="MixerFrame" type="MeshInstance3D" parent="@Node3D@12/TruckMixer" unique_id=704063969]
+mesh = ExtResource("30_mkolx")
+
+[node name="DrumMount" type="Node3D" parent="@Node3D@12/TruckMixer" unique_id=180377220]
+transform = Transform3D(1, 0, 0, 0, 0.9781476, 0.2079117, 0, -0.2079117, 0.9781476, 0, 2.32, 0.52)
+
+[node name="Drum" type="MeshInstance3D" parent="@Node3D@12/TruckMixer/DrumMount" unique_id=593609563]
+mesh = ExtResource("31_bvxwm")
+
+[node name="ChutePivot" type="Node3D" parent="@Node3D@12/TruckMixer" unique_id=350549044]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.62, 2.49)
+
+[node name="Chute" type="MeshInstance3D" parent="@Node3D@12/TruckMixer/ChutePivot" unique_id=584529405]
+mesh = ExtResource("32_k21es")
+
+[node name="@Label3D@24" type="Label3D" parent="@Node3D@12" unique_id=1715537007]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.9, 0.5, -6.5)
+pixel_size = 0.011
+billboard = 1
+no_depth_test = true
+modulate = Color(0.9607843, 0.94509804, 0.9098039, 1)
+outline_modulate = Color(0.14901961, 0.2, 0.23921569, 1)
+text = "BETONEIRA"
+
+[node name="TruckFlatbed" type="Node3D" parent="@Node3D@12" unique_id=1326603462 instance=ExtResource("33_qxufk")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -0.6, 0, -1.625)
+metadata/visual_id = "vehicle.truck_flatbed.a"
+metadata/asset_status = "PENDENTE de revisao humana"
+metadata/visual_envelope_min = Vector3(-1.45, 0, -3.6)
+metadata/visual_envelope_size = Vector3(2.9, 2.7799997, 7.2)
+
+[node name="Body" type="MeshInstance3D" parent="@Node3D@12/TruckFlatbed" unique_id=1044672546]
+mesh = ExtResource("34_1b3rv")
+
+[node name="Wheel_FL" type="MeshInstance3D" parent="@Node3D@12/TruckFlatbed" unique_id=945827874]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 0.47, -2.55)
+mesh = ExtResource("20_84yte")
+
+[node name="Wheel_FR" type="MeshInstance3D" parent="@Node3D@12/TruckFlatbed" unique_id=1854597193]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 0.47, -2.55)
+mesh = ExtResource("20_84yte")
+
+[node name="Wheel_ML" type="MeshInstance3D" parent="@Node3D@12/TruckFlatbed" unique_id=336550124]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 0.47, 1.45)
+mesh = ExtResource("20_84yte")
+
+[node name="Wheel_MR" type="MeshInstance3D" parent="@Node3D@12/TruckFlatbed" unique_id=589608884]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 0.47, 1.45)
+mesh = ExtResource("20_84yte")
+
+[node name="Wheel_RL" type="MeshInstance3D" parent="@Node3D@12/TruckFlatbed" unique_id=313927412]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 0.47, 2.65)
+mesh = ExtResource("20_84yte")
+
+[node name="Wheel_RR" type="MeshInstance3D" parent="@Node3D@12/TruckFlatbed" unique_id=690586353]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 0.47, 2.65)
+mesh = ExtResource("20_84yte")
+
+[node name="Candidate_Discharge" type="Marker3D" parent="@Node3D@12/TruckFlatbed" unique_id=788082323]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3.9)
+
+[node name="Flatbed" type="MeshInstance3D" parent="@Node3D@12/TruckFlatbed" unique_id=852373631]
+mesh = ExtResource("35_nhv8k")
+
+[node name="LoadSteel" type="MeshInstance3D" parent="@Node3D@12/TruckFlatbed" unique_id=1863839668]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.32, 0)
+mesh = ExtResource("36_d3ylc")
+
+[node name="LoadWood" type="MeshInstance3D" parent="@Node3D@12/TruckFlatbed" unique_id=166546648]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.32, 0)
+visible = false
+mesh = ExtResource("37_bb803")
+
+[node name="@Label3D@25" type="Label3D" parent="@Node3D@12" unique_id=2017876417]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6, 0.5, -6.5)
+pixel_size = 0.011
+billboard = 1
+no_depth_test = true
+modulate = Color(0.9607843, 0.94509804, 0.9098039, 1)
+outline_modulate = Color(0.14901961, 0.2, 0.23921569, 1)
+text = "AÇO"
+
+[node name="@Node3D@26" type="Node3D" parent="@Node3D@12" unique_id=1225240357 instance=ExtResource("33_qxufk")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 7.7, 0, -1.625)
+metadata/visual_id = "vehicle.truck_flatbed.a"
+metadata/asset_status = "PENDENTE de revisao humana"
+metadata/visual_envelope_min = Vector3(-1.45, 0, -3.6)
+metadata/visual_envelope_size = Vector3(2.9, 2.7799997, 7.2)
+
+[node name="Body" type="MeshInstance3D" parent="@Node3D@12/@Node3D@26" unique_id=1142148372]
+mesh = ExtResource("34_1b3rv")
+
+[node name="Wheel_FL" type="MeshInstance3D" parent="@Node3D@12/@Node3D@26" unique_id=1901703270]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 0.47, -2.55)
+mesh = ExtResource("20_84yte")
+
+[node name="Wheel_FR" type="MeshInstance3D" parent="@Node3D@12/@Node3D@26" unique_id=2056919739]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 0.47, -2.55)
+mesh = ExtResource("20_84yte")
+
+[node name="Wheel_ML" type="MeshInstance3D" parent="@Node3D@12/@Node3D@26" unique_id=1392378983]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 0.47, 1.45)
+mesh = ExtResource("20_84yte")
+
+[node name="Wheel_MR" type="MeshInstance3D" parent="@Node3D@12/@Node3D@26" unique_id=995058126]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 0.47, 1.45)
+mesh = ExtResource("20_84yte")
+
+[node name="Wheel_RL" type="MeshInstance3D" parent="@Node3D@12/@Node3D@26" unique_id=1798095209]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 0.47, 2.65)
+mesh = ExtResource("20_84yte")
+
+[node name="Wheel_RR" type="MeshInstance3D" parent="@Node3D@12/@Node3D@26" unique_id=296376143]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 0.47, 2.65)
+mesh = ExtResource("20_84yte")
+
+[node name="Candidate_Discharge" type="Marker3D" parent="@Node3D@12/@Node3D@26" unique_id=519195610]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3.9)
+
+[node name="Flatbed" type="MeshInstance3D" parent="@Node3D@12/@Node3D@26" unique_id=164321642]
+mesh = ExtResource("35_nhv8k")
+
+[node name="LoadSteel" type="MeshInstance3D" parent="@Node3D@12/@Node3D@26" unique_id=1657979110]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.32, 0)
+visible = false
+mesh = ExtResource("36_d3ylc")
+
+[node name="LoadWood" type="MeshInstance3D" parent="@Node3D@12/@Node3D@26" unique_id=1124212322]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.32, 0)
+mesh = ExtResource("37_bb803")
+
+[node name="@Label3D@27" type="Label3D" parent="@Node3D@12" unique_id=1039918792]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.7, 0.5, -6.5)
+pixel_size = 0.011
+billboard = 1
+no_depth_test = true
+modulate = Color(0.9607843, 0.94509804, 0.9098039, 1)
+outline_modulate = Color(0.14901961, 0.2, 0.23921569, 1)
+text = "MADEIRA"
+
+[node name="AsphaltPaver" type="Node3D" parent="@Node3D@12" unique_id=471754496 instance=ExtResource("38_m3dbt")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 16, 0, -1.625)
+metadata/visual_id = "vehicle.asphalt_paver.a"
+metadata/asset_status = "PENDENTE de revisao humana"
+metadata/visual_envelope_min = Vector3(-1.27, 0, -2.31)
+metadata/visual_envelope_size = Vector3(2.54, 2.8400002, 4.62)
+
+[node name="Body" type="MeshInstance3D" parent="@Node3D@12/AsphaltPaver" unique_id=418979856]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.13)
+mesh = ExtResource("39_jv1c2")
+
+[node name="TrackLeft" type="MeshInstance3D" parent="@Node3D@12/AsphaltPaver" unique_id=1474862816]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.98, -0.12, -0.13)
+mesh = ExtResource("40_pd3uy")
+
+[node name="HopperLeftPivot" type="Node3D" parent="@Node3D@12/AsphaltPaver" unique_id=541190390]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.76, 0.75, -1.55)
+
+[node name="Wing" type="MeshInstance3D" parent="@Node3D@12/AsphaltPaver/HopperLeftPivot" unique_id=1895181767]
+mesh = ExtResource("41_4ofn8")
+
+[node name="TrackRight" type="MeshInstance3D" parent="@Node3D@12/AsphaltPaver" unique_id=1148585469]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.98, -0.12, -0.13)
+mesh = ExtResource("40_pd3uy")
+
+[node name="HopperRightPivot" type="Node3D" parent="@Node3D@12/AsphaltPaver" unique_id=2119577487]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.76, 0.75, -1.55)
+
+[node name="Wing" type="MeshInstance3D" parent="@Node3D@12/AsphaltPaver/HopperRightPivot" unique_id=1637267467]
+mesh = ExtResource("42_idpg5")
+
+[node name="HopperLoad" type="MeshInstance3D" parent="@Node3D@12/AsphaltPaver" unique_id=1306999141]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.84, -0.13)
+mesh = ExtResource("43_46eep")
+
+[node name="ScreedPivot" type="Node3D" parent="@Node3D@12/AsphaltPaver" unique_id=247712637]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 1.19)
+
+[node name="Screed" type="MeshInstance3D" parent="@Node3D@12/AsphaltPaver/ScreedPivot" unique_id=509986406]
+mesh = ExtResource("44_kmbuk")
+
+[node name="Candidate_HopperFeed" type="Marker3D" parent="@Node3D@12/AsphaltPaver" unique_id=469381497]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2.73)
+
+[node name="Candidate_PavementExit" type="Marker3D" parent="@Node3D@12/AsphaltPaver" unique_id=1295505424]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2.2199998)
+
+[node name="@Label3D@28" type="Label3D" parent="@Node3D@12" unique_id=1142312424]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0.5, -6.5)
+pixel_size = 0.011
+billboard = 1
+no_depth_test = true
+modulate = Color(0.9607843, 0.94509804, 0.9098039, 1)
+outline_modulate = Color(0.14901961, 0.2, 0.23921569, 1)
+text = "PAVIMENTADORA"
+
+[node name="RoadRoller" type="Node3D" parent="@Node3D@12" unique_id=2027524981 instance=ExtResource("45_2750g")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 24.3, 0, -1.625)
+metadata/visual_id = "vehicle.road_roller.a"
+metadata/asset_status = "PENDENTE de revisao humana"
+metadata/visual_envelope_min = Vector3(-1.1599535, 2.8848648e-05, -1.9784712)
+metadata/visual_envelope_size = Vector3(2.319907, 2.7099712, 3.9669423)
+
+[node name="Body" type="MeshInstance3D" parent="@Node3D@12/RoadRoller" unique_id=685492976]
+mesh = ExtResource("46_o28f3")
+
+[node name="FrontSteering" type="Node3D" parent="@Node3D@12/RoadRoller" unique_id=1177477850]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.39)
+
+[node name="Fork" type="MeshInstance3D" parent="@Node3D@12/RoadRoller/FrontSteering" unique_id=618802371]
+mesh = ExtResource("47_phbtm")
+
+[node name="FrontDrum" type="MeshInstance3D" parent="@Node3D@12/RoadRoller/FrontSteering" unique_id=1565100122]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5885, 0)
+mesh = ExtResource("48_28443")
+
+[node name="RearDrum" type="MeshInstance3D" parent="@Node3D@12/RoadRoller" unique_id=88016450]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5885, 1.4)
+mesh = ExtResource("48_28443")
+
+[node name="Candidate_ContactFront" type="Marker3D" parent="@Node3D@12/RoadRoller" unique_id=1588167371]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.39)
+
+[node name="Candidate_ContactRear" type="Marker3D" parent="@Node3D@12/RoadRoller" unique_id=929638389]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.4)
+
+[node name="@Label3D@29" type="Label3D" parent="@Node3D@12" unique_id=1197962513]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.3, 0.5, -6.5)
+pixel_size = 0.011
+billboard = 1
+no_depth_test = true
+modulate = Color(0.9607843, 0.94509804, 0.9098039, 1)
+outline_modulate = Color(0.14901961, 0.2, 0.23921569, 1)
+text = "ROLO"

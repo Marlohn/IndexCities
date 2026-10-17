@@ -70,7 +70,7 @@ public sealed partial class CitySimulation
         // Only the road samples the stopped vehicle physically occupies are closed.
         var avoid=State.Roads.Where(r=>r.Position.Distance(blocker.Position)<State.Tuning.RoadStep+.5).Select(r=>r.Id).ToHashSet();
         if(avoid.Contains(behind)){v.Cause="Rua bloqueada por veículo parado; sem espaço para meia-volta";return false;}
-        var alternative=FindRoadRoute(behind,v.Route[^1],avoid);
+        var alternative=FindRoadRoute(behind,v.Route[^1],false,avoid);
         if(alternative.Count==0){v.Cause="Rua bloqueada por veículo parado; sem rota alternativa";return false;}
         if(!OppositeLaneClear(v,blocker,dir,left,8,returnsToLane:false))return false;
         // It moves into the lane beside it and drives back along that lane; the

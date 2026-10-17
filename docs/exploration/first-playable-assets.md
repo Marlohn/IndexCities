@@ -50,6 +50,8 @@ Polícia/bombeiros/ambulâncias, ônibus/vans/táxis, trens, escola/hospital, pr
 
 ## Contrato de integração a fechar cedo com a IA do jogo
 
+**Pedido atual do responsável — 2026-10-16:** produzir os caminhões por material, pavimentadora e rolo aprovados na [SPEC de logística](../spec/materiais-logistica.md#caminhões-reconhecíveis-pelo-material) e na [SPEC de construção](../spec/construcao.md#pavimentação-física-das-ruas). A modelagem desta entrega usa **GPT-6.1-sol, esforço xhigh**, por solicitação expressa, substituindo para esta frente a atribuição histórica ao Claude. A tarefa de arte deve preservar o padrão visual do conjunto atual, com fonte original editável, partes móveis separadas e sem autoplay; apresentar amostras cedo dentro do Godot, em escala de rua e com câmera do jogo. A aprovação do comportamento não equivale à validação humana da estética dos modelos produzidos.
+
 O responsável pela implementação e a IA de assets precisam alinhar, **antes de congelar os modelos dimensionais**:
 
 1. **Escala e orientação:** unidade de trabalho, eixo vertical da engine (Godot: Y), eixo de fachada e pivô no solo; a pesquisa técnica sugere **1 unidade 3D = 1 metro**, mas isso precisa ser testado no projeto e não fixa lotes arbitrários.

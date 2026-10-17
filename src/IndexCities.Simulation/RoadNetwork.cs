@@ -3,8 +3,8 @@ namespace IndexCities.Simulation;
 public sealed partial class CitySimulation
 {
     Dictionary<int,RoadNode> _roads=new();
-    HashSet<int> _exteriorConnected=new();Dictionary<(BuildingKind,Point,double),int?> _accessCache=new();
-    void RebuildRoadGraph(bool changed=true){_roads=State.Roads.ToDictionary(r=>r.Id);foreach(var n in State.Roads){n.Neighbours=State.Roads.Where(r=>r.Id!=n.Id&&r.Position.Distance(n.Position)<=State.Tuning.RoadStep+.01).Select(r=>r.Id).ToList();}RebuildJunctionAreas();if(changed)State.RoadRevision++;_accessCache.Clear();_walkSurface=null;_exteriorConnected.Clear();var q=new Queue<int>();q.Enqueue(EntryNode().Id);while(q.Count>0){var id=q.Dequeue();if(!_exteriorConnected.Add(id))continue;foreach(var next in _roads[id].Neighbours)if(_roads[next].MaintenanceRatio>.05)q.Enqueue(next);}}
+    HashSet<int> _exteriorConnected=new(),_workExteriorConnected=new();Dictionary<(BuildingKind,Point,double),int?> _accessCache=new();
+    void RebuildRoadGraph(bool changed=true){_roads=State.Roads.ToDictionary(r=>r.Id);foreach(var n in State.Roads){n.Neighbours=State.Roads.Where(r=>r.Id!=n.Id&&r.Position.Distance(n.Position)<=State.Tuning.RoadStep+.01).Select(r=>r.Id).ToList();}RebuildJunctionAreas();if(changed)State.RoadRevision++;_accessCache.Clear();_walkSurface=null;_exteriorConnected.Clear();_workExteriorConnected.Clear();var q=new Queue<int>();q.Enqueue(EntryNode().Id);while(q.Count>0){var id=q.Dequeue();if(!_workExteriorConnected.Add(id))continue;foreach(var next in _roads[id].Neighbours)if(_roads[next].MaintenanceRatio>.05)q.Enqueue(next);}q.Enqueue(EntryNode().Id);while(q.Count>0){var id=q.Dequeue();if(!_exteriorConnected.Add(id))continue;foreach(var next in _roads[id].Neighbours)if(!_roads[next].ConstructionOnly&&_roads[next].MaintenanceRatio>.05)q.Enqueue(next);}}
     RoadNode AddRoad(Point point,bool highway=false)
     {
         var existing=State.Roads.FirstOrDefault(r=>r.Position.Distance(point)<.05);if(existing!=null)return existing;
@@ -20,17 +20,17 @@ public sealed partial class CitySimulation
     public RoadNode? Access(Building b)
     {
         var key=(b.Kind,b.Position,b.Rotation);if(_accessCache.TryGetValue(key,out var id))return id==null?null:_roads.GetValueOrDefault(id.Value);
-        var result=State.Roads.Where(r=>!r.Highway&&r.MaintenanceRatio>.05&&r.Position.Distance(b.Door)<=State.Tuning.RoadWidth/2+3).MinBy(r=>r.Position.Distance(b.Door));if(_accessCache.Count>4096)_accessCache.Clear();_accessCache[key]=result?.Id;return result;
+        var result=State.Roads.Where(r=>!r.Highway&&!r.ConstructionOnly&&r.MaintenanceRatio>.05&&r.Position.Distance(b.Door)<=State.Tuning.RoadWidth/2+3).MinBy(r=>r.Position.Distance(b.Door));if(_accessCache.Count>4096)_accessCache.Clear();_accessCache[key]=result?.Id;return result;
     }
     RoadNode? NearestRoad(Point p,bool allowHighway=true)=>State.Roads.Where(r=>allowHighway||!r.Highway).MinBy(r=>r.Position.Distance(p));
     public bool HasExteriorAccess(Building b)=>Access(b) is { } n&&_exteriorConnected.Contains(n.Id);
     RoadNode EntryNode()=>State.Roads.First(r=>r.Highway&&r.Position.Distance(State.Entry)<.1);
-    public List<int> FindRoadRoute(int from,int to)=>FindRoadRoute(from,to,null);
-    List<int> FindRoadRoute(int from,int to,HashSet<int>? avoid)
+    public List<int> FindRoadRoute(int from,int to,bool construction=false)=>FindRoadRoute(from,to,construction,null);
+    List<int> FindRoadRoute(int from,int to,bool construction,HashSet<int>? avoid)
     {
-        if(!_roads.ContainsKey(from)||!_roads.ContainsKey(to))return [];
+        if(!_roads.ContainsKey(from)||!_roads.ContainsKey(to)||!construction&&(_roads[from].ConstructionOnly||_roads[to].ConstructionOnly))return [];
         var queue=new Queue<int>();var parent=new Dictionary<int,int>{{from,-1}};queue.Enqueue(from);
-        while(queue.Count>0){var id=queue.Dequeue();if(id==to)break;foreach(var next in _roads[id].Neighbours){if(parent.ContainsKey(next)||_roads[next].MaintenanceRatio<=.05||avoid!=null&&avoid.Contains(next))continue;parent[next]=id;queue.Enqueue(next);}}
+        while(queue.Count>0){var id=queue.Dequeue();if(id==to)break;foreach(var next in _roads[id].Neighbours){if(parent.ContainsKey(next)||_roads[next].MaintenanceRatio<=.05||!construction&&_roads[next].ConstructionOnly||avoid!=null&&avoid.Contains(next))continue;parent[next]=id;queue.Enqueue(next);}}
         if(!parent.ContainsKey(to))return [];var result=new List<int>();for(var id=to;id!=-1;id=parent[id])result.Add(id);result.Reverse();return result;
     }
     double RouteLength(IReadOnlyList<int> route){double length=0;for(var i=1;i<route.Count;i++)length+=_roads[route[i-1]].Position.Distance(_roads[route[i]].Position);return length;}

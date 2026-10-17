@@ -2,6 +2,10 @@
 
 > Só registro histórico; as regras vigentes estão em [docs/spec/construcao.md](../spec/construcao.md).
 
+- 2026-10-16 — Responsável escolheu A para a pavimentação: máquinas com equipe externa inicialmente e custo incluído na obra, evitando exigir frota municipal na primeira rua. A proposta discutida usa basculante, pavimentadora e rolo em trabalho físico automático, com abertura ao trânsito na conclusão; frota própria do Pátio fica para outra discussão. Autorizou depois o registro e a implementação orquestrada. → seção Pavimentação física das ruas.
+- 2026-10-16 — No caso de rua parcialmente finalizada que dá acesso a outra obra, responsável escolheu permitir somente acesso de obras no trecho pronto. Tráfego comum permanece fechado até a conclusão; não vale para trechos só planejados ou fisicamente inacabados. → seção Pavimentação física das ruas.
+- 2026-10-16 — Para rua cancelada antes da conclusão, responsável escolheu A: trechos já compactados abrem ao trânsito como rua comum e podem ser demolidos depois. Rejeitadas: mantê-los fechados só para obras (viraria asfalto inútil, pois não há retomada de obra) e removê-los (o asfalto pago sumiria sem remoção física). Desvantagem aceita: pode sobrar ponta sem saída, e mover rua inacabada deixa o trecho pronto no local anterior. → seção Pavimentação física das ruas.
+
 - 2026-10-08 — A residência substituta é nova e oferece primeira compra ao antigo proprietário indenizado, sem herança automática; substitui mercado aberto sem preferência (primeira oferta prioritária) → seção Intervenção municipal sobre propriedades privadas e realocação de prédios concluídos
 - 2026-10-08 — A operação antiga pode continuar na realocação enquanto houver estrutura, espaço e acesso reais, evitando fechamento antecipado desnecessário (opção C) → seção Intervenção municipal sobre propriedades privadas e realocação de prédios concluídos
 - 2026-10-08 — Realocar não impõe paralisação fixa; vínculos e salários privados e municipais seguem as regras normais e a autonomia dos SIMs (opções C, 1A privada e A municipal) → seção Intervenção municipal sobre propriedades privadas e realocação de prédios concluídos

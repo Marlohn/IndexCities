@@ -139,7 +139,7 @@ public sealed partial class CitySimulation
     }
     bool OrderImport(Building destination,ResourceKind resource,double requested,string account)
     {
-        var n=Access(destination);var vehicle=State.Vehicles.FirstOrDefault(v=>v.External&&v.HomeBuildingId==null&&v.Status==VehicleStatus.Outside);if(n==null||vehicle==null)return false;var route=FindRoadRoute(EntryNode().Id,n.Id);if(route.Count==0)return false;
+        var n=Access(destination);var vehicle=AvailableTruck(resource);if(n==null||vehicle==null)return false;var route=FindRoadRoute(EntryNode().Id,n.Id);if(route.Count==0)return false;
         if(RouteLength(route)*2*FuelRate(vehicle)+4>State.Tuning.FuelTank){destination.Cause="Reposição inviável: ida e volta maiores que a autonomia do caminhão";return false;}
         var fuel=Math.Max(0,State.Tuning.FuelTank-vehicle.Fuel);var fee=State.Tuning.FreightBase+(decimal)(RouteLength(route)*2)*State.Tuning.FreightPerMetre+(decimal)fuel*State.Tuning.ImportPrices[ResourceKind.Fuel];var amount=Math.Min(requested,Math.Min(vehicle.CargoCapacity,Math.Min(State.OutsideStock[resource],(double)((Balance(account)-fee)/State.Tuning.ImportPrices[resource]))));amount=Math.Floor(amount*100)/100;
         if(amount<1||State.OutsideStock[ResourceKind.Fuel]<fuel){destination.Cause="Reposição inviável: saldo, carga ou combustível externos";return false;}var price=Money((decimal)amount*State.Tuning.ImportPrices[resource]+fee);

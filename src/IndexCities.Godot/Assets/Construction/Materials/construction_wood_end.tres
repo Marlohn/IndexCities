@@ -1,0 +1,6 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[resource]
+resource_name = "construction_wood_end"
+albedo_color = Color(0.8156863, 0.6745098, 0.4862745, 1)
+roughness = 0.89

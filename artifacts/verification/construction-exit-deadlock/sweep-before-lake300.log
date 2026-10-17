@@ -1,0 +1,30 @@
+FAIL lake seed=1 t=932: OVERLAP V31 Roller x V18 Travelling depth=0,84 at Point { X = 102,35, Z = 27,2541219597369 }/Point { X = 102,35, Z = 32 }
+FAIL lake seed=408 t=1850: V22 None Available Travelling stopped since 948 at Point { X = -178,5, Z = -1,65 }: Fila na faixa
+FAIL lake seed=593 t=928: OVERLAP V31 Roller x V18 Travelling depth=0,16 at Point { X = 94,35, Z = 3,2541219597368984 }/Point { X = 96, Z = -1,65 }
+FAIL lake seed=1074 t=936: OVERLAP V31 Roller x V18 Travelling depth=0,16 at Point { X = 98,35, Z = 3,2541219597368984 }/Point { X = 100, Z = -1,65 }
+FAIL lake seed=1111 t=1850: V22 None Available Travelling stopped since 948 at Point { X = -178,5, Z = -1,65 }: Fila na faixa
+FAIL lake seed=1148 t=1794: V18 None Available Travelling stopped since 892 at Point { X = 89, Z = -1,65 }: Fila na faixa
+FAIL lake seed=1296 t=1850: V22 None Available Travelling stopped since 948 at Point { X = -178,5, Z = -1,65 }: Fila na faixa
+FAIL lake seed=1518 t=964: OVERLAP V31 Roller x V18 Travelling depth=0,51 at Point { X = 106,35, Z = 2 }/Point { X = 108, Z = -1,65 }
+FAIL lake seed=1925 t=1850: V22 None Available Travelling stopped since 948 at Point { X = -178,5, Z = -1,65 }: Fila na faixa
+FAIL lake seed=2036 t=1850: V22 None Available Travelling stopped since 948 at Point { X = -178,5, Z = -1,65 }: Fila na faixa
+FAIL lake seed=2147 t=1850: V22 None Available Travelling stopped since 948 at Point { X = -178,5, Z = -1,65 }: Fila na faixa
+FAIL lake seed=2184 t=1850: V22 None Available Travelling stopped since 948 at Point { X = -178,5, Z = -1,65 }: Fila na faixa
+FAIL lake seed=2221 t=1850: V22 None Available Travelling stopped since 948 at Point { X = -178,5, Z = -1,65 }: Fila na faixa
+FAIL lake seed=2332 t=962: OVERLAP V31 Roller x V18 Travelling depth=0,09 at Point { X = 110,35, Z = 5 }/Point { X = 108, Z = 1,65 }
+FAIL lake seed=2628 t=1850: V22 None Available Travelling stopped since 948 at Point { X = -178,5, Z = -1,65 }: Fila na faixa
+FAIL lake seed=3294 t=964: OVERLAP V31 Roller x V18 Travelling depth=0,44 at Point { X = 110,35, Z = 2,2541219597368984 }/Point { X = 112, Z = -1,65 }
+FAIL lake seed=4182 t=946: OVERLAP V31 Roller x V18 Travelling depth=0,16 at Point { X = 102,35, Z = 3,2541219597368984 }/Point { X = 104, Z = -1,65 }
+FAIL lake seed=4219 t=946: OVERLAP V31 Roller x V18 Travelling depth=0,16 at Point { X = 102,35, Z = 3,254121959736906 }/Point { X = 104, Z = -1,65 }
+FAIL lake seed=4404 t=928: OVERLAP V31 Roller x V18 Travelling depth=0,16 at Point { X = 94,35, Z = 3,254121959736906 }/Point { X = 96, Z = -1,65 }
+FAIL lake seed=5551 t=1892: V18 None Available Travelling stopped since 990 at Point { X = 114,35, Z = 6,5 }: Fila na faixa
+FAIL lake seed=6069 t=928: OVERLAP V31 Roller x V18 Travelling depth=0,16 at Point { X = 94,35, Z = 3,2541219597368984 }/Point { X = 96, Z = -1,65 }
+FAIL lake seed=6550 t=1850: V22 None Available Travelling stopped since 948 at Point { X = -178,5, Z = -1,65 }: Fila na faixa
+FAIL lake seed=6883 t=942: OVERLAP V31 Roller x V18 Travelling depth=0,84 at Point { X = 94,35, Z = 39,254121959736906 }/Point { X = 94,35, Z = 44 }
+FAIL lake seed=7697 t=910: OVERLAP V31 Roller x V18 Travelling depth=0,51 at Point { X = 94,35, Z = 2 }/Point { X = 96, Z = -1,65 }
+FAIL lake seed=7808 t=1850: V22 None Available Travelling stopped since 948 at Point { X = -178,5, Z = -1,65 }: Fila na faixa
+FAIL lake seed=8992 t=932: OVERLAP V31 Roller x V18 Travelling depth=0,84 at Point { X = 98,35, Z = 31,254121959736906 }/Point { X = 98,35, Z = 36 }
+FAIL lake seed=9510 t=972: OVERLAP V31 Roller x V18 Travelling depth=0,51 at Point { X = 110,35, Z = 2 }/Point { X = 112, Z = -1,65 }
+FAIL lake seed=10916 t=932: OVERLAP V31 Roller x V18 Travelling depth=0,84 at Point { X = 98,35, Z = 31,254121959736906 }/Point { X = 98,35, Z = 36 }
+lake: skipped 0
+ran=300 fails=28 ms=23385
