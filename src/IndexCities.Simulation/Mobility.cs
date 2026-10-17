@@ -351,9 +351,18 @@ public sealed partial class CitySimulation
     // reconsiders; its home was kept until the car actually left the city.
     void ReturnEmigrantHome(Vehicle v)
     {
-        if(v.DriverId is int driverId&&State.Citizens.FirstOrDefault(c=>c.Id==driverId) is {} driver&&FamilyById(driver.FamilyId) is {} family){family.Emigrating=false;v.DestinationBuildingId=family.HomeId;}
-        v.TripPurpose=JourneyPurpose.Home;v.RefuellingAt=null;v.SavedRoute=[];v.Status=VehicleStatus.Parked;
-        LeaveCar(v,"Carro parado no posto: sem dinheiro ou combustível para emigrar; família volta para casa");
+        Family? family=v.DriverId is int driverId&&State.Citizens.FirstOrDefault(c=>c.Id==driverId) is {} driver?FamilyById(driver.FamilyId):null;
+        v.TripPurpose=JourneyPurpose.Home;v.RefuellingAt=null;v.SavedRoute=[];
+        if(family!=null){family.Emigrating=false;v.DestinationBuildingId=family.HomeId;}
+        // Back home by car when the tank allows it (a small margin covers the lot
+        // manoeuvres), so the car is there for the next try.
+        if(family!=null&&BuildingById(family.HomeId) is {} home&&Access(home) is {} access&&FreeSpot(home,family,v) is {} spot&&NearestRoad(v.Position,false) is {} start&&FindRoadRoute(start.Id,access.Id) is {Count:>0} route&&v.Fuel>=RouteLength(route)*FuelRate(v)+.3){
+            v.ParkingSpot=spot.Key;v.DockPosition=spot.Position;v.Route=route;v.RouteIndex=0;v.Status=VehicleStatus.Travelling;v.Cause="Família voltando para casa: sem dinheiro ou combustível para emigrar";
+            foreach(var id in v.Passengers.Append(v.DriverId!.Value)){var c=State.Citizens.First(x=>x.Id==id);c.Purpose=JourneyPurpose.Home;c.DestinationId=home.Id;c.Activity="Voltando para casa de carro";}
+            return;
+        }
+        // Not even enough to get home: the car stays parked at the station (off the pump).
+        v.Status=VehicleStatus.Parked;LeaveCar(v,"Carro parado no posto: sem combustível nem para voltar; família volta a pé para casa");
     }
     void Refuel(Vehicle v,int stationId)
     {

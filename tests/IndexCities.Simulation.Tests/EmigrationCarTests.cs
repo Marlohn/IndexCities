@@ -36,15 +36,16 @@ public sealed class EmigrationCarTests
         Assert.True(family.Emigrating);Assert.All(sim.State.Citizens.Where(c=>family.Members.Contains(c.Id)),c=>{Assert.True(c.Moving);Assert.Equal(JourneyPurpose.Leaving,c.Purpose);});
         sim.CheckInvariants();
     }
-    [Fact] public void If_the_station_runs_dry_before_arrival_the_family_parks_there_and_walks_home_keeping_its_house()
+    [Fact] public void If_the_station_runs_dry_before_arrival_the_family_drives_back_home_and_keeps_its_house()
     {
         var (sim,family,car,station)=Desperate();Move(sim,"global",car.OwnerAccount,14);var home=family.HomeId;Review(sim);
         Assert.True(family.Emigrating);Assert.Equal(home,family.HomeId);
         station.AddStock(ResourceKind.Fuel,-station.Quantity(ResourceKind.Fuel));
-        for(var i=0;i<600&&car.Status!=VehicleStatus.Parked;i++)sim.Advance(2);
+        var homeSpot=sim.ParkingSpots(sim.Buildings.Single(b=>b.Id==home)).First().Key;
+        for(var i=0;i<1200&&!(car.Status==VehicleStatus.Parked&&car.ParkingSpot==homeSpot);i++)sim.Advance(2);
         var info=$"car={car.Status} {car.Cause} fuel={car.Fuel:F2} refAt={car.RefuellingAt} emig={family.Emigrating} home={family.HomeId} stock={station.Quantity(ResourceKind.Fuel):F1} purposes={string.Join(",",sim.State.Citizens.Where(c=>family.Members.Contains(c.Id)).Select(c=>c.Purpose+"/"+c.Activity))}";
         Assert.True(car.Status==VehicleStatus.Parked,info);Assert.False(family.Emigrating,info);Assert.Equal(home,family.HomeId);
-        Assert.Equal(family.Id,sim.Buildings.Single(b=>b.Id==home).FamilyId);Assert.Null(car.ParkingSpot);
+        Assert.Equal(family.Id,sim.Buildings.Single(b=>b.Id==home).FamilyId);Assert.True(homeSpot==car.ParkingSpot,car.Cause+" fuel="+car.Fuel+" pos="+car.Position);
         Assert.All(sim.State.Citizens.Where(c=>family.Members.Contains(c.Id)),c=>{Assert.Null(c.VehicleId);Assert.Equal(JourneyPurpose.Home,c.Purpose);});
         Assert.All(sim.State.Vehicles.Where(v=>!v.PassengerCar),v=>Assert.DoesNotContain("Fila para acesso de carga",v.Cause));
         sim.CheckInvariants();
