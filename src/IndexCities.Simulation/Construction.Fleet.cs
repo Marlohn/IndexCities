@@ -17,17 +17,19 @@ public sealed partial class CitySimulation
     void MigrateConstructionState()
     {
         if(State.ConstructionStateVersion>=1)return;
-        var bodies=new[]{TruckBody.Dump,TruckBody.Dump,TruckBody.Dump,TruckBody.Mixer,TruckBody.Flatbed,TruckBody.Cargo};var unassigned=new List<Vehicle>();
-        foreach(var v in State.Vehicles.Where(v=>!v.PassengerCar&&v.Machine==PavingMachine.None)){
+        var bodies=new[]{TruckBody.Dump,TruckBody.Dump,TruckBody.Dump,TruckBody.Mixer,TruckBody.Flatbed,TruckBody.Cargo};
+        // Missing Body, rather than its default Cargo value, identifies trucks
+        // from before differentiation. Explicit modern bodies never opt in.
+        var legacy=State.Vehicles.Where(v=>!v.PassengerCar&&v.Machine==PavingMachine.None&&!v.HasExplicitBody).OrderBy(v=>v.Id).ToList();
+        var trucks=State.Vehicles.Where(v=>v.External&&!v.PassengerCar&&v.Machine==PavingMachine.None&&v.HomeBuildingId==null).ToList();
+        var assigned=trucks.Except(legacy).Select(v=>v.Body).ToList();
+        foreach(var v in legacy){
             var cargo=v.Cargo.Count>0?v.Cargo:v.Status!=VehicleStatus.Outside?State.Shipments.LastOrDefault(s=>s.VehicleId==v.Id&&s.Cargo.Count>0)?.Cargo:null;
-            if(cargo is {Count:>0})v.Body=BodyFor(cargo.First().Key);
-            else if(v.External&&v.HomeBuildingId==null)unassigned.Add(v);else v.Body=TruckBody.Cargo;
-        }
-        var pendingIds=unassigned.Select(v=>v.Id).ToHashSet();
-        foreach(var v in unassigned){
-            var assigned=State.Vehicles.Where(a=>a.External&&a.HomeBuildingId==null&&!a.PassengerCar&&a.Machine==PavingMachine.None&&!pendingIds.Contains(a.Id)).ToList();
-            var body=bodies.FirstOrDefault(body=>assigned.Count(a=>a.Body==body)<bodies.Count(target=>target==body));
-            v.Body=body;pendingIds.Remove(v.Id);
+            v.Body=cargo is {Count:>0}?BodyFor(cargo.Keys.OrderBy(k=>k).First()):TruckBody.Cargo;
+            if(!trucks.Contains(v))continue;
+            var target=bodies.FirstOrDefault(body=>assigned.Count(a=>a==body)<bodies.Count(bodyInMix=>bodyInMix==body));
+            assigned.Add(target);v.LegacyBodyAfterReturn=target;
+            CompleteLegacyTruckConversion(v);
         }
         foreach(var p in State.Projects.Where(IsPaving)){
             p.AppliedRoadPoints=p.RoadPoints.Where(point=>State.Roads.Any(r=>p.BuiltRoadNodes.Contains(r.Id)&&r.Position==point)).ToList();
@@ -37,6 +39,12 @@ public sealed partial class CitySimulation
             p.MachineryQuoted=QuoteMachinery(p.Position,p.WorkSeconds);
         }
         State.ConstructionStateVersion=1;
+    }
+
+    void CompleteLegacyTruckConversion(Vehicle v)
+    {
+        if(v.LegacyBodyAfterReturn is not {} target||!v.External||v.HomeBuildingId!=null||v.Status!=VehicleStatus.Outside||v.ShipmentId!=null||v.Cargo.Values.Any(q=>q>.000001))return;
+        v.Body=target;v.LegacyBodyAfterReturn=null;
     }
 
     RoadNode? ConstructionAccess(Building b)=>State.Roads.Where(r=>!r.Highway&&r.MaintenanceRatio>.05&&_workExteriorConnected.Contains(r.Id)&&r.Position.Distance(b.Door)<=State.Tuning.RoadWidth/2+3).MinBy(r=>r.Position.Distance(b.Door));

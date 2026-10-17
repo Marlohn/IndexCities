@@ -270,7 +270,7 @@ public sealed partial class CitySimulation
         if(PavingMachineArrived(v))return;
         if(v.RefuellingAt is {} stationId&&BuildingById(stationId) is {} station&&Access(station) is {} stationAccess&&v.Position.Distance(DockAt(stationAccess,station,false))<3){Refuel(v,stationId);return;}
         var s=v.ShipmentId==null?null:State.Shipments.FirstOrDefault(s=>s.Id==v.ShipmentId);
-        if(s==null){if(v.External&&v.Position.Distance(State.Entry)<8){v.Position=State.Entry;v.Status=VehicleStatus.Outside;v.CrewAboard=false;v.CrewCount=0;v.ConstructionAccess=false;v.Route.Clear();v.IntersectionClaim=null;v.Cause="Disponível no exterior";}else {v.Status=VehicleStatus.Parked;ReleaseDriver(v);}return;}
+        if(s==null){if(v.External&&v.Position.Distance(State.Entry)<8){v.Position=State.Entry;v.Status=VehicleStatus.Outside;v.CrewAboard=false;v.CrewCount=0;v.ConstructionAccess=false;v.Route.Clear();v.IntersectionClaim=null;v.Cause="Disponível no exterior";CompleteLegacyTruckConversion(v);}else {v.Status=VehicleStatus.Parked;ReleaseDriver(v);}return;}
         if(s.Complete&&v.CrewAboard){v.Status=VehicleStatus.Parked;v.Cause="Equipe externa no canteiro";return;}
         if(s.Cancelled){RedirectCancelled(v,s);return;}
         if(!s.PickedUp&&s.SourceBuildingId is {} sourceId){var source=BuildingById(sourceId);if(source==null||s.Cargo.Any(kv=>source.Quantity(kv.Key)<kv.Value)){v.Status=VehicleStatus.Waiting;v.Cause="Carga reservada indisponível na origem";return;}foreach(var kv in s.Cargo)source.AddStock(kv.Key,-kv.Value);if(source.Kind==BuildingKind.Farm)source.FoodSoldToday+=s.Cargo.GetValueOrDefault(ResourceKind.Food);v.Cargo=new(s.Cargo);s.PickedUp=true;

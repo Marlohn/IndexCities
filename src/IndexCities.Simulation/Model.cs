@@ -244,7 +244,10 @@ public sealed class Company
 public sealed class Vehicle
 {
     public int Id {get;set;}
-    public TruckBody Body {get;set;}
+    TruckBody _body;
+    public TruckBody Body {get=>_body;set{_body=value;HasExplicitBody=true;}}
+    [JsonIgnore] internal bool HasExplicitBody {get;private set;}
+    public TruckBody? LegacyBodyAfterReturn {get;set;}
     public bool ConstructionAccess {get;set;}
     public PavingMachine Machine {get;set;}
     public MachinePhase MachinePhase {get;set;}
