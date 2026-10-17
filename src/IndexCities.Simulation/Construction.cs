@@ -136,6 +136,8 @@ public sealed partial class CitySimulation
                 if(source==null&&State.OutsideStock.GetValueOrDefault(k)<amount){p.Cause=WorkCause.SupplierOutOfMaterial;continue;}
                 var route=FindRoadRoute(EntryNode().Id,(source==null?access:Access(source)!).Id,true);if(route.Count==0)continue;
                 var travel=RouteLength(route)+(source==null?0:RouteLength(FindRoadRoute(Access(source)!.Id,access.Id,true)));
+                // SPEC: the truck must reach the site and return to the exterior with one tank.
+                if((travel+RouteLength(FindRoadRoute(access.Id,EntryNode().Id,true)))*FuelRate(vehicle)+4>State.Tuning.FuelTank){p.Cause=WorkCause.RouteBeyondTruckRange;continue;}
                 var fuel=Math.Max(0,State.Tuning.FuelTank-vehicle.Fuel);if(State.OutsideStock[ResourceKind.Fuel]<fuel){p.Cause=WorkCause.SupplierOutOfFuel;continue;}
                 var fee=State.Tuning.FreightBase+(decimal)(travel*2)*State.Tuning.FreightPerMetre+(decimal)fuel*State.Tuning.ImportPrices[ResourceKind.Fuel];
                 var price=source==null?(decimal)amount*State.Tuning.ImportPrices[k]:0;
@@ -160,6 +162,7 @@ public sealed partial class CitySimulation
     void SendExternalCrew(WorkProject project,RoadNode access)
     {
         var vehicle=AvailableTruck();if(vehicle==null)return;var route=FindRoadRoute(EntryNode().Id,access.Id,true);if(route.Count==0)return;
+        if(RouteLength(route)*2*FuelRate(vehicle)+4>State.Tuning.FuelTank){project.Cause=WorkCause.RouteBeyondTruckRange;return;}
         var fuel=Math.Max(0,State.Tuning.FuelTank-vehicle.Fuel);if(State.OutsideStock[ResourceKind.Fuel]<fuel)return;var fee=State.Tuning.FreightBase+(decimal)(RouteLength(route)*2)*State.Tuning.FreightPerMetre+(decimal)fuel*State.Tuning.ImportPrices[ResourceKind.Fuel];
         if(!ProjectPay(project,fee,project.IsMaintenance?MaintenanceCategory(project):"Equipe externa","Transporte físico e combustível da equipe externa")){project.Cause=WorkCause.CommitmentInsufficientForCrew;return;}
         State.OutsideStock[ResourceKind.Fuel]-=fuel;vehicle.Fuel+=fuel;var shipment=new Shipment{Id=Id(),Purpose=project.IsMaintenance?ShipmentPurpose.Maintenance:ShipmentPurpose.Construction,ProjectId=project.Id,DestinationBuildingId=project.BuildingId,VehicleId=vehicle.Id,PickedUp=true,PricePaid=Money(fee)};State.Shipments.Add(shipment);vehicle.ConstructionAccess=true;vehicle.ShipmentId=shipment.Id;vehicle.Cargo.Clear();vehicle.Route=route;vehicle.RouteIndex=0;vehicle.Position=State.Entry;vehicle.Status=VehicleStatus.Travelling;vehicle.CrewAboard=true;vehicle.CrewCount=3;vehicle.DockPosition=DockAt(access,BuildingById(project.BuildingId),true);project.CrewVehicleId=vehicle.Id;

@@ -8,6 +8,12 @@
 >
 > Concentra pesquisa e raciocínio sobre serviços urbanos, mobilidade, vias, educação, saúde, infraestrutura técnica, conexão externa e capacidades operacionais. A SPEC continua sendo a autoridade sobre o que já foi decidido.
 
+## Veículos quebrando, guincho e oficinas — ideias do responsável (2026-10-16)
+
+- Ao discutir veículo sem combustível na via, o responsável disse que carros quebrando "seria muito bom", com guincho, e que uma empresa local de guincho poderia existir (inicialmente vindo do exterior). **Decidido e registrado na SPEC:** prevenir partida sem combustível e contornar veículo parado (em vigor) e guincho externo como intenção para depois (visão aprovada).
+- **Quebras: intenção registrada na SPEC (visão aprovada), detalhes em aberto.** Pediriam desgaste/condição do veículo e manutenção. O valor aparece junto do guincho e do contorno.
+- **Oficinas (ideia, não decidida):** empresa local que conserta veículos quebrados (e eventualmente faz manutenção preventiva), recebendo o veículo pelo guincho ou pelo próprio dono, com trabalhadores, peças importadas e cobrança real. Questões para quando entrar: quem decide levar à oficina (dono SIM, sem clique do jogador), o que acontece sem oficina na cidade (oficina do exterior?), peças como recurso novo ou não, e como mostrar a causa da quebra e do conserto. Avaliar microgerenciamento, custo interno (estados, testes) e diagnóstico antes de propor.
+
 ## Diagnóstico de água na partida V1 — 2026-10-12
 
 > **Revisão humana desta seção: PENDENTE.** Análise da IA do save; não altera regras de contratação, turnos ou abastecimento.

@@ -123,6 +123,8 @@ public sealed partial class CitySimulation
         if(State.Vehicles.Any(v=>v.HomeBuildingId==farm.Id&&v.OwnerAccount=="company:"+farm.CompanyId)||State.Shipments.Any(s=>s.Purpose==ShipmentPurpose.Vehicle&&s.DestinationBuildingId==farm.Id&&!s.Complete)||Access(farm)==null||State.Vehicles.Count(v=>!v.External&&!v.PassengerCar)>=State.Tuning.ExternalCompanyCandidates)return;
         var account="company:"+farm.CompanyId;var fuel=State.Tuning.FuelTank;var price=State.Tuning.TruckPrice+(decimal)fuel*State.Tuning.ImportPrices[ResourceKind.Fuel]+State.Tuning.FreightBase;
         if(Spendable(account)<price+500||State.OutsideStock[ResourceKind.Fuel]<fuel||BusinessOpportunity(farm)<.2)return;var route=FindRoadRoute(EntryNode().Id,Access(farm)!.Id);if(route.Count==0)return;
+        // One way only: the truck stays in the city and refuels at a station afterwards.
+        if(RouteLength(route)*State.Tuning.FuelPerMetre+4>fuel){if(CompanyById(farm.CompanyId) is {} owner)owner.Decision="Caminhão não comprado: a entrega desde a entrada passa da autonomia do tanque";return;}
         if(!Transfer(account,"global",price,"Veículos","Aquisição/importação real de caminhão e combustível inicial",farm.Id))return;State.OutsideStock[ResourceKind.Fuel]-=fuel;
         var v=new Vehicle{Id=Id(),OwnerAccount=account,External=true,ExternalDriverId="entregador externo de veículo "+farm.Id,HomeBuildingId=farm.Id,Position=State.Entry,Fuel=fuel,Route=route,DockPosition=DockAt(Access(farm)!,farm,false),Status=VehicleStatus.Travelling};var s=new Shipment{Id=Id(),Purpose=ShipmentPurpose.Vehicle,DestinationBuildingId=farm.Id,VehicleId=v.Id,PickedUp=true,PricePaid=price,GoodsOwnerAccount=account};v.ShipmentId=s.Id;State.Vehicles.Add(v);State.Shipments.Add(s);
     }
@@ -138,6 +140,7 @@ public sealed partial class CitySimulation
     bool OrderImport(Building destination,ResourceKind resource,double requested,string account)
     {
         var n=Access(destination);var vehicle=AvailableTruck(resource);if(n==null||vehicle==null)return false;var route=FindRoadRoute(EntryNode().Id,n.Id);if(route.Count==0)return false;
+        if(RouteLength(route)*2*FuelRate(vehicle)+4>State.Tuning.FuelTank){destination.Cause="Reposição inviável: ida e volta maiores que a autonomia do caminhão";return false;}
         var fuel=Math.Max(0,State.Tuning.FuelTank-vehicle.Fuel);var fee=State.Tuning.FreightBase+(decimal)(RouteLength(route)*2)*State.Tuning.FreightPerMetre+(decimal)fuel*State.Tuning.ImportPrices[ResourceKind.Fuel];var amount=Math.Min(requested,Math.Min(vehicle.CargoCapacity,Math.Min(State.OutsideStock[resource],(double)((Balance(account)-fee)/State.Tuning.ImportPrices[resource]))));amount=Math.Floor(amount*100)/100;
         if(amount<1||State.OutsideStock[ResourceKind.Fuel]<fuel){destination.Cause="Reposição inviável: saldo, carga ou combustível externos";return false;}var price=Money((decimal)amount*State.Tuning.ImportPrices[resource]+fee);
         if(!Transfer(account,"global",price,"Importação comercial","Produto, frete e combustível com entrega física",destination.Id))return false;State.OutsideStock[resource]-=amount;State.OutsideStock[ResourceKind.Fuel]-=fuel;
@@ -173,8 +176,25 @@ public sealed partial class CitySimulation
     {
         foreach(var family in State.Families.Where(f=>!f.Emigrating&&f.HomeId!=null)){
             var members=family.Members.Select(id=>State.Citizens.First(c=>c.Id==id)).Where(c=>c.Alive&&c.Resident).ToList();if(members.Count==0)continue;
-            if(members.All(c=>c.HungerHours>48&&c.WorkplaceId==null&&Balance(c.Account)<20)&&State.ElapsedSeconds-family.LastMigrationReview>3*86400){var home=BuildingById(family.HomeId);var start=home==null?null:Access(home);if(start==null)continue;var route=FindRoadRoute(start.Id,EntryNode().Id);if(route.Count==0)continue;family.Emigrating=true;var car=FamilyCar(family);var carHome=home==null||car==null?(ParkingSpot?)null:ParkingSpots(home).FirstOrDefault(s=>s.Key==car.ParkingSpot);
-                if(car!=null&&car.Status==VehicleStatus.Parked&&car.DriverId==null&&carHome?.Key!=null&&members.All(m=>m.Position.Distance(home!.Door)<3&&!m.Moving)&&FindRoadRoute((NearestRoad(car.Position,false)??start).Id,EntryNode().Id) is {Count:>0} carRoute){car.Route=carRoute;car.RouteIndex=0;car.DockPosition=State.Entry;car.ParkingSpot=null;car.TripPurpose=JourneyPurpose.Leaving;car.DriverId=members[0].Id;car.Passengers=members.Skip(1).Select(m=>m.Id).ToList();car.Status=VehicleStatus.Travelling;car.Cause="Família emigrando de carro";foreach(var m in members){m.VehicleId=car.Id;m.Path.Clear();m.PathIndex=0;m.Purpose=JourneyPurpose.Leaving;m.Activity="Emigrando de carro";Personal(m,"Decidiu sair por falta persistente de renda e alimentação");}if(home!=null)home.FamilyId=null;family.HomeId=null;continue;}
+            if(members.All(c=>c.HungerHours>48&&c.WorkplaceId==null&&Balance(c.Account)<20)&&State.ElapsedSeconds-family.LastMigrationReview>3*86400){var home=BuildingById(family.HomeId);var start=home==null?null:Access(home);if(start==null)continue;var route=FindRoadRoute(start.Id,EntryNode().Id);if(route.Count==0)continue;var car=FamilyCar(family);
+                // SPEC (populacao): a family with a car leaves with it, never on foot
+                // abandoning it. It waits until the car is home with fuel for the exit,
+                // refuelling first when the owner can pay for what the trip needs.
+                if(car!=null){
+                    void Wait(string reason){foreach(var m in members){m.Activity=reason;m.Decision=reason;}}
+                    var carHome=home==null?(ParkingSpot?)null:ParkingSpots(home).FirstOrDefault(s=>s.Key==car.ParkingSpot);
+                    if(car.Status!=VehicleStatus.Parked||car.DriverId!=null||carHome?.Key==null||!members.All(m=>m.Position.Distance(home!.Door)<3&&!m.Moving)){Wait("Família aguardando o carro em casa para emigrar");continue;}
+                    if(FindRoadRoute((NearestRoad(car.Position,false)??start).Id,EntryNode().Id) is not {Count:>0} carRoute){Wait("Família aguardando rota de carro até a saída");continue;}
+                    var missing=RouteLength(carRoute)*FuelRate(car)+1-car.Fuel;
+                    if(missing>0){
+                        var spot=car.DockPosition;
+                        // Size the purchase on the trip actually driven: home → station → exit.
+                        var planned=EnsureFuel(car,EntryNode().Id)&&BuildingById(car.RefuellingAt) is {} station&&(car.Fuel-RouteLength(car.Route)*FuelRate(car)) is var atStation&&(RouteLength(car.SavedRoute)*FuelRate(car)+1-atStation) is var purchase&&purchase<=State.Tuning.FuelTank-atStation&&station.Quantity(ResourceKind.Fuel)>=purchase&&Balance(car.OwnerAccount)>=Money((decimal)purchase*station.SalePrice);
+                        if(!planned){car.RefuellingAt=null;car.SavedRoute=[];car.Route.Clear();car.RouteIndex=0;car.DockPosition=spot;Wait("Família aguardando dinheiro para o combustível da saída");continue;}
+                    }else{car.Route=carRoute;car.RouteIndex=0;car.DockPosition=State.Entry;}
+                    family.Emigrating=true;car.ParkingSpot=null;car.TripPurpose=JourneyPurpose.Leaving;car.DriverId=members[0].Id;car.Passengers=members.Skip(1).Select(m=>m.Id).ToList();car.Status=VehicleStatus.Travelling;car.Cause="Família emigrando de carro";foreach(var m in members){m.VehicleId=car.Id;m.Path.Clear();m.PathIndex=0;m.Purpose=JourneyPurpose.Leaving;m.Activity="Emigrando de carro";Personal(m,"Decidiu sair por falta persistente de renda e alimentação");}continue;
+                }
+                family.Emigrating=true;
                 foreach(var c in members){c.Path=route.Select(id=>_roads[id].Position+new Point(0,State.Tuning.RoadWidth/2+1)).ToList();c.Path.Add(State.Entry);c.PathIndex=0;c.Purpose=JourneyPurpose.Leaving;c.PathRoadRevision=State.RoadRevision;c.Activity="Emigrando por condições reais";Personal(c,"Decidiu sair por falta persistente de renda e alimentação");}if(home!=null)home.FamilyId=null;family.HomeId=null;
             }
         }
