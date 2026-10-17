@@ -443,3 +443,28 @@ Os números ficaram dentro da faixa natural, e o dinheiro se conservou em todas 
 **O que o intervalo maior muda de fato:** um SIM que chega ao trabalho no meio do intervalo só começa a ganhar salário na avaliação seguinte; a refeição e a falta de água são percebidas com até um intervalo de atraso; os valores de água/energia do HUD se atualizam a cada intervalo. Com 60 s, isso dá até 1 minuto em turnos de 8 horas. **Se algo assim for adotado no jogo, é decisão do responsável**, porque afeta o que a SPEC chama de efeitos equivalentes.
 
 **Leitura:** para a cidade pequena e sem veículos presos, o ganho de ~10x põe 80 anos na faixa de algumas horas headless. É a primeira evidência de que a meta pode não ser impossível. Para escalas maiores, faltam: corrigir os veículos presos; medir de novo 400+ SIMs sem travamento; repetir com várias sementes por intervalo; e só então decidir sobre uma versão orientada a eventos (recalcular ao chegar, sair ou trocar de turno) em vez de intervalo fixo.
+
+### Resultado do item 2 — 400 e 1.000 SIMs após corrigir os travamentos (2026-10-17, PENDENTE)
+
+> **Pesquisa, não decisão.** Mesma branch experimental (`experimento/agenda-estacionaria`), já com as correções de trânsito das PRs #27 e #28. Cidade em grade crescendo por casas novas (`--growth`) até a população-alvo, dois dias de aquecimento e então medição.
+
+**400 SIMs, três sementes, motor atual (2 s) contra intervalo de 60 s** (3 dias medidos; as seis rodadas correram em paralelo, o que infla os tempos — a rodada sequencial de 60 s com semente 42 deu 38 s/dia contra 63 s/dia em paralelo):
+
+| Semente | 2 s: s/dia (h para 80 anos) | 60 s: s/dia (h para 80 anos) | Refeições 2 s / 60 s | Gasto com alimentos 2 s / 60 s | Satisfação média 2 s / 60 s |
+|---|---|---|---|---|---|
+| 42 | 467 (3.794) | 63 (511) | 3.932 / 3.966 | 39.513 / 37.387 | 71,8 / 75,0 |
+| 43 | 407 (3.302) | 79 (644) | 4.034 / 4.063 | 35.793 / 34.856 | 72,0 / 75,4 |
+| 44 | 457 (3.708) | 124 (1.009) | 4.046 / 4.079 | 40.540 / 35.134 | 71,6 / 75,0 |
+
+- Nenhum travamento de trânsito; dinheiro conservado.
+- **Fidelidade:** o número de refeições bate, mas o gasto com alimentos fica 2–13% menor e a **satisfação média sobe ~3 pontos em todas as sementes, fora da faixa natural do motor atual**. É uma diferença sistemática, não ruído: o intervalo fixo de 60 s muda o jogo de forma mensurável.
+
+**1.000 SIMs (1.037), intervalo de 60 s, semente 42, rodada sequencial com perfil:**
+
+- **3.936 s por dia simulado (22x o tempo real) → ~31.900 h para 80 anos.** O crescimento até 1.000 SIMs levou 24 min e o aquecimento de 2 dias, 2 h 25 min.
+- De 400 para 1.000 SIMs (2,5x), o tempo por dia com 60 s subiu ~100x (38 s → 3.936 s): **crescimento muito pior que linear**.
+- Perfil: **`MoveCitizens` 94,6%**, revisão econômica 3,5%, o resto abaixo de 1%. O intervalo maior não alcança o movimento, que continua a cada 2 s; na escala de 1.000 é ele, não os sistemas estacionários, que decide.
+- Alocação: ~2,7 TB alocados por dia simulado (427 mil coletas gen0), com memória residente de só 69 MB — muita alocação temporária por passo.
+- A rodada de 1.000 SIMs com o motor atual (2 s) não foi medida até o fim: só o crescimento já passava de uma hora.
+
+**Leitura:** o intervalo fixo ajuda até algumas centenas de SIMs, mas muda resultados (satisfação) e não resolve a escala de 1.000+, onde a caminhada domina com custo que cresce mais que linearmente (verificações de distância contra todos os pedestres e consultas lineares por prédio, ver medição de escala acima). O próximo passo técnico que não muda regra nenhuma é atacar esse custo — índice espacial para pedestres, dicionário por Id para prédios, menos alocação por passo — cada um com prova de SHA idêntico pela bancada. Só depois disso faz sentido decidir entre intervalo maior, agenda de próximos acontecimentos ou outra arquitetura.
