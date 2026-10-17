@@ -8,6 +8,18 @@
 >
 > A autoridade de produto continua sendo `docs/SPEC.md`. Este documento concentra pesquisa, alternativas, referências e hipóteses sobre interface e ferramentas do jogador. Quando uma decisão fecha, o resultado oficial deve ser promovido para `docs/SPEC.md`; este arquivo preserva o raciocínio e o material ainda em formação.
 
+## Mover e Demolir — implementação parcial de 2026-10-17
+
+> Pesquisa e relato técnico da IA, não fonte de verdade. A decisão humana vigente está em [construção](../spec/construcao.md#demolição) e [mudança municipal](../spec/construcao.md#mudança-de-prédios-municipais-concluídos).
+
+O responsável aprovou Prefeitura pronta somente com Mover sede, demais municipais com Mover/Demolir e privados com demolição indenizada, adiando a realocação privada para reavaliação. Exigiu clareza das consequências antes da confirmação. A implementação segue em pacotes pequenos com GLM-5.3 Flash Free e DeepSeek V4.1 Flash Free, conforme a restrição específica do AGENTS.
+
+**Entregue nesta integração:** o aviso de demolição de rua separa remoção, ausência de indenização, total, Caixa, retirada imediata, falta de reembolso e locais que perderão acesso. As consultas de orçamento de demolição de prédios e mudança municipal retornam custos e afetados sem alterar o estado. **Essas consultas ainda não executam uma ordem nem disponibilizam Mover/Demolir prédios pela interface.**
+
+**Evidência:** 16 testes focados passaram na integração; build do host sem erros, com o aviso de nulidade preexistente em `Main.ProblemAlertsQA.cs`; cenário renderizado `--demolition-preview-smoke` passou, incluindo cancelamento sem alteração da cidade. A captura do modal foi inspecionada pelo coordenador. O primeiro par de pacotes recebeu revisão independente GLM com 9 testes, sonda própria e cenários Godot de prévia/persistência; nenhum bloqueador nesse recorte. A revisão municipal é registrada após sua conclusão. Logs e relatórios locais estão em `artifacts/verification/move-demolish*` e `move-municipal*`.
+
+**Limites:** execução da indenização/retirada, desocupação assistida, transição da instituição municipal, logística e respectivas interfaces continuam sem implementação nesta entrega parcial. O orçamento não comprova esses ciclos. A sonda do revisor reproduziu titular sintético existente sem carteira, situação não encontrada no fluxo comum: antes de executar qualquer transferência, a operação deve conferir titular e conta e tratar falhas de pagamento sem remoção ou cobranças parciais. Isso é robustez técnica, não nova regra de produto ou autorização para indenização fictícia.
+
 ## Recuperação isolada do construtor de ruas — 2026-10-15
 
 > **Revisão humana desta seção: PENDENTE.** Diagnóstico e síntese da IA. Os objetivos pedidos pelo responsável estão na SPEC; a experiência desta primeira intervenção ainda precisa de avaliação humana.
