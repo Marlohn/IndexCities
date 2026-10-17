@@ -1,0 +1,4 @@
+corner-ordered
+corner-truck-yields
+corner-roller-passed
+corner-completed

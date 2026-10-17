@@ -1,0 +1,12 @@
+  Determinando os projetos a serem restaurados...
+  Todos os projetos estão atualizados para restauração.
+  IndexCities.Simulation -> C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\src\IndexCities.Simulation\bin\Debug\net8.0\IndexCities.Simulation.dll
+  IndexCities.Simulation.Tests -> C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\tests\IndexCities.Simulation.Tests\bin\Debug\net8.0\IndexCities.Simulation.Tests.dll
+Execução de teste para C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\tests\IndexCities.Simulation.Tests\bin\Debug\net8.0\IndexCities.Simulation.Tests.dll (.NETCoreApp,Version=v8.0)
+1 arquivos de teste no total corresponderam ao padrão especificado.
+
+Aprovado!  – Com falha:     0, Aprovado:   230, Ignorado:     0, Total:   230, Duração: 1 m 29 s - IndexCities.Simulation.Tests.dll (net8.0)
+
+real	1m33.576s
+user	0m0.000s
+sys	0m0.000s

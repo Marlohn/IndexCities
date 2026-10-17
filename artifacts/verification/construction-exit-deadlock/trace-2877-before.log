@@ -1,0 +1,282 @@
+road1 (-192,0)->(108,120) road2 (108,0)->(172,56) house Point { X = 122, Z = 120 }
+--- t=940
+  V18 None/Dump Available Travelling (-132,30,-1,65) h=1,57 r31/106 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Parked (-143,50,6,75) h=1,57 r27/27 sp0/0 ws=0: Equipe externa no canteiro
+  V31 Roller/Cargo OnSite Parked (108,00,70,00) h=0,00 r10/10 sp1/2 ws=0: Compactando asfalto na obra 26
+--- t=942
+  V18 None/Dump Available Travelling (-118,30,-1,65) h=1,57 r35/106 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Parked (-143,50,6,75) h=1,57 r27/27 sp0/0 ws=0: Equipe externa no canteiro
+  V31 Roller/Cargo OnSite Parked (108,00,72,00) h=0,00 r10/10 sp0/0 ws=0: Compactando asfalto na obra 26
+--- t=944
+  V18 None/Dump Available Travelling (-104,30,-1,65) h=1,57 r38/106 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Parked (-143,50,6,75) h=1,57 r27/27 sp0/0 ws=0: Equipe externa no canteiro
+  V31 Roller/Cargo OnSite Parked (108,00,74,00) h=0,00 r10/10 sp1/2 ws=0: Compactando asfalto na obra 26
+--- t=946
+  V18 None/Dump Available Travelling (-90,30,-1,65) h=1,57 r42/106 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Parked (-143,50,6,75) h=1,57 r27/27 sp0/0 ws=0: Equipe externa no canteiro
+  V31 Roller/Cargo OnSite Parked (108,00,76,00) h=0,00 r10/10 sp0/0 ws=0: Compactando asfalto na obra 26
+--- t=948
+  V18 None/Dump Available Travelling (-76,30,-1,65) h=1,57 r45/106 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Parked (-143,50,6,75) h=1,57 r27/27 sp0/0 ws=0: Equipe externa no canteiro
+  V31 Roller/Cargo OnSite Parked (108,00,78,00) h=0,00 r10/10 sp1/2 ws=0: Compactando asfalto na obra 26
+--- t=950
+  V18 None/Dump Available Travelling (-62,30,-1,65) h=1,57 r49/106 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Parked (-143,50,6,75) h=1,57 r27/27 sp0/0 ws=0: Equipe externa no canteiro
+  V31 Roller/Cargo OnSite Parked (108,00,80,00) h=0,00 r10/10 sp0/0 ws=0: Compactando asfalto na obra 26
+--- t=952
+  V18 None/Dump Available Travelling (-48,30,-1,65) h=1,57 r52/106 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Parked (-143,50,6,75) h=1,57 r27/27 sp0/0 ws=0: Equipe externa no canteiro
+  V31 Roller/Cargo OnSite Parked (108,00,82,00) h=0,00 r10/10 sp1/2 ws=0: Compactando asfalto na obra 26
+--- t=954
+  V18 None/Dump Available Travelling (-34,30,-1,65) h=1,57 r56/106 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Parked (-143,50,6,75) h=1,57 r27/27 sp0/0 ws=0: Equipe externa no canteiro
+  V31 Roller/Cargo OnSite Parked (108,00,84,00) h=0,00 r10/10 sp0/0 ws=0: Compactando asfalto na obra 26
+--- t=956
+  V18 None/Dump Available Travelling (-20,30,-1,65) h=1,57 r59/106 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Parked (-143,50,6,75) h=1,57 r27/27 sp0/0 ws=0: Equipe externa no canteiro
+  V31 Roller/Cargo OnSite Parked (108,00,86,00) h=0,00 r10/10 sp1/2 ws=0: Compactando asfalto na obra 26
+--- t=958
+  V18 None/Dump Available Travelling (-6,30,-1,65) h=1,57 r63/106 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Parked (-143,50,6,75) h=1,57 r27/27 sp0/0 ws=0: Equipe externa no canteiro
+  V31 Roller/Cargo OnSite Parked (108,00,88,00) h=0,00 r10/10 sp0/0 ws=0: Compactando asfalto na obra 26
+--- t=960
+  V18 None/Dump Available Travelling (7,70,-1,65) h=1,57 r66/106 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Parked (-143,50,6,75) h=1,57 r27/27 sp0/0 ws=0: Equipe externa no canteiro
+  V31 Roller/Cargo OnSite Parked (108,00,90,00) h=0,00 r10/10 sp1/2 ws=0: Compactando asfalto na obra 26
+--- t=962
+  V18 None/Dump Available Travelling (21,70,-1,65) h=1,57 r70/106 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Travelling (-143,50,6,75) h=1,57 r0/27 sp0/0 ws=0: Retorno ao exterior
+  V31 Roller/Cargo OnSite Parked (108,00,92,00) h=0,00 r10/10 sp0/0 ws=0: Compactando asfalto na obra 26
+--- t=964
+  V18 None/Dump Available Travelling (35,70,-1,65) h=1,57 r73/106 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Travelling (-156,09,1,65) h=-1,57 r2/27 sp0/0 ws=0: Em viagem
+  V31 Roller/Cargo OnSite Parked (108,00,94,00) h=0,00 r10/10 sp1/2 ws=0: Compactando asfalto na obra 26
+--- t=966
+  V18 None/Dump Available Travelling (49,70,-1,65) h=1,57 r77/106 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Travelling (-170,09,1,65) h=-1,57 r5/27 sp0/0 ws=0: Em viagem
+  V31 Roller/Cargo OnSite Parked (108,00,96,00) h=0,00 r10/10 sp0/0 ws=0: Compactando asfalto na obra 26
+--- t=968
+  V18 None/Dump Available Travelling (63,70,-1,65) h=1,57 r80/106 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Travelling (-184,09,1,65) h=-1,57 r9/27 sp0/0 ws=0: Em viagem
+  V31 Roller/Cargo OnSite Parked (108,00,98,00) h=0,00 r10/10 sp1/2 ws=0: Compactando asfalto na obra 26
+--- t=970
+  V18 None/Dump Available Travelling (77,70,-1,65) h=1,57 r84/106 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Travelling (-205,29,1,65) h=-1,57 r14/27 sp0/0 ws=0: Em viagem
+  V31 Roller/Cargo OnSite Parked (108,00,100,00) h=0,00 r10/10 sp0/0 ws=0: Compactando asfalto na obra 26
+--- t=972
+  V18 None/Dump Available Travelling (91,70,-1,65) h=1,57 r87/106 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Travelling (-229,29,1,65) h=-1,57 r20/27 sp0/0 ws=0: Em viagem
+  V31 Roller/Cargo OnSite Parked (108,00,102,00) h=0,00 r10/10 sp1/2 ws=0: Compactando asfalto na obra 26
+--- t=974
+  V18 None/Dump Available Travelling (105,70,-1,65) h=1,57 r91/106 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Travelling (-253,29,1,65) h=-1,57 r26/27 sp0/0 ws=0: Em viagem
+  V31 Roller/Cargo OnSite Parked (108,00,104,00) h=0,00 r10/10 sp0/0 ws=0: Compactando asfalto na obra 26
+--- t=976
+  V18 None/Dump Available Travelling (109,65,9,82) h=0,00 r94/106 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Unloading (-256,00,1,65) h=-1,57 r27/27 sp0/0 ws=0: Descarregando no destino
+  V31 Roller/Cargo OnSite Parked (108,00,106,00) h=0,00 r10/10 sp1/2 ws=0: Compactando asfalto na obra 26
+--- t=978
+  V18 None/Dump Available Travelling (109,65,23,82) h=0,00 r97/106 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Unloading (-256,00,1,65) h=-1,57 r27/27 sp0/0 ws=0: Descarregando no destino
+  V31 Roller/Cargo OnSite Parked (108,00,108,00) h=0,00 r10/10 sp0/0 ws=0: Compactando asfalto na obra 26
+--- t=980
+  V18 None/Dump Available Travelling (109,65,37,82) h=0,00 r101/106 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Unloading (-256,00,1,65) h=-1,57 r27/27 sp0/0 ws=0: Descarregando no destino
+  V31 Roller/Cargo OnSite Parked (108,00,110,00) h=0,00 r10/10 sp1/2 ws=0: Compactando asfalto na obra 26
+--- t=982
+  V18 None/Dump Available Travelling (109,65,51,82) h=0,00 r104/106 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Unloading (-256,00,1,65) h=-1,57 r27/27 sp0/0 ws=0: Descarregando no destino
+  V31 Roller/Cargo OnSite Parked (108,00,112,00) h=0,00 r10/10 sp0/0 ws=0: Compactando asfalto na obra 26
+--- t=984
+  V18 None/Dump Available Unloading (114,75,56,00) h=0,00 r106/106 sp0/0 ws=0: Descarregando no destino
+  V22 None/Flatbed Available Unloading (-256,00,1,65) h=-1,57 r27/27 sp0/0 ws=0: Descarregando no destino
+  V31 Roller/Cargo OnSite Parked (108,00,114,00) h=0,00 r10/10 sp1/2 ws=0: Compactando asfalto na obra 26
+--- t=986
+  V18 None/Dump Available Unloading (114,75,56,00) h=0,00 r106/106 sp0/0 ws=0: Descarregando no destino
+  V19 None/Dump Available Travelling (-256,00,0,00) h=-1,57 r0/121 sp0/0 ws=0: Entrega para obra 28
+  V21 None/Mixer Available Travelling (-256,00,0,00) h=-1,57 r0/121 sp0/0 ws=0: Entrega para obra 28
+  V22 None/Flatbed Available Unloading (-256,00,1,65) h=-1,57 r27/27 sp0/0 ws=0: Descarregando no destino
+  V31 Roller/Cargo OnSite Parked (108,00,116,00) h=0,00 r10/10 sp0/0 ws=0: Compactando asfalto na obra 26
+--- t=988
+  V18 None/Dump Available Unloading (114,75,56,00) h=0,00 r106/106 sp0/0 ws=0: Descarregando no destino
+  V19 None/Dump Available Travelling (-233,65,-1,65) h=1,57 r6/121 sp0/0 ws=0: Em viagem
+  V21 None/Mixer Available Travelling (-241,65,-1,65) h=1,57 r4/121 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Unloading (-256,00,1,65) h=-1,57 r27/27 sp0/0 ws=0: Descarregando no destino
+  V31 Roller/Cargo OnSite Parked (108,00,118,00) h=0,00 r10/10 sp1/2 ws=0: Compactando asfalto na obra 26
+--- t=990
+  V18 None/Dump Available Unloading (114,75,56,00) h=0,00 r106/106 sp0/0 ws=0: Descarregando no destino
+  V19 None/Dump Available Travelling (-209,65,-1,65) h=1,57 r12/121 sp0/0 ws=0: Em viagem
+  V21 None/Mixer Available Travelling (-217,65,-1,65) h=1,57 r10/121 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Unloading (-256,00,1,65) h=-1,57 r27/27 sp0/0 ws=0: Descarregando no destino
+  V31 Roller/Cargo LeavingSite Parked (108,00,120,00) h=0,00 r10/10 sp0/0 ws=0: Compactando asfalto na obra 26
+--- t=992
+  V18 None/Dump Available Unloading (114,75,56,00) h=0,00 r106/106 sp0/0 ws=0: Descarregando no destino
+  V19 None/Dump Available Travelling (-188,30,-1,65) h=1,57 r17/121 sp0/0 ws=0: Em viagem
+  V21 None/Mixer Available Travelling (-196,30,-1,65) h=1,57 r15/121 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Travelling (-256,00,0,00) h=-1,57 r0/122 sp0/0 ws=0: Entrega para obra 28
+  V31 Roller/Cargo LeavingSite Parked (103,60,110,40) h=3,14 r10/10 sp3/105 ws=0: Compactando asfalto na obra 26
+--- t=994
+  V18 None/Dump Available Unloading (114,75,56,00) h=0,00 r106/106 sp0/0 ws=0: Descarregando no destino
+  V19 None/Dump Available Travelling (-174,30,-1,65) h=1,57 r21/121 sp0/0 ws=0: Em viagem
+  V21 None/Mixer Available Travelling (-182,30,-1,65) h=1,57 r19/121 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Travelling (-233,65,-1,65) h=1,57 r6/122 sp0/0 ws=0: Em viagem
+  V31 Roller/Cargo LeavingSite Parked (105,64,97,03) h=2,54 r10/10 sp6/105 ws=0: Compactando asfalto na obra 26
+--- t=996
+  V18 None/Dump Available Unloading (114,75,56,00) h=0,00 r106/106 sp0/0 ws=0: Descarregando no destino
+  V19 None/Dump Available Travelling (-160,30,-1,65) h=1,57 r24/121 sp0/0 ws=0: Em viagem
+  V21 None/Mixer Available Travelling (-168,30,-1,65) h=1,57 r22/121 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Travelling (-209,65,-1,65) h=1,57 r12/122 sp0/0 ws=0: Em viagem
+  V31 Roller/Cargo LeavingSite Parked (106,35,83,25) h=3,14 r10/10 sp10/105 ws=0: Compactando asfalto na obra 26
+--- t=998
+  V18 None/Dump Available Unloading (114,75,56,00) h=0,00 r106/106 sp0/0 ws=0: Descarregando no destino
+  V19 None/Dump Available Travelling (-146,30,-1,65) h=1,57 r28/121 sp0/0 ws=0: Em viagem
+  V21 None/Mixer Available Travelling (-154,30,-1,65) h=1,57 r26/121 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Travelling (-188,30,-1,65) h=1,57 r17/122 sp0/0 ws=0: Em viagem
+  V31 Roller/Cargo LeavingSite Parked (106,35,69,25) h=3,14 r10/10 sp13/105 ws=0: Compactando asfalto na obra 26
+--- t=1000
+  V18 None/Dump Available Travelling (114,75,56,00) h=0,00 r0/106 sp0/0 ws=0: Retorno ao exterior
+  V19 None/Dump Available Travelling (-132,30,-1,65) h=1,57 r31/121 sp0/0 ws=0: Em viagem
+  V21 None/Mixer Available Travelling (-140,30,-1,65) h=1,57 r29/121 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Travelling (-174,30,-1,65) h=1,57 r21/122 sp0/0 ws=0: Em viagem
+  V31 Roller/Cargo LeavingSite Parked (106,35,55,25) h=3,14 r10/10 sp17/105 ws=0: Compactando asfalto na obra 26
+--- t=1002
+  V18 None/Dump Available Travelling (111,25,56,00) h=-1,57 r0/106 sp0/0 ws=0: Em viagem
+  V19 None/Dump Available Travelling (-118,30,-1,65) h=1,57 r35/121 sp0/0 ws=0: Em viagem
+  V21 None/Mixer Available Travelling (-126,30,-1,65) h=1,57 r33/121 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Travelling (-160,30,-1,65) h=1,57 r24/122 sp0/0 ws=0: Em viagem
+  V31 Roller/Cargo LeavingSite Parked (106,35,41,25) h=3,14 r10/10 sp20/105 ws=0: Compactando asfalto na obra 26
+--- t=1004
+  V18 None/Dump Available Travelling (106,35,47,00) h=3,14 r3/106 sp0/0 ws=0: Em viagem
+  V19 None/Dump Available Travelling (-104,30,-1,65) h=1,57 r38/121 sp0/0 ws=0: Em viagem
+  V21 None/Mixer Available Travelling (-112,30,-1,65) h=1,57 r36/121 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Travelling (-146,30,-1,65) h=1,57 r28/122 sp0/0 ws=0: Em viagem
+  V31 Roller/Cargo LeavingSite Parked (106,35,27,25) h=3,14 r10/10 sp24/105 ws=0: Compactando asfalto na obra 26
+--- t=1006
+  V18 None/Dump Available Travelling (106,35,33,00) h=3,14 r6/106 sp0/0 ws=0: Em viagem
+  V19 None/Dump Available Travelling (-90,30,-1,65) h=1,57 r42/121 sp0/0 ws=0: Em viagem
+  V21 None/Mixer Available Travelling (-98,30,-1,65) h=1,57 r40/121 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Travelling (-132,30,-1,65) h=1,57 r31/122 sp0/0 ws=0: Em viagem
+  V31 Roller/Cargo LeavingSite Parked (106,35,13,25) h=3,14 r10/10 sp27/105 ws=0: Compactando asfalto na obra 26
+--- t=1008
+  V18 None/Dump Available Travelling (106,35,19,00) h=3,14 r10/106 sp0/0 ws=0: Em viagem
+  V19 None/Dump Available Travelling (-76,30,-1,65) h=1,57 r45/121 sp0/0 ws=0: Em viagem
+  V21 None/Mixer Available Travelling (-84,30,-1,65) h=1,57 r43/121 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Travelling (-118,30,-1,65) h=1,57 r35/122 sp0/0 ws=0: Em viagem
+  V31 Roller/Cargo LeavingSite Parked (105,74,0,43) h=-0,96 r10/10 sp31/105 ws=0: Compactando asfalto na obra 26
+--- t=1010
+  V18 None/Dump Available Travelling (106,35,6,50) h=3,14 r13/106 sp0/0 ws=0: Em viagem
+  V19 None/Dump Available Travelling (-62,30,-1,65) h=1,57 r49/121 sp0/0 ws=0: Em viagem
+  V21 None/Mixer Available Travelling (-70,30,-1,65) h=1,57 r47/121 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Travelling (-104,30,-1,65) h=1,57 r38/122 sp0/0 ws=0: Em viagem
+  V31 Roller/Cargo LeavingSite Parked (104,00,1,65) h=-0,96 r10/10 sp32/105 ws=0: Aguardando espaço ocupado no canteiro
+--- t=1012
+  V18 None/Dump Available Travelling (106,35,6,50) h=3,14 r13/106 sp0/0 ws=1010: Fila na faixa
+  V19 None/Dump Available Travelling (-48,30,-1,65) h=1,57 r52/121 sp0/0 ws=0: Em viagem
+  V21 None/Mixer Available Travelling (-56,30,-1,65) h=1,57 r50/121 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Travelling (-90,30,-1,65) h=1,57 r42/122 sp0/0 ws=0: Em viagem
+  V31 Roller/Cargo LeavingSite Parked (104,00,1,65) h=-0,96 r10/10 sp32/105 ws=0: Aguardando espaço ocupado no canteiro
+--- t=1014
+  V18 None/Dump Available Travelling (106,35,6,50) h=3,14 r13/106 sp0/0 ws=1010: Fila na faixa
+  V19 None/Dump Available Travelling (-34,30,-1,65) h=1,57 r56/121 sp0/0 ws=0: Em viagem
+  V21 None/Mixer Available Travelling (-42,30,-1,65) h=1,57 r54/121 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Travelling (-76,30,-1,65) h=1,57 r45/122 sp0/0 ws=0: Em viagem
+  V31 Roller/Cargo LeavingSite Parked (104,00,1,65) h=-0,96 r10/10 sp32/105 ws=0: Aguardando espaço ocupado no canteiro
+--- t=1016
+  V18 None/Dump Available Travelling (106,35,6,50) h=3,14 r13/106 sp0/0 ws=1010: Fila na faixa
+  V19 None/Dump Available Travelling (-20,30,-1,65) h=1,57 r59/121 sp0/0 ws=0: Em viagem
+  V21 None/Mixer Available Travelling (-28,30,-1,65) h=1,57 r57/121 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Travelling (-62,30,-1,65) h=1,57 r49/122 sp0/0 ws=0: Em viagem
+  V31 Roller/Cargo LeavingSite Parked (104,00,1,65) h=-0,96 r10/10 sp32/105 ws=0: Aguardando espaço ocupado no canteiro
+--- t=1018
+  V18 None/Dump Available Travelling (106,35,6,50) h=3,14 r13/106 sp0/0 ws=1010: Fila na faixa
+  V19 None/Dump Available Travelling (-6,30,-1,65) h=1,57 r63/121 sp0/0 ws=0: Em viagem
+  V21 None/Mixer Available Travelling (-14,30,-1,65) h=1,57 r61/121 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Travelling (-48,30,-1,65) h=1,57 r52/122 sp0/0 ws=0: Em viagem
+  V31 Roller/Cargo LeavingSite Parked (104,00,1,65) h=-0,96 r10/10 sp32/105 ws=0: Aguardando espaço ocupado no canteiro
+--- t=1020
+  V18 None/Dump Available Travelling (106,35,6,50) h=3,14 r13/106 sp0/0 ws=1010: Fila na faixa
+  V19 None/Dump Available Travelling (7,70,-1,65) h=1,57 r66/121 sp0/0 ws=0: Em viagem
+  V21 None/Mixer Available Travelling (-0,30,-1,65) h=1,57 r64/121 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Travelling (-34,30,-1,65) h=1,57 r56/122 sp0/0 ws=0: Em viagem
+  V31 Roller/Cargo LeavingSite Parked (104,00,1,65) h=-0,96 r10/10 sp32/105 ws=0: Aguardando espaço ocupado no canteiro
+--- t=1022
+  V18 None/Dump Available Travelling (106,35,6,50) h=3,14 r13/106 sp0/0 ws=1010: Fila na faixa
+  V19 None/Dump Available Travelling (21,70,-1,65) h=1,57 r70/121 sp0/0 ws=0: Em viagem
+  V21 None/Mixer Available Travelling (13,70,-1,65) h=1,57 r68/121 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Travelling (-20,30,-1,65) h=1,57 r59/122 sp0/0 ws=0: Em viagem
+  V31 Roller/Cargo LeavingSite Parked (104,00,1,65) h=-0,96 r10/10 sp32/105 ws=0: Aguardando espaço ocupado no canteiro
+--- t=1024
+  V18 None/Dump Available Travelling (106,35,6,50) h=3,14 r13/106 sp0/0 ws=1010: Fila na faixa
+  V19 None/Dump Available Travelling (35,70,-1,65) h=1,57 r73/121 sp0/0 ws=0: Em viagem
+  V21 None/Mixer Available Travelling (27,70,-1,65) h=1,57 r71/121 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Travelling (-6,30,-1,65) h=1,57 r63/122 sp0/0 ws=0: Em viagem
+  V31 Roller/Cargo LeavingSite Parked (104,00,1,65) h=-0,96 r10/10 sp32/105 ws=0: Aguardando espaço ocupado no canteiro
+--- t=1026
+  V18 None/Dump Available Travelling (106,35,6,50) h=3,14 r13/106 sp0/0 ws=1010: Fila na faixa
+  V19 None/Dump Available Travelling (49,70,-1,65) h=1,57 r77/121 sp0/0 ws=0: Em viagem
+  V21 None/Mixer Available Travelling (41,70,-1,65) h=1,57 r75/121 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Travelling (7,70,-1,65) h=1,57 r66/122 sp0/0 ws=0: Em viagem
+  V31 Roller/Cargo LeavingSite Parked (104,00,1,65) h=-0,96 r10/10 sp32/105 ws=0: Aguardando espaço ocupado no canteiro
+--- t=1028
+  V18 None/Dump Available Travelling (106,35,6,50) h=3,14 r13/106 sp0/0 ws=1010: Fila na faixa
+  V19 None/Dump Available Travelling (63,70,-1,65) h=1,57 r80/121 sp0/0 ws=0: Em viagem
+  V21 None/Mixer Available Travelling (55,70,-1,65) h=1,57 r78/121 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Travelling (21,70,-1,65) h=1,57 r70/122 sp0/0 ws=0: Em viagem
+  V31 Roller/Cargo LeavingSite Parked (104,00,1,65) h=-0,96 r10/10 sp32/105 ws=0: Aguardando espaço ocupado no canteiro
+--- t=1030
+  V18 None/Dump Available Travelling (106,35,6,50) h=3,14 r13/106 sp0/0 ws=1010: Fila na faixa
+  V19 None/Dump Available Travelling (77,70,-1,65) h=1,57 r84/121 sp0/0 ws=0: Em viagem
+  V21 None/Mixer Available Travelling (69,70,-1,65) h=1,57 r82/121 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Travelling (35,70,-1,65) h=1,57 r73/122 sp0/0 ws=0: Em viagem
+  V31 Roller/Cargo LeavingSite Parked (104,00,1,65) h=-0,96 r10/10 sp32/105 ws=0: Aguardando espaço ocupado no canteiro
+--- t=1032
+  V18 None/Dump Available Travelling (106,35,6,50) h=3,14 r13/106 sp0/0 ws=1010: Fila na faixa
+  V19 None/Dump Available Travelling (91,70,-1,65) h=1,57 r87/121 sp0/0 ws=0: Em viagem
+  V21 None/Mixer Available Travelling (83,70,-1,65) h=1,57 r85/121 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Travelling (49,70,-1,65) h=1,57 r77/122 sp0/0 ws=0: Em viagem
+  V31 Roller/Cargo LeavingSite Parked (104,00,1,65) h=-0,96 r10/10 sp32/105 ws=0: Aguardando espaço ocupado no canteiro
+--- t=1034
+  V18 None/Dump Available Travelling (106,35,6,50) h=3,14 r13/106 sp0/0 ws=1010: Fila na faixa
+  V19 None/Dump Available Travelling (100,50,-1,65) h=1,57 r90/121 sp0/0 ws=0: Em viagem
+  V21 None/Mixer Available Travelling (92,50,-1,65) h=1,57 r88/121 sp0/0 ws=0: Em viagem
+  V22 None/Flatbed Available Travelling (63,70,-1,65) h=1,57 r80/122 sp0/0 ws=0: Em viagem
+  V31 Roller/Cargo LeavingSite Parked (104,00,1,65) h=-0,96 r10/10 sp32/105 ws=0: Aguardando espaço ocupado no canteiro
+--- t=1036
+  V18 None/Dump Available Travelling (106,35,6,50) h=3,14 r13/106 sp0/0 ws=1010: Fila na faixa
+  V19 None/Dump Available Travelling (100,50,-1,65) h=1,57 r90/121 sp0/0 ws=1034: Fila na faixa
+  V21 None/Mixer Available Travelling (92,50,-1,65) h=1,57 r88/121 sp0/0 ws=1034: Fila na faixa
+  V22 None/Flatbed Available Travelling (77,70,-1,65) h=1,57 r84/122 sp0/0 ws=0: Em viagem
+  V31 Roller/Cargo LeavingSite Parked (104,00,1,65) h=-0,96 r10/10 sp32/105 ws=0: Aguardando espaço ocupado no canteiro
+--- t=1038
+  V18 None/Dump Available Travelling (106,35,6,50) h=3,14 r13/106 sp0/0 ws=1010: Fila na faixa
+  V19 None/Dump Available Travelling (100,50,-1,65) h=1,57 r90/121 sp0/0 ws=1034: Fila na faixa
+  V21 None/Mixer Available Travelling (92,50,-1,65) h=1,57 r88/121 sp0/0 ws=1034: Fila na faixa
+  V22 None/Flatbed Available Travelling (84,50,-1,65) h=1,57 r86/122 sp0/0 ws=0: Em viagem
+  V31 Roller/Cargo LeavingSite Parked (104,00,1,65) h=-0,96 r10/10 sp32/105 ws=0: Aguardando espaço ocupado no canteiro
+--- t=1040
+  V18 None/Dump Available Travelling (106,35,6,50) h=3,14 r13/106 sp0/0 ws=1010: Fila na faixa
+  V19 None/Dump Available Travelling (100,50,-1,65) h=1,57 r90/121 sp0/0 ws=1034: Fila na faixa
+  V21 None/Mixer Available Travelling (92,50,-1,65) h=1,57 r88/121 sp0/0 ws=1034: Fila na faixa
+  V22 None/Flatbed Available Travelling (84,50,-1,65) h=1,57 r86/122 sp0/0 ws=1038: Fila na faixa
+  V31 Roller/Cargo LeavingSite Parked (104,00,1,65) h=-0,96 r10/10 sp32/105 ws=0: Aguardando espaço ocupado no canteiro
+--- t=1042
+  V18 None/Dump Available Travelling (106,35,6,50) h=3,14 r13/106 sp0/0 ws=1010: Fila na faixa
+  V19 None/Dump Available Travelling (100,50,-1,65) h=1,57 r90/121 sp0/0 ws=1034: Fila na faixa
+  V21 None/Mixer Available Travelling (92,50,-1,65) h=1,57 r88/121 sp0/0 ws=1034: Fila na faixa
+  V22 None/Flatbed Available Travelling (84,50,-1,65) h=1,57 r86/122 sp0/0 ws=1038: Fila na faixa
+  V31 Roller/Cargo LeavingSite Parked (104,00,1,65) h=-0,96 r10/10 sp32/105 ws=0: Aguardando espaço ocupado no canteiro
+--- t=1044
+  V18 None/Dump Available Travelling (106,35,6,50) h=3,14 r13/106 sp0/0 ws=1010: Fila na faixa
+  V19 None/Dump Available Travelling (100,50,-1,65) h=1,57 r90/121 sp0/0 ws=1034: Fila na faixa
+  V21 None/Mixer Available Travelling (92,50,-1,65) h=1,57 r88/121 sp0/0 ws=1034: Fila na faixa
+  V22 None/Flatbed Available Travelling (84,50,-1,65) h=1,57 r86/122 sp0/0 ws=1038: Fila na faixa
+  V31 Roller/Cargo LeavingSite Parked (104,00,1,65) h=-0,96 r10/10 sp32/105 ws=0: Aguardando espaço ocupado no canteiro
+P24 Completed 1,00 0/0/0: Concluído
+P26 InProgress 1,00 105/105/105: Aplicação e acabamento de asfalto em andamento
+P27 Waiting 0,00 0/0/16: Aguardando pavimentadora e rolo disponíveis
+P28 Waiting 0,00 0/0/0: Aguardando caminhão externo disponível
+V18 None/Dump Available Travelling (106,35,6,50) h=3,14 r13/106 sp0/0 ws=1010: Fila na faixa
+V19 None/Dump Available Travelling (100,50,-1,65) h=1,57 r90/121 sp0/0 ws=1034: Fila na faixa
+V21 None/Mixer Available Travelling (92,50,-1,65) h=1,57 r88/121 sp0/0 ws=1034: Fila na faixa
+V22 None/Flatbed Available Travelling (84,50,-1,65) h=1,57 r86/122 sp0/0 ws=1038: Fila na faixa
+V31 Roller/Cargo LeavingSite Parked (104,00,1,65) h=-0,96 r10/10 sp32/105 ws=0: Aguardando espaço ocupado no canteiro
