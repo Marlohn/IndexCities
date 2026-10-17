@@ -55,6 +55,7 @@ public sealed partial class CitySimulation
         // Refresh derived crossings once for an old save before retrying routes.
         // Loading itself still preserves the serialized state exactly.
         if(!_pedestrianCrossingsChecked){UpdateCrosswalks();_pedestrianCrossingsChecked=true;}
+        RefreshCrosswalks();
         foreach(var c in State.Citizens.Where(c=>c.Alive)){
             if(!c.Moving&&c.PathRoadRevision!=State.RoadRevision&&c.Activity.StartsWith("Sem rota",StringComparison.Ordinal))c.NextDecisionAt=Math.Min(c.NextDecisionAt,State.ElapsedSeconds);
             if(c.ConstructionProjectId!=null&&ShiftActive(c)){c.WorkSecondsToday+=dt;AccrueWage(c,dt);}
@@ -74,7 +75,7 @@ public sealed partial class CitySimulation
                     // Only negotiate the crossing reached by this physical step,
                     // and preserve an ongoing crossing before nearby alternatives.
                     var nextPosition=c.Position.MoveTowards(target,Math.Min(distance,d));
-                    var crossing=State.Roads.Where(n=>n.Crosswalk&&(n.Position.Distance(c.Position)<State.Tuning.RoadWidth+1||n.Position.Distance(nextPosition)<State.Tuning.RoadWidth+1)&&CrossesLane(c.Position,nextPosition,n)).OrderBy(n=>n.Id==c.CrossingNodeId?0:1).ThenBy(n=>n.Position.Distance(c.Position)).FirstOrDefault();
+                    var crossing=CrossingReached(c,nextPosition);
                     if(crossing!=null&&c.CrossingNodeId!=crossing.Id){
                         // A vehicle already stopped in a queue does not advance onto the
                         // walker; only one entering or passing the crossing does. This
@@ -82,18 +83,50 @@ public sealed partial class CitySimulation
                         var occupied=State.Vehicles.Any(v=>v.Status==VehicleStatus.Travelling&&(v.IntersectionClaim==crossing.Id||v.WaitingSince==0&&v.Position.Distance(crossing.Position)<3.5));
                         if(occupied){c.Activity="Aguardando travessia";break;}c.CrossingNodeId=crossing.Id;
                     }
-                    var heading=d>.001?(target-c.Position)*(1/d):new Point(0,0);var gap=State.Citizens.Where(other=>other.Id!=c.Id&&other.Alive&&other.Moving&&other.VehicleId==null).Select(other=>{var relative=other.Position-c.Position;var otherTarget=other.Path[other.PathIndex];var otherDelta=otherTarget-other.Position;var otherLength=otherDelta.Distance(new(0,0));var alignment=otherLength<.001?1:(heading.X*otherDelta.X+heading.Z*otherDelta.Z)/otherLength;
-                        // At a shared turning point, two converging headings can
-                        // each see the other ahead. Only the closer walker leads
-                        // that merge; stable identity resolves an exact tie.
-                        var sharedTurn=otherTarget.Distance(target)<.05;var precedes=!sharedTurn||otherLength<d-.001||Math.Abs(otherLength-d)<=.001&&other.Id<c.Id;
-                        return (Ahead:relative.X*heading.X+relative.Z*heading.Z,Side:Math.Abs(relative.X*heading.Z-relative.Z*heading.X),Alignment:alignment,Precedes:precedes);}).Where(other=>other.Precedes&&other.Ahead>.001&&other.Side<.55&&other.Alignment>.5).Select(other=>other.Ahead).DefaultIfEmpty(double.MaxValue).Min();var travelled=Math.Min(distance,Math.Min(d,Math.Max(0,gap-.7)));if(travelled<.000001&&d>.001){c.Activity="Fila de pedestres";break;}c.Position=c.Position.MoveTowards(target,travelled);distance-=travelled;if(d<=travelled+.00001)c.PathIndex++;else break;
+                    var heading=d>.001?(target-c.Position)*(1/d):new Point(0,0);var gap=PedestrianGap(c,target,d,heading,Math.Min(distance,d)+.7);var travelled=Math.Min(distance,Math.Min(d,Math.Max(0,gap-.7)));if(travelled<.000001&&d>.001){c.Activity="Fila de pedestres";break;}c.Position=c.Position.MoveTowards(target,travelled);distance-=travelled;if(d<=travelled+.00001)c.PathIndex++;else break;
                 }
                 c.InsideMap=InMap(c.Position);if(!c.Moving){c.CrossingNodeId=null;CitizenArrived(c);}continue;
             }
             if(State.ElapsedSeconds<c.NextDecisionAt)continue;c.NextDecisionAt=State.ElapsedSeconds+60;
             CitizenRoutine(c);
         }
+    }
+    // Crosswalk nodes in State.Roads order. Rebuilt at the start of every
+    // MoveCitizens call and whenever the road list or crossings change.
+    readonly List<RoadNode> _crosswalks=[];int _crosswalksEpoch=-1;int _roadEpoch;
+    void RefreshCrosswalks(){_crosswalks.Clear();foreach(var n in State.Roads)if(n.Crosswalk)_crosswalks.Add(n);_crosswalksEpoch=_roadEpoch;}
+    // Crosswalk reached by this physical step: the one already being crossed,
+    // else the nearest; an exact tie keeps road-list order (as a stable sort).
+    RoadNode? CrossingReached(Citizen c,Point nextPosition)
+    {
+        if(_crosswalksEpoch!=_roadEpoch)RefreshCrosswalks();
+        RoadNode? best=null;var bestKey=0;var bestDistance=0.0;
+        foreach(var n in _crosswalks){
+            if(!(n.Position.Distance(c.Position)<State.Tuning.RoadWidth+1||n.Position.Distance(nextPosition)<State.Tuning.RoadWidth+1)||!CrossesLane(c.Position,nextPosition,n))continue;
+            var key=n.Id==c.CrossingNodeId?0:1;var distance=n.Position.Distance(c.Position);
+            if(best==null||key<bestKey||key==bestKey&&distance.CompareTo(bestDistance)<0){best=n;bestKey=key;bestDistance=distance;}
+        }
+        return best;
+    }
+    // Distance to the nearest walker ahead in the same lane (double.MaxValue if
+    // none). Only the result's effect on the step is used, so walkers farther
+    // than `reach` (the step length plus clearance) are skipped: their lead
+    // always exceeds the step, as does the returned value in that case.
+    double PedestrianGap(Citizen c,Point target,double d,Point heading,double reach)
+    {
+        var gap=double.MaxValue;var radius=reach+1.3;radius*=radius;
+        foreach(var other in State.Citizens){
+            if(other.Id==c.Id||!other.Alive||!other.Moving||other.VehicleId!=null)continue;
+            var relative=other.Position-c.Position;if(relative.X*relative.X+relative.Z*relative.Z>radius)continue;
+            var otherTarget=other.Path[other.PathIndex];var otherDelta=otherTarget-other.Position;var otherLength=otherDelta.Distance(new(0,0));var alignment=otherLength<.001?1:(heading.X*otherDelta.X+heading.Z*otherDelta.Z)/otherLength;
+            // At a shared turning point, two converging headings can
+            // each see the other ahead. Only the closer walker leads
+            // that merge; stable identity resolves an exact tie.
+            var sharedTurn=otherTarget.Distance(target)<.05;var precedes=!sharedTurn||otherLength<d-.001||Math.Abs(otherLength-d)<=.001&&other.Id<c.Id;
+            var ahead=relative.X*heading.X+relative.Z*heading.Z;var side=Math.Abs(relative.X*heading.Z-relative.Z*heading.X);
+            if(precedes&&ahead>.001&&side<.55&&alignment>.5&&ahead<gap)gap=ahead;
+        }
+        return gap;
     }
     void CitizenArrived(Citizen c)
     {
@@ -162,7 +195,10 @@ public sealed partial class CitySimulation
         // actual rear of the truck; the former 9 m reservation could overlap
         // nearby junctions and make opposite queues hold each other forever.
         foreach(var vehicle in State.Vehicles)ClearPassedJunction(vehicle);
-        foreach(var v in State.Vehicles.OrderBy(v=>v.WaitingSince).ThenBy(v=>v.Id)){
+        // Same order as OrderBy(WaitingSince).ThenBy(Id): Ids are unique, so the
+        // key is a total order and any sort yields the same sequence.
+        var ordered=State.Vehicles.ToArray();Array.Sort(ordered,static (a,b)=>a.WaitingSince.CompareTo(b.WaitingSince) is var c and not 0?c:a.Id.CompareTo(b.Id));
+        foreach(var v in ordered){
             // A bypass belongs to the trip in progress: a stopped, parked or
             // replanned-elsewhere vehicle does not resume old waypoints.
             if(v.Detour.Count>0&&v.Status!=VehicleStatus.Travelling)v.Detour.Clear();

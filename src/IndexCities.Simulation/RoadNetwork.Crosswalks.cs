@@ -18,6 +18,7 @@ public sealed partial class CitySimulation
 
     void UpdateCrosswalks()
     {
+        _roadEpoch++;
         var marked=State.Roads.Where(n=>!n.Highway&&(n.Neighbours.Any(id=>_roads[id].Highway)||n.Neighbours.Count>=3)&&CrosswalkGeometry(n,State).Any()).Select(n=>n.Id).ToHashSet();
         // A curve alone is not a crossing. Accesses on the same straight run
         // share a physical crossing; all accesses are considered in a stable order.
