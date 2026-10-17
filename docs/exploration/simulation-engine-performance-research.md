@@ -745,4 +745,13 @@ Para veículos, "≥ 10 s" quase só acontece quando não há nenhum outro agent
 
 ### 16.6. Achado colateral: veículos presos e mortes na grade de 108 SIMs (`main` em `f3affed`)
 
-Na rodada `repeat grid --rows=3 --length=400 --days=10`, os dias 1–5 ficaram estáveis: ~34 s por dia e nenhum veículo em viagem no fim do dia. A partir do dia 6, há veículos que terminam o dia ainda em viagem (10, 13, 15, 16, 17), o tempo por dia triplica e **10 SIMs morrem até o dia 10**. Parece travamento de trânsito ou veículo preso, e não carga da máquina, porque o estado da cidade muda junto. **Investigar como bug** antes de usar esta cidade em novas medições.
+Na rodada `repeat grid --rows=3 --length=400 --days=10`, os dias 1–5 ficaram estáveis: ~34 s por dia e nenhum veículo em viagem no fim do dia. A partir do dia 6, há veículos que terminam o dia ainda em viagem (10, 13, 15, 16, 17), o tempo por dia triplica e **10 SIMs morrem até o dia 10**.
+
+**Diagnóstico** (comando `stuck` da branch experimental, amostra a cada 10 min de jogo):
+- No dia 5, às 06:30–07:00, **quatro caminhões externos de importação ficam sem combustível no meio da rota**, embora a importação confira ida e volta contra o tanque e encha o tanque antes de partir. Os postos funcionam ~60% do tempo, e até ali nenhum veículo precisou abastecer; o posto não é a causa. A regra de prevenção da SPEC está sendo violada por algum trajeto que a checagem não conta.
+- Dois desses caminhões param em sentidos opostos, quase lado a lado. As frentes das duas filas ficam 1.400+ min esperando: nenhuma ultrapassa nem faz meia-volta, porque a contramão de cada uma está ocupada pela outra.
+- Carros saindo de vaga atrás de um veículo parado nunca tentam contornar (a regra só age em quem já está na rua) e esperam para sempre.
+- SIMs presos dentro desses carros não comem e morrem.
+- O modo de subpassos de entrada em faixa (Mobility.LaneEntry.cs) refaz verificações minúsculas enquanto a entrada continua bloqueada, e o dia passa de 4,6 s para 54–100 s. A PR #32 viu o mesmo efeito com 1.000 SIMs.
+
+Correção despachada para um worker em 2026-10-17 (prevenção, saída de vaga, bloqueio nos dois sentidos e desempenho do modo de subpassos), com perguntas ao responsável onde a SPEC não definir o comportamento.
