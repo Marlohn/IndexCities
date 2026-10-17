@@ -468,3 +468,26 @@ Os números ficaram dentro da faixa natural, e o dinheiro se conservou em todas 
 - A rodada de 1.000 SIMs com o motor atual (2 s) não foi medida até o fim: só o crescimento já passava de uma hora.
 
 **Leitura:** o intervalo fixo ajuda até algumas centenas de SIMs, mas muda resultados (satisfação) e não resolve a escala de 1.000+, onde a caminhada domina com custo que cresce mais que linearmente (verificações de distância contra todos os pedestres e consultas lineares por prédio, ver medição de escala acima). O próximo passo técnico que não muda regra nenhuma é atacar esse custo — índice espacial para pedestres, dicionário por Id para prédios, menos alocação por passo — cada um com prova de SHA idêntico pela bancada. Só depois disso faz sentido decidir entre intervalo maior, agenda de próximos acontecimentos ou outra arquitetura.
+
+### Veículos presos na grade: causa e correção (2026-10-17, PENDENTE)
+
+> **Pesquisa, não decisão.** Registro do diagnóstico que acompanhou a correção na branch `Marlohn/veiculos-presos`. A regra é a da SPEC ([transporte-circulacao](../spec/transporte-circulacao.md), "Veículo parado na via não trava a rua"); aqui ficam só a causa e as medições.
+
+- **Causa:** os caminhões externos que ficavam sem combustível eram da **equipe de manutenção viária**. O projeto agrupa até 16 trechos por célula de 64 m, ordenados pela distância à entrada. Numa célula com duas ruas paralelas, os trechos alternam entre elas, e o caminhão se reposicionava a cada trecho (~250 m por salto) sem nova checagem. O tanque de 40 L acabava no meio da rua. Daí vinham as filas, os carros presos saindo da vaga, as mortes por fome dentro deles e o modo de subpassos permanente.
+- **Correção aplicada:** a equipe confere trecho + volta ao exterior antes de cada reposicionamento; se faltar, volta para reabastecer na importação e a obra chama equipe de novo. O caminhão local confere a volta à fazenda. A parada no posto exige estoque e dinheiro para o resto da viagem; abastecimento parcial não parte.
+- **Medição (`stuck grid --rows=3 --length=400 --days=11`, após 2 dias de aquecimento):**
+
+| Semente | Sem combustível na via (main → corrigido) | Parados ≥30 min, máx. | Mortes | Dia mais lento ÷ mais rápido |
+|---|---|---|---|---|
+| 42 | 4 → 0 | 18 → 0 | 11 → 0 | 3,8 → 1,1 |
+| 7 | 4 → 0 | 15 → 0 | 6 → 0 | 4,3 → 1,1 |
+| 43 | 4 → 0 | 25 → 0 | 19 → 0 | 5,5 → 1,1 |
+
+  Cidade `cycle`, 10 dias: 0/0 nos dois casos e a mesma morte pré-existente. As rodadas do main correram em paralelo; compare a razão dentro da mesma rodada, não os segundos absolutos.
+- **Subpassos com veículo parado:** com o bug, todo passo de 2 s entrava no modo de subpassos (~12 fatias por passo). As fatias vinham da chegada prevista de veículos retidos na fila atrás do parado, que nunca acontecia. Agora entrada bloqueada por veículo parado ou pela fila retida atrás dele não gera subpassos. Sem veículo parado o cálculo é idêntico (SHA igual ao main em `cycle` e na grade, 3 dias).
+- **Em aberto:**
+  - **B2:** carro saindo da vaga com veículo parado na frente.
+  - **B3:** duas frentes de fila travadas entre dois parados em faixas opostas.
+  - **Custo do reenvio da equipe externa.**
+  - **Motorista preso em caminhão sem posto viável.**
+  - **Ordem em zigue-zague dos trechos de manutenção:** cada salto custa combustível e, agora, reenvios pagos. Melhoria técnica possível, ainda não feita.
