@@ -1,0 +1,31 @@
+﻿Godot Engine v4.7.2.stable.mono.official.ed1daf0bf - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 546.18 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 3050 6GB Laptop GPU
+
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\after-main-merge\construction-paving-smoke\straight-ordered.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\after-main-merge\construction-paving-smoke\straight-unload-Aggregate.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\after-main-merge\construction-paving-smoke\straight-empty-return-Dump.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\after-main-merge\construction-paving-smoke\straight-unload-Asphalt.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\after-main-merge\construction-paving-smoke\straight-applying.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\after-main-merge\construction-paving-smoke\straight-stopped-no-fuel.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\after-main-merge\construction-paving-smoke\straight-rolling.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\after-main-merge\construction-paving-smoke\straight-unload-Concrete.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\after-main-merge\construction-paving-smoke\straight-empty-return-Mixer.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\after-main-merge\construction-paving-smoke\straight-unload-Steel.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\after-main-merge\construction-paving-smoke\straight-empty-return-Flatbed.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\after-main-merge\construction-paving-smoke\straight-unload-Wood.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\after-main-merge\construction-paving-smoke\straight-completed.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\after-main-merge\construction-paving-smoke\L-ordered.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\after-main-merge\construction-paving-smoke\L-unload-Aggregate.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\after-main-merge\construction-paving-smoke\L-empty-return-Dump.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\after-main-merge\construction-paving-smoke\L-unload-Asphalt.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\after-main-merge\construction-paving-smoke\L-applying.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\after-main-merge\construction-paving-smoke\L-stopped-no-fuel.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\after-main-merge\construction-paving-smoke\L-rolling.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\after-main-merge\construction-paving-smoke\L-unload-Concrete.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\after-main-merge\construction-paving-smoke\L-empty-return-Mixer.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\after-main-merge\construction-paving-smoke\L-unload-Steel.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\after-main-merge\construction-paving-smoke\L-empty-return-Flatbed.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\after-main-merge\construction-paving-smoke\L-unload-Wood.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\after-main-merge\construction-paving-smoke\L-completed.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\after-main-merge\construction-paving-smoke\cancelled-returned.png
+INDEXCITIES_CONSTRUCTION_PAVING_OK models=final captures=27 directory=C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\artifacts\verification\construction-integration\after-main-merge\construction-paving-smoke straight=L=physical money=conserved save-load=deterministic cancel=physical-return compacted=opened
