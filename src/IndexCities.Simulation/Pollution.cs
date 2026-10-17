@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace IndexCities.Simulation;
 
 public sealed partial class CitySimulation
@@ -16,6 +18,7 @@ public sealed partial class CitySimulation
     // order changed: same factors, same summation order, same result.
     sealed class CellFactors{public int Layout=-1,Count;public long[] Keys=[];public double[] Factors=[];}
     readonly Dictionary<Point,CellFactors> _pollutionFactors=new();
+    readonly List<long> _decayKeys=[];
     long[] _cellKeys=[];double[] _cellValues=[];int _cellCount,_cellLayout;
     // Copies the cells in enumeration order; the layout changes whenever that
     // key sequence differs from the previous snapshot.
@@ -46,7 +49,9 @@ public sealed partial class CitySimulation
     void UpdatePollution(double dt,List<Building> active)
     {
         var recovery=Math.Exp(-.15*dt/86400);
-        foreach(var key in State.PollutionCells.Keys.ToList()){State.PollutionCells[key]*=recovery;if(State.PollutionCells[key]<1e-10)State.PollutionCells.Remove(key);}
+        // Same multiplications and removals, in the same key order.
+        _decayKeys.Clear();_decayKeys.AddRange(State.PollutionCells.Keys);
+        foreach(var key in _decayKeys){ref var value=ref CollectionsMarshal.GetValueRefOrNullRef(State.PollutionCells,key);value*=recovery;if(value<1e-10)State.PollutionCells.Remove(key);}
         foreach(var building in active)EmitPollution(building.Position,building.UntreatedSewage/100*dt/86400);
         foreach(var vehicle in State.Vehicles)EmitPollution(vehicle.Position,vehicle.FuelBurnedLastStep*.01);
         SnapshotPollution();State.LakePollution=SampledPollution(State.LakeCentre);
