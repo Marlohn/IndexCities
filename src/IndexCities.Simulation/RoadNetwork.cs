@@ -33,6 +33,17 @@ public sealed partial class CitySimulation
         while(queue.Count>0){var id=queue.Dequeue();if(id==to)break;foreach(var next in _roads[id].Neighbours){if(parent.ContainsKey(next)||_roads[next].MaintenanceRatio<=.05||!construction&&_roads[next].ConstructionOnly||avoid!=null&&avoid.Contains(next))continue;parent[next]=id;queue.Enqueue(next);}}
         if(!parent.ContainsKey(to))return [];var result=new List<int>();for(var id=to;id!=-1;id=parent[id])result.Add(id);result.Reverse();return result;
     }
+    // RouteLength(FindRoadRoute(from,to)) for every reachable `to` on an ordinary
+    // trip (null when no route can start at `from`). The same breadth-first
+    // visit assigns the same parents (stopping early never changes one), and
+    // each length adds the same edge distances in the same order from `from`.
+    Dictionary<int,double>? RouteLengthsFrom(int from)
+    {
+        if(!_roads.TryGetValue(from,out var start)||start.ConstructionOnly)return null;
+        var lengths=new Dictionary<int,double>{{from,0}};var queue=new Queue<int>();queue.Enqueue(from);
+        while(queue.Count>0){var id=queue.Dequeue();var node=_roads[id];foreach(var next in node.Neighbours){if(lengths.ContainsKey(next)||_roads[next].MaintenanceRatio<=.05||_roads[next].ConstructionOnly)continue;lengths[next]=lengths[id]+node.Position.Distance(_roads[next].Position);queue.Enqueue(next);}}
+        return lengths;
+    }
     // Every node FindRoadRoute(from,to) reaches on an ordinary trip, for any to.
     HashSet<int> RoadReach(int from)
     {
@@ -58,8 +69,14 @@ public sealed partial class CitySimulation
                 var straight=State.Roads.Where(r=>r.Crosswalk&&!r.Highway&&r.Position.Distance(from)<=Math.Max(24,State.Tuning.CrosswalkSpacing+State.Tuning.RoadStep)&&((vertical&&!horizontal&&Math.Abs(r.Position.X-a.Position.X)<.1&&r.Neighbours.All(id=>Math.Abs(_roads[id].Position.X-r.Position.X)<.1))||(horizontal&&!vertical&&Math.Abs(r.Position.Z-a.Position.Z)<.1&&r.Neighbours.All(id=>Math.Abs(_roads[id].Position.Z-r.Position.Z)<.1)))&&SameRoadLine(a,r,horizontal)).MinBy(r=>CrosswalkCentre(r,State).Distance(from));
                 if(straight!=null){var centre=CrosswalkCentre(straight,State);crossingApproach=vertical?new Point(from.X,centre.Z):new Point(centre.X,from.Z);from=crossingApproach.Value;a=straight;}
                 else {
-                    var recovery=State.Roads.Where(r=>r.Crosswalk&&!r.Highway).Select(r=>(Node:r,Route:FindRoadRoute(a.Id,r.Id))).Where(r=>r.Route.Count>0&&RouteLength(r.Route)<=State.Tuning.CrosswalkSpacing*3+State.Tuning.RoadWidth).OrderBy(r=>RouteLength(r.Route)).ThenBy(r=>r.Node.Id).FirstOrDefault();
-                    if(recovery.Node!=null){laneApproach.AddRange(recovery.Route.Select(id=>_roads[id].Position));a=recovery.Node;crossingApproach=CrosswalkCentre(a,State);from=crossingApproach.Value;}
+                    // Nearest crosswalk by route length, then Id: one route tree
+                    // from this node instead of one route search per crosswalk.
+                    var lengths=RouteLengthsFrom(a.Id);RoadNode? recovery=null;var recoveryLength=0.0;
+                    foreach(var r in State.Roads){
+                        if(!r.Crosswalk||r.Highway||r.ConstructionOnly||lengths==null||!lengths.TryGetValue(r.Id,out var length)||!(length<=State.Tuning.CrosswalkSpacing*3+State.Tuning.RoadWidth))continue;
+                        if(recovery==null||length<recoveryLength||length==recoveryLength&&r.Id<recovery.Id){recovery=r;recoveryLength=length;}
+                    }
+                    if(recovery!=null){laneApproach.AddRange(FindRoadRoute(a.Id,recovery.Id).Select(id=>_roads[id].Position));a=recovery;crossingApproach=CrosswalkCentre(a,State);from=crossingApproach.Value;}
                 }
             }
         }

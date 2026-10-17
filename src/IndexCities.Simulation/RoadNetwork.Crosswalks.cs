@@ -15,6 +15,19 @@ public sealed partial class CitySimulation
         var route=FindRoadRoute(from.Id,to.Id);
         return route.Count>0 && route.All(id=>!_roads[id].Highway && Math.Abs(horizontal?_roads[id].Position.Z-from.Position.Z:_roads[id].Position.X-from.Position.X)<.01);
     }
+    // Every `to` passing SameRoadLine(from,to,horizontal) after its coordinate
+    // check, from one breadth-first visit: the same parents as FindRoadRoute
+    // (stopping early never changes one), and a node qualifies when it and
+    // every node before it on that route are city roads on from's line.
+    HashSet<int> RoadLineFrom(RoadNode from,bool horizontal)
+    {
+        var line=new HashSet<int>();if(!_roads.TryGetValue(from.Id,out var start)||start.ConstructionOnly)return line;
+        bool OnLine(RoadNode n)=>!n.Highway&&Math.Abs(horizontal?n.Position.Z-from.Position.Z:n.Position.X-from.Position.X)<.01;
+        var onRoute=new Dictionary<int,bool>{{from.Id,OnLine(start)}};var queue=new Queue<int>();queue.Enqueue(from.Id);
+        while(queue.Count>0){var id=queue.Dequeue();foreach(var next in _roads[id].Neighbours){if(onRoute.ContainsKey(next)||_roads[next].MaintenanceRatio<=.05||_roads[next].ConstructionOnly)continue;onRoute[next]=onRoute[id]&&OnLine(_roads[next]);queue.Enqueue(next);}}
+        foreach(var (id,valid) in onRoute)if(valid)line.Add(id);
+        return line;
+    }
 
     void UpdateCrosswalks()
     {
@@ -72,7 +85,9 @@ public sealed partial class CitySimulation
 
     (RoadNode Node,Point Centre)? SharedCrossing(RoadNode node,bool horizontal,Point start,Point finish)
     {
-        return State.Roads.Where(r=>r.Crosswalk&&!r.Highway&&SameRoadLine(node,r,horizontal))
+        // SameRoadLine(node,r,horizontal), with one route visit for all r.
+        HashSet<int>? line=null;
+        return State.Roads.Where(r=>r.Crosswalk&&!r.Highway&&!(Math.Abs(horizontal?node.Position.Z-r.Position.Z:node.Position.X-r.Position.X)>.01)&&(line??=RoadLineFrom(node,horizontal)).Contains(r.Id))
             .SelectMany(r=>CrosswalkLocations(r,State).Where(p=>p.HorizontalRoad==horizontal&&Math.Abs(horizontal?p.Centre.Z-node.Position.Z:p.Centre.X-node.Position.X)<.01).Select(p=>(Node:r,Centre:p.Centre)))
             .OrderBy(p=>p.Centre.Distance(start)+p.Centre.Distance(finish)).ThenBy(p=>p.Node.Id)
             .Select(p=>((RoadNode Node,Point Centre)?)p).FirstOrDefault();
