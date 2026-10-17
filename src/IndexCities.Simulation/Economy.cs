@@ -66,13 +66,23 @@ public sealed partial class CitySimulation
     }
     void ReviewJobs()
     {
+        // The road graph does not change during a review, and workplaces change
+        // only below: keep each origin's reachable roads (the same rule as
+        // FindRoadRoute) and live counts of alive workers per workplace.
+        var reach=new Dictionary<int,HashSet<int>>();
+        bool RouteExists(int from,int to){if(!_roads.ContainsKey(from)||!_roads.ContainsKey(to)||_roads[from].ConstructionOnly||_roads[to].ConstructionOnly)return false;if(!reach.TryGetValue(from,out var reached))reach[from]=reached=RoadReach(from);return reached.Contains(to);}
+        var hired=new Dictionary<int,int>();foreach(var x in State.Citizens)if(x.Alive&&x.WorkplaceId is {} w)hired[w]=hired.GetValueOrDefault(w)+1;
         foreach(var c in State.Citizens.Where(c=>c.Alive&&c.Resident&&c.Age>=18&&c.InsideMap)){
-            var current=BuildingById(c.WorkplaceId);if(current!=null&&(current.Removed||current.OperationClosed||current.CompanyId is {} ci&&!CompanyById(ci)!.Active)){SettleWages(c,current);c.WorkplaceId=null;current=null;Personal(c,"Vínculo encerrado: operação deixou de existir");}
+            var current=BuildingById(c.WorkplaceId);if(current!=null&&(current.Removed||current.OperationClosed||current.CompanyId is {} ci&&!CompanyById(ci)!.Active)){SettleWages(c,current);hired[current.Id]--;c.WorkplaceId=null;current=null;Personal(c,"Vínculo encerrado: operação deixou de existir");}
             var home=BuildingById(FamilyById(c.FamilyId)?.HomeId);if(home==null)continue;
-            var options=State.Buildings.Where(b=>b.Completed&&!b.Removed&&b.Kind!=BuildingKind.House&&!b.OperationClosed&&(!b.Definition.Private||b.CompanyId!=null&&CompanyById(b.CompanyId)!.Active)&&Access(b)!=null&&State.Citizens.Count(x=>x.Alive&&x.WorkplaceId==b.Id)<b.Definition.Jobs).Where(b=>FindRoadRoute(Access(home)?.Id??-1,Access(b)!.Id).Count>0).Where(b=>Spendable(b.CompanyId==null?"city":"company:"+b.CompanyId)>b.SalaryOffer*8*3).OrderByDescending(b=>b.SalaryOffer-(decimal)(home.Position.Distance(b.Position)/400)).ToList();
-            var best=options.FirstOrDefault();if(best==null){if(current==null)c.Decision="Sem vaga real com rota e empregador viável";continue;}
+            // First of the highest score in building order, as a stable descending sort.
+            Building? best=null;var bestScore=0m;
+            foreach(var b in State.Buildings.Where(b=>b.Completed&&!b.Removed&&b.Kind!=BuildingKind.House&&!b.OperationClosed&&(!b.Definition.Private||b.CompanyId!=null&&CompanyById(b.CompanyId)!.Active)&&Access(b)!=null&&hired.GetValueOrDefault(b.Id)<b.Definition.Jobs).Where(b=>RouteExists(Access(home)?.Id??-1,Access(b)!.Id)).Where(b=>Spendable(b.CompanyId==null?"city":"company:"+b.CompanyId)>b.SalaryOffer*8*3)){
+                var score=b.SalaryOffer-(decimal)(home.Position.Distance(b.Position)/400);if(best==null||score>bestScore){best=b;bestScore=score;}
+            }
+            if(best==null){if(current==null)c.Decision="Sem vaga real com rota e empregador viável";continue;}
             if(current!=null&&best.Id!=current.Id&&best.SalaryOffer<current.SalaryOffer*1.15m&&!State.Obligations.Any(o=>o.Debtor==current.OwnerAccount&&o.Creditor==c.Account&&o.Kind=="Salário"&&o.Outstanding>0))continue;
-            if(current?.Id==best.Id)continue;var old=c.WorkplaceId;if(current!=null)SettleWages(c,current);c.WorkplaceId=best.Id;c.Shift=State.Citizens.Count(x=>x.Alive&&x.WorkplaceId==best.Id&&x.Id!=c.Id)%(best.Definition.Utility?3:best.Kind is BuildingKind.Grocery or BuildingKind.FuelStation?2:1);c.NextDecisionAt=State.ElapsedSeconds;
+            if(current?.Id==best.Id)continue;var old=c.WorkplaceId;if(current!=null)SettleWages(c,current);if(old is {} previous)hired[previous]--;hired[best.Id]=hired.GetValueOrDefault(best.Id)+1;c.WorkplaceId=best.Id;c.Shift=State.Citizens.Count(x=>x.Alive&&x.WorkplaceId==best.Id&&x.Id!=c.Id)%(best.Definition.Utility?3:best.Kind is BuildingKind.Grocery or BuildingKind.FuelStation?2:1);c.NextDecisionAt=State.ElapsedSeconds;
             Personal(c,(old==null?"Contratado":"Mudou autonomamente de emprego")+" em "+best.Definition.Name+"; salário e rota avaliados");
         }
     }

@@ -33,6 +33,13 @@ public sealed partial class CitySimulation
         while(queue.Count>0){var id=queue.Dequeue();if(id==to)break;foreach(var next in _roads[id].Neighbours){if(parent.ContainsKey(next)||_roads[next].MaintenanceRatio<=.05||!construction&&_roads[next].ConstructionOnly||avoid!=null&&avoid.Contains(next))continue;parent[next]=id;queue.Enqueue(next);}}
         if(!parent.ContainsKey(to))return [];var result=new List<int>();for(var id=to;id!=-1;id=parent[id])result.Add(id);result.Reverse();return result;
     }
+    // Every node FindRoadRoute(from,to) reaches on an ordinary trip, for any to.
+    HashSet<int> RoadReach(int from)
+    {
+        var reached=new HashSet<int>{from};var queue=new Queue<int>();queue.Enqueue(from);
+        while(queue.Count>0){var id=queue.Dequeue();foreach(var next in _roads[id].Neighbours){if(reached.Contains(next)||_roads[next].MaintenanceRatio<=.05||_roads[next].ConstructionOnly)continue;reached.Add(next);queue.Enqueue(next);}}
+        return reached;
+    }
     double RouteLength(IReadOnlyList<int> route){double length=0;for(var i=1;i<route.Count;i++)length+=_roads[route[i-1]].Position.Distance(_roads[route[i]].Position);return length;}
     public List<Point> PedestrianRoute(Point from,Building destination)=>PedestrianPath(from,destination.Door,Access(destination));
     List<Point> PedestrianPath(Point from,Point door,RoadNode? b)
