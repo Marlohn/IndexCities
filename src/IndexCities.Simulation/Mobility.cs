@@ -109,9 +109,10 @@ public sealed partial class CitySimulation
         return best;
     }
     // Distance to the nearest walker ahead in the same lane (double.MaxValue if
-    // none). Only the result's effect on the step is used, so walkers farther
-    // than `reach` (the step length plus clearance) are skipped: their lead
-    // always exceeds the step, as does the returned value in that case.
+    // none). The caller only compares it with `reach` (step length + 0.7 m
+    // clearance). A walker more than reach+1.3 m away and within 0.55 m of the
+    // lane is more than `reach` ahead, so skipping it never changes the step:
+    // the result differs only when both values already exceed `reach`.
     double PedestrianGap(Citizen c,Point target,double d,Point heading,double reach)
     {
         var gap=double.MaxValue;var radius=reach+1.3;radius*=radius;
