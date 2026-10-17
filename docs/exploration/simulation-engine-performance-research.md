@@ -579,3 +579,174 @@ Laço com `PriorityQueue` em .NET 8, Release, um núcleo, Intel Core i5-13420H, 
 1. Reforça a direção das rodadas 9–12: agenda de acontecimentos por SIM, índices de dependência e horizontes de validade. Paralelismo e GPU entram como multiplicadores posteriores.
 2. Acrescenta que, **nos jogos verificados, a idade é acelerada**, e não encontrei jogo com calendário literal (o que não prova que não exista). Não há atalho conhecido a copiar, e a validação precisa ser nossa.
 3. Para decisões futuras do responsável, sem propor nenhuma: se o protótipo de trânsito por acontecimentos falhar, as alavancas que restam são de produto (tamanho de cidade-alvo da meta geracional, hardware de referência, horas aceitas), nunca o calendário.
+
+## 14. Sexta rodada — o passo fixo talvez não seja o vilão; quantidades exatas permitem pular tempo sem mudar o resultado (2026-10-17)
+
+> **Revisão humana: PENDENTE.** Pesquisa e contas da IA, sem autoridade de produto. Parte das medições de 400 e 1.000 SIMs ([ritmo-velocidades](ritmo-velocidades.md#resultado-do-item-2--400-e-1000-sims-após-corrigir-os-travamentos-2026-10-17-pendente)). Não altera SPEC nem ARCHITECTURE.
+
+### 14.1. Reenquadramento: o caro pode ser visitar todos a cada passo, não o passo de 2 s em si
+
+Na meta (30 h para 80 anos, 3,70 s por dia simulado) cabem **~86 µs por passo de 2 s para a cidade inteira**. A rodada 13.4 dividiu isso por todos os SIMs (~17 ns cada, com 5.000) e concluiu que o passo fixo é inviável. Mas o censo das cidades pequenas mostra só ~1,3–2,7% dos passos de SIM em movimento (andando 0,9–1,2%, em veículo 0,1–1,8%, este inflado por caminhões presos); a fração em cidades de 1.000+ não foi medida. Se **só quem se move for visitado a cada passo** e o resto passar a ser calculado por acontecimento (14.2), e supondo ~3% em movimento, o orçamento por agente em movimento fica:
+
+| SIMs | em movimento (~3%) | orçamento por agente em movimento por passo |
+|---|---|---|
+| 1.000 | ~30 | ~2,9 µs |
+| 2.000 | ~60 | ~1,4 µs |
+| 5.000 | ~150 | ~0,6 µs |
+
+Referência externa: busca de vizinhos com árvore k-d (nanoflann) processa **100.000 agentes em ~35 ms** num "PC de consumo rápido", segundo o resumo de [Vermeulen, Hillebrand e Geraerts, CASA 2017](https://webspace.science.uu.nl/~gerae101/UU_crowd_simulation_publications_comparative_study_nearest_neighbors.html): ~0,35 µs por consulta de vizinhos, não por passo completo de movimento. Os slides do mesmo estudo citariam ~16 s para busca linear no mesmo caso (não verificado: o PDF não pôde ser lido).
+
+**Distância medida até esse orçamento:** com 1.037 SIMs, `MoveCitizens` gastou ~3.724 s por dia simulado, ~86 ms por passo; para ~30 agentes em movimento, **~2,9 ms por agente por passo, cerca de 1.000x o orçamento de 2,9 µs**. O salto de ~100x entre 400 e 1.000 SIMs **ainda não está explicado**: uma busca de todos contra todos cresceria ~6x para 2,5x mais SIMs. Candidatos: pedestre contra todos os pedestres, varreduras de todos os SIMs/prédios por agente em movimento, buscas lineares por Id e alocações. Falta perfil por função (tarefa do worker da opção B).
+
+**Hipótese, não conclusão:** manter o **movimento em passo fixo de 2 s, idêntico ao atual**, talvez caiba na meta até ~1.000–2.000 SIMs se só os ativos forem visitados e a busca for local. Hoje a distância é ~1.000x, então isso depende de as otimizações que preservam o SHA eliminarem quase todo o custo atual. Se der certo, sai do caminho crítico o maior risco das rodadas anteriores: **trânsito e pedestres por acontecimentos com resultado equivalente** (9.4, 13.4) deixariam de ser pré-requisito e virariam melhoria posterior. O worker da opção B deve medir o custo por agente em movimento depois das otimizações.
+
+### 14.2. Quantidades exatas: pular tempo com o mesmo resultado, bit a bit
+
+O problema do intervalo fixo (60 s) foi mudar resultados: satisfação ~3 pontos acima em todas as sementes. O problema da agenda de acontecimentos exata é **provar** que ela dá o mesmo que o passo a passo: somar `dt/3600` 30 vezes em ponto flutuante não dá os mesmos bits que somar `30*dt/3600` uma vez, então o SHA muda e cai-se na comparação estatística, sujeita ao efeito borboleta.
+
+Ideia nova desta rodada: **guardar as quantidades acumuladas em unidades inteiras** (ponto fixo), como o dinheiro já é (`decimal` arredondado em centavos, `CitySimulation.Money`). Exemplos: fome em segundos inteiros em vez de `HungerHours` em `double`; saúde em milésimos de ponto; combustível em mililitros. Com inteiros:
+
+- N passos de 2 s viram **uma multiplicação com os mesmos bits** (`fome += N*2`).
+- O passo exato em que um limiar é cruzado sai por divisão inteira: "às 12 h de fome come do estoque" vira "acontece no passo k = (12 h − fome atual)/2 s", sem varrer.
+- A perda de saúde por fome, que cresce com a fome, só tem soma fechada exata **dentro de cada trecho sem mudança de regime**. A fórmula atual tem três regimes: perde acima de 30 h de fome, recupera abaixo de 18 h e não muda entre os dois. Também há os limites 0 e 100. A saúde precisaria de um acumulador exato (por exemplo, inteiro com escala fina o bastante para que cada parcela por passo seja inteira), usado igual no motor passo a passo; arredondar a cada passo e somar de uma vez não dá os mesmos bits.
+- **Prova barata:** roda-se o mesmo save no motor passo a passo e no motor que pula, e o SHA tem que ser idêntico. A bancada headless já imprime esse SHA.
+- **Bônus para vários núcleos:** soma de inteiros não depende da ordem, então juntar resultados de threads em paralelo dá o mesmo valor (13.3 exigia ordem fixa justamente por causa do ponto flutuante).
+
+**Armadilhas reais no código atual (`UpdateNeeds`, `Economy.cs`):** comer do estoque exige o SIM parado a menos de 3 m da porta, e o estoque é dividido pela família, então a ordem entre membros importa; a fome cai 12 h no meio do passo e a perda de saúde usa o valor já reduzido; a falta de água/energia (`WaterRatio`, `ElectricityRatio`) é reescrita pela infraestrutura a cada passo e só é constante enquanto as entradas não mudam; a morte e a revisão de emigração (fome > 48 h) leem a fome em instantes exatos; os registros pessoais usam a hora do passo. Cada um vira um **acontecimento agendado** (chegar em casa, cruzar 12/18/30/48 h, mudar a infraestrutura) em que o estado é materializado antes de ser lido.
+
+Posição de veículos e pedestres em ponto fixo talvez permita o mesmo para o movimento livre (99,5% dos passos de caminhada da grade foram livres): calcular a posição por fórmula só quando alguém precisar lê-la. Não verificado; fica para depois de 14.1.
+
+Fontes: bibliotecas de ponto fixo existem para simulação reproduzível bit a bit, por exemplo [mas-bandwidth/fixed](https://github.com/mas-bandwidth/fixed), com hash idêntico entre arm64 e x86-64 segundo os autores, e [FixedMathSharp](https://feed.nuget.org/packages/FixedMathSharp/2.1.1) em .NET. Não encontrei fonte que use ponto fixo especificamente para **pular** passos com igualdade de bits; a propriedade decorre da aritmética inteira, não de evidência externa. As bibliotecas citadas não seriam copiadas (AGENTS.md §6); o uso aqui seria só `long` com escala própria.
+
+**Custo e limite:** trocar `double` por inteiro muda os arredondamentos **uma vez** (a cidade passa a divergir do motor atual logo no início). Isso muda resultados de saúde, fome e combustível, então **é mudança de regra que exige decisão do responsável**, não calibração nem decisão técnica. Depois dessa troca, todas as otimizações por acontecimento seguintes podem ser provadas por SHA. A bancada já imprime o SHA do save. Fórmulas recalculadas a partir do estado (satisfação, frações) não acumulam e não precisam mudar.
+
+### 14.3. Precedentes no gênero
+
+- **RimWorld** atualiza coisas em três frequências: tick normal (1/60 s), *rare tick* a cada 250 ticks e *long tick* a cada 2.000 ([wiki de modding](https://rimworldwiki.com/wiki/Ticks)). É o atalho do intervalo fixo, num jogo comercial; não achei fonte sobre o ganho de desempenho nem sobre efeito nos resultados.
+- **Jogos incrementais (idle)** resolvem "tempo passado sem o jogador" de duas formas: aproximação por média (renda média × tempo) ou simulação de todos os ticks, como relatam jogadores de *Melvor Idle* ([discussão](https://steamcommunity.com/app/1267910/discussions/0/591762563949134719); [relato de desenvolvedor no itch.io](https://itch.io/post/14654594)). Fontes comunitárias. Nenhum dos dois exemplos usa salto exato; o gênero aceita aproximação, que o IndexCities rejeitou.
+
+### 14.4. O que esta rodada muda (opções de estudo, nada aprovado)
+
+1. **Ordem sugerida:** (a) otimizações que preservam SHA e visitam só ativos (em andamento, opção B); (b) decisão do responsável sobre unidades inteiras para fome, saúde e combustível; (c) sistemas estacionários por acontecimento provados por SHA contra o passo a passo; (d) só então paralelismo e movimento livre por fórmula.
+2. O alvo realista com essa ordem **não foi medido**. Se as otimizações fecharem a distância de ~1.000x do movimento, a hipótese é 1.000–2.000 SIMs dentro da meta; 5.000+ provavelmente exige (d).
+3. Ainda sem resposta: o custo por SIM em movimento depois das otimizações (sai do worker da opção B) e quanto da revisão econômica (3,5% em 1.000 SIMs) também cresce mais que linearmente.
+
+## 15. Sétima rodada — 10 mil e 50 mil SIMs: o que outras áreas fazem (2026-10-17)
+
+> **Revisão humana: PENDENTE.** Pesquisa e contas da IA, sem autoridade de produto. Nada aqui está aprovado; as ideias avaliadas em 15.3 são propostas de estudo. Verificada por Claude Haiku 5.5, com correções aplicadas.
+
+### 15.1. A conta para cidades grandes
+
+A meta de estudo é 80 anos em 20–40 h ([ritmo-velocidades](ritmo-velocidades.md#resultados)): **2,5–4,9 s de computador por dia de jogo**. A tabela usa o meio da faixa (30 h, 3,7 s); com 20 h tudo fica ~1,5x mais apertado, com 40 h ~1,3x mais folgado. Premissas, não medições: ~3% dos SIMs em movimento (censo das cidades pequenas) e **~40 acontecimentos por SIM por dia**. A rodada 13.4 usou ~20; aqui dobrei porque cada viagem passa a contar também cada rua percorrida.
+
+| SIMs | Tempo por SIM por dia de jogo | Movimento a cada 2 s (3% se movendo), por atualização | Por acontecimento (~40 por SIM/dia), num núcleo |
+|---|---|---|---|
+| 1.000 | 3,7 ms | ~2,9 µs | ~93 µs |
+| 10.000 | 370 µs | ~290 ns | ~9 µs |
+| 50.000 | 74 µs | ~57 ns | ~1,9 µs |
+
+Uns 57 ns são menos que uma leitura da memória principal fora do cache (~80–100 ns), sem espaço para busca de vizinhos e regras de trânsito. Uma atualização de veículo no SUMO custaria ~10 µs, segundo fonte comunitária não verificada ([resumo](https://pyshine.com/Eclipse-SUMO-Microscopic-Multi-Modal-Traffic-Simulation/)). **Leitura, por estas contas e sem medição:** com 50 mil SIMs, atualizar cada agente em movimento a cada 2 s, um objeto por agente na CPU, fica muito longe da meta; com 10 mil, também parece fora. Vários núcleos têm teto ideal de 12x com 12 núcleos; estimo 4–8x na prática (memória, sincronização, junção em ordem fixa), sem medição. Por acontecimento, 1,9–9 µs num núcleo, multiplicados pelos núcleos, é apertado mas plausível; a maquinaria da fila custa 0,1–0,5 µs (13.4).
+
+### 15.2. Quem simula populações inteiras faz assim
+
+- **MATSim (planejamento de transporte):** cada pessoa tem um **plano do dia** (casa → trabalho às 7h30 → loja → casa) e as ruas são **filas com capacidade**: o carro entra na rua, espera a vez se ela está cheia e sai depois do tempo de percurso, sem posição a cada segundo. O simulador **Hermes** só processa acontecimentos. A página do MATSim relata "2,5x" por iteração contra o QSim (3:33 contra 8:45) e também "40% a menos de tempo total", números que não batem entre si porque o total inclui replanejamento. O teste foi na Suíça com 10% da população, com resultados próximos mas não idênticos ([MATSim, 2020](https://matsim.org/news/2020/introducing-hermes/)). O modelo SIMBA MOBi da SBB (ferrovias suíças) representa a mobilidade diária de 8,5 milhões de pessoas na Suíça ([FOSDEM 2024](https://archive.fosdem.org/2024/events/attachments/fosdem-2024-2203-matsim-at-sbb-using-and-contributing-to-the-open-source-transport-simulation-for-advanced-passenger-demand-modeling-/slides/22143/MATSim_at_SBB_FOSDEM_0rxDIl2.pdf)).
+- **SUMO:** o modo mesoscópico (ruas como filas) roda **até 100x mais rápido** que o microscópico, segundo a documentação oficial ([SUMO Meso](https://sumo.dlr.de/docs/Simulation/Meso.html)). Num caso da Baía de São Francisco, a razão foi ~70x ([MANTA, 2020](https://arxiv.org/pdf/2007.03614); conta minha, sobre um tempo microscópico extrapolado pelos autores).
+- **Replanejar só quando algo muda:** extensões do MATSim recalculam a rota durante a viagem quando há incidente ([10.3141/2302-15](https://doi.org/10.3141/2302-15), não verificado diretamente). Num sistema híbrido recente, a vazão de re-roteamento foi ~200 agentes/min contra ~2.050 agentes/min de atualização de planos ([MobiVerse, 2025](https://arxiv.org/pdf/2506.21784)). É vazão do sistema deles, não custo por agente, mas sugere que guardar rotas prontas compensa.
+- **GPU** para trânsito microscópico (MOSS, LPSim) já está em 9.2 e 9.6.
+
+Ruas como filas são o padrão nessas ferramentas, mas **não são uma regra aprovada no IndexCities** (ver 15.4).
+
+### 15.3. Ideias levantadas pelo responsável, avaliadas como propostas de estudo (nenhuma aprovada)
+
+- **"Vida pré-programada":** corresponde ao plano do dia do MATSim. Só seria fiel se o plano fosse feito pelas regras reais do jogo (fome, turno, estoque, dinheiro) e refeito sempre que algo que o afeta mudar (loja vazia, emprego perdido, rua fechada). Muda a forma de calcular os SIMs, então a adoção é decisão do responsável.
+- **"Duplicar vidas":** copiar o resultado de um SIM para outro fabricaria acontecimentos que não ocorreram, no mesmo espírito das regras que proíbem duplicar unidades físicas, dinheiro ou contratos ([economia](../spec/economia.md)); não é opção válida. Já **reaproveitar cálculo com entradas idênticas** é técnico: rota casa → trabalho igual enquanto a malha não mudar; mesma consulta para quem está no mesmo estado. É cache, não clone.
+- **Cache:** de rotas, planos e consultas espaciais (12, 13.4). Exige regra clara de invalidação.
+- **Threads:** multiplicador estimado de 4–8x (teto 12x), só com divisão por família ou região e junção em ordem fixa (13.3). Não resolve sozinho.
+- **Outra linguagem:** não medi nem achei fonte comparando para este caso. A ordem de grandeza que falta (centenas a milhares de vezes) não vem de trocar de linguagem.
+- **"Acelerar só o visual":** num motor por acontecimentos, a verdade do jogo seria "saiu de casa 7h30, entrou na rua X 7h33, chegou 7h52", e o desenho do SIM andando seria calculado a partir desses horários só para o que a câmera mostra. Só é fiel se fila, cruzamento e veículo parado estiverem nos acontecimentos; senão o visual mente. Mudaria o que o jogador vê na velocidade máxima, então também é decisão do responsável.
+- **IA local de decisão ou de previsão (LLMs locais, modelos de mundo como JEPA):** dentro da simulação, a conta não fecha. Com 50 mil SIMs e ~20 decisões por SIM/dia, seriam ~270 mil decisões por segundo de computador; uma IA local leva ordem de 0,1–1 s por decisão (estimativa, depende de modelo e hardware), enquanto uma regra em código leva menos de 1 µs. Prever estados com rede neural é aproximação: no estudo de 9.5, o erro do tempo de viagem foi 2,67% em média e 6,46% no percentil 99. Fora do jogo pode ajudar em testes e na busca de casos estranhos.
+- **GPU (placa de vídeo):** milhares de núcleos simples fazendo a mesma conta ao mesmo tempo; boa para mover muitos veículos com a mesma fórmula (9.2), ruim para decisões diferentes por SIM. Cada passo exige troca de dados com a CPU, porque o trânsito depende da economia, e o custo fixo dessa troca pode pesar com 43.200 passos por dia de jogo (estimativa, não medida). Também depende do hardware do jogador e disputa a placa com a renderização do Godot. Fica como reforço possível só para o trânsito.
+
+### 15.4. O que isso significa para a meta (opções de estudo)
+
+1. **Até ~1.000–2.000 SIMs:** talvez caiba mantendo o movimento atual, se as otimizações da opção B e os acontecimentos para quem está parado funcionarem (14). Com a meta de 20 h, o teto cai.
+2. **10 mil:** pelas contas, exige que **todo** o jogo trabalhe por acontecimento, inclusive as viagens, com rotas e planos guardados e vários núcleos.
+3. **50 mil:** além disso, o trânsito provavelmente precisaria ser modelado como **filas por rua** (cada carro continua individual, ocupa a rua e espera a vez, sem posição a cada 2 s) ou ir para a GPU. Ruas como filas mudariam regras aprovadas em [transporte e circulação](../spec/transporte-circulacao.md), como ultrapassar veículo parado pela contramão, meia-volta e entrada na faixa. Seria **decisão de produto** do responsável, com o que se perde descrito antes.
+
+Nada disso foi medido no IndexCities; os números de 15.1 são contas sobre premissas.
+
+## 16. Oitava rodada — critério do jogo expandido, duas ideias rebaixadas por medição e teto CPU × GPU (2026-10-17)
+
+> **Revisão humana: PENDENTE.** Medições e contas da IA, sem autoridade de produto. Verificada por Claude Haiku 5.5, com correções aplicadas. O código das medições está na branch `experimento/repeticao-dias` (não mesclar): os comandos `repeat` e `isolation` da bancada headless (`repeat cycle|grid --days=10 --cap=100000`, `isolation cycle|grid --days=3 --cap=100000`) e `tools/gpu-ceiling`. Núcleo medido: `main` em `f3affed`, semente 42.
+
+### 16.1. Critério do responsável: avaliar contra o jogo expandido
+
+O responsável alertou que propriedades da V1 vão mudar com a expansão ("isso é o jogo hoje na V1 [...] cuidado pra não focar no que vai mudar com toda certeza"). A [SPEC](../spec/mundo-tempo-saves.md#tempo-de-jogo) registra que a viabilidade do acompanhamento geracional considera o jogo expandido. **Consequência para este estudo:** as premissas de 14.1 e 15.1 (~3% dos SIMs em movimento, medidos nas cidades pequenas da V1) servem só como ilustração. Conclusões de viabilidade precisam ser refeitas num cenário de pico mais denso. Ideias cujo ganho depende de ociosidade ou de trânsito leve não contam para a meta.
+
+O responsável também disse que nesta arquitetura "os dias se repetem EXATAMENTE". Para os acontecimentos e o dinheiro de cada SIM, a medição de 16.2 indica o contrário. Talvez ele se referisse à rotina (mesmo emprego e mesma casa), o que não foi medido. Fica para confirmar com ele.
+
+### 16.2. Medição: os dias quase nunca se repetem, nem na V1
+
+O comando `repeat` compara, para cada SIM, os acontecimentos pessoais de um dia com os do dia anterior (mesma descrição no mesmo horário). Compara também as movimentações de dinheiro da conta dele.
+
+| Cidade | Dia idêntico ao anterior (acontecimentos e dinheiro) | Mesma sequência ignorando horário |
+|---|---|---|
+| A (47 SIMs, dias 2–10) | 0% em todos os dias | 0–12,5% |
+| Grade (108 SIMs, dias 2–6) | 0–2,8% | 3,7–7,4% |
+
+Nos dias 7–10 da grade aparecem SIMs sem nenhum acontecimento, que o comando conta como "idênticos". Esses dias também têm veículos presos e mortes (16.6) e ficaram fora da tabela. As diferenças vêm de três fontes: lazer variado (passeio, visita), compras em dias diferentes e horários de saída para o trabalho que mudam. **Reaproveitar o dia anterior de cada SIM fica rebaixado:** não funciona na V1 medida. Que a variedade só aumente com a expansão é previsão, não medição.
+
+### 16.3. Medição: agentes em movimento raramente ficam isolados
+
+O comando `isolation` calcula, a cada passo e para cada agente em movimento, um limite inferior do tempo até outro agente em movimento poder chegar perto: 10 m entre pedestres e entre veículo e pedestre, 20 m entre veículos. A conta usa distância em linha reta e as velocidades máximas uma contra a outra; os veículos entram sempre a 12 m/s, a velocidade da rodovia, embora nas ruas seja 7 m/s. Linha reta e velocidade máxima deixam o horizonte mais curto que o real. Ignorar veículos parados, semáforos e faixas de pedestre pode deixá-lo mais longo. O sentido do erro total não é conhecido.
+
+| Cidade | Veículos: horizonte < 2 s | Veículos: ≥ 10 s | Pedestres: < 2 s | Pedestres: < 10 s |
+|---|---|---|---|---|
+| A (47 SIMs, 3 dias) | 66,9% | 13,4% | 14,5% | 29,3% |
+| Grade (108 SIMs, 3 dias) | 65,5% | 7,7% | 16,4% | 32,9% |
+
+Para veículos, "≥ 10 s" quase só acontece quando não há nenhum outro agente em movimento ao alcance; a faixa de 30–120 s ficou vazia. **Bolhas exatas para veículos ficam rebaixadas:** com estes limites conservadores, dois terços dos passos de veículo não teriam folga para pular nem um passo. Não é refutação limpa, porque o método é aproximado. Mesmo assim, pelo critério de 16.1 (o trânsito vai aumentar), a ideia não contaria para a meta. A rodada de 400 SIMs foi interrompida para não distorcer as medições que o worker da opção B fazia na mesma máquina.
+
+### 16.4. Teto CPU × GPU para movimento (teste isolado, não o jogo)
+
+`tools/gpu-ceiling` simula N carros em pistas circulares de 50 carros, cada um seguindo o da frente (modelo IDM, passo de 2 s). Não há busca de vizinhos, cruzamentos, faixas, pedestres nem ultrapassagem. Cada configuração rodou 4.320 passos, uma única vez, e o resultado foi extrapolado para 43.200 passos (um dia de jogo).
+
+Máquina do responsável: Intel Core i5-13420H (4 núcleos de desempenho e 4 de eficiência, 12 threads) e NVIDIA GeForce RTX 3050 6 GB Laptop; .NET 8 e ILGPU 1.5.1 (CUDA). **Todas as linhas foram medidas com outros benchmarks rodando na mesma máquina.** Serão refeitas com a máquina livre e com repetições.
+
+| Carros em movimento | CPU 1 núcleo | CPU, laço paralelo simples | GPU, sincroniza a cada passo | GPU, sincroniza a cada 30 passos |
+|---|---|---|---|---|
+| 1.000 | 0,39 s/dia | 0,59 | 1,01 | 0,30 |
+| 10.000 | 3,18 | 1,08 | 1,09 | 0,31 |
+| 50.000 | 15,70 | 14,85 | 1,45 | 0,42 |
+| 200.000 | 97,2 | 71,3 | 5,43 | 1,40 |
+
+- **A CPU é uma base ingênua.** O laço é escalar, sem SIMD, e a versão paralela abre um `Parallel.For` por passo. Com 50 mil carros, ela quase não escalou (1,06x), seja pela concorrência com os outros benchmarks, seja pelo próprio desenho. Uma CPU vetorizada e bem paralelizada reduziria parte da distância; não foi medida.
+- **Os dois modos da GPU lançam um kernel por passo.** A diferença é só que o segundo não espera a GPU nem lê 64 valores de volta a cada passo. Os ~7 µs por passo são o custo de lançamento deste desenho, não um limite da placa; lançar vários passos de uma vez reduziria. Esperar e ler a cada passo custou ~3x mais.
+- **Onde cada um ganha.** Sincronizando a cada 30 passos, a GPU já empatou ou ganhou a partir de 1.000 carros. Sincronizando a cada passo, só a partir de ~10 mil. Com 50 mil carros, a GPU ficou ~11x à frente da CPU de 1 núcleo sincronizando a cada passo e ~37x sincronizando a cada 30, **sempre contra a CPU ingênua**.
+- Na CPU ingênua, 50 mil carros já gastam ~15 s por dia de jogo neste caso simples. A meta de estudo é de 2,5–4,9 s para o jogo inteiro (meta pedida em [ritmo-velocidades](ritmo-velocidades.md#resultados), não fixada na SPEC). O jogo real faz mais conta por veículo, então estouraria ainda mais nessa forma de CPU.
+- **O que não se sabe:**
+  - quanto a GPU perde com as regras reais (preferência, semáforo, ultrapassagem, meia-volta, pedestres), que são ramificadas, justamente o que ela faz pior;
+  - se os resultados da GPU batem com os da CPU, o que este teste não comparou (os inteiros de 14.2 ajudariam);
+  - como fica numa máquina sem placa dedicada.
+
+  A GPU seria acelerador opcional, com a versão CPU sempre completa (9.2).
+
+### 16.5. Ideias que sobrevivem ao critério de 16.1 (propostas de estudo, nada aprovado)
+
+1. **Consulta só à vizinhança no movimento** (índice espacial por faixa, calçada e cruzamento): pedestres e veículos interagem com quem está perto. Redes de água e energia e a economia continuam ligando a cidade inteira e precisam de outras técnicas. É o que o worker da opção B começou.
+2. **Regiões em vários núcleos com junção em ordem fixa** (13.3): quanto mais o jogo faz, mais trabalho há para dividir. Na máquina medida, o ganho real tende a ficar bem abaixo de 12x (4 núcleos de desempenho e 4 de eficiência).
+3. **Quantidades inteiras** (14.2): permitem provar a equivalência de qualquer otimização, seja qual for o conteúdo.
+4. **Agenda de cada SIM com movimento na GPU em lotes:** a agenda diz de antemão quem sai e quando; a GPU avança o trânsito vários passos por vez e devolve as chegadas com horário exato. Pelo teste, ganha mais quanto mais veículos houver em movimento.
+5. **Rotas pré-processadas** (Contraction Hierarchies, como no OSRM [F14]): quanto mais viagens, maior o ganho.
+6. **Avanço sem o jogador olhando** (ideia de produto, que dependeria de decisão do responsável): simulação completa, sem renderização, enquanto o computador fica ligado, com pausa automática em acontecimentos importantes. Separa horas de jogo de horas de computador.
+7. **Orçamento de desempenho por sistema:** cada sistema novo (escola, ônibus, saúde) declara seu custo por SIM por dia, medido na bancada, e a bancada reprova se passar. Assim a expansão não consome a meta sem que se perceba.
+8. **"Cidade do futuro" na bancada:** cenário de pico com muito mais gente e veículos em movimento ao mesmo tempo, para avaliar as ideias no jogo expandido em vez da cidade calma da V1.
+
+**Rebaixadas nesta rodada:**
+- **Reaproveitar o dia anterior** (16.2).
+- **Bolhas de isolamento para veículos** (16.3).
+- **Paralelismo no tempo**, em que cada núcleo simula um dia futuro a partir de um estado chutado e só aceita o resultado se o chute bater exatamente. A SPEC exige resultado idêntico, e o estado completo da meia-noite (dinheiro, estoques, fome) muda todo dia. Isso não foi medido, mas a parte medida (acontecimentos e dinheiro por SIM, 16.2) já não se repete. A literatura trata o casamento de estados como questão inerente à técnica e propõe casamento parcial aproximado para filas ([Wang e Abrams, TR-92-50](https://vtechworks.lib.vt.edu/handle/10919/19827); [WSC 2004](https://informs-sim.org/wsc04papers/041.pdf), não lido na íntegra).
+
+### 16.6. Achado colateral: veículos presos e mortes na grade de 108 SIMs (`main` em `f3affed`)
+
+Na rodada `repeat grid --rows=3 --length=400 --days=10`, os dias 1–5 ficaram estáveis: ~34 s por dia e nenhum veículo em viagem no fim do dia. A partir do dia 6, há veículos que terminam o dia ainda em viagem (10, 13, 15, 16, 17), o tempo por dia triplica e **10 SIMs morrem até o dia 10**. Parece travamento de trânsito ou veículo preso, e não carga da máquina, porque o estado da cidade muda junto. **Investigar como bug** antes de usar esta cidade em novas medições.
