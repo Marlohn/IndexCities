@@ -79,22 +79,53 @@ public sealed partial class CitySimulation
 
     double SafeSiteTravel(Vehicle vehicle,Point target,double distance,bool machinesOnly=false)
     {
-        if(machinesOnly&&!State.Vehicles.Any(other=>other.Machine!=PavingMachine.None&&other.Status!=VehicleStatus.Outside&&other.Position.Distance(vehicle.Position)<=distance+12))return distance;
+        // A moving machine holds its whole remaining path, not only its body:
+        // a vehicle stopped anywhere on it (behind a turn, across an oncoming
+        // lane) would wait for the machine while the machine waits for it.
+        // The hold stops at the first body already on the path: space behind a
+        // blocked machine is not held, and whoever stands on the path may leave.
+        var reserved=vehicle.Machine!=PavingMachine.None?[]:State.Vehicles.Where(m=>m.Id!=vehicle.Id).Select(MachineReservation)
+            .SelectMany(poses=>poses).Where(pose=>pose.Position.Distance(vehicle.Position)<=distance+12).ToList();
+        if(machinesOnly&&reserved.Count==0&&!State.Vehicles.Any(other=>other.Machine!=PavingMachine.None&&other.Status!=VehicleStatus.Outside&&other.Position.Distance(vehicle.Position)<=distance+12))return distance;
         var safe=0.0;
         while(safe<distance-.000001){var next=Math.Min(distance,safe+.5);var at=vehicle.Position.MoveTowards(target,next);
             if(State.Vehicles.Any(other=>other.Id!=vehicle.Id&&other.Status!=VehicleStatus.Outside&&(!machinesOnly||other.Machine!=PavingMachine.None&&other.Status==VehicleStatus.Parked)&&other.Position.Distance(at)<12&&VehicleBodiesOverlap(vehicle,at,other)))break;
+            if(reserved.Any(pose=>pose.Position.Distance(at)<12&&BodiesOverlap(vehicle,at,vehicle.Heading,pose.Machine,pose.Position,pose.Heading)))break;
             safe=next;
         }
         return safe;
     }
 
-    static bool VehicleBodiesOverlap(Vehicle a,Point at,Vehicle b)
+    // The poses a parked machine still passes through on its site path: its
+    // turn in place toward the next point, then 0.5 m samples along the path.
+    // A machine halted for fuel or budget is not moving and holds nothing.
+    List<(Vehicle Machine,Point Position,double Heading)> MachineReservation(Vehicle machine)
+    {
+        var poses=new List<(Vehicle,Point,double)>();
+        if(machine.Machine==PavingMachine.None||machine.Status!=VehicleStatus.Parked||machine.MachinePhase is not (MachinePhase.OnSite or MachinePhase.LeavingSite)||machine.SitePathIndex>=machine.SitePath.Count||machine.Cause is WorkCause.PavingOutOfFuel or WorkCause.NoBudgetForPaving)return poses;
+        var at=machine.Position;
+        for(var index=machine.SitePathIndex;index<machine.SitePath.Count;index++){
+            var target=machine.SitePath[index];var length=at.Distance(target);if(length<=.001)continue;
+            var heading=machine.SiteDockHeading is {} dock&&index==machine.SitePath.Count-1?dock:Math.Atan2(target.X-at.X,target.Z-at.Z);
+            for(var along=0.0;;along=Math.Min(length,along+.5)){
+                var pose=at.MoveTowards(target,along);
+                if(State.Vehicles.Any(other=>other.Id!=machine.Id&&other.Status!=VehicleStatus.Outside&&other.Position.Distance(pose)<12&&BodiesOverlap(machine,pose,heading,other,other.Position,other.Heading)))return poses;
+                poses.Add((machine,pose,heading));if(along>=length)break;
+            }
+            at=target;
+        }
+        return poses;
+    }
+
+    static bool VehicleBodiesOverlap(Vehicle a,Point at,Vehicle b)=>BodiesOverlap(a,at,a.Heading,b,b.Position,b.Heading);
+
+    static bool BodiesOverlap(Vehicle a,Point aAt,double aHeading,Vehicle b,Point bAt,double bHeading)
     {
         static double HalfLength(Vehicle v)=>v.PassengerCar?2.1:v.Machine==PavingMachine.Paver?2.31:v.Machine==PavingMachine.Roller?1.99:3.6;
         static double HalfWidth(Vehicle v)=>v.PassengerCar?.9:v.Machine==PavingMachine.Paver?1.27:v.Machine==PavingMachine.Roller?1.16:1.45;
         static double Dot(Point x,Point y)=>x.X*y.X+x.Z*y.Z;
-        var af=new Point(Math.Sin(a.Heading),Math.Cos(a.Heading));var ar=new Point(af.Z,-af.X);
-        var bf=new Point(Math.Sin(b.Heading),Math.Cos(b.Heading));var br=new Point(bf.Z,-bf.X);var delta=b.Position-at;
+        var af=new Point(Math.Sin(aHeading),Math.Cos(aHeading));var ar=new Point(af.Z,-af.X);
+        var bf=new Point(Math.Sin(bHeading),Math.Cos(bHeading));var br=new Point(bf.Z,-bf.X);var delta=bAt-aAt;
         foreach(var axis in new[]{af,ar,bf,br})if(Math.Abs(Dot(delta,axis))>=HalfLength(a)*Math.Abs(Dot(af,axis))+HalfWidth(a)*Math.Abs(Dot(ar,axis))+HalfLength(b)*Math.Abs(Dot(bf,axis))+HalfWidth(b)*Math.Abs(Dot(br,axis))+.1)return false;
         return true;
     }
