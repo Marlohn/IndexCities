@@ -33,15 +33,22 @@ public sealed partial class CitySimulation
         while(queue.Count>0){var id=queue.Dequeue();if(id==to)break;foreach(var next in _roads[id].Neighbours){if(parent.ContainsKey(next)||_roads[next].MaintenanceRatio<=.05||!construction&&_roads[next].ConstructionOnly||avoid!=null&&avoid.Contains(next))continue;parent[next]=id;queue.Enqueue(next);}}
         if(!parent.ContainsKey(to))return [];var result=new List<int>();for(var id=to;id!=-1;id=parent[id])result.Add(id);result.Reverse();return result;
     }
-    // RouteLength(FindRoadRoute(from,to)) for every reachable `to` on an ordinary
-    // trip (null when no route can start at `from`). The same breadth-first
-    // visit assigns the same parents (stopping early never changes one), and
+    // RouteLength(FindRoadRoute(from,to)) for every `to` an ordinary trip
+    // reaches within `limit` (null when no route can start at `from`); farther
+    // nodes may be absent. The same breadth-first visit, one hop layer at a
+    // time, assigns the same parents (stopping early never changes one), and
     // each length adds the same edge distances in the same order from `from`.
-    Dictionary<int,double>? RouteLengthsFrom(int from)
+    // Lengths never decrease along a route: once a whole layer exceeds `limit`,
+    // so does every deeper node.
+    Dictionary<int,double>? RouteLengthsFrom(int from,double limit)
     {
         if(!_roads.TryGetValue(from,out var start)||start.ConstructionOnly)return null;
-        var lengths=new Dictionary<int,double>{{from,0}};var queue=new Queue<int>();queue.Enqueue(from);
-        while(queue.Count>0){var id=queue.Dequeue();var node=_roads[id];foreach(var next in node.Neighbours){if(lengths.ContainsKey(next)||_roads[next].MaintenanceRatio<=.05||_roads[next].ConstructionOnly)continue;lengths[next]=lengths[id]+node.Position.Distance(_roads[next].Position);queue.Enqueue(next);}}
+        var lengths=new Dictionary<int,double>{{from,0}};var layer=new List<int>{from};var next=new List<int>();
+        while(layer.Count>0&&layer.Any(id=>lengths[id]<=limit)){
+            next.Clear();
+            foreach(var id in layer){var node=_roads[id];foreach(var neighbour in node.Neighbours){if(lengths.ContainsKey(neighbour)||_roads[neighbour].MaintenanceRatio<=.05||_roads[neighbour].ConstructionOnly)continue;lengths[neighbour]=lengths[id]+node.Position.Distance(_roads[neighbour].Position);next.Add(neighbour);}}
+            (layer,next)=(next,layer);
+        }
         return lengths;
     }
     // Every node FindRoadRoute(from,to) reaches on an ordinary trip, for any to.
@@ -71,9 +78,9 @@ public sealed partial class CitySimulation
                 else {
                     // Nearest crosswalk by route length, then Id: one route tree
                     // from this node instead of one route search per crosswalk.
-                    var lengths=RouteLengthsFrom(a.Id);RoadNode? recovery=null;var recoveryLength=0.0;
+                    var limit=State.Tuning.CrosswalkSpacing*3+State.Tuning.RoadWidth;var lengths=RouteLengthsFrom(a.Id,limit);RoadNode? recovery=null;var recoveryLength=0.0;
                     foreach(var r in State.Roads){
-                        if(!r.Crosswalk||r.Highway||r.ConstructionOnly||lengths==null||!lengths.TryGetValue(r.Id,out var length)||!(length<=State.Tuning.CrosswalkSpacing*3+State.Tuning.RoadWidth))continue;
+                        if(!r.Crosswalk||r.Highway||r.ConstructionOnly||lengths==null||!lengths.TryGetValue(r.Id,out var length)||!(length<=limit))continue;
                         if(recovery==null||length<recoveryLength||length==recoveryLength&&r.Id<recovery.Id){recovery=r;recoveryLength=length;}
                     }
                     if(recovery!=null){laneApproach.AddRange(FindRoadRoute(a.Id,recovery.Id).Select(id=>_roads[id].Position));a=recovery;crossingApproach=CrosswalkCentre(a,State);from=crossingApproach.Value;}
