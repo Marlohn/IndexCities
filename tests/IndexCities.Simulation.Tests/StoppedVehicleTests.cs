@@ -58,6 +58,41 @@ public sealed class StoppedVehicleTests
         Assert.True(follower.Status==VehicleStatus.Parked||follower.RouteIndex>=follower.Route.Count||follower.Position.Distance(sim.State.Roads.Single(r=>r.Id==destination).Position)<6,follower.Cause+" "+follower.Position);
         Assert.Contains(follower.Route,id=>id is >=1940 and <=2060);Assert.Equal(new Point(0,38.35),stopped.Position);sim.CheckInvariants();
     }
+    static CitySimulation Ring(CitySimulation sim)
+    {
+        var initial=sim.State;
+        for(var x=-60;x<=60;x+=4)initial.Roads.Add(new(){Id=2000+x,Position=new(x,80)});
+        for(var z=44;z<=76;z+=4){initial.Roads.Add(new(){Id=3000+z,Position=new(-60,z)});initial.Roads.Add(new(){Id=4000+z,Position=new(60,z)});}
+        return new CitySimulation(initial);
+    }
+    [Fact] public void A_blocked_queue_turns_back_from_its_tail_without_vehicles_overlapping()
+    {
+        var (street,_,_,_)=Street(junctionAtStop:true);var sim=Ring(street);
+        var cars=sim.State.Vehicles.OrderBy(v=>v.Id).Take(3).ToArray();var front=cars[1];var rear=cars[2];
+        front.Route=front.Route.Take(28).ToList();
+        rear.Position=new(-40,38.35);rear.Heading=Math.PI/2;rear.Status=VehicleStatus.Travelling;rear.Fuel=40;rear.Route=front.Route.ToList();rear.RouteIndex=6;
+        double? frontTurned=null,rearTurned=null;
+        for(var i=0;i<600;i++){
+            sim.Advance(1);
+            if(rearTurned==null&&rear.Route.Any(id=>id is >=1940 and <=2060))rearTurned=sim.State.ElapsedSeconds;
+            if(frontTurned==null&&front.Route.Any(id=>id is >=1940 and <=2060))frontTurned=sim.State.ElapsedSeconds;
+            if(front.Status==VehicleStatus.Travelling&&rear.Status==VehicleStatus.Travelling&&Math.Abs(front.Position.Z-rear.Position.Z)<1.5&&Math.Cos(front.Heading-rear.Heading)>.5)Assert.True(front.Position.Distance(rear.Position)>=4,$"{front.Position} {rear.Position}");
+        }
+        Assert.True(rearTurned!=null,$"rear {rear.Position} {rear.Status} {rear.Cause} idx={rear.RouteIndex}");Assert.True(frontTurned!=null,$"front {front.Position} {front.Status} {front.Cause} idx={front.RouteIndex}");Assert.True(rearTurned<=frontTurned,$"{rearTurned} {frontTurned}");
+        Assert.All(new[]{front,rear},c=>Assert.Contains(c.Route,id=>id is >=1940 and <=2060));sim.CheckInvariants();
+    }
+    [Fact] public void A_bypass_is_dropped_when_the_vehicle_stops_and_survives_a_replanned_route()
+    {
+        var (sim,_,follower,_)=Street();
+        for(var i=0;i<200&&follower.Detour.Count==0;i++)sim.Advance(.1);
+        Assert.NotEmpty(follower.Detour);
+        // Replanned mid-bypass: the old resume node is not on the new route.
+        var replanned=CitySimulation.FromJson(sim.SaveToJson());var other=replanned.State.Vehicles.Single(v=>v.Id==follower.Id);
+        other.Route=Enumerable.Range(0,10).Select(n=>1000+40-n*4).Prepend(1000+44).ToList();other.RouteIndex=1;
+        for(var i=0;i<100;i++)replanned.Advance(.1);
+        Assert.Empty(other.Detour);Assert.InRange(other.RouteIndex,1,other.Route.Count);replanned.CheckInvariants();
+        follower.Status=VehicleStatus.Parked;sim.Advance(.1);Assert.Empty(follower.Detour);sim.CheckInvariants();
+    }
     [Fact] public void A_truck_does_not_leave_for_a_work_whose_round_trip_exceeds_its_tank()
     {
         var sim=new CitySimulation(42,new SimulationTuning{FuelTank=3});
@@ -65,5 +100,8 @@ public sealed class StoppedVehicleTests
         sim.Advance(600);
         Assert.Equal(WorkCause.RouteBeyondTruckRange,sim.State.Projects.Single(p=>p.RoadPoints.Count>0).Cause);Assert.Empty(sim.State.Shipments);
         Assert.All(sim.State.Vehicles,v=>Assert.Equal(VehicleStatus.Outside,v.Status));sim.CheckInvariants();
+        // Control: the same work with the default tank does dispatch a truck.
+        var normal=new CitySimulation(42);normal.PlaceBuilding(BuildingKind.CityHall,new(-152,16));normal.PlaceRoad(new(-192,0),new(100,0));normal.Advance(600);
+        Assert.NotEmpty(normal.State.Shipments);
     }
 }

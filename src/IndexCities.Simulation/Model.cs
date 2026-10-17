@@ -263,9 +263,10 @@ public sealed class Vehicle
     public List<int> Passengers {get;set;}=[];
     public JourneyPurpose TripPurpose {get;set;}
     // Physical bypass of a vehicle stopped on the road: remaining waypoints and
-    // the route index to resume once back in the lane.
+    // the road node to resume at once back in the lane (a node, not an index:
+    // the route may be replanned meanwhile).
     public List<Point> Detour {get;set;}=[];
-    public int DetourResumeIndex {get;set;}
+    public int DetourResumeNode {get;set;}
 }
 public sealed class Shipment
 {

@@ -161,6 +161,9 @@ public sealed partial class CitySimulation
         // nearby junctions and make opposite queues hold each other forever.
         foreach(var vehicle in State.Vehicles)ClearPassedJunction(vehicle);
         foreach(var v in State.Vehicles.OrderBy(v=>v.WaitingSince).ThenBy(v=>v.Id)){
+            // A bypass belongs to the trip in progress: a stopped, parked or
+            // replanned-elsewhere vehicle does not resume old waypoints.
+            if(v.Detour.Count>0&&v.Status!=VehicleStatus.Travelling)v.Detour.Clear();
             if(_vehicleMovementBatch==null||operationsDt!=null){
                 var operationTime=operationsDt??dt;
                 v.FuelBurnedLastStep=0;

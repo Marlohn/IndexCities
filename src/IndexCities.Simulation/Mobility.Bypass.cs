@@ -10,11 +10,30 @@ public sealed partial class CitySimulation
     const double OppositeLaneOffset=3.3;
     bool TryBypassStopped(Vehicle v,Vehicle blocker)
     {
-        if(blocker.Status!=VehicleStatus.Stranded||v.Detour.Count>0||v.WaitingSince<=0||v.RouteIndex<1||v.RouteIndex>=v.Route.Count)return false;
+        if(v.Detour.Count>0||v.WaitingSince<=0||v.RouteIndex<1||v.RouteIndex>=v.Route.Count)return false;
+        var stopped=blocker.Status==VehicleStatus.Stranded?blocker:StoppedAtQueueHead(blocker);if(stopped==null)return false;
         var waited=VehicleMovementTime-v.WaitingSince;
-        if(waited>=State.Tuning.BypassWaitSeconds&&TryOvertake(v,blocker))return true;
-        if(waited>=State.Tuning.UTurnWaitSeconds&&TryUTurn(v,blocker))return true;
+        if(stopped==blocker&&waited>=State.Tuning.BypassWaitSeconds&&TryOvertake(v,blocker))return true;
+        if(waited>=State.Tuning.UTurnWaitSeconds&&TryUTurn(v,stopped))return true;
         return false;
+    }
+    // Follows a queue forward (nearest same-direction vehicle ahead in the lane,
+    // as the queue rule sees it) and returns the stopped vehicle at its head.
+    Vehicle? StoppedAtQueueHead(Vehicle start)
+    {
+        var current=start;
+        for(var hops=0;hops<64;hops++){
+            if(current.Status==VehicleStatus.Stranded)return current;
+            if(current.WaitingSince<=0)return null;
+            Vehicle? next=null;var best=double.MaxValue;var heading=new Point(Math.Sin(current.Heading),Math.Cos(current.Heading));
+            foreach(var o in State.Vehicles){
+                if(o.Id==current.Id||o.Status is not (VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded)||Math.Cos(o.Heading-current.Heading)<=.5)continue;
+                var r=o.Position-current.Position;var forward=r.X*heading.X+r.Z*heading.Z;var side=Math.Abs(r.X*heading.Z-r.Z*heading.X);
+                if(forward>0&&forward<16&&side<2.6&&forward<best){best=forward;next=o;}
+            }
+            if(next==null)return null;current=next;
+        }
+        return null;
     }
     bool RoadAxis(Vehicle v,out Point dir,out Point left)
     {
@@ -24,7 +43,7 @@ public sealed partial class CitySimulation
     }
     // The opposite lane must stay free for the whole manoeuvre, including an
     // oncoming vehicle covering the distance during it, and the return point too.
-    bool OppositeLaneClear(Vehicle v,Vehicle? ignored,Point dir,Point left,double end)
+    bool OppositeLaneClear(Vehicle v,Vehicle? ignored,Point dir,Point left,double end,bool returnsToLane=true)
     {
         var duration=end/State.Tuning.VehicleSpeed;
         foreach(var o in State.Vehicles){
@@ -33,7 +52,7 @@ public sealed partial class CitySimulation
             var oncoming=Math.Cos(o.Heading-v.Heading)<-.5&&o.Status==VehicleStatus.Travelling;
             var reach=end+8+(oncoming?Math.Max(State.Tuning.VehicleSpeed,State.Tuning.HighwaySpeed)*duration:0);
             if(side>1&&side<5.5&&along>-8&&along<reach)return false;
-            if(side>-2&&side<=1&&along>end-8&&along<end+8)return false;
+            if(returnsToLane&&side>-2&&side<=1&&along>end-8&&along<end+8)return false;
         }
         return true;
     }
@@ -47,7 +66,9 @@ public sealed partial class CitySimulation
         var resume=-1;Point? previous=null;
         for(var i=v.RouteIndex-1;i<v.Route.Count;i++){
             if(!_roads.TryGetValue(v.Route[i],out var node))return false;
-            if(i>=v.RouteIndex&&(node.Neighbours.Count>=3||node.Crosswalk||node.Highway))return false;
+            // Includes the node just passed while the vehicle is still on its pavement.
+            var nearPassed=i==v.RouteIndex-1&&node.Position.Distance(v.Position)<State.Tuning.RoadWidth;
+            if((i>=v.RouteIndex||nearPassed)&&(node.Neighbours.Count>=3||node.Crosswalk))return false;
             if(previous is {} p){var step=node.Position-p;var len=step.Distance(default);if(len<.01||(step.X*dir.X+step.Z*dir.Z)/len<.999)return false;}
             previous=node.Position;
             var along=(node.Position-v.Position).X*dir.X+(node.Position-v.Position).Z*dir.Z;
@@ -55,7 +76,7 @@ public sealed partial class CitySimulation
         }
         if(resume<0||!OppositeLaneClear(v,blocker,dir,left,end))return false;
         v.Detour=[v.Position+dir*2+left*OppositeLaneOffset,v.Position+dir*(blockerAlong+6)+left*OppositeLaneOffset,v.Position+dir*end];
-        v.DetourResumeIndex=resume;v.WaitingSince=0;v.Cause="Ultrapassando veículo parado pela contramão";
+        v.DetourResumeNode=v.Route[resume];v.WaitingSince=0;v.Cause="Ultrapassando veículo parado pela contramão";
         return true;
     }
     bool TryUTurn(Vehicle v,Vehicle blocker)
@@ -67,7 +88,11 @@ public sealed partial class CitySimulation
         if(avoid.Contains(behind)){v.Cause="Rua bloqueada por veículo parado; sem espaço para meia-volta";return false;}
         var alternative=FindRoadRoute(behind,v.Route[^1],avoid);
         if(alternative.Count==0){v.Cause="Rua bloqueada por veículo parado; sem rota alternativa";return false;}
-        if(!OppositeLaneClear(v,blocker,dir,left,8))return false;
+        if(!OppositeLaneClear(v,blocker,dir,left,8,returnsToLane:false))return false;
+        // Turning crosses the space just behind it: a queued follower must leave first,
+        // so a blocked queue unwinds from its tail.
+        var behindDistance=_roads[behind].Position.Distance(v.Position)+8;
+        if(State.Vehicles.Any(o=>o.Id!=v.Id&&o.Status is VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded&&(o.Position-v.Position) is var r&&r.X*dir.X+r.Z*dir.Z<0&&r.X*dir.X+r.Z*dir.Z>-behindDistance&&Math.Abs(r.X*left.X+r.Z*left.Z)<2)){v.Cause="Rua bloqueada por veículo parado; aguardando a fila de trás para meia-volta";return false;}
         // The first entry only gives the reversed lane geometry; motion starts at the node behind.
         v.Route=[ahead,..alternative];v.RouteIndex=1;v.IntersectionClaim=null;v.WaitingSince=0;v.Cause="Meia-volta: rua bloqueada por veículo parado";
         return true;
@@ -89,6 +114,6 @@ public sealed partial class CitySimulation
         if(v.Fuel<=.000001){v.Status=VehicleStatus.Stranded;v.Cause="Sem combustível; nenhuma viagem fictícia";remaining=0;return;}
         step=Math.Min(step,v.Fuel/FuelRate(v));if(d>.01)v.Heading=Math.Atan2(heading.X,heading.Z);
         v.Position=v.Position.MoveTowards(target,step);v.Fuel=Math.Max(0,v.Fuel-step*FuelRate(v));v.FuelBurnedLastStep+=step*FuelRate(v);remaining-=step/speed;v.WaitingSince=0;
-        if(d<=step+.001){v.Detour.RemoveAt(0);if(v.Detour.Count==0){v.RouteIndex=v.DetourResumeIndex;v.Cause="Em viagem";}}
+        if(d<=step+.001){v.Detour.RemoveAt(0);if(v.Detour.Count==0){var resume=v.Route.IndexOf(v.DetourResumeNode,Math.Min(v.RouteIndex,v.Route.Count));if(resume>=0)v.RouteIndex=resume;v.Cause="Em viagem";}}
     }
 }
