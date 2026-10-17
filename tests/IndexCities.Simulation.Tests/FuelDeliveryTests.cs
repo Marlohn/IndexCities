@@ -37,6 +37,23 @@ public sealed class FuelDeliveryTests
         for(var step=0;step<3600&&truck.Status!=VehicleStatus.Parked;step++){sim.Advance(2);refuelled|=truck.Fuel>10;Assert.NotEqual(VehicleStatus.Stranded,truck.Status);sim.CheckInvariants();}
         Assert.True(refuelled,$"{truck.Cause}, {truck.Fuel} L");Assert.Equal(VehicleStatus.Parked,truck.Status);Assert.True(truck.Position.Distance(farm.Door)<30,truck.Position+" "+farm.Door);Assert.Equal(sim.State.Tuning.TotalMoney,sim.MonetaryTotal);
     }
+    // Stock taken by others after the stop was chosen: the truck buys what exists,
+    // never leaves short of the trip, frees the pump bay and resumes after restock.
+    [Fact] public void Partially_refuelled_truck_waits_off_the_pump_and_resumes_after_restock()
+    {
+        var (sim,truck,farm,shop,station)=ReadyDelivery();truck.Fuel=2;shop.AddStock(ResourceKind.Food,-10);
+        Assert.True(OrderLocalFood(sim,farm,shop,10));Assert.Equal(station.Id,truck.RefuellingAt);var shipment=sim.State.Shipments.Last(s=>s.VehicleId==truck.Id&&!s.Complete);
+        var stock=0d;var drained=false;
+        for(var step=0;step<3600&&truck.Status!=VehicleStatus.Waiting;step++){
+            sim.Advance(1);Assert.NotEqual(VehicleStatus.Stranded,truck.Status);
+            if(!drained&&truck.Status==VehicleStatus.Unloading&&truck.Cause=="Abastecendo combustível"){stock=station.Quantity(ResourceKind.Fuel);station.AddStock(ResourceKind.Fuel,.3-stock);drained=true;}
+        }
+        Assert.True(drained);Assert.Equal(VehicleStatus.Waiting,truck.Status);Assert.True(truck.RefuellingAt==null,truck.Cause+" fuel="+truck.Fuel+" stock="+station.Quantity(ResourceKind.Fuel)+" route="+truck.Route.Count);Assert.False(shipment.Complete);
+        for(var step=0;step<60;step++){sim.Advance(2);Assert.Equal(VehicleStatus.Waiting,truck.Status);}
+        station.AddStock(ResourceKind.Fuel,stock);
+        for(var step=0;step<3600&&!shipment.Complete;step++){sim.Advance(2);Assert.NotEqual(VehicleStatus.Stranded,truck.Status);sim.CheckInvariants();}
+        Assert.True(shipment.Complete,truck.Cause);Assert.Equal(sim.State.Tuning.TotalMoney,sim.MonetaryTotal);
+    }
     // A station without enough stock for the rest of the trip is no viable stop.
     [Fact] public void Local_truck_does_not_leave_when_the_only_station_lacks_fuel_for_the_trip()
     {

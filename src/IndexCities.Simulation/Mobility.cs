@@ -246,7 +246,9 @@ public sealed partial class CitySimulation
     {
         var start=NearestRoad(v.Position);if(start==null||start.Position.Distance(v.Position)>State.Tuning.RoadWidth/2+3)return;
         var target=!s.PickedUp?Access(BuildingById(s.SourceBuildingId)!):s.ProjectId is {} pId?WorkAccess(State.Projects.First(p=>p.Id==pId)):Access(BuildingById(s.DestinationBuildingId)!);
-        if(target==null)return;var route=FindRoadRoute(start.Id,target.Id,ConstructionTrip(v));if(route.Count==0)return;v.Route=route;v.RouteIndex=0;v.Status=VehicleStatus.Travelling;
+        if(target==null)return;
+        // SPEC transporte-circulacao: a replanned departure also needs fuel for the trip.
+        if(!EnsureFuel(v,target.Id))return;v.Status=VehicleStatus.Travelling;
     }
     bool CrossesLane(Point from,Point to,RoadNode n)
     {
@@ -390,14 +392,15 @@ public sealed partial class CitySimulation
             // A private car that cannot pay stays parked at the station, still
             // usable once the family has money; it is not stranded on the lane.
             if(v.PassengerCar){v.RefuellingAt=null;v.SavedRoute=[];v.Status=VehicleStatus.Parked;LeaveCar(v,"Carro parado no posto: sem dinheiro para abastecer");return;}
-            v.Status=VehicleStatus.Stranded;v.Cause="Sem dinheiro/combustível para abastecer";return;}
+            v.RefuellingAt=null;v.SavedRoute=[];v.Route.Clear();v.RouteIndex=0;v.Status=VehicleStatus.Waiting;v.Cause="Sem dinheiro/combustível para abastecer";return;}
         var price=Money((decimal)amount*station.SalePrice);if(!Transfer(v.OwnerAccount,"company:"+station.CompanyId,price,"Combustível","Abastecimento físico no posto",v.Id))return;
         station.AddStock(ResourceKind.Fuel,-amount);v.Fuel+=amount;
         // Stock or money can run short after the stop was chosen: never leave without
-        // the rest of the trip. A truck waits at the pump; a car stays parked there.
+        // the rest of the trip. A car stays parked at the station.
         if(!leaving&&v.SavedRoute.Count>0&&v.Fuel<RouteLength(v.SavedRoute)*FuelRate(v)+(v.PassengerCar?1:4)){
             if(v.PassengerCar){v.RefuellingAt=null;v.SavedRoute=[];v.Status=VehicleStatus.Parked;LeaveCar(v,"Carro parado no posto: combustível do posto ou dinheiro não bastam para a viagem");return;}
-            v.LoadTimer=60;v.Status=VehicleStatus.Unloading;v.Cause="Abastecido em parte; aguardando estoque ou dinheiro para a viagem";return;}
+            // Off the pump bay: the truck waits and replans its refuelling (Waiting).
+            v.RefuellingAt=null;v.SavedRoute=[];v.Route.Clear();v.RouteIndex=0;v.Status=VehicleStatus.Waiting;v.Cause="Abastecido em parte; combustível do posto ou dinheiro não bastam para a viagem";return;}
         v.RefuellingAt=null;v.Route=v.SavedRoute;v.SavedRoute=[];if(v.Route.Count>0){var shipment=State.Shipments.FirstOrDefault(s=>s.Id==v.ShipmentId);var destination=BuildingById(shipment?.PickedUp==false?shipment.SourceBuildingId:shipment?.DestinationBuildingId??v.HomeBuildingId);v.DockPosition=DockAt(_roads[v.Route[^1]],destination,false);}if(v.PassengerCar&&SpotByKey(v.ParkingSpot) is {} carSpot)v.DockPosition=carSpot.Position;if(v.PassengerCar&&v.TripPurpose==JourneyPurpose.Leaving)v.DockPosition=State.Entry;v.RouteIndex=0;v.Status=VehicleStatus.Travelling;v.Cause="Abastecido com combustível real";
     }
     bool EnsureFuel(Vehicle v,int destination)
