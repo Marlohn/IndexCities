@@ -4,7 +4,7 @@ public sealed partial class CitySimulation
 {
     // Derived, scoped to one movement batch; no new persisted gameplay state.
     HashSet<int>? _vehicleMovementBatch;
-    Dictionary<int,Vehicle>? _entryFrame;
+    Dictionary<int,Vehicle>? _entryFrame;readonly Dictionary<int,Vehicle> _entryFrameBuffer=new();
     double _vehicleMovementOffset;
     double? _vehicleMovementClock;
     double VehicleMovementTime=>_vehicleMovementClock??State.ElapsedSeconds;
@@ -84,7 +84,8 @@ public sealed partial class CitySimulation
             while(dt-_vehicleMovementOffset>.000001){
                 var remaining=dt-_vehicleMovementOffset;
                 _vehicleMovementClock=State.ElapsedSeconds+_vehicleMovementOffset;
-                _entryFrame=State.Vehicles.Where(v=>v.Status is (VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded)&&!TryLaneEntry(v,out _)).ToDictionary(v=>v.Id,EntrySnapshot);
+                // Same entries as ToDictionary, in a dictionary reused across slices.
+                _entryFrameBuffer.Clear();foreach(var v in State.Vehicles.Where(v=>v.Status is (VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded)&&!TryLaneEntry(v,out _)))_entryFrameBuffer.Add(v.Id,EntrySnapshot(v));_entryFrame=_entryFrameBuffer;
                 var slice=NextVehicleMovementEvent(remaining);
                 MoveVehiclesUnsplit(slice);
                 _vehicleMovementOffset+=slice;
