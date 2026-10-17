@@ -90,7 +90,7 @@ public sealed partial class CitySimulation
                 MoveVehiclesUnsplit(slice);
                 _vehicleMovementOffset+=slice;
             }
-        }finally{_vehicleMovementBatch=null;_entryFrame=null;_vehicleMovementClock=null;_vehicleMovementOffset=0;}
+        }finally{_vehicleMovementBatch=null;_entryFrame=null;_entryFrameBuffer.Clear();_vehicleMovementClock=null;_vehicleMovementOffset=0;}
     }
     Point ProjectedVelocity(Vehicle v)
     {
