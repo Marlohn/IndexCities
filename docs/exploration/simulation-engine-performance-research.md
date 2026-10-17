@@ -674,3 +674,64 @@ Ruas como filas são o padrão nessas ferramentas, mas **não são uma regra apr
 3. **50 mil:** além disso, o trânsito provavelmente precisaria ser modelado como **filas por rua** (cada carro continua individual, ocupa a rua e espera a vez, sem posição a cada 2 s) ou ir para a GPU. Ruas como filas mudariam regras aprovadas em [transporte e circulação](../spec/transporte-circulacao.md), como ultrapassar veículo parado pela contramão, meia-volta e entrada na faixa. Seria **decisão de produto** do responsável, com o que se perde descrito antes.
 
 Nada disso foi medido no IndexCities; os números de 15.1 são contas sobre premissas.
+
+## 16. Oitava rodada — critério do jogo expandido, duas ideias refutadas por medição e teto CPU × GPU (2026-10-17)
+
+> **Revisão humana: PENDENTE.** Medições e contas da IA, sem autoridade de produto. Código das medições na branch `experimento/repeticao-dias` (não mesclar): comandos `repeat` e `isolation` da bancada headless e `tools/gpu-ceiling`.
+
+### 16.1. Critério do responsável: avaliar contra o jogo expandido
+
+O responsável alertou que propriedades da V1 vão mudar com certeza: SIMs quase sempre parados, pouco trânsito, rotinas repetidas. A [SPEC](../spec/mundo-tempo-saves.md#tempo-de-jogo) passou a registrar que a viabilidade do acompanhamento geracional é avaliada contra o jogo expandido. **Consequência para este estudo:** as premissas de 14.1 e 15.1 (~3% dos SIMs em movimento, medidos nas cidades pequenas da V1) servem só como ilustração; qualquer conclusão de viabilidade precisa ser refeita num cenário de pico mais denso. Ideias cujo ganho depende de ociosidade, trânsito leve ou repetição não contam para a meta.
+
+### 16.2. Medição: os dias quase nunca se repetem, nem na V1
+
+Comando `repeat`: compara, para cada SIM, os acontecimentos pessoais de um dia com os do dia anterior (mesma descrição no mesmo horário) e as movimentações de dinheiro. Cidade A (47 SIMs) e grade de 109 SIMs, 10 dias após 2 de aquecimento, semente 42, `main` em `f3affed`.
+
+| Cidade | Dia idêntico ao anterior (eventos e dinheiro) | Mesma sequência de eventos ignorando horário |
+|---|---|---|
+| A (47 SIMs) | 0% em todos os dias | 0–12,5% |
+| Grade (109 SIMs) | 0–9,4% (em geral 1–3%) | 1,9–12,3% |
+
+As diferenças vêm de lazer variado (passeio, visita), compras em dias diferentes e horários de saída para o trabalho que mudam. **Reaproveitar o dia anterior de cada SIM está refutado** já na V1, e a expansão só aumentaria a variedade.
+
+### 16.3. Medição: agentes em movimento raramente ficam isolados
+
+Comando `isolation`: a cada passo, para cada agente em movimento, o tempo mínimo até outro agente em movimento poder chegar a 10 m (pedestres) ou 20 m (veículos), supondo as velocidades máximas uma contra a outra. Ignora semáforos, faixas de pedestre e veículos parados, então o isolamento real é **menor**.
+
+| Cidade | Veículos: horizonte < 2 s | Veículos: ≥ 10 s | Pedestres: < 2 s | Pedestres: ≥ 30 s |
+|---|---|---|---|---|
+| A (47 SIMs, 3 dias) | 66,9% | 13,4% | 14,5% | 49,1% |
+| Grade (109 SIMs, 3 dias) | 65,5% | 7,7% | 16,4% | 43,3% |
+
+**"Bolhas" para veículos estão refutadas** (14.1 e 9.12-I para veículos): mesmo com trânsito leve, dois terços dos passos de veículo têm outro veículo a menos de 2 s. Para pedestres funcionariam na V1, mas pelo critério de 16.1 não se pode contar com isso. A rodada de 400 SIMs foi interrompida para não distorcer as medições do worker da opção B, que rodavam na mesma máquina.
+
+### 16.4. Teto CPU × GPU para movimento (teste isolado, não o jogo)
+
+`tools/gpu-ceiling`: N carros em pistas circulares de 50 carros, cada um seguindo o da frente (modelo IDM, passo de 2 s, sem busca de vizinhos, cruzamentos, faixas, pedestres nem ultrapassagem). 4.320 passos medidos; resultado extrapolado para 43.200 passos (um dia de jogo). Máquina do responsável: Intel Core i5-13420H (4 núcleos de desempenho + 4 de eficiência, 12 threads) e NVIDIA GeForce RTX 3050 6 GB Laptop; .NET 8, ILGPU 1.5.1 (CUDA). **Os números de CPU foram medidos com outros benchmarks rodando ao mesmo tempo** e serão refeitos com a máquina livre.
+
+| Carros em movimento | CPU 1 núcleo | CPU todos os núcleos | GPU, troca com a CPU a cada passo | GPU, troca a cada 30 passos |
+|---|---|---|---|---|
+| 1.000 | 0,39 s/dia | 0,59 | 1,01 | 0,30 |
+| 10.000 | 3,18 | 1,08 | 1,09 | 0,31 |
+| 50.000 | 15,70 | 14,85* | 1,45 | 0,42 |
+| 200.000 | 97,2 | 71,3* | 5,43 | 1,40 |
+
+\* provavelmente inflados pela concorrência.
+
+- A GPU tem custo fixo de ~7 µs por passo mesmo com poucos carros; abaixo de alguns milhares de veículos em movimento ela não compensa.
+- Trocar dados com a CPU a cada passo custa ~3x mais que a cada 30 passos (~23 contra ~7 µs por passo de base). A GPU só rende se o jogo souber de antemão quem vai entrar no trânsito (agenda) e receber as chegadas em lote, com horário exato.
+- Com 50 mil ou mais veículos em movimento, a GPU ficou dezenas de vezes à frente da CPU neste caso simples. Como o caso simples já passa da meta na CPU com 50 mil, o jogo real (muito mais conta por veículo) também passaria.
+- **O que não se sabe:** quanto a GPU perde com as regras reais (preferência, semáforo, ultrapassagem, meia-volta, pedestres), que são ramificadas e são o que ela faz pior; e como manter o resultado idêntico ao da versão CPU (ponto flutuante na GPU; os inteiros de 14.2 ajudariam). Também depende de o jogador ter placa dedicada: a GPU seria acelerador opcional, com a versão CPU sempre completa (9.2).
+
+### 16.5. Ideias que sobrevivem ao critério de 16.1 (propostas de estudo, nada aprovado)
+
+1. **Consulta só à vizinhança** (índice espacial por faixa, calçada e cruzamento): ninguém interage com o outro lado da cidade em nenhuma versão do jogo. É o que o worker da opção B começou.
+2. **Regiões em vários núcleos com junção em ordem fixa** (13.3): quanto mais o jogo faz, mais trabalho para dividir. Na máquina medida, o ganho real tende a ficar abaixo de 12x (4 núcleos de desempenho + 4 de eficiência).
+3. **Quantidades inteiras** (14.2): servem para provar equivalência de qualquer otimização, seja qual for o conteúdo.
+4. **Agenda de cada SIM + movimento na GPU em lotes:** a agenda diz de antemão quem sai e quando; a GPU avança o trânsito um minuto de jogo por vez e devolve as chegadas com horário exato. Só faz sentido com dezenas de milhares de veículos em movimento.
+5. **Rotas pré-processadas** (Contraction Hierarchies, como no OSRM [F14]): mais viagens, mais ganho.
+6. **Avanço sem o jogador olhando** (ideia de produto, decisão do responsável): simulação completa, sem renderização, enquanto o computador fica ligado, com pausa automática em acontecimentos importantes. Separa horas de jogo de horas de computador.
+7. **Orçamento de desempenho por sistema:** cada sistema novo (escola, ônibus, saúde) declara seu custo por SIM por dia, medido na bancada; a bancada reprova se passar. Impede que a expansão consuma a meta sem que se perceba.
+8. **"Cidade do futuro" na bancada:** cenário de pico, com muito mais gente e veículos em movimento ao mesmo tempo, para avaliar as ideias no jogo expandido em vez da cidade calma da V1.
+
+**Refutadas ou rebaixadas nesta rodada:** reaproveitar o dia anterior (16.2); bolhas de isolamento para veículos (16.3); paralelismo no tempo, em que cada núcleo simula um dia futuro a partir de um estado chutado e só aceita se o chute bater, porque o estado da meia-noite nunca se repete e a literatura aponta o casamento de estados como o problema central ([WSC 2004](https://informs-sim.org/wsc04papers/041.pdf), [Virginia Tech](https://vtechworks.lib.vt.edu/handle/10919/19827)).
