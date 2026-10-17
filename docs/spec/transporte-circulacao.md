@@ -90,6 +90,7 @@
 ### Socorro a veículos parados
 
 - **Guincho (intenção do responsável para depois da contornagem):** um serviço de guincho, inicialmente vindo do exterior, atende veículo parado na via: o dono paga com dinheiro real (Reserva Global, como nas importações), o guincho chega fisicamente e leva o veículo (carro particular para a vaga do dono; caminhão externo para o exterior). Uma empresa local de guincho pode substituir o serviço externo no futuro. Detalhes de chamada, preço e prazos ainda não foram especificados.
+- **Veículos quebrando (intenção do responsável para depois):** veículos podem quebrar de verdade e ficar parados, sendo contornados pelo trânsito e atendidos pelo guincho. Causa, frequência, desgaste/manutenção e reparo ainda não foram especificados; oficinas como possível tipo de empresa estão em [pesquisa](../exploration/city-systems.md#veículos-quebrando-guincho-e-oficinas--ideias-do-responsável-2026-10-16).
 
 ### Tempo de execução dos serviços adiados
 
