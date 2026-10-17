@@ -27,6 +27,12 @@ public sealed class EmigrationCarTests
         Assert.All(sim.State.Citizens.Where(c=>family.Members.Contains(c.Id)),c=>{Assert.False(c.Moving);Assert.Equal("Família aguardando dinheiro para o combustível da saída",c.Activity);});
         sim.CheckInvariants();
     }
+    [Fact] public void A_family_without_a_car_still_walks_out()
+    {
+        var (sim,family,car,_)=Desperate();car.Status=VehicleStatus.Outside;Review(sim);
+        Assert.True(family.Emigrating);Assert.All(sim.State.Citizens.Where(c=>family.Members.Contains(c.Id)),c=>{Assert.True(c.Moving);Assert.Equal(JourneyPurpose.Leaving,c.Purpose);});
+        sim.CheckInvariants();
+    }
     [Fact] public void A_family_that_can_pay_refuels_on_the_way_out()
     {
         var (sim,family,car,station)=Desperate();Move(sim,"global",car.OwnerAccount,14);Review(sim);

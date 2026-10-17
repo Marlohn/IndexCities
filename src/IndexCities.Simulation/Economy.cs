@@ -188,7 +188,8 @@ public sealed partial class CitySimulation
                     var missing=RouteLength(carRoute)*FuelRate(car)+1-car.Fuel;
                     if(missing>0){
                         var spot=car.DockPosition;
-                        var planned=EnsureFuel(car,EntryNode().Id)&&BuildingById(car.RefuellingAt) is {} station&&station.Quantity(ResourceKind.Fuel)>=missing&&Balance(car.OwnerAccount)>=Money((decimal)missing*station.SalePrice);
+                        // Size the purchase on the trip actually driven: home → station → exit.
+                        var planned=EnsureFuel(car,EntryNode().Id)&&BuildingById(car.RefuellingAt) is {} station&&(car.Fuel-RouteLength(car.Route)*FuelRate(car)) is var atStation&&(RouteLength(car.SavedRoute)*FuelRate(car)+1-atStation) is var purchase&&purchase<=State.Tuning.FuelTank-atStation&&station.Quantity(ResourceKind.Fuel)>=purchase&&Balance(car.OwnerAccount)>=Money((decimal)purchase*station.SalePrice);
                         if(!planned){car.RefuellingAt=null;car.SavedRoute=[];car.Route.Clear();car.RouteIndex=0;car.DockPosition=spot;Wait("Família aguardando dinheiro para o combustível da saída");continue;}
                     }else{car.Route=carRoute;car.RouteIndex=0;car.DockPosition=State.Entry;}
                     family.Emigrating=true;car.ParkingSpot=null;car.TripPurpose=JourneyPurpose.Leaving;car.DriverId=members[0].Id;car.Passengers=members.Skip(1).Select(m=>m.Id).ToList();car.Status=VehicleStatus.Travelling;car.Cause="Família emigrando de carro";foreach(var m in members){m.VehicleId=car.Id;m.Path.Clear();m.PathIndex=0;m.Purpose=JourneyPurpose.Leaving;m.Activity="Emigrando de carro";Personal(m,"Decidiu sair por falta persistente de renda e alimentação");}if(home!=null)home.FamilyId=null;family.HomeId=null;continue;
