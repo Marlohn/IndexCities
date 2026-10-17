@@ -158,11 +158,12 @@ public sealed partial class CitySimulation
         var s=new Shipment{Id=Id(),Purpose=resource==ResourceKind.Food?ShipmentPurpose.Food:ShipmentPurpose.Fuel,DestinationBuildingId=destination.Id,Destination=n.Position,VehicleId=vehicle.Id,PickedUp=true,GoodsOwnerAccount=account,Cargo=new(){{resource,amount}},PricePaid=price};State.Shipments.Add(s);vehicle.Fuel+=fuel;vehicle.Cargo=new(s.Cargo);vehicle.ShipmentId=s.Id;vehicle.Route=route;vehicle.RouteIndex=0;vehicle.DockPosition=DockAt(n,destination,false);vehicle.Status=VehicleStatus.Travelling;vehicle.Position=State.Entry;vehicle.Cause="Importação comercial em trânsito";
         destination.InventoryUnitCost=Money(price/(decimal)amount);destination.SalePrice=Money(destination.InventoryUnitCost*1.4m);return true;
     }
+    readonly Dictionary<Point,double> _homePollution=new();
     void UpdateNeeds(double dt)
     {
         // Pollution is unchanged during this routine, and residents in the same
         // home use exactly the same point. Retain every per-citizen calculation.
-        var pollution=new Dictionary<Point,double>();
+        SnapshotPollution();var pollution=_homePollution;pollution.Clear();
         double HomePollution(Point position){if(!pollution.TryGetValue(position,out var value)){value=SampledPollution(position);pollution.Add(position,value);}return value;}
         foreach(var c in State.Citizens.Where(c=>c.Alive&&c.Resident&&c.InsideMap)){
             c.HungerHours+=dt/3600;var family=FamilyById(c.FamilyId)!;var home=BuildingById(family.HomeId);

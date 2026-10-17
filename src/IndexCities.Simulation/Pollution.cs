@@ -14,16 +14,28 @@ public sealed partial class CitySimulation
     // the simulation itself samples every step (homes, lake), keep the factors
     // aligned with the cells' enumeration order and recompute only where that
     // order changed: same factors, same summation order, same result.
-    readonly Dictionary<Point,(List<long> Keys,List<double> Factors)> _pollutionFactors=new();
+    sealed class CellFactors{public int Layout=-1,Count;public long[] Keys=[];public double[] Factors=[];}
+    readonly Dictionary<Point,CellFactors> _pollutionFactors=new();
+    long[] _cellKeys=[];double[] _cellValues=[];int _cellCount,_cellLayout;
+    // Copies the cells in enumeration order; the layout changes whenever that
+    // key sequence differs from the previous snapshot.
+    void SnapshotPollution()
+    {
+        var count=State.PollutionCells.Count;var changed=count!=_cellCount;
+        if(_cellKeys.Length<count){Array.Resize(ref _cellKeys,Math.Max(count,_cellKeys.Length*2));Array.Resize(ref _cellValues,_cellKeys.Length);}
+        var i=0;foreach(var entry in State.PollutionCells){if(!changed&&_cellKeys[i]!=entry.Key)changed=true;_cellKeys[i]=entry.Key;_cellValues[i]=entry.Value;i++;}
+        _cellCount=count;if(changed)_cellLayout++;
+    }
+    // LocalPollution over the last snapshot.
     double SampledPollution(Point point)
     {
-        if(!_pollutionFactors.TryGetValue(point,out var cache)){if(_pollutionFactors.Count>4096)_pollutionFactors.Clear();_pollutionFactors[point]=cache=([],[]);}
-        var load=0.0;var i=0;
-        foreach(var entry in State.PollutionCells){
-            if(i==cache.Keys.Count){cache.Keys.Add(entry.Key);cache.Factors.Add(CellFactor(point,entry.Key));}
-            else if(cache.Keys[i]!=entry.Key){cache.Keys[i]=entry.Key;cache.Factors[i]=CellFactor(point,entry.Key);}
-            load+=entry.Value*cache.Factors[i];i++;
+        if(!_pollutionFactors.TryGetValue(point,out var cache)){if(_pollutionFactors.Count>4096)_pollutionFactors.Clear();_pollutionFactors[point]=cache=new();}
+        if(cache.Layout!=_cellLayout){
+            if(cache.Keys.Length<_cellCount){Array.Resize(ref cache.Keys,_cellKeys.Length);Array.Resize(ref cache.Factors,_cellKeys.Length);}
+            for(var j=0;j<_cellCount;j++)if(j>=cache.Count||cache.Keys[j]!=_cellKeys[j]){cache.Keys[j]=_cellKeys[j];cache.Factors[j]=CellFactor(point,_cellKeys[j]);}
+            cache.Count=_cellCount;cache.Layout=_cellLayout;
         }
+        var load=0.0;var factors=cache.Factors;for(var i=0;i<_cellCount;i++)load+=_cellValues[i]*factors[i];
         return Math.Clamp(load,0,2);
     }
     void EmitPollution(Point point,double amount)
@@ -37,6 +49,6 @@ public sealed partial class CitySimulation
         foreach(var key in State.PollutionCells.Keys.ToList()){State.PollutionCells[key]*=recovery;if(State.PollutionCells[key]<1e-10)State.PollutionCells.Remove(key);}
         foreach(var building in active)EmitPollution(building.Position,building.UntreatedSewage/100*dt/86400);
         foreach(var vehicle in State.Vehicles)EmitPollution(vehicle.Position,vehicle.FuelBurnedLastStep*.01);
-        State.LakePollution=SampledPollution(State.LakeCentre);
+        SnapshotPollution();State.LakePollution=SampledPollution(State.LakeCentre);
     }
 }
