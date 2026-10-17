@@ -92,7 +92,7 @@ public sealed partial class CitySimulation
         // Turning crosses the space just behind it: a queued follower must leave first,
         // so a blocked queue unwinds from its tail.
         var behindDistance=_roads[behind].Position.Distance(v.Position)+8;
-        if(State.Vehicles.Any(o=>o.Id!=v.Id&&o.Status is VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded&&(o.Position-v.Position) is var r&&r.X*dir.X+r.Z*dir.Z<0&&r.X*dir.X+r.Z*dir.Z>-behindDistance&&Math.Abs(r.X*left.X+r.Z*left.Z)<2)){v.Cause="Rua bloqueada por veículo parado; aguardando a fila de trás para meia-volta";return false;}
+        if(State.Vehicles.FirstOrDefault(o=>o.Id!=v.Id&&o.Status is VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded&&(o.Position-v.Position) is var r&&r.X*dir.X+r.Z*dir.Z<0&&r.X*dir.X+r.Z*dir.Z>-behindDistance&&Math.Abs(r.X*left.X+r.Z*left.Z)<2) is {} behindVehicle){v.Cause=behindVehicle.Status==VehicleStatus.Stranded?"Rua bloqueada por veículos parados à frente e atrás":"Rua bloqueada por veículo parado; aguardando a fila de trás para meia-volta";return false;}
         // The first entry only gives the reversed lane geometry; motion starts at the node behind.
         v.Route=[ahead,..alternative];v.RouteIndex=1;v.IntersectionClaim=null;v.WaitingSince=0;v.Cause="Meia-volta: rua bloqueada por veículo parado";
         return true;

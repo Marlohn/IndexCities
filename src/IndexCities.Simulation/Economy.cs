@@ -124,7 +124,7 @@ public sealed partial class CitySimulation
         var account="company:"+farm.CompanyId;var fuel=State.Tuning.FuelTank;var price=State.Tuning.TruckPrice+(decimal)fuel*State.Tuning.ImportPrices[ResourceKind.Fuel]+State.Tuning.FreightBase;
         if(Spendable(account)<price+500||State.OutsideStock[ResourceKind.Fuel]<fuel||BusinessOpportunity(farm)<.2)return;var route=FindRoadRoute(EntryNode().Id,Access(farm)!.Id);if(route.Count==0)return;
         // One way only: the truck stays in the city and refuels at a station afterwards.
-        if(RouteLength(route)*State.Tuning.FuelPerMetre+4>fuel){CompanyById(farm.CompanyId)!.Decision="Caminhão não comprado: a entrega desde a entrada passa da autonomia do tanque";return;}
+        if(RouteLength(route)*State.Tuning.FuelPerMetre+4>fuel){if(CompanyById(farm.CompanyId) is {} owner)owner.Decision="Caminhão não comprado: a entrega desde a entrada passa da autonomia do tanque";return;}
         if(!Transfer(account,"global",price,"Veículos","Aquisição/importação real de caminhão e combustível inicial",farm.Id))return;State.OutsideStock[ResourceKind.Fuel]-=fuel;
         var v=new Vehicle{Id=Id(),OwnerAccount=account,External=true,ExternalDriverId="entregador externo de veículo "+farm.Id,HomeBuildingId=farm.Id,Position=State.Entry,Fuel=fuel,Route=route,DockPosition=DockAt(Access(farm)!,farm,false),Status=VehicleStatus.Travelling};var s=new Shipment{Id=Id(),Purpose=ShipmentPurpose.Vehicle,DestinationBuildingId=farm.Id,VehicleId=v.Id,PickedUp=true,PricePaid=price,GoodsOwnerAccount=account};v.ShipmentId=s.Id;State.Vehicles.Add(v);State.Shipments.Add(s);
     }
