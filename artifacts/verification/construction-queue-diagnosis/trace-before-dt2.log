@@ -1,0 +1,174 @@
+t=2 P26=Aguardando pavimentadora e rolo disponíveis
+  V18 Dump/None Available Travelling (-256,00,0,00) h=0,00 sp=0/0 ri=0/17 Entrega para obra 26
+  V29 Cargo/Paver ToSite Travelling (-256,00,0,00) h=0,00 sp=0/0 ri=0/13 Equipe e máquina a caminho da obra 26
+  V30 Cargo/Roller ToSite Travelling (-256,00,0,00) h=0,00 sp=0/0 ri=0/10 Equipe e máquina a caminho da obra 26
+t=4 P26=Aguardando pavimentadora e rolo disponíveis
+  V18 Dump/None Available Travelling (-233,65,-1,65) h=1,57 sp=0/0 ri=6/17 Em viagem
+  V29 Cargo/Paver ToSite Travelling (-241,65,-1,65) h=1,57 sp=0/0 ri=4/13 Em viagem
+  V30 Cargo/Roller ToSite Travelling (-249,65,-1,65) h=1,57 sp=0/0 ri=2/10 Em viagem
+t=8 P26=Aguardando pavimentadora e rolo disponíveis
+  V18 Dump/None Available Travelling (-192,00,2,05) h=1,57 sp=0/0 ri=17/17 Em viagem
+  V29 Cargo/Paver ToSite Travelling (-208,00,6,72) h=1,57 sp=0/0 ri=13/13 Em viagem
+  V30 Cargo/Roller ToSite Unloading (-220,00,-6,75) h=1,57 sp=0/0 ri=10/10 Descarregando no destino
+t=10 P26=Aguardando pavimentadora e rolo disponíveis
+  V18 Dump/None Available Unloading (-192,00,6,75) h=1,57 sp=0/0 ri=17/17 Descarregando no destino
+  V29 Cargo/Paver ToSite Unloading (-208,00,6,75) h=1,57 sp=0/0 ri=13/13 Descarregando no destino
+  V30 Cargo/Roller ToSite Unloading (-220,00,-6,75) h=1,57 sp=0/0 ri=10/10 Descarregando no destino
+t=24 P26=Aguardando pavimentadora e rolo disponíveis
+  V18 Dump/None Available Unloading (-192,00,6,75) h=1,57 sp=0/0 ri=17/17 Descarregando no destino
+  V29 Cargo/Paver ToSite Unloading (-208,00,6,75) h=1,57 sp=0/0 ri=13/13 Descarregando no destino
+  V30 Cargo/Roller OnSite Parked (-220,00,-6,75) h=1,57 sp=0/0 ri=10/10 Máquina e operador no canteiro
+t=26 P26=Materiais em trânsito
+  V18 Dump/None Available Travelling (-192,00,6,75) h=1,57 sp=0/0 ri=0/17 Retorno ao exterior
+  V19 Dump/None Available Travelling (-256,00,0,00) h=0,00 sp=0/4 ri=0/10 Entrega para obra 26
+  V29 Cargo/Paver OnSite Parked (-208,00,6,75) h=-1,57 sp=0/0 ri=13/13 Pavimentadora posicionada para receber Asfalto
+  V30 Cargo/Roller OnSite Parked (-220,00,-6,75) h=1,57 sp=0/0 ri=10/10 Máquina e operador no canteiro
+t=28 P26=Aguardando entrega física
+  V18 Dump/None Available Travelling (-210,90,1,65) h=-1,57 sp=0/0 ri=5/17 Em viagem
+  V19 Dump/None Available Travelling (-233,65,-1,65) h=1,57 sp=0/4 ri=6/10 Em viagem
+  V29 Cargo/Paver OnSite Parked (-208,00,6,75) h=-1,57 sp=0/0 ri=13/13 Pavimentadora posicionada para receber Asfalto
+  V30 Cargo/Roller OnSite Parked (-220,00,-6,75) h=1,57 sp=0/0 ri=10/10 Máquina e operador no canteiro
+t=32 P26=Aguardando entrega física
+  V18 Dump/None Available Unloading (-256,00,1,65) h=-1,57 sp=0/0 ri=17/17 Descarregando no destino
+  V19 Dump/None Available Travelling (-220,00,4,07) h=0,00 sp=1/4 ri=10/10 Em viagem
+  V29 Cargo/Paver OnSite Parked (-208,00,6,75) h=-1,57 sp=0/0 ri=13/13 Pavimentadora posicionada para receber Asfalto
+  V30 Cargo/Roller OnSite Parked (-220,00,-6,75) h=1,57 sp=0/0 ri=10/10 Máquina e operador no canteiro
+t=38 P26=Aguardando entrega física
+  V18 Dump/None Available Unloading (-256,00,1,65) h=-1,57 sp=0/0 ri=17/17 Descarregando no destino
+  V19 Dump/None Available Unloading (-214,60,6,75) h=-1,57 sp=4/4 ri=10/10 Descarregando no destino
+  V29 Cargo/Paver OnSite Parked (-208,00,6,75) h=-1,57 sp=0/0 ri=13/13 Pavimentadora posicionada para receber Asfalto
+  V30 Cargo/Roller OnSite Parked (-220,00,-6,75) h=1,57 sp=0/0 ri=10/10 Máquina e operador no canteiro
+t=48 P26=Aguardando entrega física
+  V19 Dump/None Available Unloading (-214,60,6,75) h=-1,57 sp=4/4 ri=10/10 Descarregando no destino
+  V29 Cargo/Paver OnSite Parked (-208,00,6,75) h=-1,57 sp=0/0 ri=13/13 Pavimentadora posicionada para receber Asfalto
+  V30 Cargo/Roller OnSite Parked (-220,00,-6,75) h=1,57 sp=0/0 ri=10/10 Máquina e operador no canteiro
+t=54 P26=Aguardando entrega física
+  V19 Dump/None Available Travelling (-214,60,6,75) h=-1,57 sp=0/4 ri=0/10 Retorno ao exterior
+  V29 Cargo/Paver OnSite Parked (-208,00,6,75) h=-1,57 sp=0/0 ri=13/13 Pavimentadora posicionada para receber Asfalto
+  V30 Cargo/Roller OnSite Parked (-220,00,-6,75) h=1,57 sp=0/0 ri=10/10 Máquina e operador no canteiro
+t=62 P26=Aplicação e acabamento de asfalto em andamento
+  V19 Dump/None Available Travelling (-241,45,1,65) h=-1,57 sp=0/0 ri=6/10 Em viagem
+  V29 Cargo/Paver OnSite Parked (-202,40,-1,65) h=1,57 sp=2/7 ri=13/13 Deslocando máquina dentro do acesso real
+  V30 Cargo/Roller OnSite Parked (-220,00,-6,75) h=1,57 sp=0/0 ri=10/10 Máquina e operador no canteiro
+t=64 P26=Aplicação e acabamento de asfalto em andamento
+  V19 Dump/None Available Unloading (-256,00,1,65) h=-1,57 sp=0/0 ri=10/10 Descarregando no destino
+  V29 Cargo/Paver OnSite Parked (-192,00,1,95) h=0,00 sp=5/7 ri=13/13 Deslocando máquina dentro do acesso real
+  V30 Cargo/Roller OnSite Parked (-220,00,-6,75) h=1,57 sp=0/0 ri=10/10 Máquina e operador no canteiro
+t=66 P26=Aplicação e acabamento de asfalto em andamento
+  V19 Dump/None Available Unloading (-256,00,1,65) h=-1,57 sp=0/0 ri=10/10 Descarregando no destino
+  V29 Cargo/Paver OnSite Parked (-192,00,5,71) h=0,00 sp=6/7 ri=13/13 Aplicando asfalto na obra 26
+  V30 Cargo/Roller OnSite Parked (-220,00,-6,75) h=1,57 sp=0/0 ri=10/10 Máquina e operador no canteiro
+t=80 P26=Aplicação e acabamento de asfalto em andamento
+  V29 Cargo/Paver OnSite Parked (-192,00,12,00) h=0,00 sp=0/0 ri=13/13 Aplicando asfalto na obra 26
+  V30 Cargo/Roller OnSite Parked (-220,00,-6,75) h=1,57 sp=0/0 ri=10/10 Máquina e operador no canteiro
+t=264 P26=Aplicação e acabamento de asfalto em andamento
+  V29 Cargo/Paver LeavingSite Parked (-128,00,132,00) h=1,57 sp=0/0 ri=13/13 Aplicando asfalto na obra 26
+  V30 Cargo/Roller OnSite Parked (-220,00,-6,75) h=1,57 sp=0/0 ri=10/10 Máquina e operador no canteiro
+t=294 P26=Aplicação e acabamento de asfalto em andamento
+  V29 Cargo/Paver Returning Travelling (-193,65,0,00) h=-2,75 sp=50/0 ri=0/17 Retorno ao exterior
+  V30 Cargo/Roller OnSite Parked (-220,00,-6,75) h=1,57 sp=0/0 ri=10/10 Máquina e operador no canteiro
+t=296 P26=Aplicação e acabamento de asfalto em andamento
+  V29 Cargo/Paver Returning Travelling (-213,67,1,65) h=-1,57 sp=50/0 ri=6/17 Em viagem
+  V30 Cargo/Roller OnSite Parked (-220,00,-6,75) h=1,57 sp=0/0 ri=10/10 Máquina e operador no canteiro
+t=298 P26=Aplicação e acabamento de asfalto em andamento
+  V29 Cargo/Paver Returning Travelling (-237,67,1,65) h=-1,57 sp=50/0 ri=12/17 Em viagem
+  V30 Cargo/Roller OnSite Parked (-211,10,-1,65) h=1,57 sp=3/9 ri=10/10 Deslocando máquina dentro do acesso real
+t=300 P26=Aplicação e acabamento de asfalto em andamento
+  V29 Cargo/Paver Returning Unloading (-256,00,1,65) h=-1,57 sp=50/0 ri=17/17 Descarregando no destino
+  V30 Cargo/Roller OnSite Parked (-197,10,-1,65) h=1,57 sp=6/9 ri=10/10 Deslocando máquina dentro do acesso real
+t=302 P26=Aplicação e acabamento de asfalto em andamento
+  V29 Cargo/Paver Returning Unloading (-256,00,1,65) h=-1,57 sp=50/0 ri=17/17 Descarregando no destino
+  V30 Cargo/Roller OnSite Parked (-192,00,-0,38) h=0,00 sp=8/9 ri=10/10 Compactando asfalto na obra 26
+t=316 P26=Aplicação e acabamento de asfalto em andamento
+  V30 Cargo/Roller OnSite Parked (-192,00,12,00) h=0,00 sp=0/0 ri=10/10 Compactando asfalto na obra 26
+t=436 P26=Aplicação e acabamento de asfalto em andamento
+  V18 Dump/None Available Travelling (-256,00,0,00) h=-1,57 sp=0/0 ri=0/50 Entrega para obra 27
+  V21 Mixer/None Available Travelling (-256,00,0,00) h=0,00 sp=0/0 ri=0/50 Entrega para obra 27
+  V22 Flatbed/None Available Travelling (-256,00,0,00) h=0,00 sp=0/0 ri=0/50 Entrega para obra 27
+  V30 Cargo/Roller OnSite Parked (-192,00,132,00) h=0,00 sp=0/0 ri=10/10 Compactando asfalto na obra 26
+t=438 P26=Aplicação e acabamento de asfalto em andamento
+  V18 Dump/None Available Travelling (-233,65,-1,65) h=1,57 sp=0/0 ri=6/50 Em viagem
+  V21 Mixer/None Available Travelling (-241,65,-1,65) h=1,57 sp=0/0 ri=4/50 Em viagem
+  V22 Flatbed/None Available Travelling (-249,65,-1,65) h=1,57 sp=0/0 ri=2/50 Em viagem
+  V30 Cargo/Roller OnSite Parked (-190,00,132,00) h=1,57 sp=1/2 ri=10/10 Compactando asfalto na obra 26
+t=462 P26=Aplicação e acabamento de asfalto em andamento
+  V18 Dump/None Available Unloading (-189,87,138,40) h=0,00 sp=0/0 ri=50/50 Descarregando no destino
+  V21 Mixer/None Available Travelling (-190,35,132,00) h=0,00 sp=0/0 ri=50/50 Fila para acesso de carga
+  V22 Flatbed/None Available Travelling (-190,35,124,00) h=0,00 sp=0/0 ri=48/50 Fila na faixa
+  V30 Cargo/Roller OnSite Parked (-166,00,132,00) h=1,57 sp=1/2 ri=10/10 Compactando asfalto na obra 26
+t=478 P26=Aplicação e acabamento de asfalto em andamento
+  V18 Dump/None Available Travelling (-189,87,138,40) h=0,00 sp=0/0 ri=0/50 Retorno ao exterior
+  V21 Mixer/None Available Unloading (-189,87,138,40) h=0,00 sp=0/0 ri=50/50 Descarregando no destino
+  V22 Flatbed/None Available Travelling (-190,35,130,40) h=0,00 sp=0/0 ri=49/50 Em viagem
+  V30 Cargo/Roller OnSite Parked (-150,00,132,00) h=1,57 sp=1/2 ri=10/10 Compactando asfalto na obra 26
+t=480 P26=Aplicação e acabamento de asfalto em andamento
+  V18 Dump/None Available Travelling (-193,65,125,44) h=3,14 sp=0/0 ri=2/50 Em viagem
+  V21 Mixer/None Available Unloading (-189,87,138,40) h=0,00 sp=0/0 ri=50/50 Descarregando no destino
+  V22 Flatbed/None Available Travelling (-190,35,132,00) h=0,00 sp=0/0 ri=50/50 Fila para acesso de carga
+  V30 Cargo/Roller OnSite Parked (-148,00,132,00) h=1,57 sp=0/0 ri=10/10 Compactando asfalto na obra 26
+t=494 P26=Aplicação e acabamento de asfalto em andamento
+  V18 Dump/None Available Travelling (-193,65,27,44) h=3,14 sp=0/0 ri=27/50 Em viagem
+  V21 Mixer/None Available Travelling (-189,87,138,40) h=0,00 sp=0/0 ri=0/50 Retorno ao exterior
+  V22 Flatbed/None Available Unloading (-189,87,138,40) h=0,00 sp=0/0 ri=50/50 Descarregando no destino
+  V30 Cargo/Roller OnSite Parked (-134,00,132,00) h=1,57 sp=1/2 ri=10/10 Compactando asfalto na obra 26
+t=496 P26=Aplicação e acabamento de asfalto em andamento
+  V18 Dump/None Available Travelling (-193,65,13,44) h=3,14 sp=0/0 ri=30/50 Em viagem
+  V21 Mixer/None Available Travelling (-193,65,125,44) h=3,14 sp=0/0 ri=2/50 Em viagem
+  V22 Flatbed/None Available Unloading (-189,87,138,40) h=0,00 sp=0/0 ri=50/50 Descarregando no destino
+  V30 Cargo/Roller OnSite Parked (-132,00,132,00) h=1,57 sp=0/0 ri=10/10 Compactando asfalto na obra 26
+t=500 P26=Aplicação e acabamento de asfalto em andamento
+  V18 Dump/None Available Travelling (-220,95,1,65) h=-1,57 sp=0/0 ri=41/50 Em viagem
+  V21 Mixer/None Available Travelling (-193,65,97,44) h=3,14 sp=0/0 ri=9/50 Em viagem
+  V22 Flatbed/None Available Unloading (-189,87,138,40) h=0,00 sp=0/0 ri=50/50 Descarregando no destino
+  V30 Cargo/Roller LeavingSite Parked (-128,00,132,00) h=1,57 sp=0/0 ri=10/10 Compactando asfalto na obra 26
+t=504 P26=Aplicação e acabamento de asfalto em andamento
+  V18 Dump/None Available Unloading (-256,00,1,65) h=-1,57 sp=0/0 ri=50/50 Descarregando no destino
+  V21 Mixer/None Available Travelling (-193,65,69,44) h=3,14 sp=0/0 ri=16/50 Em viagem
+  V22 Flatbed/None Available Unloading (-189,87,138,40) h=0,00 sp=0/0 ri=50/50 Descarregando no destino
+  V30 Cargo/Roller LeavingSite Parked (-154,35,133,65) h=-1,57 sp=7/49 ri=10/10 Compactando asfalto na obra 26
+t=510 P26=Aplicação e acabamento de asfalto em andamento
+  V18 Dump/None Available Unloading (-256,00,1,65) h=-1,57 sp=0/0 ri=50/50 Descarregando no destino
+  V21 Mixer/None Available Travelling (-193,65,27,44) h=3,14 sp=0/0 ri=27/50 Em viagem
+  V22 Flatbed/None Available Travelling (-189,87,138,40) h=0,00 sp=0/0 ri=0/50 Retorno ao exterior
+  V30 Cargo/Roller LeavingSite Parked (-193,09,127,70) h=-1,48 sp=17/49 ri=10/10 Compactando asfalto na obra 26
+t=512 P26=Aplicação e acabamento de asfalto em andamento
+  V18 Dump/None Available Unloading (-256,00,1,65) h=-1,57 sp=0/0 ri=50/50 Descarregando no destino
+  V21 Mixer/None Available Travelling (-193,65,13,44) h=3,14 sp=0/0 ri=30/50 Em viagem
+  V22 Flatbed/None Available Travelling (-192,92,133,24) h=-2,61 sp=0/0 ri=0/50 Em viagem
+  V30 Cargo/Roller LeavingSite Parked (-196,40,117,32) h=3,14 sp=20/49 ri=10/10 Compactando asfalto na obra 26
+t=514 P26=Aplicação e acabamento de asfalto em andamento
+  V18 Dump/None Available Unloading (-256,00,1,65) h=-1,57 sp=0/0 ri=50/50 Descarregando no destino
+  V21 Mixer/None Available Travelling (-196,95,1,65) h=-1,57 sp=0/0 ri=35/50 Em viagem
+  V22 Flatbed/None Available Travelling (-193,65,119,44) h=3,14 sp=0/0 ri=4/50 Em viagem
+  V30 Cargo/Roller LeavingSite Parked (-196,40,116,00) h=2,54 sp=21/49 ri=10/10 Aguardando espaço ocupado no canteiro
+t=516 P26=Aplicação e acabamento de asfalto em andamento
+  V18 Dump/None Available Unloading (-256,00,1,65) h=-1,57 sp=0/0 ri=50/50 Descarregando no destino
+  V21 Mixer/None Available Travelling (-220,95,1,65) h=-1,57 sp=0/0 ri=41/50 Em viagem
+  V22 Flatbed/None Available Travelling (-193,65,119,44) h=3,14 sp=0/0 ri=4/50 Fila na faixa
+  V30 Cargo/Roller LeavingSite Parked (-196,40,116,00) h=2,54 sp=21/49 ri=10/10 Aguardando espaço ocupado no canteiro
+t=520 P26=Aplicação e acabamento de asfalto em andamento
+  V21 Mixer/None Available Unloading (-256,00,1,65) h=-1,57 sp=0/0 ri=50/50 Descarregando no destino
+  V22 Flatbed/None Available Travelling (-193,65,119,44) h=3,14 sp=0/0 ri=4/50 Fila na faixa
+  V30 Cargo/Roller LeavingSite Parked (-196,40,116,00) h=2,54 sp=21/49 ri=10/10 Aguardando espaço ocupado no canteiro
+t=536 P26=Aplicação e acabamento de asfalto em andamento
+  V22 Flatbed/None Available Travelling (-193,65,119,44) h=3,14 sp=0/0 ri=4/50 Fila na faixa
+  V30 Cargo/Roller LeavingSite Parked (-196,40,116,00) h=2,54 sp=21/49 ri=10/10 Aguardando espaço ocupado no canteiro
+overlap now roller-vs-truck=True truck-vs-roller=True
+roller step 0,5: at (-196,12,115,59) overlap=True
+roller step 1: at (-195,83,115,18) overlap=True
+roller step 1,5: at (-195,55,114,76) overlap=True
+roller step 2: at (-195,27,114,35) overlap=True
+roller step 2,5: at (-194,98,113,94) overlap=True
+roller step 3: at (-194,70,113,53) overlap=True
+roller step 3,5: at (-194,42,113,12) overlap=False
+roller step 4: at (-194,13,112,70) overlap=False
+roller step 4,5: at (-193,85,112,29) overlap=False
+roller step 5: at (-193,65,112,00) overlap=False
+roller step 5,5: at (-193,65,112,00) overlap=False
+roller step 6: at (-193,65,112,00) overlap=False
+truck step 0,5: overlap=True
+truck step 1: overlap=True
+truck step 1,5: overlap=True
+truck step 2: overlap=True
+truck step 2,5: overlap=True
+truck step 3: overlap=True

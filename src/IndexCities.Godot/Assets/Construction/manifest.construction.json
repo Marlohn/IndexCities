@@ -1,0 +1,556 @@
+{
+  "authorship": "GPT-6.1-Sol xhigh; original recipes with current project V1 kit/palette",
+  "conventions": {
+    "autoplay": false,
+    "front": "-Z",
+    "loads_visible_by_default": false,
+    "pivot": "ground, center",
+    "runtime_scripts": false,
+    "unit": "meter",
+    "up": "+Y"
+  },
+  "entries": [
+    {
+      "contract": {
+        "bed": {
+          "axis": "X",
+          "node": "BedPivot",
+          "operation_degrees": 38,
+          "pivot_m": [
+            0,
+            1.18,
+            2.9
+          ]
+        },
+        "cover": "BedPivot/Cover",
+        "hydraulics": {
+          "anchors": [
+            "HydraulicAnchor",
+            "BedPivot/HydraulicTarget"
+          ],
+          "nodes": [
+            "HydraulicBase",
+            "HydraulicRod"
+          ]
+        },
+        "loads": [
+          "BedPivot/LoadSandGravel",
+          "BedPivot/LoadAsphalt"
+        ],
+        "tailgate": {
+          "axis": "X",
+          "node": "BedPivot/TailgatePivot",
+          "operation_degrees": -72
+        },
+        "wheels": {
+          "forward_roll": "negative radians = -distance / radius",
+          "nodes": [
+            "Wheel_FL",
+            "Wheel_FR",
+            "Wheel_ML",
+            "Wheel_MR",
+            "Wheel_RL",
+            "Wheel_RR"
+          ],
+          "radius_m": 0.47,
+          "roll_axis": "X",
+          "steer_front_axis": "Y"
+        }
+      },
+      "envelope_all_states_rest": {
+        "max": [
+          1.45,
+          2.78,
+          3.6
+        ],
+        "min": [
+          -1.45,
+          0.0,
+          -3.6
+        ],
+        "size": [
+          2.9,
+          2.78,
+          7.2
+        ]
+      },
+      "mesh_instances": 14,
+      "meshes": [
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.truck_dump.a.body.tres",
+          "node": "Body",
+          "surfaces": 7,
+          "triangles": 822
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres",
+          "node": "Wheel_FL",
+          "surfaces": 2,
+          "triangles": 212
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres",
+          "node": "Wheel_FR",
+          "surfaces": 2,
+          "triangles": 212
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres",
+          "node": "Wheel_ML",
+          "surfaces": 2,
+          "triangles": 212
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres",
+          "node": "Wheel_MR",
+          "surfaces": 2,
+          "triangles": 212
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres",
+          "node": "Wheel_RL",
+          "surfaces": 2,
+          "triangles": 212
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres",
+          "node": "Wheel_RR",
+          "surfaces": 2,
+          "triangles": 212
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.truck_dump.a.bed.tres",
+          "node": "BedPivot/Bed",
+          "surfaces": 2,
+          "triangles": 276
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.truck_dump.a.tailgate.tres",
+          "node": "BedPivot/TailgatePivot/Tailgate",
+          "surfaces": 2,
+          "triangles": 80
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.truck_dump.a.load_sand_gravel.tres",
+          "node": "BedPivot/LoadSandGravel",
+          "surfaces": 2,
+          "triangles": 806
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.truck_dump.a.load_asphalt.tres",
+          "node": "BedPivot/LoadAsphalt",
+          "surfaces": 1,
+          "triangles": 14
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.truck_dump.a.cover.tres",
+          "node": "BedPivot/Cover",
+          "surfaces": 2,
+          "triangles": 160
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.truck_dump.a.hydraulic_base.tres",
+          "node": "HydraulicBase",
+          "surfaces": 1,
+          "triangles": 36
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.truck_dump.a.hydraulic_rod.tres",
+          "node": "HydraulicRod",
+          "surfaces": 1,
+          "triangles": 36
+        }
+      ],
+      "scene": "res://Assets/Construction/Scenes/vehicle.truck_dump.a.tscn",
+      "surfaces_all_states": 30,
+      "triangles_all_states": 3502,
+      "visual_id": "vehicle.truck_dump.a"
+    },
+    {
+      "contract": {
+        "chute": {
+          "axis": "Y",
+          "node": "ChutePivot",
+          "operation_degrees": 24
+        },
+        "drum": {
+          "axis": "local Z",
+          "mount_tilt_x_degrees": -12,
+          "node": "DrumMount/Drum"
+        },
+        "loads": [],
+        "note": "Drum is permanent body; no visible concrete inventory or default delivery",
+        "wheels": {
+          "forward_roll": "negative radians = -distance / radius",
+          "nodes": [
+            "Wheel_FL",
+            "Wheel_FR",
+            "Wheel_ML",
+            "Wheel_MR",
+            "Wheel_RL",
+            "Wheel_RR"
+          ],
+          "radius_m": 0.47,
+          "roll_axis": "X",
+          "steer_front_axis": "Y"
+        }
+      },
+      "envelope_all_states_rest": {
+        "max": [
+          1.45,
+          3.2829,
+          3.6
+        ],
+        "min": [
+          -1.45,
+          0.0,
+          -3.6
+        ],
+        "size": [
+          2.9,
+          3.2829,
+          7.2
+        ]
+      },
+      "mesh_instances": 10,
+      "meshes": [
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.truck_mixer.a.body.tres",
+          "node": "Body",
+          "surfaces": 7,
+          "triangles": 822
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres",
+          "node": "Wheel_FL",
+          "surfaces": 2,
+          "triangles": 212
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres",
+          "node": "Wheel_FR",
+          "surfaces": 2,
+          "triangles": 212
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres",
+          "node": "Wheel_ML",
+          "surfaces": 2,
+          "triangles": 212
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres",
+          "node": "Wheel_MR",
+          "surfaces": 2,
+          "triangles": 212
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres",
+          "node": "Wheel_RL",
+          "surfaces": 2,
+          "triangles": 212
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres",
+          "node": "Wheel_RR",
+          "surfaces": 2,
+          "triangles": 212
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.truck_mixer.a.frame.tres",
+          "node": "MixerFrame",
+          "surfaces": 4,
+          "triangles": 300
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.truck_mixer.a.drum.tres",
+          "node": "DrumMount/Drum",
+          "surfaces": 2,
+          "triangles": 348
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.truck_mixer.a.chute.tres",
+          "node": "ChutePivot/Chute",
+          "surfaces": 2,
+          "triangles": 36
+        }
+      ],
+      "scene": "res://Assets/Construction/Scenes/vehicle.truck_mixer.a.tscn",
+      "surfaces_all_states": 27,
+      "triangles_all_states": 2778,
+      "visual_id": "vehicle.truck_mixer.a"
+    },
+    {
+      "contract": {
+        "bed": "Flatbed remains when empty; tie straps are inside each load node",
+        "loads": [
+          "LoadSteel",
+          "LoadWood"
+        ],
+        "quantity": "Load pivots at deck Y=1.32; host may scale local Y or hide from real quantity; no inventory is encoded",
+        "wheels": {
+          "forward_roll": "negative radians = -distance / radius",
+          "nodes": [
+            "Wheel_FL",
+            "Wheel_FR",
+            "Wheel_ML",
+            "Wheel_MR",
+            "Wheel_RL",
+            "Wheel_RR"
+          ],
+          "radius_m": 0.47,
+          "roll_axis": "X",
+          "steer_front_axis": "Y"
+        }
+      },
+      "envelope_all_states_rest": {
+        "max": [
+          1.45,
+          2.78,
+          3.6
+        ],
+        "min": [
+          -1.45,
+          0.0,
+          -3.6
+        ],
+        "size": [
+          2.9,
+          2.78,
+          7.2
+        ]
+      },
+      "mesh_instances": 10,
+      "meshes": [
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.truck_flatbed.a.body.tres",
+          "node": "Body",
+          "surfaces": 7,
+          "triangles": 822
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres",
+          "node": "Wheel_FL",
+          "surfaces": 2,
+          "triangles": 212
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres",
+          "node": "Wheel_FR",
+          "surfaces": 2,
+          "triangles": 212
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres",
+          "node": "Wheel_ML",
+          "surfaces": 2,
+          "triangles": 212
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres",
+          "node": "Wheel_MR",
+          "surfaces": 2,
+          "triangles": 212
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres",
+          "node": "Wheel_RL",
+          "surfaces": 2,
+          "triangles": 212
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres",
+          "node": "Wheel_RR",
+          "surfaces": 2,
+          "triangles": 212
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.truck_flatbed.a.bed.tres",
+          "node": "Flatbed",
+          "surfaces": 4,
+          "triangles": 280
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.truck_flatbed.a.load_steel.tres",
+          "node": "LoadSteel",
+          "surfaces": 3,
+          "triangles": 612
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.truck_flatbed.a.load_wood.tres",
+          "node": "LoadWood",
+          "surfaces": 3,
+          "triangles": 912
+        }
+      ],
+      "scene": "res://Assets/Construction/Scenes/vehicle.truck_flatbed.a.tscn",
+      "surfaces_all_states": 29,
+      "triangles_all_states": 3898,
+      "visual_id": "vehicle.truck_flatbed.a"
+    },
+    {
+      "contract": {
+        "hopper": {
+          "axis": "Z",
+          "fold_degrees": [
+            -22,
+            22
+          ],
+          "left": "HopperLeftPivot",
+          "right": "HopperRightPivot"
+        },
+        "loads": [
+          "HopperLoad"
+        ],
+        "note": "Compact lane-size equipment; width does not determine road capacity or lane geometry",
+        "screed": {
+          "axis": "X",
+          "node": "ScreedPivot",
+          "operation_degrees": 0,
+          "operation_y_m": 0.42,
+          "rest_y_m": 0.5
+        },
+        "tracks": [
+          "TrackLeft",
+          "TrackRight"
+        ],
+        "width_m": 2.54
+      },
+      "envelope_all_states_rest": {
+        "max": [
+          1.27,
+          2.84,
+          2.31
+        ],
+        "min": [
+          -1.27,
+          0.0,
+          -2.31
+        ],
+        "size": [
+          2.54,
+          2.84,
+          4.62
+        ]
+      },
+      "mesh_instances": 7,
+      "meshes": [
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.asphalt_paver.a.body.tres",
+          "node": "Body",
+          "surfaces": 6,
+          "triangles": 462
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.asphalt_paver.a.track.tres",
+          "node": "TrackLeft",
+          "surfaces": 2,
+          "triangles": 364
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.asphalt_paver.a.hopper_-1.tres",
+          "node": "HopperLeftPivot/Wing",
+          "surfaces": 2,
+          "triangles": 32
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.asphalt_paver.a.track.tres",
+          "node": "TrackRight",
+          "surfaces": 2,
+          "triangles": 364
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.asphalt_paver.a.hopper_1.tres",
+          "node": "HopperRightPivot/Wing",
+          "surfaces": 2,
+          "triangles": 32
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.asphalt_paver.a.hopper_load.tres",
+          "node": "HopperLoad",
+          "surfaces": 1,
+          "triangles": 14
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.asphalt_paver.a.screed.tres",
+          "node": "ScreedPivot/Screed",
+          "surfaces": 2,
+          "triangles": 104
+        }
+      ],
+      "scene": "res://Assets/Construction/Scenes/vehicle.asphalt_paver.a.tscn",
+      "surfaces_all_states": 17,
+      "triangles_all_states": 1372,
+      "visual_id": "vehicle.asphalt_paver.a"
+    },
+    {
+      "contract": {
+        "drums": {
+          "axis": "X",
+          "nodes": [
+            "FrontSteering/FrontDrum",
+            "RearDrum"
+          ],
+          "radius_m": 0.5885
+        },
+        "note": "Two smooth steel drums, no operator figurine or independent compaction animation",
+        "steering": {
+          "axis": "Y",
+          "node": "FrontSteering",
+          "operation_degrees": 8
+        },
+        "width_m": 2.32
+      },
+      "envelope_all_states_rest": {
+        "max": [
+          1.16,
+          2.71,
+          1.9885
+        ],
+        "min": [
+          -1.16,
+          0.0,
+          -1.9785
+        ],
+        "size": [
+          2.3199,
+          2.71,
+          3.9669
+        ]
+      },
+      "mesh_instances": 4,
+      "meshes": [
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.road_roller.a.body.tres",
+          "node": "Body",
+          "surfaces": 5,
+          "triangles": 436
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.road_roller.a.front_fork.tres",
+          "node": "FrontSteering/Fork",
+          "surfaces": 3,
+          "triangles": 60
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.road_roller.a.drum.tres",
+          "node": "FrontSteering/FrontDrum",
+          "surfaces": 3,
+          "triangles": 228
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.road_roller.a.drum.tres",
+          "node": "RearDrum",
+          "surfaces": 3,
+          "triangles": 228
+        }
+      ],
+      "scene": "res://Assets/Construction/Scenes/vehicle.road_roller.a.tscn",
+      "surfaces_all_states": 14,
+      "triangles_all_states": 952,
+      "visual_id": "vehicle.road_roller.a"
+    }
+  ],
+  "schema": "indexcities.construction/1",
+  "status": "Estetica PENDENTE de revisao humana"
+}

@@ -12,7 +12,7 @@ public sealed class PedestrianCrossingTests
         Assert.True(sim.PlaceRoad(new(-192,0),new(-128,132),true).Success);
         var placed=sim.PlaceBuilding(BuildingKind.House,new(-190,146));Assert.True(placed.Success);
         sim.Advance(7200);
-        var home=sim.State.Buildings.Single(b=>b.Id==placed.Id);Assert.True(home.Completed);
+        var home=sim.State.Buildings.Single(b=>b.Id==placed.Id);Assert.True(home.Completed,PavingTests.Diagnostic(sim));
         var citizen=sim.State.Citizens.First();
         var corner=sim.State.Roads.Single(r=>r.Position==new Point(-192,132));
         var access=sim.Access(home)!;Assert.False(corner.Crosswalk);

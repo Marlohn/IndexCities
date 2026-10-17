@@ -1,0 +1,24 @@
+  Determinando os projetos a serem restaurados...
+  Todos os projetos estão atualizados para restauração.
+  IndexCities.Simulation -> C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\src\IndexCities.Simulation\bin\Debug\net8.0\IndexCities.Simulation.dll
+  IndexCities.Simulation.Tests -> C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\tests\IndexCities.Simulation.Tests\bin\Debug\net8.0\IndexCities.Simulation.Tests.dll
+Execução de teste para C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\tests\IndexCities.Simulation.Tests\bin\Debug\net8.0\IndexCities.Simulation.Tests.dll (.NETCoreApp,Version=v8.0)
+1 arquivos de teste no total corresponderam ao padrão especificado.
+  Com falha IndexCities.Simulation.Tests.MachineExitTests.Leaving_machines_and_street_traffic_never_wait_on_each_other_forever(shape: "lake", seeds: [1, 408, 593, 1074, 1111, ···]) [269 ms]
+  Mensagem de erro:
+   lake seed 1: t=932: V31 and V18 overlap | P24 Completed 1: Concluído, 0/0, verba 0; P26 InProgress 1: Aplicação e acabamento de asfalto em andamento, 97/97, verba 29,12; P27 Waiting 0: Aguardando pavimentadora e rolo disponíveis, 0/0, verba 1514,27; P28 Waiting 0: Aguardando caminhão externo disponível, 0/0, verba 1586,44 | V18 None Available Travelling Point { X = 102,35, Z = 32 } route 1/99: Fila na faixa; V19 None Available Travelling Point { X = -146,29583333333335, Z = -1,65 } route 28/114: Em viagem; V20 None Available Outside Point { X = -256, Z = 0 } route 10/0: Disponível no exterior; V21 None Available Travelling Point { X = -154,29583333333335, Z = -1,65 } route 26/114: Em viagem; V22 None Available Travelling Point { X = -205,2926544778794, Z = 1,65 } route 14/27: Em viagem; V23 None Available Outside Point { X = -256, Z = 0 } route 0/0: No exterior; V30 Paver Available Outside Point { X = -256, Z = 1,65 } route 17/0: Máquina no exterior; respeita vínculo da equipe contratada; V31 Roller LeavingSite Parked Point { X = 102,35, Z = 27,2541219597369 } route 10/10: Aguardando espaço ocupado no canteiro
+  Rastreamento de pilha:
+     at IndexCities.Simulation.Tests.MachineExitTests.Leaving_machines_and_street_traffic_never_wait_on_each_other_forever(String shape, Int32[] seeds) in C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\tests\IndexCities.Simulation.Tests\MachineExitTests.cs:line 94
+   at InvokeStub_MachineExitTests.Leaving_machines_and_street_traffic_never_wait_on_each_other_forever(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+  Com falha IndexCities.Simulation.Tests.MachineExitTests.A_truck_following_the_leaving_roller_waits_clear_of_its_turn_and_the_lake_streets_finish [469 ms]
+  Mensagem de erro:
+   Assert.Null() Failure: Value is not null
+Expected: null
+Actual:   "t=1912: V18 stopped since 1010 | P24 Completed 1: "···
+  Rastreamento de pilha:
+     at IndexCities.Simulation.Tests.MachineExitTests.A_truck_following_the_leaving_roller_waits_clear_of_its_turn_and_the_lake_streets_finish() in C:\Users\Marlohn\orca\workspaces\IndexCities\pavimentacao-integracao\tests\IndexCities.Simulation.Tests\MachineExitTests.cs:line 76
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+Com falha! – Com falha:     2, Aprovado:     6, Ignorado:     0, Total:     8, Duração: 3 s - IndexCities.Simulation.Tests.dll (net8.0)

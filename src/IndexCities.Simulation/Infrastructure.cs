@@ -33,7 +33,7 @@ public sealed partial class CitySimulation
         var wind=active.Where(b=>b.Kind==BuildingKind.WindPower&&HasExteriorAccess(b)).ToList();
         foreach(var b in wind)b.OperationalCapacity=b.Definition.Capacity*StaffFactor(b)*b.MaintenanceRatio*State.WindFactor;
         State.ElectricityCapacity=wind.Sum(b=>b.OperationalCapacity);State.ElectricityAvailableToday+=State.ElectricityCapacity*dt/86400;
-        var night=State.Now.Hour<6||State.Now.Hour>=18;var streetDemands=State.Roads.Where(n=>!n.Highway).ToDictionary(n=>n.Id,n=>night ? .12*n.MaintenanceRatio : 0);
+        var night=State.Now.Hour<6||State.Now.Hour>=18;var streetDemands=State.Roads.Where(n=>!n.Highway).ToDictionary(n=>n.Id,n=>night&&!n.ConstructionOnly ? .12*n.MaintenanceRatio : 0);
         State.ElectricityDemand=active.Sum(b=>b.ElectricityDemand)+streetDemands.Values.Sum();
         var allocation=AllocateCapacity(active.Select(b=>(b.Id,b.Position,b.ElectricityDemand)).Concat(State.Roads.Where(r=>!r.Highway).Select(r=>(-r.Id,r.Position,streetDemands[r.Id]))).ToList(),State.ElectricityCapacity,wind.Select(b=>b.Position).ToList());
         foreach(var b in active){b.ElectricityRatio=b.ElectricityDemand<=0?0:allocation.GetValueOrDefault(b.Id)/b.ElectricityDemand;b.ElectricityConsumedToday+=b.ElectricityDemand*b.ElectricityRatio*dt/86400;}

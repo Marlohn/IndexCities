@@ -1,0 +1,6 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[resource]
+resource_name = "construction_ochre_dark"
+albedo_color = Color(0.59607846, 0.42352942, 0.17254902, 1)
+roughness = 0.72

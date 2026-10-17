@@ -1,0 +1,16 @@
+diff -r '--exclude=bin' '--exclude=obj' --strip-trailing-cr src/IndexCities.Simulation/Construction.Feeding.cs /c/Users/Marlohn/AppData/Local/Temp/claude/C--Users-Marlohn-orca-workspaces-IndexCities-pavimentacao-diagnostico/15a0688b-8ec4-4df3-80c2-0d87df3bf66d/scratchpad/exp/Sim/Construction.Feeding.cs
+68c68
+<             if(distance>.001)vehicle.Heading=vehicle.SiteDockHeading is {} heading&&vehicle.SitePathIndex==vehicle.SitePath.Count-1?heading:Math.Atan2(delta.X,delta.Z);
+---
+>             var previousHeading=vehicle.Heading;if(distance>.001)vehicle.Heading=vehicle.SiteDockHeading is {} heading&&vehicle.SitePathIndex==vehicle.SitePath.Count-1?heading:Math.Atan2(delta.X,delta.Z);
+70c70
+<             if(travel<=.000001&&distance>.001){vehicle.Cause=WorkCause.PavingSiteOccupied;return false;}
+---
+>             if(travel<=.000001&&distance>.001){vehicle.Heading=previousHeading;vehicle.Cause=WorkCause.PavingSiteOccupied;return false;}
+diff -r '--exclude=bin' '--exclude=obj' --strip-trailing-cr src/IndexCities.Simulation/Construction.Paving.cs /c/Users/Marlohn/AppData/Local/Temp/claude/C--Users-Marlohn-orca-workspaces-IndexCities-pavimentacao-diagnostico/15a0688b-8ec4-4df3-80c2-0d87df3bf66d/scratchpad/exp/Sim/Construction.Paving.cs
+153,154c153,154
+<             machine.Heading=Math.Atan2(delta.X,delta.Z);travel=SafeSiteTravel(machine,target,travel);
+<             if(travel<=.000001){p.Cause=WorkCause.PavingSiteOccupied;machine.Cause=p.Cause;break;}
+---
+>             var previousHeading=machine.Heading;machine.Heading=Math.Atan2(delta.X,delta.Z);travel=SafeSiteTravel(machine,target,travel);
+>             if(travel<=.000001){machine.Heading=previousHeading;p.Cause=WorkCause.PavingSiteOccupied;machine.Cause=p.Cause;break;}

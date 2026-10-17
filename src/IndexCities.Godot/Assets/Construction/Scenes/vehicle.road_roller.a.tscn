@@ -1,0 +1,34 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.road_roller.a.body.tres" id="1_fti2x"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.road_roller.a.front_fork.tres" id="2_gwdfv"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.road_roller.a.drum.tres" id="3_tvdll"]
+
+[node name="RoadRoller" type="Node3D" unique_id=2027524981]
+metadata/visual_id = "vehicle.road_roller.a"
+metadata/asset_status = "PENDENTE de revisao humana"
+metadata/visual_envelope_min = Vector3(-1.1599535, 2.8848648e-05, -1.9784712)
+metadata/visual_envelope_size = Vector3(2.319907, 2.7099712, 3.9669423)
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=685492976]
+mesh = ExtResource("1_fti2x")
+
+[node name="FrontSteering" type="Node3D" parent="." unique_id=1177477850]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.39)
+
+[node name="Fork" type="MeshInstance3D" parent="FrontSteering" unique_id=618802371]
+mesh = ExtResource("2_gwdfv")
+
+[node name="FrontDrum" type="MeshInstance3D" parent="FrontSteering" unique_id=1565100122]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5885, 0)
+mesh = ExtResource("3_tvdll")
+
+[node name="RearDrum" type="MeshInstance3D" parent="." unique_id=88016450]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5885, 1.4)
+mesh = ExtResource("3_tvdll")
+
+[node name="Candidate_ContactFront" type="Marker3D" parent="." unique_id=1588167371]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.39)
+
+[node name="Candidate_ContactRear" type="Marker3D" parent="." unique_id=929638389]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.4)

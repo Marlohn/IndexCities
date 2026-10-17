@@ -1,0 +1,6 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[resource]
+resource_name = "construction_gravel"
+albedo_color = Color(0.56078434, 0.54901963, 0.5254902, 1)
+roughness = 0.98

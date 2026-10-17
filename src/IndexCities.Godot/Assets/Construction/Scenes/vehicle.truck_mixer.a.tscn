@@ -1,0 +1,58 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_mixer.a.body.tres" id="1_nba8j"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres" id="2_dk2u3"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_mixer.a.frame.tres" id="3_qtyms"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_mixer.a.drum.tres" id="4_nrinr"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_mixer.a.chute.tres" id="5_rb3xx"]
+
+[node name="TruckMixer" type="Node3D" unique_id=2048396467]
+metadata/visual_id = "vehicle.truck_mixer.a"
+metadata/asset_status = "PENDENTE de revisao humana"
+metadata/visual_envelope_min = Vector3(-1.45, 0, -3.6)
+metadata/visual_envelope_size = Vector3(2.9, 3.2828834, 7.2)
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=2026465829]
+mesh = ExtResource("1_nba8j")
+
+[node name="Wheel_FL" type="MeshInstance3D" parent="." unique_id=1580869375]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 0.47, -2.55)
+mesh = ExtResource("2_dk2u3")
+
+[node name="Wheel_FR" type="MeshInstance3D" parent="." unique_id=789503719]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 0.47, -2.55)
+mesh = ExtResource("2_dk2u3")
+
+[node name="Wheel_ML" type="MeshInstance3D" parent="." unique_id=2132495655]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 0.47, 1.45)
+mesh = ExtResource("2_dk2u3")
+
+[node name="Wheel_MR" type="MeshInstance3D" parent="." unique_id=618706997]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 0.47, 1.45)
+mesh = ExtResource("2_dk2u3")
+
+[node name="Wheel_RL" type="MeshInstance3D" parent="." unique_id=2060358771]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 0.47, 2.65)
+mesh = ExtResource("2_dk2u3")
+
+[node name="Wheel_RR" type="MeshInstance3D" parent="." unique_id=1356255932]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 0.47, 2.65)
+mesh = ExtResource("2_dk2u3")
+
+[node name="Candidate_Discharge" type="Marker3D" parent="." unique_id=286327810]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3.9)
+
+[node name="MixerFrame" type="MeshInstance3D" parent="." unique_id=704063969]
+mesh = ExtResource("3_qtyms")
+
+[node name="DrumMount" type="Node3D" parent="." unique_id=180377220]
+transform = Transform3D(1, 0, 0, 0, 0.9781476, 0.2079117, 0, -0.2079117, 0.9781476, 0, 2.32, 0.52)
+
+[node name="Drum" type="MeshInstance3D" parent="DrumMount" unique_id=593609563]
+mesh = ExtResource("4_nrinr")
+
+[node name="ChutePivot" type="Node3D" parent="." unique_id=350549044]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.62, 2.49)
+
+[node name="Chute" type="MeshInstance3D" parent="ChutePivot" unique_id=584529405]
+mesh = ExtResource("5_rb3xx")

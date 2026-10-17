@@ -16,6 +16,9 @@ public enum WorkStatus { Waiting, InProgress, Completed, Cancelled }
 public enum JourneyPurpose { Arriving, Work, Home, Shopping, Leaving, Construction, Boarding, Visit, Stroll }
 public enum VehicleStatus { Outside, Travelling, Unloading, Parked, Waiting, Stranded }
 public enum ShipmentPurpose { Construction, Food, Fuel, Vehicle, Maintenance }
+public enum TruckBody { Cargo, Dump, Mixer, Flatbed }
+public enum PavingMachine { None, Paver, Roller }
+public enum MachinePhase { Available, ToSite, OnSite, LeavingSite, Returning }
 public enum JunctionControl { RightHand, ThroughX, ThroughZ, Signal }
 
 public sealed record BuildingDefinition(BuildingKind Kind,string Name,double Width,double Depth,decimal BaseValue,int Jobs,double Capacity,double WorkSeconds,Dictionary<ResourceKind,double> Materials)
@@ -79,6 +82,9 @@ public sealed class SimulationTuning
     public decimal LoanLimit {get;set;}=100000;
     public int LoanMonths {get;set;}=12;
     public int ExternalTruckCount {get;set;}=6;
+    public int ExternalPavingTeams {get;set;}=1;
+    public decimal PavingMachineHire {get;set;}=90;
+    public decimal PavingMachineHourlyPrice {get;set;}=80;
     public int ExternalFamilyCandidates {get;set;}=160;
     public int ExternalCompanyCandidates {get;set;}=24;
     public decimal CarPrice {get;set;}=9000;
@@ -133,6 +139,8 @@ public sealed class Building
 public sealed class RoadNode
 {
     public int Id {get;set;}
+    public bool ConstructionOnly {get;set;}
+    public int? WorkProjectId {get;set;}
     public Point Position {get;set;}
     public bool Highway {get;set;}
     public List<int> Neighbours {get;set;}=[];
@@ -146,6 +154,7 @@ public sealed class RoadNode
 public sealed class WorkProject
 {
     public int Id {get;set;}
+    public int PavingVersion {get;set;}
     public int? BuildingId {get;set;}
     public List<Point> RoadPoints {get;set;}=[];
     public List<int> BuiltRoadNodes {get;set;}=[];
@@ -164,6 +173,12 @@ public sealed class WorkProject
     public decimal ExternalCrewFee {get;set;}
     public int? CrewVehicleId {get;set;}
     public decimal CrewCostDue {get;set;}
+    public int? PaverId {get;set;}
+    public int? RollerId {get;set;}
+    public List<Point> AppliedRoadPoints {get;set;}=[];
+    public List<Point> RolledRoadPoints {get;set;}=[];
+    public decimal MachineryQuoted {get;set;}
+    public decimal MachineryPaid {get;set;}
     public List<int> LocalCrew {get;set;}=[];
     public bool ImportsOrdered {get;set;}
     public string Cause {get;set;}="Aguardando acesso";
@@ -229,6 +244,18 @@ public sealed class Company
 public sealed class Vehicle
 {
     public int Id {get;set;}
+    public TruckBody Body {get;set;}
+    public bool ConstructionAccess {get;set;}
+    public PavingMachine Machine {get;set;}
+    public MachinePhase MachinePhase {get;set;}
+    public int? MachineProjectId {get;set;}
+    public List<Point> SitePath {get;set;}=[];
+    public int SitePathIndex {get;set;}
+    public Point? WorkTarget {get;set;}
+    public bool FeedingReady {get;set;}
+    public bool SitePathBeforeRoad {get;set;}
+    public int? SiteProjectId {get;set;}
+    public double? SiteDockHeading {get;set;}
     public string OwnerAccount {get;set;}="global";
     public bool External {get;set;}
     public Point Position {get;set;}
@@ -264,6 +291,7 @@ public sealed class Vehicle
 public sealed class Shipment
 {
     public int Id {get;set;}
+    public int? ReceivingMachineId {get;set;}
     public ShipmentPurpose Purpose {get;set;}
     public int? ProjectId {get;set;}
     public int? OriginalProjectId {get;set;}
@@ -322,6 +350,7 @@ public sealed class ExternalCompanyCandidate
 public sealed class CityState
 {
     public int SchemaVersion {get;set;}=1;
+    public int ConstructionStateVersion {get;set;}
     public int Seed {get;set;}
     public string Name {get;set;}="";
     public SimulationTuning Tuning {get;set;}=new();
@@ -352,6 +381,7 @@ public sealed class CityState
     public List<Family> Families {get;set;}=[];
     public List<Company> Companies {get;set;}=[];
     public List<Vehicle> Vehicles {get;set;}=[];
+    public bool PavingFleetInitialized {get;set;}
     public List<Shipment> Shipments {get;set;}=[];
     public List<ExternalFamilyCandidate> FamilyCandidates {get;set;}=[];
     public List<ExternalCompanyCandidate> CompanyCandidates {get;set;}=[];
@@ -378,4 +408,7 @@ public sealed class CityState
     public List<PersonalEvent> CityEvents {get;set;}=[];
 }
 public sealed record CommandResult(bool Success,string Message,int? Id=null);
-public sealed record PlacementQuote(bool PhysicallyValid,bool Accessible,decimal Total,Dictionary<ResourceKind,double> Materials,string Message);
+public sealed record PlacementQuote(bool PhysicallyValid,bool Accessible,decimal Total,Dictionary<ResourceKind,double> Materials,string Message)
+{
+    public decimal MachineryEstimate {get;init;}
+}

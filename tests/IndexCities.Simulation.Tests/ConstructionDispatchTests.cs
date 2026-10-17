@@ -81,7 +81,7 @@ public sealed class ConstructionDispatchTests
         var placed=sim.PlaceRoad(new(-192,0),new(-192,12));
         Assert.True(placed.Success);sim.Advance(2);
         var project=sim.State.Projects.Single(p=>p.Id==placed.Id);
-        var truck=sim.State.Vehicles.Single();
+        var truck=sim.State.Vehicles.Single(v=>v.ShipmentId!=null);
         // A previous version sent the crew aboard the first of multiple loads.
         truck.CrewAboard=true;truck.CrewCount=3;project.CrewVehicleId=truck.Id;
         sim=CitySimulation.FromJson(sim.SaveToJson());

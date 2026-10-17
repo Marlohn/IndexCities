@@ -42,10 +42,10 @@ public partial class Main
     void ShowCities()
     {
         var box = Modal("Cidades");
-        var saves = CitySaves.List().ToList();
+        var saves = CitySaves.ListAll().ToList();
         var load = Card(box, "Abrir uma cidade salva", "Cada partida tem seu próprio arquivo. Escolha a cidade que deseja retomar.");
         if (saves.Count == 0) Muted(load, "Nenhuma cidade salva ainda.");
-        foreach (var saved in saves) { var copy = saved;var savedRow=ResponsiveRow(load);Button(savedRow, copy.Name + " • " + copy.At.ToString("dd/MM/yyyy HH:mm"), () => LoadCity(copy.Id));var rename=Button(savedRow,"Renomear",()=>ShowCityRename(copy.Id,copy.Name));rename.CustomMinimumSize=new(104,40);rename.SizeFlagsHorizontal=Control.SizeFlags.Fill; }
+        foreach (var saved in saves) { var copy = saved;var savedRow=ResponsiveRow(load);if(copy.Outdated){Button(savedRow, copy.Name + " • versão antiga do jogo", () => LoadCity(copy.Id));continue;}Button(savedRow, copy.Name + " • " + copy.At.ToString("dd/MM/yyyy HH:mm"), () => LoadCity(copy.Id));var rename=Button(savedRow,"Renomear",()=>ShowCityRename(copy.Id,copy.Name));rename.CustomMinimumSize=new(104,40);rename.SizeFlagsHorizontal=Control.SizeFlags.Fill; }
         var saving = Card(box, "Salvar esta partida", "Cidade atual: " + _sim.State.Name + " · código do mapa: " + _sim.State.Seed);
         Button(saving, "▣ Salvar agora", SaveCity);
         var autosaveRow = new HBoxContainer(); saving.AddChild(autosaveRow);

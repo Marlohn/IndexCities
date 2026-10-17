@@ -21,9 +21,11 @@ public partial class Main
 
     public static readonly QaScenario[] QaScenarios =
     {
+        new("--construction-paving-smoke",new[]{"--construction-paving-smoke"},"Caminhões por material, pavimentadora/rolo reais em reta/L, custos, parada causal, cancelamento e save/load",true,"nenhuma (cria cidades; saves isolados em artifacts/verification; modelos Construction obrigatórios na validação final)",nameof(ConstructionPavingSmoke)),
+        new("--construction-corner-smoke",new[]{"--construction-corner-smoke"},"Rua em L invertido com casa: caminhão espera fora do trajeto do rolo saindo e segue atrás dele, sem giro no lugar nem sobreposição; rua e casa concluem (quantum 2 s)",true,"nenhuma (cria a cidade CornerCity seed 42; saves isolados em artifacts/verification)",nameof(ConstructionCornerSmoke)),
         new("--performance-smoke",new[]{"--performance-smoke"},"FPS e ms de simulação/apresentação; só métricas, sem asserção de correção",false,"opcional via --fixture= (ignora --review-save-dir antes desta correção)",null,QaTrigger.Performance),
         new("--bar-capture",new[]{"--bar-capture"},"Posiciona a Prefeitura e espera --capture= para capturar a barra; não é teste",true,"nenhuma",null,QaTrigger.BarCapture),
-        new("--persistence-smoke",new[]{"--persistence-smoke"},"Round-trip de save/load, esboços e migração legada de relógio",false,"nenhuma (cria a cidade)",nameof(PersistenceSmoke)),
+        new("--persistence-smoke",new[]{"--persistence-smoke"},"Round-trip de save/load, esboços, migração legada de relógio e aviso de save de versão antiga",false,"nenhuma (cria a cidade)",nameof(PersistenceSmoke)),
         new("--ui-smoke",new[]{"--ui-smoke"},"Fundação 1 clique, catálogo=10, rua 2 cliques, cancelar e inspeção",false,"nenhuma (cria a cidade)",nameof(UiSmoke)),
         new("--ui-input-smoke",new[]{"--ui-input-smoke"},"Gestos reais de mouse/tecla sobre a GUI",true,"nenhuma (cria a cidade)",nameof(UiInputSmoke)),
         new("--recovery-smoke",new[]{"--recovery-smoke"},"Construção completa por GUI, menus e save/load",true,"nenhuma (cria a cidade)",nameof(RecoverySmoke)),

@@ -1,0 +1,55 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.asphalt_paver.a.body.tres" id="1_3d738"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.asphalt_paver.a.track.tres" id="2_cqy1b"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.asphalt_paver.a.hopper_-1.tres" id="3_4fmse"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.asphalt_paver.a.hopper_1.tres" id="4_bga0g"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.asphalt_paver.a.hopper_load.tres" id="5_l13qr"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.asphalt_paver.a.screed.tres" id="6_rsn5e"]
+
+[node name="AsphaltPaver" type="Node3D" unique_id=471754496]
+metadata/visual_id = "vehicle.asphalt_paver.a"
+metadata/asset_status = "PENDENTE de revisao humana"
+metadata/visual_envelope_min = Vector3(-1.27, 0, -2.31)
+metadata/visual_envelope_size = Vector3(2.54, 2.8400002, 4.62)
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=418979856]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.13)
+mesh = ExtResource("1_3d738")
+
+[node name="TrackLeft" type="MeshInstance3D" parent="." unique_id=1474862816]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.98, -0.12, -0.13)
+mesh = ExtResource("2_cqy1b")
+
+[node name="HopperLeftPivot" type="Node3D" parent="." unique_id=541190390]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.76, 0.75, -1.55)
+
+[node name="Wing" type="MeshInstance3D" parent="HopperLeftPivot" unique_id=1895181767]
+mesh = ExtResource("3_4fmse")
+
+[node name="TrackRight" type="MeshInstance3D" parent="." unique_id=1148585469]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.98, -0.12, -0.13)
+mesh = ExtResource("2_cqy1b")
+
+[node name="HopperRightPivot" type="Node3D" parent="." unique_id=2119577487]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.76, 0.75, -1.55)
+
+[node name="Wing" type="MeshInstance3D" parent="HopperRightPivot" unique_id=1637267467]
+mesh = ExtResource("4_bga0g")
+
+[node name="HopperLoad" type="MeshInstance3D" parent="." unique_id=1306999141]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.84, -0.13)
+visible = false
+mesh = ExtResource("5_l13qr")
+
+[node name="ScreedPivot" type="Node3D" parent="." unique_id=247712637]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 1.19)
+
+[node name="Screed" type="MeshInstance3D" parent="ScreedPivot" unique_id=509986406]
+mesh = ExtResource("6_rsn5e")
+
+[node name="Candidate_HopperFeed" type="Marker3D" parent="." unique_id=469381497]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2.73)
+
+[node name="Candidate_PavementExit" type="Marker3D" parent="." unique_id=1295505424]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2.2199998)

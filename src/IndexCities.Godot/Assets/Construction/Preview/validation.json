@@ -1,0 +1,133 @@
+{
+  "checks": 546,
+  "engine": {
+    "build": "official",
+    "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+    "hex": 263938,
+    "major": 4,
+    "minor": 7,
+    "patch": 2,
+    "status": "stable",
+    "string": "4.7.2-stable (official)",
+    "timestamp": 0
+  },
+  "failures": [],
+  "measurements": [
+    {
+      "all_states_surfaces": 30,
+      "all_states_triangles": 3502,
+      "default_surfaces": 25,
+      "default_triangles": 2522,
+      "id": "vehicle.truck_dump.a",
+      "mesh_instances": 14,
+      "operation_envelope_m": [
+        2.9,
+        4.9403,
+        7.9872
+      ],
+      "operation_min_m": [
+        -1.45,
+        0.0,
+        -3.6
+      ],
+      "rest_envelope_m": [
+        2.9,
+        2.78,
+        7.2
+      ]
+    },
+    {
+      "all_states_surfaces": 27,
+      "all_states_triangles": 2778,
+      "default_surfaces": 27,
+      "default_triangles": 2778,
+      "id": "vehicle.truck_mixer.a",
+      "mesh_instances": 10,
+      "operation_envelope_m": [
+        2.9,
+        3.2796,
+        7.2115
+      ],
+      "operation_min_m": [
+        -1.45,
+        0.0,
+        -3.6
+      ],
+      "rest_envelope_m": [
+        2.9,
+        3.2829,
+        7.2
+      ]
+    },
+    {
+      "all_states_surfaces": 29,
+      "all_states_triangles": 3898,
+      "default_surfaces": 23,
+      "default_triangles": 2374,
+      "id": "vehicle.truck_flatbed.a",
+      "mesh_instances": 10,
+      "operation_envelope_m": [
+        2.9,
+        2.78,
+        7.2
+      ],
+      "operation_min_m": [
+        -1.45,
+        0.0,
+        -3.6
+      ],
+      "rest_envelope_m": [
+        2.9,
+        2.78,
+        7.2
+      ]
+    },
+    {
+      "all_states_surfaces": 17,
+      "all_states_triangles": 1372,
+      "default_surfaces": 16,
+      "default_triangles": 1358,
+      "id": "vehicle.asphalt_paver.a",
+      "mesh_instances": 7,
+      "operation_envelope_m": [
+        2.54,
+        2.84,
+        4.62
+      ],
+      "operation_min_m": [
+        -1.27,
+        0.0,
+        -2.31
+      ],
+      "rest_envelope_m": [
+        2.54,
+        2.84,
+        4.62
+      ]
+    },
+    {
+      "all_states_surfaces": 14,
+      "all_states_triangles": 952,
+      "default_surfaces": 14,
+      "default_triangles": 952,
+      "id": "vehicle.road_roller.a",
+      "mesh_instances": 4,
+      "operation_envelope_m": [
+        2.3356,
+        2.71,
+        4.0948
+      ],
+      "operation_min_m": [
+        -1.1594,
+        0.0,
+        -2.1064
+      ],
+      "rest_envelope_m": [
+        2.3199,
+        2.71,
+        3.9669
+      ]
+    }
+  ],
+  "renderer_project": "gl_compatibility"
+}

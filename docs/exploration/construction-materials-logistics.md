@@ -699,7 +699,7 @@ Foram considerados modelos abstrato, construtora privada totalmente simulada e m
 
 A decisão atual é começar pelo **Pátio Municipal de Obras**, por manter trabalhadores, capacidade e custos reais sem exigir desde já uma economia completa de empreiteiras privadas.
 
-Máquinas e equipamentos de obra ainda precisam de pesquisa específica para decidir o que vale representar fisicamente e o que pode permanecer agregado.
+**Atualização de 2026-10-16:** a indefinição histórica sobre máquinas foi parcialmente resolvida pelo responsável. A pavimentação com pavimentadora e rolo de equipe externa inicial e os caminhões por material estão nas regras canônicas de [construção](../spec/construcao.md#pavimentação-física-das-ruas) e [logística](../spec/materiais-logistica.md#caminhões-reconhecíveis-pelo-material). Outros equipamentos e uma futura frota municipal continuam sem definição; as alternativas históricas desta pesquisa não ampliam essa aprovação.
 
 
 ---

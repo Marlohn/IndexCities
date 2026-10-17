@@ -34,6 +34,7 @@
 - **Projetos urbanos não confirmados persistentes:** os esboços visuais de ruas/prédios ainda sem confirmação são **salvos com a cidade**, inclusive no **autosave já aprovado e configurável**. Ao carregar, preservam posições e condição de projeto sem passar a existir como obra, bloquear tráfego, consumir materiais, comprometer Caixa ou validar automaticamente algo que se tornou inviável. Não criar biblioteca/manual de projetos como obrigação.
 - O jogo permite múltiplos saves e múltiplas cidades.
 - Autosave existe e sua frequência deve ser configurável.
+- **Saves de versões anteriores durante o desenvolvimento:** até existir uma versão estável, uma mudança de regra pode deixar de abrir cidades salvas antes dela, sem conversão. A cidade incompatível continua listada no menu Cidades marcada como versão antiga, e tentar abri-la mostra um aviso, sem apagar o arquivo nem alterar a partida atual. Compatibilidades antigas já existentes podem permanecer enquanto não custarem trabalho; nenhuma nova conversão de save é exigida nesse período.
 
 ## Visão aprovada (ainda não implementada)
 
