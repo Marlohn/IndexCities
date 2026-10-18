@@ -2,13 +2,15 @@ namespace IndexCities.Simulation;
 
 // Execução de Mover prédio municipal concluído (SPEC construcao: Mudança de
 // prédios municipais concluídos). A substituta é uma obra comum no destino; o
-// prédio antigo opera até ela ficar pronta. Então os funcionários passam ao novo
+// prédio antigo opera até ela ficar pronta e fisicamente apta. Então os funcionários passam ao novo
 // endereço e reavaliam o vínculo, o estoque segue por caminhão real e o endereço
 // antigo é retirado pagando a remoção reservada. A obra substituta conserva Mover
 // e Cancelar das obras inacabadas; cancelar encerra a mudança sem estorno.
 public sealed partial class CitySimulation
 {
     public const string StaleRelocationPreview="Os dados da mudança mudaram enquanto a cidade avançava; confira a prévia atualizada antes de confirmar";
+    // Calibração do prazo curto aprovado: um dia de bloqueio real por espaço/rota.
+    public const double MunicipalStockRecoveryDeadline=86400;
     public MunicipalRelocationOrder? MunicipalRelocationOf(int buildingId)=>State.MunicipalRelocations.LastOrDefault(r=>r.SourceBuildingId==buildingId||r.TargetBuildingId==buildingId);
     MunicipalRelocationOrder? ActiveRelocationForProject(int projectId)=>State.MunicipalRelocations.FirstOrDefault(r=>r.Active&&r.TargetProjectId==projectId);
     // Retirada e frete ainda não pagos que Cancelar a obra substituta libera.
@@ -25,6 +27,7 @@ public sealed partial class CitySimulation
         var placed=PlaceBuilding(source.Kind,destination,rotation,source.ProjectId);
         if(!placed.Success)return placed;
         var target=BuildingById(placed.Id)!;
+        target.OperationClosed=true;
         var order=new MunicipalRelocationOrder{Id=Id(),Kind=source.Kind,SourceBuildingId=source.Id,TargetBuildingId=target.Id,TargetProjectId=target.ProjectId,OrderedAt=State.Now,RemovalReserved=quote.RemovalCost,TransferReserved=quote.TransferEstimate,Cause="Obra substituta aguardando execução; "+source.Definition.Name+" segue operando no endereço antigo"};
         State.MunicipalRelocations.Add(order);
         Event("Mudança de "+source.Definition.Name+" confirmada: obra no novo endereço ("+Cash(quote.Construction!.Total)+") e retirada"+(quote.TransferEstimate>0?" e frete do estoque":"")+" ("+Cash(quote.RemovalCost+quote.TransferEstimate)+") comprometidos; o prédio antigo continua operando até a conclusão");
@@ -36,17 +39,21 @@ public sealed partial class CitySimulation
         &&a.Construction?.Total==b.Construction?.Total&&a.Construction?.Accessible==b.Construction?.Accessible&&a.WorkerIds.Order().SequenceEqual(b.WorkerIds.Order())
         &&a.Stock.Count==b.Stock.Count&&a.Stock.All(entry=>b.Stock.TryGetValue(entry.Key,out var other)&&Math.Abs(entry.Value-other)<=Math.Max(1,entry.Value*.05));
 
-    void ProgressMunicipalRelocations()
+    void ProgressMunicipalRelocations(double dt)
     {
         if(!State.MunicipalRelocations.Any(r=>r.Active))return;
         foreach(var order in State.MunicipalRelocations.Where(r=>r.Active).ToList()){
             var source=BuildingById(order.SourceBuildingId);var target=BuildingById(order.TargetBuildingId);var project=State.Projects.FirstOrDefault(p=>p.Id==order.TargetProjectId);
             if(order.Stage==MunicipalRelocationStage.Constructing){
                 if(target==null||project==null||project.Status==WorkStatus.Cancelled){CloseRelocationAfterCancel(order);continue;}
+                target.OperationClosed=true;
                 if(!target.Completed){order.Cause="Obra substituta "+project.Progress.ToString("P0",System.Globalization.CultureInfo.InvariantCulture)+": "+project.Cause+(source==null?"; o endereço antigo já não existe":"; "+source.Definition.Name+" segue operando no endereço antigo");continue;}
+                if(!HasExteriorAccess(target)||target.MaintenanceRatio<=.05||target.Kind==BuildingKind.WaterIntake&&!HasNaturalWaterSource(target)){
+                    order.Cause="Obra substituta concluída, mas ainda sem estrutura/acesso aptos"+(target.Kind==BuildingKind.WaterIntake&&!HasNaturalWaterSource(target)?"; captação sem fonte natural viável":"")+"; a instituição e seus funcionários permanecem no endereço antigo enquanto viável";continue;
+                }
                 BeginRelocationTransfer(order,source,target);
             }
-            ProgressRelocationTransfer(order,source,target);
+            ProgressRelocationTransfer(order,source,target,dt);
         }
     }
     void CloseRelocationAfterCancel(MunicipalRelocationOrder order)
@@ -67,12 +74,13 @@ public sealed partial class CitySimulation
         var placed=PlaceBuilding(order.Kind,position,rotation,source?.ProjectId);
         if(!placed.Success){CloseRelocationAfterCancel(order);return new(false,"Obra substituta cancelada e não recolocada: "+placed.Message);}
         var target=BuildingById(placed.Id)!;order.TargetBuildingId=target.Id;order.TargetProjectId=target.ProjectId;
+        target.OperationClosed=true;
         Event("Obra substituta de "+target.Definition.Name+" movida; a mudança continua com retirada e frete ainda reservados; pagamentos efetivos da obra anterior preservados");
         return new(true,State.LastMessage,target.Id);
     }
     void BeginRelocationTransfer(MunicipalRelocationOrder order,Building? source,Building target)
     {
-        order.Stage=MunicipalRelocationStage.Transferring;order.BlockedSince=-1;
+        order.Stage=MunicipalRelocationStage.Transferring;order.BlockedSince=-1;target.OperationClosed=false;
         if(source==null)return;
         // Same institution: the job keeps its salary; the old address stops
         // operating now, so capacity, vacancies and wages never exist twice.
@@ -98,41 +106,65 @@ public sealed partial class CitySimulation
         var idleAtOld=!c.Moving&&c.Position.Distance(source.Door)<3;var headingToOld=c.Moving&&c.DestinationId==source.Id;
         if(c.InsideMap&&c.VehicleId==null&&c.BoardingVehicleId==null&&c.ConstructionProjectId==null&&(idleAtOld||headingToOld)&&ShiftActive(c))StartJourney(c,target,JourneyPurpose.Work);
     }
-    void ProgressRelocationTransfer(MunicipalRelocationOrder order,Building? source,Building? target)
+    void ProgressRelocationTransfer(MunicipalRelocationOrder order,Building? source,Building? target,double dt)
     {
         if(source==null){FinishRelocation(order,null,target);return;}
-        if(target!=null)RedirectCargoBoundFor(source,target);
+        if(target!=null)RedirectCargoBoundFor(order,source,target);
         var transfers=State.Shipments.Where(s=>order.TransferShipmentIds.Contains(s.Id)&&!s.Complete).ToList();
         var pickups=State.Shipments.Where(s=>!s.Complete&&!s.PickedUp&&s.SourceBuildingId==source.Id).ToList();
         var inbound=State.Shipments.Count(s=>!s.Complete&&s.DestinationBuildingId==source.Id);
         double Free(ResourceKind k)=>source.Quantity(k)-pickups.Sum(s=>s.Cargo.GetValueOrDefault(k));
         var remaining=source.Stock.Keys.Where(k=>Free(k)>.001).ToList();
         if(remaining.Count==0&&transfers.Count==0&&pickups.Count==0&&inbound==0){FinishRelocation(order,source,target);return;}
-        string? blocked=null;var dispatched=false;
+        var stock=source.Stock.Values.Sum();
+        var progressed=order.LastRecoveryStock>=0&&stock<order.LastRecoveryStock-.0001;
+        order.LastRecoveryStock=stock;
+        if(progressed)order.StockRecoveryBlockedSeconds=0;
+        string? blocked=RelocationRouteBlock(source,target);var dispatched=false;
         if(target==null)blocked="Novo endereço indisponível para receber o estoque";
-        else foreach(var k in remaining){
+        else if(blocked==null)foreach(var k in remaining){
             var space=target.Definition.Capacity-target.Stock.Values.Sum()-State.Shipments.Where(s=>!s.Complete&&s.DestinationBuildingId==target.Id).Sum(s=>s.Cargo.Values.Sum());
             if(space<.001){blocked="Novo endereço sem espaço de estoque";break;}
             var refusal=DispatchRelocationStock(order,source,target,k,Math.Min(Free(k),space));
             if(refusal==null)dispatched=true;else blocked=refusal;
         }
         var stockText=string.Join(", ",source.Stock.Where(e=>e.Value>.0001).Select(e=>ResourceLabel(e.Key)+" "+e.Value.ToString("0.#",System.Globalization.CultureInfo.InvariantCulture)));
-        if(dispatched||transfers.Count>0){order.BlockedSince=-1;order.Cause="Transferindo estoque por caminhão real: "+(transfers.Count+(dispatched?1:0))+" viagem(ns) em curso"+(stockText.Length>0?"; ainda no endereço antigo: "+stockText:"");return;}
-        // No discard deadline is approved yet: recoverable stock is never written
-        // off by time. The removal waits, with the real obstacle and how long it
-        // has been blocked, until a load can leave.
-        if(order.BlockedSince<0)order.BlockedSince=State.ElapsedSeconds;
-        var hours=(State.ElapsedSeconds-order.BlockedSince)/3600;
-        order.Cause=(blocked??(pickups.Count+inbound>0?"Aguardando carregamentos já a caminho do endereço antigo":"Aguardando saída para o estoque"))+(stockText.Length>0?"; ainda no endereço antigo: "+stockText:"")+"; retirada do endereço antigo aguarda o estoque sair (bloqueada há "+hours.ToString("0.#",System.Globalization.CultureInfo.InvariantCulture)+" h)";
+        // Pending deliveries reserve space but are not a permanent lack of room.
+        // Only actual full storage or a missing physical road counts; vehicle,
+        // cash and fuel waits pause the clock. A real pickup resets it.
+        var deadlineCause=stock>.001?(RelocationRouteBlock(source,target)??(target!=null&&target.Definition.Capacity-target.Stock.Values.Sum()<.001?"Novo endereço sem espaço de estoque":null)):null;
+        if(deadlineCause!=null&&!progressed)order.StockRecoveryBlockedSeconds+=dt;
+        order.BlockedSince=deadlineCause==null?-1:State.ElapsedSeconds-order.StockRecoveryBlockedSeconds;
+        if(deadlineCause!=null&&order.StockRecoveryBlockedSeconds>=MunicipalStockRecoveryDeadline){FinishRelocation(order,source,target);return;}
+        var trips=State.Shipments.Count(s=>order.TransferShipmentIds.Contains(s.Id)&&!s.Complete);
+        var action=deadlineCause??blocked??(trips>0||dispatched?"Transferindo estoque por caminhão real: "+trips+" viagem(ns) em curso":pickups.Count+inbound>0?"Aguardando carregamentos já a caminho do endereço antigo":"Aguardando saída para o estoque");
+        order.Cause=action+(stockText.Length>0?"; ainda no endereço antigo: "+stockText:"")+"; retirada aguarda recuperação; prazo de perda residual: "+(Math.Max(0,MunicipalStockRecoveryDeadline-order.StockRecoveryBlockedSeconds)/3600).ToString("0.#",System.Globalization.CultureInfo.InvariantCulture)+" h de bloqueio por espaço/rota"+(deadlineCause==null?" (pausado; caminhão, caixa e combustível não contam)":"; risco de perda do estoque residual")+(inbound>0?"; preservando cargas ainda a caminho do endereço antigo":"");
+    }
+    string? RelocationRouteBlock(Building source,Building? target)
+    {
+        if(target==null)return "Novo endereço indisponível para receber o estoque";
+        var from=Access(source);var to=Access(target);
+        if(from==null||to==null||!HasExteriorAccess(source)||!HasExteriorAccess(target))return "Sem acesso viário entre os dois endereços";
+        return FindRoadRoute(from.Id,to.Id).Count==0?"Sem rota viável entre os dois endereços":null;
     }
     // Cargo already loaded for the old address (a redirected municipal load)
     // continues physically to the new one instead of stopping at a closed door.
-    void RedirectCargoBoundFor(Building source,Building target)
+    void RedirectCargoBoundFor(MunicipalRelocationOrder order,Building source,Building target)
     {
-        var to=Access(target);if(to==null)return;
+        var from=Access(source);var to=Access(target);if(from==null||to==null||!HasExteriorAccess(target))return;
         foreach(var s in State.Shipments.Where(s=>!s.Complete&&!s.Cancelled&&s.PickedUp&&s.ProjectId==null&&s.DestinationBuildingId==source.Id)){
-            var v=State.Vehicles.FirstOrDefault(x=>x.Id==s.VehicleId&&x.ShipmentId==s.Id);var start=v==null?null:NearestRoad(v.Position);if(v==null||start==null)continue;
-            var route=FindRoadRoute(start.Id,to.Id);if(route.Count==0)continue;
+            var v=State.Vehicles.FirstOrDefault(x=>x.Id==s.VehicleId&&x.ShipmentId==s.Id);
+            // Finish the existing road leg first. Never replace the next node in
+            // mid-segment or interrupt a detour/refuelling/load operation.
+            if(v==null||v.Status!=VehicleStatus.Unloading||v.RefuellingAt!=null||v.Detour.Count>0||v.RouteIndex<v.Route.Count||v.DockPosition is not {} dock||v.Position.Distance(dock)>.1||dock.Distance(DockAt(from,source,false))>.1)continue;
+            var reserved=State.Shipments.Where(x=>x.Id!=s.Id&&!x.Complete&&x.DestinationBuildingId==target.Id).Sum(x=>x.Cargo.Values.Sum());
+            if(v.Cargo.Values.Sum()>target.Definition.Capacity-target.Stock.Values.Sum()-reserved+.001)continue;
+            var route=FindRoadRoute(from.Id,to.Id);var back=FindRoadRoute(to.Id,EntryNode().Id);
+            if(route.Count==0||back.Count==0||v.Fuel<(RouteLength(route)+RouteLength(back)+v.Position.Distance(from.Position))*FuelRate(v)+4)continue;
+            var fee=Money(State.Tuning.FreightBase+(decimal)RouteLength(route)*State.Tuning.FreightPerMetre);
+            var reservedFee=Math.Min(fee,order.TransferReserved);
+            if(fee-reservedFee>Available||!Transfer("city","global",fee,"Mudança municipal","Frete e combustível: redirecionamento físico de carga ao novo endereço",source.Id))continue;
+            order.TransferReserved-=reservedFee;order.TransferPaid+=fee;s.PricePaid+=fee;
             s.DestinationBuildingId=target.Id;s.Destination=to.Position;v.Route=route;v.RouteIndex=0;v.DockPosition=DockAt(to,target,false);v.Status=VehicleStatus.Travelling;v.Cause="Carga municipal seguindo ao novo endereço de "+target.Definition.Name;
         }
     }
@@ -163,6 +195,12 @@ public sealed partial class CitySimulation
     {
         var name=Catalog.Definitions[order.Kind].Name;
         if(source!=null){
+            // Loaded inbound cargo is outside the structure. Retire its old
+            // destination through the existing municipal recovery flow, leaving
+            // the body, ownership and current road leg untouched. Arrival or
+            // ordinary replanning will recover/park it instead of unloading into
+            // the retired building; it is never included in residual loss.
+            foreach(var s in State.Shipments.Where(s=>!s.Complete&&s.PickedUp&&s.ProjectId==null&&s.GoodsOwnerAccount=="city"&&s.DestinationBuildingId==source.Id))s.Cancelled=true;
             // Loads not yet picked up stay inside the structure and are lost with it.
             foreach(var s in State.Shipments.Where(s=>!s.Complete&&!s.PickedUp&&s.SourceBuildingId==source.Id)){
                 s.Cancelled=true;
@@ -182,7 +220,7 @@ public sealed partial class CitySimulation
         parts.Add(source==null?"endereço antigo já não existia: nada a retirar":"retirada do endereço antigo paga ("+Cash(order.RemovalPaid)+")");
         if(order.TransferPaid>0)parts.Add("frete do estoque "+Cash(order.TransferPaid));
         if(moved.Count>0)parts.Add("estoque levado por caminhão: "+Amounts(moved));
-        if(order.StockLost.Count>0)parts.Add("resíduo de estoque baixado na retirada: "+Amounts(order.StockLost));
+        if(order.StockLost.Count>0)parts.Add("resíduo de estoque baixado uma única vez após "+(MunicipalStockRecoveryDeadline/3600)+" h sem progresso por falta de espaço/rota: "+Amounts(order.StockLost)+"; perda do titular "+(source?.OwnerAccount??"city")+"; causa anterior: "+order.Cause);
         parts.Add(order.WorkersContinued+" funcionário(s) continuaram e "+order.WorkersLeft+" saíram após reavaliar");
         order.Cause=string.Join("; ",parts);Event(order.Cause);
     }

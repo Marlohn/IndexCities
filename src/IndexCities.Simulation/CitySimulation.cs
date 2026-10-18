@@ -75,7 +75,7 @@ public sealed partial class CitySimulation
     }
     void Step(double dt)
     {
-        MoveVehicles(dt);ReturnPavingMachines(dt);MoveCitizens(dt);var completedConstruction=ProgressConstruction(dt);UpdateMaintenanceCondition(dt);UpdateInfrastructure(dt);ProgressMunicipalRelocations();OperateBusinesses(dt);UpdateNeeds(dt);
+        MoveVehicles(dt);ReturnPavingMachines(dt);MoveCitizens(dt);var completedConstruction=ProgressConstruction(dt);UpdateMaintenanceCondition(dt);ProgressMunicipalRelocations(dt);UpdateInfrastructure(dt);OperateBusinesses(dt);UpdateNeeds(dt);
         State.ElapsedSeconds+=dt;State.Now=State.Now.AddSeconds(dt);
         // Construction is physical work, not a periodic market decision. Dispatch
         // available vehicles and crews on the next simulated step, including when

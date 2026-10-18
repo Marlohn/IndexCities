@@ -350,6 +350,8 @@ public sealed class MunicipalRelocationOrder
     public decimal RemovalPaid {get;set;}
     public decimal TransferPaid {get;set;}
     public double BlockedSince {get;set;}=-1;
+    public double StockRecoveryBlockedSeconds {get;set;}
+    public double LastRecoveryStock {get;set;}=-1;
     public List<int> TransferShipmentIds {get;set;}=[];
     public Dictionary<ResourceKind,double> StockLost {get;set;}=new();
     public int WorkersContinued {get;set;}
