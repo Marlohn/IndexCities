@@ -304,13 +304,15 @@ public sealed partial class CitySimulation
         else{var s=PendingShipment(t);var building=BuildingById(s==null?t.HomeBuildingId:s.PickedUp?s.DestinationBuildingId:s.SourceBuildingId);t.DockPosition=DockAt(_roads[route[^1]],building,t.CrewAboard);}
         foreach(var c in Occupants(t))Personal(c,"Combustível comprado no exterior após o reboque; voltando para a viagem");
     }
-    // A tow held for minutes by a stranded vehicle or the queue it causes.
-    bool TowHeldTooLong(Vehicle v,Vehicle? blocker)=>IsTow(v)&&v.TowPhase is TowPhase.ToVehicle or TowPhase.Delivering&&v.WaitingSince>0&&VehicleMovementTime-v.WaitingSince>=State.Tuning.UTurnWaitSeconds&&(blocker==null||blocker.Status==VehicleStatus.Stranded||HeldBehindStranded(blocker));
-    // The stranded vehicle that holds this junction (or its shared area), if any.
+    // A tow held for minutes by a stranded vehicle or the queue it causes (directly
+    // behind it, or jammed as long at a junction it locks nearby).
+    bool TowHeldTooLong(Vehicle v,Vehicle? blocker)=>IsTow(v)&&v.TowPhase is TowPhase.ToVehicle or TowPhase.Delivering&&v.WaitingSince>0&&VehicleMovementTime-v.WaitingSince>=State.Tuning.UTurnWaitSeconds&&(blocker==null||blocker.Status==VehicleStatus.Stranded||HeldBehindStranded(blocker)||blocker.WaitingSince>0&&VehicleMovementTime-blocker.WaitingSince>=State.Tuning.UTurnWaitSeconds&&State.Vehicles.Any(o=>o.Status==VehicleStatus.Stranded&&o.Position.Distance(v.Position)<150));
+    // The vehicle holding this junction (or its shared area) because of a stranded
+    // vehicle: the stranded one itself, or one stuck right behind it.
     Vehicle? JunctionHeldByStranded(Vehicle v,RoadNode junction)
     {
         var area=_junctionAreas.GetValueOrDefault(junction.Id);
-        return State.Vehicles.FirstOrDefault(o=>o.Id!=v.Id&&o.Id!=v.TowTargetId&&o.Status==VehicleStatus.Stranded&&o.IntersectionClaim is {} held&&(held==junction.Id||area?.Contains(held)==true));
+        return State.Vehicles.FirstOrDefault(o=>o.Id!=v.Id&&o.Id!=v.TowTargetId&&(o.Status==VehicleStatus.Stranded||o.Status==VehicleStatus.Travelling&&o.WaitingSince>0&&HeldBehindStranded(o))&&o.IntersectionClaim is {} held&&(held==junction.Id||area?.Contains(held)==true));
     }
     // Head-on arrival: the tow crosses into the stranded vehicle's lane in front of
     // it only with the path to the pose free; vehicles merely near it (a car
