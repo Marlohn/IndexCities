@@ -211,4 +211,55 @@ public sealed class TowingTests
         RunUntil(scene,()=>scene.Driver.VehicleId==null,600);
         Assert.Null(scene.Driver.VehicleId);Assert.Equal(VehicleStatus.Towed,scene.Car.Status);Assert.True(scene.Sim.State.ElapsedSeconds-scene.Car.TowCalledAt>300);scene.Sim.CheckInvariants();
     }
+    // A side street north at x=0 makes (0,0) a junction; the stranded car stands at
+    // x=8 and the car queued behind it holds the junction. Turning back is disabled.
+    static (Scene Scene,Vehicle Queue,RoadNode Junction) LockedJunction(bool waiterAtMouth)
+    {
+        var scene=City(ring:false,tuning:new SimulationTuning{UTurnWaitSeconds=1e9});var s=scene.Sim.State;
+        for(var z=4;z<=40;z+=4)s.Roads.Add(new(){Id=s.NextId++,Position=new(0,z)});
+        var junction=s.Roads.Single(r=>r.Position==new Point(0,0));var car=s.Vehicles.Single(v=>v.Id==scene.Car.Id);
+        car.Position=new(8,-1.65);car.RouteIndex=8;
+        var queue=new Vehicle{Id=s.NextId++,OwnerAccount="global",PassengerCar=true,External=true,Position=new(0,-1.65),Heading=Math.PI/2,Fuel=40,Status=VehicleStatus.Travelling,Route=car.Route.ToList(),RouteIndex=6,IntersectionClaim=junction.Id};
+        s.Vehicles.Add(queue);
+        if(waiterAtMouth){
+            // Southbound on the side street, waiting at the mouth: its front reaches the opposite lane.
+            var south=s.Roads.Where(r=>r.Position.X==0&&r.Position.Z>0).OrderByDescending(r=>r.Position.Z).Select(r=>r.Id).Append(junction.Id).Concat(s.Roads.Where(r=>r.Position.Z==0&&r.Position.X<0&&r.Position.X>=-40).OrderByDescending(r=>r.Position.X).Select(r=>r.Id)).ToList();
+            s.Vehicles.Add(new Vehicle{Id=s.NextId++,OwnerAccount="global",PassengerCar=true,External=true,Position=new(-1.65,4.5),Heading=Math.PI,Fuel=40,Status=VehicleStatus.Travelling,Route=south,RouteIndex=south.IndexOf(junction.Id)});
+        }
+        var sim=new CitySimulation(s);
+        return (scene with {Sim=sim,Car=sim.State.Vehicles.Single(v=>v.Id==car.Id)},sim.State.Vehicles.Single(v=>v.Id==queue.Id),sim.State.Roads.Single(r=>r.Id==junction.Id));
+    }
+    [Fact] public void The_tow_crosses_through_the_empty_opposite_lane_a_junction_locked_by_the_stranded_cars_own_queue()
+    {
+        var (scene,queue,junction)=LockedJunction(waiterAtMouth:false);var sim=scene.Sim;var heldBefore=false;var crossed=false;
+        // It waits behind the queue before the junction, then drives the opposite lane through it.
+        RunUntil(scene,()=>{var tow=sim.State.Vehicles.FirstOrDefault(v=>v.TowTargetId==scene.Car.Id);if(tow!=null&&tow.WaitingSince>0&&tow.Position.X<junction.Position.X-4)heldBefore=true;if(heldBefore&&tow!=null&&tow.Detour.Count>0&&tow.Position.Z>0)crossed=true;return scene.Car.Status==VehicleStatus.Towed;},1200);
+        Assert.True(heldBefore);Assert.True(crossed);Assert.Equal(VehicleStatus.Towed,scene.Car.Status);
+        // The queue stayed in its lane and the junction frees once the car is gone.
+        RunUntil(scene,()=>queue.Position.X>20,600);Assert.True(queue.Position.X>20,queue.Cause+" "+queue.Position);sim.CheckInvariants();
+    }
+    [Fact] public void The_tow_does_not_cross_a_locked_junction_through_a_vehicle_waiting_at_its_mouth()
+    {
+        var (scene,_,junction)=LockedJunction(waiterAtMouth:true);var sim=scene.Sim;var waiter=sim.State.Vehicles.OrderByDescending(v=>v.Id).First(v=>v.Heading==Math.PI);
+        Run(scene,900,()=>{foreach(var tow in sim.State.Vehicles.Where(v=>v.Body==TruckBody.Tow&&v.Status==VehicleStatus.Travelling))Assert.True(tow.Position.Distance(waiter.Position)>4,tow.Position+" "+waiter.Position);});
+        Assert.Equal(VehicleStatus.Stranded,scene.Car.Status);Assert.True(waiter.Position.Distance(new(-1.65,4.5))<.5);Assert.NotNull(scene.Car.TowTruckId);sim.CheckInvariants();
+    }
+    [Fact] public void A_loaded_tow_whose_fuel_no_longer_reaches_the_station_takes_the_car_to_the_exterior_it_came_from()
+    {
+        var scene=City();var sim=scene.Sim;RunUntil(scene,()=>scene.Car.Status==VehicleStatus.Towed);var tow=scene.Tow!;
+        // Enough for the way out (plus the margin) but not for the station and back.
+        var entryX=sim.State.Roads.Min(r=>r.Position.X);tow.Fuel=4+sim.State.Tuning.FuelPerMetre*(tow.Position.X-entryX+20);tow.Status=VehicleStatus.Waiting;
+        Run(scene,4);Assert.Equal(TowDestination.Exterior,tow.TowDestination);Assert.Contains("ao exterior",scene.Car.Cause);
+        RunUntil(scene,()=>scene.Car.Status==VehicleStatus.Parked&&scene.Car.Cause=="Estacionado",2400);
+        Assert.Equal("Estacionado",scene.Car.Cause);Assert.Contains(sim.State.Ledger,m=>m.Category=="Combustível"&&m.From==scene.Driver.Account&&m.Reason.Contains("exterior"));
+        Assert.Single(sim.State.Ledger,m=>m.Category=="Guincho");Assert.Equal(sim.State.Tuning.TotalMoney,sim.MonetaryTotal);sim.CheckInvariants();
+    }
+    [Fact] public void A_loaded_tow_without_fuel_even_for_the_way_out_waits_in_place_with_the_cause_visible()
+    {
+        var scene=City();var sim=scene.Sim;RunUntil(scene,()=>scene.Car.Status==VehicleStatus.Towed);var tow=scene.Tow!;
+        tow.Fuel=1;tow.Status=VehicleStatus.Waiting;Run(scene,4);var at=tow.Position;
+        Run(scene,300);
+        Assert.Equal(VehicleStatus.Waiting,tow.Status);Assert.Equal(at,tow.Position);Assert.Equal(1,tow.Fuel);
+        Assert.Contains("sem combustível para levar o veículo",tow.Cause);Assert.Contains("guincho sem combustível",scene.Car.Cause);sim.CheckInvariants();
+    }
 }

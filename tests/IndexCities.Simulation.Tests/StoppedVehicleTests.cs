@@ -81,6 +81,26 @@ public sealed class StoppedVehicleTests
         Assert.True(rearTurned!=null,$"rear {rear.Position} {rear.Status} {rear.Cause} idx={rear.RouteIndex}");Assert.True(frontTurned!=null,$"front {front.Position} {front.Status} {front.Cause} idx={front.RouteIndex}");Assert.True(frontTurned<rearTurned,$"{frontTurned} {rearTurned}");
         Assert.All(new[]{front,rear},c=>Assert.Contains(c.Route,id=>id is >=1940 and <=2060));sim.CheckInvariants();
     }
+    [Fact] public void Waiting_at_a_junction_held_by_a_stopped_vehicle_turns_back_after_the_same_minutes_and_takes_another_route()
+    {
+        // The stopped car stands in the junction (4,40) holding it; a westbound car
+        // waits right at its mouth, so close that it turns straight across.
+        var (street,_,_,_)=Street(junctionAtStop:true);var sim=Ring(street);
+        var cars=sim.State.Vehicles.OrderBy(v=>v.Id).Take(2).ToArray();var stopped=cars[0];var waiter=cars[1];
+        // Cars: the stopped one ends 2.4 m short of the waiter, too close to swing in ahead.
+        stopped.PassengerCar=waiter.PassengerCar=true;stopped.Position=new(4,38.35);stopped.RouteIndex=17;stopped.IntersectionClaim=1004;
+        var west=Enumerable.Range(0,19).Select(n=>1012-n*4).ToList();
+        waiter.Position=new(8.5,41.65);waiter.Heading=-Math.PI/2;waiter.Route=west;waiter.RouteIndex=2;
+        double? turnedAt=null;
+        for(var i=0;i<600;i++){
+            sim.Advance(1);
+            if(turnedAt==null&&waiter.Route.Any(id=>id is >=1940 and <=2060))turnedAt=sim.State.ElapsedSeconds;
+            Assert.False(waiter.Status==VehicleStatus.Travelling&&waiter.Position.Distance(stopped.Position)<6&&Math.Abs(waiter.Position.X-stopped.Position.X)<3.9,waiter.Position.ToString());
+        }
+        Assert.True(turnedAt!=null,$"{waiter.Position} {waiter.Status} {waiter.Cause}");Assert.InRange(turnedAt!.Value,sim.State.Tuning.UTurnWaitSeconds,sim.State.Tuning.UTurnWaitSeconds+30);
+        Assert.True(waiter.Position.Distance(sim.State.Roads.Single(r=>r.Id==940).Position)<6||waiter.Status==VehicleStatus.Parked||waiter.RouteIndex>=waiter.Route.Count,waiter.Cause+" "+waiter.Position);
+        Assert.Equal(new Point(4,38.35),stopped.Position);sim.CheckInvariants();
+    }
     [Fact] public void A_bypass_is_dropped_when_the_vehicle_stops_and_survives_a_replanned_route()
     {
         var (sim,_,follower,_)=Street();
