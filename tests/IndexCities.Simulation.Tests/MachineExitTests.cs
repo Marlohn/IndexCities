@@ -39,7 +39,7 @@ public sealed class MachineExitTests
     static double HalfWidth(Vehicle v)=>v.PassengerCar?.9:v.Machine==PavingMachine.Paver?1.27:v.Machine==PavingMachine.Roller?1.16:1.45;
 
     // Physical penetration of two rendered bodies (no safety margin).
-    static double Penetration(Vehicle a,Vehicle b)
+    internal static double Penetration(Vehicle a,Vehicle b)
     {
         static double Dot(Point x,Point y)=>x.X*y.X+x.Z*y.Z;
         var af=new Point(Math.Sin(a.Heading),Math.Cos(a.Heading));var ar=new Point(af.Z,-af.X);

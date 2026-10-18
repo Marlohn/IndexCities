@@ -61,6 +61,7 @@ public sealed partial class CitySimulation
 
     bool MoveConstructionSitePath(Vehicle vehicle,ref double remaining,double speed)
     {
+        if(vehicle.Machine==PavingMachine.None&&YieldAsphaltApproach(vehicle,ref remaining,speed))return false;
         while(remaining>.000001&&vehicle.SitePathIndex<vehicle.SitePath.Count){
             var target=vehicle.SitePath[vehicle.SitePathIndex];var delta=target-vehicle.Position;var distance=delta.Distance(default);
             var travel=Math.Min(distance,Math.Min(speed*remaining,vehicle.Fuel/State.Tuning.FuelPerMetre));
@@ -86,6 +87,10 @@ public sealed partial class CitySimulation
         // blocked machine is not held, and whoever stands on the path may leave.
         var reserved=vehicle.Machine!=PavingMachine.None?[]:State.Vehicles.Where(m=>m.Id!=vehicle.Id).Select(MachineReservation)
             .SelectMany(poses=>poses).Where(pose=>pose.Position.Distance(vehicle.Position)<=distance+12).ToList();
+        // Lane traffic also respects an asphalt truck on its site path (see
+        // Construction.ApproachYield).
+        if(machinesOnly)reserved.AddRange(State.Vehicles.Where(t=>t.Id!=vehicle.Id&&OnSitePath(t)&&t.Position.Distance(vehicle.Position)<=distance+40)
+            .SelectMany(SiteTruckReservation).Where(pose=>pose.Position.Distance(vehicle.Position)<=distance+12));
         if(machinesOnly&&reserved.Count==0&&!State.Vehicles.Any(other=>other.Machine!=PavingMachine.None&&other.Status!=VehicleStatus.Outside&&other.Position.Distance(vehicle.Position)<=distance+12))return distance;
         var safe=0.0;
         while(safe<distance-.000001){var next=Math.Min(distance,safe+.5);var at=vehicle.Position.MoveTowards(target,next);
