@@ -118,10 +118,12 @@ public sealed partial class CitySimulation
         }
         var stockText=string.Join(", ",source.Stock.Where(e=>e.Value>.0001).Select(e=>e.Key+" "+e.Value.ToString("0.#",System.Globalization.CultureInfo.InvariantCulture)));
         if(dispatched||transfers.Count>0){order.BlockedSince=-1;order.Cause="Transferindo estoque por caminhão real: "+(transfers.Count+(dispatched?1:0))+" viagem(ns) em curso"+(stockText.Length>0?"; ainda no endereço antigo: "+stockText:"");return;}
+        // No discard deadline is approved yet: recoverable stock is never written
+        // off by time. The removal waits, with the real obstacle and how long it
+        // has been blocked, until a load can leave.
         if(order.BlockedSince<0)order.BlockedSince=State.ElapsedSeconds;
-        var wait=Math.Max(0,State.Tuning.MunicipalRelocationStockWaitSeconds);var left=order.BlockedSince+wait-State.ElapsedSeconds;
-        order.Cause=(blocked??(pickups.Count+inbound>0?"Aguardando carregamentos já a caminho do endereço antigo":"Aguardando saída para o estoque"))+(stockText.Length>0?"; ainda no endereço antigo: "+stockText:"")+"; retirada em até "+(Math.Max(0,left)/3600).ToString("0.#",System.Globalization.CultureInfo.InvariantCulture)+" h";
-        if(left<=0)FinishRelocation(order,source,target,blocked);
+        var hours=(State.ElapsedSeconds-order.BlockedSince)/3600;
+        order.Cause=(blocked??(pickups.Count+inbound>0?"Aguardando carregamentos já a caminho do endereço antigo":"Aguardando saída para o estoque"))+(stockText.Length>0?"; ainda no endereço antigo: "+stockText:"")+"; retirada do endereço antigo aguarda o estoque sair (bloqueada há "+hours.ToString("0.#",System.Globalization.CultureInfo.InvariantCulture)+" h)";
     }
     // Cargo already loaded for the old address (a redirected municipal load)
     // continues physically to the new one instead of stopping at a closed door.
@@ -156,7 +158,7 @@ public sealed partial class CitySimulation
         vehicle.ShipmentId=shipment.Id;vehicle.Cargo=new();vehicle.Route=route;vehicle.RouteIndex=0;vehicle.DockPosition=DockAt(from,source,false);vehicle.Status=VehicleStatus.Travelling;vehicle.Position=State.Entry;vehicle.Cause="Mudança de "+source.Definition.Name+": buscando estoque no endereço antigo";
         return null;
     }
-    void FinishRelocation(MunicipalRelocationOrder order,Building? source,Building? target,string? stockCause=null)
+    void FinishRelocation(MunicipalRelocationOrder order,Building? source,Building? target)
     {
         var name=Catalog.Definitions[order.Kind].Name;
         if(source!=null){
@@ -166,7 +168,7 @@ public sealed partial class CitySimulation
                 if(s.ProjectId is {} pid&&State.Projects.FirstOrDefault(p=>p.Id==pid) is {} p)foreach(var kv in s.Cargo)p.LocalReserved[kv.Key]=Math.Max(0,p.LocalReserved.GetValueOrDefault(kv.Key)-kv.Value);
             }
             foreach(var c in State.Citizens.Where(c=>c.WorkplaceId==source.Id)){SettleWages(c,source);c.WorkplaceId=null;Personal(c,"Vínculo encerrado: endereço antigo de "+name+" retirado");}
-            order.StockLost=source.Stock.Where(e=>e.Value>.0001).ToDictionary(e=>e.Key,e=>e.Value);
+            order.StockLost=source.Stock.Where(e=>e.Value>.001).ToDictionary(e=>e.Key,e=>e.Value);
             if(order.RemovalReserved>0&&!Transfer("city","global",order.RemovalReserved,"Mudança municipal","Retirada física do endereço antigo de "+name+"; sem reembolso de obra ou materiais",source.Id))throw new InvalidOperationException("Retirada reservada sem Caixa");
             order.RemovalPaid+=order.RemovalReserved;
             source.Stock.Clear();source.OperationalCapacity=0;source.OperationClosed=true;source.Removed=true;source.Cause="Retirado: "+name+" mudou-se para o novo endereço";
@@ -179,7 +181,7 @@ public sealed partial class CitySimulation
         parts.Add(source==null?"endereço antigo já não existia: nada a retirar":"retirada do endereço antigo paga ("+Cash(order.RemovalPaid)+")");
         if(order.TransferPaid>0)parts.Add("frete do estoque "+Cash(order.TransferPaid));
         if(moved.Count>0)parts.Add("estoque levado por caminhão: "+Amounts(moved));
-        if(order.StockLost.Count>0)parts.Add("estoque perdido na retirada: "+Amounts(order.StockLost)+(stockCause==null?"":" ("+stockCause+")"));
+        if(order.StockLost.Count>0)parts.Add("resíduo de estoque baixado na retirada: "+Amounts(order.StockLost));
         parts.Add(order.WorkersContinued+" funcionário(s) continuaram e "+order.WorkersLeft+" saíram após reavaliar");
         order.Cause=string.Join("; ",parts);Event(order.Cause);
     }

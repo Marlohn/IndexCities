@@ -75,9 +75,6 @@ public sealed class SimulationTuning
     public decimal RoadDemolitionCostPerSquareMetre {get;set;}=1.5m;
     // Short assisted vacating of an occupied residence ordered demolished (SPEC construcao: calibration).
     public double AssistedVacatingDays {get;set;}=1;
-    // Mudança municipal: espera máxima sem saída física viável para o estoque
-    // restante antes da retirada do endereço antigo (calibração da SPEC).
-    public double MunicipalRelocationStockWaitSeconds {get;set;}=3600;
     public decimal FreightBase {get;set;}=24;
     public decimal FreightPerMetre {get;set;}=.06m;
     public decimal TruckPrice {get;set;}=3500;

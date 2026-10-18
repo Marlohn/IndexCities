@@ -89,20 +89,30 @@ public sealed class MunicipalRelocationTests
         Assert.Contains("estoque levado por caminhão",order.Cause);
     }
 
-    [Fact] public void Stock_without_room_waits_then_is_lost_once_with_visible_cause()
+    // Fixture above the capacity of the same type: no common path fills a depot
+    // past 150, but a destination already holding stock gives the same block.
+    // No discard deadline is approved, so recoverable stock is never written off.
+    [Fact] public void Stock_without_room_keeps_the_old_address_waiting_with_visible_cause()
     {
-        var sim=City();sim.State.Tuning.MunicipalRelocationStockWaitSeconds=2*3600;var depot=Single(sim,BuildingKind.WorksDepot);
+        var sim=City();var depot=Single(sim,BuildingKind.WorksDepot);
         depot.Stock[ResourceKind.Wood]=100;depot.Stock[ResourceKind.Steel]=80;
         var at=Destination(sim,depot);var quote=sim.QuoteMunicipalRelocation(depot.Id,at,Math.PI);
-        Assert.True(quote.StockBeyondDestination>0);Assert.Contains("risco de perda",quote.Message);
+        Assert.True(quote.StockBeyondDestination>0);Assert.Contains("não cabe",quote.Message);
         Assert.True(sim.RelocateMunicipalBuilding(depot.Id,at,Math.PI,quote).Success);
-        var order=RunUntilDone(sim,sim.State.MunicipalRelocations.Single());
-        var target=Single(sim,BuildingKind.WorksDepot);
+        var order=sim.State.MunicipalRelocations.Single();
+        for(var i=0;i<24;i++){sim.Advance(3600);sim.CheckInvariants();}
+        var target=sim.State.Buildings.Single(b=>b.Id==order.TargetBuildingId);
+        Assert.Equal(MunicipalRelocationStage.Transferring,order.Stage);Assert.True(target.Completed);
+        Assert.False(depot.Removed);Assert.True(depot.OperationClosed);Assert.Empty(order.StockLost);
+        Assert.Contains("sem espaço",order.Cause);Assert.Contains("aguarda",order.Cause);
         Assert.True(target.Stock.Values.Sum()<=target.Definition.Capacity+.001);
-        Assert.NotEmpty(order.StockLost);Assert.Contains("estoque perdido na retirada",order.Cause);Assert.Contains("sem espaço",order.Cause);
         var delivered=sim.State.Shipments.Where(s=>order.TransferShipmentIds.Contains(s.Id)&&s.Complete&&!s.Cancelled).Sum(s=>s.Cargo.Values.Sum());
-        Assert.Equal(180,delivered+order.StockLost.Values.Sum()+SuppliedToWorks(sim,depot,ResourceKind.Wood)+SuppliedToWorks(sim,depot,ResourceKind.Steel),3);
-        Assert.True(depot.Removed);Assert.Empty(depot.Stock);
+        Assert.Equal(180,delivered+depot.Stock.Values.Sum()+SuppliedToWorks(sim,depot,ResourceKind.Wood)+SuppliedToWorks(sim,depot,ResourceKind.Steel),3);
+        Assert.True(order.RemovalReserved>0);Assert.Equal(0m,Paid(sim,"Retirada física"));
+        // Room at the new address (here: material used elsewhere) lets the rest leave.
+        target.Stock.Clear();
+        order=RunUntilDone(sim,order);
+        Assert.Equal(MunicipalRelocationStage.Completed,order.Stage);Assert.Empty(order.StockLost);Assert.True(depot.Removed);
     }
 
     [Fact] public void Cancelling_the_substitute_work_ends_the_move_and_keeps_the_old_building()
@@ -153,7 +163,7 @@ public sealed class MunicipalRelocationTests
 
     [Fact] public void Save_and_load_during_each_stage_never_charge_twice_or_duplicate_the_seat()
     {
-        var sim=City();sim.State.Tuning.MunicipalRelocationStockWaitSeconds=2*3600;var depot=Single(sim,BuildingKind.WorksDepot);depot.Stock[ResourceKind.Wood]=60;
+        var sim=City();var depot=Single(sim,BuildingKind.WorksDepot);depot.Stock[ResourceKind.Wood]=60;
         var at=Destination(sim,depot);var quote=sim.QuoteMunicipalRelocation(depot.Id,at,Math.PI);
         Assert.True(sim.RelocateMunicipalBuilding(depot.Id,at,Math.PI,quote).Success);
         sim.Advance(30);
