@@ -67,12 +67,12 @@ public sealed partial class CitySimulation
         var occupants=new List<int>();if(v.DriverId is {} driver)occupants.Add(driver);occupants.AddRange(v.Passengers);v.DriverId=null;v.Passengers.Clear();
         if(v.TripPurpose==JourneyPurpose.Leaving){
             // The family leaves its home only now that the car actually left the city.
-            foreach(var family in occupants.Select(id=>FamilyById(State.Citizens.First(x=>x.Id==id).FamilyId)).OfType<Family>().Distinct()){if(BuildingById(family.HomeId) is {} house&&house.FamilyId==family.Id)house.FamilyId=null;family.HomeId=null;}
+            foreach(var family in occupants.Select(id=>FamilyById(CitizenWithId(id).FamilyId)).OfType<Family>().Distinct()){if(BuildingById(family.HomeId) is {} house&&house.FamilyId==family.Id)house.FamilyId=null;family.HomeId=null;}
             v.Status=VehicleStatus.Outside;v.ParkingSpot=null;v.Position=State.Entry;v.Cause="No exterior com a família emigrada";
-            foreach(var c in occupants.Select(id=>State.Citizens.First(x=>x.Id==id))){c.VehicleId=null;c.Position=State.Entry;c.Path.Clear();c.PathIndex=0;c.Resident=false;c.InsideMap=false;c.Activity="Residindo no exterior";c.WorkplaceId=null;Personal(c,"Saiu de carro da cidade; dinheiro, patrimônio e dívidas persistem");}return;}
+            foreach(var c in occupants.Select(id=>CitizenWithId(id))){c.VehicleId=null;c.Position=State.Entry;c.Path.Clear();c.PathIndex=0;c.Resident=false;c.InsideMap=false;c.Activity="Residindo no exterior";c.WorkplaceId=null;Personal(c,"Saiu de carro da cidade; dinheiro, patrimônio e dívidas persistem");}return;}
         if(SpotByKey(v.ParkingSpot) is {} spot){v.Position=spot.Position;v.Heading=spot.Heading;}v.Cause="Estacionado";
         var destination=BuildingById(v.DestinationBuildingId);
-        foreach(var c in occupants.Select(id=>State.Citizens.First(x=>x.Id==id))){c.VehicleId=null;c.Position=v.Position;c.InsideMap=InMap(c.Position);
+        foreach(var c in occupants.Select(id=>CitizenWithId(id))){c.VehicleId=null;c.Position=v.Position;c.InsideMap=InMap(c.Position);
             if(destination==null){c.Path.Clear();c.PathIndex=0;c.Activity="Destino indisponível";continue;}
             c.Path=[v.Position,destination.Door];c.PathIndex=0;c.PathRoadRevision=State.RoadRevision;c.Purpose=v.TripPurpose;c.DestinationId=destination.Id;c.Activity="Estacionou; caminhando até "+destination.Definition.Name;}
     }
@@ -81,7 +81,7 @@ public sealed partial class CitySimulation
     {
         var occupants=new List<int>();if(v.DriverId is {} driver)occupants.Add(driver);occupants.AddRange(v.Passengers);v.DriverId=null;v.Passengers.Clear();v.ParkingSpot=null;v.Route.Clear();v.RouteIndex=0;v.IntersectionClaim=null;v.Cause=cause;
         if(v.Status!=VehicleStatus.Stranded)v.Status=VehicleStatus.Parked;var destination=BuildingById(v.DestinationBuildingId);
-        foreach(var c in occupants.Select(id=>State.Citizens.First(x=>x.Id==id))){c.VehicleId=null;c.BoardingVehicleId=null;c.Position=v.Position;c.Path.Clear();c.PathIndex=0;c.NextDecisionAt=State.ElapsedSeconds;Personal(c,cause+"; segue a pé");if(destination!=null&&v.TripPurpose!=JourneyPurpose.Leaving){var path=CitizenRoute(c,destination);if(path.Count>0){c.Path=path;c.PathRoadRevision=State.RoadRevision;c.Purpose=v.TripPurpose;c.DestinationId=destination.Id;}}}
+        foreach(var c in occupants.Select(id=>CitizenWithId(id))){c.VehicleId=null;c.BoardingVehicleId=null;c.Position=v.Position;c.Path.Clear();c.PathIndex=0;c.NextDecisionAt=State.ElapsedSeconds;Personal(c,cause+"; segue a pé");if(destination!=null&&v.TripPurpose!=JourneyPurpose.Leaving){var path=CitizenRoute(c,destination);if(path.Count>0){c.Path=path;c.PathRoadRevision=State.RoadRevision;c.Purpose=v.TripPurpose;c.DestinationId=destination.Id;}}}
     }
     void ReplanCar(Vehicle v)
     {
@@ -94,7 +94,7 @@ public sealed partial class CitySimulation
     }
     void BuyCarOnMigration(Family family,Building house,ExternalFamilyCandidate candidate)
     {
-        var members=family.Members.Select(id=>State.Citizens.First(c=>c.Id==id)).ToList();var buyer=members[0];
+        var members=family.Members.Select(id=>CitizenWithId(id)).ToList();var buyer=members[0];
         var fuel=State.Tuning.FuelTank;var price=State.Tuning.CarPrice+(decimal)fuel*State.Tuning.ImportPrices[ResourceKind.Fuel];
         var funds=members.Sum(c=>Balance(c.Account));var access=Access(house);var spot=ParkingSpots(house).FirstOrDefault();
         if(funds<price+State.Tuning.CarPurchaseReserve||access==null||spot.Key==null||State.OutsideStock[ResourceKind.Fuel]<fuel||!SpotFree(spot,-1))return;
@@ -114,7 +114,7 @@ public sealed partial class CitySimulation
     bool TryOuting(Citizen c,Building home)
     {
         if(NextRandom()<.55){
-            var hosts=State.Buildings.Where(b=>b.Kind==BuildingKind.House&&b.Completed&&!b.Removed&&b.FamilyId!=null&&b.FamilyId!=c.FamilyId&&b.Position.Distance(home.Position)<350&&FamilyById(b.FamilyId) is {} f&&f.Members.Any(id=>State.Citizens.First(x=>x.Id==id) is {Alive:true,Moving:false,VehicleId:null} host&&host.Position.Distance(b.Door)<3)).OrderBy(b=>b.Position.Distance(home.Position)).Take(8).ToList();
+            var hosts=State.Buildings.Where(b=>b.Kind==BuildingKind.House&&b.Completed&&!b.Removed&&b.FamilyId!=null&&b.FamilyId!=c.FamilyId&&b.Position.Distance(home.Position)<350&&FamilyById(b.FamilyId) is {} f&&f.Members.Any(id=>CitizenWithId(id) is {Alive:true,Moving:false,VehicleId:null} host&&host.Position.Distance(b.Door)<3)).OrderBy(b=>b.Position.Distance(home.Position)).Take(8).ToList();
             if(hosts.Count>0){var host=hosts[(int)(NextRandom()*hosts.Count)];if(StartJourney(c,host,JourneyPurpose.Visit)){c.OutingUntil=State.ElapsedSeconds+(30+NextRandom()*45)*60;return true;}}
             return false;
         }

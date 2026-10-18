@@ -205,6 +205,10 @@
 
 - Sem recursos suficientes, a atividade fica pendente e a infraestrutura afetada perde capacidade gradualmente, conforme a regra de insuficiência definida.
 
+- A equipe de manutenção viária conserta uma rua de cada vez, em sequência ao longo da rua, antes de passar à seguinte. A ordem não muda quais trechos o serviço conserta e reduz as travessias e o combustível gasto nelas.
+
+- Quando a equipe externa volta ao exterior para reabastecer no meio de um serviço e é chamada de novo, o novo envio paga frete e combustível de novo, pela mesma regra de qualquer envio de equipe externa.
+
 - Não exigir comandos de reparo por trecho/prédio nem criar novas construções ou políticas por esta decisão; quantidades, periodicidade e intensidade permanecem em calibração proporcional.
 
 ### Prefeitura — construção física, administração e participação cidadã
