@@ -91,6 +91,10 @@ public sealed partial class CitySimulation
         // Construction.ApproachYield).
         if(machinesOnly)reserved.AddRange(State.Vehicles.Where(t=>t.Id!=vehicle.Id&&OnSitePath(t)&&t.Position.Distance(vehicle.Position)<=distance+40)
             .SelectMany(SiteTruckReservation).Where(pose=>pose.Position.Distance(vehicle.Position)<=distance+12));
+        // An asphalt truck unloading at the paver bay keeps its present body there
+        // until the unload ends (see Construction.ApproachYield).
+        if(machinesOnly)reserved.AddRange(State.Vehicles.Where(t=>t.Id!=vehicle.Id&&UnloadingAsphaltBody(t)&&t.Position.Distance(vehicle.Position)<=distance+12)
+            .Select(t=>(t,t.Position,t.Heading)));
         if(machinesOnly&&reserved.Count==0&&!State.Vehicles.Any(other=>other.Machine!=PavingMachine.None&&other.Status!=VehicleStatus.Outside&&other.Position.Distance(vehicle.Position)<=distance+12))return distance;
         var safe=0.0;
         while(safe<distance-.000001){var next=Math.Min(distance,safe+.5);var at=vehicle.Position.MoveTowards(target,next);

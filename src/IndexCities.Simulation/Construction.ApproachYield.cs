@@ -12,6 +12,10 @@ public sealed partial class CitySimulation
     static bool OnAsphaltApproach(Vehicle v)=>OnSitePath(v)&&!v.SitePathBeforeRoad;
     static bool LaneTraffic(Vehicle v)=>v.Machine==PavingMachine.None&&v.Status is VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded&&v.Route.Count>0&&v.RouteIndex<v.Route.Count&&!OnSitePath(v);
 
+    // The asphalt truck unloading at the receiving paver's bay occupies the street
+    // with its present body only; its future path is not held.
+    bool UnloadingAsphaltBody(Vehicle v)=>v.Machine==PavingMachine.None&&v.Status==VehicleStatus.Unloading&&v.ShipmentId is {} id&&State.Shipments.Any(s=>s.Id==id&&s.ReceivingMachineId!=null);
+
     bool LaneEnd(Vehicle v,out Point at,out double heading)
     {
         at=default;heading=v.Heading;
