@@ -247,6 +247,7 @@
 - A indenização ao proprietário não garante nova casa nem concede dinheiro fictício ou compensação automática ao inquilino.
 - Desocupação assistida em intervenção municipal residencial: se houver moradores numa residência escolhida para demolição ou realocação por ordem do jogador, a confirmação inicia um período de transição curto e de andamento automático.
 - Durante esse período, a família pode continuar no endereço original enquanto a simulação procura outra moradia existente, disponível e financeiramente compatível, sem exigir que o jogador escolha o destino ou negocie com cada SIM.
+- Na busca durante a desocupação assistida, as famílias deslocadas têm a primeira oportunidade de adquirir uma casa vaga compatível, antes de novas famílias migrantes. A aquisição usa recursos reais e as regras normais do mercado; a prioridade não garante moradia, não concede desconto nem mantém uma casa reservada quando a família não pode adquiri-la. A entrada de novos moradores pode ser adiada por essa preferência.
 - Uma opção encontrada não é residência gratuita: compra ou locação exige as transações reais já definidas.
 - Conclusão da desocupação: se os moradores desocuparem antes do prazo, a intervenção pode prosseguir sem esperas artificiais.
 - Ao fim do prazo curto, a intervenção não fica bloqueada indefinidamente por falta de outra casa: a família que não se mudou deixa o imóvel e passa ao fluxo vigente de ausência de moradia ou eventual emigração.

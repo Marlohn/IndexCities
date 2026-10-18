@@ -40,6 +40,8 @@
 - 2026-10-15 — A recuperação preserva L/Tab, continuidade e grafo real e é aceita para abrir PR sob correção do traçado estreito/sobreposto, com versão local, regressão e revisão independente (pedido e avaliação humanos) → seção Ferramenta de construção de ruas
 - 2026-10-16 — As velocidades passam provisoriamente a 1x/30x/1000x até revisão do ritmo, após medição estável em cidade pequena e 3000x inviável (ajuste do responsável) → seção Recuperação da interação da V1
 
+- 2026-10-18 — O responsável escolheu dar à família deslocada pela demolição a primeira oportunidade de compra da casa vaga, antes de nova família migrante, com pagamento real, sem garantia de moradia ou reserva permanente; pode adiar a imigração → seção Desocupação assistida em intervenção municipal residencial.
+
 ## Registros sem data explícita
 
 A seção original não informa a data destas escolhas; nenhuma data foi inferida.
