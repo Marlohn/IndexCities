@@ -4,8 +4,16 @@ namespace IndexCities.Simulation;
 // ou serviço municipal). Não executa nada: não escreve, não cancela obra, não
 // muda CityHallPlaced e não faz clone/Save temporário do estado. WorkerIds e
 // Stock são snapshots de leitura; Construction é a cotação de obra comum no
-// destino. A retirada do endereço antigo é cobrada pela área, sem indenização.
-public sealed record MunicipalRelocationQuote(int SourceBuildingId,bool Allowed,PlacementQuote? Construction,decimal RemovalCost,decimal TotalCost,List<int> WorkerIds,Dictionary<ResourceKind,double> Stock,double CurrentCapacity,string Message);
+// destino. A retirada do endereço antigo é cobrada pela área, sem indenização;
+// o frete estimado leva o estoque existente ao novo endereço por caminhão real.
+public sealed record MunicipalRelocationQuote(int SourceBuildingId,bool Allowed,PlacementQuote? Construction,decimal RemovalCost,decimal TotalCost,List<int> WorkerIds,Dictionary<ResourceKind,double> Stock,double CurrentCapacity,string Message)
+{
+    public decimal TransferEstimate {get;init;}
+    public bool DestinationValid {get;init;}
+    public double StockBeyondDestination {get;init;}
+    public int PendingPickups {get;init;}
+    public int WorksWithLocalReservation {get;init;}
+}
 
 public sealed partial class CitySimulation
 {
@@ -16,6 +24,7 @@ public sealed partial class CitySimulation
         if(source.Removed)return RejectRelocation(sourceBuildingId,"Prédio já removido; não há sede a mudar");
         if(!source.Completed)return RejectRelocation(sourceBuildingId,"Obra incompleta: use Mover pelas regras de obra inacabada");
         if(source.Definition.Private)return RejectRelocation(sourceBuildingId,"Prédio privado: realocação adiada para reavaliação; use Demolir");
+        if(State.MunicipalRelocations.FirstOrDefault(r=>r.Active&&(r.SourceBuildingId==source.Id||r.TargetBuildingId==source.Id)) is {} running)return RejectRelocation(sourceBuildingId,"Mudança #"+running.Id+" de "+source.Definition.Name+" já em andamento; acompanhe a obra substituta");
         // A estrutura antiga permanece fisicamente no local durante a obra da
         // substituta. A cotação ignora só o próprio projeto da origem para não
         // acusar duplicidade (inclusive de Prefeitura); a sobreposição com essa
@@ -23,23 +32,42 @@ public sealed partial class CitySimulation
         var placement=QuoteBuilding(source.Kind,destination,rotation,source.ProjectId);
         var candidate=new Building{Kind=source.Kind,Position=destination,Rotation=rotation};
         var removalCost=Money(Math.Max(0,State.Tuning.RoadDemolitionCostPerSquareMetre)*(decimal)(source.Definition.Width*source.Definition.Depth));
-        var totalCost=Money(removalCost+placement.Total);
         var workers=State.Citizens.Where(c=>c.Alive&&c.WorkplaceId==source.Id).Select(c=>c.Id).ToList();
         var stock=source.Stock.Where(entry=>entry.Value>0).ToDictionary(entry=>entry.Key,entry=>entry.Value);
+        var transfer=StockTransferEstimate(source,destination,stock);
+        var totalCost=Money(removalCost+placement.Total+transfer);
         var capacity=source.OperationalCapacity;
-        if(Overlap(candidate,source))return new(sourceBuildingId,false,placement,removalCost,totalCost,workers,stock,capacity,$"O destino fica dentro do próprio prédio existente ({source.Definition.Name} #{source.Id}): a estrutura antiga permanece no local até a retirada; escolha um endereço livre");
-        if(!placement.PhysicallyValid)return new(sourceBuildingId,false,placement,removalCost,totalCost,workers,stock,capacity,placement.Message);
-        if(totalCost>Available)return new(sourceBuildingId,false,placement,removalCost,totalCost,workers,stock,capacity,"Caixa livre insuficiente: total "+Cash(totalCost)+" (obra "+Cash(placement.Total)+" + retirada "+Cash(removalCost)+") e disponível "+Cash(Available));
-        return new(sourceBuildingId,true,placement,removalCost,totalCost,workers,stock,capacity,Describe(source,placement,removalCost,totalCost,workers,stock));
+        var beyond=Math.Max(0,stock.Values.Sum()-source.Definition.Capacity);
+        var pickups=State.Shipments.Count(s=>!s.Complete&&!s.PickedUp&&s.SourceBuildingId==source.Id);
+        var reservations=IsActiveDepot(source)?State.Projects.Count(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress&&p.LocalReserved.Values.Any(v=>v>.001)):0;
+        var overlap=Overlap(candidate,source);
+        MunicipalRelocationQuote Result(bool allowed,string message)=>new(sourceBuildingId,allowed,placement,removalCost,totalCost,workers,stock,capacity,message){TransferEstimate=transfer,DestinationValid=placement.PhysicallyValid&&!overlap,StockBeyondDestination=beyond,PendingPickups=pickups,WorksWithLocalReservation=reservations};
+        if(overlap)return Result(false,$"O destino fica dentro do próprio prédio existente ({source.Definition.Name} #{source.Id}): a estrutura antiga permanece no local até a retirada; escolha um endereço livre");
+        if(!placement.PhysicallyValid)return Result(false,placement.Message);
+        if(totalCost>Available)return Result(false,"Caixa livre insuficiente: total "+Cash(totalCost)+" (obra "+Cash(placement.Total)+" + retirada "+Cash(removalCost)+(transfer>0?" + frete do estoque "+Cash(transfer):"")+") e disponível "+Cash(Available));
+        return Result(true,DescribeRelocation(source,placement,removalCost,transfer,totalCost,workers,stock,beyond,pickups,reservations));
     }
     static MunicipalRelocationQuote RejectRelocation(int sourceBuildingId,string message)=>new(sourceBuildingId,false,null,0,0,[],new(),0,message);
-    string Describe(Building source,PlacementQuote placement,decimal removalCost,decimal totalCost,List<int> workers,Dictionary<ResourceKind,double> stock)
+    bool IsActiveDepot(Building building)=>building.Kind==BuildingKind.WorksDepot&&State.Buildings.FirstOrDefault(b=>b.Kind==BuildingKind.WorksDepot&&b.Completed&&!b.Removed&&!b.OperationClosed)?.Id==building.Id;
+    // One external truck trip per load, as the existing municipal transport:
+    // entrance → old address (pickup) → new address, freight and a full tank.
+    decimal StockTransferEstimate(Building source,Point destination,Dictionary<ResourceKind,double> stock)
     {
-        var parts=new List<string>{"Nova obra de "+source.Definition.Name+" no destino ("+Cash(placement.Total)+") mais a retirada do endereço antigo ("+Cash(removalCost)+"): total "+Cash(totalCost)+" do Caixa, sem indenização por patrimônio municipal"};
+        if(stock.Count==0)return 0;
+        static double Manhattan(Point a,Point b)=>Math.Abs(a.X-b.X)+Math.Abs(a.Z-b.Z);
+        var trips=stock.Values.Sum(quantity=>(int)Math.Ceiling(quantity/150));
+        var travel=Manhattan(State.Entry,source.Position)+Manhattan(source.Position,destination);
+        return Money(trips*(State.Tuning.FreightBase+(decimal)(travel*2)*State.Tuning.FreightPerMetre+State.Tuning.ImportPrices[ResourceKind.Fuel]*(decimal)State.Tuning.FuelTank));
+    }
+    string DescribeRelocation(Building source,PlacementQuote placement,decimal removalCost,decimal transfer,decimal totalCost,List<int> workers,Dictionary<ResourceKind,double> stock,double beyond,int pickups,int reservations)
+    {
+        var parts=new List<string>{"Nova obra de "+source.Definition.Name+" no destino ("+Cash(placement.Total)+") mais a retirada do endereço antigo ("+Cash(removalCost)+")"+(transfer>0?" e o frete estimado do estoque ("+Cash(transfer)+")":"")+": total "+Cash(totalCost)+" comprometido do Caixa, sem indenização por patrimônio municipal"};
         if(!placement.Accessible)parts.Add("o destino é fisicamente válido mas ainda sem acesso viário, como qualquer obra comum que aguarda rua");
-        parts.Add(workers.Count==0?"nenhum emprego vinculado neste momento":workers.Count+" emprego(s) real(is) podem ser interrompidos até a nova estrutura operar");
-        parts.Add("capacidade atual "+source.OperationalCapacity.ToString("0.##",System.Globalization.CultureInfo.InvariantCulture)+" e "+(stock.Count>0?"o estoque existente":"o estoque atual")+" não são teletransportados: seguem transporte físico possível, com perda residual real");
-        parts.Add(source.Kind==BuildingKind.CityHall?"a Prefeitura mantém as ferramentas de construção e gestão durante a transição":"a operação antiga pode cessar quando a estrutura ou o acesso precisar ser liberado");
+        parts.Add(source.Kind==BuildingKind.CityHall?"a Prefeitura mantém as ferramentas de construção e gestão durante a transição":"o prédio antigo continua operando enquanto a obra corre e deixa de operar quando o novo endereço é concluído, sem capacidade em dobro");
+        parts.Add(workers.Count==0?"nenhum emprego vinculado neste momento":workers.Count+" funcionário(s) passam ao novo endereço e reavaliam o emprego pelo novo trajeto; a capacidade cai até chegarem");
+        if(stock.Count>0)parts.Add("o estoque existente não é teletransportado: segue por caminhão real ao novo endereço depois da conclusão"+(beyond>0?"; "+beyond.ToString("0.#",System.Globalization.CultureInfo.InvariantCulture)+" acima da capacidade do destino corre risco de perda se não for consumido antes":"")+"; sem caminhão, rota ou espaço o restante é perdido na retirada");
+        if(reservations>0)parts.Add(reservations+" obra(s) com material reservado neste Pátio passam a reservar no novo endereço conforme o estoque chegar");
+        if(pickups>0)parts.Add(pickups+" carregamento(s) já a caminho continuam");
         return string.Join("; ",parts)+".";
     }
 }

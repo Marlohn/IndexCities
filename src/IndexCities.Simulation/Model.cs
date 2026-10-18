@@ -75,6 +75,9 @@ public sealed class SimulationTuning
     public decimal RoadDemolitionCostPerSquareMetre {get;set;}=1.5m;
     // Short assisted vacating of an occupied residence ordered demolished (SPEC construcao: calibration).
     public double AssistedVacatingDays {get;set;}=1;
+    // Mudança municipal: espera máxima sem saída física viável para o estoque
+    // restante antes da retirada do endereço antigo (calibração da SPEC).
+    public double MunicipalRelocationStockWaitSeconds {get;set;}=3600;
     public decimal FreightBase {get;set;}=24;
     public decimal FreightPerMetre {get;set;}=.06m;
     public decimal TruckPrice {get;set;}=3500;
@@ -330,6 +333,33 @@ public sealed class Shipment
     public decimal PricePaid {get;set;}
     public Point Destination {get;set;}
 }
+public enum MunicipalRelocationStage { Constructing, Transferring, Completed, Cancelled }
+// Registro mínimo de uma mudança de prédio municipal concluído: liga a
+// estrutura antiga à obra substituta e guarda os compromissos ainda não pagos
+// (retirada e frete do estoque), que entram em Committed até serem pagos ou
+// liberados. Dinheiro, estoque e pessoas continuam nos seus lugares reais.
+public sealed class MunicipalRelocationOrder
+{
+    public int Id {get;set;}
+    public BuildingKind Kind {get;set;}
+    public int SourceBuildingId {get;set;}
+    public int TargetBuildingId {get;set;}
+    public int TargetProjectId {get;set;}
+    public MunicipalRelocationStage Stage {get;set;}
+    public DateTime OrderedAt {get;set;}
+    public DateTime? FinishedAt {get;set;}
+    public decimal RemovalReserved {get;set;}
+    public decimal TransferReserved {get;set;}
+    public decimal RemovalPaid {get;set;}
+    public decimal TransferPaid {get;set;}
+    public double BlockedSince {get;set;}=-1;
+    public List<int> TransferShipmentIds {get;set;}=[];
+    public Dictionary<ResourceKind,double> StockLost {get;set;}=new();
+    public int WorkersContinued {get;set;}
+    public int WorkersLeft {get;set;}
+    public string Cause {get;set;}="";
+    [JsonIgnore] public bool Active=>Stage is MunicipalRelocationStage.Constructing or MunicipalRelocationStage.Transferring;
+}
 public sealed record PersonalEvent(DateTime At,string Description);
 public sealed record MoneyMovement(DateTime At,string From,string To,decimal Amount,string Category,string Reason,int? EntityId);
 public sealed class Obligation
@@ -407,6 +437,7 @@ public sealed class CityState
     public List<Vehicle> Vehicles {get;set;}=[];
     public bool PavingFleetInitialized {get;set;}
     public List<Shipment> Shipments {get;set;}=[];
+    public List<MunicipalRelocationOrder> MunicipalRelocations {get;set;}=[];
     public List<ExternalFamilyCandidate> FamilyCandidates {get;set;}=[];
     public List<ExternalCompanyCandidate> CompanyCandidates {get;set;}=[];
     public Dictionary<ResourceKind,double> OutsideStock {get;set;}=new();

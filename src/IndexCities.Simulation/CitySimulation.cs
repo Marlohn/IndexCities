@@ -4,7 +4,7 @@ public sealed partial class CitySimulation
 {
     public CityState State {get;}
     public decimal CityBalance=>Balance("city");
-    public decimal Committed=>State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress).Sum(p=>p.BudgetRemaining);
+    public decimal Committed=>State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress).Sum(p=>p.BudgetRemaining)+State.MunicipalRelocations.Where(r=>r.Active).Sum(r=>r.RemovalReserved+r.TransferReserved);
     public decimal Available=>Math.Max(0,CityBalance-Committed);
     public decimal MonetaryTotal=>State.Wallets.Values.Sum();
     public IReadOnlyList<Building> Buildings=>State.Buildings;
@@ -75,7 +75,7 @@ public sealed partial class CitySimulation
     }
     void Step(double dt)
     {
-        MoveVehicles(dt);ReturnPavingMachines(dt);MoveCitizens(dt);var completedConstruction=ProgressConstruction(dt);UpdateMaintenanceCondition(dt);UpdateInfrastructure(dt);OperateBusinesses(dt);UpdateNeeds(dt);
+        MoveVehicles(dt);ReturnPavingMachines(dt);MoveCitizens(dt);var completedConstruction=ProgressConstruction(dt);UpdateMaintenanceCondition(dt);UpdateInfrastructure(dt);ProgressMunicipalRelocations();OperateBusinesses(dt);UpdateNeeds(dt);
         State.ElapsedSeconds+=dt;State.Now=State.Now.AddSeconds(dt);
         // Construction is physical work, not a periodic market decision. Dispatch
         // available vehicles and crews on the next simulated step, including when

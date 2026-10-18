@@ -86,6 +86,9 @@ public sealed partial class CitySimulation
             Personal(c,(old==null?"Contratado":"Mudou autonomamente de emprego")+" em "+best.Definition.Name+"; salário e rota avaliados");
         }
     }
+    // Real vacancies with route from home and an employer able to pay, best first.
+    List<Building> JobOptions(Building home)=>State.Buildings.Where(b=>b.Completed&&!b.Removed&&b.Kind!=BuildingKind.House&&!b.OperationClosed&&(!b.Definition.Private||b.CompanyId!=null&&CompanyById(b.CompanyId)!.Active)&&Access(b)!=null&&State.Citizens.Count(x=>x.Alive&&x.WorkplaceId==b.Id)<b.Definition.Jobs).Where(b=>FindRoadRoute(Access(home)?.Id??-1,Access(b)!.Id).Count>0).Where(b=>Spendable(b.CompanyId==null?"city":"company:"+b.CompanyId)>b.SalaryOffer*8*3).OrderByDescending(b=>JobScore(home,b)).ToList();
+    static decimal JobScore(Building home,Building job)=>job.SalaryOffer-(decimal)(home.Position.Distance(job.Position)/400);
     void AccrueWage(Citizen c,double seconds){var job=BuildingById(c.WorkplaceId);if(job==null)return;var earned=(decimal)(seconds/3600)*job.SalaryOffer;c.WagesAccrued+=earned;if(job.Kind is BuildingKind.WaterIntake or BuildingKind.WaterTreatment)State.WaterWageCostToday+=earned;else if(job.Kind==BuildingKind.WindPower)State.ElectricityWageCostToday+=earned;}
     // Citizens grouped by WorkplaceId in list order; lists are reused per step.
     readonly Dictionary<int,List<Citizen>> _staff=new();

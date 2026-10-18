@@ -36,7 +36,7 @@ public sealed class MunicipalRelocationQuoteTests
         Assert.NotNull(quote.Construction);Assert.True(quote.Construction!.PhysicallyValid);
         Assert.False(quote.Construction.Accessible);
         Assert.Equal(792m,quote.RemovalCost);
-        Assert.Equal(quote.RemovalCost+quote.Construction.Total,quote.TotalCost);
+        Assert.True(quote.TransferEstimate>0);Assert.Equal(quote.RemovalCost+quote.Construction.Total+quote.TransferEstimate,quote.TotalCost);
         Assert.Equal(new List<int>{901},quote.WorkerIds);
         Assert.True(quote.Stock.ContainsKey(ResourceKind.Wood));Assert.False(quote.Stock.ContainsKey(ResourceKind.Steel));
         Assert.Equal(150d,quote.CurrentCapacity);

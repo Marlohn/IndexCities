@@ -27,7 +27,7 @@ public sealed partial class CitySimulation
     void ScheduleMaintenance(bool essentialOnly=false)
     {
         var pending=State.Projects.Where(p=>p.IsMaintenance&&p.Status is WorkStatus.Waiting or WorkStatus.InProgress).ToList();
-        foreach(var building in State.Buildings.Where(b=>b.Completed&&!b.Removed&&!b.Definition.Private&&State.ElapsedSeconds>=b.MaintenanceDueAt&&(!essentialOnly||b.Definition.Utility||b.Kind==BuildingKind.WorksDepot)).OrderBy(b=>b.Definition.Utility?0:b.Kind==BuildingKind.WorksDepot?1:2)){
+        foreach(var building in State.Buildings.Where(b=>b.Completed&&!b.Removed&&!b.Definition.Private&&!b.OperationClosed&&State.ElapsedSeconds>=b.MaintenanceDueAt&&(!essentialOnly||b.Definition.Utility||b.Kind==BuildingKind.WorksDepot)).OrderBy(b=>b.Definition.Utility?0:b.Kind==BuildingKind.WorksDepot?1:2)){
             if(pending.Any(p=>p.BuildingId==building.Id))continue;
             var materials=building.Definition.Materials.Where(k=>k.Key is ResourceKind.Concrete or ResourceKind.Steel).ToDictionary(k=>k.Key,k=>Math.Max(.02,k.Value*.003));var labour=Math.Max(60,building.Definition.Width*building.Definition.Depth*.15);
             var project=CreateMaintenance(building.Position,materials,labour);if(project==null)continue;project.BuildingId=building.Id;pending.Add(project);
