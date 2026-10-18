@@ -134,9 +134,35 @@ public partial class Main
             Require(RecoveryNodes<Label>(_inspection!).Any(l => l.Text.Contains("estoque levado por caminhão")), "Inspeção diagnostica o estoque transferido");
             await RecoveryCaptureOnce("depot-done", GetViewport());
 
+            // Fixture de excesso de estoque: exercita a decisão humana de prazo
+            // por falta de espaço, com aviso na prévia e perda persistente.
+            newDepot.Stock[ResourceKind.Wood]=100;newDepot.Stock[ResourceKind.Steel]=80;
+            await RecoverySelectBuilding(newDepot);await RecoveryInspectionButton("↗ Mover");
+            var residualTarget=RelocationDestination(newDepot);await RecoveryWorldPoint(residualTarget);
+            Require(_modal!=null&&RecoveryNodes<Label>(_modal!).Any(l=>l.Text.Contains("24 h")&&l.Text.Contains("perda")),"Prévia avisa prazo e perda residual");
+            await RecoveryCaptureOnce("residual-preview",_modal!);
+            await RecoveryButton(RecoveryNodes<Button>(_modal!).Single(b=>b.Name=="ConfirmMunicipalRelocation"));
+            var residualOrder=_sim.State.MunicipalRelocations.Single(r=>r.SourceBuildingId==newDepot.Id);
+            for(var i=0;i<600&&residualOrder.StockRecoveryBlockedSeconds<600;i++)await RecoveryAdvance(60);
+            Require(residualOrder.StockRecoveryBlockedSeconds>=600&&!newDepot.Removed&&residualOrder.StockLost.Count==0,"Estoque sem espaço aguarda antes do prazo: "+residualOrder.Cause);
+            await RecoverySelectBuilding(newDepot);
+            Require(RecoveryNodes<Label>(_inspection!).Any(l=>l.Text.Contains("prazo de perda residual")&&l.Text.Contains("sem espaço")),"Inspeção mostra causa e prazo reais");
+            await RecoveryCaptureOnce("residual-waiting",GetViewport());
+            var blockedSeconds=residualOrder.StockRecoveryBlockedSeconds;
+            Require(TrySaveCity(),"Save isolado durante prazo de recuperação");LoadCity(_cityId);await RecoveryFrame();
+            residualOrder=_sim.State.MunicipalRelocations.Single(r=>r.SourceBuildingId==newDepot.Id);
+            Require(residualOrder.StockRecoveryBlockedSeconds==blockedSeconds,"Prazo preservado no save/load");
+            for(var i=0;i<30&&residualOrder.Active;i++)await RecoveryAdvance(3600);
+            Require(residualOrder.Stage==MunicipalRelocationStage.Completed&&residualOrder.StockLost.Values.Sum()>0,"Retirada após prazo baixa resíduo real: "+residualOrder.Cause);
+            Require(_sim.State.Ledger.Count(m=>m.Category=="Mudança municipal"&&m.Reason.StartsWith("Retirada física")&&m.EntityId==newDepot.Id)==1,"Retirada residual paga uma vez");
+            var residualBuilding=_sim.State.Buildings.Single(b=>b.Id==residualOrder.TargetBuildingId);
+            _world.Sync(_sim.State);await RecoverySelectBuilding(residualBuilding);
+            Require(RecoveryNodes<Label>(_inspection!).Any(l=>l.Text.Contains("perda do titular city")),"Perda efetiva diagnosticável no novo endereço");
+            await RecoveryCaptureOnce("residual-done",GetViewport());
+
             _sim.CheckInvariants();
             System.IO.File.WriteAllText(System.IO.Path.Combine(directory, "municipal-relocation-final.json"), _sim.SaveToJson());
-            GD.Print("INDEXCITIES_MUNICIPAL_RELOCATION_OK hall-total=" + Cash(updated.TotalCost) + " hall-removal=" + Cash(updated.RemovalCost) + " cancel=no-change stale-revalidated=true save-load=constructing depot-wood-moved=" + moved.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) + " used-by-works=" + supplied.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) + " workers=" + depotOrder.WorkersContinued + "/" + depotOrder.WorkersLeft + " directory=" + directory);
+            GD.Print("INDEXCITIES_MUNICIPAL_RELOCATION_OK hall-total=" + Cash(updated.TotalCost) + " hall-removal=" + Cash(updated.RemovalCost) + " cancel=no-change stale-revalidated=true save-load=constructing,recovery-deadline depot-wood-moved=" + moved.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) + " used-by-works=" + supplied.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) + " workers=" + depotOrder.WorkersContinued + "/" + depotOrder.WorkersLeft + " residual-loss="+residualOrder.StockLost.Values.Sum().ToString("0.#",System.Globalization.CultureInfo.InvariantCulture)+" directory=" + directory);
             GetTree().Quit();
         } catch (Exception exception) {
             GD.PushError("Municipal relocation: " + exception);

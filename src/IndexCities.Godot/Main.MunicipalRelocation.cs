@@ -44,7 +44,7 @@ public partial class Main
         Text(box,"Indenização: não se aplica a patrimônio municipal",14);
         Text(box,"Caixa disponível: "+Cash(_sim.Available),14);
         Text(box,"Empregos: "+quote.WorkerIds.Count+" funcionário(s) passam ao novo endereço e reavaliam o vínculo pelo novo trajeto",15);
-        Text(box,"Capacidade atual: "+quote.CurrentCapacity.ToString("N1")+" · o prédio antigo opera durante a obra; a capacidade acompanha a chegada da equipe ao novo endereço",15);
+        Text(box,"Capacidade atual: "+quote.CurrentCapacity.ToString("N1")+" · o prédio antigo opera enquanto viável; a troca exige estrutura e acesso aptos, e a capacidade acompanha a chegada da equipe",15);
         if(quote.Stock.Count>0)Text(box,"Estoque: "+string.Join(" • ",quote.Stock.Select(k=>ResourceName(k.Key)+" "+k.Value.ToString("N1")))+(quote.StockBeyondDestination>0?" · "+quote.StockBeyondDestination.ToString("N1")+" não cabe no destino":""),15);
         if(quote.WorksWithLocalReservation>0||quote.PendingPickups>0)Text(box,"Obras com material reservado aqui: "+quote.WorksWithLocalReservation+" · carregamentos a caminho: "+quote.PendingPickups,14);
         Text(box,quote.Message,14);
