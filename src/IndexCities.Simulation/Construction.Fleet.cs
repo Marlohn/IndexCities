@@ -9,7 +9,7 @@ public sealed partial class CitySimulation
     Vehicle? AvailableTruck(ResourceKind? resource=null)
     {
         // Fixed specialist vehicles; the original fleet count is unchanged.
-        var trucks=State.Vehicles.Where(v=>v.External&&!v.PassengerCar&&v.Machine==PavingMachine.None&&v.HomeBuildingId==null).ToList();
+        var trucks=State.Vehicles.Where(v=>v.External&&!v.PassengerCar&&v.Machine==PavingMachine.None&&v.HomeBuildingId==null&&!IsTow(v)).ToList();
         if(trucks.Count(v=>v.Status!=VehicleStatus.Outside)>=State.Tuning.ExternalTruckCount)return null;
         return trucks.FirstOrDefault(v=>v.Status==VehicleStatus.Outside&&(resource==null||v.Body==BodyFor(resource.Value)));
     }

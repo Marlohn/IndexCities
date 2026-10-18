@@ -31,7 +31,7 @@ public sealed partial class CitySimulation
     {
         var duration=end/State.Tuning.VehicleSpeed;
         foreach(var o in State.Vehicles){
-            if(o.Id==v.Id||o.Id==ignored?.Id||o.Status is not (VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded))continue;
+            if(o.Id==v.Id||o.Id==ignored?.Id||!OccupiesLane(o))continue;
             var relative=o.Position-v.Position;var along=relative.X*dir.X+relative.Z*dir.Z;var side=relative.X*left.X+relative.Z*left.Z;
             var oncoming=Math.Cos(o.Heading-v.Heading)<-.5&&o.Status==VehicleStatus.Travelling;
             var reach=end+8+(oncoming?Math.Max(State.Tuning.VehicleSpeed,State.Tuning.HighwaySpeed)*duration:0);
@@ -86,15 +86,17 @@ public sealed partial class CitySimulation
         var heading=d>.01?(target-v.Position)*(1/d):new Point(Math.Sin(v.Heading),Math.Cos(v.Heading));
         var leader=double.MaxValue;
         foreach(var o in State.Vehicles){
-            if(o.Id==v.Id||o.Status is not (VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded))continue;
+            if(o.Id==v.Id||!OccupiesLane(o))continue;
             var relative=o.Position-v.Position;var forward=relative.X*heading.X+relative.Z*heading.Z;var side=Math.Abs(relative.X*heading.Z-relative.Z*heading.X);
             if(forward>0&&side<2.6&&Math.Cos(o.Heading-v.Heading)>.5)leader=Math.Min(leader,forward);
         }
         var step=Math.Min(d,Math.Min(speed*remaining,Math.Max(0,leader-8)));
         if(step<.00001&&d>.00001){v.Cause="Ultrapassagem aguardando espaço";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;remaining=0;return;}
-        if(v.Fuel<=.000001){v.Status=VehicleStatus.Stranded;v.Cause="Sem combustível; nenhuma viagem fictícia";remaining=0;return;}
+        if(v.Fuel<=.000001){RunOutOfFuel(v);remaining=0;return;}
         step=Math.Min(step,v.Fuel/FuelRate(v));if(d>.01)v.Heading=Math.Atan2(heading.X,heading.Z);
         v.Position=v.Position.MoveTowards(target,step);v.Fuel=Math.Max(0,v.Fuel-step*FuelRate(v));v.FuelBurnedLastStep+=step*FuelRate(v);remaining-=step/speed;v.WaitingSince=0;
-        if(d<=step+.001){v.Detour.RemoveAt(0);if(v.Detour.Count==0){var resume=v.Route.IndexOf(v.DetourResumeNode,Math.Min(v.RouteIndex,v.Route.Count));if(resume>=0)v.RouteIndex=resume;v.Cause="Em viagem";}}
+        if(d<=step+.001){v.Detour.RemoveAt(0);if(v.Detour.Count==0){var resume=v.Route.IndexOf(v.DetourResumeNode,Math.Min(v.RouteIndex,v.Route.Count));if(resume>=0)v.RouteIndex=resume;
+            // A tow that drove the empty opposite lane is already at its pickup pose.
+            else if(v.TowPhase==TowPhase.ToVehicle&&v.DockPosition is {} pose&&v.Position.Distance(pose)<.05)v.RouteIndex=v.Route.Count;v.Cause="Em viagem";}}
     }
 }

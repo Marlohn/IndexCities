@@ -22,7 +22,9 @@ public sealed partial class CitySimulation
     }
     void ClearPassedJunction(Vehicle vehicle)
     {
-        if(vehicle.IntersectionClaim is {} held&&(!_roads.TryGetValue(held,out var road)||vehicle.Position.Distance(road.Position)>JunctionClearance))vehicle.IntersectionClaim=null;
+        // A heavy tow keeps its claim until the truck trailing it has also passed.
+        var trailing=vehicle.Body==TruckBody.TowHeavy&&vehicle.TowPhase is TowPhase.Delivering or TowPhase.Unloading;
+        if(vehicle.IntersectionClaim is {} held&&(!_roads.TryGetValue(held,out var road)||vehicle.Position.Distance(road.Position)>JunctionClearance&&(!trailing||(vehicle.Position-Forward(vehicle.Heading)*HeavyTowTrail).Distance(road.Position)>JunctionClearance)))vehicle.IntersectionClaim=null;
         if(vehicle.IntersectionClaim==null)vehicle.IntersectionEnteredAt=null;
         else if(_junctionAreas.ContainsKey(vehicle.IntersectionClaim.Value))vehicle.IntersectionEnteredAt??=vehicle.WaitingSince>0?vehicle.WaitingSince:VehicleMovementTime;
     }
