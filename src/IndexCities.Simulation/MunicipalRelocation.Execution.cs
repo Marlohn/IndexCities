@@ -116,7 +116,7 @@ public sealed partial class CitySimulation
             var refusal=DispatchRelocationStock(order,source,target,k,Math.Min(Free(k),space));
             if(refusal==null)dispatched=true;else blocked=refusal;
         }
-        var stockText=string.Join(", ",source.Stock.Where(e=>e.Value>.0001).Select(e=>e.Key+" "+e.Value.ToString("0.#",System.Globalization.CultureInfo.InvariantCulture)));
+        var stockText=string.Join(", ",source.Stock.Where(e=>e.Value>.0001).Select(e=>ResourceLabel(e.Key)+" "+e.Value.ToString("0.#",System.Globalization.CultureInfo.InvariantCulture)));
         if(dispatched||transfers.Count>0){order.BlockedSince=-1;order.Cause="Transferindo estoque por caminhão real: "+(transfers.Count+(dispatched?1:0))+" viagem(ns) em curso"+(stockText.Length>0?"; ainda no endereço antigo: "+stockText:"");return;}
         // No discard deadline is approved yet: recoverable stock is never written
         // off by time. The removal waits, with the real obstacle and how long it
@@ -141,7 +141,7 @@ public sealed partial class CitySimulation
     string? DispatchRelocationStock(MunicipalRelocationOrder order,Building source,Building target,ResourceKind k,double amount)
     {
         if(amount<=.001)return null;
-        var vehicle=AvailableTruck(k);if(vehicle==null)return "Aguardando caminhão externo disponível para "+k;
+        var vehicle=AvailableTruck(k);if(vehicle==null)return "Aguardando caminhão externo disponível para "+ResourceLabel(k);
         var from=Access(source);var to=Access(target);if(from==null||to==null||!HasExteriorAccess(source)||!HasExteriorAccess(target))return "Sem acesso viário entre os dois endereços";
         var entry=EntryNode();var route=FindRoadRoute(entry.Id,from.Id);var leg=FindRoadRoute(from.Id,to.Id);var back=FindRoadRoute(to.Id,entry.Id);
         if(route.Count==0||leg.Count==0||back.Count==0)return "Sem rota viável entre os dois endereços";
@@ -158,6 +158,7 @@ public sealed partial class CitySimulation
         vehicle.ShipmentId=shipment.Id;vehicle.Cargo=new();vehicle.Route=route;vehicle.RouteIndex=0;vehicle.DockPosition=DockAt(from,source,false);vehicle.Status=VehicleStatus.Travelling;vehicle.Position=State.Entry;vehicle.Cause="Mudança de "+source.Definition.Name+": buscando estoque no endereço antigo";
         return null;
     }
+    static string ResourceLabel(ResourceKind kind)=>kind switch{ResourceKind.Aggregate=>"Areia e brita",ResourceKind.Concrete=>"Concreto",ResourceKind.Steel=>"Aço",ResourceKind.Wood=>"Madeira",ResourceKind.Asphalt=>"Asfalto",ResourceKind.Food=>"Alimentos",_=>"Combustível"};
     void FinishRelocation(MunicipalRelocationOrder order,Building? source,Building? target)
     {
         var name=Catalog.Definitions[order.Kind].Name;
@@ -176,7 +177,7 @@ public sealed partial class CitySimulation
         }
         order.RemovalReserved=0;order.TransferReserved=0;order.BlockedSince=-1;order.Stage=MunicipalRelocationStage.Completed;order.FinishedAt=State.Now;
         var moved=State.Shipments.Where(s=>order.TransferShipmentIds.Contains(s.Id)&&s.Complete&&!s.Cancelled).SelectMany(s=>s.Cargo).GroupBy(e=>e.Key).ToDictionary(g=>g.Key,g=>g.Sum(e=>e.Value));
-        static string Amounts(Dictionary<ResourceKind,double> stock)=>string.Join(", ",stock.Select(e=>e.Key+" "+e.Value.ToString("0.#",System.Globalization.CultureInfo.InvariantCulture)));
+        static string Amounts(Dictionary<ResourceKind,double> stock)=>string.Join(", ",stock.Select(e=>ResourceLabel(e.Key)+" "+e.Value.ToString("0.#",System.Globalization.CultureInfo.InvariantCulture)));
         var parts=new List<string>{"Mudança de "+name+" concluída"+(target==null?"":" no novo endereço #"+target.Id)};
         parts.Add(source==null?"endereço antigo já não existia: nada a retirar":"retirada do endereço antigo paga ("+Cash(order.RemovalPaid)+")");
         if(order.TransferPaid>0)parts.Add("frete do estoque "+Cash(order.TransferPaid));
