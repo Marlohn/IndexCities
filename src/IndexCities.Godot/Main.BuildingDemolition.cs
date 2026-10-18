@@ -6,11 +6,18 @@ namespace IndexCities.Game;
 // reais, confirmação que revalida antes de cobrar, e andamento na inspeção.
 public partial class Main
 {
+    int? _buildingDemolitionTarget;
+    bool BuildingDemolitionPreview()
+    {
+        if(_buildingDemolitionTarget is not {} id)return false;
+        if(_modal==null||_sim.State.Buildings.FirstOrDefault(b=>b.Id==id&&!b.Removed) is not {} building){_buildingDemolitionTarget=null;_world.ClearPreview();return false;}
+        _world.PreviewBuildingDemolition(building);return true;
+    }
     string VacatingWindow=>_sim.State.Tuning.AssistedVacatingDays.ToString("0.##",Pt)+" dia(s)";
     void ShowBuildingDemolition(int buildingId,string feedback="")
     {
         var s=_sim.State;var building=s.Buildings.First(b=>b.Id==buildingId);var quote=_sim.QuoteBuildingDemolition(buildingId);
-        var box=Modal("Demolir "+building.Definition.Name);if(feedback.Length>0)Text(box,"⚠ "+feedback,16);
+        var box=Modal("Demolir "+building.Definition.Name);_buildingDemolitionTarget=buildingId;if(feedback.Length>0)Text(box,"⚠ "+feedback,16);
         Text(box,"Alvo: "+building.Definition.Name+" #"+building.Id+" • "+building.Position.X.ToString("N0")+", "+building.Position.Z.ToString("N0"),18);
         if(quote.TotalCost>0){
             var costs=Card(box,"Custos");
@@ -41,9 +48,10 @@ public partial class Main
         if(!result.Success){if(result.Message==CitySimulation.StaleDemolitionPreview||_sim.QuoteBuildingDemolition(buildingId) is {Allowed:false})ShowBuildingDemolition(buildingId,result.Message);else Text(feedback,result.Message);return;}
         CloseModal();if(_sim.State.Buildings.First(b=>b.Id==buildingId).Removed)ClearSelection();_inspectionKey="";RefreshInspection();RefreshHud();
     }
-    void BuildingDemolitionInspection(Node parent,Building building)
+    // Status of a confirmed order goes at the top of the inspection; the action at the end.
+    void BuildingDemolitionInspection(Node parent,Building building,bool status)
     {
-        if(building.Demolition is {} order){
+        if(status){if(building.Demolition is not {} order)return;
             var card=Card(parent,"Demolição confirmada");
             Text(card,order.CompensationPaid>0?"Indenização paga: "+Cash(order.CompensationPaid)+" a "+order.BeneficiaryName:"Sem indenização a pagar",14);
             Text(card,"Remoção paga: "+Cash(order.RemovalCostPaid),14);
@@ -51,7 +59,7 @@ public partial class Main
             InspectionText(card,()=>"Prazo restante: "+Math.Max(0,(order.DeadlineSeconds-_sim.State.ElapsedSeconds)/3600).ToString("N1")+" h; depois, quem não se mudou fica sem moradia e o prédio é retirado",14);
             return;
         }
-        if(!building.Completed||building.Kind==BuildingKind.CityHall)return;
-        InspectionButton(parent,()=>building.Definition.Private&&building.OwnerAccount!=null?"× Demolir com indenização":"× Demolir",()=>ShowBuildingDemolition(building.Id),"Mostra custos, beneficiário e afetados antes de confirmar");
+        if(building.Demolition!=null||!building.Completed||building.Kind==BuildingKind.CityHall)return;
+        InspectionButton(parent,()=>_sim.QuoteBuildingDemolition(building.Id).Compensation>0?"× Demolir com indenização":"× Demolir",()=>ShowBuildingDemolition(building.Id),"Mostra custos, beneficiário e afetados antes de confirmar");
     }
 }

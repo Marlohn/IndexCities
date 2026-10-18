@@ -166,6 +166,7 @@ public partial class Main:Node3D
     void UpdatePreview()
     {
         RefreshPlacementGrid();
+        if(BuildingDemolitionPreview())return;
         if(_demolitionTool){if(_hoverPreview&&_modal==null&&GetViewport().GuiGetHoveredControl()==null&&RoadUnderPointer(Ground(_pointerPixel??GetViewport().GetMousePosition())) is {Highway:false} target)_world.PreviewDemolition(target);else _world.ClearPreview();return;}
         if (_building is {} kind) {
             if (_dragStart is {} dragStart) {

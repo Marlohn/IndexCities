@@ -115,4 +115,27 @@ public sealed class BuildingDemolitionTests
         Assert.True(sim.DemolishBuilding(house.Id,quote).Success);Assert.True(house.Removed);
         Assert.Equal(global+quote.RemovalCost,sim.Balance("global"));Assert.Equal(0m,Paid(sim,"Indenização",house.Id));
     }
+    [Fact] public void Local_order_not_yet_loaded_for_a_demolished_shop_stays_at_the_farm()
+    {
+        var sim=new CitySimulation(42);
+        Assert.True(sim.PlaceBuilding(BuildingKind.CityHall,new(-152,16)).Success);Assert.True(sim.PlaceRoad(new(-192,0),new(100,0)).Success);sim.Advance(7200);
+        sim.State.Companies.Add(new Company{Id=900,Name="Campo 900"});sim.State.Wallets["company:900"]=0;sim.State.Companies.Add(new Company{Id=901,Name="Mercado 901"});sim.State.Wallets["company:901"]=0;
+        var farm=new Building{Id=sim.State.NextId++,Kind=BuildingKind.Farm,Position=new(-40,26),Completed=true,OwnerAccount="company:900",CompanyId=900};farm.Stock[ResourceKind.Food]=30;sim.State.Buildings.Add(farm);
+        var shop=new Building{Id=sim.State.NextId++,Kind=BuildingKind.Grocery,Position=new(40,14),Completed=true,OwnerAccount="company:901",CompanyId=901};sim.State.Buildings.Add(shop);
+        Assert.NotNull(sim.Access(farm));Assert.NotNull(sim.Access(shop));
+        var truck=new Vehicle{Id=sim.State.NextId++,OwnerAccount="company:900",HomeBuildingId=farm.Id,Position=farm.Door,Status=VehicleStatus.Unloading,LoadTimer=1,Fuel=40};
+        var order=new Shipment{Id=sim.State.NextId++,Purpose=ShipmentPurpose.Food,SourceBuildingId=farm.Id,DestinationBuildingId=shop.Id,VehicleId=truck.Id,PickedUp=false,GoodsOwnerAccount="company:901",Cargo=new(){{ResourceKind.Food,20}}};
+        var driver=new Citizen{Id=sim.State.NextId++,Name="Lia 900",FamilyId=sim.State.NextId++,Resident=true,InsideMap=true,Age=30,WorkplaceId=farm.Id,VehicleId=truck.Id,Position=truck.Position};sim.State.Citizens.Add(driver);sim.State.Wallets[driver.Account]=0;sim.State.Families.Add(new Family{Id=driver.FamilyId,Members=[driver.Id]});
+        truck.DriverId=driver.Id;truck.ShipmentId=order.Id;sim.State.Vehicles.Add(truck);sim.State.Shipments.Add(order);
+        Assert.True(sim.DemolishBuilding(shop.Id).Success);Assert.True(shop.Removed);
+        for(var i=0;i<30;i++)sim.Advance(60);sim.CheckInvariants();
+        Assert.True(order.Complete&&order.Cancelled);Assert.Null(truck.ShipmentId);Assert.Empty(truck.Cargo);Assert.Equal(30,farm.Quantity(ResourceKind.Food),3);
+    }
+    [Fact] public void Saves_without_demolition_data_load_with_defaults_and_stay_unchanged()
+    {
+        var sim=new CitySimulation(7);Add(sim,BuildingKind.House);var json=sim.SaveToJson();
+        Assert.DoesNotContain("\"Demolition\"",json);Assert.Contains("\"AssistedVacatingDays\":1,",json);
+        var loaded=CitySimulation.FromJson(json.Replace("\"AssistedVacatingDays\":1,",""));
+        Assert.Equal(1,loaded.State.Tuning.AssistedVacatingDays);Assert.All(loaded.State.Buildings,b=>Assert.Null(b.Demolition));Assert.Equal(json,loaded.SaveToJson());
+    }
 }

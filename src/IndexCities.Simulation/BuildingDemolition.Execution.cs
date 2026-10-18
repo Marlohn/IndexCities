@@ -29,9 +29,10 @@ public sealed partial class CitySimulation
     }
     // Revalidation before charging: money, beneficiary and affected people/stock
     // must match what the player reviewed, otherwise the preview is shown again.
+    // Stock tolerates the small continuous drift of production and sales.
     static bool SameDemolitionImpact(BuildingDemolitionQuote a,BuildingDemolitionQuote b)=>a.BuildingId==b.BuildingId&&a.RemovalCost==b.RemovalCost&&a.Compensation==b.Compensation&&a.TotalCost==b.TotalCost&&a.OwnerAccount==b.OwnerAccount&&a.WaitsForResidents==b.WaitsForResidents
         &&a.ResidentIds.Order().SequenceEqual(b.ResidentIds.Order())&&a.WorkerIds.Order().SequenceEqual(b.WorkerIds.Order())
-        &&a.Stock.Count==b.Stock.Count&&a.Stock.All(entry=>b.Stock.TryGetValue(entry.Key,out var other)&&Math.Round(entry.Value,1)==Math.Round(other,1));
+        &&a.Stock.Count==b.Stock.Count&&a.Stock.All(entry=>b.Stock.TryGetValue(entry.Key,out var other)&&Math.Abs(entry.Value-other)<=Math.Max(1,entry.Value*.05));
     public List<Family> VacatingFamilies(Building building)=>State.Families.Where(f=>f.HomeId==building.Id).ToList();
     void ProgressBuildingDemolitions(bool searchHomes)
     {
@@ -78,22 +79,27 @@ public sealed partial class CitySimulation
         var workers=State.Citizens.Where(c=>c.WorkplaceId==building.Id).ToList();
         foreach(var c in workers){SettleWages(c,building);c.WorkplaceId=null;Personal(c,"Vínculo encerrado: "+name+" demolido por ordem municipal; salário devido pago ou registrado como dívida");}
         ReleaseShipmentsOf(building);
+        // Vehicles heading to refuel at a removed station replan on the remaining network.
+        foreach(var v in State.Vehicles.Where(v=>v.RefuellingAt==building.Id)){v.RefuellingAt=null;v.SavedRoute=[];v.Route.Clear();v.RouteIndex=0;if(v.Status==VehicleStatus.Travelling)v.Status=VehicleStatus.Waiting;v.Cause="Posto demolido antes do abastecimento; replanejando";}
         if(building.Kind==BuildingKind.WorksDepot)foreach(var project in State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress))project.LocalReserved.Clear();
         building.Stock.Clear();building.OperationalCapacity=0;building.FamilyId=null;building.OperationClosed=true;
         if(CompanyById(building.CompanyId) is {} company)company.Buildings.Remove(building.Id);
         building.CompanyId=null;building.OwnerAccount=null;building.Removed=true;building.Cause="Demolido por ordem municipal";
         RetireMaintenanceWithoutTargets();
-        var parts=new List<string>{name+" demolido"};
+        var parts=new List<string>{"Demolição concluída: "+name+" #"+building.Id+" retirado"};var order=building.Demolition;
+        if(order is {CompensationPaid:>0})parts.Add("indenização "+Cash(order.CompensationPaid)+" paga na confirmação a "+order.BeneficiaryName);
+        if(order is {FamiliesRelocated:>0})parts.Add(order.FamiliesRelocated+" família(s) mudaram-se comprando outra casa");
         if(displacedFamilies>0)parts.Add(displacedFamilies+" família(s) ficaram sem moradia ao fim do prazo");
         if(workers.Count>0)parts.Add(workers.Count+" emprego(s) encerrado(s)");
-        if(lost.Count>0)parts.Add("estoque perdido ("+string.Join(", ",lost.Select(entry=>entry.Key+" "+entry.Value.ToString("0.#",System.Globalization.CultureInfo.InvariantCulture)))+") de "+(owner??"sem titular"));
+        if(lost.Count>0)parts.Add("estoque perdido ("+string.Join(", ",lost.Select(entry=>entry.Key+" "+entry.Value.ToString("0.#",System.Globalization.CultureInfo.InvariantCulture)))+") de "+(owner==null?"sem titular":ReadableOwnerName(owner)));
         Event(string.Join("; ",parts)+"; sem reembolso de obra ou materiais");
     }
     // Reservations still inside the removed structure are lost with its stock;
-    // the trucks sent to load them are released without cargo.
+    // a local order not yet loaded for a removed destination stays at its origin.
+    // Either way the trucks sent to load are released without cargo.
     void ReleaseShipmentsOf(Building building)
     {
-        foreach(var s in State.Shipments.Where(s=>!s.Complete&&!s.PickedUp&&s.SourceBuildingId==building.Id).ToList()){
+        foreach(var s in State.Shipments.Where(s=>!s.Complete&&!s.PickedUp&&(s.SourceBuildingId==building.Id||s.ProjectId==null&&s.DestinationBuildingId==building.Id)).ToList()){
             if(s.ProjectId is {} pid&&State.Projects.FirstOrDefault(p=>p.Id==pid) is {} project)foreach(var kv in s.Cargo)project.LocalReserved[kv.Key]=Math.Max(0,project.LocalReserved.GetValueOrDefault(kv.Key)-kv.Value);
             var v=State.Vehicles.FirstOrDefault(x=>x.Id==s.VehicleId&&x.ShipmentId==s.Id);
             // External trucks follow the existing cancellation: nothing to load, back to the exterior.
@@ -101,7 +107,7 @@ public sealed partial class CitySimulation
             s.Complete=true;s.Cancelled=true;v.ShipmentId=null;
             if(State.Citizens.FirstOrDefault(c=>c.Id==v.DriverId) is {} driver&&driver.VehicleId!=v.Id){driver.BoardingVehicleId=null;driver.Path.Clear();driver.PathIndex=0;v.DriverId=null;}
             else ReleaseDriver(v);
-            v.Status=VehicleStatus.Parked;v.Cause="Carga reservada perdida com "+building.Definition.Name+" demolido";
+            v.Status=VehicleStatus.Parked;v.LoadTimer=0;v.Cause=s.SourceBuildingId==building.Id?"Carga reservada perdida com "+building.Definition.Name+" demolido":"Entrega cancelada: "+building.Definition.Name+" de destino demolido; carga permanece na origem";
         }
     }
 }
