@@ -171,4 +171,15 @@ public sealed class TowingTests
         Run(scene,1500);
         Assert.All(queue,v=>Assert.True(v.Position.X>30||v.RouteIndex>=v.Route.Count,v.Cause+" "+v.Position));sim.CheckInvariants();
     }
+    [Fact] public void A_car_stranded_at_a_junction_mouth_holding_it_is_still_reached_and_the_junction_frees()
+    {
+        // A side street north at x=4 makes (4,0) a junction right in front of the car.
+        var scene=City(ring:false);var s=scene.Sim.State;
+        for(var z=4;z<=40;z+=4)s.Roads.Add(new(){Id=s.NextId++,Position=new(4,z)});
+        var sim=new CitySimulation(s);var car=sim.State.Vehicles.Single(v=>v.Id==scene.Car.Id);var junction=sim.State.Roads.Single(r=>r.Position==new Point(4,0));
+        car.IntersectionClaim=junction.Id;
+        var reached=false;for(var t=0;t<900;t+=2){sim.Advance(2);if(sim.State.Vehicles.Any(v=>v.TowTargetId==car.Id&&v.TowPhase==TowPhase.Loading))reached=true;}
+        Assert.True(reached,string.Join(" | ",sim.State.Vehicles.Where(v=>v.Body==TruckBody.Tow).Select(v=>v.Position+" "+v.Cause)));
+        Assert.NotEqual(VehicleStatus.Stranded,car.Status);Assert.Null(car.IntersectionClaim);sim.CheckInvariants();
+    }
 }

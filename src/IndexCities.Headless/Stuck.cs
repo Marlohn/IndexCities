@@ -54,7 +54,8 @@ sealed class Stuck
             var v=st.Vehicles.First(x=>x.Id==id);var tow=st.Vehicles.FirstOrDefault(x=>x.TowTargetId==id);
             // Queue: vehicles held (waiting) within 60 m behind it, same lane and heading.
             var queue=v.Status==VehicleStatus.Stranded?st.Vehicles.Count(o=>o.Id!=id&&o.WaitingSince>0&&o.Status==VehicleStatus.Travelling&&Math.Cos(o.Heading-v.Heading)>.9&&(v.Position-o.Position) is var r&&r.X*Math.Sin(v.Heading)+r.Z*Math.Cos(v.Heading) is >0 and <60&&Math.Abs(r.X*Math.Cos(v.Heading)-r.Z*Math.Sin(v.Heading))<2.6):0;
-            Console.WriteLine($"    t+{(st.ElapsedSeconds-since)/60,3:F0}min #{id} {v.Status} fila atrás={queue} guincho={(tow==null?"-":"#"+tow.Id+" "+tow.TowPhase)} «{v.Cause}» ocupantes={st.Citizens.Count(c=>c.VehicleId==id)}");
+            if(tow!=null&&Environment.GetEnvironmentVariable("STUCK_EVERY")=="1")foreach(var o in st.Vehicles.Where(o=>o.Id!=tow.Id&&o.Status!=VehicleStatus.Outside).OrderBy(o=>o.Position.Distance(tow.Position)).Take(2))Console.WriteLine($"      perto: #{o.Id} {o.Status} ({o.Position.X:F1},{o.Position.Z:F1}) h={o.Heading*180/Math.PI:F0} rota {o.RouteIndex}/{o.Route.Count} esperando desde {o.WaitingSince:F0} (agora {st.ElapsedSeconds:F0}) claim={o.IntersectionClaim} «{o.Cause}»");
+            Console.WriteLine($"    t+{(st.ElapsedSeconds-since)/60,3:F0}min #{id} {v.Status} fila atrás={queue} guincho={(tow==null?"-":$"#{tow.Id} {tow.TowPhase} {tow.Status} em ({tow.Position.X:F1},{tow.Position.Z:F1}) rota {tow.RouteIndex}/{tow.Route.Count} «{tow.Cause}»")} «{v.Cause}» ocupantes={st.Citizens.Count(c=>c.VehicleId==id)}");
         }
     }
 }

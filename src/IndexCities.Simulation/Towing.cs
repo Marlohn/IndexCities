@@ -250,6 +250,12 @@ public sealed partial class CitySimulation
         else{var s=PendingShipment(t);var building=BuildingById(s==null?t.HomeBuildingId:s.PickedUp?s.DestinationBuildingId:s.SourceBuildingId);t.DockPosition=DockAt(_roads[route[^1]],building,t.CrewAboard);}
         foreach(var c in Occupants(t))Personal(c,"Combustível comprado no exterior após o reboque; voltando para a viagem");
     }
+    // The stranded vehicle that holds this junction (or its shared area), if any.
+    Vehicle? JunctionHeldByStranded(Vehicle v,RoadNode junction)
+    {
+        var area=_junctionAreas.GetValueOrDefault(junction.Id);
+        return State.Vehicles.FirstOrDefault(o=>o.Id!=v.Id&&o.Id!=v.TowTargetId&&o.Status==VehicleStatus.Stranded&&o.IntersectionClaim is {} held&&(held==junction.Id||area?.Contains(held)==true));
+    }
     // Head-on arrival: the tow crosses into the stranded vehicle's lane in front of
     // it only with that short stretch free (the queue behind it is not in the way).
     bool PickupLaneClear(Vehicle tow,Point dock)
@@ -262,24 +268,31 @@ public sealed partial class CitySimulation
         }
         return true;
     }
-    // From behind a queue: the empty opposite lane up to the free side in front,
-    // under the same safety check as overtaking (straight stretch, lane clear).
+    // From behind a queue (in the stranded vehicle's lane, or held at the junction
+    // it blocks): the empty opposite lane up to the free side in front, under the
+    // same safety check as overtaking (straight stretch, opposite lane clear); the
+    // only junction allowed is the one at the pickup itself.
     bool TryTowContraflow(Vehicle v)
     {
         if(v.Detour.Count>0||v.DockPosition is not {} pose||v.RouteIndex<1||v.RouteIndex>=v.Route.Count||State.Vehicles.FirstOrDefault(o=>o.Id==v.TowTargetId) is not {Status:VehicleStatus.Stranded} t)return false;
         if(v.WaitingSince<=0||VehicleMovementTime-v.WaitingSince<State.Tuning.BypassWaitSeconds||!RoadAxis(v,out var dir,out var left))return false;
-        var relative=t.Position-v.Position;var along=relative.X*dir.X+relative.Z*dir.Z;if(along<=0||along>150||Math.Abs(relative.X*left.X+relative.Z*left.Z)>2.6)return false;
-        var toPose=pose-v.Position;var end=toPose.X*dir.X+toPose.Z*dir.Z;if(end<=along||Math.Abs(toPose.X*left.X+toPose.Z*left.Z)>2.6)return false;
+        var toPose=pose-v.Position;var end=toPose.X*dir.X+toPose.Z*dir.Z;var poseSide=toPose.X*left.X+toPose.Z*left.Z;
+        if(end<=4||end>150||poseSide< -2.6||poseSide>OppositeLaneOffset+2.2)return false;
         Point? previous=null;
         for(var i=v.RouteIndex-1;i<v.Route.Count;i++){
             if(!_roads.TryGetValue(v.Route[i],out var node))return false;
+            var nodeAlong=(node.Position-v.Position).X*dir.X+(node.Position-v.Position).Z*dir.Z;if(i>=v.RouteIndex&&nodeAlong>end+.5)break;
+            if(node.Position.Distance(pose)<=State.Tuning.RoadWidth/2+1)break;
             var nearPassed=i==v.RouteIndex-1&&node.Position.Distance(v.Position)<State.Tuning.RoadWidth;
             if((i>=v.RouteIndex||nearPassed)&&(node.Neighbours.Count>=3||node.Crosswalk))return false;
             if(previous is {} p){var step=node.Position-p;var len=step.Distance(default);if(len<.01||(step.X*dir.X+step.Z*dir.Z)/len<.999)return false;}
-            previous=node.Position;var nodeAlong=(node.Position-v.Position).X*dir.X+(node.Position-v.Position).Z*dir.Z;if(i>=v.RouteIndex&&nodeAlong>end+.5)break;
+            previous=node.Position;
         }
-        if(!OppositeLaneClear(v,t,dir,left,end))return false;
-        v.Detour=[v.Position+dir*2+left*OppositeLaneOffset,pose+left*OppositeLaneOffset-dir*4,pose];v.DetourResumeNode=-1;v.WaitingSince=0;v.Cause=$"Guincho pela contramão vazia até o veículo {t.Id}";
+        if(!OppositeLaneClear(v,t,dir,left,end,returnsToLane:false))return false;
+        // The pickup pose itself must be free (the queue stands behind it).
+        if(State.Vehicles.Any(o=>o.Id!=v.Id&&o.Id!=t.Id&&OccupiesLane(o)&&o.Position.Distance(pose)<3))return false;
+        var detour=new List<Point>{v.Position+dir*2+left*OppositeLaneOffset};if(end-4>2)detour.Add(v.Position+dir*(end-4)+left*OppositeLaneOffset);detour.Add(pose);
+        v.Detour=detour;v.DetourResumeNode=-1;v.WaitingSince=0;v.Cause=$"Guincho pela contramão vazia até o veículo {t.Id}";
         return true;
     }
 }
