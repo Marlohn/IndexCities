@@ -1,0 +1,25 @@
+  Determinando os projetos a serem restaurados...
+  Todos os projetos estão atualizados para restauração.
+  IndexCities.Simulation -> C:\Users\Marlohn\orca\workspaces\IndexCities\guincho-modelo\src\IndexCities.Simulation\bin\Debug\net8.0\IndexCities.Simulation.dll
+  Marlohn/guincho-modelo
+  9020670103caa83f4a945c7a2ad720d00a7950cc
+  src/IndexCities.Godot/Assets/Construction/Scenes/vehicle.asphalt_paver.a.tscn
+  src/IndexCities.Godot/Assets/Construction/Scenes/vehicle.road_roller.a.tscn
+  src/IndexCities.Godot/Assets/Construction/Scenes/vehicle.tow_truck.a.tscn
+  src/IndexCities.Godot/Assets/Construction/Scenes/vehicle.tow_truck_heavy.a.tscn
+  src/IndexCities.Godot/Assets/Construction/Scenes/vehicle.truck_dump.a.tscn
+  src/IndexCities.Godot/Assets/Construction/Scenes/vehicle.truck_flatbed.a.tscn
+  src/IndexCities.Godot/Assets/Construction/Scenes/vehicle.truck_mixer.a.tscn
+  src/IndexCities.Godot/Assets/Construction/Source/build_construction.gd
+  src/IndexCities.Godot/Assets/Construction/Source/verify_construction.gd
+  src/IndexCities.Godot/Assets/Construction/manifest.construction.json
+C:\Users\Marlohn\orca\workspaces\IndexCities\guincho-modelo\src\IndexCities.Godot\Main.ProblemAlertsQA.cs(198,25): warning CS8629: O tipo de valor de nulidade pode ser nulo. [C:\Users\Marlohn\orca\workspaces\IndexCities\guincho-modelo\src\IndexCities.Godot\IndexCities.Godot.csproj]
+  IndexCities.Godot -> C:\Users\Marlohn\orca\workspaces\IndexCities\guincho-modelo\src\IndexCities.Godot\.godot\mono\temp\bin\Debug\IndexCities.Godot.dll
+
+Compilação com êxito.
+
+C:\Users\Marlohn\orca\workspaces\IndexCities\guincho-modelo\src\IndexCities.Godot\Main.ProblemAlertsQA.cs(198,25): warning CS8629: O tipo de valor de nulidade pode ser nulo. [C:\Users\Marlohn\orca\workspaces\IndexCities\guincho-modelo\src\IndexCities.Godot\IndexCities.Godot.csproj]
+    1 Aviso(s)
+    0 Erro(s)
+
+Tempo Decorrido 00:00:02.57

@@ -1,0 +1,34 @@
+Godot Engine v4.7.2.stable.mono.official.ed1daf0bf - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 546.18 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 3050 6GB Laptop GPU
+
+[construction-check] vehicle.truck_dump.a rest=[P: (-1.45, 0.0, -3.6), S: (2.9, 2.78, 7.2)] operation=[P: (-1.45, 0.0, -3.6), S: (2.9, 4.940292, 7.987155)]
+[construction-check] vehicle.truck_mixer.a rest=[P: (-1.45, 0.0, -3.6), S: (2.9, 3.282883, 7.2)] operation=[P: (-1.45, 0.0, -3.6), S: (2.9, 3.27964, 7.211497)]
+[construction-check] vehicle.truck_flatbed.a rest=[P: (-1.45, 0.0, -3.6), S: (2.9, 2.78, 7.2)] operation=[P: (-1.45, 0.0, -3.6), S: (2.9, 2.78, 7.2)]
+[construction-check] vehicle.tow_truck.a rest=[P: (-1.45, 0.0, -3.6), S: (2.9, 2.97, 7.2)] operation=[P: (-1.45, 0.0, -3.6), S: (2.9, 3.346729, 7.731637)]
+[construction-check] vehicle.tow_truck_heavy.a rest=[P: (-1.45, 0.0, -4.065), S: (2.9, 3.29, 8.13)] operation=[P: (-1.45, 0.0, -4.065), S: (2.9, 3.29, 8.03925)]
+[construction-check] vehicle.asphalt_paver.a rest=[P: (-1.27, 0.0, -2.31), S: (2.54, 2.84, 4.62)] operation=[P: (-1.27, -0.0, -2.31), S: (2.54, 2.84, 4.62)]
+[construction-check] vehicle.road_roller.a rest=[P: (-1.159953, 0.000029, -1.978471), S: (2.319907, 2.709971, 3.966942)] operation=[P: (-1.159443, 0.000029, -2.10635), S: (2.335588, 2.709971, 4.094821)]
+[construction-check] 821 checks; 0 failures
+[construction-render] device=NVIDIA GeForce RTX 3050 6GB Laptop GPU method=gl_compatibility display=Windows
+[construction-render] saved C:/Users/Marlohn/orca/workspaces/IndexCities/guincho-modelo/src/IndexCities.Godot/../../artifacts/verification/construction-models/board_urban_loaded_iso.png
+[construction-render] saved C:/Users/Marlohn/orca/workspaces/IndexCities/guincho-modelo/src/IndexCities.Godot/../../artifacts/verification/construction-models/board_urban_loaded_back.png
+[construction-render] saved C:/Users/Marlohn/orca/workspaces/IndexCities/guincho-modelo/src/IndexCities.Godot/../../artifacts/verification/construction-models/detail_paver_hopper.png
+[construction-render] saved C:/Users/Marlohn/orca/workspaces/IndexCities/guincho-modelo/src/IndexCities.Godot/../../artifacts/verification/construction-models/detail_paver_screed.png
+[construction-render] saved C:/Users/Marlohn/orca/workspaces/IndexCities/guincho-modelo/src/IndexCities.Godot/../../artifacts/verification/construction-models/detail_mixer_front_iso.png
+[construction-render] saved C:/Users/Marlohn/orca/workspaces/IndexCities/guincho-modelo/src/IndexCities.Godot/../../artifacts/verification/construction-models/detail_tow_loaded_front_iso.png
+[construction-render] saved C:/Users/Marlohn/orca/workspaces/IndexCities/guincho-modelo/src/IndexCities.Godot/../../artifacts/verification/construction-models/detail_tow_loaded_back_iso.png
+[construction-render] saved C:/Users/Marlohn/orca/workspaces/IndexCities/guincho-modelo/src/IndexCities.Godot/../../artifacts/verification/construction-models/detail_tow_deck_operation.png
+[construction-render] saved C:/Users/Marlohn/orca/workspaces/IndexCities/guincho-modelo/src/IndexCities.Godot/../../artifacts/verification/construction-models/detail_tow_heavy_front_iso.png
+[construction-render] saved C:/Users/Marlohn/orca/workspaces/IndexCities/guincho-modelo/src/IndexCities.Godot/../../artifacts/verification/construction-models/detail_tow_heavy_back_iso.png
+[construction-render] saved C:/Users/Marlohn/orca/workspaces/IndexCities/guincho-modelo/src/IndexCities.Godot/../../artifacts/verification/construction-models/detail_tow_heavy_lift.png
+[construction-render] saved C:/Users/Marlohn/orca/workspaces/IndexCities/guincho-modelo/src/IndexCities.Godot/../../artifacts/verification/construction-models/detail_tow_heavy_cradle.png
+[construction-render] saved C:/Users/Marlohn/orca/workspaces/IndexCities/guincho-modelo/src/IndexCities.Godot/../../artifacts/verification/construction-models/sheet_truck_dump.png
+[construction-render] saved C:/Users/Marlohn/orca/workspaces/IndexCities/guincho-modelo/src/IndexCities.Godot/../../artifacts/verification/construction-models/sheet_truck_mixer.png
+[construction-render] saved C:/Users/Marlohn/orca/workspaces/IndexCities/guincho-modelo/src/IndexCities.Godot/../../artifacts/verification/construction-models/sheet_truck_flatbed.png
+[construction-render] saved C:/Users/Marlohn/orca/workspaces/IndexCities/guincho-modelo/src/IndexCities.Godot/../../artifacts/verification/construction-models/sheet_asphalt_paver.png
+[construction-render] saved C:/Users/Marlohn/orca/workspaces/IndexCities/guincho-modelo/src/IndexCities.Godot/../../artifacts/verification/construction-models/sheet_road_roller.png
+[construction-render] saved C:/Users/Marlohn/orca/workspaces/IndexCities/guincho-modelo/src/IndexCities.Godot/../../artifacts/verification/construction-models/sheet_tow_truck.png
+[construction-render] saved C:/Users/Marlohn/orca/workspaces/IndexCities/guincho-modelo/src/IndexCities.Godot/../../artifacts/verification/construction-models/sheet_tow_truck_heavy.png
+[construction-render] saved C:/Users/Marlohn/orca/workspaces/IndexCities/guincho-modelo/src/IndexCities.Godot/../../artifacts/verification/construction-models/lineup_front_operation.png
+[construction-render] saved C:/Users/Marlohn/orca/workspaces/IndexCities/guincho-modelo/src/IndexCities.Godot/../../artifacts/verification/construction-models/lineup_back_operation.png
+[construction-render] PASS 21 captures plus mixer tile; real GL Compatibility; no save writes
