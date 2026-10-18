@@ -209,8 +209,8 @@ public sealed partial class CitySimulation
         t.HoldingPosition=null;
         if(station==null){t.Cause="Rebocado; posto indisponível na entrega";return;}
         if(!Crewed(t)){
-            // Nobody aboard (they went on foot): it stays parked at the station, off the road.
-            if(t.PassengerCar&&ParkingSpots(station).FirstOrDefault(s=>SpotFree(s,t.Id)) is {Key:not null} spot){t.Position=spot.Position;t.Heading=spot.Heading;}
+            // Nobody aboard (they went on foot): it stays parked where the tow left it
+            // at the station, off the road, as a car that could not pay for fuel.
             t.Cause="Rebocado ao posto "+station.Id+"; estacionado aguardando o dono";t.TowResumeNode=null;return;
         }
         // The owner deals with it under the existing station rules.
