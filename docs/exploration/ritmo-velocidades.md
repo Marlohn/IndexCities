@@ -567,3 +567,24 @@ dotnet src/IndexCities.Headless/bin/Release/net8.0/IndexCities.Headless.dll scal
 ```
 
 **Revisão independente:** DeepSeek V4.1 Flash (`opencode/deepseek-v4.1-flash-free`), em duas rodadas e sem achados Alto ou Médio. O revisor reproduziu os SHAs (6/6 depois; 5/6 antes, porque o sexto não terminou no tempo dele) e rodou sondas próprias contra reimplementações literais do código removido (≈2 milhões de checagens, 0 divergências). As notas que ele deixou foram corrigidas: redação da ARCHITECTURE, premissa de Id único documentada e buffer esvaziado ao fim do lote. Relatórios em `artifacts/verification/otimizacao-caminhada/review-deepseek/`.
+
+## 2026-10-18 — referência para conversão de quantidades a ponto fixo
+
+Medição técnica, sem autoridade de produto. Autorização do responsável registrada em [mundo-tempo-saves](../spec/mundo-tempo-saves.md#tempo-de-jogo); inventário de acumuladores e limites para uma agenda em [pesquisa do motor, §17](simulation-engine-performance-research.md#17-inventário-de-quantidades-acumuladas-no-núcleo-2026-10-18).
+
+Base: `origin/main` em `c50923a`, .NET 8.0.32, Release, aquecimento padrão de 2 dias. `cycle`: `scale cycle --days=7`; `grid`: `stuck grid --rows=3 --length=400 --days=11`; cada comando executado com `--seed=42`, `7` e `43`, limite de 3.600 s. Refeições são os acontecimentos reais de consumo doméstico; salários são pagamentos da categoria `Salários / <prédio>`; médias usam SIMs vivos e residentes.
+
+| Cenário | Seed | Mortes antes → depois | Refeições antes → depois | Salários antes → depois | Saúde média antes → depois | Satisfação média antes → depois | Veículos parados antes → depois |
+|---|---|---|---|---|---|---|---|
+| cycle, 7 dias | 42 | 1 → pendente | 840 → pendente | 5.297,66 → pendente | 99,999989 → pendente | 69,718855 → pendente | 0 no fim → pendente |
+| cycle, 7 dias | 7 | 0 → pendente | 894 → pendente | 5.353,94 → pendente | 99,999984 → pendente | 66,648491 → pendente | 0 no fim → pendente |
+| cycle, 7 dias | 43 | 0 → pendente | 948 → pendente | 5.428,14 → pendente | 99,999995 → pendente | 73,438801 → pendente | 0 no fim → pendente |
+| grid, 11 dias | 42 | 0 → pendente | 2.700 → pendente | 19.013,13 → pendente | 99,999996 → pendente | 68,829473 → pendente | máximo 0 → pendente |
+| grid, 11 dias | 7 | 0 → pendente | 2.675 → pendente | 18.962,69 → pendente | 99,999996 → pendente | 68,935944 → pendente | máximo 0 → pendente |
+| grid, 11 dias | 43 | 0 → pendente | 2.750 → pendente | 19.021,82 → pendente | 99,999996 → pendente | 68,916647 → pendente | máximo 0 → pendente |
+
+No ciclo, `scale` confirma zero veículos em viagem no encerramento; não mede o máximo de imobilizados ao longo do período. Na grade, `stuck` mede o máximo de veículos sem deslocamento por pelo menos 30 min e a falta de combustível acumulada; ambos zero nas três sementes. Os logs completos e SHAs anteriores estão em `artifacts/verification/fixed-quantities/before-*.log`.
+
+**Correção da bancada, aplicada antes da conversão:** o acesso da captação no ciclo com seed 43 era rejeitado porque atravessava a Casa #260. A fixture conserva o traçado original se `QuoteRoad` o aceita; caso contrário usa a faixa livre z=32. O núcleo não foi alterado. O ciclo43 foi medido já com esse ajuste; 42/7 mantêm seus traçados originais. A falha original foi preservada em `before-cycle-43-original-fixture.log`.
+
+**Estado desta rodada:** referência concluída (6/6, invariantes OK; suíte original 250/250). Conversão, testes de propriedade, round-trip exato, medição posterior, Godot e revisão independente ainda não executados. Pergunta de arredondamento pendente no Orca (`msg_b4dc71abe9dd`); coordenador sem cota até 20h30 no terminal observado. Não inferir equivalência ou melhoria de desempenho desta tabela incompleta.

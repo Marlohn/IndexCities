@@ -6,6 +6,8 @@
 
 ### Tempo de jogo
 
+- **Quantidades acumuladas exatas:** as quantidades que acumulam tempo, consumo, produção ou efeitos persistentes usam inteiros de ponto fixo com escala fina e explícita. A conversão muda os arredondamentos uma vez, preservando regras, limiares e ordem causal. Movimento e posições mantêm o cálculo atual; dinheiro permanece decimal em centavos. Essa mudança não implementa agenda de acontecimentos nem paralelismo.
+
 - O jogo terá **pause**, a velocidade normal **1x em tempo real** e **dois multiplicadores rápidos**, cujos valores são calibração técnica (ver *1x em tempo real* em [Recuperação da interação da V1](construcao.md#recuperação-da-interação-da-v1)).
 - A escala de tempo e seus multiplicadores devem ser configuráveis para permitir calibração durante o desenvolvimento.
 - **Aceleração real do tempo:** nas velocidades de jogo, o tempo simulado deve avançar de fato e **todos os acontecimentos e consequências correspondentes devem continuar sendo simulados**, incluindo rotinas e deslocamentos dos SIMs, trabalho, produção, consumo, estoques, logística, salários, aluguéis, dívidas, nascimento e envelhecimento. Acelerar **não** significa apenas saltar a data, inventar dias de atividade, concluir viagens/obras por aparência ou criar transações e resultados que não ocorreram. A simulação pode usar técnicas de processamento eficientes, inclusive eventos ou cálculo de intervalos previsíveis, **desde que preservem estado, identidade, interações, ordem causal e efeitos físicos/econômicos equivalentes**. O jogador vê o mundo efetivamente avançando, não uma projeção ou resumo substituindo sua execução.
