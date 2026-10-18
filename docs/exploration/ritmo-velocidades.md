@@ -461,7 +461,7 @@ Os números ficaram dentro da faixa natural, e o dinheiro se conservou em todas 
 
 **1.000 SIMs (1.037), intervalo de 60 s, semente 42, rodada sequencial com perfil:**
 
-- **3.936 s por dia simulado (22x o tempo real) → ~31.900 h para 80 anos.** O crescimento até 1.000 SIMs levou 24 min e o aquecimento de 2 dias, 2 h 25 min.
+- **3.936 s por dia simulado (o cálculo é só 22x mais rápido que o tempo do jogo) → ~31.900 h para 80 anos.** O crescimento até 1.000 SIMs levou 24 min e o aquecimento de 2 dias, 2 h 25 min.
 - De 400 para 1.000 SIMs (2,5x), o tempo por dia com 60 s subiu ~100x (38 s → 3.936 s): **crescimento muito pior que linear**.
 - Perfil: **`MoveCitizens` 94,6%**, revisão econômica 3,5%, o resto abaixo de 1%. O intervalo maior não alcança o movimento, que continua a cada 2 s; na escala de 1.000 é ele, não os sistemas estacionários, que decide.
 - Alocação: ~2,7 TB alocados por dia simulado (427 mil coletas gen0), com memória residente de só 69 MB — muita alocação temporária por passo.
