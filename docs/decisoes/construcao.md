@@ -44,6 +44,7 @@
 - 2026-10-18 — O responsável escolheu redirecionar a carga privada já embarcada para outro prédio compatível da mesma empresa; sem destino viável, aguardar fisicamente em segurança, preservando carga/titular, sem reembolso e podendo manter o caminhão ocupado → seção Intervenção municipal sobre propriedades privadas.
 - 2026-10-18 — Na espera segura de caminhão local sem destino para a carga, o responsável escolheu liberar o motorista para sua rotina; retomar só com motorista disponível e chegada/embarque reais → seção Intervenção municipal sobre propriedades privadas.
 - 2026-10-18 — Na mudança municipal, o responsável escolheu retirar o prédio antigo após prazo curto e avisado sem progresso por falta de espaço ou rota, com perda residual única; caminhão ocupado e falta temporária de caixa/combustível não contam. A alternativa de manter o prédio fechado indefinidamente com o estoque foi rejeitada → seção Mudança de prédios municipais concluídos.
+- 2026-10-18 — Para alimentos já pagos, ainda na fazenda quando a loja de destino é demolida, o responsável escolheu preservar a reserva ao comprador na origem e liberar caminhão/motorista até existir destino apto da mesma empresa. Rejeitou carregar apenas para manter o caminhão em espera; não há segunda venda dos mesmos bens nem cobrança repetida da compra → seção Intervenção municipal sobre propriedades privadas.
 
 ## Registros sem data explícita
 
