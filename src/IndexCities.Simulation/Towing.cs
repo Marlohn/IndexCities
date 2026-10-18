@@ -254,6 +254,8 @@ public sealed partial class CitySimulation
     void DeliverTowed(Vehicle tow,Vehicle t)
     {
         var destination=tow.TowDestination;var station=BuildingById(tow.TowStationId);
+        // The station can stop operating while the tow unloads: the same rule sends it on.
+        if(destination==TowDestination.Station&&(station==null||!StationOperates(station))){tow.TowPhase=TowPhase.Delivering;if(!StartDelivery(tow,t))tow.Cause="Guincho aguardando rota para entregar o veículo "+t.Id;return;}
         // A car comes down from the platform where the tow stands; a truck is set
         // down where it trails, along the curb of the bay (no jump).
         t.TowTruckId=null;t.TowPrepaid=false;if(t.PassengerCar)t.Position=tow.Position;t.Heading=tow.Heading;t.Status=VehicleStatus.Parked;t.WaitingSince=0;
@@ -312,7 +314,7 @@ public sealed partial class CitySimulation
     Vehicle? JunctionHeldByStranded(Vehicle v,RoadNode junction)
     {
         var area=_junctionAreas.GetValueOrDefault(junction.Id);
-        return State.Vehicles.FirstOrDefault(o=>o.Id!=v.Id&&o.Id!=v.TowTargetId&&(o.Status==VehicleStatus.Stranded||o.Status==VehicleStatus.Travelling&&o.WaitingSince>0&&HeldBehindStranded(o))&&o.IntersectionClaim is {} held&&(held==junction.Id||area?.Contains(held)==true));
+        return State.Vehicles.FirstOrDefault(o=>o.Id!=v.Id&&o.Id!=v.TowTargetId&&o.IntersectionClaim is {} held&&(held==junction.Id||area?.Contains(held)==true)&&(o.Status==VehicleStatus.Stranded||o.Status==VehicleStatus.Travelling&&o.WaitingSince>0&&HeldBehindStranded(o)));
     }
     // Head-on arrival: the tow crosses into the stranded vehicle's lane in front of
     // it only with the path to the pose free; vehicles merely near it (a car

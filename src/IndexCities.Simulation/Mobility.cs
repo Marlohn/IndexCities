@@ -279,8 +279,8 @@ public sealed partial class CitySimulation
                 if((node.Neighbours.Count>=3||node.Crosswalk)&&d<9&&!MayEnterJunction(v,node)){if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;
                     // SPEC: held at a junction by a vehicle stopped there (out of fuel), it
                     // turns back after the same minutes as behind it in the lane.
-                    if(JunctionHeldByStranded(v,node) is {} stranded&&VehicleMovementTime-v.WaitingSince>=State.Tuning.UTurnWaitSeconds&&TryUTurn(v,stranded))continue;
-                    if(JunctionHeldByStranded(v,node)!=null&&TowHeldTooLong(v,null)&&TryUTurn(v,null,[..TowClosedRoads(v),node.Id])){CheckTowFuel(v);continue;}break;}
+                    if(VehicleMovementTime-v.WaitingSince>=State.Tuning.UTurnWaitSeconds&&JunctionHeldByStranded(v,node) is {} stranded&&TryUTurn(v,stranded))continue;
+                    if(IsTow(v)&&TowHeldTooLong(v,null)&&JunctionHeldByStranded(v,node)!=null&&TryUTurn(v,null,[..TowClosedRoads(v),node.Id])){CheckTowFuel(v);continue;}break;}
                 if(v.Fuel<=.000001){RunOutOfFuel(v);break;}
                 step=Math.Min(step,v.Fuel/FuelRate(v));v.Position=v.Position.MoveTowards(target,step);v.Fuel=Math.Max(0,v.Fuel-step*FuelRate(v));v.FuelBurnedLastStep+=step*FuelRate(v);remaining-=step/speed;v.WaitingSince=0;v.Cause="Em viagem";
                 ClearPassedJunction(v);

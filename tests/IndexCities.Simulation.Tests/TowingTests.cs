@@ -196,8 +196,8 @@ public sealed class TowingTests
     }
     [Fact] public void A_station_removed_or_emptied_during_the_delivery_sends_the_tow_on_under_the_same_rule()
     {
-        foreach(var removed in new[]{true,false}){
-            var scene=City();RunUntil(scene,()=>scene.Car.Status==VehicleStatus.Towed);
+        foreach(var (removed,duringUnloading) in new[]{(true,false),(false,false),(false,true)}){
+            var scene=City();RunUntil(scene,()=>duringUnloading?scene.Tow?.TowPhase==TowPhase.Unloading:scene.Car.Status==VehicleStatus.Towed);
             if(removed)scene.Station!.Removed=true;else scene.Station!.Stock[ResourceKind.Fuel]=0;
             RunUntil(scene,()=>scene.Car.Status==VehicleStatus.Parked&&scene.Car.Cause=="Estacionado",2400);
             Assert.Equal("Estacionado",scene.Car.Cause);Assert.Null(scene.Driver.VehicleId);
