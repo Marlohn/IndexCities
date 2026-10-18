@@ -522,7 +522,7 @@
     {
       "contract": {
         "lift": {
-          "alignment": "Same horizontal heading: carried truck behind (+Z), its front -Z toward the wrecker; pitch positive X so rear wheels stay grounded, then translate source front axle center onto LiftAnchor. Keep native scale; align axle, not vehicle root. Counter-rotate rear wheels by body pitch for the flat-ground review pose.",
+          "alignment": "Same horizontal heading: carried truck behind (+Z), its front -Z toward the wrecker; pitch positive X so rear wheels stay grounded, then translate source front axle center onto LiftAnchor. Keep native scale; align axle, not vehicle root. Counter-rotate all four towed-truck wheels by body pitch for the flat-ground review pose.",
           "anchor": "LiftPivot/LiftAnchor",
           "anchor_rest_m": [
             0,

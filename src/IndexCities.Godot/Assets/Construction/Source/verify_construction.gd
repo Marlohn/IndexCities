@@ -39,6 +39,72 @@ func bounds(r: Node3D, only_visible: bool = false) -> AABB:
 					found=true
 	return box
 
+func mesh_triangles(n: MeshInstance3D, reference: Node3D, omit_front_axle: bool = false) -> Array:
+	var result: Array=[]
+	var transform=reference.global_transform.affine_inverse()*n.global_transform
+	for surface in n.mesh.get_surface_count():
+		var arrays=n.mesh.surface_get_arrays(surface)
+		var vertices=arrays[Mesh.ARRAY_VERTEX]
+		var indices=arrays[Mesh.ARRAY_INDEX]
+		var indexed=indices!=null and indices.size()>0
+		for i in range(0,indices.size() if indexed else vertices.size(),3):
+			var points: Array=[]
+			var axle=omit_front_axle
+			for k in 3:
+				var p: Vector3=vertices[indices[i+k] if indexed else i+k]
+				axle=axle and abs(p.y-0.47)<0.08 and abs(p.z+2.55)<0.08
+				points.append(transform*p)
+			# The cradle intentionally holds this axle; cabin/chassis clearance is
+			# checked separately from that permitted mechanical contact.
+			if axle:
+				continue
+			var box=AABB(points[0],Vector3.ZERO).expand(points[1]).expand(points[2])
+			result.append({"points":points,"box":box})
+	return result
+
+func point_triangle_distance_squared(p: Vector3, t: Array) -> float:
+	var normal=(t[1]-t[0]).cross(t[2]-t[0])
+	if normal.length_squared()>0.000000001:
+		var projection=p-normal*normal.dot(p-t[0])/normal.length_squared()
+		var inside=true
+		for i in 3:
+			inside=inside and (t[(i+1)%3]-t[i]).cross(projection-t[i]).dot(normal)>=-0.0000001
+		if inside:
+			return p.distance_squared_to(projection)
+	var distance=INF
+	for i in 3:
+		distance=min(distance,p.distance_squared_to(Geometry3D.get_closest_point_to_segment(p,t[i],t[(i+1)%3])))
+	return distance
+
+func triangles_have_clearance(a: Array, b: Array, gap: float) -> bool:
+	for i in 3:
+		if Geometry3D.segment_intersects_triangle(a[i],a[(i+1)%3],b[0],b[1],b[2])!=null:
+			return false
+		if Geometry3D.segment_intersects_triangle(b[i],b[(i+1)%3],a[0],a[1],a[2])!=null:
+			return false
+		if min(point_triangle_distance_squared(a[i],b),point_triangle_distance_squared(b[i],a))<gap*gap:
+			return false
+		for j in 3:
+			var closest=Geometry3D.get_closest_points_between_segments(a[i],a[(i+1)%3],b[j],b[(j+1)%3])
+			if closest[0].distance_squared_to(closest[1])<gap*gap:
+				return false
+	return true
+
+func meshes_have_clearance(a: Array, b: Array, gap: float) -> bool:
+	for first in a:
+		for second in b:
+			if first.box.grow(gap).intersects(second.box) and not triangles_have_clearance(first.points,second.points,gap):
+				return false
+	return true
+
+func wheel_floor_y(wheel: MeshInstance3D, reference: Node3D) -> float:
+	var transform=reference.global_transform.affine_inverse()*wheel.global_transform
+	var lowest=INF
+	for surface in wheel.mesh.get_surface_count():
+		for vertex in wheel.mesh.surface_get_arrays(surface)[Mesh.ARRAY_VERTEX]:
+			lowest=min(lowest,(transform*vertex).y)
+	return lowest
+
 func run() -> void:
 	out=ProjectSettings.globalize_path("res://../../artifacts/verification/construction-models")
 	for arg in OS.get_cmdline_user_args():
@@ -203,10 +269,13 @@ func verify_tow_heavy(r: Node3D, contract: Dictionary) -> void:
 		expect(truck.position.z>anchor_position.z and heading.dot(Vector3.FORWARD)>0.999,"Towed truck behind, front toward wrecker (-Z), no yaw reversal")
 		for wheel in ["Wheel_RL","Wheel_RR"]:
 			var w=truck.get_node(wheel)
-			var box=bounds(w)
-			var center=posed.global_transform.affine_inverse()*w.global_position
-			expect(abs(center.y+box.position.y)<0.002,"Towed rear tire rests on ground "+wheel)
+			expect(abs(wheel_floor_y(w,posed))<0.002,"Transformed towed rear tire vertices rest on ground "+wheel)
+		var truck_triangles=mesh_triangles(truck.get_node("Body"),posed,true)
+		for part in ["Body","RecoveryBody","LiftPivot/LiftArm"]:
+			expect(meshes_have_clearance(truck_triangles,mesh_triangles(posed.get_node(part),posed),0.02),"Towed cabin/chassis clears heavy "+part+" by 0.02 m; operating="+str(operating))
 		expect(bounds(posed).position.y>=-0.002,"Towed cargo truck body stays above ground")
+		truck.position.z-=0.75
+		expect(not meshes_have_clearance(mesh_triangles(truck.get_node("Body"),posed,true),mesh_triangles(posed.get_node("RecoveryBody"),posed),0.02),"Clearance check rejects an overlapping towed cabin")
 		posed.free()
 
 func state(r: Node3D, cargo: String) -> void:
@@ -395,6 +464,18 @@ func render_reviews() -> void:
 		camera_at(Vector3(1.625,1.2,3.2 if spec.cargo=="cargo_truck" else 0) if spec.family=="tow_truck_heavy" else Vector3(0,1.2,0),spec.direction,17.5 if spec.family=="tow_truck_heavy" and spec.cargo=="cargo_truck" else 10.5 if spec.family=="tow_truck_heavy" else 9.5)
 		await snap(spec.file)
 		detail.free()
+	# Low view under the real mounted truck: show the axle inside the two cradles.
+	var closeup=Node3D.new()
+	scene_root.add_child(closeup)
+	var heavy=load_visual("tow_truck_heavy")
+	closeup.add_child(heavy)
+	mount_heavy_truck(heavy)
+	var hitch=heavy.get_node("LiftPivot/LiftAnchor").global_position
+	camera.size=3.4
+	camera.position=hitch+Vector3(2.3,-0.55,2.3)
+	camera.look_at(hitch)
+	await snap("detail_tow_heavy_cradle")
+	closeup.free()
 	# Independent cameras for correct front/rear orthographic and exact game iso.
 	# Each tile is a real 500x380 viewport render, then composed losslessly by Godot.
 	for family in ["truck_dump","truck_mixer","truck_flatbed","asphalt_paver","road_roller","tow_truck","tow_truck_heavy"]:
@@ -433,7 +514,7 @@ func render_reviews() -> void:
 	var f=FileAccess.open(out+"/render_metrics.json",FileAccess.WRITE)
 	f.store_string(JSON.stringify({"renderer":RenderingServer.get_current_rendering_method(),"adapter":RenderingServer.get_video_adapter_name(),"viewport":vec(Vector3(root.size.x,root.size.y,0)),"metrics":metrics,"note":"Local preview counts, not gameplay performance benchmark; no FPS/GPU-time conclusion"},"  "))
 	f.close()
-	print("[construction-render] PASS 20 captures plus mixer tile; real GL Compatibility; no save writes")
+	print("[construction-render] PASS 21 captures plus mixer tile; real GL Compatibility; no save writes")
 
 func tile(family: String, variant: Dictionary, view: int) -> Image:
 	var vp=SubViewport.new()

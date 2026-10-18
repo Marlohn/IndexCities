@@ -68,6 +68,12 @@
       "primitives": 6384
     },
     {
+      "capture": "detail_tow_heavy_cradle",
+      "draw_calls": 78,
+      "objects": 78,
+      "primitives": 8736
+    },
+    {
       "capture": "lineup_front_operation",
       "draw_calls": 319,
       "objects": 319,
