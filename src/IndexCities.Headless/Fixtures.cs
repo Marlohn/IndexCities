@@ -8,6 +8,7 @@ namespace IndexCities.Headless;
 static class Fixtures
 {
     static bool _scaled;
+    static readonly Queue<(Point Position,double Rotation)> _pendingHouses=new();
     // Same layout as CityCycleTests.City(), with real construction until done.
     public static CitySimulation Cycle(int seed)
     {
@@ -30,7 +31,7 @@ static class Fixtures
     // Grid of horizontal streets (60 m apart) on a west spine, connectors every
     // 320 m, houses north of each street and workplaces alternating with houses
     // south of it; lake east of the main street for the intakes.
-    public static (CitySimulation Sim,string Info) Grid(int seed,int rows,double length,bool signals,double utilityScale=50)
+    public static (CitySimulation Sim,string Info) Grid(int seed,int rows,double length,bool signals,bool staged=false,double utilityScale=50)
     {
         // Mutates the static catalog of this process only; guarded against scaling twice.
         if(_scaled)throw new InvalidOperationException("Grid só pode ser criada uma vez por processo");_scaled=true;
@@ -42,11 +43,16 @@ static class Fixtures
         var H=Math.Ceiling(Math.Max(256,Math.Max((half+1)*rowGap+60,(72+length+260)/2+40))/4)*4;var x0=-H+72;
         var houses=(int)(rows*length/20*1.6)+50;
         var tuning=new SimulationTuning{MapHalfSize=H,TotalMoney=100_000_000_000m,CityInitialMoney=2_000_000_000m,ExternalFamilyCandidates=(int)(houses*1.5)+40,ExternalCompanyCandidates=houses,ExternalTruckCount=Math.Max(6,houses/12)};
+        // Staged growth reaches maps larger than V1 (256 m half-size): scale the
+        // tank so a round trip still fits. The unstaged grid keeps its old tuning.
+        if(staged)tuning.FuelTank*=Math.Max(1,H/256);
         var sim=new CitySimulation(seed,tuning);var s=sim.State;
         var lakeX=x0+length+130;s.LakeCentre=new(lakeX,0);s.LakeRadius=36;s.LakeBoundary=LakeGeometry.GenerateBoundary(seed,s.LakeCentre,s.LakeRadius);
         var fails=0;
         void Road(Point a,Point b){if(!sim.PlaceRoad(a,b).Success)fails++;}
         bool Place(BuildingKind k,Point p,double rot){var ok=sim.PlaceBuilding(k,p,rot).Success;if(!ok)fails++;return ok;}
+        // Staged: houses are only queued; AddHouses places and completes them later.
+        bool House(Point p,double rot){if(!staged)return Place(BuildingKind.House,p,rot);if(!sim.QuoteBuilding(BuildingKind.House,p,rot).PhysicallyValid){fails++;return false;}_pendingHouses.Enqueue((p,rot));return true;}
         Place(BuildingKind.CityHall,new(x0+32,16),0);Road(new(-H+64,0),new(x0,0));
         var zMin=-half*rowGap;var zMax=(rows-1-half)*rowGap;
         if(rows>1){Road(new(x0,0),new(x0,zMax));Road(new(x0,0),new(x0,zMin));}
@@ -60,11 +66,11 @@ static class Fixtures
         bool NearConnector(double x,double w)=>connectors.Any(c=>Math.Abs(c-x)<w/2+8);
         for(var r=0;r<rows;r++){
             var z=zMin+r*rowGap;
-            for(var x=x0+(z==0?60:24);x<x0+length-12;x+=20){if(!NearConnector(x,12)&&Place(BuildingKind.House,new(x,z+14),0))nh++;}
+            for(var x=x0+(z==0?60:24);x<x0+length-12;x+=20){if(!NearConnector(x,12)&&House(new(x,z+14),0))nh++;}
             var sx=x0+(z==0?56:24);var slot=0;
             while(sx<x0+length-16){
                 if(slot%2==0){var k=kinds[wi%kinds.Length];var w=Catalog.Definitions[k].Width;var d=Catalog.Definitions[k].Depth;var cx=sx+w/2;if(!NearConnector(cx,w)&&cx+w/2<x0+length&&Place(k,new(cx,z-(d/2+6)),Math.PI)){nw++;wi++;}sx+=w+8;}
-                else{var cx=sx+6;if(!NearConnector(cx,12)&&Place(BuildingKind.House,new(cx,z-14),Math.PI))nh++;sx+=20;}
+                else{var cx=sx+6;if(!NearConnector(cx,12)&&House(new(cx,z-14),Math.PI))nh++;sx+=20;}
                 slot++;
             }
         }
@@ -88,6 +94,14 @@ static class Fixtures
         rebuild.Invoke(sim,[true]);junctions.Invoke(sim,null);
         foreach(var p in open.OrderBy(p=>p.RoadPoints.Count>0?0:1))complete.Invoke(sim,[p]);
         sim.CheckInvariants();
+    }
+    // Staged growth: houses appear over time, like a city that grows over days
+    // instead of receiving every family at once. Returns houses still queued.
+    public static int AddHouses(CitySimulation sim,int count)
+    {
+        var complete=Private(sim,"CompleteConstructionProject");
+        for(var i=0;i<count&&_pendingHouses.Count>0;i++){var (p,rot)=_pendingHouses.Dequeue();var r=sim.PlaceBuilding(BuildingKind.House,p,rot);if(!r.Success)continue;complete.Invoke(sim,[sim.State.Projects.Single(w=>w.BuildingId==r.Id)]);}
+        sim.CheckInvariants();return _pendingHouses.Count;
     }
     static MethodInfo Private(CitySimulation sim,string name)=>typeof(CitySimulation).GetMethod(name,BindingFlags.Instance|BindingFlags.NonPublic)??throw new InvalidOperationException($"Método {name} não encontrado; atualize Fixtures.cs");
     static void Require(CommandResult r){if(!r.Success)throw new InvalidOperationException("Fixture: "+r.Message);}

@@ -1,5 +1,5 @@
 {
-  "checks": 546,
+  "checks": 821,
   "engine": {
     "build": "official",
     "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
@@ -80,6 +80,52 @@
         2.9,
         2.78,
         7.2
+      ]
+    },
+    {
+      "all_states_surfaces": 27,
+      "all_states_triangles": 2750,
+      "default_surfaces": 27,
+      "default_triangles": 2750,
+      "id": "vehicle.tow_truck.a",
+      "mesh_instances": 9,
+      "operation_envelope_m": [
+        2.9,
+        3.3467,
+        7.7316
+      ],
+      "operation_min_m": [
+        -1.45,
+        0.0,
+        -3.6
+      ],
+      "rest_envelope_m": [
+        2.9,
+        2.97,
+        7.2
+      ]
+    },
+    {
+      "all_states_surfaces": 28,
+      "all_states_triangles": 2894,
+      "default_surfaces": 28,
+      "default_triangles": 2894,
+      "id": "vehicle.tow_truck_heavy.a",
+      "mesh_instances": 9,
+      "operation_envelope_m": [
+        2.9,
+        3.29,
+        8.0393
+      ],
+      "operation_min_m": [
+        -1.45,
+        0.0,
+        -4.065
+      ],
+      "rest_envelope_m": [
+        2.9,
+        3.29,
+        8.13
       ]
     },
     {

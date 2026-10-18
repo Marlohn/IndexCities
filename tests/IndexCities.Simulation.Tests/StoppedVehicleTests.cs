@@ -93,6 +93,84 @@ public sealed class StoppedVehicleTests
         Assert.Empty(other.Detour);Assert.InRange(other.RouteIndex,1,other.Route.Count);replanned.CheckInvariants();
         follower.Status=VehicleStatus.Parked;sim.Advance(.1);Assert.Empty(follower.Detour);sim.CheckInvariants();
     }
+    // Two parallel streets 60 m apart joined only at their west end, both inside
+    // one 64 m maintenance cell: the crew zigzags between them (the grid case).
+    static CitySimulation ZigzagMaintenance(SimulationTuning? tuning=null)
+    {
+        var founded=new CitySimulation(42,tuning);Assert.True(founded.PlaceBuilding(BuildingKind.CityHall,new(-152,16)).Success);Assert.True(founded.PlaceRoad(new(-192,0),new(-80,0)).Success);founded.Advance(7200);
+        var state=founded.State;
+        for(var z=4;z<=60;z+=4)state.Roads.Add(new(){Id=90000+z,Position=new(-192,z)});
+        for(var x=-188;x<=-80;x+=4)state.Roads.Add(new(){Id=91000-x,Position=new(x,60)});
+        var sim=new CitySimulation(state);var now=sim.State.ElapsedSeconds;
+        foreach(var road in sim.State.Roads.Where(r=>!r.Highway))road.MaintenanceDueAt=road.Position.X>=-128&&road.Position.Z is 0 or 60?now-1:now+1e7;
+        foreach(var b in sim.State.Buildings)b.MaintenanceDueAt=now+1e7;
+        sim.State.EconomyNextAt=now;return sim;
+    }
+    [Fact] public void A_maintenance_crew_moves_on_only_with_fuel_for_the_next_stretch_and_the_way_out()
+    {
+        var sim=ZigzagMaintenance();var refuelReturn=false;var drained=false;var paid=new HashSet<(int?,int)>();
+        for(var i=0;i<20000&&(i<10||sim.State.Projects.Any(p=>p.IsMaintenance&&p.Status!=WorkStatus.Completed));i++){
+            sim.Advance(5);
+            // Along the street the stretches are close; leave the crew on site with
+            // fuel for the way out only, so its next move must refuel first.
+            if(!drained&&sim.State.Vehicles.FirstOrDefault(v=>v.Status==VehicleStatus.Parked&&v.Cause=="Equipe externa no canteiro") is {} crew){
+                var exit=sim.FindRoadRoute(crew.Route[^1],sim.State.Roads.First(r=>r.Highway&&r.Position.Distance(sim.State.Entry)<.1).Id,true);Assert.NotEmpty(exit);
+                crew.Fuel=exit.Zip(exit.Skip(1)).Sum(pair=>sim.State.Roads.Single(r=>r.Id==pair.First).Position.Distance(sim.State.Roads.Single(r=>r.Id==pair.Second).Position))*sim.State.Tuning.FuelPerMetre+2;drained=true;
+            }
+            Assert.DoesNotContain(sim.State.Vehicles,v=>v.Status==VehicleStatus.Stranded);
+            refuelReturn|=sim.State.Vehicles.Any(v=>v.Cause.StartsWith("Retorno ao exterior para reabastecer"));
+            foreach(var s in sim.State.Shipments.Where(s=>s.Purpose==ShipmentPurpose.Maintenance&&s.PricePaid>0))paid.Add((s.ProjectId,s.Id));
+        }
+        var maintenance=sim.State.Projects.Where(p=>p.IsMaintenance).ToList();Assert.NotEmpty(maintenance);
+        Assert.All(maintenance,p=>Assert.True(p.Status==WorkStatus.Completed,p.Cause));Assert.True(refuelReturn);
+        // The crew sent again after refuelling outside pays freight and fuel again.
+        Assert.Contains(paid.GroupBy(x=>x.Item1),g=>g.Count()>=2);
+        Assert.All(sim.State.Roads.Where(r=>!r.Highway&&r.Position.X>=-128&&r.Position.Z is 0 or 60),r=>Assert.Equal(1,r.MaintenanceRatio));sim.CheckInvariants();
+    }
+    // A street with a side street making a T, all due in one maintenance cell.
+    static CitySimulation TeeMaintenance()
+    {
+        var founded=new CitySimulation(42);Assert.True(founded.PlaceBuilding(BuildingKind.CityHall,new(-152,16)).Success);Assert.True(founded.PlaceRoad(new(-192,0),new(-80,0)).Success);founded.Advance(7200);
+        var state=founded.State;for(var z=4;z<=16;z+=4)state.Roads.Add(new(){Id=92000+z,Position=new(-104,z)});
+        var sim=new CitySimulation(state);var now=sim.State.ElapsedSeconds;
+        foreach(var road in sim.State.Roads.Where(r=>!r.Highway))road.MaintenanceDueAt=road.Position.X>=-120&&road.Position.Z==0||road.Id>=92000?now-1:now+1e7;
+        foreach(var b in sim.State.Buildings)b.MaintenanceDueAt=now+1e7;
+        sim.State.EconomyNextAt=now;return sim;
+    }
+    [Fact] public void Maintenance_stretches_follow_one_street_at_a_time_along_it()
+    {
+        foreach(var (sim,maxJumps) in new[]{(ZigzagMaintenance(),1),(TeeMaintenance(),2)}){
+            var due=sim.State.Roads.Where(r=>!r.Highway&&r.MaintenanceDueAt<sim.State.ElapsedSeconds).Select(r=>r.Id).ToHashSet();
+            sim.Advance(5);
+            var projects=sim.State.Projects.Where(p=>p.IsMaintenance&&p.MaintenanceRoadIds.Count>0).ToList();Assert.NotEmpty(projects);
+            // The same stretches are maintained, only the order changes.
+            Assert.Equal(due.OrderBy(id=>id),projects.SelectMany(p=>p.MaintenanceRoadIds).OrderBy(id=>id));
+            // Consecutive stretches are neighbours along the street; the crew only
+            // jumps when it passes to the next street (whatever the street's direction).
+            foreach(var p in projects){
+                var roads=p.MaintenanceRoadIds.Select(id=>sim.State.Roads.Single(r=>r.Id==id)).ToList();
+                var jumps=roads.Zip(roads.Skip(1)).Count(pair=>!pair.First.Neighbours.Contains(pair.Second.Id));
+                Assert.True(jumps<=maxJumps,string.Join(" ",roads.Select(r=>$"({r.Position.X},{r.Position.Z})")));
+            }
+        }
+    }
+    static T Private<T>(CitySimulation sim,string name,params object[] args)=>(T)typeof(CitySimulation).GetMethod(name,System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance)!.Invoke(sim,args)!;
+    [Fact] public void A_lot_entry_held_by_a_stranded_vehicle_and_its_queue_needs_no_motion_substeps()
+    {
+        var initial=new CitySimulation(42);for(var x=-60;x<=60;x+=4)initial.State.Roads.Add(new(){Id=1000+x,Position=new(x,40)});
+        var sim=new CitySimulation(initial.State);sim.State.Vehicles.Clear();sim.State.EconomyNextAt=1e9;
+        var east=Enumerable.Range(0,31).Select(n=>940+n*4).ToList();
+        var stopped=new Vehicle{Id=1,External=true,ExternalDriverId="fixture",Position=new(2,38.35),Heading=Math.PI/2,Status=VehicleStatus.Stranded,Fuel=0,Route=east,RouteIndex=16,Cause="Sem combustível; nenhuma viagem fictícia"};
+        var queued=new Vehicle{Id=2,External=true,ExternalDriverId="fixture",PassengerCar=true,Position=new(-6,38.35),Heading=Math.PI/2,Status=VehicleStatus.Travelling,Fuel=40,Route=east,RouteIndex=15};
+        var exit=new Vehicle{Id=3,External=true,ExternalDriverId="fixture",PassengerCar=true,Position=new(0,33.25),Heading=-Math.PI/2,Status=VehicleStatus.Travelling,Fuel=40,Route=Enumerable.Range(0,11).Select(n=>1000-n*4).ToList()};
+        sim.State.Vehicles.AddRange([stopped,queued,exit]);
+        // Control: the same entry next to a vehicle that can move is a live entry.
+        stopped.Status=VehicleStatus.Travelling;Assert.True(Private<bool>(sim,"LiveLaneEntry",exit));stopped.Status=VehicleStatus.Stranded;
+        sim.Advance(4);Assert.True(queued.WaitingSince>0,queued.Cause);Assert.Equal(0,exit.RouteIndex);
+        Assert.True(Private<bool>(sim,"HeldBehindStranded",queued));Assert.False(Private<bool>(sim,"LiveLaneEntry",exit));
+        var restored=CitySimulation.FromJson(sim.SaveToJson());sim.Advance(4);restored.Advance(4);Assert.Equal(sim.SaveToJson(),restored.SaveToJson());
+        Assert.Equal(new Point(2,38.35),stopped.Position);sim.CheckInvariants();
+    }
     [Fact] public void A_truck_does_not_leave_for_a_work_whose_round_trip_exceeds_its_tank()
     {
         var sim=new CitySimulation(42,new SimulationTuning{FuelTank=3});

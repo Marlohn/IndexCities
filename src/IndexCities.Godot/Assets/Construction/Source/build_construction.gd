@@ -121,12 +121,14 @@ func build_all() -> void:
 	build_dump()
 	build_mixer()
 	build_flatbed()
+	build_tow_truck()
+	build_tow_truck_heavy()
 	build_paver()
 	build_roller()
 	var f = FileAccess.open(ROOT + "/manifest.construction.json",FileAccess.WRITE)
 	f.store_string(JSON.stringify({"schema":"indexcities.construction/1","authorship":"GPT-6.1-Sol xhigh; original recipes with current project V1 kit/palette","status":"Estetica PENDENTE de revisao humana","conventions":{"front":"-Z","up":"+Y","unit":"meter","pivot":"ground, center","runtime_scripts":false,"autoplay":false,"loads_visible_by_default":false},"entries":entries},"  "))
 	f.close()
-	print("[construction-build] PASS 5 scenes; original editable sources; no runtime scripts")
+	print("[construction-build] PASS 7 scenes; original editable sources; no runtime scripts")
 	quit(0)
 
 func truck_base(id: String) -> Node3D:
@@ -358,6 +360,96 @@ func build_flatbed() -> void:
 		b.pop()
 		part(r,"Load"+cargo,b,id+".load_"+cargo.to_lower(),Vector3(0,1.32,0)).visible=false
 	save(r,id,{"wheels":wheel_contract(),"loads":["LoadSteel","LoadWood"],"quantity":"Load pivots at deck Y=1.32; host may scale local Y or hide from real quantity; no inventory is encoded","bed":"Flatbed remains when empty; tie straps are inside each load node"})
+
+func build_tow_truck() -> void:
+	var id="vehicle.tow_truck.a"
+	var r=truck_base(id)
+	# A physical flat recovery deck, not a cargo bed with tall enclosing walls.
+	var b=builder()
+	for sx in [-1.0,1.0]:
+		b.box_c("construction_ochre_dark",Vector3(sx*0.66,1.04,0.95),Vector3(0.16,0.12,4.75))
+		b.bevel_box("construction_ochre",Vector3(sx*0.88-0.23,0.57,-1.27),Vector3(sx*0.88+0.23,1.06,-0.42),0.045)
+		# Broad service stripe beneath the door glass; no lettering or external logo.
+		b.box_c("construction_ochre",Vector3(sx*1.168,1.53,-2.71),Vector3(0.022,0.18,1.24))
+		b.box_c("trim_white",Vector3(sx*1.181,1.53,-2.71),Vector3(0.008,0.045,1.24))
+	# Unlit amber light bar, kept separate from the cab's seven material slots.
+	b.bevel_box("metal_dark",Vector3(-0.82,2.78,-2.45),Vector3(0.82,2.86,-2.12),0.025)
+	for sx in [-1.0,1.0]:
+		b.bevel_box("construction_ochre",Vector3(sx*0.58-0.22,2.86,-2.43),Vector3(sx*0.58+0.22,2.97,-2.14),0.045)
+	b.box_c("trim_white",Vector3(0,2.89,-2.285),Vector3(0.65,0.06,0.25))
+	part(r,"RecoveryFrame",b,id+".frame")
+	var pivot=node(r,"DeckPivot",Vector3(0,1.15,2.9))
+	b=builder()
+	b.push_translate(-pivot.position)
+	b.bevel_box("metal_light",Vector3(-1.20,1.10,-1.38),Vector3(1.20,1.24,3.28),0.025)
+	# Thin tapered tail; the review pose shows an initial tilt/slide, not full unloading.
+	Truck._extrude_x(b,"metal_light",PackedVector2Array([Vector2(3.25,1.10),Vector2(3.25,1.24),Vector2(3.55,1.13),Vector2(3.55,1.10)]),-1.20,1.20)
+	for sx in [-1.0,1.0]:
+		b.box_c("construction_ochre",Vector3(sx*1.20,1.27,0.95),Vector3(0.08,0.12,4.65))
+		# Low wheel guides and tiedown apertures read at the game's isometric angle.
+		for z in [-0.9,0.0,0.9,1.8,2.7]:
+			b.box_c("metal_dark",Vector3(sx*1.12,1.245,z),Vector3(0.10,0.01,0.22))
+		b.beam("construction_ochre",Vector3(sx*1.12,1.24,-1.33),Vector3(sx*1.12,2.43,-1.33),0.10)
+		b.beam("construction_ochre_dark",Vector3(sx*1.12,1.27,-0.89),Vector3(sx*1.12,1.83,-1.33),0.07)
+	b.beam("construction_ochre",Vector3(-1.12,2.43,-1.33),Vector3(1.12,2.43,-1.33),0.11)
+	b.beam("construction_ochre_dark",Vector3(-1.12,1.83,-1.33),Vector3(1.12,1.83,-1.33),0.08)
+	# Winch housing/spool at the headboard, clear of the passenger car's nose.
+	b.bevel_box("construction_ochre_dark",Vector3(-0.36,1.28,-1.36),Vector3(0.36,1.51,-1.15),0.025)
+	b.cylinder_x("metal_dark",Vector3(0,1.49,-1.24),0.10,0.43,10)
+	b.pop()
+	part(pivot,"Deck",b,id+".deck")
+	marker(pivot,"CarryAnchor",Vector3(0,0.09,-1.815))
+	save(r,id,{"wheels":wheel_contract(),"loads":[],"deck":{"node":"DeckPivot","mesh":"DeckPivot/Deck","axis":"X","rest_position_m":[0,1.15,2.9],"operation_position_m":[0,1.15,3.5],"operation_degrees":12,"rotation_direction":"Positive X raises front (-Z) relative to rear; positive Z slides rearward","carry_anchor":"DeckPivot/CarryAnchor","carry_anchor_rest_m":[0,1.24,1.085],"clear_floor_min_m":[-1.14,1.24,-1.10],"clear_floor_max_m":[1.14,1.24,3.27]},"note":"Empty by default; host parents the real carried vehicle at CarryAnchor with identity local transform. Deck pose is illustrative, not automatic motion or simulation timing. Passenger car fits at native scale; full-size cargo truck does not fit this compact deck."})
+
+func build_tow_truck_heavy() -> void:
+	var id="vehicle.tow_truck_heavy.a"
+	var r=truck_base(id)
+	# Extend the working silhouette behind the existing fleet chassis; recenter
+	# the cab/chassis so the complete heavy wrecker is about eight meters long.
+	for child in r.get_children():
+		child.position.z-=0.4
+	var b=builder()
+	for sx in [-1.0,1.0]:
+		b.bevel_box("construction_ochre",Vector3(sx*0.90-0.28,1.12,-1.74),Vector3(sx*0.90+0.28,1.64,2.67),0.045)
+		for z in [-1.15,0.0,1.15,2.19]:
+			b.box_c("metal_dark",Vector3(sx*1.185,1.37,z),Vector3(0.012,0.32,0.018))
+			b.box_c("metal_light",Vector3(sx*1.193,1.49,z+0.22),Vector3(0.018,0.035,0.15))
+		b.box_c("trim_white",Vector3(sx*1.193,1.22,0.45),Vector3(0.012,0.08,4.20))
+		b.box_c("construction_ochre",Vector3(sx*1.168,1.53,-3.11),Vector3(0.022,0.18,1.24))
+		b.box_c("trim_white",Vector3(sx*1.181,1.53,-3.11),Vector3(0.008,0.045,1.24))
+	# Closed tool lockers flank an open recovery mechanism; no cargo platform.
+	b.bevel_box("construction_ochre_dark",Vector3(-0.63,1.05,-1.70),Vector3(0.63,1.36,2.57),0.045)
+	for sx in [-1.0,1.0]:
+		b.beam("construction_ochre",Vector3(sx*0.96,1.45,-1.70),Vector3(sx*0.96,3.21,-1.70),0.14)
+	b.beam("construction_ochre",Vector3(-0.96,3.21,-1.70),Vector3(0.96,3.21,-1.70),0.16)
+	b.bevel_box("metal_dark",Vector3(-0.82,2.78,-2.85),Vector3(0.82,2.86,-2.52),0.025)
+	for sx in [-1.0,1.0]:
+		b.bevel_box("construction_ochre",Vector3(sx*0.58-0.22,2.86,-2.83),Vector3(sx*0.58+0.22,2.97,-2.54),0.045)
+	# Compact raised recovery boom with a nested extension and stowed cable.
+	b.beam("construction_ochre_dark",Vector3(0,1.50,-0.67),Vector3(0,2.68,1.47),0.43)
+	b.beam("construction_ochre",Vector3(0,2.59,1.32),Vector3(0,2.88,2.50),0.29)
+	for sx in [-1.0,1.0]:
+		b.beam("metal_light",Vector3(sx*0.32,1.49,0.20),Vector3(sx*0.19,2.48,1.45),0.085)
+	b.cylinder_x("metal_dark",Vector3(0,1.67,-0.89),0.20,0.75,12)
+	b.beam("metal_dark",Vector3(0,2.82,2.51),Vector3(0,1.82,2.51),0.025)
+	b.beam("metal_dark",Vector3(0,1.82,2.51),Vector3(0,1.73,2.66),0.07)
+	b.beam("metal_dark",Vector3(0,1.73,2.66),Vector3(0,1.87,2.73),0.07)
+	part(r,"RecoveryBody",b,id+".recovery_body")
+	var lift=node(r,"LiftPivot",Vector3(0,0.68,2.5))
+	b=builder()
+	b.beam("construction_ochre_dark",Vector3(0,0,0),Vector3(0,0.22,0.96),0.30)
+	b.beam("construction_ochre",Vector3(0,0.22,0.84),Vector3(0,0.34,1.42),0.22)
+	b.beam("metal_dark",Vector3(-0.96,0.34,1.43),Vector3(0.96,0.34,1.43),0.17)
+	for sx in [-1.0,1.0]:
+		# Two open axle cradles, supporting the actual truck's front axle.
+		b.box_c("metal_light",Vector3(sx*0.73,0.38,1.50),Vector3(0.24,0.08,0.20))
+		for z in [1.40,1.60]:
+			b.box_c("construction_ochre",Vector3(sx*0.73,0.48,z),Vector3(0.24,0.20,0.06))
+	part(lift,"LiftArm",b,id+".lift_arm")
+	marker(lift,"LiftAnchor",Vector3(0,0.42,1.50))
+	for child in r.get_children():
+		child.position.z-=0.065
+	save(r,id,{"wheels":wheel_contract(),"loads":[],"lift":{"node":"LiftPivot","mesh":"LiftPivot/LiftArm","axis":"X","operation_degrees":-10,"rotation_direction":"Negative X raises the rear axle cradle (+Z)","anchor":"LiftPivot/LiftAnchor","anchor_rest_m":[0,1.10,3.935],"source_front_axle_m":[0,0.47,-2.55],"source_rear_axle_m":[0,0.47,1.75],"source_rear_wheel_radius_m":0.47,"source_scene":"res://Assets/V1/Scenes/vehicle.truck_cargo.a.tscn","alignment":"Same horizontal heading: carried truck behind (+Z), its front -Z toward the wrecker; pitch positive X so rear wheels stay grounded, then translate source front axle center onto LiftAnchor. Keep native scale; align axle, not vehicle root. Counter-rotate all four towed-truck wheels by body pitch for the flat-ground review pose."},"note":"Heavy axle-lift wrecker, delivered alone. Host controls the real towed truck and wheel contact, no cargo truck clone or motion is embedded."})
 
 func build_paver() -> void:
 	var id="vehicle.asphalt_paver.a"
