@@ -243,6 +243,7 @@ public partial class Main
             Require(localShipment.Complete && localBoarded && Math.Abs(sister.Quantity(ResourceKind.Food) - 20) < 1e-6, "Retomada com motorista real embarcado e entrega física: " + farmTruck.Cause);
             Require(_sim.Balance(firm.Account) == firmLocal + localQuote.Compensation && _sim.MonetaryTotal == localMoney, "Sem reembolso, frete ou taxa na retomada local");
 
+            await BuildingDemolitionGuardsSmoke(directory);
             _sim.CheckInvariants();
             System.IO.File.WriteAllText(System.IO.Path.Combine(directory, "building-demolition-final.json"), _sim.SaveToJson());
             GD.Print("INDEXCITIES_BUILDING_DEMOLITION_OK compensation=" + Cash(changed.Compensation) + " removal=" + Cash(changed.RemovalCost) + " stale-revalidated=true cancel=no-change deadline-homeless=true moved-before-deadline=true cargo-waited-safely=true cargo-resumed-same-company=true local-driver-released=true directory=" + directory);
