@@ -1,0 +1,8 @@
+tow-stranded
+tow-truck-lifting
+tow-car-loading
+tow-truck-pulled
+tow-car-carried
+tow-car-at-station
+tow-done
+tow-reloaded

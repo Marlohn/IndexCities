@@ -1,0 +1,1 @@
+Revisor efetivo: DeepSeek V4.1 Flash indisponível (OpenCode: 'This API key has expired'); fallback AGENTS.md §7 → Claude Haiku 5.5.

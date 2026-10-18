@@ -84,7 +84,7 @@ public sealed partial class CitySimulation
             // Same-direction leader within the hold distance, as in MoveVehiclesUnsplit.
             Vehicle? leader=null;var nearest=double.MaxValue;var sin=Math.Sin(current.Heading);var cos=Math.Cos(current.Heading);
             foreach(var o in State.Vehicles){
-                if(o.Id==current.Id||o.Status is not (VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded))continue;
+                if(o.Id==current.Id||!OccupiesLane(o))continue;
                 var relative=o.Position-current.Position;var forward=relative.X*sin+relative.Z*cos;var side=Math.Abs(relative.X*cos-relative.Z*sin);
                 if(forward>0&&side<2.6&&Math.Cos(o.Heading-current.Heading)>.5&&forward<nearest){nearest=forward;leader=o;}
             }
@@ -109,7 +109,7 @@ public sealed partial class CitySimulation
                 var remaining=dt-_vehicleMovementOffset;
                 _vehicleMovementClock=State.ElapsedSeconds+_vehicleMovementOffset;
                 // Same entries as ToDictionary, in a dictionary reused across slices.
-                _entryFrameBuffer.Clear();foreach(var v in State.Vehicles.Where(v=>v.Status is (VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded)&&!TryLaneEntry(v,out _)))_entryFrameBuffer.Add(v.Id,EntrySnapshot(v));_entryFrame=_entryFrameBuffer;
+                _entryFrameBuffer.Clear();foreach(var v in State.Vehicles.Where(v=>OccupiesLane(v)&&!TryLaneEntry(v,out _)))_entryFrameBuffer.Add(v.Id,EntrySnapshot(v));_entryFrame=_entryFrameBuffer;
                 var slice=NextVehicleMovementEvent(remaining);
                 MoveVehiclesUnsplit(slice);
                 _vehicleMovementOffset+=slice;
@@ -153,14 +153,14 @@ public sealed partial class CitySimulation
         foreach(var v in State.Vehicles.Where(v=>_vehicleMovementBatch!.Contains(v.Id))){
             // A blocked lot entry is not travelling to its lane target yet.
             // Its hypothetical arrival must not generate an extra substep.
-            if(TryLaneEntry(v,out var waitingAccess)&&State.Vehicles.Where(o=>o.Id!=v.Id&&o.Status is (VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded)).Select(EntryFrameVehicle).Any(o=>BlocksLaneEntry(v,waitingAccess,o)))continue;
+            if(TryLaneEntry(v,out var waitingAccess)&&State.Vehicles.Where(o=>o.Id!=v.Id&&OccupiesLane(o)).Select(EntryFrameVehicle).Any(o=>BlocksLaneEntry(v,waitingAccess,o)))continue;
             if(held?.Contains(v.Id)==true)continue;
             horizon=Math.Min(horizon,TimeToMovementChange(v,horizon));
         }
         var earliest=horizon;
         foreach(var v in entries){
             TryLaneEntry(v,out var access);
-            var occupants=State.Vehicles.Where(o=>o.Id!=v.Id&&o.Status is VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded).Select(EntryFrameVehicle).ToList();
+            var occupants=State.Vehicles.Where(o=>o.Id!=v.Id&&OccupiesLane(o)).Select(EntryFrameVehicle).ToList();
             if(!occupants.Any(o=>BlocksLaneEntry(v,access,o)))continue;
             var candidates=new SortedSet<double>();
             foreach(var other in occupants){

@@ -1,0 +1,12 @@
+Godot Engine v4.7.2.stable.mono.official.ed1daf0bf - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 546.18 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 3050 6GB Laptop GPU
+
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\guincho\artifacts\verification\tow-qa\tow-stranded.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\guincho\artifacts\verification\tow-qa\tow-truck-lifting.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\guincho\artifacts\verification\tow-qa\tow-car-loading.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\guincho\artifacts\verification\tow-qa\tow-truck-pulled.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\guincho\artifacts\verification\tow-qa\tow-car-carried.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\guincho\artifacts\verification\tow-qa\tow-car-at-station.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\guincho\artifacts\verification\tow-qa\tow-done.png
+RECOVERY_VIEWPORT_CAPTURE C:\Users\Marlohn\orca\workspaces\IndexCities\guincho\artifacts\verification\tow-qa\tow-reloaded.png
+INDEXCITIES_TOW_OK models=vehicle.tow_truck.a=final,vehicle.tow_truck_heavy.a=final captures=8 directory=C:\Users\Marlohn\orca\workspaces\IndexCities\guincho\artifacts\verification\tow-qa car=front-loaded-carried-refuelled truck=lifted-pulled-delivered queue=clear saveload=towed

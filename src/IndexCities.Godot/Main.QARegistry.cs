@@ -55,6 +55,7 @@ public partial class Main
         new("--real-clock-smoke",new[]{"--real-clock-smoke"},"Relógio real por velocidade e pausa",true,"nenhuma (cria a cidade)",nameof(RealClockSmoke)),
         new("--traffic-recovery-smoke",new[]{"--traffic-recovery-smoke"},"Caminhões saem da paralisação e a oferta é preservada",true,"cidade-checkpoint via --fixture= com caminhões externos ativos",nameof(TrafficRecoverySmoke)),
         new("--smoke",new[]{"--smoke"},"Invariantes e sincronização do mundo numa cidade vazia",false,"nenhuma (cria a cidade)",nameof(Smoke)),
+        new("--tow-smoke",new[]{"--tow-smoke"},"Guincho: carro e caminhão sem combustível na via, chegada pela frente, plataforma (CarryAnchor) e guincho pesado (LiftAnchor), entrega no posto, fila desfeita e save/load no meio do reboque",true,"nenhuma (cria a cidade)",nameof(TowSmoke)),
         new("--neighbourhood-smoke",new[]{"--neighbourhood-smoke"},"Continuidade de ruas, conexões e obra dependente",true,"nenhuma (cria a cidade)",nameof(NeighbourhoodSmoke)),
     };
 
