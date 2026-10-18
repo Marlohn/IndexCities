@@ -130,7 +130,8 @@ public sealed class BuildingDemolitionTests
         truck.DriverId=driver.Id;truck.ShipmentId=order.Id;sim.State.Vehicles.Add(truck);sim.State.Shipments.Add(order);
         Assert.True(sim.DemolishBuilding(shop.Id).Success);Assert.True(shop.Removed);
         for(var i=0;i<30;i++)sim.Advance(60);sim.CheckInvariants();
-        Assert.True(order.Complete&&order.Cancelled);Assert.Null(truck.ShipmentId);Assert.Empty(truck.Cargo);Assert.Equal(30,farm.Quantity(ResourceKind.Food),3);
+        Assert.False(order.Complete);Assert.False(order.Cancelled);Assert.Null(truck.ShipmentId);Assert.Empty(truck.Cargo);Assert.Equal(30,farm.Quantity(ResourceKind.Food),3);
+        Assert.Equal("company:901",order.GoodsOwnerAccount);Assert.Equal(20,order.Cargo[ResourceKind.Food]);Assert.Null(truck.DriverId);
     }
     [Fact] public void Saves_without_demolition_data_load_with_defaults_and_stay_unchanged()
     {

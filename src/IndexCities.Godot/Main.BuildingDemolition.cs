@@ -53,7 +53,7 @@ public partial class Main
             var titular=owners.Length>0?" (titular "+owners+")":"";
             var line=group.Key switch{
                 ShipmentImpactKind.LostReserved=>"▣ Remessas de saída ainda não carregadas: "+count+" cancelada(s); "+cargo+" reservado(s) no prédio perde-se"+titular+".",
-                ShipmentImpactKind.StaysAtOrigin=>"↩ Remessas ainda não carregadas para este prédio: "+count+" ficam na origem, "+cargo+titular+".",
+                ShipmentImpactKind.StaysAtOrigin=>"↩ Remessas ainda não carregadas para este prédio: "+count+" ficam na origem, "+cargo+titular+". Na fazenda, compras pagas continuam reservadas ao comprador; caminhão e motorista ficam livres. Retomam para outro prédio apto da mesma empresa compradora, com carregamento e percurso reais, sem nova cobrança ou reembolso.",
                 ShipmentImpactKind.OnboardSeeksSameCompany=>"⛟ Carga já embarcada para este prédio: "+count+" caminhão(ões), "+cargo+titular+"; mantém titular e quantidade e busca outro prédio da mesma empresa com espaço e acesso"
                     +(group.Select(s=>s.AlternativeDestination).OfType<string>().Distinct().ToList() is {Count:>0} apt?" (apto agora: "+string.Join(", ",apt)+", sem garantia)":" (nenhum apto agora)")
                     +"; sem destino viável, aguarda em local seguro com a carga e o caminhão ocupado (motorista local desembarca e retoma a rotina). Sem reembolso nem frete novo.",

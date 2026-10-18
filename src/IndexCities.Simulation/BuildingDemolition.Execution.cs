@@ -124,14 +124,17 @@ public sealed partial class CitySimulation
     void ReleaseShipmentsOf(Building building)
     {
         foreach(var s in State.Shipments.Where(s=>!s.Complete&&!s.PickedUp&&(s.SourceBuildingId==building.Id||s.ProjectId==null&&s.DestinationBuildingId==building.Id)).ToList()){
+            // Only the destination is removed: sold goods still physically at an intact
+            // farm stay reserved to the buyer. Detach the empty carrier, not the purchase.
+            var preserve=s.SourceBuildingId!=building.Id&&s.ProjectId==null&&s.Purpose==ShipmentPurpose.Food&&PrivateCargo(s)&&BuildingById(s.SourceBuildingId) is {Kind:BuildingKind.Farm};
             if(s.ProjectId is {} pid&&State.Projects.FirstOrDefault(p=>p.Id==pid) is {} project)foreach(var kv in s.Cargo)project.LocalReserved[kv.Key]=Math.Max(0,project.LocalReserved.GetValueOrDefault(kv.Key)-kv.Value);
             var v=State.Vehicles.FirstOrDefault(x=>x.Id==s.VehicleId&&x.ShipmentId==s.Id);
             // External trucks follow the existing cancellation: nothing to load, back to the exterior.
-            if(v==null||v.External){s.Cancelled=true;if(v==null)s.Complete=true;continue;}
-            s.Complete=true;s.Cancelled=true;v.ShipmentId=null;
+            if(v==null||v.External){if(preserve&&v==null){s.VehicleId=0;continue;}s.Cancelled=true;if(v==null)s.Complete=true;continue;}
+            s.Complete=!preserve;s.Cancelled=!preserve;if(preserve)s.VehicleId=0;v.ShipmentId=null;
             if(State.Citizens.FirstOrDefault(c=>c.Id==v.DriverId) is {} driver&&driver.VehicleId!=v.Id){driver.BoardingVehicleId=null;driver.Path.Clear();driver.PathIndex=0;v.DriverId=null;}
             else ReleaseDriver(v);
-            v.Status=VehicleStatus.Parked;v.LoadTimer=0;v.Cause=s.SourceBuildingId==building.Id?"Carga reservada perdida com "+building.Definition.Name+" demolido":"Entrega cancelada: "+building.Definition.Name+" de destino demolido; carga permanece na origem";
+            v.Status=VehicleStatus.Parked;v.LoadTimer=0;v.Cause=preserve?"Destino demolido: compra paga reservada ao comprador na fazenda; caminhão e motorista livres":s.SourceBuildingId==building.Id?"Carga reservada perdida com "+building.Definition.Name+" demolido":"Entrega cancelada: "+building.Definition.Name+" de destino demolido; carga permanece na origem";
         }
     }
 }

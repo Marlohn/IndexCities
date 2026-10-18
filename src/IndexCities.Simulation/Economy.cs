@@ -156,7 +156,9 @@ public sealed partial class CitySimulation
     bool OrderLocalFood(Building farm,Building shop,double amount)
     {
         var v=LocalDeliveryVehicle(farm);var driver=State.Citizens.FirstOrDefault(c=>c.Alive&&c.WorkplaceId==farm.Id&&c.VehicleId==null&&c.ConstructionProjectId==null&&!c.Moving&&c.Position.Distance(farm.Door)<3&&ShiftActive(c));if(v==null||driver==null||Access(shop)==null)return false;
-        amount=Math.Min(amount,v.CargoCapacity);var price=farm.CompanyId==shop.CompanyId?0:Money((decimal)amount*farm.SalePrice+State.Tuning.FreightBase+(decimal)farm.Position.Distance(shop.Position)*State.Tuning.FreightPerMetre);
+        var free=farm.Quantity(ResourceKind.Food)-State.Shipments.Where(s=>s.SourceBuildingId==farm.Id&&!s.Complete&&!s.PickedUp).Sum(s=>s.Cargo.GetValueOrDefault(ResourceKind.Food));
+        amount=Math.Min(amount,Math.Min(v.CargoCapacity,free));if(amount<.1)return false;
+        var price=farm.CompanyId==shop.CompanyId?0:Money((decimal)amount*farm.SalePrice+State.Tuning.FreightBase+(decimal)farm.Position.Distance(shop.Position)*State.Tuning.FreightPerMetre);
         if(Balance("company:"+shop.CompanyId)<price||!EnsureFuel(v,Access(shop)!.Id))return false;
         if(price>0&&!Transfer("company:"+shop.CompanyId,"company:"+farm.CompanyId,price,"Fornecedor local","Alimentos reservados e frete do fornecedor real",shop.Id))return false;
         var s=new Shipment{Id=Id(),Purpose=ShipmentPurpose.Food,SourceBuildingId=farm.Id,DestinationBuildingId=shop.Id,VehicleId=v.Id,Cargo=new(){{ResourceKind.Food,amount}},GoodsOwnerAccount="company:"+shop.CompanyId,PricePaid=price,PickedUp=false};State.Shipments.Add(s);v.ShipmentId=s.Id;v.DriverId=driver.Id;driver.BoardingVehicleId=v.Id;driver.Purpose=JourneyPurpose.Boarding;driver.Path=[driver.Position,v.Position];driver.PathIndex=0;driver.PathRoadRevision=State.RoadRevision;driver.Activity="Caminhando para embarcar no caminhão";v.Status=VehicleStatus.Unloading;v.LoadTimer=15;v.Cause="Carregando na fazenda; motorista real";shop.InventoryUnitCost=Money(price==0?farm.SalePrice:price/(decimal)amount);shop.SalePrice=Money(shop.InventoryUnitCost*1.4m);return true;

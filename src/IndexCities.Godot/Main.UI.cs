@@ -80,6 +80,7 @@ public partial class Main
         _inspectionKey=key;_inspectionTexts.Clear();_inspectionButtons.Clear();_inspectionTooltips.Clear();Clear(_inspection);
         if(_selectedBuilding is {} id&&s.Buildings.FirstOrDefault(b=>b.Id==id&&!b.Removed) is {} b){
             _inspector.Visible=true;var summary=Card(_inspection,b.Definition.Name);InspectionText(summary,()=>b.Cause,18);InspectionText(summary,()=>_world.BuildingProblemText(b.Id),16,hideEmpty:true);BuildingDemolitionInspection(_inspection,b,true);
+            InspectionText(summary,()=>_sim.ReservedPurchasesAt(b),14,hideEmpty:true);
             if(b.Kind==BuildingKind.House){var occupants=InspectionText(summary,()=>"Moradores: "+s.Citizens.Count(c=>c.Alive&&c.Resident&&s.Families.Any(f=>f.Id==c.FamilyId&&f.HomeId==b.Id)),18);InspectionTooltip(occupants,()=>"Capacidade de produção/serviço: "+b.OperationalCapacity.ToString("N1")+". Residências abrigam famílias; esse indicador não mede moradores.");}
             else InspectionText(summary,()=>"Capacidade operacional: "+b.OperationalCapacity.ToString("N1"),18);
             if(b.Definition.Utility)ServiceInspection(_inspection,b);
