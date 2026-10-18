@@ -121,12 +121,13 @@ func build_all() -> void:
 	build_dump()
 	build_mixer()
 	build_flatbed()
+	build_tow_truck()
 	build_paver()
 	build_roller()
 	var f = FileAccess.open(ROOT + "/manifest.construction.json",FileAccess.WRITE)
 	f.store_string(JSON.stringify({"schema":"indexcities.construction/1","authorship":"GPT-6.1-Sol xhigh; original recipes with current project V1 kit/palette","status":"Estetica PENDENTE de revisao humana","conventions":{"front":"-Z","up":"+Y","unit":"meter","pivot":"ground, center","runtime_scripts":false,"autoplay":false,"loads_visible_by_default":false},"entries":entries},"  "))
 	f.close()
-	print("[construction-build] PASS 5 scenes; original editable sources; no runtime scripts")
+	print("[construction-build] PASS 6 scenes; original editable sources; no runtime scripts")
 	quit(0)
 
 func truck_base(id: String) -> Node3D:
@@ -358,6 +359,46 @@ func build_flatbed() -> void:
 		b.pop()
 		part(r,"Load"+cargo,b,id+".load_"+cargo.to_lower(),Vector3(0,1.32,0)).visible=false
 	save(r,id,{"wheels":wheel_contract(),"loads":["LoadSteel","LoadWood"],"quantity":"Load pivots at deck Y=1.32; host may scale local Y or hide from real quantity; no inventory is encoded","bed":"Flatbed remains when empty; tie straps are inside each load node"})
+
+func build_tow_truck() -> void:
+	var id="vehicle.tow_truck.a"
+	var r=truck_base(id)
+	# A physical flat recovery deck, not a cargo bed with tall enclosing walls.
+	var b=builder()
+	for sx in [-1.0,1.0]:
+		b.box_c("construction_ochre_dark",Vector3(sx*0.66,1.04,0.95),Vector3(0.16,0.12,4.75))
+		b.bevel_box("construction_ochre",Vector3(sx*0.88-0.23,0.57,-1.27),Vector3(sx*0.88+0.23,1.06,-0.42),0.045)
+		# Broad service stripe beneath the door glass; no lettering or external logo.
+		b.box_c("construction_ochre",Vector3(sx*1.168,1.53,-2.71),Vector3(0.022,0.18,1.24))
+		b.box_c("trim_white",Vector3(sx*1.181,1.53,-2.71),Vector3(0.008,0.045,1.24))
+	# Unlit amber light bar, kept separate from the cab's seven material slots.
+	b.bevel_box("metal_dark",Vector3(-0.82,2.78,-2.45),Vector3(0.82,2.86,-2.12),0.025)
+	for sx in [-1.0,1.0]:
+		b.bevel_box("construction_ochre",Vector3(sx*0.58-0.22,2.86,-2.43),Vector3(sx*0.58+0.22,2.97,-2.14),0.045)
+	b.box_c("trim_white",Vector3(0,2.89,-2.285),Vector3(0.65,0.06,0.25))
+	part(r,"RecoveryFrame",b,id+".frame")
+	var pivot=node(r,"DeckPivot",Vector3(0,1.15,2.9))
+	b=builder()
+	b.push_translate(-pivot.position)
+	b.bevel_box("metal_light",Vector3(-1.20,1.10,-1.38),Vector3(1.20,1.24,3.28),0.025)
+	# Thin tapered tail; the review pose shows an initial tilt/slide, not full unloading.
+	Truck._extrude_x(b,"metal_light",PackedVector2Array([Vector2(3.25,1.10),Vector2(3.25,1.24),Vector2(3.55,1.13),Vector2(3.55,1.10)]),-1.20,1.20)
+	for sx in [-1.0,1.0]:
+		b.box_c("construction_ochre",Vector3(sx*1.20,1.27,0.95),Vector3(0.08,0.12,4.65))
+		# Low wheel guides and tiedown apertures read at the game's isometric angle.
+		for z in [-0.9,0.0,0.9,1.8,2.7]:
+			b.box_c("metal_dark",Vector3(sx*1.12,1.245,z),Vector3(0.10,0.01,0.22))
+		b.beam("construction_ochre",Vector3(sx*1.12,1.24,-1.33),Vector3(sx*1.12,2.43,-1.33),0.10)
+		b.beam("construction_ochre_dark",Vector3(sx*1.12,1.27,-0.89),Vector3(sx*1.12,1.83,-1.33),0.07)
+	b.beam("construction_ochre",Vector3(-1.12,2.43,-1.33),Vector3(1.12,2.43,-1.33),0.11)
+	b.beam("construction_ochre_dark",Vector3(-1.12,1.83,-1.33),Vector3(1.12,1.83,-1.33),0.08)
+	# Winch housing/spool at the headboard, clear of the passenger car's nose.
+	b.bevel_box("construction_ochre_dark",Vector3(-0.36,1.28,-1.36),Vector3(0.36,1.51,-1.15),0.025)
+	b.cylinder_x("metal_dark",Vector3(0,1.49,-1.24),0.10,0.43,10)
+	b.pop()
+	part(pivot,"Deck",b,id+".deck")
+	marker(pivot,"CarryAnchor",Vector3(0,0.09,-1.815))
+	save(r,id,{"wheels":wheel_contract(),"loads":[],"deck":{"node":"DeckPivot","mesh":"DeckPivot/Deck","axis":"X","rest_position_m":[0,1.15,2.9],"operation_position_m":[0,1.15,3.5],"operation_degrees":12,"rotation_direction":"Positive X raises front (-Z) relative to rear; positive Z slides rearward","carry_anchor":"DeckPivot/CarryAnchor","carry_anchor_rest_m":[0,1.24,1.085],"clear_floor_min_m":[-1.14,1.24,-1.10],"clear_floor_max_m":[1.14,1.24,3.27]},"note":"Empty by default; host parents the real carried vehicle at CarryAnchor with identity local transform. Deck pose is illustrative, not automatic motion or simulation timing. Passenger car fits at native scale; full-size cargo truck does not fit this compact deck."})
 
 func build_paver() -> void:
 	var id="vehicle.asphalt_paver.a"

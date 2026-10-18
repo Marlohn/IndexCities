@@ -46,7 +46,7 @@ func run() -> void:
 			out=arg.substr(6)
 	DirAccess.make_dir_recursive_absolute(out)
 	var manifest=JSON.parse_string(FileAccess.get_file_as_string(ROOT+"/manifest.construction.json"))
-	expect(manifest.entries.size()==5,"Five families")
+	expect(manifest.entries.size()==6,"Six families")
 	for e in manifest.entries:
 		var ps=load(e.scene)
 		expect(ps is PackedScene,"PackedScene "+e.scene)
@@ -88,6 +88,8 @@ func run() -> void:
 				var w=r.get_node(path)
 				expect(w.mesh==r.get_node(wheels[0]).mesh,"Shared wheel mesh "+path)
 				expect(is_equal_approx(w.position.y,0.47),"Wheel pivot Y "+path)
+		if e.visual_id=="vehicle.tow_truck.a":
+			verify_tow_truck(r,e.contract)
 		var a=bounds(r)
 		expect(a.position.y>=-0.002,"Ground contact; no underground geometry "+e.visual_id)
 		expect(a.size.x<=2.901,"Rest fits 3.25 m technical lane "+e.visual_id)
@@ -123,6 +125,39 @@ func run() -> void:
 func vec(p: Vector3) -> Array:
 	return [snapped(p.x,0.0001),snapped(p.y,0.0001),snapped(p.z,0.0001)]
 
+func verify_tow_truck(r: Node3D, contract: Dictionary) -> void:
+	var deck=r.get_node_or_null("DeckPivot/Deck")
+	var anchor=r.get_node_or_null("DeckPivot/CarryAnchor")
+	expect(deck is MeshInstance3D,"Tow deck mesh at stable path")
+	expect(anchor is Marker3D,"Tow CarryAnchor is a Marker3D under DeckPivot")
+	if not anchor is Marker3D:
+		return
+	expect(anchor.transform.basis.is_equal_approx(Basis.IDENTITY),"CarryAnchor preserves vehicle orientation/scale")
+	var anchor_position=r.global_transform.affine_inverse()*anchor.global_position
+	expect(vec(anchor_position)==contract.deck.carry_anchor_rest_m,"CarryAnchor rest coordinates match manifest")
+	var car=load(V1+"vehicle.car_passenger.a.tscn").instantiate()
+	anchor.add_child(car)
+	var a=bounds(car)
+	var lo=contract.deck.clear_floor_min_m
+	var hi=contract.deck.clear_floor_max_m
+	expect(a.position.y>=-0.002 and a.position.y<=0.002,"Passenger car root rests on ground before mounting")
+	expect(a.position.x+anchor_position.x>=lo[0] and a.end.x+anchor_position.x<=hi[0],"Native passenger car including mirrors fits deck width")
+	expect(a.position.z+anchor_position.z>=lo[2] and a.end.z+anchor_position.z<=hi[2],"Native passenger car fits clear deck length")
+	expect(is_equal_approx(anchor_position.y,lo[1]),"CarryAnchor is at deck floor height")
+	car.free()
+	var posed=r.duplicate()
+	root.add_child(posed)
+	pose(posed,true)
+	# The initial tilt/slide keeps the floor above the fixed rear fenders. A pose
+	# that merely stays above the ground can still cut straight through the chassis.
+	var pivot=posed.get_node("DeckPivot")
+	for z in [1.45,2.65,3.17]:
+		var local_z=(z-pivot.position.z+0.05*sin(pivot.rotation.x))/cos(pivot.rotation.x)
+		var floor_point=pivot.transform*Vector3(0,-0.05,local_z)
+		expect(floor_point.y>=1.131,"Tilted/slid deck clears rear fenders at Z="+str(z))
+	expect(posed.get_node("DeckPivot").rotation.x>0,"Positive X inclines deck front above rear")
+	posed.free()
+
 func load_visual(id: String) -> Node3D:
 	return load(ROOT+"/Scenes/vehicle."+id+".a.tscn").instantiate()
 
@@ -135,6 +170,10 @@ func state(r: Node3D, cargo: String) -> void:
 		"steel": r.get_node("LoadSteel").visible=true
 		"wood": r.get_node("LoadWood").visible=true
 		"hopper": r.get_node("HopperLoad").visible=true
+		"passenger":
+			# Authorship preview only; delivered scene never contains a fictitious vehicle.
+			var car=load(V1+"vehicle.car_passenger.a.tscn").instantiate()
+			r.get_node("DeckPivot/CarryAnchor").add_child(car)
 
 func pose(r: Node3D, operation: bool) -> void:
 	if not operation:
@@ -162,6 +201,9 @@ func pose(r: Node3D, operation: bool) -> void:
 		r.get_node("HopperLoad").visible=true
 	elif id.contains("road_roller"):
 		r.get_node("FrontSteering").rotation.y=deg_to_rad(8)
+	elif id.contains("tow_truck"):
+		r.get_node("DeckPivot").position=Vector3(0,1.15,3.5)
+		r.get_node("DeckPivot").rotation.x=deg_to_rad(12)
 
 func make_stage() -> void:
 	scene_root=Node3D.new()
@@ -281,7 +323,7 @@ func render_reviews() -> void:
 	await snap("board_urban_loaded_back")
 	content.free()
 	# Close inspection of the front feed hopper, rear screed, and mixer finish.
-	for spec in [{"family":"asphalt_paver","cargo":"hopper","file":"detail_paver_hopper","direction":Vector3(300,330,-300),"op":false},{"family":"asphalt_paver","cargo":"hopper","file":"detail_paver_screed","direction":Vector3(300,330,300),"op":true},{"family":"truck_mixer","cargo":"","file":"detail_mixer_front_iso","direction":Vector3(300,330,-300),"op":true}]:
+	for spec in [{"family":"asphalt_paver","cargo":"hopper","file":"detail_paver_hopper","direction":Vector3(300,330,-300),"op":false},{"family":"asphalt_paver","cargo":"hopper","file":"detail_paver_screed","direction":Vector3(300,330,300),"op":true},{"family":"truck_mixer","cargo":"","file":"detail_mixer_front_iso","direction":Vector3(300,330,-300),"op":true},{"family":"tow_truck","cargo":"passenger","file":"detail_tow_loaded_front_iso","direction":Vector3(300,330,-300),"op":false},{"family":"tow_truck","cargo":"passenger","file":"detail_tow_loaded_back_iso","direction":Vector3(300,330,300),"op":false},{"family":"tow_truck","cargo":"","file":"detail_tow_deck_operation","direction":Vector3(300,330,300),"op":true}]:
 		var detail=Node3D.new()
 		scene_root.add_child(detail)
 		road(detail,0,2)
@@ -294,9 +336,11 @@ func render_reviews() -> void:
 		detail.free()
 	# Independent cameras for correct front/rear orthographic and exact game iso.
 	# Each tile is a real 500x380 viewport render, then composed losslessly by Godot.
-	for family in ["truck_dump","truck_mixer","truck_flatbed","asphalt_paver","road_roller"]:
+	for family in ["truck_dump","truck_mixer","truck_flatbed","asphalt_paver","road_roller","tow_truck"]:
 		var cargo="sand" if family=="truck_dump" else ("steel" if family=="truck_flatbed" else ("hopper" if family=="asphalt_paver" else ""))
 		var tiles=[{"label":"VAZIO / REPOUSO","cargo":"","op":false},{"label":"CARREGADO" if family not in ["truck_mixer","road_roller"] else "CARROCERIA PERMANENTE","cargo":cargo,"op":false},{"label":"ASFALTO + LONA" if family=="truck_dump" else ("MADEIRA" if family=="truck_flatbed" else "OPERAÇÃO"),"cargo":"asphalt" if family=="truck_dump" else ("wood" if family=="truck_flatbed" else cargo),"op":family not in ["truck_dump","truck_flatbed"]},{"label":"DESCARGA / PARTES","cargo":cargo,"op":true}]
+		if family=="tow_truck":
+			tiles=[{"label":"VAZIO / REPOUSO","cargo":"","op":false},{"label":"CARRO EM ESCALA REAL","cargo":"passenger","op":false},{"label":"PLATAFORMA RECUADA / INCLINADA","cargo":"","op":true},{"label":"CARRO NO PIVÔ INCLINADO","cargo":"passenger","op":true}]
 		var sheet=Image.create(2000,1200,false,Image.FORMAT_RGBA8)
 		sheet.fill(Color("26333d"))
 		for row in 3:
@@ -326,7 +370,7 @@ func render_reviews() -> void:
 	var f=FileAccess.open(out+"/render_metrics.json",FileAccess.WRITE)
 	f.store_string(JSON.stringify({"renderer":RenderingServer.get_current_rendering_method(),"adapter":RenderingServer.get_video_adapter_name(),"viewport":vec(Vector3(root.size.x,root.size.y,0)),"metrics":metrics,"note":"Local preview counts, not gameplay performance benchmark; no FPS/GPU-time conclusion"},"  "))
 	f.close()
-	print("[construction-render] PASS 12 captures plus mixer tile; real GL Compatibility; no save writes")
+	print("[construction-render] PASS 16 captures plus mixer tile; real GL Compatibility; no save writes")
 
 func tile(family: String, variant: Dictionary, view: int) -> Image:
 	var vp=SubViewport.new()

@@ -390,6 +390,137 @@
     },
     {
       "contract": {
+        "deck": {
+          "axis": "X",
+          "carry_anchor": "DeckPivot/CarryAnchor",
+          "carry_anchor_rest_m": [
+            0,
+            1.24,
+            1.085
+          ],
+          "clear_floor_max_m": [
+            1.14,
+            1.24,
+            3.27
+          ],
+          "clear_floor_min_m": [
+            -1.14,
+            1.24,
+            -1.1
+          ],
+          "mesh": "DeckPivot/Deck",
+          "node": "DeckPivot",
+          "operation_degrees": 12,
+          "operation_position_m": [
+            0,
+            1.15,
+            3.5
+          ],
+          "rest_position_m": [
+            0,
+            1.15,
+            2.9
+          ],
+          "rotation_direction": "Positive X raises front (-Z) relative to rear; positive Z slides rearward"
+        },
+        "loads": [],
+        "note": "Empty by default; host parents the real carried vehicle at CarryAnchor with identity local transform. Deck pose is illustrative, not automatic motion or simulation timing. Passenger car fits at native scale; full-size cargo truck does not fit this compact deck.",
+        "wheels": {
+          "forward_roll": "negative radians = -distance / radius",
+          "nodes": [
+            "Wheel_FL",
+            "Wheel_FR",
+            "Wheel_ML",
+            "Wheel_MR",
+            "Wheel_RL",
+            "Wheel_RR"
+          ],
+          "radius_m": 0.47,
+          "roll_axis": "X",
+          "steer_front_axis": "Y"
+        }
+      },
+      "envelope_all_states_rest": {
+        "max": [
+          1.45,
+          2.97,
+          3.6
+        ],
+        "min": [
+          -1.45,
+          0.0,
+          -3.6
+        ],
+        "size": [
+          2.9,
+          2.97,
+          7.2
+        ]
+      },
+      "mesh_instances": 9,
+      "meshes": [
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.tow_truck.a.body.tres",
+          "node": "Body",
+          "surfaces": 7,
+          "triangles": 822
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres",
+          "node": "Wheel_FL",
+          "surfaces": 2,
+          "triangles": 212
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres",
+          "node": "Wheel_FR",
+          "surfaces": 2,
+          "triangles": 212
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres",
+          "node": "Wheel_ML",
+          "surfaces": 2,
+          "triangles": 212
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres",
+          "node": "Wheel_MR",
+          "surfaces": 2,
+          "triangles": 212
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres",
+          "node": "Wheel_RL",
+          "surfaces": 2,
+          "triangles": 212
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres",
+          "node": "Wheel_RR",
+          "surfaces": 2,
+          "triangles": 212
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.tow_truck.a.frame.tres",
+          "node": "RecoveryFrame",
+          "surfaces": 4,
+          "triangles": 304
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.tow_truck.a.deck.tres",
+          "node": "DeckPivot/Deck",
+          "surfaces": 4,
+          "triangles": 352
+        }
+      ],
+      "scene": "res://Assets/Construction/Scenes/vehicle.tow_truck.a.tscn",
+      "surfaces_all_states": 27,
+      "triangles_all_states": 2750,
+      "visual_id": "vehicle.tow_truck.a"
+    },
+    {
+      "contract": {
         "hopper": {
           "axis": "Z",
           "fold_degrees": [
