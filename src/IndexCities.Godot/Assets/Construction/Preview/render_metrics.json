@@ -50,6 +50,24 @@
       "primitives": 5816
     },
     {
+      "capture": "detail_tow_heavy_front_iso",
+      "draw_calls": 129,
+      "objects": 129,
+      "primitives": 10368
+    },
+    {
+      "capture": "detail_tow_heavy_back_iso",
+      "draw_calls": 129,
+      "objects": 129,
+      "primitives": 10368
+    },
+    {
+      "capture": "detail_tow_heavy_lift",
+      "draw_calls": 99,
+      "objects": 99,
+      "primitives": 6384
+    },
+    {
       "capture": "lineup_front_operation",
       "draw_calls": 319,
       "objects": 319,

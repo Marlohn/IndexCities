@@ -46,7 +46,7 @@ func run() -> void:
 			out=arg.substr(6)
 	DirAccess.make_dir_recursive_absolute(out)
 	var manifest=JSON.parse_string(FileAccess.get_file_as_string(ROOT+"/manifest.construction.json"))
-	expect(manifest.entries.size()==6,"Six families")
+	expect(manifest.entries.size()==7,"Seven families")
 	for e in manifest.entries:
 		var ps=load(e.scene)
 		expect(ps is PackedScene,"PackedScene "+e.scene)
@@ -90,6 +90,8 @@ func run() -> void:
 				expect(is_equal_approx(w.position.y,0.47),"Wheel pivot Y "+path)
 		if e.visual_id=="vehicle.tow_truck.a":
 			verify_tow_truck(r,e.contract)
+		elif e.visual_id=="vehicle.tow_truck_heavy.a":
+			verify_tow_heavy(r,e.contract)
 		var a=bounds(r)
 		expect(a.position.y>=-0.002,"Ground contact; no underground geometry "+e.visual_id)
 		expect(a.size.x<=2.901,"Rest fits 3.25 m technical lane "+e.visual_id)
@@ -161,6 +163,52 @@ func verify_tow_truck(r: Node3D, contract: Dictionary) -> void:
 func load_visual(id: String) -> Node3D:
 	return load(ROOT+"/Scenes/vehicle."+id+".a.tscn").instantiate()
 
+func mount_heavy_truck(r: Node3D) -> Node3D:
+	# Preview math in wrecker-local flat-ground coordinates. The production host
+	# owns the actual truck, road slope and wheel rolling; no truck is in the asset.
+	var truck=load(V1+"vehicle.truck_cargo.a.tscn").instantiate()
+	r.add_child(truck)
+	truck.name="ReviewTowedTruck"
+	align_heavy_truck(r,truck)
+	return truck
+
+func align_heavy_truck(r: Node3D, truck: Node3D) -> void:
+	var target=r.global_transform.affine_inverse()*r.get_node("LiftPivot/LiftAnchor").global_position
+	var front=(truck.get_node("Wheel_FL").position+truck.get_node("Wheel_FR").position)*0.5
+	var rear=(truck.get_node("Wheel_RL").position+truck.get_node("Wheel_RR").position)*0.5
+	var pitch=asin((target.y-0.47)/(rear.z-front.z))
+	truck.rotation.x=pitch
+	truck.position=target-truck.basis*front
+	# Keep the faceted tires' existing flat ground contact in this static preview.
+	for wheel in ["Wheel_FL","Wheel_FR","Wheel_RL","Wheel_RR"]:
+		truck.get_node(wheel).rotation.x=-pitch
+
+func verify_tow_heavy(r: Node3D, contract: Dictionary) -> void:
+	var anchor=r.get_node_or_null("LiftPivot/LiftAnchor")
+	expect(r.get_node_or_null("LiftPivot/LiftArm") is MeshInstance3D,"Heavy lifting arm at stable path")
+	expect(anchor is Marker3D,"Heavy LiftAnchor is a Marker3D")
+	if not anchor is Marker3D:
+		return
+	var anchor_position=r.global_transform.affine_inverse()*anchor.global_position
+	expect(vec(anchor_position)==contract.lift.anchor_rest_m,"Heavy lift anchor matches manifest")
+	for operating in [false,true]:
+		var posed=r.duplicate()
+		root.add_child(posed)
+		pose(posed,operating)
+		var truck=mount_heavy_truck(posed)
+		var front=(truck.get_node("Wheel_FL").global_position+truck.get_node("Wheel_FR").global_position)*0.5
+		expect(front.distance_to(posed.get_node("LiftPivot/LiftAnchor").global_position)<0.001,"Towed front axle centered at LiftAnchor")
+		expect(truck.scale.is_equal_approx(Vector3.ONE),"Towed cargo truck keeps native scale")
+		var heading=Vector3(-truck.basis.z.x,0,-truck.basis.z.z).normalized()
+		expect(truck.position.z>anchor_position.z and heading.dot(Vector3.FORWARD)>0.999,"Towed truck behind, front toward wrecker (-Z), no yaw reversal")
+		for wheel in ["Wheel_RL","Wheel_RR"]:
+			var w=truck.get_node(wheel)
+			var box=bounds(w)
+			var center=posed.global_transform.affine_inverse()*w.global_position
+			expect(abs(center.y+box.position.y)<0.002,"Towed rear tire rests on ground "+wheel)
+		expect(bounds(posed).position.y>=-0.002,"Towed cargo truck body stays above ground")
+		posed.free()
+
 func state(r: Node3D, cargo: String) -> void:
 	match cargo:
 		"sand": r.get_node("BedPivot/LoadSandGravel").visible=true
@@ -174,6 +222,7 @@ func state(r: Node3D, cargo: String) -> void:
 			# Authorship preview only; delivered scene never contains a fictitious vehicle.
 			var car=load(V1+"vehicle.car_passenger.a.tscn").instantiate()
 			r.get_node("DeckPivot/CarryAnchor").add_child(car)
+		"cargo_truck": mount_heavy_truck(r)
 
 func pose(r: Node3D, operation: bool) -> void:
 	if not operation:
@@ -201,6 +250,10 @@ func pose(r: Node3D, operation: bool) -> void:
 		r.get_node("HopperLoad").visible=true
 	elif id.contains("road_roller"):
 		r.get_node("FrontSteering").rotation.y=deg_to_rad(8)
+	elif id.contains("tow_truck_heavy"):
+		r.get_node("LiftPivot").rotation.x=deg_to_rad(-10)
+		if r.has_node("ReviewTowedTruck"):
+			align_heavy_truck(r,r.get_node("ReviewTowedTruck"))
 	elif id.contains("tow_truck"):
 		r.get_node("DeckPivot").position=Vector3(0,1.15,3.5)
 		r.get_node("DeckPivot").rotation.x=deg_to_rad(12)
@@ -323,24 +376,34 @@ func render_reviews() -> void:
 	await snap("board_urban_loaded_back")
 	content.free()
 	# Close inspection of the front feed hopper, rear screed, and mixer finish.
-	for spec in [{"family":"asphalt_paver","cargo":"hopper","file":"detail_paver_hopper","direction":Vector3(300,330,-300),"op":false},{"family":"asphalt_paver","cargo":"hopper","file":"detail_paver_screed","direction":Vector3(300,330,300),"op":true},{"family":"truck_mixer","cargo":"","file":"detail_mixer_front_iso","direction":Vector3(300,330,-300),"op":true},{"family":"tow_truck","cargo":"passenger","file":"detail_tow_loaded_front_iso","direction":Vector3(300,330,-300),"op":false},{"family":"tow_truck","cargo":"passenger","file":"detail_tow_loaded_back_iso","direction":Vector3(300,330,300),"op":false},{"family":"tow_truck","cargo":"","file":"detail_tow_deck_operation","direction":Vector3(300,330,300),"op":true}]:
+	for spec in [{"family":"asphalt_paver","cargo":"hopper","file":"detail_paver_hopper","direction":Vector3(300,330,-300),"op":false},{"family":"asphalt_paver","cargo":"hopper","file":"detail_paver_screed","direction":Vector3(300,330,300),"op":true},{"family":"truck_mixer","cargo":"","file":"detail_mixer_front_iso","direction":Vector3(300,330,-300),"op":true},{"family":"tow_truck","cargo":"passenger","file":"detail_tow_loaded_front_iso","direction":Vector3(300,330,-300),"op":false},{"family":"tow_truck","cargo":"passenger","file":"detail_tow_loaded_back_iso","direction":Vector3(300,330,300),"op":false},{"family":"tow_truck","cargo":"","file":"detail_tow_deck_operation","direction":Vector3(300,330,300),"op":true},{"family":"tow_truck_heavy","cargo":"cargo_truck","file":"detail_tow_heavy_front_iso","direction":Vector3(300,330,-300),"op":false},{"family":"tow_truck_heavy","cargo":"cargo_truck","file":"detail_tow_heavy_back_iso","direction":Vector3(300,330,300),"op":false},{"family":"tow_truck_heavy","cargo":"","file":"detail_tow_heavy_lift","direction":Vector3(300,330,300),"op":true}]:
 		var detail=Node3D.new()
 		scene_root.add_child(detail)
-		road(detail,0,2)
+		if spec.family=="tow_truck_heavy":
+			var corridor=Node3D.new()
+			detail.add_child(corridor)
+			corridor.rotation.y=PI/2
+			road(corridor,0,4)
+		else:
+			road(detail,0,2)
 		var r=load_visual(spec.family)
 		detail.add_child(r)
+		if spec.family=="tow_truck_heavy":
+			r.position.x=1.625
 		state(r,spec.cargo)
 		pose(r,spec.op)
-		camera_at(Vector3(0,1.2,0),spec.direction,9.5)
+		camera_at(Vector3(1.625,1.2,3.2 if spec.cargo=="cargo_truck" else 0) if spec.family=="tow_truck_heavy" else Vector3(0,1.2,0),spec.direction,17.5 if spec.family=="tow_truck_heavy" and spec.cargo=="cargo_truck" else 10.5 if spec.family=="tow_truck_heavy" else 9.5)
 		await snap(spec.file)
 		detail.free()
 	# Independent cameras for correct front/rear orthographic and exact game iso.
 	# Each tile is a real 500x380 viewport render, then composed losslessly by Godot.
-	for family in ["truck_dump","truck_mixer","truck_flatbed","asphalt_paver","road_roller","tow_truck"]:
+	for family in ["truck_dump","truck_mixer","truck_flatbed","asphalt_paver","road_roller","tow_truck","tow_truck_heavy"]:
 		var cargo="sand" if family=="truck_dump" else ("steel" if family=="truck_flatbed" else ("hopper" if family=="asphalt_paver" else ""))
 		var tiles=[{"label":"VAZIO / REPOUSO","cargo":"","op":false},{"label":"CARREGADO" if family not in ["truck_mixer","road_roller"] else "CARROCERIA PERMANENTE","cargo":cargo,"op":false},{"label":"ASFALTO + LONA" if family=="truck_dump" else ("MADEIRA" if family=="truck_flatbed" else "OPERAÇÃO"),"cargo":"asphalt" if family=="truck_dump" else ("wood" if family=="truck_flatbed" else cargo),"op":family not in ["truck_dump","truck_flatbed"]},{"label":"DESCARGA / PARTES","cargo":cargo,"op":true}]
 		if family=="tow_truck":
 			tiles=[{"label":"VAZIO / REPOUSO","cargo":"","op":false},{"label":"CARRO EM ESCALA REAL","cargo":"passenger","op":false},{"label":"PLATAFORMA RECUADA / INCLINADA","cargo":"","op":true},{"label":"CARRO NO PIVÔ INCLINADO","cargo":"passenger","op":true}]
+		elif family=="tow_truck_heavy":
+			tiles=[{"label":"GUINCHO PESADO VAZIO","cargo":"","op":false},{"label":"CAMINHÃO EM ESCALA REAL","cargo":"cargo_truck","op":false},{"label":"ELEVAÇÃO DO BRAÇO","cargo":"","op":true},{"label":"REBOCADO / RODAS NO SOLO","cargo":"cargo_truck","op":true}]
 		var sheet=Image.create(2000,1200,false,Image.FORMAT_RGBA8)
 		sheet.fill(Color("26333d"))
 		for row in 3:
@@ -370,7 +433,7 @@ func render_reviews() -> void:
 	var f=FileAccess.open(out+"/render_metrics.json",FileAccess.WRITE)
 	f.store_string(JSON.stringify({"renderer":RenderingServer.get_current_rendering_method(),"adapter":RenderingServer.get_video_adapter_name(),"viewport":vec(Vector3(root.size.x,root.size.y,0)),"metrics":metrics,"note":"Local preview counts, not gameplay performance benchmark; no FPS/GPU-time conclusion"},"  "))
 	f.close()
-	print("[construction-render] PASS 16 captures plus mixer tile; real GL Compatibility; no save writes")
+	print("[construction-render] PASS 20 captures plus mixer tile; real GL Compatibility; no save writes")
 
 func tile(family: String, variant: Dictionary, view: int) -> Image:
 	var vp=SubViewport.new()
@@ -403,10 +466,12 @@ func tile(family: String, variant: Dictionary, view: int) -> Image:
 	stage.add_child(sim)
 	var cam=Camera3D.new()
 	cam.projection=Camera3D.PROJECTION_ORTHOGONAL
-	cam.size=11.2 if view==2 else (10.2 if family=="truck_dump" and variant.op else 8.4)
+	cam.size=(20.0 if view==2 else 10.2) if family=="tow_truck_heavy" else (11.2 if view==2 else (10.2 if family=="truck_dump" and variant.op else 8.4))
 	cam.current=true
 	stage.add_child(cam)
 	var target=Vector3(0,2.15 if family=="truck_dump" and variant.op and view!=2 else 1.5,0)
+	if family=="tow_truck_heavy":
+		target.z=3.2
 	cam.position=target+[Vector3(0,0,-100),Vector3(0,0,100),Vector3(300,330,300)][view]
 	cam.look_at(target)
 	var title=Label.new()
