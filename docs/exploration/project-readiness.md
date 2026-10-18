@@ -6,6 +6,18 @@
 >
 > **Última reavaliação de avanço:** 2026-10-11: **93% de maturidade das definições do Convencional** (antes 89%) e **83% de prontidão documental/técnica para integração** (antes 81%). Ambos são **estimativas qualitativas, não progresso de programação nem validação do jogo**. **Registro histórico de implementação: 0% na avaliação anterior.** Não é uma medição atual do checkout nem exclui trabalho externo. **Pesquisa comparativa de base:** 2026-10-08. [Evidências e 24 frentes de investigação](genre-benchmark.md#pesquisa-transversal-ampliada--cidade-real-jogos-e-lacunas-de-gameplay-2026-10-08).
 
+## Conferência da entrega local — 2026-10-17
+
+> Relato técnico da IA, sem autoridade para ampliar o recorte ou declarar aprovação humana. Estado conferido no código e nas evidências locais; não é percentual de conclusão.
+
+O catálogo básico e seus ciclos possuem implementação e testes integrados. `CityCycleTests` verifica construção e operação com pessoas, empresas, pagamentos, produção, compras, água e energia; persistência tem testes próprios. A suíte de261 testes passou após a primeira correção do save. Isso não comprova legibilidade, diversão, escala ou ausência de falhas em partidas diferentes.
+
+**Trabalho concreto ainda incompleto:** Demolir prédios está em checkpoint isolado `ef4904b`, com cenário Godot real e27 testes focados de demolição/saída de máquinas conferidos pelo coordenador, mas aguarda revisão independente e decisão humana sobre a ordem de busca de casa entre deslocados e migrantes. Mover prédios municipais possui somente orçamento: execução, obra substituta, continuidade institucional, logística física e interface ainda faltam. A realocação privada continua adiada pela SPEC.
+
+**Correção do save:** o destravamento passou no replay e Godot, mas uma verificação posterior em passos menores encontrou contatos entre corpos que exigem revisão antes da entrega ao jogador. O ajuste separado da descarga também está em revisão. O Desktop e o save original ainda não receberam essas mudanças. Diagnóstico, evidências e limites estão no [registro de logística](construction-materials-logistics.md#veículos-travados-na-cidade-do-marlohn--2026-10-17); estado das ferramentas no [registro de interface](player-interface.md#mover-e-demolir--implementação-parcial-de-2026-10-17).
+
+**Conclusão da V1 continua não comprovada:** após as correções e ferramentas aprovadas, falta verificar uma partida integrada de fundação, construção, operação, diagnóstico e save/load, com avaliação humana da experiência e da apresentação. A SPEC já define esse critério; não é necessário implementar os serviços adiados nem toda a visão futura para atendê-lo. Desempenho em cidade grande e legibilidade para quem ainda não lê permanecem sem validação nesta rodada.
+
 ## Revisão para a V1 — 2026-10-12
 
 > **Revisão humana desta seção: PENDENTE.** Conferência documental da IA; não altera requisitos, não recalcula os percentuais acima e não aprova escolhas de produto.
