@@ -315,6 +315,7 @@ public sealed class Vehicle
     public double TowCalledAt {get;set;}
     public double TowRetryAt {get;set;}
     public int? TowRoadRevision {get;set;}
+    public bool TowPrepaid {get;set;}
 }
 public sealed class Shipment
 {

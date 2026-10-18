@@ -43,7 +43,7 @@ sealed class Stuck
     {
         var st=sim.State;
         int Behind(Vehicle v)=>st.Vehicles.Count(o=>o.Id!=v.Id&&o.Status==VehicleStatus.Travelling&&Math.Cos(o.Heading-v.Heading)>.9&&(v.Position-o.Position) is var r&&r.X*Math.Sin(v.Heading)+r.Z*Math.Cos(v.Heading) is >0 and <40&&Math.Abs(r.X*Math.Cos(v.Heading)-r.Z*Math.Sin(v.Heading))<2.6);
-        var picked=st.Vehicles.Where(v=>v.Status==VehicleStatus.Travelling&&v.Machine==PavingMachine.None&&v.Body is not (TruckBody.Tow or TruckBody.TowHeavy)&&v.RouteIndex>0&&v.RouteIndex<v.Route.Count&&v.Detour.Count==0&&Math.Abs(v.Position.X)<st.Tuning.MapHalfSize-20&&Behind(v)>0).OrderByDescending(Behind).ThenBy(v=>v.Id).Take(count).ToList();
+        var picked=st.Vehicles.Where(v=>v.Status==VehicleStatus.Travelling&&v.WaitingSince==0&&v.Machine==PavingMachine.None&&v.Body is not (TruckBody.Tow or TruckBody.TowHeavy)&&v.RouteIndex>0&&v.RouteIndex<v.Route.Count&&v.Detour.Count==0&&Math.Abs(v.Position.X)<st.Tuning.MapHalfSize-20&&Behind(v)>0).OrderByDescending(Behind).ThenBy(v=>v.Id).Take(count).ToList();
         foreach(var v in picked){v.Fuel=0;Console.WriteLine($"  FORCE #{v.Id} {(v.PassengerCar?"carro":"caminhão")}{(v.External?" externo":"")} {st.Now:HH:mm} em ({v.Position.X:F1},{v.Position.Z:F1}) com {Behind(v)} veículo(s) logo atrás; ocupantes={st.Citizens.Count(c=>c.VehicleId==v.Id)}");}
         return picked.Select(v=>v.Id).ToList();
     }

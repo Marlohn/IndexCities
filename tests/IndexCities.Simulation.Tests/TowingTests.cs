@@ -183,4 +183,32 @@ public sealed class TowingTests
         Assert.True(reached,string.Join(" | ",sim.State.Vehicles.Where(v=>v.Body==TruckBody.Tow).Select(v=>v.Position+" "+v.Cause)));
         Assert.NotEqual(VehicleStatus.Stranded,car.Status);Assert.Null(car.IntersectionClaim);sim.CheckInvariants();
     }
+    static void RunUntil(Scene scene,Func<bool> done,double seconds=1500){for(var t=0.0;t<seconds&&!done();t+=2)scene.Sim.Advance(2);}
+    [Fact] public void A_tow_whose_replanned_trip_no_longer_fits_its_fuel_returns_and_another_comes_without_a_new_charge()
+    {
+        var scene=City();Run(scene,4);var first=scene.Tow!;
+        // Its route broke and the tank no longer covers the rest of the trip.
+        first.Fuel=6;first.Status=VehicleStatus.Waiting;Run(scene,4);
+        Assert.Equal(TowPhase.None,first.TowPhase);Assert.Null(scene.Car.TowTruckId);
+        RunUntil(scene,()=>scene.Car.Status==VehicleStatus.Parked&&scene.Car.Cause=="Estacionado",2400);
+        Assert.Equal("Estacionado",scene.Car.Cause);Assert.Single(scene.Sim.State.Ledger,m=>m.Category=="Guincho");Assert.False(scene.Car.TowPrepaid);
+        Assert.Equal(scene.Sim.State.Tuning.TotalMoney,scene.Sim.MonetaryTotal);scene.Sim.CheckInvariants();
+    }
+    [Fact] public void A_station_removed_or_emptied_during_the_delivery_sends_the_tow_on_under_the_same_rule()
+    {
+        foreach(var removed in new[]{true,false}){
+            var scene=City();RunUntil(scene,()=>scene.Car.Status==VehicleStatus.Towed);
+            if(removed)scene.Station!.Removed=true;else scene.Station!.Stock[ResourceKind.Fuel]=0;
+            RunUntil(scene,()=>scene.Car.Status==VehicleStatus.Parked&&scene.Car.Cause=="Estacionado",2400);
+            Assert.Equal("Estacionado",scene.Car.Cause);Assert.Null(scene.Driver.VehicleId);
+            Assert.Contains(scene.Sim.State.Ledger,m=>m.Category=="Combustível"&&m.From==scene.Driver.Account&&m.To=="global");scene.Sim.CheckInvariants();
+        }
+    }
+    [Fact] public void People_on_a_loaded_tow_that_cannot_move_go_on_foot_after_the_waiting_limit()
+    {
+        var scene=City(tuning:new SimulationTuning{TowMaxWaitSeconds=300});RunUntil(scene,()=>scene.Car.Status==VehicleStatus.Towed);
+        var tow=scene.Tow!;tow.Fuel=1;tow.Status=VehicleStatus.Waiting;
+        RunUntil(scene,()=>scene.Driver.VehicleId==null,600);
+        Assert.Null(scene.Driver.VehicleId);Assert.Equal(VehicleStatus.Towed,scene.Car.Status);Assert.True(scene.Sim.State.ElapsedSeconds-scene.Car.TowCalledAt>300);scene.Sim.CheckInvariants();
+    }
 }
