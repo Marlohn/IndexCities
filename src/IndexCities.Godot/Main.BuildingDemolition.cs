@@ -33,7 +33,7 @@ public partial class Main
         if(quote.WaitsForResidents){
             var homes=Text(effects,"⌂ "+quote.FamilyIds.Count+" família(s), "+quote.ResidentIds.Count+" morador(es): a retirada aguarda a desocupação assistida de até "+VacatingWindow+".",16);
             homes.TooltipText="Moradores: "+string.Join(", ",quote.ResidentIds.Select(id=>s.Citizens.First(c=>c.Id==id).Name));homes.MouseFilter=Control.MouseFilterEnum.Stop;
-            Text(effects,"A família procura casa existente à venda que consiga pagar com o próprio dinheiro. Não há casa garantida: ao fim do prazo, quem não se mudou fica sem moradia.",14);
+            Text(effects,"A família procura casa existente à venda que consiga pagar com o próprio dinheiro, com a primeira oportunidade antes de novos migrantes, sem reserva nem desconto. Não há casa garantida: ao fim do prazo, quem não se mudou fica sem moradia.",14);
         }else Text(effects,"Retirada imediata após confirmar.",16);
         ShipmentLines(effects,quote);
         if(quote.WorkerIds.Count>0)Text(effects,"⚒ "+quote.WorkerIds.Count+" emprego(s) encerrado(s) na retirada; salários devidos são pagos ou ficam como dívida do empregador.",14);
@@ -54,7 +54,10 @@ public partial class Main
             var line=group.Key switch{
                 ShipmentImpactKind.LostReserved=>"▣ Remessas de saída ainda não carregadas: "+count+" cancelada(s); "+cargo+" reservado(s) no prédio perde-se"+titular+".",
                 ShipmentImpactKind.StaysAtOrigin=>"↩ Remessas ainda não carregadas para este prédio: "+count+" ficam na origem, "+cargo+titular+".",
-                ShipmentImpactKind.OnboardStuck=>"⛟ Carga já embarcada para este prédio: "+count+" caminhão(ões), "+cargo+titular+"; fica no caminhão sem destino disponível, sem pagamento nem frete novo.",
+                ShipmentImpactKind.OnboardSeeksSameCompany=>"⛟ Carga já embarcada para este prédio: "+count+" caminhão(ões), "+cargo+titular+"; mantém titular e quantidade e busca outro prédio da mesma empresa com espaço e acesso"
+                    +(group.Select(s=>s.AlternativeDestination).OfType<string>().Distinct().ToList() is {Count:>0} apt?" (apto agora: "+string.Join(", ",apt)+", sem garantia)":" (nenhum apto agora)")
+                    +"; sem destino viável, aguarda em local seguro com a carga e o caminhão ocupado. Sem reembolso nem frete novo.",
+                ShipmentImpactKind.OnboardMunicipal=>"⛟ Material municipal já embarcado para este prédio: "+count+" caminhão(ões), "+cargo+"; segue a regra do material municipal (obra ou estoque com espaço, ou espera segura).",
                 _=>"⛟ Carga já embarcada saindo deste prédio: "+count+" caminhão(ões), "+cargo+titular+"; segue no caminhão.",
             };
             Text(parent,line,14);

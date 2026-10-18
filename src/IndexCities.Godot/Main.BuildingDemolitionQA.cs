@@ -147,17 +147,65 @@ public partial class Main
             Require(Shows("Remessas ainda não carregadas para este prédio: 1 ficam na origem"), "Prévia mostra a remessa não carregada que fica na origem");
             Require(Shows("Remessas de saída ainda não carregadas: 1 cancelada(s)"), "Prévia mostra a remessa de saída que é cancelada");
             Require(Shows("Carga já embarcada para este prédio: 1 caminhão(ões)"), "Prévia distingue carga já embarcada");
-            Require(Shows("sem pagamento nem frete novo"), "Prévia não cobra frete nem paga carga embarcada");
+            Require(Shows("Sem reembolso nem frete novo") && Shows("busca outro prédio da mesma empresa"), "Prévia explica destino da mesma empresa, sem reembolso nem frete");
             Require(Shows("Estoque perdido na retirada: " + ResourceName(ResourceKind.Food) + " " + (9.0).ToString("N1")), "Estoque perdido não inclui carga embarcada");
             Require(_sim.SaveToJson() == beforeShipments, "Abrir a prévia com remessas não altera a cidade");
             await RecoveryCaptureOnce("building-demolition-shipments-preview", _modal!);
             RecoveryNodes<Button>(_modal!).Single(b => b.Text == "× Cancelar").EmitSignal(Godot.Button.SignalName.Pressed);
             await RecoveryFrame();
             Require(_modal == null && _sim.SaveToJson() == beforeShipments, "Cancelar a prévia com remessas não muda carga, titular nem dinheiro");
+            // Os dados fictícios da prévia de remessas saem da cidade antes da fase com caminhão real.
+            _sim.State.Vehicles.Remove(carrier); _sim.State.Shipments.RemoveAll(x => x.Id == waiting.Id || x.Id == reserved.Id || x.Id == onboard.Id); _sim.State.Buildings.Remove(shop); _world.Reset(_sim.State);
+
+            // Carga privada real embarcada: importação paga pela empresa, loja demolida pela interface,
+            // espera segura sem destino apto, save/load e retomada física quando surge espaço na loja irmã.
+            var firm = new Company { Id = _sim.State.NextId++, Name = "Mercado QA", Active = false }; _sim.State.Companies.Add(firm);
+            _sim.State.Wallets[firm.Account] = 6000; _sim.State.Wallets["global"] -= 6000;
+            Building FirmShop(double x) { var b = new Building { Id = _sim.State.NextId++, Kind = BuildingKind.Grocery, Position = new(x, 14), Completed = true, OperationalCapacity = 1, OwnerAccount = firm.Account, CompanyId = firm.Id }; _sim.State.Buildings.Add(b); firm.Buildings.Add(b.Id); return b; }
+            var doomed = FirmShop(80); var sister = FirmShop(60); sister.Stock[ResourceKind.Food] = sister.Definition.Capacity;
+            var import = typeof(CitySimulation).GetMethod("OrderImport", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+            Require((bool)import.Invoke(_sim, [doomed, ResourceKind.Food, 30d, firm.Account])!, "Importação real paga pela empresa titular");
+            var cargoShipment = _sim.State.Shipments.Last(x => x.DestinationBuildingId == doomed.Id); var truck = _sim.State.Vehicles.Single(v => v.Id == cargoShipment.VehicleId);
+            var cargoAmount = truck.Cargo[ResourceKind.Food];
+            for (var i = 0; i < 600 && !(truck.Status == VehicleStatus.Travelling && truck.RouteIndex > 2); i++) { _sim.Advance(1); if (i % 10 == 0) await RecoveryFrame(); }
+            Require(truck.Status == VehicleStatus.Travelling, "Caminhão em viagem com a carga");
+            _focus = ToV(doomed.Position); UpdateCamera();
+            ClearSelection(); _selectedBuilding = doomed.Id; _inspectionKey = ""; RefreshInspection(); await RecoveryFrame();
+            RecoveryNodes<Button>(_inspection!).Single(b => b.Text == "× Demolir com indenização").EmitSignal(Godot.Button.SignalName.Pressed);
+            await RecoveryFrame(); await RecoveryFrame();
+            var cargoTexts = RecoveryNodes<Label>(_modal!).Select(label => label.Text).ToArray();
+            Require(cargoTexts.Any(t => t.Contains("Carga já embarcada para este prédio: 1 caminhão(ões)") && t.Contains("titular Mercado QA") && t.Contains("nenhum apto agora")), "Prévia mostra carga embarcada, titular e ausência de destino apto sem prometer");
+            await RecoveryCaptureOnce("building-demolition-cargo-preview", _modal!);
+            var firmBefore = _sim.Balance(firm.Account); var cargoQuote = _sim.QuoteBuildingDemolition(doomed.Id); var money = _sim.MonetaryTotal;
+            RecoveryNodes<Button>(_modal!).Single(b => b.Text == "✓ Confirmar demolição").EmitSignal(Godot.Button.SignalName.Pressed);
+            await RecoveryFrame();
+            Require(doomed.Removed && _sim.Balance(firm.Account) == firmBefore + cargoQuote.Compensation, "Loja retirada; só a indenização entra na empresa");
+            Require(_sim.State.CityEvents.Any(e => e.Description.Contains("mantêm titular e quantidade")), "Resultado explica a carga embarcada");
+            for (var i = 0; i < 400 && !(truck.Status == VehicleStatus.Waiting && truck.HoldingPosition is { } spot && truck.Position.Distance(spot) < .1); i++) { _sim.Advance(5); if (i % 10 == 0) await RecoveryFrame(); }
+            Require(truck.Status == VehicleStatus.Waiting && truck.Cause.Contains("fora das faixas"), "Sem destino apto, o caminhão aguarda fora das faixas: " + truck.Cause);
+            Require(truck.Cargo[ResourceKind.Food] == cargoAmount && cargoShipment.GoodsOwnerAccount == firm.Account && !cargoShipment.Complete, "Carga, titular e remessa preservados na espera");
+            Require(!_sim.State.Buildings.Any(b => b.Kind == BuildingKind.WorksDepot && b.Stock.Values.Sum() > 0), "Nenhum Pátio recebe a carga privada");
+            _focus = ToV(truck.Position); _zoom = 60; UpdateCamera();
+            ClearSelection(); _selectedVehicle = truck.Id; _inspectionKey = ""; RefreshInspection(); for (var i = 0; i < 4; i++) await RecoveryFrame();
+            await RecoveryCaptureOnce("building-demolition-cargo-waiting", GetViewport());
+            var waitingSave = System.IO.Path.Combine(directory, "building-demolition-cargo-waiting.json");
+            System.IO.File.WriteAllText(waitingSave, _sim.SaveToJson());
+            _sim = CitySimulation.FromJson(System.IO.File.ReadAllText(waitingSave)); _world.Reset(_sim.State);
+            truck = _sim.State.Vehicles.Single(v => v.Id == truck.Id); cargoShipment = _sim.State.Shipments.Single(x => x.Id == cargoShipment.Id); sister = _sim.State.Buildings.Single(b => b.Id == sister.Id);
+            Require(truck.HoldingPosition != null && truck.Cargo[ResourceKind.Food] == cargoAmount, "Espera carregada do save com carga e posição");
+            // Espaço real na loja irmã: a próxima revisão econômica retoma a entrega física.
+            sister.Stock[ResourceKind.Food] = 0;
+            for (var i = 0; i < 2000 && !cargoShipment.Complete; i++) { _sim.Advance(2); if (i % 25 == 0) await RecoveryFrame(); }
+            Require(cargoShipment.Complete && Math.Abs(sister.Quantity(ResourceKind.Food) - cargoAmount) < 1e-6, "Carga entregue fisicamente na loja da mesma empresa: " + truck.Cause);
+            Require(_sim.Balance(firm.Account) == firmBefore + cargoQuote.Compensation && _sim.MonetaryTotal == money, "Retomada sem reembolso, frete ou taxa nova");
+            _focus = ToV(sister.Position); UpdateCamera(); ClearSelection(); _selectedBuilding = sister.Id; _inspectionKey = ""; RefreshInspection(); for (var i = 0; i < 4; i++) await RecoveryFrame();
+            Require(_sim.State.CityEvents.Any(e => e.Description.Contains("segue a Mercearia #" + sister.Id + " da mesma empresa")), "Resultado legível do redirecionamento");
+            RefreshHud(); await RecoveryFrame();
+            await RecoveryCaptureOnce("building-demolition-cargo-delivered", GetViewport());
 
             _sim.CheckInvariants();
             System.IO.File.WriteAllText(System.IO.Path.Combine(directory, "building-demolition-final.json"), _sim.SaveToJson());
-            GD.Print("INDEXCITIES_BUILDING_DEMOLITION_OK compensation=" + Cash(changed.Compensation) + " removal=" + Cash(changed.RemovalCost) + " stale-revalidated=true cancel=no-change deadline-homeless=true moved-before-deadline=true directory=" + directory);
+            GD.Print("INDEXCITIES_BUILDING_DEMOLITION_OK compensation=" + Cash(changed.Compensation) + " removal=" + Cash(changed.RemovalCost) + " stale-revalidated=true cancel=no-change deadline-homeless=true moved-before-deadline=true cargo-waited-safely=true cargo-resumed-same-company=true directory=" + directory);
             GetTree().Quit();
         } catch (Exception exception) {
             GD.PushError("Building demolition: " + exception);

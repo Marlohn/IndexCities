@@ -110,12 +110,12 @@ public sealed partial class CitySimulation
         var onboard=State.Shipments.Where(s=>s.DestinationBuildingId==building.Id&&AwaitsRemovedDestination(s)).ToList();
         var redirected=onboard.Count(s=>PrivateCargo(s)&&State.Vehicles.FirstOrDefault(v=>v.Id==s.VehicleId&&v.ShipmentId==s.Id) is {Status:VehicleStatus.Travelling} v&&TryRedirectPrivateCargo(v,s,building));
         var parts=new List<string>{"Demolição concluída: "+name+" #"+building.Id+" retirado"};var order=building.Demolition;
-        if(onboard.Count>0)parts.Add(onboard.Count+" carga(s) já embarcada(s) para o prédio mantêm titular e quantidade"+(redirected>0?" ("+redirected+" redirecionada(s) a outro prédio da mesma empresa)":"")+(onboard.Count>redirected?"; sem destino apto agora, buscam outro prédio da mesma empresa ou espera segura":""));
         if(order is {CompensationPaid:>0})parts.Add("indenização "+Cash(order.CompensationPaid)+" paga na confirmação a "+order.BeneficiaryName);
         if(order is {FamiliesRelocated:>0})parts.Add(order.FamiliesRelocated+" família(s) mudaram-se comprando outra casa");
         if(displacedFamilies>0)parts.Add(displacedFamilies+" família(s) ficaram sem moradia ao fim do prazo");
         if(workers.Count>0)parts.Add(workers.Count+" emprego(s) encerrado(s)");
         if(lost.Count>0)parts.Add("estoque perdido ("+string.Join(", ",lost.Select(entry=>entry.Key+" "+entry.Value.ToString("0.#",System.Globalization.CultureInfo.InvariantCulture)))+") de "+(owner==null?"sem titular":ReadableOwnerName(owner))+(reservedForOthers.Count>0?", incluindo reservas já vendidas a "+string.Join(", ",reservedForOthers):""));
+        if(onboard.Count>0)parts.Add(onboard.Count+" carga(s) já embarcada(s) para o prédio mantêm titular e quantidade"+(redirected>0?" ("+redirected+" redirecionada(s) a outro prédio da mesma empresa)":"")+(onboard.Count>redirected?"; sem destino apto agora, buscam outro prédio da mesma empresa ou espera segura":""));
         Event(string.Join("; ",parts)+"; sem reembolso de obra ou materiais");
     }
     // Reservations still inside the removed structure are lost with its stock;
