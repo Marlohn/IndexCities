@@ -159,6 +159,8 @@ public sealed partial class CitySimulation
             if(p.CrewVehicleId==null&&p.LocalCrew.Count==0&&p.Required.All(k=>p.Delivered.GetValueOrDefault(k.Key)+.001>=k.Value))SendExternalCrew(p,access);
         }
     }
+    // Same margin as the dispatch checks: the leg, then the way back to the exterior.
+    bool FuelForTripAndExit(Vehicle v,List<int> route,RoadNode destination)=>FindRoadRoute(destination.Id,EntryNode().Id,true) is {Count:>0} exit&&(RouteLength(route)+RouteLength(exit))*FuelRate(v)+4<=v.Fuel;
     void SendExternalCrew(WorkProject project,RoadNode access)
     {
         var vehicle=AvailableTruck();if(vehicle==null)return;var route=FindRoadRoute(EntryNode().Id,access.Id,true);if(route.Count==0)return;
@@ -203,7 +205,13 @@ public sealed partial class CitySimulation
                 // road across the gap must not become its departure node.
                 var atKnownBay=crew.DockPosition is {} dock&&crew.Position.Distance(dock)<.1&&crew.Route.Count>0&&crew.RouteIndex>=crew.Route.Count&&_roads.ContainsKey(crew.Route[^1]);
                 var start=atKnownBay?_roads[crew.Route[^1]]:NearestRoad(crew.Position);
-                if(start!=null){var route=FindRoadRoute(start.Id,access.Id,true);if(route.Count>0){crew.Route=route;crew.RouteIndex=0;crew.DockPosition=DockAt(access,BuildingById(p.BuildingId),true);crew.Status=VehicleStatus.Travelling;}}
+                if(start!=null){var route=FindRoadRoute(start.Id,access.Id,true);if(route.Count>0){
+                    // SPEC transporte-circulacao: each move is a departure. Without fuel
+                    // for it and the return to the exterior, the crew goes back to refuel
+                    // on import and the work calls a crew again; it never strands on a lane.
+                    if(!FuelForTripAndExit(crew,route,access)){p.CrewVehicleId=null;ReturnExternal(crew);if(crew.Status==VehicleStatus.Travelling)crew.Cause="Retorno ao exterior para reabastecer: combustível não basta para o próximo trecho e a volta";}
+                    else{crew.Route=route;crew.RouteIndex=0;crew.DockPosition=DockAt(access,BuildingById(p.BuildingId),true);crew.Status=VehicleStatus.Travelling;}
+                }}
             }
             var external=crew is {Status:VehicleStatus.Parked}&&crew.Position.Distance(DockAt(access,BuildingById(p.BuildingId),true))<=2.5?crew:null;
             RelocateMaintenanceCrew(p,access);

@@ -72,10 +72,34 @@ public sealed partial class CitySimulation
         }
         return Math.Abs(gap)<8+(approaching?access.Distance*approachSpeed/access.Speed:0);
     }
+    // A vehicle stranded on the lane never moves, and the queue held behind it
+    // only moves when its front bypasses it. Neither is a motion event: a lot
+    // entry they block is rechecked every step without substeps of its own, and
+    // their next road sample is not a predicted arrival. Without a stranded
+    // vehicle nothing here applies, so ordinary traffic keeps the same substeps.
+    bool HeldBehindStranded(Vehicle v)
+    {
+        var current=v;
+        for(var hops=0;hops<State.Vehicles.Count&&current.Status==VehicleStatus.Travelling&&current.WaitingSince>0&&current.Detour.Count==0;hops++){
+            // Same-direction leader within the hold distance, as in MoveVehiclesUnsplit.
+            Vehicle? leader=null;var nearest=double.MaxValue;var sin=Math.Sin(current.Heading);var cos=Math.Cos(current.Heading);
+            foreach(var o in State.Vehicles){
+                if(o.Id==current.Id||o.Status is not (VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded))continue;
+                var relative=o.Position-current.Position;var forward=relative.X*sin+relative.Z*cos;var side=Math.Abs(relative.X*cos-relative.Z*sin);
+                if(forward>0&&side<2.6&&Math.Cos(o.Heading-current.Heading)>.5&&forward<nearest){nearest=forward;leader=o;}
+            }
+            if(leader==null||nearest>8+.000001)return false;
+            if(leader.Status==VehicleStatus.Stranded)return true;
+            current=leader;
+        }
+        return false;
+    }
+    bool StaticOnLane(Vehicle o)=>o.Status==VehicleStatus.Stranded||HeldBehindStranded(o);
+    bool LiveLaneEntry(Vehicle v)=>TryLaneEntry(v,out var access)&&!(State.Vehicles.Any(o=>o.Status==VehicleStatus.Stranded)&&State.Vehicles.Any(o=>o.Id!=v.Id&&o.Status is VehicleStatus.Travelling or VehicleStatus.Stranded&&BlocksLaneEntry(v,access,EntryFrameVehicle(o))&&StaticOnLane(o)));
     static Vehicle EntrySnapshot(Vehicle v)=>new(){Id=v.Id,Position=v.Position,Heading=v.Heading,Status=v.Status,Fuel=v.Fuel,PassengerCar=v.PassengerCar,RouteIndex=v.RouteIndex,Route=v.Route.ToList()};
     void MoveVehicles(double dt)
     {
-        if(!State.Vehicles.Any(v=>TryLaneEntry(v,out _))){MoveVehiclesUnsplit(dt);return;}
+        if(!State.Vehicles.Any(LiveLaneEntry)){MoveVehiclesUnsplit(dt);return;}
         _vehicleMovementBatch=[];_vehicleMovementOffset=0;
         try{
             // Driver wages, loading timers, replanning and boarding transitions
@@ -92,12 +116,12 @@ public sealed partial class CitySimulation
             }
         }finally{_vehicleMovementBatch=null;_entryFrame=null;_entryFrameBuffer.Clear();_vehicleMovementClock=null;_vehicleMovementOffset=0;}
     }
-    Point ProjectedVelocity(Vehicle v)
+    Point ProjectedVelocity(Vehicle v,HashSet<int>? held)
     {
         // A competing lot entry may itself be blocked. Never forecast it as
         // free-flowing traffic: its actual progress and the existing ID rule
         // are observed when the movement batch is committed and rechecked.
-        if(TryLaneEntry(v,out _))return default;
+        if(TryLaneEntry(v,out _)||held?.Contains(v.Id)==true)return default;
         if(v.Status!=VehicleStatus.Travelling||_vehicleMovementBatch==null||!_vehicleMovementBatch.Contains(v.Id)||v.Fuel<=.000001||!TryMovementTarget(v,out var node,out var target,out _,out _,out var speed)||!node.Highway&&node.MaintenanceRatio<=.05)return default;
         var d=v.Position.Distance(target);return d>.00001?(target-v.Position)*(speed/d):default;
     }
@@ -123,12 +147,14 @@ public sealed partial class CitySimulation
     }
     double NextVehicleMovementEvent(double horizon)
     {
-        var entries=State.Vehicles.Where(v=>_vehicleMovementBatch!.Contains(v.Id)&&TryLaneEntry(v,out _)).ToList();
+        var entries=State.Vehicles.Where(v=>_vehicleMovementBatch!.Contains(v.Id)&&LiveLaneEntry(v)).ToList();
         if(entries.Count==0)return horizon;
+        var held=State.Vehicles.Any(o=>o.Status==VehicleStatus.Stranded)?State.Vehicles.Where(HeldBehindStranded).Select(o=>o.Id).ToHashSet():null;
         foreach(var v in State.Vehicles.Where(v=>_vehicleMovementBatch!.Contains(v.Id))){
             // A blocked lot entry is not travelling to its lane target yet.
             // Its hypothetical arrival must not generate an extra substep.
             if(TryLaneEntry(v,out var waitingAccess)&&State.Vehicles.Where(o=>o.Id!=v.Id&&o.Status is (VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded)).Select(EntryFrameVehicle).Any(o=>BlocksLaneEntry(v,waitingAccess,o)))continue;
+            if(held?.Contains(v.Id)==true)continue;
             horizon=Math.Min(horizon,TimeToMovementChange(v,horizon));
         }
         var earliest=horizon;
@@ -138,7 +164,7 @@ public sealed partial class CitySimulation
             if(!occupants.Any(o=>BlocksLaneEntry(v,access,o)))continue;
             var candidates=new SortedSet<double>();
             foreach(var other in occupants){
-                var velocity=ProjectedVelocity(other);if(velocity.Distance(default)<.000001)continue;
+                var velocity=ProjectedVelocity(other,held);if(velocity.Distance(default)<.000001)continue;
                 var side=access.Side(other.Position);var sideSpeed=(velocity.X*access.Axis.Z-velocity.Z*access.Axis.X)/access.Length;
                 var cuts=new SortedSet<double>{0,horizon};
                 if(Math.Abs(sideSpeed)>.000001)foreach(var boundary in new[]{-State.Tuning.RoadWidth/2,State.Tuning.RoadWidth/2,Math.Min(access.FromSide,access.ToSide)-.9,Math.Max(access.FromSide,access.ToSide)+.9,access.FromSide,access.ToSide}){var t=(boundary-side)/sideSpeed;if(t>0&&t<horizon)cuts.Add(t);}
@@ -157,7 +183,7 @@ public sealed partial class CitySimulation
             foreach(var t in candidates){
                 if(t>=earliest)break;
                 var blocked=false;
-                foreach(var other in occupants){var projected=EntrySnapshot(other);projected.Position+=ProjectedVelocity(other)*t;if(BlocksLaneEntry(v,access,projected)){blocked=true;break;}}
+                foreach(var other in occupants){var projected=EntrySnapshot(other);projected.Position+=ProjectedVelocity(other,held)*t;if(BlocksLaneEntry(v,access,projected)){blocked=true;break;}}
                 // A prediction selects a time to RECHECK, never grants entry.
                 // If a queue or crossing stopped a vehicle, the actual frame at
                 // that event still blocks; it is never assumed to have left.
