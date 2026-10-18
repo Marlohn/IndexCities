@@ -107,7 +107,8 @@ public sealed class BuildingDemolitionTests
         var loaded=CitySimulation.FromJson(sim.SaveToJson());for(var i=0;i<60;i++)loaded.Advance(60);loaded.CheckInvariants();
         var keptShipment=loaded.State.Shipments.Single(s=>s.Id==shipment.Id);var keptTruck=loaded.State.Vehicles.Single(v=>v.Id==truck.Id);
         Assert.False(keptShipment.Complete);Assert.False(keptShipment.Cancelled);Assert.Equal(titular,keptShipment.GoodsOwnerAccount);Assert.Equal(cargo,keptTruck.Cargo);
-        Assert.Equal("Destino indisponível: carga preservada",keptTruck.Cause);
+        // No other shop of the titular company: the truck waits off the lanes keeping cargo and titular.
+        Assert.StartsWith("Destino Mercearia demolido: carga de",keptTruck.Cause);Assert.NotNull(keptTruck.HoldingPosition);Assert.Equal(shop.Id,keptShipment.DestinationBuildingId);
     }
     [Fact] public void Vacant_private_building_without_owner_is_removed_without_reserve_indemnity()
     {

@@ -81,7 +81,7 @@ public sealed class BuildingDemolitionFixTests
         Assert.Equal(baseline.Stock.Count,quote.Stock.Count);Assert.Equal(5.0,quote.Stock[ResourceKind.Food],6);
         var kinds=quote.Shipments.ToDictionary(s=>s.ShipmentId,s=>s.Kind);
         Assert.Equal(ShipmentImpactKind.StaysAtOrigin,kinds[unloaded.Id]);
-        Assert.Equal(ShipmentImpactKind.OnboardStuck,kinds[loaded.Id]);
+        Assert.Equal(ShipmentImpactKind.OnboardSeeksSameCompany,kinds[loaded.Id]);
         Assert.Equal(20.0,quote.Shipments.Single(s=>s.ShipmentId==unloaded.Id).Quantity,6);
         Assert.Equal("company:4",quote.Shipments.Single(s=>s.ShipmentId==loaded.Id).GoodsOwnerAccount);
         // Reading the preview changes nothing: no wallet, cargo or shipment moves.

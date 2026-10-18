@@ -3,10 +3,13 @@ namespace IndexCities.Simulation;
 // What happens to an existing shipment that touches the demolished building. Mirrors the
 // execution rules: a reservation not yet loaded is lost (origin) or stays at its origin
 // (destination), and cargo already on a truck is never stock lost in the building.
-public enum ShipmentImpactKind {LostReserved,StaysAtOrigin,OnboardStuck,OnboardLeaves}
+public enum ShipmentImpactKind {LostReserved,StaysAtOrigin,OnboardSeeksSameCompany,OnboardMunicipal,OnboardLeaves}
 public sealed record ShipmentImpact(int ShipmentId,ShipmentImpactKind Kind,string GoodsOwnerAccount,string GoodsOwnerName,Dictionary<ResourceKind,double> Cargo)
 {
     public double Quantity=>Cargo.Values.Sum();
+    // Apt building of the same titular company found right now for onboard private cargo;
+    // informative only, it can change before the removal.
+    public string? AlternativeDestination {get;init;}
 }
 
 public sealed record BuildingDemolitionQuote(int BuildingId,bool Allowed,decimal RemovalCost,decimal Compensation,decimal TotalCost,string? OwnerAccount,string OwnerName,List<int> ResidentIds,List<int> WorkerIds,Dictionary<ResourceKind,double> Stock,double OperationalCapacity,bool WaitsForResidents,string Message)
@@ -48,12 +51,12 @@ public sealed partial class CitySimulation
         var outbound=s.SourceBuildingId==building.Id;var inbound=s.DestinationBuildingId==building.Id;
         ShipmentImpactKind? kind=outbound&&!s.PickedUp?ShipmentImpactKind.LostReserved
             :inbound&&!s.PickedUp&&s.ProjectId==null?ShipmentImpactKind.StaysAtOrigin
-            :inbound&&s.PickedUp&&s.ProjectId==null?ShipmentImpactKind.OnboardStuck
+            :inbound&&s.PickedUp&&s.ProjectId==null&&s.Purpose!=ShipmentPurpose.Vehicle?(PrivateCargo(s)?ShipmentImpactKind.OnboardSeeksSameCompany:ShipmentImpactKind.OnboardMunicipal)
             :outbound&&s.PickedUp?ShipmentImpactKind.OnboardLeaves
             :null;
         if(kind is not {} impact)return null;
         var owner=s.GoodsOwnerAccount??"";
-        return new ShipmentImpact(s.Id,impact,owner,ReadableOwnerName(owner),new Dictionary<ResourceKind,double>(s.Cargo));
+        return new ShipmentImpact(s.Id,impact,owner,ReadableOwnerName(owner),new Dictionary<ResourceKind,double>(s.Cargo)){AlternativeDestination=impact==ShipmentImpactKind.OnboardSeeksSameCompany?CargoAlternativeName(s,building):null};
     }
     static BuildingDemolitionQuote Reject(int buildingId,string message)=>new(buildingId,false,0,0,0,null,"",[],[],new(),0,false,message);
     bool HasRealEconomicOwner(string? account)=>account switch

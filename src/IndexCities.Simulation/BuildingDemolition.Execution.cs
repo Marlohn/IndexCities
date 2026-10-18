@@ -41,9 +41,16 @@ public sealed partial class CitySimulation
     List<Family> LinkedFamilies(Building building)=>State.Families.Where(f=>f.HomeId==building.Id).ToList();
     List<Citizen> ResidentMembers(Family family)=>State.Citizens.Where(c=>family.Members.Contains(c.Id)&&c.Alive&&c.Resident).ToList();
     public List<Family> VacatingFamilies(Building building)=>LinkedFamilies(building).Where(f=>ResidentMembers(f).Count>0).ToList();
-    void ProgressBuildingDemolitions(bool searchHomes)
+    // SPEC construcao: displaced families get the first chance at a vacant house in
+    // each market review, before new migrants (ReviewMarkets runs right after).
+    // Only a house the family can really pay is bought; nothing stays reserved.
+    void SeekHomesForAllDisplaced()
     {
-        foreach(var building in State.Buildings.Where(b=>b.Demolition!=null&&!b.Removed).ToList()){if(searchHomes)SeekHomesForDisplaced(building);ProgressBuildingDemolition(building);}
+        foreach(var building in State.Buildings.Where(b=>b.Demolition!=null&&!b.Removed).ToList())SeekHomesForDisplaced(building);
+    }
+    void ProgressBuildingDemolitions()
+    {
+        foreach(var building in State.Buildings.Where(b=>b.Demolition!=null&&!b.Removed).ToList())ProgressBuildingDemolition(building);
     }
     void ProgressBuildingDemolition(Building building)
     {
@@ -85,6 +92,8 @@ public sealed partial class CitySimulation
     void RemoveDemolishedBuilding(Building building,int displacedFamilies)
     {
         var name=building.Definition.Name;var owner=building.OwnerAccount;var lost=building.Stock.Where(entry=>entry.Value>.0001).ToDictionary(entry=>entry.Key,entry=>entry.Value);
+        // Stock still in the building but already sold to another titular is named apart.
+        var reservedForOthers=State.Shipments.Where(s=>!s.Complete&&!s.PickedUp&&s.SourceBuildingId==building.Id&&s.GoodsOwnerAccount!=owner).GroupBy(s=>s.GoodsOwnerAccount).Select(g=>ReadableOwnerName(g.Key)+" "+g.Sum(s=>s.Cargo.Values.Sum()).ToString("0.#",System.Globalization.CultureInfo.InvariantCulture)).ToList();
         var workers=State.Citizens.Where(c=>c.WorkplaceId==building.Id).ToList();
         foreach(var c in workers){SettleWages(c,building);c.WorkplaceId=null;Personal(c,"Vínculo encerrado: "+name+" demolido por ordem municipal; salário devido pago ou registrado como dívida");}
         ReleaseShipmentsOf(building);
@@ -95,12 +104,18 @@ public sealed partial class CitySimulation
         if(CompanyById(building.CompanyId) is {} company)company.Buildings.Remove(building.Id);
         building.CompanyId=null;building.OwnerAccount=null;building.Removed=true;building.Cause="Demolido por ordem municipal";
         RetireMaintenanceWithoutTargets();
+        // Private cargo already on a truck to this building keeps titular and quantity: a
+        // truck on its way changes course now when its company has another apt building;
+        // the others decide when they stop or arrive (HandleRemovedCargoDestination).
+        var onboard=State.Shipments.Where(s=>s.DestinationBuildingId==building.Id&&AwaitsRemovedDestination(s)).ToList();
+        var redirected=onboard.Count(s=>PrivateCargo(s)&&State.Vehicles.FirstOrDefault(v=>v.Id==s.VehicleId&&v.ShipmentId==s.Id) is {Status:VehicleStatus.Travelling} v&&TryRedirectPrivateCargo(v,s,building));
         var parts=new List<string>{"Demolição concluída: "+name+" #"+building.Id+" retirado"};var order=building.Demolition;
+        if(onboard.Count>0)parts.Add(onboard.Count+" carga(s) já embarcada(s) para o prédio mantêm titular e quantidade"+(redirected>0?" ("+redirected+" redirecionada(s) a outro prédio da mesma empresa)":"")+(onboard.Count>redirected?"; sem destino apto agora, buscam outro prédio da mesma empresa ou espera segura":""));
         if(order is {CompensationPaid:>0})parts.Add("indenização "+Cash(order.CompensationPaid)+" paga na confirmação a "+order.BeneficiaryName);
         if(order is {FamiliesRelocated:>0})parts.Add(order.FamiliesRelocated+" família(s) mudaram-se comprando outra casa");
         if(displacedFamilies>0)parts.Add(displacedFamilies+" família(s) ficaram sem moradia ao fim do prazo");
         if(workers.Count>0)parts.Add(workers.Count+" emprego(s) encerrado(s)");
-        if(lost.Count>0)parts.Add("estoque perdido ("+string.Join(", ",lost.Select(entry=>entry.Key+" "+entry.Value.ToString("0.#",System.Globalization.CultureInfo.InvariantCulture)))+") de "+(owner==null?"sem titular":ReadableOwnerName(owner)));
+        if(lost.Count>0)parts.Add("estoque perdido ("+string.Join(", ",lost.Select(entry=>entry.Key+" "+entry.Value.ToString("0.#",System.Globalization.CultureInfo.InvariantCulture)))+") de "+(owner==null?"sem titular":ReadableOwnerName(owner))+(reservedForOthers.Count>0?", incluindo reservas já vendidas a "+string.Join(", ",reservedForOthers):""));
         Event(string.Join("; ",parts)+"; sem reembolso de obra ou materiais");
     }
     // Reservations still inside the removed structure are lost with its stock;

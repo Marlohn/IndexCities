@@ -250,7 +250,9 @@ public sealed partial class CitySimulation
     {
         var start=NearestRoad(v.Position);if(start==null||start.Position.Distance(v.Position)>State.Tuning.RoadWidth/2+3)return;
         // A demolished origin/destination keeps the truck waiting with its cargo and titular preserved.
-        var endpoint=BuildingById(!s.PickedUp?s.SourceBuildingId:s.DestinationBuildingId);if(s.ProjectId==null&&endpoint==null){v.Cause="Destino indisponível: carga preservada";return;}
+        var endpoint=BuildingById(!s.PickedUp?s.SourceBuildingId:s.DestinationBuildingId);
+        if(AwaitsRemovedDestination(s)){if(v.HoldingPosition==null)HandleRemovedCargoDestination(v,s);return;}
+        if(s.ProjectId==null&&endpoint==null){v.Cause="Destino indisponível: carga preservada";return;}
         var target=s.ProjectId is {} pId&&s.PickedUp?WorkAccess(State.Projects.First(p=>p.Id==pId)):endpoint==null?null:Access(endpoint);
         if(target==null)return;var route=FindRoadRoute(start.Id,target.Id,ConstructionTrip(v));if(route.Count==0)return;v.Route=route;v.RouteIndex=0;v.Status=VehicleStatus.Travelling;
     }
@@ -316,6 +318,7 @@ public sealed partial class CitySimulation
             if(v.CrewAboard){v.Status=VehicleStatus.Parked;v.IntersectionClaim=null;v.Cause="Equipe externa no canteiro";}else ReturnExternal(v);return;
         }
         if(s.Purpose==ShipmentPurpose.Vehicle){s.Complete=true;v.External=false;v.ExternalDriverId=null;v.Status=VehicleStatus.Parked;v.ShipmentId=null;v.Cause="Caminhão adquirido; aguarda motorista SIM";return;}
+        if(AwaitsRemovedDestination(s)){HandleRemovedCargoDestination(v,s);return;}
         var dest=BuildingById(s.DestinationBuildingId);if(dest==null){v.Status=VehicleStatus.Waiting;v.Cause="Destino indisponível: carga preservada";return;}
         var atBay=State.Vehicles.Any(o=>o.Id<v.Id&&o.Status==VehicleStatus.Unloading&&o.ShipmentId is {} other&&State.Shipments.Any(x=>x.Id==other&&x.DestinationBuildingId==dest.Id));
         if(atBay){v.Status=VehicleStatus.Unloading;v.LoadTimer=10;v.Cause="Fila física de descarga";return;}
@@ -335,16 +338,25 @@ public sealed partial class CitySimulation
         // A crew-only trip has no paid cargo to store or redirect. Keep the real
         // crew aboard its truck and send it home by the remaining road network.
         if(v.Cargo.Values.All(quantity=>quantity==0)){s.Complete=true;v.HoldingPosition=null;ReturnExternal(v);return;}
+        // Works and the Pátio only take municipal material; private cargo is never appropriated.
+        if(PrivateCargo(s)){s.Cancelled=false;if(AwaitsRemovedDestination(s))HandleRemovedCargoDestination(v,s);else {v.Status=VehicleStatus.Waiting;v.Cause="Carga privada de "+ReadableOwnerName(s.GoodsOwnerAccount)+" preservada; não vai ao Pátio municipal";}return;}
         if(TryRedirectMunicipalCargo(v,s))return;
         var depot=State.Buildings.FirstOrDefault(b=>b.Kind==BuildingKind.WorksDepot&&b.Completed&&!b.Removed&&Access(b)!=null&&b.Stock.Values.Sum()+v.Cargo.Values.Sum()<=b.Definition.Capacity);
         var start=NearestRoad(v.Position);var target=depot==null?null:Access(depot);var route=start==null||target==null?new List<int>():FindRoadRoute(start.Id,target.Id);
         if(depot==null||route.Count==0){ParkCancelledCargo(v);return;}
         v.HoldingPosition=null;s.Cancelled=false;s.ProjectId=null;s.Purpose=ShipmentPurpose.Maintenance;s.DestinationBuildingId=depot.Id;s.Destination=depot.Door;v.CrewAboard=false;v.CrewCount=0;v.Route=route;v.RouteIndex=0;v.DockPosition=DockAt(target!,depot,false);v.Status=VehicleStatus.Travelling;v.Cause="Redirecionando carga municipal ao Pátio";
     }
-    void ParkCancelledCargo(Vehicle vehicle)
+    // Roadside spot beside the highway, outside the lanes and away from buildings and
+    // spots already reserved by other waiting trucks.
+    (RoadNode Road,Point Position)? HoldingSlot(Vehicle vehicle)
     {
         var candidates=State.Roads.Where(r=>r.Highway).OrderBy(r=>r.Position.Distance(State.Entry)).Where((road,index)=>index>=2&&index%2==0).Select(road=>(Road:road,Position:road.Position+new Point(0,-State.Tuning.RoadWidth/2-1.5)));
         var slot=candidates.FirstOrDefault(candidate=>State.Buildings.All(b=>b.Removed||!Inside(b,candidate.Position,4))&&State.Vehicles.All(other=>other.Id==vehicle.Id||other.HoldingPosition is not {} reserved||reserved.Distance(candidate.Position)>=8));
+        return slot.Road==null?null:slot;
+    }
+    void ParkCancelledCargo(Vehicle vehicle)
+    {
+        var slot=HoldingSlot(vehicle)??default;
         var start=NearestRoad(vehicle.Position);if(slot.Road==null||start==null){vehicle.Status=VehicleStatus.Waiting;vehicle.Cause="Carga municipal aguardando estoque; não há espaço físico de espera";return;}
         vehicle.HoldingPosition=slot.Position;if(vehicle.Position.Distance(slot.Position)<.1){vehicle.Status=VehicleStatus.Waiting;vehicle.Cause="Carga municipal estacionada fora das faixas; aguarda estoque ou obra compatível";return;}
         var route=FindRoadRoute(start.Id,slot.Road.Id);if(route.Count==0){vehicle.Status=VehicleStatus.Waiting;vehicle.Cause="Sem rota física para estacionar carga preservada";return;}
