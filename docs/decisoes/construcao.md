@@ -43,6 +43,7 @@
 - 2026-10-18 — O responsável escolheu dar à família deslocada pela demolição a primeira oportunidade de compra da casa vaga, antes de nova família migrante, com pagamento real, sem garantia de moradia ou reserva permanente; pode adiar a imigração → seção Desocupação assistida em intervenção municipal residencial.
 - 2026-10-18 — O responsável escolheu redirecionar a carga privada já embarcada para outro prédio compatível da mesma empresa; sem destino viável, aguardar fisicamente em segurança, preservando carga/titular, sem reembolso e podendo manter o caminhão ocupado → seção Intervenção municipal sobre propriedades privadas.
 - 2026-10-18 — Na espera segura de caminhão local sem destino para a carga, o responsável escolheu liberar o motorista para sua rotina; retomar só com motorista disponível e chegada/embarque reais → seção Intervenção municipal sobre propriedades privadas.
+- 2026-10-18 — Na mudança municipal, o responsável escolheu retirar o prédio antigo após prazo curto e avisado sem progresso por falta de espaço ou rota, com perda residual única; caminhão ocupado e falta temporária de caixa/combustível não contam. A alternativa de manter o prédio fechado indefinidamente com o estoque foi rejeitada → seção Mudança de prédios municipais concluídos.
 
 ## Registros sem data explícita
 
