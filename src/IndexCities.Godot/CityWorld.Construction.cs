@@ -6,12 +6,24 @@ public partial class CityWorld
 {
     static string VehicleVisual(Vehicle v)=>v.PassengerCar?"vehicle.car_passenger.a":v.Machine switch{
         PavingMachine.Paver=>"vehicle.asphalt_paver.a",PavingMachine.Roller=>"vehicle.road_roller.a",
-        _=>v.Body switch{TruckBody.Dump=>"vehicle.truck_dump.a",TruckBody.Mixer=>"vehicle.truck_mixer.a",TruckBody.Flatbed=>"vehicle.truck_flatbed.a",_=>"vehicle.truck_cargo.a"}};
+        _=>v.Body switch{TruckBody.Dump=>"vehicle.truck_dump.a",TruckBody.Mixer=>"vehicle.truck_mixer.a",TruckBody.Flatbed=>"vehicle.truck_flatbed.a",
+            TruckBody.Tow=>"vehicle.tow_truck.a",TruckBody.TowHeavy=>"vehicle.tow_truck_heavy.a",_=>"vehicle.truck_cargo.a"}};
+    // Contract with the asset kit: the platform tow carries a car at CarryAnchor;
+    // the heavy tow lifts a truck's front at LiftAnchor. Until a tow scene
+    // exists, the open-bed truck stands in with the anchor added at its bed/rear.
+    static string TowAnchor(Vehicle tow)=>tow.Body==TruckBody.TowHeavy?"LiftAnchor":"CarryAnchor";
+    static Node3D? TowFallback(Vehicle v)
+    {
+        if(v.Body is not (TruckBody.Tow or TruckBody.TowHeavy))return null;var file="res://Assets/Construction/Scenes/vehicle.truck_flatbed.a.tscn";
+        var n=ResourceLoader.Exists(file)?GD.Load<PackedScene>(file)?.Instantiate<Node3D>():null;if(n==null)return null;
+        foreach(var load in new[]{"LoadSteel","LoadWood"})n.GetNodeOrNull<Node3D>(load)?.QueueFree();
+        n.AddChild(new Marker3D{Name=TowAnchor(v),Position=v.Body==TruckBody.TowHeavy?new(0,.9f,3.7f):new(0,1.32f,.6f)});return n;
+    }
 
     static Node3D CreateVehicleVisual(Vehicle v)
     {
         var id=VehicleVisual(v);var file="res://Assets/Construction/Scenes/"+id+".tscn";
-        var n=ResourceLoader.Exists(file)?GD.Load<PackedScene>(file)?.Instantiate<Node3D>():Scene(id);
+        var n=ResourceLoader.Exists(file)?GD.Load<PackedScene>(file)?.Instantiate<Node3D>():Scene(id)??TowFallback(v);
         if(n==null){n=new();Box(n,new(2.3f,1,5.5f),new(0,.8f,0),v.Machine==PavingMachine.None?"bc864b":"d4aa3c");
             if(v.Machine==PavingMachine.None)Box(n,new(2.2f,1.6f,1.7f),new(0,1.8f,-1.8f),"6a93ad");
             if(v.Body==TruckBody.Mixer)n.AddChild(new MeshInstance3D{Mesh=new SphereMesh{Radius=1.2f,Height=2.6f},Position=new(0,2,.6f),MaterialOverride=Material("e4dbb6")});
@@ -31,8 +43,25 @@ public partial class CityWorld
             n.Position=P(pose.Item1,RoadSurfaceAt(pose.Item1));n.Rotation=new(0,(float)(pose.Item2??v.Heading+Math.PI),0);
             SyncConstructionParts(n,v,state);
         }
+        SyncTowedVisuals(state);
     }
 
+    // A towed vehicle is drawn on its tow's anchor (a truck with its front on the
+    // lift and the rear on the road); loading and unloading move it between the
+    // road pose and the anchor with the simulation's real timer.
+    void SyncTowedVisuals(CityState state)
+    {
+        foreach(var tow in state.Vehicles){
+            if(tow.Body is not (TruckBody.Tow or TruckBody.TowHeavy)||tow.TowPhase is TowPhase.None or TowPhase.ToVehicle||tow.TowTargetId is not {} id)continue;
+            if(!_trucks.TryGetValue(tow.Id,out var towNode)||!_trucks.TryGetValue(id,out var carried))continue;
+            var anchor=towNode.GetNodeOrNull<Node3D>(TowAnchor(tow))?.GlobalTransform??towNode.GlobalTransform.TranslatedLocal(tow.Body==TruckBody.TowHeavy?new(0,.9f,3.7f):new(0,1.3f,.6f));
+            var mounted=anchor;
+            if(tow.Body==TruckBody.TowHeavy){var front=-carried.GetMeta("visual_envelope_min",new Vector3(0,0,-3.6f)).AsVector3().Z;var tilt=new Basis(Vector3.Right,.08f);mounted=new(anchor.Basis*tilt,anchor.Origin+anchor.Basis*(tilt*new Vector3(0,0,front)));}
+            var progress=tow.TowPhase switch{TowPhase.Loading=>1-tow.LoadTimer/state.Tuning.TowLoadSeconds,TowPhase.Unloading=>tow.LoadTimer/state.Tuning.TowUnloadSeconds,_=>1};
+            carried.GlobalTransform=carried.GlobalTransform.InterpolateWith(mounted,(float)Math.Clamp(progress,0,1));
+            carried.SetMeta("towed_by",tow.Id);
+        }
+    }
     static void SyncConstructionParts(Node3D n,Vehicle v,CityState state)
     {
         // The visible quantity derives from cargo still on the vehicle. Delivery
@@ -68,6 +97,9 @@ public partial class CityWorld
     }
 
     public string RenderedVehicle(int id)=>_trucks.TryGetValue(id,out var node)?node.GetMeta("vehicle_visual","").AsString():"";
+    // QA (guincho): world position of a vehicle's visual and of a tow's anchor.
+    public Vector3? VehicleVisualPosition(int id)=>_trucks.TryGetValue(id,out var node)?node.GlobalPosition:null;
+    public Vector3? TowAnchorPosition(Vehicle tow)=>_trucks.TryGetValue(tow.Id,out var node)?node.GetNodeOrNull<Node3D>(TowAnchor(tow))?.GlobalPosition:null;
 
     void DrawAppliedAsphalt(Node3D root,WorkProject work,CityState state)
     {

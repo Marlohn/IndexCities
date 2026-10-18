@@ -200,7 +200,9 @@ public sealed partial class CitySimulation
     void DeliverTowed(Vehicle tow,Vehicle t)
     {
         var destination=tow.TowDestination;var station=BuildingById(tow.TowStationId);
-        t.TowTruckId=null;t.Position=tow.Position;t.Heading=tow.Heading;t.Status=VehicleStatus.Parked;t.WaitingSince=0;
+        // A car comes down from the platform where the tow stands; a truck is set
+        // down where it trails, along the curb of the bay (no jump).
+        t.TowTruckId=null;if(t.PassengerCar)t.Position=tow.Position;t.Heading=tow.Heading;t.Status=VehicleStatus.Parked;t.WaitingSince=0;
         tow.TowPhase=TowPhase.None;tow.TowTargetId=null;tow.TowStationId=null;
         if(destination==TowDestination.Exterior){tow.Position=State.Entry;tow.Status=VehicleStatus.Outside;tow.Route.Clear();tow.DockPosition=null;tow.IntersectionClaim=null;tow.Cause="Disponível no exterior";}
         else ReturnExternal(tow);
