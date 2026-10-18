@@ -122,7 +122,8 @@ public partial class Main
             Require(depotOrder.Stage != MunicipalRelocationStage.Constructing && operatedDuringWork > 0, "Obra do novo Pátio concluída fisicamente");
             _world.Sync(_sim.State);
             var truck = _sim.State.Vehicles.FirstOrDefault(v => v.ShipmentId is { } sid && depotOrder.TransferShipmentIds.Contains(sid));
-            if (truck != null) { _focus = ToV(truck.Position); _zoom = 140; UpdateCamera(); await RecoveryFrame(); await RecoveryCaptureOnce("depot-stock-truck", GetViewport()); }
+            if (truck != null) { _focus = ToV(truck.Position); _zoom = 140; UpdateCamera(); RefreshInspection(); await RecoveryFrame();
+                Require(!_sim.State.Citizens.Any(c => c.WorkplaceId == depot.Id) && RecoveryNodes<Label>(_inspection!).Any(l => l.Text.Contains("0 contratados")), "Inspeção do Pátio antigo mostra a equipe já transferida"); await RecoveryCaptureOnce("depot-stock-truck", GetViewport()); }
             for (var i = 0; i < 240 && depotOrder.Active; i++) { _sim.Advance(60); _sim.CheckInvariants(); if (i % 10 == 0) await RecoveryFrame(); }
             Require(depotOrder.Stage == MunicipalRelocationStage.Completed && depot.Removed && newDepot.Completed, "Pátio antigo retirado depois da transferência: " + depotOrder.Cause);
             var moved = _sim.State.Shipments.Where(s => depotOrder.TransferShipmentIds.Contains(s.Id) && s.Complete && !s.Cancelled).Sum(s => s.Cargo.GetValueOrDefault(ResourceKind.Wood));
