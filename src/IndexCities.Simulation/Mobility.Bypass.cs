@@ -63,12 +63,13 @@ public sealed partial class CitySimulation
         v.DetourResumeNode=v.Route[resume];v.WaitingSince=0;v.Cause="Ultrapassando veículo parado pela contramão";
         return true;
     }
-    bool TryUTurn(Vehicle v,Vehicle blocker)
+    bool TryUTurn(Vehicle v,Vehicle? blocker,HashSet<int>? alsoClosed=null)
     {
-        if(!RoadAxis(v,out var dir,out var left))return false;
+        if(v.RouteIndex<1||v.RouteIndex>=v.Route.Count||v.Detour.Count>0||!RoadAxis(v,out var dir,out var left))return false;
         var ahead=v.Route[v.RouteIndex];var behind=v.Route[v.RouteIndex-1];
         // Only the road samples the stopped vehicle physically occupies are closed.
-        var avoid=State.Roads.Where(r=>r.Position.Distance(blocker.Position)<State.Tuning.RoadStep+.5).Select(r=>r.Id).ToHashSet();
+        var avoid=blocker==null?new HashSet<int>():State.Roads.Where(r=>r.Position.Distance(blocker.Position)<State.Tuning.RoadStep+.5).Select(r=>r.Id).ToHashSet();
+        if(alsoClosed!=null)avoid.UnionWith(alsoClosed.Where(id=>id!=v.Route[v.RouteIndex-1]));
         if(avoid.Contains(behind)){v.Cause="Rua bloqueada por veículo parado; sem espaço para meia-volta";return false;}
         var alternative=FindRoadRoute(behind,v.Route[^1],false,avoid);
         if(alternative.Count==0){v.Cause="Rua bloqueada por veículo parado; sem rota alternativa";return false;}

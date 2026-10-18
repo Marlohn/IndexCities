@@ -169,7 +169,8 @@ public sealed class TowingTests
         var queue=Enumerable.Range(0,3).Select(i=>new Vehicle{Id=sim.State.NextId++,OwnerAccount="global",PassengerCar=true,External=true,Position=new(-12-i*9,-1.65),Heading=Math.PI/2,Fuel=40,Status=VehicleStatus.Travelling,Route=route.ToList(),RouteIndex=route.FindIndex(id=>sim.State.Roads.First(r=>r.Id==id).Position.X>-12-i*9)}).ToList();
         sim.State.Vehicles.AddRange(queue);
         Run(scene,1500);
-        Assert.All(queue,v=>Assert.True(v.Position.X>30||v.RouteIndex>=v.Route.Count,v.Cause+" "+v.Position));sim.CheckInvariants();
+        var tows=string.Join(" | ",sim.State.Vehicles.Where(v=>v.Body==TruckBody.Tow).Select(v=>$"{v.Status} {v.TowPhase} {v.Position} «{v.Cause}»"));
+        Assert.All(queue,v=>Assert.True(v.Position.X>30||v.RouteIndex>=v.Route.Count,v.Cause+" "+v.Position+" guinchos: "+tows));sim.CheckInvariants();
     }
     [Fact] public void A_car_stranded_at_a_junction_mouth_holding_it_is_still_reached_and_the_junction_frees()
     {

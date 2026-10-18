@@ -272,11 +272,15 @@ public sealed partial class CitySimulation
                 // Like a machine, a blocked vehicle keeps its verified pose rather
                 // than turning in place into a parked machine's body.
                 if(step<.00001&&d>.00001&&State.Vehicles.Any(o=>o.Id!=v.Id&&o.Machine!=PavingMachine.None&&o.Status==VehicleStatus.Parked&&o.Position.Distance(v.Position)<12&&VehicleBodiesOverlap(v,v.Position,o)))v.Heading=approachHeading;
-                if(step<.00001&&d>.00001){v.Cause=blocker?.Status==VehicleStatus.Stranded?$"Aguardando veículo {blocker.Id} sem combustível na via":enteringLane?"Aguardando espaço para acessar a faixa":"Fila na faixa";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;if(v.TowPhase==TowPhase.ToVehicle&&TryTowContraflow(v))continue;if(!enteringLane&&blocker!=null&&blocker.Id!=v.TowTargetId&&TryBypassStopped(v,blocker))continue;break;}
+                if(step<.00001&&d>.00001){v.Cause=blocker?.Status==VehicleStatus.Stranded?$"Aguardando veículo {blocker.Id} sem combustível na via":enteringLane?"Aguardando espaço para acessar a faixa":"Fila na faixa";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;if(v.TowPhase==TowPhase.ToVehicle&&TryTowContraflow(v))continue;if(!enteringLane&&blocker!=null&&blocker.Id!=v.TowTargetId&&TryBypassStopped(v,blocker))continue;
+                    // A tow held for minutes turns back and goes around the stranded vehicles
+                    // and the junctions they lock, instead of waiting in the queue.
+                    if(TowHeldTooLong(v)&&blocker!=null&&TryUTurn(v,blocker,TowClosedRoads(v)))continue;break;}
                 if((node.Neighbours.Count>=3||node.Crosswalk)&&d<9&&!MayEnterJunction(v,node)){if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;
                     // SPEC: held at a junction by a vehicle stopped there (out of fuel), it
                     // turns back after the same minutes as behind it in the lane.
-                    if(JunctionHeldByStranded(v,node) is {} stranded&&VehicleMovementTime-v.WaitingSince>=State.Tuning.UTurnWaitSeconds&&TryUTurn(v,stranded))continue;break;}
+                    if(JunctionHeldByStranded(v,node) is {} stranded&&VehicleMovementTime-v.WaitingSince>=State.Tuning.UTurnWaitSeconds&&TryUTurn(v,stranded))continue;
+                    if(TowHeldTooLong(v)&&TryUTurn(v,null,[..TowClosedRoads(v),node.Id]))continue;break;}
                 if(v.Fuel<=.000001){RunOutOfFuel(v);break;}
                 step=Math.Min(step,v.Fuel/FuelRate(v));v.Position=v.Position.MoveTowards(target,step);v.Fuel=Math.Max(0,v.Fuel-step*FuelRate(v));v.FuelBurnedLastStep+=step*FuelRate(v);remaining-=step/speed;v.WaitingSince=0;v.Cause="Em viagem";
                 ClearPassedJunction(v);
