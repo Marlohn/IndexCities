@@ -8,6 +8,16 @@
 >
 > Concentra a evolução do modelo de construção física, materiais, estoques, importação/exportação, reservas, execução de obras e logística. Alternativas superadas permanecem identificadas para preservar por que o modelo atual foi escolhido.
 
+## Veículos travados na Cidade do Marlohn — 2026-10-17
+
+> Diagnóstico e relato técnico da IA, não fonte de verdade. Regras vigentes: [pavimentação](../spec/construcao.md#pavimentação-física-das-ruas) e [circulação](../spec/transporte-circulacao.md).
+
+Uma cópia isolada do save reproduziu cinco veículos imóveis por uma hora simulada. Confirmado por chamadas ao método real de colisão: o giro instantâneo do caminhão V18 na curva sobrepõe a pavimentadora V27; o basculante V19 espera V18 no caminho de canteiro e leva o Asfalto que V27 aguarda. V20 sofre a fila. Não foi reconstruído todo o histórico que levou à pose inicial da pavimentadora.
+
+A tentativa Claude está preservada no commit local **WIP `c263933`**, sem integrar: recupera o save (entrega em32s, P86 concluída em596s) e passa no Godot renderizado por seis horas simuladas, com cinco veículos recuperados e20 obras concluídas. Porém **falha em regressão existente de duas equipes de obra**:53/54 testes próximos passaram, enquanto a teoria correspondente na base passou7/7. Logo, não está pronta para o jogador. O save original e o jogo Desktop não receberam esse reparo.
+
+Claude Code atingiu cota; Opus/Sonnet via Antigravity também encontraram limite individual. A revisão DeepSeek não executou por chave OpenCode expirada. Não houve aceite independente do WIP. Código, sondas, capturas, hashes, falha e comandos estão preservados localmente em `artifacts/verification/cidade-marlohn-fix/report.md`. A correção precisa conciliar recuperação e ausência da regressão, sem atravessar corpos, inventar recursos ou mudar o contrato aprovado. Não transformar esta pesquisa em autorização de mecânica nova.
+
 ## Caminhão de obra cancelada — revisão 6B aprovada (2026-10-11)
 
 > **Revisão humana: PARCIALMENTE REVISADO.** O responsável escolheu 6B para resolver a antiga pergunta 27 reaberta; logística fina e tratamento quando não existir destino acessível ainda requerem calibração.
