@@ -34,10 +34,29 @@ public sealed partial class CitySimulation
         }
         var reserved=pending.SelectMany(p=>p.MaintenanceRoadIds).ToHashSet();
         var due=State.Roads.Where(r=>!r.Highway&&State.ElapsedSeconds>=r.MaintenanceDueAt&&!reserved.Contains(r.Id)).OrderBy(r=>r.Position.Distance(State.Entry)).ToList();
-        foreach(var area in due.GroupBy(r=>((int)Math.Floor(r.Position.X/64),(int)Math.Floor(r.Position.Z/64))))foreach(var roads in area.Chunk(16)){
-            var length=roads.Length*State.Tuning.RoadStep;var materials=new Dictionary<ResourceKind,double>{{ResourceKind.Aggregate,length*.004},{ResourceKind.Asphalt,length*.006}};
-            var project=CreateMaintenance(roads[0].Position,materials,Math.Max(60,roads.Length*20));if(project==null)continue;project.MaintenanceRoadIds=roads.Select(r=>r.Id).ToList();project.RoadPoints=roads.Select(r=>r.Position).ToList();
+        foreach(var area in due.GroupBy(r=>((int)Math.Floor(r.Position.X/64),(int)Math.Floor(r.Position.Z/64))))foreach(var chunk in area.Chunk(16)){
+            var length=chunk.Length*State.Tuning.RoadStep;var materials=new Dictionary<ResourceKind,double>{{ResourceKind.Aggregate,length*.004},{ResourceKind.Asphalt,length*.006}};
+            var project=CreateMaintenance(chunk[0].Position,materials,Math.Max(60,chunk.Length*20));if(project==null)continue;var roads=AlongStreets(chunk);project.MaintenanceRoadIds=roads.Select(r=>r.Id).ToList();project.RoadPoints=roads.Select(r=>r.Position).ToList();
         }
+    }
+    // SPEC prefeitura-financas: the same stretches, one street at a time in
+    // sequence along it. A run follows neighbouring stretches (straight on
+    // first, so a street runs straight through a junction); the next run starts
+    // at the street end nearest to the last stretch, to keep crossings short.
+    List<RoadNode> AlongStreets(IReadOnlyList<RoadNode> roads)
+    {
+        var left=roads.ToList();var ordered=new List<RoadNode>(roads.Count);
+        int Pending(RoadNode r)=>r.Neighbours.Count(id=>left.Any(o=>o.Id==id));
+        while(left.Count>0){
+            var current=left.OrderBy(r=>Pending(r)<=1?0:1).ThenBy(r=>r.Position.Distance(ordered.Count>0?ordered[^1].Position:State.Entry)).ThenBy(r=>r.Id).First();
+            while(true){
+                ordered.Add(current);left.Remove(current);var previous=ordered.Count>1?ordered[^2]:null;var at=current;
+                double Straight(RoadNode next){if(previous==null||!previous.Neighbours.Contains(at.Id))return 0;var a=at.Position-previous.Position;var b=next.Position-at.Position;return -(a.X*b.X+a.Z*b.Z)/Math.Max(.01,a.Distance(default)*b.Distance(default));}
+                var next=left.Where(r=>at.Neighbours.Contains(r.Id)).OrderBy(Straight).ThenBy(r=>r.Id).FirstOrDefault();
+                if(next==null)break;current=next;
+            }
+        }
+        return ordered;
     }
     WorkProject? CreateMaintenance(Point location,Dictionary<ResourceKind,double> materials,double labour)
     {

@@ -91,3 +91,7 @@
 - 2026-10-12 — Prestadores de manutenção da V1: a manutenção de ruas e instalações municipais é automática, executada por equipes reais do Pátio Municipal de Obras, com apoio externo contratado quando faltar capacidade local (origem: aprovação expressa registrada na SPEC) → seção Moradia e finanças públicas
 
 - 2026-10-12 — Confirmar a posição da primeira Prefeitura libera o catálogo antes da conclusão da obra, substituindo a hipótese verbal de paralisar a administração para evitar bloqueio circular no início vazio (origem: escopo V1; hipótese anterior 3B registrada na seção temática) → seção Prefeitura — construção física, administração e participação cidadã
+
+- 2026-10-17 — Ordem dos trechos de manutenção viária: a equipe faz uma rua de cada vez, em sequência ao longo da rua (A1, A2, A3 e depois B1, B2, B3), em vez de alternar entre ruas próximas; os trechos consertados são os mesmos (decisão do responsável; motivo: menos combustível em travessias) → seção Prestadores de manutenção da V1
+
+- 2026-10-17 — Reenvio da equipe externa após voltar para reabastecer: o novo envio paga frete e combustível de novo, pela regra existente de envio da equipe externa (decisão do responsável) → seção Prestadores de manutenção da V1
