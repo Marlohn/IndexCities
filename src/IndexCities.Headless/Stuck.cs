@@ -7,10 +7,21 @@ namespace IndexCities.Headless;
 sealed class Stuck
 {
     readonly Dictionary<int,(Point at,double since)> _still=new();
-    readonly HashSet<int> _reported=new();
+    readonly HashSet<int> _reported=new(),_strandedSeen=new();
+    readonly Dictionary<int,double> _lastFuel=new();
+    readonly Dictionary<int,int> _stationSamples=new(),_stationOpen=new();
     public void Sample(CitySimulation sim)
     {
         var now=sim.State.ElapsedSeconds;
+        foreach(var v in sim.State.Vehicles){
+            if(v.Status==VehicleStatus.Stranded&&_strandedSeen.Add(v.Id)){
+                var stations=sim.State.Buildings.Where(b=>b.Kind==BuildingKind.FuelStation).ToList();
+                var nearest=stations.OrderBy(b=>b.Position.Distance(v.Position)).FirstOrDefault();
+                Console.WriteLine($"STRANDED #{v.Id} {(v.PassengerCar?"carro":"caminhão")} {sim.State.Now:MM-dd HH:mm} em ({v.Position.X:F1},{v.Position.Z:F1}) combustível={v.Fuel:F2} antes={_lastFuel.GetValueOrDefault(v.Id,-1):F2} externo={v.External} dono={v.OwnerAccount} carga={v.ShipmentId} abastecendoEm={v.RefuellingAt} rota {v.RouteIndex}/{v.Route.Count} «{v.Cause}» posto mais perto a {nearest?.Position.Distance(v.Position):F0} m com {nearest?.Quantity(ResourceKind.Fuel):F1} L");
+            }
+            _lastFuel[v.Id]=v.Fuel;
+        }
+        foreach(var b in sim.State.Buildings.Where(b=>b.Kind==BuildingKind.FuelStation)){_stationSamples[b.Id]=_stationSamples.GetValueOrDefault(b.Id)+1;if(b.OperationalCapacity>0)_stationOpen[b.Id]=_stationOpen.GetValueOrDefault(b.Id)+1;}
         foreach(var v in sim.State.Vehicles){
             if(v.Status is not (VehicleStatus.Travelling or VehicleStatus.Waiting)){_still.Remove(v.Id);continue;}
             if(_still.TryGetValue(v.Id,out var s)&&s.at.Distance(v.Position)<.5)continue;
@@ -24,6 +35,7 @@ sealed class Stuck
         var inStuck=st.Citizens.Count(c=>c.Alive&&c.VehicleId!=null&&stuck.Any(v=>v.Id==c.VehicleId));
         var hungry=st.Citizens.Count(c=>c.Alive&&c.HungerHours>30);
         Console.WriteLine($"STUCK day={day} {sim.State.Now:yyyy-MM-dd HH:mm} parados≥30min={stuck.Count} SIMs dentro deles={inStuck} SIMs com fome>30h={hungry} mortos={st.Citizens.Count(c=>!c.Alive)}");
+        foreach(var b in st.Buildings.Where(b=>b.Kind==BuildingKind.FuelStation))Console.WriteLine($"  POSTO #{b.Id} estoque={b.Quantity(ResourceKind.Fuel):F1} L operação agora={b.OperationalCapacity:F2} amostras abertas={_stationOpen.GetValueOrDefault(b.Id)}/{_stationSamples.GetValueOrDefault(b.Id)} empresa={b.CompanyId} funcionários={sim.State.Citizens.Count(c=>c.Alive&&c.WorkplaceId==b.Id)}");
         foreach(var v in stuck.Where(v=>_reported.Add(v.Id)).Take(30)){
             var near=st.Vehicles.Where(o=>o.Id!=v.Id).OrderBy(o=>o.Position.Distance(v.Position)).Take(2)
                 .Select(o=>$"#{o.Id} {o.Status} a {o.Position.Distance(v.Position):F1}m «{o.Cause}» rota {o.RouteIndex}/{o.Route.Count}");
