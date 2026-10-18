@@ -57,13 +57,21 @@ public sealed partial class CitySimulation
     }
     void Personal(Citizen c,string description){c.History.Add(new(State.Now,description));c.Decision=description;}
     void Event(string description){State.CityEvents.Add(new(State.Now,description));State.LastMessage=description;}
-    Building? BuildingById(int? id)=>id is null?null:State.Buildings.FirstOrDefault(b=>b.Id==id&&!b.Removed);
-    Company? CompanyById(int? id)=>id is null?null:State.Companies.FirstOrDefault(c=>c.Id==id);
-    Family? FamilyById(int? id)=>id is null?null:State.Families.FirstOrDefault(f=>f.Id==id);
+    readonly EntityIndex<Building> _buildingIndex=new(b=>b.Id);readonly EntityIndex<Company> _companyIndex=new(c=>c.Id);readonly EntityIndex<Family> _familyIndex=new(f=>f.Id);
+    readonly EntityIndex<Citizen> _citizenIndex=new(c=>c.Id);readonly EntityIndex<Vehicle> _vehicleIndex=new(v=>v.Id);
+    Building? BuildingById(int? id)=>id is null?null:_buildingIndex.Find(State.Buildings,id.Value) is {Removed:false} b?b:null;
+    Company? CompanyById(int? id)=>id is null?null:_companyIndex.Find(State.Companies,id.Value);
+    Family? FamilyById(int? id)=>id is null?null:_familyIndex.Find(State.Families,id.Value);
+    Citizen? CitizenById(int? id)=>id is null?null:_citizenIndex.Find(State.Citizens,id.Value);
+    Vehicle? VehicleById(int? id)=>id is null?null:_vehicleIndex.Find(State.Vehicles,id.Value);
+    // Same contract as Enumerable.First: a missing Id is an inconsistent state.
+    Citizen CitizenWithId(int id)=>CitizenById(id)??throw new InvalidOperationException("Sequence contains no matching element");
     public void Advance(double seconds)
     {
         if(!double.IsFinite(seconds)||seconds<0)throw new ArgumentOutOfRangeException(nameof(seconds));
-        var remaining=seconds;while(remaining>1e-8){var dt=Math.Min(Quantum,remaining);Step(dt);remaining-=dt;}
+        _crosswalkBands.Clear();_crosswalkBandsActive=true;
+        try{var remaining=seconds;while(remaining>1e-8){var dt=Math.Min(Quantum,remaining);Step(dt);remaining-=dt;}}
+        finally{_crosswalkBandsActive=false;_crosswalkBands.Clear();}
     }
     void Step(double dt)
     {

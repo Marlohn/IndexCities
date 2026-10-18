@@ -66,7 +66,7 @@ public sealed partial class CitySimulation
     void RelocateMaintenanceCrew(WorkProject project,RoadNode access)
     {
         if(!project.IsMaintenance)return;
-        foreach(var citizen in project.LocalCrew.Select(id=>State.Citizens.First(c=>c.Id==id)).Where(c=>c.Alive&&!c.Moving&&ShiftActive(c)&&c.Position.Distance(access.Position)>=State.Tuning.RoadWidth)){var target=CrewPedestrianSite(access);var route=PedestrianPath(citizen.Position,target,access);if(route.Count==0)continue;citizen.Path=route;citizen.PathIndex=0;citizen.PathRoadRevision=State.RoadRevision;citizen.Purpose=JourneyPurpose.Construction;citizen.Activity="Indo à manutenção física";}
+        foreach(var citizen in project.LocalCrew.Select(id=>CitizenWithId(id)).Where(c=>c.Alive&&!c.Moving&&ShiftActive(c)&&c.Position.Distance(access.Position)>=State.Tuning.RoadWidth)){var target=CrewPedestrianSite(access);var route=PedestrianPath(citizen.Position,target,access);if(route.Count==0)continue;citizen.Path=route;citizen.PathIndex=0;citizen.PathRoadRevision=State.RoadRevision;citizen.Purpose=JourneyPurpose.Construction;citizen.Activity="Indo à manutenção física";}
     }
     void ProgressRoadMaintenance(WorkProject project)
     {

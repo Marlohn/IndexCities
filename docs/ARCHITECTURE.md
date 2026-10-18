@@ -445,6 +445,15 @@ Quando recalcular um derivado for caro, a implementação pode usar:
 
 Essas otimizações só entram quando houver benefício mensurável e precisam ter invalidação centralizada junto às operações que alteram o estado primário.
 
+No núcleo atual (desde 2026-10-17), os derivados de desempenho seguem duas formas, ambas fora do save:
+
+- **índices validados na consulta** (`EntityIndex`: Id → posição na lista do estado): só respondem depois de conferir que aquela posição da lista viva ainda tem o Id, e se reconstroem a partir da lista em qualquer outro caso, inclusive quando testes, QA ou carregamento editam o estado direto;
+- **caches e buffers derivados**: faixas de travessia, invalidadas por uma época única da rede viária (incrementada em `RebuildRoadGraph`, `AddRoad` e `UpdateCrosswalks`) e mantidas só durante uma chamada de `Advance`; fatores de poluição por ponto, recalculados onde a sequência de células mudou; buffers refeitos a cada passo.
+
+Os índices partem da premissa, garantida pelo contador `Id()`, de que cada Id é único na sua lista.
+
+Esses derivados não mudam resultado: a equivalência foi verificada pelo mesmo SHA-256 do save na bancada headless (§15) antes e depois, em várias cidades e sementes (registro em `docs/exploration/ritmo-velocidades.md`).
+
 ---
 
 ## 9. Conteúdo configurável e regras
