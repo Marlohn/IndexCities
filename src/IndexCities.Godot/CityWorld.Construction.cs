@@ -56,7 +56,12 @@ public partial class CityWorld
             if(!_trucks.TryGetValue(tow.Id,out var towNode)||!_trucks.TryGetValue(id,out var carried))continue;
             var anchor=towNode.GetNodeOrNull<Node3D>(TowAnchor(tow))?.GlobalTransform??towNode.GlobalTransform.TranslatedLocal(tow.Body==TruckBody.TowHeavy?new(0,.9f,3.7f):new(0,1.3f,.6f));
             var mounted=anchor;
-            if(tow.Body==TruckBody.TowHeavy){var front=-carried.GetMeta("visual_envelope_min",new Vector3(0,0,-3.6f)).AsVector3().Z;var tilt=new Basis(Vector3.Right,.08f);mounted=new(anchor.Basis*tilt,anchor.Origin+anchor.Basis*(tilt*new Vector3(0,0,front)));}
+            if(tow.Body==TruckBody.TowHeavy){
+                // Kit rule: front axle centred on LiftAnchor, rear wheels (r=0.47) on the road.
+                Vector3 Axle(string left,string right,float z)=>carried.GetNodeOrNull<Node3D>(left) is {} l&&carried.GetNodeOrNull<Node3D>(right) is {} r?(l.Position+r.Position)*.5f:new(0,.47f,z);
+                var front=Axle("Wheel_FL","Wheel_FR",-2.55f);var rear=Axle("Wheel_RL","Wheel_RR",2.65f);var local=towNode.GlobalTransform.AffineInverse()*anchor.Origin;
+                var tilt=new Basis(Vector3.Right,Mathf.Asin(Mathf.Clamp((local.Y-.47f)/Math.Max(.1f,rear.Z-front.Z),-.5f,.5f)));
+                mounted=towNode.GlobalTransform*new Transform3D(tilt,local-tilt*front);}
             var progress=tow.TowPhase switch{TowPhase.Loading=>1-tow.LoadTimer/state.Tuning.TowLoadSeconds,TowPhase.Unloading=>tow.LoadTimer/state.Tuning.TowUnloadSeconds,_=>1};
             carried.GlobalTransform=carried.GlobalTransform.InterpolateWith(mounted,(float)Math.Clamp(progress,0,1));
             carried.SetMeta("towed_by",tow.Id);
@@ -100,6 +105,7 @@ public partial class CityWorld
     // QA (guincho): world position of a vehicle's visual and of a tow's anchor.
     public Vector3? VehicleVisualPosition(int id)=>_trucks.TryGetValue(id,out var node)?node.GlobalPosition:null;
     public Vector3? TowAnchorPosition(Vehicle tow)=>_trucks.TryGetValue(tow.Id,out var node)?node.GetNodeOrNull<Node3D>(TowAnchor(tow))?.GlobalPosition:null;
+    public Vector3? FrontAxlePosition(int id)=>_trucks.TryGetValue(id,out var node)&&node.GetNodeOrNull<Node3D>("Wheel_FL") is {} l&&node.GetNodeOrNull<Node3D>("Wheel_FR") is {} r?(l.GlobalPosition+r.GlobalPosition)*.5f:null;
 
     void DrawAppliedAsphalt(Node3D root,WorkProject work,CityState state)
     {

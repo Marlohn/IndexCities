@@ -117,7 +117,7 @@ public sealed class TowingTests
             sim.Advance(2);var tow=sim.State.Vehicles.FirstOrDefault(v=>v.Body==TruckBody.TowHeavy);
             if(t==20)sim.State.Vehicles.Add(follower);
             if(tow!=null&&truck.Status==VehicleStatus.Towed){
-                sawTrail=true;Assert.Equal(7.0,tow.Position.Distance(truck.Position),3);
+                sawTrail=true;Assert.Equal(6.5,tow.Position.Distance(truck.Position),3);
                 if(sim.State.Vehicles.Contains(follower)&&follower.Status==VehicleStatus.Travelling&&Math.Abs(follower.Position.Z-truck.Position.Z)<1.5&&Math.Cos(follower.Heading-truck.Heading)>.9&&follower.Position.X>truck.Position.X)Assert.True(truck.Position.Distance(follower.Position)>=4,$"{truck.Position} {follower.Position}");
             }
         }

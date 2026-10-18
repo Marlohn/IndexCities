@@ -47,8 +47,8 @@ public partial class Main
                     Require(_world.RenderedVehicle(heavy.Id)=="vehicle.tow_truck_heavy.a",$"t={t}: caminhão é rebocado pelo guincho pesado");
                     if(heavy.TowPhase==TowPhase.Loading&&!truckLoaded){truckLoaded=true;await Shot("tow-truck-lifting",truck.Position,30);}
                     if(truck.Status==VehicleStatus.Towed){
-                        Require(Math.Abs(heavy.Position.Distance(truck.Position)-7)<.01,$"t={t}: caminhão segue atrás do guincho pesado");
-                        if(heavy.TowPhase==TowPhase.Delivering&&_world.TowAnchorPosition(heavy) is {} lift&&_world.VehicleVisualPosition(truck.Id) is {} shown){Require(Math.Abs(lift.DistanceTo(shown)-3.6f)<.15f,$"t={t}: frente do caminhão no LiftAnchor ({lift} × {shown})");if(!truckMounted){truckMounted=true;await Shot("tow-truck-pulled",heavy.Position,30);}}
+                        Require(Math.Abs(heavy.Position.Distance(truck.Position)-6.5)<.01,$"t={t}: caminhão segue atrás do guincho pesado");
+                        if(heavy.TowPhase==TowPhase.Delivering&&_world.TowAnchorPosition(heavy) is {} lift&&_world.FrontAxlePosition(truck.Id) is {} axle){Require(lift.DistanceTo(axle)<.05f,$"t={t}: eixo dianteiro do caminhão no LiftAnchor ({lift} × {axle})");if(!truckMounted){truckMounted=true;await Shot("tow-truck-pulled",heavy.Position,30);}}
                     }
                 }
                 if(!carDelivered&&carMounted&&car.Status!=VehicleStatus.Towed){carDelivered=true;Require(car.Fuel>1,"Carro abastecido no posto pelo dono");await Shot("tow-car-at-station",station.Door,35);}

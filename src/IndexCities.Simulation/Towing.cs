@@ -10,7 +10,7 @@ public sealed partial class CitySimulation
 {
     // Body half-lengths along the lane (calibration of the kit geometry). A heavy
     // tow lifts the truck's front and pulls it behind, the pair taking the summed length.
-    const double TowHalfLength=3.6,HeavyTowHalfLength=4.0,TruckHalfLength=3.6,CarHalfLength=2.2,HeavyTowTrail=7.0;
+    const double TowHalfLength=3.6,HeavyTowHalfLength=4.0,TruckHalfLength=3.6,CarHalfLength=2.2,HeavyTowTrail=6.5;
     static bool IsTow(Vehicle v)=>v.Body is TruckBody.Tow or TruckBody.TowHeavy;
     // A truck trailing a heavy tow still occupies the lane behind it.
     static bool OccupiesLane(Vehicle o)=>o.Status is VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded||o.Status==VehicleStatus.Towed&&!o.PassengerCar;
