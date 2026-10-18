@@ -36,7 +36,7 @@ public sealed partial class CitySimulation
         var due=State.Roads.Where(r=>!r.Highway&&State.ElapsedSeconds>=r.MaintenanceDueAt&&!reserved.Contains(r.Id)).OrderBy(r=>r.Position.Distance(State.Entry)).ToList();
         foreach(var area in due.GroupBy(r=>((int)Math.Floor(r.Position.X/64),(int)Math.Floor(r.Position.Z/64))))foreach(var chunk in area.Chunk(16)){
             var length=chunk.Length*State.Tuning.RoadStep;var materials=new Dictionary<ResourceKind,double>{{ResourceKind.Aggregate,length*.004},{ResourceKind.Asphalt,length*.006}};
-            var project=CreateMaintenance(chunk[0].Position,materials,Math.Max(60,chunk.Length*20));if(project==null)continue;var roads=AlongStreets(chunk);project.MaintenanceRoadIds=roads.Select(r=>r.Id).ToList();project.RoadPoints=roads.Select(r=>r.Position).ToList();
+            var roads=AlongStreets(chunk);var project=CreateMaintenance(roads[0].Position,materials,Math.Max(60,chunk.Length*20));if(project==null)continue;project.MaintenanceRoadIds=roads.Select(r=>r.Id).ToList();project.RoadPoints=roads.Select(r=>r.Position).ToList();
         }
     }
     // SPEC prefeitura-financas: the same stretches, one street at a time in

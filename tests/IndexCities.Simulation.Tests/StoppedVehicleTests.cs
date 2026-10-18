@@ -108,7 +108,7 @@ public sealed class StoppedVehicleTests
     }
     [Fact] public void A_maintenance_crew_moves_on_only_with_fuel_for_the_next_stretch_and_the_way_out()
     {
-        var sim=ZigzagMaintenance();var refuelReturn=false;var drained=false;
+        var sim=ZigzagMaintenance();var refuelReturn=false;var drained=false;var paid=new HashSet<(int?,int)>();
         for(var i=0;i<20000&&(i<10||sim.State.Projects.Any(p=>p.IsMaintenance&&p.Status!=WorkStatus.Completed));i++){
             sim.Advance(5);
             // Along the street the stretches are close; leave the crew on site with
@@ -119,9 +119,12 @@ public sealed class StoppedVehicleTests
             }
             Assert.DoesNotContain(sim.State.Vehicles,v=>v.Status==VehicleStatus.Stranded);
             refuelReturn|=sim.State.Vehicles.Any(v=>v.Cause.StartsWith("Retorno ao exterior para reabastecer"));
+            foreach(var s in sim.State.Shipments.Where(s=>s.Purpose==ShipmentPurpose.Maintenance&&s.PricePaid>0))paid.Add((s.ProjectId,s.Id));
         }
         var maintenance=sim.State.Projects.Where(p=>p.IsMaintenance).ToList();Assert.NotEmpty(maintenance);
         Assert.All(maintenance,p=>Assert.True(p.Status==WorkStatus.Completed,p.Cause));Assert.True(refuelReturn);
+        // The crew sent again after refuelling outside pays freight and fuel again.
+        Assert.Contains(paid.GroupBy(x=>x.Item1),g=>g.Count()>=2);
         Assert.All(sim.State.Roads.Where(r=>!r.Highway&&r.Position.X>=-128&&r.Position.Z is 0 or 60),r=>Assert.Equal(1,r.MaintenanceRatio));sim.CheckInvariants();
     }
     // A street with a side street making a T, all due in one maintenance cell.
