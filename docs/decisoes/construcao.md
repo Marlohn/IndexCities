@@ -41,6 +41,7 @@
 - 2026-10-16 — As velocidades passam provisoriamente a 1x/30x/1000x até revisão do ritmo, após medição estável em cidade pequena e 3000x inviável (ajuste do responsável) → seção Recuperação da interação da V1
 
 - 2026-10-18 — O responsável escolheu dar à família deslocada pela demolição a primeira oportunidade de compra da casa vaga, antes de nova família migrante, com pagamento real, sem garantia de moradia ou reserva permanente; pode adiar a imigração → seção Desocupação assistida em intervenção municipal residencial.
+- 2026-10-18 — O responsável escolheu redirecionar a carga privada já embarcada para outro prédio compatível da mesma empresa; sem destino viável, aguardar fisicamente em segurança, preservando carga/titular, sem reembolso e podendo manter o caminhão ocupado → seção Intervenção municipal sobre propriedades privadas.
 
 ## Registros sem data explícita
 
