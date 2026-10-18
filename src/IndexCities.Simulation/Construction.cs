@@ -159,6 +159,8 @@ public sealed partial class CitySimulation
             if(p.CrewVehicleId==null&&p.LocalCrew.Count==0&&p.Required.All(k=>p.Delivered.GetValueOrDefault(k.Key)+.001>=k.Value))SendExternalCrew(p,access);
         }
     }
+    // Same margin as the dispatch checks: the leg, then the way back to the exterior.
+    bool FuelForTripAndExit(Vehicle v,List<int> route,RoadNode destination)=>FindRoadRoute(destination.Id,EntryNode().Id,true) is {Count:>0} exit&&(RouteLength(route)+RouteLength(exit))*FuelRate(v)+4<=v.Fuel;
     void SendExternalCrew(WorkProject project,RoadNode access)
     {
         var vehicle=AvailableTruck();if(vehicle==null)return;var route=FindRoadRoute(EntryNode().Id,access.Id,true);if(route.Count==0)return;
@@ -193,7 +195,7 @@ public sealed partial class CitySimulation
                 // no truck left to deliver the rest. Return that actual crew
                 // to the exterior, then reuse its truck for missing materials.
                 var missingUnordered=p.Required.Any(required=>p.Delivered.GetValueOrDefault(required.Key)+State.Shipments.Where(s=>s.ProjectId==p.Id&&!s.Complete).Sum(s=>s.Cargo.GetValueOrDefault(required.Key))+.001<required.Value);
-                if(missingUnordered&&p.CrewVehicleId is {} earlyCrewId&&State.Vehicles.FirstOrDefault(v=>v.Id==earlyCrewId) is {Status:VehicleStatus.Parked,CrewAboard:true} earlyCrew){p.CrewVehicleId=null;ReturnExternal(earlyCrew);}
+                if(missingUnordered&&p.CrewVehicleId is {} earlyCrewId&&VehicleById(earlyCrewId) is {Status:VehicleStatus.Parked,CrewAboard:true} earlyCrew){p.CrewVehicleId=null;ReturnExternal(earlyCrew);}
                 p.Cause=State.Shipments.Any(s=>s.ProjectId==p.Id&&!s.Complete)?WorkCause.AwaitingPhysicalDelivery:WorkCause.MissingMaterials;continue;
             }
             var crew=p.CrewVehicleId==null?null:State.Vehicles.FirstOrDefault(v=>v.Id==p.CrewVehicleId&&v.CrewAboard);
@@ -203,11 +205,17 @@ public sealed partial class CitySimulation
                 // road across the gap must not become its departure node.
                 var atKnownBay=crew.DockPosition is {} dock&&crew.Position.Distance(dock)<.1&&crew.Route.Count>0&&crew.RouteIndex>=crew.Route.Count&&_roads.ContainsKey(crew.Route[^1]);
                 var start=atKnownBay?_roads[crew.Route[^1]]:NearestRoad(crew.Position);
-                if(start!=null){var route=FindRoadRoute(start.Id,access.Id,true);if(route.Count>0){crew.Route=route;crew.RouteIndex=0;crew.DockPosition=DockAt(access,BuildingById(p.BuildingId),true);crew.Status=VehicleStatus.Travelling;}}
+                if(start!=null){var route=FindRoadRoute(start.Id,access.Id,true);if(route.Count>0){
+                    // SPEC transporte-circulacao: each move is a departure. Without fuel
+                    // for it and the return to the exterior, the crew goes back to refuel
+                    // on import and the work calls a crew again; it never strands on a lane.
+                    if(!FuelForTripAndExit(crew,route,access)){p.CrewVehicleId=null;ReturnExternal(crew);if(crew.Status==VehicleStatus.Travelling)crew.Cause="Retorno ao exterior para reabastecer: combustível não basta para o próximo trecho e a volta";}
+                    else{crew.Route=route;crew.RouteIndex=0;crew.DockPosition=DockAt(access,BuildingById(p.BuildingId),true);crew.Status=VehicleStatus.Travelling;}
+                }}
             }
             var external=crew is {Status:VehicleStatus.Parked}&&crew.Position.Distance(DockAt(access,BuildingById(p.BuildingId),true))<=2.5?crew:null;
             RelocateMaintenanceCrew(p,access);
-            var local=p.LocalCrew.Select(id=>State.Citizens.First(c=>c.Id==id)).Where(c=>c.Alive&&c.ConstructionProjectId==p.Id&&BuildingById(c.WorkplaceId)?.Kind==BuildingKind.WorksDepot&&!c.Moving&&c.Position.Distance(access.Position)<State.Tuning.RoadWidth&&ShiftActive(c)).ToList();
+            var local=p.LocalCrew.Select(id=>CitizenWithId(id)).Where(c=>c.Alive&&c.ConstructionProjectId==p.Id&&BuildingById(c.WorkplaceId)?.Kind==BuildingKind.WorksDepot&&!c.Moving&&c.Position.Distance(access.Position)<State.Tuning.RoadWidth&&ShiftActive(c)).ToList();
             if(external==null&&local.Count==0){p.Cause=WorkCause.AwaitingCrewOnSite;continue;}
             if(!HasExteriorWorkAccess(p)){p.Cause=WorkCause.WorkRouteInterrupted;continue;}
             var factor=external!=null?1:local.Count/3.0;var used=Math.Min(dt*factor,p.WorkSeconds*(1-p.Progress));
@@ -244,7 +252,7 @@ public sealed partial class CitySimulation
         ReleasePavingMachines(p);
         if(p.CrewVehicleId is {} id&&State.Vehicles.FirstOrDefault(v=>v.Id==id&&v.CrewAboard) is {} crew){crew.CrewAboard=false;crew.CrewCount=0;ReturnExternal(crew);}
         p.CrewVehicleId=null;
-        foreach(var citizenId in p.LocalCrew){var c=State.Citizens.First(c=>c.Id==citizenId);c.ConstructionProjectId=null;var job=BuildingById(c.WorkplaceId);if(job!=null)StartJourney(c,job,JourneyPurpose.Work);}p.LocalCrew.Clear();
+        foreach(var citizenId in p.LocalCrew){var c=CitizenWithId(citizenId);c.ConstructionProjectId=null;var job=BuildingById(c.WorkplaceId);if(job!=null)StartJourney(c,job,JourneyPurpose.Work);}p.LocalCrew.Clear();
     }
     bool CompleteConstructionProject(WorkProject p)
     {
@@ -271,8 +279,8 @@ public sealed partial class CitySimulation
         p.Status=WorkStatus.Cancelled;p.BudgetRemaining=0;p.LocalReserved.Clear();p.Cause=WorkCause.Cancelled;
         if(!p.IsMaintenance&&BuildingById(p.BuildingId) is {} b)b.Removed=true;
         foreach(var s in State.Shipments.Where(s=>s.ProjectId==p.Id&&!s.Complete)){s.Cancelled=true;var v=State.Vehicles.First(x=>x.Id==s.VehicleId);RedirectCancelled(v,s);}
-        if(p.CrewVehicleId is {} vid&&State.Vehicles.FirstOrDefault(v=>v.Id==vid) is {} crew&&crew.Status==VehicleStatus.Parked){crew.CrewAboard=false;crew.CrewCount=0;ReturnExternal(crew);}
-        foreach(var id in p.LocalCrew){var c=State.Citizens.First(c=>c.Id==id);c.ConstructionProjectId=null;if(BuildingById(c.WorkplaceId) is {} workplace)StartJourney(c,workplace,JourneyPurpose.Work);}p.LocalCrew.Clear();ReserveLocalMaterials();
+        if(p.CrewVehicleId is {} vid&&VehicleById(vid) is {} crew&&crew.Status==VehicleStatus.Parked){crew.CrewAboard=false;crew.CrewCount=0;ReturnExternal(crew);}
+        foreach(var id in p.LocalCrew){var c=CitizenWithId(id);c.ConstructionProjectId=null;if(BuildingById(c.WorkplaceId) is {} workplace)StartJourney(c,workplace,JourneyPurpose.Work);}p.LocalCrew.Clear();ReserveLocalMaterials();
     }
     public PlacementQuote QuoteMoveBuilding(int projectId,Point position,double rotation)
     {

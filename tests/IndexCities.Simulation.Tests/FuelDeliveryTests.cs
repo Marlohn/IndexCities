@@ -3,7 +3,8 @@ using Xunit;
 namespace IndexCities.Simulation.Tests;
 public sealed class FuelDeliveryTests
 {
-    [Fact] public void Loaded_local_truck_really_refuels_at_the_selected_station_before_delivering_food()
+    // The cycle city at the first moment its farm truck, driver, food and station are all ready.
+    static (CitySimulation Sim,Vehicle Truck,Building Farm,Building Shop,Building Station) ReadyDelivery()
     {
         var sim=CityCycleTests.City();Vehicle? truck=null;Building? farm=null,shop=null,station=null;
         for(var step=0;step<336&&truck==null;step++){
@@ -12,9 +13,54 @@ public sealed class FuelDeliveryTests
             var driver=sim.State.Citizens.Any(c=>c.Alive&&c.WorkplaceId==farm.Id&&c.VehicleId==null&&c.ConstructionProjectId==null&&!c.Moving&&c.Position.Distance(farm.Door)<3);
             if(candidate!=null&&driver&&farm.OperationalCapacity>0&&farm.Quantity(ResourceKind.Food)>=10&&station.OperationalCapacity>0&&station.Quantity(ResourceKind.Fuel)>20)truck=candidate;
         }
-        Assert.NotNull(truck);Assert.NotNull(farm);Assert.NotNull(shop);Assert.NotNull(station);truck!.Fuel=2;shop!.AddStock(ResourceKind.Food,-10);
-        var method=typeof(CitySimulation).GetMethod("OrderLocalFood",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance)!;Assert.True((bool)method.Invoke(sim,[farm!,shop,10d])!);var shipment=sim.State.Shipments.Last(s=>s.VehicleId==truck.Id&&!s.Complete);var stationId=station!.Id;Assert.Equal(stationId,truck.RefuellingAt);var refuelled=false;
+        Assert.NotNull(truck);Assert.NotNull(farm);Assert.NotNull(shop);Assert.NotNull(station);return (sim,truck!,farm!,shop!,station!);
+    }
+    static bool OrderLocalFood(CitySimulation sim,Building farm,Building shop,double amount)=>(bool)typeof(CitySimulation).GetMethod("OrderLocalFood",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance)!.Invoke(sim,[farm,shop,amount])!;
+    [Fact] public void Loaded_local_truck_really_refuels_at_the_selected_station_before_delivering_food()
+    {
+        var (sim,truck,farm,shop,station)=ReadyDelivery();truck.Fuel=2;shop.AddStock(ResourceKind.Food,-10);
+        Assert.True(OrderLocalFood(sim,farm,shop,10));var shipment=sim.State.Shipments.Last(s=>s.VehicleId==truck.Id&&!s.Complete);var stationId=station.Id;Assert.Equal(stationId,truck.RefuellingAt);var refuelled=false;
         for(var step=0;step<3600&&!shipment.Complete;step++){sim.Advance(2);refuelled|=truck.Fuel>10;sim.CheckInvariants();}
         Assert.True(refuelled,$"{truck.Cause}, {truck.Fuel} L, {truck.Position}");Assert.True(shipment.Complete,truck.Cause);Assert.True(shipment.PickedUp);Assert.Equal(0,truck.Cargo.Values.Sum());Assert.Equal(sim.State.Tuning.TotalMoney,sim.MonetaryTotal);
+    }
+    // SPEC transporte-circulacao: the way back to the farm is a departure too.
+    [Fact] public void Local_truck_refuels_before_returning_when_the_tank_does_not_cover_the_way_back()
+    {
+        var (sim,truck,farm,shop,station)=ReadyDelivery();truck.Fuel=sim.State.Tuning.FuelTank;shop.AddStock(ResourceKind.Food,-10);
+        Assert.True(OrderLocalFood(sim,farm,shop,10));
+        var shipment=sim.State.Shipments.Last(s=>s.VehicleId==truck.Id&&!s.Complete);Assert.Null(truck.RefuellingAt);
+        // Just enough for the delivery leg and its margin: the same way back is not covered.
+        var roads=sim.State.Roads.ToDictionary(r=>r.Id);var leg=truck.Route.Zip(truck.Route.Skip(1),(a,b)=>roads[a].Position.Distance(roads[b].Position)).Sum();
+        truck.Fuel=leg*sim.State.Tuning.FuelPerMetre+4.05;
+        for(var step=0;step<3600&&!shipment.Complete;step++){sim.Advance(2);Assert.NotEqual(VehicleStatus.Stranded,truck.Status);}
+        Assert.True(shipment.Complete,truck.Cause);Assert.Equal(station.Id,truck.RefuellingAt);var refuelled=false;
+        for(var step=0;step<3600&&truck.Status!=VehicleStatus.Parked;step++){sim.Advance(2);refuelled|=truck.Fuel>10;Assert.NotEqual(VehicleStatus.Stranded,truck.Status);sim.CheckInvariants();}
+        Assert.True(refuelled,$"{truck.Cause}, {truck.Fuel} L");Assert.Equal(VehicleStatus.Parked,truck.Status);Assert.True(truck.Position.Distance(farm.Door)<30,truck.Position+" "+farm.Door);Assert.Equal(sim.State.Tuning.TotalMoney,sim.MonetaryTotal);
+    }
+    // Stock taken by others after the stop was chosen: the truck buys what exists,
+    // never leaves short of the trip, frees the pump bay and resumes after restock.
+    [Fact] public void Partially_refuelled_truck_waits_off_the_pump_and_resumes_after_restock()
+    {
+        var (sim,truck,farm,shop,station)=ReadyDelivery();truck.Fuel=2;shop.AddStock(ResourceKind.Food,-10);
+        Assert.True(OrderLocalFood(sim,farm,shop,10));Assert.Equal(station.Id,truck.RefuellingAt);var shipment=sim.State.Shipments.Last(s=>s.VehicleId==truck.Id&&!s.Complete);
+        var stock=0d;var drained=false;
+        for(var step=0;step<3600&&truck.Status!=VehicleStatus.Waiting;step++){
+            sim.Advance(1);Assert.NotEqual(VehicleStatus.Stranded,truck.Status);
+            if(!drained&&truck.Status==VehicleStatus.Unloading&&truck.Cause=="Abastecendo combustível"){stock=station.Quantity(ResourceKind.Fuel);station.AddStock(ResourceKind.Fuel,.3-stock);drained=true;}
+        }
+        Assert.True(drained);Assert.Equal(VehicleStatus.Waiting,truck.Status);Assert.True(truck.RefuellingAt==null,truck.Cause+" fuel="+truck.Fuel+" stock="+station.Quantity(ResourceKind.Fuel)+" route="+truck.Route.Count);Assert.False(shipment.Complete);
+        for(var step=0;step<60;step++){sim.Advance(2);Assert.Equal(VehicleStatus.Waiting,truck.Status);}
+        station.AddStock(ResourceKind.Fuel,stock);
+        for(var step=0;step<3600&&!shipment.Complete;step++){sim.Advance(2);Assert.NotEqual(VehicleStatus.Stranded,truck.Status);sim.CheckInvariants();}
+        Assert.True(shipment.Complete,truck.Cause);Assert.Equal(sim.State.Tuning.TotalMoney,sim.MonetaryTotal);
+    }
+    // A station without enough stock for the rest of the trip is no viable stop.
+    [Fact] public void Local_truck_does_not_leave_when_the_only_station_lacks_fuel_for_the_trip()
+    {
+        var (sim,truck,farm,shop,station)=ReadyDelivery();truck.Fuel=2;shop.AddStock(ResourceKind.Food,-10);
+        var stock=station.Quantity(ResourceKind.Fuel);station.AddStock(ResourceKind.Fuel,.5-stock);
+        Assert.False(OrderLocalFood(sim,farm,shop,10));Assert.Null(truck.RefuellingAt);Assert.Equal(VehicleStatus.Parked,truck.Status);
+        Assert.DoesNotContain(sim.State.Shipments,s=>s.VehicleId==truck.Id&&!s.Complete);
+        station.AddStock(ResourceKind.Fuel,stock-.5);Assert.True(OrderLocalFood(sim,farm,shop,10));Assert.Equal(station.Id,truck.RefuellingAt);sim.CheckInvariants();
     }
 }

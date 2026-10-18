@@ -55,10 +55,11 @@ public sealed partial class CitySimulation
         // Refresh derived crossings once for an old save before retrying routes.
         // Loading itself still preserves the serialized state exactly.
         if(!_pedestrianCrossingsChecked){UpdateCrosswalks();_pedestrianCrossingsChecked=true;}
+        RefreshCrosswalks();
         foreach(var c in State.Citizens.Where(c=>c.Alive)){
             if(!c.Moving&&c.PathRoadRevision!=State.RoadRevision&&c.Activity.StartsWith("Sem rota",StringComparison.Ordinal))c.NextDecisionAt=Math.Min(c.NextDecisionAt,State.ElapsedSeconds);
             if(c.ConstructionProjectId!=null&&ShiftActive(c)){c.WorkSecondsToday+=dt;AccrueWage(c,dt);}
-            if(c.VehicleId is {} vid){var v=State.Vehicles.FirstOrDefault(v=>v.Id==vid);if(v!=null){c.Position=v.Position;c.InsideMap=InMap(v.Position);}continue;}
+            if(c.VehicleId is {} vid){var v=VehicleById(vid);if(v!=null){c.Position=v.Position;c.InsideMap=InMap(v.Position);}continue;}
             if(c.Moving){
                 if(c.Purpose==JourneyPurpose.Boarding)c.PathRoadRevision=State.RoadRevision;
                 if(c.PathRoadRevision!=State.RoadRevision&&c.Purpose==JourneyPurpose.Construction&&c.ConstructionProjectId is {} projectId){var project=State.Projects.First(p=>p.Id==projectId);var access=WorkAccess(project);var replacement=access==null?new List<Point>():PedestrianPath(c.Position,CrewPedestrianSite(access),access);c.Path=replacement;c.PathIndex=0;c.PathRoadRevision=State.RoadRevision;if(replacement.Count==0){c.Activity="Equipe aguardando rota de obra";continue;}}
@@ -74,7 +75,7 @@ public sealed partial class CitySimulation
                     // Only negotiate the crossing reached by this physical step,
                     // and preserve an ongoing crossing before nearby alternatives.
                     var nextPosition=c.Position.MoveTowards(target,Math.Min(distance,d));
-                    var crossing=State.Roads.Where(n=>n.Crosswalk&&(n.Position.Distance(c.Position)<State.Tuning.RoadWidth+1||n.Position.Distance(nextPosition)<State.Tuning.RoadWidth+1)&&CrossesLane(c.Position,nextPosition,n)).OrderBy(n=>n.Id==c.CrossingNodeId?0:1).ThenBy(n=>n.Position.Distance(c.Position)).FirstOrDefault();
+                    var crossing=CrossingReached(c,nextPosition);
                     if(crossing!=null&&c.CrossingNodeId!=crossing.Id){
                         // A vehicle already stopped in a queue does not advance onto the
                         // walker; only one entering or passing the crossing does. This
@@ -82,18 +83,51 @@ public sealed partial class CitySimulation
                         var occupied=State.Vehicles.Any(v=>v.Status==VehicleStatus.Travelling&&(v.IntersectionClaim==crossing.Id||v.WaitingSince==0&&v.Position.Distance(crossing.Position)<3.5));
                         if(occupied){c.Activity="Aguardando travessia";break;}c.CrossingNodeId=crossing.Id;
                     }
-                    var heading=d>.001?(target-c.Position)*(1/d):new Point(0,0);var gap=State.Citizens.Where(other=>other.Id!=c.Id&&other.Alive&&other.Moving&&other.VehicleId==null).Select(other=>{var relative=other.Position-c.Position;var otherTarget=other.Path[other.PathIndex];var otherDelta=otherTarget-other.Position;var otherLength=otherDelta.Distance(new(0,0));var alignment=otherLength<.001?1:(heading.X*otherDelta.X+heading.Z*otherDelta.Z)/otherLength;
-                        // At a shared turning point, two converging headings can
-                        // each see the other ahead. Only the closer walker leads
-                        // that merge; stable identity resolves an exact tie.
-                        var sharedTurn=otherTarget.Distance(target)<.05;var precedes=!sharedTurn||otherLength<d-.001||Math.Abs(otherLength-d)<=.001&&other.Id<c.Id;
-                        return (Ahead:relative.X*heading.X+relative.Z*heading.Z,Side:Math.Abs(relative.X*heading.Z-relative.Z*heading.X),Alignment:alignment,Precedes:precedes);}).Where(other=>other.Precedes&&other.Ahead>.001&&other.Side<.55&&other.Alignment>.5).Select(other=>other.Ahead).DefaultIfEmpty(double.MaxValue).Min();var travelled=Math.Min(distance,Math.Min(d,Math.Max(0,gap-.7)));if(travelled<.000001&&d>.001){c.Activity="Fila de pedestres";break;}c.Position=c.Position.MoveTowards(target,travelled);distance-=travelled;if(d<=travelled+.00001)c.PathIndex++;else break;
+                    var heading=d>.001?(target-c.Position)*(1/d):new Point(0,0);var gap=PedestrianGap(c,target,d,heading,Math.Min(distance,d)+.7);var travelled=Math.Min(distance,Math.Min(d,Math.Max(0,gap-.7)));if(travelled<.000001&&d>.001){c.Activity="Fila de pedestres";break;}c.Position=c.Position.MoveTowards(target,travelled);distance-=travelled;if(d<=travelled+.00001)c.PathIndex++;else break;
                 }
                 c.InsideMap=InMap(c.Position);if(!c.Moving){c.CrossingNodeId=null;CitizenArrived(c);}continue;
             }
             if(State.ElapsedSeconds<c.NextDecisionAt)continue;c.NextDecisionAt=State.ElapsedSeconds+60;
             CitizenRoutine(c);
         }
+    }
+    // Crosswalk nodes in State.Roads order. Rebuilt at the start of every
+    // MoveCitizens call and whenever the road list or crossings change.
+    readonly List<RoadNode> _crosswalks=[];int _crosswalksEpoch=-1;int _roadEpoch;
+    void RefreshCrosswalks(){_crosswalks.Clear();foreach(var n in State.Roads)if(n.Crosswalk)_crosswalks.Add(n);_crosswalksEpoch=_roadEpoch;}
+    // Crosswalk reached by this physical step: the one already being crossed,
+    // else the nearest; an exact tie keeps road-list order (as a stable sort).
+    RoadNode? CrossingReached(Citizen c,Point nextPosition)
+    {
+        if(_crosswalksEpoch!=_roadEpoch)RefreshCrosswalks();
+        RoadNode? best=null;var bestKey=0;var bestDistance=0.0;
+        foreach(var n in _crosswalks){
+            if(!(n.Position.Distance(c.Position)<State.Tuning.RoadWidth+1||n.Position.Distance(nextPosition)<State.Tuning.RoadWidth+1)||!CrossesLane(c.Position,nextPosition,n))continue;
+            var key=n.Id==c.CrossingNodeId?0:1;var distance=n.Position.Distance(c.Position);
+            if(best==null||key<bestKey||key==bestKey&&distance.CompareTo(bestDistance)<0){best=n;bestKey=key;bestDistance=distance;}
+        }
+        return best;
+    }
+    // Distance to the nearest walker ahead in the same lane (double.MaxValue if
+    // none). The caller only compares it with `reach` (step length + 0.7 m
+    // clearance). A walker more than reach+1.3 m away and within 0.55 m of the
+    // lane is more than `reach` ahead, so skipping it never changes the step:
+    // the result differs only when both values already exceed `reach`.
+    double PedestrianGap(Citizen c,Point target,double d,Point heading,double reach)
+    {
+        var gap=double.MaxValue;var radius=reach+1.3;radius*=radius;
+        foreach(var other in State.Citizens){
+            if(other.Id==c.Id||!other.Alive||!other.Moving||other.VehicleId!=null)continue;
+            var relative=other.Position-c.Position;if(relative.X*relative.X+relative.Z*relative.Z>radius)continue;
+            var otherTarget=other.Path[other.PathIndex];var otherDelta=otherTarget-other.Position;var otherLength=otherDelta.Distance(new(0,0));var alignment=otherLength<.001?1:(heading.X*otherDelta.X+heading.Z*otherDelta.Z)/otherLength;
+            // At a shared turning point, two converging headings can
+            // each see the other ahead. Only the closer walker leads
+            // that merge; stable identity resolves an exact tie.
+            var sharedTurn=otherTarget.Distance(target)<.05;var precedes=!sharedTurn||otherLength<d-.001||Math.Abs(otherLength-d)<=.001&&other.Id<c.Id;
+            var ahead=relative.X*heading.X+relative.Z*heading.Z;var side=Math.Abs(relative.X*heading.Z-relative.Z*heading.X);
+            if(precedes&&ahead>.001&&side<.55&&alignment>.5&&ahead<gap)gap=ahead;
+        }
+        return gap;
     }
     void CitizenArrived(Citizen c)
     {
@@ -120,7 +154,7 @@ public sealed partial class CitySimulation
             if(c.Position.Distance(job.Door)>3)StartJourney(c,job,JourneyPurpose.Work);else c.Activity="No trabalho";return;
         }
         if(home==null){c.Activity="Sem moradia";return;}
-        var adults=family!.Members.Select(id=>State.Citizens.First(x=>x.Id==id)).Where(x=>x.Alive&&x.Age>=18&&x.Resident).ToList();
+        var adults=family!.Members.Select(id=>CitizenWithId(id)).Where(x=>x.Alive&&x.Age>=18&&x.Resident).ToList();
         var existingShopper=adults.Any(x=>x.Id!=c.Id&&(x.Purpose==JourneyPurpose.Shopping&&x.Moving||x.BagFood>0));
         if(family.Pantry<family.Members.Count*1.5&&c.Age>=18&&!existingShopper&&State.Now.Hour>=7&&State.Now.Hour<21){c.TriedShops.Clear();if(SeekFood(c))return;}
         if(c.Purpose==JourneyPurpose.Visit&&c.OutingUntil>State.ElapsedSeconds&&c.Position.Distance(home.Door)>3){
@@ -162,20 +196,23 @@ public sealed partial class CitySimulation
         // actual rear of the truck; the former 9 m reservation could overlap
         // nearby junctions and make opposite queues hold each other forever.
         foreach(var vehicle in State.Vehicles)ClearPassedJunction(vehicle);
-        foreach(var v in State.Vehicles.OrderBy(v=>v.WaitingSince).ThenBy(v=>v.Id)){
+        // Same order as OrderBy(WaitingSince).ThenBy(Id): Ids are unique, so the
+        // key is a total order and any sort yields the same sequence.
+        var ordered=State.Vehicles.ToArray();Array.Sort(ordered,static (a,b)=>a.WaitingSince.CompareTo(b.WaitingSince) is var c and not 0?c:a.Id.CompareTo(b.Id));
+        foreach(var v in ordered){
             // A bypass belongs to the trip in progress: a stopped, parked or
             // replanned-elsewhere vehicle does not resume old waypoints.
             if(v.Detour.Count>0&&v.Status!=VehicleStatus.Travelling)v.Detour.Clear();
             if(_vehicleMovementBatch==null||operationsDt!=null){
                 var operationTime=operationsDt??dt;
                 v.FuelBurnedLastStep=0;
-                if(!v.External&&v.Status is VehicleStatus.Travelling or VehicleStatus.Unloading or VehicleStatus.Waiting){var actualDriver=State.Citizens.FirstOrDefault(c=>c.Id==v.DriverId&&c.Alive&&(v.PassengerCar||c.Resident&&c.InsideMap)&&c.VehicleId==v.Id);if(actualDriver==null){v.Cause=v.PassengerCar?"Aguardando motorista embarcar":"Sem motorista local presente; carga e viagem preservadas";continue;}}
-                if(!v.PassengerCar&&v.DriverId is {} driver&&State.Citizens.FirstOrDefault(c=>c.Id==driver) is {} citizen&&v.Status is VehicleStatus.Travelling or VehicleStatus.Unloading){citizen.Position=v.Position;citizen.WorkSecondsToday+=operationTime;AccrueWage(citizen,operationTime);citizen.Activity="Conduzindo entrega real";}
+                if(!v.External&&v.Status is VehicleStatus.Travelling or VehicleStatus.Unloading or VehicleStatus.Waiting){var actualDriver=CitizenById(v.DriverId) is {} c&&c.Alive&&(v.PassengerCar||c.Resident&&c.InsideMap)&&c.VehicleId==v.Id?c:null;if(actualDriver==null){v.Cause=v.PassengerCar?"Aguardando motorista embarcar":"Sem motorista local presente; carga e viagem preservadas";continue;}}
+                if(!v.PassengerCar&&v.DriverId is {} driver&&CitizenById(driver) is {} citizen&&v.Status is VehicleStatus.Travelling or VehicleStatus.Unloading){citizen.Position=v.Position;citizen.WorkSecondsToday+=operationTime;AccrueWage(citizen,operationTime);citizen.Activity="Conduzindo entrega real";}
                 if(v.Status==VehicleStatus.Unloading){v.LoadTimer-=operationTime;if(v.LoadTimer<=0)VehicleArrived(v);continue;}
                 if(v.Machine!=PavingMachine.None&&v.Status==VehicleStatus.Waiting){ReplanPavingMachine(v);continue;}
                 if(v.PassengerCar&&v.Status==VehicleStatus.Waiting){ReplanCar(v);continue;}
                 if(v.PassengerCar&&v.Status==VehicleStatus.Stranded&&(v.DriverId!=null||v.Passengers.Count>0)){LeaveCar(v,"Carro sem combustível parado na via");continue;}
-                if(v.Status==VehicleStatus.Waiting){if(v.ShipmentId is {} si&&State.Shipments.FirstOrDefault(s=>s.Id==si) is {} shipment){if(shipment.Cancelled)RedirectCancelled(v,shipment);else ReplanVehicle(v,shipment);}else if(v.External)ReturnExternal(v);continue;}
+                if(v.Status==VehicleStatus.Waiting){if(v.ShipmentId is {} si&&State.Shipments.FirstOrDefault(s=>s.Id==si) is {} shipment){if(shipment.Cancelled)RedirectCancelled(v,shipment);else ReplanVehicle(v,shipment);}else if(v.External)ReturnExternal(v);else if(v.HomeBuildingId!=null&&v.DestinationBuildingId==v.HomeBuildingId)ReturnLocal(v);continue;}
                 if(v.Status!=VehicleStatus.Travelling)continue;
                 if(v.Route.Count==0||v.Route.Any(id=>!_roads.ContainsKey(id))){v.Status=VehicleStatus.Waiting;v.Cause="Rota interrompida; aguarda ligação viária";continue;}
                 _vehicleMovementBatch?.Add(v.Id);
@@ -246,7 +283,9 @@ public sealed partial class CitySimulation
     {
         var start=NearestRoad(v.Position);if(start==null||start.Position.Distance(v.Position)>State.Tuning.RoadWidth/2+3)return;
         var target=!s.PickedUp?Access(BuildingById(s.SourceBuildingId)!):s.ProjectId is {} pId?WorkAccess(State.Projects.First(p=>p.Id==pId)):Access(BuildingById(s.DestinationBuildingId)!);
-        if(target==null)return;var route=FindRoadRoute(start.Id,target.Id,ConstructionTrip(v));if(route.Count==0)return;v.Route=route;v.RouteIndex=0;v.Status=VehicleStatus.Travelling;
+        if(target==null)return;
+        // SPEC transporte-circulacao: a replanned departure also needs fuel for the trip.
+        if(!EnsureFuel(v,target.Id))return;v.Status=VehicleStatus.Travelling;
     }
     bool CrossesLane(Point from,Point to,RoadNode n)
     {
@@ -305,7 +344,7 @@ public sealed partial class CitySimulation
             if(s.ProjectId is {} pi&&State.Projects.FirstOrDefault(p=>p.Id==pi) is {} project)foreach(var kv in s.Cargo)project.LocalReserved[kv.Key]=Math.Max(0,project.LocalReserved.GetValueOrDefault(kv.Key)-kv.Value);
             var target=s.ProjectId is {} pId?WorkAccess(State.Projects.First(p=>p.Id==pId)):Access(BuildingById(s.DestinationBuildingId)!);var start=NearestRoad(v.Position);if(start==null||target==null){v.Status=VehicleStatus.Waiting;v.Cause="Destino sem via";return;}if(!EnsureFuel(v,target.Id)){v.Status=VehicleStatus.Waiting;return;}if(v.RefuellingAt==null)v.DockPosition=DockAt(target,BuildingById(s.DestinationBuildingId),v.CrewAboard);v.Status=VehicleStatus.Travelling;if(v.RefuellingAt==null&&s.ReceivingMachineId!=null)ConfigureAsphaltApproach(v,s);return;
         }
-        if(s.ReceivingMachineId is {} machineId){var receiver=State.Vehicles.FirstOrDefault(m=>m.Id==machineId);if(receiver is not {MachinePhase:MachinePhase.OnSite,FeedingReady:true,CrewAboard:true}||receiver.CrewCount<1||receiver.Fuel<=0||receiver.MachineProjectId!=s.ProjectId||receiver.Position.Distance(v.Position)>7||Math.Cos(receiver.Heading-v.Heading)<.95){v.LoadTimer=2;v.Status=VehicleStatus.Unloading;v.Cause="Aguardando pavimentadora real para descarregar";return;}}
+        if(s.ReceivingMachineId is {} machineId){var receiver=VehicleById(machineId);if(receiver is not {MachinePhase:MachinePhase.OnSite,FeedingReady:true,CrewAboard:true}||receiver.CrewCount<1||receiver.Fuel<=0||receiver.MachineProjectId!=s.ProjectId||receiver.Position.Distance(v.Position)>7||Math.Cos(receiver.Heading-v.Heading)<.95){v.LoadTimer=2;v.Status=VehicleStatus.Unloading;v.Cause="Aguardando pavimentadora real para descarregar";return;}}
         if(s.ProjectId is {} id&&s.Purpose is ShipmentPurpose.Construction or ShipmentPurpose.Maintenance){var p=State.Projects.First(p=>p.Id==id);if(p.Status==WorkStatus.Cancelled){s.Cancelled=true;RedirectCancelled(v,s);return;}if(RetireMaintenanceWithoutTargets(p))return;foreach(var kv in v.Cargo)p.Delivered[kv.Key]=p.Delivered.GetValueOrDefault(kv.Key)+kv.Value;v.Cargo.Clear();s.Complete=true;
             if(v.CrewAboard){v.Status=VehicleStatus.Parked;v.IntersectionClaim=null;v.Cause="Equipe externa no canteiro";}else ReturnExternal(v);return;
         }
@@ -319,9 +358,13 @@ public sealed partial class CitySimulation
     }
     void ReturnLocal(Vehicle v)
     {
-        var source=BuildingById(v.HomeBuildingId);var start=NearestRoad(v.Position);var target=source==null?null:Access(source);if(start==null||target==null){v.Status=VehicleStatus.Waiting;v.Cause="Sem acesso para retorno";return;}v.Route=FindRoadRoute(start.Id,target.Id);v.RouteIndex=0;v.ShipmentId=null;v.DockPosition=DockAt(target,source,false);v.Status=v.Route.Count>0?VehicleStatus.Travelling:VehicleStatus.Waiting;v.DestinationBuildingId=source!.Id;
+        var source=BuildingById(v.HomeBuildingId);var start=NearestRoad(v.Position);var target=source==null?null:Access(source);if(start==null||target==null){v.Status=VehicleStatus.Waiting;v.Cause="Sem acesso para retorno";return;}v.ShipmentId=null;v.DestinationBuildingId=source!.Id;
+        // SPEC transporte-circulacao: the way back is a departure too; it refuels
+        // at a station first when the tank does not cover it, or waits at the bay.
+        if(!EnsureFuel(v,target.Id)){if(FindRoadRoute(start.Id,target.Id).Count==0)v.Cause="Sem rota para retorno";v.Route.Clear();v.RouteIndex=0;v.Status=VehicleStatus.Waiting;return;}
+        if(v.RefuellingAt==null)v.DockPosition=DockAt(target,source,false);v.Status=VehicleStatus.Travelling;
     }
-    void ReleaseDriver(Vehicle v){if(v.DriverId is {} id&&State.Citizens.FirstOrDefault(c=>c.Id==id) is {} c){c.VehicleId=null;c.Position=v.Position;var workplace=BuildingById(c.WorkplaceId);if(workplace!=null)StartJourney(c,workplace,JourneyPurpose.Work);}v.DriverId=null;}
+    void ReleaseDriver(Vehicle v){if(v.DriverId is {} id&&CitizenById(id) is {} c){c.VehicleId=null;c.Position=v.Position;var workplace=BuildingById(c.WorkplaceId);if(workplace!=null)StartJourney(c,workplace,JourneyPurpose.Work);}v.DriverId=null;}
     void RedirectCancelled(Vehicle v,Shipment s)
     {
         PrepareConstructionSiteDeparture(v);
@@ -362,14 +405,14 @@ public sealed partial class CitySimulation
     // reconsiders; its home was kept until the car actually left the city.
     void ReturnEmigrantHome(Vehicle v)
     {
-        Family? family=v.DriverId is int driverId&&State.Citizens.FirstOrDefault(c=>c.Id==driverId) is {} driver?FamilyById(driver.FamilyId):null;
+        Family? family=v.DriverId is int driverId&&CitizenById(driverId) is {} driver?FamilyById(driver.FamilyId):null;
         v.TripPurpose=JourneyPurpose.Home;v.RefuellingAt=null;v.SavedRoute=[];
         if(family!=null){family.Emigrating=false;v.DestinationBuildingId=family.HomeId;}
         // Back home by car when the tank allows it (a small margin covers the lot
         // manoeuvres), so the car is there for the next try.
         if(family!=null&&BuildingById(family.HomeId) is {} home&&Access(home) is {} access&&FreeSpot(home,family,v) is {} spot&&NearestRoad(v.Position,false) is {} start&&FindRoadRoute(start.Id,access.Id) is {Count:>0} route&&v.Fuel>=RouteLength(route)*FuelRate(v)+.3){
             v.ParkingSpot=spot.Key;v.DockPosition=spot.Position;v.Route=route;v.RouteIndex=0;v.Status=VehicleStatus.Travelling;v.Cause="Família voltando para casa: sem dinheiro ou combustível para emigrar";
-            foreach(var id in v.Passengers.Append(v.DriverId!.Value)){var c=State.Citizens.First(x=>x.Id==id);c.Purpose=JourneyPurpose.Home;c.DestinationId=home.Id;c.Activity="Voltando para casa de carro";}
+            foreach(var id in v.Passengers.Append(v.DriverId!.Value)){var c=CitizenWithId(id);c.Purpose=JourneyPurpose.Home;c.DestinationId=home.Id;c.Activity="Voltando para casa de carro";}
             return;
         }
         // Not even enough to get home: the car stays parked at the station (off the pump).
@@ -386,15 +429,27 @@ public sealed partial class CitySimulation
             // A private car that cannot pay stays parked at the station, still
             // usable once the family has money; it is not stranded on the lane.
             if(v.PassengerCar){v.RefuellingAt=null;v.SavedRoute=[];v.Status=VehicleStatus.Parked;LeaveCar(v,"Carro parado no posto: sem dinheiro para abastecer");return;}
-            v.Status=VehicleStatus.Stranded;v.Cause="Sem dinheiro/combustível para abastecer";return;}
+            v.RefuellingAt=null;v.SavedRoute=[];v.Route.Clear();v.RouteIndex=0;v.Status=VehicleStatus.Waiting;v.Cause="Sem dinheiro/combustível para abastecer";return;}
         var price=Money((decimal)amount*station.SalePrice);if(!Transfer(v.OwnerAccount,"company:"+station.CompanyId,price,"Combustível","Abastecimento físico no posto",v.Id))return;
-        station.AddStock(ResourceKind.Fuel,-amount);v.Fuel+=amount;v.RefuellingAt=null;v.Route=v.SavedRoute;v.SavedRoute=[];if(v.Route.Count>0){var shipment=State.Shipments.FirstOrDefault(s=>s.Id==v.ShipmentId);var destination=BuildingById(shipment?.PickedUp==false?shipment.SourceBuildingId:shipment?.DestinationBuildingId??v.HomeBuildingId);v.DockPosition=DockAt(_roads[v.Route[^1]],destination,false);}if(v.PassengerCar&&SpotByKey(v.ParkingSpot) is {} carSpot)v.DockPosition=carSpot.Position;if(v.PassengerCar&&v.TripPurpose==JourneyPurpose.Leaving)v.DockPosition=State.Entry;v.RouteIndex=0;v.Status=VehicleStatus.Travelling;v.Cause="Abastecido com combustível real";
+        station.AddStock(ResourceKind.Fuel,-amount);v.Fuel+=amount;
+        // Stock or money can run short after the stop was chosen: never leave without
+        // the rest of the trip. A car stays parked at the station.
+        if(!leaving&&v.SavedRoute.Count>0&&v.Fuel<RouteLength(v.SavedRoute)*FuelRate(v)+(v.PassengerCar?1:4)){
+            if(v.PassengerCar){v.RefuellingAt=null;v.SavedRoute=[];v.Status=VehicleStatus.Parked;LeaveCar(v,"Carro parado no posto: combustível do posto ou dinheiro não bastam para a viagem");return;}
+            // Off the pump bay: the truck waits and replans its refuelling (Waiting).
+            v.RefuellingAt=null;v.SavedRoute=[];v.Route.Clear();v.RouteIndex=0;v.Status=VehicleStatus.Waiting;v.Cause="Abastecido em parte; combustível do posto ou dinheiro não bastam para a viagem";return;}
+        v.RefuellingAt=null;v.Route=v.SavedRoute;v.SavedRoute=[];if(v.Route.Count>0){var shipment=State.Shipments.FirstOrDefault(s=>s.Id==v.ShipmentId);var destination=BuildingById(shipment?.PickedUp==false?shipment.SourceBuildingId:shipment?.DestinationBuildingId??v.HomeBuildingId);v.DockPosition=DockAt(_roads[v.Route[^1]],destination,false);}if(v.PassengerCar&&SpotByKey(v.ParkingSpot) is {} carSpot)v.DockPosition=carSpot.Position;if(v.PassengerCar&&v.TripPurpose==JourneyPurpose.Leaving)v.DockPosition=State.Entry;v.RouteIndex=0;v.Status=VehicleStatus.Travelling;v.Cause="Abastecido com combustível real";
     }
     bool EnsureFuel(Vehicle v,int destination)
     {
         var start=NearestRoad(v.Position);if(start==null)return false;var normal=FindRoadRoute(start.Id,destination,ConstructionTrip(v));if(normal.Count==0)return false;
         var need=RouteLength(normal)*FuelRate(v)+(v.PassengerCar?1:4);if(v.Fuel>=need){v.Route=normal;v.RouteIndex=0;return true;}
-        foreach(var station in State.Buildings.Where(b=>b.Kind==BuildingKind.FuelStation&&b.Completed&&b.OperationalCapacity>0&&b.Quantity(ResourceKind.Fuel)>0&&Access(b)!=null).OrderBy(b=>b.Position.Distance(v.Position))){var n=Access(station)!;var toStation=FindRoadRoute(start.Id,n.Id);if(toStation.Count==0||RouteLength(toStation)*FuelRate(v)+(v.PassengerCar?1:0)>v.Fuel)continue;v.SavedRoute=FindRoadRoute(n.Id,destination,ConstructionTrip(v));if(v.SavedRoute.Count==0)continue;v.RefuellingAt=station.Id;v.DockPosition=DockAt(n,station,false);v.Route=toStation;v.RouteIndex=0;return true;}
+        foreach(var station in State.Buildings.Where(b=>b.Kind==BuildingKind.FuelStation&&b.Completed&&b.OperationalCapacity>0&&b.Quantity(ResourceKind.Fuel)>0&&Access(b)!=null).OrderBy(b=>b.Position.Distance(v.Position))){var n=Access(station)!;var toStation=FindRoadRoute(start.Id,n.Id);if(toStation.Count==0||RouteLength(toStation)*FuelRate(v)+(v.PassengerCar?1:0)>v.Fuel)continue;var onward=FindRoadRoute(n.Id,destination,ConstructionTrip(v));if(onward.Count==0)continue;
+            // SPEC transporte-circulacao: the stop must cover the rest of the trip,
+            // with stock the station actually has and money the owner actually has.
+            var atStation=v.Fuel-RouteLength(toStation)*FuelRate(v);var purchase=RouteLength(onward)*FuelRate(v)+(v.PassengerCar?1:4)-atStation;
+            if(purchase>0&&(purchase>State.Tuning.FuelTank-atStation||station.Quantity(ResourceKind.Fuel)<purchase||Balance(v.OwnerAccount)<Money((decimal)purchase*station.SalePrice)))continue;
+            v.SavedRoute=onward;v.RefuellingAt=station.Id;v.DockPosition=DockAt(n,station,false);v.Route=toStation;v.RouteIndex=0;return true;}
         v.Cause="Combustível insuficiente; não há posto viável no alcance";return false;
     }
 }
