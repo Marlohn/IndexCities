@@ -1,0 +1,10 @@
+Godot Engine v4.7.2.stable.mono.official.ed1daf0bf - https://godotengine.org
+
+[construction-check] vehicle.truck_dump.a rest=[P: (-1.45, 0.0, -3.6), S: (2.9, 2.78, 7.2)] operation=[P: (-1.45, 0.0, -3.6), S: (2.9, 4.940292, 7.987155)]
+[construction-check] vehicle.truck_mixer.a rest=[P: (-1.45, 0.0, -3.6), S: (2.9, 3.282883, 7.2)] operation=[P: (-1.45, 0.0, -3.6), S: (2.9, 3.27964, 7.211497)]
+[construction-check] vehicle.truck_flatbed.a rest=[P: (-1.45, 0.0, -3.6), S: (2.9, 2.78, 7.2)] operation=[P: (-1.45, 0.0, -3.6), S: (2.9, 2.78, 7.2)]
+[construction-check] vehicle.tow_truck.a rest=[P: (-1.45, 0.0, -3.6), S: (2.9, 2.97, 7.2)] operation=[P: (-1.45, 0.0, -3.6), S: (2.9, 3.346729, 7.731637)]
+[construction-check] vehicle.tow_truck_heavy.a rest=[P: (-1.45, 0.0, -4.065), S: (2.9, 3.29, 8.13)] operation=[P: (-1.45, 0.0, -4.065), S: (2.9, 3.29, 8.03925)]
+[construction-check] vehicle.asphalt_paver.a rest=[P: (-1.27, 0.0, -2.31), S: (2.54, 2.84, 4.62)] operation=[P: (-1.27, -0.0, -2.31), S: (2.54, 2.84, 4.62)]
+[construction-check] vehicle.road_roller.a rest=[P: (-1.159953, 0.000029, -1.978471), S: (2.319907, 2.709971, 3.966942)] operation=[P: (-1.159443, 0.000029, -2.10635), S: (2.335588, 2.709971, 4.094821)]
+[construction-check] 821 checks; 0 failures

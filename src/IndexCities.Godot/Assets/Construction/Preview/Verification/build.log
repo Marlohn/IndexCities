@@ -1,0 +1,10 @@
+Godot Engine v4.7.2.stable.mono.official.ed1daf0bf - https://godotengine.org
+
+[construction-build] vehicle.truck_dump.a triangles=3502 surfaces=30 instances=14 envelope=(2.9, 2.78, 7.2)
+[construction-build] vehicle.truck_mixer.a triangles=2778 surfaces=27 instances=10 envelope=(2.9, 3.282883, 7.2)
+[construction-build] vehicle.truck_flatbed.a triangles=3898 surfaces=29 instances=10 envelope=(2.9, 2.78, 7.2)
+[construction-build] vehicle.tow_truck.a triangles=2750 surfaces=27 instances=9 envelope=(2.9, 2.97, 7.2)
+[construction-build] vehicle.tow_truck_heavy.a triangles=2894 surfaces=28 instances=9 envelope=(2.9, 3.29, 8.13)
+[construction-build] vehicle.asphalt_paver.a triangles=1372 surfaces=17 instances=7 envelope=(2.54, 2.84, 4.62)
+[construction-build] vehicle.road_roller.a triangles=952 surfaces=14 instances=4 envelope=(2.319907, 2.709971, 3.966942)
+[construction-build] PASS 7 scenes; original editable sources; no runtime scripts

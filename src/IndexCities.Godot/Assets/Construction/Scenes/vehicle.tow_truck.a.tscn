@@ -1,0 +1,54 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.tow_truck.a.body.tres" id="1_24h6s"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres" id="2_vm3li"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.tow_truck.a.frame.tres" id="3_4d01o"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.tow_truck.a.deck.tres" id="4_1dg5g"]
+
+[node name="TowTruck" type="Node3D" unique_id=301103979]
+metadata/visual_id = "vehicle.tow_truck.a"
+metadata/asset_status = "PENDENTE de revisao humana"
+metadata/visual_envelope_min = Vector3(-1.45, 0, -3.6)
+metadata/visual_envelope_size = Vector3(2.9, 2.97, 7.2)
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=2120034539]
+mesh = ExtResource("1_24h6s")
+
+[node name="Wheel_FL" type="MeshInstance3D" parent="." unique_id=329504495]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 0.47, -2.55)
+mesh = ExtResource("2_vm3li")
+
+[node name="Wheel_FR" type="MeshInstance3D" parent="." unique_id=1355329843]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 0.47, -2.55)
+mesh = ExtResource("2_vm3li")
+
+[node name="Wheel_ML" type="MeshInstance3D" parent="." unique_id=981635105]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 0.47, 1.45)
+mesh = ExtResource("2_vm3li")
+
+[node name="Wheel_MR" type="MeshInstance3D" parent="." unique_id=1852652507]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 0.47, 1.45)
+mesh = ExtResource("2_vm3li")
+
+[node name="Wheel_RL" type="MeshInstance3D" parent="." unique_id=12968742]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 0.47, 2.65)
+mesh = ExtResource("2_vm3li")
+
+[node name="Wheel_RR" type="MeshInstance3D" parent="." unique_id=89209725]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 0.47, 2.65)
+mesh = ExtResource("2_vm3li")
+
+[node name="Candidate_Discharge" type="Marker3D" parent="." unique_id=1373626216]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3.9)
+
+[node name="RecoveryFrame" type="MeshInstance3D" parent="." unique_id=1448034279]
+mesh = ExtResource("3_4d01o")
+
+[node name="DeckPivot" type="Node3D" parent="." unique_id=262535255]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.15, 2.9)
+
+[node name="Deck" type="MeshInstance3D" parent="DeckPivot" unique_id=788576073]
+mesh = ExtResource("4_1dg5g")
+
+[node name="CarryAnchor" type="Marker3D" parent="DeckPivot" unique_id=1674026965]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.09, -1.815)
