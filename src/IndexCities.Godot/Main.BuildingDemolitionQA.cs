@@ -203,9 +203,49 @@ public partial class Main
             RefreshHud(); await RecoveryFrame();
             await RecoveryCaptureOnce("building-demolition-cargo-delivered", GetViewport());
 
+            // Caminhão local com motorista SIM: estaciona junto ao terreno, o motorista desembarca e segue a rotina;
+            // a retomada exige destino apto e um trabalhador da empresa que caminha e embarca de verdade.
+            var farmFirm = new Company { Id = _sim.State.NextId++, Name = "Campo QA" }; _sim.State.Companies.Add(farmFirm);
+            _sim.State.Wallets[farmFirm.Account] = 5000; _sim.State.Wallets["global"] -= 5000;
+            var farm = new Building { Id = _sim.State.NextId++, Kind = BuildingKind.Farm, Position = new(-40, -28), Rotation = Math.PI, Completed = true, OperationalCapacity = 1, OwnerAccount = farmFirm.Account, CompanyId = farmFirm.Id, SalaryOffer = 80 };
+            farm.Stock[ResourceKind.Food] = 60; _sim.State.Buildings.Add(farm); farmFirm.Buildings.Add(farm.Id);
+            firm = _sim.State.Companies.Single(c => c.Id == firm.Id);
+            var localTarget = FirmShop(20); sister.Stock[ResourceKind.Food] = sister.Definition.Capacity;
+            var dockAt = typeof(CitySimulation).GetMethod("DockAt", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+            var farmTruck = new Vehicle { Id = _sim.State.NextId++, OwnerAccount = farmFirm.Account, HomeBuildingId = farm.Id, Fuel = _sim.State.Tuning.FuelTank, Status = VehicleStatus.Parked, Cause = "Na fazenda" };
+            farmTruck.Position = (IndexCities.Simulation.Point)dockAt.Invoke(_sim, [_sim.Access(farm)!, farm, false])!; _sim.State.Vehicles.Add(farmTruck); _world.Reset(_sim.State);
+            for (var i = 0; i < 200 && !(_sim.State.Now.Hour is >= 8 and < 12); i++) await RecoveryAdvance(1800);
+            var driverSim = _sim.State.Citizens.First(c => c.Id == _sim.State.Families.Single(f => f.Id == moving.Id).Members[0]);
+            driverSim.WorkplaceId = farm.Id; driverSim.Shift = 0; driverSim.WeeklyDayOff = ((int)_sim.State.Now.DayOfWeek + 3) % 7; driverSim.Path.Clear(); driverSim.PathIndex = 0; driverSim.Position = farm.Door;
+            var localOrder = typeof(CitySimulation).GetMethod("OrderLocalFood", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+            Require((bool)localOrder.Invoke(_sim, [farm, localTarget, 20d])!, "Pedido local real da loja à fazenda");
+            var localShipment = _sim.State.Shipments.Last(x => x.VehicleId == farmTruck.Id);
+            for (var i = 0; i < 3000 && !(localShipment.PickedUp && farmTruck.Status == VehicleStatus.Travelling); i++) { _sim.Advance(1); if (i % 20 == 0) await RecoveryFrame(); }
+            Require(localShipment.PickedUp && farmTruck.DriverId == driverSim.Id, "Caminhão local carregado com motorista SIM a bordo");
+            var localMoney = _sim.MonetaryTotal; var firmLocal = _sim.Balance(firm.Account);
+            _focus = ToV(localTarget.Position); UpdateCamera();
+            ClearSelection(); _selectedBuilding = localTarget.Id; _inspectionKey = ""; RefreshInspection(); await RecoveryFrame();
+            RecoveryNodes<Button>(_inspection!).Single(b => b.Text == "× Demolir com indenização").EmitSignal(Godot.Button.SignalName.Pressed);
+            await RecoveryFrame(); await RecoveryFrame();
+            Require(RecoveryNodes<Label>(_modal!).Any(l => l.Text.Contains("motorista local desembarca")), "Prévia explica a liberação do motorista local");
+            var localQuote = _sim.QuoteBuildingDemolition(localTarget.Id);
+            RecoveryNodes<Button>(_modal!).Single(b => b.Text == "✓ Confirmar demolição").EmitSignal(Godot.Button.SignalName.Pressed);
+            await RecoveryFrame();
+            for (var i = 0; i < 2000 && farmTruck.Status != VehicleStatus.Parked; i++) { _sim.Advance(1); if (i % 20 == 0) await RecoveryFrame(); }
+            Require(farmTruck.Status == VehicleStatus.Parked && farmTruck.DriverId == null && driverSim.VehicleId == null && farmTruck.Cause.Contains("junto ao terreno"), "Caminhão local estacionado junto ao terreno e motorista liberado: " + farmTruck.Cause);
+            Require(farmTruck.Cargo[ResourceKind.Food] == 20 && localShipment.GoodsOwnerAccount == firm.Account && !localShipment.Complete, "Carga e titular preservados sem motorista");
+            for (var i = 0; i < 120; i++) { _sim.Advance(1); if (i % 10 == 0) await RecoveryFrame(); }
+            _focus = ToV(farmTruck.Position); _zoom = 50; UpdateCamera();
+            ClearSelection(); _selectedVehicle = farmTruck.Id; _inspectionKey = ""; RefreshInspection(); RefreshHud(); for (var i = 0; i < 4; i++) await RecoveryFrame();
+            await RecoveryCaptureOnce("building-demolition-local-parked", GetViewport());
+            sister.Stock[ResourceKind.Food] = 0; var localBoarded = false;
+            for (var i = 0; i < 60000 && !localShipment.Complete; i++) { _sim.Advance(5); localBoarded |= farmTruck.DriverId is { } d && _sim.State.Citizens.Single(c => c.Id == d).VehicleId == farmTruck.Id; if (i % 200 == 0) await RecoveryFrame(); }
+            Require(localShipment.Complete && localBoarded && Math.Abs(sister.Quantity(ResourceKind.Food) - 20) < 1e-6, "Retomada com motorista real embarcado e entrega física: " + farmTruck.Cause);
+            Require(_sim.Balance(firm.Account) == firmLocal + localQuote.Compensation && _sim.MonetaryTotal == localMoney, "Sem reembolso, frete ou taxa na retomada local");
+
             _sim.CheckInvariants();
             System.IO.File.WriteAllText(System.IO.Path.Combine(directory, "building-demolition-final.json"), _sim.SaveToJson());
-            GD.Print("INDEXCITIES_BUILDING_DEMOLITION_OK compensation=" + Cash(changed.Compensation) + " removal=" + Cash(changed.RemovalCost) + " stale-revalidated=true cancel=no-change deadline-homeless=true moved-before-deadline=true cargo-waited-safely=true cargo-resumed-same-company=true directory=" + directory);
+            GD.Print("INDEXCITIES_BUILDING_DEMOLITION_OK compensation=" + Cash(changed.Compensation) + " removal=" + Cash(changed.RemovalCost) + " stale-revalidated=true cancel=no-change deadline-homeless=true moved-before-deadline=true cargo-waited-safely=true cargo-resumed-same-company=true local-driver-released=true directory=" + directory);
             GetTree().Quit();
         } catch (Exception exception) {
             GD.PushError("Building demolition: " + exception);

@@ -105,6 +105,47 @@ public sealed class BuildingDemolitionCargoTests
         Assert.Equal(titular+quote.Compensation,loaded.Balance(company.Account));Assert.Equal(total,loaded.MonetaryTotal);loaded.CheckInvariants();
     }
 
+    // Caminhão local da fazenda com motorista SIM levando comida já vendida à loja demolida.
+    [Fact] public void Local_truck_parks_at_the_empty_lot_frees_its_driver_and_resumes_only_with_a_real_driver_boarding()
+    {
+        var sim=Street();
+        var placed=sim.PlaceBuilding(BuildingKind.House,new(-100,14));Assert.True(placed.Success,placed.Message);var house=sim.State.Buildings.Single(b=>b.Id==placed.Id);
+        for(var i=0;i<96&&!sim.State.Families.Any(f=>f.HomeId==house.Id);i++)sim.Advance(1800);
+        var worker=sim.State.Citizens.First(c=>c.Id==sim.State.Families.Single(f=>f.HomeId==house.Id).Members[0]);
+        var farmCo=AddCompany(sim,910,5000);farmCo.Active=true;var shopCo=AddCompany(sim,911,5000);
+        var farm=new Building{Id=sim.State.NextId++,Kind=BuildingKind.Farm,Position=new(-40,-28),Rotation=Math.PI,Completed=true,OperationalCapacity=1,OwnerAccount=farmCo.Account,CompanyId=farmCo.Id,SalaryOffer=80};
+        farm.Stock[ResourceKind.Food]=60;sim.State.Buildings.Add(farm);farmCo.Buildings.Add(farm.Id);
+        var target=Shop(sim,shopCo,new(-20,14));var sister=Shop(sim,shopCo,new(60,14));sister.Stock[ResourceKind.Food]=sister.Definition.Capacity;
+        var dockAt=typeof(CitySimulation).GetMethod("DockAt",BindingFlags.NonPublic|BindingFlags.Instance)!;
+        var truck=new Vehicle{Id=sim.State.NextId++,OwnerAccount=farmCo.Account,HomeBuildingId=farm.Id,Fuel=sim.State.Tuning.FuelTank,Status=VehicleStatus.Parked,Cause="Na fazenda"};
+        truck.Position=(Point)dockAt.Invoke(sim,[sim.Access(farm)!,farm,false])!;sim.State.Vehicles.Add(truck);
+        for(var i=0;i<200&&!(sim.State.Now.Hour is >=8 and <12&&sim.State.Now.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday));i++)sim.Advance(1800);
+        worker.WorkplaceId=farm.Id;worker.Shift=0;worker.WeeklyDayOff=((int)sim.State.Now.DayOfWeek+3)%7;worker.Path.Clear();worker.PathIndex=0;worker.Position=farm.Door;
+        var order=typeof(CitySimulation).GetMethod("OrderLocalFood",BindingFlags.NonPublic|BindingFlags.Instance)!;
+        Assert.True((bool)order.Invoke(sim,[farm,target,20d])!);
+        var shipment=sim.State.Shipments.Last(s=>s.VehicleId==truck.Id);
+        for(var i=0;i<3000&&!(shipment.PickedUp&&truck.Status==VehicleStatus.Travelling);i++)sim.Advance(1);
+        Assert.True(shipment.PickedUp,truck.Cause);Assert.Equal(worker.Id,truck.DriverId);
+        var titular=sim.Balance(shopCo.Account);var total=sim.MonetaryTotal;
+        var quote=sim.QuoteBuildingDemolition(target.Id);Assert.True(sim.DemolishBuilding(target.Id,quote).Success);
+        for(var i=0;i<2000&&truck.Status!=VehicleStatus.Parked;i++)sim.Advance(1);
+        // Parked beside the empty lot, outside the lanes; the SIM got off and is no longer held by the cargo.
+        Assert.Equal(VehicleStatus.Parked,truck.Status);Assert.NotNull(truck.HoldingPosition);Assert.Null(truck.DriverId);Assert.Null(worker.VehicleId);
+        Assert.Contains("estacionada junto ao terreno",truck.Cause);
+        Assert.Equal(20,truck.Cargo[ResourceKind.Food],6);Assert.Equal(shopCo.Account,shipment.GoodsOwnerAccount);Assert.False(shipment.Complete);
+        Assert.Contains(worker.History,h=>h.Description.StartsWith("Desembarcou"));
+        // Persists without a driver; nothing drives it while the destination is still full.
+        var loaded=CitySimulation.FromJson(sim.SaveToJson());
+        var held=loaded.State.Vehicles.Single(v=>v.Id==truck.Id);var heldShipment=loaded.State.Shipments.Single(s=>s.Id==shipment.Id);
+        Assert.Equal(VehicleStatus.Parked,held.Status);Assert.Null(held.DriverId);Assert.Equal(truck.Position,held.Position);
+        loaded.Advance(loaded.State.Tuning.EconomyInterval+10);Assert.Equal(truck.Position,held.Position);Assert.Null(held.DriverId);
+        // Real room: a worker of the truck's company on shift walks to the truck, boards and delivers.
+        var room=loaded.State.Buildings.Single(b=>b.Id==sister.Id);room.Stock[ResourceKind.Food]=0;var boarded=false;
+        for(var i=0;i<60000&&!heldShipment.Complete;i++){loaded.Advance(5);boarded|=held.DriverId is {} d&&loaded.State.Citizens.Single(c=>c.Id==d).VehicleId==held.Id;if(i%500==0)loaded.CheckInvariants();}
+        Assert.True(heldShipment.Complete,held.Cause);Assert.True(boarded);Assert.Equal(20,room.Quantity(ResourceKind.Food),6);
+        Assert.Equal(titular+quote.Compensation,loaded.Balance(shopCo.Account));Assert.Equal(total,loaded.MonetaryTotal);loaded.CheckInvariants();
+    }
+
     // Uma casa vaga, uma família deslocada e um migrante que podem pagar: a família deslocada compra primeiro.
     static (CitySimulation Sim,Building House,Family Family,Building Vacant) DisplacedAndVacant()
     {

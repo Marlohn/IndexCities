@@ -40,7 +40,45 @@ public sealed partial class CitySimulation
         if(!PrivateCargo(s)){v.HoldingPosition=null;s.Cancelled=true;RedirectCancelled(v,s);return;}
         if(TryRedirectPrivateCargo(v,s,removed))return;
         if(v.External)HoldCargoSafely(v,s,removed);
-        else HoldCargoInPlace(v,s,removed,"Destino "+removed.Definition.Name+" demolido: sem outro prédio apto de "+ReadableOwnerName(s.GoodsOwnerAccount)+"; carga e titular preservados no caminhão");
+        else HoldLocalCargo(v,s,removed);
+    }
+    string CargoWaiting(Shipment s,Building removed)=>"Destino "+removed.Definition.Name+" demolido: carga de "+ReadableOwnerName(s.GoodsOwnerAccount)+" aguarda outro prédio apto da mesma empresa";
+    // SPEC construcao (2026-10-18): a local truck parks at the loading bay of the empty lot,
+    // beside the street and outside the lanes, and its SIM driver gets off there and resumes
+    // the normal routine. Cargo, titular and the truck stay; no driver is kept or invented.
+    void HoldLocalCargo(Vehicle v,Shipment s,Building removed)
+    {
+        var waiting=CargoWaiting(s,removed);var access=Access(removed);
+        if(access==null){HoldCargoInPlace(v,s,removed,waiting+"; o terreno ficou sem via de acesso, posição mantida com o motorista");return;}
+        var spot=DockAt(access,removed,false);
+        if(v.Position.Distance(spot)<.1){
+            v.HoldingPosition=spot;v.DockPosition=spot;v.Route.Clear();v.RouteIndex=0;v.Status=VehicleStatus.Parked;v.LoadTimer=0;v.Cause=waiting+"; estacionada junto ao terreno, fora das faixas";
+            if(State.Citizens.FirstOrDefault(c=>c.Id==v.DriverId&&c.VehicleId==v.Id) is {} driver){Personal(driver,"Desembarcou: caminhão com carga de "+ReadableOwnerName(s.GoodsOwnerAccount)+" aguarda destino junto ao terreno demolido");driver.NextDecisionAt=State.ElapsedSeconds;}
+            ReleaseDriver(v);return;
+        }
+        var start=NearestRoad(v.Position);
+        if(start==null||start.Position.Distance(v.Position)>State.Tuning.RoadWidth/2+3){HoldCargoInPlace(v,s,removed,waiting+"; sem via próxima para estacionar com segurança, posição mantida com o motorista");return;}
+        var route=FindRoadRoute(start.Id,access.Id);
+        if(route.Count==0&&start.Id!=access.Id){HoldCargoInPlace(v,s,removed,waiting+"; sem rota física até o terreno para estacionar, posição mantida com o motorista");return;}
+        if(route.Count==0)route=[access.Id];
+        if(v.Fuel<(RouteLength(route)+v.Position.Distance(spot))*FuelRate(v)){HoldCargoInPlace(v,s,removed,waiting+"; combustível insuficiente para estacionar com segurança, posição mantida com o motorista");return;}
+        v.HoldingPosition=spot;v.Route=route;v.RouteIndex=0;v.DockPosition=spot;v.Status=VehicleStatus.Travelling;v.Cause=waiting+"; seguindo ao terreno para estacionar";
+    }
+    // Resuming a parked local truck needs an apt destination and a real driver: a worker of
+    // the truck's company on shift at the workplace walks to the truck and boards; only then
+    // does the truck replan (ReplanVehicle with the hold released).
+    void CallDriverForHeldCargo(Vehicle v,Shipment s,Building removed)
+    {
+        var start=NearestRoad(v.Position);if(start==null||CargoAlternative(v,s,removed,start.Id)==null)return;
+        var waiting=CargoWaiting(s,removed);
+        foreach(var c in State.Citizens.Where(c=>c.Alive&&c.Resident&&c.InsideMap&&c.VehicleId==null&&c.BoardingVehicleId==null&&c.ConstructionProjectId==null&&!c.Moving&&BuildingById(c.WorkplaceId) is {} job&&job.OwnerAccount==v.OwnerAccount&&c.Position.Distance(job.Door)<3&&ShiftActiveIn(c,job)).OrderBy(c=>c.Position.Distance(v.Position)).ThenBy(c=>c.Id)){
+            var path=PedestrianRoute(c.Position,removed);if(path.Count==0)continue;
+            path.Add(v.Position);
+            c.BoardingVehicleId=v.Id;c.Purpose=JourneyPurpose.Boarding;c.DestinationId=null;c.Path=path;c.PathIndex=0;c.PathRoadRevision=State.RoadRevision;c.Activity="Caminhando para embarcar no caminhão com carga em espera";
+            Personal(c,"Chamado para conduzir carga de "+ReadableOwnerName(s.GoodsOwnerAccount)+" a um prédio apto da mesma empresa");
+            v.DriverId=c.Id;v.HoldingPosition=null;v.Status=VehicleStatus.Waiting;v.Cause=waiting+"; destino apto encontrado, motorista a caminho";return;
+        }
+        v.Cause=waiting+"; destino apto encontrado, aguardando motorista disponível da empresa";
     }
     bool TryRedirectPrivateCargo(Vehicle v,Shipment s,Building removed)
     {
@@ -87,7 +125,10 @@ public sealed partial class CitySimulation
     // road repaired) are rechecked periodically rather than on every step.
     void RetryCargoAwaitingDestination()
     {
-        foreach(var v in State.Vehicles.Where(v=>v.HoldingPosition!=null&&v.Status==VehicleStatus.Waiting&&v.ShipmentId!=null).ToList())
-            if(State.Shipments.FirstOrDefault(s=>s.Id==v.ShipmentId) is {} s&&AwaitsRemovedDestination(s))HandleRemovedCargoDestination(v,s);
+        foreach(var v in State.Vehicles.Where(v=>v.HoldingPosition!=null&&v.Status is VehicleStatus.Waiting or VehicleStatus.Parked&&v.ShipmentId!=null).ToList()){
+            if(State.Shipments.FirstOrDefault(s=>s.Id==v.ShipmentId) is not {} s||!AwaitsRemovedDestination(s))continue;
+            if(v.Status==VehicleStatus.Parked){if(v.DriverId==null)CallDriverForHeldCargo(v,s,RemovedBuilding(s.DestinationBuildingId)!);}
+            else HandleRemovedCargoDestination(v,s);
+        }
     }
 }

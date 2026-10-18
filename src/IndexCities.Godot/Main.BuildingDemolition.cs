@@ -56,7 +56,7 @@ public partial class Main
                 ShipmentImpactKind.StaysAtOrigin=>"↩ Remessas ainda não carregadas para este prédio: "+count+" ficam na origem, "+cargo+titular+".",
                 ShipmentImpactKind.OnboardSeeksSameCompany=>"⛟ Carga já embarcada para este prédio: "+count+" caminhão(ões), "+cargo+titular+"; mantém titular e quantidade e busca outro prédio da mesma empresa com espaço e acesso"
                     +(group.Select(s=>s.AlternativeDestination).OfType<string>().Distinct().ToList() is {Count:>0} apt?" (apto agora: "+string.Join(", ",apt)+", sem garantia)":" (nenhum apto agora)")
-                    +"; sem destino viável, aguarda em local seguro com a carga e o caminhão ocupado. Sem reembolso nem frete novo.",
+                    +"; sem destino viável, aguarda em local seguro com a carga e o caminhão ocupado (motorista local desembarca e retoma a rotina). Sem reembolso nem frete novo.",
                 ShipmentImpactKind.OnboardMunicipal=>"⛟ Material municipal já embarcado para este prédio: "+count+" caminhão(ões), "+cargo+"; segue a regra do material municipal (obra ou estoque com espaço, ou espera segura).",
                 _=>"⛟ Carga já embarcada saindo deste prédio: "+count+" caminhão(ões), "+cargo+titular+"; segue no caminhão.",
             };
