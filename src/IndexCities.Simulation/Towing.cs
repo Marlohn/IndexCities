@@ -347,7 +347,9 @@ public sealed partial class CitySimulation
             if(previous is {} p){var step=node.Position-p;var len=step.Distance(default);if(len<.01||(step.X*dir.X+step.Z*dir.Z)/len<.999)return false;}
             previous=node.Position;
         }
-        if(!OppositeLaneClear(v,t,dir,left,end,returnsToLane:false))return false;
+        // Vehicles stopped behind the stranded one cannot come through it: not oncoming.
+        var targetAlong=(t.Position-v.Position).X*dir.X+(t.Position-v.Position).Z*dir.Z;
+        if(!OppositeLaneClear(v,t,dir,left,end,returnsToLane:false,alsoIgnored:o=>o.WaitingSince>0&&o.Detour.Count==0&&((o.Position-v.Position).X*dir.X+(o.Position-v.Position).Z*dir.Z)>targetAlong&&HeldBehindStranded(o)))return false;
         // The pickup pose itself must be free (the queue stands behind it).
         if(State.Vehicles.Any(o=>o.Id!=v.Id&&o.Id!=t.Id&&OccupiesLane(o)&&o.Position.Distance(pose)<3))return false;
         var detour=new List<Point>{v.Position+dir*2+left*OppositeLaneOffset};if(end-4>2)detour.Add(v.Position+dir*(end-4)+left*OppositeLaneOffset);detour.Add(pose);

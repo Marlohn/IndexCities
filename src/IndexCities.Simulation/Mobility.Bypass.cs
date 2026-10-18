@@ -27,11 +27,11 @@ public sealed partial class CitySimulation
     }
     // The opposite lane must stay free for the whole manoeuvre, including an
     // oncoming vehicle covering the distance during it, and the return point too.
-    bool OppositeLaneClear(Vehicle v,Vehicle? ignored,Point dir,Point left,double end,bool returnsToLane=true)
+    bool OppositeLaneClear(Vehicle v,Vehicle? ignored,Point dir,Point left,double end,bool returnsToLane=true,Func<Vehicle,bool>? alsoIgnored=null)
     {
         var duration=end/State.Tuning.VehicleSpeed;
         foreach(var o in State.Vehicles){
-            if(o.Id==v.Id||o.Id==ignored?.Id||!OccupiesLane(o))continue;
+            if(o.Id==v.Id||o.Id==ignored?.Id||!OccupiesLane(o)||alsoIgnored?.Invoke(o)==true)continue;
             var relative=o.Position-v.Position;var along=relative.X*dir.X+relative.Z*dir.Z;var side=relative.X*left.X+relative.Z*left.Z;
             var oncoming=Math.Cos(o.Heading-v.Heading)<-.5&&o.Status==VehicleStatus.Travelling;
             var reach=end+8+(oncoming?Math.Max(State.Tuning.VehicleSpeed,State.Tuning.HighwaySpeed)*duration:0);
