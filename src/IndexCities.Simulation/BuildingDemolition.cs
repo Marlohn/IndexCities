@@ -1,8 +1,18 @@
 namespace IndexCities.Simulation;
 
+// What happens to an existing shipment that touches the demolished building. Mirrors the
+// execution rules: a reservation not yet loaded is lost (origin) or stays at its origin
+// (destination), and cargo already on a truck is never stock lost in the building.
+public enum ShipmentImpactKind {LostReserved,StaysAtOrigin,OnboardStuck,OnboardLeaves}
+public sealed record ShipmentImpact(int ShipmentId,ShipmentImpactKind Kind,string GoodsOwnerAccount,string GoodsOwnerName,Dictionary<ResourceKind,double> Cargo)
+{
+    public double Quantity=>Cargo.Values.Sum();
+}
+
 public sealed record BuildingDemolitionQuote(int BuildingId,bool Allowed,decimal RemovalCost,decimal Compensation,decimal TotalCost,string? OwnerAccount,string OwnerName,List<int> ResidentIds,List<int> WorkerIds,Dictionary<ResourceKind,double> Stock,double OperationalCapacity,bool WaitsForResidents,string Message)
 {
     public List<int> FamilyIds {get;init;}=[];
+    public List<ShipmentImpact> Shipments {get;init;}=[];
 }
 
 public sealed partial class CitySimulation
@@ -26,9 +36,24 @@ public sealed partial class CitySimulation
         var removalCost=Money(Math.Max(0,State.Tuning.RoadDemolitionCostPerSquareMetre)*(decimal)(building.Definition.Width*building.Definition.Depth));
         var totalCost=Money(removalCost+compensation);
         var quote=new BuildingDemolitionQuote(buildingId,true,removalCost,compensation,totalCost,ownerAccount,ownerName,residents,workers,stock,building.OperationalCapacity,residents.Count>0,Describe(building,removalCost,compensation,totalCost,ownerName,residents,workers,stock)){FamilyIds=families.Where(f=>f.Members.Any(residents.Contains)).Select(f=>f.Id).ToList()};
+        quote=quote with{Shipments=ShipmentImpacts(building)};
         // A real owner whose wallet cannot receive the money blocks the whole order: nothing is charged or removed.
         if(compensation>0&&!State.Wallets.ContainsKey(ownerAccount!))return quote with{Allowed=false,Message="Conta do titular "+ownerName+" indisponível para receber a indenização; nada será cobrado nem removido"};
         return totalCost>Available?quote with{Allowed=false,Message="Caixa livre insuficiente para a demolição: total "+Cash(totalCost)+" e disponível "+Cash(Available)}:quote;
+    }
+    List<ShipmentImpact> ShipmentImpacts(Building building)=>State.Shipments.Where(s=>!s.Complete&&(s.SourceBuildingId==building.Id||s.DestinationBuildingId==building.Id))
+        .Select(s=>ShipmentImpactOf(s,building)).OfType<ShipmentImpact>().OrderBy(s=>s.ShipmentId).ToList();
+    ShipmentImpact? ShipmentImpactOf(Shipment s,Building building)
+    {
+        var outbound=s.SourceBuildingId==building.Id;var inbound=s.DestinationBuildingId==building.Id;
+        ShipmentImpactKind? kind=outbound&&!s.PickedUp?ShipmentImpactKind.LostReserved
+            :inbound&&!s.PickedUp&&s.ProjectId==null?ShipmentImpactKind.StaysAtOrigin
+            :inbound&&s.PickedUp&&s.ProjectId==null?ShipmentImpactKind.OnboardStuck
+            :outbound&&s.PickedUp?ShipmentImpactKind.OnboardLeaves
+            :null;
+        if(kind is not {} impact)return null;
+        var owner=s.GoodsOwnerAccount??"";
+        return new ShipmentImpact(s.Id,impact,owner,ReadableOwnerName(owner),new Dictionary<ResourceKind,double>(s.Cargo));
     }
     static BuildingDemolitionQuote Reject(int buildingId,string message)=>new(buildingId,false,0,0,0,null,"",[],[],new(),0,false,message);
     bool HasRealEconomicOwner(string? account)=>account switch

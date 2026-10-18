@@ -32,8 +32,15 @@ public sealed partial class CitySimulation
     // Stock tolerates the small continuous drift of production and sales.
     static bool SameDemolitionImpact(BuildingDemolitionQuote a,BuildingDemolitionQuote b)=>a.BuildingId==b.BuildingId&&a.RemovalCost==b.RemovalCost&&a.Compensation==b.Compensation&&a.TotalCost==b.TotalCost&&a.OwnerAccount==b.OwnerAccount&&a.WaitsForResidents==b.WaitsForResidents
         &&a.ResidentIds.Order().SequenceEqual(b.ResidentIds.Order())&&a.WorkerIds.Order().SequenceEqual(b.WorkerIds.Order())
-        &&a.Stock.Count==b.Stock.Count&&a.Stock.All(entry=>b.Stock.TryGetValue(entry.Key,out var other)&&Math.Abs(entry.Value-other)<=Math.Max(1,entry.Value*.05));
-    public List<Family> VacatingFamilies(Building building)=>State.Families.Where(f=>f.HomeId==building.Id).ToList();
+        &&a.Stock.Count==b.Stock.Count&&a.Stock.All(entry=>b.Stock.TryGetValue(entry.Key,out var other)&&Math.Abs(entry.Value-other)<=Math.Max(1,entry.Value*.05))
+        &&SameShipments(a.Shipments,b.Shipments);
+    // A shipment that is loaded, picked up or redirected since the preview is a material change.
+    static bool SameShipments(List<ShipmentImpact> a,List<ShipmentImpact> b)=>a.Count==b.Count&&a.Zip(b).All(pair=>pair.First.ShipmentId==pair.Second.ShipmentId&&pair.First.Kind==pair.Second.Kind&&pair.First.GoodsOwnerAccount==pair.Second.GoodsOwnerAccount&&Math.Abs(pair.First.Quantity-pair.Second.Quantity)<=.000001);
+    // Families still linked to the building by HomeId. Only those with a living member
+    // still in the city must vacate; a link left by a family already gone is stale.
+    List<Family> LinkedFamilies(Building building)=>State.Families.Where(f=>f.HomeId==building.Id).ToList();
+    List<Citizen> ResidentMembers(Family family)=>State.Citizens.Where(c=>family.Members.Contains(c.Id)&&c.Alive&&c.Resident).ToList();
+    public List<Family> VacatingFamilies(Building building)=>LinkedFamilies(building).Where(f=>ResidentMembers(f).Count>0).ToList();
     void ProgressBuildingDemolitions(bool searchHomes)
     {
         foreach(var building in State.Buildings.Where(b=>b.Demolition!=null&&!b.Removed).ToList()){if(searchHomes)SeekHomesForDisplaced(building);ProgressBuildingDemolition(building);}
@@ -45,9 +52,11 @@ public sealed partial class CitySimulation
             var hours=(order.DeadlineSeconds-State.ElapsedSeconds)/3600;
             building.Cause="Demolição confirmada"+(order.CompensationPaid>0?", indenização paga":"")+": "+families.Count+" família(s) procurando outra casa; prazo "+hours.ToString("0.#",System.Globalization.CultureInfo.InvariantCulture)+" h";return;
         }
-        foreach(var family in families){
+        foreach(var family in LinkedFamilies(building)){
+            // Only residents still in the city lose a home; a stale link is cleared silently,
+            // with no money, person or physical trip touched.
+            foreach(var c in ResidentMembers(family))Personal(c,"Perdeu a moradia: o prazo da desocupação assistida terminou sem outra casa compatível");
             family.HomeId=null;
-            foreach(var c in State.Citizens.Where(c=>c.FamilyId==family.Id&&c.Alive&&c.Resident))Personal(c,"Perdeu a moradia: o prazo da desocupação assistida terminou sem outra casa compatível");
         }
         RemoveDemolishedBuilding(building,families.Count);
     }

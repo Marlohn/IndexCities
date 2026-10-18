@@ -129,6 +129,32 @@ public partial class Main
             RefreshHud(); await RecoveryFrame();
             await RecoveryCaptureOnce("building-demolition-family-moved", GetViewport());
 
+            // Remessas afetadas na prévia: loja com carga reservada, carga não carregada para ela e carga já embarcada.
+            _sim.State.Companies.Add(new Company { Id = 901, Name = "Campo 901" }); _sim.State.Wallets["company:901"] = 0;
+            var shop = new Building { Id = _sim.State.NextId++, Kind = BuildingKind.Grocery, Position = new(40, 14), Completed = true };
+            shop.Stock[ResourceKind.Food] = 9;
+            _sim.State.Buildings.Add(shop);
+            var waiting = new Shipment { Id = _sim.State.NextId++, Purpose = ShipmentPurpose.Food, DestinationBuildingId = shop.Id, VehicleId = -1, GoodsOwnerAccount = "company:901", Cargo = new() { { ResourceKind.Food, 20 } } };
+            var reserved = new Shipment { Id = _sim.State.NextId++, Purpose = ShipmentPurpose.Food, SourceBuildingId = shop.Id, VehicleId = -1, GoodsOwnerAccount = "company:901", Cargo = new() { { ResourceKind.Food, 4 } } };
+            var onboard = new Shipment { Id = _sim.State.NextId++, Purpose = ShipmentPurpose.Food, DestinationBuildingId = shop.Id, PickedUp = true, VehicleId = _sim.State.NextId, GoodsOwnerAccount = "company:901", Cargo = new() { { ResourceKind.Food, 16 } } };
+            var carrier = new Vehicle { Id = onboard.VehicleId, OwnerAccount = "company:901", Position = new(40, 20), Status = VehicleStatus.Travelling, Fuel = 40, ShipmentId = onboard.Id };
+            carrier.Cargo[ResourceKind.Food] = 16;
+            _sim.State.Vehicles.Add(carrier); _sim.State.Shipments.Add(waiting); _sim.State.Shipments.Add(reserved); _sim.State.Shipments.Add(onboard);
+            var beforeShipments = _sim.SaveToJson();
+            ShowBuildingDemolition(shop.Id); await RecoveryFrame(); await RecoveryFrame();
+            var shipmentTexts = RecoveryNodes<Label>(_modal!).Select(label => label.Text).ToArray();
+            bool Shows(string fragment) => shipmentTexts.Any(text => text.Contains(fragment, StringComparison.Ordinal));
+            Require(Shows("Remessas ainda não carregadas para este prédio: 1 ficam na origem"), "Prévia mostra a remessa não carregada que fica na origem");
+            Require(Shows("Remessas de saída ainda não carregadas: 1 cancelada(s)"), "Prévia mostra a remessa de saída que é cancelada");
+            Require(Shows("Carga já embarcada para este prédio: 1 caminhão(ões)"), "Prévia distingue carga já embarcada");
+            Require(Shows("sem pagamento nem frete novo"), "Prévia não cobra frete nem paga carga embarcada");
+            Require(Shows("Estoque perdido na retirada: " + ResourceName(ResourceKind.Food) + " " + (9.0).ToString("N1")), "Estoque perdido não inclui carga embarcada");
+            Require(_sim.SaveToJson() == beforeShipments, "Abrir a prévia com remessas não altera a cidade");
+            await RecoveryCaptureOnce("building-demolition-shipments-preview", _modal!);
+            RecoveryNodes<Button>(_modal!).Single(b => b.Text == "× Cancelar").EmitSignal(Godot.Button.SignalName.Pressed);
+            await RecoveryFrame();
+            Require(_modal == null && _sim.SaveToJson() == beforeShipments, "Cancelar a prévia com remessas não muda carga, titular nem dinheiro");
+
             _sim.CheckInvariants();
             System.IO.File.WriteAllText(System.IO.Path.Combine(directory, "building-demolition-final.json"), _sim.SaveToJson());
             GD.Print("INDEXCITIES_BUILDING_DEMOLITION_OK compensation=" + Cash(changed.Compensation) + " removal=" + Cash(changed.RemovalCost) + " stale-revalidated=true cancel=no-change deadline-homeless=true moved-before-deadline=true directory=" + directory);

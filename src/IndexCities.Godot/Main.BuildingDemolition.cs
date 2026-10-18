@@ -35,12 +35,30 @@ public partial class Main
             homes.TooltipText="Moradores: "+string.Join(", ",quote.ResidentIds.Select(id=>s.Citizens.First(c=>c.Id==id).Name));homes.MouseFilter=Control.MouseFilterEnum.Stop;
             Text(effects,"A família procura casa existente à venda que consiga pagar com o próprio dinheiro. Não há casa garantida: ao fim do prazo, quem não se mudou fica sem moradia.",14);
         }else Text(effects,"Retirada imediata após confirmar.",16);
+        ShipmentLines(effects,quote);
         if(quote.WorkerIds.Count>0)Text(effects,"⚒ "+quote.WorkerIds.Count+" emprego(s) encerrado(s) na retirada; salários devidos são pagos ou ficam como dívida do empregador.",14);
         if(quote.Stock.Count>0)Text(effects,"▣ Estoque perdido na retirada: "+string.Join(" • ",quote.Stock.Select(k=>ResourceName(k.Key)+" "+k.Value.ToString("N1"))),14);
         if(!building.Definition.Private&&building.Definition.Capacity>0)Text(effects,"⚠ Capacidade de serviço perdida: "+quote.OperationalCapacity.ToString("N1")+" atual",14);
         Text(effects,"Sem reembolso de obra ou materiais; sem promessa de nova moradia ou de continuidade da empresa.",14);
         if(!quote.Allowed)Text(box,"⚠ "+quote.Message+(quote.TotalCost>_sim.Available?" — falta "+Cash(quote.TotalCost-_sim.Available):""),16);
         var row=ModalActions();var confirm=Button(row,"✓ Confirmar demolição",()=>ConfirmBuildingDemolition(buildingId,quote,box));confirm.Disabled=!quote.Allowed;Button(row,"× Cancelar",CloseModal);
+    }
+    // Remessas afetadas, agrupadas por consequência real. Cargas já embarcadas não são estoque perdido.
+    void ShipmentLines(Node parent,BuildingDemolitionQuote quote)
+    {
+        foreach(var group in quote.Shipments.GroupBy(s=>s.Kind)){
+            var count=group.Count();
+            var cargo=string.Join(" • ",group.SelectMany(s=>s.Cargo).GroupBy(entry=>entry.Key).Select(entry=>ResourceName(entry.Key)+" "+entry.Sum(item=>item.Value).ToString("N1")));
+            var owners=string.Join(", ",group.Select(s=>s.GoodsOwnerName).Where(name=>name.Length>0).Distinct());
+            var titular=owners.Length>0?" (titular "+owners+")":"";
+            var line=group.Key switch{
+                ShipmentImpactKind.LostReserved=>"▣ Remessas de saída ainda não carregadas: "+count+" cancelada(s); "+cargo+" reservado(s) no prédio perde-se"+titular+".",
+                ShipmentImpactKind.StaysAtOrigin=>"↩ Remessas ainda não carregadas para este prédio: "+count+" ficam na origem, "+cargo+titular+".",
+                ShipmentImpactKind.OnboardStuck=>"⛟ Carga já embarcada para este prédio: "+count+" caminhão(ões), "+cargo+titular+"; fica no caminhão sem destino disponível, sem pagamento nem frete novo.",
+                _=>"⛟ Carga já embarcada saindo deste prédio: "+count+" caminhão(ões), "+cargo+titular+"; segue no caminhão.",
+            };
+            Text(parent,line,14);
+        }
     }
     void ConfirmBuildingDemolition(int buildingId,BuildingDemolitionQuote displayed,Node feedback)
     {
