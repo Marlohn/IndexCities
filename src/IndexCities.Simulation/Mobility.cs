@@ -275,11 +275,11 @@ public sealed partial class CitySimulation
                 var step=Math.Min(d,Math.Min(speed*remaining,Math.Max(0,leaderDistance-8)));
                 var free=step;step=SafeSiteTravel(v,target,step,true);
                 if(node.Neighbours.Count<3&&!node.Crosswalk)step=ClearOfCrossingAhead(v,target,step);
-                var steer=step<.00001&&free>.00001?TurnClearance(v,approachHeading,free):null;
+                var steer=step<.00001&&free>.00001?TurnClearance(v,approachHeading,free,access):null;
                 if(steer is {} bend){v.Heading=bend.Heading;target=bend.To;step=bend.Distance;}
                 // Like a machine, a blocked vehicle keeps its verified pose rather
-                // than turning in place into a parked machine's body.
-                if(step<.00001&&d>.00001&&State.Vehicles.Any(o=>o.Id!=v.Id&&o.Machine!=PavingMachine.None&&o.Status==VehicleStatus.Parked&&o.Position.Distance(v.Position)<12&&VehicleBodiesOverlap(v,v.Position,o)))v.Heading=approachHeading;
+                // than turning in place into a parked machine's or site truck's body.
+                if(step<.00001&&d>.00001&&State.Vehicles.Any(o=>o.Id!=v.Id&&StreetBody(o)&&o.Position.Distance(v.Position)<12&&VehicleBodiesOverlap(v,v.Position,o)))v.Heading=approachHeading;
                 if(step<.00001&&d>.00001){v.Cause=blocker?.Status==VehicleStatus.Stranded?$"Aguardando veículo {blocker.Id} sem combustível na via":enteringLane?"Aguardando espaço para acessar a faixa":"Fila na faixa";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;if(v.TowPhase==TowPhase.ToVehicle&&(TryTowContraflow(v)||TryTowFromBehind(v)))continue;if(!enteringLane&&blocker!=null&&blocker.Id!=v.TowTargetId&&TryBypassStopped(v,blocker))continue;if(blocker!=null&&TowExitHolds(blocker)&&TryUTurn(v,blocker))continue;
                     // A tow held for minutes turns back and goes around the stranded vehicles
                     // and the junctions they lock, instead of waiting in the queue.

@@ -15,6 +15,10 @@ public sealed partial class CitySimulation
     // The asphalt truck unloading at the receiving paver's bay occupies the street
     // with its present body only; its future path is not held.
     bool UnloadingAsphaltBody(Vehicle v)=>v.Machine==PavingMachine.None&&v.Status==VehicleStatus.Unloading&&v.ShipmentId is {} id&&State.Shipments.Any(s=>s.Id==id&&s.ReceivingMachineId!=null);
+    // Bodies lane traffic never drives or turns into: a parked machine, an
+    // asphalt truck on its site path (also where its hold stops at a body
+    // already on it, or at its lane end) or one unloading at the paver bay.
+    bool StreetBody(Vehicle o)=>o.Machine!=PavingMachine.None&&o.Status==VehicleStatus.Parked||OnSitePath(o)||UnloadingAsphaltBody(o);
 
     bool LaneEnd(Vehicle v,out Point at,out double heading)
     {
