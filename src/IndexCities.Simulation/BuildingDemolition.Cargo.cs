@@ -52,6 +52,7 @@ public sealed partial class CitySimulation
         if(access==null){HoldCargoInPlace(v,s,removed,waiting+"; o terreno ficou sem via de acesso, posição mantida com o motorista");return;}
         var spot=DockAt(access,removed,false);
         if(v.Position.Distance(spot)<.1){
+            if(HeldCargoBayBlocked(v,spot))return;
             v.HoldingPosition=spot;v.DockPosition=spot;v.Route.Clear();v.RouteIndex=0;v.Status=VehicleStatus.Parked;v.LoadTimer=0;v.Cause=waiting+"; estacionada junto ao terreno, fora das faixas";
             if(State.Citizens.FirstOrDefault(c=>c.Id==v.DriverId&&c.VehicleId==v.Id) is {} driver){Personal(driver,"Desembarcou: caminhão com carga de "+ReadableOwnerName(s.GoodsOwnerAccount)+" aguarda destino junto ao terreno demolido");driver.NextDecisionAt=State.ElapsedSeconds;}
             ReleaseDriver(v);return;
@@ -63,6 +64,23 @@ public sealed partial class CitySimulation
         if(route.Count==0)route=[access.Id];
         if(v.Fuel<(RouteLength(route)+v.Position.Distance(spot))*FuelRate(v)){HoldCargoInPlace(v,s,removed,waiting+"; combustível insuficiente para estacionar com segurança, posição mantida com o motorista");return;}
         v.HoldingPosition=spot;v.Route=route;v.RouteIndex=0;v.DockPosition=spot;v.Status=VehicleStatus.Travelling;v.Cause=waiting+"; seguindo ao terreno para estacionar";
+    }
+    // The safe bay must hold the truck's real body and be reached without crossing another
+    // vehicle. Checked at every docking step (Mobility) for a local truck whose cargo
+    // destination was demolished: the body is swept from where it stands to the bay; a
+    // blocked bay keeps the truck where it is, with driver and cargo, until the other
+    // vehicle really leaves.
+    bool HeldCargoBayBlocked(Vehicle v,Point bay)
+    {
+        if(v.External||v.ShipmentId is not {} id||State.Shipments.FirstOrDefault(s=>s.Id==id) is not {} s||!AwaitsRemovedDestination(s)||!PrivateCargo(s))return false;
+        var length=v.Position.Distance(bay);
+        for(var along=Math.Min(.25,length);;along=Math.Min(length,along+.25)){
+            var at=v.Position.MoveTowards(bay,along);
+            if(State.Vehicles.Any(o=>o.Id!=v.Id&&o.Status!=VehicleStatus.Outside&&o.Position.Distance(at)<12&&VehicleBodiesOverlap(v,at,o))){
+                v.Cause=CargoWaiting(s,RemovedBuilding(s.DestinationBuildingId)!)+"; espaço de espera junto ao terreno ocupado por outro veículo, aguardando com o motorista";return true;
+            }
+            if(along>=length)return false;
+        }
     }
     // Resuming a parked local truck needs an apt destination and a real driver: a worker of
     // the truck's company on shift at the workplace walks to the truck and boards; only then
@@ -130,5 +148,8 @@ public sealed partial class CitySimulation
             if(v.Status==VehicleStatus.Parked){if(v.DriverId==null)CallDriverForHeldCargo(v,s,RemovedBuilding(s.DestinationBuildingId)!);}
             else HandleRemovedCargoDestination(v,s);
         }
+        // A local truck held at the end of its route by an occupied bay may also find a destination.
+        foreach(var v in State.Vehicles.Where(v=>!v.External&&v.Status==VehicleStatus.Travelling&&v.RouteIndex>=v.Route.Count&&v.ShipmentId!=null).ToList())
+            if(State.Shipments.FirstOrDefault(s=>s.Id==v.ShipmentId) is {} s&&AwaitsRemovedDestination(s))TryRedirectPrivateCargo(v,s,RemovedBuilding(s.DestinationBuildingId)!);
     }
 }
