@@ -1,28 +1,28 @@
-FIXTURE grid rows=3 length=400 H=408 houses=72 workplaces=20 intakes=2 roadNodes=399 jobs=110 placeFails=0 signals=True build=0,5s .NET=8.0.32 cpu=12 release=True
-WARMUP 2d wall=27,7s pop=107 alive=107 dead=0 employed=107 moving=0 vehicles=82 travelling=0 ledger=926 history=2482
-DAY 1 wall=13,95s eff=6192x pop=107 alive=107 dead=0 employed=107 moving=0 vehicles=82 travelling=0 ledger=1210 history=3389
+FIXTURE grid rows=3 length=400 H=408 houses=72 workplaces=20 intakes=2 roadNodes=399 jobs=110 placeFails=0 signals=True build=0,6s .NET=8.0.32 cpu=12 release=True
+WARMUP 2d wall=28,6s pop=107 alive=107 dead=0 employed=107 moving=0 vehicles=82 travelling=0 ledger=926 history=2482
+DAY 1 wall=13,31s eff=6491x pop=107 alive=107 dead=0 employed=107 moving=0 vehicles=82 travelling=0 ledger=1210 history=3389
 STUCK day=1 2026-01-04 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
-DAY 2 wall=12,38s eff=6980x pop=107 alive=107 dead=0 employed=107 moving=0 vehicles=82 travelling=0 ledger=1528 history=4410
+DAY 2 wall=12,32s eff=7014x pop=107 alive=107 dead=0 employed=107 moving=0 vehicles=82 travelling=0 ledger=1528 history=4410
 STUCK day=2 2026-01-05 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
-DAY 3 wall=11,97s eff=7220x pop=107 alive=107 dead=0 employed=107 moving=0 vehicles=82 travelling=0 ledger=1825 history=5382
+DAY 3 wall=12,13s eff=7120x pop=107 alive=107 dead=0 employed=107 moving=0 vehicles=82 travelling=0 ledger=1825 history=5382
 STUCK day=3 2026-01-06 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
-DAY 4 wall=11,82s eff=7313x pop=107 alive=107 dead=0 employed=107 moving=0 vehicles=82 travelling=0 ledger=2112 history=6333
+DAY 4 wall=12,19s eff=7085x pop=107 alive=107 dead=0 employed=107 moving=0 vehicles=82 travelling=0 ledger=2112 history=6333
 STUCK day=4 2026-01-07 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
-DAY 5 wall=11,93s eff=7242x pop=107 alive=107 dead=0 employed=107 moving=0 vehicles=82 travelling=0 ledger=2410 history=7294
+DAY 5 wall=12,03s eff=7183x pop=107 alive=107 dead=0 employed=107 moving=0 vehicles=82 travelling=0 ledger=2410 history=7294
 STUCK day=5 2026-01-08 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
-DAY 6 wall=13,99s eff=6178x pop=107 alive=107 dead=0 employed=107 moving=0 vehicles=82 travelling=0 ledger=3227 history=8349
+DAY 6 wall=13,77s eff=6273x pop=107 alive=107 dead=0 employed=107 moving=0 vehicles=82 travelling=0 ledger=3227 history=8349
 STUCK day=6 2026-01-09 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
-DAY 7 wall=10,92s eff=7916x pop=107 alive=107 dead=0 employed=107 moving=0 vehicles=82 travelling=0 ledger=3499 history=9249
+DAY 7 wall=10,98s eff=7870x pop=107 alive=107 dead=0 employed=107 moving=0 vehicles=82 travelling=0 ledger=3499 history=9249
 STUCK day=7 2026-01-10 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
-DAY 8 wall=10,94s eff=7896x pop=107 alive=107 dead=0 employed=107 moving=0 vehicles=82 travelling=0 ledger=3815 history=10230
+DAY 8 wall=11,05s eff=7822x pop=107 alive=107 dead=0 employed=107 moving=0 vehicles=82 travelling=0 ledger=3815 history=10230
 STUCK day=8 2026-01-11 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
-DAY 9 wall=10,66s eff=8106x pop=107 alive=107 dead=0 employed=107 moving=0 vehicles=82 travelling=0 ledger=4129 history=11217
+DAY 9 wall=11,02s eff=7843x pop=107 alive=107 dead=0 employed=107 moving=0 vehicles=82 travelling=0 ledger=4129 history=11217
 STUCK day=9 2026-01-12 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
-DAY 10 wall=10,68s eff=8092x pop=107 alive=107 dead=0 employed=107 moving=0 vehicles=82 travelling=0 ledger=4403 history=12111
+DAY 10 wall=10,92s eff=7912x pop=107 alive=107 dead=0 employed=107 moving=0 vehicles=82 travelling=0 ledger=4403 history=12111
 STUCK day=10 2026-01-13 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
-DAY 11 wall=10,57s eff=8174x pop=107 alive=107 dead=0 employed=107 moving=0 vehicles=82 travelling=0 ledger=4716 history=13119
+DAY 11 wall=10,87s eff=7949x pop=107 alive=107 dead=0 employed=107 moving=0 vehicles=82 travelling=0 ledger=4716 history=13119
 STUCK day=11 2026-01-14 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
-SUMMARY days=11 perDay=11,80s eff=7322x hours80y=96 gen0=2527 gen2=2 allocMB/day=1441 workingSetMB=59
+SUMMARY days=11 perDay=11,87s eff=7278x hours80y=96 gen0=2527 gen2=2 allocMB/day=1441 workingSetMB=60
 STUCK SUMMARY guinchos chamados=0 rebocando agora=0 sem combustível na via (total)=0 parados≥30min (máx)=0 mortos=0
-SAVE 2,6MB save=0,48s load=0,29s sha256=00ABCF684E37B75B
+SAVE 2,6MB save=0,52s load=0,29s sha256=00ABCF684E37B75B
 INVARIANTS OK

@@ -75,7 +75,9 @@ public sealed partial class CitySimulation
         // It swings into the lane beside it 2 m ahead, or straight across when the
         // stopped vehicle is that close (one stopped inside the junction it waits at).
         Point Turn(double ahead)=>v.Position+dir*ahead+left*OppositeLaneOffset;
-        bool Hits(Point at)=>blocker!=null&&(at-v.Position) is var to&&BodiesOverlap(v,at,Math.Atan2(to.X,to.Z),blocker,blocker.Position,blocker.Heading);
+        // Against the stopped vehicle and anyone else standing there (including those
+        // held beyond it, exempt from the oncoming check below).
+        bool Hits(Point at)=>(at-v.Position) is var to&&State.Vehicles.Any(o=>o.Id!=v.Id&&(o.Id==blocker?.Id||OccupiesLane(o))&&o.Position.Distance(at)<12&&BodiesOverlap(v,at,Math.Atan2(to.X,to.Z),o,o.Position,o.Heading));
         var turn=Turn(2);if(Hits(turn))turn=Turn(0);
         if(Hits(turn)){v.Cause="Rua bloqueada por veículo parado; sem espaço para meia-volta";return false;}
         var alternative=FindRoadRoute(behind,v.Route[^1],false,avoid);

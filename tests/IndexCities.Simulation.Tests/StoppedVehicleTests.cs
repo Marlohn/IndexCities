@@ -101,6 +101,21 @@ public sealed class StoppedVehicleTests
         Assert.True(waiter.Position.Distance(sim.State.Roads.Single(r=>r.Id==940).Position)<6||waiter.Status==VehicleStatus.Parked||waiter.RouteIndex>=waiter.Route.Count,waiter.Cause+" "+waiter.Position);
         Assert.Equal(new Point(4,38.35),stopped.Position);sim.CheckInvariants();
     }
+    [Fact] public void Behind_a_vehicle_stopped_in_a_junction_one_waiting_at_its_far_mouth_is_not_oncoming_traffic()
+    {
+        // The stopped car holds the junction (4,40). Beyond it a westbound car waits at
+        // the junction for the dead-end side street (no other route): it cannot come
+        // through, so the car right behind the stopped one still turns back.
+        var (street,_,_,_)=Street(junctionAtStop:true);var sim=Ring(street);
+        var cars=sim.State.Vehicles.OrderBy(v=>v.Id).Take(3).ToArray();var stopped=cars[0];var follower=cars[1];var beyond=cars[2];
+        stopped.PassengerCar=follower.PassengerCar=beyond.PassengerCar=true;stopped.Position=new(4,38.35);stopped.RouteIndex=17;stopped.IntersectionClaim=1004;
+        follower.Position=new(-4,38.35);follower.Route=follower.Route.Take(28).ToList();follower.RouteIndex=15;
+        beyond.Position=new(10,41.65);beyond.Heading=-Math.PI/2;beyond.Status=VehicleStatus.Travelling;beyond.Fuel=40;beyond.Route=[1016,1012,1008,1004,5000,5001];beyond.RouteIndex=2;
+        double? turnedAt=null;
+        for(var i=0;i<400&&turnedAt==null;i++){sim.Advance(1);if(follower.Route.Any(id=>id is >=1940 and <=2060))turnedAt=sim.State.ElapsedSeconds;}
+        Assert.True(turnedAt!=null,$"{follower.Position} {follower.Cause} | {beyond.Position} {beyond.Cause}");Assert.InRange(turnedAt!.Value,sim.State.Tuning.UTurnWaitSeconds,sim.State.Tuning.UTurnWaitSeconds+30);
+        Assert.True(beyond.Position.X>4,beyond.Position.ToString());Assert.Equal(new Point(4,38.35),stopped.Position);sim.CheckInvariants();
+    }
     [Fact] public void A_bypass_is_dropped_when_the_vehicle_stops_and_survives_a_replanned_route()
     {
         var (sim,_,follower,_)=Street();
