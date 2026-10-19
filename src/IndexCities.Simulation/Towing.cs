@@ -58,7 +58,7 @@ public sealed partial class CitySimulation
         for(var i=Math.Max(t.RouteIndex,0);i<t.Route.Count;i++){
             if(!_roads.TryGetValue(t.Route[i],out var n))break;
             var previous=i>0&&_roads.TryGetValue(t.Route[i-1],out var p)?p.Position:t.Position;var axis=n.Position-previous;var length=axis.Distance(default);
-            points.Add(length>.01?n.Position+new Point(axis.Z/length*1.65,-axis.X/length*1.65):n.Position);
+            points.Add(length>.01?n.Position+new Point(axis.Z/length*1.65,-axis.X/length*1.65)+InnerCornerOffset(t.Route,i,n,axis,length):n.Position);
         }
         var left=gap;pose=t.Position+Forward(t.Heading)*gap;
         for(var i=1;i<points.Count;i++){var d=points[i-1].Distance(points[i]);if(d>=left){pose=points[i-1].MoveTowards(points[i],left);break;}left-=d;if(i==points.Count-1){var dir=d>.01?(points[i]-points[i-1])*(1/d):Forward(t.Heading);pose=points[i]+dir*left;}}
