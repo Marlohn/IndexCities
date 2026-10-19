@@ -111,7 +111,7 @@ Adicionar entradas com numeração única e crescente; não reutilizar identific
 
 - **IA-024 — Referência frontal azul: RETIRADA pelo responsável em 2026-10-15.** Remover a faixa azul “Rua aqui” e seu encaixe específico. A prévia normal da ferramenta continua mostrando a área que será efetivamente encomendada; não substituir a correção geral de posicionamento por essa referência.
 
-- **IA-025 — Identificação do titular na inspeção do veículo:** apresentar a carteira proprietária já exibida sob o rótulo “Titular do veículo”, em vez de “Titular”. A causa da entrega continua identificando o titular da carga quando pertinente. Não muda propriedade, pagamento, carga, campos, ações ou regras. Justificativa: evitar confundir o dono do caminhão com o comprador dos alimentos; esclarecimento textual local, reversível e de baixo impacto sobre um dado existente. Origem: IA; status: **PENDENTE DE REVISÃO HUMANA**.
+- **IA-028 — Identificação do titular na inspeção do veículo:** apresentar a carteira proprietária já exibida sob o rótulo “Titular do veículo”, em vez de “Titular”. A causa da entrega continua identificando o titular da carga quando pertinente. Não muda propriedade, pagamento, carga, campos, ações ou regras. Justificativa: evitar confundir o dono do caminhão com o comprador dos alimentos; esclarecimento textual local, reversível e de baixo impacto sobre um dado existente. Origem: IA; status: **PENDENTE DE REVISÃO HUMANA**.
 
 ## Sistemas — regras por arquivo
 
