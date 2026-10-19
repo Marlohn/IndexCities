@@ -107,11 +107,11 @@ public sealed partial class CitySimulation
         }
         if(best!=null)return best;
         if(Crewed(t)){var exit=TowRoute(start.Id,entry.Id,closed,strict);return exit.Count>0&&Fits(exit,0)?new(TowDestination.Exterior,null,State.Entry,exit,0):null;}
-        var slot=HoldingSlot(t);if(slot.Road==null)return null;var toSlot=TowRoute(start.Id,slot.Road.Id,closed,strict);if(toSlot.Count==0)return null;
+        var slot=TowHoldingSlot(t);if(slot.Road==null)return null;var toSlot=TowRoute(start.Id,slot.Road.Id,closed,strict);if(toSlot.Count==0)return null;
         var leave=RouteLength(FindRoadRoute(slot.Road.Id,entry.Id));return Fits(toSlot,leave)?new(TowDestination.Holding,null,slot.Position,toSlot,leave):null;
     }
     // Same physical waiting spaces beside the highway as preserved municipal cargo.
-    (RoadNode? Road,Point Position) HoldingSlot(Vehicle vehicle)
+    (RoadNode? Road,Point Position) TowHoldingSlot(Vehicle vehicle)
     {
         var candidates=State.Roads.Where(r=>r.Highway).OrderBy(r=>r.Position.Distance(State.Entry)).Where((road,index)=>index>=2&&index%2==0).Select(road=>(Road:(RoadNode?)road,Position:road.Position+new Point(0,-State.Tuning.RoadWidth/2-1.5)));
         return candidates.FirstOrDefault(candidate=>State.Buildings.All(b=>b.Removed||!Inside(b,candidate.Position,4))&&State.Vehicles.All(other=>other.Id==vehicle.Id||other.HoldingPosition is not {} reserved||reserved.Distance(candidate.Position)>=8));
