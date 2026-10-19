@@ -58,6 +58,7 @@ public partial class Main
         new("--traffic-recovery-smoke",new[]{"--traffic-recovery-smoke"},"Caminhões saem da paralisação e a oferta é preservada",true,"cidade-checkpoint via --fixture= com caminhões externos ativos",nameof(TrafficRecoverySmoke)),
         new("--smoke",new[]{"--smoke"},"Invariantes e sincronização do mundo numa cidade vazia",false,"nenhuma (cria a cidade)",nameof(Smoke)),
         new("--municipal-relocation-smoke",new[]{"--municipal-relocation-smoke"},"Mover sede/prédio municipal pela inspeção: destino com o mouse, orçamento, cancelar sem mutação, revalidação, obra física, save/load em transição e no prazo de recuperação, Prefeitura única com gestão liberada, Pátio operando durante a obra, estoque por caminhão e perda residual por falta de espaço",true,"nenhuma (cria a cidade; estoque inicial e excesso de estoque do Pátio injetados como fixtures; saves isolados em artifacts/verification/municipal-relocation)",nameof(MunicipalRelocationSmoke)),
+        new("--tow-smoke",new[]{"--tow-smoke"},"Guincho: carro e caminhão sem combustível na via, chegada pela frente, plataforma (CarryAnchor) e guincho pesado (LiftAnchor), entrega no posto, fila desfeita e save/load no meio do reboque",true,"nenhuma (cria a cidade)",nameof(TowSmoke)),
         new("--neighbourhood-smoke",new[]{"--neighbourhood-smoke"},"Continuidade de ruas, conexões e obra dependente",true,"nenhuma (cria a cidade)",nameof(NeighbourhoodSmoke)),
     };
 

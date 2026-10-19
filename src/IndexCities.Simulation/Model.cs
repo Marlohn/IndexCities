@@ -14,9 +14,12 @@ public enum BuildingKind { CityHall, WorksDepot, House, Grocery, Farm, FuelStati
 public enum ResourceKind { Aggregate, Concrete, Steel, Wood, Asphalt, Food, Fuel }
 public enum WorkStatus { Waiting, InProgress, Completed, Cancelled }
 public enum JourneyPurpose { Arriving, Work, Home, Shopping, Leaving, Construction, Boarding, Visit, Stroll }
-public enum VehicleStatus { Outside, Travelling, Unloading, Parked, Waiting, Stranded }
+public enum VehicleStatus { Outside, Travelling, Unloading, Parked, Waiting, Stranded, Towed }
 public enum ShipmentPurpose { Construction, Food, Fuel, Vehicle, Maintenance }
-public enum TruckBody { Cargo, Dump, Mixer, Flatbed }
+public enum TruckBody { Cargo, Dump, Mixer, Flatbed, Tow, TowHeavy }
+// Tow service from the exterior (SPEC transporte-circulacao, Socorro a veículos parados).
+public enum TowPhase { None, ToVehicle, Loading, Delivering, Unloading }
+public enum TowDestination { Station, Exterior, Holding }
 public enum PavingMachine { None, Paver, Roller }
 public enum MachinePhase { Available, ToSite, OnSite, LeavingSite, Returning }
 public enum JunctionControl { RightHand, ThroughX, ThroughZ, Signal }
@@ -96,6 +99,11 @@ public sealed class SimulationTuning
     public double OutingChancePerMinute {get;set;}=.025;
     public double BypassWaitSeconds {get;set;}=10;
     public double UTurnWaitSeconds {get;set;}=180;
+    public double TowMaxWaitSeconds {get;set;}=3600;
+    public decimal TowServiceBase {get;set;}=60;
+    public double TowLoadSeconds {get;set;}=90;
+    public double TowUnloadSeconds {get;set;}=60;
+    public double TowRetrySeconds {get;set;}=60;
     public decimal ShoppingTripCostPerMetre {get;set;}=.004m;
     public Dictionary<ResourceKind,decimal> ImportPrices {get;set;}=new(){[ResourceKind.Aggregate]=14,[ResourceKind.Concrete]=25,[ResourceKind.Steel]=50,[ResourceKind.Wood]=24,[ResourceKind.Asphalt]=22,[ResourceKind.Food]=2,[ResourceKind.Fuel]=5};
 }
@@ -311,6 +319,24 @@ public sealed class Vehicle
     // the route may be replanned meanwhile).
     public List<Point> Detour {get;set;}=[];
     public int DetourResumeNode {get;set;}
+    // Tow service: on the tow truck, its phase, the vehicle served and the
+    // station it delivers to; on the stranded vehicle, the assigned tow, the
+    // road node its trip resumes towards and when the call is retried (after a
+    // pause, or once the road network changes after an impossible call).
+    public TowPhase TowPhase {get;set;}
+    public int? TowTargetId {get;set;}
+    public TowDestination TowDestination {get;set;}
+    public int? TowStationId {get;set;}
+    public int? TowTruckId {get;set;}
+    public int? TowResumeNode {get;set;}
+    public double TowCalledAt {get;set;}
+    public double TowRetryAt {get;set;}
+    public int? TowRoadRevision {get;set;}
+    public bool TowPrepaid {get;set;}
+    // A loaded tow waiting for the lane beside a queue that faces it: since when,
+    // and whether it found no other way out (then that queue turns back).
+    public double TowExitWaitSince {get;set;}
+    public bool TowExitNoOther {get;set;}
 }
 public sealed class Shipment
 {
