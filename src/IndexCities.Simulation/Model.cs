@@ -316,6 +316,10 @@ public sealed class Vehicle
     public double TowRetryAt {get;set;}
     public int? TowRoadRevision {get;set;}
     public bool TowPrepaid {get;set;}
+    // A loaded tow waiting for the lane beside a queue that faces it: since when,
+    // and whether it found no other way out (then that queue turns back).
+    public double TowExitWaitSince {get;set;}
+    public bool TowExitNoOther {get;set;}
 }
 public sealed class Shipment
 {

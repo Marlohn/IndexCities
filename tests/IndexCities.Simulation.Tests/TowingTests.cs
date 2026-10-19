@@ -312,6 +312,45 @@ public sealed class TowingTests
         RunUntil(scene,()=>car.Status==VehicleStatus.Parked&&car.Cause=="Estacionado",1500);Assert.Equal("Estacionado",car.Cause);
         Assert.Single(sim.State.Ledger,m=>m.Category=="Guincho");Assert.Equal(sim.State.Tuning.TotalMoney,sim.MonetaryTotal);sim.CheckInvariants();
     }
+    // Revisor's case: the tow has just loaded the car from behind and faces a car
+    // queued behind it; the lane beside the queue is taken by a vehicle that never
+    // moves (a local truck without its driver). Exterior west, ring north.
+    static (Scene Scene,Vehicle Tow,Vehicle Follower) LoadedFacingQueue(double? towFuel)
+    {
+        var scene=City(station:false);var s=scene.Sim.State;var car=s.Vehicles.Single(v=>v.Id==scene.Car.Id);
+        car.Status=VehicleStatus.Stranded;car.TowCalledAt=1;car.TowPrepaid=true;
+        var tow=new Vehicle{Id=s.NextId++,Body=TruckBody.Tow,External=true,ExternalDriverId="guincheiro externo",CargoCapacity=0,Position=new(-6.8,-1.65),Heading=-Math.PI/2,Fuel=towFuel??s.Tuning.FuelTank,Status=VehicleStatus.Waiting,TowPhase=TowPhase.Loading,LoadTimer=2,TowTargetId=car.Id,TowDestination=TowDestination.Exterior};
+        car.TowTruckId=tow.Id;s.Vehicles.Add(tow);
+        var east=s.Roads.Where(r=>r.Position.Z==0&&r.Position.X>=-80&&r.Position.X<=40).OrderBy(r=>r.Position.X).ToList();
+        var follower=new Vehicle{Id=s.NextId++,OwnerAccount="global",PassengerCar=true,External=true,Position=new(-14.8,-1.65),Heading=Math.PI/2,Fuel=40,Status=VehicleStatus.Travelling,Route=east.Select(r=>r.Id).ToList(),RouteIndex=east.FindIndex(r=>r.Position.X>-14.8)};
+        var west=s.Roads.Where(r=>r.Position.Z==0&&r.Position.X<=8&&r.Position.X>=-40).OrderByDescending(r=>r.Position.X).ToList();
+        s.Vehicles.Add(follower);s.Vehicles.Add(new Vehicle{Id=s.NextId++,OwnerAccount="global",CargoCapacity=10,Position=new(2,1.65),Heading=-Math.PI/2,Fuel=40,Status=VehicleStatus.Waiting,Route=west.Select(r=>r.Id).ToList(),RouteIndex=west.FindIndex(r=>r.Position.X<2),Cause="Em viagem"});
+        var sim=new CitySimulation(s);
+        return (scene with {Sim=sim,Car=sim.State.Vehicles.Single(v=>v.Id==car.Id)},sim.State.Vehicles.Single(v=>v.Id==tow.Id),sim.State.Vehicles.Single(v=>v.Id==follower.Id));
+    }
+    [Fact] public void A_loaded_tow_that_cannot_pass_beside_the_queue_waits_then_leaves_by_another_way()
+    {
+        var (scene,tow,follower)=LoadedFacingQueue(null);var sim=scene.Sim;double? waitFrom=null;var leftEast=false;
+        RunUntil(scene,()=>{
+            // The queue never goes through the tow, nor the tow through it.
+            if(Math.Abs(tow.Position.Z+1.65)<1.5&&tow.Position.X<10)Assert.True(follower.Position.X<tow.Position.X-5.8,follower.Position+" "+tow.Position+" "+tow.Cause);
+            if(tow.Cause.Contains("aguardando a faixa ao lado"))waitFrom??=sim.State.ElapsedSeconds;
+            if(tow.Position.X>20&&tow.TowPhase==TowPhase.Delivering){leftEast=true;Assert.True(sim.State.ElapsedSeconds-waitFrom>=sim.State.Tuning.UTurnWaitSeconds-2);}
+            return leftEast;
+        },900);
+        Assert.NotNull(waitFrom);Assert.True(leftEast,tow.Cause+" "+tow.Position);Assert.Equal(VehicleStatus.Towed,scene.Car.Status);sim.CheckInvariants();
+    }
+    [Fact] public void Without_another_way_out_the_queue_facing_the_loaded_tow_turns_back_and_the_tow_leaves()
+    {
+        // Fuel for the way out west only, not for the ring.
+        var (scene,tow,follower)=LoadedFacingQueue(4+.015*300);var sim=scene.Sim;var turned=false;
+        RunUntil(scene,()=>{
+            if(Math.Abs(tow.Position.Z+1.65)<1.5&&!turned)Assert.True(follower.Position.X<tow.Position.X-5.8,follower.Position+" "+tow.Position+" "+tow.Cause);
+            if(Math.Cos(follower.Heading+Math.PI/2)>.9)turned=true;
+            return tow.Position.X< -40;
+        },900);
+        Assert.True(turned,follower.Cause+" "+tow.Cause);Assert.True(tow.Position.X< -40,tow.Cause+" "+tow.Position);Assert.Equal(VehicleStatus.Towed,scene.Car.Status);sim.CheckInvariants();
+    }
     [Fact] public void When_the_queue_behind_also_keeps_it_away_the_tow_waits_with_the_cause_visible()
     {
         var (scene,waiter,queue)=StrandedInOnlyJunction(queued:true);var sim=scene.Sim;

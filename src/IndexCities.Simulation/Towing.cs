@@ -82,11 +82,13 @@ public sealed partial class CitySimulation
         }
         return closed;
     }
-    // A route around the closed roads when one exists, otherwise the plain route.
-    List<int> TowRoute(int from,int to,HashSet<int> closed)
+    // A route around the closed roads when one exists, otherwise the plain route;
+    // the strictly closed roads (a queue to stay out of) are never taken.
+    List<int> TowRoute(int from,int to,HashSet<int> closed,HashSet<int>? strict=null)
     {
-        var open=closed.Contains(from)||closed.Contains(to)?closed.Where(id=>id!=from&&id!=to).ToHashSet():closed;
-        var route=FindRoadRoute(from,to,false,open);return route.Count>0?route:FindRoadRoute(from,to);
+        HashSet<int> Open(HashSet<int> set)=>set.Contains(from)||set.Contains(to)?set.Where(id=>id!=from&&id!=to).ToHashSet():set;
+        var route=FindRoadRoute(from,to,false,Open(strict==null?closed:closed.Union(strict).ToHashSet()));if(route.Count>0)return route;
+        return strict==null?FindRoadRoute(from,to):FindRoadRoute(from,to,false,Open(strict));
     }
     sealed record TowPlan(TowDestination Kind,Building? Station,Point Dock,List<int> Route,double Back);
     // A station that operates: open for business with fuel to sell.
@@ -94,18 +96,18 @@ public sealed partial class CitySimulation
     // The nearest operating station by road within the fuel; without one (none
     // operates, or none fits the fuel left) the exterior the tow came from, except
     // for a vehicle nobody is aboard, which waits off the road by the highway.
-    TowPlan? PlanTowDelivery(Vehicle t,RoadNode start,double fuel,double travelled,HashSet<int> closed)
+    TowPlan? PlanTowDelivery(Vehicle t,RoadNode start,double fuel,double travelled,HashSet<int> closed,HashSet<int>? strict=null)
     {
         var entry=EntryNode();bool Fits(List<int> route,double back)=>(travelled+RouteLength(route)+back)*State.Tuning.FuelPerMetre+4<=fuel;
         TowPlan? best=null;
         foreach(var station in State.Buildings.Where(StationOperates)){
-            if(Access(station) is not {} access)continue;var route=TowRoute(start.Id,access.Id,closed);if(route.Count==0)continue;
+            if(Access(station) is not {} access)continue;var route=TowRoute(start.Id,access.Id,closed,strict);if(route.Count==0)continue;
             var back=FindRoadRoute(access.Id,entry.Id);if(back.Count==0||!Fits(route,RouteLength(back)))continue;
             if(best==null||RouteLength(route)<RouteLength(best.Route))best=new(TowDestination.Station,station,DockAt(access,station,false),route,RouteLength(back));
         }
         if(best!=null)return best;
-        if(Crewed(t)){var exit=TowRoute(start.Id,entry.Id,closed);return exit.Count>0&&Fits(exit,0)?new(TowDestination.Exterior,null,State.Entry,exit,0):null;}
-        var slot=HoldingSlot(t);if(slot.Road==null)return null;var toSlot=TowRoute(start.Id,slot.Road.Id,closed);if(toSlot.Count==0)return null;
+        if(Crewed(t)){var exit=TowRoute(start.Id,entry.Id,closed,strict);return exit.Count>0&&Fits(exit,0)?new(TowDestination.Exterior,null,State.Entry,exit,0):null;}
+        var slot=HoldingSlot(t);if(slot.Road==null)return null;var toSlot=TowRoute(start.Id,slot.Road.Id,closed,strict);if(toSlot.Count==0)return null;
         var leave=RouteLength(FindRoadRoute(slot.Road.Id,entry.Id));return Fits(toSlot,leave)?new(TowDestination.Holding,null,slot.Position,toSlot,leave):null;
     }
     // Same physical waiting spaces beside the highway as preserved municipal cargo.
@@ -186,7 +188,7 @@ public sealed partial class CitySimulation
     void AbortTow(Vehicle tow,Vehicle? t)
     {
         if(t!=null&&t.TowTruckId==tow.Id)t.TowTruckId=null;
-        tow.TowPhase=TowPhase.None;tow.TowTargetId=null;tow.TowStationId=null;ReturnExternal(tow);
+        tow.TowPhase=TowPhase.None;tow.TowTargetId=null;tow.TowStationId=null;tow.TowExitWaitSince=0;tow.TowExitNoOther=false;ReturnExternal(tow);
     }
     void ReplanTow(Vehicle tow,Vehicle t)
     {
@@ -202,17 +204,19 @@ public sealed partial class CitySimulation
     // Departure from wherever the tow stands: the nearby road sample (not under a
     // stranded vehicle or a locked junction) that gives the shortest way out, with
     // the sample before it so the lane is known and it can still turn back.
-    bool StartDelivery(Vehicle tow,Vehicle t)
+    bool StartDelivery(Vehicle tow,Vehicle t,HashSet<int>? avoid=null)
     {
         var closed=TowClosedRoads(tow);TowPlan? best=null;RoadNode? from=null;double cost=double.MaxValue;
         var near=State.Roads.Where(r=>!r.ConstructionOnly&&r.Position.Distance(tow.Position)<=State.Tuning.RoadWidth).OrderBy(r=>closed.Contains(r.Id)?1:0).ThenBy(r=>r.Position.Distance(tow.Position)).ToList();
         if(near.Count==0&&NearestRoad(tow.Position) is {} nearest)near.Add(nearest);
         foreach(var node in near){
             if(best!=null&&closed.Contains(node.Id))break;
-            if(PlanTowDelivery(t,node,tow.Fuel,0,closed) is not {} option)continue;
+            if(avoid?.Contains(node.Id)==true)continue;
+            if(PlanTowDelivery(t,node,tow.Fuel,0,closed,avoid) is not {} option)continue;
             var total=node.Position.Distance(tow.Position)+RouteLength(option.Route);if(total<cost){cost=total;best=option;from=node;}
         }
         if(best==null||from==null){
+            if(avoid!=null)return false;
             // SPEC: without even the way back out within its fuel (only with fuel
             // forced in tests) the tow waits where it stands; no fictitious trip.
             // Retried every few seconds rather than every step (calibration).
@@ -234,20 +238,34 @@ public sealed partial class CitySimulation
     // Leaving toward the queue that faces it in its lane (it loaded from behind, or
     // turns back past the stranded vehicle's queue): it first moves into the lane of
     // its route beside the queue, as an overtake starts (2 m ahead), and only with
-    // that lane free there; otherwise it waits in place, holding the queue.
+    // that lane free there; otherwise it waits in place, holding the queue. SPEC
+    // "Saída depois de carregar por trás": after the U-turn wait it looks for another
+    // way out that keeps off the queue; with none, the queue turns back.
     void TowLeavesPastQueue(Vehicle tow,Vehicle t)
     {
-        if(tow.RouteIndex<1||tow.RouteIndex>=tow.Route.Count||!_roads.TryGetValue(tow.Route[tow.RouteIndex],out var node)||!_roads.TryGetValue(tow.Route[tow.RouteIndex-1],out var previous))return;
-        var axis=node.Position-previous.Position;var length=axis.Distance(default);if(length<.01)return;
+        void Clear(){tow.TowExitWaitSince=0;tow.TowExitNoOther=false;}
+        if(tow.RouteIndex<1||tow.RouteIndex>=tow.Route.Count||!_roads.TryGetValue(tow.Route[tow.RouteIndex],out var node)||!_roads.TryGetValue(tow.Route[tow.RouteIndex-1],out var previous)){Clear();return;}
+        var axis=node.Position-previous.Position;var length=axis.Distance(default);if(length<.01){Clear();return;}
         var dir=axis*(1/length);var lane=node.Position+new Point(dir.Z*1.65,-dir.X*1.65);var heading=Math.Atan2(dir.X,dir.Z);
         double Along(Point p,Point from)=>(p-from).X*dir.X+(p-from).Z*dir.Z;double Across(Point p,Point from)=>Math.Abs((p-from).X*dir.Z-(p-from).Z*dir.X);
         bool Facing(Vehicle o)=>o.Id!=tow.Id&&o.Id!=t.Id&&OccupiesLane(o)&&Math.Cos(o.Heading-heading)< -.5&&Along(o.Position,tow.Position) is >0 and <=12&&Across(o.Position,tow.Position)<2.6;
-        if(Across(tow.Position,lane)<1||!State.Vehicles.Any(Facing))return;
+        if(Across(tow.Position,lane)<1||!State.Vehicles.Any(Facing)){Clear();return;}
         var side=lane+dir*(Along(tow.Position,lane)+2);
         var free=!State.Vehicles.Any(o=>o.Id!=tow.Id&&o.Id!=t.Id&&OccupiesLane(o)&&(Across(o.Position,lane)<2.6&&Along(o.Position,side) is >-15 and <8||o.Position.Distance(side)<12&&BodiesOverlap(tow,side,heading,o,o.Position,o.Heading)));
-        if(!free){tow.Status=VehicleStatus.Waiting;tow.TowRetryAt=State.ElapsedSeconds+2;tow.Cause=$"Guincho com o veículo {t.Id} aguardando a faixa ao lado livre para sair";return;}
-        tow.Detour=[side];tow.DetourResumeNode=tow.Route[tow.RouteIndex];
+        if(free){Clear();tow.Detour=[side];tow.DetourResumeNode=tow.Route[tow.RouteIndex];return;}
+        if(tow.TowExitWaitSince<=0)tow.TowExitWaitSince=State.ElapsedSeconds;
+        tow.Status=VehicleStatus.Waiting;tow.TowRetryAt=State.ElapsedSeconds+2;
+        tow.Cause=tow.TowExitNoOther?$"Guincho com o veículo {t.Id} sem outra saída; aguardando a fila fazer meia-volta":$"Guincho com o veículo {t.Id} aguardando a faixa ao lado livre para sair";
+        if(tow.TowExitNoOther||State.ElapsedSeconds-tow.TowExitWaitSince<State.Tuning.UTurnWaitSeconds)return;
+        // Marked before replanning, so the replan's own departure check does not search again.
+        var queue=State.Roads.Where(r=>State.Vehicles.Any(o=>Facing(o)&&o.Position.Distance(r.Position)<State.Tuning.RoadStep+.5)).Select(r=>r.Id).ToHashSet();
+        tow.TowExitNoOther=true;
+        if(StartDelivery(tow,t,queue))return;
+        tow.Cause=$"Guincho com o veículo {t.Id} sem outra saída; aguardando a fila fazer meia-volta";
     }
+    // SPEC: the queue facing a loaded tow that found no other way out turns back,
+    // as before a stopped vehicle.
+    static bool TowExitHolds(Vehicle tow)=>tow.TowExitNoOther&&tow.Status==VehicleStatus.Waiting;
     void TowReachedDock(Vehicle tow)
     {
         tow.IntersectionClaim=null;tow.WaitingSince=0;var t=State.Vehicles.FirstOrDefault(o=>o.Id==tow.TowTargetId);
@@ -289,7 +307,7 @@ public sealed partial class CitySimulation
         // A car comes down from the platform where the tow stands; a truck is set
         // down where it trails, along the curb of the bay (no jump).
         t.TowTruckId=null;t.TowPrepaid=false;if(t.PassengerCar)t.Position=tow.Position;t.Heading=tow.Heading;t.Status=VehicleStatus.Parked;t.WaitingSince=0;
-        tow.TowPhase=TowPhase.None;tow.TowTargetId=null;tow.TowStationId=null;
+        tow.TowPhase=TowPhase.None;tow.TowTargetId=null;tow.TowStationId=null;tow.TowExitWaitSince=0;tow.TowExitNoOther=false;
         if(destination==TowDestination.Exterior){tow.Position=State.Entry;tow.Status=VehicleStatus.Outside;tow.Route.Clear();tow.DockPosition=null;tow.IntersectionClaim=null;tow.Cause="Disponível no exterior";}
         else ReturnExternal(tow);
         if(destination==TowDestination.Exterior){ResumeFromExterior(t);return;}
