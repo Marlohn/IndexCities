@@ -35,7 +35,7 @@ public sealed partial class CitySimulation
             if(!_roads.TryGetValue(route[i],out var road))break;
             var edge=i>0?road.Position-_roads[route[i-1]].Position:route.Count>1&&_roads.TryGetValue(route[1],out var second)?second.Position-road.Position:default;
             var metres=edge.Distance(default);if(metres<.01)continue;
-            var lane=road.Position+new Point(edge.Z/metres,-edge.X/metres)*1.65;
+            var lane=road.Position+new Point(edge.Z/metres,-edge.X/metres)*1.65+(i>0?InnerCornerOffset(route,i,road,edge,metres):default);
             var direction=Math.Atan2(lane.X-at.X,lane.Z-at.Z);var turn=Math.IEEERemainder(direction-facing,2*Math.PI);
             for(var part=0;part<=8;part++)held.Add((o,at,facing+turn*part/8));
             var run=new List<(Point Position,double Heading)>();SamplePoses(run,at,lane,direction);held.AddRange(run.Select(p=>(o,p.Position,p.Heading)));
@@ -110,5 +110,21 @@ public sealed partial class CitySimulation
             safe=next;
         }
         return safe;
+    }
+}
+
+public sealed partial class CitySimulation
+{
+    // A right turn pivots where its incoming and outgoing lane lines meet,
+    // before the node, instead of running on to the crossing road's centre
+    // line and cutting back across it diagonally. Left turns keep their point.
+    Point InnerCornerOffset(List<int> route,int index,RoadNode node,Point incoming,double length)
+    {
+        if(node.Neighbours.Count>=3||node.Crosswalk||index<1||index+1>=route.Count||length<=.01||!_roads.TryGetValue(route[index+1],out var next))return default;
+        var outgoing=next.Position-node.Position;var metres=outgoing.Distance(default);if(metres<=.01)return default;
+        var cross=incoming.X*outgoing.Z-incoming.Z*outgoing.X;
+        // Square turn to the right of travel (the lane side): out ≈ (in.Z,-in.X).
+        if(Math.Abs(cross)<.99*length*metres||outgoing.X*incoming.Z-outgoing.Z*incoming.X<=0)return default;
+        return new Point(outgoing.Z/metres*1.65,-outgoing.X/metres*1.65);
     }
 }
