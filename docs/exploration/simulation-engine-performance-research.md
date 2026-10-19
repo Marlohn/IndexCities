@@ -753,7 +753,7 @@ Na rodada `repeat grid --rows=3 --length=400 --days=10`, os dias 1–5 ficaram e
 
 ## 17. Inventário de quantidades acumuladas no núcleo (2026-10-18)
 
-Levantamento técnico sobre `origin/main` em `c50923a`; a autorização do responsável para ponto fixo está na SPEC. Esta seção continua sendo pesquisa, não fonte de verdade de produto.
+Inventário inicial sobre `origin/main` em `c50923a`, revisto após integrar a main `13b8e98` (PR #38) e corrigir a revisão em 2026-10-19; a autorização do responsável para ponto fixo está na SPEC. Esta seção continua sendo pesquisa, não fonte de verdade de produto.
 
 | Entidade / campos | Acumulação confirmada | Tratamento e acontecimentos para uma agenda futura |
 |---|---|---|

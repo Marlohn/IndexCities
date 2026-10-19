@@ -1,0 +1,12 @@
+FIXTURE cycle (CityCycleTests.City, obras reais) build=4,8s .NET=8.0.32 cpu=12 release=True
+WARMUP 2d wall=2,6s pop=53 alive=53 dead=0 employed=48 moving=0 vehicles=41 travelling=0 ledger=1143 history=1356 meals=206 wages=858,59 health=99,999996 satisfaction=74,231870
+DAY 1 wall=1,27s eff=68092x pop=53 alive=53 dead=0 employed=48 moving=1 vehicles=41 travelling=0 ledger=1276 history=1864 meals=313 wages=1528,33 health=99,999996 satisfaction=74,271357
+DAY 2 wall=1,27s eff=68074x pop=53 alive=53 dead=0 employed=48 moving=0 vehicles=41 travelling=0 ledger=1392 history=2313 meals=421 wages=2195,84 health=99,999995 satisfaction=73,715019
+DAY 3 wall=1,27s eff=67844x pop=53 alive=53 dead=0 employed=48 moving=0 vehicles=41 travelling=0 ledger=1532 history=2834 meals=527 wages=2880,15 health=99,999994 satisfaction=73,641932
+DAY 4 wall=1,29s eff=66874x pop=53 alive=53 dead=0 employed=48 moving=0 vehicles=41 travelling=0 ledger=1669 history=3363 meals=632 wages=3506,79 health=99,999995 satisfaction=73,622854
+DAY 5 wall=1,51s eff=57058x pop=53 alive=53 dead=0 employed=48 moving=0 vehicles=41 travelling=0 ledger=2053 history=3808 meals=738 wages=4096,08 health=99,999990 satisfaction=70,864062
+DAY 6 wall=1,33s eff=64989x pop=53 alive=53 dead=0 employed=48 moving=0 vehicles=41 travelling=0 ledger=2186 history=4303 meals=843 wages=4742,39 health=99,999996 satisfaction=74,102759
+DAY 7 wall=1,28s eff=67270x pop=53 alive=53 dead=0 employed=48 moving=0 vehicles=41 travelling=0 ledger=2327 history=4832 meals=948 wages=5428,14 health=99,999995 satisfaction=73,438740
+SUMMARY days=7 perDay=1,32s eff=65514x hours80y=11 gen0=804 gen2=1 allocMB/day=721 workingSetMB=56
+SAVE 1,2MB save=0,11s load=0,10s sha256=DD4767C55B208EEF
+INVARIANTS OK

@@ -1,0 +1,11 @@
+  Determinando os projetos a serem restaurados...
+  C:\Users\Marlohn\orca\workspaces\IndexCities\quantidades-inteiras\artifacts\verification\fixed-quantities\main-13b8e98-source\src\IndexCities.Headless\IndexCities.Headless.csproj restaurado (em 83 ms).
+  1 de 2 projetos estão atualizados para restauração.
+  IndexCities.Simulation -> C:\Users\Marlohn\orca\workspaces\IndexCities\quantidades-inteiras\artifacts\verification\fixed-quantities\main-13b8e98-source\src\IndexCities.Simulation\bin\Release\net8.0\IndexCities.Simulation.dll
+  IndexCities.Headless -> C:\Users\Marlohn\orca\workspaces\IndexCities\quantidades-inteiras\artifacts\verification\fixed-quantities\main-13b8e98-source\src\IndexCities.Headless\bin\Release\net8.0\IndexCities.Headless.dll
+
+Compilação com êxito.
+    0 Aviso(s)
+    0 Erro(s)
+
+Tempo Decorrido 00:00:01.15

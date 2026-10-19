@@ -1,0 +1,8 @@
+﻿de62d24: nenhuma escrita composta em propriedades double de quantidades acumuladas na simulação ou no host Godot.
+Main PR38: TowExitWaitSince é instante derivado (atribuições zero/VehicleMovementTime), não soma de dt.
+src/IndexCities.Simulation\Towing.cs:191:        tow.TowPhase=TowPhase.None;tow.TowTargetId=null;tow.TowStationId=null;tow.TowExitWaitSince=0;tow.TowExitNoOther=false;ReturnExternal(tow);
+src/IndexCities.Simulation\Towing.cs:246:        void Clear(){tow.TowExitWaitSince=0;tow.TowExitNoOther=false;}
+src/IndexCities.Simulation\Towing.cs:256:        if(tow.TowExitWaitSince<=0)tow.TowExitWaitSince=State.ElapsedSeconds;
+src/IndexCities.Simulation\Towing.cs:259:        if(tow.TowExitNoOther||State.ElapsedSeconds-tow.TowExitWaitSince<State.Tuning.UTurnWaitSeconds)return;
+src/IndexCities.Simulation\Towing.cs:310:        tow.TowPhase=TowPhase.None;tow.TowTargetId=null;tow.TowStationId=null;tow.TowExitWaitSince=0;tow.TowExitNoOther=false;
+src/IndexCities.Simulation\Model.cs:354:    public double TowExitWaitSince {get;set;}

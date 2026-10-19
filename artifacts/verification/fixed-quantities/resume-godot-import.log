@@ -1,0 +1,155 @@
+Godot Engine v4.7.2.stable.mono.official.ed1daf0bf - https://godotengine.org
+
+[   0% ] [90m[1mfirst_scan_filesystem[22m | Started Inicialização do Projeto (5 steps)[39m[0m
+[   0% ] [90m[1mfirst_scan_filesystem[22m | Escaneando estrutura de arquivos...[39m[0m
+[  16% ] [90m[1mfirst_scan_filesystem[22m | Carregando nomes de classe globais...[39m[0m
+[  33% ] [90m[1mfirst_scan_filesystem[22m | Verificando GDExtensions...[39m[0m
+[  50% ] [90m[1mfirst_scan_filesystem[22m | Criando scripts autoload...[39m[0m
+[  66% ] [90m[1mfirst_scan_filesystem[22m | Inicializando plugins...[39m[0m
+[  83% ] [90m[1mfirst_scan_filesystem[22m | Iniciando escaneamento de arquivos...[39m[0m
+[92m[ DONE ][39m [1mfirst_scan_filesystem[22m
+[0m
+[   0% ] [90m[1mupdate_scripts_classes[22m | Started Registrando classes globais... (4 steps)[39m[0m
+[   0% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  20% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  40% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  60% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[92m[ DONE ][39m [1mupdate_scripts_classes[22m
+[0m
+[   0% ] [90m[1m_update_scan_actions[22m | Started Escaneando ações... (40 steps)[39m[0m
+[   0% ] [90m[1m_update_scan_actions[22m | activity_badge.svg[39m[0m
+[   2% ] [90m[1m_update_scan_actions[22m | activity_cargo.svg[39m[0m
+[   4% ] [90m[1m_update_scan_actions[22m | activity_people.svg[39m[0m
+[   7% ] [90m[1m_update_scan_actions[22m | demolish.svg[39m[0m
+[   9% ] [90m[1m_update_scan_actions[22m | problem_alert_tile.svg[39m[0m
+[  12% ] [90m[1m_update_scan_actions[22m | problem_energy.svg[39m[0m
+[  14% ] [90m[1m_update_scan_actions[22m | problem_intake.svg[39m[0m
+[  17% ] [90m[1m_update_scan_actions[22m | problem_maintenance.svg[39m[0m
+[  19% ] [90m[1m_update_scan_actions[22m | problem_noraw.svg[39m[0m
+[  21% ] [90m[1m_update_scan_actions[22m | problem_road.svg[39m[0m
+[  24% ] [90m[1m_update_scan_actions[22m | problem_staff.svg[39m[0m
+[  26% ] [90m[1m_update_scan_actions[22m | problem_stock.svg[39m[0m
+[  29% ] [90m[1m_update_scan_actions[22m | problem_water.svg[39m[0m
+[  31% ] [90m[1m_update_scan_actions[22m | agriculture.farm_small.a.svg[39m[0m
+[  34% ] [90m[1m_update_scan_actions[22m | civic.city_hall.a.svg[39m[0m
+[  36% ] [90m[1m_update_scan_actions[22m | civic.works_depot.a.svg[39m[0m
+[  39% ] [90m[1m_update_scan_actions[22m | commercial.fuel_station.a.svg[39m[0m
+[  41% ] [90m[1m_update_scan_actions[22m | commercial.grocery_small.a.svg[39m[0m
+[  43% ] [90m[1m_update_scan_actions[22m | residential.small_house.a.svg[39m[0m
+[  46% ] [90m[1m_update_scan_actions[22m | utility.sewage_treatment.a.svg[39m[0m
+[  48% ] [90m[1m_update_scan_actions[22m | utility.water_intake.a.svg[39m[0m
+[  51% ] [90m[1m_update_scan_actions[22m | utility.water_treatment.a.svg[39m[0m
+[  53% ] [90m[1m_update_scan_actions[22m | utility.wind_power.a.svg[39m[0m
+[  56% ] [90m[1m_update_scan_actions[22m | agent.sim_pedestrian.a.png[39m[0m
+[  58% ] [90m[1m_update_scan_actions[22m | agriculture.farm_small.a.png[39m[0m
+[  60% ] [90m[1m_update_scan_actions[22m | civic.city_hall.a.png[39m[0m
+[  63% ] [90m[1m_update_scan_actions[22m | civic.works_depot.a.png[39m[0m
+[  65% ] [90m[1m_update_scan_actions[22m | commercial.fuel_station.a.png[39m[0m
+[  68% ] [90m[1m_update_scan_actions[22m | commercial.grocery_small.a.png[39m[0m
+[  70% ] [90m[1m_update_scan_actions[22m | residential.small_house.a.png[39m[0m
+[  73% ] [90m[1m_update_scan_actions[22m | road.urban_1x1.a.corner_l.png[39m[0m
+[  75% ] [90m[1m_update_scan_actions[22m | road.urban_1x1.a.lamp.png[39m[0m
+[  78% ] [90m[1m_update_scan_actions[22m | road.urban_1x1.a.straight.png[39m[0m
+[  80% ] [90m[1m_update_scan_actions[22m | utility.sewage_treatment.a.png[39m[0m
+[  82% ] [90m[1m_update_scan_actions[22m | utility.water_intake.a.png[39m[0m
+[  85% ] [90m[1m_update_scan_actions[22m | utility.water_treatment.a.png[39m[0m
+[  87% ] [90m[1m_update_scan_actions[22m | utility.wind_power.a.png[39m[0m
+[  90% ] [90m[1m_update_scan_actions[22m | vegetation.tree_broadleaf.a.png[39m[0m
+[  92% ] [90m[1m_update_scan_actions[22m | vehicle.car_passenger.a.png[39m[0m
+[  95% ] [90m[1m_update_scan_actions[22m | vehicle.truck_cargo.a.png[39m[0m
+[92m[ DONE ][39m [1m_update_scan_actions[22m
+[0m
+[   0% ] [90m[1mreimport[22m | Started (Re)Importando Recursos (40 steps)[39m[0m
+[   0% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[   2% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[   4% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[   7% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[   9% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  12% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  14% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  17% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  19% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  21% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  24% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  26% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  29% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  31% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  34% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  36% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  39% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  41% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  43% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  46% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  48% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  51% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  53% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  56% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  58% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  60% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  63% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  65% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  68% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  70% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  73% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  75% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  78% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  80% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  82% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  85% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  87% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  90% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  92% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[  95% ] [90m[1mreimport[22m | Preparando arquivos para reimportação...[39m[0m
+[   0% ] [90m[1mreimport[22m | Executando operações pré-reimportação...[39m[0m
+[   0% ] [90m[1mreimport[22m | utility.water_intake.a.svg[39m[0m
+[   2% ] [90m[1mreimport[22m | utility.water_treatment.a.svg[39m[0m
+[   4% ] [90m[1mreimport[22m | utility.wind_power.a.svg[39m[0m
+[   7% ] [90m[1mreimport[22m | agent.sim_pedestrian.a.png[39m[0m
+[   9% ] [90m[1mreimport[22m | agriculture.farm_small.a.png[39m[0m
+[  12% ] [90m[1mreimport[22m | civic.city_hall.a.png[39m[0m
+[  14% ] [90m[1mreimport[22m | civic.works_depot.a.png[39m[0m
+[  17% ] [90m[1mreimport[22m | commercial.fuel_station.a.png[39m[0m
+[  19% ] [90m[1mreimport[22m | commercial.grocery_small.a.png[39m[0m
+[  21% ] [90m[1mreimport[22m | residential.small_house.a.png[39m[0m
+[  24% ] [90m[1mreimport[22m | road.urban_1x1.a.corner_l.png[39m[0m
+[  26% ] [90m[1mreimport[22m | road.urban_1x1.a.lamp.png[39m[0m
+[  29% ] [90m[1mreimport[22m | road.urban_1x1.a.straight.png[39m[0m
+[  31% ] [90m[1mreimport[22m | utility.sewage_treatment.a.png[39m[0m
+[  34% ] [90m[1mreimport[22m | utility.water_intake.a.png[39m[0m
+[  36% ] [90m[1mreimport[22m | utility.water_treatment.a.png[39m[0m
+[  39% ] [90m[1mreimport[22m | utility.wind_power.a.png[39m[0m
+[  41% ] [90m[1mreimport[22m | vegetation.tree_broadleaf.a.png[39m[0m
+[  43% ] [90m[1mreimport[22m | vehicle.car_passenger.a.png[39m[0m
+[  46% ] [90m[1mreimport[22m | vehicle.truck_cargo.a.png[39m[0m
+[  48% ] [90m[1mreimport[22m | activity_badge.svg[39m[0m
+[  51% ] [90m[1mreimport[22m | activity_cargo.svg[39m[0m
+[  53% ] [90m[1mreimport[22m | activity_people.svg[39m[0m
+[  56% ] [90m[1mreimport[22m | demolish.svg[39m[0m
+[  58% ] [90m[1mreimport[22m | problem_alert_tile.svg[39m[0m
+[  60% ] [90m[1mreimport[22m | problem_energy.svg[39m[0m
+[  63% ] [90m[1mreimport[22m | problem_intake.svg[39m[0m
+[  65% ] [90m[1mreimport[22m | problem_maintenance.svg[39m[0m
+[  68% ] [90m[1mreimport[22m | problem_noraw.svg[39m[0m
+[  70% ] [90m[1mreimport[22m | problem_road.svg[39m[0m
+[  73% ] [90m[1mreimport[22m | problem_staff.svg[39m[0m
+[  75% ] [90m[1mreimport[22m | problem_stock.svg[39m[0m
+[  78% ] [90m[1mreimport[22m | problem_water.svg[39m[0m
+[  80% ] [90m[1mreimport[22m | agriculture.farm_small.a.svg[39m[0m
+[  82% ] [90m[1mreimport[22m | civic.city_hall.a.svg[39m[0m
+[  85% ] [90m[1mreimport[22m | civic.works_depot.a.svg[39m[0m
+[  87% ] [90m[1mreimport[22m | commercial.fuel_station.a.svg[39m[0m
+[  90% ] [90m[1mreimport[22m | commercial.grocery_small.a.svg[39m[0m
+[  92% ] [90m[1mreimport[22m | residential.small_house.a.svg[39m[0m
+[  95% ] [90m[1mreimport[22m | utility.sewage_treatment.a.svg[39m[0m
+[  97% ] [90m[1mreimport[22m | Finalizando Importação de Recursos...[39m[0m
+[92m[ DONE ][39m [1mreimport[22m
+[0m
+[   0% ] [90m[1mreimport[22m | Started (Re)Importando Recursos (40 steps)[39m[0m
+[   0% ] [90m[1mreimport[22m | Executando operações pós-reimportação...[39m[0m
+[92m[ DONE ][39m [1mreimport[22m
+[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Started Carregando editor (5 steps)[39m[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Carregando layout do editor...[39m[0m
+[  16% ] [90m[1mloading_editor_layout[22m | Carregando abas...[39m[0m
+[92m[ DONE ][39m [1mloading_editor_layout[22m
+[0m

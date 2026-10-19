@@ -1,0 +1,15 @@
+  Determinando os projetos a serem restaurados...
+  Todos os projetos estão atualizados para restauração.
+  IndexCities.Simulation -> C:\Users\Marlohn\orca\workspaces\IndexCities\quantidades-inteiras\src\IndexCities.Simulation\bin\Debug\net8.0\IndexCities.Simulation.dll
+  Marlohn/quantidades-inteiras
+  de62d24cbd99fe970e83633b9d720652474d8735
+C:\Users\Marlohn\orca\workspaces\IndexCities\quantidades-inteiras\src\IndexCities.Godot\Main.ProblemAlertsQA.cs(198,25): warning CS8629: O tipo de valor de nulidade pode ser nulo. [C:\Users\Marlohn\orca\workspaces\IndexCities\quantidades-inteiras\src\IndexCities.Godot\IndexCities.Godot.csproj]
+  IndexCities.Godot -> C:\Users\Marlohn\orca\workspaces\IndexCities\quantidades-inteiras\src\IndexCities.Godot\.godot\mono\temp\bin\Debug\IndexCities.Godot.dll
+
+Compilação com êxito.
+
+C:\Users\Marlohn\orca\workspaces\IndexCities\quantidades-inteiras\src\IndexCities.Godot\Main.ProblemAlertsQA.cs(198,25): warning CS8629: O tipo de valor de nulidade pode ser nulo. [C:\Users\Marlohn\orca\workspaces\IndexCities\quantidades-inteiras\src\IndexCities.Godot\IndexCities.Godot.csproj]
+    1 Aviso(s)
+    0 Erro(s)
+
+Tempo Decorrido 00:00:02.97
