@@ -67,18 +67,33 @@ public sealed partial class CitySimulation
     {
         if(v.RouteIndex<1||v.RouteIndex>=v.Route.Count||v.Detour.Count>0||!RoadAxis(v,out var dir,out var left))return false;
         var ahead=v.Route[v.RouteIndex];var behind=v.Route[v.RouteIndex-1];
-        // Only the road samples the stopped vehicle physically occupies are closed.
+        // Only the road samples the stopped vehicle physically occupies are closed;
+        // the sample the vehicle turns back from stays open (it stands there).
         var avoid=blocker==null?new HashSet<int>():State.Roads.Where(r=>r.Position.Distance(blocker.Position)<State.Tuning.RoadStep+.5).Select(r=>r.Id).ToHashSet();
-        if(alsoClosed!=null)avoid.UnionWith(alsoClosed.Where(id=>id!=v.Route[v.RouteIndex-1]));
-        if(avoid.Contains(behind)){v.Cause="Rua bloqueada por veículo parado; sem espaço para meia-volta";return false;}
+        if(alsoClosed!=null)avoid.UnionWith(alsoClosed);
+        avoid.Remove(behind);
+        // It swings into the lane beside it 2 m ahead, or straight across when the
+        // stopped vehicle is that close (one stopped inside the junction it waits at).
+        Point Turn(double ahead)=>v.Position+dir*ahead+left*OppositeLaneOffset;
+        // Against the stopped vehicle and anyone else standing there (including those
+        // held beyond it, exempt from the oncoming check below).
+        bool Hits(Point at)=>(at-v.Position) is var to&&State.Vehicles.Any(o=>o.Id!=v.Id&&(o.Id==blocker?.Id||OccupiesLane(o))&&o.Position.Distance(at)<12&&BodiesOverlap(v,at,Math.Atan2(to.X,to.Z),o,o.Position,o.Heading));
+        var turn=Turn(2);if(Hits(turn))turn=Turn(0);
+        if(Hits(turn)){v.Cause="Rua bloqueada por veículo parado; sem espaço para meia-volta";return false;}
         var alternative=FindRoadRoute(behind,v.Route[^1],false,avoid);
         if(alternative.Count==0){v.Cause="Rua bloqueada por veículo parado; sem rota alternativa";return false;}
-        if(!OppositeLaneClear(v,blocker,dir,left,8,returnsToLane:false))return false;
+        // Vehicles held behind the stopped one beyond it (it stands in a junction,
+        // they in the lane beside) cannot come through it: not oncoming.
+        double Along(Vehicle o)=>(o.Position-v.Position).X*dir.X+(o.Position-v.Position).Z*dir.Z;
+        bool HeldBeyond(Vehicle o)=>blocker is {Status:VehicleStatus.Stranded}&&o.WaitingSince>0&&o.Detour.Count==0&&Along(o)>Along(blocker)&&HeldInStrandedChain(o,orAtItsJunction:true);
+        if(!OppositeLaneClear(v,blocker,dir,left,8,returnsToLane:false,alsoIgnored:HeldBeyond))return false;
         // It moves into the lane beside it and drives back along that lane; the
         // first route entry only gives the reversed lane geometry.
-        v.Route=[ahead,..alternative];v.RouteIndex=1;v.Detour=[v.Position+dir*2+left*OppositeLaneOffset];v.DetourResumeNode=behind;v.IntersectionClaim=null;v.WaitingSince=0;v.Cause="Meia-volta: rua bloqueada por veículo parado";
+        v.Route=[ahead,..alternative];v.RouteIndex=1;v.Detour=[turn];v.DetourResumeNode=behind;v.IntersectionClaim=null;v.WaitingSince=0;v.Cause="Meia-volta: rua bloqueada por veículo parado";
         return true;
     }
+    // Waiting at the mouth of a junction held by a stranded vehicle (or its queue).
+    bool HeldAtStrandedJunction(Vehicle o)=>o.Status==VehicleStatus.Travelling&&o.WaitingSince>0&&o.RouteIndex<o.Route.Count&&_roads.TryGetValue(o.Route[o.RouteIndex],out var next)&&next.Neighbours.Count>=3&&next.Position.Distance(o.Position)<9&&JunctionHeldByStranded(o,next)!=null;
     // Motion along committed bypass waypoints. Only a same-direction vehicle on
     // the waypoint path holds it; oncoming traffic yields to it (see MoveVehicles).
     void MoveAlongDetour(Vehicle v,ref double remaining)
@@ -87,7 +102,8 @@ public sealed partial class CitySimulation
         var heading=d>.01?(target-v.Position)*(1/d):new Point(Math.Sin(v.Heading),Math.Cos(v.Heading));
         var leader=double.MaxValue;
         foreach(var o in State.Vehicles){
-            if(o.Id==v.Id||!OccupiesLane(o))continue;
+            // A tow passes the vehicle it comes for (it may stand askew in a junction).
+            if(o.Id==v.Id||!OccupiesLane(o)||o.Id==v.TowTargetId&&v.TowPhase==TowPhase.ToVehicle)continue;
             var relative=o.Position-v.Position;var forward=relative.X*heading.X+relative.Z*heading.Z;var side=Math.Abs(relative.X*heading.Z-relative.Z*heading.X);
             if(forward>0&&side<2.6&&Math.Cos(o.Heading-v.Heading)>.5)leader=Math.Min(leader,forward);
         }

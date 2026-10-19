@@ -257,6 +257,11 @@ public sealed partial class CitySimulation
                     if(other.Detour.Count>0&&Math.Cos(other.Heading-v.Heading)<-.5){var ahead=relative.X*Math.Sin(v.Heading)+relative.Z*Math.Cos(v.Heading);var across=Math.Abs(relative.X*Math.Cos(v.Heading)-relative.Z*Math.Sin(v.Heading));if(ahead>0&&across<2.6){HoldFor(other,ahead);continue;}}
                     var forward=relative.X*Math.Sin(v.Heading)+relative.Z*Math.Cos(v.Heading);
                     var side=Math.Abs(relative.X*Math.Cos(v.Heading)-relative.Z*Math.Sin(v.Heading));
+                    // A tow facing it in its own lane while loading, or leaving with the load,
+                    // holds it like a leader: having come from behind, it turns its rear to the
+                    // vehicle, facing the queue. A tow that is itself held does not (it may wait
+                    // on this very queue). Oncoming traffic in the other lane is 3.3 m aside.
+                    if((other.TowPhase==TowPhase.Loading||other.TowPhase==TowPhase.Delivering&&other.WaitingSince==0)&&Math.Cos(other.Heading-v.Heading)< -.5&&forward>0&&side<1.2){HoldFor(other,forward);continue;}
                     if(Math.Cos(other.Heading-v.Heading)>.5&&forward>0&&side<2.6){
                         // Side by side with converging headings (adjacent lot
                         // spaces), each is "ahead" of the other: only the higher
@@ -272,15 +277,16 @@ public sealed partial class CitySimulation
                 // Like a machine, a blocked vehicle keeps its verified pose rather
                 // than turning in place into a parked machine's body.
                 if(step<.00001&&d>.00001&&State.Vehicles.Any(o=>o.Id!=v.Id&&o.Machine!=PavingMachine.None&&o.Status==VehicleStatus.Parked&&o.Position.Distance(v.Position)<12&&VehicleBodiesOverlap(v,v.Position,o)))v.Heading=approachHeading;
-                if(step<.00001&&d>.00001){v.Cause=blocker?.Status==VehicleStatus.Stranded?$"Aguardando veículo {blocker.Id} sem combustível na via":enteringLane?"Aguardando espaço para acessar a faixa":"Fila na faixa";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;if(v.TowPhase==TowPhase.ToVehicle&&TryTowContraflow(v))continue;if(!enteringLane&&blocker!=null&&blocker.Id!=v.TowTargetId&&TryBypassStopped(v,blocker))continue;
+                if(step<.00001&&d>.00001){v.Cause=blocker?.Status==VehicleStatus.Stranded?$"Aguardando veículo {blocker.Id} sem combustível na via":enteringLane?"Aguardando espaço para acessar a faixa":"Fila na faixa";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;if(v.TowPhase==TowPhase.ToVehicle&&(TryTowContraflow(v)||TryTowFromBehind(v)))continue;if(!enteringLane&&blocker!=null&&blocker.Id!=v.TowTargetId&&TryBypassStopped(v,blocker))continue;if(blocker!=null&&TowExitHolds(blocker)&&TryUTurn(v,blocker))continue;
                     // A tow held for minutes turns back and goes around the stranded vehicles
                     // and the junctions they lock, instead of waiting in the queue.
-                    if(blocker!=null&&TowHeldTooLong(v,blocker)&&TryUTurn(v,blocker,TowClosedRoads(v))){CheckTowFuel(v);continue;}break;}
+                    if(blocker!=null&&TowHeldTooLong(v,blocker)&&TryUTurn(v,blocker,TowClosedRoads(v))){CheckTowFuel(v);continue;}TowWaitsWithoutAccess(v);break;}
                 if((node.Neighbours.Count>=3||node.Crosswalk)&&d<9&&!MayEnterJunction(v,node)){if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;
                     // SPEC: held at a junction by a vehicle stopped there (out of fuel), it
                     // turns back after the same minutes as behind it in the lane.
+                    if(TryTowFromBehind(v))continue;
                     if(VehicleMovementTime-v.WaitingSince>=State.Tuning.UTurnWaitSeconds&&JunctionHeldByStranded(v,node) is {} stranded&&TryUTurn(v,stranded))continue;
-                    if(IsTow(v)&&TowHeldTooLong(v,null)&&JunctionHeldByStranded(v,node)!=null&&TryUTurn(v,null,[..TowClosedRoads(v),node.Id])){CheckTowFuel(v);continue;}break;}
+                    if(IsTow(v)&&TowHeldTooLong(v,null)&&JunctionHeldByStranded(v,node) is {} holder&&TryUTurn(v,holder,[..TowClosedRoads(v),node.Id])){CheckTowFuel(v);continue;}TowWaitsWithoutAccess(v);break;}
                 if(v.Fuel<=.000001){RunOutOfFuel(v);break;}
                 step=Math.Min(step,v.Fuel/FuelRate(v));v.Position=v.Position.MoveTowards(target,step);v.Fuel=Math.Max(0,v.Fuel-step*FuelRate(v));v.FuelBurnedLastStep+=step*FuelRate(v);remaining-=step/speed;v.WaitingSince=0;v.Cause="Em viagem";
                 ClearPassedJunction(v);
