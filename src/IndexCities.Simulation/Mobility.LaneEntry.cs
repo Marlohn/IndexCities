@@ -36,7 +36,7 @@ public sealed partial class CitySimulation
         if(v.RouteIndex==0&&v.Route.Count>1){if(!_roads.TryGetValue(v.Route[1],out var next))return false;axis=next.Position-node.Position;}else axis=node.Position-previous;
         length=axis.Distance(default);target=node.Position;
         if(length>.01)target+=new Point(axis.Z/length*1.65,-axis.X/length*1.65);
-        if(v.RouteIndex>0)target+=InnerCornerOffset(v.Route,v.RouteIndex,node,axis,length);
+        if(v.RouteIndex>0)target+=InnerCornerOffset(v.Route,v.RouteIndex,node,axis,length)+OuterCornerOffset(v,node,axis,length);
         speed=(node.Highway?State.Tuning.HighwaySpeed:State.Tuning.VehicleSpeed)*Math.Max(.15,node.MaintenanceRatio);
         return speed>0;
     }
