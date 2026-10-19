@@ -117,8 +117,10 @@ public sealed class Building
     public string? OwnerAccount {get;set;}
     public int? CompanyId {get;set;}
     public int? FamilyId {get;set;}
-    public Dictionary<ResourceKind,double> Stock {get;set;}=new();
-    public double FoodProduced {get;set;}
+    public ResourceStock Stock {get;set;}=new();
+    public long FoodProducedUnits {get;set;}
+    [JsonIgnore] public double FoodProduced {get=>FixedPoint.Value(FoodProducedUnits,FixedPoint.ResourceScale);set=>FoodProducedUnits=FixedPoint.Quantize(value,FixedPoint.ResourceScale);}
+    public void AddFoodProduced(double delta)=>FoodProducedUnits=FixedPoint.Add(FoodProducedUnits,delta,FixedPoint.ResourceScale);
     public double WaterRatio {get;set;}
     public double ElectricityRatio {get;set;}
     public double WaterDemand {get;set;}
@@ -126,8 +128,12 @@ public sealed class Building
     public double SewageProduced {get;set;}
     public double UntreatedSewage {get;set;}
     public double OperationalCapacity {get;set;}
-    public double WaterOutageSeconds {get;set;}
-    public double MaintenanceRatio {get;set;}=1;
+    public long WaterOutageSecondsUnits {get;set;}
+    [JsonIgnore] public double WaterOutageSeconds {get=>FixedPoint.Value(WaterOutageSecondsUnits,FixedPoint.TimeScale);set=>WaterOutageSecondsUnits=FixedPoint.Quantize(value,FixedPoint.TimeScale);}
+    public void AddWaterOutageSeconds(double delta)=>WaterOutageSecondsUnits=FixedPoint.Add(WaterOutageSecondsUnits,delta,FixedPoint.TimeScale);
+    public long MaintenanceRatioUnits {get;set;}=1*FixedPoint.PointScale;
+    [JsonIgnore] public double MaintenanceRatio {get=>FixedPoint.Value(MaintenanceRatioUnits,FixedPoint.PointScale);set=>MaintenanceRatioUnits=FixedPoint.Quantize(value,FixedPoint.PointScale);}
+    public void AddMaintenanceRatio(double delta)=>MaintenanceRatioUnits=FixedPoint.Add(MaintenanceRatioUnits,delta,FixedPoint.PointScale);
     public double MaintenanceDueAt {get;set;}
     public double ProductionAccumulator {get;set;}
     public decimal InventoryUnitCost {get;set;}=5;
@@ -135,16 +141,24 @@ public sealed class Building
     public decimal SalaryOffer {get;set;}=2.5m;
     public double LastCustomerAt {get;set;}
     public string Cause {get;set;}="Em obra";
-    public double WaterConsumedToday {get;set;}
-    public double ElectricityConsumedToday {get;set;}
+    public long WaterConsumedTodayUnits {get;set;}
+    [JsonIgnore] public double WaterConsumedToday {get=>FixedPoint.Value(WaterConsumedTodayUnits,FixedPoint.ResourceScale);set=>WaterConsumedTodayUnits=FixedPoint.Quantize(value,FixedPoint.ResourceScale);}
+    public void AddWaterConsumedToday(double delta)=>WaterConsumedTodayUnits=FixedPoint.Add(WaterConsumedTodayUnits,delta,FixedPoint.ResourceScale);
+    public long ElectricityConsumedTodayUnits {get;set;}
+    [JsonIgnore] public double ElectricityConsumedToday {get=>FixedPoint.Value(ElectricityConsumedTodayUnits,FixedPoint.ResourceScale);set=>ElectricityConsumedTodayUnits=FixedPoint.Quantize(value,FixedPoint.ResourceScale);}
+    public void AddElectricityConsumedToday(double delta)=>ElectricityConsumedTodayUnits=FixedPoint.Add(ElectricityConsumedTodayUnits,delta,FixedPoint.ResourceScale);
     public decimal PaidMaintenance {get;set;}
     public bool OperationClosed {get;set;}
-    public double FoodSoldToday {get;set;}
-    public double FoodDemandEstimate {get;set;}
+    public long FoodSoldTodayUnits {get;set;}
+    [JsonIgnore] public double FoodSoldToday {get=>FixedPoint.Value(FoodSoldTodayUnits,FixedPoint.ResourceScale);set=>FoodSoldTodayUnits=FixedPoint.Quantize(value,FixedPoint.ResourceScale);}
+    public void AddFoodSoldToday(double delta)=>FoodSoldTodayUnits=FixedPoint.Add(FoodSoldTodayUnits,delta,FixedPoint.ResourceScale);
+    public long FoodDemandEstimateUnits {get;set;}
+    [JsonIgnore] public double FoodDemandEstimate {get=>FixedPoint.Value(FoodDemandEstimateUnits,FixedPoint.ResourceScale);set=>FoodDemandEstimateUnits=FixedPoint.Quantize(value,FixedPoint.ResourceScale);}
     [JsonIgnore] public BuildingDefinition Definition=>Catalog.Definitions[Kind];
     [JsonIgnore] public Point Door=>Position+new Point(-Math.Sin(Rotation)*Definition.Depth/2,-Math.Cos(Rotation)*Definition.Depth/2);
     public double Quantity(ResourceKind k)=>Stock.GetValueOrDefault(k);
-    public void AddStock(ResourceKind k,double amount)=>Stock[k]=Math.Max(0,Quantity(k)+amount);
+    public void AddStock(ResourceKind k,double amount)=>Stock.Units[k]=Math.Max(0,FixedPoint.Add(Stock.Units.GetValueOrDefault(k),amount,FixedPoint.ResourceScale));
+    public void AddStockUnits(ResourceKind k,long units)=>Stock.Units[k]=Math.Max(0,checked(Stock.Units.GetValueOrDefault(k)+units));
 }
 public sealed class RoadNode
 {
@@ -159,7 +173,9 @@ public sealed class RoadNode
     public bool Crosswalk {get;set;}
     public double MaintenanceDueAt {get;set;}
     public double ElectricityRatio {get;set;}
-    public double MaintenanceRatio {get;set;}=1;
+    public long MaintenanceRatioUnits {get;set;}=1*FixedPoint.PointScale;
+    [JsonIgnore] public double MaintenanceRatio {get=>FixedPoint.Value(MaintenanceRatioUnits,FixedPoint.PointScale);set=>MaintenanceRatioUnits=FixedPoint.Quantize(value,FixedPoint.PointScale);}
+    public void AddMaintenanceRatio(double delta)=>MaintenanceRatioUnits=FixedPoint.Add(MaintenanceRatioUnits,delta,FixedPoint.PointScale);
 }
 public sealed class WorkProject
 {
@@ -173,10 +189,12 @@ public sealed class WorkProject
     public List<int> MaintenanceRoadIds {get;set;}=[];
     public List<int> MaintainedRoadIds {get;set;}=[];
     public Dictionary<ResourceKind,double> Required {get;set;}=new();
-    public Dictionary<ResourceKind,double> Delivered {get;set;}=new();
-    public Dictionary<ResourceKind,double> LocalReserved {get;set;}=new();
+    public ResourceStock Delivered {get;set;}=new();
+    public ResourceStock LocalReserved {get;set;}=new();
     public WorkStatus Status {get;set;}
-    public double Progress {get;set;}
+    public long ProgressUnits {get;set;}
+    [JsonIgnore] public double Progress {get=>FixedPoint.Value(ProgressUnits,FixedPoint.PointScale);set=>ProgressUnits=FixedPoint.Quantize(value,FixedPoint.PointScale);}
+    public void AddProgress(double delta)=>ProgressUnits=FixedPoint.Add(ProgressUnits,delta,FixedPoint.PointScale);
     public double WorkSeconds {get;set;}
     public decimal BudgetRemaining {get;set;}
     public decimal CostPaid {get;set;}
@@ -212,11 +230,19 @@ public sealed class Citizen
     public int PathIndex {get;set;}
     public JourneyPurpose Purpose {get;set;}
     public int? DestinationId {get;set;}
-    public double HungerHours {get;set;}
-    public double Health {get;set;}=100;
+    public long HungerMicroseconds {get;set;}
+    [JsonIgnore] public double HungerHours {get=>HungerMicroseconds/(3600.0*FixedPoint.TimeScale);set=>HungerMicroseconds=FixedPoint.Quantize(value*3600,FixedPoint.TimeScale);}
+    public void AddHungerSeconds(double seconds)=>HungerMicroseconds=FixedPoint.Add(HungerMicroseconds,seconds,FixedPoint.TimeScale);
+    public long HealthUnits {get;set;}=100*FixedPoint.PointScale;
+    [JsonIgnore] public double Health {get=>FixedPoint.Value(HealthUnits,FixedPoint.PointScale);set=>HealthUnits=FixedPoint.Quantize(value,FixedPoint.PointScale);}
+    public void AddHealth(double delta)=>HealthUnits=FixedPoint.Add(HealthUnits,delta,FixedPoint.PointScale);
     public double Satisfaction {get;set;}=65;
-    public double BagFood {get;set;}
-    public double WorkSecondsToday {get;set;}
+    public long BagFoodUnits {get;set;}
+    [JsonIgnore] public double BagFood {get=>FixedPoint.Value(BagFoodUnits,FixedPoint.ResourceScale);set=>BagFoodUnits=FixedPoint.Quantize(value,FixedPoint.ResourceScale);}
+    public void AddBagFood(double delta)=>BagFoodUnits=FixedPoint.Add(BagFoodUnits,delta,FixedPoint.ResourceScale);
+    public long WorkSecondsTodayUnits {get;set;}
+    [JsonIgnore] public double WorkSecondsToday {get=>FixedPoint.Value(WorkSecondsTodayUnits,FixedPoint.TimeScale);set=>WorkSecondsTodayUnits=FixedPoint.Quantize(value,FixedPoint.TimeScale);}
+    public void AddWorkSecondsToday(double delta)=>WorkSecondsTodayUnits=FixedPoint.Add(WorkSecondsTodayUnits,delta,FixedPoint.TimeScale);
     public decimal WagesAccrued {get;set;}
     public double LastPaidAt {get;set;}
     public double NextDecisionAt {get;set;}
@@ -237,7 +263,9 @@ public sealed class Family
     public int Id {get;set;}
     public List<int> Members {get;set;}=[];
     public int? HomeId {get;set;}
-    public double Pantry {get;set;}
+    public long PantryUnits {get;set;}
+    [JsonIgnore] public double Pantry {get=>FixedPoint.Value(PantryUnits,FixedPoint.ResourceScale);set=>PantryUnits=FixedPoint.Quantize(value,FixedPoint.ResourceScale);}
+    public void AddPantry(double delta)=>PantryUnits=FixedPoint.Add(PantryUnits,delta,FixedPoint.ResourceScale);
     public double LastMigrationReview {get;set;}
     public bool Emigrating {get;set;}
 }
@@ -270,8 +298,12 @@ public sealed class Vehicle
     public bool External {get;set;}
     public Point Position {get;set;}
     public double Heading {get;set;}
-    public double Fuel {get;set;}
-    public double FuelBurnedLastStep {get;set;}
+    public long FuelUnits {get;set;}
+    [JsonIgnore] public double Fuel {get=>FixedPoint.Value(FuelUnits,FixedPoint.ResourceScale);set=>FuelUnits=FixedPoint.Quantize(value,FixedPoint.ResourceScale);}
+    public void AddFuel(double delta)=>FuelUnits=FixedPoint.Add(FuelUnits,delta,FixedPoint.ResourceScale);
+    public long FuelBurnedLastStepUnits {get;set;}
+    [JsonIgnore] public double FuelBurnedLastStep {get=>FixedPoint.Value(FuelBurnedLastStepUnits,FixedPoint.ResourceScale);set=>FuelBurnedLastStepUnits=FixedPoint.Quantize(value,FixedPoint.ResourceScale);}
+    public void AddFuelBurnedLastStep(double delta)=>FuelBurnedLastStepUnits=FixedPoint.Add(FuelBurnedLastStepUnits,delta,FixedPoint.ResourceScale);
     public VehicleStatus Status {get;set;}
     public List<int> Route {get;set;}=[];
     public int RouteIndex {get;set;}
@@ -284,9 +316,11 @@ public sealed class Vehicle
     public int? DestinationBuildingId {get;set;}
     public int? RefuellingAt {get;set;}
     public List<int> SavedRoute {get;set;}=[];
-    public Dictionary<ResourceKind,double> Cargo {get;set;}=new();
+    public ResourceStock Cargo {get;set;}=new();
     public double CargoCapacity {get;set;}=150;
-    public double LoadTimer {get;set;}
+    public long LoadTimerUnits {get;set;}
+    [JsonIgnore] public double LoadTimer {get=>FixedPoint.Value(LoadTimerUnits,FixedPoint.TimeScale);set=>LoadTimerUnits=FixedPoint.Quantize(value,FixedPoint.TimeScale);}
+    public void AddLoadTimer(double delta)=>LoadTimerUnits=FixedPoint.Add(LoadTimerUnits,delta,FixedPoint.TimeScale);
     public string Cause {get;set;}="No exterior";
     public double WaitingSince {get;set;}
     public int? IntersectionClaim {get;set;}
@@ -331,7 +365,7 @@ public sealed class Shipment
     public bool Cancelled {get;set;}
     public bool PickedUp {get;set;}
     public string GoodsOwnerAccount {get;set;}="city";
-    public Dictionary<ResourceKind,double> Cargo {get;set;}=new();
+    public ResourceStock Cargo {get;set;}=new();
     public decimal PricePaid {get;set;}
     public Point Destination {get;set;}
 }
@@ -379,6 +413,7 @@ public sealed class ExternalCompanyCandidate
 public sealed class CityState
 {
     public int SchemaVersion {get;set;}=1;
+    public int QuantityStateVersion {get;set;}
     public int ConstructionStateVersion {get;set;}
     public int Seed {get;set;}
     public string Name {get;set;}="";
@@ -386,7 +421,9 @@ public sealed class CityState
     public ulong RandomState {get;set;}
     public int NextId {get;set;}=1;
     public DateTime Now {get;set;}=new(2026,1,1,6,0,0);
-    public double ElapsedSeconds {get;set;}
+    public long ElapsedSecondsUnits {get;set;}
+    [JsonIgnore] public double ElapsedSeconds {get=>FixedPoint.Value(ElapsedSecondsUnits,FixedPoint.TimeScale);set=>ElapsedSecondsUnits=FixedPoint.Quantize(value,FixedPoint.TimeScale);}
+    public void AddElapsedSeconds(double delta)=>ElapsedSecondsUnits=FixedPoint.Add(ElapsedSecondsUnits,delta,FixedPoint.TimeScale);
     public double EconomyNextAt {get;set;}
     public DateTime NextDaily {get;set;}
     public DateTime NextTaxDate {get;set;}
@@ -396,7 +433,7 @@ public sealed class CityState
     [JsonIgnore(Condition=JsonIgnoreCondition.WhenWritingNull)]
     public List<Point>? LakeBoundary {get;set;}
     public double LakePollution {get;set;}
-    public Dictionary<long,double> PollutionCells {get;set;}=new();
+    public Dictionary<long,long> PollutionCells {get;set;}=new();
     public bool CityHallPlaced {get;set;}
     public int RoadRevision {get;set;}
     public Dictionary<string,decimal> Wallets {get;set;}=new();
@@ -414,7 +451,7 @@ public sealed class CityState
     public List<Shipment> Shipments {get;set;}=[];
     public List<ExternalFamilyCandidate> FamilyCandidates {get;set;}=[];
     public List<ExternalCompanyCandidate> CompanyCandidates {get;set;}=[];
-    public Dictionary<ResourceKind,double> OutsideStock {get;set;}=new();
+    public ResourceStock OutsideStock {get;set;}=new();
     public decimal[] TaxRates {get;set;}=[.01m,.01m,.01m,.01m,.01m,.01m];
     public double PotableCapacity {get;set;}
     public double WaterDemand {get;set;}
@@ -425,11 +462,17 @@ public sealed class CityState
     public double UntreatedSewage {get;set;}
     public double WindFactor {get;set;}
     public double RawWaterCapacity {get;set;}
-    public double StreetElectricityConsumedToday {get;set;}
+    public long StreetElectricityConsumedTodayUnits {get;set;}
+    [JsonIgnore] public double StreetElectricityConsumedToday {get=>FixedPoint.Value(StreetElectricityConsumedTodayUnits,FixedPoint.ResourceScale);set=>StreetElectricityConsumedTodayUnits=FixedPoint.Quantize(value,FixedPoint.ResourceScale);}
+    public void AddStreetElectricityConsumedToday(double delta)=>StreetElectricityConsumedTodayUnits=FixedPoint.Add(StreetElectricityConsumedTodayUnits,delta,FixedPoint.ResourceScale);
     public decimal WaterWageCostToday {get;set;}
     public decimal ElectricityWageCostToday {get;set;}
-    public double WaterAvailableToday {get;set;}
-    public double ElectricityAvailableToday {get;set;}
+    public long WaterAvailableTodayUnits {get;set;}
+    [JsonIgnore] public double WaterAvailableToday {get=>FixedPoint.Value(WaterAvailableTodayUnits,FixedPoint.ResourceScale);set=>WaterAvailableTodayUnits=FixedPoint.Quantize(value,FixedPoint.ResourceScale);}
+    public void AddWaterAvailableToday(double delta)=>WaterAvailableTodayUnits=FixedPoint.Add(WaterAvailableTodayUnits,delta,FixedPoint.ResourceScale);
+    public long ElectricityAvailableTodayUnits {get;set;}
+    [JsonIgnore] public double ElectricityAvailableToday {get=>FixedPoint.Value(ElectricityAvailableTodayUnits,FixedPoint.ResourceScale);set=>ElectricityAvailableTodayUnits=FixedPoint.Quantize(value,FixedPoint.ResourceScale);}
+    public void AddElectricityAvailableToday(double delta)=>ElectricityAvailableTodayUnits=FixedPoint.Add(ElectricityAvailableTodayUnits,delta,FixedPoint.ResourceScale);
     public decimal WaterUnitPrice {get;set;}=.04m;
     public decimal ElectricityUnitPrice {get;set;}=.03m;
     public double MaintenanceNextAt {get;set;}

@@ -137,7 +137,7 @@ public sealed partial class CitySimulation
         // replanned trip) is replaced at no new charge.
         if(!t.TowPrepaid)ChargeOwner(t,fee,"Guincho","Reboque físico: frete e combustível do guincho");
         t.TowPrepaid=true;
-        State.OutsideStock[ResourceKind.Fuel]-=fuel;tow.Fuel+=fuel;
+        State.OutsideStock.AddAmount(ResourceKind.Fuel,-(fuel));tow.AddFuel(fuel);
         tow.Position=State.Entry;tow.Route=toVehicle;tow.RouteIndex=0;tow.DockPosition=pose;tow.Detour.Clear();tow.WaitingSince=0;tow.IntersectionClaim=null;tow.Status=VehicleStatus.Travelling;
         tow.TowPhase=TowPhase.ToVehicle;tow.TowTargetId=t.Id;tow.TowDestination=plan.Kind;tow.TowStationId=plan.Station?.Id;tow.Cause=$"Guincho a caminho do veículo {t.Id}";
         t.TowTruckId=tow.Id;t.TowRoadRevision=null;t.Cause=$"Sem combustível; aguardando guincho {tow.Id}";
@@ -159,8 +159,8 @@ public sealed partial class CitySimulation
         var t=State.Vehicles.FirstOrDefault(o=>o.Id==tow.TowTargetId);
         if(t==null||t.TowTruckId!=tow.Id||tow.TowPhase is TowPhase.ToVehicle or TowPhase.Loading&&t.Status!=VehicleStatus.Stranded){AbortTow(tow,t);return true;}
         switch(tow.TowPhase){
-            case TowPhase.Loading:tow.LoadTimer-=dt;if(tow.LoadTimer<=0)LoadTowed(tow,t);return true;
-            case TowPhase.Unloading:tow.LoadTimer-=dt;if(tow.LoadTimer<=0)DeliverTowed(tow,t);return true;
+            case TowPhase.Loading:tow.AddLoadTimer(-(dt));if(tow.LoadTimer<=0)LoadTowed(tow,t);return true;
+            case TowPhase.Unloading:tow.AddLoadTimer(-(dt));if(tow.LoadTimer<=0)DeliverTowed(tow,t);return true;
         }
         // SPEC waiting limit: people still stuck on a tow that cannot move go on foot.
         if(tow.TowPhase==TowPhase.Delivering&&PeopleAboard(t)&&State.ElapsedSeconds-t.TowCalledAt>State.Tuning.TowMaxWaitSeconds&&(tow.Status==VehicleStatus.Waiting||tow.WaitingSince>0&&VehicleMovementTime-tow.WaitingSince>=State.Tuning.UTurnWaitSeconds)){Disembark(t,"Guincho parado além do limite de espera");t.Status=VehicleStatus.Towed;t.Cause="Sendo rebocado; pessoas seguiram a pé";}
@@ -298,7 +298,7 @@ public sealed partial class CitySimulation
         }
         if(t.PassengerCar&&t.TripPurpose==JourneyPurpose.Leaving){t.TowResumeNode=null;CarReachedSpot(t);return;}
         var fuel=Math.Min(Math.Max(0,State.Tuning.FuelTank-t.Fuel),State.OutsideStock[ResourceKind.Fuel]);
-        if(fuel>0){ChargeOwner(t,Money((decimal)fuel*State.Tuning.ImportPrices[ResourceKind.Fuel]),"Combustível","Combustível importado no exterior após reboque");State.OutsideStock[ResourceKind.Fuel]-=fuel;t.Fuel+=fuel;}
+        if(fuel>0){ChargeOwner(t,Money((decimal)fuel*State.Tuning.ImportPrices[ResourceKind.Fuel]),"Combustível","Combustível importado no exterior após reboque");State.OutsideStock.AddAmount(ResourceKind.Fuel,-(fuel));t.AddFuel(fuel);}
         var target=TowTripTarget(t);t.TowResumeNode=null;var route=target==null?[]:FindRoadRoute(EntryNode().Id,target.Id,ConstructionTrip(t));
         t.Route=route;t.RouteIndex=0;t.Status=route.Count>0?VehicleStatus.Travelling:VehicleStatus.Waiting;t.Cause=route.Count>0?"Reabastecido no exterior após reboque; voltando para a viagem":"Reabastecido no exterior; sem rota para retomar a viagem";
         if(route.Count==0)return;

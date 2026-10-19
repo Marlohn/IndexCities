@@ -576,15 +576,17 @@ Base: `origin/main` em `c50923a`, .NET 8.0.32, Release, aquecimento padrão de 2
 
 | Cenário | Seed | Mortes antes → depois | Refeições antes → depois | Salários antes → depois | Saúde média antes → depois | Satisfação média antes → depois | Veículos parados antes → depois |
 |---|---|---|---|---|---|---|---|
-| cycle, 7 dias | 42 | 1 → pendente | 840 → pendente | 5.297,66 → pendente | 99,999989 → pendente | 69,718855 → pendente | 0 no fim → pendente |
-| cycle, 7 dias | 7 | 0 → pendente | 894 → pendente | 5.353,94 → pendente | 99,999984 → pendente | 66,648491 → pendente | 0 no fim → pendente |
-| cycle, 7 dias | 43 | 0 → pendente | 948 → pendente | 5.428,14 → pendente | 99,999995 → pendente | 73,438801 → pendente | 0 no fim → pendente |
-| grid, 11 dias | 42 | 0 → pendente | 2.700 → pendente | 19.013,13 → pendente | 99,999996 → pendente | 68,829473 → pendente | máximo 0 → pendente |
-| grid, 11 dias | 7 | 0 → pendente | 2.675 → pendente | 18.962,69 → pendente | 99,999996 → pendente | 68,935944 → pendente | máximo 0 → pendente |
-| grid, 11 dias | 43 | 0 → pendente | 2.750 → pendente | 19.021,82 → pendente | 99,999996 → pendente | 68,916647 → pendente | máximo 0 → pendente |
+| cycle, 7 dias | 42 | 1 → 1 | 840 → 840 | 5.297,66 → 5.297,66 | 99,999989 → 99,999989 | 69,718855 → 69,718807 | 0 no fim → 0 no fim |
+| cycle, 7 dias | 7 | 0 → 0 | 894 → 894 | 5.353,94 → 5.353,94 | 99,999984 → 99,999984 | 66,648491 → 66,648428 | 0 no fim → 0 no fim |
+| cycle, 7 dias | 43 | 0 → 0 | 948 → 948 | 5.428,14 → 5.428,14 | 99,999995 → 99,999995 | 73,438801 → 73,438740 | 0 no fim → 0 no fim |
+| grid, 11 dias | 42 | 0 → 0 | 2.700 → 2700 | 19.013,13 → 19.013,78 | 99,999996 → 99,999996 | 68,829473 → 68,805195 | máximo 0 → máximo 0 |
+| grid, 11 dias | 7 | 0 → 0 | 2.675 → 2675 | 18.962,69 → 18.962,11 | 99,999996 → 99,999996 | 68,935944 → 68,873064 | máximo 0 → máximo 0 |
+| grid, 11 dias | 43 | 0 → 0 | 2.750 → 2750 | 19.021,82 → 19.021,69 | 99,999996 → 99,999996 | 68,916647 → 68,994653 | máximo 0 → máximo 0 |
 
 No ciclo, `scale` confirma zero veículos em viagem no encerramento; não mede o máximo de imobilizados ao longo do período. Na grade, `stuck` mede o máximo de veículos sem deslocamento por pelo menos 30 min e a falta de combustível acumulada; ambos zero nas três sementes. Os logs completos e SHAs anteriores estão em `artifacts/verification/fixed-quantities/before-*.log`.
 
 **Correção da bancada, aplicada antes da conversão:** o acesso da captação no ciclo com seed 43 era rejeitado porque atravessava a Casa #260. A fixture conserva o traçado original se `QuoteRoad` o aceita; caso contrário usa a faixa livre z=32. O núcleo não foi alterado. O ciclo43 foi medido já com esse ajuste; 42/7 mantêm seus traçados originais. A falha original foi preservada em `before-cycle-43-original-fixture.log`.
 
-**Estado desta rodada:** referência concluída (6/6, invariantes OK; suíte original 250/250). Conversão, testes de propriedade, round-trip exato, medição posterior, Godot e revisão independente ainda não executados. Pergunta de arredondamento pendente no Orca (`msg_b4dc71abe9dd`); coordenador sem cota até 20h30 no terminal observado. Não inferir equivalência ou melhoria de desempenho desta tabela incompleta.
+**Comparação posterior:** seis cenários completos, com invariantes OK. Mortes e refeições ficaram idênticas nas seis sementes/cidades; saúde média permaneceu igual nas seis casas exibidas. As diferenças de salários e satisfação na grade ficam abaixo da dispersão entre as três sementes de referência; não apareceu mudança sistemática relevante nem veículo parado/sem combustível. Há pequenas diferenças nos acontecimentos: a conversão altera os arredondamentos uma vez, conforme autorizado; não se exige SHA igual ao formato antigo. Logs e SHAs posteriores estão em `artifacts/verification/fixed-quantities/after-*.log`. Os tempos não sustentam conclusão de desempenho: houve build/import do Godot concorrente em parte da medição.
+
+**Validação:** suíte original 250/250 preservada, sem mudar expectativas; sete testes novos cobrem soma dos incrementos já quantizados, fome/saúde variável, ordem refeição/limites de saúde, recorrências de poluição e demanda, estoques/copias exatas, round-trip bruto, 100 anos de relógio, o maior estoque atual (1 milhão de unidades externas) e rejeição de estouro. A suíte completa passou 257/257. No Godot 4.7.2 mono, build/import e `-- --qa-list` reais; `-- --smoke` produziu `INDEXCITIES_SMOKE_OK buildings=0 roads=17`, e `-- --persistence-smoke` produziu `INDEXCITIES_PERSISTENCE_OK`, com continuação idêntica e aviso de save antigo. Diretório absoluto isolado: `C:/Users/Marlohn/orca/workspaces/IndexCities/quantidades-inteiras/artifacts/verification/fixed-quantities/after-godot-saves`; o cenário de persistência confirmou esse destino no marcador. O smoke simples não grava cidade. Resta registrar a revisão independente e suas correções.

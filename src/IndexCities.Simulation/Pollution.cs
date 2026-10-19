@@ -8,7 +8,7 @@ public sealed partial class CitySimulation
     public double LocalPollution(Point point)
     {
         var load=0.0;
-        foreach(var entry in State.PollutionCells)load+=entry.Value*CellFactor(point,entry.Key);
+        foreach(var entry in State.PollutionCells)load+=FixedPoint.Value(entry.Value,FixedPoint.PointScale)*CellFactor(point,entry.Key);
         return Math.Clamp(load,0,2);
     }
     static double CellFactor(Point point,long key){var x=(int)(key>>32);var z=unchecked((int)key);var centre=new Point((x+.5)*PollutionCellSize,(z+.5)*PollutionCellSize);return Math.Exp(-point.Distance(centre)/64);}
@@ -26,7 +26,7 @@ public sealed partial class CitySimulation
     {
         var count=State.PollutionCells.Count;var changed=count!=_cellCount;
         if(_cellKeys.Length<count){Array.Resize(ref _cellKeys,Math.Max(count,_cellKeys.Length*2));Array.Resize(ref _cellValues,_cellKeys.Length);}
-        var i=0;foreach(var entry in State.PollutionCells){if(!changed&&_cellKeys[i]!=entry.Key)changed=true;_cellKeys[i]=entry.Key;_cellValues[i]=entry.Value;i++;}
+        var i=0;foreach(var entry in State.PollutionCells){if(!changed&&_cellKeys[i]!=entry.Key)changed=true;_cellKeys[i]=entry.Key;_cellValues[i]=FixedPoint.Value(entry.Value,FixedPoint.PointScale);i++;}
         _cellCount=count;if(changed)_cellLayout++;
     }
     CellFactors FactorsFor(Point point)
@@ -62,14 +62,14 @@ public sealed partial class CitySimulation
     void EmitPollution(Point point,double amount)
     {
         if(amount<=0||!InMap(point))return;var x=(int)Math.Floor(point.X/PollutionCellSize);var z=(int)Math.Floor(point.Z/PollutionCellSize);var key=((long)x<<32)|unchecked((uint)z);
-        State.PollutionCells[key]=State.PollutionCells.GetValueOrDefault(key)+amount;
+        State.PollutionCells[key]=FixedPoint.Add(State.PollutionCells.GetValueOrDefault(key),amount,FixedPoint.PointScale);
     }
     void UpdatePollution(double dt,List<Building> active)
     {
         var recovery=Math.Exp(-.15*dt/86400);
-        // Same multiplications and removals, in the same key order.
+        // Compose this rounded integer recurrence in key order; do not use pow(recovery,N).
         _decayKeys.Clear();_decayKeys.AddRange(State.PollutionCells.Keys);
-        foreach(var key in _decayKeys){ref var value=ref CollectionsMarshal.GetValueRefOrNullRef(State.PollutionCells,key);value*=recovery;if(value<1e-10)State.PollutionCells.Remove(key);}
+        foreach(var key in _decayKeys){ref var value=ref CollectionsMarshal.GetValueRefOrNullRef(State.PollutionCells,key);value=FixedPoint.Multiply(value,recovery);if(value<100)State.PollutionCells.Remove(key);}
         foreach(var building in active)EmitPollution(building.Position,building.UntreatedSewage/100*dt/86400);
         foreach(var vehicle in State.Vehicles)EmitPollution(vehicle.Position,vehicle.FuelBurnedLastStep*.01);
         SnapshotPollution();State.LakePollution=SampledPollution(State.LakeCentre);

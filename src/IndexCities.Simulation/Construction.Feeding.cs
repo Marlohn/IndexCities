@@ -71,7 +71,7 @@ public sealed partial class CitySimulation
             if(distance>.001)vehicle.Heading=vehicle.SiteDockHeading is {} heading&&vehicle.SitePathIndex==vehicle.SitePath.Count-1?heading:Math.Atan2(delta.X,delta.Z);
             travel=SafeSiteTravel(vehicle,target,travel);
             if(travel<=.000001&&distance>.001){vehicle.Heading=previousHeading;vehicle.Cause=WorkCause.PavingSiteOccupied;return false;}
-            vehicle.Position=vehicle.Position.MoveTowards(target,travel);vehicle.Fuel=Math.Max(0,vehicle.Fuel-travel*State.Tuning.FuelPerMetre);vehicle.FuelBurnedLastStep+=travel*State.Tuning.FuelPerMetre;remaining-=travel/speed;
+            vehicle.Position=vehicle.Position.MoveTowards(target,travel);vehicle.AddFuel(-(travel*State.Tuning.FuelPerMetre));vehicle.FuelUnits=Math.Max(0,vehicle.FuelUnits);vehicle.AddFuelBurnedLastStep(travel*State.Tuning.FuelPerMetre);remaining-=travel/speed;
             if(travel>=distance-.000001)vehicle.SitePathIndex++;else return false;
         }
         return vehicle.SitePathIndex>=vehicle.SitePath.Count;
