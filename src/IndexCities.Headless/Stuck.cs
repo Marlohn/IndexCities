@@ -15,6 +15,9 @@ sealed class Stuck
     public void Sample(CitySimulation sim)
     {
         var now=sim.State.ElapsedSeconds;
+        // STUCK_TRACE=id,id: position and cause of those vehicles at every sample (diagnostic).
+        foreach(var id in (Environment.GetEnvironmentVariable("STUCK_TRACE")??"").Split(',',StringSplitOptions.RemoveEmptyEntries))
+            if(sim.State.Vehicles.FirstOrDefault(v=>v.Id==int.Parse(id)) is {} traced)Console.WriteLine($"  TRACE {sim.State.Now:MM-dd HH:mm} #{traced.Id} {traced.Status} ({traced.Position.X:F1},{traced.Position.Z:F1}) h={traced.Heading*180/Math.PI:F0} rota {traced.RouteIndex}/{traced.Route.Count} claim={traced.IntersectionClaim} detour={traced.Detour.Count} «{traced.Cause}»");
         foreach(var v in sim.State.Vehicles){
             if(v.Status==VehicleStatus.Stranded&&_stranded.Add(v.Id))Console.WriteLine($"  STRANDED #{v.Id} {(v.PassengerCar?"carro":"caminhão")}{(v.External?" externo":"")} {sim.State.Now:yyyy-MM-dd HH:mm} em ({v.Position.X:F1},{v.Position.Z:F1}) «{v.Cause}»");
             if(v.Status is not (VehicleStatus.Travelling or VehicleStatus.Waiting)){_still.Remove(v.Id);continue;}
@@ -51,7 +54,7 @@ sealed class Stuck
     {
         var st=sim.State;
         foreach(var id in ids){
-            var v=st.Vehicles.First(x=>x.Id==id);var tow=st.Vehicles.FirstOrDefault(x=>x.TowTargetId==id);
+            if(st.Vehicles.FirstOrDefault(x=>x.Id==id) is not {} v)continue;var tow=st.Vehicles.FirstOrDefault(x=>x.TowTargetId==id);
             // Queue: vehicles held (waiting) within 60 m behind it, same lane and heading.
             var queue=v.Status==VehicleStatus.Stranded?st.Vehicles.Count(o=>o.Id!=id&&o.WaitingSince>0&&o.Status==VehicleStatus.Travelling&&Math.Cos(o.Heading-v.Heading)>.9&&(v.Position-o.Position) is var r&&r.X*Math.Sin(v.Heading)+r.Z*Math.Cos(v.Heading) is >0 and <60&&Math.Abs(r.X*Math.Cos(v.Heading)-r.Z*Math.Sin(v.Heading))<2.6):0;
             if(tow!=null&&Environment.GetEnvironmentVariable("STUCK_EVERY")=="1")Console.WriteLine($"      alvo h={v.Heading*180/Math.PI:F0} claim={v.IntersectionClaim} guincho doca={tow.DockPosition} rota guincho={string.Join(",",tow.Route.Skip(Math.Max(0,tow.RouteIndex-1)).Take(8).Select(n=>st.Roads.First(r=>r.Id==n) is var r?$"{n}({r.Position.X:F0},{r.Position.Z:F0})/{r.Neighbours.Count}":""))} perto do alvo: {string.Join("; ",st.Vehicles.Where(o=>o.Id!=id&&o.Status!=VehicleStatus.Outside&&o.Position.Distance(v.Position)<14).Select(o=>$"#{o.Id} {o.Status} ({o.Position.X:F1},{o.Position.Z:F1}) h={o.Heading*180/Math.PI:F0} claim={o.IntersectionClaim} w={o.WaitingSince:F0} «{o.Cause}» dest={o.Route.LastOrDefault()}"))}");

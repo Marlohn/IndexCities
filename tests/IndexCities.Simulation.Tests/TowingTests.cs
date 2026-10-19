@@ -183,6 +183,16 @@ public sealed class TowingTests
         Assert.True(reached,string.Join(" | ",sim.State.Vehicles.Where(v=>v.Body==TruckBody.Tow).Select(v=>v.Position+" "+v.Cause)));
         Assert.NotEqual(VehicleStatus.Stranded,car.Status);Assert.Null(car.IntersectionClaim);sim.CheckInvariants();
     }
+    [Fact] public void A_car_stranded_in_a_junction_keeps_holding_it_after_its_people_walk_on()
+    {
+        // No tow can come (no link to the exterior): the people walk at once and the car stays.
+        var scene=City(ring:false,connected:false);var s=scene.Sim.State;
+        for(var z=4;z<=40;z+=4)s.Roads.Add(new(){Id=s.NextId++,Position=new(4,z)});
+        var sim=new CitySimulation(s);var car=sim.State.Vehicles.Single(v=>v.Id==scene.Car.Id);var junction=sim.State.Roads.Single(r=>r.Position==new Point(4,0));
+        car.Position=new(4,-1.65);car.IntersectionClaim=junction.Id;
+        for(var t=0;t<60;t+=2)sim.Advance(2);
+        Assert.Equal(VehicleStatus.Stranded,car.Status);Assert.Null(car.DriverId);Assert.Equal(junction.Id,car.IntersectionClaim);sim.CheckInvariants();
+    }
     static void RunUntil(Scene scene,Func<bool> done,double seconds=1500){for(var t=0.0;t<seconds&&!done();t+=2)scene.Sim.Advance(2);}
     [Fact] public void A_tow_whose_replanned_trip_no_longer_fits_its_fuel_returns_and_another_comes_without_a_new_charge()
     {

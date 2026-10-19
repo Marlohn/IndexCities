@@ -79,7 +79,9 @@ public sealed partial class CitySimulation
     // A car that lost its route or fuel stays where it physically is; people continue on foot.
     void LeaveCar(Vehicle v,string cause)
     {
-        var occupants=new List<int>();if(v.DriverId is {} driver)occupants.Add(driver);occupants.AddRange(v.Passengers);v.DriverId=null;v.Passengers.Clear();v.ParkingSpot=null;v.Route.Clear();v.RouteIndex=0;v.IntersectionClaim=null;v.Cause=cause;
+        var occupants=new List<int>();if(v.DriverId is {} driver)occupants.Add(driver);occupants.AddRange(v.Passengers);v.DriverId=null;v.Passengers.Clear();v.ParkingSpot=null;v.Route.Clear();v.RouteIndex=0;v.Cause=cause;
+        // A stranded car still stands where it stopped: it keeps holding the junction it is in.
+        if(v.Status!=VehicleStatus.Stranded)v.IntersectionClaim=null;
         if(v.Status!=VehicleStatus.Stranded)v.Status=VehicleStatus.Parked;var destination=BuildingById(v.DestinationBuildingId);
         foreach(var c in occupants.Select(id=>CitizenWithId(id))){c.VehicleId=null;c.BoardingVehicleId=null;c.Position=v.Position;c.Path.Clear();c.PathIndex=0;c.NextDecisionAt=State.ElapsedSeconds;Personal(c,cause+"; segue a pé");if(destination!=null&&v.TripPurpose!=JourneyPurpose.Leaving){var path=CitizenRoute(c,destination);if(path.Count>0){c.Path=path;c.PathRoadRevision=State.RoadRevision;c.Purpose=v.TripPurpose;c.DestinationId=destination.Id;}}}
     }

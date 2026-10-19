@@ -77,10 +77,13 @@ public sealed partial class CitySimulation
     // entry they block is rechecked every step without substeps of its own, and
     // their next road sample is not a predicted arrival. Without a stranded
     // vehicle nothing here applies, so ordinary traffic keeps the same substeps.
-    bool HeldBehindStranded(Vehicle v)
+    bool HeldBehindStranded(Vehicle v)=>HeldInStrandedChain(v,false);
+    bool HeldInStrandedChain(Vehicle v,bool orAtItsJunction)
     {
         var current=v;
         for(var hops=0;hops<State.Vehicles.Count&&current.Status==VehicleStatus.Travelling&&current.WaitingSince>0&&current.Detour.Count==0;hops++){
+            // Optionally the chain may also end at one held at the junction a stranded vehicle locks.
+            if(orAtItsJunction&&HeldAtStrandedJunction(current))return true;
             // Same-direction leader within the hold distance, as in MoveVehiclesUnsplit.
             Vehicle? leader=null;var nearest=double.MaxValue;var sin=Math.Sin(current.Heading);var cos=Math.Cos(current.Heading);
             foreach(var o in State.Vehicles){

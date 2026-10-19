@@ -14,6 +14,8 @@ public sealed partial class CitySimulation
     // axle sits on the lift behind the tow (kit: LiftAnchor 3.9 m back, axle 2.55 m
     // ahead of the truck origin).
     const double TowHalfLength=3.6,HeavyTowHalfLength=4.0,TruckHalfLength=3.6,CarHalfLength=2.2,HeavyTowTrail=6.5;
+    // A waiting tow with no delivery plan looks again after this many seconds.
+    const double TowReplanSeconds=10;
     static bool IsTow(Vehicle v)=>v.Body is TruckBody.Tow or TruckBody.TowHeavy;
     // A truck trailing a heavy tow still occupies the lane behind it.
     static bool OccupiesLane(Vehicle o)=>o.Status is VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded||o.Status==VehicleStatus.Towed&&!o.PassengerCar;
@@ -165,7 +167,7 @@ public sealed partial class CitySimulation
         }
         // SPEC waiting limit: people still stuck on a tow that cannot move go on foot.
         if(tow.TowPhase==TowPhase.Delivering&&PeopleAboard(t)&&State.ElapsedSeconds-t.TowCalledAt>State.Tuning.TowMaxWaitSeconds&&(tow.Status==VehicleStatus.Waiting||tow.WaitingSince>0&&VehicleMovementTime-tow.WaitingSince>=State.Tuning.UTurnWaitSeconds)){Disembark(t,"Guincho parado além do limite de espera");t.Status=VehicleStatus.Towed;t.Cause="Sendo rebocado; pessoas seguiram a pé";}
-        if(tow.Status==VehicleStatus.Waiting){ReplanTow(tow,t);return true;}
+        if(tow.Status==VehicleStatus.Waiting){if(State.ElapsedSeconds>=tow.TowRetryAt)ReplanTow(tow,t);return true;}
         return false;
     }
     // SPEC: the tow never goes on without fuel for the rest of its trip. After a
@@ -212,7 +214,8 @@ public sealed partial class CitySimulation
         if(best==null||from==null){
             // SPEC: without even the way back out within its fuel (only with fuel
             // forced in tests) the tow waits where it stands; no fictitious trip.
-            tow.Status=VehicleStatus.Waiting;var reachable=near.Any(node=>PlanTowDelivery(t,node,double.MaxValue,0,closed)!=null);
+            // Retried every few seconds rather than every step (calibration).
+            tow.Status=VehicleStatus.Waiting;tow.TowRetryAt=State.ElapsedSeconds+TowReplanSeconds;var reachable=near.Any(node=>PlanTowDelivery(t,node,double.MaxValue,0,closed)!=null);
             tow.Cause=reachable?$"Guincho sem combustível para levar o veículo {t.Id} a qualquer destino; parado no lugar":"Guincho aguardando rota para entregar o veículo "+t.Id;
             if(reachable)t.Cause="Sendo rebocado; guincho sem combustível para seguir";
             return false;
@@ -363,10 +366,12 @@ public sealed partial class CitySimulation
     bool DetourBodyClear(Vehicle tow,Vehicle t,List<Point> detour)
     {
         var from=tow.Position;
-        foreach(var to in detour){
-            var leg=to-from;var length=leg.Distance(default);var heading=length>.01?Math.Atan2(leg.X,leg.Z):tow.Heading;
-            for(var d=0.0;d<=length;d+=1){var at=from.MoveTowards(to,d);
-                if(State.Vehicles.Any(o=>o.Id!=tow.Id&&o.Id!=t.Id&&OccupiesLane(o)&&o.Position.Distance(at)<12&&!InStrandedQueue(tow,o)&&BodiesOverlap(tow,at,heading,o,o.Position,o.Heading)))return false;}
+        for(var i=0;i<detour.Count;i++){
+            var to=detour[i];var leg=to-from;var length=leg.Distance(default);var heading=length>.01?Math.Atan2(leg.X,leg.Z):tow.Heading;
+            // The stranded vehicle itself (it may stand askew) counts until the last
+            // leg, which ends at the pickup pose in front of it.
+            for(var d=i==detour.Count-1?1.0:0;d<=length;d+=1){var at=from.MoveTowards(to,d);
+                if(State.Vehicles.Any(o=>o.Id!=tow.Id&&(o.Id!=t.Id||i<detour.Count-1)&&OccupiesLane(o)&&o.Position.Distance(at)<12&&!InStrandedQueue(tow,o)&&BodiesOverlap(tow,at,heading,o,o.Position,o.Heading)))return false;}
             from=to;
         }
         return true;
