@@ -67,7 +67,7 @@ public sealed partial class CitySimulation
                 // Unloading at the bay, or already on its way in past the junction.
                 var home=o.External?EntryNode():BuildingById(o.HomeBuildingId) is {} source?Access(source):null;if(home==null)continue;
                 CrossingPoses(held,o,FindRoadRoute(access.Id,home.Id,ConstructionTrip(o)),0,dock,o.Heading,junction);
-            }else if(o.Status==VehicleStatus.Travelling&&o.ShipmentId==null&&o.DockPosition==null&&o.Route.Count>1&&o.Route[0]==access.Id)
+            }else if(o.Status==VehicleStatus.Travelling&&o.ShipmentId==null&&(o.DockPosition==null||!o.External&&o.DockPosition is {} home&&home.Distance(dock)>=.1)&&o.Route.Count>1&&o.Route[0]==access.Id)
                 CrossingPoses(held,o,o.Route,o.RouteIndex,o.Position,o.Heading,junction);
         }
         return held;

@@ -49,9 +49,13 @@ public sealed class SpurBayQueueTests
         Assert.True(held&&reloaded,"no delivery waited before the junction");
         Assert.True(Done(),PavingTests.Diagnostic(sim));
         var houses=sim.State.Projects.Where(p=>p.BuildingId!=null&&BuildingReachable(sim,p)).ToList();
-        Assert.True(houses.Count>=2,PavingTests.Diagnostic(sim));
+        // The third house (z=40) lies past the 32 m street end and has no access by design.
+        Assert.Equal(2,houses.Count);
         Assert.All(houses,p=>Assert.All(p.Required,r=>Assert.True(p.Delivered.GetValueOrDefault(r.Key)>=r.Value-.001,$"P{p.Id} {r.Key}")));
         Assert.All(sim.State.Shipments.Where(s=>s.ProjectId is {} id&&houses.Any(p=>p.Id==id)),s=>Assert.True(s.Complete,$"shipment {s.Id}"));
+        // Truck x machine samples come from the dock slide and the roller leaving its site,
+        // measured identically before this change (see report); a new one must not appear.
+        Assert.True(machineSamples<=1,$"machine contact samples: {machineSamples}");
         Assert.Equal(money,sim.MonetaryTotal);Assert.Equal(fuel,Fuel()+burned,6);
         sim.CheckInvariants();
         output.WriteLine($"dt={dt}; finishedAt={time:F1}; heldBeforeJunction={held}; reloaded={reloaded}; machineContactSamples={machineSamples}; houses={houses.Count}");
