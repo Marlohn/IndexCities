@@ -12,7 +12,7 @@ public sealed partial class CitySimulation
         // as integers. Geometry SchemaVersion remains an independent contract.
         using var document=JsonDocument.Parse(json);
         if(document.RootElement.ValueKind==JsonValueKind.Null)throw new InvalidDataException("Save vazio");
-        if(!document.RootElement.TryGetProperty("QuantityStateVersion",out var version)||version.GetInt32()!=1)
+        if(document.RootElement.ValueKind!=JsonValueKind.Object||!document.RootElement.TryGetProperty("QuantityStateVersion",out var version)||version.ValueKind!=JsonValueKind.Number||!version.TryGetInt32(out var quantityVersion)||quantityVersion!=1)
             throw new InvalidDataException("Cidade salva antes das quantidades em ponto fixo; versão não suportada");
         var state=JsonSerializer.Deserialize<CityState>(json,SaveOptions)??throw new InvalidDataException("Save vazio");
         if(state.SchemaVersion is not (1 or 2))throw new InvalidDataException("Versão de cidade não suportada");

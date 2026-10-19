@@ -67,9 +67,10 @@ public sealed partial class CitySimulation
     void UpdatePollution(double dt,List<Building> active)
     {
         var recovery=Math.Exp(-.15*dt/86400);
-        // Compose this rounded integer recurrence in key order; do not use pow(recovery,N).
+        // Truncate decay towards zero so even tiny residues keep decreasing to
+        // the existing removal threshold. Compose each step; do not use pow(recovery,N).
         _decayKeys.Clear();_decayKeys.AddRange(State.PollutionCells.Keys);
-        foreach(var key in _decayKeys){ref var value=ref CollectionsMarshal.GetValueRefOrNullRef(State.PollutionCells,key);value=FixedPoint.Multiply(value,recovery);if(value<100)State.PollutionCells.Remove(key);}
+        foreach(var key in _decayKeys){ref var value=ref CollectionsMarshal.GetValueRefOrNullRef(State.PollutionCells,key);value=FixedPoint.Multiply(value,recovery,MidpointRounding.ToZero);if(value<100)State.PollutionCells.Remove(key);}
         foreach(var building in active)EmitPollution(building.Position,building.UntreatedSewage/100*dt/86400);
         foreach(var vehicle in State.Vehicles)EmitPollution(vehicle.Position,vehicle.FuelBurnedLastStep*.01);
         SnapshotPollution();State.LakePollution=SampledPollution(State.LakeCentre);

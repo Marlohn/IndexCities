@@ -15,7 +15,7 @@ public static class FixedPoint
     public static double Value(long units,long scale)=>units/(double)scale;
     public static long Add(long units,double delta,long scale)=>checked(units+Quantize(delta,scale));
     // Round the product once, without converting the accumulated value to double.
-    public static long Multiply(long units,double factor)=>checked((long)decimal.Round(units*(decimal)factor,0,MidpointRounding.AwayFromZero));
+    public static long Multiply(long units,double factor,MidpointRounding rounding=MidpointRounding.AwayFromZero)=>checked((long)decimal.Round(units*(decimal)factor,0,rounding));
 }
 
 // The public dictionary boundary uses catalogue units. All persistent quantities

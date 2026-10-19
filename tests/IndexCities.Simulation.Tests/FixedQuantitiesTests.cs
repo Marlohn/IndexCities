@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using IndexCities.Simulation;
 using Xunit;
 
@@ -91,13 +92,83 @@ public sealed class FixedQuantitiesTests
         var factor=(decimal)Math.Exp(-.15*2/86400);var delta=(long)Math.Round(emission*FixedPoint.PointScale,MidpointRounding.AwayFromZero);
         for(var i=0;i<n;i++){
             Invoke(sim,"UpdatePollution",2.0,new List<Building>());Invoke(sim,"EmitPollution",point,emission);
-            expected=checked((long)decimal.Round(expected*factor,0,MidpointRounding.AwayFromZero)+delta);
+            expected=checked((long)decimal.Truncate(expected*factor)+delta);
         }
         Assert.Equal(expected,sim.State.PollutionCells[0]);
         var farm=new Building{FoodDemandEstimateUnits=17_123_456_789,FoodSoldTodayUnits=9_123_456_789};expected=farm.FoodDemandEstimateUnits;
         for(var i=0;i<n;i++){Invoke(sim,"ReviewFarmDemand",farm);expected=(long)decimal.Round(expected*.7m+farm.FoodSoldTodayUnits*.3m,0,MidpointRounding.AwayFromZero);}
         Assert.Equal(expected,farm.FoodDemandEstimateUnits);
         sim.State.PollutionCells[0]=99;Invoke(sim,"UpdatePollution",2.0,new List<Building>());Assert.Empty(sim.State.PollutionCells);
+    }
+    [Theory]
+    [InlineData(100L)]
+    [InlineData(1000L)]
+    [InlineData(100000L)]
+    [InlineData(143000L)]
+    [InlineData(144000L)]
+    public void TinyPollutionResiduesKeepDecayingUntilRemoved(long initial)
+    {
+        var sim=new CitySimulation(42);sim.State.PollutionCells.Clear();sim.State.PollutionCells[0]=initial;
+        // At least one integer unit must disappear per 2 s step, even where
+        // nearest rounding used to leave the residue unchanged forever.
+        var previous=initial;
+        for(var step=0;step<=initial-100&&sim.State.PollutionCells.Count>0;step++){
+            Invoke(sim,"UpdatePollution",2.0,new List<Building>());
+            if(sim.State.PollutionCells.TryGetValue(0,out var current)){Assert.True(current<previous);Assert.True(current>=100);previous=current;}
+        }
+        Assert.Empty(sim.State.PollutionCells);
+    }
+    [Theory]
+    [InlineData("\"1\"")]
+    [InlineData("null")]
+    [InlineData("true")]
+    [InlineData("{}")]
+    [InlineData("[]")]
+    [InlineData("1.5")]
+    [InlineData("2147483648")]
+    [InlineData("1e100")]
+    public void InvalidQuantityVersionReportsUnsupportedSave(string version)
+    {
+        Assert.Throws<InvalidDataException>(()=>CitySimulation.FromJson("{\"QuantityStateVersion\":"+version+"}"));
+    }
+    [Fact]
+    public void PersistedDoublesAreOnlyExplicitNonAccumulators()
+    {
+        // Review every persisted double (including nullable/collection values)
+        // reachable from CityState. New state cannot silently add an accumulator.
+        (Type Type,string Names)[] allowed=[
+            (typeof(Point),"X,Z"),
+            (typeof(Building),"Rotation,WaterRatio,ElectricityRatio,WaterDemand,ElectricityDemand,SewageProduced,UntreatedSewage,OperationalCapacity,MaintenanceDueAt,LastCustomerAt"),
+            (typeof(RoadNode),"MaintenanceDueAt,ElectricityRatio"),
+            (typeof(WorkProject),"Required,WorkSeconds"),
+            (typeof(Citizen),"Satisfaction,LastPaidAt,NextDecisionAt,OutingUntil"),
+            (typeof(Family),"LastMigrationReview"),(typeof(Company),"LossStartedAt"),
+            (typeof(Vehicle),"SiteDockHeading,Heading,CargoCapacity,WaitingSince,IntersectionEnteredAt,TowCalledAt,TowRetryAt,TowExitWaitSince"),
+            (typeof(ExternalFamilyCandidate),"RiskTolerance"),(typeof(ExternalCompanyCandidate),"RiskTolerance"),
+            (typeof(CityState),"EconomyNextAt,LakeRadius,LakePollution,PotableCapacity,WaterDemand,ElectricityCapacity,ElectricityDemand,SewageCapacity,SewageDemand,UntreatedSewage,WindFactor,RawWaterCapacity,MaintenanceNextAt"),
+            (typeof(SimulationTuning),"MapHalfSize,RoadStep,RoadWidth,CrosswalkSpacing,WalkingSpeed,VehicleSpeed,HighwaySpeed,FuelPerMetre,FuelTank,SimulationSecondsPerRealSecond,SpeedMultipliers,EconomyInterval,PurchaseFoodPerPerson,HungerDamageAfterHours,WaterClosureHours,UtilityRecoveryPerHour,PublicMaintenanceIntervalHours,CarFuelPerMetre,CarMinimumTripMetres,OutingChancePerMinute,BypassWaitSeconds,UTurnWaitSeconds,TowMaxWaitSeconds,TowLoadSeconds,TowUnloadSeconds,TowRetrySeconds")
+        ];
+        var doubles=new SortedSet<string>();var visited=new HashSet<Type>();
+        bool ContainsDouble(Type type)=>type==typeof(double)||(type.IsArray&&ContainsDouble(type.GetElementType()!))||(type.IsGenericType&&type.GetGenericArguments().Any(ContainsDouble));
+        void Visit(Type type){
+            if(!visited.Add(type))return;
+            if(type==typeof(ResourceStock)){
+                // The converter serializes Units, not IDictionary<...,double>.
+                Assert.Equal(typeof(ResourceStockConverter),type.GetCustomAttribute<JsonConverterAttribute>()!.ConverterType);
+                Visit(type.GetProperty(nameof(ResourceStock.Units))!.PropertyType);return;
+            }
+            if(type.IsArray)Visit(type.GetElementType()!);
+            if(type.IsGenericType)foreach(var argument in type.GetGenericArguments())Visit(argument);
+            if(type.Assembly!=typeof(CityState).Assembly)return;
+            foreach(var property in type.GetProperties(BindingFlags.Instance|BindingFlags.Public)){
+                if(property.GetCustomAttribute<JsonIgnoreAttribute>() is {Condition:JsonIgnoreCondition.Always})continue;
+                if(ContainsDouble(property.PropertyType))doubles.Add(type.Name+"."+property.Name);
+                Visit(property.PropertyType);
+            }
+        }
+        Visit(typeof(CityState));
+        var expected=allowed.SelectMany(entry=>entry.Names.Split(',').Select(name=>entry.Type.Name+"."+name)).Order().ToArray();
+        Assert.Equal(expected,doubles.ToArray());
     }
     [Fact]
     public void SaveRoundTripPreservesLowBitsOfEveryAccumulator()

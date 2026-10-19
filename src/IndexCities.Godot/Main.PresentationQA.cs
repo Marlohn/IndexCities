@@ -39,7 +39,7 @@ public partial class Main
             resident.Path = [home.Door]; resident.PathIndex = 0; resident.Activity = "Voltando para casa";
             _world.CaptureMotionBeforeStep(_sim.State);
             resident.Position = home.Door; resident.Path = []; resident.PathIndex = 0; resident.Activity = "Em casa";
-            _sim.State.ElapsedSeconds += 2;
+            _sim.State.AddElapsedSeconds(2);
             _world.Sync(_sim.State, .5);
             Require(_world.IsCitizenVisible(resident.Id), "Chegada interpolada continua visível até alcançar interior");
             _world.Sync(_sim.State);

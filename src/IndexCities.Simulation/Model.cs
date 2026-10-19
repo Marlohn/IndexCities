@@ -135,7 +135,6 @@ public sealed class Building
     [JsonIgnore] public double MaintenanceRatio {get=>FixedPoint.Value(MaintenanceRatioUnits,FixedPoint.PointScale);set=>MaintenanceRatioUnits=FixedPoint.Quantize(value,FixedPoint.PointScale);}
     public void AddMaintenanceRatio(double delta)=>MaintenanceRatioUnits=FixedPoint.Add(MaintenanceRatioUnits,delta,FixedPoint.PointScale);
     public double MaintenanceDueAt {get;set;}
-    public double ProductionAccumulator {get;set;}
     public decimal InventoryUnitCost {get;set;}=5;
     public decimal SalePrice {get;set;}=7;
     public decimal SalaryOffer {get;set;}=2.5m;
