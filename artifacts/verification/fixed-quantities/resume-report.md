@@ -2,6 +2,8 @@
 
 Task `task_bcdedccc2f4b`, Dispatch `ctx_887e347ab053`. Branch `Marlohn/quantidades-inteiras`. Correções e verificações desta retomada concluídas; revisão independente final e avaliação humana continuam com o coordenador.
 
+PR de entrega: [#40](https://github.com/Marlohn/IndexCities/pull/40), aberto contra `main`, sem merge, em 2026-10-19. Push realizado com o helper `gh auth git-credential` solicitado.
+
 ## Alvo e base de produto
 
 Pedido recebido: integrar a main com o guincho da PR #38, corrigir os bloqueios e ajustes baratos de `review.md`, refazer a comparação pareada com a main atual, executar suíte completa e Godot reconstruído, fazer push e abrir PR para main sem merge. A revisão anterior de `a9625b4` foi feita por Claude Haiku 5.5; esta retomada corrige seus achados e não substitui a revisão final independente pedida para depois do PR.
