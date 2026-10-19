@@ -1,5 +1,5 @@
 FIXTURE grid rows=3 length=400 H=408 houses=72 workplaces=20 intakes=2 roadNodes=399 jobs=110 placeFails=0 signals=True build=0,6s .NET=8.0.32 cpu=12 release=True
-WARMUP 2d wall=27,5s pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=83 travelling=0 ledger=926 history=2488
+WARMUP 2d wall=9,2s pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=83 travelling=0 ledger=926 history=2488
   FORCE #834 carro 07:02 em (-44,6,-61,6) com 1 veículo(s) logo atrás; ocupantes=1
     t+  1min #834 Stranded fila atrás=0 guincho=#935 ToVehicle Travelling em (-20,0,-1,6) rota 98/119 «Aguardando preferência/semáforo/travessia» «Sem combustível; aguardando guincho 935» ocupantes=1
     t+  4min #834 Towed fila atrás=0 guincho=#935 Unloading Unloading em (22,1,-6,4) rota 29/29 «Guincho descarregando o veículo 834 no posto 160» «Sendo rebocado ao posto 160» ocupantes=1
@@ -12,7 +12,7 @@ WARMUP 2d wall=27,5s pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=83 
     t+ 25min #834 Parked fila atrás=0 guincho=- «Carro parado no posto: sem dinheiro para abastecer» ocupantes=0
     t+ 28min #834 Parked fila atrás=0 guincho=- «Carro parado no posto: sem dinheiro para abastecer» ocupantes=0
     t+ 30min #834 Parked fila atrás=0 guincho=- «Carro parado no posto: sem dinheiro para abastecer» ocupantes=0
-DAY 1 wall=13,66s eff=6325x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=84 travelling=0 ledger=1203 history=3422
+DAY 1 wall=3,84s eff=22496x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=84 travelling=0 ledger=1203 history=3422
 STUCK day=1 2026-01-04 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
   FORCE #863 carro 07:01 em (-23,8,1,6) com 1 veículo(s) logo atrás; ocupantes=1
     t+  1min #863 Stranded fila atrás=1 guincho=#935 ToVehicle Travelling em (-44,0,-1,6) rota 92/95 «Fila na faixa» «Sem combustível; aguardando guincho 935» ocupantes=1
@@ -26,7 +26,7 @@ STUCK day=1 2026-01-04 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome
     t+ 25min #863 Parked fila atrás=0 guincho=- «Estacionado» ocupantes=0
     t+ 28min #863 Parked fila atrás=0 guincho=- «Estacionado» ocupantes=0
     t+ 30min #863 Parked fila atrás=0 guincho=- «Estacionado» ocupantes=0
-DAY 2 wall=12,44s eff=6945x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=84 travelling=0 ledger=1522 history=4438
+DAY 2 wall=5,19s eff=16656x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=84 travelling=0 ledger=1522 history=4438
 STUCK day=2 2026-01-05 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
   FORCE #847 carro 22:01 em (-234,6,61,6) com 1 veículo(s) logo atrás; ocupantes=1
     t+  1min #847 Stranded fila atrás=0 guincho=#935 Loading Waiting em (-241,4,61,6) rota 58/58 «Guincho carregando o veículo 847» «Sendo carregado no guincho 935» ocupantes=1
@@ -40,7 +40,7 @@ STUCK day=2 2026-01-05 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome
     t+ 25min #847 Parked fila atrás=0 guincho=- «Estacionado» ocupantes=0
     t+ 28min #847 Parked fila atrás=0 guincho=- «Estacionado» ocupantes=0
     t+ 30min #847 Parked fila atrás=0 guincho=- «Estacionado» ocupantes=0
-DAY 3 wall=12,35s eff=6998x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=84 travelling=0 ledger=1821 history=5454
+DAY 3 wall=7,01s eff=12331x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=84 travelling=0 ledger=1821 history=5454
 STUCK day=3 2026-01-06 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
   FORCE #828 carro 06:01 em (5,9,-1,6) com 1 veículo(s) logo atrás; ocupantes=1
     t+  1min #828 Stranded fila atrás=1 guincho=#935 ToVehicle Travelling em (-20,0,-1,6) rota 98/106 «Aguardando preferência/semáforo/travessia» «Sem combustível; aguardando guincho 935» ocupantes=1
@@ -54,7 +54,7 @@ STUCK day=3 2026-01-06 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome
     t+ 25min #828 Parked fila atrás=0 guincho=- «Estacionado» ocupantes=0
     t+ 28min #828 Parked fila atrás=0 guincho=- «Estacionado» ocupantes=0
     t+ 30min #828 Parked fila atrás=0 guincho=- «Estacionado» ocupantes=0
-DAY 4 wall=12,25s eff=7051x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=84 travelling=0 ledger=2109 history=6429
+DAY 4 wall=4,84s eff=17847x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=84 travelling=0 ledger=2109 history=6429
 STUCK day=4 2026-01-07 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
   FORCE #859 carro 06:01 em (11,2,-1,6) com 2 veículo(s) logo atrás; ocupantes=1
     t+  1min #859 Stranded fila atrás=1 guincho=#935 ToVehicle Travelling em (-20,0,-1,6) rota 98/107 «Aguardando preferência/semáforo/travessia» «Sem combustível; aguardando guincho 935» ocupantes=1
@@ -68,7 +68,7 @@ STUCK day=4 2026-01-07 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome
     t+ 25min #859 Parked fila atrás=0 guincho=- «Estacionado» ocupantes=0
     t+ 28min #859 Parked fila atrás=0 guincho=- «Estacionado» ocupantes=0
     t+ 30min #859 Parked fila atrás=0 guincho=- «Estacionado» ocupantes=0
-DAY 5 wall=12,33s eff=7010x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=84 travelling=0 ledger=2414 history=7594
+DAY 5 wall=4,54s eff=19035x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=84 travelling=0 ledger=2414 history=7594
 STUCK day=5 2026-01-08 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
   FORCE #19 caminhão externo 06:03 em (-326,0,-1,6) com 1 veículo(s) logo atrás; ocupantes=0
     t+  1min #19 Stranded fila atrás=3 guincho=#1044 ToVehicle Travelling em (-51,1,58,4) rota 105/205 «Em viagem» «Sem combustível; aguardando guincho 1044» ocupantes=0
@@ -82,11 +82,11 @@ STUCK day=5 2026-01-08 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome
     t+ 25min #19 Unloading fila atrás=0 guincho=- «Descarregando no destino» ocupantes=0
     t+ 28min #19 Parked fila atrás=0 guincho=- «Equipe externa no canteiro» ocupantes=0
     t+ 30min #19 Unloading fila atrás=0 guincho=- «Descarregando no destino» ocupantes=0
-DAY 6 wall=14,00s eff=6171x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=85 travelling=0 ledger=3238 history=8650
+DAY 6 wall=5,91s eff=14614x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=85 travelling=0 ledger=3238 history=8650
 STUCK day=6 2026-01-09 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
-DAY 7 wall=11,05s eff=7818x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=85 travelling=0 ledger=3511 history=9565
+DAY 7 wall=4,36s eff=19825x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=85 travelling=0 ledger=3511 history=9565
 STUCK day=7 2026-01-10 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
-DAY 8 wall=11,25s eff=7682x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=85 travelling=0 ledger=3816 history=10538
+DAY 8 wall=4,67s eff=18484x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=85 travelling=0 ledger=3816 history=10538
 STUCK day=8 2026-01-11 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
   FORCE #773 carro 06:01 em (7,6,-1,6) com 1 veículo(s) logo atrás; ocupantes=1
     t+  1min #773 Stranded fila atrás=1 guincho=#935 ToVehicle Travelling em (-20,0,-1,6) rota 98/107 «Aguardando preferência/semáforo/travessia» «Sem combustível; aguardando guincho 935» ocupantes=1
@@ -100,50 +100,25 @@ STUCK day=8 2026-01-11 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome
     t+ 25min #773 Parked fila atrás=0 guincho=- «Estacionado» ocupantes=0
     t+ 28min #773 Parked fila atrás=0 guincho=- «Estacionado» ocupantes=0
     t+ 30min #773 Parked fila atrás=0 guincho=- «Estacionado» ocupantes=0
-DAY 9 wall=11,16s eff=7743x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=85 travelling=0 ledger=4143 history=11560
+DAY 9 wall=4,44s eff=19473x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=85 travelling=0 ledger=4143 history=11560
 STUCK day=9 2026-01-12 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
-DAY 10 wall=11,00s eff=7856x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=85 travelling=0 ledger=4421 history=12473
+DAY 10 wall=4,17s eff=20731x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=85 travelling=0 ledger=4421 history=12473
 STUCK day=10 2026-01-13 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
   FORCE #773 carro 06:01 em (-16,4,-0,4) com 1 veículo(s) logo atrás; ocupantes=1
     t+  1min #773 Stranded fila atrás=1 guincho=#935 ToVehicle Travelling em (-28,0,-1,6) rota 96/101 «Fila na faixa» «Sem combustível; aguardando guincho 935» ocupantes=1
     t+  4min #773 Stranded fila atrás=0 guincho=#935 ToVehicle Travelling em (-24,4,-1,6) rota 96/101 «Aguardando veículo 773 sem combustível na via» «Sem combustível; aguardando guincho 935» ocupantes=1
-    t+  7min #773 Stranded fila atrás=0 guincho=#935 ToVehicle Travelling em (-24,4,-1,6) rota 96/101 «Rua bloqueada por veículo parado; sem rota alternativa» «Sem combustível; aguardando guincho 935» ocupantes=1
-    t+ 10min #773 Stranded fila atrás=0 guincho=#935 ToVehicle Travelling em (-24,4,-1,6) rota 96/101 «Rua bloqueada por veículo parado; sem rota alternativa» «Sem combustível; aguardando guincho 935» ocupantes=1
-    t+ 13min #773 Stranded fila atrás=0 guincho=#935 ToVehicle Travelling em (-24,4,-1,6) rota 96/101 «Rua bloqueada por veículo parado; sem rota alternativa» «Sem combustível; aguardando guincho 935» ocupantes=1
-    t+ 16min #773 Stranded fila atrás=0 guincho=#935 ToVehicle Travelling em (-24,4,-1,6) rota 96/101 «Rua bloqueada por veículo parado; sem rota alternativa» «Sem combustível; aguardando guincho 935» ocupantes=1
-    t+ 19min #773 Stranded fila atrás=0 guincho=#935 ToVehicle Travelling em (-24,4,-1,6) rota 96/101 «Rua bloqueada por veículo parado; sem rota alternativa» «Sem combustível; aguardando guincho 935» ocupantes=1
-    t+ 22min #773 Stranded fila atrás=0 guincho=#935 ToVehicle Travelling em (-24,4,-1,6) rota 96/101 «Rua bloqueada por veículo parado; sem rota alternativa» «Sem combustível; aguardando guincho 935» ocupantes=1
-    t+ 25min #773 Stranded fila atrás=0 guincho=#935 ToVehicle Travelling em (-24,4,-1,6) rota 96/101 «Rua bloqueada por veículo parado; sem rota alternativa» «Sem combustível; aguardando guincho 935» ocupantes=1
-    t+ 28min #773 Stranded fila atrás=0 guincho=#935 ToVehicle Travelling em (-24,4,-1,6) rota 96/101 «Rua bloqueada por veículo parado; sem rota alternativa» «Sem combustível; aguardando guincho 935» ocupantes=1
-    t+ 30min #773 Stranded fila atrás=0 guincho=#935 ToVehicle Travelling em (-24,4,-1,6) rota 96/101 «Rua bloqueada por veículo parado; sem rota alternativa» «Sem combustível; aguardando guincho 935» ocupantes=1
-  STRANDED #773 carro 2026-01-13 06:41 em (-16,4,-0,4) «Sem combustível; aguardando guincho 935»
-DAY 11 wall=15,41s eff=5606x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=85 travelling=8 ledger=4719 history=13437
-STUCK day=11 2026-01-14 06:00 parados≥30min=8 SIMs dentro deles=7 SIMs com fome>30h=2 mortos=0 sem combustível na via=1 (total 1)
-  #769 carro Travelling parado há 959 min em (-40,4,-1,6) rumo 90° rota 3/40 nó 436 motorista 768 «Fila na faixa»
-      perto: #693 Travelling a 8,0m «Fila na faixa» rota 6/39
-      perto: #722 Travelling a 8,0m «Fila na faixa» rota 32/91
-  #741 carro Travelling parado há 1379 min em (-39,4,7,7) rumo -176° rota 0/37 nó 436 motorista 740 «Aguardando espaço para acessar a faixa»
-      perto: #769 Travelling a 9,4m «Fila na faixa» rota 3/40
-      perto: #722 Travelling a 11,7m «Fila na faixa» rota 32/91
-  #748 carro Travelling parado há 1379 min em (4,0,1,6) rumo -90° rota 5/37 nó 446 motorista 747 «Fila na faixa»
-      perto: #744 Travelling a 8,0m «Fila na faixa» rota 2/31
-      perto: #752 Travelling a 16,0m «Rua bloqueada por veículo parado; sem rota alternativa» rota 14/41
-  #752 carro Travelling parado há 1399 min em (-12,0,1,6) rumo -90° rota 14/41 nó 442 motorista 750 «Rua bloqueada por veículo parado; sem rota alternativa»
-      perto: #773 Stranded a 4,8m «Sem combustível; aguardando guincho 935» rota 0/0
-      perto: #744 Travelling a 8,0m «Fila na faixa» rota 2/31
-  #744 carro Travelling parado há 1399 min em (-4,0,1,6) rumo -90° rota 2/31 nó 444 motorista 743 «Fila na faixa»
-      perto: #748 Travelling a 8,0m «Fila na faixa» rota 5/37
-      perto: #752 Travelling a 8,0m «Rua bloqueada por veículo parado; sem rota alternativa» rota 14/41
-  #935 caminhão Travelling parado há 1399 min em (-24,4,-1,6) rumo 90° rota 96/101 nó 440 motorista guincheiro externo «Rua bloqueada por veículo parado; sem rota alternativa»
-      perto: #722 Travelling a 8,0m «Fila na faixa» rota 32/91
-      perto: #773 Stranded a 8,1m «Sem combustível; aguardando guincho 935» rota 0/0
-  #722 carro Travelling parado há 1379 min em (-32,4,-1,6) rumo 90° rota 32/91 nó 438 motorista 721 «Fila na faixa»
-      perto: #769 Travelling a 8,0m «Fila na faixa» rota 3/40
-      perto: #935 Travelling a 8,0m «Rua bloqueada por veículo parado; sem rota alternativa» rota 96/101
-  #693 carro Travelling parado há 899 min em (-48,4,-1,6) rumo 90° rota 6/39 nó 434 motorista 692 «Fila na faixa»
-      perto: #769 Travelling a 8,0m «Fila na faixa» rota 3/40
-      perto: #741 Travelling a 12,9m «Aguardando espaço para acessar a faixa» rota 0/37
-SUMMARY days=11 perDay=12,44s eff=6943x hours80y=101 gen0=2788 gen2=2 allocMB/day=1590 workingSetMB=62
-STUCK SUMMARY guinchos chamados=7 rebocando agora=0 sem combustível na via (total)=1 parados≥30min (máx)=8 mortos=0
-SAVE 2,6MB save=0,23s load=0,16s sha256=4CC8077C32FA3986
+    t+  7min #773 Stranded fila atrás=0 guincho=#935 Loading Waiting em (-23,2,-0,4) rota 101/101 «Guincho carregando o veículo 773» «Sendo carregado no guincho 935» ocupantes=1
+    t+ 10min #773 Travelling fila atrás=0 guincho=- «Em viagem» ocupantes=1
+    t+ 13min #773 Parked fila atrás=0 guincho=- «Estacionado» ocupantes=0
+    t+ 16min #773 Parked fila atrás=0 guincho=- «Estacionado» ocupantes=0
+    t+ 19min #773 Parked fila atrás=0 guincho=- «Estacionado» ocupantes=0
+    t+ 22min #773 Parked fila atrás=0 guincho=- «Estacionado» ocupantes=0
+    t+ 25min #773 Parked fila atrás=0 guincho=- «Estacionado» ocupantes=0
+    t+ 28min #773 Parked fila atrás=0 guincho=- «Estacionado» ocupantes=0
+    t+ 30min #773 Parked fila atrás=0 guincho=- «Estacionado» ocupantes=0
+DAY 11 wall=4,20s eff=20574x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=85 travelling=0 ledger=4734 history=13499
+STUCK day=11 2026-01-14 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
+SUMMARY days=11 perDay=4,83s eff=17877x hours80y=39 gen0=2577 gen2=2 allocMB/day=1470 workingSetMB=61
+STUCK SUMMARY guinchos chamados=7 rebocando agora=0 sem combustível na via (total)=0 parados≥30min (máx)=0 mortos=0
+SAVE 2,6MB save=0,14s load=0,12s sha256=82B2472174B52504
 INVARIANTS OK

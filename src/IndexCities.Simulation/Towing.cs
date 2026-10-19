@@ -23,7 +23,8 @@ public sealed partial class CitySimulation
     // External trucks always keep their (non-SIM) driver aboard.
     static bool Crewed(Vehicle v)=>PeopleAboard(v)||v.External;
     IEnumerable<Citizen> Occupants(Vehicle v)=>State.Citizens.Where(c=>c.VehicleId==v.Id);
-    bool OnRoadway(Vehicle v)=>NearestRoad(v.Position) is {} n&&n.Position.Distance(v.Position)<=State.Tuning.RoadWidth/2+1;
+    bool OnRoadway(Vehicle v)=>OnRoadway(v.Position);
+    bool OnRoadway(Point at)=>NearestRoad(at) is {} n&&n.Position.Distance(at)<=State.Tuning.RoadWidth/2+1;
     bool AtPumpBay(Vehicle v)=>v.RefuellingAt is {} id&&BuildingById(id) is {} station&&Access(station) is {} access&&v.Position.Distance(DockAt(access,station,false))<3;
     bool Towable(Vehicle v)=>!IsTow(v)&&v.Machine==PavingMachine.None&&!AtPumpBay(v)&&OnRoadway(v);
     static Point Forward(double heading)=>new(Math.Sin(heading),Math.Cos(heading));
@@ -406,5 +407,27 @@ public sealed partial class CitySimulation
         if(crossesJunction&&!DetourBodyClear(v,t,detour))return false;
         v.Detour=detour;v.DetourResumeNode=-1;v.WaitingSince=0;v.Cause=$"Guincho pela contramão vazia até o veículo {t.Id}";
         return true;
+    }
+    // SPEC "Chegada por trás" (IA-027): right behind the vehicle it came for, with
+    // nobody between, after the U-turn wait without reaching the front, the tow
+    // pulls up behind it and loads it from there as it would from the front.
+    bool TryTowFromBehind(Vehicle v)
+    {
+        if(v.TowPhase!=TowPhase.ToVehicle||v.Detour.Count>0||v.WaitingSince<=0||VehicleMovementTime-v.WaitingSince<State.Tuning.UTurnWaitSeconds||State.Vehicles.FirstOrDefault(o=>o.Id==v.TowTargetId) is not {Status:VehicleStatus.Stranded} t)return false;
+        var dir=Forward(v.Heading);var relative=t.Position-v.Position;var ahead=relative.X*dir.X+relative.Z*dir.Z;
+        if(ahead<=0||ahead>15||Math.Abs(relative.X*dir.Z-relative.Z*dir.X)>2.6||Math.Cos(t.Heading-v.Heading)<=.5)return false;
+        // Its nearest same-direction leader is the vehicle itself (same test as the queue).
+        if(State.Vehicles.Any(o=>o.Id!=v.Id&&o.Id!=t.Id&&OccupiesLane(o)&&(o.Position-v.Position) is var r&&r.X*dir.X+r.Z*dir.Z is var f&&f>0&&f<ahead&&Math.Abs(r.X*dir.Z-r.Z*dir.X)<2.6))return false;
+        // It stops the pickup gap behind it, or where it stands if already that close.
+        var pose=ahead>PickupGap(t)?t.Position-dir*PickupGap(t):v.Position;
+        if(!OnRoadway(pose)||!PickupLaneClear(v,pose))return false;
+        v.RouteIndex=v.Route.Count;v.DockPosition=pose;v.WaitingSince=0;v.Cause=$"Guincho encostando por trás do veículo {t.Id} (sem acesso pela frente)";
+        return true;
+    }
+    // Held by a stranded vehicle's jam as long as a U-turn wait, with no way in
+    // from the front, from behind or around: the cause says why it stays.
+    void TowWaitsWithoutAccess(Vehicle v)
+    {
+        if(v.TowPhase==TowPhase.ToVehicle&&v.WaitingSince>0&&VehicleMovementTime-v.WaitingSince>=State.Tuning.UTurnWaitSeconds&&HeldInStrandedChain(v,orAtItsJunction:true))v.Cause=$"Guincho sem acesso ao veículo {v.TowTargetId} pela frente nem por trás; aguardando a via abrir";
     }
 }
