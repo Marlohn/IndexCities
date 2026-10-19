@@ -229,6 +229,18 @@ public sealed partial class CitySimulation
                 var delta=v.RouteIndex==0&&v.Route.Count>1?_roads[v.Route[1]].Position-node.Position:node.Position-previous;var len=delta.Distance(new(0,0));var target=node.Position;
                 if(len>.01)target+=new Point(delta.Z/len*1.65,-delta.X/len*1.65);
                 var d=v.Position.Distance(target);var speed=(node.Highway?State.Tuning.HighwaySpeed:State.Tuning.VehicleSpeed)*Math.Max(.15,node.MaintenanceRatio);
+                // The next junction is awaited at its stop line, and a delivery to a
+                // busy bay just beyond it waits before it (Mobility.BayJunction).
+                var stopEarly=0.0;var bayHold=false;List<(Vehicle Body,Point Position,double Heading)>? crossingPoses=null;
+                if(node.Neighbours.Count<3&&!node.Crosswalk&&v.IntersectionClaim==null&&v.RouteIndex+1<v.Route.Count&&_roads.TryGetValue(v.Route[v.RouteIndex+1],out var crossing)&&crossing.Neighbours.Count>=3){
+                    stopEarly=StopLineBefore(v,node,crossing,delta,len);
+                    if(HoldBeforeBayJunction(v,v.RouteIndex+1,out var exits)){bayHold=true;crossingPoses=exits;stopEarly=Math.Max(stopEarly,.001);}
+                    if(d<=stopEarly+.001){
+                        if(bayHold){v.Cause="Fila para acesso de carga";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}
+                        if(stopEarly>0){v.RouteIndex++;continue;}
+                    }
+                    if(stopEarly>0){var turning=ClaimHolderPoses(v,crossing);if(turning.Count>0)(crossingPoses??=[]).AddRange(turning);}
+                }
                 var approachHeading=v.Heading;
                 var facing=target-v.Position;if(d>.01)v.Heading=Math.Atan2(facing.X,facing.Z);
                 // The exterior gateway is a staging origin (all external trucks
@@ -273,14 +285,28 @@ public sealed partial class CitySimulation
                     }
                 }
                 var step=Math.Min(d,Math.Min(speed*remaining,Math.Max(0,leaderDistance-8)));
+                if(stopEarly>0)step=Math.Min(step,Math.Max(0,d-stopEarly));
+                if(crossingPoses!=null)step=ClearOfPoses(v,target,step,crossingPoses);
+                // At a bend the vehicle ahead in the same general direction can sit
+                // beyond the straight-lane strip above; its body still bounds this
+                // step and this turn. Opposite and parallel lanes are not involved.
+                var bendLeaders=State.Vehicles.Where(o=>o.Id!=v.Id&&o.Status is VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded&&Math.Cos(o.Heading-v.Heading)>.5&&Ahead(v,o)>0&&
+                    Math.Abs((o.Position.X-v.Position.X)*Math.Cos(v.Heading)-(o.Position.Z-v.Position.Z)*Math.Sin(v.Heading))>=2.6&&o.Position.Distance(v.Position)<=step+12&&
+                    !(o.Position.Distance(State.Entry)<8&&v.Position.Distance(State.Entry)<8)).ToList();
+                if(bendLeaders.Count>0){
+                    if(bendLeaders.Any(o=>TurnsInto(v,approachHeading,o))){v.Heading=approachHeading;step=0;}
+                    else step=ClearOfPoses(v,target,step,bendLeaders.Where(o=>!VehicleBodiesOverlap(v,v.Position,o)).Select(o=>(o,o.Position,o.Heading)).ToList());
+                }
                 var free=step;step=SafeSiteTravel(v,target,step,true);
                 if(node.Neighbours.Count<3&&!node.Crosswalk)step=ClearOfCrossingAhead(v,target,step);
                 var steer=step<.00001&&free>.00001?TurnClearance(v,approachHeading,free,access):null;
                 if(steer is {} bend){v.Heading=bend.Heading;target=bend.To;step=bend.Distance;}
                 // Like a machine, a blocked vehicle keeps its verified pose rather
-                // than turning in place into a parked machine's or site truck's body.
-                if(step<.00001&&d>.00001&&State.Vehicles.Any(o=>o.Id!=v.Id&&StreetBody(o)&&o.Position.Distance(v.Position)<12&&VehicleBodiesOverlap(v,v.Position,o)))v.Heading=approachHeading;
-                if(step<.00001&&d>.00001){v.Cause=blocker?.Status==VehicleStatus.Stranded?$"Aguardando veículo {blocker.Id} sem combustível na via":enteringLane?"Aguardando espaço para acessar a faixa":"Fila na faixa";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;if(v.TowPhase==TowPhase.ToVehicle&&(TryTowContraflow(v)||TryTowFromBehind(v)))continue;if(!enteringLane&&blocker!=null&&blocker.Id!=v.TowTargetId&&TryBypassStopped(v,blocker))continue;if(blocker!=null&&TowExitHolds(blocker)&&TryUTurn(v,blocker))continue;
+                // than turning in place into a parked machine's or site truck's body,
+                // or into any other body that pose was clear of.
+                if(step<.00001&&d>.00001&&State.Vehicles.Any(o=>o.Id!=v.Id&&o.Status!=VehicleStatus.Outside&&o.Position.Distance(v.Position)<12&&
+                    (StreetBody(o)?VehicleBodiesOverlap(v,v.Position,o):!(o.Position.Distance(State.Entry)<8&&v.Position.Distance(State.Entry)<8)&&TurnsInto(v,approachHeading,o))))v.Heading=approachHeading;
+                if(step<.00001&&d>.00001){v.Cause=blocker?.Status==VehicleStatus.Stranded?$"Aguardando veículo {blocker.Id} sem combustível na via":bayHold?"Fila para acesso de carga":enteringLane?"Aguardando espaço para acessar a faixa":"Fila na faixa";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;if(v.TowPhase==TowPhase.ToVehicle&&(TryTowContraflow(v)||TryTowFromBehind(v)))continue;if(!enteringLane&&blocker!=null&&blocker.Id!=v.TowTargetId&&TryBypassStopped(v,blocker))continue;if(blocker!=null&&TowExitHolds(blocker)&&TryUTurn(v,blocker))continue;
                     // A tow held for minutes turns back and goes around the stranded vehicles
                     // and the junctions they lock, instead of waiting in the queue.
                     if(blocker!=null&&TowHeldTooLong(v,blocker)&&TryUTurn(v,blocker,TowClosedRoads(v))){CheckTowFuel(v);continue;}TowWaitsWithoutAccess(v);break;}
@@ -294,7 +320,7 @@ public sealed partial class CitySimulation
                 step=Math.Min(step,v.Fuel/FuelRate(v));v.Position=v.Position.MoveTowards(target,step);v.Fuel=Math.Max(0,v.Fuel-step*FuelRate(v));v.FuelBurnedLastStep+=step*FuelRate(v);remaining-=step/speed;v.WaitingSince=0;v.Cause="Em viagem";
                 ClearPassedJunction(v);
                 if(steer!=null)continue;
-                if(d<=step+.001)v.RouteIndex++;else break;
+                if(!bayHold&&(d<=step+.001||stopEarly>0&&d-step<=stopEarly+.001))v.RouteIndex++;else break;
             }
         }
         // A towed vehicle moves only with its tow (platform or trailing a heavy tow).

@@ -134,12 +134,12 @@ public sealed partial class CitySimulation
     static double BodyHalfLength(Vehicle v)=>v.PassengerCar?2.1:v.Machine==PavingMachine.Paver?2.31:v.Machine==PavingMachine.Roller?1.99:3.6;
     static double BodyHalfWidth(Vehicle v)=>v.PassengerCar?.9:v.Machine==PavingMachine.Paver?1.27:v.Machine==PavingMachine.Roller?1.16:1.45;
 
-    static bool BodiesOverlap(Vehicle a,Point aAt,double aHeading,Vehicle b,Point bAt,double bHeading)
+    static bool BodiesOverlap(Vehicle a,Point aAt,double aHeading,Vehicle b,Point bAt,double bHeading,double margin=.1)
     {
         static double Dot(Point x,Point y)=>x.X*y.X+x.Z*y.Z;
         var af=new Point(Math.Sin(aHeading),Math.Cos(aHeading));var ar=new Point(af.Z,-af.X);
         var bf=new Point(Math.Sin(bHeading),Math.Cos(bHeading));var br=new Point(bf.Z,-bf.X);var delta=bAt-aAt;
-        foreach(var axis in new[]{af,ar,bf,br})if(Math.Abs(Dot(delta,axis))>=BodyHalfLength(a)*Math.Abs(Dot(af,axis))+BodyHalfWidth(a)*Math.Abs(Dot(ar,axis))+BodyHalfLength(b)*Math.Abs(Dot(bf,axis))+BodyHalfWidth(b)*Math.Abs(Dot(br,axis))+.1)return false;
+        foreach(var axis in new[]{af,ar,bf,br})if(Math.Abs(Dot(delta,axis))>=BodyHalfLength(a)*Math.Abs(Dot(af,axis))+BodyHalfWidth(a)*Math.Abs(Dot(ar,axis))+BodyHalfLength(b)*Math.Abs(Dot(bf,axis))+BodyHalfWidth(b)*Math.Abs(Dot(br,axis))+margin)return false;
         return true;
     }
 
