@@ -128,25 +128,3 @@ public sealed partial class CitySimulation
         return new Point(outgoing.Z/metres*1.65,-outgoing.X/metres*1.65);
     }
 }
-
-public sealed partial class CitySimulation
-{
-    // A left turn at a plain bend pivots where the lane lines meet too, so the
-    // body stays out of the inner lane of the opposite flow, unless that pivot
-    // would put it into a parked machine or a site truck beside the corner; then
-    // it keeps the node's lane point and the existing steering around them.
-    Point OuterCornerOffset(Vehicle v,RoadNode node,Point incoming,double length)
-    {
-        if(v.Machine!=PavingMachine.None||node.Neighbours.Count!=2||node.Crosswalk||v.RouteIndex<1||v.RouteIndex+1>=v.Route.Count||length<=.01||!_roads.TryGetValue(v.Route[v.RouteIndex+1],out var next))return default;
-        var outgoing=next.Position-node.Position;var metres=outgoing.Distance(default);if(metres<=.01)return default;
-        var cross=outgoing.X*incoming.Z-outgoing.Z*incoming.X;
-        if(Math.Abs(cross)<.99*length*metres||cross>=0)return default;
-        var offset=new Point(outgoing.Z/metres*1.65,-outgoing.X/metres*1.65);
-        var corner=node.Position+new Point(incoming.Z/length*1.65,-incoming.X/length*1.65)+offset;
-        double inHeading=Math.Atan2(incoming.X,incoming.Z),outHeading=Math.Atan2(outgoing.X,outgoing.Z);
-        var turn=Math.IEEERemainder(outHeading-inHeading,2*Math.PI);
-        for(var part=0;part<=8;part++){var heading=inHeading+turn*part/8;
-            if(State.Vehicles.Any(o=>o.Id!=v.Id&&StreetBody(o)&&o.Position.Distance(corner)<12&&BodiesOverlap(v,corner,heading,o,o.Position,o.Heading)))return default;}
-        return offset;
-    }
-}
