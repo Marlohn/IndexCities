@@ -228,7 +228,25 @@ public sealed partial class CitySimulation
         var where=plan.Kind switch{TowDestination.Station=>"ao posto "+plan.Station!.Id,TowDestination.Exterior=>"ao exterior",_=>"ao espaço de espera junto à rodovia"};
         tow.Cause=$"Guincho levando o veículo {t.Id} {where}";t.Cause="Sendo rebocado "+where;
         foreach(var c in Occupants(t)){c.Activity="No guincho, a caminho "+(plan.Kind==TowDestination.Station?"do posto "+plan.Station!.Id:"do exterior");Personal(c,"Veículo carregado no guincho; seguem juntos "+where);}
+        TowLeavesPastQueue(tow,t);
         return true;
+    }
+    // Leaving toward the queue that faces it in its lane (it loaded from behind, or
+    // turns back past the stranded vehicle's queue): it first moves into the lane of
+    // its route beside the queue, as an overtake starts (2 m ahead), and only with
+    // that lane free there; otherwise it waits in place, holding the queue.
+    void TowLeavesPastQueue(Vehicle tow,Vehicle t)
+    {
+        if(tow.RouteIndex<1||tow.RouteIndex>=tow.Route.Count||!_roads.TryGetValue(tow.Route[tow.RouteIndex],out var node)||!_roads.TryGetValue(tow.Route[tow.RouteIndex-1],out var previous))return;
+        var axis=node.Position-previous.Position;var length=axis.Distance(default);if(length<.01)return;
+        var dir=axis*(1/length);var lane=node.Position+new Point(dir.Z*1.65,-dir.X*1.65);var heading=Math.Atan2(dir.X,dir.Z);
+        double Along(Point p,Point from)=>(p-from).X*dir.X+(p-from).Z*dir.Z;double Across(Point p,Point from)=>Math.Abs((p-from).X*dir.Z-(p-from).Z*dir.X);
+        bool Facing(Vehicle o)=>o.Id!=tow.Id&&o.Id!=t.Id&&OccupiesLane(o)&&Math.Cos(o.Heading-heading)< -.5&&Along(o.Position,tow.Position) is >0 and <=12&&Across(o.Position,tow.Position)<2.6;
+        if(Across(tow.Position,lane)<1||!State.Vehicles.Any(Facing))return;
+        var side=lane+dir*(Along(tow.Position,lane)+2);
+        var free=!State.Vehicles.Any(o=>o.Id!=tow.Id&&o.Id!=t.Id&&OccupiesLane(o)&&(Across(o.Position,lane)<2.6&&Along(o.Position,side) is >-15 and <8||o.Position.Distance(side)<12&&BodiesOverlap(tow,side,heading,o,o.Position,o.Heading)));
+        if(!free){tow.Status=VehicleStatus.Waiting;tow.TowRetryAt=State.ElapsedSeconds+2;tow.Cause=$"Guincho com o veículo {t.Id} aguardando a faixa ao lado livre para sair";return;}
+        tow.Detour=[side];tow.DetourResumeNode=tow.Route[tow.RouteIndex];
     }
     void TowReachedDock(Vehicle tow)
     {
@@ -418,9 +436,9 @@ public sealed partial class CitySimulation
         if(ahead<=0||ahead>15||Math.Abs(relative.X*dir.Z-relative.Z*dir.X)>2.6||Math.Cos(t.Heading-v.Heading)<=.5)return false;
         // Its nearest same-direction leader is the vehicle itself (same test as the queue).
         if(State.Vehicles.Any(o=>o.Id!=v.Id&&o.Id!=t.Id&&OccupiesLane(o)&&(o.Position-v.Position) is var r&&r.X*dir.X+r.Z*dir.Z is var f&&f>0&&f<ahead&&Math.Abs(r.X*dir.Z-r.Z*dir.X)<2.6))return false;
-        // It stops the pickup gap behind it, or where it stands if already that close.
-        var pose=ahead>PickupGap(t)?t.Position-dir*PickupGap(t):v.Position;
-        if(!OnRoadway(pose)||!PickupLaneClear(v,pose))return false;
+        // It stops the pickup gap behind it (backing up if closer), its body clear of everyone else.
+        var pose=t.Position-dir*PickupGap(t);
+        if(!OnRoadway(pose)||!PickupLaneClear(v,pose)||State.Vehicles.Any(o=>o.Id!=v.Id&&o.Id!=t.Id&&OccupiesLane(o)&&o.Position.Distance(pose)<12&&BodiesOverlap(v,pose,v.Heading,o,o.Position,o.Heading)))return false;
         v.RouteIndex=v.Route.Count;v.DockPosition=pose;v.WaitingSince=0;v.Cause=$"Guincho encostando por trás do veículo {t.Id} (sem acesso pela frente)";
         return true;
     }
