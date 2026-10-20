@@ -141,6 +141,18 @@ Aprovado pelo responsável para entrar no jogo numa única entrega integrada; pa
 - É uma construção econômica privada (estrutura especializada, como o posto), posicionada pelo jogador e operada por empresa autônoma com caixa, funcionários, preço, tributos e falência conforme a SPEC de economia.
 - Faz conserto e revisão em um número finito de vagas de serviço ao mesmo tempo; os demais aguardam. Atendimento local é mais barato e mais rápido que o do exterior (valores em calibração) e gera empregos; a cidade continua funcionando sem oficina, com socorro, conserto e revisões do exterior.
 - A oficina mostra no mundo os veículos em serviço (por exemplo, o carro subindo no elevador); o guincho local é reconhecível e carrega visivelmente o veículo.
+- Funciona das 7h às 22h em dois turnos, com 4 empregos. Sem funcionário presente, o conserto não avança e a causa fica visível ("aguardando mecânico").
+- Aceita veículos enquanto os destinados a ela (em serviço, aguardando no pátio e a caminho) forem menos que 2 vagas de serviço + 2 lugares de espera no pátio; além disso, o veículo vai ao exterior.
+
+**Casos específicos (decididos em 2026-10-20)**
+
+- **Máquinas de pavimentação** (pavimentadora e rolo) têm condição e revisão, mas não quebram nesta entrega.
+- **Guinchos** só quebram vazios (indo ao chamado ou voltando). Se um guincho quebra a caminho, outro assume o chamado sem nova cobrança, e o guincho quebrado é socorrido como qualquer caminhão.
+- **Guincho local** é dirigido por funcionário da oficina presente no turno; sem funcionário presente ou sem combustível para o serviço inteiro, vem o guincho externo.
+- **Caminhão externo quebrado:** o motorista e a equipe externos seguem no caminhão rebocado até o exterior; depois do conserto, se havia entrega pendente, o caminhão volta dirigindo para concluí-la.
+- **Caminhão local quebrado com carga:** depois do conserto, volta à base com a carga, e um funcionário presente retoma a mesma entrega; dinheiro e propriedade da carga são preservados.
+- **Devolução do consertado** à vaga do dono é um novo socorro, com as regras de pagamento em vigor (dono paga ao prestador do guincho; a Prefeitura cobre o que faltar como dívida do dono); usa o guincho local se livre, senão o externo.
+- **Revisão de carro particular** acontece quando o carro está na vaga de casa e um adulto da família está em tempo livre; ele espera na porta da oficina e volta dirigindo. Caminhão de empresa vai com funcionário em turno. Veículos externos fazem a revisão no exterior quando estão parados lá, ficando indisponíveis durante o serviço, sem pagamento.
 
 ### Tempo de execução dos serviços adiados
 
