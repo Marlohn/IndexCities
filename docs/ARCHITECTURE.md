@@ -455,7 +455,7 @@ No núcleo atual (desde 2026-10-17), os derivados de desempenho seguem duas form
 
 Os índices partem da premissa, garantida pelo contador `Id()`, de que cada Id é único na sua lista.
 
-Esses derivados não mudam resultado: a equivalência foi verificada pelo mesmo SHA-256 do save na bancada headless (§15) antes e depois, em várias cidades e sementes (registro em `docs/exploration/ritmo-velocidades.md`).
+Esses derivados não mudam resultado: o mesmo SHA-256 do save na bancada headless (§12, §15), antes e depois, em várias cidades e sementes, mostrou o estado persistido inalterado, junto com os testes (registro em `docs/exploration/ritmo-velocidades.md`).
 
 ---
 
