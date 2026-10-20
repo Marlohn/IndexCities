@@ -5,6 +5,7 @@ const ROOT = "res://Assets/Construction"
 const Builder = preload("res://Assets/V1/Source/kit/mesh_builder.gd")
 const Truck = preload("res://Assets/V1/Source/recipes/vehicle_truck_cargo.gd")
 const Palette = preload("res://Assets/V1/Source/kit/palette.gd")
+const Rig = preload("res://Assets/V1/Source/kit/breakdown_rig.gd")
 const MATERIALS = {
 	"construction_ochre": {"albedo":"#cf9b3e", "roughness":0.66},
 	"construction_ochre_dark": {"albedo":"#986c2c", "roughness":0.72},
@@ -60,6 +61,14 @@ func marker(parent: Node3D, title: String, pos: Vector3) -> void:
 	n.position = pos
 	parent.add_child(n)
 
+## Hood lid (pivot at its hinge), hazard-light and smoke markers for the machines whose engine
+## cover is part of their own recipe. `hood_builder` already holds the lid geometry.
+func machine_hood(r: Node3D, id: String, hood_builder, pivot: Vector3, open_degrees: float, hazard_front_right: Vector3, hazard_rear_right: Vector3, smoke_at: Vector3) -> void:
+	var hood = part(r,"Hood",hood_builder,id+".hood",pivot)
+	hood.set_meta("open_degrees",open_degrees)
+	Rig.add_hazard_markers(r,hazard_front_right,hazard_rear_right)
+	Rig.add_smoke_marker(r,smoke_at)
+
 func own(n: Node, r: Node) -> void:
 	for c in n.get_children():
 		c.owner = r
@@ -98,6 +107,9 @@ func save(r: Node3D, id: String, contract: Dictionary) -> void:
 	r.name = id.replace("vehicle.", "").replace(".a", "").to_pascal_case()
 	r.set_meta("visual_id",id)
 	r.set_meta("asset_status","PENDENTE de revisao humana")
+	var hood = r.get_node("Hood") as Node3D
+	Rig.add_hood_animation(r,hood.get_meta("open_degrees"))
+	contract["breakdown"] = {"hood":{"node":"Hood","pivot_m":v(hood.position),"axis":"X","open_degrees":hood.get_meta("open_degrees"),"animation":"AnimationPlayer/"+Rig.HOOD_ANIMATION},"hazard_markers":["HazardFL","HazardFR","HazardRL","HazardRR"],"smoke_marker":Rig.SMOKE_MARKER,"note":"Presentation hooks only; the host decides when a vehicle is broken."}
 	var d = {"meshes":[],"triangles":0,"surfaces":0}
 	inspect(r,Transform3D.IDENTITY,r,d)
 	r.set_meta("visual_envelope_min",d.aabb.position)
@@ -158,6 +170,9 @@ func truck_base(id: String) -> Node3D:
 			w.position = Vector3(side.x,0.47,axle.z)
 			r.add_child(w)
 	marker(r,"Candidate_Discharge",Vector3(0,0,3.9))
+	var hb = builder()
+	truck._hood(hb)
+	truck.add_breakdown_nodes(r,mesh(hb,"vehicle.construction_truck.hood"))
 	return r
 
 func wheel_contract() -> Dictionary:
@@ -456,7 +471,14 @@ func build_paver() -> void:
 	var r=Node3D.new()
 	var b=builder()
 	b.bevel_box("construction_ochre_dark",Vector3(-0.96,0.48,-1.5),Vector3(0.96,1.12,1.5),0.08)
-	b.bevel_box("construction_ochre",Vector3(-0.9,0.95,-0.65),Vector3(0.9,1.65,0.91),0.1)
+	# Engine cover: fixed lower block and rear section, plus a front panel (`Hood`, below) that
+	# lifts at its rear edge. The side/front rims keep the closed silhouette of one solid cover.
+	b.bevel_box("construction_ochre",Vector3(-0.9,0.95,-0.65),Vector3(0.9,1.45,0.91),0.1)
+	b.bevel_box("construction_ochre",Vector3(-0.9,1.45,-0.28),Vector3(0.9,1.65,0.91),0.08)
+	for sx in [-1.0,1.0]:
+		b.box("construction_ochre",Vector3(min(sx*0.74,sx*0.9),1.45,-0.65),Vector3(max(sx*0.74,sx*0.9),1.65,-0.28))
+	b.box("construction_ochre",Vector3(-0.74,1.45,-0.65),Vector3(0.74,1.65,-0.62))
+	b.box_c("metal_dark",Vector3(0,1.50,-0.45),Vector3(1.0,0.12,0.30))
 	for sx in [-1.0,1.0]:
 		for z in [-0.3,-0.1,0.1,0.3,0.5]:
 			b.box_c("metal_dark",Vector3(sx*0.912,1.39,z),Vector3(0.025,0.29,0.055))
@@ -508,6 +530,14 @@ func build_paver() -> void:
 	for sx in [-1.0,1.0]:
 		b.box_c("metal_dark",Vector3(sx*1.23,-0.12,0.72),Vector3(0.08,0.4,0.8))
 	part(sc,"Screed",b,id+".screed")
+	var hood_pivot = Vector3(0,1.55,-0.62)
+	b = builder()
+	b.push_translate(-hood_pivot)
+	b.bevel_box("construction_ochre",Vector3(-0.74,1.45,-0.62),Vector3(0.74,1.65,-0.28),0.05)
+	for x in [-0.4,0,0.4]:
+		b.box_c("metal_dark",Vector3(x,1.655,-0.45),Vector3(0.1,0.015,0.24))
+	b.pop()
+	machine_hood(r,id,b,hood_pivot,-60.0,Vector3(0.95,1.17,-1.42),Vector3(0.95,1.17,1.42),Vector3(0,1.72,-0.45))
 	marker(r,"Candidate_HopperFeed",Vector3(0,0,-2.6))
 	marker(r,"Candidate_PavementExit",Vector3(0,0,2.35))
 	# Center the complete physical silhouette, not just the engine block.
@@ -526,7 +556,10 @@ func build_roller() -> void:
 	var r=Node3D.new()
 	var b=builder()
 	b.bevel_box("construction_ochre_dark",Vector3(-0.65,0.83,-0.87),Vector3(0.65,1.2,0.93),0.09)
-	b.bevel_box("construction_ochre",Vector3(-0.78,1.04,0.24),Vector3(0.78,1.69,1.54),0.11)
+	# Engine block: lower block plus front rim are fixed; the rear lid (`Hood`, below) lifts at the back.
+	b.bevel_box("construction_ochre",Vector3(-0.78,1.04,0.24),Vector3(0.78,1.55,1.54),0.11)
+	b.bevel_box("construction_ochre",Vector3(-0.78,1.55,0.24),Vector3(0.78,1.69,0.72),0.07)
+	b.box_c("metal_dark",Vector3(0,1.55,1.1),Vector3(1.0,0.1,0.6))
 	for x in [-0.45,-0.22,0,0.22,0.45]:
 		b.box_c("metal_dark",Vector3(x,1.43,1.551),Vector3(0.10,0.3,0.022))
 	for sx in [-1.0,1.0]:
@@ -556,6 +589,14 @@ func build_roller() -> void:
 		drum.mesh=dm
 		drum.position=spec.pos
 		spec.parent.add_child(drum)
+	var hood_pivot = Vector3(0,1.62,1.54)
+	b = builder()
+	b.push_translate(-hood_pivot)
+	b.bevel_box("construction_ochre",Vector3(-0.78,1.55,0.72),Vector3(0.78,1.69,1.54),0.06)
+	for z in [0.95,1.15,1.35]:
+		b.box_c("metal_dark",Vector3(0,1.695,z),Vector3(0.9,0.014,0.07))
+	b.pop()
+	machine_hood(r,id,b,hood_pivot,60.0,Vector3(0.58,1.26,-0.82),Vector3(0.70,1.30,1.57),Vector3(0,1.76,1.1))
 	marker(r,"Candidate_ContactFront",Vector3(0,0,-1.39))
 	marker(r,"Candidate_ContactRear",Vector3(0,0,1.4))
 	save(r,id,{"drums":{"nodes":["FrontSteering/FrontDrum","RearDrum"],"axis":"X","radius_m":0.5885},"steering":{"node":"FrontSteering","axis":"Y","operation_degrees":8},"width_m":2.32,"note":"Two smooth steel drums, no operator figurine or independent compaction animation"})

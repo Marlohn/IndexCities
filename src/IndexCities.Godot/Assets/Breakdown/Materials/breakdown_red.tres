@@ -1,0 +1,6 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[resource]
+resource_name = "breakdown_red"
+albedo_color = Color(0.7529412, 0.19607843, 0.16470589, 1)
+roughness = 0.45

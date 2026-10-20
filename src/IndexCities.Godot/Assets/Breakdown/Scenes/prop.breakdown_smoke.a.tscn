@@ -1,0 +1,39 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://Assets/Breakdown/Meshes/prop.breakdown_smoke.a.puff.tres" id="1_2047k"]
+
+[sub_resource type="Curve" id="Curve_jyyyg"]
+_data = [Vector2(0, 0.35), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="Gradient" id="Gradient_trlxk"]
+offsets = PackedFloat32Array(0, 0.18, 1)
+colors = PackedColorArray(0.2, 0.2, 0.22, 0, 0.24, 0.24, 0.27, 0.8, 0.42, 0.42, 0.45, 0)
+
+[node name="BreakdownSmoke" type="Node3D" unique_id=1234154723]
+metadata/visual_id = "prop.breakdown_smoke.a"
+metadata/asset_status = "PENDENTE de revisao humana; sem regra de produto"
+metadata/visual_envelope_min = Vector3(0, 0, 0)
+metadata/visual_envelope_size = Vector3(0, 0, 0)
+
+[node name="Smoke" type="CPUParticles3D" parent="." unique_id=953358992]
+amount = 16
+lifetime = 2.6
+lifetime_randomness = 0.3
+fixed_fps = 30
+mesh = ExtResource("1_2047k")
+emission_shape = 1
+emission_sphere_radius = 0.12
+direction = Vector3(0, 1, 0)
+spread = 14.0
+gravity = Vector3(0.12, 0.25, 0)
+initial_velocity_min = 0.55
+initial_velocity_max = 0.95
+angular_velocity_min = -20.0
+angular_velocity_max = 20.0
+damping_min = 0.15
+damping_max = 0.3
+angle_min = -180.0
+angle_max = 180.0
+scale_amount_curve = SubResource("Curve_jyyyg")
+color_ramp = SubResource("Gradient_trlxk")

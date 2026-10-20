@@ -1,56 +1,110 @@
 [gd_scene format=3]
 
-[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_flatbed.a.body.tres" id="1_0euj8"]
-[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres" id="2_30qy0"]
-[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_flatbed.a.bed.tres" id="3_j7jen"]
-[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_flatbed.a.load_steel.tres" id="4_yxuoa"]
-[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_flatbed.a.load_wood.tres" id="5_kaoba"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_flatbed.a.body.tres" id="1_30qy0"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres" id="2_j7jen"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.construction_truck.hood.tres" id="3_yxuoa"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_flatbed.a.bed.tres" id="4_kaoba"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_flatbed.a.load_steel.tres" id="5_4wc6h"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_flatbed.a.load_wood.tres" id="6_5or2g"]
 
-[node name="TruckFlatbed" type="Node3D" unique_id=1326603462]
+[sub_resource type="Animation" id="Animation_uhpah"]
+length = 0.9
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Hood:rotation")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.63, 0.9),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(0, 0, 0), Vector3(-1.850049, 0, 0), Vector3(-1.7453293, 0, 0)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_maj3c"]
+_data = {
+&"hood_open": SubResource("Animation_uhpah")
+}
+
+[node name="TruckFlatbed" type="Node3D" unique_id=261541080]
 metadata/visual_id = "vehicle.truck_flatbed.a"
 metadata/asset_status = "PENDENTE de revisao humana"
 metadata/visual_envelope_min = Vector3(-1.45, 0, -3.6)
 metadata/visual_envelope_size = Vector3(2.9, 2.7799997, 7.2)
 
-[node name="Body" type="MeshInstance3D" parent="." unique_id=1044672546]
-mesh = ExtResource("1_0euj8")
+[node name="Body" type="MeshInstance3D" parent="." unique_id=1447267191]
+mesh = ExtResource("1_30qy0")
 
-[node name="Wheel_FL" type="MeshInstance3D" parent="." unique_id=945827874]
+[node name="Wheel_FL" type="MeshInstance3D" parent="." unique_id=789755855]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 0.47, -2.55)
-mesh = ExtResource("2_30qy0")
+mesh = ExtResource("2_j7jen")
 
-[node name="Wheel_FR" type="MeshInstance3D" parent="." unique_id=1854597193]
+[node name="Wheel_FR" type="MeshInstance3D" parent="." unique_id=1390881918]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 0.47, -2.55)
-mesh = ExtResource("2_30qy0")
+mesh = ExtResource("2_j7jen")
 
-[node name="Wheel_ML" type="MeshInstance3D" parent="." unique_id=336550124]
+[node name="Wheel_ML" type="MeshInstance3D" parent="." unique_id=1290251713]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 0.47, 1.45)
-mesh = ExtResource("2_30qy0")
+mesh = ExtResource("2_j7jen")
 
-[node name="Wheel_MR" type="MeshInstance3D" parent="." unique_id=589608884]
+[node name="Wheel_MR" type="MeshInstance3D" parent="." unique_id=1800098062]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 0.47, 1.45)
-mesh = ExtResource("2_30qy0")
+mesh = ExtResource("2_j7jen")
 
-[node name="Wheel_RL" type="MeshInstance3D" parent="." unique_id=313927412]
+[node name="Wheel_RL" type="MeshInstance3D" parent="." unique_id=1368750755]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 0.47, 2.65)
-mesh = ExtResource("2_30qy0")
+mesh = ExtResource("2_j7jen")
 
-[node name="Wheel_RR" type="MeshInstance3D" parent="." unique_id=690586353]
+[node name="Wheel_RR" type="MeshInstance3D" parent="." unique_id=214396891]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 0.47, 2.65)
-mesh = ExtResource("2_30qy0")
+mesh = ExtResource("2_j7jen")
 
-[node name="Candidate_Discharge" type="Marker3D" parent="." unique_id=788082323]
+[node name="Candidate_Discharge" type="Marker3D" parent="." unique_id=731011368]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3.9)
 
-[node name="Flatbed" type="MeshInstance3D" parent="." unique_id=852373631]
-mesh = ExtResource("3_j7jen")
+[node name="Hood" type="MeshInstance3D" parent="." unique_id=1079683034]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.86, -3.55)
+mesh = ExtResource("3_yxuoa")
+metadata/open_degrees = -100.0
 
-[node name="LoadSteel" type="MeshInstance3D" parent="." unique_id=1863839668]
+[node name="HazardFL" type="Marker3D" parent="." unique_id=2038318390]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.98, 1.36, -3.57)
+gizmo_extents = 0.3
+metadata/note = "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
+
+[node name="HazardFR" type="Marker3D" parent="." unique_id=1641059279]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.98, 1.36, -3.57)
+gizmo_extents = 0.3
+metadata/note = "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
+
+[node name="HazardRL" type="Marker3D" parent="." unique_id=382088430]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -1, 0.66, 3.47)
+gizmo_extents = 0.3
+metadata/note = "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
+
+[node name="HazardRR" type="Marker3D" parent="." unique_id=449269653]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 1, 0.66, 3.47)
+gizmo_extents = 0.3
+metadata/note = "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
+
+[node name="HoodSmoke" type="Marker3D" parent="." unique_id=304339681]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.58, -3.64)
+gizmo_extents = 0.3
+metadata/note = "Origem da fumaca (prop breakdown_smoke) sobre o compartimento do motor. Nao e acesso nem regra."
+
+[node name="Flatbed" type="MeshInstance3D" parent="." unique_id=79479576]
+mesh = ExtResource("4_kaoba")
+
+[node name="LoadSteel" type="MeshInstance3D" parent="." unique_id=1302312108]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.32, 0)
 visible = false
-mesh = ExtResource("4_yxuoa")
+mesh = ExtResource("5_4wc6h")
 
-[node name="LoadWood" type="MeshInstance3D" parent="." unique_id=166546648]
+[node name="LoadWood" type="MeshInstance3D" parent="." unique_id=1061250872]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.32, 0)
 visible = false
-mesh = ExtResource("5_kaoba")
+mesh = ExtResource("6_5or2g")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1656206979]
+libraries/ = SubResource("AnimationLibrary_maj3c")
