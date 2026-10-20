@@ -2,11 +2,11 @@
 
 [ext_resource type="ArrayMesh" path="res://Assets/Breakdown/Meshes/prop.warning_triangle.a.tres" id="1_s74p3"]
 
-[node name="WarningTriangle" type="Node3D" unique_id=1093614005]
+[node name="WarningTriangle" type="Node3D" unique_id=976338720]
 metadata/visual_id = "prop.warning_triangle.a"
 metadata/asset_status = "PENDENTE de revisao humana; sem regra de produto"
 metadata/visual_envelope_min = Vector3(-0.32, 0, -0.09)
 metadata/visual_envelope_size = Vector3(0.64, 0.6042563, 0.18)
 
-[node name="Body" type="MeshInstance3D" parent="." unique_id=1175743607]
+[node name="Body" type="MeshInstance3D" parent="." unique_id=1298332727]
 mesh = ExtResource("1_s74p3")

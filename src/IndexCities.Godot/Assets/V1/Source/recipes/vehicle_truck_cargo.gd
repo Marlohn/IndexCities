@@ -36,7 +36,7 @@ const BOX_Y0 := 1.12
 const BOX_Z0 := -1.45
 const BOX_Z1 := 3.535           # face traseira do bau (portas); macanetas vao ate +3,60
 ## Tampa frontal de servico (cabine avancada): dobradica na base da grade, abre para a frente.
-const HOOD_HINGE := Vector3(0.0, 1.02, CAB_FRONT - 0.03)
+const HOOD_HINGE := Vector3(0.0, 0.86, CAB_FRONT - 0.03)
 const HOOD_OPEN_DEGREES := -100.0
 ## Encaixes (lado +X; o -X e o espelho): pisca sobre os farois e na ponta do para-choque traseiro.
 const HAZARD_FRONT_R := Vector3(0.98, 1.36, CAB_FRONT - 0.05)
@@ -254,9 +254,9 @@ func _cab(b) -> void:
 		b.box("metal_dark", Vector3(min(xa, xb), 0.46, CAB_REAR - 0.10), Vector3(max(xa, xb), 0.62, CAB_REAR - 0.04), PackedStringArray(["+y"]))
 	# Compartimento atras da grade (fundo escuro + aletas do radiador). A grade em si e a
 	# tampa `Hood`, que cobre este fundo e se abre.
-	b.box("metal_dark", Vector3(-0.70, 1.02, CAB_FRONT - 0.015), Vector3(0.70, 1.50, CAB_FRONT + 0.01), PackedStringArray(["+z"]))
+	b.box("metal_dark", Vector3(-0.70, 0.86, CAB_FRONT - 0.015), Vector3(0.70, 1.54, CAB_FRONT + 0.01), PackedStringArray(["+z"]))
 	for x in [-0.45, -0.15, 0.15, 0.45]:
-		b.box("metal_light", Vector3(x - 0.03, 1.08, CAB_FRONT - 0.03), Vector3(x + 0.03, 1.44, CAB_FRONT - 0.015), PackedStringArray(["+z"]))
+		b.box("metal_light", Vector3(x - 0.03, 0.92, CAB_FRONT - 0.03), Vector3(x + 0.03, 1.48, CAB_FRONT - 0.015), PackedStringArray(["+z"]))
 	# Farois (apagados) nas quinas inferiores.
 	for sx in [-1.0, 1.0]:
 		var x0: float = sx * 0.78
@@ -277,8 +277,10 @@ func _hood_mesh(kit):
 
 func _hood(b) -> void:
 	b.push_translate(-HOOD_HINGE)
-	b.box("metal_dark", Vector3(-0.70, 1.02, CAB_FRONT - 0.05), Vector3(0.70, 1.50, CAB_FRONT - 0.015), PackedStringArray(["+z"]))
-	for y in [1.12, 1.24, 1.36]:
+	b.box("metal_dark", Vector3(-0.70, 0.86, CAB_FRONT - 0.05), Vector3(0.70, 1.54, CAB_FRONT - 0.025), PackedStringArray(["+z"]))
+	# Verso na cor da cabine: com a tampa aberta quem olha ve um painel claro, nao um buraco.
+	b.box("truck_cab", Vector3(-0.70, 0.86, CAB_FRONT - 0.025), Vector3(0.70, 1.54, CAB_FRONT - 0.015), PackedStringArray(["+z"]))
+	for y in [1.0, 1.15, 1.30, 1.45]:
 		b.box("truck_cab", Vector3(-0.66, y, CAB_FRONT - 0.075), Vector3(0.66, y + 0.05, CAB_FRONT - 0.05), PackedStringArray(["+z"]))
 	b.pop()
 

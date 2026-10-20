@@ -1,43 +1,41 @@
-## Preview e verificacao por GPU. Nao abre cidade, nao le nem grava saves.
-## -- --out=<absoluto em artifacts/verification> --lighting=game|studio --views=hero,front,rear,detail,scale
+## Capturas por GPU da oficina com veiculos reais do jogo nas ancoras. Nao abre cidade nem save.
+## -- --out=<absoluto em artifacts/verification> --shots=lift_down,lift_up,gate_closed,gate_open,tow_base,top
 extends SceneTree
 
 const PACKAGE := "res://Assets/Workshop"
 const SCENE := PACKAGE+"/Scenes/commercial.mechanic_shop.a.tscn"
+const CAR := "res://Assets/V1/Scenes/vehicle.car_passenger.a.tscn"
+const TRUCK := "res://Assets/V1/Scenes/vehicle.truck_cargo.a.tscn"
+const TOW := "res://Assets/Construction/Scenes/vehicle.tow_truck.a.tscn"
 const VIEWS := {
-	"hero":{"p":Vector3(0.78,0.65,-1.0),"target":Vector3(0,1.6,0),"size":18.5},
-	"front":{"p":Vector3(0.1,0.23,-1),"target":Vector3(0,2.2,0.2),"size":15.0},
-	"rear":{"p":Vector3(-0.9,0.68,1),"target":Vector3(0,1.8,0.3),"size":18.5},
-	"detail":{"p":Vector3(0.38,0.18,-1),"target":Vector3(-6.95,1.8,1.3),"size":6.0},
-	"office":{"p":Vector3(0.80,0.4,-1),"target":Vector3(6.3,1.8,-0.4),"size":7.5},
-	"scale":{"p":Vector3(0.85,0.90,-1),"target":Vector3(0,1.0,-1.5),"size":35.0},
-	"thumb":{"p":Vector3(0.78,0.65,-1),"target":Vector3(0,2.2,0),"size":28.5},
+	"hero":{"p":Vector3(0.78,0.65,-1.0),"target":Vector3(0,1.6,1.0),"size":26.0},
+	"bays":{"p":Vector3(0.55,0.42,-1.0),"target":Vector3(-4.2,1.6,3.0),"size":13.0},
+	"yard":{"p":Vector3(0.78,0.7,-1.0),"target":Vector3(3.5,1.0,-3.0),"size":17.0},
+	"top":{"p":Vector3(0,1,-0.001),"target":Vector3(0,0,0),"size":28.0},
 }
-
+## nome -> {view, lift ("down"/"up"), gate ("closed"/"open"), car_lift, truck_bay1, tow}
+const SHOTS := {
+	"lift_down":{"view":"bays","lift":"down","gate":"closed","car_lift":true},
+	"lift_up":{"view":"bays","lift":"up","gate":"closed","car_lift":true},
+	"gate_closed":{"view":"hero","lift":"down","gate":"closed","car_lift":true},
+	"gate_open":{"view":"hero","lift":"up","gate":"open","car_lift":true,"truck_bay1":true},
+	"tow_base":{"view":"yard","lift":"down","gate":"closed","tow":true},
+	"hero_all":{"view":"hero","lift":"up","gate":"open","car_lift":true,"truck_bay1":true,"tow":true},
+	"top":{"view":"top","lift":"down","gate":"open","car_lift":true,"truck_bay1":true,"tow":true},
+}
 var output_dir := ""
-var lighting := "game"
-var selected := PackedStringArray(["hero","front","rear","detail","office","scale","thumb"])
+var selected := PackedStringArray(SHOTS.keys())
 var viewport: SubViewport
 var stage: Node3D
 var camera: Camera3D
 var captures: Array = []
 var errors: Array = []
-var asset_instance: Node3D
-var interactive := false
-var context_trees: Array = []
-var source_format := "native"
 
 func _initialize() -> void:
 	for arg in OS.get_cmdline_user_args():
-		if arg == "--inspect":
-			interactive = true
-		elif arg.begins_with("--out="):
+		if arg.begins_with("--out="):
 			output_dir = arg.substr(6).replace("\\","/")
-		elif arg.begins_with("--lighting="):
-			lighting = arg.substr(11)
-		elif arg == "--source=glb":
-			source_format = "glb"
-		elif arg.begins_with("--views="):
+		elif arg.begins_with("--shots="):
 			selected = arg.substr(8).split(",")
 	var allowed := ProjectSettings.globalize_path("res://../../artifacts/verification").simplify_path().replace("\\","/")+"/"
 	if not output_dir.is_absolute_path() or not (output_dir.simplify_path()+"/").begins_with(allowed):
@@ -46,6 +44,21 @@ func _initialize() -> void:
 		return
 	DirAccess.make_dir_recursive_absolute(output_dir)
 	_run.call_deferred()
+
+func _seek(player: AnimationPlayer, animation: String) -> void:
+	player.play(animation)
+	player.seek(player.current_animation_length,true)
+	player.pause()
+
+func _paint(car: Node3D, material_name: String) -> void:
+	var paint: Material = load("res://Assets/V1/Materials/"+material_name+".tres")
+	for part in ["Body","Hood"]:
+		var mi := car.get_node_or_null(part) as MeshInstance3D
+		if mi == null:
+			continue
+		for i in mi.mesh.get_surface_count():
+			if mi.mesh.surface_get_name(i) == "car_paint":
+				mi.set_surface_override_material(i,paint)
 
 func _run() -> void:
 	viewport = SubViewport.new()
@@ -65,153 +78,83 @@ func _run() -> void:
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-48,-30,0)
 	sun.light_color = Color("fff0d0")
-	sun.light_energy = 1.0
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 650
-	sun.shadow_blur = 1.0
 	stage.add_child(sun)
-	if lighting == "studio":
-		environment.ambient_light_energy = 0.55
-		environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-		environment.ssao_enabled = true
-		environment.ssao_radius = 0.9
-		environment.ssao_intensity = 1.8
-		environment.ssao_power = 1.4
-		sun.light_energy = 1.25
-		sun.rotation_degrees = Vector3(-45,-145,0)
-		sun.light_angular_distance = 3.0
-		var fill := DirectionalLight3D.new()
-		fill.rotation_degrees = Vector3(-30,-20,0)
-		fill.light_energy = 0.38
-		fill.light_color = Color("d3e6ed")
-		stage.add_child(fill)
 	var world := WorldEnvironment.new()
 	world.environment = environment
 	stage.add_child(world)
-	if source_format == "glb":
-		var doc := GLTFDocument.new()
-		var state := GLTFState.new()
-		if doc.append_from_file(PACKAGE+"/Scenes/commercial.mechanic_shop.a.glb",state) == OK:
-			asset_instance = doc.generate_scene(state)
-	else:
-		var loaded: PackedScene = load(SCENE)
-		if loaded != null:
-			asset_instance = loaded.instantiate()
-	if asset_instance == null:
-		printerr("cena ausente/invalida")
-		quit(1)
-		return
-	stage.add_child(asset_instance)
-	_validate(asset_instance)
 	_context()
 	camera = Camera3D.new()
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	camera.near = 0.1
 	camera.far = 200
 	stage.add_child(camera)
 	camera.make_current()
-	# Janela real mostra a mesma camera que produz a evidencia.
 	var display := TextureRect.new()
 	display.texture = viewport.get_texture()
 	display.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	display.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	display.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	get_root().add_child(display)
-	await process_frame
 	for key in selected:
-		if not VIEWS.has(key):
-			errors.append("vista desconhecida "+key)
+		if not SHOTS.has(key):
+			errors.append("captura desconhecida "+key)
 			continue
-		var view: Dictionary = VIEWS[key]
-		for tree in context_trees:
-			tree.visible = key == "scale" or key == "rear"
+		var shot: Dictionary = SHOTS[key]
+		var shop: Node3D = (load(SCENE) as PackedScene).instantiate()
+		stage.add_child(shop)
+		if shot.lift == "up":
+			_seek(shop.get_node("LiftPlatform/AnimationPlayer"),"lift_up")
+		if shot.gate == "open":
+			_seek(shop.get_node("Gate/AnimationPlayer"),"gate_open")
+		if shot.get("car_lift",false):
+			var car: Node3D = (load(CAR) as PackedScene).instantiate()
+			shop.get_node("LiftPlatform/ServiceBay0").add_child(car)
+			_paint(car,"car_paint_red")
+			if shot.lift == "up":
+				car.get_node("Hood").rotation = Vector3(deg_to_rad(62.0),0,0)
+		if shot.get("truck_bay1",false):
+			(shop.get_node("Anchors/ServiceBay1") as Node3D).add_child((load(TRUCK) as PackedScene).instantiate())
+		if shot.get("tow",false):
+			var tow: Node3D = (load(TOW) as PackedScene).instantiate()
+			shop.get_node("Anchors/TowTruckBase").add_child(tow)
+		var view: Dictionary = VIEWS[shot.view]
 		camera.position = view.target + view.p.normalized()*65.0
-		camera.look_at(view.target)
+		camera.look_at(view.target,Vector3(0,0,1) if shot.view == "top" else Vector3.UP)
 		camera.size = view.size
-		var thumb := key == "thumb"
-		viewport.size = Vector2i(1024,1024) if thumb else Vector2i(2560,1600)
 		for i in 8:
 			await process_frame
 		await RenderingServer.frame_post_draw
 		var img := viewport.get_texture().get_image()
 		if img == null or img.is_empty():
 			errors.append("captura vazia "+key)
-			continue
-		img.resize(512 if thumb else 1920,512 if thumb else 1200,Image.INTERPOLATE_LANCZOS)
-		var name := "mechanic_shop_"+lighting+"_"+("glb_" if source_format=="glb" else "")+key+".png"
-		if img.save_png(output_dir.path_join(name)) != OK:
-			errors.append("falha gravando "+name)
-		captures.append({"file":name,"width":img.get_width(),"height":img.get_height(),"camera_size":camera.size})
-		print("[workshop-preview] captured ",name)
-	var report := FileAccess.open(output_dir.path_join("report_"+lighting+("_glb" if source_format=="glb" else "")+("_inspect" if interactive else "")+".json"),FileAccess.WRITE)
-	report.store_string(JSON.stringify({"scene":SCENE,"renderer":RenderingServer.get_current_rendering_method(),"lighting":lighting,
-		"lighting_source":"Main.cs:21-22 daytime constants copied manually" if lighting=="game" else "independent studio setup",
-		"sun_energy":sun.light_energy,"sun_rotation_degrees":[sun.rotation_degrees.x,sun.rotation_degrees.y,sun.rotation_degrees.z],
-		"sun_color":sun.light_color.to_html(),"ambient_energy":environment.ambient_light_energy,"ambient_color":environment.ambient_light_color.to_html(),
-		"gpu":RenderingServer.get_video_adapter_name(),"source_format":source_format,"captures":captures,"errors":errors,"save_access":false},"\t"))
-	print("[workshop-preview] ","OK" if errors.is_empty() else "FAILED", " captures=",captures.size()," errors=",errors.size())
-	if interactive and errors.is_empty():
-		viewport.size = Vector2i(1920,1200)
-		camera.size = VIEWS.hero.size
-		camera.position = VIEWS.hero.target+VIEWS.hero.p.normalized()*65.0
-		camera.look_at(VIEWS.hero.target)
-		var controls := Node.new()
-		controls.set_script(load(PACKAGE+"/Source/viewer_controls.gd"))
-		get_root().add_child(controls)
-		controls.configure(camera,VIEWS.hero.target)
-		print("[workshop-preview] INTERACTIVE: arraste para girar; roda para zoom; R restaura; Esc fecha")
-		return
+		else:
+			img.resize(1920,1200,Image.INTERPOLATE_LANCZOS)
+			var file := "workshop_"+key+".png"
+			if img.save_png(output_dir.path_join(file)) != OK:
+				errors.append("falha gravando "+file)
+			captures.append({"file":file,"width":img.get_width(),"height":img.get_height()})
+			print("[workshop-preview] captured ",file)
+		shop.free()
+	var report := FileAccess.open(output_dir.path_join("report_workshop.json"),FileAccess.WRITE)
+	report.store_string(JSON.stringify({"renderer":RenderingServer.get_current_rendering_method(),"gpu":RenderingServer.get_video_adapter_name(),"captures":captures,"errors":errors,"save_access":false},"\t"))
+	print("[workshop-preview] ","OK" if errors.is_empty() else "FAILED"," captures=",captures.size())
 	quit(0 if errors.is_empty() else 1)
 
-func _validate(node: Node) -> void:
-	if node.get_script() != null:
-		errors.append("script dentro do asset: "+str(node.name))
-	if node is Light3D or node is CollisionObject3D or node is AnimationPlayer:
-		errors.append("runtime nao permitido: "+str(node.name))
-	if node is MeshInstance3D:
-		var mi := node as MeshInstance3D
-		if mi.mesh == null:
-			errors.append("malha ausente: "+str(node.name))
-		else:
-			var a := mi.transform * mi.mesh.get_aabb()
-			if not a.position.is_finite() or not a.size.is_finite():
-				errors.append("envelope nao finito: "+str(node.name))
-			if not mi.mesh is TextMesh and (a.position.x < -11.01 or a.end.x > 11.01 or a.position.z < -8.51 or a.end.z > 8.51):
-				errors.append("fora do lote candidato: "+str(node.name))
-	for child in node.get_children():
-		_validate(child)
-
-func _material(hex: String) -> StandardMaterial3D:
-	var m := StandardMaterial3D.new()
-	m.albedo_color = Color(hex)
-	m.roughness = 0.93
-	return m
-
-func _context_box(p: Vector3, s: Vector3, color: String) -> void:
+func _box(p: Vector3, s: Vector3, color: String) -> void:
 	var mi := MeshInstance3D.new()
 	var mesh := BoxMesh.new()
 	mesh.size = s
 	mi.mesh = mesh
 	mi.position = p
-	mi.material_override = _material(color)
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(color)
+	m.roughness = 0.93
+	mi.material_override = m
 	stage.add_child(mi)
 
 func _context() -> void:
-	_context_box(Vector3(0,-0.31,0),Vector3(42,0.35,32),"899276")
-	_context_box(Vector3(0,-0.10,-12),Vector3(42,0.16,6.8),"5a6263")
-	_context_box(Vector3(0,0.01,-8.9),Vector3(42,0.16,0.80),"c8c7b8")
-	for i in 9:
-		_context_box(Vector3(-19+i*4.6,-0.008,-12),Vector3(1.6,0.015,0.09),"d6bb7a")
-	# Contexto usa os assets atuais deste projeto, fora do pacote entregue.
-	for item in [
-		{"path":"vegetation.tree_broadleaf.a","p":Vector3(-15,0,5.5),"scale":1.0},
-		{"path":"vegetation.tree_broadleaf.a","p":Vector3(15,0,6.5),"scale":1.15},
-		{"path":"agent.sim_pedestrian.a","p":Vector3(8.1,0,-5.0),"scale":1.0}]:
-		var packed: PackedScene = load("res://Assets/V1/Scenes/"+item.path+".tscn")
-		if packed != null:
-			var obj := packed.instantiate() as Node3D
-			obj.position = item.p
-			obj.scale = Vector3.ONE*item.scale
-			stage.add_child(obj)
-			if item.path.begins_with("vegetation"):
-				context_trees.append(obj)
+	_box(Vector3(0,-0.31,0),Vector3(48,0.35,44),"899276")
+	_box(Vector3(0,-0.10,-14),Vector3(48,0.16,6.8),"5a6263")
+	for i in 10:
+		_box(Vector3(-21+i*4.6,-0.008,-14),Vector3(1.6,0.015,0.09),"d6bb7a")

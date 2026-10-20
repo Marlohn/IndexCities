@@ -103,9 +103,9 @@ func tyre(center: Vector3, radius: float = 0.37, width: float = 0.22, axis: Vect
 		x = Vector3.RIGHT
 	transform = prior * Transform3D(Basis(x,y,x.cross(y).normalized()), center)
 	var section := [Vector2(0.55,-0.5),Vector2(0.85,-0.5),Vector2(1,-0.30),Vector2(1,0.3),Vector2(0.85,0.5),Vector2(0.55,0.5)]
-	for i in 20:
-		var a := TAU*i/20
-		var b := TAU*(i+1)/20
+	for i in 12:
+		var a := TAU*i/12
+		var b := TAU*(i+1)/12
 		for j in section.size():
 			var s: Vector2 = section[j]
 			var t: Vector2 = section[(j+1)%section.size()]

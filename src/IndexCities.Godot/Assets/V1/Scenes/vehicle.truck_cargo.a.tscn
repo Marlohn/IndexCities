@@ -24,66 +24,66 @@ _data = {
 &"hood_open": SubResource("Animation_rtoxf")
 }
 
-[node name="TruckCargo" type="Node3D" unique_id=1262730016]
+[node name="TruckCargo" type="Node3D" unique_id=1423087397]
 metadata/visual_id = "vehicle.truck_cargo.a"
 metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
 metadata/visual_envelope_min = Vector3(-1.45, 0, -3.6)
 metadata/visual_envelope_size = Vector3(2.9, 3.3000002, 7.2)
 
-[node name="Body" type="MeshInstance3D" parent="." unique_id=455346732]
+[node name="Body" type="MeshInstance3D" parent="." unique_id=1938815581]
 mesh = ExtResource("1_12qbv")
 
-[node name="Wheel_FL" type="MeshInstance3D" parent="." unique_id=1742504309]
+[node name="Wheel_FL" type="MeshInstance3D" parent="." unique_id=2126282657]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.98, 0.47, -2.55)
 mesh = ExtResource("2_fscqt")
 
-[node name="Wheel_FR" type="MeshInstance3D" parent="." unique_id=815379075]
+[node name="Wheel_FR" type="MeshInstance3D" parent="." unique_id=1286958360]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.98, 0.47, -2.55)
 mesh = ExtResource("2_fscqt")
 
-[node name="Wheel_RL" type="MeshInstance3D" parent="." unique_id=2039014131]
+[node name="Wheel_RL" type="MeshInstance3D" parent="." unique_id=1324225372]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.98, 0.47, 1.75)
 mesh = ExtResource("2_fscqt")
 
-[node name="Wheel_RR" type="MeshInstance3D" parent="." unique_id=1175822258]
+[node name="Wheel_RR" type="MeshInstance3D" parent="." unique_id=1810676705]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.98, 0.47, 1.75)
 mesh = ExtResource("2_fscqt")
 
-[node name="Candidate_CargoDoor" type="Marker3D" parent="." unique_id=2135993914]
+[node name="Candidate_CargoDoor" type="Marker3D" parent="." unique_id=166808342]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 3.9)
 gizmo_extents = 0.4
 metadata/candidate = true
 metadata/note = "CANDIDATO: ponto no solo atras das portas traseiras (fechadas). Nao e acesso funcional."
 
-[node name="Hood" type="MeshInstance3D" parent="." unique_id=631462522]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.02, -3.55)
+[node name="Hood" type="MeshInstance3D" parent="." unique_id=744035254]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.86, -3.55)
 mesh = ExtResource("3_q8jqa")
 metadata/open_degrees = -100.0
 
-[node name="HazardFL" type="Marker3D" parent="." unique_id=1783173410]
+[node name="HazardFL" type="Marker3D" parent="." unique_id=1562743557]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.98, 1.36, -3.57)
 gizmo_extents = 0.3
 metadata/note = "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
 
-[node name="HazardFR" type="Marker3D" parent="." unique_id=348899543]
+[node name="HazardFR" type="Marker3D" parent="." unique_id=2078295661]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.98, 1.36, -3.57)
 gizmo_extents = 0.3
 metadata/note = "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
 
-[node name="HazardRL" type="Marker3D" parent="." unique_id=1373062368]
+[node name="HazardRL" type="Marker3D" parent="." unique_id=2106515598]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -1, 0.66, 3.47)
 gizmo_extents = 0.3
 metadata/note = "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
 
-[node name="HazardRR" type="Marker3D" parent="." unique_id=791442622]
+[node name="HazardRR" type="Marker3D" parent="." unique_id=531171330]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 1, 0.66, 3.47)
 gizmo_extents = 0.3
 metadata/note = "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
 
-[node name="HoodSmoke" type="Marker3D" parent="." unique_id=420779450]
+[node name="HoodSmoke" type="Marker3D" parent="." unique_id=1467671035]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.58, -3.64)
 gizmo_extents = 0.3
 metadata/note = "Origem da fumaca (prop breakdown_smoke) sobre o compartimento do motor. Nao e acesso nem regra."
 
-[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=350487703]
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=250617186]
 libraries/ = SubResource("AnimationLibrary_jjr5e")

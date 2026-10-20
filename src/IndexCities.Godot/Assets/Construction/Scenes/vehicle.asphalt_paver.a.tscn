@@ -28,82 +28,82 @@ _data = {
 &"hood_open": SubResource("Animation_ut1q5")
 }
 
-[node name="AsphaltPaver" type="Node3D" unique_id=714333109]
+[node name="AsphaltPaver" type="Node3D" unique_id=327937491]
 metadata/visual_id = "vehicle.asphalt_paver.a"
 metadata/asset_status = "PENDENTE de revisao humana"
 metadata/visual_envelope_min = Vector3(-1.27, 0, -2.31)
 metadata/visual_envelope_size = Vector3(2.54, 2.8400002, 4.62)
 
-[node name="Body" type="MeshInstance3D" parent="." unique_id=1109525736]
+[node name="Body" type="MeshInstance3D" parent="." unique_id=319093888]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.13)
 mesh = ExtResource("1_cqy1b")
 
-[node name="TrackLeft" type="MeshInstance3D" parent="." unique_id=1238839504]
+[node name="TrackLeft" type="MeshInstance3D" parent="." unique_id=1363642410]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.98, -0.12, -0.13)
 mesh = ExtResource("2_4fmse")
 
-[node name="HopperLeftPivot" type="Node3D" parent="." unique_id=1247578763]
+[node name="HopperLeftPivot" type="Node3D" parent="." unique_id=1041916316]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.76, 0.75, -1.55)
 
-[node name="Wing" type="MeshInstance3D" parent="HopperLeftPivot" unique_id=990587185]
+[node name="Wing" type="MeshInstance3D" parent="HopperLeftPivot" unique_id=1536065089]
 mesh = ExtResource("3_bga0g")
 
-[node name="TrackRight" type="MeshInstance3D" parent="." unique_id=1481934272]
+[node name="TrackRight" type="MeshInstance3D" parent="." unique_id=1181217863]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.98, -0.12, -0.13)
 mesh = ExtResource("2_4fmse")
 
-[node name="HopperRightPivot" type="Node3D" parent="." unique_id=1459423915]
+[node name="HopperRightPivot" type="Node3D" parent="." unique_id=689463070]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.76, 0.75, -1.55)
 
-[node name="Wing" type="MeshInstance3D" parent="HopperRightPivot" unique_id=1899229344]
+[node name="Wing" type="MeshInstance3D" parent="HopperRightPivot" unique_id=333559078]
 mesh = ExtResource("4_l13qr")
 
-[node name="HopperLoad" type="MeshInstance3D" parent="." unique_id=1649046760]
+[node name="HopperLoad" type="MeshInstance3D" parent="." unique_id=1669145825]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.84, -0.13)
 visible = false
 mesh = ExtResource("5_rsn5e")
 
-[node name="ScreedPivot" type="Node3D" parent="." unique_id=2139986341]
+[node name="ScreedPivot" type="Node3D" parent="." unique_id=750172866]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 1.19)
 
-[node name="Screed" type="MeshInstance3D" parent="ScreedPivot" unique_id=1646656922]
+[node name="Screed" type="MeshInstance3D" parent="ScreedPivot" unique_id=1035039834]
 mesh = ExtResource("6_q2bie")
 
-[node name="Hood" type="MeshInstance3D" parent="." unique_id=762593546]
+[node name="Hood" type="MeshInstance3D" parent="." unique_id=719935677]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.55, -0.75)
 mesh = ExtResource("7_cymmp")
 metadata/open_degrees = -60.0
 
-[node name="HazardFL" type="Marker3D" parent="." unique_id=489734783]
+[node name="HazardFL" type="Marker3D" parent="." unique_id=450460480]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.95, 1.17, -1.55)
 gizmo_extents = 0.3
 metadata/note = "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
 
-[node name="HazardFR" type="Marker3D" parent="." unique_id=356686431]
+[node name="HazardFR" type="Marker3D" parent="." unique_id=896606450]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.95, 1.17, -1.55)
 gizmo_extents = 0.3
 metadata/note = "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
 
-[node name="HazardRL" type="Marker3D" parent="." unique_id=2038474664]
+[node name="HazardRL" type="Marker3D" parent="." unique_id=663409449]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -0.95, 1.17, 1.29)
 gizmo_extents = 0.3
 metadata/note = "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
 
-[node name="HazardRR" type="Marker3D" parent="." unique_id=294431556]
+[node name="HazardRR" type="Marker3D" parent="." unique_id=615384078]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0.95, 1.17, 1.29)
 gizmo_extents = 0.3
 metadata/note = "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
 
-[node name="HoodSmoke" type="Marker3D" parent="." unique_id=1229635144]
+[node name="HoodSmoke" type="Marker3D" parent="." unique_id=1002339587]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.72, -0.58)
 gizmo_extents = 0.3
 metadata/note = "Origem da fumaca (prop breakdown_smoke) sobre o compartimento do motor. Nao e acesso nem regra."
 
-[node name="Candidate_HopperFeed" type="Marker3D" parent="." unique_id=664539535]
+[node name="Candidate_HopperFeed" type="Marker3D" parent="." unique_id=295750976]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2.73)
 
-[node name="Candidate_PavementExit" type="Marker3D" parent="." unique_id=1330303932]
+[node name="Candidate_PavementExit" type="Marker3D" parent="." unique_id=518176708]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2.2199998)
 
-[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=71941730]
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1078178309]
 libraries/ = SubResource("AnimationLibrary_5lw16")

@@ -52,9 +52,9 @@
       "contract": {
         "activity": "emitting = true ao entrar na arvore; `Smoke.emitting = false` para parar; remover o no encerra o efeito",
         "animation": "nenhuma",
-        "cost": "12 particulas de 20 triangulos (240 triangulos vivos), material sem sombreamento",
+        "cost": "16 particulas de 20 triangulos (320 triangulos vivos), material sem sombreamento",
         "nodes": [
-          "Smoke (CPUParticles3D, 12 particulas, malha de 20 faces, sem textura)"
+          "Smoke (CPUParticles3D, 16 particulas, malha de 20 faces, sem textura)"
         ],
         "pivot": "origem da emissao; a integracao encaixa em HoodSmoke do veiculo (mesma orientacao)"
       },
@@ -98,19 +98,19 @@
       },
       "envelope_m": {
         "max": [
-          0.93,
-          0.945,
-          2.042
+          0.97,
+          0.965,
+          2.05
         ],
         "min": [
-          -0.93,
-          0.735,
-          -2.032
+          -0.97,
+          0.715,
+          -2.04
         ],
         "size": [
-          1.86,
-          0.21,
-          4.074
+          1.94,
+          0.25,
+          4.09
         ]
       },
       "meshes": [

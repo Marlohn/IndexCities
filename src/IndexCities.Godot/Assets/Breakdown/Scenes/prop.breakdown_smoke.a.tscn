@@ -8,18 +8,17 @@ point_count = 2
 
 [sub_resource type="Gradient" id="Gradient_trlxk"]
 offsets = PackedFloat32Array(0, 0.18, 1)
-colors = PackedColorArray(0.62, 0.63, 0.66, 0, 0.5, 0.51, 0.55, 0.62, 0.3, 0.31, 0.34, 0)
+colors = PackedColorArray(0.2, 0.2, 0.22, 0, 0.24, 0.24, 0.27, 0.8, 0.42, 0.42, 0.45, 0)
 
-[node name="BreakdownSmoke" type="Node3D" unique_id=1800764369]
+[node name="BreakdownSmoke" type="Node3D" unique_id=1234154723]
 metadata/visual_id = "prop.breakdown_smoke.a"
 metadata/asset_status = "PENDENTE de revisao humana; sem regra de produto"
 metadata/visual_envelope_min = Vector3(0, 0, 0)
 metadata/visual_envelope_size = Vector3(0, 0, 0)
 
-[node name="Smoke" type="CPUParticles3D" parent="." unique_id=1666848363]
-amount = 12
+[node name="Smoke" type="CPUParticles3D" parent="." unique_id=953358992]
+amount = 16
 lifetime = 2.6
-preprocess = 2.6
 lifetime_randomness = 0.3
 fixed_fps = 30
 mesh = ExtResource("1_2047k")

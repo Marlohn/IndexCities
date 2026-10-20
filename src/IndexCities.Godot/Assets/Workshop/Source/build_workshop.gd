@@ -59,7 +59,7 @@ func _initialize() -> void:
 	_save_part("ArchitecturalDetails")
 	_shutter()
 	var gate := _save_part("Gate", GATE_PIVOT+SHIFT)
-	_add_animation(gate,"gate_open",".:scale",Vector3.ONE,Vector3(1,0.05,1),GATE_SECONDS,Animation.INTERPOLATION_CUBIC,"gate_close")
+	_add_animation(gate,"gate_open",".:scale",Vector3.ONE,Vector3(1,0.05,1),GATE_SECONDS,Animation.INTERPOLATION_LINEAR,"gate_close")
 	_interior()
 	_save_part("WorkshopFurnishings")
 	_lift()
@@ -209,8 +209,8 @@ func _ground() -> void:
 	geo.transform = Transform3D(Basis.IDENTITY,SHIFT)
 	# Canal de drenagem fora do caminho pedonal.
 	_box(Vector3(-3.3,0.03,-2.7),Vector3(12.6,0.035,0.22),Color("606968"),0.01,"metal")
-	for i in 70:
-		_box(Vector3(-9.5+i*0.18,0.052,-2.7),Vector3(0.035,0.015,0.18),STEEL,0.003,"metal")
+	for i in 24:
+		_box(Vector3(-9.5+i*0.53,0.052,-2.7),Vector3(0.05,0.015,0.35),STEEL,0.003,"metal")
 	# Guias curtas, fora das duas faixas de aproximacao.
 	for x in [-10.45,10.45]:
 		_box(Vector3(x,0.12,1.55),Vector3(0.18,0.24,12.6),Color("c7c4b2"),0.045)
@@ -233,8 +233,8 @@ func _shell() -> void:
 		var y := 0.11+i*0.18
 		for x in [-9.969,2.669]:
 			_box(Vector3(x,y,3.15),Vector3(0.008,0.014,8.48),Color("c0a58b"),0.001)
-		for j in 15:
-			var z := -0.84+j*0.56+(i%2)*0.28
+		for j in 8:
+			var z := -0.84+j*1.05+(i%2)*0.52
 			for x in [-9.97,2.67]:
 				_box(Vector3(x,y+0.085,z),Vector3(0.008,0.16,0.014),Color("b29a81"),0.001)
 	# Ombreiras com rebaixo escuro e metal exterior.
@@ -369,9 +369,9 @@ func _interior() -> void:
 	_box(Vector3(-6.95,0.44,6.20),Vector3(3.17,0.83,0.68),BLUE_DARK,0.055,"metal")
 	_box(Vector3(-6.95,0.91,6.20),Vector3(3.36,0.12,0.86),Color("ae875d"),0.04)
 	_box(Vector3(-6.95,1.81,6.79),Vector3(3.31,1.38,0.09),Color("8b9385"),0.035)
-	for ix in 18:
-		for iy in 6:
-			_box(Vector3(-8.43+ix*0.175,1.29+iy*0.18,6.73),Vector3(0.025,0.025,0.009),Color("626f68"),0.002)
+	for ix in 9:
+		for iy in 3:
+			_box(Vector3(-8.43+ix*0.35,1.29+iy*0.36,6.73),Vector3(0.025,0.025,0.009),Color("626f68"),0.002)
 	for i in 5:
 		var x := -8.0+i*0.43
 		geo.beam(Vector3(x,1.42,6.69),Vector3(x+0.035,1.99-i*0.045,6.69),0.045,0.022,STEEL,"metal")
@@ -418,7 +418,7 @@ func _lift_platform() -> void:
 	asset.add_child(platform)
 	platform.owner = asset
 	_save_part("Carriage",LIFT_POS+SHIFT,platform)
-	_add_animation(platform,"lift_up",".:position",platform.position,platform.position+Vector3(0,LIFT_TRAVEL,0),LIFT_SECONDS,Animation.INTERPOLATION_CUBIC,"lift_down")
+	_add_animation(platform,"lift_up",".:position",platform.position,platform.position+Vector3(0,LIFT_TRAVEL,0),LIFT_SECONDS,Animation.INTERPOLATION_LINEAR,"lift_down")
 	# Ponto onde o jogo estaciona o carro REAL: origem do carro = origem desta ancora; o carro
 	# olha para -Z (para a rua). Filha da plataforma, acompanha a subida.
 	var bay := Marker3D.new()
@@ -526,7 +526,7 @@ func _text(value: String, pos: Vector3, height: float, _color: Color, label: Str
 	var mesh := TextMesh.new()
 	mesh.text = value
 	mesh.font_size = 64
-	mesh.curve_step = 2.0
+	mesh.curve_step = 6.0
 	mesh.pixel_size = height/64.0
 	mesh.depth = 0.015
 	mesh.material = materials["lettering"]

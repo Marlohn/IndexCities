@@ -2407,11 +2407,11 @@
             "metal_dark",
             "truck_cab"
           ],
-          "triangles": 40,
+          "triangles": 60,
           "visible_by_default": true
         }
       ],
-      "triangles_total": 2042,
+      "triangles_total": 2062,
       "mesh_surfaces_total": 17,
       "proposed": {
         "comprimento_m": 7.2,
@@ -2439,7 +2439,7 @@
       "parts": {
         "Body": "cabine + bau + chassi + para-choques + portas traseiras fechadas (<= 7 superficies)",
         "Wheel_FL, Wheel_FR, Wheel_RL, Wheel_RR": "MeshInstance3D com UMA malha compartilhada (.wheel; superficies metal_light, rubber), origem no centro do eixo. Rolagem: rotacao em X local (andar para a frente, -Z, = angulo negativo = -distancia / raio). Dianteiras podem ser estercadas em Y local (compor Basis(Y, esterco) * Basis(X, rolagem)).",
-        "Hood": "MeshInstance3D com a tampa frontal de servico (grade); origem na dobradica (0.0, 1.02, -3.55). `hood_open` (AnimationPlayer) gira o no em X ate -100 graus; rotacao 0 = fechada. Superficies metal_dark e truck_cab (a cor da cabine e a do Body).",
+        "Hood": "MeshInstance3D com a tampa frontal de servico (grade); origem na dobradica (0.0, 0.86, -3.55). `hood_open` (AnimationPlayer) gira o no em X ate -100 graus; rotacao 0 = fechada. Superficies metal_dark e truck_cab (a cor da cabine e a do Body).",
         "HazardFL, HazardFR, HazardRL, HazardRR, HoodSmoke": "Marker3D de encaixe dos props de quebra (pisca-alerta e fumaca). Sem acesso nem regra.",
         "Candidate_CargoDoor": "Marker3D CANDIDATO no solo, 0,30 m atras do ponto mais traseiro (z = +3,90), forward +Z (para fora das portas). Nao e acesso funcional nem vaga."
       },

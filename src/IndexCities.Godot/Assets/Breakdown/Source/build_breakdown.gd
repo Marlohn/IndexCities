@@ -231,16 +231,15 @@ func build_smoke() -> void:
 	r.name = "BreakdownSmoke"
 	var b = builder()
 	# Uma "nuvem" facetada de 20 faces; vira varias via CPUParticles3D.
-	b.icosphere("breakdown_smoke", Vector3.ZERO, 0.24, 0, 0.05, 11, Vector3(1.0, 0.85, 1.0))
+	b.icosphere("breakdown_smoke", Vector3.ZERO, 0.3, 0, 0.05, 11, Vector3(1.0, 0.85, 1.0))
 	var puff := save_mesh(b, "prop.breakdown_smoke.a.puff")
 	var p := CPUParticles3D.new()
 	p.name = "Smoke"
 	p.mesh = puff
 	p.emitting = true
-	p.amount = 12
+	p.amount = 16
 	p.lifetime = 2.6
 	p.lifetime_randomness = 0.3
-	p.preprocess = 2.6
 	p.fixed_fps = 30
 	p.local_coords = false
 	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
@@ -262,15 +261,15 @@ func build_smoke() -> void:
 	p.scale_amount_curve = grow
 	var fade := Gradient.new()
 	fade.offsets = PackedFloat32Array([0.0, 0.18, 1.0])
-	fade.colors = PackedColorArray([Color(0.62, 0.63, 0.66, 0.0), Color(0.5, 0.51, 0.55, 0.62), Color(0.3, 0.31, 0.34, 0.0)])
+	fade.colors = PackedColorArray([Color(0.2, 0.2, 0.22, 0.0), Color(0.24, 0.24, 0.27, 0.8), Color(0.42, 0.42, 0.45, 0.0)])
 	p.color_ramp = fade
 	r.add_child(p)
 	# Sem AABB declarado: o motor calcula; o caminho de emissao e curto (~2,5 m de altura).
 	save_scene(r, "prop.breakdown_smoke.a", {
-		"nodes": ["Smoke (CPUParticles3D, 12 particulas, malha de 20 faces, sem textura)"],
+		"nodes": ["Smoke (CPUParticles3D, 16 particulas, malha de 20 faces, sem textura)"],
 		"pivot": "origem da emissao; a integracao encaixa em HoodSmoke do veiculo (mesma orientacao)",
 		"activity": "emitting = true ao entrar na arvore; `Smoke.emitting = false` para parar; remover o no encerra o efeito",
-		"cost": "12 particulas de 20 triangulos (240 triangulos vivos), material sem sombreamento",
+		"cost": "16 particulas de 20 triangulos (320 triangulos vivos), material sem sombreamento",
 		"animation": "nenhuma",
 	})
 
@@ -281,13 +280,13 @@ func build_smoke() -> void:
 
 func lens_housing() -> Mesh:
 	var b = builder()
-	b.bevel_box("breakdown_amber_off", Vector3(-0.13, -0.065, -0.03), Vector3(0.13, 0.065, 0.03), 0.018)
+	b.bevel_box("breakdown_amber_off", Vector3(-0.17, -0.085, -0.035), Vector3(0.17, 0.085, 0.035), 0.02)
 	return save_mesh(b, "prop.hazard_lights.a.lens")
 
 
 func lens_glow() -> Mesh:
 	var b = builder()
-	b.bevel_box("breakdown_amber_on", Vector3(-0.105, -0.042, -0.042), Vector3(0.105, 0.042, -0.012), 0.012)
+	b.bevel_box("breakdown_amber_on", Vector3(-0.14, -0.058, -0.05), Vector3(0.14, 0.058, -0.015), 0.02)
 	return save_mesh(b, "prop.hazard_lights.a.glow")
 
 

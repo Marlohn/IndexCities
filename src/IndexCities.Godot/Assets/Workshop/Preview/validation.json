@@ -6,66 +6,125 @@
 			"bounds_max": [
 				10.9949998855591,
 				6.01700019836426,
-				8.48999977111816
+				9.4940013885498
 			],
 			"bounds_min": [
 				-10.9949998855591,
 				-0.239999994635582,
-				-8.48999977111816
+				-9.48999977111816
 			],
 			"format": "native",
-			"markers": [
-				"PedestrianDoor",
-				"ServiceDoor",
-				"OpenBayThreshold",
-				"ClosedBayThreshold",
-				"VehicleApproach",
-				"VehiclePresentationAnchor",
-				"ActivitySign"
-			],
 			"materials": [
-				"mechanic_codex_paint",
-				"mechanic_codex_metal",
-				"mechanic_codex_glass",
-				"mechanic_codex_rubber",
-				"mechanic_codex_lettering"
+				"mechanic_shop_paint",
+				"mechanic_shop_metal",
+				"mechanic_shop_glass",
+				"mechanic_shop_rubber",
+				"mechanic_shop_lettering"
 			],
 			"meshes": 11,
 			"surfaces": 23,
-			"triangles": 37094
+			"triangles": 12918
 		},
 		{
 			"bounds_max": [
 				10.9949998855591,
 				6.01700019836426,
-				8.48999977111816
+				9.4940013885498
 			],
 			"bounds_min": [
 				-10.9949998855591,
 				-0.239999994635582,
-				-8.48999977111816
+				-9.48999977111816
 			],
 			"format": "glb",
-			"markers": [
-				"PedestrianDoor",
-				"ServiceDoor",
-				"OpenBayThreshold",
-				"ClosedBayThreshold",
-				"VehicleApproach",
-				"VehiclePresentationAnchor",
-				"ActivitySign"
-			],
 			"materials": [
-				"mechanic_codex_paint",
-				"mechanic_codex_metal",
-				"mechanic_codex_glass",
-				"mechanic_codex_rubber",
-				"mechanic_codex_lettering"
+				"mechanic_shop_paint",
+				"mechanic_shop_metal",
+				"mechanic_shop_glass",
+				"mechanic_shop_rubber",
+				"mechanic_shop_lettering"
 			],
 			"meshes": 11,
 			"surfaces": 23,
-			"triangles": 37094
+			"triangles": 12918
 		}
 	],
-	"result": "PASS"
+	"result": "PASS",
+	"vehicle_fits": [
+		{
+			"case": "car@ServiceBay0 baixo",
+			"inside_lot": true,
+			"intersections": 0,
+			"vehicle_aabb_max": [
+				-5.97500038146973,
+				1.84251403808594,
+				5.44999980926514
+			],
+			"vehicle_aabb_min": [
+				-7.83500003814697,
+				0.0,
+				1.25
+			]
+		},
+		{
+			"case": "car@ServiceBay0 elevado",
+			"inside_lot": true,
+			"intersections": 0,
+			"vehicle_aabb_max": [
+				-5.97500038146973,
+				3.24251413345337,
+				5.44999980926514
+			],
+			"vehicle_aabb_min": [
+				-7.83500003814697,
+				1.40000009536743,
+				1.25
+			]
+		},
+		{
+			"case": "car@ServiceBay1",
+			"inside_lot": true,
+			"intersections": 0,
+			"vehicle_aabb_max": [
+				-0.519999980926514,
+				1.48000001907349,
+				6.09999990463257
+			],
+			"vehicle_aabb_min": [
+				-2.38000011444092,
+				0.0,
+				1.90000009536743
+			]
+		},
+		{
+			"case": "truck@ServiceBay1",
+			"inside_lot": true,
+			"intersections": 0,
+			"vehicle_aabb_max": [
+				0.0,
+				3.30000019073486,
+				7.59999990463257
+			],
+			"vehicle_aabb_min": [
+				-2.90000009536743,
+				0.0,
+				0.400000095367432
+			]
+		},
+		{
+			"case": "tow@TowTruckBase",
+			"inside_lot": true,
+			"intersections": 0,
+			"vehicle_aabb_max": [
+				10.1999998092651,
+				2.97000002861023,
+				-4.34999990463257
+			],
+			"vehicle_aabb_min": [
+				3.0,
+				0.0,
+				-7.25
+			]
+		}
+	]
 }

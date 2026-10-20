@@ -215,7 +215,7 @@
 				0.0
 			],
 			"surfaces": 2,
-			"triangles": 2480
+			"triangles": 1928
 		},
 		{
 			"aabb": {
@@ -250,7 +250,7 @@
 				0.0
 			],
 			"surfaces": 3,
-			"triangles": 4696
+			"triangles": 4024
 		},
 		{
 			"aabb": {
@@ -355,7 +355,7 @@
 				0.0
 			],
 			"surfaces": 3,
-			"triangles": 2228
+			"triangles": 1256
 		},
 		{
 			"aabb": {
@@ -460,7 +460,7 @@
 				0.0
 			],
 			"surfaces": 3,
-			"triangles": 3141
+			"triangles": 2181
 		},
 		{
 			"aabb": {
@@ -566,12 +566,12 @@
 				-1.26500010490417
 			],
 			"text": "OFICINA",
-			"triangles": 1040
+			"triangles": 492
 		}
 	],
-	"triangles_geometry_excluding_text": 15582,
-	"triangles_text": 1040,
-	"triangles_total": 16622,
+	"triangles_geometry_excluding_text": 12426,
+	"triangles_text": 492,
+	"triangles_total": 12918,
 	"up": "Y",
 	"visual_id": "commercial.mechanic_shop.a"
 }

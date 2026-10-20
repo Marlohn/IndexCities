@@ -36,7 +36,7 @@
             "open_degrees": -100.0,
             "pivot_m": [
               0.0,
-              1.02,
+              0.86,
               -3.55
             ]
           },
@@ -143,7 +143,7 @@
           "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.hood.tres",
           "node": "Hood",
           "surfaces": 2,
-          "triangles": 40
+          "triangles": 60
         },
         {
           "mesh": "res://Assets/Construction/Meshes/vehicle.truck_dump.a.bed.tres",
@@ -190,7 +190,7 @@
       ],
       "scene": "res://Assets/Construction/Scenes/vehicle.truck_dump.a.tscn",
       "surfaces_all_states": 32,
-      "triangles_all_states": 3552,
+      "triangles_all_states": 3572,
       "visual_id": "vehicle.truck_dump.a"
     },
     {
@@ -209,7 +209,7 @@
             "open_degrees": -100.0,
             "pivot_m": [
               0.0,
-              1.02,
+              0.86,
               -3.55
             ]
           },
@@ -308,7 +308,7 @@
           "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.hood.tres",
           "node": "Hood",
           "surfaces": 2,
-          "triangles": 40
+          "triangles": 60
         },
         {
           "mesh": "res://Assets/Construction/Meshes/vehicle.truck_mixer.a.frame.tres",
@@ -331,7 +331,7 @@
       ],
       "scene": "res://Assets/Construction/Scenes/vehicle.truck_mixer.a.tscn",
       "surfaces_all_states": 29,
-      "triangles_all_states": 2828,
+      "triangles_all_states": 2848,
       "visual_id": "vehicle.truck_mixer.a"
     },
     {
@@ -351,7 +351,7 @@
             "open_degrees": -100.0,
             "pivot_m": [
               0.0,
-              1.02,
+              0.86,
               -3.55
             ]
           },
@@ -443,7 +443,7 @@
           "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.hood.tres",
           "node": "Hood",
           "surfaces": 2,
-          "triangles": 40
+          "triangles": 60
         },
         {
           "mesh": "res://Assets/Construction/Meshes/vehicle.truck_flatbed.a.bed.tres",
@@ -466,7 +466,7 @@
       ],
       "scene": "res://Assets/Construction/Scenes/vehicle.truck_flatbed.a.tscn",
       "surfaces_all_states": 31,
-      "triangles_all_states": 3948,
+      "triangles_all_states": 3968,
       "visual_id": "vehicle.truck_flatbed.a"
     },
     {
@@ -485,7 +485,7 @@
             "open_degrees": -100.0,
             "pivot_m": [
               0.0,
-              1.02,
+              0.86,
               -3.55
             ]
           },
@@ -607,7 +607,7 @@
           "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.hood.tres",
           "node": "Hood",
           "surfaces": 2,
-          "triangles": 40
+          "triangles": 60
         },
         {
           "mesh": "res://Assets/Construction/Meshes/vehicle.tow_truck.a.frame.tres",
@@ -624,7 +624,7 @@
       ],
       "scene": "res://Assets/Construction/Scenes/vehicle.tow_truck.a.tscn",
       "surfaces_all_states": 29,
-      "triangles_all_states": 2800,
+      "triangles_all_states": 2820,
       "visual_id": "vehicle.tow_truck.a"
     },
     {
@@ -643,7 +643,7 @@
             "open_degrees": -100.0,
             "pivot_m": [
               0.0,
-              1.02,
+              0.86,
               -4.015
             ]
           },
@@ -758,7 +758,7 @@
           "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.hood.tres",
           "node": "Hood",
           "surfaces": 2,
-          "triangles": 40
+          "triangles": 60
         },
         {
           "mesh": "res://Assets/Construction/Meshes/vehicle.tow_truck_heavy.a.recovery_body.tres",
@@ -775,7 +775,7 @@
       ],
       "scene": "res://Assets/Construction/Scenes/vehicle.tow_truck_heavy.a.tscn",
       "surfaces_all_states": 30,
-      "triangles_all_states": 2944,
+      "triangles_all_states": 2964,
       "visual_id": "vehicle.tow_truck_heavy.a"
     },
     {
