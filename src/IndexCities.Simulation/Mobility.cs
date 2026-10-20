@@ -12,7 +12,8 @@ public sealed partial class CitySimulation
         if(b.Kind is BuildingKind.WaterIntake or BuildingKind.WaterTreatment or BuildingKind.SewageTreatment or BuildingKind.WindPower)return c.Shift switch{0=>hour>=6&&hour<14,1=>hour>=14&&hour<22,_=>hour>=22||hour<6};
         return b.Kind is BuildingKind.Grocery or BuildingKind.FuelStation or BuildingKind.MechanicShop?(c.Shift==0?hour>=7&&hour<15:hour>=14&&hour<22):hour>=7&&hour<15;
     }
-    bool Open(Building b)=>b.Kind is BuildingKind.Grocery or BuildingKind.FuelStation or BuildingKind.MechanicShop?State.Now.Hour>=7&&State.Now.Hour<22:State.Now.Hour>=6&&State.Now.Hour<19;
+    bool Open(Building b)=>OpenAt(b.Kind,State.Now);
+    public static bool OpenAt(BuildingKind kind,DateTime now)=>kind is BuildingKind.Grocery or BuildingKind.FuelStation or BuildingKind.MechanicShop?now.Hour>=7&&now.Hour<22:now.Hour>=6&&now.Hour<19;
     // Read-only opening hours for presentation (problem alerts over buildings).
     // Same rule the simulation already uses for building causes; no behaviour change.
     public bool BuildingOpen(Building building)=>Open(building);

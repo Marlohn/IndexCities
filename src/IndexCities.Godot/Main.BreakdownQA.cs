@@ -24,12 +24,17 @@ public partial class Main
             var captures=new List<string>();
             async System.Threading.Tasks.Task Shot(string name,Point at,float zoom=40,Vehicle? inspect=null){
                 if(inspect!=null){ClearSelection();_selectedVehicle=inspect.Id;}
+                // The pointer off the scene, so no hover tooltip covers it.
+                Input.WarpMouse(new(8,GetViewport().GetVisibleRect().Size.Y-8));
                 _focus=ToV(at);_zoom=zoom;UpdateCamera();_world.Sync(_sim.State);RefreshHud();
                 await RecoveryCapture(Path.Combine(directory,name+".png"),GetViewport());
                 File.WriteAllText(Path.Combine(directory,name+".json"),_sim.SaveToJson());captures.Add(name);
             }
             bool Run(double seconds,Func<bool> until){for(var t=0.0;t<seconds;t+=2){_sim.Advance(2);_world.Sync(_sim.State);if(until())return true;}return false;}
             void Calm(){_sim.State.Tuning.BreakdownChancePerKmNew=0;_sim.State.Tuning.BreakdownChancePerKmWorn=0;}
+            // Animations (hood, lift, gate) run in real time between simulation steps.
+            async System.Threading.Tasks.Task Settle(double seconds)=>await ToSignal(GetTree().CreateTimer(seconds),SceneTreeTimer.SignalName.Timeout);
+            void Parts(Vehicle v,bool broken,string when){var shown=_world.BreakdownParts(v.Id);Require(shown==(broken,broken,broken,broken),$"{when}: capô aberto, pisca, fumaça e triângulo {(broken?"presentes":"ausentes")} ({shown})");}
 
             // City A.
             var a=BreakdownQACity(shop:true);var car=a.Car;var shopId=a.Shop!.Id;
@@ -38,19 +43,28 @@ public partial class Main
             _sim.Advance(2);_world.Sync(_sim.State);Calm();
             Require(car.BrokenDown&&car.Status==VehicleStatus.Stranded,$"Carro quebrou na via: {car.Status} «{car.Cause}»");
             Require(a.Driver.VehicleId==null,"A motorista desceu e segue a pé");
-            await Shot("breakdown-a-car-broken",car.Position,30,car);
+            Parts(car,true,"Carro quebrado na via");await Settle(1.2);
+            await Shot("breakdown-a-car-broken",car.Position,14,car);
             Require(Run(240,()=>a.Follower.Position.X>car.Position.X+8),$"O carro de trás contornou o quebrado: {a.Follower.Position} «{a.Follower.Cause}»");
             await Shot("breakdown-a-bypass",car.Position,35);
             Require(Run(60,()=>car.TowTruckId!=null),"Socorro chamado");
             var tow=_sim.State.Vehicles.Single(v=>v.Id==car.TowTruckId);
             Require(!tow.External&&tow.HomeBuildingId==shopId,$"Veio o guincho da oficina (veio {tow.Id}, externo={tow.External})");
             Require(Run(1800,()=>car.Status==VehicleStatus.Towed&&tow.TowPhase==TowPhase.Delivering),$"Guincho local carregou o carro: «{tow.Cause}»");
+            Parts(car,false,"Carro carregado no guincho");await Settle(1.2);
             await Shot("breakdown-a-local-tow-carrying",tow.Position,30,car);
             Require(Run(1800,()=>car.ServicePhase==ServicePhase.InService&&car.PushPath.Count==0),$"Carro numa vaga da oficina: «{car.Cause}»");
             Require(car.ServiceShopId==shopId&&car.ServiceBay is not null&&_sim.ServiceBays(a.Shop).Contains(car.Id),"Contrato de apresentação: oficina e vaga do veículo");
-            await Shot("breakdown-a-in-service",a.Shop.Position,30,car);
+            Require(car.ServiceBay==0&&_world.VehicleOnLift(car.Id)&&_world.ShopPresentation(shopId).LiftUp==true,$"Carro no elevador e elevador subindo (vaga {car.ServiceBay}, {_world.ShopPresentation(shopId)})");
+            Require(_world.BreakdownParts(car.Id).Hood&&!_world.BreakdownParts(car.Id).Triangle,"Em serviço: capô aberto, sem triângulo");Require(_world.ShopPresentation(shopId).GateOpen==false,"Portão do piso fechado sem veículo na vaga do piso");
+            // Lift from two of the player's camera angles: the start of the rise, then the raised pose.
+            var bay=a.Shop.Position+new Point(6.9,0);foreach(var yaw in new[]{-45f,45f}){_yaw=yaw;await Shot("breakdown-a-lift-start-yaw"+yaw,bay,14,car);}
+            await Settle(1.2);await Shot("breakdown-a-lift-rising-yaw45",bay,14,car);_yaw=-45;await Settle(2.2);await Shot("breakdown-a-in-service",bay,14,car);_yaw=45;
             Require(Run(1800,()=>car.ServicePhase==ServicePhase.AwaitingReturn),$"Conserto concluído: «{car.Cause}»");
             Require(car.Condition>.999&&!car.BrokenDown,"Conserto devolve 100%");
+            Require(_world.ShopPresentation(shopId).LiftUp==false,"Elevador desce ao fim do serviço");
+            Require(Run(2400,()=>car.Status==VehicleStatus.Towed),$"Guincho carregou o carro consertado: «{car.Cause}»");Require(!_world.VehicleOnLift(car.Id),"Carro saiu do elevador ao ser carregado");Parts(car,false,"Carro consertado sendo devolvido");await Settle(1.2);
+            await Shot("breakdown-a-return-carrying",_sim.State.Vehicles.Single(v=>v.Id==car.TowTruckId).Position,30,car);
             Require(Run(2400,()=>car.Status==VehicleStatus.Parked&&car.ServicePhase==ServicePhase.None&&car.PushPath.Count==0&&car.TowTruckId==null),$"Carro devolvido à vaga da dona: «{car.Cause}»");
             Require(car.Position.Distance(new(-6.6,-7.7))<.1,$"Na vaga de casa: {car.Position}");
             await Shot("breakdown-a-car-home",car.Position,30,car);
@@ -62,10 +76,12 @@ public partial class Main
             truck.Position=new(0,41.65);truck.Heading=-Math.PI/2;truck.Status=VehicleStatus.Travelling;truck.RouteIndex=11;truck.Fuel=40;
             _sim.Advance(2);_world.Sync(_sim.State);Calm();
             Require(truck.BrokenDown,$"Caminhão quebrou: «{truck.Cause}»");
-            await Shot("breakdown-a-truck-broken",truck.Position,30,truck);
+            Parts(truck,true,"Caminhão quebrado na via");await Settle(1.2);
+            await Shot("breakdown-a-truck-broken",truck.Position,22,truck);
             Require(Run(120,()=>truck.TowTruckId!=null),"Socorro do caminhão chamado");
             var heavy=_sim.State.Vehicles.Single(v=>v.Id==truck.TowTruckId);Require(heavy.External&&heavy.Body==TruckBody.TowHeavy,"Caminhão atendido pelo guincho pesado externo");
             Require(Run(1800,()=>truck.Status==VehicleStatus.Towed&&heavy.TowPhase==TowPhase.Delivering),$"Guincho pesado rebocando: «{heavy.Cause}»");
+            Parts(truck,false,"Caminhão no guincho pesado");await Settle(1.2);
             await Shot("breakdown-a-heavy-tow",heavy.Position,30,truck);
             Require(Run(1800,()=>truck.ServicePhase==ServicePhase.AtExterior),$"Caminhão no exterior para conserto: «{truck.Cause}»");
             Require(Run(1800,()=>truck.ServicePhase==ServicePhase.None&&truck.Status==VehicleStatus.Outside),$"Caminhão consertado no exterior: «{truck.Cause}»");
@@ -76,6 +92,8 @@ public partial class Main
             // City B: no shop.
             var b=BreakdownQACity(shop:false);car=b.Car;_world.Reset(_sim.State);BuildCatalog();
             _sim.Advance(2);_world.Sync(_sim.State);Calm();Require(car.BrokenDown,"Carro quebrou (cidade sem oficina)");
+            Require(Run(600,()=>car.TowTruckId!=null&&_sim.State.Vehicles.Single(v=>v.Id==car.TowTruckId).TowPhase==TowPhase.Delivering),$"Sem oficina, o guincho externo carrega o carro: «{car.Cause}»");
+            await Settle(1.2);await Shot("breakdown-b-external-tow",_sim.State.Vehicles.Single(v=>v.Id==car.TowTruckId).Position,30,car);
             Require(Run(1800,()=>car.ServicePhase==ServicePhase.AtExterior),$"Sem oficina, o carro vai ao exterior: «{car.Cause}»");
             await Shot("breakdown-b-exterior",new(-230,0),45,car);
             Require(_sim.State.Ledger.Any(m=>m.Category=="Conserto de veículo"&&m.From==b.Driver.Account&&m.To=="global"),"Conserto no exterior pago à Reserva Global");
@@ -90,7 +108,7 @@ public partial class Main
     }
     sealed record BreakdownQAScene(Vehicle Car,Citizen Driver,Vehicle Follower,Vehicle Truck,Building? Shop);
     // Street z=0 to x=60 with a northern ring (z=40); the car's home faces the
-    // street at x=-10, the shop at x=-30 (north side), the grocery at x=40. A worn
+    // street at x=-10, the shop at x=-30 (also south, facing the camera), the grocery at x=40. A worn
     // car heads east with a follower behind it; an external truck waits on the ring.
     BreakdownQAScene BreakdownQACity(bool shop)
     {
@@ -105,7 +123,7 @@ public partial class Main
         var house=new Building{Id=Next(),Kind=BuildingKind.House,Position=new(-10,-14),Rotation=Math.PI,Completed=true,OwnerAccount=driver.Account,FamilyId=driver.FamilyId};s.Buildings.Add(house);s.Families.Single(f=>f.Id==driver.FamilyId).HomeId=house.Id;
         Building? garage=null;
         if(shop){
-            var owner=Owner("Oficina QA");garage=new Building{Id=Next(),Kind=BuildingKind.MechanicShop,Position=new(-30,16),Completed=true,CompanyId=owner.Id,OwnerAccount=owner.Account,SalePrice=120};s.Buildings.Add(garage);owner.Buildings.Add(garage.Id);
+            var owner=Owner("Oficina QA");garage=new Building{Id=Next(),Kind=BuildingKind.MechanicShop,Position=new(-30,-15.5),Rotation=Math.PI,Completed=true,CompanyId=owner.Id,OwnerAccount=owner.Account,SalePrice=120};s.Buildings.Add(garage);owner.Buildings.Add(garage.Id);
             var mechanic=Person("Mecânico",garage.Door);mechanic.WorkplaceId=garage.Id;mechanic.Activity="No trabalho";
             s.Vehicles.Add(new Vehicle{Id=Next(),Body=TruckBody.Tow,OwnerAccount=owner.Account,HomeBuildingId=garage.Id,CargoCapacity=0,Position=CitySimulation.ShopTowSpace(garage),Heading=CitySimulation.TowBaseHeading(garage),Fuel=40,Status=VehicleStatus.Parked,Cause="Guincho da oficina disponível"});
         }
