@@ -154,6 +154,7 @@
 - Obras consomem materiais reais da cidade.
 - Obras dependem de trabalhadores reais.
 - No fluxo normal, as equipes do Pátio Municipal de Obras são formadas por cidadãos empregados pela prefeitura; no bootstrap inicial, uma equipe externa temporária pode executar as primeiras obras.
+- **Parada do caminhão da equipe durante a obra:** quando não couber inteiro fora da pista, o caminhão pode encostar no mesmo meio-fio e acesso ocupando parte da própria faixa. Seu corpo real continua sendo obstáculo; o tráfego respeita as regras de circulação vigentes e pode formar fila. A parada não autoriza ocupar prédios, vagas alheias ou a pista contrária, nem ignorar corpos ou áreas de manobra compartilhadas. O caminhão sai fisicamente quando termina seu trabalho. É uma regra automática, sem botão ou gerenciamento individual pelo jogador.
 - Materiais de construção precisam estar fisicamente disponíveis e reservados para a obra antes de serem consumidos, seja na oferta local elegível da cidade ou já entregues no canteiro.
 - No início de uma cidade, materiais podem ser importados pela conexão externa usando o dinheiro inicial.
 - O custo apresentado da obra indica explicitamente quando materiais faltantes são importados e quanto essa importação aumenta o custo monetário.

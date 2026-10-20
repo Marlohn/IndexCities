@@ -46,6 +46,8 @@
 - 2026-10-18 — Na mudança municipal, o responsável escolheu retirar o prédio antigo após prazo curto e avisado sem progresso por falta de espaço ou rota, com perda residual única; caminhão ocupado e falta temporária de caixa/combustível não contam. A alternativa de manter o prédio fechado indefinidamente com o estoque foi rejeitada → seção Mudança de prédios municipais concluídos.
 - 2026-10-18 — Para alimentos já pagos, ainda na fazenda quando a loja de destino é demolida, o responsável escolheu preservar a reserva ao comprador na origem e liberar caminhão/motorista até existir destino apto da mesma empresa. Rejeitou carregar apenas para manter o caminhão em espera; não há segunda venda dos mesmos bens nem cobrança repetida da compra → seção Intervenção municipal sobre propriedades privadas.
 
+- 2026-10-20 — Diante de fachadas sem largura para acomodar o caminhão inteiro fora da pista, o responsável aprovou a parada da equipe ocupando parte da própria faixa durante a obra, com corpo real como obstáculo, fila possível e saída física ao terminar. Regra automática, sem novo botão; a alternativa de exigir parada integralmente fora da pista não foi escolhida → seção Execução das obras em construção.
+
 ## Registros sem data explícita
 
 A seção original não informa a data destas escolhas; nenhuma data foi inferida.
