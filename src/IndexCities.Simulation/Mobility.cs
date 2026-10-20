@@ -237,7 +237,9 @@ public sealed partial class CitySimulation
                 // An approach already begun keeps its existing physical backing-out
                 // path when road traffic obstructs it; admission cannot prevent that recovery.
                 if(OnAsphaltApproach(v)&&YieldAsphaltApproach(v,ref remaining,2))break;
-                if(v.RouteIndex>=v.Route.Count){if(!v.PassengerCar&&!IsTow(v)&&v.RefuellingAt==null&&v.Machine==PavingMachine.None&&v.SitePathIndex==0&&v.DockPosition is {} entryDock&&v.Position.Distance(entryDock)>.01&&!DockAdmitted(v,entryDock)&&BayEntryHold(v).Count>0){if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}if(v.Machine==PavingMachine.None&&v.SitePathIndex<v.SitePath.Count){if(!MoveConstructionSitePath(v,ref remaining,2))break;}var carSpot=v.PassengerCar&&v.RefuellingAt==null;if(v.DockPosition is {} dock&&v.Position.Distance(dock)>.01){if(!carSpot&&HeldCargoBayBlocked(v,dock))break;var blocked=!carSpot&&State.Vehicles.Any(o=>o.Id!=v.Id&&!(o.PassengerCar&&o.Status==VehicleStatus.Parked)&&o.Status is VehicleStatus.Unloading or VehicleStatus.Parked&&o.Position.Distance(dock)<4);if(blocked){v.Cause="Fila para acesso de carga";break;}var distance=v.Position.Distance(dock);var moved=Math.Min(distance,State.Tuning.VehicleSpeed*remaining);if(v.Fuel<moved*FuelRate(v)){RunOutOfFuel(v);break;}if(v.TowPhase==TowPhase.ToVehicle&&!PickupLaneClear(v,dock)){v.Cause="Guincho aguardando a faixa livre para encostar";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}var toDock=dock-v.Position;if(v.PassengerCar&&distance>.01)v.Heading=Math.Atan2(toDock.X,toDock.Z);v.Position=v.Position.MoveTowards(dock,moved);Wear(v,moved);v.AddFuel(-(moved*FuelRate(v)));v.AddFuelBurnedLastStep(moved*FuelRate(v));remaining-=moved/State.Tuning.VehicleSpeed;if(moved<distance-.01)break;}if(v.TowPhase!=TowPhase.None){TowReachedDock(v);break;}if(v.ServicePhase==ServicePhase.ToService){ServiceArrived(v);break;}if(carSpot){CarReachedSpot(v);break;}v.Status=VehicleStatus.Unloading;v.LoadTimer=15;v.IntersectionClaim=null;v.Cause=v.RefuellingAt!=null?"Abastecendo combustível":v.ShipmentId is {} shipmentId&&State.Shipments.Any(s=>s.Id==shipmentId&&!s.PickedUp)?"Carregando na origem":"Descarregando no destino";break;}
+                if(v.RouteIndex>=v.Route.Count){if(!v.PassengerCar&&!IsTow(v)&&v.RefuellingAt==null&&v.Machine==PavingMachine.None&&v.SitePathIndex==0&&v.DockPosition is {} entryDock&&v.Position.Distance(entryDock)>.01&&!DockAdmitted(v,entryDock)&&BayEntryHold(v).Count>0){if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}if(v.Machine==PavingMachine.None&&v.SitePathIndex<v.SitePath.Count){if(!MoveConstructionSitePath(v,ref remaining,2))break;}var carSpot=v.PassengerCar&&v.RefuellingAt==null;if(v.DockPosition is {} dock&&v.Position.Distance(dock)>.01){if(!carSpot&&HeldCargoBayBlocked(v,dock))break;
+                    // A machine has no bay admission: its slide across the lane waits for any body on it.
+                    if(v.Machine!=PavingMachine.None&&MachineDockSlideBlocked(v,dock)){v.Cause="Fila para acesso de carga";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}var blocked=!carSpot&&State.Vehicles.Any(o=>o.Id!=v.Id&&!(o.PassengerCar&&o.Status==VehicleStatus.Parked)&&o.Status is VehicleStatus.Unloading or VehicleStatus.Parked&&o.Position.Distance(dock)<4);if(blocked){v.Cause="Fila para acesso de carga";break;}var distance=v.Position.Distance(dock);var moved=Math.Min(distance,State.Tuning.VehicleSpeed*remaining);if(v.Fuel<moved*FuelRate(v)){RunOutOfFuel(v);break;}if(v.TowPhase==TowPhase.ToVehicle&&!PickupLaneClear(v,dock)){v.Cause="Guincho aguardando a faixa livre para encostar";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}var toDock=dock-v.Position;if(v.PassengerCar&&distance>.01)v.Heading=Math.Atan2(toDock.X,toDock.Z);v.Position=v.Position.MoveTowards(dock,moved);Wear(v,moved);v.AddFuel(-(moved*FuelRate(v)));v.AddFuelBurnedLastStep(moved*FuelRate(v));remaining-=moved/State.Tuning.VehicleSpeed;if(moved<distance-.01)break;}if(v.TowPhase!=TowPhase.None){TowReachedDock(v);break;}if(v.ServicePhase==ServicePhase.ToService){ServiceArrived(v);break;}if(carSpot){CarReachedSpot(v);break;}v.Status=VehicleStatus.Unloading;v.LoadTimer=15;v.IntersectionClaim=null;v.Cause=v.RefuellingAt!=null?"Abastecendo combustível":v.ShipmentId is {} shipmentId&&State.Shipments.Any(s=>s.Id==shipmentId&&!s.PickedUp)?"Carregando na origem":"Descarregando no destino";break;}
                 var node=_roads[v.Route[v.RouteIndex]];if(node.ConstructionOnly&&!ConstructionTrip(v)){v.Status=VehicleStatus.Waiting;v.Cause="Rua ainda em obra: tráfego normal aguarda conclusão";break;}if(!node.Highway&&node.MaintenanceRatio<=.05){v.Status=VehicleStatus.Waiting;v.Cause="Via sem capacidade por manutenção não realizada";break;}var previous=v.RouteIndex>0?_roads[v.Route[v.RouteIndex-1]].Position:v.Position;
                 var delta=v.RouteIndex==0&&v.Route.Count>1?_roads[v.Route[1]].Position-node.Position:node.Position-previous;var len=delta.Distance(new(0,0));var target=node.Position;
                 if(len>.01)target+=new Point(delta.Z/len*1.65,-delta.X/len*1.65);
@@ -249,17 +251,23 @@ public sealed partial class CitySimulation
                     ((v.Position.X-target.X)*delta.X+(v.Position.Z-target.Z)*delta.Z)/len>0){v.RouteIndex++;continue;}
                 // Leaving a bay or dock is admitted whole, or the truck stays there (Mobility.SharedSpace).
                 if(LeavesDock(v)&&(v.ManoeuvreDock!=null||!OnCarriageway(v))&&WayOut(v,out var exitSpaces) is var exitWay&&!AdmitManoeuvre(v,exitWay,exitSpaces,v.ManoeuvreDock??v.Position,true)){if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}
-                // The next junction is awaited at its stop line, and a delivery to a
+                // The next junction is awaited at its stop line (also while the claim of
+                // the one just passed is held, if it waits past it), and a delivery to a
                 // busy bay just beyond it waits before it (Mobility.BayJunction).
                 var stopEarly=0.0;var bayHold=false;List<(Vehicle Body,Point Position,double Heading)>? crossingPoses=null;
-                if(node.Neighbours.Count<3&&!node.Crosswalk&&v.IntersectionClaim==null&&NextSharedOnApproach(v,node,delta,len,out var crossing,out var crossingIndex)){
-                    stopEarly=StopLineBefore(v,node,crossing,delta,len);
-                    if(HoldBeforeBayJunction(v,crossingIndex,out var exits)){bayHold=true;crossingPoses=exits;stopEarly=Math.Max(stopEarly,.001);}
-                    if(d<=stopEarly+.001){
-                        if(bayHold){v.Cause="Fila para acesso de carga";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}
-                        if(stopEarly>0){v.RouteIndex++;continue;}
+                if(node.Neighbours.Count<3&&!node.Crosswalk&&NextSharedOnApproach(v,node,delta,len,out var crossing,out var crossingIndex)&&v.IntersectionClaim!=crossing.Id){
+                    if(WaitsClearOfPassedClaim(v,node,crossing,delta,len,target,d)){
+                        stopEarly=StopLineBefore(v,node,crossing,delta,len);
+                        if(HoldBeforeBayJunction(v,crossingIndex,out var exits)){bayHold=true;crossingPoses=exits;stopEarly=Math.Max(stopEarly,.001);}
+                        if(d<=stopEarly+.001){
+                            if(bayHold){v.Cause="Fila para acesso de carga";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}
+                            if(stopEarly>0){v.RouteIndex++;continue;}
+                        }
                     }
-                    if(stopEarly>0){var turning=ClaimHolderPoses(v,crossing);if(turning.Count>0)(crossingPoses??=[]).AddRange(turning);}
+                    // The holder's remaining way (a machine leaving onto the lane just
+                    // before the junction, say) is kept clear along the whole approach,
+                    // also while the claim of the junction just passed is still held.
+                    var turning=ClaimHolderPoses(v,crossing);if(turning.Count>0)(crossingPoses??=[]).AddRange(turning);
                 }
                 // Near its bay, a delivery not yet admitted keeps out of the dock corridor
                 // and of the way out of the truck that owns it (Mobility.SharedSpace).
@@ -550,7 +558,7 @@ public sealed partial class CitySimulation
             // Its centre stays at or beyond that carriageway's outer edge.
             for(var inset=0.0;State.Tuning.RoadWidth/2+1.5-inset>=CarriagewayHalfWidth;inset+=.25){
                 var candidate=dock+along*(shift*sign)-side*inset;
-                if(CrewDockClear(candidate,heading))return candidate;
+                if(CrewDockClear(candidate,heading,road))return candidate;
             }
         }
         // No compatible location: keep the requested access as an intention.
@@ -558,24 +566,57 @@ public sealed partial class CitySimulation
         return dock;
     }
 
-    readonly Dictionary<(Point,double),bool> _crewDockGeometry=[];
+    // A machine ending its road route slides from the lane to its bay like a
+    // truck, but without a bay admission: a body on that slide keeps it waiting.
+    bool MachineDockSlideBlocked(Vehicle v,Point dock)
+    {
+        var slide=new List<(Point Position,double Heading)>();SamplePoses(slide,v.Position,dock,v.Heading);
+        return BodyOnWay(v,slide.Select(p=>(v,p.Position,p.Heading)).ToList())!=null;
+    }
+
+    readonly Dictionary<(Point,double,int),bool> _crewDockGeometry=[];
     (int,int,int) _crewDockGeometryStamp;
-    bool CrewDockClear(Point dock,double heading)
+    bool CrewDockClear(Point dock,double heading,RoadNode? access=null)
     {
         var stamp=WalkStamp;if(_crewDockGeometryStamp!=stamp){_crewDockGeometry.Clear();_crewDockGeometryStamp=stamp;}
-        var key=(dock,heading);if(!_crewDockGeometry.TryGetValue(key,out var clear))_crewDockGeometry[key]=clear=CrewDockGeometryClear(dock,heading);
+        var key=(dock,heading,access?.Id??-1);if(!_crewDockGeometry.TryGetValue(key,out var clear))_crewDockGeometry[key]=clear=CrewDockGeometryClear(dock,heading,access);
         return clear;
     }
-    bool CrewDockGeometryClear(Point dock,double heading)
+    bool CrewDockGeometryClear(Point dock,double heading,RoadNode? access)
     {
         var truck=new Vehicle();var car=new Vehicle{PassengerCar=true};
         if(!InMap(dock,BodyHalfLength(truck))||State.Roads.Any(n=>(SharedNode(n)||n.Crosswalk)&&EntersArea(truck,dock,heading,n)))return false;
-        var forward=new Point(Math.Sin(heading),Math.Cos(heading));var right=new Point(forward.Z,-forward.X);
-        foreach(var b in State.Buildings.Where(b=>!b.Removed)){
-            var bf=new Point(Math.Sin(b.Rotation),Math.Cos(b.Rotation));var br=new Point(bf.Z,-bf.X);var delta=b.Position-dock;
-            bool Separated(Point axis){double Dot(Point a,Point c)=>a.X*c.X+a.Z*c.Z;return Math.Abs(Dot(delta,axis))>=BodyHalfLength(truck)*Math.Abs(Dot(forward,axis))+BodyHalfWidth(truck)*Math.Abs(Dot(right,axis))+b.Definition.Depth/2*Math.Abs(Dot(bf,axis))+b.Definition.Width/2*Math.Abs(Dot(br,axis))+.1;}
-            if(!new[]{forward,right,bf,br}.Any(Separated))return false;
-            if(LotParkingGeometry(b).Any(s=>BodiesOverlap(truck,dock,heading,car,s.Position,s.Heading)))return false;
+        // SPEC construcao: part of its own lane only. Lengthwise along its own
+        // street the centre stays at or beyond that carriageway's outer edge, so
+        // the body never reaches the centre line; any other street, such as the
+        // cross street of a T, keeps its whole carriageway clear.
+        var lengthwiseX=Math.Abs(Math.Sin(heading))>.7;var ownCurb=State.Tuning.RoadWidth/2+1.5+.1;
+        double Lateral(RoadNode n)=>Math.Abs(lengthwiseX?dock.Z-n.Position.Z:dock.X-n.Position.X);
+        bool OwnStreet(RoadNode n)=>!n.Highway&&!SharedNode(n)&&!n.Crosswalk&&Lateral(n)<=ownCurb&&
+            n.Neighbours.All(id=>lengthwiseX?Math.Abs(_roads[id].Position.Z-n.Position.Z)<.01:Math.Abs(_roads[id].Position.X-n.Position.X)<.01);
+        if(State.Roads.Any(n=>OwnStreet(n)&&Lateral(n)<CarriagewayHalfWidth-.001)||BayBodyBlocksRoad(dock,lengthwiseX,BodyHalfLength(truck),BodyHalfWidth(truck),OwnStreet))return false;
+        bool OffLots(Point at,double h)
+        {
+            var forward=new Point(Math.Sin(h),Math.Cos(h));var right=new Point(forward.Z,-forward.X);
+            foreach(var b in State.Buildings.Where(b=>!b.Removed&&b.Position.Distance(at)<30)){
+                var bf=new Point(Math.Sin(b.Rotation),Math.Cos(b.Rotation));var br=new Point(bf.Z,-bf.X);var delta=b.Position-at;
+                bool Separated(Point axis){double Dot(Point a,Point c)=>a.X*c.X+a.Z*c.Z;return Math.Abs(Dot(delta,axis))>=BodyHalfLength(truck)*Math.Abs(Dot(forward,axis))+BodyHalfWidth(truck)*Math.Abs(Dot(right,axis))+b.Definition.Depth/2*Math.Abs(Dot(bf,axis))+b.Definition.Width/2*Math.Abs(Dot(br,axis))+.1;}
+                if(!new[]{forward,right,bf,br}.Any(Separated))return false;
+                if(LotParkingGeometry(b).Any(s=>BodiesOverlap(truck,at,h,car,s.Position,s.Heading)))return false;
+            }
+            return true;
+        }
+        if(!OffLots(dock,heading))return false;
+        if(access==null)return true;
+        // Leaving, the lane model turns the truck in place toward a lane point of
+        // its access, either way along the street: that real turn must not sweep
+        // a facade or a lot's parking space either.
+        var axis=lengthwiseX?new Point(Math.Sign(access.Position.X-dock.X),0):new Point(0,Math.Sign(access.Position.Z-dock.Z));
+        if(axis.Distance(default)<.5)return true;
+        var facing=Math.Atan2(axis.X,axis.Z);var across=new Point(axis.Z,-axis.X)*1.65;
+        foreach(var lane in new[]{access.Position+across,access.Position-across}){
+            var turn=Math.IEEERemainder(Math.Atan2(lane.X-dock.X,lane.Z-dock.Z)-facing,2*Math.PI);
+            for(var part=1;part<=8;part++)if(!OffLots(dock,facing+turn*part/8))return false;
         }
         return true;
     }

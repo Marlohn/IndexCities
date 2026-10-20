@@ -13,7 +13,8 @@ namespace IndexCities.Simulation;
 public sealed partial class CitySimulation
 {
     const double CarriagewayHalfWidth=3.3;
-    readonly Dictionary<(int Junction,int Approach,bool Car),double> _stopDistances=[];
+    // Keyed by the waiting body's dimensions: a car, a truck and each machine stop apart.
+    readonly Dictionary<(int Junction,int Approach,double HalfLength,double HalfWidth),double> _stopDistances=[];
     int _stopDistancesEpoch=-1;
 
     bool NextSharedOnApproach(Vehicle v,RoadNode node,Point incoming,double length,out RoadNode junction,out int index)
@@ -36,7 +37,7 @@ public sealed partial class CitySimulation
         var onward=junction.Position-node.Position;var gap=onward.Distance(default);
         if(gap<=.01||length<=.01||Math.Abs(onward.X*incoming.Z-onward.Z*incoming.X)>=.01*gap*length||onward.X*incoming.X+onward.Z*incoming.Z<=0)return 0;
         if(_stopDistancesEpoch!=_roadEpoch){_stopDistances.Clear();_stopDistancesEpoch=_roadEpoch;}
-        var key=(junction.Id,node.Id,v.PassengerCar);
+        var key=(junction.Id,node.Id,BodyHalfLength(v),BodyHalfWidth(v));
         if(!_stopDistances.TryGetValue(key,out var distance)){
             distance=CarriagewayHalfWidth+BodyHalfLength(v);
             var forward=incoming*(1/length);var lane=junction.Position+new Point(forward.Z,-forward.X)*1.65;
@@ -56,6 +57,16 @@ public sealed partial class CitySimulation
             _stopDistances[key]=distance;
         }
         return Math.Max(0,distance-gap);
+    }
+
+    // The stop line of the next shared node also applies while v still holds the
+    // claim of the junction it has just passed, once its waiting place lies past
+    // that junction (where the claim is released): it never waits inside it.
+    bool WaitsClearOfPassedClaim(Vehicle v,RoadNode node,RoadNode junction,Point incoming,double length,Point target,double distance)
+    {
+        if(v.IntersectionClaim is not {} held||!_roads.TryGetValue(held,out var passed))return true;
+        var wait=v.Position.MoveTowards(target,Math.Max(0,distance-StopLineBefore(v,node,junction,incoming,length)));
+        return wait.Distance(passed.Position)>JunctionClearance;
     }
 
     // End of the exact SAT overlap interval for a waiting body moved backwards

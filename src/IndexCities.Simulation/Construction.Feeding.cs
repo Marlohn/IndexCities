@@ -2,7 +2,7 @@ namespace IndexCities.Simulation;
 
 public sealed partial class CitySimulation
 {
-    (RoadNode Road,Point Position) PavingBay(RoadNode access,PavingMachine kind)
+    (RoadNode Road,Point Position) PavingBay(RoadNode access,PavingMachine kind,WorkProject? work=null)
     {
         var route=FindRoadRoute(EntryNode().Id,access.Id,true);
         var index=Math.Max(1,route.Count-1-(kind==PavingMachine.Paver?4:7));index=Math.Min(index,route.Count-1);
@@ -13,6 +13,8 @@ public sealed partial class CitySimulation
             // full-size feeder would stand across the crossing carriageway.
             var feeder=dock-axis*(6.6/Math.Max(.001,axis.Distance(default)));
             if(kind==PavingMachine.Paver&&BayBodyBlocksRoad(feeder,Math.Abs(axis.X)>.01,3.6,1.45))continue;
+            // Nor on the street being built: both machines drive over its points.
+            if(work!=null&&WorkRoadBlocksBay(work,dock,Math.Abs(axis.X)>.01))continue;
             if(!MachineBayBlocksRoad(dock,Math.Abs(axis.X)>.01)&&State.Buildings.All(b=>b.Removed||!Inside(b,dock,2.5))&&State.Vehicles.All(v=>v.Status==VehicleStatus.Outside||v.DockPosition is not {} occupied||occupied.Distance(dock)>7))return(road,dock);
         }
         // Exterior staging origin already exists in the road model. Equipment
@@ -20,14 +22,23 @@ public sealed partial class CitySimulation
         var entry=EntryNode();return(entry,entry.Position+new Point(0,kind==PavingMachine.Paver?6.75:-6.75));
     }
 
+    // A machine bay overlapping the carriageway of a point of the work's own new
+    // street (its orientation is not known yet, so on both axes).
+    bool WorkRoadBlocksBay(WorkProject work,Point bay,bool horizontalMachine)
+    {
+        var halfX=horizontalMachine?2.31:1.27;var halfZ=horizontalMachine?1.27:2.31;var lane=State.Tuning.RoadWidth*(6.5/10.5)/2;
+        return work.RoadPoints.Any(point=>Math.Abs(bay.X-point.X)<halfX+lane+.2&&Math.Abs(bay.Z-point.Z)<halfZ+lane+.2);
+    }
+
     bool MachineBayBlocksRoad(Point bay,bool horizontalMachine)
         =>BayBodyBlocksRoad(bay,horizontalMachine,2.31,1.27);
 
-    bool BayBodyBlocksRoad(Point bay,bool horizontalMachine,double halfLength,double halfWidth)
+    bool BayBodyBlocksRoad(Point bay,bool horizontalMachine,double halfLength,double halfWidth,Func<RoadNode,bool>? exempt=null)
     {
         var halfX=horizontalMachine?halfLength:halfWidth;var halfZ=horizontalMachine?halfWidth:halfLength;
         var lane=State.Tuning.RoadWidth*(6.5/10.5)/2;var step=State.Tuning.RoadStep/2;
         foreach(var road in State.Roads){
+            if(exempt?.Invoke(road)==true)continue;
             var horizontal=road.Highway||road.Neighbours.Any(id=>Math.Abs(_roads[id].Position.X-road.Position.X)>.01);
             var vertical=road.Neighbours.Any(id=>Math.Abs(_roads[id].Position.Z-road.Position.Z)>.01);
             var roadX=vertical?lane:step;var roadZ=horizontal?lane:step;

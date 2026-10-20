@@ -322,13 +322,13 @@ public sealed partial class CitySimulation
         if(!needed)return [];
         var crewHeading=v.Route.Count>0&&_roads.TryGetValue(v.Route[^1],out var crewAccess)&&
             (crewAccess.Highway||crewAccess.Neighbours.Any(id=>Math.Abs(_roads[id].Position.X-crewAccess.Position.X)>.1))?Math.PI/2:0;
-        if(limit.ReachesDock&&v.Machine==PavingMachine.None&&v.CrewAboard&&!CrewDockClear(dock,crewHeading)){
+        if(limit.ReachesDock&&v.Machine==PavingMachine.None&&v.CrewAboard&&!CrewDockClear(dock,crewHeading,_roads.GetValueOrDefault(v.Route[^1]))){
             // Road completion can invalidate a previously chosen curb position.
             // Replan only the unadmitted intention, without moving the body.
             var shipment=State.Shipments.FirstOrDefault(s=>s.Id==v.ShipmentId);
             if(v.Route.Count>0&&_roads.TryGetValue(v.Route[^1],out var access)){
                 var revised=DockAt(access,BuildingById(shipment?.DestinationBuildingId),true);
-                if(CrewDockClear(revised,crewHeading)){v.DockPosition=dock=revised;way=EntryPlan(v,dock,out spaces,out limit,out needed);}
+                if(CrewDockClear(revised,crewHeading,access)){v.DockPosition=dock=revised;way=EntryPlan(v,dock,out spaces,out limit,out needed);}
                 else {v.Cause=WorkCause.PavingSiteOccupied;return way;}
             }
         }

@@ -46,7 +46,7 @@ public sealed partial class CitySimulation
         foreach(var machine in new[]{paver,roller}){
             machine.Fuel=State.Tuning.FuelTank;machine.MachineProjectId=p.Id;machine.MachinePhase=MachinePhase.ToSite;
             machine.CrewAboard=true;machine.CrewCount=1;machine.Route=route.ToList();machine.RouteIndex=0;
-            var bay=PavingBay(access,machine.Machine);machine.Route=FindRoadRoute(EntryNode().Id,bay.Road.Id,true);machine.DockPosition=bay.Position;machine.Status=VehicleStatus.Travelling;
+            var bay=PavingBay(access,machine.Machine,p);machine.Route=FindRoadRoute(EntryNode().Id,bay.Road.Id,true);machine.DockPosition=bay.Position;machine.Status=VehicleStatus.Travelling;
             machine.FeedingReady=false;machine.SitePath=[];machine.SitePathIndex=0;machine.WorkTarget=null;machine.Cause="Equipe e máquina a caminho da obra "+p.Id;
         }
         p.PaverId=paver.Id;p.RollerId=roller.Id;p.Cause=WorkCause.PavingMachinesInTransit;
@@ -175,7 +175,7 @@ public sealed partial class CitySimulation
         if(project.Status is WorkStatus.Completed or WorkStatus.Cancelled){machine.MachinePhase=MachinePhase.Returning;ReturnExternal(machine);return;}
         if(start==null||access==null||start.Position.Distance(machine.Position)>State.Tuning.RoadWidth/2+3)return;
         var route=FindRoadRoute(start.Id,access.Id,true);if(route.Count==0)return;
-        var bay=PavingBay(access,machine.Machine);var toBay=FindRoadRoute(start.Id,bay.Road.Id,true);if(toBay.Count==0)return;
+        var bay=PavingBay(access,machine.Machine,project);var toBay=FindRoadRoute(start.Id,bay.Road.Id,true);if(toBay.Count==0)return;
         machine.Route=toBay;machine.RouteIndex=0;machine.DockPosition=bay.Position;machine.Status=VehicleStatus.Travelling;
     }
 
