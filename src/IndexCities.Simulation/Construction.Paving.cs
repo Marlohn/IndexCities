@@ -131,7 +131,8 @@ public sealed partial class CitySimulation
         var done=machine.Machine==PavingMachine.Paver?p.AppliedRoadPoints:p.RolledRoadPoints;
         if(done.Count>=p.RoadPoints.Count)return;
         if(machine.WorkTarget==null){
-            if(done.Count==0&&State.Vehicles.Any(v=>v.Machine==PavingMachine.None&&v.Status is VehicleStatus.Travelling or VehicleStatus.Unloading&&v.Position.Distance(machine.Position)<25)){p.Cause=WorkCause.PavingSiteOccupied;return;}
+            // Not one stopped by this machine's own body: it passes only once the machine moves.
+            if(done.Count==0&&State.Vehicles.Any(v=>v.Machine==PavingMachine.None&&v.Status is VehicleStatus.Travelling or VehicleStatus.Unloading&&v.Position.Distance(machine.Position)<25&&!WaitsOnBody(v,machine))){p.Cause=WorkCause.PavingSiteOccupied;return;}
             foreach(var target in p.RoadPoints.Where(point=>!done.Contains(point)&&(machine.Machine==PavingMachine.Paver||p.AppliedRoadPoints.Contains(point))).OrderBy(point=>point.Distance(machine.Position))){
                 var route=PavingApproachRoute(p,machine.Position,target);if(route.Count==0)continue;
                 machine.SitePath=route;machine.SitePathIndex=0;machine.WorkTarget=target;break;
@@ -150,7 +151,7 @@ public sealed partial class CitySimulation
             var due=Money(p.CrewCostDue+(executing?(decimal)(travel/speed/3600)*hourly:0));
             if(due>p.BudgetRemaining){p.Cause=WorkCause.NoBudgetForPaving;machine.Cause=p.Cause;break;}
             if(machine.Fuel<travel*State.Tuning.FuelPerMetre){p.Cause=WorkCause.PavingOutOfFuel;machine.Cause=p.Cause;break;}
-            var previousHeading=machine.Heading;machine.Heading=Math.Atan2(delta.X,delta.Z);travel=SafeSiteTravel(machine,target,travel);
+            var previousHeading=machine.Heading;machine.Heading=Math.Atan2(delta.X,delta.Z);travel=MachineMayEnter(machine)?SafeSiteTravel(machine,target,travel):0;
             if(travel<=.000001){machine.Heading=previousHeading;p.Cause=WorkCause.PavingSiteOccupied;machine.Cause=p.Cause;break;}
             machine.Position=machine.Position.MoveTowards(target,travel);remaining-=travel/speed;
             machine.AddFuel(-(travel*State.Tuning.FuelPerMetre));machine.AddFuelBurnedLastStep(travel*State.Tuning.FuelPerMetre);

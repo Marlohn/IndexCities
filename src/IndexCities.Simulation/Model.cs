@@ -360,6 +360,11 @@ public sealed class Vehicle
     public double WaitingSince {get;set;}
     public int? IntersectionClaim {get;set;}
     public double? IntersectionEnteredAt {get;set;}
+    // ARCHITECTURE "Espaços compartilhados": an admitted local manoeuvre — the
+    // dock whose corridor it owns (entering, at or leaving it) and the junctions
+    // and bends it holds on the way, until its body has left them.
+    public Point? ManoeuvreDock {get;set;}
+    public List<int> ManoeuvreSpaces {get;set;}=[];
     public bool CrewAboard {get;set;}
     public int CrewCount {get;set;}
     public bool PassengerCar {get;set;}

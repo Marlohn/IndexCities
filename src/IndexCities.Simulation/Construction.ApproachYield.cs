@@ -74,7 +74,8 @@ public sealed partial class CitySimulation
     // end it holds nothing beyond its own body.
     List<(Vehicle Machine,Point Position,double Heading)> SiteTruckReservation(Vehicle truck)
     {
-        var held=new List<(Vehicle,Point,double)>();if(!OnSitePath(truck))return held;
+        // A manoeuvre not yet admitted holds nothing (Mobility.SharedSpace).
+        var held=new List<(Vehicle,Point,double)>();if(!OnSitePath(truck)||!SitePathHolds(truck))return held;
         List<(Point Position,double Heading)> poses;
         if(OnAsphaltApproach(truck)&&ApproachObstructed(truck)){
             if(!LaneEnd(truck,out var laneEnd,out var laneHeading)||truck.SitePathIndex==0&&truck.Position.Distance(laneEnd)<=.001)return held;

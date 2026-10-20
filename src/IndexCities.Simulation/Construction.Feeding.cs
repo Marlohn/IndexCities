@@ -70,7 +70,7 @@ public sealed partial class CitySimulation
             // next point is untested occupancy and can lock an adjacent vehicle.
             var previousHeading=vehicle.Heading;
             if(distance>.001)vehicle.Heading=vehicle.SiteDockHeading is {} heading&&vehicle.SitePathIndex==vehicle.SitePath.Count-1?heading:Math.Atan2(delta.X,delta.Z);
-            travel=SafeSiteTravel(vehicle,target,travel);
+            travel=vehicle.Machine!=PavingMachine.None&&!MachineMayEnter(vehicle)?0:SafeSiteTravel(vehicle,target,travel);
             if(travel<=.000001&&distance>.001){vehicle.Heading=previousHeading;vehicle.Cause=WorkCause.PavingSiteOccupied;return false;}
             vehicle.Position=vehicle.Position.MoveTowards(target,travel);vehicle.AddFuel(-(travel*State.Tuning.FuelPerMetre));vehicle.FuelUnits=Math.Max(0,vehicle.FuelUnits);vehicle.AddFuelBurnedLastStep(travel*State.Tuning.FuelPerMetre);remaining-=travel/speed;
             if(travel>=distance-.000001)vehicle.SitePathIndex++;else return false;
@@ -92,6 +92,9 @@ public sealed partial class CitySimulation
         // Construction.ApproachYield).
         if(machinesOnly)reserved.AddRange(State.Vehicles.Where(t=>t.Id!=vehicle.Id&&OnSitePath(t)&&t.Position.Distance(vehicle.Position)<=distance+40)
             .SelectMany(SiteTruckReservation).Where(pose=>pose.Position.Distance(vehicle.Position)<=distance+12));
+        // And an admitted way into or out of a bay (Mobility.SharedSpace).
+        if(machinesOnly)reserved.AddRange(State.Vehicles.Where(t=>t.Id!=vehicle.Id&&t.ManoeuvreDock!=null&&!OnSitePath(t)&&t.Position.Distance(vehicle.Position)<=distance+40)
+            .SelectMany(AdmittedManoeuvre).Where(pose=>pose.Position.Distance(vehicle.Position)<=distance+12));
         // An asphalt truck on its site path or unloading at the paver bay keeps
         // its present body there (see Construction.ApproachYield). Trucks still
         // stacked together at the exterior staging origin have not entered yet.
@@ -116,12 +119,16 @@ public sealed partial class CitySimulation
         var poses=new List<(Vehicle,Point,double)>();
         if(machine.Machine==PavingMachine.None||machine.Status!=VehicleStatus.Parked||machine.MachinePhase is not (MachinePhase.OnSite or MachinePhase.LeavingSite)||machine.SitePathIndex>=machine.SitePath.Count||machine.Fuel<=.000001||machine.Cause is WorkCause.PavingOutOfFuel or WorkCause.NoBudgetForPaving)return poses;
         var at=machine.Position;
+        // Nor into a junction or bend it does not hold (Mobility.SharedSpace): that
+        // part of its path is intention until it takes the space.
+        var unheld=SharedNodes().Where(n=>!machine.ManoeuvreSpaces.Contains(n.Id)&&n.Position.Distance(machine.Position)<240&&!EntersArea(machine,machine.Position,machine.Heading,n)).ToList();
         for(var index=machine.SitePathIndex;index<machine.SitePath.Count;index++){
             var target=machine.SitePath[index];var length=at.Distance(target);if(length<=.001)continue;
             var heading=machine.SiteDockHeading is {} dock&&index==machine.SitePath.Count-1?dock:Math.Atan2(target.X-at.X,target.Z-at.Z);
             for(var along=0.0;;along=Math.Min(length,along+.5)){
                 var pose=at.MoveTowards(target,along);
                 if(State.Vehicles.Any(other=>other.Id!=machine.Id&&other.Status!=VehicleStatus.Outside&&other.Position.Distance(pose)<12&&BodiesOverlap(machine,pose,heading,other,other.Position,other.Heading)))return poses;
+                if(unheld.Any(n=>n.Position.Distance(pose)<JunctionClearance+4&&EntersArea(machine,pose,heading,n)))return poses;
                 poses.Add((machine,pose,heading));if(along>=length)break;
             }
             at=target;

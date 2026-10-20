@@ -201,7 +201,7 @@ public sealed partial class CitySimulation
         // Carriageway half-width (3.3 m) + truck half-length (3.6 m) covers the
         // actual rear of the truck; the former 9 m reservation could overlap
         // nearby junctions and make opposite queues hold each other forever.
-        foreach(var vehicle in State.Vehicles)ClearPassedJunction(vehicle);
+        foreach(var vehicle in State.Vehicles){ClearPassedJunction(vehicle);ReleaseManoeuvre(vehicle);}
         // Same order as OrderBy(WaitingSince).ThenBy(Id): Ids are unique, so the
         // key is a total order and any sort yields the same sequence.
         var ordered=State.Vehicles.ToArray();Array.Sort(ordered,static (a,b)=>a.WaitingSince.CompareTo(b.WaitingSince) is var c and not 0?c:a.Id.CompareTo(b.Id));
@@ -229,10 +229,12 @@ public sealed partial class CitySimulation
             }else if(!_vehicleMovementBatch.Contains(v.Id)||v.Status!=VehicleStatus.Travelling)continue;
             var remaining=dt;
             while(remaining>.000001&&v.Status==VehicleStatus.Travelling){
+                // The way back from a works-site dock is admitted whole (Mobility.SharedSpace).
+                if(v.SitePathBeforeRoad&&(AtSiteDock(v)||v.ManoeuvreDock!=null)&&WayOut(v,out var siteSpaces) is var siteWay&&!AdmitManoeuvre(v,siteWay,siteSpaces,v.ManoeuvreDock??v.SitePath[0],true)){if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}
                 if(v.SitePathBeforeRoad){if(!MoveConstructionSitePath(v,ref remaining,2))break;v.SitePathBeforeRoad=false;v.SitePath=[];v.SitePathIndex=0;}
                 if(_vehicleMovementBatch!=null)_vehicleMovementClock=State.ElapsedSeconds+_vehicleMovementOffset+dt-remaining;
                 if(v.Detour.Count>0){MoveAlongDetour(v,ref remaining);ClearPassedJunction(v);continue;}
-                if(v.RouteIndex>=v.Route.Count){if(v.Machine==PavingMachine.None&&v.SitePathIndex<v.SitePath.Count){if(!MoveConstructionSitePath(v,ref remaining,2))break;}var carSpot=v.PassengerCar&&v.RefuellingAt==null;if(v.DockPosition is {} dock&&v.Position.Distance(dock)>.01){if(!carSpot&&HeldCargoBayBlocked(v,dock))break;var blocked=!carSpot&&State.Vehicles.Any(o=>o.Id!=v.Id&&!(o.PassengerCar&&o.Status==VehicleStatus.Parked)&&o.Status is VehicleStatus.Unloading or VehicleStatus.Parked&&o.Position.Distance(dock)<4);if(blocked){v.Cause="Fila para acesso de carga";break;}var distance=v.Position.Distance(dock);var moved=Math.Min(distance,State.Tuning.VehicleSpeed*remaining);if(v.Fuel<moved*FuelRate(v)){RunOutOfFuel(v);break;}if(v.TowPhase==TowPhase.ToVehicle&&!PickupLaneClear(v,dock)){v.Cause="Guincho aguardando a faixa livre para encostar";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}var toDock=dock-v.Position;if(v.PassengerCar&&distance>.01)v.Heading=Math.Atan2(toDock.X,toDock.Z);v.Position=v.Position.MoveTowards(dock,moved);Wear(v,moved);v.AddFuel(-(moved*FuelRate(v)));v.AddFuelBurnedLastStep(moved*FuelRate(v));remaining-=moved/State.Tuning.VehicleSpeed;if(moved<distance-.01)break;}if(v.TowPhase!=TowPhase.None){TowReachedDock(v);break;}if(v.ServicePhase==ServicePhase.ToService){ServiceArrived(v);break;}if(carSpot){CarReachedSpot(v);break;}v.Status=VehicleStatus.Unloading;v.LoadTimer=15;v.IntersectionClaim=null;v.Cause=v.RefuellingAt!=null?"Abastecendo combustível":v.ShipmentId is {} shipmentId&&State.Shipments.Any(s=>s.Id==shipmentId&&!s.PickedUp)?"Carregando na origem":"Descarregando no destino";break;}
+                if(v.RouteIndex>=v.Route.Count){if(!v.PassengerCar&&!IsTow(v)&&v.RefuellingAt==null&&v.Machine==PavingMachine.None&&v.SitePathIndex==0&&v.DockPosition is {} entryDock&&v.Position.Distance(entryDock)>.01&&(v.ManoeuvreDock is not {} ownedDock||ownedDock.Distance(entryDock)>=.1)&&BayEntryHold(v).Count>0){if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}if(v.Machine==PavingMachine.None&&v.SitePathIndex<v.SitePath.Count){if(!MoveConstructionSitePath(v,ref remaining,2))break;}var carSpot=v.PassengerCar&&v.RefuellingAt==null;if(v.DockPosition is {} dock&&v.Position.Distance(dock)>.01){if(!carSpot&&HeldCargoBayBlocked(v,dock))break;var blocked=!carSpot&&State.Vehicles.Any(o=>o.Id!=v.Id&&!(o.PassengerCar&&o.Status==VehicleStatus.Parked)&&o.Status is VehicleStatus.Unloading or VehicleStatus.Parked&&o.Position.Distance(dock)<4);if(blocked){v.Cause="Fila para acesso de carga";break;}var distance=v.Position.Distance(dock);var moved=Math.Min(distance,State.Tuning.VehicleSpeed*remaining);if(v.Fuel<moved*FuelRate(v)){RunOutOfFuel(v);break;}if(v.TowPhase==TowPhase.ToVehicle&&!PickupLaneClear(v,dock)){v.Cause="Guincho aguardando a faixa livre para encostar";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}var toDock=dock-v.Position;if(v.PassengerCar&&distance>.01)v.Heading=Math.Atan2(toDock.X,toDock.Z);v.Position=v.Position.MoveTowards(dock,moved);Wear(v,moved);v.AddFuel(-(moved*FuelRate(v)));v.AddFuelBurnedLastStep(moved*FuelRate(v));remaining-=moved/State.Tuning.VehicleSpeed;if(moved<distance-.01)break;}if(v.TowPhase!=TowPhase.None){TowReachedDock(v);break;}if(v.ServicePhase==ServicePhase.ToService){ServiceArrived(v);break;}if(carSpot){CarReachedSpot(v);break;}v.Status=VehicleStatus.Unloading;v.LoadTimer=15;v.IntersectionClaim=null;v.Cause=v.RefuellingAt!=null?"Abastecendo combustível":v.ShipmentId is {} shipmentId&&State.Shipments.Any(s=>s.Id==shipmentId&&!s.PickedUp)?"Carregando na origem":"Descarregando no destino";break;}
                 var node=_roads[v.Route[v.RouteIndex]];if(node.ConstructionOnly&&!ConstructionTrip(v)){v.Status=VehicleStatus.Waiting;v.Cause="Rua ainda em obra: tráfego normal aguarda conclusão";break;}if(!node.Highway&&node.MaintenanceRatio<=.05){v.Status=VehicleStatus.Waiting;v.Cause="Via sem capacidade por manutenção não realizada";break;}var previous=v.RouteIndex>0?_roads[v.Route[v.RouteIndex-1]].Position:v.Position;
                 var delta=v.RouteIndex==0&&v.Route.Count>1?_roads[v.Route[1]].Position-node.Position:node.Position-previous;var len=delta.Distance(new(0,0));var target=node.Position;
                 if(len>.01)target+=new Point(delta.Z/len*1.65,-delta.X/len*1.65);
@@ -242,10 +244,12 @@ public sealed partial class CitySimulation
                 // beyond it): that point is reached, rather than turning back to it.
                 if(v.RouteIndex>0&&v.RouteIndex+1<v.Route.Count&&len>.01&&d>.001&&Math.Abs(((v.Position.X-target.X)*delta.Z-(v.Position.Z-target.Z)*delta.X)/len)<.05&&
                     ((v.Position.X-target.X)*delta.X+(v.Position.Z-target.Z)*delta.Z)/len>0){v.RouteIndex++;continue;}
+                // Leaving a bay or dock is admitted whole, or the truck stays there (Mobility.SharedSpace).
+                if(LeavesDock(v)&&(v.ManoeuvreDock!=null||!OnCarriageway(v))&&WayOut(v,out var exitSpaces) is var exitWay&&!AdmitManoeuvre(v,exitWay,exitSpaces,v.ManoeuvreDock??v.Position,true)){if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}
                 // The next junction is awaited at its stop line, and a delivery to a
                 // busy bay just beyond it waits before it (Mobility.BayJunction).
                 var stopEarly=0.0;var bayHold=false;List<(Vehicle Body,Point Position,double Heading)>? crossingPoses=null;
-                if(node.Neighbours.Count<3&&!node.Crosswalk&&v.IntersectionClaim==null&&v.RouteIndex+1<v.Route.Count&&_roads.TryGetValue(v.Route[v.RouteIndex+1],out var crossing)&&crossing.Neighbours.Count>=3){
+                if(node.Neighbours.Count<3&&!node.Crosswalk&&v.IntersectionClaim==null&&v.RouteIndex+1<v.Route.Count&&_roads.TryGetValue(v.Route[v.RouteIndex+1],out var crossing)&&(crossing.Neighbours.Count>=3||TurnsAtBend(v,v.RouteIndex+1))){
                     stopEarly=StopLineBefore(v,node,crossing,delta,len);
                     if(HoldBeforeBayJunction(v,v.RouteIndex+1,out var exits)){bayHold=true;crossingPoses=exits;stopEarly=Math.Max(stopEarly,.001);}
                     if(d<=stopEarly+.001){
@@ -254,6 +258,10 @@ public sealed partial class CitySimulation
                     }
                     if(stopEarly>0){var turning=ClaimHolderPoses(v,crossing);if(turning.Count>0)(crossingPoses??=[]).AddRange(turning);}
                 }
+                // Near its bay, a delivery not yet admitted keeps out of the dock corridor
+                // and of the way out of the truck that owns it (Mobility.SharedSpace).
+                var entryHeld=EntersBay(v)&&BayEntryHold(v) is {Count:>0} entryHold?entryHold:null;
+                if(entryHeld!=null)(crossingPoses??=[]).AddRange(entryHeld);
                 var approachHeading=v.Heading;
                 var facing=target-v.Position;if(d>.01)v.Heading=Math.Atan2(facing.X,facing.Z);
                 // The exterior gateway is a staging origin (all external trucks
@@ -272,6 +280,9 @@ public sealed partial class CitySimulation
                 void HoldFor(Vehicle other,double distance){if(distance<leaderDistance){leaderDistance=distance;blocker=other;}}
                 foreach(var liveOther in State.Vehicles){
                     var other=enteringLane?EntryFrameVehicle(liveOther):liveOther;
+                    // A truck stopped at a dock with its body across this lane (a street bay)
+                    // is queued behind like a leader, keeping the queue gap (Mobility.SharedSpace).
+                    if(other.Id!=v.Id&&BodyAcrossLane(v,other) is {} docked){HoldFor(other,docked);continue;}
                     if(other.Id==v.Id||!OccupiesLane(other))continue;
                     var relative=other.Position-v.Position;
                     if(insideMap&&relative.Distance(new(0,0))<.1){if(other.Status==VehicleStatus.Stranded||other.Id<v.Id)HoldFor(other,0);continue;}
@@ -319,11 +330,15 @@ public sealed partial class CitySimulation
                 // or into any other body that pose was clear of.
                 if(step<.00001&&d>.00001&&State.Vehicles.Any(o=>o.Id!=v.Id&&o.Status!=VehicleStatus.Outside&&o.Position.Distance(v.Position)<12&&
                     (StreetBody(o)?VehicleBodiesOverlap(v,v.Position,o):!(o.Position.Distance(State.Entry)<8&&v.Position.Distance(State.Entry)<8)&&TurnsInto(v,approachHeading,o))))v.Heading=approachHeading;
-                if(step<.00001&&d>.00001){v.Cause=blocker?.Status==VehicleStatus.Stranded?$"Aguardando veículo {blocker.Id} {(blocker.BrokenDown?"quebrado":"sem combustível")} na via":bayHold?"Fila para acesso de carga":enteringLane?"Aguardando espaço para acessar a faixa":"Fila na faixa";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;if(v.TowPhase==TowPhase.ToVehicle&&(TryTowContraflow(v)||TryTowFromBehind(v)))continue;if(!enteringLane&&blocker!=null&&blocker.Id!=v.TowTargetId&&TryBypassStopped(v,blocker))continue;if(blocker!=null&&TowExitHolds(blocker)&&TryUTurn(v,blocker))continue;
+                if(step<.00001&&d>.00001){v.Cause=blocker?.Status==VehicleStatus.Stranded?$"Aguardando veículo {blocker.Id} {(blocker.BrokenDown?"quebrado":"sem combustível")} na via":bayHold||entryHeld!=null?"Fila para acesso de carga":enteringLane?"Aguardando espaço para acessar a faixa":"Fila na faixa";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;if(v.TowPhase==TowPhase.ToVehicle&&(TryTowContraflow(v)||TryTowFromBehind(v)))continue;if(!enteringLane&&blocker!=null&&blocker.Id!=v.TowTargetId&&TryBypassStopped(v,blocker))continue;if(blocker!=null&&TowExitHolds(blocker)&&TryUTurn(v,blocker))continue;
                     // A tow held for minutes turns back and goes around the stranded vehicles
                     // and the junctions they lock, instead of waiting in the queue.
                     if(blocker!=null&&TowHeldTooLong(v,blocker)&&TryUTurn(v,blocker,TowClosedRoads(v))){CheckTowFuel(v);continue;}TowWaitsWithoutAccess(v);break;}
-                if((node.Neighbours.Count>=3||node.Crosswalk)&&d<9&&!MayEnterJunction(v,node)){if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;
+                // Entering is admitted whole too: a delivery near its bay takes no junction
+                // or bend before its entry is admitted.
+                var sharedAhead=node.Neighbours.Count>=3||node.Crosswalk||TurnsAtBend(v,v.RouteIndex);
+                if(sharedAhead&&d<9&&!Holds(v,node.Id)&&entryHeld!=null){v.Cause="Fila para acesso de carga";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}
+                if(sharedAhead&&d<9&&!MayEnterJunction(v,node)){if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;
                     // SPEC: held at a junction by a vehicle stopped there (out of fuel), it
                     // turns back after the same minutes as behind it in the lane.
                     if(TryTowFromBehind(v))continue;
@@ -366,9 +381,28 @@ public sealed partial class CitySimulation
     bool MayEnterJunction(Vehicle v,RoadNode junction)
     {
         v.Cause="Aguardando preferência/semáforo/travessia";var area=_junctionAreas.GetValueOrDefault(junction.Id);
+        // A space of an admitted manoeuvre (Mobility.SharedSpace): its holder goes
+        // on, everyone else waits for it.
+        if(v.ManoeuvreSpaces.Contains(junction.Id)){ReserveJunction(v,junction,area);return true;}
+        if(State.Vehicles.FirstOrDefault(o=>o.Id!=v.Id&&o.Id!=v.TowTargetId&&o.TowTruckId!=v.Id&&!Receives(o,v)&&(o.ManoeuvreSpaces.Contains(junction.Id)||area!=null&&o.ManoeuvreSpaces.Any(area.Contains))) is {} manoeuvre){v.Cause=(IsBend(junction)?"Aguardando liberação da curva pelo veículo ":"Aguardando liberação do cruzamento pelo veículo ")+manoeuvre.Id;return false;}
         var continuing=area!=null&&v.IntersectionClaim is {} held&&area.Contains(held);
         if(area!=null){var owner=NearbyAreaOwner(area,junction,v);if(owner!=null&&owner.Id!=v.Id&&owner.Id!=v.TowTargetId){v.Cause="Aguardando liberação do cruzamento pelo veículo "+owner.Id;return false;}}
         if(v.IntersectionClaim==junction.Id)return true;
+        if(IsBend(junction)){
+            // SPEC "Curva simples, um de cada vez": no direction has preference; the
+            // first to arrive (waiting longest, fixed ID tie-break) turns. It takes
+            // the bend together with every space it crosses up to the first place
+            // its body can wait clear of them, with that way free of bodies.
+            if(State.Vehicles.FirstOrDefault(o=>o.Id!=v.Id&&o.Id!=v.TowTargetId&&o.TowTruckId!=v.Id&&!Receives(o,v)&&Holds(o,junction.Id)) is {} holder){v.Cause="Aguardando liberação da curva pelo veículo "+holder.Id;return false;}
+            double Arrived(Vehicle a)=>a.WaitingSince>0?a.WaitingSince:VehicleMovementTime;
+            var first=State.Vehicles.Where(o=>o.Id!=v.TowTargetId&&o.Status==VehicleStatus.Travelling&&!Leaving(o)&&o.RouteIndex<o.Route.Count&&o.Route[o.RouteIndex]==junction.Id&&TurnsAtBend(o,o.RouteIndex)&&o.Position.Distance(junction.Position)<11&&(o.Id==v.Id||CanTurnNow(o)))
+                .Append(v).Distinct().OrderBy(Arrived).ThenBy(o=>o.Id).First();
+            if(first.Id!=v.Id){v.Cause="Aguardando liberação da curva pelo veículo "+first.Id;return false;}
+            var way=TurnWay(v,out var spaces);
+            foreach(var space in spaces.Where(s=>s.Id!=junction.Id)){var index=way.FindIndex(p=>EntersArea(v,p.Position,p.Heading,space));var from=index>0?way[index-1].Position:v.Position;if(!SpaceFree(v,space,space.Position-from,false))return false;}
+            if(BodyOnWay(v,way) is {} body){v.Cause="Fila na faixa";return false;}
+            ReserveJunction(v,junction,null);v.ManoeuvreSpaces=spaces.Select(s=>s.Id).ToList();if(!v.ManoeuvreSpaces.Contains(junction.Id))v.ManoeuvreSpaces.Add(junction.Id);return true;
+        }
         if(area==null&&junction.Neighbours.Count>=3&&State.Vehicles.FirstOrDefault(o=>o.Id!=v.Id&&o.Id!=v.TowTargetId&&o.IntersectionClaim==junction.Id&&o.Position.Distance(junction.Position)<9) is {} occupant){v.Cause="Aguardando liberação do cruzamento pelo veículo "+occupant.Id;return false;}
         // Only a walker physically at this crossing holds traffic back.
         if(State.Citizens.Any(c=>c.Alive&&c.VehicleId==null&&c.Moving&&c.CrossingNodeId==junction.Id&&c.Position.Distance(junction.Position)<State.Tuning.RoadWidth/2+1.5))return false;
@@ -395,6 +429,15 @@ public sealed partial class CitySimulation
                 double Since(Vehicle a)=>a.WaitingSince>0?a.WaitingSince:double.MaxValue;
                 if(waiting.OrderBy(Since).ThenBy(a=>a.Id).First().Id!=v.Id)return false;
             }
+        }
+        // When its way out of the junction runs straight into another junction or
+        // bend, with no place between where its body could wait clear of both, it
+        // takes them together (ARCHITECTURE "conjunto até a espera segura").
+        var onward=TurnWay(v,out var crossed);
+        if(crossed.Any(s=>s.Id!=junction.Id)){
+            foreach(var space in crossed.Where(s=>s.Id!=junction.Id)){var index=onward.FindIndex(p=>EntersArea(v,p.Position,p.Heading,space));var from=index>0?onward[index-1].Position:v.Position;if(!SpaceFree(v,space,space.Position-from,false))return false;}
+            if(BodyOnWay(v,onward) is {}){v.Cause="Fila na faixa";return false;}
+            v.ManoeuvreSpaces=crossed.Select(s=>s.Id).ToList();
         }
         ReserveJunction(v,junction,area);return true;
     }

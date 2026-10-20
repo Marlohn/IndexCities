@@ -48,8 +48,12 @@ public sealed partial class CitySimulation
     List<(Vehicle Body,Point Position,double Heading)> ClaimHolderPoses(Vehicle v,RoadNode junction)
     {
         var held=new List<(Vehicle Body,Point Position,double Heading)>();
-        foreach(var o in State.Vehicles)
-            if(o.Id!=v.Id&&o.IntersectionClaim==junction.Id&&o.Status==VehicleStatus.Travelling&&o.RouteIndex<o.Route.Count)CrossingPoses(held,o,o.Route,o.RouteIndex,o.Position,o.Heading,junction);
+        foreach(var o in State.Vehicles){
+            if(o.Id==v.Id||!Holds(o,junction.Id))continue;
+            // A holder leaving a bay or on a works-site path: its admitted manoeuvre.
+            if(Leaving(o))held.AddRange(WayOut(o,out _));
+            else if(o.Status==VehicleStatus.Travelling&&o.RouteIndex<o.Route.Count)CrossingPoses(held,o,o.Route,o.RouteIndex,o.Position,o.Heading,junction);
+        }
         return held;
     }
 
