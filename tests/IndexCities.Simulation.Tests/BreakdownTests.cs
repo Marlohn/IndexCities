@@ -140,4 +140,104 @@ public sealed class BreakdownTests
         var old=System.Text.Json.Nodes.JsonNode.Parse(new CitySimulation(7).SaveToJson())!.AsObject();old.Remove("VehicleStateVersion");foreach(var v in old["Vehicles"]!.AsArray())v!.AsObject().Remove("ConditionUnits");
         var loaded=CitySimulation.FromJson(old.ToJsonString());Assert.Equal(1,loaded.State.VehicleStateVersion);Assert.All(loaded.State.Vehicles,v=>Assert.Equal(1,v.Condition,6));
     }
+
+    static void Fund(CityState s,string account,decimal amount){s.Wallets["global"]-=amount;s.Wallets[account]=s.Wallets.GetValueOrDefault(account)+amount;}
+    static Citizen Worker(CityState s,string name,Building workplace,int shift=0)
+    {
+        var family=s.NextId++;var c=new Citizen{Id=s.NextId++,Name=name,FamilyId=family,Age=30,Resident=true,InsideMap=true,Position=workplace.Door,WeeklyDayOff=0,Shift=shift,WorkplaceId=workplace.Id,Activity="No trabalho"};
+        s.Citizens.Add(c);s.Wallets[c.Account]=0;s.Families.Add(new(){Id=family,Members=[c.Id]});return c;
+    }
+    // The car parked at its owner's space, out of the way.
+    static void ParkCar(Scene scene){var car=scene.Car;car.Status=VehicleStatus.Parked;car.DriverId=null;car.Route.Clear();car.Position=new(-6.6,-7.7);car.ParkingSpot="b:"+scene.House.Id+":0";scene.Driver.VehicleId=null;scene.Driver.Position=scene.House.Door;scene.Driver.Purpose=JourneyPurpose.Home;scene.Driver.Activity="Em casa";}
+    // A farm facing the street at x=16 (south side), its company, a worker on shift and its truck.
+    static (Building Farm,Company Owner,Citizen Worker,Vehicle Truck) Farm(Scene scene)
+    {
+        var s=scene.S;var owner=new Company{Id=s.NextId++,Name="Campo teste"};s.Companies.Add(owner);Fund(s,owner.Account,3000);
+        var farm=new Building{Id=s.NextId++,Kind=BuildingKind.Farm,Position=new(16,-26),Rotation=Math.PI,Completed=true,CompanyId=owner.Id,OwnerAccount=owner.Account};s.Buildings.Add(farm);owner.Buildings.Add(farm.Id);
+        var worker=Worker(s,"Lia",farm);
+        var truck=new Vehicle{Id=s.NextId++,OwnerAccount=owner.Account,HomeBuildingId=farm.Id,CargoCapacity=20,Fuel=40,Status=VehicleStatus.Parked,Position=new(16,-7),Heading=Math.PI/2,Cause="Caminhão adquirido"};s.Vehicles.Add(truck);
+        return (farm,owner,worker,truck);
+    }
+
+    // SPEC decision 5A: a local truck broken with cargo goes back to its base after
+    // the repair, with the cargo, and a worker present resumes the same delivery.
+    [Fact] public void A_local_truck_broken_with_cargo_is_repaired_brought_back_to_base_and_a_worker_resumes_the_same_delivery()
+    {
+        var scene=City(localTow:false,breakNow:false);var s=scene.S;ParkCar(scene);var (farm,owner,worker,truck)=Farm(scene);
+        var grocery=s.Buildings.Single(b=>b.Kind==BuildingKind.Grocery);var foodBefore=grocery.Quantity(ResourceKind.Food);
+        var delivery=new Shipment{Id=s.NextId++,Purpose=ShipmentPurpose.Food,SourceBuildingId=farm.Id,DestinationBuildingId=grocery.Id,VehicleId=truck.Id,Cargo=new(){{ResourceKind.Food,10}},GoodsOwnerAccount="company:"+grocery.CompanyId,PricePaid=50,PickedUp=true};s.Shipments.Add(delivery);
+        truck.Cargo=new(delivery.Cargo);truck.ShipmentId=delivery.Id;truck.Position=new(0,-1.65);truck.Route=new(scene.Car.Route.Count>0?scene.Car.Route:s.Roads.Where(r=>r.Position.Z==0&&r.Position.X>=-20&&r.Position.X<=40).OrderBy(r=>r.Position.X).Select(r=>r.Id));truck.RouteIndex=6;truck.Status=VehicleStatus.Travelling;truck.DriverId=worker.Id;truck.Condition=.1;truck.Cause="Entrega real";
+        worker.VehicleId=truck.Id;worker.Activity="Conduzindo entrega real";
+        var money=scene.Sim.MonetaryTotal;
+        s.Tuning.BreakdownChancePerKmNew=1e7;s.Tuning.BreakdownChancePerKmWorn=1e7;scene.Sim.Advance(2);s.Tuning.BreakdownChancePerKmNew=0;s.Tuning.BreakdownChancePerKmWorn=0;
+        Assert.True(truck.BrokenDown,truck.Cause);Assert.Null(worker.VehicleId);Assert.Equal(10,truck.Cargo.GetValueOrDefault(ResourceKind.Food),6);Assert.False(delivery.Complete);
+        Assert.True(Run(scene,4*3600,()=>truck.Status==VehicleStatus.Parked&&truck.ServicePhase==ServicePhase.None&&truck.PushPath.Count==0&&truck.TowTruckId==null&&!truck.BrokenDown),truck.Cause);
+        Assert.True(truck.Position.Distance(farm.Door)<12,"de volta à base: "+truck.Position);Assert.Equal(10,truck.Cargo.GetValueOrDefault(ResourceKind.Food),6);Assert.Equal(delivery.Id,truck.ShipmentId);Assert.False(delivery.Complete);
+        Assert.Contains(s.Ledger,m=>m.Category=="Conserto de veículo"&&m.From==owner.Account&&m.To==scene.ShopOwner!.Account);
+        // The next economy review sends a worker present with the same cargo.
+        worker.Position=farm.Door;worker.Activity="No trabalho";s.EconomyNextAt=0;scene.Sim.Advance(2);s.EconomyNextAt=1e9;
+        Assert.Equal(worker.Id,truck.DriverId);
+        Assert.True(Run(scene,1800,()=>delivery.Complete),truck.Cause+" / "+worker.Activity);
+        Assert.Equal(foodBefore+10,grocery.Quantity(ResourceKind.Food),6);Assert.Equal("company:"+grocery.CompanyId,delivery.GoodsOwnerAccount);Assert.Equal(50,delivery.PricePaid);
+        Assert.DoesNotContain(s.Ledger,m=>m.Category=="Fornecedor local");Assert.Equal(money,scene.Sim.MonetaryTotal);scene.Sim.CheckInvariants();
+    }
+    // SPEC decision 2A: a tow that breaks on its way is replaced, with no new charge;
+    // the broken tow is rescued like any truck.
+    [Fact] public void A_tow_that_breaks_on_its_way_is_replaced_without_a_new_charge_and_is_rescued_itself()
+    {
+        var scene=City();var s=scene.S;var tow=scene.LocalTow!;BreakOnce(scene);
+        Assert.True(Run(scene,120,()=>scene.Car.TowTruckId==tow.Id&&tow.TowPhase==TowPhase.ToVehicle&&tow.Status==VehicleStatus.Travelling&&tow.DriverId!=null&&s.Citizens.Single(c=>c.Id==tow.DriverId).VehicleId==tow.Id),tow.Cause);
+        var charges=s.Ledger.Count(m=>m.Category=="Guincho");Assert.Equal(1,charges);
+        tow.Condition=.1;s.Tuning.BreakdownChancePerKmNew=1e7;s.Tuning.BreakdownChancePerKmWorn=1e7;
+        Assert.True(Run(scene,60,()=>tow.BrokenDown),tow.Cause);s.Tuning.BreakdownChancePerKmNew=0;s.Tuning.BreakdownChancePerKmWorn=0;
+        Assert.Equal(VehicleStatus.Stranded,tow.Status);Assert.Equal(TowPhase.None,tow.TowPhase);Assert.NotEqual(tow.Id,scene.Car.TowTruckId);
+        Assert.True(Run(scene,120,()=>scene.Car.TowTruckId!=null&&tow.TowTruckId!=null),scene.Car.Cause+" / "+tow.Cause);
+        var replacement=s.Vehicles.Single(v=>v.Id==scene.Car.TowTruckId);Assert.True(replacement.External);Assert.Equal(TruckBody.Tow,replacement.Body);
+        Assert.Equal(TruckBody.TowHeavy,s.Vehicles.Single(v=>v.Id==tow.TowTruckId).Body);
+        // One charge to the car's owner for the whole rescue; the shop pays its own tow's.
+        Assert.Single(s.Ledger,m=>m.Category=="Guincho"&&m.From==scene.Driver.Account);
+        Assert.True(Run(scene,6*3600,()=>Home(scene)&&!tow.BrokenDown&&tow.Status==VehicleStatus.Parked&&tow.PushPath.Count==0&&tow.Position.Distance(CitySimulation.ShopTowSpace(scene.Shop!))<.5),scene.Car.Cause+" / "+tow.Cause);
+        // The return home is a new rescue (SPEC decision 4A): two charges in all.
+        Assert.Equal(2,s.Ledger.Count(m=>m.Category=="Guincho"&&m.From==scene.Driver.Account));Assert.True(tow.Condition>.99);Assert.Equal(CitySimulation.TowBaseHeading(scene.Shop!),tow.Heading,6);
+        Assert.Equal(s.Tuning.TotalMoney,scene.Sim.MonetaryTotal);scene.Sim.CheckInvariants();
+    }
+    // SPEC 8A: a company truck goes to revision with a worker on shift and comes back.
+    [Fact] public void A_worn_company_truck_goes_to_revision_with_a_worker_on_shift_and_comes_back()
+    {
+        var scene=City(localTow:false,breakNow:false);var s=scene.S;ParkCar(scene);var (farm,owner,worker,truck)=Farm(scene);truck.Condition=.3;
+        s.EconomyNextAt=0;scene.Sim.Advance(2);s.EconomyNextAt=1e9;
+        Assert.Equal(ServicePhase.ToService,truck.ServicePhase);Assert.Equal(scene.Shop!.Id,truck.ServiceShopId);Assert.Equal(worker.Id,truck.DriverId);
+        Assert.True(Run(scene,1800,()=>truck.ServicePhase==ServicePhase.InService&&truck.PushPath.Count==0),truck.Cause);
+        Assert.True(Run(scene,3*3600,()=>truck.Status==VehicleStatus.Parked&&truck.ServicePhase==ServicePhase.None&&truck.DriverId==null&&truck.Position.Distance(farm.Door)<12),truck.Cause+" / "+worker.Activity);
+        Assert.True(truck.Condition>.99,truck.Condition.ToString());var paid=s.Ledger.Single(m=>m.Category=="Revisão de veículo");Assert.Equal(owner.Account,paid.From);Assert.Equal(scene.ShopOwner!.Account,paid.To);
+        Assert.Equal(s.Tuning.TotalMoney,scene.Sim.MonetaryTotal);scene.Sim.CheckInvariants();
+    }
+    // SPEC "Guincho local": the shop company buys its platform tow with real money;
+    // it is delivered physically and waits at its own space.
+    [Fact] public void A_shop_buys_its_own_tow_with_real_money_and_it_is_delivered_to_its_space()
+    {
+        var scene=City(localTow:false,breakNow:false);var s=scene.S;ParkCar(scene);var shop=scene.Shop!;Fund(s,scene.ShopOwner!.Account,8000);
+        var before=scene.Sim.Balance(scene.ShopOwner.Account);
+        s.EconomyNextAt=0;scene.Sim.Advance(2);s.EconomyNextAt=1e9;
+        var bought=s.Ledger.Single(m=>m.Category=="Veículos"&&m.From==scene.ShopOwner.Account);Assert.Equal("global",bought.To);Assert.True(bought.Amount>=s.Tuning.TowTruckPrice);Assert.Equal(before-bought.Amount,scene.Sim.Balance(scene.ShopOwner.Account));
+        var tow=s.Vehicles.Single(v=>v.Body==TruckBody.Tow&&v.HomeBuildingId==shop.Id);Assert.Equal(scene.ShopOwner.Account,tow.OwnerAccount);Assert.True(tow.Fuel>s.Tuning.FuelTank-1,tow.Fuel.ToString());
+        Assert.True(Run(scene,1800,()=>tow.Status==VehicleStatus.Parked&&tow.PushPath.Count==0&&!tow.External),tow.Cause);
+        Assert.True(tow.Position.Distance(CitySimulation.ShopTowSpace(shop))<.5,tow.Position.ToString());Assert.Equal(CitySimulation.TowBaseHeading(shop),tow.Heading,6);
+        // Only one tow per shop.
+        s.EconomyNextAt=0;scene.Sim.Advance(2);s.EconomyNextAt=1e9;Assert.Single(s.Vehicles,v=>v.Body==TruckBody.Tow&&v.HomeBuildingId==shop.Id);
+        Assert.Equal(s.Tuning.TotalMoney,scene.Sim.MonetaryTotal);scene.Sim.CheckInvariants();
+    }
+    // The shop's idle tow refuels at a station with a mechanic present, paid by the shop.
+    [Fact] public void The_shop_tow_refuels_at_a_station_when_its_tank_runs_low()
+    {
+        var scene=City(breakNow:false);var s=scene.S;ParkCar(scene);var tow=scene.LocalTow!;tow.Fuel=10;
+        var operatorCompany=new Company{Id=s.NextId++,Name="Rota teste"};s.Companies.Add(operatorCompany);Fund(s,operatorCompany.Account,2000);
+        var station=new Building{Id=s.NextId++,Kind=BuildingKind.FuelStation,Position=new(-60,-18),Rotation=Math.PI,Completed=true,CompanyId=operatorCompany.Id,OwnerAccount=operatorCompany.Account,SalePrice=6};station.AddStock(ResourceKind.Fuel,300);s.Buildings.Add(station);operatorCompany.Buildings.Add(station.Id);
+        Worker(s,"Frentista",station);
+        s.EconomyNextAt=0;scene.Sim.Advance(2);s.EconomyNextAt=1e9;
+        Assert.Equal(station.Id,tow.RefuellingAt);Assert.Equal(scene.Mechanic!.Id,tow.DriverId);
+        Assert.True(Run(scene,1800,()=>tow.Fuel>30&&tow.Status==VehicleStatus.Parked&&tow.PushPath.Count==0&&tow.Position.Distance(CitySimulation.ShopTowSpace(scene.Shop!))<.5),tow.Cause+" fuel="+tow.Fuel);
+        var paid=s.Ledger.Single(m=>m.Category=="Combustível"&&m.EntityId==tow.Id);Assert.Equal(scene.ShopOwner!.Account,paid.From);Assert.Equal(operatorCompany.Account,paid.To);
+        Assert.Null(tow.DriverId);Assert.Equal(s.Tuning.TotalMoney,scene.Sim.MonetaryTotal);scene.Sim.CheckInvariants();
+    }
 }
