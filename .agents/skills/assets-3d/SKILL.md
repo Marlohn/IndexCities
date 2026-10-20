@@ -16,8 +16,8 @@ Regras que valem sempre: `AGENTS.md` (seção 6, sem herança: todo asset é ori
 ## Convenções
 
 - Y para cima, 1 unidade = 1 metro, pivô no solo (y = 0), no centro do lote ou do corpo principal.
-- Fachada e frente voltadas para **−Z**. Em âncoras (`Marker3D`), em geral o −Z local é o heading (para onde o veículo ou o SIM olha, ou para fora da abertura). Há exceções, como fonte de luz e saída de fumaça apontando em Y: o README do pacote diz o eixo de cada âncora.
-- Nó raiz com os metadados que o jogo lê: `visual_id`, `asset_status` e envelope visual (`visual_envelope_min`/`visual_envelope_size`), como em `Assets/V1`.
+- Fachada e frente voltadas para **−Z**. Em âncoras (`Marker3D`), em geral o −Z local é o heading (para onde o veículo ou o SIM olha, ou para fora da abertura). Há exceções, como fonte de luz e saída de fumaça apontando em Y: confira no README ou na receita do pacote o eixo de cada âncora.
+- Metadados no nó raiz, seguindo o pacote parecido: `visual_id` e `asset_status` em todos; envelope visual (`visual_envelope_min`/`visual_envelope_size`) nos do catálogo V1. Hoje o jogo lê só o `visual_envelope_size`; o resto é conferido pelos validadores.
 - Nome do pacote = família do `VisualId` (`civic.`, `commercial.`, `residential.`, `vehicle.`, `prop.` …) + variante `.a`.
 - Malha gerada por **receita GDScript** em `Source/`, nunca durante a partida. Variante de cor = trocar material por superfície, sem regenerar a malha.
 - Sem scripts, luzes, colisão ou física no asset. Animações (`AnimationPlayer`) com nomes claros (`lift_up`, `gate_open`, `hood_open`); o jogo decide quando tocar. Autoplay só em efeito contínuo de prop que aparece já ativo (ex.: `blink` do pisca-alerta).
