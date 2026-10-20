@@ -11,7 +11,7 @@
 			"position": [
 				-6.905,
 				0.0,
-				3.35
+				1.95
 			]
 		},
 		{
@@ -250,7 +250,7 @@
 				0.0
 			],
 			"surfaces": 3,
-			"triangles": 4024
+			"triangles": 4012
 		},
 		{
 			"aabb": {
@@ -285,7 +285,7 @@
 				0.0
 			],
 			"surfaces": 3,
-			"triangles": 1824
+			"triangles": 1604
 		},
 		{
 			"aabb": {
@@ -362,24 +362,24 @@
 				"max": [
 					-5.25,
 					3.24000000953674,
-					3.68999981880188
+					2.28999996185303
 				],
 				"min": [
 					-8.55999946594238,
 					0.0149999996647239,
-					3.00999999046326
+					1.61000001430511
 				]
 			},
 			"local_aabb": {
 				"max": [
 					-5.25,
 					3.24000000953674,
-					3.68999981880188
+					2.28999996185303
 				],
 				"min": [
 					-8.55999946594238,
 					0.0149999996647239,
-					3.00999999046326
+					1.61000001430511
 				]
 			},
 			"name": "LiftFrame",
@@ -397,24 +397,24 @@
 				"max": [
 					-5.32000017166138,
 					0.520000040531158,
-					4.16000032424927
+					2.75999999046326
 				],
 				"min": [
 					-8.49000072479248,
 					0.0200000070035458,
-					2.53999996185303
+					1.13999998569489
 				]
 			},
 			"local_aabb": {
 				"max": [
 					1.58500003814697,
 					0.520000040531158,
-					0.810000419616699
+					0.809999942779541
 				],
 				"min": [
 					-1.58500051498413,
 					0.0200000070035458,
-					-0.809999942779541
+					-0.810000061988831
 				]
 			},
 			"name": "Carriage",
@@ -422,7 +422,7 @@
 			"pivot": [
 				-6.90500020980835,
 				0.0,
-				3.34999990463257
+				1.95000004768372
 			],
 			"surfaces": 2,
 			"triangles": 328
@@ -542,7 +542,7 @@
 	"mesh_instances_total": 11,
 	"notes": "Ancoras so dao posicao e heading; as duas aberturas e o patio nao definem capacidade. A simulacao comanda veiculos, pessoas, portao e elevador. Textos genericos substituiveis.",
 	"palette": {
-		"colors": 117,
+		"colors": 116,
 		"size": [
 			32,
 			32
@@ -569,9 +569,9 @@
 			"triangles": 492
 		}
 	],
-	"triangles_geometry_excluding_text": 12426,
+	"triangles_geometry_excluding_text": 12194,
 	"triangles_text": 492,
-	"triangles_total": 12918,
+	"triangles_total": 12686,
 	"up": "Y",
 	"visual_id": "commercial.mechanic_shop.a"
 }

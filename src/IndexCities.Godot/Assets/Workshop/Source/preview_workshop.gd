@@ -12,6 +12,9 @@ const VIEWS := {
 	"bays":{"p":Vector3(0.55,0.42,-1.0),"target":Vector3(-4.2,1.6,3.0),"size":13.0},
 	"yard":{"p":Vector3(0.78,0.7,-1.0),"target":Vector3(3.5,1.0,-3.0),"size":17.0},
 	"top":{"p":Vector3(0,1,-0.001),"target":Vector3(0,0,0),"size":28.0},
+	# Camera do jogo (ortografica, 38 graus, so diagonais): a fachada vista de cada lado.
+	"game_left":{"p":Vector3(-300,330,-300),"target":Vector3(-6.9,1.2,1.5),"size":12.0},
+	"game_right":{"p":Vector3(300,330,-300),"target":Vector3(-6.9,1.2,1.5),"size":12.0},
 }
 ## nome -> {view, lift ("down"/"up"), gate ("closed"/"open"), car_lift, truck_bay1, tow}
 const SHOTS := {
@@ -22,6 +25,8 @@ const SHOTS := {
 	"tow_base":{"view":"yard","lift":"down","gate":"closed","tow":true},
 	"hero_all":{"view":"hero","lift":"up","gate":"open","car_lift":true,"truck_bay1":true,"tow":true},
 	"top":{"view":"top","lift":"down","gate":"open","car_lift":true,"truck_bay1":true,"tow":true},
+	"game_left_up":{"view":"game_left","lift":"up","gate":"open","car_lift":true},
+	"game_right_up":{"view":"game_right","lift":"up","gate":"open","car_lift":true},
 }
 var output_dir := ""
 var selected := PackedStringArray(SHOTS.keys())

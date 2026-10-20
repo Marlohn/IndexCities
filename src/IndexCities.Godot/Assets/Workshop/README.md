@@ -16,7 +16,7 @@ Todas as âncoras são `Marker3D` (no GLB, `Node3D` com o mesmo nome). O **−Z 
 
 | Caminho | Posição (m, referencial do lote) | Heading (−Z local) | Uso |
 | --- | --- | --- | --- |
-| `LiftPlatform/ServiceBay0` | (−6,905; 0; 3,35) com o elevador embaixo | −Z (rua) | Carro REAL sobre o elevador. **Filho** de `LiftPlatform`: parentear o carro nele (`transform` local identidade) e ele sobe junto |
+| `LiftPlatform/ServiceBay0` | (−6,905; 0; 1,95) com o elevador embaixo | −Z (rua) | Carro REAL sobre o elevador. **Filho** de `LiftPlatform`: parentear o carro nele (`transform` local identidade) e ele sobe junto |
 | `Anchors/ServiceBay1` | (−1,45; 0; 4,00) | −Z | Piso atrás do portão; cabe um carro ou o caminhão de carga (cabe com folga de 0,4 m à frente) |
 | `Anchors/TowTruckBase` | (6,60; 0; −5,80) | −X (nariz para oeste) | Origem do guincho de plataforma próprio (`vehicle.tow_truck.a`). Cabe em repouso e com a plataforma inclinada, e sai para oeste pelo pátio |
 | `Anchors/WaitingSpot0` / `WaitingSpot1` | (4,5; 0; −3,1) e (5,5; 0; −3,1) | +Z (de frente para a oficina) | Onde um SIM espera o serviço, junto ao banco da recepção |
@@ -48,7 +48,7 @@ $engine = 'C:\Users\Marlohn\Tools\Godot\Godot_v4.7.2-stable_mono_win64_console.e
 scripts/PreviewWorkshop.ps1     # capturas em artifacts/verification/quebras-assets/
 ```
 
-`validate_workshop.gd` confere: partes e âncoras, animações e seus valores finais, orçamento de triângulos, malhas e normais finitas, reimportação do GLB (mesmos triângulos, `LiftPlatform`/`Gate`/`Anchors`) e, com os veículos reais do jogo nas âncoras (carro no elevador embaixo e em cima com o capô aberto, carro e caminhão de carga na `ServiceBay1`, guincho na `TowTruckBase`), que ficam dentro do lote e sem atravessar o corpo da oficina. Relatório em `Preview/validation.json`. A preview (`Source/preview_workshop.gd`, GL Compatibility, janela real) grava `workshop_lift_down/up`, `gate_closed/open`, `tow_base`, `hero_all` e `top`.
+`validate_workshop.gd` confere: partes e âncoras, animações e seus valores finais, orçamento de triângulos, malhas e normais finitas, reimportação do GLB (mesmos triângulos, `LiftPlatform`/`Gate`/`Anchors`) e, com os veículos reais do jogo nas âncoras (carro no elevador embaixo e em cima com o capô aberto, carro e caminhão de carga na `ServiceBay1`, guincho na `TowTruckBase`), que ficam dentro do lote e sem atravessar o corpo da oficina. Relatório em `Preview/validation.json`. A preview (`Source/preview_workshop.gd`, GL Compatibility, janela real) grava `workshop_lift_down/up`, `gate_closed/open`, `tow_base`, `hero_all` e `top`. Na câmera do jogo (ortográfica, 38°, só diagonais; `preview_workshop.gd` grava `game_left_up` e `game_right_up`) o carro levantado aparece sob a abertura: o elevador fica junto à fachada e a baia do elevador não tem abrigo nem caixa de rolo, com a verga fina.
 
 ## Limites
 

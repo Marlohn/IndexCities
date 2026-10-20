@@ -15,7 +15,7 @@ public sealed partial class CitySimulation
     // (Assets/Workshop): the bays inside (0 = lift, 1 = floor), the waiting
     // place in the yard at each bay door, the shop tow's own space and the
     // places by the reception where a driver waits.
-    static readonly (double X,double Z)[] ShopBayOffsets=[(-6.905,3.35),(-1.45,4.0)];
+    static readonly (double X,double Z)[] ShopBayOffsets=[(-6.905,1.95),(-1.45,4.0)];
     const double ShopWaitingZ=-5.6;
     static readonly (double X,double Z) ShopTowOffset=(6.6,-5.8);
     static readonly (double X,double Z)[] ShopDriverWaitOffsets=[(4.5,-3.1),(5.5,-3.1)];

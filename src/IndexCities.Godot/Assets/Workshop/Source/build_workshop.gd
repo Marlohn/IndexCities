@@ -11,7 +11,7 @@ const LOT := Vector2(22, 19)
 ## A construcao foi desenhada num lote de 17 m de profundidade; o patio da frente ganhou 2 m
 ## (espaco do guincho de plataforma). `SHIFT` leva a construcao para o centro do novo lote.
 const SHIFT := Vector3(0, 0, 1.0)
-const LIFT_POS := Vector3(-6.905, 0, 2.35)       # centro do elevador, piso (antes de SHIFT)
+const LIFT_POS := Vector3(-6.905, 0, 0.95)       # centro do elevador, piso (antes de SHIFT): junto a fachada, sob a abertura, para o carro levantado ser visto da camera do jogo
 const LIFT_TRAVEL := 1.4                          # curso do elevador (m)
 const GATE_PIVOT := Vector3(-1.45, 3.5, -0.99)   # topo do portao (antes de SHIFT)
 const GATE_SECONDS := 1.6
@@ -242,12 +242,15 @@ func _shell() -> void:
 		for x in [bounds.x,bounds.y]:
 			_box(Vector3(x,1.76,-1.055),Vector3(0.17,3.52,0.42),BLUE_DARK,0.025,"metal")
 			_box(Vector3(x,1.78,-1.29),Vector3(0.11,3.56,0.08),TRIM,0.022)
-		_box(Vector3((bounds.x+bounds.y)/2,3.51,-1.14),Vector3(bounds.y-bounds.x+0.17,0.16,0.35),BLUE_DARK,0.025,"metal")
+		# Verga fina na baia do elevador: abertura mais alta para o carro levantado aparecer.
+		var lift_opening: bool = bounds.x < -8.0
+		_box(Vector3((bounds.x+bounds.y)/2,3.55 if lift_opening else 3.51,-1.14),Vector3(bounds.y-bounds.x+0.17,0.10 if lift_opening else 0.16,0.35),BLUE_DARK,0.025,"metal")
 	# Faixa superior, testa levemente arredondada e abrigo dos portoes.
 	_box(Vector3(-3.65,4.22,-1.12),Vector3(12.72,0.55,0.28),BLUE,0.075)
-	_box(Vector3(-3.65,3.83,-1.43),Vector3(12.95,0.13,1.05),ROOF,0.045,"metal")
-	_box(Vector3(-3.65,3.765,-1.925),Vector3(12.92,0.11,0.075),ORANGE,0.02,"metal")
-	for x in [-8.8,-4.5,0.75]:
+	# O abrigo cobre so a baia do portao e o resto da fachada; a baia do elevador fica descoberta.
+	_box(Vector3(-1.0625,3.83,-1.43),Vector3(7.775,0.13,1.05),ROOF,0.045,"metal")
+	_box(Vector3(-1.0625,3.765,-1.925),Vector3(7.745,0.11,0.075),ORANGE,0.02,"metal")
+	for x in [-4.5,0.75]:
 		geo.beam(Vector3(x,3.42,-1.10),Vector3(x,3.76,-1.82),0.065,0.065,BLUE_DARK,"metal")
 
 func _roof() -> void:
@@ -330,10 +333,6 @@ func _office() -> void:
 	_box(Vector3(9.55,2.68,0.55),Vector3(0.20,0.11,4.17),TRIM,0.025)
 
 func _front_details() -> void:
-	# Rolamento recolhido acima da baia aberta, sem esconder a profundidade.
-	_box(Vector3(-6.9,3.39,-0.92),Vector3(4.04,0.26,0.29),BLUE,0.045,"metal")
-	for y in [3.3,3.4,3.5]:
-		_box(Vector3(-6.9,y,-1.09),Vector3(3.99,0.025,0.025),BLUE.lightened(0.12),0.003,"metal")
 	# Caixa do rolo do portao da segunda abertura: a cortina recolhe para dentro dela.
 	_box(Vector3(-1.45,3.39,-0.92),Vector3(5.0,0.26,0.29),BLUE,0.045,"metal")
 	# Ombreiras com protecao de impacto em ocre.
@@ -342,7 +341,7 @@ func _front_details() -> void:
 		for y in [0.25,0.55,0.85]:
 			_box(Vector3(x,y,-1.395),Vector3(0.15,0.035,0.012),DARK,0.001)
 	# Luminarias: geometria sem luz ligada ou garantia de funcionamento.
-	for x in [-8.95,-4.45,1.9]:
+	for x in [-4.45,1.9]:
 		geo.beam(Vector3(x,3.96,-1.24),Vector3(x,3.87,-1.55),0.045,0.045,BLUE_DARK,"metal")
 		geo.cylinder(Vector3(x,3.84,-1.56),0.18,0.10,BLUE,16,Vector3.UP,"metal",0.07)
 		geo.cylinder(Vector3(x,3.779,-1.56),0.135,0.018,TRIM,16)
@@ -395,12 +394,12 @@ func _lift() -> void:
 	# Estrutura fixa do elevador de dois montantes: bases, colunas, trilhos e travessa superior.
 	# Os carros e os bracos moveis ficam em `LiftPlatform`.
 	for x in [-8.28,-5.53]:
-		_box(Vector3(x,0.085,2.35),Vector3(0.56,0.14,0.68),BLUE_DARK,0.035,"metal")
-		_box(Vector3(x,1.57,2.35),Vector3(0.28,3.02,0.34),BLUE,0.04,"metal")
-		_box(Vector3(x,1.64,2.14),Vector3(0.14,2.65,0.06),STEEL,0.015,"metal")
-	_box(Vector3(-6.905,3.15,2.35),Vector3(3.08,0.18,0.29),BLUE,0.04,"metal")
-	_box(Vector3(-8.46,1.17,2.34),Vector3(0.10,0.28,0.22),TRIM,0.025)
-	geo.cylinder(Vector3(-8.525,1.22,2.34),0.035,0.025,ORANGE,12,Vector3.LEFT)
+		_box(Vector3(x,0.085,LIFT_POS.z),Vector3(0.56,0.14,0.68),BLUE_DARK,0.035,"metal")
+		_box(Vector3(x,1.57,LIFT_POS.z),Vector3(0.28,3.02,0.34),BLUE,0.04,"metal")
+		_box(Vector3(x,1.64,LIFT_POS.z-0.21),Vector3(0.14,2.65,0.06),STEEL,0.015,"metal")
+	_box(Vector3(-6.905,3.15,LIFT_POS.z),Vector3(3.08,0.18,0.29),BLUE,0.04,"metal")
+	_box(Vector3(-8.46,1.17,LIFT_POS.z-0.01),Vector3(0.10,0.28,0.22),TRIM,0.025)
+	geo.cylinder(Vector3(-8.525,1.22,LIFT_POS.z-0.01),0.035,0.025,ORANGE,12,Vector3.LEFT)
 
 func _lift_platform() -> void:
 	# Parte movel: carrinhos nas colunas, 4 bracos e 4 apoios sob o assoalho do carro. A origem
