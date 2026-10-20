@@ -9,6 +9,7 @@
 ## Codigo original escrito para este projeto (sem origem em acervos anteriores).
 extends RefCounted
 
+const Rig := preload("res://Assets/V1/Source/kit/breakdown_rig.gd")
 const FAMILY_ID := "vehicle.car_passenger.a"
 const MATERIAL_PREFIX := "car_"
 const MATERIALS := {
@@ -37,11 +38,21 @@ const NOSE := 2.06              # pontas da carroceria (para-choques vao ate 2,1
 const FLOOR_Y := 0.20
 const BELT_Y := 0.94            # linha de cintura (base dos vidros)
 const CABIN_HW := 0.80          # meia largura da cabine
+## Capo: tampa do compartimento do motor (largura 1,32 m; os para-lamas ficam no Body),
+## dobradica na base do para-brisa (z = -0,85). Abre levantando a frente.
+const HOOD_HALF_W := 0.66
+const HOOD_HINGE := Vector3(0.0, 0.90, -0.85)
+const HOOD_OPEN_DEGREES := 62.0
+## Encaixes do pisca (lado +X; o -X e o espelho) nas quinas do nariz e da traseira.
+const HAZARD_FRONT_R := Vector3(0.80, 0.80, -1.99)
+const HAZARD_REAR_R := Vector3(0.80, 0.88, 2.00)
+const SMOKE_AT := Vector3(0.0, 0.96, -1.45)
 
 
 func build(kit) -> void:
 	var wheel_mesh = kit.save_mesh(_wheel(kit), FAMILY_ID + ".wheel")
 	var body_mesh = kit.save_mesh(_body(kit), FAMILY_ID + ".body")
+	var hood_mesh = kit.save_mesh(_hood_mesh(kit), FAMILY_ID + ".hood")
 
 	var root = kit.new_root("CarPassenger", FAMILY_ID)
 	kit.add_mesh(root, "Body", body_mesh)
@@ -53,6 +64,11 @@ func build(kit) -> void:
 	}
 	for n in wheels.keys():
 		kit.add_mesh(root, n, wheel_mesh, Transform3D(Basis.IDENTITY, wheels[n]))
+	var hood = kit.add_mesh(root, Rig.HOOD_NODE, hood_mesh, Transform3D(Basis.IDENTITY, HOOD_HINGE))
+	hood.set_meta("open_degrees", HOOD_OPEN_DEGREES)
+	Rig.add_hazard_markers(root, HAZARD_FRONT_R, HAZARD_REAR_R)
+	Rig.add_smoke_marker(root, SMOKE_AT)
+	Rig.add_hood_animation(root, HOOD_OPEN_DEGREES)
 
 	kit.save_scene(root, FAMILY_ID, {
 		"family_id": FAMILY_ID,
@@ -71,6 +87,8 @@ func build(kit) -> void:
 		},
 		"parts": {
 			"Body": "carroceria + cabine + vidros + para-choques + farois/lanternas (<= 5 superficies: car_paint, glass_dark, metal_dark, car_headlight_off, car_taillight)",
+			"Hood": "MeshInstance3D com o capo (superficie car_paint); origem na dobradica %s. `hood_open` (AnimationPlayer) gira o no em X ate %.0f graus; rotacao 0 = fechado. Ao variar a cor do Body, aplicar a MESMA variante na superficie car_paint do Hood." % [str(HOOD_HINGE), HOOD_OPEN_DEGREES],
+			"HazardFL, HazardFR, HazardRL, HazardRR, HoodSmoke": "Marker3D de encaixe dos props de quebra (pisca-alerta e fumaca). Sem acesso nem regra.",
 			"Wheel_FL, Wheel_FR, Wheel_RL, Wheel_RR": "MeshInstance3D com UMA malha compartilhada (.wheel; superficies metal_light, rubber), origem no centro do eixo. Rolagem: rotacao em X local (andar para a frente, -Z, = angulo negativo = -distancia / raio). Dianteiras podem ser estercadas em Y local (compor Basis(Y, esterco) * Basis(X, rolagem)).",
 		},
 		"notes": [
@@ -194,18 +212,45 @@ func _arch(zc: float) -> Array:
 func _lower_body(b) -> void:
 	# Perfil lateral (z, y) em sentido horario: nariz baixo, capo suave, cintura reta e
 	# traseira curta; recortes dos para-lamas. Frente em -Z.
-	var pts: Array = [
-		Vector2(-NOSE, FLOOR_Y), Vector2(-NOSE, 0.62), Vector2(-NOSE + 0.10, 0.82),
-		Vector2(-0.85, BELT_Y), Vector2(NOSE - 0.12, BELT_Y), Vector2(NOSE, 0.82),
-		Vector2(NOSE, FLOOR_Y),
-	]
 	var rear: Array = _arch(AXLE_R_Z)
 	rear.reverse()   # percorre de z maior para z menor
 	var front: Array = _arch(AXLE_F_Z)
 	front.reverse()
-	pts.append_array(rear)
-	pts.append_array(front)
-	_extrude_x(b, "car_paint", PackedVector2Array(pts), -HALF_W, HALF_W)
+	var fender: Array = [
+		Vector2(-NOSE, FLOOR_Y), Vector2(-NOSE, 0.62), Vector2(-NOSE + 0.10, 0.82),
+		Vector2(-0.85, BELT_Y), Vector2(NOSE - 0.12, BELT_Y), Vector2(NOSE, 0.82),
+		Vector2(NOSE, FLOOR_Y),
+	]
+	fender.append_array(rear)
+	fender.append_array(front)
+	# Faixa central: o topo do compartimento do motor fica rebaixado (a espessura do capo);
+	# o capo `Hood` fecha exatamente por cima e recompõe o perfil original.
+	var bay: Array = [
+		Vector2(-NOSE, FLOOR_Y), Vector2(-NOSE, 0.55), Vector2(-NOSE + 0.13, 0.74),
+		Vector2(-0.85, 0.86), Vector2(-0.85, BELT_Y), Vector2(NOSE - 0.12, BELT_Y), Vector2(NOSE, 0.82),
+		Vector2(NOSE, FLOOR_Y),
+	]
+	bay.append_array(rear)
+	bay.append_array(front)
+	_extrude_x(b, "car_paint", PackedVector2Array(fender), -HALF_W, -HOOD_HALF_W)
+	_extrude_x(b, "car_paint", PackedVector2Array(fender), HOOD_HALF_W, HALF_W)
+	_extrude_x(b, "car_paint", PackedVector2Array(bay), -HOOD_HALF_W, HOOD_HALF_W)
+	# Bloco do motor, visivel so com o capo aberto (o topo inclinado fica dentro do capo).
+	_extrude_x(b, "metal_dark", PackedVector2Array([
+		Vector2(-1.80, 0.72), Vector2(-1.80, 0.77), Vector2(-0.95, 0.88), Vector2(-0.95, 0.72),
+	]), -0.50, 0.50)
+
+
+## Capo: cunha fina (perfil z, y) do nariz ate o cowl, com a origem na dobradica.
+func _hood_mesh(kit):
+	var b = kit.builder()
+	b.push_translate(-HOOD_HINGE)
+	_extrude_x(b, "car_paint", PackedVector2Array([
+		Vector2(-NOSE, 0.62), Vector2(-NOSE + 0.10, 0.82), Vector2(-0.85, BELT_Y),
+		Vector2(-0.85, 0.86), Vector2(-NOSE + 0.13, 0.74), Vector2(-NOSE, 0.55),
+	]), -HOOD_HALF_W, HOOD_HALF_W)
+	b.pop()
+	return b
 
 
 func _cabin(b) -> void:

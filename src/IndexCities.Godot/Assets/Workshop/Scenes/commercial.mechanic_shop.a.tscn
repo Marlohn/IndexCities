@@ -1,0 +1,185 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://Assets/Workshop/Meshes/site.res" id="1_bfean"]
+[ext_resource type="ArrayMesh" path="res://Assets/Workshop/Meshes/building.res" id="2_hf12v"]
+[ext_resource type="ArrayMesh" path="res://Assets/Workshop/Meshes/architectural_details.res" id="3_fx7hn"]
+[ext_resource type="ArrayMesh" path="res://Assets/Workshop/Meshes/gate.res" id="4_3ncbl"]
+[ext_resource type="ArrayMesh" path="res://Assets/Workshop/Meshes/workshop_furnishings.res" id="5_02k26"]
+[ext_resource type="ArrayMesh" path="res://Assets/Workshop/Meshes/lift_frame.res" id="6_20apb"]
+[ext_resource type="ArrayMesh" path="res://Assets/Workshop/Meshes/carriage.res" id="7_uskij"]
+[ext_resource type="ArrayMesh" path="res://Assets/Workshop/Meshes/yard_props.res" id="8_u0amn"]
+[ext_resource type="ArrayMesh" path="res://Assets/Workshop/Meshes/sign_housing.res" id="9_gj31e"]
+[ext_resource type="Material" path="res://Assets/Workshop/Materials/lettering.tres" id="10_ddwh0"]
+[ext_resource type="ArrayMesh" path="res://Assets/Workshop/Meshes/wrench_emblem.res" id="11_x1h8h"]
+
+[sub_resource type="Animation" id="Animation_reyvu"]
+length = 1.6
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:scale")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 1.6),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Vector3(1, 0.05, 1), Vector3(1, 1, 1)]
+}
+
+[sub_resource type="Animation" id="Animation_ulv7a"]
+length = 1.6
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:scale")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 1.6),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Vector3(1, 1, 1), Vector3(1, 0.05, 1)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_s0x6t"]
+_data = {
+&"gate_close": SubResource("Animation_reyvu"),
+&"gate_open": SubResource("Animation_ulv7a")
+}
+
+[sub_resource type="Animation" id="Animation_ptm4m"]
+length = 3.0
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:position")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 3),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Vector3(-6.905, 1.4, 3.35), Vector3(-6.905, 0, 3.35)]
+}
+
+[sub_resource type="Animation" id="Animation_4hgp3"]
+length = 3.0
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:position")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 3),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Vector3(-6.905, 0, 3.35), Vector3(-6.905, 1.4, 3.35)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_ln3hv"]
+_data = {
+&"lift_down": SubResource("Animation_ptm4m"),
+&"lift_up": SubResource("Animation_4hgp3")
+}
+
+[sub_resource type="TextMesh" id="TextMesh_x5rwv"]
+material = ExtResource("10_ddwh0")
+text = "OFICINA"
+font_size = 64
+pixel_size = 0.008125
+curve_step = 2.0
+depth = 0.015
+
+[node name="MechanicShop" type="Node3D" unique_id=1745329947]
+metadata/visual_id = "commercial.mechanic_shop.a"
+metadata/asset_status = "estetica pendente de revisao humana; sem regra de produto"
+metadata/lot_candidate_m = Vector2(22, 19)
+metadata/front = "-Z"
+
+[node name="Site" type="MeshInstance3D" parent="." unique_id=1775954152]
+mesh = ExtResource("1_bfean")
+
+[node name="Building" type="MeshInstance3D" parent="." unique_id=1572338097]
+mesh = ExtResource("2_hf12v")
+
+[node name="ArchitecturalDetails" type="MeshInstance3D" parent="." unique_id=326443277]
+mesh = ExtResource("3_fx7hn")
+
+[node name="Gate" type="MeshInstance3D" parent="." unique_id=1808361456]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 3.5, 0.00999999)
+mesh = ExtResource("4_3ncbl")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="Gate" unique_id=1097169856]
+libraries/ = SubResource("AnimationLibrary_s0x6t")
+
+[node name="WorkshopFurnishings" type="MeshInstance3D" parent="." unique_id=1013169832]
+mesh = ExtResource("5_02k26")
+
+[node name="LiftFrame" type="MeshInstance3D" parent="." unique_id=2028161477]
+mesh = ExtResource("6_20apb")
+
+[node name="LiftPlatform" type="Node3D" parent="." unique_id=250642755]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.905, 0, 3.35)
+
+[node name="Carriage" type="MeshInstance3D" parent="LiftPlatform" unique_id=303149949]
+mesh = ExtResource("7_uskij")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="LiftPlatform" unique_id=1406650808]
+libraries/ = SubResource("AnimationLibrary_ln3hv")
+
+[node name="ServiceBay0" type="Marker3D" parent="LiftPlatform" unique_id=1155657828]
+metadata/note = "vaga de servico sobre o elevador; veiculo real parenteado aqui com transform local identidade"
+
+[node name="YardProps" type="MeshInstance3D" parent="." unique_id=2126342800]
+mesh = ExtResource("8_u0amn")
+
+[node name="SignHousing" type="MeshInstance3D" parent="." unique_id=16131168]
+mesh = ExtResource("9_gj31e")
+
+[node name="ReplaceableActivityLabel" type="MeshInstance3D" parent="." unique_id=52112772]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 5.92, 3.79, -1.2650001)
+mesh = SubResource("TextMesh_x5rwv")
+
+[node name="WrenchEmblem" type="MeshInstance3D" parent="." unique_id=713665930]
+mesh = ExtResource("11_x1h8h")
+
+[node name="Anchors" type="Node3D" parent="." unique_id=1004717572]
+metadata/status = "posicoes e headings para a integracao; sem regra de produto"
+
+[node name="Entrance" type="Marker3D" parent="Anchors" unique_id=1005833273]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.13, 0, -1.6500001)
+metadata/note = "soleira da porta da recepcao, fora; -Z = para a rua"
+
+[node name="WaitingSpot0" type="Marker3D" parent="Anchors" unique_id=1499760579]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 4.5, 0, -3.1)
+metadata/note = "onde um SIM espera o servico, de frente para a oficina"
+
+[node name="WaitingSpot1" type="Marker3D" parent="Anchors" unique_id=50995473]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 5.5, 0, -3.1)
+metadata/note = "segundo ponto de espera"
+
+[node name="ServiceBay1" type="Marker3D" parent="Anchors" unique_id=727660295]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 0, 4)
+metadata/note = "piso atras do portao; origem do veiculo REAL estacionado, nariz para -Z (rua); cabe um caminhao de carga"
+
+[node name="TowTruckBase" type="Marker3D" parent="Anchors" unique_id=1687482763]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 6.6, 0, -5.8)
+metadata/note = "vaga do guincho de plataforma proprio (vehicle.tow_truck.a), nariz para -X; origem = origem do veiculo"
+
+[node name="BayThreshold0" type="Marker3D" parent="Anchors" unique_id=285010278]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.9, 0, -0.29999995)
+metadata/note = "soleira da baia do elevador, na linha da fachada"
+
+[node name="BayThreshold1" type="Marker3D" parent="Anchors" unique_id=651088273]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 0, -0.29999995)
+metadata/note = "soleira da baia do portao, na linha da fachada"
+
+[node name="ServiceDoor" type="Marker3D" parent="Anchors" unique_id=531356445]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 5, 0, 8.235001)
+metadata/note = "porta de servico dos fundos; -Z = para fora (+Z do mundo)"
+
+[node name="ActivitySign" type="Marker3D" parent="Anchors" unique_id=780857998]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.92, 3.79, -1.28)
+metadata/note = "letreiro substituivel"

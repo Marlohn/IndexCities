@@ -1,0 +1,19 @@
+[gd_resource type="ArrayMesh" format=4]
+
+[ext_resource type="Material" path="res://Assets/V1/Materials/car_paint.tres" id="1_7cnrr"]
+
+[resource]
+resource_name = "vehicle.car_passenger.a.hood"
+_surfaces = [{
+"aabb": AABB(-0.66, -0.34999996, -1.2099999, 1.32, 0.39, 1.2099999),
+"attribute_data": PackedByteArray("cD2KvwjXIz5H4Zq/KFyPPkfhmr8yM7M+R+Gavyhcjz5wPYq/CNcjPkfhmr8yM7M+AAAAABDXI70AAAAAANcjPQAAAAAQ1yO9AAAAAADXIz17FI6/CNejPXsUjr8I16M9cD2KvwjXIz5H4Zq/KFyPPnsUjr8I16M9cD2KvwjXIz4AAAAAENcjvXsUjr8I16M9w/Uovyhcjz7D9Sg/CNejPcP1KL8I16M9w/UoPyhcjz7D9Si/exSOv8P1KD8AAAAAw/UovwAAAADD9Sg/exSOv8P1KL8Q1yO9w/UoPwDXIz3D9Si/ANcjPcP1KL8Q1yO9w/UoPxDXI73D9Sg/ANcjPcP1KL8AAAAAw/UoP3A9ir/D9Si/cD2Kv8P1KD8AAAAAw/UovwjXIz7D9Sg/MjOzPsP1KL8yM7M+w/UoPwjXIz7D9Si/MjOzPsP1KD8oXI8+w/Uovyhcjz7D9Sg/MjOzPg=="),
+"format": 34359742487,
+"index_count": 60,
+"index_data": PackedByteArray("AAABAAIAAwAEAAUABgAAAAcABAAIAAkAAAAKAAEACwAMAA0ADgAPABAABAARAAgAEgATABQAEgAVABMAFgAXABgAFgAZABcAGgAbABwAHQAeAB8AIAAhACIAIAAjACEAJAAlACYAJAAnACUAKAApACoAKAArACkA"),
+"material": ExtResource("1_7cnrr"),
+"name": "car_paint",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 44,
+"vertex_data": PackedByteArray("w/UoPwjXI75wPYq/w/UoPyhcj75H4Zq/w/UoPzIzs75H4Zq/w/Uovyhcj75H4Zq/w/UovwjXI75wPYq/w/UovzIzs75H4Zq/w/UoPxDXIz0AAAAAw/UoPwDXI70AAAAAw/UovxDXIz0AAAAAw/UovwDXI70AAAAAw/UoPwjXo717FI6/w/UovwjXo717FI6/w/UovwjXI75wPYq/w/Uovyhcj75H4Zq/w/UoPwjXo717FI6/w/UoPwjXI75wPYq/w/UoPxDXIz0AAAAAw/UovwjXo717FI6/w/Uovyhcj75H4Zq/w/UoPwjXo717FI6/w/UovwjXo717FI6/w/UoPyhcj75H4Zq/w/UovwjXo717FI6/w/UoPxDXIz0AAAAAw/UovxDXIz0AAAAAw/UoPwjXo717FI6/w/UovxDXIz0AAAAAw/UoPwDXI70AAAAAw/UovwDXI70AAAAAw/UovxDXIz0AAAAAw/UoPxDXIz0AAAAAw/UoPwDXI70AAAAAw/UovwDXI70AAAAAw/UoPwjXI75wPYq/w/UovwjXI75wPYq/w/UoPwDXI70AAAAAw/UovwjXI75wPYq/w/UoPzIzs75H4Zq/w/UovzIzs75H4Zq/w/UoPwjXI75wPYq/w/UovzIzs75H4Zq/w/UoPyhcj75H4Zq/w/Uovyhcj75H4Zq/w/UoPzIzs75H4Zq/////f/9//7////9//3//v////3//f/+/AAD/f/9//78AAP9//3//vwAA/3//f/+/////f/9//7////9//3//vwAA/3//f/+/AAD/f/9//7////9//3//vwAA/3//f/+/AAD/f/9//78AAP9//3//v////3//f/+/////f/9//7////9//3//vwAA/3//f/+/VNX//yRJJIlU1f//JEkkiVTV//8kSSSJVNX//yRJJIl8jP//VQEmuXyM//9VASa5fIz//1UBJrl8jP//VQEmuf9//3//fwCA/3//f/9/AID/f/9//38AgP9//3//fwCA/3//f/9/AID/f/9//38AgP9/zAxoAfa4/3/MDGgB9rj/f8wMaAH2uP9/zAxoAfa4/3//S3g7643/f/9LeDvrjf9//0t4O+uN/3//S3g7643//////38AgP//////fwCA//////9/AID//////38AgA==")
+}]

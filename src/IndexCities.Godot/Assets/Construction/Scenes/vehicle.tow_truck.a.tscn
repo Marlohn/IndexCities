@@ -1,54 +1,108 @@
 [gd_scene format=3]
 
-[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.tow_truck.a.body.tres" id="1_24h6s"]
-[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres" id="2_vm3li"]
-[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.tow_truck.a.frame.tres" id="3_4d01o"]
-[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.tow_truck.a.deck.tres" id="4_1dg5g"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.tow_truck.a.body.tres" id="1_vm3li"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres" id="2_4d01o"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.construction_truck.hood.tres" id="3_1dg5g"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.tow_truck.a.frame.tres" id="4_0i6is"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.tow_truck.a.deck.tres" id="5_60rst"]
 
-[node name="TowTruck" type="Node3D" unique_id=301103979]
+[sub_resource type="Animation" id="Animation_b3hso"]
+length = 0.9
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Hood:rotation")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.63, 0.9),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(0, 0, 0), Vector3(-1.850049, 0, 0), Vector3(-1.7453293, 0, 0)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_ujh2f"]
+_data = {
+&"hood_open": SubResource("Animation_b3hso")
+}
+
+[node name="TowTruck" type="Node3D" unique_id=1505206332]
 metadata/visual_id = "vehicle.tow_truck.a"
 metadata/asset_status = "PENDENTE de revisao humana"
 metadata/visual_envelope_min = Vector3(-1.45, 0, -3.6)
 metadata/visual_envelope_size = Vector3(2.9, 2.97, 7.2)
 
-[node name="Body" type="MeshInstance3D" parent="." unique_id=2120034539]
-mesh = ExtResource("1_24h6s")
+[node name="Body" type="MeshInstance3D" parent="." unique_id=1788456235]
+mesh = ExtResource("1_vm3li")
 
-[node name="Wheel_FL" type="MeshInstance3D" parent="." unique_id=329504495]
+[node name="Wheel_FL" type="MeshInstance3D" parent="." unique_id=1277936418]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 0.47, -2.55)
-mesh = ExtResource("2_vm3li")
+mesh = ExtResource("2_4d01o")
 
-[node name="Wheel_FR" type="MeshInstance3D" parent="." unique_id=1355329843]
+[node name="Wheel_FR" type="MeshInstance3D" parent="." unique_id=1497025801]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 0.47, -2.55)
-mesh = ExtResource("2_vm3li")
+mesh = ExtResource("2_4d01o")
 
-[node name="Wheel_ML" type="MeshInstance3D" parent="." unique_id=981635105]
+[node name="Wheel_ML" type="MeshInstance3D" parent="." unique_id=460331303]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 0.47, 1.45)
-mesh = ExtResource("2_vm3li")
+mesh = ExtResource("2_4d01o")
 
-[node name="Wheel_MR" type="MeshInstance3D" parent="." unique_id=1852652507]
+[node name="Wheel_MR" type="MeshInstance3D" parent="." unique_id=1284045925]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 0.47, 1.45)
-mesh = ExtResource("2_vm3li")
+mesh = ExtResource("2_4d01o")
 
-[node name="Wheel_RL" type="MeshInstance3D" parent="." unique_id=12968742]
+[node name="Wheel_RL" type="MeshInstance3D" parent="." unique_id=147844144]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 0.47, 2.65)
-mesh = ExtResource("2_vm3li")
+mesh = ExtResource("2_4d01o")
 
-[node name="Wheel_RR" type="MeshInstance3D" parent="." unique_id=89209725]
+[node name="Wheel_RR" type="MeshInstance3D" parent="." unique_id=627929380]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 0.47, 2.65)
-mesh = ExtResource("2_vm3li")
+mesh = ExtResource("2_4d01o")
 
-[node name="Candidate_Discharge" type="Marker3D" parent="." unique_id=1373626216]
+[node name="Candidate_Discharge" type="Marker3D" parent="." unique_id=374811025]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3.9)
 
-[node name="RecoveryFrame" type="MeshInstance3D" parent="." unique_id=1448034279]
-mesh = ExtResource("3_4d01o")
+[node name="Hood" type="MeshInstance3D" parent="." unique_id=433563765]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.02, -3.55)
+mesh = ExtResource("3_1dg5g")
+metadata/open_degrees = -100.0
 
-[node name="DeckPivot" type="Node3D" parent="." unique_id=262535255]
+[node name="HazardFL" type="Marker3D" parent="." unique_id=1680040275]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.98, 1.36, -3.57)
+gizmo_extents = 0.3
+metadata/note = "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
+
+[node name="HazardFR" type="Marker3D" parent="." unique_id=1525791731]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.98, 1.36, -3.57)
+gizmo_extents = 0.3
+metadata/note = "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
+
+[node name="HazardRL" type="Marker3D" parent="." unique_id=1662282435]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -1, 0.66, 3.47)
+gizmo_extents = 0.3
+metadata/note = "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
+
+[node name="HazardRR" type="Marker3D" parent="." unique_id=1814188714]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 1, 0.66, 3.47)
+gizmo_extents = 0.3
+metadata/note = "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
+
+[node name="HoodSmoke" type="Marker3D" parent="." unique_id=665097385]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.58, -3.64)
+gizmo_extents = 0.3
+metadata/note = "Origem da fumaca (prop breakdown_smoke) sobre o compartimento do motor. Nao e acesso nem regra."
+
+[node name="RecoveryFrame" type="MeshInstance3D" parent="." unique_id=1892740818]
+mesh = ExtResource("4_0i6is")
+
+[node name="DeckPivot" type="Node3D" parent="." unique_id=1543016814]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.15, 2.9)
 
-[node name="Deck" type="MeshInstance3D" parent="DeckPivot" unique_id=788576073]
-mesh = ExtResource("4_1dg5g")
+[node name="Deck" type="MeshInstance3D" parent="DeckPivot" unique_id=168771494]
+mesh = ExtResource("5_60rst")
 
-[node name="CarryAnchor" type="Marker3D" parent="DeckPivot" unique_id=1674026965]
+[node name="CarryAnchor" type="Marker3D" parent="DeckPivot" unique_id=145901251]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.09, -1.815)
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=841525832]
+libraries/ = SubResource("AnimationLibrary_ujh2f")

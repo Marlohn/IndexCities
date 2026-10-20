@@ -1,0 +1,6 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[resource]
+resource_name = "breakdown_amber_off"
+albedo_color = Color(0.6039216, 0.41568628, 0.10980392, 1)
+roughness = 0.3

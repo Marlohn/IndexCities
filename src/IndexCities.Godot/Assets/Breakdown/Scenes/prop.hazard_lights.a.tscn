@@ -1,0 +1,107 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://Assets/Breakdown/Meshes/prop.hazard_lights.a.lens.tres" id="1_1a6dc"]
+[ext_resource type="ArrayMesh" path="res://Assets/Breakdown/Meshes/prop.hazard_lights.a.glow.tres" id="2_mac80"]
+
+[sub_resource type="Animation" id="Animation_ln3a2"]
+length = 0.8
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("LightFL/Glow:visible")
+tracks/0/interp = 0
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.4),
+"transitions": PackedFloat32Array(1, 1),
+"update": 1,
+"values": [true, false]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("LightFR/Glow:visible")
+tracks/1/interp = 0
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.4),
+"transitions": PackedFloat32Array(1, 1),
+"update": 1,
+"values": [true, false]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("LightRL/Glow:visible")
+tracks/2/interp = 0
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.4),
+"transitions": PackedFloat32Array(1, 1),
+"update": 1,
+"values": [true, false]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("LightRR/Glow:visible")
+tracks/3/interp = 0
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0, 0.4),
+"transitions": PackedFloat32Array(1, 1),
+"update": 1,
+"values": [true, false]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_m2oe8"]
+_data = {
+&"blink": SubResource("Animation_ln3a2")
+}
+
+[node name="HazardLights" type="Node3D" unique_id=1854212685]
+metadata/visual_id = "prop.hazard_lights.a"
+metadata/asset_status = "PENDENTE de revisao humana; sem regra de produto"
+metadata/visual_envelope_min = Vector3(-0.93, 0.735, -2.032)
+metadata/visual_envelope_size = Vector3(1.86, 0.20999998, 4.0740004)
+
+[node name="LightFL" type="Node3D" parent="." unique_id=291771233]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8, 0.8, -1.99)
+
+[node name="Lens" type="MeshInstance3D" parent="LightFL" unique_id=507662577]
+mesh = ExtResource("1_1a6dc")
+
+[node name="Glow" type="MeshInstance3D" parent="LightFL" unique_id=1252017901]
+mesh = ExtResource("2_mac80")
+
+[node name="LightFR" type="Node3D" parent="." unique_id=1011974349]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8, 0.8, -1.99)
+
+[node name="Lens" type="MeshInstance3D" parent="LightFR" unique_id=2031535070]
+mesh = ExtResource("1_1a6dc")
+
+[node name="Glow" type="MeshInstance3D" parent="LightFR" unique_id=1936137188]
+mesh = ExtResource("2_mac80")
+
+[node name="LightRL" type="Node3D" parent="." unique_id=1833849]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -0.8, 0.88, 2)
+
+[node name="Lens" type="MeshInstance3D" parent="LightRL" unique_id=451776758]
+mesh = ExtResource("1_1a6dc")
+
+[node name="Glow" type="MeshInstance3D" parent="LightRL" unique_id=1000725457]
+mesh = ExtResource("2_mac80")
+
+[node name="LightRR" type="Node3D" parent="." unique_id=1388495274]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0.8, 0.88, 2)
+
+[node name="Lens" type="MeshInstance3D" parent="LightRR" unique_id=1668563735]
+mesh = ExtResource("1_1a6dc")
+
+[node name="Glow" type="MeshInstance3D" parent="LightRR" unique_id=1439342501]
+mesh = ExtResource("2_mac80")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=53801837]
+libraries/ = SubResource("AnimationLibrary_m2oe8")
+autoplay = &"blink"

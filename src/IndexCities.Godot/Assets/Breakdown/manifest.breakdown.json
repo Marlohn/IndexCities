@@ -1,0 +1,174 @@
+{
+  "authorship": "geometria e fonte originais escritas para IndexCities (receita em Source/build_breakdown.gd)",
+  "conventions": {
+    "front": "-Z",
+    "note": "Props de apresentacao. A integracao instancia, posiciona e remove a partir do estado real do veiculo.",
+    "pivot": "ground, center",
+    "runtime_scripts": false,
+    "unit": "meter",
+    "up": "+Y"
+  },
+  "entries": [
+    {
+      "contract": {
+        "animation": "nenhuma",
+        "nodes": [
+          "Body"
+        ],
+        "pivot": "centro da base no solo; frente da placa (face principal) em +Z, igual atras ao veiculo; as duas faces sao iguais",
+        "placement": "a integracao posiciona atras do veiculo (+Z do veiculo) e vira a face para o transito que se aproxima; o asset nao define a distancia"
+      },
+      "envelope_m": {
+        "max": [
+          0.32,
+          0.6043,
+          0.09
+        ],
+        "min": [
+          -0.32,
+          0.0,
+          -0.09
+        ],
+        "size": [
+          0.64,
+          0.6043,
+          0.18
+        ]
+      },
+      "meshes": [
+        {
+          "mesh": "res://Assets/Breakdown/Meshes/prop.warning_triangle.a.tres",
+          "node": "Body",
+          "triangles": 120,
+          "visible_by_default": true
+        }
+      ],
+      "root_node": "WarningTriangle",
+      "scene": "res://Assets/Breakdown/Scenes/prop.warning_triangle.a.tscn",
+      "triangles": 120,
+      "visual_id": "prop.warning_triangle.a"
+    },
+    {
+      "contract": {
+        "activity": "emitting = true ao entrar na arvore; `Smoke.emitting = false` para parar; remover o no encerra o efeito",
+        "animation": "nenhuma",
+        "cost": "12 particulas de 20 triangulos (240 triangulos vivos), material sem sombreamento",
+        "nodes": [
+          "Smoke (CPUParticles3D, 12 particulas, malha de 20 faces, sem textura)"
+        ],
+        "pivot": "origem da emissao; a integracao encaixa em HoodSmoke do veiculo (mesma orientacao)"
+      },
+      "envelope_m": {
+        "max": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "size": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "meshes": [],
+      "root_node": "BreakdownSmoke",
+      "scene": "res://Assets/Breakdown/Scenes/prop.breakdown_smoke.a.tscn",
+      "triangles": 0,
+      "visual_id": "prop.breakdown_smoke.a"
+    },
+    {
+      "contract": {
+        "animation": "blink: 0,8 s em loop; todas as lentes acendem 0,0-0,4 s e apagam 0,4-0,8 s; autoplay = blink",
+        "cost": "4 lentes de 2 caixas chanfradas; sem Light3D",
+        "nodes": [
+          "LightFL",
+          "LightFR",
+          "LightRL",
+          "LightRR",
+          "<cada uma>/Lens (carcaca ambar apagada)",
+          "<cada uma>/Glow (lente ambar emissiva, alterna visivel)",
+          "AnimationPlayer"
+        ],
+        "placement": "ao instanciar, copiar o transform global de HazardFL/FR/RL/RR do veiculo para LightFL/FR/RL/RR; -Z local de cada Light e a direcao em que a lente olha"
+      },
+      "envelope_m": {
+        "max": [
+          0.93,
+          0.945,
+          2.042
+        ],
+        "min": [
+          -0.93,
+          0.735,
+          -2.032
+        ],
+        "size": [
+          1.86,
+          0.21,
+          4.074
+        ]
+      },
+      "meshes": [
+        {
+          "mesh": "res://Assets/Breakdown/Meshes/prop.hazard_lights.a.glow.tres",
+          "node": "LightRR/Glow",
+          "triangles": 44,
+          "visible_by_default": true
+        },
+        {
+          "mesh": "res://Assets/Breakdown/Meshes/prop.hazard_lights.a.lens.tres",
+          "node": "LightRR/Lens",
+          "triangles": 44,
+          "visible_by_default": true
+        },
+        {
+          "mesh": "res://Assets/Breakdown/Meshes/prop.hazard_lights.a.glow.tres",
+          "node": "LightRL/Glow",
+          "triangles": 44,
+          "visible_by_default": true
+        },
+        {
+          "mesh": "res://Assets/Breakdown/Meshes/prop.hazard_lights.a.lens.tres",
+          "node": "LightRL/Lens",
+          "triangles": 44,
+          "visible_by_default": true
+        },
+        {
+          "mesh": "res://Assets/Breakdown/Meshes/prop.hazard_lights.a.glow.tres",
+          "node": "LightFR/Glow",
+          "triangles": 44,
+          "visible_by_default": true
+        },
+        {
+          "mesh": "res://Assets/Breakdown/Meshes/prop.hazard_lights.a.lens.tres",
+          "node": "LightFR/Lens",
+          "triangles": 44,
+          "visible_by_default": true
+        },
+        {
+          "mesh": "res://Assets/Breakdown/Meshes/prop.hazard_lights.a.glow.tres",
+          "node": "LightFL/Glow",
+          "triangles": 44,
+          "visible_by_default": true
+        },
+        {
+          "mesh": "res://Assets/Breakdown/Meshes/prop.hazard_lights.a.lens.tres",
+          "node": "LightFL/Lens",
+          "triangles": 44,
+          "visible_by_default": true
+        }
+      ],
+      "root_node": "HazardLights",
+      "scene": "res://Assets/Breakdown/Scenes/prop.hazard_lights.a.tscn",
+      "triangles": 352,
+      "visual_id": "prop.hazard_lights.a"
+    }
+  ],
+  "schema": "indexcities.breakdown/1",
+  "status": "PENDENTE de revisao humana; sem regra de produto"
+}

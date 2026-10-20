@@ -1,0 +1,577 @@
+{
+	"anchors": [
+		{
+			"forward": [
+				0.0,
+				0.0,
+				-1.0
+			],
+			"node": "LiftPlatform/ServiceBay0",
+			"note": "vaga de servico sobre o elevador; veiculo real parenteado aqui com transform local identidade",
+			"position": [
+				-6.905,
+				0.0,
+				3.35
+			]
+		},
+		{
+			"forward": [
+				0.0,
+				0.0,
+				-1.0
+			],
+			"node": "Anchors/Entrance",
+			"note": "soleira da porta da recepcao, fora; -Z = para a rua",
+			"position": [
+				8.13,
+				0.0,
+				-1.65
+			]
+		},
+		{
+			"forward": [
+				0.0,
+				0.0,
+				1.0
+			],
+			"node": "Anchors/WaitingSpot0",
+			"note": "onde um SIM espera o servico, de frente para a oficina",
+			"position": [
+				4.5,
+				0.0,
+				-3.1
+			]
+		},
+		{
+			"forward": [
+				0.0,
+				0.0,
+				1.0
+			],
+			"node": "Anchors/WaitingSpot1",
+			"note": "segundo ponto de espera",
+			"position": [
+				5.5,
+				0.0,
+				-3.1
+			]
+		},
+		{
+			"forward": [
+				0.0,
+				0.0,
+				-1.0
+			],
+			"node": "Anchors/ServiceBay1",
+			"note": "piso atras do portao; origem do veiculo REAL estacionado, nariz para -Z (rua); cabe um caminhao de carga",
+			"position": [
+				-1.45,
+				0.0,
+				4.0
+			]
+		},
+		{
+			"forward": [
+				-1.0,
+				0.0,
+				0.0
+			],
+			"node": "Anchors/TowTruckBase",
+			"note": "vaga do guincho de plataforma proprio (vehicle.tow_truck.a), nariz para -X; origem = origem do veiculo",
+			"position": [
+				6.6,
+				0.0,
+				-5.8
+			]
+		},
+		{
+			"forward": [
+				0.0,
+				0.0,
+				-1.0
+			],
+			"node": "Anchors/BayThreshold0",
+			"note": "soleira da baia do elevador, na linha da fachada",
+			"position": [
+				-6.9,
+				0.0,
+				-0.3
+			]
+		},
+		{
+			"forward": [
+				0.0,
+				0.0,
+				-1.0
+			],
+			"node": "Anchors/BayThreshold1",
+			"note": "soleira da baia do portao, na linha da fachada",
+			"position": [
+				-1.45,
+				0.0,
+				-0.3
+			]
+		},
+		{
+			"forward": [
+				0.0,
+				0.0,
+				1.0
+			],
+			"node": "Anchors/ServiceDoor",
+			"note": "porta de servico dos fundos; -Z = para fora (+Z do mundo)",
+			"position": [
+				5.0,
+				0.0,
+				8.235
+			]
+		},
+		{
+			"forward": [
+				0.0,
+				0.0,
+				-1.0
+			],
+			"node": "Anchors/ActivitySign",
+			"note": "letreiro substituivel",
+			"position": [
+				5.92,
+				3.79,
+				-1.28
+			]
+		}
+	],
+	"animations": [
+		{
+			"animations": [
+				{
+					"name": "gate_close",
+					"seconds": 1.6,
+					"tracks": 1
+				},
+				{
+					"name": "gate_open",
+					"seconds": 1.6,
+					"tracks": 1
+				}
+			],
+			"autoplay": "",
+			"player": "Gate/AnimationPlayer"
+		},
+		{
+			"animations": [
+				{
+					"name": "lift_down",
+					"seconds": 3.0,
+					"tracks": 1
+				},
+				{
+					"name": "lift_up",
+					"seconds": 3.0,
+					"tracks": 1
+				}
+			],
+			"autoplay": "",
+			"player": "LiftPlatform/AnimationPlayer"
+		}
+	],
+	"authorship": "geometria e fonte originais escritas para IndexCities",
+	"autoplay": false,
+	"embedded_people": 0,
+	"embedded_vehicles": 0,
+	"front": "-Z",
+	"gameplay": "sem preco, capacidade, emprego, receita, estoque, regras de reparo ou acesso funcional",
+	"geometry_parts": [
+		{
+			"aabb": {
+				"max": [
+					10.9949998855591,
+					0.239999994635582,
+					9.4940013885498
+				],
+				"min": [
+					-10.9949998855591,
+					-0.239999994635582,
+					-9.48999977111816
+				]
+			},
+			"local_aabb": {
+				"max": [
+					10.9949998855591,
+					0.239999994635582,
+					9.4940013885498
+				],
+				"min": [
+					-10.9949998855591,
+					-0.239999994635582,
+					-9.48999977111816
+				]
+			},
+			"name": "Site",
+			"path": "res://Assets/Workshop/Meshes/site.res",
+			"pivot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"surfaces": 2,
+			"triangles": 2480
+		},
+		{
+			"aabb": {
+				"max": [
+					9.69999885559082,
+					6.01700019836426,
+					8.67500019073486
+				],
+				"min": [
+					-10.1499996185303,
+					-0.0240000002086163,
+					-2.30000019073486
+				]
+			},
+			"local_aabb": {
+				"max": [
+					9.69999885559082,
+					6.01700019836426,
+					8.67500019073486
+				],
+				"min": [
+					-10.1499996185303,
+					-0.0240000002086163,
+					-2.30000019073486
+				]
+			},
+			"name": "Building",
+			"path": "res://Assets/Workshop/Meshes/building.res",
+			"pivot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"surfaces": 3,
+			"triangles": 4696
+		},
+		{
+			"aabb": {
+				"max": [
+					8.77999973297119,
+					3.98160791397095,
+					8.79750061035156
+				],
+				"min": [
+					-10.0600004196167,
+					0.0,
+					-0.739999949932098
+				]
+			},
+			"local_aabb": {
+				"max": [
+					8.77999973297119,
+					3.98160791397095,
+					8.79750061035156
+				],
+				"min": [
+					-10.0600004196167,
+					0.0,
+					-0.739999949932098
+				]
+			},
+			"name": "ArchitecturalDetails",
+			"path": "res://Assets/Workshop/Meshes/architectural_details.res",
+			"pivot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"surfaces": 3,
+			"triangles": 1824
+		},
+		{
+			"aabb": {
+				"max": [
+					1.10999965667725,
+					3.47000002861023,
+					0.074999988079071
+				],
+				"min": [
+					-4.01000022888184,
+					0.0199999809265137,
+					-0.194999933242798
+				]
+			},
+			"local_aabb": {
+				"max": [
+					2.55999970436096,
+					-0.0299999713897705,
+					0.0649999976158142
+				],
+				"min": [
+					-2.56000018119812,
+					-3.48000001907349,
+					-0.204999923706055
+				]
+			},
+			"name": "Gate",
+			"path": "res://Assets/Workshop/Meshes/gate.res",
+			"pivot": [
+				-1.45000004768372,
+				3.5,
+				0.00999999046325684
+			],
+			"surfaces": 2,
+			"triangles": 412
+		},
+		{
+			"aabb": {
+				"max": [
+					2.27999973297119,
+					4.23999977111816,
+					7.98499965667725
+				],
+				"min": [
+					-9.57999992370605,
+					-0.00199999939650297,
+					0.119999885559082
+				]
+			},
+			"local_aabb": {
+				"max": [
+					2.27999973297119,
+					4.23999977111816,
+					7.98499965667725
+				],
+				"min": [
+					-9.57999992370605,
+					-0.00199999939650297,
+					0.119999885559082
+				]
+			},
+			"name": "WorkshopFurnishings",
+			"path": "res://Assets/Workshop/Meshes/workshop_furnishings.res",
+			"pivot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"surfaces": 3,
+			"triangles": 2228
+		},
+		{
+			"aabb": {
+				"max": [
+					-5.25,
+					3.24000000953674,
+					3.68999981880188
+				],
+				"min": [
+					-8.55999946594238,
+					0.0149999996647239,
+					3.00999999046326
+				]
+			},
+			"local_aabb": {
+				"max": [
+					-5.25,
+					3.24000000953674,
+					3.68999981880188
+				],
+				"min": [
+					-8.55999946594238,
+					0.0149999996647239,
+					3.00999999046326
+				]
+			},
+			"name": "LiftFrame",
+			"path": "res://Assets/Workshop/Meshes/lift_frame.res",
+			"pivot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"surfaces": 2,
+			"triangles": 336
+		},
+		{
+			"aabb": {
+				"max": [
+					-5.32000017166138,
+					0.520000040531158,
+					4.16000032424927
+				],
+				"min": [
+					-8.49000072479248,
+					0.0200000070035458,
+					2.53999996185303
+				]
+			},
+			"local_aabb": {
+				"max": [
+					1.58500003814697,
+					0.520000040531158,
+					0.810000419616699
+				],
+				"min": [
+					-1.58500051498413,
+					0.0200000070035458,
+					-0.809999942779541
+				]
+			},
+			"name": "Carriage",
+			"path": "res://Assets/Workshop/Meshes/carriage.res",
+			"pivot": [
+				-6.90500020980835,
+				0.0,
+				3.34999990463257
+			],
+			"surfaces": 2,
+			"triangles": 328
+		},
+		{
+			"aabb": {
+				"max": [
+					10.6749982833862,
+					1.87999999523163,
+					7.17999935150146
+				],
+				"min": [
+					-10.710000038147,
+					-0.00000000715255721317476,
+					-2.77900004386902
+				]
+			},
+			"local_aabb": {
+				"max": [
+					10.6749982833862,
+					1.87999999523163,
+					7.17999935150146
+				],
+				"min": [
+					-10.710000038147,
+					-0.00000000715255721317476,
+					-2.77900004386902
+				]
+			},
+			"name": "YardProps",
+			"path": "res://Assets/Workshop/Meshes/yard_props.res",
+			"pivot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"surfaces": 3,
+			"triangles": 3141
+		},
+		{
+			"aabb": {
+				"max": [
+					8.92000007629395,
+					4.23999977111816,
+					-0.989999890327454
+				],
+				"min": [
+					2.92000007629395,
+					3.29999995231628,
+					-1.24749994277954
+				]
+			},
+			"local_aabb": {
+				"max": [
+					8.92000007629395,
+					4.23999977111816,
+					-0.989999890327454
+				],
+				"min": [
+					2.92000007629395,
+					3.29999995231628,
+					-1.24749994277954
+				]
+			},
+			"name": "SignHousing",
+			"path": "res://Assets/Workshop/Meshes/sign_housing.res",
+			"pivot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"surfaces": 1,
+			"triangles": 56
+		},
+		{
+			"aabb": {
+				"max": [
+					-3.02500009536743,
+					5.27500009536743,
+					-0.144999980926514
+				],
+				"min": [
+					-4.27500009536743,
+					4.02500009536743,
+					-0.315000057220459
+				]
+			},
+			"local_aabb": {
+				"max": [
+					-3.02500009536743,
+					5.27500009536743,
+					-0.144999980926514
+				],
+				"min": [
+					-4.27500009536743,
+					4.02500009536743,
+					-0.315000057220459
+				]
+			},
+			"name": "WrenchEmblem",
+			"path": "res://Assets/Workshop/Meshes/wrench_emblem.res",
+			"pivot": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"surfaces": 1,
+			"triangles": 81
+		}
+	],
+	"lights": 0,
+	"lot_m": [
+		22.0,
+		19.0
+	],
+	"materials": 5,
+	"mesh_instances_total": 11,
+	"notes": "Ancoras so dao posicao e heading; as duas aberturas e o patio nao definem capacidade. A simulacao comanda veiculos, pessoas, portao e elevador. Textos genericos substituiveis.",
+	"palette": {
+		"colors": 117,
+		"size": [
+			32,
+			32
+		],
+		"source": "paleta original escrita pela receita; sem imagens externas"
+	},
+	"pivot": "centro do lote no solo",
+	"scene": "res://Assets/Workshop/Scenes/commercial.mechanic_shop.a.tscn",
+	"scripts_in_asset": 0,
+	"source": "res://Assets/Workshop/Source/build_workshop.gd",
+	"status": "pronta para integracao; estetica pendente de revisao humana",
+	"text_parts": [
+		{
+			"glb": "geometria triangulada",
+			"material": "lettering",
+			"name": "ReplaceableActivityLabel",
+			"native": "TextMesh editavel",
+			"position": [
+				5.92000007629395,
+				3.78999996185303,
+				-1.26500010490417
+			],
+			"text": "OFICINA",
+			"triangles": 1040
+		}
+	],
+	"triangles_geometry_excluding_text": 15582,
+	"triangles_text": 1040,
+	"triangles_total": 16622,
+	"up": "Y",
+	"visual_id": "commercial.mechanic_shop.a"
+}

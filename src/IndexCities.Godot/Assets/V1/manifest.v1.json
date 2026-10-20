@@ -204,7 +204,7 @@
             "farm_dirt",
             "farm_soil"
           ],
-          "triangles": 1625,
+          "triangles": 1625.0,
           "visible_by_default": true
         },
         {
@@ -214,12 +214,12 @@
             "tree_foliage_dark",
             "tree_foliage"
           ],
-          "triangles": 1204,
+          "triangles": 1204.0,
           "visible_by_default": true
         }
       ],
-      "triangles_total": 2829,
-      "mesh_surfaces_total": 9,
+      "triangles_total": 2829.0,
+      "mesh_surfaces_total": 9.0,
       "proposed": {
         "lote_x_z_m": [
           36.0,
@@ -465,7 +465,7 @@
             "glass_dark",
             "civic_accent"
           ],
-          "triangles": 1676,
+          "triangles": 1676.0,
           "visible_by_default": true
         },
         {
@@ -474,7 +474,7 @@
           "surfaces": [
             "depot_sand"
           ],
-          "triangles": 50,
+          "triangles": 50.0,
           "visible_by_default": true
         },
         {
@@ -484,7 +484,7 @@
             "depot_timber",
             "concrete_dark"
           ],
-          "triangles": 140,
+          "triangles": 140.0,
           "visible_by_default": true
         },
         {
@@ -494,7 +494,7 @@
             "concrete",
             "metal_light"
           ],
-          "triangles": 240,
+          "triangles": 240.0,
           "visible_by_default": true
         },
         {
@@ -503,7 +503,7 @@
           "surfaces": [
             "depot_timber"
           ],
-          "triangles": 290,
+          "triangles": 290.0,
           "visible_by_default": true
         },
         {
@@ -512,12 +512,12 @@
           "surfaces": [
             "road_asphalt"
           ],
-          "triangles": 50,
+          "triangles": 50.0,
           "visible_by_default": true
         }
       ],
-      "triangles_total": 2446,
-      "mesh_surfaces_total": 14,
+      "triangles_total": 2446.0,
+      "mesh_surfaces_total": 14.0,
       "proposed": {
         "lote_x_m": 24.0,
         "lote_z_m": 22.0,
@@ -532,7 +532,7 @@
           4.0,
           4.3
         ],
-        "portoes_veiculo_qtd": 2,
+        "portoes_veiculo_qtd": 2.0,
         "porta_pessoal_galpao_l_x_a_m": [
           1.0,
           2.2
@@ -544,7 +544,7 @@
           1.1,
           2.3
         ],
-        "baias_qtd": 4,
+        "baias_qtd": 4.0,
         "baia_vao_z_m": 2.4,
         "baia_profundidade_x_m": 2.7,
         "baia_altura_divisor_m": 1.3,
@@ -737,7 +737,7 @@
             "glass_dark",
             "fuel_wall"
           ],
-          "triangles": 1928,
+          "triangles": 1928.0,
           "visible_by_default": true
         },
         {
@@ -747,12 +747,12 @@
             "shop_sign_blank",
             "metal_dark"
           ],
-          "triangles": 42,
+          "triangles": 42.0,
           "visible_by_default": true
         }
       ],
-      "triangles_total": 1970,
-      "mesh_surfaces_total": 9,
+      "triangles_total": 1970.0,
+      "mesh_surfaces_total": 9.0,
       "proposed": {
         "lote_x_z_m": [
           24.0,
@@ -765,9 +765,9 @@
         "altura_livre_cobertura_m": 5.0,
         "topo_cobertura_m": 6.06,
         "testeira_altura_m": 1.0,
-        "pilares": 4,
+        "pilares": 4.0,
         "ilhas": {
-          "quantidade": 2,
+          "quantidade": 2.0,
           "comprimento_m": 11.2,
           "largura_m": 1.2,
           "altura_m": 0.18,
@@ -778,7 +778,7 @@
           "pontas": "arredondadas (meio-octogono, raio = meia largura)"
         },
         "bombas": {
-          "quantidade": 4,
+          "quantidade": 4.0,
           "l_x_p_x_a_m": [
             1.18,
             0.64,
@@ -1447,7 +1447,7 @@
             "sewage_pipe",
             "glass_dark"
           ],
-          "triangles": 2476,
+          "triangles": 2476.0,
           "visible_by_default": true
         },
         {
@@ -1457,7 +1457,7 @@
             "metal_dark",
             "sewage_ochre"
           ],
-          "triangles": 160,
+          "triangles": 160.0,
           "visible_by_default": true
         },
         {
@@ -1467,7 +1467,7 @@
             "sewage_effluent",
             "concrete"
           ],
-          "triangles": 280,
+          "triangles": 280.0,
           "visible_by_default": true
         },
         {
@@ -1476,19 +1476,19 @@
           "surfaces": [
             "sewage_sludge"
           ],
-          "triangles": 320,
+          "triangles": 320.0,
           "visible_by_default": true
         }
       ],
-      "triangles_total": 3236,
-      "mesh_surfaces_total": 12,
+      "triangles_total": 3236.0,
+      "mesh_surfaces_total": 12.0,
       "proposed": {
         "lote_x_z_m": [
           26.0,
           28.0
         ],
         "raias_aeracao": {
-          "quantidade": 3,
+          "quantidade": 3.0,
           "largura_util_m": 2.6,
           "comprimento_m": 17.0,
           "borda_m": 1.3,
@@ -1504,7 +1504,7 @@
           "topo_cupula_m": 6.28
         },
         "leitos_secagem": {
-          "quantidade": 4,
+          "quantidade": 4.0,
           "l_x_c_m": [
             2.8,
             8.7
@@ -1633,12 +1633,12 @@
             "metal_dark",
             "glass_dark"
           ],
-          "triangles": 1702,
+          "triangles": 1702.0,
           "visible_by_default": true
         }
       ],
-      "triangles_total": 1702,
-      "mesh_surfaces_total": 7,
+      "triangles_total": 1702.0,
+      "mesh_surfaces_total": 7.0,
       "proposed": {
         "lote_x_z_m": [
           14.0,
@@ -1766,7 +1766,7 @@
             "metal_dark",
             "glass_dark"
           ],
-          "triangles": 2832,
+          "triangles": 2832.0,
           "visible_by_default": true
         },
         {
@@ -1775,12 +1775,12 @@
           "surfaces": [
             "water_clean"
           ],
-          "triangles": 36,
+          "triangles": 36.0,
           "visible_by_default": true
         }
       ],
-      "triangles_total": 2868,
-      "mesh_surfaces_total": 7,
+      "triangles_total": 2868.0,
+      "mesh_surfaces_total": 7.0,
       "proposed": {
         "lote_x_z_m": [
           24.0,
@@ -1804,7 +1804,7 @@
           13.8,
           4.8
         ],
-        "filtros_celulas": 4,
+        "filtros_celulas": 4.0,
         "filtros_borda_m": 1.5,
         "reservatorio_diametro_m": 7.2,
         "reservatorio_altura_parede_m": 5.0,
@@ -1901,7 +1901,7 @@
             "concrete_dark",
             "metal_dark"
           ],
-          "triangles": 334,
+          "triangles": 334.0,
           "visible_by_default": true
         },
         {
@@ -1910,7 +1910,7 @@
           "surfaces": [
             "wind_tower"
           ],
-          "triangles": 98,
+          "triangles": 98.0,
           "visible_by_default": true
         },
         {
@@ -1920,12 +1920,12 @@
             "wind_tower",
             "wind_tip"
           ],
-          "triangles": 248,
+          "triangles": 248.0,
           "visible_by_default": true
         }
       ],
-      "triangles_total": 680,
-      "mesh_surfaces_total": 7,
+      "triangles_total": 680.0,
+      "mesh_surfaces_total": 7.0,
       "proposed": {
         "lote_x_z_m": [
           18.0,
@@ -2067,19 +2067,90 @@
           4.2
         ]
       },
-      "markers": [],
+      "markers": [
+        {
+          "node": "HazardFL",
+          "position": [
+            -0.8,
+            0.8,
+            -1.99
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "note": "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
+        },
+        {
+          "node": "HazardFR",
+          "position": [
+            0.8,
+            0.8,
+            -1.99
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "note": "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
+        },
+        {
+          "node": "HazardRL",
+          "position": [
+            -0.8,
+            0.88,
+            2.0
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "note": "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
+        },
+        {
+          "node": "HazardRR",
+          "position": [
+            0.8,
+            0.88,
+            2.0
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "note": "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
+        },
+        {
+          "node": "HoodSmoke",
+          "position": [
+            0.0,
+            0.96,
+            -1.45
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "note": "Origem da fumaca (prop breakdown_smoke) sobre o compartimento do motor. Nao e acesso nem regra."
+        }
+      ],
       "meshes": [
         {
           "node": "Body",
           "mesh": "res://Assets/V1/Meshes/vehicle.car_passenger.a.body.tres",
           "surfaces": [
             "car_paint",
-            "glass_dark",
             "metal_dark",
+            "glass_dark",
             "car_headlight_off",
             "car_taillight"
           ],
-          "triangles": 480,
+          "triangles": 640,
           "visible_by_default": true
         },
         {
@@ -2121,10 +2192,19 @@
           ],
           "triangles": 180,
           "visible_by_default": true
+        },
+        {
+          "node": "Hood",
+          "mesh": "res://Assets/V1/Meshes/vehicle.car_passenger.a.hood.tres",
+          "surfaces": [
+            "car_paint"
+          ],
+          "triangles": 20,
+          "visible_by_default": true
         }
       ],
-      "triangles_total": 1200,
-      "mesh_surfaces_total": 13,
+      "triangles_total": 1380,
+      "mesh_surfaces_total": 14,
       "proposed": {
         "comprimento_m": 4.2,
         "largura_m": 1.8,
@@ -2139,6 +2219,8 @@
       },
       "parts": {
         "Body": "carroceria + cabine + vidros + para-choques + farois/lanternas (<= 5 superficies: car_paint, glass_dark, metal_dark, car_headlight_off, car_taillight)",
+        "Hood": "MeshInstance3D com o capo (superficie car_paint); origem na dobradica (0.0, 0.9, -0.85). `hood_open` (AnimationPlayer) gira o no em X ate 62 graus; rotacao 0 = fechado. Ao variar a cor do Body, aplicar a MESMA variante na superficie car_paint do Hood.",
+        "HazardFL, HazardFR, HazardRL, HazardRR, HoodSmoke": "Marker3D de encaixe dos props de quebra (pisca-alerta e fumaca). Sem acesso nem regra.",
         "Wheel_FL, Wheel_FR, Wheel_RL, Wheel_RR": "MeshInstance3D com UMA malha compartilhada (.wheel; superficies metal_light, rubber), origem no centro do eixo. Rolagem: rotacao em X local (andar para a frente, -Z, = angulo negativo = -distancia / raio). Dianteiras podem ser estercadas em Y local (compor Basis(Y, esterco) * Basis(X, rolagem))."
       },
       "notes": [
@@ -2190,6 +2272,76 @@
             1.0
           ],
           "note": "CANDIDATO: ponto no solo atras das portas traseiras (fechadas). Nao e acesso funcional."
+        },
+        {
+          "node": "HazardFL",
+          "position": [
+            -0.98,
+            1.36,
+            -3.57
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "note": "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
+        },
+        {
+          "node": "HazardFR",
+          "position": [
+            0.98,
+            1.36,
+            -3.57
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "note": "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
+        },
+        {
+          "node": "HazardRL",
+          "position": [
+            -1.0,
+            0.66,
+            3.47
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "note": "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
+        },
+        {
+          "node": "HazardRR",
+          "position": [
+            1.0,
+            0.66,
+            3.47
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "note": "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
+        },
+        {
+          "node": "HoodSmoke",
+          "position": [
+            0.0,
+            1.58,
+            -3.64
+          ],
+          "forward": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "note": "Origem da fumaca (prop breakdown_smoke) sobre o compartimento do motor. Nao e acesso nem regra."
         }
       ],
       "meshes": [
@@ -2200,12 +2352,12 @@
             "truck_cab",
             "glass_dark",
             "metal_dark",
+            "metal_light",
             "truck_light_front_off",
             "truck_box",
-            "metal_light",
             "truck_light_rear_off"
           ],
-          "triangles": 1144.0,
+          "triangles": 1154,
           "visible_by_default": true
         },
         {
@@ -2215,7 +2367,7 @@
             "metal_light",
             "rubber"
           ],
-          "triangles": 212.0,
+          "triangles": 212,
           "visible_by_default": true
         },
         {
@@ -2225,7 +2377,7 @@
             "metal_light",
             "rubber"
           ],
-          "triangles": 212.0,
+          "triangles": 212,
           "visible_by_default": true
         },
         {
@@ -2235,7 +2387,7 @@
             "metal_light",
             "rubber"
           ],
-          "triangles": 212.0,
+          "triangles": 212,
           "visible_by_default": true
         },
         {
@@ -2245,12 +2397,22 @@
             "metal_light",
             "rubber"
           ],
-          "triangles": 212.0,
+          "triangles": 212,
+          "visible_by_default": true
+        },
+        {
+          "node": "Hood",
+          "mesh": "res://Assets/V1/Meshes/vehicle.truck_cargo.a.hood.tres",
+          "surfaces": [
+            "metal_dark",
+            "truck_cab"
+          ],
+          "triangles": 40,
           "visible_by_default": true
         }
       ],
-      "triangles_total": 1992.0,
-      "mesh_surfaces_total": 15.0,
+      "triangles_total": 2042,
+      "mesh_surfaces_total": 17,
       "proposed": {
         "comprimento_m": 7.2,
         "largura_bau_m": 2.45,
@@ -2277,6 +2439,8 @@
       "parts": {
         "Body": "cabine + bau + chassi + para-choques + portas traseiras fechadas (<= 7 superficies)",
         "Wheel_FL, Wheel_FR, Wheel_RL, Wheel_RR": "MeshInstance3D com UMA malha compartilhada (.wheel; superficies metal_light, rubber), origem no centro do eixo. Rolagem: rotacao em X local (andar para a frente, -Z, = angulo negativo = -distancia / raio). Dianteiras podem ser estercadas em Y local (compor Basis(Y, esterco) * Basis(X, rolagem)).",
+        "Hood": "MeshInstance3D com a tampa frontal de servico (grade); origem na dobradica (0.0, 1.02, -3.55). `hood_open` (AnimationPlayer) gira o no em X ate -100 graus; rotacao 0 = fechada. Superficies metal_dark e truck_cab (a cor da cabine e a do Body).",
+        "HazardFL, HazardFR, HazardRL, HazardRR, HoodSmoke": "Marker3D de encaixe dos props de quebra (pisca-alerta e fumaca). Sem acesso nem regra.",
         "Candidate_CargoDoor": "Marker3D CANDIDATO no solo, 0,30 m atras do ponto mais traseiro (z = +3,90), forward +Z (para fora das portas). Nao e acesso funcional nem vaga."
       },
       "notes": [
@@ -2286,6 +2450,8 @@
         "Cores por superficie (truck_cab, truck_box) podem ser trocadas por variante sem regenerar a malha. Sem logos, texto ou marca.",
         "Sem carga a mostra: o bau e fechado; o que o veiculo transporta e estado da simulacao."
       ],
+      "lot_m": [],
+      "state_nodes": [],
       "status": "amostra V1 para compatibilizacao - revisao humana PENDENTE"
     }
   ],

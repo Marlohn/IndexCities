@@ -1,35 +1,89 @@
 [gd_scene format=3]
 
-[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/vehicle.truck_cargo.a.body.tres" id="1_6da3y"]
-[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/vehicle.truck_cargo.a.wheel.tres" id="2_12qbv"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/vehicle.truck_cargo.a.body.tres" id="1_12qbv"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/vehicle.truck_cargo.a.wheel.tres" id="2_fscqt"]
+[ext_resource type="ArrayMesh" path="res://Assets/V1/Meshes/vehicle.truck_cargo.a.hood.tres" id="3_q8jqa"]
 
-[node name="TruckCargo" type="Node3D" unique_id=478526375]
+[sub_resource type="Animation" id="Animation_rtoxf"]
+length = 0.9
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Hood:rotation")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.63, 0.9),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(0, 0, 0), Vector3(-1.850049, 0, 0), Vector3(-1.7453293, 0, 0)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_jjr5e"]
+_data = {
+&"hood_open": SubResource("Animation_rtoxf")
+}
+
+[node name="TruckCargo" type="Node3D" unique_id=1262730016]
 metadata/visual_id = "vehicle.truck_cargo.a"
 metadata/asset_status = "amostra V1 para compatibilizacao - revisao humana PENDENTE"
 metadata/visual_envelope_min = Vector3(-1.45, 0, -3.6)
 metadata/visual_envelope_size = Vector3(2.9, 3.3000002, 7.2)
 
-[node name="Body" type="MeshInstance3D" parent="." unique_id=1434438746]
-mesh = ExtResource("1_6da3y")
+[node name="Body" type="MeshInstance3D" parent="." unique_id=455346732]
+mesh = ExtResource("1_12qbv")
 
-[node name="Wheel_FL" type="MeshInstance3D" parent="." unique_id=663919821]
+[node name="Wheel_FL" type="MeshInstance3D" parent="." unique_id=1742504309]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.98, 0.47, -2.55)
-mesh = ExtResource("2_12qbv")
+mesh = ExtResource("2_fscqt")
 
-[node name="Wheel_FR" type="MeshInstance3D" parent="." unique_id=1734386604]
+[node name="Wheel_FR" type="MeshInstance3D" parent="." unique_id=815379075]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.98, 0.47, -2.55)
-mesh = ExtResource("2_12qbv")
+mesh = ExtResource("2_fscqt")
 
-[node name="Wheel_RL" type="MeshInstance3D" parent="." unique_id=389283387]
+[node name="Wheel_RL" type="MeshInstance3D" parent="." unique_id=2039014131]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.98, 0.47, 1.75)
-mesh = ExtResource("2_12qbv")
+mesh = ExtResource("2_fscqt")
 
-[node name="Wheel_RR" type="MeshInstance3D" parent="." unique_id=2014245337]
+[node name="Wheel_RR" type="MeshInstance3D" parent="." unique_id=1175822258]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.98, 0.47, 1.75)
-mesh = ExtResource("2_12qbv")
+mesh = ExtResource("2_fscqt")
 
-[node name="Candidate_CargoDoor" type="Marker3D" parent="." unique_id=131109233]
+[node name="Candidate_CargoDoor" type="Marker3D" parent="." unique_id=2135993914]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 3.9)
 gizmo_extents = 0.4
 metadata/candidate = true
 metadata/note = "CANDIDATO: ponto no solo atras das portas traseiras (fechadas). Nao e acesso funcional."
+
+[node name="Hood" type="MeshInstance3D" parent="." unique_id=631462522]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.02, -3.55)
+mesh = ExtResource("3_q8jqa")
+metadata/open_degrees = -100.0
+
+[node name="HazardFL" type="Marker3D" parent="." unique_id=1783173410]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.98, 1.36, -3.57)
+gizmo_extents = 0.3
+metadata/note = "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
+
+[node name="HazardFR" type="Marker3D" parent="." unique_id=348899543]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.98, 1.36, -3.57)
+gizmo_extents = 0.3
+metadata/note = "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
+
+[node name="HazardRL" type="Marker3D" parent="." unique_id=1373062368]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -1, 0.66, 3.47)
+gizmo_extents = 0.3
+metadata/note = "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
+
+[node name="HazardRR" type="Marker3D" parent="." unique_id=791442622]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 1, 0.66, 3.47)
+gizmo_extents = 0.3
+metadata/note = "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
+
+[node name="HoodSmoke" type="Marker3D" parent="." unique_id=420779450]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.58, -3.64)
+gizmo_extents = 0.3
+metadata/note = "Origem da fumaca (prop breakdown_smoke) sobre o compartimento do motor. Nao e acesso nem regra."
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=350487703]
+libraries/ = SubResource("AnimationLibrary_jjr5e")

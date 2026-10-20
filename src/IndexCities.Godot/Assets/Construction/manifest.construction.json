@@ -22,6 +22,27 @@
             2.9
           ]
         },
+        "breakdown": {
+          "hazard_markers": [
+            "HazardFL",
+            "HazardFR",
+            "HazardRL",
+            "HazardRR"
+          ],
+          "hood": {
+            "animation": "AnimationPlayer/hood_open",
+            "axis": "X",
+            "node": "Hood",
+            "open_degrees": -100.0,
+            "pivot_m": [
+              0.0,
+              1.02,
+              -3.55
+            ]
+          },
+          "note": "Presentation hooks only; the host decides when a vehicle is broken.",
+          "smoke_marker": "HoodSmoke"
+        },
         "cover": "BedPivot/Cover",
         "hydraulics": {
           "anchors": [
@@ -74,13 +95,13 @@
           7.2
         ]
       },
-      "mesh_instances": 14,
+      "mesh_instances": 15,
       "meshes": [
         {
           "mesh": "res://Assets/Construction/Meshes/vehicle.truck_dump.a.body.tres",
           "node": "Body",
           "surfaces": 7,
-          "triangles": 822
+          "triangles": 832
         },
         {
           "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres",
@@ -117,6 +138,12 @@
           "node": "Wheel_RR",
           "surfaces": 2,
           "triangles": 212
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.hood.tres",
+          "node": "Hood",
+          "surfaces": 2,
+          "triangles": 40
         },
         {
           "mesh": "res://Assets/Construction/Meshes/vehicle.truck_dump.a.bed.tres",
@@ -162,12 +189,33 @@
         }
       ],
       "scene": "res://Assets/Construction/Scenes/vehicle.truck_dump.a.tscn",
-      "surfaces_all_states": 30,
-      "triangles_all_states": 3502,
+      "surfaces_all_states": 32,
+      "triangles_all_states": 3552,
       "visual_id": "vehicle.truck_dump.a"
     },
     {
       "contract": {
+        "breakdown": {
+          "hazard_markers": [
+            "HazardFL",
+            "HazardFR",
+            "HazardRL",
+            "HazardRR"
+          ],
+          "hood": {
+            "animation": "AnimationPlayer/hood_open",
+            "axis": "X",
+            "node": "Hood",
+            "open_degrees": -100.0,
+            "pivot_m": [
+              0.0,
+              1.02,
+              -3.55
+            ]
+          },
+          "note": "Presentation hooks only; the host decides when a vehicle is broken.",
+          "smoke_marker": "HoodSmoke"
+        },
         "chute": {
           "axis": "Y",
           "node": "ChutePivot",
@@ -212,13 +260,13 @@
           7.2
         ]
       },
-      "mesh_instances": 10,
+      "mesh_instances": 11,
       "meshes": [
         {
           "mesh": "res://Assets/Construction/Meshes/vehicle.truck_mixer.a.body.tres",
           "node": "Body",
           "surfaces": 7,
-          "triangles": 822
+          "triangles": 832
         },
         {
           "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres",
@@ -257,6 +305,12 @@
           "triangles": 212
         },
         {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.hood.tres",
+          "node": "Hood",
+          "surfaces": 2,
+          "triangles": 40
+        },
+        {
           "mesh": "res://Assets/Construction/Meshes/vehicle.truck_mixer.a.frame.tres",
           "node": "MixerFrame",
           "surfaces": 4,
@@ -276,13 +330,34 @@
         }
       ],
       "scene": "res://Assets/Construction/Scenes/vehicle.truck_mixer.a.tscn",
-      "surfaces_all_states": 27,
-      "triangles_all_states": 2778,
+      "surfaces_all_states": 29,
+      "triangles_all_states": 2828,
       "visual_id": "vehicle.truck_mixer.a"
     },
     {
       "contract": {
         "bed": "Flatbed remains when empty; tie straps are inside each load node",
+        "breakdown": {
+          "hazard_markers": [
+            "HazardFL",
+            "HazardFR",
+            "HazardRL",
+            "HazardRR"
+          ],
+          "hood": {
+            "animation": "AnimationPlayer/hood_open",
+            "axis": "X",
+            "node": "Hood",
+            "open_degrees": -100.0,
+            "pivot_m": [
+              0.0,
+              1.02,
+              -3.55
+            ]
+          },
+          "note": "Presentation hooks only; the host decides when a vehicle is broken.",
+          "smoke_marker": "HoodSmoke"
+        },
         "loads": [
           "LoadSteel",
           "LoadWood"
@@ -320,13 +395,13 @@
           7.2
         ]
       },
-      "mesh_instances": 10,
+      "mesh_instances": 11,
       "meshes": [
         {
           "mesh": "res://Assets/Construction/Meshes/vehicle.truck_flatbed.a.body.tres",
           "node": "Body",
           "surfaces": 7,
-          "triangles": 822
+          "triangles": 832
         },
         {
           "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres",
@@ -365,6 +440,12 @@
           "triangles": 212
         },
         {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.hood.tres",
+          "node": "Hood",
+          "surfaces": 2,
+          "triangles": 40
+        },
+        {
           "mesh": "res://Assets/Construction/Meshes/vehicle.truck_flatbed.a.bed.tres",
           "node": "Flatbed",
           "surfaces": 4,
@@ -384,12 +465,33 @@
         }
       ],
       "scene": "res://Assets/Construction/Scenes/vehicle.truck_flatbed.a.tscn",
-      "surfaces_all_states": 29,
-      "triangles_all_states": 3898,
+      "surfaces_all_states": 31,
+      "triangles_all_states": 3948,
       "visual_id": "vehicle.truck_flatbed.a"
     },
     {
       "contract": {
+        "breakdown": {
+          "hazard_markers": [
+            "HazardFL",
+            "HazardFR",
+            "HazardRL",
+            "HazardRR"
+          ],
+          "hood": {
+            "animation": "AnimationPlayer/hood_open",
+            "axis": "X",
+            "node": "Hood",
+            "open_degrees": -100.0,
+            "pivot_m": [
+              0.0,
+              1.02,
+              -3.55
+            ]
+          },
+          "note": "Presentation hooks only; the host decides when a vehicle is broken.",
+          "smoke_marker": "HoodSmoke"
+        },
         "deck": {
           "axis": "X",
           "carry_anchor": "DeckPivot/CarryAnchor",
@@ -457,13 +559,13 @@
           7.2
         ]
       },
-      "mesh_instances": 9,
+      "mesh_instances": 10,
       "meshes": [
         {
           "mesh": "res://Assets/Construction/Meshes/vehicle.tow_truck.a.body.tres",
           "node": "Body",
           "surfaces": 7,
-          "triangles": 822
+          "triangles": 832
         },
         {
           "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres",
@@ -502,6 +604,12 @@
           "triangles": 212
         },
         {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.hood.tres",
+          "node": "Hood",
+          "surfaces": 2,
+          "triangles": 40
+        },
+        {
           "mesh": "res://Assets/Construction/Meshes/vehicle.tow_truck.a.frame.tres",
           "node": "RecoveryFrame",
           "surfaces": 4,
@@ -515,12 +623,33 @@
         }
       ],
       "scene": "res://Assets/Construction/Scenes/vehicle.tow_truck.a.tscn",
-      "surfaces_all_states": 27,
-      "triangles_all_states": 2750,
+      "surfaces_all_states": 29,
+      "triangles_all_states": 2800,
       "visual_id": "vehicle.tow_truck.a"
     },
     {
       "contract": {
+        "breakdown": {
+          "hazard_markers": [
+            "HazardFL",
+            "HazardFR",
+            "HazardRL",
+            "HazardRR"
+          ],
+          "hood": {
+            "animation": "AnimationPlayer/hood_open",
+            "axis": "X",
+            "node": "Hood",
+            "open_degrees": -100.0,
+            "pivot_m": [
+              0.0,
+              1.02,
+              -4.015
+            ]
+          },
+          "note": "Presentation hooks only; the host decides when a vehicle is broken.",
+          "smoke_marker": "HoodSmoke"
+        },
         "lift": {
           "alignment": "Same horizontal heading: carried truck behind (+Z), its front -Z toward the wrecker; pitch positive X so rear wheels stay grounded, then translate source front axle center onto LiftAnchor. Keep native scale; align axle, not vehicle root. Counter-rotate all four towed-truck wheels by body pitch for the flat-ground review pose.",
           "anchor": "LiftPivot/LiftAnchor",
@@ -581,13 +710,13 @@
           8.13
         ]
       },
-      "mesh_instances": 9,
+      "mesh_instances": 10,
       "meshes": [
         {
           "mesh": "res://Assets/Construction/Meshes/vehicle.tow_truck_heavy.a.body.tres",
           "node": "Body",
           "surfaces": 7,
-          "triangles": 822
+          "triangles": 832
         },
         {
           "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres",
@@ -626,6 +755,12 @@
           "triangles": 212
         },
         {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.construction_truck.hood.tres",
+          "node": "Hood",
+          "surfaces": 2,
+          "triangles": 40
+        },
+        {
           "mesh": "res://Assets/Construction/Meshes/vehicle.tow_truck_heavy.a.recovery_body.tres",
           "node": "RecoveryBody",
           "surfaces": 5,
@@ -639,12 +774,33 @@
         }
       ],
       "scene": "res://Assets/Construction/Scenes/vehicle.tow_truck_heavy.a.tscn",
-      "surfaces_all_states": 28,
-      "triangles_all_states": 2894,
+      "surfaces_all_states": 30,
+      "triangles_all_states": 2944,
       "visual_id": "vehicle.tow_truck_heavy.a"
     },
     {
       "contract": {
+        "breakdown": {
+          "hazard_markers": [
+            "HazardFL",
+            "HazardFR",
+            "HazardRL",
+            "HazardRR"
+          ],
+          "hood": {
+            "animation": "AnimationPlayer/hood_open",
+            "axis": "X",
+            "node": "Hood",
+            "open_degrees": -60.0,
+            "pivot_m": [
+              0.0,
+              1.55,
+              -0.75
+            ]
+          },
+          "note": "Presentation hooks only; the host decides when a vehicle is broken.",
+          "smoke_marker": "HoodSmoke"
+        },
         "hopper": {
           "axis": "Z",
           "fold_degrees": [
@@ -688,13 +844,13 @@
           4.62
         ]
       },
-      "mesh_instances": 7,
+      "mesh_instances": 8,
       "meshes": [
         {
           "mesh": "res://Assets/Construction/Meshes/vehicle.asphalt_paver.a.body.tres",
           "node": "Body",
           "surfaces": 6,
-          "triangles": 462
+          "triangles": 554
         },
         {
           "mesh": "res://Assets/Construction/Meshes/vehicle.asphalt_paver.a.track.tres",
@@ -731,15 +887,42 @@
           "node": "ScreedPivot/Screed",
           "surfaces": 2,
           "triangles": 104
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.asphalt_paver.a.hood.tres",
+          "node": "Hood",
+          "surfaces": 2,
+          "triangles": 80
         }
       ],
       "scene": "res://Assets/Construction/Scenes/vehicle.asphalt_paver.a.tscn",
-      "surfaces_all_states": 17,
-      "triangles_all_states": 1372,
+      "surfaces_all_states": 19,
+      "triangles_all_states": 1544,
       "visual_id": "vehicle.asphalt_paver.a"
     },
     {
       "contract": {
+        "breakdown": {
+          "hazard_markers": [
+            "HazardFL",
+            "HazardFR",
+            "HazardRL",
+            "HazardRR"
+          ],
+          "hood": {
+            "animation": "AnimationPlayer/hood_open",
+            "axis": "X",
+            "node": "Hood",
+            "open_degrees": 60.0,
+            "pivot_m": [
+              0.0,
+              1.62,
+              1.54
+            ]
+          },
+          "note": "Presentation hooks only; the host decides when a vehicle is broken.",
+          "smoke_marker": "HoodSmoke"
+        },
         "drums": {
           "axis": "X",
           "nodes": [
@@ -773,13 +956,13 @@
           3.9669
         ]
       },
-      "mesh_instances": 4,
+      "mesh_instances": 5,
       "meshes": [
         {
           "mesh": "res://Assets/Construction/Meshes/vehicle.road_roller.a.body.tres",
           "node": "Body",
           "surfaces": 5,
-          "triangles": 436
+          "triangles": 492
         },
         {
           "mesh": "res://Assets/Construction/Meshes/vehicle.road_roller.a.front_fork.tres",
@@ -798,11 +981,17 @@
           "node": "RearDrum",
           "surfaces": 3,
           "triangles": 228
+        },
+        {
+          "mesh": "res://Assets/Construction/Meshes/vehicle.road_roller.a.hood.tres",
+          "node": "Hood",
+          "surfaces": 2,
+          "triangles": 80
         }
       ],
       "scene": "res://Assets/Construction/Scenes/vehicle.road_roller.a.tscn",
-      "surfaces_all_states": 14,
-      "triangles_all_states": 952,
+      "surfaces_all_states": 16,
+      "triangles_all_states": 1088,
       "visual_id": "vehicle.road_roller.a"
     }
   ],
