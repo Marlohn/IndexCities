@@ -224,6 +224,9 @@ public sealed class BreakdownTests
         var waitedInYard=false;
         Assert.True(Run(scene,3*3600,()=>{
             Assert.NotEqual(0,first.ServiceBay);Assert.NotEqual(0,second.ServiceBay);
+            // One status line per vehicle: the bay is part of the cause, not a second line (inspection).
+            foreach(var v in new[]{first,second})if(v.ServicePhase==ServicePhase.InService)Assert.Contains("vaga do piso",v.Cause);
+            Assert.All(new[]{first,second},v=>Assert.DoesNotContain("vaga do elevador",v.Cause));
             waitedInYard|=second.ServicePhase==ServicePhase.Queued&&first.ServiceBay==1&&second.ServiceBay==null&&scene.Sim.ServiceBays(scene.Shop!)[0]==null;
             return first.ServicePhase==ServicePhase.None&&second.ServicePhase==ServicePhase.None&&first.Condition>.99&&second.Condition>.99;
         }),first.Cause+" / "+second.Cause);

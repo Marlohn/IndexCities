@@ -308,7 +308,7 @@ public sealed partial class CitySimulation
             // Retried every few seconds rather than every step (calibration).
             tow.Status=VehicleStatus.Waiting;tow.TowRetryAt=State.ElapsedSeconds+TowReplanSeconds;var reachable=near.Any(node=>PlanTowDelivery(t,node,double.MaxValue,0,closed,null,home)!=null);
             tow.Cause=reachable?$"Guincho sem combustível para levar o veículo {t.Id} a qualquer destino; parado no lugar":"Guincho aguardando rota para entregar o veículo "+t.Id;
-            if(reachable)t.Cause="Sendo rebocado; guincho sem combustível para seguir";
+            if(reachable)t.Cause="Sendo rebocado pelo guincho "+tow.Id+"; guincho sem combustível para seguir";
             return false;
         }
         tow.TowDestination=best.Kind;tow.TowStationId=best.Station?.Id;tow.Route=best.Route;tow.RouteIndex=0;tow.DockPosition=best.Dock;tow.Status=VehicleStatus.Travelling;tow.WaitingSince=0;
@@ -316,7 +316,7 @@ public sealed partial class CitySimulation
         var plan=best;AssignTowDestination(t,plan);
         if(plan.Kind==TowDestination.Holding)t.HoldingPosition=plan.Dock;
         var where=plan.Kind switch{TowDestination.Station=>"ao posto "+plan.Station!.Id,TowDestination.Exterior=>"ao exterior",TowDestination.Shop=>"à oficina "+plan.Station!.Id,TowDestination.Home=>"à vaga do dono",_=>"ao espaço de espera junto à rodovia"};
-        tow.Cause=$"Guincho levando o veículo {t.Id} {where}";t.Cause="Sendo rebocado "+where;
+        tow.Cause=$"Guincho levando o veículo {t.Id} {where}";t.Cause="Sendo rebocado pelo guincho "+tow.Id+" "+where;
         foreach(var c in Occupants(t)){c.Activity="No guincho, a caminho "+(plan.Kind==TowDestination.Station?"do posto "+plan.Station!.Id:"do exterior");Personal(c,"Veículo carregado no guincho; seguem juntos "+where);}
         TowLeavesPastQueue(tow,t);
         return true;

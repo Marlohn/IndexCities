@@ -223,14 +223,14 @@ public sealed partial class CitySimulation
                 // From another door's waiting place it crosses the yard to the bay's door first.
                 var viaDoor=v.ServiceSpot is {} spot&&spot!=bay;
                 occupied[bay]=v;v.ServiceBay=bay;v.ServiceSpot=null;v.ServicePhase=ServicePhase.InService;v.ServiceWork=ServiceSeconds(shop,v.Service);v.PushPath=viaDoor?[ShopWaiting(shop,bay),ShopBay(shop,bay)]:[ShopBay(shop,bay)];v.PushHeading=OutwardHeading(shop);
-                v.Cause=(v.Service==ServiceKind.Repair?"Em conserto":"Em revisão")+" na oficina "+shop.Id;
+                v.Cause=InServiceCause(v,shop,bay);
             }
             var working=0;
             for(var bay=0;bay<occupied.Length;bay++){
                 if(occupied[bay] is not {ServicePhase:ServicePhase.InService} v||v.PushPath.Count>0)continue;
-                if(!open||working>=present){v.Cause=(v.Service==ServiceKind.Repair?"Em conserto":"Em revisão")+"; aguardando mecânico na oficina "+shop.Id;continue;}
+                if(!open||working>=present){v.Cause=InServiceCause(v,shop,bay)+"; aguardando mecânico";continue;}
                 working++;v.ServiceWorkUnits=Math.Max(0,FixedPoint.Add(v.ServiceWorkUnits,-dt,FixedPoint.TimeScale));
-                v.Cause=(v.Service==ServiceKind.Repair?"Em conserto":"Em revisão")+" na oficina "+shop.Id+" ("+(1-v.ServiceWork/ServiceSeconds(shop,v.Service)).ToString("P0")+")";
+                v.Cause=InServiceCause(v,shop,bay)+" ("+(1-v.ServiceWork/ServiceSeconds(shop,v.Service)).ToString("P0")+")";
                 if(v.ServiceWorkUnits==0)ServiceDone(v,shop,bay);
             }
         }
@@ -413,17 +413,10 @@ public sealed partial class CitySimulation
         var bays=new int?[ShopBayCount];foreach(var v in State.Vehicles)if(v.ServiceShopId==shop.Id&&v.ServiceBay is {} bay&&bay<bays.Length)bays[bay]=v.Id;return bays;
     }
     public int BrokenAwaitingTow=>State.Vehicles.Count(v=>v.BrokenDown&&v.Status==VehicleStatus.Stranded);
-    public string ServiceStage(Vehicle v)
-    {
-        if(v.Status==VehicleStatus.Towed&&State.Vehicles.FirstOrDefault(t=>t.Id==v.TowTruckId) is {} tow)return "Sendo rebocado pelo guincho "+tow.Id+(tow.TowDestination switch{TowDestination.Shop=>" à oficina "+tow.TowStationId,TowDestination.Home=>" à vaga do dono",TowDestination.Station=>" ao posto "+tow.TowStationId,TowDestination.Exterior=>" ao exterior",_=>" ao espaço de espera"});
-        if(v.BrokenDown&&v.Status==VehicleStatus.Stranded)return v.TowTruckId is {} id?"Quebrado; guincho "+id+" a caminho":"Quebrado; aguardando guincho";
-        return v.ServicePhase switch{
-            ServicePhase.ToService=>"A caminho da revisão",
-            ServicePhase.Queued=>(v.BrokenDown?"Quebrado; ":"")+"na fila da oficina "+v.ServiceShopId,
-            ServicePhase.InService=>(v.Service==ServiceKind.Repair?"Em conserto":"Em revisão")+" na oficina "+v.ServiceShopId+" (vaga "+(v.ServiceBay==0?"do elevador":"do piso")+")",
-            ServicePhase.AtExterior=>v.Service==ServiceKind.Repair?"Em conserto no exterior":"Em revisão no exterior",
-            ServicePhase.AwaitingReturn=>v.TowTruckId is {} id?"Aguardando o guincho "+id+" para voltar à vaga":v.Service==ServiceKind.Revision?"Revisado; saindo da oficina":"Aguardando guincho para voltar à vaga",
-            ServicePhase.AwaitingMoney=>"Quebrado; aguardando dinheiro para o conserto",
-            _=>v.BrokenDown?"Quebrado":""};
-    }
+    // The inspection shows the vehicle's Cause as the one status line: in every
+    // broken, towed and shop state it already names the stage (the shop bay is in
+    // InServiceCause). Only the trip to the revision has a stage the traffic
+    // causes ("Em viagem", waits) would hide, so the inspection adds this line.
+    public string ServiceStage(Vehicle v)=>v.ServicePhase==ServicePhase.ToService?"A caminho da revisão":"";
+    string InServiceCause(Vehicle v,Building shop,int bay)=>(v.Service==ServiceKind.Repair?"Em conserto":"Em revisão")+" na oficina "+shop.Id+", vaga "+(bay==0?"do elevador":"do piso");
 }
