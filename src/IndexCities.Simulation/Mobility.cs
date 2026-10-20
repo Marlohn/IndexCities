@@ -48,7 +48,7 @@ public sealed partial class CitySimulation
     bool StartJourney(Citizen c,Building destination,JourneyPurpose purpose)
     {
         if(TryDrive(c,destination,purpose))return true;
-        var path=CitizenRoute(c,destination);if(path.Count==0){c.Activity="Sem rota para "+destination.Definition.Name;c.Decision="Acesso viário ou travessia indisponível";c.NextDecisionAt=State.ElapsedSeconds+300;return false;}
+        var path=CitizenRoute(c,destination);if(path.Count==0){c.Activity="Sem rota para "+destination.Definition.Name;c.Decision="Acesso viário ou travessia indisponível";c.PathRoadRevision=State.RoadRevision;c.NextDecisionAt=State.ElapsedSeconds+300;return false;}
         c.Path=path;c.PathIndex=0;c.PathRoadRevision=State.RoadRevision;c.Purpose=purpose;c.DestinationId=destination.Id;c.Activity=purpose switch{JourneyPurpose.Work=>"Indo trabalhar",JourneyPurpose.Home=>"Voltando para casa",JourneyPurpose.Shopping=>"Indo comprar alimentos",JourneyPurpose.Arriving=>"Chegando à cidade",JourneyPurpose.Visit=>"Indo visitar outra família",JourneyPurpose.Stroll=>"Passeando a pé",_=>"Indo ao canteiro"};Personal(c,c.Activity+" em "+destination.Definition.Name);return true;
     }
     void MoveCitizens(double dt)
@@ -58,7 +58,7 @@ public sealed partial class CitySimulation
         if(!_pedestrianCrossingsChecked){UpdateCrosswalks();_pedestrianCrossingsChecked=true;}
         RefreshCrosswalks();
         foreach(var c in State.Citizens.Where(c=>c.Alive)){
-            if(!c.Moving&&c.PathRoadRevision!=State.RoadRevision&&c.Activity.StartsWith("Sem rota",StringComparison.Ordinal))c.NextDecisionAt=Math.Min(c.NextDecisionAt,State.ElapsedSeconds);
+            if(!c.Moving&&c.PathRoadRevision!=State.RoadRevision&&(c.Activity.StartsWith("Sem rota",StringComparison.Ordinal)||c.Activity=="Viagem interrompida: rota removida"))c.NextDecisionAt=Math.Min(c.NextDecisionAt,State.ElapsedSeconds);
             if(c.ConstructionProjectId!=null&&ShiftActive(c)){c.AddWorkSecondsToday(dt);AccrueWage(c,dt);}
             if(c.VehicleId is {} vid){var v=VehicleById(vid);if(v!=null){c.Position=v.Position;c.InsideMap=InMap(v.Position);}continue;}
             if(c.Moving){
@@ -67,7 +67,7 @@ public sealed partial class CitySimulation
                 var journeyDestination=BuildingById(c.DestinationId);
                 var closeDoorDetour=journeyDestination!=null&&c.Purpose!=JourneyPurpose.Service&&c.Position.Distance(journeyDestination.Door)<3&&c.Path.Skip(c.PathIndex).Any(point=>point.Distance(journeyDestination.Door)>3)&&Access(journeyDestination) is {} doorAccess&&!CrossesLane(c.Position,journeyDestination.Door,doorAccess);
                 if((c.PathRoadRevision!=State.RoadRevision||closeDoorDetour)&&c.Purpose!=JourneyPurpose.Construction){
-                    var dest=journeyDestination;if(dest!=null){var replacement=CitizenRoute(c,dest);if(replacement.Count==0){c.Activity="Viagem interrompida: rota removida";c.Path.Clear();c.NextDecisionAt=State.ElapsedSeconds+300;continue;}c.Path=replacement;c.PathIndex=0;c.PathRoadRevision=State.RoadRevision;}
+                    var dest=journeyDestination;if(dest!=null){var replacement=CitizenRoute(c,dest);if(replacement.Count==0){c.Activity="Viagem interrompida: rota removida";c.Path.Clear();c.PathRoadRevision=State.RoadRevision;c.NextDecisionAt=State.ElapsedSeconds+300;continue;}c.Path=replacement;c.PathIndex=0;c.PathRoadRevision=State.RoadRevision;}
                 }
                 var distance=State.Tuning.WalkingSpeed*dt;
                 while(distance>0&&c.PathIndex<c.Path.Count){var target=c.Path[c.PathIndex];var d=c.Position.Distance(target);

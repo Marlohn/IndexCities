@@ -61,3 +61,4 @@
 - 2026-10-11 — Turistas com múltiplas visitas na mesma viagem (opção 12B) → Turismo e hospedagem.
 - 2026-10-11 — Benefício temporário de bem-estar por atendimento opcional real (opção 9A) → Atividades internas, lazer e visitas.
 - 2026-10-16 — Família com carro emigra com ele: abastece antes se puder pagar, senão espera em casa (o responsável rejeitou sair a pé deixando o carro); vender o carro para emigrar registrado como intenção para depois → Migração (em vigor e visão aprovada).
+- 2026-10-20 — SIM sem rota tenta de novo quando a malha muda ou após 5 min (correção de bug aprovada pelo responsável).

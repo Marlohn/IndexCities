@@ -644,3 +644,39 @@ Alocação no dia medido: 54.042 → 15.915 MB (−71%); coletas gen0: ~8.690 �
 **Validação:** `dotnet test` 299/299 (inclui dois testes novos em `WalkRouteCacheTests`, que conferem cada rota guardada contra uma busca nova depois de mudanças feitas por fora entre chamadas, inclusive restaurando os valores; os dois falham quando a conferência `Matches` é desligada, e o segundo também quando a cópia não é descartada junto com as rotas). Godot 4.7.2 mono: `-- --smoke` (`INDEXCITIES_SMOKE_OK buildings=0 roads=17`) e `-- --persistence-smoke` (`INDEXCITIES_PERSISTENCE_OK ... continuation=identical`), com saves em `artifacts/verification/rotas-a-pe-cache/` (caminho absoluto). São cenários headless; não substituem playtest visual.
 
 **Revisão independente:** DeepSeek V4.1 Flash (`opencode/deepseek-v4.1-flash-free`). Sem achados Alto ou Médio; confirmou a equivalência de `FamilyCar` e `WalkCrossesRoad`. Na 1ª rodada, achou um contraexemplo Baixo real ao contrato: se o estado fosse alterado por fora e depois restaurado exatamente entre chamadas de `Advance`, a cópia antiga voltaria a coincidir e aceitaria rotas calculadas no estado alterado (inalcançável pelo jogo; sem efeito no SHA). Corrigido (a cópia é descartada junto com as rotas) e coberto por teste. Também foram incluídos os Ids na comparação, e o teste foi reforçado. Na 2ª rodada (mesmo modelo; a primeira tentativa estourou o tempo limite sem saída), sem Alto ou Médio: confirmou a correção em todas as sequências (mudança externa, carimbo no meio de `Advance`, cache vazio, exceção) e, em cópia própria, que os testes falham com cada defeito; os ajustes de redação que apontou foram aplicados. Relatórios em `artifacts/verification/rotas-a-pe-cache/` (fora do Git).
+
+## 2026-10-20 — retentativa de SIM sem rota
+
+> **Medição, não fonte de verdade.** A correção de bug foi aprovada pelo responsável: a regra está em [população](../spec/populacao.md#cidadãos-e-simulação). A análise e os tempos abaixo são evidências técnicas, sem alterar tuning, calendário ou criar agenda.
+
+**Correção:** a falha em `StartJourney` passa a registrar a revisão da malha tentada em `PathRoadRevision`. O prazo de 300 s deixa de ser antecipado a cada passo de 2 s sem mudança nas ruas. A viagem a pé interrompida também registra a revisão da falha e reage à próxima mudança da malha. O carro sem rota devolve o SIM à rotina comum e à mesma espera quando a alternativa a pé falha; não há mudança nas regras de veículos.
+
+**Bancadas na base da PR (`0fb61c6`):** Release, .NET 8.0.32, aquecimento padrão de 2 dias, `--cap=100000`. Cada comando foi executado antes e depois; as colunas de mortes, refeições e salários são totais acumulados ao fim do segundo dia medido e coincidiram em cada par. Não usar os tempos dessas quatro bancadas pequenas como estimativa de ganho: algumas execuções anteriores concorreram com a suíte/reprodução da falha da grade grande.
+
+| Cidade e comando | Semente | SHA antes | SHA depois | Mortes antes → depois | Refeições antes → depois | Salários antes → depois |
+|---|---|---|---|---|---|---|
+| `scale cycle --days=2` | 42 | `F91F3FB832A7F593` | `F91F3FB832A7F593` | 0 → 0 | 366 → 366 | 1.940,49 → 1.940,49 |
+| `scale cycle --days=2` | 7 | `497037A7C8BD992D` | `497037A7C8BD992D` | 0 → 0 | 416 → 416 | 2.770,86 → 2.770,86 |
+| `scale grid --rows=3 --length=400 --days=2` | 42 | `F1A1F7134A23D6BB` | `F1A1F7134A23D6BB` | 0 → 0 | 756 → 756 | 5.811,62 → 5.811,62 |
+| `scale grid --rows=3 --length=400 --days=2` | 7 | `DAD22EA34BF241EA` | `DAD22EA34BF241EA` | 0 → 0 | 749 → 749 | 5.810,27 → 5.810,27 |
+
+São os 16 primeiros hex do SHA-256 do save, conforme a convenção da bancada. Os quatro cenários mantêm refeições e pagamentos reais positivos e nenhuma morte, sem divergência nos totais observados; os SHAs finais idênticos não substituem os testes específicos da espera.
+
+**Limitação preexistente na main:** `scale grid --rows=7 --length=1440 --growth=40 --days=1 --seed=42 --cap=100000` aborta durante o crescimento na base `0fb61c6`, antes de produzir aquecimento/dia medido: `InvalidOperationException: Estoque negativo`, em `CitySimulation.CheckInvariants` (linha 98), chamado por `Fixtures.AddHouses` (linha 107) e `Program` (linha 26). Reproduzido duas vezes sem a correção e uma vez com ela. Não foi corrigido neste escopo. Por orientação do coordenador, a comparação de desempenho usa a main anterior à PR #43, `ee00c6a` (já contém a PR #42), e uma cópia dessa mesma base com somente as três alterações de `Mobility.cs`; a PR permanece sobre a main atual.
+
+**Tempos na grade de ~1.000 SIMs sobre `ee00c6a`:** mesmo comando da grade grande acima, com crescimento de 16 h simuladas, aquecimento de 2 dias e 1 dia medido. Execuções em série: antes1, depois1, depois2, antes2; depois, antes3 e depois3 para substituir o primeiro par com sondas concorrentes. Nenhum build, teste ou Godot deste worker durante a série. Tempos reais em segundos:
+
+| Rodada | Crescimento: antes → depois | Aquecimento: antes → depois | Dia medido: antes → depois | Carga externa observada |
+|---|---|---|---|---|
+| 1 (contexto; excluída da mediana de reposição) | 95,0 → 121,4 | 156,1 → 115,1 | 101,16 → 50,66 | Sondas de outra worktree no crescimento e na fase medida |
+| 2 | 68,2 → 67,3 | 103,5 → 102,7 | 52,09 → 54,59 | Só a bancada desta tarefa nas amostras de processos durante o dia |
+| 3 (reposição) | 93,5 → 89,0 | 125,7 → 121,4 | 59,79 → 66,82 | Godot/Visual Studio com ~uma thread cada no antes; testes de outra worktree no aquecimento do depois |
+| **Mediana das rodadas 2 e 3** | **80,85 → 78,15** | **114,60 → 112,05** | **55,94 → 60,71 (+8,5%)** | A reposição também encontrou carga externa |
+
+**Ganho de tempo não demonstrado:** a mediana das duas rodadas usadas para substituir o primeiro par é 8,5% mais lenta, enquanto incluir as três rodadas dá mediana de 59,79 → 54,59 s/dia (−8,7%). A inversão de sinal, a dispersão e a concorrência observada impedem atribuir uma aceleração ou regressão estável à correção. Não anunciar o primeiro par como ganho de 50%. A redução estável observada é de alocação: 15.915 → 15.811 MB no dia (−104 MB; −0,65%). A máquina não ficou livre apesar das solicitações ao coordenador; não foram interrompidos processos alheios. As amostras e a tabela não excluem interferência entre as observações.
+
+Nas seis execuções concluídas dessa base, o dia termina com 1.037 SIMs, 0 mortes, 6.235 refeições, salários de 28.497,66 e saúde média de 99,722448. Os SHAs são estáveis por versão: antes `B262964FF295F874`, depois `442743608826A6D1`. A mudança de SHA é esperada numa correção que altera o estado e os momentos de retentativa (`PathRoadRevision`/`NextDecisionAt`), embora os agregados observados coincidam; não se alega equivalência de todo o estado final.
+
+**Validação da correção:** `dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj`: **325/325**, sem falhas ou ignorados. Os seis casos de `JourneyRetryTests` cobrem falha a pé e alternativa do carro, manutenção do prazo em passos de 2 s, nova tentativa após 300 s, mudança sem conexão que reinicia a espera, reconexão imediata e rota removida. Aplicados à biblioteca original, cinco dos seis falham; com a correção, os seis passam. Godot 4.7.2 mono: build/importação reais, `-- --qa-list` e `-- --smoke`, com `INDEXCITIES_SMOKE_OK buildings=0 roads=17` e `--review-save-dir=C:/Users/Marlohn/orca/workspaces/IndexCities/sem-rota/artifacts/verification/sem-rota-retentativa/godot-saves`. O smoke é headless e não grava cidade; não substitui playtest humano.
+
+Logs, binários congelados e script da comparação em `artifacts/verification/sem-rota-retentativa/` (fora do Git). Revisão independente a cargo do coordenador após a PR; ainda não realizada nesta entrega.
