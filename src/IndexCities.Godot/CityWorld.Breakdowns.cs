@@ -96,6 +96,8 @@ public partial class CityWorld
     }
     // QA: whether a vehicle is drawn on the lift, and the lift and gate states shown.
     public bool VehicleOnLift(int id)=>_trucks.TryGetValue(id,out var n)&&n.GetParent()?.Name=="ServiceBay0";
+    // QA: where the drawn vehicle really is (world position), to compare with the simulation and the lift height.
+    public Vector3? VehiclePose(int id)=>_trucks.TryGetValue(id,out var n)&&IsInstanceValid(n)?n.GlobalPosition:null;
     public (bool? LiftUp,bool? GateOpen) ShopPresentation(int shopId)=>ShopVisualOf(shopId) is {} shop?(shop.Lift?.HasMeta("state")==true?shop.Lift.GetMeta("state").AsBool():null,shop.Gate?.HasMeta("state")==true?shop.Gate.GetMeta("state").AsBool():null):(null,null);
     public (bool Hood,bool Hazards,bool Smoke,bool Triangle) BreakdownParts(int id)=>_trucks.TryGetValue(id,out var n)?(n.HasMeta("hood_open")&&n.GetMeta("hood_open").AsBool(),n.GetNodeOrNull("BreakdownHazards")!=null,n.GetNodeOrNull("BreakdownSmoke")!=null,n.GetNodeOrNull("BreakdownTriangle")!=null):(false,false,false,false);
 }

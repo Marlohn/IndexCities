@@ -36,6 +36,11 @@ public partial class Main
             async System.Threading.Tasks.Task Settle(double seconds)=>await ToSignal(GetTree().CreateTimer(seconds),SceneTreeTimer.SignalName.Timeout);
             void Parts(Vehicle v,bool broken,string when){var shown=_world.BreakdownParts(v.Id);Require(shown==(broken,broken,broken,broken),$"{when}: capô aberto, pisca, fumaça e triângulo {(broken?"presentes":"ausentes")} ({shown})");}
 
+            void LiftedPose(Vehicle v,string when,bool raised){
+                var pose=_world.VehiclePose(v.Id);Require(pose is {} p&&Math.Abs(p.X-v.Position.X)<.6&&Math.Abs(p.Z-v.Position.Z)<.6,$"Pose do carro {when}: sobre a vaga do elevador ({pose} x simulação {v.Position})");
+                Require(raised?pose!.Value.Y is >1.2f and <1.6f:pose!.Value.Y is >-.1f and <.15f,$"Pose do carro {when}: altura {(raised?"elevada (~1,4 m)":"no chão")} ({pose!.Value.Y:0.00} m)");
+            }
+
             // City A.
             var a=BreakdownQACity(shop:true);var car=a.Car;var shopId=a.Shop!.Id;
             _world.Reset(_sim.State);BuildCatalog();
@@ -60,6 +65,8 @@ public partial class Main
             // Lift from two of the player's camera angles: the start of the rise, then the raised pose.
             var bay=a.Shop.Position+new Point(6.9,0);foreach(var yaw in new[]{-45f,45f}){_yaw=yaw;await Shot("breakdown-a-lift-start-yaw"+yaw,bay,14,car);}
             await Settle(1.2);await Shot("breakdown-a-lift-rising-yaw45",bay,14,car);_yaw=-45;await Settle(2.2);await Shot("breakdown-a-in-service",bay,14,car);_yaw=45;
+            // The drawn pose, not only the metadata: over the bay's anchor and raised by the lift (asset contract: 1.4 m).
+            LiftedPose(car,"em serviço",true);
             // The floor bay's gate: with the lift busy, the shop's own tow goes to revision
             // on the floor bay (grocery stocked so the review imports nothing).
             Require(Run(600,()=>tow.Status==VehicleStatus.Parked&&tow.PushPath.Count==0&&tow.Position.Distance(CitySimulation.ShopTowSpace(a.Shop))<.5),$"Guincho de volta à oficina: «{tow.Cause}»");
@@ -76,6 +83,7 @@ public partial class Main
             Require(Run(1800,()=>car.ServicePhase==ServicePhase.AwaitingReturn),$"Conserto concluído: «{car.Cause}»");
             Require(car.Condition>.999&&!car.BrokenDown,"Conserto devolve 100%");
             Require(_world.ShopPresentation(shopId).LiftUp==false,"Elevador desce ao fim do serviço");
+            await Settle(3.4);LiftedPose(car,"serviço concluído",false);
             Require(Run(2400,()=>car.Status==VehicleStatus.Towed),$"Guincho carregou o carro consertado: «{car.Cause}»");Require(!_world.VehicleOnLift(car.Id),"Carro saiu do elevador ao ser carregado");Parts(car,false,"Carro consertado sendo devolvido");await Settle(1.2);
             await Shot("breakdown-a-return-carrying",_sim.State.Vehicles.Single(v=>v.Id==car.TowTruckId).Position,30,car);
             Require(Run(2400,()=>car.Status==VehicleStatus.Parked&&car.ServicePhase==ServicePhase.None&&car.PushPath.Count==0&&car.TowTruckId==null),$"Carro devolvido à vaga da dona: «{car.Cause}»");
