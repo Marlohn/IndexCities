@@ -25,7 +25,13 @@ public sealed partial class CitySimulation
     static Point LocalPoint(Building b,double x,double z)=>b.Position+new Point(x*Math.Cos(b.Rotation)+z*Math.Sin(b.Rotation),-x*Math.Sin(b.Rotation)+z*Math.Cos(b.Rotation));
     public IEnumerable<ParkingSpot> ParkingSpots(Building b)
     {
-        if(!b.Completed||b.Removed)yield break;var spots=LotSpots[b.Kind];
+        return b.Completed?LotParkingGeometry(b):[];
+    }
+    // Geometry also exists while the lot is being built: a works crew must not
+    // choose the future parking space and strand a car when the house completes.
+    IEnumerable<ParkingSpot> LotParkingGeometry(Building b)
+    {
+        if(b.Removed)yield break;var spots=LotSpots[b.Kind];
         for(var i=0;i<spots.Length;i++){var s=spots[i];var p=LocalPoint(b,s.X,s.Z);var forward=s.AlongX?new Point(Math.Cos(b.Rotation),-Math.Sin(b.Rotation)):new Point(-Math.Sin(b.Rotation),-Math.Cos(b.Rotation));
             if(State.Roads.Any(n=>n.Position.Distance(p)<State.Tuning.RoadWidth/2+1.2))continue;yield return new("b:"+b.Id+":"+i,b.Id,p,Math.Atan2(forward.X,forward.Z));}
     }

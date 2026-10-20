@@ -119,29 +119,16 @@ public sealed partial class CitySimulation
         return safe;
     }
 
-    // The poses a parked machine still passes through on its site path: its
-    // turn in place toward the next point, then 0.5 m samples along the path.
-    // A machine halted for fuel or budget is not moving and holds nothing.
+    // Publish the same whole manoeuvre checked by MachineMayEnter, never a
+    // prefix of an intention blocked by a body or an unacquired space. The
+    // machine's present body and any physically held spaces remain obstacles.
     List<(Vehicle Machine,Point Position,double Heading)> MachineReservation(Vehicle machine)
     {
         var poses=new List<(Vehicle,Point,double)>();
         if(machine.Machine==PavingMachine.None||machine.Status!=VehicleStatus.Parked||machine.MachinePhase is not (MachinePhase.OnSite or MachinePhase.LeavingSite)||machine.SitePathIndex>=machine.SitePath.Count||machine.Fuel<=.000001||machine.Cause is WorkCause.PavingOutOfFuel or WorkCause.NoBudgetForPaving)return poses;
-        var at=machine.Position;
-        // Nor into a junction or bend it does not hold (Mobility.SharedSpace): that
-        // part of its path is intention until it takes the space.
-        var unheld=SharedNodes().Where(n=>!machine.ManoeuvreSpaces.Contains(n.Id)&&n.Position.Distance(machine.Position)<240&&!EntersArea(machine,machine.Position,machine.Heading,n)).ToList();
-        for(var index=machine.SitePathIndex;index<machine.SitePath.Count;index++){
-            var target=machine.SitePath[index];var length=at.Distance(target);if(length<=.001)continue;
-            var heading=machine.SiteDockHeading is {} dock&&index==machine.SitePath.Count-1?dock:Math.Atan2(target.X-at.X,target.Z-at.Z);
-            for(var along=0.0;;along=Math.Min(length,along+.5)){
-                var pose=at.MoveTowards(target,along);
-                if(State.Vehicles.Any(other=>other.Id!=machine.Id&&other.Status!=VehicleStatus.Outside&&other.Position.Distance(pose)<12&&BodiesOverlap(machine,pose,heading,other,other.Position,other.Heading)))return poses;
-                if(unheld.Any(n=>n.Position.Distance(pose)<JunctionClearance+4&&EntersArea(machine,pose,heading,n)))return poses;
-                poses.Add((machine,pose,heading));if(along>=length)break;
-            }
-            at=target;
-        }
-        return poses;
+        var way=MachinePathAhead(machine);
+        if(BodyOnWay(machine,way)!=null||SharedNodes().Any(n=>!machine.ManoeuvreSpaces.Contains(n.Id)&&way.Any(p=>EntersArea(machine,p.Position,p.Heading,n))))return poses;
+        return way;
     }
 
     static bool VehicleBodiesOverlap(Vehicle a,Point at,Vehicle b)=>BodiesOverlap(a,at,a.Heading,b,b.Position,b.Heading);

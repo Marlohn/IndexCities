@@ -418,7 +418,7 @@ public sealed partial class CitySimulation
         // A vehicle already admitted to shared pavement must be able to leave
         // it before another occupant/approach takes the same physical space.
         if(continuing){ReserveJunction(v,junction,area);return true;}
-        var competitors=State.Vehicles.Where(o=>o.Id!=v.Id&&o.Status==VehicleStatus.Travelling&&o.RouteIndex<o.Route.Count&&o.Route[o.RouteIndex]==junction.Id&&o.Position.Distance(junction.Position)<14).ToList();
+        var competitors=State.Vehicles.Where(o=>o.Id!=v.Id&&o.Status==VehicleStatus.Travelling&&o.RouteIndex<o.Route.Count&&o.Route[o.RouteIndex]==junction.Id&&o.Position.Distance(junction.Position)<14&&CanTurnNow(o)).ToList();
         if(junction.Control==JunctionControl.ThroughX&&!horizontal&&competitors.Any(o=>Math.Abs(Math.Sin(o.Heading))>.7))return false;
         if(junction.Control==JunctionControl.ThroughZ&&horizontal&&competitors.Any(o=>Math.Abs(Math.Cos(o.Heading))>.7))return false;
         if(junction.Control==JunctionControl.RightHand){
@@ -527,7 +527,35 @@ public sealed partial class CitySimulation
         }return false;
     }
     Point DockAt(RoadNode road,Building? building,bool crew)
-    {var normal=road.Highway||road.Neighbours.Any(id=>Math.Abs(_roads[id].Position.X-road.Position.X)>.1)?new Point(0,1):new Point(1,0);var delta=building==null?normal:building.Door-road.Position;var length=delta.Distance(new(0,0));var side=crew?normal*(delta.X*normal.X+delta.Z*normal.Z<0?-1:1):length<.01?normal:delta*(1/length);return road.Position+side*(State.Tuning.RoadWidth/2+1.5)+(crew?new Point(side.Z,-side.X)*8.5:new Point(0,0));}
+    {
+        var normal=road.Highway||road.Neighbours.Any(id=>Math.Abs(_roads[id].Position.X-road.Position.X)>.1)?new Point(0,1):new Point(1,0);var delta=building==null?normal:building.Door-road.Position;var length=delta.Distance(new(0,0));var side=crew?normal*(delta.X*normal.X+delta.Z*normal.Z<0?-1:1):length<.01?normal:delta*(1/length);
+        var dock=road.Position+side*(State.Tuning.RoadWidth/2+1.5)+(crew?new Point(side.Z,-side.X)*8.5:default);
+        if(!crew)return dock;
+        var along=new Point(side.Z,-side.X);var heading=Math.Atan2(along.X,along.Z);
+        // Same curb and local access, nearest compatible position first. This
+        // uses lot geometry, never SpotFree or the cars' choice of parking.
+        for(var shift=0.0;shift<=State.Tuning.RoadWidth;shift+=.5)foreach(var sign in shift==0?new[]{1}:new[]{1,-1}){
+            var candidate=dock+along*(shift*sign);
+            if(CrewDockClear(candidate,heading))return candidate;
+        }
+        // No compatible location: keep the requested access as an intention.
+        // BayEntryHold refuses its admission, so the body stays in a safe place.
+        return dock;
+    }
+
+    bool CrewDockClear(Point dock,double heading)
+    {
+        var truck=new Vehicle();var car=new Vehicle{PassengerCar=true};
+        if(!InMap(dock,BodyHalfLength(truck))||BayBodyBlocksRoad(dock,Math.Abs(Math.Sin(heading))>.7,BodyHalfLength(truck),BodyHalfWidth(truck)))return false;
+        var forward=new Point(Math.Sin(heading),Math.Cos(heading));var right=new Point(forward.Z,-forward.X);
+        foreach(var b in State.Buildings.Where(b=>!b.Removed)){
+            var bf=new Point(Math.Sin(b.Rotation),Math.Cos(b.Rotation));var br=new Point(bf.Z,-bf.X);var delta=b.Position-dock;
+            bool Separated(Point axis){double Dot(Point a,Point c)=>a.X*c.X+a.Z*c.Z;return Math.Abs(Dot(delta,axis))>=BodyHalfLength(truck)*Math.Abs(Dot(forward,axis))+BodyHalfWidth(truck)*Math.Abs(Dot(right,axis))+b.Definition.Depth/2*Math.Abs(Dot(bf,axis))+b.Definition.Width/2*Math.Abs(Dot(br,axis))+.1;}
+            if(!new[]{forward,right,bf,br}.Any(Separated))return false;
+            if(LotParkingGeometry(b).Any(s=>BodiesOverlap(truck,dock,heading,car,s.Position,s.Heading)))return false;
+        }
+        return true;
+    }
     // SPEC populacao: an emigrating family that cannot refuel enough leaves the car
     // parked at the station (off the pump) and walks back home, where it waits and
     // reconsiders; its home was kept until the car actually left the city.

@@ -26,9 +26,9 @@ public sealed partial class CitySimulation
     List<RoadNode> SharedNodes(){if(_sharedNodesEpoch!=_roadEpoch){_sharedNodes.Clear();foreach(var road in State.Roads)if(SharedNode(road))_sharedNodes.Add(road);_sharedNodesEpoch=_roadEpoch;}return _sharedNodes;}
     bool AtGateway(Vehicle v)=>v.Position.Distance(State.Entry)<8;
 
-    // The body enters the manoeuvring space of a junction or bend: the square of
-    // the crossing carriageway plus a truck turning through it (JunctionClearance
-    // around the node), against the body's own extent.
+    // The body enters the actual carriageway square of a junction or bend.
+    // Its own extent is added once; JunctionClearance already includes a truck
+    // length and would also reserve nearby parallel streets the body never enters.
     static bool EntersArea(Vehicle body,Point at,double heading,RoadNode road,double clearance=CarriagewayHalfWidth)
     {
         var dx=Math.Abs(at.X-road.Position.X);var dz=Math.Abs(at.Z-road.Position.Z);var s=Math.Abs(Math.Sin(heading));var c=Math.Abs(Math.Cos(heading));
@@ -182,7 +182,7 @@ public sealed partial class CitySimulation
             if(Holds(o,node.Id)||area!=null&&(o.IntersectionClaim is {} held&&area.Contains(held)&&o.Position.Distance(node.Position)<9||o.ManoeuvreSpaces.Any(area.Contains))){v.Cause=(IsBend(node)?"Aguardando liberação da curva pelo veículo ":"Aguardando liberação do cruzamento pelo veículo ")+o.Id;return false;}
             // A lot exit yields to traffic presenting at the node; a vehicle entering
             // its bay through it is traffic itself and waits only for who arrived first.
-            if(o.Status==VehicleStatus.Travelling&&!Leaving(o)&&o.RouteIndex<o.Route.Count&&o.Route[o.RouteIndex]==node.Id&&o.Position.Distance(node.Position)<14&&(yieldToTraffic||o.WaitingSince>0&&(v.WaitingSince<=0||o.WaitingSince<v.WaitingSince||o.WaitingSince==v.WaitingSince&&o.Id<v.Id)&&(!IsBend(node)||CanTurnNow(o)))){v.Cause=yieldToTraffic?"Aguardando espaço para acessar a faixa":"Fila para acesso de carga";return false;}
+            if(o.Status==VehicleStatus.Travelling&&!Leaving(o)&&o.RouteIndex<o.Route.Count&&o.Route[o.RouteIndex]==node.Id&&o.Position.Distance(node.Position)<14&&CanTurnNow(o)&&(yieldToTraffic||o.WaitingSince>0&&(v.WaitingSince<=0||o.WaitingSince<v.WaitingSince||o.WaitingSince==v.WaitingSince&&o.Id<v.Id))){v.Cause=yieldToTraffic?"Aguardando espaço para acessar a faixa":"Fila para acesso de carga";return false;}
         }
         if(State.Citizens.Any(c=>c.Alive&&c.VehicleId==null&&c.Moving&&c.CrossingNodeId==node.Id&&c.Position.Distance(node.Position)<State.Tuning.RoadWidth/2+1.5)){v.Cause="Aguardando preferência/semáforo/travessia";return false;}
         if(node.Control==JunctionControl.Signal&&node.Neighbours.Count>=3&&((VehicleMovementTime%60<30)!=(Math.Abs(entering.X)>Math.Abs(entering.Z)))){v.Cause="Aguardando preferência/semáforo/travessia";return false;}
@@ -255,6 +255,12 @@ public sealed partial class CitySimulation
     List<(Vehicle Body,Point Position,double Heading)> BayEntryHold(Vehicle v)
     {
         if(v.DockPosition is not {} dock||DockAdmitted(v,dock))return [];
+        var crewHeading=v.Route.Count>0&&_roads.TryGetValue(v.Route[^1],out var crewAccess)&&
+            (crewAccess.Highway||crewAccess.Neighbours.Any(id=>Math.Abs(_roads[id].Position.X-crewAccess.Position.X)>.1))?Math.PI/2:0;
+        if(v.Machine==PavingMachine.None&&v.CrewAboard&&!CrewDockClear(dock,crewHeading)){
+            v.Cause=WorkCause.PavingSiteOccupied;
+            return WayIn(v,dock,out _);
+        }
         var owners=DockOwners(v,dock).ToList();
         var way=WayIn(v,dock,out var spaces);
         if(owners.Count==0&&AdmitManoeuvre(v,way,spaces,dock,false))return [];
@@ -266,13 +272,23 @@ public sealed partial class CitySimulation
         return hold;
     }
 
-    // The next 20 m of a paving machine's site path.
+    // The machine's manoeuvre ends at the first path point where its entire
+    // body can wait outside shared pavement, using the same poses for admission
+    // and publication. A fixed look-ahead can stop halfway through a crossing.
     List<(Vehicle Body,Point Position,double Heading)> MachinePathAhead(Vehicle m)
     {
-        var poses=new List<(Vehicle Body,Point Position,double Heading)>();var at=m.Position;var left=20.0;
-        for(var index=m.SitePathIndex;index<m.SitePath.Count&&left>0;index++){
+        var poses=new List<(Vehicle Body,Point Position,double Heading)>();var at=m.Position;
+        for(var index=m.SitePathIndex;index<m.SitePath.Count;index++){
             var target=m.SitePath[index];var length=at.Distance(target);if(length<=.001)continue;var heading=Math.Atan2(target.X-at.X,target.Z-at.Z);
-            var run=new List<(Point Position,double Heading)>();SamplePoses(run,at,at.MoveTowards(target,Math.Min(length,left)),heading);poses.AddRange(run.Select(p=>(m,p.Position,p.Heading)));left-=length;at=target;
+            var run=new List<(Point Position,double Heading)>();SamplePoses(run,at,target,heading);poses.AddRange(run.Select(p=>(m,p.Position,p.Heading)));at=target;
+            if(SharedNodes().All(node=>!EntersArea(m,at,heading,node)))break;
+        }
+        // The end of the site path is not necessarily a safe waiting place:
+        // leaving equipment continues from there onto the real return route.
+        // Acquire that continuation together, before entering its first space.
+        if(m.MachinePhase==MachinePhase.LeavingSite&&poses.Count>0&&SharedNodes().Any(node=>EntersArea(m,at,poses[^1].Heading,node))&&NearestRoad(at) is {} access){
+            var route=FindRoadRoute(access.Id,EntryNode().Id,true);
+            if(route.Count>0)poses.AddRange(Manoeuvre(m,route,0,at,poses[^1].Heading,[],false,1,out _));
         }
         return poses;
     }
@@ -281,8 +297,7 @@ public sealed partial class CitySimulation
     bool MachineMayEnter(Vehicle m)
     {
         var ahead=MachinePathAhead(m);
-        var needed=SharedNodes().Where(node=>!m.ManoeuvreSpaces.Contains(node.Id)&&node.Position.Distance(m.Position)<=40&&ahead.Any(p=>EntersArea(m,p.Position,p.Heading,node))).ToList();
-        if(needed.Count==0)return true;
+        var needed=SharedNodes().Where(node=>!m.ManoeuvreSpaces.Contains(node.Id)&&ahead.Any(p=>EntersArea(m,p.Position,p.Heading,node))).ToList();
         if(BodyOnWay(m,ahead)!=null)return false;
         foreach(var node in needed){
             var area=_junctionAreas.GetValueOrDefault(node.Id);
