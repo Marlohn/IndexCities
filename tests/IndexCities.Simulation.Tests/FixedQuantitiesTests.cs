@@ -186,6 +186,10 @@ public sealed class FixedQuantitiesTests
         sim.State.PollutionCells[0]=9_007_199_254.74099312345678901234m;
         var json=sim.SaveToJson();Assert.Equal(json,CitySimulation.FromJson(json).SaveToJson());
         var old=JsonNode.Parse(json)!.AsObject();old.Remove("QuantityStateVersion");Assert.Throws<InvalidDataException>(()=>CitySimulation.FromJson(old.ToJsonString()));
+        // Version 1 stored pollution as integers at 1e12 per point; loading it as
+        // decimal points would silently multiply pollution, so it is refused.
+        var v1=JsonNode.Parse(json)!.AsObject();v1["QuantityStateVersion"]=1;v1["PollutionCells"]=new JsonObject{["0"]=123_456_789_123L};
+        Assert.Throws<InvalidDataException>(()=>CitySimulation.FromJson(v1.ToJsonString()));
     }
     [Fact]
     public void ScalesCoverOneHundredYearsAndLargestCurrentStockAndRejectOverflow()
