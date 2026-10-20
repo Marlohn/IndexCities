@@ -191,7 +191,7 @@ public sealed partial class CitySimulation
     void OperateMechanicShops(double dt,Dictionary<int,List<Citizen>> staff)
     {
         if(_serviceVehicles.Count==0)return;
-        foreach(var group in _serviceVehicles.GroupBy(v=>v.ServiceShopId!.Value).OrderBy(g=>g.Key)){
+        foreach(var group in _serviceVehicles.Where(v=>v.ServiceShopId!=null).GroupBy(v=>v.ServiceShopId!.Value).OrderBy(g=>g.Key)){
             var shop=BuildingById(group.Key);var vehicles=group.ToList();
             if(shop==null||!ShopOperates(shop)){foreach(var v in vehicles)LeaveClosedShop(v,shop);continue;}
             var present=staff.TryGetValue(shop.Id,out var workers)?workers.Count(c=>WorkerPresentAt(c,shop)):0;var open=Open(shop);
@@ -256,6 +256,16 @@ public sealed partial class CitySimulation
         v.Cause=(v.BrokenDown?"Quebrado; ":"")+"na fila da oficina "+shop.Id;
     }
 
+    // Set down at the owner's space (or base): eased into it; still broken when the
+    // owner could not pay the repair, until there is money and the tow is called again.
+    void ArriveHome(Vehicle t)
+    {
+        t.HoldingPosition=null;t.TowResumeNode=null;t.Route.Clear();t.RouteIndex=0;t.DockPosition=null;t.ServiceShopId=null;t.ServiceBay=null;t.ServiceSpot=null;
+        if(OwnerHome(t) is {} home&&HomeSpace(t,home) is {} space){if(t.PassengerCar)t.ParkingSpot=ParkingSpots(home).FirstOrDefault(s=>s.Position.Distance(space.Position)<.01).Key;t.PushPath=[space.Position];t.PushHeading=space.Heading;}
+        if(t.BrokenDown){t.Service=ServiceKind.Repair;t.ServicePhase=ServicePhase.AwaitingMoney;t.TowRetryAt=State.ElapsedSeconds+State.Tuning.TowRetrySeconds;t.TowRoadRevision=null;t.Cause="Quebrado na vaga do dono; aguardando dinheiro para o conserto";return;}
+        ClearService(t);t.Cause=t.PassengerCar?"Estacionado":"Consertado e de volta à base";
+    }
+
     // SPEC 8A: revisions. Reviewed with the economy, not every step.
     void ReviewVehicleRevisions()
     {
@@ -285,7 +295,7 @@ public sealed partial class CitySimulation
         if(v.RefuellingAt==null)v.DockPosition=shop==null?State.Entry:ServiceDock(shop);
         v.DestinationBuildingId=shop?.Id;v.TripPurpose=JourneyPurpose.Service;v.DriverId=driver.Id;v.Passengers.Clear();v.Status=v.PassengerCar?VehicleStatus.Parked:VehicleStatus.Travelling;
         v.Cause="Indo à revisão "+(shop==null?"no exterior":"na oficina "+shop.Id)+"; aguardando motorista embarcar";
-        driver.BoardingVehicleId=v.Id;driver.Purpose=JourneyPurpose.Boarding;driver.Path=[driver.Position,v.Position];driver.PathIndex=0;driver.PathRoadRevision=State.RoadRevision;driver.DestinationId=shop?.Id;driver.Activity="Levando o veículo à revisão";
+        driver.BoardingVehicleId=v.Id;driver.Purpose=JourneyPurpose.Boarding;driver.Path=[driver.Position,v.Position];driver.PathIndex=0;driver.PathRoadRevision=State.RoadRevision;driver.DestinationId=null;driver.Activity="Levando o veículo à revisão";
         Personal(driver,"Leva o veículo "+v.Id+" à revisão "+(shop==null?"no exterior":"na oficina "+shop.Id)+" (condição "+v.Condition.ToString("P0")+")");
     }
     // Arrived at the shop's street side (or the exterior) on a revision trip.
@@ -316,7 +326,7 @@ public sealed partial class CitySimulation
         if(driver.VehicleId==v.Id){v.Status=VehicleStatus.Travelling;foreach(var c in Occupants(v)){c.Purpose=JourneyPurpose.Home;c.DestinationId=home.Id;c.Activity="Voltando com o veículo revisado";}return;}
         // The driver waiting at the shop door walks to it and drives.
         v.Status=v.PassengerCar?VehicleStatus.Parked:VehicleStatus.Travelling;
-        driver.BoardingVehicleId=v.Id;driver.Purpose=JourneyPurpose.Boarding;driver.Path=[driver.Position,v.Position];driver.PathIndex=0;driver.PathRoadRevision=State.RoadRevision;driver.DestinationId=home.Id;driver.Activity="Indo buscar o veículo revisado";
+        driver.BoardingVehicleId=v.Id;driver.Purpose=JourneyPurpose.Boarding;driver.Path=[driver.Position,v.Position];driver.PathIndex=0;driver.PathRoadRevision=State.RoadRevision;driver.DestinationId=null;driver.Activity="Indo buscar o veículo revisado";
     }
     // A driver waiting at the shop door for the vehicle being revised.
     bool WaitingForService(Citizen c)=>c.Purpose==JourneyPurpose.Service&&State.Vehicles.Any(v=>v.DriverId==c.Id&&v.ServicePhase is ServicePhase.Queued or ServicePhase.InService or ServicePhase.ToService);
@@ -332,7 +342,7 @@ public sealed partial class CitySimulation
             if(target==null||!EnsureFuel(v,target.Id))continue;
             if(v.RefuellingAt==null)v.DockPosition=DockAt(target,BuildingById(s.PickedUp?s.DestinationBuildingId:s.SourceBuildingId),false);
             v.DriverId=driver.Id;v.Status=VehicleStatus.Travelling;v.Cause="Retomando a entrega depois do conserto";
-            driver.BoardingVehicleId=v.Id;driver.Purpose=JourneyPurpose.Boarding;driver.Path=[driver.Position,v.Position];driver.PathIndex=0;driver.PathRoadRevision=State.RoadRevision;driver.Activity="Caminhando para retomar a entrega";
+            driver.BoardingVehicleId=v.Id;driver.Purpose=JourneyPurpose.Boarding;driver.DestinationId=null;driver.Path=[driver.Position,v.Position];driver.PathIndex=0;driver.PathRoadRevision=State.RoadRevision;driver.Activity="Caminhando para retomar a entrega";
         }
     }
 
@@ -367,7 +377,7 @@ public sealed partial class CitySimulation
             var station=State.Buildings.Where(b=>StationOperates(b)&&Access(b)!=null).OrderBy(b=>b.Position.Distance(shop.Position)).FirstOrDefault();if(station==null)continue;
             var there=FindRoadRoute(access.Id,Access(station)!.Id);var back=FindRoadRoute(Access(station)!.Id,access.Id);if(there.Count==0||back.Count==0||RouteLength(there)*FuelRate(tow)>tow.Fuel)continue;
             tow.Route=there;tow.RouteIndex=0;tow.SavedRoute=back;tow.RefuellingAt=station.Id;tow.DockPosition=DockAt(Access(station)!,station,false);tow.DriverId=driver.Id;tow.DestinationBuildingId=shop.Id;tow.Status=VehicleStatus.Travelling;tow.Cause="Guincho indo abastecer no posto "+station.Id;
-            driver.BoardingVehicleId=tow.Id;driver.Purpose=JourneyPurpose.Boarding;driver.Path=[driver.Position,tow.Position];driver.PathIndex=0;driver.PathRoadRevision=State.RoadRevision;driver.Activity="Levando o guincho para abastecer";
+            driver.BoardingVehicleId=tow.Id;driver.Purpose=JourneyPurpose.Boarding;driver.DestinationId=null;driver.Path=[driver.Position,tow.Position];driver.PathIndex=0;driver.PathRoadRevision=State.RoadRevision;driver.Activity="Levando o guincho para abastecer";
         }
     }
 
