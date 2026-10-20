@@ -60,7 +60,7 @@ public sealed partial class CitySimulation
     }
     double RouteLength(IReadOnlyList<int> route){double length=0;for(var i=1;i<route.Count;i++)length+=_roads[route[i-1]].Position.Distance(_roads[route[i]].Position);return length;}
     public List<Point> PedestrianRoute(Point from,Building destination)=>PedestrianPath(from,destination.Door,Access(destination));
-    List<Point> PedestrianPath(Point from,Point door,RoadNode? b)
+    List<Point> FindPedestrianPath(Point from,Point door,RoadNode? b)
     {
         var originalFrom=from;Point? crossingApproach=null;var laneApproach=new List<Point>();var a=NearestRoad(from);
         if(a!=null&&!a.Highway&&(!a.Crosswalk||StraightRoad(a,out _))){

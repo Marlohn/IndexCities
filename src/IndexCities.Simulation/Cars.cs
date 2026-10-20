@@ -35,7 +35,14 @@ public sealed partial class CitySimulation
     // A car still physically in the space (its driver already chose another
     // destination) keeps occupying it until it actually leaves.
     bool SpotFree(ParkingSpot spot,int exceptVehicle)=>!State.Vehicles.Any(v=>v.Id!=exceptVehicle&&v.PassengerCar&&v.Status!=VehicleStatus.Outside&&(v.ParkingSpot==spot.Key||v.Position.Distance(spot.Position)<2));
-    public Vehicle? FamilyCar(Family? family)=>family==null?null:State.Vehicles.FirstOrDefault(v=>v.PassengerCar&&v.Status!=VehicleStatus.Outside&&family.Members.Any(id=>v.OwnerAccount=="sim:"+id));
+    // First car in vehicle order owned by a member; the member accounts are
+    // built once instead of once per vehicle (same ordinal string match).
+    public Vehicle? FamilyCar(Family? family)
+    {
+        if(family==null)return null;var accounts=family.Members.Select(id=>"sim:"+id).ToArray();
+        foreach(var v in State.Vehicles)if(v.PassengerCar&&v.Status!=VehicleStatus.Outside&&Array.IndexOf(accounts,v.OwnerAccount)>=0)return v;
+        return null;
+    }
     // Strangers do not use private house garages; other lots serve trips to that building.
     ParkingSpot? FreeSpot(Building destination,Family family,Vehicle car)
     {
@@ -43,7 +50,14 @@ public sealed partial class CitySimulation
         foreach(var spot in ParkingSpots(destination))if(SpotFree(spot,car.Id))return spot;return null;
     }
     // Reaching the car must not mean walking across a carriageway outside a crossing.
-    bool WalkCrossesRoad(Point a,Point b)=>State.Roads.Any(n=>{var ab=b-a;var len2=ab.X*ab.X+ab.Z*ab.Z;var t=len2<1e-9?0:Math.Clamp(((n.Position.X-a.X)*ab.X+(n.Position.Z-a.Z)*ab.Z)/len2,0,1);return n.Position.Distance(a+ab*t)<State.Tuning.RoadWidth/2-.6;});
+    // The nearest point of a→b lies in the segment's box, so a node more than
+    // the radius (plus 1 m against rounding) outside that box never matches.
+    bool WalkCrossesRoad(Point a,Point b)
+    {
+        var radius=State.Tuning.RoadWidth/2-.6;var margin=radius+1;
+        var x0=Math.Min(a.X,b.X)-margin;var x1=Math.Max(a.X,b.X)+margin;var z0=Math.Min(a.Z,b.Z)-margin;var z1=Math.Max(a.Z,b.Z)+margin;
+        return State.Roads.Any(n=>{if(n.Position.X<x0||n.Position.X>x1||n.Position.Z<z0||n.Position.Z>z1)return false;var ab=b-a;var len2=ab.X*ab.X+ab.Z*ab.Z;var t=len2<1e-9?0:Math.Clamp(((n.Position.X-a.X)*ab.X+(n.Position.Z-a.Z)*ab.Z)/len2,0,1);return n.Position.Distance(a+ab*t)<radius;});
+    }
     double FuelRate(Vehicle v)=>v.PassengerCar?State.Tuning.CarFuelPerMetre:State.Tuning.FuelPerMetre;
     bool TryDrive(Citizen c,Building destination,JourneyPurpose purpose)
     {

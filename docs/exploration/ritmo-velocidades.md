@@ -605,3 +605,42 @@ No ciclo, `scale` confirma zero veículos em viagem no encerramento; não mede o
 No Godot 4.7.2 mono, `dotnet build -t:Rebuild` e importação reais, seguidos de `-- --qa-list` (36 cenários), `-- --smoke` e `-- --persistence-smoke`. Marcadores: `INDEXCITIES_SMOKE_OK buildings=0 roads=17` e `INDEXCITIES_PERSISTENCE_OK ... continuation=identical ... directory=.../resume-godot-saves/saves-d61dce6601474939920afe9e61e12b1c`. Diretório absoluto isolado: `C:/Users/Marlohn/orca/workspaces/IndexCities/quantidades-inteiras/artifacts/verification/fixed-quantities/resume-godot-saves`; arquivos confirmados nesse destino. Logs e hash da biblioteca reconstruída: `resume-godot-*`. São cenários headless; não substituem playtest visual/humano. O smoke simples não grava cidade.
 
 **Revisão:** achados bloqueantes e ajustes baratos da revisão Claude Haiku 5.5 sobre `a9625b4` corrigidos: comparação atual, decaimento residual, escrita de QA, guarda de persistência, exceção de versão e campo morto. A revisão final independente será despachada pelo coordenador depois do PR; ainda não executada nesta retomada. Permanecem os limites numéricos de borda: quantização recebe double, fatores double viram decimal nas recorrências e `HungerHours` converte horas em segundos antes de quantizar. Isso não permite transformar a futura agenda em soma de taxas constantes para estados não lineares.
+
+## 2026-10-19 — rotas a pé guardadas e decisões que não recalculam (PENDENTE)
+
+> **Pesquisa, não decisão.** Branch `Marlohn/rotas-a-pe-cache`. Só desempenho: nenhuma regra, tuning, ordem de eventos ou formato de save mudou, e os 16 primeiros hex do SHA-256 do save da bancada (a convenção desta bancada) são **idênticos antes e depois** nas cinco cidades medidas. A estrutura nova está em `docs/ARCHITECTURE.md` §8.
+
+**Por que tantas rotas** (sonda temporária de contadores, fora do repositório; grade de 1.000 SIMs, semente 42, dia medido): 135.113 buscas de rota a pé por dia, das quais **129.600 falham** e quase todas repetem exatamente a mesma origem, destino e malha (95% de repetição já no aquecimento). Elas vêm de ~3 SIMs em "Sem rota" (100.800 tentativas de voltar para casa e 28.800 de ir ao trabalho por dia): um SIM parado em "Sem rota" cuja `PathRoadRevision` difere da revisão atual da malha tem a próxima decisão antecipada a cada passo (`Mobility.cs`, início de `MoveCitizens`), e uma tentativa que falha não atualiza essa revisão. Assim, a espera de 300 s depois de "Sem rota" nunca acontece: o SIM tenta de novo a cada 2 s, sempre em vão. Cada tentativa também chama `TryDrive` antes da rota a pé (136.183 chamadas/dia; 87 mil param em "família sem carro", 46 mil adiante, perto do carro). **Possível bug de comportamento, não corrigido aqui**: corrigir mudaria o resultado e pede decisão sobre a regra esperada.
+
+**O que mudou** (cada item com SHA idêntico):
+
+1. Rotas a pé guardadas por ponto exato de origem, porta e nó de acesso, só durante `Advance`, invalidadas por qualquer mudança da malha ou dos lotes e conferidas por inteiro entre chamadas (`RoadNetwork.WalkRoutes.cs`). As tentativas repetidas viram consulta a um dicionário: na sonda, a busca a pé caiu de 49 s para 0,7 s por dia, e `CitizenRoutine`, de 66 s para 15 s.
+2. `FamilyCar` monta as contas `sim:<id>` da família uma vez por chamada, em vez de uma vez por veículo e membro.
+3. `WalkCrossesRoad` descarta pela caixa do trajeto (com 1 m de folga) as ruas que não podem estar a menos de 4,65 m dele, antes do cálculo original.
+
+**Prova de equivalência** (16 primeiros hex do SHA-256 do save; antes = `origin/main` em `58bed59`, depois = cabeça da branch; `--cap=100000`):
+
+| Cidade | Semente | Comando | Antes | Depois |
+|---|---|---|---|---|
+| `cycle` | 42 | `scale cycle --days=2` | `419A5ACE934BD16F` | `419A5ACE934BD16F` |
+| `cycle` | 7 | `scale cycle --days=2` | `19BBA169594EE657` | `19BBA169594EE657` |
+| Grade 3×400 | 42 | `scale grid --rows=3 --length=400 --days=2` | `B6F9736766F55B54` | `B6F9736766F55B54` |
+| Grade 3×400 | 7 | `scale grid --rows=3 --length=400 --days=2` | `D841FA8845927281` | `D841FA8845927281` |
+| Grade 7×1440, ~1.000 SIMs | 42 | `scale grid --rows=7 --length=1440 --growth=40 --days=1` | `B262964FF295F874` | `B262964FF295F874` |
+
+**Tempos na grade de 1.000** (Release, .NET 8.0.32, CPU de 12 threads, rodadas em série; havia processos de outra worktree em parte do tempo, de uma thread cada, então a variação entre rodadas é real; s = tempo real):
+
+| Rodada (ordem) | Dia medido: antes → depois | Aquecimento de 2 dias: antes → depois | Concorrência observada |
+|---|---|---|---|
+| 1 (antes, depois) | 88,05 → 84,53 | 169,0 → 110,6 | processo de outra worktree começou durante o "depois" |
+| 2 (depois, antes) | 84,19 → 54,20 | 167,9 → 102,2 | um processo de uma thread de outra worktree nas duas |
+| 3 (antes, depois) | 95,82 → 64,63 | 222,0 → 141,9 | `dotnet test` de outra worktree no fim do "antes" e em todo o "depois" |
+| **Mediana** | **88,05 → 64,63 (−27%)** | **169,0 → 110,6 (−35%)** | |
+
+Alocação no dia medido: 54.042 → 15.915 MB (−71%); coletas gen0: ~8.690 → ~2.600. O crescimento (16 h simuladas) não muda além do ruído (72–96 s antes, 85–101 s depois). Na sonda de contadores, que cronometra cada chamada, a parte cortada soma ~50 s/dia; o ganho menor no cronômetro de parede sugere que a sonda superestima o custo por chamada e que a rodada 1 do "depois" sofreu interferência.
+
+**Leitura:** o ganho vem quase todo de não refazer a mesma busca a pé fracassada a cada 2 s. Ele depende de haver SIMs nesse laço: na grade 3×400 (semente 42, 1 dia) a sonda não registrou nenhuma tentativa fracassada e só 552 buscas a pé; no `cycle` não contei; nelas não medi diferença confiável de tempo (na revisão, o `cycle` ficou dentro do ruído). A causa do laço (a nova tentativa antecipada a cada passo) segue intacta e ainda custa `TryDrive` e a própria decisão a cada 2 s; resolvê-la é decisão de produto, não otimização. Também não houve ganho nos outros ~50 s/dia (veículos, infraestrutura, necessidades), fora do alvo desta rodada.
+
+**Validação:** `dotnet test` 299/299 (inclui dois testes novos em `WalkRouteCacheTests`, que conferem cada rota guardada contra uma busca nova depois de mudanças feitas por fora entre chamadas, inclusive restaurando os valores; os dois falham quando a conferência `Matches` é desligada, e o segundo também quando a cópia não é descartada junto com as rotas). Godot 4.7.2 mono: `-- --smoke` (`INDEXCITIES_SMOKE_OK buildings=0 roads=17`) e `-- --persistence-smoke` (`INDEXCITIES_PERSISTENCE_OK ... continuation=identical`), com saves em `artifacts/verification/rotas-a-pe-cache/` (caminho absoluto). São cenários headless; não substituem playtest visual.
+
+**Revisão independente:** DeepSeek V4.1 Flash (`opencode/deepseek-v4.1-flash-free`). Sem achados Alto ou Médio; confirmou a equivalência de `FamilyCar` e `WalkCrossesRoad`. Na 1ª rodada, achou um contraexemplo Baixo real ao contrato: se o estado fosse alterado por fora e depois restaurado exatamente entre chamadas de `Advance`, a cópia antiga voltaria a coincidir e aceitaria rotas calculadas no estado alterado (inalcançável pelo jogo; sem efeito no SHA). Corrigido (a cópia é descartada junto com as rotas) e coberto por teste. Também foram incluídos os Ids na comparação, e o teste foi reforçado. Na 2ª rodada (mesmo modelo; a primeira tentativa estourou o tempo limite sem saída), sem Alto ou Médio: confirmou a correção em todas as sequências (mudança externa, carimbo no meio de `Advance`, cache vazio, exceção) e, em cópia própria, que os testes falham com cada defeito; os ajustes de redação que apontou foram aplicados. Relatórios em `artifacts/verification/rotas-a-pe-cache/` (fora do Git).
