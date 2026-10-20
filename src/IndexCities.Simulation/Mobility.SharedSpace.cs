@@ -29,7 +29,7 @@ public sealed partial class CitySimulation
     // The body enters the manoeuvring space of a junction or bend: the square of
     // the crossing carriageway plus a truck turning through it (JunctionClearance
     // around the node), against the body's own extent.
-    static bool EntersArea(Vehicle body,Point at,double heading,RoadNode road,double clearance=JunctionClearance)
+    static bool EntersArea(Vehicle body,Point at,double heading,RoadNode road,double clearance=CarriagewayHalfWidth)
     {
         var dx=Math.Abs(at.X-road.Position.X);var dz=Math.Abs(at.Z-road.Position.Z);var s=Math.Abs(Math.Sin(heading));var c=Math.Abs(Math.Cos(heading));
         return dx<clearance+BodyHalfLength(body)*s+BodyHalfWidth(body)*c&&dz<clearance+BodyHalfLength(body)*c+BodyHalfWidth(body)*s;
