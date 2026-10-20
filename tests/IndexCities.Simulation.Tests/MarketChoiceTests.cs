@@ -67,4 +67,31 @@ public sealed class MarketChoiceTests
         Assert.Null(Call(sim,"LocalDeliveryVehicle",farm));
         Assert.Equal(sim.State.Tuning.TotalMoney,sim.MonetaryTotal);sim.CheckInvariants();
     }
+    // SPEC economia: cargo and the truck's own fuel come from physical stock.
+    [Theory]
+    [InlineData(50,10,20,true)]
+    [InlineData(30,10,0,false)]
+    [InlineData(30.5,10,0,false)]
+    [InlineData(29,10,0,false)]
+    [InlineData(50,40,50,true)]
+    [InlineData(200,10,100,true)]
+    public void Fuel_import_reserves_the_trucks_refill_before_allocating_its_cargo(double outsideFuel,double tank,double expectedCargo,bool expectedOrder)
+    {
+        var sim=Founded();var company=Company(sim,50000);var station=Owned(sim,BuildingKind.FuelStation,-100,company);
+        var truck=sim.State.Vehicles.First(v=>v.External&&v.Body==TruckBody.Cargo&&v.Status==VehicleStatus.Outside);
+        truck.Fuel=tank;sim.State.OutsideStock[ResourceKind.Fuel]=outsideFuel;
+        var money=sim.Balance(company.Account);var shipments=sim.State.Shipments.Count;var ledger=sim.State.Ledger.Count;
+        Assert.Equal(expectedOrder,(bool)Call(sim,"OrderImport",station,ResourceKind.Fuel,100d,company.Account)!);
+        if(expectedOrder){
+            var shipment=sim.State.Shipments.Last();Assert.Equal(truck.Id,shipment.VehicleId);
+            Assert.Equal(expectedCargo,shipment.Cargo[ResourceKind.Fuel]);Assert.Equal(expectedCargo,truck.Cargo[ResourceKind.Fuel]);
+            Assert.Equal(sim.State.Tuning.FuelTank,truck.Fuel);
+            Assert.Equal(outsideFuel,sim.State.OutsideStock[ResourceKind.Fuel]+shipment.Cargo[ResourceKind.Fuel]+truck.Fuel-tank,8);
+            Assert.Equal(money-shipment.PricePaid,sim.Balance(company.Account));
+        }else{
+            Assert.Equal(outsideFuel,sim.State.OutsideStock[ResourceKind.Fuel]);Assert.Equal(tank,truck.Fuel);Assert.Empty(truck.Cargo);
+            Assert.Equal(money,sim.Balance(company.Account));Assert.Equal(shipments,sim.State.Shipments.Count);Assert.Equal(ledger,sim.State.Ledger.Count);
+        }
+        sim.CheckInvariants();
+    }
 }
