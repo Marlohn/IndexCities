@@ -73,20 +73,22 @@ public sealed partial class CitySimulation
         try{var remaining=seconds;while(remaining>1e-8){var dt=Math.Min(Quantum,remaining);Step(dt);remaining-=dt;}}
         finally{_crosswalkBandsActive=false;_crosswalkBands.Clear();}
     }
+    // EXPERIMENT ONLY (experimento/perfil-escala): per-subsystem timers.
+    public static readonly long[] Prof=new long[14];public static readonly long[] SubProf=new long[6],SubCount=new long[6];public static readonly string[] SubNames=["RefreshCrosswalks","Moving (inclui chegada)","CitizenRoutine (decisões)","CitizenArrived","CitizenRoute (rotas a pé)",""];
+    public static readonly string[] ProfNames=["MoveVehicles","ReturnPaving","MoveCitizens","Construction","MaintCond","Infrastructure","OperateBusinesses","UpdateNeeds","ReviewMarkets","ReviewJobs","ScheduleMaint+Order","Restock/Emig/Debt","Daily/Tax","Loans"];
+    static long _t;static void P(int i){var n=System.Diagnostics.Stopwatch.GetTimestamp();Prof[i]+=n-_t;_t=n;}
     void Step(double dt)
     {
-        MoveVehicles(dt);ReturnPavingMachines(dt);MoveCitizens(dt);var completedConstruction=ProgressConstruction(dt);UpdateMaintenanceCondition(dt);UpdateInfrastructure(dt);OperateBusinesses(dt);UpdateNeeds(dt);
+        _t=System.Diagnostics.Stopwatch.GetTimestamp();
+        MoveVehicles(dt);P(0);ReturnPavingMachines(dt);P(1);MoveCitizens(dt);P(2);var completedConstruction=ProgressConstruction(dt);P(3);UpdateMaintenanceCondition(dt);P(4);UpdateInfrastructure(dt);P(5);OperateBusinesses(dt);P(6);UpdateNeeds(dt);P(7);
         State.AddElapsedSeconds(dt);State.Now=State.Now.AddSeconds(dt);
-        // Construction is physical work, not a periodic market decision. Dispatch
-        // available vehicles and crews on the next simulated step, including when
-        // a vehicle returns or a newly completed street restores access.
         var reviewEconomy=completedConstruction||State.ElapsedSeconds>=State.EconomyNextAt;
-        if(reviewEconomy){State.EconomyNextAt=State.ElapsedSeconds+State.Tuning.EconomyInterval;ReviewMarkets();ReviewJobs();ScheduleMaintenance();}
-        OrderConstruction();
-        if(reviewEconomy){RestockBusinesses();ReviewEmigration();RecoverDebt();}
+        if(reviewEconomy){State.EconomyNextAt=State.ElapsedSeconds+State.Tuning.EconomyInterval;ReviewMarkets();P(8);ReviewJobs();P(9);ScheduleMaintenance();}
+        OrderConstruction();P(10);
+        if(reviewEconomy){RestockBusinesses();ReviewEmigration();RecoverDebt();}P(11);
         while(State.Now>=State.NextDaily){DailyFinance();State.NextDaily=State.NextDaily.AddDays(1);}
-        while(State.Now>=State.NextTaxDate){PropertyTaxes();State.NextTaxDate=State.NextTaxDate.AddMonths(1);}
-        ProcessLoans();
+        while(State.Now>=State.NextTaxDate){PropertyTaxes();State.NextTaxDate=State.NextTaxDate.AddMonths(1);}P(12);
+        ProcessLoans();P(13);
     }
     public void CheckInvariants()
     {

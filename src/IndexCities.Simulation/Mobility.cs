@@ -36,7 +36,8 @@ public sealed partial class CitySimulation
         }
         return result;
     }
-    List<Point> CitizenRoute(Citizen citizen,Building destination)
+    List<Point> CitizenRoute(Citizen citizen,Building destination){var t=System.Diagnostics.Stopwatch.GetTimestamp();try{return CitizenRouteCore(citizen,destination);}finally{SubProf[4]+=System.Diagnostics.Stopwatch.GetTimestamp()-t;SubCount[4]++;}}
+    List<Point> CitizenRouteCore(Citizen citizen,Building destination)
     {
         // Replanning beside the destination door must not take the walker to
         // the default sidewalk, across the road and back to that same door.
@@ -55,12 +56,12 @@ public sealed partial class CitySimulation
         // Refresh derived crossings once for an old save before retrying routes.
         // Loading itself still preserves the serialized state exactly.
         if(!_pedestrianCrossingsChecked){UpdateCrosswalks();_pedestrianCrossingsChecked=true;}
-        RefreshCrosswalks();
+        var __t0=System.Diagnostics.Stopwatch.GetTimestamp();RefreshCrosswalks();SubProf[0]+=System.Diagnostics.Stopwatch.GetTimestamp()-__t0;
         foreach(var c in State.Citizens.Where(c=>c.Alive)){
             if(!c.Moving&&c.PathRoadRevision!=State.RoadRevision&&c.Activity.StartsWith("Sem rota",StringComparison.Ordinal))c.NextDecisionAt=Math.Min(c.NextDecisionAt,State.ElapsedSeconds);
             if(c.ConstructionProjectId!=null&&ShiftActive(c)){c.AddWorkSecondsToday(dt);AccrueWage(c,dt);}
             if(c.VehicleId is {} vid){var v=VehicleById(vid);if(v!=null){c.Position=v.Position;c.InsideMap=InMap(v.Position);}continue;}
-            if(c.Moving){
+            if(c.Moving){var __tm=System.Diagnostics.Stopwatch.GetTimestamp();try{
                 if(c.Purpose==JourneyPurpose.Boarding)c.PathRoadRevision=State.RoadRevision;
                 if(c.PathRoadRevision!=State.RoadRevision&&c.Purpose==JourneyPurpose.Construction&&c.ConstructionProjectId is {} projectId){var project=State.Projects.First(p=>p.Id==projectId);var access=WorkAccess(project);var replacement=access==null?new List<Point>():PedestrianPath(c.Position,CrewPedestrianSite(access),access);c.Path=replacement;c.PathIndex=0;c.PathRoadRevision=State.RoadRevision;if(replacement.Count==0){c.Activity="Equipe aguardando rota de obra";continue;}}
                 var journeyDestination=BuildingById(c.DestinationId);
@@ -85,10 +86,10 @@ public sealed partial class CitySimulation
                     }
                     var heading=d>.001?(target-c.Position)*(1/d):new Point(0,0);var gap=PedestrianGap(c,target,d,heading,Math.Min(distance,d)+.7);var travelled=Math.Min(distance,Math.Min(d,Math.Max(0,gap-.7)));if(travelled<.000001&&d>.001){c.Activity="Fila de pedestres";break;}c.Position=c.Position.MoveTowards(target,travelled);distance-=travelled;if(d<=travelled+.00001)c.PathIndex++;else break;
                 }
-                c.InsideMap=InMap(c.Position);if(!c.Moving){c.CrossingNodeId=null;CitizenArrived(c);}continue;
+                c.InsideMap=InMap(c.Position);if(!c.Moving){var __ta=System.Diagnostics.Stopwatch.GetTimestamp();c.CrossingNodeId=null;CitizenArrived(c);SubProf[3]+=System.Diagnostics.Stopwatch.GetTimestamp()-__ta;}continue;}finally{SubProf[1]+=System.Diagnostics.Stopwatch.GetTimestamp()-__tm;}
             }
             if(State.ElapsedSeconds<c.NextDecisionAt)continue;c.NextDecisionAt=State.ElapsedSeconds+60;
-            CitizenRoutine(c);
+            var __tr=System.Diagnostics.Stopwatch.GetTimestamp();CitizenRoutine(c);SubProf[2]+=System.Diagnostics.Stopwatch.GetTimestamp()-__tr;SubCount[2]++;
         }
     }
     // Crosswalk nodes in State.Roads order. Rebuilt at the start of every
