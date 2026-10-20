@@ -18,7 +18,7 @@ public sealed partial class CitySimulation
         State.Entry=new(-State.Tuning.MapHalfSize,0);
         State.LakeCentre=new(State.Tuning.MapHalfSize*.64+(NextRandom()-.5)*24,State.Tuning.MapHalfSize*.38+(NextRandom()-.5)*24);
         State.LakeRadius=28+NextRandom()*12;
-        State.QuantityStateVersion=1;State.ConstructionStateVersion=1;State.SchemaVersion=2;State.LakeBoundary=LakeGeometry.GenerateBoundary(seed,State.LakeCentre,State.LakeRadius);
+        State.QuantityStateVersion=2;State.ConstructionStateVersion=1;State.SchemaVersion=2;State.LakeBoundary=LakeGeometry.GenerateBoundary(seed,State.LakeCentre,State.LakeRadius);
         State.Wallets["global"]=State.Tuning.TotalMoney;State.Wallets["city"]=0;
         Transfer("global","city",State.Tuning.CityInitialMoney,"Capital inicial","Distribuição da oferta monetária",null);
         State.NextDaily=State.Now.Date.AddDays(1);State.NextTaxDate=State.Now.Date.AddMonths(1);
@@ -90,7 +90,7 @@ public sealed partial class CitySimulation
     }
     public void CheckInvariants()
     {
-        if(State.QuantityStateVersion!=1)throw new InvalidOperationException("Versão de quantidades do save não suportada");
+        if(State.QuantityStateVersion!=2)throw new InvalidOperationException("Versão de quantidades do save não suportada");
         if(State.SchemaVersion is not (1 or 2))throw new InvalidOperationException("Versão de save não suportada");
         if(State.SchemaVersion==2&&State.LakeBoundary is not {Count:>=8})throw new InvalidOperationException("Contorno do lago ausente");
         if(State.Wallets.Values.Any(x=>x<0)||MonetaryTotal!=State.Tuning.TotalMoney)throw new InvalidOperationException("Oferta monetária ou saldo inválido");

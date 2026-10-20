@@ -88,35 +88,37 @@ public sealed class FixedQuantitiesTests
     public void PollutionAndFarmDemandComposeRoundedIntegerRecurrences()
     {
         var sim=new CitySimulation(42);var point=new Point(0,0);const int n=300;const double emission=.0000001234567;
-        sim.State.PollutionCells[0]=123_456_789_123;long expected=123_456_789_123;
-        var factor=(decimal)Math.Exp(-.15*2/86400);var delta=(long)Math.Round(emission*FixedPoint.PointScale,MidpointRounding.AwayFromZero);
+        sim.State.PollutionCells[0]=0.123456789123m;var expected=0.123456789123m;
+        var factor=(decimal)Math.Exp(-.15*2/86400);
         for(var i=0;i<n;i++){
             Invoke(sim,"UpdatePollution",2.0,new List<Building>());Invoke(sim,"EmitPollution",point,emission);
-            expected=checked((long)decimal.Truncate(expected*factor)+delta);
+            expected=FixedPoint.Pollution(FixedPoint.Pollution(expected*factor)+(decimal)emission);
         }
         Assert.Equal(expected,sim.State.PollutionCells[0]);
-        var farm=new Building{FoodDemandEstimateUnits=17_123_456_789,FoodSoldTodayUnits=9_123_456_789};expected=farm.FoodDemandEstimateUnits;
-        for(var i=0;i<n;i++){Invoke(sim,"ReviewFarmDemand",farm);expected=(long)decimal.Round(expected*.7m+farm.FoodSoldTodayUnits*.3m,0,MidpointRounding.AwayFromZero);}
-        Assert.Equal(expected,farm.FoodDemandEstimateUnits);
-        sim.State.PollutionCells[0]=99;Invoke(sim,"UpdatePollution",2.0,new List<Building>());Assert.Empty(sim.State.PollutionCells);
+        var farm=new Building{FoodDemandEstimateUnits=17_123_456_789,FoodSoldTodayUnits=9_123_456_789};var demand=farm.FoodDemandEstimateUnits;
+        for(var i=0;i<n;i++){Invoke(sim,"ReviewFarmDemand",farm);demand=(long)decimal.Round(demand*.7m+farm.FoodSoldTodayUnits*.3m,0,MidpointRounding.AwayFromZero);}
+        Assert.Equal(demand,farm.FoodDemandEstimateUnits);
+        sim.State.PollutionCells[0]=0.000000000099m;Invoke(sim,"UpdatePollution",2.0,new List<Building>());Assert.Empty(sim.State.PollutionCells);
     }
     [Theory]
-    [InlineData(100L)]
-    [InlineData(1000L)]
-    [InlineData(100000L)]
-    [InlineData(143000L)]
-    [InlineData(144000L)]
-    public void TinyPollutionResiduesKeepDecayingUntilRemoved(long initial)
+    [InlineData("0.000000144")]
+    [InlineData("0.000000000144")]
+    [InlineData("0.0000000001001")]
+    public void TinyPollutionResiduesFollowTheExponentialCurveUntilRemoved(string start)
     {
+        // Residues keep the exponential decay of the previous double model (no
+        // stall from rounding, no faster linear loss) until below 1e-10 points.
+        var initial=decimal.Parse(start,System.Globalization.CultureInfo.InvariantCulture);
         var sim=new CitySimulation(42);sim.State.PollutionCells.Clear();sim.State.PollutionCells[0]=initial;
-        // At least one integer unit must disappear per 2 s step, even where
-        // nearest rounding used to leave the residue unchanged forever.
-        var previous=initial;
-        for(var step=0;step<=initial-100&&sim.State.PollutionCells.Count>0;step++){
-            Invoke(sim,"UpdatePollution",2.0,new List<Building>());
-            if(sim.State.PollutionCells.TryGetValue(0,out var current)){Assert.True(current<previous);Assert.True(current>=100);previous=current;}
+        var rate=-.15*2/86400;var steps=0;
+        while(sim.State.PollutionCells.Count>0&&steps<400){
+            Invoke(sim,"UpdatePollution",2.0,new List<Building>());steps++;
+            var exact=(double)initial*Math.Exp(rate*steps);
+            if(sim.State.PollutionCells.TryGetValue(0,out var current))Assert.True(Math.Abs((double)current-exact)<=exact*1e-9,$"step {steps}: {current} vs {exact}");
+            else Assert.True(exact<1e-10*(1+1e-9),$"removed at step {steps} while the curve was {exact}");
         }
-        Assert.Empty(sim.State.PollutionCells);
+        // 1.001e-10 crosses the threshold after ~288 steps; larger residues are still decaying.
+        if(initial<0.0000000001003m)Assert.Empty(sim.State.PollutionCells);else Assert.NotEmpty(sim.State.PollutionCells);
     }
     [Theory]
     [InlineData("\"1\"")]
@@ -181,9 +183,13 @@ public sealed class FixedQuantitiesTests
         // need positive stock, and delivered must not exceed required materials.
         foreach(var store in new[]{home.Stock,project.LocalReserved,sim.State.OutsideStock,shipment.Cargo,sim.State.Vehicles[0].Cargo})store.Units[ResourceKind.Wood]=9_007_199_254_740_993;
         project.Delivered.Units[ResourceKind.Wood]=123_456_789;project.Required[ResourceKind.Wood]=1;
-        sim.State.PollutionCells[0]=9_007_199_254_740_993;
+        sim.State.PollutionCells[0]=9_007_199_254.74099312345678901234m;
         var json=sim.SaveToJson();Assert.Equal(json,CitySimulation.FromJson(json).SaveToJson());
         var old=JsonNode.Parse(json)!.AsObject();old.Remove("QuantityStateVersion");Assert.Throws<InvalidDataException>(()=>CitySimulation.FromJson(old.ToJsonString()));
+        // Version 1 stored pollution as integers at 1e12 per point; loading it as
+        // decimal points would silently multiply pollution, so it is refused.
+        var v1=JsonNode.Parse(json)!.AsObject();v1["QuantityStateVersion"]=1;v1["PollutionCells"]=new JsonObject{["0"]=123_456_789_123L};
+        Assert.Throws<InvalidDataException>(()=>CitySimulation.FromJson(v1.ToJsonString()));
     }
     [Fact]
     public void ScalesCoverOneHundredYearsAndLargestCurrentStockAndRejectOverflow()
