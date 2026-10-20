@@ -399,6 +399,21 @@ Consultas caras devem passar por fila/orçamento/prioridade quando necessário. 
 
 A API exata, algoritmos e uso de NavigationServer continuam em exploração/prototipagem. A decisão arquitetural é preservar essa separação para não confundir **decidir destino**, **estimar custo**, **encontrar rota** e **mover-se pela rota**.
 
+#### Espaços compartilhados do movimento local (2026-10-20)
+
+Um espaço físico usado por mais de um veículo tem **um único dono por vez**, decidido por **uma única admissão**. Todo movimento que põe um corpo nesse espaço passa por ela: faixa, saída e entrada de baia/doca, e caminho de canteiro. Motivo: com donos separados (reserva de cruzamento, poses de baia, reservas do canteiro), uma camada admitia um corpo onde a saída dele deixava o outro sem espaço, ou cada camada tomava metade de um caminho (ciclos reproduzidos em 2026-10-20).
+
+- **Espaços.** São três: (a) área de cruzamento/travessia; (b) curva simples, na mesma reserva de cruzamento, com a regra da SPEC; (c) corredor de baia/doca, da doca ao ponto da faixa, nos dois sentidos. A parte do corredor que cai dentro de (a) ou (b) pertence a esse espaço.
+- **Preferências.** Ficam onde já estão: direita, via contínua no T, semáforo, travessia e empate nos cruzamentos; ordem de chegada com desempate fixo na curva; saída de lote cedendo ao tráfego; espera por baia ocupada. Não há fila nem ordem global.
+- **Três fases.** O **corpo presente** é sempre obstáculo, inclusive parado por quebra ou falta de combustível. A **manobra admitida** obteve juntas todas as reservas que atravessa e bloqueia quem não as tem. A **intenção** (quer sair ou entrar, mas não tem tudo) não publica poses nem bloqueia ninguém além do próprio corpo.
+- **Admissão integral e simétrica.** Saída (doca → corredor → curva/cruzamento → faixa) e entrada (faixa → curva/cruzamento → corredor → doca) começam só quando todos os espaços da manobra são obtidos juntos e o percurso está livre de corpos. Sem isso, o veículo não toma nenhum espaço.
+- **Onde se espera.** Sempre fora de espaço compartilhado novo, ou num espaço que já é só do veículo: a doca do dono, ou uma posição da faixa medida fora da manobra de saída do dono (corpo com as dimensões reais e a margem de contato). Ninguém espera segurando um espaço por outro, o que exclui tomar dois espaços em ordens opostas.
+- **Liberação observável.** A posse do corredor termina quando o corpo do dono não se sobrepõe a nenhuma pose do corredor, com a mesma margem; não depende de estado, índice de rota ou tempo. A reserva de curva/cruzamento é liberada pelo corpo a mais da folga do nó. Uma manobra admitida não a perde antes de passar pelo nó. Toda reserva é limpa nos mesmos pontos em que a reserva de cruzamento já é limpa (estacionar, descarregar, rebocar, sair, demolir via). Após carregar um save, a posse do corredor é recalculada do corpo e da rota.
+- **Máquinas do canteiro.** O dono é o corpo físico, não o ponto lógico da doca: a pavimentadora e o basculante que a alimenta ocupam posições distintas e compatíveis, e a alimentação nunca depende de a pavimentadora sair.
+- **Geometria de doca de equipe.** A doca é escolhida no mesmo meio-fio e acesso, fora das vagas existentes dos lotes. É geometria estática, sem reserva, sem capacidade nova e sem mover veículo já estacionado.
+
+Isto é estrutura interna do movimento local: não cria regra, prioridade, opção nem consequência de produto.
+
 ---
 
 ## 8. Modelo de comunicação
