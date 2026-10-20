@@ -414,6 +414,16 @@ Um espaço físico usado por mais de um veículo tem **um único dono por vez**,
 
 Isto é estrutura interna do movimento local: não cria regra, prioridade, opção nem consequência de produto.
 
+**Complemento (2026-10-20, após traces e dois pareceres independentes):**
+- **Admissão explícita.** Quando corpo e rota não bastam para distinguir intenção de manobra já admitida, a admissão é estado explícito e persistido do veículo: o corredor de doca que ele ocupa e o **conjunto finito de espaços** (curvas/cruzamentos) que a manobra atravessa. Trocar o destino seguinte (`DockPosition`) não apaga essa posse; um único índice de reserva não representa vários espaços.
+- **Conjunto até a espera segura.** O conjunto é o de espaços que o corpo atravessa até o **primeiro local em que o corpo inteiro pode aguardar** fora deles e fora da saída de outro dono. É calculado por varredura dos corpos e corredores reais, a partir da rota real, inclusive com o veículo ainda na doca. É reservado numa única operação, depois de todas as verificações, e não se estende além desse local. Distâncias só filtram candidatos.
+- **Simetria da aquisição, não da prioridade.** Quem sai do lote confere o tráfego já circulando e sua aproximação durante a manobra inteira, pelas regras existentes. Intenção não retém ninguém. Uma manobra admitida e seu corpo continuam obstáculos até concluir. O próximo caminhão é retido **antes** de entrar no corredor de saída do dono, conferindo o passo inteiro.
+- **Liberação física.** Cada espaço do conjunto e o corredor são liberados quando o corpo deixa de ocupá-los e a manobra restante não os atravessa mais. Quebra e falta de combustível preservam corpo e posse; cancelamento, estacionamento, reboque e saída do mapa não deixam posse órfã. Nenhum corpo é descartado por já estar em contato.
+- **Máquinas.** Caminho e posição das máquinas do canteiro passam pela mesma aquisição. A alimentação da pavimentadora e a saída do rolo devem ser fisicamente possíveis, sem mover máquina parada nem fazer o basculante esperar a pavimentadora sair.
+- **Persistência.** Os dados mínimos da admissão efetiva são persistidos. Ausentes num save anterior, recebem tratamento conservador: preservam a reserva antiga ainda fisicamente válida e o corpo presente, sem migração destrutiva nem mudança da versão de quantidades.
+- **Doca de equipe.** Escolhida no mesmo meio-fio e acesso, fora de prédios e das vagas do lote (inclusive de lote ainda em obra). Sem ponto compatível, não se escolhe ponto inválido: a equipe espera em local viável com a causa real.
+- **Mantidos.** Ultrapassagem, meia-volta, rota alternativa e socorro já aprovados. Não há ré nova, teleporte, descarte, encolhimento de corpo, raio de agrupamento, cadeia ou fila global.
+
 ---
 
 ## 8. Modelo de comunicação
