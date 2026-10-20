@@ -19,6 +19,8 @@ public sealed partial class CitySimulation
         [BuildingKind.SewageTreatment]=[(-11,-11,false),(-8.6,-11,false)],
         [BuildingKind.WindPower]=[(-7,-6,false)],
         [BuildingKind.CityHall]=[],
+        // The shop yard holds the service places and its tow (Breakdowns.cs), not visitor spaces.
+        [BuildingKind.MechanicShop]=[],
     };
     static Point LocalPoint(Building b,double x,double z)=>b.Position+new Point(x*Math.Cos(b.Rotation)+z*Math.Sin(b.Rotation),-x*Math.Sin(b.Rotation)+z*Math.Cos(b.Rotation));
     public IEnumerable<ParkingSpot> ParkingSpots(Building b)
@@ -35,7 +37,14 @@ public sealed partial class CitySimulation
     // A car still physically in the space (its driver already chose another
     // destination) keeps occupying it until it actually leaves.
     bool SpotFree(ParkingSpot spot,int exceptVehicle)=>!State.Vehicles.Any(v=>v.Id!=exceptVehicle&&v.PassengerCar&&v.Status!=VehicleStatus.Outside&&(v.ParkingSpot==spot.Key||v.Position.Distance(spot.Position)<2));
-    public Vehicle? FamilyCar(Family? family)=>family==null?null:State.Vehicles.FirstOrDefault(v=>v.PassengerCar&&v.Status!=VehicleStatus.Outside&&family.Members.Any(id=>v.OwnerAccount=="sim:"+id));
+    // First car in vehicle order owned by a member; the member accounts are
+    // built once instead of once per vehicle (same ordinal string match).
+    public Vehicle? FamilyCar(Family? family)
+    {
+        if(family==null)return null;var accounts=family.Members.Select(id=>"sim:"+id).ToArray();
+        foreach(var v in State.Vehicles)if(v.PassengerCar&&v.Status!=VehicleStatus.Outside&&Array.IndexOf(accounts,v.OwnerAccount)>=0)return v;
+        return null;
+    }
     // Strangers do not use private house garages; other lots serve trips to that building.
     ParkingSpot? FreeSpot(Building destination,Family family,Vehicle car)
     {
@@ -43,12 +52,19 @@ public sealed partial class CitySimulation
         foreach(var spot in ParkingSpots(destination))if(SpotFree(spot,car.Id))return spot;return null;
     }
     // Reaching the car must not mean walking across a carriageway outside a crossing.
-    bool WalkCrossesRoad(Point a,Point b)=>State.Roads.Any(n=>{var ab=b-a;var len2=ab.X*ab.X+ab.Z*ab.Z;var t=len2<1e-9?0:Math.Clamp(((n.Position.X-a.X)*ab.X+(n.Position.Z-a.Z)*ab.Z)/len2,0,1);return n.Position.Distance(a+ab*t)<State.Tuning.RoadWidth/2-.6;});
+    // The nearest point of a→b lies in the segment's box, so a node more than
+    // the radius (plus 1 m against rounding) outside that box never matches.
+    bool WalkCrossesRoad(Point a,Point b)
+    {
+        var radius=State.Tuning.RoadWidth/2-.6;var margin=radius+1;
+        var x0=Math.Min(a.X,b.X)-margin;var x1=Math.Max(a.X,b.X)+margin;var z0=Math.Min(a.Z,b.Z)-margin;var z1=Math.Max(a.Z,b.Z)+margin;
+        return State.Roads.Any(n=>{if(n.Position.X<x0||n.Position.X>x1||n.Position.Z<z0||n.Position.Z>z1)return false;var ab=b-a;var len2=ab.X*ab.X+ab.Z*ab.Z;var t=len2<1e-9?0:Math.Clamp(((n.Position.X-a.X)*ab.X+(n.Position.Z-a.Z)*ab.Z)/len2,0,1);return n.Position.Distance(a+ab*t)<radius;});
+    }
     double FuelRate(Vehicle v)=>v.PassengerCar?State.Tuning.CarFuelPerMetre:State.Tuning.FuelPerMetre;
     bool TryDrive(Citizen c,Building destination,JourneyPurpose purpose)
     {
         if(c.Age<18||purpose is not (JourneyPurpose.Work or JourneyPurpose.Home or JourneyPurpose.Shopping or JourneyPurpose.Visit))return false;
-        var family=FamilyById(c.FamilyId);var car=FamilyCar(family);if(family==null||car==null||car.Status!=VehicleStatus.Parked||car.DriverId!=null||car.Position.Distance(c.Position)>40||WalkCrossesRoad(c.Position,car.Position))return false;
+        var family=FamilyById(c.FamilyId);var car=FamilyCar(family);if(family==null||car==null||car.Status!=VehicleStatus.Parked||car.DriverId!=null||car.BrokenDown||car.ServicePhase!=ServicePhase.None||car.PushPath.Count>0||car.Position.Distance(c.Position)>40||WalkCrossesRoad(c.Position,car.Position))return false;
         var start=NearestRoad(car.Position,false);var target=Access(destination);if(start==null||target==null||start.Position.Distance(car.Position)>State.Tuning.RoadWidth/2+16)return false;
         var route=FindRoadRoute(start.Id,target.Id);if(route.Count==0)return false;
         var home=BuildingById(family.HomeId);var atHome=home!=null&&ParkingSpots(home).Any(s=>s.Key==car.ParkingSpot);

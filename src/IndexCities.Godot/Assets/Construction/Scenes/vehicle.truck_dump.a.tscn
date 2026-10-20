@@ -1,87 +1,141 @@
 [gd_scene format=3]
 
-[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_dump.a.body.tres" id="1_j7gvr"]
-[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres" id="2_bdqg2"]
-[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_dump.a.bed.tres" id="3_tdyd3"]
-[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_dump.a.tailgate.tres" id="4_o7wfx"]
-[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_dump.a.load_sand_gravel.tres" id="5_5t37d"]
-[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_dump.a.load_asphalt.tres" id="6_nryuo"]
-[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_dump.a.cover.tres" id="7_0yyqy"]
-[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_dump.a.hydraulic_base.tres" id="8_jkrec"]
-[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_dump.a.hydraulic_rod.tres" id="9_247y2"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_dump.a.body.tres" id="1_bdqg2"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.construction_truck.wheel.tres" id="2_tdyd3"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.construction_truck.hood.tres" id="3_o7wfx"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_dump.a.bed.tres" id="4_5t37d"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_dump.a.tailgate.tres" id="5_nryuo"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_dump.a.load_sand_gravel.tres" id="6_0yyqy"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_dump.a.load_asphalt.tres" id="7_jkrec"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_dump.a.cover.tres" id="8_247y2"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_dump.a.hydraulic_base.tres" id="9_pyc2g"]
+[ext_resource type="ArrayMesh" path="res://Assets/Construction/Meshes/vehicle.truck_dump.a.hydraulic_rod.tres" id="10_a218j"]
 
-[node name="TruckDump" type="Node3D" unique_id=1792706996]
+[sub_resource type="Animation" id="Animation_d0s0a"]
+length = 0.9
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Hood:rotation")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.63, 0.9),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(0, 0, 0), Vector3(-1.850049, 0, 0), Vector3(-1.7453293, 0, 0)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_qcja2"]
+_data = {
+&"hood_open": SubResource("Animation_d0s0a")
+}
+
+[node name="TruckDump" type="Node3D" unique_id=1188556859]
 metadata/visual_id = "vehicle.truck_dump.a"
 metadata/asset_status = "PENDENTE de revisao humana"
 metadata/visual_envelope_min = Vector3(-1.45, 0, -3.6)
 metadata/visual_envelope_size = Vector3(2.9, 2.7799997, 7.2)
 
-[node name="Body" type="MeshInstance3D" parent="." unique_id=293336939]
-mesh = ExtResource("1_j7gvr")
+[node name="Body" type="MeshInstance3D" parent="." unique_id=604983199]
+mesh = ExtResource("1_bdqg2")
 
-[node name="Wheel_FL" type="MeshInstance3D" parent="." unique_id=1342423441]
+[node name="Wheel_FL" type="MeshInstance3D" parent="." unique_id=367045231]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 0.47, -2.55)
-mesh = ExtResource("2_bdqg2")
+mesh = ExtResource("2_tdyd3")
 
-[node name="Wheel_FR" type="MeshInstance3D" parent="." unique_id=2040997954]
+[node name="Wheel_FR" type="MeshInstance3D" parent="." unique_id=1075312635]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 0.47, -2.55)
-mesh = ExtResource("2_bdqg2")
+mesh = ExtResource("2_tdyd3")
 
-[node name="Wheel_ML" type="MeshInstance3D" parent="." unique_id=1900396495]
+[node name="Wheel_ML" type="MeshInstance3D" parent="." unique_id=312042567]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 0.47, 1.45)
-mesh = ExtResource("2_bdqg2")
+mesh = ExtResource("2_tdyd3")
 
-[node name="Wheel_MR" type="MeshInstance3D" parent="." unique_id=621957537]
+[node name="Wheel_MR" type="MeshInstance3D" parent="." unique_id=1221058327]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 0.47, 1.45)
-mesh = ExtResource("2_bdqg2")
+mesh = ExtResource("2_tdyd3")
 
-[node name="Wheel_RL" type="MeshInstance3D" parent="." unique_id=1369285002]
+[node name="Wheel_RL" type="MeshInstance3D" parent="." unique_id=1851241132]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.04, 0.47, 2.65)
-mesh = ExtResource("2_bdqg2")
+mesh = ExtResource("2_tdyd3")
 
-[node name="Wheel_RR" type="MeshInstance3D" parent="." unique_id=650549034]
+[node name="Wheel_RR" type="MeshInstance3D" parent="." unique_id=694605643]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.04, 0.47, 2.65)
-mesh = ExtResource("2_bdqg2")
+mesh = ExtResource("2_tdyd3")
 
-[node name="Candidate_Discharge" type="Marker3D" parent="." unique_id=595080997]
+[node name="Candidate_Discharge" type="Marker3D" parent="." unique_id=1395410699]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3.9)
 
-[node name="BedPivot" type="Node3D" parent="." unique_id=485707196]
+[node name="Hood" type="MeshInstance3D" parent="." unique_id=1278407921]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.86, -3.55)
+mesh = ExtResource("3_o7wfx")
+metadata/open_degrees = -100.0
+
+[node name="HazardFL" type="Marker3D" parent="." unique_id=278106865]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.98, 1.36, -3.57)
+gizmo_extents = 0.3
+metadata/note = "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
+
+[node name="HazardFR" type="Marker3D" parent="." unique_id=1517196701]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.98, 1.36, -3.57)
+gizmo_extents = 0.3
+metadata/note = "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
+
+[node name="HazardRL" type="Marker3D" parent="." unique_id=2034551095]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -1, 0.66, 3.47)
+gizmo_extents = 0.3
+metadata/note = "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
+
+[node name="HazardRR" type="Marker3D" parent="." unique_id=582100176]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 1, 0.66, 3.47)
+gizmo_extents = 0.3
+metadata/note = "Encaixe da lente do pisca-alerta (prop hazard_lights). Nao e acesso nem regra."
+
+[node name="HoodSmoke" type="Marker3D" parent="." unique_id=957623242]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.58, -3.64)
+gizmo_extents = 0.3
+metadata/note = "Origem da fumaca (prop breakdown_smoke) sobre o compartimento do motor. Nao e acesso nem regra."
+
+[node name="BedPivot" type="Node3D" parent="." unique_id=789858782]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.18, 2.9)
 
-[node name="Bed" type="MeshInstance3D" parent="BedPivot" unique_id=1958741164]
-mesh = ExtResource("3_tdyd3")
+[node name="Bed" type="MeshInstance3D" parent="BedPivot" unique_id=1508976185]
+mesh = ExtResource("4_5t37d")
 
-[node name="TailgatePivot" type="Node3D" parent="BedPivot" unique_id=1878390067]
+[node name="TailgatePivot" type="Node3D" parent="BedPivot" unique_id=1650713564]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.04, 0.34)
 
-[node name="Tailgate" type="MeshInstance3D" parent="BedPivot/TailgatePivot" unique_id=1594814663]
-mesh = ExtResource("4_o7wfx")
+[node name="Tailgate" type="MeshInstance3D" parent="BedPivot/TailgatePivot" unique_id=171435532]
+mesh = ExtResource("5_nryuo")
 
-[node name="LoadSandGravel" type="MeshInstance3D" parent="BedPivot" unique_id=545196381]
+[node name="LoadSandGravel" type="MeshInstance3D" parent="BedPivot" unique_id=2138432425]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.14, 0)
 visible = false
-mesh = ExtResource("5_5t37d")
+mesh = ExtResource("6_0yyqy")
 
-[node name="LoadAsphalt" type="MeshInstance3D" parent="BedPivot" unique_id=881387934]
+[node name="LoadAsphalt" type="MeshInstance3D" parent="BedPivot" unique_id=871083802]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.14, 0)
 visible = false
-mesh = ExtResource("6_nryuo")
+mesh = ExtResource("7_jkrec")
 
-[node name="Cover" type="MeshInstance3D" parent="BedPivot" unique_id=2037301751]
+[node name="Cover" type="MeshInstance3D" parent="BedPivot" unique_id=2021990905]
 visible = false
-mesh = ExtResource("7_0yyqy")
+mesh = ExtResource("8_247y2")
 
-[node name="HydraulicTarget" type="Marker3D" parent="BedPivot" unique_id=874285847]
+[node name="HydraulicTarget" type="Marker3D" parent="BedPivot" unique_id=356966757]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, -2.7)
 
-[node name="HydraulicAnchor" type="Marker3D" parent="." unique_id=871875548]
+[node name="HydraulicAnchor" type="Marker3D" parent="." unique_id=1336549526]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.89, -0.65)
 
-[node name="HydraulicBase" type="MeshInstance3D" parent="." unique_id=1229384488]
+[node name="HydraulicBase" type="MeshInstance3D" parent="." unique_id=723384247]
 transform = Transform3D(1, 0, 0, 0, 0.57357645, 0.81915206, 0, -0.81915206, 0.57357645, 0, 0.85, -0.55)
-mesh = ExtResource("8_jkrec")
+mesh = ExtResource("9_pyc2g")
 
-[node name="HydraulicRod" type="MeshInstance3D" parent="." unique_id=284590740]
+[node name="HydraulicRod" type="MeshInstance3D" parent="." unique_id=508455654]
 transform = Transform3D(1, 0, 0, 0, 0.57357645, 0.81915206, 0, -0.81915206, 0.57357645, 0, 0.85, -0.55)
-mesh = ExtResource("9_247y2")
+mesh = ExtResource("10_a218j")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1865078615]
+libraries/ = SubResource("AnimationLibrary_qcja2")

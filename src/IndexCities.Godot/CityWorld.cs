@@ -34,12 +34,12 @@ public partial class CityWorld:Node3D
     readonly Dictionary<int,MotionBefore> _peopleBefore=new(),_vehiclesBefore=new();
     readonly Dictionary<int,MotionTrace> _peopleMotion=new(),_vehicleMotion=new();
     CityState? _motionState;double _motionBeforeAt,_motionBuiltAt=double.NaN;
-    public static string Visual(BuildingKind kind)=>kind switch{BuildingKind.CityHall=>"civic.city_hall.a",BuildingKind.WorksDepot=>"civic.works_depot.a",BuildingKind.House=>"residential.small_house.a",BuildingKind.Grocery=>"commercial.grocery_small.a",BuildingKind.Farm=>"agriculture.farm_small.a",BuildingKind.FuelStation=>"commercial.fuel_station.a",BuildingKind.WaterIntake=>"utility.water_intake.a",BuildingKind.WaterTreatment=>"utility.water_treatment.a",BuildingKind.SewageTreatment=>"utility.sewage_treatment.a",_=>"utility.wind_power.a"};
+    public static string Visual(BuildingKind kind)=>kind switch{BuildingKind.CityHall=>"civic.city_hall.a",BuildingKind.WorksDepot=>"civic.works_depot.a",BuildingKind.House=>"residential.small_house.a",BuildingKind.Grocery=>"commercial.grocery_small.a",BuildingKind.Farm=>"agriculture.farm_small.a",BuildingKind.FuelStation=>"commercial.fuel_station.a",BuildingKind.WaterIntake=>"utility.water_intake.a",BuildingKind.WaterTreatment=>"utility.water_treatment.a",BuildingKind.SewageTreatment=>"utility.sewage_treatment.a",BuildingKind.MechanicShop=>"commercial.mechanic_shop.a",_=>"utility.wind_power.a"};
     public void Reset(CityState state)
     {
         _placementGridSurfaces.Clear();
         _waterIntakeRanges.Clear();_waterIntakeJobs.Clear();_waterIntakeRange=null;
-        foreach(var child in GetChildren()){RemoveChild(child);child.QueueFree();}_buildings.Clear();_roads.Clear();_people.Clear();_trucks.Clear();_finished.Clear();_lamps.Clear();_lampGlass.Clear();_causes.Clear();_companySigns.Clear();_rotors.Clear();_waterStates.Clear();_stockStates.Clear();_stockMarkers.Clear();_trees.Clear();_vegetationGeometry=null;_lastVisualTime=state.ElapsedSeconds;_roadRevision=-1;_state=state;
+        foreach(var child in GetChildren()){RemoveChild(child);child.QueueFree();}_buildings.Clear();_shopVisuals.Clear();_roads.Clear();_people.Clear();_trucks.Clear();_finished.Clear();_lamps.Clear();_lampGlass.Clear();_causes.Clear();_companySigns.Clear();_rotors.Clear();_waterStates.Clear();_stockStates.Clear();_stockMarkers.Clear();_trees.Clear();_vegetationGeometry=null;_lastVisualTime=state.ElapsedSeconds;_roadRevision=-1;_state=state;
         _roadWorks.Clear();_roadWorkLabels.Clear();_roadWorkGeometry=null;_roadSurface=null;_sidewalkSurface.Clear();
         _buildingPickMeshes.Clear();_roadFootprints.Clear();_roadCarriageways.Clear();_crosswalkStripes.Clear();_crosswalkPaint=null;_labelLayoutKey=null;
         ClearActivityBadges();_previewAccess=null;_previewAccessKey=null;
@@ -66,8 +66,11 @@ public partial class CityWorld:Node3D
     static MeshInstance3D Box(Node3D parent,Vector3 size,Vector3 at,string hex,float alpha=1){var mesh=new MeshInstance3D{Mesh=new BoxMesh{Size=size},Position=at,MaterialOverride=Material(hex,alpha)};parent.AddChild(mesh);return mesh;}
     // Paint variety is presentation only: a stable color per real vehicle.
     static readonly string[] CarPaints=["car_paint","car_paint_red","car_paint_blue","car_paint_white","car_paint_yellow","car_paint_green"];
-    static void PaintCar(Node3D car,int id){if(car.GetNodeOrNull<MeshInstance3D>("Body") is not {Mesh:ArrayMesh mesh} body)return;var file="res://Assets/V1/Materials/"+CarPaints[(int)((uint)(id*2654435761u)%CarPaints.Length)]+".tres";if(!ResourceLoader.Exists(file))return;var paint=GD.Load<Material>(file);for(var i=0;i<mesh.GetSurfaceCount();i++)if(mesh.SurfaceGetName(i)=="car_paint")body.SetSurfaceOverrideMaterial(i,paint);}
-    static Node3D? Scene(string id){var file="res://Assets/V1/Scenes/"+id+".tscn";return ResourceLoader.Exists(file)?GD.Load<PackedScene>(file)?.Instantiate<Node3D>():null;}
+    // The hood has its own car_paint surface and takes the same variant as the body.
+    static void PaintCar(Node3D car,int id){var file="res://Assets/V1/Materials/"+CarPaints[(int)((uint)(id*2654435761u)%CarPaints.Length)]+".tres";if(!ResourceLoader.Exists(file))return;var paint=GD.Load<Material>(file);foreach(var part in new[]{"Body","Hood"})if(car.GetNodeOrNull<MeshInstance3D>(part) is {Mesh:ArrayMesh mesh} panel)for(var i=0;i<mesh.GetSurfaceCount();i++)if(mesh.SurfaceGetName(i)=="car_paint")panel.SetSurfaceOverrideMaterial(i,paint);}
+    // The mechanic shop model lives in its own asset package.
+    const string MechanicShopScene="res://Assets/Workshop/Scenes/commercial.mechanic_shop.a.tscn";
+    static Node3D? Scene(string id){var file="res://Assets/V1/Scenes/"+id+".tscn";if(id=="commercial.mechanic_shop.a")file=MechanicShopScene;return ResourceLoader.Exists(file)?GD.Load<PackedScene>(file)?.Instantiate<Node3D>():null;}
     static Node3D FallbackTree(){var root=new Node3D();Box(root,new(.65f,3,.65f),new(0,1.5f,0),"745541");root.AddChild(new MeshInstance3D{Mesh=new SphereMesh{Radius=2.5f,Height=5,RadialSegments=8,Rings=4},Position=new(0,4,0),MaterialOverride=Material("598745")});return root;}
     static Node3D BuildingVisual(Building b)=>BuildingVisual(b.Kind);
     static Node3D BuildingVisual(BuildingKind kind)
@@ -134,7 +137,7 @@ public partial class CityWorld:Node3D
         foreach(var c in state.Citizens){if(!c.Alive||!c.InsideMap||c.VehicleId!=null){Remove(_people,c.Id);continue;}if(!_people.TryGetValue(c.Id,out var n)){n=Scene("agent.sim_pedestrian.a")??new Node3D();n.Name="Citizen"+c.Id;if(n.GetChildCount()==0)Box(n,new(.6f,1.7f,.5f),new(0,.85f,0),"d7a359");AddChild(n);_people[c.Id]=n;}
             var pose=interpolate&&_peopleMotion.TryGetValue(c.Id,out var motion)?motion.At(interpolation!.Value):(c.Position,(double?)null);n.Position=P(pose.Item1,RoadSurfaceAt(pose.Item1));var interior=pose.Item2!=null?null:InteriorBuildingId(state,c,pose.Item1);n.Visible=interior==null;
             var anim=n.GetNodeOrNull<AnimationPlayer>("AnimationPlayer");if(anim!=null){var animation=c.Moving||pose.Item2!=null?"walk":"idle";if(anim.HasAnimation(animation)&&anim.CurrentAnimation!=animation)anim.Play(animation);}if(pose.Item2 is {} heading)n.Rotation=new(0,(float)heading,0);else if(c.Moving){var target=c.Path[c.PathIndex];n.Rotation=new(0,(float)Math.Atan2(c.Position.X-target.X,c.Position.Z-target.Z),0);}}
-        SyncVehicleVisuals(state,interpolate,interpolation);
+        SyncVehicleVisuals(state,interpolate,interpolation);SyncShopVisuals(state);
         SyncBuildingActivity(state,interpolate,interpolation);
         if(simulation!=null)UpdateProblemAlerts(state,simulation,state.ElapsedSeconds);
         var geometry=state.Buildings.Aggregate(state.RoadRevision,(hash,b)=>HashCode.Combine(hash,b.Id,b.Removed));if(_vegetationGeometry!=geometry){_vegetationGeometry=geometry;foreach(var tree in _trees){var p=tree.Position;tree.Node.Visible=!state.Buildings.Any(b=>!b.Removed&&Math.Abs(p.X-b.Position.X)<Math.Max(b.Definition.Width,b.Definition.Depth)/2+4&&Math.Abs(p.Z-b.Position.Z)<Math.Max(b.Definition.Width,b.Definition.Depth)/2+4)&&!state.Roads.Any(r=>r.Position.Distance(p)<state.Tuning.RoadWidth/2+3);}}
@@ -298,7 +301,7 @@ public partial class CityWorld:Node3D
     {
         var rect=new Rect2((float)at.X-width/2,(float)at.Z-depth/2,width,depth);(carriageway?_roadCarriageways:_roadFootprints).Add(rect);
     }
-    void Remove<T>(Dictionary<int,T> table,int id)where T:Node3D{if(table.Remove(id,out var node)){RemoveChild(node);node.QueueFree();}}
+    void Remove<T>(Dictionary<int,T> table,int id)where T:Node3D{if(table.Remove(id,out var node)){node.GetParent()?.RemoveChild(node);node.QueueFree();}}
     static void PreviewValidity(Node3D parent,Vector3 at,bool valid){parent.AddChild(new Label3D{Text=valid?"✓":"×",Position=at,FontSize=48,PixelSize=.04f,Billboard=BaseMaterial3D.BillboardModeEnum.Enabled,OutlineSize=4,Modulate=new Color("fff5d4")});}
     public void ClearPreview(){if(_preview==null||_previewKey==""&&_previewAccess==null)return;foreach(var c in _preview.GetChildren()){_preview.RemoveChild(c);c.QueueFree();}_previewKey="";_previewBuildingKind=null;_previewPool.Clear();_previewAccess=null;_previewAccessKey=null;}
     public void PreviewAccessLinks(IEnumerable<(Point Door,Point Road,bool Connected)> links)

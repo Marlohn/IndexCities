@@ -289,3 +289,8 @@ Rodados no projeto temporário fora do repositório, com Godot 4.7.2 mono.
   - build exportada para Windows;
   - desempenho com muitas instalações;
   - escala real das cenas dentro dos lotes do jogo.
+
+
+## Ganchos de quebra (2026-10-20)
+
+`vehicle.car_passenger.a` e `vehicle.truck_cargo.a` ganharam `Hood` (capô/tampa com pivô na dobradiça), `AnimationPlayer` com `hood_open`, `HazardFL/FR/RL/RR` e `HoodSmoke`, com o veículo fechado idêntico ao anterior. No carro, o `Hood` tem superfície `car_paint` própria: aplique a mesma variante de cor do `Body`. Contrato, ângulos e props em [`../Breakdown/README.md`](../Breakdown/README.md); receita em `Source/kit/breakdown_rig.gd` e nas receitas dos dois veículos. O validador V1 continua com 0 falhas.

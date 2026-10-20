@@ -10,23 +10,26 @@ public readonly record struct Point(double X, double Z)
     public static Point operator -(Point a, Point b)=>new(a.X-b.X,a.Z-b.Z);
     public static Point operator *(Point p,double scale)=>new(p.X*scale,p.Z*scale);
 }
-public enum BuildingKind { CityHall, WorksDepot, House, Grocery, Farm, FuelStation, WaterIntake, WaterTreatment, SewageTreatment, WindPower }
+public enum BuildingKind { CityHall, WorksDepot, House, Grocery, Farm, FuelStation, WaterIntake, WaterTreatment, SewageTreatment, WindPower, MechanicShop }
 public enum ResourceKind { Aggregate, Concrete, Steel, Wood, Asphalt, Food, Fuel }
 public enum WorkStatus { Waiting, InProgress, Completed, Cancelled }
-public enum JourneyPurpose { Arriving, Work, Home, Shopping, Leaving, Construction, Boarding, Visit, Stroll }
+public enum JourneyPurpose { Arriving, Work, Home, Shopping, Leaving, Construction, Boarding, Visit, Stroll, Service }
 public enum VehicleStatus { Outside, Travelling, Unloading, Parked, Waiting, Stranded, Towed }
 public enum ShipmentPurpose { Construction, Food, Fuel, Vehicle, Maintenance }
 public enum TruckBody { Cargo, Dump, Mixer, Flatbed, Tow, TowHeavy }
 // Tow service from the exterior (SPEC transporte-circulacao, Socorro a veículos parados).
 public enum TowPhase { None, ToVehicle, Loading, Delivering, Unloading }
-public enum TowDestination { Station, Exterior, Holding }
+public enum TowDestination { Station, Exterior, Holding, Shop, Home }
+// Breakdowns, repair and revision (SPEC transporte-circulacao, "Quebras, guincho local e oficina").
+public enum ServiceKind { None, Repair, Revision }
+public enum ServicePhase { None, ToService, Queued, InService, AwaitingReturn, AtExterior, AwaitingMoney }
 public enum PavingMachine { None, Paver, Roller }
 public enum MachinePhase { Available, ToSite, OnSite, LeavingSite, Returning }
 public enum JunctionControl { RightHand, ThroughX, ThroughZ, Signal }
 
 public sealed record BuildingDefinition(BuildingKind Kind,string Name,double Width,double Depth,decimal BaseValue,int Jobs,double Capacity,double WorkSeconds,Dictionary<ResourceKind,double> Materials)
 {
-    public bool Private=>Kind is BuildingKind.House or BuildingKind.Grocery or BuildingKind.Farm or BuildingKind.FuelStation;
+    public bool Private=>Kind is BuildingKind.House or BuildingKind.Grocery or BuildingKind.Farm or BuildingKind.FuelStation or BuildingKind.MechanicShop;
     public int TaxCategory=>Kind==BuildingKind.House?0:Kind==BuildingKind.Farm?4:2;
     public bool Utility=>Kind is BuildingKind.WaterIntake or BuildingKind.WaterTreatment or BuildingKind.SewageTreatment or BuildingKind.WindPower;
 }
@@ -45,6 +48,7 @@ public static class Catalog
         [BuildingKind.WaterTreatment]=new(BuildingKind.WaterTreatment,"Água potável",24,26,12000,6,960,360,M(20,20,12,4)),
         [BuildingKind.SewageTreatment]=new(BuildingKind.SewageTreatment,"Esgoto",26,28,12000,6,1000,360,M(22,22,12,2)),
         [BuildingKind.WindPower]=new(BuildingKind.WindPower,"Energia eólica",18,18,14000,6,1200,360,M(16,20,20,2)),
+        [BuildingKind.MechanicShop]=new(BuildingKind.MechanicShop,"Oficina mecânica",22,19,90000,4,0,300,M(16,14,8,4)),
     };
 }
 // Values/frequencies explicitly delegated to calibration by SPEC. They are saved with the city.
@@ -104,6 +108,21 @@ public sealed class SimulationTuning
     public double TowLoadSeconds {get;set;}=90;
     public double TowUnloadSeconds {get;set;}=60;
     public double TowRetrySeconds {get;set;}=60;
+    // Condition wear and breakdown hazard: the condition falls with the distance
+    // driven; the chance per kilometre grows from the new rate to the worn one.
+    public double ConditionWearPerMetre {get;set;}=1.0/60000;
+    public double BreakdownChancePerKmNew {get;set;}=.002;
+    public double BreakdownChancePerKmWorn {get;set;}=.08;
+    public double RevisionThreshold {get;set;}=.5;
+    public double LocalRepairSeconds {get;set;}=3600;
+    public double LocalRevisionSeconds {get;set;}=1800;
+    public double ExteriorRepairSeconds {get;set;}=4*3600;
+    public double ExteriorRevisionSeconds {get;set;}=2*3600;
+    public decimal MechanicHourlyPrice {get;set;}=120;
+    public decimal ExteriorServiceHourlyPrice {get;set;}=150;
+    public decimal LocalTowBase {get;set;}=35;
+    public decimal TowTruckPrice {get;set;}=6000;
+    public double ShopPushSpeed {get;set;}=1;
     public decimal ShoppingTripCostPerMetre {get;set;}=.004m;
     public Dictionary<ResourceKind,decimal> ImportPrices {get;set;}=new(){[ResourceKind.Aggregate]=14,[ResourceKind.Concrete]=25,[ResourceKind.Steel]=50,[ResourceKind.Wood]=24,[ResourceKind.Asphalt]=22,[ResourceKind.Food]=2,[ResourceKind.Fuel]=5};
 }
@@ -370,6 +389,25 @@ public sealed class Vehicle
     // and whether it found no other way out (then that queue turns back).
     public double TowExitWaitSince {get;set;}
     public bool TowExitNoOther {get;set;}
+    // Condition (0..1) falls with the distance driven; a worn vehicle in use may
+    // break down. Presentation contract: Condition, BrokenDown, ServiceShopId and
+    // ServiceBay (0 = lift, 1 = floor) while on a bay of a local mechanic shop.
+    public long ConditionUnits {get;set;}=1*FixedPoint.PointScale;
+    [JsonIgnore] public double Condition {get=>FixedPoint.Value(ConditionUnits,FixedPoint.PointScale);set=>ConditionUnits=FixedPoint.Quantize(Math.Clamp(value,0,1),FixedPoint.PointScale);}
+    public bool BrokenDown {get;set;}
+    public ServiceKind Service {get;set;}
+    public ServicePhase ServicePhase {get;set;}
+    public int? ServiceShopId {get;set;}
+    public int? ServiceBay {get;set;}
+    public int? ServiceSpot {get;set;}
+    public long ServiceWorkUnits {get;set;}
+    [JsonIgnore] public double ServiceWork {get=>FixedPoint.Value(ServiceWorkUnits,FixedPoint.TimeScale);set=>ServiceWorkUnits=FixedPoint.Quantize(value,FixedPoint.TimeScale);}
+    public double ServiceSince {get;set;}
+    public double ServiceUntil {get;set;}
+    // A short manoeuvre inside a lot at walking pace: pushed into or out of a bay,
+    // or set down at the owner's space.
+    public List<Point> PushPath {get;set;}=[];
+    public double? PushHeading {get;set;}
 }
 public sealed class Shipment
 {
@@ -467,10 +505,15 @@ public sealed class CityState
     public int SchemaVersion {get;set;}=1;
     public int QuantityStateVersion {get;set;}
     public int ConstructionStateVersion {get;set;}
+    // 1: vehicle condition, breakdowns and mechanic service. Older saves load with
+    // every vehicle at full condition and no service in progress.
+    public int VehicleStateVersion {get;set;}
     public int Seed {get;set;}
     public string Name {get;set;}="";
     public SimulationTuning Tuning {get;set;}=new();
     public ulong RandomState {get;set;}
+    // Separate stream for vehicle breakdowns, so the other random decisions keep their sequence.
+    public ulong BreakdownRandomState {get;set;}
     public int NextId {get;set;}=1;
     public DateTime Now {get;set;}=new(2026,1,1,6,0,0);
     public long ElapsedSecondsUnits {get;set;}

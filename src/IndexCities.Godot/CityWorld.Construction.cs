@@ -36,14 +36,19 @@ public partial class CityWorld
 
     void SyncVehicleVisuals(CityState state,bool interpolate,double? interpolation)
     {
+        var beingLoaded=VehiclesBeingLoaded(state);
         foreach(var v in state.Vehicles){
             if(v.Status==VehicleStatus.Outside){Remove(_trucks,v.Id);continue;}
-            if(_trucks.TryGetValue(v.Id,out var old)&&old.GetMeta("vehicle_visual","").AsString()!=VehicleVisual(v))Remove(_trucks,v.Id);
+            if(_trucks.TryGetValue(v.Id,out var old)&&(!IsInstanceValid(old)||old.GetMeta("vehicle_visual","").AsString()!=VehicleVisual(v)))Remove(_trucks,v.Id);
             if(!_trucks.TryGetValue(v.Id,out var n)){n=CreateVehicleVisual(v);n.Name="Vehicle"+v.Id;AddChild(n);_trucks[v.Id]=n;}
-            var pose=interpolate&&_vehicleMotion.TryGetValue(v.Id,out var motion)?motion.At(interpolation!.Value):(v.Position,(double?)null);
-            var travel=n.GetMeta("wheel_travel",0.0).AsDouble();if(n.HasMeta("last_position"))travel+=n.GetMeta("last_position").AsVector2().DistanceTo(new((float)pose.Item1.X,(float)pose.Item1.Z));n.SetMeta("last_position",new Vector2((float)pose.Item1.X,(float)pose.Item1.Z));n.SetMeta("wheel_travel",travel);
-            n.Position=P(pose.Item1,RoadSurfaceAt(pose.Item1));n.Rotation=new(0,(float)(pose.Item2??v.Heading+Math.PI),0);
-            SyncConstructionParts(n,v,state);
+            if(LiftSeat(v) is {} seat){Seat(n,seat);n.Transform=Transform3D.Identity;}
+            else{
+                Seat(n,this);
+                var pose=interpolate&&_vehicleMotion.TryGetValue(v.Id,out var motion)?motion.At(interpolation!.Value):(v.Position,(double?)null);
+                var travel=n.GetMeta("wheel_travel",0.0).AsDouble();if(n.HasMeta("last_position"))travel+=n.GetMeta("last_position").AsVector2().DistanceTo(new((float)pose.Item1.X,(float)pose.Item1.Z));n.SetMeta("last_position",new Vector2((float)pose.Item1.X,(float)pose.Item1.Z));n.SetMeta("wheel_travel",travel);
+                n.Position=P(pose.Item1,RoadSurfaceAt(pose.Item1));n.Rotation=new(0,(float)(pose.Item2??v.Heading+Math.PI),0);
+            }
+            SyncConstructionParts(n,v,state);SyncBreakdownParts(n,v,beingLoaded.Contains(v.Id));
         }
         SyncTowedVisuals(state);
     }

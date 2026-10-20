@@ -280,7 +280,7 @@ public sealed partial class CitySimulation
         ReleasePavingMachines(p);
         if(IsPaving(p))OpenCompactedRoads(p);
         p.Status=WorkStatus.Cancelled;p.BudgetRemaining=0;p.LocalReserved.Clear();p.Cause=WorkCause.Cancelled;
-        if(!p.IsMaintenance&&BuildingById(p.BuildingId) is {} b)b.Removed=true;
+        if(!p.IsMaintenance&&BuildingById(p.BuildingId) is {} b){b.Removed=true;_buildingRemovals++;}
         foreach(var s in State.Shipments.Where(s=>s.ProjectId==p.Id&&!s.Complete)){s.Cancelled=true;var v=State.Vehicles.First(x=>x.Id==s.VehicleId);RedirectCancelled(v,s);}
         if(p.CrewVehicleId is {} vid&&VehicleById(vid) is {} crew&&crew.Status==VehicleStatus.Parked){crew.CrewAboard=false;crew.CrewCount=0;ReturnExternal(crew);}
         foreach(var id in p.LocalCrew){var c=CitizenWithId(id);c.ConstructionProjectId=null;if(BuildingById(c.WorkplaceId) is {} workplace)StartJourney(c,workplace,JourneyPurpose.Work);}p.LocalCrew.Clear();ReserveLocalMaterials();

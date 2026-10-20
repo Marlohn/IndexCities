@@ -149,10 +149,10 @@ public sealed class FixedQuantitiesTests
             (typeof(BuildingDemolitionOrder),"DeadlineSeconds"),
             // Mover: absolute instant the stock recovery started waiting (-1 when not waiting).
             (typeof(MunicipalRelocationOrder),"BlockedSince"),
-            (typeof(Vehicle),"SiteDockHeading,Heading,CargoCapacity,WaitingSince,IntersectionEnteredAt,TowCalledAt,TowRetryAt,TowExitWaitSince"),
+            (typeof(Vehicle),"SiteDockHeading,Heading,CargoCapacity,WaitingSince,IntersectionEnteredAt,TowCalledAt,TowRetryAt,TowExitWaitSince,ServiceSince,ServiceUntil,PushHeading"),
             (typeof(ExternalFamilyCandidate),"RiskTolerance"),(typeof(ExternalCompanyCandidate),"RiskTolerance"),
             (typeof(CityState),"EconomyNextAt,LakeRadius,LakePollution,PotableCapacity,WaterDemand,ElectricityCapacity,ElectricityDemand,SewageCapacity,SewageDemand,UntreatedSewage,WindFactor,RawWaterCapacity,MaintenanceNextAt"),
-            (typeof(SimulationTuning),"AssistedVacatingDays,MapHalfSize,RoadStep,RoadWidth,CrosswalkSpacing,WalkingSpeed,VehicleSpeed,HighwaySpeed,FuelPerMetre,FuelTank,SimulationSecondsPerRealSecond,SpeedMultipliers,EconomyInterval,PurchaseFoodPerPerson,HungerDamageAfterHours,WaterClosureHours,UtilityRecoveryPerHour,PublicMaintenanceIntervalHours,CarFuelPerMetre,CarMinimumTripMetres,OutingChancePerMinute,BypassWaitSeconds,UTurnWaitSeconds,TowMaxWaitSeconds,TowLoadSeconds,TowUnloadSeconds,TowRetrySeconds")
+            (typeof(SimulationTuning),"AssistedVacatingDays,MapHalfSize,RoadStep,RoadWidth,CrosswalkSpacing,WalkingSpeed,VehicleSpeed,HighwaySpeed,FuelPerMetre,FuelTank,SimulationSecondsPerRealSecond,SpeedMultipliers,EconomyInterval,PurchaseFoodPerPerson,HungerDamageAfterHours,WaterClosureHours,UtilityRecoveryPerHour,PublicMaintenanceIntervalHours,CarFuelPerMetre,CarMinimumTripMetres,OutingChancePerMinute,BypassWaitSeconds,UTurnWaitSeconds,TowMaxWaitSeconds,TowLoadSeconds,TowUnloadSeconds,TowRetrySeconds,ConditionWearPerMetre,BreakdownChancePerKmNew,BreakdownChancePerKmWorn,RevisionThreshold,LocalRepairSeconds,LocalRevisionSeconds,ExteriorRepairSeconds,ExteriorRevisionSeconds,ShopPushSpeed")
         ];
         var doubles=new SortedSet<string>();var visited=new HashSet<Type>();
         bool ContainsDouble(Type type)=>type==typeof(double)||(type.IsArray&&ContainsDouble(type.GetElementType()!))||(type.IsGenericType&&type.GetGenericArguments().Any(ContainsDouble));

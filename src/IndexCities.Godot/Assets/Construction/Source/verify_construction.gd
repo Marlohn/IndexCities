@@ -127,7 +127,9 @@ func run() -> void:
 		var count=0
 		for n in nodes(r):
 			expect(n.get_script()==null,"No runtime script "+str(r.get_path_to(n)))
-			expect(not(n is CollisionObject3D or n is Light3D or n is Timer or n is AnimationPlayer or n is GPUParticles3D),"No runtime activity "+str(n.name))
+			expect(not(n is CollisionObject3D or n is Light3D or n is Timer or n is GPUParticles3D),"No runtime activity "+str(n.name))
+			# The only animation allowed is the host-triggered hood_open (never autoplay).
+			expect(not(n is AnimationPlayer) or (n.name=="AnimationPlayer" and n.get_animation_list()==PackedStringArray(["hood_open"]) and n.autoplay==""),"Only hood_open without autoplay "+str(n.name))
 			if n is MeshInstance3D:
 				count+=1
 				expect(n.mesh is ArrayMesh and n.mesh.resource_path.begins_with(ROOT+"/Meshes/"),"External reusable mesh "+str(n.name))
@@ -154,6 +156,7 @@ func run() -> void:
 				var w=r.get_node(path)
 				expect(w.mesh==r.get_node(wheels[0]).mesh,"Shared wheel mesh "+path)
 				expect(is_equal_approx(w.position.y,0.47),"Wheel pivot Y "+path)
+		verify_breakdown(r,e)
 		if e.visual_id=="vehicle.tow_truck.a":
 			verify_tow_truck(r,e.contract)
 		elif e.visual_id=="vehicle.tow_truck_heavy.a":
@@ -192,6 +195,44 @@ func run() -> void:
 
 func vec(p: Vector3) -> Array:
 	return [snapped(p.x,0.0001),snapped(p.y,0.0001),snapped(p.z,0.0001)]
+
+## Breakdown hooks: Hood pivot + hood_open, four hazard-light anchors and the smoke anchor.
+func verify_breakdown(r: Node3D, e: Dictionary) -> void:
+	var id=e.visual_id
+	var spec=e.contract.get("breakdown",{})
+	expect(not spec.is_empty(),"Manifest declares breakdown hooks "+id)
+	var hood=r.get_node_or_null("Hood")
+	expect(hood is MeshInstance3D,"Hood mesh node "+id)
+	if not hood is MeshInstance3D:
+		return
+	expect(hood.rotation==Vector3.ZERO and hood.scale==Vector3.ONE,"Hood closed at rest "+id)
+	var local=hood.mesh.get_aabb()
+	expect(local.position.length()<1.7 and local.end.length()<1.7,"Hood mesh origin is its hinge "+id)
+	var animations=r.get_node_or_null("AnimationPlayer")
+	expect(animations is AnimationPlayer and animations.has_animation("hood_open"),"hood_open animation "+id)
+	if animations is AnimationPlayer and animations.has_animation("hood_open"):
+		var a=animations.get_animation("hood_open")
+		expect(a.get_track_count()==1 and str(a.track_get_path(0))=="Hood:rotation","hood_open drives only Hood rotation "+id)
+		var end=a.track_get_key_value(0,a.track_get_key_count(0)-1)
+		expect(is_equal_approx(end.x,deg_to_rad(spec.hood.open_degrees)) and is_zero_approx(end.y) and is_zero_approx(end.z),"hood_open ends at the manifest angle "+id)
+		expect(a.track_get_key_value(0,0)==Vector3.ZERO,"hood_open starts closed "+id)
+		# Open hood stays in the technical lane and above ground.
+		var closed=bounds(r)
+		hood.rotation=end
+		var open=bounds(r)
+		hood.rotation=Vector3.ZERO
+		expect(open.size.x<=2.901 and open.position.y>=-0.002,"Open hood keeps lane width and ground "+id)
+		expect(open.end.y<=4.0,"Open hood height under 4 m "+id)
+		measured.append({"id":id,"hood_open_envelope_m":vec(open.size),"hood_closed_envelope_m":vec(closed.size)})
+	var right={"HazardFR":1.0,"HazardRR":1.0,"HazardFL":-1.0,"HazardRL":-1.0}
+	for marker in right:
+		var m=r.get_node_or_null(marker)
+		expect(m is Marker3D,"Marker "+marker+" "+id)
+		if m is Marker3D:
+			expect(signf(m.position.x)==right[marker] and signf(m.position.z)==(-1.0 if marker.begins_with("HazardF") else 1.0),"Hazard marker side/end "+marker+" "+id)
+			var mirror=r.get_node_or_null(marker.left(marker.length()-1)+("R" if marker.ends_with("L") else "L"))
+			expect(mirror is Marker3D and is_equal_approx(mirror.position.x,-m.position.x) and is_equal_approx(mirror.position.y,m.position.y) and is_equal_approx(mirror.position.z,m.position.z),"Hazard marker mirrored "+marker+" "+id)
+	expect(r.get_node_or_null("HoodSmoke") is Marker3D,"HoodSmoke marker "+id)
 
 func verify_tow_truck(r: Node3D, contract: Dictionary) -> void:
 	var deck=r.get_node_or_null("DeckPivot/Deck")
