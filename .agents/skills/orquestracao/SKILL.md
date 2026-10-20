@@ -19,18 +19,16 @@ Complementa a seção 7 do `AGENTS.md` (as regras ficam lá) e o guia do própri
 - Leia **todas** as mensagens de um lote do `check` antes do `--ack`: perguntas chegam misturadas com heartbeats.
 - Sessões abertas fora do Orca (terminal comum) não mandam pergunta nem `worker_done`. Prefira sempre `worker-start`.
 - Depois de um limite de uso, **olhe o terminal do worker antes de despachar de novo**: as sessões costumam voltar sozinhas. Despachar no mesmo terminal costuma falhar (`agent_readiness: timeout`), e o Orca recusa o `worker_done` de uma tarefa já encerrada. A mensagem recusada ainda chega ao coordenador com o relatório; leia-a.
-- `worker-start --agent opencode --model ...` não funciona. Sem `--model`, o OpenCode usa o modelo mais recente da sua configuração; confira no terminal qual abriu.
+- Com OpenCode, `--model` só é aceito em worktree que já existe e, mesmo assim, pode ser recusado ("cannot verify launch-time model selection"). Sem `--model`, ele abre com o modelo da própria configuração (aqui, o último usado): confira no terminal qual abriu e registre o modelo efetivo.
 - Confira você mesmo as capturas dos cenários (abra as imagens): os testes não pegam carro invisível, objeto flutuando etc.
 
 ## Limpeza
 
-- Depois de aceitar: `worker-release`. Depois do merge: `orca worktree rm` e apague a branch.
 - **Nunca remova a worktree em que a sua própria sessão roda**: a sessão cai. Deixe essa para o responsável.
 - Ruído de reimportação do Godot (`*.import`, `*.uid` alterados só por fim de linha ou hash) não entra em commit: descarte com `git checkout -- <arquivos>` depois de conferir o diff.
 
 ## PR e push
 
 - Antes de dar push numa branch de PR: `gh pr view N --json state`. O merge costuma ser rápido, e um commit depois do merge fica órfão.
-- Nunca PR empilhada: base sempre `main`.
 - Se o `git push` der 403 por credencial de outra conta, use a conta do `gh`:
   `git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push`

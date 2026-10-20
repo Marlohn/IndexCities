@@ -105,7 +105,7 @@ O IndexCities nasce do zero (diretriz expressa do responsável). **Não copiar, 
   - uma worktree isolada por worker (ou `--worktree current` para revisão somente leitura) e uma branch integrada a partir do `main`, sem PR empilhada; após o merge, `worker-release` e `orca worktree rm`;
   - escolha o modelo pela dificuldade, confira a cota antes de despachar e registre o modelo efetivo; tarefa pequena (cabe em poucos minutos e arquivos) o coordenador faz direto;
   - estudo que embasa decisão do responsável passa por verificação de um segundo modelo;
-  - **responsável ausente** (avisou que vai se ausentar e deixou o trabalho rodando): dúvida de produto é confirmada com um segundo modelo, o coordenador segue a própria recomendação e a registra na SPEC como "decisão do coordenador por delegação do responsável — PENDENTE DE REVISÃO HUMANA", para revisão conjunta depois.
+  - **responsável ausente**: só quando ele **autorizar expressamente** que o trabalho siga sem ele, uma dúvida de produto que bloqueia a entrega pode ser decidida pelo coordenador, dentro do que já foi aprovado para essa entrega. Antes, a recomendação passa pela crítica de um modelo de outro provedor; depois, é registrada na SPEC como "decisão do coordenador por delegação do responsável — PENDENTE DE REVISÃO HUMANA", para revisão conjunta na volta. Mudança de escopo ou de versão e decisão difícil de desfazer continuam esperando o responsável.
 
 ## 8. Filosofia
 
