@@ -69,9 +69,9 @@ public sealed partial class CitySimulation
     public void Advance(double seconds)
     {
         if(!double.IsFinite(seconds)||seconds<0)throw new ArgumentOutOfRangeException(nameof(seconds));
-        _crosswalkBands.Clear();_crosswalkBandsActive=true;
+        _crosswalkBands.Clear();_crosswalkBandsActive=true;BeginWalkRoutes();
         try{var remaining=seconds;while(remaining>1e-8){var dt=Math.Min(Quantum,remaining);Step(dt);remaining-=dt;}}
-        finally{_crosswalkBandsActive=false;_crosswalkBands.Clear();}
+        finally{_crosswalkBandsActive=false;_crosswalkBands.Clear();EndWalkRoutes();}
     }
     void Step(double dt)
     {
