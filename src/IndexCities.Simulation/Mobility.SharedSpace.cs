@@ -29,10 +29,10 @@ public sealed partial class CitySimulation
     // The body enters the manoeuvring space of a junction or bend: the square of
     // the crossing carriageway plus a truck turning through it (JunctionClearance
     // around the node), against the body's own extent.
-    static bool EntersArea(Vehicle body,Point at,double heading,RoadNode road)
+    static bool EntersArea(Vehicle body,Point at,double heading,RoadNode road,double clearance=JunctionClearance)
     {
         var dx=Math.Abs(at.X-road.Position.X);var dz=Math.Abs(at.Z-road.Position.Z);var s=Math.Abs(Math.Sin(heading));var c=Math.Abs(Math.Cos(heading));
-        return dx<JunctionClearance+BodyHalfLength(body)*s+BodyHalfWidth(body)*c&&dz<JunctionClearance+BodyHalfLength(body)*c+BodyHalfWidth(body)*s;
+        return dx<clearance+BodyHalfLength(body)*s+BodyHalfWidth(body)*c&&dz<clearance+BodyHalfLength(body)*c+BodyHalfWidth(body)*s;
     }
     // How deep two bodies overlap (negative: the gap between them).
     static double Penetration(Vehicle a,Point aAt,double aHeading,Vehicle b,Point bAt,double bHeading)
@@ -45,10 +45,18 @@ public sealed partial class CitySimulation
     // A truck about to drive from its bay or dock to its first lane point, or doing so.
     bool LeavesDock(Vehicle v)=>v.Status==VehicleStatus.Travelling&&v.RouteIndex==0&&v.Route.Count>1&&!v.PassengerCar&&!IsTow(v)&&v.Detour.Count==0&&!v.SitePathBeforeRoad&&InMap(v.Position)&&!AtGateway(v);
     // Its body already stands on the road at its first node: the way out has begun.
-    bool OnCarriageway(Vehicle v)=>v.Route.Count>0&&_roads.TryGetValue(v.Route[0],out var first)&&v.Position.Distance(first.Position)<State.Tuning.RoadWidth/2;
+    bool OnCarriageway(Vehicle v)
+    {
+        if(v.Route.Count<2||!_roads.TryGetValue(v.Route[0],out var first)||!_roads.TryGetValue(v.Route[1],out var second))return false;
+        var axis=second.Position-first.Position;var length=axis.Distance(default);if(length<=.01)return false;
+        var lane=first.Position+new Point(axis.Z/length,-axis.X/length)*1.65;
+        return v.Position.Distance(lane)<.1;
+    }
     // Still at the works-site dock it is about to drive back from.
     static bool AtSiteDock(Vehicle v)=>v.SitePathBeforeRoad&&v.SitePathIndex<=1&&v.SitePath.Count>0&&v.Position.Distance(v.SitePath[0])<.01;
     bool Leaving(Vehicle v)=>v.SitePathBeforeRoad&&v.Status==VehicleStatus.Travelling&&v.SitePath.Count>v.SitePathIndex||LeavesDock(v);
+    bool DockAdmitted(Vehicle v,Point dock)=>v.ManoeuvreDock is {} owned&&owned.Distance(dock)<.1&&
+        (v.ManoeuvreDeparture??(Leaving(v)&&v.Position.Distance(owned)>.01))==Leaving(v);
     // How far ahead of v (along its heading) a truck stopped at its dock stands,
     // when its body lies across v's lane; null otherwise.
     double? BodyAcrossLane(Vehicle v,Vehicle o)
@@ -158,7 +166,11 @@ public sealed partial class CitySimulation
     }
     // A stopped lane vehicle whose way on is blocked by that body.
     bool WaitsOnBody(Vehicle v,Vehicle body)=>v.Status==VehicleStatus.Travelling&&v.WaitingSince>0&&v.RouteIndex<v.Route.Count&&BodyOnWay(v,TurnWay(v,out _))?.Id==body.Id;
-    bool CanTurnNow(Vehicle o)=>o.RouteIndex<o.Route.Count&&BodyOnWay(o,TurnWay(o,out _)) is null;
+    // A delivery whose bay entry is not admitted turns only into that entry: a
+    // dock owner or a body on its way in keeps it from turning, like a body on
+    // the turn (intention holds no one).
+    bool CanTurnNow(Vehicle o)=>o.RouteIndex<o.Route.Count&&BodyOnWay(o,TurnWay(o,out _)) is null&&
+        !(EntersBay(o)&&o.DockPosition is {} dock&&!DockAdmitted(o,dock)&&(DockOwners(o,dock).Any()||BodyOnWay(o,WayIn(o,dock,out _)) is {}));
     // Whether v, leaving or entering a bay, may take the shared node now: no one
     // else holds it, no traffic presents at it, no walker is on its crossing and
     // a signal shows green for the way v enters.
@@ -182,7 +194,7 @@ public sealed partial class CitySimulation
     // it keeps them and only its present way is checked against bodies.
     bool AdmitManoeuvre(Vehicle v,List<(Vehicle Body,Point Position,double Heading)> way,List<RoadNode> spaces,Point dock,bool yieldToTraffic)
     {
-        var admitted=v.ManoeuvreDock is {} owned&&owned.Distance(dock)<.1;
+        var admitted=DockAdmitted(v,dock);
         if(!admitted){
             foreach(var space in spaces){
                 if(Holds(v,space.Id))continue;
@@ -192,7 +204,7 @@ public sealed partial class CitySimulation
             if(yieldToTraffic&&TrafficOnWay(v,way) is {}){v.Cause="Aguardando espaço para acessar a faixa";return false;}
         }
         if(BodyOnWay(v,way) is {} body){if(!admitted)v.Cause=yieldToTraffic?"Aguardando espaço para acessar a faixa":"Fila para acesso de carga";return false;}
-        if(!admitted){v.ManoeuvreDock=dock;v.ManoeuvreSpaces=spaces.Select(s=>s.Id).Where(id=>v.IntersectionClaim!=id).ToList();}
+        if(!admitted){v.ManoeuvreDock=dock;v.ManoeuvreDeparture=Leaving(v);v.ManoeuvreSpaces=v.ManoeuvreSpaces.Concat(spaces.Select(s=>s.Id)).Where(id=>v.IntersectionClaim!=id).Distinct().ToList();}
         return true;
     }
 
@@ -242,7 +254,7 @@ public sealed partial class CitySimulation
     // once admitted, or when it is admitted now).
     List<(Vehicle Body,Point Position,double Heading)> BayEntryHold(Vehicle v)
     {
-        if(v.DockPosition is not {} dock||v.ManoeuvreDock is {} owned&&owned.Distance(dock)<.1)return [];
+        if(v.DockPosition is not {} dock||DockAdmitted(v,dock))return [];
         var owners=DockOwners(v,dock).ToList();
         var way=WayIn(v,dock,out var spaces);
         if(owners.Count==0&&AdmitManoeuvre(v,way,spaces,dock,false))return [];
@@ -264,26 +276,27 @@ public sealed partial class CitySimulation
         }
         return poses;
     }
-    // A paving machine whose next 20 m of path enter a junction or bend takes it
-    // when nobody holds it, like an admitted manoeuvre. Lane traffic already
-    // yields to a moving machine's path; the machine waits only for a holder.
+    // Acquisition is atomic for a machine too: a body on the path or a held
+    // node prevents acquiring any new space, without releasing occupied ones.
     bool MachineMayEnter(Vehicle m)
     {
         var ahead=MachinePathAhead(m);
-        foreach(var node in SharedNodes()){
-            if(m.ManoeuvreSpaces.Contains(node.Id)||node.Position.Distance(m.Position)>40||!ahead.Any(p=>EntersArea(m,p.Position,p.Heading,node)))continue;
+        var needed=SharedNodes().Where(node=>!m.ManoeuvreSpaces.Contains(node.Id)&&node.Position.Distance(m.Position)<=40&&ahead.Any(p=>EntersArea(m,p.Position,p.Heading,node))).ToList();
+        if(needed.Count==0)return true;
+        if(BodyOnWay(m,ahead)!=null)return false;
+        foreach(var node in needed){
             var area=_junctionAreas.GetValueOrDefault(node.Id);
             if(State.Vehicles.Any(o=>o.Id!=m.Id&&(Holds(o,node.Id)||area!=null&&(o.IntersectionClaim is {} held&&area.Contains(held)&&o.Position.Distance(node.Position)<9||o.ManoeuvreSpaces.Any(area.Contains)))))
-                return EntersArea(m,m.Position,m.Heading,node);
-            m.ManoeuvreSpaces.Add(node.Id);
+                return false;
         }
+        m.ManoeuvreSpaces.AddRange(needed.Select(node=>node.Id));
         return true;
     }
     // Admitted manoeuvres lane traffic keeps out of: a way out of a bay or a way
     // into it, while held. The hold stops at the first body already on it.
     List<(Vehicle Machine,Point Position,double Heading)> AdmittedManoeuvre(Vehicle o)
     {
-        var held=new List<(Vehicle,Point,double)>();if(o.ManoeuvreDock is not {} dock||o.Status!=VehicleStatus.Travelling)return held;
+        var held=new List<(Vehicle,Point,double)>();if(o.ManoeuvreDock is not {} dock||!DockAdmitted(o,dock)||o.Status!=VehicleStatus.Travelling)return held;
         var way=Leaving(o)?WayOut(o,out _):o.DockPosition is {} bay&&bay.Distance(dock)<.1?WayIn(o,bay,out _):[];
         foreach(var pose in way){
             if(State.Vehicles.Any(other=>other.Id!=o.Id&&other.Status!=VehicleStatus.Outside&&other.Position.Distance(pose.Position)<12&&BodiesOverlap(o,pose.Position,pose.Heading,other,other.Position,other.Heading)))break;
@@ -293,7 +306,7 @@ public sealed partial class CitySimulation
     }
     // A works-site truck's path holds lane traffic once admitted, or once begun
     // (a save from before the explicit admission).
-    static bool SitePathHolds(Vehicle t)=>t.ManoeuvreDock!=null||!AtSiteDock(t)&&t.SitePathIndex>0;
+    bool SitePathHolds(Vehicle t)=>t.ManoeuvreDock is {} dock&&DockAdmitted(t,dock)||!AtSiteDock(t)&&t.SitePathIndex>0;
 
     // Physical release: a space once the body is clear of it and the rest of the
     // manoeuvre no longer enters it; the corridor once the body is clear of the
@@ -308,7 +321,10 @@ public sealed partial class CitySimulation
             :Leaving(v)?WayOut(v,out _)
             :v.ManoeuvreDock is {} target&&v.DockPosition is {} bay&&bay.Distance(target)<.1?WayIn(v,bay,out _)
             :v.RouteIndex<v.Route.Count?Manoeuvre(v,v.Route,v.RouteIndex,v.Position,v.Heading,[],false,1,out _):[];
-        v.ManoeuvreSpaces.RemoveAll(id=>!_roads.TryGetValue(id,out var node)||!EntersArea(v,v.Position,v.Heading,node)&&!rest.Any(p=>EntersArea(v,p.Position,p.Heading,node)));
+        // The body itself is measured on the carriageway square: the planning area
+        // already counts a truck length around the node, which a parked body beside
+        // it (a paver at the curb) would never leave.
+        v.ManoeuvreSpaces.RemoveAll(id=>!_roads.TryGetValue(id,out var node)||!EntersArea(v,v.Position,v.Heading,node,CarriagewayHalfWidth)&&!rest.Any(p=>EntersArea(v,p.Position,p.Heading,node)));
         if(v.ManoeuvreDock is {} dock){
             var atDock=v.Status is VehicleStatus.Unloading or VehicleStatus.Parked&&v.DockPosition is {} parked&&parked.Distance(dock)<.1;
             var entering=v.Status==VehicleStatus.Travelling&&v.DockPosition is {} goal&&goal.Distance(dock)<.1;

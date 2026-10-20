@@ -249,9 +249,9 @@ public sealed partial class CitySimulation
                 // The next junction is awaited at its stop line, and a delivery to a
                 // busy bay just beyond it waits before it (Mobility.BayJunction).
                 var stopEarly=0.0;var bayHold=false;List<(Vehicle Body,Point Position,double Heading)>? crossingPoses=null;
-                if(node.Neighbours.Count<3&&!node.Crosswalk&&v.IntersectionClaim==null&&v.RouteIndex+1<v.Route.Count&&_roads.TryGetValue(v.Route[v.RouteIndex+1],out var crossing)&&(crossing.Neighbours.Count>=3||TurnsAtBend(v,v.RouteIndex+1))){
+                if(node.Neighbours.Count<3&&!node.Crosswalk&&v.IntersectionClaim==null&&NextSharedOnApproach(v,node,delta,len,out var crossing,out var crossingIndex)){
                     stopEarly=StopLineBefore(v,node,crossing,delta,len);
-                    if(HoldBeforeBayJunction(v,v.RouteIndex+1,out var exits)){bayHold=true;crossingPoses=exits;stopEarly=Math.Max(stopEarly,.001);}
+                    if(HoldBeforeBayJunction(v,crossingIndex,out var exits)){bayHold=true;crossingPoses=exits;stopEarly=Math.Max(stopEarly,.001);}
                     if(d<=stopEarly+.001){
                         if(bayHold){v.Cause="Fila para acesso de carga";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}
                         if(stopEarly>0){v.RouteIndex++;continue;}
@@ -282,7 +282,7 @@ public sealed partial class CitySimulation
                     var other=enteringLane?EntryFrameVehicle(liveOther):liveOther;
                     // A truck stopped at a dock with its body across this lane (a street bay)
                     // is queued behind like a leader, keeping the queue gap (Mobility.SharedSpace).
-                    if(other.Id!=v.Id&&BodyAcrossLane(v,other) is {} docked){HoldFor(other,docked);continue;}
+                    if(other.Id!=v.Id&&(!LeavesDock(v)||OnCarriageway(v))&&BodyAcrossLane(v,other) is {} docked){HoldFor(other,docked);continue;}
                     if(other.Id==v.Id||!OccupiesLane(other))continue;
                     var relative=other.Position-v.Position;
                     if(insideMap&&relative.Distance(new(0,0))<.1){if(other.Status==VehicleStatus.Stranded||other.Id<v.Id)HoldFor(other,0);continue;}
@@ -337,8 +337,8 @@ public sealed partial class CitySimulation
                 // Entering is admitted whole too: a delivery near its bay takes no junction
                 // or bend before its entry is admitted.
                 var sharedAhead=node.Neighbours.Count>=3||node.Crosswalk||TurnsAtBend(v,v.RouteIndex);
-                if(sharedAhead&&d<9&&!Holds(v,node.Id)&&entryHeld!=null){v.Cause="Fila para acesso de carga";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}
-                if(sharedAhead&&d<9&&!MayEnterJunction(v,node)){if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;
+                if(sharedAhead&&!Holds(v,node.Id)&&entryHeld!=null){v.Cause="Fila para acesso de carga";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}
+                if(sharedAhead&&!MayEnterJunction(v,node)){if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;
                     // SPEC: held at a junction by a vehicle stopped there (out of fuel), it
                     // turns back after the same minutes as behind it in the lane.
                     if(TryTowFromBehind(v))continue;
@@ -434,9 +434,12 @@ public sealed partial class CitySimulation
         // bend, with no place between where its body could wait clear of both, it
         // takes them together (ARCHITECTURE "conjunto até a espera segura").
         var onward=TurnWay(v,out var crossed);
+        // Even a single shared space needs a clear way through it. Taking the
+        // junction while a docked body blocks the exit prevents that body from
+        // acquiring the very junction it needs to leave.
+        if(BodyOnWay(v,onward) is {}){v.Cause="Fila na faixa";return false;}
         if(crossed.Any(s=>s.Id!=junction.Id)){
             foreach(var space in crossed.Where(s=>s.Id!=junction.Id)){var index=onward.FindIndex(p=>EntersArea(v,p.Position,p.Heading,space));var from=index>0?onward[index-1].Position:v.Position;if(!SpaceFree(v,space,space.Position-from,false))return false;}
-            if(BodyOnWay(v,onward) is {}){v.Cause="Fila na faixa";return false;}
             v.ManoeuvreSpaces=crossed.Select(s=>s.Id).ToList();
         }
         ReserveJunction(v,junction,area);return true;

@@ -13,6 +13,20 @@ namespace IndexCities.Simulation;
 public sealed partial class CitySimulation
 {
     const double CarriagewayHalfWidth=3.3;
+    readonly Dictionary<(int Junction,int Approach,bool Car),double> _stopDistances=[];
+    int _stopDistancesEpoch=-1;
+
+    bool NextSharedOnApproach(Vehicle v,RoadNode node,Point incoming,double length,out RoadNode junction,out int index)
+    {
+        junction=null!;index=-1;if(length<=.01)return false;
+        for(var i=v.RouteIndex+1;i<v.Route.Count;i++){
+            var next=_roads[v.Route[i]];var delta=next.Position-node.Position;var gap=delta.Distance(default);
+            if(gap<=.01||Math.Abs(delta.X*incoming.Z-delta.Z*incoming.X)>=.01*gap*length||delta.X*incoming.X+delta.Z*incoming.Z<=0)return false;
+            if(next.Neighbours.Count>=3||TurnsAtBend(v,i)){junction=next;index=i;return true;}
+            if(gap>2*(CarriagewayHalfWidth+BodyHalfLength(v)+BodyHalfWidth(v)))return false;
+        }
+        return false;
+    }
 
     // How far before the lane point of `node` (next to a junction) v waits, so
     // that its front stays out of the crossing carriageway (0 if the node
@@ -21,7 +35,43 @@ public sealed partial class CitySimulation
     {
         var onward=junction.Position-node.Position;var gap=onward.Distance(default);
         if(gap<=.01||length<=.01||Math.Abs(onward.X*incoming.Z-onward.Z*incoming.X)>=.01*gap*length||onward.X*incoming.X+onward.Z*incoming.Z<=0)return 0;
-        return Math.Max(0,CarriagewayHalfWidth+BodyHalfLength(v)-gap);
+        if(_stopDistancesEpoch!=_roadEpoch){_stopDistances.Clear();_stopDistancesEpoch=_roadEpoch;}
+        var key=(junction.Id,node.Id,v.PassengerCar);
+        if(!_stopDistances.TryGetValue(key,out var distance)){
+            distance=CarriagewayHalfWidth+BodyHalfLength(v);
+            var forward=incoming*(1/length);var lane=junction.Position+new Point(forward.Z,-forward.X)*1.65;
+            // The crossing's turns use the same lane points and body dimensions as
+            // actual motion. Their diagonal sweep can extend past the carriageway
+            // edge. Keep this waiting body's entire rectangle outside that sweep.
+            var truck=new Vehicle();
+            foreach(var fromId in junction.Neighbours.Where(id=>id!=node.Id))foreach(var toId in junction.Neighbours.Where(id=>id!=fromId)){
+                var from=_roads[fromId];var to=_roads[toId];var direction=junction.Position-from.Position;var metres=direction.Distance(default);if(metres<=.01)continue;
+                var heading=Math.Atan2(direction.X,direction.Z);
+                var start=from.Position+new Point(direction.Z/metres,-direction.X/metres)*1.65;
+                var route=new List<int>{fromId,junction.Id,toId};
+                var continuation=to.Neighbours.FirstOrDefault(id=>id!=junction.Id);if(continuation!=0)route.Add(continuation);
+                var poses=new List<(Vehicle Body,Point Position,double Heading)>();CrossingPoses(poses,truck,route,1,start,heading,junction);
+                foreach(var pose in poses)distance=Math.Max(distance,LastOverlapOnApproach(v,lane,forward,truck,pose.Position,pose.Heading));
+            }
+            _stopDistances[key]=distance;
+        }
+        return Math.Max(0,distance-gap);
+    }
+
+    // End of the exact SAT overlap interval for a waiting body moved backwards
+    // along its lane. The existing 0.1 m body margin applies once, on every axis.
+    static double LastOverlapOnApproach(Vehicle waiting,Point lane,Point forward,Vehicle turning,Point at,double heading)
+    {
+        static double Dot(Point a,Point b)=>a.X*b.X+a.Z*b.Z;
+        var right=new Point(forward.Z,-forward.X);var turn=new Point(Math.Sin(heading),Math.Cos(heading));var turnRight=new Point(turn.Z,-turn.X);var delta=at-lane;
+        var low=double.NegativeInfinity;var high=double.PositiveInfinity;
+        foreach(var axis in new[]{forward,right,turn,turnRight}){
+            var extent=BodyHalfLength(waiting)*Math.Abs(Dot(forward,axis))+BodyHalfWidth(waiting)*Math.Abs(Dot(right,axis))+BodyHalfLength(turning)*Math.Abs(Dot(turn,axis))+BodyHalfWidth(turning)*Math.Abs(Dot(turnRight,axis))+.1;
+            var slope=Dot(forward,axis);var offset=Dot(delta,axis);
+            if(Math.Abs(slope)<1e-9){if(Math.Abs(offset)>=extent)return 0;continue;}
+            var a=(-extent-offset)/slope;var b=(extent-offset)/slope;low=Math.Max(low,Math.Min(a,b));high=Math.Min(high,Math.Max(a,b));if(low>=high)return 0;
+        }
+        return high>0?high:0;
     }
 
     // The poses o passes through along `route` from index `from`, as the lane

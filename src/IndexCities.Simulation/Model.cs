@@ -364,6 +364,8 @@ public sealed class Vehicle
     // dock whose corridor it owns (entering, at or leaving it) and the junctions
     // and bends it holds on the way, until its body has left them.
     public Point? ManoeuvreDock {get;set;}
+    // null in older saves: a return route at the dock is not an admitted exit.
+    public bool? ManoeuvreDeparture {get;set;}
     public List<int> ManoeuvreSpaces {get;set;}=[];
     public bool CrewAboard {get;set;}
     public int CrewCount {get;set;}

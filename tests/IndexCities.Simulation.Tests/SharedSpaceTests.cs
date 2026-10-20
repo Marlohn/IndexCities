@@ -32,7 +32,10 @@ public sealed class SharedSpaceTests
     }
 
     // The seat south of the main street, its door facing it.
-    static void Seat(CitySimulation sim)=>Assert.True(sim.PlaceBuilding(BuildingKind.CityHall,new(-152,-16),Math.PI).Success,sim.State.LastMessage);
+    // At x=-152 the bend fixture's hall door was 21 m from its nearest street:
+    // it could never complete even with perfect traffic. This door is 7 m
+    // south of the first 20 m street in both layouts (access limit is 8.25 m).
+    static void Seat(CitySimulation sim)=>Assert.True(sim.PlaceBuilding(BuildingKind.CityHall,new(-184,-16),Math.PI).Success,sim.State.LastMessage);
 
     static CitySimulation City(string layout)=>layout=="bend"?Bend():BendAndJunction();
 
@@ -80,9 +83,37 @@ public sealed class SharedSpaceTests
         var t=0.0;for(;t<6*3600&&!(a.State.Vehicles.Any(Waits)&&a.State.Vehicles.Any(Admitted));t+=.5)a.Advance(.5);
         Assert.True(a.State.Vehicles.Any(Waits)&&a.State.Vehicles.Any(Admitted),"no wait for a shared space happened | "+PavingTests.Diagnostic(a));
         var b=CitySimulation.FromJson(a.SaveToJson());
-        Assert.Equal(a.State.Vehicles.Select(v=>(v.Id,v.ManoeuvreDock,string.Join(",",v.ManoeuvreSpaces))),b.State.Vehicles.Select(v=>(v.Id,v.ManoeuvreDock,string.Join(",",v.ManoeuvreSpaces))));
+        Assert.Equal(a.State.Vehicles.Select(v=>(v.Id,v.ManoeuvreDock,v.ManoeuvreDeparture,string.Join(",",v.ManoeuvreSpaces))),b.State.Vehicles.Select(v=>(v.Id,v.ManoeuvreDock,v.ManoeuvreDeparture,string.Join(",",v.ManoeuvreSpaces))));
         for(var s=0.0;s<1800;s+=.5){a.Advance(.5);b.Advance(.5);}
         Assert.Equal(a.SaveToJson(),b.SaveToJson());
         b.CheckInvariants();
+    }
+
+    [Fact]
+    public void Save_during_unloading_requires_a_new_exit_admission_and_preserves_a_stranded_owner()
+    {
+        var a=BendAndJunction();
+        for(var t=0;t<3600&&!a.State.Vehicles.Any(v=>v.Machine==PavingMachine.None&&v.Status==VehicleStatus.Unloading&&v.ManoeuvreDock!=null);t++)a.Advance(.5);
+        var truck=a.State.Vehicles.First(v=>v.Machine==PavingMachine.None&&v.Status==VehicleStatus.Unloading&&v.ManoeuvreDock!=null);
+        Assert.False(truck.ManoeuvreDeparture);
+        var b=CitySimulation.FromJson(a.SaveToJson());var sawExit=false;
+        for(var t=0;t<3600;t++){
+            a.Advance(.5);b.Advance(.5);
+            if(truck.ManoeuvreDock!=null&&truck.ManoeuvreDeparture==true){
+                sawExit=true;
+                // An interrupted admitted manoeuvre remains occupied on load.
+                var interrupted=CitySimulation.FromJson(a.SaveToJson());var owner=interrupted.State.Vehicles.Single(v=>v.Id==truck.Id);
+                owner.Status=VehicleStatus.Stranded;owner.BrokenDown=true;
+                var loaded=CitySimulation.FromJson(interrupted.SaveToJson());
+                Assert.Equal(owner.ManoeuvreDock,loaded.State.Vehicles.Single(v=>v.Id==owner.Id).ManoeuvreDock);
+                Assert.Equal(owner.ManoeuvreSpaces,loaded.State.Vehicles.Single(v=>v.Id==owner.Id).ManoeuvreSpaces);
+                interrupted.Advance(.5);loaded.Advance(.5);Assert.Equal(interrupted.SaveToJson(),loaded.SaveToJson());
+                break;
+            }
+        }
+        Assert.True(sawExit,"the return never obtained its own admission");
+        for(var t=0;t<3600;t++){a.Advance(.5);b.Advance(.5);}
+        Assert.Equal(a.SaveToJson(),b.SaveToJson());
+        Assert.All(a.State.Projects,p=>Assert.Equal(WorkStatus.Completed,p.Status));a.CheckInvariants();
     }
 }

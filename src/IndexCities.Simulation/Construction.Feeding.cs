@@ -6,8 +6,13 @@ public sealed partial class CitySimulation
     {
         var route=FindRoadRoute(EntryNode().Id,access.Id,true);
         var index=Math.Max(1,route.Count-1-(kind==PavingMachine.Paver?4:7));index=Math.Min(index,route.Count-1);
-        for(var i=index;i>=0;i--){var road=_roads[route[i]];var dock=DockAt(road,null,false);if(kind==PavingMachine.Roller)dock=road.Position*2-dock;
+        foreach(var i in Enumerable.Range(0,route.Count).OrderBy(i=>Math.Abs(i-index)).ThenBy(i=>i)){var road=_roads[route[i]];var dock=DockAt(road,null,false);if(kind==PavingMachine.Roller)dock=road.Position*2-dock;
             var axis=i>0?road.Position-_roads[route[i-1]].Position:new Point(1,0);
+            // Feeding happens in front of the paver, facing back along its
+            // approach. A paver clear of a corner is insufficient if its real
+            // full-size feeder would stand across the crossing carriageway.
+            var feeder=dock-axis*(6.6/Math.Max(.001,axis.Distance(default)));
+            if(kind==PavingMachine.Paver&&BayBodyBlocksRoad(feeder,Math.Abs(axis.X)>.01,3.6,1.45))continue;
             if(!MachineBayBlocksRoad(dock,Math.Abs(axis.X)>.01)&&State.Buildings.All(b=>b.Removed||!Inside(b,dock,2.5))&&State.Vehicles.All(v=>v.Status==VehicleStatus.Outside||v.DockPosition is not {} occupied||occupied.Distance(dock)>7))return(road,dock);
         }
         // Exterior staging origin already exists in the road model. Equipment
@@ -16,8 +21,11 @@ public sealed partial class CitySimulation
     }
 
     bool MachineBayBlocksRoad(Point bay,bool horizontalMachine)
+        =>BayBodyBlocksRoad(bay,horizontalMachine,2.31,1.27);
+
+    bool BayBodyBlocksRoad(Point bay,bool horizontalMachine,double halfLength,double halfWidth)
     {
-        var halfX=horizontalMachine?2.31:1.27;var halfZ=horizontalMachine?1.27:2.31;
+        var halfX=horizontalMachine?halfLength:halfWidth;var halfZ=horizontalMachine?halfWidth:halfLength;
         var lane=State.Tuning.RoadWidth*(6.5/10.5)/2;var step=State.Tuning.RoadStep/2;
         foreach(var road in State.Roads){
             var horizontal=road.Highway||road.Neighbours.Any(id=>Math.Abs(_roads[id].Position.X-road.Position.X)>.01);
@@ -104,7 +112,7 @@ public sealed partial class CitySimulation
         if(machinesOnly&&reserved.Count==0&&!State.Vehicles.Any(other=>other.Machine!=PavingMachine.None&&other.Status!=VehicleStatus.Outside&&other.Position.Distance(vehicle.Position)<=distance+12))return distance;
         var safe=0.0;
         while(safe<distance-.000001){var next=Math.Min(distance,safe+.5);var at=vehicle.Position.MoveTowards(target,next);
-            if(State.Vehicles.Any(other=>other.Id!=vehicle.Id&&other.Status!=VehicleStatus.Outside&&(!machinesOnly||other.Machine!=PavingMachine.None&&other.Status==VehicleStatus.Parked)&&other.Position.Distance(at)<12&&VehicleBodiesOverlap(vehicle,at,other)))break;
+            if(State.Vehicles.Any(other=>other.Id!=vehicle.Id&&other.Status!=VehicleStatus.Outside&&(!machinesOnly||other.Machine!=PavingMachine.None&&(other.Status==VehicleStatus.Parked||!(other.Position.Distance(State.Entry)<8&&vehicle.Position.Distance(State.Entry)<8)))&&other.Position.Distance(at)<12&&VehicleBodiesOverlap(vehicle,at,other)))break;
             if(reserved.Any(pose=>pose.Position.Distance(at)<12&&BodiesOverlap(vehicle,at,vehicle.Heading,pose.Machine,pose.Position,pose.Heading)))break;
             safe=next;
         }
