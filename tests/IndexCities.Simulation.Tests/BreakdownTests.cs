@@ -26,9 +26,9 @@ public sealed class BreakdownTests
         var house=new Building{Id=Next(),Kind=BuildingKind.House,Position=new(-10,-14),Rotation=Math.PI,Completed=true,OwnerAccount=driver.Account,FamilyId=driver.FamilyId};s.Buildings.Add(house);s.Families.Single(f=>f.Id==driver.FamilyId).HomeId=house.Id;
         Building? garage=null;Company? owner=null;Vehicle? tow=null;Citizen? mechanic=null;
         if(shop){
-            owner=Owner("Oficina teste");garage=new Building{Id=Next(),Kind=BuildingKind.MechanicShop,Position=new(-30,15),Completed=true,CompanyId=owner.Id,OwnerAccount=owner.Account,SalePrice=120};s.Buildings.Add(garage);owner.Buildings.Add(garage.Id);
+            owner=Owner("Oficina teste");garage=new Building{Id=Next(),Kind=BuildingKind.MechanicShop,Position=new(-30,16),Completed=true,CompanyId=owner.Id,OwnerAccount=owner.Account,SalePrice=120};s.Buildings.Add(garage);owner.Buildings.Add(garage.Id);
             for(var i=0;i<mechanics;i++){var m=Person("Mecânico "+i,garage.Door);m.WorkplaceId=garage.Id;m.Shift=hour>=14?1:0;m.Activity="No trabalho";mechanic??=m;}
-            if(localTow){tow=new Vehicle{Id=Next(),Body=TruckBody.Tow,OwnerAccount=owner.Account,HomeBuildingId=garage.Id,CargoCapacity=0,Position=new(-30+5.5,15-6.1),Heading=Math.PI/2,Fuel=40,Status=VehicleStatus.Parked,Cause="Guincho da oficina disponível"};s.Vehicles.Add(tow);}
+            if(localTow){tow=new Vehicle{Id=Next(),Body=TruckBody.Tow,OwnerAccount=owner.Account,HomeBuildingId=garage.Id,CargoCapacity=0,Position=CitySimulation.ShopTowSpace(garage),Heading=CitySimulation.TowBaseHeading(garage),Fuel=40,Status=VehicleStatus.Parked,Cause="Guincho da oficina disponível"};s.Vehicles.Add(tow);}
         }
         var east=s.Roads.Where(r=>r.Position.Z==0&&r.Position.X>=-20&&r.Position.X<=40).OrderBy(r=>r.Position.X).Select(r=>r.Id).ToList();
         var car=new Vehicle{Id=Next(),OwnerAccount=driver.Account,PassengerCar=true,CargoCapacity=0,Position=new(0,-1.65),Heading=Math.PI/2,Fuel=40,Status=VehicleStatus.Travelling,Route=east,RouteIndex=6,DestinationBuildingId=grocery.Id,ParkingSpot="b:"+grocery.Id+":0",TripPurpose=JourneyPurpose.Shopping,DriverId=driver.Id,Cause="Em viagem",Condition=.2};
@@ -125,7 +125,7 @@ public sealed class BreakdownTests
         s.Tuning.BreakdownChancePerKmNew=0;s.Tuning.BreakdownChancePerKmWorn=0;s.EconomyNextAt=0;
         scene.Sim.Advance(2);Assert.True(car.ServicePhase==ServicePhase.ToService,car.Cause+" | "+ana.Activity+" "+ana.Decision+" "+ana.Moving);Assert.Equal(scene.Shop!.Id,car.ServiceShopId);s.EconomyNextAt=1e9;
         Assert.True(Run(scene,1800,()=>car.ServicePhase==ServicePhase.InService),car.Cause);
-        Assert.True(ana.Position.Distance(scene.Shop.Door)<3,"espera na porta: "+ana.Activity);
+        Assert.True(ana.Position.Distance(new(scene.Shop.Position.X+4.5,scene.Shop.Position.Z-3.1))<.1,"espera junto à recepção: "+ana.Activity+" "+ana.Position);
         Assert.True(Run(scene,3*3600,()=>car.Status==VehicleStatus.Parked&&car.ServicePhase==ServicePhase.None&&car.Position.Distance(new(-6.6,-7.7))<.1&&ana.VehicleId==null),car.Cause+" / "+ana.Activity);
         Assert.True(car.Condition>.99,car.Condition.ToString());var paid=s.Ledger.Single(m=>m.Category=="Revisão de veículo");Assert.Equal(ana.Account,paid.From);Assert.Equal(scene.ShopOwner!.Account,paid.To);scene.Sim.CheckInvariants();
     }

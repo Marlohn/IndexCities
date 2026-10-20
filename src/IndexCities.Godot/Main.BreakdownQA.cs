@@ -105,9 +105,9 @@ public partial class Main
         var house=new Building{Id=Next(),Kind=BuildingKind.House,Position=new(-10,-14),Rotation=Math.PI,Completed=true,OwnerAccount=driver.Account,FamilyId=driver.FamilyId};s.Buildings.Add(house);s.Families.Single(f=>f.Id==driver.FamilyId).HomeId=house.Id;
         Building? garage=null;
         if(shop){
-            var owner=Owner("Oficina QA");garage=new Building{Id=Next(),Kind=BuildingKind.MechanicShop,Position=new(-30,15),Completed=true,CompanyId=owner.Id,OwnerAccount=owner.Account,SalePrice=120};s.Buildings.Add(garage);owner.Buildings.Add(garage.Id);
+            var owner=Owner("Oficina QA");garage=new Building{Id=Next(),Kind=BuildingKind.MechanicShop,Position=new(-30,16),Completed=true,CompanyId=owner.Id,OwnerAccount=owner.Account,SalePrice=120};s.Buildings.Add(garage);owner.Buildings.Add(garage.Id);
             var mechanic=Person("Mecânico",garage.Door);mechanic.WorkplaceId=garage.Id;mechanic.Activity="No trabalho";
-            s.Vehicles.Add(new Vehicle{Id=Next(),Body=TruckBody.Tow,OwnerAccount=owner.Account,HomeBuildingId=garage.Id,CargoCapacity=0,Position=new(-30+5.5,15-6.1),Heading=Math.PI/2,Fuel=40,Status=VehicleStatus.Parked,Cause="Guincho da oficina disponível"});
+            s.Vehicles.Add(new Vehicle{Id=Next(),Body=TruckBody.Tow,OwnerAccount=owner.Account,HomeBuildingId=garage.Id,CargoCapacity=0,Position=CitySimulation.ShopTowSpace(garage),Heading=CitySimulation.TowBaseHeading(garage),Fuel=40,Status=VehicleStatus.Parked,Cause="Guincho da oficina disponível"});
         }
         var east=s.Roads.Where(r=>r.Position.Z==0&&r.Position.X>=-20&&r.Position.X<=40).OrderBy(r=>r.Position.X).Select(r=>r.Id).ToList();
         var car=new Vehicle{Id=Next(),OwnerAccount=driver.Account,PassengerCar=true,CargoCapacity=0,Position=new(0,-1.65),Heading=Math.PI/2,Fuel=40,Status=VehicleStatus.Travelling,Route=east,RouteIndex=6,DestinationBuildingId=grocery.Id,ParkingSpot="b:"+grocery.Id+":0",TripPurpose=JourneyPurpose.Shopping,DriverId=driver.Id,Cause="Em viagem",Condition=.2};

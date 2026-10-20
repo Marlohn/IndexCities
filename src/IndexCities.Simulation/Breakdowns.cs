@@ -11,22 +11,30 @@ namespace IndexCities.Simulation;
 public sealed partial class CitySimulation
 {
     // Positions in a mechanic shop lot (local x to the right of the facade, z
-    // towards the back, as LotSpots): the bays inside (0 = lift, 1 = floor), the
-    // waiting place at each bay door and the shop tow's own space. Calibration
-    // on the candidate model's anchors.
-    static readonly (double X,double Z)[] ShopBayOffsets=[(-6.9,2.35),(-1.45,2.35)];
-    const double ShopWaitingZ=-5.6,ShopDoorZ=-1.3;
-    static readonly (double X,double Z) ShopTowOffset=(5.5,-6.1);
+    // towards the back, as LotSpots), on the anchors of the shop model
+    // (Assets/Workshop): the bays inside (0 = lift, 1 = floor), the waiting
+    // place in the yard at each bay door, the shop tow's own space and the
+    // places by the reception where a driver waits.
+    static readonly (double X,double Z)[] ShopBayOffsets=[(-6.905,3.35),(-1.45,4.0)];
+    const double ShopWaitingZ=-5.6;
+    static readonly (double X,double Z) ShopTowOffset=(6.6,-5.8);
+    static readonly (double X,double Z)[] ShopDriverWaitOffsets=[(4.5,-3.1),(5.5,-3.1)];
     public static int ShopBayCount=>ShopBayOffsets.Length;
     // Bays plus one waiting place at each bay door.
     static int ShopCapacity=>ShopBayOffsets.Length*2;
     Point ShopBay(Building shop,int bay)=>LocalPoint(shop,ShopBayOffsets[bay].X,ShopBayOffsets[bay].Z);
     Point ShopWaiting(Building shop,int bay)=>LocalPoint(shop,ShopBayOffsets[bay].X,ShopWaitingZ);
-    Point ShopDoorway(Building shop,int bay)=>LocalPoint(shop,ShopBayOffsets[bay].X,ShopDoorZ);
-    Point ShopTowSpace(Building shop)=>LocalPoint(shop,ShopTowOffset.X,ShopTowOffset.Z);
-    // Into the building (local +z) and along the facade (local +x).
-    static double InwardHeading(Building shop)=>shop.Rotation;
-    static double AlongFacadeHeading(Building shop)=>shop.Rotation+Math.PI/2;
+    public static Point ShopTowSpace(Building shop)=>LocalPoint(shop,ShopTowOffset.X,ShopTowOffset.Z);
+    // A free place by the reception for a driver waiting for the revision.
+    Point ShopDriverWait(Building shop,Citizen driver)
+    {
+        foreach(var (x,z) in ShopDriverWaitOffsets){var at=LocalPoint(shop,x,z);if(!State.Citizens.Any(c=>c.Id!=driver.Id&&c.Alive&&c.Position.Distance(at)<.3))return at;}
+        return LocalPoint(shop,ShopDriverWaitOffsets[0].X,ShopDriverWaitOffsets[0].Z);
+    }
+    // Vehicles in the yard and on the bays stand nose to the street; the shop
+    // tow along the facade, nose to the side it leaves by (local -x).
+    static double OutwardHeading(Building shop)=>shop.Rotation+Math.PI;
+    public static double TowBaseHeading(Building shop)=>shop.Rotation-Math.PI/2;
 
     double NextBreakdownRandom()
     {
@@ -79,7 +87,7 @@ public sealed partial class CitySimulation
     }
     (Point Position,double Heading)? HomeSpace(Vehicle v,Building home)
     {
-        if(IsTow(v)&&home.Kind==BuildingKind.MechanicShop)return (ShopTowSpace(home),AlongFacadeHeading(home));
+        if(IsTow(v)&&home.Kind==BuildingKind.MechanicShop)return (ShopTowSpace(home),TowBaseHeading(home));
         if(v.PassengerCar){var spot=ParkingSpots(home).FirstOrDefault(s=>s.Key==v.ParkingSpot&&SpotFree(s,v.Id));if(spot.Key==null)spot=ParkingSpots(home).FirstOrDefault(s=>SpotFree(s,v.Id));return spot.Key==null?null:(spot.Position,spot.Heading);}
         return Access(home) is {} access?(DockAt(access,home,false),v.Heading):null;
     }
@@ -114,7 +122,9 @@ public sealed partial class CitySimulation
         if(v.PushPath.Count==0)return false;
         var left=State.Tuning.ShopPushSpeed*dt;
         while(left>1e-9&&v.PushPath.Count>0){
-            var to=v.PushPath[0];var d=v.Position.Distance(to);if(d>.01){var dir=to-v.Position;v.Heading=Math.Atan2(dir.X,dir.Z);}
+            var to=v.PushPath[0];var d=v.Position.Distance(to);
+            // It backs into a space whose final heading points against the motion.
+            if(d>.01){var dir=to-v.Position;var heading=Math.Atan2(dir.X,dir.Z);if(v.PushHeading is {} final&&Math.Cos(heading-final)<0)heading+=Math.PI;v.Heading=heading;}
             if(d<=left){v.Position=to;v.PushPath.RemoveAt(0);left-=d;}else{v.Position=v.Position.MoveTowards(to,left);left=0;}
         }
         if(v.PushPath.Count==0){if(v.PushHeading is {} heading)v.Heading=heading;v.PushHeading=null;Pushed(v);}
@@ -200,7 +210,7 @@ public sealed partial class CitySimulation
                 if(v.ServiceSpot is not {} bay||occupied[bay]!=null){v.Cause=(v.BrokenDown?"Quebrado; ":"")+"aguardando vaga de serviço na oficina "+shop.Id;continue;}
                 if(!open||present==0){v.Cause=(v.BrokenDown?"Quebrado; ":"")+"aguardando mecânico na oficina "+shop.Id;continue;}
                 if(!PayService(v,shop,v.Service)){NoMoneyAtShop(v,shop);continue;}
-                occupied[bay]=v;v.ServiceBay=bay;v.ServiceSpot=null;v.ServicePhase=ServicePhase.InService;v.ServiceWork=ServiceSeconds(shop,v.Service);v.PushPath=[ShopBay(shop,bay)];v.PushHeading=InwardHeading(shop);
+                occupied[bay]=v;v.ServiceBay=bay;v.ServiceSpot=null;v.ServicePhase=ServicePhase.InService;v.ServiceWork=ServiceSeconds(shop,v.Service);v.PushPath=[ShopBay(shop,bay)];v.PushHeading=OutwardHeading(shop);
                 v.Cause=(v.Service==ServiceKind.Repair?"Em conserto":"Em revisão")+" na oficina "+shop.Id;
             }
             var working=0;
@@ -220,7 +230,7 @@ public sealed partial class CitySimulation
         if(v.Service==ServiceKind.Revision){
             // Out through the bay door to the street side, where the driver takes it.
             v.ServiceBay=null;var own=IsTow(v)&&v.HomeBuildingId==shop.Id;
-            v.PushPath=own?[ShopWaiting(shop,bay),ShopTowSpace(shop)]:[ShopWaiting(shop,bay),ServiceDock(shop)];v.PushHeading=own?AlongFacadeHeading(shop):null;
+            v.PushPath=own?[ShopWaiting(shop,bay),ShopTowSpace(shop)]:[ShopWaiting(shop,bay),ServiceDock(shop)];v.PushHeading=own?TowBaseHeading(shop):null;
             v.Cause="Revisado na oficina "+shop.Id+(own?"":"; saindo para o motorista");return;
         }
         // Repaired: it waits in the bay for the tow back to the owner's space (4A).
@@ -252,7 +262,7 @@ public sealed partial class CitySimulation
         int? place=null;for(var bay=0;bay<ShopBayCount&&place==null;bay++)if(taken.All(o=>o.ServiceSpot!=bay&&o.ServiceBay!=bay))place=bay;
         for(var bay=0;bay<ShopBayCount&&place==null;bay++)if(taken.All(o=>o.ServiceSpot!=bay))place=bay;
         v.ServiceSpot=place??0;var spot=v.ServiceSpot.Value;
-        v.PushPath=[ShopWaiting(shop,spot)];v.PushHeading=InwardHeading(shop);
+        v.PushPath=[ShopWaiting(shop,spot)];v.PushHeading=OutwardHeading(shop);
         v.Cause=(v.BrokenDown?"Quebrado; ":"")+"na fila da oficina "+shop.Id;
     }
 
@@ -309,7 +319,7 @@ public sealed partial class CitySimulation
         if(!ShopOperates(shop)){ClearService(v);v.Service=ServiceKind.Revision;DriveBackFromService(v,"Oficina sem operação na chegada; voltando");return;}
         EnterShop(v,shop,ServiceKind.Revision);
         // The driver waits at the shop door (SPEC decision 8A).
-        if(CitizenById(v.DriverId) is {} driver&&driver.VehicleId==v.Id){driver.VehicleId=null;driver.Position=v.Position;driver.Path=[v.Position,shop.Door];driver.PathIndex=0;driver.PathRoadRevision=State.RoadRevision;driver.Purpose=JourneyPurpose.Service;driver.DestinationId=shop.Id;driver.Activity="Levando o veículo à revisão";Personal(driver,"Deixou o veículo "+v.Id+" na oficina "+shop.Id+"; espera na porta");}
+        if(CitizenById(v.DriverId) is {} driver&&driver.VehicleId==v.Id){driver.VehicleId=null;driver.Position=v.Position;driver.Path=[v.Position,ShopDriverWait(shop,driver)];driver.PathIndex=0;driver.PathRoadRevision=State.RoadRevision;driver.Purpose=JourneyPurpose.Service;driver.DestinationId=shop.Id;driver.Activity="Levando o veículo à revisão";Personal(driver,"Deixou o veículo "+v.Id+" na oficina "+shop.Id+"; espera na porta");}
     }
     // After a revision (or none) the driver takes the vehicle back to its space.
     void DriveBackFromService(Vehicle v,string? cause=null)

@@ -64,7 +64,7 @@ public sealed partial class CitySimulation
                 if(c.Purpose==JourneyPurpose.Boarding)c.PathRoadRevision=State.RoadRevision;
                 if(c.PathRoadRevision!=State.RoadRevision&&c.Purpose==JourneyPurpose.Construction&&c.ConstructionProjectId is {} projectId){var project=State.Projects.First(p=>p.Id==projectId);var access=WorkAccess(project);var replacement=access==null?new List<Point>():PedestrianPath(c.Position,CrewPedestrianSite(access),access);c.Path=replacement;c.PathIndex=0;c.PathRoadRevision=State.RoadRevision;if(replacement.Count==0){c.Activity="Equipe aguardando rota de obra";continue;}}
                 var journeyDestination=BuildingById(c.DestinationId);
-                var closeDoorDetour=journeyDestination!=null&&c.Position.Distance(journeyDestination.Door)<3&&c.Path.Skip(c.PathIndex).Any(point=>point.Distance(journeyDestination.Door)>3)&&Access(journeyDestination) is {} doorAccess&&!CrossesLane(c.Position,journeyDestination.Door,doorAccess);
+                var closeDoorDetour=journeyDestination!=null&&c.Purpose!=JourneyPurpose.Service&&c.Position.Distance(journeyDestination.Door)<3&&c.Path.Skip(c.PathIndex).Any(point=>point.Distance(journeyDestination.Door)>3)&&Access(journeyDestination) is {} doorAccess&&!CrossesLane(c.Position,journeyDestination.Door,doorAccess);
                 if((c.PathRoadRevision!=State.RoadRevision||closeDoorDetour)&&c.Purpose!=JourneyPurpose.Construction){
                     var dest=journeyDestination;if(dest!=null){var replacement=CitizenRoute(c,dest);if(replacement.Count==0){c.Activity="Viagem interrompida: rota removida";c.Path.Clear();c.NextDecisionAt=State.ElapsedSeconds+300;continue;}c.Path=replacement;c.PathIndex=0;c.PathRoadRevision=State.RoadRevision;}
                 }
@@ -135,7 +135,8 @@ public sealed partial class CitySimulation
         if(c.Purpose==JourneyPurpose.Leaving){c.Resident=false;c.InsideMap=false;c.Activity="Residindo no exterior";c.WorkplaceId=null;Personal(c,"Saiu fisicamente da cidade; dinheiro, patrimônio e dívidas persistem");return;}
         if(c.Purpose==JourneyPurpose.Construction){c.Activity="Trabalhando no canteiro";return;}
         var destination=BuildingById(c.DestinationId);if(destination==null){c.Activity="Destino indisponível";return;}
-        c.Position=destination.Door;c.Path.Clear();c.PathIndex=0;
+        // A driver waiting for a revision stays at the place by the shop reception.
+        c.Position=c.Purpose==JourneyPurpose.Service&&destination.Kind==BuildingKind.MechanicShop&&c.Path.Count>0?c.Path[^1]:destination.Door;c.Path.Clear();c.PathIndex=0;
         if(c.Purpose==JourneyPurpose.Arriving){c.Resident=true;c.InsideMap=true;c.Activity="Em casa";Personal(c,"Chegou à residência adquirida");}
         else if(c.Purpose==JourneyPurpose.Work)c.Activity="No trabalho";
         else if(c.Purpose==JourneyPurpose.Home){if(FamilyById(c.FamilyId) is {} family){family.PantryUnits=checked(family.PantryUnits+c.BagFoodUnits);c.BagFood=0;}c.Activity="Em casa";}
@@ -362,7 +363,7 @@ public sealed partial class CitySimulation
         if(PavingMachineArrived(v))return;
         if(v.RefuellingAt is {} stationId&&BuildingById(stationId) is {} station&&Access(station) is {} stationAccess&&v.Position.Distance(DockAt(stationAccess,station,false))<3){Refuel(v,stationId);return;}
         var s=v.ShipmentId==null?null:State.Shipments.FirstOrDefault(s=>s.Id==v.ShipmentId);
-        if(s==null){if(v.External&&v.Position.Distance(State.Entry)<8){v.Position=State.Entry;v.Status=VehicleStatus.Outside;v.CrewAboard=false;v.CrewCount=0;v.ConstructionAccess=false;v.Route.Clear();v.IntersectionClaim=null;v.Cause="Disponível no exterior";}else {v.Status=VehicleStatus.Parked;ReleaseDriver(v);if(IsTow(v)&&BuildingById(v.HomeBuildingId) is {Kind:BuildingKind.MechanicShop} shop&&v.Position.Distance(ShopTowSpace(shop))<.5){v.Heading=AlongFacadeHeading(shop);v.Cause="Guincho da oficina disponível";}}return;}
+        if(s==null){if(v.External&&v.Position.Distance(State.Entry)<8){v.Position=State.Entry;v.Status=VehicleStatus.Outside;v.CrewAboard=false;v.CrewCount=0;v.ConstructionAccess=false;v.Route.Clear();v.IntersectionClaim=null;v.Cause="Disponível no exterior";}else {v.Status=VehicleStatus.Parked;ReleaseDriver(v);if(IsTow(v)&&BuildingById(v.HomeBuildingId) is {Kind:BuildingKind.MechanicShop} shop&&v.Position.Distance(ShopTowSpace(shop))<.5){v.Heading=TowBaseHeading(shop);v.Cause="Guincho da oficina disponível";}}return;}
         if(s.Complete&&v.CrewAboard){v.Status=VehicleStatus.Parked;v.Cause="Equipe externa no canteiro";return;}
         if(s.Cancelled){RedirectCancelled(v,s);return;}
         if(!s.PickedUp&&s.SourceBuildingId is {} sourceId){var source=BuildingById(sourceId);if(source==null||s.Cargo.Any(kv=>source.Quantity(kv.Key)<kv.Value)){v.Status=VehicleStatus.Waiting;v.Cause="Carga reservada indisponível na origem";return;}foreach(var kv in s.Cargo.Units)source.AddStockUnits(kv.Key,-kv.Value);if(source.Kind==BuildingKind.Farm)source.FoodSoldTodayUnits=checked(source.FoodSoldTodayUnits+s.Cargo.Units.GetValueOrDefault(ResourceKind.Food));v.Cargo=new(s.Cargo);s.PickedUp=true;
@@ -375,7 +376,7 @@ public sealed partial class CitySimulation
         }
         if(s.Purpose==ShipmentPurpose.Vehicle){s.Complete=true;v.External=false;v.ExternalDriverId=null;v.Status=VehicleStatus.Parked;v.ShipmentId=null;v.Cause="Caminhão adquirido; aguarda motorista SIM";
             // The shop's tow is set at its own space (it may arrive at the street side after a detour).
-            if(IsTow(v)&&BuildingById(v.HomeBuildingId) is {Kind:BuildingKind.MechanicShop} shop){v.Cause="Guincho da oficina disponível";if(v.Position.Distance(ShopTowSpace(shop))>.5)v.PushPath=[ShopTowSpace(shop)];v.PushHeading=AlongFacadeHeading(shop);if(v.PushPath.Count==0)v.Heading=AlongFacadeHeading(shop);}
+            if(IsTow(v)&&BuildingById(v.HomeBuildingId) is {Kind:BuildingKind.MechanicShop} shop){v.Cause="Guincho da oficina disponível";if(v.Position.Distance(ShopTowSpace(shop))>.5)v.PushPath=[ShopTowSpace(shop)];v.PushHeading=TowBaseHeading(shop);if(v.PushPath.Count==0)v.Heading=TowBaseHeading(shop);}
             return;}
         var dest=BuildingById(s.DestinationBuildingId);if(dest==null){v.Status=VehicleStatus.Waiting;v.Cause="Destino indisponível: carga preservada";return;}
         var atBay=State.Vehicles.Any(o=>o.Id<v.Id&&o.Status==VehicleStatus.Unloading&&o.ShipmentId is {} other&&State.Shipments.Any(x=>x.Id==other&&x.DestinationBuildingId==dest.Id));

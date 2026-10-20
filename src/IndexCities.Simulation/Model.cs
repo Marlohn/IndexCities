@@ -48,7 +48,7 @@ public static class Catalog
         [BuildingKind.WaterTreatment]=new(BuildingKind.WaterTreatment,"Água potável",24,26,12000,6,960,360,M(20,20,12,4)),
         [BuildingKind.SewageTreatment]=new(BuildingKind.SewageTreatment,"Esgoto",26,28,12000,6,1000,360,M(22,22,12,2)),
         [BuildingKind.WindPower]=new(BuildingKind.WindPower,"Energia eólica",18,18,14000,6,1200,360,M(16,20,20,2)),
-        [BuildingKind.MechanicShop]=new(BuildingKind.MechanicShop,"Oficina mecânica",22,17,90000,4,0,300,M(16,14,8,4)),
+        [BuildingKind.MechanicShop]=new(BuildingKind.MechanicShop,"Oficina mecânica",22,19,90000,4,0,300,M(16,14,8,4)),
     };
 }
 // Values/frequencies explicitly delegated to calibration by SPEC. They are saved with the city.
