@@ -219,7 +219,13 @@ public sealed partial class CitySimulation
         parts.Add(source==null?"endereço antigo já não existia: nada a retirar":"retirada do endereço antigo paga ("+Cash(order.RemovalPaid)+")");
         if(order.TransferPaid>0)parts.Add("frete do estoque "+Cash(order.TransferPaid));
         if(moved.Count>0)parts.Add("estoque levado por caminhão: "+Amounts(moved));
-        if(order.StockLost.Count>0)parts.Add("resíduo de estoque baixado uma única vez após "+(MunicipalStockRecoveryDeadline/3600)+" h sem progresso por falta de espaço/rota: "+Amounts(order.StockLost)+"; perda do titular "+(source?.OwnerAccount??"city")+"; causa anterior: "+order.Cause);
+        // The write-off after the recovery deadline, or, when the move ended with
+        // only amounts no load takes (0,001 or less of a resource), those amounts
+        // at the retirement: the event states which one happened.
+        var afterDeadline=order.StockRecoveryBlockedSeconds>=MunicipalStockRecoveryDeadline;
+        static string Exact(IEnumerable<KeyValuePair<ResourceKind,double>> stock)=>string.Join(", ",stock.Select(e=>ResourceLabel(e.Key)+" "+e.Value.ToString("0.#########",System.Globalization.CultureInfo.InvariantCulture)));
+        if(order.StockLost.Count>0)parts.Add(afterDeadline?"resíduo de estoque baixado uma única vez após "+(MunicipalStockRecoveryDeadline/3600)+" h sem progresso por falta de espaço/rota: "+Amounts(order.StockLost)+"; perda do titular "+(source?.OwnerAccount??"city")+"; causa anterior: "+order.Cause
+            :"resíduo de até 0,001 por recurso, que nenhuma carga leva, baixado uma única vez ao retirar o endereço antigo: "+Exact(order.StockLost)+"; perda do titular "+(source?.OwnerAccount??"city"));
         parts.Add(order.WorkersContinued+" funcionário(s) continuaram e "+order.WorkersLeft+" saíram após reavaliar");
         order.Cause=string.Join("; ",parts);Event(order.Cause);
     }

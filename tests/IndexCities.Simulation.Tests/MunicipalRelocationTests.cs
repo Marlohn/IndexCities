@@ -166,6 +166,8 @@ public sealed class MunicipalRelocationTests
         Assert.True(sim.RelocateMunicipalBuilding(depot.Id,at,Math.PI,quote).Success);
         var order=RunUntilDone(sim,sim.State.MunicipalRelocations.Single());
         Assert.True(sim.State.Buildings.Single(b=>b.Id==depot.Id).Removed);
+        // The event states what happened: no 24 h deadline, the exact amount written off.
+        Assert.DoesNotContain("24 h",order.Cause);Assert.Contains("Madeira 0.0000005",order.Cause);Assert.Contains("perda do titular",order.Cause);
         Assert.Equal(500,order.StockLost.Units.GetValueOrDefault(ResourceKind.Wood));
         order=CitySimulation.FromJson(sim.SaveToJson()).State.MunicipalRelocations.Single();
         Assert.Equal(500,order.StockLost.Units.GetValueOrDefault(ResourceKind.Wood));
