@@ -1,0 +1,11 @@
+﻿UTC=2026-10-19T22:20:35.3230416Z
+before=origin/main 13b8e98 (git archive; simulation and tests unchanged)
+after=de62d24 (includes main 13b8e98 and review corrections)
+before harness: only Headless/Program.cs and Fixtures.cs copied from after for identical metrics and seed43 valid intake access
+sequential order: cycle 42/7/43, grid 42/7/43; before then after per pair; no concurrent builds in this run
+D9E15C4E414AD41CF0FB3CFB18F585B85307843D7A9B9ED05AB4B7EBB1DD22D4 C:\Users\Marlohn\orca\workspaces\IndexCities\quantidades-inteiras\artifacts\verification\fixed-quantities\main-13b8e98-source\src\IndexCities.Headless\Program.cs
+703D666F8DE4FE82429CD69EEE2E774F0E3690C9D0A79E0319C43F0D80A4E54C C:\Users\Marlohn\orca\workspaces\IndexCities\quantidades-inteiras\artifacts\verification\fixed-quantities\main-13b8e98-source\src\IndexCities.Headless\Fixtures.cs
+706DA601469F24F25B6F33BC7C9D8D5FC755E03E5CEB3C3C5A54E73B1C8D18A6 C:\Users\Marlohn\orca\workspaces\IndexCities\quantidades-inteiras\artifacts\verification\fixed-quantities\main-13b8e98-source\src\IndexCities.Simulation\bin\Release\net8.0\IndexCities.Simulation.dll
+D9E15C4E414AD41CF0FB3CFB18F585B85307843D7A9B9ED05AB4B7EBB1DD22D4 C:\Users\Marlohn\orca\workspaces\IndexCities\quantidades-inteiras\src\IndexCities.Headless\Program.cs
+703D666F8DE4FE82429CD69EEE2E774F0E3690C9D0A79E0319C43F0D80A4E54C C:\Users\Marlohn\orca\workspaces\IndexCities\quantidades-inteiras\src\IndexCities.Headless\Fixtures.cs
+4D88B5A20E402459AD4E5EF9C63B29D2A0543ECFE8A802D5CB1D78482C3489FA C:\Users\Marlohn\orca\workspaces\IndexCities\quantidades-inteiras\src\IndexCities.Simulation\bin\Release\net8.0\IndexCities.Simulation.dll

@@ -98,7 +98,7 @@ public sealed partial class CitySimulation
         foreach(var k in Enum.GetValues<ResourceKind>().Where(k=>k!=ResourceKind.Food&&k!=ResourceKind.Fuel)){
             var free=depot.Quantity(k)-State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress).Sum(p=>p.LocalReserved.GetValueOrDefault(k));
             foreach(var p in State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress).OrderBy(p=>p.Id)){
-                var pending=State.Shipments.Where(s=>s.ProjectId==p.Id&&!s.Complete).Sum(s=>s.Cargo.GetValueOrDefault(k));var need=p.Required.GetValueOrDefault(k)-p.Delivered.GetValueOrDefault(k)-pending-p.LocalReserved.GetValueOrDefault(k);var reserve=Math.Max(0,Math.Min(free,need));p.LocalReserved[k]=p.LocalReserved.GetValueOrDefault(k)+reserve;free-=reserve;
+                var pending=State.Shipments.Where(s=>s.ProjectId==p.Id&&!s.Complete).Sum(s=>s.Cargo.GetValueOrDefault(k));var need=p.Required.GetValueOrDefault(k)-p.Delivered.GetValueOrDefault(k)-pending-p.LocalReserved.GetValueOrDefault(k);var reserve=Math.Max(0,Math.Min(free,need));p.LocalReserved.AddAmount(k,reserve);free-=reserve;
             }
         }
     }
@@ -142,7 +142,7 @@ public sealed partial class CitySimulation
                 var fee=State.Tuning.FreightBase+(decimal)(travel*2)*State.Tuning.FreightPerMetre+(decimal)fuel*State.Tuning.ImportPrices[ResourceKind.Fuel];
                 var price=source==null?(decimal)amount*State.Tuning.ImportPrices[k]:0;
                 if(!ProjectPay(p,price+fee,p.IsMaintenance?MaintenanceCategory(p):"Obras e materiais",(source==null?"Importação de ":"Transporte municipal de ")+k+"; produto, frete e combustível")){p.Cause=WorkCause.RemainingCommitmentInsufficient;continue;}
-                if(source==null)State.OutsideStock[k]-=amount;State.OutsideStock[ResourceKind.Fuel]-=fuel;vehicle.Fuel+=fuel;
+                if(source==null)State.OutsideStock.AddAmount(k,-(amount));State.OutsideStock.AddAmount(ResourceKind.Fuel,-(fuel));vehicle.AddFuel(fuel);
                 var shipment=new Shipment{Id=Id(),Purpose=p.IsMaintenance?ShipmentPurpose.Maintenance:ShipmentPurpose.Construction,ProjectId=p.Id,SourceBuildingId=source?.Id,DestinationBuildingId=p.BuildingId,Destination=access.Position,VehicleId=vehicle.Id,Cargo=new(){{k,amount}},PricePaid=Money(price+fee),PickedUp=source==null};
                 shipment.ReceivingMachineId=receiver?.Id;State.Shipments.Add(shipment);vehicle.ConstructionAccess=true;vehicle.ShipmentId=shipment.Id;vehicle.Cargo=source==null?new(shipment.Cargo):new();vehicle.Route=route;vehicle.RouteIndex=0;vehicle.DockPosition=DockAt(source==null?access:Access(source)!,source??BuildingById(p.BuildingId),vehicle.CrewAboard);vehicle.Status=VehicleStatus.Travelling;vehicle.Position=State.Entry;vehicle.Cause="Entrega para obra "+p.Id;
                 // A crew truck waits at the site. Bringing the crew with the
@@ -167,7 +167,7 @@ public sealed partial class CitySimulation
         if(RouteLength(route)*2*FuelRate(vehicle)+4>State.Tuning.FuelTank){project.Cause=WorkCause.RouteBeyondTruckRange;return;}
         var fuel=Math.Max(0,State.Tuning.FuelTank-vehicle.Fuel);if(State.OutsideStock[ResourceKind.Fuel]<fuel)return;var fee=State.Tuning.FreightBase+(decimal)(RouteLength(route)*2)*State.Tuning.FreightPerMetre+(decimal)fuel*State.Tuning.ImportPrices[ResourceKind.Fuel];
         if(!ProjectPay(project,fee,project.IsMaintenance?MaintenanceCategory(project):"Equipe externa","Transporte físico e combustível da equipe externa")){project.Cause=WorkCause.CommitmentInsufficientForCrew;return;}
-        State.OutsideStock[ResourceKind.Fuel]-=fuel;vehicle.Fuel+=fuel;var shipment=new Shipment{Id=Id(),Purpose=project.IsMaintenance?ShipmentPurpose.Maintenance:ShipmentPurpose.Construction,ProjectId=project.Id,DestinationBuildingId=project.BuildingId,VehicleId=vehicle.Id,PickedUp=true,PricePaid=Money(fee)};State.Shipments.Add(shipment);vehicle.ConstructionAccess=true;vehicle.ShipmentId=shipment.Id;vehicle.Cargo.Clear();vehicle.Route=route;vehicle.RouteIndex=0;vehicle.Position=State.Entry;vehicle.Status=VehicleStatus.Travelling;vehicle.CrewAboard=true;vehicle.CrewCount=3;vehicle.DockPosition=DockAt(access,BuildingById(project.BuildingId),true);project.CrewVehicleId=vehicle.Id;
+        State.OutsideStock.AddAmount(ResourceKind.Fuel,-(fuel));vehicle.AddFuel(fuel);var shipment=new Shipment{Id=Id(),Purpose=project.IsMaintenance?ShipmentPurpose.Maintenance:ShipmentPurpose.Construction,ProjectId=project.Id,DestinationBuildingId=project.BuildingId,VehicleId=vehicle.Id,PickedUp=true,PricePaid=Money(fee)};State.Shipments.Add(shipment);vehicle.ConstructionAccess=true;vehicle.ShipmentId=shipment.Id;vehicle.Cargo.Clear();vehicle.Route=route;vehicle.RouteIndex=0;vehicle.Position=State.Entry;vehicle.Status=VehicleStatus.Travelling;vehicle.CrewAboard=true;vehicle.CrewCount=3;vehicle.DockPosition=DockAt(access,BuildingById(project.BuildingId),true);project.CrewVehicleId=vehicle.Id;
     }
     void AssignLocalCrew(WorkProject p,RoadNode access)
     {
@@ -221,7 +221,7 @@ public sealed partial class CitySimulation
             var factor=external!=null?1:local.Count/3.0;var used=Math.Min(dt*factor,p.WorkSeconds*(1-p.Progress));
             if(external!=null){var due=Money((decimal)(used/3600)*State.Tuning.ExternalCrewHourlyPrice);if(due>p.BudgetRemaining){p.Cause=WorkCause.NoBudgetForExternalCrew;continue;}p.CrewCostDue+=(decimal)(used/3600)*State.Tuning.ExternalCrewHourlyPrice;if(p.CrewCostDue>=1||p.Progress+used/p.WorkSeconds>=.999999){var amount=Money(p.CrewCostDue);if(!ProjectPay(p,amount,p.IsMaintenance?MaintenanceCategory(p):"Equipe externa",p.IsMaintenance?"Manutenção efetivamente realizada por equipe externa":"Trabalho efetivamente realizado na obra")){p.Cause=WorkCause.ExternalCrewAwaitingPayment;continue;}p.CrewCostDue=0;}}
             
-            p.Status=WorkStatus.InProgress;p.Progress=Math.Min(1,p.Progress+used/p.WorkSeconds);if(p.Progress>=.999999)p.Progress=1;p.Cause=p.IsMaintenance?WorkCause.MaintenanceInProgress:WorkCause.UnderConstruction;
+            p.Status=WorkStatus.InProgress;p.AddProgress(used/p.WorkSeconds);p.ProgressUnits=Math.Min(FixedPoint.PointScale,p.ProgressUnits);if(p.Progress>=.999999)p.Progress=1;p.Cause=p.IsMaintenance?WorkCause.MaintenanceInProgress:WorkCause.UnderConstruction;
             if(p.IsMaintenance)ProgressRoadMaintenance(p);
 
             if(p.Progress<.999999)continue;

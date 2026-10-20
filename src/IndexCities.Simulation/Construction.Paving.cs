@@ -42,7 +42,7 @@ public sealed partial class CitySimulation
         if(State.OutsideStock[ResourceKind.Fuel]<fuel){p.Cause=WorkCause.SupplierOutOfFuel;return;}
         var fee=Money(2*(State.Tuning.PavingMachineHire+State.Tuning.FreightBase+(decimal)(RouteLength(route)*2)*State.Tuning.FreightPerMetre)+(decimal)fuel*State.Tuning.ImportPrices[ResourceKind.Fuel]);
         if(!ProjectPay(p,fee,"Máquinas de pavimentação","Contratação, deslocamento e combustível de pavimentadora e rolo externos")){p.Cause=WorkCause.NoBudgetForPaving;return;}
-        p.MachineryPaid+=fee;State.OutsideStock[ResourceKind.Fuel]-=fuel;
+        p.MachineryPaid+=fee;State.OutsideStock.AddAmount(ResourceKind.Fuel,-(fuel));
         foreach(var machine in new[]{paver,roller}){
             machine.Fuel=State.Tuning.FuelTank;machine.MachineProjectId=p.Id;machine.MachinePhase=MachinePhase.ToSite;
             machine.CrewAboard=true;machine.CrewCount=1;machine.Route=route.ToList();machine.RouteIndex=0;
@@ -153,7 +153,7 @@ public sealed partial class CitySimulation
             var previousHeading=machine.Heading;machine.Heading=Math.Atan2(delta.X,delta.Z);travel=SafeSiteTravel(machine,target,travel);
             if(travel<=.000001){machine.Heading=previousHeading;p.Cause=WorkCause.PavingSiteOccupied;machine.Cause=p.Cause;break;}
             machine.Position=machine.Position.MoveTowards(target,travel);remaining-=travel/speed;
-            machine.Fuel-=travel*State.Tuning.FuelPerMetre;machine.FuelBurnedLastStep+=travel*State.Tuning.FuelPerMetre;
+            machine.AddFuel(-(travel*State.Tuning.FuelPerMetre));machine.AddFuelBurnedLastStep(travel*State.Tuning.FuelPerMetre);
             if(executing){p.CrewCostDue+=(decimal)(travel/speed/3600)*hourly;
                 if(p.CrewCostDue>=1){var payable=Money(p.CrewCostDue);if(ProjectPay(p,payable,"Máquinas de pavimentação","Aplicação/acabamento efetivos; operadores e máquinas")){p.MachineryPaid+=payable;p.CrewCostDue=0;}}
             }

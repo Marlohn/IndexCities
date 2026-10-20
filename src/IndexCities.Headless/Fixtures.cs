@@ -22,6 +22,9 @@ static class Fixtures
         Require(sim.PlaceBuilding(BuildingKind.WindPower,new(0,-16),Math.PI));Require(sim.PlaceBuilding(BuildingKind.WindPower,new(120,-16),Math.PI));
         Require(sim.PlaceBuilding(BuildingKind.WaterTreatment,new(40,-20),Math.PI));Require(sim.PlaceBuilding(BuildingKind.SewageTreatment,new(80,-20),Math.PI));
         var lake=sim.State.LakeCentre;var z=Math.Round((lake.Z-sim.State.LakeRadius-30)/4)*4;
+        // Seed 43 puts the original intake access through the first house row.
+        // Keep the original fixture whenever valid; use the clear gap otherwise.
+        if(!sim.QuoteRoad(new(240,0),new(132,z),true).PhysicallyValid)z=32;
         Require(sim.PlaceRoad(new(240,0),new(132,z),true));sim.Advance(14400);
         Require(sim.PlaceBuilding(BuildingKind.WaterIntake,new(144,z+14)));
         for(var i=0;i<240&&sim.State.Projects.Any(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress&&!p.IsMaintenance);i++)sim.Advance(3600);

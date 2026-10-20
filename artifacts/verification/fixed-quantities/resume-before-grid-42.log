@@ -1,0 +1,28 @@
+FIXTURE grid rows=3 length=400 H=408 houses=72 workplaces=20 intakes=2 roadNodes=399 jobs=110 placeFails=0 signals=True build=0,4s .NET=8.0.32 cpu=12 release=True
+WARMUP 2d wall=6,1s pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=83 travelling=0 ledger=926 history=2488 meals=324 wages=2862,01 health=99,999998 satisfaction=70,296438
+DAY 1 wall=2,45s eff=35227x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=83 travelling=0 ledger=1205 history=3416 meals=540 wages=4353,73 health=99,999998 satisfaction=70,178909
+STUCK day=1 2026-01-04 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
+DAY 2 wall=2,46s eff=35067x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=83 travelling=0 ledger=1523 history=4434 meals=756 wages=5811,62 health=99,999997 satisfaction=69,943631
+STUCK day=2 2026-01-05 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
+DAY 3 wall=2,47s eff=35038x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=83 travelling=0 ledger=1823 history=5448 meals=972 wages=7231,12 health=99,999997 satisfaction=69,782065
+STUCK day=3 2026-01-06 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
+DAY 4 wall=2,47s eff=34938x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=83 travelling=0 ledger=2123 history=6424 meals=1188 wages=8647,56 health=99,999997 satisfaction=69,542823
+STUCK day=4 2026-01-07 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
+DAY 5 wall=2,47s eff=34986x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=83 travelling=0 ledger=2411 history=7725 meals=1404 wages=10147,32 health=99,999997 satisfaction=69,518126
+STUCK day=5 2026-01-08 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
+DAY 6 wall=3,14s eff=27558x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=83 travelling=0 ledger=3235 history=8780 meals=1620 wages=11711,84 health=99,999996 satisfaction=68,703970
+STUCK day=6 2026-01-09 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
+DAY 7 wall=2,48s eff=34784x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=83 travelling=0 ledger=3507 history=9700 meals=1836 wages=13231,32 health=99,999996 satisfaction=68,718268
+STUCK day=7 2026-01-10 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
+DAY 8 wall=2,46s eff=35179x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=83 travelling=0 ledger=3811 history=10676 meals=2052 wages=14722,49 health=99,999996 satisfaction=68,742916
+STUCK day=8 2026-01-11 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
+DAY 9 wall=2,47s eff=34967x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=83 travelling=0 ledger=4124 history=11687 meals=2268 wages=16179,42 health=99,999996 satisfaction=68,757725
+STUCK day=9 2026-01-12 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
+DAY 10 wall=2,48s eff=34895x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=83 travelling=0 ledger=4405 history=12611 meals=2484 wages=17598,00 health=99,999996 satisfaction=68,809473
+STUCK day=10 2026-01-13 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
+DAY 11 wall=2,46s eff=35125x pop=108 alive=108 dead=0 employed=108 moving=0 vehicles=83 travelling=0 ledger=4716 history=13626 meals=2700 wages=19013,13 health=99,999996 satisfaction=68,829473
+STUCK day=11 2026-01-14 06:00 parados≥30min=0 SIMs dentro deles=0 SIMs com fome>30h=0 mortos=0 sem combustível na via=0 (total 0)
+SUMMARY days=11 perDay=2,53s eff=34179x hours80y=21 gen0=2548 gen2=2 allocMB/day=1453 workingSetMB=58
+STUCK SUMMARY guinchos chamados=0 rebocando agora=0 sem combustível na via (total)=0 parados≥30min (máx)=0 mortos=0
+SAVE 2,6MB save=0,11s load=0,10s sha256=0C6CFA3359434694
+INVARIANTS OK
