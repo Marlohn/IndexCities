@@ -212,18 +212,25 @@ public sealed partial class CitySimulation
     // at or out of a dock whose body pose overlaps v's at its dock.
     IEnumerable<Vehicle> DockOwners(Vehicle v,Point dock)
     {
+        List<(Vehicle Body,Point Position,double Heading)>? entering=null;
         foreach(var o in State.Vehicles){
             if(o.Id==v.Id||o.PassengerCar||o.Machine!=PavingMachine.None||o.Status is VehicleStatus.Outside or VehicleStatus.Towed)continue;
             var at=o.ManoeuvreDock??(o.Status is VehicleStatus.Unloading or VehicleStatus.Parked?o.DockPosition:null);if(at is not {} other||other.Distance(dock)>16)continue;
-            if(other.Distance(dock)<.1||Penetration(v,dock,v.Heading,o,other,o.Heading)>-.1||Penetration(v,dock,v.Heading,o,o.Position,o.Heading)>-.1)yield return o;
+            if(other.Distance(dock)<.1||Penetration(v,dock,v.Heading,o,other,o.Heading)>-.1||Penetration(v,dock,v.Heading,o,o.Position,o.Heading)>-.1){yield return o;continue;}
+            // Distinct dock endpoints can share the same physical corridor. A
+            // newcomer must wait outside that owner's exit too, instead of
+            // stopping on it while waiting for a different occupied bay.
+            entering??=WayIn(v,dock,out _);
+            if(DockWayOut(o).Any(exit=>entering.Any(p=>p.Position.Distance(exit.Position)<12&&BodiesOverlap(v,p.Position,p.Heading,o,exit.Position,exit.Heading))))yield return o;
         }
     }
+    List<(Vehicle Body,Point Position,double Heading)> DockWayOut(Vehicle o)=>o.Status==VehicleStatus.Travelling&&o.ManoeuvreDock!=null&&!Leaving(o)&&o.DockPosition is {} bay?PredictedWayOut(o,bay,o.Heading,[],out _):WayOut(o,out _);
     // The ways out of the trucks owning v's dock corridor, which v keeps out of
     // until its own entry is admitted.
     List<(Vehicle Body,Point Position,double Heading)> OwnersWayOut(Vehicle v,Point dock)
     {
         var held=new List<(Vehicle Body,Point Position,double Heading)>();
-        foreach(var o in DockOwners(v,dock))held.AddRange(o.Status==VehicleStatus.Travelling&&o.ManoeuvreDock!=null&&!Leaving(o)&&o.DockPosition is {} bay?PredictedWayOut(o,bay,o.Heading,[],out _):WayOut(o,out _));
+        foreach(var o in DockOwners(v,dock))held.AddRange(DockWayOut(o));
         return held;
     }
     // The slide from the lane into the dock: trucks keep their lane heading.
@@ -258,8 +265,14 @@ public sealed partial class CitySimulation
         var crewHeading=v.Route.Count>0&&_roads.TryGetValue(v.Route[^1],out var crewAccess)&&
             (crewAccess.Highway||crewAccess.Neighbours.Any(id=>Math.Abs(_roads[id].Position.X-crewAccess.Position.X)>.1))?Math.PI/2:0;
         if(v.Machine==PavingMachine.None&&v.CrewAboard&&!CrewDockClear(dock,crewHeading)){
-            v.Cause=WorkCause.PavingSiteOccupied;
-            return WayIn(v,dock,out _);
+            // Road completion can invalidate a previously chosen curb position.
+            // Replan only the unadmitted intention, without moving the body.
+            var shipment=State.Shipments.FirstOrDefault(s=>s.Id==v.ShipmentId);
+            if(v.Route.Count>0&&_roads.TryGetValue(v.Route[^1],out var access)){
+                var revised=DockAt(access,BuildingById(shipment?.DestinationBuildingId),true);
+                if(CrewDockClear(revised,crewHeading)){v.DockPosition=dock=revised;}
+                else {v.Cause=WorkCause.PavingSiteOccupied;return WayIn(v,dock,out _);}
+            }
         }
         var owners=DockOwners(v,dock).ToList();
         var way=WayIn(v,dock,out var spaces);

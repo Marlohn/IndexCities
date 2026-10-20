@@ -535,8 +535,12 @@ public sealed partial class CitySimulation
         // Same curb and local access, nearest compatible position first. This
         // uses lot geometry, never SpotFree or the cars' choice of parking.
         for(var shift=0.0;shift<=State.Tuning.RoadWidth;shift+=.5)foreach(var sign in shift==0?new[]{1}:new[]{1,-1}){
-            var candidate=dock+along*(shift*sign);
-            if(CrewDockClear(candidate,heading))return candidate;
+            // Fit between the real carriageway and lot, rather than forcing the
+            // old centre offset through the facade of a closely set-back house.
+            for(var inset=0.0;State.Tuning.RoadWidth/2+1.5-inset>=CarriagewayHalfWidth+1.45+.1;inset+=.25){
+                var candidate=dock+along*(shift*sign)-side*inset;
+                if(CrewDockClear(candidate,heading))return candidate;
+            }
         }
         // No compatible location: keep the requested access as an intention.
         // BayEntryHold refuses its admission, so the body stays in a safe place.
