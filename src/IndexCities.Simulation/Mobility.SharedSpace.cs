@@ -288,6 +288,9 @@ public sealed partial class CitySimulation
             return lane;
         }
         var run=new List<(Point Position,double Heading)>();SamplePoses(run,end,dock,heading);lane.AddRange(run.Select(p=>(v,p.Position,p.Heading)));
+        // The final slide is physical motion too. It may cross a junction from
+        // a lane point that is already outside it, especially at a curb near a T.
+        foreach(var node in SharedNodes())if(!spaces.Contains(node)&&run.Any(p=>EntersArea(v,p.Position,p.Heading,node)))spaces.Add(node);
         return lane;
     }
     // A delivery is still lane traffic until it reaches a real shared space.
@@ -334,7 +337,10 @@ public sealed partial class CitySimulation
             // Reaching the end of the physical route is not proof that it has
             // a safe endpoint. A missing safe pose never grants the whole trip.
             var end=way.Count>0?way[^1]:(v,v.Position,v.Heading);
-            occupied=SharedNodes().Any(n=>EntersArea(v,end.Item2,end.Item3,n))||OwnersWayOut(v,dock).Any(o=>o.Position.Distance(end.Item2)<12&&BodiesOverlap(v,end.Item2,end.Item3,o.Body,o.Position,o.Heading))||
+            // At the dock the acquired space is solely this vehicle's during
+            // its physical service (ARCHITECTURE "onde se espera"). It need
+            // not be outside its own acquired crossing, only other owners' exits.
+            occupied=OwnersWayOut(v,dock).Any(o=>o.Position.Distance(end.Item2)<12&&BodiesOverlap(v,end.Item2,end.Item3,o.Body,o.Position,o.Heading))||
                 DockOwners(v,dock).Any(o=>o.ManoeuvreDock is {} other&&Penetration(v,dock,v.Heading,o,other,o.Heading)>-.1);
         }
         if(!occupied&&AdmitManoeuvre(v,way,spaces,dock,false,limit))return [];

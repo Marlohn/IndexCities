@@ -543,10 +543,12 @@ public sealed partial class CitySimulation
         var along=new Point(side.Z,-side.X);var heading=Math.Atan2(along.X,along.Z);
         // Same curb and local access, nearest compatible position first. This
         // uses lot geometry, never SpotFree or the cars' choice of parking.
-        for(var shift=0.0;shift<=State.Tuning.RoadWidth;shift+=.5)foreach(var sign in shift==0?new[]{1}:new[]{1,-1}){
+        for(var shift=0.0;shift<=State.Tuning.RoadWidth*2;shift+=.5)foreach(var sign in shift==0?new[]{1}:new[]{1,-1}){
             // Fit between the real carriageway and lot, rather than forcing the
             // old centre offset through the facade of a closely set-back house.
-            for(var inset=0.0;State.Tuning.RoadWidth/2+1.5-inset>=CarriagewayHalfWidth+1.45+.1;inset+=.25){
+            // SPEC: the truck may occupy part of its own lane during the work.
+            // Its centre stays at or beyond that carriageway's outer edge.
+            for(var inset=0.0;State.Tuning.RoadWidth/2+1.5-inset>=CarriagewayHalfWidth;inset+=.25){
                 var candidate=dock+along*(shift*sign)-side*inset;
                 if(CrewDockClear(candidate,heading))return candidate;
             }
@@ -556,10 +558,18 @@ public sealed partial class CitySimulation
         return dock;
     }
 
+    readonly Dictionary<(Point,double),bool> _crewDockGeometry=[];
+    (int,int,int) _crewDockGeometryStamp;
     bool CrewDockClear(Point dock,double heading)
     {
+        var stamp=WalkStamp;if(_crewDockGeometryStamp!=stamp){_crewDockGeometry.Clear();_crewDockGeometryStamp=stamp;}
+        var key=(dock,heading);if(!_crewDockGeometry.TryGetValue(key,out var clear))_crewDockGeometry[key]=clear=CrewDockGeometryClear(dock,heading);
+        return clear;
+    }
+    bool CrewDockGeometryClear(Point dock,double heading)
+    {
         var truck=new Vehicle();var car=new Vehicle{PassengerCar=true};
-        if(!InMap(dock,BodyHalfLength(truck))||BayBodyBlocksRoad(dock,Math.Abs(Math.Sin(heading))>.7,BodyHalfLength(truck),BodyHalfWidth(truck)))return false;
+        if(!InMap(dock,BodyHalfLength(truck))||State.Roads.Any(n=>(SharedNode(n)||n.Crosswalk)&&EntersArea(truck,dock,heading,n)))return false;
         var forward=new Point(Math.Sin(heading),Math.Cos(heading));var right=new Point(forward.Z,-forward.X);
         foreach(var b in State.Buildings.Where(b=>!b.Removed)){
             var bf=new Point(Math.Sin(b.Rotation),Math.Cos(b.Rotation));var br=new Point(bf.Z,-bf.X);var delta=b.Position-dock;
