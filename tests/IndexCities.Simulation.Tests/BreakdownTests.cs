@@ -270,4 +270,42 @@ public sealed class BreakdownTests
         var paid=s.Ledger.Single(m=>m.Category=="Combustível"&&m.EntityId==tow.Id);Assert.Equal(scene.ShopOwner!.Account,paid.From);Assert.Equal(operatorCompany.Account,paid.To);
         Assert.Null(tow.DriverId);Assert.Equal(s.Tuning.TotalMoney,scene.Sim.MonetaryTotal);scene.Sim.CheckInvariants();
     }
+    // SPEC: 2 service bays + 2 waiting places; a third truck arriving while the shop has no
+    // mechanic does not stack on a waiting place: the oldest goes into the free floor bay to wait.
+    [Fact] public void Three_trucks_queued_without_a_mechanic_each_stand_in_their_own_place()
+    {
+        var scene=City(localTow:false,breakNow:false,mechanics:0);var s=scene.S;ParkCar(scene);var (farm,_,_,first)=Farm(scene);first.Condition=.3;
+        var trucks=new List<Vehicle>{first};
+        for(var i=0;i<2;i++){trucks.Add(new Vehicle{Id=s.NextId++,OwnerAccount=first.OwnerAccount,HomeBuildingId=farm.Id,CargoCapacity=20,Fuel=40,Status=VehicleStatus.Parked,Position=new(20+4*i,-7),Heading=Math.PI/2,Cause="Caminhão adquirido",Condition=.3});s.Vehicles.Add(trucks[^1]);}
+        for(var i=0;i<2;i++)Worker(s,"Ajudante "+i,farm);
+        s.EconomyNextAt=0;scene.Sim.Advance(2);s.EconomyNextAt=1e9;
+        Assert.All(trucks,t=>Assert.Equal(ServicePhase.ToService,t.ServicePhase));
+        Assert.True(Run(scene,3600,()=>{scene.Driver.WorkplaceId=null;return trucks.All(t=>t.ServicePhase==ServicePhase.Queued&&t.PushPath.Count==0);}),string.Join(" | ",trucks.Select(t=>t.Cause)));
+        Run(scene,60,()=>{scene.Driver.WorkplaceId=null;return false;});
+        for(var i=0;i<trucks.Count;i++)for(var j=i+1;j<trucks.Count;j++)Assert.True(trucks[i].Position.Distance(trucks[j].Position)>3,$"caminhões {trucks[i].Id} e {trucks[j].Id} no mesmo lugar: {trucks[i].Position}");
+        var spots=trucks.Where(t=>t.ServiceSpot!=null).Select(t=>t.ServiceSpot!.Value).ToList();Assert.Equal(spots.Count,spots.Distinct().Count());
+        Assert.Equal(1,trucks.Count(t=>t.ServiceBay==1&&t.ServicePhase==ServicePhase.Queued));Assert.DoesNotContain(trucks,t=>t.ServiceBay==0);
+        // The mechanic arrives: the three are served in turn, each once.
+        var mechanic=Worker(s,"Mecânico tardio",scene.Shop!);mechanic.Shift=0;
+        Assert.True(Run(scene,4*3600,()=>trucks.All(t=>t.ServicePhase==ServicePhase.None&&t.Condition>.99)),string.Join(" | ",trucks.Select(t=>t.Cause)));
+        scene.Sim.CheckInvariants();
+    }
+    // The shop's tow that finds no way back (no fuel, no station) waits, looks again and returns once it can.
+    [Fact] public void A_shop_tow_without_a_way_back_tries_again_instead_of_waiting_forever()
+    {
+        var scene=City(breakNow:false);var s=scene.S;ParkCar(scene);var tow=scene.LocalTow!;var driver=scene.Mechanic!;
+        tow.Position=new(20,-1.65);tow.Heading=Math.PI/2;tow.Fuel=.2;tow.DriverId=driver.Id;driver.VehicleId=tow.Id;driver.Position=tow.Position;
+        tow.Status=VehicleStatus.Waiting;tow.Route.Clear();tow.RouteIndex=0;tow.TowRetryAt=0;tow.Cause="Guincho sem combustível ou rota para voltar à oficina";
+        Run(scene,60,()=>false);Assert.Equal(VehicleStatus.Waiting,tow.Status);Assert.True(tow.TowRetryAt>0,"deve marcar a próxima tentativa");
+        tow.Fuel=40;
+        Assert.True(Run(scene,1800,()=>tow.Status==VehicleStatus.Parked&&tow.PushPath.Count==0&&tow.Position.Distance(CitySimulation.ShopTowSpace(scene.Shop!))<.5),tow.Cause+" "+tow.Position);
+        scene.Sim.CheckInvariants();
+    }
+    // The revision trip is said once on the inspection: the stage line only when the cause does not already say it.
+    [Fact] public void The_revision_trip_stage_is_not_repeated_when_the_cause_already_says_it()
+    {
+        var scene=City(localTow:false,breakNow:false);var car=scene.Car;car.Condition=1;car.ServicePhase=ServicePhase.ToService;
+        car.Cause="Indo à revisão na oficina 1; aguardando motorista embarcar";Assert.Equal("",scene.Sim.ServiceStage(car));
+        car.Cause="Em viagem";Assert.Equal("A caminho da revisão",scene.Sim.ServiceStage(car));
+    }
 }

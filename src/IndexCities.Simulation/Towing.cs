@@ -246,7 +246,11 @@ public sealed partial class CitySimulation
     }
     bool OperateTow(Vehicle tow,double dt)
     {
-        if(tow.TowPhase==TowPhase.None)return false;
+        if(tow.TowPhase==TowPhase.None){
+            // The shop's tow that found no way back (access or fuel) tries again.
+            if(!tow.External&&tow.Status==VehicleStatus.Waiting&&tow.Route.Count==0&&tow.ServicePhase==ServicePhase.None&&!tow.BrokenDown&&State.ElapsedSeconds>=tow.TowRetryAt&&BuildingById(tow.HomeBuildingId) is {Kind:BuildingKind.MechanicShop})ReturnLocalTow(tow);
+            return false;
+        }
         var t=State.Vehicles.FirstOrDefault(o=>o.Id==tow.TowTargetId);
         if(t==null||t.TowTruckId!=tow.Id||tow.TowPhase is TowPhase.ToVehicle or TowPhase.Loading&&!AwaitsTow(t)){AbortTow(tow,t);return true;}
         switch(tow.TowPhase){

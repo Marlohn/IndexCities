@@ -216,8 +216,8 @@ public sealed partial class CitySimulation
             var present=staff.TryGetValue(shop.Id,out var workers)?workers.Count(c=>WorkerPresentAt(c,shop)):0;var open=Open(shop);
             var occupied=new Vehicle?[ShopBayCount];foreach(var v in vehicles)if(v.ServiceBay is {} bay&&bay<occupied.Length)occupied[bay]=v;
             foreach(var v in vehicles.Where(v=>v.ServicePhase==ServicePhase.Queued&&v.PushPath.Count==0&&v.Status==VehicleStatus.Parked).OrderBy(v=>v.ServiceSince).ThenBy(v=>v.Id)){
-                var target=FloorOnly(v)?FloorBay:v.ServiceSpot;
-                if(target is not {} bay||occupied[bay]!=null){v.Cause=(v.BrokenDown?"Quebrado; ":"")+"aguardando vaga de serviço na oficina "+shop.Id;continue;}
+                var target=v.ServiceBay??(FloorOnly(v)?FloorBay:v.ServiceSpot);
+                if(target is not {} bay||occupied[bay]!=null&&occupied[bay]!=v){v.Cause=(v.BrokenDown?"Quebrado; ":"")+"aguardando vaga de serviço na oficina "+shop.Id;continue;}
                 if(!open||present==0){v.Cause=(v.BrokenDown?"Quebrado; ":"")+"aguardando mecânico na oficina "+shop.Id;continue;}
                 if(!PayService(v,shop,v.Service)){NoMoneyAtShop(v,shop);continue;}
                 // From another door's waiting place it crosses the yard to the bay's door first.
@@ -276,6 +276,13 @@ public sealed partial class CitySimulation
         if(FloorOnly(v))foreach(var bay in new[]{FloorBay,0})if(place==null&&taken.All(o=>o.ServiceSpot!=bay))place=bay;
         for(var bay=0;bay<ShopBayCount&&place==null;bay++)if(taken.All(o=>o.ServiceSpot!=bay&&o.ServiceBay!=bay))place=bay;
         for(var bay=0;bay<ShopBayCount&&place==null;bay++)if(taken.All(o=>o.ServiceSpot!=bay))place=bay;
+        // Yard full (the queue stands while the shop is closed or without a mechanic):
+        // the oldest queued vehicle whose bay is free goes in to wait there, so each
+        // waiting place holds one vehicle (SPEC: 2 service bays + 2 waiting places).
+        if(place==null)foreach(var o in taken.Where(o=>o.ServicePhase==ServicePhase.Queued&&o.ServiceSpot!=null&&o.ServiceBay==null).OrderBy(o=>o.ServiceSince).ThenBy(o=>o.Id)){
+            var bay=FloorOnly(o)?FloorBay:o.ServiceSpot!.Value;if(taken.Any(x=>x.ServiceBay==bay))continue;
+            place=o.ServiceSpot;o.PushPath=o.ServiceSpot==bay?[ShopBay(shop,bay)]:[ShopWaiting(shop,bay),ShopBay(shop,bay)];o.PushHeading=OutwardHeading(shop);o.ServiceBay=bay;o.ServiceSpot=null;break;
+        }
         v.ServiceSpot=place??0;var spot=v.ServiceSpot.Value;
         v.PushPath=[ShopWaiting(shop,spot)];v.PushHeading=OutwardHeading(shop);
         v.Cause=(v.BrokenDown?"Quebrado; ":"")+"na fila da oficina "+shop.Id;
@@ -389,7 +396,9 @@ public sealed partial class CitySimulation
     {
         tow.ShipmentId=null;tow.TowExitWaitSince=0;tow.TowExitNoOther=false;
         var shop=BuildingById(tow.HomeBuildingId);var target=shop==null?null:Access(shop);var start=NearestRoad(tow.Position);
-        if(shop==null||target==null||start==null){tow.Status=VehicleStatus.Waiting;tow.Cause="Guincho sem oficina com acesso para voltar";return;}
+        // Without a way back it waits where it stands and looks again (OperateTow); it is never left for good.
+        tow.TowRetryAt=State.ElapsedSeconds+TowReplanSeconds;
+        if(shop==null||target==null||start==null){tow.Route.Clear();tow.RouteIndex=0;tow.Status=VehicleStatus.Waiting;tow.Cause="Guincho sem oficina com acesso para voltar";return;}
         if(!EnsureFuel(tow,target.Id)){tow.Route.Clear();tow.RouteIndex=0;tow.Status=VehicleStatus.Waiting;tow.Cause="Guincho sem combustível ou rota para voltar à oficina";return;}
         if(tow.RefuellingAt==null)tow.DockPosition=ShopTowSpace(shop);tow.DestinationBuildingId=shop.Id;tow.Status=VehicleStatus.Travelling;tow.Cause="Guincho voltando à oficina "+shop.Id;
     }
@@ -417,6 +426,7 @@ public sealed partial class CitySimulation
     // broken, towed and shop state it already names the stage (the shop bay is in
     // InServiceCause). Only the trip to the revision has a stage the traffic
     // causes ("Em viagem", waits) would hide, so the inspection adds this line.
-    public string ServiceStage(Vehicle v)=>v.ServicePhase==ServicePhase.ToService?"A caminho da revisão":"";
+    // Said once: when the Cause already names the revision trip ("Indo à revisão ...") it adds nothing.
+    public string ServiceStage(Vehicle v)=>v.ServicePhase==ServicePhase.ToService&&!v.Cause.Contains("revisão",StringComparison.OrdinalIgnoreCase)?"A caminho da revisão":"";
     string InServiceCause(Vehicle v,Building shop,int bay)=>(v.Service==ServiceKind.Repair?"Em conserto":"Em revisão")+" na oficina "+shop.Id+", vaga "+(bay==0?"do elevador":"do piso");
 }
