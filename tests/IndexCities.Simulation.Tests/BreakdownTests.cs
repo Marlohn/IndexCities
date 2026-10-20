@@ -212,6 +212,33 @@ public sealed class BreakdownTests
         Assert.True(truck.Condition>.99,truck.Condition.ToString());var paid=s.Ledger.Single(m=>m.Category=="Revisão de veículo");Assert.Equal(owner.Account,paid.From);Assert.Equal(scene.ShopOwner!.Account,paid.To);
         Assert.Equal(s.Tuning.TotalMoney,scene.Sim.MonetaryTotal);scene.Sim.CheckInvariants();
     }
+    // IA-030: trucks and tows use only the floor bay; with it busy the next truck waits
+    // in the yard and the lift stays empty.
+    [Fact] public void Trucks_use_only_the_floor_bay_and_wait_in_the_yard_while_it_is_busy()
+    {
+        var scene=City(localTow:false,breakNow:false,mechanics:2);var s=scene.S;ParkCar(scene);var (farm,_,worker,first)=Farm(scene);first.Condition=.3;
+        var second=new Vehicle{Id=s.NextId++,OwnerAccount=first.OwnerAccount,HomeBuildingId=farm.Id,CargoCapacity=20,Fuel=40,Status=VehicleStatus.Parked,Position=new(20,-7),Heading=Math.PI/2,Cause="Caminhão adquirido",Condition=.3};s.Vehicles.Add(second);
+        Worker(s,"Leo",farm);
+        s.EconomyNextAt=0;scene.Sim.Advance(2);s.EconomyNextAt=1e9;
+        Assert.Equal(ServicePhase.ToService,first.ServicePhase);Assert.Equal(ServicePhase.ToService,second.ServicePhase);
+        var waitedInYard=false;
+        Assert.True(Run(scene,3*3600,()=>{
+            Assert.NotEqual(0,first.ServiceBay);Assert.NotEqual(0,second.ServiceBay);
+            waitedInYard|=second.ServicePhase==ServicePhase.Queued&&first.ServiceBay==1&&second.ServiceBay==null&&scene.Sim.ServiceBays(scene.Shop!)[0]==null;
+            return first.ServicePhase==ServicePhase.None&&second.ServicePhase==ServicePhase.None&&first.Condition>.99&&second.Condition>.99;
+        }),first.Cause+" / "+second.Cause);
+        Assert.True(waitedInYard,"o segundo caminhão devia esperar no pátio com a vaga do piso ocupada e o elevador vazio");
+        Assert.True(first.Condition>.99&&second.Condition>.99);scene.Sim.CheckInvariants();
+    }
+    // IA-030: a truck never takes the lift, so the shop holds at most 3 trucks (floor + 2 waiting places).
+    [Theory] [InlineData(3,true)] [InlineData(4,false)] public void The_shop_room_counts_trucks_only_on_the_floor_bay(int trucks,bool accepted)
+    {
+        var scene=City(localTow:false);
+        for(var i=0;i<trucks;i++)scene.S.Vehicles.Add(new Vehicle{Id=scene.S.NextId++,OwnerAccount="global",External=true,Status=VehicleStatus.Outside,Position=scene.S.Entry,ServiceShopId=scene.Shop!.Id,ServicePhase=ServicePhase.ToService,Service=ServiceKind.Revision});
+        BreakOnce(scene);
+        Assert.True(Run(scene,60,()=>scene.Car.TowTruckId!=null));
+        if(accepted)Assert.Equal(scene.Shop!.Id,scene.Car.ServiceShopId);else Assert.Null(scene.Car.ServiceShopId);
+    }
     // SPEC "Guincho local": the shop company buys its platform tow with real money;
     // it is delivered physically and waits at its own space.
     [Fact] public void A_shop_buys_its_own_tow_with_real_money_and_it_is_delivered_to_its_space()

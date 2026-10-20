@@ -139,7 +139,7 @@ Aprovado pelo responsável para entrar no jogo numa única entrega integrada; pa
 **Oficina mecânica local**
 
 - É uma construção econômica privada (estrutura especializada, como o posto), posicionada pelo jogador e operada por empresa autônoma com caixa, funcionários, preço, tributos e falência conforme a SPEC de economia.
-- Faz conserto e revisão em um número finito de vagas de serviço ao mesmo tempo; os demais aguardam. Atendimento local é mais barato e mais rápido que o do exterior (valores em calibração) e gera empregos; a cidade continua funcionando sem oficina, com socorro, conserto e revisões do exterior.
+- Faz conserto e revisão em um número finito de vagas de serviço ao mesmo tempo; os demais aguardam. A vaga do elevador é só para carros de passeio; caminhões e guinchos usam só a vaga do piso e, com ela ocupada, aguardam no pátio (IA-030, pendente de revisão humana). Atendimento local é mais barato e mais rápido que o do exterior (valores em calibração) e gera empregos; a cidade continua funcionando sem oficina, com socorro, conserto e revisões do exterior.
 - A oficina mostra no mundo os veículos em serviço (por exemplo, o carro subindo no elevador); o guincho local é reconhecível e carrega visivelmente o veículo.
 - Funciona das 7h às 22h em dois turnos, com 4 empregos. Sem funcionário presente, o conserto não avança e a causa fica visível ("aguardando mecânico").
 - Aceita veículos enquanto os destinados a ela (em serviço, aguardando no pátio e a caminho) forem menos que 2 vagas de serviço + 2 lugares de espera no pátio; além disso, o veículo vai ao exterior.

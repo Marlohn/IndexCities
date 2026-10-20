@@ -94,10 +94,19 @@ public sealed partial class CitySimulation
 
     public static bool ShopOperatesFor(Building b)=>b.Kind==BuildingKind.MechanicShop&&b.Completed&&!b.Removed&&!b.OperationClosed&&b.CompanyId!=null;
     bool ShopOperates(Building b)=>ShopOperatesFor(b)&&CompanyById(b.CompanyId) is {Active:true}&&Access(b)!=null;
-    int ShopLoad(Building shop,Vehicle? except=null)=>State.Vehicles.Count(v=>v.ServiceShopId==shop.Id&&v.Id!=except?.Id);
+    // IA-030: the lift takes passenger cars only; trucks and tows use the floor bay.
+    const int FloorBay=1;
+    static bool FloorOnly(Vehicle v)=>!v.PassengerCar;
     // SPEC decision (7A): room while the vehicles destined to it (in service,
     // waiting in the yard, on their way) are fewer than bays plus waiting places.
-    bool ShopHasRoom(Building shop,Vehicle v)=>ShopOperates(shop)&&ShopLoad(shop,v)<ShopCapacity;
+    // The lift is filled by a car and the floor bay by anything, the rest waits in the yard (IA-030).
+    bool ShopHasRoom(Building shop,Vehicle v)
+    {
+        if(!ShopOperates(shop))return false;
+        var destined=State.Vehicles.Where(o=>o.ServiceShopId==shop.Id&&o.Id!=v.Id).Append(v).ToList();
+        var cars=destined.Count(o=>!FloorOnly(o));var lift=cars>0?1:0;var floor=destined.Count-lift>0?1:0;
+        return destined.Count-lift-floor<=ShopCapacity-ShopBayCount;
+    }
     decimal ServicePrice(Building? shop,ServiceKind kind)
     {
         var seconds=shop==null?(kind==ServiceKind.Repair?State.Tuning.ExteriorRepairSeconds:State.Tuning.ExteriorRevisionSeconds):kind==ServiceKind.Repair?State.Tuning.LocalRepairSeconds:State.Tuning.LocalRevisionSeconds;
@@ -207,10 +216,13 @@ public sealed partial class CitySimulation
             var present=staff.TryGetValue(shop.Id,out var workers)?workers.Count(c=>WorkerPresentAt(c,shop)):0;var open=Open(shop);
             var occupied=new Vehicle?[ShopBayCount];foreach(var v in vehicles)if(v.ServiceBay is {} bay&&bay<occupied.Length)occupied[bay]=v;
             foreach(var v in vehicles.Where(v=>v.ServicePhase==ServicePhase.Queued&&v.PushPath.Count==0&&v.Status==VehicleStatus.Parked).OrderBy(v=>v.ServiceSince).ThenBy(v=>v.Id)){
-                if(v.ServiceSpot is not {} bay||occupied[bay]!=null){v.Cause=(v.BrokenDown?"Quebrado; ":"")+"aguardando vaga de serviço na oficina "+shop.Id;continue;}
+                var target=FloorOnly(v)?FloorBay:v.ServiceSpot;
+                if(target is not {} bay||occupied[bay]!=null){v.Cause=(v.BrokenDown?"Quebrado; ":"")+"aguardando vaga de serviço na oficina "+shop.Id;continue;}
                 if(!open||present==0){v.Cause=(v.BrokenDown?"Quebrado; ":"")+"aguardando mecânico na oficina "+shop.Id;continue;}
                 if(!PayService(v,shop,v.Service)){NoMoneyAtShop(v,shop);continue;}
-                occupied[bay]=v;v.ServiceBay=bay;v.ServiceSpot=null;v.ServicePhase=ServicePhase.InService;v.ServiceWork=ServiceSeconds(shop,v.Service);v.PushPath=[ShopBay(shop,bay)];v.PushHeading=OutwardHeading(shop);
+                // From another door's waiting place it crosses the yard to the bay's door first.
+                var viaDoor=v.ServiceSpot is {} spot&&spot!=bay;
+                occupied[bay]=v;v.ServiceBay=bay;v.ServiceSpot=null;v.ServicePhase=ServicePhase.InService;v.ServiceWork=ServiceSeconds(shop,v.Service);v.PushPath=viaDoor?[ShopWaiting(shop,bay),ShopBay(shop,bay)]:[ShopBay(shop,bay)];v.PushHeading=OutwardHeading(shop);
                 v.Cause=(v.Service==ServiceKind.Repair?"Em conserto":"Em revisão")+" na oficina "+shop.Id;
             }
             var working=0;
@@ -259,7 +271,10 @@ public sealed partial class CitySimulation
     {
         v.Service=kind;v.ServicePhase=ServicePhase.Queued;v.ServiceShopId=shop.Id;v.ServiceSince=State.ElapsedSeconds;v.Status=VehicleStatus.Parked;v.Route.Clear();v.RouteIndex=0;v.DockPosition=null;v.IntersectionClaim=null;v.WaitingSince=0;
         var taken=State.Vehicles.Where(o=>o.Id!=v.Id&&o.ServiceShopId==shop.Id).ToList();
-        int? place=null;for(var bay=0;bay<ShopBayCount&&place==null;bay++)if(taken.All(o=>o.ServiceSpot!=bay&&o.ServiceBay!=bay))place=bay;
+        // A truck waits at the floor door, or at the lift's yard place when that one is taken (IA-030).
+        int? place=null;
+        if(FloorOnly(v))foreach(var bay in new[]{FloorBay,0})if(place==null&&taken.All(o=>o.ServiceSpot!=bay))place=bay;
+        for(var bay=0;bay<ShopBayCount&&place==null;bay++)if(taken.All(o=>o.ServiceSpot!=bay&&o.ServiceBay!=bay))place=bay;
         for(var bay=0;bay<ShopBayCount&&place==null;bay++)if(taken.All(o=>o.ServiceSpot!=bay))place=bay;
         v.ServiceSpot=place??0;var spot=v.ServiceSpot.Value;
         v.PushPath=[ShopWaiting(shop,spot)];v.PushHeading=OutwardHeading(shop);
