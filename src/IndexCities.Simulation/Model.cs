@@ -446,7 +446,6 @@ public sealed class MunicipalRelocationOrder
     public decimal TransferReserved {get;set;}
     public decimal RemovalPaid {get;set;}
     public decimal TransferPaid {get;set;}
-    public double BlockedSince {get;set;}=-1;
     public long StockRecoveryBlockedSecondsUnits {get;set;}
     [JsonIgnore] public double StockRecoveryBlockedSeconds {get=>FixedPoint.Value(StockRecoveryBlockedSecondsUnits,FixedPoint.TimeScale);set=>StockRecoveryBlockedSecondsUnits=FixedPoint.Quantize(value,FixedPoint.TimeScale);}
     public void AddStockRecoveryBlockedSeconds(double delta)=>StockRecoveryBlockedSecondsUnits=FixedPoint.Add(StockRecoveryBlockedSecondsUnits,delta,FixedPoint.TimeScale);

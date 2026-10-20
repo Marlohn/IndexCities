@@ -156,6 +156,21 @@ public sealed class MunicipalRelocationTests
         order=sim.State.MunicipalRelocations.Single();Assert.Equal(loss,order.StockLost.Values.Sum());Assert.Equal(removal,Paid(sim,"Retirada física"));
     }
 
+    // Any positive quantity left at the old address is a real loss: recorded once,
+    // exactly, even below what the trucks would carry.
+    [Fact] public void Residual_below_a_truckload_unit_is_recorded_exactly_as_loss()
+    {
+        var sim=City();var depot=Single(sim,BuildingKind.WorksDepot);
+        depot.Stock.Clear();depot.Stock.Units[ResourceKind.Wood]=500;
+        var at=Destination(sim,depot);var quote=sim.QuoteMunicipalRelocation(depot.Id,at,Math.PI);
+        Assert.True(sim.RelocateMunicipalBuilding(depot.Id,at,Math.PI,quote).Success);
+        var order=RunUntilDone(sim,sim.State.MunicipalRelocations.Single());
+        Assert.True(sim.State.Buildings.Single(b=>b.Id==depot.Id).Removed);
+        Assert.Equal(500,order.StockLost.Units.GetValueOrDefault(ResourceKind.Wood));
+        order=CitySimulation.FromJson(sim.SaveToJson()).State.MunicipalRelocations.Single();
+        Assert.Equal(500,order.StockLost.Units.GetValueOrDefault(ResourceKind.Wood));
+    }
+
     [Theory]
     [InlineData("truck")][InlineData("cash")][InlineData("fuel")]
     public void Temporary_transport_shortages_pause_the_loss_clock_then_recovery_resumes(string shortage)

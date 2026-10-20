@@ -147,8 +147,6 @@ public sealed class FixedQuantitiesTests
             (typeof(Family),"LastMigrationReview"),(typeof(Company),"LossStartedAt"),
             // Demolir: absolute instant of the assisted-vacating deadline, set once and compared.
             (typeof(BuildingDemolitionOrder),"DeadlineSeconds"),
-            // Mover: absolute instant the stock recovery started waiting (-1 when not waiting).
-            (typeof(MunicipalRelocationOrder),"BlockedSince"),
             (typeof(Vehicle),"SiteDockHeading,Heading,CargoCapacity,WaitingSince,IntersectionEnteredAt,TowCalledAt,TowRetryAt,TowExitWaitSince,ServiceSince,ServiceUntil,PushHeading"),
             (typeof(ExternalFamilyCandidate),"RiskTolerance"),(typeof(ExternalCompanyCandidate),"RiskTolerance"),
             (typeof(CityState),"EconomyNextAt,LakeRadius,LakePollution,PotableCapacity,WaterDemand,ElectricityCapacity,ElectricityDemand,SewageCapacity,SewageDemand,UntreatedSewage,WindFactor,RawWaterCapacity,MaintenanceNextAt"),
