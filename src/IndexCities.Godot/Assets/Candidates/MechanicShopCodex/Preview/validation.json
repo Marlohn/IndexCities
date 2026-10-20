@@ -1,0 +1,71 @@
+{
+	"engine": "4.7.2-stable (official)",
+	"errors": [],
+	"records": [
+		{
+			"bounds_max": [
+				10.9949998855591,
+				6.01700019836426,
+				8.48999977111816
+			],
+			"bounds_min": [
+				-10.9949998855591,
+				-0.239999994635582,
+				-8.48999977111816
+			],
+			"format": "native",
+			"markers": [
+				"PedestrianDoor",
+				"ServiceDoor",
+				"OpenBayThreshold",
+				"ClosedBayThreshold",
+				"VehicleApproach",
+				"VehiclePresentationAnchor",
+				"ActivitySign"
+			],
+			"materials": [
+				"mechanic_codex_paint",
+				"mechanic_codex_metal",
+				"mechanic_codex_glass",
+				"mechanic_codex_rubber",
+				"mechanic_codex_lettering"
+			],
+			"meshes": 11,
+			"surfaces": 23,
+			"triangles": 37094
+		},
+		{
+			"bounds_max": [
+				10.9949998855591,
+				6.01700019836426,
+				8.48999977111816
+			],
+			"bounds_min": [
+				-10.9949998855591,
+				-0.239999994635582,
+				-8.48999977111816
+			],
+			"format": "glb",
+			"markers": [
+				"PedestrianDoor",
+				"ServiceDoor",
+				"OpenBayThreshold",
+				"ClosedBayThreshold",
+				"VehicleApproach",
+				"VehiclePresentationAnchor",
+				"ActivitySign"
+			],
+			"materials": [
+				"mechanic_codex_paint",
+				"mechanic_codex_metal",
+				"mechanic_codex_glass",
+				"mechanic_codex_rubber",
+				"mechanic_codex_lettering"
+			],
+			"meshes": 11,
+			"surfaces": 23,
+			"triangles": 37094
+		}
+	],
+	"result": "PASS"
+}
