@@ -163,13 +163,21 @@ public sealed class MunicipalRelocationTests
         var sim=City();var depot=Single(sim,BuildingKind.WorksDepot);
         depot.Stock.Clear();depot.Stock.Units[ResourceKind.Wood]=500;
         var at=Destination(sim,depot);var quote=sim.QuoteMunicipalRelocation(depot.Id,at,Math.PI);
+        var money=sim.MonetaryTotal;
         Assert.True(sim.RelocateMunicipalBuilding(depot.Id,at,Math.PI,quote).Success);
         var order=RunUntilDone(sim,sim.State.MunicipalRelocations.Single());
         Assert.True(sim.State.Buildings.Single(b=>b.Id==depot.Id).Removed);
         // The event states what happened: no 24 h deadline, the exact amount written off.
         Assert.DoesNotContain("24 h",order.Cause);Assert.Contains("Madeira 0.0000005",order.Cause);Assert.Contains("perda do titular",order.Cause);
         Assert.Equal(500,order.StockLost.Units.GetValueOrDefault(ResourceKind.Wood));
-        order=CitySimulation.FromJson(sim.SaveToJson()).State.MunicipalRelocations.Single();
+        // One write-off only, and nothing but the paid removal and freight moved money:
+        // the residual is a loss of stock, never a charge, and a save/load repeats neither.
+        Assert.Equal(money,sim.MonetaryTotal);Assert.Equal(quote.RemovalCost,Paid(sim,"Retirada física"));
+        Assert.Equal(1,sim.State.CityEvents.Count(e=>e.Description.Contains("resíduo de até 0,001")));
+        var loaded=CitySimulation.FromJson(sim.SaveToJson());loaded.Advance(3600);loaded.CheckInvariants();
+        order=loaded.State.MunicipalRelocations.Single();
+        Assert.Equal(quote.RemovalCost,Paid(loaded,"Retirada física"));Assert.Equal(money,loaded.MonetaryTotal);
+        Assert.Equal(1,loaded.State.CityEvents.Count(e=>e.Description.Contains("resíduo de até 0,001")));
         Assert.Equal(500,order.StockLost.Units.GetValueOrDefault(ResourceKind.Wood));
     }
 
