@@ -60,6 +60,19 @@ public partial class Main
             // Lift from two of the player's camera angles: the start of the rise, then the raised pose.
             var bay=a.Shop.Position+new Point(6.9,0);foreach(var yaw in new[]{-45f,45f}){_yaw=yaw;await Shot("breakdown-a-lift-start-yaw"+yaw,bay,14,car);}
             await Settle(1.2);await Shot("breakdown-a-lift-rising-yaw45",bay,14,car);_yaw=-45;await Settle(2.2);await Shot("breakdown-a-in-service",bay,14,car);_yaw=45;
+            // The floor bay's gate: with the lift busy, the shop's own tow goes to revision
+            // on the floor bay (grocery stocked so the review imports nothing).
+            Require(Run(600,()=>tow.Status==VehicleStatus.Parked&&tow.PushPath.Count==0&&tow.Position.Distance(CitySimulation.ShopTowSpace(a.Shop))<.5),$"Guincho de volta à oficina: «{tow.Cause}»");
+            var grocery=_sim.State.Buildings.Single(b=>b.Kind==BuildingKind.Grocery);grocery.AddStock(ResourceKind.Food,grocery.Definition.Capacity-grocery.Quantity(ResourceKind.Food));
+            _sim.State.Tuning.LocalRevisionSeconds=300;tow.Condition=.3;_sim.State.EconomyNextAt=0;_sim.Advance(2);_sim.State.EconomyNextAt=1e9;_world.Sync(_sim.State);
+            Require(tow.Service==ServiceKind.Revision&&tow.ServiceShopId==shopId,$"Guincho da oficina em revisão: «{tow.Cause}»");
+            Require(Run(600,()=>tow.ServiceBay==1&&tow.PushPath.Count>0),$"Guincho entrando na vaga do piso: «{tow.Cause}»");
+            Require(_world.ShopPresentation(shopId).GateOpen==true,"Portão abre com veículo entrando");
+            await Settle(1.8);await Shot("breakdown-a-gate-open",bay+new Point(-5.5,0),16);
+            Require(Run(600,()=>tow.ServicePhase==ServicePhase.InService&&tow.PushPath.Count==0),$"Guincho em revisão na vaga do piso: «{tow.Cause}»");
+            Require(_world.ShopPresentation(shopId).GateOpen==true,"Portão aberto com veículo em serviço no horário");
+            Require(Run(900,()=>tow.ServicePhase==ServicePhase.None&&tow.PushPath.Count==0),$"Guincho revisado de volta à vaga: «{tow.Cause}»");
+            Require(_world.ShopPresentation(shopId).GateOpen==false&&tow.Condition>.999,"Portão fecha sem veículo na vaga do piso; guincho revisado");
             Require(Run(1800,()=>car.ServicePhase==ServicePhase.AwaitingReturn),$"Conserto concluído: «{car.Cause}»");
             Require(car.Condition>.999&&!car.BrokenDown,"Conserto devolve 100%");
             Require(_world.ShopPresentation(shopId).LiftUp==false,"Elevador desce ao fim do serviço");
@@ -124,7 +137,7 @@ public partial class Main
         Building? garage=null;
         if(shop){
             var owner=Owner("Oficina QA");garage=new Building{Id=Next(),Kind=BuildingKind.MechanicShop,Position=new(-30,-15.5),Rotation=Math.PI,Completed=true,CompanyId=owner.Id,OwnerAccount=owner.Account,SalePrice=120};s.Buildings.Add(garage);owner.Buildings.Add(garage.Id);
-            var mechanic=Person("Mecânico",garage.Door);mechanic.WorkplaceId=garage.Id;mechanic.Activity="No trabalho";
+            foreach(var name in new[]{"Mecânico","Mecânica"}){var mechanic=Person(name,garage.Door);mechanic.WorkplaceId=garage.Id;mechanic.Activity="No trabalho";}
             s.Vehicles.Add(new Vehicle{Id=Next(),Body=TruckBody.Tow,OwnerAccount=owner.Account,HomeBuildingId=garage.Id,CargoCapacity=0,Position=CitySimulation.ShopTowSpace(garage),Heading=CitySimulation.TowBaseHeading(garage),Fuel=40,Status=VehicleStatus.Parked,Cause="Guincho da oficina disponível"});
         }
         var east=s.Roads.Where(r=>r.Position.Z==0&&r.Position.X>=-20&&r.Position.X<=40).OrderBy(r=>r.Position.X).Select(r=>r.Id).ToList();
