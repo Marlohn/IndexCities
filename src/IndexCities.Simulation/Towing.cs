@@ -26,7 +26,14 @@ public sealed partial class CitySimulation
     bool OnRoadway(Vehicle v)=>OnRoadway(v.Position);
     bool OnRoadway(Point at)=>NearestRoad(at) is {} n&&n.Position.Distance(at)<=State.Tuning.RoadWidth/2+1;
     bool AtPumpBay(Vehicle v)=>v.RefuellingAt is {} id&&BuildingById(id) is {} station&&Access(station) is {} access&&v.Position.Distance(DockAt(access,station,false))<3;
-    bool Towable(Vehicle v)=>!IsTow(v)&&v.Machine==PavingMachine.None&&!AtPumpBay(v)&&OnRoadway(v);
+    bool Towable(Vehicle v)=>(!IsTow(v)||v.BrokenDown)&&v.Machine==PavingMachine.None&&!AtPumpBay(v)&&OnRoadway(v);
+    // Waiting for its tow: stopped on the road, or parked off it (left at the
+    // owner's space, at a shop after the repair, or at the exterior).
+    static bool AwaitsTow(Vehicle t)=>t.Status is VehicleStatus.Stranded or VehicleStatus.Parked or VehicleStatus.Outside;
+    // Where a tow returns after a service: the exterior, or its shop.
+    RoadNode? TowHomeNode(Vehicle tow)=>tow.External?EntryNode():BuildingById(tow.HomeBuildingId) is {} shop?Access(shop):null;
+    void ReturnTow(Vehicle tow){if(tow.External)ReturnExternal(tow);else ReturnLocalTow(tow);}
+    static string TowPrefix(Vehicle t)=>t.BrokenDown?"Quebrado":t.ServicePhase==ServicePhase.AwaitingReturn?"Consertado":"Sem combustível";
     static Point Forward(double heading)=>new(Math.Sin(heading),Math.Cos(heading));
 
     void RunOutOfFuel(Vehicle v)
@@ -38,10 +45,10 @@ public sealed partial class CitySimulation
     void TendStranded(Vehicle t)
     {
         if(t.TowTruckId!=null){
-            if(PeopleAboard(t)&&State.ElapsedSeconds-t.TowCalledAt>State.Tuning.TowMaxWaitSeconds){var tow=t.TowTruckId;Disembark(t,"Guincho demorou mais que o limite de espera");t.Cause=$"Sem combustível; aguardando guincho {tow}";}
+            if(PeopleAboard(t)&&State.ElapsedSeconds-t.TowCalledAt>State.Tuning.TowMaxWaitSeconds){var tow=t.TowTruckId;Disembark(t,"Guincho demorou mais que o limite de espera");t.Cause=$"{TowPrefix(t)}; aguardando guincho {tow}";}
             return;
         }
-        if(!Towable(t)){if(t.PassengerCar&&PeopleAboard(t))LeaveCar(t,"Carro sem combustível parado na via");return;}
+        if(!Towable(t)){if(t.PassengerCar&&PeopleAboard(t))LeaveCar(t,t.BrokenDown?"Carro quebrado parado na via":"Carro sem combustível parado na via");return;}
         if(t.TowRoadRevision==State.RoadRevision||State.ElapsedSeconds<t.TowRetryAt)return;
         CallTow(t);
     }
