@@ -12,6 +12,7 @@ Estas regras valem para humanos e IAs. O objetivo é maximizar progresso útil s
 | Decisões estruturais de software (fronteiras, responsabilidades, dependências) | `docs/ARCHITECTURE.md` | Fonte de verdade estrutural; não cria requisito de produto |
 | Pesquisa, ideias, alternativas, referências, benchmark do gênero (`genre-benchmark.md`, consultado periodicamente) | `docs/EXPLORATION.md` (hub) e `docs/exploration/<tema>.md` | Nenhuma — só consulta |
 | Regras de trabalho para humanos e IAs | `AGENTS.md` | Fonte de verdade de processo |
+| Passo a passo prático por tipo de tarefa (orquestração, assets 3D, QA no Godot) | `.agents/skills/<nome>/SKILL.md` — antes de uma tarefa, veja se alguma se aplica (nome e descrição no topo de cada arquivo) e leia-a | Só procedimento; não cria regra |
 | Estado real da implementação | código e histórico do repositório | — |
 
 - Decisão de produto fechada → regra no presente, sem histórico, no arquivo do sistema; histórico em `docs/decisoes/`; mudança de escopo, regras gerais e decisões delegadas → `docs/SPEC.md`.
@@ -104,7 +105,8 @@ O IndexCities nasce do zero (diretriz expressa do responsável). **Não copiar, 
   - acompanhamento: depois de esperas vazias, leia `orca orchestration worker-list` e aja pelas atenções do Orca (`stale`, `failure`, `interruption`, `nextAction`); o Orca sinaliza, quem coordena decide. Complemente só o que ele não cobre: pedido de permissão pendente no terminal do worker e cota do modelo;
   - uma worktree isolada por worker (ou `--worktree current` para revisão somente leitura) e uma branch integrada a partir do `main`, sem PR empilhada; após o merge, `worker-release` e `orca worktree rm`;
   - escolha o modelo pela dificuldade, confira a cota antes de despachar e registre o modelo efetivo; tarefa pequena (cabe em poucos minutos e arquivos) o coordenador faz direto;
-  - estudo que embasa decisão do responsável passa por verificação de um segundo modelo.
+  - estudo que embasa decisão do responsável passa por verificação de um segundo modelo;
+  - **responsável ausente**: quando ele **autorizar expressamente**, ao se ausentar, que o coordenador decida as dúvidas de uma entrega, isso é uma delegação humana para aquela entrega, distinta da delegação geral da §2, e vale só no alcance que ele deu. Cada dúvida que bloqueia o trabalho recebe a recomendação do coordenador, criticada por um modelo de outro provedor, e é registrada na SPEC como "decisão do coordenador por delegação do responsável — PENDENTE DE REVISÃO HUMANA", para revisão conjunta na volta. Sem essa autorização, ou na dúvida sobre o alcance, vale a §2. Mudança de escopo ou de versão e decisão difícil de desfazer sempre esperam o responsável.
 
 ## 8. Filosofia
 

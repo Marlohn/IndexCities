@@ -225,7 +225,7 @@
 
 ### Catálogo inicial de atividades privadas
 
-- Na V1, o catálogo econômico contém mercearia pequena, fazenda pequena e posto de combustível. A **oficina mecânica** (com guincho próprio) entra pela entrega de quebras de veículos, com regras em [transporte e circulação](transporte-circulacao.md#quebras-guincho-local-e-oficina-aprovado-para-a-entrega-em-curso-2026-10-20). O catálogo completo e as demais atividades ficam na visão aprovada.
+- Na V1, o catálogo econômico contém mercearia pequena, fazenda pequena e posto de combustível. A **oficina mecânica** (com guincho próprio) também faz parte do catálogo, com regras em [transporte e circulação](transporte-circulacao.md#quebras-guincho-local-e-oficina). O catálogo completo e as demais atividades ficam na visão aprovada.
 
 #### Mercado e mercearia
 
@@ -1035,7 +1035,7 @@
 
 - **Em aberto:** As diferenças conceituais de refeição, varejo, serviços opcionais e famílias 3D seguem as regras desta seção; parâmetros numéricos, insumos e exceções ainda não decididos precisam de regras coerentes com a SPEC antes do código que dependa deles; não inventar estoque de serviço, contratação fictícia nem faturamento automático.
 
-- A oficina mecânica está aprovada como estrutura especializada própria (ver [quebras, guincho e oficina](transporte-circulacao.md#quebras-guincho-local-e-oficina-aprovado-para-a-entrega-em-curso-2026-10-20)), fora desse catálogo de dez. Lavanderia, escritórios e outras atividades estudadas permanecem fora desse catálogo de dez, podendo ser exploradas futuramente sem entrar automaticamente na implementação.
+- A oficina mecânica está aprovada como estrutura especializada própria (ver [quebras, guincho e oficina](transporte-circulacao.md#quebras-guincho-local-e-oficina)), fora desse catálogo de dez. Lavanderia, escritórios e outras atividades estudadas permanecem fora desse catálogo de dez, podendo ser exploradas futuramente sem entrar automaticamente na implementação.
 
 #### Prestação de serviços entre empresas
 
