@@ -22,7 +22,9 @@ public partial class CityWorld
     {
         var stranded=v.BrokenDown&&v.Status==VehicleStatus.Stranded&&!beingLoaded;
         var serviced=v.ServicePhase==ServicePhase.InService&&v.ServiceBay!=null&&v.PushPath.Count==0;
-        SetHood(n,stranded||serviced);
+        // Nothing shown and nothing to show: the common case costs one lookup.
+        var first=!n.HasMeta("hood_open");if(!first&&!stranded&&!serviced&&!n.GetMeta("hood_open").AsBool())return;
+        SetHood(n,stranded||serviced,first);
         var hazards=n.GetNodeOrNull<Node3D>("BreakdownHazards");
         if(stranded&&hazards==null&&Prop(HazardLightsScene) is {} lights){
             lights.Name="BreakdownHazards";
@@ -42,13 +44,14 @@ public partial class CityWorld
         else if(!stranded&&triangle!=null)Discard(triangle);
     }
     static void Discard(Node node){node.GetParent()?.RemoveChild(node);node.QueueFree();}
-    // hood_open plays once on the change; a vehicle drawn already open shows the final pose.
-    static void SetHood(Node3D n,bool open)
+    // hood_open plays once on the change; a vehicle drawn already open (new visual,
+    // loaded city) shows the final pose.
+    static void SetHood(Node3D n,bool open,bool first)
     {
+        if(!first&&n.GetMeta("hood_open").AsBool()==open)return;n.SetMeta("hood_open",open);
         if(n.GetNodeOrNull<AnimationPlayer>("AnimationPlayer") is not {} player||!player.HasAnimation("hood_open"))return;
-        var shown=n.HasMeta("hood_open")?n.GetMeta("hood_open").AsBool():(bool?)null;if(shown==open)return;n.SetMeta("hood_open",open);
-        if(open){player.Play("hood_open");if(shown==null)player.Seek(player.CurrentAnimationLength,true);}
-        else if(shown==true)player.PlayBackwards("hood_open");
+        if(open){player.Play("hood_open");if(first)player.Seek(player.CurrentAnimationLength,true);}
+        else if(!first)player.PlayBackwards("hood_open");
     }
 
     ShopVisual? ShopVisualOf(int? shopId)
