@@ -19,6 +19,8 @@ public sealed partial class CitySimulation
         [BuildingKind.SewageTreatment]=[(-11,-11,false),(-8.6,-11,false)],
         [BuildingKind.WindPower]=[(-7,-6,false)],
         [BuildingKind.CityHall]=[],
+        // The shop yard holds the service places and its tow (Breakdowns.cs), not visitor spaces.
+        [BuildingKind.MechanicShop]=[],
     };
     static Point LocalPoint(Building b,double x,double z)=>b.Position+new Point(x*Math.Cos(b.Rotation)+z*Math.Sin(b.Rotation),-x*Math.Sin(b.Rotation)+z*Math.Cos(b.Rotation));
     public IEnumerable<ParkingSpot> ParkingSpots(Building b)
@@ -62,7 +64,7 @@ public sealed partial class CitySimulation
     bool TryDrive(Citizen c,Building destination,JourneyPurpose purpose)
     {
         if(c.Age<18||purpose is not (JourneyPurpose.Work or JourneyPurpose.Home or JourneyPurpose.Shopping or JourneyPurpose.Visit))return false;
-        var family=FamilyById(c.FamilyId);var car=FamilyCar(family);if(family==null||car==null||car.Status!=VehicleStatus.Parked||car.DriverId!=null||car.Position.Distance(c.Position)>40||WalkCrossesRoad(c.Position,car.Position))return false;
+        var family=FamilyById(c.FamilyId);var car=FamilyCar(family);if(family==null||car==null||car.Status!=VehicleStatus.Parked||car.DriverId!=null||car.BrokenDown||car.ServicePhase!=ServicePhase.None||car.PushPath.Count>0||car.Position.Distance(c.Position)>40||WalkCrossesRoad(c.Position,car.Position))return false;
         var start=NearestRoad(car.Position,false);var target=Access(destination);if(start==null||target==null||start.Position.Distance(car.Position)>State.Tuning.RoadWidth/2+16)return false;
         var route=FindRoadRoute(start.Id,target.Id);if(route.Count==0)return false;
         var home=BuildingById(family.HomeId);var atHome=home!=null&&ParkingSpots(home).Any(s=>s.Key==car.ParkingSpot);

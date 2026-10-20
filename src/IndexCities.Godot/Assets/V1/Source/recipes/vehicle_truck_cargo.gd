@@ -7,6 +7,7 @@
 ## Codigo original escrito para este projeto (sem origem em acervos anteriores).
 extends RefCounted
 
+const Rig := preload("res://Assets/V1/Source/kit/breakdown_rig.gd")
 const FAMILY_ID := "vehicle.truck_cargo.a"
 const MATERIAL_PREFIX := "truck_"
 const MATERIALS := {
@@ -34,11 +35,19 @@ const BOX_HW := WIDTH * 0.5     # meia largura do bau
 const BOX_Y0 := 1.12
 const BOX_Z0 := -1.45
 const BOX_Z1 := 3.535           # face traseira do bau (portas); macanetas vao ate +3,60
+## Tampa frontal de servico (cabine avancada): dobradica na base da grade, abre para a frente.
+const HOOD_HINGE := Vector3(0.0, 0.86, CAB_FRONT - 0.03)
+const HOOD_OPEN_DEGREES := -100.0
+## Encaixes (lado +X; o -X e o espelho): pisca sobre os farois e na ponta do para-choque traseiro.
+const HAZARD_FRONT_R := Vector3(0.98, 1.36, CAB_FRONT - 0.05)
+const HAZARD_REAR_R := Vector3(1.0, 0.66, 3.47)
+const SMOKE_AT := Vector3(0.0, 1.58, CAB_FRONT - 0.12)
 
 
 func build(kit) -> void:
 	var wheel_mesh = kit.save_mesh(_wheel(kit), FAMILY_ID + ".wheel")
 	var body_mesh = kit.save_mesh(_body(kit), FAMILY_ID + ".body")
+	var hood_mesh = kit.save_mesh(_hood_mesh(kit), FAMILY_ID + ".hood")
 
 	var root = kit.new_root("TruckCargo", FAMILY_ID)
 	kit.add_mesh(root, "Body", body_mesh)
@@ -52,6 +61,8 @@ func build(kit) -> void:
 		kit.add_mesh(root, n, wheel_mesh, Transform3D(Basis.IDENTITY, wheels[n]))
 	kit.add_marker(root, "Candidate_CargoDoor", Vector3(0, 0, HALF_L + 0.30), Vector3.BACK,
 		"CANDIDATO: ponto no solo atras das portas traseiras (fechadas). Nao e acesso funcional.")
+	add_breakdown_nodes(root, hood_mesh)
+	Rig.add_hood_animation(root, HOOD_OPEN_DEGREES)
 
 	kit.save_scene(root, FAMILY_ID, {
 		"family_id": FAMILY_ID,
@@ -72,6 +83,8 @@ func build(kit) -> void:
 		"parts": {
 			"Body": "cabine + bau + chassi + para-choques + portas traseiras fechadas (<= 7 superficies)",
 			"Wheel_FL, Wheel_FR, Wheel_RL, Wheel_RR": "MeshInstance3D com UMA malha compartilhada (.wheel; superficies metal_light, rubber), origem no centro do eixo. Rolagem: rotacao em X local (andar para a frente, -Z, = angulo negativo = -distancia / raio). Dianteiras podem ser estercadas em Y local (compor Basis(Y, esterco) * Basis(X, rolagem)).",
+			"Hood": "MeshInstance3D com a tampa frontal de servico (grade); origem na dobradica %s. `hood_open` (AnimationPlayer) gira o no em X ate %.0f graus; rotacao 0 = fechada. Superficies metal_dark e truck_cab (a cor da cabine e a do Body)." % [str(HOOD_HINGE), HOOD_OPEN_DEGREES],
+			"HazardFL, HazardFR, HazardRL, HazardRR, HoodSmoke": "Marker3D de encaixe dos props de quebra (pisca-alerta e fumaca). Sem acesso nem regra.",
 			"Candidate_CargoDoor": "Marker3D CANDIDATO no solo, 0,30 m atras do ponto mais traseiro (z = +3,90), forward +Z (para fora das portas). Nao e acesso funcional nem vaga.",
 		},
 		"notes": [
@@ -239,10 +252,11 @@ func _cab(b) -> void:
 		var xb: float = sx * (CAB_HW + 0.01)
 		b.box("metal_dark", Vector3(min(xa, xb), 0.40, AXLE_F_Z + 0.62), Vector3(max(xa, xb), 0.46, CAB_REAR - 0.04))
 		b.box("metal_dark", Vector3(min(xa, xb), 0.46, CAB_REAR - 0.10), Vector3(max(xa, xb), 0.62, CAB_REAR - 0.04), PackedStringArray(["+y"]))
-	# Grade (fundo escuro + 3 frisos na cor da cabine).
-	b.box("metal_dark", Vector3(-0.70, 1.02, CAB_FRONT - 0.015), Vector3(0.70, 1.50, CAB_FRONT + 0.01), PackedStringArray(["+z"]))
-	for y in [1.12, 1.24, 1.36]:
-		b.box("truck_cab", Vector3(-0.66, y, CAB_FRONT - 0.04), Vector3(0.66, y + 0.05, CAB_FRONT - 0.015), PackedStringArray(["+z"]))
+	# Compartimento atras da grade (fundo escuro + aletas do radiador). A grade em si e a
+	# tampa `Hood`, que cobre este fundo e se abre.
+	b.box("metal_dark", Vector3(-0.70, 0.86, CAB_FRONT - 0.015), Vector3(0.70, 1.54, CAB_FRONT + 0.01), PackedStringArray(["+z"]))
+	for x in [-0.45, -0.15, 0.15, 0.45]:
+		b.box("metal_light", Vector3(x - 0.03, 0.92, CAB_FRONT - 0.03), Vector3(x + 0.03, 1.48, CAB_FRONT - 0.015), PackedStringArray(["+z"]))
 	# Farois (apagados) nas quinas inferiores.
 	for sx in [-1.0, 1.0]:
 		var x0: float = sx * 0.78
@@ -251,6 +265,38 @@ func _cab(b) -> void:
 		b.box("truck_light_front_off", Vector3(min(x0, x1), 0.99, CAB_FRONT - 0.045), Vector3(max(x0, x1), 1.23, CAB_FRONT - 0.02), PackedStringArray(["+z"]))
 	# Para-choque dianteiro.
 	b.bevel_box("metal_dark", Vector3(-1.17, 0.40, -HALF_L), Vector3(1.17, 0.72, CAB_FRONT + 0.10), 0.04, true)
+
+
+## Tampa da grade (aberta no `Hood`): painel escuro + 3 frisos na cor da cabine, com o
+## mesmo aspecto da grade fixa original. Origem da malha = dobradica (HOOD_HINGE).
+func _hood_mesh(kit):
+	var b = kit.builder()
+	_hood(b)
+	return b
+
+
+func _hood(b) -> void:
+	b.push_translate(-HOOD_HINGE)
+	b.box("metal_dark", Vector3(-0.70, 0.86, CAB_FRONT - 0.05), Vector3(0.70, 1.54, CAB_FRONT - 0.025), PackedStringArray(["+z"]))
+	# Verso na cor da cabine: com a tampa aberta quem olha ve um painel claro, nao um buraco.
+	b.box("truck_cab", Vector3(-0.70, 0.86, CAB_FRONT - 0.025), Vector3(0.70, 1.54, CAB_FRONT - 0.015), PackedStringArray(["+z"]))
+	for y in [1.0, 1.15, 1.30, 1.45]:
+		b.box("truck_cab", Vector3(-0.66, y, CAB_FRONT - 0.075), Vector3(0.66, y + 0.05, CAB_FRONT - 0.05), PackedStringArray(["+z"]))
+	b.pop()
+
+
+## No `Hood` e marcadores de encaixe (a animacao `hood_open` e adicionada por quem salva a
+## cena). Usado tambem pelas carrocerias do Patio de Obras (res://Assets/Construction),
+## que reaproveitam esta cabine.
+func add_breakdown_nodes(root: Node3D, hood_mesh: Mesh) -> void:
+	var hood := MeshInstance3D.new()
+	hood.name = Rig.HOOD_NODE
+	hood.mesh = hood_mesh
+	hood.position = HOOD_HINGE
+	hood.set_meta("open_degrees", HOOD_OPEN_DEGREES)
+	root.add_child(hood)
+	Rig.add_hazard_markers(root, HAZARD_FRONT_R, HAZARD_REAR_R)
+	Rig.add_smoke_marker(root, SMOKE_AT)
 
 
 func _cargo_box(b) -> void:

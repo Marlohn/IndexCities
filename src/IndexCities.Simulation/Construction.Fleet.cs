@@ -11,7 +11,7 @@ public sealed partial class CitySimulation
         // Fixed specialist vehicles; the original fleet count is unchanged.
         var trucks=State.Vehicles.Where(v=>v.External&&!v.PassengerCar&&v.Machine==PavingMachine.None&&v.HomeBuildingId==null&&!IsTow(v)).ToList();
         if(trucks.Count(v=>v.Status!=VehicleStatus.Outside)>=State.Tuning.ExternalTruckCount)return null;
-        return trucks.FirstOrDefault(v=>v.Status==VehicleStatus.Outside&&(resource==null||v.Body==BodyFor(resource.Value)));
+        return trucks.FirstOrDefault(v=>v.Status==VehicleStatus.Outside&&v.ServicePhase==ServicePhase.None&&!v.BrokenDown&&(resource==null||v.Body==BodyFor(resource.Value)));
     }
 
     RoadNode? ConstructionAccess(Building b)=>State.Roads.Where(r=>!r.Highway&&r.MaintenanceRatio>.05&&_workExteriorConnected.Contains(r.Id)&&r.Position.Distance(b.Door)<=State.Tuning.RoadWidth/2+3).MinBy(r=>r.Position.Distance(b.Door));

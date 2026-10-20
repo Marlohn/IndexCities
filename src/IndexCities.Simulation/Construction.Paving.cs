@@ -32,8 +32,8 @@ public sealed partial class CitySimulation
         if(p.PaverId!=null||p.RollerId!=null)return;
         if(!p.RoadPoints.Any(target=>!p.RolledRoadPoints.Contains(target)&&PavingSiteRoute(p,access.Position,target).Count>0)){p.Cause=WorkCause.PavingAwaitingSiteLink;return;}
         EnsurePavingFleet();
-        var paver=State.Vehicles.FirstOrDefault(v=>v.Machine==PavingMachine.Paver&&v.Status==VehicleStatus.Outside&&v.MachineProjectId==null);
-        var roller=State.Vehicles.FirstOrDefault(v=>v.Machine==PavingMachine.Roller&&v.Status==VehicleStatus.Outside&&v.MachineProjectId==null);
+        var paver=State.Vehicles.FirstOrDefault(v=>v.Machine==PavingMachine.Paver&&v.Status==VehicleStatus.Outside&&v.ServicePhase==ServicePhase.None&&v.MachineProjectId==null);
+        var roller=State.Vehicles.FirstOrDefault(v=>v.Machine==PavingMachine.Roller&&v.Status==VehicleStatus.Outside&&v.ServicePhase==ServicePhase.None&&v.MachineProjectId==null);
         if(paver==null||roller==null){p.Cause=WorkCause.AwaitingPavingMachines;return;}
         var route=FindRoadRoute(EntryNode().Id,access.Id,true);if(route.Count==0)return;
         var minimumFuel=(2*RouteLength(route)+2*p.RoadPoints.Count*State.Tuning.RoadStep+50)*State.Tuning.FuelPerMetre;
