@@ -314,6 +314,16 @@ public sealed class Company
     public string Decision {get;set;}="";
     [JsonIgnore] public string Account=>"company:"+Id;
 }
+// A local permission, not a shortened physical route. Snapshots identify the
+// actual path; a reroute cannot reuse the same numeric endpoint accidentally.
+public sealed class LocalMovementAdmission
+{
+    public List<int> Route {get;set;}=[];
+    public List<Point> SitePath {get;set;}=[];
+    public int EndRouteIndex {get;set;}
+    public bool ReachesDock {get;set;}
+}
+
 public sealed class Vehicle
 {
     public int Id {get;set;}
@@ -366,6 +376,7 @@ public sealed class Vehicle
     public Point? ManoeuvreDock {get;set;}
     // null in older saves: a return route at the dock is not an admitted exit.
     public bool? ManoeuvreDeparture {get;set;}
+    public LocalMovementAdmission? MovementAdmission {get;set;}
     public List<int> ManoeuvreSpaces {get;set;}=[];
     public bool CrewAboard {get;set;}
     public int CrewCount {get;set;}
