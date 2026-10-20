@@ -34,7 +34,7 @@ public partial class CityWorld:Node3D
     readonly Dictionary<int,MotionBefore> _peopleBefore=new(),_vehiclesBefore=new();
     readonly Dictionary<int,MotionTrace> _peopleMotion=new(),_vehicleMotion=new();
     CityState? _motionState;double _motionBeforeAt,_motionBuiltAt=double.NaN;
-    public static string Visual(BuildingKind kind)=>kind switch{BuildingKind.CityHall=>"civic.city_hall.a",BuildingKind.WorksDepot=>"civic.works_depot.a",BuildingKind.House=>"residential.small_house.a",BuildingKind.Grocery=>"commercial.grocery_small.a",BuildingKind.Farm=>"agriculture.farm_small.a",BuildingKind.FuelStation=>"commercial.fuel_station.a",BuildingKind.WaterIntake=>"utility.water_intake.a",BuildingKind.WaterTreatment=>"utility.water_treatment.a",BuildingKind.SewageTreatment=>"utility.sewage_treatment.a",_=>"utility.wind_power.a"};
+    public static string Visual(BuildingKind kind)=>kind switch{BuildingKind.CityHall=>"civic.city_hall.a",BuildingKind.WorksDepot=>"civic.works_depot.a",BuildingKind.House=>"residential.small_house.a",BuildingKind.Grocery=>"commercial.grocery_small.a",BuildingKind.Farm=>"agriculture.farm_small.a",BuildingKind.FuelStation=>"commercial.fuel_station.a",BuildingKind.WaterIntake=>"utility.water_intake.a",BuildingKind.WaterTreatment=>"utility.water_treatment.a",BuildingKind.SewageTreatment=>"utility.sewage_treatment.a",BuildingKind.MechanicShop=>"commercial.mechanic_shop.a",_=>"utility.wind_power.a"};
     public void Reset(CityState state)
     {
         _placementGridSurfaces.Clear();
@@ -67,7 +67,9 @@ public partial class CityWorld:Node3D
     // Paint variety is presentation only: a stable color per real vehicle.
     static readonly string[] CarPaints=["car_paint","car_paint_red","car_paint_blue","car_paint_white","car_paint_yellow","car_paint_green"];
     static void PaintCar(Node3D car,int id){if(car.GetNodeOrNull<MeshInstance3D>("Body") is not {Mesh:ArrayMesh mesh} body)return;var file="res://Assets/V1/Materials/"+CarPaints[(int)((uint)(id*2654435761u)%CarPaints.Length)]+".tres";if(!ResourceLoader.Exists(file))return;var paint=GD.Load<Material>(file);for(var i=0;i<mesh.GetSurfaceCount();i++)if(mesh.SurfaceGetName(i)=="car_paint")body.SetSurfaceOverrideMaterial(i,paint);}
-    static Node3D? Scene(string id){var file="res://Assets/V1/Scenes/"+id+".tscn";return ResourceLoader.Exists(file)?GD.Load<PackedScene>(file)?.Instantiate<Node3D>():null;}
+    // Provisional: the mechanic shop uses the candidate model until a V1 scene exists.
+    const string MechanicShopCandidate="res://Assets/Candidates/MechanicShopCodex/Scenes/mechanic_shop_codex.a.tscn";
+    static Node3D? Scene(string id){var file="res://Assets/V1/Scenes/"+id+".tscn";if(id=="commercial.mechanic_shop.a"&&!ResourceLoader.Exists(file))file=MechanicShopCandidate;return ResourceLoader.Exists(file)?GD.Load<PackedScene>(file)?.Instantiate<Node3D>():null;}
     static Node3D FallbackTree(){var root=new Node3D();Box(root,new(.65f,3,.65f),new(0,1.5f,0),"745541");root.AddChild(new MeshInstance3D{Mesh=new SphereMesh{Radius=2.5f,Height=5,RadialSegments=8,Rings=4},Position=new(0,4,0),MaterialOverride=Material("598745")});return root;}
     static Node3D BuildingVisual(Building b)=>BuildingVisual(b.Kind);
     static Node3D BuildingVisual(BuildingKind kind)

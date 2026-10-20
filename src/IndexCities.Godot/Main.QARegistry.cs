@@ -26,7 +26,7 @@ public partial class Main
         new("--performance-smoke",new[]{"--performance-smoke"},"FPS e ms de simulação/apresentação; só métricas, sem asserção de correção",false,"opcional via --fixture= (ignora --review-save-dir antes desta correção)",null,QaTrigger.Performance),
         new("--bar-capture",new[]{"--bar-capture"},"Posiciona a Prefeitura e espera --capture= para capturar a barra; não é teste",true,"nenhuma",null,QaTrigger.BarCapture),
         new("--persistence-smoke",new[]{"--persistence-smoke"},"Round-trip de save/load, esboços, migração legada de relógio e aviso de save de versão antiga",false,"nenhuma (cria a cidade)",nameof(PersistenceSmoke)),
-        new("--ui-smoke",new[]{"--ui-smoke"},"Fundação 1 clique, catálogo=10, rua 2 cliques, cancelar e inspeção",false,"nenhuma (cria a cidade)",nameof(UiSmoke)),
+        new("--ui-smoke",new[]{"--ui-smoke"},"Fundação 1 clique, catálogo=11, rua 2 cliques, cancelar e inspeção",false,"nenhuma (cria a cidade)",nameof(UiSmoke)),
         new("--ui-input-smoke",new[]{"--ui-input-smoke"},"Gestos reais de mouse/tecla sobre a GUI",true,"nenhuma (cria a cidade)",nameof(UiInputSmoke)),
         new("--recovery-smoke",new[]{"--recovery-smoke"},"Construção completa por GUI, menus e save/load",true,"nenhuma (cria a cidade)",nameof(RecoverySmoke)),
         new("--road-recovery-smoke",new[]{"--road-recovery-smoke"},"Rua: acesso pela porta, demolição e calçadas",true,"nenhuma (cria a cidade)",nameof(RoadRecoverySmoke)),
@@ -55,6 +55,7 @@ public partial class Main
         new("--real-clock-smoke",new[]{"--real-clock-smoke"},"Relógio real por velocidade e pausa",true,"nenhuma (cria a cidade)",nameof(RealClockSmoke)),
         new("--traffic-recovery-smoke",new[]{"--traffic-recovery-smoke"},"Caminhões saem da paralisação e a oferta é preservada",true,"cidade-checkpoint via --fixture= com caminhões externos ativos",nameof(TrafficRecoverySmoke)),
         new("--smoke",new[]{"--smoke"},"Invariantes e sincronização do mundo numa cidade vazia",false,"nenhuma (cria a cidade)",nameof(Smoke)),
+        new("--breakdown-smoke",new[]{"--breakdown-smoke"},"Quebras: carro quebra, contorno, guincho da oficina leva à oficina, conserto na vaga e devolução à vaga da dona; caminhão externo quebra e vai ao exterior pelo guincho pesado; cidade sem oficina manda o carro ao exterior; save/load",true,"nenhuma (cria as cidades; saves isolados em artifacts/verification)",nameof(BreakdownSmoke)),
         new("--tow-smoke",new[]{"--tow-smoke"},"Guincho: carro e caminhão sem combustível na via, chegada pela frente, plataforma (CarryAnchor) e guincho pesado (LiftAnchor), entrega no posto, fila desfeita e save/load no meio do reboque",true,"nenhuma (cria a cidade)",nameof(TowSmoke)),
         new("--neighbourhood-smoke",new[]{"--neighbourhood-smoke"},"Continuidade de ruas, conexões e obra dependente",true,"nenhuma (cria a cidade)",nameof(NeighbourhoodSmoke)),
     };
