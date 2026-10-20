@@ -627,6 +627,8 @@ Isso permite:
 
 Quando surgir o primeiro benchmark ou ferramenta que precise de entrada executável, pode ser criado um pequeno `IndexCities.Headless`/CLI que referencia diretamente o núcleo.
 
+**Medição de tempo:** rodadas sequenciais, uma de cada vez, com a máquina livre (sem testes, Godot ou bancadas de outras worktrees). Mínimo de 2 rodadas por versão, com a dispersão reportada; se houve concorrência, registre e não anuncie ganho com esses tempos. SHA idêntico do save, nos casos medidos, mostra que o estado persistido não mudou; não substitui testes nem a equivalência causal exigida pela SPEC.
+
 A fronteira headless é uma capacidade arquitetural; não precisa virar um subsistema distribuído.
 
 ---
@@ -728,7 +730,7 @@ src/
   IndexCities.Godot/
 ```
 
-`IndexCities.Headless` existe desde 2026-10-16: console sem Godot que referencia o núcleo para medir desempenho (custo por dia simulado, censo de movimento, SHA do save). Ferramenta de medição, não parte do jogo, sem regras próprias; o núcleo não depende dela. Usa reflexão para concluir obras instantaneamente nas cidades de medição e, por isso, quebra de forma explícita se esses métodos privados mudarem. Tempos só valem medidos em série com a máquina livre (sem testes, Godot ou bancadas de outras worktrees rodando), com pelo menos 2 rodadas; o SHA idêntico do save prova que uma otimização não mudou o jogo.
+`IndexCities.Headless` existe desde 2026-10-16: console sem Godot que referencia o núcleo para medir desempenho (custo por dia simulado, censo de movimento, SHA do save). Ferramenta de medição, não parte do jogo, sem regras próprias; o núcleo não depende dela. Usa reflexão para concluir obras instantaneamente nas cidades de medição e, por isso, quebra de forma explícita se esses métodos privados mudarem.
 
 Outros assemblies devem exigir justificativa concreta.
 
