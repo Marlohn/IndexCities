@@ -20,8 +20,8 @@ public sealed partial class CitySimulation
     void UpdateMaintenanceCondition(double dt)
     {
         var graphChanged=false;
-        foreach(var building in State.Buildings.Where(b=>b.Completed&&!b.Removed&&!b.Definition.Private)){if(building.MaintenanceDueAt<=0)building.MaintenanceDueAt=State.ElapsedSeconds+MaintenanceInterval;if(State.ElapsedSeconds>=building.MaintenanceDueAt)building.MaintenanceRatio=Math.Max(0,building.MaintenanceRatio-.03*dt/86400);}
-        foreach(var road in State.Roads.Where(r=>!r.Highway)){if(road.MaintenanceDueAt<=0)road.MaintenanceDueAt=State.ElapsedSeconds+MaintenanceInterval;var before=road.MaintenanceRatio;if(State.ElapsedSeconds>=road.MaintenanceDueAt)road.MaintenanceRatio=Math.Max(0,road.MaintenanceRatio-.03*dt/86400);if(before>.05&&road.MaintenanceRatio<=.05)graphChanged=true;}
+        foreach(var building in State.Buildings.Where(b=>b.Completed&&!b.Removed&&!b.Definition.Private)){if(building.MaintenanceDueAt<=0)building.MaintenanceDueAt=State.ElapsedSeconds+MaintenanceInterval;if(State.ElapsedSeconds>=building.MaintenanceDueAt){building.AddMaintenanceRatio(-.03*dt/86400);building.MaintenanceRatioUnits=Math.Max(0,building.MaintenanceRatioUnits);}}
+        foreach(var road in State.Roads.Where(r=>!r.Highway)){if(road.MaintenanceDueAt<=0)road.MaintenanceDueAt=State.ElapsedSeconds+MaintenanceInterval;var before=road.MaintenanceRatio;if(State.ElapsedSeconds>=road.MaintenanceDueAt){road.AddMaintenanceRatio(-.03*dt/86400);road.MaintenanceRatioUnits=Math.Max(0,road.MaintenanceRatioUnits);}if(before>.05&&road.MaintenanceRatio<=.05)graphChanged=true;}
         if(graphChanged)RebuildRoadGraph();
     }
     void ScheduleMaintenance(bool essentialOnly=false)

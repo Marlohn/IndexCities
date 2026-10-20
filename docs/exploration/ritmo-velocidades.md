@@ -567,3 +567,41 @@ dotnet src/IndexCities.Headless/bin/Release/net8.0/IndexCities.Headless.dll scal
 ```
 
 **Revisão independente:** DeepSeek V4.1 Flash (`opencode/deepseek-v4.1-flash-free`), em duas rodadas e sem achados Alto ou Médio. O revisor reproduziu os SHAs (6/6 depois; 5/6 antes, porque o sexto não terminou no tempo dele) e rodou sondas próprias contra reimplementações literais do código removido (≈2 milhões de checagens, 0 divergências). As notas que ele deixou foram corrigidas: redação da ARCHITECTURE, premissa de Id único documentada e buffer esvaziado ao fim do lote. Relatórios em `artifacts/verification/otimizacao-caminhada/review-deepseek/`.
+
+## 2026-10-19 — quantidades inteiras: comparação pareada com a main
+
+Medição técnica, sem autoridade de produto. Autorização do responsável registrada em [mundo-tempo-saves](../spec/mundo-tempo-saves.md#tempo-de-jogo); inventário de acumuladores e limites para uma agenda em [pesquisa do motor, §17](simulation-engine-performance-research.md#17-inventário-de-quantidades-acumuladas-no-núcleo-2026-10-18).
+
+**Árvores medidas:** antes = `origin/main` em `13b8e98` (inclui a PR #38), depois = `de62d24` (main integrada e correções da revisão). .NET 8.0.32, Release, aquecimento de 2 dias. `cycle`: `scale cycle --days=7`; `grid`: `stuck grid --rows=3 --length=400 --days=11`; cada comando com `--seed=42`, `7` e `43`, `--warmup=2` e `--cap=3600`. Foram 12 execuções completas, em série, antes/depois por cenário e semente, sem builds concorrentes deste worker. Refeições são os acontecimentos reais de consumo doméstico; salários são pagamentos da categoria `Salários / <prédio>`; médias usam SIMs vivos e residentes.
+
+O baseline saiu de `git archive 13b8e98`; seu núcleo e testes ficaram intactos. Somente `Headless/Program.cs` (métricas) e `Fixtures.cs` (acesso válido da captação na semente 43) foram copiados da branch para usar a mesma bancada nas duas árvores. O script e os hashes dos arquivos/bibliotecas estão em `artifacts/verification/fixed-quantities/resume-bench.ps1` e `resume-bench-metadata.txt`; logs completos em `resume-{before,after}-{cycle,grid}-{42,7,43}.log`. Esta rodada substitui a comparação anterior contra `c50923a`.
+
+| Cenário | Seed | Mortes antes → depois | Refeições antes → depois | Salários antes → depois | Saúde média antes → depois | Satisfação média antes → depois | Circulação antes → depois |
+|---|---|---|---|---|---|---|---|
+| cycle, 7 dias | 42 | 1 → 1 | 840 → 840 | 5297,66 → 5297,66 | 99,999989 → 99,999989 | 69,718855 → 69,718807 | em viagem no fim: 0 → 0 |
+| cycle, 7 dias | 7 | 0 → 0 | 894 → 894 | 5353,94 → 5353,94 | 99,999984 → 99,999984 | 66,648491 → 66,648428 | em viagem no fim: 0 → 0 |
+| cycle, 7 dias | 43 | 0 → 0 | 948 → 948 | 5428,14 → 5428,14 | 99,999995 → 99,999995 | 73,438801 → 73,438740 | em viagem no fim: 0 → 0 |
+| grid, 11 dias | 42 | 0 → 0 | 2700 → 2700 | 19013,13 → 19013,78 | 99,999996 → 99,999996 | 68,829473 → 68,805196 | parados ≥30min (máx): 0 → 0 |
+| grid, 11 dias | 7 | 0 → 0 | 2675 → 2675 | 18962,69 → 18962,11 | 99,999996 → 99,999996 | 68,935944 → 68,873065 | parados ≥30min (máx): 0 → 0 |
+| grid, 11 dias | 43 | 0 → 0 | 2750 → 2750 | 19021,82 → 19021,69 | 99,999996 → 99,999996 | 68,916647 → 68,994654 | parados ≥30min (máx): 0 → 0 |
+
+No ciclo, `scale` confirma zero veículos em viagem no encerramento; não mede o máximo de imobilizados ao longo do período. Na grade, `stuck` mede o máximo de veículos sem deslocamento por pelo menos 30 min e a falta de combustível acumulada; ambos zero nas três sementes, antes/depois. Nenhum guincho foi chamado nestas grades sem pane forçada; elas não exercitam o resgate por si.
+
+| Cenário | Seed | Eventos pessoais antes → depois | Variação | Lançamentos antes → depois | Δ salários | Δ satisfação |
+|---|---|---|---|---|---|---|
+| cycle | 42 | 5856 → 5856 | 0 (0%) | 2298 → 2298 | 0,00 | -0,000048 |
+| cycle | 7 | 4547 → 4547 | 0 (0%) | 2019 → 2019 | 0,00 | -0,000063 |
+| cycle | 43 | 4832 → 4832 | 0 (0%) | 2327 → 2327 | 0,00 | -0,000061 |
+| grid | 42 | 13626 → 13609 | -17 (-0,125%) | 4716 → 4722 | +0,65 | -0,024277 |
+| grid | 7 | 13119 → 13156 | +37 (+0,282%) | 4716 → 4728 | -0,58 | -0,062879 |
+| grid | 43 | 13678 → 13878 | +200 (+1,462%) | 4762 → 4783 | -0,13 | +0,078007 |
+
+**Correção da bancada, aplicada igualmente antes/depois:** o acesso da captação no ciclo com seed 43 era rejeitado porque atravessava a Casa #260. A fixture conserva o traçado original se `QuoteRoad` o aceita; caso contrário usa a faixa livre z=32. O núcleo não foi alterado. O ciclo43 foi medido já com esse ajuste; 42/7 mantêm seus traçados originais. A falha original foi preservada em `before-cycle-43-original-fixture.log`.
+
+**Leitura pareada:** mortes e refeições coincidiram nas seis cidades, e a saúde média coincidiu nas seis casas exibidas. Nos ciclos, os salários e as contagens finais de eventos/lançamentos também coincidiram. Nas grades, há divergência de trajetória após a quantização, não apenas diferença no último dígito: na semente 43 são +200 eventos pessoais (cerca de +1,5%) e +21 lançamentos; a satisfação sobe 0,078007 ponto. Esses números não provam equivalência de trajetórias, e a dispersão entre sementes não é usada para minimizá-los. As métricas e invariantes observadas não detectaram regressão de regra, mas não explicam qual decisão inicial separou cada par de trajetórias. SHAs de formatos distintos não são comparáveis como prova de equivalência. Os tempos estão nos logs como contexto; esta rodada não estabelece ganho de desempenho.
+
+**Validação atual:** main `13b8e98`: **278/278** testes; branch `de62d24`: **299/299**, sem falhas/ignorados nem alteração das expectativas da suíte original. Os 21 casos novos cobrem soma de incrementos quantizados, fome/saúde variável, ordem refeição/limites, recorrências, estoques/cópias, round-trip bruto acima de 2^53, 100 anos, maior estoque atual e estouro; incluem cinco resíduos de poluição que devem decair até a remoção, oito versões numéricas inválidas e guarda por lista permitida de doubles persistidos. Logs: `resume-main-tests.log`, `resume-targeted-tests.log` e `resume-tests.log`.
+
+No Godot 4.7.2 mono, `dotnet build -t:Rebuild` e importação reais, seguidos de `-- --qa-list` (36 cenários), `-- --smoke` e `-- --persistence-smoke`. Marcadores: `INDEXCITIES_SMOKE_OK buildings=0 roads=17` e `INDEXCITIES_PERSISTENCE_OK ... continuation=identical ... directory=.../resume-godot-saves/saves-d61dce6601474939920afe9e61e12b1c`. Diretório absoluto isolado: `C:/Users/Marlohn/orca/workspaces/IndexCities/quantidades-inteiras/artifacts/verification/fixed-quantities/resume-godot-saves`; arquivos confirmados nesse destino. Logs e hash da biblioteca reconstruída: `resume-godot-*`. São cenários headless; não substituem playtest visual/humano. O smoke simples não grava cidade.
+
+**Revisão:** achados bloqueantes e ajustes baratos da revisão Claude Haiku 5.5 sobre `a9625b4` corrigidos: comparação atual, decaimento residual, escrita de QA, guarda de persistência, exceção de versão e campo morto. A revisão final independente será despachada pelo coordenador depois do PR; ainda não executada nesta retomada. Permanecem os limites numéricos de borda: quantização recebe double, fatores double viram decimal nas recorrências e `HungerHours` converte horas em segundos antes de quantizar. Isso não permite transformar a futura agenda em soma de taxas constantes para estados não lineares.

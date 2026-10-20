@@ -8,6 +8,12 @@ public sealed partial class CitySimulation
     public string SaveToJson(){CheckInvariants();LakeGeometry.Validate(State);return JsonSerializer.Serialize(State,SaveOptions);}
     public static CitySimulation FromJson(string json)
     {
+        // Check the numeric representation before parsing old fractional stocks
+        // as integers. Geometry SchemaVersion remains an independent contract.
+        using var document=JsonDocument.Parse(json);
+        if(document.RootElement.ValueKind==JsonValueKind.Null)throw new InvalidDataException("Save vazio");
+        if(document.RootElement.ValueKind!=JsonValueKind.Object||!document.RootElement.TryGetProperty("QuantityStateVersion",out var version)||version.ValueKind!=JsonValueKind.Number||!version.TryGetInt32(out var quantityVersion)||quantityVersion!=2)
+            throw new InvalidDataException("Cidade salva antes das quantidades em ponto fixo; versão não suportada");
         var state=JsonSerializer.Deserialize<CityState>(json,SaveOptions)??throw new InvalidDataException("Save vazio");
         if(state.SchemaVersion is not (1 or 2))throw new InvalidDataException("Versão de cidade não suportada");
         if(state.ConstructionStateVersion<1)throw new InvalidDataException("Cidade salva numa versão antiga do jogo; até a versão estável, saves antigos não podem ser abertos");

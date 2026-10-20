@@ -111,7 +111,7 @@ public sealed partial class CitySimulation
         if(step<.00001&&d>.00001){v.Cause="Ultrapassagem aguardando espaço";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;remaining=0;return;}
         if(v.Fuel<=.000001){RunOutOfFuel(v);remaining=0;return;}
         step=Math.Min(step,v.Fuel/FuelRate(v));if(d>.01)v.Heading=Math.Atan2(heading.X,heading.Z);
-        v.Position=v.Position.MoveTowards(target,step);v.Fuel=Math.Max(0,v.Fuel-step*FuelRate(v));v.FuelBurnedLastStep+=step*FuelRate(v);remaining-=step/speed;v.WaitingSince=0;
+        v.Position=v.Position.MoveTowards(target,step);v.AddFuel(-(step*FuelRate(v)));v.FuelUnits=Math.Max(0,v.FuelUnits);v.AddFuelBurnedLastStep(step*FuelRate(v));remaining-=step/speed;v.WaitingSince=0;
         if(d<=step+.001){v.Detour.RemoveAt(0);if(v.Detour.Count==0){var resume=v.Route.IndexOf(v.DetourResumeNode,Math.Min(v.RouteIndex,v.Route.Count));if(resume>=0)v.RouteIndex=resume;
             // A tow that drove the empty opposite lane is already at its pickup pose.
             else if(v.TowPhase==TowPhase.ToVehicle&&v.DockPosition is {} pose&&v.Position.Distance(pose)<.05)v.RouteIndex=v.Route.Count;v.Cause="Em viagem";}}

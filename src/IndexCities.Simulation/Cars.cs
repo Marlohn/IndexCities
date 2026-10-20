@@ -103,7 +103,7 @@ public sealed partial class CitySimulation
         if(funds<price+State.Tuning.CarPurchaseReserve||access==null||spot.Key==null||State.OutsideStock[ResourceKind.Fuel]<fuel||!SpotFree(spot,-1))return;
         var route=FindRoadRoute(EntryNode().Id,access.Id);if(route.Count==0)return;
         foreach(var other in members.Skip(1))if(Balance(buyer.Account)<price)Transfer(other.Account,buyer.Account,Math.Min(Balance(other.Account),price-Balance(buyer.Account)),"Cooperação familiar","Contribuição para compra do carro com titular único",null);
-        if(!Transfer(buyer.Account,"global",price,"Veículos","Compra/importação real de carro particular e combustível inicial ao migrar",house.Id))return;State.OutsideStock[ResourceKind.Fuel]-=fuel;
+        if(!Transfer(buyer.Account,"global",price,"Veículos","Compra/importação real de carro particular e combustível inicial ao migrar",house.Id))return;State.OutsideStock.AddAmount(ResourceKind.Fuel,-(fuel));
         var car=new Vehicle{Id=Id(),OwnerAccount=buyer.Account,PassengerCar=true,Position=State.Entry,Fuel=fuel,CargoCapacity=0,Route=route,DockPosition=spot.Position,ParkingSpot=spot.Key,DriverId=buyer.Id,Passengers=members.Skip(1).Select(c=>c.Id).ToList(),DestinationBuildingId=house.Id,TripPurpose=JourneyPurpose.Arriving,Status=VehicleStatus.Travelling,Cause="Família chegando de carro"};
         State.Vehicles.Add(car);candidate.Cause+="; comprou carro ao migrar";
         foreach(var c in members){c.VehicleId=car.Id;c.Path.Clear();c.PathIndex=0;c.Purpose=JourneyPurpose.Arriving;c.DestinationId=house.Id;c.Activity="Chegando de carro";Personal(c,c.Id==buyer.Id?"Comprou carro importado ao migrar; preço pago à Reserva Global":"Chegando no carro da família");}

@@ -104,17 +104,17 @@ public sealed partial class CitySimulation
         // keeping building order and citizen order within each building.
         var staff=StaffByWorkplace();
         foreach(var b in State.Buildings.Where(b=>b.Completed&&!b.Removed)){
-            if(staff.TryGetValue(b.Id,out var workers))foreach(var c in workers.Where(c=>c.Alive&&c.VehicleId==null&&c.ConstructionProjectId==null&&!c.Moving&&c.Position.Distance(b.Door)<3&&ShiftActive(c))){c.WorkSecondsToday+=dt;AccrueWage(c,dt);}
+            if(staff.TryGetValue(b.Id,out var workers))foreach(var c in workers.Where(c=>c.Alive&&c.VehicleId==null&&c.ConstructionProjectId==null&&!c.Moving&&c.Position.Distance(b.Door)<3&&ShiftActive(c))){c.AddWorkSecondsToday(dt);AccrueWage(c,dt);}
             if(b.Kind!=BuildingKind.Farm||b.CompanyId==null||b.OperationalCapacity<=0||!Open(b))continue;
             var target=FarmReserveTarget(b);if(b.Quantity(ResourceKind.Food)>=target){b.Cause="Estoque de segurança completo; produção acompanha pedidos reais";continue;}
-            var amount=Math.Min(target-b.Quantity(ResourceKind.Food),b.OperationalCapacity*dt/43200);if(amount<=0)continue;b.AddStock(ResourceKind.Food,amount);b.FoodProduced+=amount;
+            var amount=Math.Min(target-b.Quantity(ResourceKind.Food),b.OperationalCapacity*dt/43200);if(amount<=0)continue;b.AddStock(ResourceKind.Food,amount);b.AddFoodProduced(amount);
             b.SalePrice=Money(Math.Max(2,State.Tuning.ImportPrices[ResourceKind.Food]*.85m));
         }
     }
     // Adaptive production: a small safety reserve plus recent real orders
     // (dispatched, or requested while the farm lacked stock); never population alone.
     double FarmReserveTarget(Building farm)=>Math.Min(farm.Definition.Capacity,Math.Max(16,farm.FoodDemandEstimate*1.5));
-    void ReviewFarmDemand(Building farm)=>farm.FoodDemandEstimate=farm.FoodDemandEstimate*.7+farm.FoodSoldToday*.3;
+    void ReviewFarmDemand(Building farm)=>farm.FoodDemandEstimateUnits=checked((long)decimal.Round(farm.FoodDemandEstimateUnits*.7m+farm.FoodSoldTodayUnits*.3m,0,MidpointRounding.AwayFromZero));
     bool TryBuyFood(Citizen c,Building shop)
     {
         if(shop.CompanyId==null||!Open(shop)||shop.OperationalCapacity<=0||shop.Quantity(ResourceKind.Food)<.1){Personal(c,"Compra não realizada: operação/estoque indisponíveis");return false;}
@@ -123,7 +123,7 @@ public sealed partial class CitySimulation
         foreach(var helper in family.Members.Select(id=>CitizenWithId(id)).Where(s=>s.Id!=c.Id&&s.Alive)){var shortage=Math.Max(0,need-Balance(c.Account));if(shortage<=0)break;Transfer(helper.Account,c.Account,Math.Min(shortage,Balance(helper.Account)),"Cooperação familiar","Contribuição real para alimentação",c.Id);}
         var amount=Math.Min(desired,Math.Min(shop.Quantity(ResourceKind.Food),(double)(Balance(c.Account)/shop.SalePrice)));amount=Math.Floor(amount*100)/100;if(amount<.1){Personal(c,"Compra não realizada: família sem saldo para alimentos");return false;}
         var price=Money((decimal)amount*shop.SalePrice);if(!Transfer(c.Account,"company:"+shop.CompanyId,price,"Alimentos","Compra presencial de alimento existente",shop.Id))return false;
-        shop.AddStock(ResourceKind.Food,-amount);shop.FoodSoldToday+=amount;shop.LastCustomerAt=State.ElapsedSeconds;c.BagFood+=amount;Personal(c,"Comprou "+amount.ToString("F2")+" alimentos por "+price+"; transportando à residência");return true;
+        shop.AddStock(ResourceKind.Food,-amount);shop.AddFoodSoldToday(amount);shop.LastCustomerAt=State.ElapsedSeconds;c.AddBagFood(amount);Personal(c,"Comprou "+amount.ToString("F2")+" alimentos por "+price+"; transportando à residência");return true;
     }
     void RestockBusinesses()
     {
@@ -137,7 +137,7 @@ public sealed partial class CitySimulation
             var local=farms.Where(f=>f.Quantity(ResourceKind.Food)-State.Shipments.Where(s=>s.SourceBuildingId==f.Id&&!s.Complete&&!s.PickedUp).Sum(s=>s.Cargo.GetValueOrDefault(ResourceKind.Food))>=amount).FirstOrDefault(f=>LocalDeliveryVehicle(f)!=null);
             // A competitive local supplier without enough stock receives this real
             // order as a production signal; the shop still imports meanwhile.
-            if(local==null&&farms.Count>0)farms[0].FoodDemandEstimate=Math.Max(farms[0].FoodDemandEstimate,amount);
+            if(local==null&&farms.Count>0)farms[0].FoodDemandEstimateUnits=Math.Max(farms[0].FoodDemandEstimateUnits,FixedPoint.Quantize(amount,FixedPoint.ResourceScale));
             if(local!=null&&OrderLocalFood(local,b,amount))continue;
             OrderImport(b,resource,amount,account);
         }
@@ -149,7 +149,7 @@ public sealed partial class CitySimulation
         if(Spendable(account)<price+500||State.OutsideStock[ResourceKind.Fuel]<fuel||BusinessOpportunity(farm)<.2)return;var route=FindRoadRoute(EntryNode().Id,Access(farm)!.Id);if(route.Count==0)return;
         // One way only: the truck stays in the city and refuels at a station afterwards.
         if(RouteLength(route)*State.Tuning.FuelPerMetre+4>fuel){if(CompanyById(farm.CompanyId) is {} owner)owner.Decision="Caminhão não comprado: a entrega desde a entrada passa da autonomia do tanque";return;}
-        if(!Transfer(account,"global",price,"Veículos","Aquisição/importação real de caminhão e combustível inicial",farm.Id))return;State.OutsideStock[ResourceKind.Fuel]-=fuel;
+        if(!Transfer(account,"global",price,"Veículos","Aquisição/importação real de caminhão e combustível inicial",farm.Id))return;State.OutsideStock.AddAmount(ResourceKind.Fuel,-(fuel));
         var v=new Vehicle{Id=Id(),OwnerAccount=account,External=true,ExternalDriverId="entregador externo de veículo "+farm.Id,HomeBuildingId=farm.Id,Position=State.Entry,Fuel=fuel,Route=route,DockPosition=DockAt(Access(farm)!,farm,false),Status=VehicleStatus.Travelling};var s=new Shipment{Id=Id(),Purpose=ShipmentPurpose.Vehicle,DestinationBuildingId=farm.Id,VehicleId=v.Id,PickedUp=true,PricePaid=price,GoodsOwnerAccount=account};v.ShipmentId=s.Id;State.Vehicles.Add(v);State.Shipments.Add(s);
     }
     Vehicle? LocalDeliveryVehicle(Building farm)=>State.Vehicles.FirstOrDefault(v=>!v.External&&v.HomeBuildingId==farm.Id&&v.OwnerAccount=="company:"+farm.CompanyId&&v.Status==VehicleStatus.Parked&&v.DriverId==null&&v.Cargo.Values.Sum()<.001);
@@ -169,8 +169,8 @@ public sealed partial class CitySimulation
         if(RouteLength(route)*2*FuelRate(vehicle)+4>State.Tuning.FuelTank){destination.Cause="Reposição inviável: ida e volta maiores que a autonomia do caminhão";return false;}
         var fuel=Math.Max(0,State.Tuning.FuelTank-vehicle.Fuel);var fee=State.Tuning.FreightBase+(decimal)(RouteLength(route)*2)*State.Tuning.FreightPerMetre+(decimal)fuel*State.Tuning.ImportPrices[ResourceKind.Fuel];var amount=Math.Min(requested,Math.Min(vehicle.CargoCapacity,Math.Min(State.OutsideStock[resource],(double)((Balance(account)-fee)/State.Tuning.ImportPrices[resource]))));amount=Math.Floor(amount*100)/100;
         if(amount<1||State.OutsideStock[ResourceKind.Fuel]<fuel){destination.Cause="Reposição inviável: saldo, carga ou combustível externos";return false;}var price=Money((decimal)amount*State.Tuning.ImportPrices[resource]+fee);
-        if(!Transfer(account,"global",price,"Importação comercial","Produto, frete e combustível com entrega física",destination.Id))return false;State.OutsideStock[resource]-=amount;State.OutsideStock[ResourceKind.Fuel]-=fuel;
-        var s=new Shipment{Id=Id(),Purpose=resource==ResourceKind.Food?ShipmentPurpose.Food:ShipmentPurpose.Fuel,DestinationBuildingId=destination.Id,Destination=n.Position,VehicleId=vehicle.Id,PickedUp=true,GoodsOwnerAccount=account,Cargo=new(){{resource,amount}},PricePaid=price};State.Shipments.Add(s);vehicle.Fuel+=fuel;vehicle.Cargo=new(s.Cargo);vehicle.ShipmentId=s.Id;vehicle.Route=route;vehicle.RouteIndex=0;vehicle.DockPosition=DockAt(n,destination,false);vehicle.Status=VehicleStatus.Travelling;vehicle.Position=State.Entry;vehicle.Cause="Importação comercial em trânsito";
+        if(!Transfer(account,"global",price,"Importação comercial","Produto, frete e combustível com entrega física",destination.Id))return false;State.OutsideStock.AddAmount(resource,-(amount));State.OutsideStock.AddAmount(ResourceKind.Fuel,-(fuel));
+        var s=new Shipment{Id=Id(),Purpose=resource==ResourceKind.Food?ShipmentPurpose.Food:ShipmentPurpose.Fuel,DestinationBuildingId=destination.Id,Destination=n.Position,VehicleId=vehicle.Id,PickedUp=true,GoodsOwnerAccount=account,Cargo=new(){{resource,amount}},PricePaid=price};State.Shipments.Add(s);vehicle.AddFuel(fuel);vehicle.Cargo=new(s.Cargo);vehicle.ShipmentId=s.Id;vehicle.Route=route;vehicle.RouteIndex=0;vehicle.DockPosition=DockAt(n,destination,false);vehicle.Status=VehicleStatus.Travelling;vehicle.Position=State.Entry;vehicle.Cause="Importação comercial em trânsito";
         destination.InventoryUnitCost=Money(price/(decimal)amount);destination.SalePrice=Money(destination.InventoryUnitCost*1.4m);return true;
     }
     readonly Dictionary<Point,double> _homePollution=new();readonly List<Point> _homePoints=[];
@@ -185,11 +185,11 @@ public sealed partial class CitySimulation
         SampledPollution(_homePoints,pollution);
         double HomePollution(Point position){if(!pollution.TryGetValue(position,out var value)){value=SampledPollution(position);pollution.Add(position,value);}return value;}
         foreach(var c in State.Citizens.Where(c=>c.Alive&&c.Resident&&c.InsideMap)){
-            c.HungerHours+=dt/3600;var family=FamilyById(c.FamilyId)!;var home=BuildingById(family.HomeId);
-            if(home!=null&&!c.Moving&&c.VehicleId==null&&c.Position.Distance(home.Door)<3&&c.HungerHours>=12&&family.Pantry>=1){family.Pantry-=1;c.HungerHours=Math.Max(0,c.HungerHours-12);Personal(c,"Consumiu 1 alimento do estoque físico da residência");}
+            c.AddHungerSeconds(dt);var family=FamilyById(c.FamilyId)!;var home=BuildingById(family.HomeId);
+            if(home!=null&&!c.Moving&&c.VehicleId==null&&c.Position.Distance(home.Door)<3&&c.HungerHours>=12&&family.Pantry>=1){family.AddPantry(-(1));c.HungerMicroseconds=Math.Max(0,checked(c.HungerMicroseconds-12*3600*FixedPoint.TimeScale));Personal(c,"Consumiu 1 alimento do estoque físico da residência");}
             var hungry=c.HungerHours>State.Tuning.HungerDamageAfterHours;var unmet=home==null?1:(1-home.WaterRatio)*.5+(1-home.ElectricityRatio)*.15+HomePollution(home.Position)*.1;
-            if(hungry)c.Health-=dt/3600*(c.HungerHours/State.Tuning.HungerDamageAfterHours);else if(c.HungerHours<18)c.Health=Math.Min(100,c.Health+dt/3600*.3);
-            c.Health=Math.Clamp(c.Health-unmet*dt/86400,0,100);c.Satisfaction=Math.Clamp(80-c.HungerHours*.7-unmet*15-(family.Members.Count>Catalog.Definitions[BuildingKind.House].Capacity?8:0),0,100);
+            if(hungry)c.AddHealth(-(dt/3600*(c.HungerHours/State.Tuning.HungerDamageAfterHours)));else if(c.HungerHours<18){c.AddHealth(dt/3600*.3);c.HealthUnits=Math.Min(100*FixedPoint.PointScale,c.HealthUnits);}
+            c.AddHealth(-unmet*dt/86400);c.HealthUnits=Math.Clamp(c.HealthUnits,0,100*FixedPoint.PointScale);c.Satisfaction=Math.Clamp(80-c.HungerHours*.7-unmet*15-(family.Members.Count>Catalog.Definitions[BuildingKind.House].Capacity?8:0),0,100);
             if(c.Health<=0)CitizenDied(c);
         }
     }

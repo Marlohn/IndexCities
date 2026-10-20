@@ -1,0 +1,10 @@
+  Determinando os projetos a serem restaurados...
+  C:\Users\Marlohn\orca\workspaces\IndexCities\quantidades-inteiras\artifacts\verification\fixed-quantities\main-13b8e98-source\src\IndexCities.Simulation\IndexCities.Simulation.csproj restaurado (em 68 ms).
+  C:\Users\Marlohn\orca\workspaces\IndexCities\quantidades-inteiras\artifacts\verification\fixed-quantities\main-13b8e98-source\tests\IndexCities.Simulation.Tests\IndexCities.Simulation.Tests.csproj restaurado (em 213 ms).
+  IndexCities.Simulation -> C:\Users\Marlohn\orca\workspaces\IndexCities\quantidades-inteiras\artifacts\verification\fixed-quantities\main-13b8e98-source\src\IndexCities.Simulation\bin\Release\net8.0\IndexCities.Simulation.dll
+C:\Users\Marlohn\orca\workspaces\IndexCities\quantidades-inteiras\artifacts\verification\fixed-quantities\main-13b8e98-source\tests\IndexCities.Simulation.Tests\TowingTests.cs(54,116): warning CS0219: A variável "minFollowerGap" é atribuída, mas seu valor nunca é usado [C:\Users\Marlohn\orca\workspaces\IndexCities\quantidades-inteiras\artifacts\verification\fixed-quantities\main-13b8e98-source\tests\IndexCities.Simulation.Tests\IndexCities.Simulation.Tests.csproj]
+  IndexCities.Simulation.Tests -> C:\Users\Marlohn\orca\workspaces\IndexCities\quantidades-inteiras\artifacts\verification\fixed-quantities\main-13b8e98-source\tests\IndexCities.Simulation.Tests\bin\Release\net8.0\IndexCities.Simulation.Tests.dll
+Execução de teste para C:\Users\Marlohn\orca\workspaces\IndexCities\quantidades-inteiras\artifacts\verification\fixed-quantities\main-13b8e98-source\tests\IndexCities.Simulation.Tests\bin\Release\net8.0\IndexCities.Simulation.Tests.dll (.NETCoreApp,Version=v8.0)
+1 arquivos de teste no total corresponderam ao padrão especificado.
+
+Aprovado!  – Com falha:     0, Aprovado:   278, Ignorado:     0, Total:   278, Duração: 26 s - IndexCities.Simulation.Tests.dll (net8.0)

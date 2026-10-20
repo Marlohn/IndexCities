@@ -133,7 +133,7 @@ public sealed partial class CitySimulation
         // Only actual full storage or a missing physical road counts; vehicle,
         // cash and fuel waits pause the clock. A real pickup resets it.
         var deadlineCause=stock>.001?(RelocationRouteBlock(source,target)??(target!=null&&target.Definition.Capacity-target.Stock.Values.Sum()<.001?"Novo endereço sem espaço de estoque":null)):null;
-        if(deadlineCause!=null&&!progressed)order.StockRecoveryBlockedSeconds+=dt;
+        if(deadlineCause!=null&&!progressed)order.AddStockRecoveryBlockedSeconds(dt);
         order.BlockedSince=deadlineCause==null?-1:State.ElapsedSeconds-order.StockRecoveryBlockedSeconds;
         if(deadlineCause!=null&&order.StockRecoveryBlockedSeconds>=MunicipalStockRecoveryDeadline){FinishRelocation(order,source,target);return;}
         var trips=State.Shipments.Count(s=>order.TransferShipmentIds.Contains(s.Id)&&!s.Complete);
@@ -207,7 +207,7 @@ public sealed partial class CitySimulation
                 if(s.ProjectId is {} pid&&State.Projects.FirstOrDefault(p=>p.Id==pid) is {} p)foreach(var kv in s.Cargo)p.LocalReserved[kv.Key]=Math.Max(0,p.LocalReserved.GetValueOrDefault(kv.Key)-kv.Value);
             }
             foreach(var c in State.Citizens.Where(c=>c.WorkplaceId==source.Id)){SettleWages(c,source);c.WorkplaceId=null;Personal(c,"Vínculo encerrado: endereço antigo de "+name+" retirado");}
-            order.StockLost=source.Stock.Where(e=>e.Value>.001).ToDictionary(e=>e.Key,e=>e.Value);
+            var lost=new ResourceStock();foreach(var e in source.Stock.Units.Where(e=>e.Value>FixedPoint.Quantize(.001,FixedPoint.ResourceScale)))lost.AddUnits(e.Key,e.Value);order.StockLost=lost;
             if(order.RemovalReserved>0&&!Transfer("city","global",order.RemovalReserved,"Mudança municipal","Retirada física do endereço antigo de "+name+"; sem reembolso de obra ou materiais",source.Id))throw new InvalidOperationException("Retirada reservada sem Caixa");
             order.RemovalPaid+=order.RemovalReserved;
             source.Stock.Clear();source.OperationalCapacity=0;source.OperationClosed=true;source.Removed=true;source.Cause="Retirado: "+name+" mudou-se para o novo endereço";
@@ -215,7 +215,7 @@ public sealed partial class CitySimulation
         }
         order.RemovalReserved=0;order.TransferReserved=0;order.BlockedSince=-1;order.Stage=MunicipalRelocationStage.Completed;order.FinishedAt=State.Now;
         var moved=State.Shipments.Where(s=>order.TransferShipmentIds.Contains(s.Id)&&s.Complete&&!s.Cancelled).SelectMany(s=>s.Cargo).GroupBy(e=>e.Key).ToDictionary(g=>g.Key,g=>g.Sum(e=>e.Value));
-        static string Amounts(Dictionary<ResourceKind,double> stock)=>string.Join(", ",stock.Select(e=>ResourceLabel(e.Key)+" "+e.Value.ToString("0.#",System.Globalization.CultureInfo.InvariantCulture)));
+        static string Amounts(IEnumerable<KeyValuePair<ResourceKind,double>> stock)=>string.Join(", ",stock.Select(e=>ResourceLabel(e.Key)+" "+e.Value.ToString("0.#",System.Globalization.CultureInfo.InvariantCulture)));
         var parts=new List<string>{"Mudança de "+name+" concluída"+(target==null?"":" no novo endereço #"+target.Id)};
         parts.Add(source==null?"endereço antigo já não existia: nada a retirar":"retirada do endereço antigo paga ("+Cash(order.RemovalPaid)+")");
         if(order.TransferPaid>0)parts.Add("frete do estoque "+Cash(order.TransferPaid));
