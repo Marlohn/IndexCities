@@ -11,6 +11,10 @@ public static class FixedPoint
     public const long TimeScale=1_000_000;
     public const long ResourceScale=1_000_000_000;
     public const long PointScale=1_000_000_000_000;
+    // Pollution cells: exact decimal points kept to 20 places, so multiplicative
+    // decay never stalls above the 1e-10 removal threshold.
+    public const int PollutionDecimals=20;public const decimal PollutionRemovalThreshold=0.0000000001m;
+    public static decimal Pollution(decimal value)=>decimal.Round(value,PollutionDecimals,MidpointRounding.AwayFromZero);
     public static long Quantize(double value,long scale)=>checked((long)Math.Round(value*scale,MidpointRounding.AwayFromZero));
     public static double Value(long units,long scale)=>units/(double)scale;
     public static long Add(long units,double delta,long scale)=>checked(units+Quantize(delta,scale));
