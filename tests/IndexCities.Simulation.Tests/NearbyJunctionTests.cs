@@ -62,6 +62,11 @@ public sealed class NearbyJunctionTests
     {
         var (sim,first,second,outbound,returning)=AdjacentCity();sim.State.Roads.AddRange([new(){Id=1003,Position=new(-228,12)},new(){Id=1004,Position=new(-228,16)}]);sim=new CitySimulation(sim.State);
         outbound.IntersectionClaim=null;outbound.WaitingSince=0;outbound.Route=[first.Id,second.Id,1001,1002,1003,1004];outbound.RouteIndex=1;returning.IntersectionClaim=null;returning.WaitingSince=0;
+        // The shared fixture's returning pose (turning on the crossing) starts 2 m inside
+        // outbound's body, which bodies as obstacles never allow. Here it comes south on the
+        // side street and waits at the mouth of the same shared pavement: body clear of the
+        // crossing carriageway and of outbound's way, its next node the adjacent crossing.
+        returning.Route=[1004,1003,1002,1001,second.Id,first.Id,..returning.Route.Skip(2)];returning.RouteIndex=3;returning.Position=new(-229.65,11);returning.Heading=Math.PI;
         var enter=typeof(CitySimulation).GetMethod("MayEnterJunction",BindingFlags.Instance|BindingFlags.NonPublic)!;Assert.True((bool)enter.Invoke(sim,[outbound,first])!);
         Assert.False((bool)enter.Invoke(sim,[returning,second])!);Assert.Null(returning.IntersectionClaim);var otherPosition=returning.Position;
         sim.Advance(.1);Assert.Equal(otherPosition,returning.Position);Assert.NotNull(outbound.IntersectionClaim);Assert.Null(returning.IntersectionClaim);
