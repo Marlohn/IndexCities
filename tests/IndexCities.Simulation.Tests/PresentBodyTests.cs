@@ -22,7 +22,9 @@ public sealed class PresentBodyTests
     public void Lane_traffic_never_overlaps_the_asphalt_truck_and_the_street_is_finished(double dt,bool v18Moved)
     {
         var sim=CitySimulation.FromJson(File.ReadAllText(Path.Combine(AppContext.BaseDirectory,"Fixtures","stuck-asphalt-approach.json")));
-        if(v18Moved){var car=sim.State.Vehicles.Single(v=>v.Id==18);car.Position=new Point(-150,car.Position.Z);}
+        // On its own lane: the next node ahead of it is the second of its route (x=-160);
+        // its saved index (past the bend) would send it diagonally across the street.
+        if(v18Moved){var car=sim.State.Vehicles.Single(v=>v.Id==18);car.Position=new Point(-150,car.Position.Z);car.RouteIndex=1;}
         double Fuel()=>sim.State.Vehicles.Sum(v=>v.Fuel)+sim.State.Buildings.Where(b=>!b.Removed).Sum(b=>b.Quantity(ResourceKind.Fuel))+sim.State.OutsideStock.GetValueOrDefault(ResourceKind.Fuel);
         var money=sim.MonetaryTotal;var fuel=Fuel();var burned=0.0;
         Shipment Shipment()=>sim.State.Shipments.Single(s=>s.Id==121);

@@ -183,6 +183,9 @@ public sealed partial class CitySimulation
     }
     // A stopped lane vehicle whose way on is blocked by that body.
     bool WaitsOnBody(Vehicle v,Vehicle body)=>v.Status==VehicleStatus.Travelling&&v.WaitingSince>0&&v.RouteIndex<v.Route.Count&&BodyOnWay(v,TurnWay(v,out _))?.Id==body.Id;
+    // Stopped by that body, directly or through the stopped vehicles queued ahead of it.
+    bool HeldByBody(Vehicle v,Vehicle body,int depth=0)=>v.Status==VehicleStatus.Travelling&&v.WaitingSince>0&&v.RouteIndex<v.Route.Count&&
+        BodyOnWay(v,TurnWay(v,out _)) is {} ahead&&(ahead.Id==body.Id||depth<4&&HeldByBody(ahead,body,depth+1));
     // A delivery whose bay entry is not admitted turns only into that entry: a
     // dock owner or a body on its way in keeps it from turning, like a body on
     // the turn (intention holds no one).

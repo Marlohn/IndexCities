@@ -15,7 +15,9 @@ public sealed class UnloadingBodyTests
         var truck=sim.State.Vehicles.Single(v=>v.Id==19);var car=sim.State.Vehicles.Single(v=>v.Id==18);
         var shipment=sim.State.Shipments.Single(s=>s.Id==121);
         // The car is an ordinary lane car 22 m east of its fixture pose, on the same lane.
-        car.Position=new Point(-150,car.Position.Z);
+        // Its next node ahead there is the second of its route (x=-160); the saved index
+        // (past the bend) would send it diagonally across the street.
+        car.Position=new Point(-150,car.Position.Z);car.RouteIndex=1;
         double Fuel()=>sim.State.Vehicles.Sum(v=>v.Fuel)+sim.State.Buildings.Where(b=>!b.Removed).Sum(b=>b.Quantity(ResourceKind.Fuel))+sim.State.OutsideStock.GetValueOrDefault(ResourceKind.Fuel);
         var money=sim.MonetaryTotal;var fuel=Fuel();var burned=0.0;
         var unloadingSteps=0;

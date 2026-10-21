@@ -131,8 +131,9 @@ public sealed partial class CitySimulation
         var done=machine.Machine==PavingMachine.Paver?p.AppliedRoadPoints:p.RolledRoadPoints;
         if(done.Count>=p.RoadPoints.Count)return;
         if(machine.WorkTarget==null){
-            // Not one stopped by this machine's own body: it passes only once the machine moves.
-            if(done.Count==0&&State.Vehicles.Any(v=>v.Machine==PavingMachine.None&&v.Status is VehicleStatus.Travelling or VehicleStatus.Unloading&&v.Position.Distance(machine.Position)<25&&!WaitsOnBody(v,machine))){p.Cause=WorkCause.PavingSiteOccupied;return;}
+            // Not one stopped by this machine's own body, nor the queue held behind it:
+            // they pass only once the machine moves.
+            if(done.Count==0&&State.Vehicles.Any(v=>v.Machine==PavingMachine.None&&v.Status is VehicleStatus.Travelling or VehicleStatus.Unloading&&v.Position.Distance(machine.Position)<25&&!HeldByBody(v,machine))){p.Cause=WorkCause.PavingSiteOccupied;return;}
             foreach(var target in p.RoadPoints.Where(point=>!done.Contains(point)&&(machine.Machine==PavingMachine.Paver||p.AppliedRoadPoints.Contains(point))).OrderBy(point=>point.Distance(machine.Position))){
                 var route=PavingApproachRoute(p,machine.Position,target);if(route.Count==0)continue;
                 machine.SitePath=route;machine.SitePathIndex=0;machine.WorkTarget=target;break;
