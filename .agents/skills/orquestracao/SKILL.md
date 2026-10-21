@@ -10,7 +10,7 @@ Complementa a seção 7 do `AGENTS.md` (as regras ficam lá) e o guia do própri
 ## Antes de despachar
 
 - Parta do `origin/main` atualizado (`git fetch` e uma worktree nova a partir dele), não da worktree em que a sessão foi aberta: ela pode estar atrás e já ter conflito com a SPEC.
-- Confira a cota de cada modelo (rodapé do terminal) **antes** de mandar trabalho. Não ponha coordenador e todos os workers no mesmo provedor: um limite de uso para todos ao mesmo tempo.
+- Confira a cota de cada modelo (rodapé do terminal) **antes** de mandar trabalho. Não ponha coordenador e todos os workers no mesmo provedor: um limite de uso derruba todos juntos e ninguém avisa (em 20/10 o autor ficou 10 h parado). Se receber a coordenação assim, avise o responsável e troque um dos dois.
 - Escreva o pedido num arquivo e passe com `--spec "$(cat arquivo)"` pelo Bash. Aspas e quebras de linha no PowerShell quebram o argumento.
 - Workers em paralelo só com fronteira de arquivos clara (ex.: simulação × `Assets/`). Defina antes o contrato entre eles (nomes de nós, campos expostos).
 
