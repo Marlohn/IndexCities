@@ -36,7 +36,7 @@ public sealed class RoadNeighbourIndexTests
         }
         var reference=Reference(roads,4);
         Indexed(roads,4);
-        for(var i=0;i<roads.Count;i++)Assert.Equal(reference[i],roads[i].Neighbours);
+        for(var i=0;i<roads.Count;i++)Assert.Equal(reference[i],roads[i].Neighbours.ToArray());
     }
 
     [Theory]
@@ -52,7 +52,18 @@ public sealed class RoadNeighbourIndexTests
         };
         var reference=Reference(roads,step);
         Indexed(roads,step);
-        for(var i=0;i<roads.Count;i++)Assert.Equal(reference[i],roads[i].Neighbours);
+        for(var i=0;i<roads.Count;i++)Assert.Equal(reference[i],roads[i].Neighbours.ToArray());
+    }
+
+    [Fact]
+    public void HighlyConcentratedRoadsUseSafeFallback()
+    {
+        var roads=Enumerable.Range(0,150).Select(i=>new RoadNode{
+            Id=i+1,Position=new(i%3*.001,i%5*.001)
+        }).ToList();
+        var reference=Reference(roads,4);
+        Indexed(roads,4);
+        for(var i=0;i<roads.Count;i++)Assert.Equal(reference[i],roads[i].Neighbours.ToArray());
     }
 
     [Fact]
@@ -65,6 +76,6 @@ public sealed class RoadNeighbourIndexTests
         roads.Add(new RoadNode{Id=1002,Position=new(-.01,4)});
         var reference=Reference(roads,4);
         Indexed(roads,4);
-        for(var i=0;i<roads.Count;i++)Assert.Equal(reference[i],roads[i].Neighbours);
+        for(var i=0;i<roads.Count;i++)Assert.Equal(reference[i],roads[i].Neighbours.ToArray());
     }
 }
