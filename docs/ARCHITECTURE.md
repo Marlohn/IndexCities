@@ -482,7 +482,7 @@ No núcleo atual (desde 2026-10-17), os derivados de desempenho seguem duas form
 
 Os índices partem da premissa, garantida pelo contador `Id()`, de que cada Id é único na sua lista.
 
-Esses derivados não mudam resultado: a equivalência foi verificada pelo mesmo SHA-256 do save na bancada headless (§15) antes e depois, em várias cidades e sementes (registro em `docs/exploration/ritmo-velocidades.md`).
+Esses derivados não mudam resultado: o mesmo SHA-256 do save na bancada headless (§12, §15), antes e depois, em várias cidades e sementes, mostrou o estado persistido inalterado, junto com os testes (registro em `docs/exploration/ritmo-velocidades.md`).
 
 ---
 
@@ -653,6 +653,8 @@ Isso permite:
 **Não é necessário criar agora um servidor ou IPC.**
 
 Quando surgir o primeiro benchmark ou ferramenta que precise de entrada executável, pode ser criado um pequeno `IndexCities.Headless`/CLI que referencia diretamente o núcleo.
+
+**Medição de tempo:** rodadas sequenciais, uma de cada vez, com a máquina livre (sem testes, Godot ou bancadas de outras worktrees). Mínimo de 2 rodadas por versão, com a dispersão reportada; se houve concorrência, registre e não anuncie ganho com esses tempos. SHA idêntico do save, nos casos medidos, mostra que o estado persistido não mudou; não substitui testes nem a equivalência causal exigida pela SPEC.
 
 A fronteira headless é uma capacidade arquitetural; não precisa virar um subsistema distribuído.
 
