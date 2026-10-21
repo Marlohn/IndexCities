@@ -47,6 +47,52 @@ public sealed class DockCorridorTests
     }
 
     [Fact]
+    public void New_exit_sweep_starts_at_the_body_even_if_a_reroute_retained_the_old_dock_identity()
+    {
+        var sim=OppositeDocks();var a=sim.State.Vehicles[0];
+        sim.State.Vehicles[1].Status=VehicleStatus.Outside;
+        var start=a.Position;var oldDock=new Point(-120,33.25);
+        a.ManoeuvreDock=oldDock;a.DockPosition=oldDock;a.ManoeuvreDeparture=false;
+        var way=Exit(sim,a);
+        var admit=typeof(CitySimulation).GetMethod("AdmitManoeuvre",BindingFlags.Instance|BindingFlags.NonPublic)!;
+        Assert.True((bool)admit.Invoke(sim,[a,way,new List<RoadNode>(),oldDock,true,null])!);
+        Assert.Equal(start,a.DockCorridor[0].Position);
+        Assert.DoesNotContain(a.DockCorridor,p=>p.Position==oldDock);
+    }
+
+    [Fact]
+    public void A_matching_destination_does_not_keep_an_expired_departure_after_physical_clearance()
+    {
+        var sim=OppositeDocks();sim.Advance(.8);var a=sim.State.Vehicles[0];
+        Assert.NotEmpty(a.DockCorridor);
+        // Component fixture for the state after a route prefix was passed and
+        // cargo was redirected to the same destination as the old dock tag.
+        a.Position=new(-180,41.65);a.RouteIndex=5;a.DockPosition=a.ManoeuvreDock;
+        var at=a.Position;
+        typeof(CitySimulation).GetMethod("ReleaseManoeuvre",BindingFlags.Instance|BindingFlags.NonPublic)!.Invoke(sim,[a]);
+        Assert.Null(a.ManoeuvreDock);Assert.Empty(a.DockCorridor);Assert.Equal(at,a.Position);
+    }
+
+    [Fact]
+    public void Machine_does_not_enter_an_admitted_dock_sweep_just_because_no_body_is_there_yet()
+    {
+        var sim=OppositeDocks();sim.Advance(.1);
+        Assert.NotNull(sim.State.Vehicles[0].ManoeuvreDock);
+        var machine=sim.State.Vehicles[1];
+        machine.Machine=PavingMachine.Roller;machine.MachinePhase=MachinePhase.LeavingSite;
+        machine.Status=VehicleStatus.Parked;machine.Heading=0;
+        machine.SitePath=[new(-168,41.65)];machine.SitePathIndex=0;
+        var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+        object? Call(string name,params object?[] values)=>typeof(CitySimulation).GetMethods(flags)
+            .Single(m=>m.Name==name&&m.GetParameters().Length==values.Length).Invoke(sim,values);
+        var ahead=Call("MachinePathAhead",machine);
+        Assert.Null(Call("BodyOnWay",machine,ahead));
+        Assert.False((bool)Call("MachineMayEnter",machine)!);
+        Assert.Empty(machine.ManoeuvreSpaces);
+        Assert.Empty((List<(Vehicle Body,Point Position,double Heading)>)Call("MachineReservation",machine)!);
+    }
+
+    [Fact]
     public void Exit_acquires_next_junction_when_the_previous_lane_pose_still_occupies_its_dock_sweep()
     {
         var sim=OppositeDocks(true);var a=sim.State.Vehicles[0];

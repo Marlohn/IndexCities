@@ -163,7 +163,7 @@ public sealed partial class CitySimulation
         var poses=new List<(Vehicle,Point,double)>();
         if(machine.Machine==PavingMachine.None||machine.Status!=VehicleStatus.Parked||machine.MachinePhase is not (MachinePhase.OnSite or MachinePhase.LeavingSite)||machine.SitePathIndex>=machine.SitePath.Count||machine.Fuel<=.000001||machine.Cause is WorkCause.PavingOutOfFuel or WorkCause.NoBudgetForPaving)return poses;
         var way=MachinePathAhead(machine);
-        if(BodyOnWay(machine,way)!=null||SharedNodes().Any(n=>!machine.ManoeuvreSpaces.Contains(n.Id)&&way.Any(p=>EntersArea(machine,p.Position,p.Heading,n))))return poses;
+        if(BodyOnWay(machine,way)!=null||machine.MachinePhase==MachinePhase.LeavingSite&&ConflictsWithDockWay(machine,way)||SharedNodes().Any(n=>!machine.ManoeuvreSpaces.Contains(n.Id)&&way.Any(p=>EntersArea(machine,p.Position,p.Heading,n))))return poses;
         return way;
     }
 

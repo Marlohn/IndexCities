@@ -240,8 +240,7 @@ public sealed partial class CitySimulation
         if(!admitted){
             // A straight street has no shared node, but admitted dock sweeps
             // still exclude each other. Check the whole new plan atomically.
-            if(yieldToTraffic&&State.Vehicles.Any(o=>o.Id!=v.Id&&o.ManoeuvreDock!=null&&o.ManoeuvreDeparture==true&&
-                OwnedDockWay(o).Any(q=>way.Any(p=>p.Position.Distance(q.Position)<12&&BodiesOverlap(v,p.Position,p.Heading,o,q.Position,q.Heading))))){
+            if(yieldToTraffic&&ConflictsWithDockWay(v,way)){
                 v.Cause=yieldToTraffic?"Aguardando espaço para acessar a faixa":"Fila para acesso de carga";return false;
             }
             foreach(var space in spaces){
@@ -256,7 +255,10 @@ public sealed partial class CitySimulation
             var departure=Leaving(v);
             if(limit==null){WayOut(v,out _,out var endIndex);limit=new(){Route=v.Route.ToList(),SitePath=v.SitePath.ToList(),EndRouteIndex=endIndex};}
             v.ManoeuvreDock=dock;v.ManoeuvreDeparture=departure;v.MovementAdmission=limit;
-            v.DockCorridor=PhysicalDockWay(v,dock,departure).Select(p=>new MovementPose{Position=p.Position,Heading=p.Heading}).ToList();
+            // A reroute can retain the previous dock identity while the body
+            // waits elsewhere. The newly acquired exit starts at its real pose,
+            // never along a fictitious diagonal from that old dock to Route[0].
+            v.DockCorridor=PhysicalDockWay(v,departure?v.Position:dock,departure).Select(p=>new MovementPose{Position=p.Position,Heading=p.Heading}).ToList();
             v.ManoeuvreSpaces=v.ManoeuvreSpaces.Concat(spaces.Select(s=>s.Id)).Where(id=>v.IntersectionClaim!=id).Distinct().ToList();
         }
         return true;
@@ -279,6 +281,9 @@ public sealed partial class CitySimulation
         if(DockAdmitted(o,dock))way.AddRange(Leaving(o)?WayOut(o,out _):AdmittedEntryWay(o,dock,out _));
         return way;
     }
+    bool ConflictsWithDockWay(Vehicle v,List<(Vehicle Body,Point Position,double Heading)> way)
+        =>State.Vehicles.Any(o=>o.Id!=v.Id&&o.ManoeuvreDock!=null&&
+            OwnedDockWay(o).Any(q=>way.Any(p=>p.Position.Distance(q.Position)<12&&BodiesOverlap(v,p.Position,p.Heading,o,q.Position,q.Heading))));
 
     // Trucks that own a dock corridor overlapping v's dock: a truck admitted into,
     // at or out of a dock whose body pose overlaps v's at its dock.
@@ -287,9 +292,7 @@ public sealed partial class CitySimulation
         List<(Vehicle Body,Point Position,double Heading)>? entering=null;
         foreach(var o in State.Vehicles){
             if(o.Id==v.Id||o.PassengerCar||o.Machine!=PavingMachine.None||o.Status is VehicleStatus.Outside or VehicleStatus.Towed)continue;
-            // The destination may be far away while the first waiting pose is
-            // beside this owner's exit. Dock distance cannot exclude that sweep.
-            var at=o.ManoeuvreDock is {} owned&&(o.ManoeuvreDeparture==true||o.MovementAdmission?.ReachesDock==true)?owned:o.Status is VehicleStatus.Unloading or VehicleStatus.Parked?o.DockPosition:null;if(at is not {} other)continue;
+            var at=o.ManoeuvreDock is {} owned&&(o.ManoeuvreDeparture==true||o.MovementAdmission?.ReachesDock==true)?owned:o.Status is VehicleStatus.Unloading or VehicleStatus.Parked?o.DockPosition:null;if(at is not {} other||other.Distance(dock)>16)continue;
             if(other.Distance(dock)<.1||Penetration(v,dock,v.Heading,o,other,o.Heading)>-.1||Penetration(v,dock,v.Heading,o,o.Position,o.Heading)>-.1){yield return o;continue;}
             // Distinct dock endpoints can share the same physical corridor. A
             // newcomer must wait outside that owner's exit too, instead of
@@ -417,6 +420,10 @@ public sealed partial class CitySimulation
         var ahead=MachinePathAhead(m);
         var needed=SharedNodes().Where(node=>!m.ManoeuvreSpaces.Contains(node.Id)&&ahead.Any(p=>EntersArea(m,p.Position,p.Heading,node))).ToList();
         if(BodyOnWay(m,ahead)!=null)return false;
+        // The next site point may be outside a junction while an admitted
+        // truck's body sweeps through it. Do not enter that corridor first and
+        // only discover the truck's junction claim at the following point.
+        if(m.MachinePhase==MachinePhase.LeavingSite&&ConflictsWithDockWay(m,ahead))return false;
         foreach(var node in needed){
             var area=_junctionAreas.GetValueOrDefault(node.Id);
             if(State.Vehicles.Any(o=>o.Id!=m.Id&&(Holds(o,node.Id)||area!=null&&(o.IntersectionClaim is {} held&&area.Contains(held)&&o.Position.Distance(node.Position)<9||o.ManoeuvreSpaces.Any(area.Contains)))))
@@ -458,8 +465,11 @@ public sealed partial class CitySimulation
         // it (a paver at the curb) would never leave.
         v.ManoeuvreSpaces.RemoveAll(id=>!_roads.TryGetValue(id,out var node)||!EntersArea(v,v.Position,v.Heading,node,CarriagewayHalfWidth)&&!rest.Any(p=>EntersArea(v,p.Position,p.Heading,node)));
         if(v.ManoeuvreDock is {} dock){
-            var atDock=v.Status is VehicleStatus.Unloading or VehicleStatus.Parked&&v.DockPosition is {} parked&&parked.Distance(dock)<.1;
-            var entering=v.Status==VehicleStatus.Travelling&&v.DockPosition is {} goal&&goal.Distance(dock)<.1;
+            var atDock=v.Status is VehicleStatus.Unloading or VehicleStatus.Parked&&v.Position.Distance(dock)<.1;
+            // A destination equal to an old dock is not an active entry. A
+            // rerouted vehicle keeps only physically occupied old possessions,
+            // never an expired departure permission all the way to that target.
+            var entering=v.Status==VehicleStatus.Travelling&&v.ManoeuvreDeparture!=true&&v.DockPosition is {} goal&&goal.Distance(dock)<.1&&DockAdmitted(v,dock);
             // Old saves have no sweep: reconstruct from the retained dock and
             // actual route; never infer clearance from distance to a node.
             if(v.DockCorridor.Count==0)v.DockCorridor=PhysicalDockWay(v,dock,v.ManoeuvreDeparture==true).Select(p=>new MovementPose{Position=p.Position,Heading=p.Heading}).ToList();
