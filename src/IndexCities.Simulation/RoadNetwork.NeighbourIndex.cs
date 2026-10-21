@@ -34,6 +34,13 @@ public sealed partial class CitySimulation
             // Two-cell margin also covers floating-point rounding at boundaries.
             for(var dx=-2;dx<=2;dx++)for(var dz=-2;dz<=2;dz++)
                 if(cells.TryGetValue((centre.X+dx,centre.Z+dz),out var bucket))candidates.AddRange(bucket);
+            // A highly concentrated map makes a spatial index unselective.
+            // Avoid sorting almost the entire city: a direct scan is cheaper.
+            if(candidates.Count>roads.Count/4){
+                var denseNode=roads[i];
+                denseNode.Neighbours=roads.Where(other=>other.Id!=denseNode.Id&&other.Position.Distance(denseNode.Position)<=radius).Select(other=>other.Id).ToList();
+                continue;
+            }
             candidates.Sort(); // preserve the exact pre-existing State.Roads order
             var node=roads[i];
             var neighbours=new List<int>();
