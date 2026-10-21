@@ -140,6 +140,8 @@ public sealed class FixedQuantitiesTests
         // reachable from CityState. New state cannot silently add an accumulator.
         (Type Type,string Names)[] allowed=[
             (typeof(Point),"X,Z"),
+            // A frozen geometric direction of the dock sweep, never accumulated.
+            (typeof(MovementPose),"Heading"),
             (typeof(Building),"Rotation,WaterRatio,ElectricityRatio,WaterDemand,ElectricityDemand,SewageProduced,UntreatedSewage,OperationalCapacity,MaintenanceDueAt,LastCustomerAt"),
             (typeof(RoadNode),"MaintenanceDueAt,ElectricityRatio"),
             (typeof(WorkProject),"Required,WorkSeconds"),

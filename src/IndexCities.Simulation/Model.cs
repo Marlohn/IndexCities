@@ -324,6 +324,12 @@ public sealed class LocalMovementAdmission
     public bool ReachesDock {get;set;}
 }
 
+public sealed class MovementPose
+{
+    public Point Position {get;set;}
+    public double Heading {get;set;}
+}
+
 public sealed class Vehicle
 {
     public int Id {get;set;}
@@ -374,6 +380,8 @@ public sealed class Vehicle
     // dock whose corridor it owns (entering, at or leaving it) and the junctions
     // and bends it holds on the way, until its body has left them.
     public Point? ManoeuvreDock {get;set;}
+    // Physical dock-to-lane sweep, retained even after its route prefix is passed.
+    public List<MovementPose> DockCorridor {get;set;}=[];
     // null in older saves: a return route at the dock is not an admitted exit.
     public bool? ManoeuvreDeparture {get;set;}
     public LocalMovementAdmission? MovementAdmission {get;set;}
