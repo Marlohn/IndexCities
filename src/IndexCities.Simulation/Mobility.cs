@@ -189,11 +189,9 @@ public sealed partial class CitySimulation
     void ReturnExternal(Vehicle v)
     {
         PrepareConstructionSiteDeparture(v);
-        // From a known bay the way back starts at the arrival street's node beside the
-        // body (the access, or the next node for a crew dock set along the curb).
         v.ConstructionAccess=ConstructionTrip(v);
         v.ShipmentId=null;
-        var atKnownBay=v.DockPosition is {} dock&&v.Position.Distance(dock)<.1&&v.Route.Count>0&&v.RouteIndex>=v.Route.Count&&_roads.ContainsKey(v.Route[^1]);var n=atKnownBay?v.Route.Skip(Math.Max(0,v.Route.Count-4)).Where(_roads.ContainsKey).Select(id=>_roads[id]).MinBy(r=>r.Position.Distance(v.Position)):NearestRoad(v.Position);if(n==null||!atKnownBay&&n.Position.Distance(v.Position)>State.Tuning.RoadWidth/2+3){v.Status=VehicleStatus.Waiting;v.Cause="Sem via para voltar ao exterior";return;}
+        var atKnownBay=v.DockPosition is {} dock&&v.Position.Distance(dock)<.1&&v.Route.Count>0&&v.RouteIndex>=v.Route.Count&&_roads.ContainsKey(v.Route[^1]);var n=atKnownBay?_roads[v.Route[^1]]:NearestRoad(v.Position);if(n==null||!atKnownBay&&n.Position.Distance(v.Position)>State.Tuning.RoadWidth/2+3){v.Status=VehicleStatus.Waiting;v.Cause="Sem via para voltar ao exterior";return;}
         var route=FindRoadRoute(n.Id,EntryNode().Id,ConstructionTrip(v));if(route.Count==0){v.Status=VehicleStatus.Waiting;v.Cause="Conexão externa interrompida";return;}
         v.Route=route;v.RouteIndex=0;v.DockPosition=null;v.Status=VehicleStatus.Travelling;v.DestinationBuildingId=null;v.ShipmentId=null;v.Cause="Retorno ao exterior";
     }
@@ -511,8 +509,6 @@ public sealed partial class CitySimulation
     void RedirectCancelled(Vehicle v,Shipment s)
     {
         PrepareConstructionSiteDeparture(v);
-        // From a known bay the way back starts at the arrival street's node beside the
-        // body (the access, or the next node for a crew dock set along the curb).
         if(!s.PickedUp){s.Complete=true;v.Cargo.Clear();v.CrewAboard=false;ReturnExternal(v);return;}
         // A crew-only trip has no paid cargo to store or redirect. Keep the real
         // crew aboard its truck and send it home by the remaining road network.
@@ -558,9 +554,6 @@ public sealed partial class CitySimulation
         var dock=road.Position+side*(State.Tuning.RoadWidth/2+1.5)+(crew?new Point(side.Z,-side.X)*8.5:default);
         if(!crew)return dock;
         var along=new Point(side.Z,-side.X);var heading=Math.Atan2(along.X,along.Z);
-        // Clear of the material docks of this and the other works still receiving material.
-        var truck=new Vehicle();var materials=State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress&&p.Required.Any(k=>p.Delivered.GetValueOrDefault(k.Key)+.001<k.Value)).Select(WorkAccess).OfType<RoadNode>().Where(a=>a.Position.Distance(road.Position)<30)
-            .Select(a=>DockAt(a,null,false)).Append(DockAt(road,building,false)).ToList();
         // Same curb and local access, nearest compatible position first. This
         // uses lot geometry, never SpotFree or the cars' choice of parking.
         for(var shift=0.0;shift<=State.Tuning.RoadWidth*2;shift+=.5)foreach(var sign in shift==0?new[]{1}:new[]{1,-1}){
@@ -570,7 +563,7 @@ public sealed partial class CitySimulation
             // Its centre stays at or beyond that carriageway's outer edge.
             for(var inset=0.0;State.Tuning.RoadWidth/2+1.5-inset>=CarriagewayHalfWidth;inset+=.25){
                 var candidate=dock+along*(shift*sign)-side*inset;
-                if(CrewDockClear(candidate,heading,road)&&materials.All(m=>!BodiesOverlap(truck,candidate,heading,truck,m,heading)))return candidate;
+                if(CrewDockClear(candidate,heading,road))return candidate;
             }
         }
         // No compatible location: keep the requested access as an intention.
