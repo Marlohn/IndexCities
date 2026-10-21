@@ -64,7 +64,8 @@ public sealed partial class CitySimulation
     // when its body lies across v's lane; null otherwise.
     double? BodyAcrossLane(Vehicle v,Vehicle o)
     {
-        if(o.PassengerCar||o.Machine!=PavingMachine.None||o.Position.Distance(v.Position)>20)return null;
+        // Trucks still stacked at the exterior staging origin have not entered yet.
+        if(o.PassengerCar||o.Machine!=PavingMachine.None||o.Position.Distance(v.Position)>20||AtGateway(o)&&AtGateway(v))return null;
         var docked=o.Status is VehicleStatus.Unloading or VehicleStatus.Parked&&o.DockPosition is {} at&&at.Distance(o.Position)<.1||LeavesDock(o)&&!OnCarriageway(o)||OnSitePath(o);
         if(!docked)return null;
         var relative=o.Position-v.Position;var forward=relative.X*Math.Sin(v.Heading)+relative.Z*Math.Cos(v.Heading);if(forward<=0)return null;
