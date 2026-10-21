@@ -8,6 +8,17 @@
 >
 > A autoridade de produto continua sendo `docs/SPEC.md`. Este documento concentra pesquisa, alternativas, referências e hipóteses sobre interface e ferramentas do jogador. Quando uma decisão fecha, o resultado oficial deve ser promovido para `docs/SPEC.md`; este arquivo preserva o raciocínio e o material ainda em formação.
 
+## Mover e Demolir — implementação parcial de 2026-10-17
+
+> Pesquisa e relato técnico da IA, não fonte de verdade. A decisão humana vigente está em [construção](../spec/construcao.md#demolição) e [mudança municipal](../spec/construcao.md#mudança-de-prédios-municipais-concluídos).
+
+O responsável aprovou Prefeitura pronta somente com Mover sede, demais municipais com Mover/Demolir e privados com demolição indenizada, adiando a realocação privada para reavaliação. Exigiu clareza das consequências antes da confirmação. Os pacotes simples usam GLM-5.3 Flash Free e DeepSeek V4.1 Flash Free; o responsável escolheu Claude para o trabalho complexo e depois autorizou GPT para continuar após os limites, conforme o AGENTS e a orientação mais recente.
+
+**Estado atualizado em 2026-10-18:** a integração local já executa Mover municipal e Demolir prédios pela interface. A Prefeitura concluída oferece somente Mover sede. A prévia separa construção, remoção, frete e indenização, identifica beneficiários e explica as consequências pertinentes. Mover passou pela revisão independente GPT-6-Astra sobre `b94a089` e inspeção da integração `aa6ce4f`; o coordenador executou os dois cenários Godot reais. Isso supera o estado anterior de consultas sem execução.
+
+**Correções posteriores de Demolir:** `0e12cb2` integra a preservação da compra paga ainda na fazenda e a checagem corporal de todo o percurso até a baia segura. Na raiz combinada com Mover, passaram 77 testes próximos e o Godot real registrou reserva/retomada sem segunda cobrança, zero sobreposições em 6000 amostras e desembarque após estacionamento. As capturas da prévia e da baia foram inspecionadas pelo coordenador. Evidências: `artifacts/verification/move-demolir-integrated/guards-*` e relatório do autor em `demolition-guards/report.md`.
+
+**Limites atuais:** os novos patches receberam parecer independente GPT-6-Astra apto, com 77 testes próximos e duas sondas adicionais sobre o archive exato. A suíte completa da integração passou 319/319. A correção de trânsito do save ainda é uma frente separada, com impasse reproduzido. Não há validação humana global concluída. A prioridade de compra das famílias deslocadas e as regras de carga já foram decididas e estão na SPEC; não aguardam nova resposta. Os relatos antigos de testes de consulta não comprovam esses ciclos completos. O executor manual que não suporta `MemberData` também não conta como suíte completa aprovada.
 ## Recuperação isolada do construtor de ruas — 2026-10-15
 
 > **Revisão humana desta seção: PENDENTE.** Diagnóstico e síntese da IA. Os objetivos pedidos pelo responsável estão na SPEC; a experiência desta primeira intervenção ainda precisa de avaliação humana.

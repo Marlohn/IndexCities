@@ -27,11 +27,22 @@ public sealed class WalkRouteCacheTests
     {
         var sim=CityCycleTests.City();
         for(var i=0;i<1800;i++)sim.Advance(2);
-        var (stored,stale)=StoredWalks(sim);Assert.True(stored>0);Assert.Equal(0,stale);
         // Changes from outside the simulation code move no epoch: paint removed,
         // streets worn out and a lot dropped directly in the state.
         var crossings=sim.State.Roads.Where(r=>r.Crosswalk).ToList();var worn=sim.State.Roads.Where(r=>!r.Highway).Take(20).ToList();
         var lot=sim.State.Buildings.First(b=>b.Kind==BuildingKind.House);
+        // Which walks are stored depends on the city's traffic at that moment: go on (at
+        // most another hour) until these edits would change one, tried and undone in place.
+        bool EditsChangeAStoredWalk()
+        {
+            var ratios=worn.Select(r=>r.MaintenanceRatio).ToList();
+            foreach(var crossing in crossings)crossing.Crosswalk=false;foreach(var road in worn)road.MaintenanceRatio=0;lot.Removed=true;
+            var changed=StoredWalks(sim).Stale>0;
+            foreach(var crossing in crossings)crossing.Crosswalk=true;for(var k=0;k<worn.Count;k++)worn[k].MaintenanceRatio=ratios[k];lot.Removed=false;
+            return changed;
+        }
+        for(var i=0;i<1800&&!EditsChangeAStoredWalk();i++)sim.Advance(2);
+        var (stored,stale)=StoredWalks(sim);Assert.True(stored>0);Assert.Equal(0,stale);
         foreach(var crossing in crossings)crossing.Crosswalk=false;
         foreach(var road in worn)road.MaintenanceRatio=0;
         lot.Removed=true;

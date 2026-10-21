@@ -46,7 +46,7 @@ public sealed partial class CitySimulation
         foreach(var machine in new[]{paver,roller}){
             machine.Fuel=State.Tuning.FuelTank;machine.MachineProjectId=p.Id;machine.MachinePhase=MachinePhase.ToSite;
             machine.CrewAboard=true;machine.CrewCount=1;machine.Route=route.ToList();machine.RouteIndex=0;
-            var bay=PavingBay(access,machine.Machine);machine.Route=FindRoadRoute(EntryNode().Id,bay.Road.Id,true);machine.DockPosition=bay.Position;machine.Status=VehicleStatus.Travelling;
+            var bay=PavingBay(access,machine.Machine,p);machine.Route=FindRoadRoute(EntryNode().Id,bay.Road.Id,true);machine.DockPosition=bay.Position;machine.Status=VehicleStatus.Travelling;
             machine.FeedingReady=false;machine.SitePath=[];machine.SitePathIndex=0;machine.WorkTarget=null;machine.Cause="Equipe e máquina a caminho da obra "+p.Id;
         }
         p.PaverId=paver.Id;p.RollerId=roller.Id;p.Cause=WorkCause.PavingMachinesInTransit;
@@ -131,7 +131,9 @@ public sealed partial class CitySimulation
         var done=machine.Machine==PavingMachine.Paver?p.AppliedRoadPoints:p.RolledRoadPoints;
         if(done.Count>=p.RoadPoints.Count)return;
         if(machine.WorkTarget==null){
-            if(done.Count==0&&State.Vehicles.Any(v=>v.Machine==PavingMachine.None&&v.Status is VehicleStatus.Travelling or VehicleStatus.Unloading&&v.Position.Distance(machine.Position)<25)){p.Cause=WorkCause.PavingSiteOccupied;return;}
+            // Not one stopped by this machine's own body, nor the queue held behind it:
+            // they pass only once the machine moves.
+            if(done.Count==0&&State.Vehicles.Any(v=>v.Machine==PavingMachine.None&&v.Status is VehicleStatus.Travelling or VehicleStatus.Unloading&&v.Position.Distance(machine.Position)<25&&!HeldByBody(v,machine))){p.Cause=WorkCause.PavingSiteOccupied;return;}
             foreach(var target in p.RoadPoints.Where(point=>!done.Contains(point)&&(machine.Machine==PavingMachine.Paver||p.AppliedRoadPoints.Contains(point))).OrderBy(point=>point.Distance(machine.Position))){
                 var route=PavingApproachRoute(p,machine.Position,target);if(route.Count==0)continue;
                 machine.SitePath=route;machine.SitePathIndex=0;machine.WorkTarget=target;break;
@@ -150,7 +152,7 @@ public sealed partial class CitySimulation
             var due=Money(p.CrewCostDue+(executing?(decimal)(travel/speed/3600)*hourly:0));
             if(due>p.BudgetRemaining){p.Cause=WorkCause.NoBudgetForPaving;machine.Cause=p.Cause;break;}
             if(machine.Fuel<travel*State.Tuning.FuelPerMetre){p.Cause=WorkCause.PavingOutOfFuel;machine.Cause=p.Cause;break;}
-            var previousHeading=machine.Heading;machine.Heading=Math.Atan2(delta.X,delta.Z);travel=SafeSiteTravel(machine,target,travel);
+            var previousHeading=machine.Heading;machine.Heading=Math.Atan2(delta.X,delta.Z);travel=MachineMayEnter(machine)?SafeSiteTravel(machine,target,travel):0;
             if(travel<=.000001){machine.Heading=previousHeading;p.Cause=WorkCause.PavingSiteOccupied;machine.Cause=p.Cause;break;}
             machine.Position=machine.Position.MoveTowards(target,travel);remaining-=travel/speed;
             machine.AddFuel(-(travel*State.Tuning.FuelPerMetre));machine.AddFuelBurnedLastStep(travel*State.Tuning.FuelPerMetre);
@@ -174,7 +176,7 @@ public sealed partial class CitySimulation
         if(project.Status is WorkStatus.Completed or WorkStatus.Cancelled){machine.MachinePhase=MachinePhase.Returning;ReturnExternal(machine);return;}
         if(start==null||access==null||start.Position.Distance(machine.Position)>State.Tuning.RoadWidth/2+3)return;
         var route=FindRoadRoute(start.Id,access.Id,true);if(route.Count==0)return;
-        var bay=PavingBay(access,machine.Machine);var toBay=FindRoadRoute(start.Id,bay.Road.Id,true);if(toBay.Count==0)return;
+        var bay=PavingBay(access,machine.Machine,project);var toBay=FindRoadRoute(start.Id,bay.Road.Id,true);if(toBay.Count==0)return;
         machine.Route=toBay;machine.RouteIndex=0;machine.DockPosition=bay.Position;machine.Status=VehicleStatus.Travelling;
     }
 

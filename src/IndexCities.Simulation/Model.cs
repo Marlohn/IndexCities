@@ -80,6 +80,8 @@ public sealed class SimulationTuning
     public decimal HourlySalary {get;set;}=2.5m;
     public decimal ExternalCrewHourlyPrice {get;set;}=180;
     public decimal RoadDemolitionCostPerSquareMetre {get;set;}=1.5m;
+    // Short assisted vacating of an occupied residence ordered demolished (SPEC construcao: calibration).
+    public double AssistedVacatingDays {get;set;}=1;
     public decimal FreightBase {get;set;}=24;
     public decimal FreightPerMetre {get;set;}=.06m;
     public decimal TruckPrice {get;set;}=3500;
@@ -172,11 +174,26 @@ public sealed class Building
     public void AddFoodSoldToday(double delta)=>FoodSoldTodayUnits=FixedPoint.Add(FoodSoldTodayUnits,delta,FixedPoint.ResourceScale);
     public long FoodDemandEstimateUnits {get;set;}
     [JsonIgnore] public double FoodDemandEstimate {get=>FixedPoint.Value(FoodDemandEstimateUnits,FixedPoint.ResourceScale);set=>FoodDemandEstimateUnits=FixedPoint.Quantize(value,FixedPoint.ResourceScale);}
+    [JsonIgnore(Condition=JsonIgnoreCondition.WhenWritingNull)]
+    public BuildingDemolitionOrder? Demolition {get;set;}
     [JsonIgnore] public BuildingDefinition Definition=>Catalog.Definitions[Kind];
     [JsonIgnore] public Point Door=>Position+new Point(-Math.Sin(Rotation)*Definition.Depth/2,-Math.Cos(Rotation)*Definition.Depth/2);
     public double Quantity(ResourceKind k)=>Stock.GetValueOrDefault(k);
     public void AddStock(ResourceKind k,double amount)=>Stock.Units[k]=Math.Max(0,FixedPoint.Add(Stock.Units.GetValueOrDefault(k),amount,FixedPoint.ResourceScale));
     public void AddStockUnits(ResourceKind k,long units)=>Stock.Units[k]=Math.Max(0,checked(Stock.Units.GetValueOrDefault(k)+units));
+}
+// A confirmed demolition: removal cost and indemnity were paid once at
+// confirmation; the structure stays only while its residents vacate.
+public sealed class BuildingDemolitionOrder
+{
+    public DateTime OrderedAt {get;set;}
+    public double DeadlineSeconds {get;set;}
+    public decimal RemovalCostPaid {get;set;}
+    public decimal CompensationPaid {get;set;}
+    public string? Beneficiary {get;set;}
+    public string BeneficiaryName {get;set;}="";
+    public int FamiliesAtOrder {get;set;}
+    public int FamiliesRelocated {get;set;}
 }
 public sealed class RoadNode
 {
@@ -297,6 +314,22 @@ public sealed class Company
     public string Decision {get;set;}="";
     [JsonIgnore] public string Account=>"company:"+Id;
 }
+// A local permission, not a shortened physical route. Snapshots identify the
+// actual path; a reroute cannot reuse the same numeric endpoint accidentally.
+public sealed class LocalMovementAdmission
+{
+    public List<int> Route {get;set;}=[];
+    public List<Point> SitePath {get;set;}=[];
+    public int EndRouteIndex {get;set;}
+    public bool ReachesDock {get;set;}
+}
+
+public sealed class MovementPose
+{
+    public Point Position {get;set;}
+    public double Heading {get;set;}
+}
+
 public sealed class Vehicle
 {
     public int Id {get;set;}
@@ -343,6 +376,16 @@ public sealed class Vehicle
     public double WaitingSince {get;set;}
     public int? IntersectionClaim {get;set;}
     public double? IntersectionEnteredAt {get;set;}
+    // ARCHITECTURE "Espaços compartilhados": an admitted local manoeuvre — the
+    // dock whose corridor it owns (entering, at or leaving it) and the junctions
+    // and bends it holds on the way, until its body has left them.
+    public Point? ManoeuvreDock {get;set;}
+    // Physical dock-to-lane sweep, retained even after its route prefix is passed.
+    public List<MovementPose> DockCorridor {get;set;}=[];
+    // null in older saves: a return route at the dock is not an admitted exit.
+    public bool? ManoeuvreDeparture {get;set;}
+    public LocalMovementAdmission? MovementAdmission {get;set;}
+    public List<int> ManoeuvreSpaces {get;set;}=[];
     public bool CrewAboard {get;set;}
     public int CrewCount {get;set;}
     public bool PassengerCar {get;set;}
@@ -409,6 +452,37 @@ public sealed class Shipment
     public ResourceStock Cargo {get;set;}=new();
     public decimal PricePaid {get;set;}
     public Point Destination {get;set;}
+}
+public enum MunicipalRelocationStage { Constructing, Transferring, Completed, Cancelled }
+// Registro mínimo de uma mudança de prédio municipal concluído: liga a
+// estrutura antiga à obra substituta e guarda os compromissos ainda não pagos
+// (retirada e frete do estoque), que entram em Committed até serem pagos ou
+// liberados. Dinheiro, estoque e pessoas continuam nos seus lugares reais.
+public sealed class MunicipalRelocationOrder
+{
+    public int Id {get;set;}
+    public BuildingKind Kind {get;set;}
+    public int SourceBuildingId {get;set;}
+    public int TargetBuildingId {get;set;}
+    public int TargetProjectId {get;set;}
+    public MunicipalRelocationStage Stage {get;set;}
+    public DateTime OrderedAt {get;set;}
+    public DateTime? FinishedAt {get;set;}
+    public decimal RemovalReserved {get;set;}
+    public decimal TransferReserved {get;set;}
+    public decimal RemovalPaid {get;set;}
+    public decimal TransferPaid {get;set;}
+    public long StockRecoveryBlockedSecondsUnits {get;set;}
+    [JsonIgnore] public double StockRecoveryBlockedSeconds {get=>FixedPoint.Value(StockRecoveryBlockedSecondsUnits,FixedPoint.TimeScale);set=>StockRecoveryBlockedSecondsUnits=FixedPoint.Quantize(value,FixedPoint.TimeScale);}
+    public void AddStockRecoveryBlockedSeconds(double delta)=>StockRecoveryBlockedSecondsUnits=FixedPoint.Add(StockRecoveryBlockedSecondsUnits,delta,FixedPoint.TimeScale);
+    public long LastRecoveryStockUnits {get;set;}=-FixedPoint.ResourceScale;
+    [JsonIgnore] public double LastRecoveryStock {get=>FixedPoint.Value(LastRecoveryStockUnits,FixedPoint.ResourceScale);set=>LastRecoveryStockUnits=FixedPoint.Quantize(value,FixedPoint.ResourceScale);}
+    public List<int> TransferShipmentIds {get;set;}=[];
+    public ResourceStock StockLost {get;set;}=new();
+    public int WorkersContinued {get;set;}
+    public int WorkersLeft {get;set;}
+    public string Cause {get;set;}="";
+    [JsonIgnore] public bool Active=>Stage is MunicipalRelocationStage.Constructing or MunicipalRelocationStage.Transferring;
 }
 public sealed record PersonalEvent(DateTime At,string Description);
 public sealed record MoneyMovement(DateTime At,string From,string To,decimal Amount,string Category,string Reason,int? EntityId);
@@ -495,6 +569,7 @@ public sealed class CityState
     public List<Vehicle> Vehicles {get;set;}=[];
     public bool PavingFleetInitialized {get;set;}
     public List<Shipment> Shipments {get;set;}=[];
+    public List<MunicipalRelocationOrder> MunicipalRelocations {get;set;}=[];
     public List<ExternalFamilyCandidate> FamilyCandidates {get;set;}=[];
     public List<ExternalCompanyCandidate> CompanyCandidates {get;set;}=[];
     public ResourceStock OutsideStock {get;set;}=new();

@@ -56,8 +56,19 @@ public partial class Main
             var work=_sim.State.Projects.Single(p=>p.Id==road.Id);
             _world.Reset(_sim.State);BuildCatalog();
             await Shot("corner-ordered",new(-170,70),110);
-            Vehicle? waiting=null;Point waitedAt=default;var followed=false;
+            Vehicle? waiting=null;Point waitedAt=default;var followed=false;var followerPlaced=false;
             for(var step=0;step<3600&&!(work.Status==WorkStatus.Completed&&_sim.State.Buildings.Single(b=>b.Id==house.Id).Completed);step++){
+                // Fixture: an empty construction truck returning behind the
+                // roller on the work's lane. Ordinary traffic cannot use it.
+                var leaving=_sim.State.Vehicles.FirstOrDefault(v=>v.Id==work.RollerId);
+                if(!followerPlaced&&leaving is {MachinePhase:MachinePhase.LeavingSite}&&leaving.Position.Z is >100 and <120&&Math.Abs(leaving.Position.X+193.65)<1){
+                    var from=_sim.State.Roads.Single(r=>r.Position==new Point(-192,120));
+                    var home=_sim.State.Roads.MinBy(r=>r.Position.Distance(_sim.State.Entry))!;
+                    _sim.State.Vehicles.Add(new(){Id=_sim.State.NextId++,Body=TruckBody.Flatbed,External=true,ConstructionAccess=true,OwnerAccount="global",Fuel=40,
+                        Status=VehicleStatus.Travelling,Position=new(-193.65,leaving.Position.Z+5.9),Heading=Math.PI,
+                        Route=_sim.FindRoadRoute(from.Id,home.Id,true),RouteIndex=1,Cause="Retorno de caminhão de obra"});
+                    followerPlaced=true;
+                }
                 var before=_sim.State.Vehicles.Where(v=>v.Machine!=PavingMachine.None&&v.MachinePhase==MachinePhase.LeavingSite).ToDictionary(v=>v.Id,v=>(v.Position,v.Heading));
                 _sim.Advance(2);
                 var t=_sim.State.ElapsedSeconds;

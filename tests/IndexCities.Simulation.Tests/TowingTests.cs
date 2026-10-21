@@ -111,7 +111,8 @@ public sealed class TowingTests
         // Returning to the exterior: westbound lane (z=+1.65), the station behind it.
         var west=sim.State.Roads.Where(r=>r.Position.Z==0&&r.Position.X<=40).OrderByDescending(r=>r.Position.X).Select(r=>r.Id).ToList();
         truck.Position=new(20,1.65);truck.Heading=-Math.PI/2;truck.Fuel=0;truck.Status=VehicleStatus.Travelling;truck.Route=west;truck.RouteIndex=6;
-        var follower=new Vehicle{Id=sim.State.NextId++,OwnerAccount="global",PassengerCar=true,External=true,Position=new(60,1.65),Heading=-Math.PI/2,Fuel=40,Status=VehicleStatus.Travelling,Route=sim.State.Roads.Where(r=>r.Position.Z==0&&r.Position.X>=-64&&r.Position.X<=64).OrderByDescending(r=>r.Position.X).Select(r=>r.Id).ToList(),RouteIndex=1};
+        // The follower drives on to the exterior: a route ending on the carriageway would leave it parked in the lane.
+        var follower=new Vehicle{Id=sim.State.NextId++,OwnerAccount="global",PassengerCar=true,External=true,Position=new(60,1.65),Heading=-Math.PI/2,Fuel=40,Status=VehicleStatus.Travelling,Route=sim.State.Roads.Where(r=>r.Position.Z==0&&r.Position.X<=64).OrderByDescending(r=>r.Position.X).Select(r=>r.Id).ToList(),RouteIndex=1};
         var sawTrail=false;
         for(var t=0;t<1800;t+=2){
             sim.Advance(2);var tow=sim.State.Vehicles.FirstOrDefault(v=>v.Body==TruckBody.TowHeavy);

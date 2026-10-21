@@ -8,6 +8,16 @@
 >
 > Concentra a evolução do modelo de construção física, materiais, estoques, importação/exportação, reservas, execução de obras e logística. Alternativas superadas permanecem identificadas para preservar por que o modelo atual foi escolhido.
 
+## Veículos travados na Cidade do Marlohn — 2026-10-17
+
+> Diagnóstico e relato técnico da IA, não fonte de verdade. Regras vigentes: [pavimentação](../spec/construcao.md#pavimentação-física-das-ruas) e [circulação](../spec/transporte-circulacao.md).
+
+Uma cópia isolada do save reproduziu cinco veículos imóveis por uma hora simulada. Confirmado por chamadas ao método real de colisão: o giro instantâneo do caminhão V18 na curva sobrepõe a pavimentadora V27; o basculante V19 espera V18 no caminho de canteiro e leva o Asfalto que V27 aguarda. V20 sofre a fila. Não foi reconstruído todo o histórico que levou à pose inicial da pavimentadora.
+
+A correção de Claude Opus 5.5 (`008f75f`, integrada localmente como `0ce1a78`) recupera a mesma cópia sem editar posições, carga ou saldo: remessa121 entregue em32s, P86 concluída em596s, dinheiro e combustível conservados e nenhuma sobreposição nas450 amostras fora do staging exterior. Corrigiu também as regressões da tentativa WIP `c263933`:55/55 testes próximos e261/261 da suíte completa passaram. O coordenador repetiu o cenário Godot renderizado sobre o commit limpo: cinco veículos recuperados e20 obras concluídas em seis horas simuladas. O save original não foi alterado e o Desktop ainda não recebeu esse reparo.
+
+A revisão independente inicial foi de Claude Haiku 5.5, pois DeepSeek não executou por chave OpenCode expirada. A sobreposição **preexistente** durante descarga ganhou ajuste separado `3938305`, de autoria Haiku e revisão Opus:36/36 testes próximos passaram, com descarga e retomada reais. Porém a verificação posterior em passos de0,2/0,5s confirmou **contatos novos da série de destravamento nos primeiros3,4s do raw intacto**, ausentes na base e invisíveis na amostragem anterior de2s. A entrega da série está bloqueada até corrigir esses contatos sem recriar o impasse; o aceite do pequeno patch de descarga não é aceite do conjunto. Um contato de saída da baia no cenário modificado foi reproduzido também antes do patch e separado dessa regressão. Não há medição de desempenho em cidade grande nem validação desse save com população, que é zero. Evidências locais atuais: `artifacts/verification/cidade-marlohn-fix-resumed/`, `unloading-body-fix/` e `unloading-independent-review/report.md`; a falha histórica do WIP está preservada em `cidade-marlohn-fix/report.md`. Não transformar esta pesquisa em autorização de mecânica nova.
+
 ## Caminhão de obra cancelada — revisão 6B aprovada (2026-10-11)
 
 > **Revisão humana: PARCIALMENTE REVISADO.** O responsável escolheu 6B para resolver a antiga pergunta 27 reaberta; logística fina e tratamento quando não existir destino acessível ainda requerem calibração.

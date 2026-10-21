@@ -2,12 +2,24 @@ namespace IndexCities.Simulation;
 
 public sealed partial class CitySimulation
 {
-    (RoadNode Road,Point Position) PavingBay(RoadNode access,PavingMachine kind)
+    (RoadNode Road,Point Position) PavingBay(RoadNode access,PavingMachine kind,WorkProject? work=null)
     {
         var route=FindRoadRoute(EntryNode().Id,access.Id,true);
         var index=Math.Max(1,route.Count-1-(kind==PavingMachine.Paver?4:7));index=Math.Min(index,route.Count-1);
-        for(var i=index;i>=0;i--){var road=_roads[route[i]];var dock=DockAt(road,null,false);if(kind==PavingMachine.Roller)dock=road.Position*2-dock;
+        foreach(var i in Enumerable.Range(0,route.Count).OrderBy(i=>Math.Abs(i-index)).ThenBy(i=>i)){var road=_roads[route[i]];var dock=DockAt(road,null,false);if(kind==PavingMachine.Roller)dock=road.Position*2-dock;
             var axis=i>0?road.Position-_roads[route[i-1]].Position:new Point(1,0);
+            // Feeding happens in front of the paver, facing back along its
+            // approach. A paver clear of a corner is insufficient if its real
+            // full-size feeder would stand across the crossing carriageway.
+            var feeder=dock-axis*(6.6/Math.Max(.001,axis.Distance(default)));
+            if(kind==PavingMachine.Paver&&BayBodyBlocksRoad(feeder,Math.Abs(axis.X)>.01,3.6,1.45))continue;
+            // Nor on the street being built (both machines drive over its points),
+            // nor where trucks turning at a nearby junction sweep.
+            if(InTurnSweep(new Vehicle{Machine=kind},dock,Math.Abs(axis.X)>.01?Math.PI/2:0))continue;
+            if(work!=null&&WorkRoadBlocksBay(work,dock,Math.Abs(axis.X)>.01))continue;
+            // Nor on the dock of another work still receiving material: the machine would wait in the lane
+            // inside the way out of the truck unloading there.
+            if(State.Projects.Any(p=>p.Id!=work?.Id&&p.Status is WorkStatus.Waiting or WorkStatus.InProgress&&p.Required.Any(k=>p.Delivered.GetValueOrDefault(k.Key)+.001<k.Value)&&WorkAccess(p) is {} other&&DockAt(other,BuildingById(p.BuildingId),false).Distance(dock)<=7))continue;
             if(!MachineBayBlocksRoad(dock,Math.Abs(axis.X)>.01)&&State.Buildings.All(b=>b.Removed||!Inside(b,dock,2.5))&&State.Vehicles.All(v=>v.Status==VehicleStatus.Outside||v.DockPosition is not {} occupied||occupied.Distance(dock)>7))return(road,dock);
         }
         // Exterior staging origin already exists in the road model. Equipment
@@ -15,11 +27,43 @@ public sealed partial class CitySimulation
         var entry=EntryNode();return(entry,entry.Position+new Point(0,kind==PavingMachine.Paver?6.75:-6.75));
     }
 
-    bool MachineBayBlocksRoad(Point bay,bool horizontalMachine)
+    // The poses a full-size truck sweeps through each way across a shared node,
+    // as the lane model drives it (the same turns the stop lines keep clear of).
+    readonly Dictionary<int,List<(Vehicle Body,Point Position,double Heading)>> _turnSweeps=[];int _turnSweepsEpoch=-1;
+    List<(Vehicle Body,Point Position,double Heading)> TurnSweep(RoadNode junction)
     {
-        var halfX=horizontalMachine?2.31:1.27;var halfZ=horizontalMachine?1.27:2.31;
+        if(_turnSweepsEpoch!=_roadEpoch){_turnSweeps.Clear();_turnSweepsEpoch=_roadEpoch;}
+        if(_turnSweeps.TryGetValue(junction.Id,out var cached))return cached;
+        var poses=new List<(Vehicle Body,Point Position,double Heading)>();var truck=new Vehicle();
+        foreach(var fromId in junction.Neighbours)foreach(var toId in junction.Neighbours.Where(id=>id!=fromId)){
+            if(!_roads.TryGetValue(fromId,out var from)||!_roads.TryGetValue(toId,out var to))continue;
+            var direction=junction.Position-from.Position;var metres=direction.Distance(default);if(metres<=.01)continue;
+            var start=from.Position+new Point(direction.Z/metres,-direction.X/metres)*1.65;var route=new List<int>{fromId,junction.Id,toId};
+            var continuation=to.Neighbours.FirstOrDefault(id=>id!=junction.Id);if(continuation!=0)route.Add(continuation);
+            CrossingPoses(poses,truck,route,1,start,Math.Atan2(direction.X,direction.Z),junction);
+        }
+        return _turnSweeps[junction.Id]=poses;
+    }
+    bool InTurnSweep(Vehicle body,Point at,double heading)=>SharedNodes().Where(n=>n.Position.Distance(at)<20)
+        .Any(n=>TurnSweep(n).Any(p=>p.Position.Distance(at)<12&&BodiesOverlap(body,at,heading,p.Body,p.Position,p.Heading)));
+
+    // A machine bay overlapping the carriageway of a point of the work's own new
+    // street (its orientation is not known yet, so on both axes).
+    bool WorkRoadBlocksBay(WorkProject work,Point bay,bool horizontalMachine)
+    {
+        var halfX=horizontalMachine?2.31:1.27;var halfZ=horizontalMachine?1.27:2.31;var lane=State.Tuning.RoadWidth*(6.5/10.5)/2;
+        return work.RoadPoints.Any(point=>Math.Abs(bay.X-point.X)<halfX+lane+.2&&Math.Abs(bay.Z-point.Z)<halfZ+lane+.2);
+    }
+
+    bool MachineBayBlocksRoad(Point bay,bool horizontalMachine)
+        =>BayBodyBlocksRoad(bay,horizontalMachine,2.31,1.27);
+
+    bool BayBodyBlocksRoad(Point bay,bool horizontalMachine,double halfLength,double halfWidth,Func<RoadNode,bool>? exempt=null)
+    {
+        var halfX=horizontalMachine?halfLength:halfWidth;var halfZ=horizontalMachine?halfWidth:halfLength;
         var lane=State.Tuning.RoadWidth*(6.5/10.5)/2;var step=State.Tuning.RoadStep/2;
         foreach(var road in State.Roads){
+            if(exempt?.Invoke(road)==true)continue;
             var horizontal=road.Highway||road.Neighbours.Any(id=>Math.Abs(_roads[id].Position.X-road.Position.X)>.01);
             var vertical=road.Neighbours.Any(id=>Math.Abs(_roads[id].Position.Z-road.Position.Z)>.01);
             var roadX=vertical?lane:step;var roadZ=horizontal?lane:step;
@@ -61,6 +105,7 @@ public sealed partial class CitySimulation
 
     bool MoveConstructionSitePath(Vehicle vehicle,ref double remaining,double speed)
     {
+        if(vehicle.Machine==PavingMachine.None&&YieldAsphaltApproach(vehicle,ref remaining,speed))return false;
         while(remaining>.000001&&vehicle.SitePathIndex<vehicle.SitePath.Count){
             var target=vehicle.SitePath[vehicle.SitePathIndex];var delta=target-vehicle.Position;var distance=delta.Distance(default);
             var travel=Math.Min(distance,Math.Min(speed*remaining,vehicle.Fuel/State.Tuning.FuelPerMetre));
@@ -69,7 +114,7 @@ public sealed partial class CitySimulation
             // next point is untested occupancy and can lock an adjacent vehicle.
             var previousHeading=vehicle.Heading;
             if(distance>.001)vehicle.Heading=vehicle.SiteDockHeading is {} heading&&vehicle.SitePathIndex==vehicle.SitePath.Count-1?heading:Math.Atan2(delta.X,delta.Z);
-            travel=SafeSiteTravel(vehicle,target,travel);
+            travel=vehicle.Machine!=PavingMachine.None&&!MachineMayEnter(vehicle)?0:SafeSiteTravel(vehicle,target,travel);
             if(travel<=.000001&&distance>.001){vehicle.Heading=previousHeading;vehicle.Cause=WorkCause.PavingSiteOccupied;return false;}
             vehicle.Position=vehicle.Position.MoveTowards(target,travel);vehicle.AddFuel(-(travel*State.Tuning.FuelPerMetre));vehicle.FuelUnits=Math.Max(0,vehicle.FuelUnits);vehicle.AddFuelBurnedLastStep(travel*State.Tuning.FuelPerMetre);remaining-=travel/speed;
             if(travel>=distance-.000001)vehicle.SitePathIndex++;else return false;
@@ -87,47 +132,52 @@ public sealed partial class CitySimulation
         // Only a paving machine has reserved poses (MachineReservation is empty otherwise).
         var reserved=vehicle.Machine!=PavingMachine.None?[]:State.Vehicles.Where(m=>m.Id!=vehicle.Id&&m.Machine!=PavingMachine.None).Select(MachineReservation)
             .SelectMany(poses=>poses).Where(pose=>pose.Position.Distance(vehicle.Position)<=distance+12).ToList();
+        // Lane traffic also respects an asphalt truck on its site path (see
+        // Construction.ApproachYield).
+        if(machinesOnly)reserved.AddRange(State.Vehicles.Where(t=>t.Id!=vehicle.Id&&OnSitePath(t)&&t.Position.Distance(vehicle.Position)<=distance+40)
+            .SelectMany(SiteTruckReservation).Where(pose=>pose.Position.Distance(vehicle.Position)<=distance+12));
+        // And an admitted way into or out of a bay (Mobility.SharedSpace).
+        if(machinesOnly)reserved.AddRange(State.Vehicles.Where(t=>t.Id!=vehicle.Id&&t.ManoeuvreDock!=null&&!OnSitePath(t)&&t.Position.Distance(vehicle.Position)<=distance+40)
+            .SelectMany(AdmittedManoeuvre).Where(pose=>pose.Position.Distance(vehicle.Position)<=distance+12));
+        // An asphalt truck on its site path or unloading at the paver bay keeps
+        // its present body there (see Construction.ApproachYield). Trucks still
+        // stacked together at the exterior staging origin have not entered yet.
+        if(machinesOnly)reserved.AddRange(State.Vehicles.Where(t=>t.Id!=vehicle.Id&&(OnAsphaltApproach(t)||UnloadingAsphaltBody(t))&&t.Position.Distance(vehicle.Position)<=distance+12&&
+                !(t.Position.Distance(State.Entry)<8&&vehicle.Position.Distance(State.Entry)<8))
+            .Select(t=>(t,t.Position,t.Heading)));
         if(machinesOnly&&reserved.Count==0&&!State.Vehicles.Any(other=>other.Machine!=PavingMachine.None&&other.Status!=VehicleStatus.Outside&&other.Position.Distance(vehicle.Position)<=distance+12))return distance;
         var safe=0.0;
         while(safe<distance-.000001){var next=Math.Min(distance,safe+.5);var at=vehicle.Position.MoveTowards(target,next);
-            if(State.Vehicles.Any(other=>other.Id!=vehicle.Id&&other.Status!=VehicleStatus.Outside&&(!machinesOnly||other.Machine!=PavingMachine.None&&other.Status==VehicleStatus.Parked)&&other.Position.Distance(at)<12&&VehicleBodiesOverlap(vehicle,at,other)))break;
+            if(State.Vehicles.Any(other=>other.Id!=vehicle.Id&&other.Status!=VehicleStatus.Outside&&(!machinesOnly||other.Machine!=PavingMachine.None&&(other.Status==VehicleStatus.Parked||!(other.Position.Distance(State.Entry)<8&&vehicle.Position.Distance(State.Entry)<8)))&&other.Position.Distance(at)<12&&VehicleBodiesOverlap(vehicle,at,other)))break;
             if(reserved.Any(pose=>pose.Position.Distance(at)<12&&BodiesOverlap(vehicle,at,vehicle.Heading,pose.Machine,pose.Position,pose.Heading)))break;
             safe=next;
         }
         return safe;
     }
 
-    // The poses a parked machine still passes through on its site path: its
-    // turn in place toward the next point, then 0.5 m samples along the path.
-    // A machine halted for fuel or budget is not moving and holds nothing.
+    // Publish the same whole manoeuvre checked by MachineMayEnter, never a
+    // prefix of an intention blocked by a body or an unacquired space. The
+    // machine's present body and any physically held spaces remain obstacles.
     List<(Vehicle Machine,Point Position,double Heading)> MachineReservation(Vehicle machine)
     {
         var poses=new List<(Vehicle,Point,double)>();
         if(machine.Machine==PavingMachine.None||machine.Status!=VehicleStatus.Parked||machine.MachinePhase is not (MachinePhase.OnSite or MachinePhase.LeavingSite)||machine.SitePathIndex>=machine.SitePath.Count||machine.Fuel<=.000001||machine.Cause is WorkCause.PavingOutOfFuel or WorkCause.NoBudgetForPaving)return poses;
-        var at=machine.Position;
-        for(var index=machine.SitePathIndex;index<machine.SitePath.Count;index++){
-            var target=machine.SitePath[index];var length=at.Distance(target);if(length<=.001)continue;
-            var heading=machine.SiteDockHeading is {} dock&&index==machine.SitePath.Count-1?dock:Math.Atan2(target.X-at.X,target.Z-at.Z);
-            for(var along=0.0;;along=Math.Min(length,along+.5)){
-                var pose=at.MoveTowards(target,along);
-                if(State.Vehicles.Any(other=>other.Id!=machine.Id&&other.Status!=VehicleStatus.Outside&&other.Position.Distance(pose)<12&&BodiesOverlap(machine,pose,heading,other,other.Position,other.Heading)))return poses;
-                poses.Add((machine,pose,heading));if(along>=length)break;
-            }
-            at=target;
-        }
-        return poses;
+        var way=MachinePathAhead(machine);
+        if(BodyOnWay(machine,way)!=null||machine.MachinePhase==MachinePhase.LeavingSite&&ConflictsWithDockWay(machine,way)||SharedNodes().Any(n=>!machine.ManoeuvreSpaces.Contains(n.Id)&&way.Any(p=>EntersArea(machine,p.Position,p.Heading,n))))return poses;
+        return way;
     }
 
     static bool VehicleBodiesOverlap(Vehicle a,Point at,Vehicle b)=>BodiesOverlap(a,at,a.Heading,b,b.Position,b.Heading);
 
-    static bool BodiesOverlap(Vehicle a,Point aAt,double aHeading,Vehicle b,Point bAt,double bHeading)
+    static double BodyHalfLength(Vehicle v)=>v.PassengerCar?2.1:v.Machine==PavingMachine.Paver?2.31:v.Machine==PavingMachine.Roller?1.99:3.6;
+    static double BodyHalfWidth(Vehicle v)=>v.PassengerCar?.9:v.Machine==PavingMachine.Paver?1.27:v.Machine==PavingMachine.Roller?1.16:1.45;
+
+    static bool BodiesOverlap(Vehicle a,Point aAt,double aHeading,Vehicle b,Point bAt,double bHeading,double margin=.1)
     {
-        static double HalfLength(Vehicle v)=>v.PassengerCar?2.1:v.Machine==PavingMachine.Paver?2.31:v.Machine==PavingMachine.Roller?1.99:3.6;
-        static double HalfWidth(Vehicle v)=>v.PassengerCar?.9:v.Machine==PavingMachine.Paver?1.27:v.Machine==PavingMachine.Roller?1.16:1.45;
         static double Dot(Point x,Point y)=>x.X*y.X+x.Z*y.Z;
         var af=new Point(Math.Sin(aHeading),Math.Cos(aHeading));var ar=new Point(af.Z,-af.X);
         var bf=new Point(Math.Sin(bHeading),Math.Cos(bHeading));var br=new Point(bf.Z,-bf.X);var delta=bAt-aAt;
-        foreach(var axis in new[]{af,ar,bf,br})if(Math.Abs(Dot(delta,axis))>=HalfLength(a)*Math.Abs(Dot(af,axis))+HalfWidth(a)*Math.Abs(Dot(ar,axis))+HalfLength(b)*Math.Abs(Dot(bf,axis))+HalfWidth(b)*Math.Abs(Dot(br,axis))+.1)return false;
+        foreach(var axis in new[]{af,ar,bf,br})if(Math.Abs(Dot(delta,axis))>=BodyHalfLength(a)*Math.Abs(Dot(af,axis))+BodyHalfWidth(a)*Math.Abs(Dot(ar,axis))+BodyHalfLength(b)*Math.Abs(Dot(bf,axis))+BodyHalfWidth(b)*Math.Abs(Dot(br,axis))+margin)return false;
         return true;
     }
 

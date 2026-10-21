@@ -16,6 +16,7 @@ public sealed class CitySave
     public Point? DraftRoadStart {get;set;}
     public Point? DraftRoadEnd {get;set;}
     public int? DraftMoveProject {get;set;}
+    public int? DraftRelocationBuilding {get;set;}
     public double DraftRotation {get;set;}
     public bool DraftReverse {get;set;}
     public bool? DraftRoadFixed {get;set;}

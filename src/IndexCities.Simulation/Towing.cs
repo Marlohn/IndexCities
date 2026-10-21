@@ -65,7 +65,7 @@ public sealed partial class CitySimulation
         for(var i=Math.Max(t.RouteIndex,0);i<t.Route.Count;i++){
             if(!_roads.TryGetValue(t.Route[i],out var n))break;
             var previous=i>0&&_roads.TryGetValue(t.Route[i-1],out var p)?p.Position:t.Position;var axis=n.Position-previous;var length=axis.Distance(default);
-            points.Add(length>.01?n.Position+new Point(axis.Z/length*1.65,-axis.X/length*1.65):n.Position);
+            points.Add(length>.01?n.Position+new Point(axis.Z/length*1.65,-axis.X/length*1.65)+InnerCornerOffset(t.Route,i,n,axis,length):n.Position);
         }
         var left=gap;pose=t.Position+Forward(t.Heading)*gap;
         for(var i=1;i<points.Count;i++){var d=points[i-1].Distance(points[i]);if(d>=left){pose=points[i-1].MoveTowards(points[i],left);break;}left-=d;if(i==points.Count-1){var dir=d>.01?(points[i]-points[i-1])*(1/d):Forward(t.Heading);pose=points[i]+dir*left;}}
@@ -113,14 +113,14 @@ public sealed partial class CitySimulation
         var entry=EntryNode();home??=entry;bool Fits(List<int> route,double back)=>(travelled+RouteLength(route)+back)*State.Tuning.FuelPerMetre+4<=fuel;
         double Back(RoadNode from)=>from.Id==home.Id?0:FindRoadRoute(from.Id,home.Id) is {Count:>0} back?RouteLength(back):double.PositiveInfinity;
         TowPlan? To(TowDestination kind,Building? building,RoadNode access,Point dock){var route=TowRoute(start.Id,access.Id,closed,strict);if(route.Count==0)return null;var back=Back(access);return double.IsFinite(back)&&Fits(route,back)?new(kind,building,dock,route,back):null;}
-        TowPlan? Holding(){var slot=HoldingSlot(t);return slot.Road==null?null:To(TowDestination.Holding,null,slot.Road,slot.Position);}
+        TowPlan? Holding(){var slot=TowHoldingSlot(t);return slot.Road==null?null:To(TowDestination.Holding,null,slot.Road,slot.Position);}
         TowPlan? HomePlan()=>OwnerHome(t) is {} b&&Access(b) is {} a?To(TowDestination.Home,b,a,DockAt(a,b,false)):Holding();
         TowPlan? Exterior()=>To(TowDestination.Exterior,null,entry,State.Entry);
         if(t.ServicePhase==ServicePhase.AwaitingReturn)return HomePlan();
         if(t.BrokenDown){
             if(!t.External){
                 TowPlan? shop=null;
-                foreach(var b in State.Buildings.Where(b=>ShopHasRoom(b,t)&&CanPay(t,b,ServiceKind.Repair)))if(Access(b) is {} access&&To(TowDestination.Shop,b,access,ServiceDock(b)) is {} option&&(shop==null||RouteLength(option.Route)<RouteLength(shop.Route)))shop=option;
+                foreach(var b in State.Buildings.Where(b=>ShopHasRoom(b,t)&&CanPay(t,b,ServiceKind.Repair)))if(ServiceAccess(b) is {} access&&To(TowDestination.Shop,b,access,ServiceDock(b)) is {} option&&(shop==null||RouteLength(option.Route)<RouteLength(shop.Route)))shop=option;
                 if(shop!=null)return shop;
                 if(!CanPay(t,null,ServiceKind.Repair))return HomePlan();
             }
@@ -141,7 +141,7 @@ public sealed partial class CitySimulation
         t.Cause="Quebrado; aguardando dinheiro para o conserto";return false;
     }
     // Same physical waiting spaces beside the highway as preserved municipal cargo.
-    (RoadNode? Road,Point Position) HoldingSlot(Vehicle vehicle)
+    (RoadNode? Road,Point Position) TowHoldingSlot(Vehicle vehicle)
     {
         var candidates=State.Roads.Where(r=>r.Highway).OrderBy(r=>r.Position.Distance(State.Entry)).Where((road,index)=>index>=2&&index%2==0).Select(road=>(Road:(RoadNode?)road,Position:road.Position+new Point(0,-State.Tuning.RoadWidth/2-1.5)));
         return candidates.FirstOrDefault(candidate=>State.Buildings.All(b=>b.Removed||!Inside(b,candidate.Position,4))&&State.Vehicles.All(other=>other.Id==vehicle.Id||other.HoldingPosition is not {} reserved||reserved.Distance(candidate.Position)>=8));
@@ -341,7 +341,9 @@ public sealed partial class CitySimulation
         bool Facing(Vehicle o)=>o.Id!=tow.Id&&o.Id!=t.Id&&OccupiesLane(o)&&Math.Cos(o.Heading-heading)< -.5&&Along(o.Position,tow.Position) is >0 and <=12&&Across(o.Position,tow.Position)<2.6;
         if(Across(tow.Position,lane)<1||!State.Vehicles.Any(Facing)){Clear();return;}
         var side=lane+dir*(Along(tow.Position,lane)+2);
-        var free=!State.Vehicles.Any(o=>o.Id!=tow.Id&&o.Id!=t.Id&&OccupiesLane(o)&&(Across(o.Position,lane)<2.6&&Along(o.Position,side) is >-15 and <8||o.Position.Distance(side)<12&&BodiesOverlap(tow,side,heading,o,o.Position,o.Heading)));
+        // A vehicle stopped behind in that lane, clear of the tow's body there, is no traffic arriving.
+        bool StoppedBehind(Vehicle o)=>o.WaitingSince>0&&Along(o.Position,side)< -(BodyHalfLength(tow)+BodyHalfLength(o)+1);
+        var free=!State.Vehicles.Any(o=>o.Id!=tow.Id&&o.Id!=t.Id&&OccupiesLane(o)&&(Across(o.Position,lane)<2.6&&Along(o.Position,side) is >-15 and <8&&!StoppedBehind(o)||o.Position.Distance(side)<12&&BodiesOverlap(tow,side,heading,o,o.Position,o.Heading)));
         if(free){Clear();tow.Detour=[side];tow.DetourResumeNode=tow.Route[tow.RouteIndex];return;}
         if(tow.TowExitWaitSince<=0)tow.TowExitWaitSince=State.ElapsedSeconds;
         tow.Status=VehicleStatus.Waiting;tow.TowRetryAt=State.ElapsedSeconds+2;
@@ -450,7 +452,10 @@ public sealed partial class CitySimulation
         t.Route=route;t.RouteIndex=0;t.Status=route.Count>0?VehicleStatus.Travelling:VehicleStatus.Waiting;t.Cause=route.Count>0?"Reabastecido no exterior após reboque; voltando para a viagem":"Reabastecido no exterior; sem rota para retomar a viagem";
         if(route.Count==0)return;
         if(t.PassengerCar){if(SpotByKey(t.ParkingSpot) is {} spot)t.DockPosition=spot.Position;else t.DockPosition=null;}
-        else{var s=PendingShipment(t);var building=BuildingById(s==null?t.HomeBuildingId:s.PickedUp?s.DestinationBuildingId:s.SourceBuildingId);t.DockPosition=DockAt(_roads[route[^1]],building,t.CrewAboard);}
+        else{var s=PendingShipment(t);var building=BuildingById(s==null?t.HomeBuildingId:s.PickedUp?s.DestinationBuildingId:s.SourceBuildingId);t.DockPosition=DockAt(_roads[route[^1]],building,t.CrewAboard);
+            // Asphalt for a paver is delivered by feeding it again: a fresh approach
+            // from this route, not the generic dock nor the site path left before.
+            if(s is {ReceivingMachineId:not null,PickedUp:true}){t.SitePath=[];t.SitePathIndex=0;ConfigureAsphaltApproach(t,s);}}
         foreach(var c in Occupants(t))Personal(c,"Combustível comprado no exterior após o reboque; voltando para a viagem");
     }
     // A tow held for minutes by a stranded vehicle or the queue it causes (directly

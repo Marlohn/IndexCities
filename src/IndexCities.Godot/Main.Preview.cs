@@ -54,7 +54,7 @@ public partial class Main
                 if (roadless > 0) cause = roadless + " obras aguardarão ligação viária. " + cause;
             } else {
                 var at = _dragStart ?? _anchor ?? _cursor;
-                quote = _movingProject is {} moving ? _sim.QuoteMoveBuilding(moving, at, _rotation) : _sim.QuoteBuilding(kind, at, _rotation);
+                quote = PlacementPreviewQuote(kind, at);
                 total = quote.Total; valid = quote.PhysicallyValid; connected = quote.Accessible; cause = QuoteFeedback(quote);
             }
         } else if (_roadTool && _roadStart is {} start && _roadEnd is {} end) {

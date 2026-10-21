@@ -143,17 +143,20 @@ public sealed class StoppedVehicleTests
     }
     [Fact] public void A_maintenance_crew_moves_on_only_with_fuel_for_the_next_stretch_and_the_way_out()
     {
-        var sim=ZigzagMaintenance();var refuelReturn=false;var drained=false;var paid=new HashSet<(int?,int)>();
+        var sim=ZigzagMaintenance();var refuelReturn=false;var drained=false;var paid=new HashSet<(int?,int)>();Vehicle? drainedCrew=null;WorkProject? drainedWork=null;
         for(var i=0;i<20000&&(i<10||sim.State.Projects.Any(p=>p.IsMaintenance&&p.Status!=WorkStatus.Completed));i++){
             sim.Advance(5);
             // Along the street the stretches are close; leave the crew on site with
             // fuel for the way out only, so its next move must refuel first.
             if(!drained&&sim.State.Vehicles.FirstOrDefault(v=>v.Status==VehicleStatus.Parked&&v.Cause=="Equipe externa no canteiro") is {} crew){
+                drainedCrew=crew;drainedWork=sim.State.Projects.FirstOrDefault(p=>p.CrewVehicleId==crew.Id);
                 var exit=sim.FindRoadRoute(crew.Route[^1],sim.State.Roads.First(r=>r.Highway&&r.Position.Distance(sim.State.Entry)<.1).Id,true);Assert.NotEmpty(exit);
                 crew.Fuel=exit.Zip(exit.Skip(1)).Sum(pair=>sim.State.Roads.Single(r=>r.Id==pair.First).Position.Distance(sim.State.Roads.Single(r=>r.Id==pair.Second).Position))*sim.State.Tuning.FuelPerMetre+2;drained=true;
             }
             Assert.DoesNotContain(sim.State.Vehicles,v=>v.Status==VehicleStatus.Stranded);
-            refuelReturn|=sim.State.Vehicles.Any(v=>v.Cause.StartsWith("Retorno ao exterior para reabastecer"));
+            // The cause lasts until the truck moves off; reaching the exterior with its
+            // stretch still pending shows the same return to refuel.
+            refuelReturn|=sim.State.Vehicles.Any(v=>v.Cause.StartsWith("Retorno ao exterior para reabastecer"))||drainedCrew is {Status:VehicleStatus.Outside}&&drainedWork is {} pending&&pending.Status!=WorkStatus.Completed;
             foreach(var s in sim.State.Shipments.Where(s=>s.Purpose==ShipmentPurpose.Maintenance&&s.PricePaid>0))paid.Add((s.ProjectId,s.Id));
         }
         var maintenance=sim.State.Projects.Where(p=>p.IsMaintenance).ToList();Assert.NotEmpty(maintenance);

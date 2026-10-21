@@ -94,7 +94,9 @@ public partial class Main
         var home=s.Roads.Where(r=>r.Position.Z==40&&r.Position.X<=40).OrderByDescending(r=>r.Position.X).Concat(s.Roads.Where(r=>r.Position.X==-60&&r.Position.Z is >0 and <40).OrderByDescending(r=>r.Position.Z)).Concat(s.Roads.Where(r=>r.Position.Z==0&&r.Position.X<=-60).OrderByDescending(r=>r.Position.X)).Select(r=>r.Id).ToList();
         truck.Position=new(0,41.65);truck.Heading=-Math.PI/2;truck.Status=VehicleStatus.Travelling;truck.Route=home;truck.RouteIndex=11;truck.Cause="Retorno ao exterior";
         // Followers behind each stranded vehicle, so the queue can be seen to clear.
-        var south=s.Roads.Where(r=>r.Position.Z==0&&r.Position.X>=-64&&r.Position.X<=60).OrderBy(r=>r.Position.X).Select(r=>r.Id).ToList();
+        // The follower drives on to the exterior (up the eastern side, along the ring and back west):
+        // a route ending at the corner would leave it parked in the lane, in the way of the tow turning there.
+        var south=s.Roads.Where(r=>r.Position.Z==0&&r.Position.X>=-32&&r.Position.X<=60).OrderBy(r=>r.Position.X).Concat(s.Roads.Where(r=>r.Position.X==60&&r.Position.Z is >0 and <40).OrderBy(r=>r.Position.Z)).Concat(s.Roads.Where(r=>r.Position.Z==40).OrderByDescending(r=>r.Position.X)).Concat(s.Roads.Where(r=>r.Position.X==-60&&r.Position.Z is >0 and <40).OrderByDescending(r=>r.Position.Z)).Concat(s.Roads.Where(r=>r.Position.Z==0&&r.Position.X<=-60).OrderByDescending(r=>r.Position.X)).Select(r=>r.Id).ToList();
         s.Vehicles.Add(new Vehicle{Id=Next(),OwnerAccount="global",PassengerCar=true,External=true,Position=new(-30,-1.65),Heading=Math.PI/2,Fuel=40,Status=VehicleStatus.Travelling,Route=south,RouteIndex=south.FindIndex(id=>s.Roads.First(r=>r.Id==id).Position.X>-30)});
         s.Now=new(2026,1,1,8,0,0);s.EconomyNextAt=1e9;
         _sim=new CitySimulation(s);_cityId=CitySaves.NewId();

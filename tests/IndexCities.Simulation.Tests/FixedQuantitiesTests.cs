@@ -140,15 +140,19 @@ public sealed class FixedQuantitiesTests
         // reachable from CityState. New state cannot silently add an accumulator.
         (Type Type,string Names)[] allowed=[
             (typeof(Point),"X,Z"),
+            // A frozen geometric direction of the dock sweep, never accumulated.
+            (typeof(MovementPose),"Heading"),
             (typeof(Building),"Rotation,WaterRatio,ElectricityRatio,WaterDemand,ElectricityDemand,SewageProduced,UntreatedSewage,OperationalCapacity,MaintenanceDueAt,LastCustomerAt"),
             (typeof(RoadNode),"MaintenanceDueAt,ElectricityRatio"),
             (typeof(WorkProject),"Required,WorkSeconds"),
             (typeof(Citizen),"Satisfaction,LastPaidAt,NextDecisionAt,OutingUntil"),
             (typeof(Family),"LastMigrationReview"),(typeof(Company),"LossStartedAt"),
+            // Demolir: absolute instant of the assisted-vacating deadline, set once and compared.
+            (typeof(BuildingDemolitionOrder),"DeadlineSeconds"),
             (typeof(Vehicle),"SiteDockHeading,Heading,CargoCapacity,WaitingSince,IntersectionEnteredAt,TowCalledAt,TowRetryAt,TowExitWaitSince,ServiceSince,ServiceUntil,PushHeading"),
             (typeof(ExternalFamilyCandidate),"RiskTolerance"),(typeof(ExternalCompanyCandidate),"RiskTolerance"),
             (typeof(CityState),"EconomyNextAt,LakeRadius,LakePollution,PotableCapacity,WaterDemand,ElectricityCapacity,ElectricityDemand,SewageCapacity,SewageDemand,UntreatedSewage,WindFactor,RawWaterCapacity,MaintenanceNextAt"),
-            (typeof(SimulationTuning),"MapHalfSize,RoadStep,RoadWidth,CrosswalkSpacing,WalkingSpeed,VehicleSpeed,HighwaySpeed,FuelPerMetre,FuelTank,SimulationSecondsPerRealSecond,SpeedMultipliers,EconomyInterval,PurchaseFoodPerPerson,HungerDamageAfterHours,WaterClosureHours,UtilityRecoveryPerHour,PublicMaintenanceIntervalHours,CarFuelPerMetre,CarMinimumTripMetres,OutingChancePerMinute,BypassWaitSeconds,UTurnWaitSeconds,TowMaxWaitSeconds,TowLoadSeconds,TowUnloadSeconds,TowRetrySeconds,ConditionWearPerMetre,BreakdownChancePerKmNew,BreakdownChancePerKmWorn,RevisionThreshold,LocalRepairSeconds,LocalRevisionSeconds,ExteriorRepairSeconds,ExteriorRevisionSeconds,ShopPushSpeed")
+            (typeof(SimulationTuning),"AssistedVacatingDays,MapHalfSize,RoadStep,RoadWidth,CrosswalkSpacing,WalkingSpeed,VehicleSpeed,HighwaySpeed,FuelPerMetre,FuelTank,SimulationSecondsPerRealSecond,SpeedMultipliers,EconomyInterval,PurchaseFoodPerPerson,HungerDamageAfterHours,WaterClosureHours,UtilityRecoveryPerHour,PublicMaintenanceIntervalHours,CarFuelPerMetre,CarMinimumTripMetres,OutingChancePerMinute,BypassWaitSeconds,UTurnWaitSeconds,TowMaxWaitSeconds,TowLoadSeconds,TowUnloadSeconds,TowRetrySeconds,ConditionWearPerMetre,BreakdownChancePerKmNew,BreakdownChancePerKmWorn,RevisionThreshold,LocalRepairSeconds,LocalRevisionSeconds,ExteriorRepairSeconds,ExteriorRevisionSeconds,ShopPushSpeed")
         ];
         var doubles=new SortedSet<string>();var visited=new HashSet<Type>();
         bool ContainsDouble(Type type)=>type==typeof(double)||(type.IsArray&&ContainsDouble(type.GetElementType()!))||(type.IsGenericType&&type.GetGenericArguments().Any(ContainsDouble));
