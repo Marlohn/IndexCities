@@ -558,8 +558,8 @@ public sealed partial class CitySimulation
         var dock=road.Position+side*(State.Tuning.RoadWidth/2+1.5)+(crew?new Point(side.Z,-side.X)*8.5:default);
         if(!crew)return dock;
         var along=new Point(side.Z,-side.X);var heading=Math.Atan2(along.X,along.Z);
-        // Clear of the material docks of this and the other works, where deliveries stop.
-        var truck=new Vehicle();var materials=State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress).Select(WorkAccess).OfType<RoadNode>().Where(a=>a.Position.Distance(road.Position)<30)
+        // Clear of the material docks of this and the other works still receiving material.
+        var truck=new Vehicle();var materials=State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress&&p.Required.Any(k=>p.Delivered.GetValueOrDefault(k.Key)+.001<k.Value)).Select(WorkAccess).OfType<RoadNode>().Where(a=>a.Position.Distance(road.Position)<30)
             .Select(a=>DockAt(a,null,false)).Append(DockAt(road,building,false)).ToList();
         // Same curb and local access, nearest compatible position first. This
         // uses lot geometry, never SpotFree or the cars' choice of parking.

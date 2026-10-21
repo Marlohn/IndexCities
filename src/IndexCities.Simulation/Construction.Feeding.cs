@@ -17,9 +17,9 @@ public sealed partial class CitySimulation
             // nor where trucks turning at a nearby junction sweep.
             if(InTurnSweep(new Vehicle{Machine=kind},dock,Math.Abs(axis.X)>.01?Math.PI/2:0))continue;
             if(work!=null&&WorkRoadBlocksBay(work,dock,Math.Abs(axis.X)>.01))continue;
-            // Nor on another work's material dock, nor where a body stands: the machine
-            // would wait in the lane inside that truck's way out.
-            if(State.Vehicles.Any(v=>v.Status!=VehicleStatus.Outside&&v.Position.Distance(dock)<=7)||State.Projects.Any(p=>p.Id!=work?.Id&&p.Status is WorkStatus.Waiting or WorkStatus.InProgress&&WorkAccess(p) is {} other&&DockAt(other,BuildingById(p.BuildingId),false).Distance(dock)<=7))continue;
+            // Nor on the dock of another work still receiving material: the machine would wait in the lane
+            // inside the way out of the truck unloading there.
+            if(State.Projects.Any(p=>p.Id!=work?.Id&&p.Status is WorkStatus.Waiting or WorkStatus.InProgress&&p.Required.Any(k=>p.Delivered.GetValueOrDefault(k.Key)+.001<k.Value)&&WorkAccess(p) is {} other&&DockAt(other,BuildingById(p.BuildingId),false).Distance(dock)<=7))continue;
             if(!MachineBayBlocksRoad(dock,Math.Abs(axis.X)>.01)&&State.Buildings.All(b=>b.Removed||!Inside(b,dock,2.5))&&State.Vehicles.All(v=>v.Status==VehicleStatus.Outside||v.DockPosition is not {} occupied||occupied.Distance(dock)>7))return(road,dock);
         }
         // Exterior staging origin already exists in the road model. Equipment
