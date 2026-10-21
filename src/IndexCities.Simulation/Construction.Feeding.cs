@@ -13,7 +13,9 @@ public sealed partial class CitySimulation
             // full-size feeder would stand across the crossing carriageway.
             var feeder=dock-axis*(6.6/Math.Max(.001,axis.Distance(default)));
             if(kind==PavingMachine.Paver&&BayBodyBlocksRoad(feeder,Math.Abs(axis.X)>.01,3.6,1.45))continue;
-            // Nor on the street being built: both machines drive over its points.
+            // Nor on the street being built (both machines drive over its points),
+            // nor where trucks turning at a nearby junction sweep.
+            if(InTurnSweep(new Vehicle{Machine=kind},dock,Math.Abs(axis.X)>.01?Math.PI/2:0))continue;
             if(work!=null&&WorkRoadBlocksBay(work,dock,Math.Abs(axis.X)>.01))continue;
             if(!MachineBayBlocksRoad(dock,Math.Abs(axis.X)>.01)&&State.Buildings.All(b=>b.Removed||!Inside(b,dock,2.5))&&State.Vehicles.All(v=>v.Status==VehicleStatus.Outside||v.DockPosition is not {} occupied||occupied.Distance(dock)>7))return(road,dock);
         }
@@ -21,6 +23,26 @@ public sealed partial class CitySimulation
         // still travels to/from it and retains its position while waiting.
         var entry=EntryNode();return(entry,entry.Position+new Point(0,kind==PavingMachine.Paver?6.75:-6.75));
     }
+
+    // The poses a full-size truck sweeps through each way across a shared node,
+    // as the lane model drives it (the same turns the stop lines keep clear of).
+    readonly Dictionary<int,List<(Vehicle Body,Point Position,double Heading)>> _turnSweeps=[];int _turnSweepsEpoch=-1;
+    List<(Vehicle Body,Point Position,double Heading)> TurnSweep(RoadNode junction)
+    {
+        if(_turnSweepsEpoch!=_roadEpoch){_turnSweeps.Clear();_turnSweepsEpoch=_roadEpoch;}
+        if(_turnSweeps.TryGetValue(junction.Id,out var cached))return cached;
+        var poses=new List<(Vehicle Body,Point Position,double Heading)>();var truck=new Vehicle();
+        foreach(var fromId in junction.Neighbours)foreach(var toId in junction.Neighbours.Where(id=>id!=fromId)){
+            if(!_roads.TryGetValue(fromId,out var from)||!_roads.TryGetValue(toId,out var to))continue;
+            var direction=junction.Position-from.Position;var metres=direction.Distance(default);if(metres<=.01)continue;
+            var start=from.Position+new Point(direction.Z/metres,-direction.X/metres)*1.65;var route=new List<int>{fromId,junction.Id,toId};
+            var continuation=to.Neighbours.FirstOrDefault(id=>id!=junction.Id);if(continuation!=0)route.Add(continuation);
+            CrossingPoses(poses,truck,route,1,start,Math.Atan2(direction.X,direction.Z),junction);
+        }
+        return _turnSweeps[junction.Id]=poses;
+    }
+    bool InTurnSweep(Vehicle body,Point at,double heading)=>SharedNodes().Where(n=>n.Position.Distance(at)<20)
+        .Any(n=>TurnSweep(n).Any(p=>p.Position.Distance(at)<12&&BodiesOverlap(body,at,heading,p.Body,p.Position,p.Heading)));
 
     // A machine bay overlapping the carriageway of a point of the work's own new
     // street (its orientation is not known yet, so on both axes).
