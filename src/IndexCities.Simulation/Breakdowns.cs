@@ -248,8 +248,27 @@ public sealed partial class CitySimulation
         // Repaired: it waits in the bay for the tow back to the owner's space (4A).
         v.TowRetryAt=0;v.TowRoadRevision=null;v.Cause="Consertado na oficina "+shop.Id+"; aguardando guincho para voltar à vaga";
     }
+    // The street node a service trip ends at: the access, or, with the dock slid
+    // along the frontage, the node beside it, so the truck slides in forward.
+    RoadNode? ServiceAccess(Building shop)=>Access(shop) is {} access&&ServiceDock(shop).Distance(DockAt(access,shop,false))>.01?NearestRoad(ServiceDock(shop),false):Access(shop);
     // The shop's street-side point where tows set vehicles down and drivers come in.
-    Point ServiceDock(Building shop)=>Access(shop) is {} access?DockAt(access,shop,false):shop.Door;
+    // The yard's waiting places reach the curb: the service dock slides along the
+    // shop's own frontage, nearest first, until a truck there (lane heading) is clear
+    // of every waiting place and bay (1 m, room for its slide in from the lane), so
+    // the queue forms without bodies touching.
+    Point ServiceDock(Building shop)
+    {
+        if(Access(shop) is not {} access)return shop.Door;
+        var dock=DockAt(access,shop,false);var truck=new Vehicle();
+        var horizontal=access.Highway||access.Neighbours.Any(id=>Math.Abs(_roads[id].Position.X-access.Position.X)>.1);var heading=horizontal?Math.PI/2:0;
+        var along=new Point(Math.Sin(heading),Math.Cos(heading));
+        var places=Enumerable.Range(0,ShopBayCount).SelectMany(bay=>new[]{ShopWaiting(shop,bay),ShopBay(shop,bay)}).ToList();
+        for(var shift=0.0;shift<=shop.Definition.Width/2;shift+=.5)foreach(var sign in shift==0?new[]{1}:new[]{1,-1}){
+            var candidate=dock+along*(shift*sign);
+            if(places.All(p=>!BodiesOverlap(truck,candidate,heading,truck,p,OutwardHeading(shop),1)))return candidate;
+        }
+        return dock;
+    }
     void NoMoneyAtShop(Vehicle v,Building shop)
     {
         if(v.Service==ServiceKind.Revision){v.ServicePhase=ServicePhase.AwaitingReturn;v.Cause="Revisão não feita: dono sem dinheiro";v.PushPath=[ServiceDock(shop)];v.ServiceSpot=null;return;}
@@ -322,7 +341,7 @@ public sealed partial class CitySimulation
     }
     void StartRevisionTrip(Vehicle v,Citizen driver,Building? shop)
     {
-        var target=shop==null?EntryNode():Access(shop);if(target==null||!EnsureFuel(v,target.Id)){v.Route.Clear();v.RouteIndex=0;return;}
+        var target=shop==null?EntryNode():ServiceAccess(shop);if(target==null||!EnsureFuel(v,target.Id)){v.Route.Clear();v.RouteIndex=0;return;}
         v.Service=ServiceKind.Revision;v.ServicePhase=ServicePhase.ToService;v.ServiceShopId=shop?.Id;
         if(v.RefuellingAt==null)v.DockPosition=shop==null?State.Entry:ServiceDock(shop);
         v.DestinationBuildingId=shop?.Id;v.TripPurpose=JourneyPurpose.Service;v.DriverId=driver.Id;v.Passengers.Clear();v.Status=v.PassengerCar?VehicleStatus.Parked:VehicleStatus.Travelling;

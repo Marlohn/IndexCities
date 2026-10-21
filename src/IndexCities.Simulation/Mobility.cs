@@ -352,7 +352,7 @@ public sealed partial class CitySimulation
                 if(sharedAhead&&!MayEnterJunction(v,node)){if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;
                     // SPEC: held at a junction by a vehicle stopped there (out of fuel), it
                     // turns back after the same minutes as behind it in the lane.
-                    if(TryTowFromBehind(v))continue;
+                    if(v.TowPhase==TowPhase.ToVehicle&&(TryTowContraflow(v)||TryTowFromBehind(v)))continue;
                     if(VehicleMovementTime-v.WaitingSince>=State.Tuning.UTurnWaitSeconds&&JunctionHeldByStranded(v,node) is {} stranded&&TryUTurn(v,stranded))continue;
                     if(IsTow(v)&&TowHeldTooLong(v,null)&&JunctionHeldByStranded(v,node) is {} holder&&TryUTurn(v,holder,[..TowClosedRoads(v),node.Id])){CheckTowFuel(v);continue;}TowWaitsWithoutAccess(v);break;}
                 if(v.Fuel<=.000001){RunOutOfFuel(v);break;}

@@ -120,7 +120,7 @@ public sealed partial class CitySimulation
         if(t.BrokenDown){
             if(!t.External){
                 TowPlan? shop=null;
-                foreach(var b in State.Buildings.Where(b=>ShopHasRoom(b,t)&&CanPay(t,b,ServiceKind.Repair)))if(Access(b) is {} access&&To(TowDestination.Shop,b,access,ServiceDock(b)) is {} option&&(shop==null||RouteLength(option.Route)<RouteLength(shop.Route)))shop=option;
+                foreach(var b in State.Buildings.Where(b=>ShopHasRoom(b,t)&&CanPay(t,b,ServiceKind.Repair)))if(ServiceAccess(b) is {} access&&To(TowDestination.Shop,b,access,ServiceDock(b)) is {} option&&(shop==null||RouteLength(option.Route)<RouteLength(shop.Route)))shop=option;
                 if(shop!=null)return shop;
                 if(!CanPay(t,null,ServiceKind.Repair))return HomePlan();
             }
@@ -341,7 +341,9 @@ public sealed partial class CitySimulation
         bool Facing(Vehicle o)=>o.Id!=tow.Id&&o.Id!=t.Id&&OccupiesLane(o)&&Math.Cos(o.Heading-heading)< -.5&&Along(o.Position,tow.Position) is >0 and <=12&&Across(o.Position,tow.Position)<2.6;
         if(Across(tow.Position,lane)<1||!State.Vehicles.Any(Facing)){Clear();return;}
         var side=lane+dir*(Along(tow.Position,lane)+2);
-        var free=!State.Vehicles.Any(o=>o.Id!=tow.Id&&o.Id!=t.Id&&OccupiesLane(o)&&(Across(o.Position,lane)<2.6&&Along(o.Position,side) is >-15 and <8||o.Position.Distance(side)<12&&BodiesOverlap(tow,side,heading,o,o.Position,o.Heading)));
+        // A vehicle stopped behind in that lane, clear of the tow's body there, is no traffic arriving.
+        bool StoppedBehind(Vehicle o)=>o.WaitingSince>0&&Along(o.Position,side)< -(BodyHalfLength(tow)+BodyHalfLength(o)+1);
+        var free=!State.Vehicles.Any(o=>o.Id!=tow.Id&&o.Id!=t.Id&&OccupiesLane(o)&&(Across(o.Position,lane)<2.6&&Along(o.Position,side) is >-15 and <8&&!StoppedBehind(o)||o.Position.Distance(side)<12&&BodiesOverlap(tow,side,heading,o,o.Position,o.Heading)));
         if(free){Clear();tow.Detour=[side];tow.DetourResumeNode=tow.Route[tow.RouteIndex];return;}
         if(tow.TowExitWaitSince<=0)tow.TowExitWaitSince=State.ElapsedSeconds;
         tow.Status=VehicleStatus.Waiting;tow.TowRetryAt=State.ElapsedSeconds+2;
