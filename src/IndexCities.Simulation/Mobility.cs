@@ -186,12 +186,27 @@ public sealed partial class CitySimulation
         }
         c.Activity="Alimentos indisponíveis ou inacessíveis";c.Decision="Não existe loja operante, estoque e rota viáveis";return false;
     }
+    // A crew dock lies along the curb, away from its access node: driving to that
+    // node's lane point is a long diagonal whose body ends in the opposite lane.
+    // The way back then starts at the arrival street's node nearest the body whose
+    // route leaves in the direction the truck faces (a pull-out, never a U-turn).
+    RoadNode? CrewDockForwardStart(Vehicle v)
+    {
+        var facing=Forward(v.Heading);static double Dot(Point a,Point b)=>a.X*b.X+a.Z*b.Z;
+        if(Math.Abs(Dot(_roads[v.Route[^1]].Position-v.Position,facing))<=4)return null;
+        foreach(var node in v.Route.Skip(Math.Max(0,v.Route.Count-4)).Where(_roads.ContainsKey).Select(id=>_roads[id]).OrderBy(r=>r.Position.Distance(v.Position))){
+            if(Dot(node.Position-v.Position,facing)< -.5)continue;
+            var route=FindRoadRoute(node.Id,EntryNode().Id,ConstructionTrip(v));
+            if(route.Count>1&&Dot(_roads[route[1]].Position-node.Position,facing)>0)return node;
+        }
+        return null;
+    }
     void ReturnExternal(Vehicle v)
     {
         PrepareConstructionSiteDeparture(v);
         v.ConstructionAccess=ConstructionTrip(v);
         v.ShipmentId=null;
-        var atKnownBay=v.DockPosition is {} dock&&v.Position.Distance(dock)<.1&&v.Route.Count>0&&v.RouteIndex>=v.Route.Count&&_roads.ContainsKey(v.Route[^1]);var n=atKnownBay?_roads[v.Route[^1]]:NearestRoad(v.Position);if(n==null||!atKnownBay&&n.Position.Distance(v.Position)>State.Tuning.RoadWidth/2+3){v.Status=VehicleStatus.Waiting;v.Cause="Sem via para voltar ao exterior";return;}
+        var atKnownBay=v.DockPosition is {} dock&&v.Position.Distance(dock)<.1&&v.Route.Count>0&&v.RouteIndex>=v.Route.Count&&_roads.ContainsKey(v.Route[^1]);var n=atKnownBay?CrewDockForwardStart(v)??_roads[v.Route[^1]]:NearestRoad(v.Position);if(n==null||!atKnownBay&&n.Position.Distance(v.Position)>State.Tuning.RoadWidth/2+3){v.Status=VehicleStatus.Waiting;v.Cause="Sem via para voltar ao exterior";return;}
         var route=FindRoadRoute(n.Id,EntryNode().Id,ConstructionTrip(v));if(route.Count==0){v.Status=VehicleStatus.Waiting;v.Cause="Conexão externa interrompida";return;}
         v.Route=route;v.RouteIndex=0;v.DockPosition=null;v.Status=VehicleStatus.Travelling;v.DestinationBuildingId=null;v.ShipmentId=null;v.Cause="Retorno ao exterior";
     }
