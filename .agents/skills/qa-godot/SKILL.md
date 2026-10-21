@@ -56,3 +56,6 @@ Abra as imagens geradas e olhe de verdade: objetos invisíveis, flutuando, atrav
 ## 5. Antes de declarar pronto
 
 Testes da área e suíte inteira verdes; cenário novo e cenários vizinhos (os que usam o que você mexeu) executados, com o marcador certo de cada um; capturas conferidas; `scripts/Validate-Docs.ps1` se mexeu em docs; diff revisado sem ruído de `*.import`/`*.uid`. Depois vem a revisão independente (AGENTS, seção 7).
+
+- **Circulação ou obras:** carregue uma **cópia** do último save do jogador (`cities/` em `%APPDATA%/Godot/app_userdata/IndexCities` → `artifacts/verification`; nunca o original) e rode a 30× por uns 10 min reais. Falha se a obra em andamento não avança ou se um veículo fica com o mesmo motivo de espera e a mesma posição por mais de ~30 min de jogo. Relate save, velocidade e duração. Os cenários sintéticos passaram e a cidade real travou em 1 h de jogo (21/10).
+- **Bug encontrado jogando** vira teste mínimo da simulação ou cenário de QA na mesma entrega da correção; o save fica como evidência. Se não der, registre o limite no relato.
