@@ -105,7 +105,10 @@ public sealed class MachineExitTests
     {
         foreach(var seed in seeds){
             var sim=Build(shape,seed);Assert.True(sim!=null,$"{shape} seed {seed} could not be placed");
-            var failure=Finish(sim!);Assert.True(failure==null,$"{shape} seed {seed}: {failure}");
+            // Breakdowns are in force: one truck may be towed out and repaired at the
+            // exterior meanwhile, so the horizon leaves room for that repair; a stall
+            // of 900 s still fails.
+            var failure=Finish(sim!,14400+sim!.State.Tuning.ExteriorRepairSeconds);Assert.True(failure==null,$"{shape} seed {seed}: {failure}");
         }
     }
 }

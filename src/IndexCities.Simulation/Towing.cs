@@ -452,7 +452,10 @@ public sealed partial class CitySimulation
         t.Route=route;t.RouteIndex=0;t.Status=route.Count>0?VehicleStatus.Travelling:VehicleStatus.Waiting;t.Cause=route.Count>0?"Reabastecido no exterior após reboque; voltando para a viagem":"Reabastecido no exterior; sem rota para retomar a viagem";
         if(route.Count==0)return;
         if(t.PassengerCar){if(SpotByKey(t.ParkingSpot) is {} spot)t.DockPosition=spot.Position;else t.DockPosition=null;}
-        else{var s=PendingShipment(t);var building=BuildingById(s==null?t.HomeBuildingId:s.PickedUp?s.DestinationBuildingId:s.SourceBuildingId);t.DockPosition=DockAt(_roads[route[^1]],building,t.CrewAboard);}
+        else{var s=PendingShipment(t);var building=BuildingById(s==null?t.HomeBuildingId:s.PickedUp?s.DestinationBuildingId:s.SourceBuildingId);t.DockPosition=DockAt(_roads[route[^1]],building,t.CrewAboard);
+            // Asphalt for a paver is delivered by feeding it again: a fresh approach
+            // from this route, not the generic dock nor the site path left before.
+            if(s is {ReceivingMachineId:not null,PickedUp:true}){t.SitePath=[];t.SitePathIndex=0;ConfigureAsphaltApproach(t,s);}}
         foreach(var c in Occupants(t))Personal(c,"Combustível comprado no exterior após o reboque; voltando para a viagem");
     }
     // A tow held for minutes by a stranded vehicle or the queue it causes (directly
