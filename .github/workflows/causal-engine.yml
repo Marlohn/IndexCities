@@ -219,7 +219,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Observe first-year paid employment and staffed retail survival
+      - name: Measure one year of real-demand-funded farm/store vacancies
         run: |
           set -o pipefail
           dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=366 --seed=42 --adversarial --vacancy-market --cohort-renewal 2>&1 | tee vacancy-market-1y.log
