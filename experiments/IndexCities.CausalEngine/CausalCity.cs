@@ -176,7 +176,7 @@ internal sealed partial class CausalCity : IDisposable
     private readonly long[] _junctionAvailable = new long[Nodes];
     private readonly bool[] _closed = new bool[Nodes * 4];
     private HistorySink _history;
-    private long _sequence, _time, _initialMoney, _treasury;
+    private long _sequence, _time, _initialMoney, _treasury, _reserveGlobal;
     private long _days, _journeys, _segments, _waitSeconds, _sales, _shipments, _workdays;
     private long _births, _deaths, _unservedMeals, _paidWages, _unsatisfiedSales, _replans;
     private long _producedFood, _eatenFood, _initialFood;
@@ -220,7 +220,7 @@ internal sealed partial class CausalCity : IDisposable
 
     private long CalculateMoney()
     {
-        long total = _treasury;
+        long total = checked(_treasury + _reserveGlobal);
         foreach (var p in _people) total = checked(total + p.Cash);
         foreach (var f in _shops) total = checked(total + f.Cash);
         foreach (var f in _farms) total = checked(total + f.Cash);
@@ -466,7 +466,13 @@ internal sealed partial class CausalCity : IDisposable
         _active--; _deaths++;
         var family = _households[p.HouseholdId];
         var heir = family.Members.Select(id => _people[id]).FirstOrDefault(x => x.Alive);
-        if (heir is null) _treasury = checked(_treasury + p.Cash);
+        if (heir is null)
+        {
+            // SPEC: unclaimed private money goes to the GLOBAL RESERVE,
+            // never into the municipal payroll-funded pension account.
+            _reserveGlobal = checked(_reserveGlobal + p.Cash);
+            if (p.Cash > 0) _history.Fact(_time, p.Id, 17, p.Cash);
+        }
         else heir.Cash = checked(heir.Cash + p.Cash);
         p.Cash = 0;
         p.PensionCredit = 0; // Unpaid pension claim is not inherited.
@@ -765,7 +771,7 @@ internal sealed partial class CausalCity : IDisposable
         // HashCode process salts and excludes timing/perf counters.
         ulong hash = 14695981039346656037UL;
         void Mix(long x) { hash ^= unchecked((ulong)x); hash *= 1099511628211UL; }
-        Mix(_time); Mix(_active); Mix(_births); Mix(_deaths);
+        Mix(_time); Mix(_active); Mix(_births); Mix(_deaths); Mix(_treasury); Mix(_reserveGlobal);
         Mix(_journeys); Mix(_segments); Mix(_sales); Mix(_shipments);
         foreach (var p in _people)
         {
@@ -791,6 +797,7 @@ internal sealed partial class CausalCity : IDisposable
     public int PeakActive => _maxActive;
     public int MinimumActive => _minActive;
     public long RecordedFacts => _history.Entries;
+    public long ReserveGlobalCents => _reserveGlobal;
 
     public object Report(double wallSeconds) => new
     {
@@ -816,6 +823,7 @@ internal sealed partial class CausalCity : IDisposable
         shopCashCents = _shops.Sum(s => s.Cash),
         farmCashCents = _farms.Sum(f => f.Cash),
         treasuryCashCents = _treasury,
+        reserveGlobalCashCents = _reserveGlobal,
         unpaidPensionCreditsCents = _people.Sum(p => p.PensionCredit),
         historicalPensionsPaidCents = _people.Sum(p => p.PensionReceived),
         contributors = _people.Count(p => p.ContributedDays > 0),
