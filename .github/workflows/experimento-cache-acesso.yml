@@ -21,5 +21,7 @@ jobs:
         run: dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --filter FullyQualifiedName~RoadAccessCacheScaleTests --logger 'console;verbosity=normal'
       - name: Suite completa do nucleo
         run: dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --logger 'console;verbosity=minimal'
+      - name: Controle com 3 mil predios (abaixo do limite antigo)
+        run: dotnet run -c Release --project src/IndexCities.Headless -- accesscache 3000
       - name: Benchmark do cache com 10 mil predios
         run: dotnet run -c Release --project src/IndexCities.Headless -- accesscache 10000
