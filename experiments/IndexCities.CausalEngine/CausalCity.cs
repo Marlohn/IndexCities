@@ -8,7 +8,7 @@ namespace IndexCities.CausalEngine;
 
 // Independent vertical-slice engine for falsifying the architecture.
 // RULES AND FIXTURES HERE ARE NOT AN IMPLEMENTATION OF ALL OF INDEXCITIES SPEC.
-internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false);
+internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false);
 internal enum EventKind : byte { Day, Hour, StartWork, EndWork, Move, Delivery, RoadClose, RoadOpen, HouseholdShop }
 internal readonly record struct SimEvent(EventKind Kind, int Id);
 internal sealed class Person
@@ -535,7 +535,12 @@ internal sealed partial class CausalCity : IDisposable
             var realisedFoodPerShift = farm && firm.MonthFarmWorkdays > 0
                 ? Math.Max(1L, firm.MonthFoodProduced / firm.MonthFarmWorkdays)
                 : 10L;
-            var unitsPerEmployee = farm ? realisedFoodPerShift * 30 : 5L * 30;
+            // Farm workers in the current calendar are deliberately absent 1 day
+            // out of 7. Counting them as present on 30/30 days consistently
+            // underfunds actual harvest. Only harvest is physically capacity-
+            // limited here; retail throughput is not yet faithfully capped.
+            var farmPaidShiftsInMonth = _config.AttendanceAwareFarms ? 26L : 30L;
+            var unitsPerEmployee = farm ? realisedFoodPerShift * farmPaidShiftsInMonth : 5L * 30;
             // Real, already-resident households have a daily food need even
             // before the first retail sale. Staff planning must consider that
             // demand; otherwise eight farms hire only 16 starters and all
@@ -1378,6 +1383,7 @@ internal sealed partial class CausalCity : IDisposable
         maximumRetailUnitPriceCents = _shops.Max(f => f.RetailUnitPriceCents),
         costBasedFoodPriceFixture = _config.CostBasedFoodPrice,
         capacityPricedFoodFixture = _config.CapacityPricedFood,
+        attendanceAwareFarmsFixture = _config.AttendanceAwareFarms,
         contractorServiceRevenueCents = checked(_constructionStarted * ContractorLaborInvoice),
         businessOperatingNetCents = checked(_retailSalesCents +
             _constructionStarted * ContractorLaborInvoice - _paidWages),
