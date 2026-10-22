@@ -1,0 +1,25 @@
+name: Experimento cache de acesso viario
+
+on:
+  push:
+    branches:
+      - experimento/cache-acesso-ruas-10k
+
+permissions:
+  contents: read
+
+jobs:
+  validar-cache:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Testes de equivalencia do acesso
+        run: dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --filter FullyQualifiedName~RoadAccessCacheScaleTests --logger 'console;verbosity=normal'
+      - name: Suite completa do nucleo
+        run: dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --logger 'console;verbosity=minimal'
+      - name: Benchmark do cache com 10 mil predios
+        run: dotnet run -c Release --project src/IndexCities.Headless -- accesscache 10000
