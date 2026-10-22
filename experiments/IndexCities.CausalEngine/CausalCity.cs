@@ -23,6 +23,8 @@ internal sealed class Person
     public bool Alive = true;
     public int Node;
     public int CarryFood;
+    public int ContributedDays;
+    public long GrossEarnings, PensionCredit, PensionReceived;
     public bool AtWork;
     public bool Traveling;
     public int TripId = -1;
@@ -155,7 +157,8 @@ internal sealed partial class CausalCity : IDisposable
     private const long TravelSeconds = 12, Headway = 3, CrossingSeconds = 2;
     private const int Grid = 8, Nodes = Grid * Grid;
     private const int StoreCount = 64, FarmCount = 8;
-    private const int FoodPrice = 50, WholesalePrice = 20;
+    // Fixture calibration ONLY, not approved IndexCities prices/wages.
+    private const int FoodPrice = 50, WholesalePrice = 7;
     private LabConfig _config;
     private readonly PriorityQueue<SimEvent, (long At, long Sequence)> _events = new();
     private readonly List<Person> _people = [];
@@ -308,6 +311,7 @@ internal sealed partial class CausalCity : IDisposable
                 if (Age(p, date) >= 85 || p.Health <= 0) Die(p);
             }
         }
+        PayContributoryPensions(date);
         // Food and jobs are not simulated by a population aggregate: each
         // household's real stock and each person's physical state matter.
         foreach (var h in _households)
@@ -328,7 +332,7 @@ internal sealed partial class CausalCity : IDisposable
                     p.Health -= 1;
                     if (p.Health <= 0) Die(p);
                 }
-                if (p.Alive && Age(p, date) >= 18 && Age(p, date) < 65)
+                if (p.Alive && Age(p, date) >= 18 && Age(p, date) < 70)
                 {
                     Schedule(_time + 8 * 3600, EventKind.StartWork, id);
                     Schedule(_time + 17 * 3600, EventKind.EndWork, id);
@@ -361,6 +365,50 @@ internal sealed partial class CausalCity : IDisposable
         }
         if (_days < _config.Days) Schedule(_time + DaySeconds, EventKind.Day, 0);
     }
+    private void PayContributoryPensions(DateTime date)
+    {
+        // Approved product DIRECTION: municipal pay-as-you-go, real employee
+        // contributions, accumulated individual rights and proportional payout
+        // when municipal funds are insufficient. Ages/rates here are STRESS
+        // FIXTURE calibration, not newly approved gameplay values.
+        var eligible = new List<Person>();
+        long totalClaims = 0;
+        foreach (var p in _people)
+        {
+            if (!p.Alive || Age(p, date) < 70 || p.ContributedDays < 5 * 365) continue;
+            var dailyDue = Math.Min(80, p.GrossEarnings * 4 / (5L * p.ContributedDays));
+            p.PensionCredit = checked(p.PensionCredit + dailyDue);
+            totalClaims = checked(totalClaims + p.PensionCredit);
+            eligible.Add(p);
+        }
+        if (totalClaims <= 0 || _treasury <= 0) return;
+        var budget = Math.Min(_treasury, totalClaims);
+        long distributed = 0;
+        foreach (var p in eligible)
+        {
+            var paid = Math.Min(p.PensionCredit,
+                (long)((decimal)budget * p.PensionCredit / totalClaims));
+            if (paid <= 0) continue;
+            p.PensionCredit -= paid;
+            p.PensionReceived += paid;
+            p.Cash += paid;
+            _treasury -= paid;
+            distributed += paid;
+            _history.Fact(_time, p.Id, 16, paid);
+        }
+        var remainder = budget - distributed;
+        foreach (var p in eligible)
+        {
+            if (remainder <= 0) break;
+            if (p.PensionCredit <= 0) continue;
+            p.PensionCredit--;
+            p.PensionReceived++;
+            p.Cash++;
+            _treasury--;
+            remainder--;
+            _history.Fact(_time, p.Id, 16, 1);
+        }
+    }
     private void DoHour()
     {
         var hour = _time / 3600;
@@ -384,6 +432,7 @@ internal sealed partial class CausalCity : IDisposable
         if (heir is null) _treasury = checked(_treasury + p.Cash);
         else heir.Cash = checked(heir.Cash + p.Cash);
         p.Cash = 0;
+        p.PensionCredit = 0; // Unpaid pension claim is not inherited.
         _history.Fact(_time, p.Id, 6, heir?.Id ?? -1);
     }
     private void StartWork(int personId)
@@ -407,14 +456,19 @@ internal sealed partial class CausalCity : IDisposable
             _producedFood += food;
             _history.Fact(_time, p.Id, 8, food);
         }
-        var wage = p.Job < StoreCount ? 50 : 200;
+        var wage = p.Job < StoreCount ? 65 : 80;
         if (employer.Cash >= wage)
         {
             employer.Cash -= wage;
-            p.Cash += wage;
+            var contribution = wage / 10; // 10% illustrative contributory fixture
+            _treasury += contribution;
+            p.Cash += wage - contribution;
+            p.ContributedDays++;
+            p.GrossEarnings += wage;
             _paidWages += wage;
             _workdays++;
-            _history.Fact(_time, p.Id, 7, wage);
+            _history.Fact(_time, p.Id, 7, wage - contribution);
+            _history.Fact(_time, p.Id, 15, contribution);
         }
         p.AtWork = false;
         var h = _households[p.HouseholdId];
@@ -660,6 +714,7 @@ internal sealed partial class CausalCity : IDisposable
         {
             Mix(p.Id); Mix(p.Node); Mix(p.Cash); Mix(p.Alive ? 1 : 0);
             Mix(p.Health); Mix(p.CarryFood); Mix(p.Traveling ? 1 : 0);
+            Mix(p.ContributedDays); Mix(p.GrossEarnings); Mix(p.PensionCredit); Mix(p.PensionReceived);
         }
         foreach (var h in _households) { Mix(h.Pantry); Mix(h.Members.Count); }
         foreach (var f in _shops) { Mix(f.Cash); Mix(f.Stock); }
@@ -703,6 +758,9 @@ internal sealed partial class CausalCity : IDisposable
         shopCashCents = _shops.Sum(s => s.Cash),
         farmCashCents = _farms.Sum(f => f.Cash),
         treasuryCashCents = _treasury,
+        unpaidPensionCreditsCents = _people.Sum(p => p.PensionCredit),
+        historicalPensionsPaidCents = _people.Sum(p => p.PensionReceived),
+        contributors = _people.Count(p => p.ContributedDays > 0),
         adultCitizensWithZeroCash = _people.Count(p => p.Alive && p.Cash == 0 && Age(p, Epoch.AddSeconds(_time)) >= 18),
         householdsWithNoPantry = _households.Count(h => h.Pantry == 0),
         shopFoodAvailable = _shops.Sum(s => (long)s.Stock),
