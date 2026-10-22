@@ -13,6 +13,13 @@ using IndexCities.Simulation;
 //          --strand=N empties the tank of N driving vehicles each day and follows the tow and the queue for 30 min
 // Results are measurements, not product rules: see docs/exploration/ritmo-velocidades.md.
 Console.OutputEncoding=Encoding.UTF8;
+if(args.Length>0&&args[0]=="e13")
+{
+    var rows=args.Length>1?int.Parse(args[1]):3;
+    var length=args.Length>2?int.Parse(args[2]):400;
+    var queries=args.Length>3?int.Parse(args[3]):250000;
+    return ExperimentE13.Run(rows,length,queries);
+}
 var known=new HashSet<string>{"rows","length","days","cap","signals","seed","growth","warmup","strand"};
 var opts=new Dictionary<string,string>();foreach(var p in args.Skip(2).Select(a=>a.TrimStart('-').Split('=',2)))opts[p[0]]=p.Length>1?p[1]:"1";
 string Opt(string k,string d)=>opts.GetValueOrDefault(k,d);
