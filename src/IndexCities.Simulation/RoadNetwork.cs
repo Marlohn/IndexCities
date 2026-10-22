@@ -5,7 +5,7 @@ public sealed partial class CitySimulation
     Dictionary<int,RoadNode> _roads=new();
     HashSet<int> _exteriorConnected=new(),_workExteriorConnected=new();Dictionary<(BuildingKind,Point,double),int?> _accessCache=new();
     // Only used in this isolated experiment to time the actual original policy.
-    bool _benchmarkLegacyAccessLimit;
+    bool _benchmarkLegacyAccessLimit = false;
     void RebuildRoadGraph(bool changed=true){_roadEpoch++;_roads=State.Roads.ToDictionary(r=>r.Id);foreach(var n in State.Roads){n.Neighbours=State.Roads.Where(r=>r.Id!=n.Id&&r.Position.Distance(n.Position)<=State.Tuning.RoadStep+.01).Select(r=>r.Id).ToList();}RebuildJunctionAreas();if(changed)State.RoadRevision++;_accessCache.Clear();_walkSurface=null;_exteriorConnected.Clear();_workExteriorConnected.Clear();var q=new Queue<int>();q.Enqueue(EntryNode().Id);while(q.Count>0){var id=q.Dequeue();if(!_workExteriorConnected.Add(id))continue;foreach(var next in _roads[id].Neighbours)if(_roads[next].MaintenanceRatio>.05)q.Enqueue(next);}q.Enqueue(EntryNode().Id);while(q.Count>0){var id=q.Dequeue();if(!_exteriorConnected.Add(id))continue;foreach(var next in _roads[id].Neighbours)if(!_roads[next].ConstructionOnly&&_roads[next].MaintenanceRatio>.05)q.Enqueue(next);}}
     RoadNode AddRoad(Point point,bool highway=false)
     {
