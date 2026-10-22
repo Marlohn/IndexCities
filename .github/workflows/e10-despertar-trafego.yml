@@ -1,0 +1,40 @@
+name: E10 - despertares de trafego sob congestionamento
+
+on:
+  push:
+    branches:
+      - experimento/e10-despertar-trafego-congestionado
+
+permissions:
+  contents: read
+
+jobs:
+  provar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Testes da simulacao
+        run: dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --logger 'console;verbosity=minimal'
+      - name: E10 - cidade menor e trafego comum
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet run -c Release --project src/IndexCities.Headless -- e10 --rows=3 --length=400 --seed=42 --minutes=60 --force=0 | tee e10_108.txt
+          grep -q '^E10_OK' e10_108.txt
+      - name: E10 - cidade com 400 SIMs e veiculo imobilizado
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet run -c Release --project src/IndexCities.Headless -- e10 --rows=5 --length=800 --seed=42 --minutes=60 --force=1 | tee e10_400_breakdown.txt
+          grep -q '^E10_OK' e10_400_breakdown.txt
+      - name: Evidencias E10
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e10-despertar-trafego
+          path: e10_*.txt
+          if-no-files-found: ignore
