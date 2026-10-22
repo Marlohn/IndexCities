@@ -282,6 +282,54 @@ jobs:
           path: economic-second-cycle-10y.log
           if-no-files-found: ignore
 
+  cross-farm-freight-10y:
+    # Real farms can bid for customers outside their original eight shops.
+    # Each delivery still requires a paid person, real food and physical travel.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[cross-farm-10y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compare local single-farm monopoly to real alternate suppliers
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms 2>&1 | tee single-farm-10y.log
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight 2>&1 | tee cross-farm-10y.log
+          python3 - <<'PY'
+          import json
+          def load(path):
+              lines=open(path).readlines()
+              i=next(i for i,line in enumerate(lines) if line.startswith('{'))
+              return json.loads(''.join(lines[i:]))
+          b,t=load('single-farm-10y.log'),load('cross-farm-10y.log')
+          for r in (b,t):
+              assert r['simulatedDays']==3653 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+              assert r['realWorkerFreightTrips']>0 and r['attendanceAwareFarmsFixture']
+          assert not b['crossFarmFreightFixture'] and t['crossFarmFreightFixture']
+          print('SINGLE_FARM_10Y',b['aliveEnd'],b['unmetMeals'],b['farmFoodAvailable'])
+          print('CROSS_FARM_10Y',t['aliveEnd'],t['minimumAliveAtAnyEvent'],t['unmetMeals'],t['farmFoodAvailable'])
+          open('healthy-decade.flag','w').write('yes' if t['minimumAliveAtAnyEvent']>=10000 else 'no')
+          PY
+          if test "$(cat healthy-decade.flag)" = yes; then
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight 2>&1 | tee cross-farm-80y-no-history.log
+          else
+            echo 'Ten-year survival not proven; no 80-year history claim'
+          fi
+      - name: Preserve all comparisons
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-cross-farm-comparison
+          path: |
+            single-farm-10y.log
+            cross-farm-10y.log
+            cross-farm-80y-no-history.log
+          if-no-files-found: ignore
+
   attendance-farms-market-10y:
     # Run paid physical farm work using 26 actual shift days per employee,
     # not imaginary 30 shift days. Uses capacity-based unit pricing.
