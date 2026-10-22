@@ -212,6 +212,8 @@ public sealed partial class CitySimulation
     }
     void MoveVehiclesUnsplit(double dt,double? operationsDt=null)
     {
+        E21BeginUnsplit();
+        var e21TotalStart=E21Probe=="cost"?System.Diagnostics.Stopwatch.GetTimestamp():0;
         // Release a passed junction even while a vehicle waits at the next one.
         // Carriageway half-width (3.3 m) + truck half-length (3.6 m) covers the
         // actual rear of the truck; the former 9 m reservation could overlap
@@ -221,6 +223,10 @@ public sealed partial class CitySimulation
         // key is a total order and any sort yields the same sequence.
         var ordered=State.Vehicles.ToArray();Array.Sort(ordered,static (a,b)=>a.WaitingSince.CompareTo(b.WaitingSince) is var c and not 0?c:a.Id.CompareTo(b.Id));
         foreach(var v in ordered){
+            E21BeforeVehicle(v);
+            var e21Before=E21Probe=="off"?default:E21PoseOf(v);
+            var e21Start=E21Probe=="cost"?System.Diagnostics.Stopwatch.GetTimestamp():0;
+            try{
             // A bypass belongs to the trip in progress: a stopped, parked or
             // replanned-elsewhere vehicle does not resume old waypoints.
             if(v.Detour.Count>0&&v.Status!=VehicleStatus.Travelling)v.Detour.Clear();
@@ -359,7 +365,7 @@ public sealed partial class CitySimulation
                 if(step<.00001&&d>.00001){v.Cause=blocker?.Status==VehicleStatus.Stranded?$"Aguardando veículo {blocker.Id} {(blocker.BrokenDown?"quebrado":"sem combustível")} na via":bayHold||entryHeld!=null?"Fila para acesso de carga":enteringLane?"Aguardando espaço para acessar a faixa":blocker!=null&&HoldsJunctionAhead(blocker,node)?(IsBend(node)?"Aguardando liberação da curva pelo veículo ":"Aguardando liberação do cruzamento pelo veículo ")+blocker.Id:"Fila na faixa";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;if(v.TowPhase==TowPhase.ToVehicle&&(TryTowContraflow(v)||TryTowFromBehind(v)))continue;if(!enteringLane&&blocker!=null&&blocker.Id!=v.TowTargetId&&TryBypassStopped(v,blocker))continue;if(blocker!=null&&TowExitHolds(blocker)&&TryUTurn(v,blocker))continue;
                     // A tow held for minutes turns back and goes around the stranded vehicles
                     // and the junctions they lock, instead of waiting in the queue.
-                    if(blocker!=null&&TowHeldTooLong(v,blocker)&&TryUTurn(v,blocker,TowClosedRoads(v))){CheckTowFuel(v);continue;}TowWaitsWithoutAccess(v);break;}
+                    if(blocker!=null&&TowHeldTooLong(v,blocker)&&TryUTurn(v,blocker,TowClosedRoads(v))){CheckTowFuel(v);continue;}TowWaitsWithoutAccess(v);E21Blocked(v,blocker);break;}
                 // Entering is admitted whole too: a delivery near its bay takes no junction
                 // or bend before its entry is admitted.
                 var sharedAhead=node.Neighbours.Count>=3||node.Crosswalk||TurnsAtBend(v,v.RouteIndex);
@@ -369,7 +375,7 @@ public sealed partial class CitySimulation
                     // turns back after the same minutes as behind it in the lane.
                     if(v.TowPhase==TowPhase.ToVehicle&&(TryTowContraflow(v)||TryTowFromBehind(v)))continue;
                     if(VehicleMovementTime-v.WaitingSince>=State.Tuning.UTurnWaitSeconds&&JunctionHeldByStranded(v,node) is {} stranded&&TryUTurn(v,stranded))continue;
-                    if(IsTow(v)&&TowHeldTooLong(v,null)&&JunctionHeldByStranded(v,node) is {} holder&&TryUTurn(v,holder,[..TowClosedRoads(v),node.Id])){CheckTowFuel(v);continue;}TowWaitsWithoutAccess(v);break;}
+                    if(IsTow(v)&&TowHeldTooLong(v,null)&&JunctionHeldByStranded(v,node) is {} holder&&TryUTurn(v,holder,[..TowClosedRoads(v),node.Id])){CheckTowFuel(v);continue;}TowWaitsWithoutAccess(v);E21Blocked(v,null,true);break;}
                 if(v.Fuel<=.000001){RunOutOfFuel(v);break;}
                 step=Math.Min(step,v.Fuel/FuelRate(v));v.Position=v.Position.MoveTowards(target,step);v.AddFuel(-(step*FuelRate(v)));v.FuelUnits=Math.Max(0,v.FuelUnits);v.AddFuelBurnedLastStep(step*FuelRate(v));remaining-=step/speed;v.WaitingSince=0;v.Cause="Em viagem";
                 ClearPassedJunction(v);
@@ -378,9 +384,11 @@ public sealed partial class CitySimulation
                 // Wear for the distance driven; a vehicle in use may break down here.
                 if(DriveWear(v,step)||steer==null&&!advanced)break;
             }
+            }finally{if(E21Probe!="off")E21AfterVehicle(v,e21Start,e21Before,operationsDt!=null||_vehicleMovementBatch==null);}
         }
         // A towed vehicle moves only with its tow (platform or trailing a heavy tow).
         SyncTowedVehicles();
+        E21EndUnsplit(e21TotalStart);
     }
     void ReplanVehicle(Vehicle v,Shipment s)
     {
