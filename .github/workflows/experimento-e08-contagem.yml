@@ -34,9 +34,9 @@ jobs:
           run_case() {
             local tag="$1"; shift
             echo "===== ORIGINAL ${tag} ====="
-            dotnet run --no-restore -c Release --project referencia/src/IndexCities.Headless -- scale "$@" | tee "base_${tag}.txt"
+            dotnet run -c Release --project referencia/src/IndexCities.Headless -- scale "$@" | tee "base_${tag}.txt"
             echo "===== INSTRUMENTADO ${tag} ====="
-            dotnet run --no-restore -c Release --project instrumentado/src/IndexCities.Headless -- scale "$@" --e08=1 | tee "e08_${tag}.txt"
+            dotnet run -c Release --project instrumentado/src/IndexCities.Headless -- scale "$@" --e08=1 | tee "e08_${tag}.txt"
             local before after
             before=$(grep -o 'sha256=[0-9A-F]*' "base_${tag}.txt" | tail -1 | cut -d= -f2)
             after=$(grep -o 'sha256=[0-9A-F]*' "e08_${tag}.txt" | tail -1 | cut -d= -f2)
