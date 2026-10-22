@@ -1,0 +1,66 @@
+name: Laboratorio de performance combinada
+
+on:
+  push:
+    branches:
+      - experimento/performance-combinada
+    paths-ignore:
+      - 'docs/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  equivalencia-e-escala:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout experimento combinado
+        uses: actions/checkout@v4
+        with:
+          path: combinado
+      - name: Checkout main de referencia imutavel
+        uses: actions/checkout@v4
+        with:
+          ref: 651326228729d7689b61745370cc63d997e5ee60
+          path: referencia
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Testes especificos das duas tecnicas
+        run: dotnet test combinado/tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --filter 'FullyQualifiedName~RoadNeighbourIndexTests|FullyQualifiedName~RoadAccessCacheScaleTests' --logger 'console;verbosity=normal'
+      - name: Testes completos
+        run: dotnet test combinado/tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --logger 'console;verbosity=minimal'
+      - name: Microbenchmark da reconstrucao do grafo
+        run: dotnet run -c Release --project combinado/src/IndexCities.Headless -- roadgraph 10000
+      - name: Comparar dias simulados e saves com a main
+        shell: bash
+        run: |
+          set -euo pipefail
+          for case_name in cycle grid; do
+            if [[ "$case_name" == "cycle" ]]; then
+              scenario=(cycle)
+            else
+              scenario=(grid --rows=3 --length=400)
+            fi
+            echo "===== CENARIO $case_name: main referencia ====="
+            dotnet run -c Release --project referencia/src/IndexCities.Headless -- scale "${scenario[@]}" --days=1 --warmup=1 --seed=42 --cap=240 | tee "main_${case_name}.txt"
+            echo "===== CENARIO $case_name: duas melhorias ====="
+            dotnet run -c Release --project combinado/src/IndexCities.Headless -- scale "${scenario[@]}" --days=1 --warmup=1 --seed=42 --cap=240 | tee "combo_${case_name}.txt"
+            old_sha=$(grep -o 'sha256=[0-9A-F]*' "main_${case_name}.txt" | tail -1 | cut -d= -f2)
+            new_sha=$(grep -o 'sha256=[0-9A-F]*' "combo_${case_name}.txt" | tail -1 | cut -d= -f2)
+            echo "RESULTADO $case_name main_sha=$old_sha combo_sha=$new_sha"
+            grep -E '^(DAY 1|SUMMARY|INVARIANTS OK)' "main_${case_name}.txt"
+            grep -E '^(DAY 1|SUMMARY|INVARIANTS OK)' "combo_${case_name}.txt"
+            test -n "$old_sha" && test "$old_sha" = "$new_sha" || { echo "DIVERGENCIA de save no cenario $case_name"; exit 1; }
+          done
+      - name: Publicar logs de reproducao
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: laboratorio-performance-combinada
+          path: |
+            main_*.txt
+            combo_*.txt
+          if-no-files-found: ignore

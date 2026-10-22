@@ -680,3 +680,22 @@ Nas seis execuções concluídas dessa base, o dia termina com 1.037 SIMs, 0 mor
 **Validação da correção:** `dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj`: **325/325**, sem falhas ou ignorados. Os seis casos de `JourneyRetryTests` cobrem falha a pé e alternativa do carro, manutenção do prazo em passos de 2 s, nova tentativa após 300 s, mudança sem conexão que reinicia a espera, reconexão imediata e rota removida. Aplicados à biblioteca original, cinco dos seis falham; com a correção, os seis passam. Godot 4.7.2 mono: build/importação reais, `-- --qa-list` e `-- --smoke`, com `INDEXCITIES_SMOKE_OK buildings=0 roads=17` e `--review-save-dir=C:/Users/Marlohn/orca/workspaces/IndexCities/sem-rota/artifacts/verification/sem-rota-retentativa/godot-saves`. O smoke é headless e não grava cidade; não substitui playtest humano.
 
 Logs, binários congelados e script da comparação em `artifacts/verification/sem-rota-retentativa/` (fora do Git). Revisão independente a cargo do coordenador após a PR; ainda não realizada nesta entrega.
+
+## 2026-10-21 — laboratório unificado: duas otimizações viárias em conjunto
+
+> **Pesquisa técnica experimental, não requisito da SPEC nem decisão arquitetural.** Branch `experimento/performance-combinada` criada a partir da `main` `6513262`. O objetivo é testar **a combinação**, mantendo resultados individuais separáveis e uma única fonte de síntese. As branches originais seguem como referências e não foram mescladas na `main`.
+
+### Hipóteses e medições isoladas, já obtidas
+
+| Otimização | Evidência C# executada | Limite da interpretação |
+|---|---|---|
+| Índice espacial de vizinhos ao reconstruir o grafo | [Actions 39697599407](https://github.com/Marlohn/IndexCities/actions/runs/39697599407): 10.000 nós, 391,32 → 31,25 ms (**12,52×**); 8/8 testes específicos, 442/442 gerais | Mede **reconstrução** de nós, não um dia simulado |
+| Limite do cache `Access(Building)` proporcional aos prédios existentes | [Actions 39701334607](https://github.com/Marlohn/IndexCities/actions/runs/39701334607): 10.000 prédios, **40.000 → 10.000** buscas completas em quatro passagens, 4,80–4,84× na consulta; 3/3 específicos e 437/437 gerais | 10 mil **prédios ≠ 10 mil SIMs**; com 3 mil prédios as duas políticas tiveram 3 mil faltas cada, e os tempos apresentaram ruído elevado |
+
+### Experimento integrado
+
+A branch contém apenas **as duas mudanças de produção** e seus testes, sem o seletor de política antigo/novo nem o contador de misses que serviram apenas para a investigação isolada. O teste combinado [GitHub Actions — laboratório unificado](https://github.com/Marlohn/IndexCities/actions/workflows/experimento-performance-combinada.yml) executa a suíte completa e compara o **save SHA-256**, os eventos e as estatísticas do mesmo cenário headless (`cycle` e `grid`) sob a `main` de origem e a branch combinada. O microbenchmark da reconstrução viária permanece disponível.
+
+**Critério crítico:** tempo de dia simulado e integridade causal valem mais que ganhos artificiais de funções isoladas. Mesmo com snapshots idênticos, não se pode extrapolar um cenário V1 moderado para 10 mil SIMs nem dispensar revisão independente e QA no Godot.
+
+**Estado:** comparação integrada ainda precisa ser interpretada após execução do CI; nenhum merge autorizado automaticamente. Não criar um requisito de novo scheduler a partir destes dados.
