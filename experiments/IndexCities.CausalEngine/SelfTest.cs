@@ -129,12 +129,24 @@ internal static class EngineSelfTest
             File.Delete(feedbackSave);
             if (feedbackHash != feedbackResumedHash)
                 throw new InvalidOperationException("Revenue-backed payroll changed after save/resume");
+            // Small closed-household stress case: when the final family
+            // member dies, a positive estate must NOT finance city pensions.
+            long unclaimedEstate;
+            using (var orphan = new CausalCity(new LabConfig(4, 365, 48, null, false)))
+            {
+                orphan.Run();
+                orphan.AssertConservation();
+                unclaimedEstate = orphan.ReserveGlobalCents;
+            }
+            if (unclaimedEstate <= 0)
+                throw new InvalidOperationException("Heirless money did not reach the Global Reserve");
             watch.Stop();
             Console.WriteLine(JsonSerializer.Serialize(new
             {
                 success = true, scope = "14 days, 256 people, real trips and transactions in simplified fixture",
                 worlds = 7, deterministic = true, hash = hashA,
                 payrollFeedbackSaveResumeExact = feedbackHash == feedbackResumedHash,
+                heirlessEstatesReturnToReserve = unclaimedEstate > 0,
                 saveResumeExact = resumedHash == hashA,
                 compressedHistoryReplayExact = reopened == facts,
                 journeys, sales, births, successorPurchases, retiredPurchases, historyFacts = facts,
