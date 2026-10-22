@@ -1,0 +1,31 @@
+name: E15-L - diagnóstico de primeira divergência
+
+on:
+  push:
+    branches:
+      - experimento/e15-local-diagnostico
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Comparar cada passo de 2 segundos ate detectar a primeira divergencia
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet run -c Release --project src/IndexCities.Headless -- scale grid --rows=3 --length=400 --seed=42 --warmup=1 --e15=diagnose | tee e15_first_difference.txt
+          grep -q 'E15_FIRST_DIFFERENCE' e15_first_difference.txt
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e15-first-difference
+          path: e15_first_difference.txt
+          if-no-files-found: ignore
