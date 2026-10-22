@@ -36,7 +36,7 @@ internal static class Program
             }
             int sims = 1000, days = 7, seed = 42;
             string? history = null;
-            bool adversarial = false, wageFeedback = false;
+            bool adversarial = false, wageFeedback = false, cohortRenewal = false;
             foreach (var arg in args)
             {
                 if (arg.StartsWith("--sims=")) sims = int.Parse(arg[7..]);
@@ -45,12 +45,13 @@ internal static class Program
                 else if (arg.StartsWith("--history=")) history = arg[10..];
                 else if (arg == "--adversarial") adversarial = true;
                 else if (arg == "--wage-feedback") wageFeedback = true;
+                else if (arg == "--cohort-renewal") cohortRenewal = true;
                 else if (arg == "--self-test") return EngineSelfTest.Run();
                 else throw new ArgumentException("Unknown argument: " + arg);
             }
             if (sims < 4 || sims > 100_000 || days < 1 || days > 29_220)
                 throw new ArgumentOutOfRangeException("Requires 4..100000 SIMs and 1..29220 days.");
-            var config = new LabConfig(sims, days, seed, history, adversarial, wageFeedback);
+            var config = new LabConfig(sims, days, seed, history, adversarial, wageFeedback, cohortRenewal);
             using var engine = new CausalCity(config);
             var sw = Stopwatch.StartNew();
             engine.Run();
