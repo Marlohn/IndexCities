@@ -541,9 +541,41 @@ internal sealed class CausalCity : IDisposable
         foreach (var farm in _farms) if (farm.Stock < 0 || farm.Cash < 0) throw new InvalidOperationException("Invalid farm");
         foreach (var p in _people) if (p.Cash < 0 || p.CarryFood < 0) throw new InvalidOperationException("Invalid person");
     }
+    public string Fingerprint()
+    {
+        // Deterministic FNV-1a-style state fingerprint; independent of .NET
+        // HashCode process salts and excludes timing/perf counters.
+        ulong hash = 14695981039346656037UL;
+        void Mix(long x) { hash ^= unchecked((ulong)x); hash *= 1099511628211UL; }
+        Mix(_time); Mix(_active); Mix(_births); Mix(_deaths);
+        Mix(_journeys); Mix(_segments); Mix(_sales); Mix(_shipments);
+        foreach (var p in _people)
+        {
+            Mix(p.Id); Mix(p.Node); Mix(p.Cash); Mix(p.Alive ? 1 : 0);
+            Mix(p.Health); Mix(p.CarryFood); Mix(p.Traveling ? 1 : 0);
+        }
+        foreach (var h in _households) { Mix(h.Pantry); Mix(h.Members.Count); }
+        foreach (var f in _shops) { Mix(f.Cash); Mix(f.Stock); }
+        foreach (var f in _farms) { Mix(f.Cash); Mix(f.Stock); }
+        foreach (var x in _closed) Mix(x ? 1 : 0);
+        foreach (var t in _trips) if (!t.Completed)
+        {
+            Mix(t.OwnerId); Mix(t.Destination); Mix(t.CurrentNode);
+            Mix(t.EnterAt); Mix(t.ExitAt);
+        }
+        return hash.ToString("X16", CultureInfo.InvariantCulture);
+    }
+    public long Journeys => _journeys;
+    public long Sales => _sales;
+    public long Births => _births;
+    public int PeakActive => _maxActive;
+    public int MinimumActive => _minActive;
+    public long RecordedFacts => _history.Entries;
+
     public object Report(double wallSeconds) => new
     {
         status = "PARTIAL_ARCHITECTURAL_FIXTURE_NOT_FULL_INDEXCITIES",
+        stateFingerprint = Fingerprint(),
         warning = "Not SPEC-complete: simplified lanes/intersections, no pedestrian crosswalks, real towing, building construction, complex health or full demography. NEVER claim full 10k/80y achieved.",
         seed = _config.Seed,
         requestedSims = _config.Sims,
