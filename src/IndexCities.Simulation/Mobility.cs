@@ -219,7 +219,9 @@ public sealed partial class CitySimulation
         foreach(var vehicle in State.Vehicles){ClearPassedJunction(vehicle);ReleaseManoeuvre(vehicle);}
         // Same order as OrderBy(WaitingSince).ThenBy(Id): Ids are unique, so the
         // key is a total order and any sort yields the same sequence.
-        var ordered=State.Vehicles.ToArray();Array.Sort(ordered,static (a,b)=>a.WaitingSince.CompareTo(b.WaitingSince) is var c and not 0?c:a.Id.CompareTo(b.Id));
+        var ordered=E15BatchScoped&&_vehicleMovementBatch!=null&&operationsDt==null
+            ?State.Vehicles.Where(v=>_vehicleMovementBatch.Contains(v.Id)).ToArray()
+            :State.Vehicles.ToArray();Array.Sort(ordered,static (a,b)=>a.WaitingSince.CompareTo(b.WaitingSince) is var c and not 0?c:a.Id.CompareTo(b.Id));
         foreach(var v in ordered){
             // A bypass belongs to the trip in progress: a stopped, parked or
             // replanned-elsewhere vehicle does not resume old waypoints.
