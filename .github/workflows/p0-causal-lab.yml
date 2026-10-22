@@ -29,6 +29,10 @@ jobs:
         run: |
           set -o pipefail
           dotnet run -c Release --project experiments/IndexCities.CausalLab/IndexCities.CausalLab.csproj | tee p0-dotnet.log
+      - name: Event-driven limiar de fome vs passos exatos
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalLab/IndexCities.CausalLab.csproj -- --segments | tee p0-segments.log
       - name: Auditoria integrada na cidade real do IndexCities
         run: |
           set -o pipefail
