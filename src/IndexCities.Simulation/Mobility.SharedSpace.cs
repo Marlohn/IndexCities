@@ -89,6 +89,7 @@ public sealed partial class CitySimulation
 
     List<(Vehicle Body,Point Position,double Heading)> Manoeuvre(Vehicle o,List<int> route,int from,Point at,double facing,IReadOnlyList<Point> site,bool approach,int minimum,out List<RoadNode> spaces,out int endIndex,Func<Point,double,bool>? extraClear=null,int? through=null)
     {
+        if(_e08Slice is {} e08Manoeuvre)e08Manoeuvre.ManoeuvreCalls++;
         var held=new List<(Vehicle Body,Point Position,double Heading)>();spaces=[];endIndex=from-1;
         var near=SharedNodes();var found=spaces;
         void Note(Point p,double h){foreach(var n in near)if(!found.Contains(n)&&EntersArea(o,p,h,n))found.Add(n);}
@@ -110,6 +111,7 @@ public sealed partial class CitySimulation
             at=lane;facing=direction;points++;endIndex=i;
             if(points>=minimum&&near.All(n=>!EntersArea(o,at,facing,n))&&(extraClear?.Invoke(at,facing)??true))break;
         }
+        if(_e08Slice is {} e08Poses)e08Poses.ManoeuvrePoses+=held.Count;
         return held;
     }
     // A truck's way out of the dock at `at` toward home (predicted while it is
