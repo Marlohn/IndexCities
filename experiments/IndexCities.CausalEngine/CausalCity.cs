@@ -8,7 +8,7 @@ namespace IndexCities.CausalEngine;
 
 // Independent vertical-slice engine for falsifying the architecture.
 // RULES AND FIXTURES HERE ARE NOT AN IMPLEMENTATION OF ALL OF INDEXCITIES SPEC.
-internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false, bool RetailShopFallback = false, int RetailBasketsPerShift = 5, bool MunicipalSanitationPilot = false, int MunicipalCollectionIntervalDays = 6);
+internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false, bool RetailShopFallback = false, int RetailBasketsPerShift = 5, bool MunicipalSanitationPilot = false, int MunicipalCollectionIntervalDays = 6, bool MunicipalWasteTreatmentPilot = false);
 internal enum EventKind : byte { Day, Hour, StartWork, EndWork, Move, Delivery, RoadClose, RoadOpen, HouseholdShop }
 internal readonly record struct SimEvent(EventKind Kind, int Id);
 internal sealed class Person
@@ -509,17 +509,33 @@ internal sealed partial class CausalCity : IDisposable
         // from actual 30-day grocery sales / wholesale orders, never guaranteed
         // inhabitants or new money. This is an intentionally narrow test, NOT
         // the full autonomous employer, wage negotiation or skills contract.
-        Span<int> positions = stackalloc int[StoreCount + FarmCount + (_config.ConstructionPilot ? 1 : 0) + (_config.MunicipalSanitationPilot ? 1 : 0)];
-        Span<int> occupied = stackalloc int[StoreCount + FarmCount + (_config.ConstructionPilot ? 1 : 0) + (_config.MunicipalSanitationPilot ? 1 : 0)];
+        Span<int> positions = stackalloc int[StoreCount + FarmCount + (_config.ConstructionPilot ? 1 : 0) + (_config.MunicipalSanitationPilot ? 1 : 0) + (_config.MunicipalWasteTreatmentPilot ? 1 : 0)];
+        Span<int> occupied = stackalloc int[StoreCount + FarmCount + (_config.ConstructionPilot ? 1 : 0) + (_config.MunicipalSanitationPilot ? 1 : 0) + (_config.MunicipalWasteTreatmentPilot ? 1 : 0)];
+        long municipalPayrollBudget = _treasury;
         for (var i = 0; i < positions.Length; i++)
         {
+            if (_config.MunicipalWasteTreatmentPilot && i == WasteTreatmentJob)
+            {
+                // Water/food consumption already creates household waste.
+                // Keep finite treatment throughput per real paid shift, and
+                // use ONLY the municipal cash left after collection contracts.
+                var neededWaste = (long)_active * 30;
+                var demanded = (int)Math.Min(MaxWasteTreatmentWorkers,
+                    (neededWaste + WasteTreatmentUnitsPerShift * 26 - 1) /
+                    (WasteTreatmentUnitsPerShift * 26));
+                positions[i] = (int)Math.Min(demanded,
+                    municipalPayrollBudget / (WasteTreatmentGrossWage * 30L));
+                municipalPayrollBudget -= positions[i] * WasteTreatmentGrossWage * 30L;
+                continue;
+            }
             if (_config.MunicipalSanitationPilot && i == SanitationJob)
             {
                 // One actual home served per real shift, ~weekly residence service.
                 var liveHomes = _households.Count(h => h.Members.Any(id => _people[id].Alive));
                 var interval = _config.MunicipalCollectionIntervalDays;
                 var demanded = Math.Min(1600, (liveHomes + interval - 1) / interval);
-                positions[i] = Math.Min(demanded, (int)(_treasury / (80L * 30)));
+                positions[i] = Math.Min(demanded, (int)(municipalPayrollBudget / (80L * 30)));
+                municipalPayrollBudget -= positions[i] * 80L * 30;
                 continue;
             }
             if (i == BuilderJob)
@@ -684,6 +700,7 @@ internal sealed partial class CausalCity : IDisposable
                 {
                     if (occupied[i] >= positions[i]) continue;
                     var node = i == BuilderJob ? _builder.Node :
+                        (_config.MunicipalWasteTreatmentPilot && i == WasteTreatmentJob) ? SanitationDepotNode :
                         (_config.MunicipalSanitationPilot && i == SanitationJob) ? p.Home :
                         i < StoreCount ? _shops[i].Node : _farms[i - StoreCount].Node;
                     var distance = Math.Abs(p.Home % Grid - node % Grid) +
@@ -852,6 +869,8 @@ internal sealed partial class CausalCity : IDisposable
     }
     private void Die(Person p)
     {
+        if (_config.MunicipalWasteTreatmentPilot && p.Job == WasteTreatmentJob && p.AtWork)
+            p.AtWork = false;
         if (_config.MunicipalSanitationPilot && p.Job == SanitationJob && p.AtWork)
             p.AtWork = false; // No private-firm presence for municipal employees.
         if (_config.VacancyMarket && p.AtWork && p.Job >= 0)
@@ -888,6 +907,8 @@ internal sealed partial class CausalCity : IDisposable
         if (!p.Alive || p.Job < 0 || p.Traveling || p.Node != p.Home) return;
         var workNode = p.Job < StoreCount ? _shops[p.Job].Node :
             p.Job < BuilderJob ? _farms[p.Job - StoreCount].Node : -1;
+        if (_config.MunicipalWasteTreatmentPilot && p.Job == WasteTreatmentJob)
+            workNode = SanitationDepotNode;
         if (_config.MunicipalSanitationPilot && p.Job == SanitationJob)
         {
             p.SanitationHouseholdId = PickMunicipalCollectionSite(p);
@@ -917,6 +938,11 @@ internal sealed partial class CausalCity : IDisposable
             if (!p.Traveling && p.Node == p.Home &&
                 _households[p.HouseholdId].Pantry < 30)
                 Schedule(_time + 3600, EventKind.HouseholdShop, personId);
+            return;
+        }
+        if (_config.MunicipalWasteTreatmentPilot && p.Job == WasteTreatmentJob)
+        {
+            FinishMunicipalTreatmentShift(p);
             return;
         }
         if (_config.MunicipalSanitationPilot && p.Job == SanitationJob)
@@ -1231,6 +1257,7 @@ internal sealed partial class CausalCity : IDisposable
             if (p.Node != p.Home) { StartTrip(p, p.Home); return; }
         }
         var workplace = p.Job < 0 ? -1 :
+            (_config.MunicipalWasteTreatmentPilot && p.Job == WasteTreatmentJob) ? SanitationDepotNode :
             (_config.MunicipalSanitationPilot && p.Job == SanitationJob) ?
                 (p.SanitationHouseholdId >= 0 ? _households[p.SanitationHouseholdId].Home : -1) :
             p.Job == BuilderJob ?
@@ -1281,6 +1308,8 @@ internal sealed partial class CausalCity : IDisposable
             p.AtWork = true;
             if (_config.VacancyMarket)
             {
+                if (_config.MunicipalWasteTreatmentPilot && p.Job == WasteTreatmentJob)
+                    return; // Physical arrival at treatment depot.
                 if (_config.MunicipalSanitationPilot && p.Job == SanitationJob)
                     return; // Physical arrival, no fictional private firm.
                 var employer = p.Job == BuilderJob ? _builder :
@@ -1493,8 +1522,8 @@ internal sealed partial class CausalCity : IDisposable
             throw new InvalidOperationException("Invalid person or freight cargo");
         AssertConstructionConservation();
         if (_config.MunicipalSanitationPilot &&
-            (_garbageGenerated != _garbageAtDepot + _garbageInTransit + _households.Sum(h => h.TrashUnits) ||
-             _garbageCollected != _garbageAtDepot + _garbageInTransit ||
+            (_garbageGenerated != _garbageAtDepot + _wasteTreated + _garbageInTransit + _households.Sum(h => h.TrashUnits) ||
+             _garbageCollected != _garbageAtDepot + _wasteTreated + _garbageInTransit ||
              _garbageInTransit != _people.Sum(p => p.SanitationCargo) || _treasury < 0))
             throw new InvalidOperationException("Municipal waste or city cash violated causal accounting");
         if (_config.FreightLabor && _shipments != _freightLaborTrips)
@@ -1522,7 +1551,7 @@ internal sealed partial class CausalCity : IDisposable
         Mix(_time); Mix(_active); Mix(_births); Mix(_deaths); Mix(_treasury); Mix(_reserveGlobal);
         Mix(_journeys); Mix(_segments); Mix(_sales); Mix(_shipments); Mix(_retailSalesCents);
         Mix(_municipalTaxPaidCents); Mix(_municipalWagesPaidCents);
-        Mix(_garbageGenerated); Mix(_garbageCollected); Mix(_garbageAtDepot); Mix(_sanitationPaidVisits); Mix(_garbageInTransit);
+        Mix(_garbageGenerated); Mix(_garbageCollected); Mix(_garbageAtDepot); Mix(_sanitationPaidVisits); Mix(_wasteTreated); Mix(_wasteTreatmentPaidShifts); Mix(_garbageInTransit);
         foreach (var p in _people)
         {
             Mix(p.Id); Mix(p.Node); Mix(p.Job); Mix(p.Cash); Mix(p.Alive ? 1 : 0); Mix(p.HeadingToWork ? 1 : 0);
@@ -1628,6 +1657,10 @@ internal sealed partial class CausalCity : IDisposable
         retailAlternativePurchases = _people.Sum(p => p.RetailAlternativePurchases),
         retailAlternativeFailures = _people.Sum(p => p.RetailAlternativeFailures),
         municipalSanitationPilotFixture = _config.MunicipalSanitationPilot,
+        municipalWasteTreatmentPilotFixture = _config.MunicipalWasteTreatmentPilot,
+        wasteTreatedAtDepot = _wasteTreated,
+        paidWasteTreatmentShifts = _wasteTreatmentPaidShifts,
+        municipalWasteTreatmentJobs = _people.Count(p => p.Alive && p.Job == WasteTreatmentJob),
         municipalCollectionIntervalDays = _config.MunicipalCollectionIntervalDays,
         municipalTaxCollectedCents = _municipalTaxPaidCents,
         municipalSanitationWagesPaidCents = _municipalWagesPaidCents,
