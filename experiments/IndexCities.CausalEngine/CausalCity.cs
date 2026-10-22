@@ -439,6 +439,76 @@ internal sealed partial class CausalCity : IDisposable
         }
         if (_days < _config.Days) Schedule(_time + DaySeconds, EventKind.Day, 0);
     }
+    private void ReconcileVacancies(DateTime date, long day)
+    {
+        // Counterfactual V1-scale job market: firm-funded positions are formed
+        // from actual 30-day grocery sales / wholesale orders, never guaranteed
+        // inhabitants or new money. This is an intentionally narrow test, NOT
+        // the full autonomous employer, wage negotiation or skills contract.
+        Span<int> positions = stackalloc int[StoreCount + FarmCount];
+        Span<int> occupied = stackalloc int[StoreCount + FarmCount];
+        for (var i = 0; i < positions.Length; i++)
+        {
+            var farm = i >= StoreCount;
+            var firm = farm ? _farms[i - StoreCount] : _shops[i];
+            var unitPrice = farm ? WholesalePrice : FoodPrice;
+            var monthlyUnits = firm.DayReceipts / unitPrice;
+            var unitsPerEmployee = farm ? 35 * 30 : 5 * 30;
+            // One trial position per solvent business even with no demand:
+            // startup must be possible without fabricated sales or wages.
+            var wanted = (int)Math.Clamp(
+                (monthlyUnits + unitsPerEmployee - 1) / unitsPerEmployee,
+                farm ? 2 : 1, farm ? 60 : 96);
+            var wage = farm ? 80 : 65;
+            var funded = (int)Math.Min(firm.Cash / (wage * 30L), wanted);
+            positions[i] = funded;
+            firm.OfferedPositions = funded;
+            firm.DayReceipts = 0;
+            firm.DaySupplies = 0;
+        }
+        // Keep valid jobs before recruiting; losing sales may end a vacancy.
+        // Changing an employer at midnight never materializes transportation
+        // or wages. Only someone actually arriving for the shift is paid.
+        for (var i = 0; i < _people.Count; i++)
+        {
+            var p = _people[i];
+            if (p.Job < 0) continue;
+            var age = Age(p, date);
+            if (!p.Alive || age is < 18 or >= 70 ||
+                occupied[p.Job] >= positions[p.Job])
+            {
+                p.Job = -1;
+                p.AtWork = false;
+                continue;
+            }
+            occupied[p.Job]++;
+        }
+        // Applicants individually find the nearest offer. Rotating the start
+        // ID avoids claiming every offer for the same initial families.
+        var start = (int)(((long)_config.Seed + day * 43) % _people.Count);
+        for (var k = 0; k < _people.Count; k++)
+        {
+            var p = _people[(start + k) % _people.Count];
+            if (!p.Alive || p.Job >= 0 || Age(p, date) is < 18 or >= 70)
+                continue;
+            var best = -1;
+            var bestDistance = int.MaxValue;
+            for (var i = 0; i < positions.Length; i++)
+            {
+                if (occupied[i] >= positions[i]) continue;
+                var node = i < StoreCount ? _shops[i].Node : _farms[i - StoreCount].Node;
+                var distance = Math.Abs(p.Home % Grid - node % Grid) +
+                               Math.Abs(p.Home / Grid - node / Grid);
+                if (distance >= bestDistance) continue;
+                bestDistance = distance;
+                best = i;
+            }
+            if (best < 0) break;
+            p.Job = best;
+            occupied[best]++;
+        }
+    }
+
     private void ScheduleDemandFundedShifts(DateTime date, long day)
     {
         // Isolated counterfactual: only real previous-day customer receipts
@@ -817,6 +887,12 @@ internal sealed partial class CausalCity : IDisposable
         p.TripId = -1;
         var workplace = p.Job < 0 ? -1 : p.Job < StoreCount
             ? _shops[p.Job].Node : _farms[p.Job - StoreCount].Node;
+        if (_config.VacancyMarket && p.HeadingToWork && p.Job < 0)
+        {
+            p.HeadingToWork = false;
+            StartTrip(p, p.Home); // cancelled shift; not a grocery purchase.
+            return;
+        }
         if (p.Node == workplace && _time % DaySeconds < 17 * 3600 &&
             _time % DaySeconds >= 8 * 3600 &&
             (!_config.VacancyMarket || p.HeadingToWork))
@@ -906,6 +982,15 @@ internal sealed partial class CausalCity : IDisposable
         foreach (var store in _shops) if (store.Stock < 0 || store.Cash < 0) throw new InvalidOperationException("Invalid shop");
         foreach (var farm in _farms) if (farm.Stock < 0 || farm.Cash < 0) throw new InvalidOperationException("Invalid farm");
         foreach (var p in _people) if (p.Cash < 0 || p.CarryFood < 0) throw new InvalidOperationException("Invalid person");
+        if (_config.VacancyMarket)
+        {
+            for (var firmId = 0; firmId < StoreCount + FarmCount; firmId++)
+            {
+                var offer = firmId < StoreCount ? _shops[firmId] : _farms[firmId - StoreCount];
+                if (_people.Count(p => p.Alive && p.Job == firmId) > offer.OfferedPositions)
+                    throw new InvalidOperationException("More contracted people than market vacancies");
+            }
+        }
     }
     public string Fingerprint()
     {
