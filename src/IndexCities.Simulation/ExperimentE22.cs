@@ -102,7 +102,8 @@ public sealed partial class CitySimulation
         {_e22WokeByOwnState++;E22Unsubscribe(v.Id);return false;}
         // A time-driven wake is mandatory at the original U-turn threshold
         // or signal-cycle boundary. Other time dependencies remain unproven.
-        if(v.WaitingSince>0&&VehicleMovementTime>=v.WaitingSince+State.Tuning.UTurnWaitSeconds||
+        if(v.WaitingSince>0&&sub.RegisteredAt<v.WaitingSince+State.Tuning.UTurnWaitSeconds&&
+           VehicleMovementTime>=v.WaitingSince+State.Tuning.UTurnWaitSeconds||
            (int)(sub.RegisteredAt/30)!=(int)(VehicleMovementTime/30))
         {_e22WokeByTime++;E22Unsubscribe(v.Id);return false;}
         if(E22Mode=="queue"&&!_e22BatchSkip.Contains(v.Id))
@@ -129,7 +130,8 @@ public sealed partial class CitySimulation
                    !_e22VehicleById.TryGetValue(id,out var vehicle)||
                    sub.Self!=E22State(vehicle)||
                    sub.RoadRevision!=State.RoadRevision||
-                   vehicle.WaitingSince>0&&VehicleMovementTime>=vehicle.WaitingSince+State.Tuning.UTurnWaitSeconds||
+                   vehicle.WaitingSince>0&&sub.RegisteredAt<vehicle.WaitingSince+State.Tuning.UTurnWaitSeconds&&
+                   VehicleMovementTime>=vehicle.WaitingSince+State.Tuning.UTurnWaitSeconds||
                    (int)(sub.RegisteredAt/30)!=(int)(VehicleMovementTime/30))
                 {canSleep=false;break;}
             }
