@@ -44,11 +44,39 @@ internal static class EngineSelfTest
                 if (hashA != hashB)
                     throw new InvalidOperationException($"Nondeterministic states: {hashA} != {hashB}");
             }
+            // Resume after day seven rather than silently restarting a city.
+            // The history file is a lossless concatenation of GZip members.
+            var compressed = temp + ".gz";
+            var snapshot = temp + ".save.json";
+            string resumedHash; long resumedFacts;
+            using (var firstHalf = new CausalCity(new LabConfig(256, 14, 42, compressed, true)))
+            {
+                firstHalf.RunUntilDay(7);
+                firstHalf.SaveSnapshot(snapshot);
+            }
+            using (var secondHalf = CausalCity.FromSnapshot(snapshot))
+            {
+                secondHalf.Run();
+                secondHalf.AssertConservation();
+                resumedHash = secondHalf.Fingerprint();
+                resumedFacts = secondHalf.RecordedFacts;
+                if (resumedHash != hashA || resumedFacts != facts)
+                    throw new InvalidOperationException(
+                        $"Save/resume changed causal result: {resumedHash}/{resumedFacts} vs {hashA}/{facts}");
+            }
+            long reopened = 0;
+            foreach (var entry in HistorySink.Read(compressed)) reopened++;
+            if (reopened != facts)
+                throw new InvalidOperationException($"GZip history append lost records: {reopened}/{facts}");
+            File.Delete(compressed);
+            File.Delete(snapshot);
             watch.Stop();
             Console.WriteLine(JsonSerializer.Serialize(new
             {
                 success = true, scope = "14 days, 256 people, real trips and transactions in simplified fixture",
-                worlds = 2, deterministic = true, hash = hashA,
+                worlds = 3, deterministic = true, hash = hashA,
+                saveResumeExact = resumedHash == hashA,
+                compressedHistoryReplayExact = reopened == facts,
                 journeys, sales, births, historyFacts = facts,
                 historyBytes = bytes, historyFullyPersisted = readFacts == facts,
                 originalByteEquivalent = facts * 21, compressionWithoutGzip = (double)bytes / (facts * 21),
