@@ -36,7 +36,7 @@ internal static class Program
             }
             int sims = 1000, days = 7, seed = 42, annualLoadCycles = 0;
             string? history = null;
-            bool adversarial = false, wageFeedback = false, cohortRenewal = false, demandStaffing = false, vacancyMarket = false, freightLabor = false, constructionPilot = false, fairHouseholdHiring = false;
+            bool adversarial = false, wageFeedback = false, cohortRenewal = false, demandStaffing = false, vacancyMarket = false, freightLabor = false, constructionPilot = false, fairHouseholdHiring = false, demographicUpperBound = false;
             foreach (var arg in args)
             {
                 if (arg.StartsWith("--sims=")) sims = int.Parse(arg[7..]);
@@ -52,8 +52,14 @@ internal static class Program
                 else if (arg == "--freight-labor") freightLabor = true;
                 else if (arg == "--construction-pilot") constructionPilot = true;
                 else if (arg == "--fair-household-hiring") fairHouseholdHiring = true;
+                else if (arg == "--demographic-upper-bound") demographicUpperBound = true;
                 else if (arg == "--self-test") return EngineSelfTest.Run();
                 else throw new ArgumentException("Unknown argument: " + arg);
+            }
+            if (demographicUpperBound)
+            {
+                if (args.Length != 1) throw new ArgumentException("Demographic bound takes no city options");
+                return DemographicUpperBound.Run();
             }
             if (sims < 4 || sims > 100_000 || days < 1 || days > 29_220)
                 throw new ArgumentOutOfRangeException("Requires 4..100000 SIMs and 1..29220 days.");
