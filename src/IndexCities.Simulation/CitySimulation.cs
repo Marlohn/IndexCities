@@ -9,6 +9,10 @@ public sealed partial class CitySimulation
     public decimal MonetaryTotal=>State.Wallets.Values.Sum();
     public IReadOnlyList<Building> Buildings=>State.Buildings;
     public double Quantum=>2;
+    // Instrumentação exclusivamente do experimento: não participa do estado salvo.
+    public bool ProfileCitizenMovement {get;set;}
+    public long CitizenMovementTicks {get;private set;}
+    public long CitizenMovementCalls {get;private set;}
     public int Population=>State.Citizens.Count(c=>c.Alive&&c.Resident&&c.InsideMap);
     public CitySimulation(int seed,SimulationTuning? tuning=null)
     {
@@ -75,7 +79,16 @@ public sealed partial class CitySimulation
     }
     void Step(double dt)
     {
-        MoveVehicles(dt);ReturnPavingMachines(dt);MoveCitizens(dt);var completedConstruction=ProgressConstruction(dt);UpdateMaintenanceCondition(dt);ProgressMunicipalRelocations(dt);UpdateInfrastructure(dt);OperateBusinesses(dt);UpdateNeeds(dt);
+        MoveVehicles(dt);ReturnPavingMachines(dt);
+        if(ProfileCitizenMovement)
+        {
+            var started=System.Diagnostics.Stopwatch.GetTimestamp();
+            MoveCitizens(dt);
+            CitizenMovementTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-started;
+            CitizenMovementCalls++;
+        }
+        else MoveCitizens(dt);
+        var completedConstruction=ProgressConstruction(dt);UpdateMaintenanceCondition(dt);ProgressMunicipalRelocations(dt);UpdateInfrastructure(dt);OperateBusinesses(dt);UpdateNeeds(dt);
         State.AddElapsedSeconds(dt);State.Now=State.Now.AddSeconds(dt);
         // Construction is physical work, not a periodic market decision. Dispatch
         // available vehicles and crews on the next simulated step, including when
