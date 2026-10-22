@@ -264,6 +264,35 @@ internal static class EngineSelfTest
                     throw new InvalidOperationException("Cost-based prices changed on snapshot resume");
             }
             File.Delete(costSave);
+            // A limited cashier's service must be backed by a paid, present
+            // worker and reconstruct exactly from the saved live shift quota.
+            var checkoutConfig = new LabConfig(256, 90, 42, null, true,
+                VacancyMarket: true, BoundedRetailService: true);
+            var checkoutSave = temp + ".checkout.save.json";
+            string checkoutFingerprint;
+            using (var bounded = new CausalCity(checkoutConfig))
+            {
+                bounded.Run();
+                bounded.AssertConservation();
+                checkoutFingerprint = bounded.Fingerprint();
+                using var d = JsonDocument.Parse(JsonSerializer.Serialize(bounded.Report(0)));
+                if (!d.RootElement.GetProperty("boundedRetailServiceFixture").GetBoolean() ||
+                    d.RootElement.GetProperty("salesFoodUnits").GetInt64() <= 0)
+                    throw new InvalidOperationException("Bounded checkout failed to serve any real customers");
+            }
+            using (var partialCheckout = new CausalCity(checkoutConfig))
+            {
+                partialCheckout.RunUntilDay(46);
+                partialCheckout.SaveSnapshot(checkoutSave);
+            }
+            using (var resumedCheckout = CausalCity.FromSnapshot(checkoutSave))
+            {
+                resumedCheckout.Run();
+                resumedCheckout.AssertConservation();
+                if (checkoutFingerprint != resumedCheckout.Fingerprint())
+                    throw new InvalidOperationException("Bounded paid checkout differs after snapshot");
+            }
+            File.Delete(checkoutSave);
             // In the physical-supplier-freight counterfactual, a real farm
             // employee must leave the farm with real stock, travel to the shop,
             // unload there, and receive exactly one salary from existing cash.
@@ -360,6 +389,7 @@ internal static class EngineSelfTest
                 demandStaffingSaveResumeExact = true,
                 realVacancyMarketSaveResumeExact = true, marketEmployed, marketUnemployed,
                 costBasedFoodPricingSaveResumeExact = true, observedRetailPriceCents = costAverage,
+                boundedRetailServiceSaveResumeExact = true,
                 realFreightSaveResumeExact = true, freightJourneys, freightCharges,
                 buildingMaterialAndPayrollConserved = true, buildingPaidShifts = builtShifts,
                 saveResumeExact = resumedHash == hashA,
@@ -379,7 +409,7 @@ internal static class EngineSelfTest
         }
         finally
         {
-            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json", temp + ".construction.save.json", temp + ".cost-price.save.json" })
+            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json", temp + ".construction.save.json", temp + ".cost-price.save.json", temp + ".checkout.save.json" })
                 if (File.Exists(path)) File.Delete(path);
         }
     }
