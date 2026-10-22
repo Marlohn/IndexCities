@@ -89,6 +89,7 @@ public sealed partial class CitySimulation
 
     List<(Vehicle Body,Point Position,double Heading)> Manoeuvre(Vehicle o,List<int> route,int from,Point at,double facing,IReadOnlyList<Point> site,bool approach,int minimum,out List<RoadNode> spaces,out int endIndex,Func<Point,double,bool>? extraClear=null,int? through=null)
     {
+        if(E12Enabled)E12Observe(o,route,from,at,facing,site,approach,minimum,extraClear,through);
         var held=new List<(Vehicle Body,Point Position,double Heading)>();spaces=[];endIndex=from-1;
         var near=SharedNodes();var found=spaces;
         void Note(Point p,double h){foreach(var n in near)if(!found.Contains(n)&&EntersArea(o,p,h,n))found.Add(n);}
