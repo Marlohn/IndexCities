@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using IndexCities.Headless;
 using IndexCities.Simulation;
 
@@ -26,7 +27,7 @@ Console.WriteLine($"FIXTURE {info} build={sw.Elapsed.TotalSeconds:F1}s .NET={Env
 if(growth>0){sw.Restart();var hours=0;while(Fixtures.AddHouses(sim,growth)>0){sim.Advance(3600);hours++;}Console.WriteLine($"GROWTH {growth} casas/h por {hours} h wall={sw.Elapsed.TotalSeconds:F1}s pop={sim.Population}");}
 sw.Restart();sim.Advance(warmup*86400);
 Console.WriteLine($"WARMUP {warmup}d wall={sw.Elapsed.TotalSeconds:F1}s {Stats(sim)}");
-var e15=Opt("e15","off");if(e15 is not ("off" or "active" or "local" or "compare" or "diagnose")){Console.Error.WriteLine("e15 deve ser off, active ou local");return 2;}
+var e15=Opt("e15","off");if(e15 is not ("off" or "active" or "local" or "compare" or "diagnose" or "semantic")){Console.Error.WriteLine("e15 deve ser off, active ou local");return 2;}
 sim.E15BatchScoped=e15 is "active" or "local";sim.E15LocalTime=e15=="local";
 var e15Checkpoints=Opt("e15-checkpoints","0")=="1";
 Console.WriteLine($"E15_MODE {e15} checkpoints={e15Checkpoints}");
@@ -34,6 +35,61 @@ Console.WriteLine($"E15_MODE {e15} checkpoints={e15Checkpoints}");
 // compare each simulated hour, and run the full day (including economics/needs).
 // This is separate from the normal scale command path and never used in Godot.
 // First-difference probe on identical saves; diagnostic-only branch.
+// Compare every gameplay field on full-hour snapshots, allowing only
+// tiny floating-point numerical noise. The baseline and trial receive
+// exactly the same commands/save and each simulate one integrated day.
+if(e15=="semantic")
+{
+    var initialJson=sim.SaveToJson();
+    var reference=CitySimulation.FromJson(initialJson);
+    var trial=CitySimulation.FromJson(initialJson);
+    trial.E15BatchScoped=true;trial.E15LocalTime=true;
+    long totalFloatDifferences=0;int substantiveHours=0;
+    for(var hour=1;hour<=24;hour++)
+    {
+        reference.Advance(3600);trial.Advance(3600);
+        var before=reference.SaveToJson();var after=trial.SaveToJson();
+        using var l=JsonDocument.Parse(before);using var rr=JsonDocument.Parse(after);
+        var first=new List<string>();long floating=0;double maxFloatingDelta=0;
+        void Compare(JsonElement a,JsonElement b,string path)
+        {
+            if(first.Count>=12)return;
+            if(a.ValueKind!=b.ValueKind){first.Add(path+": kind "+a.ValueKind+" / "+b.ValueKind);return;}
+            switch(a.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    foreach(var pair in a.EnumerateObject())
+                    {
+                        if(!b.TryGetProperty(pair.Name,out var rhs)){first.Add(path+"."+pair.Name+": missing");continue;}
+                        Compare(pair.Value,rhs,path+"."+pair.Name);
+                    }
+                    break;
+                case JsonValueKind.Array:
+                    if(a.GetArrayLength()!=b.GetArrayLength()){first.Add(path+": array count "+a.GetArrayLength()+" / "+b.GetArrayLength());break;}
+                    for(var i=0;i<a.GetArrayLength();i++)Compare(a[i],b[i],path+"["+i+"]");
+                    break;
+                case JsonValueKind.Number:
+                    if(a.GetRawText()==b.GetRawText())break;
+                    if(a.TryGetInt64(out var ia)&&b.TryGetInt64(out var ib)&&ia==ib)break;
+                    var x=a.GetDouble();var y=b.GetDouble();var diff=Math.Abs(x-y);
+                    // Distinguish machine-level float drift from gameplay changes;
+                    // large money, time and fixed-point changes remain detectable.
+                    if(double.IsFinite(diff)&&diff<=1e-9){floating++;maxFloatingDelta=Math.Max(maxFloatingDelta,diff);}
+                    else first.Add(path+": "+a.GetRawText()+" / "+b.GetRawText());
+                    break;
+                default:
+                    if(a.GetRawText()!=b.GetRawText())first.Add(path+": "+a.GetRawText().Substring(0,Math.Min(80,a.GetRawText().Length))+" / "+b.GetRawText().Substring(0,Math.Min(80,b.GetRawText().Length)));
+                    break;
+            }
+        }
+        Compare(l.RootElement,rr.RootElement,"$");
+        totalFloatDifferences+=floating;if(first.Count>0)substantiveHours++;
+        Console.WriteLine($"E15_SEMANTIC hour={hour} equalJson={before==after} substantiveDifferences={first.Count} floatingNoiseCount={floating} maxFloatingNoise={maxFloatingDelta:G17}");
+        foreach(var x in first.Take(6))Console.WriteLine("E15_SUBSTANTIVE "+x);
+    }
+    Console.WriteLine($"E15_SEMANTIC_SUMMARY substantiveHours={substantiveHours} floatingNoiseCount={totalFloatDifferences}");
+    return 0;
+}
 if(e15=="diagnose")
 {
     var initialJson=sim.SaveToJson();
