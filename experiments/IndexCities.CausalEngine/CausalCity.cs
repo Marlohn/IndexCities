@@ -993,9 +993,15 @@ internal sealed partial class CausalCity : IDisposable
         if (_config.FreightLabor && p.FreightShift &&
             p.FreightShopId < 0 && p.Node == workplace)
         {
-            // Return from the physical delivery; no second paid farm shift.
-            StartTrip(p, p.Home);
-            return;
+            // Return from physical delivery, without a second paid shift.
+            // A person can LIVE on the same grid node as the farm: do not
+            // spawn a self-trip that repeats infinitely before going home.
+            if (p.Node != p.Home)
+            {
+                StartTrip(p, p.Home);
+                return;
+            }
+            p.FreightShift = false;
         }
         var earliest = _config.VacancyMarket && p.Job < StoreCount
             ? (p.Id % 2 == 0 ? 11 : 14) * 3600 : 8 * 3600;
