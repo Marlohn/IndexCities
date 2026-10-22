@@ -220,7 +220,11 @@ public sealed partial class CitySimulation
         // Same order as OrderBy(WaitingSince).ThenBy(Id): Ids are unique, so the
         // key is a total order and any sort yields the same sequence.
         var ordered=State.Vehicles.ToArray();Array.Sort(ordered,static (a,b)=>a.WaitingSince.CompareTo(b.WaitingSince) is var c and not 0?c:a.Id.CompareTo(b.Id));
+        _e09LeaderGrid=new VehicleLeaderGrid(State.Vehicles);
+        if(_e09CollectStats)_e09IndexedBuilds++;
+        try{
         foreach(var v in ordered){
+            try{
             // A bypass belongs to the trip in progress: a stopped, parked or
             // replanned-elsewhere vehicle does not resume old waypoints.
             if(v.Detour.Count>0&&v.Status!=VehicleStatus.Travelling)v.Detour.Clear();
@@ -304,7 +308,10 @@ public sealed partial class CitySimulation
                 // yield back to the other vehicle and freeze both indefinitely.
                 var leaderDistance=double.MaxValue;Vehicle? blocker=null;
                 void HoldFor(Vehicle other,double distance){if(distance<leaderDistance){leaderDistance=distance;blocker=other;}}
-                foreach(var liveOther in State.Vehicles){
+                void ScanLeaders(IEnumerable<Vehicle> candidates)
+                {
+                foreach(var liveOther in candidates){
+                    if(_e09CollectStats)_e09Candidates++;
                     var other=enteringLane?EntryFrameVehicle(liveOther):liveOther;
                     // A truck stopped at a dock with its body across this lane (a street bay)
                     // is queued behind like a leader, keeping the queue gap (Mobility.SharedSpace).
@@ -334,6 +341,14 @@ public sealed partial class CitySimulation
                         HoldFor(other,forward);
                     }
                 }
+                }
+                if(_e09CollectStats)_e09Queries++;
+                // A normal lane leader can only reduce movement if it is at
+                // most 8 metres beyond the movement planned in this slice.
+                // A dock obstruction is bounded by 20 metres. Lot entries use
+                // the reference full scan because their prediction looks farther ahead.
+                var nearRadius=Math.Max(20.000001,Math.Min(d,speed*remaining)+8.000001);
+                ScanLeaders(enteringLane?State.Vehicles:_e09LeaderGrid!.Near(v.Position,nearRadius));
                 var step=Math.Min(d,Math.Min(speed*remaining,Math.Max(0,leaderDistance-8)));
                 if(stopEarly>0)step=Math.Min(step,Math.Max(0,d-stopEarly));
                 if(crossingPoses!=null)step=ClearOfPoses(v,target,step,crossingPoses);
@@ -349,6 +364,13 @@ public sealed partial class CitySimulation
                 }
                 var free=step;step=SafeSiteTravel(v,target,step,true);
                 if(node.Neighbours.Count<3&&!node.Crosswalk)step=ClearOfCrossingAhead(v,target,step);
+                // A distant leader does not bound travel in this substep, but
+                // may still determine the exact reason for a wait/UTurn. Only
+                // then restore the original complete ordered scan for diagnosis.
+                if(!enteringLane&&step<.00001&&d>.00001&&blocker==null){
+                    if(_e09CollectStats)_e09FullFallbacks++;
+                    ScanLeaders(State.Vehicles);
+                }
                 var steer=step<.00001&&free>.00001?TurnClearance(v,approachHeading,free,access):null;
                 if(steer is {} bend){v.Heading=bend.Heading;target=bend.To;step=bend.Distance;}
                 // Like a machine, a blocked vehicle keeps its verified pose rather
@@ -378,7 +400,9 @@ public sealed partial class CitySimulation
                 // Wear for the distance driven; a vehicle in use may break down here.
                 if(DriveWear(v,step)||steer==null&&!advanced)break;
             }
+            }finally{_e09LeaderGrid?.Sync(v);}
         }
+        }finally{_e09LeaderGrid=null;}
         // A towed vehicle moves only with its tow (platform or trailing a heavy tow).
         SyncTowedVehicles();
     }
