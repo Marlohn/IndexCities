@@ -99,10 +99,12 @@ public sealed partial class CitySimulation
         return false;
     }
     bool StaticOnLane(Vehicle o)=>o.Status==VehicleStatus.Stranded||HeldBehindStranded(o);
-    bool LiveLaneEntry(Vehicle v)=>TryLaneEntry(v,out var access)&&!(State.Vehicles.Any(o=>o.Status==VehicleStatus.Stranded)&&State.Vehicles.Any(o=>o.Id!=v.Id&&o.Status is VehicleStatus.Travelling or VehicleStatus.Stranded&&BlocksLaneEntry(v,access,EntryFrameVehicle(o))&&StaticOnLane(o)));
+    bool LiveLaneEntry(Vehicle v)=>CountE08LiveEntry()&&TryLaneEntry(v,out var access)&&!(State.Vehicles.Any(o=>o.Status==VehicleStatus.Stranded)&&State.Vehicles.Any(o=>o.Id!=v.Id&&o.Status is VehicleStatus.Travelling or VehicleStatus.Stranded&&BlocksLaneEntry(v,access,EntryFrameVehicle(o))&&StaticOnLane(o)));
+    bool CountE08LiveEntry(){if(_e08Slice is {} e08)e08.LiveEntryChecks++;return true;}
     static Vehicle EntrySnapshot(Vehicle v)=>new(){Id=v.Id,Position=v.Position,Heading=v.Heading,Status=v.Status,Fuel=v.Fuel,PassengerCar=v.PassengerCar,RouteIndex=v.RouteIndex,Route=v.Route.ToList()};
     void MoveVehicles(double dt)
     {
+        TickTrafficProbe();
         if(!State.Vehicles.Any(LiveLaneEntry)){MoveVehiclesUnsplit(dt);return;}
         _vehicleMovementBatch=[];_vehicleMovementOffset=0;
         try{
@@ -113,7 +115,7 @@ public sealed partial class CitySimulation
                 var remaining=dt-_vehicleMovementOffset;
                 _vehicleMovementClock=State.ElapsedSeconds+_vehicleMovementOffset;
                 // Same entries as ToDictionary, in a dictionary reused across slices.
-                _entryFrameBuffer.Clear();foreach(var v in State.Vehicles.Where(v=>OccupiesLane(v)&&!TryLaneEntry(v,out _)))_entryFrameBuffer.Add(v.Id,EntrySnapshot(v));_entryFrame=_entryFrameBuffer;
+                _entryFrameBuffer.Clear();foreach(var v in State.Vehicles.Where(v=>OccupiesLane(v)&&!TryLaneEntry(v,out _))){_entryFrameBuffer.Add(v.Id,EntrySnapshot(v));if(_e08Slice is {} e08Snap)e08Snap.EntrySnapshots++;}_entryFrame=_entryFrameBuffer;
                 var slice=NextVehicleMovementEvent(remaining);
                 MoveVehiclesUnsplit(slice);
                 _vehicleMovementOffset+=slice;
@@ -151,7 +153,9 @@ public sealed partial class CitySimulation
     }
     double NextVehicleMovementEvent(double horizon)
     {
+        if(_e08Slice is {} e08Event)e08Event.MovementEventCalls++;
         var entries=State.Vehicles.Where(v=>_vehicleMovementBatch!.Contains(v.Id)&&LiveLaneEntry(v)).ToList();
+        if(_e08Slice is {} e08Entries)e08Entries.PredictedEntries+=entries.Count;
         if(entries.Count==0)return horizon;
         var held=State.Vehicles.Any(o=>o.Status==VehicleStatus.Stranded)?State.Vehicles.Where(HeldBehindStranded).Select(o=>o.Id).ToHashSet():null;
         foreach(var v in State.Vehicles.Where(v=>_vehicleMovementBatch!.Contains(v.Id))){
