@@ -22,6 +22,19 @@ jobs:
         run: dotnet build experiments/IndexCities.CausalEngine/IndexCities.CausalEngine.csproj -c Release
       - name: Validate determinism, trips, ledger, births and physical history
         run: dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --self-test | tee self-test.json
+      - name: Validate two independent annual workload cycles without pretending continuity
+        run: |
+          set -o pipefail
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=256 --annual-load-cycles=2 --adversarial | tee annual-workload-smoke.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('annual-workload-smoke.json'))
+          assert d['status']=='TECHNICAL_REPEAT_LOAD_ONLY_NOT_CONTINUOUS_CITY'
+          assert d['independentAnnualCycles']==2 and d['representedGregorianDays']==731
+          assert d['minLivingAgentsAcrossIndependentCycles']>=256
+          assert d['totalIndividualJourneys']>0 and d['totalRealFoodSalesUnitsAcrossCycles']>0
+          assert d['allCycleMoneyAndFoodConserved'] and not d['historyPersistent']
+          PY
       - name: Run city with 1k concurrent citizens 30 days and real fact file
         run: dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=1000 --days=30 --seed=42 --history=artifacts/causal-1000-30d.facts --adversarial | tee city-1000-30d.json
       - name: Inspect individual recorded lifetime events
@@ -194,6 +207,43 @@ jobs:
         with:
           name: causal-engine-80y-population-no-history
           path: eighty-years-population.log
+          if-no-files-found: ignore
+
+  sustained-workload-80y:
+    # Synthetic workload comparison: 80 independent one-year, LIVE 10k worlds,
+    # real physical trips and economic transfers within each year. Explicitly
+    # NOT one continuous world, its historical data, or a SPEC acceptance test.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[load-80y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Stress 80 independent live 10k annual loads with exact Gregorian day count
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --annual-load-cycles=80 --seed=42 --adversarial 2>&1 | tee live-10k-annual-workload.log
+          python3 - <<'PY'
+          import json
+          s=open('live-10k-annual-workload.log').readlines()
+          start=next(i for i,v in enumerate(s) if v.startswith('{'))
+          d=json.loads(''.join(s[start:]))
+          assert d['status']=='TECHNICAL_REPEAT_LOAD_ONLY_NOT_CONTINUOUS_CITY'
+          assert d['independentAnnualCycles']==80 and d['representedGregorianDays']==29220
+          assert d['baselinePopulationPerIndependentCycle']==10000
+          assert d['minLivingAgentsAcrossIndependentCycles']>=10000
+          assert d['totalIndividualJourneys']>0 and d['totalRealFoodSalesUnitsAcrossCycles']>0
+          assert d['allCycleMoneyAndFoodConserved'] and not d['historyPersistent']
+          print('INDEPENDENT_YEAR_LOAD_80',d['wallSeconds'],d['totalIndividualJourneys'])
+          PY
+      - name: Keep bounded technical-load report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-live-10k-independent-year-load
+          path: live-10k-annual-workload.log
           if-no-files-found: ignore
 
   staffing-80y-counterfactual:
