@@ -43,7 +43,19 @@ for(var d=1;d<=days;d++){
         var partsPerHour=3600/e16Interval;
         for(var hour=0;hour<24;hour++){
             if((e16=="tow"||e16=="mixed")&&!e16Forced&&hour is >=1 and <=8){
-                e16ForcedIds=e16Probe.Force(sim,2);e16Forced=e16ForcedIds.Count>0;
+                e16ForcedIds=e16Probe.Force(sim,2);
+                // If there is no convoy, still create a physically stranded vehicle
+                // on an active route to exercise emergency and tow dispatch.
+                if(e16ForcedIds.Count==0&&hour==8)
+                {
+                    var fallback=sim.State.Vehicles.Where(v=>v.Status==VehicleStatus.Travelling
+                        &&v.RouteIndex>0&&v.RouteIndex<v.Route.Count
+                        &&v.Machine==PavingMachine.None&&v.Body is not (TruckBody.Tow or TruckBody.TowHeavy)
+                        &&v.Detour.Count==0).OrderBy(v=>v.Id).Take(1).ToList();
+                    foreach(var v in fallback){v.Fuel=0;e16ForcedIds.Add(v.Id);}
+                    if(fallback.Count>0)Console.WriteLine($"E16_FALLBACK_STRAND count={fallback.Count}");
+                }
+                e16Forced=e16ForcedIds.Count>0;
                 if(e16Forced)Console.WriteLine($"E16_FORCED day={d} hour={hour} count={e16ForcedIds.Count} ids={string.Join(",",e16ForcedIds)}");
             }
             if((e16=="road"||e16=="mixed")&&hour==3){
@@ -67,7 +79,7 @@ for(var d=1;d<=days;d++){
                 Console.WriteLine($"E15_CHECKPOINT day={d} hour={hour+1} part={part+1} sha={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(snapshot)))[..16]}");
             }
         }
-        if(e16=="tow"||e16=="mixed")Console.WriteLine($"E16_TOW_COVERAGE forced={e16ForcedIds.Count>0}");
+        if(e16=="tow"||e16=="mixed")Console.WriteLine($"E16_TOW_COVERAGE forced={e16ForcedIds.Count>0} stranded={sim.State.Vehicles.Count(v=>v.Status==VehicleStatus.Stranded)} activeTows={sim.State.Vehicles.Count(v=>v.TowTargetId!=null)}");
     }else if(stuck!=null){var strand=int.Parse(Opt("strand","0"));var dayEnd=sim.State.ElapsedSeconds+86400;if(strand>0){var forced=new List<int>();while(forced.Count==0&&sim.State.ElapsedSeconds<dayEnd-1800){forced=stuck.Force(sim,strand);if(forced.Count==0)sim.Advance(60);}var since=sim.State.ElapsedSeconds;for(var m=0;m<30&&forced.Count>0;m++){sim.Advance(60);if(m%3==0||m==29||Environment.GetEnvironmentVariable("STUCK_EVERY")=="1")stuck.Watch(sim,forced,since);}}while(sim.State.ElapsedSeconds<dayEnd-1e-6){sim.Advance(Math.Min(600,dayEnd-sim.State.ElapsedSeconds));stuck.Sample(sim);}}else if(census==null&&e15Checkpoints){for(var h=1;h<=24;h++){sim.Advance(3600);var checkpoint=sim.SaveToJson();Console.WriteLine($"E15_CHECKPOINT day={d} hour={h} sha={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(checkpoint)))[..16]}");}}else if(census==null)sim.Advance(86400);else for(var i=0;i<43200;i++){sim.Advance(2);census.Sample(sim);}
     var w=sw.Elapsed.TotalSeconds;total+=w;done=d;
     Console.WriteLine($"DAY {d} wall={w:F2}s eff={86400/w:F0}x {Stats(sim)}");stuck?.Report(sim,d);
