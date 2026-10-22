@@ -23,9 +23,13 @@ jobs:
           set -euo pipefail
           dotnet run -c Release --project src/IndexCities.Headless -- scale grid --rows=3 --length=400 --seed=42 --warmup=1 --e15=diagnose | tee e15_first_difference.txt
           grep -q 'E15_FIRST_DIFFERENCE' e15_first_difference.txt
+          dotnet run -c Release --project src/IndexCities.Headless -- scale grid --rows=3 --length=400 --seed=42 --warmup=1 --e15=semantic | tee e15_semantic.txt
+          grep -q 'E15_SEMANTIC_SUMMARY' e15_semantic.txt
       - if: always()
         uses: actions/upload-artifact@v4
         with:
           name: e15-first-difference
-          path: e15_first_difference.txt
+          path: |
+            e15_first_difference.txt
+            e15_semantic.txt
           if-no-files-found: ignore
