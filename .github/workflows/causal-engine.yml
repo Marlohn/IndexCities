@@ -392,6 +392,73 @@ jobs:
           path: fair-basket-*.log
           if-no-files-found: ignore
 
+  municipal-real-service-cadence:
+    # The SAME real home waste demands more staff if collection is offered
+    # every 3 or 2 days instead of every 6. Property taxes scale with service
+    # costs, and each household pickup still needs an actual road trip,
+    # salary, material cargo and finite municipal depot capacity.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[municipal-cadence]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Run two seeded cities for 6-, 3-, and 2-day real garbage collection
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          for interval in 6 3 2; do
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --municipal-sanitation-pilot --municipal-collection-interval=$interval 2>&1 | tee city-waste-interval-$interval-seed42.log
+          done
+          for interval in 3 2; do
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=73 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --municipal-sanitation-pilot --municipal-collection-interval=$interval 2>&1 | tee city-waste-interval-$interval-seed73.log
+          done
+          python3 - <<'PY'
+          import json
+          def get(path):
+              lines=open(path).readlines()
+              i=next(i for i,line in enumerate(lines) if line.startswith('{'))
+              return json.loads(''.join(lines[i:]))
+          enough={}
+          for interval,seed in [(6,42),(3,42),(2,42),(3,73),(2,73)]:
+              r=get(f'city-waste-interval-{interval}-seed{seed}.log')
+              assert r['simulatedDays']==3653 and not r['fullIndexCitiesTargetValidated']
+              assert r['municipalSanitationPilotFixture'] and r['municipalCollectionIntervalDays']==interval
+              assert r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+              assert r['municipalPaidCollections']>0 and r['municipalTaxCollectedCents']>0
+              assert r['municipalSanitationWagesPaidCents']==80*r['municipalPaidCollections']
+              assert r['totalWasteCreated'] >= r['totalWasteCollected'] >= r['wasteStoredAtRealDepot']
+              assert r['totalWasteCollected'] == r['wasteStoredAtRealDepot'] + r['wasteInTransitByRealWorkers']
+              print('CIVIC_SERVICE_CADENCE',interval,seed,
+                    'alive',r['aliveEnd'],'minimum',r['minimumAliveAtAnyEvent'],
+                    'jobs',r['municipalSanitationJobs'],
+                    'visits',r['municipalPaidCollections'],
+                    'businessPropertyTaxes',r['municipalTaxCollectedCents'],
+                    'realWages',r['municipalSanitationWagesPaidCents'],
+                    'depotWaste',r['wasteStoredAtRealDepot'],
+                    'unmetMeals',r['unmetMeals'],
+                    'householdMoney',r['personalCashCents'],
+                    'cityTreasury',r['treasuryCashCents'])
+              enough[(interval,seed)]=r['minimumAliveAtAnyEvent']>=10000
+          open('sustained.flag','w').write('yes' if enough[(2,42)] and enough[(2,73)] else 'no')
+          PY
+          if test "$(cat sustained.flag)" = yes; then
+            echo 'Both decade seeds sustained. Stress ONE CONTINUOUS 80-year world WITHOUT claiming history validity.'
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --municipal-sanitation-pilot --municipal-collection-interval=2 2>&1 | tee city-waste-interval-2-seed42-80y-no-history.log
+          else
+            echo 'Two-seed ten-year proof did not pass.'
+          fi
+      - name: Preserve every full benchmark even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: municipal-real-sanitation-cadence
+          path: |
+            city-waste-*.log
+          if-no-files-found: ignore
+
   municipal-sanitation-revenue-10y:
     # A fully accounted city-financed wage circuit: real property taxes
     # from operating stores/farms support people serving physical household
