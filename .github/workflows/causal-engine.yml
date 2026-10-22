@@ -197,8 +197,8 @@ jobs:
           if-no-files-found: ignore
 
   cohort-80y-counterfactual:
-    # Isolated birth scheduling hypothesis, not approved family gameplay,
-    # not complete traffic/construction/household migration or history.
+    # Isolated birth scheduling + improved grocery availability diagnosis.
+    # Not approved family gameplay or complete traffic/construction/migration/history.
     if: github.event_name == 'push' && contains(github.event.head_commit.message, '[cohort-80y]')
     runs-on: ubuntu-latest
     timeout-minutes: 90
