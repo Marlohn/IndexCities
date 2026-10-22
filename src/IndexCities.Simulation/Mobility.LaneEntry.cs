@@ -115,7 +115,8 @@ public sealed partial class CitySimulation
                 // Same entries as ToDictionary, in a dictionary reused across slices.
                 _entryFrameBuffer.Clear();foreach(var v in State.Vehicles.Where(v=>OccupiesLane(v)&&!TryLaneEntry(v,out _)))_entryFrameBuffer.Add(v.Id,EntrySnapshot(v));_entryFrame=_entryFrameBuffer;
                 var slice=NextVehicleMovementEvent(remaining);
-                MoveVehiclesUnsplit(slice);
+                if(E11Enabled){var snapshot=E11Capture();MoveVehiclesUnsplit(slice);E11Completed(snapshot);}
+                else MoveVehiclesUnsplit(slice);
                 _vehicleMovementOffset+=slice;
             }
         }finally{_vehicleMovementBatch=null;_entryFrame=null;_entryFrameBuffer.Clear();_vehicleMovementClock=null;_vehicleMovementOffset=0;}
