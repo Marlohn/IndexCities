@@ -1,0 +1,59 @@
+name: E15 - trânsito com relógio local (somente experimento)
+
+on:
+  push:
+    branches:
+      - experimento/e15-tempo-local-transito
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Testes do contrato atual
+        run: dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --logger 'console;verbosity=minimal'
+
+  experiment:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: small
+            rows: 3
+            length: 400
+            seed: 42
+          - label: medium
+            rows: 5
+            length: 800
+            seed: 42
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: A/B/C com um estado inicial comum, vinte e quatro checkpoints e dia integral
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet run -c Release --project src/IndexCities.Headless -- scale grid \
+            --rows=${{ matrix.rows }} --length=${{ matrix.length }} --seed=${{ matrix.seed }} \
+            --warmup=1 --days=1 --e15=compare | tee "e15_${{ matrix.label }}.txt"
+          grep -q 'E15_INVARIANTS mode=local OK' "e15_${{ matrix.label }}.txt"
+          grep -q 'E15_COMPARE mode=active sameHourly=True firstDivergentHour=-1' "e15_${{ matrix.label }}.txt"
+          grep '^E15_COMPARE' "e15_${{ matrix.label }}.txt"
+      - name: Guardar logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e15-${{ matrix.label }}-measurements
+          path: e15_${{ matrix.label }}.txt
+          if-no-files-found: ignore
