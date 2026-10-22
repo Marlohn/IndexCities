@@ -220,9 +220,12 @@ public sealed partial class CitySimulation
         // Same order as OrderBy(WaitingSince).ThenBy(Id): Ids are unique, so the
         // key is a total order and any sort yields the same sequence.
         var ordered=State.Vehicles.ToArray();Array.Sort(ordered,static (a,b)=>a.WaitingSince.CompareTo(b.WaitingSince) is var c and not 0?c:a.Id.CompareTo(b.Id));
-        _e09LeaderGrid=new VehicleLeaderGrid(State.Vehicles);
-        if(_e09CollectStats)_e09IndexedBuilds++;
-        try{
+        if(_e09LeaderGrid==null||!_e09LeaderGrid.Refresh())
+        {
+            _e09LeaderGrid=new VehicleLeaderGrid(State.Vehicles);
+            if(_e09CollectStats){_e09IndexedBuilds++;_e10Rebuilds++;}
+        }
+        else if(_e09CollectStats)_e10Refreshes++;
         foreach(var v in ordered){
             try{
             // A bypass belongs to the trip in progress: a stopped, parked or
@@ -402,7 +405,8 @@ public sealed partial class CitySimulation
             }
             }finally{_e09LeaderGrid?.Sync(v);}
         }
-        }finally{_e09LeaderGrid=null;}
+        // Grid retained across substeps and outer 2-second ticks.
+        // The next call to Refresh also catches vehicle movement by other systems.
         // A towed vehicle moves only with its tow (platform or trailing a heavy tow).
         SyncTowedVehicles();
     }
