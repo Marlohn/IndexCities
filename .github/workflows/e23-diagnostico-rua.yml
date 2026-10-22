@@ -3,7 +3,7 @@ name: E23 - primeiro estado divergente apos remoção viaria
 on:
   push:
     branches:
-      - experimento/e23-diagnostico-invalida-rua
+      - experimento/e23-guarda-invalida-rede
 
 permissions:
   contents: read
@@ -36,7 +36,7 @@ jobs:
             --rows=5 --length=800 --seed=${{ matrix.seed }} --signals=1 \
             --warmup=1 --e22=compare --e22-window=3000 \
             --e22-adversary=mixed --e22-reverse=${{ matrix.reversed }} \
-            --e23-diff=1 | tee "e23_${{ matrix.label }}.log"
+            --e23-diff=1 --e23-roadguard=600 | tee "e23_${{ matrix.label }}.log"
           grep -q '^E23_FIRST_DIFFERENCE mode=' "e23_${{ matrix.label }}.log"
       - uses: actions/upload-artifact@v4
         if: always()
