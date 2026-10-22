@@ -282,6 +282,67 @@ jobs:
           path: economic-second-cycle-10y.log
           if-no-files-found: ignore
 
+  basket-retail-10y:
+    # Correct dimensional mismatch: a cashier serves five PHYSICAL customer
+    # baskets, not five pieces of food. Vacancies must use the SAME unit and
+    # shop staffing has a finite physical cap. This is a fixture, not a rule.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[basket-checkout-10y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Reproduce incoherent and coherent retail for a full decade
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --bounded-retail-service 2>&1 | tee five-food-units-10y.log
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service 2>&1 | tee five-baskets-10y.log
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=73 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service 2>&1 | tee five-baskets-seed73-10y.log
+          python3 - <<'PY'
+          import json
+          def get(path):
+              lines=open(path).readlines()
+              i=next(i for i,line in enumerate(lines) if line.startswith('{'))
+              return json.loads(''.join(lines[i:]))
+          baseline,trial,replicate=map(get,['five-food-units-10y.log','five-baskets-10y.log','five-baskets-seed73-10y.log'])
+          for r in (baseline,trial,replicate):
+              assert r['simulatedDays']==3653 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+              assert r['boundedRetailServiceFixture'] and r['farmCostPricingFixture'] and not r['fullIndexCitiesTargetValidated']
+          assert not baseline['basketRetailServiceFixture']
+          for r in (trial,replicate):
+              assert r['basketRetailServiceFixture'] and r['checkoutBasketTransactions']>0
+              assert r['salesFoodUnits']>r['checkoutBasketTransactions']
+              assert r['checkoutFixtureMaxEmployeesPerSmallStore']==8
+          for name,r in [('UNITS_42',baseline),('BASKETS_42',trial),('BASKETS_73',replicate)]:
+              print('BASKET_RETAIL_RESULT',name,
+                    'live',r['aliveEnd'],'min',r['minimumAliveAtAnyEvent'],
+                    'unmet',r['unmetMeals'],'transactions',r['checkoutBasketTransactions'],
+                    'cash',r['personalCashCents'],'shopFood',r['shopFoodAvailable'],
+                    'employed',r['employedAlive'],'deniedCapacity',r['checkoutCapacityDeniedVisits'],
+                    'salesUnits',r['salesFoodUnits'],'price',r['averageRetailUnitPriceCents'])
+          open('healthy-basket.flag','w').write('yes' if trial['minimumAliveAtAnyEvent']>=10000 and replicate['minimumAliveAtAnyEvent']>=10000 else 'no')
+          PY
+          if test "$(cat healthy-basket.flag)" = yes; then
+            echo 'Both 10-year seeds passed. Check 80y demographics, but not yet V1 fidelity.'
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service 2>&1 | tee five-baskets-80y-no-history.log
+          else
+            echo 'At least one ten-year seed lost the required population.'
+          fi
+      - name: Preserve all actual economic traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: basket-retail-10y-economic-comparison
+          path: |
+            five-food-units-10y.log
+            five-baskets-10y.log
+            five-baskets-seed73-10y.log
+            five-baskets-80y-no-history.log
+          if-no-files-found: ignore
+
   bounded-checkout-10y:
     # The earlier 10y fixture only required one staffed worker to sell
     # unbounded food. Verify worker-by-worker daily checkout throughput.
