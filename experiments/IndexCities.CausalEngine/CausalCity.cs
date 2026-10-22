@@ -8,7 +8,7 @@ namespace IndexCities.CausalEngine;
 
 // Independent vertical-slice engine for falsifying the architecture.
 // RULES AND FIXTURES HERE ARE NOT AN IMPLEMENTATION OF ALL OF INDEXCITIES SPEC.
-internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false);
+internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false);
 internal enum EventKind : byte { Day, Hour, StartWork, EndWork, Move, Delivery, RoadClose, RoadOpen, HouseholdShop }
 internal readonly record struct SimEvent(EventKind Kind, int Id);
 internal sealed class Person
@@ -70,6 +70,9 @@ internal sealed class Firm
     public long MonthFarmPaidWagesCents, MonthWholesaleSalesUnits;
     public long MonthWholesaleBoughtUnits, MonthWholesalePaidCents;
     public int FarmWholesaleUnitPriceCents = 7;
+    // Optional physical checkout capacity on actual attended shifts.
+    public int TodayCheckoutUnitsLeft;
+    public long ReservedCheckoutWagesCents;
 }
 internal sealed class Trip
 {
@@ -356,6 +359,8 @@ internal sealed partial class CausalCity : IDisposable
             }
         }
         PayContributoryPensions(date);
+        if (_config.BoundedRetailService)
+            foreach (var shop in _shops) shop.TodayCheckoutUnitsLeft = 0;
         // Food and jobs are not simulated by a population aggregate: each
         // household's real stock and each person's physical state matter.
         foreach (var h in _households)
@@ -799,6 +804,8 @@ internal sealed partial class CausalCity : IDisposable
             var current = p.Job == BuilderJob ? _builder :
                 p.Job < StoreCount ? _shops[p.Job] : _farms[p.Job - StoreCount];
             current.PresentWorkers--;
+            if (_config.BoundedRetailService && p.Job < StoreCount)
+                current.ReservedCheckoutWagesCents -= 65;
             p.AtWork = false;
         }
         p.Alive = false;
@@ -878,6 +885,8 @@ internal sealed partial class CausalCity : IDisposable
             employer.Cash -= wage;
             if (_config.DemandStaffing)
                 employer.PayrollBudget = Math.Max(0, employer.PayrollBudget - wage);
+            if (_config.BoundedRetailService && p.Job < StoreCount)
+                employer.ReservedCheckoutWagesCents -= 65;
             var contribution = wage / 10; // 10% illustrative contributory fixture
             _treasury += contribution;
             p.Cash += wage - contribution;
@@ -1196,6 +1205,19 @@ internal sealed partial class CausalCity : IDisposable
             {
                 var employer = p.Job == BuilderJob ? _builder :
                     p.Job < StoreCount ? _shops[p.Job] : _farms[p.Job - StoreCount];
+                if (_config.BoundedRetailService && p.Job < StoreCount)
+                {
+                    // A cashier who cannot be paid must not grant the shop
+                    // fictitious service throughput before their shift ends.
+                    if (employer.Cash - employer.ReservedCheckoutWagesCents < 65)
+                    {
+                        p.AtWork = false;
+                        StartTrip(p, p.Home);
+                        return;
+                    }
+                    employer.ReservedCheckoutWagesCents += 65;
+                    employer.TodayCheckoutUnitsLeft += 5;
+                }
                 employer.PresentWorkers++;
             }
             if (_config.FreightLabor && p.Job >= StoreCount && p.IsFreightDriver &&
@@ -1234,11 +1256,14 @@ internal sealed partial class CausalCity : IDisposable
         var price = _config.CostBasedFoodPrice ? shop.RetailUnitPriceCents : FoodPrice;
         var buy = _config.VacancyMarket && shop.PresentWorkers <= 0
             ? 0 : Math.Min(32, Math.Min(shop.Stock, (int)(p.Cash / price)));
+        if (_config.BoundedRetailService)
+            buy = Math.Min(buy, shop.TodayCheckoutUnitsLeft);
         if (buy > 0)
         {
             var paid = checked((long)buy * price);
             p.Cash -= paid;
             shop.Cash += paid;
+            if (_config.BoundedRetailService) shop.TodayCheckoutUnitsLeft -= buy;
             _retailSalesCents = checked(_retailSalesCents + paid);
             if (_config.CostBasedFoodPrice) shop.MonthRetailSalesUnits += buy;
             if (_config.WageFeedback || _config.DemandStaffing || _config.VacancyMarket) shop.DayReceipts += paid;
@@ -1313,7 +1338,12 @@ internal sealed partial class CausalCity : IDisposable
         if (_days > _config.Days || _active < 0) throw new InvalidOperationException("Invalid days/population");
         if (_people.Count(p => p.Alive) != _active) throw new InvalidOperationException("Population count inconsistent");
         foreach (var h in _households) if (h.Pantry < 0) throw new InvalidOperationException("Negative pantry");
-        foreach (var store in _shops) if (store.Stock < 0 || store.Cash < 0) throw new InvalidOperationException("Invalid shop");
+        foreach (var store in _shops)
+            if (store.Stock < 0 || store.Cash < 0 ||
+                (_config.BoundedRetailService &&
+                  (store.TodayCheckoutUnitsLeft < 0 || store.ReservedCheckoutWagesCents < 0 ||
+                    store.ReservedCheckoutWagesCents > store.Cash)))
+                throw new InvalidOperationException("Invalid physical shop or unpaid reserved cashier");
         foreach (var farm in _farms) if (farm.Stock < 0 || farm.Cash < 0) throw new InvalidOperationException("Invalid farm");
         foreach (var p in _people) if (p.Cash < 0 || p.CarryFood < 0 || p.FreightCargo < 0)
             throw new InvalidOperationException("Invalid person or freight cargo");
@@ -1437,6 +1467,7 @@ internal sealed partial class CausalCity : IDisposable
         capacityPricedFoodFixture = _config.CapacityPricedFood,
         attendanceAwareFarmsFixture = _config.AttendanceAwareFarms,
         crossFarmFreightFixture = _config.CrossFarmFreight,
+        boundedRetailServiceFixture = _config.BoundedRetailService,
         farmCostPricingFixture = _config.FarmCostPricing,
         meanFarmWholesaleUnitPriceCents = _farms.Average(f=>f.FarmWholesaleUnitPriceCents),
         contractorServiceRevenueCents = checked(_constructionStarted * ContractorLaborInvoice),
