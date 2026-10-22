@@ -8,7 +8,7 @@ namespace IndexCities.CausalEngine;
 
 // Independent vertical-slice engine for falsifying the architecture.
 // RULES AND FIXTURES HERE ARE NOT AN IMPLEMENTATION OF ALL OF INDEXCITIES SPEC.
-internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false);
+internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false);
 internal enum EventKind : byte { Day, Hour, StartWork, EndWork, Move, Delivery, RoadClose, RoadOpen, HouseholdShop }
 internal readonly record struct SimEvent(EventKind Kind, int Id);
 internal sealed class Person
@@ -944,16 +944,42 @@ internal sealed partial class CausalCity : IDisposable
         var farmId = driver.Job - StoreCount;
         var farm = _farms[farmId];
         if (farm.Stock <= 0) return false;
-        // Each farm is responsible only for its own eight retail customers.
-        // An employed individual at the farm actually loads and delivers.
-        for (var offset = 0; offset < 8; offset++)
+        // Original lab traps each of eight shops behind a single farm, even
+        // if another farm has a physical surplus. Optional counterfactual:
+        // choose an actual solvent buyer among all 64 shops, preferring the
+        // most depleted actual stock, then shortest existing-road distance.
+        // No extra food, sellers, trucks or employees are created.
+        const int freightPrice = 35;
+        var target = -1;
+        var chosenStock = int.MaxValue;
+        var chosenDistance = int.MaxValue;
+        var options = _config.CrossFarmFreight ? StoreCount : 8;
+        for (var offset = 0; offset < options; offset++)
         {
-            var shopId = farmId + 8 * ((driver.Id + offset) % 8);
+            var shopId = _config.CrossFarmFreight
+                ? (driver.Id + offset) % StoreCount
+                : farmId + 8 * ((driver.Id + offset) % 8);
             var shop = _shops[shopId];
             var amount = Math.Min(500, Math.Min(farm.Stock, Math.Max(0, 1000 - shop.Stock)));
-            const int freightPrice = 35; // hypothetical delivery charge per truck trip
             var invoice = amount * WholesalePrice + freightPrice;
             if (amount <= 0 || shop.Cash < invoice || farm.Cash < 80) continue;
+            var distance = Math.Abs(farm.Node % Grid - shop.Node % Grid) +
+                           Math.Abs(farm.Node / Grid - shop.Node / Grid);
+            if (target < 0 || (shop.Stock < chosenStock) ||
+                (shop.Stock == chosenStock && distance < chosenDistance))
+            {
+                target = shopId;
+                chosenStock = shop.Stock;
+                chosenDistance = distance;
+            }
+            if (!_config.CrossFarmFreight) break;
+        }
+        if (target < 0) return false;
+        {
+            var shopId = target;
+            var shop = _shops[shopId];
+            var amount = Math.Min(500, Math.Min(farm.Stock, Math.Max(0, 1000 - shop.Stock)));
+            var invoice = amount * WholesalePrice + freightPrice;
             // The assigned worker is already physically at the real farm
             // and performs paid loading + road delivery, not free overtime.
             const int grossFreightWage = 80;
@@ -1384,6 +1410,7 @@ internal sealed partial class CausalCity : IDisposable
         costBasedFoodPriceFixture = _config.CostBasedFoodPrice,
         capacityPricedFoodFixture = _config.CapacityPricedFood,
         attendanceAwareFarmsFixture = _config.AttendanceAwareFarms,
+        crossFarmFreightFixture = _config.CrossFarmFreight,
         contractorServiceRevenueCents = checked(_constructionStarted * ContractorLaborInvoice),
         businessOperatingNetCents = checked(_retailSalesCents +
             _constructionStarted * ContractorLaborInvoice - _paidWages),
