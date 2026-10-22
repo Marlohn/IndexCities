@@ -1,0 +1,39 @@
+name: E13 - layout compacto de dados quentes
+on:
+  push:
+    branches:
+      - experimento/e13-layout-dados-quentes
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --logger 'console;verbosity=minimal'
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Medir leitura objetos e snapshot compacto
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet run -c Release --project src/IndexCities.Headless -- e13 3 400 300000 | tee e13_small.log
+          dotnet run -c Release --project src/IndexCities.Headless -- e13 5 800 300000 | tee e13_medium.log
+          grep -E '^(E13_RESULT|E13_LIMIT)' e13_*.log
+      - name: Preservar dados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e13-layout-dados
+          path: e13_*.log
+          if-no-files-found: ignore
