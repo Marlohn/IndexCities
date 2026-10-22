@@ -3,7 +3,8 @@ name: IndexCities Causal Lab CI
 on:
   workflow_dispatch:
 
-# Runs isolated experiment code without model credentials or write permission.
+# Runs experimental code without model credentials or write permissions.
+# A 30-day fixture is NOT proof of the 80-year target.
 permissions:
   contents: read
 
@@ -14,38 +15,47 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: experimento/laboratorio-causal-10k
+          ref: experimento/motor-causal-10k-80y-autonomo
           persist-credentials: false
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Existing V1 contract must remain intact
+      - name: Current IndexCities V1 must remain correct
         shell: bash
         run: |
           set -euo pipefail
-          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --logger 'console;verbosity=minimal'
-      - name: CausalLab actually runs a city, not a microbenchmark
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
+            -c Release --logger 'console;verbosity=minimal'
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: .trusted-automation
+          persist-credentials: false
+      - name: Verify existing independent CausalEngine at 1000 and 10000 people
         shell: bash
         run: |
           set -euo pipefail
-          LAB=experiments/IndexCities.CausalLab/IndexCities.CausalLab.csproj
-          if [[ ! -f "$LAB" ]]; then
-            echo '::error::Independent CausalLab has not been implemented yet.'
-            exit 1
-          fi
-          dotnet build "$LAB" -c Release
+          ENGINE=experiments/IndexCities.CausalEngine/IndexCities.CausalEngine.csproj
+          test -f "$ENGINE"
+          dotnet build "$ENGINE" -c Release
           mkdir -p lab-results
-          dotnet run -c Release --no-build --project "$LAB" -- \
-            --scenario integrated --seed 42 --population 400 --days 1 \
-            --report "$PWD/lab-results/report.json"
-          python3 .github/scripts/validate_causal_lab.py lab-results/report.json
+          dotnet run -c Release --no-build --project "$ENGINE" -- \
+            --self-test > lab-results/self-test.json
+          dotnet run -c Release --no-build --project "$ENGINE" -- \
+            --sims=1000 --days=30 --seed=42 --adversarial \
+            --history=lab-results/facts-1000.bin > lab-results/report-1000.json
+          dotnet run -c Release --no-build --project "$ENGINE" -- \
+            --sims=10000 --days=30 --seed=42 --adversarial \
+            --history=lab-results/facts-10000.bin > lab-results/report-10000.json
+          python3 .trusted-automation/.github/scripts/validate_causal_lab.py \
+            lab-results/self-test.json lab-results/report-1000.json lab-results/report-10000.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: causal-lab-latest
-          path: lab-results/
+          name: causal-lab-metrics
+          path: lab-results/*.json
           if-no-files-found: ignore
