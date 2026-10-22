@@ -89,3 +89,66 @@ jobs:
           name: causal-engine-10k-366days
           path: year-10000.json
           if-no-files-found: ignore
+
+  decade-10k:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Ten real Gregorian years with 10k persons, physical travel and compressed factual history
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --history=artifacts/causal-10k-10y.ich2.gz --adversarial | tee decade-10000.json
+          python3 - <<'PY'
+          import json
+          r=json.load(open('decade-10000.json'))
+          assert r['moneyConserved'] and r['foodConserved'] and r['simulatedDays']==3653
+          assert r['births']>0 and r['journeys']>0 and r['cargoDeliveries']>0
+          print('DECADE',r['aliveEnd'],r['minimumAliveAtDayBoundary'],r['unmetMeals'],r['wallSeconds'])
+          PY
+          test -s artifacts/causal-10k-10y.ich2.gz
+          gzip -t artifacts/causal-10k-10y.ich2.gz
+          du -h artifacts/causal-10k-10y.ich2.gz
+      - name: Preserve 10-year report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-10k-decade-metrics
+          path: decade-10000.json
+          if-no-files-found: ignore
+
+  eighty-years-10k:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Execute 2020-2100 without skipping days, with factual history on disk
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --history=artifacts/causal-10k-80y.ich2.gz --adversarial | tee 80years-10000.json
+          python3 - <<'PY'
+          import json
+          r=json.load(open('80years-10000.json'))
+          assert r['simulatedDays']==29220 and r['gregorianEnd']=='2100-01-01'
+          assert r['moneyConserved'] and r['foodConserved'] and r['historyPersistent']
+          assert r['births']>0 and r['deaths']>0
+          assert r['journeys']>0 and r['cargoDeliveries']>0
+          assert r['minimumAliveAtDayBoundary']>=10000, 'Does not sustain 10k living citizens'
+          print('EIGHTY_YEARS_PARTIAL_FIXTURE',r['wallSeconds'],r['aliveEnd'])
+          PY
+          test -s artifacts/causal-10k-80y.ich2.gz
+          gzip -t artifacts/causal-10k-80y.ich2.gz
+          du -h artifacts/causal-10k-80y.ich2.gz
+      - name: Preserve 80-year result (not a SPEC-complete acceptance)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-10k-80y-fixture-metrics
+          path: 80years-10000.json
+          if-no-files-found: ignore
