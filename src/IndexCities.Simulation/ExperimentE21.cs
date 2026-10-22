@@ -19,7 +19,8 @@ public sealed partial class CitySimulation
     long _e21OperationalVisits, _e21OperationalTicks;
     long _e21BlockedEvents, _e21BlockedByCar, _e21BlockedJunction, _e21BlockedOther;
     long _e21Rechecks, _e21SelfChanged, _e21BlockerChanged, _e21NeighboursChanged;
-    long _e21RoadChanged, _e21DeadlineReached, _e21NoObservedTrigger;
+    long _e21RoadChanged, _e21DeadlineReached, _e21DeadlineAlreadyOverdue, _e21NoObservedTrigger;
+    readonly List<string> _e21UnclassifiedSamples=[];
     long _e21NoTriggerPhysicalChange, _e21NoTriggerStill;
     readonly Dictionary<int,E21Wait> _e21Waits = new();
     readonly HashSet<int> _e21Marked = new();
@@ -77,8 +78,12 @@ public sealed partial class CitySimulation
         if(E21NearbyFingerprint(v)!=old.NeighbourHash){_e21NeighboursChanged++;return;}
         // Thresholds tested by traffic code are measured, but NOT every timing
         // rule is enumerated here (service, lane priority, tow and road access).
-        if(v.WaitingSince>0&&VehicleMovementTime-v.WaitingSince>=State.Tuning.UTurnWaitSeconds)
+        var expiry=v.WaitingSince+State.Tuning.UTurnWaitSeconds;
+        // Crossing a threshold is an EVENT. Remaining beyond an old threshold
+        // on thousands of consecutive slices is NOT thousands of new events.
+        if(v.WaitingSince>0&&old.At<expiry&&VehicleMovementTime>=expiry)
         {_e21DeadlineReached++;return;}
+        if(v.WaitingSince>0&&old.At>=expiry)_e21DeadlineAlreadyOverdue++;
         _e21NoObservedTrigger++;_e21NoTrigger.Add(v.Id);
     }
 
@@ -117,7 +122,12 @@ public sealed partial class CitySimulation
             if(_e21NoTrigger.Remove(v.Id))
             {
                 var after=E21PoseOf(v);
-                if(after!=before)_e21NoTriggerPhysicalChange++;else _e21NoTriggerStill++;
+                if(after!=before){
+                    _e21NoTriggerPhysicalChange++;
+                    if(_e21UnclassifiedSamples.Count<8)
+                        _e21UnclassifiedSamples.Add(
+                            $"E21_UNEXPLAINED at={VehicleMovementTime:F6} vehicle={v.Id} before={before} after={after}");
+                }else _e21NoTriggerStill++;
             }
             if(!_e21Marked.Remove(v.Id))_e21Waits.Remove(v.Id);
         }
@@ -171,11 +181,13 @@ public sealed partial class CitySimulation
           .Append(" blockerChanged=").Append(_e21BlockerChanged)
           .Append(" neighboursChanged=").Append(_e21NeighboursChanged)
           .Append(" roadChanged=").Append(_e21RoadChanged)
-          .Append(" deadlineReached=").Append(_e21DeadlineReached)
+          .Append(" deadlineCrossings=").Append(_e21DeadlineReached)
+          .Append(" alreadyOverdueRechecks=").Append(_e21DeadlineAlreadyOverdue)
           .Append(" noObservedTrigger=").Append(_e21NoObservedTrigger)
           .Append(" noTriggerStateChanged=").Append(_e21NoTriggerPhysicalChange)
           .Append(" noTriggerStill=").Append(_e21NoTriggerStill)
           .AppendLine();
+        foreach(var example in _e21UnclassifiedSamples)sb.AppendLine(example);
         return sb.ToString();
     }
 }
