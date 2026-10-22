@@ -30,11 +30,12 @@ static class AccessCacheBenchmark
                 Rotation=0});
         var buildings=sim.State.Buildings;
         var oldCache=new Dictionary<(BuildingKind,Point,double),int?>();
+        var roadsById=sim.State.Roads.ToDictionary(r=>r.Id);
         RoadNode? OldAccess(Building b)
         {
             var key=(b.Kind,b.Position,b.Rotation);
             if(oldCache.TryGetValue(key,out var roadId))
-                return roadId==null?null:sim.State.Roads.FirstOrDefault(r=>r.Id==roadId);
+                return roadId==null?null:roadsById.GetValueOrDefault(roadId.Value);
             var result=sim.State.Roads.Where(r=>!r.Highway&&!r.ConstructionOnly&&r.MaintenanceRatio>.05&&r.Position.Distance(b.Door)<=sim.State.Tuning.RoadWidth/2+3)
                 .MinBy(r=>r.Position.Distance(b.Door));
             if(oldCache.Count>4096)oldCache.Clear();
