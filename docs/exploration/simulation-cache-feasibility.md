@@ -247,3 +247,21 @@ Os autores de MemoSim mostram explicitamente esse dilema, oferecem fallback e de
 **Ponto de decisão prático:** na implementação integrada, medir 3 famílias separadas — **busca de rotas**, **consultas econômicas**, **trechos físicos/operacionais estáveis**. A primeira que mostrar alto custo e repetição verdadeira recebe cache localizado, com comparação funcional e benchmarks reais. Nenhuma POC de sistema de produto é etapa obrigatória.
 
 **Status final: PENDENTE. Nenhuma alteração na SPEC, ARCHITECTURE ou código.**
+
+
+## 2026-10-21 — experimento isolado: cache de acesso prédio → rua acima de 4.096 endereços
+
+> **Evidência técnica, não fonte de verdade nem aprovação de arquitetura.** Executada na branch separada `experimento/cache-acesso-ruas-10k`, derivada da `main`. Não altera a SPEC nem o produto aprovado.
+
+**Problema específico:** `CitySimulation.Access` guarda uma consulta por `(Kind, Position, Rotation)`, mas limpa **todo** o dicionário ao exceder 4.096 entradas. Quando há milhares de prédios com endereços distintos consultados repetidamente, cada passagem pode destruir o cache antes de reutilizá-lo. A hipótese experimental dimensiona o limite em função de `State.Buildings.Count + 512`, respeitando piso de 4.096; `RebuildRoadGraph` continua invalidando o cache.
+
+**Evidência .NET 8 em CI:** [GitHub Actions run 39701334607](https://github.com/Marlohn/IndexCities/actions/runs/39701334607), `Release`, Ubuntu Linux, **3/3 testes específicos** e **437/437 testes gerais**. A bancada C# usa o **mesmo `CitySimulation.Access`** alternando somente a política antiga e a nova, ordem ABBA, quatro passagens pelos prédios e 378 nós de rua sintéticos. Três execuções por tamanho, com resultados de IDs idênticos.
+
+| Endereços sintéticos | Buscas completas (antigo → novo) em 4 passagens | Ganho de tempo registrado |
+|---|---:|---:|
+| 3.000 | 3.000 → 3.000 | 1,52–3,42×, **não interpretável como ganho**: as políticas executam o mesmo número de buscas; variação de runner/JIT/medição |
+| 10.000 | **40.000 → 10.000** | **4,80–4,84×** nesta bancada para a operação `Access` |
+
+**Causa técnica confirmada:** a política antiga provoca aproximadamente quatro vezes mais buscas completas quando o conjunto de endereços ultrapassa seu limite; o dimensionamento experimental retém 10 mil entradas e evita buscas redundantes. **Não equivale a quatro vezes menos CPU no jogo**, pois `Access` é só uma operação e o teste é sintético, sem 10 mil SIMs nem economia/veículos em execução. A cidade de 10 mil habitantes pode ter menos de 4.096 prédios, portanto o caso patológico não é garantido.
+
+**Limitações e próximo critério:** o seletor `_benchmarkLegacyAccessLimit` e o contador `_benchmarkAccessMisses` são **instrumentação somente desta branch** e devem sair antes de eventual integração. Precisa de medição do total por dia simulado em cidades representativas, consumo de memória, invalidação após mudanças viárias, Godot integrado e revisão independente conforme `AGENTS.md`. O benchmark inicial que comparava dois métodos diferentes foi descartado após um controle abaixo do limite revelar viés; os tempos acima vêm da bancada posterior, com método único.
