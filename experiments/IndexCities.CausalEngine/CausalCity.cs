@@ -102,6 +102,7 @@ internal sealed class CausalCity : IDisposable
     private long _sequence, _time, _initialMoney, _treasury;
     private long _days, _journeys, _segments, _waitSeconds, _sales, _shipments, _workdays;
     private long _births, _deaths, _unservedMeals, _paidWages, _unsatisfiedSales, _replans;
+    private long _producedFood, _eatenFood, _initialFood;
     private long _peakEvents;
     private long _firstDollarViolation = -1;
     private int _active, _maxActive, _minActive;
@@ -130,6 +131,7 @@ internal sealed class CausalCity : IDisposable
         }
         _active = _maxActive = _minActive = config.Sims;
         _initialMoney = CalculateMoney();
+        _initialFood = CalculateFood();
         Schedule(0, EventKind.Day, 0);
         Schedule(0, EventKind.Hour, 0);
         if (config.Adversarial)
@@ -145,6 +147,16 @@ internal sealed class CausalCity : IDisposable
         foreach (var p in _people) total = checked(total + p.Cash);
         foreach (var f in _shops) total = checked(total + f.Cash);
         foreach (var f in _farms) total = checked(total + f.Cash);
+        return total;
+    }
+    private long CalculateFood()
+    {
+        long total = 0;
+        foreach (var h in _households) total += h.Pantry;
+        foreach (var f in _shops) total += f.Stock;
+        foreach (var f in _farms) total += f.Stock;
+        foreach (var p in _people) total += p.CarryFood;
+        foreach (var trip in _trips) if (!trip.Completed && trip.OwnerId < 0) total += trip.Cargo;
         return total;
     }
     private void Schedule(long when, EventKind kind, int id)
@@ -233,6 +245,7 @@ internal sealed class CausalCity : IDisposable
                 if (h.Pantry > 0)
                 {
                     h.Pantry--;
+                    _eatenFood++;
                     p.Health = Math.Min(100, p.Health + (_waterRatio >= .5 ? 1 : 0));
                     _history.Fact(_time, id, 3, 1);
                 }
@@ -249,21 +262,13 @@ internal sealed class CausalCity : IDisposable
                 }
             }
         }
-        foreach (var farm in _farms)
-        {
-            // Farm output requires energy and water. Source is real production
-            // in the fixture, not magically replenishing shop inventory.
-            var quantity = (int)(1500 * Math.Min(_windFactor, _waterRatio));
-            farm.Stock = checked(farm.Stock + quantity);
-            _history.Fact(_time, -1000 - farm.Id, 8, quantity);
-        }
         for (var shopId = 0; shopId < _shops.Length; shopId++)
         {
             var farmId = shopId % _farms.Length;
             var shop = _shops[shopId];
             var farm = _farms[farmId];
-            var want = Math.Max(0, 240 - shop.Stock);
-            var count = Math.Min(240, Math.Min(want, farm.Stock));
+            var want = Math.Max(0, 1000 - shop.Stock);
+            var count = Math.Min(500, Math.Min(want, farm.Stock));
             if (count <= 0 || shop.Cash < count * WholesalePrice) continue;
             // Claim cargo and pay supplier before departure; actual store stock
             // increases ONLY after the truck reaches the destination.
@@ -319,7 +324,15 @@ internal sealed class CausalCity : IDisposable
         var p = _people[personId];
         if (!p.Alive || p.Traveling || !p.AtWork) return;
         var employer = p.Job < StoreCount ? _shops[p.Job] : _farms[p.Job - StoreCount];
-        // Only physically present workers earn wages.
+        // Only physically present workers earn wages. Farm output additionally
+        // requires the farmworker actually to have arrived for their shift.
+        if (p.Job >= StoreCount)
+        {
+            var food = (int)(35 * Math.Min(_windFactor, _waterRatio));
+            employer.Stock = checked(employer.Stock + food);
+            _producedFood += food;
+            _history.Fact(_time, p.Id, 8, food);
+        }
         var wage = p.Job < StoreCount ? 50 : 200;
         if (employer.Cash >= wage)
         {
@@ -331,8 +344,26 @@ internal sealed class CausalCity : IDisposable
         }
         p.AtWork = false;
         var h = _households[p.HouseholdId];
-        if (h.Members.FirstOrDefault(id => _people[id].Alive && Age(_people[id], Epoch.AddSeconds(_time)) >= 18) == p.Id && h.Pantry < 30 && p.Cash >= 100)
-            StartTrip(p, _shops[(p.Home + 1) % Nodes].Node);
+        if (h.Members.FirstOrDefault(id => _people[id].Alive && Age(_people[id], Epoch.AddSeconds(_time)) >= 18) == p.Id && h.Pantry < 30)
+        {
+            // Explicit intrafamily transfers: no pooling fictitious money.
+            // Purchase funds exist in identifiable personal accounts.
+            var needed = Math.Max(0, 32 * FoodPrice - p.Cash);
+            if (needed > 0)
+                foreach (var id in h.Members)
+                {
+                    var donor = _people[id];
+                    if (donor.Id == p.Id || !donor.Alive || donor.Cash <= 0) continue;
+                    var payment = Math.Min(needed, donor.Cash);
+                    donor.Cash -= payment;
+                    p.Cash += payment;
+                    needed -= payment;
+                    _history.Fact(_time, donor.Id, 14, payment);
+                    if (needed == 0) break;
+                }
+            if (p.Cash >= FoodPrice) StartTrip(p, _shops[(p.Home + 1) % Nodes].Node);
+            else StartTrip(p, p.Home);
+        }
         else StartTrip(p, p.Home);
     }
     private Trip NewTrip(int owner, int from, int destination, EventKind completion, int payload = 0, int cargo = 0)
@@ -534,6 +565,8 @@ internal sealed class CausalCity : IDisposable
     {
         if (CalculateMoney() != _initialMoney)
             throw new InvalidOperationException("Money created/destroyed. First mismatch: " + _firstDollarViolation);
+        if (CalculateFood() != checked(_initialFood + _producedFood - _eatenFood))
+            throw new InvalidOperationException("Food created/destroyed outside farm work and meals");
         if (_days > _config.Days || _active < 0) throw new InvalidOperationException("Invalid days/population");
         if (_people.Count(p => p.Alive) != _active) throw new InvalidOperationException("Population count inconsistent");
         foreach (var h in _households) if (h.Pantry < 0) throw new InvalidOperationException("Negative pantry");
@@ -557,6 +590,7 @@ internal sealed class CausalCity : IDisposable
         foreach (var h in _households) { Mix(h.Pantry); Mix(h.Members.Count); }
         foreach (var f in _shops) { Mix(f.Cash); Mix(f.Stock); }
         foreach (var f in _farms) { Mix(f.Cash); Mix(f.Stock); }
+        Mix(_producedFood); Mix(_eatenFood);
         foreach (var x in _closed) Mix(x ? 1 : 0);
         foreach (var t in _trips) if (!t.Completed)
         {
@@ -591,6 +625,8 @@ internal sealed class CausalCity : IDisposable
         demonstrated10kSustained = _minActive >= 10_000 && _config.Sims >= 10_000,
         journeys = _journeys, roadSegments = _segments, roadWaitSeconds = _waitSeconds,
         salesFoodUnits = _sales, cargoDeliveries = _shipments, paidWagesCents = _paidWages,
+        producedFoodUnits = _producedFood, eatenFoodUnits = _eatenFood,
+        foodConserved = CalculateFood() == _initialFood + _producedFood - _eatenFood,
         workingDays = _workdays, births = _births, deaths = _deaths,
         unmetMeals = _unservedMeals, deniedPurchases = _unsatisfiedSales,
         routeReroutes = _replans, recordedFacts = _history.Entries, peakQueue = _peakEvents,
