@@ -25,6 +25,11 @@ public sealed partial class CitySimulation
     readonly Dictionary<int,E21Wait> _e21Waits = new();
     readonly HashSet<int> _e21Marked = new();
     readonly HashSet<int> _e21NoTrigger = new();
+    readonly Dictionary<int,int> _e21WakeReason=new();
+    readonly long[] _e21WakeStateChanged=new long[7];
+    readonly long[] _e21WakeUnchanged=new long[7];
+    static readonly string[] E21WakeNames={"self","road","blocker","neighbours","time_threshold_crossing","new_2s_quantum","no_observed_trigger"};
+    void E21Wake(Vehicle v,int kind)=>_e21WakeReason[v.Id]=kind;
     const double E21Radius=64; // sensitivity-analysis probe, NOT a proven dependency boundary
 
     readonly record struct E21Pose(Point Pos,double Heading,int RouteIndex,
@@ -67,29 +72,29 @@ public sealed partial class CitySimulation
     void E21BeforeVehicle(Vehicle v)
     {
         if(E21Probe!="causes")return;
-        _e21Marked.Remove(v.Id);_e21NoTrigger.Remove(v.Id);
+        _e21Marked.Remove(v.Id);_e21NoTrigger.Remove(v.Id);_e21WakeReason.Remove(v.Id);
         if(!_e21Waits.TryGetValue(v.Id,out var old))return;
         _e21Rechecks++;
         var self=E21PoseOf(v);
-        if(self!=old.Self){_e21SelfChanged++;return;}
-        if(old.RoadRevision!=State.RoadRevision){_e21RoadChanged++;return;}
+        if(self!=old.Self){_e21SelfChanged++;E21Wake(v,0);return;}
+        if(old.RoadRevision!=State.RoadRevision){_e21RoadChanged++;E21Wake(v,1);return;}
         var blocker=old.BlockerId is {} id?State.Vehicles.FirstOrDefault(x=>x.Id==id):null;
         if(old.BlockerId!=null&&(blocker==null||E21PoseOf(blocker)!=old.Blocker))
-        {_e21BlockerChanged++;return;}
-        if(E21NearbyFingerprint(v)!=old.NeighbourHash){_e21NeighboursChanged++;return;}
+        {_e21BlockerChanged++;E21Wake(v,2);return;}
+        if(E21NearbyFingerprint(v)!=old.NeighbourHash){_e21NeighboursChanged++;E21Wake(v,3);return;}
         // Thresholds tested by traffic code are measured, but NOT every timing
         // rule is enumerated here (service, lane priority, tow and road access).
         var expiry=v.WaitingSince+State.Tuning.UTurnWaitSeconds;
         // Crossing a threshold is an EVENT. Remaining beyond an old threshold
         // on thousands of consecutive slices is NOT thousands of new events.
         if(v.WaitingSince>0&&old.At<expiry&&VehicleMovementTime>=expiry)
-        {_e21DeadlineReached++;return;}
+        {_e21DeadlineReached++;E21Wake(v,4);return;}
         if(v.WaitingSince>0&&old.At>=expiry)_e21DeadlineAlreadyOverdue++;
         // A new logical 2-second quantum runs operational vehicle updates,
         // citizens and infrastructure. The absence of nearby pose changes
         // does NOT make all those callbacks independent.
-        if(old.OuterTime!=State.ElapsedSeconds){_e21NewQuantum++;return;}
-        _e21NoObservedTrigger++;_e21NoTrigger.Add(v.Id);
+        if(old.OuterTime!=State.ElapsedSeconds){_e21NewQuantum++;E21Wake(v,5);return;}
+        _e21NoObservedTrigger++;_e21NoTrigger.Add(v.Id);E21Wake(v,6);
     }
 
     void E21Blocked(Vehicle v,Vehicle? blocker,bool junction=false)
@@ -125,6 +130,10 @@ public sealed partial class CitySimulation
         }
         if(E21Probe=="causes")
         {
+            if(_e21WakeReason.Remove(v.Id,out var reason)){
+                if(E21PoseOf(v)!=before)_e21WakeStateChanged[reason]++;
+                else _e21WakeUnchanged[reason]++;
+            }
             if(_e21NoTrigger.Remove(v.Id))
             {
                 var after=E21PoseOf(v);
@@ -194,6 +203,10 @@ public sealed partial class CitySimulation
           .Append(" noTriggerStateChanged=").Append(_e21NoTriggerPhysicalChange)
           .Append(" noTriggerStill=").Append(_e21NoTriggerStill)
           .AppendLine();
+        for(var i=0;i<E21WakeNames.Length;i++)
+            sb.Append("E21_WAKE reason=").Append(E21WakeNames[i])
+              .Append(" changed=").Append(_e21WakeStateChanged[i])
+              .Append(" unchanged=").Append(_e21WakeUnchanged[i]).AppendLine();
         foreach(var example in _e21UnclassifiedSamples)sb.AppendLine(example);
         return sb.ToString();
     }
