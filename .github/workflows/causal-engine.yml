@@ -282,6 +282,74 @@ jobs:
           path: economic-second-cycle-10y.log
           if-no-files-found: ignore
 
+  sanitation-property-tax-10y:
+    # Real collected solid waste at actual occupied homes, person-carried to a
+    # finite physical depot. Only current company property cash funds jobs;
+    # every shift must be visited, worked and paid. Lab, NOT V1 approval.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[sanitation-10y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: A/B 10 years of real city service fees, employees and material collection
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring 2>&1 | tee no-public-service-42.log
+          for seed in 42 73; do
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=$seed --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot 2>&1 | tee public-service-$seed.log
+          done
+          python3 - <<'PY'
+          import json
+          def get(path):
+              lines=open(path).readlines()
+              start=next(i for i,line in enumerate(lines) if line.startswith('{'))
+              return json.loads(''.join(lines[start:]))
+          a,b,c=get('no-public-service-42.log'),get('public-service-42.log'),get('public-service-73.log')
+          for r in (a,b,c):
+              assert r['simulatedDays']==3653 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+              assert r['fairHouseholdHiringFixture'] and not r['fullIndexCitiesTargetValidated']
+          assert not a['municipalSanitationPilotFixture']
+          for r in (b,c):
+              assert r['municipalSanitationPilotFixture']
+              assert r['municipalTaxCollectedCents']>0 and r['municipalSanitationWagesPaidCents']>0
+              assert r['municipalPaidCollections']>0 and r['totalWasteCollected']>0
+              assert r['totalWasteCreated']>=r['totalWasteCollected']
+          for name,r in [('no_service_42',a),('service_42',b),('service_73',c)]:
+              print('MUNICIPAL_SERVICE_RESULT',name,
+                    'alive',r['aliveEnd'],'min',r['minimumAliveAtAnyEvent'],
+                    'unmet',r['unmetMeals'],'tax',r['municipalTaxCollectedCents'],
+                    'cityWages',r['municipalSanitationWagesPaidCents'],
+                    'jobs',r['municipalSanitationJobs'],
+                    'waste',r['totalWasteCollected'],
+                    'earningHomes',r['householdsWithEmployedAdults'],
+                    'familyCash',r['personalCashCents'],
+                    'firmCash',r['businessCurrentCashCents'])
+          open('sustained-10y.flag','w').write('yes' if
+              b['minimumAliveAtAnyEvent']>=10000 and c['minimumAliveAtAnyEvent']>=10000 else 'no')
+          PY
+          if test "$(cat sustained-10y.flag)" = yes; then
+            echo 'Both seeds sustained 10 years. Extend one SAME city 80 years with REAL persisted history.'
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --history=full-municipal-80y.facts.gz 2>&1 | tee municipal-80y.log
+          else
+            echo 'One or more real-population decades failed; never assert 80y from an extinct population.'
+          fi
+      - name: Preserve all tests and any full generated history
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-municipal-10k-economy
+          path: |
+            no-public-service-42.log
+            public-service-42.log
+            public-service-73.log
+            municipal-80y.log
+            full-municipal-80y.facts.gz
+          if-no-files-found: ignore
+
   fair-household-basket-10y:
     # Existing funded jobs only; compare whether preferentially hiring
     # in households with no worker prevents cash-concentration famine.
