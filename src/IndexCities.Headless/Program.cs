@@ -71,6 +71,9 @@ if(e15=="semantic")
                 case JsonValueKind.Number:
                     if(a.GetRawText()==b.GetRawText())break;
                     if(a.TryGetInt64(out var ia)&&b.TryGetInt64(out var ib)&&ia==ib)break;
+                    if(a.TryGetUInt64(out var ua)&&b.TryGetUInt64(out var ub)&&ua==ub)break;
+                    var asText=a.GetRawText();var bsText=b.GetRawText();
+                    if(asText.All(char.IsDigit)&&bsText.All(char.IsDigit)){first.Add(path+": integer "+asText+" / "+bsText);break;}
                     var x=a.GetDouble();var y=b.GetDouble();var diff=Math.Abs(x-y);
                     // Distinguish machine-level float drift from gameplay changes;
                     // large money, time and fixed-point changes remain detectable.
