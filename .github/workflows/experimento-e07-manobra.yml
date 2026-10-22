@@ -1,0 +1,57 @@
+name: E07 - reuso de amostras de manobra
+
+on:
+  push:
+    branches:
+      - experimento/e07-reuso-amostras-manobra
+
+permissions:
+  contents: read
+
+jobs:
+  teste-integrado:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: candidato
+      - uses: actions/checkout@v4
+        with:
+          ref: 651326228729d7689b61745370cc63d997e5ee60
+          path: referencia
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Suite completa sem alterar as regras
+        run: dotnet test candidato/tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --logger 'console;verbosity=minimal'
+      - name: Comparar dias reais do nucleo e hash dos saves
+        shell: bash
+        run: |
+          set -euo pipefail
+          compare() {
+            local tag="$1"; shift
+            echo "===== BASE ${tag} ====="
+            dotnet run -c Release --project referencia/src/IndexCities.Headless -- scale "$@" | tee "base_${tag}.txt"
+            echo "===== E07 ${tag} ====="
+            dotnet run -c Release --project candidato/src/IndexCities.Headless -- scale "$@" | tee "e07_${tag}.txt"
+            local before after
+            before=$(grep -o 'sha256=[0-9A-F]*' "base_${tag}.txt" | tail -1 | cut -d= -f2)
+            after=$(grep -o 'sha256=[0-9A-F]*' "e07_${tag}.txt" | tail -1 | cut -d= -f2)
+            echo "RESULTADO ${tag} base_sha=$before e07_sha=$after"
+            grep -E '^(DAY 1|SUMMARY|INVARIANTS OK)' "base_${tag}.txt"
+            grep -E '^(DAY 1|SUMMARY|INVARIANTS OK)' "e07_${tag}.txt"
+            test -n "$before" && test "$before" = "$after" || { echo "DIVERGENCIA ${tag}"; exit 1; }
+          }
+          compare pequeno42 cycle --seed=42 --warmup=1 --days=1 --cap=360
+          compare medio42 grid --rows=3 --length=400 --seed=42 --warmup=1 --days=1 --cap=360
+          compare grande42 grid --rows=5 --length=800 --seed=42 --warmup=0 --days=1 --cap=360
+      - name: Preservar logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e07-manoeuvre-comparacao
+          path: |
+            base_*.txt
+            e07_*.txt
+          if-no-files-found: ignore
