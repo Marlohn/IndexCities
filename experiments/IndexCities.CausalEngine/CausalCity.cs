@@ -500,7 +500,8 @@ internal sealed partial class CausalCity : IDisposable
             // A variable price makes revenue/old-fixed-price a false volume estimate.
             var monthlyUnits = farm ? firm.DayReceipts / WholesalePrice :
                 (_config.CostBasedFoodPrice ? firm.MonthRetailSalesUnits : firm.DayReceipts / FoodPrice);
-            if (_config.CostBasedFoodPrice && !farm && firm.MonthRetailSalesUnits > 0)
+            if (_config.CostBasedFoodPrice && !farm &&
+                (firm.MonthRetailSalesUnits > 0 || _config.CapacityPricedFood))
             {
                 // Price is a transparent observed cost estimate, not a target survival
                 // price. Wages are ACTUALLY paid and all goods still have a real
