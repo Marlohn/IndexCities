@@ -96,6 +96,7 @@ jobs:
           if-no-files-found: ignore
 
   decade-10k:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
@@ -126,6 +127,7 @@ jobs:
           if-no-files-found: ignore
 
   eighty-years-10k:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
