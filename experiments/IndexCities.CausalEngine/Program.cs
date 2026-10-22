@@ -36,7 +36,7 @@ internal static class Program
             }
             int sims = 1000, days = 7, seed = 42, annualLoadCycles = 0;
             string? history = null;
-            bool adversarial = false, wageFeedback = false, cohortRenewal = false, demandStaffing = false, vacancyMarket = false, freightLabor = false, constructionPilot = false, fairHouseholdHiring = false, demographicUpperBound = false, costBasedFoodPrice = false;
+            bool adversarial = false, wageFeedback = false, cohortRenewal = false, demandStaffing = false, vacancyMarket = false, freightLabor = false, constructionPilot = false, fairHouseholdHiring = false, demographicUpperBound = false, costBasedFoodPrice = false, capacityPricedFood = false;
             foreach (var arg in args)
             {
                 if (arg.StartsWith("--sims=")) sims = int.Parse(arg[7..]);
@@ -54,6 +54,7 @@ internal static class Program
                 else if (arg == "--fair-household-hiring") fairHouseholdHiring = true;
                 else if (arg == "--demographic-upper-bound") demographicUpperBound = true;
                 else if (arg == "--cost-based-food-price") costBasedFoodPrice = true;
+                else if (arg == "--capacity-priced-food") { capacityPricedFood = true; costBasedFoodPrice = true; }
                 else if (arg == "--self-test") return EngineSelfTest.Run();
                 else throw new ArgumentException("Unknown argument: " + arg);
             }
@@ -126,7 +127,7 @@ internal static class Program
                 }, new JsonSerializerOptions { WriteIndented = true }));
                 return 0;
             }
-            var config = new LabConfig(sims, days, seed, history, adversarial, wageFeedback, cohortRenewal, demandStaffing, vacancyMarket, freightLabor, constructionPilot, fairHouseholdHiring, costBasedFoodPrice);
+            var config = new LabConfig(sims, days, seed, history, adversarial, wageFeedback, cohortRenewal, demandStaffing, vacancyMarket, freightLabor, constructionPilot, fairHouseholdHiring, costBasedFoodPrice, capacityPricedFood);
             using var engine = new CausalCity(config);
             var sw = Stopwatch.StartNew();
             engine.Run();
