@@ -328,6 +328,34 @@ internal static class EngineSelfTest
                     throw new InvalidOperationException("Real paid basket checkout changed after checkpoint");
             }
             File.Delete(basketSave);
+            // Recover a real failed purchase by traveling to another open,
+            // staffed grocery store. Never teleport stock or invent cash.
+            var fallbackConfig = basketConfig with { RetailShopFallback = true };
+            var fallbackSave = temp + ".fallback.save.json";
+            string fallbackHash;
+            using (var completeFallback = new CausalCity(fallbackConfig))
+            {
+                completeFallback.Run();
+                completeFallback.AssertConservation();
+                fallbackHash = completeFallback.Fingerprint();
+                using var d = JsonDocument.Parse(JsonSerializer.Serialize(completeFallback.Report(0)));
+                if (!d.RootElement.GetProperty("retailShopFallbackFixture").GetBoolean() ||
+                    d.RootElement.GetProperty("checkoutBasketTransactions").GetInt64() <= 0)
+                    throw new InvalidOperationException("Alternative-shop test lost paid grocery sales");
+            }
+            using (var partialFallback = new CausalCity(fallbackConfig))
+            {
+                partialFallback.RunUntilDay(46);
+                partialFallback.SaveSnapshot(fallbackSave);
+            }
+            using (var resumedFallback = CausalCity.FromSnapshot(fallbackSave))
+            {
+                resumedFallback.Run();
+                resumedFallback.AssertConservation();
+                if (resumedFallback.Fingerprint() != fallbackHash)
+                    throw new InvalidOperationException("Alternative grocery routes changed on save/resume");
+            }
+            File.Delete(fallbackSave);
             // In the physical-supplier-freight counterfactual, a real farm
             // employee must leave the farm with real stock, travel to the shop,
             // unload there, and receive exactly one salary from existing cash.
@@ -426,6 +454,7 @@ internal static class EngineSelfTest
                 costBasedFoodPricingSaveResumeExact = true, observedRetailPriceCents = costAverage,
                 boundedRetailServiceSaveResumeExact = true,
                 basketRetailStaffingAndSaveResumeExact = true, basketTransactions,
+                alternativeRetailRouteSaveResumeExact = true,
                 realFreightSaveResumeExact = true, freightJourneys, freightCharges,
                 buildingMaterialAndPayrollConserved = true, buildingPaidShifts = builtShifts,
                 saveResumeExact = resumedHash == hashA,
@@ -445,7 +474,7 @@ internal static class EngineSelfTest
         }
         finally
         {
-            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json", temp + ".construction.save.json", temp + ".cost-price.save.json", temp + ".checkout.save.json", temp + ".basket.save.json" })
+            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json", temp + ".construction.save.json", temp + ".cost-price.save.json", temp + ".checkout.save.json", temp + ".basket.save.json", temp + ".fallback.save.json" })
                 if (File.Exists(path)) File.Delete(path);
         }
     }
