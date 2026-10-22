@@ -37,7 +37,7 @@ internal static class Program
             int sims = 1000, days = 7, seed = 42, annualLoadCycles = 0;
             string? history = null;
             int retailBasketsPerShift = 5;
-            bool adversarial = false, wageFeedback = false, cohortRenewal = false, demandStaffing = false, vacancyMarket = false, freightLabor = false, constructionPilot = false, fairHouseholdHiring = false, demographicUpperBound = false, costBasedFoodPrice = false, capacityPricedFood = false, attendanceAwareFarms = false, crossFarmFreight = false, farmCostPricing = false, boundedRetailService = false, basketRetailService = false, retailShopFallback = false;
+            bool adversarial = false, wageFeedback = false, cohortRenewal = false, demandStaffing = false, vacancyMarket = false, freightLabor = false, constructionPilot = false, fairHouseholdHiring = false, demographicUpperBound = false, costBasedFoodPrice = false, capacityPricedFood = false, attendanceAwareFarms = false, crossFarmFreight = false, farmCostPricing = false, boundedRetailService = false, basketRetailService = false, retailShopFallback = false, municipalSanitationPilot = false;
             foreach (var arg in args)
             {
                 if (arg.StartsWith("--sims=")) sims = int.Parse(arg[7..]);
@@ -62,6 +62,7 @@ internal static class Program
                 else if (arg == "--bounded-retail-service") boundedRetailService = true;
                 else if (arg == "--basket-retail-service") { boundedRetailService = true; basketRetailService = true; }
                 else if (arg == "--retail-shop-fallback") retailShopFallback = true;
+                else if (arg == "--municipal-sanitation-pilot") municipalSanitationPilot = true;
                 else if (arg.StartsWith("--retail-baskets-per-shift=")) retailBasketsPerShift = int.Parse(arg["--retail-baskets-per-shift=".Length..]);
                 else if (arg == "--self-test") return EngineSelfTest.Run();
                 else throw new ArgumentException("Unknown argument: " + arg);
@@ -76,6 +77,8 @@ internal static class Program
             if (retailBasketsPerShift is < 1 or > 100 ||
                 (retailBasketsPerShift != 5 && !basketRetailService))
                 throw new ArgumentException("Basket throughput requires --basket-retail-service and 1..100 baskets per shift");
+            if (municipalSanitationPilot && !(vacancyMarket && constructionPilot))
+                throw new ArgumentException("Municipal sanitation pilot requires real vacancies and construction job slot");
             if (retailShopFallback && !basketRetailService)
                 throw new ArgumentException("Alternative-shop routing requires physical basket checkout");
             if (boundedRetailService && !vacancyMarket)
@@ -104,7 +107,7 @@ internal static class Program
             if (annualLoadCycles != 0)
             {
                 if (annualLoadCycles < 1 || annualLoadCycles > 80 ||
-                    history is not null || wageFeedback || cohortRenewal || demandStaffing || vacancyMarket || freightLabor || constructionPilot || fairHouseholdHiring || costBasedFoodPrice || attendanceAwareFarms || crossFarmFreight || farmCostPricing || boundedRetailService || basketRetailService || retailShopFallback || retailBasketsPerShift != 5 || days != 7)
+                    history is not null || wageFeedback || cohortRenewal || demandStaffing || vacancyMarket || freightLabor || constructionPilot || fairHouseholdHiring || costBasedFoodPrice || attendanceAwareFarms || crossFarmFreight || farmCostPricing || boundedRetailService || basketRetailService || retailShopFallback || retailBasketsPerShift != 5 || municipalSanitationPilot || days != 7)
                     throw new ArgumentException(
                         "Annual workload mode requires 1..80 cycles, no --days, history, or gameplay counterfactuals");
                 var watch = Stopwatch.StartNew();
@@ -148,7 +151,7 @@ internal static class Program
                 }, new JsonSerializerOptions { WriteIndented = true }));
                 return 0;
             }
-            var config = new LabConfig(sims, days, seed, history, adversarial, wageFeedback, cohortRenewal, demandStaffing, vacancyMarket, freightLabor, constructionPilot, fairHouseholdHiring, costBasedFoodPrice, capacityPricedFood, attendanceAwareFarms, crossFarmFreight, farmCostPricing, boundedRetailService, basketRetailService, retailShopFallback, retailBasketsPerShift);
+            var config = new LabConfig(sims, days, seed, history, adversarial, wageFeedback, cohortRenewal, demandStaffing, vacancyMarket, freightLabor, constructionPilot, fairHouseholdHiring, costBasedFoodPrice, capacityPricedFood, attendanceAwareFarms, crossFarmFreight, farmCostPricing, boundedRetailService, basketRetailService, retailShopFallback, retailBasketsPerShift, municipalSanitationPilot);
             using var engine = new CausalCity(config);
             var sw = Stopwatch.StartNew();
             engine.Run();
