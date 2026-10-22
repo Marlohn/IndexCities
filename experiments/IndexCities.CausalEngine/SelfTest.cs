@@ -70,6 +70,33 @@ internal static class EngineSelfTest
                 throw new InvalidOperationException($"GZip history append lost records: {reopened}/{facts}");
             File.Delete(compressed);
             File.Delete(snapshot);
+
+            // A family in this four-person fixture starts at ages 58, 56,
+            // 54 and 52. Its oldest adult retires after 12 years; after
+            // 18 years nobody works. Shopping must continue to happen via
+            // physical trips and paid purchases in BOTH situations.
+            var retirementFacts = temp + ".retired.facts";
+            var retirementDays = (CausalCity.Epoch.AddYears(19) - CausalCity.Epoch).Days;
+            using (var retirement = new CausalCity(new LabConfig(4, retirementDays, 42, retirementFacts, false)))
+            {
+                retirement.Run();
+                retirement.AssertConservation();
+            }
+            var firstRetirement = (long)(CausalCity.Epoch.AddYears(12) - CausalCity.Epoch).TotalSeconds;
+            var secondRetirement = (long)(CausalCity.Epoch.AddYears(14) - CausalCity.Epoch).TotalSeconds;
+            var allRetired = (long)(CausalCity.Epoch.AddYears(18) - CausalCity.Epoch).TotalSeconds;
+            long successorPurchases = 0, retiredPurchases = 0;
+            foreach (var fact in HistorySink.Read(retirementFacts))
+            {
+                if (fact.Type != 10 || fact.Amount <= 0) continue;
+                if (fact.Owner == 1 && fact.At >= firstRetirement && fact.At < secondRetirement)
+                    successorPurchases++;
+                if (fact.At >= allRetired) retiredPurchases++;
+            }
+            File.Delete(retirementFacts);
+            if (successorPurchases == 0 || retiredPurchases == 0)
+                throw new InvalidOperationException(
+                    $"Household food shopping stopped after retirement: successor={successorPurchases}, retirees={retiredPurchases}");
             watch.Stop();
             Console.WriteLine(JsonSerializer.Serialize(new
             {
@@ -77,7 +104,7 @@ internal static class EngineSelfTest
                 worlds = 3, deterministic = true, hash = hashA,
                 saveResumeExact = resumedHash == hashA,
                 compressedHistoryReplayExact = reopened == facts,
-                journeys, sales, births, historyFacts = facts,
+                journeys, sales, births, successorPurchases, retiredPurchases, historyFacts = facts,
                 historyBytes = bytes, historyFullyPersisted = readFacts == facts,
                 originalByteEquivalent = facts * 21, compressionWithoutGzip = (double)bytes / (facts * 21),
                 elapsedSeconds = watch.Elapsed.TotalSeconds,
@@ -90,6 +117,10 @@ internal static class EngineSelfTest
             Console.Error.WriteLine("SELF-TEST FAILED: " + ex);
             return 1;
         }
-        finally { if (File.Exists(temp)) File.Delete(temp); }
+        finally
+        {
+            foreach (var path in new[] { temp, temp + ".retired.facts", temp + ".gz", temp + ".save.json" })
+                if (File.Exists(path)) File.Delete(path);
+        }
     }
 }
