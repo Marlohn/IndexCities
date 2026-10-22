@@ -467,6 +467,46 @@ internal static class EngineSelfTest
                     throw new InvalidOperationException("City taxes and physical household trash replay diverged");
             }
             File.Delete(municipalSave);
+            // Treatment must consume only refuse physically delivered by
+            // previous real collection shifts, paid from existing city money.
+            // Replaying a save must reproduce ALL material inventory and wages.
+            var treatmentConfig = municipalCfg with
+            {
+                Days = 210, MunicipalWasteTreatmentPilot = true
+            };
+            var treatmentSave = temp + ".treatment.save.json";
+            string treatmentHash;
+            long treatmentShifts;
+            using (var completeTreatment = new CausalCity(treatmentConfig))
+            {
+                completeTreatment.Run();
+                completeTreatment.AssertConservation();
+                treatmentHash = completeTreatment.Fingerprint();
+                using var data = JsonDocument.Parse(JsonSerializer.Serialize(completeTreatment.Report(0)));
+                var report = data.RootElement;
+                treatmentShifts = report.GetProperty("paidWasteTreatmentShifts").GetInt64();
+                if (!report.GetProperty("municipalWasteTreatmentPilotFixture").GetBoolean() ||
+                    treatmentShifts <= 0 ||
+                    report.GetProperty("wasteTreatedAtDepot").GetInt64() <= 0 ||
+                    report.GetProperty("wasteTreatedAtDepot").GetInt64() >
+                        report.GetProperty("totalWasteCollected").GetInt64() ||
+                    report.GetProperty("municipalSanitationWagesPaidCents").GetInt64() <=
+                        report.GetProperty("municipalPaidCollections").GetInt64() * 80)
+                    throw new InvalidOperationException("Unpaid or materially fictitious depot treatment");
+            }
+            using (var partialTreatment = new CausalCity(treatmentConfig))
+            {
+                partialTreatment.RunUntilDay(111);
+                partialTreatment.SaveSnapshot(treatmentSave);
+            }
+            using (var resumedTreatment = CausalCity.FromSnapshot(treatmentSave))
+            {
+                resumedTreatment.Run();
+                resumedTreatment.AssertConservation();
+                if (resumedTreatment.Fingerprint() != treatmentHash)
+                    throw new InvalidOperationException("Depot inventory or wages changed after checkpoint");
+            }
+            File.Delete(treatmentSave);
             // Small closed-household stress case: when the final family
             // member dies, a positive estate must NOT finance city pensions.
             long unclaimedEstate;
@@ -494,6 +534,7 @@ internal static class EngineSelfTest
                 basketRetailStaffingAndSaveResumeExact = true, basketTransactions,
                 alternativeRetailRouteSaveResumeExact = true,
                 municipalCashTaxWasteAndJobsSaveResumeExact = true, municipalVisits,
+                municipalWasteTreatmentSavedExactly = true, treatmentShifts,
                 realFreightSaveResumeExact = true, freightJourneys, freightCharges,
                 buildingMaterialAndPayrollConserved = true, buildingPaidShifts = builtShifts,
                 saveResumeExact = resumedHash == hashA,
@@ -513,7 +554,7 @@ internal static class EngineSelfTest
         }
         finally
         {
-            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json", temp + ".construction.save.json", temp + ".cost-price.save.json", temp + ".checkout.save.json", temp + ".basket.save.json", temp + ".fallback.save.json", temp + ".municipal.save.json" })
+            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json", temp + ".construction.save.json", temp + ".cost-price.save.json", temp + ".checkout.save.json", temp + ".basket.save.json", temp + ".fallback.save.json", temp + ".municipal.save.json", temp + ".treatment.save.json" })
                 if (File.Exists(path)) File.Delete(path);
         }
     }
