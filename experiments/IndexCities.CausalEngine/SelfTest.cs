@@ -71,29 +71,33 @@ internal static class EngineSelfTest
             File.Delete(compressed);
             File.Delete(snapshot);
 
-            // A family with seed 48 starts at ages 64, 62, 60 and 58.
-            // Births require two carers under 60, so no children can become
-            // replacement workers. The first retires after 6 years and
-            // all four retire after 12 years. Shopping must continue to happen via
-            // physical trips and paid purchases in BOTH situations.
-            var retirementFacts = temp + ".retired.facts";
-            var retirementDays = (CausalCity.Epoch.AddYears(13) - CausalCity.Epoch).Days;
-            using (var retirement = new CausalCity(new LabConfig(4, retirementDays, 48, retirementFacts, false)))
+            // These two fixtures retain actual farm workers and delivered
+            // groceries. In 256 sims, household 0 has adults aged 64, 34,
+            // 53, 23: the first retiree must be replaced by a working shopper.
+            // In 196 sims, household 0 has four adults all aged 64: none is
+            // working after six years, so retirees must shop themselves.
+            var successorFacts = temp + ".successor.facts.gz";
+            var retirementFacts = temp + ".retired.facts.gz";
+            var retirementDays = (CausalCity.Epoch.AddYears(7) - CausalCity.Epoch).Days;
+            using (var successor = new CausalCity(new LabConfig(256, retirementDays, 48, successorFacts, false)))
+            {
+                successor.Run();
+                successor.AssertConservation();
+            }
+            using (var retirement = new CausalCity(new LabConfig(196, retirementDays, 48, retirementFacts, false)))
             {
                 retirement.Run();
                 retirement.AssertConservation();
             }
             var firstRetirement = (long)(CausalCity.Epoch.AddYears(6) - CausalCity.Epoch).TotalSeconds;
-            var secondRetirement = (long)(CausalCity.Epoch.AddYears(8) - CausalCity.Epoch).TotalSeconds;
-            var allRetired = (long)(CausalCity.Epoch.AddYears(12) - CausalCity.Epoch).TotalSeconds;
             long successorPurchases = 0, retiredPurchases = 0;
+            foreach (var fact in HistorySink.Read(successorFacts))
+                if (fact.Type == 10 && fact.Amount > 0 && fact.Owner == 64 &&
+                    fact.At >= firstRetirement) successorPurchases++;
             foreach (var fact in HistorySink.Read(retirementFacts))
-            {
-                if (fact.Type != 10 || fact.Amount <= 0) continue;
-                if (fact.Owner == 1 && fact.At >= firstRetirement && fact.At < secondRetirement)
-                    successorPurchases++;
-                if (fact.At >= allRetired) retiredPurchases++;
-            }
+                if (fact.Type == 10 && fact.Amount > 0 && fact.Owner == 0 &&
+                    fact.At >= firstRetirement) retiredPurchases++;
+            File.Delete(successorFacts);
             File.Delete(retirementFacts);
             if (successorPurchases == 0 || retiredPurchases == 0)
                 throw new InvalidOperationException(
@@ -102,7 +106,7 @@ internal static class EngineSelfTest
             Console.WriteLine(JsonSerializer.Serialize(new
             {
                 success = true, scope = "14 days, 256 people, real trips and transactions in simplified fixture",
-                worlds = 3, deterministic = true, hash = hashA,
+                worlds = 5, deterministic = true, hash = hashA,
                 saveResumeExact = resumedHash == hashA,
                 compressedHistoryReplayExact = reopened == facts,
                 journeys, sales, births, successorPurchases, retiredPurchases, historyFacts = facts,
@@ -120,7 +124,7 @@ internal static class EngineSelfTest
         }
         finally
         {
-            foreach (var path in new[] { temp, temp + ".retired.facts", temp + ".gz", temp + ".save.json" })
+            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json" })
                 if (File.Exists(path)) File.Delete(path);
         }
     }
