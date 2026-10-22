@@ -105,6 +105,7 @@ public sealed partial class CitySimulation
     {
         if(!State.Vehicles.Any(LiveLaneEntry)){MoveVehiclesUnsplit(dt);return;}
         _vehicleMovementBatch=[];_vehicleMovementOffset=0;
+        if(E19TemporalPredictions)_e19Predictions.Clear();
         try{
             // Driver wages, loading timers, replanning and boarding transitions
             // retain one operational update per outer step. Motion alone is split.
@@ -116,6 +117,7 @@ public sealed partial class CitySimulation
                 _entryFrameBuffer.Clear();foreach(var v in State.Vehicles.Where(v=>OccupiesLane(v)&&!TryLaneEntry(v,out _)))_entryFrameBuffer.Add(v.Id,EntrySnapshot(v));_entryFrame=_entryFrameBuffer;
                 var slice=NextVehicleMovementEvent(remaining);
                 MoveVehiclesUnsplit(slice);
+                if(E19TemporalPredictions)_e19MovementSlices++;
                 _vehicleMovementOffset+=slice;
             }
         }finally{_vehicleMovementBatch=null;_entryFrame=null;_entryFrameBuffer.Clear();_vehicleMovementClock=null;_vehicleMovementOffset=0;}
@@ -153,13 +155,14 @@ public sealed partial class CitySimulation
     {
         var entries=State.Vehicles.Where(v=>_vehicleMovementBatch!.Contains(v.Id)&&LiveLaneEntry(v)).ToList();
         if(entries.Count==0)return horizon;
+        var fullHorizon=horizon;
         var held=State.Vehicles.Any(o=>o.Status==VehicleStatus.Stranded)?State.Vehicles.Where(HeldBehindStranded).Select(o=>o.Id).ToHashSet():null;
         foreach(var v in State.Vehicles.Where(v=>_vehicleMovementBatch!.Contains(v.Id))){
             // A blocked lot entry is not travelling to its lane target yet.
             // Its hypothetical arrival must not generate an extra substep.
             if(TryLaneEntry(v,out var waitingAccess)&&State.Vehicles.Where(o=>o.Id!=v.Id&&OccupiesLane(o)).Select(EntryFrameVehicle).Any(o=>BlocksLaneEntry(v,waitingAccess,o)))continue;
             if(held?.Contains(v.Id)==true)continue;
-            horizon=Math.Min(horizon,TimeToMovementChange(v,horizon));
+            horizon=Math.Min(horizon,E19TemporalPredictions?E19PredictAndVerify(v,horizon,fullHorizon):TimeToMovementChange(v,horizon));
         }
         var earliest=horizon;
         foreach(var v in entries){
