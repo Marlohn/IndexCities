@@ -698,4 +698,13 @@ A branch contém apenas **as duas mudanças de produção** e seus testes, sem o
 
 **Critério crítico:** tempo de dia simulado e integridade causal valem mais que ganhos artificiais de funções isoladas. Mesmo com snapshots idênticos, não se pode extrapolar um cenário V1 moderado para 10 mil SIMs nem dispensar revisão independente e QA no Godot.
 
-**Estado:** comparação integrada ainda precisa ser interpretada após execução do CI; nenhum merge autorizado automaticamente. Não criar um requisito de novo scheduler a partir destes dados.
+**Resultado integrado executado:** [GitHub Actions 39705009432](https://github.com/Marlohn/IndexCities/actions/runs/39705009432), commit `4897caf1b326f9cc18d322f597ccaf31e535716d`: **11/11 testes específicos**, **445/445 testes totais** e comparação `main` vs. combinação, com saves SHA-256 iguais nos dois cenários. `roadgraph 10000`: **349,67 ms → 24,71 ms (14,15×)** para reconstrução isolada, mesmo conjunto e ordem de vizinhos.
+
+| Cenário de 1 dia após 1 dia de aquecimento | `main` (segundos reais) | Combinado (segundos reais) | Save SHA-256 abreviado |
+|---|---:|---:|---|
+| `scale cycle --days=1 --warmup=1 --seed=42` | 1,36 | 1,44 | `7357FCCBAA99AA96` nas duas |
+| `scale grid --rows=3 --length=400 --days=1 --warmup=1 --seed=42` | 2,95 | 2,96 | `2D095BC89EB9A34D` nas duas |
+
+**Leitura crítica:** nestes cenários pequenos, **nenhum ganho de tempo total foi demonstrado**; no primeiro o combinado foi ~0,08 s mais lento e no segundo ~0,01 s mais lento, diferenças de execução única sem controle de ruído. Os cenários terminaram com **47 e 108 SIMs**, respectivamente, muito aquém de 10 mil. A identidade do save não substitui testar cenários grandes, trânsito carregado, alterações de rua, save/load e revisão independente. Portanto, **o teste integrado valida compatibilidade nos casos medidos, não viabilidade da meta geracional nem regressão estatisticamente estável**.
+
+**Estado:** experimento integrado executado e teste funcional aprovado no CI; desempenho do jogo inteiro inconclusivo para cidades maiores. Nenhum merge autorizado automaticamente. Não criar requisito de novo scheduler a partir destes dados.
