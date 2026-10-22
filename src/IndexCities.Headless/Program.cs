@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using IndexCities.Headless;
 using IndexCities.Simulation;
 
@@ -13,7 +14,7 @@ using IndexCities.Simulation;
 //          --strand=N empties the tank of N driving vehicles each day and follows the tow and the queue for 30 min
 // Results are measurements, not product rules: see docs/exploration/ritmo-velocidades.md.
 Console.OutputEncoding=Encoding.UTF8;
-var known=new HashSet<string>{"rows","length","days","cap","signals","seed","growth","warmup","strand","e22","e22-window","e22-adversary","e22-reverse"};
+var known=new HashSet<string>{"rows","length","days","cap","signals","seed","growth","warmup","strand","e22","e22-window","e22-adversary","e22-reverse","e23-diff"};
 var opts=new Dictionary<string,string>();foreach(var p in args.Skip(2).Select(a=>a.TrimStart('-').Split('=',2)))opts[p[0]]=p.Length>1?p[1]:"1";
 string Opt(string k,string d)=>opts.GetValueOrDefault(k,d);
 if(opts.Keys.FirstOrDefault(k=>!known.Contains(k)) is {} unknown){Console.Error.WriteLine("opção desconhecida: --"+unknown);return 2;}
@@ -123,12 +124,13 @@ if(e22=="compare")
         }
         return(-1,false,"unknown intervention");
     }
-    var results=new Dictionary<string,(string[] Hashes,double Seconds,long Alloc)>();
+    var results=new Dictionary<string,(string[] Hashes,double Seconds,long Alloc,Dictionary<int,string> Snapshots)>();
     foreach(var mode in order)
     {
         var trial=CitySimulation.FromJson(initial);
         trial.E22Mode=mode;
         var hashes=new string[boundaries.Count];var previous=0;
+        var snapshots=new Dictionary<int,string>();
         var towStranded=false;var towDispatched=false;
         var initialAlloc=GC.GetTotalAllocatedBytes();
         var clock=Stopwatch.StartNew();
@@ -151,12 +153,15 @@ if(e22=="compare")
                     trial.State.Vehicles.Any(v=>v.TowTargetId==towedId) ||
                     trial.State.Ledger.Any(l=>l.Category=="Guincho"&&l.EntityId==towedId);
             }
-            hashes[i]=Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(trial.SaveToJson())))[..16];
+            var currentJson=trial.SaveToJson();
+            hashes[i]=Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(currentJson)))[..16];
+            if(Opt("e23-diff","0")=="1"&&previous>=1860&&previous<=3600)
+                snapshots[previous]=currentJson;
             if(i<30||i==boundaries.Count-1||i%4==0)
                 Console.WriteLine($"E22_CHECKPOINT mode={mode} elapsed={boundaries[i]} sha={hashes[i]}");
         }
         clock.Stop();trial.CheckInvariants();
-        results[mode]=(hashes,clock.Elapsed.TotalSeconds,GC.GetTotalAllocatedBytes()-initialAlloc);
+        results[mode]=(hashes,clock.Elapsed.TotalSeconds,GC.GetTotalAllocatedBytes()-initialAlloc,snapshots);
         if(towStranded)towStrandedArms++;
         if(towDispatched)towDispatchArms++;
         Console.WriteLine($"E22_TOW_COVERAGE mode={mode} stranded={towStranded} dispatched={towDispatched}");
@@ -169,6 +174,12 @@ if(e22=="compare")
         var observed=results[mode];var first=-1;
         for(var i=0;i<boundaries.Count;i++)if(original.Hashes[i]!=observed.Hashes[i]){first=boundaries[i];break;}
         Console.WriteLine($"E22_COMPARE mode={mode} exactCheckpoints={first<0} firstDivergentSecond={first} baselineSeconds={original.Seconds:F3} trialSeconds={observed.Seconds:F3} baselineMB={original.Alloc/1e6:F1} trialMB={observed.Alloc/1e6:F1}");
+        if(first>=0&&original.Snapshots.TryGetValue(first,out var originalJson)&&observed.Snapshots.TryGetValue(first,out var trialJson)){
+            using var baselineDoc=JsonDocument.Parse(originalJson);
+            using var candidateDoc=JsonDocument.Parse(trialJson);
+            var firstPath=FirstDifference(baselineDoc.RootElement,candidateDoc.RootElement,"state")??"unknown";
+            Console.WriteLine($"E23_FIRST_DIFFERENCE mode={mode} second={first} {firstPath}");
+        }
     }
     Console.WriteLine($"E22_COVERAGE adversary={adversary} seeds={seed} appliedTow={coverage.GetValueOrDefault("tow")} appliedJunction={coverage.GetValueOrDefault("junction")} appliedRoadWithRoute={coverage.GetValueOrDefault("road")} towStrandedArms={towStrandedArms} towDispatchArms={towDispatchArms} order={string.Join(",",order)}");
     // Coverage must not pass silently. A failed mutation means that stress case
@@ -196,3 +207,32 @@ sim.CheckInvariants();Console.WriteLine("INVARIANTS OK");
 return 0;
 
 static string Stats(CitySimulation s){var st=s.State;var alive=st.Citizens.Where(c=>c.Alive&&c.Resident).ToList();return $"pop={s.Population} alive={st.Citizens.Count(c=>c.Alive)} dead={st.Citizens.Count(c=>!c.Alive)} employed={st.Citizens.Count(c=>c.Alive&&c.Resident&&c.WorkplaceId!=null)} moving={st.Citizens.Count(c=>c.Alive&&c.Moving)} vehicles={st.Vehicles.Count} travelling={st.Vehicles.Count(v=>v.Status==VehicleStatus.Travelling)} ledger={st.Ledger.Count} history={st.Citizens.Sum(c=>c.History.Count)} meals={st.Citizens.Sum(c=>c.History.Count(h=>h.Description.StartsWith("Consumiu 1 alimento")))} wages={st.Ledger.Where(l=>l.Category.StartsWith("Salários / ")).Sum(l=>l.Amount):F2} health={(alive.Count==0?0:alive.Average(c=>c.Health)):F6} satisfaction={(alive.Count==0?0:alive.Average(c=>c.Satisfaction)):F6}";}
+
+static string? FirstDifference(JsonElement a,JsonElement b,string path)
+{
+    if(a.ValueKind!=b.ValueKind)return path+" type "+a.ValueKind+" -> "+b.ValueKind;
+    if(a.ValueKind==JsonValueKind.Object)
+    {
+        foreach(var field in a.EnumerateObject()){
+            if(!b.TryGetProperty(field.Name,out var counterpart))return path+"."+field.Name+" missing";
+            var sub=FirstDifference(field.Value,counterpart,path+"."+field.Name);
+            if(sub!=null)return sub;
+        }
+        return null;
+    }
+    if(a.ValueKind==JsonValueKind.Array)
+    {
+        if(a.GetArrayLength()!=b.GetArrayLength())return path+$" count {a.GetArrayLength()} -> {b.GetArrayLength()}";
+        for(var i=0;i<a.GetArrayLength();i++)
+        {
+            // Show vehicle identity with the array index for traceability.
+            var id=a[i].ValueKind==JsonValueKind.Object&&a[i].TryGetProperty("Id",out var tag)?
+                "(id="+tag.GetRawText()+")":"";
+            var sub=FirstDifference(a[i],b[i],path+"["+i+"]"+id);
+            if(sub!=null)return sub;
+        }
+        return null;
+    }
+    if(a.GetRawText()!=b.GetRawText())return path+" original="+a.GetRawText()[..Math.Min(130,a.GetRawText().Length)]+" candidate="+b.GetRawText()[..Math.Min(130,b.GetRawText().Length)];
+    return null;
+}
