@@ -282,6 +282,54 @@ jobs:
           path: economic-second-cycle-10y.log
           if-no-files-found: ignore
 
+  attendance-farms-market-10y:
+    # Run paid physical farm work using 26 actual shift days per employee,
+    # not imaginary 30 shift days. Uses capacity-based unit pricing.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[farm-attendance-10y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compare ten-year true harvested food under weekly rest scheduling
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food 2>&1 | tee capacity-base-10y.log
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms 2>&1 | tee attendance-farms-10y.log
+          python3 - <<'PY'
+          import json
+          def report(path):
+              lines=open(path).readlines()
+              i=next(i for i,line in enumerate(lines) if line.startswith('{'))
+              return json.loads(''.join(lines[i:]))
+          b,t=report('capacity-base-10y.log'),report('attendance-farms-10y.log')
+          for r in (b,t):
+              assert r['simulatedDays']==3653 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+              assert r['capacityPricedFoodFixture'] and r['vacancyMarketFixture']
+          assert not b['attendanceAwareFarmsFixture'] and t['attendanceAwareFarmsFixture']
+          print('FARM_SCHEDULING_BASE',b['aliveEnd'],b['unmetMeals'],b['producedFoodUnits'])
+          print('FARM_SCHEDULING_ATTENDANCE',t['aliveEnd'],t['minimumAliveAtAnyEvent'],t['unmetMeals'],t['producedFoodUnits'])
+          open('healthy-decade.flag','w').write('yes' if t['minimumAliveAtAnyEvent']>=10000 else 'no')
+          PY
+          if test "$(cat healthy-decade.flag)" = yes; then
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms 2>&1 | tee attendance-farms-80y-no-history.log
+          else
+            echo 'Not sustainably alive for ten years, no premature 80-year victory'
+          fi
+      - name: Keep evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-farm-attendance
+          path: |
+            capacity-base-10y.log
+            attendance-farms-10y.log
+            attendance-farms-80y-no-history.log
+          if-no-files-found: ignore
+
   capacity-priced-market-10y:
     # Stress a standard per-physically-served-unit cost quote without
     # reimbursing idle payroll through runaway customer prices.
