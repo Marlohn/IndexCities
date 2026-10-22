@@ -33,6 +33,7 @@ public sealed partial class CitySimulation
     readonly Dictionary<int,HashSet<int>> _e22Queues=new();
     readonly Dictionary<int,int> _e22QueueByMember=new();
     readonly HashSet<int> _e22BatchSkip=new();
+    readonly Dictionary<int,Vehicle> _e22VehicleById=new();
     long _e22Visits,_e22Registered,_e22Eligible,_e22Skipped,_e22Awakened;
     long _e22WokeByLeader,_e22WokeByGroup,_e22WokeByOwnState,_e22WokeByTime;
     long _e22QueuesPrepared,_e22QueuesSlept,_e22GroupMembers,_e22GroupsMax;
@@ -117,6 +118,7 @@ public sealed partial class CitySimulation
         if(E22Mode!="queue")return;
         var t=Stopwatch.GetTimestamp();
         _e22BatchSkip.Clear();_e22QueuesPrepared++;
+        _e22VehicleById.Clear();foreach(var v in State.Vehicles)_e22VehicleById[v.Id]=v;
         foreach(var (_,members) in _e22Queues)
         {
             var canSleep=true;
@@ -124,7 +126,7 @@ public sealed partial class CitySimulation
             {
                 _e22Visits++;
                 if(!_e22Waits.TryGetValue(id,out var sub)||sub.Awake||
-                   State.Vehicles.FirstOrDefault(v=>v.Id==id) is not {} vehicle||
+                   !_e22VehicleById.TryGetValue(id,out var vehicle)||
                    sub.Self!=E22State(vehicle)||
                    sub.RoadRevision!=State.RoadRevision||
                    vehicle.WaitingSince>0&&VehicleMovementTime>=vehicle.WaitingSince+State.Tuning.UTurnWaitSeconds||
