@@ -745,6 +745,9 @@ internal sealed partial class CausalCity : IDisposable
         }
         p.Alive = false;
         _active--; _deaths++;
+        // The 10k requirement is continuous. A death before the next daily
+        // census must count even if a subsequent birth masks the dip.
+        _minActive = Math.Min(_minActive, _active);
         var family = _households[p.HouseholdId];
         var heir = family.Members.Select(id => _people[id]).FirstOrDefault(x => x.Alive);
         if (heir is null)
@@ -1310,7 +1313,8 @@ internal sealed partial class CausalCity : IDisposable
         peopleEverCreated = _people.Count,
         aliveEnd = _active,
         peakAlive = _maxActive,
-        minimumAliveAtDayBoundary = _minActive,
+        minimumAliveAtDayBoundary = _minActive, // compatibility: now also observes deaths between boundaries
+        minimumAliveAtAnyEvent = _minActive,
         simulatedDays = _days,
         gregorianEnd = Epoch.AddDays(_config.Days).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         wallSeconds,
@@ -1355,5 +1359,6 @@ internal sealed partial class CausalCity : IDisposable
         currentMoneyCents = CalculateMoney(),
         historyPersistent = _config.History is not null
     };
+    public void CompleteHistory() => _history.Dispose();
     public void Dispose() => _history.Dispose();
 }
