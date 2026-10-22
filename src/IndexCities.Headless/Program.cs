@@ -13,7 +13,7 @@ using IndexCities.Simulation;
 //          --strand=N empties the tank of N driving vehicles each day and follows the tow and the queue for 30 min
 // Results are measurements, not product rules: see docs/exploration/ritmo-velocidades.md.
 Console.OutputEncoding=Encoding.UTF8;
-var known=new HashSet<string>{"rows","length","days","cap","signals","seed","growth","warmup","strand","e15","e15-verify","e15-checkpoints"};
+var known=new HashSet<string>{"rows","length","days","cap","signals","seed","growth","warmup","strand","e15","e15-verify","e15-checkpoints","e16","e16-interval"};
 var opts=new Dictionary<string,string>();foreach(var p in args.Skip(2).Select(a=>a.TrimStart('-').Split('=',2)))opts[p[0]]=p.Length>1?p[1]:"1";
 string Opt(string k,string d)=>opts.GetValueOrDefault(k,d);
 if(opts.Keys.FirstOrDefault(k=>!known.Contains(k)) is {} unknown){Console.Error.WriteLine("opção desconhecida: --"+unknown);return 2;}
@@ -26,6 +26,10 @@ Console.WriteLine($"FIXTURE {info} build={sw.Elapsed.TotalSeconds:F1}s .NET={Env
 if(growth>0){sw.Restart();var hours=0;while(Fixtures.AddHouses(sim,growth)>0){sim.Advance(3600);hours++;}Console.WriteLine($"GROWTH {growth} casas/h por {hours} h wall={sw.Elapsed.TotalSeconds:F1}s pop={sim.Population}");}
 var e15Enabled=Opt("e15","0")=="1";
 var e15Checkpoints=Opt("e15-checkpoints","0")=="1";
+var e16=Opt("e16","none");
+if(e16 is not ("none" or "tow" or "road" or "reload" or "mixed")){Console.Error.WriteLine("invalid e16 mode");return 2;}
+var e16Interval=int.Parse(Opt("e16-interval","3600"));
+if(e16Interval<=0||3600%e16Interval!=0){Console.Error.WriteLine("e16 interval must divide one hour");return 2;}
 sim.E15Enable=e15Enabled;
 sim.E15VerifyEvery=int.Parse(Opt("e15-verify","0"));
 sw.Restart();sim.Advance(warmup*86400);
@@ -34,7 +38,37 @@ var census=args[0]=="census"?new Census():null;var stuck=args[0]=="stuck"?new St
 var total=0.0;var gc0=GC.CollectionCount(0);var gc2=GC.CollectionCount(2);var alloc0=GC.GetTotalAllocatedBytes();var done=0;
 for(var d=1;d<=days;d++){
     sw.Restart();
-    if(stuck!=null){var strand=int.Parse(Opt("strand","0"));var dayEnd=sim.State.ElapsedSeconds+86400;if(strand>0){var forced=new List<int>();while(forced.Count==0&&sim.State.ElapsedSeconds<dayEnd-1800){forced=stuck.Force(sim,strand);if(forced.Count==0)sim.Advance(60);}var since=sim.State.ElapsedSeconds;for(var m=0;m<30&&forced.Count>0;m++){sim.Advance(60);if(m%3==0||m==29||Environment.GetEnvironmentVariable("STUCK_EVERY")=="1")stuck.Watch(sim,forced,since);}}while(sim.State.ElapsedSeconds<dayEnd-1e-6){sim.Advance(Math.Min(600,dayEnd-sim.State.ElapsedSeconds));stuck.Sample(sim);}}else if(census==null&&e15Checkpoints){for(var h=1;h<=24;h++){sim.Advance(3600);var checkpoint=sim.SaveToJson();Console.WriteLine($"E15_CHECKPOINT day={d} hour={h} sha={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(checkpoint)))[..16]}");}}else if(census==null)sim.Advance(86400);else for(var i=0;i<43200;i++){sim.Advance(2);census.Sample(sim);}
+    if(e16!="none"){
+        var e16Forced=false;var e16ForcedIds=new List<int>();var e16Probe=new Stuck();
+        var partsPerHour=3600/e16Interval;
+        for(var hour=0;hour<24;hour++){
+            if((e16=="tow"||e16=="mixed")&&!e16Forced&&hour is >=1 and <=8){
+                e16ForcedIds=e16Probe.Force(sim,2);e16Forced=e16ForcedIds.Count>0;
+                if(e16Forced)Console.WriteLine($"E16_FORCED day={d} hour={hour} count={e16ForcedIds.Count} ids={string.Join(",",e16ForcedIds)}");
+            }
+            if((e16=="road"||e16=="mixed")&&hour==3){
+                var candidate=sim.State.Roads.Where(r=>!r.Highway&&r.Neighbours.Count>=2).OrderByDescending(r=>r.Neighbours.Count).ThenBy(r=>r.Id).First();
+                // Real road node changes reach the same rebuild/invalidation path as road works.
+                // Experimental topology perturbation only (not a gameplay action).
+                var before=sim.State.Roads.Count;
+                var add=typeof(CitySimulation).GetMethod("AddRoad",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic)!;
+                var rebuild=typeof(CitySimulation).GetMethod("RebuildRoadGraph",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic)!;
+                add.Invoke(sim,new object[]{new Point(candidate.Position.X+12,candidate.Position.Z+12),false});
+                rebuild.Invoke(sim,new object[]{true});
+                Console.WriteLine($"E16_ROAD day={d} hour={hour} roads={before}->{sim.State.Roads.Count}");
+            }
+            if((e16=="reload"||e16=="mixed")&&hour==8){
+                sim=CitySimulation.FromJson(sim.SaveToJson());sim.E15Enable=e15Enabled;sim.E15VerifyEvery=int.Parse(Opt("e15-verify","0"));
+                Console.WriteLine($"E16_RELOAD day={d} hour={hour}");
+            }
+            for(var part=0;part<partsPerHour;part++){
+                sim.Advance(e16Interval);
+                var snapshot=sim.SaveToJson();
+                Console.WriteLine($"E15_CHECKPOINT day={d} hour={hour+1} part={part+1} sha={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(snapshot)))[..16]}");
+            }
+        }
+        if(e16=="tow"||e16=="mixed")Console.WriteLine($"E16_TOW_COVERAGE forced={e16ForcedIds.Count>0}");
+    }else if(stuck!=null){var strand=int.Parse(Opt("strand","0"));var dayEnd=sim.State.ElapsedSeconds+86400;if(strand>0){var forced=new List<int>();while(forced.Count==0&&sim.State.ElapsedSeconds<dayEnd-1800){forced=stuck.Force(sim,strand);if(forced.Count==0)sim.Advance(60);}var since=sim.State.ElapsedSeconds;for(var m=0;m<30&&forced.Count>0;m++){sim.Advance(60);if(m%3==0||m==29||Environment.GetEnvironmentVariable("STUCK_EVERY")=="1")stuck.Watch(sim,forced,since);}}while(sim.State.ElapsedSeconds<dayEnd-1e-6){sim.Advance(Math.Min(600,dayEnd-sim.State.ElapsedSeconds));stuck.Sample(sim);}}else if(census==null&&e15Checkpoints){for(var h=1;h<=24;h++){sim.Advance(3600);var checkpoint=sim.SaveToJson();Console.WriteLine($"E15_CHECKPOINT day={d} hour={h} sha={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(checkpoint)))[..16]}");}}else if(census==null)sim.Advance(86400);else for(var i=0;i<43200;i++){sim.Advance(2);census.Sample(sim);}
     var w=sw.Elapsed.TotalSeconds;total+=w;done=d;
     Console.WriteLine($"DAY {d} wall={w:F2}s eff={86400/w:F0}x {Stats(sim)}");stuck?.Report(sim,d);
     if(total>cap){Console.WriteLine($"STOP limite de {cap}s");break;}
