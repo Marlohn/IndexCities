@@ -75,8 +75,17 @@ public sealed partial class CitySimulation
     }
     void Step(double dt)
     {
-        MoveVehicles(dt);ReturnPavingMachines(dt);MoveCitizens(dt);var completedConstruction=ProgressConstruction(dt);UpdateMaintenanceCondition(dt);ProgressMunicipalRelocations(dt);UpdateInfrastructure(dt);OperateBusinesses(dt);UpdateNeeds(dt);
-        State.AddElapsedSeconds(dt);State.Now=State.Now.AddSeconds(dt);
+        long e17Mark=E17Profile?System.Diagnostics.Stopwatch.GetTimestamp():0;
+        if(E17Profile)_e17Steps++;
+        MoveVehicles(dt);if(E17Profile)E17Record(0,ref e17Mark);
+        ReturnPavingMachines(dt);if(E17Profile)E17Record(1,ref e17Mark);
+        MoveCitizens(dt);if(E17Profile)E17Record(2,ref e17Mark);
+        var completedConstruction=ProgressConstruction(dt);if(E17Profile)E17Record(3,ref e17Mark);
+        UpdateMaintenanceCondition(dt);ProgressMunicipalRelocations(dt);if(E17Profile)E17Record(4,ref e17Mark);
+        UpdateInfrastructure(dt);if(E17Profile)E17Record(5,ref e17Mark);
+        OperateBusinesses(dt);if(E17Profile)E17Record(6,ref e17Mark);
+        UpdateNeeds(dt);if(E17Profile)E17Record(7,ref e17Mark);
+        State.AddElapsedSeconds(dt);State.Now=State.Now.AddSeconds(dt);if(E17Profile)E17Record(8,ref e17Mark);
         // Construction is physical work, not a periodic market decision. Dispatch
         // available vehicles and crews on the next simulated step, including when
         // a vehicle returns or a newly completed street restores access.
@@ -87,7 +96,7 @@ public sealed partial class CitySimulation
         ProgressBuildingDemolitions();
         while(State.Now>=State.NextDaily){DailyFinance();State.NextDaily=State.NextDaily.AddDays(1);}
         while(State.Now>=State.NextTaxDate){PropertyTaxes();State.NextTaxDate=State.NextTaxDate.AddMonths(1);}
-        ProcessLoans();
+        ProcessLoans();if(E17Profile)E17Record(9,ref e17Mark);
     }
     public void CheckInvariants()
     {
