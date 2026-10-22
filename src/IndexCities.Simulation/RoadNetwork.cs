@@ -20,7 +20,7 @@ public sealed partial class CitySimulation
     public RoadNode? Access(Building b)
     {
         var key=(b.Kind,b.Position,b.Rotation);if(_accessCache.TryGetValue(key,out var id))return id==null?null:_roads.GetValueOrDefault(id.Value);
-        var result=State.Roads.Where(r=>!r.Highway&&!r.ConstructionOnly&&r.MaintenanceRatio>.05&&r.Position.Distance(b.Door)<=State.Tuning.RoadWidth/2+3).MinBy(r=>r.Position.Distance(b.Door));if(_accessCache.Count>4096)_accessCache.Clear();_accessCache[key]=result?.Id;return result;
+        var result=State.Roads.Where(r=>!r.Highway&&!r.ConstructionOnly&&r.MaintenanceRatio>.05&&r.Position.Distance(b.Door)<=State.Tuning.RoadWidth/2+3).MinBy(r=>r.Position.Distance(b.Door));if(_accessCache.Count>Math.Max(4096,State.Buildings.Count+512))_accessCache.Clear();_accessCache[key]=result?.Id;return result;
     }
     RoadNode? NearestRoad(Point p,bool allowHighway=true)=>State.Roads.Where(r=>allowHighway||!r.Highway).MinBy(r=>r.Position.Distance(p));
     public bool HasExteriorAccess(Building b)=>Access(b) is { } n&&_exteriorConnected.Contains(n.Id);
