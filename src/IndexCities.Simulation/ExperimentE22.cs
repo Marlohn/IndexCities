@@ -121,7 +121,16 @@ public sealed partial class CitySimulation
         {
             var canSleep=true;
             foreach(var id in members)
-                if(!_e22Waits.TryGetValue(id,out var sub)||sub.Awake){canSleep=false;break;}
+            {
+                _e22Visits++;
+                if(!_e22Waits.TryGetValue(id,out var sub)||sub.Awake||
+                   State.Vehicles.FirstOrDefault(v=>v.Id==id) is not {} vehicle||
+                   sub.Self!=E22State(vehicle)||
+                   sub.RoadRevision!=State.RoadRevision||
+                   vehicle.WaitingSince>0&&VehicleMovementTime>=vehicle.WaitingSince+State.Tuning.UTurnWaitSeconds||
+                   (int)(sub.RegisteredAt/30)!=(int)(VehicleMovementTime/30))
+                {canSleep=false;break;}
+            }
             if(!canSleep)continue;
             _e22QueuesSlept++;_e22GroupMembers+=members.Count;
             _e22GroupsMax=Math.Max(_e22GroupsMax,members.Count);
