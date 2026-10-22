@@ -1,10 +1,18 @@
 # Programa de prova de viabilidade — 10 mil SIMs, 80 anos e simulação causal integral
 
-> **Estado: PROPOSTA DE TESTE ISOLADO — AUDITORIA CRÍTICA DE 15 MINUTOS CONCLUÍDA EM 2026-10-22; EM REVISÃO, SEM IMPLEMENTAÇÃO.** Versão de 2026-10-22, aberta para sucessivas revisões do responsável. Não é decisão aprovada de arquitetura ou produto, nem orientação para reescrever a V1. Respeita a [SPEC](../SPEC.md), a [ARCHITECTURE](../ARCHITECTURE.md) e o [AGENTS](../../AGENTS.md). O experimento ainda não foi executado; nenhuma melhoria foi demonstrada. A execução futura deve acontecer em branch experimental separada, sem merge automático.
+> **Estado: PROPOSTA DE TESTE ISOLADO — AUDITORIA CRÍTICA DE 15 MINUTOS CONCLUÍDA EM 2026-10-22; EM REVISÃO, SEM IMPLEMENTAÇÃO.** Versão de 2026-10-22, aberta para sucessivas revisões do responsável. Não é decisão aprovada de arquitetura ou produto, nem orientação para reescrever a V1. Respeita a [SPEC](../SPEC.md), a [ARCHITECTURE](../ARCHITECTURE.md) e o [AGENTS](../../AGENTS.md). O laboratório completo ainda não foi executado; nenhuma melhoria integrada foi demonstrada. **A primeira sonda P0 matemática já foi executada em branch separada ([PR #53](https://github.com/Marlohn/IndexCities/pull/53)); o executável C# ainda não foi compilado/rodado por falta de .NET neste ambiente.** Execuções e código permanecem isolados, sem merge automático.
 >
 > **Pergunta:** se projetássemos o núcleo de simulação desde o zero, que arquitetura teria uma chance tecnicamente defensável de executar uma cidade de **pelo menos 10 mil SIMs simultâneos**, acompanhando aproximadamente **80 anos do calendário gregoriano** em poucas horas reais, sem substituir a vida física/econômica por estatísticas ou dias inventados?
 >
 > **Resposta condicional:** estudar um **motor C#/.NET modular, com um relógio autoritativo global e agenda causal; execução orientada a acontecimentos para vida/economia; e mobilidade híbrida que combina trajetórias válidas por intervalos com resolução física detalhada e compacta quando há conflitos.** A mobilidade densa e a integração causal são os maiores riscos. A escolha só se sustenta se testes representativos mostrarem ganho líquido, regras preservadas e custo viável de manutenção.
+
+## Atualização da execução — 2026-10-22 (em revisão)
+
+- **Trânsito / outra sessão:** o [E21 na PR #51](https://github.com/Marlohn/IndexCities/pull/51) confirmou que ~89,2% do tempo instrumentado de `MoveVehicles` em um dia de 400 SIMs se concentrou em passagens de veículos que terminaram parados. **Essa percentagem NÃO é economia automaticamente aproveitável.** A outra sessão iniciou **E22**, comparando despertar por dependências versus solver de filas; **não duplicar aqui** e não antecipar resultado.
+- **P0 / esta sessão:** a [PR #53 — acumuladores e fronteiras temporais](https://github.com/Marlohn/IndexCities/pull/53) contém **cinco contraexemplos matemáticos executados em Python** e um programa C#/.NET 8 isolado preparado para reproduzir/verificar com o `FixedPoint` real. Atalhos ingênuos de agregação mudaram produção, poluição, energia ou horário de consumo nos modelos reduzidos. **C# ainda não executado; nenhum speedup ou equivalência integrada demonstrada.**
+- **Decisão prática:** avançar os testes temporais e de infraestrutura em paralelo ao E22. Não começar reescrita integral de mobilidade nem do jogo até comparar custo real e fidelidade das estratégias candidatas. Um resultado de laboratório parcial não comprova o alvo de 10k SIMs/80 anos.
+
+---
 
 ## 0. OBJETIVO DO EXPERIMENTO — definido antes da solução
 
