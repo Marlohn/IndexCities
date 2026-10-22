@@ -1,27 +1,34 @@
-# IndexCities — P0: equivalência de tempo e acumuladores
+# IndexCities — laboratório P0: avanço causal de tempo
 
-> **Experimento isolado, NÃO aprovado/implementado no jogo.** Ver programa da [PR #52](https://github.com/Marlohn/IndexCities/pull/52). Não modifica `CitySimulation`, SPEC, economia ou Godot; preserva a branch principal. É uma bancada **matemática parcial**, não uma engine executada.
+> **Experimento isolado (PR #53), não incorporado à V1.** Referência de arquitetura: [PR #52](https://github.com/Marlohn/IndexCities/pull/52). Não modifica `CitySimulation`, SPEC nem Godot.
 
-## Objetivo
+Este diretório **já foi compilado e executado em .NET 8** por GitHub Actions. Os resultados verificados estão em [RESULTADOS-P0.md](RESULTADOS-P0.md). O ambiente local desta conversa não tem `dotnet`, então as execuções C# foram feitas **no CI do próprio repositório**, não simuladas por Python.
 
-Tentar refutar a suposição de que “somar 300 passos de dois segundos de uma vez dá sempre o mesmo mundo”. Testa **com o próprio `FixedPoint` da biblioteca**:
-- produção em quantidades quantizadas: soma em lote **antes** de quantizar falha;
-- avanço exatamente equivalente de quantidade linear com entradas constantes: `n * quantização(delta_por_quantum)` é correto até que uma dependência/limiar interrompa o trecho;
-- poluição: arredondar em cada passo difere de um único decaimento exponencial;
-- vento: amostrar a cada hora em vez de a cada quantum altera energia disponível;
-- fome: verificar apenas no fim do intervalo adia consumo real;
-- mudança de taxas por segmentos e 2.000 casos aleatórios: equivalência da composição de deltas constantes.
+## Executar com .NET 8
 
-## Executar
-
-```sh
+```bash
+# 5 contraexemplos e 2.000 casos de composição de delta
 dotnet run --project experiments/IndexCities.CausalLab/IndexCities.CausalLab.csproj -c Release
+
+# Agenda de limiar vs. milhões de atualizações passo a passo
+dotnet run --project experiments/IndexCities.CausalLab/IndexCities.CausalLab.csproj -c Release -- --segments
+
+# Despensa compartilhada, concorrência por alimento, entregas e despertares
+dotnet run --project experiments/IndexCities.CausalLab/IndexCities.CausalLab.csproj -c Release -- --shared
+
+# Cidade VERDADEIRA do IndexCities: 108 SIMs, 83 veículos, 1 dia / 24 checkpoints
+dotnet run --project experiments/IndexCities.CausalLab/IndexCities.CausalLab.csproj -c Release -- --integrated
+
+# Sonda independente de fórmulas, em Python (não equivale a teste C#)
+python3 experiments/IndexCities.CausalLab/p0_math_probe.py
 ```
 
-Retorna JSON e código 0 quando os **contraexemplos realmente divergem** e os casos de composição segura coincidem. Retorna código 1 em falha. Não afirmar que `0` significa viabilidade da arquitetura.
+CI: [P0: acumuladores e fronteiras temporais](https://github.com/Marlohn/IndexCities/actions/workflows/p0-causal-lab.yml). É importante selecionar a branch do laboratório. `Actions` exige permissões adequadas.
 
-## Evidências e limitações
+## Limites
 
-É um teste pequeno. Não verifica distribuição multiestabelecimento de água/energia, emissões de veículos móveis, mudança de equipe, saúde ligada a escassez real, economia, histórico, save/load ou a aceleração de 10 mil Sims. Para responder se existe ganho integrado, será necessário um executor experimental que detecte todas as alterações/limiares e compare o primeiro acontecimento divergente com `CitySimulation`.
-
-**Importante:** `dotnet` não está disponível no ambiente local desta sessão; o código C# foi publicado mas **não foi compilado/executado aqui**. Uma sondagem separada em Python com fórmulas equivalentes demonstrou contraexemplos e consta no relatório. As saídas C# ainda dependem de compilação/CI ou de um runtime .NET; não tratar a sondagem Python como equivalência bit a bit com C#.
+- O **motor atual continua executando os 43.200 passos de 2 segundos por dia** em `--integrated`. A equivalência dos seus hashes não representa aceleração.
+- `--segments` prova apenas uma decisão local de fome em casa, com despensa própria. `--shared` cobre concorrência por alimento e entregas, mas **não** viagens, saúde, dinheiro, falência ou trajetórias.
+- Os cálculos de vento/poluição são sondas reduzidas para *refutar* atalhos, não substitutos das rotinas completas de infraestrutura.
+- No futuro, o novo executor só poderá ser considerado equivalente após acoplar os sistemas e comparar os fatos/estados reais sob diversas seeds, congestionamento, nascimentos e anos.
+- **Não anunciar speedup de 10k/80 anos.** Ganho em microteste isolado não é ganho do dia integrado; a PR #52 registra o orçamento completo e os critérios de descarte.
