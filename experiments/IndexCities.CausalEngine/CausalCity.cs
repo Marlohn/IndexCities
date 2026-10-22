@@ -1320,7 +1320,13 @@ internal sealed partial class CausalCity : IDisposable
         wallSeconds,
         wallSecondsPerDay = wallSeconds / _days,
         speedBudgetOnly_notPassingCriterion = (wallSeconds / _days) * 29220 <= 21600,
-        demonstrated10kSustained = _minActive >= 10_000 && _config.Sims >= 10_000,
+        // A 30-day or one-year run may sustain 10k within its observed window
+        // but must NEVER look like a completed 80-year history validation.
+        tenKAliveDuringObservedWindow = _minActive >= 10_000 && _config.Sims >= 10_000,
+        demonstrated10kSustained = _days == 29_220 && _minActive >= 10_000 &&
+            _config.Sims >= 10_000 && _config.History is not null,
+        fullIndexCitiesTargetValidated = false, // this laboratory omits approved V1 systems
+
         journeys = _journeys, roadSegments = _segments, roadWaitSeconds = _waitSeconds,
         salesFoodUnits = _sales, cargoDeliveries = _shipments, paidWagesCents = _paidWages,
         businessSalesRevenueCents = checked(_sales * FoodPrice),
