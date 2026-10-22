@@ -27,8 +27,8 @@ if(growth>0){sw.Restart();var hours=0;while(Fixtures.AddHouses(sim,growth)>0){si
 sw.Restart();sim.Advance(warmup*86400);
 Console.WriteLine($"WARMUP {warmup}d wall={sw.Elapsed.TotalSeconds:F1}s {Stats(sim)}");
 var e21=Opt("e21","off");
-if(e21 is not ("off" or "cost" or "causes" or "compare")){Console.Error.WriteLine("--e21 deve ser off, cost, causes ou compare");return 2;}
-if(e21=="compare")
+if(e21 is not ("off" or "cost" or "causes" or "compare" or "compare-cost")){Console.Error.WriteLine("--e21 deve ser off, cost, causes ou compare");return 2;}
+if(e21 is "compare" or "compare-cost")
 {
     var initial=sim.SaveToJson();
     var window=int.Parse(Opt("e21-window","7200"));
@@ -38,7 +38,7 @@ if(e21=="compare")
     var piece=window/checks;
     if(piece%2!=0){checks=1;piece=window;}
     var results=new Dictionary<string,(string[] Sha,double Wall,long Allocation)>();
-    foreach(var mode in new[]{"off","cost","causes"})
+    foreach(var mode in (e21=="compare-cost"?new[]{"off","cost"}:new[]{"off","cost","causes"}))
     {
         var trial=CitySimulation.FromJson(initial);trial.E21Probe=mode;
         var marks=new string[checks];var startAlloc=GC.GetTotalAllocatedBytes();
@@ -54,7 +54,7 @@ if(e21=="compare")
         if(mode!="off")Console.Write(trial.E21Report());
     }
     var reference=results["off"];
-    foreach(var mode in new[]{"cost","causes"}){
+    foreach(var mode in (e21=="compare-cost"?new[]{"cost"}:new[]{"cost","causes"})){
         var result=results[mode];var first=-1;
         for(var i=0;i<checks;i++)if(reference.Sha[i]!=result.Sha[i]){first=i+1;break;}
         Console.WriteLine($"E21_COMPARE mode={mode} sameCheckpoints={first<0} firstDivergent={first} baselineSeconds={reference.Wall:F3} probeSeconds={result.Wall:F3}");
