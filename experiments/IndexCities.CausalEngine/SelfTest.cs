@@ -269,6 +269,42 @@ internal static class EngineSelfTest
                     throw new InvalidOperationException("Physical cargo/driver/payroll changed after save/resume");
             }
             File.Delete(freightSave);
+            // Households with a fifth real occupant fund a finite material
+            // shipment and a real contractor (cash, worker, physical site).
+            // The experiment never mints currency, timber or finished homes.
+            var buildingCfg = new LabConfig(256, 160, 42, null, true,
+                VacancyMarket: true, CohortRenewal: true, ConstructionPilot: true);
+            var buildingSave = temp + ".construction.save.json";
+            string builtHash;
+            long builtShifts;
+            using (var completeConstruction = new CausalCity(buildingCfg))
+            {
+                completeConstruction.Run();
+                completeConstruction.AssertConservation();
+                builtHash = completeConstruction.Fingerprint();
+                using var rep = JsonDocument.Parse(JsonSerializer.Serialize(completeConstruction.Report(0)));
+                var d = rep.RootElement;
+                builtShifts = d.GetProperty("constructionPaidShifts").GetInt64();
+                if (d.GetProperty("constructionContractsStarted").GetInt64() <= 0 ||
+                    builtShifts <= 0 || !d.GetProperty("materialConserved").GetBoolean() ||
+                    !d.GetProperty("moneyConserved").GetBoolean())
+                    throw new InvalidOperationException("Construction did not pay real workers with actual material and cash");
+            }
+            using (var partialConstruction = new CausalCity(buildingCfg))
+            {
+                partialConstruction.RunUntilDay(83);
+                partialConstruction.SaveSnapshot(buildingSave);
+            }
+            using (var resumedConstruction = CausalCity.FromSnapshot(buildingSave))
+            {
+                resumedConstruction.Run();
+                resumedConstruction.AssertConservation();
+                using var rep = JsonDocument.Parse(JsonSerializer.Serialize(resumedConstruction.Report(0)));
+                if (builtHash != resumedConstruction.Fingerprint() ||
+                    builtShifts != rep.RootElement.GetProperty("constructionPaidShifts").GetInt64())
+                    throw new InvalidOperationException("Building materials, labor or state diverged after checkpoint");
+            }
+            File.Delete(buildingSave);
             // Small closed-household stress case: when the final family
             // member dies, a positive estate must NOT finance city pensions.
             long unclaimedEstate;
@@ -292,6 +328,7 @@ internal static class EngineSelfTest
                 demandStaffingSaveResumeExact = true,
                 realVacancyMarketSaveResumeExact = true, marketEmployed, marketUnemployed,
                 realFreightSaveResumeExact = true, freightJourneys, freightCharges,
+                buildingMaterialAndPayrollConserved = true, buildingPaidShifts = builtShifts,
                 saveResumeExact = resumedHash == hashA,
                 compressedHistoryReplayExact = reopened == facts,
                 journeys, sales, births, successorPurchases, retiredPurchases, historyFacts = facts,
@@ -309,7 +346,7 @@ internal static class EngineSelfTest
         }
         finally
         {
-            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json" })
+            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json", temp + ".construction.save.json" })
                 if (File.Exists(path)) File.Delete(path);
         }
     }
