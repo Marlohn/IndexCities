@@ -1,0 +1,60 @@
+name: E22 - eventos vs filas agrupadas (teste causal)
+
+on:
+  push:
+    branches:
+      - experimento/e22-acordar-vs-filas
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Testes do motor original
+        run: dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --logger 'console;verbosity=minimal'
+
+  ab:
+    name: ${{ matrix.label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: small-108-day
+            rows: 3
+            length: 400
+            seconds: 86400
+          - label: traffic-400-2h
+            rows: 5
+            length: 800
+            seconds: 7200
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Motor original vs acordar por blocker vs despertar por fila
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet run -c Release --project src/IndexCities.Headless -- scale grid \
+            --rows=${{ matrix.rows }} --length=${{ matrix.length }} --warmup=1 --seed=42 \
+            --e22=compare --e22-window=${{ matrix.seconds }} | tee "e22_${{ matrix.label }}.log"
+          grep -q '^E22_COMPARE mode=events' "e22_${{ matrix.label }}.log"
+          grep -q '^E22_COMPARE mode=queue' "e22_${{ matrix.label }}.log"
+          grep '^E22_COMPARE' "e22_${{ matrix.label }}.log"
+          grep '^E22_RESULT' "e22_${{ matrix.label }}.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e22-${{ matrix.label }}
+          path: e22_*.log
+          if-no-files-found: ignore
