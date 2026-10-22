@@ -1,0 +1,53 @@
+name: E11 - subpassos locais observacionais
+on:
+  push:
+    branches:
+      - experimento/e11-subpassos-locais
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --logger 'console;verbosity=minimal'
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Comparar estado do dia em cidade populada
+        shell: bash
+        run: |
+          set -euo pipefail
+          run_pair() {
+            local label="$1"; shift
+            echo "BASELINE $label"
+            dotnet run -c Release --project src/IndexCities.Headless -- scale grid "$@" | tee "baseline_${label}.log"
+            echo "PROBE $label"
+            E11_PROFILE=1 dotnet run -c Release --project src/IndexCities.Headless -- scale grid "$@" | tee "probe_${label}.log"
+            local a b
+            a=$(grep -o 'sha256=[0-9A-F]*' "baseline_${label}.log" | tail -1)
+            b=$(grep -o 'sha256=[0-9A-F]*' "probe_${label}.log" | tail -1)
+            echo "SHA $label $a $b"
+            test -n "$a" && test "$a" = "$b" || { echo "DIVERGENT SAVE"; exit 1; }
+            grep '^E11_RESULT' "probe_${label}.log"
+          }
+          run_pair small --rows=3 --length=400 --seed=42 --warmup=1 --days=1 --cap=900
+          run_pair medium --rows=5 --length=800 --seed=42 --warmup=1 --days=1 --cap=900
+      - name: Preservar dados
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e11-subpassos-locais-diagnostic
+          path: |
+            baseline_*.log
+            probe_*.log
+          if-no-files-found: ignore
