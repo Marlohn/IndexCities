@@ -1,0 +1,29 @@
+name: Experimento indice viario (nao integrar)
+
+on:
+  push:
+    branches:
+      - experimento/indice-vias-10k
+
+permissions:
+  contents: read
+
+jobs:
+  validar-indice:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Instalar .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Identificar versao
+        run: dotnet --info
+      - name: Testes de equivalencia do indice
+        run: dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --filter FullyQualifiedName~RoadNeighbourIndexTests --logger 'console;verbosity=normal'
+      - name: Suite de testes da simulacao
+        run: dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --logger 'console;verbosity=normal'
+      - name: Benchmark 10 mil pontos de via
+        run: dotnet run -c Release --project src/IndexCities.Headless -- roadgraph 10000
