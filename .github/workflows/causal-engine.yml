@@ -282,6 +282,57 @@ jobs:
           path: economic-second-cycle-10y.log
           if-no-files-found: ignore
 
+  capacity-priced-market-10y:
+    # Stress a standard per-physically-served-unit cost quote without
+    # reimbursing idle payroll through runaway customer prices.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[capacity-price-10y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compare both price formulas across one continuous decade
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --cost-based-food-price 2>&1 | tee realized-cost-10y.log
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food 2>&1 | tee capacity-cost-10y.log
+          python3 - <<'PY'
+          import json
+          def get(path):
+              lines=open(path).readlines()
+              start=next(i for i,line in enumerate(lines) if line.startswith('{'))
+              return json.loads(''.join(lines[start:]))
+          a,b=map(get,['realized-cost-10y.log','capacity-cost-10y.log'])
+          for d in (a,b):
+              assert d['moneyConserved'] and d['foodConserved'] and d['materialConserved']
+              assert d['simulatedDays']==3653 and not d['fullIndexCitiesTargetValidated']
+              assert d['vacancyMarketFixture'] and d['freightLaborFixture'] and d['constructionPilotFixture']
+          assert a['costBasedFoodPriceFixture'] and not a['capacityPricedFoodFixture']
+          assert b['costBasedFoodPriceFixture'] and b['capacityPricedFoodFixture']
+          print('REALIZED_COST_10Y',a['aliveEnd'],a['unmetMeals'],a['maximumRetailUnitPriceCents'])
+          print('CAPACITY_COST_10Y',b['aliveEnd'],b['minimumAliveAtAnyEvent'],b['unmetMeals'],b['averageRetailUnitPriceCents'],b['maximumRetailUnitPriceCents'])
+          open('healthy-decade.flag','w').write('yes' if b['minimumAliveAtAnyEvent']>=10000 else 'no')
+          PY
+          if test "$(cat healthy-decade.flag)" = yes; then
+            echo 'Ten years sustained: test 80 continuous years WITHOUT HISTORY for demographics'
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food 2>&1 | tee capacity-cost-80y-no-history.log
+          else
+            echo 'Ten years failed: do not extrapolate speed from a collapsed city'
+          fi
+      - name: Preserve failing and passing evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-capacity-price-comparison
+          path: |
+            realized-cost-10y.log
+            capacity-cost-10y.log
+            capacity-cost-80y-no-history.log
+          if-no-files-found: ignore
+
   cost-priced-market-10y:
     # Compare the exact same city with current fixed price and transparent
     # paid-payroll + wholesale-cost retail prices. Not a SPEC acceptance.
