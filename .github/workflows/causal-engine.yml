@@ -282,6 +282,65 @@ jobs:
           path: economic-second-cycle-10y.log
           if-no-files-found: ignore
 
+  nearby-retail-fallback-10y:
+    # Approved in-person alternative shop selection, bounded by at most
+    # three additional roads-and-checkouts; workers, goods and money are real.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[retail-fallback-10y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Two-seed ten-year A/B with strictly limited physical alternate shops
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service 2>&1 | tee basket-no-alternates.log
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback 2>&1 | tee basket-alternates-42.log
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=73 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback 2>&1 | tee basket-alternates-73.log
+          python3 - <<'PY'
+          import json
+          def get(path):
+              lines=open(path).readlines()
+              i=next(i for i,line in enumerate(lines) if line.startswith('{'))
+              return json.loads(''.join(lines[i:]))
+          a,b,c=map(get,['basket-no-alternates.log','basket-alternates-42.log','basket-alternates-73.log'])
+          for r in (a,b,c):
+              assert r['simulatedDays']==3653 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+              assert r['basketRetailServiceFixture'] and r['checkoutBasketTransactions']>0
+              assert not r['fullIndexCitiesTargetValidated']
+          assert not a['retailShopFallbackFixture']
+          assert b['retailShopFallbackFixture'] and c['retailShopFallbackFixture']
+          for name,r in [('single_42',a),('fallback_42',b),('fallback_73',c)]:
+              print('RETAIL_FALLBACK_RESULT',name,'alive',r['aliveEnd'],
+                    'min',r['minimumAliveAtAnyEvent'],'unmet',r['unmetMeals'],
+                    'failedCheckouts',r['checkoutCapacityDeniedVisits'],
+                    'reroutes',r['retailAlternativeTrips'],
+                    'fulfilledAfterReroute',r['retailAlternativePurchases'],
+                    'failedAfterReroute',r['retailAlternativeFailures'],
+                    'householdCash',r['personalCashCents'],
+                    'physicalCheckouts',r['checkoutBasketTransactions'])
+          open('healthy-decade.flag','w').write('yes' if b['minimumAliveAtAnyEvent']>=10000 and c['minimumAliveAtAnyEvent']>=10000 else 'no')
+          PY
+          if test "$(cat healthy-decade.flag)" = yes; then
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback 2>&1 | tee basket-alternates-80y-no-history.log
+          else
+            echo 'Population not sustained. Keep original test data and do not infer eighty-year stability.'
+          fi
+      - name: Keep complete causal comparisons
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: basket-retail-alternate-sellers-10y
+          path: |
+            basket-no-alternates.log
+            basket-alternates-42.log
+            basket-alternates-73.log
+            basket-alternates-80y-no-history.log
+          if-no-files-found: ignore
+
   basket-retail-10y:
     # Correct dimensional mismatch: a cashier serves five PHYSICAL customer
     # baskets, not five pieces of food. Vacancies must use the SAME unit and
