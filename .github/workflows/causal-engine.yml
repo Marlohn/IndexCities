@@ -254,7 +254,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Falsify physical building material supply and real construction work
+      - name: Verify contractor receipts, finite material and site wages without ledger drift
         run: |
           set -o pipefail
           dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=366 --seed=42 --adversarial --vacancy-market --cohort-renewal --construction-pilot 2>&1 | tee construction-1y.log
