@@ -63,3 +63,29 @@ jobs:
           name: causal-engine-10k-metrics
           path: city-10000-30d.json
           if-no-files-found: ignore
+
+  year-10k:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: 10k active lives for one actual Gregorian year, with compressed factual history
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=366 --seed=42 --history=artifacts/causal-10000-366d.facts.gz --adversarial | tee year-10000.json
+          grep -q '"moneyConserved": true' year-10000.json
+          grep -q '"foodConserved": true' year-10000.json
+          grep -q '"simulatedDays": 366' year-10000.json
+          grep -q '"historyPersistent": true' year-10000.json
+          test -s artifacts/causal-10000-366d.facts.gz
+          gzip -t artifacts/causal-10000-366d.facts.gz
+      - name: Preserve 10k/one-year metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-10k-366days
+          path: year-10000.json
+          if-no-files-found: ignore
