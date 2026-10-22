@@ -15,7 +15,7 @@ internal static class IntegratedProbe
 {
     public static int Run()
     {
-        Console.WriteLine("P0_INTEGRATED creating真实-fixture grid=3x400 seed=42");
+        Console.WriteLine("P0_INTEGRATED creating-real-fixture grid=3x400 seed=42");
         var stopwatch = Stopwatch.StartNew();
         var (source, fixtureInfo) = Fixtures.Grid(42, 3, 400, true);
         Console.WriteLine($"P0_INTEGRATED fixture={fixtureInfo} created_s={stopwatch.Elapsed.TotalSeconds:F3}");
