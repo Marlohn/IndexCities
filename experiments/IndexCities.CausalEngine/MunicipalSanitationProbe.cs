@@ -35,7 +35,7 @@ internal sealed partial class CausalCity
     private int PickMunicipalCollectionSite(Person worker)
     {
         if (_treasury < SanitationGrossWage ||
-            _garbageAtDepot + _people.Sum(p => p.SanitationCargo) >= SanitationDepotCapacity) return -1;
+            _garbageAtDepot + _garbageInTransit >= SanitationDepotCapacity) return -1;
         var day = _time / DaySeconds;
         var best = -1;
         var bestTravel = int.MaxValue;
@@ -84,11 +84,12 @@ internal sealed partial class CausalCity
         // has finite carrying capacity and cannot duplicate household waste.
         var home = _households[homeId];
         var remainingDepotCapacity = SanitationDepotCapacity -
-            _garbageAtDepot - _people.Sum(p => p.SanitationCargo);
+            _garbageAtDepot - _garbageInTransit;
         var amount = Math.Min(500L, Math.Min(home.TrashUnits, remainingDepotCapacity));
         if (amount <= 0) { StartTrip(worker, worker.Home); return; }
         home.TrashUnits -= amount;
         worker.SanitationCargo = amount;
+        _garbageInTransit += amount;
         _garbageCollected += amount;
         _sanitationPaidVisits++;
         _treasury -= SanitationGrossWage;
