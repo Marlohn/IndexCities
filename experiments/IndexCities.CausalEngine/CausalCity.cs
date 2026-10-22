@@ -8,7 +8,7 @@ namespace IndexCities.CausalEngine;
 
 // Independent vertical-slice engine for falsifying the architecture.
 // RULES AND FIXTURES HERE ARE NOT AN IMPLEMENTATION OF ALL OF INDEXCITIES SPEC.
-internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false);
+internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false);
 internal enum EventKind : byte { Day, Hour, StartWork, EndWork, Move, Delivery, RoadClose, RoadOpen, HouseholdShop }
 internal readonly record struct SimEvent(EventKind Kind, int Id);
 internal sealed class Person
@@ -35,6 +35,7 @@ internal sealed class Household
     public required int Home;
     public required List<int> Members;
     public int Pantry = 40;
+    public int LastBirthDay = -10_000;
 }
 internal sealed class Firm
 {
@@ -292,29 +293,22 @@ internal sealed partial class CausalCity : IDisposable
         // a housing slot, water, pantry and existing household money.
         if (day != 0)
         {
-            if (day % 2 == 0)
+            if (_config.CohortRenewal)
+            {
+                // Counterfactual only: no citywide one-birth-per-two-days cap.
+                // A rotating deterministic family appointment still requires
+                // two living adult carers, actual food, money and housing room.
+                // This does NOT implement the SPEC's complete relationships,
+                // pregnancy, childcare or migration.
+                var household = _households[(int)(((long)day * 151 + _config.Seed) % _households.Length)];
+                TryBirth(household, date, day);
+            }
+            if (!_config.CohortRenewal && day % 2 == 0)
             {
                 var start = (int)((day * 19) % _households.Length);
                 for (var k = 0; k < _households.Length; k++)
                 {
-                    var h = _households[(start + k) % _households.Length];
-                    if (h.Members.Count >= 16 || h.Pantry < 2) continue;
-                    var carers = 0; long cash = 0;
-                    foreach (var id in h.Members)
-                    {
-                        var p = _people[id]; if (!p.Alive) continue;
-                        if (Age(p, date) >= 18 && Age(p, date) < 60) carers++;
-                        cash += p.Cash;
-                    }
-                    if (carers < 2 || cash < 300 || _waterRatio < .4) continue;
-                    var child = new Person { Id = _people.Count, HouseholdId = h.Id,
-                        Born = date, Home = h.Home, Node = h.Home, Job = (h.Id * 7) % 72, Cash = 0 };
-                    _people.Add(child);
-                    h.Members.Add(child.Id);
-                    _active++; _births++;
-                    _maxActive = Math.Max(_maxActive, _active);
-                    _history.Fact(_time, child.Id, 5, h.Id);
-                    break;
+                    if (TryBirth(_households[(start + k) % _households.Length], date, day)) break;
                 }
             }
             // Natural deaths in this fixture happen at the calendrical 85th
@@ -389,9 +383,44 @@ internal sealed partial class CausalCity : IDisposable
         {
             AssertConservation();
             Console.Error.WriteLine($"LAB_PROGRESS days={_days} live={_active} births={_births} deaths={_deaths} trips={_journeys} queue={_events.Count}");
-            Console.Error.WriteLine($"LAB_ECON day={_days} peopleCash={_people.Sum(p=>p.Cash)} shopCash={_shops.Sum(s=>s.Cash)} farmCash={_farms.Sum(f=>f.Cash)} familyEmpty={_households.Count(h=>h.Pantry==0)} noMoneyAdults={_people.Count(p=>p.Alive&&p.Cash==0&&Age(p,Epoch.AddSeconds(_time))>=18)} unmet={_unservedMeals}");
+            var childCount = _people.Count(p => p.Alive && Age(p, date) < 18);
+            var adultCount = _people.Count(p => p.Alive && Age(p, date) is >= 18 and < 70);
+            var olderCount = _active - childCount - adultCount;
+            var emptyWithFunds = _households.Count(h => h.Pantry == 0 &&
+                h.Members.Any(id => _people[id].Alive) &&
+                h.Members.Where(id => _people[id].Alive).Sum(id => _people[id].Cash) >= FoodPrice);
+            var childOnlyHomes = _households.Count(h =>
+                h.Members.Any(id => _people[id].Alive) &&
+                !h.Members.Any(id => _people[id].Alive && Age(_people[id], date) >= 18));
+            Console.Error.WriteLine($"LAB_ECON day={_days} peopleCash={_people.Sum(p=>p.Cash)} shopCash={_shops.Sum(s=>s.Cash)} farmCash={_farms.Sum(f=>f.Cash)} treasury={_treasury} reserve={_reserveGlobal} familyEmpty={_households.Count(h=>h.Pantry==0)} noMoneyAdults={_people.Count(p=>p.Alive&&p.Cash==0&&Age(p,date)>=18)} unmet={_unservedMeals}");
+            Console.Error.WriteLine($"LAB_CAUSE day={_days} children={childCount} adults={adultCount} retired={olderCount} childOnlyHomes={childOnlyHomes} emptyWithFunds={emptyWithFunds} shopFood={_shops.Sum(f=>f.Stock)} farmFood={_farms.Sum(f=>f.Stock)} eligibleCarerHomes={_households.Count(h=>h.Members.Count<16 && h.Members.Count(id=>_people[id].Alive&&Age(_people[id],date) is >=18 and <60)>=2)}");
         }
         if (_days < _config.Days) Schedule(_time + DaySeconds, EventKind.Day, 0);
+    }
+    private bool TryBirth(Household h, DateTime date, long day)
+    {
+        if (h.Members.Count >= 16 || h.Pantry < 2) return false;
+        if (_config.CohortRenewal && day - h.LastBirthDay < 4 * 365) return false;
+        var carers = 0;
+        long cash = 0;
+        foreach (var id in h.Members)
+        {
+            var p = _people[id];
+            if (!p.Alive) continue;
+            if (Age(p, date) is >= 18 and < 60) carers++;
+            cash += p.Cash;
+        }
+        if (carers < 2 || cash < 300 || _waterRatio < .4) return false;
+        var child = new Person { Id = _people.Count, HouseholdId = h.Id,
+            Born = date, Home = h.Home, Node = h.Home, Job = (h.Id * 7) % 72, Cash = 0 };
+        _people.Add(child);
+        h.Members.Add(child.Id);
+        h.LastBirthDay = (int)day;
+        _active++;
+        _births++;
+        _maxActive = Math.Max(_maxActive, _active);
+        _history.Fact(_time, child.Id, 5, h.Id);
+        return true;
     }
     private static void ResetDailyWage(Firm firm, int baseWage, long netRevenue)
     {
@@ -779,7 +808,7 @@ internal sealed partial class CausalCity : IDisposable
             Mix(p.Health); Mix(p.CarryFood); Mix(p.Traveling ? 1 : 0);
             Mix(p.ContributedDays); Mix(p.GrossEarnings); Mix(p.PensionCredit); Mix(p.PensionReceived);
         }
-        foreach (var h in _households) { Mix(h.Pantry); Mix(h.Members.Count); }
+        foreach (var h in _households) { Mix(h.Pantry); Mix(h.Members.Count); Mix(h.LastBirthDay); }
         foreach (var f in _shops) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); }
         foreach (var f in _farms) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); }
         Mix(_producedFood); Mix(_eatenFood);
@@ -806,6 +835,7 @@ internal sealed partial class CausalCity : IDisposable
         warning = "Not SPEC-complete: simplified lanes/intersections, no pedestrian crosswalks, real towing, building construction, complex health or full demography. NEVER claim full 10k/80y achieved.",
         seed = _config.Seed,
         wageFeedbackFixture = _config.WageFeedback,
+        cohortRenewalFixture = _config.CohortRenewal,
         requestedSims = _config.Sims,
         peopleEverCreated = _people.Count,
         aliveEnd = _active,
