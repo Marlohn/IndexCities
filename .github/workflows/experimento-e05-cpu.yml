@@ -1,0 +1,64 @@
+name: E05 - perfil real de CPU do motor (sem alterar codigo)
+
+on:
+  push:
+    branches:
+      - experimento/e05-perfil-cpu-integrado
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  perfil-cidade-400:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+      - name: Compilar exatamente o core da main
+        run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+      - name: Instalar amostrador EventPipe
+        run: |
+          dotnet tool install -g dotnet-trace
+          dotnet-trace --version
+      - name: Perfil 400 SIMs - amostrar 45s de processamento efetivo
+        shell: bash
+        run: |
+          set -euo pipefail
+          dll="$PWD/src/IndexCities.Headless/bin/Release/net8.0/IndexCities.Headless.dll"
+          dotnet "$dll" scale grid --rows=5 --length=800 --seed=42 --warmup=0 --days=1 --cap=360 > e05-run.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true' EXIT
+          for i in $(seq 1 200); do
+            if grep -q '^WARMUP' e05-run.log; then break; fi
+            if ! kill -0 "$pid" 2>/dev/null; then cat e05-run.log; exit 1; fi
+            sleep .2
+          done
+          grep -q '^WARMUP' e05-run.log || { echo "WARMUP ausente"; cat e05-run.log; exit 1; }
+          echo "===== Amostragem do processo em Step ====="
+          dotnet-trace collect -p "$pid" --profile dotnet-sampled-thread-time --duration 00:00:00:45 -o e05-400.nettrace
+          echo "===== TOP 40 TEMPO EXCLUSIVO ====="
+          dotnet-trace report e05-400.nettrace topN -n 40 | tee e05-exclusive.txt
+          echo "===== TOP 40 TEMPO INCLUSIVO ====="
+          dotnet-trace report e05-400.nettrace topN -n 40 --inclusive | tee e05-inclusive.txt
+          echo "===== Esperando concluir dia / hash ====="
+          wait "$pid"
+          trap - EXIT
+          grep -E '^(FIXTURE|WARMUP|DAY 1|SUMMARY|SAVE|INVARIANTS OK)' e05-run.log
+          grep -q '^INVARIANTS OK' e05-run.log
+      - name: Guardar resultados e trace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e05-perfil-cpu-400-sims
+          path: |
+            e05-run.log
+            e05-exclusive.txt
+            e05-inclusive.txt
+            e05-400.nettrace
+          if-no-files-found: ignore
