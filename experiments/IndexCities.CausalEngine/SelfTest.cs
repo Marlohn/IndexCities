@@ -129,6 +129,36 @@ internal static class EngineSelfTest
             File.Delete(feedbackSave);
             if (feedbackHash != feedbackResumedHash)
                 throw new InvalidOperationException("Revenue-backed payroll changed after save/resume");
+            // Counterfactual demographic clock: make births depend on actual
+            // households (not an absolute citywide cap), and retain the exact
+            // appointment state across a checkpoint without extra citizens.
+            var renewalConfig = new LabConfig(256, 365, 42, null, true,
+                WageFeedback: true, CohortRenewal: true);
+            string renewalHash;
+            long renewalBirths;
+            using (var continuous = new CausalCity(renewalConfig))
+            {
+                continuous.Run();
+                continuous.AssertConservation();
+                renewalHash = continuous.Fingerprint();
+                renewalBirths = continuous.Births;
+            }
+            var renewalSave = temp + ".renewal.save.json";
+            using (var half = new CausalCity(renewalConfig))
+            {
+                half.RunUntilDay(183);
+                half.SaveSnapshot(renewalSave);
+            }
+            using (var continued = CausalCity.FromSnapshot(renewalSave))
+            {
+                continued.Run();
+                continued.AssertConservation();
+                if (renewalHash != continued.Fingerprint() || renewalBirths != continued.Births)
+                    throw new InvalidOperationException("Family renewal diverged after save/resume");
+            }
+            File.Delete(renewalSave);
+            if (renewalBirths <= 0)
+                throw new InvalidOperationException("Household birth appointments produced no births");
             // Small closed-household stress case: when the final family
             // member dies, a positive estate must NOT finance city pensions.
             long unclaimedEstate;
@@ -147,6 +177,7 @@ internal static class EngineSelfTest
                 worlds = 7, deterministic = true, hash = hashA,
                 payrollFeedbackSaveResumeExact = feedbackHash == feedbackResumedHash,
                 heirlessEstatesReturnToReserve = unclaimedEstate > 0,
+                familyRenewalSaveResumeExact = true, familyRenewalBirths = renewalBirths,
                 saveResumeExact = resumedHash == hashA,
                 compressedHistoryReplayExact = reopened == facts,
                 journeys, sales, births, successorPurchases, retiredPurchases, historyFacts = facts,
@@ -164,7 +195,7 @@ internal static class EngineSelfTest
         }
         finally
         {
-            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json" })
+            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json" })
                 if (File.Exists(path)) File.Delete(path);
         }
     }
