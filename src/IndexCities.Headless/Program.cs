@@ -38,6 +38,7 @@ for(var d=1;d<=days;d++){
     if(total>cap){Console.WriteLine($"STOP limite de {cap}s");break;}
 }
 if(done>0)Console.WriteLine($"SUMMARY days={done} perDay={total/done:F2}s eff={86400*done/total:F0}x hours80y={total/done*29220/3600:F0} gen0={GC.CollectionCount(0)-gc0} gen2={GC.CollectionCount(2)-gc2} allocMB/day={(GC.GetTotalAllocatedBytes()-alloc0)/1e6/done:F0} workingSetMB={Process.GetCurrentProcess().WorkingSet64/1e6:F0}");
+if(idleProbe){Console.WriteLine("IDLE_PROBE_PHASE end_of_measured_days");IdleSchedulingProbe.Run(sim);}
 if(idleProbe)Console.WriteLine($"MOVE_PROFILE calls={sim.CitizenMovementCalls} wall={sim.CitizenMovementTicks/(double)Stopwatch.Frequency:F4}s portion={100*sim.CitizenMovementTicks/(Stopwatch.Frequency*Math.Max(total,.000001)):F2}% totalMeasured={total:F4}s");
 census?.Print(done);if(stuck!=null)Console.WriteLine($"STUCK SUMMARY guinchos chamados={sim.State.Ledger.Where(m=>m.Category=="Guincho"&&m.To=="global").Select(m=>(m.At,m.EntityId)).Distinct().Count()} rebocando agora={sim.State.Vehicles.Count(v=>v.Status==VehicleStatus.Towed)} sem combustível na via (total)={stuck.StrandedTotal} parados≥30min (máx)={stuck.StuckMax} mortos={sim.State.Citizens.Count(c=>!c.Alive)}");
 sw.Restart();var json=sim.SaveToJson();var save=sw.Elapsed.TotalSeconds;sw.Restart();CitySimulation.FromJson(json);
