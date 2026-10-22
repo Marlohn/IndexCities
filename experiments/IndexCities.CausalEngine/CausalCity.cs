@@ -104,7 +104,7 @@ internal sealed class CausalCity : IDisposable
     private long _births, _deaths, _unservedMeals, _paidWages, _unsatisfiedSales, _replans;
     private long _peakEvents, _oldestQueue;
     private long _firstDollarViolation = -1;
-    private int _active, _maxActive;
+    private int _active, _maxActive, _minActive;
     private double _windFactor = 1, _waterRatio = 1;
     private int _deliveryVanId;
     public CausalCity(LabConfig config)
@@ -130,7 +130,7 @@ internal sealed class CausalCity : IDisposable
             _people.Add(p);
             family.Members.Add(i);
         }
-        _active = _maxActive = config.Sims;
+        _active = _maxActive = _minActive = config.Sims;
         _initialMoney = CalculateMoney();
         Schedule(0, EventKind.Day, 0);
         Schedule(0, EventKind.Hour, 0);
@@ -276,6 +276,7 @@ internal sealed class CausalCity : IDisposable
             Schedule(_time + 4 * 3600, EventKind.Move, t.Id);
             _history.Fact(_time, -2000 - shopId, 9, count);
         }
+        _minActive = Math.Min(_minActive, _active);
         if (_days % 365 == 0)
         {
             AssertConservation();
@@ -321,17 +322,18 @@ internal sealed class CausalCity : IDisposable
         if (!p.Alive || p.Traveling || !p.AtWork) return;
         var employer = p.Job < StoreCount ? _shops[p.Job] : _farms[p.Job - StoreCount];
         // Only physically present workers earn wages.
-        if (employer.Cash >= 50)
+        var wage = p.Job < StoreCount ? 50 : 200;
+        if (employer.Cash >= wage)
         {
-            employer.Cash -= 50;
-            p.Cash += 50;
-            _paidWages += 50;
+            employer.Cash -= wage;
+            p.Cash += wage;
+            _paidWages += wage;
             _workdays++;
-            _history.Fact(_time, p.Id, 7, 50);
+            _history.Fact(_time, p.Id, 7, wage);
         }
         p.AtWork = false;
         var h = _households[p.HouseholdId];
-        if (p.Id % 4 == 0 && h.Pantry < 30 && p.Cash >= 100)
+        if (h.Members.FirstOrDefault(id => _people[id].Alive && Age(_people[id], Epoch.AddSeconds(_time)) >= 18) == p.Id && h.Pantry < 30 && p.Cash >= 100)
             StartTrip(p, _shops[p.Home].Node);
         else StartTrip(p, p.Home);
     }
@@ -539,11 +541,13 @@ internal sealed class CausalCity : IDisposable
         peopleEverCreated = _people.Count,
         aliveEnd = _active,
         peakAlive = _maxActive,
+        minimumAliveAtDayBoundary = _minActive,
         simulatedDays = _days,
         gregorianEnd = Epoch.AddDays(_config.Days).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         wallSeconds,
         wallSecondsPerDay = wallSeconds / _days,
-        wouldMeetSixHoursIfRepresentative = (wallSeconds / _days) * 29220 <= 21600,
+        speedBudgetOnly_notPassingCriterion = (wallSeconds / _days) * 29220 <= 21600,
+        demonstrated10kSustained = _minActive >= 10_000 && _config.Sims >= 10_000,
         journeys = _journeys, roadSegments = _segments, roadWaitSeconds = _waitSeconds,
         salesFoodUnits = _sales, cargoDeliveries = _shipments, paidWagesCents = _paidWages,
         workingDays = _workdays, births = _births, deaths = _deaths,
