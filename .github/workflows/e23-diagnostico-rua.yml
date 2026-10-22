@@ -37,7 +37,15 @@ jobs:
             --warmup=1 --e22=compare --e22-window=3000 \
             --e22-adversary=mixed --e22-reverse=${{ matrix.reversed }} \
             --e23-diff=1 --e23-roadguard=600 | tee "e23_${{ matrix.label }}.log"
-          grep -q '^E23_FIRST_DIFFERENCE mode=' "e23_${{ matrix.label }}.log"
+          # Esta ablação tenta preservar o estado, logo não exigir divergência.
+          # Falhar se faltar cobertura causal ou se qualquer candidato divergir.
+          grep -q '^E22_COMPARE mode=events exactCheckpoints=True firstDivergentSecond=-1 ' "e23_${{ matrix.label }}.log"
+          grep -q '^E22_COMPARE mode=queue exactCheckpoints=True firstDivergentSecond=-1 ' "e23_${{ matrix.label }}.log"
+          grep -Eq '^E22_COVERAGE adversary=mixed .*appliedTow=3 appliedJunction=3 appliedRoadWithRoute=3 towStrandedArms=3 towDispatchArms=3 ' "e23_${{ matrix.label }}.log"
+          if grep -q '^E23_FIRST_DIFFERENCE mode=' "e23_${{ matrix.label }}.log"; then
+            echo "E23: divergência causal detectada; ablação reprovada."
+            exit 1
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
