@@ -8,7 +8,7 @@ namespace IndexCities.CausalEngine;
 
 // Independent vertical-slice engine for falsifying the architecture.
 // RULES AND FIXTURES HERE ARE NOT AN IMPLEMENTATION OF ALL OF INDEXCITIES SPEC.
-internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false);
+internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false, bool RetailShopFallback = false);
 internal enum EventKind : byte { Day, Hour, StartWork, EndWork, Move, Delivery, RoadClose, RoadOpen, HouseholdShop }
 internal readonly record struct SimEvent(EventKind Kind, int Id);
 internal sealed class Person
@@ -34,6 +34,10 @@ internal sealed class Person
     public bool FreightShift;
     public bool IsFreightDriver;
     public int ConstructionSiteId = -1;
+    // The alternative-shop search is bounded and follows real road trips.
+    public ulong RetailVisitedStoresMask;
+    public int RetailFallbackAttempts;
+    public long RetailAlternativeTrips, RetailAlternativePurchases, RetailAlternativeFailures;
 }
 internal sealed class Household
 {
@@ -961,6 +965,8 @@ internal sealed partial class CausalCity : IDisposable
                 if (needed == 0) break;
             }
         if (p.Cash < price) return false;
+        p.RetailVisitedStoresMask = 0;
+        p.RetailFallbackAttempts = 0;
         StartTrip(p, _shops[(p.Home + 1) % Nodes].Node);
         h.LastShoppingDepartureDay = _time / DaySeconds;
         return true;
@@ -1297,6 +1303,8 @@ internal sealed partial class CausalCity : IDisposable
                 shop.MonthRetailBaskets++;
                 shop.LifetimeRetailBaskets++;
             }
+            if (_config.RetailShopFallback && p.RetailFallbackAttempts > 0)
+                p.RetailAlternativePurchases++;
             _retailSalesCents = checked(_retailSalesCents + paid);
             if (_config.CostBasedFoodPrice) shop.MonthRetailSalesUnits += buy;
             if (_config.WageFeedback || _config.DemandStaffing || _config.VacancyMarket) shop.DayReceipts += paid;
@@ -1305,8 +1313,51 @@ internal sealed partial class CausalCity : IDisposable
             _sales += buy;
             _history.Fact(_time, p.Id, 10, buy);
         }
-        else _unsatisfiedSales++;
+        else
+        {
+            _unsatisfiedSales++;
+            if (_config.RetailShopFallback && TryAlternativeRetailShop(p))
+                return;
+            if (_config.RetailShopFallback && p.RetailFallbackAttempts > 0)
+                p.RetailAlternativeFailures++;
+        }
+        if (_config.RetailShopFallback)
+        {
+            p.RetailVisitedStoresMask = 0;
+            p.RetailFallbackAttempts = 0;
+        }
         StartTrip(p, p.Home);
+    }
+    // Approved V1 principle: search another accessible real seller after
+    // failure. Experimental radius/three extra visits are NOT product values.
+    private bool TryAlternativeRetailShop(Person buyer)
+    {
+        buyer.RetailVisitedStoresMask |= 1UL << buyer.Node;
+        if (buyer.RetailFallbackAttempts >= 3) return false;
+        var best = -1;
+        var bestScore = int.MaxValue;
+        for (var id = 0; id < StoreCount; id++)
+        {
+            if ((buyer.RetailVisitedStoresMask & (1UL << id)) != 0 ||
+                id == buyer.Home) continue;
+            var distance = Math.Abs((id % Grid) - (buyer.Node % Grid)) +
+                           Math.Abs((id / Grid) - (buyer.Node / Grid));
+            // Neighbouring existing roads, rather than global free delivery.
+            if (distance > 3 || distance == 0) continue;
+            var shop = _shops[id];
+            if (shop.Stock <= 0 || shop.PresentWorkers <= 0 ||
+                shop.TodayCheckoutUnitsLeft <= 0 ||
+                buyer.Cash < shop.RetailUnitPriceCents) continue;
+            var score = distance * 100 + shop.RetailUnitPriceCents;
+            if (score >= bestScore) continue;
+            best = id;
+            bestScore = score;
+        }
+        if (best < 0) return false;
+        buyer.RetailFallbackAttempts++;
+        buyer.RetailAlternativeTrips++;
+        StartTrip(buyer, _shops[best].Node);
+        return true;
     }
     private void CompleteDelivery(int tripId)
     {
@@ -1412,6 +1463,9 @@ internal sealed partial class CausalCity : IDisposable
             Mix(p.FreightShopId); Mix(p.FreightCargo); Mix(p.FreightShift ? 1 : 0);
             Mix(p.IsFreightDriver ? 1 : 0);
             Mix(p.ConstructionSiteId);
+            Mix(unchecked((long)p.RetailVisitedStoresMask));
+            Mix(p.RetailFallbackAttempts); Mix(p.RetailAlternativeTrips);
+            Mix(p.RetailAlternativePurchases); Mix(p.RetailAlternativeFailures);
             Mix(p.ContributedDays); Mix(p.GrossEarnings); Mix(p.PensionCredit); Mix(p.PensionReceived);
         }
         foreach (var h in _households) { Mix(h.Pantry); Mix(h.Members.Count); Mix(h.LastBirthDay); Mix(h.LastShoppingDepartureDay); }
@@ -1502,6 +1556,10 @@ internal sealed partial class CausalCity : IDisposable
         crossFarmFreightFixture = _config.CrossFarmFreight,
         boundedRetailServiceFixture = _config.BoundedRetailService,
         basketRetailServiceFixture = _config.BasketRetailService,
+        retailShopFallbackFixture = _config.RetailShopFallback,
+        retailAlternativeTrips = _people.Sum(p => p.RetailAlternativeTrips),
+        retailAlternativePurchases = _people.Sum(p => p.RetailAlternativePurchases),
+        retailAlternativeFailures = _people.Sum(p => p.RetailAlternativeFailures),
         checkoutBasketTransactions = _shops.Sum(f => f.LifetimeRetailBaskets),
         checkoutCapacityDeniedVisits = _shops.Sum(f => f.LifetimeCheckoutCapacityDenied),
         checkoutFixtureMaxEmployeesPerSmallStore = _config.BasketRetailService ? 8 : 0,
