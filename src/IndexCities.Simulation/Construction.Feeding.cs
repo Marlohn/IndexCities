@@ -124,6 +124,7 @@ public sealed partial class CitySimulation
 
     double SafeSiteTravel(Vehicle vehicle,Point target,double distance,bool machinesOnly=false)
     {
+        if(_e08Slice is {} e08Safe)e08Safe.SafeTravelCalls++;
         // A moving machine holds its whole remaining path, not only its body:
         // a vehicle stopped anywhere on it (behind a turn, across an oncoming
         // lane) would wait for the machine while the machine waits for it.
@@ -148,8 +149,15 @@ public sealed partial class CitySimulation
         if(machinesOnly&&reserved.Count==0&&!State.Vehicles.Any(other=>other.Machine!=PavingMachine.None&&other.Status!=VehicleStatus.Outside&&other.Position.Distance(vehicle.Position)<=distance+12))return distance;
         var safe=0.0;
         while(safe<distance-.000001){var next=Math.Min(distance,safe+.5);var at=vehicle.Position.MoveTowards(target,next);
-            if(State.Vehicles.Any(other=>other.Id!=vehicle.Id&&other.Status!=VehicleStatus.Outside&&(!machinesOnly||other.Machine!=PavingMachine.None&&(other.Status==VehicleStatus.Parked||!(other.Position.Distance(State.Entry)<8&&vehicle.Position.Distance(State.Entry)<8)))&&other.Position.Distance(at)<12&&VehicleBodiesOverlap(vehicle,at,other)))break;
-            if(reserved.Any(pose=>pose.Position.Distance(at)<12&&BodiesOverlap(vehicle,at,vehicle.Heading,pose.Machine,pose.Position,pose.Heading)))break;
+            if(_e08Slice is {} e08Sweep)e08Sweep.SafeSweepPositions++;
+            if(State.Vehicles.Any(other=>{
+                if(_e08Slice is {} e08Body)e08Body.SafeBodyChecks++;
+                return other.Id!=vehicle.Id&&other.Status!=VehicleStatus.Outside&&(!machinesOnly||other.Machine!=PavingMachine.None&&(other.Status==VehicleStatus.Parked||!(other.Position.Distance(State.Entry)<8&&vehicle.Position.Distance(State.Entry)<8)))&&other.Position.Distance(at)<12&&VehicleBodiesOverlap(vehicle,at,other);
+            })){if(_e08Slice is {} e08Stop)e08Stop.SafeBodyStops++;break;}
+            if(reserved.Any(pose=>{
+                if(_e08Slice is {} e08Reserve)e08Reserve.SafeReservedChecks++;
+                return pose.Position.Distance(at)<12&&BodiesOverlap(vehicle,at,vehicle.Heading,pose.Machine,pose.Position,pose.Heading);
+            })){if(_e08Slice is {} e08ReservedStop)e08ReservedStop.SafeReservedStops++;break;}
             safe=next;
         }
         return safe;
