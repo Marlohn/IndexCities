@@ -165,6 +165,7 @@ internal sealed partial class CausalCity : IDisposable
     private const int StoreCount = 64, FarmCount = 8;
     // Fixture calibration ONLY, not approved IndexCities prices/wages.
     private const int FoodPrice = 50, WholesalePrice = 7;
+    private const long InitialBusinessCashCents = (StoreCount + FarmCount) * 20_000_000L;
     private LabConfig _config;
     private readonly PriorityQueue<SimEvent, (long At, long Sequence)> _events = new();
     private readonly List<Person> _people = [];
@@ -797,6 +798,13 @@ internal sealed partial class CausalCity : IDisposable
     {
         if (CalculateMoney() != _initialMoney)
             throw new InvalidOperationException("Money created/destroyed. First mismatch: " + _firstDollarViolation);
+        // Here food is the sole paid consumer good. Wholesale transfers stay
+        // inside the business sector; every paid salary leaves it. This
+        // independent ledger exposes structural insolvency that total-money
+        // conservation by itself would miss.
+        var businessesCash = _shops.Sum(f => f.Cash) + _farms.Sum(f => f.Cash);
+        if (businessesCash != checked(InitialBusinessCashCents + _sales * FoodPrice - _paidWages))
+            throw new InvalidOperationException("Business sector ledger differs from paid sales minus payroll");
         if (CalculateFood() != checked(_initialFood + _producedFood - _eatenFood))
             throw new InvalidOperationException("Food created/destroyed outside farm work and meals");
         if (_days > _config.Days || _active < 0) throw new InvalidOperationException("Invalid days/population");
@@ -861,6 +869,10 @@ internal sealed partial class CausalCity : IDisposable
         demonstrated10kSustained = _minActive >= 10_000 && _config.Sims >= 10_000,
         journeys = _journeys, roadSegments = _segments, roadWaitSeconds = _waitSeconds,
         salesFoodUnits = _sales, cargoDeliveries = _shipments, paidWagesCents = _paidWages,
+        businessSalesRevenueCents = checked(_sales * FoodPrice),
+        businessOperatingNetCents = checked(_sales * FoodPrice - _paidWages),
+        businessInitialCashCents = InitialBusinessCashCents,
+        businessCurrentCashCents = _shops.Sum(f => f.Cash) + _farms.Sum(f => f.Cash),
         personalCashCents = _people.Sum(p => p.Cash),
         shopCashCents = _shops.Sum(s => s.Cash),
         farmCashCents = _farms.Sum(f => f.Cash),
