@@ -1109,6 +1109,10 @@ internal sealed partial class CausalCity : IDisposable
         unemployedAdults = _people.Count(p => p.Alive && p.Job < 0 &&
             Age(p, Epoch.AddSeconds(_time)) is >= 18 and < 70),
         vacanciesOffered = _shops.Sum(f => f.OfferedPositions) + _farms.Sum(f => f.OfferedPositions),
+        occupiedHouseholds = _households.Count(h => h.Members.Any(id => _people[id].Alive)),
+        householdsWithEmployedAdults = _households.Count(h => h.Members.Any(id =>
+            _people[id].Alive && _people[id].Job >= 0 &&
+            Age(_people[id], Epoch.AddSeconds(_time)) is >= 18 and < 70)),
         requestedSims = _config.Sims,
         peopleEverCreated = _people.Count,
         aliveEnd = _active,
