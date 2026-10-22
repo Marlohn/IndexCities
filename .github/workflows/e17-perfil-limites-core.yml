@@ -1,0 +1,61 @@
+name: E17 - orçamento real dos subsistemas do core
+
+on:
+  push:
+    branches:
+      - experimento/e17-perfil-limites-core
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Regressao da simulacao (sem alteracoes de gameplay)
+        run: dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --logger 'console;verbosity=minimal'
+
+  profile:
+    name: profile-${{ matrix.label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: small-108
+            rows: 3
+            length: 400
+          - label: medium-400
+            rows: 5
+            length: 800
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Linha de base versus medicao, mesma seed e mesmo dia
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless -c Release
+          for mode in off profile; do
+            dotnet src/IndexCities.Headless/bin/Release/net8.0/IndexCities.Headless.dll scale grid --rows=${{ matrix.rows }} --length=${{ matrix.length }} --seed=42 --warmup=1 --days=1 --cap=1500 --e17="$mode" | tee "e17_${{ matrix.label }}_${mode}.txt"
+            grep -q '^INVARIANTS OK' "e17_${{ matrix.label }}_${mode}.txt"
+          done
+          grep -q '^E17_TOTAL steps=43200 ' "e17_${{ matrix.label }}_profile.txt"
+          diff -u <(grep '^SAVE ' "e17_${{ matrix.label }}_off.txt" | sed -E 's/save=[^ ]+ load=[^ ]+ / /') <(grep '^SAVE ' "e17_${{ matrix.label }}_profile.txt" | sed -E 's/save=[^ ]+ load=[^ ]+ / /')
+          grep -E '^(E17_|DAY |SUMMARY|SAVE)' "e17_${{ matrix.label }}_profile.txt"
+          echo "E17_EQUIVALENT YES"
+      - name: Preservar evidencia
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e17-${{ matrix.label }}
+          path: e17_*.txt
+          if-no-files-found: ignore
