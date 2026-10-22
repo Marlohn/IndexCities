@@ -8,7 +8,7 @@ namespace IndexCities.CausalEngine;
 
 // Independent vertical-slice engine for falsifying the architecture.
 // RULES AND FIXTURES HERE ARE NOT AN IMPLEMENTATION OF ALL OF INDEXCITIES SPEC.
-internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false);
+internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false);
 internal enum EventKind : byte { Day, Hour, StartWork, EndWork, Move, Delivery, RoadClose, RoadOpen, HouseholdShop }
 internal readonly record struct SimEvent(EventKind Kind, int Id);
 internal sealed class Person
@@ -66,6 +66,10 @@ internal sealed class Firm
     // Optional price pilot: every field follows real trade/paid payroll, not theoretical units.
     public long MonthRetailSalesUnits, MonthRetailPaidWagesCents;
     public int RetailUnitPriceCents = 50;
+    // Real accrued costs and trade quantities (NOT new wallets).
+    public long MonthFarmPaidWagesCents, MonthWholesaleSalesUnits;
+    public long MonthWholesaleBoughtUnits, MonthWholesalePaidCents;
+    public int FarmWholesaleUnitPriceCents = 7;
 }
 internal sealed class Trip
 {
@@ -498,7 +502,7 @@ internal sealed partial class CausalCity : IDisposable
             var farm = i >= StoreCount;
             var firm = farm ? _farms[i - StoreCount] : _shops[i];
             // A variable price makes revenue/old-fixed-price a false volume estimate.
-            var monthlyUnits = farm ? firm.DayReceipts / WholesalePrice :
+            var monthlyUnits = farm ? (_config.FarmCostPricing ? firm.MonthWholesaleSalesUnits : firm.DayReceipts / WholesalePrice) :
                 (_config.CostBasedFoodPrice ? firm.MonthRetailSalesUnits : firm.DayReceipts / FoodPrice);
             if (_config.CostBasedFoodPrice && !farm &&
                 (firm.MonthRetailSalesUnits > 0 || _config.CapacityPricedFood))
@@ -521,12 +525,22 @@ internal sealed partial class CausalCity : IDisposable
                     var shifts = firm.MonthRetailPaidWagesCents / 65;
                     var wagePerShift = shifts > 0
                         ? (firm.MonthRetailPaidWagesCents + shifts - 1) / shifts : 65;
-                    var normalUnitCost = WholesalePrice + (wagePerShift + 4) / 5;
+                    var purchaseUnitCost = _config.FarmCostPricing && firm.MonthWholesaleBoughtUnits > 0
+                        ? (firm.MonthWholesalePaidCents + firm.MonthWholesaleBoughtUnits - 1) / firm.MonthWholesaleBoughtUnits
+                        : WholesalePrice;
+                    var normalUnitCost = purchaseUnitCost + (wagePerShift + 4) / 5;
                     priced = (checked(normalUnitCost * 105) + 99) / 100;
                 }
                 else
                     priced = (checked(observedCosts * 105) + units * 100 - 1) / (units * 100);
                 firm.RetailUnitPriceCents = checked((int)Math.Clamp(priced, WholesalePrice + 1L, int.MaxValue));
+            }
+            if (_config.FarmCostPricing && farm && firm.MonthFoodProduced > 0)
+            {
+                var numerator = checked(firm.MonthFarmPaidWagesCents * 105);
+                var denominator = checked(firm.MonthFoodProduced * 100);
+                var unitPrice = (numerator + denominator - 1) / denominator;
+                firm.FarmWholesaleUnitPriceCents = checked((int)Math.Clamp(unitPrice, 1, int.MaxValue));
             }
             // Farm staffing is sized from REAL food physically produced in
             // previous paid shifts, not its theoretical maximum yield of 35.
@@ -565,6 +579,10 @@ internal sealed partial class CausalCity : IDisposable
             firm.MonthFarmWorkdays = 0;
             firm.MonthRetailSalesUnits = 0;
             firm.MonthRetailPaidWagesCents = 0;
+            firm.MonthFarmPaidWagesCents = 0;
+            firm.MonthWholesaleSalesUnits = 0;
+            firm.MonthWholesaleBoughtUnits = 0;
+            firm.MonthWholesalePaidCents = 0;
         }
         // Keep valid jobs before recruiting; losing sales may end a vacancy.
         // Changing an employer at midnight never materializes transportation
@@ -870,6 +888,8 @@ internal sealed partial class CausalCity : IDisposable
             if (_config.WageFeedback || _config.DemandStaffing || _config.VacancyMarket) employer.DayPaidShifts++;
             if (_config.CostBasedFoodPrice && p.Job < StoreCount)
                 employer.MonthRetailPaidWagesCents += wage;
+            if (_config.FarmCostPricing && p.Job >= StoreCount && p.Job < BuilderJob)
+                employer.MonthFarmPaidWagesCents += wage;
             _history.Fact(_time, p.Id, 7, wage - contribution);
             _history.Fact(_time, p.Id, 15, contribution);
         }
@@ -961,7 +981,7 @@ internal sealed partial class CausalCity : IDisposable
                 : farmId + 8 * ((driver.Id + offset) % 8);
             var shop = _shops[shopId];
             var amount = Math.Min(500, Math.Min(farm.Stock, Math.Max(0, 1000 - shop.Stock)));
-            var invoice = amount * WholesalePrice + freightPrice;
+            var invoice = amount * (_config.FarmCostPricing ? farm.FarmWholesaleUnitPriceCents : WholesalePrice) + freightPrice;
             if (amount <= 0 || shop.Cash < invoice || farm.Cash < 80) continue;
             var distance = Math.Abs(farm.Node % Grid - shop.Node % Grid) +
                            Math.Abs(farm.Node / Grid - shop.Node / Grid);
@@ -979,7 +999,7 @@ internal sealed partial class CausalCity : IDisposable
             var shopId = target;
             var shop = _shops[shopId];
             var amount = Math.Min(500, Math.Min(farm.Stock, Math.Max(0, 1000 - shop.Stock)));
-            var invoice = amount * WholesalePrice + freightPrice;
+            var invoice = amount * (_config.FarmCostPricing ? farm.FarmWholesaleUnitPriceCents : WholesalePrice) + freightPrice;
             // The assigned worker is already physically at the real farm
             // and performs paid loading + road delivery, not free overtime.
             const int grossFreightWage = 80;
@@ -996,6 +1016,13 @@ internal sealed partial class CausalCity : IDisposable
             farm.Cash += invoice;
             shop.DaySupplies += invoice;
             farm.DayReceipts += invoice;
+            if (_config.FarmCostPricing)
+            {
+                shop.MonthWholesaleBoughtUnits += amount;
+                shop.MonthWholesalePaidCents += invoice;
+                farm.MonthWholesaleSalesUnits += amount;
+                farm.MonthFarmPaidWagesCents += grossFreightWage;
+            }
             _paidFreightCents += freightPrice;
             farm.Stock -= amount;
             driver.FreightCargo = amount;
@@ -1325,7 +1352,7 @@ internal sealed partial class CausalCity : IDisposable
             Mix(p.ContributedDays); Mix(p.GrossEarnings); Mix(p.PensionCredit); Mix(p.PensionReceived);
         }
         foreach (var h in _households) { Mix(h.Pantry); Mix(h.Members.Count); Mix(h.LastBirthDay); Mix(h.LastShoppingDepartureDay); }
-        foreach (var f in _shops) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); Mix(f.MonthRetailSalesUnits); Mix(f.MonthRetailPaidWagesCents); Mix(f.RetailUnitPriceCents); }
+        foreach (var f in _shops) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); Mix(f.MonthRetailSalesUnits); Mix(f.MonthRetailPaidWagesCents); Mix(f.RetailUnitPriceCents); Mix(f.MonthFarmPaidWagesCents); Mix(f.MonthWholesaleSalesUnits); Mix(f.MonthWholesaleBoughtUnits); Mix(f.MonthWholesalePaidCents); Mix(f.FarmWholesaleUnitPriceCents); }
         foreach (var f in _farms) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); }
         Mix(_builder.Cash); Mix(_builder.OfferedPositions); Mix(_builder.PresentWorkers);
         Mix(_outsideTimber); Mix(_constructionStarted); Mix(_constructionFinished); Mix(_constructionPaidShifts);
@@ -1410,6 +1437,8 @@ internal sealed partial class CausalCity : IDisposable
         capacityPricedFoodFixture = _config.CapacityPricedFood,
         attendanceAwareFarmsFixture = _config.AttendanceAwareFarms,
         crossFarmFreightFixture = _config.CrossFarmFreight,
+        farmCostPricingFixture = _config.FarmCostPricing,
+        meanFarmWholesaleUnitPriceCents = _farms.Average(f=>f.FarmWholesaleUnitPriceCents),
         contractorServiceRevenueCents = checked(_constructionStarted * ContractorLaborInvoice),
         businessOperatingNetCents = checked(_retailSalesCents +
             _constructionStarted * ContractorLaborInvoice - _paidWages),
