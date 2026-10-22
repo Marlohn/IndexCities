@@ -235,9 +235,12 @@ internal sealed partial class CausalCity : IDisposable
         _events.Enqueue(new SimEvent(kind, id), (when, ++_sequence));
         _peakEvents = Math.Max(_peakEvents, _events.Count);
     }
-    public void Run()
+    public void Run() => RunUntilDay(_config.Days);
+    public void RunUntilDay(int day)
     {
-        var end = _config.Days * DaySeconds;
+        if (day < 0 || day > _config.Days || (long)day * DaySeconds < _time)
+            throw new ArgumentOutOfRangeException(nameof(day));
+        var end = day * DaySeconds;
         var stopWatch = Stopwatch.StartNew();
         while (_events.TryPeek(out _, out var priority) && priority.At < end)
         {
