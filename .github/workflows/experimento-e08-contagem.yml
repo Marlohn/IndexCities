@@ -1,0 +1,58 @@
+name: E08 - contabilizar verificacoes e subpassos do transito
+
+on:
+  push:
+    branches:
+      - experimento/e08-contagem-subpassos-transito
+
+permissions:
+  contents: read
+
+jobs:
+  medir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout instrumentado
+        uses: actions/checkout@v4
+        with:
+          path: instrumentado
+      - name: Checkout referencia imutavel
+        uses: actions/checkout@v4
+        with:
+          ref: 651326228729d7689b61745370cc63d997e5ee60
+          path: referencia
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Suite de testes original
+        run: dotnet test instrumentado/tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --logger 'console;verbosity=minimal'
+      - name: Comparar save e medir chamadas por janelas de 6 horas
+        shell: bash
+        run: |
+          set -euo pipefail
+          run_case() {
+            local tag="$1"; shift
+            echo "===== ORIGINAL ${tag} ====="
+            dotnet run --no-restore -c Release --project referencia/src/IndexCities.Headless -- scale "$@" | tee "base_${tag}.txt"
+            echo "===== INSTRUMENTADO ${tag} ====="
+            dotnet run --no-restore -c Release --project instrumentado/src/IndexCities.Headless -- scale "$@" --e08=1 | tee "e08_${tag}.txt"
+            local before after
+            before=$(grep -o 'sha256=[0-9A-F]*' "base_${tag}.txt" | tail -1 | cut -d= -f2)
+            after=$(grep -o 'sha256=[0-9A-F]*' "e08_${tag}.txt" | tail -1 | cut -d= -f2)
+            test -n "$before" && test "$before" = "$after" || { echo "DIVERGENCIA save em ${tag}"; exit 1; }
+            echo "RESULTADO ${tag} save=$before igual=SIM"
+            grep -E '^(SUMMARY|E08 bucket=|INVARIANTS OK)' "e08_${tag}.txt"
+          }
+          run_case pequeno42 cycle --seed=42 --warmup=1 --days=1 --cap=450
+          run_case medio42 grid --rows=3 --length=400 --seed=42 --warmup=1 --days=1 --cap=450
+          run_case grande42 grid --rows=5 --length=800 --seed=42 --warmup=0 --days=1 --cap=450
+      - name: Publicar resultados reproduziveis
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e08-contagens-trafego
+          path: |
+            base_*.txt
+            e08_*.txt
+          if-no-files-found: ignore
