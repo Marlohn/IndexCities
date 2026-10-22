@@ -127,6 +127,9 @@ internal static class Program
             using var engine = new CausalCity(config);
             var sw = Stopwatch.StartNew();
             engine.Run();
+            // Finalizing GZip and committing the last compressed bytes are part
+            // of the actual six-hour performance budget, not post-benchmark work.
+            engine.CompleteHistory();
             sw.Stop();
             engine.AssertConservation();
             Console.WriteLine(JsonSerializer.Serialize(engine.Report(sw.Elapsed.TotalSeconds),
