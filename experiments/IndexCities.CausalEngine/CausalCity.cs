@@ -223,7 +223,7 @@ internal sealed partial class CausalCity : IDisposable
     private long _paidFreightCents, _freightLaborTrips;
     private long _retailSalesCents;
     private long _municipalTaxPaidCents, _municipalWagesPaidCents;
-    private long _garbageGenerated, _garbageCollected, _garbageAtDepot, _sanitationPaidVisits;
+    private long _garbageGenerated, _garbageCollected, _garbageAtDepot, _sanitationPaidVisits, _garbageInTransit;
     private long _peakEvents;
     private long _firstDollarViolation = -1;
     private int _active, _maxActive, _minActive;
@@ -1225,6 +1225,7 @@ internal sealed partial class CausalCity : IDisposable
         if (_config.MunicipalSanitationPilot && p.SanitationCargo > 0 && p.Node == SanitationDepotNode)
         {
             _garbageAtDepot += p.SanitationCargo;
+            _garbageInTransit -= p.SanitationCargo;
             _history.Fact(_time, p.Id, 27, p.SanitationCargo);
             p.SanitationCargo = 0;
             if (p.Node != p.Home) { StartTrip(p, p.Home); return; }
@@ -1492,8 +1493,9 @@ internal sealed partial class CausalCity : IDisposable
             throw new InvalidOperationException("Invalid person or freight cargo");
         AssertConstructionConservation();
         if (_config.MunicipalSanitationPilot &&
-            (_garbageGenerated != _garbageAtDepot + _people.Sum(p => p.SanitationCargo) + _households.Sum(h => h.TrashUnits) ||
-             _garbageCollected != _garbageAtDepot + _people.Sum(p => p.SanitationCargo) || _treasury < 0))
+            (_garbageGenerated != _garbageAtDepot + _garbageInTransit + _households.Sum(h => h.TrashUnits) ||
+             _garbageCollected != _garbageAtDepot + _garbageInTransit ||
+             _garbageInTransit != _people.Sum(p => p.SanitationCargo) || _treasury < 0))
             throw new InvalidOperationException("Municipal waste or city cash violated causal accounting");
         if (_config.FreightLabor && _shipments != _freightLaborTrips)
             throw new InvalidOperationException("A delivery was recorded without a real freight worker");
@@ -1520,7 +1522,7 @@ internal sealed partial class CausalCity : IDisposable
         Mix(_time); Mix(_active); Mix(_births); Mix(_deaths); Mix(_treasury); Mix(_reserveGlobal);
         Mix(_journeys); Mix(_segments); Mix(_sales); Mix(_shipments); Mix(_retailSalesCents);
         Mix(_municipalTaxPaidCents); Mix(_municipalWagesPaidCents);
-        Mix(_garbageGenerated); Mix(_garbageCollected); Mix(_garbageAtDepot); Mix(_sanitationPaidVisits);
+        Mix(_garbageGenerated); Mix(_garbageCollected); Mix(_garbageAtDepot); Mix(_sanitationPaidVisits); Mix(_garbageInTransit);
         foreach (var p in _people)
         {
             Mix(p.Id); Mix(p.Node); Mix(p.Job); Mix(p.Cash); Mix(p.Alive ? 1 : 0); Mix(p.HeadingToWork ? 1 : 0);
@@ -1633,6 +1635,7 @@ internal sealed partial class CausalCity : IDisposable
         totalWasteCreated = _garbageGenerated,
         totalWasteCollected = _garbageCollected,
         wasteStoredAtRealDepot = _garbageAtDepot,
+        wasteInTransitByRealWorkers = _garbageInTransit,
         householdsWithUncollectedWaste = _households.Count(h => h.TrashUnits > 0),
         municipalSanitationJobs = _people.Count(p => p.Alive && p.Job == SanitationJob),
         checkoutBasketTransactions = _shops.Sum(f => f.LifetimeRetailBaskets),
