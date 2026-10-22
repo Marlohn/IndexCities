@@ -6,6 +6,22 @@
 >
 > **Resposta condicional:** estudar um **motor C#/.NET modular, com um relógio autoritativo global e agenda causal; execução orientada a acontecimentos para vida/economia; e mobilidade híbrida que combina trajetórias válidas por intervalos com resolução física detalhada e compacta quando há conflitos.** A mobilidade densa e a integração causal são os maiores riscos. A escolha só se sustenta se testes representativos mostrarem ganho líquido, regras preservadas e custo viável de manutenção.
 
+## Decisão após E22 — 2026-10-22: ganho medido, equivalência reprovada
+
+O E22 já terminou suas investigações iniciais na [PR #51](https://github.com/Marlohn/IndexCities/pull/51). **Não tratá-lo mais como pendente.**
+
+- Em 400 SIMs, seed 42, **dia completo e sem o cenário adversarial**: controle **368,578 s**, despertar por dependências explícitas **247,940 s** (~32,7% mais rápido), filas agrupadas **253,524 s** (~31,2% mais rápido). Checkpoints da rodada coincidiram. [CI do dia](https://github.com/Marlohn/IndexCities/actions/runs/39812279777).
+- Na matriz adversarial com guincho realmente despachado, demolição de via com rota e mudança em cruzamento, **as duas alternativas divergiram do controle**. Primeiros instantes de divergência no segmento medido: seed 42, **1886 s** para ambas; seed 43, **1864 s (eventos) / 1866 s (fila)**; seed 44, **1868 s (eventos) / 2520 s (fila)**. [CI adversarial](https://github.com/Marlohn/IndexCities/actions/runs/39813229490). O workflow pode estar verde e o comparador `exactCheckpoints=False`; confiar nos dados, não na cor do workflow.
+- Portanto, **E22 é REPROVADO para integração ou adoção como modelo canônico**, apesar do ganho de CPU nos cenários favoráveis. O mecanismo por grupos ainda não constitui solver de física compacta independente.
+
+**Próximo experimento decisivo de trânsito (para a sessão que mantém a PR #51):** partir do **primeiro estado divergente** e produzir um traço causal pequeno (`off/events/queue`), mostrando o primeiro campo e fato alterado, veículo/obstáculo/interseção envolvido, inscrições existentes, invalidações que aconteceram e as que deveriam ter acontecido, ordem de commits e passo físico onde a diferença nasceu. Corrigir uma dependência concreta de cada vez e repetir a matriz adversarial *inteira* (incluindo guincho efetivamente despachado), um dia de 400 SIMs, múltiplas seeds e checkpoints intermediários. **Somente após equivalência comprovada medir desempenho da correção**, pois um sistema que acorda corretamente mais veículos pode perder parte do ganho. Não substituir essa auditoria por fallback global arbitrário sem medir seu custo.
+
+**Trabalho que pode continuar em paralelo no laboratório da [PR #53](https://github.com/Marlohn/IndexCities/pull/53):** ir além dos microtestes: construir ensaio de intervalo causal acoplado (vento → energia → água → produção/fome/saúde → morte/poluição), incluindo mudanças de rede e fontes com instante registrado; comparar oráculo passo a passo e primeiro desvio de efeitos, saldos e limiares. Os 24 hashes iguais do motor original e o microbenchmark isolado de fome **não** demonstram integração acelerada.
+
+**Porta de decisão:** nenhum dos dois braços deve autorizar migração da V1 ou proclamação da meta de 10k/80 anos. Primeiro comprovar correção adversarial do trânsito e redução integrada verificável do restante da cidade. Se E22 corrigido não tiver ganho significativo, confrontar novo solver compacto independente e contabilizar a inviabilidade onde aplicável.
+
+---
+
 ## Atualização da execução — 2026-10-22 (em revisão)
 
 - **Trânsito / outra sessão:** o [E21 na PR #51](https://github.com/Marlohn/IndexCities/pull/51) confirmou que ~89,2% do tempo instrumentado de `MoveVehicles` em um dia de 400 SIMs se concentrou em passagens de veículos que terminaram parados. **Essa percentagem NÃO é economia automaticamente aproveitável.** A outra sessão iniciou **E22**, comparando despertar por dependências versus solver de filas; **não duplicar aqui** e não antecipar resultado.
