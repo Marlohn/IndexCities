@@ -356,7 +356,8 @@ internal sealed partial class CausalCity : IDisposable
                     if (p.Health <= 0) Die(p);
                 }
                 if (!_config.DemandStaffing && p.Alive && Age(p, date) >= 18 && Age(p, date) < 70 &&
-                    (!_config.VacancyMarket || p.Job >= 0))
+                    (!_config.VacancyMarket ||
+                     (p.Job >= 0 && (day + p.Id) % 7 != 0)))
                 {
                     var startHour = _config.VacancyMarket && p.Job < StoreCount
                         ? (p.Id % 2 == 0 ? 10 : 14) : 8;
@@ -923,6 +924,14 @@ internal sealed partial class CausalCity : IDisposable
                 var employer = p.Job < StoreCount ? _shops[p.Job] : _farms[p.Job - StoreCount];
                 employer.PresentWorkers++;
             }
+            return;
+        }
+        if (_config.VacancyMarket && p.HeadingToWork)
+        {
+            // An employee delayed beyond the real shift cannot be treated as
+            // a customer merely because their worksite shares the store node.
+            p.HeadingToWork = false;
+            StartTrip(p, p.Home);
             return;
         }
         p.HeadingToWork = false;
