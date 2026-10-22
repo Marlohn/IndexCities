@@ -719,6 +719,8 @@ internal sealed partial class CausalCity : IDisposable
     {
         var p = _people[personId];
         if (!p.Alive || (_config.VacancyMarket && p.Job < 0)) return;
+        if (_config.FreightLabor && p.FreightShift)
+            return; // delivered a physical, already-paid freight shift
         if (p.Traveling || !p.AtWork)
         {
             // A worker who missed their shift must not block all other adults
@@ -840,7 +842,19 @@ internal sealed partial class CausalCity : IDisposable
             var amount = Math.Min(500, Math.Min(farm.Stock, Math.Max(0, 1000 - shop.Stock)));
             const int freightPrice = 35; // hypothetical delivery charge per truck trip
             var invoice = amount * WholesalePrice + freightPrice;
-            if (amount <= 0 || shop.Cash < invoice) continue;
+            if (amount <= 0 || shop.Cash < invoice || farm.Cash < 80) continue;
+            // The assigned worker is already physically at the real farm
+            // and performs paid loading + road delivery, not free overtime.
+            const int grossFreightWage = 80;
+            farm.Cash -= grossFreightWage;
+            _treasury += grossFreightWage / 10;
+            driver.Cash += grossFreightWage - grossFreightWage / 10;
+            driver.ContributedDays++;
+            driver.GrossEarnings += grossFreightWage;
+            _paidWages += grossFreightWage;
+            _workdays++;
+            _history.Fact(_time, driver.Id, 7, grossFreightWage - grossFreightWage / 10);
+            _history.Fact(_time, driver.Id, 15, grossFreightWage / 10);
             shop.Cash -= invoice;
             farm.Cash += invoice;
             shop.DaySupplies += invoice;
@@ -976,6 +990,13 @@ internal sealed partial class CausalCity : IDisposable
             StartTrip(p, p.Home); // cancelled shift; not a grocery purchase.
             return;
         }
+        if (_config.FreightLabor && p.FreightShift &&
+            p.FreightShopId < 0 && p.Node == workplace)
+        {
+            // Return from the physical delivery; no second paid farm shift.
+            StartTrip(p, p.Home);
+            return;
+        }
         var earliest = _config.VacancyMarket && p.Job < StoreCount
             ? (p.Id % 2 == 0 ? 11 : 14) * 3600 : 8 * 3600;
         var latest = _config.VacancyMarket && p.Job < StoreCount
@@ -1027,6 +1048,7 @@ internal sealed partial class CausalCity : IDisposable
         p.HeadingToWork = false;
         if (p.Node == p.Home)
         {
+            if (_config.FreightLabor) p.FreightShift = false;
             var h = _households[p.HouseholdId];
             h.Pantry = checked(h.Pantry + p.CarryFood);
             if (p.CarryFood > 0) _history.Fact(_time, p.Id, 4, p.CarryFood);
