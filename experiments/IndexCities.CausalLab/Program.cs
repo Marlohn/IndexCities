@@ -91,7 +91,7 @@ internal static class Program
         };
     }
 
-    private static double Wind(double elapsed, int seed)
+    private static double Wind(double elapsed, int seed = 42)
         => Math.Clamp(
             .55 + .25 * Math.Sin(elapsed / 21600 + seed) +
             .15 * Math.Sin(elapsed / 172800 + seed * .3),
