@@ -324,6 +324,69 @@ jobs:
           path: fair-basket-*.log
           if-no-files-found: ignore
 
+  municipal-sanitation-revenue-10y:
+    # A fully accounted city-financed wage circuit: real property taxes
+    # from operating stores/farms support people serving physical household
+    # waste collection shifts. No imaginary revenue, duties or agents.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[municipal-sanitation-10y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compare 10 years and two independent seeded city economies
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          for seed in 42 73; do
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=$seed --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 2>&1 | tee civic-baseline-$seed.log
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=$seed --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --municipal-sanitation-pilot 2>&1 | tee civic-sanitation-$seed.log
+          done
+          python3 - <<'PY'
+          import json
+          def get(path):
+              lines=open(path).readlines()
+              start=next(i for i,line in enumerate(lines) if line.startswith('{'))
+              return json.loads(''.join(lines[start:]))
+          ok=True
+          for seed in (42,73):
+              a,b=get(f'civic-baseline-{seed}.log'),get(f'civic-sanitation-{seed}.log')
+              for r in (a,b):
+                  assert r['simulatedDays']==3653 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+                  assert r['realWorkerFreightTrips'] > 0 and not r['fullIndexCitiesTargetValidated']
+              assert b['municipalSanitationPilotFixture'] and not a['municipalSanitationPilotFixture']
+              assert b['municipalTaxCollectedCents']>0 and b['municipalPaidCollections']>0
+              assert b['municipalSanitationWagesPaidCents']==80*b['municipalPaidCollections']
+              assert b['totalWasteCollected']>=b['wasteStoredAtRealDepot']>0
+              print('CITY_CIRCUIT_RESULT',seed,
+                    'baseline',a['aliveEnd'],'pilot',b['aliveEnd'],
+                    'min',b['minimumAliveAtAnyEvent'],
+                    'missedMeals',b['unmetMeals'],
+                    'realCityJobs',b['municipalSanitationJobs'],
+                    'cityPaidVisits',b['municipalPaidCollections'],
+                    'businessPropertyTaxes',b['municipalTaxCollectedCents'],
+                    'realMunicipalWages',b['municipalSanitationWagesPaidCents'],
+                    'wasteUnitsActuallyDelivered',b['wasteStoredAtRealDepot'],
+                    'personalMoney',b['personalCashCents'])
+              ok &= b['minimumAliveAtAnyEvent']>=10000
+          open('civic-sustained.flag','w').write('yes' if ok else 'no')
+          PY
+          if test "$(cat civic-sustained.flag)" = yes; then
+            echo 'Two seeds passed 10y, extending SAME city for eighty years, not proving full V1.'
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --municipal-sanitation-pilot 2>&1 | tee civic-sanitation-80y-no-history.log
+          fi
+      - name: Preserve every negative and positive result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: municipal-sanitation-tax-wage-matter-circuit
+          path: |
+            civic-baseline-*.log
+            civic-sanitation-*.log
+          if-no-files-found: ignore
+
   basket-throughput-sensitivity:
     # Single explicit parameter drives physical checkout slots, job demand
     # and price simultaneously. More checkouts do NOT manufacture employees.
