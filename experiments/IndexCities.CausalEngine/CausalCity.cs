@@ -8,7 +8,7 @@ namespace IndexCities.CausalEngine;
 
 // Independent vertical-slice engine for falsifying the architecture.
 // RULES AND FIXTURES HERE ARE NOT AN IMPLEMENTATION OF ALL OF INDEXCITIES SPEC.
-internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false);
+internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false);
 internal enum EventKind : byte { Day, Hour, StartWork, EndWork, Move, Delivery, RoadClose, RoadOpen, HouseholdShop }
 internal readonly record struct SimEvent(EventKind Kind, int Id);
 internal sealed class Person
@@ -281,7 +281,7 @@ internal sealed partial class CausalCity : IDisposable
         var day = _time / DaySeconds;
         _days++;
         var date = Epoch.AddDays(day);
-        if (_config.WageFeedback)
+        if (_config.WageFeedback && !_config.DemandStaffing)
         {
             // Hypothetical stress fixture, NOT a new IndexCities wage policy:
             // the prior day's net trading receipts are distributed through
@@ -290,6 +290,8 @@ internal sealed partial class CausalCity : IDisposable
             foreach (var shop in _shops) ResetDailyWage(shop, 65, shop.DayReceipts - shop.DaySupplies);
             foreach (var farm in _farms) ResetDailyWage(farm, 80, farm.DayReceipts);
         }
+        if (_config.DemandStaffing)
+            ScheduleDemandFundedShifts(date, day);
         // A fixture-specific, deterministic demographic policy. NOT an approved
         // IndexCities birth/death algorithm. Birth requires real adult carers,
         // a housing slot, water, pantry and existing household money.
@@ -342,7 +344,7 @@ internal sealed partial class CausalCity : IDisposable
                     p.Health -= 1;
                     if (p.Health <= 0) Die(p);
                 }
-                if (p.Alive && Age(p, date) >= 18 && Age(p, date) < 70)
+                if (!_config.DemandStaffing && p.Alive && Age(p, date) >= 18 && Age(p, date) < 70)
                 {
                     Schedule(_time + 8 * 3600, EventKind.StartWork, id);
                     Schedule(_time + 17 * 3600, EventKind.EndWork, id);
@@ -350,8 +352,8 @@ internal sealed partial class CausalCity : IDisposable
             }
             // A retired household cannot depend on a worker's EndWork event to
             // buy groceries. Its shopper still has to travel, pay and return.
-            if (h.Pantry < 30 && !h.Members.Any(id =>
-                _people[id].Alive && Age(_people[id], date) is >= 18 and < 70))
+            if (h.Pantry < 30 && (_config.DemandStaffing || !h.Members.Any(id =>
+                _people[id].Alive && Age(_people[id], date) is >= 18 and < 70)))
             {
                 var buyer = h.Members.FirstOrDefault(id =>
                     _people[id].Alive && Age(_people[id], date) >= 18, -1);
@@ -370,7 +372,7 @@ internal sealed partial class CausalCity : IDisposable
             // increases ONLY after the truck reaches the destination.
             shop.Cash -= count * WholesalePrice;
             farm.Cash += count * WholesalePrice;
-            if (_config.WageFeedback)
+            if (_config.WageFeedback || _config.DemandStaffing)
             {
                 shop.DaySupplies += count * WholesalePrice;
                 farm.DayReceipts += count * WholesalePrice;
@@ -424,6 +426,46 @@ internal sealed partial class CausalCity : IDisposable
 
         }
         if (_days < _config.Days) Schedule(_time + DaySeconds, EventKind.Day, 0);
+    }
+    private void ScheduleDemandFundedShifts(DateTime date, long day)
+    {
+        // Isolated counterfactual: only real previous-day customer receipts
+        // finance new shift offers. Wholesale is an expense to stores and
+        // genuine income to farms. No salaries, jobs or cash are created.
+        // This models shift allocations, not complete employment contracts.
+        Span<int> quotas = stackalloc int[StoreCount + FarmCount];
+        Span<int> used = stackalloc int[StoreCount + FarmCount];
+        for (var i = 0; i < quotas.Length; i++)
+        {
+            var farm = i >= StoreCount;
+            var employer = farm ? _farms[i - StoreCount] : _shops[i];
+            var revenue = employer.DayReceipts - (farm ? 0 : employer.DaySupplies);
+            var grossWage = farm ? 80 : 65;
+            // Up to 98% of realised net daily receipts finance new shifts.
+            // Positive buffers may subsidise only one trial shift, never
+            // unlimited workers. Minimum staff does not imply a sale.
+            var operatingBudget = Math.Max(0, revenue) * 98 / 100;
+            if (employer.Cash >= grossWage && operatingBudget < grossWage)
+                operatingBudget = grossWage;
+            quotas[i] = (int)Math.Min(operatingBudget / grossWage, employer.Cash / grossWage);
+            employer.DayReceipts = 0;
+            employer.DaySupplies = 0;
+            employer.DayPaidShifts = 0;
+        }
+        // Rotate physical people, not aggregate workers: years of identical
+        // offers to the first N workers would concentrate income by household.
+        var count = _people.Count;
+        if (count == 0) return;
+        var start = (int)((day * 37 + _config.Seed) % count);
+        for (var k = 0; k < count; k++)
+        {
+            var p = _people[(start + k) % count];
+            if (!p.Alive || Age(p, date) is < 18 or >= 70) continue;
+            if (used[p.Job] >= quotas[p.Job]) continue;
+            used[p.Job]++;
+            Schedule(_time + 8 * 3600, EventKind.StartWork, p.Id);
+            Schedule(_time + 17 * 3600, EventKind.EndWork, p.Id);
+        }
     }
     private bool TryBirth(Household h, DateTime date, long day)
     {
@@ -566,7 +608,8 @@ internal sealed partial class CausalCity : IDisposable
             _producedFood += food;
             _history.Fact(_time, p.Id, 8, food);
         }
-        var wage = _config.WageFeedback ? employer.WageForDay : (p.Job < StoreCount ? 65 : 80);
+        var wage = _config.WageFeedback && !_config.DemandStaffing
+            ? employer.WageForDay : (p.Job < StoreCount ? 65 : 80);
         if (employer.Cash >= wage)
         {
             employer.Cash -= wage;
@@ -577,7 +620,7 @@ internal sealed partial class CausalCity : IDisposable
             p.GrossEarnings += wage;
             _paidWages += wage;
             _workdays++;
-            if (_config.WageFeedback) employer.DayPaidShifts++;
+            if (_config.WageFeedback || _config.DemandStaffing) employer.DayPaidShifts++;
             _history.Fact(_time, p.Id, 7, wage - contribution);
             _history.Fact(_time, p.Id, 15, contribution);
         }
@@ -774,7 +817,7 @@ internal sealed partial class CausalCity : IDisposable
         {
             p.Cash -= buy * FoodPrice;
             shop.Cash += buy * FoodPrice;
-            if (_config.WageFeedback) shop.DayReceipts += buy * FoodPrice;
+            if (_config.WageFeedback || _config.DemandStaffing) shop.DayReceipts += buy * FoodPrice;
             shop.Stock -= buy;
             p.CarryFood += buy;
             _sales += buy;
@@ -882,6 +925,7 @@ internal sealed partial class CausalCity : IDisposable
         seed = _config.Seed,
         wageFeedbackFixture = _config.WageFeedback,
         cohortRenewalFixture = _config.CohortRenewal,
+        demandStaffingFixture = _config.DemandStaffing,
         requestedSims = _config.Sims,
         peopleEverCreated = _people.Count,
         aliveEnd = _active,
