@@ -232,6 +232,43 @@ internal static class EngineSelfTest
                     throw new InvalidOperationException("Real vacancy employment changed after checkpoint");
             }
             File.Delete(marketSave);
+            // In the physical-supplier-freight counterfactual, a real farm
+            // employee must leave the farm with real stock, travel to the shop,
+            // unload there, and receive exactly one salary from existing cash.
+            // Checkpoint both driver cargo and completed cash/food ledgers.
+            var freightCfg = new LabConfig(256, 60, 42, null, true,
+                VacancyMarket: true, FreightLabor: true);
+            var freightSave = temp + ".freight.save.json";
+            string freightHash;
+            long freightJourneys, freightCharges;
+            using (var fullFreight = new CausalCity(freightCfg))
+            {
+                fullFreight.Run();
+                fullFreight.AssertConservation();
+                freightHash = fullFreight.Fingerprint();
+                using var freightReport = JsonDocument.Parse(JsonSerializer.Serialize(fullFreight.Report(0)));
+                freightJourneys = freightReport.RootElement.GetProperty("realWorkerFreightTrips").GetInt64();
+                freightCharges = freightReport.RootElement.GetProperty("freightChargesPaidCents").GetInt64();
+                if (freightJourneys <= 0 || freightCharges != freightJourneys * 35 ||
+                    freightReport.RootElement.GetProperty("salesFoodUnits").GetInt64() <= 0)
+                    throw new InvalidOperationException("Freight delivery occurred without worker, real cash or stock");
+            }
+            using (var partialFreight = new CausalCity(freightCfg))
+            {
+                partialFreight.RunUntilDay(27);
+                partialFreight.SaveSnapshot(freightSave);
+            }
+            using (var continuedFreight = CausalCity.FromSnapshot(freightSave))
+            {
+                continuedFreight.Run();
+                continuedFreight.AssertConservation();
+                using var freightReport = JsonDocument.Parse(JsonSerializer.Serialize(continuedFreight.Report(0)));
+                if (freightHash != continuedFreight.Fingerprint() ||
+                    freightJourneys != freightReport.RootElement.GetProperty("realWorkerFreightTrips").GetInt64() ||
+                    freightCharges != freightReport.RootElement.GetProperty("freightChargesPaidCents").GetInt64())
+                    throw new InvalidOperationException("Physical cargo/driver/payroll changed after save/resume");
+            }
+            File.Delete(freightSave);
             // Small closed-household stress case: when the final family
             // member dies, a positive estate must NOT finance city pensions.
             long unclaimedEstate;
@@ -254,6 +291,7 @@ internal static class EngineSelfTest
                 demandFundedShiftsConserved = demandWages > 0,
                 demandStaffingSaveResumeExact = true,
                 realVacancyMarketSaveResumeExact = true, marketEmployed, marketUnemployed,
+                realFreightSaveResumeExact = true, freightJourneys, freightCharges,
                 saveResumeExact = resumedHash == hashA,
                 compressedHistoryReplayExact = reopened == facts,
                 journeys, sales, births, successorPurchases, retiredPurchases, historyFacts = facts,
@@ -271,7 +309,7 @@ internal static class EngineSelfTest
         }
         finally
         {
-            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json" })
+            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json" })
                 if (File.Exists(path)) File.Delete(path);
         }
     }
