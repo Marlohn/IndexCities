@@ -1,0 +1,137 @@
+name: IndexCities Causal Lab Autoloop
+
+# workflow_run requires this YAML on the default branch. Only this workflow
+# has write access, and it NEVER pushes to main or merges a PR.
+on:
+  workflow_run:
+    workflows: ["IndexCities Causal Lab CI"]
+    types: [completed]
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/causal-lab-loop.yml
+      - .github/workflows/causal-lab-ci.yml
+  schedule:
+    - cron: '17 11 * * *'
+
+concurrency:
+  group: indexcities-causal-lab-orchestrator
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    if: github.repository == 'Marlohn/IndexCities'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    outputs:
+      proceed: ${{ steps.gate.outputs.proceed }}
+      previous: ${{ steps.gate.outputs.previous }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Authorize one experiment and cap daily costs
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HAS_API_KEY: ${{ secrets.OPENAI_API_KEY != '' }}
+        run: python3 .github/scripts/causal_lab_gate.py
+
+  agent:
+    needs: gate
+    if: needs.gate.outputs.proceed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    permissions:
+      contents: write
+      actions: write
+      issues: write
+      pull-requests: read
+    env:
+      LAB_BRANCH: experimento/laboratorio-causal-10k
+      PREVIOUS_CI: ${{ needs.gate.outputs.previous }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Load one isolated laboratory and the last CI evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          if git ls-remote --exit-code --heads origin "$LAB_BRANCH" >/dev/null 2>&1; then
+            git fetch origin "refs/heads/$LAB_BRANCH"
+            git switch -C causal-lab FETCH_HEAD
+          else
+            git switch -c causal-lab origin/main
+          fi
+          mkdir -p .autolab-input
+          if [[ -n "$PREVIOUS_CI" ]]; then
+            gh run view "$PREVIOUS_CI" --repo "$GITHUB_REPOSITORY" --log 2>&1 \
+              | tail -n 700 > .autolab-input/last-ci.log || true
+          fi
+          if [[ ! -s .autolab-input/last-ci.log ]]; then
+            printf 'No previous CI log. Initialize the independent CausalLab.\n' > .autolab-input/last-ci.log
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/pulls/52" --jq '.body' \
+            > .autolab-input/pr52-context.txt
+      - name: Improve the lab toward 10k simultaneous SIMs x 80 Gregorian years
+        id: codex
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          permission-profile: ':workspace'
+          prompt-file: .github/causal-lab-agent.md
+          output-file: .autolab-input/agent-output.txt
+      - name: Validate modifications and push ONLY isolated experiment branch
+        id: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .autolab-input
+          mapfile -d '' changed < <(
+            { git diff --name-only -z HEAD; git ls-files --others --exclude-standard -z; } | sort -zu
+          )
+          if (( ${#changed[@]} == 0 )); then
+            echo 'No code changes; pause the loop instead of burning CI minutes.'
+            echo 'published=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          for path in "${changed[@]}"; do
+            case "$path" in
+              experiments/IndexCities.CausalLab/*) ;;
+              *) echo "::error::Forbidden edit outside standalone lab: $path"; exit 1 ;;
+            esac
+          done
+          git reset -q HEAD
+          git add -A -- experiments/IndexCities.CausalLab
+          git config user.name 'IndexCities Experiment Bot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'experiment: advance isolated 10k/80y CausalLab'
+          BASIC=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $BASIC" \
+            push origin HEAD:"refs/heads/$LAB_BRANCH"
+          echo 'published=true' >> "$GITHUB_OUTPUT"
+      - name: Launch isolated CI (completion triggers next agent run)
+        if: steps.publish.outputs.published == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh workflow run causal-lab-ci.yml --repo "$GITHUB_REPOSITORY" --ref main
+          echo 'Dispatched CausalLab CI; its completion triggers the next loop.'
