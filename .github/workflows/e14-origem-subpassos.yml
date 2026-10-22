@@ -1,0 +1,67 @@
+name: E14 - origem e ablação dos subpassos de trânsito
+
+on:
+  push:
+    branches:
+      - experimento/e14-origem-subpassos
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Contrato vigente da simulação
+        run: dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --logger 'console;verbosity=minimal'
+  experiment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 32
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Testar causas e remoção experimental de eventos
+        shell: bash
+        run: |
+          set -euo pipefail
+          run_case() {
+            local label="$1" rows="$2" length="$3"
+            for mode in off observe drop; do
+              echo "E14_MODE $label $mode"
+              dotnet run -c Release --project src/IndexCities.Headless -- scale grid --rows="$rows" --length="$length" --seed=42 --warmup=1 --days=1 --cap=1100 --e14="$mode" --e14-checkpoints=1 | tee "e14_${label}_${mode}.txt"
+              grep -q 'INVARIANTS OK' "e14_${label}_${mode}.txt"
+            done
+            local a b c
+            a=$(grep -o 'sha256=[0-9A-F]*' "e14_${label}_off.txt"|tail -1)
+            b=$(grep -o 'sha256=[0-9A-F]*' "e14_${label}_observe.txt"|tail -1)
+            c=$(grep -o 'sha256=[0-9A-F]*' "e14_${label}_drop.txt"|tail -1)
+            echo "E14_COMPARE $label off=$a observe=$b drop=$c"
+            test -n "$a" && test "$a" = "$b" || { echo "E14_DIAGNOSTIC_DIVERGED"; exit 1; }
+            diff -u <(grep '^E14_CHECKPOINT' "e14_${label}_off.txt") <(grep '^E14_CHECKPOINT' "e14_${label}_observe.txt")
+            if diff -u <(grep '^E14_CHECKPOINT' "e14_${label}_off.txt") <(grep '^E14_CHECKPOINT' "e14_${label}_drop.txt") > "e14_${label}_divergence.diff"; then
+              echo "E14_ABLATION sameHourlyCheckpoints=YES (NOT a causal proof)"
+            else
+              echo "E14_ABLATION sameHourlyCheckpoints=NO (unconditional forecast removal UNSAFE)"
+              head -30 "e14_${label}_divergence.diff"
+            fi
+            grep '^E14_RESULT' "e14_${label}_observe.txt"
+            grep '^E14_RESULT' "e14_${label}_drop.txt"
+          }
+          run_case small 3 400
+          run_case medium 5 800
+      - name: Preservar evidencia
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e14-substeps-attribution
+          path: |
+            e14_*.txt
+            e14_*.diff
+          if-no-files-found: ignore
