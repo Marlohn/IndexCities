@@ -1,0 +1,64 @@
+name: E19 - agenda temporal de veiculos (prototipo falsificavel)
+
+on:
+  push:
+    branches:
+      - experimento/e19-agenda-causal-transito
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Contrato vigente do simulation core
+        run: dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --logger 'console;verbosity=minimal'
+
+  benchmark:
+    name: ${{ matrix.label }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: 108-day
+            rows: 3
+            length: 400
+            seconds: 86400
+          - label: 400-day
+            rows: 5
+            length: 800
+            seconds: 86400
+          - label: 1000-peak-window
+            rows: 7
+            length: 1500
+            seconds: 900
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Mesmo estado inicial — original, agenda e agenda com oraculo
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet run -c Release --project src/IndexCities.Headless -- scale grid \
+            --rows=${{ matrix.rows }} --length=${{ matrix.length }} \
+            --seed=42 --warmup=1 --e19=compare --e19-window=${{ matrix.seconds }} \
+            | tee "e19_${{ matrix.label }}.txt"
+          grep -q '^E19_COMPARE mode=verify sameCheckpoints=True' "e19_${{ matrix.label }}.txt"
+          grep -q '^E19_RESULT ' "e19_${{ matrix.label }}.txt"
+          grep '^E19_COMPARE' "e19_${{ matrix.label }}.txt"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e19-${{ matrix.label }}
+          path: e19_*.txt
+          if-no-files-found: ignore
