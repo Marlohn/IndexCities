@@ -282,6 +282,37 @@ jobs:
           path: economic-second-cycle-10y.log
           if-no-files-found: ignore
 
+  demographic-ceiling-80y:
+    # An intentionally permissive mathematical bound, NOT population survival.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[cohort-bound-80y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Bound 80-year age/carer/household renewal independently of money
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --demographic-upper-bound | tee demographic-ceiling.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('demographic-ceiling.json'))
+          assert d['status']=='DEMOGRAPHIC_THEORETICAL_UPPER_BOUND_ONLY'
+          assert d['years']==80 and d['days']==29220
+          assert d['rotatingFixtureUpperBound']['demographicOnly']
+          assert not d['rotatingFixtureUpperBound']['physicallyAndEconomicallyValid']
+          assert d['rotatingFixtureUpperBound']['births']>0
+          PY
+      - name: Preserve 80-year theoretical ceiling
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-demographic-ceiling
+          path: demographic-ceiling.json
+          if-no-files-found: ignore
+
   household-hiring-3y:
     # A/B diagnostic against the prior identical three-year integrated scenario.
     # Job counts, product, cash and food are never manufactured for this test.
