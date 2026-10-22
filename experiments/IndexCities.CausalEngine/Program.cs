@@ -36,7 +36,7 @@ internal static class Program
             }
             int sims = 1000, days = 7, seed = 42, annualLoadCycles = 0;
             string? history = null;
-            bool adversarial = false, wageFeedback = false, cohortRenewal = false, demandStaffing = false, vacancyMarket = false, freightLabor = false, constructionPilot = false, fairHouseholdHiring = false, demographicUpperBound = false;
+            bool adversarial = false, wageFeedback = false, cohortRenewal = false, demandStaffing = false, vacancyMarket = false, freightLabor = false, constructionPilot = false, fairHouseholdHiring = false, demographicUpperBound = false, costBasedFoodPrice = false;
             foreach (var arg in args)
             {
                 if (arg.StartsWith("--sims=")) sims = int.Parse(arg[7..]);
@@ -53,6 +53,7 @@ internal static class Program
                 else if (arg == "--construction-pilot") constructionPilot = true;
                 else if (arg == "--fair-household-hiring") fairHouseholdHiring = true;
                 else if (arg == "--demographic-upper-bound") demographicUpperBound = true;
+                else if (arg == "--cost-based-food-price") costBasedFoodPrice = true;
                 else if (arg == "--self-test") return EngineSelfTest.Run();
                 else throw new ArgumentException("Unknown argument: " + arg);
             }
@@ -63,6 +64,8 @@ internal static class Program
             }
             if (sims < 4 || sims > 100_000 || days < 1 || days > 29_220)
                 throw new ArgumentOutOfRangeException("Requires 4..100000 SIMs and 1..29220 days.");
+            if (costBasedFoodPrice && !vacancyMarket)
+                throw new ArgumentException("Cost-based food pricing requires --vacancy-market");
             if (fairHouseholdHiring && !vacancyMarket)
                 throw new ArgumentException("Fair household hiring is only for --vacancy-market");
             if (constructionPilot && !vacancyMarket)
@@ -79,7 +82,7 @@ internal static class Program
             if (annualLoadCycles != 0)
             {
                 if (annualLoadCycles < 1 || annualLoadCycles > 80 ||
-                    history is not null || wageFeedback || cohortRenewal || demandStaffing || vacancyMarket || freightLabor || constructionPilot || fairHouseholdHiring || days != 7)
+                    history is not null || wageFeedback || cohortRenewal || demandStaffing || vacancyMarket || freightLabor || constructionPilot || fairHouseholdHiring || costBasedFoodPrice || days != 7)
                     throw new ArgumentException(
                         "Annual workload mode requires 1..80 cycles, no --days, history, or gameplay counterfactuals");
                 var watch = Stopwatch.StartNew();
@@ -123,7 +126,7 @@ internal static class Program
                 }, new JsonSerializerOptions { WriteIndented = true }));
                 return 0;
             }
-            var config = new LabConfig(sims, days, seed, history, adversarial, wageFeedback, cohortRenewal, demandStaffing, vacancyMarket, freightLabor, constructionPilot, fairHouseholdHiring);
+            var config = new LabConfig(sims, days, seed, history, adversarial, wageFeedback, cohortRenewal, demandStaffing, vacancyMarket, freightLabor, constructionPilot, fairHouseholdHiring, costBasedFoodPrice);
             using var engine = new CausalCity(config);
             var sw = Stopwatch.StartNew();
             engine.Run();
