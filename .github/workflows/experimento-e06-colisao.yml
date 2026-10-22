@@ -1,0 +1,61 @@
+name: E06 - colisao sem alocacao (comparacao causal)
+
+on:
+  push:
+    branches:
+      - experimento/e06-colisao-sem-alocacao
+
+permissions:
+  contents: read
+
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout candidato E06
+        uses: actions/checkout@v4
+        with:
+          path: candidato
+      - name: Checkout baseline imutavel
+        uses: actions/checkout@v4
+        with:
+          ref: 651326228729d7689b61745370cc63d997e5ee60
+          path: referencia
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Teste numerico exato de penetracao
+        run: dotnet test candidato/tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --filter FullyQualifiedName~CollisionAxisEquivalenceTests --logger 'console;verbosity=normal'
+      - name: Suite inteira
+        run: dotnet test candidato/tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --logger 'console;verbosity=minimal'
+      - name: Comparacao de dias completos e saves
+        shell: bash
+        run: |
+          set -euo pipefail
+          compare() {
+            local tag="$1"; shift
+            echo "===== REFERENCIA ${tag} ====="
+            dotnet run -c Release --project referencia/src/IndexCities.Headless -- scale "$@" | tee "antes_${tag}.txt"
+            echo "===== CANDIDATO ${tag} ====="
+            dotnet run -c Release --project candidato/src/IndexCities.Headless -- scale "$@" | tee "depois_${tag}.txt"
+            local old new
+            old=$(grep -o 'sha256=[0-9A-F]*' "antes_${tag}.txt" | tail -1 | cut -d= -f2)
+            new=$(grep -o 'sha256=[0-9A-F]*' "depois_${tag}.txt" | tail -1 | cut -d= -f2)
+            echo "RESULTADO ${tag} antes_sha=$old depois_sha=$new"
+            grep -E '^(DAY 1|SUMMARY|INVARIANTS OK)' "antes_${tag}.txt"
+            grep -E '^(DAY 1|SUMMARY|INVARIANTS OK)' "depois_${tag}.txt"
+            test -n "$old" && test "$old" = "$new" || { echo "ERRO: estado divergente em ${tag}"; exit 1; }
+          }
+          compare pequeno42 cycle --seed=42 --warmup=1 --days=1 --cap=360
+          compare medio42 grid --rows=3 --length=400 --seed=42 --warmup=1 --days=1 --cap=360
+          compare grande42 grid --rows=5 --length=800 --seed=42 --warmup=0 --days=1 --cap=360
+      - name: Guardar logs de evidencia
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e06-comparacao-colisao
+          path: |
+            antes_*.txt
+            depois_*.txt
+          if-no-files-found: ignore
