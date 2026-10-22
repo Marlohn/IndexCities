@@ -453,7 +453,7 @@ internal sealed partial class CausalCity : IDisposable
             var hungryWithStockAndFunds = _households.Count(h => h.Pantry == 0 &&
                 h.Members.Where(id => _people[id].Alive).Sum(id => _people[id].Cash) >= FoodPrice &&
                 _shops[(h.Home + 1) % Nodes].Stock > 0);
-            Console.Error.WriteLine($"LAB_INCOME day={_days} earningHomes={incomeHouseholds} occupiedHomes={occupiedHomes} employed={_people.Count(p => p.Alive && p.Job>=0)} hungryWithStockAndFunds={hungryWithStockAndFunds} foodSpendNeededDailyCents={_active * FoodPrice} wagePaidCumulativeCents={_paidWages} realFoodSalesCumulativeCents={_sales}");
+            Console.Error.WriteLine($"LAB_INCOME day={_days} earningHomes={incomeHouseholds} occupiedHomes={occupiedHomes} employed={_people.Count(p => p.Alive && p.Job>=0)} hungryWithStockAndFunds={hungryWithStockAndFunds} foodSpendNeededDailyCents={_active * (_config.CostBasedFoodPrice ? _shops.Average(f=>f.RetailUnitPriceCents) : FoodPrice):F0} wagePaidCumulativeCents={_paidWages} actualRetailSalesCents={_retailSalesCents} realFoodSalesCumulativeUnits={_sales}");
             Console.Error.WriteLine($"LAB_CAUSE day={_days} children={childCount} adults={adultCount} retired={olderCount} childOnlyHomes={childOnlyHomes} livedInEmptyPantries={inhabitedEmptyPantries} emptyWithFunds={emptyWithFunds} hungryEmptyStore={hungryWithEmptyStore} hungryStockAndFunds={hungryWithStockAndFunds} shopsNoStock={_shops.Count(f=>f.Stock==0)} shopsNoCash={_shops.Count(f=>f.Cash<WholesalePrice*32)} shopFood={_shops.Sum(f=>f.Stock)} farmFood={_farms.Sum(f=>f.Stock)} eligibleCarerHomes={_households.Count(h=>h.Members.Count<16 && h.Members.Count(id=>_people[id].Alive&&Age(_people[id],date) is >=18 and <60)>=2)}");
             // Bounded ten-year trace for families who can pay and whose local
             // store has food, yet their household inventory is empty.
@@ -498,7 +498,6 @@ internal sealed partial class CausalCity : IDisposable
             var farm = i >= StoreCount;
             var firm = farm ? _farms[i - StoreCount] : _shops[i];
             // A variable price makes revenue/old-fixed-price a false volume estimate.
-            var unitPrice = farm ? WholesalePrice : (_config.CostBasedFoodPrice ? firm.RetailUnitPriceCents : FoodPrice);
             var monthlyUnits = farm ? firm.DayReceipts / WholesalePrice :
                 (_config.CostBasedFoodPrice ? firm.MonthRetailSalesUnits : firm.DayReceipts / FoodPrice);
             if (_config.CostBasedFoodPrice && !farm && firm.MonthRetailSalesUnits > 0)
@@ -1169,7 +1168,7 @@ internal sealed partial class CausalCity : IDisposable
             shop.Cash += paid;
             _retailSalesCents = checked(_retailSalesCents + paid);
             if (_config.CostBasedFoodPrice) shop.MonthRetailSalesUnits += buy;
-            if (_config.WageFeedback || _config.DemandStaffing || _config.VacancyMarket) shop.DayReceipts += buy * FoodPrice;
+            if (_config.WageFeedback || _config.DemandStaffing || _config.VacancyMarket) shop.DayReceipts += paid;
             shop.Stock -= buy;
             p.CarryFood += buy;
             _sales += buy;
@@ -1269,7 +1268,7 @@ internal sealed partial class CausalCity : IDisposable
         ulong hash = 14695981039346656037UL;
         void Mix(long x) { hash ^= unchecked((ulong)x); hash *= 1099511628211UL; }
         Mix(_time); Mix(_active); Mix(_births); Mix(_deaths); Mix(_treasury); Mix(_reserveGlobal);
-        Mix(_journeys); Mix(_segments); Mix(_sales); Mix(_shipments);
+        Mix(_journeys); Mix(_segments); Mix(_sales); Mix(_shipments); Mix(_retailSalesCents);
         foreach (var p in _people)
         {
             Mix(p.Id); Mix(p.Node); Mix(p.Job); Mix(p.Cash); Mix(p.Alive ? 1 : 0); Mix(p.HeadingToWork ? 1 : 0);
@@ -1280,7 +1279,7 @@ internal sealed partial class CausalCity : IDisposable
             Mix(p.ContributedDays); Mix(p.GrossEarnings); Mix(p.PensionCredit); Mix(p.PensionReceived);
         }
         foreach (var h in _households) { Mix(h.Pantry); Mix(h.Members.Count); Mix(h.LastBirthDay); Mix(h.LastShoppingDepartureDay); }
-        foreach (var f in _shops) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); }
+        foreach (var f in _shops) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); Mix(f.MonthRetailSalesUnits); Mix(f.MonthRetailPaidWagesCents); Mix(f.RetailUnitPriceCents); }
         foreach (var f in _farms) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); }
         Mix(_builder.Cash); Mix(_builder.OfferedPositions); Mix(_builder.PresentWorkers);
         Mix(_outsideTimber); Mix(_constructionStarted); Mix(_constructionFinished); Mix(_constructionPaidShifts);
