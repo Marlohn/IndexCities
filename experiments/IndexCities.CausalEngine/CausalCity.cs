@@ -404,6 +404,24 @@ internal sealed partial class CausalCity : IDisposable
                 h.Members.Where(id => _people[id].Alive).Sum(id => _people[id].Cash) >= FoodPrice &&
                 _shops[(h.Home + 1) % Nodes].Stock > 0);
             Console.Error.WriteLine($"LAB_CAUSE day={_days} children={childCount} adults={adultCount} retired={olderCount} childOnlyHomes={childOnlyHomes} livedInEmptyPantries={inhabitedEmptyPantries} emptyWithFunds={emptyWithFunds} hungryEmptyStore={hungryWithEmptyStore} hungryStockAndFunds={hungryWithStockAndFunds} shopsNoStock={_shops.Count(f=>f.Stock==0)} shopsNoCash={_shops.Count(f=>f.Cash<WholesalePrice*32)} shopFood={_shops.Sum(f=>f.Stock)} farmFood={_farms.Sum(f=>f.Stock)} eligibleCarerHomes={_households.Count(h=>h.Members.Count<16 && h.Members.Count(id=>_people[id].Alive&&Age(_people[id],date) is >=18 and <60)>=2)}");
+            // Bounded ten-year trace for families who can pay and whose local
+            // store has food, yet their household inventory is empty.
+            if (_days == 3650)
+            {
+                foreach (var h in _households.Where(h => h.Pantry == 0 &&
+                    h.Members.Where(id => _people[id].Alive).Sum(id => _people[id].Cash) >= FoodPrice &&
+                    _shops[(h.Home + 1) % Nodes].Stock > 0).Take(16))
+                {
+                    var members = h.Members.Where(id => _people[id].Alive).Select(id =>
+                    {
+                        var p = _people[id];
+                        var t = p.TripId < 0 ? null : _trips[p.TripId];
+                        return $"{id}:a{Age(p,date)}:c{p.Cash}:at{p.AtWork}:travel{p.Traveling}:node{p.Node}:to{t?.Destination ?? -1}:exit{t?.ExitAt ?? -1}";
+                    });
+                    Console.Error.WriteLine($"LAB_HUNGRY_FAMILY id={h.Id} home={h.Home} lastShopDay={h.LastShoppingDepartureDay} shopStock={_shops[(h.Home + 1) % Nodes].Stock} members=[{string.Join(';', members)}]");
+                }
+            }
+
         }
         if (_days < _config.Days) Schedule(_time + DaySeconds, EventKind.Day, 0);
     }
