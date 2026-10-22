@@ -1139,6 +1139,10 @@ internal sealed partial class CausalCity : IDisposable
         householdsWithNoPantry = _households.Count(h => h.Pantry == 0),
         shopFoodAvailable = _shops.Sum(s => (long)s.Stock),
         farmFoodAvailable = _farms.Sum(f => (long)f.Stock),
+        shopsWithFoodAtEnd = _shops.Count(s => s.Stock > 0),
+        farmsWithFoodAtEnd = _farms.Count(f => f.Stock > 0),
+        occupiedHouseholdsWithNoFood = _households.Count(h => h.Pantry == 0 &&
+            h.Members.Any(id => _people[id].Alive)),
         producedFoodUnits = _producedFood, eatenFoodUnits = _eatenFood,
         foodConserved = CalculateFood() == _initialFood + _producedFood - _eatenFood,
         workingDays = _workdays, births = _births, deaths = _deaths,
