@@ -8,6 +8,7 @@ public sealed partial class CitySimulation
     public bool E15Enable {get;set;}
     public int E15VerifyEvery {get;set;}
     long _e15Calls,_e15Eligible,_e15Hits,_e15Misses,_e15Closure,_e15Verified;
+    bool _e15Bypass;
     readonly Dictionary<Vehicle,E15Entry> _e15Geometry=new();
 
     sealed class E15Entry
