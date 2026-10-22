@@ -25,8 +25,17 @@ internal static class EngineSelfTest
                     throw new InvalidOperationException("Self-test fixture inactive or inconsistent");
             }
             var bytes = new FileInfo(temp).Length;
-            if (bytes != facts * 21)
-                throw new InvalidOperationException($"History lost facts: {bytes} != {facts} * 21");
+            long readFacts = 0, previousAt = -1, meals = 0, trips = 0;
+            foreach (var fact in HistorySink.Read(temp))
+            {
+                if (fact.At < previousAt) throw new InvalidOperationException("History out of order");
+                previousAt = fact.At;
+                if (fact.Type == 3) meals++;
+                if (fact.Type == 2) trips++;
+                readFacts++;
+            }
+            if (readFacts != facts || trips <= 0 || meals <= 0 || bytes >= facts * 21)
+                throw new InvalidOperationException($"Corrupt compact factual history: read={readFacts}, expected={facts}, bytes={bytes}");
             using (var b = new CausalCity(new LabConfig(256, 14, 42, null, true)))
             {
                 b.Run();
@@ -41,7 +50,8 @@ internal static class EngineSelfTest
                 success = true, scope = "14 days, 256 people, real trips and transactions in simplified fixture",
                 worlds = 2, deterministic = true, hash = hashA,
                 journeys, sales, births, historyFacts = facts,
-                historyBytes = bytes, historyFullyPersisted = bytes == facts * 21,
+                historyBytes = bytes, historyFullyPersisted = readFacts == facts,
+                originalByteEquivalent = facts * 21, compressionWithoutGzip = (double)bytes / (facts * 21),
                 elapsedSeconds = watch.Elapsed.TotalSeconds,
                 warning = "Does NOT prove IndexCities SPEC fidelity or target 10k/80y"
             }, new JsonSerializerOptions { WriteIndented = true }));
