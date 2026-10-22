@@ -282,6 +282,38 @@ jobs:
           path: economic-second-cycle-10y.log
           if-no-files-found: ignore
 
+  household-hiring-3y:
+    # A/B diagnostic against the prior identical three-year integrated scenario.
+    # Job counts, product, cash and food are never manufactured for this test.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[distribution-3y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Test household-first access to the SAME real funded vacancies
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=1096 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --fair-household-hiring 2>&1 | tee household-hiring-3y.log
+          python3 - <<'PY'
+          import json
+          lines=open('household-hiring-3y.log').readlines()
+          start=next(i for i,line in enumerate(lines) if line.startswith('{'))
+          r=json.loads(''.join(lines[start:]))
+          assert r['simulatedDays']==1096 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+          assert r['fairHouseholdHiringFixture'] and r['freightLaborFixture'] and r['constructionPilotFixture']
+          print('HOUSEHOLD_FAIRNESS_3Y', r['aliveEnd'], r['minimumAliveAtDayBoundary'], r['unmetMeals'], r['householdsWithEmployedAdults'])
+          PY
+      - name: Keep diagnostic whether population survives or not
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-household-hiring-3y
+          path: household-hiring-3y.log
+          if-no-files-found: ignore
+
   construction-pilot-1y:
     # Separate isolated site + real payroll + finite outside materials;
     # no new gameplay rule and no full city construction coverage.
