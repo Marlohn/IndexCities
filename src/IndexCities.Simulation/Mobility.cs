@@ -222,6 +222,11 @@ public sealed partial class CitySimulation
         // key is a total order and any sort yields the same sequence.
         var ordered=State.Vehicles.ToArray();Array.Sort(ordered,static (a,b)=>a.WaitingSince.CompareTo(b.WaitingSince) is var c and not 0?c:a.Id.CompareTo(b.Id));
         foreach(var v in ordered){
+            // Batch mode: a queue was validated once as a group, so a stable
+            // member needs no individual physics-body evaluation this slice.
+            // Earlier vehicle commits can revoke membership before this turn.
+            if(E22Mode=="queue"&&operationsDt==null&&_vehicleMovementBatch!=null
+               &&_e22BatchSkip.Contains(v.Id)){_e22Skipped++;continue;}
             var e22Track=E22Enabled&&(v.Status==VehicleStatus.Travelling||_e22Followers.ContainsKey(v.Id)||_e22Queues.ContainsKey(v.Id));
             var e22Before=e22Track?E22State(v):default;
             try{
@@ -246,7 +251,7 @@ public sealed partial class CitySimulation
                 if(v.Route.Count==0||v.Route.Any(id=>!_roads.ContainsKey(id))){v.Status=VehicleStatus.Waiting;v.Cause="Rota interrompida; aguarda ligação viária";continue;}
                 _vehicleMovementBatch?.Add(v.Id);
             }else if(!_vehicleMovementBatch.Contains(v.Id)||v.Status!=VehicleStatus.Travelling)continue;
-            if(E22CanSleep(v))continue;
+            if(E22Mode=="events"&&E22CanSleep(v))continue;
             if(E22Enabled)_e22OriginalPhysicalVisits++;
             var remaining=dt;
             while(remaining>.000001&&v.Status==VehicleStatus.Travelling){
