@@ -36,7 +36,7 @@ internal static class Program
             }
             int sims = 1000, days = 7, seed = 42, annualLoadCycles = 0;
             string? history = null;
-            bool adversarial = false, wageFeedback = false, cohortRenewal = false, demandStaffing = false;
+            bool adversarial = false, wageFeedback = false, cohortRenewal = false, demandStaffing = false, vacancyMarket = false;
             foreach (var arg in args)
             {
                 if (arg.StartsWith("--sims=")) sims = int.Parse(arg[7..]);
@@ -48,11 +48,15 @@ internal static class Program
                 else if (arg == "--wage-feedback") wageFeedback = true;
                 else if (arg == "--cohort-renewal") cohortRenewal = true;
                 else if (arg == "--demand-staffing") demandStaffing = true;
+                else if (arg == "--vacancy-market") vacancyMarket = true;
                 else if (arg == "--self-test") return EngineSelfTest.Run();
                 else throw new ArgumentException("Unknown argument: " + arg);
             }
             if (sims < 4 || sims > 100_000 || days < 1 || days > 29_220)
                 throw new ArgumentOutOfRangeException("Requires 4..100000 SIMs and 1..29220 days.");
+            if (vacancyMarket && (demandStaffing || wageFeedback))
+                throw new ArgumentException(
+                    "Vacancy market requires its own payroll policy, not the two earlier wage counterfactuals");
             // Isolate computational feasibility from the pathological finances
             // and demography of the incomplete laboratory economy. This is a
             // repeatable *load benchmark*, emphatically NOT 80 continuous
@@ -60,7 +64,7 @@ internal static class Program
             if (annualLoadCycles != 0)
             {
                 if (annualLoadCycles < 1 || annualLoadCycles > 80 ||
-                    history is not null || wageFeedback || cohortRenewal || demandStaffing || days != 7)
+                    history is not null || wageFeedback || cohortRenewal || demandStaffing || vacancyMarket || days != 7)
                     throw new ArgumentException(
                         "Annual workload mode requires 1..80 cycles, no --days, history, or gameplay counterfactuals");
                 var watch = Stopwatch.StartNew();
@@ -104,7 +108,7 @@ internal static class Program
                 }, new JsonSerializerOptions { WriteIndented = true }));
                 return 0;
             }
-            var config = new LabConfig(sims, days, seed, history, adversarial, wageFeedback, cohortRenewal, demandStaffing);
+            var config = new LabConfig(sims, days, seed, history, adversarial, wageFeedback, cohortRenewal, demandStaffing, vacancyMarket);
             using var engine = new CausalCity(config);
             var sw = Stopwatch.StartNew();
             engine.Run();
