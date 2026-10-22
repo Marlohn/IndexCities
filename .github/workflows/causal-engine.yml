@@ -282,6 +282,58 @@ jobs:
           path: economic-second-cycle-10y.log
           if-no-files-found: ignore
 
+  cost-priced-market-10y:
+    # Compare the exact same city with current fixed price and transparent
+    # paid-payroll + wholesale-cost retail prices. Not a SPEC acceptance.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[cost-price-10y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Run paired 3-year and 10-year city counterfactuals
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=1096 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot 2>&1 | tee fixed-price-3y.log
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=1096 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --cost-based-food-price 2>&1 | tee cost-priced-3y.log
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --cost-based-food-price 2>&1 | tee cost-priced-10y.log
+          python3 - <<'PY'
+          import json
+          def load(path):
+              lines=open(path).readlines()
+              start=next(i for i,line in enumerate(lines) if line.startswith('{'))
+              return json.loads(''.join(lines[start:]))
+          fixed, trial, decade=map(load, ['fixed-price-3y.log','cost-priced-3y.log','cost-priced-10y.log'])
+          for r in (fixed,trial,decade):
+              assert r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+              assert r['vacancyMarketFixture'] and r['freightLaborFixture'] and r['constructionPilotFixture']
+              assert r['fullIndexCitiesTargetValidated'] is False
+          assert fixed['simulatedDays']==trial['simulatedDays']==1096
+          assert decade['simulatedDays']==3653
+          assert not fixed['costBasedFoodPriceFixture']
+          assert trial['costBasedFoodPriceFixture'] and decade['costBasedFoodPriceFixture']
+          print('COST_PRICE_3Y_BASE',fixed['aliveEnd'],fixed['unmetMeals'],fixed['businessSalesRevenueCents'])
+          print('COST_PRICE_3Y_TRIAL',trial['aliveEnd'],trial['unmetMeals'],trial['averageRetailUnitPriceCents'],trial['businessSalesRevenueCents'])
+          print('COST_PRICE_10Y_TRIAL',decade['aliveEnd'],decade['minimumAliveAtAnyEvent'],decade['unmetMeals'],decade['wallSeconds'])
+          if decade['minimumAliveAtAnyEvent']>=10000:
+              print('SUSTAINED_TEN_YEARS_ONLY; eighty-year history still required')
+          else:
+              print('POPULATION_COLLAPSED; DO NOT RUN EIGHTY YEARS ON EXTINCT CITY')
+          PY
+      - name: Preserve comparisons including reprovals
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-cost-priced-comparisons
+          path: |
+            fixed-price-3y.log
+            cost-priced-3y.log
+            cost-priced-10y.log
+          if-no-files-found: ignore
+
   demographic-ceiling-80y:
     # An intentionally permissive mathematical bound, NOT population survival.
     if: github.event_name == 'push' && contains(github.event.head_commit.message, '[cohort-bound-80y]')
