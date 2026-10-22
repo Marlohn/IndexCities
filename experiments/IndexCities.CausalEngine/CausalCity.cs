@@ -90,6 +90,7 @@ internal sealed class CausalCity : IDisposable
     private readonly PriorityQueue<SimEvent, (long At, long Sequence)> _events = new();
     private readonly List<Person> _people = [];
     private readonly List<Trip> _trips = [];
+    private readonly Stack<int> _freeTripSlots = new();
     private readonly Household[] _households;
     private readonly Firm[] _shops;
     private readonly Firm[] _farms;
@@ -98,20 +99,17 @@ internal sealed class CausalCity : IDisposable
     private readonly long[] _junctionAvailable = new long[Nodes];
     private readonly bool[] _closed = new bool[Nodes * 4];
     private readonly HistorySink _history;
-    private readonly Random _random;
     private long _sequence, _time, _initialMoney, _treasury;
     private long _days, _journeys, _segments, _waitSeconds, _sales, _shipments, _workdays;
     private long _births, _deaths, _unservedMeals, _paidWages, _unsatisfiedSales, _replans;
-    private long _peakEvents, _oldestQueue;
+    private long _peakEvents;
     private long _firstDollarViolation = -1;
     private int _active, _maxActive, _minActive;
     private double _windFactor = 1, _waterRatio = 1;
-    private int _deliveryVanId;
     public CausalCity(LabConfig config)
     {
         _config = config;
         _history = new HistorySink(config.History);
-        _random = new Random(config.Seed);
         var families = Math.Max(1, config.Sims / 4);
         _households = new Household[families];
         for (var i = 0; i < families; i++)
@@ -136,8 +134,8 @@ internal sealed class CausalCity : IDisposable
         Schedule(0, EventKind.Hour, 0);
         if (config.Adversarial)
         {
-            Schedule(1860, EventKind.RoadClose, 0);
-            Schedule(3000, EventKind.RoadOpen, 0);
+            Schedule(8 * 3600 + 30, EventKind.RoadClose, 0);
+            Schedule(8 * 3600 + 900, EventKind.RoadOpen, 0);
         }
     }
 
@@ -339,6 +337,16 @@ internal sealed class CausalCity : IDisposable
     }
     private Trip NewTrip(int owner, int from, int destination, EventKind completion, int payload = 0, int cargo = 0)
     {
+        if (_freeTripSlots.TryPop(out var reused))
+        {
+            var old = _trips[reused];
+            old.OwnerId = owner; old.CurrentNode = from;
+            old.Destination = destination; old.Completion = completion;
+            old.Payload = payload; old.Cargo = cargo;
+            old.From = old.To = 0; old.EnterAt = old.ExitAt = 0;
+            old.Completed = false;
+            return old;
+        }
         var trip = new Trip { Id = _trips.Count, OwnerId = owner, CurrentNode = from,
             Destination = destination, Completion = completion, Payload = payload, Cargo = cargo };
         _trips.Add(trip);
@@ -426,6 +434,7 @@ internal sealed class CausalCity : IDisposable
                 CompleteDelivery(trip.Id);
             else
                 ArrivePerson(_people[trip.OwnerId]);
+            _freeTripSlots.Push(trip.Id);
             return;
         }
         var next = NextNode(trip.CurrentNode, trip.Destination);
@@ -554,6 +563,8 @@ internal sealed class CausalCity : IDisposable
         unmetMeals = _unservedMeals, deniedPurchases = _unsatisfiedSales,
         routeReroutes = _replans, recordedFacts = _history.Entries, peakQueue = _peakEvents,
         pendingQueue = _events.Count,
+        allocatedTripSlots = _trips.Count,
+        reusableTripSlots = _freeTripSlots.Count,
         moneyConserved = CalculateMoney() == _initialMoney,
         initialMoneyCents = _initialMoney,
         currentMoneyCents = CalculateMoney(),
