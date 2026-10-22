@@ -19,7 +19,7 @@ public sealed partial class CitySimulation
     long _e21OperationalVisits, _e21OperationalTicks;
     long _e21BlockedEvents, _e21BlockedByCar, _e21BlockedJunction, _e21BlockedOther;
     long _e21Rechecks, _e21SelfChanged, _e21BlockerChanged, _e21NeighboursChanged;
-    long _e21RoadChanged, _e21DeadlineReached, _e21DeadlineAlreadyOverdue, _e21NoObservedTrigger;
+    long _e21RoadChanged, _e21DeadlineReached, _e21DeadlineAlreadyOverdue, _e21NewQuantum, _e21NoObservedTrigger;
     readonly List<string> _e21UnclassifiedSamples=[];
     long _e21NoTriggerPhysicalChange, _e21NoTriggerStill;
     readonly Dictionary<int,E21Wait> _e21Waits = new();
@@ -43,6 +43,7 @@ public sealed partial class CitySimulation
         public int NeighbourHash;
         public int RoadRevision;
         public double At;
+        public double OuterTime;
     }
 
     // Captures nearby physical AND shared-space state of all vehicles in 64m,
@@ -84,6 +85,10 @@ public sealed partial class CitySimulation
         if(v.WaitingSince>0&&old.At<expiry&&VehicleMovementTime>=expiry)
         {_e21DeadlineReached++;return;}
         if(v.WaitingSince>0&&old.At>=expiry)_e21DeadlineAlreadyOverdue++;
+        // A new logical 2-second quantum runs operational vehicle updates,
+        // citizens and infrastructure. The absence of nearby pose changes
+        // does NOT make all those callbacks independent.
+        if(old.OuterTime!=State.ElapsedSeconds){_e21NewQuantum++;return;}
         _e21NoObservedTrigger++;_e21NoTrigger.Add(v.Id);
     }
 
@@ -98,7 +103,8 @@ public sealed partial class CitySimulation
             Self=E21PoseOf(v),BlockerId=blocker?.Id,
             Blocker=blocker==null?default:E21PoseOf(blocker),
             NeighbourHash=E21NearbyFingerprint(v),
-            RoadRevision=State.RoadRevision,At=VehicleMovementTime
+            RoadRevision=State.RoadRevision,At=VehicleMovementTime,
+            OuterTime=State.ElapsedSeconds
         };
     }
 
@@ -183,6 +189,7 @@ public sealed partial class CitySimulation
           .Append(" roadChanged=").Append(_e21RoadChanged)
           .Append(" deadlineCrossings=").Append(_e21DeadlineReached)
           .Append(" alreadyOverdueRechecks=").Append(_e21DeadlineAlreadyOverdue)
+          .Append(" newTwoSecondQuantum=").Append(_e21NewQuantum)
           .Append(" noObservedTrigger=").Append(_e21NoObservedTrigger)
           .Append(" noTriggerStateChanged=").Append(_e21NoTriggerPhysicalChange)
           .Append(" noTriggerStill=").Append(_e21NoTriggerStill)
