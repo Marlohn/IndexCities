@@ -207,7 +207,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Compare 80-year market-financed rotating work shifts
+      - name: Compare 80-year paid shifts with unspent firm-budget rollover
         run: |
           set -o pipefail
           dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --cohort-renewal --demand-staffing 2>&1 | tee staffing-80y.log
