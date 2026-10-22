@@ -26,6 +26,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - label: 400-tow-junction-road-seed42-tow-covered
+            rows: 5
+            length: 800
+            seed: 42
+            seconds: 7200
+            adversary: mixed
+            reverse: 0
+            signals: 1
           - label: 400-tow-junction-road-seed43-reversed
             rows: 5
             length: 800
