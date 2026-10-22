@@ -31,19 +31,19 @@ internal static class IntegratedProbe
         var points = new List<object>();
         bool equal = true;
         double totalGrouped = 0, totalShort = 0, totalMinute = 0;
-        const int windows = 6;
+        const int windows = 24;
         for (var window = 1; window <= windows; window++)
         {
             stopwatch.Restart();
-            grouped.Advance(600);
+            grouped.Advance(3600);
             totalGrouped += stopwatch.Elapsed.TotalSeconds;
 
             stopwatch.Restart();
-            for (var i = 0; i < 300; i++) perTwoSeconds.Advance(2);
+            for (var i = 0; i < 1800; i++) perTwoSeconds.Advance(2);
             totalShort += stopwatch.Elapsed.TotalSeconds;
 
             stopwatch.Restart();
-            for (var i = 0; i < 10; i++) perMinute.Advance(60);
+            for (var i = 0; i < 60; i++) perMinute.Advance(60);
             totalMinute += stopwatch.Elapsed.TotalSeconds;
 
             var a = Sha(grouped.SaveToJson());
@@ -51,7 +51,7 @@ internal static class IntegratedProbe
             var c = Sha(perMinute.SaveToJson());
             var same = a == b && a == c;
             equal &= same;
-            points.Add(new { simulatedSecond = window * 600, equivalent = same,
+            points.Add(new { simulatedSecond = window * 3600, equivalent = same,
                 groupedHash = a[..16], twoSecondHash = b[..16], minuteHash = c[..16] });
             if (!same) break; // primeira divergência é mais informativa
         }
@@ -64,7 +64,7 @@ internal static class IntegratedProbe
         var roundtrip = Sha(loaded.SaveToJson()) == Sha(snapshot);
         Console.WriteLine(JsonSerializer.Serialize(new
         {
-            scenario = "Grid 3x400, seed 42, 1 dia real de warmup e 1 hora medida",
+            scenario = "Grid 3x400, seed 42, 1 dia real de warmup e 1 dia inteiro medido",
             startHash = startHash[..16],
             simPopulation = source.Population,
             simVehicles = source.State.Vehicles.Count,
