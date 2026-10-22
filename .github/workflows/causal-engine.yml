@@ -196,6 +196,44 @@ jobs:
           path: eighty-years-population.log
           if-no-files-found: ignore
 
+  staffing-80y-counterfactual:
+    # Demand-funded REAL paid shifts in single-product laboratory economy.
+    # Not approved gameplay, unemployment modelling or complete SPEC.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[staffing-80y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compare 80-year market-financed rotating work shifts
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --cohort-renewal --demand-staffing 2>&1 | tee staffing-80y.log
+          python3 - <<'PY'
+          import json
+          lines=open('staffing-80y.log').readlines()
+          start=next(i for i,line in enumerate(lines) if line.startswith('{'))
+          r=json.loads(''.join(lines[start:]))
+          assert r['simulatedDays']==29220 and r['gregorianEnd']=='2100-01-01'
+          assert r['moneyConserved'] and r['foodConserved']
+          assert r['demandStaffingFixture'] and r['cohortRenewalFixture']
+          assert r['workingDays']>0 and r['salesFoodUnits']>0 and r['cargoDeliveries']>0
+          assert r['businessInitialCashCents']+r['businessOperatingNetCents']==r['businessCurrentCashCents']
+          print('DEMAND_STAFFING_80Y',r['aliveEnd'],r['minimumAliveAtDayBoundary'],
+                r['unmetMeals'],r['workingDays'],r['businessOperatingNetCents'],
+                r['wallSeconds'])
+          assert r['minimumAliveAtDayBoundary']>=10000, 'Demand-funded shifts did not sustain 10k'
+          PY
+      - name: Preserve all annual economic and demographic metrics on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-staffing-80y
+          path: staffing-80y.log
+          if-no-files-found: ignore
+
   cohort-80y-counterfactual:
     # Isolated birth scheduling + improved grocery availability diagnosis.
     # Not approved family gameplay or complete traffic/construction/migration/history.
