@@ -36,6 +36,7 @@ internal sealed class Household
     public required List<int> Members;
     public int Pantry = 40;
     public int LastBirthDay = -10_000;
+    public long LastShoppingDepartureDay = -1;
 }
 internal sealed class Firm
 {
@@ -517,7 +518,17 @@ internal sealed partial class CausalCity : IDisposable
     private void EndWork(int personId)
     {
         var p = _people[personId];
-        if (!p.Alive || p.Traveling || !p.AtWork) return;
+        if (!p.Alive) return;
+        if (p.Traveling || !p.AtWork)
+        {
+            // A worker who missed their shift must not block all other adults
+            // from feeding their real household. An idle adult at home may
+            // shop after work hours, provided nobody shopped earlier today.
+            if (!p.Traveling && p.Node == p.Home &&
+                _households[p.HouseholdId].Pantry < 30)
+                Schedule(_time + 3600, EventKind.HouseholdShop, personId);
+            return;
+        }
         var employer = p.Job < StoreCount ? _shops[p.Job] : _farms[p.Job - StoreCount];
         // Only physically present workers earn wages. Farm output additionally
         // requires the farmworker actually to have arrived for their shift.
@@ -552,7 +563,7 @@ internal sealed partial class CausalCity : IDisposable
         {
             var member = _people[id];
             var age = Age(member, Epoch.AddSeconds(_time));
-            return member.Alive && age >= 18 && age < 70;
+            return member.Alive && age >= 18 && age < 70 && (member.AtWork || member.Id == p.Id);
         }, -1);
         if (shopper == p.Id && TryStartHouseholdShopping(p)) return;
         StartTrip(p, p.Home);
@@ -566,7 +577,7 @@ internal sealed partial class CausalCity : IDisposable
     private bool TryStartHouseholdShopping(Person p)
     {
         var h = _households[p.HouseholdId];
-        if (h.Pantry >= 30) return false;
+        if (h.Pantry >= 30 || h.LastShoppingDepartureDay == _time / DaySeconds) return false;
         // Actual intrafamily transfers, never a fictitious pooled balance.
         var needed = Math.Max(0, 32 * FoodPrice - p.Cash);
         if (needed > 0)
@@ -583,6 +594,7 @@ internal sealed partial class CausalCity : IDisposable
             }
         if (p.Cash < FoodPrice) return false;
         StartTrip(p, _shops[(p.Home + 1) % Nodes].Node);
+        h.LastShoppingDepartureDay = _time / DaySeconds;
         return true;
     }
     private Trip NewTrip(int owner, int from, int destination, EventKind completion, int payload = 0, int cargo = 0)
@@ -808,7 +820,7 @@ internal sealed partial class CausalCity : IDisposable
             Mix(p.Health); Mix(p.CarryFood); Mix(p.Traveling ? 1 : 0);
             Mix(p.ContributedDays); Mix(p.GrossEarnings); Mix(p.PensionCredit); Mix(p.PensionReceived);
         }
-        foreach (var h in _households) { Mix(h.Pantry); Mix(h.Members.Count); Mix(h.LastBirthDay); }
+        foreach (var h in _households) { Mix(h.Pantry); Mix(h.Members.Count); Mix(h.LastBirthDay); Mix(h.LastShoppingDepartureDay); }
         foreach (var f in _shops) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); }
         foreach (var f in _farms) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); }
         Mix(_producedFood); Mix(_eatenFood);
