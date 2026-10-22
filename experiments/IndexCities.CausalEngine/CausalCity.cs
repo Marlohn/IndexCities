@@ -588,6 +588,20 @@ internal sealed partial class CausalCity : IDisposable
                 (requiredUnits + unitsPerEmployee - 1) / unitsPerEmployee,
                 farm ? 2 : (_config.BasketRetailService ? 2 : 1),
                 farm ? 128 : (_config.BasketRetailService ? 8 : 96));
+            if (_config.BasketRetailService && !farm)
+            {
+                // A family with too little money or stock may buy only two
+                // servings and STILL need one entire cashier interaction.
+                // Demand for real workers is measured in actual successful
+                // customer visits, with an explicit floor from living
+                // households' 32-item maximum basket consumption.
+                var expectedBaskets = (expectedMonthlyDemand + 31) / 32;
+                var neededBaskets = Math.Max(firm.MonthRetailBaskets, expectedBaskets);
+                var basketsPerFundedWorkerMonth = (long)_config.RetailBasketsPerShift * 26;
+                wanted = (int)Math.Clamp(
+                    (neededBaskets + basketsPerFundedWorkerMonth - 1) /
+                    basketsPerFundedWorkerMonth, 2, 8);
+            }
             var wage = farm ? 80 : 65;
             // Freight positions are extra real hires, never substitutes for
             // the staff producing the meals used by the city.
