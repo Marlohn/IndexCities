@@ -1,0 +1,60 @@
+name: Experimento indice de pedestres (comparacao integrada)
+
+on:
+  push:
+    branches:
+      - experimento/indice-pedestres-dinamico
+
+permissions:
+  contents: read
+
+jobs:
+  avaliar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    steps:
+      - name: Checkout do candidato
+        uses: actions/checkout@v4
+        with:
+          path: candidato
+      - name: Checkout do baseline imutavel
+        uses: actions/checkout@v4
+        with:
+          ref: 651326228729d7689b61745370cc63d997e5ee60
+          path: baseline
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Testes completos
+        run: dotnet test candidato/tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --logger 'console;verbosity=minimal'
+      - name: Executar comparacao integrada
+        shell: bash
+        run: |
+          set -euo pipefail
+          compare() {
+            local tag="$1"; shift
+            echo "===== BASELINE ${tag} ====="
+            dotnet run -c Release --project baseline/src/IndexCities.Headless -- scale "$@" | tee "old_${tag}.txt"
+            echo "===== CANDIDATO ${tag} ====="
+            dotnet run -c Release --project candidato/src/IndexCities.Headless -- scale "$@" | tee "new_${tag}.txt"
+            local old new
+            old=$(grep -o 'sha256=[0-9A-F]*' "old_${tag}.txt" | tail -1 | cut -d= -f2)
+            new=$(grep -o 'sha256=[0-9A-F]*' "new_${tag}.txt" | tail -1 | cut -d= -f2)
+            echo "RESULT ${tag} old=$old new=$new"
+            grep -E '^(FIXTURE|DAY 1|SUMMARY|INVARIANTS OK)' "old_${tag}.txt"
+            grep -E '^(FIXTURE|DAY 1|SUMMARY|INVARIANTS OK)' "new_${tag}.txt"
+            test -n "$old" && test "$old" = "$new" || { echo "FALHA: save divergente ${tag}"; exit 1; }
+          }
+          compare cycle42 cycle --seed=42 --warmup=1 --days=1 --cap=180
+          compare grid42 grid --rows=3 --length=400 --seed=42 --warmup=1 --days=1 --cap=180
+          compare grid7 grid --rows=3 --length=400 --seed=7 --warmup=1 --days=1 --cap=180
+          compare medium42 grid --rows=5 --length=800 --seed=42 --warmup=0 --days=1 --cap=180
+      - name: Preservar evidencias
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: indice-pedestres-comparacao
+          path: |
+            old_*.txt
+            new_*.txt
+          if-no-files-found: ignore
