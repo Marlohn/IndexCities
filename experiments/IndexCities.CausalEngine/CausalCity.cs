@@ -56,6 +56,8 @@ internal sealed class Firm
     // open positions. Receipts are NOT a second bank account.
     public int OfferedPositions;
     public int PresentWorkers;
+    public long MonthFoodProduced;
+    public int MonthFarmWorkdays;
 }
 internal sealed class Trip
 {
@@ -469,7 +471,14 @@ internal sealed partial class CausalCity : IDisposable
             var firm = farm ? _farms[i - StoreCount] : _shops[i];
             var unitPrice = farm ? WholesalePrice : FoodPrice;
             var monthlyUnits = firm.DayReceipts / unitPrice;
-            var unitsPerEmployee = farm ? 35 * 30 : 5 * 30;
+            // Farm staffing is sized from REAL food physically produced in
+            // previous paid shifts, not its theoretical maximum yield of 35.
+            // Before any actual production, use a conservative 10 units/shift
+            // stress estimate: demand exists before initial sales or harvest.
+            var realisedFoodPerShift = farm && firm.MonthFarmWorkdays > 0
+                ? Math.Max(1L, firm.MonthFoodProduced / firm.MonthFarmWorkdays)
+                : 10L;
+            var unitsPerEmployee = farm ? realisedFoodPerShift * 30 : 5L * 30;
             // Real, already-resident households have a daily food need even
             // before the first retail sale. Staff planning must consider that
             // demand; otherwise eight farms hire only 16 starters and all
@@ -487,6 +496,8 @@ internal sealed partial class CausalCity : IDisposable
             firm.OfferedPositions = funded;
             firm.DayReceipts = 0;
             firm.DaySupplies = 0;
+            firm.MonthFoodProduced = 0;
+            firm.MonthFarmWorkdays = 0;
         }
         // Keep valid jobs before recruiting; losing sales may end a vacancy.
         // Changing an employer at midnight never materializes transportation
@@ -714,17 +725,23 @@ internal sealed partial class CausalCity : IDisposable
             return;
         }
         var employer = p.Job < StoreCount ? _shops[p.Job] : _farms[p.Job - StoreCount];
-        // Only physically present workers earn wages. Farm output additionally
-        // requires the farmworker actually to have arrived for their shift.
-        if (p.Job >= StoreCount)
+        // Paid and physically present shifts drive real harvest. In this new
+        // market fixture, an insolvent employer does NOT receive free harvest
+        // from workers it cannot pay.
+        var wage = _config.WageFeedback && !_config.DemandStaffing
+            ? employer.WageForDay : (p.Job < StoreCount ? 65 : 80);
+        if (p.Job >= StoreCount && (!_config.VacancyMarket || employer.Cash >= wage))
         {
             var food = (int)(35 * Math.Min(_windFactor, _waterRatio));
             employer.Stock = checked(employer.Stock + food);
             _producedFood += food;
+            if (_config.VacancyMarket)
+            {
+                employer.MonthFoodProduced += food;
+                employer.MonthFarmWorkdays++;
+            }
             _history.Fact(_time, p.Id, 8, food);
         }
-        var wage = _config.WageFeedback && !_config.DemandStaffing
-            ? employer.WageForDay : (p.Job < StoreCount ? 65 : 80);
         if (employer.Cash >= wage)
         {
             employer.Cash -= wage;
@@ -1059,8 +1076,8 @@ internal sealed partial class CausalCity : IDisposable
             Mix(p.ContributedDays); Mix(p.GrossEarnings); Mix(p.PensionCredit); Mix(p.PensionReceived);
         }
         foreach (var h in _households) { Mix(h.Pantry); Mix(h.Members.Count); Mix(h.LastBirthDay); Mix(h.LastShoppingDepartureDay); }
-        foreach (var f in _shops) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); }
-        foreach (var f in _farms) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); }
+        foreach (var f in _shops) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); }
+        foreach (var f in _farms) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); }
         Mix(_producedFood); Mix(_eatenFood);
         foreach (var x in _closed) Mix(x ? 1 : 0);
         foreach (var t in _trips) if (!t.Completed)
