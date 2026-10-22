@@ -1,0 +1,71 @@
+name: E15 - cache real de geometria de manobras
+
+on:
+  push:
+    branches:
+      - experimento/e15-cache-manobras-integrado
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Testes de regressao
+        run: dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --logger 'console;verbosity=minimal'
+  integrated:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Benchmark A/B por hora com duas seeds e congestionamento
+        shell: bash
+        run: |
+          set -euo pipefail
+          run_pair() {
+            local tag="$1"; shift
+            local mode
+            for mode in baseline cached; do
+              echo "E15_BEGIN tag=$tag mode=$mode"
+              if [ "$mode" = cached ]; then
+                dotnet run -c Release --project src/IndexCities.Headless -- scale "$@" --e15=1 --e15-verify=4096 --e15-checkpoints=1 | tee "e15_${tag}_cached.log"
+              else
+                dotnet run -c Release --project src/IndexCities.Headless -- scale "$@" --e15=0 --e15-checkpoints=1 | tee "e15_${tag}_baseline.log"
+              fi
+              grep -q 'INVARIANTS OK' "e15_${tag}_${mode}.log"
+            done
+            local a b
+            a=$(grep -o 'sha256=[0-9A-F]*' "e15_${tag}_baseline.log" | tail -1)
+            b=$(grep -o 'sha256=[0-9A-F]*' "e15_${tag}_cached.log" | tail -1)
+            echo "E15_COMPARE tag=$tag baseline=$a cached=$b"
+            if ! diff -u <(grep '^E15_CHECKPOINT' "e15_${tag}_baseline.log") <(grep '^E15_CHECKPOINT' "e15_${tag}_cached.log") > "e15_${tag}_diff.txt"; then
+              echo "E15_DIVERGENCE checkpoint state differs for $tag"
+              head -45 "e15_${tag}_diff.txt"
+              return 1
+            fi
+            test -n "$a" && test "$a" = "$b" || { echo "E15_DIVERGENCE final save differs"; return 1; }
+            echo "E15_EQUAL tag=$tag all24Hours=YES finalSave=YES"
+            grep '^E15_RESULT' "e15_${tag}_cached.log"
+            grep '^SUMMARY' "e15_${tag}_"*.log
+          }
+          run_pair small42 grid --rows=3 --length=400 --seed=42 --warmup=1 --days=1 --cap=1200
+          run_pair small7 grid --rows=3 --length=400 --seed=7 --warmup=1 --days=1 --cap=1200
+          run_pair medium42 grid --rows=5 --length=800 --seed=42 --warmup=1 --days=1 --cap=1200
+      - name: Evidencia de desempenho e divergencias
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e15-ab-paired-comparison
+          path: |
+            e15_*.log
+            e15_*.txt
+          if-no-files-found: ignore
