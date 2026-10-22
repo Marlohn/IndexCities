@@ -57,7 +57,10 @@ public sealed partial class CitySimulation
         // Loading itself still preserves the serialized state exactly.
         if(!_pedestrianCrossingsChecked){UpdateCrosswalks();_pedestrianCrossingsChecked=true;}
         RefreshCrosswalks();
+        _pedestrianIndexActive=true;_pedestrianIndexReady=false;
+        try{
         foreach(var c in State.Citizens.Where(c=>c.Alive)){
+            try{
             if(!c.Moving&&c.PathRoadRevision!=State.RoadRevision&&(c.Activity.StartsWith("Sem rota",StringComparison.Ordinal)||c.Activity=="Viagem interrompida: rota removida"))c.NextDecisionAt=Math.Min(c.NextDecisionAt,State.ElapsedSeconds);
             if(c.ConstructionProjectId!=null&&ShiftActive(c)){c.AddWorkSecondsToday(dt);AccrueWage(c,dt);}
             if(c.VehicleId is {} vid){var v=VehicleById(vid);if(v!=null){c.Position=v.Position;c.InsideMap=InMap(v.Position);}continue;}
@@ -90,7 +93,9 @@ public sealed partial class CitySimulation
             }
             if(State.ElapsedSeconds<c.NextDecisionAt)continue;c.NextDecisionAt=State.ElapsedSeconds+60;
             CitizenRoutine(c);
+            }finally{SyncPedestrianIndex(c);}
         }
+        }finally{_pedestrianIndexActive=false;_pedestrianIndexReady=false;}
     }
     // Crosswalk nodes in State.Roads order. Rebuilt at the start of every
     // MoveCitizens call and whenever the road list or crossings change.
@@ -116,8 +121,8 @@ public sealed partial class CitySimulation
     // the result differs only when both values already exceed `reach`.
     double PedestrianGap(Citizen c,Point target,double d,Point heading,double reach)
     {
-        var gap=double.MaxValue;var radius=reach+1.3;radius*=radius;
-        foreach(var other in State.Citizens){
+        var gap=double.MaxValue;var searchRadius=reach+1.3;var radius=searchRadius*searchRadius;
+        foreach(var other in PedestrianCandidates(c.Position,searchRadius)){
             if(other.Id==c.Id||!other.Alive||!other.Moving||other.VehicleId!=null)continue;
             var relative=other.Position-c.Position;if(relative.X*relative.X+relative.Z*relative.Z>radius)continue;
             var otherTarget=other.Path[other.PathIndex];var otherDelta=otherTarget-other.Position;var otherLength=otherDelta.Distance(new(0,0));var alignment=otherLength<.001?1:(heading.X*otherDelta.X+heading.Z*otherDelta.Z)/otherLength;
