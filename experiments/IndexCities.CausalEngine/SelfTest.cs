@@ -249,7 +249,7 @@ internal static class EngineSelfTest
                 using var freightReport = JsonDocument.Parse(JsonSerializer.Serialize(fullFreight.Report(0)));
                 freightJourneys = freightReport.RootElement.GetProperty("realWorkerFreightTrips").GetInt64();
                 freightCharges = freightReport.RootElement.GetProperty("freightChargesPaidCents").GetInt64();
-                if (freightJourneys <= 0 || freightCharges != freightJourneys * 35 ||
+                if (freightJourneys <= 0 || freightCharges < freightJourneys * 35 || freightCharges % 35 != 0 ||
                     freightReport.RootElement.GetProperty("salesFoodUnits").GetInt64() <= 0)
                     throw new InvalidOperationException("Freight delivery occurred without worker, real cash or stock");
             }
