@@ -282,6 +282,81 @@ jobs:
           path: economic-second-cycle-10y.log
           if-no-files-found: ignore
 
+  actual-waste-treatment-10y:
+    # Complete the REAL refuse material circuit, not just an ever-growing
+    # 50-million-unit pile. Municipal employees commute to the finite depot,
+    # process only ARRIVED waste and are paid only if they actually do it.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[waste-treatment-10y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Run two-seed decade economy with collected and treated finite matter
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          COMMON='--sims=10000 --days=3653 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot'
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $COMMON --seed=42 2>&1 | tee collection-only-42.log
+          for interval in 6 4; do
+            for seed in 42 73; do
+              dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $COMMON --seed=$seed --municipal-collection-interval=$interval --municipal-waste-treatment-pilot 2>&1 | tee treatment-$interval-$seed.log
+            done
+          done
+          python3 - <<'PY'
+          import json
+          def get(path):
+              lines=open(path).readlines()
+              i=next(i for i,line in enumerate(lines) if line.startswith('{'))
+              return json.loads(''.join(lines[i:]))
+          baseline=get('collection-only-42.log')
+          assert baseline['moneyConserved'] and baseline['foodConserved']
+          assert not baseline['municipalWasteTreatmentPilotFixture']
+          good=[]
+          for interval in [6,4]:
+              survived=True
+              for seed in [42,73]:
+                  r=get(f'treatment-{interval}-{seed}.log')
+                  assert r['simulatedDays']==3653 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+                  assert r['municipalWasteTreatmentPilotFixture'] and r['municipalSanitationPilotFixture']
+                  assert r['paidWasteTreatmentShifts']>0 and r['wasteTreatedAtDepot']>0
+                  assert r['wasteTreatedAtDepot']<=r['totalWasteCollected']
+                  assert not r['fullIndexCitiesTargetValidated']
+                  survived &= r['minimumAliveAtAnyEvent']>=10000
+                  print('REAL_TREATMENT_10Y',
+                        'interval',interval,'seed',seed,'alive',r['aliveEnd'],
+                        'minimum',r['minimumAliveAtAnyEvent'],
+                        'treated',r['wasteTreatedAtDepot'],'unprocessed',r['wasteStoredAtRealDepot'],
+                        'publicCollectionJobs',r['municipalSanitationJobs'],
+                        'depotWorkers',r['municipalWasteTreatmentJobs'],
+                        'payroll',r['municipalSanitationWagesPaidCents'],
+                        'tax',r['municipalTaxCollectedCents'],
+                        'familyCash',r['personalCashCents'],
+                        'unmet',r['unmetMeals'])
+              if survived: good.append(interval)
+          open('full-history-interval.flag','w').write(str(good[0]) if good else 'none')
+          PY
+          INTERVAL="$(cat full-history-interval.flag)"
+          if test "$INTERVAL" != none; then
+            echo "Ten-year two-seed proof for interval $INTERVAL. Begin FULL continuous 80-year 10k history check."
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-collection-interval=$INTERVAL --municipal-waste-treatment-pilot --history=full-80year-treated-waste.facts.gz 2>&1 | tee full-80year-treated-waste.log
+          else
+            echo 'Real funded jobs and finite landfill still failed ten-year population. Do not claim eighty years.'
+          fi
+      - name: Persist actual decade evidence, full-year history only if completed
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: finite-waste-treatment-economy
+          path: |
+            collection-only-42.log
+            treatment-*.log
+            full-80year-treated-waste.log
+            full-80year-treated-waste.facts.gz
+          if-no-files-found: ignore
+
   sanitation-property-tax-10y:
     # Real collected solid waste at actual occupied homes, person-carried to a
     # finite physical depot. Only current company property cash funds jobs;
