@@ -12,6 +12,7 @@ public sealed partial class CitySimulation
     public string E21Probe { get; set; } = "off"; // off|cost|causes
 
     long _e21Calls, _e21Visits, _e21VehicleTicks, _e21UnsplitTicks;
+    long _e21OuterCalls,_e21OuterTicks,_e21ForecastCalls,_e21ForecastTicks;
     long _e21ActiveVisits, _e21ActiveTicks, _e21MovedVisits, _e21MovedTicks;
     long _e21BlockedVisits, _e21BlockedTicks, _e21StillVisits, _e21StillTicks;
     long _e21InactiveVisits, _e21InactiveTicks;
@@ -122,6 +123,16 @@ public sealed partial class CitySimulation
         }
     }
 
+    void E21OuterComplete(long start)
+    {
+        if(E21Probe!="cost")return;
+        _e21OuterCalls++;_e21OuterTicks+=Stopwatch.GetTimestamp()-start;
+    }
+    void E21ForecastComplete(long start)
+    {
+        if(E21Probe!="cost")return;
+        _e21ForecastCalls++;_e21ForecastTicks+=Stopwatch.GetTimestamp()-start;
+    }
     void E21BeginUnsplit(){if(E21Probe!="off")_e21Calls++;}
     void E21EndUnsplit(long start)
     {
@@ -132,7 +143,12 @@ public sealed partial class CitySimulation
     {
         static string F(long ticks)=>(ticks/(double)Stopwatch.Frequency).ToString("F4",CultureInfo.InvariantCulture);
         var sb=new StringBuilder();
-        sb.Append("E21_TOTAL mode=").Append(E21Probe).Append(" unsplitCalls=").Append(_e21Calls)
+        sb.Append("E21_TOTAL mode=").Append(E21Probe)
+          .Append(" outerCalls=").Append(_e21OuterCalls)
+          .Append(" outerSeconds=").Append(F(_e21OuterTicks))
+          .Append(" forecastCalls=").Append(_e21ForecastCalls)
+          .Append(" forecastSeconds=").Append(F(_e21ForecastTicks))
+          .Append(" unsplitCalls=").Append(_e21Calls)
           .Append(" vehicleVisits=").Append(_e21Visits)
           .Append(" unsplitSeconds=").Append(F(_e21UnsplitTicks))
           .Append(" vehicleBodySeconds=").Append(F(_e21VehicleTicks))
