@@ -242,6 +242,7 @@ public sealed partial class CitySimulation
                 if(v.Route.Count==0||v.Route.Any(id=>!_roads.ContainsKey(id))){v.Status=VehicleStatus.Waiting;v.Cause="Rota interrompida; aguarda ligação viária";continue;}
                 _vehicleMovementBatch?.Add(v.Id);
             }else if(!_vehicleMovementBatch.Contains(v.Id)||v.Status!=VehicleStatus.Travelling)continue;
+            else if(E20CanRemainBlocked(v))continue;
             var remaining=dt;
             while(remaining>.000001&&v.Status==VehicleStatus.Travelling){
                 // The way back from a works-site dock is admitted whole (Mobility.SharedSpace).
@@ -359,7 +360,7 @@ public sealed partial class CitySimulation
                 if(step<.00001&&d>.00001){v.Cause=blocker?.Status==VehicleStatus.Stranded?$"Aguardando veículo {blocker.Id} {(blocker.BrokenDown?"quebrado":"sem combustível")} na via":bayHold||entryHeld!=null?"Fila para acesso de carga":enteringLane?"Aguardando espaço para acessar a faixa":blocker!=null&&HoldsJunctionAhead(blocker,node)?(IsBend(node)?"Aguardando liberação da curva pelo veículo ":"Aguardando liberação do cruzamento pelo veículo ")+blocker.Id:"Fila na faixa";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;if(v.TowPhase==TowPhase.ToVehicle&&(TryTowContraflow(v)||TryTowFromBehind(v)))continue;if(!enteringLane&&blocker!=null&&blocker.Id!=v.TowTargetId&&TryBypassStopped(v,blocker))continue;if(blocker!=null&&TowExitHolds(blocker)&&TryUTurn(v,blocker))continue;
                     // A tow held for minutes turns back and goes around the stranded vehicles
                     // and the junctions they lock, instead of waiting in the queue.
-                    if(blocker!=null&&TowHeldTooLong(v,blocker)&&TryUTurn(v,blocker,TowClosedRoads(v))){CheckTowFuel(v);continue;}TowWaitsWithoutAccess(v);break;}
+                    if(blocker!=null&&TowHeldTooLong(v,blocker)&&TryUTurn(v,blocker,TowClosedRoads(v))){CheckTowFuel(v);continue;}TowWaitsWithoutAccess(v);E20MarkBlocked(v,blocker);break;}
                 // Entering is admitted whole too: a delivery near its bay takes no junction
                 // or bend before its entry is admitted.
                 var sharedAhead=node.Neighbours.Count>=3||node.Crosswalk||TurnsAtBend(v,v.RouteIndex);
