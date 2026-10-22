@@ -470,11 +470,17 @@ internal sealed partial class CausalCity : IDisposable
             var unitPrice = farm ? WholesalePrice : FoodPrice;
             var monthlyUnits = firm.DayReceipts / unitPrice;
             var unitsPerEmployee = farm ? 35 * 30 : 5 * 30;
-            // One trial position per solvent business even with no demand:
-            // startup must be possible without fabricated sales or wages.
+            // Real, already-resident households have a daily food need even
+            // before the first retail sale. Staff planning must consider that
+            // demand; otherwise eight farms hire only 16 starters and all
+            // stores run dry while the population starves with money available.
+            // These capacity factors are laboratory calibration ONLY.
+            var expectedMonthlyDemand = (long)_active * 30 /
+                (farm ? FarmCount : StoreCount);
+            var requiredUnits = Math.Max(monthlyUnits, expectedMonthlyDemand);
             var wanted = (int)Math.Clamp(
-                (monthlyUnits + unitsPerEmployee - 1) / unitsPerEmployee,
-                farm ? 2 : 1, farm ? 60 : 96);
+                (requiredUnits + unitsPerEmployee - 1) / unitsPerEmployee,
+                farm ? 2 : 1, farm ? 128 : 96);
             var wage = farm ? 80 : 65;
             var funded = (int)Math.Min(firm.Cash / (wage * 30L), wanted);
             positions[i] = funded;
