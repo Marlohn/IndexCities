@@ -38,7 +38,7 @@ internal sealed class Firm
     public required int Id;
     public required int Node;
     public long Cash = 20_000_000;
-    public int Stock = 1000;
+    public int Stock = 100;
 }
 internal sealed class Trip
 {
@@ -332,7 +332,7 @@ internal sealed class CausalCity : IDisposable
         p.AtWork = false;
         var h = _households[p.HouseholdId];
         if (h.Members.FirstOrDefault(id => _people[id].Alive && Age(_people[id], Epoch.AddSeconds(_time)) >= 18) == p.Id && h.Pantry < 30 && p.Cash >= 100)
-            StartTrip(p, _shops[p.Home].Node);
+            StartTrip(p, _shops[(p.Home + 1) % Nodes].Node);
         else StartTrip(p, p.Home);
     }
     private Trip NewTrip(int owner, int from, int destination, EventKind completion, int payload = 0, int cargo = 0)
