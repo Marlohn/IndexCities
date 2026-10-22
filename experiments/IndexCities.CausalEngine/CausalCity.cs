@@ -55,6 +55,7 @@ internal sealed class Firm
     // Bounded pilot: monthly observed product demand determines genuine
     // open positions. Receipts are NOT a second bank account.
     public int OfferedPositions;
+    public int PresentWorkers;
 }
 internal sealed class Trip
 {
@@ -357,8 +358,12 @@ internal sealed partial class CausalCity : IDisposable
                 if (!_config.DemandStaffing && p.Alive && Age(p, date) >= 18 && Age(p, date) < 70 &&
                     (!_config.VacancyMarket || p.Job >= 0))
                 {
-                    Schedule(_time + 8 * 3600, EventKind.StartWork, id);
-                    Schedule(_time + 17 * 3600, EventKind.EndWork, id);
+                    var startHour = _config.VacancyMarket && p.Job < StoreCount
+                        ? (p.Id % 2 == 0 ? 10 : 14) : 8;
+                    var endHour = _config.VacancyMarket && p.Job < StoreCount
+                        ? (p.Id % 2 == 0 ? 19 : 23) : 17;
+                    Schedule(_time + startHour * 3600, EventKind.StartWork, id);
+                    Schedule(_time + endHour * 3600, EventKind.EndWork, id);
                 }
             }
             // A retired household cannot depend on a worker's EndWork event to
@@ -368,7 +373,9 @@ internal sealed partial class CausalCity : IDisposable
                 _people[id].Alive && Age(_people[id], date) is >= 18 and < 70)))
             {
                 var buyer = h.Members.FirstOrDefault(id =>
-                    _people[id].Alive && Age(_people[id], date) >= 18, -1);
+                    _people[id].Alive && Age(_people[id], date) >= 18 &&
+                    (!_config.VacancyMarket || (!_people[id].Traveling &&
+                        _people[id].Node == h.Home)), -1);
                 if (buyer >= 0) Schedule(_time + 18 * 3600, EventKind.HouseholdShop, buyer);
             }
         }
@@ -647,6 +654,12 @@ internal sealed partial class CausalCity : IDisposable
     }
     private void Die(Person p)
     {
+        if (_config.VacancyMarket && p.AtWork && p.Job >= 0)
+        {
+            var current = p.Job < StoreCount ? _shops[p.Job] : _farms[p.Job - StoreCount];
+            current.PresentWorkers--;
+            p.AtWork = false;
+        }
         p.Alive = false;
         _active--; _deaths++;
         var family = _households[p.HouseholdId];
@@ -714,6 +727,8 @@ internal sealed partial class CausalCity : IDisposable
             _history.Fact(_time, p.Id, 15, contribution);
         }
         p.AtWork = false;
+        if (_config.VacancyMarket)
+            employer.PresentWorkers--;
         var h = _households[p.HouseholdId];
         // Select the first *working* adult. The oldest adult might already
         // have retired; choosing them would prevent employed relatives from
@@ -893,12 +908,21 @@ internal sealed partial class CausalCity : IDisposable
             StartTrip(p, p.Home); // cancelled shift; not a grocery purchase.
             return;
         }
-        if (p.Node == workplace && _time % DaySeconds < 17 * 3600 &&
-            _time % DaySeconds >= 8 * 3600 &&
+        var earliest = _config.VacancyMarket && p.Job < StoreCount
+            ? (p.Id % 2 == 0 ? 10 : 14) * 3600 : 8 * 3600;
+        var latest = _config.VacancyMarket && p.Job < StoreCount
+            ? (p.Id % 2 == 0 ? 19 : 23) * 3600 : 17 * 3600;
+        if (p.Node == workplace && _time % DaySeconds < latest &&
+            _time % DaySeconds >= earliest &&
             (!_config.VacancyMarket || p.HeadingToWork))
         {
             p.HeadingToWork = false;
             p.AtWork = true;
+            if (_config.VacancyMarket)
+            {
+                var employer = p.Job < StoreCount ? _shops[p.Job] : _farms[p.Job - StoreCount];
+                employer.PresentWorkers++;
+            }
             return;
         }
         p.HeadingToWork = false;
@@ -912,7 +936,10 @@ internal sealed partial class CausalCity : IDisposable
         }
         // Shop visit is physical; purchase only at actual arrival.
         var shop = _shops[p.Node];
-        var buy = Math.Min(32, Math.Min(shop.Stock, (int)(p.Cash / FoodPrice)));
+        // The earlier laboratory offered food without needing a cashier.
+        // In the market pilot, no real employee on site means no retail sale.
+        var buy = _config.VacancyMarket && shop.PresentWorkers <= 0
+            ? 0 : Math.Min(32, Math.Min(shop.Stock, (int)(p.Cash / FoodPrice)));
         if (buy > 0)
         {
             p.Cash -= buy * FoodPrice;
@@ -989,6 +1016,8 @@ internal sealed partial class CausalCity : IDisposable
                 var offer = firmId < StoreCount ? _shops[firmId] : _farms[firmId - StoreCount];
                 if (_people.Count(p => p.Alive && p.Job == firmId) > offer.OfferedPositions)
                     throw new InvalidOperationException("More contracted people than market vacancies");
+                if (offer.PresentWorkers != _people.Count(p => p.Alive && p.Job == firmId && p.AtWork))
+                    throw new InvalidOperationException("Ghost or missing physically present employees");
             }
         }
     }
@@ -1007,8 +1036,8 @@ internal sealed partial class CausalCity : IDisposable
             Mix(p.ContributedDays); Mix(p.GrossEarnings); Mix(p.PensionCredit); Mix(p.PensionReceived);
         }
         foreach (var h in _households) { Mix(h.Pantry); Mix(h.Members.Count); Mix(h.LastBirthDay); Mix(h.LastShoppingDepartureDay); }
-        foreach (var f in _shops) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); }
-        foreach (var f in _farms) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); }
+        foreach (var f in _shops) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); }
+        foreach (var f in _farms) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); }
         Mix(_producedFood); Mix(_eatenFood);
         foreach (var x in _closed) Mix(x ? 1 : 0);
         foreach (var t in _trips) if (!t.Completed)
