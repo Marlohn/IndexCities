@@ -102,7 +102,7 @@ if(e22=="compare")
         {
             trial.Advance(boundaries[i]-previous);previous=boundaries[i];
             if(ChooseAction(previous) is {} kind){
-                var expected=interventions.TryGetValue(previous,out var prior)?prior:default;
+                interventions.TryGetValue(previous,out var prior);
                 if(prior.Kind!=null&&prior.Kind!=kind)throw new InvalidOperationException("E22 intervention kind changed");
                 var actual=Apply(trial,kind,prior.Kind==null?null:prior.Id);
                 if(prior.Kind==null&&actual.Hit)interventions[previous]=(kind,actual.Id);
