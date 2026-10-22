@@ -32,16 +32,19 @@ static class AccessCacheBenchmark
         var cacheField=typeof(CitySimulation).GetField("_accessCache",BindingFlags.Instance|BindingFlags.NonPublic)
             ??throw new InvalidOperationException("Cache ausente");
         var cache=(IDictionary)cacheField.GetValue(sim)!;
+        var missesField=typeof(CitySimulation).GetField("_benchmarkAccessMisses",BindingFlags.Instance|BindingFlags.NonPublic)
+            ??throw new InvalidOperationException("contador ausente");
         var buildings=sim.State.Buildings;
         const int waves=4;
         // Warm exactly the same method/JIT before both policies are measured.
         for(var i=0;i<Math.Min(128,count);i++)sim.Access(buildings[i]);
         cache.Clear();
 
-        (double Time,long Checksum,int[] Ids,int Entries) Measure(bool legacy)
+        (double Time,long Checksum,int[] Ids,int Entries,int Misses) Measure(bool legacy)
         {
             toggle.SetValue(sim,legacy);
             cache.Clear();
+            missesField.SetValue(sim,0);
             var output=new int[count];
             var checksum=0L;
             var watch=Stopwatch.StartNew();
@@ -51,7 +54,7 @@ static class AccessCacheBenchmark
                     if(wave==waves-1)output[i]=selected;
                     checksum+=selected;
                 }
-            return (watch.Elapsed.TotalMilliseconds,checksum,output,cache.Count);
+            return (watch.Elapsed.TotalMilliseconds,checksum,output,cache.Count,(int)missesField.GetValue(sim)!);
         }
 
         // ABBA balances temporal drift and shared JIT/cache warming.
@@ -64,7 +67,7 @@ static class AccessCacheBenchmark
 
         var oldMs=(old1.Time+old2.Time)/2;
         var newMs=(new1.Time+new2.Time)/2;
-        Console.WriteLine($"ACCESSCACHE buildings={count} roads={sim.State.Roads.Count} waves={waves} baselineMs={oldMs:F2} optimizedMs={newMs:F2} speedup={oldMs/newMs:F2}x oldEntries={old2.Entries} newEntries={new2.Entries} sameResults=YES method=identical design=ABBA");
+        Console.WriteLine($"ACCESSCACHE buildings={count} roads={sim.State.Roads.Count} waves={waves} baselineMs={oldMs:F2} optimizedMs={newMs:F2} speedup={oldMs/newMs:F2}x oldEntries={old2.Entries} newEntries={new2.Entries} oldMisses={old2.Misses} newMisses={new2.Misses} sameResults=YES method=identical design=ABBA");
         return 0;
     }
 }
