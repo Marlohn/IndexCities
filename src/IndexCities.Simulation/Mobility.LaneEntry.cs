@@ -115,7 +115,8 @@ public sealed partial class CitySimulation
                 // Same entries as ToDictionary, in a dictionary reused across slices.
                 _entryFrameBuffer.Clear();foreach(var v in State.Vehicles.Where(v=>OccupiesLane(v)&&!TryLaneEntry(v,out _)))_entryFrameBuffer.Add(v.Id,EntrySnapshot(v));_entryFrame=_entryFrameBuffer;
                 var slice=NextVehicleMovementEvent(remaining);
-                MoveVehiclesUnsplit(slice);
+                if(E14Observe){var before=E14Capture();MoveVehiclesUnsplit(slice);E14Slice(before,slice);}
+                else MoveVehiclesUnsplit(slice);
                 _vehicleMovementOffset+=slice;
             }
         }finally{_vehicleMovementBatch=null;_entryFrame=null;_entryFrameBuffer.Clear();_vehicleMovementClock=null;_vehicleMovementOffset=0;}
@@ -151,8 +152,9 @@ public sealed partial class CitySimulation
     }
     double NextVehicleMovementEvent(double horizon)
     {
+        var originalHorizon=horizon;
         var entries=State.Vehicles.Where(v=>_vehicleMovementBatch!.Contains(v.Id)&&LiveLaneEntry(v)).ToList();
-        if(entries.Count==0)return horizon;
+        if(entries.Count==0){E14NoEntryForecast(horizon);return horizon;}
         var held=State.Vehicles.Any(o=>o.Status==VehicleStatus.Stranded)?State.Vehicles.Where(HeldBehindStranded).Select(o=>o.Id).ToHashSet():null;
         foreach(var v in State.Vehicles.Where(v=>_vehicleMovementBatch!.Contains(v.Id))){
             // A blocked lot entry is not travelling to its lane target yet.
@@ -161,6 +163,7 @@ public sealed partial class CitySimulation
             if(held?.Contains(v.Id)==true)continue;
             horizon=Math.Min(horizon,TimeToMovementChange(v,horizon));
         }
+        var routeHorizon=horizon;
         var earliest=horizon;
         foreach(var v in entries){
             TryLaneEntry(v,out var access);
@@ -194,6 +197,11 @@ public sealed partial class CitySimulation
                 if(!blocked){earliest=t;break;}
             }
         }
-        return Math.Max(Math.Min(earliest,horizon),Math.Min(MovementEventEpsilon,horizon));
+        var chosen=Math.Max(Math.Min(earliest,horizon),Math.Min(MovementEventEpsilon,horizon));
+        E14Forecast(originalHorizon,routeHorizon,earliest,chosen);
+        // Ablacao propositalmente arriscada: medir se dispensar previsoes de
+        // entrada de faixa muda os acontecimentos. NUNCA habilitar no jogo.
+        if(E14DropEntryEvents&&earliest<routeHorizon-1e-9){_e14DroppedEntry++;return routeHorizon;}
+        return chosen;
     }
 }
