@@ -1,0 +1,51 @@
+name: IndexCities Causal Lab CI
+
+on:
+  workflow_dispatch:
+
+# Runs isolated experiment code without model credentials or write permission.
+permissions:
+  contents: read
+
+concurrency:
+  group: indexcities-causal-lab-ci
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: experimento/laboratorio-causal-10k
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Existing V1 contract must remain intact
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --logger 'console;verbosity=minimal'
+      - name: CausalLab actually runs a city, not a microbenchmark
+        shell: bash
+        run: |
+          set -euo pipefail
+          LAB=experiments/IndexCities.CausalLab/IndexCities.CausalLab.csproj
+          if [[ ! -f "$LAB" ]]; then
+            echo '::error::Independent CausalLab has not been implemented yet.'
+            exit 1
+          fi
+          dotnet build "$LAB" -c Release
+          mkdir -p lab-results
+          dotnet run -c Release --no-build --project "$LAB" -- \
+            --scenario integrated --seed 42 --population 400 --days 1 \
+            --report "$PWD/lab-results/report.json"
+          python3 .github/scripts/validate_causal_lab.py lab-results/report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: causal-lab-latest
+          path: lab-results/
+          if-no-files-found: ignore
