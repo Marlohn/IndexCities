@@ -34,7 +34,7 @@ internal static class Program
                 Console.Error.WriteLine($"HISTORY_QUERY sim={person} found={count} emitted={Math.Min(count, limit)}");
                 return 0;
             }
-            int sims = 1000, days = 7, seed = 42;
+            int sims = 1000, days = 7, seed = 42, annualLoadCycles = 0;
             string? history = null;
             bool adversarial = false, wageFeedback = false, cohortRenewal = false, demandStaffing = false;
             foreach (var arg in args)
@@ -43,6 +43,7 @@ internal static class Program
                 else if (arg.StartsWith("--days=")) days = int.Parse(arg[7..]);
                 else if (arg.StartsWith("--seed=")) seed = int.Parse(arg[7..]);
                 else if (arg.StartsWith("--history=")) history = arg[10..];
+                else if (arg.StartsWith("--annual-load-cycles=")) annualLoadCycles = int.Parse(arg[21..]);
                 else if (arg == "--adversarial") adversarial = true;
                 else if (arg == "--wage-feedback") wageFeedback = true;
                 else if (arg == "--cohort-renewal") cohortRenewal = true;
@@ -52,6 +53,57 @@ internal static class Program
             }
             if (sims < 4 || sims > 100_000 || days < 1 || days > 29_220)
                 throw new ArgumentOutOfRangeException("Requires 4..100000 SIMs and 1..29220 days.");
+            // Isolate computational feasibility from the pathological finances
+            // and demography of the incomplete laboratory economy. This is a
+            // repeatable *load benchmark*, emphatically NOT 80 continuous
+            // years of one city or an implementation of the full product.
+            if (annualLoadCycles != 0)
+            {
+                if (annualLoadCycles < 1 || annualLoadCycles > 80 ||
+                    history is not null || wageFeedback || cohortRenewal || demandStaffing || days != 7)
+                    throw new ArgumentException(
+                        "Annual workload mode requires 1..80 cycles, no --days, history, or gameplay counterfactuals");
+                var watch = Stopwatch.StartNew();
+                var lowestPopulation = sims;
+                long representedDays = 0, actualTrips = 0, actualSales = 0, actualBirths = 0;
+                for (var year = 0; year < annualLoadCycles; year++)
+                {
+                    // The 80 independent, living annual workloads cover the
+                    // exact Gregorian day count for 2020 through 2099.
+                    var length = DateTime.IsLeapYear(2020 + year) ? 366 : 365;
+                    using var annual = new CausalCity(new LabConfig(sims, length, seed, null, adversarial));
+                    annual.Run();
+                    annual.AssertConservation();
+                    if (annual.MinimumActive < sims)
+                        throw new InvalidOperationException(
+                            $"Load benchmark lost live agents during cycle {year}");
+                    representedDays += length;
+                    lowestPopulation = Math.Min(lowestPopulation, annual.MinimumActive);
+                    actualTrips += annual.Journeys;
+                    actualSales += annual.Sales;
+                    actualBirths += annual.Births;
+                    if ((year + 1) % 10 == 0)
+                        Console.Error.WriteLine($"LAB_LOAD years={year + 1} days={representedDays} trips={actualTrips}");
+                }
+                watch.Stop();
+                Console.WriteLine(JsonSerializer.Serialize(new
+                {
+                    status = "TECHNICAL_REPEAT_LOAD_ONLY_NOT_CONTINUOUS_CITY",
+                    warning = "Independent one-year cities reset each cycle. NO 80-year continuous demographics, economic stability or 80-year persistent history; NOT a SPEC-complete validation.",
+                    baselinePopulationPerIndependentCycle = sims,
+                    minLivingAgentsAcrossIndependentCycles = lowestPopulation,
+                    independentAnnualCycles = annualLoadCycles,
+                    representedGregorianDays = representedDays,
+                    totalIndividualJourneys = actualTrips,
+                    totalRealFoodSalesUnitsAcrossCycles = actualSales,
+                    totalBirthsAcrossCycles = actualBirths,
+                    allCycleMoneyAndFoodConserved = true,
+                    historyPersistent = false,
+                    wallSeconds = watch.Elapsed.TotalSeconds,
+                    equivalentHoursAtMeasuredWorkload = watch.Elapsed.TotalHours
+                }, new JsonSerializerOptions { WriteIndented = true }));
+                return 0;
+            }
             var config = new LabConfig(sims, days, seed, history, adversarial, wageFeedback, cohortRenewal, demandStaffing);
             using var engine = new CausalCity(config);
             var sw = Stopwatch.StartNew();
