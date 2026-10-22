@@ -32,6 +32,7 @@ internal sealed class Person
     public int FreightShopId = -1;
     public int FreightCargo;
     public bool FreightShift;
+    public bool IsFreightDriver;
 }
 internal sealed class Household
 {
@@ -496,6 +497,9 @@ internal sealed partial class CausalCity : IDisposable
                 (requiredUnits + unitsPerEmployee - 1) / unitsPerEmployee,
                 farm ? 2 : 1, farm ? 128 : 96);
             var wage = farm ? 80 : 65;
+            // Freight positions are extra real hires, never substitutes for
+            // the staff producing the meals used by the city.
+            if (_config.FreightLabor && farm) wanted += 8;
             var funded = (int)Math.Min(firm.Cash / (wage * 30L), wanted);
             positions[i] = funded;
             firm.OfferedPositions = funded;
@@ -516,6 +520,7 @@ internal sealed partial class CausalCity : IDisposable
                 occupied[p.Job] >= positions[p.Job])
             {
                 p.Job = -1;
+                p.IsFreightDriver = false;
                 p.AtWork = false;
                 continue;
             }
@@ -544,6 +549,20 @@ internal sealed partial class CausalCity : IDisposable
             if (best < 0) break;
             p.Job = best;
             occupied[best]++;
+        }
+        if (_config.FreightLabor)
+        {
+            Span<int> drivers = stackalloc int[FarmCount];
+            foreach (var p in _people)
+            {
+                p.IsFreightDriver = false;
+                if (!p.Alive || p.Job < StoreCount ||
+                    p.Job >= StoreCount + FarmCount) continue;
+                var farmId = p.Job - StoreCount;
+                if (drivers[farmId] >= 8) continue;
+                p.IsFreightDriver = true;
+                drivers[farmId]++;
+            }
         }
     }
 
@@ -1032,8 +1051,8 @@ internal sealed partial class CausalCity : IDisposable
                 var employer = p.Job < StoreCount ? _shops[p.Job] : _farms[p.Job - StoreCount];
                 employer.PresentWorkers++;
             }
-            if (_config.FreightLabor && p.Job >= StoreCount && !p.FreightShift &&
-                TryAssignFreight(p))
+            if (_config.FreightLabor && p.Job >= StoreCount && p.IsFreightDriver &&
+                !p.FreightShift && TryAssignFreight(p))
             {
                 // One contracted shift performs one delivery instead of
                 // harvesting. No free driver, no free food and no teleport.
@@ -1164,6 +1183,7 @@ internal sealed partial class CausalCity : IDisposable
             Mix(p.Id); Mix(p.Node); Mix(p.Job); Mix(p.Cash); Mix(p.Alive ? 1 : 0); Mix(p.HeadingToWork ? 1 : 0);
             Mix(p.Health); Mix(p.CarryFood); Mix(p.Traveling ? 1 : 0);
             Mix(p.FreightShopId); Mix(p.FreightCargo); Mix(p.FreightShift ? 1 : 0);
+            Mix(p.IsFreightDriver ? 1 : 0);
             Mix(p.ContributedDays); Mix(p.GrossEarnings); Mix(p.PensionCredit); Mix(p.PensionReceived);
         }
         foreach (var h in _households) { Mix(h.Pantry); Mix(h.Members.Count); Mix(h.LastBirthDay); Mix(h.LastShoppingDepartureDay); }
@@ -1199,6 +1219,7 @@ internal sealed partial class CausalCity : IDisposable
         freightLaborFixture = _config.FreightLabor,
         realWorkerFreightTrips = _freightLaborTrips,
         freightChargesPaidCents = _paidFreightCents,
+        farmEmployeesAssignedToFreight = _people.Count(p => p.Alive && p.IsFreightDriver),
         employedAlive = _people.Count(p => p.Alive && p.Job >= 0),
         unemployedAdults = _people.Count(p => p.Alive && p.Job < 0 &&
             Age(p, Epoch.AddSeconds(_time)) is >= 18 and < 70),
