@@ -680,3 +680,23 @@ Nas seis execuções concluídas dessa base, o dia termina com 1.037 SIMs, 0 mor
 **Validação da correção:** `dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj`: **325/325**, sem falhas ou ignorados. Os seis casos de `JourneyRetryTests` cobrem falha a pé e alternativa do carro, manutenção do prazo em passos de 2 s, nova tentativa após 300 s, mudança sem conexão que reinicia a espera, reconexão imediata e rota removida. Aplicados à biblioteca original, cinco dos seis falham; com a correção, os seis passam. Godot 4.7.2 mono: build/importação reais, `-- --qa-list` e `-- --smoke`, com `INDEXCITIES_SMOKE_OK buildings=0 roads=17` e `--review-save-dir=C:/Users/Marlohn/orca/workspaces/IndexCities/sem-rota/artifacts/verification/sem-rota-retentativa/godot-saves`. O smoke é headless e não grava cidade; não substitui playtest humano.
 
 Logs, binários congelados e script da comparação em `artifacts/verification/sem-rota-retentativa/` (fora do Git). Revisão independente a cargo do coordenador após a PR; ainda não realizada nesta entrega.
+
+
+## 2026-10-21 — experimento isolado: reconstrução dos vizinhos da malha viária
+
+> **Pesquisa e medição técnica, não decisão de produto nem aprovação de arquitetura.** A mudança é experimental, em branch isolada; não autoriza incorporar esta versão à `main` sem revisão e validação proporcional. O custo aqui é de **reconstrução da rede**, não de executar um dia simulado com 10 mil cidadãos.
+
+**Problema reproduzido no código:** `RebuildRoadGraph` em `RoadNetwork.cs` percorre `State.Roads` dentro de outro percurso por todos os nós para descobrir conexões até `RoadStep + 0,01` de distância (quadrático em número de nós). O experimento `experimento/indice-vias-10k` substitui somente essa descoberta por índice de células espaciais. Mantém o mesmo teste geométrico, preserva a ordem original dos vizinhos pela ordem em `State.Roads`, tem fallback para coordenadas excepcionais e áreas extremamente densas e não muda regras de roteamento, trânsito ou construção.
+
+**Execução C# real:** GitHub Actions [.NET 8, ubuntu-latest, run 39697599407](https://github.com/Marlohn/IndexCities/actions/runs/39697599407), commit `28fab57368347bbd99ea8fb51c0bc5ca210e917e`, em branch isolada:
+
+| Verificação | Resultado |
+|---|---|
+| Testes específicos de equivalência (diferentes sementes, ordem dos vizinhos, remoção/inserção e aglomeração) | **8/8 aprovados** |
+| Suíte de testes do Simulation Core | **442/442 aprovados** |
+| `dotnet run -c Release --project src/IndexCities.Headless -- roadgraph 10000` | **391,32 ms** (varredura) vs **31,25 ms** (índice); **12,52x** no microbenchmark |
+| Comparação de vizinhos do benchmark de 10 mil nós | **Identidade de ordem e IDs confirmada** |
+
+**Interpretação:** confirma ganho no custo de *reconstruir conexões* para um mapa sintético em grade de 10 mil pontos de via. **Não mede** o ganho em `Advance`/dia, nem uma cidade com 10 mil SIMs, nem construção viária completa em Godot. É uma medição de **uma rodada**, em runner compartilhado; outras topologias/densidades e repetição podem mudar o ganho. No pior caso de concentração extrema existe fallback para varredura direta. Nenhum resultado foi incorporado automaticamente à SPEC.
+
+**Pendências antes de integração:** revisão independente conforme `AGENTS.md`; validação em cena Godot, saves/rotas e crescimento de uma cidade representativa; medir impacto no tempo total de simulação e memória. Não transformar `12,52x` de uma função em promessa de aceleração equivalente do jogo.
