@@ -1181,9 +1181,14 @@ internal sealed partial class CausalCity : IDisposable
         // inside the business sector; every paid salary leaves it. This
         // independent ledger exposes structural insolvency that total-money
         // conservation by itself would miss.
-        var businessesCash = _shops.Sum(f => f.Cash) + _farms.Sum(f => f.Cash);
-        if (businessesCash != checked(InitialBusinessCashCents + _sales * FoodPrice - _paidWages))
-            throw new InvalidOperationException("Business sector ledger differs from paid sales minus payroll");
+        var businessesCash = _shops.Sum(f => f.Cash) + _farms.Sum(f => f.Cash) + _builder.Cash;
+        // Private household building invoices are real receipts for the
+        // builder; timber is separately bought from the finite external
+        // reserve and is not magically credited to local businesses.
+        var contractorRevenue = checked(_constructionStarted * ContractorLaborInvoice);
+        if (businessesCash != checked(InitialBusinessCashCents + _sales * FoodPrice +
+            contractorRevenue - _paidWages))
+            throw new InvalidOperationException("Business ledger differs from food + construction sales minus actual wages");
         if (CalculateFood() != checked(_initialFood + _producedFood - _eatenFood))
             throw new InvalidOperationException("Food created/destroyed outside farm work and meals");
         if (_days > _config.Days || _active < 0) throw new InvalidOperationException("Invalid days/population");
@@ -1298,9 +1303,11 @@ internal sealed partial class CausalCity : IDisposable
         journeys = _journeys, roadSegments = _segments, roadWaitSeconds = _waitSeconds,
         salesFoodUnits = _sales, cargoDeliveries = _shipments, paidWagesCents = _paidWages,
         businessSalesRevenueCents = checked(_sales * FoodPrice),
-        businessOperatingNetCents = checked(_sales * FoodPrice - _paidWages),
+        contractorServiceRevenueCents = checked(_constructionStarted * ContractorLaborInvoice),
+        businessOperatingNetCents = checked(_sales * FoodPrice +
+            _constructionStarted * ContractorLaborInvoice - _paidWages),
         businessInitialCashCents = InitialBusinessCashCents,
-        businessCurrentCashCents = _shops.Sum(f => f.Cash) + _farms.Sum(f => f.Cash),
+        businessCurrentCashCents = _shops.Sum(f => f.Cash) + _farms.Sum(f => f.Cash) + _builder.Cash,
         unspentRealPayrollBudgetCents = _shops.Sum(f => f.PayrollBudget) + _farms.Sum(f => f.PayrollBudget),
         personalCashCents = _people.Sum(p => p.Cash),
         shopCashCents = _shops.Sum(s => s.Cash),
