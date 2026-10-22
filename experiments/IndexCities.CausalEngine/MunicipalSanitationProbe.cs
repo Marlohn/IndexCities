@@ -10,7 +10,8 @@ internal sealed partial class CausalCity
     private const int SanitationJob = BuilderJob + 1;
     private const int SanitationDepotNode = 0;
     private const int SanitationGrossWage = 80;
-    private const long MonthlyAssessedPropertyTaxCents = 20_000;
+    private const long BaseMonthlyAssessedPropertyTaxCents = 20_000;
+    private const long SanitationDepotCapacity = 50_000_000L;
 
     private void CollectMunicipalPropertyTaxes()
     {
@@ -18,9 +19,11 @@ internal sealed partial class CausalCity
         // taxable commercial/industrial building. Only its CURRENT wallet
         // can pay a 20,000-cent monthly experimental levy on its assessed lot.
         // This is NOT a tax on sales, and cash never appears from nowhere.
+        var assessment = BaseMonthlyAssessedPropertyTaxCents * 6 /
+            _config.MunicipalCollectionIntervalDays;
         foreach (var firm in _shops.Concat(_farms))
         {
-            var paid = Math.Min(MonthlyAssessedPropertyTaxCents, firm.Cash);
+            var paid = Math.Min(assessment, firm.Cash);
             if (paid <= 0) continue;
             firm.Cash -= paid;
             _treasury = checked(_treasury + paid);
@@ -31,7 +34,8 @@ internal sealed partial class CausalCity
 
     private int PickMunicipalCollectionSite(Person worker)
     {
-        if (_treasury < SanitationGrossWage) return -1;
+        if (_treasury < SanitationGrossWage ||
+            _garbageAtDepot + _people.Sum(p => p.SanitationCargo) >= SanitationDepotCapacity) return -1;
         var day = _time / DaySeconds;
         var best = -1;
         var bestTravel = int.MaxValue;
@@ -79,7 +83,10 @@ internal sealed partial class CausalCity
         // The actual worker is present at the real collection site. Pickup
         // has finite carrying capacity and cannot duplicate household waste.
         var home = _households[homeId];
-        var amount = Math.Min(500L, home.TrashUnits);
+        var remainingDepotCapacity = SanitationDepotCapacity -
+            _garbageAtDepot - _people.Sum(p => p.SanitationCargo);
+        var amount = Math.Min(500L, Math.Min(home.TrashUnits, remainingDepotCapacity));
+        if (amount <= 0) { StartTrip(worker, worker.Home); return; }
         home.TrashUnits -= amount;
         worker.SanitationCargo = amount;
         _garbageCollected += amount;
