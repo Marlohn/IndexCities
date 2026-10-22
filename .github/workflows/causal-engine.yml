@@ -254,7 +254,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Compare real farm freight labor after same-node round-trip fix
+      - name: Compare funded extra drivers while preserving production crews
         run: |
           set -o pipefail
           dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=366 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor 2>&1 | tee freight-pilot-1y.log
