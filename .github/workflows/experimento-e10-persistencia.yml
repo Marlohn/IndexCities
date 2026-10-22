@@ -1,0 +1,85 @@
+name: E10 - persistir indice espacial entre subpassos
+
+on:
+  push:
+    branches:
+      - experimento/e10-indice-lideres-persistente
+
+permissions:
+  contents: read
+
+jobs:
+  equivalencia-e-custo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout E10
+        uses: actions/checkout@v4
+        with:
+          path: e10
+      - name: Checkout E09 imutavel
+        uses: actions/checkout@v4
+        with:
+          ref: a3809b1b21e7d65e43ee005f2a2624e7cb718e1d
+          path: e09
+      - name: Checkout main imutavel
+        uses: actions/checkout@v4
+        with:
+          ref: 651326228729d7689b61745370cc63d997e5ee60
+          path: base
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Testes completos E10
+        run: dotnet test e10/tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --logger 'console;verbosity=minimal'
+      - name: Comparar 47/108 SIMs e saves
+        shell: bash
+        run: |
+          set -euo pipefail
+          compare() {
+            local tag="$1"; shift
+            echo "===== MAIN $tag ====="
+            dotnet run -c Release --project base/src/IndexCities.Headless -- scale "$@" | tee "main_$tag.txt"
+            echo "===== E10 $tag ====="
+            dotnet run -c Release --project e10/src/IndexCities.Headless -- scale "$@" --e09=1 | tee "e10_$tag.txt"
+            local old new
+            old=$(grep -o 'sha256=[0-9A-F]*' "main_$tag.txt" | tail -1 | cut -d= -f2)
+            new=$(grep -o 'sha256=[0-9A-F]*' "e10_$tag.txt" | tail -1 | cut -d= -f2)
+            test -n "$old" && test "$old" = "$new" || { echo "DIVERGENCIA $tag $old $new"; exit 1; }
+            echo "E10_RESULT scenario=$tag sameSave=YES sha=$new"
+            grep -E '^(DAY [0-9]|SUMMARY|E09 |INVARIANTS OK)' "main_$tag.txt"
+            grep -E '^(DAY [0-9]|SUMMARY|E09 |INVARIANTS OK)' "e10_$tag.txt"
+          }
+          compare pequeno42 cycle --seed=42 --warmup=1 --days=2 --cap=360
+          compare medio42 grid --rows=3 --length=400 --seed=42 --warmup=1 --days=2 --cap=360
+          compare medio7 grid --rows=3 --length=400 --seed=7 --warmup=1 --days=1 --cap=360
+      - name: Comparar main E09 E10 com 400 SIMs
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=(grid --rows=5 --length=800 --seed=42 --warmup=0 --days=1 --cap=450)
+          echo "===== MAIN 400 ====="
+          dotnet run -c Release --project base/src/IndexCities.Headless -- scale "${args[@]}" | tee main_400.txt
+          echo "===== E09 400 ====="
+          dotnet run -c Release --project e09/src/IndexCities.Headless -- scale "${args[@]}" --e09=1 | tee e09_400.txt
+          echo "===== E10 400 ====="
+          dotnet run -c Release --project e10/src/IndexCities.Headless -- scale "${args[@]}" --e09=1 | tee e10_400.txt
+          old=$(grep -o 'sha256=[0-9A-F]*' main_400.txt | tail -1 | cut -d= -f2)
+          previous=$(grep -o 'sha256=[0-9A-F]*' e09_400.txt | tail -1 | cut -d= -f2)
+          next=$(grep -o 'sha256=[0-9A-F]*' e10_400.txt | tail -1 | cut -d= -f2)
+          echo "E10_RESULT scenario=400 main=$old e09=$previous e10=$next"
+          for name in main e09 e10; do
+            echo "===== RESULT $name ====="
+            grep -E '^(DAY 1|SUMMARY|E09 |INVARIANTS OK)' "${name}_400.txt"
+          done
+          test -n "$old" && test "$old" = "$previous" && test "$old" = "$next" || { echo "DIVERGENCIA 400"; exit 1; }
+      - name: Preservar logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e10-triple-comparison
+          path: |
+            main_*.txt
+            e09_*.txt
+            e10_*.txt
+          if-no-files-found: ignore
