@@ -1,0 +1,55 @@
+name: E18 - fronteira causal dos eventos de rota
+
+on:
+  push:
+    branches:
+      - experimento/e18-eventos-rota-escopo
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --logger 'console;verbosity=minimal'
+
+  experiment:
+    name: compare-${{ matrix.label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: small-108
+            rows: 3
+            length: 400
+          - label: medium-400
+            rows: 5
+            length: 800
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Mesma cidade, modelo original contra subpassos limitados por influencia local
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet run -c Release --project src/IndexCities.Headless -- scale grid --rows=${{ matrix.rows }} --length=${{ matrix.length }} --seed=42 --warmup=1 --days=1 --e18=compare | tee "e18_${{ matrix.label }}.txt"
+          grep -q '^E18_COMPARE ' "e18_${{ matrix.label }}.txt"
+          grep -q '^E18_RESULT ' "e18_${{ matrix.label }}.txt"
+          grep '^E18_COMPARE' "e18_${{ matrix.label }}.txt"
+      - name: Preservar logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e18-${{ matrix.label }}
+          path: e18_*.txt
+          if-no-files-found: ignore
