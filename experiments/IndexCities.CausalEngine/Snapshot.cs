@@ -55,7 +55,7 @@ internal sealed partial class CausalCity
                 _segments, _waitSeconds, _sales, _shipments, _workdays, _births,
                 _deaths, _unservedMeals, _paidWages, _unsatisfiedSales, _replans,
                 _producedFood, _eatenFood, _initialFood, _peakEvents,
-                _firstDollarViolation, _reserveGlobal
+                _firstDollarViolation, _reserveGlobal, _paidFreightCents, _freightLaborTrips
             ],
             Populations = [_active, _maxActive, _minActive],
             Factors = [_windFactor, _waterRatio],
@@ -72,7 +72,7 @@ internal sealed partial class CausalCity
     {
         var state = JsonSerializer.Deserialize<Snapshot>(File.ReadAllText(path), SnapshotJson)
             ?? throw new InvalidDataException("Empty snapshot");
-        if (state.Counters.Length != 23 || state.Populations.Length != 3 ||
+        if (state.Counters.Length != 25 || state.Populations.Length != 3 ||
             state.Factors.Length != 2 || state.Households.Length < 1 ||
             state.Shops.Length != StoreCount || state.Farms.Length != FarmCount ||
             state.LaneNextEntry.Length != Nodes * 4 ||
@@ -113,6 +113,8 @@ internal sealed partial class CausalCity
           c[8], c[9], c[10], c[11], c[12], c[13], c[14],
           c[15], c[16], c[17], c[18], c[19], c[20], c[21]);
         city._reserveGlobal = c[22];
+        city._paidFreightCents = c[23];
+        city._freightLaborTrips = c[24];
         city._active = state.Populations[0];
         city._maxActive = state.Populations[1];
         city._minActive = state.Populations[2];
