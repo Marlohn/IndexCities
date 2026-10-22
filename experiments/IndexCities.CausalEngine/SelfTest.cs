@@ -429,6 +429,44 @@ internal static class EngineSelfTest
                     throw new InvalidOperationException("Building materials, labor or state diverged after checkpoint");
             }
             File.Delete(buildingSave);
+            // Municipal property taxes must be debited from existing firms,
+            // finance a SIM that actually travels to a home, and transfer
+            // physically collected waste to the city depot. No fake jobs,
+            // trash or money, and a checkpoint replays exactly.
+            var municipalCfg = new LabConfig(256, 150, 42, null, true,
+                VacancyMarket: true, ConstructionPilot: true,
+                MunicipalSanitationPilot: true);
+            var municipalSave = temp + ".municipal.save.json";
+            string municipalHash;
+            long municipalVisits;
+            using (var entireMunicipality = new CausalCity(municipalCfg))
+            {
+                entireMunicipality.Run();
+                entireMunicipality.AssertConservation();
+                municipalHash = entireMunicipality.Fingerprint();
+                using var rep = JsonDocument.Parse(JsonSerializer.Serialize(entireMunicipality.Report(0)));
+                var d = rep.RootElement;
+                municipalVisits = d.GetProperty("municipalPaidCollections").GetInt64();
+                if (municipalVisits == 0 ||
+                    d.GetProperty("municipalSanitationWagesPaidCents").GetInt64() != municipalVisits * 80 ||
+                    d.GetProperty("municipalTaxCollectedCents").GetInt64() <= 0 ||
+                    d.GetProperty("wasteStoredAtRealDepot").GetInt64() <= 0 ||
+                    !d.GetProperty("moneyConserved").GetBoolean())
+                    throw new InvalidOperationException("Municipal salary lacked genuine paid service and property taxes");
+            }
+            using (var partialMunicipality = new CausalCity(municipalCfg))
+            {
+                partialMunicipality.RunUntilDay(77);
+                partialMunicipality.SaveSnapshot(municipalSave);
+            }
+            using (var resumedMunicipality = CausalCity.FromSnapshot(municipalSave))
+            {
+                resumedMunicipality.Run();
+                resumedMunicipality.AssertConservation();
+                if (municipalHash != resumedMunicipality.Fingerprint())
+                    throw new InvalidOperationException("City taxes and physical household trash replay diverged");
+            }
+            File.Delete(municipalSave);
             // Small closed-household stress case: when the final family
             // member dies, a positive estate must NOT finance city pensions.
             long unclaimedEstate;
@@ -455,6 +493,7 @@ internal static class EngineSelfTest
                 boundedRetailServiceSaveResumeExact = true,
                 basketRetailStaffingAndSaveResumeExact = true, basketTransactions,
                 alternativeRetailRouteSaveResumeExact = true,
+                municipalCashTaxWasteAndJobsSaveResumeExact = true, municipalVisits,
                 realFreightSaveResumeExact = true, freightJourneys, freightCharges,
                 buildingMaterialAndPayrollConserved = true, buildingPaidShifts = builtShifts,
                 saveResumeExact = resumedHash == hashA,
@@ -474,7 +513,7 @@ internal static class EngineSelfTest
         }
         finally
         {
-            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json", temp + ".construction.save.json", temp + ".cost-price.save.json", temp + ".checkout.save.json", temp + ".basket.save.json", temp + ".fallback.save.json" })
+            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json", temp + ".construction.save.json", temp + ".cost-price.save.json", temp + ".checkout.save.json", temp + ".basket.save.json", temp + ".fallback.save.json", temp + ".municipal.save.json" })
                 if (File.Exists(path)) File.Delete(path);
         }
     }
