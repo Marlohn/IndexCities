@@ -49,7 +49,7 @@ jobs:
             seconds: 7200
             adversary: mixed
             reverse: 1
-            signals: 0
+            signals: 1
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
