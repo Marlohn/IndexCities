@@ -293,6 +293,41 @@ internal static class EngineSelfTest
                     throw new InvalidOperationException("Bounded paid checkout differs after snapshot");
             }
             File.Delete(checkoutSave);
+            // A physical shopper can check out one basket (up to 32 items)
+            // for one cashier service slot. Test the new staffing and checkout
+            // contract together, including actual attendance and save/resume.
+            var basketConfig = new LabConfig(256, 95, 42, null, true,
+                VacancyMarket: true, BoundedRetailService: true,
+                BasketRetailService: true, CostBasedFoodPrice: true,
+                CapacityPricedFood: true);
+            var basketSave = temp + ".basket.save.json";
+            string basketHash;
+            long basketTransactions;
+            using (var completeBasket = new CausalCity(basketConfig))
+            {
+                completeBasket.Run();
+                completeBasket.AssertConservation();
+                basketHash = completeBasket.Fingerprint();
+                using var d = JsonDocument.Parse(JsonSerializer.Serialize(completeBasket.Report(0)));
+                basketTransactions = d.RootElement.GetProperty("checkoutBasketTransactions").GetInt64();
+                if (!d.RootElement.GetProperty("basketRetailServiceFixture").GetBoolean() ||
+                    basketTransactions == 0 ||
+                    d.RootElement.GetProperty("salesFoodUnits").GetInt64() <= basketTransactions)
+                    throw new InvalidOperationException("Retail did not process real multi-item baskets");
+            }
+            using (var partialBasket = new CausalCity(basketConfig))
+            {
+                partialBasket.RunUntilDay(46);
+                partialBasket.SaveSnapshot(basketSave);
+            }
+            using (var resumedBasket = CausalCity.FromSnapshot(basketSave))
+            {
+                resumedBasket.Run();
+                resumedBasket.AssertConservation();
+                if (resumedBasket.Fingerprint() != basketHash)
+                    throw new InvalidOperationException("Real paid basket checkout changed after checkpoint");
+            }
+            File.Delete(basketSave);
             // In the physical-supplier-freight counterfactual, a real farm
             // employee must leave the farm with real stock, travel to the shop,
             // unload there, and receive exactly one salary from existing cash.
@@ -390,6 +425,7 @@ internal static class EngineSelfTest
                 realVacancyMarketSaveResumeExact = true, marketEmployed, marketUnemployed,
                 costBasedFoodPricingSaveResumeExact = true, observedRetailPriceCents = costAverage,
                 boundedRetailServiceSaveResumeExact = true,
+                basketRetailStaffingAndSaveResumeExact = true, basketTransactions,
                 realFreightSaveResumeExact = true, freightJourneys, freightCharges,
                 buildingMaterialAndPayrollConserved = true, buildingPaidShifts = builtShifts,
                 saveResumeExact = resumedHash == hashA,
@@ -409,7 +445,7 @@ internal static class EngineSelfTest
         }
         finally
         {
-            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json", temp + ".construction.save.json", temp + ".cost-price.save.json", temp + ".checkout.save.json" })
+            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json", temp + ".construction.save.json", temp + ".cost-price.save.json", temp + ".checkout.save.json", temp + ".basket.save.json" })
                 if (File.Exists(path)) File.Delete(path);
         }
     }
