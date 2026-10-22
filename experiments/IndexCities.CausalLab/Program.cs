@@ -20,8 +20,10 @@ internal static class Program
         {
             if (args.Length == 1 && args[0] == "--integrated")
                 return IntegratedProbe.Run();
+            if (args.Length == 1 && args[0] == "--segments")
+                return TemporalKernel.Run();
             if (args.Length != 0)
-                throw new ArgumentException("Uso: sem argumentos (matemática P0) ou --integrated (cidade real)");
+                throw new ArgumentException("Uso: sem argumentos (matemática P0), --segments (evento de fome) ou --integrated (cidade real)");
             var report = new Dictionary<string, object>
             {
                 ["scope"] = "P0: contraexemplos e equivalência de acumuladores isolados; NÃO benchmark integrado",
