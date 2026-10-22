@@ -103,6 +103,8 @@ public sealed partial class CitySimulation
     static Vehicle EntrySnapshot(Vehicle v)=>new(){Id=v.Id,Position=v.Position,Heading=v.Heading,Status=v.Status,Fuel=v.Fuel,PassengerCar=v.PassengerCar,RouteIndex=v.RouteIndex,Route=v.Route.ToList()};
     void MoveVehicles(double dt)
     {
+        var e21Start=E21Probe=="cost"?System.Diagnostics.Stopwatch.GetTimestamp():0;
+        try {
         if(!State.Vehicles.Any(LiveLaneEntry)){MoveVehiclesUnsplit(dt);return;}
         _vehicleMovementBatch=[];_vehicleMovementOffset=0;
         try{
@@ -119,6 +121,7 @@ public sealed partial class CitySimulation
                 _vehicleMovementOffset+=slice;
             }
         }finally{_vehicleMovementBatch=null;_entryFrame=null;_entryFrameBuffer.Clear();_vehicleMovementClock=null;_vehicleMovementOffset=0;}
+        }finally{E21OuterComplete(e21Start);}
     }
     Point ProjectedVelocity(Vehicle v,HashSet<int>? held)
     {
@@ -151,6 +154,8 @@ public sealed partial class CitySimulation
     }
     double NextVehicleMovementEvent(double horizon)
     {
+        var e21Start=E21Probe=="cost"?System.Diagnostics.Stopwatch.GetTimestamp():0;
+        try {
         var entries=State.Vehicles.Where(v=>_vehicleMovementBatch!.Contains(v.Id)&&LiveLaneEntry(v)).ToList();
         if(entries.Count==0)return horizon;
         var held=State.Vehicles.Any(o=>o.Status==VehicleStatus.Stranded)?State.Vehicles.Where(HeldBehindStranded).Select(o=>o.Id).ToHashSet():null;
@@ -195,5 +200,6 @@ public sealed partial class CitySimulation
             }
         }
         return Math.Max(Math.Min(earliest,horizon),Math.Min(MovementEventEpsilon,horizon));
+        }finally{E21ForecastComplete(e21Start);}
     }
 }
