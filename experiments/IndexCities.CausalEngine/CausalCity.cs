@@ -8,7 +8,7 @@ namespace IndexCities.CausalEngine;
 
 // Independent vertical-slice engine for falsifying the architecture.
 // RULES AND FIXTURES HERE ARE NOT AN IMPLEMENTATION OF ALL OF INDEXCITIES SPEC.
-internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false);
+internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false);
 internal enum EventKind : byte { Day, Hour, StartWork, EndWork, Move, Delivery, RoadClose, RoadOpen, HouseholdShop }
 internal readonly record struct SimEvent(EventKind Kind, int Id);
 internal sealed class Person
@@ -509,7 +509,22 @@ internal sealed partial class CausalCity : IDisposable
                 var units = firm.MonthRetailSalesUnits;
                 var acquisition = checked(units * WholesalePrice);
                 var observedCosts = checked(firm.MonthRetailPaidWagesCents + acquisition);
-                var priced = (checked(observedCosts * 105) + units * 100 - 1) / (units * 100);
+                long priced;
+                if (_config.CapacityPricedFood)
+                {
+                    // In real shops a slow month is a LOSS, not permission to
+                    // charge the next buyer for all idle staff. Base the quote
+                    // on the observed worker wage per scheduled capacity of
+                    // five servings per paid shift, already the staffed retail
+                    // throughput assumption in this laboratory.
+                    var shifts = firm.MonthRetailPaidWagesCents / 65;
+                    var wagePerShift = shifts > 0
+                        ? (firm.MonthRetailPaidWagesCents + shifts - 1) / shifts : 65;
+                    var normalUnitCost = WholesalePrice + (wagePerShift + 4) / 5;
+                    priced = (checked(normalUnitCost * 105) + 99) / 100;
+                }
+                else
+                    priced = (checked(observedCosts * 105) + units * 100 - 1) / (units * 100);
                 firm.RetailUnitPriceCents = checked((int)Math.Clamp(priced, WholesalePrice + 1L, int.MaxValue));
             }
             // Farm staffing is sized from REAL food physically produced in
@@ -1361,6 +1376,7 @@ internal sealed partial class CausalCity : IDisposable
         minimumRetailUnitPriceCents = _shops.Min(f => f.RetailUnitPriceCents),
         maximumRetailUnitPriceCents = _shops.Max(f => f.RetailUnitPriceCents),
         costBasedFoodPriceFixture = _config.CostBasedFoodPrice,
+        capacityPricedFoodFixture = _config.CapacityPricedFood,
         contractorServiceRevenueCents = checked(_constructionStarted * ContractorLaborInvoice),
         businessOperatingNetCents = checked(_retailSalesCents +
             _constructionStarted * ContractorLaborInvoice - _paidWages),
