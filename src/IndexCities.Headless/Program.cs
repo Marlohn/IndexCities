@@ -13,7 +13,7 @@ using IndexCities.Simulation;
 //          --strand=N empties the tank of N driving vehicles each day and follows the tow and the queue for 30 min
 // Results are measurements, not product rules: see docs/exploration/ritmo-velocidades.md.
 Console.OutputEncoding=Encoding.UTF8;
-var known=new HashSet<string>{"rows","length","days","cap","signals","seed","growth","warmup","strand","e22","e22-window"};
+var known=new HashSet<string>{"rows","length","days","cap","signals","seed","growth","warmup","strand","e22","e22-window","e22-adversary","e22-reverse"};
 var opts=new Dictionary<string,string>();foreach(var p in args.Skip(2).Select(a=>a.TrimStart('-').Split('=',2)))opts[p[0]]=p.Length>1?p[1]:"1";
 string Opt(string k,string d)=>opts.GetValueOrDefault(k,d);
 if(opts.Keys.FirstOrDefault(k=>!known.Contains(k)) is {} unknown){Console.Error.WriteLine("opção desconhecida: --"+unknown);return 2;}
@@ -36,8 +36,62 @@ if(e22=="compare")
     var boundaries=new List<int>();var progress=0;
     while(progress<Math.Min(span,60)){progress+=2;boundaries.Add(progress);}
     while(progress<span){progress=Math.Min(span,progress+600);boundaries.Add(progress);}
+    var adversary=Opt("e22-adversary","none");
+    if(adversary is not ("none" or "tow" or "junction" or "road" or "mixed"))
+    {Console.Error.WriteLine("e22-adversary deve ser none/tow/junction/road/mixed");return 2;}
+    var reversed=Opt("e22-reverse","0")=="1";
+    var order=reversed?new[]{"queue","events","off"}:new[]{"off","events","queue"};
+    var interventions=new Dictionary<int,(string Kind,int Id)>();
+    var coverage=new Dictionary<string,int>(StringComparer.Ordinal);
+    string? ChooseAction(int seconds){
+        if(adversary=="none")return null;
+        if(adversary!="mixed")return seconds==660?adversary:null;
+        return seconds switch{660=>"tow",1260=>"junction",1860=>"road",_=>null};
+    }
+    (int Id,bool Hit,string Info) Apply(CitySimulation trial,string kind,int? target){
+        var st=trial.State;
+        if(kind=="tow"){
+            // Prefer a real leader with followers, as Stuck.Force does, but
+            // select ONE id in reference order and reuse it on all arms.
+            var picked=target==null?
+                st.Vehicles.Where(v=>v.Status==VehicleStatus.Travelling&&v.Fuel>0&&v.RouteIndex>0&&v.RouteIndex<v.Route.Count
+                    &&v.Machine==PavingMachine.None&&v.Body is not (TruckBody.Tow or TruckBody.TowHeavy)&&v.Detour.Count==0)
+                .OrderByDescending(v=>st.Vehicles.Count(o=>o.Id!=v.Id&&o.Status==VehicleStatus.Travelling
+                    &&Math.Cos(o.Heading-v.Heading)>.9&&(v.Position-o.Position) is var rel
+                    &&rel.X*Math.Sin(v.Heading)+rel.Z*Math.Cos(v.Heading) is >0 and <40
+                    &&Math.Abs(rel.X*Math.Cos(v.Heading)-rel.Z*Math.Sin(v.Heading))<2.6))
+                .ThenBy(v=>v.Id).FirstOrDefault():
+                st.Vehicles.FirstOrDefault(v=>v.Id==target);
+            if(picked==null)return(-1,false,"no travelling vehicle to strand");
+            picked.Fuel=0;
+            return(picked.Id,true,$"fuel=0 id={picked.Id} driver={picked.DriverId} status={picked.Status}");
+        }
+        if(kind=="junction"){
+            var selected=target==null?
+                st.Roads.Where(n=>!n.Highway&&n.Neighbours.Count>=3)
+                .OrderByDescending(n=>st.Vehicles.Count(v=>v.Status==VehicleStatus.Travelling&&v.Route.Skip(v.RouteIndex).Contains(n.Id)))
+                .ThenBy(n=>n.Id).FirstOrDefault():
+                st.Roads.FirstOrDefault(n=>n.Id==target);
+            if(selected==null)return(-1,false,"no junction");
+            var control=selected.Control==JunctionControl.Signal?JunctionControl.ThroughX:JunctionControl.Signal;
+            var result=trial.SetJunction(selected.Id,control);
+            return(selected.Id,result.Success,$"junction={selected.Id} control={control} success={result.Success}");
+        }
+        if(kind=="road"){
+            var ordered=target==null?
+                st.Roads.Where(n=>!n.Highway)
+                .OrderByDescending(n=>st.Vehicles.Count(v=>v.Status==VehicleStatus.Travelling&&v.Route.Skip(v.RouteIndex).Contains(n.Id)))
+                .ThenBy(n=>n.Id).FirstOrDefault():
+                st.Roads.FirstOrDefault(n=>n.Id==target);
+            if(ordered==null)return(-1,false,"no eligible urban road");
+            var before=trial.QuoteRoadDemolition(ordered.Id);
+            var result=trial.DemolishRoad(ordered.Id);
+            return(ordered.Id,result.Success,$"road={ordered.Id} routes={before.AffectedVehicleRoutes} isolated={before.IsolatedBuildingIds.Count} success={result.Success}");
+        }
+        return(-1,false,"unknown intervention");
+    }
     var results=new Dictionary<string,(string[] Hashes,double Seconds,long Alloc)>();
-    foreach(var mode in new[]{"off","events","queue"})
+    foreach(var mode in order)
     {
         var trial=CitySimulation.FromJson(initial);
         trial.E22Mode=mode;
@@ -47,6 +101,14 @@ if(e22=="compare")
         for(var i=0;i<boundaries.Count;i++)
         {
             trial.Advance(boundaries[i]-previous);previous=boundaries[i];
+            if(ChooseAction(previous) is {} kind){
+                var expected=interventions.TryGetValue(previous,out var prior)?prior:default;
+                if(prior.Kind!=null&&prior.Kind!=kind)throw new InvalidOperationException("E22 intervention kind changed");
+                var actual=Apply(trial,kind,prior.Kind==null?null:prior.Id);
+                if(prior.Kind==null&&actual.Hit)interventions[previous]=(kind,actual.Id);
+                if(actual.Hit)coverage[kind]=coverage.GetValueOrDefault(kind)+1;
+                Console.WriteLine($"E22_INTERVENTION mode={mode} second={previous} kind={kind} id={actual.Id} applied={actual.Hit} {actual.Info}");
+            }
             hashes[i]=Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(trial.SaveToJson())))[..16];
             if(i<30||i==boundaries.Count-1||i%4==0)
                 Console.WriteLine($"E22_CHECKPOINT mode={mode} elapsed={boundaries[i]} sha={hashes[i]}");
@@ -63,7 +125,12 @@ if(e22=="compare")
         for(var i=0;i<boundaries.Count;i++)if(original.Hashes[i]!=observed.Hashes[i]){first=boundaries[i];break;}
         Console.WriteLine($"E22_COMPARE mode={mode} exactCheckpoints={first<0} firstDivergentSecond={first} baselineSeconds={original.Seconds:F3} trialSeconds={observed.Seconds:F3} baselineMB={original.Alloc/1e6:F1} trialMB={observed.Alloc/1e6:F1}");
     }
-    return 0; // experimental falsification: divergence MUST be reported, not a CI failure.
+    Console.WriteLine($"E22_COVERAGE adversary={adversary} seeds={seed} appliedTow={coverage.GetValueOrDefault("tow")} appliedJunction={coverage.GetValueOrDefault("junction")} appliedRoad={coverage.GetValueOrDefault("road")} order={string.Join(",",order)}");
+    // Coverage must not pass silently. A failed mutation means that stress case
+    // was NOT tested, regardless of save equality and CI result.
+    var expectedKinds=adversary=="mixed"?new[]{"tow","junction","road"}:
+        adversary=="none"?Array.Empty<string>():new[]{adversary};
+    return expectedKinds.All(k=>coverage.GetValueOrDefault(k)==3)?0:3;
 }
 sim.E22Mode=e22;
 var census=args[0]=="census"?new Census():null;var stuck=args[0]=="stuck"?new Stuck():null;
