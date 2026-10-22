@@ -8,7 +8,7 @@ namespace IndexCities.CausalEngine;
 
 // Independent vertical-slice engine for falsifying the architecture.
 // RULES AND FIXTURES HERE ARE NOT AN IMPLEMENTATION OF ALL OF INDEXCITIES SPEC.
-internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false, bool RetailShopFallback = false, int RetailBasketsPerShift = 5, bool MunicipalSanitationPilot = false);
+internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false, bool RetailShopFallback = false, int RetailBasketsPerShift = 5, bool MunicipalSanitationPilot = false, int MunicipalCollectionIntervalDays = 6);
 internal enum EventKind : byte { Day, Hour, StartWork, EndWork, Move, Delivery, RoadClose, RoadOpen, HouseholdShop }
 internal readonly record struct SimEvent(EventKind Kind, int Id);
 internal sealed class Person
@@ -389,6 +389,8 @@ internal sealed partial class CausalCity : IDisposable
                     _eatenFood++;
                     if (_config.MunicipalSanitationPilot) { h.TrashUnits++; _garbageGenerated++; }
                     p.Health = Math.Min(100, p.Health + (_waterRatio >= .5 ? 1 : 0));
+                    if (_config.MunicipalSanitationPilot && h.TrashUnits > 80)
+                        p.Health = Math.Max(0, p.Health - 2); // material service consequence: unhygienic accumulation
                     _history.Fact(_time, id, 3, 1);
                 }
                 else
@@ -515,7 +517,8 @@ internal sealed partial class CausalCity : IDisposable
             {
                 // One actual home served per real shift, ~weekly residence service.
                 var liveHomes = _households.Count(h => h.Members.Any(id => _people[id].Alive));
-                var demanded = Math.Min(512, (liveHomes + 5) / 6);
+                var interval = _config.MunicipalCollectionIntervalDays;
+                var demanded = Math.Min(1600, (liveHomes + interval - 1) / interval);
                 positions[i] = Math.Min(demanded, (int)(_treasury / (80L * 30)));
                 continue;
             }
@@ -1623,6 +1626,7 @@ internal sealed partial class CausalCity : IDisposable
         retailAlternativePurchases = _people.Sum(p => p.RetailAlternativePurchases),
         retailAlternativeFailures = _people.Sum(p => p.RetailAlternativeFailures),
         municipalSanitationPilotFixture = _config.MunicipalSanitationPilot,
+        municipalCollectionIntervalDays = _config.MunicipalCollectionIntervalDays,
         municipalTaxCollectedCents = _municipalTaxPaidCents,
         municipalSanitationWagesPaidCents = _municipalWagesPaidCents,
         municipalPaidCollections = _sanitationPaidVisits,
