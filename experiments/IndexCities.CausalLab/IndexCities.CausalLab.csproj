@@ -8,5 +8,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/IndexCities.Simulation/IndexCities.Simulation.csproj" />
+    <Compile Include="../../src/IndexCities.Headless/Fixtures.cs" Link="Fixtures.cs" />
   </ItemGroup>
 </Project>
