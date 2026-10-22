@@ -1,0 +1,59 @@
+name: E09 - candidatos espaciais de lideres sem mudar transito
+
+on:
+  push:
+    branches:
+      - experimento/e09-indice-lideres-espacial
+
+permissions:
+  contents: read
+
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 26
+    steps:
+      - name: Checkout candidato
+        uses: actions/checkout@v4
+        with:
+          path: candidato
+      - name: Checkout main de referencia
+        uses: actions/checkout@v4
+        with:
+          ref: 651326228729d7689b61745370cc63d997e5ee60
+          path: base
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Suite completa (candidato)
+        run: dotnet test candidato/tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --logger 'console;verbosity=minimal'
+      - name: Dias completos com SHA e contagem de candidatos
+        shell: bash
+        run: |
+          set -euo pipefail
+          compare() {
+            local tag="$1"; shift
+            echo "==== BASE ${tag} ===="
+            dotnet run -c Release --project base/src/IndexCities.Headless -- scale "$@" | tee "main_${tag}.txt"
+            echo "==== E09 ${tag} ===="
+            dotnet run -c Release --project candidato/src/IndexCities.Headless -- scale "$@" --e09=1 | tee "e09_${tag}.txt"
+            local old new
+            old=$(grep -o 'sha256=[0-9A-F]*' "main_${tag}.txt" | tail -1 | cut -d= -f2)
+            new=$(grep -o 'sha256=[0-9A-F]*' "e09_${tag}.txt" | tail -1 | cut -d= -f2)
+            echo "E09_RESULT tag=${tag} baseline=${old} candidate=${new}"
+            grep -E '^(DAY 1|SUMMARY|E09 |INVARIANTS OK)' "main_${tag}.txt"
+            grep -E '^(DAY 1|SUMMARY|E09 |INVARIANTS OK)' "e09_${tag}.txt"
+            if [ -z "$old" ] || [ "$old" != "$new" ]; then echo "DIVERGENCIA SAVE"; exit 1; fi
+          }
+          compare pequeno42 cycle --seed=42 --warmup=1 --days=1 --cap=480
+          compare medio42 grid --rows=3 --length=400 --seed=42 --warmup=1 --days=1 --cap=480
+          compare grande42 grid --rows=5 --length=800 --seed=42 --warmup=0 --days=1 --cap=480
+      - name: Preservar logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e09-resultados
+          path: |
+            main_*.txt
+            e09_*.txt
+          if-no-files-found: ignore
