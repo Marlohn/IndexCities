@@ -306,7 +306,7 @@ internal static class EngineSelfTest
             // The experiment never mints currency, timber or finished homes.
             var buildingCfg = new LabConfig(256, 160, 42, null, true,
                 VacancyMarket: true, CohortRenewal: true, ConstructionPilot: true);
-            var buildingSave = temp + ".construction.save.json", temp + ".cost-price.save.json";
+            var buildingSave = temp + ".construction.save.json";
             string builtHash;
             long builtShifts;
             using (var completeConstruction = new CausalCity(buildingCfg))
@@ -379,7 +379,7 @@ internal static class EngineSelfTest
         }
         finally
         {
-            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json", temp + ".construction.save.json" })
+            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json", temp + ".construction.save.json", temp + ".cost-price.save.json" })
                 if (File.Exists(path)) File.Delete(path);
         }
     }
