@@ -7,13 +7,15 @@ public sealed partial class CitySimulation
     private VehicleLeaderGrid? _e09LeaderGrid;
     private bool _e09CollectStats;
     private long _e09Queries, _e09Candidates, _e09FullFallbacks, _e09IndexedBuilds;
+    private long _e10Refreshes, _e10Rebuilds;
     public void StartE09Counters()
     {
         _e09CollectStats=true;
         _e09Queries=_e09Candidates=_e09FullFallbacks=_e09IndexedBuilds=0;
+        _e10Refreshes=_e10Rebuilds=0;
     }
     public string E09Counters()
-        =>$"E09 queries={_e09Queries} inspected={_e09Candidates} fallbackFullScans={_e09FullFallbacks} indexBuilds={_e09IndexedBuilds}";
+        =>$"E09 queries={_e09Queries} inspected={_e09Candidates} fallbackFullScans={_e09FullFallbacks} indexBuilds={_e09IndexedBuilds} refreshes={_e10Refreshes} rosterRebuilds={_e10Rebuilds}";
 
     private sealed class VehicleLeaderGrid
     {
@@ -21,6 +23,7 @@ public sealed partial class CitySimulation
         private readonly Dictionary<(long X,long Z),List<Vehicle>> _cells=new();
         private readonly Dictionary<int,(long X,long Z)> _location=new();
         private readonly Dictionary<int,int> _originalOrder=new();
+        private readonly Dictionary<int,Vehicle> _members=new();
         private readonly List<Vehicle> _scratch=new();
         private readonly List<Vehicle> _vehicles;
         private bool _valid=true;
@@ -38,7 +41,7 @@ public sealed partial class CitySimulation
             _vehicles=vehicles;
             for(var i=0;i<vehicles.Count;i++)
             {
-                var v=vehicles[i];_originalOrder[v.Id]=i;
+                var v=vehicles[i];_originalOrder[v.Id]=i;_members[v.Id]=v;
                 if(!TryCell(v.Position,out var key)){_valid=false;break;}
                 Add(v,key);
             }
@@ -54,13 +57,31 @@ public sealed partial class CitySimulation
         {
             if(!_valid)return;
             if(!TryCell(v.Position,out var key)){_valid=false;return;}
-            if(!_originalOrder.ContainsKey(v.Id)){_valid=false;return;}
+            if(!_members.TryGetValue(v.Id,out var member)||!ReferenceEquals(member,v)){_valid=false;return;}
             if(!_location.TryGetValue(v.Id,out var previous)){_valid=false;return;}
             if(key==previous)return;
             var cell=_cells[previous];
             cell.Remove(v);
             if(cell.Count==0)_cells.Remove(previous);
             Add(v,key);
+        }
+
+        // All vehicles can be moved by other subsystems between outer ticks
+        // (tows, parking, service, repair etc.). Reconcile once per unsplit
+        // substep without allocating a new grid. Roster or identity changes
+        // force a full rebuild before further spatial queries.
+        public bool Refresh()
+        {
+            if(!_valid||_vehicles.Count!=_originalOrder.Count)return false;
+            for(var i=0;i<_vehicles.Count;i++)
+            {
+                var v=_vehicles[i];
+                if(!_originalOrder.TryGetValue(v.Id,out var oldIndex)||oldIndex!=i
+                    ||!_members.TryGetValue(v.Id,out var member)||!ReferenceEquals(v,member))return false;
+                Sync(v);
+                if(!_valid)return false;
+            }
+            return true;
         }
 
         public IEnumerable<Vehicle> Near(Point position,double radius)
