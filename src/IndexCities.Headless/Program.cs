@@ -76,7 +76,8 @@ if(e22=="compare")
             var picked=target==null?
                 st.Vehicles.Where(v=>v.Status==VehicleStatus.Travelling&&v.Fuel>0&&v.RouteIndex>0&&v.RouteIndex<v.Route.Count
                     &&v.Machine==PavingMachine.None&&v.Body is not (TruckBody.Tow or TruckBody.TowHeavy)&&v.Detour.Count==0)
-                .OrderByDescending(v=>v.PassengerCar&&v.DriverId!=null)
+                .OrderByDescending(v=>st.Roads.Any(n=>n.Position.Distance(v.Position)<=st.Tuning.RoadWidth/2+1))
+                .ThenByDescending(v=>v.PassengerCar&&v.DriverId!=null)
                 .ThenByDescending(v=>st.Vehicles.Count(o=>o.Id!=v.Id&&o.Status==VehicleStatus.Travelling
                     &&Math.Cos(o.Heading-v.Heading)>.9&&(v.Position-o.Position) is var rel
                     &&rel.X*Math.Sin(v.Heading)+rel.Z*Math.Cos(v.Heading) is >0 and <40
@@ -85,7 +86,18 @@ if(e22=="compare")
                 st.Vehicles.FirstOrDefault(v=>v.Id==target);
             if(picked==null)return(-1,false,"no travelling vehicle to strand");
             picked.Fuel=0;
-            return(picked.Id,true,$"fuel=0 id={picked.Id} passengerCar={picked.PassengerCar} driver={picked.DriverId} status={picked.Status}");
+            // The previous adversary only zeroed Fuel on a car already blocked
+            // in traffic. It never attempted a drive, so it never became
+            // Stranded and NO tow was called. Fire the existing game's real
+            // RunOutOfFuel transition in this synthetic adversarial fixture.
+            // This preserves the implementation of tow calling, routing and
+            // payments, which all run in subsequent ordinary simulation Steps.
+            var outOfFuel=typeof(CitySimulation).GetMethod("RunOutOfFuel",
+                System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic)
+                ??throw new InvalidOperationException("Missing real RunOutOfFuel transition");
+            outOfFuel.Invoke(trial,[picked]);
+            return(picked.Id,picked.Status==VehicleStatus.Stranded,
+                $"injectedRealRunOutOfFuel id={picked.Id} passengerCar={picked.PassengerCar} driver={picked.DriverId} status={picked.Status}");
         }
         if(kind=="junction"){
             var selected=target==null?
