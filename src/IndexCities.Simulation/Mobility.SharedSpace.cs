@@ -91,10 +91,13 @@ public sealed partial class CitySimulation
     {
         var held=new List<(Vehicle Body,Point Position,double Heading)>();spaces=[];endIndex=from-1;
         var near=SharedNodes();var found=spaces;
+        // Experimental: one reusable scratch list for all site/lane segments
+        // of this manoeuvre; output still goes to 'held' in the original order.
+        var sampled=new List<(Point Position,double Heading)>();
         void Note(Point p,double h){foreach(var n in near)if(!found.Contains(n)&&EntersArea(o,p,h,n))found.Add(n);}
         for(var index=0;index<site.Count;index++){
             var to=site[index];var heading=approach&&o.SiteDockHeading is {} dockHeading&&index==site.Count-1?dockHeading:to.Distance(at)>.001?Math.Atan2(to.X-at.X,to.Z-at.Z):facing;
-            var run=new List<(Point Position,double Heading)>();SamplePoses(run,at,to,heading);foreach(var p in run){held.Add((o,p.Position,p.Heading));Note(p.Position,p.Heading);}at=to;facing=heading;
+            sampled.Clear();SamplePoses(sampled,at,to,heading);foreach(var p in sampled){held.Add((o,p.Position,p.Heading));Note(p.Position,p.Heading);}at=to;facing=heading;
         }
         var points=0;
         for(var i=from;i<route.Count&&i<=(through??int.MaxValue);i++){
@@ -106,7 +109,7 @@ public sealed partial class CitySimulation
             // The lane model turns in place at once: the turn counts for the spaces it
             // enters, the body only takes the new heading.
             for(var part=0;part<=8;part++)Note(at,facing+turn*part/8);held.Add((o,at,direction));
-            var straight=new List<(Point Position,double Heading)>();SamplePoses(straight,at,lane,direction);foreach(var p in straight){held.Add((o,p.Position,p.Heading));Note(p.Position,p.Heading);}
+            sampled.Clear();SamplePoses(sampled,at,lane,direction);foreach(var p in sampled){held.Add((o,p.Position,p.Heading));Note(p.Position,p.Heading);}
             at=lane;facing=direction;points++;endIndex=i;
             if(points>=minimum&&near.All(n=>!EntersArea(o,at,facing,n))&&(extraClear?.Invoke(at,facing)??true))break;
         }
