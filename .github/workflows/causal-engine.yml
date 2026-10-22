@@ -243,6 +243,45 @@ jobs:
           path: vacancy-market-1y.log
           if-no-files-found: ignore
 
+  integrated-second-cycle-10y:
+    # Both independently passed one-year POCs connected in the same market.
+    # Ten-year result is required to expose macroeconomic viability, not just
+    # confirm valid individual deliveries and construction work.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[second-cycle-10y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Challenge 10k Sims for ten years with paid freight and housebuilding
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --construction-pilot --freight-labor 2>&1 | tee economic-second-cycle-10y.log
+          python3 - <<'PY'
+          import json
+          rows=open('economic-second-cycle-10y.log').readlines()
+          idx=next(i for i,v in enumerate(rows) if v.startswith('{'))
+          d=json.loads(''.join(rows[idx:]))
+          assert d['simulatedDays']==3653 and d['freightLaborFixture'] and d['constructionPilotFixture']
+          assert d['moneyConserved'] and d['foodConserved'] and d['materialConserved']
+          assert d['realWorkerFreightTrips']>0 and d['constructionPaidShifts']>0
+          assert d['constructionContractsCompleted']>0
+          assert d['businessInitialCashCents']+d['businessOperatingNetCents']==d['businessCurrentCashCents']
+          print('SECOND_CYCLE_10Y',d['aliveEnd'],d['minimumAliveAtDayBoundary'],
+                d['unmetMeals'],d['constructionContractsCompleted'],
+                d['realWorkerFreightTrips'],d['wallSeconds'])
+          assert d['minimumAliveAtDayBoundary']>=10000, 'Real construction and freight did not prevent collapse'
+          PY
+      - name: Keep complete decade metrics even when the population fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-2nd-economy-10y
+          path: economic-second-cycle-10y.log
+          if-no-files-found: ignore
+
   construction-pilot-1y:
     # Separate isolated site + real payroll + finite outside materials;
     # no new gameplay rule and no full city construction coverage.
