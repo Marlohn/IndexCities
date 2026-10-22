@@ -54,10 +54,13 @@ internal sealed class Trip
     public long EnterAt, ExitAt;
     public bool Completed;
 }
+internal readonly record struct HistoricalFact(long At, int Owner, byte Type, long Amount);
 internal sealed class HistorySink : IDisposable
 {
     private readonly BinaryWriter? _writer;
+    private long _lastAt;
     public long Entries { get; private set; }
+    public long BytesWritten { get; private set; }
     public HistorySink(string? path)
     {
         if (path is null) return;
@@ -68,16 +71,73 @@ internal sealed class HistorySink : IDisposable
         if (path.EndsWith(".gz", StringComparison.OrdinalIgnoreCase))
             output = new GZipStream(output, CompressionLevel.Fastest);
         _writer = new BinaryWriter(output);
+        _writer.Write(new byte[] { (byte)'I', (byte)'C', (byte)'H', (byte)'2' });
+        BytesWritten = 4;
     }
+    private void Var(ulong value)
+    {
+        if (_writer is null) return;
+        while (value >= 128)
+        {
+            _writer.Write((byte)((value & 127UL) | 128UL));
+            BytesWritten++;
+            value >>= 7;
+        }
+        _writer.Write((byte)value);
+        BytesWritten++;
+    }
+    private static ulong ZigZag(long number)
+        => unchecked((ulong)((number << 1) ^ (number >> 63)));
+    private static long UnZigZag(ulong number)
+        => unchecked((long)(number >> 1) ^ -((long)(number & 1UL)));
     public void Fact(long at, int owner, byte type, long amount)
     {
-        // Compact 21-byte append-only factual record; never sampled or truncated.
+        if (at < _lastAt) throw new InvalidOperationException("Historical event not in global causal order");
         Entries++;
-        if (_writer is null) return;
-        _writer.Write(at);
-        _writer.Write(owner);
+        if (_writer is null) { _lastAt = at; return; }
+        Var((ulong)(at - _lastAt));
+        Var(ZigZag(owner));
         _writer.Write(type);
-        _writer.Write(amount);
+        BytesWritten++;
+        Var(ZigZag(amount));
+        _lastAt = at;
+    }
+    private static ulong ReadVar(BinaryReader input, byte first)
+    {
+        ulong value = 0;
+        var current = first;
+        for (var shift = 0; shift < 70; shift += 7)
+        {
+            if (shift == 63 && current > 1)
+                throw new InvalidDataException("Invalid varint overflow");
+            value |= (ulong)(current & 127) << shift;
+            if ((current & 128) == 0) return value;
+            current = input.ReadByte();
+        }
+        throw new InvalidDataException("Invalid varint length");
+    }
+    private static ulong ReadVar(BinaryReader input) => ReadVar(input, input.ReadByte());
+    public static IEnumerable<HistoricalFact> Read(string path)
+    {
+        using Stream raw = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read,
+            1024 * 1024, FileOptions.SequentialScan);
+        using Stream data = path.EndsWith(".gz", StringComparison.OrdinalIgnoreCase)
+            ? new GZipStream(raw, CompressionMode.Decompress) : raw;
+        using var input = new BinaryReader(data);
+        var magic = input.ReadBytes(4);
+        if (!magic.SequenceEqual(new byte[] { 73, 67, 72, 50 }))
+            throw new InvalidDataException("Not an IndexCities experimental ICH2 history");
+        long at = 0;
+        while (true)
+        {
+            int first = input.BaseStream.ReadByte();
+            if (first < 0) yield break;
+            at = checked(at + (long)ReadVar(input, (byte)first));
+            var id = checked((int)UnZigZag(ReadVar(input)));
+            var kind = input.ReadByte();
+            var amount = UnZigZag(ReadVar(input));
+            yield return new HistoricalFact(at, id, kind, amount);
+        }
     }
     public void Flush() => _writer?.Flush();
     public void Dispose() => _writer?.Dispose();
