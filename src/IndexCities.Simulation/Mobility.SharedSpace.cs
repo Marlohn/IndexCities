@@ -39,7 +39,14 @@ public sealed partial class CitySimulation
     {
         static double Dot(Point x,Point y)=>x.X*y.X+x.Z*y.Z;
         var af=new Point(Math.Sin(aHeading),Math.Cos(aHeading));var ar=new Point(af.Z,-af.X);var bf=new Point(Math.Sin(bHeading),Math.Cos(bHeading));var br=new Point(bf.Z,-bf.X);var d=bAt-aAt;
-        return new[]{af,ar,bf,br}.Min(x=>BodyHalfLength(a)*Math.Abs(Dot(af,x))+BodyHalfWidth(a)*Math.Abs(Dot(ar,x))+BodyHalfLength(b)*Math.Abs(Dot(bf,x))+BodyHalfWidth(b)*Math.Abs(Dot(br,x))-Math.Abs(Dot(d,x)));
+        // Experimental: evaluate the same four separating axes in the same order
+        // without allocating a Point[] or a LINQ enumerator/delegate per contact.
+        double Axis(Point x)=>BodyHalfLength(a)*Math.Abs(Dot(af,x))+BodyHalfWidth(a)*Math.Abs(Dot(ar,x))+BodyHalfLength(b)*Math.Abs(Dot(bf,x))+BodyHalfWidth(b)*Math.Abs(Dot(br,x))-Math.Abs(Dot(d,x));
+        var min=Axis(af);
+        var next=Axis(ar);if(next<min||double.IsNaN(next))min=next;
+        next=Axis(bf);if(next<min||double.IsNaN(next))min=next;
+        next=Axis(br);if(next<min||double.IsNaN(next))min=next;
+        return min;
     }
 
     // A truck about to drive from its bay or dock to its first lane point, or doing so.
