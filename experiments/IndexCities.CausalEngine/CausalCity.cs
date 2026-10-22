@@ -8,7 +8,7 @@ namespace IndexCities.CausalEngine;
 
 // Independent vertical-slice engine for falsifying the architecture.
 // RULES AND FIXTURES HERE ARE NOT AN IMPLEMENTATION OF ALL OF INDEXCITIES SPEC.
-internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false, bool RetailShopFallback = false);
+internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false, bool RetailShopFallback = false, int RetailBasketsPerShift = 5);
 internal enum EventKind : byte { Day, Hour, StartWork, EndWork, Move, Delivery, RoadClose, RoadOpen, HouseholdShop }
 internal readonly record struct SimEvent(EventKind Kind, int Id);
 internal sealed class Person
@@ -542,7 +542,7 @@ internal sealed partial class CausalCity : IDisposable
                         : WholesalePrice;
                     var normalUnitCost = purchaseUnitCost +
                         (_config.BasketRetailService
-                            ? (wagePerShift + 5 * 32 - 1) / (5 * 32)
+                            ? (wagePerShift + _config.RetailBasketsPerShift * 32 - 1) / (_config.RetailBasketsPerShift * 32)
                             : (wagePerShift + 4) / 5);
                     priced = (checked(normalUnitCost * 105) + 99) / 100;
                 }
@@ -575,7 +575,7 @@ internal sealed partial class CausalCity : IDisposable
             // under the actual calendar (one day off per 7). The eight-job
             // maximum is a small-store fixture cap, NOT a V1 product rule.
             var unitsPerEmployee = farm ? realisedFoodPerShift * farmPaidShiftsInMonth :
-                _config.BasketRetailService ? 5L * 32 * 26 : 5L * 30;
+                _config.BasketRetailService ? (long)_config.RetailBasketsPerShift * 32 * 26 : 5L * 30;
             // Real, already-resident households have a daily food need even
             // before the first retail sale. Staff planning must consider that
             // demand; otherwise eight farms hire only 16 starters and all
@@ -1236,7 +1236,7 @@ internal sealed partial class CausalCity : IDisposable
                         return;
                     }
                     employer.ReservedCheckoutWagesCents += 65;
-                    employer.TodayCheckoutUnitsLeft += 5;
+                    employer.TodayCheckoutUnitsLeft += _config.BasketRetailService ? _config.RetailBasketsPerShift : 5;
                 }
                 employer.PresentWorkers++;
             }
@@ -1563,6 +1563,7 @@ internal sealed partial class CausalCity : IDisposable
         checkoutBasketTransactions = _shops.Sum(f => f.LifetimeRetailBaskets),
         checkoutCapacityDeniedVisits = _shops.Sum(f => f.LifetimeCheckoutCapacityDenied),
         checkoutFixtureMaxEmployeesPerSmallStore = _config.BasketRetailService ? 8 : 0,
+        basketCheckoutsPerPaidWorkerShift = _config.BasketRetailService ? _config.RetailBasketsPerShift : 0,
         farmCostPricingFixture = _config.FarmCostPricing,
         meanFarmWholesaleUnitPriceCents = _farms.Average(f=>f.FarmWholesaleUnitPriceCents),
         contractorServiceRevenueCents = checked(_constructionStarted * ContractorLaborInvoice),
