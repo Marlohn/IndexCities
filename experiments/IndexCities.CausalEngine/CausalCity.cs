@@ -8,7 +8,7 @@ namespace IndexCities.CausalEngine;
 
 // Independent vertical-slice engine for falsifying the architecture.
 // RULES AND FIXTURES HERE ARE NOT AN IMPLEMENTATION OF ALL OF INDEXCITIES SPEC.
-internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial);
+internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false);
 internal enum EventKind : byte { Day, Hour, StartWork, EndWork, Move, Delivery, RoadClose, RoadOpen, HouseholdShop }
 internal readonly record struct SimEvent(EventKind Kind, int Id);
 internal sealed class Person
@@ -42,6 +42,10 @@ internal sealed class Firm
     public required int Node;
     public long Cash = 20_000_000;
     public int Stock = 100;
+    // Laboratory-only accounting of yesterday's real revenues and paid shifts.
+    // Used to test whether undistributed company income drives the famine.
+    public long DayReceipts, DaySupplies;
+    public int DayPaidShifts, WageForDay;
 }
 internal sealed class Trip
 {
@@ -274,6 +278,15 @@ internal sealed partial class CausalCity : IDisposable
         var day = _time / DaySeconds;
         _days++;
         var date = Epoch.AddDays(day);
+        if (_config.WageFeedback)
+        {
+            // Hypothetical stress fixture, NOT a new IndexCities wage policy:
+            // the prior day's net trading receipts are distributed through
+            // actual workers' next paid shifts. Neither food nor money appears
+            // from nowhere, and firms still refuse unaffordable payroll.
+            foreach (var shop in _shops) ResetDailyWage(shop, 65, shop.DayReceipts - shop.DaySupplies);
+            foreach (var farm in _farms) ResetDailyWage(farm, 80, farm.DayReceipts);
+        }
         // A fixture-specific, deterministic demographic policy. NOT an approved
         // IndexCities birth/death algorithm. Birth requires real adult carers,
         // a housing slot, water, pantry and existing household money.
@@ -361,6 +374,11 @@ internal sealed partial class CausalCity : IDisposable
             // increases ONLY after the truck reaches the destination.
             shop.Cash -= count * WholesalePrice;
             farm.Cash += count * WholesalePrice;
+            if (_config.WageFeedback)
+            {
+                shop.DaySupplies += count * WholesalePrice;
+                farm.DayReceipts += count * WholesalePrice;
+            }
             farm.Stock -= count;
             var t = NewTrip(-1, farm.Node, shop.Node, EventKind.Delivery, shopId, count);
             Schedule(_time + 4 * 3600, EventKind.Move, t.Id);
@@ -374,6 +392,15 @@ internal sealed partial class CausalCity : IDisposable
             Console.Error.WriteLine($"LAB_ECON day={_days} peopleCash={_people.Sum(p=>p.Cash)} shopCash={_shops.Sum(s=>s.Cash)} farmCash={_farms.Sum(f=>f.Cash)} familyEmpty={_households.Count(h=>h.Pantry==0)} noMoneyAdults={_people.Count(p=>p.Alive&&p.Cash==0&&Age(p,Epoch.AddSeconds(_time))>=18)} unmet={_unservedMeals}");
         }
         if (_days < _config.Days) Schedule(_time + DaySeconds, EventKind.Day, 0);
+    }
+    private static void ResetDailyWage(Firm firm, int baseWage, long netRevenue)
+    {
+        firm.WageForDay = firm.DayPaidShifts > 0
+            ? (int)Math.Clamp(netRevenue / firm.DayPaidShifts, baseWage, 1000)
+            : baseWage;
+        firm.DayReceipts = 0;
+        firm.DaySupplies = 0;
+        firm.DayPaidShifts = 0;
     }
     private void PayContributoryPensions(DateTime date)
     {
@@ -466,7 +493,7 @@ internal sealed partial class CausalCity : IDisposable
             _producedFood += food;
             _history.Fact(_time, p.Id, 8, food);
         }
-        var wage = p.Job < StoreCount ? 65 : 80;
+        var wage = _config.WageFeedback ? employer.WageForDay : (p.Job < StoreCount ? 65 : 80);
         if (employer.Cash >= wage)
         {
             employer.Cash -= wage;
@@ -477,6 +504,7 @@ internal sealed partial class CausalCity : IDisposable
             p.GrossEarnings += wage;
             _paidWages += wage;
             _workdays++;
+            if (_config.WageFeedback) employer.DayPaidShifts++;
             _history.Fact(_time, p.Id, 7, wage - contribution);
             _history.Fact(_time, p.Id, 15, contribution);
         }
@@ -672,6 +700,7 @@ internal sealed partial class CausalCity : IDisposable
         {
             p.Cash -= buy * FoodPrice;
             shop.Cash += buy * FoodPrice;
+            if (_config.WageFeedback) shop.DayReceipts += buy * FoodPrice;
             shop.Stock -= buy;
             p.CarryFood += buy;
             _sales += buy;
@@ -745,8 +774,8 @@ internal sealed partial class CausalCity : IDisposable
             Mix(p.ContributedDays); Mix(p.GrossEarnings); Mix(p.PensionCredit); Mix(p.PensionReceived);
         }
         foreach (var h in _households) { Mix(h.Pantry); Mix(h.Members.Count); }
-        foreach (var f in _shops) { Mix(f.Cash); Mix(f.Stock); }
-        foreach (var f in _farms) { Mix(f.Cash); Mix(f.Stock); }
+        foreach (var f in _shops) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); }
+        foreach (var f in _farms) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); }
         Mix(_producedFood); Mix(_eatenFood);
         foreach (var x in _closed) Mix(x ? 1 : 0);
         foreach (var t in _trips) if (!t.Completed)
@@ -769,6 +798,7 @@ internal sealed partial class CausalCity : IDisposable
         stateFingerprint = Fingerprint(),
         warning = "Not SPEC-complete: simplified lanes/intersections, no pedestrian crosswalks, real towing, building construction, complex health or full demography. NEVER claim full 10k/80y achieved.",
         seed = _config.Seed,
+        wageFeedbackFixture = _config.WageFeedback,
         requestedSims = _config.Sims,
         peopleEverCreated = _people.Count,
         aliveEnd = _active,
