@@ -26,10 +26,52 @@ Console.WriteLine($"FIXTURE {info} build={sw.Elapsed.TotalSeconds:F1}s .NET={Env
 if(growth>0){sw.Restart();var hours=0;while(Fixtures.AddHouses(sim,growth)>0){sim.Advance(3600);hours++;}Console.WriteLine($"GROWTH {growth} casas/h por {hours} h wall={sw.Elapsed.TotalSeconds:F1}s pop={sim.Population}");}
 sw.Restart();sim.Advance(warmup*86400);
 Console.WriteLine($"WARMUP {warmup}d wall={sw.Elapsed.TotalSeconds:F1}s {Stats(sim)}");
-var e15=Opt("e15","off");if(e15 is not ("off" or "active" or "local")){Console.Error.WriteLine("e15 deve ser off, active ou local");return 2;}
+var e15=Opt("e15","off");if(e15 is not ("off" or "active" or "local" or "compare")){Console.Error.WriteLine("e15 deve ser off, active ou local");return 2;}
 sim.E15BatchScoped=e15 is "active" or "local";sim.E15LocalTime=e15=="local";
 var e15Checkpoints=Opt("e15-checkpoints","0")=="1";
 Console.WriteLine($"E15_MODE {e15} checkpoints={e15Checkpoints}");
+// An experiment-only differential harness: fork three identical warmed states,
+// compare each simulated hour, and run the full day (including economics/needs).
+// This is separate from the normal scale command path and never used in Godot.
+if(e15=="compare")
+{
+    if(args[0]!="scale"){Console.Error.WriteLine("e15 compare exige scale");return 2;}
+    var initial=sim.SaveToJson();
+    var reports=new Dictionary<string,(string[] Hours,string Final,double Seconds,long Alloc)>();
+    foreach(var mode in new[]{"off","active","local"})
+    {
+        var candidate=CitySimulation.FromJson(initial);
+        candidate.E15BatchScoped=mode!="off";
+        candidate.E15LocalTime=mode=="local";
+        var checkpoints=new string[24];
+        var allocatedAt=GC.GetTotalAllocatedBytes();
+        var timer=Stopwatch.StartNew();
+        for(var hour=0;hour<24;hour++)
+        {
+            candidate.Advance(3600);
+            checkpoints[hour]=Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(candidate.SaveToJson())))[..16];
+            Console.WriteLine($"E15_CHECKPOINT mode={mode} hour={hour+1} sha={checkpoints[hour]}");
+        }
+        timer.Stop();
+        candidate.CheckInvariants();
+        var totalAlloc=GC.GetTotalAllocatedBytes()-allocatedAt;
+        reports[mode]=(checkpoints,checkpoints[^1],timer.Elapsed.TotalSeconds,totalAlloc);
+        Console.WriteLine($"E15_DAY mode={mode} wall={timer.Elapsed.TotalSeconds:F3}s allocMB={totalAlloc/1e6:F0} sha={checkpoints[^1]} {Stats(candidate)}");
+        if(mode!="off")Console.WriteLine(candidate.E15Summary());
+        Console.WriteLine($"E15_INVARIANTS mode={mode} OK");
+    }
+    foreach(var mode in new[]{"active","local"})
+    {
+        var baseline=reports["off"].Hours;var other=reports[mode].Hours;
+        var first=-1;for(var i=0;i<other.Length;i++)if(other[i]!=baseline[i]){first=i+1;break;}
+        Console.WriteLine($"E15_COMPARE mode={mode} sameHourly={first<0} firstDivergentHour={first} " +
+            $"baseSeconds={reports["off"].Seconds:F3} newSeconds={reports[mode].Seconds:F3} " +
+            $"baseAllocMB={reports["off"].Alloc/1e6:F0} newAllocMB={reports[mode].Alloc/1e6:F0}");
+    }
+    // "active" must be an exact differential control; "local" may fail and
+    // will then be reported as falsified, not used for production.
+    return reports["off"].Hours.SequenceEqual(reports["active"].Hours)?0:1;
+}
 var census=args[0]=="census"?new Census():null;var stuck=args[0]=="stuck"?new Stuck():null;
 var total=0.0;var gc0=GC.CollectionCount(0);var gc2=GC.CollectionCount(2);var alloc0=GC.GetTotalAllocatedBytes();var done=0;
 for(var d=1;d<=days;d++){
