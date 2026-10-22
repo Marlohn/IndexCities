@@ -1,0 +1,61 @@
+name: E21 - custo e gatilhos no transito congestionado
+
+on:
+  push:
+    branches:
+      - experimento/e21-custo-despertar-transito
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Regressao completa do nucleo
+        run: dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --logger 'console;verbosity=minimal'
+
+  integrated:
+    name: ${{ matrix.label }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: 108-full-day
+            rows: 3
+            length: 400
+            seconds: 86400
+          - label: 400-congested-2h
+            rows: 5
+            length: 800
+            seconds: 7200
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: A/B/C - baseline, medicao CPU, auditoria dos gatilhos
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet run -c Release --project src/IndexCities.Headless -- scale grid \
+            --rows=${{ matrix.rows }} --length=${{ matrix.length }} \
+            --seed=42 --warmup=1 --e21=compare --e21-window=${{ matrix.seconds }} \
+            | tee "e21_${{ matrix.label }}.log"
+          grep -q '^E21_COMPARE mode=cost sameCheckpoints=True' "e21_${{ matrix.label }}.log"
+          grep -q '^E21_COMPARE mode=causes sameCheckpoints=True' "e21_${{ matrix.label }}.log"
+          grep '^E21_' "e21_${{ matrix.label }}.log" | grep -E 'DAY|TOTAL|COST|CAUSES|COMPARE'
+      - name: Preservar dados completos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e21-${{ matrix.label }}
+          path: e21_*.log
+          if-no-files-found: ignore
