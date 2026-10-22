@@ -1,0 +1,46 @@
+name: E23 - primeiro estado divergente apos remoção viaria
+
+on:
+  push:
+    branches:
+      - experimento/e23-diagnostico-invalida-rua
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostic:
+    name: ${{ matrix.label }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: seed43-reversed
+            seed: 43
+            reversed: 1
+          - label: seed44
+            seed: 44
+            reversed: 0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Primeira diferenca por veiculo/campo apos intervencao
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet run -c Release --project src/IndexCities.Headless -- scale grid \
+            --rows=5 --length=800 --seed=${{ matrix.seed }} --signals=1 \
+            --warmup=1 --e22=compare --e22-window=3000 \
+            --e22-adversary=mixed --e22-reverse=${{ matrix.reversed }} \
+            --e23-diff=1 | tee "e23_${{ matrix.label }}.log"
+          grep -q '^E23_FIRST_DIFFERENCE mode=' "e23_${{ matrix.label }}.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e23-${{ matrix.label }}
+          path: e23_*.log
+          if-no-files-found: ignore
