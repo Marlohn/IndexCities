@@ -1,0 +1,79 @@
+name: E22 - validacao adversarial completa
+
+on:
+  push:
+    branches:
+      - experimento/e22-validacao-adversarial
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    name: contract-434
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --logger 'console;verbosity=minimal'
+
+  integrated:
+    name: ${{ matrix.label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: 400-full-day-seed42
+            rows: 5
+            length: 800
+            seed: 42
+            seconds: 86400
+            adversary: none
+            reverse: 0
+            signals: 1
+          - label: 400-tow-junction-road-seed42
+            rows: 5
+            length: 800
+            seed: 42
+            seconds: 7200
+            adversary: mixed
+            reverse: 0
+            signals: 1
+          - label: 400-tow-junction-road-seed7-reversed
+            rows: 5
+            length: 800
+            seed: 7
+            seconds: 7200
+            adversary: mixed
+            reverse: 1
+            signals: 0
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Original vs eventos vs filas - mesmo save e perturbacoes reais
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet run -c Release --project src/IndexCities.Headless -- scale grid \
+            --rows=${{ matrix.rows }} --length=${{ matrix.length }} \
+            --seed=${{ matrix.seed }} --signals=${{ matrix.signals }} --warmup=1 \
+            --e22=compare --e22-window=${{ matrix.seconds }} \
+            --e22-adversary=${{ matrix.adversary }} --e22-reverse=${{ matrix.reverse }} \
+            | tee "e22_validation_${{ matrix.label }}.log"
+          grep -q '^E22_COMPARE mode=events ' "e22_validation_${{ matrix.label }}.log"
+          grep -q '^E22_COMPARE mode=queue ' "e22_validation_${{ matrix.label }}.log"
+          grep -q '^E22_COVERAGE ' "e22_validation_${{ matrix.label }}.log"
+          grep '^E22_\(DAY\|COMPARE\|RESULT\|COVERAGE\|INTERVENTION\)' "e22_validation_${{ matrix.label }}.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e22-validation-${{ matrix.label }}
+          path: e22_validation_*.log
+          if-no-files-found: ignore
