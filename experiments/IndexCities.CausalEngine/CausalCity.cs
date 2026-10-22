@@ -395,7 +395,15 @@ internal sealed partial class CausalCity : IDisposable
                 h.Members.Any(id => _people[id].Alive) &&
                 !h.Members.Any(id => _people[id].Alive && Age(_people[id], date) >= 18));
             Console.Error.WriteLine($"LAB_ECON day={_days} peopleCash={_people.Sum(p=>p.Cash)} shopCash={_shops.Sum(s=>s.Cash)} farmCash={_farms.Sum(f=>f.Cash)} treasury={_treasury} reserve={_reserveGlobal} familyEmpty={_households.Count(h=>h.Pantry==0)} noMoneyAdults={_people.Count(p=>p.Alive&&p.Cash==0&&Age(p,date)>=18)} unmet={_unservedMeals}");
-            Console.Error.WriteLine($"LAB_CAUSE day={_days} children={childCount} adults={adultCount} retired={olderCount} childOnlyHomes={childOnlyHomes} emptyWithFunds={emptyWithFunds} shopFood={_shops.Sum(f=>f.Stock)} farmFood={_farms.Sum(f=>f.Stock)} eligibleCarerHomes={_households.Count(h=>h.Members.Count<16 && h.Members.Count(id=>_people[id].Alive&&Age(_people[id],date) is >=18 and <60)>=2)}");
+            var inhabitedEmptyPantries = _households.Count(h => h.Pantry == 0 &&
+                h.Members.Any(id => _people[id].Alive));
+            var hungryWithEmptyStore = _households.Count(h => h.Pantry == 0 &&
+                h.Members.Any(id => _people[id].Alive) &&
+                _shops[(h.Home + 1) % Nodes].Stock == 0);
+            var hungryWithStockAndFunds = _households.Count(h => h.Pantry == 0 &&
+                h.Members.Where(id => _people[id].Alive).Sum(id => _people[id].Cash) >= FoodPrice &&
+                _shops[(h.Home + 1) % Nodes].Stock > 0);
+            Console.Error.WriteLine($"LAB_CAUSE day={_days} children={childCount} adults={adultCount} retired={olderCount} childOnlyHomes={childOnlyHomes} livedInEmptyPantries={inhabitedEmptyPantries} emptyWithFunds={emptyWithFunds} hungryEmptyStore={hungryWithEmptyStore} hungryStockAndFunds={hungryWithStockAndFunds} shopsNoStock={_shops.Count(f=>f.Stock==0)} shopsNoCash={_shops.Count(f=>f.Cash<WholesalePrice*32)} shopFood={_shops.Sum(f=>f.Stock)} farmFood={_farms.Sum(f=>f.Stock)} eligibleCarerHomes={_households.Count(h=>h.Members.Count<16 && h.Members.Count(id=>_people[id].Alive&&Age(_people[id],date) is >=18 and <60)>=2)}");
         }
         if (_days < _config.Days) Schedule(_time + DaySeconds, EventKind.Day, 0);
     }
