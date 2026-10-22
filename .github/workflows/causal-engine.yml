@@ -282,6 +282,65 @@ jobs:
           path: economic-second-cycle-10y.log
           if-no-files-found: ignore
 
+  basket-throughput-sensitivity:
+    # Single explicit parameter drives physical checkout slots, job demand
+    # and price simultaneously. More checkouts do NOT manufacture employees.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[retail-throughput]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Run 5, 20 and 60 baskets per paid shift for same 10-year city
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          for rate in 5 20 60; do
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=$rate 2>&1 | tee retail-rate-$rate-seed42.log
+          done
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=73 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 2>&1 | tee retail-rate-20-seed73.log
+          python3 - <<'PY'
+          import json
+          def load(path):
+              lines=open(path).readlines()
+              i=next(i for i,line in enumerate(lines) if line.startswith('{'))
+              return json.loads(''.join(lines[i:]))
+          runs = {}
+          for rate,seed in [(5,42),(20,42),(60,42),(20,73)]:
+              r=load(f'retail-rate-{rate}-seed{seed}.log')
+              assert r['simulatedDays']==3653 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+              assert r['basketCheckoutsPerPaidWorkerShift']==rate and r['retailShopFallbackFixture']
+              assert not r['fullIndexCitiesTargetValidated']
+              print('RETAIL_THROUGHPUT_RESULT',
+                    'rate',rate,'seed',seed,'alive',r['aliveEnd'],
+                    'min',r['minimumAliveAtAnyEvent'],'hungry',r['unmetMeals'],
+                    'workers',r['employedAlive'],'incomeHomes',r['householdsWithEmployedAdults'],
+                    'failedPhysicalSlots',r['checkoutCapacityDeniedVisits'],
+                    'reroutes',r['retailAlternativeTrips'],
+                    'retailPurchases',r['checkoutBasketTransactions'],
+                    'householdCash',r['personalCashCents'],'unitPrice',r['averageRetailUnitPriceCents'])
+              runs[(rate,seed)]=r
+          open('healthy-decade.flag','w').write('yes' if
+            runs[(20,42)]['minimumAliveAtAnyEvent']>=10000 and
+            runs[(20,73)]['minimumAliveAtAnyEvent']>=10000 else 'no')
+          PY
+          if test "$(cat healthy-decade.flag)" = yes; then
+            echo 'Both ten-year seeds retained 10k; extend the SAME city 80 years (no persisted history proof yet).'
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 2>&1 | tee retail-rate-20-seed42-80y-no-history.log
+          else
+            echo 'Ten-year benchmark still fails. No eighty-year full-history claim.'
+          fi
+      - name: Preserve sensitivity data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-retail-basket-throughput-10y
+          path: |
+            retail-rate-*.log
+          if-no-files-found: ignore
+
   nearby-retail-fallback-10y:
     # Approved in-person alternative shop selection, bounded by at most
     # three additional roads-and-checkouts; workers, goods and money are real.
