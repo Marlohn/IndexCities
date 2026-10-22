@@ -30,6 +30,14 @@ var e22=Opt("e22","off");
 if(e22 is not ("off" or "events" or "queue" or "compare")){Console.Error.WriteLine("e22 deve ser off/events/queue/compare");return 2;}
 if(e22=="compare")
 {
+    // The synthetic grid is wider than the V1 map. Give external rescue
+    // vehicles fuel autonomy to actually reach a forced stranded truck/car.
+    // All three arms use the identical warmed snapshot and the same tuning.
+    var stress=Opt("e22-adversary","none");
+    if(stress is "tow" or "mixed"){
+        sim.State.Tuning.FuelTank*=12;
+        Console.WriteLine($"E22_TOW_FIXTURE extendedTank={sim.State.Tuning.FuelTank:F1} cause=large-synthetic-map");
+    }
     var initial=sim.SaveToJson();
     var span=int.Parse(Opt("e22-window","7200"));
     if(span<2||span>86400||span%2!=0){Console.Error.WriteLine("e22-window deve ser par de 2 a 86400");return 2;}
@@ -68,7 +76,8 @@ if(e22=="compare")
             var picked=target==null?
                 st.Vehicles.Where(v=>v.Status==VehicleStatus.Travelling&&v.Fuel>0&&v.RouteIndex>0&&v.RouteIndex<v.Route.Count
                     &&v.Machine==PavingMachine.None&&v.Body is not (TruckBody.Tow or TruckBody.TowHeavy)&&v.Detour.Count==0)
-                .OrderByDescending(v=>st.Vehicles.Count(o=>o.Id!=v.Id&&o.Status==VehicleStatus.Travelling
+                .OrderByDescending(v=>v.PassengerCar&&v.DriverId!=null)
+                .ThenByDescending(v=>st.Vehicles.Count(o=>o.Id!=v.Id&&o.Status==VehicleStatus.Travelling
                     &&Math.Cos(o.Heading-v.Heading)>.9&&(v.Position-o.Position) is var rel
                     &&rel.X*Math.Sin(v.Heading)+rel.Z*Math.Cos(v.Heading) is >0 and <40
                     &&Math.Abs(rel.X*Math.Cos(v.Heading)-rel.Z*Math.Sin(v.Heading))<2.6))
@@ -76,7 +85,7 @@ if(e22=="compare")
                 st.Vehicles.FirstOrDefault(v=>v.Id==target);
             if(picked==null)return(-1,false,"no travelling vehicle to strand");
             picked.Fuel=0;
-            return(picked.Id,true,$"fuel=0 id={picked.Id} driver={picked.DriverId} status={picked.Status}");
+            return(picked.Id,true,$"fuel=0 id={picked.Id} passengerCar={picked.PassengerCar} driver={picked.DriverId} status={picked.Status}");
         }
         if(kind=="junction"){
             var selected=target==null?
