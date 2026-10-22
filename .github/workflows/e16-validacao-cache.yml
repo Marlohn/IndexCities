@@ -1,0 +1,121 @@
+name: E16 - validar cache E15 adversarial e A/B repetido
+
+on:
+  push:
+    branches:
+      - experimento/e16-validacao-adversarial-cache
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --logger 'console;verbosity=minimal'
+
+  repeated-400:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Duas duplas A/B com ordem invertida em 400 SIMs
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build -c Release src/IndexCities.Headless/IndexCities.Headless.csproj
+          app="src/IndexCities.Headless/bin/Release/net8.0/IndexCities.Headless.dll"
+          args=(scale grid --rows=5 --length=800 --seed=42 --warmup=1 --days=1 --cap=1500 --e15-checkpoints=1)
+          for mode in baseline cached cached baseline; do
+            run=$(( ${run:-0}+1 ))
+            if [ "$mode" = cached ]; then
+              dotnet "$app" "${args[@]}" --e15=1 --e15-verify=1024 | tee "e16_repeat_${run}_cached.log"
+            else
+              dotnet "$app" "${args[@]}" --e15=0 | tee "e16_repeat_${run}_baseline.log"
+            fi
+            grep -q '^INVARIANTS OK' "e16_repeat_${run}_${mode}.log"
+            grep '^SUMMARY' "e16_repeat_${run}_${mode}.log"
+            [ "$mode" != cached ] || grep '^E15_RESULT' "e16_repeat_${run}_${mode}.log"
+          done
+          for pair in 1 2; do
+            if [ "$pair" = 1 ]; then a=e16_repeat_1_baseline.log; b=e16_repeat_2_cached.log
+            else a=e16_repeat_4_baseline.log; b=e16_repeat_3_cached.log; fi
+            diff -u <(grep '^E15_CHECKPOINT' "$a") <(grep '^E15_CHECKPOINT' "$b")
+            cmp <(grep '^SAVE' "$a" |grep -o 'sha256=[0-9A-F]*') <(grep '^SAVE' "$b"|grep -o 'sha256=[0-9A-F]*')
+            echo "E16_REPEAT_PAIR ${pair} equivalent=YES"
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e16-repeated-400
+          path: e16_repeat_*.log
+          if-no-files-found: ignore
+
+  adversarial:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - tag: small-mixed-42
+            rows: 3
+            length: 400
+            seed: 42
+            scenario: mixed
+            interval: 600
+          - tag: small-mixed-7
+            rows: 3
+            length: 400
+            seed: 7
+            scenario: mixed
+            interval: 600
+          - tag: medium-mixed-42
+            rows: 5
+            length: 800
+            seed: 42
+            scenario: mixed
+            interval: 1800
+    name: adversarial-${{ matrix.tag }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Mesmo cenário e checkpoints, baseline versus cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build -c Release src/IndexCities.Headless/IndexCities.Headless.csproj
+          app="src/IndexCities.Headless/bin/Release/net8.0/IndexCities.Headless.dll"
+          args=(scale grid --rows=${{ matrix.rows }} --length=${{ matrix.length }} --seed=${{ matrix.seed }} --warmup=1 --days=1 --cap=1500 --e16=${{ matrix.scenario }} --e16-interval=${{ matrix.interval }})
+          for mode in baseline cached; do
+            if [ "$mode" = cached ]; then
+              dotnet "$app" "${args[@]}" --e15=1 --e15-verify=256 | tee "e16_${mode}.log"
+            else
+              dotnet "$app" "${args[@]}" --e15=0 | tee "e16_${mode}.log"
+            fi
+            grep -q '^INVARIANTS OK' "e16_${mode}.log"
+            grep -q '^E16_ROAD' "e16_${mode}.log"
+            grep -q '^E16_RELOAD' "e16_${mode}.log"
+            grep -q '^E16_TOW_COVERAGE forced=True' "e16_${mode}.log"
+            echo "E16_EVENTS $mode"
+            grep -E '^(E16_|SUMMARY|E15_RESULT)' "e16_${mode}.log"
+          done
+          diff -u <(grep '^E15_CHECKPOINT' e16_baseline.log) <(grep '^E15_CHECKPOINT' e16_cached.log)
+          cmp <(grep '^SAVE' e16_baseline.log |grep -o 'sha256=[0-9A-F]*') <(grep '^SAVE' e16_cached.log|grep -o 'sha256=[0-9A-F]*')
+          echo "E16_ADVERSARIAL_EQUAL ${{ matrix.tag }}=YES"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e16-${{ matrix.tag }}
+          path: e16_*.log
+          if-no-files-found: ignore
