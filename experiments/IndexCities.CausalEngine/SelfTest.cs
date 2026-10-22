@@ -102,11 +102,39 @@ internal static class EngineSelfTest
             if (successorPurchases == 0 || retiredPurchases == 0)
                 throw new InvalidOperationException(
                     $"Household food shopping stopped after retirement: successor={successorPurchases}, retirees={retiredPurchases}");
+            // This counterfactual must preserve both conservation and causal
+            // checkpoint equivalence. In particular, payroll depends on firm
+            // receipts and shift counts which must survive save/resume.
+            var feedbackConfig = new LabConfig(256, 30, 42, null, true, WageFeedback: true);
+            string feedbackHash;
+            using (var complete = new CausalCity(feedbackConfig))
+            {
+                complete.Run();
+                complete.AssertConservation();
+                feedbackHash = complete.Fingerprint();
+            }
+            var feedbackSave = temp + ".feedback.save.json";
+            string feedbackResumedHash;
+            using (var partial = new CausalCity(feedbackConfig))
+            {
+                partial.RunUntilDay(15);
+                partial.SaveSnapshot(feedbackSave);
+            }
+            using (var resumed = CausalCity.FromSnapshot(feedbackSave))
+            {
+                resumed.Run();
+                resumed.AssertConservation();
+                feedbackResumedHash = resumed.Fingerprint();
+            }
+            File.Delete(feedbackSave);
+            if (feedbackHash != feedbackResumedHash)
+                throw new InvalidOperationException("Revenue-backed payroll changed after save/resume");
             watch.Stop();
             Console.WriteLine(JsonSerializer.Serialize(new
             {
                 success = true, scope = "14 days, 256 people, real trips and transactions in simplified fixture",
-                worlds = 5, deterministic = true, hash = hashA,
+                worlds = 7, deterministic = true, hash = hashA,
+                payrollFeedbackSaveResumeExact = feedbackHash == feedbackResumedHash,
                 saveResumeExact = resumedHash == hashA,
                 compressedHistoryReplayExact = reopened == facts,
                 journeys, sales, births, successorPurchases, retiredPurchases, historyFacts = facts,
@@ -124,7 +152,7 @@ internal static class EngineSelfTest
         }
         finally
         {
-            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json" })
+            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json" })
                 if (File.Exists(path)) File.Delete(path);
         }
     }
