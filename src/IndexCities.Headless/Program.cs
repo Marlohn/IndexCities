@@ -33,12 +33,23 @@ if(e22=="compare")
     var initial=sim.SaveToJson();
     var span=int.Parse(Opt("e22-window","7200"));
     if(span<2||span>86400||span%2!=0){Console.Error.WriteLine("e22-window deve ser par de 2 a 86400");return 2;}
-    var boundaries=new List<int>();var progress=0;
-    while(progress<Math.Min(span,60)){progress+=2;boundaries.Add(progress);}
-    while(progress<span){progress=Math.Min(span,progress+600);boundaries.Add(progress);}
     var adversary=Opt("e22-adversary","none");
     if(adversary is not ("none" or "tow" or "junction" or "road" or "mixed"))
     {Console.Error.WriteLine("e22-adversary deve ser none/tow/junction/road/mixed");return 2;}
+    // Observe every original 2-second quantum for one minute after each
+    // intervention, then return to 10-minute checkpoints. Keep scheduled
+    // interventions themselves as explicit checkpoint boundaries.
+    var interventionsAt=adversary=="mixed"?new[]{660,1260,1860}:
+        adversary=="none"?Array.Empty<int>():new[]{660};
+    var boundaries=new List<int>();var progress=0;
+    while(progress<span){
+        var next=progress+600;
+        if(progress<60||interventionsAt.Any(at=>progress>=at&&progress<at+60))
+            next=progress+2;
+        foreach(var at in interventionsAt)
+            if(at>progress)next=Math.Min(next,at);
+        progress=Math.Min(span,next);boundaries.Add(progress);
+    }
     var reversed=Opt("e22-reverse","0")=="1";
     var order=reversed?new[]{"queue","events","off"}:new[]{"off","events","queue"};
     var interventions=new Dictionary<int,(string Kind,int Id)>();
