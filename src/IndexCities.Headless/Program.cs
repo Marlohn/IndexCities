@@ -26,13 +26,50 @@ Console.WriteLine($"FIXTURE {info} build={sw.Elapsed.TotalSeconds:F1}s .NET={Env
 if(growth>0){sw.Restart();var hours=0;while(Fixtures.AddHouses(sim,growth)>0){sim.Advance(3600);hours++;}Console.WriteLine($"GROWTH {growth} casas/h por {hours} h wall={sw.Elapsed.TotalSeconds:F1}s pop={sim.Population}");}
 sw.Restart();sim.Advance(warmup*86400);
 Console.WriteLine($"WARMUP {warmup}d wall={sw.Elapsed.TotalSeconds:F1}s {Stats(sim)}");
-var e15=Opt("e15","off");if(e15 is not ("off" or "active" or "local" or "compare")){Console.Error.WriteLine("e15 deve ser off, active ou local");return 2;}
+var e15=Opt("e15","off");if(e15 is not ("off" or "active" or "local" or "compare" or "diagnose")){Console.Error.WriteLine("e15 deve ser off, active ou local");return 2;}
 sim.E15BatchScoped=e15 is "active" or "local";sim.E15LocalTime=e15=="local";
 var e15Checkpoints=Opt("e15-checkpoints","0")=="1";
 Console.WriteLine($"E15_MODE {e15} checkpoints={e15Checkpoints}");
 // An experiment-only differential harness: fork three identical warmed states,
 // compare each simulated hour, and run the full day (including economics/needs).
 // This is separate from the normal scale command path and never used in Godot.
+// First-difference probe on identical saves; diagnostic-only branch.
+if(e15=="diagnose")
+{
+    var initialJson=sim.SaveToJson();
+    var control=CitySimulation.FromJson(initialJson);
+    var experiment=CitySimulation.FromJson(initialJson);
+    experiment.E15BatchScoped=true;experiment.E15LocalTime=true;
+    for(var tick=1;tick<=1800;tick++)
+    {
+        control.Advance(2);
+        experiment.Advance(2);
+        var reference=control.SaveToJson();
+        var altered=experiment.SaveToJson();
+        if(reference==altered)continue;
+        var first=0;while(first<Math.Min(reference.Length,altered.Length)&&reference[first]==altered[first])first++;
+        var start=Math.Max(0,first-100);
+        Console.WriteLine($"E15_FIRST_DIFFERENCE step={tick} timeSeconds={tick*2} firstByte={first} " +
+            $"referenceLength={reference.Length} alteredLength={altered.Length}");
+        Console.WriteLine("E15_REF "+reference.Substring(start,Math.Min(280,reference.Length-start)));
+        Console.WriteLine("E15_NEW "+altered.Substring(start,Math.Min(280,altered.Length-start)));
+        Console.WriteLine($"E15_RNG ref={control.State.RandomState} new={experiment.State.RandomState}");
+        foreach(var v in control.State.Vehicles)
+        {
+            var n=experiment.State.Vehicles.FirstOrDefault(x=>x.Id==v.Id);
+            if(n==null){Console.WriteLine($"E15_VEHICLE ref={v.Id} missing");continue;}
+            if(v.Position!=n.Position||v.Heading!=n.Heading||v.Status!=n.Status||v.RouteIndex!=n.RouteIndex||v.FuelUnits!=n.FuelUnits||v.WaitingSince!=n.WaitingSince||v.Cause!=n.Cause)
+            {
+                Console.WriteLine($"E15_VEHICLE id={v.Id} ref=({v.Position}, {v.Heading}, {v.Status}, route={v.RouteIndex}, fuel={v.FuelUnits}, wait={v.WaitingSince}, cause={v.Cause})");
+                Console.WriteLine($"E15_VEHICLE id={n.Id} new=({n.Position}, {n.Heading}, {n.Status}, route={n.RouteIndex}, fuel={n.FuelUnits}, wait={n.WaitingSince}, cause={n.Cause})");
+                break;
+            }
+        }
+        return 0;
+    }
+    Console.WriteLine("E15_NO_DIFFERENCE within first 3600 simulated seconds");
+    return 1;
+}
 if(e15=="compare")
 {
     if(args[0]!="scale"){Console.Error.WriteLine("e15 compare exige scale");return 2;}
