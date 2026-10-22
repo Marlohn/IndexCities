@@ -243,6 +243,76 @@ jobs:
           path: vacancy-market-1y.log
           if-no-files-found: ignore
 
+  freight-pilot-1y:
+    # Opt-in physical freight worker experiment, never automatic deliveries.
+    # This is NOT the final trucks/fuel system nor a full second V1 economy.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[freight-1y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compare a full live year with real paid farm freight employees
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=366 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor 2>&1 | tee freight-pilot-1y.log
+          python3 - <<'PY'
+          import json
+          lines=open('freight-pilot-1y.log').readlines()
+          i=next(i for i,line in enumerate(lines) if line.startswith('{'))
+          d=json.loads(''.join(lines[i:]))
+          assert d['simulatedDays']==366 and d['vacancyMarketFixture'] and d['freightLaborFixture']
+          assert d['foodConserved'] and d['moneyConserved']
+          assert d['realWorkerFreightTrips']>0 and d['freightChargesPaidCents']>=35*d['realWorkerFreightTrips']
+          assert d['salesFoodUnits']>0 and d['paidWagesCents']>0
+          print('REAL_FREIGHT_1Y',d['aliveEnd'],d['minimumAliveAtDayBoundary'],
+                d['unmetMeals'],d['realWorkerFreightTrips'],d['freightChargesPaidCents'],d['wallSeconds'])
+          assert d['minimumAliveAtDayBoundary']>=10000, 'Real physical freight reduced survivors below 10k'
+          PY
+      - name: Preserve one-year metrics regardless of rejection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-real-freight-1y
+          path: freight-pilot-1y.log
+          if-no-files-found: ignore
+
+  freight-pilot-10y:
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[freight-1y]')
+    needs: freight-pilot-1y
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Test same real freight pilot for ten continuous years
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor 2>&1 | tee freight-pilot-10y.log
+          python3 - <<'PY'
+          import json
+          lines=open('freight-pilot-10y.log').readlines()
+          i=next(i for i,line in enumerate(lines) if line.startswith('{'))
+          d=json.loads(''.join(lines[i:]))
+          assert d['simulatedDays']==3653 and d['freightLaborFixture']
+          assert d['foodConserved'] and d['moneyConserved']
+          assert d['realWorkerFreightTrips']>0
+          print('REAL_FREIGHT_10Y',d['aliveEnd'],d['minimumAliveAtDayBoundary'],
+                d['unmetMeals'],d['realWorkerFreightTrips'],d['wallSeconds'])
+          assert d['minimumAliveAtDayBoundary']>=10000, 'Real freight + existing market did not sustain 10k'
+          PY
+      - name: Preserve ten-year comparison even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-real-freight-10y
+          path: freight-pilot-10y.log
+          if-no-files-found: ignore
+
   vacancy-market-10y:
     # The V1 narrow food-sector job market is a deliberate falsification POC.
     # No new money, guaranteed jobs, instant travel or salary without work.
