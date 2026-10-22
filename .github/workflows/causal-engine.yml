@@ -1,0 +1,65 @@
+name: Causal Engine - integrated reality check
+
+on:
+  push:
+    branches:
+      - experimento/motor-causal-10k-80y-autonomo
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compile Release
+        run: dotnet build experiments/IndexCities.CausalEngine/IndexCities.CausalEngine.csproj -c Release
+      - name: Validate determinism, trips, ledger, births and physical history
+        run: dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --self-test | tee self-test.json
+      - name: Run city with 1k concurrent citizens 30 days and real fact file
+        run: dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=1000 --days=30 --seed=42 --history=artifacts/causal-1000-30d.facts --adversarial | tee city-1000-30d.json
+      - name: Reject false positives
+        run: |
+          grep -q '"moneyConserved": true' city-1000-30d.json
+          grep -q '"simulatedDays": 30' city-1000-30d.json
+          grep -q '"historyPersistent": true' city-1000-30d.json
+          grep -q '"deterministic": true' self-test.json
+          test -s artifacts/causal-1000-30d.facts
+      - name: Keep reports, never upload huge simulation history
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-smoke
+          path: |
+            self-test.json
+            city-1000-30d.json
+          if-no-files-found: ignore
+
+  scale-10k:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Execute 10,000 individual agents for 30 days, with persisted histories
+        run: |
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=30 --seed=42 --history=artifacts/causal-10000-30d.facts --adversarial | tee city-10000-30d.json
+          grep -q '"moneyConserved": true' city-10000-30d.json
+          grep -q '"simulatedDays": 30' city-10000-30d.json
+          grep -q '"historyPersistent": true' city-10000-30d.json
+          test -s artifacts/causal-10000-30d.facts
+      - name: Keep metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-10k-metrics
+          path: city-10000-30d.json
+          if-no-files-found: ignore
