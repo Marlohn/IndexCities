@@ -8,7 +8,7 @@ namespace IndexCities.CausalEngine;
 
 // Independent vertical-slice engine for falsifying the architecture.
 // RULES AND FIXTURES HERE ARE NOT AN IMPLEMENTATION OF ALL OF INDEXCITIES SPEC.
-internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false);
+internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false);
 internal enum EventKind : byte { Day, Hour, StartWork, EndWork, Move, Delivery, RoadClose, RoadOpen, HouseholdShop }
 internal readonly record struct SimEvent(EventKind Kind, int Id);
 internal sealed class Person
@@ -73,6 +73,9 @@ internal sealed class Firm
     // Optional physical checkout capacity on actual attended shifts.
     public int TodayCheckoutUnitsLeft;
     public long ReservedCheckoutWagesCents;
+    // Exactly one checkout event is one physically arriving buyer with a basket.
+    // Counters are observations, NOT payments, inventory or agent creation.
+    public long MonthRetailBaskets, LifetimeRetailBaskets, LifetimeCheckoutCapacityDenied;
 }
 internal sealed class Trip
 {
@@ -533,7 +536,10 @@ internal sealed partial class CausalCity : IDisposable
                     var purchaseUnitCost = _config.FarmCostPricing && firm.MonthWholesaleBoughtUnits > 0
                         ? (firm.MonthWholesalePaidCents + firm.MonthWholesaleBoughtUnits - 1) / firm.MonthWholesaleBoughtUnits
                         : WholesalePrice;
-                    var normalUnitCost = purchaseUnitCost + (wagePerShift + 4) / 5;
+                    var normalUnitCost = purchaseUnitCost +
+                        (_config.BasketRetailService
+                            ? (wagePerShift + 5 * 32 - 1) / (5 * 32)
+                            : (wagePerShift + 4) / 5);
                     priced = (checked(normalUnitCost * 105) + 99) / 100;
                 }
                 else
@@ -559,7 +565,13 @@ internal sealed partial class CausalCity : IDisposable
             // underfunds actual harvest. Only harvest is physically capacity-
             // limited here; retail throughput is not yet faithfully capped.
             var farmPaidShiftsInMonth = _config.AttendanceAwareFarms ? 26L : 30L;
-            var unitsPerEmployee = farm ? realisedFoodPerShift * farmPaidShiftsInMonth : 5L * 30;
+            // One retail shift can check out five HOUSEHOLD BASKETS, not five
+            // individual meal units. A physical basket carries at most 32 food
+            // items; absent staff cannot serve. Count 26 paid shifts/month
+            // under the actual calendar (one day off per 7). The eight-job
+            // maximum is a small-store fixture cap, NOT a V1 product rule.
+            var unitsPerEmployee = farm ? realisedFoodPerShift * farmPaidShiftsInMonth :
+                _config.BasketRetailService ? 5L * 32 * 26 : 5L * 30;
             // Real, already-resident households have a daily food need even
             // before the first retail sale. Staff planning must consider that
             // demand; otherwise eight farms hire only 16 starters and all
@@ -570,7 +582,8 @@ internal sealed partial class CausalCity : IDisposable
             var requiredUnits = Math.Max(monthlyUnits, expectedMonthlyDemand);
             var wanted = (int)Math.Clamp(
                 (requiredUnits + unitsPerEmployee - 1) / unitsPerEmployee,
-                farm ? 2 : 1, farm ? 128 : 96);
+                farm ? 2 : (_config.BasketRetailService ? 2 : 1),
+                farm ? 128 : (_config.BasketRetailService ? 8 : 96));
             var wage = farm ? 80 : 65;
             // Freight positions are extra real hires, never substitutes for
             // the staff producing the meals used by the city.
@@ -584,6 +597,7 @@ internal sealed partial class CausalCity : IDisposable
             firm.MonthFarmWorkdays = 0;
             firm.MonthRetailSalesUnits = 0;
             firm.MonthRetailPaidWagesCents = 0;
+            firm.MonthRetailBaskets = 0;
             firm.MonthFarmPaidWagesCents = 0;
             firm.MonthWholesaleSalesUnits = 0;
             firm.MonthWholesaleBoughtUnits = 0;
@@ -1257,13 +1271,32 @@ internal sealed partial class CausalCity : IDisposable
         var buy = _config.VacancyMarket && shop.PresentWorkers <= 0
             ? 0 : Math.Min(32, Math.Min(shop.Stock, (int)(p.Cash / price)));
         if (_config.BoundedRetailService)
-            buy = Math.Min(buy, shop.TodayCheckoutUnitsLeft);
+        {
+            if (_config.BasketRetailService)
+            {
+                // Each completed in-person basket uses one staffed checkout
+                // slot, regardless of how many real food units it contains.
+                if (shop.TodayCheckoutUnitsLeft <= 0)
+                {
+                    if (shop.PresentWorkers > 0)
+                        shop.LifetimeCheckoutCapacityDenied++;
+                    buy = 0;
+                }
+            }
+            else buy = Math.Min(buy, shop.TodayCheckoutUnitsLeft);
+        }
         if (buy > 0)
         {
             var paid = checked((long)buy * price);
             p.Cash -= paid;
             shop.Cash += paid;
-            if (_config.BoundedRetailService) shop.TodayCheckoutUnitsLeft -= buy;
+            if (_config.BoundedRetailService)
+                shop.TodayCheckoutUnitsLeft -= _config.BasketRetailService ? 1 : buy;
+            if (_config.BasketRetailService)
+            {
+                shop.MonthRetailBaskets++;
+                shop.LifetimeRetailBaskets++;
+            }
             _retailSalesCents = checked(_retailSalesCents + paid);
             if (_config.CostBasedFoodPrice) shop.MonthRetailSalesUnits += buy;
             if (_config.WageFeedback || _config.DemandStaffing || _config.VacancyMarket) shop.DayReceipts += paid;
@@ -1382,7 +1415,7 @@ internal sealed partial class CausalCity : IDisposable
             Mix(p.ContributedDays); Mix(p.GrossEarnings); Mix(p.PensionCredit); Mix(p.PensionReceived);
         }
         foreach (var h in _households) { Mix(h.Pantry); Mix(h.Members.Count); Mix(h.LastBirthDay); Mix(h.LastShoppingDepartureDay); }
-        foreach (var f in _shops) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); Mix(f.MonthRetailSalesUnits); Mix(f.MonthRetailPaidWagesCents); Mix(f.RetailUnitPriceCents); Mix(f.MonthFarmPaidWagesCents); Mix(f.MonthWholesaleSalesUnits); Mix(f.MonthWholesaleBoughtUnits); Mix(f.MonthWholesalePaidCents); Mix(f.FarmWholesaleUnitPriceCents); Mix(f.TodayCheckoutUnitsLeft); Mix(f.ReservedCheckoutWagesCents); }
+        foreach (var f in _shops) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); Mix(f.MonthRetailSalesUnits); Mix(f.MonthRetailPaidWagesCents); Mix(f.RetailUnitPriceCents); Mix(f.MonthFarmPaidWagesCents); Mix(f.MonthWholesaleSalesUnits); Mix(f.MonthWholesaleBoughtUnits); Mix(f.MonthWholesalePaidCents); Mix(f.FarmWholesaleUnitPriceCents); Mix(f.TodayCheckoutUnitsLeft); Mix(f.ReservedCheckoutWagesCents); Mix(f.MonthRetailBaskets); Mix(f.LifetimeRetailBaskets); Mix(f.LifetimeCheckoutCapacityDenied); }
         foreach (var f in _farms) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); }
         Mix(_builder.Cash); Mix(_builder.OfferedPositions); Mix(_builder.PresentWorkers);
         Mix(_outsideTimber); Mix(_constructionStarted); Mix(_constructionFinished); Mix(_constructionPaidShifts);
@@ -1468,6 +1501,10 @@ internal sealed partial class CausalCity : IDisposable
         attendanceAwareFarmsFixture = _config.AttendanceAwareFarms,
         crossFarmFreightFixture = _config.CrossFarmFreight,
         boundedRetailServiceFixture = _config.BoundedRetailService,
+        basketRetailServiceFixture = _config.BasketRetailService,
+        checkoutBasketTransactions = _shops.Sum(f => f.LifetimeRetailBaskets),
+        checkoutCapacityDeniedVisits = _shops.Sum(f => f.LifetimeCheckoutCapacityDenied),
+        checkoutFixtureMaxEmployeesPerSmallStore = _config.BasketRetailService ? 8 : 0,
         farmCostPricingFixture = _config.FarmCostPricing,
         meanFarmWholesaleUnitPriceCents = _farms.Average(f=>f.FarmWholesaleUnitPriceCents),
         contractorServiceRevenueCents = checked(_constructionStarted * ContractorLaborInvoice),
