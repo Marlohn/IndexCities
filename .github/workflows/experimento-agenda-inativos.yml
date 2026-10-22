@@ -1,0 +1,63 @@
+name: Experimento agenda inativos - custo de varredura
+
+on:
+  push:
+    branches:
+      - experimento/agenda-inativos-profiling
+
+permissions:
+  contents: read
+
+jobs:
+  medir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout do experimento
+        uses: actions/checkout@v4
+        with:
+          path: candidato
+      - name: Checkout da main de referencia
+        uses: actions/checkout@v4
+        with:
+          ref: 651326228729d7689b61745370cc63d997e5ee60
+          path: baseline
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Testes completos do candidato
+        run: dotnet test candidato/tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --logger 'console;verbosity=minimal'
+      - name: Medicoes integradas e equivalencia
+        shell: bash
+        run: |
+          set -euo pipefail
+          compare() {
+            local tag="$1"; shift
+            echo "==== BASELINE $tag ===="
+            dotnet run -c Release --project baseline/src/IndexCities.Headless -- scale "$@" | tee "old_${tag}.txt"
+            echo "==== CANDIDATO COM PERFIL $tag ===="
+            INDEXCITIES_IDLE_PROBE=1 dotnet run -c Release --project candidato/src/IndexCities.Headless -- scale "$@" | tee "new_${tag}.txt"
+            local old new
+            old=$(grep -o 'sha256=[0-9A-F]*' "old_${tag}.txt" | tail -1 | cut -d= -f2)
+            new=$(grep -o 'sha256=[0-9A-F]*' "new_${tag}.txt" | tail -1 | cut -d= -f2)
+            echo "RESULT $tag oldSHA=$old newSHA=$new"
+            grep -E '^(IDLE_PROBE|MOVE_PROFILE|DAY 1|SUMMARY|SAVE|INVARIANTS OK)' "new_${tag}.txt"
+            test -n "$old" && test "$old" = "$new" || { echo "FALHA: save divergente ($tag)"; exit 1; }
+          }
+          compare cycle42 cycle --seed=42 --warmup=1 --days=1 --cap=600
+          compare grid42 grid --rows=3 --length=400 --seed=42 --warmup=1 --days=1 --cap=600
+          compare medium42 grid --rows=5 --length=800 --seed=42 --warmup=0 --days=1 --cap=600
+      - name: Sonda de varredura em populacao grande (sem simular um dia)
+        shell: bash
+        run: |
+          INDEXCITIES_IDLE_PROBE=1 dotnet run -c Release --project candidato/src/IndexCities.Headless -- scale grid --rows=9 --length=1200 --seed=42 --warmup=0 --days=0 --cap=600 | tee probe_large.txt
+      - name: Preservar dados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agenda-inativos-sonda
+          path: |
+            old_*.txt
+            new_*.txt
+            probe_large.txt
+          if-no-files-found: ignore
