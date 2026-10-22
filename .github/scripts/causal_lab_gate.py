@@ -9,6 +9,7 @@ from pathlib import Path
 
 REPO = "Marlohn/IndexCities"
 CI = "causal-lab-ci.yml"
+ACTIVE_LAB_BRANCH = "experimento/motor-causal-10k-80y-autonomo"
 DAILY_LIMIT = 8
 
 def api(path):
@@ -36,10 +37,12 @@ def main():
     if event_type == "workflow_run":
         run = payload.get("workflow_run", {})
         previous = run.get("id", "")
-        if (run.get("name") != "IndexCities Causal Lab CI"
+        if (run.get("name") not in ("IndexCities Causal Lab CI", "Causal Engine - integrated reality check")
                 or run.get("head_repository", {}).get("full_name") != REPO
-                or run.get("head_branch") != "main"
-                or run.get("event") != "workflow_dispatch"):
+                or not (
+                    run.get("head_branch") == "main" and run.get("event") == "workflow_dispatch"
+                    or run.get("head_branch") == ACTIVE_LAB_BRANCH and run.get("event") == "push"
+                )):
             output(False, "irrelevant or untrusted completion"); return
         if run.get("conclusion") not in ("success", "failure", "cancelled", "timed_out"):
             output(False, "CI unfinished"); return
@@ -47,6 +50,11 @@ def main():
         output(False, "untrusted event"); return
     if api("pulls/52").get("state") != "open":
         output(False, "PR #52 not open"); return
+    active = api("actions/runs?per_page=100").get("workflow_runs", [])
+    if any(r.get("head_branch") == ACTIVE_LAB_BRANCH
+           and r.get("status") in ("queued", "in_progress", "waiting", "requested", "pending")
+           for r in active):
+        output(False, "existing CausalEngine branch has an active CI"); return
     runs = api(f"actions/workflows/{CI}/runs?per_page=100").get("workflow_runs", [])
     if any(r.get("status") in ("queued", "in_progress", "waiting", "requested", "pending") for r in runs):
         output(False, "another experiment CI is active"); return
