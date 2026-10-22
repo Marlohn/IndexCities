@@ -209,6 +209,44 @@ jobs:
           path: eighty-years-population.log
           if-no-files-found: ignore
 
+  vacancy-market-10y:
+    # The V1 narrow food-sector job market is a deliberate falsification POC.
+    # No new money, guaranteed jobs, instant travel or salary without work.
+    # Still not complete SPEC (notably material and delivery-truck staffing).
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[vacancy-10y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compare 10k Sims over ten years with real paid vacancies
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal 2>&1 | tee vacancy-10y.log
+          python3 - <<'PY'
+          import json
+          lines=open('vacancy-10y.log').readlines()
+          i=next(i for i,v in enumerate(lines) if v.startswith('{'))
+          d=json.loads(''.join(lines[i:]))
+          assert d['simulatedDays']==3653 and d['vacancyMarketFixture']
+          assert d['moneyConserved'] and d['foodConserved']
+          assert d['paidWagesCents']>0 and d['salesFoodUnits']>0
+          assert d['unemployedAdults']>=0 and d['employedAlive']>=0
+          assert d['businessInitialCashCents']+d['businessOperatingNetCents']==d['businessCurrentCashCents']
+          print('VACANCY_MARKET_TEN_YEARS',d['aliveEnd'],d['minimumAliveAtDayBoundary'],
+                d['unmetMeals'],d['employedAlive'],d['unemployedAdults'],d['wallSeconds'])
+          assert d['minimumAliveAtDayBoundary']>=10000, 'Vacancy market fails 10k living population'
+          PY
+      - name: Preserve negative economic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-vacancy-market-10y
+          path: vacancy-10y.log
+          if-no-files-found: ignore
+
   sustained-workload-80y:
     # Synthetic workload comparison: 80 independent one-year, LIVE 10k worlds,
     # real physical trips and economic transfers within each year. Explicitly
