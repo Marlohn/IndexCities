@@ -71,20 +71,21 @@ internal static class EngineSelfTest
             File.Delete(compressed);
             File.Delete(snapshot);
 
-            // A family in this four-person fixture starts at ages 58, 56,
-            // 54 and 52. Its oldest adult retires after 12 years; after
-            // 18 years nobody works. Shopping must continue to happen via
+            // A family with seed 48 starts at ages 64, 62, 60 and 58.
+            // Births require two carers under 60, so no children can become
+            // replacement workers. The first retires after 6 years and
+            // all four retire after 12 years. Shopping must continue to happen via
             // physical trips and paid purchases in BOTH situations.
             var retirementFacts = temp + ".retired.facts";
-            var retirementDays = (CausalCity.Epoch.AddYears(19) - CausalCity.Epoch).Days;
-            using (var retirement = new CausalCity(new LabConfig(4, retirementDays, 42, retirementFacts, false)))
+            var retirementDays = (CausalCity.Epoch.AddYears(13) - CausalCity.Epoch).Days;
+            using (var retirement = new CausalCity(new LabConfig(4, retirementDays, 48, retirementFacts, false)))
             {
                 retirement.Run();
                 retirement.AssertConservation();
             }
-            var firstRetirement = (long)(CausalCity.Epoch.AddYears(12) - CausalCity.Epoch).TotalSeconds;
-            var secondRetirement = (long)(CausalCity.Epoch.AddYears(14) - CausalCity.Epoch).TotalSeconds;
-            var allRetired = (long)(CausalCity.Epoch.AddYears(18) - CausalCity.Epoch).TotalSeconds;
+            var firstRetirement = (long)(CausalCity.Epoch.AddYears(6) - CausalCity.Epoch).TotalSeconds;
+            var secondRetirement = (long)(CausalCity.Epoch.AddYears(8) - CausalCity.Epoch).TotalSeconds;
+            var allRetired = (long)(CausalCity.Epoch.AddYears(12) - CausalCity.Epoch).TotalSeconds;
             long successorPurchases = 0, retiredPurchases = 0;
             foreach (var fact in HistorySink.Read(retirementFacts))
             {
