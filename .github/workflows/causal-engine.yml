@@ -209,6 +209,40 @@ jobs:
           path: eighty-years-population.log
           if-no-files-found: ignore
 
+  vacancy-market-1y:
+    # Only expand to ten/eighty years after workers can actually serve a city.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[market-1y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Observe first-year paid employment and staffed retail survival
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=366 --seed=42 --adversarial --vacancy-market --cohort-renewal 2>&1 | tee vacancy-market-1y.log
+          python3 - <<'PY'
+          import json
+          lines=open('vacancy-market-1y.log').readlines()
+          i=next(i for i,line in enumerate(lines) if line.startswith('{'))
+          d=json.loads(''.join(lines[i:]))
+          assert d['simulatedDays']==366 and d['vacancyMarketFixture']
+          assert d['foodConserved'] and d['moneyConserved']
+          assert d['salesFoodUnits']>0 and d['paidWagesCents']>0
+          print('MARKET_YEAR_1',d['aliveEnd'],d['minimumAliveAtDayBoundary'],
+                d['unmetMeals'],d['deniedPurchases'],d['employedAlive'],d['wallSeconds'])
+          assert d['minimumAliveAtDayBoundary']>=10000, 'Real vacancy fixture did not sustain 10k even 1 year'
+          PY
+      - name: Preserve poor outcomes for diagnosis
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-real-vacancy-one-year
+          path: vacancy-market-1y.log
+          if-no-files-found: ignore
+
   vacancy-market-10y:
     # The V1 narrow food-sector job market is a deliberate falsification POC.
     # No new money, guaranteed jobs, instant travel or salary without work.
