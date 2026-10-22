@@ -232,6 +232,38 @@ internal static class EngineSelfTest
                     throw new InvalidOperationException("Real vacancy employment changed after checkpoint");
             }
             File.Delete(marketSave);
+            // A separate real-cost pricing trial must retain every cent in
+            // its original wallets and survive a checkpoint after repricing.
+            var costConfig = new LabConfig(256, 120, 42, null, true,
+                VacancyMarket: true, CostBasedFoodPrice: true);
+            var costSave = temp + ".cost-price.save.json";
+            string costHash;
+            double costAverage;
+            using (var completeCost = new CausalCity(costConfig))
+            {
+                completeCost.Run();
+                completeCost.AssertConservation();
+                costHash = completeCost.Fingerprint();
+                using var report = JsonDocument.Parse(JsonSerializer.Serialize(completeCost.Report(0)));
+                costAverage = report.RootElement.GetProperty("averageRetailUnitPriceCents").GetDouble();
+                if (report.RootElement.GetProperty("salesFoodUnits").GetInt64() <= 0 ||
+                    report.RootElement.GetProperty("businessSalesRevenueCents").GetInt64() <= 0 ||
+                    Math.Abs(costAverage - 50) < .01)
+                    throw new InvalidOperationException("Observed food costs never produced a real new transaction price");
+            }
+            using (var halfCost = new CausalCity(costConfig))
+            {
+                halfCost.RunUntilDay(65);
+                halfCost.SaveSnapshot(costSave);
+            }
+            using (var resumedCost = CausalCity.FromSnapshot(costSave))
+            {
+                resumedCost.Run();
+                resumedCost.AssertConservation();
+                if (resumedCost.Fingerprint() != costHash)
+                    throw new InvalidOperationException("Cost-based prices changed on snapshot resume");
+            }
+            File.Delete(costSave);
             // In the physical-supplier-freight counterfactual, a real farm
             // employee must leave the farm with real stock, travel to the shop,
             // unload there, and receive exactly one salary from existing cash.
@@ -274,7 +306,7 @@ internal static class EngineSelfTest
             // The experiment never mints currency, timber or finished homes.
             var buildingCfg = new LabConfig(256, 160, 42, null, true,
                 VacancyMarket: true, CohortRenewal: true, ConstructionPilot: true);
-            var buildingSave = temp + ".construction.save.json";
+            var buildingSave = temp + ".construction.save.json", temp + ".cost-price.save.json";
             string builtHash;
             long builtShifts;
             using (var completeConstruction = new CausalCity(buildingCfg))
@@ -327,6 +359,7 @@ internal static class EngineSelfTest
                 demandFundedShiftsConserved = demandWages > 0,
                 demandStaffingSaveResumeExact = true,
                 realVacancyMarketSaveResumeExact = true, marketEmployed, marketUnemployed,
+                costBasedFoodPricingSaveResumeExact = true, observedRetailPriceCents = costAverage,
                 realFreightSaveResumeExact = true, freightJourneys, freightCharges,
                 buildingMaterialAndPayrollConserved = true, buildingPaidShifts = builtShifts,
                 saveResumeExact = resumedHash == hashA,
