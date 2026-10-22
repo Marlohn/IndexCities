@@ -12,6 +12,9 @@ internal sealed partial class CausalCity
     private const int WasteTreatmentGrossWage = 80;
     private const int WasteTreatmentUnitsPerShift = 50;
     private const int MaxWasteTreatmentWorkers = 256;
+    // A physical, finite landfill compartment, not an infinite sink. Both
+    // raw and processed waste remain present in auditable inventories.
+    private const long TreatedLandfillCapacity = 500_000_000L;
 
     private long _wasteTreated, _wasteTreatmentPaidShifts;
 
@@ -20,7 +23,8 @@ internal sealed partial class CausalCity
         worker.AtWork = false;
         worker.HeadingToWork = false;
         if (worker.Node != SanitationDepotNode ||
-            _garbageAtDepot <= 0 || _treasury < WasteTreatmentGrossWage)
+            _garbageAtDepot <= 0 || _wasteTreated >= TreatedLandfillCapacity ||
+            _treasury < WasteTreatmentGrossWage)
         {
             StartTrip(worker, worker.Home);
             return;
@@ -28,7 +32,8 @@ internal sealed partial class CausalCity
 
         // Only ACTUALLY DEPOSITED refuse exists at the treatment plant;
         // refuse still carried by collection workers is not processed.
-        var amount = Math.Min(WasteTreatmentUnitsPerShift, _garbageAtDepot);
+        var amount = Math.Min(WasteTreatmentUnitsPerShift,
+            Math.Min(_garbageAtDepot, TreatedLandfillCapacity - _wasteTreated));
         _garbageAtDepot -= amount;
         _wasteTreated += amount;
 
