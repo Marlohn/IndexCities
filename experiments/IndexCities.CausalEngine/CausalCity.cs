@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO.Compression;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
@@ -62,8 +63,11 @@ internal sealed class HistorySink : IDisposable
         if (path is null) return;
         var directory = Path.GetDirectoryName(Path.GetFullPath(path))!;
         Directory.CreateDirectory(directory);
-        _writer = new BinaryWriter(new FileStream(path, FileMode.Create, FileAccess.Write,
-            FileShare.Read, 1024 * 1024, FileOptions.SequentialScan));
+        Stream output = new FileStream(path, FileMode.Create, FileAccess.Write,
+            FileShare.Read, 1024 * 1024, FileOptions.SequentialScan);
+        if (path.EndsWith(".gz", StringComparison.OrdinalIgnoreCase))
+            output = new GZipStream(output, CompressionLevel.Fastest);
+        _writer = new BinaryWriter(output);
     }
     public void Fact(long at, int owner, byte type, long amount)
     {
