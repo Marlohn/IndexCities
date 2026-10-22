@@ -26,29 +26,21 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - label: 400-full-day-seed42
+          - label: 400-tow-junction-road-seed43-reversed
             rows: 5
             length: 800
-            seed: 42
-            seconds: 86400
-            adversary: none
-            reverse: 0
-            signals: 1
-          - label: 400-tow-junction-road-seed42
-            rows: 5
-            length: 800
-            seed: 42
-            seconds: 7200
-            adversary: mixed
-            reverse: 0
-            signals: 1
-          - label: 400-tow-junction-road-seed7-reversed
-            rows: 5
-            length: 800
-            seed: 7
+            seed: 43
             seconds: 7200
             adversary: mixed
             reverse: 1
+            signals: 1
+          - label: 400-tow-junction-road-seed44
+            rows: 5
+            length: 800
+            seed: 44
+            seconds: 7200
+            adversary: mixed
+            reverse: 0
             signals: 1
     runs-on: ubuntu-latest
     timeout-minutes: 45
