@@ -23,12 +23,19 @@ jobs:
           python3 --version
       - name: Sonda matematica independente
         run: |
+          set -o pipefail
           python3 experiments/IndexCities.CausalLab/p0_math_probe.py | tee p0-python.log
       - name: Executar P0 em C# contra FixedPoint real
         run: |
+          set -o pipefail
           dotnet run -c Release --project experiments/IndexCities.CausalLab/IndexCities.CausalLab.csproj | tee p0-dotnet.log
+      - name: Auditoria integrada na cidade real do IndexCities
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalLab/IndexCities.CausalLab.csproj -- --integrated | tee p0-integrated.log
       - name: Testes existentes do nucleo
         run: |
+          set -o pipefail
           dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --logger 'console;verbosity=minimal' | tee p0-regression.log
       - name: Preservar resultados
         if: always()
