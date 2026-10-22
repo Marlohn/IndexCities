@@ -164,6 +164,39 @@ internal static class EngineSelfTest
             File.Delete(renewalSave);
             if (renewalBirths <= 0)
                 throw new InvalidOperationException("Household birth appointments produced no births");
+            // Revenue-funded, rotating real shifts must conserve cash and
+            // produce the same result after an exact day-boundary checkpoint.
+            // Workers with no allocated shift receive NO wage.
+            var demandConfig = new LabConfig(256, 60, 42, null, true,
+                CohortRenewal: true, DemandStaffing: true);
+            var demandSave = temp + ".demand.save.json";
+            string demandFingerprint;
+            long demandWages;
+            using (var completeDemand = new CausalCity(demandConfig))
+            {
+                completeDemand.Run();
+                completeDemand.AssertConservation();
+                demandFingerprint = completeDemand.Fingerprint();
+                using var report = JsonDocument.Parse(JsonSerializer.Serialize(completeDemand.Report(0)));
+                demandWages = report.RootElement.GetProperty("paidWagesCents").GetInt64();
+                var shifts = report.RootElement.GetProperty("workingDays").GetInt64();
+                if (demandWages <= 0 || shifts <= 0 || shifts >= 256 * 60)
+                    throw new InvalidOperationException("Demand based work is not real, selective and paid");
+            }
+            using (var firstDemand = new CausalCity(demandConfig))
+            {
+                firstDemand.RunUntilDay(30);
+                firstDemand.SaveSnapshot(demandSave);
+            }
+            using (var secondDemand = CausalCity.FromSnapshot(demandSave))
+            {
+                secondDemand.Run();
+                secondDemand.AssertConservation();
+                if (demandFingerprint != secondDemand.Fingerprint())
+                    throw new InvalidOperationException("Demand-funded shifts diverged after checkpoint");
+            }
+            File.Delete(demandSave);
+
             // Small closed-household stress case: when the final family
             // member dies, a positive estate must NOT finance city pensions.
             long unclaimedEstate;
@@ -183,6 +216,8 @@ internal static class EngineSelfTest
                 payrollFeedbackSaveResumeExact = feedbackHash == feedbackResumedHash,
                 heirlessEstatesReturnToReserve = unclaimedEstate > 0,
                 familyRenewalSaveResumeExact = true, familyRenewalBirths = renewalBirths,
+                demandFundedShiftsConserved = demandWages > 0,
+                demandStaffingSaveResumeExact = true,
                 saveResumeExact = resumedHash == hashA,
                 compressedHistoryReplayExact = reopened == facts,
                 journeys, sales, births, successorPurchases, retiredPurchases, historyFacts = facts,
@@ -200,7 +235,7 @@ internal static class EngineSelfTest
         }
         finally
         {
-            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json" })
+            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json" })
                 if (File.Exists(path)) File.Delete(path);
         }
     }
