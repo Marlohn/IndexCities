@@ -14,10 +14,14 @@ internal static class Program
     const double Quantum = 2.0;
     const int DaySteps = 43_200;
 
-    private static int Main()
+    private static int Main(string[] args)
     {
         try
         {
+            if (args.Length == 1 && args[0] == "--integrated")
+                return IntegratedProbe.Run();
+            if (args.Length != 0)
+                throw new ArgumentException("Uso: sem argumentos (matemática P0) ou --integrated (cidade real)");
             var report = new Dictionary<string, object>
             {
                 ["scope"] = "P0: contraexemplos e equivalência de acumuladores isolados; NÃO benchmark integrado",
