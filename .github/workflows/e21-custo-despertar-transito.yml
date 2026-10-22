@@ -32,10 +32,17 @@ jobs:
             rows: 3
             length: 400
             seconds: 86400
+            mode: compare
           - label: 400-congested-2h
             rows: 5
             length: 800
             seconds: 7200
+            mode: compare
+          - label: 400-full-day-cost
+            rows: 5
+            length: 800
+            seconds: 86400
+            mode: compare-cost
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -47,10 +54,12 @@ jobs:
           set -euo pipefail
           dotnet run -c Release --project src/IndexCities.Headless -- scale grid \
             --rows=${{ matrix.rows }} --length=${{ matrix.length }} \
-            --seed=42 --warmup=1 --e21=compare --e21-window=${{ matrix.seconds }} \
+            --seed=42 --warmup=1 --e21=${{ matrix.mode }} --e21-window=${{ matrix.seconds }} \
             | tee "e21_${{ matrix.label }}.log"
           grep -q '^E21_COMPARE mode=cost sameCheckpoints=True' "e21_${{ matrix.label }}.log"
-          grep -q '^E21_COMPARE mode=causes sameCheckpoints=True' "e21_${{ matrix.label }}.log"
+          if [[ "${{ matrix.mode }}" == "compare" ]]; then
+            grep -q '^E21_COMPARE mode=causes sameCheckpoints=True' "e21_${{ matrix.label }}.log"
+          fi
           grep '^E21_' "e21_${{ matrix.label }}.log" | grep -E 'DAY|TOTAL|COST|CAUSES|COMPARE'
       - name: Preservar dados completos
         if: always()
