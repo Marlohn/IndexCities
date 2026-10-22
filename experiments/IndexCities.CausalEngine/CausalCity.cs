@@ -9,7 +9,7 @@ namespace IndexCities.CausalEngine;
 // Independent vertical-slice engine for falsifying the architecture.
 // RULES AND FIXTURES HERE ARE NOT AN IMPLEMENTATION OF ALL OF INDEXCITIES SPEC.
 internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial);
-internal enum EventKind : byte { Day, Hour, StartWork, EndWork, Move, Delivery, RoadClose, RoadOpen }
+internal enum EventKind : byte { Day, Hour, StartWork, EndWork, Move, Delivery, RoadClose, RoadOpen, HouseholdShop }
 internal readonly record struct SimEvent(EventKind Kind, int Id);
 internal sealed class Person
 {
@@ -259,6 +259,7 @@ internal sealed partial class CausalCity : IDisposable
                 case EventKind.Delivery: CompleteDelivery(e.Id); break;
                 case EventKind.RoadClose: CloseRoad(); break;
                 case EventKind.RoadOpen: OpenRoad(); break;
+                case EventKind.HouseholdShop: ShopAtHome(e.Id); break;
             }
             if ((_sequence & 0xFFFFFF) == 0 && _firstDollarViolation == -1)
                 if (CalculateMoney() != _initialMoney) _firstDollarViolation = _time;
@@ -337,6 +338,15 @@ internal sealed partial class CausalCity : IDisposable
                     Schedule(_time + 8 * 3600, EventKind.StartWork, id);
                     Schedule(_time + 17 * 3600, EventKind.EndWork, id);
                 }
+            }
+            // A retired household cannot depend on a worker's EndWork event to
+            // buy groceries. Its shopper still has to travel, pay and return.
+            if (h.Pantry < 30 && !h.Members.Any(id =>
+                _people[id].Alive && Age(_people[id], date) is >= 18 and < 70))
+            {
+                var buyer = h.Members.FirstOrDefault(id =>
+                    _people[id].Alive && Age(_people[id], date) >= 18, -1);
+                if (buyer >= 0) Schedule(_time + 18 * 3600, EventKind.HouseholdShop, buyer);
             }
         }
         for (var shopId = 0; shopId < _shops.Length; shopId++)
@@ -472,27 +482,45 @@ internal sealed partial class CausalCity : IDisposable
         }
         p.AtWork = false;
         var h = _households[p.HouseholdId];
-        if (h.Members.FirstOrDefault(id => _people[id].Alive && Age(_people[id], Epoch.AddSeconds(_time)) >= 18) == p.Id && h.Pantry < 30)
+        // Select the first *working* adult. The oldest adult might already
+        // have retired; choosing them would prevent employed relatives from
+        // shopping even when the family has money and local food available.
+        var shopper = h.Members.FirstOrDefault(id =>
         {
-            // Explicit intrafamily transfers: no pooling fictitious money.
-            // Purchase funds exist in identifiable personal accounts.
-            var needed = Math.Max(0, 32 * FoodPrice - p.Cash);
-            if (needed > 0)
-                foreach (var id in h.Members)
-                {
-                    var donor = _people[id];
-                    if (donor.Id == p.Id || !donor.Alive || donor.Cash <= 0) continue;
-                    var payment = Math.Min(needed, donor.Cash);
-                    donor.Cash -= payment;
-                    p.Cash += payment;
-                    needed -= payment;
-                    _history.Fact(_time, donor.Id, 14, payment);
-                    if (needed == 0) break;
-                }
-            if (p.Cash >= FoodPrice) StartTrip(p, _shops[(p.Home + 1) % Nodes].Node);
-            else StartTrip(p, p.Home);
-        }
-        else StartTrip(p, p.Home);
+            var member = _people[id];
+            var age = Age(member, Epoch.AddSeconds(_time));
+            return member.Alive && age >= 18 && age < 70;
+        }, -1);
+        if (shopper == p.Id && TryStartHouseholdShopping(p)) return;
+        StartTrip(p, p.Home);
+    }
+    private void ShopAtHome(int personId)
+    {
+        var p = _people[personId];
+        if (!p.Alive || p.Traveling || p.Node != p.Home) return;
+        TryStartHouseholdShopping(p);
+    }
+    private bool TryStartHouseholdShopping(Person p)
+    {
+        var h = _households[p.HouseholdId];
+        if (h.Pantry >= 30) return false;
+        // Actual intrafamily transfers, never a fictitious pooled balance.
+        var needed = Math.Max(0, 32 * FoodPrice - p.Cash);
+        if (needed > 0)
+            foreach (var id in h.Members)
+            {
+                var donor = _people[id];
+                if (donor.Id == p.Id || !donor.Alive || donor.Cash <= 0) continue;
+                var payment = Math.Min(needed, donor.Cash);
+                donor.Cash -= payment;
+                p.Cash += payment;
+                needed -= payment;
+                _history.Fact(_time, donor.Id, 14, payment);
+                if (needed == 0) break;
+            }
+        if (p.Cash < FoodPrice) return false;
+        StartTrip(p, _shops[(p.Home + 1) % Nodes].Node);
+        return true;
     }
     private Trip NewTrip(int owner, int from, int destination, EventKind completion, int payload = 0, int cargo = 0)
     {
