@@ -160,6 +160,42 @@ jobs:
           path: 80years-10000.json
           if-no-files-found: ignore
 
+  eighty-years-population-diagnostic:
+    # A separate, explicitly requested causal/demographic probe. It does NOT
+    # persist facts; the long-history workload remains a separate acceptance
+    # problem and this job can never prove the complete IndexCities SPEC.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[80y-diagnostic]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Run 80 Gregorian years with corrected household purchasing
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial 2>&1 | tee eighty-years-population.log
+          python3 - <<'PY'
+          import json
+          lines=open("eighty-years-population.log").readlines()
+          report_start=next(i for i,line in enumerate(lines) if line.startswith('{'))
+          result=json.loads(''.join(lines[report_start:]))
+          assert result['simulatedDays'] == 29220 and result['gregorianEnd'] == '2100-01-01'
+          assert result['foodConserved'] and result['moneyConserved']
+          print('EIGHTY_YEAR_POPULATION_DIAGNOSTIC', result['aliveEnd'],
+                result['minimumAliveAtDayBoundary'], result['unmetMeals'],
+                result['wallSeconds'])
+          assert result['minimumAliveAtDayBoundary'] >= 10000, 'Living population fell below 10,000'
+          PY
+      - name: Keep diagnostic results even if the population collapses
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-80y-population-no-history
+          path: eighty-years-population.log
+          if-no-files-found: ignore
+
   economic-stability-diagnostic:
     runs-on: ubuntu-latest
     timeout-minutes: 45
