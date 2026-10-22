@@ -1004,7 +1004,6 @@ internal sealed partial class CausalCity : IDisposable
             StartTrip(driver, shop.Node);
             return true;
         }
-        return false;
     }
 
     private void StartTrip(Person p, int destination)
