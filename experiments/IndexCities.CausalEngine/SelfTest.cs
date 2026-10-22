@@ -26,15 +26,20 @@ internal static class EngineSelfTest
             }
             var bytes = new FileInfo(temp).Length;
             long readFacts = 0, previousAt = -1, meals = 0, trips = 0;
+            var householdPurchasesPerDay = new HashSet<(long Day, int Household)>();
             foreach (var fact in HistorySink.Read(temp))
             {
                 if (fact.At < previousAt) throw new InvalidOperationException("History out of order");
                 previousAt = fact.At;
                 if (fact.Type == 3) meals++;
                 if (fact.Type == 2) trips++;
+                if (fact.Type == 10 && fact.Owner is >= 0 and < 256 && fact.Amount > 0 &&
+                    !householdPurchasesPerDay.Add((fact.At / CausalCity.DaySeconds, fact.Owner % 64)))
+                    throw new InvalidOperationException("Two adults purchased for the same household on one day");
                 readFacts++;
             }
-            if (readFacts != facts || trips <= 0 || meals <= 0 || bytes >= facts * 21)
+            if (readFacts != facts || trips <= 0 || meals <= 0 ||
+                householdPurchasesPerDay.Count <= 0 || bytes >= facts * 21)
                 throw new InvalidOperationException($"Corrupt compact factual history: read={readFacts}, expected={facts}, bytes={bytes}");
             using (var b = new CausalCity(new LabConfig(256, 14, 42, null, true)))
             {
