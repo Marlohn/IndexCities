@@ -17,6 +17,8 @@ internal sealed partial class CausalCity
         public Household[] Households { get; set; } = [];
         public Firm[] Shops { get; set; } = [];
         public Firm[] Farms { get; set; } = [];
+        public Firm? Builder { get; set; }
+        public ConstructionSite[] ConstructionSites { get; set; } = [];
         public Trip[] Trips { get; set; } = [];
         public int[] FreeTripSlots { get; set; } = [];
         public TimedSnapshotEvent[] Future { get; set; } = [];
@@ -42,6 +44,7 @@ internal sealed partial class CausalCity
         {
             Config = _config, People = _people.ToArray(),
             Households = _households, Shops = _shops, Farms = _farms,
+            Builder = _builder, ConstructionSites = _construction,
             Trips = _trips.ToArray(), FreeTripSlots = _freeTripSlots.ToArray(),
             Future = _events.UnorderedItems.Select(e => new TimedSnapshotEvent
             {
@@ -55,7 +58,8 @@ internal sealed partial class CausalCity
                 _segments, _waitSeconds, _sales, _shipments, _workdays, _births,
                 _deaths, _unservedMeals, _paidWages, _unsatisfiedSales, _replans,
                 _producedFood, _eatenFood, _initialFood, _peakEvents,
-                _firstDollarViolation, _reserveGlobal, _paidFreightCents, _freightLaborTrips
+                _firstDollarViolation, _reserveGlobal, _paidFreightCents, _freightLaborTrips,
+                _outsideTimber, _constructionStarted, _constructionFinished, _constructionPaidShifts
             ],
             Populations = [_active, _maxActive, _minActive],
             Factors = [_windFactor, _waterRatio],
@@ -72,9 +76,10 @@ internal sealed partial class CausalCity
     {
         var state = JsonSerializer.Deserialize<Snapshot>(File.ReadAllText(path), SnapshotJson)
             ?? throw new InvalidDataException("Empty snapshot");
-        if (state.Counters.Length != 25 || state.Populations.Length != 3 ||
+        if (state.Counters.Length != 29 || state.Populations.Length != 3 ||
             state.Factors.Length != 2 || state.Households.Length < 1 ||
             state.Shops.Length != StoreCount || state.Farms.Length != FarmCount ||
+            state.Builder is null || state.ConstructionSites.Length != state.Households.Length ||
             state.LaneNextEntry.Length != Nodes * 4 ||
             state.LaneLastEntry.Length != Nodes * 4 ||
             state.JunctionAvailable.Length != Nodes ||
@@ -95,6 +100,8 @@ internal sealed partial class CausalCity
         state.Households.CopyTo(city._households, 0);
         state.Shops.CopyTo(city._shops, 0);
         state.Farms.CopyTo(city._farms, 0);
+        city._builder = state.Builder;
+        city._construction = state.ConstructionSites;
         state.LaneNextEntry.CopyTo(city._laneNextEntry, 0);
         state.LaneLastEntry.CopyTo(city._laneLastEntry, 0);
         state.JunctionAvailable.CopyTo(city._junctionAvailable, 0);
@@ -115,6 +122,10 @@ internal sealed partial class CausalCity
         city._reserveGlobal = c[22];
         city._paidFreightCents = c[23];
         city._freightLaborTrips = c[24];
+        city._outsideTimber = (int)c[25];
+        city._constructionStarted = c[26];
+        city._constructionFinished = c[27];
+        city._constructionPaidShifts = c[28];
         city._active = state.Populations[0];
         city._maxActive = state.Populations[1];
         city._minActive = state.Populations[2];
