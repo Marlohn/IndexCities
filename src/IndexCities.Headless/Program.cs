@@ -54,6 +54,7 @@ if(e22=="compare")
     var order=reversed?new[]{"queue","events","off"}:new[]{"off","events","queue"};
     var interventions=new Dictionary<int,(string Kind,int Id)>();
     var coverage=new Dictionary<string,int>(StringComparer.Ordinal);
+    var towDispatchArms=0;var towStrandedArms=0;
     string? ChooseAction(int seconds){
         if(adversary=="none")return null;
         if(adversary!="mixed")return seconds==660?adversary:null;
@@ -97,7 +98,7 @@ if(e22=="compare")
             if(ordered==null)return(-1,false,"no eligible urban road");
             var before=trial.QuoteRoadDemolition(ordered.Id);
             var result=trial.DemolishRoad(ordered.Id);
-            return(ordered.Id,result.Success,$"road={ordered.Id} routes={before.AffectedVehicleRoutes} isolated={before.IsolatedBuildingIds.Count} success={result.Success}");
+            return(ordered.Id,result.Success&&before.AffectedVehicleRoutes>0,$"road={ordered.Id} routes={before.AffectedVehicleRoutes} isolated={before.IsolatedBuildingIds.Count} success={result.Success}");
         }
         return(-1,false,"unknown intervention");
     }
@@ -107,6 +108,7 @@ if(e22=="compare")
         var trial=CitySimulation.FromJson(initial);
         trial.E22Mode=mode;
         var hashes=new string[boundaries.Count];var previous=0;
+        var towStranded=false;var towDispatched=false;
         var initialAlloc=GC.GetTotalAllocatedBytes();
         var clock=Stopwatch.StartNew();
         for(var i=0;i<boundaries.Count;i++)
@@ -120,12 +122,23 @@ if(e22=="compare")
                 if(actual.Hit)coverage[kind]=coverage.GetValueOrDefault(kind)+1;
                 Console.WriteLine($"E22_INTERVENTION mode={mode} second={previous} kind={kind} id={actual.Id} applied={actual.Hit} {actual.Info}");
             }
+            var towedId=interventions.Values.Where(z=>z.Kind=="tow").Select(z=>z.Id).FirstOrDefault();
+            if(towedId>0){
+                var victim=trial.State.Vehicles.FirstOrDefault(v=>v.Id==towedId);
+                towStranded|=victim?.Status is VehicleStatus.Stranded or VehicleStatus.Towed;
+                towDispatched|=victim?.TowTruckId!=null ||
+                    trial.State.Vehicles.Any(v=>v.TowTargetId==towedId) ||
+                    trial.State.Ledger.Any(l=>l.Category=="Guincho"&&l.EntityId==towedId);
+            }
             hashes[i]=Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(trial.SaveToJson())))[..16];
             if(i<30||i==boundaries.Count-1||i%4==0)
                 Console.WriteLine($"E22_CHECKPOINT mode={mode} elapsed={boundaries[i]} sha={hashes[i]}");
         }
         clock.Stop();trial.CheckInvariants();
         results[mode]=(hashes,clock.Elapsed.TotalSeconds,GC.GetTotalAllocatedBytes()-initialAlloc);
+        if(towStranded)towStrandedArms++;
+        if(towDispatched)towDispatchArms++;
+        Console.WriteLine($"E22_TOW_COVERAGE mode={mode} stranded={towStranded} dispatched={towDispatched}");
         Console.WriteLine($"E22_DAY mode={mode} simulatedSeconds={span} wall={clock.Elapsed.TotalSeconds:F3} allocatedMB={(GC.GetTotalAllocatedBytes()-initialAlloc)/1e6:F1} sha={hashes[^1]} {Stats(trial)}");
         if(mode!="off")Console.WriteLine(trial.E22Report());
     }
@@ -136,12 +149,12 @@ if(e22=="compare")
         for(var i=0;i<boundaries.Count;i++)if(original.Hashes[i]!=observed.Hashes[i]){first=boundaries[i];break;}
         Console.WriteLine($"E22_COMPARE mode={mode} exactCheckpoints={first<0} firstDivergentSecond={first} baselineSeconds={original.Seconds:F3} trialSeconds={observed.Seconds:F3} baselineMB={original.Alloc/1e6:F1} trialMB={observed.Alloc/1e6:F1}");
     }
-    Console.WriteLine($"E22_COVERAGE adversary={adversary} seeds={seed} appliedTow={coverage.GetValueOrDefault("tow")} appliedJunction={coverage.GetValueOrDefault("junction")} appliedRoad={coverage.GetValueOrDefault("road")} order={string.Join(",",order)}");
+    Console.WriteLine($"E22_COVERAGE adversary={adversary} seeds={seed} appliedTow={coverage.GetValueOrDefault("tow")} appliedJunction={coverage.GetValueOrDefault("junction")} appliedRoadWithRoute={coverage.GetValueOrDefault("road")} towStrandedArms={towStrandedArms} towDispatchArms={towDispatchArms} order={string.Join(",",order)}");
     // Coverage must not pass silently. A failed mutation means that stress case
     // was NOT tested, regardless of save equality and CI result.
     var expectedKinds=adversary=="mixed"?new[]{"tow","junction","road"}:
         adversary=="none"?Array.Empty<string>():new[]{adversary};
-    return expectedKinds.All(k=>coverage.GetValueOrDefault(k)==3)?0:3;
+    return expectedKinds.All(k=>coverage.GetValueOrDefault(k)==3) && (adversary is not ("tow" or "mixed")||towDispatchArms==3&&towStrandedArms==3)?0:3;
 }
 sim.E22Mode=e22;
 var census=args[0]=="census"?new Census():null;var stuck=args[0]=="stuck"?new Stuck():null;
