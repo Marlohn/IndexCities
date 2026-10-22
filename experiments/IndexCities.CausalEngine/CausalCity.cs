@@ -59,20 +59,26 @@ internal sealed class HistorySink : IDisposable
 {
     private readonly BinaryWriter? _writer;
     private long _lastAt;
+    public long LastAt => _lastAt;
     public long Entries { get; private set; }
     public long BytesWritten { get; private set; }
-    public HistorySink(string? path)
+    public HistorySink(string? path, bool append = false, long lastAt = 0, long entries = 0)
     {
+        _lastAt = lastAt;
+        Entries = entries;
         if (path is null) return;
         var directory = Path.GetDirectoryName(Path.GetFullPath(path))!;
         Directory.CreateDirectory(directory);
-        Stream output = new FileStream(path, FileMode.Create, FileAccess.Write,
+        Stream output = new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write,
             FileShare.Read, 1024 * 1024, FileOptions.SequentialScan);
         if (path.EndsWith(".gz", StringComparison.OrdinalIgnoreCase))
             output = new GZipStream(output, CompressionLevel.Fastest);
         _writer = new BinaryWriter(output);
-        _writer.Write(new byte[] { (byte)'I', (byte)'C', (byte)'H', (byte)'2' });
-        BytesWritten = 4;
+        if (!append)
+        {
+            _writer.Write(new byte[] { (byte)'I', (byte)'C', (byte)'H', (byte)'2' });
+            BytesWritten = 4;
+        }
     }
     private void Var(ulong value)
     {
@@ -142,7 +148,7 @@ internal sealed class HistorySink : IDisposable
     public void Flush() => _writer?.Flush();
     public void Dispose() => _writer?.Dispose();
 }
-internal sealed class CausalCity : IDisposable
+internal sealed partial class CausalCity : IDisposable
 {
     public static readonly DateTime Epoch = new(2020, 1, 1);
     public const long DaySeconds = 86400;
@@ -150,7 +156,7 @@ internal sealed class CausalCity : IDisposable
     private const int Grid = 8, Nodes = Grid * Grid;
     private const int StoreCount = 64, FarmCount = 8;
     private const int FoodPrice = 50, WholesalePrice = 20;
-    private readonly LabConfig _config;
+    private LabConfig _config;
     private readonly PriorityQueue<SimEvent, (long At, long Sequence)> _events = new();
     private readonly List<Person> _people = [];
     private readonly List<Trip> _trips = [];
@@ -162,7 +168,7 @@ internal sealed class CausalCity : IDisposable
     private readonly long[] _laneLastEntry = new long[Nodes * 4];
     private readonly long[] _junctionAvailable = new long[Nodes];
     private readonly bool[] _closed = new bool[Nodes * 4];
-    private readonly HistorySink _history;
+    private HistorySink _history;
     private long _sequence, _time, _initialMoney, _treasury;
     private long _days, _journeys, _segments, _waitSeconds, _sales, _shipments, _workdays;
     private long _births, _deaths, _unservedMeals, _paidWages, _unsatisfiedSales, _replans;
