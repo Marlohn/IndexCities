@@ -59,7 +59,7 @@ public sealed partial class CitySimulation
         _e14MaxSlice=Math.Max(_e14MaxSlice,seconds);
         if(seconds<=.0001)_e14Tiny++;
         if(seconds<.05)_e14Short++;
-        var tracked=0,pose=0,n=Math.Min(before.Length,State.Vehicles.Count);
+        int tracked=0,pose=0,n=Math.Min(before.Length,State.Vehicles.Count);
         for(var i=0;i<n;i++)
         {
             var next=E14Stamp.Of(State.Vehicles[i]);
