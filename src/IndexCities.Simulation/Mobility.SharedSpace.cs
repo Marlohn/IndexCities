@@ -89,6 +89,32 @@ public sealed partial class CitySimulation
 
     List<(Vehicle Body,Point Position,double Heading)> Manoeuvre(Vehicle o,List<int> route,int from,Point at,double facing,IReadOnlyList<Point> site,bool approach,int minimum,out List<RoadNode> spaces,out int endIndex,Func<Point,double,bool>? extraClear=null,int? through=null)
     {
+        // Only callback-free physical geometry is memoized. Each hit creates
+        // mutable copies so admission/collision callers retain current semantics.
+        var e15Cacheable=E15Enable&&!_e15Bypass&&extraClear==null;
+        if(E15Enable&&!_e15Bypass)
+        {
+            _e15Calls++;
+            if(extraClear!=null)_e15Closure++;
+        }
+        if(e15Cacheable&&E15Lookup(o,route,from,at,facing,site,approach,minimum,through,
+            out var cached,out var cachedSpaces,out var cachedEnd))
+        {
+            if(E15VerifyEvery>0&&_e15Hits%E15VerifyEvery==0)
+            {
+                _e15Bypass=true;
+                try
+                {
+                    var fresh=Manoeuvre(o,route,from,at,facing,site,approach,minimum,
+                        out var freshSpaces,out var freshEnd,null,through);
+                    E15Verify(cached,fresh,cachedSpaces,freshSpaces,cachedEnd,freshEnd);
+                }
+                finally{_e15Bypass=false;}
+            }
+            spaces=cachedSpaces;endIndex=cachedEnd;return cached;
+        }
+        var e15OriginalAt=at;
+        var e15OriginalFacing=facing;
         var held=new List<(Vehicle Body,Point Position,double Heading)>();spaces=[];endIndex=from-1;
         var near=SharedNodes();var found=spaces;
         void Note(Point p,double h){foreach(var n in near)if(!found.Contains(n)&&EntersArea(o,p,h,n))found.Add(n);}
@@ -110,6 +136,7 @@ public sealed partial class CitySimulation
             at=lane;facing=direction;points++;endIndex=i;
             if(points>=minimum&&near.All(n=>!EntersArea(o,at,facing,n))&&(extraClear?.Invoke(at,facing)??true))break;
         }
+        if(e15Cacheable)E15Remember(o,route,from,e15OriginalAt,e15OriginalFacing,site,approach,minimum,through,held,spaces,endIndex);
         return held;
     }
     // A truck's way out of the dock at `at` toward home (predicted while it is
