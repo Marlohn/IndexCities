@@ -8,7 +8,7 @@ namespace IndexCities.CausalEngine;
 
 // Independent vertical-slice engine for falsifying the architecture.
 // RULES AND FIXTURES HERE ARE NOT AN IMPLEMENTATION OF ALL OF INDEXCITIES SPEC.
-internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false);
+internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false);
 internal enum EventKind : byte { Day, Hour, StartWork, EndWork, Move, Delivery, RoadClose, RoadOpen, HouseholdShop }
 internal readonly record struct SimEvent(EventKind Kind, int Id);
 internal sealed class Person
@@ -33,6 +33,7 @@ internal sealed class Person
     public int FreightCargo;
     public bool FreightShift;
     public bool IsFreightDriver;
+    public int ConstructionSiteId = -1;
 }
 internal sealed class Household
 {
@@ -72,6 +73,7 @@ internal sealed class Trip
     public required EventKind Completion;
     public int Payload;                 // shop/firm id for deliveries
     public int Cargo;
+    public int MaterialCargo;
     public int From, To;
     public long EnterAt, ExitAt;
     public bool Completed;
@@ -225,6 +227,8 @@ internal sealed partial class CausalCity : IDisposable
             _people.Add(p);
             family.Members.Add(i);
         }
+        _construction = Enumerable.Range(0, families)
+            .Select(i => new ConstructionSite { HouseholdId = i }).ToArray();
         _active = _maxActive = _minActive = config.Sims;
         _initialMoney = CalculateMoney();
         _initialFood = CalculateFood();
@@ -239,7 +243,7 @@ internal sealed partial class CausalCity : IDisposable
 
     private long CalculateMoney()
     {
-        long total = checked(_treasury + _reserveGlobal);
+        long total = checked(_treasury + _reserveGlobal + _builder.Cash);
         foreach (var p in _people) total = checked(total + p.Cash);
         foreach (var f in _shops) total = checked(total + f.Cash);
         foreach (var f in _farms) total = checked(total + f.Cash);
@@ -308,6 +312,8 @@ internal sealed partial class CausalCity : IDisposable
         }
         if (_config.DemandStaffing)
             ScheduleDemandFundedShifts(date, day);
+        if (_config.ConstructionPilot && day % 30 == 0)
+            OrderFamilyConstruction(day);
         if (_config.VacancyMarket && day % 30 == 0)
             ReconcileVacancies(date, day);
         // A fixture-specific, deterministic demographic policy. NOT an approved
@@ -469,10 +475,19 @@ internal sealed partial class CausalCity : IDisposable
         // from actual 30-day grocery sales / wholesale orders, never guaranteed
         // inhabitants or new money. This is an intentionally narrow test, NOT
         // the full autonomous employer, wage negotiation or skills contract.
-        Span<int> positions = stackalloc int[StoreCount + FarmCount];
-        Span<int> occupied = stackalloc int[StoreCount + FarmCount];
+        Span<int> positions = stackalloc int[StoreCount + FarmCount + (_config.ConstructionPilot ? 1 : 0)];
+        Span<int> occupied = stackalloc int[StoreCount + FarmCount + (_config.ConstructionPilot ? 1 : 0)];
         for (var i = 0; i < positions.Length; i++)
         {
+            if (i == BuilderJob)
+            {
+                var sitesReady = _construction.Count(site => site.Ordered &&
+                    !site.Finished && site.TimberOnSite > 0);
+                var offered = Math.Min(32, sitesReady);
+                positions[i] = Math.Min(offered, (int)Math.Min(int.MaxValue, _builder.Cash / (80L * 30)));
+                _builder.OfferedPositions = positions[i];
+                continue;
+            }
             var farm = i >= StoreCount;
             var firm = farm ? _farms[i - StoreCount] : _shops[i];
             var unitPrice = farm ? WholesalePrice : FoodPrice;
@@ -539,7 +554,8 @@ internal sealed partial class CausalCity : IDisposable
             for (var i = 0; i < positions.Length; i++)
             {
                 if (occupied[i] >= positions[i]) continue;
-                var node = i < StoreCount ? _shops[i].Node : _farms[i - StoreCount].Node;
+                var node = i == BuilderJob ? _builder.Node :
+                    i < StoreCount ? _shops[i].Node : _farms[i - StoreCount].Node;
                 var distance = Math.Abs(p.Home % Grid - node % Grid) +
                                Math.Abs(p.Home / Grid - node / Grid);
                 if (distance >= bestDistance) continue;
@@ -706,7 +722,8 @@ internal sealed partial class CausalCity : IDisposable
     {
         if (_config.VacancyMarket && p.AtWork && p.Job >= 0)
         {
-            var current = p.Job < StoreCount ? _shops[p.Job] : _farms[p.Job - StoreCount];
+            var current = p.Job == BuilderJob ? _builder :
+                p.Job < StoreCount ? _shops[p.Job] : _farms[p.Job - StoreCount];
             current.PresentWorkers--;
             p.AtWork = false;
         }
@@ -730,7 +747,14 @@ internal sealed partial class CausalCity : IDisposable
     {
         var p = _people[personId];
         if (!p.Alive || p.Job < 0 || p.Traveling || p.Node != p.Home) return;
-        var workNode = p.Job < StoreCount ? _shops[p.Job].Node : _farms[p.Job - StoreCount].Node;
+        var workNode = p.Job < StoreCount ? _shops[p.Job].Node :
+            p.Job < BuilderJob ? _farms[p.Job - StoreCount].Node : -1;
+        if (_config.ConstructionPilot && p.Job == BuilderJob)
+        {
+            p.ConstructionSiteId = PickConstructionSite(p);
+            if (p.ConstructionSiteId < 0) return;
+            workNode = _households[p.ConstructionSiteId].Home;
+        }
         p.HeadingToWork = _config.VacancyMarket;
         StartTrip(p, workNode);
     }
@@ -750,13 +774,17 @@ internal sealed partial class CausalCity : IDisposable
                 Schedule(_time + 3600, EventKind.HouseholdShop, personId);
             return;
         }
-        var employer = p.Job < StoreCount ? _shops[p.Job] : _farms[p.Job - StoreCount];
+        var employer = p.Job == BuilderJob ? _builder :
+            p.Job < StoreCount ? _shops[p.Job] : _farms[p.Job - StoreCount];
+        if (_config.ConstructionPilot && p.Job == BuilderJob && employer.Cash >= 80)
+            PerformConstructionShift(p);
         // Paid and physically present shifts drive real harvest. In this new
         // market fixture, an insolvent employer does NOT receive free harvest
         // from workers it cannot pay.
         var wage = _config.WageFeedback && !_config.DemandStaffing
             ? employer.WageForDay : (p.Job < StoreCount ? 65 : 80);
-        if (p.Job >= StoreCount && !p.FreightShift && (!_config.VacancyMarket || employer.Cash >= wage))
+        if (p.Job >= StoreCount && p.Job < BuilderJob &&
+            !p.FreightShift && (!_config.VacancyMarket || employer.Cash >= wage))
         {
             var food = (int)(35 * Math.Min(_windFactor, _waterRatio));
             employer.Stock = checked(employer.Stock + food);
@@ -786,6 +814,7 @@ internal sealed partial class CausalCity : IDisposable
         }
         p.AtWork = false;
         p.FreightShift = false;
+        p.ConstructionSiteId = -1;
         if (_config.VacancyMarket)
             employer.PresentWorkers--;
         var h = _households[p.HouseholdId];
@@ -1001,8 +1030,10 @@ internal sealed partial class CausalCity : IDisposable
     {
         p.Traveling = false;
         p.TripId = -1;
-        var workplace = p.Job < 0 ? -1 : p.Job < StoreCount
-            ? _shops[p.Job].Node : _farms[p.Job - StoreCount].Node;
+        var workplace = p.Job < 0 ? -1 :
+            p.Job == BuilderJob ?
+                (p.ConstructionSiteId >= 0 ? _households[p.ConstructionSiteId].Home : -1) :
+            p.Job < StoreCount ? _shops[p.Job].Node : _farms[p.Job - StoreCount].Node;
         if (_config.VacancyMarket && p.HeadingToWork && p.Job < 0)
         {
             p.HeadingToWork = false;
@@ -1048,7 +1079,8 @@ internal sealed partial class CausalCity : IDisposable
             p.AtWork = true;
             if (_config.VacancyMarket)
             {
-                var employer = p.Job < StoreCount ? _shops[p.Job] : _farms[p.Job - StoreCount];
+                var employer = p.Job == BuilderJob ? _builder :
+                    p.Job < StoreCount ? _shops[p.Job] : _farms[p.Job - StoreCount];
                 employer.PresentWorkers++;
             }
             if (_config.FreightLabor && p.Job >= StoreCount && p.IsFreightDriver &&
@@ -1103,6 +1135,11 @@ internal sealed partial class CausalCity : IDisposable
     {
         var t = _trips[tripId];
         if (!t.Completed || t.OwnerId != -1) throw new InvalidOperationException("Fictitious shipment completion");
+        if (_config.ConstructionPilot && t.Payload >= 10_000)
+        {
+            CompleteConstructionDelivery(t);
+            return;
+        }
         _shops[t.Payload].Stock = checked(_shops[t.Payload].Stock + t.Cargo);
         _shipments++;
         _history.Fact(_time, -2000 - t.Payload, 11, t.Cargo);
@@ -1156,13 +1193,16 @@ internal sealed partial class CausalCity : IDisposable
         foreach (var farm in _farms) if (farm.Stock < 0 || farm.Cash < 0) throw new InvalidOperationException("Invalid farm");
         foreach (var p in _people) if (p.Cash < 0 || p.CarryFood < 0 || p.FreightCargo < 0)
             throw new InvalidOperationException("Invalid person or freight cargo");
+        AssertConstructionConservation();
         if (_config.FreightLabor && _shipments != _freightLaborTrips)
             throw new InvalidOperationException("A delivery was recorded without a real freight worker");
         if (_config.VacancyMarket)
         {
-            for (var firmId = 0; firmId < StoreCount + FarmCount; firmId++)
+            for (var firmId = 0;
+                firmId < StoreCount + FarmCount + (_config.ConstructionPilot ? 1 : 0); firmId++)
             {
-                var offer = firmId < StoreCount ? _shops[firmId] : _farms[firmId - StoreCount];
+                var offer = firmId == BuilderJob ? _builder :
+                    firmId < StoreCount ? _shops[firmId] : _farms[firmId - StoreCount];
                 if (_people.Count(p => p.Alive && p.Job == firmId) > offer.OfferedPositions)
                     throw new InvalidOperationException("More contracted people than market vacancies");
                 if (offer.PresentWorkers != _people.Count(p => p.Alive && p.Job == firmId && p.AtWork))
@@ -1184,11 +1224,20 @@ internal sealed partial class CausalCity : IDisposable
             Mix(p.Health); Mix(p.CarryFood); Mix(p.Traveling ? 1 : 0);
             Mix(p.FreightShopId); Mix(p.FreightCargo); Mix(p.FreightShift ? 1 : 0);
             Mix(p.IsFreightDriver ? 1 : 0);
+            Mix(p.ConstructionSiteId);
             Mix(p.ContributedDays); Mix(p.GrossEarnings); Mix(p.PensionCredit); Mix(p.PensionReceived);
         }
         foreach (var h in _households) { Mix(h.Pantry); Mix(h.Members.Count); Mix(h.LastBirthDay); Mix(h.LastShoppingDepartureDay); }
         foreach (var f in _shops) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); }
         foreach (var f in _farms) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); }
+        Mix(_builder.Cash); Mix(_builder.OfferedPositions); Mix(_builder.PresentWorkers);
+        Mix(_outsideTimber); Mix(_constructionStarted); Mix(_constructionFinished); Mix(_constructionPaidShifts);
+        foreach (var site in _construction)
+        {
+            Mix(site.Ordered ? 1 : 0); Mix(site.Finished ? 1 : 0);
+            Mix(site.TimberOnSite); Mix(site.TimberBuiltIntoHouse);
+            Mix(site.PaidShifts); Mix(site.LastCrewDay);
+        }
         Mix(_producedFood); Mix(_eatenFood);
         foreach (var x in _closed) Mix(x ? 1 : 0);
         foreach (var t in _trips) if (!t.Completed)
@@ -1217,13 +1266,20 @@ internal sealed partial class CausalCity : IDisposable
         demandStaffingFixture = _config.DemandStaffing,
         vacancyMarketFixture = _config.VacancyMarket,
         freightLaborFixture = _config.FreightLabor,
+        constructionPilotFixture = _config.ConstructionPilot,
+        importedBuildingTimberOutside = _outsideTimber,
+        builderFirmCashCents = _builder.Cash,
+        constructionContractsStarted = _constructionStarted,
+        constructionContractsCompleted = _constructionFinished,
+        constructionPaidShifts = _constructionPaidShifts,
+        materialConserved = CalculateConstructionTimber() == _initialOutsideTimber,
         realWorkerFreightTrips = _freightLaborTrips,
         freightChargesPaidCents = _paidFreightCents,
         farmEmployeesAssignedToFreight = _people.Count(p => p.Alive && p.IsFreightDriver),
         employedAlive = _people.Count(p => p.Alive && p.Job >= 0),
         unemployedAdults = _people.Count(p => p.Alive && p.Job < 0 &&
             Age(p, Epoch.AddSeconds(_time)) is >= 18 and < 70),
-        vacanciesOffered = _shops.Sum(f => f.OfferedPositions) + _farms.Sum(f => f.OfferedPositions),
+        vacanciesOffered = _shops.Sum(f => f.OfferedPositions) + _farms.Sum(f => f.OfferedPositions) + _builder.OfferedPositions,
         occupiedHouseholds = _households.Count(h => h.Members.Any(id => _people[id].Alive)),
         householdsWithEmployedAdults = _households.Count(h => h.Members.Any(id =>
             _people[id].Alive && _people[id].Job >= 0 &&
