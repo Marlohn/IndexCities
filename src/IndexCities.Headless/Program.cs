@@ -13,6 +13,22 @@ using IndexCities.Simulation;
 //          --strand=N empties the tank of N driving vehicles each day and follows the tow and the queue for 30 min
 // Results are measurements, not product rules: see docs/exploration/ritmo-velocidades.md.
 Console.OutputEncoding=Encoding.UTF8;
+if(args.Length>0&&args[0]=="e10")
+{
+    var values=new Dictionary<string,string>();
+    foreach(var option in args.Skip(1))
+    {
+        var pair=option.TrimStart('-').Split('=',2);
+        if(pair.Length!=2||!new[]{"rows","length","seed","minutes","force"}.Contains(pair[0]))
+        {
+            Console.Error.WriteLine("e10: use --rows=5 --length=800 --seed=42 --minutes=60 --force=0|1");
+            return 2;
+        }
+        values[pair[0]]=pair[1];
+    }
+    int Setting(string key,int defaultValue)=>values.TryGetValue(key,out var str)?int.Parse(str):defaultValue;
+    return ExperimentE10.Run(Setting("rows",5),Setting("length",800),Setting("seed",42),Setting("minutes",60),Setting("force",0)==1);
+}
 var known=new HashSet<string>{"rows","length","days","cap","signals","seed","growth","warmup","strand"};
 var opts=new Dictionary<string,string>();foreach(var p in args.Skip(2).Select(a=>a.TrimStart('-').Split('=',2)))opts[p[0]]=p.Length>1?p[1]:"1";
 string Opt(string k,string d)=>opts.GetValueOrDefault(k,d);
