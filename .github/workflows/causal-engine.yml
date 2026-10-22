@@ -159,3 +159,26 @@ jobs:
           name: causal-engine-10k-80y-fixture-metrics
           path: 80years-10000.json
           if-no-files-found: ignore
+
+  economic-stability-diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Diagnose why citizens become poor over ten years, without extra history I/O
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial 2>&1 | tee economic-decade.log
+          grep -q '"moneyConserved": true' economic-decade.log
+          grep -q '"foodConserved": true' economic-decade.log
+          grep -q '"simulatedDays": 3653' economic-decade.log
+      - name: Preserve annual finances and final state
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: economic-decade-diagnostic
+          path: economic-decade.log
+          if-no-files-found: ignore
