@@ -197,6 +197,41 @@ internal static class EngineSelfTest
             }
             File.Delete(demandSave);
 
+            // Opt-in market vacancies: initial citizens do NOT arrive with
+            // manufactured jobs. Firms post cash-funded positions; actual
+            // unemployed Sims take only one, physically work, and receive
+            // payment only when present. Conservation and save/resume must hold.
+            var marketConfig = new LabConfig(256, 90, 42, null, true,
+                VacancyMarket: true);
+            var marketSave = temp + ".market.save.json";
+            string marketHash;
+            int marketEmployed, marketUnemployed;
+            using (var continuousMarket = new CausalCity(marketConfig))
+            {
+                continuousMarket.Run();
+                continuousMarket.AssertConservation();
+                marketHash = continuousMarket.Fingerprint();
+                using var report = JsonDocument.Parse(JsonSerializer.Serialize(continuousMarket.Report(0)));
+                marketEmployed = report.RootElement.GetProperty("employedAlive").GetInt32();
+                marketUnemployed = report.RootElement.GetProperty("unemployedAdults").GetInt32();
+                if (marketEmployed <= 0 || marketUnemployed <= 0 ||
+                    report.RootElement.GetProperty("paidWagesCents").GetInt64() <= 0 ||
+                    report.RootElement.GetProperty("salesFoodUnits").GetInt64() <= 0)
+                    throw new InvalidOperationException("Market created universal/fictitious work or had no real paid transactions");
+            }
+            using (var halfMarket = new CausalCity(marketConfig))
+            {
+                halfMarket.RunUntilDay(45);
+                halfMarket.SaveSnapshot(marketSave);
+            }
+            using (var resumedMarket = CausalCity.FromSnapshot(marketSave))
+            {
+                resumedMarket.Run();
+                resumedMarket.AssertConservation();
+                if (marketHash != resumedMarket.Fingerprint())
+                    throw new InvalidOperationException("Real vacancy employment changed after checkpoint");
+            }
+            File.Delete(marketSave);
             // Small closed-household stress case: when the final family
             // member dies, a positive estate must NOT finance city pensions.
             long unclaimedEstate;
@@ -218,6 +253,7 @@ internal static class EngineSelfTest
                 familyRenewalSaveResumeExact = true, familyRenewalBirths = renewalBirths,
                 demandFundedShiftsConserved = demandWages > 0,
                 demandStaffingSaveResumeExact = true,
+                realVacancyMarketSaveResumeExact = true, marketEmployed, marketUnemployed,
                 saveResumeExact = resumedHash == hashA,
                 compressedHistoryReplayExact = reopened == facts,
                 journeys, sales, births, successorPurchases, retiredPurchases, historyFacts = facts,
@@ -235,7 +271,7 @@ internal static class EngineSelfTest
         }
         finally
         {
-            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json" })
+            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json" })
                 if (File.Exists(path)) File.Delete(path);
         }
     }
