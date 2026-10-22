@@ -48,6 +48,9 @@ internal sealed class Firm
     // Used to test whether undistributed company income drives the famine.
     public long DayReceipts, DaySupplies;
     public int DayPaidShifts, WageForDay;
+    // Earmarked portion of this firm's REAL existing cash, not a second wallet.
+    // Unspent payroll allocation survives the gap between customer visits.
+    public long PayrollBudget;
 }
 internal sealed class Trip
 {
@@ -444,10 +447,13 @@ internal sealed partial class CausalCity : IDisposable
             // Up to 98% of realised net daily receipts finance new shifts.
             // Positive buffers may subsidise only one trial shift, never
             // unlimited workers. Minimum staff does not imply a sale.
-            var operatingBudget = Math.Max(0, revenue) * 98 / 100;
-            if (employer.Cash >= grossWage && operatingBudget < grossWage)
-                operatingBudget = grossWage;
-            quotas[i] = (int)Math.Min(operatingBudget / grossWage, employer.Cash / grossWage);
+            employer.PayrollBudget = Math.Clamp(
+                employer.PayrollBudget + revenue * 98 / 100, 0, employer.Cash);
+            // A one-shift exploratory floor is paid only from company cash.
+            // Excess receipts remain earmarked for genuine future shifts.
+            var offeredBudget = Math.Max(employer.PayrollBudget,
+                employer.Cash >= grossWage ? grossWage : 0);
+            quotas[i] = (int)Math.Min(offeredBudget / grossWage, employer.Cash / grossWage);
             employer.DayReceipts = 0;
             employer.DaySupplies = 0;
             employer.DayPaidShifts = 0;
@@ -613,6 +619,8 @@ internal sealed partial class CausalCity : IDisposable
         if (employer.Cash >= wage)
         {
             employer.Cash -= wage;
+            if (_config.DemandStaffing)
+                employer.PayrollBudget = Math.Max(0, employer.PayrollBudget - wage);
             var contribution = wage / 10; // 10% illustrative contributory fixture
             _treasury += contribution;
             p.Cash += wage - contribution;
@@ -898,8 +906,8 @@ internal sealed partial class CausalCity : IDisposable
             Mix(p.ContributedDays); Mix(p.GrossEarnings); Mix(p.PensionCredit); Mix(p.PensionReceived);
         }
         foreach (var h in _households) { Mix(h.Pantry); Mix(h.Members.Count); Mix(h.LastBirthDay); Mix(h.LastShoppingDepartureDay); }
-        foreach (var f in _shops) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); }
-        foreach (var f in _farms) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); }
+        foreach (var f in _shops) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); }
+        foreach (var f in _farms) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); }
         Mix(_producedFood); Mix(_eatenFood);
         foreach (var x in _closed) Mix(x ? 1 : 0);
         foreach (var t in _trips) if (!t.Completed)
@@ -943,6 +951,7 @@ internal sealed partial class CausalCity : IDisposable
         businessOperatingNetCents = checked(_sales * FoodPrice - _paidWages),
         businessInitialCashCents = InitialBusinessCashCents,
         businessCurrentCashCents = _shops.Sum(f => f.Cash) + _farms.Sum(f => f.Cash),
+        unspentRealPayrollBudgetCents = _shops.Sum(f => f.PayrollBudget) + _farms.Sum(f => f.PayrollBudget),
         personalCashCents = _people.Sum(p => p.Cash),
         shopCashCents = _shops.Sum(s => s.Cash),
         farmCashCents = _farms.Sum(f => f.Cash),
