@@ -15,11 +15,20 @@ internal static class TemporalKernel
     private const long Threshold = 12L * 3600 * FixedPoint.TimeScale;
     private static readonly long Delta = FixedPoint.Quantize(2, FixedPoint.TimeScale);
 
-    private sealed record HungerState(long HungerUnits, int Pantry)
+    private struct HungerState
     {
+        public long HungerUnits;
+        public int Pantry;
         public int Meals;
-        public long FirstMealAt = -1;
-        public long LastMealAt = -1;
+        public long FirstMealAt;
+        public long LastMealAt;
+        public HungerState(long hungerUnits, int pantry)
+        {
+            HungerUnits = hungerUnits;
+            Pantry = pantry;
+            FirstMealAt = -1;
+            LastMealAt = -1;
+        }
     }
 
     private static HungerState Stepwise(long initial, int pantry, int steps)
@@ -27,13 +36,10 @@ internal static class TemporalKernel
         var state = new HungerState(initial, pantry);
         for (var i = 1; i <= steps; i++)
         {
-            state = state with { HungerUnits = checked(state.HungerUnits + Delta) };
+            state.HungerUnits = checked(state.HungerUnits + Delta);
             if (state.HungerUnits < Threshold || state.Pantry == 0) continue;
-            state = state with
-            {
-                HungerUnits = checked(state.HungerUnits - Threshold),
-                Pantry = state.Pantry - 1,
-            };
+            state.HungerUnits = checked(state.HungerUnits - Threshold);
+            state.Pantry--;
             state.Meals++;
             if (state.FirstMealAt < 0) state.FirstMealAt = i * 2L;
             state.LastMealAt = i * 2L;
@@ -50,7 +56,7 @@ internal static class TemporalKernel
         {
             if (state.Pantry == 0)
             {
-                state = state with { HungerUnits = checked(state.HungerUnits + remaining * Delta) };
+                state.HungerUnits = checked(state.HungerUnits + remaining * Delta);
                 break;
             }
 
@@ -58,16 +64,13 @@ internal static class TemporalKernel
             var until = missing <= 0 ? 1 : checked((missing + Delta - 1) / Delta);
             if (until > remaining)
             {
-                state = state with { HungerUnits = checked(state.HungerUnits + remaining * Delta) };
+                state.HungerUnits = checked(state.HungerUnits + remaining * Delta);
                 break;
             }
 
             var stepsUntil = (int)until;
-            state = state with
-            {
-                HungerUnits = checked(state.HungerUnits + stepsUntil * Delta - Threshold),
-                Pantry = state.Pantry - 1,
-            };
+            state.HungerUnits = checked(state.HungerUnits + stepsUntil * Delta - Threshold);
+            state.Pantry--;
             completed += stepsUntil;
             remaining -= stepsUntil;
             state.Meals++;
