@@ -24,6 +24,11 @@ jobs:
         run: dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --self-test | tee self-test.json
       - name: Run city with 1k concurrent citizens 30 days and real fact file
         run: dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=1000 --days=30 --seed=42 --history=artifacts/causal-1000-30d.facts --adversarial | tee city-1000-30d.json
+      - name: Inspect individual recorded lifetime events
+        run: |
+          set -o pipefail
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- inspect artifacts/causal-1000-30d.facts 0 0 30 3 2>&1 | tee inspected-sim0.log
+          grep -q 'HISTORY_QUERY sim=0 found=' inspected-sim0.log
       - name: Reject false positives
         run: |
           grep -q '"moneyConserved": true' city-1000-30d.json
