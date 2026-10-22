@@ -357,6 +357,7 @@ internal sealed partial class CausalCity : IDisposable
         {
             AssertConservation();
             Console.Error.WriteLine($"LAB_PROGRESS days={_days} live={_active} births={_births} deaths={_deaths} trips={_journeys} queue={_events.Count}");
+            Console.Error.WriteLine($"LAB_ECON day={_days} peopleCash={_people.Sum(p=>p.Cash)} shopCash={_shops.Sum(s=>s.Cash)} farmCash={_farms.Sum(f=>f.Cash)} familyEmpty={_households.Count(h=>h.Pantry==0)} noMoneyAdults={_people.Count(p=>p.Alive&&p.Cash==0&&Age(p,Epoch.AddSeconds(_time))>=18)} unmet={_unservedMeals}");
         }
         if (_days < _config.Days) Schedule(_time + DaySeconds, EventKind.Day, 0);
     }
