@@ -196,6 +196,41 @@ jobs:
           path: eighty-years-population.log
           if-no-files-found: ignore
 
+  finance-80y-counterfactual:
+    # Compare against run 39835827175. Counterfactual payroll hypothesis;
+    # never interpret this as approved gameplay or as full SPEC coverage.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[finance-80y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Measure revenue-funded wages for 80 years with real money and food conservation
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --wage-feedback 2>&1 | tee finance-80y.log
+          python3 - <<'PY'
+          import json
+          lines = open('finance-80y.log').readlines()
+          start = next(i for i, line in enumerate(lines) if line.startswith('{'))
+          data = json.loads(''.join(lines[start:]))
+          assert data['simulatedDays'] == 29220 and data['gregorianEnd'] == '2100-01-01'
+          assert data['moneyConserved'] and data['foodConserved']
+          assert data['wageFeedbackFixture'] and not data['historyPersistent']
+          print('COUNTERFACTUAL_REVENUE_PAYROLL', data['minimumAliveAtDayBoundary'],
+                data['aliveEnd'], data['unmetMeals'], data['wallSeconds'])
+          assert data['minimumAliveAtDayBoundary'] >= 10000, 'Counterfactual did not sustain 10k'
+          PY
+      - name: Preserve 80-year comparison even on demographic failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-finance-80y-comparison
+          path: finance-80y.log
+          if-no-files-found: ignore
+
   economic-stability-diagnostic:
     runs-on: ubuntu-latest
     timeout-minutes: 45
