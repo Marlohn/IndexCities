@@ -36,9 +36,9 @@ public sealed partial class CitySimulation
     long _e22Visits,_e22Registered,_e22Eligible,_e22Skipped,_e22Awakened;
     long _e22WokeByLeader,_e22WokeByGroup,_e22WokeByOwnState,_e22WokeByTime;
     long _e22QueuesPrepared,_e22QueuesSlept,_e22GroupMembers,_e22GroupsMax;
-    long _e22ChangedVehicles,_e22EventEdges,_e22Untracked;
+    long _e22ChangedVehicles,_e22EventEdges;
     long _e22OriginalPhysicalVisits;
-    double _e22BatchPrepSeconds,_e22ExtraSeconds;
+    double _e22BatchPrepSeconds;
 
     bool E22Enabled=>E22Mode is "events" or "queue";
 
