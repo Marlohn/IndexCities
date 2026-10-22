@@ -6,6 +6,7 @@ public sealed partial class CitySimulation
     HashSet<int> _exteriorConnected=new(),_workExteriorConnected=new();Dictionary<(BuildingKind,Point,double),int?> _accessCache=new();
     // Only used in this isolated experiment to time the actual original policy.
     bool _benchmarkLegacyAccessLimit = false;
+    int _benchmarkAccessMisses;
     void RebuildRoadGraph(bool changed=true){_roadEpoch++;_roads=State.Roads.ToDictionary(r=>r.Id);foreach(var n in State.Roads){n.Neighbours=State.Roads.Where(r=>r.Id!=n.Id&&r.Position.Distance(n.Position)<=State.Tuning.RoadStep+.01).Select(r=>r.Id).ToList();}RebuildJunctionAreas();if(changed)State.RoadRevision++;_accessCache.Clear();_walkSurface=null;_exteriorConnected.Clear();_workExteriorConnected.Clear();var q=new Queue<int>();q.Enqueue(EntryNode().Id);while(q.Count>0){var id=q.Dequeue();if(!_workExteriorConnected.Add(id))continue;foreach(var next in _roads[id].Neighbours)if(_roads[next].MaintenanceRatio>.05)q.Enqueue(next);}q.Enqueue(EntryNode().Id);while(q.Count>0){var id=q.Dequeue();if(!_exteriorConnected.Add(id))continue;foreach(var next in _roads[id].Neighbours)if(!_roads[next].ConstructionOnly&&_roads[next].MaintenanceRatio>.05)q.Enqueue(next);}}
     RoadNode AddRoad(Point point,bool highway=false)
     {
@@ -22,6 +23,7 @@ public sealed partial class CitySimulation
     public RoadNode? Access(Building b)
     {
         var key=(b.Kind,b.Position,b.Rotation);if(_accessCache.TryGetValue(key,out var id))return id==null?null:_roads.GetValueOrDefault(id.Value);
+        _benchmarkAccessMisses++;
         var result=State.Roads.Where(r=>!r.Highway&&!r.ConstructionOnly&&r.MaintenanceRatio>.05&&r.Position.Distance(b.Door)<=State.Tuning.RoadWidth/2+3).MinBy(r=>r.Position.Distance(b.Door));if(_accessCache.Count>(_benchmarkLegacyAccessLimit?4096:Math.Max(4096,State.Buildings.Count+512)))_accessCache.Clear();_accessCache[key]=result?.Id;return result;
     }
     RoadNode? NearestRoad(Point p,bool allowHighway=true)=>State.Roads.Where(r=>allowHighway||!r.Highway).MinBy(r=>r.Position.Distance(p));
