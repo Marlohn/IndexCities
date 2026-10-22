@@ -9,6 +9,26 @@ namespace IndexCities.Simulation;
 public sealed partial class CitySimulation
 {
     public string E22Mode { get; set; }="off"; // off | events | queue
+    // E23 experimental safety hypothesis: explicit road revision flush.
+    public double E23RoadGuardSeconds { get; set; }
+    int _e23ObservedRoadRevision=-1;
+    double _e23RoadWakeUntil;
+    long _e23NetworkFlushes,_e23SubscriptionsFlushed;
+    bool E23GuardRoadChange()
+    {
+        if(E23RoadGuardSeconds<=0||!E22Enabled)return false;
+        if(_e23ObservedRoadRevision<0){_e23ObservedRoadRevision=State.RoadRevision;return false;}
+        if(_e23ObservedRoadRevision!=State.RoadRevision)
+        {
+            _e23ObservedRoadRevision=State.RoadRevision;
+            _e23NetworkFlushes++;
+            _e23SubscriptionsFlushed+=_e22Waits.Count;
+            foreach(var id in _e22Waits.Keys.ToArray())E22Unsubscribe(id);
+            _e22BatchSkip.Clear();
+            _e23RoadWakeUntil=State.ElapsedSeconds+E23RoadGuardSeconds;
+        }
+        return State.ElapsedSeconds<_e23RoadWakeUntil;
+    }
     sealed class E22Subscription
     {
         public int BlockerId,GroupRootId,RoadRevision;
@@ -67,6 +87,7 @@ public sealed partial class CitySimulation
 
     void E22Subscribe(Vehicle v,Vehicle? leader)
     {
+        if(E23GuardRoadChange()){E22Unsubscribe(v.Id);return;}
         if(!E22Enabled||leader==null||!v.PassengerCar||
            v.Status!=VehicleStatus.Travelling||v.Detour.Count!=0||
            v.TowPhase!=TowPhase.None||v.ServicePhase!=ServicePhase.None||
@@ -95,6 +116,7 @@ public sealed partial class CitySimulation
 
     bool E22CanSleep(Vehicle v)
     {
+        if(E23GuardRoadChange())return false;
         if(!E22Enabled||!_e22Waits.TryGetValue(v.Id,out var sub))return false;
         _e22Visits++;
         if(sub.Awake){_e22Awakened++;E22Unsubscribe(v.Id);return false;}
@@ -116,9 +138,11 @@ public sealed partial class CitySimulation
     // it does NOT remove the original per-vehicle scheduling overhead.
     void E22PrepareBatch()
     {
+        var roadHazard=E23GuardRoadChange();
         if(E22Mode!="queue")return;
         var t=Stopwatch.GetTimestamp();
         _e22BatchSkip.Clear();_e22QueuesPrepared++;
+        if(roadHazard)return;
         _e22VehicleById.Clear();foreach(var v in State.Vehicles)_e22VehicleById[v.Id]=v;
         foreach(var (_,members) in _e22Queues)
         {
@@ -185,6 +209,6 @@ public sealed partial class CitySimulation
             $"invalidationEdges={_e22EventEdges} queuesPrepared={_e22QueuesPrepared} " +
             $"queuesSlept={_e22QueuesSlept} groupedMembers={_e22GroupMembers} " +
             $"largestGroup={_e22GroupsMax} batchSeconds={F(_e22BatchPrepSeconds)} " +
-            $"subscriptionsRemaining={_e22Waits.Count}";
+            $"subscriptionsRemaining={_e22Waits.Count} roadFlushes={_e23NetworkFlushes} flushedSubscribers={_e23SubscriptionsFlushed} roadGuardUntil={_e23RoadWakeUntil:F0}";
     }
 }
