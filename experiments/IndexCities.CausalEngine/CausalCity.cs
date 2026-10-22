@@ -360,9 +360,9 @@ internal sealed partial class CausalCity : IDisposable
                      (p.Job >= 0 && (day + p.Id) % 7 != 0)))
                 {
                     var startHour = _config.VacancyMarket && p.Job < StoreCount
-                        ? (p.Id % 2 == 0 ? 10 : 14) : 8;
+                        ? (p.Id % 2 == 0 ? 11 : 14) : 8;
                     var endHour = _config.VacancyMarket && p.Job < StoreCount
-                        ? (p.Id % 2 == 0 ? 19 : 23) : 17;
+                        ? (p.Id % 2 == 0 ? 21 : 23) : 17;
                     Schedule(_time + startHour * 3600, EventKind.StartWork, id);
                     Schedule(_time + endHour * 3600, EventKind.EndWork, id);
                 }
@@ -377,7 +377,15 @@ internal sealed partial class CausalCity : IDisposable
                     _people[id].Alive && Age(_people[id], date) >= 18 &&
                     (!_config.VacancyMarket || (!_people[id].Traveling &&
                         _people[id].Node == h.Home)), -1);
-                if (buyer >= 0) Schedule(_time + 18 * 3600, EventKind.HouseholdShop, buyer);
+                if (buyer >= 0)
+                {
+                    // Desynchronise residential errands. Shops require
+                    // physically present workers; an 18:00 citywide rush was
+                    // arriving after actual retail shifts in congested roads.
+                    var shoppingHour = _config.VacancyMarket
+                        ? 15 + (int)((h.Id * 7L + day) % 4) : 18;
+                    Schedule(_time + shoppingHour * 3600, EventKind.HouseholdShop, buyer);
+                }
             }
         }
         for (var shopId = 0; shopId < _shops.Length; shopId++)
@@ -416,7 +424,7 @@ internal sealed partial class CausalCity : IDisposable
             var childOnlyHomes = _households.Count(h =>
                 h.Members.Any(id => _people[id].Alive) &&
                 !h.Members.Any(id => _people[id].Alive && Age(_people[id], date) >= 18));
-            Console.Error.WriteLine($"LAB_ECON day={_days} peopleCash={_people.Sum(p=>p.Cash)} shopCash={_shops.Sum(s=>s.Cash)} farmCash={_farms.Sum(f=>f.Cash)} treasury={_treasury} reserve={_reserveGlobal} familyEmpty={_households.Count(h=>h.Pantry==0)} noMoneyAdults={_people.Count(p=>p.Alive&&p.Cash==0&&Age(p,date)>=18)} unmet={_unservedMeals}");
+            Console.Error.WriteLine($"LAB_ECON day={_days} peopleCash={_people.Sum(p=>p.Cash)} shopCash={_shops.Sum(s=>s.Cash)} farmCash={_farms.Sum(f=>f.Cash)} treasury={_treasury} reserve={_reserveGlobal} familyEmpty={_households.Count(h=>h.Pantry==0)} noMoneyAdults={_people.Count(p=>p.Alive&&p.Cash==0&&Age(p,date)>=18)} unmet={_unservedMeals} deniedPurchases={_unsatisfiedSales} realSales={_sales} tripWaitSec={_waitSeconds}");
             var inhabitedEmptyPantries = _households.Count(h => h.Pantry == 0 &&
                 h.Members.Any(id => _people[id].Alive));
             var hungryWithEmptyStore = _households.Count(h => h.Pantry == 0 &&
@@ -910,9 +918,9 @@ internal sealed partial class CausalCity : IDisposable
             return;
         }
         var earliest = _config.VacancyMarket && p.Job < StoreCount
-            ? (p.Id % 2 == 0 ? 10 : 14) * 3600 : 8 * 3600;
+            ? (p.Id % 2 == 0 ? 11 : 14) * 3600 : 8 * 3600;
         var latest = _config.VacancyMarket && p.Job < StoreCount
-            ? (p.Id % 2 == 0 ? 19 : 23) * 3600 : 17 * 3600;
+            ? (p.Id % 2 == 0 ? 21 : 23) * 3600 : 17 * 3600;
         if (p.Node == workplace && _time % DaySeconds < latest &&
             _time % DaySeconds >= earliest &&
             (!_config.VacancyMarket || p.HeadingToWork))
