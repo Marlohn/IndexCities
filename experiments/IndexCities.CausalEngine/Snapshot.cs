@@ -62,7 +62,8 @@ internal sealed partial class CausalCity
                 _outsideTimber, _constructionStarted, _constructionFinished, _constructionPaidShifts,
                 _retailSalesCents,
                 _municipalTaxPaidCents, _municipalWagesPaidCents,
-                _garbageGenerated, _garbageCollected, _garbageAtDepot, _sanitationPaidVisits
+                _garbageGenerated, _garbageCollected, _garbageAtDepot, _sanitationPaidVisits,
+                _garbageInTransit
             ],
             Populations = [_active, _maxActive, _minActive],
             Factors = [_windFactor, _waterRatio],
@@ -79,7 +80,7 @@ internal sealed partial class CausalCity
     {
         var state = JsonSerializer.Deserialize<Snapshot>(File.ReadAllText(path), SnapshotJson)
             ?? throw new InvalidDataException("Empty snapshot");
-        if (state.Counters.Length != 36 || state.Populations.Length != 3 ||
+        if (state.Counters.Length != 37 || state.Populations.Length != 3 ||
             state.Factors.Length != 2 || state.Households.Length < 1 ||
             state.Shops.Length != StoreCount || state.Farms.Length != FarmCount ||
             state.Builder is null || state.ConstructionSites.Length != state.Households.Length ||
@@ -136,6 +137,7 @@ internal sealed partial class CausalCity
         city._garbageCollected = c[33];
         city._garbageAtDepot = c[34];
         city._sanitationPaidVisits = c[35];
+        city._garbageInTransit = c[36];
         city._active = state.Populations[0];
         city._maxActive = state.Populations[1];
         city._minActive = state.Populations[2];
