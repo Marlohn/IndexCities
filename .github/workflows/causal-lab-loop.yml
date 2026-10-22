@@ -4,7 +4,7 @@ name: IndexCities Causal Lab Autoloop
 # has write access, and it NEVER pushes to main or merges a PR.
 on:
   workflow_run:
-    workflows: ["IndexCities Causal Lab CI"]
+    workflows: ["IndexCities Causal Lab CI", "Causal Engine - integrated reality check"]
     types: [completed]
   workflow_dispatch:
   push:
@@ -53,7 +53,7 @@ jobs:
       issues: write
       pull-requests: read
     env:
-      LAB_BRANCH: experimento/laboratorio-causal-10k
+      LAB_BRANCH: experimento/motor-causal-10k-80y-autonomo
       PREVIOUS_CI: ${{ needs.gate.outputs.previous }}
     steps:
       - uses: actions/checkout@v4
@@ -78,6 +78,7 @@ jobs:
             git switch -c causal-lab origin/main
           fi
           mkdir -p .autolab-input
+          git show origin/main:.github/causal-lab-agent.md > .autolab-input/agent-prompt.md
           if [[ -n "$PREVIOUS_CI" ]]; then
             gh run view "$PREVIOUS_CI" --repo "$GITHUB_REPOSITORY" --log 2>&1 \
               | tail -n 700 > .autolab-input/last-ci.log || true
@@ -93,7 +94,7 @@ jobs:
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           permission-profile: ':workspace'
-          prompt-file: .github/causal-lab-agent.md
+          prompt-file: .autolab-input/agent-prompt.md
           output-file: .autolab-input/agent-output.txt
       - name: Validate modifications and push ONLY isolated experiment branch
         id: publish
@@ -113,12 +114,12 @@ jobs:
           fi
           for path in "${changed[@]}"; do
             case "$path" in
-              experiments/IndexCities.CausalLab/*) ;;
+              experiments/IndexCities.CausalEngine/*) ;;
               *) echo "::error::Forbidden edit outside standalone lab: $path"; exit 1 ;;
             esac
           done
           git reset -q HEAD
-          git add -A -- experiments/IndexCities.CausalLab
+          git add -A -- experiments/IndexCities.CausalEngine
           git config user.name 'IndexCities Experiment Bot'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m 'experiment: advance isolated 10k/80y CausalLab'
