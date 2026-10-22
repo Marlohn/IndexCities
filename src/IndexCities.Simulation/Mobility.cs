@@ -212,6 +212,7 @@ public sealed partial class CitySimulation
     }
     void MoveVehiclesUnsplit(double dt,double? operationsDt=null)
     {
+        E22PrepareBatch();
         // Release a passed junction even while a vehicle waits at the next one.
         // Carriageway half-width (3.3 m) + truck half-length (3.6 m) covers the
         // actual rear of the truck; the former 9 m reservation could overlap
@@ -221,6 +222,9 @@ public sealed partial class CitySimulation
         // key is a total order and any sort yields the same sequence.
         var ordered=State.Vehicles.ToArray();Array.Sort(ordered,static (a,b)=>a.WaitingSince.CompareTo(b.WaitingSince) is var c and not 0?c:a.Id.CompareTo(b.Id));
         foreach(var v in ordered){
+            var e22Track=E22Enabled&&(v.Status==VehicleStatus.Travelling||_e22Followers.ContainsKey(v.Id)||_e22Queues.ContainsKey(v.Id));
+            var e22Before=e22Track?E22State(v):default;
+            try{
             // A bypass belongs to the trip in progress: a stopped, parked or
             // replanned-elsewhere vehicle does not resume old waypoints.
             if(v.Detour.Count>0&&v.Status!=VehicleStatus.Travelling)v.Detour.Clear();
@@ -242,6 +246,8 @@ public sealed partial class CitySimulation
                 if(v.Route.Count==0||v.Route.Any(id=>!_roads.ContainsKey(id))){v.Status=VehicleStatus.Waiting;v.Cause="Rota interrompida; aguarda ligação viária";continue;}
                 _vehicleMovementBatch?.Add(v.Id);
             }else if(!_vehicleMovementBatch.Contains(v.Id)||v.Status!=VehicleStatus.Travelling)continue;
+            if(E22CanSleep(v))continue;
+            if(E22Enabled)_e22OriginalPhysicalVisits++;
             var remaining=dt;
             while(remaining>.000001&&v.Status==VehicleStatus.Travelling){
                 // The way back from a works-site dock is admitted whole (Mobility.SharedSpace).
@@ -359,7 +365,7 @@ public sealed partial class CitySimulation
                 if(step<.00001&&d>.00001){v.Cause=blocker?.Status==VehicleStatus.Stranded?$"Aguardando veículo {blocker.Id} {(blocker.BrokenDown?"quebrado":"sem combustível")} na via":bayHold||entryHeld!=null?"Fila para acesso de carga":enteringLane?"Aguardando espaço para acessar a faixa":blocker!=null&&HoldsJunctionAhead(blocker,node)?(IsBend(node)?"Aguardando liberação da curva pelo veículo ":"Aguardando liberação do cruzamento pelo veículo ")+blocker.Id:"Fila na faixa";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;if(v.TowPhase==TowPhase.ToVehicle&&(TryTowContraflow(v)||TryTowFromBehind(v)))continue;if(!enteringLane&&blocker!=null&&blocker.Id!=v.TowTargetId&&TryBypassStopped(v,blocker))continue;if(blocker!=null&&TowExitHolds(blocker)&&TryUTurn(v,blocker))continue;
                     // A tow held for minutes turns back and goes around the stranded vehicles
                     // and the junctions they lock, instead of waiting in the queue.
-                    if(blocker!=null&&TowHeldTooLong(v,blocker)&&TryUTurn(v,blocker,TowClosedRoads(v))){CheckTowFuel(v);continue;}TowWaitsWithoutAccess(v);break;}
+                    if(blocker!=null&&TowHeldTooLong(v,blocker)&&TryUTurn(v,blocker,TowClosedRoads(v))){CheckTowFuel(v);continue;}TowWaitsWithoutAccess(v);E22Subscribe(v,blocker);break;}
                 // Entering is admitted whole too: a delivery near its bay takes no junction
                 // or bend before its entry is admitted.
                 var sharedAhead=node.Neighbours.Count>=3||node.Crosswalk||TurnsAtBend(v,v.RouteIndex);
@@ -378,6 +384,7 @@ public sealed partial class CitySimulation
                 // Wear for the distance driven; a vehicle in use may break down here.
                 if(DriveWear(v,step)||steer==null&&!advanced)break;
             }
+            }finally{if(e22Track)E22Publish(v,e22Before);}
         }
         // A towed vehicle moves only with its tow (platform or trailing a heavy tow).
         SyncTowedVehicles();
