@@ -282,6 +282,48 @@ jobs:
           path: economic-second-cycle-10y.log
           if-no-files-found: ignore
 
+  fair-household-basket-10y:
+    # Existing funded jobs only; compare whether preferentially hiring
+    # in households with no worker prevents cash-concentration famine.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[fair-basket-10y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Paired ten-year household allocation experiments
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          for rate in 5 20; do
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=$rate --fair-household-hiring 2>&1 | tee fair-basket-$rate-42.log
+          done
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=73 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring 2>&1 | tee fair-basket-20-73.log
+          python3 - <<'PY'
+          import json
+          def get(path):
+              lines=open(path).readlines()
+              i=next(i for i,line in enumerate(lines) if line.startswith('{'))
+              return json.loads(''.join(lines[i:]))
+          for rate,seed in [(5,42),(20,42),(20,73)]:
+              r=get(f'fair-basket-{rate}-{seed}.log')
+              assert r['simulatedDays']==3653
+              assert r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+              assert r['fairHouseholdHiringFixture'] and r['basketRetailServiceFixture']
+              print('FAIR_BASKET_10Y',rate,seed,r['aliveEnd'],
+                    r['minimumAliveAtAnyEvent'],r['unmetMeals'],r['employedAlive'],
+                    r['householdsWithEmployedAdults'],r['personalCashCents'])
+          PY
+      - name: Persist controlled variants
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-household-basket-10y
+          path: fair-basket-*.log
+          if-no-files-found: ignore
+
   basket-throughput-sensitivity:
     # Single explicit parameter drives physical checkout slots, job demand
     # and price simultaneously. More checkouts do NOT manufacture employees.
