@@ -45,8 +45,8 @@
 - 1x em tempo real: um segundo real avança um segundo simulado na velocidade normal.
 - Movimento físico, relógio, obras, turnos, produção e consumo seguem a mesma escala; as velocidades rápidas permitem avançar.
 - Aplicar também ao retomar cidades existentes, sem alterar o horário já alcançado, posições, recursos ou obrigações.
-- Os dois multiplicadores rápidos continuam sendo calibração técnica.
-- Velocidades provisórias: as velocidades passam provisoriamente a 1x, 30x e 1000x (passos iguais em escala: cerca de 30 vezes entre cada uma); a mais rápida em 1000x (medição em [ritmo-velocidades.md](../exploration/ritmo-velocidades.md): estável em cidade pequena; 3000x inviável), até a revisão separada do ritmo.
+- Os dois multiplicadores acelerados continuam sendo calibração técnica, com controles voltados ao jogador **Normal, Média e Alta**; o contrato de produto e a meta geracional estão em [Tempo de jogo](mundo-tempo-saves.md#tempo-de-jogo).
+- **Calibração provisória implementada na V1:** 1x, 30x e 1000x. Esses números **não são teto do motor nem objetivo final da velocidade Alta**. O estudo em [ritmo-velocidades.md](../exploration/ritmo-velocidades.md) mediu limites em cidades e versões específicas do motor então existente; não extrapolar tais resultados para a capacidade futura nem interpretar a alteração de um multiplicador como prova de desempenho.
 - Não manter uma aceleração oculta de 15 vezes no controle normal.
 - Identificação da versão e FPS: mostrar na interface a identificação da compilação em execução e o FPS real de renderização.
 - A identificação permite distinguir branch/commit e alterações locais da compilação; não consultar apenas o checkout atual e apresentá-lo como se fosse o código já carregado.
