@@ -8,7 +8,7 @@ namespace IndexCities.CausalEngine;
 
 // Independent vertical-slice engine for falsifying the architecture.
 // RULES AND FIXTURES HERE ARE NOT AN IMPLEMENTATION OF ALL OF INDEXCITIES SPEC.
-internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false, bool RetailShopFallback = false, int RetailBasketsPerShift = 5, bool MunicipalSanitationPilot = false, int MunicipalCollectionIntervalDays = 6, bool MunicipalWasteTreatmentPilot = false, bool FairSanitationDispatch = false, bool AttendanceAwareMunicipalShifts = false, bool TaxInclusiveProductPrice = false, int TaxCostRecoveryPercent = 100, int MonthlyResidentialTaxCents = 0, int WasteTreatmentUnitsPerShift = 50);
+internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false, bool RetailShopFallback = false, int RetailBasketsPerShift = 5, bool MunicipalSanitationPilot = false, int MunicipalCollectionIntervalDays = 6, bool MunicipalWasteTreatmentPilot = false, bool FairSanitationDispatch = false, bool AttendanceAwareMunicipalShifts = false, bool TaxInclusiveProductPrice = false, int TaxCostRecoveryPercent = 100, int MonthlyResidentialTaxCents = 0, int WasteTreatmentUnitsPerShift = 50, bool LivingOccupancyBirthCap = false);
 internal enum EventKind : byte { Day, Hour, StartWork, EndWork, Move, Delivery, RoadClose, RoadOpen, HouseholdShop }
 internal readonly record struct SimEvent(EventKind Kind, int Id);
 internal sealed class Person
@@ -509,7 +509,7 @@ internal sealed partial class CausalCity : IDisposable
                 h.Members.Where(id => _people[id].Alive).Sum(id => _people[id].Cash) >= FoodPrice &&
                 _shops[(h.Home + 1) % Nodes].Stock > 0);
             Console.Error.WriteLine($"LAB_INCOME day={_days} earningHomes={incomeHouseholds} occupiedHomes={occupiedHomes} employed={_people.Count(p => p.Alive && p.Job>=0)} hungryWithStockAndFunds={hungryWithStockAndFunds} foodSpendNeededDailyCents={_active * (_config.CostBasedFoodPrice ? _shops.Average(f=>f.RetailUnitPriceCents) : FoodPrice):F0} wagePaidCumulativeCents={_paidWages} actualRetailSalesCents={_retailSalesCents} realFoodSalesCumulativeUnits={_sales}");
-            Console.Error.WriteLine($"LAB_CAUSE day={_days} children={childCount} adults={adultCount} retired={olderCount} childOnlyHomes={childOnlyHomes} livedInEmptyPantries={inhabitedEmptyPantries} emptyWithFunds={emptyWithFunds} hungryEmptyStore={hungryWithEmptyStore} hungryStockAndFunds={hungryWithStockAndFunds} shopsNoStock={_shops.Count(f=>f.Stock==0)} shopsNoCash={_shops.Count(f=>f.Cash<WholesalePrice*32)} shopFood={_shops.Sum(f=>f.Stock)} farmFood={_farms.Sum(f=>f.Stock)} eligibleCarerHomes={_households.Count(h=>h.Members.Count<16 && h.Members.Count(id=>_people[id].Alive&&Age(_people[id],date) is >=18 and <60)>=2)}");
+            Console.Error.WriteLine($"LAB_CAUSE day={_days} children={childCount} adults={adultCount} retired={olderCount} childOnlyHomes={childOnlyHomes} livedInEmptyPantries={inhabitedEmptyPantries} emptyWithFunds={emptyWithFunds} hungryEmptyStore={hungryWithEmptyStore} hungryStockAndFunds={hungryWithStockAndFunds} shopsNoStock={_shops.Count(f=>f.Stock==0)} shopsNoCash={_shops.Count(f=>f.Cash<WholesalePrice*32)} shopFood={_shops.Sum(f=>f.Stock)} farmFood={_farms.Sum(f=>f.Stock)} eligibleCarerHomes={_households.Count(h=>(_config.LivingOccupancyBirthCap ? h.Members.Count(id=>_people[id].Alive) : h.Members.Count)<16 && h.Members.Count(id=>_people[id].Alive&&Age(_people[id],date) is >=18 and <60)>=2)}");
             // Bounded ten-year trace for families who can pay and whose local
             // store has food, yet their household inventory is empty.
             if (_days == 3650)
@@ -818,7 +818,11 @@ internal sealed partial class CausalCity : IDisposable
     }
     private bool TryBirth(Household h, DateTime date, long day)
     {
-        if (h.Members.Count >= 16 || h.Pantry < 2) return false;
+        // The stress fixture historically counted dead relatives against
+        // the physical 16-person housing limit. A deceased resident cannot
+        // occupy a housing slot; preserve the lineage but allow its slot to
+        // become available in the opt-in counterfactual.
+        if ((_config.LivingOccupancyBirthCap ? h.Members.Count(id => _people[id].Alive) : h.Members.Count) >= 16 || h.Pantry < 2) return false;
         if (_config.CohortRenewal && day - h.LastBirthDay < 4 * 365) return false;
         var carers = 0;
         long cash = 0;
@@ -1667,6 +1671,8 @@ internal sealed partial class CausalCity : IDisposable
             Age(p, Epoch.AddSeconds(_time)) is >= 18 and < 70),
         vacanciesOffered = _shops.Sum(f => f.OfferedPositions) + _farms.Sum(f => f.OfferedPositions) + _builder.OfferedPositions + (_config.MunicipalSanitationPilot ? Math.Min(512, (int)(_treasury / (80L * 30))) : 0),
         occupiedHouseholds = _households.Count(h => h.Members.Any(id => _people[id].Alive)),
+        livingOccupancyBirthCapFixture = _config.LivingOccupancyBirthCap,
+        householdsHistoricallyFullButCurrentlyVacant = _households.Count(h => h.Members.Count >= 16 && h.Members.Count(id => _people[id].Alive) < 16),
         householdsWithEmployedAdults = _households.Count(h => h.Members.Any(id =>
             _people[id].Alive && _people[id].Job >= 0 &&
             Age(_people[id], Epoch.AddSeconds(_time)) is >= 18 and < 70)),

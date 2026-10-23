@@ -1936,3 +1936,72 @@ jobs:
             treatment-candidates.txt
             treatment-80y-qualified.txt
           if-no-files-found: ignore
+
+
+  lifetime-vs-physical-occupancy-80y:
+    # Falsify whether dead family members occupying imaginary housing slots
+    # suppress true birth opportunities. No extra people or housing is granted.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[living-occupancy-audit]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Run lifetime-member and living-resident housing limits in two 80-year cities
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          BASE='--sims=10000 --days=29220 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25 --waste-treatment-units-per-shift=100'
+          for seed in 42 73; do
+            for variant in old living; do
+              OPT=''
+              if test "$variant" = living; then OPT='--living-occupancy-birth-cap'; fi
+              dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --seed=$seed $OPT 2>&1 | tee housing-$variant-$seed-80y.log
+            done
+          done
+          python3 - <<'PY'
+          import json
+          qualified=[]
+          for seed in (42,73):
+              results={}
+              for variant in ('old','living'):
+                  lines=open(f'housing-{variant}-{seed}-80y.log').readlines()
+                  i=next(j for j,v in enumerate(lines) if v.startswith('{'))
+                  d=json.loads(''.join(lines[i:]))
+                  assert d['simulatedDays']==29220 and d['moneyConserved'] and d['foodConserved'] and d['materialConserved']
+                  assert d['livingOccupancyBirthCapFixture']==(variant=='living')
+                  assert d['wasteTreatmentUnitsPerPaidShift']==100 and not d['fullIndexCitiesTargetValidated']
+                  results[variant]=d
+                  print('HOUSING_80Y',variant,seed,'min',d['minimumAliveAtAnyEvent'],'end',d['aliveEnd'],
+                        'births',d['births'],'historicallyFullWithVacancies',d['householdsHistoricallyFullButCurrentlyVacant'],
+                        'treated',d['wasteTreatedAtDepot'],'wall',d['wallSeconds'],flush=True)
+              if results['living']['minimumAliveAtAnyEvent']>=10000: qualified.append(seed)
+          open('housing-qualifying-seeds.txt','w').write(' '.join(map(str,qualified)))
+          PY
+      - name: Persist and audit complete facts for a 10k continuous 80y occupancy success
+        run: |
+          set -o pipefail
+          BASE='--sims=10000 --days=29220 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25 --waste-treatment-units-per-shift=100 --living-occupancy-birth-cap'
+          for seed in $(cat housing-qualifying-seeds.txt); do
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --seed=$seed --history=housing-history-$seed.gz 2>&1 | tee housing-living-$seed-persisted.log
+            python3 - "$seed" <<'PY'
+          import json,sys
+          seed=int(sys.argv[1]); lines=open(f'housing-living-{seed}-persisted.log').readlines()
+          i=next(i for i,v in enumerate(lines) if v.startswith('{'))
+          d=json.loads(''.join(lines[i:]))
+          assert d['historyPersistent'] and d['minimumAliveAtAnyEvent']>=10000
+          assert d['moneyConserved'] and d['foodConserved'] and d['materialConserved']
+          print('HOUSING_PERSISTED_80Y',seed,d['historyFacts'],d['wallSeconds'],flush=True)
+          PY
+          done
+      - name: Keep raw evidence even for rejected populations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: physical-vs-lifetime-occupancy-comparison
+          path: |
+            housing-*.log
+            housing-qualifying-seeds.txt
+          if-no-files-found: ignore
