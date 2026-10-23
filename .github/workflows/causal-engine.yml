@@ -2264,7 +2264,7 @@ jobs:
   integrated-v1-infrastructure-80y:
     # One long combined run instead of separate water/power/sewage/fuel/housing
     # tests. Only the explicit marker triggers this expensive experiment.
-    if: github.event_name == 'push' && (contains(github.event.head_commit.message, '[integrated-v1-80y]') || contains(github.event.head_commit.message, '[fiscal-tax-ab]') || contains(github.event.head_commit.message, '[pension-liability-audit]'))
+    if: github.event_name == 'push' && (contains(github.event.head_commit.message, '[integrated-v1-80y]') || contains(github.event.head_commit.message, '[fiscal-tax-ab]') || contains(github.event.head_commit.message, '[pension-liability-audit]') || contains(github.event.head_commit.message, '[pension-cohort-diagnostic]'))
     runs-on: ubuntu-latest
     timeout-minutes: 240
     steps:
@@ -2431,8 +2431,62 @@ jobs:
                         'seconds',d['wallSeconds'],flush=True)
           print('PENSION_LIFECYCLE_AUDIT_COMPLETE no_history_files no_policy_approved',flush=True)
           PY
+      # Read-only diagnostic of cohort aging vs actual paid work, not a policy.
+      # Reuse deterministic tax-100 seed-42 baseline for 29,220 days, no history.
+      - name: Diagnose late pension cohort and paid productive base
+        if: contains(github.event.head_commit.message, '[pension-cohort-diagnostic]')
+        run: |
+          set -euo pipefail
+          BASE='--sims=10000 --days=29220 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25 --waste-treatment-units-per-shift=75 --integrated-v1-stress --eligible-birth-fallback --municipal-payroll-reserve-counterfactual'
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --seed=42 --monthly-residential-tax-cents=100 2>&1 | tee integrated-v1-cohort-seed42.log
+          python3 - <<'PY' | tee integrated-v1-cohort-summary.txt
+          import json,re
+          rows=open('integrated-v1-cohort-seed42.log').readlines()
+          i=next(i for i,line in enumerate(rows) if line.startswith('{'))
+          d=json.loads(''.join(rows[i:]))
+          assert d['seed']==42 and d['simulatedDays']==29220 and d['gregorianEnd']=='2100-01-01'
+          assert d['integratedV1StressFixture'] and d['municipalPayrollReserveCounterfactualFixture']
+          assert d['monthlyResidentialPropertyTaxCents']==100 and not d['historyPersistent']
+          assert d['moneyConserved'] and d['foodConserved'] and d['materialConserved']
+          assert d['fiscalTreasuryLedgerBalanced'] and d['pensionLiabilityLedgerBalanced'] and d['pensionLiabilityLedgerComplete']
+          assert d['minimumAliveAtAnyEvent']==10000 and d['aliveEnd']==15310
+          assert d['pensionClaimsAccruedCents']==1287706342 and d['unpaidPensionCreditsCents']==0
+          assert d['pensionClaimsExtinguishedAtDeathCents']==0
+          assert d['residentialPropertyTaxDebtOutstandingCents']==9865244
+          fiscal={}
+          for line in rows:
+              if not line.startswith('LAB_FISCAL '): continue
+              f={k:int(v) for k,v in re.findall(r'\b([A-Za-z]\w*)=(-?\d+)',line)}
+              fiscal[f['day']]=f
+          for year in range(60,81):
+              f=fiscal[365*year]
+              assert sum(f[k] for k in ('cohortUnder18','cohort18To39','cohort40To69','cohort70Plus'))==f['alive']
+              assert f['cohort70To74']+f['cohort75To79']+f['cohort80Plus']==f['cohort70Plus']
+              assert f['workingAgeAssignedJobs']<=f['cohort18To39']+f['cohort40To69']
+              assert f['pensionEligibleAlive']<=f['cohort70Plus']
+              assert f['fiscalBalanced']==1 and f['pensionLiabilityLedgerBalanced']==1
+              if year==60: continue
+              a=fiscal[365*(year-1)]
+              def delta(k): return f[k]-a[k]
+              claims=delta('pensionClaimsAccruedCents')
+              contributions=delta('pensionContributionsPaidCents')
+              payroll=delta('municipalGrossPayrollCents')
+              pensions=delta('pensionsActuallyPaidCents')
+              revenue=sum(delta(k) for k in ('businessTaxPaidCents','residentialTaxPaidCents','pensionContributionsPaidCents'))
+              assert claims==pensions+delta('pensionCreditsOutstandingCents')+delta('pensionClaimsExtinguishedAtDeathCents')
+              assert revenue-payroll-pensions==delta('treasuryCents')
+              print('PENSION_COHORT_365D',year,'under18',f['cohortUnder18'],
+                    'working18To39',f['cohort18To39'],'working40To69',f['cohort40To69'],
+                    'age70Plus',f['cohort70Plus'],'pensionEligible',f['pensionEligibleAlive'],
+                    'assignedJobs',f['workingAgeAssignedJobs'],
+                    'paidPrivateFreightShifts',delta('privateFreightPaidShiftsCumulative'),
+                    'newClaims',claims,'contributionsPaid',contributions,
+                    'revenuePaid',revenue,'municipalPayrollPaid',payroll,
+                    'pensionsPaid',pensions,'treasuryChange',delta('treasuryCents'),flush=True)
+          print('PENSION_COHORT_DIAGNOSTIC_COMPLETE seed42 tax100 days29220 no_history_files no_policy_approved',flush=True)
+          PY
       - name: Test three continuous 80-year cities with staffed water, sewage, wind, fuel and paid home deeds
-        if: ${{ !contains(github.event.head_commit.message, '[fiscal-tax-ab]') && !contains(github.event.head_commit.message, '[pension-liability-audit]') }}
+        if: ${{ !contains(github.event.head_commit.message, '[fiscal-tax-ab]') && !contains(github.event.head_commit.message, '[pension-liability-audit]') && !contains(github.event.head_commit.message, '[pension-cohort-diagnostic]') }}
         run: |
           set -uo pipefail
           FLAGS='--sims=10000 --days=29220 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25 --waste-treatment-units-per-shift=75 --integrated-v1-stress --eligible-birth-fallback --municipal-payroll-reserve-counterfactual'

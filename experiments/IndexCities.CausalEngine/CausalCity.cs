@@ -409,6 +409,16 @@ internal sealed partial class CausalCity : IDisposable
                 $"pensionClaimsExtinguishedAtDeathCents={_pensionClaimsExtinguishedAtDeathCents} " +
                 $"pensionLiabilityLedgerBalanced={(pensionLedgerBalanced ? 1 : 0)} " +
                 $"pensionLiabilityLedgerComplete={(_pensionLiabilityLedgerComplete ? 1 : 0)} " +
+                // Read-only age pyramid; assigned jobs are NOT paid shifts.
+                $"cohortUnder18={_people.Count(p => p.Alive && Age(p, date) < 18)} " +
+                $"cohort18To39={_people.Count(p => p.Alive && Age(p, date) is >= 18 and < 40)} " +
+                $"cohort40To69={_people.Count(p => p.Alive && Age(p, date) is >= 40 and < 70)} " +
+                $"cohort70Plus={_people.Count(p => p.Alive && Age(p, date) >= 70)} " +
+                $"cohort70To74={_people.Count(p => p.Alive && Age(p, date) is >= 70 and < 75)} " +
+                $"cohort75To79={_people.Count(p => p.Alive && Age(p, date) is >= 75 and < 80)} " +
+                $"cohort80Plus={_people.Count(p => p.Alive && Age(p, date) >= 80)} " +
+                $"workingAgeAssignedJobs={_people.Count(p => p.Alive && Age(p, date) is >= 18 and < 70 && p.Job >= 0)} " +
+                $"privateFreightPaidShiftsCumulative={_workdays} " +
                 $"pensionEligibleAlive={pensionEligible.Length} pensionNewClaimsDailyCents={pensionNewClaimsDaily} " +
                 $"residentialTaxAssessedCents={_residentialTaxAssessedCents} residentialTaxDebtCents={residentialDebt} " +
                 $"residentialTaxDebtorHomes={debtorHomes} residentialTaxDebtorOwnerCashCents={debtorOwnerCash} " +
