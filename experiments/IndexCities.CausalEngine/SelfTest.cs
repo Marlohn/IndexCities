@@ -606,6 +606,48 @@ internal static class EngineSelfTest
                     throw new InvalidOperationException("Private household title/tax/debt changed after resume");
             }
             File.Delete(homeTaxSave);
+            // One coherent integrated system: real employees operate four
+            // different sites, with power/water/sewage capacity, externally
+            // paid and delivered fuel, and houses actually bought by adults.
+            // Save/load must preserve every physical inventory and paid shift.
+            var integratedCfg = treatmentConfig with
+            {
+                Days = 120, Adversarial = false, FreightLabor = true,
+                FairSanitationDispatch = true,
+                AttendanceAwareMunicipalShifts = true,
+                IntegratedV1Stress = true
+            };
+            var integratedSave = temp + ".integrated.save.json";
+            string integratedHash;
+            using (var integrated = new CausalCity(integratedCfg))
+            {
+                integrated.Run();
+                integrated.AssertConservation();
+                integratedHash = integrated.Fingerprint();
+                using var rep = JsonDocument.Parse(JsonSerializer.Serialize(integrated.Report(0)));
+                var d = rep.RootElement;
+                if (!d.GetProperty("integratedV1StressFixture").GetBoolean() ||
+                    d.GetProperty("actualUtilityWorkShifts").GetInt64() <= 0 ||
+                    d.GetProperty("generatedWindElectricity").GetInt64() <= 0 ||
+                    d.GetProperty("physicallyExtractedWater").GetInt64() <= 0 ||
+                    d.GetProperty("consumedPotableWater").GetInt64() <= 0 ||
+                    d.GetProperty("residentialDeedPurchasePaymentsCents").GetInt64() <= 0 ||
+                    d.GetProperty("actualFuelImported").GetInt64() <= 0)
+                    throw new InvalidOperationException("Integrated facilities, fuel or real deed purchases were inactive");
+            }
+            using (var integratedPart = new CausalCity(integratedCfg))
+            {
+                integratedPart.RunUntilDay(61);
+                integratedPart.SaveSnapshot(integratedSave);
+            }
+            using (var integratedResume = CausalCity.FromSnapshot(integratedSave))
+            {
+                integratedResume.Run();
+                integratedResume.AssertConservation();
+                if (integratedResume.Fingerprint() != integratedHash)
+                    throw new InvalidOperationException("Integrated V1 physical and financial checkpoint diverged");
+            }
+            File.Delete(integratedSave);
             // Small closed-household stress case: when the final family
             // member dies, a positive estate must NOT finance city pensions.
             long unclaimedEstate;
@@ -634,6 +676,7 @@ internal static class EngineSelfTest
                 alternativeRetailRouteSaveResumeExact = true,
                 auditedTaxInclusivePricingCheckpointExact = true,
                 realResidentialPropertyTaxOwnershipAndCheckpoint = true,
+                integratedRealUtilitiesFuelAndDeedsCheckpoint = true,
                 municipalCashTaxWasteAndJobsSaveResumeExact = true, municipalVisits,
                 municipalWasteTreatmentSavedExactly = true, treatmentShifts,
                 fairHouseholdSanitationDispatchSaveResumeExact = true,
@@ -656,7 +699,7 @@ internal static class EngineSelfTest
         }
         finally
         {
-            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json", temp + ".construction.save.json", temp + ".cost-price.save.json", temp + ".checkout.save.json", temp + ".basket.save.json", temp + ".fallback.save.json", temp + ".municipal.save.json", temp + ".treatment.save.json", temp + ".fair-collection.save.json", temp + ".tax-price.save.json", temp + ".home-tax.save.json" })
+            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json", temp + ".construction.save.json", temp + ".cost-price.save.json", temp + ".checkout.save.json", temp + ".basket.save.json", temp + ".fallback.save.json", temp + ".municipal.save.json", temp + ".treatment.save.json", temp + ".fair-collection.save.json", temp + ".tax-price.save.json", temp + ".home-tax.save.json", temp + ".integrated.save.json" })
                 if (File.Exists(path)) File.Delete(path);
         }
     }
