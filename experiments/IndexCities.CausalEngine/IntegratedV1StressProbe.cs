@@ -87,7 +87,7 @@ internal sealed partial class CausalCity
         _history.Fact(_time, -7010, 40, actual);
     }
 
-    private void ConsumeIntegratedServices(Person person)
+    private void ConsumeIntegratedServices(Person person, bool ateRealFoodToday)
     {
         // The city can run dry or lose electricity. A numerical wind/weather
         // factor alone NEVER grants service to a resident in this pilot.
@@ -96,7 +96,8 @@ internal sealed partial class CausalCity
             _potableWater--;
             _waterConsumed++;
             _sewage++;
-            person.Health = Math.Min(100, person.Health + 1);
+            // Potable water prevents dehydration, but cannot undo hunger.
+            if (ateRealFoodToday) person.Health = Math.Min(100, person.Health + 1);
             _history.Fact(_time, person.Id, 33, 1);
         }
         else
@@ -178,7 +179,14 @@ internal sealed partial class CausalCity
             _lastWindMaintainedDay = (int)(_time / DaySeconds);
         }
         else if (job == FuelStationJob)
+        {
             OrderExternalFuelIfNeeded();
+            // Customers may request fuel before this shop's employee arrives.
+            // Queue REAL purchases, then dispatch on a paid staffed shift;
+            // no instant fuel, ghost attendant or fictional cash.
+            for (var i = 0; i < FarmCount; i++)
+                if (_farms[i].TruckFuelDemandPending) RequestFarmFuel(i);
+        }
         _history.Fact(_time, worker.Id, job == FuelStationJob ? (byte)38 : (byte)32, produced);
         StartTrip(worker, worker.Home);
     }
@@ -224,6 +232,7 @@ internal sealed partial class CausalCity
         _fuelStation.Stock -= 80;
         _fuelInTransit += 80;
         farm.TruckFuelOnOrder = true;
+        farm.TruckFuelDemandPending = false;
         var delivery = NewTrip(-1, FuelStationNode, farm.Node,
             EventKind.Delivery, FuelFarmPayloadBase - farmId, 80);
         Schedule(_time + 1, EventKind.Move, delivery.Id);
@@ -251,9 +260,15 @@ internal sealed partial class CausalCity
         var distance = Math.Abs(farm.Node % Grid - shop.Node % Grid) +
                        Math.Abs(farm.Node / Grid - shop.Node / Grid);
         if (!farm.TruckBusy && farm.TruckFuelUnits >= 2 * distance + 4)
+        {
+            farm.TruckFuelDemandPending = false;
             return true;
+        }
         if (!farm.TruckBusy && farm.TruckFuelUnits < 2 * distance + 4)
-            RequestFarmFuel(farmId);
+        {
+            farm.TruckFuelDemandPending = true;
+            if (_fuelStation.PresentWorkers > 0) RequestFarmFuel(farmId);
+        }
         return false;
     }
 
