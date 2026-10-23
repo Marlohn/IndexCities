@@ -2260,3 +2260,101 @@ jobs:
             taxfree-paid-treatment-*.log
             taxfree-paid-treatment-*.txt
           if-no-files-found: ignore
+
+  integrated-v1-infrastructure-80y:
+    # One long combined run instead of separate water/power/sewage/fuel/housing
+    # tests. Only the explicit marker triggers this expensive experiment.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[integrated-v1-80y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compile the guarded combined causal engine
+        run: dotnet build experiments/IndexCities.CausalEngine -c Release
+      - name: Test three continuous 80-year cities with staffed water, sewage, wind, fuel and paid home deeds
+        run: |
+          set -uo pipefail
+          FLAGS='--sims=10000 --days=29220 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25 --waste-treatment-units-per-shift=75 --integrated-v1-stress'
+          failures=0
+          candidate=''
+          for seed in 42 73 101; do
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $FLAGS --seed=$seed 2>&1 | tee integrated-v1-seed$seed-80y.log
+            outcome=$?
+            if [ "$outcome" -ne 0 ]; then
+              echo "INTEGRATED_80Y_ENGINE_FAILURE seed=$seed exit=$outcome" | tee integrated-v1-seed$seed-summary.txt
+              failures=$((failures+1))
+              continue
+            fi
+            python3 - "$seed" <<'PY' | tee integrated-v1-seed$seed-summary.txt
+          import json,sys
+          seed=int(sys.argv[1])
+          rows=open(f'integrated-v1-seed{seed}-80y.log').readlines()
+          i=next(i for i,line in enumerate(rows) if line.startswith('{'))
+          d=json.loads(''.join(rows[i:]))
+          assert d['integratedV1StressFixture']
+          assert d['simulatedDays']==29220 and d['gregorianEnd']=='2100-01-01'
+          assert d['moneyConserved'] and d['foodConserved'] and d['materialConserved']
+          assert d['actualUtilityWorkShifts']>0 and d['consumedPotableWater']>0
+          assert d['sewagePhysicallyProcessed']>0 and d['generatedWindElectricity']>0
+          assert d['actualFuelImported']>0 and d['residentialDeedPurchasePaymentsCents']>0
+          print('INTEGRATED_V1_80Y',seed,'alive',d['aliveEnd'],'minimum',d['minimumAliveAtAnyEvent'],
+                'seconds',d['wallSeconds'],'waterShortage',d['deniedPotableWater'],
+                'electricityShortage',d['unservedElectricity'],
+                'fuelBurned',d['fuelConsumedByRealFreight'],
+                'shifts',d['actualUtilityWorkShifts'],
+                'factsRecordedWithoutFile',d['recordedFacts'], flush=True)
+          PY
+            status=$?
+            if [ "$status" -ne 0 ]; then
+              failures=$((failures+1))
+              continue
+            fi
+            if python3 - "$seed" <<'PY'
+          import json,sys
+          seed=int(sys.argv[1])
+          lines=open(f'integrated-v1-seed{seed}-80y.log').readlines()
+          i=next(i for i,s in enumerate(lines) if s.startswith('{'))
+          d=json.loads(''.join(lines[i:]))
+          assert d['minimumAliveAtAnyEvent']>=10000 and d['wallSeconds']<=21600
+          PY
+            then
+              if [ -z "$candidate" ]; then candidate="$seed"; fi
+            else
+              failures=$((failures+1))
+            fi
+          done
+          # Only spend billions-of-facts I/O on a city that genuinely passed
+          # the full-duration and continuous-population diagnostic.
+          if [ -n "$candidate" ]; then
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $FLAGS --seed=$candidate --history=integrated-v1-80y.gz 2>&1 | tee integrated-v1-full-history.log
+            if [ "$?" -ne 0 ]; then failures=$((failures+1)); else
+              python3 - <<'PY'
+          import json
+          rows=open('integrated-v1-full-history.log').readlines()
+          i=next(i for i,line in enumerate(rows) if line.startswith('{'))
+          d=json.loads(''.join(rows[i:]))
+          assert d['minimumAliveAtAnyEvent']>=10000
+          assert d['historyPersistent'] and d['wallSeconds']<=21600 and d['simulatedDays']==29220
+          open('integrated-v1-facts.txt','w').write(str(d['recordedFacts']))
+          print('INTEGRATED_HISTORY_WRITTEN',d['seed'],d['recordedFacts'],d['wallSeconds'],flush=True)
+          PY
+              if [ "$?" -ne 0 ]; then failures=$((failures+1)); else
+                dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- verify-history integrated-v1-80y.gz "$(cat integrated-v1-facts.txt)" 29220 0 | tee integrated-v1-history-verified.log
+                if [ "$?" -ne 0 ]; then failures=$((failures+1)); fi
+              fi
+            fi
+          fi
+          echo "INTEGRATED_LAB_80Y invalid_seed_count=$failures qualifying_history_seed=$candidate"
+          test "$failures" -eq 0
+      - name: Preserve every negative and positive integrated result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-v1-five-system-eighty-year-evidence
+          path: |
+            integrated-v1-*.log
+            integrated-v1-*.txt
+          if-no-files-found: ignore
