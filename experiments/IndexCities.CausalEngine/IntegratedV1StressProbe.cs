@@ -281,6 +281,9 @@ internal sealed partial class CausalCity
             throw new InvalidOperationException("Moving a freight truck without real fuel");
         farm.TruckFuelUnits--;
         _fuelBurned++;
+        // Expense follows physical use; the company already paid the station
+        // at delivery, so consuming diesel must NOT debit cash twice.
+        farm.MonthFreightFuelConsumedCents += FuelRetailPrice;
         _history.Fact(_time, driver.Id, 44, 1);
     }
 
