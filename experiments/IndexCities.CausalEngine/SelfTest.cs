@@ -763,6 +763,46 @@ internal static class EngineSelfTest
                         "Sequential real-truck dispatch diverged after save/resume");
             }
             File.Delete(sequentialFreightSave);
+
+            // No public money is minted: the counterfactual can only DEFER
+            // pension settlement to fund genuinely contracted public shifts.
+            if (CausalCity.PensionSpendableAfterPayrollReserve(200, 150) != 50 ||
+                CausalCity.PensionSpendableAfterPayrollReserve(100, 150) != 0 ||
+                CausalCity.PensionSpendableAfterPayrollReserve(200, 0) != 200)
+                throw new InvalidOperationException("Experimental pension budget spent earmarked public cash");
+            var payrollReserveCfg = sequentialFreightCfg with
+            {
+                Sims = 1_000, Days = 180, MunicipalPayrollReserveCounterfactual = true
+            };
+            var payrollReserveSave = temp + ".public-payroll-reserve.save.json";
+            string payrollReserveHash;
+            using (var reservedCity = new CausalCity(payrollReserveCfg))
+            {
+                reservedCity.Run();
+                reservedCity.AssertConservation();
+                payrollReserveHash = reservedCity.Fingerprint();
+                using var report = JsonDocument.Parse(JsonSerializer.Serialize(reservedCity.Report(0)));
+                var data = report.RootElement;
+                if (!data.GetProperty("municipalPayrollReserveCounterfactualFixture").GetBoolean() ||
+                    data.GetProperty("municipalContractPayrollReservedCents").GetInt64() <= 0 ||
+                    !data.GetProperty("fiscalTreasuryLedgerBalanced").GetBoolean() ||
+                    data.GetProperty("municipalPaidCollections").GetInt64() <= 0 ||
+                    data.GetProperty("actualUtilityWorkShifts").GetInt64() <= 0)
+                    throw new InvalidOperationException("Real public payroll reservation lacked paid services or balanced ledger");
+            }
+            using (var reservedCity = new CausalCity(payrollReserveCfg))
+            {
+                reservedCity.RunUntilDay(83);
+                reservedCity.SaveSnapshot(payrollReserveSave);
+            }
+            using (var reservedCity = CausalCity.FromSnapshot(payrollReserveSave))
+            {
+                reservedCity.Run();
+                reservedCity.AssertConservation();
+                if (reservedCity.Fingerprint() != payrollReserveHash)
+                    throw new InvalidOperationException("Municipal payroll reservation diverged after checkpoint");
+            }
+            File.Delete(payrollReserveSave);
             // Small closed-household stress case: when the final family
             // member dies, a positive estate must NOT finance city pensions.
             long unclaimedEstate;
@@ -795,6 +835,7 @@ internal static class EngineSelfTest
                 integratedRealUtilitiesFuelAndDeedsCheckpoint = true,
                 integratedWaterPowerAndDeedsHistoryReadable = true,
                 sequentialSingleTruckFreightAndSaveResumeExact = true,
+                municipalPayrollReserveCounterfactualConservedAndCheckpointExact = true,
                 municipalCashTaxWasteAndJobsSaveResumeExact = true, municipalVisits,
                 municipalWasteTreatmentSavedExactly = true, treatmentShifts,
                 fairHouseholdSanitationDispatchSaveResumeExact = true,
@@ -817,7 +858,7 @@ internal static class EngineSelfTest
         }
         finally
         {
-            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json", temp + ".construction.save.json", temp + ".cost-price.save.json", temp + ".checkout.save.json", temp + ".basket.save.json", temp + ".fallback.save.json", temp + ".municipal.save.json", temp + ".treatment.save.json", temp + ".fair-collection.save.json", temp + ".tax-price.save.json", temp + ".home-tax.save.json", temp + ".integrated.save.json", temp + ".integrated.facts.gz", temp + ".sequential-freight.save.json" })
+            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json", temp + ".construction.save.json", temp + ".cost-price.save.json", temp + ".checkout.save.json", temp + ".basket.save.json", temp + ".fallback.save.json", temp + ".municipal.save.json", temp + ".treatment.save.json", temp + ".fair-collection.save.json", temp + ".tax-price.save.json", temp + ".home-tax.save.json", temp + ".integrated.save.json", temp + ".integrated.facts.gz", temp + ".sequential-freight.save.json", temp + ".public-payroll-reserve.save.json" })
                 if (File.Exists(path)) File.Delete(path);
         }
     }

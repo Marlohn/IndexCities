@@ -2277,7 +2277,7 @@ jobs:
       - name: Test three continuous 80-year cities with staffed water, sewage, wind, fuel and paid home deeds
         run: |
           set -uo pipefail
-          FLAGS='--sims=10000 --days=29220 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25 --waste-treatment-units-per-shift=75 --integrated-v1-stress --eligible-birth-fallback'
+          FLAGS='--sims=10000 --days=29220 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25 --waste-treatment-units-per-shift=75 --integrated-v1-stress --eligible-birth-fallback --municipal-payroll-reserve-counterfactual'
           failures=0
           candidate=''
           for seed in 42 73 101; do
@@ -2295,6 +2295,7 @@ jobs:
           i=next(i for i,line in enumerate(rows) if line.startswith('{'))
           d=json.loads(''.join(rows[i:]))
           assert d['integratedV1StressFixture'] and d['birthEligibilityFallbackFixture']
+          assert d['municipalPayrollReserveCounterfactualFixture']
           assert d['simulatedDays']==29220 and d['gregorianEnd']=='2100-01-01'
           assert d['moneyConserved'] and d['foodConserved'] and d['materialConserved']
           assert d['actualUtilityWorkShifts']>0 and d['consumedPotableWater']>0
@@ -2305,6 +2306,9 @@ jobs:
                 'electricityShortage',d['unservedElectricity'],
                 'fuelBurned',d['fuelConsumedByRealFreight'],
                 'shifts',d['actualUtilityWorkShifts'],
+                'treasury',d['treasuryCashCents'],
+                'unpaidPensionCredits',d['unpaidPensionCreditsCents'],
+                'reservedPayroll',d['municipalContractPayrollReservedCents'],
                 'factsRecordedWithoutFile',d['recordedFacts'], flush=True)
           PY
             status=$?

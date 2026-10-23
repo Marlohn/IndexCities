@@ -8,7 +8,7 @@ namespace IndexCities.CausalEngine;
 
 // Independent vertical-slice engine for falsifying the architecture.
 // RULES AND FIXTURES HERE ARE NOT AN IMPLEMENTATION OF ALL OF INDEXCITIES SPEC.
-internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false, bool RetailShopFallback = false, int RetailBasketsPerShift = 5, bool MunicipalSanitationPilot = false, int MunicipalCollectionIntervalDays = 6, bool MunicipalWasteTreatmentPilot = false, bool FairSanitationDispatch = false, bool AttendanceAwareMunicipalShifts = false, bool TaxInclusiveProductPrice = false, int TaxCostRecoveryPercent = 100, int MonthlyResidentialTaxCents = 0, int WasteTreatmentUnitsPerShift = 50, bool LivingOccupancyBirthCap = false, int TreatmentBacklogMonths = 0, bool IntegratedV1Stress = false, bool BirthEligibleFallback = false);
+internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false, bool RetailShopFallback = false, int RetailBasketsPerShift = 5, bool MunicipalSanitationPilot = false, int MunicipalCollectionIntervalDays = 6, bool MunicipalWasteTreatmentPilot = false, bool FairSanitationDispatch = false, bool AttendanceAwareMunicipalShifts = false, bool TaxInclusiveProductPrice = false, int TaxCostRecoveryPercent = 100, int MonthlyResidentialTaxCents = 0, int WasteTreatmentUnitsPerShift = 50, bool LivingOccupancyBirthCap = false, int TreatmentBacklogMonths = 0, bool IntegratedV1Stress = false, bool BirthEligibleFallback = false, bool MunicipalPayrollReserveCounterfactual = false);
 internal enum EventKind : byte { Day, Hour, StartWork, EndWork, Move, Delivery, RoadClose, RoadOpen, HouseholdShop }
 internal readonly record struct SimEvent(EventKind Kind, int Id);
 internal sealed class Person
@@ -389,6 +389,7 @@ internal sealed partial class CausalCity : IDisposable
                 $"fiscalExpectedTreasuryCents={expectedTreasury} fiscalBalanced={expectedTreasury == _treasury} " +
                 $"pensionsActuallyPaidCents={pensionsPaid} " +
                 $"pensionCreditsOutstandingCents={_people.Sum(p => p.PensionCredit)} " +
+                $"contractPayrollReserveCents={MunicipalContractPayrollReserveCents(date)} " +
                 $"businessTaxPaidCents={_municipalTaxPaidCents} residentialTaxPaidCents={_residentialTaxPaidCents} " +
                 $"pensionContributionsPaidCents={_pensionContributionsPaidCents} " +
                 $"municipalGrossPayrollCents={_municipalWagesPaidCents} " +
@@ -407,6 +408,7 @@ internal sealed partial class CausalCity : IDisposable
                 Console.Error.WriteLine(
                     $"LAB_SERVICE_CHAIN day={_days} sampling=pre_tax_pension_shift alive={_active} " +
                     $"treasuryCents={_treasury} pensionCreditsCents={_people.Sum(p => p.PensionCredit)} " +
+                    $"contractPayrollReserveCents={MunicipalContractPayrollReserveCents(date)} " +
                     $"pensionsPaidCents={pensionsPaid} businessTaxPaidCents={_municipalTaxPaidCents} " +
                     $"residentialTaxPaidCents={_residentialTaxPaidCents} pensionContributionsCents={_pensionContributionsPaidCents} " +
                     $"municipalPayrollCents={_municipalWagesPaidCents} paidCollections={_sanitationPaidVisits} " +
@@ -1052,6 +1054,49 @@ internal sealed partial class CausalCity : IDisposable
         firm.DaySupplies = 0;
         firm.DayPaidShifts = 0;
     }
+
+    // LABORATORY-ONLY counterfactual: retain existing treasury cash for the
+    // ALREADY-CONTRACTED public workers' possible real shifts until the next
+    // monthly levy. This is not a second wallet, guaranteed payroll, new tax,
+    // or an approved pension/service priority for IndexCities. Any unused
+    // amount becomes pension-spendable as the period advances.
+    // An absent, deceased, retired or unfunded worker still cannot work.
+    private long MunicipalContractPayrollReserveCents(DateTime date)
+    {
+        if (!_config.MunicipalPayrollReserveCounterfactual) return 0;
+        var day = (int)(_time / DaySeconds);
+        var daysUntilNextLevy = 30 - day % 30;
+        var end = date.AddDays(daysUntilNextLevy);
+        long contractedShifts = 0;
+        foreach (var p in _people)
+        {
+            if (!p.Alive || !(
+                (_config.MunicipalSanitationPilot && p.Job == SanitationJob) ||
+                (_config.MunicipalWasteTreatmentPilot && p.Job == WasteTreatmentJob) ||
+                (_config.IntegratedV1Stress && p.Job >= IntakeJob && p.Job <= WindJob)))
+                continue;
+            // The fixture schedules public employees at most six days a week.
+            // Respect 18/70 employment bounds and real contractual headcount.
+            var first = date > p.Born.AddYears(18) ? date : p.Born.AddYears(18);
+            var last = end < p.Born.AddYears(70) ? end : p.Born.AddYears(70);
+            var eligibleDays = (last - first).Days;
+            if (eligibleDays <= 0) continue;
+            var firstDay = day + (first - date).Days;
+            var firstRestOffset = (int)((7 - ((long)firstDay + p.Id) % 7) % 7);
+            var restDays = firstRestOffset >= eligibleDays
+                ? 0 : 1 + (eligibleDays - 1 - firstRestOffset) / 7;
+            contractedShifts = checked(contractedShifts + eligibleDays - restDays);
+        }
+        return checked(contractedShifts * SanitationGrossWage);
+    }
+
+    internal static long PensionSpendableAfterPayrollReserve(long treasury, long contractedPayroll)
+    {
+        if (treasury < 0 || contractedPayroll < 0)
+            throw new ArgumentOutOfRangeException(nameof(treasury), "Cash and payroll cannot be negative");
+        return Math.Max(0L, treasury - contractedPayroll);
+    }
+
     private void PayContributoryPensions(DateTime date)
     {
         // Approved product DIRECTION: municipal pay-as-you-go, real employee
@@ -1069,7 +1114,10 @@ internal sealed partial class CausalCity : IDisposable
             eligible.Add(p);
         }
         if (totalClaims <= 0 || _treasury <= 0) return;
-        var budget = Math.Min(_treasury, totalClaims);
+        var spendable = PensionSpendableAfterPayrollReserve(_treasury,
+            MunicipalContractPayrollReserveCents(date));
+        var budget = Math.Min(spendable, totalClaims);
+        if (budget <= 0) return;
         long distributed = 0;
         foreach (var p in eligible)
         {
@@ -2035,6 +2083,8 @@ internal sealed partial class CausalCity : IDisposable
         municipalWasteTreatmentPilotFixture = _config.MunicipalWasteTreatmentPilot,
         fairSanitationDispatchFixture = _config.FairSanitationDispatch,
         attendanceAwareMunicipalShiftsFixture = _config.AttendanceAwareMunicipalShifts,
+        municipalPayrollReserveCounterfactualFixture = _config.MunicipalPayrollReserveCounterfactual,
+        municipalContractPayrollReservedCents = MunicipalContractPayrollReserveCents(Epoch.AddDays(_time / DaySeconds)),
         homesPastSanitationHygieneThreshold = _households.Count(h => h.TrashUnits > 80 && h.Members.Any(id => _people[id].Alive)),
         highestUntreatedHomeWaste = _households.Max(h => h.TrashUnits),
         homesWithoutPickupFor15Days = _households.Count(h => h.TrashUnits >= 4 &&
