@@ -170,20 +170,22 @@ internal static class EngineSelfTest
             var eligibleBirthConfig = renewalConfig with { BirthEligibleFallback = true };
             string eligibleBirthHash;
             long eligibleBirths;
+            string eligibleBirthReportJson;
             using (var eligibleCity = new CausalCity(eligibleBirthConfig))
             {
                 eligibleCity.Run();
                 eligibleCity.AssertConservation();
                 eligibleBirthHash = eligibleCity.Fingerprint();
                 eligibleBirths = eligibleCity.Births;
+                eligibleBirthReportJson = JsonSerializer.Serialize(
+                    new { checkedCandidates = eligibleCity.Report(0) });
             }
             // This 256-person fixture may already have an eligible family on
             // every appointment (64 births in both A/B runs). A strict
             // improvement assertion would reject a correct implementation.
             // Instead audit the real candidate search and its one-birth/day
             // upper bound; the long multi-seed experiment tests usefulness.
-            using (var birthReport = JsonDocument.Parse(JsonSerializer.Serialize(
-                new { checkedCandidates = eligibleCity.Report(0) })))
+            using (var birthReport = JsonDocument.Parse(eligibleBirthReportJson))
             {
                 // Read the engine's own counters rather than assuming that
                 // a tiny fixture must have different population outcomes.
