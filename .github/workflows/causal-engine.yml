@@ -400,15 +400,15 @@ jobs:
             echo 'Both decade seeds hold. Run 80 continuous years WITHOUT history first.'
             dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price 2>&1 | tee tax-inclusive-eighty-year-demography.log
             python3 - <<'PY'
-            import json
-            a=open('tax-inclusive-eighty-year-demography.log').readlines()
-            i=next(i for i,l in enumerate(a) if l.startswith('{'))
-            r=json.loads(''.join(a[i:]))
-            assert r['simulatedDays']==29220 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
-            print('TAX_PRICED_FULL_EIGHTY_YEARS',r['aliveEnd'],r['minimumAliveAtAnyEvent'],r['wallSeconds'])
-            if r['minimumAliveAtAnyEvent']>=10000:
-                open('eighty-pass.flag','w').write('yes')
-            PY
+          import json
+          a=open('tax-inclusive-eighty-year-demography.log').readlines()
+          i=next(i for i,l in enumerate(a) if l.startswith('{'))
+          r=json.loads(''.join(a[i:]))
+          assert r['simulatedDays']==29220 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+          print('TAX_PRICED_FULL_EIGHTY_YEARS',r['aliveEnd'],r['minimumAliveAtAnyEvent'],r['wallSeconds'])
+          if r['minimumAliveAtAnyEvent']>=10000:
+              open('eighty-pass.flag','w').write('yes')
+          PY
           fi
       - name: Keep real decade and 80-year outcomes
         if: always()
