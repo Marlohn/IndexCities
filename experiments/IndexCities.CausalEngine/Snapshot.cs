@@ -63,7 +63,8 @@ internal sealed partial class CausalCity
                 _retailSalesCents,
                 _municipalTaxPaidCents, _municipalWagesPaidCents,
                 _garbageGenerated, _garbageCollected, _garbageAtDepot, _sanitationPaidVisits,
-                _garbageInTransit, _wasteTreated, _wasteTreatmentPaidShifts, _fairSanitationCursor
+                _garbageInTransit, _wasteTreated, _wasteTreatmentPaidShifts, _fairSanitationCursor,
+                _residentialTaxPaidCents, _residentialTaxAssessedCents
             ],
             Populations = [_active, _maxActive, _minActive],
             Factors = [_windFactor, _waterRatio],
@@ -80,7 +81,7 @@ internal sealed partial class CausalCity
     {
         var state = JsonSerializer.Deserialize<Snapshot>(File.ReadAllText(path), SnapshotJson)
             ?? throw new InvalidDataException("Empty snapshot");
-        if ((state.Counters.Length != 37 && state.Counters.Length != 39 && state.Counters.Length != 40) || state.Populations.Length != 3 ||
+        if ((state.Counters.Length != 37 && state.Counters.Length != 39 && state.Counters.Length != 40 && state.Counters.Length != 42) || state.Populations.Length != 3 ||
             state.Factors.Length != 2 || state.Households.Length < 1 ||
             state.Shops.Length != StoreCount || state.Farms.Length != FarmCount ||
             state.Builder is null || state.ConstructionSites.Length != state.Households.Length ||
@@ -145,6 +146,11 @@ internal sealed partial class CausalCity
         }
         if (c.Length >= 40)
             city._fairSanitationCursor = (int)c[39];
+        if (c.Length >= 42)
+        {
+            city._residentialTaxPaidCents = c[40];
+            city._residentialTaxAssessedCents = c[41];
+        }
         city._active = state.Populations[0];
         city._maxActive = state.Populations[1];
         city._minActive = state.Populations[2];
