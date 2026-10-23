@@ -690,13 +690,13 @@ internal static class EngineSelfTest
                 freightCity.AssertConservation();
                 sequentialFreightHash = freightCity.Fingerprint();
                 using var report = JsonDocument.Parse(JsonSerializer.Serialize(freightCity.Report(0)));
-                var trips = report.RootElement.GetProperty("realWorkerFreightTrips").GetInt64();
-                if (trips <= 8L * sequentialFreightCfg.Days ||
+                var freightTrips = report.RootElement.GetProperty("realWorkerFreightTrips").GetInt64();
+                if (freightTrips <= 8L * sequentialFreightCfg.Days ||
                     report.RootElement.GetProperty("fuelConsumedByRealFreight").GetInt64() <= 0 ||
                     !report.RootElement.GetProperty("moneyConserved").GetBoolean() ||
                     !report.RootElement.GetProperty("foodConserved").GetBoolean())
                     throw new InvalidOperationException(
-                        $"Sequential real-truck freight insufficient or noncausal: trips={trips}");
+                        $"Sequential real-truck freight insufficient or noncausal: trips={freightTrips}");
             }
             using (var freightCity = new CausalCity(sequentialFreightCfg))
             {
