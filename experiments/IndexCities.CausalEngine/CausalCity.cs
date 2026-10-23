@@ -8,7 +8,7 @@ namespace IndexCities.CausalEngine;
 
 // Independent vertical-slice engine for falsifying the architecture.
 // RULES AND FIXTURES HERE ARE NOT AN IMPLEMENTATION OF ALL OF INDEXCITIES SPEC.
-internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false, bool RetailShopFallback = false, int RetailBasketsPerShift = 5, bool MunicipalSanitationPilot = false, int MunicipalCollectionIntervalDays = 6, bool MunicipalWasteTreatmentPilot = false, bool FairSanitationDispatch = false, bool AttendanceAwareMunicipalShifts = false);
+internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false, bool RetailShopFallback = false, int RetailBasketsPerShift = 5, bool MunicipalSanitationPilot = false, int MunicipalCollectionIntervalDays = 6, bool MunicipalWasteTreatmentPilot = false, bool FairSanitationDispatch = false, bool AttendanceAwareMunicipalShifts = false, bool TaxInclusiveProductPrice = false);
 internal enum EventKind : byte { Day, Hour, StartWork, EndWork, Move, Delivery, RoadClose, RoadOpen, HouseholdShop }
 internal readonly record struct SimEvent(EventKind Kind, int Id);
 internal sealed class Person
@@ -85,6 +85,8 @@ internal sealed class Firm
     // Exactly one checkout event is one physically arriving buyer with a basket.
     // Counters are observations, NOT payments, inventory or agent creation.
     public long MonthRetailBaskets, LifetimeRetailBaskets, LifetimeCheckoutCapacityDenied;
+    // Real taxes already debited from this business; accounting only.
+    public long MonthPropertyTaxActuallyPaidCents;
 }
 internal sealed class Trip
 {
@@ -585,7 +587,12 @@ internal sealed partial class CausalCity : IDisposable
                     var purchaseUnitCost = _config.FarmCostPricing && firm.MonthWholesaleBoughtUnits > 0
                         ? (firm.MonthWholesalePaidCents + firm.MonthWholesaleBoughtUnits - 1) / firm.MonthWholesaleBoughtUnits
                         : WholesalePrice;
-                    var normalUnitCost = purchaseUnitCost +
+                    var taxPerRetailUnit = _config.TaxInclusiveProductPrice
+                        ? (firm.MonthPropertyTaxActuallyPaidCents +
+                           Math.Max(1L, (long)_active * 30 / StoreCount) - 1) /
+                          Math.Max(1L, (long)_active * 30 / StoreCount)
+                        : 0L;
+                    var normalUnitCost = purchaseUnitCost + taxPerRetailUnit +
                         (_config.BasketRetailService
                             ? (wagePerShift + _config.RetailBasketsPerShift * 32 - 1) / (_config.RetailBasketsPerShift * 32)
                             : (wagePerShift + 4) / 5);
@@ -597,7 +604,8 @@ internal sealed partial class CausalCity : IDisposable
             }
             if (_config.FarmCostPricing && farm && firm.MonthFoodProduced > 0)
             {
-                var numerator = checked(firm.MonthFarmPaidWagesCents * 105);
+                var numerator = checked((firm.MonthFarmPaidWagesCents +
+                    (_config.TaxInclusiveProductPrice ? firm.MonthPropertyTaxActuallyPaidCents : 0)) * 105);
                 var denominator = checked(firm.MonthFoodProduced * 100);
                 var unitPrice = (numerator + denominator - 1) / denominator;
                 firm.FarmWholesaleUnitPriceCents = checked((int)Math.Clamp(unitPrice, 1, int.MaxValue));
@@ -665,6 +673,7 @@ internal sealed partial class CausalCity : IDisposable
             firm.MonthWholesaleSalesUnits = 0;
             firm.MonthWholesaleBoughtUnits = 0;
             firm.MonthWholesalePaidCents = 0;
+            firm.MonthPropertyTaxActuallyPaidCents = 0;
         }
         // Keep valid jobs before recruiting; losing sales may end a vacancy.
         // Changing an employer at midnight never materializes transportation
@@ -1574,7 +1583,7 @@ internal sealed partial class CausalCity : IDisposable
             Mix(p.ContributedDays); Mix(p.GrossEarnings); Mix(p.PensionCredit); Mix(p.PensionReceived);
         }
         foreach (var h in _households) { Mix(h.Pantry); Mix(h.Members.Count); Mix(h.LastBirthDay); Mix(h.LastShoppingDepartureDay); Mix(h.TrashUnits); Mix(h.LastSanitationBookedDay); Mix(h.LastSanitationServicedDay); }
-        foreach (var f in _shops) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); Mix(f.MonthRetailSalesUnits); Mix(f.MonthRetailPaidWagesCents); Mix(f.RetailUnitPriceCents); Mix(f.MonthFarmPaidWagesCents); Mix(f.MonthWholesaleSalesUnits); Mix(f.MonthWholesaleBoughtUnits); Mix(f.MonthWholesalePaidCents); Mix(f.FarmWholesaleUnitPriceCents); Mix(f.TodayCheckoutUnitsLeft); Mix(f.ReservedCheckoutWagesCents); Mix(f.MonthRetailBaskets); Mix(f.LifetimeRetailBaskets); Mix(f.LifetimeCheckoutCapacityDenied); }
+        foreach (var f in _shops) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); Mix(f.MonthRetailSalesUnits); Mix(f.MonthRetailPaidWagesCents); Mix(f.RetailUnitPriceCents); Mix(f.MonthFarmPaidWagesCents); Mix(f.MonthWholesaleSalesUnits); Mix(f.MonthWholesaleBoughtUnits); Mix(f.MonthWholesalePaidCents); Mix(f.FarmWholesaleUnitPriceCents); Mix(f.TodayCheckoutUnitsLeft); Mix(f.ReservedCheckoutWagesCents); Mix(f.MonthRetailBaskets); Mix(f.LifetimeRetailBaskets); Mix(f.LifetimeCheckoutCapacityDenied); Mix(f.MonthPropertyTaxActuallyPaidCents); }
         foreach (var f in _farms) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); }
         Mix(_builder.Cash); Mix(_builder.OfferedPositions); Mix(_builder.PresentWorkers);
         Mix(_outsideTimber); Mix(_constructionStarted); Mix(_constructionFinished); Mix(_constructionPaidShifts);
@@ -1666,6 +1675,7 @@ internal sealed partial class CausalCity : IDisposable
         retailAlternativePurchases = _people.Sum(p => p.RetailAlternativePurchases),
         retailAlternativeFailures = _people.Sum(p => p.RetailAlternativeFailures),
         municipalSanitationPilotFixture = _config.MunicipalSanitationPilot,
+        taxInclusiveProductPriceFixture = _config.TaxInclusiveProductPrice,
         municipalWasteTreatmentPilotFixture = _config.MunicipalWasteTreatmentPilot,
         fairSanitationDispatchFixture = _config.FairSanitationDispatch,
         attendanceAwareMunicipalShiftsFixture = _config.AttendanceAwareMunicipalShifts,
