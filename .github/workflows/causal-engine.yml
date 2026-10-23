@@ -2274,24 +2274,20 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Compile the guarded combined causal engine
         run: dotnet build experiments/IndexCities.CausalEngine -c Release
-      # Falsifiable LAB policy A/B only: same C# engine, seeds, 29,220 days,
-      # services, and municipal payroll reserve; change ONLY real monthly
-      # household property levy (150/300 cents), compared against the verified
-      # zero-tax control from CI #40005696147 without re-running it. No invented receipts:
-      # assessed-but-unpaid amounts are debts, not cash. The previous
-      # 600/1200-cent experiment removed pension arrears but reduced
-      # continuous population below 10k and created major household arrears.
-      # Test smaller rates to distinguish a fiscal/food affordability tradeoff.
-      # This is NOT a V1 policy, NOT an acceptance of fiscal solvency,
-      # and deliberately does NOT rewrite the 3/3 proven history files.
-      # Inspect tax collection, arrears, family survival, service shifts,
-      # ledger and unpaid pensions; negative outcomes are valid evidence.
+      # Fiscal diagnostic, not a new product policy: same 80-year engine,
+      # infrastructure, reserve and seeds. Only the actually collected monthly
+      # residential property levy varies (0/50/100 cents). The 0 baseline is
+      # re-executed on the same code SHA. Prior 150/300 and 600/1200 results
+      # remain recorded; do not rerun billions of factual history events.
+      # Separate real cash from assessed debt and examine late-year pensions,
+      # payroll, debtor owner liquidity and service work. Negative outcomes
+      # are evidence, not CI failure when conservation invariants hold.
       - name: Compare integrated fiscal levy A/B across three seeds without history I/O
         if: contains(github.event.head_commit.message, '[fiscal-tax-ab]')
         run: |
           set -euo pipefail
           BASE='--sims=10000 --days=29220 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25 --waste-treatment-units-per-shift=75 --integrated-v1-stress --eligible-birth-fallback --municipal-payroll-reserve-counterfactual'
-          for tax in 150 300; do
+          for tax in 0 50 100; do
             for seed in 42 73 101; do
               dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --seed=$seed --monthly-residential-tax-cents=$tax 2>&1 | tee "integrated-fiscal-tax-$tax-seed-$seed.log"
             done
@@ -2299,7 +2295,7 @@ jobs:
           python3 - <<'PY' | tee integrated-fiscal-tax-ab-summary.txt
           import json,re
           results={}
-          for tax in (150,300):
+          for tax in (0,50,100):
               for seed in (42,73,101):
                   lines=open(f'integrated-fiscal-tax-{tax}-seed-{seed}.log').readlines()
                   start=next(i for i,line in enumerate(lines) if line.startswith('{'))
@@ -2316,15 +2312,31 @@ jobs:
                   for line in lines:
                       if 'LAB_FISCAL day=' not in line: continue
                       fields={k:int(v) for k,v in re.findall(r'\b([A-Za-z]\w*)=(-?\d+)',line)}
-                      if fields.get('day') in (28855,29220): fiscal[fields['day']]=fields
-                  if len(fiscal)==2:
-                      a,b=fiscal[28855],fiscal[29220]
+                      if 'day' in fields: fiscal[fields['day']]=fields
+                  assert all(day in fiscal for day in (25550,25915,26280,26645,27010,27375,27740,28105,28470,28835,29200,28855,29220))
+                  for year in range(71,81):
+                      a,b=fiscal[365*(year-1)],fiscal[365*year]
                       revenue=sum(b[k]-a[k] for k in ('businessTaxPaidCents','residentialTaxPaidCents','pensionContributionsPaidCents'))
-                      paid=sum(b[k]-a[k] for k in ('municipalGrossPayrollCents','pensionsActuallyPaidCents'))
-                      assert revenue-paid==b['treasuryCents']-a['treasuryCents']
-                      print('FISCAL_TAX_LAST365',tax,seed,'revenue',revenue,'paid',paid,
-                            'pensionDebtChange',b['pensionCreditsOutstandingCents']-a['pensionCreditsOutstandingCents'],
-                            'treasuryChange',b['treasuryCents']-a['treasuryCents'],flush=True)
+                      payroll=b['municipalGrossPayrollCents']-a['municipalGrossPayrollCents']
+                      pensions=b['pensionsActuallyPaidCents']-a['pensionsActuallyPaidCents']
+                      assert revenue-payroll-pensions==b['treasuryCents']-a['treasuryCents']
+                      assert b['residentialTaxAssessedCents']-b['residentialTaxPaidCents']==b['residentialTaxDebtCents']
+                      print('FISCAL_TAX_365D_BLOCK',tax,seed,'block',year,
+                            'revenue',revenue,'payroll',payroll,'pensions',pensions,
+                            'treasuryChange',b['treasuryCents']-a['treasuryCents'],
+                            'treasuryEnd',b['treasuryCents'],'homeDebt',b['residentialTaxDebtCents'],
+                            'debtorHomes',b['residentialTaxDebtorHomes'],
+                            'debtorOwnerCash',b['residentialTaxDebtorOwnerCashCents'],
+                            'pensionEligible',b['pensionEligibleAlive'],
+                            'dailyPensionClaims',b['pensionNewClaimsDailyCents'],flush=True)
+                  a,b=fiscal[28855],fiscal[29220]
+                  revenue=sum(b[k]-a[k] for k in ('businessTaxPaidCents','residentialTaxPaidCents','pensionContributionsPaidCents'))
+                  paid=sum(b[k]-a[k] for k in ('municipalGrossPayrollCents','pensionsActuallyPaidCents'))
+                  assert revenue-paid==b['treasuryCents']-a['treasuryCents']
+                  print('FISCAL_TAX_LAST365',tax,seed,'revenue',revenue,'paid',paid,
+                        'pensionDebtChange',b['pensionCreditsOutstandingCents']-a['pensionCreditsOutstandingCents'],
+                        'homeDebtChange',b['residentialTaxDebtCents']-a['residentialTaxDebtCents'],
+                        'treasuryChange',b['treasuryCents']-a['treasuryCents'],flush=True)
                   print('FISCAL_TAX_80Y',tax,seed,'minAlive',r['minimumAliveAtAnyEvent'],
                         'aliveEnd',r['aliveEnd'],'wallSeconds',r['wallSeconds'],
                         'homeTaxAssessed',r['residentialTaxAssessedCents'],
@@ -2336,16 +2348,16 @@ jobs:
                         'noCashAdults',r['adultCitizensWithZeroCash'],
                         'deniedPurchases',r['deniedPurchases'],flush=True)
                   results[tax,seed]=r
-          # Deterministic no-tax control, verified in CI #40005696147 on the same engine SHA.
-          baseline={42:(10000,15653,76199732),73:(10000,15668,77381724),101:(10000,15309,60371943)}
-          for seed,(min0,end0,pension0) in baseline.items():
-              for tax in (150,300):
+          for seed in (42,73,101):
+              control=results[0,seed]
+              for tax in (50,100):
                   trial=results[tax,seed]
                   print('FISCAL_TAX_AB_DELTA',seed,tax,
-                        'minAliveChange',trial['minimumAliveAtAnyEvent']-min0,
-                        'endAliveChange',trial['aliveEnd']-end0,
-                        'pensionDebtChange',trial['unpaidPensionCreditsCents']-pension0,
-                        'homeTaxPaidChange',trial['residentialPropertyTaxActuallyPaidCents'],flush=True)
+                        'minAliveChange',trial['minimumAliveAtAnyEvent']-control['minimumAliveAtAnyEvent'],
+                        'endAliveChange',trial['aliveEnd']-control['aliveEnd'],
+                        'pensionDebtChange',trial['unpaidPensionCreditsCents']-control['unpaidPensionCreditsCents'],
+                        'homeDebtChange',trial['residentialPropertyTaxDebtOutstandingCents']-control['residentialPropertyTaxDebtOutstandingCents'],
+                        'homeTaxPaidChange',trial['residentialPropertyTaxActuallyPaidCents']-control['residentialPropertyTaxActuallyPaidCents'],flush=True)
           print('FISCAL_TAX_AB_COMPLETE no_history_files no_policy_approved',flush=True)
           PY
       - name: Test three continuous 80-year cities with staffed water, sewage, wind, fuel and paid home deeds

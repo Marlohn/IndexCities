@@ -380,6 +380,15 @@ internal sealed partial class CausalCity : IDisposable
             (_config.Days >= 29_220 && _days >= _config.Days - 730 && _days % 5 == 0)))
         {
             var pensionsPaid = _people.Sum(p => p.PensionReceived);
+            // Read-only diagnostics: debt is never treated as municipal cash.
+            var residentialDebt = _households.Sum(h => h.ResidentialPropertyTaxDebtCents);
+            var debtorHomes = _households.Count(h => h.ResidentialPropertyTaxDebtCents > 0);
+            var debtorOwnerCash = _households.Where(h => h.ResidentialPropertyTaxDebtCents > 0 &&
+                h.PropertyOwnerPersonId >= 0).Sum(h => _people[h.PropertyOwnerPersonId].Cash);
+            var pensionEligible = _people.Where(p => p.Alive && Age(p, date) >= 70 &&
+                p.ContributedDays >= 5 * 365).ToArray();
+            var pensionNewClaimsDaily = pensionEligible.Sum(p =>
+                Math.Min(80L, p.GrossEarnings * 4 / (5L * p.ContributedDays)));
             var expectedTreasury = checked(_municipalTaxPaidCents + _residentialTaxPaidCents +
                 _pensionContributionsPaidCents - _municipalWagesPaidCents - pensionsPaid);
             var collectionPayroll = _sanitationPaidVisits * SanitationGrossWage;
@@ -389,6 +398,9 @@ internal sealed partial class CausalCity : IDisposable
                 $"fiscalExpectedTreasuryCents={expectedTreasury} fiscalBalanced={expectedTreasury == _treasury} " +
                 $"pensionsActuallyPaidCents={pensionsPaid} " +
                 $"pensionCreditsOutstandingCents={_people.Sum(p => p.PensionCredit)} " +
+                $"pensionEligibleAlive={pensionEligible.Length} pensionNewClaimsDailyCents={pensionNewClaimsDaily} " +
+                $"residentialTaxAssessedCents={_residentialTaxAssessedCents} residentialTaxDebtCents={residentialDebt} " +
+                $"residentialTaxDebtorHomes={debtorHomes} residentialTaxDebtorOwnerCashCents={debtorOwnerCash} " +
                 $"contractPayrollReserveCents={MunicipalContractPayrollReserveCents(date)} " +
                 $"businessTaxPaidCents={_municipalTaxPaidCents} residentialTaxPaidCents={_residentialTaxPaidCents} " +
                 $"pensionContributionsPaidCents={_pensionContributionsPaidCents} " +
