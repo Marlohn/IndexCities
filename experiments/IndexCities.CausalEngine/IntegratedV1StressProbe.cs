@@ -74,6 +74,7 @@ internal sealed partial class CausalCity
             _potableWater--;
             _waterConsumed++;
             _sewage++;
+            person.Health = Math.Min(100, person.Health + 1);
             _history.Fact(_time, person.Id, 33, 1);
         }
         else
@@ -188,7 +189,7 @@ internal sealed partial class CausalCity
     {
         var farm = _farms[farmId];
         if (farm.TruckFuelOnOrder || _fuelStation.Stock < 80 ||
-            farm.Cash < 80L * FuelRetailPrice) return false;
+            _fuelStation.PresentWorkers <= 0 || farm.Cash < 80L * FuelRetailPrice) return false;
         // Fuel is sold by an actual company, from physical inventory; the
         // external delivery vehicle must drive from its stock to the farm.
         farm.Cash -= 80L * FuelRetailPrice;
