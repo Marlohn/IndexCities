@@ -343,6 +343,7 @@ internal sealed partial class CausalCity : IDisposable
         var day = _time / DaySeconds;
         _days++;
         var date = Epoch.AddDays(day);
+        if (_config.IntegratedV1Stress) RefreshIntegratedHourlyPower();
         // Observability only: monthly physical and fiscal bottlenecks around
         // late-generation collapses. No gameplay state or money is changed.
         if (_config.MunicipalSanitationPilot && _days % 30 == 0)
@@ -929,6 +930,7 @@ internal sealed partial class CausalCity : IDisposable
         _windFactor = Math.Clamp(.55 + .25 * Math.Sin(hour * 3600.0 / 21600 + _config.Seed) +
                                  .15 * Math.Sin(hour * 3600.0 / 172800 + _config.Seed * .3), .15, .95);
         _waterRatio = Math.Clamp((_windFactor - .15) / .55, 0, 1);
+        if (_config.IntegratedV1Stress) RefreshIntegratedHourlyPower();
         if (hour < (_config.Days * DaySeconds) / 3600)
             Schedule(_time + 3600, EventKind.Hour, 0);
     }
@@ -1681,6 +1683,7 @@ internal sealed partial class CausalCity : IDisposable
         Mix(_waterExtracted); Mix(_waterConsumed); Mix(_sewageProcessed); Mix(_powerGenerated);
         Mix(_fuelImported); Mix(_fuelBurned); Mix(_fuelInTransit); Mix(_fuelStation.Cash); Mix(_fuelStation.Stock);
         Mix(_fuelImportPending ? 1 : 0); Mix(_deedPaid);
+        Mix(_powerCurtailed); Mix(_lastPowerHour); Mix(_lastWindMaintainedDay);
         Mix(_garbageGenerated); Mix(_garbageCollected); Mix(_garbageAtDepot); Mix(_sanitationPaidVisits); Mix(_wasteTreated); Mix(_wasteTreatmentPaidShifts); Mix(_fairSanitationCursor); Mix(_garbageInTransit);
         foreach (var p in _people)
         {
@@ -1751,6 +1754,8 @@ internal sealed partial class CausalCity : IDisposable
         untreatedSewageStock = _sewage,
         sewagePhysicallyProcessed = _sewageProcessed,
         generatedWindElectricity = _powerGenerated,
+        windEnergyCurtailedWithoutBattery = _powerCurtailed,
+        currentHourUnspentPower = _energy,
         usedElectricity = _powerConsumed,
         unservedElectricity = _powerShortage,
         actualUtilityWorkShifts = _utilityShiftsPaid,
