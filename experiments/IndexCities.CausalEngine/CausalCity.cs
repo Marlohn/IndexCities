@@ -233,6 +233,8 @@ internal sealed partial class CausalCity : IDisposable
     private long _sequence, _time, _initialMoney, _treasury, _reserveGlobal;
     private long _days, _journeys, _segments, _waitSeconds, _sales, _shipments, _workdays;
     private long _births, _deaths, _unservedMeals, _paidWages, _unsatisfiedSales, _replans;
+    // Diagnostic counters only; never change the mortality rules.
+    private long _deathsWithCollapsedHealth, _deathsAtAgeLimit;
     private long _producedFood, _eatenFood, _initialFood;
     private long _paidFreightCents, _freightLaborTrips;
     private long _retailSalesCents;
@@ -495,6 +497,40 @@ internal sealed partial class CausalCity : IDisposable
             var t = NewTrip(-1, farm.Node, shop.Node, EventKind.Delivery, shopId, count);
             Schedule(_time + 4 * 3600, EventKind.Move, t.Id);
             _history.Fact(_time, -2000 - shopId, 9, count);
+        }
+        // Combined early-population diagnosis. No state, price or health changes.
+        if (_config.IntegratedV1Stress && (_days is 30 or 60 or 90 or 95 or 100
+            or 105 or 110 or 115 or 120 or 150 or 180))
+        {
+            var hungryHomes = _households.Count(h => h.Pantry == 0 &&
+                h.Members.Any(id => _people[id].Alive));
+            var hungryAffordable = _households.Count(h => h.Pantry == 0 &&
+                h.Members.Any(id => _people[id].Alive) &&
+                h.Members.Where(id => _people[id].Alive).Sum(id => _people[id].Cash) >=
+                    _shops[(h.Home + 1) % Nodes].RetailUnitPriceCents);
+            var hungryWithStoreFood = _households.Count(h => h.Pantry == 0 &&
+                h.Members.Any(id => _people[id].Alive) &&
+                _shops[(h.Home + 1) % Nodes].Stock > 0);
+            var potentialShoppers = _households.Count(h => h.Pantry < 30 &&
+                h.Members.Any(id => _people[id].Alive && Age(_people[id], date) >= 18 &&
+                    !_people[id].Traveling && _people[id].Node == h.Home));
+            Console.Error.WriteLine(
+                $"LAB_EARLY_CAUSAL day={_days} alive={_active} births={_births} deaths={_deaths} " +
+                $"healthDeaths={_deathsWithCollapsedHealth} ageDeaths={_deathsAtAgeLimit} " +
+                $"livingHealthLE10={_people.Count(p => p.Alive && p.Health <= 10)} " +
+                $"livingHealthLE50={_people.Count(p => p.Alive && p.Health <= 50)} " +
+                $"unservedMeals={_unservedMeals} deniedPurchases={_unsatisfiedSales} " +
+                $"hungryHomes={hungryHomes} hungryCanAfford={hungryAffordable} " +
+                $"hungryWithStoreStock={hungryWithStoreFood} potentialShopperHomes={potentialShoppers} " +
+                $"householdFood={_households.Sum(h => (long)h.Pantry)} " +
+                $"storeFood={_shops.Sum(s => (long)s.Stock)} farmFood={_farms.Sum(f => (long)f.Stock)} " +
+                $"storeNoStock={_shops.Count(s => s.Stock == 0)} " +
+                $"shopsNoStaff={_shops.Count(s => s.PresentWorkers == 0)} " +
+                $"storePriceMin={_shops.Min(s => s.RetailUnitPriceCents)} " +
+                $"storePriceMax={_shops.Max(s => s.RetailUnitPriceCents)} " +
+                $"retailSales={_sales} employedAdults={_people.Count(p => p.Alive && p.Job >= 0 && Age(p, date) >= 18)} " +
+                $"farmCash={_farms.Sum(f => f.Cash)} shopCash={_shops.Sum(s => s.Cash)} " +
+                $"citizenCash={_people.Sum(p => p.Cash)}");
         }
         _minActive = Math.Min(_minActive, _active);
         if (_days % 365 == 0)
@@ -969,6 +1005,9 @@ internal sealed partial class CausalCity : IDisposable
         if (_config.IntegratedV1Stress && p.FreightShift &&
             p.Job >= StoreCount && p.Job < StoreCount + FarmCount)
             _farms[p.Job - StoreCount].TruckBusy = false;
+        // Observability: diagnose whether early losses stem from health or age.
+        if (p.Health <= 0) _deathsWithCollapsedHealth++;
+        else _deathsAtAgeLimit++;
         p.Alive = false;
         _active--; _deaths++;
         // The 10k requirement is continuous. A death before the next daily
