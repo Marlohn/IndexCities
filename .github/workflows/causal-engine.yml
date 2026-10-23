@@ -300,7 +300,7 @@ jobs:
           dotnet build experiments/IndexCities.CausalEngine -c Release
           COMMON='--sims=10000 --days=3653 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot'
           dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $COMMON --seed=42 2>&1 | tee collection-only-42.log
-          for interval in 6 4; do
+          for interval in 3 2; do
             for seed in 42 73; do
               dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $COMMON --seed=$seed --municipal-collection-interval=$interval --municipal-waste-treatment-pilot 2>&1 | tee treatment-$interval-$seed.log
             done
@@ -315,7 +315,7 @@ jobs:
           assert baseline['moneyConserved'] and baseline['foodConserved']
           assert not baseline['municipalWasteTreatmentPilotFixture']
           good=[]
-          for interval in [6,4]:
+          for interval in [3,2]:
               survived=True
               for seed in [42,73]:
                   r=get(f'treatment-{interval}-{seed}.log')
