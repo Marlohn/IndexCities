@@ -212,6 +212,6 @@ public sealed partial class CitySimulation
             $"invalidationEdges={_e22EventEdges} queuesPrepared={_e22QueuesPrepared} " +
             $"queuesSlept={_e22QueuesSlept} groupedMembers={_e22GroupMembers} " +
             $"largestGroup={_e22GroupsMax} batchSeconds={F(_e22BatchPrepSeconds)} " +
-            $"subscriptionsRemaining={_e22Waits.Count} roadFlushes={_e23NetworkFlushes} flushedSubscribers={_e23SubscriptionsFlushed} roadGuardUntil={_e23RoadWakeUntil:F0}";
+            $"subscriptionsRemaining={_e22Waits.Count} roadFlushes={_e23NetworkFlushes} flushedSubscribers={_e23SubscriptionsFlushed} roadGuardUntil={_e23RoadWakeUntil:F0} flushWithoutPause={E24FlushWithoutPause}";
     }
 }
