@@ -970,7 +970,11 @@ internal sealed partial class CausalCity : IDisposable
         var family = _households[p.HouseholdId];
         var heir = family.Members.Select(id => _people[id]).FirstOrDefault(x => x.Alive);
         if ((_config.MonthlyResidentialTaxCents > 0 || _config.IntegratedV1Stress) && family.PropertyOwnerPersonId == p.Id)
+        {
             family.PropertyOwnerPersonId = heir?.Id ?? -1;
+            if (_config.IntegratedV1Stress && heir is not null)
+                _history.Fact(_time, heir.Id, 45, p.Id);
+        }
         if (heir is null)
         {
             // SPEC: unclaimed private money goes to the GLOBAL RESERVE,
@@ -1298,6 +1302,7 @@ internal sealed partial class CausalCity : IDisposable
         if (trip.ExitAt != 0)
         {
             if (_time != trip.ExitAt) throw new InvalidOperationException("Out-of-order lane completion");
+            if (trip.OwnerId >= 0) BurnTruckFuelForSegment(_people[trip.OwnerId]);
             trip.CurrentNode = trip.To;
             trip.ExitAt = 0;
             if (trip.OwnerId >= 0) _people[trip.OwnerId].Node = trip.To;
@@ -1325,7 +1330,6 @@ internal sealed partial class CausalCity : IDisposable
             _waitSeconds += 30;
             return;
         }
-        if (trip.OwnerId >= 0) BurnTruckFuelForSegment(_people[trip.OwnerId]);
         var edge = Edge(trip.CurrentNode, next);
         var entry = Math.Max(_time, _laneNextEntry[edge]);
         // Reserve receiving junction and the lane *before* departure. Avoid
