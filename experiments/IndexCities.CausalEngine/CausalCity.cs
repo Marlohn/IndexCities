@@ -371,6 +371,19 @@ internal sealed partial class CausalCity : IDisposable
                 $"paidCollections={_sanitationPaidVisits} treatmentShifts={_wasteTreatmentPaidShifts} " +
                 $"businessTaxPaid={_municipalTaxPaidCents} residentialTaxPaid={_residentialTaxPaidCents} " +
                 $"municipalWages={_municipalWagesPaidCents}");
+        // Annual read-only municipal financing audit for the integrated
+        // laboratory. Values are cumulative real transfers; pensions are
+        // reconstructed from recipients, including deceased recipients.
+        // This does not assert that sanitation wages include utility payroll.
+        if (_config.IntegratedV1Stress && (_days % 365 == 0 || _days == _config.Days))
+            Console.Error.WriteLine(
+                $"LAB_FISCAL day={_days} alive={_active} treasuryCents={_treasury} " +
+                $"pensionsActuallyPaidCents={_people.Sum(p => p.PensionReceived)} " +
+                $"pensionCreditsOutstandingCents={_people.Sum(p => p.PensionCredit)} " +
+                $"businessTaxPaidCents={_municipalTaxPaidCents} residentialTaxPaidCents={_residentialTaxPaidCents} " +
+                $"sanitationWagesPaidCents={_municipalWagesPaidCents} " +
+                $"paidCollections={_sanitationPaidVisits} treatmentShifts={_wasteTreatmentPaidShifts} " +
+                $"livingMunicipalServiceWorkers={_people.Count(p => p.Alive && (p.Job == SanitationJob || p.Job == WasteTreatmentJob))}");
         if (_config.WageFeedback && !_config.DemandStaffing)
         {
             // Hypothetical stress fixture, NOT a new IndexCities wage policy:
