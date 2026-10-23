@@ -2156,3 +2156,53 @@ jobs:
           name: paid-backlog-recovery-80y-controls
           path: backlog-*-80y.log
           if-no-files-found: ignore
+
+
+  treatment-vs-homeowner-independent-80y:
+    # Robustness test for the two separate observed physical economic fixes:
+    # 75 paid treatment units/shift, versus actual home tax revenue at 150c.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[cross-mechanism-seeds]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compare two distinct populations in three independent 80-year treatments
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          BASE='--sims=10000 --days=29220 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25 --waste-treatment-units-per-shift=75'
+          for seed in 42 73 101; do
+            for tax in 0 150; do
+              dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --seed=$seed --monthly-residential-tax-cents=$tax 2>&1 | tee cross-mechanism-seed$seed-tax$tax-80y.log
+            done
+          done
+          python3 - <<'PY'
+          import json
+          for seed in (42,73,101):
+              for tax in (0,150):
+                  path=f'cross-mechanism-seed{seed}-tax{tax}-80y.log'
+                  lines=open(path).readlines()
+                  i=next(i for i,v in enumerate(lines) if v.startswith('{'))
+                  d=json.loads(''.join(lines[i:]))
+                  assert d['simulatedDays']==29220
+                  assert d['moneyConserved'] and d['foodConserved'] and d['materialConserved']
+                  assert d['wasteTreatmentUnitsPerPaidShift']==75
+                  assert d['monthlyResidentialPropertyTaxCents']==tax
+                  assert d['residentialTaxAssessedCents']==d['residentialPropertyTaxActuallyPaidCents']+d['residentialPropertyTaxDebtOutstandingCents']
+                  assert not d['fullIndexCitiesTargetValidated']
+                  print('CROSS_MECHANISM_80Y',seed,'homeTaxCents',tax,
+                        'end',d['aliveEnd'],'minimum',d['minimumAliveAtAnyEvent'],
+                        'wasteProcessed',d['wasteTreatedAtDepot'],
+                        'treasury',d['treasuryCashCents'],'wages',d['municipalSanitationWagesPaidCents'],
+                        'wallSeconds',d['wallSeconds'],flush=True)
+          PY
+      - name: Preserve independent 80-year economic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: physical-treatment-residential-tax-robustness
+          path: cross-mechanism-*-80y.log
+          if-no-files-found: ignore
