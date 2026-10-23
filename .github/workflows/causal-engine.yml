@@ -351,6 +351,85 @@ jobs:
             full-real-municipal-80y.facts.gz
           if-no-files-found: ignore
 
+  residential-real-property-revenue-80y:
+    # The same real residents own the same existing houses. Only the
+    # actual monthly property tax amount changes (0/50/150/300 cents).
+    # Assessed-but-unpaid obligations never count as income. All other
+    # workers, taxpayers, food, firms and service jobs are held fixed.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[residential-tax-multi-seed]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Run two 10-year worlds per actual-home tax and continue qualifying cases to 80 years
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          BASE='--sims=10000 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25'
+          for tax in 0 50 150 300; do
+            for seed in 42 73; do
+              dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --days=3653 --seed=$seed --monthly-residential-tax-cents=$tax 2>&1 | tee residential-tax-$tax-seed$seed-10y.log
+            done
+          done
+          python3 - <<'PY'
+          import json
+          rows={}
+          for tax in (0,50,150,300):
+              for seed in (42,73):
+                  raw=open(f'residential-tax-{tax}-seed{seed}-10y.log').readlines()
+                  k=next(i for i,s in enumerate(raw) if s.startswith('{'))
+                  r=json.loads(''.join(raw[k:]))
+                  assert r['simulatedDays']==3653 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+                  assert r['monthlyResidentialPropertyTaxCents']==tax
+                  assert r['residentialTaxAssessedCents']==r['residentialPropertyTaxActuallyPaidCents']+r['residentialPropertyTaxDebtOutstandingCents']
+                  assert not r['fullIndexCitiesTargetValidated']
+                  if tax: assert r['residentialPropertyTaxActuallyPaidCents']>0 and r['privateOwnedResidenceCount']>0
+                  print('REAL_HOME_TAX_10Y',tax,seed,'alive',r['aliveEnd'],
+                        'min',r['minimumAliveAtAnyEvent'],
+                        'homeTaxesActuallyPaid',r['residentialPropertyTaxActuallyPaidCents'],
+                        'homeTaxDebtUnpaid',r['residentialPropertyTaxDebtOutstandingCents'],
+                        'cityCash',r['treasuryCashCents'],
+                        'householdMoney',r['personalCashCents'],
+                        'firmMoney',r['businessCurrentCashCents'],
+                        'unmetMeals',r['unmetMeals'],flush=True)
+                  rows[tax,seed]=r
+          valid=[tax for tax in (0,50,150,300)
+                 if all(rows[tax,seed]['minimumAliveAtAnyEvent']>=10000 for seed in (42,73))]
+          open('residential-qualified.txt','w').write(' '.join(map(str,valid)))
+          PY
+          for tax in $(cat residential-qualified.txt); do
+            echo "EIGHTY_YEAR_RESIDENTIAL_TRIAL tax=$tax, 10000 minimum required for all 29,220 days."
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --days=29220 --seed=42 --monthly-residential-tax-cents=$tax 2>&1 | tee residential-tax-$tax-80y-no-history.log
+          done
+          python3 - <<'PY'
+          import glob,json
+          for file in sorted(glob.glob('residential-tax-*-80y-no-history.log')):
+              raw=open(file).readlines()
+              k=next(i for i,s in enumerate(raw) if s.startswith('{'))
+              r=json.loads(''.join(raw[k:]))
+              assert r['simulatedDays']==29220 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+              assert not r['fullIndexCitiesTargetValidated']
+              print('REAL_HOME_TAX_80Y',r['monthlyResidentialPropertyTaxCents'],
+                    'alive',r['aliveEnd'],'min',r['minimumAliveAtAnyEvent'],
+                    'paid',r['residentialPropertyTaxActuallyPaidCents'],
+                    'unpaidDebt',r['residentialPropertyTaxDebtOutstandingCents'],
+                    'municipalCash',r['treasuryCashCents'],
+                    'companyCash',r['businessCurrentCashCents'],
+                    'householdCash',r['personalCashCents'],
+                    'wallSeconds',r['wallSeconds'],flush=True)
+          PY
+      - name: Keep raw comparison reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: municipal-residential-property-tax-two-seed-eighty-year
+          path: |
+            residential-tax-*.log
+          if-no-files-found: ignore
+
   tax-cost-incidence-sensitivity:
     # Every firm pays exactly the SAME real municipal property tax. Only
     # its ability to recover 25/50/75% of those costs via genuine retail
