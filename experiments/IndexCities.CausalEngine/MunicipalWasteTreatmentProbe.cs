@@ -10,7 +10,6 @@ internal sealed partial class CausalCity
 {
     private const int WasteTreatmentJob = SanitationJob + 1;
     private const int WasteTreatmentGrossWage = 80;
-    private const int WasteTreatmentUnitsPerShift = 50;
     private const int MaxWasteTreatmentWorkers = 256;
     // A physical, finite landfill compartment, not an infinite sink. Both
     // raw and processed waste remain present in auditable inventories.
@@ -32,7 +31,7 @@ internal sealed partial class CausalCity
 
         // Only ACTUALLY DEPOSITED refuse exists at the treatment plant;
         // refuse still carried by collection workers is not processed.
-        var amount = Math.Min(WasteTreatmentUnitsPerShift,
+        var amount = Math.Min(_config.WasteTreatmentUnitsPerShift,
             Math.Min(_garbageAtDepot, TreatedLandfillCapacity - _wasteTreated));
         _garbageAtDepot -= amount;
         _wasteTreated += amount;

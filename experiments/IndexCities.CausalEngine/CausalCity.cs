@@ -8,7 +8,7 @@ namespace IndexCities.CausalEngine;
 
 // Independent vertical-slice engine for falsifying the architecture.
 // RULES AND FIXTURES HERE ARE NOT AN IMPLEMENTATION OF ALL OF INDEXCITIES SPEC.
-internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false, bool RetailShopFallback = false, int RetailBasketsPerShift = 5, bool MunicipalSanitationPilot = false, int MunicipalCollectionIntervalDays = 6, bool MunicipalWasteTreatmentPilot = false, bool FairSanitationDispatch = false, bool AttendanceAwareMunicipalShifts = false, bool TaxInclusiveProductPrice = false, int TaxCostRecoveryPercent = 100, int MonthlyResidentialTaxCents = 0);
+internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false, bool RetailShopFallback = false, int RetailBasketsPerShift = 5, bool MunicipalSanitationPilot = false, int MunicipalCollectionIntervalDays = 6, bool MunicipalWasteTreatmentPilot = false, bool FairSanitationDispatch = false, bool AttendanceAwareMunicipalShifts = false, bool TaxInclusiveProductPrice = false, int TaxCostRecoveryPercent = 100, int MonthlyResidentialTaxCents = 0, int WasteTreatmentUnitsPerShift = 50);
 internal enum EventKind : byte { Day, Hour, StartWork, EndWork, Move, Delivery, RoadClose, RoadOpen, HouseholdShop }
 internal readonly record struct SimEvent(EventKind Kind, int Id);
 internal sealed class Person
@@ -553,8 +553,8 @@ internal sealed partial class CausalCity : IDisposable
                 // use ONLY the municipal cash left after collection contracts.
                 var neededWaste = (long)_active * 30;
                 var demanded = (int)Math.Min(MaxWasteTreatmentWorkers,
-                    (neededWaste + WasteTreatmentUnitsPerShift * 26 - 1) /
-                    (WasteTreatmentUnitsPerShift * 26));
+                    (neededWaste + _config.WasteTreatmentUnitsPerShift * 26 - 1) /
+                    (_config.WasteTreatmentUnitsPerShift * 26));
                 positions[i] = (int)Math.Min(demanded,
                     municipalPayrollBudget / (WasteTreatmentGrossWage * municipalPaidShiftDays));
                 municipalPayrollBudget -= positions[i] * WasteTreatmentGrossWage * municipalPaidShiftDays;
@@ -1721,6 +1721,7 @@ internal sealed partial class CausalCity : IDisposable
             h.Members.Any(id => _people[id].Alive) &&
             _days - h.LastSanitationServicedDay > 15),
         wasteTreatedAtDepot = _wasteTreated,
+        wasteTreatmentUnitsPerPaidShift = _config.WasteTreatmentUnitsPerShift,
         paidWasteTreatmentShifts = _wasteTreatmentPaidShifts,
         municipalWasteTreatmentJobs = _people.Count(p => p.Alive && p.Job == WasteTreatmentJob),
         municipalCollectionIntervalDays = _config.MunicipalCollectionIntervalDays,

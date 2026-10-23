@@ -1848,3 +1848,91 @@ jobs:
           name: economic-decade-diagnostic
           path: economic-decade.log
           if-no-files-found: ignore
+
+
+  treatment-throughput-causal-sweep:
+    # Experiment only: no invented workers, payments or processed inventory.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[treatment-throughput-sweep]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compare three paid and capacity-bounded treatments in two real 10y populations
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          BASE='--sims=10000 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25'
+          for throughput in 50 75 100; do
+            for seed in 42 73; do
+              dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --days=3653 --seed=$seed --waste-treatment-units-per-shift=$throughput 2>&1 | tee treatment-$throughput-$seed-10y.log
+            done
+          done
+          python3 - <<'PY'
+          import json
+          qualified=[]
+          for n in (50,75,100):
+              minima=[]
+              for seed in (42,73):
+                  lines=open(f'treatment-{n}-{seed}-10y.log').readlines()
+                  start=next(i for i,v in enumerate(lines) if v.startswith('{'))
+                  d=json.loads(''.join(lines[start:]))
+                  assert d['simulatedDays']==3653 and d['wasteTreatmentUnitsPerPaidShift']==n
+                  assert d['moneyConserved'] and d['foodConserved'] and d['materialConserved']
+                  assert not d['fullIndexCitiesTargetValidated']
+                  minima.append(d['minimumAliveAtAnyEvent'])
+                  print('TREATMENT_10Y',n,seed,'end',d['aliveEnd'],'min',minima[-1],'treated',d['wasteTreatedAtDepot'],'raw',d['wasteStoredAtRealDepot'],'shifts',d['paidWasteTreatmentShifts'],flush=True)
+              if min(minima)>=10000: qualified.append(n)
+          open('treatment-candidates.txt','w').write(' '.join(map(str,qualified)))
+          PY
+      - name: Stress each qualifying treatment for all 29,220 actual days and inspect monthly material bottlenecks
+        run: |
+          set -o pipefail
+          BASE='--sims=10000 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25'
+          for throughput in $(cat treatment-candidates.txt); do
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --days=29220 --seed=42 --waste-treatment-units-per-shift=$throughput 2>&1 | tee treatment-$throughput-42-80y.log
+          done
+          python3 - <<'PY'
+          import glob,json
+          qualified=[]
+          for path in sorted(glob.glob('treatment-*-42-80y.log')):
+              lines=open(path).readlines()
+              i=next(j for j,v in enumerate(lines) if v.startswith('{'))
+              d=json.loads(''.join(lines[i:]))
+              assert d['simulatedDays']==29220 and d['moneyConserved'] and d['foodConserved'] and d['materialConserved']
+              n=d['wasteTreatmentUnitsPerPaidShift']
+              samples=[v for v in lines if v.startswith('LAB_WASTE_AUDIT ')]
+              worst=max((int(v.split('dirtyHomes=')[1].split()[0]) for v in samples),default=0)
+              print('TREATMENT_80Y',n,'end',d['aliveEnd'],'min',d['minimumAliveAtAnyEvent'],'worstDirtyHomes',worst,'raw',d['wasteStoredAtRealDepot'],'treated',d['wasteTreatedAtDepot'],'wall',d['wallSeconds'],flush=True)
+              if d['minimumAliveAtAnyEvent']>=10000: qualified.append(n)
+          open('treatment-80y-qualified.txt','w').write(' '.join(map(str,qualified)))
+          PY
+      - name: Persist full eighty-year fact history only for a real survivor
+        run: |
+          set -o pipefail
+          BASE='--sims=10000 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25'
+          for throughput in $(cat treatment-80y-qualified.txt); do
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --days=29220 --seed=42 --waste-treatment-units-per-shift=$throughput --history=treatment-80y-facts.gz 2>&1 | tee treatment-$throughput-42-80y-persisted.log
+            python3 - "$throughput" <<'PY'
+          import json,sys
+          n=int(sys.argv[1])
+          rows=open(f'treatment-{n}-42-80y-persisted.log').readlines()
+          i=next(i for i,v in enumerate(rows) if v.startswith('{'))
+          d=json.loads(''.join(rows[i:]))
+          assert d['simulatedDays']==29220 and d['minimumAliveAtAnyEvent']>=10000
+          assert d['historyPersistent'] and d['moneyConserved'] and d['foodConserved'] and d['materialConserved']
+          print('TREATMENT_PERSISTED_80Y',n,d['minimumAliveAtAnyEvent'],d['historyFacts'],d['wallSeconds'],flush=True)
+          PY
+          done
+      - name: Archive all results even for negative experiments
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: treatment-throughput-80y-causal-comparison
+          path: |
+            treatment-*.log
+            treatment-candidates.txt
+            treatment-80y-qualified.txt
+          if-no-files-found: ignore
