@@ -939,11 +939,16 @@ internal sealed partial class CausalCity : IDisposable
     }
     private void Die(Person p)
     {
+        if (_config.IntegratedV1Stress && p.AtWork && p.Job >= IntakeJob && p.Job <= FuelStationJob)
+        {
+            if (p.Job == FuelStationJob) _fuelStation.PresentWorkers--;
+            p.AtWork = false;
+        }
         if (_config.MunicipalWasteTreatmentPilot && p.Job == WasteTreatmentJob && p.AtWork)
             p.AtWork = false;
         if (_config.MunicipalSanitationPilot && p.Job == SanitationJob && p.AtWork)
             p.AtWork = false; // No private-firm presence for municipal employees.
-        if (_config.VacancyMarket && p.AtWork && p.Job >= 0)
+        if (_config.VacancyMarket && p.AtWork && p.Job >= 0 && p.Job <= BuilderJob)
         {
             var current = p.Job == BuilderJob ? _builder :
                 p.Job < StoreCount ? _shops[p.Job] : _farms[p.Job - StoreCount];
@@ -952,6 +957,9 @@ internal sealed partial class CausalCity : IDisposable
                 current.ReservedCheckoutWagesCents -= 65;
             p.AtWork = false;
         }
+        if (_config.IntegratedV1Stress && p.FreightShift &&
+            p.Job >= StoreCount && p.Job < StoreCount + FarmCount)
+            _farms[p.Job - StoreCount].TruckBusy = false;
         p.Alive = false;
         _active--; _deaths++;
         // The 10k requirement is continuous. A death before the next daily
@@ -959,7 +967,7 @@ internal sealed partial class CausalCity : IDisposable
         _minActive = Math.Min(_minActive, _active);
         var family = _households[p.HouseholdId];
         var heir = family.Members.Select(id => _people[id]).FirstOrDefault(x => x.Alive);
-        if (_config.MonthlyResidentialTaxCents > 0 && family.PropertyOwnerPersonId == p.Id)
+        if ((_config.MonthlyResidentialTaxCents > 0 || _config.IntegratedV1Stress) && family.PropertyOwnerPersonId == p.Id)
             family.PropertyOwnerPersonId = heir?.Id ?? -1;
         if (heir is null)
         {
@@ -1682,8 +1690,8 @@ internal sealed partial class CausalCity : IDisposable
             Mix(p.ContributedDays); Mix(p.GrossEarnings); Mix(p.PensionCredit); Mix(p.PensionReceived);
         }
         foreach (var h in _households) { Mix(h.Pantry); Mix(h.Members.Count); Mix(h.LastBirthDay); Mix(h.LastShoppingDepartureDay); Mix(h.TrashUnits); Mix(h.LastSanitationBookedDay); Mix(h.LastSanitationServicedDay); Mix(h.PropertyOwnerPersonId); Mix(h.ResidentialPropertyTaxDebtCents); }
-        foreach (var f in _shops) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); Mix(f.MonthRetailSalesUnits); Mix(f.MonthRetailPaidWagesCents); Mix(f.RetailUnitPriceCents); Mix(f.MonthFarmPaidWagesCents); Mix(f.MonthWholesaleSalesUnits); Mix(f.MonthWholesaleBoughtUnits); Mix(f.MonthWholesalePaidCents); Mix(f.FarmWholesaleUnitPriceCents); Mix(f.TruckFuelUnits); Mix(f.TruckBusy ? 1 : 0); Mix(f.FuelOnOrder ? 1 : 0); Mix(f.TodayCheckoutUnitsLeft); Mix(f.ReservedCheckoutWagesCents); Mix(f.MonthRetailBaskets); Mix(f.LifetimeRetailBaskets); Mix(f.LifetimeCheckoutCapacityDenied); Mix(f.MonthPropertyTaxActuallyPaidCents); }
-        foreach (var f in _farms) { Mix(f.TruckFuelUnits); Mix(f.TruckBusy ? 1 : 0); Mix(f.FuelOnOrder ? 1 : 0); Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); }
+        foreach (var f in _shops) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); Mix(f.MonthRetailSalesUnits); Mix(f.MonthRetailPaidWagesCents); Mix(f.RetailUnitPriceCents); Mix(f.MonthFarmPaidWagesCents); Mix(f.MonthWholesaleSalesUnits); Mix(f.MonthWholesaleBoughtUnits); Mix(f.MonthWholesalePaidCents); Mix(f.FarmWholesaleUnitPriceCents); Mix(f.TruckFuelUnits); Mix(f.TruckBusy ? 1 : 0); Mix(f.TruckFuelOnOrder ? 1 : 0); Mix(f.TodayCheckoutUnitsLeft); Mix(f.ReservedCheckoutWagesCents); Mix(f.MonthRetailBaskets); Mix(f.LifetimeRetailBaskets); Mix(f.LifetimeCheckoutCapacityDenied); Mix(f.MonthPropertyTaxActuallyPaidCents); }
+        foreach (var f in _farms) { Mix(f.TruckFuelUnits); Mix(f.TruckBusy ? 1 : 0); Mix(f.TruckFuelOnOrder ? 1 : 0); Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); }
         Mix(_builder.Cash); Mix(_builder.OfferedPositions); Mix(_builder.PresentWorkers);
         Mix(_outsideTimber); Mix(_constructionStarted); Mix(_constructionFinished); Mix(_constructionPaidShifts);
         foreach (var site in _construction)
