@@ -102,14 +102,20 @@ internal sealed partial class CausalCity
         else
         {
             _waterShortage++;
+            _history.Fact(_time, person.Id, 43, 1);
             person.Health = Math.Max(0, person.Health - 1);
         }
         if (_energy > 0)
         {
             _energy--;
             _powerConsumed++;
+            _history.Fact(_time, person.Id, 41, 1);
         }
-        else _powerShortage++;
+        else
+        {
+            _powerShortage++;
+            _history.Fact(_time, person.Id, 42, 1);
+        }
         if (person.Health <= 0 && person.Alive) Die(person);
     }
 
@@ -191,7 +197,6 @@ internal sealed partial class CausalCity
         var delivery = NewTrip(-1, 0, FuelStationNode, EventKind.Delivery,
             FuelImportPayload, FuelImportBatch);
         _fuelInTransit += FuelImportBatch;
-        _fuelImported += FuelImportBatch;
         Schedule(_time + 1, EventKind.Move, delivery.Id);
         _history.Fact(_time, -7000, 34, FuelImportBatch);
     }
@@ -202,6 +207,7 @@ internal sealed partial class CausalCity
             throw new InvalidOperationException("Unordered or imaginary imported fuel");
         _fuelStation.Stock += trip.Cargo;
         _fuelInTransit -= trip.Cargo;
+        _fuelImported += trip.Cargo;
         _fuelImportPending = false;
         _history.Fact(_time, -7000, 35, trip.Cargo);
     }
@@ -260,6 +266,7 @@ internal sealed partial class CausalCity
             throw new InvalidOperationException("Moving a freight truck without real fuel");
         farm.TruckFuelUnits--;
         _fuelBurned++;
+        _history.Fact(_time, driver.Id, 44, 1);
     }
 
     private void AssertIntegratedConservation()
@@ -271,7 +278,8 @@ internal sealed partial class CausalCity
             _waterExtracted != _rawWater + _potableWater + _waterConsumed ||
             _waterConsumed != _sewage + _sewageProcessed ||
             _powerGenerated != _energy + _powerConsumed + _powerCurtailed ||
-            _fuelImported != _fuelStation.Stock + _fuelInTransit +
+            _fuelImported + (_fuelImportPending ? FuelImportBatch : 0) !=
+                _fuelStation.Stock + _fuelInTransit +
                 _farms.Sum(f => f.TruckFuelUnits) + _fuelBurned ||
             _fuelStation.Stock < 0 || _fuelStation.Cash < 0 || _fuelInTransit < 0 ||
             _fuelStation.PresentWorkers != _people.Count(p => p.Alive &&
