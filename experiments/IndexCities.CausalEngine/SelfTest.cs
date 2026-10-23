@@ -507,6 +507,34 @@ internal static class EngineSelfTest
                     throw new InvalidOperationException("Depot inventory or wages changed after checkpoint");
             }
             File.Delete(treatmentSave);
+            // A round-robin picker must not re-book the same material twice;
+            // its cursor and actual service-date history survive checkpoints.
+            var fairCollectionCfg = treatmentConfig with { FairSanitationDispatch = true };
+            var fairCollectionSave = temp + ".fair-collection.save.json";
+            string fairCollectionHash;
+            using (var fairCollection = new CausalCity(fairCollectionCfg))
+            {
+                fairCollection.Run();
+                fairCollection.AssertConservation();
+                fairCollectionHash = fairCollection.Fingerprint();
+                using var json = JsonDocument.Parse(JsonSerializer.Serialize(fairCollection.Report(0)));
+                if (!json.RootElement.GetProperty("fairSanitationDispatchFixture").GetBoolean() ||
+                    json.RootElement.GetProperty("municipalPaidCollections").GetInt64() <= 0)
+                    throw new InvalidOperationException("Actual fair collection never served real homes");
+            }
+            using (var partialFairCollection = new CausalCity(fairCollectionCfg))
+            {
+                partialFairCollection.RunUntilDay(111);
+                partialFairCollection.SaveSnapshot(fairCollectionSave);
+            }
+            using (var resumedFairCollection = CausalCity.FromSnapshot(fairCollectionSave))
+            {
+                resumedFairCollection.Run();
+                resumedFairCollection.AssertConservation();
+                if (resumedFairCollection.Fingerprint() != fairCollectionHash)
+                    throw new InvalidOperationException("Physical home coverage changed after save/resume");
+            }
+            File.Delete(fairCollectionSave);
             // Small closed-household stress case: when the final family
             // member dies, a positive estate must NOT finance city pensions.
             long unclaimedEstate;
@@ -535,6 +563,7 @@ internal static class EngineSelfTest
                 alternativeRetailRouteSaveResumeExact = true,
                 municipalCashTaxWasteAndJobsSaveResumeExact = true, municipalVisits,
                 municipalWasteTreatmentSavedExactly = true, treatmentShifts,
+                fairHouseholdSanitationDispatchSaveResumeExact = true,
                 realFreightSaveResumeExact = true, freightJourneys, freightCharges,
                 buildingMaterialAndPayrollConserved = true, buildingPaidShifts = builtShifts,
                 saveResumeExact = resumedHash == hashA,
@@ -554,7 +583,7 @@ internal static class EngineSelfTest
         }
         finally
         {
-            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json", temp + ".construction.save.json", temp + ".cost-price.save.json", temp + ".checkout.save.json", temp + ".basket.save.json", temp + ".fallback.save.json", temp + ".municipal.save.json", temp + ".treatment.save.json" })
+            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json", temp + ".construction.save.json", temp + ".cost-price.save.json", temp + ".checkout.save.json", temp + ".basket.save.json", temp + ".fallback.save.json", temp + ".municipal.save.json", temp + ".treatment.save.json", temp + ".fair-collection.save.json" })
                 if (File.Exists(path)) File.Delete(path);
         }
     }
