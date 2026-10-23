@@ -571,6 +571,39 @@ internal static class EngineSelfTest
                     throw new InvalidOperationException("Real company tax price and snapshot differ");
             }
             File.Delete(taxPriceSave);
+            // Real private ownership: assess a physical home to one actual
+            // living adult. Only cash paid enters the city; unpaid debt stays
+            // with that same physical asset through the exact checkpoint.
+            var homeTaxCfg = treatmentConfig with { MonthlyResidentialTaxCents = 250 };
+            var homeTaxSave = temp + ".home-tax.save.json";
+            string homeTaxHash;
+            using (var fullTaxedHomes = new CausalCity(homeTaxCfg))
+            {
+                fullTaxedHomes.Run();
+                fullTaxedHomes.AssertConservation();
+                homeTaxHash = fullTaxedHomes.Fingerprint();
+                using var d = JsonDocument.Parse(JsonSerializer.Serialize(fullTaxedHomes.Report(0)));
+                var rep = d.RootElement;
+                if (rep.GetProperty("privateOwnedResidenceCount").GetInt32() <= 0 ||
+                    rep.GetProperty("residentialPropertyTaxActuallyPaidCents").GetInt64() <= 0 ||
+                    rep.GetProperty("residentialTaxAssessedCents").GetInt64() !=
+                    rep.GetProperty("residentialPropertyTaxActuallyPaidCents").GetInt64() +
+                    rep.GetProperty("residentialPropertyTaxDebtOutstandingCents").GetInt64())
+                    throw new InvalidOperationException("Physical home ownership and real taxes diverged");
+            }
+            using (var initialHomeTaxes = new CausalCity(homeTaxCfg))
+            {
+                initialHomeTaxes.RunUntilDay(111);
+                initialHomeTaxes.SaveSnapshot(homeTaxSave);
+            }
+            using (var continuingHomeTaxes = CausalCity.FromSnapshot(homeTaxSave))
+            {
+                continuingHomeTaxes.Run();
+                continuingHomeTaxes.AssertConservation();
+                if (continuingHomeTaxes.Fingerprint() != homeTaxHash)
+                    throw new InvalidOperationException("Private household title/tax/debt changed after resume");
+            }
+            File.Delete(homeTaxSave);
             // Small closed-household stress case: when the final family
             // member dies, a positive estate must NOT finance city pensions.
             long unclaimedEstate;
@@ -598,6 +631,7 @@ internal static class EngineSelfTest
                 basketRetailStaffingAndSaveResumeExact = true, basketTransactions,
                 alternativeRetailRouteSaveResumeExact = true,
                 auditedTaxInclusivePricingCheckpointExact = true,
+                realResidentialPropertyTaxOwnershipAndCheckpoint = true,
                 municipalCashTaxWasteAndJobsSaveResumeExact = true, municipalVisits,
                 municipalWasteTreatmentSavedExactly = true, treatmentShifts,
                 fairHouseholdSanitationDispatchSaveResumeExact = true,
@@ -620,7 +654,7 @@ internal static class EngineSelfTest
         }
         finally
         {
-            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json", temp + ".construction.save.json", temp + ".cost-price.save.json", temp + ".checkout.save.json", temp + ".basket.save.json", temp + ".fallback.save.json", temp + ".municipal.save.json", temp + ".treatment.save.json", temp + ".fair-collection.save.json", temp + ".tax-price.save.json" })
+            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json", temp + ".construction.save.json", temp + ".cost-price.save.json", temp + ".checkout.save.json", temp + ".basket.save.json", temp + ".fallback.save.json", temp + ".municipal.save.json", temp + ".treatment.save.json", temp + ".fair-collection.save.json", temp + ".tax-price.save.json", temp + ".home-tax.save.json" })
                 if (File.Exists(path)) File.Delete(path);
         }
     }
