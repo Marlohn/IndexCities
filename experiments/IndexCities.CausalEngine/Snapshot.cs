@@ -18,6 +18,7 @@ internal sealed partial class CausalCity
         public Firm[] Shops { get; set; } = [];
         public Firm[] Farms { get; set; } = [];
         public Firm? Builder { get; set; }
+        public Firm? FuelStation { get; set; }
         public ConstructionSite[] ConstructionSites { get; set; } = [];
         public Trip[] Trips { get; set; } = [];
         public int[] FreeTripSlots { get; set; } = [];
@@ -44,7 +45,7 @@ internal sealed partial class CausalCity
         {
             Config = _config, People = _people.ToArray(),
             Households = _households, Shops = _shops, Farms = _farms,
-            Builder = _builder, ConstructionSites = _construction,
+            Builder = _builder, FuelStation = _fuelStation, ConstructionSites = _construction,
             Trips = _trips.ToArray(), FreeTripSlots = _freeTripSlots.ToArray(),
             Future = _events.UnorderedItems.Select(e => new TimedSnapshotEvent
             {
@@ -64,7 +65,13 @@ internal sealed partial class CausalCity
                 _municipalTaxPaidCents, _municipalWagesPaidCents,
                 _garbageGenerated, _garbageCollected, _garbageAtDepot, _sanitationPaidVisits,
                 _garbageInTransit, _wasteTreated, _wasteTreatmentPaidShifts, _fairSanitationCursor,
-                _residentialTaxPaidCents, _residentialTaxAssessedCents
+                _residentialTaxPaidCents, _residentialTaxAssessedCents,
+                _rawWater, _potableWater, _sewage, _energy,
+                _waterExtracted, _waterPurified, _waterConsumed, _waterShortage,
+                _sewageProcessed, _powerGenerated, _powerConsumed, _powerShortage,
+                _utilityShiftsPaid, _fuelImported, _fuelBurned, _fuelDelivered,
+                _fuelImportSpending, _fuelStationWages, _deedPaid,
+                _fuelInTransit, _fuelImportPending ? 1 : 0
             ],
             Populations = [_active, _maxActive, _minActive],
             Factors = [_windFactor, _waterRatio],
@@ -81,10 +88,10 @@ internal sealed partial class CausalCity
     {
         var state = JsonSerializer.Deserialize<Snapshot>(File.ReadAllText(path), SnapshotJson)
             ?? throw new InvalidDataException("Empty snapshot");
-        if ((state.Counters.Length != 37 && state.Counters.Length != 39 && state.Counters.Length != 40 && state.Counters.Length != 42) || state.Populations.Length != 3 ||
+        if ((state.Counters.Length != 37 && state.Counters.Length != 39 && state.Counters.Length != 40 && state.Counters.Length != 42 && state.Counters.Length != 63) || state.Populations.Length != 3 ||
             state.Factors.Length != 2 || state.Households.Length < 1 ||
             state.Shops.Length != StoreCount || state.Farms.Length != FarmCount ||
-            state.Builder is null || state.ConstructionSites.Length != state.Households.Length ||
+            state.Builder is null || (state.Config.IntegratedV1Stress && state.FuelStation is null) || state.ConstructionSites.Length != state.Households.Length ||
             state.LaneNextEntry.Length != Nodes * 4 ||
             state.LaneLastEntry.Length != Nodes * 4 ||
             state.JunctionAvailable.Length != Nodes ||
@@ -106,6 +113,7 @@ internal sealed partial class CausalCity
         state.Shops.CopyTo(city._shops, 0);
         state.Farms.CopyTo(city._farms, 0);
         city._builder = state.Builder;
+        if (state.FuelStation is not null) city._fuelStation = state.FuelStation;
         city._construction = state.ConstructionSites;
         state.LaneNextEntry.CopyTo(city._laneNextEntry, 0);
         state.LaneLastEntry.CopyTo(city._laneLastEntry, 0);
@@ -150,6 +158,20 @@ internal sealed partial class CausalCity
         {
             city._residentialTaxPaidCents = c[40];
             city._residentialTaxAssessedCents = c[41];
+        }
+        if (c.Length == 63)
+        {
+            city._rawWater = c[42]; city._potableWater = c[43];
+            city._sewage = c[44]; city._energy = c[45];
+            city._waterExtracted = c[46]; city._waterPurified = c[47];
+            city._waterConsumed = c[48]; city._waterShortage = c[49];
+            city._sewageProcessed = c[50]; city._powerGenerated = c[51];
+            city._powerConsumed = c[52]; city._powerShortage = c[53];
+            city._utilityShiftsPaid = c[54]; city._fuelImported = c[55];
+            city._fuelBurned = c[56]; city._fuelDelivered = c[57];
+            city._fuelImportSpending = c[58]; city._fuelStationWages = c[59];
+            city._deedPaid = c[60]; city._fuelInTransit = (int)c[61];
+            city._fuelImportPending = c[62] != 0;
         }
         city._active = state.Populations[0];
         city._maxActive = state.Populations[1];
