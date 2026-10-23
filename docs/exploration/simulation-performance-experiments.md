@@ -8,7 +8,7 @@ Descobrir como simular uma cidade com **até 10 mil SIMs individuais** e avança
 
 A pergunta decisiva é: **quanto uma mudança reduz o tempo de um dia simulado completo, mantendo o mesmo estado e os mesmos acontecimentos?** Ganho de uma função isolada não responde isso.
 
-**Fronteira desta pesquisa:** esta PR #51 registra exclusivamente os experimentos E01–E25 e sucessores da investigação do **motor integrado atual**, cada um em branch isolada. A PR #52 e o motor experimental C# autossuficiente são **outra investigação**, não uma continuidade operacional nem fonte de resultados para este registro. Referências antigas à #52 abaixo são contexto histórico; não criam dependência, entrega conjunta ou critério de aprovação da #51.
+**Fronteira desta pesquisa:** esta PR #51 registra exclusivamente os experimentos E01–E26 e sucessores da investigação do **motor integrado atual**, cada um em branch isolada. A PR #52 e o motor experimental C# autossuficiente são **outra investigação**, não uma continuidade operacional nem fonte de resultados para este registro. Referências antigas à #52 abaixo são contexto histórico; não criam dependência, entrega conjunta ou critério de aprovação da #51.
 
 ## Experimentos e evidências (atualizado em 22/10/2026, horário de Brasília)
 
@@ -144,6 +144,17 @@ Na seed 44, **`Ledger` também apresenta diferença a partir de t=2.520 s** (ent
 
 **Conclusão:** E25 **localiza a manifestação física em IDs reproduzíveis**, refina o E23/E24 e confirma que `flush-only` não conserva resultados. A próxima hipótese discriminante é instrumentar, na janela imediatamente posterior à demolição e nos IDs 2099/2107, a sequência de avaliações físicas puladas, as inscrições/bloqueadores e suas invalidações, comparando-a com `off`. Só propor invalidação seletiva quando houver dependências concretas suficientes, e não inferir causa raiz de diferenças pequenas na posição ou no RNG. Sem adoção em `main`; nenhuma relação com a pesquisa independente da PR #52.
 
+### E26 — rechecagens omitidas exatamente antes dos primeiros movimentos (22/10/2026)
+
+**Objetivo e escopo:** instrumentação *somente diagnóstica* nas mesmas três execuções `off/events/queue` das seeds 43/44, sem alteração da física ou da regra de repouso. Branch isolada [`experimento/e26-trace-despertar-primeiro-veiculo`](https://github.com/Marlohn/IndexCities/tree/experimento/e26-trace-despertar-primeiro-veiculo) e [commit `7504395`](https://github.com/Marlohn/IndexCities/commit/7504395654b8904d27eebce1ab54d4ec56c83608). O trace identifica, em janela curta de tempo, `before/after`, `events-skip/queue-skip`, `subscribe`, `VehicleMovementTime`, posição, rota, `WaitingSince`, bloqueador observado e `Awake`. Os IDs alvo vieram do E25: **2099** seed 43 e **2107** seed 44. A data do log é o tempo físico absoluto após aquecimento de 86.400 s; por exemplo `88.263,619` corresponde a `1.863,619` desde o início da comparação. `--e26-trace=1` é flag de diagnóstico.
+
+**[CI #39882983076](https://github.com/Marlohn/IndexCities/actions/runs/39882983076): 2/2 jobs concluídos com sucesso como rastreamento; os comparadores continuam `exactCheckpoints=False` e os candidatos seguem reprovados causalmente.**
+
+- **Seed 43 / vehicle 2099:** o original `off` avançou em `physical=88263.619`, `Position.X=67.5094627585618 → 67.46273214434501`. Na *mesma* marca, `events` executou `events-skip` mantendo `X=67.5094627585618`, com inscrição ao bloqueador **2657** (`Awake=False`). O bloqueador depois se desloca de `43.509462758561796` a `43.462732144345004`, e em `physical=88263.625` a inscrição aparece `Awake=True`; porém o instante em que a física original avançou **já foi perdido**. O modo `queue` ainda reavalia e executa esse primeiro avanço de 0,04673, mas posteriormente também pula rechecagens e diverge a t=1.866 s.
+- **Seed 44 / vehicle 2107:** o original avançou durante o quantum iniciado em 88.266 s, na execução registrada em `physical≈88267.99`, `Position.X=87.25534427663322 → 87.16046168707207`. No mesmo trecho, `events` e `queue` registram `events-skip` e `queue-skip` respectivamente, mantendo `X=87.25534427663322`, com assinatura vinculada ao bloqueador **2300**. Primeira divergência persistente dos checkpoints: t=1.868 s.
+
+**Diagnóstico causal reforçado:** foi comprovado um movimento original perdido **porque um carro inscrito deixou de passar pela rechecagem física**. O despertar por mudança do bloqueador observado não foi suficiente em tempo/alcance; não se deve concluir, ainda, que o bloqueador direto seja irrelevante, pois ordem de execução, outros corpos na faixa e condições da geometria podem contribuir. **Hipótese seguinte (restrita):** instrumentar no próprio cálculo físico qual `blocker`, `leaderDistance`, `step` e outros limitadores são escolhidos pela referência nos instantes exatos de avanço, comparando ao `BlockerId` da inscrição; então testar apenas invalidação cuja dependência seja demonstrada. Não integrar E22/E24; não confundir com a PR #52.
+
 ### Limites dos testes
 
 - `roadgraph 10000` contém **10 mil pontos de rua**, não 10 mil habitantes.
@@ -170,6 +181,6 @@ Uma **PR de implementação** só faz sentido depois que uma candidata apresenta
 
 ## Próxima pergunta útil
 
-**Após E25 (CI diagnóstico aprovado, comparação causal reprovada):** os veículos **2099 (seed 43)** e **2107 (seed 44)** já apresentam diferenças reais de posição a 4–8 s da demolição, com efeitos subsequentes em satisfação e, na seed 44, lançamento contábil. O próximo experimento de valor é rastrear nesses primeiros instantes as inscrições e avaliações físicas omitidas desses veículos e seus bloqueadores, juntamente com ordem de passos e eventos de guincho/cruzamento/rota, para localizar uma dependência ausente. **Não repetir janelas arbitrárias de guarda** nem alegar invalidação seletiva pronta. Se a fronteira causal completa não se mostrar viável, rejeitar a família E22/E24 para integração. O E23 guardado segue controle positivo limitado.
+**Após E26 (CI de rastreabilidade aprovado; causalidade dos candidatos reprovada):** a referência avançou os veículos 2099/2107 em instantes exatos que `events/queue` suprimiram por inscrições em bloqueadores (2657 e 2300). No seed 43, `events` acordou por mudança do líder só depois do primeiro avanço que deveria ter calculado. A próxima questão prática é identificar o verdadeiro limitador físico `blocker/leaderDistance/step` do momento do avanço e a ordem dos corpos para especificar a dependência faltante. **Não criar mais prazos arbitrários nem integrar as otimizações atuais**. Só propor invalidação seletiva se cobrir a física causalmente e preservar snapshots sob testes adversariais. O E23 guardado ainda é controle temporário local, não solução aprovada.
 
 **A PR #51 segue independente da PR #52.** O resultado de uma não é bloqueador, entrega ou relatório obrigatório da outra.
