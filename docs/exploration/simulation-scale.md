@@ -8,7 +8,7 @@
 >
 > Concentra pesquisa sobre população, profundidade individual, limites técnicos, tempo de jogo e baselines empíricos usados para orientar protótipos e benchmarks. Números provisórios não viram requisitos sem promoção explícita para a SPEC.
 
-> **Direção de produto atualizada em 2026-10-23:** a [SPEC de tempo](../spec/mundo-tempo-saves.md#tempo-de-jogo) registra a busca de **80 anos em até 6 horas reais** em cidade expandida representativa com **10 mil+ SIMs**, como meta **não demonstrada no jogo integrado**. Pausa/Normal/Média/Alta têm fatores internos configuráveis; os 30x/1000x provisórios não são teto de performance. Textos históricos abaixo que dizem não haver meta numérica aprovada descrevem **rodadas anteriores**. A conta, a distinção entre capacidade e UX e o mapa de validação estão em [ritmo e velocidades](ritmo-velocidades.md#2026-10-23--revisão-da-meta-geracional-e-do-papel-dos-multiplicadores).
+> **Direção de produto clarificada em 2026-10-23:** a [SPEC de tempo](../spec/mundo-tempo-saves.md#tempo-de-jogo) mantém como objetivo acompanhar gerações ao longo de horas/sessões numa cidade expandida representativa com **10 mil+ SIMs**, sem prazo numérico obrigatório. **80 anos em 6 horas**, assim como **80 anos em 20 horas**, são **referências exploratórias hipotéticas**, não requisitos, limites nem benchmarks já demonstrados no jogo. Pausa/Normal/Média/Alta têm fatores internos configuráveis; os 30x/1000x atuais são provisórios, não teto de performance. Contas e mapa de validação estão em [ritmo e velocidades](ritmo-velocidades.md#2026-10-23--revisão-da-meta-geracional-e-do-papel-dos-multiplicadores).
 
 ## Como ler este documento
 
