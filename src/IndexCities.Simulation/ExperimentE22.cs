@@ -14,6 +14,10 @@ public sealed partial class CitySimulation
     // E24 ablation: flush subscriptions on a road revision, but do not pause
     // subsequent sleep registrations. This does NOT prove selective dependencies.
     public bool E24FlushWithoutPause { get; set; }
+    // E28 isolated candidate: only sleep when the lane leader itself limits
+    // travel to zero; other dynamic safety filters are not leader events.
+    public bool E28LeaderOnlySleep { get; set; }
+    long _e28NonLeaderSleepDenied;
     // E26: diagnostic trace only, limited to one known vehicle and a short window.
     public int E26TraceVehicleId { get; set; }
     public double E26TraceFrom { get; set; }
@@ -232,6 +236,6 @@ public sealed partial class CitySimulation
             $"invalidationEdges={_e22EventEdges} queuesPrepared={_e22QueuesPrepared} " +
             $"queuesSlept={_e22QueuesSlept} groupedMembers={_e22GroupMembers} " +
             $"largestGroup={_e22GroupsMax} batchSeconds={F(_e22BatchPrepSeconds)} " +
-            $"subscriptionsRemaining={_e22Waits.Count} roadFlushes={_e23NetworkFlushes} flushedSubscribers={_e23SubscriptionsFlushed} roadGuardUntil={_e23RoadWakeUntil:F0} flushWithoutPause={E24FlushWithoutPause}";
+            $"subscriptionsRemaining={_e22Waits.Count} roadFlushes={_e23NetworkFlushes} flushedSubscribers={_e23SubscriptionsFlushed} roadGuardUntil={_e23RoadWakeUntil:F0} flushWithoutPause={E24FlushWithoutPause} e28LeaderOnly={E28LeaderOnlySleep} e28NonLeaderDenied={_e28NonLeaderSleepDenied}";
     }
 }

@@ -1,9 +1,9 @@
-name: E27 - bloqueador real e passo fisico nos movimentos perdidos
+name: E28 - restricao causal de repouso ao bloqueador exclusivo
 
 on:
   push:
     branches:
-      - experimento/e27-trace-limitador-fisico
+      - experimento/e28-repouso-so-lider-real
 
 permissions:
   contents: read
@@ -36,10 +36,10 @@ jobs:
             --rows=5 --length=800 --seed=${{ matrix.seed }} --signals=1 \
             --warmup=1 --e22=compare --e22-window=3000 \
             --e22-adversary=mixed --e22-reverse=${{ matrix.reversed }} \
-            --e23-diff=1 --e23-roadguard=0 --e24-flush-only=1 --e25-trace=1 --e26-trace=1 | tee "e27_${{ matrix.label }}.log"
-          # E24 is a falsification experiment: a green CI means that the
-          # comparison ran with adversarial coverage, NOT causal equivalence.
-          log="e27_${{ matrix.label }}.log"
+            --e23-diff=1 --e23-roadguard=0 --e24-flush-only=1 --e28-leader-only=1 | tee "e28_${{ matrix.label }}.log"
+          # E28 candidate: a green CI requires exact comparison and real
+          # intervention coverage. A green sample is not a general proof.
+          log="e28_${{ matrix.label }}.log"
           grep -q '^E22_COMPARE mode=events ' "$log"
           grep -q '^E22_COMPARE mode=queue ' "$log"
           grep -Eq '^E22_COVERAGE adversary=mixed .*appliedTow=3 appliedJunction=3 appliedRoadWithRoute=3 towStrandedArms=3 towDispatchArms=3 ' "$log"
@@ -47,24 +47,19 @@ jobs:
           grep -Eq '^E22_RESULT mode=queue .*roadFlushes=[1-9][0-9]* .*flushWithoutPause=True' "$log"
           grep -q '^E25_DOMAIN_FIRST mode=events domain=Vehicles available=True ' "$log"
           grep -q '^E25_DOMAIN_FIRST mode=queue domain=Vehicles available=True ' "$log"
-          grep -q '^E26_TRACE mode=off phase=before ' "$log"
-          grep -q '^E26_TRACE mode=events phase=before ' "$log"
-          grep -q '^E26_TRACE mode=queue phase=before ' "$log"
-          grep -q '^E27_PHYS mode=off ' "$log"
-          grep -q '^E27_PHYS mode=events ' "$log"
-          grep -q '^E27_PHYS mode=queue ' "$log"
-          grep '^E27_PHYS ' "$log" | tail -30
-          grep '^E26_TRACE ' "$log" | tail -30
-          grep '^E25_DOMAIN_FIRST ' "$log"
+          grep -Eq '^E22_RESULT mode=events .*e28LeaderOnly=True e28NonLeaderDenied=[1-9][0-9]*' "$log"
+          grep -Eq '^E22_RESULT mode=queue .*e28LeaderOnly=True e28NonLeaderDenied=[1-9][0-9]*' "$log"
           grep '^E22_COMPARE ' "$log"
-          if grep -Eq '^E22_COMPARE mode=(events|queue) exactCheckpoints=False ' "$log"; then
-            echo 'E27_CAUSAL equivalence=False (the flush-only candidate is rejected on this seed)'
+          if grep -q '^E22_COMPARE mode=events exactCheckpoints=True ' "$log" &&
+             grep -q '^E22_COMPARE mode=queue exactCheckpoints=True ' "$log"; then
+            echo 'E28_CAUSAL equivalence=True (only for this measured seed/window)'
           else
-            echo 'E27_CAUSAL equivalence=True (only for this measured seed/window)'
+            echo 'E28_CAUSAL equivalence=False (candidate rejected; no performance claim)'
+            exit 1
           fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: e27-${{ matrix.label }}
-          path: e27_*.log
+          name: e28-${{ matrix.label }}
+          path: e28_*.log
           if-no-files-found: ignore
