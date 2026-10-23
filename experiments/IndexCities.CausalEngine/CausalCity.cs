@@ -8,7 +8,7 @@ namespace IndexCities.CausalEngine;
 
 // Independent vertical-slice engine for falsifying the architecture.
 // RULES AND FIXTURES HERE ARE NOT AN IMPLEMENTATION OF ALL OF INDEXCITIES SPEC.
-internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false, bool RetailShopFallback = false, int RetailBasketsPerShift = 5, bool MunicipalSanitationPilot = false, int MunicipalCollectionIntervalDays = 6, bool MunicipalWasteTreatmentPilot = false, bool FairSanitationDispatch = false, bool AttendanceAwareMunicipalShifts = false, bool TaxInclusiveProductPrice = false, int TaxCostRecoveryPercent = 100, int MonthlyResidentialTaxCents = 0, int WasteTreatmentUnitsPerShift = 50, bool LivingOccupancyBirthCap = false, int TreatmentBacklogMonths = 0);
+internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false, bool RetailShopFallback = false, int RetailBasketsPerShift = 5, bool MunicipalSanitationPilot = false, int MunicipalCollectionIntervalDays = 6, bool MunicipalWasteTreatmentPilot = false, bool FairSanitationDispatch = false, bool AttendanceAwareMunicipalShifts = false, bool TaxInclusiveProductPrice = false, int TaxCostRecoveryPercent = 100, int MonthlyResidentialTaxCents = 0, int WasteTreatmentUnitsPerShift = 50, bool LivingOccupancyBirthCap = false, int TreatmentBacklogMonths = 0, bool IntegratedV1Stress = false);
 internal enum EventKind : byte { Day, Hour, StartWork, EndWork, Move, Delivery, RoadClose, RoadOpen, HouseholdShop }
 internal readonly record struct SimEvent(EventKind Kind, int Id);
 internal sealed class Person
@@ -91,6 +91,9 @@ internal sealed class Firm
     public long MonthRetailBaskets, LifetimeRetailBaskets, LifetimeCheckoutCapacityDenied;
     // Real taxes already debited from this business; accounting only.
     public long MonthPropertyTaxActuallyPaidCents;
+    public int TruckFuelUnits;
+    public bool TruckFuelOnOrder;
+    public bool TruckBusy;
 }
 internal sealed class Trip
 {
@@ -260,6 +263,7 @@ internal sealed partial class CausalCity : IDisposable
             _people.Add(p);
             family.Members.Add(i);
         }
+        if (_config.IntegratedV1Stress) AcquireExistingDeeds();
         if (_config.MonthlyResidentialTaxCents > 0)
             foreach (var h in _households)
                 h.PropertyOwnerPersonId = h.Members.FirstOrDefault(id =>
@@ -280,7 +284,8 @@ internal sealed partial class CausalCity : IDisposable
 
     private long CalculateMoney()
     {
-        long total = checked(_treasury + _reserveGlobal + _builder.Cash);
+        long total = checked(_treasury + _reserveGlobal + _builder.Cash +
+            (_config.IntegratedV1Stress ? _fuelStation.Cash : 0));
         foreach (var p in _people) total = checked(total + p.Cash);
         foreach (var f in _shops) total = checked(total + f.Cash);
         foreach (var f in _farms) total = checked(total + f.Cash);
@@ -416,7 +421,8 @@ internal sealed partial class CausalCity : IDisposable
                     h.Pantry--;
                     _eatenFood++;
                     if (_config.MunicipalSanitationPilot) { h.TrashUnits++; _garbageGenerated++; }
-                    p.Health = Math.Min(100, p.Health + (_waterRatio >= .5 ? 1 : 0));
+                    if (!_config.IntegratedV1Stress)
+                        p.Health = Math.Min(100, p.Health + (_waterRatio >= .5 ? 1 : 0));
                     if (_config.MunicipalSanitationPilot && h.TrashUnits > 80)
                         p.Health = Math.Max(0, p.Health - 2); // material service consequence: unhygienic accumulation
                     _history.Fact(_time, id, 3, 1);
@@ -427,6 +433,7 @@ internal sealed partial class CausalCity : IDisposable
                     p.Health -= 1;
                     if (p.Health <= 0) Die(p);
                 }
+                if (_config.IntegratedV1Stress && p.Alive) ConsumeIntegratedServices(p);
                 if (!_config.DemandStaffing && p.Alive && Age(p, date) >= 18 && Age(p, date) < 70 &&
                     (!_config.VacancyMarket ||
                      (p.Job >= 0 && (day + p.Id) % 7 != 0)))
@@ -537,8 +544,8 @@ internal sealed partial class CausalCity : IDisposable
         // from actual 30-day grocery sales / wholesale orders, never guaranteed
         // inhabitants or new money. This is an intentionally narrow test, NOT
         // the full autonomous employer, wage negotiation or skills contract.
-        Span<int> positions = stackalloc int[StoreCount + FarmCount + (_config.ConstructionPilot ? 1 : 0) + (_config.MunicipalSanitationPilot ? 1 : 0) + (_config.MunicipalWasteTreatmentPilot ? 1 : 0)];
-        Span<int> occupied = stackalloc int[StoreCount + FarmCount + (_config.ConstructionPilot ? 1 : 0) + (_config.MunicipalSanitationPilot ? 1 : 0) + (_config.MunicipalWasteTreatmentPilot ? 1 : 0)];
+        Span<int> positions = stackalloc int[StoreCount + FarmCount + (_config.ConstructionPilot ? 1 : 0) + (_config.MunicipalSanitationPilot ? 1 : 0) + (_config.MunicipalWasteTreatmentPilot ? 1 : 0) + (_config.IntegratedV1Stress ? 5 : 0)];
+        Span<int> occupied = stackalloc int[StoreCount + FarmCount + (_config.ConstructionPilot ? 1 : 0) + (_config.MunicipalSanitationPilot ? 1 : 0) + (_config.MunicipalWasteTreatmentPilot ? 1 : 0) + (_config.IntegratedV1Stress ? 5 : 0)];
         long municipalPayrollBudget = _treasury;
         // Paid service jobs work at most 26 days per 30-day calendar month
         // (one day of rest in seven). Monthly funding follows ACTUAL possible
@@ -546,6 +553,14 @@ internal sealed partial class CausalCity : IDisposable
         var municipalPaidShiftDays = _config.AttendanceAwareMunicipalShifts ? 26L : 30L;
         for (var i = 0; i < positions.Length; i++)
         {
+            if (_config.IntegratedV1Stress && i >= IntakeJob && i <= FuelStationJob)
+            {
+                var budget = i == FuelStationJob ? _fuelStation.Cash : municipalPayrollBudget;
+                positions[i] = (int)Math.Min(IntegratedWantedWorkers(i),
+                    budget / (UtilityGrossWage * municipalPaidShiftDays));
+                if (i != FuelStationJob) municipalPayrollBudget -= positions[i] * UtilityGrossWage * municipalPaidShiftDays;
+                continue;
+            }
             if (_config.MunicipalWasteTreatmentPilot && i == WasteTreatmentJob)
             {
                 // Water/food consumption already creates household waste.
@@ -750,6 +765,7 @@ internal sealed partial class CausalCity : IDisposable
                 {
                     if (occupied[i] >= positions[i]) continue;
                     var node = i == BuilderJob ? _builder.Node :
+                        (_config.IntegratedV1Stress && i >= IntakeJob && i <= FuelStationJob) ? IntegratedJobNode(i) :
                         (_config.MunicipalWasteTreatmentPilot && i == WasteTreatmentJob) ? SanitationDepotNode :
                         (_config.MunicipalSanitationPilot && i == SanitationJob) ? p.Home :
                         i < StoreCount ? _shops[i].Node : _farms[i - StoreCount].Node;
@@ -965,6 +981,8 @@ internal sealed partial class CausalCity : IDisposable
             p.Job < BuilderJob ? _farms[p.Job - StoreCount].Node : -1;
         if (_config.MunicipalWasteTreatmentPilot && p.Job == WasteTreatmentJob)
             workNode = SanitationDepotNode;
+        if (_config.IntegratedV1Stress && p.Job >= IntakeJob && p.Job <= FuelStationJob)
+            workNode = IntegratedJobNode(p.Job);
         if (_config.MunicipalSanitationPilot && p.Job == SanitationJob)
         {
             p.SanitationHouseholdId = PickMunicipalCollectionSite(p);
@@ -994,6 +1012,12 @@ internal sealed partial class CausalCity : IDisposable
             if (!p.Traveling && p.Node == p.Home &&
                 _households[p.HouseholdId].Pantry < 30)
                 Schedule(_time + 3600, EventKind.HouseholdShop, personId);
+            return;
+        }
+        if (_config.IntegratedV1Stress && p.Job >= IntakeJob && p.Job <= FuelStationJob)
+        {
+            if (p.Job == FuelStationJob) _fuelStation.PresentWorkers--;
+            FinishIntegratedShift(p);
             return;
         }
         if (_config.MunicipalWasteTreatmentPilot && p.Job == WasteTreatmentJob)
@@ -1154,6 +1178,11 @@ internal sealed partial class CausalCity : IDisposable
             if (!_config.CrossFarmFreight) break;
         }
         if (target < 0) return false;
+        if (_config.IntegratedV1Stress)
+        {
+            if (!HasTruckFuelForTrip(farmId, target)) return false;
+            farm.TruckBusy = true;
+        }
         {
             var shopId = target;
             var shop = _shops[shopId];
@@ -1286,6 +1315,7 @@ internal sealed partial class CausalCity : IDisposable
             _waitSeconds += 30;
             return;
         }
+        if (trip.OwnerId >= 0) BurnTruckFuelForSegment(_people[trip.OwnerId]);
         var edge = Edge(trip.CurrentNode, next);
         var entry = Math.Max(_time, _laneNextEntry[edge]);
         // Reserve receiving junction and the lane *before* departure. Avoid
@@ -1314,6 +1344,7 @@ internal sealed partial class CausalCity : IDisposable
         }
         var workplace = p.Job < 0 ? -1 :
             (_config.MunicipalWasteTreatmentPilot && p.Job == WasteTreatmentJob) ? SanitationDepotNode :
+            (_config.IntegratedV1Stress && p.Job >= IntakeJob && p.Job <= FuelStationJob) ? IntegratedJobNode(p.Job) :
             (_config.MunicipalSanitationPilot && p.Job == SanitationJob) ?
                 (p.SanitationHouseholdId >= 0 ? _households[p.SanitationHouseholdId].Home : -1) :
             p.Job == BuilderJob ?
@@ -1328,6 +1359,8 @@ internal sealed partial class CausalCity : IDisposable
         if (_config.FreightLabor && p.FreightShift &&
             p.FreightShopId < 0 && p.Node == workplace)
         {
+            if (_config.IntegratedV1Stress && p.Job >= StoreCount && p.Job < StoreCount + FarmCount)
+                _farms[p.Job - StoreCount].TruckBusy = false;
             // Return from physical delivery, without a second paid shift.
             // A person can LIVE on the same grid node as the farm: do not
             // spawn a self-trip that repeats infinitely before going home.
@@ -1364,6 +1397,11 @@ internal sealed partial class CausalCity : IDisposable
             p.AtWork = true;
             if (_config.VacancyMarket)
             {
+                if (_config.IntegratedV1Stress && p.Job >= IntakeJob && p.Job <= FuelStationJob)
+                {
+                    if (p.Job == FuelStationJob) _fuelStation.PresentWorkers++;
+                    return;
+                }
                 if (_config.MunicipalWasteTreatmentPilot && p.Job == WasteTreatmentJob)
                     return; // Physical arrival at treatment depot.
                 if (_config.MunicipalSanitationPilot && p.Job == SanitationJob)
@@ -1508,6 +1546,17 @@ internal sealed partial class CausalCity : IDisposable
     {
         var t = _trips[tripId];
         if (!t.Completed || t.OwnerId != -1) throw new InvalidOperationException("Fictitious shipment completion");
+        if (_config.IntegratedV1Stress && t.Payload == FuelImportPayload)
+        {
+            FinishFuelImport(t);
+            return;
+        }
+        if (_config.IntegratedV1Stress && t.Payload <= FuelFarmPayloadBase &&
+            t.Payload > FuelFarmPayloadBase - FarmCount)
+        {
+            FinishFarmFuel(t);
+            return;
+        }
         if (_config.ConstructionPilot && t.Payload >= 10_000)
         {
             CompleteConstructionDelivery(t);
@@ -1554,13 +1603,16 @@ internal sealed partial class CausalCity : IDisposable
         // inside the business sector; every paid salary leaves it. This
         // independent ledger exposes structural insolvency that total-money
         // conservation by itself would miss.
-        var businessesCash = _shops.Sum(f => f.Cash) + _farms.Sum(f => f.Cash) + _builder.Cash;
+        var businessesCash = _shops.Sum(f => f.Cash) + _farms.Sum(f => f.Cash) + _builder.Cash +
+            (_config.IntegratedV1Stress ? _fuelStation.Cash : 0);
         // Private household building invoices are real receipts for the
         // builder; timber is separately bought from the finite external
         // reserve and is not magically credited to local businesses.
         var contractorRevenue = checked(_constructionStarted * ContractorLaborInvoice);
-        if (businessesCash != checked(InitialBusinessCashCents + _retailSalesCents +
-            contractorRevenue - (_paidWages - _municipalWagesPaidCents) - _municipalTaxPaidCents))
+        if (businessesCash != checked(InitialBusinessCashCents +
+            (_config.IntegratedV1Stress ? FuelStationStartingCash : 0) + _retailSalesCents +
+            contractorRevenue - (_paidWages - _municipalWagesPaidCents) -
+            _municipalTaxPaidCents - _fuelImportSpending))
             throw new InvalidOperationException("Business ledger differs from food + construction sales minus actual wages");
         if (CalculateFood() != checked(_initialFood + _producedFood - _eatenFood))
             throw new InvalidOperationException("Food created/destroyed outside farm work and meals");
@@ -1577,6 +1629,7 @@ internal sealed partial class CausalCity : IDisposable
         foreach (var p in _people) if (p.Cash < 0 || p.CarryFood < 0 || p.FreightCargo < 0)
             throw new InvalidOperationException("Invalid person or freight cargo");
         AssertConstructionConservation();
+        AssertIntegratedConservation();
         if (_config.MonthlyResidentialTaxCents > 0 &&
             _residentialTaxAssessedCents != _residentialTaxPaidCents + _households.Sum(h=>h.ResidentialPropertyTaxDebtCents))
             throw new InvalidOperationException("Residential property taxes were counted as revenue before payment");
@@ -1611,6 +1664,10 @@ internal sealed partial class CausalCity : IDisposable
         Mix(_journeys); Mix(_segments); Mix(_sales); Mix(_shipments); Mix(_retailSalesCents);
         Mix(_municipalTaxPaidCents); Mix(_municipalWagesPaidCents);
         Mix(_residentialTaxPaidCents); Mix(_residentialTaxAssessedCents);
+        Mix(_rawWater); Mix(_potableWater); Mix(_sewage); Mix(_energy);
+        Mix(_waterExtracted); Mix(_waterConsumed); Mix(_sewageProcessed); Mix(_powerGenerated);
+        Mix(_fuelImported); Mix(_fuelBurned); Mix(_fuelInTransit); Mix(_fuelStation.Cash); Mix(_fuelStation.Stock);
+        Mix(_fuelImportPending ? 1 : 0); Mix(_deedPaid);
         Mix(_garbageGenerated); Mix(_garbageCollected); Mix(_garbageAtDepot); Mix(_sanitationPaidVisits); Mix(_wasteTreated); Mix(_wasteTreatmentPaidShifts); Mix(_fairSanitationCursor); Mix(_garbageInTransit);
         foreach (var p in _people)
         {
@@ -1625,8 +1682,8 @@ internal sealed partial class CausalCity : IDisposable
             Mix(p.ContributedDays); Mix(p.GrossEarnings); Mix(p.PensionCredit); Mix(p.PensionReceived);
         }
         foreach (var h in _households) { Mix(h.Pantry); Mix(h.Members.Count); Mix(h.LastBirthDay); Mix(h.LastShoppingDepartureDay); Mix(h.TrashUnits); Mix(h.LastSanitationBookedDay); Mix(h.LastSanitationServicedDay); Mix(h.PropertyOwnerPersonId); Mix(h.ResidentialPropertyTaxDebtCents); }
-        foreach (var f in _shops) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); Mix(f.MonthRetailSalesUnits); Mix(f.MonthRetailPaidWagesCents); Mix(f.RetailUnitPriceCents); Mix(f.MonthFarmPaidWagesCents); Mix(f.MonthWholesaleSalesUnits); Mix(f.MonthWholesaleBoughtUnits); Mix(f.MonthWholesalePaidCents); Mix(f.FarmWholesaleUnitPriceCents); Mix(f.TodayCheckoutUnitsLeft); Mix(f.ReservedCheckoutWagesCents); Mix(f.MonthRetailBaskets); Mix(f.LifetimeRetailBaskets); Mix(f.LifetimeCheckoutCapacityDenied); Mix(f.MonthPropertyTaxActuallyPaidCents); }
-        foreach (var f in _farms) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); }
+        foreach (var f in _shops) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); Mix(f.MonthRetailSalesUnits); Mix(f.MonthRetailPaidWagesCents); Mix(f.RetailUnitPriceCents); Mix(f.MonthFarmPaidWagesCents); Mix(f.MonthWholesaleSalesUnits); Mix(f.MonthWholesaleBoughtUnits); Mix(f.MonthWholesalePaidCents); Mix(f.FarmWholesaleUnitPriceCents); Mix(f.TruckFuelUnits); Mix(f.TruckBusy ? 1 : 0); Mix(f.FuelOnOrder ? 1 : 0); Mix(f.TodayCheckoutUnitsLeft); Mix(f.ReservedCheckoutWagesCents); Mix(f.MonthRetailBaskets); Mix(f.LifetimeRetailBaskets); Mix(f.LifetimeCheckoutCapacityDenied); Mix(f.MonthPropertyTaxActuallyPaidCents); }
+        foreach (var f in _farms) { Mix(f.TruckFuelUnits); Mix(f.TruckBusy ? 1 : 0); Mix(f.FuelOnOrder ? 1 : 0); Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); }
         Mix(_builder.Cash); Mix(_builder.OfferedPositions); Mix(_builder.PresentWorkers);
         Mix(_outsideTimber); Mix(_constructionStarted); Mix(_constructionFinished); Mix(_constructionPaidShifts);
         foreach (var site in _construction)
@@ -1673,6 +1730,23 @@ internal sealed partial class CausalCity : IDisposable
         materialConserved = CalculateConstructionTimber() == _initialOutsideTimber,
         realWorkerFreightTrips = _freightLaborTrips,
         freightChargesPaidCents = _paidFreightCents,
+        integratedV1StressFixture = _config.IntegratedV1Stress,
+        physicallyExtractedWater = _waterExtracted,
+        treatedPotableWater = _waterPurified,
+        consumedPotableWater = _waterConsumed,
+        deniedPotableWater = _waterShortage,
+        untreatedSewageStock = _sewage,
+        sewagePhysicallyProcessed = _sewageProcessed,
+        generatedWindElectricity = _powerGenerated,
+        usedElectricity = _powerConsumed,
+        unservedElectricity = _powerShortage,
+        actualUtilityWorkShifts = _utilityShiftsPaid,
+        actualFuelImported = _fuelImported,
+        fuelConsumedByRealFreight = _fuelBurned,
+        fuelPhysicallyDeliveredToFarms = _fuelDelivered,
+        fuelImportPaidCents = _fuelImportSpending,
+        residentialDeedPurchasePaymentsCents = _deedPaid,
+        fuelStationInventory = _fuelStation.Stock,
         farmEmployeesAssignedToFreight = _people.Count(p => p.Alive && p.IsFreightDriver),
         employedAlive = _people.Count(p => p.Alive && p.Job >= 0),
         unemployedAdults = _people.Count(p => p.Alive && p.Job < 0 &&
@@ -1757,9 +1831,9 @@ internal sealed partial class CausalCity : IDisposable
         meanFarmWholesaleUnitPriceCents = _farms.Average(f=>f.FarmWholesaleUnitPriceCents),
         contractorServiceRevenueCents = checked(_constructionStarted * ContractorLaborInvoice),
         businessOperatingNetCents = checked(_retailSalesCents +
-            _constructionStarted * ContractorLaborInvoice - (_paidWages - _municipalWagesPaidCents) - _municipalTaxPaidCents),
-        businessInitialCashCents = InitialBusinessCashCents,
-        businessCurrentCashCents = _shops.Sum(f => f.Cash) + _farms.Sum(f => f.Cash) + _builder.Cash,
+            _constructionStarted * ContractorLaborInvoice - (_paidWages - _municipalWagesPaidCents) - _municipalTaxPaidCents - _fuelImportSpending),
+        businessInitialCashCents = InitialBusinessCashCents + (_config.IntegratedV1Stress ? FuelStationStartingCash : 0),
+        businessCurrentCashCents = _shops.Sum(f => f.Cash) + _farms.Sum(f => f.Cash) + _builder.Cash + (_config.IntegratedV1Stress ? _fuelStation.Cash : 0),
         unspentRealPayrollBudgetCents = _shops.Sum(f => f.PayrollBudget) + _farms.Sum(f => f.PayrollBudget),
         personalCashCents = _people.Sum(p => p.Cash),
         shopCashCents = _shops.Sum(s => s.Cash),
