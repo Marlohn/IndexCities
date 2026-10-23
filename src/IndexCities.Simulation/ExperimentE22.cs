@@ -11,12 +11,15 @@ public sealed partial class CitySimulation
     public string E22Mode { get; set; }="off"; // off | events | queue
     // E23 experimental safety hypothesis: explicit road revision flush.
     public double E23RoadGuardSeconds { get; set; }
+    // E24 ablation: flush subscriptions on a road revision, but do not pause
+    // subsequent sleep registrations. This does NOT prove selective dependencies.
+    public bool E24FlushWithoutPause { get; set; }
     int _e23ObservedRoadRevision=-1;
     double _e23RoadWakeUntil;
     long _e23NetworkFlushes,_e23SubscriptionsFlushed;
     bool E23GuardRoadChange()
     {
-        if(E23RoadGuardSeconds<=0||!E22Enabled)return false;
+        if(!E22Enabled||(E23RoadGuardSeconds<=0&&!E24FlushWithoutPause))return false;
         if(_e23ObservedRoadRevision<0){_e23ObservedRoadRevision=State.RoadRevision;return false;}
         if(_e23ObservedRoadRevision!=State.RoadRevision)
         {
@@ -25,9 +28,9 @@ public sealed partial class CitySimulation
             _e23SubscriptionsFlushed+=_e22Waits.Count;
             foreach(var id in _e22Waits.Keys.ToArray())E22Unsubscribe(id);
             _e22BatchSkip.Clear();
-            _e23RoadWakeUntil=State.ElapsedSeconds+E23RoadGuardSeconds;
+            _e23RoadWakeUntil=E24FlushWithoutPause?State.ElapsedSeconds:State.ElapsedSeconds+E23RoadGuardSeconds;
         }
-        return State.ElapsedSeconds<_e23RoadWakeUntil;
+        return !E24FlushWithoutPause&&State.ElapsedSeconds<_e23RoadWakeUntil;
     }
     sealed class E22Subscription
     {

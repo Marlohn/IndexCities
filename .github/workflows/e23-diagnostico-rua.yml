@@ -1,9 +1,9 @@
-name: E23 - primeiro estado divergente apos remoção viaria
+name: E24 - flush da revisão viária sem pausa global
 
 on:
   push:
     branches:
-      - experimento/e23-guarda-invalida-rede
+      - experimento/e24-flush-revisao-sem-pausa
 
 permissions:
   contents: read
@@ -36,19 +36,24 @@ jobs:
             --rows=5 --length=800 --seed=${{ matrix.seed }} --signals=1 \
             --warmup=1 --e22=compare --e22-window=3000 \
             --e22-adversary=mixed --e22-reverse=${{ matrix.reversed }} \
-            --e23-diff=1 --e23-roadguard=600 | tee "e23_${{ matrix.label }}.log"
-          # Esta ablação tenta preservar o estado, logo não exigir divergência.
-          # Falhar se faltar cobertura causal ou se qualquer candidato divergir.
-          grep -q '^E22_COMPARE mode=events exactCheckpoints=True firstDivergentSecond=-1 ' "e23_${{ matrix.label }}.log"
-          grep -q '^E22_COMPARE mode=queue exactCheckpoints=True firstDivergentSecond=-1 ' "e23_${{ matrix.label }}.log"
-          grep -Eq '^E22_COVERAGE adversary=mixed .*appliedTow=3 appliedJunction=3 appliedRoadWithRoute=3 towStrandedArms=3 towDispatchArms=3 ' "e23_${{ matrix.label }}.log"
-          if grep -q '^E23_FIRST_DIFFERENCE mode=' "e23_${{ matrix.label }}.log"; then
-            echo "E23: divergência causal detectada; ablação reprovada."
-            exit 1
+            --e23-diff=1 --e23-roadguard=0 --e24-flush-only=1 | tee "e24_${{ matrix.label }}.log"
+          # E24 is a falsification experiment: a green CI means that the
+          # comparison ran with adversarial coverage, NOT causal equivalence.
+          log="e24_${{ matrix.label }}.log"
+          grep -q '^E22_COMPARE mode=events ' "$log"
+          grep -q '^E22_COMPARE mode=queue ' "$log"
+          grep -Eq '^E22_COVERAGE adversary=mixed .*appliedTow=3 appliedJunction=3 appliedRoadWithRoute=3 towStrandedArms=3 towDispatchArms=3 ' "$log"
+          grep -Eq '^E22_RESULT mode=events .*roadFlushes=[1-9][0-9]* .*roadGuardUntil=0' "$log"
+          grep -Eq '^E22_RESULT mode=queue .*roadFlushes=[1-9][0-9]* .*roadGuardUntil=0' "$log"
+          grep '^E22_COMPARE ' "$log"
+          if grep -Eq '^E22_COMPARE mode=(events|queue) exactCheckpoints=False ' "$log"; then
+            echo 'E24_CAUSAL equivalence=False (the flush-only candidate is rejected on this seed)'
+          else
+            echo 'E24_CAUSAL equivalence=True (only for this measured seed/window)'
           fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: e23-${{ matrix.label }}
-          path: e23_*.log
+          name: e24-${{ matrix.label }}
+          path: e24_*.log
           if-no-files-found: ignore
