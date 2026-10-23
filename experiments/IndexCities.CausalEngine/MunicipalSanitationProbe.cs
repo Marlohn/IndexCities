@@ -37,6 +37,26 @@ internal sealed partial class CausalCity
         if (_treasury < SanitationGrossWage ||
             _garbageAtDepot + _garbageInTransit >= SanitationDepotCapacity) return -1;
         var day = _time / DaySeconds;
+        if (_config.FairSanitationDispatch)
+        {
+            // Economical O(1) amortized coverage of ALL actual homes, not a
+            // nearby-house lottery that can starve a few blocks indefinitely.
+            // The dispatcher has no shortcut: the chosen real employee must
+            // still travel physically to the home, then the finite depot.
+            // The daily booking prevents two public workers servicing a
+            // household's same physical waste at the same time.
+            for (var n = 0; n < _households.Length; n++)
+            {
+                var id = (_fairSanitationCursor + n) % _households.Length;
+                var h = _households[id];
+                if (h.LastSanitationBookedDay == day || h.TrashUnits < 4 ||
+                    !h.Members.Any(pid => _people[pid].Alive)) continue;
+                _fairSanitationCursor = (id + 1) % _households.Length;
+                h.LastSanitationBookedDay = day;
+                return id;
+            }
+            return -1;
+        }
         var best = -1;
         var bestTravel = int.MaxValue;
         var bestWaste = -1L;
@@ -88,6 +108,7 @@ internal sealed partial class CausalCity
         var amount = Math.Min(500L, Math.Min(home.TrashUnits, remainingDepotCapacity));
         if (amount <= 0) { StartTrip(worker, worker.Home); return; }
         home.TrashUnits -= amount;
+        home.LastSanitationServicedDay = _time / DaySeconds;
         worker.SanitationCargo = amount;
         _garbageInTransit += amount;
         _garbageCollected += amount;
