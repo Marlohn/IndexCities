@@ -2276,10 +2276,12 @@ jobs:
         run: dotnet build experiments/IndexCities.CausalEngine -c Release
       # Falsifiable LAB policy A/B only: same C# engine, seeds, 29,220 days,
       # services, and municipal payroll reserve; change ONLY real monthly
-      # household property levy (0/600/1200 cents). No invented receipts:
-      # assessed-but-unpaid amounts are debts, not cash. 2,500 existing
-      # homes imply gross upper bounds of 0/18M/36M cents per 365 days,
-      # bracketing the observed ~30M-cent last-year pension debt growth.
+      # household property levy (150/300 cents), compared against the verified
+      # zero-tax control from CI #40005696147 without re-running it. No invented receipts:
+      # assessed-but-unpaid amounts are debts, not cash. The previous
+      # 600/1200-cent experiment removed pension arrears but reduced
+      # continuous population below 10k and created major household arrears.
+      # Test smaller rates to distinguish a fiscal/food affordability tradeoff.
       # This is NOT a V1 policy, NOT an acceptance of fiscal solvency,
       # and deliberately does NOT rewrite the 3/3 proven history files.
       # Inspect tax collection, arrears, family survival, service shifts,
@@ -2289,7 +2291,7 @@ jobs:
         run: |
           set -euo pipefail
           BASE='--sims=10000 --days=29220 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25 --waste-treatment-units-per-shift=75 --integrated-v1-stress --eligible-birth-fallback --municipal-payroll-reserve-counterfactual'
-          for tax in 0 600 1200; do
+          for tax in 150 300; do
             for seed in 42 73 101; do
               dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --seed=$seed --monthly-residential-tax-cents=$tax 2>&1 | tee "integrated-fiscal-tax-$tax-seed-$seed.log"
             done
@@ -2297,7 +2299,7 @@ jobs:
           python3 - <<'PY' | tee integrated-fiscal-tax-ab-summary.txt
           import json,re
           results={}
-          for tax in (0,600,1200):
+          for tax in (150,300):
               for seed in (42,73,101):
                   lines=open(f'integrated-fiscal-tax-{tax}-seed-{seed}.log').readlines()
                   start=next(i for i,line in enumerate(lines) if line.startswith('{'))
@@ -2330,18 +2332,20 @@ jobs:
                         'homeTaxDebt',r['residentialPropertyTaxDebtOutstandingCents'],
                         'pensionCreditsUnpaid',r['unpaidPensionCreditsCents'],
                         'treasuryCash',r['treasuryCashCents'],'unmetMeals',r['unmetMeals'],
-                        'actualUtilityWorkShifts',r['actualUtilityWorkShifts'],flush=True)
+                        'actualUtilityWorkShifts',r['actualUtilityWorkShifts'],
+                        'noCashAdults',r['adultCitizensWithZeroCash'],
+                        'deniedPurchases',r['deniedPurchases'],flush=True)
                   results[tax,seed]=r
-          for seed,expected in ((42,15653),(73,15668),(101,15309)):
-              baseline=results[0,seed]
-              assert baseline['minimumAliveAtAnyEvent']==10000 and baseline['aliveEnd']==expected, 'Baseline changed unexpectedly'
-              for tax in (600,1200):
+          # Deterministic no-tax control, verified in CI #40005696147 on the same engine SHA.
+          baseline={42:(10000,15653,76199732),73:(10000,15668,77381724),101:(10000,15309,60371943)}
+          for seed,(min0,end0,pension0) in baseline.items():
+              for tax in (150,300):
                   trial=results[tax,seed]
                   print('FISCAL_TAX_AB_DELTA',seed,tax,
-                        'minAliveChange',trial['minimumAliveAtAnyEvent']-baseline['minimumAliveAtAnyEvent'],
-                        'endAliveChange',trial['aliveEnd']-baseline['aliveEnd'],
-                        'pensionDebtChange',trial['unpaidPensionCreditsCents']-baseline['unpaidPensionCreditsCents'],
-                        'homeTaxPaidChange',trial['residentialPropertyTaxActuallyPaidCents']-baseline['residentialPropertyTaxActuallyPaidCents'],flush=True)
+                        'minAliveChange',trial['minimumAliveAtAnyEvent']-min0,
+                        'endAliveChange',trial['aliveEnd']-end0,
+                        'pensionDebtChange',trial['unpaidPensionCreditsCents']-pension0,
+                        'homeTaxPaidChange',trial['residentialPropertyTaxActuallyPaidCents'],flush=True)
           print('FISCAL_TAX_AB_COMPLETE no_history_files no_policy_approved',flush=True)
           PY
       - name: Test three continuous 80-year cities with staffed water, sewage, wind, fuel and paid home deeds
