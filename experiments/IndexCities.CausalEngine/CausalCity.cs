@@ -8,7 +8,7 @@ namespace IndexCities.CausalEngine;
 
 // Independent vertical-slice engine for falsifying the architecture.
 // RULES AND FIXTURES HERE ARE NOT AN IMPLEMENTATION OF ALL OF INDEXCITIES SPEC.
-internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false, bool RetailShopFallback = false, int RetailBasketsPerShift = 5, bool MunicipalSanitationPilot = false, int MunicipalCollectionIntervalDays = 6, bool MunicipalWasteTreatmentPilot = false, bool FairSanitationDispatch = false, bool AttendanceAwareMunicipalShifts = false, bool TaxInclusiveProductPrice = false);
+internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false, bool RetailShopFallback = false, int RetailBasketsPerShift = 5, bool MunicipalSanitationPilot = false, int MunicipalCollectionIntervalDays = 6, bool MunicipalWasteTreatmentPilot = false, bool FairSanitationDispatch = false, bool AttendanceAwareMunicipalShifts = false, bool TaxInclusiveProductPrice = false, int TaxCostRecoveryPercent = 100);
 internal enum EventKind : byte { Day, Hour, StartWork, EndWork, Move, Delivery, RoadClose, RoadOpen, HouseholdShop }
 internal readonly record struct SimEvent(EventKind Kind, int Id);
 internal sealed class Person
@@ -588,7 +588,7 @@ internal sealed partial class CausalCity : IDisposable
                         ? (firm.MonthWholesalePaidCents + firm.MonthWholesaleBoughtUnits - 1) / firm.MonthWholesaleBoughtUnits
                         : WholesalePrice;
                     var taxPerRetailUnit = _config.TaxInclusiveProductPrice
-                        ? (firm.MonthPropertyTaxActuallyPaidCents +
+                        ? ((firm.MonthPropertyTaxActuallyPaidCents * _config.TaxCostRecoveryPercent / 100) +
                            Math.Max(1L, (long)_active * 30 / StoreCount) - 1) /
                           Math.Max(1L, (long)_active * 30 / StoreCount)
                         : 0L;
@@ -605,7 +605,7 @@ internal sealed partial class CausalCity : IDisposable
             if (_config.FarmCostPricing && farm && firm.MonthFoodProduced > 0)
             {
                 var numerator = checked((firm.MonthFarmPaidWagesCents +
-                    (_config.TaxInclusiveProductPrice ? firm.MonthPropertyTaxActuallyPaidCents : 0)) * 105);
+                    (_config.TaxInclusiveProductPrice ? firm.MonthPropertyTaxActuallyPaidCents * _config.TaxCostRecoveryPercent / 100 : 0)) * 105);
                 var denominator = checked(firm.MonthFoodProduced * 100);
                 var unitPrice = (numerator + denominator - 1) / denominator;
                 firm.FarmWholesaleUnitPriceCents = checked((int)Math.Clamp(unitPrice, 1, int.MaxValue));
@@ -1676,6 +1676,7 @@ internal sealed partial class CausalCity : IDisposable
         retailAlternativeFailures = _people.Sum(p => p.RetailAlternativeFailures),
         municipalSanitationPilotFixture = _config.MunicipalSanitationPilot,
         taxInclusiveProductPriceFixture = _config.TaxInclusiveProductPrice,
+        taxCostRecoveryPercent = _config.TaxInclusiveProductPrice ? _config.TaxCostRecoveryPercent : 0,
         municipalWasteTreatmentPilotFixture = _config.MunicipalWasteTreatmentPilot,
         fairSanitationDispatchFixture = _config.FairSanitationDispatch,
         attendanceAwareMunicipalShiftsFixture = _config.AttendanceAwareMunicipalShifts,
