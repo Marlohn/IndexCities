@@ -2456,7 +2456,7 @@ jobs:
           fiscal={}
           for line in rows:
               if not line.startswith('LAB_FISCAL '): continue
-              f={k:int(v) for k,v in re.findall(r'\b([A-Za-z]\w*)=(-?\d+)',line)}
+              f={k:(1 if v=='True' else 0 if v=='False' else int(v)) for k,v in re.findall(r'\b([A-Za-z]\w*)=(-?\d+|True|False)\b',line)}
               fiscal[f['day']]=f
           for year in range(60,81):
               f=fiscal[365*year]
