@@ -535,6 +535,42 @@ internal static class EngineSelfTest
                     throw new InvalidOperationException("Physical home coverage changed after save/resume");
             }
             File.Delete(fairCollectionSave);
+            // Tax-inclusive prices debit firms first. Only real household
+            // purchases reimburse costs. Pricing is NOT a new cash source.
+            var taxPriceConfig = treatmentConfig with
+            {
+                FreightLabor = true, FarmCostPricing = true,
+                CostBasedFoodPrice = true, CapacityPricedFood = true,
+                BasketRetailService = true, BoundedRetailService = true,
+                TaxInclusiveProductPrice = true
+            };
+            var taxPriceSave = temp + ".tax-price.save.json";
+            string taxPriceHash;
+            using (var taxPrice = new CausalCity(taxPriceConfig))
+            {
+                taxPrice.Run();
+                taxPrice.AssertConservation();
+                taxPriceHash = taxPrice.Fingerprint();
+                using var d = JsonDocument.Parse(JsonSerializer.Serialize(taxPrice.Report(0)));
+                if (!d.RootElement.GetProperty("taxInclusiveProductPriceFixture").GetBoolean() ||
+                    d.RootElement.GetProperty("municipalTaxCollectedCents").GetInt64() <= 0 ||
+                    d.RootElement.GetProperty("businessSalesRevenueCents").GetInt64() <= 0 ||
+                    d.RootElement.GetProperty("averageRetailUnitPriceCents").GetDouble() <= 7)
+                    throw new InvalidOperationException("Cost-priced trades skipped real tax or real sales");
+            }
+            using (var taxPriceFirst = new CausalCity(taxPriceConfig))
+            {
+                taxPriceFirst.RunUntilDay(111);
+                taxPriceFirst.SaveSnapshot(taxPriceSave);
+            }
+            using (var taxPriceContinued = CausalCity.FromSnapshot(taxPriceSave))
+            {
+                taxPriceContinued.Run();
+                taxPriceContinued.AssertConservation();
+                if (taxPriceContinued.Fingerprint() != taxPriceHash)
+                    throw new InvalidOperationException("Real company tax price and snapshot differ");
+            }
+            File.Delete(taxPriceSave);
             // Small closed-household stress case: when the final family
             // member dies, a positive estate must NOT finance city pensions.
             long unclaimedEstate;
@@ -561,6 +597,7 @@ internal static class EngineSelfTest
                 boundedRetailServiceSaveResumeExact = true,
                 basketRetailStaffingAndSaveResumeExact = true, basketTransactions,
                 alternativeRetailRouteSaveResumeExact = true,
+                auditedTaxInclusivePricingCheckpointExact = true,
                 municipalCashTaxWasteAndJobsSaveResumeExact = true, municipalVisits,
                 municipalWasteTreatmentSavedExactly = true, treatmentShifts,
                 fairHouseholdSanitationDispatchSaveResumeExact = true,
@@ -583,7 +620,7 @@ internal static class EngineSelfTest
         }
         finally
         {
-            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json", temp + ".construction.save.json", temp + ".cost-price.save.json", temp + ".checkout.save.json", temp + ".basket.save.json", temp + ".fallback.save.json", temp + ".municipal.save.json", temp + ".treatment.save.json", temp + ".fair-collection.save.json" })
+            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json", temp + ".construction.save.json", temp + ".cost-price.save.json", temp + ".checkout.save.json", temp + ".basket.save.json", temp + ".fallback.save.json", temp + ".municipal.save.json", temp + ".treatment.save.json", temp + ".fair-collection.save.json", temp + ".tax-price.save.json" })
                 if (File.Exists(path)) File.Delete(path);
         }
     }
