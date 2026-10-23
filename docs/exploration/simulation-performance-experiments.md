@@ -8,7 +8,7 @@ Descobrir como simular uma cidade com **até 10 mil SIMs individuais** e avança
 
 A pergunta decisiva é: **quanto uma mudança reduz o tempo de um dia simulado completo, mantendo o mesmo estado e os mesmos acontecimentos?** Ganho de uma função isolada não responde isso.
 
-**Fronteira desta pesquisa:** esta PR #51 registra exclusivamente os experimentos E01–E24 e sucessores da investigação do **motor integrado atual**, cada um em branch isolada. A PR #52 e o motor experimental C# autossuficiente são **outra investigação**, não uma continuidade operacional nem fonte de resultados para este registro. Referências antigas à #52 abaixo são contexto histórico; não criam dependência, entrega conjunta ou critério de aprovação da #51.
+**Fronteira desta pesquisa:** esta PR #51 registra exclusivamente os experimentos E01–E25 e sucessores da investigação do **motor integrado atual**, cada um em branch isolada. A PR #52 e o motor experimental C# autossuficiente são **outra investigação**, não uma continuidade operacional nem fonte de resultados para este registro. Referências antigas à #52 abaixo são contexto histórico; não criam dependência, entrega conjunta ou critério de aprovação da #51.
 
 ## Experimentos e evidências (atualizado em 22/10/2026, horário de Brasília)
 
@@ -127,6 +127,23 @@ As **duas seeds divergiram**, apesar de `roadFlushes=1` em cada variante e `flus
 
 **Conclusão E24: DESCARTAR `flush-only` como solução causal; não integrar à `main`.** A guarda temporal do E23 mascarou/evitou a divergência nas mesmas amostras, mas seu intervalo arbitrário de 600 s não é uma prova de dependências. O código também mostra que `SetJunction` altera `Control` sem avançar `RoadRevision`, então revisão de rede nem sequer enumera todos os gatilhos possíveis. Uma nova candidata exige primeiro localizar o **veículo/evento e a dependência original** que se perdem (inclusive efeitos em RNG), não repetir variações de pausa por timeout. A pesquisa permanece totalmente independente da PR #52.
 
+### E25 — primeira diferença física por domínio após intervenção (22/10/2026)
+
+**Hipótese diagnóstica:** o primeiro campo do JSON divergente em E23/E24 (`BreakdownRandomState`) não identifica o primeiro veículo nem a primeira consequência de gameplay. Foi adicionada apenas instrumentação de comparação pós-processamento de snapshots no headless: sem trocar física, eventos, prioridades ou estados. Branch isolada [`experimento/e25-trace-primeiro-veiculo`](https://github.com/Marlohn/IndexCities/tree/experimento/e25-trace-primeiro-veiculo); [commit `3db099b`](https://github.com/Marlohn/IndexCities/commit/3db099b933a8ba8e213fdd9847bfd722a97717cb). A matriz mantém `off/events/queue`, E24 `flush-only`, 3.000 segundos simulados após aquecimento de um dia, 400 SIMs configurados, e verifica campos de `Vehicles`, `Citizens`, `Roads`, `Ledger` e `Shipments` a partir dos checkpoints da demolição. O comando é o E24 com `--e25-trace=1`. Os campos são pesquisados separadamente em cada domínio para que a diferença prévia no RNG não mascare os efeitos físicos.
+
+**[CI #39881862036](https://github.com/Marlohn/IndexCities/actions/runs/39881862036), 2/2 jobs verdes como diagnóstico, não como equivalência.** Os dois casos reproduzem `E25_CAUSAL equivalence=False`; as três intervenções têm cobertura efetiva, incluindo guincho despachado, troca de cruzamento e demolição viária com rotas afetadas em todos os braços.
+
+| Seed | Variante | Primeiro checkpoint diferente | Primeiro veículo com estado diferente | Outro domínio |
+|---|---|---|---|---|
+| 43 | events | t=1.864 s | **Veículo ID 2099**, `Position.X` original 67,46273214434501, candidata 67,5094627585618 | Cidadão ID 1952, `Satisfaction` também difere em t=1.864 |
+| 43 | queue | t=1.866 s | **Veículo ID 2099**, `Position.X` original 67,37622390394414, candidata 67,46273214434501 | Cidadão ID 1952, `Satisfaction` também difere em t=1.866 |
+| 44 | events | t=1.868 s | **Veículo ID 2107**, `Position.X` original 87,16046168707207, candidata 87,25534427663322 | Cidadão ID 1984, `Satisfaction` também difere em t=1.868 |
+| 44 | queue | t=1.868 s | **Veículo ID 2107**, mesmo campo e valores de `events` | Cidadão ID 1984, `Satisfaction` também difere em t=1.868 |
+
+Na seed 44, **`Ledger` também apresenta diferença a partir de t=2.520 s** (entrada 2209: campo `At` original `2026-01-02T06:40:54`, candidata `2026-01-02T06:41:38`); a discrepância física, portanto, também antecede uma divergência transacional observada. Não foram detectadas diferenças nos arrays `Roads` ou `Shipments` nos checkpoints disponíveis, nem em `Ledger` da seed 43; ausência nesses pontos **não** prova equivalência dos domínios. A primeira diferença de campo não implica o primeiro *evento causal* em ordem de execução: faltam o registro de qual carro dormiu/pulou qual avaliação e a cadeia de bloqueadores/ocupações.
+
+**Conclusão:** E25 **localiza a manifestação física em IDs reproduzíveis**, refina o E23/E24 e confirma que `flush-only` não conserva resultados. A próxima hipótese discriminante é instrumentar, na janela imediatamente posterior à demolição e nos IDs 2099/2107, a sequência de avaliações físicas puladas, as inscrições/bloqueadores e suas invalidações, comparando-a com `off`. Só propor invalidação seletiva quando houver dependências concretas suficientes, e não inferir causa raiz de diferenças pequenas na posição ou no RNG. Sem adoção em `main`; nenhuma relação com a pesquisa independente da PR #52.
+
 ### Limites dos testes
 
 - `roadgraph 10000` contém **10 mil pontos de rua**, não 10 mil habitantes.
@@ -153,6 +170,6 @@ Uma **PR de implementação** só faz sentido depois que uma candidata apresenta
 
 ## Próxima pergunta útil
 
-**Após E24 (diagnóstico concluído):** invalidar todas as inscrições no evento de revisão viária, mas permitir novas dormências imediatamente, **falhou causalmente em ambas as seeds adversariais**, mesmo com guincho e demolição cobertos. A próxima pergunta de valor não é variar mais o timeout: identificar qual veículo/acontecimento altera primeiro a sequência física/RNG após a demolição e quais mudanças de guincho, cruzamento, ingresso na faixa e reparo de rota invalidam cada inscrição. Sem uma fronteira de dependências completa e comprovável, **encerrar E22/E24 como arquitetura não integrável**. O E23 guardado é apenas controle positivo local, não solução aprovada.
+**Após E25 (CI diagnóstico aprovado, comparação causal reprovada):** os veículos **2099 (seed 43)** e **2107 (seed 44)** já apresentam diferenças reais de posição a 4–8 s da demolição, com efeitos subsequentes em satisfação e, na seed 44, lançamento contábil. O próximo experimento de valor é rastrear nesses primeiros instantes as inscrições e avaliações físicas omitidas desses veículos e seus bloqueadores, juntamente com ordem de passos e eventos de guincho/cruzamento/rota, para localizar uma dependência ausente. **Não repetir janelas arbitrárias de guarda** nem alegar invalidação seletiva pronta. Se a fronteira causal completa não se mostrar viável, rejeitar a família E22/E24 para integração. O E23 guardado segue controle positivo limitado.
 
 **A PR #51 segue independente da PR #52.** O resultado de uma não é bloqueador, entrega ou relatório obrigatório da outra.
