@@ -282,6 +282,77 @@ jobs:
           path: economic-second-cycle-10y.log
           if-no-files-found: ignore
 
+  fair-collection-coverage-80y:
+    # Check whether arbitrary nearby-house selection was starving homes even
+    # when financed collection workers were available. Every home is visited
+    # by real employees, on real road trips; 2 source seeds and 80y conditional.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[fair-collection-80y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Run real seeded sanitation A/B and prove sustained 80-year history if possible
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          COMMON='--sims=10000 --days=3653 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot'
+          for interval in 4 3; do
+            for seed in 42 73; do
+              dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $COMMON --seed=$seed --municipal-collection-interval=$interval --fair-sanitation-dispatch 2>&1 | tee fair-dispatch-$interval-$seed.log
+            done
+          done
+          python3 - <<'PY'
+          import json
+          def get(path):
+              lines=open(path).readlines()
+              k=next(i for i,line in enumerate(lines) if line.startswith('{'))
+              return json.loads(''.join(lines[k:]))
+          pass_rates=[]
+          for interval in (4,3):
+              both=True
+              for seed in (42,73):
+                  r=get(f'fair-dispatch-{interval}-{seed}.log')
+                  assert r['simulatedDays']==3653
+                  assert r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+                  assert r['fairSanitationDispatchFixture'] and r['municipalWasteTreatmentPilotFixture']
+                  assert r['wasteTreatedAtDepot']>0 and r['wasteTreatedAtDepot']<=r['totalWasteCollected']
+                  assert r['municipalSanitationWagesPaidCents']>0 and not r['fullIndexCitiesTargetValidated']
+                  both &= r['minimumAliveAtAnyEvent']>=10000
+                  print('FAIR_COLLECTION_RESULT','interval',interval,'seed',seed,
+                        'alive',r['aliveEnd'],'min',r['minimumAliveAtAnyEvent'],
+                        'homesTooDirty',r['homesPastSanitationHygieneThreshold'],
+                        'highestTrash',r['highestUntreatedHomeWaste'],
+                        'unservedHomesOver15d',r['homesWithoutPickupFor15Days'],
+                        'collected',r['totalWasteCollected'],
+                        'processed',r['wasteTreatedAtDepot'],
+                        'pendingDepot',r['wasteStoredAtRealDepot'],
+                        'cityJobs',r['municipalSanitationJobs']+r['municipalWasteTreatmentJobs'],
+                        'money',r['personalCashCents'],
+                        'tax',r['municipalTaxCollectedCents'])
+              if both: pass_rates.append(interval)
+          open('ready-for-80y.flag','w').write(str(pass_rates[0]) if pass_rates else 'none')
+          PY
+          RATE="$(cat ready-for-80y.flag)"
+          if test "$RATE" != none; then
+            echo "Both distinct seeds sustained ten years. Run 80 years with complete persistent historical fact stream, interval $RATE."
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --municipal-collection-interval=$RATE --fair-sanitation-dispatch --history=full-fair-sanitation-80y.facts.gz 2>&1 | tee full-fair-sanitation-80y.log
+          else
+            echo 'Unbroken ten-thousand lives not proven; do NOT claim 80y.'
+          fi
+      - name: Preserve real results and history if it exists
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fairness-service-80year-counterfactual
+          path: |
+            fair-dispatch-*.log
+            full-fair-sanitation-80y.log
+            full-fair-sanitation-80y.facts.gz
+          if-no-files-found: ignore
+
   actual-waste-treatment-10y:
     # Complete the REAL refuse material circuit, not just an ever-growing
     # 50-million-unit pile. Municipal employees commute to the finite depot,
