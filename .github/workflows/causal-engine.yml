@@ -282,6 +282,75 @@ jobs:
           path: economic-second-cycle-10y.log
           if-no-files-found: ignore
 
+  real-municipal-shift-coverage:
+    # Prevent one-day-per-week resting public workers from being counted as
+    # 30/30 attending workers. Staff monthly contracts under real treasury cash.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[attendance-municipal]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compare fair collection with and without paid shift coverage
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          BASE='--sims=10000 --days=3653 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch'
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --seed=42 --municipal-collection-interval=4 2>&1 | tee naive-coverage-4-42.log
+          for n in 4 3; do
+            for seed in 42 73; do
+              dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --seed=$seed --municipal-collection-interval=$n --attendance-aware-municipal-shifts 2>&1 | tee real-coverage-$n-$seed.log
+            done
+          done
+          python3 - <<'PY'
+          import json
+          def read(path):
+              lines=open(path).readlines()
+              idx=next(i for i,s in enumerate(lines) if s.startswith('{'))
+              return json.loads(''.join(lines[idx:]))
+          control=read('naive-coverage-4-42.log')
+          assert not control['attendanceAwareMunicipalShiftsFixture']
+          passing=[]
+          for n in [4,3]:
+              both=True
+              for seed in [42,73]:
+                  r=read(f'real-coverage-{n}-{seed}.log')
+                  assert r['simulatedDays']==3653 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+                  assert r['attendanceAwareMunicipalShiftsFixture'] and r['fairSanitationDispatchFixture']
+                  assert r['municipalWasteTreatmentPilotFixture'] and r['wasteTreatedAtDepot']>0
+                  both &= r['minimumAliveAtAnyEvent']>=10000
+                  print('REAL_MUNICIPAL_COVERAGE',n,seed,
+                    'alive',r['aliveEnd'],'min',r['minimumAliveAtAnyEvent'],
+                    'unservedHomes15d',r['homesWithoutPickupFor15Days'],
+                    'dirtyHomes',r['homesPastSanitationHygieneThreshold'],
+                    'wasteTreated',r['wasteTreatedAtDepot'],
+                    'municipalJobs',r['municipalSanitationJobs']+r['municipalWasteTreatmentJobs'],
+                    'paidCityWages',r['municipalSanitationWagesPaidCents'],
+                    'tax',r['municipalTaxCollectedCents'])
+              if both: passing.append(n)
+          open('coverage-80y-rate.txt','w').write(str(passing[0]) if passing else 'none')
+          PY
+          RATE="$(cat coverage-80y-rate.txt)"
+          if test "$RATE" != none; then
+            echo '10k never fell during a decade in two seeds: run full history for 80y.'
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=$RATE --history=full-real-municipal-80y.facts.gz 2>&1 | tee full-real-municipal-80y.log
+          else
+            echo 'Decadal demographic sustainability failed, no 80-year assertion.'
+          fi
+      - name: Keep proofs and failed scenarios
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-municipal-worker-attendance-80y
+          path: |
+            naive-coverage-4-42.log
+            real-coverage-*.log
+            full-real-municipal-80y.log
+            full-real-municipal-80y.facts.gz
+          if-no-files-found: ignore
+
   independent-demography-80y:
     # Separate cheap demographic boundary probe: NO compressed history. It
     # cannot satisfy the goal, but quickly falsifies the 80y survival premise
