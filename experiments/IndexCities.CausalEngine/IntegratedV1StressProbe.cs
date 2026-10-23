@@ -136,6 +136,7 @@ internal sealed partial class CausalCity
         else { employer.Cash -= UtilityGrossWage; _fuelStationWages += UtilityGrossWage; }
         var pension = UtilityGrossWage / 10;
         _treasury += pension;
+        _pensionContributionsPaidCents += pension;
         worker.Cash += UtilityGrossWage - pension;
         worker.ContributedDays++;
         worker.GrossEarnings += UtilityGrossWage;

@@ -247,6 +247,7 @@ internal sealed partial class CausalCity : IDisposable
     private long _paidFreightCents, _freightLaborTrips;
     private long _retailSalesCents;
     private long _municipalTaxPaidCents, _municipalWagesPaidCents;
+    private long _pensionContributionsPaidCents; // Every real payroll contribution, private or public.
     private long _residentialTaxPaidCents, _residentialTaxAssessedCents;
     private int _fairSanitationCursor;
     private long _garbageGenerated, _garbageCollected, _garbageAtDepot, _sanitationPaidVisits, _garbageInTransit;
@@ -371,19 +372,33 @@ internal sealed partial class CausalCity : IDisposable
                 $"paidCollections={_sanitationPaidVisits} treatmentShifts={_wasteTreatmentPaidShifts} " +
                 $"businessTaxPaid={_municipalTaxPaidCents} residentialTaxPaid={_residentialTaxPaidCents} " +
                 $"municipalWages={_municipalWagesPaidCents}");
-        // Annual read-only municipal financing audit for the integrated
-        // laboratory. Values are cumulative real transfers; pensions are
-        // reconstructed from recipients, including deceased recipients.
-        // This does not assert that sanitation wages include utility payroll.
+        // Independent treasury reconciliation from ACTUAL paid transfers.
+        // The old sanitationWagesPaidCents diagnostic was misnamed: its
+        // underlying counter also includes waste treatment and public utilities.
+        // These are cumulative amounts, not rates or hypothetical assessments.
         if (_config.IntegratedV1Stress && (_days % 365 == 0 || _days == _config.Days))
+        {
+            var pensionsPaid = _people.Sum(p => p.PensionReceived);
+            var expectedTreasury = checked(_municipalTaxPaidCents + _residentialTaxPaidCents +
+                _pensionContributionsPaidCents - _municipalWagesPaidCents - pensionsPaid);
+            var collectionPayroll = _sanitationPaidVisits * SanitationGrossWage;
+            var treatmentPayroll = _wasteTreatmentPaidShifts * WasteTreatmentGrossWage;
             Console.Error.WriteLine(
                 $"LAB_FISCAL day={_days} alive={_active} treasuryCents={_treasury} " +
-                $"pensionsActuallyPaidCents={_people.Sum(p => p.PensionReceived)} " +
+                $"fiscalExpectedTreasuryCents={expectedTreasury} fiscalBalanced={expectedTreasury == _treasury} " +
+                $"pensionsActuallyPaidCents={pensionsPaid} " +
                 $"pensionCreditsOutstandingCents={_people.Sum(p => p.PensionCredit)} " +
                 $"businessTaxPaidCents={_municipalTaxPaidCents} residentialTaxPaidCents={_residentialTaxPaidCents} " +
-                $"sanitationWagesPaidCents={_municipalWagesPaidCents} " +
+                $"pensionContributionsPaidCents={_pensionContributionsPaidCents} " +
+                $"municipalGrossPayrollCents={_municipalWagesPaidCents} " +
+                $"sanitationWagesPaidCents={collectionPayroll} wasteTreatmentWagesPaidCents={treatmentPayroll} " +
+                $"publicUtilityWagesPaidCents={_municipalWagesPaidCents - collectionPayroll - treatmentPayroll} " +
                 $"paidCollections={_sanitationPaidVisits} treatmentShifts={_wasteTreatmentPaidShifts} " +
+                $"waterShortages={_waterShortage} powerShortages={_powerShortage} " +
+                $"healthDeaths={_deathsWithCollapsedHealth} " +
+                $"dirtyLivingHomes={_households.Count(h => h.TrashUnits > 80 && h.Members.Any(id => _people[id].Alive))} " +
                 $"livingMunicipalServiceWorkers={_people.Count(p => p.Alive && (p.Job == SanitationJob || p.Job == WasteTreatmentJob))}");
+        }
         if (_config.WageFeedback && !_config.DemandStaffing)
         {
             // Hypothetical stress fixture, NOT a new IndexCities wage policy:
@@ -1211,6 +1226,7 @@ internal sealed partial class CausalCity : IDisposable
                 employer.ReservedCheckoutWagesCents -= 65;
             var contribution = wage / 10; // 10% illustrative contributory fixture
             _treasury += contribution;
+            _pensionContributionsPaidCents += contribution;
             p.Cash += wage - contribution;
             p.ContributedDays++;
             p.GrossEarnings += wage;
@@ -1365,6 +1381,7 @@ internal sealed partial class CausalCity : IDisposable
             const int grossFreightWage = 80;
             farm.Cash -= grossFreightWage;
             _treasury += grossFreightWage / 10;
+            _pensionContributionsPaidCents += grossFreightWage / 10;
             driver.Cash += grossFreightWage - grossFreightWage / 10;
             driver.ContributedDays++;
             driver.GrossEarnings += grossFreightWage;
@@ -1777,6 +1794,12 @@ internal sealed partial class CausalCity : IDisposable
     {
         if (CalculateMoney() != _initialMoney)
             throw new InvalidOperationException("Money created/destroyed. First mismatch: " + _firstDollarViolation);
+        // Independent public-sector balance: no invisible revenue or expense.
+        var paidPensions = _people.Sum(p => p.PensionReceived);
+        var expectedTreasury = checked(_municipalTaxPaidCents + _residentialTaxPaidCents +
+            _pensionContributionsPaidCents - _municipalWagesPaidCents - paidPensions);
+        if (_treasury != expectedTreasury)
+            throw new InvalidOperationException($"Treasury ledger mismatch: actual={_treasury}, expected={expectedTreasury}");
         // Here food is the sole paid consumer good. Wholesale transfers stay
         // inside the business sector; every paid salary leaves it. This
         // independent ledger exposes structural insolvency that total-money
@@ -1840,7 +1863,7 @@ internal sealed partial class CausalCity : IDisposable
         void Mix(long x) { hash ^= unchecked((ulong)x); hash *= 1099511628211UL; }
         Mix(_time); Mix(_active); Mix(_births); Mix(_deaths); Mix(_treasury); Mix(_reserveGlobal);
         Mix(_journeys); Mix(_segments); Mix(_sales); Mix(_shipments); Mix(_retailSalesCents);
-        Mix(_municipalTaxPaidCents); Mix(_municipalWagesPaidCents);
+        Mix(_municipalTaxPaidCents); Mix(_municipalWagesPaidCents); Mix(_pensionContributionsPaidCents);
         Mix(_residentialTaxPaidCents); Mix(_residentialTaxAssessedCents);
         Mix(_rawWater); Mix(_potableWater); Mix(_sewage); Mix(_energy);
         Mix(_waterExtracted); Mix(_waterConsumed); Mix(_sewageProcessed); Mix(_powerGenerated);
@@ -2024,6 +2047,10 @@ internal sealed partial class CausalCity : IDisposable
         shopCashCents = _shops.Sum(s => s.Cash),
         farmCashCents = _farms.Sum(f => f.Cash),
         treasuryCashCents = _treasury,
+        pensionContributionsActuallyPaidCents = _pensionContributionsPaidCents,
+        municipalGrossPayrollCents = _municipalWagesPaidCents,
+        fiscalTreasuryLedgerBalanced = _treasury == checked(_municipalTaxPaidCents + _residentialTaxPaidCents +
+            _pensionContributionsPaidCents - _municipalWagesPaidCents - _people.Sum(p => p.PensionReceived)),
         reserveGlobalCashCents = _reserveGlobal,
         unpaidPensionCreditsCents = _people.Sum(p => p.PensionCredit),
         historicalPensionsPaidCents = _people.Sum(p => p.PensionReceived),

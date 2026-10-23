@@ -39,6 +39,7 @@ internal sealed partial class CausalCity
         var pensionContribution = WasteTreatmentGrossWage / 10;
         _treasury -= WasteTreatmentGrossWage;
         _treasury += pensionContribution;
+        _pensionContributionsPaidCents += pensionContribution;
         worker.Cash += WasteTreatmentGrossWage - pensionContribution;
         worker.GrossEarnings += WasteTreatmentGrossWage;
         worker.ContributedDays++;

@@ -72,7 +72,8 @@ internal sealed partial class CausalCity
                 _utilityShiftsPaid, _fuelImported, _fuelBurned, _fuelDelivered,
                 _fuelImportSpending, _fuelStationWages, _deedPaid,
                 _fuelInTransit, _fuelImportPending ? 1 : 0,
-                _powerCurtailed, _lastPowerHour, _lastWindMaintainedDay
+                _powerCurtailed, _lastPowerHour, _lastWindMaintainedDay,
+                _pensionContributionsPaidCents
             ],
             Populations = [_active, _maxActive, _minActive],
             Factors = [_windFactor, _waterRatio],
@@ -89,7 +90,7 @@ internal sealed partial class CausalCity
     {
         var state = JsonSerializer.Deserialize<Snapshot>(File.ReadAllText(path), SnapshotJson)
             ?? throw new InvalidDataException("Empty snapshot");
-        if ((state.Counters.Length != 37 && state.Counters.Length != 39 && state.Counters.Length != 40 && state.Counters.Length != 42 && state.Counters.Length != 63 && state.Counters.Length != 66) || state.Populations.Length != 3 ||
+        if ((state.Counters.Length != 37 && state.Counters.Length != 39 && state.Counters.Length != 40 && state.Counters.Length != 42 && state.Counters.Length != 63 && state.Counters.Length != 66 && state.Counters.Length != 67) || state.Populations.Length != 3 ||
             state.Factors.Length != 2 || state.Households.Length < 1 ||
             state.Shops.Length != StoreCount || state.Farms.Length != FarmCount ||
             state.Builder is null || (state.Config.IntegratedV1Stress && state.FuelStation is null) || state.ConstructionSites.Length != state.Households.Length ||
@@ -180,6 +181,12 @@ internal sealed partial class CausalCity
             city._lastPowerHour = c[64];
             city._lastWindMaintainedDay = (int)c[65];
         }
+        // Older checkpoints predate this observability counter. Recover its
+        // exact cumulative value from the already persisted public ledger.
+        city._pensionContributionsPaidCents = c.Length >= 67 ? c[66] :
+            checked(city._treasury + city._municipalWagesPaidCents +
+                city._people.Sum(p => p.PensionReceived) -
+                city._municipalTaxPaidCents - city._residentialTaxPaidCents);
         city._active = state.Populations[0];
         city._maxActive = state.Populations[1];
         city._minActive = state.Populations[2];
