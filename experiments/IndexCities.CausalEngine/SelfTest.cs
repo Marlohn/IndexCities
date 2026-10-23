@@ -664,6 +664,54 @@ internal static class EngineSelfTest
                     throw new InvalidOperationException("Integrated V1 physical and financial checkpoint diverged");
             }
             File.Delete(integratedSave);
+            // The integrated city has eight real farm trucks, one per farm.
+            // After each truck returns, another on-site contracted driver can
+            // use that SAME truck on a separately paid physical freight shift.
+            // Test throughput beyond one 500-unit trip per farm per day and
+            // prove deterministic save/resume without inventing vehicles.
+            var sequentialFreightCfg = new LabConfig(10_000, 40, 42, null, true,
+                VacancyMarket: true, CohortRenewal: true, FreightLabor: true,
+                ConstructionPilot: true, CostBasedFoodPrice: true,
+                CapacityPricedFood: true, AttendanceAwareFarms: true,
+                CrossFarmFreight: true, FarmCostPricing: true,
+                BoundedRetailService: true, BasketRetailService: true,
+                RetailShopFallback: true, RetailBasketsPerShift: 20,
+                FairHouseholdHiring: true, MunicipalSanitationPilot: true,
+                MunicipalWasteTreatmentPilot: true, FairSanitationDispatch: true,
+                AttendanceAwareMunicipalShifts: true,
+                MunicipalCollectionIntervalDays: 3, TaxInclusiveProductPrice: true,
+                TaxCostRecoveryPercent: 25, WasteTreatmentUnitsPerShift: 75,
+                IntegratedV1Stress: true);
+            var sequentialFreightSave = temp + ".sequential-freight.save.json";
+            string sequentialFreightHash;
+            using (var freightCity = new CausalCity(sequentialFreightCfg))
+            {
+                freightCity.Run();
+                freightCity.AssertConservation();
+                sequentialFreightHash = freightCity.Fingerprint();
+                using var report = JsonDocument.Parse(JsonSerializer.Serialize(freightCity.Report(0)));
+                var trips = report.RootElement.GetProperty("realWorkerFreightTrips").GetInt64();
+                if (trips <= 8L * sequentialFreightCfg.Days ||
+                    report.RootElement.GetProperty("fuelConsumedByRealFreight").GetInt64() <= 0 ||
+                    !report.RootElement.GetProperty("moneyConserved").GetBoolean() ||
+                    !report.RootElement.GetProperty("foodConserved").GetBoolean())
+                    throw new InvalidOperationException(
+                        $"Sequential real-truck freight insufficient or noncausal: trips={trips}");
+            }
+            using (var freightCity = new CausalCity(sequentialFreightCfg))
+            {
+                freightCity.RunUntilDay(19);
+                freightCity.SaveSnapshot(sequentialFreightSave);
+            }
+            using (var freightCity = CausalCity.FromSnapshot(sequentialFreightSave))
+            {
+                freightCity.Run();
+                freightCity.AssertConservation();
+                if (freightCity.Fingerprint() != sequentialFreightHash)
+                    throw new InvalidOperationException(
+                        "Sequential real-truck dispatch diverged after save/resume");
+            }
+            File.Delete(sequentialFreightSave);
             // Small closed-household stress case: when the final family
             // member dies, a positive estate must NOT finance city pensions.
             long unclaimedEstate;
@@ -694,6 +742,7 @@ internal static class EngineSelfTest
                 realResidentialPropertyTaxOwnershipAndCheckpoint = true,
                 integratedRealUtilitiesFuelAndDeedsCheckpoint = true,
                 integratedWaterPowerAndDeedsHistoryReadable = true,
+                sequentialSingleTruckFreightAndSaveResumeExact = true,
                 municipalCashTaxWasteAndJobsSaveResumeExact = true, municipalVisits,
                 municipalWasteTreatmentSavedExactly = true, treatmentShifts,
                 fairHouseholdSanitationDispatchSaveResumeExact = true,
@@ -716,7 +765,7 @@ internal static class EngineSelfTest
         }
         finally
         {
-            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json", temp + ".construction.save.json", temp + ".cost-price.save.json", temp + ".checkout.save.json", temp + ".basket.save.json", temp + ".fallback.save.json", temp + ".municipal.save.json", temp + ".treatment.save.json", temp + ".fair-collection.save.json", temp + ".tax-price.save.json", temp + ".home-tax.save.json", temp + ".integrated.save.json", temp + ".integrated.facts.gz" })
+            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json", temp + ".construction.save.json", temp + ".cost-price.save.json", temp + ".checkout.save.json", temp + ".basket.save.json", temp + ".fallback.save.json", temp + ".municipal.save.json", temp + ".treatment.save.json", temp + ".fair-collection.save.json", temp + ".tax-price.save.json", temp + ".home-tax.save.json", temp + ".integrated.save.json", temp + ".integrated.facts.gz", temp + ".sequential-freight.save.json" })
                 if (File.Exists(path)) File.Delete(path);
         }
     }

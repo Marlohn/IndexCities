@@ -525,7 +525,8 @@ internal sealed partial class CausalCity : IDisposable
                 $"householdFood={_households.Sum(h => (long)h.Pantry)} " +
                 $"storeFood={_shops.Sum(s => (long)s.Stock)} farmFood={_farms.Sum(f => (long)f.Stock)} " +
                 $"storeNoStock={_shops.Count(s => s.Stock == 0)} " +
-                $"shopsNoStaff={_shops.Count(s => s.PresentWorkers == 0)} " +
+                $"retailContractedWorkers={_people.Count(p => p.Alive && p.Job >= 0 && p.Job < StoreCount)} " +
+                $"realFreightTrips={_freightLaborTrips} busyFarmTrucks={_farms.Count(f => f.TruckBusy)} " +
                 $"storePriceMin={_shops.Min(s => s.RetailUnitPriceCents)} " +
                 $"storePriceMax={_shops.Max(s => s.RetailUnitPriceCents)} " +
                 $"retailSales={_sales} employedAdults={_people.Count(p => p.Alive && p.Job >= 0 && Age(p, date) >= 18)} " +
@@ -1202,6 +1203,28 @@ internal sealed partial class CausalCity : IDisposable
         _trips.Add(trip);
         return trip;
     }
+    // One existing farm truck is shared SEQUENTIALLY by real contracted
+    // drivers already on site. A returned truck can take another paid trip
+    // during the same shift; no second vehicle, free salary or cargo is created.
+    private void DispatchNextFreightFromFarm(int farmId)
+    {
+        var farm = _farms[farmId];
+        if (!_config.IntegratedV1Stress || farm.TruckBusy ||
+            _time % DaySeconds >= 17 * 3600) return;
+        foreach (var candidate in _people)
+        {
+            if (!candidate.Alive || candidate.Job != StoreCount + farmId ||
+                !candidate.IsFreightDriver || !candidate.AtWork ||
+                candidate.Traveling || candidate.FreightShift ||
+                candidate.Node != farm.Node) continue;
+            if (!TryAssignFreight(candidate)) return;
+            candidate.FreightShift = true;
+            candidate.AtWork = false;
+            farm.PresentWorkers--;
+            return;
+        }
+    }
+
     private bool TryAssignFreight(Person driver)
     {
         var farmId = driver.Job - StoreCount;
@@ -1425,6 +1448,7 @@ internal sealed partial class CausalCity : IDisposable
                 // home separately and must not burn company diesel on foot.
                 _farms[p.Job - StoreCount].TruckBusy = false;
                 p.FreightShift = false;
+                DispatchNextFreightFromFarm(p.Job - StoreCount);
             }
             // Return from physical delivery, without a second paid shift.
             // A person can LIVE on the same grid node as the farm: do not

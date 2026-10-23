@@ -251,6 +251,9 @@ internal sealed partial class CausalCity
         _fuelDelivered += trip.Cargo;
         _fuelInTransit -= trip.Cargo;
         _history.Fact(_time, -7001 - farmId, 39, trip.Cargo);
+        // Fuel delivered physically while the truck is idle can unblock
+        // another already-present driver during the same paid shift.
+        DispatchNextFreightFromFarm(farmId);
     }
 
     private bool HasTruckFuelForTrip(int farmId, int shopId)
