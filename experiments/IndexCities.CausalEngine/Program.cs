@@ -37,7 +37,7 @@ internal static class Program
             int sims = 1000, days = 7, seed = 42, annualLoadCycles = 0;
             string? history = null;
             int retailBasketsPerShift = 5, municipalCollectionIntervalDays = 6;
-            bool adversarial = false, wageFeedback = false, cohortRenewal = false, demandStaffing = false, vacancyMarket = false, freightLabor = false, constructionPilot = false, fairHouseholdHiring = false, demographicUpperBound = false, costBasedFoodPrice = false, capacityPricedFood = false, attendanceAwareFarms = false, crossFarmFreight = false, farmCostPricing = false, boundedRetailService = false, basketRetailService = false, retailShopFallback = false, municipalSanitationPilot = false, municipalWasteTreatmentPilot = false, fairSanitationDispatch = false, attendanceAwareMunicipalShifts = false;
+            bool adversarial = false, wageFeedback = false, cohortRenewal = false, demandStaffing = false, vacancyMarket = false, freightLabor = false, constructionPilot = false, fairHouseholdHiring = false, demographicUpperBound = false, costBasedFoodPrice = false, capacityPricedFood = false, attendanceAwareFarms = false, crossFarmFreight = false, farmCostPricing = false, boundedRetailService = false, basketRetailService = false, retailShopFallback = false, municipalSanitationPilot = false, municipalWasteTreatmentPilot = false, fairSanitationDispatch = false, attendanceAwareMunicipalShifts = false, taxInclusiveProductPrice = false;
             foreach (var arg in args)
             {
                 if (arg.StartsWith("--sims=")) sims = int.Parse(arg[7..]);
@@ -66,6 +66,7 @@ internal static class Program
                 else if (arg == "--municipal-waste-treatment-pilot") municipalWasteTreatmentPilot = true;
                 else if (arg == "--fair-sanitation-dispatch") fairSanitationDispatch = true;
                 else if (arg == "--attendance-aware-municipal-shifts") attendanceAwareMunicipalShifts = true;
+                else if (arg == "--tax-inclusive-product-price") taxInclusiveProductPrice = true;
                 else if (arg.StartsWith("--municipal-collection-interval=")) municipalCollectionIntervalDays = int.Parse(arg["--municipal-collection-interval=".Length..]);
                 else if (arg.StartsWith("--retail-baskets-per-shift=")) retailBasketsPerShift = int.Parse(arg["--retail-baskets-per-shift=".Length..]);
                 else if (arg == "--self-test") return EngineSelfTest.Run();
@@ -88,6 +89,8 @@ internal static class Program
                 throw new ArgumentException("Actual municipal attendance requires real staffed collection");
             if (fairSanitationDispatch && !municipalSanitationPilot)
                 throw new ArgumentException("Fair physical residential service requires real municipal sanitation");
+            if (taxInclusiveProductPrice && !(municipalSanitationPilot && farmCostPricing && capacityPricedFood))
+                throw new ArgumentException("Tax-inclusive actual-cost pricing requires municipal levy and real farm/store pricing");
             if (municipalWasteTreatmentPilot && !municipalSanitationPilot)
                 throw new ArgumentException("Treatment requires actual collected waste and municipal payment");
             if (municipalSanitationPilot && !(vacancyMarket && constructionPilot))
@@ -120,7 +123,7 @@ internal static class Program
             if (annualLoadCycles != 0)
             {
                 if (annualLoadCycles < 1 || annualLoadCycles > 80 ||
-                    history is not null || wageFeedback || cohortRenewal || demandStaffing || vacancyMarket || freightLabor || constructionPilot || fairHouseholdHiring || costBasedFoodPrice || attendanceAwareFarms || crossFarmFreight || farmCostPricing || boundedRetailService || basketRetailService || retailShopFallback || retailBasketsPerShift != 5 || municipalSanitationPilot || municipalWasteTreatmentPilot || fairSanitationDispatch || attendanceAwareMunicipalShifts || municipalCollectionIntervalDays != 6 || days != 7)
+                    history is not null || wageFeedback || cohortRenewal || demandStaffing || vacancyMarket || freightLabor || constructionPilot || fairHouseholdHiring || costBasedFoodPrice || attendanceAwareFarms || crossFarmFreight || farmCostPricing || boundedRetailService || basketRetailService || retailShopFallback || retailBasketsPerShift != 5 || municipalSanitationPilot || municipalWasteTreatmentPilot || fairSanitationDispatch || attendanceAwareMunicipalShifts || taxInclusiveProductPrice || municipalCollectionIntervalDays != 6 || days != 7)
                     throw new ArgumentException(
                         "Annual workload mode requires 1..80 cycles, no --days, history, or gameplay counterfactuals");
                 var watch = Stopwatch.StartNew();
@@ -164,7 +167,7 @@ internal static class Program
                 }, new JsonSerializerOptions { WriteIndented = true }));
                 return 0;
             }
-            var config = new LabConfig(sims, days, seed, history, adversarial, wageFeedback, cohortRenewal, demandStaffing, vacancyMarket, freightLabor, constructionPilot, fairHouseholdHiring, costBasedFoodPrice, capacityPricedFood, attendanceAwareFarms, crossFarmFreight, farmCostPricing, boundedRetailService, basketRetailService, retailShopFallback, retailBasketsPerShift, municipalSanitationPilot, municipalCollectionIntervalDays, municipalWasteTreatmentPilot, fairSanitationDispatch, attendanceAwareMunicipalShifts);
+            var config = new LabConfig(sims, days, seed, history, adversarial, wageFeedback, cohortRenewal, demandStaffing, vacancyMarket, freightLabor, constructionPilot, fairHouseholdHiring, costBasedFoodPrice, capacityPricedFood, attendanceAwareFarms, crossFarmFreight, farmCostPricing, boundedRetailService, basketRetailService, retailShopFallback, retailBasketsPerShift, municipalSanitationPilot, municipalCollectionIntervalDays, municipalWasteTreatmentPilot, fairSanitationDispatch, attendanceAwareMunicipalShifts, taxInclusiveProductPrice);
             using var engine = new CausalCity(config);
             var sw = Stopwatch.StartNew();
             engine.Run();
