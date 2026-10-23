@@ -8,7 +8,7 @@ namespace IndexCities.CausalEngine;
 
 // Independent vertical-slice engine for falsifying the architecture.
 // RULES AND FIXTURES HERE ARE NOT AN IMPLEMENTATION OF ALL OF INDEXCITIES SPEC.
-internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false, bool RetailShopFallback = false, int RetailBasketsPerShift = 5, bool MunicipalSanitationPilot = false, int MunicipalCollectionIntervalDays = 6, bool MunicipalWasteTreatmentPilot = false, bool FairSanitationDispatch = false);
+internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false, bool RetailShopFallback = false, int RetailBasketsPerShift = 5, bool MunicipalSanitationPilot = false, int MunicipalCollectionIntervalDays = 6, bool MunicipalWasteTreatmentPilot = false, bool FairSanitationDispatch = false, bool AttendanceAwareMunicipalShifts = false);
 internal enum EventKind : byte { Day, Hour, StartWork, EndWork, Move, Delivery, RoadClose, RoadOpen, HouseholdShop }
 internal readonly record struct SimEvent(EventKind Kind, int Id);
 internal sealed class Person
@@ -514,6 +514,10 @@ internal sealed partial class CausalCity : IDisposable
         Span<int> positions = stackalloc int[StoreCount + FarmCount + (_config.ConstructionPilot ? 1 : 0) + (_config.MunicipalSanitationPilot ? 1 : 0) + (_config.MunicipalWasteTreatmentPilot ? 1 : 0)];
         Span<int> occupied = stackalloc int[StoreCount + FarmCount + (_config.ConstructionPilot ? 1 : 0) + (_config.MunicipalSanitationPilot ? 1 : 0) + (_config.MunicipalWasteTreatmentPilot ? 1 : 0)];
         long municipalPayrollBudget = _treasury;
+        // Paid service jobs work at most 26 days per 30-day calendar month
+        // (one day of rest in seven). Monthly funding follows ACTUAL possible
+        // shifts instead of fictitious 30 worked days.
+        var municipalPaidShiftDays = _config.AttendanceAwareMunicipalShifts ? 26L : 30L;
         for (var i = 0; i < positions.Length; i++)
         {
             if (_config.MunicipalWasteTreatmentPilot && i == WasteTreatmentJob)
@@ -526,8 +530,8 @@ internal sealed partial class CausalCity : IDisposable
                     (neededWaste + WasteTreatmentUnitsPerShift * 26 - 1) /
                     (WasteTreatmentUnitsPerShift * 26));
                 positions[i] = (int)Math.Min(demanded,
-                    municipalPayrollBudget / (WasteTreatmentGrossWage * 30L));
-                municipalPayrollBudget -= positions[i] * WasteTreatmentGrossWage * 30L;
+                    municipalPayrollBudget / (WasteTreatmentGrossWage * municipalPaidShiftDays));
+                municipalPayrollBudget -= positions[i] * WasteTreatmentGrossWage * municipalPaidShiftDays;
                 continue;
             }
             if (_config.MunicipalSanitationPilot && i == SanitationJob)
@@ -535,9 +539,12 @@ internal sealed partial class CausalCity : IDisposable
                 // One actual home served per real shift, ~weekly residence service.
                 var liveHomes = _households.Count(h => h.Members.Any(id => _people[id].Alive));
                 var interval = _config.MunicipalCollectionIntervalDays;
-                var demanded = Math.Min(1600, (liveHomes + interval - 1) / interval);
-                positions[i] = Math.Min(demanded, (int)(municipalPayrollBudget / (80L * 30)));
-                municipalPayrollBudget -= positions[i] * 80L * 30;
+                var demanded = (int)Math.Min(1600L,
+                    _config.AttendanceAwareMunicipalShifts
+                        ? ((long)liveHomes * 30 + interval * 26 - 1) / (interval * 26L)
+                        : (liveHomes + interval - 1) / interval);
+                positions[i] = Math.Min(demanded, (int)(municipalPayrollBudget / (80L * municipalPaidShiftDays)));
+                municipalPayrollBudget -= positions[i] * 80L * municipalPaidShiftDays;
                 continue;
             }
             if (i == BuilderJob)
@@ -1661,6 +1668,7 @@ internal sealed partial class CausalCity : IDisposable
         municipalSanitationPilotFixture = _config.MunicipalSanitationPilot,
         municipalWasteTreatmentPilotFixture = _config.MunicipalWasteTreatmentPilot,
         fairSanitationDispatchFixture = _config.FairSanitationDispatch,
+        attendanceAwareMunicipalShiftsFixture = _config.AttendanceAwareMunicipalShifts,
         homesPastSanitationHygieneThreshold = _households.Count(h => h.TrashUnits > 80 && h.Members.Any(id => _people[id].Alive)),
         highestUntreatedHomeWaste = _households.Max(h => h.TrashUnits),
         homesWithoutPickupFor15Days = _households.Count(h => h.TrashUnits >= 4 &&
