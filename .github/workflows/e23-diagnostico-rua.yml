@@ -1,9 +1,9 @@
-name: E26 - rastreio da fisica omitida no veiculo divergente
+name: E27 - bloqueador real e passo fisico nos movimentos perdidos
 
 on:
   push:
     branches:
-      - experimento/e26-trace-despertar-primeiro-veiculo
+      - experimento/e27-trace-limitador-fisico
 
 permissions:
   contents: read
@@ -36,10 +36,10 @@ jobs:
             --rows=5 --length=800 --seed=${{ matrix.seed }} --signals=1 \
             --warmup=1 --e22=compare --e22-window=3000 \
             --e22-adversary=mixed --e22-reverse=${{ matrix.reversed }} \
-            --e23-diff=1 --e23-roadguard=0 --e24-flush-only=1 --e25-trace=1 --e26-trace=1 | tee "e26_${{ matrix.label }}.log"
+            --e23-diff=1 --e23-roadguard=0 --e24-flush-only=1 --e25-trace=1 --e26-trace=1 | tee "e27_${{ matrix.label }}.log"
           # E24 is a falsification experiment: a green CI means that the
           # comparison ran with adversarial coverage, NOT causal equivalence.
-          log="e26_${{ matrix.label }}.log"
+          log="e27_${{ matrix.label }}.log"
           grep -q '^E22_COMPARE mode=events ' "$log"
           grep -q '^E22_COMPARE mode=queue ' "$log"
           grep -Eq '^E22_COVERAGE adversary=mixed .*appliedTow=3 appliedJunction=3 appliedRoadWithRoute=3 towStrandedArms=3 towDispatchArms=3 ' "$log"
@@ -50,17 +50,21 @@ jobs:
           grep -q '^E26_TRACE mode=off phase=before ' "$log"
           grep -q '^E26_TRACE mode=events phase=before ' "$log"
           grep -q '^E26_TRACE mode=queue phase=before ' "$log"
-          grep '^E26_TRACE ' "$log"
+          grep -q '^E27_PHYS mode=off ' "$log"
+          grep -q '^E27_PHYS mode=events ' "$log"
+          grep -q '^E27_PHYS mode=queue ' "$log"
+          grep '^E27_PHYS ' "$log" | tail -30
+          grep '^E26_TRACE ' "$log" | tail -30
           grep '^E25_DOMAIN_FIRST ' "$log"
           grep '^E22_COMPARE ' "$log"
           if grep -Eq '^E22_COMPARE mode=(events|queue) exactCheckpoints=False ' "$log"; then
-            echo 'E26_CAUSAL equivalence=False (the flush-only candidate is rejected on this seed)'
+            echo 'E27_CAUSAL equivalence=False (the flush-only candidate is rejected on this seed)'
           else
-            echo 'E26_CAUSAL equivalence=True (only for this measured seed/window)'
+            echo 'E27_CAUSAL equivalence=True (only for this measured seed/window)'
           fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: e26-${{ matrix.label }}
-          path: e26_*.log
+          name: e27-${{ matrix.label }}
+          path: e27_*.log
           if-no-files-found: ignore

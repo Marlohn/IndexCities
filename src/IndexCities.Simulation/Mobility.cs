@@ -369,6 +369,16 @@ public sealed partial class CitySimulation
                 // or into any other body that pose was clear of.
                 if(step<.00001&&d>.00001&&State.Vehicles.Any(o=>o.Id!=v.Id&&o.Status!=VehicleStatus.Outside&&o.Position.Distance(v.Position)<12&&
                     (StreetBody(o)?VehicleBodiesOverlap(v,v.Position,o):!(o.Position.Distance(State.Entry)<8&&v.Position.Distance(State.Entry)<8)&&TurnsInto(v,approachHeading,o))))v.Heading=approachHeading;
+                // E27: report the FULL computed lane limitation on the
+                // original physical executor; compare it with the single
+                // blocker recorded by an E22/E24 sleeper. Diagnostic only.
+                if(E26Trace(v))
+                    Console.WriteLine($"E27_PHYS mode={E22Mode} t={State.ElapsedSeconds:F2} physical={VehicleMovementTime:F3} "+
+                        $"id={v.Id} computedBlocker={blocker?.Id??-1} leaderDistance={leaderDistance:R} "+
+                        $"distanceToTarget={d:R} speed={speed:R} step={step:R} freeBeforeSite={free:R} "+
+                        $"stopEarly={stopEarly:R} bayHold={bayHold} entryHeld={entryHeld?.Count??0} "+
+                        $"crossingPoses={crossingPoses?.Count??0} node={node.Id} "+
+                        $"pos=({v.Position.X:R},{v.Position.Z:R})");
                 if(step<.00001&&d>.00001){v.Cause=blocker?.Status==VehicleStatus.Stranded?$"Aguardando veículo {blocker.Id} {(blocker.BrokenDown?"quebrado":"sem combustível")} na via":bayHold||entryHeld!=null?"Fila para acesso de carga":enteringLane?"Aguardando espaço para acessar a faixa":blocker!=null&&HoldsJunctionAhead(blocker,node)?(IsBend(node)?"Aguardando liberação da curva pelo veículo ":"Aguardando liberação do cruzamento pelo veículo ")+blocker.Id:"Fila na faixa";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;if(v.TowPhase==TowPhase.ToVehicle&&(TryTowContraflow(v)||TryTowFromBehind(v)))continue;if(!enteringLane&&blocker!=null&&blocker.Id!=v.TowTargetId&&TryBypassStopped(v,blocker))continue;if(blocker!=null&&TowExitHolds(blocker)&&TryUTurn(v,blocker))continue;
                     // A tow held for minutes turns back and goes around the stranded vehicles
                     // and the junctions they lock, instead of waiting in the queue.
