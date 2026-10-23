@@ -8,7 +8,7 @@ namespace IndexCities.CausalEngine;
 
 // Independent vertical-slice engine for falsifying the architecture.
 // RULES AND FIXTURES HERE ARE NOT AN IMPLEMENTATION OF ALL OF INDEXCITIES SPEC.
-internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false, bool RetailShopFallback = false, int RetailBasketsPerShift = 5, bool MunicipalSanitationPilot = false, int MunicipalCollectionIntervalDays = 6, bool MunicipalWasteTreatmentPilot = false);
+internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false, bool RetailShopFallback = false, int RetailBasketsPerShift = 5, bool MunicipalSanitationPilot = false, int MunicipalCollectionIntervalDays = 6, bool MunicipalWasteTreatmentPilot = false, bool FairSanitationDispatch = false);
 internal enum EventKind : byte { Day, Hour, StartWork, EndWork, Move, Delivery, RoadClose, RoadOpen, HouseholdShop }
 internal readonly record struct SimEvent(EventKind Kind, int Id);
 internal sealed class Person
@@ -51,6 +51,7 @@ internal sealed class Household
     public long LastShoppingDepartureDay = -1;
     public long TrashUnits;
     public long LastSanitationBookedDay = -1;
+    public long LastSanitationServicedDay = -1;
 }
 internal sealed class Firm
 {
@@ -223,6 +224,7 @@ internal sealed partial class CausalCity : IDisposable
     private long _paidFreightCents, _freightLaborTrips;
     private long _retailSalesCents;
     private long _municipalTaxPaidCents, _municipalWagesPaidCents;
+    private int _fairSanitationCursor;
     private long _garbageGenerated, _garbageCollected, _garbageAtDepot, _sanitationPaidVisits, _garbageInTransit;
     private long _peakEvents;
     private long _firstDollarViolation = -1;
@@ -1551,7 +1553,7 @@ internal sealed partial class CausalCity : IDisposable
         Mix(_time); Mix(_active); Mix(_births); Mix(_deaths); Mix(_treasury); Mix(_reserveGlobal);
         Mix(_journeys); Mix(_segments); Mix(_sales); Mix(_shipments); Mix(_retailSalesCents);
         Mix(_municipalTaxPaidCents); Mix(_municipalWagesPaidCents);
-        Mix(_garbageGenerated); Mix(_garbageCollected); Mix(_garbageAtDepot); Mix(_sanitationPaidVisits); Mix(_wasteTreated); Mix(_wasteTreatmentPaidShifts); Mix(_garbageInTransit);
+        Mix(_garbageGenerated); Mix(_garbageCollected); Mix(_garbageAtDepot); Mix(_sanitationPaidVisits); Mix(_wasteTreated); Mix(_wasteTreatmentPaidShifts); Mix(_fairSanitationCursor); Mix(_garbageInTransit);
         foreach (var p in _people)
         {
             Mix(p.Id); Mix(p.Node); Mix(p.Job); Mix(p.Cash); Mix(p.Alive ? 1 : 0); Mix(p.HeadingToWork ? 1 : 0);
@@ -1564,7 +1566,7 @@ internal sealed partial class CausalCity : IDisposable
             Mix(p.RetailAlternativePurchases); Mix(p.RetailAlternativeFailures);
             Mix(p.ContributedDays); Mix(p.GrossEarnings); Mix(p.PensionCredit); Mix(p.PensionReceived);
         }
-        foreach (var h in _households) { Mix(h.Pantry); Mix(h.Members.Count); Mix(h.LastBirthDay); Mix(h.LastShoppingDepartureDay); Mix(h.TrashUnits); Mix(h.LastSanitationBookedDay); }
+        foreach (var h in _households) { Mix(h.Pantry); Mix(h.Members.Count); Mix(h.LastBirthDay); Mix(h.LastShoppingDepartureDay); Mix(h.TrashUnits); Mix(h.LastSanitationBookedDay); Mix(h.LastSanitationServicedDay); }
         foreach (var f in _shops) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); Mix(f.MonthRetailSalesUnits); Mix(f.MonthRetailPaidWagesCents); Mix(f.RetailUnitPriceCents); Mix(f.MonthFarmPaidWagesCents); Mix(f.MonthWholesaleSalesUnits); Mix(f.MonthWholesaleBoughtUnits); Mix(f.MonthWholesalePaidCents); Mix(f.FarmWholesaleUnitPriceCents); Mix(f.TodayCheckoutUnitsLeft); Mix(f.ReservedCheckoutWagesCents); Mix(f.MonthRetailBaskets); Mix(f.LifetimeRetailBaskets); Mix(f.LifetimeCheckoutCapacityDenied); }
         foreach (var f in _farms) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); }
         Mix(_builder.Cash); Mix(_builder.OfferedPositions); Mix(_builder.PresentWorkers);
@@ -1658,6 +1660,12 @@ internal sealed partial class CausalCity : IDisposable
         retailAlternativeFailures = _people.Sum(p => p.RetailAlternativeFailures),
         municipalSanitationPilotFixture = _config.MunicipalSanitationPilot,
         municipalWasteTreatmentPilotFixture = _config.MunicipalWasteTreatmentPilot,
+        fairSanitationDispatchFixture = _config.FairSanitationDispatch,
+        homesPastSanitationHygieneThreshold = _households.Count(h => h.TrashUnits > 80 && h.Members.Any(id => _people[id].Alive)),
+        highestUntreatedHomeWaste = _households.Max(h => h.TrashUnits),
+        homesWithoutPickupFor15Days = _households.Count(h => h.TrashUnits >= 4 &&
+            h.Members.Any(id => _people[id].Alive) &&
+            _days - h.LastSanitationServicedDay > 15),
         wasteTreatedAtDepot = _wasteTreated,
         paidWasteTreatmentShifts = _wasteTreatmentPaidShifts,
         municipalWasteTreatmentJobs = _people.Count(p => p.Alive && p.Job == WasteTreatmentJob),
