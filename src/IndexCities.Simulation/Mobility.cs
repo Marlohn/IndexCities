@@ -222,11 +222,13 @@ public sealed partial class CitySimulation
         // key is a total order and any sort yields the same sequence.
         var ordered=State.Vehicles.ToArray();Array.Sort(ordered,static (a,b)=>a.WaitingSince.CompareTo(b.WaitingSince) is var c and not 0?c:a.Id.CompareTo(b.Id));
         foreach(var v in ordered){
+            var e26Trace=E26Trace(v);
+            if(e26Trace)E26Stage(v,"before");
             // Batch mode: a queue was validated once as a group, so a stable
             // member needs no individual physics-body evaluation this slice.
             // Earlier vehicle commits can revoke membership before this turn.
             if(E22Mode=="queue"&&operationsDt==null&&_vehicleMovementBatch!=null
-               &&_e22BatchSkip.Contains(v.Id)){_e22Skipped++;continue;}
+               &&_e22BatchSkip.Contains(v.Id)){_e22Skipped++;if(e26Trace)E26Stage(v,"queue-skip");continue;}
             var e22Track=E22Enabled&&(v.Status==VehicleStatus.Travelling||_e22Followers.ContainsKey(v.Id)||_e22Queues.ContainsKey(v.Id));
             var e22Before=e22Track?E22State(v):default;
             try{
@@ -251,7 +253,7 @@ public sealed partial class CitySimulation
                 if(v.Route.Count==0||v.Route.Any(id=>!_roads.ContainsKey(id))){v.Status=VehicleStatus.Waiting;v.Cause="Rota interrompida; aguarda ligação viária";continue;}
                 _vehicleMovementBatch?.Add(v.Id);
             }else if(!_vehicleMovementBatch.Contains(v.Id)||v.Status!=VehicleStatus.Travelling)continue;
-            if(E22Mode=="events"&&E22CanSleep(v))continue;
+            if(E22Mode=="events"&&E22CanSleep(v)){if(e26Trace)E26Stage(v,"events-skip");continue;}
             if(E22Enabled)_e22OriginalPhysicalVisits++;
             var remaining=dt;
             while(remaining>.000001&&v.Status==VehicleStatus.Travelling){
@@ -389,7 +391,7 @@ public sealed partial class CitySimulation
                 // Wear for the distance driven; a vehicle in use may break down here.
                 if(DriveWear(v,step)||steer==null&&!advanced)break;
             }
-            }finally{if(e22Track)E22Publish(v,e22Before);}
+            }finally{if(e26Trace)E26Stage(v,"after");if(e22Track)E22Publish(v,e22Before);}
         }
         // A towed vehicle moves only with its tow (platform or trailing a heavy tow).
         SyncTowedVehicles();

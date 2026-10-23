@@ -14,6 +14,25 @@ public sealed partial class CitySimulation
     // E24 ablation: flush subscriptions on a road revision, but do not pause
     // subsequent sleep registrations. This does NOT prove selective dependencies.
     public bool E24FlushWithoutPause { get; set; }
+    // E26: diagnostic trace only, limited to one known vehicle and a short window.
+    public int E26TraceVehicleId { get; set; }
+    public double E26TraceFrom { get; set; }
+    public double E26TraceUntil { get; set; }
+    bool E26Trace(Vehicle v)=>E26TraceVehicleId==v.Id&&
+        State.ElapsedSeconds>=E26TraceFrom&&State.ElapsedSeconds<=E26TraceUntil;
+    void E26Stage(Vehicle v,string phase)
+    {
+        if(!E26Trace(v))return;
+        _e22Waits.TryGetValue(v.Id,out var sub);
+        var blocker=State.Vehicles.FirstOrDefault(x=>x.Id==sub?.BlockerId);
+        Console.WriteLine($"E26_TRACE mode={E22Mode} phase={phase} t={State.ElapsedSeconds:F2} physical={VehicleMovementTime:F3} "+
+            $"id={v.Id} pos=({v.Position.X:R},{v.Position.Z:R}) heading={v.Heading:R} status={v.Status} routeIndex={v.RouteIndex} "+
+            $"waitingSince={v.WaitingSince:F3} cause={v.Cause} roadRevision={State.RoadRevision} "+
+            $"blocker={sub?.BlockerId??-1} blockerPos=({blocker?.Position.X:R},{blocker?.Position.Z:R}) "+
+            $"blockerStatus={blocker?.Status.ToString()??"none"} awake={sub?.Awake.ToString()??"none"} "+
+            $"registeredAt={sub?.RegisteredAt.ToString("F3",CultureInfo.InvariantCulture)??"none"} "+
+            $"batchSkip={_e22BatchSkip.Contains(v.Id)}");
+    }
     int _e23ObservedRoadRevision=-1;
     double _e23RoadWakeUntil;
     long _e23NetworkFlushes,_e23SubscriptionsFlushed;
@@ -115,6 +134,7 @@ public sealed partial class CitySimulation
             members.Add(v.Id);_e22QueueByMember[v.Id]=root;
         }
         _e22Registered++;
+        E26Stage(v,"subscribe");
     }
 
     bool E22CanSleep(Vehicle v)

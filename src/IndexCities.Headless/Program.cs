@@ -14,7 +14,7 @@ using IndexCities.Simulation;
 //          --strand=N empties the tank of N driving vehicles each day and follows the tow and the queue for 30 min
 // Results are measurements, not product rules: see docs/exploration/ritmo-velocidades.md.
 Console.OutputEncoding=Encoding.UTF8;
-var known=new HashSet<string>{"rows","length","days","cap","signals","seed","growth","warmup","strand","e22","e22-window","e22-adversary","e22-reverse","e23-diff","e23-roadguard","e24-flush-only","e25-trace"};
+var known=new HashSet<string>{"rows","length","days","cap","signals","seed","growth","warmup","strand","e22","e22-window","e22-adversary","e22-reverse","e23-diff","e23-roadguard","e24-flush-only","e25-trace","e26-trace"};
 var opts=new Dictionary<string,string>();foreach(var p in args.Skip(2).Select(a=>a.TrimStart('-').Split('=',2)))opts[p[0]]=p.Length>1?p[1]:"1";
 string Opt(string k,string d)=>opts.GetValueOrDefault(k,d);
 if(opts.Keys.FirstOrDefault(k=>!known.Contains(k)) is {} unknown){Console.Error.WriteLine("opção desconhecida: --"+unknown);return 2;}
@@ -131,6 +131,12 @@ if(e22=="compare")
         trial.E22Mode=mode;
         trial.E23RoadGuardSeconds=double.Parse(Opt("e23-roadguard","0"),System.Globalization.CultureInfo.InvariantCulture);
         trial.E24FlushWithoutPause=Opt("e24-flush-only","0")=="1";
+        if(Opt("e26-trace","0")=="1")
+        {
+            trial.E26TraceVehicleId=seed==43?2099:seed==44?2107:0;
+            trial.E26TraceFrom=sim.State.ElapsedSeconds+1858;
+            trial.E26TraceUntil=sim.State.ElapsedSeconds+1872;
+        }
         var hashes=new string[boundaries.Count];var previous=0;
         var snapshots=new Dictionary<int,string>();
         var towStranded=false;var towDispatched=false;
