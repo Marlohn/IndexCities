@@ -610,9 +610,11 @@ internal static class EngineSelfTest
             // different sites, with power/water/sewage capacity, externally
             // paid and delivered fuel, and houses actually bought by adults.
             // Save/load must preserve every physical inventory and paid shift.
+            var integratedHistory = temp + ".integrated.facts.gz";
             var integratedCfg = treatmentConfig with
             {
-                Days = 120, Adversarial = false, FreightLabor = true,
+                Days = 120, History = integratedHistory,
+                Adversarial = false, FreightLabor = true,
                 FairSanitationDispatch = true,
                 AttendanceAwareMunicipalShifts = true,
                 IntegratedV1Stress = true
@@ -635,7 +637,18 @@ internal static class EngineSelfTest
                     d.GetProperty("actualFuelImported").GetInt64() <= 0)
                     throw new InvalidOperationException("Integrated facilities, fuel or real deed purchases were inactive");
             }
-            using (var integratedPart = new CausalCity(integratedCfg))
+            long waterFacts = 0, powerFacts = 0, fuelFacts = 0, deeds = 0;
+            foreach (var fact in HistorySink.Read(integratedHistory))
+            {
+                if (fact.Type == 33) waterFacts++;
+                if (fact.Type is 41 or 42) powerFacts++;
+                if (fact.Type == 44) fuelFacts++;
+                if (fact.Type == 37) deeds++;
+            }
+            if (waterFacts == 0 || powerFacts == 0 || deeds == 0)
+                throw new InvalidOperationException("Integrated services and deeds missing from persisted individual history");
+            File.Delete(integratedHistory);
+            using (var integratedPart = new CausalCity(integratedCfg with { History = null }))
             {
                 integratedPart.RunUntilDay(61);
                 integratedPart.SaveSnapshot(integratedSave);
@@ -677,6 +690,7 @@ internal static class EngineSelfTest
                 auditedTaxInclusivePricingCheckpointExact = true,
                 realResidentialPropertyTaxOwnershipAndCheckpoint = true,
                 integratedRealUtilitiesFuelAndDeedsCheckpoint = true,
+                integratedWaterPowerAndDeedsHistoryReadable = true,
                 municipalCashTaxWasteAndJobsSaveResumeExact = true, municipalVisits,
                 municipalWasteTreatmentSavedExactly = true, treatmentShifts,
                 fairHouseholdSanitationDispatchSaveResumeExact = true,
@@ -699,7 +713,7 @@ internal static class EngineSelfTest
         }
         finally
         {
-            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json", temp + ".construction.save.json", temp + ".cost-price.save.json", temp + ".checkout.save.json", temp + ".basket.save.json", temp + ".fallback.save.json", temp + ".municipal.save.json", temp + ".treatment.save.json", temp + ".fair-collection.save.json", temp + ".tax-price.save.json", temp + ".home-tax.save.json", temp + ".integrated.save.json" })
+            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json", temp + ".construction.save.json", temp + ".cost-price.save.json", temp + ".checkout.save.json", temp + ".basket.save.json", temp + ".fallback.save.json", temp + ".municipal.save.json", temp + ".treatment.save.json", temp + ".fair-collection.save.json", temp + ".tax-price.save.json", temp + ".home-tax.save.json", temp + ".integrated.save.json", temp + ".integrated.facts.gz" })
                 if (File.Exists(path)) File.Delete(path);
         }
     }
