@@ -282,6 +282,56 @@ jobs:
           path: economic-second-cycle-10y.log
           if-no-files-found: ignore
 
+  independent-demography-80y:
+    # Separate cheap demographic boundary probe: NO compressed history. It
+    # cannot satisfy the goal, but quickly falsifies the 80y survival premise
+    # before spending most of the budget on history persistence.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[demography-80y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Check living population of the same city over 29,220 actual days
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          BASE='--sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch'
+          for interval in 4 3; do
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --municipal-collection-interval=$interval 2>&1 | tee genuine-80y-without-history-$interval.log
+          done
+          python3 - <<'PY'
+          import json
+          def get(path):
+              lines=open(path).readlines()
+              k=next(i for i,line in enumerate(lines) if line.startswith('{'))
+              return json.loads(''.join(lines[k:]))
+          for n in [4,3]:
+              r=get(f'genuine-80y-without-history-{n}.log')
+              assert r['simulatedDays']==29220 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+              assert r['municipalWasteTreatmentPilotFixture'] and r['fairSanitationDispatchFixture']
+              assert not r['historyPersistent'] and not r['fullIndexCitiesTargetValidated']
+              print('EIGHTY_YEAR_DEMOGRAPHY_PROBE',
+                    n,'alive',r['aliveEnd'],'minAnyEvent',r['minimumAliveAtAnyEvent'],
+                    'births',r['births'],'deaths',r['deaths'],
+                    'economicJobs',r['employedAlive'],
+                    'liveEarningHomes',r['householdsWithEmployedAdults'],
+                    'depotRaw',r['wasteStoredAtRealDepot'],
+                    'landfillProcessed',r['wasteTreatedAtDepot'],
+                    'cashFamilies',r['personalCashCents'],
+                    'cashFirms',r['businessCurrentCashCents'],
+                    'wallSeconds',r['wallSeconds'])
+          PY
+      - name: Keep 80y survivor curves, finances and capacity logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: independent-80y-demographic-falsification
+          path: genuine-80y-without-history-*.log
+          if-no-files-found: ignore
+
   fair-collection-coverage-80y:
     # Check whether arbitrary nearby-house selection was starving homes even
     # when financed collection workers were available. Every home is visited
