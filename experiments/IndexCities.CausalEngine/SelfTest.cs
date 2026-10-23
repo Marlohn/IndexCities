@@ -164,6 +164,37 @@ internal static class EngineSelfTest
             File.Delete(renewalSave);
             if (renewalBirths <= 0)
                 throw new InvalidOperationException("Household birth appointments produced no births");
+            // A/B demographic fixture: rotating eligibility search preserves
+            // real carers, pantry, money, water, spacing, and housing capacity.
+            // Check that it changes the chosen births and survives exact resume.
+            var eligibleBirthConfig = renewalConfig with { BirthEligibleFallback = true };
+            string eligibleBirthHash;
+            long eligibleBirths;
+            using (var eligibleCity = new CausalCity(eligibleBirthConfig))
+            {
+                eligibleCity.Run();
+                eligibleCity.AssertConservation();
+                eligibleBirthHash = eligibleCity.Fingerprint();
+                eligibleBirths = eligibleCity.Births;
+            }
+            if (eligibleBirths <= renewalBirths)
+                throw new InvalidOperationException(
+                    $"Eligible-family birth fallback did not discriminate: baseline={renewalBirths}, fallback={eligibleBirths}");
+            var eligibleSave = temp + ".eligible-birth.save.json";
+            using (var eligiblePartial = new CausalCity(eligibleBirthConfig))
+            {
+                eligiblePartial.RunUntilDay(183);
+                eligiblePartial.SaveSnapshot(eligibleSave);
+            }
+            using (var eligibleResumed = CausalCity.FromSnapshot(eligibleSave))
+            {
+                eligibleResumed.Run();
+                eligibleResumed.AssertConservation();
+                if (eligibleResumed.Fingerprint() != eligibleBirthHash ||
+                    eligibleResumed.Births != eligibleBirths)
+                    throw new InvalidOperationException("Eligible-family birth fallback diverged after save/resume");
+            }
+            File.Delete(eligibleSave);
             // Revenue-funded, rotating real shifts must conserve cash and
             // produce the same result after an exact day-boundary checkpoint.
             // Workers with no allocated shift receive NO wage.
@@ -731,6 +762,7 @@ internal static class EngineSelfTest
                 payrollFeedbackSaveResumeExact = feedbackHash == feedbackResumedHash,
                 heirlessEstatesReturnToReserve = unclaimedEstate > 0,
                 familyRenewalSaveResumeExact = true, familyRenewalBirths = renewalBirths,
+                eligibleFamilyFallbackSaveResumeExact = true, eligibleFamilyFallbackBirths = eligibleBirths,
                 demandFundedShiftsConserved = demandWages > 0,
                 demandStaffingSaveResumeExact = true,
                 realVacancyMarketSaveResumeExact = true, marketEmployed, marketUnemployed,

@@ -8,7 +8,7 @@ namespace IndexCities.CausalEngine;
 
 // Independent vertical-slice engine for falsifying the architecture.
 // RULES AND FIXTURES HERE ARE NOT AN IMPLEMENTATION OF ALL OF INDEXCITIES SPEC.
-internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false, bool RetailShopFallback = false, int RetailBasketsPerShift = 5, bool MunicipalSanitationPilot = false, int MunicipalCollectionIntervalDays = 6, bool MunicipalWasteTreatmentPilot = false, bool FairSanitationDispatch = false, bool AttendanceAwareMunicipalShifts = false, bool TaxInclusiveProductPrice = false, int TaxCostRecoveryPercent = 100, int MonthlyResidentialTaxCents = 0, int WasteTreatmentUnitsPerShift = 50, bool LivingOccupancyBirthCap = false, int TreatmentBacklogMonths = 0, bool IntegratedV1Stress = false);
+internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false, bool RetailShopFallback = false, int RetailBasketsPerShift = 5, bool MunicipalSanitationPilot = false, int MunicipalCollectionIntervalDays = 6, bool MunicipalWasteTreatmentPilot = false, bool FairSanitationDispatch = false, bool AttendanceAwareMunicipalShifts = false, bool TaxInclusiveProductPrice = false, int TaxCostRecoveryPercent = 100, int MonthlyResidentialTaxCents = 0, int WasteTreatmentUnitsPerShift = 50, bool LivingOccupancyBirthCap = false, int TreatmentBacklogMonths = 0, bool IntegratedV1Stress = false, bool BirthEligibleFallback = false);
 internal enum EventKind : byte { Day, Hour, StartWork, EndWork, Move, Delivery, RoadClose, RoadOpen, HouseholdShop }
 internal readonly record struct SimEvent(EventKind Kind, int Id);
 internal sealed class Person
@@ -238,6 +238,7 @@ internal sealed partial class CausalCity : IDisposable
     // Integrated laboratory observability only. Rejection causes may overlap;
     // these counters never affect births, resources, simulation or fingerprints.
     private long _birthAppointments, _birthBlockedEverSlots, _birthBlockedLiveSlots;
+    private long _birthFallbackCandidatesChecked, _birthFallbackBirths, _birthFallbackDaysWithoutEligible;
     private long _birthBlockedPantry, _birthBlockedSpacing, _birthBlockedCarers;
     private long _birthBlockedCash, _birthBlockedWater;
     private long _lastDemographyBirths, _lastDemographyDeaths;
@@ -401,8 +402,26 @@ internal sealed partial class CausalCity : IDisposable
                 // two living adult carers, actual food, money and housing room.
                 // This does NOT implement the SPEC's complete relationships,
                 // pregnancy, childcare or migration.
-                var household = _households[(int)(((long)day * 151 + _config.Seed) % _households.Length)];
-                TryBirth(household, date, day);
+                var start = (int)(((long)day * 151 + _config.Seed) % _households.Length);
+                if (_config.BirthEligibleFallback)
+                {
+                    // Opt-in demographic counterfactual: at most ONE birth per day
+                    // with ALL the existing family eligibility requirements.
+                    var found = false;
+                    for (var k = 0; k < _households.Length; k++)
+                    {
+                        _birthFallbackCandidatesChecked++;
+                        var candidate = _households[(start + k) % _households.Length];
+                        if (!CanBirth(candidate, date, day)) continue;
+                        if (!TryBirth(candidate, date, day))
+                            throw new InvalidOperationException("Eligible birth candidate was rejected");
+                        _birthFallbackBirths++;
+                        found = true;
+                        break;
+                    }
+                    if (!found) _birthFallbackDaysWithoutEligible++;
+                }
+                else TryBirth(_households[start], date, day);
             }
             if (!_config.CohortRenewal && day % 2 == 0)
             {
@@ -582,7 +601,9 @@ internal sealed partial class CausalCity : IDisposable
                     $"blockedPantry={_birthBlockedPantry} blockedSpacing={_birthBlockedSpacing} " +
                     $"blockedCarers={_birthBlockedCarers} blockedCash={_birthBlockedCash} " +
                     $"blockedWater={_birthBlockedWater} everFullHomes={familiesEverFull} liveFullHomes={familiesLiveFull} " +
-                    $"livingOccupancyCapEnabled={_config.LivingOccupancyBirthCap}");
+                    $"livingOccupancyCapEnabled={_config.LivingOccupancyBirthCap} " +
+                    $"birthFallbackCandidatesChecked={_birthFallbackCandidatesChecked} birthFallbackBirths={_birthFallbackBirths} " +
+                    $"birthFallbackNoEligibleDays={_birthFallbackDaysWithoutEligible}");
                 _lastDemographyBirths = _births;
                 _lastDemographyDeaths = _deaths;
                 _lastDemographyAgeDeaths = _deathsAtAgeLimit;
@@ -913,6 +934,26 @@ internal sealed partial class CausalCity : IDisposable
             Schedule(_time + 17 * 3600, EventKind.EndWork, p.Id);
         }
     }
+    private bool CanBirth(Household h, DateTime date, long day)
+    {
+        if ((_config.LivingOccupancyBirthCap
+                ? h.Members.Count(id => _people[id].Alive)
+                : h.Members.Count) >= 16 || h.Pantry < 2)
+            return false;
+        if (_config.CohortRenewal && day - h.LastBirthDay < 4 * 365)
+            return false;
+        var carers = 0;
+        long cash = 0;
+        foreach (var id in h.Members)
+        {
+            var p = _people[id];
+            if (!p.Alive) continue;
+            if (Age(p, date) is >= 18 and < 60) carers++;
+            cash += p.Cash;
+        }
+        return carers >= 2 && cash >= 300 && _waterRatio >= .4;
+    }
+
     private bool TryBirth(Household h, DateTime date, long day)
     {
         if (_config.IntegratedV1Stress)
@@ -937,18 +978,7 @@ internal sealed partial class CausalCity : IDisposable
         // the physical 16-person housing limit. A deceased resident cannot
         // occupy a housing slot; preserve the lineage but allow its slot to
         // become available in the opt-in counterfactual.
-        if ((_config.LivingOccupancyBirthCap ? h.Members.Count(id => _people[id].Alive) : h.Members.Count) >= 16 || h.Pantry < 2) return false;
-        if (_config.CohortRenewal && day - h.LastBirthDay < 4 * 365) return false;
-        var carers = 0;
-        long cash = 0;
-        foreach (var id in h.Members)
-        {
-            var p = _people[id];
-            if (!p.Alive) continue;
-            if (Age(p, date) is >= 18 and < 60) carers++;
-            cash += p.Cash;
-        }
-        if (carers < 2 || cash < 300 || _waterRatio < .4) return false;
+        if (!CanBirth(h, date, day)) return false;
         var child = new Person { Id = _people.Count, HouseholdId = h.Id,
             Born = date, Home = h.Home, Node = h.Home,
             Job = _config.VacancyMarket ? -1 : (h.Id * 7) % 72, Cash = 0 };
@@ -1853,6 +1883,10 @@ internal sealed partial class CausalCity : IDisposable
         seed = _config.Seed,
         wageFeedbackFixture = _config.WageFeedback,
         cohortRenewalFixture = _config.CohortRenewal,
+        birthEligibilityFallbackFixture = _config.BirthEligibleFallback,
+        birthFallbackCandidatesChecked = _birthFallbackCandidatesChecked,
+        birthFallbackBirths = _birthFallbackBirths,
+        birthFallbackNoEligibleDays = _birthFallbackDaysWithoutEligible,
         demandStaffingFixture = _config.DemandStaffing,
         vacancyMarketFixture = _config.VacancyMarket,
         freightLaborFixture = _config.FreightLabor,
