@@ -634,7 +634,10 @@ internal static class EngineSelfTest
                     d.GetProperty("physicallyExtractedWater").GetInt64() <= 0 ||
                     d.GetProperty("consumedPotableWater").GetInt64() <= 0 ||
                     d.GetProperty("residentialDeedPurchasePaymentsCents").GetInt64() <= 0 ||
-                    d.GetProperty("actualFuelImported").GetInt64() <= 0)
+                    d.GetProperty("actualFuelImported").GetInt64() <= 0 ||
+                    d.GetProperty("fuelPhysicallyDeliveredToFarms").GetInt64() <= 0 ||
+                    d.GetProperty("fuelConsumedByRealFreight").GetInt64() <= 0 ||
+                    d.GetProperty("windEnergyCurtailedWithoutBattery").GetInt64() <= 0)
                     throw new InvalidOperationException("Integrated facilities, fuel or real deed purchases were inactive");
             }
             long waterFacts = 0, powerFacts = 0, fuelFacts = 0, deeds = 0;
@@ -645,7 +648,7 @@ internal static class EngineSelfTest
                 if (fact.Type == 44) fuelFacts++;
                 if (fact.Type == 37) deeds++;
             }
-            if (waterFacts == 0 || powerFacts == 0 || deeds == 0)
+            if (waterFacts == 0 || powerFacts == 0 || fuelFacts == 0 || deeds == 0)
                 throw new InvalidOperationException("Integrated services and deeds missing from persisted individual history");
             File.Delete(integratedHistory);
             using (var integratedPart = new CausalCity(integratedCfg with { History = null }))
