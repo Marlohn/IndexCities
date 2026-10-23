@@ -1368,7 +1368,12 @@ internal sealed partial class CausalCity : IDisposable
             p.FreightShopId < 0 && p.Node == workplace)
         {
             if (_config.IntegratedV1Stress && p.Job >= StoreCount && p.Job < StoreCount + FarmCount)
+            {
+                // The paid trucking leg ENDS at the farm; the driver walks
+                // home separately and must not burn company diesel on foot.
                 _farms[p.Job - StoreCount].TruckBusy = false;
+                p.FreightShift = false;
+            }
             // Return from physical delivery, without a second paid shift.
             // A person can LIVE on the same grid node as the farm: do not
             // spawn a self-trip that repeats infinitely before going home.
