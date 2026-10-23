@@ -2279,80 +2279,109 @@ jobs:
           set -uo pipefail
           FLAGS='--sims=10000 --days=29220 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25 --waste-treatment-units-per-shift=75 --integrated-v1-stress --eligible-birth-fallback --municipal-payroll-reserve-counterfactual'
           failures=0
-          candidate=''
+          qualified=''
+          verified=0
           for seed in 42 73 101; do
-            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $FLAGS --seed=$seed 2>&1 | tee integrated-v1-seed$seed-80y.log
-            outcome=$?
-            if [ "$outcome" -ne 0 ]; then
-              echo "INTEGRATED_80Y_ENGINE_FAILURE seed=$seed exit=$outcome" | tee integrated-v1-seed$seed-summary.txt
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $FLAGS --seed=$seed 2>&1 | tee "integrated-v1-seed$seed-80y.log"
+            if [ "$?" -ne 0 ]; then
+              echo "INTEGRATED_80Y_ENGINE_FAILURE seed=$seed" | tee "integrated-v1-seed$seed-summary.txt"
               failures=$((failures+1))
               continue
             fi
-            python3 - "$seed" <<'PY' | tee integrated-v1-seed$seed-summary.txt
-          import json,sys
+            python3 - "$seed" <<'PY' | tee "integrated-v1-seed$seed-summary.txt"
+          import json,re,sys
           seed=int(sys.argv[1])
           rows=open(f'integrated-v1-seed{seed}-80y.log').readlines()
-          i=next(i for i,line in enumerate(rows) if line.startswith('{'))
+          i=next(i for i,s in enumerate(rows) if s.startswith('{'))
           d=json.loads(''.join(rows[i:]))
           assert d['integratedV1StressFixture'] and d['birthEligibilityFallbackFixture']
           assert d['municipalPayrollReserveCounterfactualFixture']
           assert d['simulatedDays']==29220 and d['gregorianEnd']=='2100-01-01'
           assert d['moneyConserved'] and d['foodConserved'] and d['materialConserved']
+          assert d['fiscalTreasuryLedgerBalanced']
           assert d['actualUtilityWorkShifts']>0 and d['consumedPotableWater']>0
           assert d['sewagePhysicallyProcessed']>0 and d['generatedWindElectricity']>0
           assert d['actualFuelImported']>0 and d['residentialDeedPurchasePaymentsCents']>0
-          print('INTEGRATED_V1_80Y',seed,'alive',d['aliveEnd'],'minimum',d['minimumAliveAtAnyEvent'],
-                'seconds',d['wallSeconds'],'waterShortage',d['deniedPotableWater'],
-                'electricityShortage',d['unservedElectricity'],
-                'fuelBurned',d['fuelConsumedByRealFreight'],
-                'shifts',d['actualUtilityWorkShifts'],
-                'treasury',d['treasuryCashCents'],
-                'unpaidPensionCredits',d['unpaidPensionCreditsCents'],
-                'reservedPayroll',d['municipalContractPayrollReservedCents'],
-                'factsRecordedWithoutFile',d['recordedFacts'], flush=True)
+          print('INTEGRATED_V1_80Y seed',seed,'minimum',d['minimumAliveAtAnyEvent'],
+                'aliveEnd',d['aliveEnd'],'seconds',d['wallSeconds'],
+                'factsCountedWithoutFile',d['recordedFacts'],'unpaidPensionCredits',d['unpaidPensionCreditsCents'],flush=True)
+          samples={}
+          for line in rows:
+              if line.startswith('LAB_FISCAL '):
+                  fields={k:int(v) for k,v in re.findall(r'\b([A-Za-z]\w*)=(-?\d+)',line)}
+                  if fields.get('day') in (28855,29220): samples[fields['day']]=fields
+          assert set(samples)=={28855,29220},'Missing comparable 365-day fiscal samples'
+          start,end=samples[28855],samples[29220]
+          delta=lambda key:end[key]-start[key]
+          income=sum(delta(k) for k in ('businessTaxPaidCents','residentialTaxPaidCents','pensionContributionsPaidCents'))
+          outflow=sum(delta(k) for k in ('municipalGrossPayrollCents','pensionsActuallyPaidCents'))
+          assert income-outflow==delta('treasuryCents'),'Annual treasury flow mismatch'
+          print('INTEGRATED_FISCAL_LAST_365D seed',seed,'revenueCents',income,
+                'paidOutCents',outflow,'treasuryChangeCents',delta('treasuryCents'),
+                'pensionDebtStartCents',start['pensionCreditsOutstandingCents'],
+                'pensionDebtEndCents',end['pensionCreditsOutstandingCents'],
+                'pensionDebtChangeCents',delta('pensionCreditsOutstandingCents'),flush=True)
           PY
-            status=$?
-            if [ "$status" -ne 0 ]; then
-              failures=$((failures+1))
-              continue
-            fi
+            if [ "$?" -ne 0 ]; then failures=$((failures+1)); continue; fi
             if python3 - "$seed" <<'PY'
           import json,sys
           seed=int(sys.argv[1])
-          lines=open(f'integrated-v1-seed{seed}-80y.log').readlines()
-          i=next(i for i,s in enumerate(lines) if s.startswith('{'))
-          d=json.loads(''.join(lines[i:]))
+          rows=open(f'integrated-v1-seed{seed}-80y.log').readlines()
+          i=next(i for i,s in enumerate(rows) if s.startswith('{'))
+          d=json.loads(''.join(rows[i:]))
           assert d['minimumAliveAtAnyEvent']>=10000 and d['wallSeconds']<=21600
           PY
-            then
-              if [ -z "$candidate" ]; then candidate="$seed"; fi
-            else
-              failures=$((failures+1))
-            fi
+            then qualified="$qualified $seed"; else failures=$((failures+1)); fi
           done
-          # Only spend billions-of-facts I/O on a city that genuinely passed
-          # the full-duration and continuous-population diagnostic.
-          if [ -n "$candidate" ]; then
-            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $FLAGS --seed=$candidate --history=integrated-v1-80y.gz 2>&1 | tee integrated-v1-full-history.log
-            if [ "$?" -ne 0 ]; then failures=$((failures+1)); else
-              python3 - <<'PY'
-          import json
-          rows=open('integrated-v1-full-history.log').readlines()
-          i=next(i for i,line in enumerate(rows) if line.startswith('{'))
-          d=json.loads(''.join(rows[i:]))
-          assert d['minimumAliveAtAnyEvent']>=10000
-          assert d['historyPersistent'] and d['wallSeconds']<=21600 and d['simulatedDays']==29220
-          open('integrated-v1-facts.txt','w').write(str(d['recordedFacts']))
-          print('INTEGRATED_HISTORY_WRITTEN',d['seed'],d['recordedFacts'],d['wallSeconds'],flush=True)
-          PY
-              if [ "$?" -ne 0 ]; then failures=$((failures+1)); else
-                dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- verify-history integrated-v1-80y.gz "$(cat integrated-v1-facts.txt)" 29220 0 | tee integrated-v1-history-verified.log
-                if [ "$?" -ne 0 ]; then failures=$((failures+1)); fi
-              fi
+          # Reopen every qualifying seed, one ~6 GB archive at a time.
+          for seed in $qualified; do
+            history_file="integrated-v1-seed$seed-80y.gz"
+            started=$(date +%s)
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $FLAGS --seed=$seed --history="$history_file" 2>&1 | tee "integrated-v1-seed$seed-history.log"
+            if [ "$?" -ne 0 ]; then
+              failures=$((failures+1)); rm -f "$history_file"; continue
             fi
-          fi
-          echo "INTEGRATED_LAB_80Y invalid_seed_count=$failures qualifying_history_seed=$candidate"
-          test "$failures" -eq 0
+            python3 - "$seed" <<'PY' | tee "integrated-v1-seed$seed-history-summary.txt"
+          import json,sys
+          seed=int(sys.argv[1])
+          def report(path):
+              rows=open(path).readlines()
+              i=next(i for i,s in enumerate(rows) if s.startswith('{'))
+              return json.loads(''.join(rows[i:]))
+          control=report(f'integrated-v1-seed{seed}-80y.log')
+          saved=report(f'integrated-v1-seed{seed}-history.log')
+          keys=('recordedFacts','aliveEnd','minimumAliveAtAnyEvent','births','deaths',
+                'moneyConserved','foodConserved','materialConserved','treasuryCashCents',
+                'unpaidPensionCreditsCents','consumedPotableWater','sewagePhysicallyProcessed',
+                'generatedWindElectricity','fuelConsumedByRealFreight')
+          for key in keys:
+              assert control[key]==saved[key],f'Replay mismatch seed={seed} key={key}'
+          assert saved['seed']==seed and saved['historyPersistent'] and saved['demonstrated10kSustained']
+          assert saved['simulatedDays']==29220 and saved['wallSeconds']<=21600
+          open(f'integrated-v1-seed{seed}-facts.txt','w').write(str(saved['recordedFacts']))
+          print('INTEGRATED_HISTORY_WRITTEN seed',seed,'facts',saved['recordedFacts'],
+                'writeSeconds',saved['wallSeconds'],'matchedFields',len(keys),flush=True)
+          PY
+            if [ "$?" -ne 0 ]; then failures=$((failures+1)); rm -f "$history_file"; continue; fi
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- verify-history "$history_file" "$(cat "integrated-v1-seed$seed-facts.txt")" 29220 0 | tee "integrated-v1-seed$seed-verified.log"
+            if [ "$?" -ne 0 ]; then failures=$((failures+1)); rm -f "$history_file"; continue; fi
+            python3 - "$seed" "$started" <<'PY' | tee "integrated-v1-seed$seed-verified-summary.txt"
+          import json,sys,time
+          seed=int(sys.argv[1])
+          v=json.load(open(f'integrated-v1-seed{seed}-verified.log'))
+          expected=int(open(f'integrated-v1-seed{seed}-facts.txt').read())
+          elapsed=int(time.time())-int(sys.argv[2])
+          assert v['historyVerified'] and v['persistedFactsReadBack']==expected
+          assert v['daysObserved']==29220 and v['firstAndLastDayPresent']
+          assert v['persistedBytes']>0 and elapsed<=21600
+          print('INTEGRATED_HISTORY_VERIFIED seed',seed,'factsReadBack',expected,
+                'bytes',v['persistedBytes'],'writePlusReadSeconds',elapsed,flush=True)
+          PY
+            if [ "$?" -ne 0 ]; then failures=$((failures+1)); else verified=$((verified+1)); fi
+            rm -f "$history_file"
+          done
+          echo "INTEGRATED_LAB_80Y invalid_seed_count=$failures qualified_seeds=$qualified history_seeds_verified=$verified"
+          test "$failures" -eq 0 && test "$verified" -eq 3
       - name: Preserve every negative and positive integrated result
         if: always()
         uses: actions/upload-artifact@v4
