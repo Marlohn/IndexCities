@@ -8,7 +8,7 @@ namespace IndexCities.CausalEngine;
 
 // Independent vertical-slice engine for falsifying the architecture.
 // RULES AND FIXTURES HERE ARE NOT AN IMPLEMENTATION OF ALL OF INDEXCITIES SPEC.
-internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false, bool RetailShopFallback = false, int RetailBasketsPerShift = 5, bool MunicipalSanitationPilot = false, int MunicipalCollectionIntervalDays = 6, bool MunicipalWasteTreatmentPilot = false, bool FairSanitationDispatch = false, bool AttendanceAwareMunicipalShifts = false, bool TaxInclusiveProductPrice = false, int TaxCostRecoveryPercent = 100);
+internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false, bool RetailShopFallback = false, int RetailBasketsPerShift = 5, bool MunicipalSanitationPilot = false, int MunicipalCollectionIntervalDays = 6, bool MunicipalWasteTreatmentPilot = false, bool FairSanitationDispatch = false, bool AttendanceAwareMunicipalShifts = false, bool TaxInclusiveProductPrice = false, int TaxCostRecoveryPercent = 100, int MonthlyResidentialTaxCents = 0);
 internal enum EventKind : byte { Day, Hour, StartWork, EndWork, Move, Delivery, RoadClose, RoadOpen, HouseholdShop }
 internal readonly record struct SimEvent(EventKind Kind, int Id);
 internal sealed class Person
@@ -52,6 +52,10 @@ internal sealed class Household
     public long TrashUnits;
     public long LastSanitationBookedDay = -1;
     public long LastSanitationServicedDay = -1;
+    // Experimental initial private residential deed, with a single real
+    // household member as taxpayer and debt kept against THIS property.
+    public int PropertyOwnerPersonId = -1;
+    public long ResidentialPropertyTaxDebtCents;
 }
 internal sealed class Firm
 {
@@ -226,6 +230,7 @@ internal sealed partial class CausalCity : IDisposable
     private long _paidFreightCents, _freightLaborTrips;
     private long _retailSalesCents;
     private long _municipalTaxPaidCents, _municipalWagesPaidCents;
+    private long _residentialTaxPaidCents, _residentialTaxAssessedCents;
     private int _fairSanitationCursor;
     private long _garbageGenerated, _garbageCollected, _garbageAtDepot, _sanitationPaidVisits, _garbageInTransit;
     private long _peakEvents;
@@ -255,6 +260,10 @@ internal sealed partial class CausalCity : IDisposable
             _people.Add(p);
             family.Members.Add(i);
         }
+        if (_config.MonthlyResidentialTaxCents > 0)
+            foreach (var h in _households)
+                h.PropertyOwnerPersonId = h.Members.FirstOrDefault(id =>
+                    Age(_people[id], Epoch) >= 18, -1);
         _construction = Enumerable.Range(0, families)
             .Select(i => new ConstructionSite { HouseholdId = i }).ToArray();
         _active = _maxActive = _minActive = config.Sims;
@@ -342,6 +351,8 @@ internal sealed partial class CausalCity : IDisposable
             ScheduleDemandFundedShifts(date, day);
         if (_config.MunicipalSanitationPilot && day % 30 == 0)
             CollectMunicipalPropertyTaxes();
+        if (_config.MonthlyResidentialTaxCents > 0 && day % 30 == 0)
+            CollectExistingResidentialPropertyTaxes();
         if (_config.ConstructionPilot && day % 30 == 0)
             OrderFamilyConstruction(day);
         if (_config.VacancyMarket && day % 30 == 0)
@@ -907,6 +918,8 @@ internal sealed partial class CausalCity : IDisposable
         _minActive = Math.Min(_minActive, _active);
         var family = _households[p.HouseholdId];
         var heir = family.Members.Select(id => _people[id]).FirstOrDefault(x => x.Alive);
+        if (_config.MonthlyResidentialTaxCents > 0 && family.PropertyOwnerPersonId == p.Id)
+            family.PropertyOwnerPersonId = heir?.Id ?? -1;
         if (heir is null)
         {
             // SPEC: unclaimed private money goes to the GLOBAL RESERVE,
@@ -1539,6 +1552,9 @@ internal sealed partial class CausalCity : IDisposable
         foreach (var p in _people) if (p.Cash < 0 || p.CarryFood < 0 || p.FreightCargo < 0)
             throw new InvalidOperationException("Invalid person or freight cargo");
         AssertConstructionConservation();
+        if (_config.MonthlyResidentialTaxCents > 0 &&
+            _residentialTaxAssessedCents != _residentialTaxPaidCents + _households.Sum(h=>h.ResidentialPropertyTaxDebtCents))
+            throw new InvalidOperationException("Residential property taxes were counted as revenue before payment");
         if (_config.MunicipalSanitationPilot &&
             (_garbageGenerated != _garbageAtDepot + _wasteTreated + _garbageInTransit + _households.Sum(h => h.TrashUnits) ||
              _garbageCollected != _garbageAtDepot + _wasteTreated + _garbageInTransit ||
@@ -1569,6 +1585,7 @@ internal sealed partial class CausalCity : IDisposable
         Mix(_time); Mix(_active); Mix(_births); Mix(_deaths); Mix(_treasury); Mix(_reserveGlobal);
         Mix(_journeys); Mix(_segments); Mix(_sales); Mix(_shipments); Mix(_retailSalesCents);
         Mix(_municipalTaxPaidCents); Mix(_municipalWagesPaidCents);
+        Mix(_residentialTaxPaidCents); Mix(_residentialTaxAssessedCents);
         Mix(_garbageGenerated); Mix(_garbageCollected); Mix(_garbageAtDepot); Mix(_sanitationPaidVisits); Mix(_wasteTreated); Mix(_wasteTreatmentPaidShifts); Mix(_fairSanitationCursor); Mix(_garbageInTransit);
         foreach (var p in _people)
         {
@@ -1582,7 +1599,7 @@ internal sealed partial class CausalCity : IDisposable
             Mix(p.RetailAlternativePurchases); Mix(p.RetailAlternativeFailures);
             Mix(p.ContributedDays); Mix(p.GrossEarnings); Mix(p.PensionCredit); Mix(p.PensionReceived);
         }
-        foreach (var h in _households) { Mix(h.Pantry); Mix(h.Members.Count); Mix(h.LastBirthDay); Mix(h.LastShoppingDepartureDay); Mix(h.TrashUnits); Mix(h.LastSanitationBookedDay); Mix(h.LastSanitationServicedDay); }
+        foreach (var h in _households) { Mix(h.Pantry); Mix(h.Members.Count); Mix(h.LastBirthDay); Mix(h.LastShoppingDepartureDay); Mix(h.TrashUnits); Mix(h.LastSanitationBookedDay); Mix(h.LastSanitationServicedDay); Mix(h.PropertyOwnerPersonId); Mix(h.ResidentialPropertyTaxDebtCents); }
         foreach (var f in _shops) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); Mix(f.MonthRetailSalesUnits); Mix(f.MonthRetailPaidWagesCents); Mix(f.RetailUnitPriceCents); Mix(f.MonthFarmPaidWagesCents); Mix(f.MonthWholesaleSalesUnits); Mix(f.MonthWholesaleBoughtUnits); Mix(f.MonthWholesalePaidCents); Mix(f.FarmWholesaleUnitPriceCents); Mix(f.TodayCheckoutUnitsLeft); Mix(f.ReservedCheckoutWagesCents); Mix(f.MonthRetailBaskets); Mix(f.LifetimeRetailBaskets); Mix(f.LifetimeCheckoutCapacityDenied); Mix(f.MonthPropertyTaxActuallyPaidCents); }
         foreach (var f in _farms) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); }
         Mix(_builder.Cash); Mix(_builder.OfferedPositions); Mix(_builder.PresentWorkers);
@@ -1677,6 +1694,11 @@ internal sealed partial class CausalCity : IDisposable
         municipalSanitationPilotFixture = _config.MunicipalSanitationPilot,
         taxInclusiveProductPriceFixture = _config.TaxInclusiveProductPrice,
         taxCostRecoveryPercent = _config.TaxInclusiveProductPrice ? _config.TaxCostRecoveryPercent : 0,
+        monthlyResidentialPropertyTaxCents = _config.MonthlyResidentialTaxCents,
+        residentialTaxAssessedCents = _residentialTaxAssessedCents,
+        residentialPropertyTaxActuallyPaidCents = _residentialTaxPaidCents,
+        residentialPropertyTaxDebtOutstandingCents = _households.Sum(h=>h.ResidentialPropertyTaxDebtCents),
+        privateOwnedResidenceCount = _households.Count(h=>h.PropertyOwnerPersonId >= 0),
         municipalWasteTreatmentPilotFixture = _config.MunicipalWasteTreatmentPilot,
         fairSanitationDispatchFixture = _config.FairSanitationDispatch,
         attendanceAwareMunicipalShiftsFixture = _config.AttendanceAwareMunicipalShifts,
