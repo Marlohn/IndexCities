@@ -2005,3 +2005,60 @@ jobs:
             housing-*.log
             housing-qualifying-seeds.txt
           if-no-files-found: ignore
+
+
+  homeowner-revenue-full-history-80y:
+    # Full persisted proof of the already qualifying REAL paid property-tax
+    # counterfactual at 150 cents. No population, jobs, funds or material
+    # exceptions; no extrapolation from 10-year results.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[home-tax-80y-history]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build and independently validate short-run accounting and determinism
+        run: |
+          dotnet build -c Release experiments/IndexCities.CausalEngine
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --self-test
+      - name: Run both independent real 80-year 10k worlds with complete GZip fact persistence and read-back
+        run: |
+          set -o pipefail
+          BASE='--sims=10000 --days=29220 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25 --monthly-residential-tax-cents=150'
+          for seed in 42 73; do
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --seed=$seed --history=home-tax-seed$seed-full-80y.gz 2>&1 | tee home-tax-seed$seed-full-80y.log
+            python3 - "$seed" <<'PY'
+          import json,sys
+          seed=int(sys.argv[1])
+          lines=open(f'home-tax-seed{seed}-full-80y.log').readlines()
+          i=next(i for i,v in enumerate(lines) if v.startswith('{'))
+          r=json.loads(''.join(lines[i:]))
+          assert r['simulatedDays']==29220
+          assert r['gregorianEnd']=='2100-01-01'
+          assert r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+          assert r['historyPersistent'] and r['historyFacts']>100000000
+          assert r['monthlyResidentialPropertyTaxCents']==150
+          assert r['residentialTaxAssessedCents']==r['residentialPropertyTaxActuallyPaidCents']+r['residentialPropertyTaxDebtOutstandingCents']
+          assert r['minimumAliveAtAnyEvent']>=10000, 'Full 80-year sustained-population target not achieved'
+          assert r['wallSeconds']<=21600, 'Six-hour full GZip history performance target failed'
+          assert not r['fullIndexCitiesTargetValidated'], 'Fixture must not claim full SPEC fidelity'
+          print('HISTORY_CANDIDATE_PASS',seed,'min',r['minimumAliveAtAnyEvent'],
+                'end',r['aliveEnd'],'factCount',r['historyFacts'],'timeSeconds',r['wallSeconds'],flush=True)
+          open(f'home-tax-seed{seed}-factcount.txt','w').write(str(r['historyFacts']))
+          PY
+            EXPECTED=$(cat home-tax-seed$seed-factcount.txt)
+            gzip -t home-tax-seed$seed-full-80y.gz
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- verify-history home-tax-seed$seed-full-80y.gz "$EXPECTED" 29220 | tee home-tax-seed$seed-verification.log
+            sha256sum home-tax-seed$seed-full-80y.gz | tee home-tax-seed$seed-history-sha256.txt
+          done
+      - name: Preserve audit reports, never upload multi-gigabyte fact archive
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-eighty-year-two-seed-residential-history-evidence
+          path: |
+            home-tax-*.log
+            home-tax-*.txt
+          if-no-files-found: ignore

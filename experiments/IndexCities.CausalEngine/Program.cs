@@ -34,6 +34,43 @@ internal static class Program
                 Console.Error.WriteLine($"HISTORY_QUERY sim={person} found={count} emitted={Math.Min(count, limit)}");
                 return 0;
             }
+            if (args.Length >= 1 && args[0] == "verify-history")
+            {
+                if (args.Length != 4)
+                    throw new ArgumentException("verify-history PATH EXPECTED_FACTS EXPECTED_DAYS");
+                var path = args[1];
+                var expected = long.Parse(args[2]);
+                var expectedDays = int.Parse(args[3]);
+                if (expected <= 0 || expectedDays <= 0 || expectedDays > 29220)
+                    throw new ArgumentOutOfRangeException(nameof(args));
+                long count = 0, previous = -1, daysObserved = 0, lastDay = -1;
+                var kinds = new long[256];
+                foreach (var fact in HistorySink.Read(path))
+                {
+                    if (fact.At < previous || fact.At < 0 ||
+                        fact.At >= expectedDays * CausalCity.DaySeconds)
+                        throw new InvalidDataException("History violates chronological window");
+                    previous = fact.At;
+                    long day = fact.At / CausalCity.DaySeconds;
+                    if (day != lastDay) { daysObserved++; lastDay = day; }
+                    kinds[fact.Type]++;
+                    count = checked(count + 1);
+                }
+                if (count != expected || daysObserved != expectedDays ||
+                    kinds[3] == 0 || kinds[5] == 0 || kinds[6] == 0 ||
+                    kinds[7] == 0 || kinds[24] == 0 || kinds[29] == 0)
+                    throw new InvalidDataException(
+                        $"Persisted facts do not match simulated causal records: {count}/{expected}, days {daysObserved}/{expectedDays}");
+                Console.WriteLine(JsonSerializer.Serialize(new {
+                    historyVerified = true, persistedFactsReadBack = count, daysObserved,
+                    firstAndLastDayPresent = lastDay == expectedDays - 1,
+                    persistedBytes = new FileInfo(path).Length,
+                    foodConsumedEvents = kinds[3], births = kinds[5], deaths = kinds[6],
+                    paidWorkEvents = kinds[7], businessTaxEvents = kinds[24],
+                    residentialTaxPaymentEvents = kinds[29]
+                }));
+                return 0;
+            }
             int sims = 1000, days = 7, seed = 42, annualLoadCycles = 0;
             string? history = null;
             int retailBasketsPerShift = 5, municipalCollectionIntervalDays = 6, taxCostRecoveryPercent = 100, monthlyResidentialTaxCents = 0, wasteTreatmentUnitsPerShift = 50;
