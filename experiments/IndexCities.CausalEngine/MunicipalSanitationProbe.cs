@@ -28,6 +28,8 @@ internal sealed partial class CausalCity
             firm.Cash -= paid;
             _treasury = checked(_treasury + paid);
             _municipalTaxPaidCents += paid;
+            if (_config.TaxInclusiveProductPrice)
+                firm.MonthPropertyTaxActuallyPaidCents += paid;
             _history.Fact(_time, -5000 - firm.Id, 24, paid);
         }
     }
