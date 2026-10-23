@@ -351,6 +351,76 @@ jobs:
             full-real-municipal-80y.facts.gz
           if-no-files-found: ignore
 
+  taxed-production-margin-80y:
+    # Compare businesses that lose paid property tax as uncompensated capital
+    # versus the SAME physical food producers/sellers quoting their actual
+    # fiscal costs. Neither imports money, increases shops or grants wages.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[tax-aware-price]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: A/B corporate tax recoverability through legitimate purchases
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          BASE='--sims=10000 --days=3653 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3'
+          for seed in 42 73; do
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --seed=$seed 2>&1 | tee old-pricing-$seed.log
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --seed=$seed --tax-inclusive-product-price 2>&1 | tee tax-inclusive-pricing-$seed.log
+          done
+          python3 - <<'PY'
+          import json
+          def get(path):
+              a=open(path).readlines()
+              i=next(i for i,l in enumerate(a) if l.startswith('{'))
+              return json.loads(''.join(a[i:]))
+          qualified=True
+          for seed in (42,73):
+              a,b=get(f'old-pricing-{seed}.log'),get(f'tax-inclusive-pricing-{seed}.log')
+              for r in (a,b):
+                  assert r['simulatedDays']==3653 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+                  assert r['municipalWasteTreatmentPilotFixture'] and r['realWorkerFreightTrips']>0
+              assert not a['taxInclusiveProductPriceFixture'] and b['taxInclusiveProductPriceFixture']
+              print('REAL_TAX_PRICING',seed,
+                    'baselineLive',a['aliveEnd'],'taxPricedLive',b['aliveEnd'],
+                    'taxPricedMinimum',b['minimumAliveAtAnyEvent'],
+                    'householdCash',b['personalCashCents'],
+                    'firmCash',b['businessCurrentCashCents'],
+                    'foodPrice',b['averageRetailUnitPriceCents'],
+                    'actualBusinessTaxes',b['municipalTaxCollectedCents'],
+                    'unmetMeals',b['unmetMeals'])
+              qualified &= b['minimumAliveAtAnyEvent']>=10000
+          open('decade-pass.flag','w').write('yes' if qualified else 'no')
+          PY
+          if test "$(cat decade-pass.flag)" = yes; then
+            echo 'Both decade seeds hold. Run 80 continuous years WITHOUT history first.'
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price 2>&1 | tee tax-inclusive-eighty-year-demography.log
+            python3 - <<'PY'
+            import json
+            a=open('tax-inclusive-eighty-year-demography.log').readlines()
+            i=next(i for i,l in enumerate(a) if l.startswith('{'))
+            r=json.loads(''.join(a[i:]))
+            assert r['simulatedDays']==29220 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+            print('TAX_PRICED_FULL_EIGHTY_YEARS',r['aliveEnd'],r['minimumAliveAtAnyEvent'],r['wallSeconds'])
+            if r['minimumAliveAtAnyEvent']>=10000:
+                open('eighty-pass.flag','w').write('yes')
+            PY
+          fi
+      - name: Keep real decade and 80-year outcomes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-tax-priced-business-solvency
+          path: |
+            old-pricing-*.log
+            tax-inclusive-pricing-*.log
+            tax-inclusive-eighty-year-demography.log
+          if-no-files-found: ignore
+
   independent-demography-80y:
     # Separate cheap demographic boundary probe: NO compressed history. It
     # cannot satisfy the goal, but quickly falsifies the 80y survival premise
