@@ -2062,3 +2062,50 @@ jobs:
             home-tax-*.log
             home-tax-*.txt
           if-no-files-found: ignore
+
+
+  independent-joint-structural-three-seed:
+    # Cross-check independent families, paid waste throughput and real paid
+    # homeowner revenue with three seeded 80-year cities. No history here;
+    # it is handled by the full archival proof job.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[structural-third-seed]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Falsify a 10k minimum across three full generations and physical throughput
+        run: |
+          set -o pipefail
+          dotnet build -c Release experiments/IndexCities.CausalEngine
+          BASE='--sims=10000 --days=29220 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25 --monthly-residential-tax-cents=150 --waste-treatment-units-per-shift=100 --living-occupancy-birth-cap'
+          for seed in 42 73 101; do
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --seed=$seed 2>&1 | tee joint-structural-seed$seed-80y.log
+          done
+          python3 - <<'PY'
+          import json
+          count=0
+          for seed in (42,73,101):
+              lines=open(f'joint-structural-seed{seed}-80y.log').readlines()
+              i=next(i for i,s in enumerate(lines) if s.startswith('{'))
+              r=json.loads(''.join(lines[i:]))
+              assert r['simulatedDays']==29220 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+              assert r['livingOccupancyBirthCapFixture'] and r['wasteTreatmentUnitsPerPaidShift']==100
+              assert r['residentialTaxAssessedCents']==r['residentialPropertyTaxActuallyPaidCents']+r['residentialPropertyTaxDebtOutstandingCents']
+              assert not r['fullIndexCitiesTargetValidated']
+              passed=r['minimumAliveAtAnyEvent']>=10000
+              print('JOINT_80Y_THREE_SEED',seed,'minimum',r['minimumAliveAtAnyEvent'],
+                    'last',r['aliveEnd'],'born',r['births'],'realTaxPaid',r['residentialPropertyTaxActuallyPaidCents'],
+                    'processedWaste',r['wasteTreatedAtDepot'],'wall',r['wallSeconds'],'populationPassed',passed,flush=True)
+              count+=int(passed)
+          print('SEEDS_PASSING_80Y',count,'of 3',flush=True)
+          PY
+      - name: Preserve three-seed material and economic observations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: independent-three-seed-80y-structural-robustness
+          path: joint-structural-seed*-80y.log
+          if-no-files-found: ignore
