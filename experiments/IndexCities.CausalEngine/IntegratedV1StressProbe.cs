@@ -13,7 +13,7 @@ internal sealed partial class CausalCity
     private const int IntakeNode = 1, PurificationNode = 2, SewageNode = 3;
     private const int WindNode = 4, FuelStationNode = 5;
     private const long WaterTankCapacity = 400_000, RawTankCapacity = 400_000;
-    private const long SewageTankCapacity = 400_000, GridEnergyCapacity = 400_000;
+    private const long SewageTankCapacity = 400_000, WindHourlyCapacity = 100_000;
     private const int UtilityGrossWage = 80, FuelImportBatch = 5000;
     private const int FuelImportPrice = 2, FuelRetailPrice = 4;
     private const int FuelImportPayload = -200;
@@ -24,6 +24,8 @@ internal sealed partial class CausalCity
     private long _rawWater, _potableWater, _sewage, _energy;
     private long _waterExtracted, _waterPurified, _waterConsumed, _waterShortage;
     private long _sewageProcessed, _powerGenerated, _powerConsumed, _powerShortage;
+    private long _powerCurtailed, _lastPowerHour = -1;
+    private int _lastWindMaintainedDay;
     private long _utilityShiftsPaid, _fuelImported, _fuelBurned, _fuelDelivered;
     private long _fuelImportSpending, _fuelStationWages, _deedPaid;
     private int _fuelInTransit;
@@ -63,6 +65,26 @@ internal sealed partial class CausalCity
             home.PropertyOwnerPersonId = ownerId;
             _history.Fact(0, ownerId, 37, 2000);
         }
+    }
+
+    // The grid has NO BATTERY. Every hour has its own variable wind supply;
+    // unused electricity is explicitly curtailed, not carried to tomorrow.
+    // Wind stops after a prolonged lack of ACTUAL paid maintenance shifts.
+    private void RefreshIntegratedHourlyPower()
+    {
+        if (!_config.IntegratedV1Stress) return;
+        var hour = _time / 3600;
+        if (hour == _lastPowerHour) return;
+        _powerCurtailed += _energy;
+        _energy = 0;
+        _lastPowerHour = hour;
+        if (_time / DaySeconds - _lastWindMaintainedDay > 30) return;
+        var factor = Math.Clamp(.55 + .25 * Math.Sin(hour * 3600.0 / 21600 + _config.Seed) +
+                                .15 * Math.Sin(hour * 3600.0 / 172800 + _config.Seed * .3), .15, .95);
+        var actual = (long)(WindHourlyCapacity * factor);
+        _powerGenerated += actual;
+        _energy = actual;
+        _history.Fact(_time, -7010, 40, actual);
     }
 
     private void ConsumeIntegratedServices(Person person)
@@ -145,10 +167,9 @@ internal sealed partial class CausalCity
         }
         else if (job == WindJob)
         {
-            produced = Math.Min(GridEnergyCapacity - _energy,
-                (long)(40_000 * _windFactor));
-            _energy += produced;
-            _powerGenerated += produced;
+            // A real paid worker maintains an existing wind turbine. Wind,
+            // not the salary payment, generates electricity each hour.
+            _lastWindMaintainedDay = (int)(_time / DaySeconds);
         }
         else if (job == FuelStationJob)
             OrderExternalFuelIfNeeded();
@@ -246,10 +267,10 @@ internal sealed partial class CausalCity
         if (!_config.IntegratedV1Stress) return;
         if (_rawWater < 0 || _potableWater < 0 || _sewage < 0 || _energy < 0 ||
             _rawWater > RawTankCapacity || _potableWater > WaterTankCapacity ||
-            _sewage > SewageTankCapacity || _energy > GridEnergyCapacity ||
+            _sewage > SewageTankCapacity || _energy > WindHourlyCapacity ||
             _waterExtracted != _rawWater + _potableWater + _waterConsumed ||
             _waterConsumed != _sewage + _sewageProcessed ||
-            _powerGenerated != _energy + _powerConsumed ||
+            _powerGenerated != _energy + _powerConsumed + _powerCurtailed ||
             _fuelImported != _fuelStation.Stock + _fuelInTransit +
                 _farms.Sum(f => f.TruckFuelUnits) + _fuelBurned ||
             _fuelStation.Stock < 0 || _fuelStation.Cash < 0 || _fuelInTransit < 0 ||
