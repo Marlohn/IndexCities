@@ -71,7 +71,8 @@ internal sealed partial class CausalCity
                 _sewageProcessed, _powerGenerated, _powerConsumed, _powerShortage,
                 _utilityShiftsPaid, _fuelImported, _fuelBurned, _fuelDelivered,
                 _fuelImportSpending, _fuelStationWages, _deedPaid,
-                _fuelInTransit, _fuelImportPending ? 1 : 0
+                _fuelInTransit, _fuelImportPending ? 1 : 0,
+                _powerCurtailed, _lastPowerHour, _lastWindMaintainedDay
             ],
             Populations = [_active, _maxActive, _minActive],
             Factors = [_windFactor, _waterRatio],
@@ -88,7 +89,7 @@ internal sealed partial class CausalCity
     {
         var state = JsonSerializer.Deserialize<Snapshot>(File.ReadAllText(path), SnapshotJson)
             ?? throw new InvalidDataException("Empty snapshot");
-        if ((state.Counters.Length != 37 && state.Counters.Length != 39 && state.Counters.Length != 40 && state.Counters.Length != 42 && state.Counters.Length != 63) || state.Populations.Length != 3 ||
+        if ((state.Counters.Length != 37 && state.Counters.Length != 39 && state.Counters.Length != 40 && state.Counters.Length != 42 && state.Counters.Length != 63 && state.Counters.Length != 66) || state.Populations.Length != 3 ||
             state.Factors.Length != 2 || state.Households.Length < 1 ||
             state.Shops.Length != StoreCount || state.Farms.Length != FarmCount ||
             state.Builder is null || (state.Config.IntegratedV1Stress && state.FuelStation is null) || state.ConstructionSites.Length != state.Households.Length ||
@@ -159,7 +160,7 @@ internal sealed partial class CausalCity
             city._residentialTaxPaidCents = c[40];
             city._residentialTaxAssessedCents = c[41];
         }
-        if (c.Length == 63)
+        if (c.Length >= 63)
         {
             city._rawWater = c[42]; city._potableWater = c[43];
             city._sewage = c[44]; city._energy = c[45];
@@ -172,6 +173,12 @@ internal sealed partial class CausalCity
             city._fuelImportSpending = c[58]; city._fuelStationWages = c[59];
             city._deedPaid = c[60]; city._fuelInTransit = (int)c[61];
             city._fuelImportPending = c[62] != 0;
+        }
+        if (c.Length >= 66)
+        {
+            city._powerCurtailed = c[63];
+            city._lastPowerHour = c[64];
+            city._lastWindMaintainedDay = (int)c[65];
         }
         city._active = state.Populations[0];
         city._maxActive = state.Populations[1];
