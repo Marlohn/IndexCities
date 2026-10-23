@@ -1923,7 +1923,7 @@ jobs:
           d=json.loads(''.join(rows[i:]))
           assert d['simulatedDays']==29220 and d['minimumAliveAtAnyEvent']>=10000
           assert d['historyPersistent'] and d['moneyConserved'] and d['foodConserved'] and d['materialConserved']
-          print('TREATMENT_PERSISTED_80Y',n,d['minimumAliveAtAnyEvent'],d['historyFacts'],d['wallSeconds'],flush=True)
+          print('TREATMENT_PERSISTED_80Y',n,d['minimumAliveAtAnyEvent'],d['recordedFacts'],d['wallSeconds'],flush=True)
           PY
           done
       - name: Archive all results even for negative experiments
@@ -1993,7 +1993,7 @@ jobs:
           d=json.loads(''.join(lines[i:]))
           assert d['historyPersistent'] and d['minimumAliveAtAnyEvent']>=10000
           assert d['moneyConserved'] and d['foodConserved'] and d['materialConserved']
-          print('HOUSING_PERSISTED_80Y',seed,d['historyFacts'],d['wallSeconds'],flush=True)
+          print('HOUSING_PERSISTED_80Y',seed,d['recordedFacts'],d['wallSeconds'],flush=True)
           PY
           done
       - name: Keep raw evidence even for rejected populations
@@ -2038,15 +2038,15 @@ jobs:
           assert r['simulatedDays']==29220
           assert r['gregorianEnd']=='2100-01-01'
           assert r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
-          assert r['historyPersistent'] and r['historyFacts']>100000000
+          assert r['historyPersistent'] and r['recordedFacts']>100000000
           assert r['monthlyResidentialPropertyTaxCents']==150
           assert r['residentialTaxAssessedCents']==r['residentialPropertyTaxActuallyPaidCents']+r['residentialPropertyTaxDebtOutstandingCents']
           assert r['minimumAliveAtAnyEvent']>=10000, 'Full 80-year sustained-population target not achieved'
           assert r['wallSeconds']<=21600, 'Six-hour full GZip history performance target failed'
           assert not r['fullIndexCitiesTargetValidated'], 'Fixture must not claim full SPEC fidelity'
           print('HISTORY_CANDIDATE_PASS',seed,'min',r['minimumAliveAtAnyEvent'],
-                'end',r['aliveEnd'],'factCount',r['historyFacts'],'timeSeconds',r['wallSeconds'],flush=True)
-          open(f'home-tax-seed{seed}-factcount.txt','w').write(str(r['historyFacts']))
+                'end',r['aliveEnd'],'factCount',r['recordedFacts'],'timeSeconds',r['wallSeconds'],flush=True)
+          open(f'home-tax-seed{seed}-factcount.txt','w').write(str(r['recordedFacts']))
           PY
             EXPECTED=$(cat home-tax-seed$seed-factcount.txt)
             gzip -t home-tax-seed$seed-full-80y.gz
