@@ -2264,7 +2264,7 @@ jobs:
   integrated-v1-infrastructure-80y:
     # One long combined run instead of separate water/power/sewage/fuel/housing
     # tests. Only the explicit marker triggers this expensive experiment.
-    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[integrated-v1-80y]')
+    if: github.event_name == 'push' && (contains(github.event.head_commit.message, '[integrated-v1-80y]') || contains(github.event.head_commit.message, '[fiscal-tax-ab]'))
     runs-on: ubuntu-latest
     timeout-minutes: 240
     steps:
@@ -2274,7 +2274,78 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Compile the guarded combined causal engine
         run: dotnet build experiments/IndexCities.CausalEngine -c Release
+      # Falsifiable LAB policy A/B only: same C# engine, seeds, 29,220 days,
+      # services, and municipal payroll reserve; change ONLY real monthly
+      # household property levy (0/600/1200 cents). No invented receipts:
+      # assessed-but-unpaid amounts are debts, not cash. 2,500 existing
+      # homes imply gross upper bounds of 0/18M/36M cents per 365 days,
+      # bracketing the observed ~30M-cent last-year pension debt growth.
+      # This is NOT a V1 policy, NOT an acceptance of fiscal solvency,
+      # and deliberately does NOT rewrite the 3/3 proven history files.
+      # Inspect tax collection, arrears, family survival, service shifts,
+      # ledger and unpaid pensions; negative outcomes are valid evidence.
+      - name: Compare integrated fiscal levy A/B across three seeds without history I/O
+        if: contains(github.event.head_commit.message, '[fiscal-tax-ab]')
+        run: |
+          set -euo pipefail
+          BASE='--sims=10000 --days=29220 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25 --waste-treatment-units-per-shift=75 --integrated-v1-stress --eligible-birth-fallback --municipal-payroll-reserve-counterfactual'
+          for tax in 0 600 1200; do
+            for seed in 42 73 101; do
+              dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --seed=$seed --monthly-residential-tax-cents=$tax 2>&1 | tee "integrated-fiscal-tax-$tax-seed-$seed.log"
+            done
+          done
+          python3 - <<'PY' | tee integrated-fiscal-tax-ab-summary.txt
+          import json,re
+          results={}
+          for tax in (0,600,1200):
+              for seed in (42,73,101):
+                  lines=open(f'integrated-fiscal-tax-{tax}-seed-{seed}.log').readlines()
+                  start=next(i for i,line in enumerate(lines) if line.startswith('{'))
+                  r=json.loads(''.join(lines[start:]))
+                  assert r['seed']==seed and r['simulatedDays']==29220 and r['gregorianEnd']=='2100-01-01'
+                  assert r['integratedV1StressFixture'] and r['municipalPayrollReserveCounterfactualFixture']
+                  assert r['birthEligibilityFallbackFixture'] and not r['historyPersistent']
+                  assert r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+                  assert r['fiscalTreasuryLedgerBalanced']
+                  assert r['monthlyResidentialPropertyTaxCents']==tax
+                  assert r['residentialTaxAssessedCents']==r['residentialPropertyTaxActuallyPaidCents']+r['residentialPropertyTaxDebtOutstandingCents']
+                  assert r['actualUtilityWorkShifts']>0 and r['actualFuelImported']>0
+                  fiscal={}
+                  for line in lines:
+                      if 'LAB_FISCAL day=' not in line: continue
+                      fields={k:int(v) for k,v in re.findall(r'\b([A-Za-z]\w*)=(-?\d+)',line)}
+                      if fields.get('day') in (28855,29220): fiscal[fields['day']]=fields
+                  if len(fiscal)==2:
+                      a,b=fiscal[28855],fiscal[29220]
+                      revenue=sum(b[k]-a[k] for k in ('businessTaxPaidCents','residentialTaxPaidCents','pensionContributionsPaidCents'))
+                      paid=sum(b[k]-a[k] for k in ('municipalGrossPayrollCents','pensionsActuallyPaidCents'))
+                      assert revenue-paid==b['treasuryCents']-a['treasuryCents']
+                      print('FISCAL_TAX_LAST365',tax,seed,'revenue',revenue,'paid',paid,
+                            'pensionDebtChange',b['pensionCreditsOutstandingCents']-a['pensionCreditsOutstandingCents'],
+                            'treasuryChange',b['treasuryCents']-a['treasuryCents'],flush=True)
+                  print('FISCAL_TAX_80Y',tax,seed,'minAlive',r['minimumAliveAtAnyEvent'],
+                        'aliveEnd',r['aliveEnd'],'wallSeconds',r['wallSeconds'],
+                        'homeTaxAssessed',r['residentialTaxAssessedCents'],
+                        'homeTaxPaid',r['residentialPropertyTaxActuallyPaidCents'],
+                        'homeTaxDebt',r['residentialPropertyTaxDebtOutstandingCents'],
+                        'pensionCreditsUnpaid',r['unpaidPensionCreditsCents'],
+                        'treasuryCash',r['treasuryCashCents'],'unmetMeals',r['unmetMeals'],
+                        'actualUtilityWorkShifts',r['actualUtilityWorkShifts'],flush=True)
+                  results[tax,seed]=r
+          for seed,expected in ((42,15653),(73,15668),(101,15309)):
+              baseline=results[0,seed]
+              assert baseline['minimumAliveAtAnyEvent']==10000 and baseline['aliveEnd']==expected, 'Baseline changed unexpectedly'
+              for tax in (600,1200):
+                  trial=results[tax,seed]
+                  print('FISCAL_TAX_AB_DELTA',seed,tax,
+                        'minAliveChange',trial['minimumAliveAtAnyEvent']-baseline['minimumAliveAtAnyEvent'],
+                        'endAliveChange',trial['aliveEnd']-baseline['aliveEnd'],
+                        'pensionDebtChange',trial['unpaidPensionCreditsCents']-baseline['unpaidPensionCreditsCents'],
+                        'homeTaxPaidChange',trial['residentialPropertyTaxActuallyPaidCents']-baseline['residentialPropertyTaxActuallyPaidCents'],flush=True)
+          print('FISCAL_TAX_AB_COMPLETE no_history_files no_policy_approved',flush=True)
+          PY
       - name: Test three continuous 80-year cities with staffed water, sewage, wind, fuel and paid home deeds
+        if: ${{ !contains(github.event.head_commit.message, '[fiscal-tax-ab]') }}
         run: |
           set -uo pipefail
           FLAGS='--sims=10000 --days=29220 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25 --waste-treatment-units-per-shift=75 --integrated-v1-stress --eligible-birth-fallback --municipal-payroll-reserve-counterfactual'
@@ -2383,11 +2454,20 @@ jobs:
           echo "INTEGRATED_LAB_80Y invalid_seed_count=$failures qualified_seeds=$qualified history_seeds_verified=$verified"
           test "$failures" -eq 0 && test "$verified" -eq 3
       - name: Preserve every negative and positive integrated result
-        if: always()
+        if: always() && !contains(github.event.head_commit.message, '[fiscal-tax-ab]')
         uses: actions/upload-artifact@v4
         with:
           name: integrated-v1-five-system-eighty-year-evidence
           path: |
             integrated-v1-*.log
             integrated-v1-*.txt
+          if-no-files-found: ignore
+      - name: Preserve fiscal A/B logs and negative outcomes
+        if: always() && contains(github.event.head_commit.message, '[fiscal-tax-ab]')
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-fiscal-tax-ab-evidence
+          path: |
+            integrated-fiscal-tax-*.log
+            integrated-fiscal-tax-*.txt
           if-no-files-found: ignore
