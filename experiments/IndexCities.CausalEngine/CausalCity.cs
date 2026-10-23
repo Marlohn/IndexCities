@@ -81,6 +81,9 @@ internal sealed class Firm
     public int RetailUnitPriceCents = 50;
     // Real accrued costs and trade quantities (NOT new wallets).
     public long MonthFarmPaidWagesCents, MonthWholesaleSalesUnits;
+    // Only diesel actually consumed by this firm's own truck counts as
+    // an operating cost; the fuel purchase itself bought physical stock.
+    public long MonthFreightFuelConsumedCents;
     public long MonthWholesaleBoughtUnits, MonthWholesalePaidCents;
     public int FarmWholesaleUnitPriceCents = 7;
     // Optional physical checkout capacity on actual attended shifts.
@@ -655,6 +658,7 @@ internal sealed partial class CausalCity : IDisposable
             if (_config.FarmCostPricing && farm && firm.MonthFoodProduced > 0)
             {
                 var numerator = checked((firm.MonthFarmPaidWagesCents +
+                    (_config.IntegratedV1Stress ? firm.MonthFreightFuelConsumedCents : 0) +
                     (_config.TaxInclusiveProductPrice ? firm.MonthPropertyTaxActuallyPaidCents * _config.TaxCostRecoveryPercent / 100 : 0)) * 105);
                 var denominator = checked(firm.MonthFoodProduced * 100);
                 var unitPrice = (numerator + denominator - 1) / denominator;
@@ -720,6 +724,7 @@ internal sealed partial class CausalCity : IDisposable
             firm.MonthRetailPaidWagesCents = 0;
             firm.MonthRetailBaskets = 0;
             firm.MonthFarmPaidWagesCents = 0;
+            firm.MonthFreightFuelConsumedCents = 0;
             firm.MonthWholesaleSalesUnits = 0;
             firm.MonthWholesaleBoughtUnits = 0;
             firm.MonthWholesalePaidCents = 0;
@@ -1704,8 +1709,8 @@ internal sealed partial class CausalCity : IDisposable
             Mix(p.ContributedDays); Mix(p.GrossEarnings); Mix(p.PensionCredit); Mix(p.PensionReceived);
         }
         foreach (var h in _households) { Mix(h.Pantry); Mix(h.Members.Count); Mix(h.LastBirthDay); Mix(h.LastShoppingDepartureDay); Mix(h.TrashUnits); Mix(h.LastSanitationBookedDay); Mix(h.LastSanitationServicedDay); Mix(h.PropertyOwnerPersonId); Mix(h.ResidentialPropertyTaxDebtCents); }
-        foreach (var f in _shops) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); Mix(f.MonthRetailSalesUnits); Mix(f.MonthRetailPaidWagesCents); Mix(f.RetailUnitPriceCents); Mix(f.MonthFarmPaidWagesCents); Mix(f.MonthWholesaleSalesUnits); Mix(f.MonthWholesaleBoughtUnits); Mix(f.MonthWholesalePaidCents); Mix(f.FarmWholesaleUnitPriceCents); Mix(f.TruckFuelUnits); Mix(f.TruckBusy ? 1 : 0); Mix(f.TruckFuelOnOrder ? 1 : 0); Mix(f.TruckFuelDemandPending ? 1 : 0); Mix(f.TodayCheckoutUnitsLeft); Mix(f.ReservedCheckoutWagesCents); Mix(f.MonthRetailBaskets); Mix(f.LifetimeRetailBaskets); Mix(f.LifetimeCheckoutCapacityDenied); Mix(f.MonthPropertyTaxActuallyPaidCents); }
-        foreach (var f in _farms) { Mix(f.TruckFuelUnits); Mix(f.TruckBusy ? 1 : 0); Mix(f.TruckFuelOnOrder ? 1 : 0); Mix(f.TruckFuelDemandPending ? 1 : 0); Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); }
+        foreach (var f in _shops) { Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); Mix(f.MonthRetailSalesUnits); Mix(f.MonthRetailPaidWagesCents); Mix(f.RetailUnitPriceCents); Mix(f.MonthFarmPaidWagesCents); Mix(f.MonthFreightFuelConsumedCents); Mix(f.MonthWholesaleSalesUnits); Mix(f.MonthWholesaleBoughtUnits); Mix(f.MonthWholesalePaidCents); Mix(f.FarmWholesaleUnitPriceCents); Mix(f.TruckFuelUnits); Mix(f.TruckBusy ? 1 : 0); Mix(f.TruckFuelOnOrder ? 1 : 0); Mix(f.TruckFuelDemandPending ? 1 : 0); Mix(f.TodayCheckoutUnitsLeft); Mix(f.ReservedCheckoutWagesCents); Mix(f.MonthRetailBaskets); Mix(f.LifetimeRetailBaskets); Mix(f.LifetimeCheckoutCapacityDenied); Mix(f.MonthPropertyTaxActuallyPaidCents); }
+        foreach (var f in _farms) { Mix(f.TruckFuelUnits); Mix(f.TruckBusy ? 1 : 0); Mix(f.TruckFuelOnOrder ? 1 : 0); Mix(f.TruckFuelDemandPending ? 1 : 0); Mix(f.Cash); Mix(f.Stock); Mix(f.DayReceipts); Mix(f.DaySupplies); Mix(f.DayPaidShifts); Mix(f.WageForDay); Mix(f.PayrollBudget); Mix(f.OfferedPositions); Mix(f.PresentWorkers); Mix(f.MonthFoodProduced); Mix(f.MonthFarmWorkdays); Mix(f.MonthFreightFuelConsumedCents); }
         Mix(_builder.Cash); Mix(_builder.OfferedPositions); Mix(_builder.PresentWorkers);
         Mix(_outsideTimber); Mix(_constructionStarted); Mix(_constructionFinished); Mix(_constructionPaidShifts);
         foreach (var site in _construction)
