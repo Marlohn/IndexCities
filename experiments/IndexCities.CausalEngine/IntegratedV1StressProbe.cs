@@ -169,6 +169,7 @@ internal sealed partial class CausalCity
         var delivery = NewTrip(-1, 0, FuelStationNode, EventKind.Delivery,
             FuelImportPayload, FuelImportBatch);
         _fuelInTransit += FuelImportBatch;
+        _fuelImported += FuelImportBatch;
         Schedule(_time + 1, EventKind.Move, delivery.Id);
         _history.Fact(_time, -7000, 34, FuelImportBatch);
     }
@@ -179,7 +180,6 @@ internal sealed partial class CausalCity
             throw new InvalidOperationException("Unordered or imaginary imported fuel");
         _fuelStation.Stock += trip.Cargo;
         _fuelInTransit -= trip.Cargo;
-        _fuelImported += trip.Cargo;
         _fuelImportPending = false;
         _history.Fact(_time, -7000, 35, trip.Cargo);
     }
@@ -187,7 +187,7 @@ internal sealed partial class CausalCity
     private bool RequestFarmFuel(int farmId)
     {
         var farm = _farms[farmId];
-        if (farm.FuelOnOrder || _fuelStation.Stock < 80 ||
+        if (farm.TruckFuelOnOrder || _fuelStation.Stock < 80 ||
             farm.Cash < 80L * FuelRetailPrice) return false;
         // Fuel is sold by an actual company, from physical inventory; the
         // external delivery vehicle must drive from its stock to the farm.
@@ -195,7 +195,7 @@ internal sealed partial class CausalCity
         _fuelStation.Cash += 80L * FuelRetailPrice;
         _fuelStation.Stock -= 80;
         _fuelInTransit += 80;
-        farm.FuelOnOrder = true;
+        farm.TruckFuelOnOrder = true;
         var delivery = NewTrip(-1, FuelStationNode, farm.Node,
             EventKind.Delivery, FuelFarmPayloadBase - farmId, 80);
         Schedule(_time + 1, EventKind.Move, delivery.Id);
@@ -206,10 +206,10 @@ internal sealed partial class CausalCity
     private void FinishFarmFuel(Trip trip)
     {
         var farmId = FuelFarmPayloadBase - trip.Payload;
-        if (farmId < 0 || farmId >= FarmCount || ! _farms[farmId].FuelOnOrder)
+        if (farmId < 0 || farmId >= FarmCount || ! _farms[farmId].TruckFuelOnOrder)
             throw new InvalidOperationException("Imaginary farm fuel delivery");
         var farm = _farms[farmId];
-        farm.FuelOnOrder = false;
+        farm.TruckFuelOnOrder = false;
         farm.TruckFuelUnits += trip.Cargo;
         _fuelDelivered += trip.Cargo;
         _fuelInTransit -= trip.Cargo;
