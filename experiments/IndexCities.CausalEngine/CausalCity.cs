@@ -376,7 +376,8 @@ internal sealed partial class CausalCity : IDisposable
         // The old sanitationWagesPaidCents diagnostic was misnamed: its
         // underlying counter also includes waste treatment and public utilities.
         // These are cumulative amounts, not rates or hypothetical assessments.
-        if (_config.IntegratedV1Stress && (_days % 365 == 0 || _days == _config.Days))
+        if (_config.IntegratedV1Stress && (_days % 365 == 0 || _days == _config.Days ||
+            (_config.Days >= 29_220 && _days >= _config.Days - 730 && _days % 5 == 0)))
         {
             var pensionsPaid = _people.Sum(p => p.PensionReceived);
             var expectedTreasury = checked(_municipalTaxPaidCents + _residentialTaxPaidCents +
@@ -398,6 +399,29 @@ internal sealed partial class CausalCity : IDisposable
                 $"healthDeaths={_deathsWithCollapsedHealth} " +
                 $"dirtyLivingHomes={_households.Count(h => h.TrashUnits > 80 && h.Members.Any(id => _people[id].Alive))} " +
                 $"livingMunicipalServiceWorkers={_people.Count(p => p.Alive && (p.Job == SanitationJob || p.Job == WasteTreatmentJob))}");
+            // Read-only causal probe. This snapshot occurs at the start of the
+            // day, BEFORE taxes, pensions, work dispatch or paid service shifts.
+            // Cumulative counters permit exact 5-day deltas without introducing
+            // mutable instrumentation state into checkpoints or fingerprints.
+            if (_config.Days >= 29_220 && _days >= _config.Days - 730)
+                Console.Error.WriteLine(
+                    $"LAB_SERVICE_CHAIN day={_days} sampling=pre_tax_pension_shift alive={_active} " +
+                    $"treasuryCents={_treasury} pensionCreditsCents={_people.Sum(p => p.PensionCredit)} " +
+                    $"pensionsPaidCents={pensionsPaid} businessTaxPaidCents={_municipalTaxPaidCents} " +
+                    $"residentialTaxPaidCents={_residentialTaxPaidCents} pensionContributionsCents={_pensionContributionsPaidCents} " +
+                    $"municipalPayrollCents={_municipalWagesPaidCents} paidCollections={_sanitationPaidVisits} " +
+                    $"paidTreatmentShifts={_wasteTreatmentPaidShifts} paidUtilityShifts={_utilityShiftsPaid} " +
+                    $"municipalWorkers={_people.Count(p => p.Alive && (p.Job == SanitationJob || p.Job == WasteTreatmentJob))} " +
+                    $"utilityWorkers={_people.Count(p => p.Alive && p.Job >= IntakeJob && p.Job <= WindJob)} " +
+                    $"lastWindMaintenanceDay={_lastWindMaintainedDay} " +
+                    $"potableWaterStock={_potableWater} rawWaterStock={_rawWater} sewageStock={_sewage} " +
+                    $"waterShortages={_waterShortage} powerShortages={_powerShortage} " +
+                    $"dirtyLivingHomes={_households.Count(h => h.TrashUnits > 80 && h.Members.Any(id => _people[id].Alive))} " +
+                    $"staleLivingHomes={_households.Count(h => h.TrashUnits >= 4 && h.Members.Any(id => _people[id].Alive) && _days - h.LastSanitationServicedDay > 15)} " +
+                    $"depotWaste={_garbageAtDepot} transitWaste={_garbageInTransit} " +
+                    $"hungryLivingHomes={_households.Count(h => h.Pantry == 0 && h.Members.Any(id => _people[id].Alive))} " +
+                    $"unservedMeals={_unservedMeals} livingHealthLE10={_people.Count(p => p.Alive && p.Health <= 10)} " +
+                    $"healthDeaths={_deathsWithCollapsedHealth} ageDeaths={_deathsAtAgeLimit}");
         }
         if (_config.WageFeedback && !_config.DemandStaffing)
         {
