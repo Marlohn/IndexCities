@@ -73,7 +73,7 @@ internal static class Program
             }
             int sims = 1000, days = 7, seed = 42, annualLoadCycles = 0;
             string? history = null;
-            int retailBasketsPerShift = 5, municipalCollectionIntervalDays = 6, taxCostRecoveryPercent = 100, monthlyResidentialTaxCents = 0, wasteTreatmentUnitsPerShift = 50;
+            int retailBasketsPerShift = 5, municipalCollectionIntervalDays = 6, taxCostRecoveryPercent = 100, monthlyResidentialTaxCents = 0, wasteTreatmentUnitsPerShift = 50, treatmentBacklogMonths = 0;
             bool livingOccupancyBirthCap = false;
             bool adversarial = false, wageFeedback = false, cohortRenewal = false, demandStaffing = false, vacancyMarket = false, freightLabor = false, constructionPilot = false, fairHouseholdHiring = false, demographicUpperBound = false, costBasedFoodPrice = false, capacityPricedFood = false, attendanceAwareFarms = false, crossFarmFreight = false, farmCostPricing = false, boundedRetailService = false, basketRetailService = false, retailShopFallback = false, municipalSanitationPilot = false, municipalWasteTreatmentPilot = false, fairSanitationDispatch = false, attendanceAwareMunicipalShifts = false, taxInclusiveProductPrice = false;
             foreach (var arg in args)
@@ -107,6 +107,7 @@ internal static class Program
                 else if (arg == "--attendance-aware-municipal-shifts") attendanceAwareMunicipalShifts = true;
                 else if (arg == "--tax-inclusive-product-price") taxInclusiveProductPrice = true;
                 else if (arg.StartsWith("--tax-cost-recovery-percent=")) taxCostRecoveryPercent = int.Parse(arg["--tax-cost-recovery-percent=".Length..]);
+                else if (arg.StartsWith("--treatment-backlog-months=")) treatmentBacklogMonths = int.Parse(arg["--treatment-backlog-months=".Length..]);
                 else if (arg.StartsWith("--waste-treatment-units-per-shift=")) wasteTreatmentUnitsPerShift = int.Parse(arg["--waste-treatment-units-per-shift=".Length..]);
                 else if (arg.StartsWith("--monthly-residential-tax-cents=")) monthlyResidentialTaxCents = int.Parse(arg["--monthly-residential-tax-cents=".Length..]);
                 else if (arg.StartsWith("--municipal-collection-interval=")) municipalCollectionIntervalDays = int.Parse(arg["--municipal-collection-interval=".Length..]);
@@ -131,6 +132,9 @@ internal static class Program
                 throw new ArgumentException("Actual municipal attendance requires real staffed collection");
             if (fairSanitationDispatch && !municipalSanitationPilot)
                 throw new ArgumentException("Fair physical residential service requires real municipal sanitation");
+            if ((treatmentBacklogMonths != 0 && treatmentBacklogMonths is < 6 or > 120) ||
+                (treatmentBacklogMonths != 0 && !municipalWasteTreatmentPilot))
+                throw new ArgumentException("Physical treatment backlog clearance requires real treatment and a six-to-120-month horizon");
             if (livingOccupancyBirthCap && !cohortRenewal)
                 throw new ArgumentException("Physical occupancy counterfactual requires real household renewal");
             if (wasteTreatmentUnitsPerShift is < 10 or > 150 ||
@@ -176,7 +180,7 @@ internal static class Program
             if (annualLoadCycles != 0)
             {
                 if (annualLoadCycles < 1 || annualLoadCycles > 80 ||
-                    history is not null || wageFeedback || cohortRenewal || demandStaffing || vacancyMarket || freightLabor || constructionPilot || fairHouseholdHiring || costBasedFoodPrice || attendanceAwareFarms || crossFarmFreight || farmCostPricing || boundedRetailService || basketRetailService || retailShopFallback || retailBasketsPerShift != 5 || municipalSanitationPilot || municipalWasteTreatmentPilot || fairSanitationDispatch || attendanceAwareMunicipalShifts || taxInclusiveProductPrice || taxCostRecoveryPercent != 100 || monthlyResidentialTaxCents != 0 || wasteTreatmentUnitsPerShift != 50 || livingOccupancyBirthCap || municipalCollectionIntervalDays != 6 || days != 7)
+                    history is not null || wageFeedback || cohortRenewal || demandStaffing || vacancyMarket || freightLabor || constructionPilot || fairHouseholdHiring || costBasedFoodPrice || attendanceAwareFarms || crossFarmFreight || farmCostPricing || boundedRetailService || basketRetailService || retailShopFallback || retailBasketsPerShift != 5 || municipalSanitationPilot || municipalWasteTreatmentPilot || fairSanitationDispatch || attendanceAwareMunicipalShifts || taxInclusiveProductPrice || taxCostRecoveryPercent != 100 || monthlyResidentialTaxCents != 0 || wasteTreatmentUnitsPerShift != 50 || treatmentBacklogMonths != 0 || livingOccupancyBirthCap || municipalCollectionIntervalDays != 6 || days != 7)
                     throw new ArgumentException(
                         "Annual workload mode requires 1..80 cycles, no --days, history, or gameplay counterfactuals");
                 var watch = Stopwatch.StartNew();
@@ -220,7 +224,7 @@ internal static class Program
                 }, new JsonSerializerOptions { WriteIndented = true }));
                 return 0;
             }
-            var config = new LabConfig(sims, days, seed, history, adversarial, wageFeedback, cohortRenewal, demandStaffing, vacancyMarket, freightLabor, constructionPilot, fairHouseholdHiring, costBasedFoodPrice, capacityPricedFood, attendanceAwareFarms, crossFarmFreight, farmCostPricing, boundedRetailService, basketRetailService, retailShopFallback, retailBasketsPerShift, municipalSanitationPilot, municipalCollectionIntervalDays, municipalWasteTreatmentPilot, fairSanitationDispatch, attendanceAwareMunicipalShifts, taxInclusiveProductPrice, taxCostRecoveryPercent, monthlyResidentialTaxCents, wasteTreatmentUnitsPerShift, livingOccupancyBirthCap);
+            var config = new LabConfig(sims, days, seed, history, adversarial, wageFeedback, cohortRenewal, demandStaffing, vacancyMarket, freightLabor, constructionPilot, fairHouseholdHiring, costBasedFoodPrice, capacityPricedFood, attendanceAwareFarms, crossFarmFreight, farmCostPricing, boundedRetailService, basketRetailService, retailShopFallback, retailBasketsPerShift, municipalSanitationPilot, municipalCollectionIntervalDays, municipalWasteTreatmentPilot, fairSanitationDispatch, attendanceAwareMunicipalShifts, taxInclusiveProductPrice, taxCostRecoveryPercent, monthlyResidentialTaxCents, wasteTreatmentUnitsPerShift, livingOccupancyBirthCap, treatmentBacklogMonths);
             using var engine = new CausalCity(config);
             var sw = Stopwatch.StartNew();
             engine.Run();

@@ -2109,3 +2109,50 @@ jobs:
           name: independent-three-seed-80y-structural-robustness
           path: joint-structural-seed*-80y.log
           if-no-files-found: ignore
+
+
+  backlog-funded-treatment-80y:
+    # Paid, physically attended treatment staffing sized for both true new
+    # household waste and previously delivered untreated inventory.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[treatment-backlog-study]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compare 18/36-month paid backlog recovery in two continuous 80-year cities
+        run: |
+          set -o pipefail
+          dotnet build -c Release experiments/IndexCities.CausalEngine
+          BASE='--sims=10000 --days=29220 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25 --monthly-residential-tax-cents=150 --waste-treatment-units-per-shift=100 --living-occupancy-birth-cap'
+          for months in 18 36; do
+            for seed in 42 73; do
+              dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --seed=$seed --treatment-backlog-months=$months 2>&1 | tee backlog-$months-seed$seed-80y.log
+            done
+          done
+          python3 - <<'PY'
+          import json
+          for months in (18,36):
+              for seed in (42,73):
+                  path=f'backlog-{months}-seed{seed}-80y.log'
+                  lines=open(path).readlines()
+                  start=next(i for i,s in enumerate(lines) if s.startswith('{'))
+                  r=json.loads(''.join(lines[start:]))
+                  assert r['simulatedDays']==29220 and r['treatmentBacklogClearanceMonths']==months
+                  assert r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+                  assert r['residentialTaxAssessedCents']==r['residentialPropertyTaxActuallyPaidCents']+r['residentialPropertyTaxDebtOutstandingCents']
+                  assert r['wasteTreatmentUnitsPerPaidShift']==100 and not r['fullIndexCitiesTargetValidated']
+                  print('BACKLOG_TREATMENT_80Y',months,seed,'min',r['minimumAliveAtAnyEvent'],
+                        'end',r['aliveEnd'],'depot',r['wasteStoredAtRealDepot'],
+                        'treated',r['wasteTreatedAtDepot'],'paidShifts',r['paidWasteTreatmentShifts'],
+                        'cityCash',r['treasuryCashCents'],'wall',r['wallSeconds'],flush=True)
+          PY
+      - name: Keep full results for both outcomes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: paid-backlog-recovery-80y-controls
+          path: backlog-*-80y.log
+          if-no-files-found: ignore

@@ -472,7 +472,7 @@ internal static class EngineSelfTest
             // Replaying a save must reproduce ALL material inventory and wages.
             var treatmentConfig = municipalCfg with
             {
-                Days = 210, MunicipalWasteTreatmentPilot = true, WasteTreatmentUnitsPerShift = 75
+                Days = 210, MunicipalWasteTreatmentPilot = true, WasteTreatmentUnitsPerShift = 75, TreatmentBacklogMonths = 18
             };
             var treatmentSave = temp + ".treatment.save.json";
             string treatmentHash;
@@ -488,6 +488,7 @@ internal static class EngineSelfTest
                 if (!report.GetProperty("municipalWasteTreatmentPilotFixture").GetBoolean() ||
                     treatmentShifts <= 0 ||
                     report.GetProperty("wasteTreatmentUnitsPerPaidShift").GetInt32() != 75 ||
+                    report.GetProperty("treatmentBacklogClearanceMonths").GetInt32() != 18 ||
                     report.GetProperty("wasteTreatedAtDepot").GetInt64() <= 0 ||
                     report.GetProperty("wasteTreatedAtDepot").GetInt64() >
                         report.GetProperty("totalWasteCollected").GetInt64() ||

@@ -8,7 +8,7 @@ namespace IndexCities.CausalEngine;
 
 // Independent vertical-slice engine for falsifying the architecture.
 // RULES AND FIXTURES HERE ARE NOT AN IMPLEMENTATION OF ALL OF INDEXCITIES SPEC.
-internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false, bool RetailShopFallback = false, int RetailBasketsPerShift = 5, bool MunicipalSanitationPilot = false, int MunicipalCollectionIntervalDays = 6, bool MunicipalWasteTreatmentPilot = false, bool FairSanitationDispatch = false, bool AttendanceAwareMunicipalShifts = false, bool TaxInclusiveProductPrice = false, int TaxCostRecoveryPercent = 100, int MonthlyResidentialTaxCents = 0, int WasteTreatmentUnitsPerShift = 50, bool LivingOccupancyBirthCap = false);
+internal readonly record struct LabConfig(int Sims, int Days, int Seed, string? History, bool Adversarial, bool WageFeedback = false, bool CohortRenewal = false, bool DemandStaffing = false, bool VacancyMarket = false, bool FreightLabor = false, bool ConstructionPilot = false, bool FairHouseholdHiring = false, bool CostBasedFoodPrice = false, bool CapacityPricedFood = false, bool AttendanceAwareFarms = false, bool CrossFarmFreight = false, bool FarmCostPricing = false, bool BoundedRetailService = false, bool BasketRetailService = false, bool RetailShopFallback = false, int RetailBasketsPerShift = 5, bool MunicipalSanitationPilot = false, int MunicipalCollectionIntervalDays = 6, bool MunicipalWasteTreatmentPilot = false, bool FairSanitationDispatch = false, bool AttendanceAwareMunicipalShifts = false, bool TaxInclusiveProductPrice = false, int TaxCostRecoveryPercent = 100, int MonthlyResidentialTaxCents = 0, int WasteTreatmentUnitsPerShift = 50, bool LivingOccupancyBirthCap = false, int TreatmentBacklogMonths = 0);
 internal enum EventKind : byte { Day, Hour, StartWork, EndWork, Move, Delivery, RoadClose, RoadOpen, HouseholdShop }
 internal readonly record struct SimEvent(EventKind Kind, int Id);
 internal sealed class Person
@@ -551,7 +551,15 @@ internal sealed partial class CausalCity : IDisposable
                 // Water/food consumption already creates household waste.
                 // Keep finite treatment throughput per real paid shift, and
                 // use ONLY the municipal cash left after collection contracts.
-                var neededWaste = (long)_active * 30;
+                // Capacity planning from both NEW household waste and REAL
+                // inventory waiting for processing, with a bounded optional
+                // debt-clearance horizon. Paid workers and physical material
+                // movements remain mandatory; this is a laboratory pilot.
+                var backlog = Math.Max(0L, _garbageAtDepot + _garbageInTransit);
+                var neededWaste = (long)_active * 30 +
+                    (_config.TreatmentBacklogMonths > 0
+                        ? (backlog + _config.TreatmentBacklogMonths - 1) / _config.TreatmentBacklogMonths
+                        : 0L);
                 var demanded = (int)Math.Min(MaxWasteTreatmentWorkers,
                     (neededWaste + _config.WasteTreatmentUnitsPerShift * 26 - 1) /
                     (_config.WasteTreatmentUnitsPerShift * 26));
@@ -1728,6 +1736,7 @@ internal sealed partial class CausalCity : IDisposable
             _days - h.LastSanitationServicedDay > 15),
         wasteTreatedAtDepot = _wasteTreated,
         wasteTreatmentUnitsPerPaidShift = _config.WasteTreatmentUnitsPerShift,
+        treatmentBacklogClearanceMonths = _config.TreatmentBacklogMonths,
         paidWasteTreatmentShifts = _wasteTreatmentPaidShifts,
         municipalWasteTreatmentJobs = _people.Count(p => p.Alive && p.Job == WasteTreatmentJob),
         municipalCollectionIntervalDays = _config.MunicipalCollectionIntervalDays,
