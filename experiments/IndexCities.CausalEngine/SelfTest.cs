@@ -89,10 +89,18 @@ internal static class EngineSelfTest
                 successor.Run();
                 successor.AssertConservation();
             }
+            string pensionAuditHash;
             using (var retirement = new CausalCity(new LabConfig(196, retirementDays, 48, retirementFacts, false)))
             {
                 retirement.Run();
                 retirement.AssertConservation();
+                pensionAuditHash = retirement.Fingerprint();
+                using var audit = JsonDocument.Parse(JsonSerializer.Serialize(retirement.Report(0)));
+                var data = audit.RootElement;
+                if (data.GetProperty("pensionClaimsAccruedCents").GetInt64() <= 0 ||
+                    !data.GetProperty("pensionLiabilityLedgerComplete").GetBoolean() ||
+                    !data.GetProperty("pensionLiabilityLedgerBalanced").GetBoolean())
+                    throw new InvalidOperationException("Contributory retirement accrual did not reconcile");
             }
             var firstRetirement = (long)(CausalCity.Epoch.AddYears(6) - CausalCity.Epoch).TotalSeconds;
             long successorPurchases = 0, retiredPurchases = 0;
@@ -107,6 +115,22 @@ internal static class EngineSelfTest
             if (successorPurchases == 0 || retiredPurchases == 0)
                 throw new InvalidOperationException(
                     $"Household food shopping stopped after retirement: successor={successorPurchases}, retirees={retiredPurchases}");
+            // Nonzero pension rights must survive checkpoint/restart exactly,
+            // without creating or erasing an accrued claim.
+            var pensionAuditSave = temp + ".pension-audit.save.json";
+            using (var half = new CausalCity(new LabConfig(196, retirementDays, 48, null, false)))
+            {
+                half.RunUntilDay(retirementDays - 60);
+                half.SaveSnapshot(pensionAuditSave);
+            }
+            using (var resumed = CausalCity.FromSnapshot(pensionAuditSave))
+            {
+                resumed.Run();
+                resumed.AssertConservation();
+                if (resumed.Fingerprint() != pensionAuditHash)
+                    throw new InvalidOperationException("Pension lifecycle audit changed after checkpoint");
+            }
+            File.Delete(pensionAuditSave);
             // This counterfactual must preserve both conservation and causal
             // checkpoint equivalence. In particular, payroll depends on firm
             // receipts and shift counts which must survive save/resume.
@@ -836,6 +860,7 @@ internal static class EngineSelfTest
                 integratedWaterPowerAndDeedsHistoryReadable = true,
                 sequentialSingleTruckFreightAndSaveResumeExact = true,
                 municipalPayrollReserveCounterfactualConservedAndCheckpointExact = true,
+                pensionAccrualAndCheckpointAudited = true,
                 municipalCashTaxWasteAndJobsSaveResumeExact = true, municipalVisits,
                 municipalWasteTreatmentSavedExactly = true, treatmentShifts,
                 fairHouseholdSanitationDispatchSaveResumeExact = true,
@@ -858,7 +883,7 @@ internal static class EngineSelfTest
         }
         finally
         {
-            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json", temp + ".construction.save.json", temp + ".cost-price.save.json", temp + ".checkout.save.json", temp + ".basket.save.json", temp + ".fallback.save.json", temp + ".municipal.save.json", temp + ".treatment.save.json", temp + ".fair-collection.save.json", temp + ".tax-price.save.json", temp + ".home-tax.save.json", temp + ".integrated.save.json", temp + ".integrated.facts.gz", temp + ".sequential-freight.save.json", temp + ".public-payroll-reserve.save.json" })
+            foreach (var path in new[] { temp, temp + ".retired.facts.gz", temp + ".successor.facts.gz", temp + ".gz", temp + ".save.json", temp + ".feedback.save.json", temp + ".renewal.save.json", temp + ".demand.save.json", temp + ".market.save.json", temp + ".freight.save.json", temp + ".construction.save.json", temp + ".cost-price.save.json", temp + ".checkout.save.json", temp + ".basket.save.json", temp + ".fallback.save.json", temp + ".municipal.save.json", temp + ".treatment.save.json", temp + ".fair-collection.save.json", temp + ".tax-price.save.json", temp + ".home-tax.save.json", temp + ".integrated.save.json", temp + ".integrated.facts.gz", temp + ".sequential-freight.save.json", temp + ".public-payroll-reserve.save.json", temp + ".pension-audit.save.json" })
                 if (File.Exists(path)) File.Delete(path);
         }
     }

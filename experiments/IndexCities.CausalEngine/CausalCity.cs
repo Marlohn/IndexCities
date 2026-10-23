@@ -248,6 +248,10 @@ internal sealed partial class CausalCity : IDisposable
     private long _retailSalesCents;
     private long _municipalTaxPaidCents, _municipalWagesPaidCents;
     private long _pensionContributionsPaidCents; // Every real payroll contribution, private or public.
+    // Read-only lifecycle audit: rights accrued = paid + still due + extinguished on death.
+    // Death cancellation is an EXISTING fixture behavior, not an approved V1 rule.
+    private long _pensionClaimsAccruedCents, _pensionClaimsExtinguishedAtDeathCents;
+    private bool _pensionLiabilityLedgerComplete = true;
     private long _residentialTaxPaidCents, _residentialTaxAssessedCents;
     private int _fairSanitationCursor;
     private long _garbageGenerated, _garbageCollected, _garbageAtDepot, _sanitationPaidVisits, _garbageInTransit;
@@ -380,6 +384,9 @@ internal sealed partial class CausalCity : IDisposable
             (_config.Days >= 29_220 && _days >= _config.Days - 730 && _days % 5 == 0)))
         {
             var pensionsPaid = _people.Sum(p => p.PensionReceived);
+            var pensionOutstanding = _people.Sum(p => p.PensionCredit);
+            var pensionLedgerBalanced = _pensionClaimsAccruedCents == checked(
+                pensionsPaid + pensionOutstanding + _pensionClaimsExtinguishedAtDeathCents);
             // Read-only diagnostics: debt is never treated as municipal cash.
             var residentialDebt = _households.Sum(h => h.ResidentialPropertyTaxDebtCents);
             var debtorHomes = _households.Count(h => h.ResidentialPropertyTaxDebtCents > 0);
@@ -397,7 +404,11 @@ internal sealed partial class CausalCity : IDisposable
                 $"LAB_FISCAL day={_days} alive={_active} treasuryCents={_treasury} " +
                 $"fiscalExpectedTreasuryCents={expectedTreasury} fiscalBalanced={expectedTreasury == _treasury} " +
                 $"pensionsActuallyPaidCents={pensionsPaid} " +
-                $"pensionCreditsOutstandingCents={_people.Sum(p => p.PensionCredit)} " +
+                $"pensionCreditsOutstandingCents={pensionOutstanding} " +
+                $"pensionClaimsAccruedCents={_pensionClaimsAccruedCents} " +
+                $"pensionClaimsExtinguishedAtDeathCents={_pensionClaimsExtinguishedAtDeathCents} " +
+                $"pensionLiabilityLedgerBalanced={(pensionLedgerBalanced ? 1 : 0)} " +
+                $"pensionLiabilityLedgerComplete={(_pensionLiabilityLedgerComplete ? 1 : 0)} " +
                 $"pensionEligibleAlive={pensionEligible.Length} pensionNewClaimsDailyCents={pensionNewClaimsDaily} " +
                 $"residentialTaxAssessedCents={_residentialTaxAssessedCents} residentialTaxDebtCents={residentialDebt} " +
                 $"residentialTaxDebtorHomes={debtorHomes} residentialTaxDebtorOwnerCashCents={debtorOwnerCash} " +
@@ -1122,6 +1133,7 @@ internal sealed partial class CausalCity : IDisposable
             if (!p.Alive || Age(p, date) < 70 || p.ContributedDays < 5 * 365) continue;
             var dailyDue = Math.Min(80, p.GrossEarnings * 4 / (5L * p.ContributedDays));
             p.PensionCredit = checked(p.PensionCredit + dailyDue);
+            _pensionClaimsAccruedCents = checked(_pensionClaimsAccruedCents + dailyDue);
             totalClaims = checked(totalClaims + p.PensionCredit);
             eligible.Add(p);
         }
@@ -1219,7 +1231,12 @@ internal sealed partial class CausalCity : IDisposable
         }
         else heir.Cash = checked(heir.Cash + p.Cash);
         p.Cash = 0;
-        p.PensionCredit = 0; // Unpaid pension claim is not inherited.
+        // Existing fixture extinguishes the deceased creditor's unpaid claim.
+        // Audit this write-off rather than silently treating it as a paid pension
+        // or as evidence that the city has met all accrued obligations.
+        _pensionClaimsExtinguishedAtDeathCents = checked(
+            _pensionClaimsExtinguishedAtDeathCents + p.PensionCredit);
+        p.PensionCredit = 0; // Fixture behavior; NOT a V1 inheritance decision.
         _history.Fact(_time, p.Id, 6, heir?.Id ?? -1);
     }
     private void StartWork(int personId)
@@ -1884,6 +1901,10 @@ internal sealed partial class CausalCity : IDisposable
             _pensionContributionsPaidCents - _municipalWagesPaidCents - paidPensions);
         if (_treasury != expectedTreasury)
             throw new InvalidOperationException($"Treasury ledger mismatch: actual={_treasury}, expected={expectedTreasury}");
+        var pensionLiabilitiesReconciled = checked(paidPensions + _people.Sum(p => p.PensionCredit) +
+            _pensionClaimsExtinguishedAtDeathCents);
+        if (_pensionClaimsAccruedCents != pensionLiabilitiesReconciled)
+            throw new InvalidOperationException($"Pension lifecycle mismatch: accrued={_pensionClaimsAccruedCents}, reconciled={pensionLiabilitiesReconciled}");
         // Here food is the sole paid consumer good. Wholesale transfers stay
         // inside the business sector; every paid salary leaves it. This
         // independent ledger exposes structural insolvency that total-money
@@ -1949,6 +1970,8 @@ internal sealed partial class CausalCity : IDisposable
         Mix(_journeys); Mix(_segments); Mix(_sales); Mix(_shipments); Mix(_retailSalesCents);
         Mix(_municipalTaxPaidCents); Mix(_municipalWagesPaidCents); Mix(_pensionContributionsPaidCents);
         Mix(_residentialTaxPaidCents); Mix(_residentialTaxAssessedCents);
+        Mix(_pensionClaimsAccruedCents); Mix(_pensionClaimsExtinguishedAtDeathCents);
+        Mix(_pensionLiabilityLedgerComplete ? 1 : 0);
         Mix(_rawWater); Mix(_potableWater); Mix(_sewage); Mix(_energy);
         Mix(_waterExtracted); Mix(_waterConsumed); Mix(_sewageProcessed); Mix(_powerGenerated);
         Mix(_fuelImported); Mix(_fuelBurned); Mix(_fuelInTransit); Mix(_fuelStation.Cash); Mix(_fuelStation.Stock);
@@ -2134,6 +2157,12 @@ internal sealed partial class CausalCity : IDisposable
         farmCashCents = _farms.Sum(f => f.Cash),
         treasuryCashCents = _treasury,
         pensionContributionsActuallyPaidCents = _pensionContributionsPaidCents,
+        pensionClaimsAccruedCents = _pensionClaimsAccruedCents,
+        pensionClaimsExtinguishedAtDeathCents = _pensionClaimsExtinguishedAtDeathCents,
+        pensionLiabilityLedgerComplete = _pensionLiabilityLedgerComplete,
+        pensionLiabilityLedgerBalanced = _pensionClaimsAccruedCents == checked(
+            _people.Sum(p => p.PensionReceived) + _people.Sum(p => p.PensionCredit) +
+            _pensionClaimsExtinguishedAtDeathCents),
         municipalGrossPayrollCents = _municipalWagesPaidCents,
         fiscalTreasuryLedgerBalanced = _treasury == checked(_municipalTaxPaidCents + _residentialTaxPaidCents +
             _pensionContributionsPaidCents - _municipalWagesPaidCents - _people.Sum(p => p.PensionReceived)),

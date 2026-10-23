@@ -2264,7 +2264,7 @@ jobs:
   integrated-v1-infrastructure-80y:
     # One long combined run instead of separate water/power/sewage/fuel/housing
     # tests. Only the explicit marker triggers this expensive experiment.
-    if: github.event_name == 'push' && (contains(github.event.head_commit.message, '[integrated-v1-80y]') || contains(github.event.head_commit.message, '[fiscal-tax-ab]'))
+    if: github.event_name == 'push' && (contains(github.event.head_commit.message, '[integrated-v1-80y]') || contains(github.event.head_commit.message, '[fiscal-tax-ab]') || contains(github.event.head_commit.message, '[pension-liability-audit]'))
     runs-on: ubuntu-latest
     timeout-minutes: 240
     steps:
@@ -2360,8 +2360,79 @@ jobs:
                         'homeTaxPaidChange',trial['residentialPropertyTaxActuallyPaidCents']-control['residentialPropertyTaxActuallyPaidCents'],flush=True)
           print('FISCAL_TAX_AB_COMPLETE no_history_files no_policy_approved',flush=True)
           PY
+      # Audit EXISTING fixture accounting, not a policy change. A deceased
+      # creditor's outstanding pension is currently zeroed: measure that
+      # extinction separately from payments and still-outstanding liabilities.
+      # One-variable A/B: zero vs 100-cent real residential levy, same seeds,
+      # services, payroll reserve and 29,220 days; NO factual-history files.
+      # Prior fiscal sweep cannot distinguish a zero balance from extinguished
+      # claims. Reconcile each of the last ten 365-day blocks and report
+      # pension accrual vs actual contribution and cash-funded obligations.
+      - name: Audit pension lifecycle liabilities in six complete 80-year runs
+        if: contains(github.event.head_commit.message, '[pension-liability-audit]')
+        run: |
+          set -euo pipefail
+          BASE='--sims=10000 --days=29220 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25 --waste-treatment-units-per-shift=75 --integrated-v1-stress --eligible-birth-fallback --municipal-payroll-reserve-counterfactual'
+          for tax in 0 100; do
+            for seed in 42 73 101; do
+              dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --seed=$seed --monthly-residential-tax-cents=$tax 2>&1 | tee "integrated-v1-pension-audit-tax${tax}-seed${seed}.log"
+            done
+          done
+          python3 - <<'PY' | tee integrated-v1-pension-audit-summary.txt
+          import json,re
+          for tax in (0,100):
+              for seed in (42,73,101):
+                  rows=open(f'integrated-v1-pension-audit-tax{tax}-seed{seed}.log').readlines()
+                  start=next(i for i,line in enumerate(rows) if line.startswith('{'))
+                  d=json.loads(''.join(rows[start:]))
+                  assert d['seed']==seed and d['simulatedDays']==29220 and d['gregorianEnd']=='2100-01-01'
+                  assert d['monthlyResidentialPropertyTaxCents']==tax and d['municipalPayrollReserveCounterfactualFixture']
+                  assert d['integratedV1StressFixture'] and not d['historyPersistent']
+                  assert d['moneyConserved'] and d['foodConserved'] and d['materialConserved']
+                  assert d['fiscalTreasuryLedgerBalanced'] and d['pensionLiabilityLedgerBalanced']
+                  assert d['pensionLiabilityLedgerComplete']
+                  assert d['pensionClaimsAccruedCents']==d['historicalPensionsPaidCents']+d['unpaidPensionCreditsCents']+d['pensionClaimsExtinguishedAtDeathCents']
+                  assert d['minimumAliveAtAnyEvent']==10000
+                  expected={0:{42:15653,73:15668,101:15309},100:{42:15310,73:15304,101:14938}}
+                  assert d['aliveEnd']==expected[tax][seed], 'Read-only audit changed demographic trajectory'
+                  fiscal={}
+                  for line in rows:
+                      if 'LAB_FISCAL day=' not in line: continue
+                      fields={k:int(v) for k,v in re.findall(r'\b([A-Za-z]\w*)=(-?\d+)',line)}
+                      if 'day' in fields: fiscal[fields['day']]=fields
+                  for year in range(71,81):
+                      a,b=fiscal[365*(year-1)],fiscal[365*year]
+                      def delta(key): return b[key]-a[key]
+                      claims=delta('pensionClaimsAccruedCents')
+                      paid=delta('pensionsActuallyPaidCents')
+                      extinct=delta('pensionClaimsExtinguishedAtDeathCents')
+                      outstanding=delta('pensionCreditsOutstandingCents')
+                      contrib=delta('pensionContributionsPaidCents')
+                      revenue=sum(delta(k) for k in ('businessTaxPaidCents','residentialTaxPaidCents','pensionContributionsPaidCents'))
+                      payroll=delta('municipalGrossPayrollCents')
+                      assert claims==paid+extinct+outstanding
+                      assert revenue-payroll-paid==delta('treasuryCents')
+                      assert b['pensionLiabilityLedgerBalanced']==1 and b['pensionLiabilityLedgerComplete']==1
+                      print('PENSION_LIFECYCLE_365D',tax,seed,'block',year,
+                            'claims',claims,'paid',paid,'extinguished',extinct,
+                            'outstandingChange',outstanding,'contributions',contrib,
+                            'taxAndContributionRevenue',revenue,'municipalPayroll',payroll,
+                            'treasuryChange',delta('treasuryCents'),
+                            'eligibleEnd',b['pensionEligibleAlive'],
+                            'dailyClaimsEnd',b['pensionNewClaimsDailyCents'],flush=True)
+                  print('PENSION_LIFECYCLE_80Y',tax,seed,
+                        'claimsAccrued',d['pensionClaimsAccruedCents'],
+                        'paid',d['historicalPensionsPaidCents'],
+                        'extinguished',d['pensionClaimsExtinguishedAtDeathCents'],
+                        'outstanding',d['unpaidPensionCreditsCents'],
+                        'treasury',d['treasuryCashCents'],
+                        'residentialTaxDebt',d['residentialPropertyTaxDebtOutstandingCents'],
+                        'aliveMin',d['minimumAliveAtAnyEvent'],'aliveEnd',d['aliveEnd'],
+                        'seconds',d['wallSeconds'],flush=True)
+          print('PENSION_LIFECYCLE_AUDIT_COMPLETE no_history_files no_policy_approved',flush=True)
+          PY
       - name: Test three continuous 80-year cities with staffed water, sewage, wind, fuel and paid home deeds
-        if: ${{ !contains(github.event.head_commit.message, '[fiscal-tax-ab]') }}
+        if: ${{ !contains(github.event.head_commit.message, '[fiscal-tax-ab]') && !contains(github.event.head_commit.message, '[pension-liability-audit]') }}
         run: |
           set -uo pipefail
           FLAGS='--sims=10000 --days=29220 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25 --waste-treatment-units-per-shift=75 --integrated-v1-stress --eligible-birth-fallback --municipal-payroll-reserve-counterfactual'

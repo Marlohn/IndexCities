@@ -32,6 +32,8 @@ internal sealed partial class CausalCity
         public double[] Factors { get; set; } = [];
         public long HistoryLastAt { get; set; }
         public long HistoryEntries { get; set; }
+        // Older checkpoints cannot reconstruct claims extinguished before save.
+        public bool PensionLiabilityLedgerComplete { get; set; }
     }
     private static readonly JsonSerializerOptions SnapshotJson = new() { IncludeFields = true };
     public void SaveSnapshot(string path)
@@ -73,11 +75,13 @@ internal sealed partial class CausalCity
                 _fuelImportSpending, _fuelStationWages, _deedPaid,
                 _fuelInTransit, _fuelImportPending ? 1 : 0,
                 _powerCurtailed, _lastPowerHour, _lastWindMaintainedDay,
-                _pensionContributionsPaidCents
+                _pensionContributionsPaidCents,
+                _pensionClaimsAccruedCents, _pensionClaimsExtinguishedAtDeathCents
             ],
             Populations = [_active, _maxActive, _minActive],
             Factors = [_windFactor, _waterRatio],
             HistoryLastAt = _history.LastAt, HistoryEntries = _history.Entries,
+            PensionLiabilityLedgerComplete = _pensionLiabilityLedgerComplete,
         };
         var destination = Path.GetFullPath(path);
         Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
@@ -90,7 +94,7 @@ internal sealed partial class CausalCity
     {
         var state = JsonSerializer.Deserialize<Snapshot>(File.ReadAllText(path), SnapshotJson)
             ?? throw new InvalidDataException("Empty snapshot");
-        if ((state.Counters.Length != 37 && state.Counters.Length != 39 && state.Counters.Length != 40 && state.Counters.Length != 42 && state.Counters.Length != 63 && state.Counters.Length != 66 && state.Counters.Length != 67) || state.Populations.Length != 3 ||
+        if ((state.Counters.Length != 37 && state.Counters.Length != 39 && state.Counters.Length != 40 && state.Counters.Length != 42 && state.Counters.Length != 63 && state.Counters.Length != 66 && state.Counters.Length != 67 && state.Counters.Length != 69) || state.Populations.Length != 3 ||
             state.Factors.Length != 2 || state.Households.Length < 1 ||
             state.Shops.Length != StoreCount || state.Farms.Length != FarmCount ||
             state.Builder is null || (state.Config.IntegratedV1Stress && state.FuelStation is null) || state.ConstructionSites.Length != state.Households.Length ||
@@ -187,6 +191,21 @@ internal sealed partial class CausalCity
             checked(city._treasury + city._municipalWagesPaidCents +
                 city._people.Sum(p => p.PensionReceived) -
                 city._municipalTaxPaidCents - city._residentialTaxPaidCents);
+        if (c.Length >= 69)
+        {
+            city._pensionClaimsAccruedCents = c[67];
+            city._pensionClaimsExtinguishedAtDeathCents = c[68];
+            city._pensionLiabilityLedgerComplete = state.PensionLiabilityLedgerComplete;
+        }
+        else
+        {
+            // Legacy saves omitted lifetime write-offs; reconstruct only the
+            // obligations still traceable, and explicitly mark incomplete history.
+            city._pensionClaimsAccruedCents = checked(city._people.Sum(p => p.PensionReceived) +
+                city._people.Sum(p => p.PensionCredit));
+            city._pensionClaimsExtinguishedAtDeathCents = 0;
+            city._pensionLiabilityLedgerComplete = false;
+        }
         city._active = state.Populations[0];
         city._maxActive = state.Populations[1];
         city._minActive = state.Populations[2];
