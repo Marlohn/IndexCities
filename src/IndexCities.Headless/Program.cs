@@ -14,7 +14,7 @@ using IndexCities.Simulation;
 //          --strand=N empties the tank of N driving vehicles each day and follows the tow and the queue for 30 min
 // Results are measurements, not product rules: see docs/exploration/ritmo-velocidades.md.
 Console.OutputEncoding=Encoding.UTF8;
-var known=new HashSet<string>{"rows","length","days","cap","signals","seed","growth","warmup","strand","e22","e22-window","e22-adversary","e22-reverse","e23-diff","e23-roadguard","e24-flush-only"};
+var known=new HashSet<string>{"rows","length","days","cap","signals","seed","growth","warmup","strand","e22","e22-window","e22-adversary","e22-reverse","e23-diff","e23-roadguard","e24-flush-only","e25-trace"};
 var opts=new Dictionary<string,string>();foreach(var p in args.Skip(2).Select(a=>a.TrimStart('-').Split('=',2)))opts[p[0]]=p.Length>1?p[1]:"1";
 string Opt(string k,string d)=>opts.GetValueOrDefault(k,d);
 if(opts.Keys.FirstOrDefault(k=>!known.Contains(k)) is {} unknown){Console.Error.WriteLine("opção desconhecida: --"+unknown);return 2;}
@@ -181,6 +181,33 @@ if(e22=="compare")
             using var candidateDoc=JsonDocument.Parse(trialJson);
             var firstPath=FirstDifference(baselineDoc.RootElement,candidateDoc.RootElement,"state")??"unknown";
             Console.WriteLine($"E23_FIRST_DIFFERENCE mode={mode} second={first} {firstPath}");
+        }
+        // E25: the RNG is serialized before physical entities and can mask
+        // the first concrete vehicle or other state difference. Search all
+        // available fine-grained checkpoints after the road intervention.
+        // Pure post-processing: not timed and never changes simulation state.
+        if(Opt("e25-trace","0")=="1")
+        {
+            foreach(var domain in new[]{"Vehicles","Citizens","Roads","Ledger","Shipments"})
+            {
+                var at=-1;var detail="no domain difference in saved checkpoints";
+                var available=false;
+                foreach(var second in boundaries)
+                {
+                    if(second<1860||!original.Snapshots.TryGetValue(second,out var left)||
+                       !observed.Snapshots.TryGetValue(second,out var right))continue;
+                    using var leftDoc=JsonDocument.Parse(left);
+                    using var rightDoc=JsonDocument.Parse(right);
+                    if(!leftDoc.RootElement.TryGetProperty(domain,out var leftDomain)||
+                       !rightDoc.RootElement.TryGetProperty(domain,out var rightDomain))
+                    {detail="domain absent in saved JSON";break;}
+                    available=true;
+                    var difference=FirstDifference(leftDomain,rightDomain,"state."+domain);
+                    if(difference==null)continue;
+                    at=second;detail=difference;break;
+                }
+                Console.WriteLine($"E25_DOMAIN_FIRST mode={mode} domain={domain} available={available} second={at} {detail}");
+            }
         }
     }
     Console.WriteLine($"E22_COVERAGE adversary={adversary} seeds={seed} appliedTow={coverage.GetValueOrDefault("tow")} appliedJunction={coverage.GetValueOrDefault("junction")} appliedRoadWithRoute={coverage.GetValueOrDefault("road")} towStrandedArms={towStrandedArms} towDispatchArms={towDispatchArms} order={string.Join(",",order)}");
