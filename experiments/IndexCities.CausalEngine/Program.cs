@@ -36,8 +36,10 @@ internal static class Program
             }
             if (args.Length >= 1 && args[0] == "verify-history")
             {
-                if (args.Length != 4)
-                    throw new ArgumentException("verify-history PATH EXPECTED_FACTS EXPECTED_DAYS");
+                if (args.Length is not (4 or 5) ||
+                    (args.Length == 5 && args[4] is not ("0" or "1")))
+                    throw new ArgumentException("verify-history PATH EXPECTED_FACTS EXPECTED_DAYS [REQUIRE_RESIDENTIAL_TAX_0_OR_1]");
+                bool requireResidentialTax = args.Length == 4 || args[4] == "1";
                 var path = args[1];
                 var expected = long.Parse(args[2]);
                 var expectedDays = int.Parse(args[3]);
@@ -58,7 +60,8 @@ internal static class Program
                 }
                 if (count != expected || daysObserved != expectedDays ||
                     kinds[3] == 0 || kinds[5] == 0 || kinds[6] == 0 ||
-                    kinds[7] == 0 || kinds[24] == 0 || kinds[29] == 0)
+                    kinds[7] == 0 || kinds[24] == 0 ||
+                    (requireResidentialTax && kinds[29] == 0))
                     throw new InvalidDataException(
                         $"Persisted facts do not match simulated causal records: {count}/{expected}, days {daysObserved}/{expectedDays}");
                 Console.WriteLine(JsonSerializer.Serialize(new {

@@ -2206,3 +2206,57 @@ jobs:
           name: physical-treatment-residential-tax-robustness
           path: cross-mechanism-*-80y.log
           if-no-files-found: ignore
+
+
+  treatment-75-full-history-readback:
+    # Targeted validation of already-proven 80y population with paid
+    # waste treatment 75, without the new homeowner tax. Stream-read every
+    # written fact and verify all 29,220 physical-economy days.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[treatment75-history-readback]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compile history reader and exercise history checkpoint determinism
+        run: |
+          dotnet build -c Release experiments/IndexCities.CausalEngine
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --self-test
+      - name: Persist and reopen all 1.3 billion facts of the tax-free paid-treatment 80-year city
+        run: |
+          set -o pipefail
+          BASE='--sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25 --waste-treatment-units-per-shift=75'
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --history=taxfree-paid-treatment-80y.gz 2>&1 | tee taxfree-paid-treatment-80y.log
+          python3 - <<'PY'
+          import json
+          lines=open('taxfree-paid-treatment-80y.log').readlines()
+          k=next(i for i,v in enumerate(lines) if v.startswith('{'))
+          r=json.loads(''.join(lines[k:]))
+          assert r['simulatedDays']==29220 and r['gregorianEnd']=='2100-01-01'
+          assert r['minimumAliveAtAnyEvent']>=10000 and r['historyPersistent']
+          assert r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+          assert r['wasteTreatmentUnitsPerPaidShift']==75
+          assert r['monthlyResidentialPropertyTaxCents']==0
+          assert r['residentialPropertyTaxActuallyPaidCents']==0
+          assert r['stateFingerprint']=='D56BFF015982DB59'
+          assert r['recordedFacts']>=1000000000 and r['wallSeconds']<=21600
+          assert not r['fullIndexCitiesTargetValidated']
+          print('TREATMENT_75_HISTORICAL_FINGERPRINT_IDENTICAL',
+                r['minimumAliveAtAnyEvent'],r['aliveEnd'],r['recordedFacts'],r['wallSeconds'],flush=True)
+          open('taxfree-paid-treatment-fact-count.txt','w').write(str(r['recordedFacts']))
+          PY
+          gzip -t taxfree-paid-treatment-80y.gz
+          EXPECTED=$(cat taxfree-paid-treatment-fact-count.txt)
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- verify-history taxfree-paid-treatment-80y.gz "$EXPECTED" 29220 0 | tee taxfree-paid-treatment-readback.log
+          sha256sum taxfree-paid-treatment-80y.gz | tee taxfree-paid-treatment-history-sha256.txt
+      - name: Preserve complete audit summary but not enormous compressed file
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tax-free-75-physical-treatment-full-history-readback
+          path: |
+            taxfree-paid-treatment-*.log
+            taxfree-paid-treatment-*.txt
+          if-no-files-found: ignore
