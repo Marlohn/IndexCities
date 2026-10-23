@@ -8,7 +8,7 @@ Descobrir como simular uma cidade com **até 10 mil SIMs individuais** e avança
 
 A pergunta decisiva é: **quanto uma mudança reduz o tempo de um dia simulado completo, mantendo o mesmo estado e os mesmos acontecimentos?** Ganho de uma função isolada não responde isso.
 
-**Fronteira desta pesquisa:** esta PR #51 registra exclusivamente os experimentos E01–E23 e sucessores da investigação do **motor integrado atual**, cada um em branch isolada. A PR #52 e o motor experimental C# autossuficiente são **outra investigação**, não uma continuidade operacional nem fonte de resultados para este registro. Referências antigas à #52 abaixo são contexto histórico; não criam dependência, entrega conjunta ou critério de aprovação da #51.
+**Fronteira desta pesquisa:** esta PR #51 registra exclusivamente os experimentos E01–E24 e sucessores da investigação do **motor integrado atual**, cada um em branch isolada. A PR #52 e o motor experimental C# autossuficiente são **outra investigação**, não uma continuidade operacional nem fonte de resultados para este registro. Referências antigas à #52 abaixo são contexto histórico; não criam dependência, entrega conjunta ou critério de aprovação da #51.
 
 ## Experimentos e evidências (atualizado em 22/10/2026, horário de Brasília)
 
@@ -110,6 +110,23 @@ A pergunta decisiva é: **quanto uma mudança reduz o tempo de um dia simulado c
 
 **Decisão atual da PR #51:** a pendência de asserção do E23 está **resolvida e verificada**; manter E22/E23 fora da `main`. O próximo experimento só se justifica se distinguir **dependências reais e invalidação seletiva** de uma pausa global após mudança viária, incluindo o instante/causa de qualquer divergência, guincho e prioridade de tráfego. Priorizar verificação estrutural da correção antes de mais variações pequenas de seed/tempo. Se a hipótese não resistir a um teste causal discriminante, registrar rejeição da candidata em vez de prolongar microtestes.
 
+### E24 — invalidação completa das inscrições sem pausa de 600 s (22/10/2026)
+
+**Hipótese discriminante, não otimização aprovada.** Branch isolada [`experimento/e24-flush-revisao-sem-pausa`](https://github.com/Marlohn/IndexCities/tree/experimento/e24-flush-revisao-sem-pausa), implementação [`a9ed947`](https://github.com/Marlohn/IndexCities/commit/a9ed947087678be9f75c813c9d9205e42e1f5660), correção do marcador/teste [`d3e30bf`](https://github.com/Marlohn/IndexCities/commit/d3e30bf6c0bfa76611a51bc9e5b6544d6b527f83). Mantém E22 `off/events/queue` e a mesma física do motor integrado. Quando `RoadRevision` muda, limpa todas as inscrições e lotes adormecidos, **mas não suspende novas inscrições**. É uma ablação de `flush` global *sem pausa*, **não invalidação seletiva por dependências**. `flushWithoutPause=True` no relatório comprova o modo; `roadGuardUntil` registra o instante absoluto da última revisão, não significa guarda ativa.
+
+**Cenário reproduzido:** `dotnet run -c Release --project src/IndexCities.Headless -- scale grid --rows=5 --length=800 --seed=43|44 --signals=1 --warmup=1 --e22=compare --e22-window=3000 --e22-adversary=mixed --e22-reverse=1|0 --e23-diff=1 --e23-roadguard=0 --e24-flush-only=1`. Cada braço sai do mesmo snapshot aquecido, com 400 SIMs de configuração, guincho REAL despachado após pane, troca de controle de cruzamento e demolição de via com rotas afetadas. `E22_COVERAGE appliedTow=3 appliedJunction=3 appliedRoadWithRoute=3 towStrandedArms=3 towDispatchArms=3` em ambas as seeds. O reteste [**CI #39880867046**](https://github.com/Marlohn/IndexCities/actions/runs/39880867046) concluiu **2/2 jobs verdes** como diagnóstico; o marcador `E24_CAUSAL equivalence=False` **reprova a candidata**.
+
+| Seed / ordem | Referência off (s) | Events (s) | Queue (s) | Primeira divergência em relação a off |
+|---|---:|---:|---:|---|
+| 43, queue/events/off | 61,266 | 45,938 | 47,396 | events **t=1.864 s**; queue **t=1.866 s** |
+| 44, off/events/queue | 19,171 | 14,563 | 14,902 | events **t=1.868 s**; queue **t=1.868 s** |
+
+As **duas seeds divergiram**, apesar de `roadFlushes=1` em cada variante e `flushedSubscribers` positivos (seed 43: 13 events / 19 queue; seed 44: 19 events / 22 queue). O primeiro campo diferente apontado foi `state.BreakdownRandomState`; **isso é efeito observável, não origem causal demonstrada**. Hashes finais diferentes do original nos quatro braços otimizados. Reduções aparentes de tempo são **inválidas para integração**; uma rodada em runners compartilhados tampouco permite afirmar aceleração estável.
+
+**Falha de instrumentação corrigida, não ocultada:** [primeira execução #39880170091](https://github.com/Marlohn/IndexCities/actions/runs/39880170091) teve ambos os jobs vermelhos porque a asserção exigia incorretamente `roadGuardUntil=0`; o campo contém o timestamp absoluto da revisão (88.260), mesmo sem pausa. Os logs já demonstravam divergência e cobertura. A correção adicionou `flushWithoutPause=True` e passou a verificar esse marcador, sem mudar a física. O CI verde do reteste indica execução e cobertura da ablação, **não equivalência**.
+
+**Conclusão E24: DESCARTAR `flush-only` como solução causal; não integrar à `main`.** A guarda temporal do E23 mascarou/evitou a divergência nas mesmas amostras, mas seu intervalo arbitrário de 600 s não é uma prova de dependências. O código também mostra que `SetJunction` altera `Control` sem avançar `RoadRevision`, então revisão de rede nem sequer enumera todos os gatilhos possíveis. Uma nova candidata exige primeiro localizar o **veículo/evento e a dependência original** que se perdem (inclusive efeitos em RNG), não repetir variações de pausa por timeout. A pesquisa permanece totalmente independente da PR #52.
+
 ### Limites dos testes
 
 - `roadgraph 10000` contém **10 mil pontos de rua**, não 10 mil habitantes.
@@ -136,6 +153,6 @@ Uma **PR de implementação** só faz sentido depois que uma candidata apresenta
 
 ## Próxima pergunta útil
 
-**Após E23 (CI de correção aprovado):** o teste corrigido agora exige equivalência e cobertura adversarial, e passou nas seeds 43/44. A primeira diferença sem a guarda apareceu no estado do gerador de quebras, mas a causa raiz não está comprovada. **A pergunta discriminante é se uma invalidação seletiva fundamentada em dependências causais explícitas pode preservar os mesmos estados sem uma pausa global de 600 s.** Antes de codificar outra candidata, mapear onde as mudanças de rede, prioridade e guincho invalidam assinaturas; só medir ganho integrado quando a correção causal estiver demonstrada. Checkpoints iguais por 3.000 s não são garantia de jogo completo. Se a hipótese não for verificável com cobertura suficiente, encerrar a candidata.
+**Após E24 (diagnóstico concluído):** invalidar todas as inscrições no evento de revisão viária, mas permitir novas dormências imediatamente, **falhou causalmente em ambas as seeds adversariais**, mesmo com guincho e demolição cobertos. A próxima pergunta de valor não é variar mais o timeout: identificar qual veículo/acontecimento altera primeiro a sequência física/RNG após a demolição e quais mudanças de guincho, cruzamento, ingresso na faixa e reparo de rota invalidam cada inscrição. Sem uma fronteira de dependências completa e comprovável, **encerrar E22/E24 como arquitetura não integrável**. O E23 guardado é apenas controle positivo local, não solução aprovada.
 
 **A PR #51 segue independente da PR #52.** O resultado de uma não é bloqueador, entrega ou relatório obrigatório da outra.
