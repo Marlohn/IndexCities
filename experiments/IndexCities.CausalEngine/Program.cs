@@ -78,6 +78,7 @@ internal static class Program
             string? history = null;
             int retailBasketsPerShift = 5, municipalCollectionIntervalDays = 6, taxCostRecoveryPercent = 100, monthlyResidentialTaxCents = 0, wasteTreatmentUnitsPerShift = 50, treatmentBacklogMonths = 0;
             bool livingOccupancyBirthCap = false;
+            bool integratedV1Stress = false;
             bool adversarial = false, wageFeedback = false, cohortRenewal = false, demandStaffing = false, vacancyMarket = false, freightLabor = false, constructionPilot = false, fairHouseholdHiring = false, demographicUpperBound = false, costBasedFoodPrice = false, capacityPricedFood = false, attendanceAwareFarms = false, crossFarmFreight = false, farmCostPricing = false, boundedRetailService = false, basketRetailService = false, retailShopFallback = false, municipalSanitationPilot = false, municipalWasteTreatmentPilot = false, fairSanitationDispatch = false, attendanceAwareMunicipalShifts = false, taxInclusiveProductPrice = false;
             foreach (var arg in args)
             {
@@ -106,6 +107,7 @@ internal static class Program
                 else if (arg == "--retail-shop-fallback") retailShopFallback = true;
                 else if (arg == "--municipal-sanitation-pilot") municipalSanitationPilot = true;
                 else if (arg == "--municipal-waste-treatment-pilot") municipalWasteTreatmentPilot = true;
+                else if (arg == "--integrated-v1-stress") integratedV1Stress = true;
                 else if (arg == "--fair-sanitation-dispatch") fairSanitationDispatch = true;
                 else if (arg == "--attendance-aware-municipal-shifts") attendanceAwareMunicipalShifts = true;
                 else if (arg == "--tax-inclusive-product-price") taxInclusiveProductPrice = true;
@@ -143,6 +145,10 @@ internal static class Program
             if (wasteTreatmentUnitsPerShift is < 10 or > 150 ||
                 (wasteTreatmentUnitsPerShift != 50 && !municipalWasteTreatmentPilot))
                 throw new ArgumentException("Waste throughput sensitivity requires real paid treatment and 10..150 units per shift");
+            if (integratedV1Stress && !(vacancyMarket && constructionPilot && freightLabor &&
+                municipalSanitationPilot && municipalWasteTreatmentPilot &&
+                fairSanitationDispatch && attendanceAwareMunicipalShifts))
+                throw new ArgumentException("Integrated facility pilot requires the staffed economy, paid waste treatment and real freight workers");
             if (monthlyResidentialTaxCents is < 0 or > 10000 ||
                 (monthlyResidentialTaxCents > 0 && !municipalSanitationPilot))
                 throw new ArgumentException("Fixed assessed home property tax requires real residential deeds and city services");
@@ -183,7 +189,7 @@ internal static class Program
             if (annualLoadCycles != 0)
             {
                 if (annualLoadCycles < 1 || annualLoadCycles > 80 ||
-                    history is not null || wageFeedback || cohortRenewal || demandStaffing || vacancyMarket || freightLabor || constructionPilot || fairHouseholdHiring || costBasedFoodPrice || attendanceAwareFarms || crossFarmFreight || farmCostPricing || boundedRetailService || basketRetailService || retailShopFallback || retailBasketsPerShift != 5 || municipalSanitationPilot || municipalWasteTreatmentPilot || fairSanitationDispatch || attendanceAwareMunicipalShifts || taxInclusiveProductPrice || taxCostRecoveryPercent != 100 || monthlyResidentialTaxCents != 0 || wasteTreatmentUnitsPerShift != 50 || treatmentBacklogMonths != 0 || livingOccupancyBirthCap || municipalCollectionIntervalDays != 6 || days != 7)
+                    history is not null || wageFeedback || cohortRenewal || demandStaffing || vacancyMarket || freightLabor || constructionPilot || fairHouseholdHiring || costBasedFoodPrice || attendanceAwareFarms || crossFarmFreight || farmCostPricing || boundedRetailService || basketRetailService || retailShopFallback || retailBasketsPerShift != 5 || municipalSanitationPilot || municipalWasteTreatmentPilot || fairSanitationDispatch || attendanceAwareMunicipalShifts || taxInclusiveProductPrice || taxCostRecoveryPercent != 100 || monthlyResidentialTaxCents != 0 || wasteTreatmentUnitsPerShift != 50 || treatmentBacklogMonths != 0 || livingOccupancyBirthCap || integratedV1Stress || municipalCollectionIntervalDays != 6 || days != 7)
                     throw new ArgumentException(
                         "Annual workload mode requires 1..80 cycles, no --days, history, or gameplay counterfactuals");
                 var watch = Stopwatch.StartNew();
@@ -227,7 +233,7 @@ internal static class Program
                 }, new JsonSerializerOptions { WriteIndented = true }));
                 return 0;
             }
-            var config = new LabConfig(sims, days, seed, history, adversarial, wageFeedback, cohortRenewal, demandStaffing, vacancyMarket, freightLabor, constructionPilot, fairHouseholdHiring, costBasedFoodPrice, capacityPricedFood, attendanceAwareFarms, crossFarmFreight, farmCostPricing, boundedRetailService, basketRetailService, retailShopFallback, retailBasketsPerShift, municipalSanitationPilot, municipalCollectionIntervalDays, municipalWasteTreatmentPilot, fairSanitationDispatch, attendanceAwareMunicipalShifts, taxInclusiveProductPrice, taxCostRecoveryPercent, monthlyResidentialTaxCents, wasteTreatmentUnitsPerShift, livingOccupancyBirthCap, treatmentBacklogMonths);
+            var config = new LabConfig(sims, days, seed, history, adversarial, wageFeedback, cohortRenewal, demandStaffing, vacancyMarket, freightLabor, constructionPilot, fairHouseholdHiring, costBasedFoodPrice, capacityPricedFood, attendanceAwareFarms, crossFarmFreight, farmCostPricing, boundedRetailService, basketRetailService, retailShopFallback, retailBasketsPerShift, municipalSanitationPilot, municipalCollectionIntervalDays, municipalWasteTreatmentPilot, fairSanitationDispatch, attendanceAwareMunicipalShifts, taxInclusiveProductPrice, taxCostRecoveryPercent, monthlyResidentialTaxCents, wasteTreatmentUnitsPerShift, livingOccupancyBirthCap, treatmentBacklogMonths, integratedV1Stress);
             using var engine = new CausalCity(config);
             var sw = Stopwatch.StartNew();
             engine.Run();
