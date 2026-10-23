@@ -235,6 +235,13 @@ internal sealed partial class CausalCity : IDisposable
     private long _births, _deaths, _unservedMeals, _paidWages, _unsatisfiedSales, _replans;
     // Diagnostic counters only; never change the mortality rules.
     private long _deathsWithCollapsedHealth, _deathsAtAgeLimit;
+    // Integrated laboratory observability only. Rejection causes may overlap;
+    // these counters never affect births, resources, simulation or fingerprints.
+    private long _birthAppointments, _birthBlockedEverSlots, _birthBlockedLiveSlots;
+    private long _birthBlockedPantry, _birthBlockedSpacing, _birthBlockedCarers;
+    private long _birthBlockedCash, _birthBlockedWater;
+    private long _lastDemographyBirths, _lastDemographyDeaths;
+    private long _lastDemographyAgeDeaths, _lastDemographyHealthDeaths;
     private long _producedFood, _eatenFood, _initialFood;
     private long _paidFreightCents, _freightLaborTrips;
     private long _retailSalesCents;
@@ -560,6 +567,27 @@ internal sealed partial class CausalCity : IDisposable
                 _shops[(h.Home + 1) % Nodes].Stock > 0);
             Console.Error.WriteLine($"LAB_INCOME day={_days} earningHomes={incomeHouseholds} occupiedHomes={occupiedHomes} employed={_people.Count(p => p.Alive && p.Job>=0)} hungryWithStockAndFunds={hungryWithStockAndFunds} foodSpendNeededDailyCents={_active * (_config.CostBasedFoodPrice ? _shops.Average(f=>f.RetailUnitPriceCents) : FoodPrice):F0} wagePaidCumulativeCents={_paidWages} actualRetailSalesCents={_retailSalesCents} realFoodSalesCumulativeUnits={_sales}");
             Console.Error.WriteLine($"LAB_CAUSE day={_days} children={childCount} adults={adultCount} retired={olderCount} childOnlyHomes={childOnlyHomes} livedInEmptyPantries={inhabitedEmptyPantries} emptyWithFunds={emptyWithFunds} hungryEmptyStore={hungryWithEmptyStore} hungryStockAndFunds={hungryWithStockAndFunds} shopsNoStock={_shops.Count(f=>f.Stock==0)} shopsNoCash={_shops.Count(f=>f.Cash<WholesalePrice*32)} shopFood={_shops.Sum(f=>f.Stock)} farmFood={_farms.Sum(f=>f.Stock)} eligibleCarerHomes={_households.Count(h=>(_config.LivingOccupancyBirthCap ? h.Members.Count(id=>_people[id].Alive) : h.Members.Count)<16 && h.Members.Count(id=>_people[id].Alive&&Age(_people[id],date) is >=18 and <60)>=2)}");
+            if (_config.IntegratedV1Stress)
+            {
+                var elderly80 = _people.Count(p => p.Alive && Age(p, date) >= 80);
+                var familiesEverFull = _households.Count(h => h.Members.Count >= 16);
+                var familiesLiveFull = _households.Count(h => h.Members.Count(id => _people[id].Alive) >= 16);
+                Console.Error.WriteLine(
+                    $"LAB_DEMOGRAPHY day={_days} alive={_active} birthsYear={_births - _lastDemographyBirths} " +
+                    $"deathsYear={_deaths - _lastDemographyDeaths} ageDeathsYear={_deathsAtAgeLimit - _lastDemographyAgeDeaths} " +
+                    $"healthDeathsYear={_deathsWithCollapsedHealth - _lastDemographyHealthDeaths} " +
+                    $"ageDeathsTotal={_deathsAtAgeLimit} healthDeathsTotal={_deathsWithCollapsedHealth} " +
+                    $"elderly80={elderly80} birthAppointments={_birthAppointments} " +
+                    $"blockedEverSlots={_birthBlockedEverSlots} blockedLiveSlots={_birthBlockedLiveSlots} " +
+                    $"blockedPantry={_birthBlockedPantry} blockedSpacing={_birthBlockedSpacing} " +
+                    $"blockedCarers={_birthBlockedCarers} blockedCash={_birthBlockedCash} " +
+                    $"blockedWater={_birthBlockedWater} everFullHomes={familiesEverFull} liveFullHomes={familiesLiveFull} " +
+                    $"livingOccupancyCapEnabled={_config.LivingOccupancyBirthCap}");
+                _lastDemographyBirths = _births;
+                _lastDemographyDeaths = _deaths;
+                _lastDemographyAgeDeaths = _deathsAtAgeLimit;
+                _lastDemographyHealthDeaths = _deathsWithCollapsedHealth;
+            }
             // Bounded ten-year trace for families who can pay and whose local
             // store has food, yet their household inventory is empty.
             if (_days == 3650)
@@ -887,6 +915,24 @@ internal sealed partial class CausalCity : IDisposable
     }
     private bool TryBirth(Household h, DateTime date, long day)
     {
+        if (_config.IntegratedV1Stress)
+        {
+            // Independent, overlapping diagnostic reasons for the SAME real
+            // family appointment. Do not bypass any existing birth condition.
+            _birthAppointments++;
+            var livingMembers = h.Members.Count(id => _people[id].Alive);
+            var eligibleCarers = h.Members.Count(id => _people[id].Alive &&
+                Age(_people[id], date) is >= 18 and < 60);
+            var livingCash = h.Members.Where(id => _people[id].Alive)
+                .Sum(id => _people[id].Cash);
+            if (h.Members.Count >= 16) _birthBlockedEverSlots++;
+            if (livingMembers >= 16) _birthBlockedLiveSlots++;
+            if (h.Pantry < 2) _birthBlockedPantry++;
+            if (day - h.LastBirthDay < 4 * 365) _birthBlockedSpacing++;
+            if (eligibleCarers < 2) _birthBlockedCarers++;
+            if (livingCash < 300) _birthBlockedCash++;
+            if (_waterRatio < .4) _birthBlockedWater++;
+        }
         // The stress fixture historically counted dead relatives against
         // the physical 16-person housing limit. A deceased resident cannot
         // occupy a housing slot; preserve the lineage but allow its slot to
