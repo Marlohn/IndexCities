@@ -351,6 +351,65 @@ jobs:
             full-real-municipal-80y.facts.gz
           if-no-files-found: ignore
 
+  tax-cost-incidence-sensitivity:
+    # Every firm pays exactly the SAME real municipal property tax. Only
+    # its ability to recover 25/50/75% of those costs via genuine retail
+    # purchases/wholesale price changes differs; no fictitious income.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[tax-incidence-sweep]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Falsify company and family solvency under three real cost splits
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          BASE='--sims=10000 --days=3653 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price'
+          for percent in 25 50 75; do
+            for seed in 42 73; do
+              dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --seed=$seed --tax-cost-recovery-percent=$percent 2>&1 | tee tax-incidence-$percent-$seed-10y.log
+            done
+          done
+          python3 - <<'PY'
+          import json
+          runs={}
+          for percent in (25,50,75):
+              for seed in (42,73):
+                  raw=open(f'tax-incidence-{percent}-{seed}-10y.log').readlines()
+                  i=next(i for i,line in enumerate(raw) if line.startswith('{'))
+                  r=json.loads(''.join(raw[i:]))
+                  assert r['simulatedDays']==3653 and r['taxCostRecoveryPercent']==percent
+                  assert r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+                  assert not r['fullIndexCitiesTargetValidated']
+                  print('TAX_INCIDENCE_RESULT',
+                        'costRecovery',percent,'seed',seed,
+                        'endAlive',r['aliveEnd'],'minAlive',r['minimumAliveAtAnyEvent'],
+                        'familyMoney',r['personalCashCents'],'firmCash',r['businessCurrentCashCents'],
+                        'unmetMeals',r['unmetMeals'],'price',r['averageRetailUnitPriceCents'])
+                  runs[(percent,seed)] = r
+          passing=[p for p in (25,50,75) if
+              runs[(p,42)]['minimumAliveAtAnyEvent']>=10000 and
+              runs[(p,73)]['minimumAliveAtAnyEvent']>=10000]
+          open('qualified-tax-share.txt','w').write(str(passing[0]) if passing else 'none')
+          PY
+          PCT="$(cat qualified-tax-share.txt)"
+          if test "$PCT" != none; then
+            echo "Two distinct ten-year worlds sustained. Stress 80 consecutive years with $PCT% recovered property costs."
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=$PCT 2>&1 | tee qualified-tax-incidence-80y-no-history.log
+          fi
+      - name: Keep negative and positive economic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: independent-economic-tax-incidence
+          path: |
+            tax-incidence-*.log
+            qualified-tax-incidence-80y-no-history.log
+          if-no-files-found: ignore
+
   taxed-production-margin-80y:
     # Compare businesses that lose paid property tax as uncompensated capital
     # versus the SAME physical food producers/sellers quoting their actual
