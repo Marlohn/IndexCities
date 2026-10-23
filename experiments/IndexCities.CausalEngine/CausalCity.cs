@@ -338,6 +338,19 @@ internal sealed partial class CausalCity : IDisposable
         var day = _time / DaySeconds;
         _days++;
         var date = Epoch.AddDays(day);
+        // Observability only: monthly physical and fiscal bottlenecks around
+        // late-generation collapses. No gameplay state or money is changed.
+        if (_config.MunicipalSanitationPilot && _days % 30 == 0)
+            Console.Error.WriteLine(
+                $"LAB_WASTE_AUDIT day={_days} live={_active} treasury={_treasury} " +
+                $"dirtyHomes={_households.Count(h => h.TrashUnits > 80 && h.Members.Any(id => _people[id].Alive))} " +
+                $"worstHomeWaste={_households.Max(h => h.TrashUnits)} " +
+                $"staleHomes={_households.Count(h => h.TrashUnits >= 4 && h.Members.Any(id => _people[id].Alive) && _days - h.LastSanitationServicedDay > 15)} " +
+                $"rawDepot={_garbageAtDepot} rawTransit={_garbageInTransit} treatedLandfill={_wasteTreated} " +
+                $"municipalJobs={_people.Count(p => p.Alive && (p.Job == SanitationJob || p.Job == WasteTreatmentJob))} " +
+                $"paidCollections={_sanitationPaidVisits} treatmentShifts={_wasteTreatmentPaidShifts} " +
+                $"businessTaxPaid={_municipalTaxPaidCents} residentialTaxPaid={_residentialTaxPaidCents} " +
+                $"municipalWages={_municipalWagesPaidCents}");
         if (_config.WageFeedback && !_config.DemandStaffing)
         {
             // Hypothetical stress fixture, NOT a new IndexCities wage policy:
