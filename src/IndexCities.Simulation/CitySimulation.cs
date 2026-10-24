@@ -1,8 +1,86 @@
 namespace IndexCities.Simulation;
 
+public sealed class StepCostProfile
+{
+    public static readonly string[] Names = { "vehicles", "paving-returns", "citizen-mobility", "construction", "maintenance", "relocation", "infrastructure", "businesses", "needs", "economy-review", "construction-dispatch", "market-followups", "demolition-finance-loans" };
+    public long[] Ticks { get; } = new long[Names.Length];
+    public static readonly string[] DetailNames = { "infra-presence", "infra-demands", "infra-electricity", "infra-water", "infra-sewage-pollution", "infra-finalize", "needs-pollution", "needs-citizens" };
+    public long[] DetailTicks { get; } = new long[DetailNames.Length];
+    public static readonly string[] VehicleDetailNames = { "entry-check", "operations", "entry-events", "movement" };
+    public long[] VehicleTicks { get; } = new long[VehicleDetailNames.Length];
+    public static readonly string[] VehicleScanNames = { "lane-leader-scan", "bend-leader-scan" };
+    public long[] VehicleScanTicks { get; } = new long[VehicleScanNames.Length];
+    public long[] VehicleScanVisits { get; } = new long[VehicleScanNames.Length];
+    public long[] VehicleScanHits { get; } = new long[VehicleScanNames.Length];
+    public long BendPrefilterCandidates { get; internal set; }
+    public long BendPrefilterNear { get; internal set; }
+    // PR57-only observation: distance of every actual lane HoldFor candidate.
+    // No spatial filtering or changes to vehicle movement are performed.
+    public long[] LaneHoldDistanceBands { get; } = new long[4]; // <=32m, <=128m, <=512m, >512m
+    public long[] LaneLeaderSelectedBands { get; } = new long[4];
+    public long[] LaneLeaderPotentialLimitBands { get; } = new long[4];
+    public long LaneLeaderFarZeroDistance { get; private set; }
+    public double LaneLeaderSelectedMaxDistanceSquared { get; private set; }
+    public long LaneHoldEntryFrameHits { get; private set; }
+    public double LaneHoldMaxDistanceSquared { get; private set; }
+    internal void ObserveLaneHoldDistance(Point from, Point to, bool entryFrame)
+    {
+        var dx=from.X-to.X;var dz=from.Z-to.Z;
+        var distanceSquared=dx*dx+dz*dz;
+        var band=distanceSquared<=32*32?0:distanceSquared<=128*128?1:distanceSquared<=512*512?2:3;
+        LaneHoldDistanceBands[band]++;
+        if(distanceSquared>LaneHoldMaxDistanceSquared)LaneHoldMaxDistanceSquared=distanceSquared;
+        if(entryFrame)LaneHoldEntryFrameHits++;
+    }
+    // Observe the final nearest leader selected by the unchanged full scan.
+    // A potential limit is relative to the reachable step BEFORE other geometry/junction restrictions;
+    // it is not proof that the candidate caused an actual stop or changed the final state.
+    internal void ObserveLaneLeaderSelection(Point from, Point to, double leaderDistance, double reachableStep)
+    {
+        var dx=from.X-to.X;var dz=from.Z-to.Z;
+        var distanceSquared=dx*dx+dz*dz;
+        var band=distanceSquared<=32*32?0:distanceSquared<=128*128?1:distanceSquared<=512*512?2:3;
+        LaneLeaderSelectedBands[band]++;
+        if(distanceSquared>LaneLeaderSelectedMaxDistanceSquared)LaneLeaderSelectedMaxDistanceSquared=distanceSquared;
+        if(Math.Max(0,leaderDistance-8)<reachableStep-1e-9)LaneLeaderPotentialLimitBands[band]++;
+        if(band==3&&leaderDistance==0)LaneLeaderFarZeroDistance++;
+    }
+    internal void MarkVehicleScan(int detail, long started, int visits, int hits)
+    {
+        VehicleScanTicks[detail] += System.Diagnostics.Stopwatch.GetTimestamp() - started;
+        VehicleScanVisits[detail] += visits;
+        VehicleScanHits[detail] += hits;
+    }
+    public long VehicleBatchedSteps { get; internal set; }
+    public long VehicleUnsplitSteps { get; internal set; }
+    public long VehicleSlices { get; internal set; }
+    internal void MarkVehicle(int detail, ref long started)
+    {
+        var now = System.Diagnostics.Stopwatch.GetTimestamp();
+        VehicleTicks[detail] += now - started;
+        started = now;
+    }
+    public long Steps { get; private set; }
+    internal void Mark(int phase, ref long started)
+    {
+        var now = System.Diagnostics.Stopwatch.GetTimestamp();
+        Ticks[phase] += now - started;
+        started = now;
+    }
+    internal void MarkDetail(int detail, ref long started)
+    {
+        var now = System.Diagnostics.Stopwatch.GetTimestamp();
+        DetailTicks[detail] += now - started;
+        started = now;
+    }
+    internal void FinishStep() => Steps++;
+}
+
 public sealed partial class CitySimulation
 {
     public CityState State {get;}
+    // PR57-only diagnostic observer; not part of CityState or save.
+    public StepCostProfile? CostProfile { get; set; }
     public decimal CityBalance=>Balance("city");
     public decimal Committed=>State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress).Sum(p=>p.BudgetRemaining)+State.MunicipalRelocations.Where(r=>r.Active).Sum(r=>r.RemovalReserved+r.TransferReserved);
     public decimal Available=>Math.Max(0,CityBalance-Committed);
@@ -75,19 +153,40 @@ public sealed partial class CitySimulation
     }
     void Step(double dt)
     {
-        MoveVehicles(dt);ReturnPavingMachines(dt);MoveCitizens(dt);var completedConstruction=ProgressConstruction(dt);UpdateMaintenanceCondition(dt);ProgressMunicipalRelocations(dt);UpdateInfrastructure(dt);OperateBusinesses(dt);UpdateNeeds(dt);
+        var profile = CostProfile;
+        var started = profile is null ? 0L : System.Diagnostics.Stopwatch.GetTimestamp();
+        MoveVehicles(dt);
+        if(profile is not null)profile.Mark(0,ref started);
+        ReturnPavingMachines(dt);
+        if(profile is not null)profile.Mark(1,ref started);
+        MoveCitizens(dt);
+        if(profile is not null)profile.Mark(2,ref started);
+        var completedConstruction=ProgressConstruction(dt);
+        if(profile is not null)profile.Mark(3,ref started);
+        UpdateMaintenanceCondition(dt);
+        if(profile is not null)profile.Mark(4,ref started);
+        ProgressMunicipalRelocations(dt);
+        if(profile is not null)profile.Mark(5,ref started);
+        UpdateInfrastructure(dt);
+        if(profile is not null)profile.Mark(6,ref started);
+        OperateBusinesses(dt);
+        if(profile is not null)profile.Mark(7,ref started);
+        UpdateNeeds(dt);
+        if(profile is not null)profile.Mark(8,ref started);
         State.AddElapsedSeconds(dt);State.Now=State.Now.AddSeconds(dt);
-        // Construction is physical work, not a periodic market decision. Dispatch
-        // available vehicles and crews on the next simulated step, including when
-        // a vehicle returns or a newly completed street restores access.
         var reviewEconomy=completedConstruction||State.ElapsedSeconds>=State.EconomyNextAt;
         if(reviewEconomy){State.EconomyNextAt=State.ElapsedSeconds+State.Tuning.EconomyInterval;SeekHomesForAllDisplaced();ReviewMarkets();ReviewJobs();ScheduleMaintenance();}
+        if(profile is not null)profile.Mark(9,ref started);
         OrderConstruction();
+        if(profile is not null)profile.Mark(10,ref started);
         if(reviewEconomy){RetryPurchasesAwaitingDestination();RestockBusinesses();ReviewEmigration();RecoverDebt();RetryCargoAwaitingDestination();ReviewVehicleRevisions();ResumeHeldDeliveries();RefuelIdleShopTows();}
+        if(profile is not null)profile.Mark(11,ref started);
         ProgressBuildingDemolitions();
         while(State.Now>=State.NextDaily){DailyFinance();State.NextDaily=State.NextDaily.AddDays(1);}
         while(State.Now>=State.NextTaxDate){PropertyTaxes();State.NextTaxDate=State.NextTaxDate.AddMonths(1);}
         ProcessLoans();
+        if(profile is not null)profile.Mark(12,ref started);
+        if(profile is not null)profile.FinishStep();
     }
     public void CheckInvariants()
     {

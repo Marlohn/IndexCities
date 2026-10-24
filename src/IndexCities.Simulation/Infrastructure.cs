@@ -17,6 +17,8 @@ public sealed partial class CitySimulation
     public double CurrentWaterTreatmentPotential=>State.Buildings.Sum(WaterTreatmentPotential);
     void UpdateInfrastructure(double dt)
     {
+        var detail=CostProfile;
+        var detailStarted=detail is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
         // Per-step working sets are reused buffers, refilled in list order.
         var active=_active;active.Clear();foreach(var b in State.Buildings)if(b.Completed&&!b.Removed)active.Add(b);
         // Presence does not change inside this calculation. Keep the public
@@ -24,6 +26,7 @@ public sealed partial class CitySimulation
         // over the citizens (the same WorkerPresentAt rule per worker).
         var present=_present;present.Clear();var byId=_activeById;byId.Clear();foreach(var b in active){present.Add(b.Id,0);byId.Add(b.Id,b);}
         foreach(var c in State.Citizens)if(c.WorkplaceId is {} site&&byId.TryGetValue(site,out var workplace)&&WorkerPresentAt(c,workplace))present[site]++;
+        if(detail is not null)detail.MarkDetail(0,ref detailStarted);
         double StaffFactor(Building b)=>InfrastructureStaffFactor(b,present[b.Id]);
         State.WindFactor=Math.Clamp(.55+.25*Math.Sin(State.ElapsedSeconds/21600+State.Seed)+.15*Math.Sin(State.ElapsedSeconds/172800+State.Seed*.3),.15,.95);
         foreach(var b in active){
@@ -33,6 +36,7 @@ public sealed partial class CitySimulation
             b.ElectricityDemand=b.Kind==BuildingKind.House?occupied*8:inUse?workers*4+(b.Kind is BuildingKind.WaterIntake or BuildingKind.WaterTreatment or BuildingKind.SewageTreatment?12:3):0;
             if(b.WaterRatio<.5&&inUse)b.AddWaterOutageSeconds(dt);else {b.AddWaterOutageSeconds(-dt*2);b.WaterOutageSecondsUnits=Math.Max(0,b.WaterOutageSecondsUnits);}
         }
+        if(detail is not null)detail.MarkDetail(1,ref detailStarted);
         var wind=active.Where(b=>b.Kind==BuildingKind.WindPower&&HasExteriorAccess(b)).ToList();
         foreach(var b in wind)b.OperationalCapacity=b.Definition.Capacity*StaffFactor(b)*b.MaintenanceRatio*State.WindFactor;
         State.ElectricityCapacity=wind.Sum(b=>b.OperationalCapacity);State.AddElectricityAvailableToday(State.ElectricityCapacity*dt/86400);
@@ -46,6 +50,7 @@ public sealed partial class CitySimulation
         _sources.Clear();foreach(var b in wind)_sources.Add(b.Position);allocation.Allocate(State.ElectricityCapacity,_sources);
         for(var i=0;i<active.Count;i++){var b=active[i];b.ElectricityRatio=b.ElectricityDemand<=0?0:allocation.Result[i]/b.ElectricityDemand;b.AddElectricityConsumedToday(b.ElectricityDemand*b.ElectricityRatio*dt/86400);}
         for(var j=0;j<streets.Count;j++){var n=streets[j];var demand=allocation.Demands[active.Count+j];n.ElectricityRatio=demand<=0?0:allocation.Result[active.Count+j]/demand;State.AddStreetElectricityConsumedToday(demand*n.ElectricityRatio*dt/86400);}
+        if(detail is not null)detail.MarkDetail(2,ref detailStarted);
         var intakes=active.Where(b=>b.Kind==BuildingKind.WaterIntake&&HasExteriorAccess(b)&&HasNaturalWaterSource(b)).ToList();
         foreach(var b in active.Where(b=>b.Kind==BuildingKind.WaterIntake))b.OperationalCapacity=intakes.Contains(b)?b.Definition.Capacity*StaffFactor(b)*b.MaintenanceRatio*b.ElectricityRatio:0;
         State.RawWaterCapacity=intakes.Sum(b=>b.OperationalCapacity);
@@ -56,12 +61,14 @@ public sealed partial class CitySimulation
         _sources.Clear();foreach(var b in treatments)_sources.Add(b.Position);water.Allocate(State.PotableCapacity,_sources);
         for(var i=0;i<active.Count;i++){var b=active[i];b.WaterRatio=b.WaterDemand<=0?0:water.Result[i]/b.WaterDemand;b.AddWaterConsumedToday(b.WaterDemand*b.WaterRatio*dt/86400);b.SewageProduced=b.WaterDemand*b.WaterRatio*.8;}
         foreach(var b in treatments)b.OperationalCapacity=nominal==0?0:State.PotableCapacity*InfrastructureTreatmentPotential(b,present[b.Id])/nominal;
+        if(detail is not null)detail.MarkDetail(3,ref detailStarted);
         var sewage=active.Where(b=>b.Kind==BuildingKind.SewageTreatment&&HasExteriorAccess(b)).ToList();foreach(var b in sewage)b.OperationalCapacity=b.Definition.Capacity*StaffFactor(b)*b.MaintenanceRatio*b.ElectricityRatio;
         State.SewageCapacity=sewage.Sum(b=>b.OperationalCapacity);State.SewageDemand=active.Sum(b=>b.SewageProduced);State.UntreatedSewage=Math.Max(0,State.SewageDemand-State.SewageCapacity);
         var sewageAllocation=_allocation;sewageAllocation.Reset(active.Count);for(var i=0;i<active.Count;i++)sewageAllocation.Set(i,active[i].Position,active[i].SewageProduced);
         _sources.Clear();foreach(var b in sewage)_sources.Add(b.Position);sewageAllocation.Allocate(State.SewageCapacity,_sources);
         for(var i=0;i<active.Count;i++){var b=active[i];b.UntreatedSewage=Math.Max(0,b.SewageProduced-sewageAllocation.Result[i]);}
         UpdatePollution(dt,active);
+        if(detail is not null)detail.MarkDetail(4,ref detailStarted);
         foreach(var b in active){
             var staff=StaffFactor(b);var service=b.Definition.Utility;
             if(b.Kind==BuildingKind.House){b.Cause=b.FamilyId==null?"Disponível no mercado":b.WaterRatio<.5?"Abastecimento de água insuficiente":b.ElectricityRatio<.5?"Energia insuficiente":"Residência ocupada";continue;}
@@ -69,6 +76,7 @@ public sealed partial class CitySimulation
             b.Cause=!b.Definition.Private&&b.MaintenanceRatio<.9?"Manutenção pendente; capacidade reduzida":!HasExteriorAccess(b)?"Sem acesso viário":b.Definition.Private&&b.CompanyId==null?"Procurando empresa":b.OperationClosed?"Operação encerrada; imóvel preservado":!Open(b)&&!service?"Fora do horário de funcionamento":present[b.Id]==0?"Sem funcionários presentes no turno":b.Kind==BuildingKind.WaterIntake&&b.OperationalCapacity==0?"Captação sem fonte natural viável/energia":b.Kind==BuildingKind.WaterTreatment&&State.RawWaterCapacity==0?"Falta captação de água bruta":b.Kind!=BuildingKind.WindPower&&b.ElectricityRatio<.1?"Energia insuficiente":b.WaterOutageSeconds>=State.Tuning.WaterClosureHours*3600?"Parada após falta persistente de água":b.Kind is BuildingKind.Grocery or BuildingKind.FuelStation&&b.Quantity(b.Kind==BuildingKind.Grocery?ResourceKind.Food:ResourceKind.Fuel)<.1?"Estoque insuficiente":b.WaterRatio<.5&&!service?"Capacidade reduzida por falta de água":"Operando";
             if(b.Definition.Private&&(b.CompanyId==null||b.OperationClosed||!CompanyById(b.CompanyId)!.Active)||!HasExteriorAccess(b))b.OperationalCapacity=0;
         }
+        if(detail is not null)detail.MarkDetail(5,ref detailStarted);
     }
     readonly List<Building> _active=[];readonly Dictionary<int,int> _present=new();readonly Dictionary<int,Building> _activeById=new();
     readonly List<RoadNode> _streets=[];readonly List<Point> _sources=[];readonly CapacityAllocation _allocation=new();

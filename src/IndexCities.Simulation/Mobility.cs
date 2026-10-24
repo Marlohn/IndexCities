@@ -2,6 +2,11 @@ namespace IndexCities.Simulation;
 
 public sealed partial class CitySimulation
 {
+    // PR57-only bounded diagnostics for the two previously identified junction winners.
+    // Never consulted by movement, and never persisted.
+    readonly Dictionary<int,int> _laneBlockProbeCounts=new();
+    readonly Dictionary<int,Dictionary<int,long>> _laneBlockProbeLeaders=new();
+    int _laneEntryOriginLastSecond=-1; // PR57: bounded, observational, never serialized
     bool _pedestrianCrossingsChecked;
     bool ShiftActive(Citizen c)=>BuildingById(c.WorkplaceId) is {} b&&ShiftActiveIn(c,b);
     bool ShiftActiveIn(Citizen c,Building b)
@@ -212,6 +217,7 @@ public sealed partial class CitySimulation
     }
     void MoveVehiclesUnsplit(double dt,double? operationsDt=null)
     {
+        var scanProfile=CostProfile;
         // Release a passed junction even while a vehicle waits at the next one.
         // Carriageway half-width (3.3 m) + truck half-length (3.6 m) covers the
         // actual rear of the truck; the former 9 m reservation could overlap
@@ -220,7 +226,110 @@ public sealed partial class CitySimulation
         // Same order as OrderBy(WaitingSince).ThenBy(Id): Ids are unique, so the
         // key is a total order and any sort yields the same sequence.
         var ordered=State.Vehicles.ToArray();Array.Sort(ordered,static (a,b)=>a.WaitingSince.CompareTo(b.WaitingSince) is var c and not 0?c:a.Id.CompareTo(b.Id));
+        // PR57 isolated A/B: parked passenger cars are not lane occupants and
+        // BodyAcrossLane explicitly excludes passenger cars. Build a stable
+        // original-order candidate list once per movement slice.
+        // Keep entry-frame occupants even if their live state has changed.
+        var pr57ActiveScan=Environment.GetEnvironmentVariable("PR57_ACTIVE_SCAN")=="1";
+        var pr57SpatialScan=Environment.GetEnvironmentVariable("PR57_SPATIAL_SCAN")=="1";
+        var pr57FastScan=Environment.GetEnvironmentVariable("PR57_FAST_SCAN")=="1";
+        // Independent A/B switch: isolate heading reuse from bend broad-phase.
+        var pr57BendPrefilter=pr57FastScan&&Environment.GetEnvironmentVariable("PR57_BEND_PREFILTER")!="0";
+        var pr57ScanCandidates=pr57ActiveScan
+            ?State.Vehicles.Where(o=>!o.PassengerCar||o.Status!=VehicleStatus.Parked||_entryFrame?.ContainsKey(o.Id)==true).ToList()
+            :State.Vehicles;
+        var pr57ScanIds=pr57ActiveScan?pr57ScanCandidates.Select(o=>o.Id).ToHashSet():null;
+        var pr57VehicleOrder=pr57ActiveScan||pr57SpatialScan?State.Vehicles.Select((o,i)=>new{o.Id,Index=i}).ToDictionary(x=>x.Id,x=>x.Index):null;
+        // PR57 spatial A/B: a live, per-slice broad-phase. The exact original
+        // lane/curve tests still decide every collision, tie and queue.
+        // All returned candidates are in State.Vehicles order, not cell order.
+        const double pr57CellWidth=32;
+        static (int X,int Z) Pr57Cell(Point p)=>((int)Math.Floor(p.X/pr57CellWidth),(int)Math.Floor(p.Z/pr57CellWidth));
+        var pr57Cells=pr57SpatialScan?new Dictionary<(int X,int Z),List<Vehicle>>():null;
+        var pr57SpatialIds=pr57SpatialScan?pr57ScanCandidates.Select(o=>o.Id).ToHashSet():null;
+        var pr57WorldExtent=pr57SpatialScan&&pr57ScanCandidates.Count>0
+            ?pr57ScanCandidates.Max(o=>Math.Max(Math.Abs(o.Position.X),Math.Abs(o.Position.Z))):0;
+        void Pr57Add(Vehicle o){
+            var key=Pr57Cell(o.Position);
+            if(!pr57Cells!.TryGetValue(key,out var list))pr57Cells[key]=list=new();
+            list.Add(o);
+        }
+        if(pr57Cells is not null)foreach(var o in pr57ScanCandidates)Pr57Add(o);
+        List<Vehicle> Pr57Query(double x0,double x1,double z0,double z1){
+            var found=new List<Vehicle>();
+            var first=Pr57Cell(new Point(x0,z0));var last=Pr57Cell(new Point(x1,z1));
+            for(var x=first.X;x<=last.X;x++)for(var z=first.Z;z<=last.Z;z++)
+                if(pr57Cells!.TryGetValue((x,z),out var cell))found.AddRange(cell);
+            found.Sort((a,b)=>pr57VehicleOrder![a.Id].CompareTo(pr57VehicleOrder[b.Id]));
+            return found;
+        }
+        List<Vehicle> Pr57LaneCandidates(Vehicle v,bool entering){
+            // Entry admission uses an extended, speed-dependent approach
+            // corridor; retain the unfiltered original list for that case.
+            if(!pr57SpatialScan||entering)return pr57ScanCandidates;
+            // Every non-entry lane leader is forward and within 2.6 m
+            // laterally, except BodyAcrossLane (strictly <=20 m from v).
+            // The ray reaches beyond all indexed positions; no forward
+            // cutoff or speed assumption can drop a distant leader.
+            var reach=2*(pr57WorldExtent+Math.Max(Math.Abs(v.Position.X),Math.Abs(v.Position.Z)))+40;
+            var end=new Point(v.Position.X+Math.Sin(v.Heading)*reach,v.Position.Z+Math.Cos(v.Heading)*reach);
+            return Pr57Query(Math.Min(v.Position.X,end.X)-20,Math.Max(v.Position.X,end.X)+20,
+                             Math.Min(v.Position.Z,end.Z)-20,Math.Max(v.Position.Z,end.Z)+20);
+        }
         foreach(var v in ordered){
+            var pr57OldCell=pr57SpatialScan?Pr57Cell(v.Position):default;
+            try{
+            // PR57: isolate whether the lateral entrant already obstructs the through lane
+            // when it starts travelling, or reaches that pose during admission.
+            if(scanProfile is not null&&v.Id==5183){
+                var probeTime=State.ElapsedSeconds+_vehicleMovementOffset;
+                var probeSecond=(int)Math.Floor(probeTime);
+                if(probeSecond>=3550&&probeSecond<=3620&&probeSecond!=_laneEntryOriginLastSecond&&
+                   (probeSecond%10==0||probeSecond>=3595)){
+                    _laneEntryOriginLastSecond=probeSecond;
+                    LaneAccess probeAccess=default;
+                    var probeEligible=TryLaneEntry(v,out probeAccess);
+                    var probe5294=State.Vehicles.FirstOrDefault(o=>o.Id==5294);
+                    var probe5179=State.Vehicles.FirstOrDefault(o=>o.Id==5179);
+                    var blocked5294=probeEligible&&probe5294 is not null&&BlocksLaneEntry(v,probeAccess,EntryFrameVehicle(probe5294));
+                    var blocked5179=probeEligible&&probe5179 is not null&&BlocksLaneEntry(v,probeAccess,EntryFrameVehicle(probe5179));
+                    // Observational only: inspect the same full first-node swept
+                    // geometry already used for truck manoeuvre admission.
+                    // No traffic priority, position or event is modified.
+                    LaneAccess otherAccess=default;
+                    var otherEntryEligible=probe5294 is not null&&TryLaneEntry(probe5294,out otherAccess);
+                    var firstNodeSweepsOverlap=false;
+                    var firstNodeSweepPairs=0;
+                    if(probeSecond==3608&&probeEligible&&probe5294 is {Status:VehicleStatus.Travelling}){
+                        var entrantWay=Manoeuvre(v,v.Route,0,v.Position,v.Heading,[],false,int.MaxValue,out _,out _,through:0);
+                        var otherWay=Manoeuvre(probe5294,probe5294.Route,0,probe5294.Position,probe5294.Heading,[],false,int.MaxValue,out _,out _,through:0);
+                        foreach(var p in entrantWay)foreach(var q in otherWay){
+                            if(p.Position.Distance(q.Position)<12&&BodiesOverlap(v,p.Position,p.Heading,probe5294,q.Position,q.Heading))
+                                firstNodeSweepPairs++;
+                        }
+                        firstNodeSweepsOverlap=firstNodeSweepPairs>0;
+                        // Inspect the *same* sampled body sweeps beyond one node.
+                        // Pure observation: the first node alone missed the real hold.
+                        foreach(var through in new[]{1,2,4}){
+                            var extendedEntrant=Manoeuvre(v,v.Route,0,v.Position,v.Heading,[],false,int.MaxValue,out _,out _,through:through);
+                            var extendedOther=Manoeuvre(probe5294,probe5294.Route,0,probe5294.Position,probe5294.Heading,[],false,int.MaxValue,out _,out _,through:through);
+                            var conflictPairs=0;
+                            foreach(var a in extendedEntrant)foreach(var b in extendedOther)
+                                if(a.Position.Distance(b.Position)<12&&BodiesOverlap(v,a.Position,a.Heading,probe5294,b.Position,b.Heading))conflictPairs++;
+                            Console.WriteLine($"PR57_ENTRY_SWEEP second={probeTime:F6} throughIndex={through} firstNodePairs={firstNodeSweepPairs} extendedPairs={conflictPairs} entrantPoses={extendedEntrant.Count} otherPoses={extendedOther.Count}");
+                        }
+                    }
+                    var crossingNow=false;var crossingNext=false;
+                    if(probe5294 is not null&&probe5294.Position.Distance(v.Position)<20&&
+                       TryMovementTarget(probe5294,out _,out var probeTarget,out _,out _,out _)){
+                        var towards=probeTarget-probe5294.Position;
+                        var heading=towards.Distance(default)>.00001?Math.Atan2(towards.X,towards.Z):probe5294.Heading;
+                        crossingNow=BodiesOverlap(probe5294,probe5294.Position,heading,v,v.Position,v.Heading);
+                        crossingNext=BodiesOverlap(probe5294,probe5294.Position.MoveTowards(probeTarget,.5),heading,v,v.Position,v.Heading);
+                    }
+                    Console.WriteLine($"LANE_ENTRY_ORIGIN time={probeTime:F6} entrant=5183 status={v.Status} cause={v.Cause?.Replace(' ','_')} x={v.Position.X:F6} z={v.Position.Z:F6} heading={v.Heading:F6} routeIndex={v.RouteIndex} waitingSince={v.WaitingSince:F6} eligible={probeEligible} fromSide={probeAccess.FromSide:F6} toSide={probeAccess.ToSide:F6} blockedBy5294={blocked5294} blockedBy5179={blocked5179} crossingNow={crossingNow} crossingNext05={crossingNext} leader5294X={probe5294?.Position.X:F6} leader5294Z={probe5294?.Position.Z:F6} leader5294Status={probe5294?.Status} leader5294EntryEligible={otherEntryEligible} leader5294FromSide={otherAccess.FromSide:F6} leader5294ToSide={otherAccess.ToSide:F6} firstNodeSweepsOverlap={firstNodeSweepsOverlap} firstNodeSweepPairs={firstNodeSweepPairs}");
+                }
+            }
             // A bypass belongs to the trip in progress: a stopped, parked or
             // replanned-elsewhere vehicle does not resume old waypoints.
             if(v.Detour.Count>0&&v.Status!=VehicleStatus.Travelling)v.Detour.Clear();
@@ -303,8 +412,14 @@ public sealed partial class CitySimulation
                 // A tiny positive forward projection must not make its winner
                 // yield back to the other vehicle and freeze both indefinitely.
                 var leaderDistance=double.MaxValue;Vehicle? blocker=null;
-                void HoldFor(Vehicle other,double distance){if(distance<leaderDistance){leaderDistance=distance;blocker=other;}}
-                foreach(var liveOther in State.Vehicles){
+                var laneCandidateHits=0;
+                void HoldFor(Vehicle other,double distance){if(scanProfile is not null){laneCandidateHits++;scanProfile.ObserveLaneHoldDistance(v.Position,other.Position,enteringLane);}if(distance<leaderDistance){leaderDistance=distance;blocker=other;}}
+                // A/B only: hoist invariant heading trigonometry for the original-order scan.
+                var pr57Sin=pr57FastScan?Math.Sin(v.Heading):0;
+                var pr57Cos=pr57FastScan?Math.Cos(v.Heading):0;
+                var laneScanStart=scanProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
+                var pr57LaneList=Pr57LaneCandidates(v,enteringLane);
+                foreach(var liveOther in pr57LaneList){
                     var other=enteringLane?EntryFrameVehicle(liveOther):liveOther;
                     // A truck stopped at a dock with its body across this lane (a street bay)
                     // is queued behind like a leader, keeping the queue gap (Mobility.SharedSpace).
@@ -315,16 +430,17 @@ public sealed partial class CitySimulation
                     // Entry occupancy is measured along the ROAD axis, including
                     // the opposite lane, rather than the diagonal lot heading.
                     if(BlocksEntry(other)){HoldFor(other,0);continue;}
+                    var pr57CosDiff=pr57FastScan?Math.Cos(other.Heading-v.Heading):0;
                     // An overtaker committed to this lane: oncoming traffic waits for it.
-                    if(other.Detour.Count>0&&Math.Cos(other.Heading-v.Heading)<-.5){var ahead=relative.X*Math.Sin(v.Heading)+relative.Z*Math.Cos(v.Heading);var across=Math.Abs(relative.X*Math.Cos(v.Heading)-relative.Z*Math.Sin(v.Heading));if(ahead>0&&across<2.6){HoldFor(other,ahead);continue;}}
-                    var forward=relative.X*Math.Sin(v.Heading)+relative.Z*Math.Cos(v.Heading);
-                    var side=Math.Abs(relative.X*Math.Cos(v.Heading)-relative.Z*Math.Sin(v.Heading));
+                    if(other.Detour.Count>0&&(pr57FastScan?pr57CosDiff:Math.Cos(other.Heading-v.Heading))<-.5){var ahead=relative.X*(pr57FastScan?pr57Sin:Math.Sin(v.Heading))+relative.Z*(pr57FastScan?pr57Cos:Math.Cos(v.Heading));var across=Math.Abs(relative.X*(pr57FastScan?pr57Cos:Math.Cos(v.Heading))-relative.Z*(pr57FastScan?pr57Sin:Math.Sin(v.Heading)));if(ahead>0&&across<2.6){HoldFor(other,ahead);continue;}}
+                    var forward=relative.X*(pr57FastScan?pr57Sin:Math.Sin(v.Heading))+relative.Z*(pr57FastScan?pr57Cos:Math.Cos(v.Heading));
+                    var side=Math.Abs(relative.X*(pr57FastScan?pr57Cos:Math.Cos(v.Heading))-relative.Z*(pr57FastScan?pr57Sin:Math.Sin(v.Heading)));
                     // A tow facing it in its own lane while loading, or leaving with the load,
                     // holds it like a leader: having come from behind, it turns its rear to the
                     // vehicle, facing the queue. A tow that is itself held does not (it may wait
                     // on this very queue). Oncoming traffic in the other lane is 3.3 m aside.
-                    if((other.TowPhase==TowPhase.Loading||other.TowPhase==TowPhase.Delivering&&other.WaitingSince==0)&&Math.Cos(other.Heading-v.Heading)< -.5&&forward>0&&side<1.2){HoldFor(other,forward);continue;}
-                    if(Math.Cos(other.Heading-v.Heading)>.5&&forward>0&&side<2.6){
+                    if((other.TowPhase==TowPhase.Loading||other.TowPhase==TowPhase.Delivering&&other.WaitingSince==0)&&(pr57FastScan?pr57CosDiff:Math.Cos(other.Heading-v.Heading))< -.5&&forward>0&&side<1.2){HoldFor(other,forward);continue;}
+                    if((pr57FastScan?pr57CosDiff:Math.Cos(other.Heading-v.Heading))>.5&&forward>0&&side<2.6){
                         // Side by side with converging headings (adjacent lot
                         // spaces), each is "ahead" of the other: only the higher
                         // ID yields, as in the coincidence case above.
@@ -334,21 +450,49 @@ public sealed partial class CitySimulation
                         HoldFor(other,forward);
                     }
                 }
+                if(scanProfile is not null){
+                    scanProfile.MarkVehicleScan(0,laneScanStart,pr57LaneList.Count,laneCandidateHits);
+                    if(blocker is not null)scanProfile.ObserveLaneLeaderSelection(v.Position,blocker.Position,leaderDistance,Math.Min(d,speed*remaining));
+                }
                 var step=Math.Min(d,Math.Min(speed*remaining,Math.Max(0,leaderDistance-8)));
                 if(stopEarly>0)step=Math.Min(step,Math.Max(0,d-stopEarly));
                 if(crossingPoses!=null)step=ClearOfPoses(v,target,step,crossingPoses);
                 // At a bend the vehicle ahead in the same general direction can sit
                 // beyond the straight-lane strip above; its body still bounds this
                 // step and this turn. Opposite and parallel lanes are not involved.
-                var bendLeaders=State.Vehicles.Where(o=>o.Id!=v.Id&&o.Status is VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded&&Math.Cos(o.Heading-v.Heading)>.5&&Ahead(v,o)>0&&
+                var bendScanStart=scanProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
+                var pr57BendList=pr57SpatialScan?Pr57Query(v.Position.X-step-12,v.Position.X+step+12,v.Position.Z-step-12,v.Position.Z+step+12):pr57ScanCandidates;
+                // A/B only: cheap conservative AABB and exact radius rejection BEFORE
+                // heading/Ahead/body tests. The old order and all original exact predicates
+                // remain in the control path; no finite lane-leader cutoff is introduced.
+                var bendLeaders=pr57BendPrefilter?new List<Vehicle>():pr57BendList.Where(o=>o.Id!=v.Id&&o.Status is VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded&&Math.Cos(o.Heading-v.Heading)>.5&&Ahead(v,o)>0&&
                     Math.Abs((o.Position.X-v.Position.X)*Math.Cos(v.Heading)-(o.Position.Z-v.Position.Z)*Math.Sin(v.Heading))>=2.6&&o.Position.Distance(v.Position)<=step+12&&
                     !(o.Position.Distance(State.Entry)<8&&v.Position.Distance(State.Entry)<8)).ToList();
+                if(pr57BendPrefilter){
+                    var reach=step+12;
+                    var near=0;
+                    foreach(var o in pr57BendList){
+                        if(o.Id==v.Id||o.Status is not (VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded))continue;
+                        // 1e-8 m margin prevents boundary rejection from rounding.
+                        if(Math.Abs(o.Position.X-v.Position.X)>reach+1e-8||Math.Abs(o.Position.Z-v.Position.Z)>reach+1e-8)continue;
+                        if(!(o.Position.Distance(v.Position)<=reach))continue;
+                        near++;
+                        if(Math.Cos(o.Heading-v.Heading)>.5&&Ahead(v,o)>0&&
+                            Math.Abs((o.Position.X-v.Position.X)*Math.Cos(v.Heading)-(o.Position.Z-v.Position.Z)*Math.Sin(v.Heading))>=2.6&&
+                            !(o.Position.Distance(State.Entry)<8&&v.Position.Distance(State.Entry)<8))bendLeaders.Add(o);
+                    }
+                    if(scanProfile is not null){scanProfile.BendPrefilterCandidates+=pr57BendList.Count;scanProfile.BendPrefilterNear+=near;}
+                }
+                if(scanProfile is not null)scanProfile.MarkVehicleScan(1,bendScanStart,pr57BendList.Count,bendLeaders.Count);
                 if(bendLeaders.Count>0){
                     if(bendLeaders.Any(o=>TurnsInto(v,approachHeading,o))){v.Heading=approachHeading;step=0;}
                     else step=ClearOfPoses(v,target,step,bendLeaders.Where(o=>!VehicleBodiesOverlap(v,v.Position,o)).Select(o=>(o,o.Position,o.Heading)).ToList());
                 }
                 var free=step;step=SafeSiteTravel(v,target,step,true);
+                var afterSiteStep=step; // observação PR57: antes da verificação de travessia
                 if(node.Neighbours.Count<3&&!node.Crosswalk)step=ClearOfCrossingAhead(v,target,step);
+                var afterCrossingStep=step; // observação PR57: sem alterar o passo
+                var headingBeforeBlockProbe=v.Heading;
                 var steer=step<.00001&&free>.00001?TurnClearance(v,approachHeading,free,access):null;
                 if(steer is {} bend){v.Heading=bend.Heading;target=bend.To;step=bend.Distance;}
                 // Like a machine, a blocked vehicle keeps its verified pose rather
@@ -356,6 +500,39 @@ public sealed partial class CitySimulation
                 // or into any other body that pose was clear of.
                 if(step<.00001&&d>.00001&&State.Vehicles.Any(o=>o.Id!=v.Id&&o.Status!=VehicleStatus.Outside&&o.Position.Distance(v.Position)<12&&
                     (StreetBody(o)?VehicleBodiesOverlap(v,v.Position,o):!(o.Position.Distance(State.Entry)<8&&v.Position.Distance(State.Entry)<8)&&TurnsInto(v,approachHeading,o))))v.Heading=approachHeading;
+                if(scanProfile is not null&&(_laneObservedWinner?.Id==v.Id&&(v.Id==3949||v.Id==5179)||_laneObservedWinner?.Id==5179&&v.Id==5294)&&step<.00001&&d>.00001){
+                    _laneBlockProbeCounts.TryGetValue(v.Id,out var blockedCount);
+                    blockedCount++;_laneBlockProbeCounts[v.Id]=blockedCount;
+                    if(!_laneBlockProbeLeaders.TryGetValue(v.Id,out var leaders))_laneBlockProbeLeaders[v.Id]=leaders=new();
+                    var leaderId=blocker?.Id??-1;
+                    leaders.TryGetValue(leaderId,out var leaderCount);leaders[leaderId]=leaderCount+1;
+                    if(blockedCount<=3||blockedCount%1000==0){
+                        var top=string.Join(";",leaders.OrderByDescending(x=>x.Value).ThenBy(x=>x.Key).Take(3).Select(x=>$"{x.Key}:{x.Value}"));
+                        var blockerDistance=blocker is null?-1:blocker.Position.Distance(v.Position);
+                        // Observação geométrica somente na amostra impressa: o primeiro passo de 0,5m
+                        // segue os mesmos candidatos físicos, sem tocar no estado da simulação.
+                        var firstPose=v.Position.MoveTowards(target,Math.Min(.5,Math.Max(0,free)));
+                        var selfNearby=v.Id!=5294?"n/a":string.Join(";",State.Vehicles.Where(o=>o.Id!=v.Id&&o.Status!=VehicleStatus.Outside&&o.Position.Distance(v.Position)<=14)
+                            .OrderBy(o=>o.Position.Distance(v.Position)).ThenBy(o=>o.Id).Take(8)
+                            .Select(o=>$"{o.Id}:{o.Position.Distance(v.Position):F2}:{o.Status}:{o.Cause?.Replace(' ','_')}"));
+                        var siteBodyOverlaps=v.Id!=5294?"n/a":string.Join(";",State.Vehicles.Where(o=>o.Id!=v.Id&&o.Status!=VehicleStatus.Outside&&o.Machine!=PavingMachine.None&&o.Position.Distance(firstPose)<12&&
+                            BodiesOverlap(v,firstPose,headingBeforeBlockProbe,o,o.Position,o.Heading)).Select(o=>o.Id));
+                        var crossingBodyOverlaps=v.Id!=5294?"n/a":string.Join(";",State.Vehicles.Where(o=>o.Id!=v.Id&&InMap(o.Position)&&LaneTraffic(o)&&
+                            (o.Position.X-v.Position.X)*Math.Sin(headingBeforeBlockProbe)+(o.Position.Z-v.Position.Z)*Math.Cos(headingBeforeBlockProbe)>0&&
+                            (o.IntersectionClaim!=null||Math.Abs(Math.Cos(o.Heading-headingBeforeBlockProbe))<=.5)&&o.Position.Distance(v.Position)<=afterSiteStep+12&&
+                            BodiesOverlap(v,firstPose,headingBeforeBlockProbe,o,o.Position,o.Heading)).Select(o=>o.Id));
+                        var entrant5183=v.Id==5294?State.Vehicles.FirstOrDefault(o=>o.Id==5183):null;
+                        LaneAccess entrantAccess=default;
+                        var entrantEligible=entrant5183 is not null&&TryLaneEntry(entrant5183,out entrantAccess);
+                        var entrantBlockers=!entrantEligible?"n/a":string.Join(";",State.Vehicles.Where(o=>o.Id!=entrant5183!.Id&&OccupiesLane(o)&&
+                            BlocksLaneEntry(entrant5183,entrantAccess,EntryFrameVehicle(o))).OrderBy(o=>o.Id).Take(12).Select(o=>o.Id));
+                        // Read-only snapshot of the immediate leader's surroundings, sampled at most every 1000 blocked slices.
+                        var nearby=blocker is null?"none":string.Join(";",State.Vehicles.Where(o=>o.Id!=blocker.Id&&o.Status!=VehicleStatus.Outside&&o.Position.Distance(blocker.Position)<=14)
+                            .OrderBy(o=>o.Position.Distance(blocker.Position)).ThenBy(o=>o.Id).Take(6)
+                            .Select(o=>$"{o.Id}:{o.Position.Distance(blocker.Position):F2}:{o.Status}:{o.Cause?.Replace(' ','_')}"));
+                        Console.WriteLine($"LANE_BLOCK_PROBE vehicle={v.Id} sample={blockedCount} time={VehicleMovementTime:F6} node={node.Id} routeIndex={v.RouteIndex} targetDistance={d:F6} blockerId={leaderId} blockerStatus={blocker?.Status} blockerDistance={blockerDistance:F6} blockerWait={(blocker?.WaitingSince??0):F6} blockerRouteIndex={blocker?.RouteIndex} blockerCause={blocker?.Cause?.Replace(' ','_')} blockerClaim={blocker?.IntersectionClaim} blockerX={blocker?.Position.X:F6} blockerZ={blocker?.Position.Z:F6} vehicleCauseBefore={v.Cause?.Replace(' ','_')} nearby={nearby} leaderDistance={leaderDistance:F6} freeBeforeSafety={free:F6} afterSite={afterSiteStep:F6} afterCrossing={afterCrossingStep:F6} finalStep={step:F6} selfNearby={selfNearby} siteBodyOverlaps={siteBodyOverlaps} crossingBodyOverlaps={crossingBodyOverlaps} entrant5183Eligible={entrantEligible} entrant5183Blockers={entrantBlockers} entrant5183Wait={entrant5183?.WaitingSince:F6} entrant5183Route={entrant5183?.RouteIndex} stopEarly={stopEarly:F6} bayHold={bayHold} entryHeld={entryHeld!=null} enteringLane={enteringLane} crossingBodies={crossingPoses?.Count??0} bendLeaders={bendLeaders.Count} waitingSince={v.WaitingSince:F6} blockerTop3={top}");
+                    }
+                }
                 if(step<.00001&&d>.00001){v.Cause=blocker?.Status==VehicleStatus.Stranded?$"Aguardando veículo {blocker.Id} {(blocker.BrokenDown?"quebrado":"sem combustível")} na via":bayHold||entryHeld!=null?"Fila para acesso de carga":enteringLane?"Aguardando espaço para acessar a faixa":blocker!=null&&HoldsJunctionAhead(blocker,node)?(IsBend(node)?"Aguardando liberação da curva pelo veículo ":"Aguardando liberação do cruzamento pelo veículo ")+blocker.Id:"Fila na faixa";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;if(v.TowPhase==TowPhase.ToVehicle&&(TryTowContraflow(v)||TryTowFromBehind(v)))continue;if(!enteringLane&&blocker!=null&&blocker.Id!=v.TowTargetId&&TryBypassStopped(v,blocker))continue;if(blocker!=null&&TowExitHolds(blocker)&&TryUTurn(v,blocker))continue;
                     // A tow held for minutes turns back and goes around the stranded vehicles
                     // and the junctions they lock, instead of waiting in the queue.
@@ -377,6 +554,27 @@ public sealed partial class CitySimulation
                 if(steer==null&&advanced)v.RouteIndex++;
                 // Wear for the distance driven; a vehicle in use may break down here.
                 if(DriveWear(v,step)||steer==null&&!advanced)break;
+            }
+            }finally{
+                // If an initially parked car starts moving during this pass, it
+                // becomes eligible for subsequent scans in original vehicle order.
+                if(pr57ScanIds is not null&&(!v.PassengerCar||v.Status!=VehicleStatus.Parked)&&pr57ScanIds.Add(v.Id)){
+                    var next=pr57ScanCandidates.FindIndex(o=>pr57VehicleOrder![o.Id]>pr57VehicleOrder[v.Id]);
+                    if(next<0)pr57ScanCandidates.Add(v);else pr57ScanCandidates.Insert(next,v);
+                }
+                if(pr57Cells is not null){
+                    if(pr57SpatialIds!.Contains(v.Id)){
+                        var newCell=Pr57Cell(v.Position);
+                        if(newCell!=pr57OldCell){
+                            var oldList=pr57Cells[pr57OldCell];oldList.Remove(v);
+                            if(oldList.Count==0)pr57Cells.Remove(pr57OldCell);
+                            Pr57Add(v);
+                        }
+                    }else if(pr57ScanIds?.Contains(v.Id)==true){
+                        pr57SpatialIds.Add(v.Id);Pr57Add(v);
+                    }
+                    pr57WorldExtent=Math.Max(pr57WorldExtent,Math.Max(Math.Abs(v.Position.X),Math.Abs(v.Position.Z)));
+                }
             }
         }
         // A towed vehicle moves only with its tow (platform or trailing a heavy tow).

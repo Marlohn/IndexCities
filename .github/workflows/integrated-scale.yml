@@ -1,0 +1,88 @@
+name: Integrated core PR57 isolate heading trig from bend broad-phase A/B
+
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths:
+      - .github/workflows/integrated-scale.yml
+      - src/IndexCities.Headless/**
+      - src/IndexCities.Simulation/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integrated-scale-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  spatial-ab:
+    name: Real integrated core trig-only vs combined A/B
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build real integrated headless
+        run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+      - name: Check adversarial checkpoint parity in same process
+        run: dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --filter FullyQualifiedName~DualExitConflictExperiment
+      - name: Compare control, heading-only, and combined A/B
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/integrated-scale-probe
+          run_one() {
+            local seed="$1" mode="$2" label="$3"
+            local fast=0 bend=0
+            if [[ "$mode" == "trig" ]]; then fast=1; bend=0; fi
+            if [[ "$mode" == "combined" ]]; then fast=1; bend=1; fi
+            PR57_ACTIVE_SCAN=1 PR57_SPATIAL_SCAN=0 PR57_FAST_SCAN="$fast" PR57_BEND_PREFILTER="$bend" PR57_AB_CHECKPOINT=1 dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- profile grid --seed="$seed" --warmup=0 --days=3 --window=1500 --cap=150 --rows=10 --length=800 --signals=1 | tee "artifacts/integrated-scale-probe/${label}.log"
+          }
+          # Seed 73: reverse order to separate candidate effect from runner drift.
+          run_one 73 control 73a_control
+          run_one 73 trig 73a_trig
+          run_one 73 combined 73a_combined
+          run_one 73 combined 73b_combined
+          run_one 73 trig 73b_trig
+          run_one 73 control 73b_control
+          # Second seed: reverse mode order.
+          run_one 42 combined 42_combined
+          run_one 42 trig 42_trig
+          run_one 42 control 42_control
+          python3 - <<'PY'
+          import pathlib,re
+          root=pathlib.Path('artifacts/integrated-scale-probe')
+          results={}
+          for seed in (73,42):
+              names=tuple(f'{seed}{run}_{mode}' for run in ('a','b') for mode in ('control','trig','combined')) if seed==73 else tuple(f'42_{mode}' for mode in ('control','trig','combined'))
+              for label in names:
+                  data=(root/(label+'.log')).read_text()
+                  for token in ('WINDOW 1 ','WINDOW 2 ','WINDOW 3 ','SUMMARY windows=3 secondsEach=1500','INVARIANTS OK','SAVE '):
+                      assert token in data,(label,token)
+                  sha=re.search(r'^SAVE .* sha256=([A-F0-9]+)$',data,re.M).group(1)
+                  walls=[float(x) for x in re.findall(r'^WINDOW \d+ .* wall=([0-9.]+)s',data,re.M)]
+                  assert len(walls)==3,(label,walls)
+                  checkpoints=tuple(re.findall(r'^PR57_AB_CHECKPOINT window=(\d+) sha256=([A-F0-9]+)',data,re.M))
+                  assert [x[0] for x in checkpoints]==['1','2','3'],(label,checkpoints)
+                  results[label]=(sha,sum(walls),checkpoints)
+                  print(f'PR57_TRIG {label} sha={sha} wall={sum(walls):.3f}s checkpoints={checkpoints}',flush=True)
+              assert len({results[n][0] for n in names})==1,f'save divergence seed {seed}'
+              assert len({results[n][2] for n in names})==1,f'checkpoint divergence seed {seed}'
+          for run in ('a','b'):
+              c,t,b=(results[f'73{run}_{mode}'][1] for mode in ('control','trig','combined'))
+              print(f'PR57_TRIG_AB seed=73 order={run} control={c:.3f} trig={t:.3f} combined={b:.3f} control/trig={c/t:.3f}x trig/combined={t/b:.3f}x',flush=True)
+          c,t,b=(results[f'42_{mode}'][1] for mode in ('control','trig','combined'))
+          print(f'PR57_TRIG_AB seed=42 control={c:.3f} trig={t:.3f} combined={b:.3f} control/trig={c/t:.3f}x trig/combined={t/b:.3f}x',flush=True)
+          PY
+      - name: Preserve full logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-trig-isolation
+          path: artifacts/integrated-scale-probe/*.log
+          if-no-files-found: warn
+          retention-days: 30

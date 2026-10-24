@@ -182,6 +182,8 @@ public sealed partial class CitySimulation
     readonly Dictionary<Point,double> _homePollution=new();readonly List<Point> _homePoints=[];
     void UpdateNeeds(double dt)
     {
+        var detail=CostProfile;
+        var detailStarted=detail is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
         // Pollution is unchanged during this routine, and residents in the same
         // home use exactly the same point. Retain every per-citizen calculation.
         SnapshotPollution();var pollution=_homePollution;pollution.Clear();
@@ -189,6 +191,7 @@ public sealed partial class CitySimulation
         // loop no longer reaches only costs time; a missing one is computed below).
         _homePoints.Clear();foreach(var c in State.Citizens)if(c.Alive&&c.Resident&&c.InsideMap&&BuildingById(FamilyById(c.FamilyId)?.HomeId) is {} h&&pollution.TryAdd(h.Position,0))_homePoints.Add(h.Position);
         SampledPollution(_homePoints,pollution);
+        if(detail is not null)detail.MarkDetail(6,ref detailStarted);
         double HomePollution(Point position){if(!pollution.TryGetValue(position,out var value)){value=SampledPollution(position);pollution.Add(position,value);}return value;}
         foreach(var c in State.Citizens.Where(c=>c.Alive&&c.Resident&&c.InsideMap)){
             c.AddHungerSeconds(dt);var family=FamilyById(c.FamilyId)!;var home=BuildingById(family.HomeId);
@@ -198,6 +201,7 @@ public sealed partial class CitySimulation
             c.AddHealth(-unmet*dt/86400);c.HealthUnits=Math.Clamp(c.HealthUnits,0,100*FixedPoint.PointScale);c.Satisfaction=Math.Clamp(80-c.HungerHours*.7-unmet*15-(family.Members.Count>Catalog.Definitions[BuildingKind.House].Capacity?8:0),0,100);
             if(c.Health<=0)CitizenDied(c);
         }
+        if(detail is not null)detail.MarkDetail(7,ref detailStarted);
     }
     void CitizenDied(Citizen c)
     {
