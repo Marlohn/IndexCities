@@ -89,6 +89,10 @@ var census=args[0]=="census"?new Census():null;var stuck=args[0]=="stuck"?new St
 var profile=args[0]=="profile"?new StepCostProfile():null;sim.CostProfile=profile;
 var total=0.0;var gc0=GC.CollectionCount(0);var gc2=GC.CollectionCount(2);var alloc0=GC.GetTotalAllocatedBytes();var done=0;
 for(var d=1;d<=days;d++){
+    // PR57 observational allocation/GC deltas per measured window (no simulation state mutation).
+    var windowAllocBefore=GC.GetTotalAllocatedBytes();
+    var windowGc0Before=GC.CollectionCount(0);
+    var windowGc2Before=GC.CollectionCount(2);
     sw.Restart();
     if(stuck!=null){var strand=int.Parse(Opt("strand","0"));var dayEnd=sim.State.ElapsedSeconds+86400;if(strand>0){var forced=new List<int>();while(forced.Count==0&&sim.State.ElapsedSeconds<dayEnd-1800){forced=stuck.Force(sim,strand);if(forced.Count==0)sim.Advance(60);}var since=sim.State.ElapsedSeconds;for(var m=0;m<30&&forced.Count>0;m++){sim.Advance(60);if(m%3==0||m==29||Environment.GetEnvironmentVariable("STUCK_EVERY")=="1")stuck.Watch(sim,forced,since);}}while(sim.State.ElapsedSeconds<dayEnd-1e-6){sim.Advance(Math.Min(600,dayEnd-sim.State.ElapsedSeconds));stuck.Sample(sim);}}else if(census==null)sim.Advance(windowSeconds);else
     {
@@ -112,8 +116,11 @@ for(var d=1;d<=days;d++){
         }
     }
     var w=sw.Elapsed.TotalSeconds;total+=w;done=d;
+    var windowAllocMB=(GC.GetTotalAllocatedBytes()-windowAllocBefore)/1e6;
+    var windowGc0=GC.CollectionCount(0)-windowGc0Before;
+    var windowGc2=GC.CollectionCount(2)-windowGc2Before;
     if(windowSeconds==86400)Console.WriteLine($"DAY {d} wall={w:F2}s eff={86400/w:F0}x {Stats(sim)}");
-    else Console.WriteLine($"WINDOW {d} seconds={windowSeconds} wall={w:F2}s eff={windowSeconds/w:F0}x {Stats(sim)}");
+    else Console.WriteLine($"WINDOW {d} seconds={windowSeconds} wall={w:F2}s eff={windowSeconds/w:F0}x allocMB={windowAllocMB:F1} gc0={windowGc0} gc2={windowGc2} {Stats(sim)}");
     stuck?.Report(sim,d);
     if(Environment.GetEnvironmentVariable("PR57_AB_CHECKPOINT")=="1"){
         sim.CheckInvariants();
