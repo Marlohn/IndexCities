@@ -1,4 +1,4 @@
-name: Integrated real-core infrastructure and needs breakdown
+name: Integrated real-core paired load scaling with phase attribution
 
 on:
   push:
@@ -19,9 +19,9 @@ concurrency:
 
 jobs:
   phase-profile:
-    name: Same-seed control vs nested infrastructure and needs cost
+    name: Paired medium vs expanded fixture with identical save controls
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -29,40 +29,40 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Build real-core headless (Release)
         run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: Compare uninstrumented and phase-profiled runs on the same runner
+      - name: Compare two real-core loads and their phase costs on the same runner
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p artifacts/integrated-scale-phases
-          echo "PHASE_PROFILE_SHA=${GITHUB_SHA}"
-          for fixture in small medium; do
-            if [[ "$fixture" == small ]]; then
-              rows=3; length=400
-              expected=2D095BC89EB9A34D4A6AE8B1012F161B766720E806F9E5577C33F3029375C5E7
-            else
+          mkdir -p artifacts/integrated-scale-load
+          echo "LOAD_SCALE_SHA=${GITHUB_SHA}"
+          for fixture in medium expanded; do
+            if [[ "$fixture" == medium ]]; then
               rows=6; length=600
               expected=0C5185A3A0A9B53EE7E53B228C7D8B0C9F8BF6FBE8C1A7C68C4DE3E8E89A562F
+            else
+              rows=10; length=800
+              expected=""
             fi
             for mode in scale profile; do
-              echo "=== PHASE_START fixture=${fixture} mode=${mode} seed=42 rows=${rows} length=${length} ==="
+              echo "=== LOAD_START fixture=${fixture} mode=${mode} seed=42 rows=${rows} length=${length} ==="
               TIMEFORMAT='TIME totalReal=%3R cpuUser=%3U cpuSystem=%3S'
-              { time timeout 180s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- "${mode}" grid --seed=42 --warmup=1 --days=1 --cap=150 --rows="${rows}" --length="${length}" --signals=1; } 2>&1 | tee "artifacts/integrated-scale-phases/${fixture}-${mode}.log"
-              grep -q '^SUMMARY days=1 ' "artifacts/integrated-scale-phases/${fixture}-${mode}.log"
-              grep -q '^INVARIANTS OK$' "artifacts/integrated-scale-phases/${fixture}-${mode}.log"
+              { time timeout 360s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- "${mode}" grid --seed=42 --warmup=1 --days=1 --cap=150 --rows="${rows}" --length="${length}" --signals=1; } 2>&1 | tee "artifacts/integrated-scale-load/${fixture}-${mode}.log"
+              grep -q '^SUMMARY days=1 ' "artifacts/integrated-scale-load/${fixture}-${mode}.log"
+              grep -q '^INVARIANTS OK$' "artifacts/integrated-scale-load/${fixture}-${mode}.log"
             done
-            test "$(grep -c '^  STEP_PHASE ' "artifacts/integrated-scale-phases/${fixture}-profile.log")" -eq 13
-            test "$(grep -c '^  STEP_DETAIL ' "artifacts/integrated-scale-phases/${fixture}-profile.log")" -eq 8
-            grep -q '^STEP_PROFILE steps=43200 ' "artifacts/integrated-scale-phases/${fixture}-profile.log"
-            base=$(sed -n 's/.*sha256=\([0-9A-F]*\).*/\1/p' "artifacts/integrated-scale-phases/${fixture}-scale.log" | tail -n 1)
-            observed=$(sed -n 's/.*sha256=\([0-9A-F]*\).*/\1/p' "artifacts/integrated-scale-phases/${fixture}-profile.log" | tail -n 1)
-            echo "PHASE_SHA_COMPARE fixture=${fixture} base=${base} profiled=${observed} prior=${expected} equal=$([[ "$base" == "$observed" && "$base" == "$expected" ]] && echo true || echo false)"
-            if [[ -z "$base" || "$base" != "$observed" || "$base" != "$expected" ]]; then echo "::error::Profile changed final save"; exit 1; fi
+            test "$(grep -c '^  STEP_PHASE ' "artifacts/integrated-scale-load/${fixture}-profile.log")" -eq 13
+            test "$(grep -c '^  STEP_DETAIL ' "artifacts/integrated-scale-load/${fixture}-profile.log")" -eq 8
+            grep -q '^STEP_PROFILE steps=43200 ' "artifacts/integrated-scale-load/${fixture}-profile.log"
+            base=$(sed -n 's/.*sha256=\([0-9A-F]*\).*/\1/p' "artifacts/integrated-scale-load/${fixture}-scale.log" | tail -n 1)
+            observed=$(sed -n 's/.*sha256=\([0-9A-F]*\).*/\1/p' "artifacts/integrated-scale-load/${fixture}-profile.log" | tail -n 1)
+            echo "LOAD_SHA_COMPARE fixture=${fixture} base=${base} profiled=${observed} prior=${expected:-none} equal=$([[ -n "$base" && "$base" == "$observed" && ( -z "$expected" || "$base" == "$expected" ) ]] && echo true || echo false)"
+            if [[ -z "$base" || "$base" != "$observed" || ( -n "$expected" && "$base" != "$expected" ) ]]; then echo "::error::Profile changed final save or medium control regressed"; exit 1; fi
           done
-      - name: Attach raw phase timings and same-seed controls
+      - name: Attach raw paired load timings and same-seed controls
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-phase-profile-raw
-          path: artifacts/integrated-scale-phases/*.log
+          name: integrated-scale-load-10x800-raw
+          path: artifacts/integrated-scale-load/*.log
           if-no-files-found: warn
           retention-days: 30
