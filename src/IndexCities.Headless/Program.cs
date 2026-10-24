@@ -63,6 +63,10 @@ if(profile is not null){
     Console.WriteLine($"STEP_PROFILE steps={profile.Steps} measuredWall={measured:F3}s phases={StepCostProfile.Names.Length}");
     for(var i=0;i<StepCostProfile.Names.Length;i++)
         Console.WriteLine($"  STEP_PHASE name={StepCostProfile.Names[i]} wall={profile.Ticks[i]/(double)Stopwatch.Frequency:F3}s share={(ticks==0?0:100.0*profile.Ticks[i]/ticks):F2}%");
+    for(var i=0;i<StepCostProfile.DetailNames.Length;i++){
+        var parent=profile.Ticks[i<6?6:8];
+        Console.WriteLine($"  STEP_DETAIL name={StepCostProfile.DetailNames[i]} wall={profile.DetailTicks[i]/(double)Stopwatch.Frequency:F3}s parentShare={(parent==0?0:100.0*profile.DetailTicks[i]/parent):F2}%");
+    }
 }
 census?.Print(done);if(stuck!=null)Console.WriteLine($"STUCK SUMMARY guinchos chamados={sim.State.Ledger.Where(m=>m.Category=="Guincho"&&m.To=="global").Select(m=>(m.At,m.EntityId)).Distinct().Count()} rebocando agora={sim.State.Vehicles.Count(v=>v.Status==VehicleStatus.Towed)} sem combustível na via (total)={stuck.StrandedTotal} parados≥30min (máx)={stuck.StuckMax} mortos={sim.State.Citizens.Count(c=>!c.Alive)}");
 sw.Restart();var json=sim.SaveToJson();var save=sw.Elapsed.TotalSeconds;sw.Restart();CitySimulation.FromJson(json);

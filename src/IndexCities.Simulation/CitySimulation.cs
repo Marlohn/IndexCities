@@ -4,11 +4,19 @@ public sealed class StepCostProfile
 {
     public static readonly string[] Names = { "vehicles", "paving-returns", "citizen-mobility", "construction", "maintenance", "relocation", "infrastructure", "businesses", "needs", "economy-review", "construction-dispatch", "market-followups", "demolition-finance-loans" };
     public long[] Ticks { get; } = new long[Names.Length];
+    public static readonly string[] DetailNames = { "infra-presence", "infra-demands", "infra-electricity", "infra-water", "infra-sewage-pollution", "infra-finalize", "needs-pollution", "needs-citizens" };
+    public long[] DetailTicks { get; } = new long[DetailNames.Length];
     public long Steps { get; private set; }
     internal void Mark(int phase, ref long started)
     {
         var now = System.Diagnostics.Stopwatch.GetTimestamp();
         Ticks[phase] += now - started;
+        started = now;
+    }
+    internal void MarkDetail(int detail, ref long started)
+    {
+        var now = System.Diagnostics.Stopwatch.GetTimestamp();
+        DetailTicks[detail] += now - started;
         started = now;
     }
     internal void FinishStep() => Steps++;
