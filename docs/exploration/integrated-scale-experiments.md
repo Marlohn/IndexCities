@@ -664,3 +664,24 @@ As distâncias da tabela são **comprimento efetivamente percorrido entre amostr
 **Estado e limites:** os quatro processos terminaram com **812 SIMs vivos, 708 empregados, 578 veículos, 355 SIMs em movimento, 25 veículos viajando, 2.181 lançamentos e 5.945 fatos em memória**, zero mortes/salários/refeições. Teste adversarial `DualExitConflictExperiment` **4/4**, invariantes e save/load aprovados. SHA-256 completo idêntico entre modos e repetições após **1.500 s** (`557497E4C0F2C98B7620379A65984874AACEFB8166C634C5195B34CEC529BB9A`), **3.000 s** (`4F3F402A1D4D1266E8495E951B61E5D86C94CD0E7ADB7290C44C70D006E58624`) e **4.500 s** (`7116E7B3E31CCD469CA076B9C3DC9B505C7CF69B4FF232706D172A39D371F95B`). Esses checkpoints não provam equivalência em todos os eventos intermediários, manobras, casos adversariais ou entre processos históricos. Fixture sintética com obras/capacidades artificiais, **75 min e menos de 1.000 SIMs**, sem ciclo econômico diurno, gerações ou Godot.
 
 **Decisão:** preservar filtro/bitset **somente como candidato desligado**, sem integração. O custo estrutural continua dominado pelo movimento (aprox. 94% do wall da seed 73), com redução de visitas muito maior que a redução do tempo total. Antes de investir em outro índice mais complexo, medir se a atualização/enumeração do bitset e a alocação de candidatos anulam o ganho; avaliar consulta sem lista intermediária ou redução de consultas por dependências **sem mudar causalidade**, e só ampliar cargas/horizonte com cobertura de eventos adequada. **Nenhum novo CI foi disparado pela atualização documental.**
+
+
+## Quadragésima execução — reutilização da lista de líderes em curvas economiza memória, mas piora wall (24/10/2026)
+
+**Experimento A/B isolado:** [commit `9afd6fe`](https://github.com/Marlohn/IndexCities/commit/9afd6fe166937b3480479c8583528d3fe50e107b), [Actions #40120789314](https://github.com/Marlohn/IndexCities/actions/runs/40120789314), job `120951660969` **success**. Na varredura de curvas do motor real, candidata `PR57_BEND_REUSE=1` reutiliza uma `List<Vehicle>` por fatia e aplica por `foreach` **o mesmo predicado, curto-circuito e ordem de candidatos** do `Where(...).ToList()` original; não altera corpos, rotas, limites, seleção, física ou estado persistente. Controle `PR57_BEND_REUSE=0`. Ambos `PR57_ACTIVE_SCAN=1 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=1 PR57_FAST_SCAN=1 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1`, candidata **desligada por padrão**.
+
+**Carga e execução:** Ubuntu/.NET 8 Release, `dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- profile grid --seed=73 --warmup=0 --days=3 --window=1500 --cap=180 --rows=10 --length=800 --signals=1`; 3 janelas de `Advance(1500)`, **4.500 s simulados** por processo, ordem **controle→reúso→reúso→controle (ABBA)** no mesmo runner. Wall exclusivamente das janelas simuladas; build/fixture/save/load excluídos.
+
+| Métrica | Controle A / B | Reúso A / B |
+| --- | ---: | ---: |
+| Wall efetivo (4.500 s) | **72,36 / 71,73 s** | **74,10 / 72,04 s** |
+| Redução do wall pareada | — | **−2,40% / −0,43%** (regressão; speedup 0,977× / 0,996×) |
+| Wall busca curva | **5,771 / 5,674 s** | **8,093 / 7,026 s** |
+| Alocação MB/janela | **7.631** | **7.584** (−47 MB, ~0,6%) |
+| GC0 / GC2 | **1.370 / 5** | **1.362 / 5** |
+| Visitas busca líder / curva | **173.075.425 / 163.577.065** | **iguais** |
+| Acertos líder / curva | **5.580.918 / 207** | **iguais** |
+
+**Equivalência observada e atividade:** os quatro processos tiveram hashes SHA-256 **integrais idênticos nos três checkpoints** (1.500, 3.000 e 4.500 s), inclusive save final `7116E7B3E31CCD469CA076B9C3DC9B505C7CF69B4FF232706D172A39D371F95B`; atividade dos checkpoints idêntica, invariantes e save/load passaram. Teste adversarial `DualExitConflictExperiment` passou **4/4**, incluindo comparação do modo novo em checkpoints de 5 s. Ao final: **812 Sims vivos, 708 empregados, 578 veículos, 355 Sims em movimento, 25 veículos viajando, 2.181 lançamentos e 5.945 fatos**, zero salários/refeições e zero mortes. Não é prova de equivalência de toda a ordem causal nem de trânsito/economia representativos.
+
+**Decisão negativa:** a eliminação de listas temporárias e de ~47 MB de alocação por janela **não compensou o aumento de CPU na busca de curva**; ambas as ordens A/B pioraram wall. **Não adotar o reúso; manter flag experimental desligado.** O LINQ atual foi mais rápido nesse runner, e a economia de alocação é pequena diante de ~7,6 GB/janela. Próxima hipótese deve mirar custo dominante de movimento/consultas com avaliação A/B e, antes de qualquer integração, enfrentar representatividade, discrepância histórica de SHA da seed 73 e cobertura adversarial. O cenário é sintético, <1.000 Sims, 75 minutos, sem ciclo econômico diário ou Godot. Atualização documental não dispara CI.
