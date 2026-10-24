@@ -29,7 +29,20 @@ Qual é a velocidade **efetiva e causalmente correta** do `IndexCities.Simulatio
 
 Workflow isolado `.github/workflows/integrated-scale.yml`, disparado por **push de instrumentação/workflow relevante** nesta branch. Começar com `scale cycle` e `scale grid`, `--seed=42 --warmup=1 --days=1 --cap=300`, e grid `--rows=3 --length=400`. Duas repetições por condição; `cap` interrompe só **depois** do dia completo, por isso existe timeout do job. Nenhum número de desempenho é aceito até ler o GitHub Actions correspondente.
 
-**Resultado:** aguardando a primeira execução real (não confundir criação do workflow com teste concluído).
+**Resultado inicial confirmado:** [GitHub Actions #40060955808](https://github.com/Marlohn/IndexCities/actions/runs/40060955808), SHA `25eebe02f2a5a9b5cea08f13ea530a70db6aa29c`, job `baseline` **success** (2026-10-24 04:07 UTC); compilação .NET 8.0.32 Release aprovada, quatro execuções completas, logs brutos no artefato `integrated-scale-baseline-raw`. Runner Ubuntu, `Environment.ProcessorCount=4`; os tempos são amostras de runner compartilhado, não hardware de referência do jogador.
+
+| Cenário real do núcleo | Repetição 1 | Repetição 2 | SIMs vivos | Veículos existentes | Tempo simulado/s real (aprox.) | Alocação gerenciada/dia | Memória de trabalho reportada | Hash save igual? |
+|---|---:|---:|---:|---:|---:|---:|---:|---|
+| `cycle`, seed 42, 1 dia medido depois de 1 dia aquecido | **2,53 s/dia** | **2,50 s/dia** | **47** | **42** | 34.176× / 34.579× | **851 MB** | 85–86 MB | **sim** (`7357FCCBAA99AA96`) |
+| `grid`, seed 42, 3 linhas/400 m, mesma janela | **5,24 s/dia** | **5,30 s/dia** | **108** | **83** | 16.489× / 16.313× | **1.612 MB** | 90 MB | **sim** (`2D095BC89EB9A34D`) |
+
+As duas medições de cada cenário diferiram aproximadamente 1,1–1,2% entre si; são **somente duas repetições**, não base estatística para declarar ganho. Ambas terminaram com `INVARIANTS OK`, `SAVE` e `SUMMARY days=1`; nenhum cenário possui divergência demonstrada. `cycle`: GC0 51/dia, GC2 1/dia; `grid`: GC0 96/dia, GC2 0/dia. Save/load no runner: `cycle` ~0,19–0,20 s / 0,12–0,13 s para ~0,7 MB; `grid` ~0,19–0,20 s / 0,14–0,15 s para ~1,0 MB. A preparação da fixture e aquecimento **não estão incluídos** no wall/dia.
+
+**Comparação com hipótese de 80 anos/6h:** 29.220 dias exigiriam média de **0,739 s por dia simulado** (≈116.880× efetivos). Mesmo neste ensaio pequeno e simplificado, `cycle` mede 2,50–2,53 s/dia (~3,4× acima desse limite), e `grid` 5,24–5,30 s/dia (~7,1× acima). A saída `hours80y=21/20` e `43/43` do CLI **é projeção linear hipotética, não simulação de 80 anos**; não modela população mutável, dívida histórica, envelhecimento, congestionamento, crescimento do save ou novos sistemas. Estes resultados **não autorizam** concluir se 10 mil SIMs/80 anos caberão ou não: estabelecem apenas que a meta exploratória está longe até em cidades minúsculas.
+
+**Limitação decisiva:** `grid` conclui obras artificialmente, aumenta capacidades de serviços e orçamento; `cycle` só tem 47 cidadãos. A linha `moving=0 travelling=0` no fim do dia NÃO comprova ausência de viagens durante o dia, mas **não há métricas de viagens/carga real durante o dia** nesses logs. A população em `grid` (108) não constitui cenário de 10k, nem valida trânsito congestionado. Invariantes + hash final iguais validam apenas estado final repetido de **mesma implementação**, não equivalência de uma otimização nem toda ordem causal interna. Também não há perfil por sistema, memória histórica de décadas, nem custo Godot/UI. Não atribuir o rendimento medido a uma arquitetura nova, já que nenhum algoritmo foi alterado.
+
+**Próxima pergunta discriminante:** instrumentar **somente observação** de atividade ao longo do dia (movimentos reais, viagens e trabalho/produção/consumo), sem alterar regras da simulação; escolher cidade integrada representativa, ou demonstrar quantitativamente por que a fixture atual não serve. Depois ampliar população/carga progressivamente e perfilar maior gargalo real. Não gastar CI em mais uma repetição idêntica ou rodar décadas cegamente.
 
 ## Registro de resultados
 
