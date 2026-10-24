@@ -1,0 +1,2740 @@
+name: Causal Engine - integrated reality check
+
+on:
+  push:
+    branches:
+      - experimento/motor-causal-10k-80y-autonomo
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compile Release
+        run: dotnet build experiments/IndexCities.CausalEngine/IndexCities.CausalEngine.csproj -c Release
+      - name: Validate determinism, trips, ledger, births and physical history
+        run: dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --self-test | tee self-test.json
+      - name: Validate two independent annual workload cycles without pretending continuity
+        run: |
+          set -o pipefail
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=256 --annual-load-cycles=2 --adversarial | tee annual-workload-smoke.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('annual-workload-smoke.json'))
+          assert d['status']=='TECHNICAL_REPEAT_LOAD_ONLY_NOT_CONTINUOUS_CITY'
+          assert d['independentAnnualCycles']==2 and d['representedGregorianDays']==731
+          assert d['minLivingAgentsAcrossIndependentCycles']>=256
+          assert d['totalIndividualJourneys']>0 and d['totalRealFoodSalesUnitsAcrossCycles']>0
+          assert d['allCycleMoneyAndFoodConserved'] and not d['historyPersistent']
+          PY
+      - name: Run city with 1k concurrent citizens 30 days and real fact file
+        run: dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=1000 --days=30 --seed=42 --history=artifacts/causal-1000-30d.facts --adversarial | tee city-1000-30d.json
+      - name: Inspect individual recorded lifetime events
+        run: |
+          set -o pipefail
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- inspect artifacts/causal-1000-30d.facts 0 0 30 3 2>&1 | tee inspected-sim0.log
+          grep -q 'HISTORY_QUERY sim=0 found=' inspected-sim0.log
+      - name: Reject false positives
+        run: |
+          grep -q '"moneyConserved": true' city-1000-30d.json
+          grep -q '"simulatedDays": 30' city-1000-30d.json
+          grep -q '"historyPersistent": true' city-1000-30d.json
+          grep -q '"deterministic": true' self-test.json
+          test -s artifacts/causal-1000-30d.facts
+      - name: Keep reports, never upload huge simulation history
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-smoke
+          path: |
+            self-test.json
+            city-1000-30d.json
+          if-no-files-found: ignore
+
+  scale-10k:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Execute 10,000 individual agents for 30 days, with persisted histories
+        run: |
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=30 --seed=42 --history=artifacts/causal-10000-30d.facts --adversarial | tee city-10000-30d.json
+          grep -q '"moneyConserved": true' city-10000-30d.json
+          grep -q '"simulatedDays": 30' city-10000-30d.json
+          grep -q '"historyPersistent": true' city-10000-30d.json
+          test -s artifacts/causal-10000-30d.facts
+      # One-off diagnostic, only when explicitly tagged on a technical commit.
+      # Same seed, days, demand and event order; only factual ICH2 writing changes.
+      - name: A/B actual ICH2 write overhead without changing causal work
+        if: github.event_name == 'push' && contains(github.event.head_commit.message, '[history-overhead-ab]')
+        run: |
+          set -euo pipefail
+          for seed in 42 73; do
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=30 --seed=$seed --adversarial > history-ab-$seed-null.json
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=30 --seed=$seed --adversarial --history=artifacts/history-ab-$seed.facts.gz > history-ab-$seed-gz.json
+            gzip -t artifacts/history-ab-$seed.facts.gz
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- profile-history artifacts/history-ab-$seed.facts.gz 0 0 30 > history-ab-$seed-query.json
+          done
+          python3 - <<'PY'
+          import json, os
+          for seed in (42,73):
+              def load(suffix):
+                  with open(f'history-ab-{seed}-{suffix}.json', encoding='utf-8') as f:
+                      return json.load(f)
+              no, gz, read = load('null'), load('gz'), load('query')
+              equal = ('stateFingerprint', 'simulatedDays', 'minimumAliveAtAnyEvent',
+                       'aliveEnd', 'journeys', 'roadSegments', 'roadWaitSeconds',
+                       'routeReroutes', 'recordedFacts', 'peakQueue',
+                       'initialMoneyCents', 'currentMoneyCents', 'salesFoodUnits')
+              for key in equal:
+                  assert no[key] == gz[key], f'{seed}: history changed {key}'
+              assert no['simulatedDays'] == 30 and no['minimumAliveAtAnyEvent'] >= 10000
+              assert not no['historyPersistent'] and gz['historyPersistent']
+              for d in (no, gz):
+                  assert d['moneyConserved'] and d['foodConserved'] and d['materialConserved']
+                  assert d['wallSeconds'] > 0 and d['processCpuSeconds'] > 0
+                  assert d['processPeakWorkingSetBytes'] > 0 and d['managedAllocatedBytes'] >= 0
+                  for key in ('gc0Collections','gc1Collections','gc2Collections'):
+                      assert d[key] >= 0
+              assert gz['recordedFacts'] > 0 and read['totalFactsScanned'] == gz['recordedFacts']
+              assert read['firstDay'] == 0 and read['lastDay'] == 29 and read['daysObserved'] == 30
+              assert read['matchingOwnerFacts'] > 0 and os.path.getsize(f'artifacts/history-ab-{seed}.facts.gz') > 0
+              print('ICH2_WRITE_AB', 'seed', seed, 'facts', gz['recordedFacts'],
+                    'journeys', gz['journeys'], 'waitSeconds', gz['roadWaitSeconds'],
+                    'noHistoryWall', no['wallSeconds'], 'withHistoryWall', gz['wallSeconds'],
+                    'wallRatio', round(gz['wallSeconds']/no['wallSeconds'],3),
+                    'noHistoryCpu', no['processCpuSeconds'], 'withHistoryCpu', gz['processCpuSeconds'],
+                    'noHistoryPeakRSS', no['processPeakWorkingSetBytes'],
+                    'withHistoryPeakRSS', gz['processPeakWorkingSetBytes'])
+          PY
+      - name: Keep metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-10k-metrics
+          path: |
+            city-10000-30d.json
+            history-ab-*.json
+          if-no-files-found: ignore
+
+  year-10k:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: 10k active lives for one actual Gregorian year, with compressed factual history
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=366 --seed=42 --history=artifacts/causal-10000-366d.facts.gz --adversarial | tee year-10000.json
+          grep -q '"moneyConserved": true' year-10000.json
+          grep -q '"foodConserved": true' year-10000.json
+          grep -q '"simulatedDays": 366' year-10000.json
+          grep -q '"historyPersistent": true' year-10000.json
+          test -s artifacts/causal-10000-366d.facts.gz
+          gzip -t artifacts/causal-10000-366d.facts.gz
+      - name: Profile actual per-SIM ICH2 query cost at 30 versus 366 Gregorian days
+        run: |
+          set -euo pipefail
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=30 --seed=42 --history=artifacts/causal-10000-30d-profile.facts.gz --adversarial > history-profile-30d-city.json
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- profile-history artifacts/causal-10000-30d-profile.facts.gz 0 0 30 > history-profile-30d-query.json
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- profile-history artifacts/causal-10000-366d.facts.gz 0 0 30 > history-profile-366d-early-query.json
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- profile-history artifacts/causal-10000-366d.facts.gz 0 365 366 > history-profile-366d-late-query.json
+          python3 - <<'PY'
+          import json
+          def read(name):
+              with open(name,encoding='utf-8') as f: return json.load(f)
+          small=read('history-profile-30d-city.json')
+          year=read('year-10000.json')
+          short=read('history-profile-30d-query.json')
+          long=read('history-profile-366d-early-query.json')
+          late=read('history-profile-366d-late-query.json')
+          assert small['simulatedDays']==30 and year['simulatedDays']==366
+          assert small['moneyConserved'] and small['foodConserved'] and year['moneyConserved'] and year['foodConserved']
+          assert small['journeys']>0 and year['journeys']>small['journeys']
+          assert short['firstDay']==long['firstDay']==late['firstDay']==0
+          assert short['lastDay']==29 and long['lastDay']==late['lastDay']==365
+          assert short['daysObserved']==30 and long['daysObserved']==late['daysObserved']==366
+          assert short['totalFactsScanned']>0 and long['totalFactsScanned']>short['totalFactsScanned']
+          assert long['compressedBytes']>short['compressedBytes']>0
+          assert short['matchingOwnerFacts']>0 and long['matchingOwnerFacts']>0
+          assert short['matchingOwnerFacts']==long['matchingOwnerFacts']
+          assert short['matchingOwnerDigest']==long['matchingOwnerDigest'], 'Early SIM history changed with horizon'
+          for query in (short,long,late):
+              assert query['scanWallSeconds']>0 and query['scanCpuSeconds']>=0
+              assert query['managedAllocatedBytes']>=0 and query['peakWorkingSetBytes']>0
+          print('ICH2_QUERY_SCALE_COMPLETE', '30d_facts',short['totalFactsScanned'],
+                '366d_facts',long['totalFactsScanned'],
+                '30d_query_wall',short['scanWallSeconds'],
+                '366d_query_wall',long['scanWallSeconds'],
+                '30d_city_wall',small['wallSeconds'],
+                '366d_city_wall',year['wallSeconds'])
+          PY
+      # One-off continuation of the 30-day ICH2 write-cost A/B: measure whether
+      # persistence overhead remains similar at 366 actual Gregorian days.
+      - name: A/B 366-day factual-history writing cost against identical causal run
+        if: github.event_name == 'push' && contains(github.event.head_commit.message, '[history-year-ab]')
+        run: |
+          set -euo pipefail
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=366 --seed=42 --adversarial > history-year-nohistory.json
+          python3 - <<'PY'
+          import json
+          with open('year-10000.json',encoding='utf-8') as f: gz=json.load(f)
+          with open('history-year-nohistory.json',encoding='utf-8') as f: no=json.load(f)
+          equal=('stateFingerprint','simulatedDays','minimumAliveAtAnyEvent','aliveEnd',
+                 'journeys','roadSegments','roadWaitSeconds','routeReroutes',
+                 'recordedFacts','peakQueue','initialMoneyCents','currentMoneyCents',
+                 'salesFoodUnits')
+          for key in equal:
+              assert gz[key]==no[key], f'History changed {key}'
+          assert gz['simulatedDays']==no['simulatedDays']==366
+          assert gz['minimumAliveAtAnyEvent']>=10000
+          assert gz['historyPersistent'] and not no['historyPersistent']
+          assert gz['recordedFacts']>50000000 and gz['journeys']>7000000
+          for item in (no,gz):
+              assert item['moneyConserved'] and item['foodConserved'] and item['materialConserved']
+              assert item['wallSeconds']>0 and item['processCpuSeconds']>0
+              assert item['processPeakWorkingSetBytes']>0 and item['managedAllocatedBytes']>=0
+              for key in ('gc0Collections','gc1Collections','gc2Collections'):
+                  assert item[key]>=0
+          print('ICH2_YEAR_WRITE_AB', 'seed',42,'days',366,
+                'facts',gz['recordedFacts'],'journeys',gz['journeys'],
+                'noHistoryWall',no['wallSeconds'],'withHistoryWall',gz['wallSeconds'],
+                'wallRatio',round(gz['wallSeconds']/no['wallSeconds'],3),
+                'noHistoryCpu',no['processCpuSeconds'],'withHistoryCpu',gz['processCpuSeconds'],
+                'noHistoryPeakRSS',no['processPeakWorkingSetBytes'],
+                'withHistoryPeakRSS',gz['processPeakWorkingSetBytes'],
+                'noHistoryGC',[no['gc0Collections'],no['gc1Collections'],no['gc2Collections']],
+                'withHistoryGC',[gz['gc0Collections'],gz['gc1Collections'],gz['gc2Collections']])
+          PY
+      - name: Preserve 10k/one-year metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-10k-366days
+          path: |
+            year-10000.json
+            history-year-nohistory.json
+            history-profile-30d-city.json
+            history-profile-30d-query.json
+            history-profile-366d-early-query.json
+            history-profile-366d-late-query.json
+          if-no-files-found: ignore
+
+  decade-10k:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Ten real Gregorian years with 10k persons, physical travel and compressed factual history
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --history=artifacts/causal-10k-10y.ich2.gz --adversarial | tee decade-10000.json
+          python3 - <<'PY'
+          import json
+          r=json.load(open('decade-10000.json'))
+          assert r['moneyConserved'] and r['foodConserved'] and r['simulatedDays']==3653
+          assert r['births']>0 and r['journeys']>0 and r['cargoDeliveries']>0
+          print('DECADE',r['aliveEnd'],r['minimumAliveAtDayBoundary'],r['unmetMeals'],r['wallSeconds'])
+          PY
+          test -s artifacts/causal-10k-10y.ich2.gz
+          gzip -t artifacts/causal-10k-10y.ich2.gz
+          du -h artifacts/causal-10k-10y.ich2.gz
+      - name: Preserve 10-year report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-10k-decade-metrics
+          path: decade-10000.json
+          if-no-files-found: ignore
+
+  eighty-years-10k:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Execute 2020-2100 without skipping days, with factual history on disk
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --history=artifacts/causal-10k-80y.ich2.gz --adversarial | tee 80years-10000.json
+          python3 - <<'PY'
+          import json
+          r=json.load(open('80years-10000.json'))
+          assert r['simulatedDays']==29220 and r['gregorianEnd']=='2100-01-01'
+          assert r['moneyConserved'] and r['foodConserved'] and r['historyPersistent']
+          assert r['births']>0 and r['deaths']>0
+          assert r['journeys']>0 and r['cargoDeliveries']>0
+          assert r['minimumAliveAtDayBoundary']>=10000, 'Does not sustain 10k living citizens'
+          print('EIGHTY_YEARS_PARTIAL_FIXTURE',r['wallSeconds'],r['aliveEnd'])
+          PY
+          test -s artifacts/causal-10k-80y.ich2.gz
+          gzip -t artifacts/causal-10k-80y.ich2.gz
+          du -h artifacts/causal-10k-80y.ich2.gz
+      - name: Preserve 80-year result (not a SPEC-complete acceptance)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-10k-80y-fixture-metrics
+          path: 80years-10000.json
+          if-no-files-found: ignore
+
+  eighty-years-population-diagnostic:
+    # A separate, explicitly requested causal/demographic probe. It does NOT
+    # persist facts; the long-history workload remains a separate acceptance
+    # problem and this job can never prove the complete IndexCities SPEC.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[80y-diagnostic]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Run 80 Gregorian years with corrected household purchasing
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial 2>&1 | tee eighty-years-population.log
+          python3 - <<'PY'
+          import json
+          lines=open("eighty-years-population.log").readlines()
+          report_start=next(i for i,line in enumerate(lines) if line.startswith('{'))
+          result=json.loads(''.join(lines[report_start:]))
+          assert result['simulatedDays'] == 29220 and result['gregorianEnd'] == '2100-01-01'
+          assert result['foodConserved'] and result['moneyConserved']
+          print('EIGHTY_YEAR_POPULATION_DIAGNOSTIC', result['aliveEnd'],
+                result['minimumAliveAtDayBoundary'], result['unmetMeals'],
+                result['wallSeconds'])
+          assert result['minimumAliveAtDayBoundary'] >= 10000, 'Living population fell below 10,000'
+          PY
+      - name: Keep diagnostic results even if the population collapses
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-80y-population-no-history
+          path: eighty-years-population.log
+          if-no-files-found: ignore
+
+  vacancy-market-1y:
+    # Only expand to ten/eighty years after workers can actually serve a city.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[market-1y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Measure one year of real-demand-funded farm/store vacancies
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=366 --seed=42 --adversarial --vacancy-market --cohort-renewal 2>&1 | tee vacancy-market-1y.log
+          python3 - <<'PY'
+          import json
+          lines=open('vacancy-market-1y.log').readlines()
+          i=next(i for i,line in enumerate(lines) if line.startswith('{'))
+          d=json.loads(''.join(lines[i:]))
+          assert d['simulatedDays']==366 and d['vacancyMarketFixture']
+          assert d['foodConserved'] and d['moneyConserved']
+          assert d['salesFoodUnits']>0 and d['paidWagesCents']>0
+          print('MARKET_YEAR_1',d['aliveEnd'],d['minimumAliveAtDayBoundary'],
+                d['unmetMeals'],d['deniedPurchases'],d['employedAlive'],d['wallSeconds'])
+          assert d['minimumAliveAtDayBoundary']>=10000, 'Real vacancy fixture did not sustain 10k even 1 year'
+          PY
+      - name: Preserve poor outcomes for diagnosis
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-real-vacancy-one-year
+          path: vacancy-market-1y.log
+          if-no-files-found: ignore
+
+  integrated-second-cycle-10y:
+    # Both independently passed one-year POCs connected in the same market.
+    # Ten-year result is required to expose macroeconomic viability, not just
+    # confirm valid individual deliveries and construction work.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[second-cycle-10y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Challenge 10k Sims for ten years with paid freight and housebuilding
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --construction-pilot --freight-labor 2>&1 | tee economic-second-cycle-10y.log
+          python3 - <<'PY'
+          import json
+          rows=open('economic-second-cycle-10y.log').readlines()
+          idx=next(i for i,v in enumerate(rows) if v.startswith('{'))
+          d=json.loads(''.join(rows[idx:]))
+          assert d['simulatedDays']==3653 and d['freightLaborFixture'] and d['constructionPilotFixture']
+          assert d['moneyConserved'] and d['foodConserved'] and d['materialConserved']
+          assert d['realWorkerFreightTrips']>0 and d['constructionPaidShifts']>0
+          assert d['constructionContractsCompleted']>0
+          assert d['businessInitialCashCents']+d['businessOperatingNetCents']==d['businessCurrentCashCents']
+          print('SECOND_CYCLE_10Y',d['aliveEnd'],d['minimumAliveAtDayBoundary'],
+                d['unmetMeals'],d['constructionContractsCompleted'],
+                d['realWorkerFreightTrips'],d['wallSeconds'])
+          assert d['minimumAliveAtDayBoundary']>=10000, 'Real construction and freight did not prevent collapse'
+          PY
+      - name: Keep complete decade metrics even when the population fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-2nd-economy-10y
+          path: economic-second-cycle-10y.log
+          if-no-files-found: ignore
+
+  real-municipal-shift-coverage:
+    # Prevent one-day-per-week resting public workers from being counted as
+    # 30/30 attending workers. Staff monthly contracts under real treasury cash.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[attendance-municipal]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compare fair collection with and without paid shift coverage
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          BASE='--sims=10000 --days=3653 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch'
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --seed=42 --municipal-collection-interval=4 2>&1 | tee naive-coverage-4-42.log
+          for n in 4 3; do
+            for seed in 42 73; do
+              dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --seed=$seed --municipal-collection-interval=$n --attendance-aware-municipal-shifts 2>&1 | tee real-coverage-$n-$seed.log
+            done
+          done
+          python3 - <<'PY'
+          import json
+          def read(path):
+              lines=open(path).readlines()
+              idx=next(i for i,s in enumerate(lines) if s.startswith('{'))
+              return json.loads(''.join(lines[idx:]))
+          control=read('naive-coverage-4-42.log')
+          assert not control['attendanceAwareMunicipalShiftsFixture']
+          passing=[]
+          for n in [4,3]:
+              both=True
+              for seed in [42,73]:
+                  r=read(f'real-coverage-{n}-{seed}.log')
+                  assert r['simulatedDays']==3653 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+                  assert r['attendanceAwareMunicipalShiftsFixture'] and r['fairSanitationDispatchFixture']
+                  assert r['municipalWasteTreatmentPilotFixture'] and r['wasteTreatedAtDepot']>0
+                  both &= r['minimumAliveAtAnyEvent']>=10000
+                  print('REAL_MUNICIPAL_COVERAGE',n,seed,
+                    'alive',r['aliveEnd'],'min',r['minimumAliveAtAnyEvent'],
+                    'unservedHomes15d',r['homesWithoutPickupFor15Days'],
+                    'dirtyHomes',r['homesPastSanitationHygieneThreshold'],
+                    'wasteTreated',r['wasteTreatedAtDepot'],
+                    'municipalJobs',r['municipalSanitationJobs']+r['municipalWasteTreatmentJobs'],
+                    'paidCityWages',r['municipalSanitationWagesPaidCents'],
+                    'tax',r['municipalTaxCollectedCents'])
+              if both: passing.append(n)
+          open('coverage-80y-rate.txt','w').write(str(passing[0]) if passing else 'none')
+          PY
+          RATE="$(cat coverage-80y-rate.txt)"
+          if test "$RATE" != none; then
+            echo '10k never fell during a decade in two seeds: run full history for 80y.'
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=$RATE --history=full-real-municipal-80y.facts.gz 2>&1 | tee full-real-municipal-80y.log
+          else
+            echo 'Decadal demographic sustainability failed, no 80-year assertion.'
+          fi
+      - name: Keep proofs and failed scenarios
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-municipal-worker-attendance-80y
+          path: |
+            naive-coverage-4-42.log
+            real-coverage-*.log
+            full-real-municipal-80y.log
+            full-real-municipal-80y.facts.gz
+          if-no-files-found: ignore
+
+  residential-real-property-revenue-80y:
+    # The same real residents own the same existing houses. Only the
+    # actual monthly property tax amount changes (0/50/150/300 cents).
+    # Assessed-but-unpaid obligations never count as income. All other
+    # workers, taxpayers, food, firms and service jobs are held fixed.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[residential-tax-multi-seed]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Run two 10-year worlds per actual-home tax and continue qualifying cases to 80 years
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          BASE='--sims=10000 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25'
+          for tax in 0 50 150 300; do
+            for seed in 42 73; do
+              dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --days=3653 --seed=$seed --monthly-residential-tax-cents=$tax 2>&1 | tee residential-tax-$tax-seed$seed-10y.log
+            done
+          done
+          python3 - <<'PY'
+          import json
+          rows={}
+          for tax in (0,50,150,300):
+              for seed in (42,73):
+                  raw=open(f'residential-tax-{tax}-seed{seed}-10y.log').readlines()
+                  k=next(i for i,s in enumerate(raw) if s.startswith('{'))
+                  r=json.loads(''.join(raw[k:]))
+                  assert r['simulatedDays']==3653 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+                  assert r['monthlyResidentialPropertyTaxCents']==tax
+                  assert r['residentialTaxAssessedCents']==r['residentialPropertyTaxActuallyPaidCents']+r['residentialPropertyTaxDebtOutstandingCents']
+                  assert not r['fullIndexCitiesTargetValidated']
+                  if tax: assert r['residentialPropertyTaxActuallyPaidCents']>0 and r['privateOwnedResidenceCount']>0
+                  print('REAL_HOME_TAX_10Y',tax,seed,'alive',r['aliveEnd'],
+                        'min',r['minimumAliveAtAnyEvent'],
+                        'homeTaxesActuallyPaid',r['residentialPropertyTaxActuallyPaidCents'],
+                        'homeTaxDebtUnpaid',r['residentialPropertyTaxDebtOutstandingCents'],
+                        'cityCash',r['treasuryCashCents'],
+                        'householdMoney',r['personalCashCents'],
+                        'firmMoney',r['businessCurrentCashCents'],
+                        'unmetMeals',r['unmetMeals'],flush=True)
+                  rows[tax,seed]=r
+          valid=[tax for tax in (0,50,150,300)
+                 if all(rows[tax,seed]['minimumAliveAtAnyEvent']>=10000 for seed in (42,73))]
+          open('residential-qualified.txt','w').write(' '.join(map(str,valid)))
+          PY
+          for tax in $(cat residential-qualified.txt); do
+            echo "EIGHTY_YEAR_RESIDENTIAL_TRIAL tax=$tax, 10000 minimum required for all 29,220 days."
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --days=29220 --seed=42 --monthly-residential-tax-cents=$tax 2>&1 | tee residential-tax-$tax-80y-no-history.log
+          done
+          python3 - <<'PY'
+          import glob,json
+          for file in sorted(glob.glob('residential-tax-*-80y-no-history.log')):
+              raw=open(file).readlines()
+              k=next(i for i,s in enumerate(raw) if s.startswith('{'))
+              r=json.loads(''.join(raw[k:]))
+              assert r['simulatedDays']==29220 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+              assert not r['fullIndexCitiesTargetValidated']
+              print('REAL_HOME_TAX_80Y',r['monthlyResidentialPropertyTaxCents'],
+                    'alive',r['aliveEnd'],'min',r['minimumAliveAtAnyEvent'],
+                    'paid',r['residentialPropertyTaxActuallyPaidCents'],
+                    'unpaidDebt',r['residentialPropertyTaxDebtOutstandingCents'],
+                    'municipalCash',r['treasuryCashCents'],
+                    'companyCash',r['businessCurrentCashCents'],
+                    'householdCash',r['personalCashCents'],
+                    'wallSeconds',r['wallSeconds'],flush=True)
+          PY
+      - name: Keep raw comparison reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: municipal-residential-property-tax-two-seed-eighty-year
+          path: |
+            residential-tax-*.log
+          if-no-files-found: ignore
+
+  tax-cost-incidence-sensitivity:
+    # Every firm pays exactly the SAME real municipal property tax. Only
+    # its ability to recover 25/50/75% of those costs via genuine retail
+    # purchases/wholesale price changes differs; no fictitious income.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[tax-incidence-sweep]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Falsify company and family solvency under three real cost splits
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          BASE='--sims=10000 --days=3653 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price'
+          for percent in 25 50 75; do
+            for seed in 42 73; do
+              dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --seed=$seed --tax-cost-recovery-percent=$percent 2>&1 | tee tax-incidence-$percent-$seed-10y.log
+            done
+          done
+          python3 - <<'PY'
+          import json
+          runs={}
+          for percent in (25,50,75):
+              for seed in (42,73):
+                  raw=open(f'tax-incidence-{percent}-{seed}-10y.log').readlines()
+                  i=next(i for i,line in enumerate(raw) if line.startswith('{'))
+                  r=json.loads(''.join(raw[i:]))
+                  assert r['simulatedDays']==3653 and r['taxCostRecoveryPercent']==percent
+                  assert r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+                  assert not r['fullIndexCitiesTargetValidated']
+                  print('TAX_INCIDENCE_RESULT',
+                        'costRecovery',percent,'seed',seed,
+                        'endAlive',r['aliveEnd'],'minAlive',r['minimumAliveAtAnyEvent'],
+                        'familyMoney',r['personalCashCents'],'firmCash',r['businessCurrentCashCents'],
+                        'unmetMeals',r['unmetMeals'],'price',r['averageRetailUnitPriceCents'])
+                  runs[(percent,seed)] = r
+          passing=[p for p in (25,50,75) if
+              runs[(p,42)]['minimumAliveAtAnyEvent']>=10000 and
+              runs[(p,73)]['minimumAliveAtAnyEvent']>=10000]
+          open('qualified-tax-share.txt','w').write(str(passing[0]) if passing else 'none')
+          PY
+          PCT="$(cat qualified-tax-share.txt)"
+          if test "$PCT" != none; then
+            echo "Two distinct ten-year worlds sustained. Stress 80 consecutive years with $PCT% recovered property costs."
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=$PCT 2>&1 | tee qualified-tax-incidence-80y-no-history.log
+          fi
+      - name: Keep negative and positive economic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: independent-economic-tax-incidence
+          path: |
+            tax-incidence-*.log
+            qualified-tax-incidence-80y-no-history.log
+          if-no-files-found: ignore
+
+  taxed-production-margin-80y:
+    # Compare businesses that lose paid property tax as uncompensated capital
+    # versus the SAME physical food producers/sellers quoting their actual
+    # fiscal costs. Neither imports money, increases shops or grants wages.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[tax-aware-price]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: A/B corporate tax recoverability through legitimate purchases
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          BASE='--sims=10000 --days=3653 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3'
+          for seed in 42 73; do
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --seed=$seed 2>&1 | tee old-pricing-$seed.log
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --seed=$seed --tax-inclusive-product-price 2>&1 | tee tax-inclusive-pricing-$seed.log
+          done
+          python3 - <<'PY'
+          import json
+          def get(path):
+              a=open(path).readlines()
+              i=next(i for i,l in enumerate(a) if l.startswith('{'))
+              return json.loads(''.join(a[i:]))
+          qualified=True
+          for seed in (42,73):
+              a,b=get(f'old-pricing-{seed}.log'),get(f'tax-inclusive-pricing-{seed}.log')
+              for r in (a,b):
+                  assert r['simulatedDays']==3653 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+                  assert r['municipalWasteTreatmentPilotFixture'] and r['realWorkerFreightTrips']>0
+              assert not a['taxInclusiveProductPriceFixture'] and b['taxInclusiveProductPriceFixture']
+              print('REAL_TAX_PRICING',seed,
+                    'baselineLive',a['aliveEnd'],'taxPricedLive',b['aliveEnd'],
+                    'taxPricedMinimum',b['minimumAliveAtAnyEvent'],
+                    'householdCash',b['personalCashCents'],
+                    'firmCash',b['businessCurrentCashCents'],
+                    'foodPrice',b['averageRetailUnitPriceCents'],
+                    'actualBusinessTaxes',b['municipalTaxCollectedCents'],
+                    'unmetMeals',b['unmetMeals'])
+              qualified &= b['minimumAliveAtAnyEvent']>=10000
+          open('decade-pass.flag','w').write('yes' if qualified else 'no')
+          PY
+          if test "$(cat decade-pass.flag)" = yes; then
+            echo 'Both decade seeds hold. Run 80 continuous years WITHOUT history first.'
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price 2>&1 | tee tax-inclusive-eighty-year-demography.log
+            python3 - <<'PY'
+          import json
+          a=open('tax-inclusive-eighty-year-demography.log').readlines()
+          i=next(i for i,l in enumerate(a) if l.startswith('{'))
+          r=json.loads(''.join(a[i:]))
+          assert r['simulatedDays']==29220 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+          print('TAX_PRICED_FULL_EIGHTY_YEARS',r['aliveEnd'],r['minimumAliveAtAnyEvent'],r['wallSeconds'])
+          if r['minimumAliveAtAnyEvent']>=10000:
+              open('eighty-pass.flag','w').write('yes')
+          PY
+          fi
+      - name: Keep real decade and 80-year outcomes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-tax-priced-business-solvency
+          path: |
+            old-pricing-*.log
+            tax-inclusive-pricing-*.log
+            tax-inclusive-eighty-year-demography.log
+          if-no-files-found: ignore
+
+  independent-demography-80y:
+    # Separate cheap demographic boundary probe: NO compressed history. It
+    # cannot satisfy the goal, but quickly falsifies the 80y survival premise
+    # before spending most of the budget on history persistence.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[demography-80y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Check living population of the same city over 29,220 actual days
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          BASE='--sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch'
+          for interval in 4 3; do
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --municipal-collection-interval=$interval 2>&1 | tee genuine-80y-without-history-$interval.log
+          done
+          python3 - <<'PY'
+          import json
+          def get(path):
+              lines=open(path).readlines()
+              k=next(i for i,line in enumerate(lines) if line.startswith('{'))
+              return json.loads(''.join(lines[k:]))
+          for n in [4,3]:
+              r=get(f'genuine-80y-without-history-{n}.log')
+              assert r['simulatedDays']==29220 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+              assert r['municipalWasteTreatmentPilotFixture'] and r['fairSanitationDispatchFixture']
+              assert not r['historyPersistent'] and not r['fullIndexCitiesTargetValidated']
+              print('EIGHTY_YEAR_DEMOGRAPHY_PROBE',
+                    n,'alive',r['aliveEnd'],'minAnyEvent',r['minimumAliveAtAnyEvent'],
+                    'births',r['births'],'deaths',r['deaths'],
+                    'economicJobs',r['employedAlive'],
+                    'liveEarningHomes',r['householdsWithEmployedAdults'],
+                    'depotRaw',r['wasteStoredAtRealDepot'],
+                    'landfillProcessed',r['wasteTreatedAtDepot'],
+                    'cashFamilies',r['personalCashCents'],
+                    'cashFirms',r['businessCurrentCashCents'],
+                    'wallSeconds',r['wallSeconds'])
+          PY
+      - name: Keep 80y survivor curves, finances and capacity logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: independent-80y-demographic-falsification
+          path: genuine-80y-without-history-*.log
+          if-no-files-found: ignore
+
+  fair-collection-coverage-80y:
+    # Check whether arbitrary nearby-house selection was starving homes even
+    # when financed collection workers were available. Every home is visited
+    # by real employees, on real road trips; 2 source seeds and 80y conditional.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[fair-collection-80y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Run real seeded sanitation A/B and prove sustained 80-year history if possible
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          COMMON='--sims=10000 --days=3653 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot'
+          for interval in 4 3; do
+            for seed in 42 73; do
+              dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $COMMON --seed=$seed --municipal-collection-interval=$interval --fair-sanitation-dispatch 2>&1 | tee fair-dispatch-$interval-$seed.log
+            done
+          done
+          python3 - <<'PY'
+          import json
+          def get(path):
+              lines=open(path).readlines()
+              k=next(i for i,line in enumerate(lines) if line.startswith('{'))
+              return json.loads(''.join(lines[k:]))
+          pass_rates=[]
+          for interval in (4,3):
+              both=True
+              for seed in (42,73):
+                  r=get(f'fair-dispatch-{interval}-{seed}.log')
+                  assert r['simulatedDays']==3653
+                  assert r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+                  assert r['fairSanitationDispatchFixture'] and r['municipalWasteTreatmentPilotFixture']
+                  assert r['wasteTreatedAtDepot']>0 and r['wasteTreatedAtDepot']<=r['totalWasteCollected']
+                  assert r['municipalSanitationWagesPaidCents']>0 and not r['fullIndexCitiesTargetValidated']
+                  both &= r['minimumAliveAtAnyEvent']>=10000
+                  print('FAIR_COLLECTION_RESULT','interval',interval,'seed',seed,
+                        'alive',r['aliveEnd'],'min',r['minimumAliveAtAnyEvent'],
+                        'homesTooDirty',r['homesPastSanitationHygieneThreshold'],
+                        'highestTrash',r['highestUntreatedHomeWaste'],
+                        'unservedHomesOver15d',r['homesWithoutPickupFor15Days'],
+                        'collected',r['totalWasteCollected'],
+                        'processed',r['wasteTreatedAtDepot'],
+                        'pendingDepot',r['wasteStoredAtRealDepot'],
+                        'cityJobs',r['municipalSanitationJobs']+r['municipalWasteTreatmentJobs'],
+                        'money',r['personalCashCents'],
+                        'tax',r['municipalTaxCollectedCents'])
+              if both: pass_rates.append(interval)
+          open('ready-for-80y.flag','w').write(str(pass_rates[0]) if pass_rates else 'none')
+          PY
+          RATE="$(cat ready-for-80y.flag)"
+          if test "$RATE" != none; then
+            echo "Both distinct seeds sustained ten years. Run 80 years with complete persistent historical fact stream, interval $RATE."
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --municipal-collection-interval=$RATE --fair-sanitation-dispatch --history=full-fair-sanitation-80y.facts.gz 2>&1 | tee full-fair-sanitation-80y.log
+          else
+            echo 'Unbroken ten-thousand lives not proven; do NOT claim 80y.'
+          fi
+      - name: Preserve real results and history if it exists
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fairness-service-80year-counterfactual
+          path: |
+            fair-dispatch-*.log
+            full-fair-sanitation-80y.log
+            full-fair-sanitation-80y.facts.gz
+          if-no-files-found: ignore
+
+  actual-waste-treatment-10y:
+    # Complete the REAL refuse material circuit, not just an ever-growing
+    # 50-million-unit pile. Municipal employees commute to the finite depot,
+    # process only ARRIVED waste and are paid only if they actually do it.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[waste-treatment-10y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Run two-seed decade economy with collected and treated finite matter
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          COMMON='--sims=10000 --days=3653 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot'
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $COMMON --seed=42 2>&1 | tee collection-only-42.log
+          for interval in 3 2; do
+            for seed in 42 73; do
+              dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $COMMON --seed=$seed --municipal-collection-interval=$interval --municipal-waste-treatment-pilot 2>&1 | tee treatment-$interval-$seed.log
+            done
+          done
+          python3 - <<'PY'
+          import json
+          def get(path):
+              lines=open(path).readlines()
+              i=next(i for i,line in enumerate(lines) if line.startswith('{'))
+              return json.loads(''.join(lines[i:]))
+          baseline=get('collection-only-42.log')
+          assert baseline['moneyConserved'] and baseline['foodConserved']
+          assert not baseline['municipalWasteTreatmentPilotFixture']
+          good=[]
+          for interval in [3,2]:
+              survived=True
+              for seed in [42,73]:
+                  r=get(f'treatment-{interval}-{seed}.log')
+                  assert r['simulatedDays']==3653 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+                  assert r['municipalWasteTreatmentPilotFixture'] and r['municipalSanitationPilotFixture']
+                  assert r['paidWasteTreatmentShifts']>0 and r['wasteTreatedAtDepot']>0
+                  assert r['wasteTreatedAtDepot']<=r['totalWasteCollected']
+                  assert not r['fullIndexCitiesTargetValidated']
+                  survived &= r['minimumAliveAtAnyEvent']>=10000
+                  print('REAL_TREATMENT_10Y',
+                        'interval',interval,'seed',seed,'alive',r['aliveEnd'],
+                        'minimum',r['minimumAliveAtAnyEvent'],
+                        'treated',r['wasteTreatedAtDepot'],'unprocessed',r['wasteStoredAtRealDepot'],
+                        'publicCollectionJobs',r['municipalSanitationJobs'],
+                        'depotWorkers',r['municipalWasteTreatmentJobs'],
+                        'payroll',r['municipalSanitationWagesPaidCents'],
+                        'tax',r['municipalTaxCollectedCents'],
+                        'familyCash',r['personalCashCents'],
+                        'unmet',r['unmetMeals'])
+              if survived: good.append(interval)
+          open('full-history-interval.flag','w').write(str(good[0]) if good else 'none')
+          PY
+          INTERVAL="$(cat full-history-interval.flag)"
+          if test "$INTERVAL" != none; then
+            echo "Ten-year two-seed proof for interval $INTERVAL. Begin FULL continuous 80-year 10k history check."
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-collection-interval=$INTERVAL --municipal-waste-treatment-pilot --history=full-80year-treated-waste.facts.gz 2>&1 | tee full-80year-treated-waste.log
+          else
+            echo 'Real funded jobs and finite landfill still failed ten-year population. Do not claim eighty years.'
+          fi
+      - name: Persist actual decade evidence, full-year history only if completed
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: finite-waste-treatment-economy
+          path: |
+            collection-only-42.log
+            treatment-*.log
+            full-80year-treated-waste.log
+            full-80year-treated-waste.facts.gz
+          if-no-files-found: ignore
+
+  sanitation-property-tax-10y:
+    # Real collected solid waste at actual occupied homes, person-carried to a
+    # finite physical depot. Only current company property cash funds jobs;
+    # every shift must be visited, worked and paid. Lab, NOT V1 approval.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[sanitation-10y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: A/B 10 years of real city service fees, employees and material collection
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring 2>&1 | tee no-public-service-42.log
+          for seed in 42 73; do
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=$seed --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot 2>&1 | tee public-service-$seed.log
+          done
+          python3 - <<'PY'
+          import json
+          def get(path):
+              lines=open(path).readlines()
+              start=next(i for i,line in enumerate(lines) if line.startswith('{'))
+              return json.loads(''.join(lines[start:]))
+          a,b,c=get('no-public-service-42.log'),get('public-service-42.log'),get('public-service-73.log')
+          for r in (a,b,c):
+              assert r['simulatedDays']==3653 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+              assert r['fairHouseholdHiringFixture'] and not r['fullIndexCitiesTargetValidated']
+          assert not a['municipalSanitationPilotFixture']
+          for r in (b,c):
+              assert r['municipalSanitationPilotFixture']
+              assert r['municipalTaxCollectedCents']>0 and r['municipalSanitationWagesPaidCents']>0
+              assert r['municipalPaidCollections']>0 and r['totalWasteCollected']>0
+              assert r['totalWasteCreated']>=r['totalWasteCollected']
+          for name,r in [('no_service_42',a),('service_42',b),('service_73',c)]:
+              print('MUNICIPAL_SERVICE_RESULT',name,
+                    'alive',r['aliveEnd'],'min',r['minimumAliveAtAnyEvent'],
+                    'unmet',r['unmetMeals'],'tax',r['municipalTaxCollectedCents'],
+                    'cityWages',r['municipalSanitationWagesPaidCents'],
+                    'jobs',r['municipalSanitationJobs'],
+                    'waste',r['totalWasteCollected'],
+                    'earningHomes',r['householdsWithEmployedAdults'],
+                    'familyCash',r['personalCashCents'],
+                    'firmCash',r['businessCurrentCashCents'])
+          open('sustained-10y.flag','w').write('yes' if
+              b['minimumAliveAtAnyEvent']>=10000 and c['minimumAliveAtAnyEvent']>=10000 else 'no')
+          PY
+          if test "$(cat sustained-10y.flag)" = yes; then
+            echo 'Both seeds sustained 10 years. Extend one SAME city 80 years with REAL persisted history.'
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --history=full-municipal-80y.facts.gz 2>&1 | tee municipal-80y.log
+          else
+            echo 'One or more real-population decades failed; never assert 80y from an extinct population.'
+          fi
+      - name: Preserve all tests and any full generated history
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-municipal-10k-economy
+          path: |
+            no-public-service-42.log
+            public-service-42.log
+            public-service-73.log
+            municipal-80y.log
+            full-municipal-80y.facts.gz
+          if-no-files-found: ignore
+
+  fair-household-basket-10y:
+    # Existing funded jobs only; compare whether preferentially hiring
+    # in households with no worker prevents cash-concentration famine.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[fair-basket-10y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Paired ten-year household allocation experiments
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          for rate in 5 20; do
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=$rate --fair-household-hiring 2>&1 | tee fair-basket-$rate-42.log
+          done
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=73 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring 2>&1 | tee fair-basket-20-73.log
+          python3 - <<'PY'
+          import json
+          def get(path):
+              lines=open(path).readlines()
+              i=next(i for i,line in enumerate(lines) if line.startswith('{'))
+              return json.loads(''.join(lines[i:]))
+          for rate,seed in [(5,42),(20,42),(20,73)]:
+              r=get(f'fair-basket-{rate}-{seed}.log')
+              assert r['simulatedDays']==3653
+              assert r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+              assert r['fairHouseholdHiringFixture'] and r['basketRetailServiceFixture']
+              print('FAIR_BASKET_10Y',rate,seed,r['aliveEnd'],
+                    r['minimumAliveAtAnyEvent'],r['unmetMeals'],r['employedAlive'],
+                    r['householdsWithEmployedAdults'],r['personalCashCents'])
+          PY
+      - name: Persist controlled variants
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-household-basket-10y
+          path: fair-basket-*.log
+          if-no-files-found: ignore
+
+  municipal-real-service-cadence:
+    # The SAME real home waste demands more staff if collection is offered
+    # every 3 or 2 days instead of every 6. Property taxes scale with service
+    # costs, and each household pickup still needs an actual road trip,
+    # salary, material cargo and finite municipal depot capacity.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[municipal-cadence]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Run two seeded cities for 6-, 3-, and 2-day real garbage collection
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          for interval in 6 3 2; do
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --municipal-sanitation-pilot --municipal-collection-interval=$interval 2>&1 | tee city-waste-interval-$interval-seed42.log
+          done
+          for interval in 3 2; do
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=73 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --municipal-sanitation-pilot --municipal-collection-interval=$interval 2>&1 | tee city-waste-interval-$interval-seed73.log
+          done
+          python3 - <<'PY'
+          import json
+          def get(path):
+              lines=open(path).readlines()
+              i=next(i for i,line in enumerate(lines) if line.startswith('{'))
+              return json.loads(''.join(lines[i:]))
+          enough={}
+          for interval,seed in [(6,42),(3,42),(2,42),(3,73),(2,73)]:
+              r=get(f'city-waste-interval-{interval}-seed{seed}.log')
+              assert r['simulatedDays']==3653 and not r['fullIndexCitiesTargetValidated']
+              assert r['municipalSanitationPilotFixture'] and r['municipalCollectionIntervalDays']==interval
+              assert r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+              assert r['municipalPaidCollections']>0 and r['municipalTaxCollectedCents']>0
+              assert r['municipalSanitationWagesPaidCents']==80*r['municipalPaidCollections']
+              assert r['totalWasteCreated'] >= r['totalWasteCollected'] >= r['wasteStoredAtRealDepot']
+              assert r['totalWasteCollected'] == r['wasteStoredAtRealDepot'] + r['wasteInTransitByRealWorkers']
+              print('CIVIC_SERVICE_CADENCE',interval,seed,
+                    'alive',r['aliveEnd'],'minimum',r['minimumAliveAtAnyEvent'],
+                    'jobs',r['municipalSanitationJobs'],
+                    'visits',r['municipalPaidCollections'],
+                    'businessPropertyTaxes',r['municipalTaxCollectedCents'],
+                    'realWages',r['municipalSanitationWagesPaidCents'],
+                    'depotWaste',r['wasteStoredAtRealDepot'],
+                    'unmetMeals',r['unmetMeals'],
+                    'householdMoney',r['personalCashCents'],
+                    'cityTreasury',r['treasuryCashCents'])
+              enough[(interval,seed)]=r['minimumAliveAtAnyEvent']>=10000
+          open('sustained.flag','w').write('yes' if enough[(2,42)] and enough[(2,73)] else 'no')
+          PY
+          if test "$(cat sustained.flag)" = yes; then
+            echo 'Both decade seeds sustained. Stress ONE CONTINUOUS 80-year world WITHOUT claiming history validity.'
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --municipal-sanitation-pilot --municipal-collection-interval=2 2>&1 | tee city-waste-interval-2-seed42-80y-no-history.log
+          else
+            echo 'Two-seed ten-year proof did not pass.'
+          fi
+      - name: Preserve every full benchmark even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: municipal-real-sanitation-cadence
+          path: |
+            city-waste-*.log
+          if-no-files-found: ignore
+
+  municipal-sanitation-revenue-10y:
+    # A fully accounted city-financed wage circuit: real property taxes
+    # from operating stores/farms support people serving physical household
+    # waste collection shifts. No imaginary revenue, duties or agents.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[municipal-sanitation-10y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compare 10 years and two independent seeded city economies
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          for seed in 42 73; do
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=$seed --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 2>&1 | tee civic-baseline-$seed.log
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=$seed --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --municipal-sanitation-pilot 2>&1 | tee civic-sanitation-$seed.log
+          done
+          python3 - <<'PY'
+          import json
+          def get(path):
+              lines=open(path).readlines()
+              start=next(i for i,line in enumerate(lines) if line.startswith('{'))
+              return json.loads(''.join(lines[start:]))
+          ok=True
+          for seed in (42,73):
+              a,b=get(f'civic-baseline-{seed}.log'),get(f'civic-sanitation-{seed}.log')
+              for r in (a,b):
+                  assert r['simulatedDays']==3653 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+                  assert r['realWorkerFreightTrips'] > 0 and not r['fullIndexCitiesTargetValidated']
+              assert b['municipalSanitationPilotFixture'] and not a['municipalSanitationPilotFixture']
+              assert b['municipalTaxCollectedCents']>0 and b['municipalPaidCollections']>0
+              assert b['municipalSanitationWagesPaidCents']==80*b['municipalPaidCollections']
+              assert b['totalWasteCollected']>=b['wasteStoredAtRealDepot']>0
+              print('CITY_CIRCUIT_RESULT',seed,
+                    'baseline',a['aliveEnd'],'pilot',b['aliveEnd'],
+                    'min',b['minimumAliveAtAnyEvent'],
+                    'missedMeals',b['unmetMeals'],
+                    'realCityJobs',b['municipalSanitationJobs'],
+                    'cityPaidVisits',b['municipalPaidCollections'],
+                    'businessPropertyTaxes',b['municipalTaxCollectedCents'],
+                    'realMunicipalWages',b['municipalSanitationWagesPaidCents'],
+                    'wasteUnitsActuallyDelivered',b['wasteStoredAtRealDepot'],
+                    'personalMoney',b['personalCashCents'])
+              ok &= b['minimumAliveAtAnyEvent']>=10000
+          open('civic-sustained.flag','w').write('yes' if ok else 'no')
+          PY
+          if test "$(cat civic-sustained.flag)" = yes; then
+            echo 'Two seeds passed 10y, extending SAME city for eighty years, not proving full V1.'
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --municipal-sanitation-pilot 2>&1 | tee civic-sanitation-80y-no-history.log
+          fi
+      - name: Preserve every negative and positive result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: municipal-sanitation-tax-wage-matter-circuit
+          path: |
+            civic-baseline-*.log
+            civic-sanitation-*.log
+          if-no-files-found: ignore
+
+  basket-throughput-sensitivity:
+    # Single explicit parameter drives physical checkout slots, job demand
+    # and price simultaneously. More checkouts do NOT manufacture employees.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[retail-throughput]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Run 5, 20 and 60 baskets per paid shift for same 10-year city
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          for rate in 5 20 60; do
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=$rate 2>&1 | tee retail-rate-$rate-seed42.log
+          done
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=73 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 2>&1 | tee retail-rate-20-seed73.log
+          python3 - <<'PY'
+          import json
+          def load(path):
+              lines=open(path).readlines()
+              i=next(i for i,line in enumerate(lines) if line.startswith('{'))
+              return json.loads(''.join(lines[i:]))
+          runs = {}
+          for rate,seed in [(5,42),(20,42),(60,42),(20,73)]:
+              r=load(f'retail-rate-{rate}-seed{seed}.log')
+              assert r['simulatedDays']==3653 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+              assert r['basketCheckoutsPerPaidWorkerShift']==rate and r['retailShopFallbackFixture']
+              assert not r['fullIndexCitiesTargetValidated']
+              print('RETAIL_THROUGHPUT_RESULT',
+                    'rate',rate,'seed',seed,'alive',r['aliveEnd'],
+                    'min',r['minimumAliveAtAnyEvent'],'hungry',r['unmetMeals'],
+                    'workers',r['employedAlive'],'incomeHomes',r['householdsWithEmployedAdults'],
+                    'failedPhysicalSlots',r['checkoutCapacityDeniedVisits'],
+                    'reroutes',r['retailAlternativeTrips'],
+                    'retailPurchases',r['checkoutBasketTransactions'],
+                    'householdCash',r['personalCashCents'],'unitPrice',r['averageRetailUnitPriceCents'])
+              runs[(rate,seed)]=r
+          open('healthy-decade.flag','w').write('yes' if
+            runs[(20,42)]['minimumAliveAtAnyEvent']>=10000 and
+            runs[(20,73)]['minimumAliveAtAnyEvent']>=10000 else 'no')
+          PY
+          if test "$(cat healthy-decade.flag)" = yes; then
+            echo 'Both ten-year seeds retained 10k; extend the SAME city 80 years (no persisted history proof yet).'
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 2>&1 | tee retail-rate-20-seed42-80y-no-history.log
+          else
+            echo 'Ten-year benchmark still fails. No eighty-year full-history claim.'
+          fi
+      - name: Preserve sensitivity data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-retail-basket-throughput-10y
+          path: |
+            retail-rate-*.log
+          if-no-files-found: ignore
+
+  nearby-retail-fallback-10y:
+    # Approved in-person alternative shop selection, bounded by at most
+    # three additional roads-and-checkouts; workers, goods and money are real.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[retail-fallback-10y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Two-seed ten-year A/B with strictly limited physical alternate shops
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service 2>&1 | tee basket-no-alternates.log
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback 2>&1 | tee basket-alternates-42.log
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=73 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback 2>&1 | tee basket-alternates-73.log
+          python3 - <<'PY'
+          import json
+          def get(path):
+              lines=open(path).readlines()
+              i=next(i for i,line in enumerate(lines) if line.startswith('{'))
+              return json.loads(''.join(lines[i:]))
+          a,b,c=map(get,['basket-no-alternates.log','basket-alternates-42.log','basket-alternates-73.log'])
+          for r in (a,b,c):
+              assert r['simulatedDays']==3653 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+              assert r['basketRetailServiceFixture'] and r['checkoutBasketTransactions']>0
+              assert not r['fullIndexCitiesTargetValidated']
+          assert not a['retailShopFallbackFixture']
+          assert b['retailShopFallbackFixture'] and c['retailShopFallbackFixture']
+          for name,r in [('single_42',a),('fallback_42',b),('fallback_73',c)]:
+              print('RETAIL_FALLBACK_RESULT',name,'alive',r['aliveEnd'],
+                    'min',r['minimumAliveAtAnyEvent'],'unmet',r['unmetMeals'],
+                    'failedCheckouts',r['checkoutCapacityDeniedVisits'],
+                    'reroutes',r['retailAlternativeTrips'],
+                    'fulfilledAfterReroute',r['retailAlternativePurchases'],
+                    'failedAfterReroute',r['retailAlternativeFailures'],
+                    'householdCash',r['personalCashCents'],
+                    'physicalCheckouts',r['checkoutBasketTransactions'])
+          open('healthy-decade.flag','w').write('yes' if b['minimumAliveAtAnyEvent']>=10000 and c['minimumAliveAtAnyEvent']>=10000 else 'no')
+          PY
+          if test "$(cat healthy-decade.flag)" = yes; then
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback 2>&1 | tee basket-alternates-80y-no-history.log
+          else
+            echo 'Population not sustained. Keep original test data and do not infer eighty-year stability.'
+          fi
+      - name: Keep complete causal comparisons
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: basket-retail-alternate-sellers-10y
+          path: |
+            basket-no-alternates.log
+            basket-alternates-42.log
+            basket-alternates-73.log
+            basket-alternates-80y-no-history.log
+          if-no-files-found: ignore
+
+  basket-retail-10y:
+    # Correct dimensional mismatch: a cashier serves five PHYSICAL customer
+    # baskets, not five pieces of food. Vacancies must use the SAME unit and
+    # shop staffing has a finite physical cap. This is a fixture, not a rule.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[basket-checkout-10y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Reproduce incoherent and coherent retail for a full decade
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --bounded-retail-service 2>&1 | tee five-food-units-10y.log
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service 2>&1 | tee five-baskets-10y.log
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=73 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service 2>&1 | tee five-baskets-seed73-10y.log
+          python3 - <<'PY'
+          import json
+          def get(path):
+              lines=open(path).readlines()
+              i=next(i for i,line in enumerate(lines) if line.startswith('{'))
+              return json.loads(''.join(lines[i:]))
+          baseline,trial,replicate=map(get,['five-food-units-10y.log','five-baskets-10y.log','five-baskets-seed73-10y.log'])
+          for r in (baseline,trial,replicate):
+              assert r['simulatedDays']==3653 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+              assert r['boundedRetailServiceFixture'] and r['farmCostPricingFixture'] and not r['fullIndexCitiesTargetValidated']
+          assert not baseline['basketRetailServiceFixture']
+          for r in (trial,replicate):
+              assert r['basketRetailServiceFixture'] and r['checkoutBasketTransactions']>0
+              assert r['salesFoodUnits']>r['checkoutBasketTransactions']
+              assert r['checkoutFixtureMaxEmployeesPerSmallStore']==8
+          for name,r in [('UNITS_42',baseline),('BASKETS_42',trial),('BASKETS_73',replicate)]:
+              print('BASKET_RETAIL_RESULT',name,
+                    'live',r['aliveEnd'],'min',r['minimumAliveAtAnyEvent'],
+                    'unmet',r['unmetMeals'],'transactions',r['checkoutBasketTransactions'],
+                    'cash',r['personalCashCents'],'shopFood',r['shopFoodAvailable'],
+                    'employed',r['employedAlive'],'deniedCapacity',r['checkoutCapacityDeniedVisits'],
+                    'salesUnits',r['salesFoodUnits'],'price',r['averageRetailUnitPriceCents'])
+          open('healthy-basket.flag','w').write('yes' if trial['minimumAliveAtAnyEvent']>=10000 and replicate['minimumAliveAtAnyEvent']>=10000 else 'no')
+          PY
+          if test "$(cat healthy-basket.flag)" = yes; then
+            echo 'Both 10-year seeds passed. Check 80y demographics, but not yet V1 fidelity.'
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service 2>&1 | tee five-baskets-80y-no-history.log
+          else
+            echo 'At least one ten-year seed lost the required population.'
+          fi
+      - name: Preserve all actual economic traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: basket-retail-10y-economic-comparison
+          path: |
+            five-food-units-10y.log
+            five-baskets-10y.log
+            five-baskets-seed73-10y.log
+            five-baskets-80y-no-history.log
+          if-no-files-found: ignore
+
+  bounded-checkout-10y:
+    # The earlier 10y fixture only required one staffed worker to sell
+    # unbounded food. Verify worker-by-worker daily checkout throughput.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[checkout-capacity-10y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compare physical checkout to unbounded staffed presence
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing 2>&1 | tee unbounded-checkout-10y.log
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --bounded-retail-service 2>&1 | tee bounded-checkout-10y.log
+          python3 - <<'PY'
+          import json
+          def read(path):
+              lines=open(path).readlines()
+              i=next(i for i,line in enumerate(lines) if line.startswith('{'))
+              return json.loads(''.join(lines[i:]))
+          a,b=read('unbounded-checkout-10y.log'),read('bounded-checkout-10y.log')
+          for r in (a,b):
+              assert r['simulatedDays']==3653 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+              assert r['farmCostPricingFixture'] and r['crossFarmFreightFixture']
+          assert not a['boundedRetailServiceFixture'] and b['boundedRetailServiceFixture']
+          print('UNBOUNDED_10Y',a['aliveEnd'],a['unmetMeals'],a['salesFoodUnits'])
+          print('BOUNDED_10Y',b['aliveEnd'],b['minimumAliveAtAnyEvent'],b['unmetMeals'],b['salesFoodUnits'])
+          open('healthy-decade.flag','w').write('yes' if b['minimumAliveAtAnyEvent']>=10000 else 'no')
+          PY
+          if test "$(cat healthy-decade.flag)" = yes; then
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --bounded-retail-service 2>&1 | tee bounded-checkout-80y-no-history.log
+          else
+            echo 'Ten-year fidelity or survival failed; retain limitation'
+          fi
+      - name: Preserve falsification even if population collapses
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-bounded-checkout
+          path: |
+            unbounded-checkout-10y.log
+            bounded-checkout-10y.log
+            bounded-checkout-80y-no-history.log
+          if-no-files-found: ignore
+
+  whole-chain-cost-10y:
+    # The existing wholesale price is fixed. Here farms quote real wage/
+    # physical harvested unit; shops pay invoices and charge acquisition
+    # plus staffed retail capacity. No money or stock is invented.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[whole-chain-cost-10y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compare ten continuous years of both full physical supply chains
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight 2>&1 | tee wholesale-fixed-10y.log
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing 2>&1 | tee whole-chain-cost-10y.log
+          python3 - <<'PY'
+          import json
+          def get(path):
+              lines=open(path).readlines()
+              i=next(i for i,line in enumerate(lines) if line.startswith('{'))
+              return json.loads(''.join(lines[i:]))
+          b,t=get('wholesale-fixed-10y.log'),get('whole-chain-cost-10y.log')
+          for r in (b,t):
+              assert r['simulatedDays']==3653 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+              assert r['crossFarmFreightFixture'] and r['realWorkerFreightTrips']>0
+          assert not b['farmCostPricingFixture'] and t['farmCostPricingFixture']
+          print('WHOLE_CHAIN_BASE_10Y',b['aliveEnd'],b['unmetMeals'],b['farmFoodAvailable'])
+          print('WHOLE_CHAIN_COST_10Y',t['aliveEnd'],t['minimumAliveAtAnyEvent'],t['unmetMeals'],t['meanFarmWholesaleUnitPriceCents'])
+          open('healthy-decade.flag','w').write('yes' if t['minimumAliveAtAnyEvent']>=10000 else 'no')
+          PY
+          if test "$(cat healthy-decade.flag)" = yes; then
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing 2>&1 | tee whole-chain-80y-no-history.log
+          else
+            echo 'Did not sustain 10k ten years; no 80y claim'
+          fi
+      - name: Preserve full comparison
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-whole-chain-pricing
+          path: |
+            wholesale-fixed-10y.log
+            whole-chain-cost-10y.log
+            whole-chain-80y-no-history.log
+          if-no-files-found: ignore
+
+  cross-farm-freight-10y:
+    # Real farms can bid for customers outside their original eight shops.
+    # Each delivery still requires a paid person, real food and physical travel.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[cross-farm-10y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compare local single-farm monopoly to real alternate suppliers
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms 2>&1 | tee single-farm-10y.log
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight 2>&1 | tee cross-farm-10y.log
+          python3 - <<'PY'
+          import json
+          def load(path):
+              lines=open(path).readlines()
+              i=next(i for i,line in enumerate(lines) if line.startswith('{'))
+              return json.loads(''.join(lines[i:]))
+          b,t=load('single-farm-10y.log'),load('cross-farm-10y.log')
+          for r in (b,t):
+              assert r['simulatedDays']==3653 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+              assert r['realWorkerFreightTrips']>0 and r['attendanceAwareFarmsFixture']
+          assert not b['crossFarmFreightFixture'] and t['crossFarmFreightFixture']
+          print('SINGLE_FARM_10Y',b['aliveEnd'],b['unmetMeals'],b['farmFoodAvailable'])
+          print('CROSS_FARM_10Y',t['aliveEnd'],t['minimumAliveAtAnyEvent'],t['unmetMeals'],t['farmFoodAvailable'])
+          open('healthy-decade.flag','w').write('yes' if t['minimumAliveAtAnyEvent']>=10000 else 'no')
+          PY
+          if test "$(cat healthy-decade.flag)" = yes; then
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight 2>&1 | tee cross-farm-80y-no-history.log
+          else
+            echo 'Ten-year survival not proven; no 80-year history claim'
+          fi
+      - name: Preserve all comparisons
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-cross-farm-comparison
+          path: |
+            single-farm-10y.log
+            cross-farm-10y.log
+            cross-farm-80y-no-history.log
+          if-no-files-found: ignore
+
+  attendance-farms-market-10y:
+    # Run paid physical farm work using 26 actual shift days per employee,
+    # not imaginary 30 shift days. Uses capacity-based unit pricing.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[farm-attendance-10y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compare ten-year true harvested food under weekly rest scheduling
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food 2>&1 | tee capacity-base-10y.log
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms 2>&1 | tee attendance-farms-10y.log
+          python3 - <<'PY'
+          import json
+          def report(path):
+              lines=open(path).readlines()
+              i=next(i for i,line in enumerate(lines) if line.startswith('{'))
+              return json.loads(''.join(lines[i:]))
+          b,t=report('capacity-base-10y.log'),report('attendance-farms-10y.log')
+          for r in (b,t):
+              assert r['simulatedDays']==3653 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+              assert r['capacityPricedFoodFixture'] and r['vacancyMarketFixture']
+          assert not b['attendanceAwareFarmsFixture'] and t['attendanceAwareFarmsFixture']
+          print('FARM_SCHEDULING_BASE',b['aliveEnd'],b['unmetMeals'],b['producedFoodUnits'])
+          print('FARM_SCHEDULING_ATTENDANCE',t['aliveEnd'],t['minimumAliveAtAnyEvent'],t['unmetMeals'],t['producedFoodUnits'])
+          open('healthy-decade.flag','w').write('yes' if t['minimumAliveAtAnyEvent']>=10000 else 'no')
+          PY
+          if test "$(cat healthy-decade.flag)" = yes; then
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms 2>&1 | tee attendance-farms-80y-no-history.log
+          else
+            echo 'Not sustainably alive for ten years, no premature 80-year victory'
+          fi
+      - name: Keep evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-farm-attendance
+          path: |
+            capacity-base-10y.log
+            attendance-farms-10y.log
+            attendance-farms-80y-no-history.log
+          if-no-files-found: ignore
+
+  capacity-priced-market-10y:
+    # Stress a standard per-physically-served-unit cost quote without
+    # reimbursing idle payroll through runaway customer prices.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[capacity-price-10y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compare both price formulas across one continuous decade
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --cost-based-food-price 2>&1 | tee realized-cost-10y.log
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food 2>&1 | tee capacity-cost-10y.log
+          python3 - <<'PY'
+          import json
+          def get(path):
+              lines=open(path).readlines()
+              start=next(i for i,line in enumerate(lines) if line.startswith('{'))
+              return json.loads(''.join(lines[start:]))
+          a,b=map(get,['realized-cost-10y.log','capacity-cost-10y.log'])
+          for d in (a,b):
+              assert d['moneyConserved'] and d['foodConserved'] and d['materialConserved']
+              assert d['simulatedDays']==3653 and not d['fullIndexCitiesTargetValidated']
+              assert d['vacancyMarketFixture'] and d['freightLaborFixture'] and d['constructionPilotFixture']
+          assert a['costBasedFoodPriceFixture'] and not a['capacityPricedFoodFixture']
+          assert b['costBasedFoodPriceFixture'] and b['capacityPricedFoodFixture']
+          print('REALIZED_COST_10Y',a['aliveEnd'],a['unmetMeals'],a['maximumRetailUnitPriceCents'])
+          print('CAPACITY_COST_10Y',b['aliveEnd'],b['minimumAliveAtAnyEvent'],b['unmetMeals'],b['averageRetailUnitPriceCents'],b['maximumRetailUnitPriceCents'])
+          open('healthy-decade.flag','w').write('yes' if b['minimumAliveAtAnyEvent']>=10000 else 'no')
+          PY
+          if test "$(cat healthy-decade.flag)" = yes; then
+            echo 'Ten years sustained: test 80 continuous years WITHOUT HISTORY for demographics'
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food 2>&1 | tee capacity-cost-80y-no-history.log
+          else
+            echo 'Ten years failed: do not extrapolate speed from a collapsed city'
+          fi
+      - name: Preserve failing and passing evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-capacity-price-comparison
+          path: |
+            realized-cost-10y.log
+            capacity-cost-10y.log
+            capacity-cost-80y-no-history.log
+          if-no-files-found: ignore
+
+  cost-priced-market-10y:
+    # Compare the exact same city with current fixed price and transparent
+    # paid-payroll + wholesale-cost retail prices. Not a SPEC acceptance.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[cost-price-10y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Run paired 3-year and 10-year city counterfactuals
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=1096 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot 2>&1 | tee fixed-price-3y.log
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=1096 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --cost-based-food-price 2>&1 | tee cost-priced-3y.log
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --cost-based-food-price 2>&1 | tee cost-priced-10y.log
+          python3 - <<'PY'
+          import json
+          def load(path):
+              lines=open(path).readlines()
+              start=next(i for i,line in enumerate(lines) if line.startswith('{'))
+              return json.loads(''.join(lines[start:]))
+          fixed, trial, decade=map(load, ['fixed-price-3y.log','cost-priced-3y.log','cost-priced-10y.log'])
+          for r in (fixed,trial,decade):
+              assert r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+              assert r['vacancyMarketFixture'] and r['freightLaborFixture'] and r['constructionPilotFixture']
+              assert r['fullIndexCitiesTargetValidated'] is False
+          assert fixed['simulatedDays']==trial['simulatedDays']==1096
+          assert decade['simulatedDays']==3653
+          assert not fixed['costBasedFoodPriceFixture']
+          assert trial['costBasedFoodPriceFixture'] and decade['costBasedFoodPriceFixture']
+          print('COST_PRICE_3Y_BASE',fixed['aliveEnd'],fixed['unmetMeals'],fixed['businessSalesRevenueCents'])
+          print('COST_PRICE_3Y_TRIAL',trial['aliveEnd'],trial['unmetMeals'],trial['averageRetailUnitPriceCents'],trial['businessSalesRevenueCents'])
+          print('COST_PRICE_10Y_TRIAL',decade['aliveEnd'],decade['minimumAliveAtAnyEvent'],decade['unmetMeals'],decade['wallSeconds'])
+          if decade['minimumAliveAtAnyEvent']>=10000:
+              print('SUSTAINED_TEN_YEARS_ONLY; eighty-year history still required')
+          else:
+              print('POPULATION_COLLAPSED; DO NOT RUN EIGHTY YEARS ON EXTINCT CITY')
+          PY
+      - name: Preserve comparisons including reprovals
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-cost-priced-comparisons
+          path: |
+            fixed-price-3y.log
+            cost-priced-3y.log
+            cost-priced-10y.log
+          if-no-files-found: ignore
+
+  demographic-ceiling-80y:
+    # An intentionally permissive mathematical bound, NOT population survival.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[cohort-bound-80y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Bound 80-year age/carer/household renewal independently of money
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --demographic-upper-bound | tee demographic-ceiling.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('demographic-ceiling.json'))
+          assert d['status']=='DEMOGRAPHIC_THEORETICAL_UPPER_BOUND_ONLY'
+          assert d['years']==80 and d['days']==29220
+          assert d['rotatingFixtureUpperBound']['demographicOnly']
+          assert not d['rotatingFixtureUpperBound']['physicallyAndEconomicallyValid']
+          assert d['rotatingFixtureUpperBound']['births']>0
+          PY
+      - name: Preserve 80-year theoretical ceiling
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-demographic-ceiling
+          path: demographic-ceiling.json
+          if-no-files-found: ignore
+
+  household-hiring-3y:
+    # A/B diagnostic against the prior identical three-year integrated scenario.
+    # Job counts, product, cash and food are never manufactured for this test.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[distribution-3y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Test household-first access to the SAME real funded vacancies
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=1096 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --fair-household-hiring 2>&1 | tee household-hiring-3y.log
+          python3 - <<'PY'
+          import json
+          lines=open('household-hiring-3y.log').readlines()
+          start=next(i for i,line in enumerate(lines) if line.startswith('{'))
+          r=json.loads(''.join(lines[start:]))
+          assert r['simulatedDays']==1096 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+          assert r['fairHouseholdHiringFixture'] and r['freightLaborFixture'] and r['constructionPilotFixture']
+          print('HOUSEHOLD_FAIRNESS_3Y', r['aliveEnd'], r['minimumAliveAtDayBoundary'], r['unmetMeals'], r['householdsWithEmployedAdults'])
+          PY
+      - name: Keep diagnostic whether population survives or not
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-household-hiring-3y
+          path: household-hiring-3y.log
+          if-no-files-found: ignore
+
+  construction-pilot-1y:
+    # Separate isolated site + real payroll + finite outside materials;
+    # no new gameplay rule and no full city construction coverage.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[construction-1y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Verify contractor receipts, finite material and site wages without ledger drift
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=366 --seed=42 --adversarial --vacancy-market --cohort-renewal --construction-pilot 2>&1 | tee construction-1y.log
+          python3 - <<'PY'
+          import json
+          rows=open('construction-1y.log').readlines()
+          i=next(i for i,v in enumerate(rows) if v.startswith('{'))
+          d=json.loads(''.join(rows[i:]))
+          assert d['simulatedDays']==366 and d['constructionPilotFixture']
+          assert d['moneyConserved'] and d['foodConserved'] and d['materialConserved']
+          assert d['constructionContractsStarted']>0
+          assert d['constructionPaidShifts']>0
+          assert d['constructionContractsCompleted']>0
+          print('CONSTRUCTION_1Y',d['aliveEnd'],d['minimumAliveAtDayBoundary'],
+                d['constructionContractsStarted'],d['constructionContractsCompleted'],
+                d['constructionPaidShifts'],d['unmetMeals'],d['wallSeconds'])
+          assert d['minimumAliveAtDayBoundary']>=10000, 'Construction pilot did not sustain 10k in first year'
+          PY
+      - name: Keep real completed and incomplete worksite evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-construction-pilot-1y
+          path: construction-1y.log
+          if-no-files-found: ignore
+
+  freight-pilot-1y:
+    # Opt-in physical freight worker experiment, never automatic deliveries.
+    # This is NOT the final trucks/fuel system nor a full second V1 economy.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[freight-1y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compare funded extra drivers while preserving production crews
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=366 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor 2>&1 | tee freight-pilot-1y.log
+          python3 - <<'PY'
+          import json
+          lines=open('freight-pilot-1y.log').readlines()
+          i=next(i for i,line in enumerate(lines) if line.startswith('{'))
+          d=json.loads(''.join(lines[i:]))
+          assert d['simulatedDays']==366 and d['vacancyMarketFixture'] and d['freightLaborFixture']
+          assert d['foodConserved'] and d['moneyConserved']
+          assert d['realWorkerFreightTrips']>0 and d['freightChargesPaidCents']>=35*d['realWorkerFreightTrips']
+          assert d['salesFoodUnits']>0 and d['paidWagesCents']>0
+          print('REAL_FREIGHT_1Y',d['aliveEnd'],d['minimumAliveAtDayBoundary'],
+                d['unmetMeals'],d['realWorkerFreightTrips'],d['freightChargesPaidCents'],d['wallSeconds'])
+          assert d['minimumAliveAtDayBoundary']>=10000, 'Real physical freight reduced survivors below 10k'
+          PY
+      - name: Preserve one-year metrics regardless of rejection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-real-freight-1y
+          path: freight-pilot-1y.log
+          if-no-files-found: ignore
+
+  freight-pilot-10y:
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[freight-1y]')
+    needs: freight-pilot-1y
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Test same real freight pilot for ten continuous years
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor 2>&1 | tee freight-pilot-10y.log
+          python3 - <<'PY'
+          import json
+          lines=open('freight-pilot-10y.log').readlines()
+          i=next(i for i,line in enumerate(lines) if line.startswith('{'))
+          d=json.loads(''.join(lines[i:]))
+          assert d['simulatedDays']==3653 and d['freightLaborFixture']
+          assert d['foodConserved'] and d['moneyConserved']
+          assert d['realWorkerFreightTrips']>0
+          print('REAL_FREIGHT_10Y',d['aliveEnd'],d['minimumAliveAtDayBoundary'],
+                d['unmetMeals'],d['realWorkerFreightTrips'],d['wallSeconds'])
+          assert d['minimumAliveAtDayBoundary']>=10000, 'Real freight + existing market did not sustain 10k'
+          PY
+      - name: Preserve ten-year comparison even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-real-freight-10y
+          path: freight-pilot-10y.log
+          if-no-files-found: ignore
+
+  vacancy-market-10y:
+    # The V1 narrow food-sector job market is a deliberate falsification POC.
+    # No new money, guaranteed jobs, instant travel or salary without work.
+    # Still not complete SPEC (notably material and delivery-truck staffing).
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[vacancy-10y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compare 10k Sims over ten years with real paid vacancies
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial --vacancy-market --cohort-renewal 2>&1 | tee vacancy-10y.log
+          python3 - <<'PY'
+          import json
+          lines=open('vacancy-10y.log').readlines()
+          i=next(i for i,v in enumerate(lines) if v.startswith('{'))
+          d=json.loads(''.join(lines[i:]))
+          assert d['simulatedDays']==3653 and d['vacancyMarketFixture']
+          assert d['moneyConserved'] and d['foodConserved']
+          assert d['paidWagesCents']>0 and d['salesFoodUnits']>0
+          assert d['unemployedAdults']>=0 and d['employedAlive']>=0
+          assert d['businessInitialCashCents']+d['businessOperatingNetCents']==d['businessCurrentCashCents']
+          print('VACANCY_MARKET_TEN_YEARS',d['aliveEnd'],d['minimumAliveAtDayBoundary'],
+                d['unmetMeals'],d['employedAlive'],d['unemployedAdults'],d['wallSeconds'])
+          assert d['minimumAliveAtDayBoundary']>=10000, 'Vacancy market fails 10k living population'
+          PY
+      - name: Preserve negative economic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-vacancy-market-10y
+          path: vacancy-10y.log
+          if-no-files-found: ignore
+
+  sustained-workload-80y:
+    # Synthetic workload comparison: 80 independent one-year, LIVE 10k worlds,
+    # real physical trips and economic transfers within each year. Explicitly
+    # NOT one continuous world, its historical data, or a SPEC acceptance test.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[load-80y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Stress 80 independent live 10k annual loads with exact Gregorian day count
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --annual-load-cycles=80 --seed=42 --adversarial 2>&1 | tee live-10k-annual-workload.log
+          python3 - <<'PY'
+          import json
+          s=open('live-10k-annual-workload.log').readlines()
+          start=next(i for i,v in enumerate(s) if v.startswith('{'))
+          d=json.loads(''.join(s[start:]))
+          assert d['status']=='TECHNICAL_REPEAT_LOAD_ONLY_NOT_CONTINUOUS_CITY'
+          assert d['independentAnnualCycles']==80 and d['representedGregorianDays']==29220
+          assert d['baselinePopulationPerIndependentCycle']==10000
+          assert d['minLivingAgentsAcrossIndependentCycles']>=10000
+          assert d['totalIndividualJourneys']>0 and d['totalRealFoodSalesUnitsAcrossCycles']>0
+          assert d['allCycleMoneyAndFoodConserved'] and not d['historyPersistent']
+          print('INDEPENDENT_YEAR_LOAD_80',d['wallSeconds'],d['totalIndividualJourneys'])
+          PY
+      - name: Keep bounded technical-load report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-live-10k-independent-year-load
+          path: live-10k-annual-workload.log
+          if-no-files-found: ignore
+
+  staffing-80y-counterfactual:
+    # Demand-funded REAL paid shifts in single-product laboratory economy.
+    # Not approved gameplay, unemployment modelling or complete SPEC.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[staffing-80y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compare 80-year paid shifts with unspent firm-budget rollover
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --cohort-renewal --demand-staffing 2>&1 | tee staffing-80y.log
+          python3 - <<'PY'
+          import json
+          lines=open('staffing-80y.log').readlines()
+          start=next(i for i,line in enumerate(lines) if line.startswith('{'))
+          r=json.loads(''.join(lines[start:]))
+          assert r['simulatedDays']==29220 and r['gregorianEnd']=='2100-01-01'
+          assert r['moneyConserved'] and r['foodConserved']
+          assert r['demandStaffingFixture'] and r['cohortRenewalFixture']
+          assert r['workingDays']>0 and r['salesFoodUnits']>0 and r['cargoDeliveries']>0
+          assert r['businessInitialCashCents']+r['businessOperatingNetCents']==r['businessCurrentCashCents']
+          print('DEMAND_STAFFING_80Y',r['aliveEnd'],r['minimumAliveAtDayBoundary'],
+                r['unmetMeals'],r['workingDays'],r['businessOperatingNetCents'],
+                r['wallSeconds'])
+          assert r['minimumAliveAtDayBoundary']>=10000, 'Demand-funded shifts did not sustain 10k'
+          PY
+      - name: Preserve all annual economic and demographic metrics on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-staffing-80y
+          path: staffing-80y.log
+          if-no-files-found: ignore
+
+  cohort-80y-counterfactual:
+    # Isolated birth scheduling + improved grocery availability diagnosis.
+    # Not approved family gameplay or complete traffic/construction/migration/history.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[cohort-80y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Falsify 80-year familial renewal using physical production and cash transfers
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --wage-feedback --cohort-renewal 2>&1 | tee cohort-80y.log
+          python3 - <<'PY'
+          import json
+          rows=open('cohort-80y.log').readlines()
+          i=next(i for i,x in enumerate(rows) if x.startswith('{'))
+          x=json.loads(''.join(rows[i:]))
+          assert x['gregorianEnd']=='2100-01-01' and x['simulatedDays']==29220
+          assert x['moneyConserved'] and x['foodConserved']
+          assert x['cohortRenewalFixture'] and x['wageFeedbackFixture']
+          assert x['births']>0 and x['deaths']>0 and x['cargoDeliveries']>0
+          print('COHORT_80Y_EXPERIMENT', x['aliveEnd'],
+                x['minimumAliveAtDayBoundary'], x['unmetMeals'],
+                x['wallSeconds'])
+          assert x['minimumAliveAtDayBoundary']>=10000, 'Real households did not sustain 10k'
+          PY
+      - name: Keep yearly demographic and scarcity observations after failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-cohort-80y
+          path: cohort-80y.log
+          if-no-files-found: ignore
+
+  finance-80y-counterfactual:
+    # Compare against run 39835827175. Counterfactual payroll hypothesis;
+    # never interpret this as approved gameplay or as full SPEC coverage.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[finance-80y]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Measure revenue-funded wages for 80 years with real money and food conservation
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=29220 --seed=42 --adversarial --wage-feedback 2>&1 | tee finance-80y.log
+          python3 - <<'PY'
+          import json
+          lines = open('finance-80y.log').readlines()
+          start = next(i for i, line in enumerate(lines) if line.startswith('{'))
+          data = json.loads(''.join(lines[start:]))
+          assert data['simulatedDays'] == 29220 and data['gregorianEnd'] == '2100-01-01'
+          assert data['moneyConserved'] and data['foodConserved']
+          assert data['wageFeedbackFixture'] and not data['historyPersistent']
+          print('COUNTERFACTUAL_REVENUE_PAYROLL', data['minimumAliveAtDayBoundary'],
+                data['aliveEnd'], data['unmetMeals'], data['wallSeconds'])
+          assert data['minimumAliveAtDayBoundary'] >= 10000, 'Counterfactual did not sustain 10k'
+          PY
+      - name: Preserve 80-year comparison even on demographic failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: causal-engine-finance-80y-comparison
+          path: finance-80y.log
+          if-no-files-found: ignore
+
+  economic-stability-diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Diagnose why citizens become poor over ten years, without extra history I/O
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=3653 --seed=42 --adversarial 2>&1 | tee economic-decade.log
+          grep -q '"moneyConserved": true' economic-decade.log
+          grep -q '"foodConserved": true' economic-decade.log
+          grep -q '"simulatedDays": 3653' economic-decade.log
+      - name: Preserve annual finances and final state
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: economic-decade-diagnostic
+          path: economic-decade.log
+          if-no-files-found: ignore
+
+
+  treatment-throughput-causal-sweep:
+    # Experiment only: no invented workers, payments or processed inventory.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[treatment-throughput-sweep]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compare three paid and capacity-bounded treatments in two real 10y populations
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          BASE='--sims=10000 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25'
+          for throughput in 50 75 100; do
+            for seed in 42 73; do
+              dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --days=3653 --seed=$seed --waste-treatment-units-per-shift=$throughput 2>&1 | tee treatment-$throughput-$seed-10y.log
+            done
+          done
+          python3 - <<'PY'
+          import json
+          qualified=[]
+          for n in (50,75,100):
+              minima=[]
+              for seed in (42,73):
+                  lines=open(f'treatment-{n}-{seed}-10y.log').readlines()
+                  start=next(i for i,v in enumerate(lines) if v.startswith('{'))
+                  d=json.loads(''.join(lines[start:]))
+                  assert d['simulatedDays']==3653 and d['wasteTreatmentUnitsPerPaidShift']==n
+                  assert d['moneyConserved'] and d['foodConserved'] and d['materialConserved']
+                  assert not d['fullIndexCitiesTargetValidated']
+                  minima.append(d['minimumAliveAtAnyEvent'])
+                  print('TREATMENT_10Y',n,seed,'end',d['aliveEnd'],'min',minima[-1],'treated',d['wasteTreatedAtDepot'],'raw',d['wasteStoredAtRealDepot'],'shifts',d['paidWasteTreatmentShifts'],flush=True)
+              if min(minima)>=10000: qualified.append(n)
+          open('treatment-candidates.txt','w').write(' '.join(map(str,qualified)))
+          PY
+      - name: Stress each qualifying treatment for all 29,220 actual days and inspect monthly material bottlenecks
+        run: |
+          set -o pipefail
+          BASE='--sims=10000 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25'
+          for throughput in $(cat treatment-candidates.txt); do
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --days=29220 --seed=42 --waste-treatment-units-per-shift=$throughput 2>&1 | tee treatment-$throughput-42-80y.log
+          done
+          python3 - <<'PY'
+          import glob,json
+          qualified=[]
+          for path in sorted(glob.glob('treatment-*-42-80y.log')):
+              lines=open(path).readlines()
+              i=next(j for j,v in enumerate(lines) if v.startswith('{'))
+              d=json.loads(''.join(lines[i:]))
+              assert d['simulatedDays']==29220 and d['moneyConserved'] and d['foodConserved'] and d['materialConserved']
+              n=d['wasteTreatmentUnitsPerPaidShift']
+              samples=[v for v in lines if v.startswith('LAB_WASTE_AUDIT ')]
+              worst=max((int(v.split('dirtyHomes=')[1].split()[0]) for v in samples),default=0)
+              print('TREATMENT_80Y',n,'end',d['aliveEnd'],'min',d['minimumAliveAtAnyEvent'],'worstDirtyHomes',worst,'raw',d['wasteStoredAtRealDepot'],'treated',d['wasteTreatedAtDepot'],'wall',d['wallSeconds'],flush=True)
+              if d['minimumAliveAtAnyEvent']>=10000: qualified.append(n)
+          open('treatment-80y-qualified.txt','w').write(' '.join(map(str,qualified)))
+          PY
+      - name: Persist full eighty-year fact history only for a real survivor
+        run: |
+          set -o pipefail
+          BASE='--sims=10000 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25'
+          for throughput in $(cat treatment-80y-qualified.txt); do
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --days=29220 --seed=42 --waste-treatment-units-per-shift=$throughput --history=treatment-80y-facts.gz 2>&1 | tee treatment-$throughput-42-80y-persisted.log
+            python3 - "$throughput" <<'PY'
+          import json,sys
+          n=int(sys.argv[1])
+          rows=open(f'treatment-{n}-42-80y-persisted.log').readlines()
+          i=next(i for i,v in enumerate(rows) if v.startswith('{'))
+          d=json.loads(''.join(rows[i:]))
+          assert d['simulatedDays']==29220 and d['minimumAliveAtAnyEvent']>=10000
+          assert d['historyPersistent'] and d['moneyConserved'] and d['foodConserved'] and d['materialConserved']
+          print('TREATMENT_PERSISTED_80Y',n,d['minimumAliveAtAnyEvent'],d['recordedFacts'],d['wallSeconds'],flush=True)
+          PY
+          done
+      - name: Archive all results even for negative experiments
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: treatment-throughput-80y-causal-comparison
+          path: |
+            treatment-*.log
+            treatment-candidates.txt
+            treatment-80y-qualified.txt
+          if-no-files-found: ignore
+
+
+  lifetime-vs-physical-occupancy-80y:
+    # Falsify whether dead family members occupying imaginary housing slots
+    # suppress true birth opportunities. No extra people or housing is granted.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[living-occupancy-audit]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Run lifetime-member and living-resident housing limits in two 80-year cities
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          BASE='--sims=10000 --days=29220 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25 --waste-treatment-units-per-shift=100'
+          for seed in 42 73; do
+            for variant in old living; do
+              OPT=''
+              if test "$variant" = living; then OPT='--living-occupancy-birth-cap'; fi
+              dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --seed=$seed $OPT 2>&1 | tee housing-$variant-$seed-80y.log
+            done
+          done
+          python3 - <<'PY'
+          import json
+          qualified=[]
+          for seed in (42,73):
+              results={}
+              for variant in ('old','living'):
+                  lines=open(f'housing-{variant}-{seed}-80y.log').readlines()
+                  i=next(j for j,v in enumerate(lines) if v.startswith('{'))
+                  d=json.loads(''.join(lines[i:]))
+                  assert d['simulatedDays']==29220 and d['moneyConserved'] and d['foodConserved'] and d['materialConserved']
+                  assert d['livingOccupancyBirthCapFixture']==(variant=='living')
+                  assert d['wasteTreatmentUnitsPerPaidShift']==100 and not d['fullIndexCitiesTargetValidated']
+                  results[variant]=d
+                  print('HOUSING_80Y',variant,seed,'min',d['minimumAliveAtAnyEvent'],'end',d['aliveEnd'],
+                        'births',d['births'],'historicallyFullWithVacancies',d['householdsHistoricallyFullButCurrentlyVacant'],
+                        'treated',d['wasteTreatedAtDepot'],'wall',d['wallSeconds'],flush=True)
+              if results['living']['minimumAliveAtAnyEvent']>=10000: qualified.append(seed)
+          open('housing-qualifying-seeds.txt','w').write(' '.join(map(str,qualified)))
+          PY
+      - name: Persist and audit complete facts for a 10k continuous 80y occupancy success
+        run: |
+          set -o pipefail
+          BASE='--sims=10000 --days=29220 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25 --waste-treatment-units-per-shift=100 --living-occupancy-birth-cap'
+          for seed in $(cat housing-qualifying-seeds.txt); do
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --seed=$seed --history=housing-history-$seed.gz 2>&1 | tee housing-living-$seed-persisted.log
+            python3 - "$seed" <<'PY'
+          import json,sys
+          seed=int(sys.argv[1]); lines=open(f'housing-living-{seed}-persisted.log').readlines()
+          i=next(i for i,v in enumerate(lines) if v.startswith('{'))
+          d=json.loads(''.join(lines[i:]))
+          assert d['historyPersistent'] and d['minimumAliveAtAnyEvent']>=10000
+          assert d['moneyConserved'] and d['foodConserved'] and d['materialConserved']
+          print('HOUSING_PERSISTED_80Y',seed,d['recordedFacts'],d['wallSeconds'],flush=True)
+          PY
+          done
+      - name: Keep raw evidence even for rejected populations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: physical-vs-lifetime-occupancy-comparison
+          path: |
+            housing-*.log
+            housing-qualifying-seeds.txt
+          if-no-files-found: ignore
+
+
+  homeowner-revenue-full-history-80y:
+    # Full persisted proof of the already qualifying REAL paid property-tax
+    # counterfactual at 150 cents. No population, jobs, funds or material
+    # exceptions; no extrapolation from 10-year results.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[home-tax-80y-history]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build and independently validate short-run accounting and determinism
+        run: |
+          dotnet build -c Release experiments/IndexCities.CausalEngine
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --self-test
+      - name: Run both independent real 80-year 10k worlds with complete GZip fact persistence and read-back
+        run: |
+          set -o pipefail
+          BASE='--sims=10000 --days=29220 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25 --monthly-residential-tax-cents=150'
+          for seed in 42 73; do
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --seed=$seed --history=home-tax-seed$seed-full-80y.gz 2>&1 | tee home-tax-seed$seed-full-80y.log
+            python3 - "$seed" <<'PY'
+          import json,sys
+          seed=int(sys.argv[1])
+          lines=open(f'home-tax-seed{seed}-full-80y.log').readlines()
+          i=next(i for i,v in enumerate(lines) if v.startswith('{'))
+          r=json.loads(''.join(lines[i:]))
+          assert r['simulatedDays']==29220
+          assert r['gregorianEnd']=='2100-01-01'
+          assert r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+          assert r['historyPersistent'] and r['recordedFacts']>100000000
+          assert r['monthlyResidentialPropertyTaxCents']==150
+          assert r['residentialTaxAssessedCents']==r['residentialPropertyTaxActuallyPaidCents']+r['residentialPropertyTaxDebtOutstandingCents']
+          assert r['minimumAliveAtAnyEvent']>=10000, 'Full 80-year sustained-population target not achieved'
+          assert r['wallSeconds']<=21600, 'Six-hour full GZip history performance target failed'
+          assert not r['fullIndexCitiesTargetValidated'], 'Fixture must not claim full SPEC fidelity'
+          print('HISTORY_CANDIDATE_PASS',seed,'min',r['minimumAliveAtAnyEvent'],
+                'end',r['aliveEnd'],'factCount',r['recordedFacts'],'timeSeconds',r['wallSeconds'],flush=True)
+          open(f'home-tax-seed{seed}-factcount.txt','w').write(str(r['recordedFacts']))
+          PY
+            EXPECTED=$(cat home-tax-seed$seed-factcount.txt)
+            gzip -t home-tax-seed$seed-full-80y.gz
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- verify-history home-tax-seed$seed-full-80y.gz "$EXPECTED" 29220 | tee home-tax-seed$seed-verification.log
+            sha256sum home-tax-seed$seed-full-80y.gz | tee home-tax-seed$seed-history-sha256.txt
+          done
+      - name: Preserve audit reports, never upload multi-gigabyte fact archive
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-eighty-year-two-seed-residential-history-evidence
+          path: |
+            home-tax-*.log
+            home-tax-*.txt
+          if-no-files-found: ignore
+
+
+  independent-joint-structural-three-seed:
+    # Cross-check independent families, paid waste throughput and real paid
+    # homeowner revenue with three seeded 80-year cities. No history here;
+    # it is handled by the full archival proof job.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[structural-third-seed]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Falsify a 10k minimum across three full generations and physical throughput
+        run: |
+          set -o pipefail
+          dotnet build -c Release experiments/IndexCities.CausalEngine
+          BASE='--sims=10000 --days=29220 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25 --monthly-residential-tax-cents=150 --waste-treatment-units-per-shift=100 --living-occupancy-birth-cap'
+          for seed in 42 73 101; do
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --seed=$seed 2>&1 | tee joint-structural-seed$seed-80y.log
+          done
+          python3 - <<'PY'
+          import json
+          count=0
+          for seed in (42,73,101):
+              lines=open(f'joint-structural-seed{seed}-80y.log').readlines()
+              i=next(i for i,s in enumerate(lines) if s.startswith('{'))
+              r=json.loads(''.join(lines[i:]))
+              assert r['simulatedDays']==29220 and r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+              assert r['livingOccupancyBirthCapFixture'] and r['wasteTreatmentUnitsPerPaidShift']==100
+              assert r['residentialTaxAssessedCents']==r['residentialPropertyTaxActuallyPaidCents']+r['residentialPropertyTaxDebtOutstandingCents']
+              assert not r['fullIndexCitiesTargetValidated']
+              passed=r['minimumAliveAtAnyEvent']>=10000
+              print('JOINT_80Y_THREE_SEED',seed,'minimum',r['minimumAliveAtAnyEvent'],
+                    'last',r['aliveEnd'],'born',r['births'],'realTaxPaid',r['residentialPropertyTaxActuallyPaidCents'],
+                    'processedWaste',r['wasteTreatedAtDepot'],'wall',r['wallSeconds'],'populationPassed',passed,flush=True)
+              count+=int(passed)
+          print('SEEDS_PASSING_80Y',count,'of 3',flush=True)
+          PY
+      - name: Preserve three-seed material and economic observations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: independent-three-seed-80y-structural-robustness
+          path: joint-structural-seed*-80y.log
+          if-no-files-found: ignore
+
+
+  backlog-funded-treatment-80y:
+    # Paid, physically attended treatment staffing sized for both true new
+    # household waste and previously delivered untreated inventory.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[treatment-backlog-study]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compare 18/36-month paid backlog recovery in two continuous 80-year cities
+        run: |
+          set -o pipefail
+          dotnet build -c Release experiments/IndexCities.CausalEngine
+          BASE='--sims=10000 --days=29220 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25 --monthly-residential-tax-cents=150 --waste-treatment-units-per-shift=100 --living-occupancy-birth-cap'
+          for months in 18 36; do
+            for seed in 42 73; do
+              dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --seed=$seed --treatment-backlog-months=$months 2>&1 | tee backlog-$months-seed$seed-80y.log
+            done
+          done
+          python3 - <<'PY'
+          import json
+          for months in (18,36):
+              for seed in (42,73):
+                  path=f'backlog-{months}-seed{seed}-80y.log'
+                  lines=open(path).readlines()
+                  start=next(i for i,s in enumerate(lines) if s.startswith('{'))
+                  r=json.loads(''.join(lines[start:]))
+                  assert r['simulatedDays']==29220 and r['treatmentBacklogClearanceMonths']==months
+                  assert r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+                  assert r['residentialTaxAssessedCents']==r['residentialPropertyTaxActuallyPaidCents']+r['residentialPropertyTaxDebtOutstandingCents']
+                  assert r['wasteTreatmentUnitsPerPaidShift']==100 and not r['fullIndexCitiesTargetValidated']
+                  print('BACKLOG_TREATMENT_80Y',months,seed,'min',r['minimumAliveAtAnyEvent'],
+                        'end',r['aliveEnd'],'depot',r['wasteStoredAtRealDepot'],
+                        'treated',r['wasteTreatedAtDepot'],'paidShifts',r['paidWasteTreatmentShifts'],
+                        'cityCash',r['treasuryCashCents'],'wall',r['wallSeconds'],flush=True)
+          PY
+      - name: Keep full results for both outcomes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: paid-backlog-recovery-80y-controls
+          path: backlog-*-80y.log
+          if-no-files-found: ignore
+
+
+  treatment-vs-homeowner-independent-80y:
+    # Robustness test for the two separate observed physical economic fixes:
+    # 75 paid treatment units/shift, versus actual home tax revenue at 150c.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[cross-mechanism-seeds]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compare two distinct populations in three independent 80-year treatments
+        run: |
+          set -o pipefail
+          dotnet build experiments/IndexCities.CausalEngine -c Release
+          BASE='--sims=10000 --days=29220 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25 --waste-treatment-units-per-shift=75'
+          for seed in 42 73 101; do
+            for tax in 0 150; do
+              dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --seed=$seed --monthly-residential-tax-cents=$tax 2>&1 | tee cross-mechanism-seed$seed-tax$tax-80y.log
+            done
+          done
+          python3 - <<'PY'
+          import json
+          for seed in (42,73,101):
+              for tax in (0,150):
+                  path=f'cross-mechanism-seed{seed}-tax{tax}-80y.log'
+                  lines=open(path).readlines()
+                  i=next(i for i,v in enumerate(lines) if v.startswith('{'))
+                  d=json.loads(''.join(lines[i:]))
+                  assert d['simulatedDays']==29220
+                  assert d['moneyConserved'] and d['foodConserved'] and d['materialConserved']
+                  assert d['wasteTreatmentUnitsPerPaidShift']==75
+                  assert d['monthlyResidentialPropertyTaxCents']==tax
+                  assert d['residentialTaxAssessedCents']==d['residentialPropertyTaxActuallyPaidCents']+d['residentialPropertyTaxDebtOutstandingCents']
+                  assert not d['fullIndexCitiesTargetValidated']
+                  print('CROSS_MECHANISM_80Y',seed,'homeTaxCents',tax,
+                        'end',d['aliveEnd'],'minimum',d['minimumAliveAtAnyEvent'],
+                        'wasteProcessed',d['wasteTreatedAtDepot'],
+                        'treasury',d['treasuryCashCents'],'wages',d['municipalSanitationWagesPaidCents'],
+                        'wallSeconds',d['wallSeconds'],flush=True)
+          PY
+      - name: Preserve independent 80-year economic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: physical-treatment-residential-tax-robustness
+          path: cross-mechanism-*-80y.log
+          if-no-files-found: ignore
+
+
+  treatment-75-full-history-readback:
+    # Targeted validation of already-proven 80y population with paid
+    # waste treatment 75, without the new homeowner tax. Stream-read every
+    # written fact and verify all 29,220 physical-economy days.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[treatment75-history-readback]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compile history reader and exercise history checkpoint determinism
+        run: |
+          dotnet build -c Release experiments/IndexCities.CausalEngine
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --self-test
+      - name: Persist and reopen all 1.3 billion facts of the tax-free paid-treatment 80-year city
+        run: |
+          set -o pipefail
+          BASE='--sims=10000 --days=29220 --seed=42 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25 --waste-treatment-units-per-shift=75'
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --history=taxfree-paid-treatment-80y.gz 2>&1 | tee taxfree-paid-treatment-80y.log
+          python3 - <<'PY'
+          import json
+          lines=open('taxfree-paid-treatment-80y.log').readlines()
+          k=next(i for i,v in enumerate(lines) if v.startswith('{'))
+          r=json.loads(''.join(lines[k:]))
+          assert r['simulatedDays']==29220 and r['gregorianEnd']=='2100-01-01'
+          assert r['minimumAliveAtAnyEvent']>=10000 and r['historyPersistent']
+          assert r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+          assert r['wasteTreatmentUnitsPerPaidShift']==75
+          assert r['monthlyResidentialPropertyTaxCents']==0
+          assert r['residentialPropertyTaxActuallyPaidCents']==0
+          assert r['stateFingerprint']=='D56BFF015982DB59'
+          assert r['recordedFacts']>=1000000000 and r['wallSeconds']<=21600
+          assert not r['fullIndexCitiesTargetValidated']
+          print('TREATMENT_75_HISTORICAL_FINGERPRINT_IDENTICAL',
+                r['minimumAliveAtAnyEvent'],r['aliveEnd'],r['recordedFacts'],r['wallSeconds'],flush=True)
+          open('taxfree-paid-treatment-fact-count.txt','w').write(str(r['recordedFacts']))
+          PY
+          gzip -t taxfree-paid-treatment-80y.gz
+          EXPECTED=$(cat taxfree-paid-treatment-fact-count.txt)
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- verify-history taxfree-paid-treatment-80y.gz "$EXPECTED" 29220 0 | tee taxfree-paid-treatment-readback.log
+          sha256sum taxfree-paid-treatment-80y.gz | tee taxfree-paid-treatment-history-sha256.txt
+      - name: Preserve complete audit summary but not enormous compressed file
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tax-free-75-physical-treatment-full-history-readback
+          path: |
+            taxfree-paid-treatment-*.log
+            taxfree-paid-treatment-*.txt
+          if-no-files-found: ignore
+
+  integrated-v1-infrastructure-80y:
+    # One long combined run instead of separate water/power/sewage/fuel/housing
+    # tests. Only the explicit marker triggers this expensive experiment.
+    if: github.event_name == 'push' && (contains(github.event.head_commit.message, '[integrated-v1-80y]') || contains(github.event.head_commit.message, '[fiscal-tax-ab]') || contains(github.event.head_commit.message, '[pension-liability-audit]') || contains(github.event.head_commit.message, '[pension-cohort-diagnostic]'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compile the guarded combined causal engine
+        run: dotnet build experiments/IndexCities.CausalEngine -c Release
+      # Fiscal diagnostic, not a new product policy: same 80-year engine,
+      # infrastructure, reserve and seeds. Only the actually collected monthly
+      # residential property levy varies (0/50/100 cents). The 0 baseline is
+      # re-executed on the same code SHA. Prior 150/300 and 600/1200 results
+      # remain recorded; do not rerun billions of factual history events.
+      # Separate real cash from assessed debt and examine late-year pensions,
+      # payroll, debtor owner liquidity and service work. Negative outcomes
+      # are evidence, not CI failure when conservation invariants hold.
+      - name: Compare integrated fiscal levy A/B across three seeds without history I/O
+        if: contains(github.event.head_commit.message, '[fiscal-tax-ab]')
+        run: |
+          set -euo pipefail
+          BASE='--sims=10000 --days=29220 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25 --waste-treatment-units-per-shift=75 --integrated-v1-stress --eligible-birth-fallback --municipal-payroll-reserve-counterfactual'
+          for tax in 0 50 100; do
+            for seed in 42 73 101; do
+              dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --seed=$seed --monthly-residential-tax-cents=$tax 2>&1 | tee "integrated-fiscal-tax-$tax-seed-$seed.log"
+            done
+          done
+          python3 - <<'PY' | tee integrated-fiscal-tax-ab-summary.txt
+          import json,re
+          results={}
+          for tax in (0,50,100):
+              for seed in (42,73,101):
+                  lines=open(f'integrated-fiscal-tax-{tax}-seed-{seed}.log').readlines()
+                  start=next(i for i,line in enumerate(lines) if line.startswith('{'))
+                  r=json.loads(''.join(lines[start:]))
+                  assert r['seed']==seed and r['simulatedDays']==29220 and r['gregorianEnd']=='2100-01-01'
+                  assert r['integratedV1StressFixture'] and r['municipalPayrollReserveCounterfactualFixture']
+                  assert r['birthEligibilityFallbackFixture'] and not r['historyPersistent']
+                  assert r['moneyConserved'] and r['foodConserved'] and r['materialConserved']
+                  assert r['fiscalTreasuryLedgerBalanced']
+                  assert r['monthlyResidentialPropertyTaxCents']==tax
+                  assert r['residentialTaxAssessedCents']==r['residentialPropertyTaxActuallyPaidCents']+r['residentialPropertyTaxDebtOutstandingCents']
+                  assert r['actualUtilityWorkShifts']>0 and r['actualFuelImported']>0
+                  fiscal={}
+                  for line in lines:
+                      if 'LAB_FISCAL day=' not in line: continue
+                      fields={k:int(v) for k,v in re.findall(r'\b([A-Za-z]\w*)=(-?\d+)',line)}
+                      if 'day' in fields: fiscal[fields['day']]=fields
+                  assert all(day in fiscal for day in (25550,25915,26280,26645,27010,27375,27740,28105,28470,28835,29200,28855,29220))
+                  for year in range(71,81):
+                      a,b=fiscal[365*(year-1)],fiscal[365*year]
+                      revenue=sum(b[k]-a[k] for k in ('businessTaxPaidCents','residentialTaxPaidCents','pensionContributionsPaidCents'))
+                      payroll=b['municipalGrossPayrollCents']-a['municipalGrossPayrollCents']
+                      pensions=b['pensionsActuallyPaidCents']-a['pensionsActuallyPaidCents']
+                      assert revenue-payroll-pensions==b['treasuryCents']-a['treasuryCents']
+                      assert b['residentialTaxAssessedCents']-b['residentialTaxPaidCents']==b['residentialTaxDebtCents']
+                      print('FISCAL_TAX_365D_BLOCK',tax,seed,'block',year,
+                            'revenue',revenue,'payroll',payroll,'pensions',pensions,
+                            'treasuryChange',b['treasuryCents']-a['treasuryCents'],
+                            'treasuryEnd',b['treasuryCents'],'homeDebt',b['residentialTaxDebtCents'],
+                            'debtorHomes',b['residentialTaxDebtorHomes'],
+                            'debtorOwnerCash',b['residentialTaxDebtorOwnerCashCents'],
+                            'pensionEligible',b['pensionEligibleAlive'],
+                            'dailyPensionClaims',b['pensionNewClaimsDailyCents'],flush=True)
+                  a,b=fiscal[28855],fiscal[29220]
+                  revenue=sum(b[k]-a[k] for k in ('businessTaxPaidCents','residentialTaxPaidCents','pensionContributionsPaidCents'))
+                  paid=sum(b[k]-a[k] for k in ('municipalGrossPayrollCents','pensionsActuallyPaidCents'))
+                  assert revenue-paid==b['treasuryCents']-a['treasuryCents']
+                  print('FISCAL_TAX_LAST365',tax,seed,'revenue',revenue,'paid',paid,
+                        'pensionDebtChange',b['pensionCreditsOutstandingCents']-a['pensionCreditsOutstandingCents'],
+                        'homeDebtChange',b['residentialTaxDebtCents']-a['residentialTaxDebtCents'],
+                        'treasuryChange',b['treasuryCents']-a['treasuryCents'],flush=True)
+                  print('FISCAL_TAX_80Y',tax,seed,'minAlive',r['minimumAliveAtAnyEvent'],
+                        'aliveEnd',r['aliveEnd'],'wallSeconds',r['wallSeconds'],
+                        'homeTaxAssessed',r['residentialTaxAssessedCents'],
+                        'homeTaxPaid',r['residentialPropertyTaxActuallyPaidCents'],
+                        'homeTaxDebt',r['residentialPropertyTaxDebtOutstandingCents'],
+                        'pensionCreditsUnpaid',r['unpaidPensionCreditsCents'],
+                        'treasuryCash',r['treasuryCashCents'],'unmetMeals',r['unmetMeals'],
+                        'actualUtilityWorkShifts',r['actualUtilityWorkShifts'],
+                        'noCashAdults',r['adultCitizensWithZeroCash'],
+                        'deniedPurchases',r['deniedPurchases'],flush=True)
+                  results[tax,seed]=r
+          for seed in (42,73,101):
+              control=results[0,seed]
+              for tax in (50,100):
+                  trial=results[tax,seed]
+                  print('FISCAL_TAX_AB_DELTA',seed,tax,
+                        'minAliveChange',trial['minimumAliveAtAnyEvent']-control['minimumAliveAtAnyEvent'],
+                        'endAliveChange',trial['aliveEnd']-control['aliveEnd'],
+                        'pensionDebtChange',trial['unpaidPensionCreditsCents']-control['unpaidPensionCreditsCents'],
+                        'homeDebtChange',trial['residentialPropertyTaxDebtOutstandingCents']-control['residentialPropertyTaxDebtOutstandingCents'],
+                        'homeTaxPaidChange',trial['residentialPropertyTaxActuallyPaidCents']-control['residentialPropertyTaxActuallyPaidCents'],flush=True)
+          print('FISCAL_TAX_AB_COMPLETE no_history_files no_policy_approved',flush=True)
+          PY
+      # Audit EXISTING fixture accounting, not a policy change. A deceased
+      # creditor's outstanding pension is currently zeroed: measure that
+      # extinction separately from payments and still-outstanding liabilities.
+      # One-variable A/B: zero vs 100-cent real residential levy, same seeds,
+      # services, payroll reserve and 29,220 days; NO factual-history files.
+      # Prior fiscal sweep cannot distinguish a zero balance from extinguished
+      # claims. Reconcile each of the last ten 365-day blocks and report
+      # pension accrual vs actual contribution and cash-funded obligations.
+      - name: Audit pension lifecycle liabilities in six complete 80-year runs
+        if: contains(github.event.head_commit.message, '[pension-liability-audit]')
+        run: |
+          set -euo pipefail
+          BASE='--sims=10000 --days=29220 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25 --waste-treatment-units-per-shift=75 --integrated-v1-stress --eligible-birth-fallback --municipal-payroll-reserve-counterfactual'
+          for tax in 0 100; do
+            for seed in 42 73 101; do
+              dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --seed=$seed --monthly-residential-tax-cents=$tax 2>&1 | tee "integrated-v1-pension-audit-tax${tax}-seed${seed}.log"
+            done
+          done
+          python3 - <<'PY' | tee integrated-v1-pension-audit-summary.txt
+          import json,re
+          for tax in (0,100):
+              for seed in (42,73,101):
+                  rows=open(f'integrated-v1-pension-audit-tax{tax}-seed{seed}.log').readlines()
+                  start=next(i for i,line in enumerate(rows) if line.startswith('{'))
+                  d=json.loads(''.join(rows[start:]))
+                  assert d['seed']==seed and d['simulatedDays']==29220 and d['gregorianEnd']=='2100-01-01'
+                  assert d['monthlyResidentialPropertyTaxCents']==tax and d['municipalPayrollReserveCounterfactualFixture']
+                  assert d['integratedV1StressFixture'] and not d['historyPersistent']
+                  assert d['moneyConserved'] and d['foodConserved'] and d['materialConserved']
+                  assert d['fiscalTreasuryLedgerBalanced'] and d['pensionLiabilityLedgerBalanced']
+                  assert d['pensionLiabilityLedgerComplete']
+                  assert d['pensionClaimsAccruedCents']==d['historicalPensionsPaidCents']+d['unpaidPensionCreditsCents']+d['pensionClaimsExtinguishedAtDeathCents']
+                  assert d['minimumAliveAtAnyEvent']==10000
+                  expected={0:{42:15653,73:15668,101:15309},100:{42:15310,73:15304,101:14938}}
+                  assert d['aliveEnd']==expected[tax][seed], 'Read-only audit changed demographic trajectory'
+                  fiscal={}
+                  for line in rows:
+                      if 'LAB_FISCAL day=' not in line: continue
+                      fields={k:int(v) for k,v in re.findall(r'\b([A-Za-z]\w*)=(-?\d+)',line)}
+                      if 'day' in fields: fiscal[fields['day']]=fields
+                  for year in range(71,81):
+                      a,b=fiscal[365*(year-1)],fiscal[365*year]
+                      def delta(key): return b[key]-a[key]
+                      claims=delta('pensionClaimsAccruedCents')
+                      paid=delta('pensionsActuallyPaidCents')
+                      extinct=delta('pensionClaimsExtinguishedAtDeathCents')
+                      outstanding=delta('pensionCreditsOutstandingCents')
+                      contrib=delta('pensionContributionsPaidCents')
+                      revenue=sum(delta(k) for k in ('businessTaxPaidCents','residentialTaxPaidCents','pensionContributionsPaidCents'))
+                      payroll=delta('municipalGrossPayrollCents')
+                      assert claims==paid+extinct+outstanding
+                      assert revenue-payroll-paid==delta('treasuryCents')
+                      assert b['pensionLiabilityLedgerBalanced']==1 and b['pensionLiabilityLedgerComplete']==1
+                      print('PENSION_LIFECYCLE_365D',tax,seed,'block',year,
+                            'claims',claims,'paid',paid,'extinguished',extinct,
+                            'outstandingChange',outstanding,'contributions',contrib,
+                            'taxAndContributionRevenue',revenue,'municipalPayroll',payroll,
+                            'treasuryChange',delta('treasuryCents'),
+                            'eligibleEnd',b['pensionEligibleAlive'],
+                            'dailyClaimsEnd',b['pensionNewClaimsDailyCents'],flush=True)
+                  print('PENSION_LIFECYCLE_80Y',tax,seed,
+                        'claimsAccrued',d['pensionClaimsAccruedCents'],
+                        'paid',d['historicalPensionsPaidCents'],
+                        'extinguished',d['pensionClaimsExtinguishedAtDeathCents'],
+                        'outstanding',d['unpaidPensionCreditsCents'],
+                        'treasury',d['treasuryCashCents'],
+                        'residentialTaxDebt',d['residentialPropertyTaxDebtOutstandingCents'],
+                        'aliveMin',d['minimumAliveAtAnyEvent'],'aliveEnd',d['aliveEnd'],
+                        'seconds',d['wallSeconds'],flush=True)
+          print('PENSION_LIFECYCLE_AUDIT_COMPLETE no_history_files no_policy_approved',flush=True)
+          PY
+      # Read-only diagnostic of cohort aging vs actual paid work, not a policy.
+      # Reuse deterministic tax-100 seed-42 baseline for 29,220 days, no history.
+      - name: Diagnose late pension cohort and paid productive base
+        if: contains(github.event.head_commit.message, '[pension-cohort-diagnostic]')
+        run: |
+          set -euo pipefail
+          BASE='--sims=10000 --days=29220 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25 --waste-treatment-units-per-shift=75 --integrated-v1-stress --eligible-birth-fallback --municipal-payroll-reserve-counterfactual'
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $BASE --seed=42 --monthly-residential-tax-cents=100 2>&1 | tee integrated-v1-cohort-seed42.log
+          python3 - <<'PY' | tee integrated-v1-cohort-summary.txt
+          import json,re
+          rows=open('integrated-v1-cohort-seed42.log').readlines()
+          i=next(i for i,line in enumerate(rows) if line.startswith('{'))
+          d=json.loads(''.join(rows[i:]))
+          assert d['seed']==42 and d['simulatedDays']==29220 and d['gregorianEnd']=='2100-01-01'
+          assert d['integratedV1StressFixture'] and d['municipalPayrollReserveCounterfactualFixture']
+          assert d['monthlyResidentialPropertyTaxCents']==100 and not d['historyPersistent']
+          assert d['moneyConserved'] and d['foodConserved'] and d['materialConserved']
+          assert d['fiscalTreasuryLedgerBalanced'] and d['pensionLiabilityLedgerBalanced'] and d['pensionLiabilityLedgerComplete']
+          assert d['minimumAliveAtAnyEvent']==10000 and d['aliveEnd']==15310
+          assert d['pensionClaimsAccruedCents']==1287706342 and d['unpaidPensionCreditsCents']==0
+          assert d['pensionClaimsExtinguishedAtDeathCents']==0
+          assert d['residentialPropertyTaxDebtOutstandingCents']==9865244
+          fiscal={}
+          for line in rows:
+              if not line.startswith('LAB_FISCAL '): continue
+              f={k:(1 if v=='True' else 0 if v=='False' else int(v)) for k,v in re.findall(r'\b([A-Za-z]\w*)=(-?\d+|True|False)\b',line)}
+              fiscal[f['day']]=f
+          for year in range(60,81):
+              f=fiscal[365*year]
+              assert sum(f[k] for k in ('cohortUnder18','cohort18To39','cohort40To69','cohort70Plus'))==f['alive']
+              assert f['cohort70To74']+f['cohort75To79']+f['cohort80Plus']==f['cohort70Plus']
+              assert f['workingAgeAssignedJobs']<=f['cohort18To39']+f['cohort40To69']
+              assert f['pensionEligibleAlive']<=f['cohort70Plus']
+              assert f['fiscalBalanced']==1 and f['pensionLiabilityLedgerBalanced']==1
+              if year==60: continue
+              a=fiscal[365*(year-1)]
+              def delta(k): return f[k]-a[k]
+              claims=delta('pensionClaimsAccruedCents')
+              contributions=delta('pensionContributionsPaidCents')
+              payroll=delta('municipalGrossPayrollCents')
+              pensions=delta('pensionsActuallyPaidCents')
+              revenue=sum(delta(k) for k in ('businessTaxPaidCents','residentialTaxPaidCents','pensionContributionsPaidCents'))
+              assert claims==pensions+delta('pensionCreditsOutstandingCents')+delta('pensionClaimsExtinguishedAtDeathCents')
+              assert revenue-payroll-pensions==delta('treasuryCents')
+              print('PENSION_COHORT_365D',year,'under18',f['cohortUnder18'],
+                    'working18To39',f['cohort18To39'],'working40To69',f['cohort40To69'],
+                    'age70Plus',f['cohort70Plus'],'pensionEligible',f['pensionEligibleAlive'],
+                    'assignedJobs',f['workingAgeAssignedJobs'],
+                    'paidPrivateFreightShifts',delta('privateFreightPaidShiftsCumulative'),
+                    'newClaims',claims,'contributionsPaid',contributions,
+                    'revenuePaid',revenue,'municipalPayrollPaid',payroll,
+                    'pensionsPaid',pensions,'treasuryChange',delta('treasuryCents'),flush=True)
+          print('PENSION_COHORT_DIAGNOSTIC_COMPLETE seed42 tax100 days29220 no_history_files no_policy_approved',flush=True)
+          PY
+      - name: Test three continuous 80-year cities with staffed water, sewage, wind, fuel and paid home deeds
+        if: ${{ !contains(github.event.head_commit.message, '[fiscal-tax-ab]') && !contains(github.event.head_commit.message, '[pension-liability-audit]') && !contains(github.event.head_commit.message, '[pension-cohort-diagnostic]') }}
+        run: |
+          set -uo pipefail
+          FLAGS='--sims=10000 --days=29220 --adversarial --vacancy-market --cohort-renewal --freight-labor --construction-pilot --capacity-priced-food --attendance-aware-farms --cross-farm-freight --farm-cost-pricing --basket-retail-service --retail-shop-fallback --retail-baskets-per-shift=20 --fair-household-hiring --municipal-sanitation-pilot --municipal-waste-treatment-pilot --fair-sanitation-dispatch --attendance-aware-municipal-shifts --municipal-collection-interval=3 --tax-inclusive-product-price --tax-cost-recovery-percent=25 --waste-treatment-units-per-shift=75 --integrated-v1-stress --eligible-birth-fallback --municipal-payroll-reserve-counterfactual'
+          failures=0
+          qualified=''
+          verified=0
+          for seed in 42 73 101; do
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $FLAGS --seed=$seed 2>&1 | tee "integrated-v1-seed$seed-80y.log"
+            if [ "$?" -ne 0 ]; then
+              echo "INTEGRATED_80Y_ENGINE_FAILURE seed=$seed" | tee "integrated-v1-seed$seed-summary.txt"
+              failures=$((failures+1))
+              continue
+            fi
+            python3 - "$seed" <<'PY' | tee "integrated-v1-seed$seed-summary.txt"
+          import json,re,sys
+          seed=int(sys.argv[1])
+          rows=open(f'integrated-v1-seed{seed}-80y.log').readlines()
+          i=next(i for i,s in enumerate(rows) if s.startswith('{'))
+          d=json.loads(''.join(rows[i:]))
+          assert d['integratedV1StressFixture'] and d['birthEligibilityFallbackFixture']
+          assert d['municipalPayrollReserveCounterfactualFixture']
+          assert d['simulatedDays']==29220 and d['gregorianEnd']=='2100-01-01'
+          assert d['moneyConserved'] and d['foodConserved'] and d['materialConserved']
+          assert d['fiscalTreasuryLedgerBalanced']
+          assert d['actualUtilityWorkShifts']>0 and d['consumedPotableWater']>0
+          assert d['sewagePhysicallyProcessed']>0 and d['generatedWindElectricity']>0
+          assert d['actualFuelImported']>0 and d['residentialDeedPurchasePaymentsCents']>0
+          print('INTEGRATED_V1_80Y seed',seed,'minimum',d['minimumAliveAtAnyEvent'],
+                'aliveEnd',d['aliveEnd'],'seconds',d['wallSeconds'],
+                'factsCountedWithoutFile',d['recordedFacts'],'unpaidPensionCredits',d['unpaidPensionCreditsCents'],flush=True)
+          samples={}
+          for line in rows:
+              if line.startswith('LAB_FISCAL '):
+                  fields={k:int(v) for k,v in re.findall(r'\b([A-Za-z]\w*)=(-?\d+)',line)}
+                  if fields.get('day') in (28855,29220): samples[fields['day']]=fields
+          assert set(samples)=={28855,29220},'Missing comparable 365-day fiscal samples'
+          start,end=samples[28855],samples[29220]
+          delta=lambda key:end[key]-start[key]
+          income=sum(delta(k) for k in ('businessTaxPaidCents','residentialTaxPaidCents','pensionContributionsPaidCents'))
+          outflow=sum(delta(k) for k in ('municipalGrossPayrollCents','pensionsActuallyPaidCents'))
+          assert income-outflow==delta('treasuryCents'),'Annual treasury flow mismatch'
+          print('INTEGRATED_FISCAL_LAST_365D seed',seed,'revenueCents',income,
+                'paidOutCents',outflow,'treasuryChangeCents',delta('treasuryCents'),
+                'pensionDebtStartCents',start['pensionCreditsOutstandingCents'],
+                'pensionDebtEndCents',end['pensionCreditsOutstandingCents'],
+                'pensionDebtChangeCents',delta('pensionCreditsOutstandingCents'),flush=True)
+          PY
+            if [ "$?" -ne 0 ]; then failures=$((failures+1)); continue; fi
+            if python3 - "$seed" <<'PY'
+          import json,sys
+          seed=int(sys.argv[1])
+          rows=open(f'integrated-v1-seed{seed}-80y.log').readlines()
+          i=next(i for i,s in enumerate(rows) if s.startswith('{'))
+          d=json.loads(''.join(rows[i:]))
+          assert d['minimumAliveAtAnyEvent']>=10000 and d['wallSeconds']<=21600
+          PY
+            then qualified="$qualified $seed"; else failures=$((failures+1)); fi
+          done
+          # Reopen every qualifying seed, one ~6 GB archive at a time.
+          for seed in $qualified; do
+            history_file="integrated-v1-seed$seed-80y.gz"
+            started=$(date +%s)
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- $FLAGS --seed=$seed --history="$history_file" 2>&1 | tee "integrated-v1-seed$seed-history.log"
+            if [ "$?" -ne 0 ]; then
+              failures=$((failures+1)); rm -f "$history_file"; continue
+            fi
+            python3 - "$seed" <<'PY' | tee "integrated-v1-seed$seed-history-summary.txt"
+          import json,sys
+          seed=int(sys.argv[1])
+          def report(path):
+              rows=open(path).readlines()
+              i=next(i for i,s in enumerate(rows) if s.startswith('{'))
+              return json.loads(''.join(rows[i:]))
+          control=report(f'integrated-v1-seed{seed}-80y.log')
+          saved=report(f'integrated-v1-seed{seed}-history.log')
+          keys=('recordedFacts','aliveEnd','minimumAliveAtAnyEvent','births','deaths',
+                'moneyConserved','foodConserved','materialConserved','treasuryCashCents',
+                'unpaidPensionCreditsCents','consumedPotableWater','sewagePhysicallyProcessed',
+                'generatedWindElectricity','fuelConsumedByRealFreight')
+          for key in keys:
+              assert control[key]==saved[key],f'Replay mismatch seed={seed} key={key}'
+          assert saved['seed']==seed and saved['historyPersistent'] and saved['demonstrated10kSustained']
+          assert saved['simulatedDays']==29220 and saved['wallSeconds']<=21600
+          open(f'integrated-v1-seed{seed}-facts.txt','w').write(str(saved['recordedFacts']))
+          print('INTEGRATED_HISTORY_WRITTEN seed',seed,'facts',saved['recordedFacts'],
+                'writeSeconds',saved['wallSeconds'],'matchedFields',len(keys),flush=True)
+          PY
+            if [ "$?" -ne 0 ]; then failures=$((failures+1)); rm -f "$history_file"; continue; fi
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- verify-history "$history_file" "$(cat "integrated-v1-seed$seed-facts.txt")" 29220 0 | tee "integrated-v1-seed$seed-verified.log"
+            if [ "$?" -ne 0 ]; then failures=$((failures+1)); rm -f "$history_file"; continue; fi
+            python3 - "$seed" "$started" <<'PY' | tee "integrated-v1-seed$seed-verified-summary.txt"
+          import json,sys,time
+          seed=int(sys.argv[1])
+          v=json.load(open(f'integrated-v1-seed{seed}-verified.log'))
+          expected=int(open(f'integrated-v1-seed{seed}-facts.txt').read())
+          elapsed=int(time.time())-int(sys.argv[2])
+          assert v['historyVerified'] and v['persistedFactsReadBack']==expected
+          assert v['daysObserved']==29220 and v['firstAndLastDayPresent']
+          assert v['persistedBytes']>0 and elapsed<=21600
+          print('INTEGRATED_HISTORY_VERIFIED seed',seed,'factsReadBack',expected,
+                'bytes',v['persistedBytes'],'writePlusReadSeconds',elapsed,flush=True)
+          PY
+            if [ "$?" -ne 0 ]; then failures=$((failures+1)); else verified=$((verified+1)); fi
+            rm -f "$history_file"
+          done
+          echo "INTEGRATED_LAB_80Y invalid_seed_count=$failures qualified_seeds=$qualified history_seeds_verified=$verified"
+          test "$failures" -eq 0 && test "$verified" -eq 3
+      - name: Preserve every negative and positive integrated result
+        if: always() && !contains(github.event.head_commit.message, '[fiscal-tax-ab]')
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-v1-five-system-eighty-year-evidence
+          path: |
+            integrated-v1-*.log
+            integrated-v1-*.txt
+          if-no-files-found: ignore
+      - name: Preserve fiscal A/B logs and negative outcomes
+        if: always() && contains(github.event.head_commit.message, '[fiscal-tax-ab]')
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-fiscal-tax-ab-evidence
+          path: |
+            integrated-fiscal-tax-*.log
+            integrated-fiscal-tax-*.txt
+          if-no-files-found: ignore
