@@ -42,7 +42,7 @@ jobs:
               echo "=== PROBE_START fixture=${fixture} mode=${mode} seed=${seed} rows=${rows} length=${length} seconds=4500 warmup=0 ==="
               TIMEFORMAT='TIME totalReal=%3R cpuUser=%3U cpuSystem=%3S'
               { time timeout 210s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- "${mode}" grid --seed=${seed} --warmup=0 --days=1 --window=4500 --cap=150 --rows="${rows}" --length="${length}" --signals=1; } 2>&1 | tee "artifacts/integrated-scale-probe/${fixture}-${mode}.log"
-              grep -q '^SUMMARY windows=1 secondsEach=7200 ' "artifacts/integrated-scale-probe/${fixture}-${mode}.log"
+              grep -q '^SUMMARY windows=1 secondsEach=4500 ' "artifacts/integrated-scale-probe/${fixture}-${mode}.log"
               grep -q '^INVARIANTS OK$' "artifacts/integrated-scale-probe/${fixture}-${mode}.log"
             done
             test "$(grep -c '^  STEP_PHASE ' "artifacts/integrated-scale-probe/${fixture}-profile.log")" -eq 13
