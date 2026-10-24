@@ -389,3 +389,26 @@ Cada entrada nova deve trazer: hipótese; SHA da branch; workflow/job/log; fixtu
 **Conclusão discriminante:** a diferença de 18.880 limites de nó/cruzamento entre seeds **não está distribuída proporcionalmente pela frota**: na seed 73, um único veículo (ID 5179) venceu 20.788 vezes na segunda hora, contra 1.284 vitórias do líder da seed 42. A instrumentação apenas conta o vencedor de `TimeToMovementChange`; **não comprova** que o veículo esteja parado, em loop geométrico, com colisão, nem que todas as vitórias causem atraso visível. O custo adicional é consistente com os subpassos e varreduras repetidas já medidos, mas não prova sua causa física. A igualdade do save final não verifica a ordem de cada evento intermediário. Não houve refeições/salários; fixture com obras/recursos/caixa artificiais, <10 mil SIMs, histórico apenas em memória e nenhum Godot.
 
 **Próxima hipótese isolada:** observar, **sem mudar movimento**, a trajetória do vencedor 5179 durante a segunda hora (nó de destino, `RouteIndex`, posição/distância ao alvo, velocidade e progresso entre limites) e comparar com o líder da seed 42. Distinguir cruzamento repetido por progresso legítimo de limite reemitido sem avanço; só depois considerar correção/otimização diferencial com casos adversariais. Não repetir o benchmark de 2h sem instrumentação capaz de responder a essa pergunta.
+
+
+## Vigésima execução — um veículo quase imóvel provoca dezenas de milhares de limites repetidos (24/10/2026)
+
+**Evidência material:** [Actions #40093387222](https://github.com/Marlohn/IndexCities/actions/runs/40093387222), SHA `ff11a8746b882e80e3c8cd46211f7ec087378729`, job `phase-profile` **success** ([logs](https://github.com/Marlohn/IndexCities/actions/runs/40093387222/job/120870514001)). .NET 8 Release; `scale|profile grid --seed=42|73 --warmup=0 --days=1 --window=7200 --cap=150 --rows=10 --length=800 --signals=1`; cada execução percorreu **3.600 quanta de 2 segundos** sem pular tempo. A observação nova registra posição, destino viário, índice de rota e distância ao alvo **somente quando o veículo vence um limite de nó/cruzamento**, não uma trajetória contínua. Invariantes, save/load e SHA-256 **completo** coincidiram entre controle/perfil por seed (42 `C7381C1699199D70D9195A24E53B833B93693C53FD84B97E602BEF67CE1CB621`; 73 `01533F5C64C59E7842F225D067B8BE6B9E0390CEE768D494343741B482EE893C`).
+
+| Medida na segunda hora (3.600–7.200 s) | Seed 42 | Seed 73 |
+| --- | ---: | ---: |
+| SIMs vivos / veículos / empregados (fim da janela) | 808 / 576 / 708 | 812 / 578 / 708 |
+| Vencedor dominante de limite de cruzamento | ID **3949**: 1.284 vitórias | ID **5179**: **20.788 vitórias** |
+| Destinos viários distintos nas vitórias | 2 | **1** (nó **3027**, 20.788/20.788) |
+| Transições consecutivas sem deslocamento observável | **1.282/1.283** | **20.783/20.787** |
+| Maior sequência sem deslocamento observável | 1.282 | **10.921** |
+| Índice de rota inicial → final | 15 → 30 | **3 → 3** |
+| Distância entre posições sucessivamente amostradas, acumulada | 54,142863 m | **0,022910 m** |
+| Distância ao nó-alvo inicial → final | 0,186563 → 7,538295 m (mudou de alvo) | **1,167627 → 1,144717 m** (mesmo alvo) |
+| Wall da janela `scale/profile` | 76,43 / 76,92 s | 135,18 / 135,97 s |
+| Avanço efetivo `scale` / alocação por janela | **94 s simulados/s real** / 18.360 MB | **53 s simulados/s real** / 35.456 MB |
+| Working set / fatos históricos em memória (`scale`) | 97 MB / 8.807 | 135 MB / 8.596 |
+
+**Conclusão discriminante:** na seed 73, **99,98%** das transições entre vitórias consecutivas do veículo 5179 ocorreram sem deslocamento mensurável (20.783/20.787), sempre mirando o mesmo nó e com índice de rota inalterado; sua posição avançou somente ~**2,3 cm** entre a primeira e a última amostra da segunda hora. O vencedor da seed 42 também apresenta uma sequência imóvel, porém **16,2× menos vitórias**. Assim, a explosão de subpassos é **compatível com reemitir limites previstos de chegada a nó para um veículo que fisicamente não consegue progredir**, e não com 20 mil cruzamentos efetivamente realizados. O método `TimeToMovementChange` calcula o tempo até o alvo pela distância/velocidade nominal; a rotina real pode bloquear movimento. A instrumentação **ainda não identifica o bloqueador nem a causa da imobilidade**; não prova bug de tráfego, deadlock, perda de conservação ou solução segura por supressão de eventos.
+
+**Limites:** a métrica de deslocamento é entre *amostras de vitórias*, não odômetro contínuo; controle/perfil com save final igual não prova igualdade de toda a ordem intermediária. Cenário artificial com obras instantâneas, caixa/serviços ampliados, apenas 808/812 vivos, zero refeições/salários nas duas horas, histórico em memória sem arquivo factual externo e sem custo Godot. Tempos de CIs distintos não são ganho/regressão controlados; comparar apenas o par deste job. **Próximo teste curto:** registrar, somente no perfil e para o veículo vencedor, `WaitingSince`, `Cause`, estado de entrada/cruzamento e o bloqueio efetivo no trecho de movimento; distinguir fila legítima de reavaliação inútil antes de otimizar. Nenhum evento, travessia ou ordem causal pode ser omitido para obter velocidade.
