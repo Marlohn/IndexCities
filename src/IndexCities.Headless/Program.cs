@@ -19,7 +19,7 @@ var known=new HashSet<string>{"rows","length","days","cap","signals","seed","gro
 var opts=new Dictionary<string,string>();foreach(var p in args.Skip(2).Select(a=>a.TrimStart('-').Split('=',2)))opts[p[0]]=p.Length>1?p[1]:"1";
 string Opt(string k,string d)=>opts.GetValueOrDefault(k,d);
 if(opts.Keys.FirstOrDefault(k=>!known.Contains(k)) is {} unknown){Console.Error.WriteLine("opção desconhecida: --"+unknown);return 2;}
-if(args.Length<2||args[0] is not ("scale" or "census" or "stuck" or "profile")||args[1] is not ("cycle" or "grid")){Console.Error.WriteLine("uso: scale|census|stuck|profile cycle|grid [--rows=3] [--length=400] [--days=7] [--cap=600] [--signals=1] [--seed=42] [--growth=0] [--warmup=2]");return 2;}
+if(args.Length<2||args[0] is not ("scale" or "census" or "stuck" or "profile" or "repro")||args[1] is not ("cycle" or "grid")){Console.Error.WriteLine("uso: scale|census|stuck|profile cycle|grid [--rows=3] [--length=400] [--days=7] [--cap=600] [--signals=1] [--seed=42] [--growth=0] [--warmup=2]");return 2;}
 var seed=int.Parse(Opt("seed","42"));var days=int.Parse(Opt("days","7"));var cap=double.Parse(Opt("cap","600"),System.Globalization.CultureInfo.InvariantCulture);var growth=int.Parse(Opt("growth","0"));var warmup=int.Parse(Opt("warmup","2"));
 var windowSeconds=int.Parse(Opt("window","86400"));
 if(windowSeconds<2||windowSeconds>86400||windowSeconds%2!=0){Console.Error.WriteLine("--window deve estar entre 2 e 86400 segundos e ser múltiplo de 2");return 2;}
@@ -29,6 +29,47 @@ if(args[1]=="cycle"){sim=Fixtures.Cycle(seed);info="cycle (CityCycleTests.City, 
 else (sim,info)=Fixtures.Grid(seed,int.Parse(Opt("rows","3")),double.Parse(Opt("length","400"),System.Globalization.CultureInfo.InvariantCulture),Opt("signals","1")=="1",growth>0);
 Console.WriteLine($"FIXTURE {info} build={sw.Elapsed.TotalSeconds:F1}s .NET={Environment.Version} cpu={Environment.ProcessorCount} release={!Debugger.IsAttached}");
 if(growth>0){sw.Restart();var hours=0;while(Fixtures.AddHouses(sim,growth)>0){sim.Advance(3600);hours++;}Console.WriteLine($"GROWTH {growth} casas/h por {hours} h wall={sw.Elapsed.TotalSeconds:F1}s pop={sim.Population}");}
+// PR57-only deterministic replay of the real 5183/5294/5179 queue.
+// This is a diagnostic command; it does not change CitySimulation behavior.
+if(args[0]=="repro"){
+    const double checkpointSecond=3606;
+    const double observationSeconds=36;
+    sim.Advance(checkpointSecond);
+    var snapshot=sim.SaveToJson();
+    Console.WriteLine($"PR57_REAL_CHECKPOINT seed={seed} second={sim.State.ElapsedSeconds:F3} {Stats(sim)} bytes={snapshot.Length}");
+    foreach(var quantum in new[]{0.1,0.5,2.0}){
+        var copy=CitySimulation.FromJson(snapshot);
+        var ids=new[]{5183,5294,5179};
+        var observed=ids.Select(id=>copy.State.Vehicles.Single(v=>v.Id==id)).ToArray();
+        var originals=observed.Select(v=>v.Position).ToArray();
+        var travelled=new double[ids.Length];
+        var idle=new double[ids.Length];
+        var longestIdle=new double[ids.Length];
+        double pairedIdle=0,longestPairedIdle=0;
+        for(var i=0;i<(int)Math.Round(observationSeconds/quantum);i++){
+            var before=observed.Select(v=>v.Position).ToArray();
+            copy.Advance(quantum);
+            for(var k=0;k<ids.Length;k++){
+                var distance=observed[k].Position.Distance(before[k]);
+                travelled[k]+=distance;
+                idle[k]=observed[k].Status==VehicleStatus.Travelling&&distance<.000001?idle[k]+quantum:0;
+                longestIdle[k]=Math.Max(longestIdle[k],idle[k]);
+            }
+            pairedIdle=idle[0]>0&&idle[1]>0?pairedIdle+quantum:0;
+            longestPairedIdle=Math.Max(longestPairedIdle,pairedIdle);
+        }
+        copy.CheckInvariants();
+        for(var k=0;k<ids.Length;k++){
+            var v=observed[k];
+            Console.WriteLine($"PR57_REAL_VEHICLE quantum={quantum:F1} id={v.Id} firstX={originals[k].X:F6} firstZ={originals[k].Z:F6} lastX={v.Position.X:F6} lastZ={v.Position.Z:F6} net={v.Position.Distance(originals[k]):F6} path={travelled[k]:F6} longestIdle={longestIdle[k]:F3} routeIndex={v.RouteIndex} status={v.Status} waitingSince={v.WaitingSince:F6} cause={v.Cause?.Replace(' ','_')}");
+        }
+        var endSave=copy.SaveToJson();
+        if(CitySimulation.FromJson(endSave).SaveToJson()!=endSave)throw new InvalidOperationException("PR57 checkpoint save/load mismatch");
+        Console.WriteLine($"PR57_REAL_RESULT quantum={quantum:F1} seconds={copy.State.ElapsedSeconds-checkpointSecond:F3} longestPairIdle={longestPairedIdle:F3} sha256={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(endSave)))} {Stats(copy)}");
+    }
+    Console.WriteLine("PR57_REAL_INVARIANTS OK");
+    return 0;
+}
 sw.Restart();sim.Advance(warmup*86400);
 Console.WriteLine($"WARMUP {warmup}d wall={sw.Elapsed.TotalSeconds:F1}s {Stats(sim)}");
 var census=args[0]=="census"?new Census():null;var stuck=args[0]=="stuck"?new Stuck():null;

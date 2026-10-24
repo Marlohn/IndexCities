@@ -1,4 +1,4 @@
-name: Integrated real-core stationary leader chain diagnosis
+name: Integrated real-core authentic lane queue checkpoint repro
 
 on:
   push:
@@ -18,10 +18,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  phase-profile:
-    name: Seed 73 75-minute blocker chain control vs profile
+  causal-repro:
+    name: Replay actual seed-73 two-car physical blocking from 3606s
     runs-on: ubuntu-latest
-    timeout-minutes: 16
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -29,46 +29,20 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Build real-core headless (Release)
         run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: Observe opposed simultaneous car departures across quanta
-        shell: bash
-        run: |
-          set -euo pipefail
-          dotnet run -c Release --project tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -- DualExitConflictExperiment | tee /tmp/pr57-dual-exit.log
-          test "$(grep -c '^PR57_DUAL_EXIT ' /tmp/pr57-dual-exit.log)" -eq 3
-      - name: Compare bounded 75-minute seed-73 window, no skipped quanta
+      - name: Compare full-city checkpoint under .1s .5s and 2s quanta
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p artifacts/integrated-scale-probe
-          echo "PROBE_SHA=${GITHUB_SHA}"
-          for seed in 73; do
-            fixture="expanded-seed${seed}"
-            rows=10; length=800
-            for mode in scale profile; do
-              echo "=== PROBE_START fixture=${fixture} mode=${mode} seed=${seed} rows=${rows} length=${length} seconds=4500 warmup=0 ==="
-              TIMEFORMAT='TIME totalReal=%3R cpuUser=%3U cpuSystem=%3S'
-              { time timeout 210s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- "${mode}" grid --seed=${seed} --warmup=0 --days=1 --window=4500 --cap=150 --rows="${rows}" --length="${length}" --signals=1; } 2>&1 | tee "artifacts/integrated-scale-probe/${fixture}-${mode}.log"
-              grep -q '^SUMMARY windows=1 secondsEach=4500 ' "artifacts/integrated-scale-probe/${fixture}-${mode}.log"
-              grep -q '^INVARIANTS OK$' "artifacts/integrated-scale-probe/${fixture}-${mode}.log"
-            done
-            test "$(grep -c '^  STEP_PHASE ' "artifacts/integrated-scale-probe/${fixture}-profile.log")" -eq 13
-            test "$(grep -c '^  STEP_DETAIL ' "artifacts/integrated-scale-probe/${fixture}-profile.log")" -eq 8
-            grep -q '^STEP_PROFILE steps=2250 ' "artifacts/integrated-scale-probe/${fixture}-profile.log"
-            grep -q '^VEHICLE_PROFILE steps=2250 ' "artifacts/integrated-scale-probe/${fixture}-profile.log"
-            test "$(grep -c '^  VEHICLE_DETAIL ' "artifacts/integrated-scale-probe/${fixture}-profile.log")" -eq 4
-            test "$(grep -c '^  VEHICLE_SCAN ' "artifacts/integrated-scale-probe/${fixture}-profile.log")" -eq 2
-            grep -q '^LANE_HOLD_RADIUS hits=' "artifacts/integrated-scale-probe/${fixture}-profile.log"
-            grep -q '^LANE_LEADER_WINNERS selected=' "artifacts/integrated-scale-probe/${fixture}-profile.log"
-            base=$(sed -n 's/.*sha256=\([0-9A-F]*\).*/\1/p' "artifacts/integrated-scale-probe/${fixture}-scale.log" | tail -n 1)
-            observed=$(sed -n 's/.*sha256=\([0-9A-F]*\).*/\1/p' "artifacts/integrated-scale-probe/${fixture}-profile.log" | tail -n 1)
-            echo "PROBE_SHA_COMPARE fixture=${fixture} base=${base} profiled=${observed} equal=$([[ -n "$base" && "$base" == "$observed" ]] && echo true || echo false)"
-            if [[ -z "$base" || "$base" != "$observed" ]]; then echo "::error::Profile changed final save"; exit 1; fi
-          done
-      - name: Attach blocker-chain raw controls and phase timings
+          dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- repro grid --seed=73 --warmup=0 --rows=10 --length=800 --signals=1 | tee artifacts/integrated-scale-probe/authentic-repro.log
+          grep -q '^PR57_REAL_INVARIANTS OK$' artifacts/integrated-scale-probe/authentic-repro.log
+          test "$(grep -c '^PR57_REAL_RESULT ' artifacts/integrated-scale-probe/authentic-repro.log)" -eq 3
+          test "$(grep -c '^PR57_REAL_VEHICLE ' artifacts/integrated-scale-probe/authentic-repro.log)" -eq 9
+      - name: Preserve checkpoint replay log
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-75m-blocker-chain-raw
-          path: artifacts/integrated-scale-probe/*.log
+          name: integrated-scale-authentic-repro
+          path: artifacts/integrated-scale-probe/authentic-repro.log
           if-no-files-found: warn
           retention-days: 30
