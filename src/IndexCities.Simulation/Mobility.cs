@@ -246,6 +246,9 @@ public sealed partial class CitySimulation
         var pr57DockAabb=pr57BitsetScan&&Environment.GetEnvironmentVariable("PR57_DOCK_AABB")=="1";
         // PR57 A/B: reuse exact longitudinal/lateral projections already computed by the conservative gate.
         var pr57GateReuse=pr57BitsetScan&&Environment.GetEnvironmentVariable("PR57_GATE_REUSE")=="1";
+        // PR57 A/B: exact-order bitset cells intersecting the full, conservative
+        // lane corridor, including the 20m dock-body exception (off by default).
+        var pr57CorridorScan=pr57BitsetScan&&Environment.GetEnvironmentVariable("PR57_CORRIDOR_SCAN")=="1";
         var pr57ScanCandidates=pr57ActiveScan
             ?State.Vehicles.Where(o=>!o.PassengerCar||o.Status!=VehicleStatus.Parked||_entryFrame?.ContainsKey(o.Id)==true).ToList()
             :State.Vehicles;
@@ -321,12 +324,43 @@ public sealed partial class CitySimulation
             oldFound.Sort((a,b)=>pr57VehicleOrder![a.Id].CompareTo(pr57VehicleOrder[b.Id]));
             return oldFound;
         }
+        List<Vehicle> Pr57LaneCorridorCandidates(Vehicle v,double reach){
+            // All ordinary leaders require lateral distance <2.6m; the
+            // BodyAcrossLane exception requires Euclidean distance <=20m.
+            // A 32m cell's center differs by at most 16m in each axis.
+            // Expand BOTH projections by the exact cell support plus a
+            // floating-point margin; never cap the number of vehicles.
+            var sin=Math.Sin(v.Heading);var cos=Math.Cos(v.Heading);
+            var margin=20+pr57CellWidth/2*(Math.Abs(sin)+Math.Abs(cos))+1e-7;
+            var scratch=pr57BitsetScratch!;
+            Array.Clear(scratch);
+            foreach(var (cell,bits) in pr57BitsetCells!){
+                var dx=(cell.X+0.5)*pr57CellWidth-v.Position.X;
+                var dz=(cell.Z+0.5)*pr57CellWidth-v.Position.Z;
+                if(Math.Abs(dx*cos-dz*sin)>margin)continue;
+                var forward=dx*sin+dz*cos;
+                if(forward< -margin||forward>reach+margin)continue;
+                for(var i=0;i<scratch.Length;i++)scratch[i]|=bits[i];
+            }
+            var found=pr57BitsetResults!;
+            found.Clear();
+            for(var i=0;i<scratch.Length;i++){
+                var word=scratch[i];
+                while(word!=0){
+                    var bit=System.Numerics.BitOperations.TrailingZeroCount(word);
+                    found.Add(State.Vehicles[i*64+bit]);
+                    word&=word-1;
+                }
+            }
+            return found;
+        }
         List<Vehicle> Pr57LaneCandidates(Vehicle v,bool entering){
             // Entry admission uses a speed-dependent corridor: never spatially filter it.
             if(!(pr57SpatialScan||pr57BitsetScan)||entering)return pr57ScanCandidates;
             // The leader ray extends beyond all indexed positions, with 20m
             // clearance for the existing BodyAcrossLane special case.
             var reach=2*(pr57WorldExtent+Math.Max(Math.Abs(v.Position.X),Math.Abs(v.Position.Z)))+40;
+            if(pr57CorridorScan)return Pr57LaneCorridorCandidates(v,reach);
             var end=new Point(v.Position.X+Math.Sin(v.Heading)*reach,v.Position.Z+Math.Cos(v.Heading)*reach);
             return Pr57Query(Math.Min(v.Position.X,end.X)-20,Math.Max(v.Position.X,end.X)+20,
                              Math.Min(v.Position.Z,end.Z)-20,Math.Max(v.Position.Z,end.Z)+20);

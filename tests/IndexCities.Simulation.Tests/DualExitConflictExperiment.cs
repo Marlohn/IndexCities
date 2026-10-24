@@ -64,7 +64,15 @@ public sealed class DualExitConflictExperiment
     public void Fast_scan_modes_match_full_adversarial_checkpoints()
     {
         // Restore exactly the same starting state for all three candidate modes.
-        var snapshot=Pair().SaveToJson();
+        var withDock=Pair();
+        // Dock-body occupant near a 32m cell boundary: corridor filtering must
+        // retain its original physical obstruction, not merely lane centers.
+        withDock.State.Vehicles.Add(new(){
+            Id=6101,External=true,ExternalDriverId="pr57-dock",PassengerCar=false,
+            Position=new(7.7,63.99),Heading=Math.PI/2,Status=VehicleStatus.Parked,
+            DockPosition=new(7.7,63.99),Fuel=40
+        });
+        var snapshots=new[]{Pair().SaveToJson(),withDock.SaveToJson()};
         var oldActive=Environment.GetEnvironmentVariable("PR57_ACTIVE_SCAN");
         var oldSpatial=Environment.GetEnvironmentVariable("PR57_SPATIAL_SCAN");
         var oldBitset=Environment.GetEnvironmentVariable("PR57_BITSET_SCAN");
@@ -74,11 +82,13 @@ public sealed class DualExitConflictExperiment
         var oldHoist=Environment.GetEnvironmentVariable("PR57_DOCK_GATE_HOIST");
         var oldAabb=Environment.GetEnvironmentVariable("PR57_DOCK_AABB");
         var oldGate=Environment.GetEnvironmentVariable("PR57_GATE_REUSE");
+        var oldCorridor=Environment.GetEnvironmentVariable("PR57_CORRIDOR_SCAN");
         try{
             Environment.SetEnvironmentVariable("PR57_ACTIVE_SCAN","1");
             Environment.SetEnvironmentVariable("PR57_SPATIAL_SCAN","0");
+            foreach(var snapshot in snapshots){
             List<string>? reference=null;
-            foreach(var mode in new[]{(Fast:"0",Bend:"0",Bitset:"0",Reuse:"0",Hoist:"0",Aabb:"0",Gate:"0"),(Fast:"1",Bend:"0",Bitset:"0",Reuse:"0",Hoist:"0",Aabb:"0",Gate:"0"),(Fast:"1",Bend:"0",Bitset:"1",Reuse:"0",Hoist:"0",Aabb:"0",Gate:"0"),(Fast:"1",Bend:"0",Bitset:"1",Reuse:"1",Hoist:"0",Aabb:"0",Gate:"0"),(Fast:"1",Bend:"1",Bitset:"0",Reuse:"0",Hoist:"0",Aabb:"0",Gate:"0"),(Fast:"1",Bend:"0",Bitset:"1",Reuse:"0",Hoist:"1",Aabb:"0",Gate:"0"),(Fast:"1",Bend:"0",Bitset:"1",Reuse:"0",Hoist:"1",Aabb:"1",Gate:"0"),(Fast:"1",Bend:"0",Bitset:"1",Reuse:"0",Hoist:"1",Aabb:"0",Gate:"1")}){
+            foreach(var mode in new[]{(Fast:"0",Bend:"0",Bitset:"0",Reuse:"0",Hoist:"0",Aabb:"0",Gate:"0",Corridor:"0"),(Fast:"1",Bend:"0",Bitset:"0",Reuse:"0",Hoist:"0",Aabb:"0",Gate:"0",Corridor:"0"),(Fast:"1",Bend:"0",Bitset:"1",Reuse:"0",Hoist:"0",Aabb:"0",Gate:"0",Corridor:"0"),(Fast:"1",Bend:"0",Bitset:"1",Reuse:"1",Hoist:"0",Aabb:"0",Gate:"0",Corridor:"0"),(Fast:"1",Bend:"1",Bitset:"0",Reuse:"0",Hoist:"0",Aabb:"0",Gate:"0",Corridor:"0"),(Fast:"1",Bend:"0",Bitset:"1",Reuse:"0",Hoist:"1",Aabb:"0",Gate:"0",Corridor:"0"),(Fast:"1",Bend:"0",Bitset:"1",Reuse:"0",Hoist:"1",Aabb:"1",Gate:"0",Corridor:"0"),(Fast:"1",Bend:"0",Bitset:"1",Reuse:"0",Hoist:"1",Aabb:"0",Gate:"1",Corridor:"0"),(Fast:"1",Bend:"0",Bitset:"1",Reuse:"0",Hoist:"1",Aabb:"0",Gate:"0",Corridor:"1")}){
                 Environment.SetEnvironmentVariable("PR57_FAST_SCAN",mode.Fast);
                 Environment.SetEnvironmentVariable("PR57_BITSET_SCAN",mode.Bitset);
                 Environment.SetEnvironmentVariable("PR57_BEND_PREFILTER",mode.Bend);
@@ -86,6 +96,7 @@ public sealed class DualExitConflictExperiment
                 Environment.SetEnvironmentVariable("PR57_DOCK_GATE_HOIST",mode.Hoist);
                 Environment.SetEnvironmentVariable("PR57_DOCK_AABB",mode.Aabb);
                 Environment.SetEnvironmentVariable("PR57_GATE_REUSE",mode.Gate);
+                Environment.SetEnvironmentVariable("PR57_CORRIDOR_SCAN",mode.Corridor);
                 var sim=CitySimulation.FromJson(snapshot);
                 var checkpoints=new List<string>();
                 for(var i=1;i<=60;i++){
@@ -94,6 +105,7 @@ public sealed class DualExitConflictExperiment
                 }
                 if(reference is null)reference=checkpoints;
                 else Assert.Equal(reference,checkpoints);
+            }
             }
         }finally{
             Environment.SetEnvironmentVariable("PR57_ACTIVE_SCAN",oldActive);
@@ -105,6 +117,7 @@ public sealed class DualExitConflictExperiment
             Environment.SetEnvironmentVariable("PR57_DOCK_GATE_HOIST",oldHoist);
             Environment.SetEnvironmentVariable("PR57_DOCK_AABB",oldAabb);
             Environment.SetEnvironmentVariable("PR57_GATE_REUSE",oldGate);
+            Environment.SetEnvironmentVariable("PR57_CORRIDOR_SCAN",oldCorridor);
         }
     }
 
