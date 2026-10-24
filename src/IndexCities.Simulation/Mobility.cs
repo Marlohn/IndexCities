@@ -242,6 +242,8 @@ public sealed partial class CitySimulation
         // PR57 A/B: the vehicle does not change during a leader enumeration;
         // hoist its dock eligibility check outside the per-candidate loop.
         var pr57DockGateHoist=pr57BitsetScan&&Environment.GetEnvironmentVariable("PR57_DOCK_GATE_HOIST")=="1";
+        // PR57 A/B: conservative prefilter for BodyAcrossLane only (its exact 20m test remains).
+        var pr57DockAabb=pr57BitsetScan&&Environment.GetEnvironmentVariable("PR57_DOCK_AABB")=="1";
         var pr57ScanCandidates=pr57ActiveScan
             ?State.Vehicles.Where(o=>!o.PassengerCar||o.Status!=VehicleStatus.Parked||_entryFrame?.ContainsKey(o.Id)==true).ToList()
             :State.Vehicles;
@@ -475,7 +477,10 @@ public sealed partial class CitySimulation
                     var other=enteringLane?EntryFrameVehicle(liveOther):liveOther;
                     // A truck stopped at a dock with its body across this lane (a street bay)
                     // is queued behind like a leader, keeping the queue gap (Mobility.SharedSpace).
-                    if(other.Id!=v.Id&&(pr57DockGateHoist?pr57DockGate:(!LeavesDock(v)||OnCarriageway(v)))&&BodyAcrossLane(v,other) is {} docked){HoldFor(other,docked);continue;}
+                    if(other.Id!=v.Id&&(pr57DockGateHoist?pr57DockGate:(!LeavesDock(v)||OnCarriageway(v)))&&
+                       (!pr57DockAabb||(!other.PassengerCar&&other.Machine==PavingMachine.None&&
+                         Math.Abs(other.Position.X-v.Position.X)<=20.00000001&&Math.Abs(other.Position.Z-v.Position.Z)<=20.00000001))&&
+                       BodyAcrossLane(v,other) is {} docked){HoldFor(other,docked);continue;}
                     if(other.Id==v.Id||!OccupiesLane(other))continue;
                     var relative=other.Position-v.Position;
                     if(insideMap&&relative.Distance(new(0,0))<.1){if(other.Status==VehicleStatus.Stranded||other.Id<v.Id)HoldFor(other,0);continue;}
