@@ -211,3 +211,23 @@ Cada entrada nova deve trazer: hipótese; SHA da branch; workflow/job/log; fixtu
 **Conclusão discriminante:** as duas varreduras integrais de `State.Vehicles` respondem por **41,13%** do tempo de `movement` na fixture média e **39,54%** na ampliada. Não constituem maioria: aproximadamente 60% ainda pertence a manobras, verificações de geometria, outros percursos e overhead. A contagem de visitas aumenta ×13,25 ao expandir a frota ×2,19 e as invocações de varredura por quantum ×6,05, coerente com custo multiplicativo de frota e atividade. **Visita não significa bloqueador relevante**; as medições atuais não contam quantos veículos efetivamente satisfazem as condições de contenção. Os cronômetros incluem GC/overhead e a diferença de wall em relação a CIs anteriores é ruído não controlado; não atribuir causalidade apenas à comparação entre execuções. A janela é inicial, sem salários/refeições, com obras e caixa/serviços artificiais, <<10 mil vivos e sem Godot.
 
 **Próxima hipótese única, sem alterar a física:** apenas uma pequena fração das centenas de milhões de visitas pode efetivamente bloquear a faixa/curva. Contar chamadas a `HoldFor` (candidatos de contenção, não necessariamente o bloqueador final) e entradas em `bendLeaders` (candidatos geométricos), preservando a ordem de varredura, e reportar `hits/visits`. Reutilizar a janela 4h, seed 42, controle `scale` versus `profile`, 7.200 quanta, invariantes, save relido e SHA-256 completo igual. Se a fração for alta, índice espacial pode não ser o primeiro alvo; se baixa, investigar estrutura de candidatos com prova de equivalência causal antes de otimizar. Não criar novo mecanismo de trânsito nesta medição.
+
+## Décima primeira execução — quase todas as visitas são irrelevantes para contenção (24/10/2026)
+
+**Evidência material:** [Actions #40075037628](https://github.com/Marlohn/IndexCities/actions/runs/40075037628), SHA `21f3f6b462e12a669d3c2fcafdd31f44280e9f92`, job `phase-profile` **success** ([logs do job](https://github.com/Marlohn/IndexCities/actions/runs/40075037628/job/120816464617)). .NET 8 Release, seed 42, `grid --warmup=0 --days=1 --window=14400 --cap=150 --signals=1`, `--rows=6 --length=600` e `--rows=10 --length=800`, modos `scale`/ `profile`. Foram **7.200 quanta reais de 2 s** em cada condição. Todas passaram invariantes e save/load; SHA-256 **completo** dos saves coincide entre controle/perfil e com os resultados anteriores das respectivas fixtures. Hash final igual não comprova igualdade de toda a sequência interna.
+
+| Janela inicial 4h, seed 42 | 6×600: 363 vivos, 263 veículos | 10×800: 808 vivos, 576 veículos |
+| --- | ---: | ---: |
+| Wall `scale/profile` (s) | 10,55 / 10,77 | 93,57 / 93,55 |
+| Avanço efetivo `scale` (s simulado/s real) | 1.365 | 154 |
+| Movimento / varredura de faixa / curva (s, `profile`) | 6,856 / 2,064 / 0,703 | 79,460 / 24,310 / 6,512 |
+| Visitas da varredura de faixa | 34.013.001 | 450.793.152 |
+| Chamadas a `HoldFor` na faixa | **874.486 (2,5710% das visitas)** | **5.030.690 (1,1160%)** |
+| Visitas da varredura de curva | 34.013.001 | 450.793.152 |
+| Candidatos geométricos de curva | **22 (~0,000065%)** | **376 (~0,000083%)** |
+| Alocação gerenciada / GC0 / GC2 | 2.576 MB / 155 / 2 | 22.743 MB / 1.364 / 6 |
+| Histórico em memória / refeições / salários | 3.702 / 0 / 0 | 10.228 / 0 / 0 |
+
+**Conclusão discriminante:** a grande maioria das visitas não produz sequer um candidato de contenção. As duas varreduras custaram **~40,4% do movimento** em 6×600 e **~38,8%** em 10×800; sua eliminação integral, mesmo se fosse semanticamente possível, **não** resolveria sozinha os ~60% restantes do movimento. `HoldFor` pode ser chamado para candidatos que não viram bloqueador final; os 22/376 candidatos de curva são contagens após predicados geométricos, não colisões reais. A baixa seletividade dá fundamento para investigar uma filtragem espacial **sem mudar ordem de candidatos, estados mutáveis ou desempates por ID**, mas **não prova** que um índice terá custo menor ou equivalência causal. Uma otimização candidata exigirá controle A/B, invariantes, save relido, hash completo e testes de trânsito adversariais antes de qualquer adoção.
+
+**Limites:** janela inicial sem refeições/salários, fixture com obras instantâneas e dinheiro/serviços artificiais, menos de 10 mil SIMs, sem Godot e sem história individual externa persistida. `profile` mede wall com GC e overhead; a variação entre CIs não demonstra aceleração ou regressão. Próxima incerteza de maior valor: se é possível reduzir visitas por filtro espacial **exato e atualizado após movimento**, preservando todas as exceções de acesso à faixa, veículos parados e curvas; não implementar aproximação que omita colisões/causalidade.
