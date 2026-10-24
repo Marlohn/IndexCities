@@ -256,6 +256,16 @@ public sealed partial class CitySimulation
                                 firstNodeSweepPairs++;
                         }
                         firstNodeSweepsOverlap=firstNodeSweepPairs>0;
+                        // Inspect the *same* sampled body sweeps beyond one node.
+                        // Pure observation: the first node alone missed the real hold.
+                        foreach(var through in new[]{1,2,4}){
+                            var extendedEntrant=Manoeuvre(v,v.Route,0,v.Position,v.Heading,[],false,int.MaxValue,out _,out _,through:through);
+                            var extendedOther=Manoeuvre(probe5294,probe5294.Route,0,probe5294.Position,probe5294.Heading,[],false,int.MaxValue,out _,out _,through:through);
+                            var conflictPairs=0;
+                            foreach(var a in extendedEntrant)foreach(var b in extendedOther)
+                                if(a.Position.Distance(b.Position)<12&&BodiesOverlap(v,a.Position,a.Heading,probe5294,b.Position,b.Heading))conflictPairs++;
+                            Console.WriteLine($"PR57_ENTRY_SWEEP second={probeTime:F6} throughIndex={through} firstNodePairs={firstNodeSweepPairs} extendedPairs={conflictPairs} entrantPoses={extendedEntrant.Count} otherPoses={extendedOther.Count}");
+                        }
                     }
                     var crossingNow=false;var crossingNext=false;
                     if(probe5294 is not null&&probe5294.Position.Distance(v.Position)<20&&

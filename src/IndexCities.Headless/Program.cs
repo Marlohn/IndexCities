@@ -39,6 +39,7 @@ if(args[0]=="repro"){
     Console.WriteLine($"PR57_REAL_CHECKPOINT seed={seed} second={sim.State.ElapsedSeconds:F3} {Stats(sim)} bytes={snapshot.Length}");
     foreach(var quantum in new[]{0.1,0.5,2.0}){
         var copy=CitySimulation.FromJson(snapshot);
+        if(quantum==2.0)copy.CostProfile=new StepCostProfile(); // profile-only swept-path observations
         var ids=new[]{5183,5294,5179};
         var observed=ids.Select(id=>copy.State.Vehicles.Single(v=>v.Id==id)).ToArray();
         var originals=observed.Select(v=>v.Position).ToArray();
