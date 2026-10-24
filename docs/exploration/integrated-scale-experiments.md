@@ -192,3 +192,22 @@ Cada entrada nova deve trazer: hipótese; SHA da branch; workflow/job/log; fixtu
 **Interpretação:** o custo dominante está em `MoveVehiclesUnsplit` (inclui passos não subdivididos), não na detecção inicial de entrada nem na previsão de eventos. O código contém duas varreduras completas de `State.Vehicles` por veículo em movimento, sugerindo potencial crescimento quadrático; os dados ainda **não atribuem** o tempo dessas varreduras separadamente de manobras e colisões. Diferenças de wall entre runs podem ser ruído do runner. Fixture sem aquecimento econômico, com obras instantâneas, caixa/capacidade artificiais, população <10 mil, sem Godot; não representa cidade sustentável ou 24h de atividade.
 
 **Próxima hipótese única:** varreduras de líderes na faixa e na curva explicam parcela majoritária do bloco `movement`? Instrumentar apenas cronômetros e número de candidatos efetivamente enumerados, sem alterar ordenação, física ou decisões; comparar os mesmos 6×600 e 10×800, seed 42, 4h, `scale` vs `profile` e exigir 7.200 quanta, invariantes, save relido e SHA-256 completo idêntico. Se forem minoritárias, investigar manobras/geometria antes de otimizar. Cronômetros incluem GC e overhead; não extrapolar 4h iniciais para 80 anos.
+
+## Décima execução — duas varreduras respondem por ~40% do movimento (24/10/2026)
+
+**Resultado material:** [Actions #40072673296](https://github.com/Marlohn/IndexCities/actions/runs/40072673296), SHA `51acd67df4d52d5cf8fc7a7fd94f1d758f159d9b`, job `phase-profile` **success**, [logs brutos](https://github.com/Marlohn/IndexCities/actions/runs/40072673296/artifacts/12551868429). Release .NET 8, seed 42, `grid --warmup=0 --days=1 --window=14400 --cap=150 --signals=1`, controle `scale` e `profile` em 6×600 e 10×800. Cada condição executou 7.200 quanta de 2 s; invariantes e save/load passaram e os SHA-256 **completos** dos saves coincidiram entre controle/perfil dentro da mesma fixture.
+
+| Janela inicial de 4h | 6×600 (363 vivos; 263 veículos) | 10×800 (808 vivos; 576 veículos) |
+| --- | ---: | ---: |
+| Wall `scale/profile` | 10,65 / 10,53 s | 91,37 / 93,34 s |
+| Velocidade efetiva `scale` | 1.352 s simulados/s real | 158 s simulados/s real |
+| Fase veículos / subfase movimento | 6,809 / 6,716 s | 81,342 / 79,468 s |
+| Varredura de líderes na faixa | **2,057 s (30,63% do movimento)** | **24,006 s (30,21%)** |
+| Varredura de líderes em curvas | **0,705 s (10,50% do movimento)** | **7,416 s (9,33%)** |
+| Visitas por varredura (faixa e curva, cada) | 34.013.001 | 450.793.152 |
+| Invocações médias de cada varredura por quantum | 17,96 | 108,70 |
+| Alocação / GC0 / GC2; working set (`profile`) | 2.582 MB / 155 / 2; 91 MB | 22.770 MB / 1.367 / 6; 126 MB |
+
+**Conclusão discriminante:** as duas varreduras integrais de `State.Vehicles` respondem por **41,13%** do tempo de `movement` na fixture média e **39,54%** na ampliada. Não constituem maioria: aproximadamente 60% ainda pertence a manobras, verificações de geometria, outros percursos e overhead. A contagem de visitas aumenta ×13,25 ao expandir a frota ×2,19 e as invocações de varredura por quantum ×6,05, coerente com custo multiplicativo de frota e atividade. **Visita não significa bloqueador relevante**; as medições atuais não contam quantos veículos efetivamente satisfazem as condições de contenção. Os cronômetros incluem GC/overhead e a diferença de wall em relação a CIs anteriores é ruído não controlado; não atribuir causalidade apenas à comparação entre execuções. A janela é inicial, sem salários/refeições, com obras e caixa/serviços artificiais, <<10 mil vivos e sem Godot.
+
+**Próxima hipótese única, sem alterar a física:** apenas uma pequena fração das centenas de milhões de visitas pode efetivamente bloquear a faixa/curva. Contar chamadas a `HoldFor` (candidatos de contenção, não necessariamente o bloqueador final) e entradas em `bendLeaders` (candidatos geométricos), preservando a ordem de varredura, e reportar `hits/visits`. Reutilizar a janela 4h, seed 42, controle `scale` versus `profile`, 7.200 quanta, invariantes, save relido e SHA-256 completo igual. Se a fração for alta, índice espacial pode não ser o primeiro alvo; se baixa, investigar estrutura de candidatos com prova de equivalência causal antes de otimizar. Não criar novo mecanismo de trânsito nesta medição.
