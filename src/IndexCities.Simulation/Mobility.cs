@@ -361,7 +361,10 @@ public sealed partial class CitySimulation
                     else step=ClearOfPoses(v,target,step,bendLeaders.Where(o=>!VehicleBodiesOverlap(v,v.Position,o)).Select(o=>(o,o.Position,o.Heading)).ToList());
                 }
                 var free=step;step=SafeSiteTravel(v,target,step,true);
+                var afterSiteStep=step; // observação PR57: antes da verificação de travessia
                 if(node.Neighbours.Count<3&&!node.Crosswalk)step=ClearOfCrossingAhead(v,target,step);
+                var afterCrossingStep=step; // observação PR57: sem alterar o passo
+                var headingBeforeBlockProbe=v.Heading;
                 var steer=step<.00001&&free>.00001?TurnClearance(v,approachHeading,free,access):null;
                 if(steer is {} bend){v.Heading=bend.Heading;target=bend.To;step=bend.Distance;}
                 // Like a machine, a blocked vehicle keeps its verified pose rather
@@ -378,11 +381,23 @@ public sealed partial class CitySimulation
                     if(blockedCount<=3||blockedCount%1000==0){
                         var top=string.Join(";",leaders.OrderByDescending(x=>x.Value).ThenBy(x=>x.Key).Take(3).Select(x=>$"{x.Key}:{x.Value}"));
                         var blockerDistance=blocker is null?-1:blocker.Position.Distance(v.Position);
+                        // Observação geométrica somente na amostra impressa: o primeiro passo de 0,5m
+                        // segue os mesmos candidatos físicos, sem tocar no estado da simulação.
+                        var firstPose=v.Position.MoveTowards(target,Math.Min(.5,Math.Max(0,free)));
+                        var selfNearby=v.Id!=5294?"n/a":string.Join(";",State.Vehicles.Where(o=>o.Id!=v.Id&&o.Status!=VehicleStatus.Outside&&o.Position.Distance(v.Position)<=14)
+                            .OrderBy(o=>o.Position.Distance(v.Position)).ThenBy(o=>o.Id).Take(8)
+                            .Select(o=>$"{o.Id}:{o.Position.Distance(v.Position):F2}:{o.Status}:{o.Cause?.Replace(' ','_')}"));
+                        var siteBodyOverlaps=v.Id!=5294?"n/a":string.Join(";",State.Vehicles.Where(o=>o.Id!=v.Id&&o.Status!=VehicleStatus.Outside&&o.Machine!=PavingMachine.None&&o.Position.Distance(firstPose)<12&&
+                            BodiesOverlap(v,firstPose,headingBeforeBlockProbe,o,o.Position,o.Heading)).Select(o=>o.Id));
+                        var crossingBodyOverlaps=v.Id!=5294?"n/a":string.Join(";",State.Vehicles.Where(o=>o.Id!=v.Id&&InMap(o.Position)&&LaneTraffic(o)&&
+                            (o.Position.X-v.Position.X)*Math.Sin(headingBeforeBlockProbe)+(o.Position.Z-v.Position.Z)*Math.Cos(headingBeforeBlockProbe)>0&&
+                            (o.IntersectionClaim!=null||Math.Abs(Math.Cos(o.Heading-headingBeforeBlockProbe))<=.5)&&o.Position.Distance(v.Position)<=afterSiteStep+12&&
+                            BodiesOverlap(v,firstPose,headingBeforeBlockProbe,o,o.Position,o.Heading)).Select(o=>o.Id));
                         // Read-only snapshot of the immediate leader's surroundings, sampled at most every 1000 blocked slices.
                         var nearby=blocker is null?"none":string.Join(";",State.Vehicles.Where(o=>o.Id!=blocker.Id&&o.Status!=VehicleStatus.Outside&&o.Position.Distance(blocker.Position)<=14)
                             .OrderBy(o=>o.Position.Distance(blocker.Position)).ThenBy(o=>o.Id).Take(6)
                             .Select(o=>$"{o.Id}:{o.Position.Distance(blocker.Position):F2}:{o.Status}:{o.Cause?.Replace(' ','_')}"));
-                        Console.WriteLine($"LANE_BLOCK_PROBE vehicle={v.Id} sample={blockedCount} time={VehicleMovementTime:F6} node={node.Id} routeIndex={v.RouteIndex} targetDistance={d:F6} blockerId={leaderId} blockerStatus={blocker?.Status} blockerDistance={blockerDistance:F6} blockerWait={(blocker?.WaitingSince??0):F6} blockerRouteIndex={blocker?.RouteIndex} blockerCause={blocker?.Cause?.Replace(' ','_')} blockerClaim={blocker?.IntersectionClaim} blockerX={blocker?.Position.X:F6} blockerZ={blocker?.Position.Z:F6} vehicleCauseBefore={v.Cause?.Replace(' ','_')} nearby={nearby} leaderDistance={leaderDistance:F6} freeBeforeSafety={free:F6} finalStep={step:F6} stopEarly={stopEarly:F6} bayHold={bayHold} entryHeld={entryHeld!=null} enteringLane={enteringLane} crossingBodies={crossingPoses?.Count??0} bendLeaders={bendLeaders.Count} waitingSince={v.WaitingSince:F6} blockerTop3={top}");
+                        Console.WriteLine($"LANE_BLOCK_PROBE vehicle={v.Id} sample={blockedCount} time={VehicleMovementTime:F6} node={node.Id} routeIndex={v.RouteIndex} targetDistance={d:F6} blockerId={leaderId} blockerStatus={blocker?.Status} blockerDistance={blockerDistance:F6} blockerWait={(blocker?.WaitingSince??0):F6} blockerRouteIndex={blocker?.RouteIndex} blockerCause={blocker?.Cause?.Replace(' ','_')} blockerClaim={blocker?.IntersectionClaim} blockerX={blocker?.Position.X:F6} blockerZ={blocker?.Position.Z:F6} vehicleCauseBefore={v.Cause?.Replace(' ','_')} nearby={nearby} leaderDistance={leaderDistance:F6} freeBeforeSafety={free:F6} afterSite={afterSiteStep:F6} afterCrossing={afterCrossingStep:F6} finalStep={step:F6} selfNearby={selfNearby} siteBodyOverlaps={siteBodyOverlaps} crossingBodyOverlaps={crossingBodyOverlaps} stopEarly={stopEarly:F6} bayHold={bayHold} entryHeld={entryHeld!=null} enteringLane={enteringLane} crossingBodies={crossingPoses?.Count??0} bendLeaders={bendLeaders.Count} waitingSince={v.WaitingSince:F6} blockerTop3={top}");
                     }
                 }
                 if(step<.00001&&d>.00001){v.Cause=blocker?.Status==VehicleStatus.Stranded?$"Aguardando veículo {blocker.Id} {(blocker.BrokenDown?"quebrado":"sem combustível")} na via":bayHold||entryHeld!=null?"Fila para acesso de carga":enteringLane?"Aguardando espaço para acessar a faixa":blocker!=null&&HoldsJunctionAhead(blocker,node)?(IsBend(node)?"Aguardando liberação da curva pelo veículo ":"Aguardando liberação do cruzamento pelo veículo ")+blocker.Id:"Fila na faixa";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;if(v.TowPhase==TowPhase.ToVehicle&&(TryTowContraflow(v)||TryTowFromBehind(v)))continue;if(!enteringLane&&blocker!=null&&blocker.Id!=v.TowTargetId&&TryBypassStopped(v,blocker))continue;if(blocker!=null&&TowExitHolds(blocker)&&TryUTurn(v,blocker))continue;
