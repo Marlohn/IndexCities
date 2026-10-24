@@ -74,12 +74,58 @@ jobs:
           grep -q '"simulatedDays": 30' city-10000-30d.json
           grep -q '"historyPersistent": true' city-10000-30d.json
           test -s artifacts/causal-10000-30d.facts
+      # One-off diagnostic, only when explicitly tagged on a technical commit.
+      # Same seed, days, demand and event order; only factual ICH2 writing changes.
+      - name: A/B actual ICH2 write overhead without changing causal work
+        if: github.event_name == 'push' && contains(github.event.head_commit.message, '[history-overhead-ab]')
+        run: |
+          set -euo pipefail
+          for seed in 42 73; do
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=30 --seed=$seed --adversarial > history-ab-$seed-null.json
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=30 --seed=$seed --adversarial --history=artifacts/history-ab-$seed.facts.gz > history-ab-$seed-gz.json
+            gzip -t artifacts/history-ab-$seed.facts.gz
+            dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- profile-history artifacts/history-ab-$seed.facts.gz 0 0 30 > history-ab-$seed-query.json
+          done
+          python3 - <<'PY'
+          import json, os
+          for seed in (42,73):
+              def load(suffix):
+                  with open(f'history-ab-{seed}-{suffix}.json', encoding='utf-8') as f:
+                      return json.load(f)
+              no, gz, read = load('null'), load('gz'), load('query')
+              equal = ('stateFingerprint', 'simulatedDays', 'minimumAliveAtAnyEvent',
+                       'aliveEnd', 'journeys', 'roadSegments', 'roadWaitSeconds',
+                       'routeReroutes', 'recordedFacts', 'peakQueue',
+                       'initialMoneyCents', 'currentMoneyCents', 'salesFoodUnits')
+              for key in equal:
+                  assert no[key] == gz[key], f'{seed}: history changed {key}'
+              assert no['simulatedDays'] == 30 and no['minimumAliveAtAnyEvent'] >= 10000
+              assert not no['historyPersistent'] and gz['historyPersistent']
+              for d in (no, gz):
+                  assert d['moneyConserved'] and d['foodConserved'] and d['materialConserved']
+                  assert d['wallSeconds'] > 0 and d['processCpuSeconds'] > 0
+                  assert d['processPeakWorkingSetBytes'] > 0 and d['managedAllocatedBytes'] >= 0
+                  for key in ('gc0Collections','gc1Collections','gc2Collections'):
+                      assert d[key] >= 0
+              assert gz['recordedFacts'] > 0 and read['totalFactsScanned'] == gz['recordedFacts']
+              assert read['firstDay'] == 0 and read['lastDay'] == 29 and read['daysObserved'] == 30
+              assert read['matchingOwnerFacts'] > 0 and os.path.getsize(f'artifacts/history-ab-{seed}.facts.gz') > 0
+              print('ICH2_WRITE_AB', 'seed', seed, 'facts', gz['recordedFacts'],
+                    'journeys', gz['journeys'], 'waitSeconds', gz['roadWaitSeconds'],
+                    'noHistoryWall', no['wallSeconds'], 'withHistoryWall', gz['wallSeconds'],
+                    'wallRatio', round(gz['wallSeconds']/no['wallSeconds'],3),
+                    'noHistoryCpu', no['processCpuSeconds'], 'withHistoryCpu', gz['processCpuSeconds'],
+                    'noHistoryPeakRSS', no['processPeakWorkingSetBytes'],
+                    'withHistoryPeakRSS', gz['processPeakWorkingSetBytes'])
+          PY
       - name: Keep metrics
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: causal-engine-10k-metrics
-          path: city-10000-30d.json
+          path: |
+            city-10000-30d.json
+            history-ab-*.json
           if-no-files-found: ignore
 
   year-10k:

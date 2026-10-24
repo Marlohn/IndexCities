@@ -2092,6 +2092,13 @@ internal sealed partial class CausalCity : IDisposable
         simulatedDays = _days,
         gregorianEnd = Epoch.AddDays(_config.Days).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         wallSeconds,
+        // Diagnostic process counters, not gameplay and not a benchmark of Godot.
+        processCpuSeconds = Process.GetCurrentProcess().TotalProcessorTime.TotalSeconds,
+        processPeakWorkingSetBytes = Process.GetCurrentProcess().PeakWorkingSet64,
+        managedAllocatedBytes = GC.GetTotalAllocatedBytes(false),
+        gc0Collections = GC.CollectionCount(0),
+        gc1Collections = GC.CollectionCount(1),
+        gc2Collections = GC.CollectionCount(2),
         wallSecondsPerDay = wallSeconds / _days,
         speedBudgetOnly_notPassingCriterion = (wallSeconds / _days) * 29220 <= 21600,
         // A 30-day or one-year run may sustain 10k within its observed window
