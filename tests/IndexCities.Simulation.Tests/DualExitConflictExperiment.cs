@@ -71,15 +71,17 @@ public sealed class DualExitConflictExperiment
         var oldFast=Environment.GetEnvironmentVariable("PR57_FAST_SCAN");
         var oldBend=Environment.GetEnvironmentVariable("PR57_BEND_PREFILTER");
         var oldReuse=Environment.GetEnvironmentVariable("PR57_BEND_REUSE");
+        var oldHoist=Environment.GetEnvironmentVariable("PR57_DOCK_GATE_HOIST");
         try{
             Environment.SetEnvironmentVariable("PR57_ACTIVE_SCAN","1");
             Environment.SetEnvironmentVariable("PR57_SPATIAL_SCAN","0");
             List<string>? reference=null;
-            foreach(var mode in new[]{(Fast:"0",Bend:"0",Bitset:"0",Reuse:"0"),(Fast:"1",Bend:"0",Bitset:"0",Reuse:"0"),(Fast:"1",Bend:"0",Bitset:"1",Reuse:"0"),(Fast:"1",Bend:"0",Bitset:"1",Reuse:"1"),(Fast:"1",Bend:"1",Bitset:"0",Reuse:"0")}){
+            foreach(var mode in new[]{(Fast:"0",Bend:"0",Bitset:"0",Reuse:"0",Hoist:"0"),(Fast:"1",Bend:"0",Bitset:"0",Reuse:"0",Hoist:"0"),(Fast:"1",Bend:"0",Bitset:"1",Reuse:"0",Hoist:"0"),(Fast:"1",Bend:"0",Bitset:"1",Reuse:"1",Hoist:"0"),(Fast:"1",Bend:"1",Bitset:"0",Reuse:"0",Hoist:"0"),(Fast:"1",Bend:"0",Bitset:"1",Reuse:"0",Hoist:"1")}){
                 Environment.SetEnvironmentVariable("PR57_FAST_SCAN",mode.Fast);
                 Environment.SetEnvironmentVariable("PR57_BITSET_SCAN",mode.Bitset);
                 Environment.SetEnvironmentVariable("PR57_BEND_PREFILTER",mode.Bend);
                 Environment.SetEnvironmentVariable("PR57_BEND_REUSE",mode.Reuse);
+                Environment.SetEnvironmentVariable("PR57_DOCK_GATE_HOIST",mode.Hoist);
                 var sim=CitySimulation.FromJson(snapshot);
                 var checkpoints=new List<string>();
                 for(var i=1;i<=60;i++){
@@ -96,6 +98,7 @@ public sealed class DualExitConflictExperiment
             Environment.SetEnvironmentVariable("PR57_FAST_SCAN",oldFast);
             Environment.SetEnvironmentVariable("PR57_BEND_PREFILTER",oldBend);
             Environment.SetEnvironmentVariable("PR57_BEND_REUSE",oldReuse);
+            Environment.SetEnvironmentVariable("PR57_DOCK_GATE_HOIST",oldHoist);
         }
     }
 

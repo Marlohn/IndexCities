@@ -239,6 +239,9 @@ public sealed partial class CitySimulation
         var pr57BendPrefilter=pr57FastScan&&Environment.GetEnvironmentVariable("PR57_BEND_PREFILTER")!="0";
         // PR57 A/B: reuse bend-leader storage across movement iterations, preserving the full predicate and order.
         var pr57BendReuse=pr57BitsetScan&&!pr57BendPrefilter&&Environment.GetEnvironmentVariable("PR57_BEND_REUSE")=="1";
+        // PR57 A/B: the vehicle does not change during a leader enumeration;
+        // hoist its dock eligibility check outside the per-candidate loop.
+        var pr57DockGateHoist=pr57BitsetScan&&Environment.GetEnvironmentVariable("PR57_DOCK_GATE_HOIST")=="1";
         var pr57ScanCandidates=pr57ActiveScan
             ?State.Vehicles.Where(o=>!o.PassengerCar||o.Status!=VehicleStatus.Parked||_entryFrame?.ContainsKey(o.Id)==true).ToList()
             :State.Vehicles;
@@ -465,13 +468,14 @@ public sealed partial class CitySimulation
                 // A/B only: hoist invariant heading trigonometry for the original-order scan.
                 var pr57Sin=pr57FastScan?Math.Sin(v.Heading):0;
                 var pr57Cos=pr57FastScan?Math.Cos(v.Heading):0;
+                var pr57DockGate=pr57DockGateHoist?(!LeavesDock(v)||OnCarriageway(v)):false;
                 var laneScanStart=scanProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
                 var pr57LaneList=Pr57LaneCandidates(v,enteringLane);
                 foreach(var liveOther in pr57LaneList){
                     var other=enteringLane?EntryFrameVehicle(liveOther):liveOther;
                     // A truck stopped at a dock with its body across this lane (a street bay)
                     // is queued behind like a leader, keeping the queue gap (Mobility.SharedSpace).
-                    if(other.Id!=v.Id&&(!LeavesDock(v)||OnCarriageway(v))&&BodyAcrossLane(v,other) is {} docked){HoldFor(other,docked);continue;}
+                    if(other.Id!=v.Id&&(pr57DockGateHoist?pr57DockGate:(!LeavesDock(v)||OnCarriageway(v)))&&BodyAcrossLane(v,other) is {} docked){HoldFor(other,docked);continue;}
                     if(other.Id==v.Id||!OccupiesLane(other))continue;
                     var relative=other.Position-v.Position;
                     if(insideMap&&relative.Distance(new(0,0))<.1){if(other.Status==VehicleStatus.Stranded||other.Id<v.Id)HoldFor(other,0);continue;}
