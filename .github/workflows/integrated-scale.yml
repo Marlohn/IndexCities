@@ -29,6 +29,12 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Build real-core headless (Release)
         run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+      - name: Observe opposed simultaneous car departures across quanta
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet run -c Release --project tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -- DualExitConflictExperiment | tee /tmp/pr57-dual-exit.log
+          test "$(grep -c '^PR57_DUAL_EXIT ' /tmp/pr57-dual-exit.log)" -eq 3
       - name: Compare bounded 75-minute seed-73 window, no skipped quanta
         shell: bash
         run: |
