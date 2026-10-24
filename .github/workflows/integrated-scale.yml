@@ -1,4 +1,4 @@
-name: Integrated real-core scale baseline
+name: Integrated real-core scale diagnostics
 
 on:
   push:
@@ -40,7 +40,7 @@ jobs:
           for fixture in cycle grid; do
             for repeat in 1 2; do
               echo "=== BASELINE_START fixture=${fixture} repeat=${repeat} seed=42 warmup=1 days=1 ==="
-              timeout 480s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- scale "${fixture}" --seed=42 --warmup=1 --days=1 --cap=300 --rows=3 --length=400 | tee "artifacts/integrated-scale/${fixture}-repeat${repeat}.log"
+              timeout 300s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- scale "${fixture}" --seed=42 --warmup=1 --days=1 --cap=300 --rows=3 --length=400 | tee "artifacts/integrated-scale/${fixture}-repeat${repeat}.log"
               grep -q '^SUMMARY days=1 ' "artifacts/integrated-scale/${fixture}-repeat${repeat}.log"
               grep -q '^SAVE ' "artifacts/integrated-scale/${fixture}-repeat${repeat}.log"
               grep -q '^INVARIANTS OK$' "artifacts/integrated-scale/${fixture}-repeat${repeat}.log"
@@ -53,5 +53,53 @@ jobs:
         with:
           name: integrated-scale-baseline-raw
           path: artifacts/integrated-scale/*.log
+          if-no-files-found: warn
+          retention-days: 30
+
+  activity:
+    name: Real-core mobility census — causal granularity check
+    needs: baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build real simulation census CLI (Release)
+        run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+      - name: Retrieve paired baseline save fingerprints
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-baseline-raw
+          path: artifacts/integrated-scale-baseline
+      - name: Observe 2-second movement samples without changing game code
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/integrated-scale-activity
+          echo "ACTIVITY_COMMIT=${GITHUB_SHA}"
+          # Census calls Advance(2) repeatedly, while baseline uses Advance(86400).
+          # Therefore identical final save SHA is CHECKED, never assumed.
+          # Census costs include per-step instrumentation; DO NOT compare its wall
+          # directly to the uninstrumented baseline as a performance regression.
+          for fixture in cycle grid; do
+            echo "=== ACTIVITY_START fixture=${fixture} seed=42 warmup=1 days=1 ==="
+            timeout 300s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- census "${fixture}" --seed=42 --warmup=1 --days=1 --cap=300 --rows=3 --length=400 | tee "artifacts/integrated-scale-activity/${fixture}.log"
+            grep -q '^CENSUS steps=43200 ' "artifacts/integrated-scale-activity/${fixture}.log"
+            grep -q '^INVARIANTS OK$' "artifacts/integrated-scale-activity/${fixture}.log"
+            base=$(sed -n 's/.*sha256=\([0-9A-F]*\).*/\1/p' "artifacts/integrated-scale-baseline/${fixture}-repeat1.log" | tail -n 1)
+            activity=$(sed -n 's/.*sha256=\([0-9A-F]*\).*/\1/p' "artifacts/integrated-scale-activity/${fixture}.log" | tail -n 1)
+            test -n "${base}" && test -n "${activity}"
+            if [[ "${base}" == "${activity}" ]]; then equal=true; else equal=false; fi
+            echo "ACTIVITY_SHA_COMPARE fixture=${fixture} baseline=${base} census=${activity} equal=${equal}"
+            echo "=== ACTIVITY_DONE fixture=${fixture} ==="
+          done
+      - name: Attach raw activity census logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-activity-raw
+          path: artifacts/integrated-scale-activity/*.log
           if-no-files-found: warn
           retention-days: 30
