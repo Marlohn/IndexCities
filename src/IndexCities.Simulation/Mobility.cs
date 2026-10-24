@@ -394,7 +394,8 @@ public sealed partial class CitySimulation
                             (o.IntersectionClaim!=null||Math.Abs(Math.Cos(o.Heading-headingBeforeBlockProbe))<=.5)&&o.Position.Distance(v.Position)<=afterSiteStep+12&&
                             BodiesOverlap(v,firstPose,headingBeforeBlockProbe,o,o.Position,o.Heading)).Select(o=>o.Id));
                         var entrant5183=v.Id==5294?State.Vehicles.FirstOrDefault(o=>o.Id==5183):null;
-                        var entrantEligible=entrant5183 is not null&&TryLaneEntry(entrant5183,out var entrantAccess);
+                        LaneAccess entrantAccess=default;
+                        var entrantEligible=entrant5183 is not null&&TryLaneEntry(entrant5183,out entrantAccess);
                         var entrantBlockers=!entrantEligible?"n/a":string.Join(";",State.Vehicles.Where(o=>o.Id!=entrant5183!.Id&&OccupiesLane(o)&&
                             BlocksLaneEntry(entrant5183,entrantAccess,EntryFrameVehicle(o))).OrderBy(o=>o.Id).Take(12).Select(o=>o.Id));
                         // Read-only snapshot of the immediate leader's surroundings, sampled at most every 1000 blocked slices.
