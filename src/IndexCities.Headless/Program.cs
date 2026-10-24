@@ -30,7 +30,27 @@ var census=args[0]=="census"?new Census():null;var stuck=args[0]=="stuck"?new St
 var total=0.0;var gc0=GC.CollectionCount(0);var gc2=GC.CollectionCount(2);var alloc0=GC.GetTotalAllocatedBytes();var done=0;
 for(var d=1;d<=days;d++){
     sw.Restart();
-    if(stuck!=null){var strand=int.Parse(Opt("strand","0"));var dayEnd=sim.State.ElapsedSeconds+86400;if(strand>0){var forced=new List<int>();while(forced.Count==0&&sim.State.ElapsedSeconds<dayEnd-1800){forced=stuck.Force(sim,strand);if(forced.Count==0)sim.Advance(60);}var since=sim.State.ElapsedSeconds;for(var m=0;m<30&&forced.Count>0;m++){sim.Advance(60);if(m%3==0||m==29||Environment.GetEnvironmentVariable("STUCK_EVERY")=="1")stuck.Watch(sim,forced,since);}}while(sim.State.ElapsedSeconds<dayEnd-1e-6){sim.Advance(Math.Min(600,dayEnd-sim.State.ElapsedSeconds));stuck.Sample(sim);}}else if(census==null)sim.Advance(86400);else for(var i=0;i<43200;i++){sim.Advance(2);census.Sample(sim);}
+    if(stuck!=null){var strand=int.Parse(Opt("strand","0"));var dayEnd=sim.State.ElapsedSeconds+86400;if(strand>0){var forced=new List<int>();while(forced.Count==0&&sim.State.ElapsedSeconds<dayEnd-1800){forced=stuck.Force(sim,strand);if(forced.Count==0)sim.Advance(60);}var since=sim.State.ElapsedSeconds;for(var m=0;m<30&&forced.Count>0;m++){sim.Advance(60);if(m%3==0||m==29||Environment.GetEnvironmentVariable("STUCK_EVERY")=="1")stuck.Watch(sim,forced,since);}}while(sim.State.ElapsedSeconds<dayEnd-1e-6){sim.Advance(Math.Min(600,dayEnd-sim.State.ElapsedSeconds));stuck.Sample(sim);}}else if(census==null)sim.Advance(86400);else
+    {
+        var hourTimer=Stopwatch.StartNew();
+        var hourCpu=Process.GetCurrentProcess().TotalProcessorTime;
+        var hourAlloc=GC.GetTotalAllocatedBytes();
+        var hourGc0=GC.CollectionCount(0);
+        var hourGc2=GC.CollectionCount(2);
+        for(var i=0;i<43200;i++)
+        {
+            sim.Advance(2);
+            census.Sample(sim);
+            if((i+1)%1800!=0)continue;
+            var cpuNow=Process.GetCurrentProcess().TotalProcessorTime;
+            var allocNow=GC.GetTotalAllocatedBytes();
+            var gc0Now=GC.CollectionCount(0);
+            var gc2Now=GC.CollectionCount(2);
+            census.RecordHourCost(hourTimer.Elapsed.TotalSeconds,(cpuNow-hourCpu).TotalSeconds,(allocNow-hourAlloc)/1e6,gc0Now-hourGc0,gc2Now-hourGc2);
+            hourTimer.Restart();
+            hourCpu=cpuNow;hourAlloc=allocNow;hourGc0=gc0Now;hourGc2=gc2Now;
+        }
+    }
     var w=sw.Elapsed.TotalSeconds;total+=w;done=d;
     Console.WriteLine($"DAY {d} wall={w:F2}s eff={86400/w:F0}x {Stats(sim)}");stuck?.Report(sim,d);
     if(total>cap){Console.WriteLine($"STOP limite de {cap}s");break;}

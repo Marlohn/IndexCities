@@ -1,4 +1,4 @@
-name: Integrated real-core load step and peak activity
+name: Integrated real-core hourly cost versus actual mobility
 
 on:
   push:
@@ -18,57 +18,46 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  load-step:
-    name: Paired small vs medium grid, plus peak mobility census
+  hourly-cost:
+    name: One-day hourly CPU, GC and active-mobility profile
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Build real simulation CLI (Release)
+      - name: Build real-core headless observer (Release)
         run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: Paired workload and 2-second peak activity census
+      - name: Compare per-hour observed costs in existing small and medium fixtures
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p artifacts/integrated-scale-load
-          echo "LOAD_STEP_COMMIT=${GITHUB_SHA}"
-          echo "OS=$(uname -srmo)"
-          dotnet --info | head -n 22
-          # Paired controls in the SAME job: do not compare timings across runners.
-          # No game rules change. Grid still uses instant construction, boosted
-          # utilities and money; medium is a workload step, NOT a viable city.
+          mkdir -p artifacts/integrated-scale-hourly
+          echo "HOURLY_COST_SHA=${GITHUB_SHA}"
           for fixture in small medium; do
-            if [[ "$fixture" == small ]]; then rows=3; length=400; else rows=6; length=600; fi
-            for repeat in 1 2; do
-              echo "=== LOAD_START fixture=${fixture} repeat=${repeat} seed=42 rows=${rows} length=${length} ==="
-              TIMEFORMAT='TIME totalReal=%3R cpuUser=%3U cpuSystem=%3S'
-              { time timeout 180s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- scale grid --seed=42 --warmup=1 --days=1 --cap=150 --rows="${rows}" --length="${length}" --signals=1; } 2>&1 | tee "artifacts/integrated-scale-load/${fixture}-scale${repeat}.log"
-              grep -q '^SUMMARY days=1 ' "artifacts/integrated-scale-load/${fixture}-scale${repeat}.log"
-              grep -q '^SAVE ' "artifacts/integrated-scale-load/${fixture}-scale${repeat}.log"
-              grep -q '^INVARIANTS OK$' "artifacts/integrated-scale-load/${fixture}-scale${repeat}.log"
-            done
-            echo "=== PEAK_CENSUS_START fixture=${fixture} seed=42 rows=${rows} length=${length} ==="
-            { time timeout 180s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- census grid --seed=42 --warmup=1 --days=1 --cap=150 --rows="${rows}" --length="${length}" --signals=1; } 2>&1 | tee "artifacts/integrated-scale-load/${fixture}-census.log"
-            grep -q '^CENSUS steps=43200 ' "artifacts/integrated-scale-load/${fixture}-census.log"
-            grep -q '^  PICOS ' "artifacts/integrated-scale-load/${fixture}-census.log"
-            grep -q '^  CARGA_HORARIA horas=24 ' "artifacts/integrated-scale-load/${fixture}-census.log"
-            grep -q '^INVARIANTS OK$' "artifacts/integrated-scale-load/${fixture}-census.log"
-            b1=$(sed -n 's/.*sha256=\([0-9A-F]*\).*/\1/p' "artifacts/integrated-scale-load/${fixture}-scale1.log" | tail -n 1)
-            b2=$(sed -n 's/.*sha256=\([0-9A-F]*\).*/\1/p' "artifacts/integrated-scale-load/${fixture}-scale2.log" | tail -n 1)
-            census=$(sed -n 's/.*sha256=\([0-9A-F]*\).*/\1/p' "artifacts/integrated-scale-load/${fixture}-census.log" | tail -n 1)
-            test -n "$b1" && test -n "$b2" && test -n "$census"
-            echo "LOAD_SHA_COMPARE fixture=${fixture} scale1=${b1} scale2=${b2} census=${census} baselineRepeatEqual=$([[ "$b1" == "$b2" ]] && echo true || echo false) granularityEqual=$([[ "$b1" == "$census" ]] && echo true || echo false)"
-            if [[ "$b1" != "$b2" ]]; then echo "::error::Same-configuration replay diverged"; exit 1; fi
-            if [[ "$b1" != "$census" ]]; then echo "::warning::Advance(2) census differs from Advance(86400); investigate before interpreting"; fi
+            if [[ "$fixture" == small ]]; then
+              rows=3; length=400
+              expected=2D095BC89EB9A34D4A6AE8B1012F161B766720E806F9E5577C33F3029375C5E7
+            else
+              rows=6; length=600
+              expected=0C5185A3A0A9B53EE7E53B228C7D8B0C9F8BF6FBE8C1A7C68C4DE3E8E89A562F
+            fi
+            echo "=== HOURLY_START fixture=${fixture} seed=42 rows=${rows} length=${length} ==="
+            TIMEFORMAT='TIME totalReal=%3R cpuUser=%3U cpuSystem=%3S'
+            { time timeout 180s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- census grid --seed=42 --warmup=1 --days=1 --cap=150 --rows="${rows}" --length="${length}" --signals=1; } 2>&1 | tee "artifacts/integrated-scale-hourly/${fixture}.log"
+            test "$(grep -c '^  HOUR_COST day=1 ' "artifacts/integrated-scale-hourly/${fixture}.log")" -eq 24
+            grep -q '^SUMMARY days=1 ' "artifacts/integrated-scale-hourly/${fixture}.log"
+            grep -q '^INVARIANTS OK$' "artifacts/integrated-scale-hourly/${fixture}.log"
+            actual=$(sed -n 's/.*sha256=\([0-9A-F]*\).*/\1/p' "artifacts/integrated-scale-hourly/${fixture}.log" | tail -n 1)
+            echo "HOURLY_SHA_COMPARE fixture=${fixture} current=${actual} priorCensus=${expected} equal=$([[ "$actual" == "$expected" ]] && echo true || echo false)"
+            if [[ "$actual" != "$expected" ]]; then echo "::error::Observational profiler changed final save"; exit 1; fi
           done
-      - name: Attach raw paired workload and census logs
+      - name: Attach raw per-hour cost and mobility measurements
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-load-step-raw
-          path: artifacts/integrated-scale-load/*.log
+          name: integrated-scale-hourly-cost-raw
+          path: artifacts/integrated-scale-hourly/*.log
           if-no-files-found: warn
           retention-days: 30
