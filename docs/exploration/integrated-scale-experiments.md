@@ -351,3 +351,22 @@ Cada entrada nova deve trazer: hipótese; SHA da branch; workflow/job/log; fixtu
 **Conclusão:** 92,5% dos subpassos da segunda hora da seed 73 vieram de limites de movimento; apenas seis de rechecagem projetada de entrada. A seed 73 tem **6,46×** mais limites que 42, apesar de frota quase igual (578/576). Ainda não sabemos se o limite decorre de combustível, nó/cruzamento, mudança de velocidade, curva ou fim de rota. Queda de wall frente ao CI anterior ocorreu sem otimização e não prova ganho; runner compartilhado introduz ruído. Saves finais iguais não demonstram igualdade de toda ordem interna. Fixture artificial <10k, sem Godot, sem refeições/salários e sem histórico individual gravado externamente.
 
 **Próxima hipótese única:** classificar por hora a causa do limite de movimento vencedor, observacionalmente, mantendo seeds 42/73, 2h, controle/perfil, invariantes e hash completo. Nenhum evento será omitido.
+
+## Décima oitava execução — limites de nó/cruzamento explicam quase todo o excesso de subpassos (24/10/2026)
+
+**Evidência nova:** [Actions #40088433168](https://github.com/Marlohn/IndexCities/actions/runs/40088433168), SHA `3db4ae2028446a9f8139ea51e5028bccbe5f4a97`, job `phase-profile` **success**. Mesmo runner, .NET 8 Release, `grid --seed=42|73 --warmup=0 --days=1 --window=7200 --cap=150 --rows=10 --length=800 --signals=1`, controle `scale` e observação `profile`; 3.600 quanta de 2s por seed. Invariantes, save/load e SHA-256 completo idênticos entre modos por seed (42 `C7381C1699199D70D9195A24E53B833B93693C53FD84B97E602BEF67CE1CB621`; 73 `01533F5C64C59E7842F225D067B8BE6B9E0390CEE768D494343741B482EE893C`).
+
+| Segunda hora (3.600–7.200s), perfil | Seed 42 | Seed 73 |
+| --- | ---: | ---: |
+| Limites de movimento `movementBoundary` | 3.445 | **22.257** |
+| Limites de nó/cruzamento `movementJunction` | **2.866 (83,2%)** | **21.746 (97,7%)** |
+| Limites de curva / velocidade / fim de rota / combustível | 382 / 19 / 178 / 0 | 357 / 1 / 153 / 0 |
+| Rechecagens projetadas de entrada | 4 | 6 |
+| Entradas bloqueadas examinadas | 5.337 | **72.502** |
+| Wall de 2h `scale` / `profile` | 56,42 / 56,48 s | 105,92 / 103,14 s |
+| Avanço efetivo `scale` | 128× | **68×** |
+| Alocação `profile` / GC0 / working set | 18.360 MB / 223 / 172 MB | 35.456 MB / 427 / 177 MB |
+
+**Conclusão:** a diferença de **18.880 limites de movimento** entre seeds se concentra na categoria de nó/cruzamento (**18.880 limites adicionais**, 21.746−2.866). A categoria é produzida por `node.Crosswalk || node.Neighbours.Count>=3` em `TimeToMovementChange`, e **não distingue ainda travessia, entroncamento, um veículo que vence repetidamente, nem uma frota inteira percorrendo nós**. É atribuição do evento vencedor, não prova de falha de física, deadlock ou ineficiência intrínseca. Os tempos mudaram entre CIs sem otimização: não inferir ganho. A janela inicial não inclui refeições/salários, a fixture injeta obras/recursos/caixa, tem apenas 808/812 vivos, histórico somente em memória e nenhum Godot.
+
+**Próxima hipótese única e barata:** o excesso de limites de nó/cruzamento na seed 73 está concentrado em poucos veículos que repetem a mesma condição, ou distribuído pela frota? Acrescentar **somente observação** do ID do veículo cujo `TimeToMovementChange` efetivamente reduz o horizonte, por hora, registrando número de IDs distintos e top 1/top 3; não alterar evento, tempo, seleção, regra nem ordem. Repetir apenas a janela dirigida de 2h nas mesmas seeds com `scale`/ `profile`, invariantes e SHA-256 completo. Se distribuído, examinar densidade de nós/rotas; se concentrado, isolar caso adversarial de veículo antes de propor otimização.
