@@ -249,6 +249,9 @@ public sealed partial class CitySimulation
         // PR57 A/B: exact-order bitset cells intersecting the full, conservative
         // lane corridor, including the 20m dock-body exception (off by default).
         var pr57CorridorScan=pr57BitsetScan&&Environment.GetEnvironmentVariable("PR57_CORRIDOR_SCAN")=="1";
+        // PR57 A/B: separate the exact 20m dock-body neighborhood from the
+        // 2.6m forward-lane corridor; their union retains original vehicle order.
+        var pr57SplitCorridor=pr57CorridorScan&&Environment.GetEnvironmentVariable("PR57_SPLIT_CORRIDOR")=="1";
         var pr57ScanCandidates=pr57ActiveScan
             ?State.Vehicles.Where(o=>!o.PassengerCar||o.Status!=VehicleStatus.Parked||_entryFrame?.ContainsKey(o.Id)==true).ToList()
             :State.Vehicles;
@@ -331,15 +334,25 @@ public sealed partial class CitySimulation
             // Expand BOTH projections by the exact cell support plus a
             // floating-point margin; never cap the number of vehicles.
             var sin=Math.Sin(v.Heading);var cos=Math.Cos(v.Heading);
-            var margin=20+pr57CellWidth/2*(Math.Abs(sin)+Math.Abs(cos))+1e-7;
+            var margin=(pr57SplitCorridor?2.6:20)+pr57CellWidth/2*(Math.Abs(sin)+Math.Abs(cos))+1e-7;
+            // A dock body is relevant only within 20m, regardless of heading.
+            // Include every cell intersecting that disk, even behind the vehicle.
+            var dockCellRadius=20+pr57CellWidth/Math.Sqrt(2)+1e-7;
+            var dockCellRadiusSquared=dockCellRadius*dockCellRadius;
             var scratch=pr57BitsetScratch!;
             Array.Clear(scratch);
             foreach(var (cell,bits) in pr57BitsetCells!){
                 var dx=(cell.X+0.5)*pr57CellWidth-v.Position.X;
                 var dz=(cell.Z+0.5)*pr57CellWidth-v.Position.Z;
-                if(Math.Abs(dx*cos-dz*sin)>margin)continue;
-                var forward=dx*sin+dz*cos;
-                if(forward< -margin||forward>reach+margin)continue;
+                // Either the exact forward-lane strip or the full dock-body
+                // disk can matter. Conservative cell support prevents false
+                // negatives; exact physics still runs in State.Vehicles order.
+                var mayHoldDock=pr57SplitCorridor&&dx*dx+dz*dz<=dockCellRadiusSquared;
+                if(!mayHoldDock){
+                    if(Math.Abs(dx*cos-dz*sin)>margin)continue;
+                    var forward=dx*sin+dz*cos;
+                    if(forward< -margin||forward>reach+margin)continue;
+                }
                 for(var i=0;i<scratch.Length;i++)scratch[i]|=bits[i];
             }
             var found=pr57BitsetResults!;
