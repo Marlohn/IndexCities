@@ -332,3 +332,22 @@ Cada entrada nova deve trazer: hipótese; SHA da branch; workflow/job/log; fixtu
 **Causa ainda não provada:** `MoveVehicles` em `Mobility.LaneEntry.cs` divide o quantum em eventos quando há entrada de faixa e reexecuta movimento e seleção de candidatos a cada subpasso. O salto para quase todos os quanta fracionados após 1h e a multiplicação de subpassos/visitas são um **alvo mais específico** que otimizar genericamente o raio de líderes. Ainda não sabemos se o fracionamento extra na seed 73 vem de tempos até mudança de segmento/combustível, projeções de desbloqueio de entrada ou rechecagens repetidas; **não** remover eventos, pular quanta ou trocar ordem de decisões sem teste diferencial. O mesmo teste teve **zero refeições e salários**, apenas histórico em memória, obras instantâneas e recursos/caixa artificiais, <<10 mil SIMs e nenhum Godot: não demonstra velocidade sustentável do jogo expandido.
 
 **Próxima hipótese única e teste dirigido:** instrumentar *somente observação* em `NextVehicleMovementEvent` para contar, por seed e por primeira/segunda hora, quantas vezes o limite do subpasso veio de `TimeToMovementChange` versus projeção de liberação de entrada, quantas entradas estavam bloqueadas e distribuição de durações dos subpassos. Reutilizar a fixture 10×800, seeds 42/73, **2h no máximo**, `scale` vs `profile`, SHA-256 completo e invariantes. Só propor otimização se o mecanismo causal do custo ficar identificado. **Não repetir 80 anos nem ampliar a cidade nesta fase.**
+
+## Décima sétima execução — limites de movimento dominam os subpassos (24/10/2026)
+
+**Evidência material:** [Actions #40086671726](https://github.com/Marlohn/IndexCities/actions/runs/40086671726), SHA `fd9ce9567865f13ffb5a4c382eb7bddc68b8f216`, job `phase-profile` **success**. .NET 8 Release, `grid --seed=42|73 --warmup=0 --days=1 --window=7200 --cap=150 --rows=10 --length=800 --signals=1`, controle `scale` versus `profile`, 3.600 quanta de 2s por seed. Invariantes, save/load e SHA-256 completo iguais por seed: 42 `C7381C1699199D70D9195A24E53B833B93693C53FD84B97E602BEF67CE1CB621`; 73 `01533F5C64C59E7842F225D067B8BE6B9E0390CEE768D494343741B482EE893C`.
+
+| Segunda hora simulada (3600–7200s) | Seed 42 | Seed 73 |
+| --- | ---: | ---: |
+| Subpassos por `TimeToMovementChange` | **3.445** | **22.257** |
+| Subpassos por projeção de liberação de entrada | 4 | 6 |
+| Subpassos de horizonte completo | 1.796 | 1.796 |
+| Subpassos totais | **5.245** | **24.059** |
+| Subpassos >1s / duração máxima | 1.518 / 1,076899s | 0 / 0,333333s |
+| Entradas bloqueadas examinadas | 5.337 | 72.502 |
+| Wall 2h, controle/perfil | 44,74 / 44,88s | 83,15 / 81,78s |
+| Alocação / working set (perfil) | 18.360 MB / 99 MB | 35.456 MB / 108 MB |
+
+**Conclusão:** 92,5% dos subpassos da segunda hora da seed 73 vieram de limites de movimento; apenas seis de rechecagem projetada de entrada. A seed 73 tem **6,46×** mais limites que 42, apesar de frota quase igual (578/576). Ainda não sabemos se o limite decorre de combustível, nó/cruzamento, mudança de velocidade, curva ou fim de rota. Queda de wall frente ao CI anterior ocorreu sem otimização e não prova ganho; runner compartilhado introduz ruído. Saves finais iguais não demonstram igualdade de toda ordem interna. Fixture artificial <10k, sem Godot, sem refeições/salários e sem histórico individual gravado externamente.
+
+**Próxima hipótese única:** classificar por hora a causa do limite de movimento vencedor, observacionalmente, mantendo seeds 42/73, 2h, controle/perfil, invariantes e hash completo. Nenhum evento será omitido.
