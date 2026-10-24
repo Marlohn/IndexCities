@@ -10,16 +10,20 @@ using IndexCities.Simulation;
 //          --warmup=N days simulated before measuring (default 2)
 //   census cycle|grid [same options]   per-step movement census (free vs. waiting)
 //   profile cycle|grid [same options]  per-step timing of unchanged simulation phases
+//   --window=N (scale/profile only): observe N simulated seconds, in 2-second quanta (default 86400)
 //   stuck  cycle|grid [same options] [--strand=N]   every 10 min: vehicles stopped 30+ min, stranded on the road, deaths;
 //          --strand=N empties the tank of N driving vehicles each day and follows the tow and the queue for 30 min
 // Results are measurements, not product rules: see docs/exploration/ritmo-velocidades.md.
 Console.OutputEncoding=Encoding.UTF8;
-var known=new HashSet<string>{"rows","length","days","cap","signals","seed","growth","warmup","strand"};
+var known=new HashSet<string>{"rows","length","days","cap","signals","seed","growth","warmup","strand","window"};
 var opts=new Dictionary<string,string>();foreach(var p in args.Skip(2).Select(a=>a.TrimStart('-').Split('=',2)))opts[p[0]]=p.Length>1?p[1]:"1";
 string Opt(string k,string d)=>opts.GetValueOrDefault(k,d);
 if(opts.Keys.FirstOrDefault(k=>!known.Contains(k)) is {} unknown){Console.Error.WriteLine("opção desconhecida: --"+unknown);return 2;}
 if(args.Length<2||args[0] is not ("scale" or "census" or "stuck" or "profile")||args[1] is not ("cycle" or "grid")){Console.Error.WriteLine("uso: scale|census|stuck|profile cycle|grid [--rows=3] [--length=400] [--days=7] [--cap=600] [--signals=1] [--seed=42] [--growth=0] [--warmup=2]");return 2;}
 var seed=int.Parse(Opt("seed","42"));var days=int.Parse(Opt("days","7"));var cap=double.Parse(Opt("cap","600"),System.Globalization.CultureInfo.InvariantCulture);var growth=int.Parse(Opt("growth","0"));var warmup=int.Parse(Opt("warmup","2"));
+var windowSeconds=int.Parse(Opt("window","86400"));
+if(windowSeconds<2||windowSeconds>86400||windowSeconds%2!=0){Console.Error.WriteLine("--window deve estar entre 2 e 86400 segundos e ser múltiplo de 2");return 2;}
+if(windowSeconds!=86400&&(args[0]=="census"||args[0]=="stuck")){Console.Error.WriteLine("--window parcial é exclusivo de scale/profile");return 2;}
 var sw=Stopwatch.StartNew();CitySimulation sim;string info;
 if(args[1]=="cycle"){sim=Fixtures.Cycle(seed);info="cycle (CityCycleTests.City, obras reais)";}
 else (sim,info)=Fixtures.Grid(seed,int.Parse(Opt("rows","3")),double.Parse(Opt("length","400"),System.Globalization.CultureInfo.InvariantCulture),Opt("signals","1")=="1",growth>0);
@@ -32,7 +36,7 @@ var profile=args[0]=="profile"?new StepCostProfile():null;sim.CostProfile=profil
 var total=0.0;var gc0=GC.CollectionCount(0);var gc2=GC.CollectionCount(2);var alloc0=GC.GetTotalAllocatedBytes();var done=0;
 for(var d=1;d<=days;d++){
     sw.Restart();
-    if(stuck!=null){var strand=int.Parse(Opt("strand","0"));var dayEnd=sim.State.ElapsedSeconds+86400;if(strand>0){var forced=new List<int>();while(forced.Count==0&&sim.State.ElapsedSeconds<dayEnd-1800){forced=stuck.Force(sim,strand);if(forced.Count==0)sim.Advance(60);}var since=sim.State.ElapsedSeconds;for(var m=0;m<30&&forced.Count>0;m++){sim.Advance(60);if(m%3==0||m==29||Environment.GetEnvironmentVariable("STUCK_EVERY")=="1")stuck.Watch(sim,forced,since);}}while(sim.State.ElapsedSeconds<dayEnd-1e-6){sim.Advance(Math.Min(600,dayEnd-sim.State.ElapsedSeconds));stuck.Sample(sim);}}else if(census==null)sim.Advance(86400);else
+    if(stuck!=null){var strand=int.Parse(Opt("strand","0"));var dayEnd=sim.State.ElapsedSeconds+86400;if(strand>0){var forced=new List<int>();while(forced.Count==0&&sim.State.ElapsedSeconds<dayEnd-1800){forced=stuck.Force(sim,strand);if(forced.Count==0)sim.Advance(60);}var since=sim.State.ElapsedSeconds;for(var m=0;m<30&&forced.Count>0;m++){sim.Advance(60);if(m%3==0||m==29||Environment.GetEnvironmentVariable("STUCK_EVERY")=="1")stuck.Watch(sim,forced,since);}}while(sim.State.ElapsedSeconds<dayEnd-1e-6){sim.Advance(Math.Min(600,dayEnd-sim.State.ElapsedSeconds));stuck.Sample(sim);}}else if(census==null)sim.Advance(windowSeconds);else
     {
         var hourTimer=Stopwatch.StartNew();
         var hourCpu=Process.GetCurrentProcess().TotalProcessorTime;
@@ -54,10 +58,14 @@ for(var d=1;d<=days;d++){
         }
     }
     var w=sw.Elapsed.TotalSeconds;total+=w;done=d;
-    Console.WriteLine($"DAY {d} wall={w:F2}s eff={86400/w:F0}x {Stats(sim)}");stuck?.Report(sim,d);
+    if(windowSeconds==86400)Console.WriteLine($"DAY {d} wall={w:F2}s eff={86400/w:F0}x {Stats(sim)}");
+    else Console.WriteLine($"WINDOW {d} seconds={windowSeconds} wall={w:F2}s eff={windowSeconds/w:F0}x {Stats(sim)}");
+    stuck?.Report(sim,d);
     if(total>cap){Console.WriteLine($"STOP limite de {cap}s");break;}
 }
-if(done>0)Console.WriteLine($"SUMMARY days={done} perDay={total/done:F2}s eff={86400*done/total:F0}x hours80y={total/done*29220/3600:F0} gen0={GC.CollectionCount(0)-gc0} gen2={GC.CollectionCount(2)-gc2} allocMB/day={(GC.GetTotalAllocatedBytes()-alloc0)/1e6/done:F0} workingSetMB={Process.GetCurrentProcess().WorkingSet64/1e6:F0}");
+if(done>0)Console.WriteLine(windowSeconds==86400
+    ? $"SUMMARY days={done} perDay={total/done:F2}s eff={86400*done/total:F0}x hours80y={total/done*29220/3600:F0} gen0={GC.CollectionCount(0)-gc0} gen2={GC.CollectionCount(2)-gc2} allocMB/day={(GC.GetTotalAllocatedBytes()-alloc0)/1e6/done:F0} workingSetMB={Process.GetCurrentProcess().WorkingSet64/1e6:F0}"
+    : $"SUMMARY windows={done} secondsEach={windowSeconds} perWindow={total/done:F2}s eff={windowSeconds*done/total:F0}x gen0={GC.CollectionCount(0)-gc0} gen2={GC.CollectionCount(2)-gc2} allocMB/window={(GC.GetTotalAllocatedBytes()-alloc0)/1e6/done:F0} workingSetMB={Process.GetCurrentProcess().WorkingSet64/1e6:F0}");
 if(profile is not null){
     var ticks=profile.Ticks.Sum();var measured=ticks/(double)Stopwatch.Frequency;
     Console.WriteLine($"STEP_PROFILE steps={profile.Steps} measuredWall={measured:F3}s phases={StepCostProfile.Names.Length}");
