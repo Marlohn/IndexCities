@@ -7,6 +7,7 @@ using IndexCities.Simulation;
 // Headless measurements of the simulation core (no Godot). Usage:
 //   scale  cycle|grid [--rows=3] [--length=400] [--days=7] [--cap=600] [--signals=1] [--seed=42] [--growth=0]
 //          --growth=N (grid only): houses appear N per simulated hour until all are placed
+//          --cycle-houses=N (cycle only): order up to N additional houses via normal construction
 //          --warmup=N days simulated before measuring (default 2)
 //   census cycle|grid [same options]   per-step movement census (free vs. waiting)
 //   profile cycle|grid [same options]  per-step timing of unchanged simulation phases
@@ -15,12 +16,14 @@ using IndexCities.Simulation;
 //          --strand=N empties the tank of N driving vehicles each day and follows the tow and the queue for 30 min
 // Results are measurements, not product rules: see docs/exploration/ritmo-velocidades.md.
 Console.OutputEncoding=Encoding.UTF8;
-var known=new HashSet<string>{"rows","length","days","cap","signals","seed","growth","warmup","strand","window"};
+var known=new HashSet<string>{"rows","length","days","cap","signals","seed","growth","warmup","strand","window","cycle-houses"};
 var opts=new Dictionary<string,string>();foreach(var p in args.Skip(2).Select(a=>a.TrimStart('-').Split('=',2)))opts[p[0]]=p.Length>1?p[1]:"1";
 string Opt(string k,string d)=>opts.GetValueOrDefault(k,d);
 if(opts.Keys.FirstOrDefault(k=>!known.Contains(k)) is {} unknown){Console.Error.WriteLine("opção desconhecida: --"+unknown);return 2;}
 if(args.Length<2||args[0] is not ("scale" or "census" or "stuck" or "profile" or "repro")||args[1] is not ("cycle" or "grid")){Console.Error.WriteLine("uso: scale|census|stuck|profile cycle|grid [--rows=3] [--length=400] [--days=7] [--cap=600] [--signals=1] [--seed=42] [--growth=0] [--warmup=2]");return 2;}
 var seed=int.Parse(Opt("seed","42"));var days=int.Parse(Opt("days","7"));var cap=double.Parse(Opt("cap","600"),System.Globalization.CultureInfo.InvariantCulture);var growth=int.Parse(Opt("growth","0"));var warmup=int.Parse(Opt("warmup","2"));
+var cycleHouses=int.Parse(Opt("cycle-houses","0"));
+if(cycleHouses<0||cycleHouses>32){Console.Error.WriteLine("--cycle-houses deve estar entre 0 e 32");return 2;}
 var windowSeconds=int.Parse(Opt("window","86400"));
 if(windowSeconds<2||windowSeconds>86400||windowSeconds%2!=0){Console.Error.WriteLine("--window deve estar entre 2 e 86400 segundos e ser múltiplo de 2");return 2;}
 if(windowSeconds!=86400&&(args[0]=="census"||args[0]=="stuck")){Console.Error.WriteLine("--window parcial é exclusivo de scale/profile");return 2;}
@@ -28,6 +31,10 @@ var sw=Stopwatch.StartNew();CitySimulation sim;string info;
 if(args[1]=="cycle"){sim=Fixtures.Cycle(seed);info="cycle (CityCycleTests.City, obras reais)";}
 else (sim,info)=Fixtures.Grid(seed,int.Parse(Opt("rows","3")),double.Parse(Opt("length","400"),System.Globalization.CultureInfo.InvariantCulture),Opt("signals","1")=="1",growth>0);
 Console.WriteLine($"FIXTURE {info} build={sw.Elapsed.TotalSeconds:F1}s .NET={Environment.Version} cpu={Environment.ProcessorCount} release={!Debugger.IsAttached}");
+if(cycleHouses>0&&args[1]=="cycle"){
+    var ordered=Fixtures.QueueCycleHousingProjects(sim,cycleHouses);
+    Console.WriteLine($"CYCLE_HOUSING requested={cycleHouses} placed={ordered.Placed} attempted={ordered.Attempted} {Stats(sim)}");
+}
 if(growth>0){sw.Restart();var hours=0;while(Fixtures.AddHouses(sim,growth)>0){sim.Advance(3600);hours++;}Console.WriteLine($"GROWTH {growth} casas/h por {hours} h wall={sw.Elapsed.TotalSeconds:F1}s pop={sim.Population}");}
 // PR57-only deterministic replay of the real 5183/5294/5179 queue.
 // This is a diagnostic command; it does not change CitySimulation behavior.
@@ -163,4 +170,4 @@ Console.WriteLine($"SAVE {json.Length/1e6:F1}MB save={save:F2}s load={sw.Elapsed
 sim.CheckInvariants();Console.WriteLine("INVARIANTS OK");
 return 0;
 
-static string Stats(CitySimulation s){var st=s.State;var alive=st.Citizens.Where(c=>c.Alive&&c.Resident).ToList();return $"pop={s.Population} alive={st.Citizens.Count(c=>c.Alive)} dead={st.Citizens.Count(c=>!c.Alive)} employed={st.Citizens.Count(c=>c.Alive&&c.Resident&&c.WorkplaceId!=null)} moving={st.Citizens.Count(c=>c.Alive&&c.Moving)} vehicles={st.Vehicles.Count} travelling={st.Vehicles.Count(v=>v.Status==VehicleStatus.Travelling)} ledger={st.Ledger.Count} history={st.Citizens.Sum(c=>c.History.Count)} meals={st.Citizens.Sum(c=>c.History.Count(h=>h.Description.StartsWith("Consumiu 1 alimento")))} wages={st.Ledger.Where(l=>l.Category.StartsWith("Salários / ")).Sum(l=>l.Amount):F2} health={(alive.Count==0?0:alive.Average(c=>c.Health)):F6} satisfaction={(alive.Count==0?0:alive.Average(c=>c.Satisfaction)):F6}";}
+static string Stats(CitySimulation s){var st=s.State;var alive=st.Citizens.Where(c=>c.Alive&&c.Resident).ToList();return $"pop={s.Population} alive={st.Citizens.Count(c=>c.Alive)} dead={st.Citizens.Count(c=>!c.Alive)} employed={st.Citizens.Count(c=>c.Alive&&c.Resident&&c.WorkplaceId!=null)} moving={st.Citizens.Count(c=>c.Alive&&c.Moving)} vehicles={st.Vehicles.Count} travelling={st.Vehicles.Count(v=>v.Status==VehicleStatus.Travelling)} ledger={st.Ledger.Count} houses={st.Buildings.Count(b=>!b.Removed&&b.Kind==BuildingKind.House)} openWorks={st.Projects.Count(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress)} history={st.Citizens.Sum(c=>c.History.Count)} meals={st.Citizens.Sum(c=>c.History.Count(h=>h.Description.StartsWith("Consumiu 1 alimento")))} wages={st.Ledger.Where(l=>l.Category.StartsWith("Salários / ")).Sum(l=>l.Amount):F2} health={(alive.Count==0?0:alive.Average(c=>c.Health)):F6} satisfaction={(alive.Count==0?0:alive.Average(c=>c.Satisfaction)):F6}";}

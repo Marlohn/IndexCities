@@ -31,6 +31,26 @@ static class Fixtures
         return sim;
     }
 
+    // PR57-only representative-load probe. Requests ordinary house projects:
+    // no private completion, money injection, capacity scaling or forced residents.
+    // Failed quotes/orders remain observable rather than silently creating houses.
+    public static (int Placed,int Attempted) QueueCycleHousingProjects(CitySimulation sim,int requested)
+    {
+        var placed=0;var attempted=0;
+        foreach(var (z,rotation) in new[]{(30.0,Math.PI),(-14.0,Math.PI)})
+        {
+            for(var x=-176.0;x<=216&&placed<requested;x+=20)
+            {
+                var position=new Point(x,z);
+                if(!sim.QuoteBuilding(BuildingKind.House,position,rotation).PhysicallyValid)continue;
+                attempted++;
+                if(sim.PlaceBuilding(BuildingKind.House,position,rotation).Success)placed++;
+            }
+            if(placed>=requested)break;
+        }
+        return (placed,attempted);
+    }
+
     // Grid of horizontal streets (60 m apart) on a west spine, connectors every
     // 320 m, houses north of each street and workplaces alternating with houses
     // south of it; lake east of the main street for the intakes.

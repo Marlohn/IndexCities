@@ -1,4 +1,4 @@
-name: Integrated core PR57 zero-distance safety economic 48h A/B
+name: Integrated core PR57 cycle real-construction 14d ABC
 
 on:
   push:
@@ -12,84 +12,76 @@ permissions:
   contents: read
 
 concurrency:
-  group: integrated-scale-${{ github.ref }}
+  group: integrated-scale-pr57
   cancel-in-progress: false
 
 jobs:
-  zero-site-economic-ab:
-    name: Real integrated grid seed73 zero-distance site 48h economic ABBA
+  cycle-real-growth-abc:
+    name: Real cycle seed42 14d no flags vs best vs best plus zero-site (ABCCBA)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 14
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Build real integrated headless
+      - name: Build integrated simulation and headless
         run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: Adversarial movements with and without zero-site optimization
-        run: |
-          for zero in 0 1; do
-            PR57_ACTIVE_SCAN=1 PR57_BITSET_SCAN=1 PR57_CORRIDOR_SCAN=1 PR57_SPLIT_CORRIDOR=0 PR57_ZERO_BEND_SKIP=1 PR57_ZERO_SITE_SKIP="$zero" dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --filter "FullyQualifiedName~DualExitConflictExperiment|FullyQualifiedName~DockCorridorTests|FullyQualifiedName~LaneEntrySlotTests|FullyQualifiedName~LaneTurnBodyTests|FullyQualifiedName~PedestrianCrossingTests|FullyQualifiedName~SharedSpaceTests"
-          done
-      - name: Seed73 integrated grid 48h wages meals zero-site ABBA and checkpoints
+      - name: Real construction, economy, persistence and complete checkpoints
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p artifacts/integrated-scale-probe
           run_one() {
-            local mode="$1" label="$2" zero=0
-            if [[ "$mode" == "candidate" ]]; then zero=1; fi
-            PR57_ACTIVE_SCAN=1 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=1 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=1 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=1 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 PR57_ZERO_BEND_SKIP=1 PR57_ZERO_SITE_SKIP="$zero" PR57_FAST_SCAN=1 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 timeout 150s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- profile grid --seed=73 --warmup=0 --days=8 --window=21600 --cap=150 --rows=6 --length=600 --signals=1 | tee "artifacts/integrated-scale-probe/${label}.log"
+            local mode="$1" label="$2" active=0 bitset=0 corridor=0 dock=0 bend=0 fast=0 zero=0
+            if [[ "$mode" != "base" ]]; then
+              active=1; bitset=1; corridor=1; dock=1; bend=1; fast=1
+            fi
+            if [[ "$mode" == "best_zero" ]]; then zero=1; fi
+            echo "PR57_MODE label=$label mode=$mode active=$active bitset=$bitset corridor=$corridor dock=$dock bend=$bend fast=$fast zero=$zero (fresh dotnet process)"
+            PR57_ACTIVE_SCAN="$active" PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN="$bitset" PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST="$dock" PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN="$corridor" PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 PR57_ZERO_BEND_SKIP="$bend" PR57_ZERO_SITE_SKIP="$zero" PR57_FAST_SCAN="$fast" PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 timeout 150s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- scale cycle --seed=42 --warmup=0 --cycle-houses=16 --days=28 --window=43200 --cap=130 | tee "artifacts/integrated-scale-probe/$label.log"
           }
-          run_one control a_control
-          run_one candidate a_candidate
-          run_one candidate b_candidate
-          run_one control b_control
+          run_one base a_base
+          run_one best a_best
+          run_one best_zero a_best_zero
+          run_one best_zero b_best_zero
+          run_one best b_best
+          run_one base b_base
           python3 - <<'PY'
           import pathlib,re
           root=pathlib.Path('artifacts/integrated-scale-probe')
+          labels=('a_base','a_best','a_best_zero','b_best_zero','b_best','b_base')
           results={}
-          for label in ('a_control','a_candidate','b_candidate','b_control'):
+          for label in labels:
               data=(root/(label+'.log')).read_text()
-              for token in ('WINDOW 1 ','WINDOW 8 ','SUMMARY windows=8 secondsEach=21600','INVARIANTS OK','SAVE '):
+              for token in ('WINDOW 1 ','WINDOW 28 ','SUMMARY windows=28 secondsEach=43200','INVARIANTS OK','SAVE ','CYCLE_HOUSING requested=16 '):
                   assert token in data,(label,token)
               assert 'STOP limite' not in data,(label,'cap exceeded')
-              windows=re.findall(r'^WINDOW (\d+) seconds=21600 wall=([0-9.]+)s eff=\d+x cpu=([0-9.]+)s allocMB=([0-9.]+) gc0=(\d+) gc2=(\d+) (.*)$',data,re.M)
-              assert len(windows)==8 and [int(x[0]) for x in windows]==list(range(1,9)),(label,windows)
+              houses=re.search(r'^CYCLE_HOUSING requested=16 placed=(\d+) attempted=(\d+)',data,re.M)
+              assert houses and int(houses.group(1))>0,(label,'no real construction projects ordered')
+              windows=re.findall(r'^WINDOW (\d+) seconds=43200 wall=([0-9.]+)s eff=\d+x cpu=([0-9.]+)s allocMB=([0-9.]+) gc0=(\d+) gc2=(\d+) (.*)$',data,re.M)
+              assert len(windows)==28 and [int(x[0]) for x in windows]==list(range(1,29)),(label,'missing windows',len(windows))
               checkpoints=tuple(re.findall(r'^PR57_AB_CHECKPOINT window=(\d+) sha256=([A-F0-9]{64}) (.*)$',data,re.M))
-              assert len(checkpoints)==8 and [int(x[0]) for x in checkpoints]==list(range(1,9)),(label,checkpoints)
+              assert len(checkpoints)==28 and [int(x[0]) for x in checkpoints]==list(range(1,29)),(label,'missing checkpoints')
               save=re.search(r'^SAVE .* sha256=([A-F0-9]{64})$',data,re.M)
               assert save and save.group(1)==checkpoints[-1][1],(label,'save mismatch')
-              scans=re.findall(r'^\s*VEHICLE_SCAN name=(\S+) wall=([0-9.]+)s visits=(\d+) hits=(\d+)',data,re.M)
-              assert len(scans)>=2,(label,scans)
-              summary=[line for line in data.splitlines() if line.startswith('SUMMARY windows=8 ')][0]
-              wall=sum(float(x[1]) for x in windows)
-              cpu=sum(float(x[2]) for x in windows)
-              alloc=sum(float(x[3]) for x in windows)
-              gc0=sum(int(x[4]) for x in windows)
-              gc2=sum(int(x[5]) for x in windows)
-              meals=int(re.search(r'\bmeals=(\d+)',checkpoints[-1][2]).group(1))
-              wages=float(re.search(r'\bwages=([0-9.]+)',checkpoints[-1][2]).group(1))
-              assert meals>0 and wages>0,(label,meals,wages,'economic cycle not exercised')
-              results[label]={'wall':wall,'cpu':cpu,'alloc':alloc,'gc0':gc0,'gc2':gc2,'checkpoints':checkpoints,'save':save.group(1),'scans':scans,'summary':summary}
-              print(f'PR57_ZERO_SITE label={label} wall={wall:.3f}s cpu={cpu:.3f}s allocMB={alloc:.1f} gc0={gc0} gc2={gc2} sha={save.group(1)} scans={scans} finalActivity={checkpoints[-1][2]} summary={summary}',flush=True)
+              totals=[sum(float(x[i]) for x in windows) for i in (1,2,3)]
+              gc0=sum(int(x[4]) for x in windows);gc2=sum(int(x[5]) for x in windows)
+              results[label]={'wall':totals[0],'cpu':totals[1],'alloc':totals[2],'gc0':gc0,'gc2':gc2,'houses':houses.group(1),'checkpoints':checkpoints,'save':save.group(1),'first':windows[0][6],'last':windows[-1][6]}
+              print(f'PR57_CYCLE_RESULT label={label} wall={totals[0]:.3f}s cpu={totals[1]:.3f}s allocMB={totals[2]:.1f} gc0={gc0} gc2={gc2} throughput={1209600/totals[0]:.1f}x orderedHouses={houses.group(1)} initial={windows[0][6]} final={windows[-1][6]} sha={save.group(1)}',flush=True)
+          assert len({r['houses'] for r in results.values()})==1,'construction order divergence'
           assert len({r['save'] for r in results.values()})==1,'final save divergence'
-          assert len({tuple((x[0],x[1]) for x in r['checkpoints']) for r in results.values()})==1,'checkpoint SHA divergence'
-          assert len({tuple((x[0],x[2]) for x in r['checkpoints']) for r in results.values()})==1,'checkpoint activity divergence'
-          assert len({r['scans'][0][3] for r in results.values()})==1,'lane scan hits divergence'
+          assert len({tuple((x[0],x[1],x[2]) for x in r['checkpoints']) for r in results.values()})==1,'intermediate causal state/activity divergence'
           for letter in ('a','b'):
-              c=results[f'{letter}_control']
-              b=results[f'{letter}_candidate']
-              assert [(x[0],x[2],x[3]) for x in b['scans']]==[(x[0],x[2],x[3]) for x in c['scans']],'physical scan count divergence'
-              print(f'PR57_ZERO_SITE_AB order={letter} control={c["wall"]:.3f}s candidate={b["wall"]:.3f}s speedup={c["wall"]/b["wall"]:.3f}x cpuControl={c["cpu"]:.3f}s cpuCandidate={b["cpu"]:.3f}s allocControlMB={c["alloc"]:.1f} allocCandidateMB={b["alloc"]:.1f}',flush=True)
-          print('PR57_ZERO_SITE_ACTIVITY '+results['a_control']['checkpoints'][-1][2],flush=True)
+              base,best,zero=(results[f'{letter}_{m}'] for m in ('base','best','best_zero'))
+              print(f'PR57_CYCLE_ABC order={letter} base={base["wall"]:.3f}s best={best["wall"]:.3f}s bestZero={zero["wall"]:.3f}s bestVsBase={base["wall"]/best["wall"]:.3f}x zeroVsBest={best["wall"]/zero["wall"]:.3f}x zeroVsBase={base["wall"]/zero["wall"]:.3f}x allocBaseMB={base["alloc"]:.1f} allocBestMB={best["alloc"]:.1f} allocZeroMB={zero["alloc"]:.1f}',flush=True)
+          print('PR57_CYCLE_ACTIVITY '+results['a_base']['checkpoints'][-1][2],flush=True)
           PY
-      - name: Preserve full logs
+      - name: Preserve all raw logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-zero-distance-site-seed73-48h-abba
+          name: integrated-scale-cycle-real-construction-seed42-14d-abc
           path: artifacts/integrated-scale-probe/*.log
           if-no-files-found: warn
           retention-days: 30
