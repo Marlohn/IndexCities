@@ -1,0 +1,54 @@
+name: P0 - Acumuladores e fronteiras temporais causais
+
+on:
+  push:
+    branches:
+      - experimento/p0-acumuladores-tempo-causal
+
+permissions:
+  contents: read
+
+jobs:
+  causal-math-and-dotnet:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Ambiente
+        run: |
+          dotnet --info
+          python3 --version
+      - name: Sonda matematica independente
+        run: |
+          set -o pipefail
+          python3 experiments/IndexCities.CausalLab/p0_math_probe.py | tee p0-python.log
+      - name: Executar P0 em C# contra FixedPoint real
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalLab/IndexCities.CausalLab.csproj | tee p0-dotnet.log
+      - name: Event-driven limiar de fome vs passos exatos
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalLab/IndexCities.CausalLab.csproj -- --segments | tee p0-segments.log
+      - name: Despensa compartilhada - eventos, limiares e entregas
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalLab/IndexCities.CausalLab.csproj -- --shared | tee p0-shared.log
+      - name: Auditoria integrada na cidade real do IndexCities
+        run: |
+          set -o pipefail
+          dotnet run -c Release --project experiments/IndexCities.CausalLab/IndexCities.CausalLab.csproj -- --integrated | tee p0-integrated.log
+      - name: Testes existentes do nucleo
+        run: |
+          set -o pipefail
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --logger 'console;verbosity=minimal' | tee p0-regression.log
+      - name: Preservar resultados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p0-tempo-causal-logs
+          path: p0-*.log
+          if-no-files-found: ignore
