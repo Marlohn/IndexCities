@@ -475,6 +475,18 @@ public sealed partial class CitySimulation
                     // Entry occupancy is measured along the ROAD axis, including
                     // the opposite lane, rather than the diagonal lot heading.
                     if(BlocksEntry(other)){HoldFor(other,0);continue;}
+                    // PR57 bitset A/B: the detour, opposing tow, and normal
+                    // leader paths below all require forward > 0 and side < 2.6.
+                    // Reject impossible candidates before the costly heading cosine;
+                    // the exact predicates and original iteration order are unchanged.
+                    if(pr57BitsetScan){
+                        var gateSin=pr57FastScan?pr57Sin:Math.Sin(v.Heading);
+                        var gateCos=pr57FastScan?pr57Cos:Math.Cos(v.Heading);
+                        var gateForward=relative.X*gateSin+relative.Z*gateCos;
+                        if(!(gateForward>0))continue;
+                        var gateSide=Math.Abs(relative.X*gateCos-relative.Z*gateSin);
+                        if(!(gateSide<2.6))continue;
+                    }
                     var pr57CosDiff=pr57FastScan?Math.Cos(other.Heading-v.Heading):0;
                     // An overtaker committed to this lane: oncoming traffic waits for it.
                     if(other.Detour.Count>0&&(pr57FastScan?pr57CosDiff:Math.Cos(other.Heading-v.Heading))<-.5){var ahead=relative.X*(pr57FastScan?pr57Sin:Math.Sin(v.Heading))+relative.Z*(pr57FastScan?pr57Cos:Math.Cos(v.Heading));var across=Math.Abs(relative.X*(pr57FastScan?pr57Cos:Math.Cos(v.Heading))-relative.Z*(pr57FastScan?pr57Sin:Math.Sin(v.Heading)));if(ahead>0&&across<2.6){HoldFor(other,ahead);continue;}}
