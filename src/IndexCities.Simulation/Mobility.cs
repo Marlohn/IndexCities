@@ -6,6 +6,7 @@ public sealed partial class CitySimulation
     // Never consulted by movement, and never persisted.
     readonly Dictionary<int,int> _laneBlockProbeCounts=new();
     readonly Dictionary<int,Dictionary<int,long>> _laneBlockProbeLeaders=new();
+    int _laneEntryOriginLastSecond=-1; // PR57: bounded, observational, never serialized
     bool _pedestrianCrossingsChecked;
     bool ShiftActive(Citizen c)=>BuildingById(c.WorkplaceId) is {} b&&ShiftActiveIn(c,b);
     bool ShiftActiveIn(Citizen c,Building b)
@@ -226,6 +227,31 @@ public sealed partial class CitySimulation
         // key is a total order and any sort yields the same sequence.
         var ordered=State.Vehicles.ToArray();Array.Sort(ordered,static (a,b)=>a.WaitingSince.CompareTo(b.WaitingSince) is var c and not 0?c:a.Id.CompareTo(b.Id));
         foreach(var v in ordered){
+            // PR57: isolate whether the lateral entrant already obstructs the through lane
+            // when it starts travelling, or reaches that pose during admission.
+            if(scanProfile is not null&&v.Id==5183){
+                var probeTime=State.ElapsedSeconds+_vehicleMovementOffset;
+                var probeSecond=(int)Math.Floor(probeTime);
+                if(probeSecond>=3550&&probeSecond<=3620&&probeSecond!=_laneEntryOriginLastSecond&&
+                   (probeSecond%10==0||probeSecond>=3595)){
+                    _laneEntryOriginLastSecond=probeSecond;
+                    LaneAccess probeAccess=default;
+                    var probeEligible=TryLaneEntry(v,out probeAccess);
+                    var probe5294=State.Vehicles.FirstOrDefault(o=>o.Id==5294);
+                    var probe5179=State.Vehicles.FirstOrDefault(o=>o.Id==5179);
+                    var blocked5294=probeEligible&&probe5294 is not null&&BlocksLaneEntry(v,probeAccess,EntryFrameVehicle(probe5294));
+                    var blocked5179=probeEligible&&probe5179 is not null&&BlocksLaneEntry(v,probeAccess,EntryFrameVehicle(probe5179));
+                    var crossingNow=false;var crossingNext=false;
+                    if(probe5294 is not null&&probe5294.Position.Distance(v.Position)<20&&
+                       TryMovementTarget(probe5294,out _,out var probeTarget,out _,out _,out _)){
+                        var towards=probeTarget-probe5294.Position;
+                        var heading=towards.Distance(default)>.00001?Math.Atan2(towards.X,towards.Z):probe5294.Heading;
+                        crossingNow=BodiesOverlap(probe5294,probe5294.Position,heading,v,v.Position,v.Heading);
+                        crossingNext=BodiesOverlap(probe5294,probe5294.Position.MoveTowards(probeTarget,.5),heading,v,v.Position,v.Heading);
+                    }
+                    Console.WriteLine($"LANE_ENTRY_ORIGIN time={probeTime:F6} entrant=5183 status={v.Status} cause={v.Cause?.Replace(' ','_')} x={v.Position.X:F6} z={v.Position.Z:F6} heading={v.Heading:F6} routeIndex={v.RouteIndex} waitingSince={v.WaitingSince:F6} eligible={probeEligible} fromSide={probeAccess.FromSide:F6} toSide={probeAccess.ToSide:F6} blockedBy5294={blocked5294} blockedBy5179={blocked5179} crossingNow={crossingNow} crossingNext05={crossingNext} leader5294X={probe5294?.Position.X:F6} leader5294Z={probe5294?.Position.Z:F6} leader5294Status={probe5294?.Status}");
+                }
+            }
             // A bypass belongs to the trip in progress: a stopped, parked or
             // replanned-elsewhere vehicle does not resume old waypoints.
             if(v.Detour.Count>0&&v.Status!=VehicleStatus.Travelling)v.Detour.Clear();
