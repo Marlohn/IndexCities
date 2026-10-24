@@ -62,6 +62,7 @@ Os estados são agregados por documento. Em material parcialmente revisado, cons
 | [Escala e baselines](exploration/simulation-scale.md) | PARCIALMENTE REVISADO | Calendário, aceleração real e referências de calibração/desempenho. |
 | [Ritmo e velocidades de simulação](exploration/ritmo-velocidades.md) | PENDENTE | Benchmarks da PR #19, pesquisa sobre gerações com calendário real e medição de escala e censo de movimento (2026-10-16: passo fixo inviável para a meta; custo dominante é recalcular agentes parados; experimento de agenda para sistemas estacionários proposto, não aprovado). |
 | [Motor de simulação](exploration/simulation-engine-performance-research.md) | PENDENTE | Pesquisa de CPU/GPU, eventos e alternativas de cálculo. |
+| [Programa de prova de viabilidade — 10 mil SIMs/80 anos](exploration/simulation-engine-hybrid-causal-proposal.md) | PENDENTE | Objetivo mensurável, arquitetura candidata contestável, auditoria adversarial de 2026-10-22, matriz de riscos, testes P0–P4 e critérios de descarte; sem aprovação nem implementação. |
 | [Técnicas de outros domínios](exploration/simulation-engine-cross-domain-research.md) | PENDENTE | Investigação transversal de aceleração causal. |
 | [Hipóteses radicais do motor](exploration/simulation-engine-radical-hypotheses.md) | PENDENTE | Alternativas especulativas; nenhuma decisão de arquitetura. |
 | [Cache da simulação](exploration/simulation-cache-feasibility.md) | PENDENTE | Viabilidade, equivalência causal, invalidação e custo líquido a medir. |
