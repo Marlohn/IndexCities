@@ -244,6 +244,8 @@ public sealed partial class CitySimulation
         var pr57DockGateHoist=pr57BitsetScan&&Environment.GetEnvironmentVariable("PR57_DOCK_GATE_HOIST")=="1";
         // PR57 A/B: conservative prefilter for BodyAcrossLane only (its exact 20m test remains).
         var pr57DockAabb=pr57BitsetScan&&Environment.GetEnvironmentVariable("PR57_DOCK_AABB")=="1";
+        // PR57 A/B: reuse exact longitudinal/lateral projections already computed by the conservative gate.
+        var pr57GateReuse=pr57BitsetScan&&Environment.GetEnvironmentVariable("PR57_GATE_REUSE")=="1";
         var pr57ScanCandidates=pr57ActiveScan
             ?State.Vehicles.Where(o=>!o.PassengerCar||o.Status!=VehicleStatus.Parked||_entryFrame?.ContainsKey(o.Id)==true).ToList()
             :State.Vehicles;
@@ -491,19 +493,20 @@ public sealed partial class CitySimulation
                     // leader paths below all require forward > 0 and side < 2.6.
                     // Reject impossible candidates before the costly heading cosine;
                     // the exact predicates and original iteration order are unchanged.
+                    var pr57GateForward=0.0;var pr57GateSide=0.0;
                     if(pr57BitsetScan){
                         var gateSin=pr57FastScan?pr57Sin:Math.Sin(v.Heading);
                         var gateCos=pr57FastScan?pr57Cos:Math.Cos(v.Heading);
-                        var gateForward=relative.X*gateSin+relative.Z*gateCos;
-                        if(!(gateForward>0))continue;
-                        var gateSide=Math.Abs(relative.X*gateCos-relative.Z*gateSin);
-                        if(!(gateSide<2.6))continue;
+                        pr57GateForward=relative.X*gateSin+relative.Z*gateCos;
+                        if(!(pr57GateForward>0))continue;
+                        pr57GateSide=Math.Abs(relative.X*gateCos-relative.Z*gateSin);
+                        if(!(pr57GateSide<2.6))continue;
                     }
                     var pr57CosDiff=pr57FastScan?Math.Cos(other.Heading-v.Heading):0;
                     // An overtaker committed to this lane: oncoming traffic waits for it.
                     if(other.Detour.Count>0&&(pr57FastScan?pr57CosDiff:Math.Cos(other.Heading-v.Heading))<-.5){var ahead=relative.X*(pr57FastScan?pr57Sin:Math.Sin(v.Heading))+relative.Z*(pr57FastScan?pr57Cos:Math.Cos(v.Heading));var across=Math.Abs(relative.X*(pr57FastScan?pr57Cos:Math.Cos(v.Heading))-relative.Z*(pr57FastScan?pr57Sin:Math.Sin(v.Heading)));if(ahead>0&&across<2.6){HoldFor(other,ahead);continue;}}
-                    var forward=relative.X*(pr57FastScan?pr57Sin:Math.Sin(v.Heading))+relative.Z*(pr57FastScan?pr57Cos:Math.Cos(v.Heading));
-                    var side=Math.Abs(relative.X*(pr57FastScan?pr57Cos:Math.Cos(v.Heading))-relative.Z*(pr57FastScan?pr57Sin:Math.Sin(v.Heading)));
+                    var forward=pr57GateReuse?pr57GateForward:relative.X*(pr57FastScan?pr57Sin:Math.Sin(v.Heading))+relative.Z*(pr57FastScan?pr57Cos:Math.Cos(v.Heading));
+                    var side=pr57GateReuse?pr57GateSide:Math.Abs(relative.X*(pr57FastScan?pr57Cos:Math.Cos(v.Heading))-relative.Z*(pr57FastScan?pr57Sin:Math.Sin(v.Heading)));
                     // A tow facing it in its own lane while loading, or leaving with the load,
                     // holds it like a leader: having come from behind, it turns its rear to the
                     // vehicle, facing the queue. A tow that is itself held does not (it may wait
