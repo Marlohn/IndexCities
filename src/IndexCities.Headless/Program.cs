@@ -192,6 +192,8 @@ static void PrintWorkDiagnostics(CitySimulation sim,int window)
         var shipmentVehicles=string.Join(",",pending.Select(s=>$"{s.Id}:{state.Vehicles.FirstOrDefault(v=>v.Id==s.VehicleId)?.Status.ToString()??"missing"}"));
         Console.WriteLine($"PR57_WORK_PROJECT window={window} id={p.Id} kind={(building==null?"road":building.Kind.ToString())} status={p.Status} cause={p.Cause.Replace(' ','_')} progress={p.Progress:F5} remaining={remaining:F2} inflight={inflight:F2} crew={(crew==null?"none":crew.Status.ToString())} localCrew={p.LocalCrew.Count} budget={p.BudgetRemaining:F2} materials={materials} shipments={shipmentVehicles}");
     }
+    foreach(var v in state.Vehicles.Where(v=>v.Status==VehicleStatus.Stranded||v.Body is TruckBody.Tow or TruckBody.TowHeavy).OrderBy(v=>v.Id))
+        Console.WriteLine($"PR57_TOW_STATE window={window} id={v.Id} body={v.Body} status={v.Status} x={v.Position.X:F3} z={v.Position.Z:F3} fuel={v.Fuel:F3} broken={v.BrokenDown} route={v.RouteIndex}/{v.Route.Count} claim={v.IntersectionClaim} towId={v.TowTruckId} target={v.TowTargetId} phase={v.TowPhase} retryAt={v.TowRetryAt:F1} calledAt={v.TowCalledAt:F1} roadRevision={v.TowRoadRevision} waitingSince={v.WaitingSince:F1} cause={v.Cause.Replace(' ','_')}");
     foreach(var shipment in state.Shipments.Where(s=>!s.Complete&&s.ProjectId!=null).OrderBy(s=>s.Id))
     {
         var truck=state.Vehicles.FirstOrDefault(v=>v.Id==shipment.VehicleId);
