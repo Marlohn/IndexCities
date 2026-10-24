@@ -1,4 +1,4 @@
-name: Integrated core PR57 real-cycle stranded tow diagnosis
+name: Integrated core PR57 cross-process save divergence diagnosis
 
 on:
   push:
@@ -16,8 +16,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  cycle-real-tow-diagnosis:
-    name: Seed42 6h stranded vehicle and tow state, unflagged
+  save-diff:
+    name: Seed42 6h raw and structural save comparison in fresh processes
     runs-on: ubuntu-latest
     timeout-minutes: 4
     steps:
@@ -25,33 +25,65 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Build real integrated simulation
+      - name: Build integrated simulation
         run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: Observe stranded vehicle and physical tow plan
+      - name: Compare real saves, not just SHA-256
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p artifacts/integrated-scale-probe
-          echo 'PR57_MODE base no PR57 performance flags, fresh dotnet process, diagnostic-only'
-          PR57_ACTIVE_SCAN=0 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 PR57_WORK_DIAG=1 timeout 90s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- scale cycle --seed=42 --warmup=0 --cycle-houses=16 --days=1 --window=21600 --cap=60 | tee artifacts/integrated-scale-probe/cycle-tow-diagnosis.log
+          mkdir -p artifacts/pr57-save-diff
+          for mode in A B C; do
+            export PR57_SAVE_CAPTURE_DIR=""
+            if [[ "$mode" != C ]]; then export PR57_SAVE_CAPTURE_DIR="artifacts/pr57-save-diff/$mode"; fi
+            echo "PR57_REPLAY mode=$mode seed=42 window=21600 houses=16 capture=${PR57_SAVE_CAPTURE_DIR:-none} flags=off fresh-process=yes"
+            PR57_ACTIVE_SCAN=0 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 PR57_WORK_DIAG=0 timeout 75s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- scale cycle --seed=42 --warmup=0 --cycle-houses=16 --days=1 --window=21600 --cap=60 | tee "artifacts/pr57-save-diff/$mode.log"
+          done
           python3 - <<'PY'
-          import pathlib,re
-          data=pathlib.Path('artifacts/integrated-scale-probe/cycle-tow-diagnosis.log').read_text()
-          checkpoint=re.search(r'^PR57_AB_CHECKPOINT window=1 sha256=([A-F0-9]{64}) ',data,re.M)
-          assert checkpoint and checkpoint.group(1)=='6D32238F95E83F47A749BB6F4314C58BABFCAE94428A572BD2D364CE04F0CB6D','6h state mismatch'
-          assert 'INVARIANTS OK' in data and 'STOP limite' not in data,'incomplete run'
-          save=re.search(r'^SAVE .* sha256=([A-F0-9]{64})$',data,re.M)
-          assert save and save.group(1)==checkpoint.group(1),'save mismatch'
-          stranded=re.findall(r'^PR57_TOW_STATE window=1 .*$',data,re.M)
-          assert any('id=22 ' in line for line in stranded),'missing stranded vehicle 22'
-          for line in stranded:print(line,flush=True)
-          print('PR57_TOW_VALIDATED seconds=21600 sha='+save.group(1),flush=True)
+          import hashlib,json,pathlib,re
+          root=pathlib.Path("artifacts/pr57-save-diff")
+          hashes={}
+          for mode in "ABC":
+              data=(root/f"{mode}.log").read_text()
+              checkpoint=re.search(r"^PR57_AB_CHECKPOINT window=1 sha256=([A-F0-9]{64}) ",data,re.M)
+              save=re.search(r"^SAVE .* sha256=([A-F0-9]{64})$",data,re.M)
+              assert checkpoint and save and checkpoint.group(1)==save.group(1),(mode,"checkpoint/save mismatch")
+              assert "INVARIANTS OK" in data and "STOP limite" not in data,(mode,"incomplete")
+              hashes[mode]=save.group(1)
+          print("PR57_SAVES final_hashes="+str(hashes),flush=True)
+          def compare(a,b,path,out,limit=20):
+              if len(out)>=limit:return
+              if type(a)!=type(b):
+                  out.append((path,f"type {type(a).__name__} != {type(b).__name__}"));return
+              if isinstance(a,dict):
+                  if a.keys()!=b.keys():
+                      out.append((path,f"keys onlyA={list(a.keys()-b.keys())[:5]} onlyB={list(b.keys()-a.keys())[:5]}"))
+                  for k in a.keys()&b.keys():
+                      compare(a[k],b[k],path+"."+str(k),out,limit)
+                      if len(out)>=limit:return
+              elif isinstance(a,list):
+                  if len(a)!=len(b):out.append((path,f"length {len(a)} != {len(b)}"))
+                  for i,(x,y) in enumerate(zip(a,b)):
+                      compare(x,y,f"{path}[{i}]",out,limit)
+                      if len(out)>=limit:return
+              elif a!=b:
+                  out.append((path,f"{str(a)[:120]!r} != {str(b)[:120]!r}"))
+          for stage in ("checkpoint-0.json","checkpoint-1.json"):
+              rawA=(root/"A"/stage).read_bytes();rawB=(root/"B"/stage).read_bytes()
+              a=json.loads(rawA);b=json.loads(rawB)
+              diffs=[];compare(a,b,"$",diffs)
+              print(f"PR57_SAVE_DIFF stage={stage} rawEqual={rawA==rawB} parsedEqual={a==b} shaA={hashlib.sha256(rawA).hexdigest().upper()} shaB={hashlib.sha256(rawB).hexdigest().upper()} firstDifferences={len(diffs)}",flush=True)
+              for path,detail in diffs:print(f"PR57_FIELD_DIFF path={path} value={detail}",flush=True)
+              assert hashlib.sha256(rawA).hexdigest().upper()==(hashes["A"] if stage.endswith("1.json") else hashlib.sha256(rawA).hexdigest().upper())
+              if stage.endswith("1.json"):
+                  assert hashlib.sha256(rawB).hexdigest().upper()==hashes["B"]
+          print("PR57_CAPTURE_EFFECT capturedA="+hashes["A"]+" capturedB="+hashes["B"]+" noCaptureC="+hashes["C"],flush=True)
+          print("PR57_SAVE_DIFF_DONE complete=3 processes; state equality is limited to sampled saves",flush=True)
           PY
-      - name: Preserve diagnosis
+      - name: Preserve complete synthetic snapshots and logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-cycle-real-tow-seed42
-          path: artifacts/integrated-scale-probe/*.log
+          name: integrated-scale-pr57-save-diff-seed42
+          path: artifacts/pr57-save-diff/**
           if-no-files-found: warn
-          retention-days: 30
+          retention-days: 14
