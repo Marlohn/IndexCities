@@ -1,4 +1,4 @@
-name: Integrated core PR57 experimental active-vehicle scan A/B
+name: Integrated core PR57 experimental spatial broad-phase A/B
 
 on:
   push:
@@ -17,47 +17,62 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  scan-ab:
-    name: Actual integrated city parked-car scan A/B
+  spatial-ab:
+    name: Real integrated core spatial scan ABBA and seed cross-check
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Compile .NET real core
+      - name: Build real integrated headless
         run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: Original versus filtered scan, same city and runner
+      - name: Compare exact control versus spatial candidate
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p artifacts/integrated-scale-probe
-          args=(profile grid --seed=73 --warmup=0 --days=1 --window=4500 --cap=150 --rows=10 --length=800 --signals=1)
-          PR57_ACTIVE_SCAN=0 dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- "${args[@]}" | tee artifacts/integrated-scale-probe/control.log
-          PR57_ACTIVE_SCAN=1 dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- "${args[@]}" | tee artifacts/integrated-scale-probe/candidate.log
+          run_one() {
+            local seed="$1" mode="$2" label="$3"
+            local spatial=0
+            if [[ "$mode" == "candidate" ]]; then spatial=1; fi
+            PR57_ACTIVE_SCAN=1 PR57_SPATIAL_SCAN="$spatial" dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- profile grid --seed="$seed" --warmup=0 --days=1 --window=4500 --cap=150 --rows=10 --length=800 --signals=1 | tee "artifacts/integrated-scale-probe/${label}.log"
+          }
+          # Same runner and load; order reversal distinguishes warm-cache noise.
+          run_one 73 control 73a_control
+          run_one 73 candidate 73a_candidate
+          run_one 73 candidate 73b_candidate
+          run_one 73 control 73b_control
+          # Distinct seed to test the filter outside the original queue.
+          run_one 42 candidate 42_candidate
+          run_one 42 control 42_control
           python3 - <<'PY'
           import pathlib,re
           root=pathlib.Path('artifacts/integrated-scale-probe')
           results={}
-          for label in ('control','candidate'):
-              s=(root/(label+'.log')).read_text()
-              for token in ('WINDOW 1 ','SUMMARY windows=1 secondsEach=4500','INVARIANTS OK','SAVE '):
-                  assert token in s,(label,token)
-              sha=re.search(r'^SAVE .* sha256=([A-F0-9]+)$',s,re.M).group(1)
-              wall=float(re.search(r'^WINDOW 1 .* wall=([0-9.]+)s',s,re.M).group(1))
-              visits=dict((name,int(num)) for name,num in re.findall(r'VEHICLE_SCAN name=(\S+) .* visits=(\d+)',s))
-              results[label]=(sha,wall,visits)
-              print(f'PR57_SCAN_AB {label} sha={sha} wall={wall:.3f}s visits={visits}',flush=True)
-          a,b=results['control'],results['candidate']
-          print(f'PR57_SCAN_COMPARE sameSave={a[0]==b[0]} speedup={a[1]/b[1]:.3f}x',flush=True)
-          assert a[0]==b[0], 'causal state mismatch: candidate cannot be accepted'
+          for seed in (73,42):
+              names=(f'{seed}a_control',f'{seed}a_candidate',f'{seed}b_candidate',f'{seed}b_control') if seed==73 else ('42_candidate','42_control')
+              for label in names:
+                  s=(root/(label+'.log')).read_text()
+                  for token in ('WINDOW 1 ','SUMMARY windows=1 secondsEach=4500','INVARIANTS OK','SAVE '):
+                      assert token in s,(label,token)
+                  sha=re.search(r'^SAVE .* sha256=([A-F0-9]+)$',s,re.M).group(1)
+                  wall=float(re.search(r'^WINDOW 1 .* wall=([0-9.]+)s',s,re.M).group(1))
+                  visits=dict((name,int(num)) for name,num in re.findall(r'VEHICLE_SCAN name=(\S+) .* visits=(\d+)',s))
+                  results[label]=(sha,wall,visits)
+                  print(f'PR57_SPATIAL {label} sha={sha} wall={wall:.3f}s visits={visits}',flush=True)
+              assert len({results[n][0] for n in names})==1,f'save divergence seed {seed}'
+          for n in ('a','b'):
+              control=results[f'73{n}_control'];candidate=results[f'73{n}_candidate']
+              print(f'PR57_SPATIAL_AB seed=73 order={n} speedup={control[1]/candidate[1]:.3f}x',flush=True)
+          print(f'PR57_SPATIAL_AB seed=42 speedup={results["42_control"][1]/results["42_candidate"][1]:.3f}x',flush=True)
           PY
-      - name: Preserve logs
+      - name: Preserve full logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-parked-scan-ab
+          name: integrated-scale-spatial-ab
           path: artifacts/integrated-scale-probe/*.log
           if-no-files-found: warn
           retention-days: 30

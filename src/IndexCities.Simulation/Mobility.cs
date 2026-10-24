@@ -231,12 +231,50 @@ public sealed partial class CitySimulation
         // original-order candidate list once per movement slice.
         // Keep entry-frame occupants even if their live state has changed.
         var pr57ActiveScan=Environment.GetEnvironmentVariable("PR57_ACTIVE_SCAN")=="1";
+        var pr57SpatialScan=Environment.GetEnvironmentVariable("PR57_SPATIAL_SCAN")=="1";
         var pr57ScanCandidates=pr57ActiveScan
             ?State.Vehicles.Where(o=>!o.PassengerCar||o.Status!=VehicleStatus.Parked||_entryFrame?.ContainsKey(o.Id)==true).ToList()
             :State.Vehicles;
         var pr57ScanIds=pr57ActiveScan?pr57ScanCandidates.Select(o=>o.Id).ToHashSet():null;
-        var pr57VehicleOrder=pr57ActiveScan?State.Vehicles.Select((o,i)=>new{o.Id,Index=i}).ToDictionary(x=>x.Id,x=>x.Index):null;
+        var pr57VehicleOrder=pr57ActiveScan||pr57SpatialScan?State.Vehicles.Select((o,i)=>new{o.Id,Index=i}).ToDictionary(x=>x.Id,x=>x.Index):null;
+        // PR57 spatial A/B: a live, per-slice broad-phase. The exact original
+        // lane/curve tests still decide every collision, tie and queue.
+        // All returned candidates are in State.Vehicles order, not cell order.
+        const double pr57CellWidth=32;
+        static (int X,int Z) Pr57Cell(Point p)=>((int)Math.Floor(p.X/pr57CellWidth),(int)Math.Floor(p.Z/pr57CellWidth));
+        var pr57Cells=pr57SpatialScan?new Dictionary<(int X,int Z),List<Vehicle>>():null;
+        var pr57SpatialIds=pr57SpatialScan?pr57ScanCandidates.Select(o=>o.Id).ToHashSet():null;
+        var pr57WorldExtent=pr57SpatialScan&&pr57ScanCandidates.Count>0
+            ?pr57ScanCandidates.Max(o=>Math.Max(Math.Abs(o.Position.X),Math.Abs(o.Position.Z))):0;
+        void Pr57Add(Vehicle o){
+            var key=Pr57Cell(o.Position);
+            if(!pr57Cells!.TryGetValue(key,out var list))pr57Cells[key]=list=new();
+            list.Add(o);
+        }
+        if(pr57Cells is not null)foreach(var o in pr57ScanCandidates)Pr57Add(o);
+        List<Vehicle> Pr57Query(double x0,double x1,double z0,double z1){
+            var found=new List<Vehicle>();
+            var first=Pr57Cell(new Point(x0,z0));var last=Pr57Cell(new Point(x1,z1));
+            for(var x=first.X;x<=last.X;x++)for(var z=first.Z;z<=last.Z;z++)
+                if(pr57Cells!.TryGetValue((x,z),out var cell))found.AddRange(cell);
+            found.Sort((a,b)=>pr57VehicleOrder![a.Id].CompareTo(pr57VehicleOrder[b.Id]));
+            return found;
+        }
+        List<Vehicle> Pr57LaneCandidates(Vehicle v,bool entering){
+            // Entry admission uses an extended, speed-dependent approach
+            // corridor; retain the unfiltered original list for that case.
+            if(!pr57SpatialScan||entering)return pr57ScanCandidates;
+            // Every non-entry lane leader is forward and within 2.6 m
+            // laterally, except BodyAcrossLane (strictly <=20 m from v).
+            // The ray reaches beyond all indexed positions; no forward
+            // cutoff or speed assumption can drop a distant leader.
+            var reach=2*(pr57WorldExtent+Math.Max(Math.Abs(v.Position.X),Math.Abs(v.Position.Z)))+40;
+            var end=new Point(v.Position.X+Math.Sin(v.Heading)*reach,v.Position.Z+Math.Cos(v.Heading)*reach);
+            return Pr57Query(Math.Min(v.Position.X,end.X)-20,Math.Max(v.Position.X,end.X)+20,
+                             Math.Min(v.Position.Z,end.Z)-20,Math.Max(v.Position.Z,end.Z)+20);
+        }
         foreach(var v in ordered){
+            var pr57OldCell=pr57SpatialScan?Pr57Cell(v.Position):default;
             try{
             // PR57: isolate whether the lateral entrant already obstructs the through lane
             // when it starts travelling, or reaches that pose during admission.
@@ -374,7 +412,8 @@ public sealed partial class CitySimulation
                 var laneCandidateHits=0;
                 void HoldFor(Vehicle other,double distance){if(scanProfile is not null){laneCandidateHits++;scanProfile.ObserveLaneHoldDistance(v.Position,other.Position,enteringLane);}if(distance<leaderDistance){leaderDistance=distance;blocker=other;}}
                 var laneScanStart=scanProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
-                foreach(var liveOther in pr57ScanCandidates){
+                var pr57LaneList=Pr57LaneCandidates(v,enteringLane);
+                foreach(var liveOther in pr57LaneList){
                     var other=enteringLane?EntryFrameVehicle(liveOther):liveOther;
                     // A truck stopped at a dock with its body across this lane (a street bay)
                     // is queued behind like a leader, keeping the queue gap (Mobility.SharedSpace).
@@ -405,7 +444,7 @@ public sealed partial class CitySimulation
                     }
                 }
                 if(scanProfile is not null){
-                    scanProfile.MarkVehicleScan(0,laneScanStart,pr57ScanCandidates.Count,laneCandidateHits);
+                    scanProfile.MarkVehicleScan(0,laneScanStart,pr57LaneList.Count,laneCandidateHits);
                     if(blocker is not null)scanProfile.ObserveLaneLeaderSelection(v.Position,blocker.Position,leaderDistance,Math.Min(d,speed*remaining));
                 }
                 var step=Math.Min(d,Math.Min(speed*remaining,Math.Max(0,leaderDistance-8)));
@@ -415,10 +454,11 @@ public sealed partial class CitySimulation
                 // beyond the straight-lane strip above; its body still bounds this
                 // step and this turn. Opposite and parallel lanes are not involved.
                 var bendScanStart=scanProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
-                var bendLeaders=pr57ScanCandidates.Where(o=>o.Id!=v.Id&&o.Status is VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded&&Math.Cos(o.Heading-v.Heading)>.5&&Ahead(v,o)>0&&
+                var pr57BendList=pr57SpatialScan?Pr57Query(v.Position.X-step-12,v.Position.X+step+12,v.Position.Z-step-12,v.Position.Z+step+12):pr57ScanCandidates;
+                var bendLeaders=pr57BendList.Where(o=>o.Id!=v.Id&&o.Status is VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded&&Math.Cos(o.Heading-v.Heading)>.5&&Ahead(v,o)>0&&
                     Math.Abs((o.Position.X-v.Position.X)*Math.Cos(v.Heading)-(o.Position.Z-v.Position.Z)*Math.Sin(v.Heading))>=2.6&&o.Position.Distance(v.Position)<=step+12&&
                     !(o.Position.Distance(State.Entry)<8&&v.Position.Distance(State.Entry)<8)).ToList();
-                if(scanProfile is not null)scanProfile.MarkVehicleScan(1,bendScanStart,pr57ScanCandidates.Count,bendLeaders.Count);
+                if(scanProfile is not null)scanProfile.MarkVehicleScan(1,bendScanStart,pr57BendList.Count,bendLeaders.Count);
                 if(bendLeaders.Count>0){
                     if(bendLeaders.Any(o=>TurnsInto(v,approachHeading,o))){v.Heading=approachHeading;step=0;}
                     else step=ClearOfPoses(v,target,step,bendLeaders.Where(o=>!VehicleBodiesOverlap(v,v.Position,o)).Select(o=>(o,o.Position,o.Heading)).ToList());
@@ -496,6 +536,19 @@ public sealed partial class CitySimulation
                 if(pr57ScanIds is not null&&(!v.PassengerCar||v.Status!=VehicleStatus.Parked)&&pr57ScanIds.Add(v.Id)){
                     var next=pr57ScanCandidates.FindIndex(o=>pr57VehicleOrder![o.Id]>pr57VehicleOrder[v.Id]);
                     if(next<0)pr57ScanCandidates.Add(v);else pr57ScanCandidates.Insert(next,v);
+                }
+                if(pr57Cells is not null){
+                    if(pr57SpatialIds!.Contains(v.Id)){
+                        var newCell=Pr57Cell(v.Position);
+                        if(newCell!=pr57OldCell){
+                            var oldList=pr57Cells[pr57OldCell];oldList.Remove(v);
+                            if(oldList.Count==0)pr57Cells.Remove(pr57OldCell);
+                            Pr57Add(v);
+                        }
+                    }else if(pr57ScanIds?.Contains(v.Id)==true){
+                        pr57SpatialIds.Add(v.Id);Pr57Add(v);
+                    }
+                    pr57WorldExtent=Math.Max(pr57WorldExtent,Math.Max(Math.Abs(v.Position.X),Math.Abs(v.Position.Z)));
                 }
             }
         }
