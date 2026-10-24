@@ -255,3 +255,28 @@ Cada entrada nova deve trazer: hipótese; SHA da branch; workflow/job/log; fixtu
 **Conclusão:** mesmo entre os raros candidatos da varredura de faixa, existem `HoldFor` além de 512 m. **Descartar candidatos por raio fixo de 32/128/512 m não preserva automaticamente a semântica**, especialmente para acesso à faixa, ultrapassagem e distância projetada ao longo da via. Porém, `HoldFor` contabiliza todos os candidatos, não apenas o **líder mais próximo selecionado**; esses números ainda não provam que um candidato distante limita o passo ou causa uma espera. O filtro exato continua hipótese não validada. Runner compartilhado, instrumentação com overhead, janela inicial sem refeições/salários, fixture artificial com obras/caixa/serviços ampliados, menos de 10 mil vivos, sem Godot e sem persistência histórica individual externa.
 
 **Próxima hipótese única, com limite explícito:** os candidatos distantes podem ser frequentes mas nunca ser o líder efetivamente selecionado nem limitar o deslocamento alcançável no quantum. Instrumentar somente contagem e distribuição espacial do **líder vencedor** da varredura já existente e se a distância longitudinal selecionada pode limitar o passo livre `min(distância ao alvo, velocidade×tempo restante)` após a folga de 8 m, **antes** de cruzamentos/geometria. Não é medição de colisão nem autorização para remover candidatos; mesmo ausência de vencedores distantes nesta fixture não prova equivalência global. Reutilizar o mesmo A/B `scale` vs `profile`, seed 42, 6×600/10×800, 4h/7.200 quanta, invariantes, save relido e SHA-256 completo. Nenhum salto temporal, regra ou algoritmo de movimento alterado.
+
+## Décima terceira execução — líderes distantes existem, mas não limitaram o passo livre observado (24/10/2026)
+
+**Evidência material:** [Actions #40079377259](https://github.com/Marlohn/IndexCities/actions/runs/40079377259), SHA `ad08d7f96abfad60440964ecfa31d8608c26527c`, job `phase-profile` **success**, [logs](https://github.com/Marlohn/IndexCities/actions/runs/40079377259/job/120829530361). .NET 8 Release, seed 42, `grid --warmup=0 --days=1 --window=14400 --cap=150 --signals=1`, `--rows=6 --length=600` e `--rows=10 --length=800`, modos `scale` e `profile` na mesma execução. **7.200 quanta de 2 s** por condição, invariantes e save/load aprovados; SHA-256 completo do save idêntico entre controle/perfil por fixture (6×600 `7B3E15DB17B6D06A86DBDF974719F74F990551F573C8B572486E31CE6D698E11`; 10×800 `FC17D58BC43299549841464041E4E65F5FD24D869858F2F17A37267FB05AD307`). Igualdade do estado final não demonstra igualdade de cada evento interno.
+
+| Janela inicial de 4h, seed 42 | 6×600 | 10×800 |
+| --- | ---: | ---: |
+| SIMs vivos / veículos / empregos atribuídos | 363 / 263 / 334 | 808 / 576 / 708 |
+| Wall controle / perfil | 10,94 / 11,08 s | 95,87 / 94,94 s |
+| Avanço efetivo controle | 1.316 s simulados/s real | 150 s simulados/s real |
+| Líderes selecionados pela varredura | 109.699 | 672.903 |
+| Líderes selecionados a até 32 m | 94.712 | 582.487 |
+| Líderes selecionados de 32 a 128 m | 12.505 | 62.504 |
+| Líderes selecionados de 128 a 512 m | 2.479 | 26.905 |
+| Líderes selecionados **além de 512 m** | **3** | **1.007** |
+| Limitações potenciais do passo livre pelo líder | 74.390 | 487.639 |
+| Limitações potenciais com líder **além de 32 m** | **0** | **0** |
+| Maior distância euclidiana até líder selecionado | 546,46 m | 748,31 m |
+| Varreduras faixa + curva / movimento (perfil) | 2,899 / 7,028 s | 30,897 / 79,921 s |
+| Alocação / GC0 / GC2 / working set (perfil) | 2.576 MB / 155 / 2 / 91 MB | 22.743 MB / 1.364 / 6 / 102 MB |
+| Histórico em memória / refeições / salários | 3.702 / 0 / 0 | 10.228 / 0 / 0 |
+
+**Conclusão discriminante:** líderes distantes (>512 m) **podem vencer a seleção** (3/1.007 ocorrências), portanto não se pode alegar que o líder selecionado é sempre local. Contudo, nesta janela, **nenhum líder selecionado a mais de 32 m** reduziu o passo livre `min(distância ao alvo, velocidade × tempo restante)` pela folga de 8 m. Isso é observação restrita à fixture e à comparação prévia a cruzamentos/geometria, **não prova** que remover líderes distantes preserve manobras, decisões posteriores, colisões ou casos adversariais. A ausência de limitação observada não autoriza raio fixo nem mudança de regra; um filtro futuro precisa ser exato em coordenadas viárias, candidatos de entrada, estados mutáveis, ordem e desempates. O custo de varredura continua relevante, mas cerca de 60% do movimento fica fora dessas duas varreduras.
+
+**Limites e próximo teste:** janela inicial de 4h sem salários/refeições, obras instantâneas, dinheiro/serviços artificiais, população <<10 mil, sem Godot e sem histórico externo gravado. Tempos incluem GC e ruído de runner. Antes de implementar índice espacial, construir **casos adversariais diferenciais curtos** (curvas, entrada de faixa, líderes parados, mesma posição, desempates, mudança de segmento) e demonstrar seleção e decisão idênticas contra a varredura completa; só depois medir custo de um filtro exato, sem mudar física ou ordem causal. Não repetir esta bateria apenas para acumular CI.
