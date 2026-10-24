@@ -1,4 +1,4 @@
-name: Integrated core PR57 zero-step bend-scan economic 48h A/B
+name: Integrated core PR57 zero-distance safety A/B
 
 on:
   push:
@@ -16,10 +16,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  economic-ab:
-    name: Real integrated grid seed73 zero-bend skip ABBA 48h economy
+  zero-site-ab:
+    name: Real integrated grid seed73 zero-distance site safety ABBA
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -30,65 +30,61 @@ jobs:
       - name: Adversarial movement parity with zero-step bend-scan
         run: |
           dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --filter FullyQualifiedName~DualExitConflictExperiment
-          PR57_ACTIVE_SCAN=1 PR57_BITSET_SCAN=1 PR57_CORRIDOR_SCAN=1 PR57_SPLIT_CORRIDOR=0 PR57_ZERO_BEND_SKIP=1 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --filter "FullyQualifiedName~DualExitConflictExperiment|FullyQualifiedName~DockCorridorTests|FullyQualifiedName~LaneEntrySlotTests"
-      - name: Seed73 integrated grid 48h economic zero-bend-skip ABBA and checkpoints
+          PR57_ACTIVE_SCAN=1 PR57_BITSET_SCAN=1 PR57_CORRIDOR_SCAN=1 PR57_SPLIT_CORRIDOR=0 PR57_ZERO_BEND_SKIP=1 PR57_ZERO_SITE_SKIP=1 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --filter "FullyQualifiedName~DualExitConflictExperiment|FullyQualifiedName~DockCorridorTests|FullyQualifiedName~LaneEntrySlotTests"
+      - name: Seed73 integrated grid zero-distance safety ABBA and checkpoints
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p artifacts/integrated-scale-probe
           run_one() {
-            local mode="$1" label="$2" skip=0
-            if [[ "$mode" == "skip" ]]; then skip=1; fi
-            PR57_ACTIVE_SCAN=1 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=1 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=1 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=1 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 PR57_ZERO_BEND_SKIP="$skip" PR57_FAST_SCAN=1 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- profile grid --seed=73 --warmup=0 --days=8 --window=21600 --cap=150 --rows=6 --length=600 --signals=1 | tee "artifacts/integrated-scale-probe/${label}.log"
+            local mode="$1" label="$2" zero=0
+            if [[ "$mode" == "candidate" ]]; then zero=1; fi
+            PR57_ACTIVE_SCAN=1 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=1 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=1 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=1 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 PR57_ZERO_BEND_SKIP=1 PR57_ZERO_SITE_SKIP="$zero" PR57_FAST_SCAN=1 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 timeout 180s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- profile grid --seed=73 --warmup=0 --days=3 --window=1500 --cap=180 --rows=10 --length=800 --signals=1 | tee "artifacts/integrated-scale-probe/${label}.log"
           }
           run_one control a_control
-          run_one skip a_skip
-          run_one skip b_skip
+          run_one candidate a_candidate
+          run_one candidate b_candidate
           run_one control b_control
           python3 - <<'PY'
           import pathlib,re
           root=pathlib.Path('artifacts/integrated-scale-probe')
           results={}
-          for label in ('a_control','a_skip','b_skip','b_control'):
+          for label in ('a_control','a_candidate','b_candidate','b_control'):
               data=(root/(label+'.log')).read_text()
-              for token in ('WINDOW 1 ','WINDOW 8 ','SUMMARY windows=8 secondsEach=21600','INVARIANTS OK','SAVE '):
+              for token in ('WINDOW 1 ','WINDOW 3 ','SUMMARY windows=3 secondsEach=1500','INVARIANTS OK','SAVE '):
                   assert token in data,(label,token)
               assert 'STOP limite' not in data,(label,'cap exceeded')
-              windows=re.findall(r'^WINDOW (\d+) seconds=21600 wall=([0-9.]+)s eff=\d+x allocMB=([0-9.]+) gc0=(\d+) gc2=(\d+) (.*)$',data,re.M)
-              assert len(windows)==8 and [int(x[0]) for x in windows]==list(range(1,9)),(label,windows)
+              windows=re.findall(r'^WINDOW (\d+) seconds=1500 wall=([0-9.]+)s eff=\d+x allocMB=([0-9.]+) gc0=(\d+) gc2=(\d+) (.*)$',data,re.M)
+              assert len(windows)==3 and [int(x[0]) for x in windows]==list(range(1,4)),(label,windows)
               checkpoints=tuple(re.findall(r'^PR57_AB_CHECKPOINT window=(\d+) sha256=([A-F0-9]{64}) (.*)$',data,re.M))
-              assert len(checkpoints)==8 and [int(x[0]) for x in checkpoints]==list(range(1,9)),(label,checkpoints)
+              assert len(checkpoints)==3 and [int(x[0]) for x in checkpoints]==list(range(1,4)),(label,checkpoints)
               save=re.search(r'^SAVE .* sha256=([A-F0-9]{64})$',data,re.M)
               assert save and save.group(1)==checkpoints[-1][1],(label,'save mismatch')
               scans=re.findall(r'^\s*VEHICLE_SCAN name=(\S+) wall=([0-9.]+)s visits=(\d+) hits=(\d+)',data,re.M)
               assert len(scans)>=2,(label,scans)
-              summary=[line for line in data.splitlines() if line.startswith('SUMMARY windows=8 ')][0]
+              summary=[line for line in data.splitlines() if line.startswith('SUMMARY windows=3 ')][0]
               wall=sum(float(x[1]) for x in windows)
               alloc=sum(float(x[2]) for x in windows)
               gc0=sum(int(x[3]) for x in windows)
               gc2=sum(int(x[4]) for x in windows)
               results[label]={'wall':wall,'alloc':alloc,'gc0':gc0,'gc2':gc2,'checkpoints':checkpoints,'save':save.group(1),'scans':scans,'summary':summary}
-              print(f'PR57_ECON_48H label={label} wall={wall:.3f}s allocMB={alloc:.1f} gc0={gc0} gc2={gc2} sha={save.group(1)} scans={scans} finalActivity={checkpoints[-1][2]} summary={summary}',flush=True)
+              print(f'PR57_ZERO_SITE label={label} wall={wall:.3f}s allocMB={alloc:.1f} gc0={gc0} gc2={gc2} sha={save.group(1)} scans={scans} finalActivity={checkpoints[-1][2]} summary={summary}',flush=True)
           assert len({r['save'] for r in results.values()})==1,'final save divergence'
           assert len({tuple((x[0],x[1]) for x in r['checkpoints']) for r in results.values()})==1,'checkpoint SHA divergence'
           assert len({tuple((x[0],x[2]) for x in r['checkpoints']) for r in results.values()})==1,'checkpoint activity divergence'
           assert len({r['scans'][0][3] for r in results.values()})==1,'lane scan hits divergence'
           for letter in ('a','b'):
               c=results[f'{letter}_control']
-              b=results[f'{letter}_skip']
-              assert int(b['scans'][1][2])<=int(c['scans'][1][2]),'bend visits increased'
-              print(f'PR57_ECON_48H_AB order={letter} control={c["wall"]:.3f}s skip={b["wall"]:.3f}s speedup={c["wall"]/b["wall"]:.3f}x allocControlMB={c["alloc"]:.1f} allocSkipMB={b["alloc"]:.1f}',flush=True)
-          final=results['a_control']['checkpoints'][-1][2]
-          meals=re.search(r'\bmeals=(\d+)',final)
-          wages=re.search(r'\bwages=([0-9.]+)',final)
-          assert meals and wages,(final,'missing activity metrics')
-          print(f'PR57_ECON_48H_ACTIVITY meals={meals.group(1)} wages={wages.group(1)} economicCycleObserved={int(int(meals.group(1))>0 and float(wages.group(1))>0)}',flush=True)
+              b=results[f'{letter}_candidate']
+              assert b['scans']==c['scans'],'physical scan count divergence'
+              print(f'PR57_ZERO_SITE_AB order={letter} control={c["wall"]:.3f}s candidate={b["wall"]:.3f}s speedup={c["wall"]/b["wall"]:.3f}x allocControlMB={c["alloc"]:.1f} allocCandidateMB={b["alloc"]:.1f}',flush=True)
+          print('PR57_ZERO_SITE_ACTIVITY '+results['a_control']['checkpoints'][-1][2],flush=True)
           PY
       - name: Preserve full logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-zero-bend-grid-seed73-48h-abba
+          name: integrated-scale-zero-distance-site-seed73-abba
           path: artifacts/integrated-scale-probe/*.log
           if-no-files-found: warn
           retention-days: 30

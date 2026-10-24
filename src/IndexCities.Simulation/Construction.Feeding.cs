@@ -2,6 +2,9 @@ namespace IndexCities.Simulation;
 
 public sealed partial class CitySimulation
 {
+    // PR57-only A/B: zero distance has no swept path. Do not build machine/site
+    // reservations when no displacement can occur; off by default.
+    static readonly bool Pr57ZeroSiteSkip=Environment.GetEnvironmentVariable("PR57_ZERO_SITE_SKIP")=="1";
     (RoadNode Road,Point Position) PavingBay(RoadNode access,PavingMachine kind,WorkProject? work=null)
     {
         var route=FindRoadRoute(EntryNode().Id,access.Id,true);
@@ -124,6 +127,7 @@ public sealed partial class CitySimulation
 
     double SafeSiteTravel(Vehicle vehicle,Point target,double distance,bool machinesOnly=false)
     {
+        if(Pr57ZeroSiteSkip&&distance==0)return 0;
         // A moving machine holds its whole remaining path, not only its body:
         // a vehicle stopped anywhere on it (behind a turn, across an oncoming
         // lane) would wait for the machine while the machine waits for it.

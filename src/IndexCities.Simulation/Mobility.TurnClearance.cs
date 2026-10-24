@@ -46,6 +46,8 @@ public sealed partial class CitySimulation
     static double Ahead(Vehicle from,Vehicle other)=>(other.Position.X-from.Position.X)*Math.Sin(from.Heading)+(other.Position.Z-from.Position.Z)*Math.Cos(from.Heading);
     double ClearOfCrossingAhead(Vehicle v,Point target,double distance)
     {
+        // A zero-length segment cannot intersect a crossing during movement.
+        if(Pr57ZeroSiteSkip&&distance==0)return 0;
         // Junction admission already orders claim holders; they are left to it.
         // One turning out of the junction ahead still has its body across this
         // lane before this vehicle reaches admission, so it counts here.
