@@ -370,3 +370,22 @@ Cada entrada nova deve trazer: hipótese; SHA da branch; workflow/job/log; fixtu
 **Conclusão:** a diferença de **18.880 limites de movimento** entre seeds se concentra na categoria de nó/cruzamento (**18.880 limites adicionais**, 21.746−2.866). A categoria é produzida por `node.Crosswalk || node.Neighbours.Count>=3` em `TimeToMovementChange`, e **não distingue ainda travessia, entroncamento, um veículo que vence repetidamente, nem uma frota inteira percorrendo nós**. É atribuição do evento vencedor, não prova de falha de física, deadlock ou ineficiência intrínseca. Os tempos mudaram entre CIs sem otimização: não inferir ganho. A janela inicial não inclui refeições/salários, a fixture injeta obras/recursos/caixa, tem apenas 808/812 vivos, histórico somente em memória e nenhum Godot.
 
 **Próxima hipótese única e barata:** o excesso de limites de nó/cruzamento na seed 73 está concentrado em poucos veículos que repetem a mesma condição, ou distribuído pela frota? Acrescentar **somente observação** do ID do veículo cujo `TimeToMovementChange` efetivamente reduz o horizonte, por hora, registrando número de IDs distintos e top 1/top 3; não alterar evento, tempo, seleção, regra nem ordem. Repetir apenas a janela dirigida de 2h nas mesmas seeds com `scale`/ `profile`, invariantes e SHA-256 completo. Se distribuído, examinar densidade de nós/rotas; se concentrado, isolar caso adversarial de veículo antes de propor otimização.
+
+## Décima nona execução — um único veículo concentra os limites de cruzamento da seed 73 (24/10/2026)
+
+**Evidência material:** [Actions #40089980043](https://github.com/Marlohn/IndexCities/actions/runs/40089980043), SHA `720db6ca75e4a32b4d2f1da1caff360bd9fbe4b1`, job `phase-profile` **success** (logs do job `120860507279`). Release .NET 8; `scale|profile grid --seed=42|73 --warmup=0 --days=1 --window=7200 --cap=150 --rows=10 --length=800 --signals=1`. Mesmo runner, 3.600 quanta de 2 s por seed/modo; invariantes, save/load e SHA-256 **completo** idêntico entre controle e perfil (42 `C7381C1699199D70D9195A24E53B833B93693C53FD84B97E602BEF67CE1CB621`; 73 `01533F5C64C59E7842F225D067B8BE6B9E0390CEE768D494343741B482EE893C`).
+
+| Segunda hora (3.600–7.200 s), observação | Seed 42 | Seed 73 |
+| --- | ---: | ---: |
+| SIMs vivos / veículos (fim da janela) | 808 / 576 | 812 / 578 |
+| Limites vencedores de nó/cruzamento | 2.866 | **21.746** |
+| IDs distintos vencedores | 144 | 130 |
+| ID mais frequente / vitórias | 3949 / 1.284 (**44,8%**) | **5179 / 20.788 (95,6%)** |
+| Top 3 IDs / participação | 1.869 (**65,2%**) | **20.905 (96,1%)** |
+| Wall da janela `scale` / `profile` | 42,76 / 42,59 s | 76,87 / 75,76 s |
+| Avanço efetivo `scale` | 168× | 94× |
+| Alocação `profile` / GC0 / working set | 18.360 MB / 1.102 / 99 MB | 35.456 MB / 2.123 / 106 MB |
+
+**Conclusão discriminante:** a diferença de 18.880 limites de nó/cruzamento entre seeds **não está distribuída proporcionalmente pela frota**: na seed 73, um único veículo (ID 5179) venceu 20.788 vezes na segunda hora, contra 1.284 vitórias do líder da seed 42. A instrumentação apenas conta o vencedor de `TimeToMovementChange`; **não comprova** que o veículo esteja parado, em loop geométrico, com colisão, nem que todas as vitórias causem atraso visível. O custo adicional é consistente com os subpassos e varreduras repetidas já medidos, mas não prova sua causa física. A igualdade do save final não verifica a ordem de cada evento intermediário. Não houve refeições/salários; fixture com obras/recursos/caixa artificiais, <10 mil SIMs, histórico apenas em memória e nenhum Godot.
+
+**Próxima hipótese isolada:** observar, **sem mudar movimento**, a trajetória do vencedor 5179 durante a segunda hora (nó de destino, `RouteIndex`, posição/distância ao alvo, velocidade e progresso entre limites) e comparar com o líder da seed 42. Distinguir cruzamento repetido por progresso legítimo de limite reemitido sem avanço; só depois considerar correção/otimização diferencial com casos adversariais. Não repetir o benchmark de 2h sem instrumentação capaz de responder a essa pergunta.
