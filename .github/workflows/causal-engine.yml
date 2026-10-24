@@ -183,6 +183,43 @@ jobs:
                 '30d_city_wall',small['wallSeconds'],
                 '366d_city_wall',year['wallSeconds'])
           PY
+      # One-off continuation of the 30-day ICH2 write-cost A/B: measure whether
+      # persistence overhead remains similar at 366 actual Gregorian days.
+      - name: A/B 366-day factual-history writing cost against identical causal run
+        if: github.event_name == 'push' && contains(github.event.head_commit.message, '[history-year-ab]')
+        run: |
+          set -euo pipefail
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=366 --seed=42 --adversarial > history-year-nohistory.json
+          python3 - <<'PY'
+          import json
+          with open('year-10000.json',encoding='utf-8') as f: gz=json.load(f)
+          with open('history-year-nohistory.json',encoding='utf-8') as f: no=json.load(f)
+          equal=('stateFingerprint','simulatedDays','minimumAliveAtAnyEvent','aliveEnd',
+                 'journeys','roadSegments','roadWaitSeconds','routeReroutes',
+                 'recordedFacts','peakQueue','initialMoneyCents','currentMoneyCents',
+                 'salesFoodUnits')
+          for key in equal:
+              assert gz[key]==no[key], f'History changed {key}'
+          assert gz['simulatedDays']==no['simulatedDays']==366
+          assert gz['minimumAliveAtAnyEvent']>=10000
+          assert gz['historyPersistent'] and not no['historyPersistent']
+          assert gz['recordedFacts']>50000000 and gz['journeys']>7000000
+          for item in (no,gz):
+              assert item['moneyConserved'] and item['foodConserved'] and item['materialConserved']
+              assert item['wallSeconds']>0 and item['processCpuSeconds']>0
+              assert item['processPeakWorkingSetBytes']>0 and item['managedAllocatedBytes']>=0
+              for key in ('gc0Collections','gc1Collections','gc2Collections'):
+                  assert item[key]>=0
+          print('ICH2_YEAR_WRITE_AB', 'seed',42,'days',366,
+                'facts',gz['recordedFacts'],'journeys',gz['journeys'],
+                'noHistoryWall',no['wallSeconds'],'withHistoryWall',gz['wallSeconds'],
+                'wallRatio',round(gz['wallSeconds']/no['wallSeconds'],3),
+                'noHistoryCpu',no['processCpuSeconds'],'withHistoryCpu',gz['processCpuSeconds'],
+                'noHistoryPeakRSS',no['processPeakWorkingSetBytes'],
+                'withHistoryPeakRSS',gz['processPeakWorkingSetBytes'],
+                'noHistoryGC',[no['gc0Collections'],no['gc1Collections'],no['gc2Collections']],
+                'withHistoryGC',[gz['gc0Collections'],gz['gc1Collections'],gz['gc2Collections']])
+          PY
       - name: Preserve 10k/one-year metrics
         if: always()
         uses: actions/upload-artifact@v4
@@ -190,6 +227,7 @@ jobs:
           name: causal-engine-10k-366days
           path: |
             year-10000.json
+            history-year-nohistory.json
             history-profile-30d-city.json
             history-profile-30d-query.json
             history-profile-366d-early-query.json
