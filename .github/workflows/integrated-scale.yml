@@ -1,4 +1,4 @@
-name: Integrated core PR57 split dock disk and narrow lane corridor A/B
+name: Integrated core PR57 active batch-only ordering A/B
 
 on:
   push:
@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   grid-bitset-ab:
-    name: Real integrated core grid seed73 bitset split lane and dock corridor ABBA
+    name: Real integrated core grid seed73 active batch-only ordering ABBA
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -27,29 +27,29 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Build real integrated headless
         run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: Adversarial movement parity with bitset split corridor
+      - name: Adversarial movement parity with batch-only ordering
         run: |
           dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --filter FullyQualifiedName~DualExitConflictExperiment
-          PR57_ACTIVE_SCAN=1 PR57_BITSET_SCAN=1 PR57_CORRIDOR_SCAN=1 PR57_SPLIT_CORRIDOR=1 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --filter "FullyQualifiedName~DualExitConflictExperiment|FullyQualifiedName~DockCorridorTests|FullyQualifiedName~LaneEntrySlotTests"
-      - name: Grid seed73 split narrow lane plus dock disk ABBA with full checkpoints
+          PR57_ACTIVE_SCAN=1 PR57_BITSET_SCAN=1 PR57_CORRIDOR_SCAN=1 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=1 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --filter "FullyQualifiedName~DualExitConflictExperiment|FullyQualifiedName~DockCorridorTests|FullyQualifiedName~LaneEntrySlotTests"
+      - name: Grid seed73 active batch-only ordering ABBA with full checkpoints
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p artifacts/integrated-scale-probe
           run_one() {
-            local mode="$1" label="$2" split=0
-            if [[ "$mode" == "split" ]]; then split=1; fi
-            PR57_ACTIVE_SCAN=1 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=1 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=1 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=1 PR57_SPLIT_CORRIDOR="$split" PR57_FAST_SCAN=1 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- profile grid --seed=73 --warmup=0 --days=3 --window=1500 --cap=180 --rows=10 --length=800 --signals=1 | tee "artifacts/integrated-scale-probe/${label}.log"
+            local mode="$1" label="$2" batch=0
+            if [[ "$mode" == "batch" ]]; then batch=1; fi
+            PR57_ACTIVE_SCAN=1 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=1 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=1 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=1 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER="$batch" PR57_FAST_SCAN=1 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- profile grid --seed=73 --warmup=0 --days=3 --window=1500 --cap=180 --rows=10 --length=800 --signals=1 | tee "artifacts/integrated-scale-probe/${label}.log"
           }
           run_one control a_control
-          run_one split a_split
-          run_one split b_split
+          run_one batch a_batch
+          run_one batch b_batch
           run_one control b_control
           python3 - <<'PY'
           import pathlib,re
           root=pathlib.Path('artifacts/integrated-scale-probe')
           results={}
-          for label in ('a_control','a_split','b_split','b_control'):
+          for label in ('a_control','a_batch','b_batch','b_control'):
               data=(root/(label+'.log')).read_text()
               for token in ('WINDOW 1 ','WINDOW 3 ','SUMMARY windows=3 secondsEach=1500','INVARIANTS OK','SAVE '):
                   assert token in data,(label,token)
@@ -65,7 +65,7 @@ jobs:
               assert len(scans)>=2,(label,scans)
               summary=[line for line in data.splitlines() if line.startswith('SUMMARY windows=3 ')][0]
               results[label]=(sha,round(sum(walls),3),checkpoints,stats,scans,summary)
-              print(f'PR57_SPLIT_CORRIDOR label={label} wall={sum(walls):.3f}s sha={sha} scans={scans} stats={stats[-1]} summary={summary}',flush=True)
+              print(f'PR57_BATCH_ORDER label={label} wall={sum(walls):.3f}s sha={sha} scans={scans} stats={stats[-1]} summary={summary}',flush=True)
           assert len({r[0] for r in results.values()})==1,'final save divergence'
           assert len({r[2] for r in results.values()})==1,'checkpoint SHA divergence'
           assert len({r[3] for r in results.values()})==1,'checkpoint activity divergence'
@@ -73,13 +73,13 @@ jobs:
           for letter in ('a','b'):
               c=results[f'{letter}_control'][1]
               b=results[f'{letter}_split'][1]
-              print(f'PR57_SPLIT_CORRIDOR_AB order={letter} control={c:.3f}s split={b:.3f}s speedup={c/b:.3f}x',flush=True)
+              print(f'PR57_BATCH_ORDER_AB order={letter} control={c:.3f}s batch={b:.3f}s speedup={c/b:.3f}x',flush=True)
           PY
       - name: Preserve full logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-split-corridor-grid-seed73-abba
+          name: integrated-scale-batch-order-grid-seed73-abba
           path: artifacts/integrated-scale-probe/*.log
           if-no-files-found: warn
           retention-days: 30
