@@ -67,14 +67,16 @@ public sealed class DualExitConflictExperiment
         var snapshot=Pair().SaveToJson();
         var oldActive=Environment.GetEnvironmentVariable("PR57_ACTIVE_SCAN");
         var oldSpatial=Environment.GetEnvironmentVariable("PR57_SPATIAL_SCAN");
+        var oldBitset=Environment.GetEnvironmentVariable("PR57_BITSET_SCAN");
         var oldFast=Environment.GetEnvironmentVariable("PR57_FAST_SCAN");
         var oldBend=Environment.GetEnvironmentVariable("PR57_BEND_PREFILTER");
         try{
             Environment.SetEnvironmentVariable("PR57_ACTIVE_SCAN","1");
             Environment.SetEnvironmentVariable("PR57_SPATIAL_SCAN","0");
             List<string>? reference=null;
-            foreach(var mode in new[]{(Fast:"0",Bend:"0"),(Fast:"1",Bend:"0"),(Fast:"1",Bend:"1")}){
+            foreach(var mode in new[]{(Fast:"0",Bend:"0",Bitset:"0"),(Fast:"1",Bend:"0",Bitset:"0"),(Fast:"1",Bend:"0",Bitset:"1"),(Fast:"1",Bend:"1",Bitset:"0")}){
                 Environment.SetEnvironmentVariable("PR57_FAST_SCAN",mode.Fast);
+                Environment.SetEnvironmentVariable("PR57_BITSET_SCAN",mode.Bitset);
                 Environment.SetEnvironmentVariable("PR57_BEND_PREFILTER",mode.Bend);
                 var sim=CitySimulation.FromJson(snapshot);
                 var checkpoints=new List<string>();
@@ -88,6 +90,7 @@ public sealed class DualExitConflictExperiment
         }finally{
             Environment.SetEnvironmentVariable("PR57_ACTIVE_SCAN",oldActive);
             Environment.SetEnvironmentVariable("PR57_SPATIAL_SCAN",oldSpatial);
+            Environment.SetEnvironmentVariable("PR57_BITSET_SCAN",oldBitset);
             Environment.SetEnvironmentVariable("PR57_FAST_SCAN",oldFast);
             Environment.SetEnvironmentVariable("PR57_BEND_PREFILTER",oldBend);
         }

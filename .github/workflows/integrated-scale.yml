@@ -1,4 +1,4 @@
-name: Integrated core PR57 heading trig-only 48h economic cycle ABBA
+name: Integrated core PR57 exact-order bitset broad-phase grid A/B
 
 on:
   push:
@@ -17,10 +17,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  economic-ab:
-    name: Real integrated core heading trig-only 48h cycle ABBA
+  grid-bitset-ab:
+    name: Real integrated core grid seed73 bitset vs heading-trig ABBA
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -28,61 +28,56 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Build real integrated headless
         run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: Adversarial movement parity
+      - name: Adversarial movement parity with spatial bitset
         run: dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --filter FullyQualifiedName~DualExitConflictExperiment
-      - name: Compare real 48h economic cycle control vs heading trig ABBA
+      - name: Grid seed73 bitset ABBA with full checkpoints
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p artifacts/integrated-scale-probe
           run_one() {
-            local seed="$1" mode="$2" label="$3"
-            local fast=0
-            if [[ "$mode" == "trig" ]]; then fast=1; fi
-            PR57_ACTIVE_SCAN=1 PR57_SPATIAL_SCAN=0 PR57_FAST_SCAN="$fast" PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- profile cycle --seed="$seed" --warmup=0 --days=8 --window=21600 --cap=90 | tee "artifacts/integrated-scale-probe/${label}.log"
+            local mode="$1" label="$2" bitset=0
+            if [[ "$mode" == "bitset" ]]; then bitset=1; fi
+            PR57_ACTIVE_SCAN=1 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN="$bitset" PR57_FAST_SCAN=1 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- profile grid --seed=73 --warmup=0 --days=3 --window=1500 --cap=180 --rows=10 --length=800 --signals=1 | tee "artifacts/integrated-scale-probe/${label}.log"
           }
-          # 8 x 6h = 48h, same integrated cycle fixture, no artificial skipping of days.
-          # Run ABBA on each seed to separate a candidate effect from runner drift.
-          for seed in 42 73; do
-            run_one "$seed" control "${seed}a_control"
-            run_one "$seed" trig "${seed}a_trig"
-            run_one "$seed" trig "${seed}b_trig"
-            run_one "$seed" control "${seed}b_control"
-          done
+          run_one control a_control
+          run_one bitset a_bitset
+          run_one bitset b_bitset
+          run_one control b_control
           python3 - <<'PY'
           import pathlib,re
           root=pathlib.Path('artifacts/integrated-scale-probe')
-          for seed in (42,73):
-              names=tuple(f'{seed}{letter}_{mode}' for letter,mode in (('a','control'),('a','trig'),('b','trig'),('b','control')))
-              results={}
-              for label in names:
-                  data=(root/(label+'.log')).read_text()
-                  for token in ('WINDOW 1 ','WINDOW 8 ','SUMMARY windows=8 secondsEach=21600','INVARIANTS OK','SAVE '):
-                      assert token in data,(label,token)
-                  assert 'STOP limite' not in data,(label,'cap exceeded')
-                  walls=[float(x) for x in re.findall(r'^WINDOW \d+ .* wall=([0-9.]+)s',data,re.M)]
-                  assert len(walls)==8,(label,walls)
-                  checkpoints=tuple(re.findall(r'^PR57_AB_CHECKPOINT window=(\d+) sha256=([A-F0-9]+)',data,re.M))
-                  assert [x[0] for x in checkpoints]==[str(i) for i in range(1,9)],(label,checkpoints)
-                  sha=re.search(r'^SAVE .* sha256=([A-F0-9]+)$',data,re.M).group(1)
-                  assert sha==checkpoints[-1][1],(label,'final checkpoint vs save')
-                  last=[line for line in data.splitlines() if line.startswith('PR57_AB_CHECKPOINT window=8 ')][0]
-                  stats={key:re.search(r'\b'+key+r'=([^ ]+)',last).group(1) for key in ('alive','dead','employed','moving','vehicles','travelling','ledger','history','meals','wages')}
-                  summary=[line for line in data.splitlines() if line.startswith('SUMMARY windows=8 ')][0]
-                  results[label]=(sha,sum(walls),checkpoints,stats,summary)
-                  print(f'PR57_ECON label={label} wall={sum(walls):.3f}s sha={sha} stats={stats} summary={summary}',flush=True)
-              assert len({results[n][0] for n in names})==1,(seed,'final save divergence')
-              assert len({results[n][2] for n in names})==1,(seed,'intermediate save divergence')
-              assert len({tuple(results[n][3].items()) for n in names})==1,(seed,'activity divergence')
-              for letter in ('a','b'):
-                  c,t=(results[f'{seed}{letter}_{mode}'][1] for mode in ('control','trig'))
-                  print(f'PR57_ECON_AB seed={seed} order={letter} control={c:.3f}s trig={t:.3f}s speedup={c/t:.3f}x',flush=True)
+          results={}
+          for label in ('a_control','a_bitset','b_bitset','b_control'):
+              data=(root/(label+'.log')).read_text()
+              for token in ('WINDOW 1 ','WINDOW 3 ','SUMMARY windows=3 secondsEach=1500','INVARIANTS OK','SAVE '):
+                  assert token in data,(label,token)
+              assert 'STOP limite' not in data,(label,'cap exceeded')
+              walls=[float(x) for x in re.findall(r'^WINDOW \d+ .* wall=([0-9.]+)s',data,re.M)]
+              assert len(walls)==3,(label,walls)
+              checkpoints=tuple(re.findall(r'^PR57_AB_CHECKPOINT window=(\d+) sha256=([A-F0-9]+).*$',data,re.M))
+              assert [x[0] for x in checkpoints]==['1','2','3'],(label,checkpoints)
+              sha=re.search(r'^SAVE .* sha256=([A-F0-9]+)$',data,re.M).group(1)
+              assert sha==checkpoints[-1][1],(label,'save mismatch')
+              stats=tuple(re.findall(r'^PR57_AB_CHECKPOINT window=\d+ sha256=[A-F0-9]+ (.*)$',data,re.M))
+              scans=re.findall(r'^\s*VEHICLE_SCAN name=(\S+) wall=([0-9.]+)s visits=(\d+) hits=(\d+)',data,re.M)
+              assert len(scans)>=2,(label,scans)
+              summary=[line for line in data.splitlines() if line.startswith('SUMMARY windows=3 ')][0]
+              results[label]=(sha,round(sum(walls),3),checkpoints,stats,scans,summary)
+              print(f'PR57_BITSET label={label} wall={sum(walls):.3f}s sha={sha} scans={scans} stats={stats[-1]} summary={summary}',flush=True)
+          assert len({r[0] for r in results.values()})==1,'final save divergence'
+          assert len({r[2] for r in results.values()})==1,'checkpoint SHA divergence'
+          assert len({r[3] for r in results.values()})==1,'checkpoint activity divergence'
+          for letter in ('a','b'):
+              c=results[f'{letter}_control'][1]
+              b=results[f'{letter}_bitset'][1]
+              print(f'PR57_BITSET_AB order={letter} control={c:.3f}s bitset={b:.3f}s speedup={c/b:.3f}x',flush=True)
           PY
       - name: Preserve full logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-trig-48h-cycle-abba
+          name: integrated-scale-bitset-grid-seed73-abba
           path: artifacts/integrated-scale-probe/*.log
           if-no-files-found: warn
           retention-days: 30

@@ -232,6 +232,8 @@ public sealed partial class CitySimulation
         // Keep entry-frame occupants even if their live state has changed.
         var pr57ActiveScan=Environment.GetEnvironmentVariable("PR57_ACTIVE_SCAN")=="1";
         var pr57SpatialScan=Environment.GetEnvironmentVariable("PR57_SPATIAL_SCAN")=="1";
+        // PR57: experimental allocation-light, exact-order spatial bitsets (off by default).
+        var pr57BitsetScan=Environment.GetEnvironmentVariable("PR57_BITSET_SCAN")=="1";
         var pr57FastScan=Environment.GetEnvironmentVariable("PR57_FAST_SCAN")=="1";
         // Independent A/B switch: isolate heading reuse from bend broad-phase.
         var pr57BendPrefilter=pr57FastScan&&Environment.GetEnvironmentVariable("PR57_BEND_PREFILTER")!="0";
@@ -239,45 +241,88 @@ public sealed partial class CitySimulation
             ?State.Vehicles.Where(o=>!o.PassengerCar||o.Status!=VehicleStatus.Parked||_entryFrame?.ContainsKey(o.Id)==true).ToList()
             :State.Vehicles;
         var pr57ScanIds=pr57ActiveScan?pr57ScanCandidates.Select(o=>o.Id).ToHashSet():null;
-        var pr57VehicleOrder=pr57ActiveScan||pr57SpatialScan?State.Vehicles.Select((o,i)=>new{o.Id,Index=i}).ToDictionary(x=>x.Id,x=>x.Index):null;
-        // PR57 spatial A/B: a live, per-slice broad-phase. The exact original
-        // lane/curve tests still decide every collision, tie and queue.
-        // All returned candidates are in State.Vehicles order, not cell order.
+        var pr57VehicleOrder=pr57ActiveScan||pr57SpatialScan||pr57BitsetScan?State.Vehicles.Select((o,i)=>new{o.Id,Index=i}).ToDictionary(x=>x.Id,x=>x.Index):null;
+        // PR57 spatial A/B: both indexes are per movement slice, updated after
+        // each processed vehicle. Exact lane/bend predicates still decide every
+        // collision. Bitset enumeration follows original State.Vehicles order,
+        // without per-query sorting, per-cell lists, or a distance cutoff.
         const double pr57CellWidth=32;
         static (int X,int Z) Pr57Cell(Point p)=>((int)Math.Floor(p.X/pr57CellWidth),(int)Math.Floor(p.Z/pr57CellWidth));
         var pr57Cells=pr57SpatialScan?new Dictionary<(int X,int Z),List<Vehicle>>():null;
-        var pr57SpatialIds=pr57SpatialScan?pr57ScanCandidates.Select(o=>o.Id).ToHashSet():null;
-        var pr57WorldExtent=pr57SpatialScan&&pr57ScanCandidates.Count>0
+        var pr57BitsetCells=pr57BitsetScan?new Dictionary<(int X,int Z),ulong[]>():null;
+        var pr57BitsetWords=(State.Vehicles.Count+63)/64;
+        var pr57BitsetScratch=pr57BitsetScan?new ulong[pr57BitsetWords]:null;
+        var pr57BitsetResults=pr57BitsetScan?new List<Vehicle>(64):null;
+        var pr57SpatialIds=pr57SpatialScan||pr57BitsetScan?pr57ScanCandidates.Select(o=>o.Id).ToHashSet():null;
+        var pr57WorldExtent=(pr57SpatialScan||pr57BitsetScan)&&pr57ScanCandidates.Count>0
             ?pr57ScanCandidates.Max(o=>Math.Max(Math.Abs(o.Position.X),Math.Abs(o.Position.Z))):0;
         void Pr57Add(Vehicle o){
             var key=Pr57Cell(o.Position);
-            if(!pr57Cells!.TryGetValue(key,out var list))pr57Cells[key]=list=new();
-            list.Add(o);
+            if(pr57BitsetCells is not null){
+                if(!pr57BitsetCells.TryGetValue(key,out var bits))pr57BitsetCells[key]=bits=new ulong[pr57BitsetWords];
+                var index=pr57VehicleOrder![o.Id];
+                bits[index/64]|=1UL<<(index%64);
+            }else{
+                if(!pr57Cells!.TryGetValue(key,out var list))pr57Cells[key]=list=new();
+                list.Add(o);
+            }
         }
-        if(pr57Cells is not null)foreach(var o in pr57ScanCandidates)Pr57Add(o);
+        void Pr57Remove(Vehicle o,(int X,int Z) key){
+            if(pr57BitsetCells is not null){
+                var bits=pr57BitsetCells[key];
+                var index=pr57VehicleOrder![o.Id];
+                bits[index/64]&=~(1UL<<(index%64));
+                if(bits.All(word=>word==0))pr57BitsetCells.Remove(key);
+            }else{
+                var list=pr57Cells![key];
+                list.Remove(o);
+                if(list.Count==0)pr57Cells.Remove(key);
+            }
+        }
+        if(pr57Cells is not null||pr57BitsetCells is not null)
+            foreach(var o in pr57ScanCandidates)Pr57Add(o);
         List<Vehicle> Pr57Query(double x0,double x1,double z0,double z1){
-            var found=new List<Vehicle>();
             var first=Pr57Cell(new Point(x0,z0));var last=Pr57Cell(new Point(x1,z1));
+            if(pr57BitsetCells is not null){
+                // A very long diagonal corridor is cheaper to scan in full.
+                // This is a conservative fallback, never a physical cutoff.
+                if(((long)last.X-first.X+1)*((long)last.Z-first.Z+1)>256)
+                    return pr57ScanCandidates;
+                var found=pr57BitsetResults!;
+                found.Clear();
+                var scratch=pr57BitsetScratch!;
+                Array.Clear(scratch);
+                for(var x=first.X;x<=last.X;x++)for(var z=first.Z;z<=last.Z;z++)
+                    if(pr57BitsetCells.TryGetValue((x,z),out var bits))
+                        for(var i=0;i<scratch.Length;i++)scratch[i]|=bits[i];
+                for(var i=0;i<scratch.Length;i++){
+                    var word=scratch[i];
+                    while(word!=0){
+                        var bit=System.Numerics.BitOperations.TrailingZeroCount(word);
+                        found.Add(State.Vehicles[i*64+bit]);
+                        word&=word-1;
+                    }
+                }
+                return found;
+            }
+            var oldFound=new List<Vehicle>();
             for(var x=first.X;x<=last.X;x++)for(var z=first.Z;z<=last.Z;z++)
-                if(pr57Cells!.TryGetValue((x,z),out var cell))found.AddRange(cell);
-            found.Sort((a,b)=>pr57VehicleOrder![a.Id].CompareTo(pr57VehicleOrder[b.Id]));
-            return found;
+                if(pr57Cells!.TryGetValue((x,z),out var cell))oldFound.AddRange(cell);
+            oldFound.Sort((a,b)=>pr57VehicleOrder![a.Id].CompareTo(pr57VehicleOrder[b.Id]));
+            return oldFound;
         }
         List<Vehicle> Pr57LaneCandidates(Vehicle v,bool entering){
-            // Entry admission uses an extended, speed-dependent approach
-            // corridor; retain the unfiltered original list for that case.
-            if(!pr57SpatialScan||entering)return pr57ScanCandidates;
-            // Every non-entry lane leader is forward and within 2.6 m
-            // laterally, except BodyAcrossLane (strictly <=20 m from v).
-            // The ray reaches beyond all indexed positions; no forward
-            // cutoff or speed assumption can drop a distant leader.
+            // Entry admission uses a speed-dependent corridor: never spatially filter it.
+            if(!(pr57SpatialScan||pr57BitsetScan)||entering)return pr57ScanCandidates;
+            // The leader ray extends beyond all indexed positions, with 20m
+            // clearance for the existing BodyAcrossLane special case.
             var reach=2*(pr57WorldExtent+Math.Max(Math.Abs(v.Position.X),Math.Abs(v.Position.Z)))+40;
             var end=new Point(v.Position.X+Math.Sin(v.Heading)*reach,v.Position.Z+Math.Cos(v.Heading)*reach);
             return Pr57Query(Math.Min(v.Position.X,end.X)-20,Math.Max(v.Position.X,end.X)+20,
                              Math.Min(v.Position.Z,end.Z)-20,Math.Max(v.Position.Z,end.Z)+20);
         }
         foreach(var v in ordered){
-            var pr57OldCell=pr57SpatialScan?Pr57Cell(v.Position):default;
+            var pr57OldCell=pr57SpatialScan||pr57BitsetScan?Pr57Cell(v.Position):default;
             try{
             // PR57: isolate whether the lateral entrant already obstructs the through lane
             // when it starts travelling, or reaches that pose during admission.
@@ -461,7 +506,7 @@ public sealed partial class CitySimulation
                 // beyond the straight-lane strip above; its body still bounds this
                 // step and this turn. Opposite and parallel lanes are not involved.
                 var bendScanStart=scanProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
-                var pr57BendList=pr57SpatialScan?Pr57Query(v.Position.X-step-12,v.Position.X+step+12,v.Position.Z-step-12,v.Position.Z+step+12):pr57ScanCandidates;
+                var pr57BendList=pr57SpatialScan||pr57BitsetScan?Pr57Query(v.Position.X-step-12,v.Position.X+step+12,v.Position.Z-step-12,v.Position.Z+step+12):pr57ScanCandidates;
                 // A/B only: cheap conservative AABB and exact radius rejection BEFORE
                 // heading/Ahead/body tests. The old order and all original exact predicates
                 // remain in the control path; no finite lane-leader cutoff is introduced.
@@ -562,12 +607,11 @@ public sealed partial class CitySimulation
                     var next=pr57ScanCandidates.FindIndex(o=>pr57VehicleOrder![o.Id]>pr57VehicleOrder[v.Id]);
                     if(next<0)pr57ScanCandidates.Add(v);else pr57ScanCandidates.Insert(next,v);
                 }
-                if(pr57Cells is not null){
+                if(pr57Cells is not null||pr57BitsetCells is not null){
                     if(pr57SpatialIds!.Contains(v.Id)){
                         var newCell=Pr57Cell(v.Position);
                         if(newCell!=pr57OldCell){
-                            var oldList=pr57Cells[pr57OldCell];oldList.Remove(v);
-                            if(oldList.Count==0)pr57Cells.Remove(pr57OldCell);
+                            Pr57Remove(v,pr57OldCell);
                             Pr57Add(v);
                         }
                     }else if(pr57ScanIds?.Contains(v.Id)==true){
