@@ -337,7 +337,10 @@ public sealed partial class CitySimulation
                         HoldFor(other,forward);
                     }
                 }
-                if(scanProfile is not null)scanProfile.MarkVehicleScan(0,laneScanStart,State.Vehicles.Count,laneCandidateHits);
+                if(scanProfile is not null){
+                    scanProfile.MarkVehicleScan(0,laneScanStart,State.Vehicles.Count,laneCandidateHits);
+                    if(blocker is not null)scanProfile.ObserveLaneLeaderSelection(v.Position,blocker.Position,leaderDistance,Math.Min(d,speed*remaining));
+                }
                 var step=Math.Min(d,Math.Min(speed*remaining,Math.Max(0,leaderDistance-8)));
                 if(stopEarly>0)step=Math.Min(step,Math.Max(0,d-stopEarly));
                 if(crossingPoses!=null)step=ClearOfPoses(v,target,step,crossingPoses);

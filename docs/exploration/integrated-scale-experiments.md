@@ -231,3 +231,27 @@ Cada entrada nova deve trazer: hipótese; SHA da branch; workflow/job/log; fixtu
 **Conclusão discriminante:** a grande maioria das visitas não produz sequer um candidato de contenção. As duas varreduras custaram **~40,4% do movimento** em 6×600 e **~38,8%** em 10×800; sua eliminação integral, mesmo se fosse semanticamente possível, **não** resolveria sozinha os ~60% restantes do movimento. `HoldFor` pode ser chamado para candidatos que não viram bloqueador final; os 22/376 candidatos de curva são contagens após predicados geométricos, não colisões reais. A baixa seletividade dá fundamento para investigar uma filtragem espacial **sem mudar ordem de candidatos, estados mutáveis ou desempates por ID**, mas **não prova** que um índice terá custo menor ou equivalência causal. Uma otimização candidata exigirá controle A/B, invariantes, save relido, hash completo e testes de trânsito adversariais antes de qualquer adoção.
 
 **Limites:** janela inicial sem refeições/salários, fixture com obras instantâneas e dinheiro/serviços artificiais, menos de 10 mil SIMs, sem Godot e sem história individual externa persistida. `profile` mede wall com GC e overhead; a variação entre CIs não demonstra aceleração ou regressão. Próxima incerteza de maior valor: se é possível reduzir visitas por filtro espacial **exato e atualizado após movimento**, preservando todas as exceções de acesso à faixa, veículos parados e curvas; não implementar aproximação que omita colisões/causalidade.
+
+## Décima segunda execução — alcance dos candidatos de contenção (24/10/2026)
+
+**Evidência material:** [Actions #40078072059](https://github.com/Marlohn/IndexCities/actions/runs/40078072059), SHA `3baf62d286e93244cab6b45594622074592ecd75`, job `phase-profile` **success**. .NET 8 Release, seed 42, `grid --warmup=0 --days=1 --window=14400 --cap=150 --signals=1`, controle `scale` e observação `profile` em `--rows=6 --length=600` e `--rows=10 --length=800`. Cada condição executou 7.200 quanta de 2 s (4 horas iniciais); invariantes, save/load e SHA-256 completo idêntico entre controle e perfil por fixture. Nenhuma alteração na ordem de movimento ou nas decisões de contenção.
+
+| Medida em 4h, seed 42 | 6×600 | 10×800 |
+| --- | ---: | ---: |
+| SIMs vivos / veículos / empregos atribuídos | 363 / 263 / 334 | 808 / 576 / 708 |
+| Wall controle / perfil | 10,63 / 10,69 s | 93,99 / 93,30 s |
+| Avanço efetivo controle | 1.355× | 153× |
+| Visitas à varredura de faixa / candidatos `HoldFor` | 34.013.001 / 874.486 | 450.793.152 / 5.030.690 |
+| Candidatos a até 32 m | 305.247 (34,91%) | 1.791.821 (35,62%) |
+| Candidatos de 32 a 128 m | 427.834 | 2.296.344 |
+| Candidatos de 128 a 512 m | 135.471 | 813.923 |
+| Candidatos **além de 512 m** | **5.934 (0,68%)** | **128.602 (2,56%)** |
+| Maior separação entre veículo e candidato | 650,46 m | 850,46 m |
+| Candidatos com projeção de entrada de faixa | 58 | 13.965 |
+| Movimento / duas varreduras (perfil) | 6,776 / 2,771 s | 79,295 / 31,964 s |
+| Alocação / GC0 / GC2 / working set (perfil) | 2.576 MB / 155 / 2 / 91 MB | 22.743 MB / 1.364 / 6 / 101 MB |
+| Histórico em memória / refeições / salários | 3.702 / 0 / 0 | 10.228 / 0 / 0 |
+
+**Conclusão:** mesmo entre os raros candidatos da varredura de faixa, existem `HoldFor` além de 512 m. **Descartar candidatos por raio fixo de 32/128/512 m não preserva automaticamente a semântica**, especialmente para acesso à faixa, ultrapassagem e distância projetada ao longo da via. Porém, `HoldFor` contabiliza todos os candidatos, não apenas o **líder mais próximo selecionado**; esses números ainda não provam que um candidato distante limita o passo ou causa uma espera. O filtro exato continua hipótese não validada. Runner compartilhado, instrumentação com overhead, janela inicial sem refeições/salários, fixture artificial com obras/caixa/serviços ampliados, menos de 10 mil vivos, sem Godot e sem persistência histórica individual externa.
+
+**Próxima hipótese única, com limite explícito:** os candidatos distantes podem ser frequentes mas nunca ser o líder efetivamente selecionado nem limitar o deslocamento alcançável no quantum. Instrumentar somente contagem e distribuição espacial do **líder vencedor** da varredura já existente e se a distância longitudinal selecionada pode limitar o passo livre `min(distância ao alvo, velocidade×tempo restante)` após a folga de 8 m, **antes** de cruzamentos/geometria. Não é medição de colisão nem autorização para remover candidatos; mesmo ausência de vencedores distantes nesta fixture não prova equivalência global. Reutilizar o mesmo A/B `scale` vs `profile`, seed 42, 6×600/10×800, 4h/7.200 quanta, invariantes, save relido e SHA-256 completo. Nenhum salto temporal, regra ou algoritmo de movimento alterado.

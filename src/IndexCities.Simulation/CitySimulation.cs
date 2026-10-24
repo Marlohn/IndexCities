@@ -15,6 +15,10 @@ public sealed class StepCostProfile
     // PR57-only observation: distance of every actual lane HoldFor candidate.
     // No spatial filtering or changes to vehicle movement are performed.
     public long[] LaneHoldDistanceBands { get; } = new long[4]; // <=32m, <=128m, <=512m, >512m
+    public long[] LaneLeaderSelectedBands { get; } = new long[4];
+    public long[] LaneLeaderPotentialLimitBands { get; } = new long[4];
+    public long LaneLeaderFarZeroDistance { get; private set; }
+    public double LaneLeaderSelectedMaxDistanceSquared { get; private set; }
     public long LaneHoldEntryFrameHits { get; private set; }
     public double LaneHoldMaxDistanceSquared { get; private set; }
     internal void ObserveLaneHoldDistance(Point from, Point to, bool entryFrame)
@@ -25,6 +29,19 @@ public sealed class StepCostProfile
         LaneHoldDistanceBands[band]++;
         if(distanceSquared>LaneHoldMaxDistanceSquared)LaneHoldMaxDistanceSquared=distanceSquared;
         if(entryFrame)LaneHoldEntryFrameHits++;
+    }
+    // Observe the final nearest leader selected by the unchanged full scan.
+    // A potential limit is relative to the reachable step BEFORE other geometry/junction restrictions;
+    // it is not proof that the candidate caused an actual stop or changed the final state.
+    internal void ObserveLaneLeaderSelection(Point from, Point to, double leaderDistance, double reachableStep)
+    {
+        var dx=from.X-to.X;var dz=from.Z-to.Z;
+        var distanceSquared=dx*dx+dz*dz;
+        var band=distanceSquared<=32*32?0:distanceSquared<=128*128?1:distanceSquared<=512*512?2:3;
+        LaneLeaderSelectedBands[band]++;
+        if(distanceSquared>LaneLeaderSelectedMaxDistanceSquared)LaneLeaderSelectedMaxDistanceSquared=distanceSquared;
+        if(Math.Max(0,leaderDistance-8)<reachableStep-1e-9)LaneLeaderPotentialLimitBands[band]++;
+        if(band==3&&leaderDistance==0)LaneLeaderFarZeroDistance++;
     }
     internal void MarkVehicleScan(int detail, long started, int visits, int hits)
     {
