@@ -49,3 +49,25 @@ As duas medições de cada cenário diferiram aproximadamente 1,1–1,2% entre s
 Cada entrada nova deve trazer: hipótese; SHA da branch; workflow/job/log; fixture/seed/parametrização e atalhos; **população real e atividade efetiva**; repetições e dispersão; wall/CPU quando disponível, RAM/GC, dias/s real; invariantes/hash/checkpoints; falhas, limites e **decisão técnica**. Se o teste falhar, registrar causa; não declarar ganho por CI verde, nem substituir prova do motor real pelo laboratório da PR #55.
 
 **Próxima decisão:** usar os números do primeiro CI para escolher entre corrigir a fixture, ampliar carga real ou perfilar o gargalo dominante. Não executar automaticamente teste de décadas antes dessa escolha.
+
+## Segunda execução — censo físico real e paridade de granularidade (24/10/2026)
+
+**Evidência material:** [Actions #40061323240](https://github.com/Marlohn/IndexCities/actions/runs/40061323240), SHA `4349a86575782b1e1e689476cfac7b2c74dd60be`, jobs `baseline` e `activity` **success**, logs/artefatos brutos anexados. Release .NET 8.0.32, seed 42, `--warmup=1 --days=1 --cap=300 --rows=3 --length=400`. O `census` chamou `Advance(2)` **43.200 vezes por dia**; `scale` chamou `Advance(86400)`. As duas execuções por fixture passaram invariantes e salvaram o estado; não houve releitura independente de todo o histórico pessoal.
+
+| Medida no dia observado | `cycle` | `grid` |
+|---|---:|---:|
+| Residentes vivos / veículos existentes | 47 / 42 | 108 / 83 |
+| Amostras SIM-quantum / veículo-quantum | 2.030.400 / 1.814.400 | 4.665.600 / 3.585.600 |
+| SIMs parados, média por amostra | **98,7%** | **99,1%** |
+| SIMs andando, média por amostra | 1,2% | 0,8% |
+| Caminhadas detectadas como iniciadas/dia | 610 | 565 |
+| Viagens de veículos detectadas como iniciadas/dia | 35 | 83 |
+| Veículos viajando, fração de veículo-quantum (arredondada) | 0,0% | 0,1% |
+| Veículos em viagem sem espera, fração de viagem-quantum | 97,6% | 83,9% |
+| Espera por preferência/sinal/travessia, fração de viagem-quantum | 1,7% | 12,4% |
+| `census` wall/dia (com observação por quantum) | 2,80 s | 5,61 s |
+| Hash do save `census` vs `scale` da mesma fixture | `7357FCCBAA99AA96` = igual | `2D095BC89EB9A34D` = igual |
+
+**Conclusão:** há viagens e esperas reais **durante** o dia, apesar de `moving=0` ao final; contudo, a carga observada é dominada por agentes parados. Não extrapolar congestionamento de cidade expandida nem presumir que toda a execução pode saltar períodos inativos: trabalho, comércio e interações podem ocorrer sem movimento. Contagens de início detectam transições amostradas, **não** comprovam trabalho físico, produção, consumo ou todas as viagens. Os percentuais de retenção são condicionais a **veículos já em viagem**, não a toda a frota. Igualdade do hash final de **16 dígitos hexadecimais (prefixo SHA-256)** não prova equivalência da ordem de eventos intermediários. Os tempos do censo incluem instrumentação e não devem ser comparados como regressão aos tempos sem censo nem extrapolados a 80 anos. `grid` permanece artificial e `cycle` minúscula.
+
+**Próxima hipótese discriminante, antes de otimizar:** ao passar de `grid --rows=3 --length=400` para `--rows=6 --length=600`, a população/carga e a concorrência efetiva aumentam, ou o motor continua majoritariamente ocioso e o custo por dia cresce sem atividade proporcional? O próximo CI executa controle e degrau **pareados no mesmo runner**, seed 42, `--warmup=1 --days=1 --signals=1`, duas repetições `scale` por condição e um `census` por condição, timeout de 180 s por processo, sem décadas. Mede wall, CPU de processo (shell), GC, RAM, alocação, população, viagens/esperas, picos simultâneos e médias da hora mais movimentada. Compara SHA-256 **completo** do save entre repetições e com o censo, preservando divergência como evidência. Picos são observados a cada 2 s e as horas são janelas contíguas desde o início da medição; não equivalem a observação contínua dentro de cada quantum. Fixture continua com obras concluídas instantaneamente, caixa e utilidades artificialmente elevados: é **degrau de carga**, não demonstração de cidade viável ou de 10 mil SIMs. O resultado só será declarado após ler jobs/logs.
