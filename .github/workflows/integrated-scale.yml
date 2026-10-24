@@ -1,9 +1,8 @@
-name: Integrated real-core authentic lane queue checkpoint repro
+name: Integrated core PR57 experimental active-vehicle scan A/B
 
 on:
   push:
-    branches:
-      - experimento/escala-motor-integrado-10k-80y
+    branches: [experimento/escala-motor-integrado-10k-80y]
     paths:
       - .github/workflows/integrated-scale.yml
       - src/IndexCities.Headless/**
@@ -18,31 +17,47 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  causal-repro:
-    name: Replay actual seed-73 two-car physical blocking from 3606s
+  scan-ab:
+    name: Actual integrated city parked-car scan A/B
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Build real-core headless (Release)
+      - name: Compile .NET real core
         run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: Compare full-city checkpoint under .1s .5s and 2s quanta
+      - name: Original versus filtered scan, same city and runner
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p artifacts/integrated-scale-probe
-          dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- repro grid --seed=73 --warmup=0 --rows=10 --length=800 --signals=1 | tee artifacts/integrated-scale-probe/authentic-repro.log
-          grep -q '^PR57_REAL_INVARIANTS OK$' artifacts/integrated-scale-probe/authentic-repro.log
-          test "$(grep -c '^PR57_REAL_RESULT ' artifacts/integrated-scale-probe/authentic-repro.log)" -eq 3
-          test "$(grep -c '^PR57_REAL_VEHICLE ' artifacts/integrated-scale-probe/authentic-repro.log)" -eq 9
-      - name: Preserve checkpoint replay log
+          args=(profile grid --seed=73 --warmup=0 --days=1 --window=4500 --cap=150 --rows=10 --length=800 --signals=1)
+          PR57_ACTIVE_SCAN=0 dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- "${args[@]}" | tee artifacts/integrated-scale-probe/control.log
+          PR57_ACTIVE_SCAN=1 dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- "${args[@]}" | tee artifacts/integrated-scale-probe/candidate.log
+          python3 - <<'PY'
+          import pathlib,re
+          root=pathlib.Path('artifacts/integrated-scale-probe')
+          results={}
+          for label in ('control','candidate'):
+              s=(root/(label+'.log')).read_text()
+              for token in ('WINDOW 1 ','SUMMARY windows=1 secondsEach=4500','INVARIANTS OK','SAVE '):
+                  assert token in s,(label,token)
+              sha=re.search(r'^SAVE .* sha256=([A-F0-9]+)$',s,re.M).group(1)
+              wall=float(re.search(r'^WINDOW 1 .* wall=([0-9.]+)s',s,re.M).group(1))
+              visits=dict((name,int(num)) for name,num in re.findall(r'VEHICLE_SCAN name=(\S+) .* visits=(\d+)',s))
+              results[label]=(sha,wall,visits)
+              print(f'PR57_SCAN_AB {label} sha={sha} wall={wall:.3f}s visits={visits}',flush=True)
+          a,b=results['control'],results['candidate']
+          print(f'PR57_SCAN_COMPARE sameSave={a[0]==b[0]} speedup={a[1]/b[1]:.3f}x',flush=True)
+          assert a[0]==b[0], 'causal state mismatch: candidate cannot be accepted'
+          PY
+      - name: Preserve logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-authentic-repro
-          path: artifacts/integrated-scale-probe/authentic-repro.log
+          name: integrated-scale-parked-scan-ab
+          path: artifacts/integrated-scale-probe/*.log
           if-no-files-found: warn
           retention-days: 30

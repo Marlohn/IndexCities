@@ -226,7 +226,18 @@ public sealed partial class CitySimulation
         // Same order as OrderBy(WaitingSince).ThenBy(Id): Ids are unique, so the
         // key is a total order and any sort yields the same sequence.
         var ordered=State.Vehicles.ToArray();Array.Sort(ordered,static (a,b)=>a.WaitingSince.CompareTo(b.WaitingSince) is var c and not 0?c:a.Id.CompareTo(b.Id));
+        // PR57 isolated A/B: parked passenger cars are not lane occupants and
+        // BodyAcrossLane explicitly excludes passenger cars. Build a stable
+        // original-order candidate list once per movement slice.
+        // Keep entry-frame occupants even if their live state has changed.
+        var pr57ActiveScan=Environment.GetEnvironmentVariable("PR57_ACTIVE_SCAN")=="1";
+        var pr57ScanCandidates=pr57ActiveScan
+            ?State.Vehicles.Where(o=>!o.PassengerCar||o.Status!=VehicleStatus.Parked||_entryFrame?.ContainsKey(o.Id)==true).ToList()
+            :State.Vehicles;
+        var pr57ScanIds=pr57ActiveScan?pr57ScanCandidates.Select(o=>o.Id).ToHashSet():null;
+        var pr57VehicleOrder=pr57ActiveScan?State.Vehicles.Select((o,i)=>new{o.Id,Index=i}).ToDictionary(x=>x.Id,x=>x.Index):null;
         foreach(var v in ordered){
+            try{
             // PR57: isolate whether the lateral entrant already obstructs the through lane
             // when it starts travelling, or reaches that pose during admission.
             if(scanProfile is not null&&v.Id==5183){
@@ -363,7 +374,7 @@ public sealed partial class CitySimulation
                 var laneCandidateHits=0;
                 void HoldFor(Vehicle other,double distance){if(scanProfile is not null){laneCandidateHits++;scanProfile.ObserveLaneHoldDistance(v.Position,other.Position,enteringLane);}if(distance<leaderDistance){leaderDistance=distance;blocker=other;}}
                 var laneScanStart=scanProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
-                foreach(var liveOther in State.Vehicles){
+                foreach(var liveOther in pr57ScanCandidates){
                     var other=enteringLane?EntryFrameVehicle(liveOther):liveOther;
                     // A truck stopped at a dock with its body across this lane (a street bay)
                     // is queued behind like a leader, keeping the queue gap (Mobility.SharedSpace).
@@ -394,7 +405,7 @@ public sealed partial class CitySimulation
                     }
                 }
                 if(scanProfile is not null){
-                    scanProfile.MarkVehicleScan(0,laneScanStart,State.Vehicles.Count,laneCandidateHits);
+                    scanProfile.MarkVehicleScan(0,laneScanStart,pr57ScanCandidates.Count,laneCandidateHits);
                     if(blocker is not null)scanProfile.ObserveLaneLeaderSelection(v.Position,blocker.Position,leaderDistance,Math.Min(d,speed*remaining));
                 }
                 var step=Math.Min(d,Math.Min(speed*remaining,Math.Max(0,leaderDistance-8)));
@@ -404,10 +415,10 @@ public sealed partial class CitySimulation
                 // beyond the straight-lane strip above; its body still bounds this
                 // step and this turn. Opposite and parallel lanes are not involved.
                 var bendScanStart=scanProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
-                var bendLeaders=State.Vehicles.Where(o=>o.Id!=v.Id&&o.Status is VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded&&Math.Cos(o.Heading-v.Heading)>.5&&Ahead(v,o)>0&&
+                var bendLeaders=pr57ScanCandidates.Where(o=>o.Id!=v.Id&&o.Status is VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded&&Math.Cos(o.Heading-v.Heading)>.5&&Ahead(v,o)>0&&
                     Math.Abs((o.Position.X-v.Position.X)*Math.Cos(v.Heading)-(o.Position.Z-v.Position.Z)*Math.Sin(v.Heading))>=2.6&&o.Position.Distance(v.Position)<=step+12&&
                     !(o.Position.Distance(State.Entry)<8&&v.Position.Distance(State.Entry)<8)).ToList();
-                if(scanProfile is not null)scanProfile.MarkVehicleScan(1,bendScanStart,State.Vehicles.Count,bendLeaders.Count);
+                if(scanProfile is not null)scanProfile.MarkVehicleScan(1,bendScanStart,pr57ScanCandidates.Count,bendLeaders.Count);
                 if(bendLeaders.Count>0){
                     if(bendLeaders.Any(o=>TurnsInto(v,approachHeading,o))){v.Heading=approachHeading;step=0;}
                     else step=ClearOfPoses(v,target,step,bendLeaders.Where(o=>!VehicleBodiesOverlap(v,v.Position,o)).Select(o=>(o,o.Position,o.Heading)).ToList());
@@ -478,6 +489,14 @@ public sealed partial class CitySimulation
                 if(steer==null&&advanced)v.RouteIndex++;
                 // Wear for the distance driven; a vehicle in use may break down here.
                 if(DriveWear(v,step)||steer==null&&!advanced)break;
+            }
+            }finally{
+                // If an initially parked car starts moving during this pass, it
+                // becomes eligible for subsequent scans in original vehicle order.
+                if(pr57ScanIds is not null&&(!v.PassengerCar||v.Status!=VehicleStatus.Parked)&&pr57ScanIds.Add(v.Id)){
+                    var next=pr57ScanCandidates.FindIndex(o=>pr57VehicleOrder![o.Id]>pr57VehicleOrder[v.Id]);
+                    if(next<0)pr57ScanCandidates.Add(v);else pr57ScanCandidates.Insert(next,v);
+                }
             }
         }
         // A towed vehicle moves only with its tow (platform or trailing a heavy tow).
