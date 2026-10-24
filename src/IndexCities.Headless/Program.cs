@@ -92,6 +92,15 @@ if(args[0]=="repro"){
 }
 sw.Restart();sim.Advance(warmup*86400);
 Console.WriteLine($"WARMUP {warmup}d wall={sw.Elapsed.TotalSeconds:F1}s {Stats(sim)}");
+// PR57-only snapshot capture: a read-only save for comparing process-local
+// serialization and causal state; no production simulation rule changes.
+var pr57SaveCaptureDir=Environment.GetEnvironmentVariable("PR57_SAVE_CAPTURE_DIR");
+if(!string.IsNullOrWhiteSpace(pr57SaveCaptureDir)){
+    Directory.CreateDirectory(pr57SaveCaptureDir);
+    var initialSnapshot=sim.SaveToJson();
+    File.WriteAllText(Path.Combine(pr57SaveCaptureDir,"checkpoint-0.json"),initialSnapshot);
+    Console.WriteLine($"PR57_CAPTURE window=0 bytes={Encoding.UTF8.GetByteCount(initialSnapshot)} sha256={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(initialSnapshot)))}");
+}
 var census=args[0]=="census"?new Census():null;var stuck=args[0]=="stuck"?new Stuck():null;
 var profile=args[0]=="profile"?new StepCostProfile():null;sim.CostProfile=profile;
 var total=0.0;var gc0=GC.CollectionCount(0);var gc2=GC.CollectionCount(2);var alloc0=GC.GetTotalAllocatedBytes();var done=0;
@@ -135,6 +144,8 @@ for(var d=1;d<=days;d++){
     if(Environment.GetEnvironmentVariable("PR57_AB_CHECKPOINT")=="1"){
         sim.CheckInvariants();
         var snapshot=sim.SaveToJson();
+        if(!string.IsNullOrWhiteSpace(pr57SaveCaptureDir))
+            File.WriteAllText(Path.Combine(pr57SaveCaptureDir,$"checkpoint-{d}.json"),snapshot);
         Console.WriteLine($"PR57_AB_CHECKPOINT window={d} sha256={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(snapshot)))} {Stats(sim)}");
     }
     // PR57-only observation: no mutation of the simulated state.
