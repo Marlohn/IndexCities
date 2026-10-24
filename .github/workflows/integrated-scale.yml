@@ -1,4 +1,4 @@
-name: Integrated real-core bounded first-hour seed divergence
+name: Integrated real-core bounded second-hour divergence
 
 on:
   push:
@@ -19,9 +19,9 @@ concurrency:
 
 jobs:
   phase-profile:
-    name: Expanded first-hour seeds 42/73 control vs profile
+    name: Expanded two-hour seeds 42/73 control vs profile
     runs-on: ubuntu-latest
-    timeout-minutes: 14
+    timeout-minutes: 16
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -29,7 +29,7 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Build real-core headless (Release)
         run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: Compare bounded four-hour windows, no skipped quanta
+      - name: Compare bounded two-hour windows, no skipped quanta
         shell: bash
         run: |
           set -euo pipefail
@@ -39,16 +39,16 @@ jobs:
             fixture="expanded-seed${seed}"
             rows=10; length=800
             for mode in scale profile; do
-              echo "=== PROBE_START fixture=${fixture} mode=${mode} seed=${seed} rows=${rows} length=${length} seconds=3600 warmup=0 ==="
+              echo "=== PROBE_START fixture=${fixture} mode=${mode} seed=${seed} rows=${rows} length=${length} seconds=7200 warmup=0 ==="
               TIMEFORMAT='TIME totalReal=%3R cpuUser=%3U cpuSystem=%3S'
-              { time timeout 180s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- "${mode}" grid --seed=${seed} --warmup=0 --days=1 --window=3600 --cap=150 --rows="${rows}" --length="${length}" --signals=1; } 2>&1 | tee "artifacts/integrated-scale-probe/${fixture}-${mode}.log"
-              grep -q '^SUMMARY windows=1 secondsEach=3600 ' "artifacts/integrated-scale-probe/${fixture}-${mode}.log"
+              { time timeout 210s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- "${mode}" grid --seed=${seed} --warmup=0 --days=1 --window=7200 --cap=150 --rows="${rows}" --length="${length}" --signals=1; } 2>&1 | tee "artifacts/integrated-scale-probe/${fixture}-${mode}.log"
+              grep -q '^SUMMARY windows=1 secondsEach=7200 ' "artifacts/integrated-scale-probe/${fixture}-${mode}.log"
               grep -q '^INVARIANTS OK$' "artifacts/integrated-scale-probe/${fixture}-${mode}.log"
             done
             test "$(grep -c '^  STEP_PHASE ' "artifacts/integrated-scale-probe/${fixture}-profile.log")" -eq 13
             test "$(grep -c '^  STEP_DETAIL ' "artifacts/integrated-scale-probe/${fixture}-profile.log")" -eq 8
-            grep -q '^STEP_PROFILE steps=1800 ' "artifacts/integrated-scale-probe/${fixture}-profile.log"
-            grep -q '^VEHICLE_PROFILE steps=1800 ' "artifacts/integrated-scale-probe/${fixture}-profile.log"
+            grep -q '^STEP_PROFILE steps=3600 ' "artifacts/integrated-scale-probe/${fixture}-profile.log"
+            grep -q '^VEHICLE_PROFILE steps=3600 ' "artifacts/integrated-scale-probe/${fixture}-profile.log"
             test "$(grep -c '^  VEHICLE_DETAIL ' "artifacts/integrated-scale-probe/${fixture}-profile.log")" -eq 4
             test "$(grep -c '^  VEHICLE_SCAN ' "artifacts/integrated-scale-probe/${fixture}-profile.log")" -eq 2
             grep -q '^LANE_HOLD_RADIUS hits=' "artifacts/integrated-scale-probe/${fixture}-profile.log"
@@ -58,11 +58,11 @@ jobs:
             echo "PROBE_SHA_COMPARE fixture=${fixture} base=${base} profiled=${observed} equal=$([[ -n "$base" && "$base" == "$observed" ]] && echo true || echo false)"
             if [[ -z "$base" || "$base" != "$observed" ]]; then echo "::error::Profile changed final save"; exit 1; fi
           done
-      - name: Attach bounded raw controls and phase timings
+      - name: Attach two-hour raw controls and phase timings
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-4h-probe-raw
+          name: integrated-scale-2h-probe-raw
           path: artifacts/integrated-scale-probe/*.log
           if-no-files-found: warn
           retention-days: 30
