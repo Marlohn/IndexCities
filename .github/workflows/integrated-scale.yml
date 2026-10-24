@@ -4,7 +4,6 @@ on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
     paths:
-      - .github/workflows/integrated-scale.yml
       - src/IndexCities.Headless/**
       - src/IndexCities.Simulation/**
   workflow_dispatch:
@@ -73,8 +72,8 @@ jobs:
           assert len({tuple((x[0],x[3]) for x in r[4]) for r in results.values()})==1,'scan hits divergence'
           for letter in ('a','b'):
               c=results[f'{letter}_control'][1]
-              b=results[f'{letter}_corridor'][1]
-              print(f'PR57_SPLIT_CORRIDOR_AB order={letter} control={c:.3f}s corridor={b:.3f}s speedup={c/b:.3f}x',flush=True)
+              b=results[f'{letter}_split'][1]
+              print(f'PR57_SPLIT_CORRIDOR_AB order={letter} control={c:.3f}s split={b:.3f}s speedup={c/b:.3f}x',flush=True)
           PY
       - name: Preserve full logs
         if: always()
