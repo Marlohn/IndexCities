@@ -36,7 +36,7 @@ if(args[0]=="repro"){
     const double observationSeconds=36;
     sim.Advance(checkpointSecond);
     var snapshot=sim.SaveToJson();
-    Console.WriteLine($"PR57_REAL_CHECKPOINT seed={seed} second={sim.State.ElapsedSeconds:F3} {Stats(sim)} bytes={snapshot.Length}");
+    Console.WriteLine($"PR57_REAL_CHECKPOINT seed={seed} second={sim.State.ElapsedSeconds:F3} {Stats(sim)} bytes={snapshot.Length} sha256={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(snapshot)))}");
     foreach(var quantum in new[]{0.1,0.5,2.0}){
         var copy=CitySimulation.FromJson(snapshot);
         if(quantum==2.0)copy.CostProfile=new StepCostProfile(); // profile-only swept-path observations
@@ -67,6 +67,18 @@ if(args[0]=="repro"){
         var endSave=copy.SaveToJson();
         if(CitySimulation.FromJson(endSave).SaveToJson()!=endSave)throw new InvalidOperationException("PR57 checkpoint save/load mismatch");
         Console.WriteLine($"PR57_REAL_RESULT quantum={quantum:F1} seconds={copy.State.ElapsedSeconds-checkpointSecond:F3} longestPairIdle={longestPairedIdle:F3} sha256={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(endSave)))} {Stats(copy)}");
+        if(quantum==0.5){
+            // Determinism probe: independent restore and identical 72 calls in
+            // the SAME process, with all other vehicles and systems intact.
+            var twin=CitySimulation.FromJson(snapshot);
+            for(var step=0;step<(int)Math.Round(observationSeconds/quantum);step++)twin.Advance(quantum);
+            twin.CheckInvariants();
+            var twinSave=twin.SaveToJson();
+            var firstDifferentByte=0;
+            while(firstDifferentByte<Math.Min(endSave.Length,twinSave.Length)&&endSave[firstDifferentByte]==twinSave[firstDifferentByte])firstDifferentByte++;
+            var same=endSave==twinSave;
+            Console.WriteLine($"PR57_HALF_REPEAT same={same} firstDifferentChar={(same?-1:firstDifferentByte)} originalBytes={endSave.Length} twinBytes={twinSave.Length} originalSha256={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(endSave)))} twinSha256={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(twinSave)))}");
+        }
     }
     Console.WriteLine("PR57_REAL_INVARIANTS OK");
     return 0;
