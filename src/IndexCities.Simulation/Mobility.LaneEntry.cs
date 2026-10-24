@@ -8,6 +8,38 @@ public sealed partial class CitySimulation
     double _vehicleMovementOffset;
     double? _vehicleMovementClock;
     double VehicleMovementTime=>_vehicleMovementClock??State.ElapsedSeconds;
+    // PR57-only observation: substep decisions by simulated hour, never used by motion.
+    sealed class LaneSliceHour
+    {
+        public readonly long[] Reasons=new long[4]; // no-entry, full horizon, movement boundary, projected recheck
+        public readonly long[] Durations=new long[5]; // <=0.1ms, <=10ms, <=100ms, <=1s, >1s
+        public long BlockedEntryChecks,ProjectionCandidates,ProjectionRechecks;
+        public double MinSlice=double.PositiveInfinity,MaxSlice;
+    }
+    readonly Dictionary<long,LaneSliceHour> _laneSliceHours=new();
+    long _lastLaneSliceHourPrinted=-1;
+    void ObserveLaneSlice(double slice,int reason,long blockedEntryChecks,long projectionCandidates,long projectionRechecks)
+    {
+        var hour=(long)Math.Floor(VehicleMovementTime/3600);
+        if(!_laneSliceHours.TryGetValue(hour,out var stats))_laneSliceHours[hour]=stats=new();
+        stats.Reasons[reason]++;
+        stats.Durations[slice<=.0001?0:slice<=.01?1:slice<=.1?2:slice<=1?3:4]++;
+        stats.BlockedEntryChecks+=blockedEntryChecks;
+        stats.ProjectionCandidates+=projectionCandidates;
+        stats.ProjectionRechecks+=projectionRechecks;
+        stats.MinSlice=Math.Min(stats.MinSlice,slice);
+        stats.MaxSlice=Math.Max(stats.MaxSlice,slice);
+    }
+    void PrintCompletedLaneSliceHours(double endTime)
+    {
+        var last=(long)Math.Floor((endTime+1e-8)/3600)-1;
+        for(var hour=_lastLaneSliceHourPrinted+1;hour<=last;hour++)
+        {
+            if(!_laneSliceHours.Remove(hour,out var stats))continue;
+            Console.WriteLine($"LANE_EVENT_HOUR hour={hour} noEntry={stats.Reasons[0]} full={stats.Reasons[1]} movementBoundary={stats.Reasons[2]} projectionRecheck={stats.Reasons[3]} blockedEntryChecks={stats.BlockedEntryChecks} projectedCandidates={stats.ProjectionCandidates} projectedRechecks={stats.ProjectionRechecks} sliceLe100us={stats.Durations[0]} sliceLe10ms={stats.Durations[1]} sliceLe100ms={stats.Durations[2]} sliceLe1s={stats.Durations[3]} sliceGt1s={stats.Durations[4]} minSlice={stats.MinSlice:F8} maxSlice={stats.MaxSlice:F6}");
+        }
+        _lastLaneSliceHourPrinted=last;
+    }
     const double MovementEventEpsilon=.00001;
     readonly record struct LaneAccess(RoadNode Node,Point Axis,double Length,Point Target,double Distance,double Speed,double FromSide,double ToSide)
     {
@@ -109,7 +141,7 @@ public sealed partial class CitySimulation
         if(profile is not null)profile.MarkVehicle(0,ref started);
         if(!hasEntry){
             MoveVehiclesUnsplit(dt);
-            if(profile is not null){profile.MarkVehicle(3,ref started);profile.VehicleUnsplitSteps++;}
+            if(profile is not null){profile.MarkVehicle(3,ref started);profile.VehicleUnsplitSteps++;PrintCompletedLaneSliceHours(State.ElapsedSeconds+dt);}
             return;
         }
         if(profile is not null)profile.VehicleBatchedSteps++;
@@ -131,6 +163,7 @@ public sealed partial class CitySimulation
                 _vehicleMovementOffset+=slice;
             }
         }finally{_vehicleMovementBatch=null;_entryFrame=null;_entryFrameBuffer.Clear();_vehicleMovementClock=null;_vehicleMovementOffset=0;}
+        if(profile is not null)PrintCompletedLaneSliceHours(State.ElapsedSeconds+dt);
     }
     Point ProjectedVelocity(Vehicle v,HashSet<int>? held)
     {
@@ -163,13 +196,16 @@ public sealed partial class CitySimulation
     }
     double NextVehicleMovementEvent(double horizon)
     {
+        var profile=CostProfile;
+        var initialHorizon=horizon;
+        long blockedEntryChecks=0,projectionCandidates=0,projectionRechecks=0;
         var entries=State.Vehicles.Where(v=>_vehicleMovementBatch!.Contains(v.Id)&&LiveLaneEntry(v)).ToList();
-        if(entries.Count==0)return horizon;
+        if(entries.Count==0){if(profile is not null)ObserveLaneSlice(horizon,0,0,0,0);return horizon;}
         var held=State.Vehicles.Any(o=>o.Status==VehicleStatus.Stranded)?State.Vehicles.Where(HeldBehindStranded).Select(o=>o.Id).ToHashSet():null;
         foreach(var v in State.Vehicles.Where(v=>_vehicleMovementBatch!.Contains(v.Id))){
             // A blocked lot entry is not travelling to its lane target yet.
             // Its hypothetical arrival must not generate an extra substep.
-            if(TryLaneEntry(v,out var waitingAccess)&&State.Vehicles.Where(o=>o.Id!=v.Id&&OccupiesLane(o)).Select(EntryFrameVehicle).Any(o=>BlocksLaneEntry(v,waitingAccess,o)))continue;
+            if(TryLaneEntry(v,out var waitingAccess)&&State.Vehicles.Where(o=>o.Id!=v.Id&&OccupiesLane(o)).Select(EntryFrameVehicle).Any(o=>BlocksLaneEntry(v,waitingAccess,o))){if(profile is not null)blockedEntryChecks++;continue;}
             if(held?.Contains(v.Id)==true)continue;
             horizon=Math.Min(horizon,TimeToMovementChange(v,horizon));
         }
@@ -196,8 +232,10 @@ public sealed partial class CitySimulation
                 }
                 foreach(var cut in cuts){var t=cut+MovementEventEpsilon;if(t>MovementEventEpsilon&&t<horizon)candidates.Add(t);}
             }
+            if(profile is not null)projectionCandidates+=candidates.Count;
             foreach(var t in candidates){
                 if(t>=earliest)break;
+                if(profile is not null)projectionRechecks++;
                 var blocked=false;
                 foreach(var other in occupants){var projected=EntrySnapshot(other);projected.Position+=ProjectedVelocity(other,held)*t;if(BlocksLaneEntry(v,access,projected)){blocked=true;break;}}
                 // A prediction selects a time to RECHECK, never grants entry.
@@ -206,6 +244,8 @@ public sealed partial class CitySimulation
                 if(!blocked){earliest=t;break;}
             }
         }
-        return Math.Max(Math.Min(earliest,horizon),Math.Min(MovementEventEpsilon,horizon));
+        var slice=Math.Max(Math.Min(earliest,horizon),Math.Min(MovementEventEpsilon,horizon));
+        if(profile is not null)ObserveLaneSlice(slice,earliest<horizon-1e-9?3:horizon<initialHorizon-1e-9?2:1,blockedEntryChecks,projectionCandidates,projectionRechecks);
+        return slice;
     }
 }
