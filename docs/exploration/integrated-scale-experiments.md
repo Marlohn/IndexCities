@@ -435,3 +435,21 @@ Cada entrada nova deve trazer: hipótese; SHA da branch; workflow/job/log; fixtu
 **Limites:** amostras somente do veículo vencedor, não de toda a frota; hash final igual não prova igualdade da ordem interna; fixture artificial com 808/812 vivos, obras/caixa/capacidade artificiais, zero refeições e salários nas 2h, histórico em memória e nenhum Godot. Wall entre CIs não serve para alegar ganho.
 
 **Hipótese isolada seguinte:** o veículo 5179 está limitado por um mesmo líder próximo (distância livre <=8 m), ou por outro teste de ocupação física? Instrumentar **somente perfil** no ponto exato em que `MoveVehiclesUnsplit` calcula o passo zero, capturando ID/status/distância do líder, passo antes/depois da segurança e principais bloqueadores em amostras espaçadas. Reutilizar as duas seeds e janela de 2h, controle/perfil, invariantes e hash; sem alterar movimento nem regras.
+
+## Vigésima segunda execução — distância física confirma bloqueio imediato, mas não a origem da fila (24/10/2026)
+
+**Evidência nova:** [Actions #40096496341](https://github.com/Marlohn/IndexCities/actions/runs/40096496341), SHA `deec91f6d2ca68a688cd5d285c9659522fcdf34a`, job `120879742037` **success**. .NET 8 Release, `scale|profile grid --seed=42|73 --warmup=0 --days=1 --window=7200 --cap=150 --rows=10 --length=800 --signals=1`; 3.600 quanta de 2 s por execução, invariantes e save/load OK, SHA-256 final idêntico entre controle e perfil em cada seed (42 `C7381C1699199D70D9195A24E53B833B93693C53FD84B97E602BEF67CE1CB621`; 73 `01533F5C64C59E7842F225D067B8BE6B9E0390CEE768D494343741B482EE893C`).
+
+| Medida de 2h | Seed 42 | Seed 73 |
+| --- | ---: | ---: |
+| SIMs vivos / veículos / empregados | 808 / 576 / 708 | 812 / 578 / 708 |
+| Wall simulação `scale/profile` | 60,75 / 64,57 s | 116,51 / 112,00 s |
+| Avanço efetivo `scale` | 119 s simulados/s real | 62 s simulados/s real |
+| Alocação `profile` / GC0 / working set | 18.360 MB / 223 / 176 MB | 35.456 MB / 427 / 179 MB |
+| Subpassos `profile` | 5.386 | **24.128** |
+| Tempo da fase veículos `profile` | 58,201 s | **105,551 s (94,25% do perfil)** |
+
+**Mecanismo imediato demonstrado na seed 73:** em amostras do veículo **5179**, entre 3.611 e 7.068 s simulados, o bloqueador foi repetidamente o **veículo 5294** (status `Travelling`), a distância medida foi **8,000000 m**, o passo livre antes de segurança foi **0,000000 m** e o passo final **0,000000 m**; não havia retenção de baia, entrada de faixa ou corpos de curva nessas amostras. `WaitingSince` do bloqueador permaneceu em **3.628,661403 s** entre as amostras de 3.840 e 5.362 s. O limitador é **distância física mínima atrás de outro veículo**, não uma travessia efetivamente realizada pelo 5179. Isso **não** identifica o que impede o 5294 de andar, se há bloqueio recíproco ou se a fila é legítima; também não autoriza omitir eventos. O controle e o perfil tiveram hash final igual, não uma auditoria da ordem intermediária. Cenário sintético, 812 vivos, zero salários/refeições nas 2h, obras e recursos artificiais, histórico só em memória, nenhum Godot.
+
+**Próxima pergunta discriminante:** por que o **5294** permanece parado? A menor reprodução útil começa logo após 3.600 s e observa somente o estado/causa do líder, seu próprio bloqueador e corpos próximos, sem modificar decisões físicas. Usar **75 minutos** em vez de repetir 2h, seed 73, controle/perfil e SHA/invariantes. Não otimizar por supressão do evento enquanto a dependência física não estiver compreendida.
+
