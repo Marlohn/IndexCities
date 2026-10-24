@@ -100,12 +100,54 @@ jobs:
           grep -q '"historyPersistent": true' year-10000.json
           test -s artifacts/causal-10000-366d.facts.gz
           gzip -t artifacts/causal-10000-366d.facts.gz
+      - name: Profile actual per-SIM ICH2 query cost at 30 versus 366 Gregorian days
+        run: |
+          set -euo pipefail
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- --sims=10000 --days=30 --seed=42 --history=artifacts/causal-10000-30d-profile.facts.gz --adversarial > history-profile-30d-city.json
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- profile-history artifacts/causal-10000-30d-profile.facts.gz 0 0 30 > history-profile-30d-query.json
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- profile-history artifacts/causal-10000-366d.facts.gz 0 0 30 > history-profile-366d-early-query.json
+          dotnet run --no-build -c Release --project experiments/IndexCities.CausalEngine -- profile-history artifacts/causal-10000-366d.facts.gz 0 365 366 > history-profile-366d-late-query.json
+          python3 - <<'PY'
+          import json
+          def read(name):
+              with open(name,encoding='utf-8') as f: return json.load(f)
+          small=read('history-profile-30d-city.json')
+          year=read('year-10000.json')
+          short=read('history-profile-30d-query.json')
+          long=read('history-profile-366d-early-query.json')
+          late=read('history-profile-366d-late-query.json')
+          assert small['simulatedDays']==30 and year['simulatedDays']==366
+          assert small['moneyConserved'] and small['foodConserved'] and year['moneyConserved'] and year['foodConserved']
+          assert small['journeys']>0 and year['journeys']>small['journeys']
+          assert short['firstDay']==long['firstDay']==late['firstDay']==0
+          assert short['lastDay']==29 and long['lastDay']==late['lastDay']==365
+          assert short['daysObserved']==30 and long['daysObserved']==late['daysObserved']==366
+          assert short['totalFactsScanned']>0 and long['totalFactsScanned']>short['totalFactsScanned']
+          assert long['compressedBytes']>short['compressedBytes']>0
+          assert short['matchingOwnerFacts']>0 and long['matchingOwnerFacts']>0
+          assert short['matchingOwnerFacts']==long['matchingOwnerFacts']
+          assert short['matchingOwnerDigest']==long['matchingOwnerDigest'], 'Early SIM history changed with horizon'
+          for query in (short,long,late):
+              assert query['scanWallSeconds']>0 and query['scanCpuSeconds']>=0
+              assert query['managedAllocatedBytes']>=0 and query['peakWorkingSetBytes']>0
+          print('ICH2_QUERY_SCALE_COMPLETE', '30d_facts',short['totalFactsScanned'],
+                '366d_facts',long['totalFactsScanned'],
+                '30d_query_wall',short['scanWallSeconds'],
+                '366d_query_wall',long['scanWallSeconds'],
+                '30d_city_wall',small['wallSeconds'],
+                '366d_city_wall',year['wallSeconds'])
+          PY
       - name: Preserve 10k/one-year metrics
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: causal-engine-10k-366days
-          path: year-10000.json
+          path: |
+            year-10000.json
+            history-profile-30d-city.json
+            history-profile-30d-query.json
+            history-profile-366d-early-query.json
+            history-profile-366d-late-query.json
           if-no-files-found: ignore
 
   decade-10k:

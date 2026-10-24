@@ -9,6 +9,67 @@ internal static class Program
     {
         try
         {
+
+            // Read-only profiler for the existing ICH2 stream. A per-SIM query
+            // currently scans the entire compressed file; do not mistake this
+            // laboratory query for an indexed game-history implementation.
+            if (args.Length >= 1 && args[0] == "profile-history")
+            {
+                if (args.Length != 5)
+                    throw new ArgumentException("profile-history PATH OWNER FROM_DAY UNTIL_DAY");
+                var path = args[1];
+                var owner = int.Parse(args[2]);
+                var fromDay = int.Parse(args[3]);
+                var untilDay = int.Parse(args[4]);
+                if (fromDay < 0 || untilDay <= fromDay || untilDay > 29220)
+                    throw new ArgumentException("Invalid history query window");
+                long facts = 0, matches = 0, previous = -1, previousDay = -1;
+                long firstDay = -1, lastDay = -1, daysObserved = 0;
+                ulong digest = 14695981039346656037UL;
+                using var process = Process.GetCurrentProcess();
+                var gc0 = GC.CollectionCount(0);
+                var gc1 = GC.CollectionCount(1);
+                var gc2 = GC.CollectionCount(2);
+                var allocatedBefore = GC.GetTotalAllocatedBytes(true);
+                var cpuBefore = process.TotalProcessorTime;
+                var clock = Stopwatch.StartNew();
+                foreach (var fact in HistorySink.Read(path))
+                {
+                    if (fact.At < previous || fact.At < 0)
+                        throw new InvalidDataException("History is not chronologically ordered");
+                    previous = fact.At;
+                    var day = fact.At / CausalCity.DaySeconds;
+                    if (firstDay < 0) firstDay = day;
+                    lastDay = day;
+                    if (day != previousDay) { daysObserved++; previousDay = day; }
+                    facts++;
+                    if (fact.Owner != owner || day < fromDay || day >= untilDay) continue;
+                    matches++;
+                    digest = unchecked((digest ^ (ulong)fact.At) * 1099511628211UL);
+                    digest = unchecked((digest ^ (ulong)(uint)fact.Owner) * 1099511628211UL);
+                    digest = unchecked((digest ^ fact.Type) * 1099511628211UL);
+                    digest = unchecked((digest ^ (ulong)fact.Amount) * 1099511628211UL);
+                }
+                clock.Stop();
+                var cpuSeconds = (process.TotalProcessorTime - cpuBefore).TotalSeconds;
+                var allocatedBytes = GC.GetTotalAllocatedBytes(true) - allocatedBefore;
+                Console.WriteLine(JsonSerializer.Serialize(new
+                {
+                    mode = "ICH2_SEQUENTIAL_INDIVIDUAL_QUERY",
+                    owner, fromDay, untilDay, firstDay, lastDay, daysObserved,
+                    totalFactsScanned = facts, matchingOwnerFacts = matches,
+                    matchingOwnerDigest = digest.ToString("X16"),
+                    compressedBytes = new FileInfo(path).Length,
+                    scanWallSeconds = clock.Elapsed.TotalSeconds,
+                    scanCpuSeconds = cpuSeconds,
+                    managedAllocatedBytes = allocatedBytes,
+                    gcGen0 = GC.CollectionCount(0) - gc0,
+                    gcGen1 = GC.CollectionCount(1) - gc1,
+                    gcGen2 = GC.CollectionCount(2) - gc2,
+                    peakWorkingSetBytes = process.PeakWorkingSet64
+                }));
+                return 0;
+            }
             if (args.Length >= 2 && args[0] == "inspect")
             {
                 var file = args[1];
