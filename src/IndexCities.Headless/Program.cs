@@ -137,6 +137,9 @@ for(var d=1;d<=days;d++){
         var snapshot=sim.SaveToJson();
         Console.WriteLine($"PR57_AB_CHECKPOINT window={d} sha256={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(snapshot)))} {Stats(sim)}");
     }
+    // PR57-only observation: no mutation of the simulated state.
+    if(Environment.GetEnvironmentVariable("PR57_WORK_DIAG")=="1" && (d==1||d==4||d==8))
+        PrintWorkDiagnostics(sim,d);
     if(total>cap){Console.WriteLine($"STOP limite de {cap}s");break;}
 }
 if(done>0)Console.WriteLine(windowSeconds==86400
@@ -171,3 +174,22 @@ sim.CheckInvariants();Console.WriteLine("INVARIANTS OK");
 return 0;
 
 static string Stats(CitySimulation s){var st=s.State;var alive=st.Citizens.Where(c=>c.Alive&&c.Resident).ToList();return $"pop={s.Population} alive={st.Citizens.Count(c=>c.Alive)} dead={st.Citizens.Count(c=>!c.Alive)} employed={st.Citizens.Count(c=>c.Alive&&c.Resident&&c.WorkplaceId!=null)} moving={st.Citizens.Count(c=>c.Alive&&c.Moving)} vehicles={st.Vehicles.Count} travelling={st.Vehicles.Count(v=>v.Status==VehicleStatus.Travelling)} ledger={st.Ledger.Count} houses={st.Buildings.Count(b=>!b.Removed&&b.Kind==BuildingKind.House)} openWorks={st.Projects.Count(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress)} history={st.Citizens.Sum(c=>c.History.Count)} meals={st.Citizens.Sum(c=>c.History.Count(h=>h.Description.StartsWith("Consumiu 1 alimento")))} wages={st.Ledger.Where(l=>l.Category.StartsWith("Salários / ")).Sum(l=>l.Amount):F2} health={(alive.Count==0?0:alive.Average(c=>c.Health)):F6} satisfaction={(alive.Count==0?0:alive.Average(c=>c.Satisfaction)):F6}";}
+
+static void PrintWorkDiagnostics(CitySimulation sim,int window)
+{
+    var state=sim.State;
+    var open=state.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress).OrderBy(p=>p.Id).ToArray();
+    var houses=state.Buildings.Where(b=>!b.Removed&&b.Kind==BuildingKind.House).ToArray();
+    Console.WriteLine($"PR57_WORK_DIAG window={window} housesTotal={houses.Length} housesCompleted={houses.Count(b=>b.Completed)} open={open.Length} completedProjects={state.Projects.Count(p=>p.Status==WorkStatus.Completed)} shipmentsOpen={state.Shipments.Count(s=>!s.Complete)} balance={sim.CityBalance:F2} committed={sim.Committed:F2} outsideFuel={state.OutsideStock.GetValueOrDefault(ResourceKind.Fuel):F2}");
+    foreach(var p in open)
+    {
+        var building=state.Buildings.FirstOrDefault(b=>b.Id==p.BuildingId);
+        var pending=state.Shipments.Where(s=>s.ProjectId==p.Id&&!s.Complete).ToArray();
+        var remaining=p.Required.Sum(kv=>Math.Max(0,kv.Value-p.Delivered.GetValueOrDefault(kv.Key)));
+        var inflight=pending.Sum(s=>p.Required.Keys.Sum(k=>s.Cargo.GetValueOrDefault(k)));
+        var crew=p.CrewVehicleId is {} crewId?state.Vehicles.FirstOrDefault(v=>v.Id==crewId):null;
+        var materials=string.Join(",",p.Required.Select(kv=>$"{kv.Key}:{p.Delivered.GetValueOrDefault(kv.Key):F1}/{kv.Value:F1}/flight={pending.Sum(s=>s.Cargo.GetValueOrDefault(kv.Key)):F1}"));
+        var shipmentVehicles=string.Join(",",pending.Select(s=>$"{s.Id}:{state.Vehicles.FirstOrDefault(v=>v.Id==s.VehicleId)?.Status.ToString()??"missing"}"));
+        Console.WriteLine($"PR57_WORK_PROJECT window={window} id={p.Id} kind={(building==null?"road":building.Kind.ToString())} status={p.Status} cause={p.Cause.Replace(' ','_')} progress={p.Progress:F5} remaining={remaining:F2} inflight={inflight:F2} crew={(crew==null?"none":crew.Status.ToString())} localCrew={p.LocalCrew.Count} budget={p.BudgetRemaining:F2} materials={materials} shipments={shipmentVehicles}");
+    }
+}
