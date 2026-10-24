@@ -2,6 +2,8 @@ namespace IndexCities.Simulation;
 
 public sealed partial class CitySimulation
 {
+    // Shared empty candidate list: read-only, never populated by a movement scan.
+    static readonly List<Vehicle> Pr57EmptyBendList=[];
     // PR57-only bounded diagnostics for the two previously identified junction winners.
     // Never consulted by movement, and never persisted.
     readonly Dictionary<int,int> _laneBlockProbeCounts=new();
@@ -244,6 +246,10 @@ public sealed partial class CitySimulation
         var pr57FastScan=Environment.GetEnvironmentVariable("PR57_FAST_SCAN")=="1";
         // Independent A/B switch: isolate heading reuse from bend broad-phase.
         var pr57BendPrefilter=pr57FastScan&&Environment.GetEnvironmentVariable("PR57_BEND_PREFILTER")!="0";
+        // PR57 A/B: a zero step cannot be shortened by bend bodies. When the
+        // current heading already equals the approach heading, the only other
+        // bend-scan effect (restoring that heading) is also a no-op.
+        var pr57ZeroBendSkip=Environment.GetEnvironmentVariable("PR57_ZERO_BEND_SKIP")=="1";
         // PR57 A/B: reuse bend-leader storage across movement iterations, preserving the full predicate and order.
         var pr57BendReuse=pr57BitsetScan&&!pr57BendPrefilter&&Environment.GetEnvironmentVariable("PR57_BEND_REUSE")=="1";
         // PR57 A/B: the vehicle does not change during a leader enumeration;
@@ -587,7 +593,8 @@ public sealed partial class CitySimulation
                 // beyond the straight-lane strip above; its body still bounds this
                 // step and this turn. Opposite and parallel lanes are not involved.
                 var bendScanStart=scanProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
-                var pr57BendList=pr57SpatialScan||pr57BitsetScan?Pr57Query(v.Position.X-step-12,v.Position.X+step+12,v.Position.Z-step-12,v.Position.Z+step+12):pr57ScanCandidates;
+                var pr57BendList=pr57ZeroBendSkip&&step==0&&v.Heading==approachHeading?Pr57EmptyBendList
+                    :pr57SpatialScan||pr57BitsetScan?Pr57Query(v.Position.X-step-12,v.Position.X+step+12,v.Position.Z-step-12,v.Position.Z+step+12):pr57ScanCandidates;
                 // A/B only: cheap conservative AABB and exact radius rejection BEFORE
                 // heading/Ahead/body tests. The old order and all original exact predicates
                 // remain in the control path; no finite lane-leader cutoff is introduced.
