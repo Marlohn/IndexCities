@@ -1,0 +1,57 @@
+name: Integrated real-core scale baseline
+
+on:
+  push:
+    branches:
+      - experimento/escala-motor-integrado-10k-80y
+    paths:
+      - .github/workflows/integrated-scale.yml
+      - src/IndexCities.Headless/**
+      - src/IndexCities.Simulation/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integrated-scale-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  baseline:
+    name: Causal real-core baseline — two repeats
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build existing real simulation CLI (Release)
+        run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+      - name: Two sequential runs of each existing fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/integrated-scale
+          echo "BASELINE_COMMIT=${GITHUB_SHA}"
+          echo "OS=$(uname -srmo)"
+          dotnet --info | head -n 22
+          for fixture in cycle grid; do
+            for repeat in 1 2; do
+              echo "=== BASELINE_START fixture=${fixture} repeat=${repeat} seed=42 warmup=1 days=1 ==="
+              timeout 480s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- scale "${fixture}" --seed=42 --warmup=1 --days=1 --cap=300 --rows=3 --length=400 | tee "artifacts/integrated-scale/${fixture}-repeat${repeat}.log"
+              grep -q '^SUMMARY days=1 ' "artifacts/integrated-scale/${fixture}-repeat${repeat}.log"
+              grep -q '^SAVE ' "artifacts/integrated-scale/${fixture}-repeat${repeat}.log"
+              grep -q '^INVARIANTS OK$' "artifacts/integrated-scale/${fixture}-repeat${repeat}.log"
+              echo "=== BASELINE_DONE fixture=${fixture} repeat=${repeat} ==="
+            done
+          done
+      - name: Attach raw baseline logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-baseline-raw
+          path: artifacts/integrated-scale/*.log
+          if-no-files-found: warn
+          retention-days: 30
