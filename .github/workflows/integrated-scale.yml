@@ -1,4 +1,4 @@
-name: Integrated real-core hourly cost versus actual mobility
+name: Integrated real-core per-step phase cost attribution
 
 on:
   push:
@@ -18,8 +18,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  hourly-cost:
-    name: One-day hourly CPU, GC and active-mobility profile
+  phase-profile:
+    name: Same-seed control vs observed simulation phase cost
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -27,14 +27,14 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Build real-core headless observer (Release)
+      - name: Build real-core headless (Release)
         run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: Compare per-hour observed costs in existing small and medium fixtures
+      - name: Compare uninstrumented and phase-profiled runs on the same runner
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p artifacts/integrated-scale-hourly
-          echo "HOURLY_COST_SHA=${GITHUB_SHA}"
+          mkdir -p artifacts/integrated-scale-phases
+          echo "PHASE_PROFILE_SHA=${GITHUB_SHA}"
           for fixture in small medium; do
             if [[ "$fixture" == small ]]; then
               rows=3; length=400
@@ -43,21 +43,25 @@ jobs:
               rows=6; length=600
               expected=0C5185A3A0A9B53EE7E53B228C7D8B0C9F8BF6FBE8C1A7C68C4DE3E8E89A562F
             fi
-            echo "=== HOURLY_START fixture=${fixture} seed=42 rows=${rows} length=${length} ==="
-            TIMEFORMAT='TIME totalReal=%3R cpuUser=%3U cpuSystem=%3S'
-            { time timeout 180s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- census grid --seed=42 --warmup=1 --days=1 --cap=150 --rows="${rows}" --length="${length}" --signals=1; } 2>&1 | tee "artifacts/integrated-scale-hourly/${fixture}.log"
-            test "$(grep -c '^  HOUR_COST day=1 ' "artifacts/integrated-scale-hourly/${fixture}.log")" -eq 24
-            grep -q '^SUMMARY days=1 ' "artifacts/integrated-scale-hourly/${fixture}.log"
-            grep -q '^INVARIANTS OK$' "artifacts/integrated-scale-hourly/${fixture}.log"
-            actual=$(sed -n 's/.*sha256=\([0-9A-F]*\).*/\1/p' "artifacts/integrated-scale-hourly/${fixture}.log" | tail -n 1)
-            echo "HOURLY_SHA_COMPARE fixture=${fixture} current=${actual} priorCensus=${expected} equal=$([[ "$actual" == "$expected" ]] && echo true || echo false)"
-            if [[ "$actual" != "$expected" ]]; then echo "::error::Observational profiler changed final save"; exit 1; fi
+            for mode in scale profile; do
+              echo "=== PHASE_START fixture=${fixture} mode=${mode} seed=42 rows=${rows} length=${length} ==="
+              TIMEFORMAT='TIME totalReal=%3R cpuUser=%3U cpuSystem=%3S'
+              { time timeout 180s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- "${mode}" grid --seed=42 --warmup=1 --days=1 --cap=150 --rows="${rows}" --length="${length}" --signals=1; } 2>&1 | tee "artifacts/integrated-scale-phases/${fixture}-${mode}.log"
+              grep -q '^SUMMARY days=1 ' "artifacts/integrated-scale-phases/${fixture}-${mode}.log"
+              grep -q '^INVARIANTS OK$' "artifacts/integrated-scale-phases/${fixture}-${mode}.log"
+            done
+            test "$(grep -c '^  STEP_PHASE ' "artifacts/integrated-scale-phases/${fixture}-profile.log")" -eq 13
+            grep -q '^STEP_PROFILE steps=43200 ' "artifacts/integrated-scale-phases/${fixture}-profile.log"
+            base=$(sed -n 's/.*sha256=\([0-9A-F]*\).*/\1/p' "artifacts/integrated-scale-phases/${fixture}-scale.log" | tail -n 1)
+            observed=$(sed -n 's/.*sha256=\([0-9A-F]*\).*/\1/p' "artifacts/integrated-scale-phases/${fixture}-profile.log" | tail -n 1)
+            echo "PHASE_SHA_COMPARE fixture=${fixture} base=${base} profiled=${observed} prior=${expected} equal=$([[ "$base" == "$observed" && "$base" == "$expected" ]] && echo true || echo false)"
+            if [[ -z "$base" || "$base" != "$observed" || "$base" != "$expected" ]]; then echo "::error::Profile changed final save"; exit 1; fi
           done
-      - name: Attach raw per-hour cost and mobility measurements
+      - name: Attach raw phase timings and same-seed controls
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-hourly-cost-raw
-          path: artifacts/integrated-scale-hourly/*.log
+          name: integrated-scale-phase-profile-raw
+          path: artifacts/integrated-scale-phases/*.log
           if-no-files-found: warn
           retention-days: 30
