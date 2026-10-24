@@ -173,3 +173,22 @@ Cada entrada nova deve trazer: hipótese; SHA da branch; workflow/job/log; fixtu
 **Conclusão limitada:** na janela inicial, o degrau de 363 para 808 vivos (×2,23) elevou o wall do controle ×8,39 e o tempo da fase de veículos ×11,07; a alocação cresceu ×8,82. **O gargalo dominante passou a ser a fase de veículos**, não a poluição residencial, nesse cenário e período. O perfil não distingue inspeção de entrada de faixa, ordenação, previsões de eventos e movimento físico. Há 576 veículos mas apenas 10 viajando ao final da janela; isto não quantifica a atividade durante os 7.200 quanta. A população nasce durante essas quatro horas (`warmup=0`), sem refeições nem salários, e a fixture injeta caixa/serviços e conclui obras instantaneamente. Portanto não comparar diretamente com um dia aquecido, não inferir cidade economicamente viável, 10 mil Sims, Godot ou décadas.
 
 **Próxima hipótese única, teste curto:** a fase `MoveVehicles` cresce sobretudo por detecção/previsão de entrada na faixa e subdivisão de quanta, ou pela movimentação/colisão propriamente dita? Instrumentar **somente cronômetros e contadores** no wrapper existente, discriminando detecção inicial, atualização operacional, geração de subeventos e movimento, além de passos com/sem subdivisão e número de fatias. Reutilizar as mesmas quatro execuções 4h `scale`/`profile` do workflow, seed 42, 6×600/10×800, timeout 240 s por processo; exigir 7.200 passos, invariantes, save relido e SHA completo igual entre controle/perfil. Não alterar decisões, quantização, ordenação, viagens nem produção Godot. Tempos incluem GC e overhead; uma janela inicial não representa um dia completo.
+
+## Nona execução — o custo está no movimento, não na previsão de entradas (24/10/2026)
+
+**Resultado material:** [Actions #40071042363](https://github.com/Marlohn/IndexCities/actions/runs/40071042363), SHA `9f0a579230386d82317488346e73296bc878ea78`, job `phase-profile` **success**, [artefato bruto](https://github.com/Marlohn/IndexCities/actions/runs/40071042363/artifacts/12551317580). .NET 8.0.32 Release, seed 42, `grid --warmup=0 --days=1 --window=14400 --cap=150 --signals=1`, 6×600 e 10×800, `scale` vs `profile` em cada fixture. Foram 7.200 quanta reais de 2 s por condição; invariantes e save/load passaram, SHA-256 **completo** igual entre controle e perfil. Hash igual não demonstra a ordem de todos os eventos intermediários.
+
+| Janela inicial de 4h | 6×600 (363 vivos; 263 veículos) | 10×800 (808 vivos; 576 veículos) |
+| --- | ---: | ---: |
+| Wall `scale/profile` | 6,21 / 6,20 s | 54,98 / 53,85 s |
+| Avanço efetivo `scale` | 2.321 s simulados/s real | 262 s simulados/s real |
+| Fase `vehicles` | 4,116 s (66,40%) | 47,026 s (87,34%) |
+| Subetapa `movement` | **4,055 s (98,53% de veículos)** | **45,946 s (97,70% de veículos)** |
+| `entry-check` / `operations` / `entry-events` | 0,046 / 0,001 / 0,013 s | 0,080 / 0,255 / 0,743 s |
+| Passos subdivididos / fatias | 24 / 87 | 5.407 / 13.689 |
+| Alocação gerenciada; GC0 / GC2 | 2.582 MB; 155 / 2 | 22.770 MB; 1.367 / 6 |
+| Fatos de histórico em memória; refeições / salários | 3.702; 0 / 0 | 10.228; 0 / 0 |
+
+**Interpretação:** o custo dominante está em `MoveVehiclesUnsplit` (inclui passos não subdivididos), não na detecção inicial de entrada nem na previsão de eventos. O código contém duas varreduras completas de `State.Vehicles` por veículo em movimento, sugerindo potencial crescimento quadrático; os dados ainda **não atribuem** o tempo dessas varreduras separadamente de manobras e colisões. Diferenças de wall entre runs podem ser ruído do runner. Fixture sem aquecimento econômico, com obras instantâneas, caixa/capacidade artificiais, população <10 mil, sem Godot; não representa cidade sustentável ou 24h de atividade.
+
+**Próxima hipótese única:** varreduras de líderes na faixa e na curva explicam parcela majoritária do bloco `movement`? Instrumentar apenas cronômetros e número de candidatos efetivamente enumerados, sem alterar ordenação, física ou decisões; comparar os mesmos 6×600 e 10×800, seed 42, 4h, `scale` vs `profile` e exigir 7.200 quanta, invariantes, save relido e SHA-256 completo idêntico. Se forem minoritárias, investigar manobras/geometria antes de otimizar. Cronômetros incluem GC e overhead; não extrapolar 4h iniciais para 80 anos.

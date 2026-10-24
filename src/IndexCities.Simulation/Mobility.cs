@@ -212,6 +212,7 @@ public sealed partial class CitySimulation
     }
     void MoveVehiclesUnsplit(double dt,double? operationsDt=null)
     {
+        var scanProfile=CostProfile;
         // Release a passed junction even while a vehicle waits at the next one.
         // Carriageway half-width (3.3 m) + truck half-length (3.6 m) covers the
         // actual rear of the truck; the former 9 m reservation could overlap
@@ -304,6 +305,7 @@ public sealed partial class CitySimulation
                 // yield back to the other vehicle and freeze both indefinitely.
                 var leaderDistance=double.MaxValue;Vehicle? blocker=null;
                 void HoldFor(Vehicle other,double distance){if(distance<leaderDistance){leaderDistance=distance;blocker=other;}}
+                var laneScanStart=scanProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
                 foreach(var liveOther in State.Vehicles){
                     var other=enteringLane?EntryFrameVehicle(liveOther):liveOther;
                     // A truck stopped at a dock with its body across this lane (a street bay)
@@ -334,15 +336,18 @@ public sealed partial class CitySimulation
                         HoldFor(other,forward);
                     }
                 }
+                if(scanProfile is not null)scanProfile.MarkVehicleScan(0,laneScanStart,State.Vehicles.Count);
                 var step=Math.Min(d,Math.Min(speed*remaining,Math.Max(0,leaderDistance-8)));
                 if(stopEarly>0)step=Math.Min(step,Math.Max(0,d-stopEarly));
                 if(crossingPoses!=null)step=ClearOfPoses(v,target,step,crossingPoses);
                 // At a bend the vehicle ahead in the same general direction can sit
                 // beyond the straight-lane strip above; its body still bounds this
                 // step and this turn. Opposite and parallel lanes are not involved.
+                var bendScanStart=scanProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
                 var bendLeaders=State.Vehicles.Where(o=>o.Id!=v.Id&&o.Status is VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded&&Math.Cos(o.Heading-v.Heading)>.5&&Ahead(v,o)>0&&
                     Math.Abs((o.Position.X-v.Position.X)*Math.Cos(v.Heading)-(o.Position.Z-v.Position.Z)*Math.Sin(v.Heading))>=2.6&&o.Position.Distance(v.Position)<=step+12&&
                     !(o.Position.Distance(State.Entry)<8&&v.Position.Distance(State.Entry)<8)).ToList();
+                if(scanProfile is not null)scanProfile.MarkVehicleScan(1,bendScanStart,State.Vehicles.Count);
                 if(bendLeaders.Count>0){
                     if(bendLeaders.Any(o=>TurnsInto(v,approachHeading,o))){v.Heading=approachHeading;step=0;}
                     else step=ClearOfPoses(v,target,step,bendLeaders.Where(o=>!VehicleBodiesOverlap(v,v.Position,o)).Select(o=>(o,o.Position,o.Heading)).ToList());

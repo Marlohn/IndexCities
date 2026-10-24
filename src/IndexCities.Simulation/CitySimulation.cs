@@ -8,6 +8,14 @@ public sealed class StepCostProfile
     public long[] DetailTicks { get; } = new long[DetailNames.Length];
     public static readonly string[] VehicleDetailNames = { "entry-check", "operations", "entry-events", "movement" };
     public long[] VehicleTicks { get; } = new long[VehicleDetailNames.Length];
+    public static readonly string[] VehicleScanNames = { "lane-leader-scan", "bend-leader-scan" };
+    public long[] VehicleScanTicks { get; } = new long[VehicleScanNames.Length];
+    public long[] VehicleScanVisits { get; } = new long[VehicleScanNames.Length];
+    internal void MarkVehicleScan(int detail, long started, int visits)
+    {
+        VehicleScanTicks[detail] += System.Diagnostics.Stopwatch.GetTimestamp() - started;
+        VehicleScanVisits[detail] += visits;
+    }
     public long VehicleBatchedSteps { get; internal set; }
     public long VehicleUnsplitSteps { get; internal set; }
     public long VehicleSlices { get; internal set; }
