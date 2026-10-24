@@ -232,6 +232,7 @@ public sealed partial class CitySimulation
         // Keep entry-frame occupants even if their live state has changed.
         var pr57ActiveScan=Environment.GetEnvironmentVariable("PR57_ACTIVE_SCAN")=="1";
         var pr57SpatialScan=Environment.GetEnvironmentVariable("PR57_SPATIAL_SCAN")=="1";
+        var pr57FastScan=Environment.GetEnvironmentVariable("PR57_FAST_SCAN")=="1";
         var pr57ScanCandidates=pr57ActiveScan
             ?State.Vehicles.Where(o=>!o.PassengerCar||o.Status!=VehicleStatus.Parked||_entryFrame?.ContainsKey(o.Id)==true).ToList()
             :State.Vehicles;
@@ -411,6 +412,9 @@ public sealed partial class CitySimulation
                 var leaderDistance=double.MaxValue;Vehicle? blocker=null;
                 var laneCandidateHits=0;
                 void HoldFor(Vehicle other,double distance){if(scanProfile is not null){laneCandidateHits++;scanProfile.ObserveLaneHoldDistance(v.Position,other.Position,enteringLane);}if(distance<leaderDistance){leaderDistance=distance;blocker=other;}}
+                // A/B only: hoist invariant heading trigonometry for the original-order scan.
+                var pr57Sin=pr57FastScan?Math.Sin(v.Heading):0;
+                var pr57Cos=pr57FastScan?Math.Cos(v.Heading):0;
                 var laneScanStart=scanProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
                 var pr57LaneList=Pr57LaneCandidates(v,enteringLane);
                 foreach(var liveOther in pr57LaneList){
@@ -424,16 +428,17 @@ public sealed partial class CitySimulation
                     // Entry occupancy is measured along the ROAD axis, including
                     // the opposite lane, rather than the diagonal lot heading.
                     if(BlocksEntry(other)){HoldFor(other,0);continue;}
+                    var pr57CosDiff=pr57FastScan?Math.Cos(other.Heading-v.Heading):0;
                     // An overtaker committed to this lane: oncoming traffic waits for it.
-                    if(other.Detour.Count>0&&Math.Cos(other.Heading-v.Heading)<-.5){var ahead=relative.X*Math.Sin(v.Heading)+relative.Z*Math.Cos(v.Heading);var across=Math.Abs(relative.X*Math.Cos(v.Heading)-relative.Z*Math.Sin(v.Heading));if(ahead>0&&across<2.6){HoldFor(other,ahead);continue;}}
-                    var forward=relative.X*Math.Sin(v.Heading)+relative.Z*Math.Cos(v.Heading);
-                    var side=Math.Abs(relative.X*Math.Cos(v.Heading)-relative.Z*Math.Sin(v.Heading));
+                    if(other.Detour.Count>0&&(pr57FastScan?pr57CosDiff:Math.Cos(other.Heading-v.Heading))<-.5){var ahead=relative.X*(pr57FastScan?pr57Sin:Math.Sin(v.Heading))+relative.Z*(pr57FastScan?pr57Cos:Math.Cos(v.Heading));var across=Math.Abs(relative.X*(pr57FastScan?pr57Cos:Math.Cos(v.Heading))-relative.Z*(pr57FastScan?pr57Sin:Math.Sin(v.Heading)));if(ahead>0&&across<2.6){HoldFor(other,ahead);continue;}}
+                    var forward=relative.X*(pr57FastScan?pr57Sin:Math.Sin(v.Heading))+relative.Z*(pr57FastScan?pr57Cos:Math.Cos(v.Heading));
+                    var side=Math.Abs(relative.X*(pr57FastScan?pr57Cos:Math.Cos(v.Heading))-relative.Z*(pr57FastScan?pr57Sin:Math.Sin(v.Heading)));
                     // A tow facing it in its own lane while loading, or leaving with the load,
                     // holds it like a leader: having come from behind, it turns its rear to the
                     // vehicle, facing the queue. A tow that is itself held does not (it may wait
                     // on this very queue). Oncoming traffic in the other lane is 3.3 m aside.
-                    if((other.TowPhase==TowPhase.Loading||other.TowPhase==TowPhase.Delivering&&other.WaitingSince==0)&&Math.Cos(other.Heading-v.Heading)< -.5&&forward>0&&side<1.2){HoldFor(other,forward);continue;}
-                    if(Math.Cos(other.Heading-v.Heading)>.5&&forward>0&&side<2.6){
+                    if((other.TowPhase==TowPhase.Loading||other.TowPhase==TowPhase.Delivering&&other.WaitingSince==0)&&(pr57FastScan?pr57CosDiff:Math.Cos(other.Heading-v.Heading))< -.5&&forward>0&&side<1.2){HoldFor(other,forward);continue;}
+                    if((pr57FastScan?pr57CosDiff:Math.Cos(other.Heading-v.Heading))>.5&&forward>0&&side<2.6){
                         // Side by side with converging headings (adjacent lot
                         // spaces), each is "ahead" of the other: only the higher
                         // ID yields, as in the coincidence case above.
@@ -455,9 +460,27 @@ public sealed partial class CitySimulation
                 // step and this turn. Opposite and parallel lanes are not involved.
                 var bendScanStart=scanProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
                 var pr57BendList=pr57SpatialScan?Pr57Query(v.Position.X-step-12,v.Position.X+step+12,v.Position.Z-step-12,v.Position.Z+step+12):pr57ScanCandidates;
-                var bendLeaders=pr57BendList.Where(o=>o.Id!=v.Id&&o.Status is VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded&&Math.Cos(o.Heading-v.Heading)>.5&&Ahead(v,o)>0&&
+                // A/B only: cheap conservative AABB and exact radius rejection BEFORE
+                // heading/Ahead/body tests. The old order and all original exact predicates
+                // remain in the control path; no finite lane-leader cutoff is introduced.
+                var bendLeaders=pr57FastScan?new List<Vehicle>():pr57BendList.Where(o=>o.Id!=v.Id&&o.Status is VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded&&Math.Cos(o.Heading-v.Heading)>.5&&Ahead(v,o)>0&&
                     Math.Abs((o.Position.X-v.Position.X)*Math.Cos(v.Heading)-(o.Position.Z-v.Position.Z)*Math.Sin(v.Heading))>=2.6&&o.Position.Distance(v.Position)<=step+12&&
                     !(o.Position.Distance(State.Entry)<8&&v.Position.Distance(State.Entry)<8)).ToList();
+                if(pr57FastScan){
+                    var reach=step+12;
+                    var near=0;
+                    foreach(var o in pr57BendList){
+                        if(o.Id==v.Id||o.Status is not (VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded))continue;
+                        // 1e-8 m margin prevents boundary rejection from rounding.
+                        if(Math.Abs(o.Position.X-v.Position.X)>reach+1e-8||Math.Abs(o.Position.Z-v.Position.Z)>reach+1e-8)continue;
+                        if(!(o.Position.Distance(v.Position)<=reach))continue;
+                        near++;
+                        if(Math.Cos(o.Heading-v.Heading)>.5&&Ahead(v,o)>0&&
+                            Math.Abs((o.Position.X-v.Position.X)*Math.Cos(v.Heading)-(o.Position.Z-v.Position.Z)*Math.Sin(v.Heading))>=2.6&&
+                            !(o.Position.Distance(State.Entry)<8&&v.Position.Distance(State.Entry)<8))bendLeaders.Add(o);
+                    }
+                    if(scanProfile is not null){scanProfile.BendPrefilterCandidates+=pr57BendList.Count;scanProfile.BendPrefilterNear+=near;}
+                }
                 if(scanProfile is not null)scanProfile.MarkVehicleScan(1,bendScanStart,pr57BendList.Count,bendLeaders.Count);
                 if(bendLeaders.Count>0){
                     if(bendLeaders.Any(o=>TurnsInto(v,approachHeading,o))){v.Heading=approachHeading;step=0;}

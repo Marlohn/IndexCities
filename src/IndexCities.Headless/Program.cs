@@ -115,6 +115,11 @@ for(var d=1;d<=days;d++){
     if(windowSeconds==86400)Console.WriteLine($"DAY {d} wall={w:F2}s eff={86400/w:F0}x {Stats(sim)}");
     else Console.WriteLine($"WINDOW {d} seconds={windowSeconds} wall={w:F2}s eff={windowSeconds/w:F0}x {Stats(sim)}");
     stuck?.Report(sim,d);
+    if(Environment.GetEnvironmentVariable("PR57_AB_CHECKPOINT")=="1"){
+        sim.CheckInvariants();
+        var snapshot=sim.SaveToJson();
+        Console.WriteLine($"PR57_AB_CHECKPOINT window={d} sha256={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(snapshot)))} {Stats(sim)}");
+    }
     if(total>cap){Console.WriteLine($"STOP limite de {cap}s");break;}
 }
 if(done>0)Console.WriteLine(windowSeconds==86400
@@ -134,6 +139,7 @@ if(profile is not null){
         Console.WriteLine($"  VEHICLE_DETAIL name={StepCostProfile.VehicleDetailNames[i]} wall={profile.VehicleTicks[i]/(double)Stopwatch.Frequency:F3}s parentShare={(profile.Ticks[0]==0?0:100.0*profile.VehicleTicks[i]/profile.Ticks[0]):F2}%");
     for(var i=0;i<StepCostProfile.VehicleScanNames.Length;i++)
         Console.WriteLine($"  VEHICLE_SCAN name={StepCostProfile.VehicleScanNames[i]} wall={profile.VehicleScanTicks[i]/(double)Stopwatch.Frequency:F3}s visits={profile.VehicleScanVisits[i]} hits={profile.VehicleScanHits[i]} hitRate={(profile.VehicleScanVisits[i]==0?0:100.0*profile.VehicleScanHits[i]/profile.VehicleScanVisits[i]):F4}% shareOfMovement={(profile.VehicleTicks[3]==0?0:100.0*profile.VehicleScanTicks[i]/profile.VehicleTicks[3]):F2}%");
+    if(profile.BendPrefilterCandidates>0)Console.WriteLine($"BEND_PREFILTER total={profile.BendPrefilterCandidates} near={profile.BendPrefilterNear} exactRejects={profile.BendPrefilterCandidates-profile.BendPrefilterNear}");
     var laneHits=profile.LaneHoldDistanceBands.Sum();
     if(laneHits!=profile.VehicleScanHits[0])throw new InvalidOperationException("Lane hold distance count differs from actual HoldFor count");
     Console.WriteLine($"LANE_HOLD_RADIUS hits={laneHits} within32={profile.LaneHoldDistanceBands[0]} between32and128={profile.LaneHoldDistanceBands[1]} between128and512={profile.LaneHoldDistanceBands[2]} beyond512={profile.LaneHoldDistanceBands[3]} maxDistanceMeters={Math.Sqrt(profile.LaneHoldMaxDistanceSquared):F2} entryFrameHits={profile.LaneHoldEntryFrameHits}");

@@ -12,6 +12,8 @@ public sealed class StepCostProfile
     public long[] VehicleScanTicks { get; } = new long[VehicleScanNames.Length];
     public long[] VehicleScanVisits { get; } = new long[VehicleScanNames.Length];
     public long[] VehicleScanHits { get; } = new long[VehicleScanNames.Length];
+    public long BendPrefilterCandidates { get; internal set; }
+    public long BendPrefilterNear { get; internal set; }
     // PR57-only observation: distance of every actual lane HoldFor candidate.
     // No spatial filtering or changes to vehicle movement are performed.
     public long[] LaneHoldDistanceBands { get; } = new long[4]; // <=32m, <=128m, <=512m, >512m
