@@ -6,6 +6,17 @@ public sealed class StepCostProfile
     public long[] Ticks { get; } = new long[Names.Length];
     public static readonly string[] DetailNames = { "infra-presence", "infra-demands", "infra-electricity", "infra-water", "infra-sewage-pollution", "infra-finalize", "needs-pollution", "needs-citizens" };
     public long[] DetailTicks { get; } = new long[DetailNames.Length];
+    public static readonly string[] VehicleDetailNames = { "entry-check", "operations", "entry-events", "movement" };
+    public long[] VehicleTicks { get; } = new long[VehicleDetailNames.Length];
+    public long VehicleBatchedSteps { get; internal set; }
+    public long VehicleUnsplitSteps { get; internal set; }
+    public long VehicleSlices { get; internal set; }
+    internal void MarkVehicle(int detail, ref long started)
+    {
+        var now = System.Diagnostics.Stopwatch.GetTimestamp();
+        VehicleTicks[detail] += now - started;
+        started = now;
+    }
     public long Steps { get; private set; }
     internal void Mark(int phase, ref long started)
     {

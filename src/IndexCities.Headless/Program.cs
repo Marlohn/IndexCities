@@ -75,6 +75,9 @@ if(profile is not null){
         var parent=profile.Ticks[i<6?6:8];
         Console.WriteLine($"  STEP_DETAIL name={StepCostProfile.DetailNames[i]} wall={profile.DetailTicks[i]/(double)Stopwatch.Frequency:F3}s parentShare={(parent==0?0:100.0*profile.DetailTicks[i]/parent):F2}%");
     }
+    Console.WriteLine($"VEHICLE_PROFILE steps={profile.VehicleBatchedSteps+profile.VehicleUnsplitSteps} batched={profile.VehicleBatchedSteps} unsplit={profile.VehicleUnsplitSteps} slices={profile.VehicleSlices} avgSlicesPerBatchedStep={(profile.VehicleBatchedSteps==0?0:(double)profile.VehicleSlices/profile.VehicleBatchedSteps):F3}");
+    for(var i=0;i<StepCostProfile.VehicleDetailNames.Length;i++)
+        Console.WriteLine($"  VEHICLE_DETAIL name={StepCostProfile.VehicleDetailNames[i]} wall={profile.VehicleTicks[i]/(double)Stopwatch.Frequency:F3}s parentShare={(profile.Ticks[0]==0?0:100.0*profile.VehicleTicks[i]/profile.Ticks[0]):F2}%");
 }
 census?.Print(done);if(stuck!=null)Console.WriteLine($"STUCK SUMMARY guinchos chamados={sim.State.Ledger.Where(m=>m.Category=="Guincho"&&m.To=="global").Select(m=>(m.At,m.EntityId)).Distinct().Count()} rebocando agora={sim.State.Vehicles.Count(v=>v.Status==VehicleStatus.Towed)} sem combustível na via (total)={stuck.StrandedTotal} parados≥30min (máx)={stuck.StuckMax} mortos={sim.State.Citizens.Count(c=>!c.Alive)}");
 sw.Restart();var json=sim.SaveToJson();var save=sw.Elapsed.TotalSeconds;sw.Restart();CitySimulation.FromJson(json);

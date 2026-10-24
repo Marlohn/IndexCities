@@ -103,19 +103,31 @@ public sealed partial class CitySimulation
     static Vehicle EntrySnapshot(Vehicle v)=>new(){Id=v.Id,Position=v.Position,Heading=v.Heading,Status=v.Status,Fuel=v.Fuel,PassengerCar=v.PassengerCar,RouteIndex=v.RouteIndex,Route=v.Route.ToList()};
     void MoveVehicles(double dt)
     {
-        if(!State.Vehicles.Any(LiveLaneEntry)){MoveVehiclesUnsplit(dt);return;}
+        var profile=CostProfile;
+        var started=profile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
+        var hasEntry=State.Vehicles.Any(LiveLaneEntry);
+        if(profile is not null)profile.MarkVehicle(0,ref started);
+        if(!hasEntry){
+            MoveVehiclesUnsplit(dt);
+            if(profile is not null){profile.MarkVehicle(3,ref started);profile.VehicleUnsplitSteps++;}
+            return;
+        }
+        if(profile is not null)profile.VehicleBatchedSteps++;
         _vehicleMovementBatch=[];_vehicleMovementOffset=0;
         try{
             // Driver wages, loading timers, replanning and boarding transitions
             // retain one operational update per outer step. Motion alone is split.
             MoveVehiclesUnsplit(0,dt);
+            if(profile is not null)profile.MarkVehicle(1,ref started);
             while(dt-_vehicleMovementOffset>.000001){
                 var remaining=dt-_vehicleMovementOffset;
                 _vehicleMovementClock=State.ElapsedSeconds+_vehicleMovementOffset;
                 // Same entries as ToDictionary, in a dictionary reused across slices.
                 _entryFrameBuffer.Clear();foreach(var v in State.Vehicles.Where(v=>OccupiesLane(v)&&!TryLaneEntry(v,out _)))_entryFrameBuffer.Add(v.Id,EntrySnapshot(v));_entryFrame=_entryFrameBuffer;
                 var slice=NextVehicleMovementEvent(remaining);
+                if(profile is not null)profile.MarkVehicle(2,ref started);
                 MoveVehiclesUnsplit(slice);
+                if(profile is not null){profile.MarkVehicle(3,ref started);profile.VehicleSlices++;}
                 _vehicleMovementOffset+=slice;
             }
         }finally{_vehicleMovementBatch=null;_entryFrame=null;_entryFrameBuffer.Clear();_vehicleMovementClock=null;_vehicleMovementOffset=0;}
