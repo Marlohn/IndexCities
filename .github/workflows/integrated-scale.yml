@@ -54,6 +54,7 @@ jobs:
             grep -q '^VEHICLE_PROFILE steps=7200 ' "artifacts/integrated-scale-probe/${fixture}-profile.log"
             test "$(grep -c '^  VEHICLE_DETAIL ' "artifacts/integrated-scale-probe/${fixture}-profile.log")" -eq 4
             test "$(grep -c '^  VEHICLE_SCAN ' "artifacts/integrated-scale-probe/${fixture}-profile.log")" -eq 2
+            grep -q '^LANE_HOLD_RADIUS hits=' "artifacts/integrated-scale-probe/${fixture}-profile.log"
             base=$(sed -n 's/.*sha256=\([0-9A-F]*\).*/\1/p' "artifacts/integrated-scale-probe/${fixture}-scale.log" | tail -n 1)
             observed=$(sed -n 's/.*sha256=\([0-9A-F]*\).*/\1/p' "artifacts/integrated-scale-probe/${fixture}-profile.log" | tail -n 1)
             echo "PROBE_SHA_COMPARE fixture=${fixture} base=${base} profiled=${observed} equal=$([[ -n "$base" && "$base" == "$observed" ]] && echo true || echo false)"

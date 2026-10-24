@@ -305,7 +305,7 @@ public sealed partial class CitySimulation
                 // yield back to the other vehicle and freeze both indefinitely.
                 var leaderDistance=double.MaxValue;Vehicle? blocker=null;
                 var laneCandidateHits=0;
-                void HoldFor(Vehicle other,double distance){if(scanProfile is not null)laneCandidateHits++;if(distance<leaderDistance){leaderDistance=distance;blocker=other;}}
+                void HoldFor(Vehicle other,double distance){if(scanProfile is not null){laneCandidateHits++;scanProfile.ObserveLaneHoldDistance(v.Position,other.Position,enteringLane);}if(distance<leaderDistance){leaderDistance=distance;blocker=other;}}
                 var laneScanStart=scanProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
                 foreach(var liveOther in State.Vehicles){
                     var other=enteringLane?EntryFrameVehicle(liveOther):liveOther;

@@ -12,6 +12,20 @@ public sealed class StepCostProfile
     public long[] VehicleScanTicks { get; } = new long[VehicleScanNames.Length];
     public long[] VehicleScanVisits { get; } = new long[VehicleScanNames.Length];
     public long[] VehicleScanHits { get; } = new long[VehicleScanNames.Length];
+    // PR57-only observation: distance of every actual lane HoldFor candidate.
+    // No spatial filtering or changes to vehicle movement are performed.
+    public long[] LaneHoldDistanceBands { get; } = new long[4]; // <=32m, <=128m, <=512m, >512m
+    public long LaneHoldEntryFrameHits { get; private set; }
+    public double LaneHoldMaxDistanceSquared { get; private set; }
+    internal void ObserveLaneHoldDistance(Point from, Point to, bool entryFrame)
+    {
+        var dx=from.X-to.X;var dz=from.Z-to.Z;
+        var distanceSquared=dx*dx+dz*dz;
+        var band=distanceSquared<=32*32?0:distanceSquared<=128*128?1:distanceSquared<=512*512?2:3;
+        LaneHoldDistanceBands[band]++;
+        if(distanceSquared>LaneHoldMaxDistanceSquared)LaneHoldMaxDistanceSquared=distanceSquared;
+        if(entryFrame)LaneHoldEntryFrameHits++;
+    }
     internal void MarkVehicleScan(int detail, long started, int visits, int hits)
     {
         VehicleScanTicks[detail] += System.Diagnostics.Stopwatch.GetTimestamp() - started;

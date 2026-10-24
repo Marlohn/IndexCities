@@ -80,6 +80,9 @@ if(profile is not null){
         Console.WriteLine($"  VEHICLE_DETAIL name={StepCostProfile.VehicleDetailNames[i]} wall={profile.VehicleTicks[i]/(double)Stopwatch.Frequency:F3}s parentShare={(profile.Ticks[0]==0?0:100.0*profile.VehicleTicks[i]/profile.Ticks[0]):F2}%");
     for(var i=0;i<StepCostProfile.VehicleScanNames.Length;i++)
         Console.WriteLine($"  VEHICLE_SCAN name={StepCostProfile.VehicleScanNames[i]} wall={profile.VehicleScanTicks[i]/(double)Stopwatch.Frequency:F3}s visits={profile.VehicleScanVisits[i]} hits={profile.VehicleScanHits[i]} hitRate={(profile.VehicleScanVisits[i]==0?0:100.0*profile.VehicleScanHits[i]/profile.VehicleScanVisits[i]):F4}% shareOfMovement={(profile.VehicleTicks[3]==0?0:100.0*profile.VehicleScanTicks[i]/profile.VehicleTicks[3]):F2}%");
+    var laneHits=profile.LaneHoldDistanceBands.Sum();
+    if(laneHits!=profile.VehicleScanHits[0])throw new InvalidOperationException("Lane hold distance count differs from actual HoldFor count");
+    Console.WriteLine($"LANE_HOLD_RADIUS hits={laneHits} within32={profile.LaneHoldDistanceBands[0]} between32and128={profile.LaneHoldDistanceBands[1]} between128and512={profile.LaneHoldDistanceBands[2]} beyond512={profile.LaneHoldDistanceBands[3]} maxDistanceMeters={Math.Sqrt(profile.LaneHoldMaxDistanceSquared):F2} entryFrameHits={profile.LaneHoldEntryFrameHits}");
 }
 census?.Print(done);if(stuck!=null)Console.WriteLine($"STUCK SUMMARY guinchos chamados={sim.State.Ledger.Where(m=>m.Category=="Guincho"&&m.To=="global").Select(m=>(m.At,m.EntityId)).Distinct().Count()} rebocando agora={sim.State.Vehicles.Count(v=>v.Status==VehicleStatus.Towed)} sem combustível na via (total)={stuck.StrandedTotal} parados≥30min (máx)={stuck.StuckMax} mortos={sim.State.Citizens.Count(c=>!c.Alive)}");
 sw.Restart();var json=sim.SaveToJson();var save=sw.Elapsed.TotalSeconds;sw.Restart();CitySimulation.FromJson(json);
