@@ -2,6 +2,10 @@ namespace IndexCities.Simulation;
 
 public sealed partial class CitySimulation
 {
+    // PR57-only bounded diagnostics for the two previously identified junction winners.
+    // Never consulted by movement, and never persisted.
+    readonly Dictionary<int,int> _laneBlockProbeCounts=new();
+    readonly Dictionary<int,Dictionary<int,long>> _laneBlockProbeLeaders=new();
     bool _pedestrianCrossingsChecked;
     bool ShiftActive(Citizen c)=>BuildingById(c.WorkplaceId) is {} b&&ShiftActiveIn(c,b);
     bool ShiftActiveIn(Citizen c,Building b)
@@ -365,6 +369,18 @@ public sealed partial class CitySimulation
                 // or into any other body that pose was clear of.
                 if(step<.00001&&d>.00001&&State.Vehicles.Any(o=>o.Id!=v.Id&&o.Status!=VehicleStatus.Outside&&o.Position.Distance(v.Position)<12&&
                     (StreetBody(o)?VehicleBodiesOverlap(v,v.Position,o):!(o.Position.Distance(State.Entry)<8&&v.Position.Distance(State.Entry)<8)&&TurnsInto(v,approachHeading,o))))v.Heading=approachHeading;
+                if(scanProfile is not null&&_laneObservedWinner?.Id==v.Id&&(v.Id==3949||v.Id==5179)&&step<.00001&&d>.00001){
+                    _laneBlockProbeCounts.TryGetValue(v.Id,out var blockedCount);
+                    blockedCount++;_laneBlockProbeCounts[v.Id]=blockedCount;
+                    if(!_laneBlockProbeLeaders.TryGetValue(v.Id,out var leaders))_laneBlockProbeLeaders[v.Id]=leaders=new();
+                    var leaderId=blocker?.Id??-1;
+                    leaders.TryGetValue(leaderId,out var leaderCount);leaders[leaderId]=leaderCount+1;
+                    if(blockedCount<=3||blockedCount%1000==0){
+                        var top=string.Join(";",leaders.OrderByDescending(x=>x.Value).ThenBy(x=>x.Key).Take(3).Select(x=>$"{x.Key}:{x.Value}"));
+                        var blockerDistance=blocker is null?-1:blocker.Position.Distance(v.Position);
+                        Console.WriteLine($"LANE_BLOCK_PROBE vehicle={v.Id} sample={blockedCount} time={VehicleMovementTime:F6} node={node.Id} routeIndex={v.RouteIndex} targetDistance={d:F6} blockerId={leaderId} blockerStatus={blocker?.Status} blockerDistance={blockerDistance:F6} blockerWait={(blocker?.WaitingSince??0):F6} leaderDistance={leaderDistance:F6} freeBeforeSafety={free:F6} finalStep={step:F6} stopEarly={stopEarly:F6} bayHold={bayHold} entryHeld={entryHeld!=null} enteringLane={enteringLane} crossingBodies={crossingPoses?.Count??0} bendLeaders={bendLeaders.Count} waitingSince={v.WaitingSince:F6} blockerTop3={top}");
+                    }
+                }
                 if(step<.00001&&d>.00001){v.Cause=blocker?.Status==VehicleStatus.Stranded?$"Aguardando veículo {blocker.Id} {(blocker.BrokenDown?"quebrado":"sem combustível")} na via":bayHold||entryHeld!=null?"Fila para acesso de carga":enteringLane?"Aguardando espaço para acessar a faixa":blocker!=null&&HoldsJunctionAhead(blocker,node)?(IsBend(node)?"Aguardando liberação da curva pelo veículo ":"Aguardando liberação do cruzamento pelo veículo ")+blocker.Id:"Fila na faixa";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;if(v.TowPhase==TowPhase.ToVehicle&&(TryTowContraflow(v)||TryTowFromBehind(v)))continue;if(!enteringLane&&blocker!=null&&blocker.Id!=v.TowTargetId&&TryBypassStopped(v,blocker))continue;if(blocker!=null&&TowExitHolds(blocker)&&TryUTurn(v,blocker))continue;
                     // A tow held for minutes turns back and goes around the stranded vehicles
                     // and the junctions they lock, instead of waiting in the queue.

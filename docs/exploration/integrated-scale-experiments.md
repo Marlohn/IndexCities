@@ -412,3 +412,26 @@ Cada entrada nova deve trazer: hipótese; SHA da branch; workflow/job/log; fixtu
 **Conclusão discriminante:** na seed 73, **99,98%** das transições entre vitórias consecutivas do veículo 5179 ocorreram sem deslocamento mensurável (20.783/20.787), sempre mirando o mesmo nó e com índice de rota inalterado; sua posição avançou somente ~**2,3 cm** entre a primeira e a última amostra da segunda hora. O vencedor da seed 42 também apresenta uma sequência imóvel, porém **16,2× menos vitórias**. Assim, a explosão de subpassos é **compatível com reemitir limites previstos de chegada a nó para um veículo que fisicamente não consegue progredir**, e não com 20 mil cruzamentos efetivamente realizados. O método `TimeToMovementChange` calcula o tempo até o alvo pela distância/velocidade nominal; a rotina real pode bloquear movimento. A instrumentação **ainda não identifica o bloqueador nem a causa da imobilidade**; não prova bug de tráfego, deadlock, perda de conservação ou solução segura por supressão de eventos.
 
 **Limites:** a métrica de deslocamento é entre *amostras de vitórias*, não odômetro contínuo; controle/perfil com save final igual não prova igualdade de toda a ordem intermediária. Cenário artificial com obras instantâneas, caixa/serviços ampliados, apenas 808/812 vivos, zero refeições/salários nas duas horas, histórico em memória sem arquivo factual externo e sem custo Godot. Tempos de CIs distintos não são ganho/regressão controlados; comparar apenas o par deste job. **Próximo teste curto:** registrar, somente no perfil e para o veículo vencedor, `WaitingSince`, `Cause`, estado de entrada/cruzamento e o bloqueio efetivo no trecho de movimento; distinguir fila legítima de reavaliação inútil antes de otimizar. Nenhum evento, travessia ou ordem causal pode ser omitido para obter velocidade.
+
+## Vigésima primeira execução — fila física confirmada no vencedor, sem progressão após cada subpasso (24/10/2026)
+
+**Evidência nova:** [Actions #40094749841](https://github.com/Marlohn/IndexCities/actions/runs/40094749841), SHA `1f4b2b705068ee1e925a508d718349c5f2f51297`, job `120874545390` **success**. Release .NET 8, `scale|profile grid --seed=42|73 --warmup=0 --days=1 --window=7200 --cap=150 --rows=10 --length=800 --signals=1`. Cada execução completou 3.600 quanta de 2 s, invariantes e save/load; SHA-256 integral idêntico entre controle e perfil por seed (42 `C7381C1699199D70D9195A24E53B833B93693C53FD84B97E602BEF67CE1CB621`; 73 `01533F5C64C59E7842F225D067B8BE6B9E0390CEE768D494343741B482EE893C`).
+
+| Resultado observacional na segunda hora | Seed 42 (veículo 3949) | Seed 73 (veículo 5179) |
+| --- | ---: | ---: |
+| Limites vencedores de cruzamento | 1.284 | **20.788** |
+| Subpassos vencedores sem deslocamento após movimento | **1.283/1.284** | **20.788/20.788** |
+| Em espera após o subpasso | 1.283 | **20.788** |
+| Causa pós-subpasso | 836 preferência/semáforo/travessia; 447 fila na faixa; 1 em viagem | **20.788 fila na faixa** |
+| Índice de rota alterado após o subpasso | 1 | **0** |
+| Distância efetivamente percorrida nos subpassos vencedores | 0,186563 m | **0,000000 m** |
+| Reivindicação de cruzamento / entrada em faixa elegível | 1 / 0 | **0 / 0** |
+| Wall controle/perfil para 2h | 78,06 / 79,14 s | 137,46 / 138,44 s |
+| Avanço efetivo do controle | 92 s simulados/s real | **52 s simulados/s real** |
+| Alocação / working set no perfil | 18.360 MB / 98 MB | **35.456 MB / 137 MB** |
+
+**Conclusão:** o veículo 5179 permaneceu em **fila na faixa** em todas as 20.788 oportunidades em que sua previsão de chegada a nó venceu o subpasso; em nenhuma delas houve deslocamento efetivo. A previsão em `TimeToMovementChange` usa distância e velocidade nominal, enquanto `MoveVehiclesUnsplit` aplica retenções físicas, incluindo líderes e áreas compartilhadas. Há forte evidência de **previsões repetidas sem progresso causal**, não de 20 mil cruzamentos realizados. `WaitingSince` passou de 3.611,052747 a 5.542,047383 nas amostras; dois eventos de nova espera impedem afirmar fila ininterrupta durante todo o período. O bloqueador concreto ainda não foi identificado: `Fila na faixa` pode decorrer de líder, afastamento de corpos ou restrições de passagem. **Não** suprimir eventos ou tratar a espera como falha de conservação sem diagnóstico.
+
+**Limites:** amostras somente do veículo vencedor, não de toda a frota; hash final igual não prova igualdade da ordem interna; fixture artificial com 808/812 vivos, obras/caixa/capacidade artificiais, zero refeições e salários nas 2h, histórico em memória e nenhum Godot. Wall entre CIs não serve para alegar ganho.
+
+**Hipótese isolada seguinte:** o veículo 5179 está limitado por um mesmo líder próximo (distância livre <=8 m), ou por outro teste de ocupação física? Instrumentar **somente perfil** no ponto exato em que `MoveVehiclesUnsplit` calcula o passo zero, capturando ID/status/distância do líder, passo antes/depois da segurança e principais bloqueadores em amostras espaçadas. Reutilizar as duas seeds e janela de 2h, controle/perfil, invariantes e hash; sem alterar movimento nem regras.
