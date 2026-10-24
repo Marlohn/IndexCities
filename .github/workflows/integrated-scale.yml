@@ -1,4 +1,4 @@
-name: Integrated real-core bounded four-hour scale diagnosis
+name: Integrated real-core cross-seed four-hour lane probe
 
 on:
   push:
@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   phase-profile:
-    name: Same-seed bounded 4h control vs profile after expanded-day timeout
+    name: Expanded 4h seed 73/101 control vs profile
     runs-on: ubuntu-latest
     timeout-minutes: 14
     steps:
@@ -35,16 +35,13 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts/integrated-scale-probe
           echo "PROBE_SHA=${GITHUB_SHA}"
-          for fixture in medium expanded; do
-            if [[ "$fixture" == medium ]]; then
-              rows=6; length=600
-            else
-              rows=10; length=800
-            fi
+          for seed in 73 101; do
+            fixture="expanded-seed${seed}"
+            rows=10; length=800
             for mode in scale profile; do
-              echo "=== PROBE_START fixture=${fixture} mode=${mode} seed=42 rows=${rows} length=${length} seconds=14400 warmup=0 ==="
+              echo "=== PROBE_START fixture=${fixture} mode=${mode} seed=${seed} rows=${rows} length=${length} seconds=14400 warmup=0 ==="
               TIMEFORMAT='TIME totalReal=%3R cpuUser=%3U cpuSystem=%3S'
-              { time timeout 240s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- "${mode}" grid --seed=42 --warmup=0 --days=1 --window=14400 --cap=150 --rows="${rows}" --length="${length}" --signals=1; } 2>&1 | tee "artifacts/integrated-scale-probe/${fixture}-${mode}.log"
+              { time timeout 240s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- "${mode}" grid --seed=${seed} --warmup=0 --days=1 --window=14400 --cap=150 --rows="${rows}" --length="${length}" --signals=1; } 2>&1 | tee "artifacts/integrated-scale-probe/${fixture}-${mode}.log"
               grep -q '^SUMMARY windows=1 secondsEach=14400 ' "artifacts/integrated-scale-probe/${fixture}-${mode}.log"
               grep -q '^INVARIANTS OK$' "artifacts/integrated-scale-probe/${fixture}-${mode}.log"
             done
@@ -55,6 +52,7 @@ jobs:
             test "$(grep -c '^  VEHICLE_DETAIL ' "artifacts/integrated-scale-probe/${fixture}-profile.log")" -eq 4
             test "$(grep -c '^  VEHICLE_SCAN ' "artifacts/integrated-scale-probe/${fixture}-profile.log")" -eq 2
             grep -q '^LANE_HOLD_RADIUS hits=' "artifacts/integrated-scale-probe/${fixture}-profile.log"
+            grep -q '^LANE_LEADER_WINNERS selected=' "artifacts/integrated-scale-probe/${fixture}-profile.log"
             grep -q '^LANE_LEADER_WINNERS selected=' "artifacts/integrated-scale-probe/${fixture}-profile.log"
             base=$(sed -n 's/.*sha256=\([0-9A-F]*\).*/\1/p' "artifacts/integrated-scale-probe/${fixture}-scale.log" | tail -n 1)
             observed=$(sed -n 's/.*sha256=\([0-9A-F]*\).*/\1/p' "artifacts/integrated-scale-probe/${fixture}-profile.log" | tail -n 1)
