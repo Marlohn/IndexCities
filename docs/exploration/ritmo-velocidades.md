@@ -683,27 +683,27 @@ Nas seis execuções concluídas dessa base, o dia termina com 1.037 SIMs, 0 mor
 
 Logs, binários congelados e script da comparação em `artifacts/verification/sem-rota-retentativa/` (fora do Git). Revisão independente a cargo do coordenador após a PR; ainda não realizada nesta entrega.
 
-## 2026-10-23 — revisão da meta geracional e do papel dos multiplicadores
+## 2026-10-23 — hipóteses de ritmo geracional e multiplicadores
 
-**Decisão de produto:** [Tempo de jogo na SPEC](../spec/mundo-tempo-saves.md#tempo-de-jogo). O jogador tem **Pausa, Normal (1x), Média e Alta**; os números de Média/Alta são configuração técnica, não promessa de fator fixo na interface. **Primeiro** buscamos a maior taxa de simulação correta e sustentável; **depois** calibramos a experiência. Mais vezes significa calendário **mais rápido**, não mais lento.
+**Produto aprovado, distinto dos cenários abaixo:** [Tempo de jogo na SPEC](../spec/mundo-tempo-saves.md#tempo-de-jogo). O jogador tem **Pausa, Normal (1x), Média e Alta**; os números de Média/Alta são configuração técnica, não promessa de fator fixo na interface. **Primeiro** buscamos a maior taxa de simulação correta e sustentável; **depois** calibramos a experiência. Mais vezes significa calendário **mais rápido**, não mais lento.
 
 **Cenários hipotéticos para comparação, não metas nem critérios de aceite aprovados.** A duração real que oferece uma boa experiência ainda depende de medições, playtests e hardware. As contas abaixo usam os **29.220 dias civis** cobertos pelo experimento de 80 anos (a quantidade exata de dias depende do intervalo gregoriano escolhido):
 
 | Situação | Tempo real para 80 anos | Avanço efetivo médio necessário |
 | --- | ---: | ---: |
 | Hipótese ilustrativa de ritmo mais lento | 20 h | 35.064x |
-| **Hipótese ilustrativa de benchmark mais exigente** | **6 h** | **116.880x** |
+| Hipótese ilustrativa de benchmark mais exigente | 6 h | 116.880x |
 | Fator provisório da V1 (1000x), *se alcançado sem atraso* | 29,22 dias | 1000x |
 
 Cálculo: **29.220 × 86.400 segundos simulados ÷ segundos reais disponíveis**. A taxa **efetiva**, medida de ponta a ponta, importa mais do que o multiplicador solicitado. Valores como 800x/2000x não completam décadas em poucas horas. Comparar hipoteticamente 6 h com 20 h significa **reduzir** o fator de aproximadamente 116.880x para 35.064x para obter ritmo mais lento. **Essas durações não devem ser tratadas como metas fixas dos timers ou condições obrigatórias de encerramento da pesquisa.**
 
 **Evidência que existe, mas não prova viabilidade integral ou prazo de gameplay:** a [PR #55](https://github.com/Marlohn/IndexCities/pull/55) isolou um laboratório C# com amostras de 80 anos e histórico materializado/relido nas seeds 42/73/101, em cerca de **41–43 min por seed**, conforme [Actions #39978132194](https://github.com/Marlohn/IndexCities/actions/runs/39978132194). Isso demonstra capacidade **na carga e no código daquele laboratório**; não demonstra equivalência integral à SPEC, experiência no Godot, desempenho em cidade futura pesada ou continuidade da mesma taxa na engine integrada. Não misturar branches, metodologia ou resultados com a pesquisa de performance da PR #51.
 
-**Mapa mínimo de validação, sem construir outro jogo só para medir:**
+**Lacunas de evidência a investigar (não exigência de criar novos processos ou testes obrigatórios):**
 
 1. **Motor real, headless:** medir dias corretos por segundo real e custo por subsistema no núcleo do jogo atual com carga representativa; comparar mesmas seeds/estados e eventos, incluindo alteração viária, economia ativa e trânsito. Não extrapolar diretamente uma cidade pequena com quase todos os SIMs parados para uma com 10 mil.
 2. **Jogo integrado:** repetir cargas representativas no Godot, medindo tempo efetivamente avançado, estabilidade da interface/comandos, apresentação, memória, pausas e saves. Um resultado headless, qualquer que seja sua duração, **não comprova por si só** que o jogo integrado atenda ao objetivo geracional.
 3. **Vida e histórico:** auditar identidade individual, fatos realmente causados, histórico persistido e consultável, determinismo/estado final, nenhum evento omitido, recursos e contas conservados; medir cenários com pelo menos 10 mil vivos continuamente sem criar pessoas, recursos, receita ou viagens fictícios.
-4. **Calibração de UX posterior à capacidade:** avaliar com jogadores qual ritmo geracional é legível e agradável e ajustar Média e Alta se necessário. **Apenas como exemplo numérico**, em 116.880x, um dia ocupa ~0,74 segundo real: não se pode exigir enxergar cada deslocamento como animação contínua nessa velocidade. **A observação pontual usa Normal/Média e a história factual consultável; Alta não dispensa simular os acontecimentos.**
+4. **Calibração de UX posterior à capacidade:** avaliar com jogadores qual ritmo geracional é legível e agradável e ajustar Média e Alta se necessário. **Apenas como exemplo numérico**, em 116.880x, um dia ocupa ~0,74 segundo real: não se pode exigir enxergar cada deslocamento como animação contínua nessa velocidade. Acompanhamento visual e acesso ao histórico factual precisam ser avaliados com ritmos diferentes; a velocidade Alta não dispensa simular os acontecimentos.
 
-**Critério de saída:** reportar **capacidade atingida e gargalo restante com evidências**, distinguir resultado do laboratório da implementação Godot, e esclarecer hardware de referência e expectativas de ritmo antes de propor qualquer prazo numérico vinculante. Não adotar framework de tarefas, nova arquitetura ou alteração de mecânica só para inflar benchmark. Não mudar os fatores numéricos do jogo atual nesta PR de documentação.
+**Ao avaliar resultados:** reportar **capacidade atingida, gargalos e limites das evidências**, distinguir laboratório de jogo integrado e esclarecer hardware de referência e ritmo desejável antes de propor qualquer prazo numérico vinculante. Não adotar framework de tarefas, nova arquitetura ou alteração de mecânica só para inflar benchmark. Não mudar os fatores numéricos do jogo atual nesta PR de documentação.
