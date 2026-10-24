@@ -51,6 +51,30 @@ public sealed partial class CitySimulation
             _hasPrevious=true;
         }
     }
+    // PR57-only post-slice evidence: did the predicted junction winner actually move?
+    sealed class LaneWinnerOutcome
+    {
+        public long Samples,Stationary,Waiting,NewWaiting,RouteChanged,Claimed,EntryEligible,NotTravelling;
+        public double Distance,MaxDistance,FirstWaitingSince,LastWaitingSince;
+        public readonly Dictionary<string,long> Causes=new(StringComparer.Ordinal);
+        public void Observe(Vehicle v,Point before,double waitingBefore,int routeBefore,bool entryEligible)
+        {
+            if(Samples==0)FirstWaitingSince=v.WaitingSince;
+            Samples++;
+            var moved=v.Position.Distance(before);
+            Distance+=moved;MaxDistance=Math.Max(MaxDistance,moved);
+            if(moved<=.000001)Stationary++;
+            if(v.WaitingSince>0)Waiting++;
+            if(waitingBefore<=0&&v.WaitingSince>0)NewWaiting++;
+            if(v.RouteIndex!=routeBefore)RouteChanged++;
+            if(v.IntersectionClaim!=null)Claimed++;
+            if(entryEligible)EntryEligible++;
+            if(v.Status!=VehicleStatus.Travelling)NotTravelling++;
+            LastWaitingSince=v.WaitingSince;
+            var cause=v.Cause??"";
+            Causes.TryGetValue(cause,out var count);Causes[cause]=count+1;
+        }
+    }
     sealed class LaneSliceHour
     {
         public readonly long[] Reasons=new long[4]; // no-entry, full horizon, movement boundary, projected recheck
@@ -58,16 +82,37 @@ public sealed partial class CitySimulation
         public readonly long[] MovementCauses=new long[5]; // fuel, junction/crosswalk, speed, turn, route end
         public readonly Dictionary<int,long> JunctionWinnerCounts=new(); // observation only, never read by movement
         public readonly Dictionary<int,LaneWinnerTrace> JunctionWinnerTraces=new();
+        public readonly Dictionary<int,LaneWinnerOutcome> JunctionWinnerOutcomes=new();
         public long BlockedEntryChecks,ProjectionCandidates,ProjectionRechecks;
         public double MinSlice=double.PositiveInfinity,MaxSlice;
     }
     readonly Dictionary<long,LaneSliceHour> _laneSliceHours=new();
     long _lastLaneSliceHourPrinted=-1;
+    Vehicle? _laneObservedWinner;
+    Point _laneObservedWinnerPosition;
+    double _laneObservedWinnerWaitingSince;
+    int _laneObservedWinnerRouteIndex;
+    long _laneObservedWinnerHour;
+    void ObserveLaneWinnerOutcome()
+    {
+        var v=_laneObservedWinner;
+        _laneObservedWinner=null;
+        if(v is null||!_laneSliceHours.TryGetValue(_laneObservedWinnerHour,out var hour))return;
+        if(!hour.JunctionWinnerOutcomes.TryGetValue(v.Id,out var outcome))hour.JunctionWinnerOutcomes[v.Id]=outcome=new();
+        outcome.Observe(v,_laneObservedWinnerPosition,_laneObservedWinnerWaitingSince,_laneObservedWinnerRouteIndex,TryLaneEntry(v,out _));
+    }
     void ObserveLaneSlice(double slice,int reason,int movementCause,long blockedEntryChecks,long projectionCandidates,long projectionRechecks,Vehicle? winnerVehicle=null)
     {
         var hour=(long)Math.Floor(VehicleMovementTime/3600);
         if(!_laneSliceHours.TryGetValue(hour,out var stats))_laneSliceHours[hour]=stats=new();
         stats.Reasons[reason]++;
+        _laneObservedWinner=reason==2&&movementCause==1?winnerVehicle:null;
+        if(_laneObservedWinner is not null){
+            _laneObservedWinnerHour=hour;
+            _laneObservedWinnerPosition=_laneObservedWinner.Position;
+            _laneObservedWinnerWaitingSince=_laneObservedWinner.WaitingSince;
+            _laneObservedWinnerRouteIndex=_laneObservedWinner.RouteIndex;
+        }
         if(reason==2&&movementCause>=0&&movementCause<5)stats.MovementCauses[movementCause]++;
         if(reason==2&&movementCause==1&&winnerVehicle is not null){
             stats.JunctionWinnerCounts.TryGetValue(winnerVehicle.Id,out var count);
@@ -101,6 +146,11 @@ public sealed partial class CitySimulation
                 if(!stats.JunctionWinnerTraces.TryGetValue(winner.Key,out var trace))continue;
                 var target=trace.TargetCounts.OrderByDescending(x=>x.Value).ThenBy(x=>x.Key).First();
                 Console.WriteLine($"LANE_WINNER_TRACE hour={hour} vehicle={winner.Key} wins={trace.Wins} uniqueTargets={trace.TargetCounts.Count} topTarget={target.Key} topTargetWins={target.Value} sameTargetTransitions={trace.SameTargetTransitions} noPositionProgress={trace.NoPositionProgress} noTargetApproach={trace.NoTargetApproach} longestNoProgressRun={trace.LongestNoProgressRun} routeIndexChanges={trace.RouteIndexChanges} sampledDistance={trace.SampledDistance:F6} maxSampledDelta={trace.MaxSampledDelta:F6} firstRouteIndex={trace.FirstRouteIndex} lastRouteIndex={trace.LastRouteIndex} firstTargetDistance={trace.FirstDistance:F6} lastTargetDistance={trace.LastDistance:F6} firstX={trace.FirstPosition.X:F4} firstZ={trace.FirstPosition.Z:F4} lastX={trace.LastPosition.X:F4} lastZ={trace.LastPosition.Z:F4}");
+                if(stats.JunctionWinnerOutcomes.TryGetValue(winner.Key,out var outcome)){
+                    var causeTop=outcome.Causes.OrderByDescending(x=>x.Value).ThenBy(x=>x.Key,StringComparer.Ordinal).Take(3).ToArray();
+                    var causes=string.Join(";",causeTop.Select(x=>$"{x.Value}:{x.Key.Replace(' ','_').Replace(';','_')}"));
+                    Console.WriteLine($"LANE_WINNER_OUTCOME hour={hour} vehicle={winner.Key} samples={outcome.Samples} stationary={outcome.Stationary} waiting={outcome.Waiting} newWaiting={outcome.NewWaiting} routeChanged={outcome.RouteChanged} claimed={outcome.Claimed} entryEligible={outcome.EntryEligible} notTravelling={outcome.NotTravelling} totalMoved={outcome.Distance:F6} maxMoved={outcome.MaxDistance:F6} firstWaitingSince={outcome.FirstWaitingSince:F6} lastWaitingSince={outcome.LastWaitingSince:F6} causes={causes}");
+                }
             }
         }
         _lastLaneSliceHourPrinted=last;
@@ -224,10 +274,10 @@ public sealed partial class CitySimulation
                 var slice=NextVehicleMovementEvent(remaining);
                 if(profile is not null)profile.MarkVehicle(2,ref started);
                 MoveVehiclesUnsplit(slice);
-                if(profile is not null){profile.MarkVehicle(3,ref started);profile.VehicleSlices++;}
+                if(profile is not null){ObserveLaneWinnerOutcome();profile.MarkVehicle(3,ref started);profile.VehicleSlices++;}
                 _vehicleMovementOffset+=slice;
             }
-        }finally{_vehicleMovementBatch=null;_entryFrame=null;_entryFrameBuffer.Clear();_vehicleMovementClock=null;_vehicleMovementOffset=0;}
+        }finally{_laneObservedWinner=null;_vehicleMovementBatch=null;_entryFrame=null;_entryFrameBuffer.Clear();_vehicleMovementClock=null;_vehicleMovementOffset=0;}
         if(profile is not null)PrintCompletedLaneSliceHours(State.ElapsedSeconds+dt);
     }
     Point ProjectedVelocity(Vehicle v,HashSet<int>? held)
