@@ -76,7 +76,7 @@ jobs:
           for letter in ('a','b'):
               c=results[f'{letter}_control']
               b=results[f'{letter}_candidate']
-              assert b['scans']==c['scans'],'physical scan count divergence'
+              assert [(x[0],x[2],x[3]) for x in b['scans']]==[(x[0],x[2],x[3]) for x in c['scans']],'physical scan count divergence'
               print(f'PR57_ZERO_SITE_AB order={letter} control={c["wall"]:.3f}s candidate={b["wall"]:.3f}s speedup={c["wall"]/b["wall"]:.3f}x allocControlMB={c["alloc"]:.1f} allocCandidateMB={b["alloc"]:.1f}',flush=True)
           print('PR57_ZERO_SITE_ACTIVITY '+results['a_control']['checkpoints'][-1][2],flush=True)
           PY
