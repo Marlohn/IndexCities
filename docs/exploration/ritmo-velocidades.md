@@ -7,6 +7,8 @@
 
 > **Atualização de 2026-10-16:** os trechos iniciais deste arquivo documentam um experimento anterior com velocidades 15x/60x e propostas de cobrança diária/limite de 300x. **Não descrevem mais a calibração vigente (1x/30x/1000x) nem uma recomendação aceita.** A verificação independente no final do estudo prevalece sobre afirmações empíricas conflitantes da rodada original. A decisão humana atual de calendário real e observação de gerações está na SPEC; a nova análise pendente vem na seção final deste arquivo.
 
+> **Revisão de direção em 2026-10-23:** a [SPEC de tempo](../spec/mundo-tempo-saves.md#tempo-de-jogo) reafirma acompanhar gerações em horas ou sessões, em cidade representativa com **10 mil+ SIMs**, separando capacidade computacional dos multiplicadores do jogador. **O cenário de 80 anos em 6 horas é apenas uma hipótese numérica de benchmark, não uma meta aprovada de produto**; 20 horas é outra referência ilustrativa, também não aprovada. As recomendações históricas de 60x/300x/1000x abaixo e os limites de fixtures antigos **não são o teto aprovado do jogo**. Veja as contas e lacunas de prova no fim deste estudo.
+
 ## Contexto histórico do estudo inicial (antes da confirmação geracional de 2026-10-16)
 
 - **Regra vigente na SPEC (linha ~64):** *"1x em tempo real: um segundo real avança um segundo simulado na velocidade normal. Movimento físico, relógio, obras, turnos, produção e consumo seguem a mesma escala; as velocidades rápidas permitem avançar. ... Os dois multiplicadores rápidos continuam sendo calibração técnica; nesta rodada, a calibração é 15x e 60x."*
@@ -680,3 +682,28 @@ Nas seis execuções concluídas dessa base, o dia termina com 1.037 SIMs, 0 mor
 **Validação da correção:** `dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj`: **325/325**, sem falhas ou ignorados. Os seis casos de `JourneyRetryTests` cobrem falha a pé e alternativa do carro, manutenção do prazo em passos de 2 s, nova tentativa após 300 s, mudança sem conexão que reinicia a espera, reconexão imediata e rota removida. Aplicados à biblioteca original, cinco dos seis falham; com a correção, os seis passam. Godot 4.7.2 mono: build/importação reais, `-- --qa-list` e `-- --smoke`, com `INDEXCITIES_SMOKE_OK buildings=0 roads=17` e `--review-save-dir=C:/Users/Marlohn/orca/workspaces/IndexCities/sem-rota/artifacts/verification/sem-rota-retentativa/godot-saves`. O smoke é headless e não grava cidade; não substitui playtest humano.
 
 Logs, binários congelados e script da comparação em `artifacts/verification/sem-rota-retentativa/` (fora do Git). Revisão independente a cargo do coordenador após a PR; ainda não realizada nesta entrega.
+
+## 2026-10-23 — hipóteses de ritmo geracional e multiplicadores
+
+**Produto aprovado, distinto dos cenários abaixo:** [Tempo de jogo na SPEC](../spec/mundo-tempo-saves.md#tempo-de-jogo). O jogador tem **Pausa, Normal (1x), Média e Alta**; os números de Média/Alta são configuração técnica, não promessa de fator fixo na interface. **Primeiro** buscamos a maior taxa de simulação correta e sustentável; **depois** calibramos a experiência. Mais vezes significa calendário **mais rápido**, não mais lento.
+
+**Cenários hipotéticos para comparação, não metas nem critérios de aceite aprovados.** A duração real que oferece uma boa experiência ainda depende de medições, playtests e hardware. As contas abaixo usam os **29.220 dias civis** cobertos pelo experimento de 80 anos (a quantidade exata de dias depende do intervalo gregoriano escolhido):
+
+| Situação | Tempo real para 80 anos | Avanço efetivo médio necessário |
+| --- | ---: | ---: |
+| Hipótese ilustrativa de ritmo mais lento | 20 h | 35.064x |
+| Hipótese ilustrativa de benchmark mais exigente | 6 h | 116.880x |
+| Fator provisório da V1 (1000x), *se alcançado sem atraso* | 29,22 dias | 1000x |
+
+Cálculo: **29.220 × 86.400 segundos simulados ÷ segundos reais disponíveis**. A taxa **efetiva**, medida de ponta a ponta, importa mais do que o multiplicador solicitado. Valores como 800x/2000x não completam décadas em poucas horas. Comparar hipoteticamente 6 h com 20 h significa **reduzir** o fator de aproximadamente 116.880x para 35.064x para obter ritmo mais lento. **Nenhuma dessas durações é critério de aceite do jogo.** Um experimento ou timer pode continuar usando 6 horas como alvo provisório de comparação, sem transformar essa hipótese em regra de produto.
+
+**Evidência que existe, mas não prova viabilidade integral ou prazo de gameplay:** a [PR #55](https://github.com/Marlohn/IndexCities/pull/55) isolou um laboratório C# com amostras de 80 anos e histórico materializado/relido nas seeds 42/73/101, em cerca de **41–43 min por seed**, conforme [Actions #39978132194](https://github.com/Marlohn/IndexCities/actions/runs/39978132194). Isso demonstra capacidade **na carga e no código daquele laboratório**; não demonstra equivalência integral à SPEC, experiência no Godot, desempenho em cidade futura pesada ou continuidade da mesma taxa na engine integrada. Não misturar branches, metodologia ou resultados com a pesquisa de performance da PR #51.
+
+**Lacunas de evidência a investigar (não exigência de criar novos processos ou testes obrigatórios):**
+
+1. **Motor real, headless:** medir dias corretos por segundo real e custo por subsistema no núcleo do jogo atual com carga representativa; comparar mesmas seeds/estados e eventos, incluindo alteração viária, economia ativa e trânsito. Não extrapolar diretamente uma cidade pequena com quase todos os SIMs parados para uma com 10 mil.
+2. **Jogo integrado:** repetir cargas representativas no Godot, medindo tempo efetivamente avançado, estabilidade da interface/comandos, apresentação, memória, pausas e saves. Um resultado headless, qualquer que seja sua duração, **não comprova por si só** que o jogo integrado atenda ao objetivo geracional.
+3. **Vida e histórico:** auditar identidade individual, fatos realmente causados, histórico persistido e consultável, determinismo/estado final, nenhum evento omitido, recursos e contas conservados; medir cenários com pelo menos 10 mil vivos continuamente sem criar pessoas, recursos, receita ou viagens fictícios.
+4. **Calibração de UX posterior à capacidade:** avaliar com jogadores qual ritmo geracional é legível e agradável e ajustar Média e Alta se necessário. **Apenas como exemplo numérico**, em 116.880x, um dia ocupa ~0,74 segundo real: não se pode exigir enxergar cada deslocamento como animação contínua nessa velocidade. Acompanhamento visual e acesso ao histórico factual precisam ser avaliados com ritmos diferentes; a velocidade Alta não dispensa simular os acontecimentos.
+
+**Ao avaliar resultados:** reportar **capacidade atingida, gargalos e limites das evidências**, distinguir laboratório de jogo integrado e esclarecer hardware de referência e ritmo desejável antes de propor qualquer prazo numérico vinculante. Não adotar framework de tarefas, nova arquitetura ou alteração de mecânica só para inflar benchmark. Não mudar os fatores numéricos do jogo atual nesta PR de documentação.
