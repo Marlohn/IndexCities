@@ -138,7 +138,7 @@ for(var d=1;d<=days;d++){
         Console.WriteLine($"PR57_AB_CHECKPOINT window={d} sha256={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(snapshot)))} {Stats(sim)}");
     }
     // PR57-only observation: no mutation of the simulated state.
-    if(Environment.GetEnvironmentVariable("PR57_WORK_DIAG")=="1" && (d==1||d==4||d==8))
+    if(Environment.GetEnvironmentVariable("PR57_WORK_DIAG")=="1" && (d==1||d==2||d==4))
         PrintWorkDiagnostics(sim,d);
     if(total>cap){Console.WriteLine($"STOP limite de {cap}s");break;}
 }
@@ -192,4 +192,17 @@ static void PrintWorkDiagnostics(CitySimulation sim,int window)
         var shipmentVehicles=string.Join(",",pending.Select(s=>$"{s.Id}:{state.Vehicles.FirstOrDefault(v=>v.Id==s.VehicleId)?.Status.ToString()??"missing"}"));
         Console.WriteLine($"PR57_WORK_PROJECT window={window} id={p.Id} kind={(building==null?"road":building.Kind.ToString())} status={p.Status} cause={p.Cause.Replace(' ','_')} progress={p.Progress:F5} remaining={remaining:F2} inflight={inflight:F2} crew={(crew==null?"none":crew.Status.ToString())} localCrew={p.LocalCrew.Count} budget={p.BudgetRemaining:F2} materials={materials} shipments={shipmentVehicles}");
     }
+    foreach(var shipment in state.Shipments.Where(s=>!s.Complete&&s.ProjectId!=null).OrderBy(s=>s.Id))
+    {
+        var truck=state.Vehicles.FirstOrDefault(v=>v.Id==shipment.VehicleId);
+        if(truck==null){Console.WriteLine($"PR57_WORK_TRUCK window={window} shipment={shipment.Id} missingVehicle={shipment.VehicleId}");continue;}
+        var closest=state.Vehicles.Where(v=>v.Id!=truck.Id&&v.Status!=VehicleStatus.Outside)
+            .Select(v=>new {v.Id,v.Status,Distance=v.Position.Distance(truck.Position)})
+            .OrderBy(v=>v.Distance).Take(2).ToArray();
+        var neighbours=string.Join(",",closest.Select(v=>$"{v.Id}:{v.Status}:{v.Distance:F2}m"));
+        Console.WriteLine($"PR57_WORK_TRUCK window={window} shipment={shipment.Id} project={shipment.ProjectId} vehicle={truck.Id} status={truck.Status} route={truck.RouteIndex}/{truck.Route.Count} x={truck.Position.X:F3} z={truck.Position.Z:F3} dockX={truck.DockPosition?.X:F3} dockZ={truck.DockPosition?.Z:F3} fuel={truck.Fuel:F3} waitingSince={truck.WaitingSince:F1} cause={truck.Cause.Replace(' ','_')} neighbours={neighbours}");
+    }
+    foreach(var truck in state.Vehicles.Where(v=>v.Status==VehicleStatus.Travelling&&v.WaitingSince>0).OrderBy(v=>v.WaitingSince).Take(6))
+        Console.WriteLine($"PR57_WAITING_VEHICLE window={window} id={truck.Id} waitingSince={truck.WaitingSince:F1} x={truck.Position.X:F3} z={truck.Position.Z:F3} route={truck.RouteIndex}/{truck.Route.Count} cause={truck.Cause.Replace(' ','_')}");
+
 }

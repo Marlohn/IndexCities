@@ -1,4 +1,4 @@
-name: Integrated core PR57 real-cycle construction bottleneck diagnosis
+name: Integrated core PR57 real-cycle shipment movement diagnosis
 
 on:
   push:
@@ -16,10 +16,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  cycle-real-work-diagnosis:
-    name: Seed42 real construction 4d, unflagged, work states and causality
+  cycle-real-shipment-diagnosis:
+    name: Seed42 real construction shipment routes 6h-24h, no flags
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -27,38 +27,37 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Build real integrated simulation
         run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: Observe pending construction, material flow and real activity
+      - name: Observe actual shipment vehicle positions and waiting
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p artifacts/integrated-scale-probe
           echo 'PR57_MODE base no PR57 performance flags, fresh dotnet process, diagnostic-only'
-          PR57_ACTIVE_SCAN=0 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 PR57_WORK_DIAG=1 timeout 240s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- scale cycle --seed=42 --warmup=0 --cycle-houses=16 --days=8 --window=43200 --cap=180 | tee artifacts/integrated-scale-probe/cycle-work-diagnosis.log
+          PR57_ACTIVE_SCAN=0 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 PR57_WORK_DIAG=1 timeout 150s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- scale cycle --seed=42 --warmup=0 --cycle-houses=16 --days=4 --window=21600 --cap=100 | tee artifacts/integrated-scale-probe/cycle-shipment-diagnosis.log
           python3 - <<'PY'
           import pathlib,re
-          data=pathlib.Path('artifacts/integrated-scale-probe/cycle-work-diagnosis.log').read_text()
-          windows=re.findall(r'^WINDOW (\d+) seconds=43200 wall=([0-9.]+)s .*$',data,re.M)
+          data=pathlib.Path('artifacts/integrated-scale-probe/cycle-shipment-diagnosis.log').read_text()
+          windows=re.findall(r'^WINDOW (\d+) seconds=21600 wall=([0-9.]+)s ',data,re.M)
           checkpoints=re.findall(r'^PR57_AB_CHECKPOINT window=(\d+) sha256=([A-F0-9]{64}) ',data,re.M)
-          diagnostics=re.findall(r'^PR57_WORK_DIAG window=(\d+) .*$',data,re.M)
-          assert [int(w[0]) for w in windows]==list(range(1,9)),('incomplete windows',len(windows))
-          assert [int(x[0]) for x in checkpoints]==list(range(1,9)),('missing checkpoints',len(checkpoints))
-          assert diagnostics==['1','4','8'],('missing diagnostics',diagnostics)
-          assert 'INVARIANTS OK' in data and 'SAVE ' in data and 'STOP limite' not in data,'incomplete run'
+          assert [int(w[0]) for w in windows]==list(range(1,5)),('incomplete windows',len(windows))
+          assert [int(x[0]) for x in checkpoints]==list(range(1,5)),('missing checkpoints',len(checkpoints))
+          assert 'INVARIANTS OK' in data and 'STOP limite' not in data,'incomplete run'
+          assert checkpoints[1][1]=='C5C38DECE3358A0189E4E724F75D890B039BB5E8852881CFB907D32F27AC7BC8','12h state mismatch'
+          assert checkpoints[3][1]=='4F4CE1157BF2CA3CE6A3724C1AE290D73BC6E35DA281FE691C27D8D2087BCEBC','24h state mismatch'
           save=re.search(r'^SAVE .* sha256=([A-F0-9]{64})$',data,re.M)
-          assert save and save.group(1)==checkpoints[-1][1],'save/checkpoint mismatch'
-          expected='3AA8052D533C4133EEE5EDF6521DE441CDD5A7B19E2662BE1E3FB310E1E84645'
-          assert checkpoints[-1][1]==expected,('diagnostic changed state or baseline changed',checkpoints[-1][1])
-          for w in ('1','4','8'):
-              projects=re.findall(r'^PR57_WORK_PROJECT window='+w+r' .*$',data,re.M)
-              print(f'PR57_WORK_COUNT window={w} projects={len(projects)}',flush=True)
-              for p in projects:print(p,flush=True)
-          print('PR57_WORK_VALIDATED windows=8 seconds=345600 sha='+save.group(1)+' wall='+str(sum(float(x[1]) for x in windows)),flush=True)
+          assert save and save.group(1)==checkpoints[-1][1],'save mismatch'
+          for w in ('1','2','4'):
+              trucks=re.findall(r'^PR57_WORK_TRUCK window='+w+r' .*$',data,re.M)
+              assert len(trucks)>=4,(w,'missing trucks')
+              print(f'PR57_SHIPMENT_COUNT window={w} trucks={len(trucks)}',flush=True)
+              for row in trucks:print(row,flush=True)
+          print('PR57_SHIPMENT_VALIDATED seconds=86400 sha='+save.group(1)+' wall='+str(sum(float(x[1]) for x in windows)),flush=True)
           PY
       - name: Preserve diagnosis
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-cycle-real-work-diagnosis-seed42
+          name: integrated-scale-cycle-real-shipment-seed42
           path: artifacts/integrated-scale-probe/*.log
           if-no-files-found: warn
           retention-days: 30
