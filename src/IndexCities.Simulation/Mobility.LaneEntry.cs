@@ -9,26 +9,75 @@ public sealed partial class CitySimulation
     double? _vehicleMovementClock;
     double VehicleMovementTime=>_vehicleMovementClock??State.ElapsedSeconds;
     // PR57-only observation: substep decisions by simulated hour, never used by motion.
+    // Samples are taken only when a junction boundary wins; they are not a continuous vehicle trajectory.
+    sealed class LaneWinnerTrace
+    {
+        public long Wins,SameTargetTransitions,NoPositionProgress,NoTargetApproach,RouteIndexChanges,LongestNoProgressRun;
+        public int FirstRouteIndex,LastRouteIndex,LastTarget=-1;
+        public Point FirstPosition,LastPosition;
+        public double FirstDistance,LastDistance,SampledDistance,MaxSampledDelta;
+        public readonly Dictionary<int,long> TargetCounts=new();
+        long _noProgressRun;
+        bool _hasPrevious;
+        public void Observe(Vehicle vehicle,int targetNodeId,double targetDistance)
+        {
+            var position=vehicle.Position;
+            if(!_hasPrevious){
+                FirstRouteIndex=vehicle.RouteIndex;
+                FirstPosition=position;
+                FirstDistance=targetDistance;
+            }else{
+                var displacement=position.Distance(LastPosition);
+                SampledDistance+=displacement;
+                MaxSampledDelta=Math.Max(MaxSampledDelta,displacement);
+                if(vehicle.RouteIndex!=LastRouteIndex)RouteIndexChanges++;
+                if(targetNodeId==LastTarget){
+                    SameTargetTransitions++;
+                    if(displacement<=.000001){
+                        NoPositionProgress++;
+                        _noProgressRun++;
+                        LongestNoProgressRun=Math.Max(LongestNoProgressRun,_noProgressRun);
+                    }else _noProgressRun=0;
+                    if(targetDistance>=LastDistance-.000001)NoTargetApproach++;
+                }else _noProgressRun=0;
+            }
+            Wins++;
+            TargetCounts.TryGetValue(targetNodeId,out var count);
+            TargetCounts[targetNodeId]=count+1;
+            LastRouteIndex=vehicle.RouteIndex;
+            LastPosition=position;
+            LastDistance=targetDistance;
+            LastTarget=targetNodeId;
+            _hasPrevious=true;
+        }
+    }
     sealed class LaneSliceHour
     {
         public readonly long[] Reasons=new long[4]; // no-entry, full horizon, movement boundary, projected recheck
         public readonly long[] Durations=new long[5];
         public readonly long[] MovementCauses=new long[5]; // fuel, junction/crosswalk, speed, turn, route end
         public readonly Dictionary<int,long> JunctionWinnerCounts=new(); // observation only, never read by movement
+        public readonly Dictionary<int,LaneWinnerTrace> JunctionWinnerTraces=new();
         public long BlockedEntryChecks,ProjectionCandidates,ProjectionRechecks;
         public double MinSlice=double.PositiveInfinity,MaxSlice;
     }
     readonly Dictionary<long,LaneSliceHour> _laneSliceHours=new();
     long _lastLaneSliceHourPrinted=-1;
-    void ObserveLaneSlice(double slice,int reason,int movementCause,long blockedEntryChecks,long projectionCandidates,long projectionRechecks,int winnerVehicleId=-1)
+    void ObserveLaneSlice(double slice,int reason,int movementCause,long blockedEntryChecks,long projectionCandidates,long projectionRechecks,Vehicle? winnerVehicle=null)
     {
         var hour=(long)Math.Floor(VehicleMovementTime/3600);
         if(!_laneSliceHours.TryGetValue(hour,out var stats))_laneSliceHours[hour]=stats=new();
         stats.Reasons[reason]++;
         if(reason==2&&movementCause>=0&&movementCause<5)stats.MovementCauses[movementCause]++;
-        if(reason==2&&movementCause==1&&winnerVehicleId>=0){
-            stats.JunctionWinnerCounts.TryGetValue(winnerVehicleId,out var count);
-            stats.JunctionWinnerCounts[winnerVehicleId]=count+1;
+        if(reason==2&&movementCause==1&&winnerVehicle is not null){
+            stats.JunctionWinnerCounts.TryGetValue(winnerVehicle.Id,out var count);
+            stats.JunctionWinnerCounts[winnerVehicle.Id]=count+1;
+            if(TryMovementTarget(winnerVehicle,out _,out var target,out _,out _,out _)){
+                var nodeId=winnerVehicle.RouteIndex>=0&&winnerVehicle.RouteIndex<winnerVehicle.Route.Count?winnerVehicle.Route[winnerVehicle.RouteIndex]:-1;
+                if(!stats.JunctionWinnerTraces.TryGetValue(winnerVehicle.Id,out var trace))
+                    stats.JunctionWinnerTraces[winnerVehicle.Id]=trace=new();
+                trace.Observe(winnerVehicle,nodeId,winnerVehicle.Position.Distance(target));
+            }
         }
         stats.Durations[slice<=.0001?0:slice<=.01?1:slice<=.1?2:slice<=1?3:4]++;
         stats.BlockedEntryChecks+=blockedEntryChecks;
@@ -48,6 +97,11 @@ public sealed partial class CitySimulation
             var topWins=top.Length>0?top[0].Value:0;
             var top3Wins=top.Sum(x=>x.Value);
             Console.WriteLine($"LANE_EVENT_HOUR hour={hour} noEntry={stats.Reasons[0]} full={stats.Reasons[1]} movementBoundary={stats.Reasons[2]} projectionRecheck={stats.Reasons[3]} blockedEntryChecks={stats.BlockedEntryChecks} projectedCandidates={stats.ProjectionCandidates} projectedRechecks={stats.ProjectionRechecks} movementFuel={stats.MovementCauses[0]} movementJunction={stats.MovementCauses[1]} movementSpeed={stats.MovementCauses[2]} movementTurn={stats.MovementCauses[3]} movementRouteEnd={stats.MovementCauses[4]} junctionUniqueWinners={stats.JunctionWinnerCounts.Count} junctionTopId={topId} junctionTopWins={topWins} junctionTop3Wins={top3Wins} sliceLe100us={stats.Durations[0]} sliceLe10ms={stats.Durations[1]} sliceLe100ms={stats.Durations[2]} sliceLe1s={stats.Durations[3]} sliceGt1s={stats.Durations[4]} minSlice={stats.MinSlice:F8} maxSlice={stats.MaxSlice:F6}");
+            foreach(var winner in top){
+                if(!stats.JunctionWinnerTraces.TryGetValue(winner.Key,out var trace))continue;
+                var target=trace.TargetCounts.OrderByDescending(x=>x.Value).ThenBy(x=>x.Key).First();
+                Console.WriteLine($"LANE_WINNER_TRACE hour={hour} vehicle={winner.Key} wins={trace.Wins} uniqueTargets={trace.TargetCounts.Count} topTarget={target.Key} topTargetWins={target.Value} sameTargetTransitions={trace.SameTargetTransitions} noPositionProgress={trace.NoPositionProgress} noTargetApproach={trace.NoTargetApproach} longestNoProgressRun={trace.LongestNoProgressRun} routeIndexChanges={trace.RouteIndexChanges} sampledDistance={trace.SampledDistance:F6} maxSampledDelta={trace.MaxSampledDelta:F6} firstRouteIndex={trace.FirstRouteIndex} lastRouteIndex={trace.LastRouteIndex} firstTargetDistance={trace.FirstDistance:F6} lastTargetDistance={trace.LastDistance:F6} firstX={trace.FirstPosition.X:F4} firstZ={trace.FirstPosition.Z:F4} lastX={trace.LastPosition.X:F4} lastZ={trace.LastPosition.Z:F4}");
+            }
         }
         _lastLaneSliceHourPrinted=last;
     }
@@ -214,7 +268,7 @@ public sealed partial class CitySimulation
         var profile=CostProfile;
         var initialHorizon=horizon;
         long blockedEntryChecks=0,projectionCandidates=0,projectionRechecks=0;
-        var movementCause=-1;var movementWinnerId=-1;
+        var movementCause=-1;Vehicle? movementWinner=null;
         var entries=State.Vehicles.Where(v=>_vehicleMovementBatch!.Contains(v.Id)&&LiveLaneEntry(v)).ToList();
         if(entries.Count==0){if(profile is not null)ObserveLaneSlice(horizon,0,-1,0,0,0);return horizon;}
         var held=State.Vehicles.Any(o=>o.Status==VehicleStatus.Stranded)?State.Vehicles.Where(HeldBehindStranded).Select(o=>o.Id).ToHashSet():null;
@@ -224,7 +278,7 @@ public sealed partial class CitySimulation
             if(TryLaneEntry(v,out var waitingAccess)&&State.Vehicles.Where(o=>o.Id!=v.Id&&OccupiesLane(o)).Select(EntryFrameVehicle).Any(o=>BlocksLaneEntry(v,waitingAccess,o))){if(profile is not null)blockedEntryChecks++;continue;}
             if(held?.Contains(v.Id)==true)continue;
             var candidate=TimeToMovementChange(v,horizon,out var cause);
-            if(candidate<horizon-1e-9){movementCause=cause;movementWinnerId=v.Id;}
+            if(candidate<horizon-1e-9){movementCause=cause;movementWinner=v;}
             horizon=Math.Min(horizon,candidate);
         }
         var earliest=horizon;
@@ -263,7 +317,7 @@ public sealed partial class CitySimulation
             }
         }
         var slice=Math.Max(Math.Min(earliest,horizon),Math.Min(MovementEventEpsilon,horizon));
-        if(profile is not null)ObserveLaneSlice(slice,earliest<horizon-1e-9?3:horizon<initialHorizon-1e-9?2:1,movementCause,blockedEntryChecks,projectionCandidates,projectionRechecks,movementWinnerId);
+        if(profile is not null)ObserveLaneSlice(slice,earliest<horizon-1e-9?3:horizon<initialHorizon-1e-9?2:1,movementCause,blockedEntryChecks,projectionCandidates,projectionRechecks,movementWinner);
         return slice;
     }
 }
