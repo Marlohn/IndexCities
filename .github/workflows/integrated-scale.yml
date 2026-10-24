@@ -72,7 +72,7 @@ jobs:
           assert len({tuple((x[0],x[3]) for x in r[4]) for r in results.values()})==1,'scan hits divergence'
           for letter in ('a','b'):
               c=results[f'{letter}_control'][1]
-              b=results[f'{letter}_split'][1]
+              b=results[f'{letter}_batch'][1]
               print(f'PR57_BATCH_ORDER_AB order={letter} control={c:.3f}s batch={b:.3f}s speedup={c/b:.3f}x',flush=True)
           PY
       - name: Preserve full logs
