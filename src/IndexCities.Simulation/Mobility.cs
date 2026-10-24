@@ -241,6 +241,22 @@ public sealed partial class CitySimulation
                     var probe5179=State.Vehicles.FirstOrDefault(o=>o.Id==5179);
                     var blocked5294=probeEligible&&probe5294 is not null&&BlocksLaneEntry(v,probeAccess,EntryFrameVehicle(probe5294));
                     var blocked5179=probeEligible&&probe5179 is not null&&BlocksLaneEntry(v,probeAccess,EntryFrameVehicle(probe5179));
+                    // Observational only: inspect the same full first-node swept
+                    // geometry already used for truck manoeuvre admission.
+                    // No traffic priority, position or event is modified.
+                    LaneAccess otherAccess=default;
+                    var otherEntryEligible=probe5294 is not null&&TryLaneEntry(probe5294,out otherAccess);
+                    var firstNodeSweepsOverlap=false;
+                    var firstNodeSweepPairs=0;
+                    if(probeSecond==3608&&probeEligible&&probe5294 is {Status:VehicleStatus.Travelling}){
+                        var entrantWay=Manoeuvre(v,v.Route,0,v.Position,v.Heading,[],false,int.MaxValue,out _,out _,through:0);
+                        var otherWay=Manoeuvre(probe5294,probe5294.Route,0,probe5294.Position,probe5294.Heading,[],false,int.MaxValue,out _,out _,through:0);
+                        foreach(var p in entrantWay)foreach(var q in otherWay){
+                            if(p.Position.Distance(q.Position)<12&&BodiesOverlap(v,p.Position,p.Heading,probe5294,q.Position,q.Heading))
+                                firstNodeSweepPairs++;
+                        }
+                        firstNodeSweepsOverlap=firstNodeSweepPairs>0;
+                    }
                     var crossingNow=false;var crossingNext=false;
                     if(probe5294 is not null&&probe5294.Position.Distance(v.Position)<20&&
                        TryMovementTarget(probe5294,out _,out var probeTarget,out _,out _,out _)){
@@ -249,7 +265,7 @@ public sealed partial class CitySimulation
                         crossingNow=BodiesOverlap(probe5294,probe5294.Position,heading,v,v.Position,v.Heading);
                         crossingNext=BodiesOverlap(probe5294,probe5294.Position.MoveTowards(probeTarget,.5),heading,v,v.Position,v.Heading);
                     }
-                    Console.WriteLine($"LANE_ENTRY_ORIGIN time={probeTime:F6} entrant=5183 status={v.Status} cause={v.Cause?.Replace(' ','_')} x={v.Position.X:F6} z={v.Position.Z:F6} heading={v.Heading:F6} routeIndex={v.RouteIndex} waitingSince={v.WaitingSince:F6} eligible={probeEligible} fromSide={probeAccess.FromSide:F6} toSide={probeAccess.ToSide:F6} blockedBy5294={blocked5294} blockedBy5179={blocked5179} crossingNow={crossingNow} crossingNext05={crossingNext} leader5294X={probe5294?.Position.X:F6} leader5294Z={probe5294?.Position.Z:F6} leader5294Status={probe5294?.Status}");
+                    Console.WriteLine($"LANE_ENTRY_ORIGIN time={probeTime:F6} entrant=5183 status={v.Status} cause={v.Cause?.Replace(' ','_')} x={v.Position.X:F6} z={v.Position.Z:F6} heading={v.Heading:F6} routeIndex={v.RouteIndex} waitingSince={v.WaitingSince:F6} eligible={probeEligible} fromSide={probeAccess.FromSide:F6} toSide={probeAccess.ToSide:F6} blockedBy5294={blocked5294} blockedBy5179={blocked5179} crossingNow={crossingNow} crossingNext05={crossingNext} leader5294X={probe5294?.Position.X:F6} leader5294Z={probe5294?.Position.Z:F6} leader5294Status={probe5294?.Status} leader5294EntryEligible={otherEntryEligible} leader5294FromSide={otherAccess.FromSide:F6} leader5294ToSide={otherAccess.ToSide:F6} firstNodeSweepsOverlap={firstNodeSweepsOverlap} firstNodeSweepPairs={firstNodeSweepPairs}");
                 }
             }
             // A bypass belongs to the trip in progress: a stopped, parked or
