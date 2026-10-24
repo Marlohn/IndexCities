@@ -60,4 +60,37 @@ public sealed class DualExitConflictExperiment
         var save=sim.SaveToJson();
         Assert.Equal(save,CitySimulation.FromJson(save).SaveToJson());
     }
+    [Fact]
+    public void Fast_scan_modes_match_full_adversarial_checkpoints()
+    {
+        // Restore exactly the same starting state for all three candidate modes.
+        var snapshot=Pair().SaveToJson();
+        var oldActive=Environment.GetEnvironmentVariable("PR57_ACTIVE_SCAN");
+        var oldSpatial=Environment.GetEnvironmentVariable("PR57_SPATIAL_SCAN");
+        var oldFast=Environment.GetEnvironmentVariable("PR57_FAST_SCAN");
+        var oldBend=Environment.GetEnvironmentVariable("PR57_BEND_PREFILTER");
+        try{
+            Environment.SetEnvironmentVariable("PR57_ACTIVE_SCAN","1");
+            Environment.SetEnvironmentVariable("PR57_SPATIAL_SCAN","0");
+            List<string>? reference=null;
+            foreach(var mode in new[]{(Fast:"0",Bend:"0"),(Fast:"1",Bend:"0"),(Fast:"1",Bend:"1")}){
+                Environment.SetEnvironmentVariable("PR57_FAST_SCAN",mode.Fast);
+                Environment.SetEnvironmentVariable("PR57_BEND_PREFILTER",mode.Bend);
+                var sim=CitySimulation.FromJson(snapshot);
+                var checkpoints=new List<string>();
+                for(var i=1;i<=60;i++){
+                    sim.Advance(.5);
+                    if(i%10==0){sim.CheckInvariants();checkpoints.Add(sim.SaveToJson());}
+                }
+                if(reference is null)reference=checkpoints;
+                else Assert.Equal(reference,checkpoints);
+            }
+        }finally{
+            Environment.SetEnvironmentVariable("PR57_ACTIVE_SCAN",oldActive);
+            Environment.SetEnvironmentVariable("PR57_SPATIAL_SCAN",oldSpatial);
+            Environment.SetEnvironmentVariable("PR57_FAST_SCAN",oldFast);
+            Environment.SetEnvironmentVariable("PR57_BEND_PREFILTER",oldBend);
+        }
+    }
+
 }
