@@ -31,7 +31,7 @@ public sealed partial class CitySimulation
         if(_pr57AgendaDeadlines.Remove(index,out var old))_pr57AgendaSleeping.Remove((old,index));
         _pr57AgendaActive.Remove(index);
         if(!citizen.Alive)return;
-        if(citizen.Moving||citizen.VehicleId!=null||citizen.ConstructionProjectId!=null||Pr57CitizenAgendaRoadRetry(citizen)
+        if(citizen.Moving||citizen.VehicleId!=null||citizen.ConstructionProjectId!=null||Pr57CitizenAgendaRoadRetry(citizen))
             _pr57AgendaActive.Add(index);
         else
         {
@@ -57,7 +57,7 @@ public sealed partial class CitySimulation
                 var citizen=State.Citizens[i];
                 _pr57AgendaIndices.Add(citizen.Id,i);
                 if(!citizen.Alive)continue;
-                if(citizen.Moving||citizen.VehicleId!=null||citizen.ConstructionProjectId!=null||Pr57CitizenAgendaRoadRetry(citizen)
+                if(citizen.Moving||citizen.VehicleId!=null||citizen.ConstructionProjectId!=null||Pr57CitizenAgendaRoadRetry(citizen))
                     _pr57AgendaActive.Add(i);
                 else
                 {
