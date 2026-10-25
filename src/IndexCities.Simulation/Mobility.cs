@@ -2,6 +2,10 @@ namespace IndexCities.Simulation;
 
 public sealed partial class CitySimulation
 {
+    // PR57-only allocation census for authentic congested checkpoint replays.
+    // Observation is enabled exclusively by CostProfile; it never affects movement or saves.
+    readonly long[] _pr57MovementAllocBytes=new long[7]; // total, setup, lane, bend, site, crossing, turn
+    long _pr57MovementAllocCalls;
     // Shared empty candidate list: read-only, never populated by a movement scan.
     static readonly List<Vehicle> Pr57EmptyBendList=[];
     // PR57-only bounded diagnostics for the two previously identified junction winners.
@@ -220,6 +224,7 @@ public sealed partial class CitySimulation
     void MoveVehiclesUnsplit(double dt,double? operationsDt=null)
     {
         var scanProfile=CostProfile;
+        var pr57AllocCallStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
         // Release a passed junction even while a vehicle waits at the next one.
         // Carriageway half-width (3.3 m) + truck half-length (3.6 m) covers the
         // actual rear of the truck; the former 9 m reservation could overlap
@@ -391,6 +396,7 @@ public sealed partial class CitySimulation
             return Pr57Query(Math.Min(v.Position.X,end.X)-20,Math.Max(v.Position.X,end.X)+20,
                              Math.Min(v.Position.Z,end.Z)-20,Math.Max(v.Position.Z,end.Z)+20);
         }
+        if(scanProfile is not null)_pr57MovementAllocBytes[1]+=GC.GetAllocatedBytesForCurrentThread()-pr57AllocCallStart;
         foreach(var v in ordered){
             var pr57OldCell=pr57SpatialScan||pr57BitsetScan?Pr57Cell(v.Position):default;
             try{
@@ -534,6 +540,7 @@ public sealed partial class CitySimulation
                 var pr57Cos=pr57FastScan?Math.Cos(v.Heading):0;
                 var pr57DockGate=pr57DockGateHoist?(!LeavesDock(v)||OnCarriageway(v)):false;
                 var laneScanStart=scanProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
+                var pr57LaneAllocStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
                 var pr57LaneList=Pr57LaneCandidates(v,enteringLane);
                 foreach(var liveOther in pr57LaneList){
                     var other=enteringLane?EntryFrameVehicle(liveOther):liveOther;
@@ -585,6 +592,7 @@ public sealed partial class CitySimulation
                 if(scanProfile is not null){
                     scanProfile.MarkVehicleScan(0,laneScanStart,pr57LaneList.Count,laneCandidateHits);
                     if(blocker is not null)scanProfile.ObserveLaneLeaderSelection(v.Position,blocker.Position,leaderDistance,Math.Min(d,speed*remaining));
+                    _pr57MovementAllocBytes[2]+=GC.GetAllocatedBytesForCurrentThread()-pr57LaneAllocStart;
                 }
                 var step=Math.Min(d,Math.Min(speed*remaining,Math.Max(0,leaderDistance-8)));
                 if(stopEarly>0)step=Math.Min(step,Math.Max(0,d-stopEarly));
@@ -593,6 +601,7 @@ public sealed partial class CitySimulation
                 // beyond the straight-lane strip above; its body still bounds this
                 // step and this turn. Opposite and parallel lanes are not involved.
                 var bendScanStart=scanProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
+                var pr57BendAllocStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
                 var pr57BendList=pr57ZeroBendSkip&&step==0&&v.Heading==approachHeading?Pr57EmptyBendList
                     :pr57SpatialScan||pr57BitsetScan?Pr57Query(v.Position.X-step-12,v.Position.X+step+12,v.Position.Z-step-12,v.Position.Z+step+12):pr57ScanCandidates;
                 // A/B only: cheap conservative AABB and exact radius rejection BEFORE
@@ -624,17 +633,23 @@ public sealed partial class CitySimulation
                     }
                     if(scanProfile is not null){scanProfile.BendPrefilterCandidates+=pr57BendList.Count;scanProfile.BendPrefilterNear+=near;}
                 }
-                if(scanProfile is not null)scanProfile.MarkVehicleScan(1,bendScanStart,pr57BendList.Count,bendLeaders.Count);
+                if(scanProfile is not null){scanProfile.MarkVehicleScan(1,bendScanStart,pr57BendList.Count,bendLeaders.Count);_pr57MovementAllocBytes[3]+=GC.GetAllocatedBytesForCurrentThread()-pr57BendAllocStart;}
                 if(bendLeaders.Count>0){
                     if(bendLeaders.Any(o=>TurnsInto(v,approachHeading,o))){v.Heading=approachHeading;step=0;}
                     else step=ClearOfPoses(v,target,step,bendLeaders.Where(o=>!VehicleBodiesOverlap(v,v.Position,o)).Select(o=>(o,o.Position,o.Heading)).ToList());
                 }
+                var pr57SiteAllocStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
                 var free=step;step=SafeSiteTravel(v,target,step,true);
+                if(scanProfile is not null)_pr57MovementAllocBytes[4]+=GC.GetAllocatedBytesForCurrentThread()-pr57SiteAllocStart;
                 var afterSiteStep=step; // observação PR57: antes da verificação de travessia
+                var pr57CrossingAllocStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
                 if(node.Neighbours.Count<3&&!node.Crosswalk)step=ClearOfCrossingAhead(v,target,step);
+                if(scanProfile is not null)_pr57MovementAllocBytes[5]+=GC.GetAllocatedBytesForCurrentThread()-pr57CrossingAllocStart;
                 var afterCrossingStep=step; // observação PR57: sem alterar o passo
                 var headingBeforeBlockProbe=v.Heading;
+                var pr57TurnAllocStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
                 var steer=step<.00001&&free>.00001?TurnClearance(v,approachHeading,free,access):null;
+                if(scanProfile is not null)_pr57MovementAllocBytes[6]+=GC.GetAllocatedBytesForCurrentThread()-pr57TurnAllocStart;
                 if(steer is {} bend){v.Heading=bend.Heading;target=bend.To;step=bend.Distance;}
                 // Like a machine, a blocked vehicle keeps its verified pose rather
                 // than turning in place into a parked machine's or site truck's body,
@@ -719,6 +734,14 @@ public sealed partial class CitySimulation
         }
         // A towed vehicle moves only with its tow (platform or trailing a heavy tow).
         SyncTowedVehicles();
+        if(scanProfile is not null){
+            _pr57MovementAllocBytes[0]+=GC.GetAllocatedBytesForCurrentThread()-pr57AllocCallStart;
+            if(++_pr57MovementAllocCalls%300==0){
+                var b=_pr57MovementAllocBytes;
+                var other=b[0]-b[1]-b[2]-b[3]-b[4]-b[5]-b[6];
+                Console.WriteLine($"PR57_ALLOC_PROFILE calls={_pr57MovementAllocCalls} totalMB={b[0]/1e6:F2} setupMB={b[1]/1e6:F2} laneMB={b[2]/1e6:F2} bendMB={b[3]/1e6:F2} siteMB={b[4]/1e6:F2} crossingMB={b[5]/1e6:F2} turnMB={b[6]/1e6:F2} otherMB={other/1e6:F2}");
+            }
+        }
     }
     void ReplanVehicle(Vehicle v,Shipment s)
     {
