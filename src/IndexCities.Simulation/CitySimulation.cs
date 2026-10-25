@@ -147,6 +147,9 @@ public sealed partial class CitySimulation
     public void Advance(double seconds)
     {
         if(!double.IsFinite(seconds)||seconds<0)throw new ArgumentOutOfRangeException(nameof(seconds));
+        // A public Advance boundary permits direct external State edits (including tests).
+        // Rebuild the opt-in agenda there; internal quanta still use incremental wakeups.
+        if(Pr57CitizenAgendaEnabled)_pr57AgendaReady=false;
         _crosswalkBands.Clear();_crosswalkBandsActive=true;BeginWalkRoutes();
         try{var remaining=seconds;while(remaining>1e-8){var dt=Math.Min(Quantum,remaining);Step(dt);remaining-=dt;}}
         finally{_crosswalkBandsActive=false;_crosswalkBands.Clear();EndWalkRoutes();}
