@@ -13,15 +13,56 @@ public sealed partial class CitySimulation
         return Money(b.Definition.BaseValue*(decimal)(access*utilities*demand*Math.Max(.55,1-pollution*.15)));
     }
     public string MarketExplanation(Building b)=>"Valor: porte "+b.Definition.BaseValue+", acesso "+(HasExteriorAccess(b)?"viável":"indisponível")+", água "+b.WaterRatio.ToString("P0")+", energia "+b.ElectricityRatio.ToString("P0")+", poluição local "+LocalPollution(b.Position).ToString("F2")+" e procura financeiramente viável";
+    // PR57-only: an ephemeral, exact index for the market-review transaction.
+    // It is never consulted outside ReviewMarkets and never serialized.
+    static readonly bool Pr57MarketReviewIndexEnabled=Environment.GetEnvironmentVariable("PR57_MARKET_REVIEW_INDEX")=="1";
+    bool _pr57MarketReviewIndexAnnounced;
     void ReviewMarkets()
     {
+        if(!_pr57MarketReviewIndexAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine($"PR57_MARKET_REVIEW_INDEX active={Pr57MarketReviewIndexEnabled}");
+            _pr57MarketReviewIndexAnnounced=true;
+        }
+        // All building membership is stable during a market review. The only
+        // changes to eligibility are the house/company purchases below.
+        var availableByKind=Pr57MarketReviewIndexEnabled
+            ?State.Buildings.Where(x=>x.Completed&&!x.Removed&&x.OwnerAccount==null)
+                .GroupBy(x=>x.Kind).ToDictionary(g=>g.Key,g=>g.Count())
+            :null;
+        var eligibleFamiliesByPrice=new Dictionary<decimal,int>();
+        var marketPopulation=Pr57MarketReviewIndexEnabled?Population:0;
+        decimal Price(Building building)
+        {
+            if(availableByKind==null)return MarketValue(building);
+            var access=HasExteriorAccess(building)?1:.65;
+            var utilities=.8+.1*building.WaterRatio+.1*building.ElectricityRatio;
+            var pollution=LocalPollution(building.Position);
+            var available=availableByKind.GetValueOrDefault(building.Kind);
+            double potential;
+            if(building.Kind==BuildingKind.House)
+            {
+                if(!eligibleFamiliesByPrice.TryGetValue(building.Definition.BaseValue,out var count))
+                    eligibleFamiliesByPrice[building.Definition.BaseValue]=count=
+                        State.FamilyCandidates.Count(x=>!x.Migrated&&x.Capital>building.Definition.BaseValue);
+                potential=count;
+            }
+            else potential=Math.Max(0,marketPopulation/3.0);
+            var demand=Math.Clamp(.85+potential/Math.Max(1,available)*.012,.85,1.2);
+            return Money(building.Definition.BaseValue*(decimal)(access*utilities*demand*Math.Max(.55,1-pollution*.15)));
+        }
+        void Sold(Building building)
+        {
+            if(availableByKind!=null)availableByKind[building.Kind]--;
+        }
         var houses=State.Buildings.Where(b=>b.Kind==BuildingKind.House&&b.Completed&&!b.Removed&&b.Demolition==null&&b.OwnerAccount==null&&b.FamilyId==null&&HasExteriorAccess(b)).OrderBy(b=>b.Id).ToList();
         // Every vacant house is offered each review; residents still travelling in
         // count against the same jobs, so demand stays bounded by real factors.
         var residents=State.Citizens.Count(c=>c.Alive&&c.Resident);
-        foreach(var house in houses){var price=MarketValue(house);var potentialJobs=State.Buildings.Where(b=>b.Kind!=BuildingKind.House&&b.Completed&&!b.Removed&&HasExteriorAccess(b)).Sum(b=>b.Definition.Jobs);
-            var candidate=State.FamilyCandidates.FirstOrDefault(c=>!c.Migrated&&c.Capital>=price+150+AnnualPropertyTax(house)&&Balance("global")>=c.Capital&&(potentialJobs>residents||c.RiskTolerance>.7&&c.Capital>price+1500));
+        foreach(var house in houses){var price=Price(house);var potentialJobs=State.Buildings.Where(b=>b.Kind!=BuildingKind.House&&b.Completed&&!b.Removed&&HasExteriorAccess(b)).Sum(b=>b.Definition.Jobs);
+            var candidate=State.FamilyCandidates.FirstOrDefault(c=>!c.Migrated&&c.Capital>=price+150+(availableByKind==null?AnnualPropertyTax(house):price*State.TaxRates[house.Definition.TaxCategory])&&Balance("global")>=c.Capital&&(potentialJobs>residents||c.RiskTolerance>.7&&c.Capital>price+1500));
             if(candidate==null){house.Cause="Sem família com capital e oportunidade viáveis";continue;}
+            var previousCitizenCount=State.Citizens.Count;
             var family=new Family{Id=Id(),HomeId=house.Id};
             for(var i=0;i<candidate.Adults;i++){var c=new Citizen{Id=Id(),Name=new[]{"Ana","Bruno","Clara","Daniel","Eva","Felipe","Lia","Miguel"}[(candidate.Id+i)%8]+" "+candidate.Id,FamilyId=family.Id,Age=22+(int)(NextRandom()*28),Position=State.Entry+new Point(0,State.Tuning.RoadWidth/2+1),WeeklyDayOff=(candidate.Id+i)%7,Shift=0};State.Wallets[c.Account]=0;family.Members.Add(c.Id);State.Citizens.Add(c);}
             var buyer=CitizenWithId(family.Members[0]);var other=family.Members.Count==2?CitizenWithId(family.Members[1]):null;
@@ -31,16 +72,26 @@ public sealed partial class CitySimulation
             house.OwnerAccount=buyer.Account;house.FamilyId=family.Id;State.Families.Add(family);candidate.Migrated=true;candidate.Cause="Moradia acessível, capital, imposto anual e risco de oportunidades avaliados";
             foreach(var c in State.Citizens.Where(c=>c.FamilyId==family.Id)){c.Resident=true;Personal(c,"Decidiu migrar; moradia adquirida com recursos reais");StartJourney(c,house,JourneyPurpose.Arriving);}
             BuyCarOnMigration(family,house,candidate);
+            Sold(house);
+            if(availableByKind!=null)
+            {
+                for(var i=previousCitizenCount;i<State.Citizens.Count;i++)
+                {
+                    var migrant=State.Citizens[i];if(migrant.Alive&&migrant.Resident&&migrant.InsideMap)marketPopulation++;
+                }
+                foreach(var baseValue in eligibleFamiliesByPrice.Keys.ToArray())
+                    if(candidate.Capital>baseValue)eligibleFamiliesByPrice[baseValue]--;
+            }
             residents+=candidate.Adults;Event("Família adquiriu casa e iniciou viagem física de chegada");
         }
         foreach(var b in State.Buildings.Where(b=>b.Completed&&!b.Removed&&b.Demolition==null&&b.Definition.Private&&b.Kind!=BuildingKind.House&&b.OwnerAccount==null)){
             if(!HasExteriorAccess(b)){b.Cause="Sem rota para funcionários e mercadorias";continue;}
-            var score=BusinessOpportunity(b);var price=MarketValue(b);var carryingCost=AnnualPropertyTax(b);
+            var score=BusinessOpportunity(b);var price=Price(b);var carryingCost=availableByKind==null?AnnualPropertyTax(b):price*State.TaxRates[b.Definition.TaxCategory];
             var company=State.Companies.FirstOrDefault(c=>c.Active&&Balance(c.Account)>price+3000+carryingCost&&score>.35);
             if(company==null){var candidate=State.CompanyCandidates.FirstOrDefault(c=>!c.Entered&&c.Capital>price+3000+carryingCost&&Balance("global")>=c.Capital&&score*c.RiskTolerance>.24);if(candidate==null){b.Cause="Oportunidade econômica insuficiente; continua disponível";continue;}
                 company=new Company{Id=Id(),Name=(b.Kind==BuildingKind.Farm?"Campo ":b.Kind==BuildingKind.FuelStation?"Rota ":b.Kind==BuildingKind.MechanicShop?"Oficina ":"Mercado ")+candidate.Id};State.Companies.Add(company);State.Wallets[company.Account]=0;Transfer("global",company.Account,candidate.Capital,"Capital empresarial","Empresa externa com capital finito",company.Id);candidate.Entered=true;candidate.Cause="Acesso, mercado potencial, impostos, capital e risco avaliados";
             }
-            if(!Transfer(company.Account,"global",price,"Imóvel empresarial","Primeira aquisição pelo valor de mercado",b.Id))continue;b.OwnerAccount=company.Account;b.CompanyId=company.Id;company.Buildings.Add(b.Id);if(b.Kind==BuildingKind.MechanicShop)b.SalePrice=State.Tuning.MechanicHourlyPrice;company.Decision="Adquiriu imóvel por oportunidade observável, sem clientes ou contratações garantidos";b.Cause="Aguardando equipe e estoque";Event(company.Name+" adquiriu "+b.Definition.Name);
+            if(!Transfer(company.Account,"global",price,"Imóvel empresarial","Primeira aquisição pelo valor de mercado",b.Id))continue;b.OwnerAccount=company.Account;b.CompanyId=company.Id;Sold(b);company.Buildings.Add(b.Id);if(b.Kind==BuildingKind.MechanicShop)b.SalePrice=State.Tuning.MechanicHourlyPrice;company.Decision="Adquiriu imóvel por oportunidade observável, sem clientes ou contratações garantidos";b.Cause="Aguardando equipe e estoque";Event(company.Name+" adquiriu "+b.Definition.Name);
         }
         foreach(var b in State.Buildings.Where(b=>b.Completed&&!b.Removed&&!b.OperationClosed&&!b.Definition.Private&&b.Definition.Jobs>0)){var vacancies=Math.Max(0,b.Definition.Jobs-State.Citizens.Count(c=>c.Alive&&c.WorkplaceId==b.Id));var alternatives=State.Buildings.Where(a=>a.Completed&&!a.Removed&&a.CompanyId!=null&&!a.OperationClosed).Select(a=>a.SalaryOffer).DefaultIfEmpty(State.Tuning.HourlySalary).Max();var publicJobs=State.Buildings.Where(a=>a.Completed&&!a.Removed&&!a.OperationClosed&&!a.Definition.Private).Sum(a=>a.Definition.Jobs);var affordable=Available/Math.Max(1,publicJobs*8*7);var target=Math.Min(affordable,Math.Max(State.Tuning.HourlySalary,alternatives)*(.95m+(decimal)vacancies/Math.Max(1,b.Definition.Jobs)*.2m));b.SalaryOffer=Money(Math.Max(.1m,b.SalaryOffer+(target-b.SalaryOffer)*.08m));}
         foreach(var b in State.Buildings.Where(b=>b.CompanyId!=null&&b.Completed&&!b.Removed)){
