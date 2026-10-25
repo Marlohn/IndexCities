@@ -1,4 +1,4 @@
-name: Integrated core PR57 dispatch shipment lookup A/B at real maintenance
+name: Integrated core PR57 nine-day real maintenance extension
 
 on:
   push:
@@ -17,84 +17,67 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  dispatch-ab:
-    name: Seed42 8-day maintenance shipment index ABBA
+  cycle-nine-days:
+    name: Seed42 real housing, economy and recurring maintenance (9 days)
     runs-on: ubuntu-latest
-    timeout-minutes: 14
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Build integrated simulation
+      - name: Build integrated simulation Release
         run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: Existing adversarial tests in fresh flag modes
+      - name: One fresh process, shipment lookup enabled, no artificial construction
         shell: bash
         run: |
           set -euo pipefail
-          for mode in 0 1; do
-            echo "PR57_DISPATCH_TEST_MODE lookup=${mode}"
-            PR57_DISPATCH_SHIPMENT_LOOKUP="$mode" dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --filter "FullyQualifiedName~ConstructionDispatchTests|FullyQualifiedName~MaintenanceTests|FullyQualifiedName~DualExitConflictExperiment" --logger "console;verbosity=minimal"
-          done
-      - name: Four fresh .NET processes, real housing and maintenance
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p artifacts/pr57-dispatch-ab
-          for entry in control-a:0 candidate-a:1 candidate-b:1 control-b:0; do
-            label="${entry%%:*}"
-            mode="${entry##*:}"
-            log="artifacts/pr57-dispatch-ab/${label}.log"
-            echo "PR57_DISPATCH_MODE label=${label} lookup=${mode} seed=42 bypass=1 southHousing=1 houses=32 windows=16 windowSeconds=43200 allOtherPerformanceFlags=0" | tee "$log"
-            PR57_DISPATCH_SHIPMENT_LOOKUP="$mode" PR57_CYCLE_SOUTH_HOUSING=1 PR57_ACTIVE_SCAN=0 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 PR57_ENTRY_FRAME_REUSE=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 PR57_WORK_DIAG=0 PR57_PROFILE_FROM_WINDOW=16 timeout 240s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- profile cycle --seed=42 --warmup=0 --cycle-houses=32 --cycle-bypass=1 --days=16 --window=43200 --cap=210 | tee -a "$log"
-          done
-      - name: Validate ABBA causal checkpoints and measure wall/alloc/GC
+          mkdir -p artifacts/pr57-cycle-nine-days
+          echo 'PR57_NINE_DAY_MODE seed=42 shipmentLookup=1 southHousing=1 bypass=1 houses=32 windows=18 windowSeconds=43200 otherPerformanceFlags=0 profilerWindow=18' | tee artifacts/pr57-cycle-nine-days/cycle.log
+          PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_CYCLE_SOUTH_HOUSING=1 PR57_ACTIVE_SCAN=0 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 PR57_ENTRY_FRAME_REUSE=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 PR57_WORK_DIAG=0 PR57_PROFILE_FROM_WINDOW=18 timeout 360s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- profile cycle --seed=42 --warmup=0 --cycle-houses=32 --cycle-bypass=1 --days=18 --window=43200 --cap=300 | tee -a artifacts/pr57-cycle-nine-days/cycle.log
+      - name: Validate 9 days and compare day-8 state to prior A/B
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           import pathlib,re
-          names=('control-a','candidate-a','candidate-b','control-b')
-          results={}
-          for name in names:
-              s=pathlib.Path(f'artifacts/pr57-dispatch-ab/{name}.log').read_text()
-              mode=1 if name.startswith('candidate') else 0
-              assert f'PR57_DISPATCH_MODE label={name} lookup={mode} ' in s, ('mode missing',name)
-              housing=re.search(r'^CYCLE_HOUSING requested=(\d+) placed=(\d+) attempted=(\d+) ',s,re.M)
-              assert housing and tuple(map(int,housing.groups()))==(32,32,32),('housing',name)
-              windows=re.findall(r'^WINDOW (\d+) seconds=43200 wall=([0-9.]+)s eff=\S+ cpu=([0-9.]+)s allocMB=([0-9.]+) gc0=(\d+) gc2=(\d+) (.*)$',s,re.M)
-              checks=re.findall(r'^PR57_AB_CHECKPOINT window=(\d+) sha256=([A-F0-9]{64}) (.*)$',s,re.M)
-              assert [int(x[0]) for x in windows]==list(range(1,17)),('incomplete windows',name,len(windows))
-              assert [int(x[0]) for x in checks]==list(range(1,17)),('incomplete checkpoints',name,len(checks))
-              assert 'INVARIANTS OK' in s and 'STOP limite' not in s,('invariants/cap',name)
-              save=re.search(r'^SAVE .* sha256=([A-F0-9]{64})$',s,re.M)
-              assert save and save[1]==checks[-1][1],('save/load',name)
-              phases=dict((k,float(v)) for k,v in re.findall(r'^\s+STEP_PHASE name=([\w-]+) wall=([0-9.]+)s',s,re.M))
-              assert 'construction-dispatch' in phases,('missing profile',name)
-              last=windows[-1][6]
-              for key in ('alive','employed','vehicles','travelling','ledger','history','meals','wages','openWorks'):
-                  assert re.search(r'\b'+key+r'=\S+',last),('missing activity',name,key)
-              results[name]={'hashes':[c[1] for c in checks],'wall':sum(float(w[1]) for w in windows),
-                'windowWall':float(windows[-1][1]),'cpu':sum(float(w[2]) for w in windows),
-                'alloc':sum(float(w[3]) for w in windows),'windowAlloc':float(windows[-1][3]),
-                'gc0':sum(int(w[4]) for w in windows),'dispatchWall':phases['construction-dispatch'],
-                'last':last,'save':save[1]}
-              print(f'PR57_DISPATCH_ABBA name={name} mode={mode} totalWall={results[name]["wall"]:.2f}s window16Wall={results[name]["windowWall"]:.2f}s totalCpu={results[name]["cpu"]:.2f}s totalAllocMB={results[name]["alloc"]:.1f} window16AllocMB={results[name]["windowAlloc"]:.1f} gc0={results[name]["gc0"]} dispatchWall={results[name]["dispatchWall"]:.3f}s finalSha={save[1]} final={last}',flush=True)
-          base=results[names[0]]
-          for name in names[1:]:
-              assert results[name]['hashes']==base['hashes'],('CAUSAL_CHECKPOINT_DIVERGENCE',name,next((i+1 for i,(a,b) in enumerate(zip(results[name]['hashes'],base['hashes'])) if a!=b),None))
-              assert results[name]['last']==base['last'],('activity mismatch',name)
-          for control,candidate in (('control-a','candidate-a'),('control-b','candidate-b')):
-              a,b=results[control],results[candidate]
-              def pct(key):return (a[key]-b[key])/a[key]*100
-              print(f'PR57_DISPATCH_PAIR control={control} candidate={candidate} totalWallGainPct={pct("wall"):.2f} window16WallGainPct={pct("windowWall"):.2f} totalAllocGainPct={pct("alloc"):.2f} window16AllocGainPct={pct("windowAlloc"):.2f} dispatchWallGainPct={pct("dispatchWall"):.2f} gc0Delta={b["gc0"]-a["gc0"]}',flush=True)
-          print('PR57_DISPATCH_PARITY 16 intermediate full-save checkpoints identical in 4 fresh processes, invariants and final save/load verified; cannot prove every transition between checkpoints or 10k/80y.',flush=True)
+          s=pathlib.Path('artifacts/pr57-cycle-nine-days/cycle.log').read_text()
+          assert 'PR57_NINE_DAY_MODE seed=42 shipmentLookup=1' in s
+          housing=re.search(r'^CYCLE_HOUSING requested=(\d+) placed=(\d+) attempted=(\d+) ',s,re.M)
+          assert housing and tuple(map(int,housing.groups()))==(32,32,32), 'normal housing placement'
+          windows=re.findall(r'^WINDOW (\d+) seconds=43200 wall=([0-9.]+)s eff=\S+ cpu=([0-9.]+)s allocMB=([0-9.]+) gc0=(\d+) gc2=(\d+) (.*)$',s,re.M)
+          checks=re.findall(r'^PR57_AB_CHECKPOINT window=(\d+) sha256=([A-F0-9]{64}) (.*)$',s,re.M)
+          assert [int(w[0]) for w in windows]==list(range(1,19)),('incomplete windows',len(windows))
+          assert [int(c[0]) for c in checks]==list(range(1,19)),('incomplete checkpoints',len(checks))
+          assert checks[15][1]=='136BB260F416DAF572322158D4307AF4249D5C4373F7817B55A41F66F201EB97', 'day-8 save differs from prior ABBA'
+          assert 'STOP limite' not in s and 'INVARIANTS OK' in s, 'cap/invariants'
+          save=re.search(r'^SAVE .* sha256=([A-F0-9]{64})$',s,re.M)
+          assert save and save[1]==checks[-1][1], 'save/checkpoint mismatch'
+          assert 'STEP_PHASE name=construction-dispatch' in s, 'missing last-window profiler'
+          def fields(w):
+              return dict(re.findall(r'\b([A-Za-z]+)=([\d.]+)',w[6]))
+          first,last=fields(windows[0]),fields(windows[-1])
+          for key in ('alive','employed','vehicles','travelling','ledger','history','meals','wages','openWorks','health','satisfaction'):
+              assert key in last,('missing economic census',key)
+          assert int(last['alive'])>0 and int(last['ledger'])>int(first['ledger']) and int(last['meals'])>int(first['meals']) and float(last['wages'])>float(first['wages']), 'economic activity missing'
+          def summary(a,b):
+              subset=windows[a:b]
+              wall=sum(float(w[1]) for w in subset)
+              alloc=sum(float(w[3]) for w in subset)
+              cpu=sum(float(w[2]) for w in subset)
+              gc0=sum(int(w[4]) for w in subset)
+              return f'windows={a+1}-{b} wall={wall:.2f}s cpu={cpu:.2f}s allocMB={alloc:.1f} gc0={gc0} throughput={43200*len(subset)/wall:.1f}x'
+          print('PR57_NINE_DAY_REFERENCE day8Sha='+checks[15][1],flush=True)
+          for a,b in ((0,12),(12,16),(16,18),(0,18)):
+              print('PR57_NINE_DAY_SEGMENT '+summary(a,b),flush=True)
+          print('PR57_NINE_DAY_FINAL '+windows[-1][6]+' sha256='+save[1],flush=True)
+          print('PR57_NINE_DAY_PARITY day8 full save matches earlier ABBA; checkpoints and invariants pass; does not prove all intervening events, 10k or 80 years.',flush=True)
           PY
-      - name: Preserve A/B evidence even if a check fails
+      - name: Preserve raw nine-day evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-pr57-dispatch-ab
-          path: artifacts/pr57-dispatch-ab/*.log
+          name: integrated-scale-pr57-cycle-nine-days
+          path: artifacts/pr57-cycle-nine-days/*.log
           if-no-files-found: warn
           retention-days: 14
