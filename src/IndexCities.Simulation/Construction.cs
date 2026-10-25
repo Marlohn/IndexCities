@@ -95,13 +95,20 @@ public sealed partial class CitySimulation
         var points=NewRoadPoints(start,end,reverse);
         var p=new WorkProject{Id=Id(),Position=points[0],RoadPoints=points,PavingVersion=1,MachineryQuoted=QuoteMachinery(start,Math.Max(120,points.Count*State.Tuning.RoadStep*2))*PavingComponents(points),Required=q.Materials,WorkSeconds=Math.Max(120,points.Count*State.Tuning.RoadStep*2),BudgetRemaining=q.Total,Cause=q.Message};State.Projects.Add(p);ReserveLocalMaterials();Event("Obra de rua confirmada; orçamento reservado"+(q.Accessible?"; materiais e equipe serão enviados":"; conecte o trecho a uma via pronta"));return new(true,State.LastMessage,p.Id);
     }
+    // PR57-only A/B: index in-flight shipments for reservation queries within
+    // this invocation. ToLookup preserves each project's shipment iteration order.
+    // Rebuilt every call: no cache survives state changes or dispatches.
+    static readonly bool Pr57DispatchShipmentLookup=Environment.GetEnvironmentVariable("PR57_DISPATCH_SHIPMENT_LOOKUP")=="1";
     void ReserveLocalMaterials()
     {
         var depot=State.Buildings.FirstOrDefault(b=>b.Kind==BuildingKind.WorksDepot&&b.Completed&&!b.Removed&&!b.OperationClosed);if(depot==null)return;
+        var pendingByProject=Pr57DispatchShipmentLookup
+            ?State.Shipments.Where(s=>s.ProjectId!=null&&!s.Complete).ToLookup(s=>s.ProjectId)
+            :null;
         foreach(var k in Enum.GetValues<ResourceKind>().Where(k=>k!=ResourceKind.Food&&k!=ResourceKind.Fuel)){
             var free=depot.Quantity(k)-State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress).Sum(p=>p.LocalReserved.GetValueOrDefault(k));
             foreach(var p in State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress).OrderBy(p=>p.Id)){
-                var pending=State.Shipments.Where(s=>s.ProjectId==p.Id&&!s.Complete).Sum(s=>s.Cargo.GetValueOrDefault(k));var need=p.Required.GetValueOrDefault(k)-p.Delivered.GetValueOrDefault(k)-pending-p.LocalReserved.GetValueOrDefault(k);var reserve=Math.Max(0,Math.Min(free,need));p.LocalReserved.AddAmount(k,reserve);free-=reserve;
+                var pending=pendingByProject==null?State.Shipments.Where(s=>s.ProjectId==p.Id&&!s.Complete).Sum(s=>s.Cargo.GetValueOrDefault(k)):pendingByProject[p.Id].Sum(s=>s.Cargo.GetValueOrDefault(k));var need=p.Required.GetValueOrDefault(k)-p.Delivered.GetValueOrDefault(k)-pending-p.LocalReserved.GetValueOrDefault(k);var reserve=Math.Max(0,Math.Min(free,need));p.LocalReserved.AddAmount(k,reserve);free-=reserve;
             }
         }
     }
