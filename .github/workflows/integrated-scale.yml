@@ -1,4 +1,4 @@
-name: Integrated core PR57 real-road redundancy viability
+name: Integrated core PR57 physical bypass viability
 
 on:
   push:
@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   cycle-bypass:
-    name: Seed42 physical alternate road vs original, 48h economy
+    name: Seed42 physical bypass, 48h economy (prior baseline retained)
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
@@ -28,18 +28,17 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Build integrated simulation
         run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: Compare ordinary road construction and deliveries, separate processes
+      - name: Test ordinary bypass construction and deliveries
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p artifacts/pr57-bypass
-          for mode in 0 1; do
-            echo "PR57_MODE cycle-bypass=$mode seed42 48h, normal road and house projects, no artificial completion, fresh .NET process"
+          mode=1
+            echo "PR57_MODE cycle-bypass=$mode seed42 48h, normal road and house projects, no artificial completion, fresh .NET process; control is run #40146783356"
             PR57_ACTIVE_SCAN=0 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 PR57_WORK_DIAG=1 timeout 180s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- scale cycle --seed=42 --warmup=0 --cycle-houses=16 --cycle-bypass=$mode --days=4 --window=43200 --cap=150 | tee artifacts/pr57-bypass/cycle-$mode.log
-          done
           python3 - <<'PY'
           import pathlib,re
-          for mode in (0,1):
+          for mode in (1,):
               s=pathlib.Path(f'artifacts/pr57-bypass/cycle-{mode}.log').read_text()
               windows=re.findall(r'^WINDOW (\d+) seconds=43200 wall=([0-9.]+)s .*$',s,re.M)
               checks=re.findall(r'^PR57_AB_CHECKPOINT window=(\d+) sha256=([A-F0-9]{64}) ',s,re.M)

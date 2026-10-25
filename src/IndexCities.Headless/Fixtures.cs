@@ -21,9 +21,9 @@ static class Fixtures
         if(bypass)
         {
             foreach(var (from,to) in new[]{
-                (new Point(-184,0),new Point(-184,-48)),
-                (new Point(-184,-48),new Point(-64,-48)),
-                (new Point(-64,-48),new Point(-64,0))})
+                (new Point(-184,0),new Point(-184,-60)),
+                (new Point(-184,-60),new Point(-16,-60)),
+                (new Point(-16,-60),new Point(-16,0))})
             {
                 var quote=sim.QuoteRoad(from,to);
                 Console.WriteLine($"PR57_BYPASS_QUOTE from={from} to={to} valid={quote.PhysicallyValid} accessible={quote.Accessible} cause={quote.Message.Replace(' ','_')}");
