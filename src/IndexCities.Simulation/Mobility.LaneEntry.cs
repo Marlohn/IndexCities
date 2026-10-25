@@ -5,6 +5,9 @@ public sealed partial class CitySimulation
     // Derived, scoped to one movement batch; no new persisted gameplay state.
     HashSet<int>? _vehicleMovementBatch;
     Dictionary<int,Vehicle>? _entryFrame;readonly Dictionary<int,Vehicle> _entryFrameBuffer=new();
+    // PR57 opt-in: reuse immutable-for-the-slice entry-frame copies across slices.
+    // Never reuse these for projected EntrySnapshot() copies, which are mutated.
+    readonly Dictionary<int,Vehicle> _entrySnapshotReuse=new();
     double _vehicleMovementOffset;
     double? _vehicleMovementClock;
     double VehicleMovementTime=>_vehicleMovementClock??State.ElapsedSeconds;
@@ -282,6 +285,7 @@ public sealed partial class CitySimulation
         var profile=CostProfile;
         var started=profile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
         var hasEntry=State.Vehicles.Any(LiveLaneEntry);
+        var pr57EntryFrameReuse=Environment.GetEnvironmentVariable("PR57_ENTRY_FRAME_REUSE")=="1";
         if(profile is not null)profile.MarkVehicle(0,ref started);
         if(!hasEntry){
             MoveVehiclesUnsplit(dt);
@@ -299,14 +303,33 @@ public sealed partial class CitySimulation
                 var remaining=dt-_vehicleMovementOffset;
                 _vehicleMovementClock=State.ElapsedSeconds+_vehicleMovementOffset;
                 // Same entries as ToDictionary, in a dictionary reused across slices.
-                _entryFrameBuffer.Clear();foreach(var v in State.Vehicles.Where(v=>OccupiesLane(v)&&!TryLaneEntry(v,out _)))_entryFrameBuffer.Add(v.Id,EntrySnapshot(v));_entryFrame=_entryFrameBuffer;
+                _entryFrameBuffer.Clear();
+                foreach(var v in State.Vehicles.Where(v=>OccupiesLane(v)&&!TryLaneEntry(v,out _))){
+                    Vehicle snapshot;
+                    if(pr57EntryFrameReuse&&_entrySnapshotReuse.TryGetValue(v.Id,out var cached)){
+                        snapshot=cached;
+                        snapshot.Position=v.Position;
+                        snapshot.Heading=v.Heading;
+                        snapshot.Status=v.Status;
+                        snapshot.Fuel=v.Fuel;
+                        snapshot.PassengerCar=v.PassengerCar;
+                        snapshot.RouteIndex=v.RouteIndex;
+                        snapshot.Route.Clear();
+                        snapshot.Route.AddRange(v.Route);
+                    }else{
+                        snapshot=EntrySnapshot(v);
+                        if(pr57EntryFrameReuse)_entrySnapshotReuse.Add(v.Id,snapshot);
+                    }
+                    _entryFrameBuffer.Add(v.Id,snapshot);
+                }
+                _entryFrame=_entryFrameBuffer;
                 var slice=NextVehicleMovementEvent(remaining);
                 if(profile is not null)profile.MarkVehicle(2,ref started);
                 MoveVehiclesUnsplit(slice);
                 if(profile is not null){ObserveLaneWinnerOutcome();profile.MarkVehicle(3,ref started);profile.VehicleSlices++;}
                 _vehicleMovementOffset+=slice;
             }
-        }finally{_laneObservedWinner=null;_vehicleMovementBatch=null;_entryFrame=null;_entryFrameBuffer.Clear();_vehicleMovementClock=null;_vehicleMovementOffset=0;}
+        }finally{_laneObservedWinner=null;_vehicleMovementBatch=null;_entryFrame=null;_entryFrameBuffer.Clear();_entrySnapshotReuse.Clear();_vehicleMovementClock=null;_vehicleMovementOffset=0;}
         if(profile is not null)PrintCompletedLaneSliceHours(State.ElapsedSeconds+dt);
     }
     Point ProjectedVelocity(Vehicle v,HashSet<int>? held)
