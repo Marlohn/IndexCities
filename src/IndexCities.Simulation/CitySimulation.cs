@@ -151,8 +151,39 @@ public sealed partial class CitySimulation
         try{var remaining=seconds;while(remaining>1e-8){var dt=Math.Min(Quantum,remaining);Step(dt);remaining-=dt;}}
         finally{_crosswalkBandsActive=false;_crosswalkBands.Clear();EndWalkRoutes();}
     }
+    // PR57 opt-in: stable living-citizen roster, invalidated on death or population growth.
+    // Rebuilt before Step, never while a Step enumerates it. Does not alter CityState/save.
+    static readonly bool Pr57LivingRosterEnabled=Environment.GetEnvironmentVariable("PR57_LIVING_ROSTER")=="1";
+    readonly List<Citizen> _pr57LivingRoster=[];
+    bool _pr57LivingRosterDirty=true,_pr57LivingRosterAnnounced;
+    int _pr57LivingRosterCount=-1;
+    IEnumerable<Citizen> Pr57LiveCitizens()=>Pr57LivingRosterEnabled?_pr57LivingRoster:State.Citizens.Where(c=>c.Alive);
+    IEnumerable<Citizen> Pr57NeedsCandidates()=>Pr57LivingRosterEnabled?_pr57LivingRoster:State.Citizens;
+    void Pr57BeginStep()
+    {
+        _pr57StaffPrepared=false;
+        if(!Pr57LivingRosterEnabled)return;
+        if(_pr57LivingRosterDirty||_pr57LivingRosterCount!=State.Citizens.Count)
+        {
+            _pr57LivingRoster.Clear();
+            foreach(var c in State.Citizens)if(c.Alive)_pr57LivingRoster.Add(c);
+            _pr57LivingRosterCount=State.Citizens.Count;
+            _pr57LivingRosterDirty=false;
+        }
+        if(!_pr57LivingRosterAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine($"PR57_LIVING_ROSTER active=True living={_pr57LivingRoster.Count} citizens={State.Citizens.Count}");
+            _pr57LivingRosterAnnounced=true;
+        }
+    }
     void Step(double dt)
     {
+        Pr57BeginStep();
+        if(!Pr57LivingRosterEnabled&&!_pr57LivingRosterAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine("PR57_LIVING_ROSTER active=False");
+            _pr57LivingRosterAnnounced=true;
+        }
         var profile = CostProfile;
         var started = profile is null ? 0L : System.Diagnostics.Stopwatch.GetTimestamp();
         MoveVehicles(dt);

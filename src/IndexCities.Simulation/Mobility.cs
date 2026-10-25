@@ -87,7 +87,7 @@ public sealed partial class CitySimulation
             Console.WriteLine($"PR57_PEDESTRIAN_GRID active={_pr57PedestrianGridActive} citizens={State.Citizens.Count} cellMetres=8");
             _pr57PedestrianGridAnnounced=true;
         }
-        foreach(var c in State.Citizens.Where(c=>c.Alive)){
+        foreach(var c in Pr57LiveCitizens()){
             try{
             if(!c.Moving&&c.PathRoadRevision!=State.RoadRevision&&(c.Activity.StartsWith("Sem rota",StringComparison.Ordinal)||c.Activity=="Viagem interrompida: rota removida"))c.NextDecisionAt=Math.Min(c.NextDecisionAt,State.ElapsedSeconds);
             if(c.ConstructionProjectId!=null&&ShiftActive(c)){c.AddWorkSecondsToday(dt);AccrueWage(c,dt);}

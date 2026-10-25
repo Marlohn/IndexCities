@@ -25,7 +25,16 @@ public sealed partial class CitySimulation
         // query live, but count every building's present workers in one pass
         // over the citizens (the same WorkerPresentAt rule per worker).
         var present=_present;present.Clear();var byId=_activeById;byId.Clear();foreach(var b in active){present.Add(b.Id,0);byId.Add(b.Id,b);}
-        foreach(var c in State.Citizens)if(c.WorkplaceId is {} site&&byId.TryGetValue(site,out var workplace)&&WorkerPresentAt(c,workplace))present[site]++;
+        if(Pr57LivingRosterEnabled)
+        {
+            // Share the exact per-step workforce groups with OperateBusinesses.
+            // This occurs after relocations and before any subsequent job changes.
+            Pr57PrepareStaff();
+            foreach(var (site,workers) in _staff)
+                if(byId.TryGetValue(site,out var workplace))
+                    foreach(var c in workers)if(WorkerPresentAt(c,workplace))present[site]++;
+        }
+        else foreach(var c in State.Citizens)if(c.WorkplaceId is {} site&&byId.TryGetValue(site,out var workplace)&&WorkerPresentAt(c,workplace))present[site]++;
         if(detail is not null)detail.MarkDetail(0,ref detailStarted);
         double StaffFactor(Building b)=>InfrastructureStaffFactor(b,present[b.Id]);
         State.WindFactor=Math.Clamp(.55+.25*Math.Sin(State.ElapsedSeconds/21600+State.Seed)+.15*Math.Sin(State.ElapsedSeconds/172800+State.Seed*.3),.15,.95);

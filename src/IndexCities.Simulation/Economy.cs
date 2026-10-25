@@ -94,8 +94,22 @@ public sealed partial class CitySimulation
     void AccrueWage(Citizen c,double seconds){var job=BuildingById(c.WorkplaceId);if(job==null)return;var earned=(decimal)(seconds/3600)*job.SalaryOffer;c.WagesAccrued+=earned;if(job.Kind is BuildingKind.WaterIntake or BuildingKind.WaterTreatment)State.WaterWageCostToday+=earned;else if(job.Kind==BuildingKind.WindPower)State.ElectricityWageCostToday+=earned;}
     // Citizens grouped by WorkplaceId in list order; lists are reused per step.
     readonly Dictionary<int,List<Citizen>> _staff=new();
+    bool _pr57StaffPrepared;
+    void Pr57PrepareStaff()
+    {
+        foreach(var list in _staff.Values)list.Clear();
+        // Living citizens retain original State.Citizens order. Dead citizens
+        // never contribute to WorkerPresentAt or business operation.
+        foreach(var c in _pr57LivingRoster)if(c.WorkplaceId is {} site)
+        {
+            if(!_staff.TryGetValue(site,out var list))_staff[site]=list=[];
+            list.Add(c);
+        }
+        _pr57StaffPrepared=true;
+    }
     Dictionary<int,List<Citizen>> StaffByWorkplace()
     {
+        if(Pr57LivingRosterEnabled&&_pr57StaffPrepared)return _staff;
         foreach(var list in _staff.Values)list.Clear();
         foreach(var c in State.Citizens)if(c.WorkplaceId is {} site){if(!_staff.TryGetValue(site,out var list))_staff[site]=list=[];list.Add(c);}
         return _staff;
@@ -189,11 +203,11 @@ public sealed partial class CitySimulation
         SnapshotPollution();var pollution=_homePollution;pollution.Clear();
         // Every home this loop can sample, computed together up front (a home the
         // loop no longer reaches only costs time; a missing one is computed below).
-        _homePoints.Clear();foreach(var c in State.Citizens)if(c.Alive&&c.Resident&&c.InsideMap&&BuildingById(FamilyById(c.FamilyId)?.HomeId) is {} h&&pollution.TryAdd(h.Position,0))_homePoints.Add(h.Position);
+        _homePoints.Clear();foreach(var c in Pr57NeedsCandidates())if(c.Alive&&c.Resident&&c.InsideMap&&BuildingById(FamilyById(c.FamilyId)?.HomeId) is {} h&&pollution.TryAdd(h.Position,0))_homePoints.Add(h.Position);
         SampledPollution(_homePoints,pollution);
         if(detail is not null)detail.MarkDetail(6,ref detailStarted);
         double HomePollution(Point position){if(!pollution.TryGetValue(position,out var value)){value=SampledPollution(position);pollution.Add(position,value);}return value;}
-        foreach(var c in State.Citizens.Where(c=>c.Alive&&c.Resident&&c.InsideMap)){
+        foreach(var c in Pr57NeedsCandidates().Where(c=>c.Alive&&c.Resident&&c.InsideMap)){
             c.AddHungerSeconds(dt);var family=FamilyById(c.FamilyId)!;var home=BuildingById(family.HomeId);
             if(home!=null&&!c.Moving&&c.VehicleId==null&&c.Position.Distance(home.Door)<3&&c.HungerHours>=12&&family.Pantry>=1){family.AddPantry(-(1));c.HungerMicroseconds=Math.Max(0,checked(c.HungerMicroseconds-12*3600*FixedPoint.TimeScale));Personal(c,"Consumiu 1 alimento do estoque físico da residência");}
             var hungry=c.HungerHours>State.Tuning.HungerDamageAfterHours;var unmet=home==null?1:(1-home.WaterRatio)*.5+(1-home.ElectricityRatio)*.15+HomePollution(home.Position)*.1;
@@ -205,7 +219,7 @@ public sealed partial class CitySimulation
     }
     void CitizenDied(Citizen c)
     {
-        c.Alive=false;c.Resident=false;c.Path.Clear();c.WorkplaceId=null;Personal(c,"Morreu após deterioração real de saúde por necessidades não atendidas");
+        c.Alive=false;c.Resident=false;c.Path.Clear();c.WorkplaceId=null;_pr57LivingRosterDirty=true;Personal(c,"Morreu após deterioração real de saúde por necessidades não atendidas");
         var debts=State.Obligations.Where(o=>o.Debtor==c.Account&&o.Outstanding>0&&o.Creditor=="city").ToList();var total=debts.Sum(o=>o.Outstanding);var funds=Math.Min(total,Balance(c.Account));foreach(var debt in debts){var amount=total==0?0:Math.Min(Balance(c.Account),Money(funds*debt.Outstanding/total));Transfer(c.Account,"city",amount,"Dívidas pessoais","Quitação proporcional com saldo do falecido",debt.BuildingId);debt.Outstanding=0;}
         var heir=State.Citizens.FirstOrDefault(x=>x.Id!=c.Id&&x.FamilyId==c.FamilyId&&x.Alive);if(heir!=null)Transfer(c.Account,heir.Account,Balance(c.Account),"Herança","Dinheiro existente do falecido",c.Id);else Transfer(c.Account,"global",Balance(c.Account),"Patrimônio não reclamado","Saldo sem sucessor elegível",c.Id);
         foreach(var b in State.Buildings.Where(b=>b.OwnerAccount==c.Account))b.OwnerAccount=heir?.Account;
