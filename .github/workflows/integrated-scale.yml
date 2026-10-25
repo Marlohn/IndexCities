@@ -1,141 +1,75 @@
-name: PR57 construction waiting-project agenda 12h and save-resume causal A/B
+name: PR57 waiting-project causal invalidations: truck return and paid road reconnection
 
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
     paths:
       - .github/workflows/integrated-scale.yml
-      - src/IndexCities.Headless/**
       - src/IndexCities.Simulation/**
+      - tests/IndexCities.Simulation.Tests/Pr57ConstructionWaitAdversarial.cs
   workflow_dispatch:
 
 permissions:
   contents: read
-  actions: read
 
 concurrency:
   group: integrated-scale-pr57
   cancel-in-progress: false
 
 jobs:
-  construction-wait:
+  wait-invalidations:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Build and run existing tests
-        run: |
-          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release
-          PR57_CONSTRUCTION_WAIT_AGENDA=1 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release
-      - name: Restore authentic maintenance checkpoint from the previous completed control
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          mkdir -p artifacts/pr57-source
-          gh run download 40200371479 -n integrated-scale-pr57-work-access-index-ab -D artifacts/pr57-source
-          find artifacts/pr57-source -name checkpoint-16.json -print
-          test -s "$(find artifacts/pr57-source -type f -name checkpoint-16.json | grep real-maintenance-control-a | head -n 1)"
-      - name: Authentic maintenance checkpoint A/B in fresh processes, inverted order
+      - name: Build experimental causal tests
+        run: dotnet build tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release
+      - name: Independent .NET processes, identical one-truck causal scenario
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p artifacts/pr57-construction-wait
-          SOURCE="$(find artifacts/pr57-source -type f -name checkpoint-16.json | grep real-maintenance-control-a | head -n 1)"
-          test -s "$SOURCE"
-          run_one() {
-            local scenario="$1" mode="$2"
-            local enabled=0
-            if [[ "$mode" == candidate* ]]; then enabled=1; fi
-            local label="$scenario-$mode"
-            mkdir -p "artifacts/pr57-construction-wait/$label"
-            echo "PR57_CONSTRUCTION_WAIT_AGENDA_RUN label=$label enabled=$enabled"
-            if [ "$scenario" = "real-maintenance" ] || [ "$scenario" = "real-restart" ]; then
-              local source="$SOURCE" days=12
-              if [ "$scenario" = "real-restart" ]; then
-                source="artifacts/pr57-construction-wait/real-maintenance-control-a/checkpoint-4.json"
-                days=4
-                test -s "$source"
-              fi
-              PR57_CONSTRUCTION_WAIT_AGENDA="$enabled" PR57_ROUTE_TREE=0 PR57_ORDER_SHIPMENT_INDEX=0 PR57_MAINTENANCE_SCHEDULE=0 PR57_SOURCE_DISTANCE_CACHE=0 PR57_WORK_ACCESS_INDEX=0 PR57_DISPATCH_SHIPMENT_LOOKUP=1 \
-              PR57_PEDESTRIAN_GRID=0 PR57_LIVING_ROSTER=0 PR57_GRID_DIAG=1 \
-              PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="artifacts/pr57-construction-wait/$label" \
-              timeout 240s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
-                scale cycle --seed=42 --resume="$source" --warmup=0 --days="$days" --window=3600 --cap=180
-            else
-              PR57_CONSTRUCTION_WAIT_AGENDA="$enabled" PR57_ROUTE_TREE=0 PR57_ORDER_SHIPMENT_INDEX=0 PR57_MAINTENANCE_SCHEDULE=0 PR57_SOURCE_DISTANCE_CACHE=0 PR57_WORK_ACCESS_INDEX=0 PR57_DISPATCH_SHIPMENT_LOOKUP=1 \
-              PR57_PEDESTRIAN_GRID=0 PR57_LIVING_ROSTER=0 PR57_GRID_DIAG=1 \
-              PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="artifacts/pr57-construction-wait/$label" \
-              timeout 120s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
-                scale cycle --seed=42 --warmup=0 --days=4 --window=3600 --cap=90
-            fi
-          }
-          run_one real-maintenance control-a | tee artifacts/pr57-construction-wait/real-maintenance-control-a.log
-          run_one real-maintenance candidate-a | tee artifacts/pr57-construction-wait/real-maintenance-candidate-a.log
-          run_one real-maintenance candidate-b | tee artifacts/pr57-construction-wait/real-maintenance-candidate-b.log
-          run_one real-maintenance control-b | tee artifacts/pr57-construction-wait/real-maintenance-control-b.log
-          # Restart from an actual four-hour checkpoint, without fabricating state.
-          # This checks cache non-persistence and causality across a save/load boundary.
-          run_one real-restart control | tee artifacts/pr57-construction-wait/real-restart-control.log
-          run_one real-restart candidate | tee artifacts/pr57-construction-wait/real-restart-candidate.log
-          run_one real-low control | tee artifacts/pr57-construction-wait/real-low-control.log
-          run_one real-low candidate | tee artifacts/pr57-construction-wait/real-low-candidate.log
-      - name: Compare every full checkpoint and actual end-to-end wall CPU allocations
+          mkdir -p artifacts/pr57-wait-invalidations
+          for mode in control candidate; do
+            flag=0
+            if [[ "$mode" == candidate ]]; then flag=1; fi
+            mkdir -p "artifacts/pr57-wait-invalidations/$mode"
+            PR57_CONSTRUCTION_WAIT_AGENDA="$flag" PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ROUTE_TREE=0 PR57_ORDER_SHIPMENT_INDEX=0 PR57_MAINTENANCE_SCHEDULE=0 PR57_WORK_ACCESS_INDEX=0 PR57_GRID_DIAG=1 \
+            PR57_WAIT_ADVERSARIAL_DIR="artifacts/pr57-wait-invalidations/$mode" \
+              timeout 180s dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj --no-build -c Release \
+              --filter FullyQualifiedName~Pr57ConstructionWaitAdversarial --logger "console;verbosity=detailed" \
+              | tee "artifacts/pr57-wait-invalidations/$mode.log"
+          done
+      - name: Compare all intermediate saves and verify physical economic effects
         shell: bash
         run: |
-          python3 - <<'PY' | tee artifacts/pr57-construction-wait/audit.log
-          import hashlib,json,pathlib,re
-          root=pathlib.Path('artifacts/pr57-construction-wait')
-          for scenario,pairs,windows in [
-            ('real-maintenance',[('control-a','candidate-a'),('control-b','candidate-b')],12),
-            ('real-restart',[('control','candidate')],4),
-            ('real-low',[('control','candidate')],4)]:
-            for control,candidate in pairs:
-              stats={}
-              for mode in (control,candidate):
-                log=(root/f'{scenario}-{mode}.log').read_text()
-                assert ('PR57_CONSTRUCTION_WAIT_AGENDA active=True' if mode.startswith('candidate') else 'PR57_CONSTRUCTION_WAIT_AGENDA active=False') in log,(scenario,mode)
-                assert 'INVARIANTS OK' in log and 'SAVE ' in log,(scenario,mode)
-                lines=[line for line in log.splitlines() if line.startswith('WINDOW ')]
-                assert len(lines)==windows,(scenario,mode,len(lines))
-                rows=[dict((k,float(v)) for k,v in re.findall(r'\b(wall|cpu|allocMB)=([0-9.]+)',line)) for line in lines]
-                assert all({'wall','cpu','allocMB'}<=row.keys() for row in rows),(scenario,mode)
-                stats[mode]={key:sum(row[key] for row in rows) for key in ('wall','cpu','allocMB')}
+          python3 - <<'PY' | tee artifacts/pr57-wait-invalidations/audit.log
+          import pathlib,json,hashlib
+          root=pathlib.Path('artifacts/pr57-wait-invalidations')
+          for mode in ('control','candidate'):
+              log=(root/f'{mode}.log').read_text()
+              assert 'Passed:' in log and 'Failed:     0' in log,mode
+              assert ('PR57_CONSTRUCTION_WAIT_AGENDA active=True' if mode=='candidate' else 'PR57_CONSTRUCTION_WAIT_AGENDA active=False') in log,mode
+          for scenario,windows in [('truck-return',24),('road-rebuild',4)]:
               for i in range(windows+1):
-                a=root/f'{scenario}-{control}'/f'checkpoint-{i}.json'
-                b=root/f'{scenario}-{candidate}'/f'checkpoint-{i}.json'
-                data=a.read_bytes();other=b.read_bytes()
-                assert data==other,('causal checkpoint mismatch',scenario,control,candidate,i,hashlib.sha256(data).hexdigest(),hashlib.sha256(other).hexdigest())
-                if i in (0,windows):
-                  state=json.loads(data)
-                  print('PR57_CONSTRUCTION_WAIT_AGENDA_STATE',json.dumps(dict(scenario=scenario,window=i,
-                    aliveResidents=sum(c['Alive'] and c['Resident'] for c in state['Citizens']),
-                    travelling=sum(v['Status']=='Travelling' for v in state['Vehicles']),
-                    openProjects=sum(p['Status'] in ('Waiting','InProgress') for p in state['Projects']),
-                    ledger=len(state['Ledger']),events=len(state['CityEvents']),
-                    history=sum(len(c['History']) for c in state['Citizens'])),sort_keys=True))
-              if scenario=='real-restart':
-                for mode,reference in [(control,'control-a'),(candidate,'candidate-a')]:
-                  for i in range(windows+1):
-                    actual=(root/f'{scenario}-{mode}'/f'checkpoint-{i}.json').read_bytes()
-                    continuous=(root/f'real-maintenance-{reference}'/f'checkpoint-{i+4}.json').read_bytes()
-                    assert actual==continuous,('save/load continuation mismatch',mode,i)
-                print('PR57_CONSTRUCTION_WAIT_AGENDA_RESTART verified=10 matchedContinuousWindows=4')
-              a=stats[control];b=stats[candidate]
-              print('PR57_CONSTRUCTION_WAIT_AGENDA_AB',json.dumps(dict(scenario=scenario,control=control,candidate=candidate,
-                wallControl=a['wall'],wallCandidate=b['wall'],cpuControl=a['cpu'],cpuCandidate=b['cpu'],
-                allocControlMB=a['allocMB'],allocCandidateMB=b['allocMB'],
-                wallGainPct=100*(a['wall']-b['wall'])/a['wall'],
-                incrementalOverDispatchLookup=True,checkpoints=windows+1),sort_keys=True))
+                  a=(root/'control'/scenario/f'checkpoint-{i}.json').read_bytes()
+                  b=(root/'candidate'/scenario/f'checkpoint-{i}.json').read_bytes()
+                  assert a==b,('checkpoint divergence',scenario,i,hashlib.sha256(a).hexdigest(),hashlib.sha256(b).hexdigest())
+              start=json.loads((root/'control'/scenario/'checkpoint-0.json').read_text())
+              end=json.loads((root/'control'/scenario/f'checkpoint-{windows}.json').read_text())
+              print('PR57_WAIT_INVALIDATIONS',json.dumps(dict(scenario=scenario,checkpoints=windows+1,
+                  initialShipments=len(start['Shipments']),finalShipments=len(end['Shipments']),
+                  initialLedger=len(start['Ledger']),finalLedger=len(end['Ledger']),
+                  initialEvents=len(start['CityEvents']),finalEvents=len(end['CityEvents']),
+                  elapsedSeconds=end['ElapsedSeconds']-start['ElapsedSeconds']),sort_keys=True))
           PY
-      - name: Preserve logs and all intermediate saves even on failure
+      - name: Preserve evidence even on failure
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-pr57-construction-wait-ab
-          path: artifacts/pr57-construction-wait/**
+          name: integrated-scale-pr57-wait-invalidations
+          path: artifacts/pr57-wait-invalidations/**
           if-no-files-found: warn
           retention-days: 14
