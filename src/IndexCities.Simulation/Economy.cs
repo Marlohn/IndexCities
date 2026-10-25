@@ -266,6 +266,12 @@ public sealed partial class CitySimulation
     // This changes no health, hunger, family, clock or persistence calculation.
     static readonly bool Pr57NeedsSinglePass=Environment.GetEnvironmentVariable("PR57_NEEDS_SINGLE_PASS")=="1";
     bool _pr57NeedsSinglePassAnnounced;
+    // PR57 isolated POC: parallelize only independent per-citizen health math.
+    // Shared pantry consumption, pollution lookup and all death/estate events
+    // remain serial in original citizen order; no quantum is omitted.
+    static readonly bool Pr57ParallelNeedsEnabled=Environment.GetEnvironmentVariable("PR57_PARALLEL_NEEDS")=="1";
+    readonly List<(Citizen Citizen,double Unmet,int Members)> _pr57ParallelNeedsRows=[];
+    bool _pr57ParallelNeedsAnnounced,_pr57ParallelNeedsEngaged;
     void UpdateNeeds(double dt)
     {
         if(!_pr57NeedsSinglePassAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
@@ -288,6 +294,57 @@ public sealed partial class CitySimulation
         }
         if(detail is not null)detail.MarkDetail(6,ref detailStarted);
         double HomePollution(Point position){if(!pollution.TryGetValue(position,out var value)){value=SampledPollution(position);pollution.Add(position,value);}return value;}
+        if(!_pr57ParallelNeedsAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine($"PR57_PARALLEL_NEEDS active={Pr57ParallelNeedsEnabled}");
+            _pr57ParallelNeedsAnnounced=true;
+        }
+        if(Pr57ParallelNeedsEnabled)
+        {
+            var candidates=Pr57NeedsCandidates().Where(c=>c.Alive&&c.Resident&&c.InsideMap).ToList();
+            if(candidates.Count>=64)
+            {
+                if(!_pr57ParallelNeedsEngaged&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+                {
+                    Console.WriteLine($"PR57_PARALLEL_NEEDS engaged=True citizens={candidates.Count} processors={Environment.ProcessorCount}");
+                    _pr57ParallelNeedsEngaged=true;
+                }
+                var rows=_pr57ParallelNeedsRows;rows.Clear();
+                // This serial phase preserves family pantry contention, meal
+                // ownership and the order of Personal events exactly.
+                foreach(var c in candidates)
+                {
+                    c.AddHungerSeconds(dt);
+                    var family=FamilyById(c.FamilyId)!;var home=BuildingById(family.HomeId);
+                    if(home!=null&&!c.Moving&&c.VehicleId==null&&c.Position.Distance(home.Door)<3&&c.HungerHours>=12&&family.Pantry>=1)
+                    {
+                        family.AddPantry(-1);
+                        c.HungerMicroseconds=Math.Max(0,checked(c.HungerMicroseconds-12*3600*FixedPoint.TimeScale));
+                        Personal(c,"Consumiu 1 alimento do estoque físico da residência");
+                    }
+                    var unmet=home==null?1:(1-home.WaterRatio)*.5+(1-home.ElectricityRatio)*.15+HomePollution(home.Position)*.1;
+                    rows.Add((c,unmet,family.Members.Count));
+                }
+                // Only distinct Citizen instances are written in parallel.
+                // Health, hunger and satisfaction retain their original exact
+                // arithmetic, including per-quantum fixed-point rounding.
+                System.Threading.Tasks.Parallel.For(0,rows.Count,i=>
+                {
+                    var (c,unmet,members)=rows[i];
+                    var hungry=c.HungerHours>State.Tuning.HungerDamageAfterHours;
+                    if(hungry)c.AddHealth(-(dt/3600*(c.HungerHours/State.Tuning.HungerDamageAfterHours)));
+                    else if(c.HungerHours<18){c.AddHealth(dt/3600*.3);c.HealthUnits=Math.Min(100*FixedPoint.PointScale,c.HealthUnits);}
+                    c.AddHealth(-unmet*dt/86400);
+                    c.HealthUnits=Math.Clamp(c.HealthUnits,0,100*FixedPoint.PointScale);
+                    c.Satisfaction=Math.Clamp(80-c.HungerHours*.7-unmet*15-(members>Catalog.Definitions[BuildingKind.House].Capacity?8:0),0,100);
+                });
+                // Death changes shared wallets, inheritance, buildings, and
+                // histories; commit these in the original citizen order.
+                foreach(var row in rows)if(row.Citizen.Health<=0)CitizenDied(row.Citizen);
+                if(detail is not null)detail.MarkDetail(7,ref detailStarted);
+                return;
+            }
+        }
         foreach(var c in Pr57NeedsCandidates().Where(c=>c.Alive&&c.Resident&&c.InsideMap)){
             c.AddHungerSeconds(dt);var family=FamilyById(c.FamilyId)!;var home=BuildingById(family.HomeId);
             if(home!=null&&!c.Moving&&c.VehicleId==null&&c.Position.Distance(home.Door)<3&&c.HungerHours>=12&&family.Pantry>=1){family.AddPantry(-(1));c.HungerMicroseconds=Math.Max(0,checked(c.HungerMicroseconds-12*3600*FixedPoint.TimeScale));Personal(c,"Consumiu 1 alimento do estoque físico da residência");}
