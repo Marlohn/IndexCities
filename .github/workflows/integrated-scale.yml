@@ -1,4 +1,4 @@
-name: Integrated core PR57 maintenance-onset discriminant
+name: Integrated core PR57 batch-order A/B at maintenance onset
 
 on:
   push:
@@ -17,10 +17,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  maintenance-profile:
-    name: Seed42 real-road cycle, first maintenance burst at 6.5d
+  batch-order-abba:
+    name: Seed42 maintenance-onset A/B, unchanged physics and economics
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -28,35 +28,66 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Build integrated simulation
         run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: Profile first costly window, preserve all real systems
+      - name: Four fresh processes, ABBA, same real-built cycle and maintenance
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p artifacts/pr57-maintenance
-          echo "PR57_MODE seed42 bypass=1 housesRequested=32 (18 valid last run), horizon=6.5d, profile ONLY window13, no performance flags, same real construction and maintenance"
-          PR57_ACTIVE_SCAN=0 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 PR57_WORK_DIAG=1 PR57_PROFILE_FROM_WINDOW=13 timeout 220s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- profile cycle --seed=42 --warmup=0 --cycle-houses=32 --cycle-bypass=1 --days=13 --window=43200 --cap=210 | tee artifacts/pr57-maintenance/seed42-onset.log
+          mkdir -p artifacts/pr57-batch-order
+          for label in control-a candidate-a candidate-b control-b; do
+            case "$label" in control-*) flag=0;; candidate-*) flag=1;; esac
+            echo "PR57_AB_MODE label=$label PR57_BATCH_ORDER=$flag otherPerformanceFlags=0 seed=42 bypass=1 housesRequested=32 horizon=13x43200 profileFrom=13"
+            PR57_ACTIVE_SCAN=0 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER="$flag" PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 PR57_WORK_DIAG=0 PR57_PROFILE_FROM_WINDOW=13 timeout 190s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- profile cycle --seed=42 --warmup=0 --cycle-houses=32 --cycle-bypass=1 --days=13 --window=43200 --cap=180 | tee "artifacts/pr57-batch-order/$label.log"
+          done
+      - name: Check intermediate causal states and report paired costs
+        shell: bash
+        run: |
+          set -euo pipefail
           python3 - <<'PY'
           import pathlib,re
-          s=pathlib.Path('artifacts/pr57-maintenance/seed42-onset.log').read_text()
-          windows=re.findall(r'^WINDOW (\d+) seconds=43200 wall=([0-9.]+)s .*allocMB=([0-9.]+) .*$',s,re.M)
-          checks=re.findall(r'^PR57_AB_CHECKPOINT window=(\d+) sha256=([A-F0-9]{64}) ',s,re.M)
-          assert [int(w[0]) for w in windows]==list(range(1,14)),('incomplete maintenance onset',len(windows))
-          assert [int(c[0]) for c in checks]==list(range(1,14)),('missing checkpoints',len(checks))
-          assert 'INVARIANTS OK' in s and 'STOP limite' not in s, 'incomplete simulation'
-          save=re.search(r'^SAVE .* sha256=([A-F0-9]{64})$',s,re.M)
-          assert save and save.group(1)==checks[-1][1], 'save/load mismatch'
-          assert 'STEP_PROFILE steps=' in s and 'STEP_PHASE name=' in s, 'missing window13 profile'
-          assert re.search(r'^PR57_WORK_DIAG window=13 .*$',s,re.M), 'missing final work diagnostics'
-          expected={12:'ECAC898C015D950F2DDA480E4C5D939B25A0C9A658B078674FF2CE8E05A86349',13:'E37C553ADFCD791E9322B20F023D4B739BB9DD3734307DB45675F0AFC3DD3153'}
-          for i,sha in checks:
-              if int(i) in expected:print(f'PR57_PROFILE_CHECKPOINT window={i} sameAsUnprofiled={sha==expected[int(i)]} sha={sha}',flush=True)
-          print(f'PR57_PROFILE_RESULT seconds=561600 wall={sum(float(w[1]) for w in windows):.2f} window13Wall={windows[-1][1]} window13AllocMB={windows[-1][2]} finalSha={save.group(1)}',flush=True)
+          labels=('control-a','candidate-a','candidate-b','control-b')
+          data={}
+          for label in labels:
+              s=pathlib.Path(f'artifacts/pr57-batch-order/{label}.log').read_text()
+              rows=re.findall(r'^WINDOW (\d+) seconds=43200 wall=([0-9.]+)s eff=\S+ cpu=([0-9.]+)s allocMB=([0-9.]+) gc0=(\d+) gc2=(\d+) (.*)$',s,re.M)
+              checks=re.findall(r'^PR57_AB_CHECKPOINT window=(\d+) sha256=([A-F0-9]{64}) (.*)$',s,re.M)
+              save=re.search(r'^SAVE .* sha256=([A-F0-9]{64})$',s,re.M)
+              slices=re.search(r'^VEHICLE_PROFILE steps=(\d+) batched=(\d+) unsplit=(\d+) slices=(\d+)',s,re.M)
+              movement=re.search(r'^  VEHICLE_DETAIL name=movement wall=([0-9.]+)s',s,re.M)
+              assert [int(x[0]) for x in rows]==list(range(1,14)),(label,'incomplete windows',len(rows))
+              assert [int(x[0]) for x in checks]==list(range(1,14)),(label,'missing intermediate saves')
+              assert save and save.group(1)==checks[-1][1],(label,'save/load mismatch')
+              assert 'INVARIANTS OK' in s and 'STOP limite' not in s,(label,'incomplete/invariants')
+              assert slices and movement,(label,'missing movement profile')
+              data[label]={'windows':rows,'checks':checks,'slices':int(slices.group(4)),'movement':float(movement.group(1))}
+          reference=data['control-a']['checks']
+          for label in labels[1:]:
+              for a,b in zip(reference,data[label]['checks']):
+                  assert a==b,(label,'causal checkpoint divergence at window',a[0],a[1],b[1])
+          for label in labels:
+              rows=data[label]['windows']
+              total=sum(float(x[1]) for x in rows)
+              alloc=sum(float(x[3]) for x in rows)
+              cpu=sum(float(x[2]) for x in rows)
+              print(f'PR57_AB_RESULT label={label} totalWall={total:.2f} window13Wall={float(rows[-1][1]):.2f} totalCpu={cpu:.2f} window13Cpu={float(rows[-1][2]):.2f} totalAllocMB={alloc:.1f} window13AllocMB={float(rows[-1][3]):.1f} window13Gc0={rows[-1][4]} slices={data[label]["slices"]} movementProfileWall={data[label]["movement"]:.3f} finalSha={reference[-1][1]}',flush=True)
+          for c,b in [('control-a','candidate-a'),('control-b','candidate-b')]:
+              cw=float(data[c]['windows'][-1][1]);bw=float(data[b]['windows'][-1][1])
+              ca=float(data[c]['windows'][-1][3]);ba=float(data[b]['windows'][-1][3])
+              print(f'PR57_AB_PAIR control={c} candidate={b} window13WallDeltaPct={100*(bw/cw-1):.2f} window13AllocDeltaPct={100*(ba/ca-1):.2f}',flush=True)
+          print('PR57_AB_EQUIVALENCE 13/13 full JSON SHA checkpoints equal across 4 fresh processes; invariants and save/load OK. Not universal between-checkpoint event equivalence.',flush=True)
           PY
-      - name: Preserve maintenance-onset logs including failure
+      - name: Run targeted adversarial tests in both fresh modes
+        shell: bash
+        run: |
+          set -euo pipefail
+          for flag in 0 1; do
+            echo "PR57_ADVERSARIAL PR57_BATCH_ORDER=$flag"
+            PR57_BATCH_ORDER="$flag" dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --filter FullyQualifiedName~DualExitConflictExperiment --verbosity quiet
+          done
+      - name: Preserve A/B logs including failure
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-pr57-maintenance-onset
-          path: artifacts/pr57-maintenance/*.log
+          name: integrated-scale-pr57-batch-order-abba
+          path: artifacts/pr57-batch-order/*.log
           if-no-files-found: warn
           retention-days: 14
