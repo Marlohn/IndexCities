@@ -1,4 +1,4 @@
-name: Integrated core PR57 initial-save observational purity A/B
+name: Integrated core PR57 housing-request count causal-state audit
 
 on:
   push:
@@ -17,8 +17,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  save-observation:
-    name: Four fresh-process 12h full-state saves with/without initial serialization
+  housing-count-audit:
+    name: Fresh-process full JSON at 32 versus 40 requested homes, same 32 legal orders
     runs-on: ubuntu-latest
     timeout-minutes: 7
     steps:
@@ -28,66 +28,64 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Build integrated simulation Release
         run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: Capture full states in fresh .NET processes, ABBA
+      - name: Capture initial and first-window states in four fresh processes
         shell: bash
         run: |
           set -euo pipefail
-          for config in a_initial:1 b_deferred:0 c_deferred:0 d_initial:1; do
-            IFS=: read -r label initial <<< "$config"
-            mkdir -p "artifacts/pr57-save-purity/$label"
-            echo "PR57_SAVE_PURITY_CASE label=$label initial=$initial seed=42 window=43200 cap=0.01" | tee "artifacts/pr57-save-purity/$label/run.log"
-            PR57_SAVE_CAPTURE_DIR="artifacts/pr57-save-purity/$label" PR57_SAVE_CAPTURE_INITIAL="$initial" PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_CYCLE_SOUTH_HOUSING=1 PR57_ACTIVE_SCAN=0 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 PR57_ENTRY_FRAME_REUSE=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 PR57_WORK_DIAG=0 PR57_PROFILE_FROM_WINDOW=16 timeout 100s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- profile cycle --seed=42 --warmup=0 --cycle-houses=32 --cycle-bypass=1 --days=16 --window=43200 --cap=0.01 | tee -a "artifacts/pr57-save-purity/$label/run.log"
+          for config in a32:32 b40:40 c40:40 d32:32; do
+            IFS=: read -r label requested <<< "$config"
+            mkdir -p "artifacts/pr57-housing-count/$label"
+            echo "PR57_HOUSING_COUNT_CASE label=$label requested=$requested seed=42 cap=0.01" | tee "artifacts/pr57-housing-count/$label/run.log"
+            PR57_SAVE_CAPTURE_DIR="artifacts/pr57-housing-count/$label" PR57_SAVE_CAPTURE_INITIAL=1 PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_CYCLE_SOUTH_HOUSING=1 PR57_ACTIVE_SCAN=0 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 PR57_ENTRY_FRAME_REUSE=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 PR57_WORK_DIAG=0 PR57_PROFILE_FROM_WINDOW=16 timeout 100s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- profile cycle --seed=42 --warmup=0 --cycle-houses="$requested" --cycle-bypass=1 --days=16 --window=43200 --cap=0.01 | tee -a "artifacts/pr57-housing-count/$label/run.log"
           done
-      - name: Compare first-window JSON and causal event history
+      - name: Compare full state, arrays and history at bootstrap and 12h
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PY' | tee artifacts/pr57-save-purity/summary.log
+          python3 - <<'PY' | tee artifacts/pr57-housing-count/summary.log
           import pathlib,json,hashlib,re
-          root=pathlib.Path('artifacts/pr57-save-purity')
-          names=('a_initial','b_deferred','c_deferred','d_initial')
-          snapshots={}
+          root=pathlib.Path('artifacts/pr57-housing-count')
+          names=('a32','b40','c40','d32')
+          states={}
           for name in names:
               log=(root/name/'run.log').read_text()
-              assert 'WINDOW 1 seconds=43200 ' in log and 'STOP limite' in log,('bounded 12h',name)
-              assert 'INVARIANTS OK' in log and 'SAVE ' in log,('invariants/save',name)
-              assert re.search(r'^PR57_AB_CHECKPOINT window=1 sha256=[A-F0-9]{64}',log,re.M),('checkpoint',name)
-              path=root/name/'checkpoint-1.json'
-              raw=path.read_bytes()
-              snapshots[name]=json.loads(raw)
-              print(f'PR57_PURITY_CASE name={name} bytes={len(raw)} sha256={hashlib.sha256(raw).hexdigest().upper()}',flush=True)
-          assert (root/'a_initial'/'checkpoint-0.json').exists()
-          assert (root/'d_initial'/'checkpoint-0.json').exists()
-          assert not (root/'b_deferred'/'checkpoint-0.json').exists()
-          assert not (root/'c_deferred'/'checkpoint-0.json').exists()
-          def diffs(a,b):
+              m=re.search(r'CYCLE_HOUSING requested=(\d+) placed=(\d+) attempted=(\d+)',log)
+              assert m and int(m[2])==32 and int(m[3])==32,('not identical 32 legal orders',name,m.groups() if m else None)
+              assert 'WINDOW 1 seconds=43200 ' in log and 'STOP limite' in log and 'INVARIANTS OK' in log and 'SAVE ' in log,name
+              states[name]={}
+              for window in (0,1):
+                  raw=(root/name/f'checkpoint-{window}.json').read_bytes()
+                  states[name][window]=json.loads(raw)
+                  print(f'PR57_HOUSING_COUNT_STATE name={name} requested={m[1]} window={window} bytes={len(raw)} sha256={hashlib.sha256(raw).hexdigest().upper()}',flush=True)
+          def diff(a,b):
               out=[]
               def walk(x,y,path):
-                  if len(out)>=12:return
+                  if len(out)>=15:return
                   if type(x)!=type(y):out.append((path,'type',str(type(x)),str(type(y))));return
                   if isinstance(x,dict):
                       for k in sorted(x.keys()|y.keys()):
                           if k not in x or k not in y:out.append((path+'.'+k,'missing'))
                           else:walk(x[k],y[k],path+'.'+k)
-                          if len(out)>=12:break
+                          if len(out)>=15:break
                   elif isinstance(x,list):
                       if len(x)!=len(y):out.append((path+'.length',len(x),len(y)))
                       for i,(u,v) in enumerate(zip(x,y)):
                           walk(u,v,path+f'[{i}]')
-                          if len(out)>=12:break
-                  elif x!=y:out.append((path,str(x)[:100],str(y)[:100]))
+                          if len(out)>=15:break
+                  elif x!=y:out.append((path,str(x)[:120],str(y)[:120]))
               walk(a,b,'$')
               return out
-          for a,b in (('a_initial','b_deferred'),('b_deferred','c_deferred'),('a_initial','d_initial')):
-              differences=diffs(snapshots[a],snapshots[b])
-              print(f'PR57_PURITY_PAIR left={a} right={b} identical={not differences} firstDiffs={json.dumps(differences,ensure_ascii=False)}',flush=True)
-          print('PR57_PURITY_SCOPE one 12h window only; full JSON, event histories and independent fresh processes; not proof of universal determinism',flush=True)
+          for a,b in (('a32','b40'),('b40','c40'),('a32','d32')):
+              for window in (0,1):
+                  delta=diff(states[a][window],states[b][window])
+                  print(f'PR57_HOUSING_COUNT_PAIR left={a} right={b} window={window} identical={not delta} firstDiffs={json.dumps(delta,ensure_ascii=False)}',flush=True)
+          print('PR57_HOUSING_COUNT_SCOPE one 12h window only, 32 legal orders in both request counts; no performance claim',flush=True)
           PY
-      - name: Preserve full checkpoints and comparisons
+      - name: Preserve full JSON and structural comparisons
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-pr57-initial-save-purity
-          path: artifacts/pr57-save-purity/**
+          name: integrated-scale-pr57-housing-request-count
+          path: artifacts/pr57-housing-count/**
           if-no-files-found: warn
           retention-days: 14
