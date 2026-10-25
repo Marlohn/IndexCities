@@ -54,13 +54,13 @@ jobs:
             mkdir -p "artifacts/pr57-order-shipment-index/$label"
             echo "PR57_ORDER_SHIPMENT_INDEX_RUN label=$label enabled=$enabled"
             if [ "$scenario" = "real-maintenance" ]; then
-              PR57_MAINTENANCE_SCHEDULE="$enabled" PR57_SOURCE_DISTANCE_CACHE=0 PR57_WORK_ACCESS_INDEX=0 PR57_DISPATCH_SHIPMENT_LOOKUP=1 \
+              PR57_ORDER_SHIPMENT_INDEX="$enabled" PR57_MAINTENANCE_SCHEDULE=0 PR57_SOURCE_DISTANCE_CACHE=0 PR57_WORK_ACCESS_INDEX=0 PR57_DISPATCH_SHIPMENT_LOOKUP=1 \
               PR57_PEDESTRIAN_GRID=0 PR57_LIVING_ROSTER=0 PR57_GRID_DIAG=1 \
               PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="artifacts/pr57-order-shipment-index/$label" \
               timeout 120s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
                 scale cycle --seed=42 --resume="$SOURCE" --warmup=0 --days=4 --window=1800 --cap=90
             else
-              PR57_MAINTENANCE_SCHEDULE="$enabled" PR57_SOURCE_DISTANCE_CACHE=0 PR57_WORK_ACCESS_INDEX=0 PR57_DISPATCH_SHIPMENT_LOOKUP=1 \
+              PR57_ORDER_SHIPMENT_INDEX="$enabled" PR57_MAINTENANCE_SCHEDULE=0 PR57_SOURCE_DISTANCE_CACHE=0 PR57_WORK_ACCESS_INDEX=0 PR57_DISPATCH_SHIPMENT_LOOKUP=1 \
               PR57_PEDESTRIAN_GRID=0 PR57_LIVING_ROSTER=0 PR57_GRID_DIAG=1 \
               PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="artifacts/pr57-order-shipment-index/$label" \
               timeout 120s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
