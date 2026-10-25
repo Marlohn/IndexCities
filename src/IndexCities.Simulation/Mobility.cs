@@ -4,7 +4,7 @@ public sealed partial class CitySimulation
 {
     // PR57-only allocation census for authentic congested checkpoint replays.
     // Observation is enabled exclusively by CostProfile; it never affects movement or saves.
-    readonly long[] _pr57MovementAllocBytes=new long[7]; // total, setup, lane, bend, site, crossing, turn
+    readonly long[] _pr57MovementAllocBytes=new long[11]; // total, setup, lane, bend, site, crossing, turn, operations, pre-lane, post-turn, finalizer
     long _pr57MovementAllocCalls;
     // Shared empty candidate list: read-only, never populated by a movement scan.
     static readonly List<Vehicle> Pr57EmptyBendList=[];
@@ -399,6 +399,11 @@ public sealed partial class CitySimulation
         if(scanProfile is not null)_pr57MovementAllocBytes[1]+=GC.GetAllocatedBytesForCurrentThread()-pr57AllocCallStart;
         foreach(var v in ordered){
             var pr57OldCell=pr57SpatialScan||pr57BitsetScan?Pr57Cell(v.Position):default;
+            // PR57 observation only: account for the residual outside the six measured calls.
+            // Stages: 0=vehicle operations, 1=route/entry preparation, 2=post-safety hold,
+            // 3=between existing measured calls. All counters are disabled without profiling.
+            var pr57VehicleAllocStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
+            var pr57VehicleAllocStage=0;
             try{
             // PR57: isolate whether the lateral entrant already obstructs the through lane
             // when it starts travelling, or reaches that pose during admission.
@@ -474,6 +479,14 @@ public sealed partial class CitySimulation
             }else if(!_vehicleMovementBatch.Contains(v.Id)||v.Status!=VehicleStatus.Travelling)continue;
             var remaining=dt;
             while(remaining>.000001&&v.Status==VehicleStatus.Travelling){
+                if(scanProfile is not null){
+                    var allocNow=GC.GetAllocatedBytesForCurrentThread();
+                    if(pr57VehicleAllocStage==0)_pr57MovementAllocBytes[7]+=allocNow-pr57VehicleAllocStart;
+                    else if(pr57VehicleAllocStage==1)_pr57MovementAllocBytes[8]+=allocNow-pr57VehicleAllocStart;
+                    else if(pr57VehicleAllocStage==2)_pr57MovementAllocBytes[9]+=allocNow-pr57VehicleAllocStart;
+                    pr57VehicleAllocStart=allocNow;
+                    pr57VehicleAllocStage=1;
+                }
                 // The way back from a works-site dock is admitted whole (Mobility.SharedSpace).
                 if(v.SitePathBeforeRoad&&(AtSiteDock(v)||v.ManoeuvreDock!=null)&&WayOut(v,out var siteSpaces) is var siteWay&&!AdmitManoeuvre(v,siteWay,siteSpaces,v.ManoeuvreDock??v.SitePath[0],true)){if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}
                 if(v.SitePathBeforeRoad){if(!MoveConstructionSitePath(v,ref remaining,2))break;v.SitePathBeforeRoad=false;v.SitePath=[];v.SitePathIndex=0;}
@@ -539,6 +552,10 @@ public sealed partial class CitySimulation
                 var pr57Sin=pr57FastScan?Math.Sin(v.Heading):0;
                 var pr57Cos=pr57FastScan?Math.Cos(v.Heading):0;
                 var pr57DockGate=pr57DockGateHoist?(!LeavesDock(v)||OnCarriageway(v)):false;
+                if(scanProfile is not null){
+                    _pr57MovementAllocBytes[8]+=GC.GetAllocatedBytesForCurrentThread()-pr57VehicleAllocStart;
+                    pr57VehicleAllocStage=3;
+                }
                 var laneScanStart=scanProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
                 var pr57LaneAllocStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
                 var pr57LaneList=Pr57LaneCandidates(v,enteringLane);
@@ -651,6 +668,10 @@ public sealed partial class CitySimulation
                 var steer=step<.00001&&free>.00001?TurnClearance(v,approachHeading,free,access):null;
                 if(scanProfile is not null)_pr57MovementAllocBytes[6]+=GC.GetAllocatedBytesForCurrentThread()-pr57TurnAllocStart;
                 if(steer is {} bend){v.Heading=bend.Heading;target=bend.To;step=bend.Distance;}
+                if(scanProfile is not null){
+                    pr57VehicleAllocStart=GC.GetAllocatedBytesForCurrentThread();
+                    pr57VehicleAllocStage=2;
+                }
                 // Like a machine, a blocked vehicle keeps its verified pose rather
                 // than turning in place into a parked machine's or site truck's body,
                 // or into any other body that pose was clear of.
@@ -712,6 +733,13 @@ public sealed partial class CitySimulation
                 if(DriveWear(v,step)||steer==null&&!advanced)break;
             }
             }finally{
+                if(scanProfile is not null){
+                    var allocNow=GC.GetAllocatedBytesForCurrentThread();
+                    if(pr57VehicleAllocStage==0)_pr57MovementAllocBytes[7]+=allocNow-pr57VehicleAllocStart;
+                    else if(pr57VehicleAllocStage==1)_pr57MovementAllocBytes[8]+=allocNow-pr57VehicleAllocStart;
+                    else if(pr57VehicleAllocStage==2)_pr57MovementAllocBytes[9]+=allocNow-pr57VehicleAllocStart;
+                }
+                var pr57FinalizeAllocStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
                 // If an initially parked car starts moving during this pass, it
                 // becomes eligible for subsequent scans in original vehicle order.
                 if(pr57ScanIds is not null&&(!v.PassengerCar||v.Status!=VehicleStatus.Parked)&&pr57ScanIds.Add(v.Id)){
@@ -730,6 +758,7 @@ public sealed partial class CitySimulation
                     }
                     pr57WorldExtent=Math.Max(pr57WorldExtent,Math.Max(Math.Abs(v.Position.X),Math.Abs(v.Position.Z)));
                 }
+                if(scanProfile is not null)_pr57MovementAllocBytes[10]+=GC.GetAllocatedBytesForCurrentThread()-pr57FinalizeAllocStart;
             }
         }
         // A towed vehicle moves only with its tow (platform or trailing a heavy tow).
@@ -738,8 +767,8 @@ public sealed partial class CitySimulation
             _pr57MovementAllocBytes[0]+=GC.GetAllocatedBytesForCurrentThread()-pr57AllocCallStart;
             if(++_pr57MovementAllocCalls%300==0){
                 var b=_pr57MovementAllocBytes;
-                var other=b[0]-b[1]-b[2]-b[3]-b[4]-b[5]-b[6];
-                Console.WriteLine($"PR57_ALLOC_PROFILE calls={_pr57MovementAllocCalls} totalMB={b[0]/1e6:F2} setupMB={b[1]/1e6:F2} laneMB={b[2]/1e6:F2} bendMB={b[3]/1e6:F2} siteMB={b[4]/1e6:F2} crossingMB={b[5]/1e6:F2} turnMB={b[6]/1e6:F2} otherMB={other/1e6:F2}");
+                var other=b[0]-b[1]-b[2]-b[3]-b[4]-b[5]-b[6]-b[7]-b[8]-b[9]-b[10];
+                Console.WriteLine($"PR57_ALLOC_PROFILE calls={_pr57MovementAllocCalls} totalMB={b[0]/1e6:F2} setupMB={b[1]/1e6:F2} laneMB={b[2]/1e6:F2} bendMB={b[3]/1e6:F2} siteMB={b[4]/1e6:F2} crossingMB={b[5]/1e6:F2} turnMB={b[6]/1e6:F2} operationsMB={b[7]/1e6:F2} preLaneMB={b[8]/1e6:F2} postTurnMB={b[9]/1e6:F2} finalizeMB={b[10]/1e6:F2} otherMB={other/1e6:F2}");
             }
         }
     }
