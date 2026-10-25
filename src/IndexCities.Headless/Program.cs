@@ -127,7 +127,15 @@ for(var d=1;d<=days;d++){
     var windowGc2Before=GC.CollectionCount(2);
     var windowCpuBefore=Process.GetCurrentProcess().TotalProcessorTime;
     sw.Restart();
-    if(stuck!=null){var strand=int.Parse(Opt("strand","0"));var dayEnd=sim.State.ElapsedSeconds+86400;if(strand>0){var forced=new List<int>();while(forced.Count==0&&sim.State.ElapsedSeconds<dayEnd-1800){forced=stuck.Force(sim,strand);if(forced.Count==0)sim.Advance(60);}var since=sim.State.ElapsedSeconds;for(var m=0;m<30&&forced.Count>0;m++){sim.Advance(60);if(m%3==0||m==29||Environment.GetEnvironmentVariable("STUCK_EVERY")=="1")stuck.Watch(sim,forced,since);}}while(sim.State.ElapsedSeconds<dayEnd-1e-6){sim.Advance(Math.Min(600,dayEnd-sim.State.ElapsedSeconds));stuck.Sample(sim);}}else if(census==null)sim.Advance(windowSeconds);else
+    if(stuck!=null){var strand=int.Parse(Opt("strand","0"));var dayEnd=sim.State.ElapsedSeconds+86400;if(strand>0){var forced=new List<int>();while(forced.Count==0&&sim.State.ElapsedSeconds<dayEnd-1800){forced=stuck.Force(sim,strand);if(forced.Count==0)sim.Advance(60);}var since=sim.State.ElapsedSeconds;for(var m=0;m<30&&forced.Count>0;m++){sim.Advance(60);if(m%3==0||m==29||Environment.GetEnvironmentVariable("STUCK_EVERY")=="1")stuck.Watch(sim,forced,since);}}while(sim.State.ElapsedSeconds<dayEnd-1e-6){sim.Advance(Math.Min(600,dayEnd-sim.State.ElapsedSeconds));stuck.Sample(sim);}}else if(census==null)
+    {
+        // PR57-only host-cadence A/B: Godot calls Advance(2) once per quantum.
+        // No time, system, event or persistence is skipped.
+        if(Environment.GetEnvironmentVariable("PR57_HOST_QUANTUM")=="1")
+            for(var quantum=0;quantum<windowSeconds/2;quantum++)sim.Advance(2);
+        else sim.Advance(windowSeconds);
+    }
+    else
     {
         var hourTimer=Stopwatch.StartNew();
         var hourCpu=Process.GetCurrentProcess().TotalProcessorTime;

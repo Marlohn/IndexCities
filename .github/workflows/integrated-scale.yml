@@ -1,75 +1,72 @@
-name: 'PR57 waiting-project causal invalidations - truck return and paid road reconnection'
-
+name: 'PR57 host-cadence Advance(2) construction wait A/B'
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
     paths:
       - .github/workflows/integrated-scale.yml
+      - src/IndexCities.Headless/Program.cs
       - src/IndexCities.Simulation/**
-      - tests/IndexCities.Simulation.Tests/Pr57ConstructionWaitAdversarial.cs
   workflow_dispatch:
-
 permissions:
   contents: read
-
+  actions: read
 concurrency:
   group: integrated-scale-pr57
   cancel-in-progress: false
-
 jobs:
-  wait-invalidations:
+  host-cadence:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Build experimental causal tests
-        run: dotnet build tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release
-      - name: Independent .NET processes, identical one-truck causal scenario
+      - name: Build
+        run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+      - name: Restore real-city checkpoint
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p artifacts/source
+          gh run download 40200371479 -n integrated-scale-pr57-work-access-index-ab -D artifacts/source
+          test -s "$(find artifacts/source -type f -name checkpoint-16.json | grep real-maintenance-control-a | head -n 1)"
+      - name: Independent .NET processes, Godot's actual Advance(2) cadence
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p artifacts/pr57-wait-invalidations
-          for mode in control candidate; do
-            flag=0
-            if [[ "$mode" == candidate ]]; then flag=1; fi
-            mkdir -p "artifacts/pr57-wait-invalidations/$mode"
-            PR57_CONSTRUCTION_WAIT_AGENDA="$flag" PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ROUTE_TREE=0 PR57_ORDER_SHIPMENT_INDEX=0 PR57_MAINTENANCE_SCHEDULE=0 PR57_WORK_ACCESS_INDEX=0 PR57_GRID_DIAG=1 \
-            PR57_WAIT_ADVERSARIAL_DIR="$PWD/artifacts/pr57-wait-invalidations/$mode" \
-              timeout 180s dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj --no-build -c Release \
-              --filter FullyQualifiedName~Pr57ConstructionWaitAdversarial --logger "console;verbosity=detailed" \
-              | tee "artifacts/pr57-wait-invalidations/$mode.log"
+          mkdir -p artifacts/host
+          SOURCE="$(find artifacts/source -type f -name checkpoint-16.json | grep real-maintenance-control-a | head -n 1)"
+          for mode in control-a candidate-a candidate-b control-b; do
+            enabled=0; [[ "$mode" == candidate* ]] && enabled=1
+            mkdir -p "artifacts/host/$mode"
+            echo "PR57_HOST_RUN mode=$mode enabled=$enabled cadence=2"
+            PR57_HOST_QUANTUM=1 PR57_CONSTRUCTION_WAIT_AGENDA="$enabled" PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ROUTE_TREE=0 PR57_ORDER_SHIPMENT_INDEX=0 PR57_MAINTENANCE_SCHEDULE=0 PR57_SOURCE_DISTANCE_CACHE=0 PR57_WORK_ACCESS_INDEX=0 PR57_PEDESTRIAN_GRID=0 PR57_LIVING_ROSTER=0 PR57_GRID_DIAG=1 PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="$PWD/artifacts/host/$mode" \
+              timeout 120s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- scale cycle --seed=42 --resume="$SOURCE" --warmup=0 --days=2 --window=3600 --cap=100 | tee "artifacts/host/$mode.log"
           done
-      - name: Compare all intermediate saves and verify physical economic effects
+      - name: Checkpoint and end-to-end metrics audit
         shell: bash
         run: |
-          python3 - <<'PY' | tee artifacts/pr57-wait-invalidations/audit.log
-          import pathlib,json,hashlib
-          root=pathlib.Path('artifacts/pr57-wait-invalidations')
-          for mode in ('control','candidate'):
+          python3 - <<'PY'
+          import pathlib,re,json
+          root=pathlib.Path('artifacts/host')
+          stats={}
+          for mode in ('control-a','candidate-a','candidate-b','control-b'):
               log=(root/f'{mode}.log').read_text()
-              assert 'Test Run Successful.' in log and 'Passed:' in log,mode
-              assert ('PR57_CONSTRUCTION_WAIT_AGENDA active=True' if mode=='candidate' else 'PR57_CONSTRUCTION_WAIT_AGENDA active=False') in log,mode
-          for scenario,windows in [('truck-return',24),('road-rebuild',3)]:
-              for i in range(windows+1):
-                  a=(root/'control'/scenario/f'checkpoint-{i}.json').read_bytes()
-                  b=(root/'candidate'/scenario/f'checkpoint-{i}.json').read_bytes()
-                  assert a==b,('checkpoint divergence',scenario,i,hashlib.sha256(a).hexdigest(),hashlib.sha256(b).hexdigest())
-              start=json.loads((root/'control'/scenario/'checkpoint-0.json').read_text())
-              end=json.loads((root/'control'/scenario/f'checkpoint-{windows}.json').read_text())
-              print('PR57_WAIT_INVALIDATIONS',json.dumps(dict(scenario=scenario,checkpoints=windows+1,
-                  initialShipments=len(start['Shipments']),finalShipments=len(end['Shipments']),
-                  initialLedger=len(start['Ledger']),finalLedger=len(end['Ledger']),
-                  initialEvents=len(start['CityEvents']),finalEvents=len(end['CityEvents']),
-                  elapsedSeconds=end['ElapsedSeconds']-start['ElapsedSeconds']),sort_keys=True))
+              assert f"PR57_CONSTRUCTION_WAIT_AGENDA active={'True' if mode.startswith('candidate') else 'False'}" in log,mode
+              assert 'INVARIANTS OK' in log and 'SAVE ' in log,mode
+              rows=[x for x in log.splitlines() if x.startswith('WINDOW ')]
+              assert len(rows)==2,(mode,len(rows))
+              stats[mode]={key:sum(float(re.search(r'\\b'+key+r'=([0-9.]+)',row).group(1)) for row in rows) for key in ('wall','cpu','allocMB')}
+          for a,b in [('control-a','candidate-a'),('control-b','candidate-b')]:
+              for i in range(3):
+                  assert (root/a/f'checkpoint-{i}.json').read_bytes()==(root/b/f'checkpoint-{i}.json').read_bytes(),(a,b,i)
+              print('PR57_HOST_AB',json.dumps(dict(control=a,candidate=b,controlMetrics=stats[a],candidateMetrics=stats[b],checkpoints=3,cadenceSeconds=2),sort_keys=True))
           PY
-      - name: Preserve evidence even on failure
+      - name: Preserve all evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-pr57-wait-invalidations
-          path: artifacts/pr57-wait-invalidations/**
-          if-no-files-found: warn
+          name: integrated-scale-pr57-host-cadence
+          path: artifacts/host/**
           retention-days: 14
