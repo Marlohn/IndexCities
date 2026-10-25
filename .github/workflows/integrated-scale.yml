@@ -1,4 +1,4 @@
-name: Integrated core PR57 nine-day real maintenance extension
+name: Integrated core PR57 short full-save divergence audit
 
 on:
   push:
@@ -17,10 +17,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  cycle-nine-days:
-    name: Seed42 real housing, economy and recurring maintenance (9 days)
+  checkpoint-audit:
+    name: Fresh-process full-state audit at first real economic window
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -28,56 +28,67 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Build integrated simulation Release
         run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: One fresh process, shipment lookup enabled, no artificial construction
+      - name: Capture initial and first 12h saves in five fresh processes
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p artifacts/pr57-cycle-nine-days
-          echo 'PR57_NINE_DAY_MODE seed=42 shipmentLookup=1 southHousing=1 bypass=1 houses=32 windows=18 windowSeconds=43200 otherPerformanceFlags=0 profilerWindow=18' | tee artifacts/pr57-cycle-nine-days/cycle.log
-          PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_CYCLE_SOUTH_HOUSING=1 PR57_ACTIVE_SCAN=0 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 PR57_ENTRY_FRAME_REUSE=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 PR57_WORK_DIAG=0 PR57_PROFILE_FROM_WINDOW=18 timeout 360s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- profile cycle --seed=42 --warmup=0 --cycle-houses=32 --cycle-bypass=1 --days=18 --window=43200 --cap=300 | tee -a artifacts/pr57-cycle-nine-days/cycle.log
-      - name: Validate 9 days and compare day-8 state to prior A/B
+          for config in a16_on:16:1 b18_on:18:1 c16_off:16:0 d18_off:18:0 e16_on_repeat:16:1; do
+            IFS=: read -r label horizon lookup <<< "$config"
+            mkdir -p "artifacts/pr57-save-audit/$label"
+            echo "PR57_AUDIT_CASE label=$label days=$horizon lookup=$lookup cap=0.01 window=43200 seed=42" | tee "artifacts/pr57-save-audit/$label/run.log"
+            PR57_SAVE_CAPTURE_DIR="artifacts/pr57-save-audit/$label" PR57_DISPATCH_SHIPMENT_LOOKUP="$lookup" PR57_CYCLE_SOUTH_HOUSING=1 PR57_ACTIVE_SCAN=0 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 PR57_ENTRY_FRAME_REUSE=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 PR57_WORK_DIAG=0 PR57_PROFILE_FROM_WINDOW="$horizon" timeout 120s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- profile cycle --seed=42 --warmup=0 --cycle-houses=32 --cycle-bypass=1 --days="$horizon" --window=43200 --cap=0.01 | tee -a "artifacts/pr57-save-audit/$label/run.log"
+          done
+      - name: Compare full JSON fields and event histories without treating prior SHA as oracle
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          import pathlib,re
-          s=pathlib.Path('artifacts/pr57-cycle-nine-days/cycle.log').read_text()
-          assert 'PR57_NINE_DAY_MODE seed=42 shipmentLookup=1' in s
-          housing=re.search(r'^CYCLE_HOUSING requested=(\d+) placed=(\d+) attempted=(\d+) ',s,re.M)
-          assert housing and tuple(map(int,housing.groups()))==(32,32,32), 'normal housing placement'
-          windows=re.findall(r'^WINDOW (\d+) seconds=43200 wall=([0-9.]+)s eff=\S+ cpu=([0-9.]+)s allocMB=([0-9.]+) gc0=(\d+) gc2=(\d+) (.*)$',s,re.M)
-          checks=re.findall(r'^PR57_AB_CHECKPOINT window=(\d+) sha256=([A-F0-9]{64}) (.*)$',s,re.M)
-          assert [int(w[0]) for w in windows]==list(range(1,19)),('incomplete windows',len(windows))
-          assert [int(c[0]) for c in checks]==list(range(1,19)),('incomplete checkpoints',len(checks))
-          assert checks[15][1]=='136BB260F416DAF572322158D4307AF4249D5C4373F7817B55A41F66F201EB97', 'day-8 save differs from prior ABBA'
-          assert 'STOP limite' not in s and 'INVARIANTS OK' in s, 'cap/invariants'
-          save=re.search(r'^SAVE .* sha256=([A-F0-9]{64})$',s,re.M)
-          assert save and save[1]==checks[-1][1], 'save/checkpoint mismatch'
-          assert 'STEP_PHASE name=construction-dispatch' in s, 'missing last-window profiler'
-          def fields(w):
-              return dict(re.findall(r'\b([A-Za-z]+)=([\d.]+)',w[6]))
-          first,last=fields(windows[0]),fields(windows[-1])
-          for key in ('alive','employed','vehicles','travelling','ledger','history','meals','wages','openWorks','health','satisfaction'):
-              assert key in last,('missing economic census',key)
-          assert int(last['alive'])>0 and int(last['ledger'])>int(first['ledger']) and int(last['meals'])>int(first['meals']) and float(last['wages'])>float(first['wages']), 'economic activity missing'
-          def summary(a,b):
-              subset=windows[a:b]
-              wall=sum(float(w[1]) for w in subset)
-              alloc=sum(float(w[3]) for w in subset)
-              cpu=sum(float(w[2]) for w in subset)
-              gc0=sum(int(w[4]) for w in subset)
-              return f'windows={a+1}-{b} wall={wall:.2f}s cpu={cpu:.2f}s allocMB={alloc:.1f} gc0={gc0} throughput={43200*len(subset)/wall:.1f}x'
-          print('PR57_NINE_DAY_REFERENCE day8Sha='+checks[15][1],flush=True)
-          for a,b in ((0,12),(12,16),(16,18),(0,18)):
-              print('PR57_NINE_DAY_SEGMENT '+summary(a,b),flush=True)
-          print('PR57_NINE_DAY_FINAL '+windows[-1][6]+' sha256='+save[1],flush=True)
-          print('PR57_NINE_DAY_PARITY day8 full save matches earlier ABBA; checkpoints and invariants pass; does not prove all intervening events, 10k or 80 years.',flush=True)
+          python3 - <<'PY' | tee artifacts/pr57-save-audit/summary.log
+          import hashlib,json,pathlib,re
+          root=pathlib.Path('artifacts/pr57-save-audit')
+          cases=('a16_on','b18_on','c16_off','d18_off','e16_on_repeat')
+          snapshots={}
+          for label in cases:
+              log=(root/label/'run.log').read_text()
+              assert 'INVARIANTS OK' in log and 'SAVE ' in log, ('invariants/save',label)
+              assert re.search(r'^PR57_AB_CHECKPOINT window=1 sha256=[A-F0-9]{64}',log,re.M),('checkpoint',label)
+              assert re.search(r'^WINDOW 1 seconds=43200 ',log,re.M),('first full economic window',label)
+              assert 'STOP limite' in log,('expected bounded early stop',label)
+              snapshots[label]={}
+              for window in (0,1):
+                  path=root/label/f'checkpoint-{window}.json'
+                  raw=path.read_bytes()
+                  snapshots[label][window]=json.loads(raw)
+                  print(f'PR57_AUDIT_SAVE label={label} window={window} bytes={len(raw)} sha256={hashlib.sha256(raw).hexdigest().upper()}',flush=True)
+          def differences(a,b,path='$',limit=8):
+              result=[]
+              def walk(x,y,p):
+                  if len(result)>=limit:return
+                  if type(x)!=type(y):
+                      result.append((p,'type',type(x).__name__,type(y).__name__));return
+                  if isinstance(x,dict):
+                      for k in x.keys()|y.keys():
+                          if len(result)>=limit:return
+                          if k not in x or k not in y:result.append((p+'.'+k,'missing',k in x,k in y))
+                          else:walk(x[k],y[k],p+'.'+k)
+                  elif isinstance(x,list):
+                      if len(x)!=len(y):result.append((p+'.length','length',len(x),len(y)))
+                      for i,(v,w) in enumerate(zip(x,y)):
+                          if len(result)>=limit:return
+                          walk(v,w,p+f'[{i}]')
+                  elif x!=y:result.append((p,'value',repr(x)[:100],repr(y)[:100]))
+              walk(a,b,path)
+              return result
+          for left,right in (('a16_on','b18_on'),('a16_on','c16_off'),('b18_on','d18_off'),('a16_on','e16_on_repeat')):
+              for window in (0,1):
+                  delta=differences(snapshots[left][window],snapshots[right][window])
+                  print(f'PR57_AUDIT_PAIR left={left} right={right} window={window} identical={not delta} firstDiffs={json.dumps(delta,ensure_ascii=False)}',flush=True)
+          print('PR57_AUDIT_SCOPE one 12h window, 98-or-fewer live Sims, normal construction, salaries and events; no claim of universal causal parity, 10k or 80 years',flush=True)
           PY
-      - name: Preserve raw nine-day evidence
+      - name: Preserve integral checkpoint evidence and structural diff
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-pr57-cycle-nine-days
-          path: artifacts/pr57-cycle-nine-days/*.log
+          name: integrated-scale-pr57-full-save-short-audit
+          path: artifacts/pr57-save-audit/**
           if-no-files-found: warn
           retention-days: 14
