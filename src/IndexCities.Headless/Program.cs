@@ -103,9 +103,10 @@ if(!string.IsNullOrWhiteSpace(pr57SaveCaptureDir)){
     Console.WriteLine($"PR57_CAPTURE window=0 bytes={Encoding.UTF8.GetByteCount(initialSnapshot)} sha256={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(initialSnapshot)))}");
 }
 var census=args[0]=="census"?new Census():null;var stuck=args[0]=="stuck"?new Stuck():null;
-var profile=args[0]=="profile"?new StepCostProfile():null;sim.CostProfile=profile;
+var profile=args[0]=="profile"?new StepCostProfile():null;var pr57ProfileFromWindow=int.TryParse(Environment.GetEnvironmentVariable("PR57_PROFILE_FROM_WINDOW"),out var profileStart)?profileStart:1;sim.CostProfile=profile is not null&&pr57ProfileFromWindow<=1?profile:null;
 var total=0.0;var gc0=GC.CollectionCount(0);var gc2=GC.CollectionCount(2);var alloc0=GC.GetTotalAllocatedBytes();var done=0;
 for(var d=1;d<=days;d++){
+    if(profile is not null)sim.CostProfile=d>=pr57ProfileFromWindow?profile:null;
     // PR57 observational allocation/GC deltas per measured window (no simulation state mutation).
     var windowAllocBefore=GC.GetTotalAllocatedBytes();
     var windowGc0Before=GC.CollectionCount(0);
@@ -150,7 +151,7 @@ for(var d=1;d<=days;d++){
         Console.WriteLine($"PR57_AB_CHECKPOINT window={d} sha256={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(snapshot)))} {Stats(sim)}");
     }
     // PR57-only observation: no mutation of the simulated state.
-    if(Environment.GetEnvironmentVariable("PR57_WORK_DIAG")=="1" && (d==1||d==2||d==4))
+    if(Environment.GetEnvironmentVariable("PR57_WORK_DIAG")=="1" && (d==1||d==2||d==4||d==days))
         PrintWorkDiagnostics(sim,d);
     if(total>cap){Console.WriteLine($"STOP limite de {cap}s");break;}
 }
