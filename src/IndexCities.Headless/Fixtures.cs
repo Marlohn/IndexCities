@@ -69,6 +69,26 @@ static class Fixtures
             }
             if(placed>=requested)break;
         }
+        // PR57 exploratory expansion, opt-in only: test the *existing*, normally
+        // constructed bypass road as extra frontage. Quote and order every home
+        // through the same player-facing construction commands as the first rows.
+        // No free houses, instant completions, population or resource injection.
+        if(Environment.GetEnvironmentVariable("PR57_CYCLE_SOUTH_HOUSING")=="1"&&placed<requested)
+        {
+            foreach(var (z,rotation) in new[]{(-74.0,Math.PI),(-46.0,0.0)})
+            {
+                var before=placed;
+                for(var x=-168.0;x<=-28&&placed<requested;x+=20)
+                {
+                    var position=new Point(x,z);
+                    if(!sim.QuoteBuilding(BuildingKind.House,position,rotation).PhysicallyValid)continue;
+                    attempted++;
+                    if(sim.PlaceBuilding(BuildingKind.House,position,rotation).Success)placed++;
+                }
+                Console.WriteLine($"PR57_CYCLE_SOUTH_ROW z={z:F0} newOrders={placed-before}");
+                if(placed>=requested)break;
+            }
+        }
         return (placed,attempted);
     }
 
