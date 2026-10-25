@@ -1,4 +1,4 @@
-name: Integrated core PR57 physical bypass viability
+name: Integrated core PR57 progressive real-construction viability
 
 on:
   push:
@@ -17,8 +17,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  cycle-bypass:
-    name: Seed42 physical bypass, 48h economy (prior baseline retained)
+  cycle-bypass-scale:
+    name: Seed42 bypass, up to 32 new houses, 7d real economy
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
@@ -28,40 +28,40 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Build integrated simulation
         run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: Test ordinary bypass construction and deliveries
+      - name: Probe physical and economic growth without injected resources
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p artifacts/pr57-bypass
-          mode=1
-            echo "PR57_MODE cycle-bypass=$mode seed42 48h, normal road and house projects, no artificial completion, fresh .NET process; control is run #40146783356"
-            PR57_ACTIVE_SCAN=0 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 PR57_WORK_DIAG=1 timeout 180s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- scale cycle --seed=42 --warmup=0 --cycle-houses=16 --cycle-bypass=$mode --days=4 --window=43200 --cap=150 | tee artifacts/pr57-bypass/cycle-$mode.log
+          mkdir -p artifacts/pr57-growth
+          echo "PR57_MODE seed42 bypass=1 housesRequested=32 horizon=7d windows=12h; no PR57 performance flags; independent load test, NOT an algorithm A/B"
+          PR57_ACTIVE_SCAN=0 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 PR57_WORK_DIAG=1 timeout 270s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- scale cycle --seed=42 --warmup=0 --cycle-houses=32 --cycle-bypass=1 --days=14 --window=43200 --cap=240 | tee artifacts/pr57-growth/seed42-32houses-7d.log
           python3 - <<'PY'
           import pathlib,re
-          for mode in (1,):
-              s=pathlib.Path(f'artifacts/pr57-bypass/cycle-{mode}.log').read_text()
-              windows=re.findall(r'^WINDOW (\d+) seconds=43200 wall=([0-9.]+)s .*$',s,re.M)
-              checks=re.findall(r'^PR57_AB_CHECKPOINT window=(\d+) sha256=([A-F0-9]{64}) ',s,re.M)
-              assert [int(w[0]) for w in windows]==[1,2,3,4],('incomplete windows',mode,len(windows))
-              assert [int(c[0]) for c in checks]==[1,2,3,4],('incomplete checkpoints',mode,len(checks))
-              assert 'INVARIANTS OK' in s and 'STOP limite' not in s,('incomplete simulation',mode)
-              save=re.search(r'^SAVE .* sha256=([A-F0-9]{64})$',s,re.M)
-              assert save and save.group(1)==checks[-1][1],('save/checkpoint mismatch',mode)
-              housing=re.search(r'^CYCLE_HOUSING requested=16 placed=(\d+) attempted=(\d+) ',s,re.M)
-              assert housing,('missing housing order',mode)
-              if mode==1:
-                  bypass=re.search(r'^PR57_BYPASS_READY completed=(\d+)/(\d+) roadNodes=(\d+) elapsed=([0-9.]+) statuses=(.*)$',s,re.M)
-                  assert bypass,('missing physical bypass status',mode)
-                  print('PR57_BYPASS_STATUS '+bypass.group(0),flush=True)
-              diag=re.findall(r'^PR57_WORK_DIAG window=4 .*$',s,re.M)
-              assert diag,('missing work status',mode)
-              print(f'PR57_TOPOLOGY_RESULT bypass={mode} seconds=172800 wall={sum(float(w[1]) for w in windows):.2f} placedHouses={housing.group(1)} finalSha={save.group(1)} '+diag[-1],flush=True)
+          s=pathlib.Path('artifacts/pr57-growth/seed42-32houses-7d.log').read_text()
+          windows=re.findall(r'^WINDOW (\d+) seconds=43200 wall=([0-9.]+)s eff=([0-9.]+)x cpu=([0-9.]+)s allocMB=([0-9.]+) gc0=(\d+) gc2=(\d+) (.*)$',s,re.M)
+          checks=re.findall(r'^PR57_AB_CHECKPOINT window=(\d+) sha256=([A-F0-9]{64}) ',s,re.M)
+          assert [int(w[0]) for w in windows]==list(range(1,15)),('incomplete 7-day simulation',len(windows))
+          assert [int(c[0]) for c in checks]==list(range(1,15)),('missing full checkpoints',len(checks))
+          assert 'INVARIANTS OK' in s and 'STOP limite' not in s, 'incomplete simulation or invariant failure'
+          save=re.search(r'^SAVE .* sha256=([A-F0-9]{64})$',s,re.M)
+          assert save and save.group(1)==checks[-1][1], 'save/load/checkpoint mismatch'
+          housing=re.search(r'^CYCLE_HOUSING requested=32 placed=(\d+) attempted=(\d+) ',s,re.M)
+          assert housing, 'missing real house orders'
+          bypass=re.search(r'^PR57_BYPASS_READY completed=(\d+)/(\d+) roadNodes=(\d+) elapsed=([0-9.]+) statuses=(.*)$',s,re.M)
+          assert bypass and bypass.group(1)==bypass.group(2)=='3', 'bypass road projects did not complete'
+          diag=re.findall(r'^PR57_WORK_DIAG window=4 .*$',s,re.M)
+          assert diag, 'missing construction/logistics status at 48h'
+          print('PR57_GROWTH_HOUSES requested=32 placed='+housing.group(1)+' attempted='+housing.group(2),flush=True)
+          print('PR57_GROWTH_AT_48H '+diag[-1],flush=True)
+          for w in windows:
+              print(f'PR57_GROWTH_WINDOW index={w[0]} wall={w[1]} eff={w[2]} cpu={w[3]} allocMB={w[4]} gc0={w[5]} gc2={w[6]} {w[7]}',flush=True)
+          print(f'PR57_GROWTH_RESULT seconds=604800 wall={sum(float(w[1]) for w in windows):.2f} allocatedMB={sum(float(w[4]) for w in windows):.1f} placedHouses={housing.group(1)} finalSha={save.group(1)}',flush=True)
           PY
-      - name: Preserve real-construction logs
+      - name: Preserve real-economy logs, including partial timeout evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-pr57-physical-bypass
-          path: artifacts/pr57-bypass/*.log
+          name: integrated-scale-pr57-growth-seed42
+          path: artifacts/pr57-growth/*.log
           if-no-files-found: warn
           retention-days: 14
