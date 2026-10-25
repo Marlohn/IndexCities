@@ -59,7 +59,7 @@ jobs:
               PR57_ENTRY_FRAME_REUSE=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 \
               timeout 90s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
                 profile cycle --seed=42 --resume="artifacts/pr57-source/pr57-jobs-20/checkpoint-12.json" \
-                --warmup=0 --days=1 --window=120 --cap=120
+                --warmup=0 --days=5 --window=120 --cap=120
             } | tee "artifacts/pr57-cargo-substeps/$mode/run.log"
           done
       - name: Audit five intermediate full-state checkpoints and ABBA wall, CPU and allocation
@@ -75,9 +75,9 @@ jobs:
               folder=root/mode
               log=(folder/'run.log').read_text()
               assert f'PR57_PENETRATION_AB mode={mode} checkpoint=12 seconds=600 stackAxes={flag} dispatchLookup=1 allOtherPr57Flags=0' in log
-              assert 'INVARIANTS OK' in log and '\\nSAVE ' in log,mode
+              assert 'INVARIANTS OK' in log and '\nSAVE ' in log,mode
               assert 'STEP_PROFILE steps=' in log and 'VEHICLE_PROFILE steps=' in log,mode
-              windows=re.findall(r'^WINDOW (\\d+) seconds=120 wall=([\\d.]+)s eff=[\\d.]+x cpu=([\\d.]+)s allocMB=([\\d.]+) gc0=(\\d+) gc2=(\\d+)',log,re.M)
+              windows=re.findall(r'^WINDOW (\d+) seconds=120 wall=([\d.]+)s eff=[\d.]+x cpu=([\d.]+)s allocMB=([\d.]+) gc0=(\d+) gc2=(\d+)',log,re.M)
               assert [int(x[0]) for x in windows]==list(range(1,6)),(mode,windows)
               before=(folder/'checkpoint-0.json').read_bytes()
               after=(folder/'checkpoint-5.json').read_bytes()
