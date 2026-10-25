@@ -10,6 +10,9 @@ public sealed partial class CitySimulation
     // PR57 observation only: split the zero-step branch, including paths that break/continue.
     readonly long[] _pr57BlockedAllocBytes=new long[6]; // cause, tow-approach, bypass, tow-exit, tow-reroute, tow-wait
     readonly long[] _pr57BlockedCalls=new long[6];
+    // PR57-only observation: full junction admission including early break/continue.
+    readonly long[] _pr57JunctionAllocBytes=new long[2]; // MayEnterJunction, post-denial handling
+    readonly long[] _pr57JunctionCalls=new long[3]; // MayEnterJunction, denied, bay-held before admission
     long _pr57MovementAllocCalls;
     // Shared empty candidate list: read-only, never populated by a movement scan.
     static readonly List<Vehicle> Pr57EmptyBendList=[];
@@ -764,15 +767,38 @@ public sealed partial class CitySimulation
                 // Entering is admitted whole too: a delivery near its bay takes no junction
                 // or bend before its entry is admitted.
                 pr57RegionStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
-                var sharedAhead=node.Neighbours.Count>=3||node.Crosswalk||TurnsAtBend(v,v.RouteIndex);
-                if(sharedAhead&&!Holds(v,node.Id)&&entryHeld!=null){v.Cause="Fila para acesso de carga";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}
-                if(sharedAhead&&!MayEnterJunction(v,node)){if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;
-                    // SPEC: held at a junction by a vehicle stopped there (out of fuel), it
-                    // turns back after the same minutes as behind it in the lane.
-                    if(v.TowPhase==TowPhase.ToVehicle&&(TryTowContraflow(v)||TryTowFromBehind(v)))continue;
-                    if(VehicleMovementTime-v.WaitingSince>=State.Tuning.UTurnWaitSeconds&&JunctionHeldByStranded(v,node) is {} stranded&&TryUTurn(v,stranded))continue;
-                    if(IsTow(v)&&TowHeldTooLong(v,null)&&JunctionHeldByStranded(v,node) is {} holder&&TryUTurn(v,holder,[..TowClosedRoads(v),node.Id])){CheckTowFuel(v);continue;}TowWaitsWithoutAccess(v);break;}
-                if(scanProfile is not null){_pr57RegionAllocBytes[6]+=GC.GetAllocatedBytesForCurrentThread()-pr57RegionStart;pr57RegionStart=GC.GetAllocatedBytesForCurrentThread();}
+                // Include early break/continue in the measured admission region. The
+                // finally block is observational; it never changes the decision.
+                try{
+                    var sharedAhead=node.Neighbours.Count>=3||node.Crosswalk||TurnsAtBend(v,v.RouteIndex);
+                    if(sharedAhead&&!Holds(v,node.Id)&&entryHeld!=null){
+                        if(scanProfile is not null)_pr57JunctionCalls[2]++;
+                        v.Cause="Fila para acesso de carga";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;
+                    }
+                    var junctionAllowed=true;
+                    if(sharedAhead){
+                        var pr57AdmissionStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
+                        if(scanProfile is not null)_pr57JunctionCalls[0]++;
+                        try{junctionAllowed=MayEnterJunction(v,node);}
+                        finally{if(scanProfile is not null)_pr57JunctionAllocBytes[0]+=GC.GetAllocatedBytesForCurrentThread()-pr57AdmissionStart;}
+                    }
+                    if(sharedAhead&&!junctionAllowed){
+                        var pr57DeniedStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
+                        if(scanProfile is not null)_pr57JunctionCalls[1]++;
+                        try{
+                            if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;
+                            // SPEC: held at a junction by a vehicle stopped there (out of fuel), it
+                            // turns back after the same minutes as behind it in the lane.
+                            if(v.TowPhase==TowPhase.ToVehicle&&(TryTowContraflow(v)||TryTowFromBehind(v)))continue;
+                            if(VehicleMovementTime-v.WaitingSince>=State.Tuning.UTurnWaitSeconds&&JunctionHeldByStranded(v,node) is {} stranded&&TryUTurn(v,stranded))continue;
+                            if(IsTow(v)&&TowHeldTooLong(v,null)&&JunctionHeldByStranded(v,node) is {} holder&&TryUTurn(v,holder,[..TowClosedRoads(v),node.Id])){CheckTowFuel(v);continue;}
+                            TowWaitsWithoutAccess(v);break;
+                        }finally{if(scanProfile is not null)_pr57JunctionAllocBytes[1]+=GC.GetAllocatedBytesForCurrentThread()-pr57DeniedStart;}
+                    }
+                }finally{
+                    if(scanProfile is not null)_pr57RegionAllocBytes[6]+=GC.GetAllocatedBytesForCurrentThread()-pr57RegionStart;
+                }
+                pr57RegionStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
                 if(v.Fuel<=.000001){RunOutOfFuel(v);break;}
                 step=Math.Min(step,v.Fuel/FuelRate(v));v.Position=v.Position.MoveTowards(target,step);v.AddFuel(-(step*FuelRate(v)));v.FuelUnits=Math.Max(0,v.FuelUnits);v.AddFuelBurnedLastStep(step*FuelRate(v));remaining-=step/speed;v.WaitingSince=0;v.Cause="Em viagem";
                 ClearPassedJunction(v);
@@ -822,6 +848,8 @@ public sealed partial class CitySimulation
                 Console.WriteLine($"PR57_ALLOC_REGIONS calls={_pr57MovementAllocCalls} routeMB={region[0]/1e6:F2} geometryMB={region[1]/1e6:F2} sharedMB={region[2]/1e6:F2} entryMB={region[3]/1e6:F2} poseMB={region[4]/1e6:F2} blockedMB={region[5]/1e6:F2} junctionMB={region[6]/1e6:F2} driveMB={region[7]/1e6:F2}");
                 var blocked=_pr57BlockedAllocBytes;var counts=_pr57BlockedCalls;
                 Console.WriteLine($"PR57_BLOCKED_ALLOC calls={_pr57MovementAllocCalls} causeMB={blocked[0]/1e6:F2} causeCalls={counts[0]} towApproachMB={blocked[1]/1e6:F2} towApproachCalls={counts[1]} bypassMB={blocked[2]/1e6:F2} bypassCalls={counts[2]} towExitMB={blocked[3]/1e6:F2} towExitCalls={counts[3]} towRerouteMB={blocked[4]/1e6:F2} towRerouteCalls={counts[4]} towWaitMB={blocked[5]/1e6:F2} towWaitCalls={counts[5]}");
+                var junctionBytes=_pr57JunctionAllocBytes;var junctionCalls=_pr57JunctionCalls;
+                Console.WriteLine($"PR57_JUNCTION_ALLOC calls={_pr57MovementAllocCalls} admissionMB={junctionBytes[0]/1e6:F2} admissionCalls={junctionCalls[0]} deniedMB={junctionBytes[1]/1e6:F2} deniedCalls={junctionCalls[1]} bayHeldCalls={junctionCalls[2]} fullRegionMB={region[6]/1e6:F2}");
                 Console.WriteLine($"PR57_ALLOC_PROFILE calls={_pr57MovementAllocCalls} totalMB={b[0]/1e6:F2} setupMB={b[1]/1e6:F2} laneMB={b[2]/1e6:F2} bendMB={b[3]/1e6:F2} siteMB={b[4]/1e6:F2} crossingMB={b[5]/1e6:F2} turnMB={b[6]/1e6:F2} operationsMB={b[7]/1e6:F2} preLaneMB={b[8]/1e6:F2} postTurnMB={b[9]/1e6:F2} finalizeMB={b[10]/1e6:F2} otherMB={other/1e6:F2}");
             }
         }
