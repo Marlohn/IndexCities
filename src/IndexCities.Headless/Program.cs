@@ -24,7 +24,7 @@ if(args.Length<2||args[0] is not ("scale" or "census" or "stuck" or "profile" or
 var seed=int.Parse(Opt("seed","42"));var days=int.Parse(Opt("days","7"));var cap=double.Parse(Opt("cap","600"),System.Globalization.CultureInfo.InvariantCulture);var growth=int.Parse(Opt("growth","0"));var warmup=int.Parse(Opt("warmup","2"));
 var cycleHouses=int.Parse(Opt("cycle-houses","0"));
 var cycleBypass=Opt("cycle-bypass","0")=="1";
-if(cycleHouses<0||cycleHouses>32){Console.Error.WriteLine("--cycle-houses deve estar entre 0 e 32");return 2;}
+if(cycleHouses<0||cycleHouses>40){Console.Error.WriteLine("--cycle-houses deve estar entre 0 e 40 (sonda experimental PR57)");return 2;}
 var windowSeconds=int.Parse(Opt("window","86400"));
 if(windowSeconds<2||windowSeconds>86400||windowSeconds%2!=0){Console.Error.WriteLine("--window deve estar entre 2 e 86400 segundos e ser múltiplo de 2");return 2;}
 if(windowSeconds!=86400&&(args[0]=="census"||args[0]=="stuck")){Console.Error.WriteLine("--window parcial é exclusivo de scale/profile");return 2;}
