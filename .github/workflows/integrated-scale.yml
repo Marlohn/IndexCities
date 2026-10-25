@@ -1,4 +1,4 @@
-name: Integrated core PR57 eight-day economic and maintenance viability
+name: Integrated core PR57 bounded physical gridlock checkpoint replay
 
 on:
   push:
@@ -11,96 +11,112 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: integrated-scale-pr57
   cancel-in-progress: false
 
 jobs:
-  legal-workplaces:
-    name: Eight-day real private workplaces, maintenance and economic survival
+  replay:
+    name: Replay two minutes from real six-day checkpoint; audit physical block
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Build integrated simulation Release
+      - name: Retrieve prior six-day real-city state, without rebuilding the city
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p artifacts/pr57-replay-source
+          gh run download 40169101306 -n integrated-scale-pr57-legal-workplaces-8d -D artifacts/pr57-replay-source
+          test -s artifacts/pr57-replay-source/pr57-jobs-20/checkpoint-10.json
+      - name: Build integrated headless Release
         run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: Run 48 legal homes and twenty paid private workplaces through eight days
+      - name: Replay 120 simulated seconds with every system and vehicle active
         shell: bash
         run: |
           set -euo pipefail
-          for workplaces in 20; do
-            dir="artifacts/pr57-jobs-$workplaces"
-            mkdir -p "$dir"
-            PR57_SAVE_CAPTURE_DIR="$dir" PR57_CYCLE_WORKFRONT=1 PR57_CYCLE_WORKPLACES="$workplaces" PR57_CYCLE_SOUTH_EXTENSION=1 PR57_CYCLE_SOUTH_HOUSING=1 PR57_CYCLE_NORTH_HOUSING=1 PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ACTIVE_SCAN=0 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 PR57_ENTRY_FRAME_REUSE=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 PR57_WORK_DIAG=1 PR57_PROFILE_FROM_WINDOW=16 timeout 300s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- profile cycle --seed=42 --warmup=0 --cycle-houses=48 --cycle-bypass=1 --days=16 --window=43200 --cap=180 | tee "$dir/run.log"
-          done
-      - name: Audit daily survival, real wages, maintenance, migration and saves
+          mkdir -p artifacts/pr57-replay
+          PR57_SAVE_CAPTURE_DIR=artifacts/pr57-replay PR57_AB_CHECKPOINT=1 PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ACTIVE_SCAN=0 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 PR57_ENTRY_FRAME_REUSE=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 timeout 120s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- profile cycle --seed=42 --resume=artifacts/pr57-replay-source/pr57-jobs-20/checkpoint-10.json --warmup=0 --days=1 --window=120 --cap=60 | tee artifacts/pr57-replay/run.log
+      - name: Verify physical mutual exclusion, activity, saves and actual movement profile
         shell: bash
         run: |
-          set -euo pipefail
-          python3 - <<'PY' | tee artifacts/pr57-jobs-summary.log
-          import decimal, json, pathlib, re
-          jobs={'CityHall':2,'WorksDepot':4,'Grocery':4,'Farm':4,'FuelStation':4,'WaterIntake':6,'WaterTreatment':6,'SewageTreatment':6,'WindPower':6,'MechanicShop':4}
-          snapshots={}
-          for count in (20,):
-              root=pathlib.Path(f'artifacts/pr57-jobs-{count}')
-              log=(root/'run.log').read_text()
-              assert 'PR57_WORKFRONT_READY completed=2/2' in log, f'paid road incomplete: {count}'
-              assert 'CYCLE_HOUSING requested=48 placed=48' in log, f'housing order incomplete: {count}'
-              if count==20:
-                  assert 'PR57_WORKPLACE_ORDERS requested=20 placed=20 attempted=20' in log, 'workplace quote/order failed'
-                  assert log.count('PR57_WORKPLACE_QUOTE index=')==20
-              assert 'INVARIANTS OK' in log and '\nSAVE ' in log, f'save/invariant failure: {count}'
-              assert 'STEP_PROFILE steps=' in log, f'profile missing: {count}'
-              for window in range(1,17):
-                  assert f'WINDOW {window} seconds=43200 ' in log, f'window {window} missing: {count}'
-                  assert f'PR57_AB_CHECKPOINT window={window} ' in log
-                  state=json.loads((root/f'checkpoint-{window}.json').read_text(),parse_float=decimal.Decimal)
-                  buildings=[b for b in state['Buildings'] if not b.get('Removed')]
-                  houses=[b for b in buildings if b['Kind']=='House']
-                  completed=[b for b in houses if b['Completed']]
-                  owned=[b for b in completed if b.get('OwnerAccount') is not None and b.get('FamilyId') is not None]
-                  private=[b for b in buildings if b['Kind'] in ('Grocery','Farm','FuelStation','MechanicShop')]
-                  purchased=[b for b in private if b['Completed'] and b.get('CompanyId') is not None and not b.get('OperationClosed')]
-                  citizens=state['Citizens']; families=state['FamilyCandidates']; vehicles=state['Vehicles']
-                  snap=dict(residents=sum(c['Alive'] and c['Resident'] for c in citizens),
-                            external=sum(c['Alive'] and not c['Resident'] for c in citizens),
-                            completedHomes=len(completed),occupiedHomes=len(owned),vacantHomes=len(completed)-len(owned),
-                            pendingFamilies=sum(not f['Migrated'] for f in families),
-                            totalPotentialJobs=sum(jobs.get(b['Kind'],0) for b in buildings if b['Completed'] and b['Kind']!='House'),
-                            acquiredPrivateJobs=sum(jobs[b['Kind']] for b in purchased),
-                            activeCompanies=sum(c['Active'] for c in state['Companies']),
-                            minCompanyCash=str(min((state['Wallets'].get('company:'+str(c['Id']),decimal.Decimal(0)) for c in state['Companies']),default=decimal.Decimal(0))),
-                            closedPrivate=sum(b['Completed'] and b.get('OperationClosed') for b in private),
-                            maintenanceOpen=sum(p['IsMaintenance'] and p['Status'] in ('Waiting','InProgress') for p in state['Projects']),
-                            maintenanceTotal=sum(p['IsMaintenance'] for p in state['Projects']),
-                            deaths=sum(not c['Alive'] for c in citizens),
-                            meals=sum(h['Description'].startswith('Consumiu 1 alimento') for c in citizens for h in c['History']),
-                            wages=str(sum((l['Amount'] for l in state['Ledger'] if l['Category'].startswith('Salários / ')),decimal.Decimal(0))),
-                            actualHires=sum(c['Alive'] and c.get('WorkplaceId') is not None for c in citizens),
-                            completedPrivate=len([b for b in private if b['Completed']]),
-                            purchasedPrivate=len(purchased),
-                            openProjects=sum(p['Status'] in ('Waiting','InProgress') for p in state['Projects']),
-                            openShipments=sum(not s['Complete'] for s in state['Shipments']),
-                            vehicles=len(vehicles),travelling=sum(v['Status']=='Travelling' for v in vehicles),
-                            cityCash=str(state['Wallets']['city']),ledger=len(state['Ledger']),
-                            personalFacts=sum(len(c['History']) for c in citizens))
-                  snapshots[(count,window)]=snap
-                  print('PR57_JOBS_WINDOW',f'workplaces={count}',f'window={window}',*(f'{k}={v}' for k,v in snap.items()),flush=True)
-              assert snapshots[(count,16)]['ledger']>snapshots[(count,1)]['ledger']
-              assert snapshots[(count,4)]['personalFacts']>snapshots[(count,1)]['personalFacts']
-              assert 'meals=' in log and 'wages=' in log
-              print(f'PR57_JOBS_SCOPE workplaces={count} houses=48 seed=42 seconds=691200 realRoads=1 realPrivateConstruction=1 noInjectedResources=1 noSpeedupClaim=1',flush=True)
-          print('PR57_LONG_LIMIT single unchanged 20-workplace load; 8 simulated days is not economic sustainability or a 10k/80y proof',flush=True)
+          python3 - <<'PY' | tee artifacts/pr57-replay/audit.log
+          import json, math, pathlib
+          source=pathlib.Path('artifacts/pr57-replay-source/pr57-jobs-20/checkpoint-10.json')
+          root=pathlib.Path('artifacts/pr57-replay')
+          start=json.loads(source.read_text())
+          before=json.loads((root/'checkpoint-0.json').read_text())
+          after=json.loads((root/'checkpoint-1.json').read_text())
+          log=(root/'run.log').read_text()
+          assert 'PR57 saved-cycle replay' in log and 'INVARIANTS OK' in log and '\nSAVE ' in log
+          assert 'STEP_PROFILE steps=' in log and 'VEHICLE_PROFILE steps=' in log
+          assert 'WINDOW 1 seconds=120 ' in log
+          assert before['ElapsedSecondsUnits']==start['ElapsedSecondsUnits']
+          assert after['ElapsedSecondsUnits']-before['ElapsedSecondsUnits']==120_000_000
+          roads={r['Id']:r for r in before['Roads']}
+          vehicles={v['Id']:v for v in before['Vehicles']}
+          afterVehicles={v['Id']:v for v in after['Vehicles']}
+          entrant=vehicles[1174]; lane=vehicles[487]
+          def delta(a,b): return (a['X']-b['X'],a['Z']-b['Z'])
+          def dot(a,b): return a[0]*b[0]+a[1]*b[1]
+          def norm(a): return math.hypot(*a)
+          def side(origin,axis,p): return ((p['X']-origin['X'])*axis[1]-(p['Z']-origin['Z'])*axis[0])/norm(axis)
+          def along(origin,axis,p): return dot(delta(p,origin),axis)/norm(axis)
+          node=roads[entrant['Route'][0]]['Position']
+          following=roads[entrant['Route'][1]]['Position']
+          axis=delta(following,node)
+          length=norm(axis)
+          target={'X':node['X']+axis[1]/length*1.65,'Z':node['Z']-axis[0]/length*1.65}
+          fromSide=side(node,axis,entrant['Position'])
+          toSide=side(node,axis,target)
+          otherSide=side(node,axis,lane['Position'])
+          fraction=(otherSide-fromSide)/(toSide-fromSide)
+          crossAlong=along(node,axis,entrant['Position'])*(1-fraction)+along(node,axis,target)*fraction
+          gap=along(node,axis,lane['Position'])-crossAlong
+          direction=dot((math.sin(lane['Heading']),math.cos(lane['Heading'])),axis)/length
+          assert entrant['PassengerCar'] and entrant['RouteIndex']==0 and entrant['Status']=='Travelling'
+          assert abs(otherSide)<before['Tuning']['RoadWidth']/2
+          assert min(fromSide,toSide)-.9<=otherSide<=max(fromSide,toSide)+.9
+          assert 0<fraction<1 and 0<gap<8 and direction<-.5 and gap*direction<0
+          # Same separating-axis geometry and body dimensions as BodiesOverlap.
+          def overlap(a,ap,ah,b,bp,bh):
+              af=(math.sin(ah),math.cos(ah)); ar=(af[1],-af[0])
+              bf=(math.sin(bh),math.cos(bh)); br=(bf[1],-bf[0])
+              d=delta(bp,ap)
+              al=2.1 if a['PassengerCar'] else 3.6
+              aw=.9 if a['PassengerCar'] else 1.45
+              bl=2.1 if b['PassengerCar'] else 3.6
+              bw=.9 if b['PassengerCar'] else 1.45
+              return all(abs(dot(d,x))<al*abs(dot(af,x))+aw*abs(dot(ar,x))+bl*abs(dot(bf,x))+bw*abs(dot(br,x))+.1 for x in (af,ar,bf,br))
+          i=lane['RouteIndex']
+          n=roads[lane['Route'][i]]['Position']
+          previous=roads[lane['Route'][i-1]]['Position']
+          advance=delta(n,previous)
+          d=norm(advance)
+          laneTarget={'X':n['X']+advance[1]/d*1.65,'Z':n['Z']-advance[0]/d*1.65}
+          dist=norm(delta(laneTarget,lane['Position']))
+          first={'X':lane['Position']['X']+(laneTarget['X']-lane['Position']['X'])*.5/dist,'Z':lane['Position']['Z']+(laneTarget['Z']-lane['Position']['Z'])*.5/dist}
+          assert dist>.5
+          assert not overlap(lane,lane['Position'],lane['Heading'],entrant,entrant['Position'],entrant['Heading'])
+          assert overlap(lane,first,lane['Heading'],entrant,entrant['Position'],entrant['Heading'])
+          for vid in (487,1174):
+              v=vehicles[vid]; later=afterVehicles[vid]
+              assert later['Status']=='Travelling' and later['Position']==v['Position']
+              assert later['RouteIndex']==v['RouteIndex'] and later['WaitingSince']==v['WaitingSince']
+              print('PR57_PAIR_REPLAY',f'id={vid}',f'cause={later["Cause"]}',f'waitingSince={later["WaitingSince"]}',f'position={later["Position"]}')
+          print('PR57_PAIR_GEOMETRY',f'entrant=1174',f'lane=487',f'gap={gap:.6f}',f'approachDirection={direction:.6f}',f'firstStepBodyOverlap=1',f'laneTargetDistance={dist:.6f}')
+          print('PR57_PAIR_LIMIT', 'snapshot geometry and 120s replay prove these local holds, not a global deadlock or 10k viability')
           PY
-      - name: Preserve complete states, physical logistics and economic activity
+      - name: Preserve replay and diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-pr57-legal-workplaces-8d
-          path: artifacts/pr57-jobs-*/**
+          name: integrated-scale-pr57-cargo-pair-120s
+          path: artifacts/pr57-replay/**
           if-no-files-found: warn
           retention-days: 14

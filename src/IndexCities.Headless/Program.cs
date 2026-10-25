@@ -16,7 +16,7 @@ using IndexCities.Simulation;
 //          --strand=N empties the tank of N driving vehicles each day and follows the tow and the queue for 30 min
 // Results are measurements, not product rules: see docs/exploration/ritmo-velocidades.md.
 Console.OutputEncoding=Encoding.UTF8;
-var known=new HashSet<string>{"rows","length","days","cap","signals","seed","growth","warmup","strand","window","cycle-houses","cycle-bypass"};
+var known=new HashSet<string>{"rows","length","days","cap","signals","seed","growth","warmup","strand","window","cycle-houses","cycle-bypass","resume"};
 var opts=new Dictionary<string,string>();foreach(var p in args.Skip(2).Select(a=>a.TrimStart('-').Split('=',2)))opts[p[0]]=p.Length>1?p[1]:"1";
 string Opt(string k,string d)=>opts.GetValueOrDefault(k,d);
 if(opts.Keys.FirstOrDefault(k=>!known.Contains(k)) is {} unknown){Console.Error.WriteLine("opção desconhecida: --"+unknown);return 2;}
@@ -29,7 +29,17 @@ var windowSeconds=int.Parse(Opt("window","86400"));
 if(windowSeconds<2||windowSeconds>86400||windowSeconds%2!=0){Console.Error.WriteLine("--window deve estar entre 2 e 86400 segundos e ser múltiplo de 2");return 2;}
 if(windowSeconds!=86400&&(args[0]=="census"||args[0]=="stuck")){Console.Error.WriteLine("--window parcial é exclusivo de scale/profile");return 2;}
 var sw=Stopwatch.StartNew();CitySimulation sim;string info;
-if(args[1]=="cycle"){sim=Fixtures.Cycle(seed,cycleBypass);info="cycle (CityCycleTests.City, obras reais)"+(cycleBypass?" + bypass físico encomendado":"");}
+// PR57-only bounded replay: restore a full real-city checkpoint instead of
+// rebuilding and simulating its first six days. No production rules are changed.
+var resumePath=Opt("resume","");
+if(resumePath.Length>0&&(args[1]!="cycle"||cycleHouses!=0||growth!=0||warmup!=0||args[0]=="repro")){
+    Console.Error.WriteLine("--resume requires profile|scale cycle, --warmup=0, --cycle-houses=0, --growth=0");return 2;
+}
+if(resumePath.Length>0){
+    var source=File.ReadAllText(resumePath);
+    sim=CitySimulation.FromJson(source);
+    info=$"PR57 saved-cycle replay elapsed={sim.State.ElapsedSeconds:F3} sourceSha256={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(source)))}";
+}else if(args[1]=="cycle"){sim=Fixtures.Cycle(seed,cycleBypass);info="cycle (CityCycleTests.City, obras reais)"+(cycleBypass?" + bypass físico encomendado":"");}
 else (sim,info)=Fixtures.Grid(seed,int.Parse(Opt("rows","3")),double.Parse(Opt("length","400"),System.Globalization.CultureInfo.InvariantCulture),Opt("signals","1")=="1",growth>0);
 Console.WriteLine($"FIXTURE {info} build={sw.Elapsed.TotalSeconds:F1}s .NET={Environment.Version} cpu={Environment.ProcessorCount} release={!Debugger.IsAttached}");
 if(cycleHouses>0&&args[1]=="cycle"){
