@@ -150,6 +150,7 @@ public sealed partial class CitySimulation
         // A public Advance boundary permits direct external State edits (including tests).
         // Rebuild the opt-in agenda there; internal quanta still use incremental wakeups.
         if(Pr57CitizenAgendaEnabled)_pr57AgendaReady=false;
+        if(Pr57MaintenanceScheduleEnabled)_pr57MaintenanceScheduleReady=false;
         _crosswalkBands.Clear();_crosswalkBandsActive=true;BeginWalkRoutes();
         try{var remaining=seconds;while(remaining>1e-8){var dt=Math.Min(Quantum,remaining);Step(dt);remaining-=dt;}}
         finally{_crosswalkBandsActive=false;_crosswalkBands.Clear();EndWalkRoutes();}
@@ -197,6 +198,7 @@ public sealed partial class CitySimulation
         MoveCitizens(dt);
         if(profile is not null)profile.Mark(2,ref started);
         var completedConstruction=ProgressConstruction(dt);
+        if(completedConstruction&&Pr57MaintenanceScheduleEnabled)_pr57MaintenanceScheduleReady=false;
         if(profile is not null)profile.Mark(3,ref started);
         UpdateMaintenanceCondition(dt);
         if(profile is not null)profile.Mark(4,ref started);
