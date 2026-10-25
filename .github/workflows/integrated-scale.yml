@@ -1,4 +1,4 @@
-name: PR57 opt-in indexed construction work access causal A/B
+name: PR57 opt-in cached utility source distances causal A/B
 
 on:
   push:
@@ -18,7 +18,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  work-access-index:
+  source-distance-cache:
     runs-on: ubuntu-latest
     timeout-minutes: 18
     steps:
@@ -42,7 +42,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p artifacts/pr57-work-access
+          mkdir -p artifacts/pr57-source-distance
           SOURCE="$(find artifacts/pr57-source -type f -name checkpoint-16.json | grep real-maintenance-control-a | head -n 1)"
           test -s "$SOURCE"
           run_one() {
@@ -50,34 +50,34 @@ jobs:
             local enabled=0
             if [[ "$mode" == candidate* ]]; then enabled=1; fi
             local label="$scenario-$mode"
-            mkdir -p "artifacts/pr57-work-access/$label"
-            echo "PR57_WORK_ACCESS_RUN label=$label enabled=$enabled"
+            mkdir -p "artifacts/pr57-source-distance/$label"
+            echo "PR57_SOURCE_DISTANCE_RUN label=$label enabled=$enabled"
             if [ "$scenario" = "real-maintenance" ]; then
-              PR57_WORK_ACCESS_INDEX="$enabled" PR57_DISPATCH_SHIPMENT_LOOKUP=1 \
+              PR57_SOURCE_DISTANCE_CACHE="$enabled" PR57_WORK_ACCESS_INDEX=0 PR57_DISPATCH_SHIPMENT_LOOKUP=1 \
               PR57_PEDESTRIAN_GRID=0 PR57_LIVING_ROSTER=0 PR57_GRID_DIAG=1 \
-              PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="artifacts/pr57-work-access/$label" \
+              PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="artifacts/pr57-source-distance/$label" \
               timeout 120s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
                 scale cycle --seed=42 --resume="$SOURCE" --warmup=0 --days=4 --window=1800 --cap=90
             else
-              PR57_WORK_ACCESS_INDEX="$enabled" PR57_DISPATCH_SHIPMENT_LOOKUP=1 \
+              PR57_SOURCE_DISTANCE_CACHE="$enabled" PR57_WORK_ACCESS_INDEX=0 PR57_DISPATCH_SHIPMENT_LOOKUP=1 \
               PR57_PEDESTRIAN_GRID=0 PR57_LIVING_ROSTER=0 PR57_GRID_DIAG=1 \
-              PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="artifacts/pr57-work-access/$label" \
+              PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="artifacts/pr57-source-distance/$label" \
               timeout 120s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
                 scale cycle --seed=42 --warmup=0 --days=4 --window=3600 --cap=90
             fi
           }
-          run_one real-maintenance control-a | tee artifacts/pr57-work-access/real-maintenance-control-a.log
-          run_one real-maintenance candidate-a | tee artifacts/pr57-work-access/real-maintenance-candidate-a.log
-          run_one real-maintenance candidate-b | tee artifacts/pr57-work-access/real-maintenance-candidate-b.log
-          run_one real-maintenance control-b | tee artifacts/pr57-work-access/real-maintenance-control-b.log
-          run_one real-low control | tee artifacts/pr57-work-access/real-low-control.log
-          run_one real-low candidate | tee artifacts/pr57-work-access/real-low-candidate.log
+          run_one real-maintenance control-a | tee artifacts/pr57-source-distance/real-maintenance-control-a.log
+          run_one real-maintenance candidate-a | tee artifacts/pr57-source-distance/real-maintenance-candidate-a.log
+          run_one real-maintenance candidate-b | tee artifacts/pr57-source-distance/real-maintenance-candidate-b.log
+          run_one real-maintenance control-b | tee artifacts/pr57-source-distance/real-maintenance-control-b.log
+          run_one real-low control | tee artifacts/pr57-source-distance/real-low-control.log
+          run_one real-low candidate | tee artifacts/pr57-source-distance/real-low-candidate.log
       - name: Compare every full checkpoint and actual end-to-end wall CPU allocations
         shell: bash
         run: |
-          python3 - <<'PY' | tee artifacts/pr57-work-access/audit.log
+          python3 - <<'PY' | tee artifacts/pr57-source-distance/audit.log
           import hashlib,json,pathlib,re
-          root=pathlib.Path('artifacts/pr57-work-access')
+          root=pathlib.Path('artifacts/pr57-source-distance')
           for scenario,pairs,windows in [
             ('real-maintenance',[('control-a','candidate-a'),('control-b','candidate-b')],4),
             ('real-low',[('control','candidate')],4)]:
@@ -85,7 +85,7 @@ jobs:
               stats={}
               for mode in (control,candidate):
                 log=(root/f'{scenario}-{mode}.log').read_text()
-                assert f'PR57_WORK_ACCESS_INDEX active=True' in log if mode.startswith('candidate') else 'PR57_WORK_ACCESS_INDEX active=True' not in log
+                assert ('PR57_SOURCE_DISTANCE_CACHE active=True' if mode.startswith('candidate') else 'PR57_SOURCE_DISTANCE_CACHE active=False') in log,(scenario,mode)
                 assert 'INVARIANTS OK' in log and 'SAVE ' in log,(scenario,mode)
                 lines=[line for line in log.splitlines() if line.startswith('WINDOW ')]
                 assert len(lines)==windows,(scenario,mode,len(lines))
@@ -99,14 +99,14 @@ jobs:
                 assert data==other,('causal checkpoint mismatch',scenario,control,candidate,i,hashlib.sha256(data).hexdigest(),hashlib.sha256(other).hexdigest())
                 if i in (0,windows):
                   state=json.loads(data)
-                  print('PR57_WORK_ACCESS_STATE',json.dumps(dict(scenario=scenario,window=i,
+                  print('PR57_SOURCE_DISTANCE_STATE',json.dumps(dict(scenario=scenario,window=i,
                     aliveResidents=sum(c['Alive'] and c['Resident'] for c in state['Citizens']),
                     travelling=sum(v['Status']=='Travelling' for v in state['Vehicles']),
                     openProjects=sum(p['Status'] in ('Waiting','InProgress') for p in state['Projects']),
                     ledger=len(state['Ledger']),events=len(state['CityEvents']),
                     history=sum(len(c['History']) for c in state['Citizens'])),sort_keys=True))
               a=stats[control];b=stats[candidate]
-              print('PR57_WORK_ACCESS_AB',json.dumps(dict(scenario=scenario,control=control,candidate=candidate,
+              print('PR57_SOURCE_DISTANCE_AB',json.dumps(dict(scenario=scenario,control=control,candidate=candidate,
                 wallControl=a['wall'],wallCandidate=b['wall'],cpuControl=a['cpu'],cpuCandidate=b['cpu'],
                 allocControlMB=a['allocMB'],allocCandidateMB=b['allocMB'],
                 wallGainPct=100*(a['wall']-b['wall'])/a['wall'],
@@ -116,7 +116,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-pr57-work-access-index-ab
-          path: artifacts/pr57-work-access/**
+          name: integrated-scale-pr57-source-distance-cache-ab
+          path: artifacts/pr57-source-distance/**
           if-no-files-found: warn
           retention-days: 14

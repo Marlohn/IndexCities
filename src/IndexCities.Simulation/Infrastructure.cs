@@ -15,8 +15,15 @@ public sealed partial class CitySimulation
     public double WaterPollutionTreatmentFactor=>1/(1+State.LakePollution*.65);
     public double WaterTreatmentPotential(Building building)=>building.Completed&&!building.Removed&&building.Kind==BuildingKind.WaterTreatment&&HasExteriorAccess(building)?InfrastructureTreatmentPotential(building,WorkersPresent(building)):0;
     public double CurrentWaterTreatmentPotential=>State.Buildings.Sum(WaterTreatmentPotential);
+    static readonly bool Pr57SourceDistanceCacheEnabled=Environment.GetEnvironmentVariable("PR57_SOURCE_DISTANCE_CACHE")=="1";
+    bool _pr57SourceDistanceCacheAnnounced;
     void UpdateInfrastructure(double dt)
     {
+        if(!_pr57SourceDistanceCacheAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine($"PR57_SOURCE_DISTANCE_CACHE active={Pr57SourceDistanceCacheEnabled}");
+            _pr57SourceDistanceCacheAnnounced=true;
+        }
         var detail=CostProfile;
         var detailStarted=detail is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
         // Per-step working sets are reused buffers, refilled in list order.
@@ -51,7 +58,7 @@ public sealed partial class CitySimulation
         State.ElectricityCapacity=wind.Sum(b=>b.OperationalCapacity);State.AddElectricityAvailableToday(State.ElectricityCapacity*dt/86400);
         var night=State.Now.Hour<6||State.Now.Hour>=18;var streets=_streets;streets.Clear();foreach(var n in State.Roads)if(!n.Highway)streets.Add(n);
         // Consumers: active buildings, then streets, in that order (as one list).
-        var allocation=_allocation;allocation.Reset(active.Count+streets.Count);
+        var allocation=Pr57SourceDistanceCacheEnabled?_pr57ElectricAllocation:_allocation;allocation.Reset(active.Count+streets.Count);
         for(var i=0;i<active.Count;i++)allocation.Set(i,active[i].Position,active[i].ElectricityDemand);
         for(var j=0;j<streets.Count;j++){var n=streets[j];allocation.Set(active.Count+j,n.Position,night&&!n.ConstructionOnly ? .12*n.MaintenanceRatio : 0);}
         var streetDemand=0.0;for(var j=0;j<streets.Count;j++)streetDemand+=allocation.Demands[active.Count+j];
@@ -66,14 +73,14 @@ public sealed partial class CitySimulation
         var treatments=active.Where(b=>b.Kind==BuildingKind.WaterTreatment&&HasExteriorAccess(b)).ToList();
         var nominal=treatments.Sum(b=>InfrastructureTreatmentPotential(b,present[b.Id]));
         State.PotableCapacity=Math.Min(State.RawWaterCapacity,nominal);State.AddWaterAvailableToday(State.PotableCapacity*dt/86400);State.WaterDemand=active.Sum(b=>b.WaterDemand);
-        var water=_allocation;water.Reset(active.Count);for(var i=0;i<active.Count;i++)water.Set(i,active[i].Position,active[i].WaterDemand);
+        var water=Pr57SourceDistanceCacheEnabled?_pr57WaterAllocation:_allocation;water.Reset(active.Count);for(var i=0;i<active.Count;i++)water.Set(i,active[i].Position,active[i].WaterDemand);
         _sources.Clear();foreach(var b in treatments)_sources.Add(b.Position);water.Allocate(State.PotableCapacity,_sources);
         for(var i=0;i<active.Count;i++){var b=active[i];b.WaterRatio=b.WaterDemand<=0?0:water.Result[i]/b.WaterDemand;b.AddWaterConsumedToday(b.WaterDemand*b.WaterRatio*dt/86400);b.SewageProduced=b.WaterDemand*b.WaterRatio*.8;}
         foreach(var b in treatments)b.OperationalCapacity=nominal==0?0:State.PotableCapacity*InfrastructureTreatmentPotential(b,present[b.Id])/nominal;
         if(detail is not null)detail.MarkDetail(3,ref detailStarted);
         var sewage=active.Where(b=>b.Kind==BuildingKind.SewageTreatment&&HasExteriorAccess(b)).ToList();foreach(var b in sewage)b.OperationalCapacity=b.Definition.Capacity*StaffFactor(b)*b.MaintenanceRatio*b.ElectricityRatio;
         State.SewageCapacity=sewage.Sum(b=>b.OperationalCapacity);State.SewageDemand=active.Sum(b=>b.SewageProduced);State.UntreatedSewage=Math.Max(0,State.SewageDemand-State.SewageCapacity);
-        var sewageAllocation=_allocation;sewageAllocation.Reset(active.Count);for(var i=0;i<active.Count;i++)sewageAllocation.Set(i,active[i].Position,active[i].SewageProduced);
+        var sewageAllocation=Pr57SourceDistanceCacheEnabled?_pr57SewageAllocation:_allocation;sewageAllocation.Reset(active.Count);for(var i=0;i<active.Count;i++)sewageAllocation.Set(i,active[i].Position,active[i].SewageProduced);
         _sources.Clear();foreach(var b in sewage)_sources.Add(b.Position);sewageAllocation.Allocate(State.SewageCapacity,_sources);
         for(var i=0;i<active.Count;i++){var b=active[i];b.UntreatedSewage=Math.Max(0,b.SewageProduced-sewageAllocation.Result[i]);}
         UpdatePollution(dt,active);
@@ -89,6 +96,8 @@ public sealed partial class CitySimulation
     }
     readonly List<Building> _active=[];readonly Dictionary<int,int> _present=new();readonly Dictionary<int,Building> _activeById=new();
     readonly List<RoadNode> _streets=[];readonly List<Point> _sources=[];readonly CapacityAllocation _allocation=new();
+    // PR57 POC: independent caches for the three causal utility allocations.
+    readonly CapacityAllocation _pr57ElectricAllocation=new(true),_pr57WaterAllocation=new(true),_pr57SewageAllocation=new(true);
 }
 
 // Capacity shared among consumers by demand, weighted by distance to the
@@ -98,6 +107,26 @@ sealed class CapacityAllocation
 {
     public Point[] Positions=[];public double[] Demands=[];public double[] Result=[];
     double[] _weights=[];int[] _pending=[];int _count;
+    // Only geometry is cached. Live demands, capacity and allocation loops run
+    // on every Step in exactly their original order; sources/positions are
+    // compared exactly before reusing any nearest-source distance.
+    readonly bool _cacheSourceDistances;
+    readonly List<Point> _cachedSources=[];
+    Point[] _cachedPositions=[],_nearest=[];
+    int _cachedCount=-1;
+    public CapacityAllocation(bool cacheSourceDistances=false)=>_cacheSourceDistances=cacheSourceDistances;
+    void RefreshSourceDistances(List<Point> sources)
+    {
+        var sourcesChanged=_cachedSources.Count!=sources.Count;
+        if(!sourcesChanged)for(var j=0;j<sources.Count;j++)if(_cachedSources[j]!=sources[j]){sourcesChanged=true;break;}
+        if(sourcesChanged){_cachedSources.Clear();_cachedSources.AddRange(sources);}
+        if(_cachedPositions.Length<_count){Array.Resize(ref _cachedPositions,_count);Array.Resize(ref _nearest,_count);}
+        for(var i=0;i<_count;i++)if(sourcesChanged||i>=_cachedCount||_cachedPositions[i]!=Positions[i])
+        {
+            _cachedPositions[i]=Positions[i];_nearest[i]=NearestSource(sources,Positions[i]);
+        }
+        _cachedCount=_count;
+    }
     public void Reset(int count)
     {
         _count=count;if(Demands.Length>=count)return;
@@ -110,9 +139,10 @@ sealed class CapacityAllocation
         if(total<=0||capacity<=0)return;
         if(capacity>=total){for(var i=0;i<_count;i++)Result[i]=Demands[i];return;}
         var pending=0;for(var i=0;i<_count;i++)if(Demands[i]>0)_pending[pending++]=i;var remaining=capacity;
+        if(_cacheSourceDistances&&sources.Count>0)RefreshSourceDistances(sources);
         // Distances and demands stay fixed throughout this allocation. Sum only
         // the remaining consumers, in the same order as the previous loop.
-        for(var k=0;k<pending;k++){var i=_pending[k];_weights[i]=Demands[i]/(1+(sources.Count==0?256:NearestSource(sources,Positions[i]))/128);}
+        for(var k=0;k<pending;k++){var i=_pending[k];_weights[i]=Demands[i]/(1+(sources.Count==0?256:_cacheSourceDistances?_nearest[i]:NearestSource(sources,Positions[i]))/128);}
         while(pending>0&&remaining>.000001){
             var sum=0.0;for(var k=0;k<pending;k++)sum+=_weights[_pending[k]];
             var allocated=0.0;for(var k=0;k<pending;k++){var i=_pending[k];var amount=Math.Min(Demands[i]-Result[i],remaining*_weights[i]/sum);Result[i]+=amount;allocated+=amount;}
