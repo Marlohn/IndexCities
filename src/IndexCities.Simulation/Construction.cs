@@ -185,7 +185,7 @@ public sealed partial class CitySimulation
         if(p.CrewVehicleId!=null||p.LocalCrew.Count>0)return;
         var depot=State.Buildings.FirstOrDefault(b=>b.Kind==BuildingKind.WorksDepot&&b.Completed&&!b.Removed&&!b.OperationClosed&&Access(b)!=null);if(depot==null)return;
         foreach(var c in State.Citizens.Where(c=>c.Alive&&c.WorkplaceId==depot.Id&&c.ConstructionProjectId==null&&!c.Moving&&c.Position.Distance(depot.Door)<3&&ShiftActive(c)).Take(3)){
-            var target=CrewPedestrianSite(access);var route=PedestrianPath(c.Position,target,access);if(route.Count==0)continue;c.ConstructionProjectId=p.Id;c.Purpose=JourneyPurpose.Construction;c.Path=route;c.PathIndex=0;c.PathRoadRevision=State.RoadRevision;c.Activity="Indo ao canteiro";p.LocalCrew.Add(c.Id);Personal(c,"Equipe municipal enviada à obra "+p.Id);
+            var target=CrewPedestrianSite(access);var route=PedestrianPath(c.Position,target,access);if(route.Count==0)continue;Pr57CitizenAgendaWake(c);c.ConstructionProjectId=p.Id;c.Purpose=JourneyPurpose.Construction;c.Path=route;c.PathIndex=0;c.PathRoadRevision=State.RoadRevision;c.Activity="Indo ao canteiro";p.LocalCrew.Add(c.Id);Personal(c,"Equipe municipal enviada à obra "+p.Id);
         }
     }
     bool ProgressConstruction(double dt)

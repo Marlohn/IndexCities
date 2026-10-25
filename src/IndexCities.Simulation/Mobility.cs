@@ -71,12 +71,14 @@ public sealed partial class CitySimulation
     }
     bool StartJourney(Citizen c,Building destination,JourneyPurpose purpose)
     {
+        Pr57CitizenAgendaWake(c);
         if(TryDrive(c,destination,purpose))return true;
         var path=CitizenRoute(c,destination);if(path.Count==0){c.Activity="Sem rota para "+destination.Definition.Name;c.Decision="Acesso viário ou travessia indisponível";c.PathRoadRevision=State.RoadRevision;c.NextDecisionAt=State.ElapsedSeconds+300;return false;}
         c.Path=path;c.PathIndex=0;c.PathRoadRevision=State.RoadRevision;c.Purpose=purpose;c.DestinationId=destination.Id;c.Activity=purpose switch{JourneyPurpose.Work=>"Indo trabalhar",JourneyPurpose.Home=>"Voltando para casa",JourneyPurpose.Shopping=>"Indo comprar alimentos",JourneyPurpose.Arriving=>"Chegando à cidade",JourneyPurpose.Visit=>"Indo visitar outra família",JourneyPurpose.Stroll=>"Passeando a pé",_=>"Indo ao canteiro"};Personal(c,c.Activity+" em "+destination.Definition.Name);return true;
     }
     void MoveCitizens(double dt)
     {
+        if(!Pr57CitizenAgendaEnabled&&!_pr57AgendaAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1"){Console.WriteLine("PR57_CITIZEN_AGENDA active=False");_pr57AgendaAnnounced=true;}
         // Refresh derived crossings once for an old save before retrying routes.
         // Loading itself still preserves the serialized state exactly.
         if(!_pedestrianCrossingsChecked){UpdateCrosswalks();_pedestrianCrossingsChecked=true;}
@@ -87,7 +89,7 @@ public sealed partial class CitySimulation
             Console.WriteLine($"PR57_PEDESTRIAN_GRID active={_pr57PedestrianGridActive} citizens={State.Citizens.Count} cellMetres=8");
             _pr57PedestrianGridAnnounced=true;
         }
-        foreach(var c in Pr57LiveCitizens()){
+        foreach(var c in Pr57CitizenAgendaEnabled?Pr57CitizenAgendaCandidates():Pr57LiveCitizens()){
             try{
             if(!c.Moving&&c.PathRoadRevision!=State.RoadRevision&&(c.Activity.StartsWith("Sem rota",StringComparison.Ordinal)||c.Activity=="Viagem interrompida: rota removida"))c.NextDecisionAt=Math.Min(c.NextDecisionAt,State.ElapsedSeconds);
             if(c.ConstructionProjectId!=null&&ShiftActive(c)){c.AddWorkSecondsToday(dt);AccrueWage(c,dt);}
@@ -121,7 +123,7 @@ public sealed partial class CitySimulation
             }
             if(State.ElapsedSeconds<c.NextDecisionAt)continue;c.NextDecisionAt=State.ElapsedSeconds+60;
             CitizenRoutine(c);
-            }finally{if(_pr57PedestrianGridActive)Pr57UpdatePedestrianGrid(c);}
+            }finally{if(_pr57PedestrianGridActive)Pr57UpdatePedestrianGrid(c);Pr57CitizenAgendaSchedule(c);}
         }
     }
     // Crosswalk nodes in State.Roads order. Rebuilt at the start of every
@@ -1041,7 +1043,7 @@ public sealed partial class CitySimulation
         if(!EnsureFuel(v,target.Id)){if(FindRoadRoute(start.Id,target.Id).Count==0)v.Cause="Sem rota para retorno";v.Route.Clear();v.RouteIndex=0;v.Status=VehicleStatus.Waiting;return;}
         if(v.RefuellingAt==null)v.DockPosition=DockAt(target,source,false);v.Status=VehicleStatus.Travelling;
     }
-    void ReleaseDriver(Vehicle v){if(v.DriverId is {} id&&CitizenById(id) is {} c){c.VehicleId=null;c.Position=v.Position;var workplace=BuildingById(c.WorkplaceId);if(workplace!=null)StartJourney(c,workplace,JourneyPurpose.Work);}v.DriverId=null;}
+    void ReleaseDriver(Vehicle v){if(v.DriverId is {} id&&CitizenById(id) is {} c){Pr57CitizenAgendaWake(c);c.VehicleId=null;c.Position=v.Position;var workplace=BuildingById(c.WorkplaceId);if(workplace!=null)StartJourney(c,workplace,JourneyPurpose.Work);}v.DriverId=null;}
     void RedirectCancelled(Vehicle v,Shipment s)
     {
         PrepareConstructionSiteDeparture(v);

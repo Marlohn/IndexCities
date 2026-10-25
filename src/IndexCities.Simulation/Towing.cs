@@ -226,7 +226,7 @@ public sealed partial class CitySimulation
             var metres=RouteLength(toVehicle)+RouteLength(plan.Route)+plan.Back;var fee=Money(State.Tuning.LocalTowBase+(decimal)metres*State.Tuning.FreightPerMetre);
             if(!t.TowPrepaid)ChargeOwner(t,fee,"Guincho","Reboque pelo guincho da oficina "+shop.Id,"company:"+shop.CompanyId);
             t.TowPrepaid=true;DispatchTow(tow,t,toVehicle,pose,plan);tow.Cause=$"Guincho da oficina {shop.Id} a caminho do veículo {t.Id}";
-            tow.DriverId=driver.Id;driver.BoardingVehicleId=tow.Id;driver.Purpose=JourneyPurpose.Boarding;driver.DestinationId=null;driver.Path=[driver.Position,tow.Position];driver.PathIndex=0;driver.PathRoadRevision=State.RoadRevision;driver.Activity="Indo dirigir o guincho da oficina";
+            tow.DriverId=driver.Id;Pr57CitizenAgendaWake(driver);driver.BoardingVehicleId=tow.Id;driver.Purpose=JourneyPurpose.Boarding;driver.DestinationId=null;driver.Path=[driver.Position,tow.Position];driver.PathIndex=0;driver.PathRoadRevision=State.RoadRevision;driver.Activity="Indo dirigir o guincho da oficina";
             Personal(driver,$"Vai dirigir o guincho {tow.Id} até o veículo {t.Id}");
             foreach(var c in Occupants(t)){c.Activity="Aguardando guincho";Personal(c,$"Veículo parado na via; guincho {tow.Id} da oficina {shop.Id} chamado ({fee})");}
             return true;
