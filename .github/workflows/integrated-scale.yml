@@ -38,75 +38,73 @@ jobs:
           done
       - name: Build unchanged integrated core Release
         run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: Replay only ten simulated minutes from each congestion stage
+      - name: ABBA comparison of original penetration and allocation-free separating axes on authentic checkpoint 12
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p artifacts/pr57-cargo-substeps
-          for mode in 10 11 12a 12b; do
-            checkpoint="$mode"
-            if [[ "$mode" == "12a" || "$mode" == "12b" ]]; then checkpoint=12; fi
+          for mode in offA onA onB offB; do
+            flag=0
+            if [[ "$mode" == on* ]]; then flag=1; fi
             mkdir -p "artifacts/pr57-cargo-substeps/$mode"
             {
-              echo "PR57_REPLAY mode=$mode checkpoint=$checkpoint seconds=600 dispatchLookup=1 allOtherPr57Flags=0"
+              echo "PR57_PENETRATION_AB mode=$mode checkpoint=12 seconds=600 stackAxes=$flag dispatchLookup=1 allOtherPr57Flags=0"
               PR57_SAVE_CAPTURE_DIR="artifacts/pr57-cargo-substeps/$mode" \
               PR57_AB_CHECKPOINT=1 PR57_PROFILE_FROM_WINDOW=1 PR57_DISPATCH_SHIPMENT_LOOKUP=1 \
+              PR57_PENETRATION_STACK_AXES="$flag" \
               PR57_ACTIVE_SCAN=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 \
               PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 \
               PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 \
               PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 \
               PR57_ENTRY_FRAME_REUSE=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 \
               timeout 90s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
-                profile cycle --seed=42 --resume="artifacts/pr57-source/pr57-jobs-20/checkpoint-$checkpoint.json" \
-                --warmup=0 --days=1 --window=600 --cap=120
+                profile cycle --seed=42 --resume="artifacts/pr57-source/pr57-jobs-20/checkpoint-12.json" \
+                --warmup=0 --days=1 --window=120 --cap=120
             } | tee "artifacts/pr57-cargo-substeps/$mode/run.log"
           done
-      - name: Audit substeps, scans, allocations and full-state progression without requiring a transaction every ten minutes
+      - name: Audit five intermediate full-state checkpoints and ABBA wall, CPU and allocation
         shell: bash
         run: |
           python3 - <<'PY' | tee artifacts/pr57-cargo-substeps/audit.log
           import json, pathlib, re, hashlib
           root=pathlib.Path('artifacts/pr57-cargo-substeps')
+          original=pathlib.Path('artifacts/pr57-source/pr57-jobs-20/checkpoint-12.json').read_bytes()
+          modes={'offA':0,'onA':1,'onB':1,'offB':0}
           results={}
-          for mode in ('10','11','12a','12b'):
-              cp='12' if mode.startswith('12') else mode
+          for mode,flag in modes.items():
               folder=root/mode
               log=(folder/'run.log').read_text()
-              assert f'PR57_REPLAY mode={mode} checkpoint={cp} seconds=600 dispatchLookup=1 allOtherPr57Flags=0' in log
-              assert 'INVARIANTS OK' in log and '\nSAVE ' in log
-              assert 'STEP_PROFILE steps=' in log and 'VEHICLE_PROFILE steps=' in log
-              windows=re.findall(r'^WINDOW (\d+) seconds=600 wall=([\d.]+)s eff=[\d.]+x cpu=([\d.]+)s allocMB=([\d.]+) gc0=(\d+) gc2=(\d+)',log,re.M)
-              assert len(windows)==1 and windows[0][0]=='1',(mode,windows)
-              start=(folder/'checkpoint-0.json').read_bytes()
-              end=(folder/'checkpoint-1.json').read_bytes()
-              original=pathlib.Path(f'artifacts/pr57-source/pr57-jobs-20/checkpoint-{cp}.json').read_bytes()
-              assert start==original, f'Checkpoint source changed in {mode}'
-              before=json.loads(start); after=json.loads(end)
-              assert after['ElapsedSecondsUnits']-before['ElapsedSecondsUnits']==600_000_000,mode
-              assert len(after['Citizens'])==len(before['Citizens']) and len(after['Vehicles'])==len(before['Vehicles']),mode
-              slices=re.search(r'VEHICLE_PROFILE steps=(\d+) batched=(\d+) unsplit=(\d+) slices=(\d+)',log)
-              assert slices,mode
-              scan={name:{'wall':float(t),'visits':int(n)} for name,t,n in re.findall(r'^  VEHICLE_SCAN name=(\S+) wall=([\d.]+)s visits=(\d+)',log,re.M)}
-              detail={name:float(t) for name,t in re.findall(r'^  VEHICLE_DETAIL name=(\S+) wall=([\d.]+)s',log,re.M)}
-              phases={name:float(t) for name,t in re.findall(r'^  STEP_PHASE name=(\S+) wall=([\d.]+)s',log,re.M)}
-              assert len(scan)>=2 and len(detail)>0 and len(phases)>0,mode
-              moved=sum(v['Position']!=old['Position'] for v in after['Vehicles'] for old in before['Vehicles'] if v['Id']==old['Id'])
-              a=windows[0]
-              results[mode]=dict(wall=float(a[1]),cpu=float(a[2]),allocMB=float(a[3]),gc0=int(a[4]),
-                  slices=int(slices[4]),batched=int(slices[2]),unsplit=int(slices[3]),scans=scan,
-                  vehicleDetails=detail,phases=phases,
-                  travellingStart=sum(v['Status']==1 for v in before['Vehicles']),
-                  movedVehicles=moved,ledgerDelta=len(after['Ledger'])-len(before['Ledger']),
-                  historyDelta=sum(len(c['History']) for c in after['Citizens'])-sum(len(c['History']) for c in before['Citizens']),
-                  endSha256=hashlib.sha256(end).hexdigest())
-              print('PR57_CONGESTION_STAGE',mode,json.dumps(results[mode],sort_keys=True))
-          assert (root/'12a/checkpoint-1.json').read_bytes()==(root/'12b/checkpoint-1.json').read_bytes(), 'Real state divergence on repeated same-runner checkpoint12 replay'
-          for name in ('11','12a'):
-              a=results['10'];b=results[name]
-              print('PR57_CONGESTION_RELATIVE',name,'vs10',f'wallRatio={b["wall"]/a["wall"]:.3f}',
-                    f'slicesRatio={b["slices"]/max(a["slices"],1):.3f}',
-                    f'allocRatio={b["allocMB"]/a["allocMB"]:.3f}')
-          print('PR57_LIMIT','Profiling overhead and different starting states: these ratios diagnose workload growth, not an A/B speedup or proof of future traffic resolution.')
+              assert f'PR57_PENETRATION_AB mode={mode} checkpoint=12 seconds=600 stackAxes={flag} dispatchLookup=1 allOtherPr57Flags=0' in log
+              assert 'INVARIANTS OK' in log and '\\nSAVE ' in log,mode
+              assert 'STEP_PROFILE steps=' in log and 'VEHICLE_PROFILE steps=' in log,mode
+              windows=re.findall(r'^WINDOW (\\d+) seconds=120 wall=([\\d.]+)s eff=[\\d.]+x cpu=([\\d.]+)s allocMB=([\\d.]+) gc0=(\\d+) gc2=(\\d+)',log,re.M)
+              assert [int(x[0]) for x in windows]==list(range(1,6)),(mode,windows)
+              before=(folder/'checkpoint-0.json').read_bytes()
+              after=(folder/'checkpoint-5.json').read_bytes()
+              assert before==original,mode
+              state0=json.loads(before); state5=json.loads(after)
+              assert state5['ElapsedSecondsUnits']-state0['ElapsedSecondsUnits']==600_000_000,mode
+              assert len(state5['Citizens'])==len(state0['Citizens']) and len(state5['Vehicles'])==len(state0['Vehicles']),mode
+              results[mode]=dict(flag=flag,wall=round(sum(float(x[1]) for x in windows),4),
+                  cpu=round(sum(float(x[2]) for x in windows),4),
+                  allocMB=round(sum(float(x[3]) for x in windows),4),
+                  gc0=sum(int(x[4]) for x in windows),gc2=sum(int(x[5]) for x in windows),
+                  endSha256=hashlib.sha256(after).hexdigest(),
+                  travellingStart=sum(v['Status']=='Travelling' for v in state0['Vehicles']),
+                  ledgerDelta=len(state5['Ledger'])-len(state0['Ledger']),
+                  historyDelta=sum(len(c['History']) for c in state5['Citizens'])-sum(len(c['History']) for c in state0['Citizens']))
+              print('PR57_PENETRATION_RESULT',mode,json.dumps(results[mode],sort_keys=True))
+          for i in range(6):
+              contents=[(root/m/f'checkpoint-{i}.json').read_bytes() for m in modes]
+              assert all(x==contents[0] for x in contents[1:]),f'Full-state divergence at intermediate checkpoint {i}'
+              print('PR57_PENETRATION_CHECKPOINT',i,hashlib.sha256(contents[0]).hexdigest())
+          for off,on in (('offA','onA'),('offB','onB')):
+              a,b=results[off],results[on]
+              print('PR57_PENETRATION_PAIR',off,on,
+                  f'wallChangePct={(b["wall"]/a["wall"]-1)*100:.2f}',
+                  f'allocChangePct={(b["allocMB"]/a["allocMB"]-1)*100:.2f}',
+                  f'cpuChangePct={(b["cpu"]/a["cpu"]-1)*100:.2f}')
+          print('PR57_LIMIT','This is a short 121-resident congested checkpoint with profiler overhead, not a sustainable city, not an integrated-vs-main gain, and not a proof of every between-checkpoint event.')
           PY
       - name: Preserve authentic saves and profile evidence
         if: always()

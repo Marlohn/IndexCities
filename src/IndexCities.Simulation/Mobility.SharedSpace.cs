@@ -35,11 +35,25 @@ public sealed partial class CitySimulation
         return dx<clearance+BodyHalfLength(body)*s+BodyHalfWidth(body)*c&&dz<clearance+BodyHalfLength(body)*c+BodyHalfWidth(body)*s;
     }
     // How deep two bodies overlap (negative: the gap between them).
+    // PR57-only reversible allocation POC. The same four separating axes and
+    // arithmetic are evaluated in the same order; only the temporary heap array
+    // and LINQ selector are removed. The flag is fixed before class initialization.
+    static readonly bool Pr57PenetrationStackAxes=Environment.GetEnvironmentVariable("PR57_PENETRATION_STACK_AXES")=="1";
     static double Penetration(Vehicle a,Point aAt,double aHeading,Vehicle b,Point bAt,double bHeading)
     {
         static double Dot(Point x,Point y)=>x.X*y.X+x.Z*y.Z;
         var af=new Point(Math.Sin(aHeading),Math.Cos(aHeading));var ar=new Point(af.Z,-af.X);var bf=new Point(Math.Sin(bHeading),Math.Cos(bHeading));var br=new Point(bf.Z,-bf.X);var d=bAt-aAt;
-        return new[]{af,ar,bf,br}.Min(x=>BodyHalfLength(a)*Math.Abs(Dot(af,x))+BodyHalfWidth(a)*Math.Abs(Dot(ar,x))+BodyHalfLength(b)*Math.Abs(Dot(bf,x))+BodyHalfWidth(b)*Math.Abs(Dot(br,x))-Math.Abs(Dot(d,x)));
+        if(!Pr57PenetrationStackAxes)
+            return new[]{af,ar,bf,br}.Min(x=>BodyHalfLength(a)*Math.Abs(Dot(af,x))+BodyHalfWidth(a)*Math.Abs(Dot(ar,x))+BodyHalfLength(b)*Math.Abs(Dot(bf,x))+BodyHalfWidth(b)*Math.Abs(Dot(br,x))-Math.Abs(Dot(d,x)));
+        ReadOnlySpan<Point> axes=stackalloc Point[]{af,ar,bf,br};
+        var minimum=double.PositiveInfinity;
+        foreach(var x in axes){
+            var depth=BodyHalfLength(a)*Math.Abs(Dot(af,x))+BodyHalfWidth(a)*Math.Abs(Dot(ar,x))+BodyHalfLength(b)*Math.Abs(Dot(bf,x))+BodyHalfWidth(b)*Math.Abs(Dot(br,x))-Math.Abs(Dot(d,x));
+            // Enumerable.Min(double) propagates NaN; do not silently change it.
+            if(double.IsNaN(depth))return depth;
+            if(depth<minimum)minimum=depth;
+        }
+        return minimum;
     }
 
     // A truck about to drive from its bay or dock to its first lane point, or doing so.
