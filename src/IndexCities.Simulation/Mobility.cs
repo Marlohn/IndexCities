@@ -13,6 +13,9 @@ public sealed partial class CitySimulation
     // PR57-only observation: full junction admission including early break/continue.
     readonly long[] _pr57JunctionAllocBytes=new long[2]; // MayEnterJunction, post-denial handling
     readonly long[] _pr57JunctionCalls=new long[3]; // MayEnterJunction, denied, bay-held before admission
+    // PR57 observation only: allocations by predicate inside MayEnterJunction.
+    readonly long[] _pr57JunctionDetailBytes=new long[7]; // manoeuvre, area owner, bend holder, bend priority, preference, way, body
+    readonly long[] _pr57JunctionDetailCalls=new long[7];
     long _pr57MovementAllocCalls;
     // Shared empty candidate list: read-only, never populated by a movement scan.
     static readonly List<Vehicle> Pr57EmptyBendList=[];
@@ -850,6 +853,8 @@ public sealed partial class CitySimulation
                 Console.WriteLine($"PR57_BLOCKED_ALLOC calls={_pr57MovementAllocCalls} causeMB={blocked[0]/1e6:F2} causeCalls={counts[0]} towApproachMB={blocked[1]/1e6:F2} towApproachCalls={counts[1]} bypassMB={blocked[2]/1e6:F2} bypassCalls={counts[2]} towExitMB={blocked[3]/1e6:F2} towExitCalls={counts[3]} towRerouteMB={blocked[4]/1e6:F2} towRerouteCalls={counts[4]} towWaitMB={blocked[5]/1e6:F2} towWaitCalls={counts[5]}");
                 var junctionBytes=_pr57JunctionAllocBytes;var junctionCalls=_pr57JunctionCalls;
                 Console.WriteLine($"PR57_JUNCTION_ALLOC calls={_pr57MovementAllocCalls} admissionMB={junctionBytes[0]/1e6:F2} admissionCalls={junctionCalls[0]} deniedMB={junctionBytes[1]/1e6:F2} deniedCalls={junctionCalls[1]} bayHeldCalls={junctionCalls[2]} fullRegionMB={region[6]/1e6:F2}");
+                var detailBytes=_pr57JunctionDetailBytes;var detailCalls=_pr57JunctionDetailCalls;
+                Console.WriteLine($"PR57_JUNCTION_DETAIL calls={_pr57MovementAllocCalls} manoeuvreMB={detailBytes[0]/1e6:F2} manoeuvreCalls={detailCalls[0]} areaOwnerMB={detailBytes[1]/1e6:F2} areaOwnerCalls={detailCalls[1]} bendHolderMB={detailBytes[2]/1e6:F2} bendHolderCalls={detailCalls[2]} bendPriorityMB={detailBytes[3]/1e6:F2} bendPriorityCalls={detailCalls[3]} preferenceMB={detailBytes[4]/1e6:F2} preferenceCalls={detailCalls[4]} turnWayMB={detailBytes[5]/1e6:F2} turnWayCalls={detailCalls[5]} bodyOnWayMB={detailBytes[6]/1e6:F2} bodyOnWayCalls={detailCalls[6]} otherMB={(junctionBytes[0]-detailBytes.Sum())/1e6:F2}");
                 Console.WriteLine($"PR57_ALLOC_PROFILE calls={_pr57MovementAllocCalls} totalMB={b[0]/1e6:F2} setupMB={b[1]/1e6:F2} laneMB={b[2]/1e6:F2} bendMB={b[3]/1e6:F2} siteMB={b[4]/1e6:F2} crossingMB={b[5]/1e6:F2} turnMB={b[6]/1e6:F2} operationsMB={b[7]/1e6:F2} preLaneMB={b[8]/1e6:F2} postTurnMB={b[9]/1e6:F2} finalizeMB={b[10]/1e6:F2} otherMB={other/1e6:F2}");
             }
         }
@@ -903,28 +908,47 @@ public sealed partial class CitySimulation
         _junctionAreas.GetValueOrDefault(node.Id) is {} area&&(body.IntersectionClaim is {} claim&&area.Contains(claim)||body.ManoeuvreSpaces.Any(area.Contains)));
     bool MayEnterJunction(Vehicle v,RoadNode junction)
     {
+        var pr57Detail=CostProfile is not null;long pr57DetailStart=0;
         v.Cause="Aguardando preferência/semáforo/travessia";var area=_junctionAreas.GetValueOrDefault(junction.Id);
         // A space of an admitted manoeuvre (Mobility.SharedSpace): its holder goes
         // on, everyone else waits for it. Elsewhere in the junction area, only a
         // holder close to this crossing reserves it, as for claims (NearbyAreaOwner).
         if(v.ManoeuvreSpaces.Contains(junction.Id)){ReserveJunction(v,junction,area);return true;}
-        if(State.Vehicles.FirstOrDefault(o=>o.Id!=v.Id&&o.Id!=v.TowTargetId&&o.TowTruckId!=v.Id&&!Receives(o,v)&&(o.ManoeuvreSpaces.Contains(junction.Id)||area!=null&&o.ManoeuvreSpaces.Any(area.Contains)&&o.Position.Distance(junction.Position)<9)) is {} manoeuvre){v.Cause=(IsBend(junction)?"Aguardando liberação da curva pelo veículo ":"Aguardando liberação do cruzamento pelo veículo ")+manoeuvre.Id;return false;}
+        pr57DetailStart=pr57Detail?GC.GetAllocatedBytesForCurrentThread():0L;
+        var manoeuvre=State.Vehicles.FirstOrDefault(o=>o.Id!=v.Id&&o.Id!=v.TowTargetId&&o.TowTruckId!=v.Id&&!Receives(o,v)&&(o.ManoeuvreSpaces.Contains(junction.Id)||area!=null&&o.ManoeuvreSpaces.Any(area.Contains)&&o.Position.Distance(junction.Position)<9));
+        if(pr57Detail){_pr57JunctionDetailBytes[0]+=GC.GetAllocatedBytesForCurrentThread()-pr57DetailStart;_pr57JunctionDetailCalls[0]++;}
+        if(manoeuvre is not null){v.Cause=(IsBend(junction)?"Aguardando liberação da curva pelo veículo ":"Aguardando liberação do cruzamento pelo veículo ")+manoeuvre.Id;return false;}
         var continuing=area!=null&&v.IntersectionClaim is {} held&&area.Contains(held);
-        if(area!=null){var owner=NearbyAreaOwner(area,junction,v);if(owner!=null&&owner.Id!=v.Id&&owner.Id!=v.TowTargetId){v.Cause="Aguardando liberação do cruzamento pelo veículo "+owner.Id;return false;}}
+        if(area!=null){
+            pr57DetailStart=pr57Detail?GC.GetAllocatedBytesForCurrentThread():0L;
+            var owner=NearbyAreaOwner(area,junction,v);
+            if(pr57Detail){_pr57JunctionDetailBytes[1]+=GC.GetAllocatedBytesForCurrentThread()-pr57DetailStart;_pr57JunctionDetailCalls[1]++;}
+            if(owner!=null&&owner.Id!=v.Id&&owner.Id!=v.TowTargetId){v.Cause="Aguardando liberação do cruzamento pelo veículo "+owner.Id;return false;}
+        }
         if(v.IntersectionClaim==junction.Id)return true;
         if(IsBend(junction)){
             // SPEC "Curva simples, um de cada vez": no direction has preference; the
             // first to arrive (waiting longest, fixed ID tie-break) turns. It takes
             // the bend together with every space it crosses up to the first place
             // its body can wait clear of them, with that way free of bodies.
-            if(State.Vehicles.FirstOrDefault(o=>o.Id!=v.Id&&o.Id!=v.TowTargetId&&o.TowTruckId!=v.Id&&!Receives(o,v)&&Holds(o,junction.Id)) is {} holder){v.Cause="Aguardando liberação da curva pelo veículo "+holder.Id;return false;}
+            pr57DetailStart=pr57Detail?GC.GetAllocatedBytesForCurrentThread():0L;
+            var holder=State.Vehicles.FirstOrDefault(o=>o.Id!=v.Id&&o.Id!=v.TowTargetId&&o.TowTruckId!=v.Id&&!Receives(o,v)&&Holds(o,junction.Id));
+            if(pr57Detail){_pr57JunctionDetailBytes[2]+=GC.GetAllocatedBytesForCurrentThread()-pr57DetailStart;_pr57JunctionDetailCalls[2]++;}
+            if(holder is not null){v.Cause="Aguardando liberação da curva pelo veículo "+holder.Id;return false;}
             double Arrived(Vehicle a)=>a.WaitingSince>0?a.WaitingSince:VehicleMovementTime;
+            pr57DetailStart=pr57Detail?GC.GetAllocatedBytesForCurrentThread():0L;
             var first=State.Vehicles.Where(o=>o.Id!=v.TowTargetId&&o.Status==VehicleStatus.Travelling&&!Leaving(o)&&o.RouteIndex<o.Route.Count&&o.Route[o.RouteIndex]==junction.Id&&TurnsAtBend(o,o.RouteIndex)&&o.Position.Distance(junction.Position)<11&&(o.Id==v.Id||CanTurnNow(o)))
                 .Append(v).Distinct().OrderBy(Arrived).ThenBy(o=>o.Id).First();
+            if(pr57Detail){_pr57JunctionDetailBytes[3]+=GC.GetAllocatedBytesForCurrentThread()-pr57DetailStart;_pr57JunctionDetailCalls[3]++;}
             if(first.Id!=v.Id){v.Cause="Aguardando liberação da curva pelo veículo "+first.Id;return false;}
+            pr57DetailStart=pr57Detail?GC.GetAllocatedBytesForCurrentThread():0L;
             var way=TurnWay(v,out var spaces);
+            if(pr57Detail){_pr57JunctionDetailBytes[5]+=GC.GetAllocatedBytesForCurrentThread()-pr57DetailStart;_pr57JunctionDetailCalls[5]++;}
             foreach(var space in spaces.Where(s=>s.Id!=junction.Id)){var index=way.FindIndex(p=>EntersArea(v,p.Position,p.Heading,space));var from=index>0?way[index-1].Position:v.Position;if(!SpaceFree(v,space,space.Position-from,false))return false;}
-            if(BodyOnWay(v,way) is {} body){v.Cause="Fila na faixa";return false;}
+            pr57DetailStart=pr57Detail?GC.GetAllocatedBytesForCurrentThread():0L;
+            var bendBody=BodyOnWay(v,way);
+            if(pr57Detail){_pr57JunctionDetailBytes[6]+=GC.GetAllocatedBytesForCurrentThread()-pr57DetailStart;_pr57JunctionDetailCalls[6]++;}
+            if(bendBody is not null){v.Cause="Fila na faixa";return false;}
             ReserveJunction(v,junction,null);RememberLaneManoeuvre(v,spaces);if(!v.ManoeuvreSpaces.Contains(junction.Id))v.ManoeuvreSpaces.Add(junction.Id);return true;
         }
         if(area==null&&junction.Neighbours.Count>=3&&State.Vehicles.FirstOrDefault(o=>o.Id!=v.Id&&o.Id!=v.TowTargetId&&o.IntersectionClaim==junction.Id&&o.Position.Distance(junction.Position)<9) is {} occupant){v.Cause="Aguardando liberação do cruzamento pelo veículo "+occupant.Id;return false;}
@@ -939,15 +963,23 @@ public sealed partial class CitySimulation
         // A vehicle already admitted to shared pavement must be able to leave
         // it before another occupant/approach takes the same physical space.
         if(continuing){ReserveJunction(v,junction,area);return true;}
-        if(!JunctionPreferenceAllows(v,junction))return false;
+        pr57DetailStart=pr57Detail?GC.GetAllocatedBytesForCurrentThread():0L;
+        var preferenceAllows=JunctionPreferenceAllows(v,junction);
+        if(pr57Detail){_pr57JunctionDetailBytes[4]+=GC.GetAllocatedBytesForCurrentThread()-pr57DetailStart;_pr57JunctionDetailCalls[4]++;}
+        if(!preferenceAllows)return false;
         // When its way out of the junction runs straight into another junction or
         // bend, with no place between where its body could wait clear of both, it
         // takes them together (ARCHITECTURE "conjunto até a espera segura").
+        pr57DetailStart=pr57Detail?GC.GetAllocatedBytesForCurrentThread():0L;
         var onward=TurnWay(v,out var crossed);
+        if(pr57Detail){_pr57JunctionDetailBytes[5]+=GC.GetAllocatedBytesForCurrentThread()-pr57DetailStart;_pr57JunctionDetailCalls[5]++;}
         // Even a single shared space needs a clear way through it. Taking the
         // junction while a docked body blocks the exit prevents that body from
         // acquiring the very junction it needs to leave.
-        if(BodyOnWay(v,onward) is {}){v.Cause="Fila na faixa";return false;}
+        pr57DetailStart=pr57Detail?GC.GetAllocatedBytesForCurrentThread():0L;
+        var onwardBody=BodyOnWay(v,onward);
+        if(pr57Detail){_pr57JunctionDetailBytes[6]+=GC.GetAllocatedBytesForCurrentThread()-pr57DetailStart;_pr57JunctionDetailCalls[6]++;}
+        if(onwardBody is not null){v.Cause="Fila na faixa";return false;}
         if(crossed.Any(s=>s.Id!=junction.Id)){
             foreach(var space in crossed.Where(s=>s.Id!=junction.Id)){var index=onward.FindIndex(p=>EntersArea(v,p.Position,p.Heading,space));var from=index>0?onward[index-1].Position:v.Position;if(!SpaceFree(v,space,space.Position-from,false))return false;}
         }
