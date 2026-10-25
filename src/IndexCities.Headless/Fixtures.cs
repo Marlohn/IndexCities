@@ -124,6 +124,25 @@ static class Fixtures
             }
             Console.WriteLine($"PR57_CYCLE_EXTENSION_ROW z=-118 newOrders={placed-before}");
         }
+        // PR57-only load probe: use the opposite side of the *already paid and
+        // completed* south extension road. This does not mint homes or residents:
+        // each lot must pass the normal physical and exterior-access quote, and
+        // each accepted home remains subject to material deliveries and work.
+        if(Environment.GetEnvironmentVariable("PR57_CYCLE_NORTH_HOUSING")=="1"&&placed<requested)
+        {
+            if(Environment.GetEnvironmentVariable("PR57_CYCLE_SOUTH_EXTENSION")!="1")
+                throw new InvalidOperationException("PR57 north housing requires the legally built south extension");
+            var before=placed;
+            for(var x=-168.0;x<=-28&&placed<requested;x+=20)
+            {
+                var position=new Point(x,-90);
+                var quote=sim.QuoteBuilding(BuildingKind.House,position,0);
+                if(!quote.PhysicallyValid||!quote.Accessible)continue;
+                attempted++;
+                if(sim.PlaceBuilding(BuildingKind.House,position,0).Success)placed++;
+            }
+            Console.WriteLine($"PR57_CYCLE_NORTH_ROW z=-90 newOrders={placed-before}");
+        }
         return (placed,attempted);
     }
 
