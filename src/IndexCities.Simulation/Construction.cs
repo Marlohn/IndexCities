@@ -99,6 +99,10 @@ public sealed partial class CitySimulation
     // this invocation. ToLookup preserves each project's shipment iteration order.
     // Rebuilt every call: no cache survives state changes or dispatches.
     static readonly bool Pr57DispatchShipmentLookup=Environment.GetEnvironmentVariable("PR57_DISPATCH_SHIPMENT_LOOKUP")=="1";
+    // PR57 POC: per-dispatch live membership index; only append new shipments, read live cargo/status.
+    static readonly bool Pr57OrderShipmentIndexEnabled=Environment.GetEnvironmentVariable("PR57_ORDER_SHIPMENT_INDEX")=="1";
+    readonly Dictionary<int,List<Shipment>> _pr57OrderShipments=new();
+    bool _pr57OrderShipmentIndexAnnounced;
     void ReserveLocalMaterials()
     {
         var depot=State.Buildings.FirstOrDefault(b=>b.Kind==BuildingKind.WorksDepot&&b.Completed&&!b.Removed&&!b.OperationClosed);if(depot==null)return;
@@ -126,14 +130,40 @@ public sealed partial class CitySimulation
     }
     void OrderConstruction()
     {
+        if(!_pr57OrderShipmentIndexAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine($"PR57_ORDER_SHIPMENT_INDEX active={Pr57OrderShipmentIndexEnabled}");
+            _pr57OrderShipmentIndexAnnounced=true;
+        }
         if(!State.Projects.Any(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress))return;
         ReserveLocalMaterials();
+        // Build membership lazily in insertion order. Any shipment appended by this
+        // dispatcher becomes visible on the next query. Complete and Cargo are
+        // deliberately read live, not snapshotted; no state is persisted.
+        if(Pr57OrderShipmentIndexEnabled)
+            foreach(var group in _pr57OrderShipments.Values)group.Clear();
+        var indexedShipmentCount=0;
+        IEnumerable<Shipment> PendingProjectShipments(int projectId)
+        {
+            if(!Pr57OrderShipmentIndexEnabled)
+                return State.Shipments.Where(s=>s.ProjectId==projectId&&!s.Complete);
+            while(indexedShipmentCount<State.Shipments.Count)
+            {
+                var shipment=State.Shipments[indexedShipmentCount++];
+                if(shipment.ProjectId is not int id)continue;
+                if(!_pr57OrderShipments.TryGetValue(id,out var group))
+                    _pr57OrderShipments[id]=group=[];
+                group.Add(shipment);
+            }
+            return _pr57OrderShipments.TryGetValue(projectId,out var shipments)
+                ?shipments.Where(s=>!s.Complete):Enumerable.Empty<Shipment>();
+        }
         foreach(var p in State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress).OrderBy(p=>p.IsMaintenance?MaintenancePriority(p):4).ThenBy(p=>p.Id)){
             if(RoadPhysicalWorkDone(p))continue;
             var access=WorkAccess(p);if(access==null||!_workExteriorConnected.Contains(access.Id)){p.Cause=WorkCause.NoMaterialsAccess;continue;}
             if(IsPaving(p))OrderPavingMachines(p,access);else AssignLocalCrew(p,access);
             foreach(var k in p.Required.Keys.ToList()){
-                var inflight=State.Shipments.Where(s=>s.ProjectId==p.Id&&!s.Complete).Sum(s=>s.Cargo.GetValueOrDefault(k));
+                var inflight=PendingProjectShipments(p.Id).Sum(s=>s.Cargo.GetValueOrDefault(k));
                 var missing=p.Required[k]-p.Delivered.GetValueOrDefault(k)-inflight;
                 if(missing<=.001)continue;
                 var receiver=IsPaving(p)&&k==ResourceKind.Asphalt?AsphaltReceiver(p):null;
@@ -158,7 +188,7 @@ public sealed partial class CitySimulation
                 // A crew truck waits at the site. Bringing the crew with the
                 // first load can occupy the only free truck while more loads
                 // remain. Bring it with the final committed delivery instead.
-                var allMaterialsDispatched=p.Required.All(required=>p.Delivered.GetValueOrDefault(required.Key)+State.Shipments.Where(s=>s.ProjectId==p.Id&&!s.Complete).Sum(s=>s.Cargo.GetValueOrDefault(required.Key))+.001>=required.Value);
+                var allMaterialsDispatched=p.Required.All(required=>p.Delivered.GetValueOrDefault(required.Key)+PendingProjectShipments(p.Id).Sum(s=>s.Cargo.GetValueOrDefault(required.Key))+.001>=required.Value);
                 if(!IsPaving(p)&&p.CrewVehicleId==null&&p.LocalCrew.Count==0&&allMaterialsDispatched){vehicle.CrewAboard=true;vehicle.CrewCount=3;p.CrewVehicleId=vehicle.Id;}
                 vehicle.DockPosition=DockAt(source==null?access:Access(source)!,source??BuildingById(p.BuildingId),vehicle.CrewAboard);
                 if(source==null&&receiver!=null)ConfigureAsphaltApproach(vehicle,shipment);
