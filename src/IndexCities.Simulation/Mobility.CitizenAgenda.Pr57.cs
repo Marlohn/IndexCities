@@ -22,13 +22,16 @@ public sealed partial class CitySimulation
         else _pr57AgendaActive.Add(index);
     }
 
+    bool Pr57CitizenAgendaRoadRetry(Citizen citizen)=>!citizen.Moving&&citizen.PathRoadRevision!=State.RoadRevision&&
+        (citizen.Activity.StartsWith("Sem rota",StringComparison.Ordinal)||citizen.Activity=="Viagem interrompida: rota removida");
+
     void Pr57CitizenAgendaSchedule(Citizen citizen)
     {
         if(!Pr57CitizenAgendaEnabled||!_pr57AgendaReady||!_pr57AgendaIndices.TryGetValue(citizen.Id,out var index))return;
         if(_pr57AgendaDeadlines.Remove(index,out var old))_pr57AgendaSleeping.Remove((old,index));
         _pr57AgendaActive.Remove(index);
         if(!citizen.Alive)return;
-        if(citizen.Moving||citizen.VehicleId!=null||citizen.ConstructionProjectId!=null)
+        if(citizen.Moving||citizen.VehicleId!=null||citizen.ConstructionProjectId!=null||Pr57CitizenAgendaRoadRetry(citizen)
             _pr57AgendaActive.Add(index);
         else
         {
@@ -54,7 +57,7 @@ public sealed partial class CitySimulation
                 var citizen=State.Citizens[i];
                 _pr57AgendaIndices.Add(citizen.Id,i);
                 if(!citizen.Alive)continue;
-                if(citizen.Moving||citizen.VehicleId!=null||citizen.ConstructionProjectId!=null)
+                if(citizen.Moving||citizen.VehicleId!=null||citizen.ConstructionProjectId!=null||Pr57CitizenAgendaRoadRetry(citizen)
                     _pr57AgendaActive.Add(i);
                 else
                 {
