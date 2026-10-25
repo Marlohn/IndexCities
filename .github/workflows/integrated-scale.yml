@@ -1,4 +1,4 @@
-name: PR57 opt-in global living roster and shared workforce causal A/B
+name: PR57 opt-in indexed construction work access causal A/B
 
 on:
   push:
@@ -18,101 +18,89 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  living-roster:
+  work-access-index:
     runs-on: ubuntu-latest
-    timeout-minutes: 14
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Restore authentic economic city checkpoints (no regeneration)
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          mkdir -p artifacts/pr57-source
-          gh run download 40169101306 -n integrated-scale-pr57-legal-workplaces-8d -D artifacts/pr57-source
-          test -s artifacts/pr57-source/pr57-jobs-20/checkpoint-0.json
-          test -s artifacts/pr57-source/pr57-jobs-20/checkpoint-12.json
-      - name: Build and run existing simulation tests
+      - name: Build and run existing tests
         run: |
           dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
           dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release
-      - name: Separate-process A/B on authentic low/congested and artificial grid
+      - name: Authentic construction A/B in separate fresh processes, inverted order
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p artifacts/pr57-living-roster
+          mkdir -p artifacts/pr57-work-access
           run_one() {
-            local scenario="$1" mode="$2" source="$3" windows="$4" seconds="$5"
+            local scenario="$1" mode="$2" count="$3" window="$4" houses="$5"
             local enabled=0
             if [ "$mode" = "candidate" ]; then enabled=1; fi
-            mkdir -p "artifacts/pr57-living-roster/$scenario/$mode"
-            echo "PR57_ROSTER_RUN scenario=$scenario mode=$mode enabled=$enabled seed=42 windows=$windows seconds=$seconds"
-            if [ "$scenario" = "artificial-grid" ]; then
-              PR57_LIVING_ROSTER="$enabled" PR57_PEDESTRIAN_GRID=0 PR57_GRID_DIAG=1 PR57_DISPATCH_SHIPMENT_LOOKUP=1 \
-              PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="artifacts/pr57-living-roster/$scenario/$mode" \
-              timeout 180s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
-                scale grid --seed=42 --rows=8 --length=600 --signals=1 --warmup=0 --days="$windows" --window="$seconds" --cap=150
-            else
-              PR57_LIVING_ROSTER="$enabled" PR57_PEDESTRIAN_GRID=0 PR57_GRID_DIAG=1 PR57_DISPATCH_SHIPMENT_LOOKUP=1 \
-              PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="artifacts/pr57-living-roster/$scenario/$mode" \
-              timeout 100s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
-                scale cycle --seed=42 --resume="$source" --warmup=0 --days="$windows" --window="$seconds" --cap=90
-            fi
+            local label="$scenario-$mode"
+            mkdir -p "artifacts/pr57-work-access/$label"
+            echo "PR57_WORK_ACCESS_RUN label=$label enabled=$enabled"
+            PR57_WORK_ACCESS_INDEX="$enabled" PR57_DISPATCH_SHIPMENT_LOOKUP=1 \
+            PR57_PEDESTRIAN_GRID=0 PR57_LIVING_ROSTER=0 PR57_GRID_DIAG=1 \
+            PR57_CYCLE_SOUTH_HOUSING=1 PR57_AB_CHECKPOINT=1 \
+            PR57_SAVE_CAPTURE_DIR="artifacts/pr57-work-access/$label" \
+            timeout 235s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+              scale cycle --seed=42 --warmup=0 --cycle-houses="$houses" --cycle-bypass=1 \
+              --days="$count" --window="$window" --cap=220
           }
-          run_one real-low control artifacts/pr57-source/pr57-jobs-20/checkpoint-0.json 4 120 | tee artifacts/pr57-living-roster/real-low-control.log
-          run_one real-low candidate artifacts/pr57-source/pr57-jobs-20/checkpoint-0.json 4 120 | tee artifacts/pr57-living-roster/real-low-candidate.log
-          run_one real-congested candidate artifacts/pr57-source/pr57-jobs-20/checkpoint-12.json 4 120 | tee artifacts/pr57-living-roster/real-congested-candidate.log
-          run_one real-congested control artifacts/pr57-source/pr57-jobs-20/checkpoint-12.json 4 120 | tee artifacts/pr57-living-roster/real-congested-control.log
-          run_one artificial-grid control none 3 300 | tee artifacts/pr57-living-roster/artificial-grid-control.log
-          run_one artificial-grid candidate none 3 300 | tee artifacts/pr57-living-roster/artificial-grid-candidate.log
-      - name: Audit full intermediate saves, actual wall/cpu/alloc and activity
+          run_one real-maintenance control-a 16 43200 32 | tee artifacts/pr57-work-access/real-maintenance-control-a.log
+          run_one real-maintenance candidate-a 16 43200 32 | tee artifacts/pr57-work-access/real-maintenance-candidate-a.log
+          run_one real-maintenance candidate-b 16 43200 32 | tee artifacts/pr57-work-access/real-maintenance-candidate-b.log
+          run_one real-maintenance control-b 16 43200 32 | tee artifacts/pr57-work-access/real-maintenance-control-b.log
+          run_one real-low control 4 3600 0 | tee artifacts/pr57-work-access/real-low-control.log
+          run_one real-low candidate 4 3600 0 | tee artifacts/pr57-work-access/real-low-candidate.log
+      - name: Compare every full checkpoint and actual end-to-end wall CPU allocations
         shell: bash
         run: |
-          python3 - <<'PY' | tee artifacts/pr57-living-roster/audit.log
+          python3 - <<'PY' | tee artifacts/pr57-work-access/audit.log
           import hashlib,json,pathlib,re
-          root=pathlib.Path('artifacts/pr57-living-roster')
-          for scenario,windows in [('real-low',4),('real-congested',4),('artificial-grid',3)]:
-              metrics={}
-              for mode in ('control','candidate'):
-                  log=(root/f'{scenario}-{mode}.log').read_text()
-                  assert f'PR57_LIVING_ROSTER active={str(mode=="candidate")}' in log,(scenario,mode,'flag')
-                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(scenario,mode,'invariants/save')
-                  lines=[x for x in log.splitlines() if x.startswith('WINDOW ')]
-                  assert len(lines)==windows,(scenario,mode,len(lines))
-                  rows=[]
-                  for line in lines:
-                      row={k:float(v) for k,v in re.findall(r'\b(wall|cpu|allocMB|eff)=([0-9.]+)',line)}
-                      assert {'wall','cpu','allocMB'}<=row.keys(),(scenario,mode,line)
-                      rows.append(row)
-                  metrics[mode]={k:sum(row[k] for row in rows) for k in ('wall','cpu','allocMB')}
+          root=pathlib.Path('artifacts/pr57-work-access')
+          for scenario,pairs,windows in [
+            ('real-maintenance',[('control-a','candidate-a'),('control-b','candidate-b')],16),
+            ('real-low',[('control','candidate')],4)]:
+            for control,candidate in pairs:
+              stats={}
+              for mode in (control,candidate):
+                log=(root/f'{scenario}-{mode}.log').read_text()
+                assert f'PR57_WORK_ACCESS_INDEX active=True' in log if mode.startswith('candidate') else 'PR57_WORK_ACCESS_INDEX active=True' not in log
+                assert 'INVARIANTS OK' in log and 'SAVE ' in log,(scenario,mode)
+                lines=[line for line in log.splitlines() if line.startswith('WINDOW ')]
+                assert len(lines)==windows,(scenario,mode,len(lines))
+                rows=[dict((k,float(v)) for k,v in re.findall(r'\b(wall|cpu|allocMB)=([0-9.]+)',line)) for line in lines]
+                assert all({'wall','cpu','allocMB'}<=row.keys() for row in rows),(scenario,mode)
+                stats[mode]={key:sum(row[key] for row in rows) for key in ('wall','cpu','allocMB')}
               for i in range(windows+1):
-                  a=(root/scenario/'control'/f'checkpoint-{i}.json').read_bytes()
-                  b=(root/scenario/'candidate'/f'checkpoint-{i}.json').read_bytes()
-                  state=json.loads(a)
-                  summary=dict(scenario=scenario,window=i,sameBytes=a==b,
-                    shaControl=hashlib.sha256(a).hexdigest(),shaCandidate=hashlib.sha256(b).hexdigest(),
-                    livingResidents=sum(c['Alive'] and c['Resident'] for c in state['Citizens']),
-                    livingExternal=sum(c['Alive'] and not c['Resident'] for c in state['Citizens']),
-                    movingWalkers=sum(c['Alive'] and c['PathIndex']<len(c['Path']) and c['VehicleId'] is None for c in state['Citizens']),
+                a=(root/scenario+'x') if False else (root/f'{scenario}-{control}'/f'checkpoint-{i}.json')
+                b=root/f'{scenario}-{candidate}'/f'checkpoint-{i}.json'
+                data=a.read_bytes();other=b.read_bytes()
+                assert data==other,('causal checkpoint mismatch',scenario,control,candidate,i,hashlib.sha256(data).hexdigest(),hashlib.sha256(other).hexdigest())
+                if i in (0,windows):
+                  state=json.loads(data)
+                  print('PR57_WORK_ACCESS_STATE',json.dumps(dict(scenario=scenario,window=i,
+                    aliveResidents=sum(c['Alive'] and c['Resident'] for c in state['Citizens']),
                     travelling=sum(v['Status']=='Travelling' for v in state['Vehicles']),
-                    ledger=len(state['Ledger']),cityEvents=len(state['CityEvents']),
-                    history=sum(len(c['History']) for c in state['Citizens']))
-                  print('PR57_ROSTER_CHECKPOINT',json.dumps(summary,sort_keys=True))
-                  assert a==b,('Full causal checkpoint mismatch; inspect preserved saves',scenario,i)
-              c=metrics['control'];v=metrics['candidate']
-              print('PR57_ROSTER_AB',json.dumps(dict(scenario=scenario,control=c,candidate=v,
-                wallGainPct=100*(c['wall']-v['wall'])/c['wall'],
-                cpuGainPct=100*(c['cpu']-v['cpu'])/max(.001,c['cpu']),
-                allocGainPct=100*(c['allocMB']-v['allocMB'])/max(.001,c['allocMB']),
-                incrementalOverDispatchLookup=True,artificial=scenario=='artificial-grid'),sort_keys=True))
+                    openProjects=sum(p['Status'] in ('Waiting','InProgress') for p in state['Projects']),
+                    ledger=len(state['Ledger']),events=len(state['CityEvents']),
+                    history=sum(len(c['History']) for c in state['Citizens'])),sort_keys=True))
+              a=stats[control];b=stats[candidate]
+              print('PR57_WORK_ACCESS_AB',json.dumps(dict(scenario=scenario,control=control,candidate=candidate,
+                wallControl=a['wall'],wallCandidate=b['wall'],cpuControl=a['cpu'],cpuCandidate=b['cpu'],
+                allocControlMB=a['allocMB'],allocCandidateMB=b['allocMB'],
+                wallGainPct=100*(a['wall']-b['wall'])/a['wall'],
+                incrementalOverDispatchLookup=True,checkpoints=windows+1),sort_keys=True))
           PY
-      - name: Preserve logs and complete saves even on failure
+      - name: Preserve logs and all intermediate saves even on failure
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-pr57-living-roster-ab
-          path: artifacts/pr57-living-roster/**
+          name: integrated-scale-pr57-work-access-index-ab
+          path: artifacts/pr57-work-access/**
           if-no-files-found: warn
           retention-days: 14

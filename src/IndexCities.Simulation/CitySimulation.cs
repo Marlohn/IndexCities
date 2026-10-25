@@ -178,6 +178,7 @@ public sealed partial class CitySimulation
     }
     void Step(double dt)
     {
+        Pr57WorkAccessBeginStep();
         Pr57BeginStep();
         if(!Pr57LivingRosterEnabled&&!_pr57LivingRosterAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
         {
