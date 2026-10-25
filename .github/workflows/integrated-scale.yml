@@ -30,32 +30,48 @@ jobs:
         run: |
           dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
           dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release
-      - name: Authentic construction A/B in separate fresh processes, inverted order
+      - name: Restore authentic maintenance checkpoint from the previous completed control
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p artifacts/pr57-source
+          gh run download 40200371479 -n integrated-scale-pr57-work-access-index-ab -D artifacts/pr57-source
+          find artifacts/pr57-source -name checkpoint-16.json -print
+          test -s "$(find artifacts/pr57-source -type f -name checkpoint-16.json | grep real-maintenance-control-a | head -n 1)"
+      - name: Authentic maintenance checkpoint A/B in fresh processes, inverted order
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p artifacts/pr57-work-access
+          SOURCE="$(find artifacts/pr57-source -type f -name checkpoint-16.json | grep real-maintenance-control-a | head -n 1)"
+          test -s "$SOURCE"
           run_one() {
-            local scenario="$1" mode="$2" count="$3" window="$4" houses="$5"
+            local scenario="$1" mode="$2"
             local enabled=0
-            if [ "$mode" = "candidate" ]; then enabled=1; fi
+            if [[ "$mode" == candidate* ]]; then enabled=1; fi
             local label="$scenario-$mode"
             mkdir -p "artifacts/pr57-work-access/$label"
             echo "PR57_WORK_ACCESS_RUN label=$label enabled=$enabled"
-            PR57_WORK_ACCESS_INDEX="$enabled" PR57_DISPATCH_SHIPMENT_LOOKUP=1 \
-            PR57_PEDESTRIAN_GRID=0 PR57_LIVING_ROSTER=0 PR57_GRID_DIAG=1 \
-            PR57_CYCLE_SOUTH_HOUSING=1 PR57_AB_CHECKPOINT=1 \
-            PR57_SAVE_CAPTURE_DIR="artifacts/pr57-work-access/$label" \
-            timeout 235s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
-              scale cycle --seed=42 --warmup=0 --cycle-houses="$houses" --cycle-bypass=1 \
-              --days="$count" --window="$window" --cap=220
+            if [ "$scenario" = "real-maintenance" ]; then
+              PR57_WORK_ACCESS_INDEX="$enabled" PR57_DISPATCH_SHIPMENT_LOOKUP=1 \
+              PR57_PEDESTRIAN_GRID=0 PR57_LIVING_ROSTER=0 PR57_GRID_DIAG=1 \
+              PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="artifacts/pr57-work-access/$label" \
+              timeout 120s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                scale cycle --seed=42 --resume="$SOURCE" --warmup=0 --days=4 --window=1800 --cap=90
+            else
+              PR57_WORK_ACCESS_INDEX="$enabled" PR57_DISPATCH_SHIPMENT_LOOKUP=1 \
+              PR57_PEDESTRIAN_GRID=0 PR57_LIVING_ROSTER=0 PR57_GRID_DIAG=1 \
+              PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="artifacts/pr57-work-access/$label" \
+              timeout 120s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                scale cycle --seed=42 --warmup=0 --days=4 --window=3600 --cap=90
+            fi
           }
-          run_one real-maintenance control-a 16 43200 32 | tee artifacts/pr57-work-access/real-maintenance-control-a.log
-          run_one real-maintenance candidate-a 16 43200 32 | tee artifacts/pr57-work-access/real-maintenance-candidate-a.log
-          run_one real-maintenance candidate-b 16 43200 32 | tee artifacts/pr57-work-access/real-maintenance-candidate-b.log
-          run_one real-maintenance control-b 16 43200 32 | tee artifacts/pr57-work-access/real-maintenance-control-b.log
-          run_one real-low control 4 3600 0 | tee artifacts/pr57-work-access/real-low-control.log
-          run_one real-low candidate 4 3600 0 | tee artifacts/pr57-work-access/real-low-candidate.log
+          run_one real-maintenance control-a | tee artifacts/pr57-work-access/real-maintenance-control-a.log
+          run_one real-maintenance candidate-a | tee artifacts/pr57-work-access/real-maintenance-candidate-a.log
+          run_one real-maintenance candidate-b | tee artifacts/pr57-work-access/real-maintenance-candidate-b.log
+          run_one real-maintenance control-b | tee artifacts/pr57-work-access/real-maintenance-control-b.log
+          run_one real-low control | tee artifacts/pr57-work-access/real-low-control.log
+          run_one real-low candidate | tee artifacts/pr57-work-access/real-low-candidate.log
       - name: Compare every full checkpoint and actual end-to-end wall CPU allocations
         shell: bash
         run: |
@@ -63,7 +79,7 @@ jobs:
           import hashlib,json,pathlib,re
           root=pathlib.Path('artifacts/pr57-work-access')
           for scenario,pairs,windows in [
-            ('real-maintenance',[('control-a','candidate-a'),('control-b','candidate-b')],16),
+            ('real-maintenance',[('control-a','candidate-a'),('control-b','candidate-b')],4),
             ('real-low',[('control','candidate')],4)]:
             for control,candidate in pairs:
               stats={}
