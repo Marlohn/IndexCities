@@ -1269,3 +1269,27 @@ As distâncias da tabela são **comprimento efetivamente percorrido entre amostr
 **Verificação causal delimitada:** as quatro execuções passaram invariantes e save/load; cada save inicial coincide byte a byte com o checkpoint autêntico correspondente e o tempo avançou exatamente 600 s. Os dois processos independentes do estágio 12 produziram saves finais **idênticos byte a byte** (SHA-256 `0C8729B9F5743023CC8509A747CDEC7A92137D6A3E40BB6794B034F4977485FE`), incluindo histórico, eventos, razão, dinheiro e veículos. Não há comparação de estados entre estágios diferentes; igualdade em dois instantes não prova equivalência de todos os eventos intermediários. O parser do job registrou incorretamente `travellingStart=0` porque comparou o enum JSON textual a `1`; **as contagens corretas 9/24/31 foram obtidas das linhas `WINDOW` e do estado**, sem usar aquele campo. Não repetir CI somente por esse campo observacional.
 
 **Direção técnica:** a hipótese de que o gargalo recente é sobretudo **multiplicação do número de subpassos** foi refutada nesta amostra. Próximo experimento de maior alavancagem: localizar **alocações e testes de ocupação/colisão por subdivisão** sob 24–31 caminhões, incluindo invalidadores de cache por movimento, chegada/saída, geometria e eventos; só propor memoização/agenda seletiva experimental após identificar predicados seguros e exigir paridade causal em processos independentes. Evitar mais variantes de `ACTIVE_SCAN/FAST_SCAN` e não alterar prioridade de entrada lateral sem base na SPEC. O throughput aqui inclui profiler e horizonte de dez minutos; não extrapolar para 10.000 vivos, gerações, 80 anos ou seis horas reais.
+
+
+## Septuagésima nona execução — atribuição de alocações revela crescimento dominante fora das varreduras e do canteiro (25/10/2026, Brasília)
+
+**Evidência:** [commit observacional `8414a93`](https://github.com/Marlohn/IndexCities/commit/8414a932922982fc4ddb94c8d1500643eaa67134), [Actions #40174059761](https://github.com/Marlohn/IndexCities/actions/runs/40174059761), job `121110848355` **success**, artefato `integrated-scale-pr57-cargo-substep-stages`. O código adicionou somente contadores de bytes alocados por thread em `MoveVehiclesUnsplit`, ativados quando `CostProfile` existe, sem mudar as decisões de física. O workflow repetiu **os mesmos checkpoints autênticos 10/11/12/12** da execução anterior, cada um por 600 s simulados em processo .NET 8 Release separado, com `PR57_DISPATCH_SHIPMENT_LOOKUP=1` e demais flags PR57 desligadas. O profiler novo tem overhead próprio e a comparação **entre estágios não é A/B de ganho**.
+
+**Alocação acumulada nas primeiras 2.100 chamadas de `MoveVehiclesUnsplit`** (MB decimais, conforme linhas `PR57_ALLOC_PROFILE calls=2100`; não confundir com a alocação de toda a janela):
+
+| Categoria | Checkpoint 10: 9 em viagem | Checkpoint 11: 24 em viagem | Checkpoint 12 A/B: 31 em viagem |
+| --- | ---: | ---: | ---: |
+| Total dentro de `MoveVehiclesUnsplit` | 176,14 | 620,38 | 1.052,45 / 1.052,44 |
+| **`other` (não atribuído às seis faixas medidas)** | **61,63** | **405,54** | **788,32 / 788,33** |
+| `SafeSiteTravel` | 83,96 | 174,89 | 219,97 / 219,97 |
+| Preparação da chamada | 22,65 | 22,65 | 23,76 / 23,76 |
+| Varredura de curva | 3,21 | 6,85 | 8,61 / 8,61 |
+| Travessia | 4,15 | 9,90 | 11,24 / 11,24 |
+| Varredura de líder | ~0 | ~0 | ~0,01 |
+| `TurnClearance` | 0,55 | 0,55 | 0,55 / 0,55 |
+
+**Resultado discriminante:** a categoria **`other` cresceu ~12,8×** (61,63→788,32 MB), passando de ~35% a ~75% das alocações medidas dentro da função, enquanto `SafeSiteTravel` cresceu ~2,62× (83,96→219,97 MB). Assim, concentrar a próxima otimização apenas em `SafeSiteTravel` ou na varredura de líderes **não ataca a maior parcela de alocação sob 31 caminhões**. `other` é um residual contábil, **não uma função identificada**: inclui trabalho de preparo/manobras/filas, chamadas de geometria e caminhos de bloqueio fora das faixas medidas, possivelmente também a própria instrumentação. Não inferir que a totalidade desse residual é eliminável ou redundante.
+
+**Paridade e limites:** os quatro replays passaram invariantes e save/load; os dois do checkpoint 12 geraram o mesmo save final SHA-256 `0C8729B9F5743023CC8509A747CDEC7A92137D6A3E40BB6794B034F4977485FE`, com 31 caminhões em viagem e 1.817 subpassos. Os valores globais por janela foram **246,9 / 736,1 / 1.223,6–1.223,7 MB**; diferem dos totais acima por incluírem outras funções e o trecho final após a 2.100ª chamada. Wall instrumentado **1,98 / 2,30 / 3,47–3,36 s** não deve ser confrontado como regressão algorítmica com o CI anterior, pois a instrumentação mudou. O parser ainda informa `travellingStart=0` por comparar enum textual com inteiro; os **9/24/31** vêm do estado/linhas `WINDOW`, e o erro de observação não exige reexecutar CI.
+
+**Próxima hipótese delimitada:** decompor **somente o residual `other`** por região de `MoveVehiclesUnsplit` (preparo/entrada/manobras antes da busca de líder, tratamento do bloqueio após colisão, e finalização), medindo alocações e chamadas com o mesmo checkpoint 12 em uma sondagem curta, sem alterar física ou gameplay. Depois selecionar **um** caminho dominante para POC reversível, exigir A/B em processos frescos e paridade de checkpoints, eventos, dinheiro, movimento e save/load. Não iniciar nova rodada de filtros de líder, nem concluir escala 10k/80 anos a partir destes 121 SIMs e dez minutos.
