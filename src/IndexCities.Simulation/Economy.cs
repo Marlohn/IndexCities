@@ -194,8 +194,18 @@ public sealed partial class CitySimulation
         destination.InventoryUnitCost=Money(price/(decimal)amount);destination.SalePrice=Money(destination.InventoryUnitCost*1.4m);return true;
     }
     readonly Dictionary<Point,double> _homePollution=new();readonly List<Point> _homePoints=[];
+    // PR57: eliminate the separate all-citizen pollution prepass. Sample each
+    // home's exact cell-order dot product at its first actual use in UpdateNeeds.
+    // This changes no health, hunger, family, clock or persistence calculation.
+    static readonly bool Pr57NeedsSinglePass=Environment.GetEnvironmentVariable("PR57_NEEDS_SINGLE_PASS")=="1";
+    bool _pr57NeedsSinglePassAnnounced;
     void UpdateNeeds(double dt)
     {
+        if(!_pr57NeedsSinglePassAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine($"PR57_NEEDS_SINGLE_PASS active={Pr57NeedsSinglePass}");
+            _pr57NeedsSinglePassAnnounced=true;
+        }
         var detail=CostProfile;
         var detailStarted=detail is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
         // Pollution is unchanged during this routine, and residents in the same
@@ -203,8 +213,12 @@ public sealed partial class CitySimulation
         SnapshotPollution();var pollution=_homePollution;pollution.Clear();
         // Every home this loop can sample, computed together up front (a home the
         // loop no longer reaches only costs time; a missing one is computed below).
-        _homePoints.Clear();foreach(var c in Pr57NeedsCandidates())if(c.Alive&&c.Resident&&c.InsideMap&&BuildingById(FamilyById(c.FamilyId)?.HomeId) is {} h&&pollution.TryAdd(h.Position,0))_homePoints.Add(h.Position);
-        SampledPollution(_homePoints,pollution);
+        _homePoints.Clear();
+        if(!Pr57NeedsSinglePass)
+        {
+            foreach(var c in Pr57NeedsCandidates())if(c.Alive&&c.Resident&&c.InsideMap&&BuildingById(FamilyById(c.FamilyId)?.HomeId) is {} h&&pollution.TryAdd(h.Position,0))_homePoints.Add(h.Position);
+            SampledPollution(_homePoints,pollution);
+        }
         if(detail is not null)detail.MarkDetail(6,ref detailStarted);
         double HomePollution(Point position){if(!pollution.TryGetValue(position,out var value)){value=SampledPollution(position);pollution.Add(position,value);}return value;}
         foreach(var c in Pr57NeedsCandidates().Where(c=>c.Alive&&c.Resident&&c.InsideMap)){
