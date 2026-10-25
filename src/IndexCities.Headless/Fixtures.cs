@@ -31,6 +31,22 @@ static class Fixtures
                 bypassIds.Add(result.Id!.Value);
             }
         }
+        // PR57 opt-in: paid, physically constructed frontage to test growth beyond
+        // the saturated 32 additional houses. No instant roads or population.
+        var extensionIds=new List<int>();
+        if(Environment.GetEnvironmentVariable("PR57_CYCLE_SOUTH_EXTENSION")=="1")
+        {
+            if(!bypass)throw new InvalidOperationException("PR57 south extension requires the real bypass");
+            foreach(var (from,to) in new[]{
+                (new Point(-184,-60),new Point(-184,-104)),
+                (new Point(-184,-104),new Point(-16,-104))})
+            {
+                var quote=sim.QuoteRoad(from,to);
+                Console.WriteLine($"PR57_EXTENSION_QUOTE from={from} to={to} valid={quote.PhysicallyValid} accessible={quote.Accessible} cause={quote.Message.Replace(' ','_')}");
+                var result=sim.PlaceRoad(from,to);Require(result);
+                extensionIds.Add(result.Id!.Value);
+            }
+        }
         foreach(var x in new[]{-128,-108,-88,-68,-48,-28,-8,12,32,52,72,92,112,132,152,172,192,212})Require(sim.PlaceBuilding(BuildingKind.House,new(x,14)));
         foreach(var x in new[]{-160,-140,-120,-100,-80,-60,-40,-20,0,20,40,60,80,100})Require(sim.PlaceBuilding(BuildingKind.House,new(x,58)));
         Require(sim.PlaceBuilding(BuildingKind.WorksDepot,new(-160,-18),Math.PI));Require(sim.PlaceBuilding(BuildingKind.Grocery,new(-124,-16),Math.PI));
@@ -48,6 +64,11 @@ static class Fixtures
         {
             var roads=bypassIds.Select(id=>sim.State.Projects.Single(p=>p.Id==id)).ToArray();
             Console.WriteLine($"PR57_BYPASS_READY completed={roads.Count(p=>p.Status==WorkStatus.Completed)}/{roads.Length} roadNodes={sim.State.Roads.Count} elapsed={sim.State.ElapsedSeconds:F0} statuses={string.Join(",",roads.Select(p=>$"{p.Id}:{p.Status}:{p.Progress:F3}:{p.Cause.Replace(' ','_')}"))}");
+        }
+        if(extensionIds.Count>0)
+        {
+            var roads=extensionIds.Select(id=>sim.State.Projects.Single(p=>p.Id==id)).ToArray();
+            Console.WriteLine($"PR57_EXTENSION_READY completed={roads.Count(p=>p.Status==WorkStatus.Completed)}/{roads.Length} elapsed={sim.State.ElapsedSeconds:F0} statuses={string.Join(",",roads.Select(p=>$"{p.Id}:{p.Status}:{p.Progress:F3}:{p.Cause.Replace(' ','_')}"))}");
         }
         return sim;
     }
@@ -88,6 +109,20 @@ static class Fixtures
                 Console.WriteLine($"PR57_CYCLE_SOUTH_ROW z={z:F0} newOrders={placed-before}");
                 if(placed>=requested)break;
             }
+        }
+        // PR57 opt-in: extra row facing the NEW, ordinarily constructed road.
+        // Quotes, material deliveries and population remain entirely simulated.
+        if(Environment.GetEnvironmentVariable("PR57_CYCLE_SOUTH_EXTENSION")=="1"&&placed<requested)
+        {
+            var before=placed;
+            for(var x=-168.0;x<=-28&&placed<requested;x+=20)
+            {
+                var position=new Point(x,-118);
+                if(!sim.QuoteBuilding(BuildingKind.House,position,Math.PI).PhysicallyValid)continue;
+                attempted++;
+                if(sim.PlaceBuilding(BuildingKind.House,position,Math.PI).Success)placed++;
+            }
+            Console.WriteLine($"PR57_CYCLE_EXTENSION_ROW z=-118 newOrders={placed-before}");
         }
         return (placed,attempted);
     }
