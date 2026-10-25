@@ -84,17 +84,38 @@ public sealed partial class CitySimulation
         public readonly Dictionary<int,LaneWinnerTrace> JunctionWinnerTraces=new();
         public readonly Dictionary<int,LaneWinnerOutcome> JunctionWinnerOutcomes=new();
         public long BlockedEntryChecks,ProjectionCandidates,ProjectionRechecks;
+        // PR57 observational only: did the vehicle predicting a speed boundary
+        // actually advance in the subsequent physical slice?
+        public long SpeedWinnerSamples,SpeedWinnerStationary,SpeedWinnerRouteChanged,SpeedWinnerWaiting;
+        public double SpeedWinnerDistance;
+        public readonly Dictionary<int,long> SpeedWinnerIds=new();
         public double MinSlice=double.PositiveInfinity,MaxSlice;
     }
     readonly Dictionary<long,LaneSliceHour> _laneSliceHours=new();
     long _lastLaneSliceHourPrinted=-1;
     Vehicle? _laneObservedWinner;
+    Vehicle? _speedObservedWinner;
+    Point _speedObservedPosition;
+    int _speedObservedRouteIndex;
+    long _speedObservedHour;
     Point _laneObservedWinnerPosition;
     double _laneObservedWinnerWaitingSince;
     int _laneObservedWinnerRouteIndex;
     long _laneObservedWinnerHour;
     void ObserveLaneWinnerOutcome()
     {
+        var speed=_speedObservedWinner;
+        _speedObservedWinner=null;
+        if(speed is not null&&_laneSliceHours.TryGetValue(_speedObservedHour,out var speedHour)){
+            speedHour.SpeedWinnerSamples++;
+            var moved=speed.Position.Distance(_speedObservedPosition);
+            speedHour.SpeedWinnerDistance+=moved;
+            if(moved<=.000001)speedHour.SpeedWinnerStationary++;
+            if(speed.RouteIndex!=_speedObservedRouteIndex)speedHour.SpeedWinnerRouteChanged++;
+            if(speed.WaitingSince>0)speedHour.SpeedWinnerWaiting++;
+            speedHour.SpeedWinnerIds.TryGetValue(speed.Id,out var wins);
+            speedHour.SpeedWinnerIds[speed.Id]=wins+1;
+        }
         var v=_laneObservedWinner;
         _laneObservedWinner=null;
         if(v is null||!_laneSliceHours.TryGetValue(_laneObservedWinnerHour,out var hour))return;
@@ -107,6 +128,12 @@ public sealed partial class CitySimulation
         if(!_laneSliceHours.TryGetValue(hour,out var stats))_laneSliceHours[hour]=stats=new();
         stats.Reasons[reason]++;
         _laneObservedWinner=reason==2&&movementCause==1?winnerVehicle:null;
+        _speedObservedWinner=reason==2&&movementCause==2?winnerVehicle:null;
+        if(_speedObservedWinner is not null){
+            _speedObservedHour=hour;
+            _speedObservedPosition=_speedObservedWinner.Position;
+            _speedObservedRouteIndex=_speedObservedWinner.RouteIndex;
+        }
         if(_laneObservedWinner is not null){
             _laneObservedWinnerHour=hour;
             _laneObservedWinnerPosition=_laneObservedWinner.Position;
@@ -142,6 +169,8 @@ public sealed partial class CitySimulation
             var topWins=top.Length>0?top[0].Value:0;
             var top3Wins=top.Sum(x=>x.Value);
             Console.WriteLine($"LANE_EVENT_HOUR hour={hour} noEntry={stats.Reasons[0]} full={stats.Reasons[1]} movementBoundary={stats.Reasons[2]} projectionRecheck={stats.Reasons[3]} blockedEntryChecks={stats.BlockedEntryChecks} projectedCandidates={stats.ProjectionCandidates} projectedRechecks={stats.ProjectionRechecks} movementFuel={stats.MovementCauses[0]} movementJunction={stats.MovementCauses[1]} movementSpeed={stats.MovementCauses[2]} movementTurn={stats.MovementCauses[3]} movementRouteEnd={stats.MovementCauses[4]} junctionUniqueWinners={stats.JunctionWinnerCounts.Count} junctionTopId={topId} junctionTopWins={topWins} junctionTop3Wins={top3Wins} sliceLe100us={stats.Durations[0]} sliceLe10ms={stats.Durations[1]} sliceLe100ms={stats.Durations[2]} sliceLe1s={stats.Durations[3]} sliceGt1s={stats.Durations[4]} minSlice={stats.MinSlice:F8} maxSlice={stats.MaxSlice:F6}");
+            var speedTop=string.Join(";",stats.SpeedWinnerIds.OrderByDescending(x=>x.Value).ThenBy(x=>x.Key).Take(3).Select(x=>$"{x.Key}:{x.Value}"));
+            Console.WriteLine($"LANE_SPEED_WINNER_HOUR hour={hour} samples={stats.SpeedWinnerSamples} stationary={stats.SpeedWinnerStationary} routeChanged={stats.SpeedWinnerRouteChanged} waiting={stats.SpeedWinnerWaiting} movedMeters={stats.SpeedWinnerDistance:F6} uniqueWinners={stats.SpeedWinnerIds.Count} top3={speedTop}");
             foreach(var winner in top){
                 if(!stats.JunctionWinnerTraces.TryGetValue(winner.Key,out var trace))continue;
                 var target=trace.TargetCounts.OrderByDescending(x=>x.Value).ThenBy(x=>x.Key).First();
