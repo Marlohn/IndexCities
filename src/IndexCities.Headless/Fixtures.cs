@@ -10,11 +10,27 @@ static class Fixtures
     static bool _scaled;
     static readonly Queue<(Point Position,double Rotation)> _pendingHouses=new();
     // Same layout as CityCycleTests.City(), with real construction until done.
-    public static CitySimulation Cycle(int seed)
+    public static CitySimulation Cycle(int seed,bool bypass=false)
     {
         var sim=new CitySimulation(seed);Require(sim.PlaceBuilding(BuildingKind.CityHall,new(-152,16)));
         Require(sim.PlaceRoad(new(-192,0),new(240,0)));sim.Advance(14400);
         Require(sim.PlaceRoad(new(-184,0),new(116,44),true));sim.Advance(7200);
+        // PR57-only alternate physical path around the westbound delivery queue.
+        // Three ordinary paid road projects; no private completion or free access.
+        var bypassIds=new List<int>();
+        if(bypass)
+        {
+            foreach(var (from,to) in new[]{
+                (new Point(-184,0),new Point(-184,-48)),
+                (new Point(-184,-48),new Point(-64,-48)),
+                (new Point(-64,-48),new Point(-64,0))})
+            {
+                var quote=sim.QuoteRoad(from,to);
+                Console.WriteLine($"PR57_BYPASS_QUOTE from={from} to={to} valid={quote.PhysicallyValid} accessible={quote.Accessible} cause={quote.Message.Replace(' ','_')}");
+                var result=sim.PlaceRoad(from,to);Require(result);
+                bypassIds.Add(result.Id!.Value);
+            }
+        }
         foreach(var x in new[]{-128,-108,-88,-68,-48,-28,-8,12,32,52,72,92,112,132,152,172,192,212})Require(sim.PlaceBuilding(BuildingKind.House,new(x,14)));
         foreach(var x in new[]{-160,-140,-120,-100,-80,-60,-40,-20,0,20,40,60,80,100})Require(sim.PlaceBuilding(BuildingKind.House,new(x,58)));
         Require(sim.PlaceBuilding(BuildingKind.WorksDepot,new(-160,-18),Math.PI));Require(sim.PlaceBuilding(BuildingKind.Grocery,new(-124,-16),Math.PI));
@@ -28,6 +44,11 @@ static class Fixtures
         Require(sim.PlaceRoad(new(240,0),new(132,z),true));sim.Advance(14400);
         Require(sim.PlaceBuilding(BuildingKind.WaterIntake,new(144,z+14)));
         for(var i=0;i<240&&sim.State.Projects.Any(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress&&!p.IsMaintenance);i++)sim.Advance(3600);
+        if(bypass)
+        {
+            var roads=bypassIds.Select(id=>sim.State.Projects.Single(p=>p.Id==id)).ToArray();
+            Console.WriteLine($"PR57_BYPASS_READY completed={roads.Count(p=>p.Status==WorkStatus.Completed)}/{roads.Length} roadNodes={sim.State.Roads.Count} elapsed={sim.State.ElapsedSeconds:F0} statuses={string.Join(",",roads.Select(p=>$"{p.Id}:{p.Status}:{p.Progress:F3}:{p.Cause.Replace(' ','_')}"))}");
+        }
         return sim;
     }
 
