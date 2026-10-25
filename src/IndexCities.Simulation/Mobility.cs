@@ -81,7 +81,14 @@ public sealed partial class CitySimulation
         // Loading itself still preserves the serialized state exactly.
         if(!_pedestrianCrossingsChecked){UpdateCrosswalks();_pedestrianCrossingsChecked=true;}
         RefreshCrosswalks();
+        _pr57PedestrianGridActive=_pr57PedestrianGridEnabled;
+        if(_pr57PedestrianGridActive)Pr57RebuildPedestrianGrid();
+        if(!_pr57PedestrianGridAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1"){
+            Console.WriteLine($"PR57_PEDESTRIAN_GRID active={_pr57PedestrianGridActive} citizens={State.Citizens.Count} cellMetres=8");
+            _pr57PedestrianGridAnnounced=true;
+        }
         foreach(var c in State.Citizens.Where(c=>c.Alive)){
+            try{
             if(!c.Moving&&c.PathRoadRevision!=State.RoadRevision&&(c.Activity.StartsWith("Sem rota",StringComparison.Ordinal)||c.Activity=="Viagem interrompida: rota removida"))c.NextDecisionAt=Math.Min(c.NextDecisionAt,State.ElapsedSeconds);
             if(c.ConstructionProjectId!=null&&ShiftActive(c)){c.AddWorkSecondsToday(dt);AccrueWage(c,dt);}
             if(c.VehicleId is {} vid){var v=VehicleById(vid);if(v!=null){c.Position=v.Position;c.InsideMap=InMap(v.Position);}continue;}
@@ -114,6 +121,7 @@ public sealed partial class CitySimulation
             }
             if(State.ElapsedSeconds<c.NextDecisionAt)continue;c.NextDecisionAt=State.ElapsedSeconds+60;
             CitizenRoutine(c);
+            }finally{if(_pr57PedestrianGridActive)Pr57UpdatePedestrianGrid(c);}
         }
     }
     // Crosswalk nodes in State.Roads order. Rebuilt at the start of every
@@ -140,6 +148,7 @@ public sealed partial class CitySimulation
     // the result differs only when both values already exceed `reach`.
     double PedestrianGap(Citizen c,Point target,double d,Point heading,double reach)
     {
+        if(_pr57PedestrianGridActive)return Pr57IndexedPedestrianGap(c,target,d,heading,reach);
         var gap=double.MaxValue;var radius=reach+1.3;radius*=radius;
         foreach(var other in State.Citizens){
             if(other.Id==c.Id||!other.Alive||!other.Moving||other.VehicleId!=null)continue;

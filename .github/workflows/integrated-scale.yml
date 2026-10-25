@@ -1,4 +1,4 @@
-name: Integrated core PR57 short causal trace of real blocked movement boundaries
+name: PR57 opt-in pedestrian spatial index causal A/B
 
 on:
   push:
@@ -18,83 +18,101 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  blocked-boundary:
-    name: Independent control/trace of authentic checkpoint 12, 120 seconds
+  pedestrian-index:
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 14
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Restore authentic six-day city without regenerating it
+      - name: Restore previously captured authentic economic city (no regeneration)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p artifacts/pr57-source
           gh run download 40169101306 -n integrated-scale-pr57-legal-workplaces-8d -D artifacts/pr57-source
+          test -s artifacts/pr57-source/pr57-jobs-20/checkpoint-0.json
           test -s artifacts/pr57-source/pr57-jobs-20/checkpoint-12.json
-      - name: Build integrated core Release with observational trace
-        run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: Fresh-process control and read-only trace, same real city and physics
+      - name: Build and run existing simulation tests
+        run: |
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release
+      - name: Separate-process A/B on authentic uncongested and congested checkpoints and artificial grid
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p artifacts/pr57-target-trace
+          mkdir -p artifacts/pr57-pedestrian-grid
           run_one() {
-            local mode="$1" trace=0
-            if [ "$mode" = "trace" ]; then trace=1; fi
-            mkdir -p "artifacts/pr57-target-trace/$mode"
-            echo "PR57_TARGET_MODE mode=$mode trace=$trace seed=42 source=checkpoint12 seconds=120 window=30 dispatchLookup=1 otherFlags=0"
-            PR57_SAVE_CAPTURE_DIR="artifacts/pr57-target-trace/$mode" PR57_AB_CHECKPOINT=1 PR57_PROFILE_FROM_WINDOW=1 \
-            PR57_TARGET_BLOCK_TRACE="$trace" PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_PENETRATION_STACK_AXES=0 \
-            PR57_ACTIVE_SCAN=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 PR57_SPATIAL_SCAN=0 \
-            PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 \
-            PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 \
-            PR57_ENTRY_FRAME_REUSE=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 \
-            timeout 90s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
-              profile cycle --seed=42 --resume=artifacts/pr57-source/pr57-jobs-20/checkpoint-12.json \
-              --warmup=0 --days=4 --window=30 --cap=85
+            local scenario="$1" mode="$2" source="$3" windows="$4" seconds="$5"
+            local enabled=0
+            if [ "$mode" = "candidate" ]; then enabled=1; fi
+            mkdir -p "artifacts/pr57-pedestrian-grid/$scenario/$mode"
+            echo "PR57_GRID_RUN scenario=$scenario mode=$mode enabled=$enabled seed=42 windows=$windows seconds=$seconds"
+            if [ "$scenario" = "artificial-grid" ]; then
+              PR57_PEDESTRIAN_GRID="$enabled" PR57_GRID_DIAG=1 PR57_DISPATCH_SHIPMENT_LOOKUP=1 \
+              PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="artifacts/pr57-pedestrian-grid/$scenario/$mode" \
+              timeout 180s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                scale grid --seed=42 --rows=8 --length=600 --signals=1 --warmup=0 --days="$windows" --window="$seconds" --cap=150
+            else
+              PR57_PEDESTRIAN_GRID="$enabled" PR57_GRID_DIAG=1 PR57_DISPATCH_SHIPMENT_LOOKUP=1 \
+              PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="artifacts/pr57-pedestrian-grid/$scenario/$mode" \
+              timeout 100s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                scale cycle --seed=42 --resume="$source" --warmup=0 --days="$windows" --window="$seconds" --cap=90
+            fi
           }
-          run_one control | tee artifacts/pr57-target-trace/control.log
-          run_one trace | tee artifacts/pr57-target-trace/trace.log
-      - name: Audit complete causal checkpoints and real population without freezing demographics
+          run_one real-low control artifacts/pr57-source/pr57-jobs-20/checkpoint-0.json 4 120 | tee artifacts/pr57-pedestrian-grid/real-low-control.log
+          run_one real-low candidate artifacts/pr57-source/pr57-jobs-20/checkpoint-0.json 4 120 | tee artifacts/pr57-pedestrian-grid/real-low-candidate.log
+          run_one real-congested candidate artifacts/pr57-source/pr57-jobs-20/checkpoint-12.json 4 120 | tee artifacts/pr57-pedestrian-grid/real-congested-candidate.log
+          run_one real-congested control artifacts/pr57-source/pr57-jobs-20/checkpoint-12.json 4 120 | tee artifacts/pr57-pedestrian-grid/real-congested-control.log
+          run_one artificial-grid control none 3 300 | tee artifacts/pr57-pedestrian-grid/artificial-grid-control.log
+          run_one artificial-grid candidate none 3 300 | tee artifacts/pr57-pedestrian-grid/artificial-grid-candidate.log
+      - name: Audit intermediate full saves, activity, actual wall/cpu/alloc and save-load
         shell: bash
         run: |
-          python3 - <<'PY' | tee artifacts/pr57-target-trace/audit.log
-          import hashlib, json, pathlib
-          root=pathlib.Path('artifacts/pr57-target-trace')
-          source=pathlib.Path('artifacts/pr57-source/pr57-jobs-20/checkpoint-12.json').read_bytes()
-          start=json.loads(source)['ElapsedSecondsUnits']
-          for mode in ('control','trace'):
-              log=(root/f'{mode}.log').read_text()
-              assert 'INVARIANTS OK' in log and any(x.startswith('SAVE ') for x in log.splitlines()),mode
-              lines=[x for x in log.splitlines() if x.startswith('WINDOW ')]
-              assert len(lines)==4 and [int(x.split()[1]) for x in lines]==[1,2,3,4],(mode,lines)
-              assert (root/mode/'checkpoint-0.json').read_bytes()==source,(mode,'source')
-              if mode=='trace':
-                  assert 'PR57_TRACE_OUTER' in log and 'PR57_TRACE_SLICE' in log and 'PR57_TARGET_HOLD vehicle=1107' in log
-          for i in range(5):
-              a=(root/'control'/f'checkpoint-{i}.json').read_bytes()
-              b=(root/'trace'/f'checkpoint-{i}.json').read_bytes()
-              control=json.loads(a); trace=json.loads(b)
-              assert control['ElapsedSecondsUnits']==start+i*30_000_000,('clock',i)
-              assert trace['ElapsedSecondsUnits']==control['ElapsedSecondsUnits'],('clock trace',i)
-              print('PR57_TARGET_CHECKPOINT',json.dumps(dict(window=i,controlSha256=hashlib.sha256(a).hexdigest(),
-                traceSha256=hashlib.sha256(b).hexdigest(),sameBytes=a==b,
-                livingResidents=sum(c['Alive'] and c['Resident'] for c in control['Citizens']),
-                livingExternal=sum(c['Alive'] and not c['Resident'] for c in control['Citizens']),
-                dead=sum(not c['Alive'] for c in control['Citizens']),
-                travelling=sum(v['Status']=='Travelling' for v in control['Vehicles']),
-                ledger=len(control['Ledger']),history=sum(len(c['History']) for c in control['Citizens'])),sort_keys=True))
-              assert a==b,('Full-state mismatch; inspect both preserved saves',i)
-          print('PR57_TARGET_RESULT','4 windows x 30s, two fresh .NET processes, exact checkpoint bytes, no speed claim; trace samples only net state changes per slice, not every internal event.')
+          python3 - <<'PY' | tee artifacts/pr57-pedestrian-grid/audit.log
+          import hashlib,json,pathlib,re
+          root=pathlib.Path('artifacts/pr57-pedestrian-grid')
+          for scenario,windows in [('real-low',4),('real-congested',4),('artificial-grid',3)]:
+              metrics={}
+              for mode in ('control','candidate'):
+                  log=(root/f'{scenario}-{mode}.log').read_text()
+                  assert f'PR57_PEDESTRIAN_GRID active={str(mode=="candidate")}' in log,(scenario,mode,'flag')
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(scenario,mode,'invariants/save')
+                  lines=[x for x in log.splitlines() if x.startswith('WINDOW ')]
+                  assert len(lines)==windows,(scenario,mode,len(lines))
+                  rows=[]
+                  for line in lines:
+                      row={k:float(v) for k,v in re.findall(r'\b(wall|cpu|allocMB|eff)=([0-9.]+)',line)}
+                      assert {'wall','cpu','allocMB','eff'}<=row.keys(),(scenario,mode,line)
+                      rows.append(row)
+                  metrics[mode]={k:sum(row[k] for row in rows) for k in ('wall','cpu','allocMB')}
+              for i in range(windows+1):
+                  a=(root/scenario/'control'/f'checkpoint-{i}.json').read_bytes()
+                  b=(root/scenario/'candidate'/f'checkpoint-{i}.json').read_bytes()
+                  state=json.loads(a)
+                  summary=dict(scenario=scenario,window=i,sameBytes=a==b,
+                    shaControl=hashlib.sha256(a).hexdigest(),shaCandidate=hashlib.sha256(b).hexdigest(),
+                    livingResidents=sum(c['Alive'] and c['Resident'] for c in state['Citizens']),
+                    livingExternal=sum(c['Alive'] and not c['Resident'] for c in state['Citizens']),
+                    movingWalkers=sum(c['Alive'] and c['Moving'] and c['VehicleId'] is None for c in state['Citizens']),
+                    travelling=sum(v['Status']=='Travelling' for v in state['Vehicles']),
+                    ledger=len(state['Ledger']),cityEvents=len(state['CityEvents']),
+                    history=sum(len(c['History']) for c in state['Citizens']))
+                  print('PR57_GRID_CHECKPOINT',json.dumps(summary,sort_keys=True))
+                  assert a==b,('Full causal checkpoint mismatch; inspect preserved saves',scenario,i)
+              c=metrics['control'];v=metrics['candidate']
+              print('PR57_GRID_AB',json.dumps(dict(scenario=scenario,control=c,candidate=v,
+                wallGainPct=100*(c['wall']-v['wall'])/c['wall'],
+                cpuGainPct=100*(c['cpu']-v['cpu'])/max(.001,c['cpu']),
+                allocGainPct=100*(c['allocMB']-v['allocMB'])/max(.001,c['allocMB']),
+                incrementalOverDispatchLookup=True,artificial=scenario=='artificial-grid'),sort_keys=True))
           PY
-      - name: Preserve logs and complete saves, including on failure
+      - name: Preserve logs and complete saves even on failure
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-pr57-targeted-boundary-trace
-          path: artifacts/pr57-target-trace/**
+          name: integrated-scale-pr57-pedestrian-grid-ab
+          path: artifacts/pr57-pedestrian-grid/**
           if-no-files-found: warn
           retention-days: 14
