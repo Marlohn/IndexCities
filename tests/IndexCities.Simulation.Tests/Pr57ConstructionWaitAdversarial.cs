@@ -72,15 +72,15 @@ public sealed class Pr57ConstructionWaitAdversarial
         var (sim,roadId,id)=Setup();
         var point=sim.State.Roads.Single(r=>r.Id==roadId).Position;
         Capture(sim,"road-rebuild",0);
-        sim.Advance(120);Capture(sim,"road-rebuild",1);
-        sim.Advance(120);Capture(sim,"road-rebuild",2);
+        sim.Advance(20);Capture(sim,"road-rebuild",1);
+        Assert.NotEqual(WorkStatus.Completed,sim.State.Projects.Single(p=>p.Id==id).Status);
         Assert.True(sim.DemolishRoad(roadId).Success);
         Assert.Equal(WorkStatus.Cancelled,sim.State.Projects.Single(p=>p.Id==id).Status);
-        Capture(sim,"road-rebuild",3);
+        Capture(sim,"road-rebuild",2);
         var replacement=sim.PlaceRoad(point,point);
         Assert.True(replacement.Success,"Reconnection must be ordered through paid public command");
         sim.Advance(120);
-        Capture(sim,"road-rebuild",4);
+        Capture(sim,"road-rebuild",3);
         Assert.True(sim.State.Projects.Any(p=>p.Id==replacement.Id&&p.Status is WorkStatus.Waiting or WorkStatus.InProgress or WorkStatus.Completed));
         Console.WriteLine($"PR57_WAIT_ADVERSARIAL road-rebuild old={id} replacement={replacement.Id} elapsed={sim.State.ElapsedSeconds}");
     }

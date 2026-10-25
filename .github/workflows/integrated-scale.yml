@@ -37,7 +37,7 @@ jobs:
             if [[ "$mode" == candidate ]]; then flag=1; fi
             mkdir -p "artifacts/pr57-wait-invalidations/$mode"
             PR57_CONSTRUCTION_WAIT_AGENDA="$flag" PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ROUTE_TREE=0 PR57_ORDER_SHIPMENT_INDEX=0 PR57_MAINTENANCE_SCHEDULE=0 PR57_WORK_ACCESS_INDEX=0 PR57_GRID_DIAG=1 \
-            PR57_WAIT_ADVERSARIAL_DIR="artifacts/pr57-wait-invalidations/$mode" \
+            PR57_WAIT_ADVERSARIAL_DIR="$PWD/artifacts/pr57-wait-invalidations/$mode" \
               timeout 180s dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj --no-build -c Release \
               --filter FullyQualifiedName~Pr57ConstructionWaitAdversarial --logger "console;verbosity=detailed" \
               | tee "artifacts/pr57-wait-invalidations/$mode.log"
@@ -50,9 +50,9 @@ jobs:
           root=pathlib.Path('artifacts/pr57-wait-invalidations')
           for mode in ('control','candidate'):
               log=(root/f'{mode}.log').read_text()
-              assert 'Passed:' in log and 'Failed:     0' in log,mode
+              assert 'Test Run Successful.' in log and 'Passed:' in log,mode
               assert ('PR57_CONSTRUCTION_WAIT_AGENDA active=True' if mode=='candidate' else 'PR57_CONSTRUCTION_WAIT_AGENDA active=False') in log,mode
-          for scenario,windows in [('truck-return',24),('road-rebuild',4)]:
+          for scenario,windows in [('truck-return',24),('road-rebuild',3)]:
               for i in range(windows+1):
                   a=(root/'control'/scenario/f'checkpoint-{i}.json').read_bytes()
                   b=(root/'candidate'/scenario/f'checkpoint-{i}.json').read_bytes()
