@@ -1,4 +1,4 @@
-name: Integrated core PR57 real-city cargo congestion scan A/B
+name: Integrated core PR57 checkpoint cargo congestion substep growth profile
 
 on:
   push:
@@ -18,97 +18,101 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  ab:
-    name: Compare exact scan against parked-car filter plus fast scan on saved real city
+  profile:
+    name: Compare movement subdivision costs across authentic saved congestion stages
     runs-on: ubuntu-latest
-    timeout-minutes: 9
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Restore authentic six-day city checkpoint, not synthetic grid
+      - name: Restore three consecutive authentic economic city checkpoints
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p artifacts/pr57-source
           gh run download 40169101306 -n integrated-scale-pr57-legal-workplaces-8d -D artifacts/pr57-source
-          test -s artifacts/pr57-source/pr57-jobs-20/checkpoint-10.json
-      - name: Build integrated core Release once
+          for i in 10 11 12; do
+            test -s "artifacts/pr57-source/pr57-jobs-20/checkpoint-$i.json"
+          done
+      - name: Build unchanged integrated core Release
         run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: Same runner ABBA, fresh dotnet processes, identical saved economy and roads
+      - name: Replay only ten simulated minutes from each congestion stage
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p artifacts/pr57-real-scan-ab
-          for mode in controlA candidateA candidateB controlB; do
-            active=0; fast=0
-            if [[ "$mode" == candidate* ]]; then active=1; fast=1; fi
-            mkdir -p "artifacts/pr57-real-scan-ab/$mode"
+          mkdir -p artifacts/pr57-cargo-substeps
+          for mode in 10 11 12a 12b; do
+            checkpoint="$mode"
+            if [[ "$mode" == "12a" || "$mode" == "12b" ]]; then checkpoint=12; fi
+            mkdir -p "artifacts/pr57-cargo-substeps/$mode"
             {
-              echo "PR57_FLAGS mode=$mode active=$active fast=$fast bitset=0 zeroSite=0 dispatchLookup=1"
-              PR57_SAVE_CAPTURE_DIR="artifacts/pr57-real-scan-ab/$mode" \
-              PR57_AB_CHECKPOINT=1 PR57_DISPATCH_SHIPMENT_LOOKUP=1 \
-              PR57_ACTIVE_SCAN="$active" PR57_FAST_SCAN="$fast" PR57_BEND_PREFILTER=0 \
+              echo "PR57_REPLAY mode=$mode checkpoint=$checkpoint seconds=600 dispatchLookup=1 allOtherPr57Flags=0"
+              PR57_SAVE_CAPTURE_DIR="artifacts/pr57-cargo-substeps/$mode" \
+              PR57_AB_CHECKPOINT=1 PR57_PROFILE_FROM_WINDOW=1 PR57_DISPATCH_SHIPMENT_LOOKUP=1 \
+              PR57_ACTIVE_SCAN=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 \
               PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 \
               PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 \
               PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 \
               PR57_ENTRY_FRAME_REUSE=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 \
-              timeout 110s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
-                profile cycle --seed=42 --resume=artifacts/pr57-source/pr57-jobs-20/checkpoint-10.json \
-                --warmup=0 --days=12 --window=300 --cap=100
-            } | tee "artifacts/pr57-real-scan-ab/$mode/run.log"
+              timeout 90s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                profile cycle --seed=42 --resume="artifacts/pr57-source/pr57-jobs-20/checkpoint-$checkpoint.json" \
+                --warmup=0 --days=1 --window=600 --cap=120
+            } | tee "artifacts/pr57-cargo-substeps/$mode/run.log"
           done
-      - name: Verify full-state checkpoints and compare actual wall CPU GC and scans
+      - name: Audit substeps, scans, allocations and full-state progression without requiring a transaction every ten minutes
         shell: bash
         run: |
-          python3 - <<'PY' | tee artifacts/pr57-real-scan-ab/audit.log
-          import json, pathlib, re
-          root=pathlib.Path('artifacts/pr57-real-scan-ab')
-          modes=['controlA','candidateA','candidateB','controlB']
-          pattern=re.compile(r'^WINDOW (\d+) seconds=300 wall=([\d.]+)s eff=[\d.]+x cpu=([\d.]+)s allocMB=([\d.]+) gc0=(\d+) gc2=(\d+)',re.M)
-          baseline=[(root/'controlA'/f'checkpoint-{i}.json').read_bytes() for i in range(13)]
-          initial=json.loads(baseline[0]); final=json.loads(baseline[-1])
-          assert final['ElapsedSecondsUnits']-initial['ElapsedSecondsUnits']==3_600_000_000
-          initialVehicles={v['Id']:v for v in initial['Vehicles']}
-          finalVehicles={v['Id']:v for v in final['Vehicles']}
-          moved=sum(v['Position']!=initialVehicles[v['Id']]['Position'] for v in final['Vehicles'] if v['Id'] in initialVehicles)
-          assert moved>0, 'No actual vehicle progress'
-          assert len(final['Ledger'])>len(initial['Ledger']), 'No actual economic transactions'
-          assert sum(len(c['History']) for c in final['Citizens'])>sum(len(c['History']) for c in initial['Citizens']), 'No personal history progress'
-          measurements={}
-          for mode in modes:
-            log=(root/mode/'run.log').read_text()
-            expected=1 if mode.startswith('candidate') else 0
-            assert f'PR57_FLAGS mode={mode} active={expected} fast={expected}' in log
-            assert 'INVARIANTS OK' in log and '\nSAVE ' in log
-            assert 'STEP_PROFILE steps=' in log and 'VEHICLE_PROFILE steps=' in log
-            windows=pattern.findall(log)
-            assert len(windows)==12 and [int(w[0]) for w in windows]==list(range(1,13)),(mode,len(windows))
-            for i in range(13):
-              actual=(root/mode/f'checkpoint-{i}.json').read_bytes()
-              assert actual==baseline[i],f'Full save diverged at {mode}, checkpoint {i}'
-            wall=sum(float(w[1]) for w in windows)
-            cpu=sum(float(w[2]) for w in windows)
-            alloc=sum(float(w[3]) for w in windows)
-            gc0=sum(int(w[4]) for w in windows)
-            scans=re.findall(r'^  VEHICLE_SCAN name=(\S+) wall=([\d.]+)s visits=(\d+)',log,re.M)
-            slices=re.search(r'VEHICLE_PROFILE steps=(\d+) batched=(\d+) unsplit=(\d+) slices=(\d+)',log)
-            assert slices and len(scans)>=2
-            measurements[mode]=dict(wall=wall,cpu=cpu,allocMB=alloc,gc0=gc0,throughput=3600/wall,slices=int(slices[4]),scans={x[0]:dict(wall=float(x[1]),visits=int(x[2])) for x in scans})
-            print('PR57_REAL_SCAN',mode,json.dumps(measurements[mode],sort_keys=True))
-          for control,candidate in [('controlA','candidateA'),('controlB','candidateB')]:
-            a=measurements[control];b=measurements[candidate]
-            assert a['slices']==b['slices'],'Substeps changed without explanation'
-            print('PR57_REAL_SCAN_PAIR',control,candidate,f'wallDeltaPct={100*(b["wall"]/a["wall"]-1):.2f}',f'allocDeltaPct={100*(b["allocMB"]/a["allocMB"]-1):.2f}')
-          print('PR57_REAL_SCAN_CAUSAL',f'fullCheckpoints=13',f'processes=4',f'vehiclesMoved={moved}',f'ledgerNew={len(final["Ledger"])-len(initial["Ledger"])}',f'historyNew={sum(len(c["History"]) for c in final["Citizens"])-sum(len(c["History"]) for c in initial["Citizens"])}',f'residentAlive={sum(c["Alive"] and c["Resident"] for c in final["Citizens"])}')
-          print('PR57_REAL_SCAN_LIMIT','Same saves at 300s intervals include cumulative history/ledger, but do not prove every intermediate event or long-run economic sustainability.')
+          python3 - <<'PY' | tee artifacts/pr57-cargo-substeps/audit.log
+          import json, pathlib, re, hashlib
+          root=pathlib.Path('artifacts/pr57-cargo-substeps')
+          results={}
+          for mode in ('10','11','12a','12b'):
+              cp='12' if mode.startswith('12') else mode
+              folder=root/mode
+              log=(folder/'run.log').read_text()
+              assert f'PR57_REPLAY mode={mode} checkpoint={cp} seconds=600 dispatchLookup=1 allOtherPr57Flags=0' in log
+              assert 'INVARIANTS OK' in log and '\nSAVE ' in log
+              assert 'STEP_PROFILE steps=' in log and 'VEHICLE_PROFILE steps=' in log
+              windows=re.findall(r'^WINDOW (\d+) seconds=600 wall=([\d.]+)s eff=[\d.]+x cpu=([\d.]+)s allocMB=([\d.]+) gc0=(\d+) gc2=(\d+)',log,re.M)
+              assert len(windows)==1 and windows[0][0]=='1',(mode,windows)
+              start=(folder/'checkpoint-0.json').read_bytes()
+              end=(folder/'checkpoint-1.json').read_bytes()
+              original=pathlib.Path(f'artifacts/pr57-source/pr57-jobs-20/checkpoint-{cp}.json').read_bytes()
+              assert start==original, f'Checkpoint source changed in {mode}'
+              before=json.loads(start); after=json.loads(end)
+              assert after['ElapsedSecondsUnits']-before['ElapsedSecondsUnits']==600_000_000,mode
+              assert len(after['Citizens'])==len(before['Citizens']) and len(after['Vehicles'])==len(before['Vehicles']),mode
+              slices=re.search(r'VEHICLE_PROFILE steps=(\d+) batched=(\d+) unsplit=(\d+) slices=(\d+)',log)
+              assert slices,mode
+              scan={name:{'wall':float(t),'visits':int(n)} for name,t,n in re.findall(r'^  VEHICLE_SCAN name=(\S+) wall=([\d.]+)s visits=(\d+)',log,re.M)}
+              detail={name:float(t) for name,t in re.findall(r'^  VEHICLE_DETAIL name=(\S+) wall=([\d.]+)s',log,re.M)}
+              phases={name:float(t) for name,t in re.findall(r'^  STEP_PHASE name=(\S+) wall=([\d.]+)s',log,re.M)}
+              assert len(scan)>=2 and len(detail)>0 and len(phases)>0,mode
+              moved=sum(v['Position']!=old['Position'] for v in after['Vehicles'] for old in before['Vehicles'] if v['Id']==old['Id'])
+              a=windows[0]
+              results[mode]=dict(wall=float(a[1]),cpu=float(a[2]),allocMB=float(a[3]),gc0=int(a[4]),
+                  slices=int(slices[4]),batched=int(slices[2]),unsplit=int(slices[3]),scans=scan,
+                  vehicleDetails=detail,phases=phases,
+                  travellingStart=sum(v['Status']==1 for v in before['Vehicles']),
+                  movedVehicles=moved,ledgerDelta=len(after['Ledger'])-len(before['Ledger']),
+                  historyDelta=sum(len(c['History']) for c in after['Citizens'])-sum(len(c['History']) for c in before['Citizens']),
+                  endSha256=hashlib.sha256(end).hexdigest())
+              print('PR57_CONGESTION_STAGE',mode,json.dumps(results[mode],sort_keys=True))
+          assert (root/'12a/checkpoint-1.json').read_bytes()==(root/'12b/checkpoint-1.json').read_bytes(), 'Real state divergence on repeated same-runner checkpoint12 replay'
+          for name in ('11','12a'):
+              a=results['10'];b=results[name]
+              print('PR57_CONGESTION_RELATIVE',name,'vs10',f'wallRatio={b["wall"]/a["wall"]:.3f}',
+                    f'slicesRatio={b["slices"]/max(a["slices"],1):.3f}',
+                    f'allocRatio={b["allocMB"]/a["allocMB"]:.3f}')
+          print('PR57_LIMIT','Profiling overhead and different starting states: these ratios diagnose workload growth, not an A/B speedup or proof of future traffic resolution.')
           PY
-      - name: Preserve independent-process evidence
+      - name: Preserve authentic saves and profile evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-pr57-real-cargo-scan-ab
-          path: artifacts/pr57-real-scan-ab/**
+          name: integrated-scale-pr57-cargo-substep-stages
+          path: artifacts/pr57-cargo-substeps/**
           if-no-files-found: warn
           retention-days: 14
