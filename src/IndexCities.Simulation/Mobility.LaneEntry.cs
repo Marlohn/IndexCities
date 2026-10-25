@@ -94,6 +94,8 @@ public sealed partial class CitySimulation
         public readonly Dictionary<int,long> SpeedWinnerIds=new();
         public double MinSlice=double.PositiveInfinity,MaxSlice;
     }
+    // Observational slice-delta census for the authentic blocked checkpoint only.
+    long _pr57TraceSlices,_pr57TraceMovedSlices,_pr57TraceVehicleMoves,_pr57TraceRouteChanges,_pr57TraceStatusChanges,_pr57TraceClaimChanges;
     readonly Dictionary<long,LaneSliceHour> _laneSliceHours=new();
     long _lastLaneSliceHourPrinted=-1;
     Vehicle? _laneObservedWinner;
@@ -324,12 +326,36 @@ public sealed partial class CitySimulation
                 }
                 _entryFrame=_entryFrameBuffer;
                 var slice=NextVehicleMovementEvent(remaining);
+                // PR57-only: compare actual physical state across each predicted boundary.
+                // This is not an event journal: transitions that reverse inside a slice are not visible.
+                var traceSlice=profile is not null&&Environment.GetEnvironmentVariable("PR57_TARGET_BLOCK_TRACE")=="1";
+                var traceBefore=traceSlice?State.Vehicles.ToDictionary(v=>v.Id,v=>(v.Position,v.Heading,v.RouteIndex,v.Status,v.IntersectionClaim)):null;
                 if(profile is not null)profile.MarkVehicle(2,ref started);
                 MoveVehiclesUnsplit(slice);
+                if(traceBefore is not null){
+                    var moved=0,heading=0,route=0,status=0,claim=0;
+                    foreach(var vehicle in State.Vehicles){
+                        if(!traceBefore.TryGetValue(vehicle.Id,out var prior)){status++;continue;}
+                        if(vehicle.Position.Distance(prior.Position)>.000001)moved++;
+                        if(vehicle.Heading!=prior.Heading)heading++;
+                        if(vehicle.RouteIndex!=prior.RouteIndex)route++;
+                        if(vehicle.Status!=prior.Status)status++;
+                        if(vehicle.IntersectionClaim!=prior.IntersectionClaim)claim++;
+                    }
+                    _pr57TraceSlices++;if(moved>0)_pr57TraceMovedSlices++;
+                    _pr57TraceVehicleMoves+=moved;_pr57TraceRouteChanges+=route;
+                    _pr57TraceStatusChanges+=status;_pr57TraceClaimChanges+=claim;
+                    if(_pr57TraceSlices<=3||_pr57TraceSlices%250==0)
+                        Console.WriteLine($"PR57_TRACE_SLICE index={_pr57TraceSlices} time={VehicleMovementTime:F6} slice={slice:F9} moved={moved} heading={heading} route={route} status={status} claim={claim}");
+                }
                 if(profile is not null){ObserveLaneWinnerOutcome();profile.MarkVehicle(3,ref started);profile.VehicleSlices++;}
                 _vehicleMovementOffset+=slice;
             }
         }finally{_laneObservedWinner=null;_vehicleMovementBatch=null;_entryFrame=null;_entryFrameBuffer.Clear();_entrySnapshotReuse.Clear();_vehicleMovementClock=null;_vehicleMovementOffset=0;}
+        if(profile is not null&&Environment.GetEnvironmentVariable("PR57_TARGET_BLOCK_TRACE")=="1"){
+            var targets=string.Join(";",State.Vehicles.Where(v=>v.Id is 1107 or 487 or 1174).OrderBy(v=>v.Id).Select(v=>$"{v.Id}:{v.Position.X:F6}:{v.Position.Z:F6}:{v.RouteIndex}:{v.Status}:{v.WaitingSince:F3}"));
+            Console.WriteLine($"PR57_TRACE_OUTER end={State.ElapsedSeconds+dt:F3} slices={_pr57TraceSlices} movedSlices={_pr57TraceMovedSlices} vehicleMoves={_pr57TraceVehicleMoves} routeChanges={_pr57TraceRouteChanges} statusChanges={_pr57TraceStatusChanges} claimChanges={_pr57TraceClaimChanges} targets={targets}");
+        }
         if(profile is not null)PrintCompletedLaneSliceHours(State.ElapsedSeconds+dt);
     }
     Point ProjectedVelocity(Vehicle v,HashSet<int>? held)

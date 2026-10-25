@@ -22,6 +22,8 @@ public sealed partial class CitySimulation
     // PR57-only bounded diagnostics for the two previously identified junction winners.
     // Never consulted by movement, and never persisted.
     readonly Dictionary<int,int> _laneBlockProbeCounts=new();
+    // PR57 trace of real checkpoint 12; profiler-only and never read by physics.
+    readonly Dictionary<int,long> _pr57TargetTraceCounts=new();
     readonly Dictionary<int,Dictionary<int,long>> _laneBlockProbeLeaders=new();
     int _laneEntryOriginLastSecond=-1; // PR57: bounded, observational, never serialized
     bool _pedestrianCrossingsChecked;
@@ -694,6 +696,12 @@ public sealed partial class CitySimulation
                 // or into any other body that pose was clear of.
                 if(step<.00001&&d>.00001&&State.Vehicles.Any(o=>o.Id!=v.Id&&o.Status!=VehicleStatus.Outside&&o.Position.Distance(v.Position)<12&&
                     (StreetBody(o)?VehicleBodiesOverlap(v,v.Position,o):!(o.Position.Distance(State.Entry)<8&&v.Position.Distance(State.Entry)<8)&&TurnsInto(v,approachHeading,o))))v.Heading=approachHeading;
+                if(scanProfile is not null&&Environment.GetEnvironmentVariable("PR57_TARGET_BLOCK_TRACE")=="1"&&(v.Id is 1107 or 487 or 1174)){
+                    _pr57TargetTraceCounts.TryGetValue(v.Id,out var count);
+                    count++;_pr57TargetTraceCounts[v.Id]=count;
+                    if(count<=3||count%250==0)
+                        Console.WriteLine($"PR57_TARGET_HOLD vehicle={v.Id} sample={count} time={VehicleMovementTime:F6} node={node.Id} route={v.RouteIndex} leaderId={blocker?.Id} leaderDistance={leaderDistance:F6} nominalDistance={d:F6} freeBeforeSafety={free:F6} afterSite={afterSiteStep:F6} afterCrossing={afterCrossingStep:F6} finalStep={step:F6} enteringLane={enteringLane} stopEarly={stopEarly:F6} bayHold={bayHold} entryHeld={entryHeld!=null} waitingSince={v.WaitingSince:F6} claim={v.IntersectionClaim} cause={v.Cause?.Replace(' ','_')}");
+                }
                 if(scanProfile is not null&&(_laneObservedWinner?.Id==v.Id&&(v.Id==3949||v.Id==5179)||_laneObservedWinner?.Id==5179&&v.Id==5294)&&step<.00001&&d>.00001){
                     _laneBlockProbeCounts.TryGetValue(v.Id,out var blockedCount);
                     blockedCount++;_laneBlockProbeCounts[v.Id]=blockedCount;

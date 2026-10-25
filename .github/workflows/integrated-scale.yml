@@ -1,4 +1,4 @@
-name: Integrated core PR57 authentic congested city six-hour viability continuation
+name: Integrated core PR57 short causal trace of real blocked movement boundaries
 
 on:
   push:
@@ -18,8 +18,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  continuation:
-    name: Bounded real-economy continuation from authentic six-day checkpoint
+  blocked-boundary:
+    name: Independent control/trace of authentic checkpoint 12, 120 seconds
     runs-on: ubuntu-latest
     timeout-minutes: 7
     steps:
@@ -27,77 +27,74 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Restore authentic economic city without regenerating six days
+      - name: Restore authentic six-day city without regenerating it
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p artifacts/pr57-source
           gh run download 40169101306 -n integrated-scale-pr57-legal-workplaces-8d -D artifacts/pr57-source
           test -s artifacts/pr57-source/pr57-jobs-20/checkpoint-12.json
-      - name: Build integrated core Release
+      - name: Build integrated core Release with observational trace
         run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: Continue normal causal simulation for at most six more hours, bounded by wall
+      - name: Fresh-process control and read-only trace, same real city and physics
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p artifacts/pr57-continuation
-          {
-            echo 'PR57_REAL_CONTINUATION source=checkpoint12 seed=42 horizonMax=21600 window=3600 capWall=170 dispatchLookup=1 penetrationStackAxes=0 allOtherPr57Flags=0'
-            PR57_SAVE_CAPTURE_DIR=artifacts/pr57-continuation PR57_AB_CHECKPOINT=1 PR57_PROFILE_FROM_WINDOW=6 \
-            PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_PENETRATION_STACK_AXES=0 \
-            PR57_ACTIVE_SCAN=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 \
-            PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 \
-            PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 \
-            PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 \
+          mkdir -p artifacts/pr57-target-trace
+          run_one() {
+            local mode="$1" trace=0
+            if [ "$mode" = "trace" ]; then trace=1; fi
+            mkdir -p "artifacts/pr57-target-trace/$mode"
+            echo "PR57_TARGET_MODE mode=$mode trace=$trace seed=42 source=checkpoint12 seconds=120 window=30 dispatchLookup=1 otherFlags=0"
+            PR57_SAVE_CAPTURE_DIR="artifacts/pr57-target-trace/$mode" PR57_AB_CHECKPOINT=1 PR57_PROFILE_FROM_WINDOW=1 \
+            PR57_TARGET_BLOCK_TRACE="$trace" PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_PENETRATION_STACK_AXES=0 \
+            PR57_ACTIVE_SCAN=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 PR57_SPATIAL_SCAN=0 \
+            PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 \
+            PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 \
             PR57_ENTRY_FRAME_REUSE=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 \
-            timeout 250s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+            timeout 90s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
               profile cycle --seed=42 --resume=artifacts/pr57-source/pr57-jobs-20/checkpoint-12.json \
-              --warmup=0 --days=6 --window=3600 --cap=170
-          } | tee artifacts/pr57-continuation/run.log
-      - name: Audit all completed windows, physical population and full-state saves
+              --warmup=0 --days=4 --window=30 --cap=85
+          }
+          run_one control | tee artifacts/pr57-target-trace/control.log
+          run_one trace | tee artifacts/pr57-target-trace/trace.log
+      - name: Audit complete causal checkpoints and real population without freezing demographics
         shell: bash
         run: |
-          python3 - <<'PY' | tee artifacts/pr57-continuation/audit.log
-          import json, pathlib, re, hashlib
-          root=pathlib.Path('artifacts/pr57-continuation')
-          log=(root/'run.log').read_text()
-          assert 'PR57_REAL_CONTINUATION source=checkpoint12' in log
-          assert 'INVARIANTS OK' in log and '\\nSAVE ' in log
-          windows=re.findall(r'^WINDOW (\\d+) seconds=3600 wall=([\\d.]+)s eff=([\\d.]+)x cpu=([\\d.]+)s allocMB=([\\d.]+) gc0=(\\d+) gc2=(\\d+)',log,re.M)
-          n=len(windows)
-          assert 2<=n<=6 and [int(w[0]) for w in windows]==list(range(1,n+1)),windows
-          initial=(root/'checkpoint-0.json').read_bytes()
+          python3 - <<'PY' | tee artifacts/pr57-target-trace/audit.log
+          import hashlib, json, pathlib
+          root=pathlib.Path('artifacts/pr57-target-trace')
           source=pathlib.Path('artifacts/pr57-source/pr57-jobs-20/checkpoint-12.json').read_bytes()
-          assert initial==source,'Resumed state differs from source'
-          previous=json.loads(initial)
-          startUnits=previous['ElapsedSecondsUnits']
-          for i in range(1,n+1):
-              raw=(root/f'checkpoint-{i}.json').read_bytes()
-              state=json.loads(raw)
-              assert state['ElapsedSecondsUnits']-startUnits==i*3600_000_000,(i,'elapsed')
-              assert len(state['Citizens'])==len(previous['Citizens']),'Unexpected citizen count; inspect before interpreting'
-              assert len(state['Vehicles'])>=0
-              print('PR57_REAL_STATE',json.dumps(dict(window=i,sha256=hashlib.sha256(raw).hexdigest(),
-                citizens=len(state['Citizens']),vehicles=len(state['Vehicles']),
-                travelling=sum(v.get('Status')=='Travelling' for v in state['Vehicles']),
-                ledger=len(state['Ledger']),ledgerDelta=len(state['Ledger'])-len(previous['Ledger']),
-                history=sum(len(c.get('History',[])) for c in state['Citizens']),
-                historyDelta=sum(len(c.get('History',[])) for c in state['Citizens'])-
-                  sum(len(c.get('History',[])) for c in previous['Citizens'])),sort_keys=True))
-              previous=state
-          wall=sum(float(w[1]) for w in windows)
-          print('PR57_REAL_SUMMARY',json.dumps(dict(completedWindows=n,simulatedSeconds=n*3600,
-            wallSeconds=round(wall,3),throughput=round(n*3600/wall,2),
-            allocMB=round(sum(float(w[4]) for w in windows),1),
-            gc0=sum(int(w[5]) for w in windows),gc2=sum(int(w[6]) for w in windows),
-            truncated=n<6,profilingOnlyFinalWindow=n==6),sort_keys=True))
-          print('PR57_LIMIT','One continuation, not A/B, not sustained 10k population, not generational viability; source checkpoint was built using real construction and market, not GRID.')
+          start=json.loads(source)['ElapsedSecondsUnits']
+          for mode in ('control','trace'):
+              log=(root/f'{mode}.log').read_text()
+              assert 'INVARIANTS OK' in log and any(x.startswith('SAVE ') for x in log.splitlines()),mode
+              lines=[x for x in log.splitlines() if x.startswith('WINDOW ')]
+              assert len(lines)==4 and [int(x.split()[1]) for x in lines]==[1,2,3,4],(mode,lines)
+              assert (root/mode/'checkpoint-0.json').read_bytes()==source,(mode,'source')
+              if mode=='trace':
+                  assert 'PR57_TRACE_OUTER' in log and 'PR57_TRACE_SLICE' in log and 'PR57_TARGET_HOLD vehicle=1107' in log
+          for i in range(5):
+              a=(root/'control'/f'checkpoint-{i}.json').read_bytes()
+              b=(root/'trace'/f'checkpoint-{i}.json').read_bytes()
+              control=json.loads(a); trace=json.loads(b)
+              assert control['ElapsedSecondsUnits']==start+i*30_000_000,('clock',i)
+              assert trace['ElapsedSecondsUnits']==control['ElapsedSecondsUnits'],('clock trace',i)
+              print('PR57_TARGET_CHECKPOINT',json.dumps(dict(window=i,controlSha256=hashlib.sha256(a).hexdigest(),
+                traceSha256=hashlib.sha256(b).hexdigest(),sameBytes=a==b,
+                livingResidents=sum(c['Alive'] and c['Resident'] for c in control['Citizens']),
+                livingExternal=sum(c['Alive'] and not c['Resident'] for c in control['Citizens']),
+                dead=sum(not c['Alive'] for c in control['Citizens']),
+                travelling=sum(v['Status']=='Travelling' for v in control['Vehicles']),
+                ledger=len(control['Ledger']),history=sum(len(c['History']) for c in control['Citizens'])),sort_keys=True))
+              assert a==b,('Full-state mismatch; inspect both preserved saves',i)
+          print('PR57_TARGET_RESULT','4 windows x 30s, two fresh .NET processes, exact checkpoint bytes, no speed claim; trace samples only net state changes per slice, not every internal event.')
           PY
-      - name: Preserve original and new state evidence
+      - name: Preserve logs and complete saves, including on failure
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-pr57-real-continuation
-          path: artifacts/pr57-continuation/**
+          name: integrated-scale-pr57-targeted-boundary-trace
+          path: artifacts/pr57-target-trace/**
           if-no-files-found: warn
           retention-days: 14
