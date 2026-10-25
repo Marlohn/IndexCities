@@ -1,9 +1,10 @@
-name: Integrated core PR57 cross-process save divergence diagnosis
+name: Integrated core PR57 seed73 real-construction viability
 
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
     paths:
+      - .github/workflows/integrated-scale.yml
       - src/IndexCities.Headless/**
       - src/IndexCities.Simulation/**
   workflow_dispatch:
@@ -16,10 +17,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  save-diff:
-    name: Seed42 6h raw and structural save comparison in fresh processes
+  cycle-seed73:
+    name: Seed73 four days of real housing deliveries, no performance flags
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 6
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -27,63 +28,35 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Build integrated simulation
         run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: Compare real saves, not just SHA-256
+      - name: Measure unmodified economy and construction on alternate seed
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p artifacts/pr57-save-diff
-          for mode in A B C; do
-            export PR57_SAVE_CAPTURE_DIR=""
-            if [[ "$mode" != C ]]; then export PR57_SAVE_CAPTURE_DIR="artifacts/pr57-save-diff/$mode"; fi
-            echo "PR57_REPLAY mode=$mode seed=42 window=21600 houses=16 capture=${PR57_SAVE_CAPTURE_DIR:-none} flags=off fresh-process=yes"
-            PR57_ACTIVE_SCAN=0 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 PR57_WORK_DIAG=0 timeout 75s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- scale cycle --seed=42 --warmup=0 --cycle-houses=16 --days=1 --window=21600 --cap=60 | tee "artifacts/pr57-save-diff/$mode.log"
-          done
+          mkdir -p artifacts/pr57-seed73-cycle
+          echo 'PR57_MODE seed73 unflagged real-construction 4d, no artificial building completion or capacity/money/fuel injection, fresh .NET process'
+          PR57_ACTIVE_SCAN=0 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 PR57_WORK_DIAG=1 timeout 245s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- scale cycle --seed=73 --warmup=0 --cycle-houses=16 --days=8 --window=43200 --cap=225 | tee artifacts/pr57-seed73-cycle/cycle.log
           python3 - <<'PY'
-          import hashlib,json,pathlib,re
-          root=pathlib.Path("artifacts/pr57-save-diff")
-          hashes={}
-          for mode in "ABC":
-              data=(root/f"{mode}.log").read_text()
-              checkpoint=re.search(r"^PR57_AB_CHECKPOINT window=1 sha256=([A-F0-9]{64}) ",data,re.M)
-              save=re.search(r"^SAVE .* sha256=([A-F0-9]{64})$",data,re.M)
-              assert checkpoint and save and checkpoint.group(1)==save.group(1),(mode,"checkpoint/save mismatch")
-              assert "INVARIANTS OK" in data and "STOP limite" not in data,(mode,"incomplete")
-              hashes[mode]=save.group(1)
-          print("PR57_SAVES final_hashes="+str(hashes),flush=True)
-          def compare(a,b,path,out,limit=20):
-              if len(out)>=limit:return
-              if type(a)!=type(b):
-                  out.append((path,f"type {type(a).__name__} != {type(b).__name__}"));return
-              if isinstance(a,dict):
-                  if a.keys()!=b.keys():
-                      out.append((path,f"keys onlyA={list(a.keys()-b.keys())[:5]} onlyB={list(b.keys()-a.keys())[:5]}"))
-                  for k in a.keys()&b.keys():
-                      compare(a[k],b[k],path+"."+str(k),out,limit)
-                      if len(out)>=limit:return
-              elif isinstance(a,list):
-                  if len(a)!=len(b):out.append((path,f"length {len(a)} != {len(b)}"))
-                  for i,(x,y) in enumerate(zip(a,b)):
-                      compare(x,y,f"{path}[{i}]",out,limit)
-                      if len(out)>=limit:return
-              elif a!=b:
-                  out.append((path,f"{str(a)[:120]!r} != {str(b)[:120]!r}"))
-          for stage in ("checkpoint-0.json","checkpoint-1.json"):
-              rawA=(root/"A"/stage).read_bytes();rawB=(root/"B"/stage).read_bytes()
-              a=json.loads(rawA);b=json.loads(rawB)
-              diffs=[];compare(a,b,"$",diffs)
-              print(f"PR57_SAVE_DIFF stage={stage} rawEqual={rawA==rawB} parsedEqual={a==b} shaA={hashlib.sha256(rawA).hexdigest().upper()} shaB={hashlib.sha256(rawB).hexdigest().upper()} firstDifferences={len(diffs)}",flush=True)
-              for path,detail in diffs:print(f"PR57_FIELD_DIFF path={path} value={detail}",flush=True)
-              assert hashlib.sha256(rawA).hexdigest().upper()==(hashes["A"] if stage.endswith("1.json") else hashlib.sha256(rawA).hexdigest().upper())
-              if stage.endswith("1.json"):
-                  assert hashlib.sha256(rawB).hexdigest().upper()==hashes["B"]
-          print("PR57_CAPTURE_EFFECT capturedA="+hashes["A"]+" capturedB="+hashes["B"]+" noCaptureC="+hashes["C"],flush=True)
-          print("PR57_SAVE_DIFF_DONE complete=3 processes; state equality is limited to sampled saves",flush=True)
+          import pathlib,re
+          s=pathlib.Path('artifacts/pr57-seed73-cycle/cycle.log').read_text()
+          windows=re.findall(r'^WINDOW (\d+) seconds=43200 wall=([0-9.]+)s .*$',s,re.M)
+          checks=re.findall(r'^PR57_AB_CHECKPOINT window=(\d+) sha256=([A-F0-9]{64}) ',s,re.M)
+          assert [int(w[0]) for w in windows]==list(range(1,9)),('incomplete windows',len(windows))
+          assert [int(c[0]) for c in checks]==list(range(1,9)),('incomplete checkpoints',len(checks))
+          assert 'INVARIANTS OK' in s and 'STOP limite' not in s,'incomplete simulation'
+          save=re.search(r'^SAVE .* sha256=([A-F0-9]{64})$',s,re.M)
+          assert save and save.group(1)==checks[-1][1],'save/checkpoint mismatch'
+          placed=re.search(r'^CYCLE_HOUSING requested=16 placed=(\d+) attempted=(\d+) ',s,re.M)
+          assert placed,'missing housing request'
+          last=re.search(r'^WINDOW 8 seconds=43200 wall=.*$',s,re.M)
+          print('PR57_SEED73_VALIDATED simulatedSeconds=345600 wallSeconds='+str(round(sum(float(w[1]) for w in windows),2))+' requestedHouses=16 placed='+placed.group(1)+' final='+last.group(0)+' finalSha='+save.group(1),flush=True)
+          for row in re.findall(r'^PR57_WORK_PROJECT window=4 .*$',s,re.M):
+              print(row,flush=True)
           PY
-      - name: Preserve complete synthetic snapshots and logs
+      - name: Preserve unmodified-cycle logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-pr57-save-diff-seed42
-          path: artifacts/pr57-save-diff/**
+          name: integrated-scale-pr57-seed73-real-cycle
+          path: artifacts/pr57-seed73-cycle/*.log
           if-no-files-found: warn
           retention-days: 14
