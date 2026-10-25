@@ -16,13 +16,22 @@ public sealed partial class CitySimulation
     public double WaterTreatmentPotential(Building building)=>building.Completed&&!building.Removed&&building.Kind==BuildingKind.WaterTreatment&&HasExteriorAccess(building)?InfrastructureTreatmentPotential(building,WorkersPresent(building)):0;
     public double CurrentWaterTreatmentPotential=>State.Buildings.Sum(WaterTreatmentPotential);
     static readonly bool Pr57SourceDistanceCacheEnabled=Environment.GetEnvironmentVariable("PR57_SOURCE_DISTANCE_CACHE")=="1";
-    bool _pr57SourceDistanceCacheAnnounced;
+    // PR57: replay a pure utility-allocation result only when *all* inputs match.
+    // No persistent State or public mutation assumptions: exact input equality
+    // is checked on every Step, including across separate Advance(2) calls.
+    static readonly bool Pr57UtilityReplayEnabled=Environment.GetEnvironmentVariable("PR57_UTILITY_REPLAY")=="1";
+    bool _pr57SourceDistanceCacheAnnounced,_pr57UtilityReplayAnnounced;
     void UpdateInfrastructure(double dt)
     {
         if(!_pr57SourceDistanceCacheAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
         {
             Console.WriteLine($"PR57_SOURCE_DISTANCE_CACHE active={Pr57SourceDistanceCacheEnabled}");
             _pr57SourceDistanceCacheAnnounced=true;
+        }
+        if(!_pr57UtilityReplayAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine($"PR57_UTILITY_REPLAY active={Pr57UtilityReplayEnabled}");
+            _pr57UtilityReplayAnnounced=true;
         }
         var detail=CostProfile;
         var detailStarted=detail is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
@@ -58,7 +67,7 @@ public sealed partial class CitySimulation
         State.ElectricityCapacity=wind.Sum(b=>b.OperationalCapacity);State.AddElectricityAvailableToday(State.ElectricityCapacity*dt/86400);
         var night=State.Now.Hour<6||State.Now.Hour>=18;var streets=_streets;streets.Clear();foreach(var n in State.Roads)if(!n.Highway)streets.Add(n);
         // Consumers: active buildings, then streets, in that order (as one list).
-        var allocation=Pr57SourceDistanceCacheEnabled?_pr57ElectricAllocation:_allocation;allocation.Reset(active.Count+streets.Count);
+        var allocation=Pr57UtilityReplayEnabled?_pr57ElectricReplay:Pr57SourceDistanceCacheEnabled?_pr57ElectricAllocation:_allocation;allocation.Reset(active.Count+streets.Count);
         for(var i=0;i<active.Count;i++)allocation.Set(i,active[i].Position,active[i].ElectricityDemand);
         for(var j=0;j<streets.Count;j++){var n=streets[j];allocation.Set(active.Count+j,n.Position,night&&!n.ConstructionOnly ? .12*n.MaintenanceRatio : 0);}
         var streetDemand=0.0;for(var j=0;j<streets.Count;j++)streetDemand+=allocation.Demands[active.Count+j];
@@ -73,14 +82,14 @@ public sealed partial class CitySimulation
         var treatments=active.Where(b=>b.Kind==BuildingKind.WaterTreatment&&HasExteriorAccess(b)).ToList();
         var nominal=treatments.Sum(b=>InfrastructureTreatmentPotential(b,present[b.Id]));
         State.PotableCapacity=Math.Min(State.RawWaterCapacity,nominal);State.AddWaterAvailableToday(State.PotableCapacity*dt/86400);State.WaterDemand=active.Sum(b=>b.WaterDemand);
-        var water=Pr57SourceDistanceCacheEnabled?_pr57WaterAllocation:_allocation;water.Reset(active.Count);for(var i=0;i<active.Count;i++)water.Set(i,active[i].Position,active[i].WaterDemand);
+        var water=Pr57UtilityReplayEnabled?_pr57WaterReplay:Pr57SourceDistanceCacheEnabled?_pr57WaterAllocation:_allocation;water.Reset(active.Count);for(var i=0;i<active.Count;i++)water.Set(i,active[i].Position,active[i].WaterDemand);
         _sources.Clear();foreach(var b in treatments)_sources.Add(b.Position);water.Allocate(State.PotableCapacity,_sources);
         for(var i=0;i<active.Count;i++){var b=active[i];b.WaterRatio=b.WaterDemand<=0?0:water.Result[i]/b.WaterDemand;b.AddWaterConsumedToday(b.WaterDemand*b.WaterRatio*dt/86400);b.SewageProduced=b.WaterDemand*b.WaterRatio*.8;}
         foreach(var b in treatments)b.OperationalCapacity=nominal==0?0:State.PotableCapacity*InfrastructureTreatmentPotential(b,present[b.Id])/nominal;
         if(detail is not null)detail.MarkDetail(3,ref detailStarted);
         var sewage=active.Where(b=>b.Kind==BuildingKind.SewageTreatment&&HasExteriorAccess(b)).ToList();foreach(var b in sewage)b.OperationalCapacity=b.Definition.Capacity*StaffFactor(b)*b.MaintenanceRatio*b.ElectricityRatio;
         State.SewageCapacity=sewage.Sum(b=>b.OperationalCapacity);State.SewageDemand=active.Sum(b=>b.SewageProduced);State.UntreatedSewage=Math.Max(0,State.SewageDemand-State.SewageCapacity);
-        var sewageAllocation=Pr57SourceDistanceCacheEnabled?_pr57SewageAllocation:_allocation;sewageAllocation.Reset(active.Count);for(var i=0;i<active.Count;i++)sewageAllocation.Set(i,active[i].Position,active[i].SewageProduced);
+        var sewageAllocation=Pr57UtilityReplayEnabled?_pr57SewageReplay:Pr57SourceDistanceCacheEnabled?_pr57SewageAllocation:_allocation;sewageAllocation.Reset(active.Count);for(var i=0;i<active.Count;i++)sewageAllocation.Set(i,active[i].Position,active[i].SewageProduced);
         _sources.Clear();foreach(var b in sewage)_sources.Add(b.Position);sewageAllocation.Allocate(State.SewageCapacity,_sources);
         for(var i=0;i<active.Count;i++){var b=active[i];b.UntreatedSewage=Math.Max(0,b.SewageProduced-sewageAllocation.Result[i]);}
         UpdatePollution(dt,active);
@@ -93,11 +102,14 @@ public sealed partial class CitySimulation
             if(b.Definition.Private&&(b.CompanyId==null||b.OperationClosed||!CompanyById(b.CompanyId)!.Active)||!HasExteriorAccess(b))b.OperationalCapacity=0;
         }
         if(detail is not null)detail.MarkDetail(5,ref detailStarted);
+        if(Pr57UtilityReplayEnabled&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1"&&State.ElapsedSeconds%3600==0)
+            Console.WriteLine($"PR57_UTILITY_REPLAY_STATS at={State.ElapsedSeconds} hits={_pr57ElectricReplay.ReplayHits+_pr57WaterReplay.ReplayHits+_pr57SewageReplay.ReplayHits} misses={_pr57ElectricReplay.ReplayMisses+_pr57WaterReplay.ReplayMisses+_pr57SewageReplay.ReplayMisses}");
     }
     readonly List<Building> _active=[];readonly Dictionary<int,int> _present=new();readonly Dictionary<int,Building> _activeById=new();
     readonly List<RoadNode> _streets=[];readonly List<Point> _sources=[];readonly CapacityAllocation _allocation=new();
     // PR57 POC: independent caches for the three causal utility allocations.
     readonly CapacityAllocation _pr57ElectricAllocation=new(true),_pr57WaterAllocation=new(true),_pr57SewageAllocation=new(true);
+    readonly CapacityAllocation _pr57ElectricReplay=new(false,true),_pr57WaterReplay=new(false,true),_pr57SewageReplay=new(false,true);
 }
 
 // Capacity shared among consumers by demand, weighted by distance to the
@@ -111,11 +123,49 @@ sealed class CapacityAllocation
     // on every Step in exactly their original order; sources/positions are
     // compared exactly before reusing any nearest-source distance.
     readonly bool _cacheSourceDistances;
+    // Exact memoization of the pure Allocate function (not State): output is
+    // copied only after comparing capacity, all sources, all positions and
+    // demands in their original order. Mutations to public State are safe.
+    readonly bool _cacheExactResults;
+    readonly List<Point> _replaySources=[];
+    Point[] _replayPositions=[];
+    double[] _replayDemands=[],_replayResults=[];
+    double _replayCapacity;
+    int _replayCount=-1;
+    public long ReplayHits {get;private set;}
+    public long ReplayMisses {get;private set;}
     readonly List<Point> _cachedSources=[];
     Point[] _cachedPositions=[];
     double[] _nearest=[];
     int _cachedCount=-1;
-    public CapacityAllocation(bool cacheSourceDistances=false)=>_cacheSourceDistances=cacheSourceDistances;
+    public CapacityAllocation(bool cacheSourceDistances=false,bool cacheExactResults=false)
+    {
+        _cacheSourceDistances=cacheSourceDistances;
+        _cacheExactResults=cacheExactResults;
+    }
+    bool TryReplay(double capacity,List<Point> sources)
+    {
+        if(_replayCount!=_count||_replayCapacity!=capacity||_replaySources.Count!=sources.Count)return false;
+        for(var i=0;i<sources.Count;i++)if(_replaySources[i]!=sources[i])return false;
+        for(var i=0;i<_count;i++)if(_replayPositions[i]!=Positions[i]||_replayDemands[i]!=Demands[i])return false;
+        Array.Copy(_replayResults,Result,_count);
+        ReplayHits++;
+        return true;
+    }
+    void CaptureReplay(double capacity,List<Point> sources)
+    {
+        if(_replayPositions.Length<_count)
+        {
+            Array.Resize(ref _replayPositions,_count);
+            Array.Resize(ref _replayDemands,_count);
+            Array.Resize(ref _replayResults,_count);
+        }
+        _replayCount=_count;_replayCapacity=capacity;
+        _replaySources.Clear();_replaySources.AddRange(sources);
+        Array.Copy(Positions,_replayPositions,_count);
+        Array.Copy(Demands,_replayDemands,_count);
+        Array.Copy(Result,_replayResults,_count);
+    }
     void RefreshSourceDistances(List<Point> sources)
     {
         var sourcesChanged=_cachedSources.Count!=sources.Count;
@@ -139,6 +189,11 @@ sealed class CapacityAllocation
         var total=0.0;for(var i=0;i<_count;i++){Result[i]=0;total+=Demands[i];}
         if(total<=0||capacity<=0)return;
         if(capacity>=total){for(var i=0;i<_count;i++)Result[i]=Demands[i];return;}
+        if(_cacheExactResults)
+        {
+            if(TryReplay(capacity,sources))return;
+            ReplayMisses++;
+        }
         var pending=0;for(var i=0;i<_count;i++)if(Demands[i]>0)_pending[pending++]=i;var remaining=capacity;
         if(_cacheSourceDistances&&sources.Count>0)RefreshSourceDistances(sources);
         // Distances and demands stay fixed throughout this allocation. Sum only
@@ -151,6 +206,7 @@ sealed class CapacityAllocation
             var kept=0;for(var k=0;k<pending;k++){var i=_pending[k];if(!(Result[i]>=Demands[i]-.000001))_pending[kept++]=i;}pending=kept;
             if(allocated<.000001)break;
         }
+        if(_cacheExactResults)CaptureReplay(capacity,sources);
     }
     static double NearestSource(List<Point> sources,Point position){var nearest=sources[0].Distance(position);for(var i=1;i<sources.Count;i++){var d=sources[i].Distance(position);if(d<nearest)nearest=d;}return nearest;}
 }
