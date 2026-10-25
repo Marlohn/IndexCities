@@ -70,6 +70,29 @@ static class Fixtures
             var roads=extensionIds.Select(id=>sim.State.Projects.Single(p=>p.Id==id)).ToArray();
             Console.WriteLine($"PR57_EXTENSION_READY completed={roads.Count(p=>p.Status==WorkStatus.Completed)}/{roads.Length} elapsed={sim.State.ElapsedSeconds:F0} statuses={string.Join(",",roads.Select(p=>$"{p.Id}:{p.Status}:{p.Progress:F3}:{p.Cause.Replace(' ','_')}"))}");
         }
+        // PR57-only workplace frontage: two paid, normally constructed road
+        // projects. Both comparison processes use the same new roads.
+        if(Environment.GetEnvironmentVariable("PR57_CYCLE_WORKFRONT")=="1")
+        {
+            if(!bypass||extensionIds.Count!=2)
+                throw new InvalidOperationException("PR57 workplace frontage requires the legally built south extension");
+            var ids=new List<int>();
+            foreach(var (from,to) in new[]{
+                (new Point(-184,-104),new Point(-184,-160)),
+                (new Point(-184,-160),new Point(228,-160))})
+            {
+                var quote=sim.QuoteRoad(from,to);
+                Console.WriteLine($"PR57_WORKFRONT_QUOTE from={from} to={to} valid={quote.PhysicallyValid} accessible={quote.Accessible} cause={quote.Message.Replace(' ','_')}");
+                if(!quote.PhysicallyValid)throw new InvalidOperationException("PR57 workplace road quote invalid: "+quote.Message);
+                var result=sim.PlaceRoad(from,to);Require(result);ids.Add(result.Id!.Value);
+            }
+            for(var i=0;i<72&&ids.Any(id=>sim.State.Projects.Single(p=>p.Id==id).Status!=WorkStatus.Completed);i++)
+                sim.Advance(3600);
+            var roads=ids.Select(id=>sim.State.Projects.Single(p=>p.Id==id)).ToArray();
+            Console.WriteLine($"PR57_WORKFRONT_READY completed={roads.Count(p=>p.Status==WorkStatus.Completed)}/{roads.Length} elapsed={sim.State.ElapsedSeconds:F0} statuses={string.Join(",",roads.Select(p=>$"{p.Id}:{p.Status}:{p.Progress:F3}:{p.Cause.Replace(' ','_')}"))}");
+            if(roads.Any(p=>p.Status!=WorkStatus.Completed))
+                throw new InvalidOperationException("PR57 workplace road not completed through real logistics");
+        }
         return sim;
     }
 
@@ -142,6 +165,38 @@ static class Fixtures
                 if(sim.PlaceBuilding(BuildingKind.House,position,0).Success)placed++;
             }
             Console.WriteLine($"PR57_CYCLE_NORTH_ROW z=-90 newOrders={placed-before}");
+        }
+        // PR57-only economic opportunity probe, opt-in and after ordinary
+        // housing orders. All twenty sites are real private businesses, not
+        // artificial job slots; completion, ownership, hiring and sales remain
+        // subject to the normal construction and market rules.
+        var workplaceOption=Environment.GetEnvironmentVariable("PR57_CYCLE_WORKPLACES");
+        if(workplaceOption!=null)
+        {
+            if(!int.TryParse(workplaceOption,out var requestedWorkplaces)||requestedWorkplaces<0||requestedWorkplaces>20)
+                throw new InvalidOperationException("PR57_CYCLE_WORKPLACES must be between 0 and 20");
+            if(requestedWorkplaces>0)
+            {
+                if(Environment.GetEnvironmentVariable("PR57_CYCLE_WORKFRONT")!="1")
+                    throw new InvalidOperationException("PR57 workplaces require the paid workplace road");
+                var sites=new List<(BuildingKind Kind,Point Position,double Rotation)>();
+                for(var i=0;i<10;i++)sites.Add((BuildingKind.Grocery,new Point(-168+i*20,-145),0));
+                for(var i=0;i<10;i++)
+                {
+                    var kind=i<6?BuildingKind.Farm:i<8?BuildingKind.FuelStation:BuildingKind.MechanicShop;
+                    var z=kind==BuildingKind.Farm?-186:kind==BuildingKind.FuelStation?-178:-176;
+                    sites.Add((kind,new Point(-164+i*40,z),Math.PI));
+                }
+                var accepted=0;
+                for(var i=0;i<requestedWorkplaces;i++)
+                {
+                    var (kind,position,rotation)=sites[i];
+                    var quote=sim.QuoteBuilding(kind,position,rotation);
+                    Console.WriteLine($"PR57_WORKPLACE_QUOTE index={i} kind={kind} x={position.X:F0} z={position.Z:F0} valid={quote.PhysicallyValid} accessible={quote.Accessible} cause={quote.Message.Replace(' ','_')}");
+                    if(quote.PhysicallyValid&&quote.Accessible&&sim.PlaceBuilding(kind,position,rotation).Success)accepted++;
+                }
+                Console.WriteLine($"PR57_WORKPLACE_ORDERS requested={requestedWorkplaces} placed={accepted} attempted={requestedWorkplaces} noInjectedJobs=1 noInstantCompletion=1");
+            }
         }
         return (placed,attempted);
     }

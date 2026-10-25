@@ -1,4 +1,4 @@
-name: Integrated core PR57 legal 40 versus 48 homes growth gate
+name: Integrated core PR57 real-workplace opportunity and migration gate
 
 on:
   push:
@@ -17,10 +17,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  legal-growth:
-    name: Paired legal-housing growth and economic throughput probe
+  legal-workplaces:
+    name: Real private workplaces versus housing-only with the same paid roads
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 9
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -28,62 +28,74 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Build integrated simulation Release
         run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: Run same seed and runner with 40 then 48 normally constructed homes
+      - name: Run 48 legal homes with zero versus twenty real workplace projects
         shell: bash
         run: |
           set -euo pipefail
-          for spec in 40:0 48:1; do
-            IFS=: read -r houses north <<< "$spec"
-            dir="artifacts/pr57-growth-$houses"
+          for workplaces in 0 20; do
+            dir="artifacts/pr57-jobs-$workplaces"
             mkdir -p "$dir"
-            PR57_SAVE_CAPTURE_DIR="$dir" PR57_CYCLE_SOUTH_EXTENSION=1 PR57_CYCLE_SOUTH_HOUSING=1 PR57_CYCLE_NORTH_HOUSING="$north" PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ACTIVE_SCAN=0 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 PR57_ENTRY_FRAME_REUSE=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 PR57_WORK_DIAG=1 PR57_PROFILE_FROM_WINDOW=4 timeout 200s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- profile cycle --seed=42 --warmup=0 --cycle-houses="$houses" --cycle-bypass=1 --days=4 --window=43200 --cap=190 | tee "$dir/run.log"
+            PR57_SAVE_CAPTURE_DIR="$dir" PR57_CYCLE_WORKFRONT=1 PR57_CYCLE_WORKPLACES="$workplaces" PR57_CYCLE_SOUTH_EXTENSION=1 PR57_CYCLE_SOUTH_HOUSING=1 PR57_CYCLE_NORTH_HOUSING=1 PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ACTIVE_SCAN=0 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 PR57_ENTRY_FRAME_REUSE=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 PR57_WORK_DIAG=1 PR57_PROFILE_FROM_WINDOW=4 timeout 225s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- profile cycle --seed=42 --warmup=0 --cycle-houses=48 --cycle-bypass=1 --days=4 --window=43200 --cap=180 | tee "$dir/run.log"
           done
-      - name: Audit legal construction, occupancy, real economy and progress
+      - name: Audit real workplace ownership, migration, economics and saved state
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PY' | tee artifacts/pr57-growth-summary.log
+          python3 - <<'PY' | tee artifacts/pr57-jobs-summary.log
           import decimal, json, pathlib, re
+          jobs={'CityHall':2,'WorksDepot':4,'Grocery':4,'Farm':4,'FuelStation':4,'WaterIntake':6,'WaterTreatment':6,'SewageTreatment':6,'WindPower':6,'MechanicShop':4}
           snapshots={}
-          for houses in (40,48):
-              root=pathlib.Path(f'artifacts/pr57-growth-{houses}')
+          for count in (0,20):
+              root=pathlib.Path(f'artifacts/pr57-jobs-{count}')
               log=(root/'run.log').read_text()
-              match=re.search(rf'CYCLE_HOUSING requested={houses} placed=(\d+) attempted=(\d+)',log)
-              assert match, f'no housing orders for {houses}'
-              assert 'PR57_EXTENSION_READY completed=2/2' in log
-              if houses==48: assert 'PR57_CYCLE_NORTH_ROW z=-90 newOrders=' in log
-              assert 'INVARIANTS OK' in log and '\nSAVE ' in log
-              assert 'STEP_PROFILE steps=' in log, 'last-window profiler missing'
-              print(f'PR57_ORDERS requested={houses} placed={match.group(1)} attempted={match.group(2)}',flush=True)
+              assert 'PR57_WORKFRONT_READY completed=2/2' in log, f'paid road incomplete: {count}'
+              assert 'CYCLE_HOUSING requested=48 placed=48' in log, f'housing order incomplete: {count}'
+              if count==20:
+                  assert 'PR57_WORKPLACE_ORDERS requested=20 placed=20 attempted=20' in log, 'workplace quote/order failed'
+                  assert log.count('PR57_WORKPLACE_QUOTE index=')==20
+              assert 'INVARIANTS OK' in log and '\nSAVE ' in log, f'save/invariant failure: {count}'
+              assert 'STEP_PROFILE steps=' in log, f'profile missing: {count}'
               for window in range(1,5):
-                  assert f'WINDOW {window} seconds=43200 ' in log, f'missing window {window} for {houses}'
+                  assert f'WINDOW {window} seconds=43200 ' in log, f'window {window} missing: {count}'
                   assert f'PR57_AB_CHECKPOINT window={window} ' in log
                   state=json.loads((root/f'checkpoint-{window}.json').read_text(),parse_float=decimal.Decimal)
-                  citizens=state['Citizens'];families=state['FamilyCandidates'];projects=state['Projects'];vehicles=state['Vehicles']
-                  homes=[b for b in state['Buildings'] if b.get('Kind')=='House' and not b.get('Removed')]
-                  done=[b for b in homes if b.get('Completed')]
-                  occupied=[b for b in done if b.get('OwnerAccount') is not None and b.get('FamilyId') is not None]
-                  residents=sum(bool(c.get('Alive') and c.get('Resident')) for c in citizens)
-                  external=sum(bool(c.get('Alive') and not c.get('Resident')) for c in citizens)
-                  openworks=sum(str(p.get('Status')) in ('Waiting','InProgress','0','1') for p in projects)
-                  openfreight=sum(not s.get('Complete') for s in state['Shipments'])
-                  migrated=sum(bool(f.get('Migrated')) for f in families)
-                  snap=dict(residents=residents,external=external,homes=len(homes),completed=len(done),occupied=len(occupied),vacant=len(done)-len(occupied),migrated=migrated,remaining=len(families)-migrated,openworks=openworks,openfreight=openfreight,vehicles=len(vehicles),movingVehicles=sum(str(v.get('Status'))=='Travelling' for v in vehicles),ledger=len(state['Ledger']),history=sum(len(c['History']) for c in citizens))
-                  snapshots[(houses,window)]=snap
-                  print('PR57_GROWTH_WINDOW',f'houses={houses}',f'window={window}',*(f'{k}={v}' for k,v in snap.items()),flush=True)
-              assert snapshots[(houses,4)]['ledger']>snapshots[(houses,1)]['ledger']
-              assert snapshots[(houses,4)]['history']>snapshots[(houses,1)]['history']
+                  buildings=[b for b in state['Buildings'] if not b.get('Removed')]
+                  houses=[b for b in buildings if b['Kind']=='House']
+                  completed=[b for b in houses if b['Completed']]
+                  owned=[b for b in completed if b.get('OwnerAccount') is not None and b.get('FamilyId') is not None]
+                  private=[b for b in buildings if b['Kind'] in ('Grocery','Farm','FuelStation','MechanicShop')]
+                  purchased=[b for b in private if b['Completed'] and b.get('CompanyId') is not None and not b.get('OperationClosed')]
+                  citizens=state['Citizens']; families=state['FamilyCandidates']; vehicles=state['Vehicles']
+                  snap=dict(residents=sum(c['Alive'] and c['Resident'] for c in citizens),
+                            external=sum(c['Alive'] and not c['Resident'] for c in citizens),
+                            completedHomes=len(completed),occupiedHomes=len(owned),vacantHomes=len(completed)-len(owned),
+                            pendingFamilies=sum(not f['Migrated'] for f in families),
+                            totalPotentialJobs=sum(jobs.get(b['Kind'],0) for b in buildings if b['Completed'] and b['Kind']!='House'),
+                            acquiredPrivateJobs=sum(jobs[b['Kind']] for b in purchased),
+                            activeCompanies=sum(c['Active'] for c in state['Companies']),
+                            actualHires=sum(c['Alive'] and c.get('WorkplaceId') is not None for c in citizens),
+                            completedPrivate=len([b for b in private if b['Completed']]),
+                            purchasedPrivate=len(purchased),
+                            openProjects=sum(p['Status'] in ('Waiting','InProgress') for p in state['Projects']),
+                            openShipments=sum(not s['Complete'] for s in state['Shipments']),
+                            vehicles=len(vehicles),travelling=sum(v['Status']=='Travelling' for v in vehicles),
+                            cityCash=str(state['Wallets']['city']),ledger=len(state['Ledger']),
+                            personalFacts=sum(len(c['History']) for c in citizens))
+                  snapshots[(count,window)]=snap
+                  print('PR57_JOBS_WINDOW',f'workplaces={count}',f'window={window}',*(f'{k}={v}' for k,v in snap.items()),flush=True)
+              assert snapshots[(count,4)]['ledger']>snapshots[(count,1)]['ledger']
+              assert snapshots[(count,4)]['personalFacts']>snapshots[(count,1)]['personalFacts']
               assert 'meals=' in log and 'wages=' in log
-              print(f'PR57_GROWTH_SCOPE requested={houses} seconds=172800 seed=42 realRoads=1 noInjectedStock=1 noInstantCompletion=1 noSpeedupClaim=1',flush=True)
-          for k in ('residents','completed','occupied','openworks','openfreight','history','ledger'):
-              print(f'PR57_GROWTH_DELTA key={k} baseline={snapshots[(40,4)][k]} expanded={snapshots[(48,4)][k]} delta={snapshots[(48,4)][k]-snapshots[(40,4)][k]}',flush=True)
-          print('PR57_CAUSAL_LIMIT distinct construction workloads; checkpoints, invariants and save/load do not prove transition-by-transition equivalence',flush=True)
+              print(f'PR57_JOBS_SCOPE workplaces={count} houses=48 seed=42 seconds=172800 realRoads=1 realPrivateConstruction=1 noInjectedResources=1 noSpeedupClaim=1',flush=True)
+          for key in ('residents','vacantHomes','totalPotentialJobs','acquiredPrivateJobs','actualHires','purchasedPrivate','openProjects','openShipments','ledger','personalFacts'):
+              print(f'PR57_JOBS_DELTA key={key} baseline={snapshots[(0,4)][key]} expanded={snapshots[(20,4)][key]}',flush=True)
+          print('PR57_JOBS_LIMIT different real construction/economic loads; no speedup claim; nominal potential jobs are not proof of actual hiring or sustainable companies',flush=True)
           PY
-      - name: Preserve full states, activity, profiler and growth audit
+      - name: Preserve complete states, physical logistics and economic activity
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-pr57-legal-growth-40-48
-          path: artifacts/pr57-growth-*/** 
+          name: integrated-scale-pr57-legal-workplaces-0-20
+          path: artifacts/pr57-jobs-*/**
           if-no-files-found: warn
           retention-days: 14
