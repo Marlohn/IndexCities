@@ -333,7 +333,7 @@ public sealed partial class CitySimulation
                 if(profile is not null)profile.MarkVehicle(2,ref started);
                 MoveVehiclesUnsplit(slice);
                 if(traceBefore is not null){
-                    var moved=0,heading=0,route=0,status=0,claim=0;
+                    int moved=0,heading=0,route=0,status=0,claim=0;
                     foreach(var vehicle in State.Vehicles){
                         if(!traceBefore.TryGetValue(vehicle.Id,out var prior)){status++;continue;}
                         if(vehicle.Position.Distance(prior.Position)>.000001)moved++;
