@@ -25,10 +25,63 @@ public sealed partial class CitySimulation
     RoadNode? NearestRoad(Point p,bool allowHighway=true)=>State.Roads.Where(r=>allowHighway||!r.Highway).MinBy(r=>r.Position.Distance(p));
     public bool HasExteriorAccess(Building b)=>Access(b) is { } n&&_exteriorConnected.Contains(n.Id);
     RoadNode EntryNode()=>State.Roads.First(r=>r.Highway&&r.Position.Distance(State.Entry)<.1);
+
+    // PR57 experimental per-origin BFS tree. Build only on the third route query
+    // from an origin; preserve the original neighbour/parent visit order.
+    // Never cache routes with exclusions. Public Advance scopes the cache so
+    // external edits to CityState between calls cannot leave stale parents.
+    static readonly bool Pr57RouteTreeEnabled=Environment.GetEnvironmentVariable("PR57_ROUTE_TREE")=="1";
+    readonly Dictionary<(int From,bool Construction),Dictionary<int,int>> _pr57RouteTreeParents=new();
+    readonly Dictionary<(int From,bool Construction),int> _pr57RouteTreeCalls=new();
+    long _pr57RouteTreeEpoch=-1;
+    bool _pr57RouteTreeActive,_pr57RouteTreeAnnounced;
+    List<int>? Pr57RouteFromTree(int from,int to,bool construction)
+    {
+        if(_pr57RouteTreeEpoch!=_roadEpoch)
+        {
+            _pr57RouteTreeParents.Clear();
+            _pr57RouteTreeCalls.Clear();
+            _pr57RouteTreeEpoch=_roadEpoch;
+        }
+        var key=(From:from,Construction:construction);
+        if(!_pr57RouteTreeParents.TryGetValue(key,out var parents))
+        {
+            var calls=_pr57RouteTreeCalls.GetValueOrDefault(key)+1;
+            _pr57RouteTreeCalls[key]=calls;
+            if(calls<3)return null;
+            parents=new Dictionary<int,int>{{from,-1}};
+            var queue=new Queue<int>();queue.Enqueue(from);
+            while(queue.Count>0)
+            {
+                var id=queue.Dequeue();
+                foreach(var next in _roads[id].Neighbours)
+                {
+                    if(parents.ContainsKey(next)||_roads[next].MaintenanceRatio<=.05||!construction&&_roads[next].ConstructionOnly)continue;
+                    parents[next]=id;queue.Enqueue(next);
+                }
+            }
+            if(_pr57RouteTreeParents.Count>=32)
+            {
+                _pr57RouteTreeParents.Clear();
+                _pr57RouteTreeCalls.Clear();
+            }
+            _pr57RouteTreeParents[key]=parents;
+        }
+        if(!parents.ContainsKey(to))return [];
+        var result=new List<int>();
+        for(var id=to;id!=-1;id=parents[id])result.Add(id);
+        result.Reverse();return result;
+    }
+
     public List<int> FindRoadRoute(int from,int to,bool construction=false)=>FindRoadRoute(from,to,construction,null);
     List<int> FindRoadRoute(int from,int to,bool construction,HashSet<int>? avoid)
     {
         if(!_roads.ContainsKey(from)||!_roads.ContainsKey(to)||!construction&&(_roads[from].ConstructionOnly||_roads[to].ConstructionOnly))return [];
+        if(Pr57RouteTreeEnabled&&_pr57RouteTreeActive&&avoid==null)
+        {
+            var cached=Pr57RouteFromTree(from,to,construction);
+            if(cached!=null)return cached;
+        }
         var queue=new Queue<int>();var parent=new Dictionary<int,int>{{from,-1}};queue.Enqueue(from);
         while(queue.Count>0){var id=queue.Dequeue();if(id==to)break;foreach(var next in _roads[id].Neighbours){if(parent.ContainsKey(next)||_roads[next].MaintenanceRatio<=.05||!construction&&_roads[next].ConstructionOnly||avoid!=null&&avoid.Contains(next))continue;parent[next]=id;queue.Enqueue(next);}}
         if(!parent.ContainsKey(to))return [];var result=new List<int>();for(var id=to;id!=-1;id=parent[id])result.Add(id);result.Reverse();return result;

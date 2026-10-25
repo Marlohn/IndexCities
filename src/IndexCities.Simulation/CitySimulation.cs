@@ -151,9 +151,24 @@ public sealed partial class CitySimulation
         // Rebuild the opt-in agenda there; internal quanta still use incremental wakeups.
         if(Pr57CitizenAgendaEnabled)_pr57AgendaReady=false;
         if(Pr57MaintenanceScheduleEnabled)_pr57MaintenanceScheduleReady=false;
+        if(Pr57RouteTreeEnabled)
+        {
+            _pr57RouteTreeParents.Clear();_pr57RouteTreeCalls.Clear();
+            _pr57RouteTreeEpoch=_roadEpoch;_pr57RouteTreeActive=true;
+            if(!_pr57RouteTreeAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+            {
+                Console.WriteLine("PR57_ROUTE_TREE active=True");
+                _pr57RouteTreeAnnounced=true;
+            }
+        }
+        else if(!_pr57RouteTreeAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine("PR57_ROUTE_TREE active=False");
+            _pr57RouteTreeAnnounced=true;
+        }
         _crosswalkBands.Clear();_crosswalkBandsActive=true;BeginWalkRoutes();
         try{var remaining=seconds;while(remaining>1e-8){var dt=Math.Min(Quantum,remaining);Step(dt);remaining-=dt;}}
-        finally{_crosswalkBandsActive=false;_crosswalkBands.Clear();EndWalkRoutes();}
+        finally{_crosswalkBandsActive=false;_crosswalkBands.Clear();EndWalkRoutes();_pr57RouteTreeActive=false;_pr57RouteTreeParents.Clear();_pr57RouteTreeCalls.Clear();}
     }
     // PR57 opt-in: stable living-citizen roster, invalidated on death or population growth.
     // Rebuilt before Step, never while a Step enumerates it. Does not alter CityState/save.
