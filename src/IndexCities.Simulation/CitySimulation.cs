@@ -150,6 +150,8 @@ public sealed partial class CitySimulation
         // A public Advance boundary permits direct external State edits (including tests).
         // Rebuild the opt-in agenda there; internal quanta still use incremental wakeups.
         if(Pr57CitizenAgendaEnabled)_pr57AgendaReady=false;
+        // Public Advance boundaries permit arbitrary external State edits.
+        _pr57ConstructionWaitAccess.Clear();
         if(Pr57MaintenanceScheduleEnabled)_pr57MaintenanceScheduleReady=false;
         if(Pr57RouteTreeEnabled)
         {

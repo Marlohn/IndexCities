@@ -103,6 +103,11 @@ public sealed partial class CitySimulation
     static readonly bool Pr57OrderShipmentIndexEnabled=Environment.GetEnvironmentVariable("PR57_ORDER_SHIPMENT_INDEX")=="1";
     readonly Dictionary<int,List<Shipment>> _pr57OrderShipments=new();
     bool _pr57OrderShipmentIndexAnnounced;
+    // PR57-only causal waiting-project worklist. A stamp records a previous
+    // successful physical access check; it never enters State or a save.
+    static readonly bool Pr57ConstructionWaitAgendaEnabled=Environment.GetEnvironmentVariable("PR57_CONSTRUCTION_WAIT_AGENDA")=="1";
+    readonly Dictionary<int,(int RoadEpoch,double Progress)> _pr57ConstructionWaitAccess=new();
+    bool _pr57ConstructionWaitAgendaAnnounced;
     void ReserveLocalMaterials()
     {
         var depot=State.Buildings.FirstOrDefault(b=>b.Kind==BuildingKind.WorksDepot&&b.Completed&&!b.Removed&&!b.OperationClosed);if(depot==null)return;
@@ -135,8 +140,22 @@ public sealed partial class CitySimulation
             Console.WriteLine($"PR57_ORDER_SHIPMENT_INDEX active={Pr57OrderShipmentIndexEnabled}");
             _pr57OrderShipmentIndexAnnounced=true;
         }
+        if(!_pr57ConstructionWaitAgendaAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine($"PR57_CONSTRUCTION_WAIT_AGENDA active={Pr57ConstructionWaitAgendaEnabled}");
+            _pr57ConstructionWaitAgendaAnnounced=true;
+        }
         if(!State.Projects.Any(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress))return;
         ReserveLocalMaterials();
+        // If no specialist truck can leave and no worker can be dispatched
+        // from the depot, rechecking an unchanged material-blocked road project
+        // cannot trigger transport, crew assignment or payment this quantum.
+        var waitingAgendaBlocked=false;
+        if(Pr57ConstructionWaitAgendaEnabled&&AvailableTruck()==null)
+        {
+            var depot=State.Buildings.FirstOrDefault(b=>b.Kind==BuildingKind.WorksDepot&&b.Completed&&!b.Removed&&!b.OperationClosed&&Access(b)!=null);
+            waitingAgendaBlocked=depot==null||!State.Citizens.Any(c=>c.Alive&&c.WorkplaceId==depot.Id&&c.ConstructionProjectId==null&&!c.Moving&&c.Position.Distance(depot.Door)<3&&ShiftActive(c));
+        }
         // Build membership lazily in insertion order. Any shipment appended by this
         // dispatcher becomes visible on the next query. Complete and Cargo are
         // deliberately read live, not snapshotted; no state is persisted.
@@ -160,6 +179,20 @@ public sealed partial class CitySimulation
         }
         foreach(var p in State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress).OrderBy(p=>p.IsMaintenance?MaintenancePriority(p):4).ThenBy(p=>p.Id)){
             if(RoadPhysicalWorkDone(p))continue;
+            // The previous real access check is reusable only while its road
+            // graph and maintenance target remain unchanged. Check live cargo
+            // in original shipment order: a newly completed delivery disables
+            // this shortcut. Every Step and every construction progress call
+            // still executes, including all physical and economic effects.
+            if(waitingAgendaBlocked&&p.IsMaintenance&&p.BuildingId==null&&p.MaintenanceRoadIds.Count>0&&p.LocalCrew.Count==0
+                &&_pr57ConstructionWaitAccess.TryGetValue(p.Id,out var checkedAccess)
+                &&checkedAccess.RoadEpoch==_roadEpoch&&checkedAccess.Progress==p.Progress
+                &&p.Required.Any(k=>p.Delivered.GetValueOrDefault(k.Key)
+                    +PendingProjectShipments(p.Id).Sum(s=>s.Cargo.GetValueOrDefault(k.Key))+.001<k.Value))
+            {
+                p.Cause=WorkCause.AwaitingExternalTruck;
+                continue;
+            }
             var access=WorkAccess(p);if(access==null||!_workExteriorConnected.Contains(access.Id)){p.Cause=WorkCause.NoMaterialsAccess;continue;}
             if(IsPaving(p))OrderPavingMachines(p,access);else AssignLocalCrew(p,access);
             foreach(var k in p.Required.Keys.ToList()){
@@ -197,6 +230,9 @@ public sealed partial class CitySimulation
             if(!IsPaving(p))AssignLocalCrew(p,access);
             if(IsPaving(p)){OrderPavingMachines(p,access);continue;}
             if(p.CrewVehicleId==null&&p.LocalCrew.Count==0&&p.Required.All(k=>p.Delivered.GetValueOrDefault(k.Key)+.001>=k.Value))SendExternalCrew(p,access);
+            if(Pr57ConstructionWaitAgendaEnabled&&p.IsMaintenance&&p.BuildingId==null&&p.MaintenanceRoadIds.Count>0
+                &&p.Cause==WorkCause.AwaitingExternalTruck)
+                _pr57ConstructionWaitAccess[p.Id]=(_roadEpoch,p.Progress);
         }
     }
     // Same margin as the dispatch checks: the leg, then the way back to the exterior.
