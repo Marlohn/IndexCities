@@ -45,11 +45,52 @@ public sealed partial class CitySimulation
         var load=0.0;var factors=FactorsFor(point).Factors;for(var i=0;i<_cellCount;i++)load+=_cellValues[i]*factors[i];
         return Math.Clamp(load,0,2);
     }
+    // PR57-only POC: compute independent household pollution dot products on
+    // worker threads. Factors are resolved serially before workers start;
+    // each household still sums every cell in the original cell order.
+    // Results are published serially in original point order. No CityState
+    // fields, cells, clocks, events or save contents are touched by workers.
+    static readonly bool Pr57ParallelPollutionEnabled=Environment.GetEnvironmentVariable("PR57_PARALLEL_POLLUTION")=="1";
+    readonly List<double[]> _pr57ParallelPollutionFactors=[];
+    double[] _pr57ParallelPollutionResults=[];
+    bool _pr57ParallelPollutionAnnounced,_pr57ParallelPollutionEngaged;
+    bool Pr57TrySamplePollutionParallel(List<Point> points,Dictionary<Point,double> loads)
+    {
+        if(!_pr57ParallelPollutionAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine($"PR57_PARALLEL_POLLUTION active={Pr57ParallelPollutionEnabled} processors={Environment.ProcessorCount}");
+            _pr57ParallelPollutionAnnounced=true;
+        }
+        // A tiny workload cannot amortize the per-Step parallel barrier.
+        if(!Pr57ParallelPollutionEnabled||Environment.ProcessorCount<2||points.Count<64||_cellCount<16)return false;
+        if(!_pr57ParallelPollutionEngaged&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine($"PR57_PARALLEL_POLLUTION engaged=True homes={points.Count} cells={_cellCount}");
+            _pr57ParallelPollutionEngaged=true;
+        }
+        _pr57ParallelPollutionFactors.Clear();
+        foreach(var point in points)_pr57ParallelPollutionFactors.Add(FactorsFor(point).Factors);
+        if(_pr57ParallelPollutionResults.Length<points.Count)Array.Resize(ref _pr57ParallelPollutionResults,points.Count);
+        var factors=_pr57ParallelPollutionFactors;
+        var values=_cellValues;
+        var count=_cellCount;
+        var results=_pr57ParallelPollutionResults;
+        System.Threading.Tasks.Parallel.For(0,points.Count,index=>
+        {
+            var weights=factors[index];
+            double load=0;
+            for(var j=0;j<count;j++)load+=values[j]*weights[j];
+            results[index]=Math.Clamp(load,0,2);
+        });
+        for(var index=0;index<points.Count;index++)loads[points[index]]=results[index];
+        return true;
+    }
     // SampledPollution of each point into `loads`. Four points share one pass
     // over the cells; each keeps its own sum in cell order, so every result is
     // the one SampledPollution(point) gives.
     void SampledPollution(List<Point> points,Dictionary<Point,double> loads)
     {
+        if(Pr57TrySamplePollutionParallel(points,loads))return;
         var i=0;
         for(;i+4<=points.Count;i+=4){
             var a=FactorsFor(points[i]).Factors;var b=FactorsFor(points[i+1]).Factors;var c=FactorsFor(points[i+2]).Factors;var d=FactorsFor(points[i+3]).Factors;

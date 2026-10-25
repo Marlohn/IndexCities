@@ -1,4 +1,4 @@
-name: 'PR57 host-cadence Advance(2) construction wait A/B'
+name: 'PR57 independent household pollution POC A/B'
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
@@ -14,7 +14,7 @@ concurrency:
   group: integrated-scale-pr57
   cancel-in-progress: false
 jobs:
-  host-cadence:
+  pollution-parallel:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -22,51 +22,69 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Build
-        run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: Restore real-city checkpoint
+      - name: Build and existing simulation tests
+        run: |
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore unmodified real-city checkpoint
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p artifacts/source
           gh run download 40200371479 -n integrated-scale-pr57-work-access-index-ab -D artifacts/source
           test -s "$(find artifacts/source -type f -name checkpoint-16.json | grep real-maintenance-control-a | head -n 1)"
-      - name: Independent .NET processes, Godot's actual Advance(2) cadence
+      - name: A/B fresh .NET processes with actual Advance(2) cadence
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p artifacts/host
+          mkdir -p artifacts/parallel
           SOURCE="$(find artifacts/source -type f -name checkpoint-16.json | grep real-maintenance-control-a | head -n 1)"
-          for mode in control-a candidate-a candidate-b control-b; do
-            enabled=0; [[ "$mode" == candidate* ]] && enabled=1
-            mkdir -p "artifacts/host/$mode"
-            echo "PR57_HOST_RUN mode=$mode enabled=$enabled cadence=2"
-            PR57_HOST_QUANTUM=1 PR57_CONSTRUCTION_WAIT_AGENDA="$enabled" PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ROUTE_TREE=0 PR57_ORDER_SHIPMENT_INDEX=0 PR57_MAINTENANCE_SCHEDULE=0 PR57_SOURCE_DISTANCE_CACHE=0 PR57_WORK_ACCESS_INDEX=0 PR57_PEDESTRIAN_GRID=0 PR57_LIVING_ROSTER=0 PR57_GRID_DIAG=1 PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="$PWD/artifacts/host/$mode" \
-              timeout 120s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- scale cycle --seed=42 --resume="$SOURCE" --warmup=0 --days=2 --window=3600 --cap=100 | tee "artifacts/host/$mode.log"
+          for scenario in real cycle grid; do
+            if [[ "$scenario" == cycle ]]; then modes=(control-a candidate-a); else modes=(control-a candidate-a candidate-b control-b); fi
+            for mode in "${modes[@]}"; do
+              enabled=0; [[ "$mode" == candidate* ]] && enabled=1
+              mkdir -p "artifacts/parallel/$scenario/$mode"
+              echo "PR57_PARALLEL_RUN scenario=$scenario mode=$mode enabled=$enabled cadence=2"
+              opts=(scale cycle --seed=42 --warmup=0 --days=2 --window=3600 --cap=150)
+              if [[ "$scenario" == real ]]; then opts+=(--resume="$SOURCE"); fi
+              if [[ "$scenario" == grid ]]; then opts=(scale grid --seed=42 --rows=6 --length=600 --warmup=0 --days=2 --window=3600 --cap=150); fi
+              PR57_HOST_QUANTUM=1 PR57_PARALLEL_POLLUTION="$enabled" PR57_CONSTRUCTION_WAIT_AGENDA=0 PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ROUTE_TREE=0 PR57_ORDER_SHIPMENT_INDEX=0 PR57_MAINTENANCE_SCHEDULE=0 PR57_SOURCE_DISTANCE_CACHE=0 PR57_WORK_ACCESS_INDEX=0 PR57_PEDESTRIAN_GRID=0 PR57_LIVING_ROSTER=0 PR57_CITIZEN_AGENDA=0 PR57_GRID_DIAG=1 PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="$PWD/artifacts/parallel/$scenario/$mode" \
+                timeout 180s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- "${opts[@]}" | tee "artifacts/parallel/$scenario/$mode.log"
+            done
           done
-      - name: Checkpoint and end-to-end metrics audit
+      - name: Causal checkpoints and full-process wall CPU allocation comparison
         shell: bash
         run: |
           python3 - <<'PY'
-          import pathlib,re,json
-          root=pathlib.Path('artifacts/host')
-          stats={}
-          for mode in ('control-a','candidate-a','candidate-b','control-b'):
-              log=(root/f'{mode}.log').read_text()
-              assert f"PR57_CONSTRUCTION_WAIT_AGENDA active={'True' if mode.startswith('candidate') else 'False'}" in log,mode
-              assert 'INVARIANTS OK' in log and 'SAVE ' in log,mode
-              rows=[x for x in log.splitlines() if x.startswith('WINDOW ')]
-              assert len(rows)==2,(mode,len(rows))
-              stats[mode]={key:sum(float(re.search(r'\\b'+key+r'=([0-9.]+)',row).group(1)) for row in rows) for key in ('wall','cpu','allocMB')}
-          for a,b in [('control-a','candidate-a'),('control-b','candidate-b')]:
-              for i in range(3):
-                  assert (root/a/f'checkpoint-{i}.json').read_bytes()==(root/b/f'checkpoint-{i}.json').read_bytes(),(a,b,i)
-              print('PR57_HOST_AB',json.dumps(dict(control=a,candidate=b,controlMetrics=stats[a],candidateMetrics=stats[b],checkpoints=3,cadenceSeconds=2),sort_keys=True))
+          import json,pathlib,re
+          root=pathlib.Path('artifacts/parallel')
+          for scenario in ('real','cycle','grid'):
+              modes=('control-a','candidate-a') if scenario=='cycle' else ('control-a','candidate-a','candidate-b','control-b')
+              stats={}
+              for mode in modes:
+                  log=(root/scenario/f'{mode}.log').read_text()
+                  enabled=mode.startswith('candidate')
+                  assert f'PR57_PARALLEL_POLLUTION active={enabled}' in log,(scenario,mode,'flag not confirmed')
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(scenario,mode,'invariants/save')
+                  rows=[row for row in log.splitlines() if row.startswith('WINDOW ')]
+                  assert len(rows)==2,(scenario,mode,len(rows))
+                  def value(row,key):
+                      match=re.search(r'\b'+re.escape(key)+r'=([0-9.]+)',row)
+                      assert match is not None,(scenario,mode,key,row)
+                      return float(match.group(1))
+                  stats[mode]={key:round(sum(value(row,key) for row in rows),3) for key in ('wall','cpu','allocMB')}
+                  if scenario=='grid' and enabled:
+                      assert 'PR57_PARALLEL_POLLUTION engaged=True' in log,(scenario,mode,'parallel path not exercised')
+              pairs=[('control-a','candidate-a')] if scenario=='cycle' else [('control-a','candidate-a'),('control-b','candidate-b')]
+              for control,candidate in pairs:
+                  for i in range(3):
+                      assert (root/scenario/control/f'checkpoint-{i}.json').read_bytes()==(root/scenario/candidate/f'checkpoint-{i}.json').read_bytes(),(scenario,control,candidate,i)
+                  print('PR57_PARALLEL_AB',json.dumps(dict(scenario=scenario,control=control,candidate=candidate,controlMetrics=stats[control],candidateMetrics=stats[candidate],checkpoints=3,cadenceSeconds=2),sort_keys=True))
           PY
-      - name: Preserve all evidence
+      - name: Preserve evidence even on parser or causal failure
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-pr57-host-cadence
-          path: artifacts/host/**
+          name: integrated-scale-pr57-parallel-pollution
+          path: artifacts/parallel/**
           retention-days: 14
