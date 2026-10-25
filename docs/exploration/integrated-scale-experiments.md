@@ -1027,3 +1027,26 @@ As distâncias da tabela são **comprimento efetivamente percorrido entre amostr
 **Atenção à comparação histórica:** os hashes desta rodada para janelas 12/13 (`FCBDECBB... / C7A73CB2...`) diferem dos `ECAC898C... / E37C553A...` registrados no perfil anterior, embora os agregados e os hashes **dentro do A/B atual** coincidam. O ensaio atual usou `PR57_WORK_DIAG=0` e `--cap=180`, contra `PR57_WORK_DIAG=1` e `--cap=210` no perfil anterior; **não está provada a causa da diferença entre configurações/revisões**, nem se ela reflete campos de save ou causalidade. Não declarar equivalência entre rodadas históricas e não repetir seis dias por ritual.
 
 **Decisão:** **rejeitar `PR57_BATCH_ORDER=1` como ganho integrado nesta carga**. Economizou 1,1% de alocação, mas aumentou wall em ambos os pares; o gargalo de 98.178 slices não mudou. Não continuar variações da ordenação nem do `ZERO_SITE_SKIP` por baixo retorno. Próxima hipótese de maior alavancagem: prova de dependências/invalidadores para eventos de velocidade que vencem sem deslocamento, ou otimização estrutural segura do trabalho por slice; exigir POC isolada e validação adversarial de mudanças de bloqueadores, docas, curvas e entrada lateral antes de eliminar qualquer fronteira causal. Para viabilidade de 10k, ainda falta expansão espacial e econômica realmente sustentável, com crescimento e gerações.
+
+
+## Sexagésima segunda execução — reúso de snapshots reduz alocação, mas não acelera manutenção (24/10/2026, horário de Brasília)
+
+**Evidência:** código opt-in [`f0f5e16`](https://github.com/Marlohn/IndexCities/commit/f0f5e1663c28e76e342b1928467e63f4205eda13), workflow [`2c34d2f`](https://github.com/Marlohn/IndexCities/commit/2c34d2f0b4c5a07f5b9afcbd38e4472be2315621), [Actions #40151486662](https://github.com/Marlohn/IndexCities/actions/runs/40151486662), job `121043771925` **success**. A flag `PR57_ENTRY_FRAME_REUSE=1` reutiliza snapshots de veículos ao longo dos slices do mesmo lote, atualizando os mesmos campos de `EntrySnapshot`; cópias projetadas, que são mutadas, continuam independentes. Flag **desligada por padrão**. O objetivo era reduzir alocações sem mudar eventos, colisões ou economia.
+
+**A/B:** quatro processos .NET 8 Release novos, mesmo runner e HEAD, ordem controle A → candidata A → candidata B → controle B; `profile cycle --seed=42 --warmup=0 --cycle-houses=32 --cycle-bypass=1 --days=13 --window=43200 --cap=180`, profiler somente na janela 13; `PR57_AB_CHECKPOINT=1`, `PR57_WORK_DIAG=0`, todas as demais flags PR57 de desempenho em zero. Construção real na fixture `cycle` com bypass; somente 18/32 casas encomendáveis, sem construção instantânea nem recursos/caixa/capacidade inflados. Horizonte **13 × 12h = 6,5 dias**, incluindo a primeira manutenção. Wall/CPU das janelas `Advance`, não do build ou bootstrap.
+
+| Métrica | Controle A / B | `ENTRY_FRAME_REUSE=1` A / B |
+| --- | ---: | ---: |
+| Wall total, 13 janelas | **72,50 / 72,15 s** | 73,87 / 71,96 s |
+| Wall janela 13 (perfil) | **44,44 / 44,36 s** | 46,46 / 44,67 s |
+| Variação pareada de wall janela 13 | — | **+4,55% / +0,70% (regressão)** |
+| CPU janela 13 | 44,48 / 44,41 s | 46,50 / 44,72 s |
+| Alocação janela 13 | 29.403,0 MB | **28.499,9 MB (−3,07%)** |
+| Alocação total | 37.013,1 MB | **36.109,1 MB (−2,44%)** |
+| GC0 janela 13 | 1.758 | **1.704** |
+| Slices janela 13 | 98.178 | 98.178 |
+| Wall perfilado de movimento | 39,487 / 39,411 s | 41,646 / 39,882 s |
+
+**Paridade e atividade:** os **13 checkpoints completos SHA-256 coincidiram nos quatro processos** (save final `E37C553ADFCD791E9322B20F023D4B739BB9DD3734307DB45675F0AFC3DD3153`), invariantes e save/load passaram; os **quatro adversariais `DualExitConflictExperiment` passaram em cada modo**. Estado final: **75 SIMs vivos**, um óbito, 48 empregados, 60 veículos (10 viajando), oito obras de manutenção abertas, **930 refeições**, salários **4.054,06**, **2.474 lançamentos** e **6.229 fatos individuais**. Igualdade de snapshots de 12h e adversariais não comprova todas as transições entre checkpoints, muito menos gerações/10k/Godot.
+
+**Decisão:** **não adotar `ENTRY_FRAME_REUSE` como otimização de wall**: economia material de alocação (3,07% na janela crítica) sem ganho de tempo, com regressão de 0,70–4,55% no gargalo e 98.178 slices intactos. Não gastar outro ABBA em variações desse cache. A próxima hipótese discriminante é reduzir *com prova causal* as fronteiras de evento redundantes mediante dependências e invalidadores explícitos (líder, fila, entrada lateral, doca, cruzamento, curva, mudança de rota/estado), ou encontrar uma abordagem estrutural alternativa de custo por slice. Nenhuma supressão de slice sem demonstrar que outros agentes não dependem da fronteira. Em paralelo, ainda falta cidade espacial/economicamente sustentável em escala crescente; esta fixture de 75 vivos não responde à meta exploratória.
