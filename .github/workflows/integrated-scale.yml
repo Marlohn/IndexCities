@@ -1,4 +1,4 @@
-name: Integrated core PR57 batch-order A/B at maintenance onset
+name: Integrated core PR57 entry-frame reuse A/B at maintenance onset
 
 on:
   push:
@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  batch-order-abba:
+  entry-frame-reuse-abba:
     name: Seed42 maintenance-onset A/B, unchanged physics and economics
     runs-on: ubuntu-latest
     timeout-minutes: 12
@@ -32,11 +32,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p artifacts/pr57-batch-order
+          mkdir -p artifacts/pr57-entry-frame-reuse
           for label in control-a candidate-a candidate-b control-b; do
             case "$label" in control-*) flag=0;; candidate-*) flag=1;; esac
-            echo "PR57_AB_MODE label=$label PR57_BATCH_ORDER=$flag otherPerformanceFlags=0 seed=42 bypass=1 housesRequested=32 horizon=13x43200 profileFrom=13"
-            PR57_ACTIVE_SCAN=0 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER="$flag" PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 PR57_WORK_DIAG=0 PR57_PROFILE_FROM_WINDOW=13 timeout 190s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- profile cycle --seed=42 --warmup=0 --cycle-houses=32 --cycle-bypass=1 --days=13 --window=43200 --cap=180 | tee "artifacts/pr57-batch-order/$label.log"
+            echo "PR57_AB_MODE label=$label PR57_ENTRY_FRAME_REUSE=$flag PR57_BATCH_ORDER=0 otherPerformanceFlags=0 seed=42 bypass=1 housesRequested=32 horizon=13x43200 profileFrom=13"
+            PR57_ACTIVE_SCAN=0 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 PR57_ENTRY_FRAME_REUSE="$flag" PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 PR57_WORK_DIAG=0 PR57_PROFILE_FROM_WINDOW=13 timeout 190s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- profile cycle --seed=42 --warmup=0 --cycle-houses=32 --cycle-bypass=1 --days=13 --window=43200 --cap=180 | tee "artifacts/pr57-entry-frame-reuse/$label.log"
           done
       - name: Check intermediate causal states and report paired costs
         shell: bash
@@ -47,7 +47,7 @@ jobs:
           labels=('control-a','candidate-a','candidate-b','control-b')
           data={}
           for label in labels:
-              s=pathlib.Path(f'artifacts/pr57-batch-order/{label}.log').read_text()
+              s=pathlib.Path(f'artifacts/pr57-entry-frame-reuse/{label}.log').read_text()
               rows=re.findall(r'^WINDOW (\d+) seconds=43200 wall=([0-9.]+)s eff=\S+ cpu=([0-9.]+)s allocMB=([0-9.]+) gc0=(\d+) gc2=(\d+) (.*)$',s,re.M)
               checks=re.findall(r'^PR57_AB_CHECKPOINT window=(\d+) sha256=([A-F0-9]{64}) (.*)$',s,re.M)
               save=re.search(r'^SAVE .* sha256=([A-F0-9]{64})$',s,re.M)
@@ -80,14 +80,14 @@ jobs:
         run: |
           set -euo pipefail
           for flag in 0 1; do
-            echo "PR57_ADVERSARIAL PR57_BATCH_ORDER=$flag"
-            PR57_BATCH_ORDER="$flag" dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --filter FullyQualifiedName~DualExitConflictExperiment --verbosity quiet
+            echo "PR57_ADVERSARIAL PR57_ENTRY_FRAME_REUSE=$flag"
+            PR57_BATCH_ORDER=0 PR57_ENTRY_FRAME_REUSE="$flag" dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --filter FullyQualifiedName~DualExitConflictExperiment --verbosity quiet
           done
       - name: Preserve A/B logs including failure
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-pr57-batch-order-abba
-          path: artifacts/pr57-batch-order/*.log
+          name: integrated-scale-pr57-entry-frame-reuse-abba
+          path: artifacts/pr57-entry-frame-reuse/*.log
           if-no-files-found: warn
           retention-days: 14
