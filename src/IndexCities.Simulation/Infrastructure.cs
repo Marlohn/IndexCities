@@ -112,7 +112,8 @@ sealed class CapacityAllocation
     // compared exactly before reusing any nearest-source distance.
     readonly bool _cacheSourceDistances;
     readonly List<Point> _cachedSources=[];
-    Point[] _cachedPositions=[],_nearest=[];
+    Point[] _cachedPositions=[];
+    double[] _nearest=[];
     int _cachedCount=-1;
     public CapacityAllocation(bool cacheSourceDistances=false)=>_cacheSourceDistances=cacheSourceDistances;
     void RefreshSourceDistances(List<Point> sources)
@@ -142,7 +143,7 @@ sealed class CapacityAllocation
         if(_cacheSourceDistances&&sources.Count>0)RefreshSourceDistances(sources);
         // Distances and demands stay fixed throughout this allocation. Sum only
         // the remaining consumers, in the same order as the previous loop.
-        for(var k=0;k<pending;k++){var i=_pending[k];_weights[i]=Demands[i]/(1+(sources.Count==0?256:_cacheSourceDistances?_nearest[i]:NearestSource(sources,Positions[i]))/128);}
+        for(var k=0;k<pending;k++){var i=_pending[k];_weights[i]=Demands[i]/(1+(sources.Count==0?256.0:(_cacheSourceDistances?_nearest[i]:NearestSource(sources,Positions[i])))/128);}
         while(pending>0&&remaining>.000001){
             var sum=0.0;for(var k=0;k<pending;k++)sum+=_weights[_pending[k]];
             var allocated=0.0;for(var k=0;k<pending;k++){var i=_pending[k];var amount=Math.Min(Demands[i]-Result[i],remaining*_weights[i]/sum);Result[i]+=amount;allocated+=amount;}
