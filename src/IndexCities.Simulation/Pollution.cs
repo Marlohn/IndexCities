@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace IndexCities.Simulation;
@@ -85,12 +86,61 @@ public sealed partial class CitySimulation
         for(var index=0;index<points.Count;index++)loads[points[index]]=results[index];
         return true;
     }
+    // PR57 opt-in: exact per-home cell order, SIMD across independent homes.
+    // A cell-major matrix is rebuilt only when cell layout or sampled homes
+    // change. Each SIMD lane still accumulates all cells in original order.
+    // No cell, quantum, event or state update is skipped.
+    static readonly bool Pr57PollutionSimdEnabled=Environment.GetEnvironmentVariable("PR57_POLLUTION_SIMD")=="1";
+    readonly List<Point> _pr57SimdPoints=[];
+    double[] _pr57SimdMatrix=[];
+    int _pr57SimdLayout=-1,_pr57SimdStride;
+    bool _pr57SimdAnnounced,_pr57SimdEngaged;
+    bool Pr57TrySamplePollutionSimd(List<Point> points,Dictionary<Point,double> loads)
+    {
+        if(!_pr57SimdAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine($"PR57_POLLUTION_SIMD active={Pr57PollutionSimdEnabled} vectorWidth={Vector<double>.Count}");
+            _pr57SimdAnnounced=true;
+        }
+        if(!Pr57PollutionSimdEnabled||!Vector.IsHardwareAccelerated||points.Count<32||_cellCount<16)return false;
+        if(!_pr57SimdEngaged&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine($"PR57_POLLUTION_SIMD engaged=True homes={points.Count} cells={_cellCount}");
+            _pr57SimdEngaged=true;
+        }
+        var width=Vector<double>.Count;
+        var stride=((points.Count+width-1)/width)*width;
+        var rebuild=_pr57SimdLayout!=_cellLayout||_pr57SimdStride!=stride||_pr57SimdPoints.Count!=points.Count;
+        if(!rebuild)for(var i=0;i<points.Count;i++)if(_pr57SimdPoints[i]!=points[i]){rebuild=true;break;}
+        if(rebuild)
+        {
+            _pr57SimdPoints.Clear();_pr57SimdPoints.AddRange(points);
+            var size=checked(_cellCount*stride);
+            if(_pr57SimdMatrix.Length<size)Array.Resize(ref _pr57SimdMatrix,size);
+            for(var home=0;home<points.Count;home++)
+            {
+                var factors=FactorsFor(points[home]).Factors;
+                for(var cell=0;cell<_cellCount;cell++)_pr57SimdMatrix[cell*stride+home]=factors[cell];
+            }
+            _pr57SimdLayout=_cellLayout;_pr57SimdStride=stride;
+        }
+        for(var home=0;home<points.Count;home+=width)
+        {
+            var sum=Vector<double>.Zero;
+            for(var cell=0;cell<_cellCount;cell++)
+                sum+=new Vector<double>(_cellValues[cell])*new Vector<double>(_pr57SimdMatrix,cell*stride+home);
+            for(var lane=0;lane<Math.Min(width,points.Count-home);lane++)
+                loads[points[home+lane]]=Math.Clamp(sum[lane],0,2);
+        }
+        return true;
+    }
     // SampledPollution of each point into `loads`. Four points share one pass
     // over the cells; each keeps its own sum in cell order, so every result is
     // the one SampledPollution(point) gives.
     void SampledPollution(List<Point> points,Dictionary<Point,double> loads)
     {
         if(Pr57TrySamplePollutionParallel(points,loads))return;
+        if(Pr57TrySamplePollutionSimd(points,loads))return;
         var i=0;
         for(;i+4<=points.Count;i+=4){
             var a=FactorsFor(points[i]).Factors;var b=FactorsFor(points[i+1]).Factors;var c=FactorsFor(points[i+2]).Factors;var d=FactorsFor(points[i+3]).Factors;
