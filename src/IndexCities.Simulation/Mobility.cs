@@ -129,14 +129,72 @@ public sealed partial class CitySimulation
     // Crosswalk nodes in State.Roads order. Rebuilt at the start of every
     // MoveCitizens call and whenever the road list or crossings change.
     readonly List<RoadNode> _crosswalks=[];int _crosswalksEpoch=-1;int _roadEpoch;
-    void RefreshCrosswalks(){_crosswalks.Clear();foreach(var n in State.Roads)if(n.Crosswalk)_crosswalks.Add(n);_crosswalksEpoch=_roadEpoch;}
-    // Crosswalk reached by this physical step: the one already being crossed,
-    // else the nearest; an exact tie keeps road-list order (as a stable sort).
+    // PR57-only POC: index crossing candidates by position rather than scan
+    // every crossing for every walking segment. Rebuild lazily per Step;
+    // no cache persists across public Advance boundaries or road mutations.
+    static readonly bool Pr57CrosswalkGridEnabled=Environment.GetEnvironmentVariable("PR57_CROSSWALK_GRID")=="1";
+    const double Pr57CrosswalkCellMetres=16;
+    readonly Dictionary<(int X,int Z),List<int>> _pr57CrosswalkCells=new();
+    readonly List<int> _pr57CrosswalkCandidates=[];
+    readonly HashSet<int> _pr57CrosswalkSeen=new();
+    bool _pr57CrosswalkGridReady,_pr57CrosswalkGridAnnounced,_pr57CrosswalkGridEngaged;
+    void RefreshCrosswalks()
+    {
+        _crosswalks.Clear();foreach(var n in State.Roads)if(n.Crosswalk)_crosswalks.Add(n);
+        _crosswalksEpoch=_roadEpoch;_pr57CrosswalkGridReady=false;
+        if(!_pr57CrosswalkGridAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine($"PR57_CROSSWALK_GRID active={Pr57CrosswalkGridEnabled}");
+            _pr57CrosswalkGridAnnounced=true;
+        }
+    }
+    void Pr57EnsureCrosswalkGrid()
+    {
+        if(_pr57CrosswalkGridReady)return;
+        foreach(var bucket in _pr57CrosswalkCells.Values)bucket.Clear();
+        for(var i=0;i<_crosswalks.Count;i++)
+        {
+            var p=_crosswalks[i].Position;
+            var key=((int)Math.Floor(p.X/Pr57CrosswalkCellMetres),(int)Math.Floor(p.Z/Pr57CrosswalkCellMetres));
+            if(!_pr57CrosswalkCells.TryGetValue(key,out var bucket))_pr57CrosswalkCells[key]=bucket=[];
+            bucket.Add(i);
+        }
+        _pr57CrosswalkGridReady=true;
+        if(!_pr57CrosswalkGridEngaged&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine($"PR57_CROSSWALK_GRID built=True nodes={_crosswalks.Count}");
+            _pr57CrosswalkGridEngaged=true;
+        }
+    }
+    void Pr57CollectCrosswalkCandidates(Point point,double reach)
+    {
+        var minX=(int)Math.Floor((point.X-reach)/Pr57CrosswalkCellMetres);
+        var maxX=(int)Math.Floor((point.X+reach)/Pr57CrosswalkCellMetres);
+        var minZ=(int)Math.Floor((point.Z-reach)/Pr57CrosswalkCellMetres);
+        var maxZ=(int)Math.Floor((point.Z+reach)/Pr57CrosswalkCellMetres);
+        for(var x=minX;x<=maxX;x++)for(var z=minZ;z<=maxZ;z++)
+            if(_pr57CrosswalkCells.TryGetValue((x,z),out var bucket))
+                foreach(var index in bucket)if(_pr57CrosswalkSeen.Add(index))_pr57CrosswalkCandidates.Add(index);
+    }
+    // Crossing predicate and tie-breaking remain identical. Bounding cells
+    // include all nodes that could pass the original endpoint-distance gate.
     RoadNode? CrossingReached(Citizen c,Point nextPosition)
     {
         if(_crosswalksEpoch!=_roadEpoch)RefreshCrosswalks();
+        if(Pr57CrosswalkGridEnabled)
+        {
+            Pr57EnsureCrosswalkGrid();
+            _pr57CrosswalkCandidates.Clear();_pr57CrosswalkSeen.Clear();
+            var reach=State.Tuning.RoadWidth+1;
+            Pr57CollectCrosswalkCandidates(c.Position,reach);
+            Pr57CollectCrosswalkCandidates(nextPosition,reach);
+            _pr57CrosswalkCandidates.Sort(); // preserve State.Roads order for ties
+        }
         RoadNode? best=null;var bestKey=0;var bestDistance=0.0;
-        foreach(var n in _crosswalks){
+        var count=Pr57CrosswalkGridEnabled?_pr57CrosswalkCandidates.Count:_crosswalks.Count;
+        for(var i=0;i<count;i++)
+        {
+            var n=_crosswalks[Pr57CrosswalkGridEnabled?_pr57CrosswalkCandidates[i]:i];
             if(!(n.Position.Distance(c.Position)<State.Tuning.RoadWidth+1||n.Position.Distance(nextPosition)<State.Tuning.RoadWidth+1)||!CrossesLane(c.Position,nextPosition,n))continue;
             var key=n.Id==c.CrossingNodeId?0:1;var distance=n.Position.Distance(c.Position);
             if(best==null||key<bestKey||key==bestKey&&distance.CompareTo(bestDistance)<0){best=n;bestKey=key;bestDistance=distance;}

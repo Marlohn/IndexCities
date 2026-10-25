@@ -1,4 +1,4 @@
-name: 'PR57 cross-phase workforce fusion A/B'
+name: 'PR57 exact spatial crosswalk candidate A/B'
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
@@ -14,7 +14,7 @@ concurrency:
   group: integrated-scale-pr57
   cancel-in-progress: false
 jobs:
-  staff-fusion:
+  crosswalk-grid:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -26,7 +26,7 @@ jobs:
         run: |
           dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
           dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
-          PR57_STAFF_PHASE_FUSION=1 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+          PR57_CROSSWALK_GRID=1 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
       - name: Restore unmodified real-city checkpoint
         env:
           GH_TOKEN: ${{ github.token }}
@@ -38,19 +38,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p artifacts/staff-fusion
+          mkdir -p artifacts/crosswalk-grid
           SOURCE="$(find artifacts/source -type f -name checkpoint-16.json | grep real-maintenance-control-a | head -n 1)"
           for scenario in real cycle grid; do
             if [[ "$scenario" == cycle ]]; then modes=(control-a candidate-a); else modes=(control-a candidate-a candidate-b control-b); fi
             for mode in "${modes[@]}"; do
               enabled=0; [[ "$mode" == candidate* ]] && enabled=1
-              mkdir -p "artifacts/staff-fusion/$scenario/$mode"
-              echo "PR57_STAFF_PHASE_FUSION_RUN scenario=$scenario mode=$mode enabled=$enabled cadence=2"
+              mkdir -p "artifacts/crosswalk-grid/$scenario/$mode"
+              echo "PR57_CROSSWALK_GRID_RUN scenario=$scenario mode=$mode enabled=$enabled cadence=2"
               opts=(scale cycle --seed=42 --warmup=0 --days=4 --window=7200 --cap=150)
               if [[ "$scenario" == real ]]; then opts+=(--resume="$SOURCE"); fi
               if [[ "$scenario" == grid ]]; then opts=(scale grid --seed=42 --rows=6 --length=600 --warmup=0 --days=4 --window=7200 --cap=150); fi
-              PR57_HOST_QUANTUM=1 PR57_STAFF_PHASE_FUSION="$enabled" PR57_UTILITY_REPLAY=0 PR57_POLLUTION_SIMD=0 PR57_PARALLEL_POLLUTION=0 PR57_CONSTRUCTION_WAIT_AGENDA=0 PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ROUTE_TREE=0 PR57_ORDER_SHIPMENT_INDEX=0 PR57_MAINTENANCE_SCHEDULE=0 PR57_SOURCE_DISTANCE_CACHE=0 PR57_WORK_ACCESS_INDEX=0 PR57_PEDESTRIAN_GRID=0 PR57_LIVING_ROSTER=0 PR57_CITIZEN_AGENDA=0 PR57_GRID_DIAG=1 PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="$PWD/artifacts/staff-fusion/$scenario/$mode" \
-                timeout 180s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- "${opts[@]}" | tee "artifacts/staff-fusion/$scenario/$mode.log"
+              PR57_HOST_QUANTUM=1 PR57_STAFF_PHASE_FUSION=0 PR57_CROSSWALK_GRID="$enabled" PR57_UTILITY_REPLAY=0 PR57_POLLUTION_SIMD=0 PR57_PARALLEL_POLLUTION=0 PR57_CONSTRUCTION_WAIT_AGENDA=0 PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ROUTE_TREE=0 PR57_ORDER_SHIPMENT_INDEX=0 PR57_MAINTENANCE_SCHEDULE=0 PR57_SOURCE_DISTANCE_CACHE=0 PR57_WORK_ACCESS_INDEX=0 PR57_PEDESTRIAN_GRID=0 PR57_LIVING_ROSTER=0 PR57_CITIZEN_AGENDA=0 PR57_GRID_DIAG=1 PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="$PWD/artifacts/crosswalk-grid/$scenario/$mode" \
+                timeout 180s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- "${opts[@]}" | tee "artifacts/crosswalk-grid/$scenario/$mode.log"
             done
           done
       - name: Causal checkpoints and full-process wall CPU allocation comparison
@@ -58,14 +58,14 @@ jobs:
         run: |
           python3 - <<'PY'
           import json,pathlib,re
-          root=pathlib.Path('artifacts/staff-fusion')
+          root=pathlib.Path('artifacts/crosswalk-grid')
           for scenario in ('real','cycle','grid'):
               modes=('control-a','candidate-a') if scenario=='cycle' else ('control-a','candidate-a','candidate-b','control-b')
               stats={}
               for mode in modes:
                   log=(root/scenario/f'{mode}.log').read_text()
                   enabled=mode.startswith('candidate')
-                  assert f'PR57_STAFF_PHASE_FUSION active={enabled}' in log,(scenario,mode,'flag not confirmed')
+                  assert f'PR57_CROSSWALK_GRID active={enabled}' in log,(scenario,mode,'flag not confirmed')
                   assert 'INVARIANTS OK' in log and 'SAVE ' in log,(scenario,mode,'invariants/save')
                   rows=[row for row in log.splitlines() if row.startswith('WINDOW ')]
                   assert len(rows)==4,(scenario,mode,len(rows))
@@ -78,12 +78,12 @@ jobs:
               for control,candidate in pairs:
                   for i in range(5):
                       assert (root/scenario/control/f'checkpoint-{i}.json').read_bytes()==(root/scenario/candidate/f'checkpoint-{i}.json').read_bytes(),(scenario,control,candidate,i)
-                  print('PR57_STAFF_PHASE_FUSION_AB',json.dumps(dict(scenario=scenario,control=control,candidate=candidate,controlMetrics=stats[control],candidateMetrics=stats[candidate],checkpoints=5,cadenceSeconds=2),sort_keys=True))
+                  print('PR57_CROSSWALK_GRID_AB',json.dumps(dict(scenario=scenario,control=control,candidate=candidate,controlMetrics=stats[control],candidateMetrics=stats[candidate],checkpoints=5,cadenceSeconds=2),sort_keys=True))
           PY
       - name: Preserve evidence even on parser or causal failure
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: integrated-scale-pr57-staff-phase-fusion
-          path: artifacts/staff-fusion/**
+          path: artifacts/crosswalk-grid/**
           retention-days: 14
