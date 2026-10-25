@@ -41,16 +41,45 @@ public sealed partial class CitySimulation
         // query live, but count every building's present workers in one pass
         // over the citizens (the same WorkerPresentAt rule per worker).
         var present=_present;present.Clear();var byId=_activeById;byId.Clear();foreach(var b in active){present.Add(b.Id,0);byId.Add(b.Id,b);}
-        if(Pr57LivingRosterEnabled)
+        if(Pr57StaffPhaseFusionEnabled)
         {
-            // Share the exact per-step workforce groups with OperateBusinesses.
-            // This occurs after relocations and before any subsequent job changes.
+            if(!_pr57StaffPhaseFusionAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+            {
+                Console.WriteLine("PR57_STAFF_PHASE_FUSION active=True");
+                _pr57StaffPhaseFusionAnnounced=true;
+            }
+            // One ordered citizen grouping and one presence evaluation serve
+            // infrastructure demand and wages; no extra Step or changed order.
             Pr57PrepareStaff();
+            foreach(var list in _pr57PresentStaff.Values)list.Clear();
             foreach(var (site,workers) in _staff)
-                if(byId.TryGetValue(site,out var workplace))
-                    foreach(var c in workers)if(WorkerPresentAt(c,workplace))present[site]++;
+            {
+                if(!byId.TryGetValue(site,out var workplace))continue;
+                foreach(var c in workers)if(WorkerPresentAt(c,workplace))
+                {
+                    present[site]++;
+                    if(!_pr57PresentStaff.TryGetValue(site,out var list))_pr57PresentStaff[site]=list=[];
+                    list.Add(c);
+                }
+            }
         }
-        else foreach(var c in State.Citizens)if(c.WorkplaceId is {} site&&byId.TryGetValue(site,out var workplace)&&WorkerPresentAt(c,workplace))present[site]++;
+        else
+        {
+            if(!_pr57StaffPhaseFusionAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+            {
+                Console.WriteLine("PR57_STAFF_PHASE_FUSION active=False");
+                _pr57StaffPhaseFusionAnnounced=true;
+            }
+            if(Pr57LivingRosterEnabled)
+            {
+                // Share the exact per-step workforce groups with OperateBusinesses.
+                Pr57PrepareStaff();
+                foreach(var (site,workers) in _staff)
+                    if(byId.TryGetValue(site,out var workplace))
+                        foreach(var c in workers)if(WorkerPresentAt(c,workplace))present[site]++;
+            }
+            else foreach(var c in State.Citizens)if(c.WorkplaceId is {} site&&byId.TryGetValue(site,out var workplace)&&WorkerPresentAt(c,workplace))present[site]++;
+        }
         if(detail is not null)detail.MarkDetail(0,ref detailStarted);
         double StaffFactor(Building b)=>InfrastructureStaffFactor(b,present[b.Id]);
         State.WindFactor=Math.Clamp(.55+.25*Math.Sin(State.ElapsedSeconds/21600+State.Seed)+.15*Math.Sin(State.ElapsedSeconds/172800+State.Seed*.3),.15,.95);

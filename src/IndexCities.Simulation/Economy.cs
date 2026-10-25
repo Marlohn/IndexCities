@@ -143,6 +143,13 @@ public sealed partial class CitySimulation
     List<Building> JobOptions(Building home)=>State.Buildings.Where(b=>b.Completed&&!b.Removed&&b.Kind!=BuildingKind.House&&!b.OperationClosed&&(!b.Definition.Private||b.CompanyId!=null&&CompanyById(b.CompanyId)!.Active)&&Access(b)!=null&&State.Citizens.Count(x=>x.Alive&&x.WorkplaceId==b.Id)<b.Definition.Jobs).Where(b=>FindRoadRoute(Access(home)?.Id??-1,Access(b)!.Id).Count>0).Where(b=>Spendable(b.CompanyId==null?"city":"company:"+b.CompanyId)>b.SalaryOffer*8*3).OrderByDescending(b=>JobScore(home,b)).ToList();
     static decimal JobScore(Building home,Building job)=>job.SalaryOffer-(decimal)(home.Position.Distance(job.Position)/400);
     void AccrueWage(Citizen c,double seconds){var job=BuildingById(c.WorkplaceId);if(job==null)return;var earned=(decimal)(seconds/3600)*job.SalaryOffer;c.WagesAccrued+=earned;if(job.Kind is BuildingKind.WaterIntake or BuildingKind.WaterTreatment)State.WaterWageCostToday+=earned;else if(job.Kind==BuildingKind.WindPower)State.ElectricityWageCostToday+=earned;}
+    // PR57 opt-in cross-phase workforce snapshot. UpdateInfrastructure creates
+    // both the ordinary grouped roster and the exactly present workers; the
+    // immediately following OperateBusinesses consumes the same Step snapshot.
+    // No cross-Step caching: public State edits and Advance(2) are safe.
+    static readonly bool Pr57StaffPhaseFusionEnabled=Environment.GetEnvironmentVariable("PR57_STAFF_PHASE_FUSION")=="1";
+    bool _pr57StaffPhaseFusionAnnounced;
+    readonly Dictionary<int,List<Citizen>> _pr57PresentStaff=new();
     // Citizens grouped by WorkplaceId in list order; lists are reused per step.
     readonly Dictionary<int,List<Citizen>> _staff=new();
     bool _pr57StaffPrepared;
@@ -151,7 +158,7 @@ public sealed partial class CitySimulation
         foreach(var list in _staff.Values)list.Clear();
         // Living citizens retain original State.Citizens order. Dead citizens
         // never contribute to WorkerPresentAt or business operation.
-        foreach(var c in _pr57LivingRoster)if(c.WorkplaceId is {} site)
+        foreach(var c in Pr57LivingRosterEnabled?_pr57LivingRoster:State.Citizens)if(c.WorkplaceId is {} site)
         {
             if(!_staff.TryGetValue(site,out var list))_staff[site]=list=[];
             list.Add(c);
@@ -160,7 +167,7 @@ public sealed partial class CitySimulation
     }
     Dictionary<int,List<Citizen>> StaffByWorkplace()
     {
-        if(Pr57LivingRosterEnabled&&_pr57StaffPrepared)return _staff;
+        if((Pr57LivingRosterEnabled||Pr57StaffPhaseFusionEnabled)&&_pr57StaffPrepared)return _staff;
         foreach(var list in _staff.Values)list.Clear();
         foreach(var c in State.Citizens)if(c.WorkplaceId is {} site){if(!_staff.TryGetValue(site,out var list))_staff[site]=list=[];list.Add(c);}
         return _staff;
@@ -171,7 +178,16 @@ public sealed partial class CitySimulation
         // keeping building order and citizen order within each building.
         var staff=StaffByWorkplace();
         foreach(var b in State.Buildings.Where(b=>b.Completed&&!b.Removed)){
-            if(staff.TryGetValue(b.Id,out var workers))foreach(var c in workers.Where(c=>c.Alive&&c.VehicleId==null&&c.ConstructionProjectId==null&&!c.Moving&&c.Position.Distance(b.Door)<3&&ShiftActive(c))){c.AddWorkSecondsToday(dt);AccrueWage(c,dt);}
+            if(Pr57StaffPhaseFusionEnabled)
+            {
+                // WorkerPresentAt was evaluated after movement, before this
+                // immediately adjacent business phase; no citizen mutation
+                // occurs in between. Preserve original building/citizen order.
+                if(_pr57PresentStaff.TryGetValue(b.Id,out var presentWorkers))
+                    foreach(var c in presentWorkers){c.AddWorkSecondsToday(dt);AccrueWage(c,dt);}
+            }
+            else if(staff.TryGetValue(b.Id,out var workers))
+                foreach(var c in workers.Where(c=>c.Alive&&c.VehicleId==null&&c.ConstructionProjectId==null&&!c.Moving&&c.Position.Distance(b.Door)<3&&ShiftActive(c))){c.AddWorkSecondsToday(dt);AccrueWage(c,dt);}
             if(b.Kind!=BuildingKind.Farm||b.CompanyId==null||b.OperationalCapacity<=0||!Open(b))continue;
             var target=FarmReserveTarget(b);if(b.Quantity(ResourceKind.Food)>=target){b.Cause="Estoque de segurança completo; produção acompanha pedidos reais";continue;}
             var amount=Math.Min(target-b.Quantity(ResourceKind.Food),b.OperationalCapacity*dt/43200);if(amount<=0)continue;b.AddStock(ResourceKind.Food,amount);b.AddFoodProduced(amount);
