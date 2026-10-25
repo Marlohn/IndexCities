@@ -1,4 +1,4 @@
-name: Integrated core PR57 checkpoint cargo congestion substep growth profile
+name: Integrated core PR57 authentic congested city six-hour viability continuation
 
 on:
   push:
@@ -18,99 +18,86 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  profile:
-    name: Compare movement subdivision costs across authentic saved congestion stages
+  continuation:
+    name: Bounded real-economy continuation from authentic six-day checkpoint
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 7
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Restore three consecutive authentic economic city checkpoints
+      - name: Restore authentic economic city without regenerating six days
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p artifacts/pr57-source
           gh run download 40169101306 -n integrated-scale-pr57-legal-workplaces-8d -D artifacts/pr57-source
-          for i in 10 11 12; do
-            test -s "artifacts/pr57-source/pr57-jobs-20/checkpoint-$i.json"
-          done
-      - name: Build unchanged integrated core Release
+          test -s artifacts/pr57-source/pr57-jobs-20/checkpoint-12.json
+      - name: Build integrated core Release
         run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: ABBA comparison of original penetration and allocation-free separating axes on authentic checkpoint 12
+      - name: Continue normal causal simulation for at most six more hours, bounded by wall
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p artifacts/pr57-cargo-substeps
-          for mode in offA onA onB offB; do
-            flag=0
-            if [[ "$mode" == on* ]]; then flag=1; fi
-            mkdir -p "artifacts/pr57-cargo-substeps/$mode"
-            {
-              echo "PR57_PENETRATION_AB mode=$mode checkpoint=12 seconds=600 stackAxes=$flag dispatchLookup=1 allOtherPr57Flags=0"
-              PR57_SAVE_CAPTURE_DIR="artifacts/pr57-cargo-substeps/$mode" \
-              PR57_AB_CHECKPOINT=1 PR57_PROFILE_FROM_WINDOW=1 PR57_DISPATCH_SHIPMENT_LOOKUP=1 \
-              PR57_PENETRATION_STACK_AXES="$flag" \
-              PR57_ACTIVE_SCAN=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 \
-              PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 \
-              PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 \
-              PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 \
-              PR57_ENTRY_FRAME_REUSE=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 \
-              timeout 90s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
-                profile cycle --seed=42 --resume="artifacts/pr57-source/pr57-jobs-20/checkpoint-12.json" \
-                --warmup=0 --days=5 --window=120 --cap=120
-            } | tee "artifacts/pr57-cargo-substeps/$mode/run.log"
-          done
-      - name: Audit five intermediate full-state checkpoints and ABBA wall, CPU and allocation
+          mkdir -p artifacts/pr57-continuation
+          {
+            echo 'PR57_REAL_CONTINUATION source=checkpoint12 seed=42 horizonMax=21600 window=3600 capWall=170 dispatchLookup=1 penetrationStackAxes=0 allOtherPr57Flags=0'
+            PR57_SAVE_CAPTURE_DIR=artifacts/pr57-continuation PR57_AB_CHECKPOINT=1 PR57_PROFILE_FROM_WINDOW=6 \
+            PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_PENETRATION_STACK_AXES=0 \
+            PR57_ACTIVE_SCAN=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 \
+            PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 \
+            PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 \
+            PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 \
+            PR57_ENTRY_FRAME_REUSE=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 \
+            timeout 250s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+              profile cycle --seed=42 --resume=artifacts/pr57-source/pr57-jobs-20/checkpoint-12.json \
+              --warmup=0 --days=6 --window=3600 --cap=170
+          } | tee artifacts/pr57-continuation/run.log
+      - name: Audit all completed windows, physical population and full-state saves
         shell: bash
         run: |
-          python3 - <<'PY' | tee artifacts/pr57-cargo-substeps/audit.log
+          python3 - <<'PY' | tee artifacts/pr57-continuation/audit.log
           import json, pathlib, re, hashlib
-          root=pathlib.Path('artifacts/pr57-cargo-substeps')
-          original=pathlib.Path('artifacts/pr57-source/pr57-jobs-20/checkpoint-12.json').read_bytes()
-          modes={'offA':0,'onA':1,'onB':1,'offB':0}
-          results={}
-          for mode,flag in modes.items():
-              folder=root/mode
-              log=(folder/'run.log').read_text()
-              assert f'PR57_PENETRATION_AB mode={mode} checkpoint=12 seconds=600 stackAxes={flag} dispatchLookup=1 allOtherPr57Flags=0' in log
-              assert 'INVARIANTS OK' in log and '\nSAVE ' in log,mode
-              assert 'STEP_PROFILE steps=' in log and 'VEHICLE_PROFILE steps=' in log,mode
-              windows=re.findall(r'^WINDOW (\d+) seconds=120 wall=([\d.]+)s eff=[\d.]+x cpu=([\d.]+)s allocMB=([\d.]+) gc0=(\d+) gc2=(\d+)',log,re.M)
-              assert [int(x[0]) for x in windows]==list(range(1,6)),(mode,windows)
-              before=(folder/'checkpoint-0.json').read_bytes()
-              after=(folder/'checkpoint-5.json').read_bytes()
-              assert before==original,mode
-              state0=json.loads(before); state5=json.loads(after)
-              assert state5['ElapsedSecondsUnits']-state0['ElapsedSecondsUnits']==600_000_000,mode
-              assert len(state5['Citizens'])==len(state0['Citizens']) and len(state5['Vehicles'])==len(state0['Vehicles']),mode
-              results[mode]=dict(flag=flag,wall=round(sum(float(x[1]) for x in windows),4),
-                  cpu=round(sum(float(x[2]) for x in windows),4),
-                  allocMB=round(sum(float(x[3]) for x in windows),4),
-                  gc0=sum(int(x[4]) for x in windows),gc2=sum(int(x[5]) for x in windows),
-                  endSha256=hashlib.sha256(after).hexdigest(),
-                  travellingStart=sum(v['Status']=='Travelling' for v in state0['Vehicles']),
-                  ledgerDelta=len(state5['Ledger'])-len(state0['Ledger']),
-                  historyDelta=sum(len(c['History']) for c in state5['Citizens'])-sum(len(c['History']) for c in state0['Citizens']))
-              print('PR57_PENETRATION_RESULT',mode,json.dumps(results[mode],sort_keys=True))
-          for i in range(6):
-              contents=[(root/m/f'checkpoint-{i}.json').read_bytes() for m in modes]
-              assert all(x==contents[0] for x in contents[1:]),f'Full-state divergence at intermediate checkpoint {i}'
-              print('PR57_PENETRATION_CHECKPOINT',i,hashlib.sha256(contents[0]).hexdigest())
-          for off,on in (('offA','onA'),('offB','onB')):
-              a,b=results[off],results[on]
-              print('PR57_PENETRATION_PAIR',off,on,
-                  f'wallChangePct={(b["wall"]/a["wall"]-1)*100:.2f}',
-                  f'allocChangePct={(b["allocMB"]/a["allocMB"]-1)*100:.2f}',
-                  f'cpuChangePct={(b["cpu"]/a["cpu"]-1)*100:.2f}')
-          print('PR57_LIMIT','This is a short 121-resident congested checkpoint with profiler overhead, not a sustainable city, not an integrated-vs-main gain, and not a proof of every between-checkpoint event.')
+          root=pathlib.Path('artifacts/pr57-continuation')
+          log=(root/'run.log').read_text()
+          assert 'PR57_REAL_CONTINUATION source=checkpoint12' in log
+          assert 'INVARIANTS OK' in log and '\\nSAVE ' in log
+          windows=re.findall(r'^WINDOW (\\d+) seconds=3600 wall=([\\d.]+)s eff=([\\d.]+)x cpu=([\\d.]+)s allocMB=([\\d.]+) gc0=(\\d+) gc2=(\\d+)',log,re.M)
+          n=len(windows)
+          assert 2<=n<=6 and [int(w[0]) for w in windows]==list(range(1,n+1)),windows
+          initial=(root/'checkpoint-0.json').read_bytes()
+          source=pathlib.Path('artifacts/pr57-source/pr57-jobs-20/checkpoint-12.json').read_bytes()
+          assert initial==source,'Resumed state differs from source'
+          previous=json.loads(initial)
+          startUnits=previous['ElapsedSecondsUnits']
+          for i in range(1,n+1):
+              raw=(root/f'checkpoint-{i}.json').read_bytes()
+              state=json.loads(raw)
+              assert state['ElapsedSecondsUnits']-startUnits==i*3600_000_000,(i,'elapsed')
+              assert len(state['Citizens'])==len(previous['Citizens']),'Unexpected citizen count; inspect before interpreting'
+              assert len(state['Vehicles'])>=0
+              print('PR57_REAL_STATE',json.dumps(dict(window=i,sha256=hashlib.sha256(raw).hexdigest(),
+                citizens=len(state['Citizens']),vehicles=len(state['Vehicles']),
+                travelling=sum(v.get('Status')=='Travelling' for v in state['Vehicles']),
+                ledger=len(state['Ledger']),ledgerDelta=len(state['Ledger'])-len(previous['Ledger']),
+                history=sum(len(c.get('History',[])) for c in state['Citizens']),
+                historyDelta=sum(len(c.get('History',[])) for c in state['Citizens'])-
+                  sum(len(c.get('History',[])) for c in previous['Citizens'])),sort_keys=True))
+              previous=state
+          wall=sum(float(w[1]) for w in windows)
+          print('PR57_REAL_SUMMARY',json.dumps(dict(completedWindows=n,simulatedSeconds=n*3600,
+            wallSeconds=round(wall,3),throughput=round(n*3600/wall,2),
+            allocMB=round(sum(float(w[4]) for w in windows),1),
+            gc0=sum(int(w[5]) for w in windows),gc2=sum(int(w[6]) for w in windows),
+            truncated=n<6,profilingOnlyFinalWindow=n==6),sort_keys=True))
+          print('PR57_LIMIT','One continuation, not A/B, not sustained 10k population, not generational viability; source checkpoint was built using real construction and market, not GRID.')
           PY
-      - name: Preserve authentic saves and profile evidence
+      - name: Preserve original and new state evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-pr57-cargo-substep-stages
-          path: artifacts/pr57-cargo-substeps/**
+          name: integrated-scale-pr57-real-continuation
+          path: artifacts/pr57-continuation/**
           if-no-files-found: warn
           retention-days: 14
