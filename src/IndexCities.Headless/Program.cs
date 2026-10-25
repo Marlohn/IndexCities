@@ -98,9 +98,13 @@ Console.WriteLine($"WARMUP {warmup}d wall={sw.Elapsed.TotalSeconds:F1}s {Stats(s
 var pr57SaveCaptureDir=Environment.GetEnvironmentVariable("PR57_SAVE_CAPTURE_DIR");
 if(!string.IsNullOrWhiteSpace(pr57SaveCaptureDir)){
     Directory.CreateDirectory(pr57SaveCaptureDir);
-    var initialSnapshot=sim.SaveToJson();
-    File.WriteAllText(Path.Combine(pr57SaveCaptureDir,"checkpoint-0.json"),initialSnapshot);
-    Console.WriteLine($"PR57_CAPTURE window=0 bytes={Encoding.UTF8.GetByteCount(initialSnapshot)} sha256={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(initialSnapshot)))}");
+    // PR57-only audit: separate initial serialization from later checkpoint
+    // capture to test whether observation itself changes causal state.
+    if(Environment.GetEnvironmentVariable("PR57_SAVE_CAPTURE_INITIAL")!="0"){
+        var initialSnapshot=sim.SaveToJson();
+        File.WriteAllText(Path.Combine(pr57SaveCaptureDir,"checkpoint-0.json"),initialSnapshot);
+        Console.WriteLine($"PR57_CAPTURE window=0 bytes={Encoding.UTF8.GetByteCount(initialSnapshot)} sha256={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(initialSnapshot)))}");
+    }
 }
 var census=args[0]=="census"?new Census():null;var stuck=args[0]=="stuck"?new Stuck():null;
 var profile=args[0]=="profile"?new StepCostProfile():null;var pr57ProfileFromWindow=int.TryParse(Environment.GetEnvironmentVariable("PR57_PROFILE_FROM_WINDOW"),out var profileStart)?profileStart:1;sim.CostProfile=profile is not null&&pr57ProfileFromWindow<=1?profile:null;

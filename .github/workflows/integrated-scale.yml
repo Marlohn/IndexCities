@@ -1,4 +1,4 @@
-name: Integrated core PR57 progressive real-housing 40-house viability
+name: Integrated core PR57 initial-save observational purity A/B
 
 on:
   push:
@@ -17,10 +17,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  progressive-cycle:
-    name: Real construction 40-house load, 8 days capped
+  save-observation:
+    name: Four fresh-process 12h full-state saves with/without initial serialization
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 7
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -28,40 +28,66 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Build integrated simulation Release
         run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: Observe economic and causal progress with ordinary construction
+      - name: Capture full states in fresh .NET processes, ABBA
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p artifacts/pr57-cycle-40
-          echo "PR57_LOAD_PROBE seed=42 cycle-houses=40 bypass=1 days=16 window=43200 cap=240 lookup=1 profile-from-window=16" | tee artifacts/pr57-cycle-40/run.log
-          PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_CYCLE_SOUTH_HOUSING=1 PR57_ACTIVE_SCAN=0 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 PR57_ENTRY_FRAME_REUSE=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 PR57_WORK_DIAG=1 PR57_PROFILE_FROM_WINDOW=16 timeout 480s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- profile cycle --seed=42 --warmup=0 --cycle-houses=40 --cycle-bypass=1 --days=16 --window=43200 --cap=240 | tee -a artifacts/pr57-cycle-40/run.log
-      - name: Report completed windows and growth without assuming success
+          for config in a_initial:1 b_deferred:0 c_deferred:0 d_initial:1; do
+            IFS=: read -r label initial <<< "$config"
+            mkdir -p "artifacts/pr57-save-purity/$label"
+            echo "PR57_SAVE_PURITY_CASE label=$label initial=$initial seed=42 window=43200 cap=0.01" | tee "artifacts/pr57-save-purity/$label/run.log"
+            PR57_SAVE_CAPTURE_DIR="artifacts/pr57-save-purity/$label" PR57_SAVE_CAPTURE_INITIAL="$initial" PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_CYCLE_SOUTH_HOUSING=1 PR57_ACTIVE_SCAN=0 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 PR57_ENTRY_FRAME_REUSE=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 PR57_WORK_DIAG=0 PR57_PROFILE_FROM_WINDOW=16 timeout 100s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- profile cycle --seed=42 --warmup=0 --cycle-houses=32 --cycle-bypass=1 --days=16 --window=43200 --cap=0.01 | tee -a "artifacts/pr57-save-purity/$label/run.log"
+          done
+      - name: Compare first-window JSON and causal event history
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PY' | tee artifacts/pr57-cycle-40/summary.log
-          import pathlib,re
-          log=pathlib.Path('artifacts/pr57-cycle-40/run.log').read_text()
-          match=re.search(r'CYCLE_HOUSING requested=(\d+) placed=(\d+) attempted=(\d+)',log)
-          assert match, 'missing actual ordered house count'
-          requested,placed,attempted=map(int,match.groups())
-          windows=re.findall(r'^WINDOW (\d+) seconds=43200 .*$',log,re.M)
-          checkpoints=re.findall(r'^PR57_AB_CHECKPOINT window=(\d+) sha256=([A-F0-9]{64}) ',log,re.M)
-          print(f'PR57_LOAD_RESULT requested={requested} placed={placed} attempted={attempted} windows={len(windows)}/16 checkpoints={len(checkpoints)}')
-          for line in re.findall(r'^(?:WINDOW (?:1|12|13|14|15|16) |STEP_PHASE |STEP_PROFILE |SUMMARY |SAVE |INVARIANTS ).*$',log,re.M):
-              print(line)
-          assert requested==40 and placed>=32, 'housing orders did not expand as expected'
-          assert len(windows)==16 and len(checkpoints)==16, '8 days not completed within bounded wall cap'
-          assert [int(x) for x in windows]==list(range(1,17)), 'window continuity'
-          assert [int(x) for x,_ in checkpoints]==list(range(1,17)), 'checkpoint continuity'
-          assert 'INVARIANTS OK' in log and 'SAVE ' in log, 'invariants or save/load missing'
-          print('PR57_LOAD_SCOPE no A/B speedup claim; genuine construction and economic throughput only; not 10k/80y',flush=True)
+          python3 - <<'PY' | tee artifacts/pr57-save-purity/summary.log
+          import pathlib,json,hashlib,re
+          root=pathlib.Path('artifacts/pr57-save-purity')
+          names=('a_initial','b_deferred','c_deferred','d_initial')
+          snapshots={}
+          for name in names:
+              log=(root/name/'run.log').read_text()
+              assert 'WINDOW 1 seconds=43200 ' in log and 'STOP limite' in log,('bounded 12h',name)
+              assert 'INVARIANTS OK' in log and 'SAVE ' in log,('invariants/save',name)
+              assert re.search(r'^PR57_AB_CHECKPOINT window=1 sha256=[A-F0-9]{64}',log,re.M),('checkpoint',name)
+              path=root/name/'checkpoint-1.json'
+              raw=path.read_bytes()
+              snapshots[name]=json.loads(raw)
+              print(f'PR57_PURITY_CASE name={name} bytes={len(raw)} sha256={hashlib.sha256(raw).hexdigest().upper()}',flush=True)
+          assert (root/'a_initial'/'checkpoint-0.json').exists()
+          assert (root/'d_initial'/'checkpoint-0.json').exists()
+          assert not (root/'b_deferred'/'checkpoint-0.json').exists()
+          assert not (root/'c_deferred'/'checkpoint-0.json').exists()
+          def diffs(a,b):
+              out=[]
+              def walk(x,y,path):
+                  if len(out)>=12:return
+                  if type(x)!=type(y):out.append((path,'type',str(type(x)),str(type(y))));return
+                  if isinstance(x,dict):
+                      for k in sorted(x.keys()|y.keys()):
+                          if k not in x or k not in y:out.append((path+'.'+k,'missing'))
+                          else:walk(x[k],y[k],path+'.'+k)
+                          if len(out)>=12:break
+                  elif isinstance(x,list):
+                      if len(x)!=len(y):out.append((path+'.length',len(x),len(y)))
+                      for i,(u,v) in enumerate(zip(x,y)):
+                          walk(u,v,path+f'[{i}]')
+                          if len(out)>=12:break
+                  elif x!=y:out.append((path,str(x)[:100],str(y)[:100]))
+              walk(a,b,'$')
+              return out
+          for a,b in (('a_initial','b_deferred'),('b_deferred','c_deferred'),('a_initial','d_initial')):
+              differences=diffs(snapshots[a],snapshots[b])
+              print(f'PR57_PURITY_PAIR left={a} right={b} identical={not differences} firstDiffs={json.dumps(differences,ensure_ascii=False)}',flush=True)
+          print('PR57_PURITY_SCOPE one 12h window only; full JSON, event histories and independent fresh processes; not proof of universal determinism',flush=True)
           PY
-      - name: Preserve logs even on incomplete horizon
+      - name: Preserve full checkpoints and comparisons
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-pr57-cycle-40-viability
-          path: artifacts/pr57-cycle-40/**
+          name: integrated-scale-pr57-initial-save-purity
+          path: artifacts/pr57-save-purity/**
           if-no-files-found: warn
           retention-days: 14
