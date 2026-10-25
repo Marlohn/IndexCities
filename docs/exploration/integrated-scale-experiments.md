@@ -1076,3 +1076,25 @@ As distâncias da tabela são **comprimento efetivamente percorrido entre amostr
 
 **Mudança de direção:** investigar o custo de `OrderConstruction` / `ReserveLocalMaterials` / `WorkAccess` e a avaliação repetida de projetos/rotas em `construction-dispatch` sob 27 manutenções pendentes. Procurar cache ou agenda por dependências **somente com invalidadores físicos/econômicos explícitos** e prova de equivalência em eventos intermediários; não suprimir tentativas que possam despachar caminhão, equipe, máquina, reserva ou pagamento. Priorizar um candidato pequeno e A/B em processos novos, mesma cidade/carga/runner, incluindo estados de docas, rotas, obras, dinheiro, salários, refeições, história e save. Não prolongar variantes de `ZERO_SITE_SKIP`, `BATCH_ORDER` ou `ENTRY_FRAME_REUSE`. **98 ≪ 10.000 vivos; 8–9,5 dias ≪ 80 anos; meta ~116.880× ainda não demonstrada.**
 
+## Sexagésima quinta execução — índice de remessas reduz wall integrado na manutenção real (25/10/2026, horário de Brasília)
+
+**Evidência:** [candidata e workflow opt-in `9ae3ff3`](https://github.com/Marlohn/IndexCities/commit/9ae3ff3a89467df779d62eaad677130814a75197), [Actions #40158031245](https://github.com/Marlohn/IndexCities/actions/runs/40158031245), job `121063493288` **success**. A hipótese, escolhida após o perfil de 41,39% em `construction-dispatch`, é substituir a varredura de **todas** as remessas para cada par obra/material em `ReserveLocalMaterials` por `ToLookup(ProjectId)` das remessas incompletas, reconstruído **a cada invocação**, mantendo a ordem original de remessas por projeto e sem persistir cache após despachos ou mudanças econômicas. `PR57_DISPATCH_SHIPMENT_LOOKUP=1` é **experimental e desligada por padrão**; não altera prioridades, preços, reservas, rotas, colisões, subpassos ou regras de gameplay.
+
+**A/B ABBA no mesmo runner:** quatro processos .NET 8 Release **novos**, controle A → candidata A → candidata B → controle B; seed 42, `profile cycle --warmup=0 --cycle-houses=32 --cycle-bypass=1 --days=16 --window=43200 --cap=210`, `PR57_CYCLE_SOUTH_HOUSING=1`, profiler somente na janela 16, `PR57_WORK_DIAG=0`, checkpoints completos a cada 12h, demais flags PR57 de desempenho desligadas. As **32/32 casas adicionais** foram encomendadas legalmente e concluídas por logística/obra real na rede com bypass; **98 SIMs vivos/residentes**, 48 empregados, 74 veículos, 14 viajando e 27 obras abertas no fim de **8 dias**. Não há caixa, capacidade, combustível ou conclusão de obra artificiais; ainda é fixture pequena, sem prova de sustentabilidade longa ou gerações. Wall abaixo mede apenas `Advance`, excluindo build/bootstrap/testes.
+
+| Métrica | Controle A / B | Índice A / B |
+| --- | ---: | ---: |
+| Wall total 16 janelas | **153,28 / 156,99 s** | **126,57 / 125,14 s** |
+| Ganho pareado total | — | **17,43% / 20,29%** |
+| Wall janela 16 perfilada | **41,40 / 43,13 s** | **32,71 / 32,17 s** |
+| Ganho pareado janela 16 | — | **20,99% / 25,41%** |
+| Wall `construction-dispatch` janela 16 | **17,570 / 18,945 s** | **8,694 / 8,611 s** |
+| Redução no despacho | — | **50,52% / 54,55%** |
+| Alocação total | **38.424,2 MB** | **37.263,4 / 37.263,5 MB (−3,02%)** |
+| Alocação janela 16 | **10.427,8 MB** | **10.049,7 MB (−3,63%)** |
+| GC0 total | **2.299** | **2.229** |
+| Throughput médio 8 dias | **4.509 / 4.403 s/s** | **5.461 / 5.523 s/s** |
+
+**Paridade observada:** os **16 checkpoints SHA-256 do JSON integral** coincidiram nos quatro processos; save final `136BB260F416DAF572322158D4307AF4249D5C4373F7817B55A41F66F201EB97`, invariantes e save/load finais aprovados. **16 testes de construção, manutenção e conflito de saída passaram em cada modo (32/32)**, executados com a variável definida antes do início de cada processo. Estado econômico final idêntico: 3.111 lançamentos, 8.380 fatos individuais, 1.495 refeições, salários 4.643,31, 64 casas, 27 obras abertas. Não foi registrada comparação de **cada** evento intermediário entre checkpoints; o hash histórico de outra execução também difere e a causa inter-rodadas não foi resolvida. Não converter paridade local em prova universal.
+
+**Decisão:** **preservar a candidata opt-in**: esta é uma redução robusta e pareada de **17–20% do wall end-to-end medido no cenário real de obras/manutenção**, distinta de ganhos relativos da fixture GRID e ainda muito distante da meta ~116.880 s/s para 10k vivos/80 anos. A alocação cai só 3%; há outros custos dominantes. Próximo experimento discriminante: ampliar escala/tempo economicamente viáveis e conferir se o ganho se mantém com outras distribuições de remessas, obras e tráfego; investigar `WorkAccess`/rotas somente se o novo perfil justificar, sem repetir variações de baixo retorno.
