@@ -1697,7 +1697,7 @@ As distâncias da tabela são **comprimento efetivamente percorrido entre amostr
 
 | Cenário / horizonte real simulado | Wall controle → candidata | CPU controle → candidata | Alocação controle → candidata | Efeito no wall |
 | --- | ---: | ---: | ---: | ---: |
-| Save econômico real, **98 residentes vivos**, 14 veículos viajando, 27 obras abertas, **2 h**, par A | **6,52 → 7,56 s** | 7,36 → 8,94 s | 1.684,2 → 1.690,7 MB | **−15,95% de throughput** (wall +15,95%) |
+| Save econômico real, **98 residentes vivos**, 14 veículos viajando, 27 obras abertas, **2 h**, par A | **6,52 → 7,56 s** | 7,36 → 8,94 s | 1.684,2 → 1.690,7 MB | **wall +15,95%** (throughput −13,76%) |
 | Mesmo save e horizonte, ordem invertida, par B | **6,11 → 7,13 s** | 6,94 → 8,49 s | 1.684,2 → 1.690,7 MB | **wall +16,69%** |
 | `grid` **ARTIFICIAL**, **363 vivos**, 263 veículos, **2 h**, par A | **8,97 → 9,60 s** | 9,95 → 11,57 s | 2.096,1 → 2.103,5 MB | **wall +7,02%** |
 | Mesmo grid artificial, ordem invertida, par B | **9,06 → 9,88 s** | 10,06 → 11,92 s | 2.096,1 → 2.103,4 MB | **wall +9,05%** |
