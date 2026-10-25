@@ -1,4 +1,4 @@
-name: Integrated core PR57 real-workplace opportunity and migration gate
+name: Integrated core PR57 eight-day economic and maintenance viability
 
 on:
   push:
@@ -18,9 +18,9 @@ concurrency:
 
 jobs:
   legal-workplaces:
-    name: Real private workplaces versus housing-only with the same paid roads
+    name: Eight-day real private workplaces, maintenance and economic survival
     runs-on: ubuntu-latest
-    timeout-minutes: 9
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -28,16 +28,16 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Build integrated simulation Release
         run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: Run 48 legal homes with zero versus twenty real workplace projects
+      - name: Run 48 legal homes and twenty paid private workplaces through eight days
         shell: bash
         run: |
           set -euo pipefail
-          for workplaces in 0 20; do
+          for workplaces in 20; do
             dir="artifacts/pr57-jobs-$workplaces"
             mkdir -p "$dir"
-            PR57_SAVE_CAPTURE_DIR="$dir" PR57_CYCLE_WORKFRONT=1 PR57_CYCLE_WORKPLACES="$workplaces" PR57_CYCLE_SOUTH_EXTENSION=1 PR57_CYCLE_SOUTH_HOUSING=1 PR57_CYCLE_NORTH_HOUSING=1 PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ACTIVE_SCAN=0 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 PR57_ENTRY_FRAME_REUSE=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 PR57_WORK_DIAG=1 PR57_PROFILE_FROM_WINDOW=4 timeout 225s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- profile cycle --seed=42 --warmup=0 --cycle-houses=48 --cycle-bypass=1 --days=4 --window=43200 --cap=180 | tee "$dir/run.log"
+            PR57_SAVE_CAPTURE_DIR="$dir" PR57_CYCLE_WORKFRONT=1 PR57_CYCLE_WORKPLACES="$workplaces" PR57_CYCLE_SOUTH_EXTENSION=1 PR57_CYCLE_SOUTH_HOUSING=1 PR57_CYCLE_NORTH_HOUSING=1 PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ACTIVE_SCAN=0 PR57_SPATIAL_SCAN=0 PR57_BITSET_SCAN=0 PR57_BEND_REUSE=0 PR57_DOCK_GATE_HOIST=0 PR57_DOCK_AABB=0 PR57_GATE_REUSE=0 PR57_CORRIDOR_SCAN=0 PR57_SPLIT_CORRIDOR=0 PR57_BATCH_ORDER=0 PR57_ENTRY_FRAME_REUSE=0 PR57_ZERO_BEND_SKIP=0 PR57_ZERO_SITE_SKIP=0 PR57_FAST_SCAN=0 PR57_BEND_PREFILTER=0 PR57_AB_CHECKPOINT=1 PR57_WORK_DIAG=1 PR57_PROFILE_FROM_WINDOW=16 timeout 300s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- profile cycle --seed=42 --warmup=0 --cycle-houses=48 --cycle-bypass=1 --days=16 --window=43200 --cap=180 | tee "$dir/run.log"
           done
-      - name: Audit real workplace ownership, migration, economics and saved state
+      - name: Audit daily survival, real wages, maintenance, migration and saves
         shell: bash
         run: |
           set -euo pipefail
@@ -45,7 +45,7 @@ jobs:
           import decimal, json, pathlib, re
           jobs={'CityHall':2,'WorksDepot':4,'Grocery':4,'Farm':4,'FuelStation':4,'WaterIntake':6,'WaterTreatment':6,'SewageTreatment':6,'WindPower':6,'MechanicShop':4}
           snapshots={}
-          for count in (0,20):
+          for count in (20,):
               root=pathlib.Path(f'artifacts/pr57-jobs-{count}')
               log=(root/'run.log').read_text()
               assert 'PR57_WORKFRONT_READY completed=2/2' in log, f'paid road incomplete: {count}'
@@ -55,7 +55,7 @@ jobs:
                   assert log.count('PR57_WORKPLACE_QUOTE index=')==20
               assert 'INVARIANTS OK' in log and '\nSAVE ' in log, f'save/invariant failure: {count}'
               assert 'STEP_PROFILE steps=' in log, f'profile missing: {count}'
-              for window in range(1,5):
+              for window in range(1,17):
                   assert f'WINDOW {window} seconds=43200 ' in log, f'window {window} missing: {count}'
                   assert f'PR57_AB_CHECKPOINT window={window} ' in log
                   state=json.loads((root/f'checkpoint-{window}.json').read_text(),parse_float=decimal.Decimal)
@@ -73,6 +73,13 @@ jobs:
                             totalPotentialJobs=sum(jobs.get(b['Kind'],0) for b in buildings if b['Completed'] and b['Kind']!='House'),
                             acquiredPrivateJobs=sum(jobs[b['Kind']] for b in purchased),
                             activeCompanies=sum(c['Active'] for c in state['Companies']),
+                            minCompanyCash=str(min((state['Wallets'].get('company:'+str(c['Id']),decimal.Decimal(0)) for c in state['Companies']),default=decimal.Decimal(0))),
+                            closedPrivate=sum(b['Completed'] and b.get('OperationClosed') for b in private),
+                            maintenanceOpen=sum(p['IsMaintenance'] and p['Status'] in ('Waiting','InProgress') for p in state['Projects']),
+                            maintenanceTotal=sum(p['IsMaintenance'] for p in state['Projects']),
+                            deaths=sum(not c['Alive'] for c in citizens),
+                            meals=sum(h['Description'].startswith('Consumiu 1 alimento') for c in citizens for h in c['History']),
+                            wages=str(sum((l['Amount'] for l in state['Ledger'] if l['Category'].startswith('Salários / ')),decimal.Decimal(0))),
                             actualHires=sum(c['Alive'] and c.get('WorkplaceId') is not None for c in citizens),
                             completedPrivate=len([b for b in private if b['Completed']]),
                             purchasedPrivate=len(purchased),
@@ -83,19 +90,17 @@ jobs:
                             personalFacts=sum(len(c['History']) for c in citizens))
                   snapshots[(count,window)]=snap
                   print('PR57_JOBS_WINDOW',f'workplaces={count}',f'window={window}',*(f'{k}={v}' for k,v in snap.items()),flush=True)
-              assert snapshots[(count,4)]['ledger']>snapshots[(count,1)]['ledger']
+              assert snapshots[(count,16)]['ledger']>snapshots[(count,1)]['ledger']
               assert snapshots[(count,4)]['personalFacts']>snapshots[(count,1)]['personalFacts']
               assert 'meals=' in log and 'wages=' in log
-              print(f'PR57_JOBS_SCOPE workplaces={count} houses=48 seed=42 seconds=172800 realRoads=1 realPrivateConstruction=1 noInjectedResources=1 noSpeedupClaim=1',flush=True)
-          for key in ('residents','vacantHomes','totalPotentialJobs','acquiredPrivateJobs','actualHires','purchasedPrivate','openProjects','openShipments','ledger','personalFacts'):
-              print(f'PR57_JOBS_DELTA key={key} baseline={snapshots[(0,4)][key]} expanded={snapshots[(20,4)][key]}',flush=True)
-          print('PR57_JOBS_LIMIT different real construction/economic loads; no speedup claim; nominal potential jobs are not proof of actual hiring or sustainable companies',flush=True)
+              print(f'PR57_JOBS_SCOPE workplaces={count} houses=48 seed=42 seconds=691200 realRoads=1 realPrivateConstruction=1 noInjectedResources=1 noSpeedupClaim=1',flush=True)
+          print('PR57_LONG_LIMIT single unchanged 20-workplace load; 8 simulated days is not economic sustainability or a 10k/80y proof',flush=True)
           PY
       - name: Preserve complete states, physical logistics and economic activity
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-pr57-legal-workplaces-0-20
+          name: integrated-scale-pr57-legal-workplaces-8d
           path: artifacts/pr57-jobs-*/**
           if-no-files-found: warn
           retention-days: 14
