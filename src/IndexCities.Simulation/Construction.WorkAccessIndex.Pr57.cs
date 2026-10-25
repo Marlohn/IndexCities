@@ -76,8 +76,9 @@ public sealed partial class CitySimulation
         foreach(var point in project.RoadPoints)
         foreach(var (index,road) in Pr57WorkAccessNear(point))
         {
-            if(!seen.Add(index)||!_workExteriorConnected.Contains(road.Id))continue;
+            if(!_workExteriorConnected.Contains(road.Id))continue;
             if(road.Position.Distance(point)>radius)continue;
+            if(!seen.Add(index))continue;
             var d=road.Position.Distance(project.Position);
             if(best==null||d<distance||(d==distance&&index<order))
             {best=road;distance=d;order=index;}

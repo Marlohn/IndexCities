@@ -115,9 +115,9 @@ public sealed partial class CitySimulation
     RoadNode? WorkAccess(WorkProject p)
     {
         // A demolished stretch is skipped: maintenance continues on the remaining network.
-        if(p.IsMaintenance&&p.MaintenanceRoadIds.Count>0){var remaining=p.MaintenanceRoadIds.Where(_roads.ContainsKey).ToList();if(remaining.Count==0)return null;var target=_roads[remaining[Math.Min(remaining.Count-1,(int)(p.Progress*remaining.Count))]];return Pr57WorkAccessIndexEnabled?Pr57IndexedMaintenanceAccess(target.Position):return State.Roads.Where(r=>_workExteriorConnected.Contains(r.Id)&&r.Position.Distance(target.Position)<=State.Tuning.RoadStep+.05).MinBy(r=>r.Position.Distance(target.Position));}
+        if(p.IsMaintenance&&p.MaintenanceRoadIds.Count>0){var remaining=p.MaintenanceRoadIds.Where(_roads.ContainsKey).ToList();if(remaining.Count==0)return null;var target=_roads[remaining[Math.Min(remaining.Count-1,(int)(p.Progress*remaining.Count))]];return Pr57WorkAccessIndexEnabled?Pr57IndexedMaintenanceAccess(target.Position):State.Roads.Where(r=>_workExteriorConnected.Contains(r.Id)&&r.Position.Distance(target.Position)<=State.Tuning.RoadStep+.05).MinBy(r=>r.Position.Distance(target.Position));}
         if(p.BuildingId!=null)return BuildingById(p.BuildingId) is {} b?ConstructionAccess(b):null;
-        return Pr57WorkAccessIndexEnabled?Pr57IndexedRoadProjectAccess(p):return State.Roads.Where(r=>p.RoadPoints.Any(a=>a.Distance(r.Position)<=State.Tuning.RoadStep+.05)&&_workExteriorConnected.Contains(r.Id)).OrderBy(r=>r.Position.Distance(p.Position)).FirstOrDefault();
+        return Pr57WorkAccessIndexEnabled?Pr57IndexedRoadProjectAccess(p):State.Roads.Where(r=>p.RoadPoints.Any(a=>a.Distance(r.Position)<=State.Tuning.RoadStep+.05)&&_workExteriorConnected.Contains(r.Id)).OrderBy(r=>r.Position.Distance(p.Position)).FirstOrDefault();
     }
     bool ProjectPay(WorkProject p,decimal value,string category,string reason)
     {
