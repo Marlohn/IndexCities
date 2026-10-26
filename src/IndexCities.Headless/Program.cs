@@ -132,7 +132,18 @@ for(var d=1;d<=days;d++){
         // PR57-only host-cadence A/B: Godot calls Advance(2) once per quantum.
         // No time, system, event or persistence is skipped.
         if(Environment.GetEnvironmentVariable("PR57_HOST_QUANTUM")=="1")
-            for(var quantum=0;quantum<windowSeconds/2;quantum++)sim.Advance(2);
+        {
+            // PR57-only adversarial A/B: deterministic externally mutable road
+            // maintenance, list order and public paid road edit BETWEEN Advance(2).
+            // This is not a production rule or a performance optimization.
+            var liveEdit=Environment.GetEnvironmentVariable("PR57_ACCESS_LIVE_EDIT")=="1";
+            for(var quantum=0;quantum<windowSeconds/2;quantum++)
+            {
+                if(liveEdit&&d==1&&quantum is 900 or 1800 or 2700 or 3000)
+                    Pr57AccessLiveEdit(sim,quantum);
+                sim.Advance(2);
+            }
+        }
         else sim.Advance(windowSeconds);
     }
     else
@@ -207,6 +218,55 @@ sw.Restart();var json=sim.SaveToJson();var save=sw.Elapsed.TotalSeconds;sw.Resta
 Console.WriteLine($"SAVE {json.Length/1e6:F1}MB save={save:F2}s load={sw.Elapsed.TotalSeconds:F2}s sha256={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(json)))}");
 sim.CheckInvariants();Console.WriteLine("INVARIANTS OK");
 return 0;
+
+// Only used by the PR57 opt-in runner. Edits are made between public quanta,
+// never inside a Step. Each A/B process replays the same deterministic choices.
+static int _pr57EditedRoadId=-1;
+static double _pr57OriginalMaintenance;
+static void Pr57AccessLiveEdit(CitySimulation sim,int quantum)
+{
+    var active=sim.State.Projects
+        .Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress && p.BuildingId!=null)
+        .Select(p=>sim.State.Buildings.FirstOrDefault(b=>b.Id==p.BuildingId))
+        .FirstOrDefault(b=>b!=null&&!b.Removed);
+    if(active==null)throw new InvalidOperationException("PR57 live access replay lost all active building works");
+    if(quantum==900)
+    {
+        var road=sim.State.Roads.Where(r=>!r.Highway&&r.MaintenanceRatio>.05)
+            .OrderBy(r=>r.Position.Distance(active.Door)).First();
+        _pr57EditedRoadId=road.Id;
+        _pr57OriginalMaintenance=road.MaintenanceRatio;
+        road.MaintenanceRatio=.04;
+        Console.WriteLine($"PR57_ACCESS_LIVE_EDIT phase=maintenance-off quantum={quantum} road={road.Id} activeWorks={sim.State.Projects.Count(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress)}");
+    }
+    else if(quantum==1800)
+    {
+        var road=sim.State.Roads.Single(r=>r.Id==_pr57EditedRoadId);
+        road.MaintenanceRatio=_pr57OriginalMaintenance;
+        Console.WriteLine($"PR57_ACCESS_LIVE_EDIT phase=maintenance-on quantum={quantum} road={road.Id}");
+    }
+    else if(quantum==2700)
+    {
+        sim.State.Roads.Reverse();
+        Console.WriteLine($"PR57_ACCESS_LIVE_EDIT phase=external-road-order quantum={quantum} roads={sim.State.Roads.Count}");
+    }
+    else if(quantum==3000)
+    {
+        var attempts=0;
+        foreach(var road in sim.State.Roads.Where(r=>!r.Highway&&r.Neighbours.Count<=2)
+                     .OrderBy(r=>r.Position.Distance(active.Door)).Take(12).ToArray())
+        {
+            attempts++;
+            var position=road.Position;
+            var demolition=sim.DemolishRoad(road.Id);
+            if(!demolition.Success)continue;
+            var replacement=sim.PlaceRoad(position,position);
+            Console.WriteLine($"PR57_ACCESS_LIVE_EDIT phase=public-road-rebuild quantum={quantum} oldRoad={road.Id} demolished=True replacementOrdered={replacement.Success} attempts={attempts}");
+            return;
+        }
+        Console.WriteLine($"PR57_ACCESS_LIVE_EDIT phase=public-road-rebuild quantum={quantum} demolished=False attempts={attempts}");
+    }
+}
 
 static string Stats(CitySimulation s){var st=s.State;var alive=st.Citizens.Where(c=>c.Alive&&c.Resident).ToList();return $"pop={s.Population} alive={st.Citizens.Count(c=>c.Alive)} dead={st.Citizens.Count(c=>!c.Alive)} employed={st.Citizens.Count(c=>c.Alive&&c.Resident&&c.WorkplaceId!=null)} moving={st.Citizens.Count(c=>c.Alive&&c.Moving)} vehicles={st.Vehicles.Count} travelling={st.Vehicles.Count(v=>v.Status==VehicleStatus.Travelling)} ledger={st.Ledger.Count} houses={st.Buildings.Count(b=>!b.Removed&&b.Kind==BuildingKind.House)} openWorks={st.Projects.Count(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress)} history={st.Citizens.Sum(c=>c.History.Count)} meals={st.Citizens.Sum(c=>c.History.Count(h=>h.Description.StartsWith("Consumiu 1 alimento")))} wages={st.Ledger.Where(l=>l.Category.StartsWith("Salários / ")).Sum(l=>l.Amount):F2} health={(alive.Count==0?0:alive.Average(c=>c.Health)):F6} satisfaction={(alive.Count==0?0:alive.Average(c=>c.Satisfaction)):F6}";}
 
