@@ -21,11 +21,11 @@ public sealed class Pr57ProgressShipmentMutationAdversarial
         var placed = sim.PlaceBuilding(BuildingKind.House, new(-100, 14));
         Assert.True(placed.Success);
         sim.Advance(2);
-        var project = sim.State.Projects.Single(p => p.Id == placed.Id);
+        var project = sim.State.Projects.Single(p => p.BuildingId == placed.Id);
         Assert.Equal(WorkStatus.Waiting, project.Status);
         Assert.True(project.Required.Count > 1);
-        var pending = Assert.Single(sim.State.Shipments.Where(s =>
-            s.ProjectId == project.Id && !s.Complete));
+        var pending = Assert.Single(sim.State.Shipments, s =>
+            s.ProjectId == project.Id && !s.Complete);
         return (sim, project.Id, pending.Id);
     }
 
