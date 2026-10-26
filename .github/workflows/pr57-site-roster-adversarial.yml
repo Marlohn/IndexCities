@@ -1,4 +1,4 @@
-name: PR57 owner roster in-slice admission guard and economic A/B
+name: PR57 owner roster drivable in-slice admission and economic A/B
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Build and exercise in-slice dock-owner transitions and complete test suites
+      - name: Build and exercise drivable dock-owner transitions and complete test suites
         shell: bash
         run: |
           set -euo pipefail
