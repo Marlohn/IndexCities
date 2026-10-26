@@ -16,7 +16,7 @@ using IndexCities.Simulation;
 //          --strand=N empties the tank of N driving vehicles each day and follows the tow and the queue for 30 min
 // Results are measurements, not product rules: see docs/exploration/ritmo-velocidades.md.
 Console.OutputEncoding=Encoding.UTF8;
-var known=new HashSet<string>{"rows","length","days","cap","signals","seed","growth","warmup","strand","window","cycle-houses","cycle-bypass","resume"};
+var known=new HashSet<string>{"rows","length","days","cap","signals","seed","growth","warmup","strand","window","cycle-houses","cycle-bypass","resume","empty"};
 var opts=new Dictionary<string,string>();foreach(var p in args.Skip(2).Select(a=>a.TrimStart('-').Split('=',2)))opts[p[0]]=p.Length>1?p[1]:"1";
 string Opt(string k,string d)=>opts.GetValueOrDefault(k,d);
 if(opts.Keys.FirstOrDefault(k=>!known.Contains(k)) is {} unknown){Console.Error.WriteLine("opção desconhecida: --"+unknown);return 2;}
@@ -32,6 +32,13 @@ var sw=Stopwatch.StartNew();CitySimulation sim;string info;
 // PR57-only bounded replay: restore a full real-city checkpoint instead of
 // rebuilding and simulating its first six days. No production rules are changed.
 var resumePath=Opt("resume","");
+var pr57Empty=Opt("empty","0")=="1";
+if(pr57Empty&&(args[1]!="cycle"||args[0] is not ("scale" or "profile")||
+    resumePath.Length>0||warmup!=0||growth!=0||cycleHouses!=0||cycleBypass))
+{
+    Console.Error.WriteLine("PR57 --empty=1 exige scale|profile cycle, --warmup=0, sem resume/growth/obras/bypass");
+    return 2;
+}
 if(resumePath.Length>0&&(cycleHouses!=0||growth!=0||warmup!=0||args[0]=="repro")){
     Console.Error.WriteLine("--resume requires profile|scale, --warmup=0, --cycle-houses=0, --growth=0");return 2;
 }
@@ -39,7 +46,8 @@ if(resumePath.Length>0){
     var source=File.ReadAllText(resumePath);
     sim=CitySimulation.FromJson(source);
     info=$"PR57 saved-{args[1]} replay elapsed={sim.State.ElapsedSeconds:F3} sourceSha256={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(source)))}";
-}else if(args[1]=="cycle"){sim=Fixtures.Cycle(seed,cycleBypass);info="cycle (CityCycleTests.City, obras reais)"+(cycleBypass?" + bypass físico encomendado":"");}
+}else if(pr57Empty){sim=new CitySimulation(seed);info="PR57 EMPTY baseline: valid initial city, zero SIMs/works; fixed Step cost only";if(sim.State.Citizens.Count!=0||sim.State.Projects.Count!=0)throw new InvalidOperationException("PR57 empty fixture not empty");}
+else if(args[1]=="cycle"){sim=Fixtures.Cycle(seed,cycleBypass);info="cycle (CityCycleTests.City, obras reais)"+(cycleBypass?" + bypass físico encomendado":"");}
 else (sim,info)=Fixtures.Grid(seed,int.Parse(Opt("rows","3")),double.Parse(Opt("length","400"),System.Globalization.CultureInfo.InvariantCulture),Opt("signals","1")=="1",growth>0);
 Console.WriteLine($"FIXTURE {info} build={sw.Elapsed.TotalSeconds:F1}s .NET={Environment.Version} cpu={Environment.ProcessorCount} release={!Debugger.IsAttached}");
 if(cycleHouses>0&&args[1]=="cycle"){
