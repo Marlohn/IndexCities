@@ -1,0 +1,134 @@
+name: PR57 #168 sampled complete-vehicle nonlocal write boundaries
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-vehicle-mutation-audit-168.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  vehicle-mutation-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build and test composed opt-ins
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          PR57_SITE_OWNER_ROSTER=1 PR57_BUILDING_WORK_ACCESS=1 \
+          PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ORDER_SHIPMENT_INDEX=1 \
+          PR57_PROGRESS_SHIPMENT_LOOKUP=1 PR57_SINGLE_CREW_ASSIGNMENT=1 \
+          PR57_SAFE_SITE_BUFFER=1 \
+            dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic works city
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-growth
+          run-id: 40250545171
+          github-token: ${{ github.token }}
+          path: artifacts/works
+      - name: Restore authentic congested city
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-legal-workplaces-8d
+          run-id: 40169101306
+          github-token: ${{ github.token }}
+          path: artifacts/queue
+      - name: Restore ARTIFICIAL 1111 living grid
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-host-scale-curve
+          run-id: 40258405557
+          github-token: ${{ github.token }}
+          path: artifacts/grid
+      - name: Observe complete vehicle mutations in fresh host-cadence processes
+        shell: bash
+        run: |
+          set -euo pipefail
+          works="$(find artifacts/works -type f -path '*/growth/checkpoint-0.json' -print -quit)"
+          queue="$(find artifacts/queue -type f -path '*/pr57-jobs-20/checkpoint-10.json' -print -quit)"
+          grid="artifacts/grid/grid18-0/checkpoint-1.json"
+          for source in "$works" "$queue" "$grid"; do test -s "$source"; echo "PR57_168_SOURCE $(sha256sum "$source")"; done
+          mkdir -p artifacts/mutation-audit-168
+          for case in worksREAL queueREAL gridARTIFICIAL; do
+            fixture=cycle; window=3600; windows=1; source="$works"
+            if [[ "$case" == queueREAL ]]; then source="$queue"; window=600; windows=2; fi
+            if [[ "$case" == gridARTIFICIAL ]]; then source="$grid"; fixture=grid; window=100; windows=6; fi
+            for mode in plain probe; do
+              output="$PWD/artifacts/mutation-audit-168/$case-$mode"
+              mkdir -p "$output"
+              command=scale; enabled=0
+              if [[ "$mode" == probe ]]; then command=profile; enabled=1; fi
+              echo "PR57_168_RUN case=$case mode=$mode horizon=$((window*windows)) Advance2=True sampled=1of97"
+              PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_GRID_DIAG=1 \
+              PR57_SAVE_CAPTURE_DIR="$output" PR57_VEHICLE_MUTATION_AUDIT="$enabled" PR57_LANE_READWRITE_PROBE=0 \
+              PR57_SITE_OWNER_ROSTER=1 PR57_BUILDING_WORK_ACCESS=1 \
+              PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ORDER_SHIPMENT_INDEX=1 \
+              PR57_PROGRESS_SHIPMENT_LOOKUP=1 PR57_SINGLE_CREW_ASSIGNMENT=1 \
+              PR57_SAFE_SITE_BUFFER=1 PR57_BLOCK_DEP_PROBE=0 PR57_GRAPH_PROBE=0 \
+              PR57_VEHICLE_COST_PROBE=0 PR57_HOT_TIMING=0 PR57_PHASE_ALLOC_PROBE=0 \
+                timeout 300s dotnet run --no-build -c Release \
+                --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                "$command" "$fixture" --seed=42 --warmup=0 --days="$windows" \
+                --window="$window" --cap=300 --resume="$source" | tee "$output.log"
+            done
+          done
+      - name: Verify complete checkpoints and attribute nonlocal vehicle writes
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import pathlib,re
+          root=pathlib.Path("artifacts/mutation-audit-168")
+          for case,windows,seconds in (("worksREAL",1,3600),("queueREAL",2,1200),("gridARTIFICIAL",6,600)):
+              logs={}
+              for mode in ("plain","probe"):
+                  log=(root/f"{case}-{mode}.log").read_text()
+                  assert "INVARIANTS OK" in log and "SAVE " in log,(case,mode,"invariants/save")
+                  rows=[line for line in log.splitlines() if line.startswith("WINDOW ")]
+                  assert len(rows)==windows,(case,mode,"windows",len(rows))
+                  logs[mode]=(log,rows)
+                  for i in range(windows+1):
+                      a=(root/f"{case}-plain"/f"checkpoint-{i}.json").read_bytes()
+                      b=(root/f"{case}-{mode}"/f"checkpoint-{i}.json").read_bytes()
+                      assert a==b,(case,mode,i,"full checkpoint divergence")
+              plain,rows=logs["plain"]
+              probe,_=logs["probe"]
+              samples=[line for line in probe.splitlines() if line.startswith("PR57_MUTATION_AUDIT ")]
+              assert samples,(case,"missing probe samples")
+              assert "PR57_MUTATION_AUDIT " not in plain,(case,"plain contaminated")
+              def val(line,key):
+                  match=re.search(r"\b"+re.escape(key)+r"=([0-9.]+)",line)
+                  assert match,(case,key,line)
+                  return float(match.group(1))
+              metrics={k:sum(val(row,k) for row in rows) for k in ("wall","cpu","allocMB")}
+              metrics.update({k:val(rows[-1],k) for k in ("alive","pop","travelling","openWorks","history","ledger")})
+              if case=="gridARTIFICIAL":
+                  assert metrics["alive"]>=1000 and metrics["travelling"]>=200,(case,metrics)
+              if case=="worksREAL":
+                  assert metrics["openWorks"]>0,(case,metrics)
+              last=samples[-1]
+              keys=("samples","slices","passes","selfChangedPasses","thirdChangedPasses",
+                    "thirdVehicleChanges","unchangedPasses","beforeQueryChecks",
+                    "beforeQueryDivergences","syncVehicleChanges","listChanges")
+              census={k:int(val(last,k)) for k in keys}
+              assert census["samples"]>=1 and census["passes"]>0,(case,census)
+              print("PR57_168_RESULT",case,"seconds",seconds,"plain",metrics,
+                    "simSecondsPerWallSecond",round(seconds/metrics["wall"],2),
+                    "fullCheckpoints",windows+1,"census",census)
+          PY
+      - name: Preserve complete checkpoints and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-mutation-audit-168
+          path: artifacts/mutation-audit-168/**
+          retention-days: 14
