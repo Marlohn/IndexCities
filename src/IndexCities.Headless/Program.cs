@@ -140,7 +140,7 @@ for(var d=1;d<=days;d++){
             var liveEdit=Environment.GetEnvironmentVariable("PR57_ACCESS_LIVE_EDIT")=="1";
             for(var quantum=0;quantum<windowSeconds/2;quantum++)
             {
-                if(liveEdit&&d==1&&quantum is 900 or 1800 or 2700 or 3000)
+                if(liveEdit&&d==1&&quantum is 300 or 600 or 900 or 1200)
                     Pr57AccessLiveEdit(sim,quantum,ref liveEditedRoadId,ref liveOriginalMaintenance);
                 sim.Advance(2);
             }
@@ -229,7 +229,7 @@ static void Pr57AccessLiveEdit(CitySimulation sim,int quantum,ref int editedRoad
         .Select(p=>sim.State.Buildings.FirstOrDefault(b=>b.Id==p.BuildingId))
         .FirstOrDefault(b=>b!=null&&!b.Removed);
     if(active==null)throw new InvalidOperationException("PR57 live access replay lost all active building works");
-    if(quantum==900)
+    if(quantum==300)
     {
         var road=sim.State.Roads.Where(r=>!r.Highway&&r.MaintenanceRatio>.05)
             .OrderBy(r=>r.Position.Distance(active.Door)).First();
@@ -238,18 +238,18 @@ static void Pr57AccessLiveEdit(CitySimulation sim,int quantum,ref int editedRoad
         road.MaintenanceRatio=.04;
         Console.WriteLine($"PR57_ACCESS_LIVE_EDIT phase=maintenance-off quantum={quantum} road={road.Id} activeWorks={sim.State.Projects.Count(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress)}");
     }
-    else if(quantum==1800)
+    else if(quantum==600)
     {
         var road=sim.State.Roads.Single(r=>r.Id==editedRoadId);
         road.MaintenanceRatio=originalMaintenance;
         Console.WriteLine($"PR57_ACCESS_LIVE_EDIT phase=maintenance-on quantum={quantum} road={road.Id}");
     }
-    else if(quantum==2700)
+    else if(quantum==900)
     {
         sim.State.Roads.Reverse();
         Console.WriteLine($"PR57_ACCESS_LIVE_EDIT phase=external-road-order quantum={quantum} roads={sim.State.Roads.Count}");
     }
-    else if(quantum==3000)
+    else if(quantum==1200)
     {
         var attempts=0;
         foreach(var road in sim.State.Roads.Where(r=>!r.Highway&&r.Neighbours.Count<=2)
