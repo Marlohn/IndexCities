@@ -11,6 +11,9 @@ public sealed class StepCostProfile
     public long ConstructionWorkAccessCalls, ConstructionBuildingAccessCalls;
     public long ConstructionRoadQueries, ConstructionRoadVisits;
     public long ConstructionShipmentQueries, ConstructionShipmentVisits;
+    // PR57 intrusive observation only. Net record counts do NOT imply causal inactivity.
+    public long ConstructionDispatchActiveSteps, ConstructionDispatchShipmentChangedSteps, ConstructionDispatchShipmentNetDelta;
+    public long ConstructionDispatchLedgerChangedSteps, ConstructionDispatchLedgerNetDelta, ConstructionDispatchNoShipmentOrLedgerSteps;
     public static readonly string[] DetailNames = { "infra-presence", "infra-demands", "infra-electricity", "infra-water", "infra-sewage-pollution", "infra-finalize", "needs-pollution", "needs-citizens" };
     public long[] DetailTicks { get; } = new long[DetailNames.Length];
     public static readonly string[] VehicleDetailNames = { "entry-check", "operations", "entry-events", "movement" };
@@ -261,7 +264,20 @@ public sealed partial class CitySimulation
         if(reviewEconomy){State.EconomyNextAt=State.ElapsedSeconds+State.Tuning.EconomyInterval;SeekHomesForAllDisplaced();ReviewMarkets();ReviewJobs();ScheduleMaintenance();}
         if(profile is not null)profile.Mark(9,ref started);
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,9,ref started);
+        // PR57 profile-only productivity census around the unchanged dispatcher.
+        var pr57DispatchActive=profile is not null&&State.Projects.Any(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress);
+        var pr57ShipmentsBefore=profile is null?0:State.Shipments.Count;
+        var pr57LedgerBefore=profile is null?0:State.Ledger.Count;
         OrderConstruction();
+        if(pr57DispatchActive)
+        {
+            var shipmentsDelta=State.Shipments.Count-pr57ShipmentsBefore;
+            var ledgerDelta=State.Ledger.Count-pr57LedgerBefore;
+            profile!.ConstructionDispatchActiveSteps++;
+            if(shipmentsDelta!=0){profile.ConstructionDispatchShipmentChangedSteps++;profile.ConstructionDispatchShipmentNetDelta+=shipmentsDelta;}
+            if(ledgerDelta!=0){profile.ConstructionDispatchLedgerChangedSteps++;profile.ConstructionDispatchLedgerNetDelta+=ledgerDelta;}
+            if(shipmentsDelta==0&&ledgerDelta==0)profile.ConstructionDispatchNoShipmentOrLedgerSteps++;
+        }
         if(profile is not null)profile.Mark(10,ref started);
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,10,ref started);
         if(reviewEconomy){RetryPurchasesAwaitingDestination();RestockBusinesses();ReviewEmigration();RecoverDebt();RetryCargoAwaitingDestination();ReviewVehicleRevisions();ResumeHeldDeliveries();RefuelIdleShopTows();}
