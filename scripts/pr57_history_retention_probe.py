@@ -5,7 +5,7 @@ No simulation, synthetic residents, altered save, or performance claim. The
 packed representation is an analytical candidate, never loaded by the engine.
 """
 import argparse
-import collections
+import copy
 import gzip
 import json
 import re
@@ -29,7 +29,7 @@ def history_size(citizens):
     assert reconstructed == histories, "lossless history roundtrip failed"
     original = compact_json(histories)
     candidate = compact_json(packed)
-    return len(original), len(candidate), len(gzip.compress(original, compresslevel=6)), len(gzip.compress(candidate, compresslevel=6)), len(descriptions)
+    return len(original), len(candidate), len(gzip.compress(original, compresslevel=6)), len(gzip.compress(candidate, compresslevel=6)), len(descriptions), packed
 
 
 def examine(archive):
@@ -57,7 +57,20 @@ def examine(archive):
                     prior = old[citizen["Id"]]
                     assert citizen["History"][:len(prior)] == prior, (path, citizen["Id"], "append-only")
             previous[group] = {c["Id"]: c["History"] for c in citizens}
-            raw_hist, packed_hist, zipped_hist, zipped_packed, unique = history_size(citizens)
+            raw_hist, packed_hist, zipped_hist, zipped_packed, unique, packed = history_size(citizens)
+            candidate_state = copy.deepcopy(state)
+            for citizen in candidate_state["Citizens"]:
+                citizen["History"] = []
+            candidate_state["PR57HistoryDictionary"] = packed
+            original_full = compact_json(state)
+            packed_full = compact_json(candidate_state)
+            # This alternate schema is offline-only; restoring it must
+            # reproduce every field of the original save without loss.
+            decoded = copy.deepcopy(candidate_state)
+            dictionary = decoded.pop("PR57HistoryDictionary")
+            for citizen, row in zip(decoded["Citizens"], dictionary["histories"]):
+                citizen["History"] = [{"At": at, "Description": dictionary["descriptions"][i]} for at, i in row]
+            assert decoded == state, (path, "full-state roundtrip")
             print(json.dumps({
                 "archive": archive, "checkpoint": path, "elapsed_s": state["ElapsedSecondsUnits"] / 1_000_000,
                 "living": sum(c["Alive"] for c in citizens), "citizens": len(citizens),
@@ -65,7 +78,10 @@ def examine(archive):
                 "ledger": len(state["Ledger"]), "city_events": len(state["CityEvents"]),
                 "save_bytes": len(raw), "history_bytes": raw_hist,
                 "packed_history_bytes": packed_hist, "gzip_history_bytes": zipped_hist,
-                "gzip_packed_history_bytes": zipped_packed, "roundtrip": "exact",
+                "gzip_packed_history_bytes": zipped_packed,
+                "gzip_full_bytes": len(gzip.compress(original_full, compresslevel=6)),
+                "gzip_full_packed_bytes": len(gzip.compress(packed_full, compresslevel=6)),
+                "roundtrip": "exact",
                 "chronology": "monotonic", "previous_checkpoint": "prefix"
             }, ensure_ascii=False, separators=(",", ":")))
 
