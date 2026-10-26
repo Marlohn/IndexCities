@@ -1,4 +1,4 @@
-name: PR57 operational-only wake attribution and 60s read-set census
+name: PR57 blocked dependency churn during 60s sampled stability
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
@@ -111,6 +111,12 @@ jobs:
               assert operation_metric('preLoopOperational')+operation_metric('preLoopOther')==wake_metric('preLoop'),(case,'pre-loop census')
               assert operation_metric('retained')+operation_metric('changed')==operation_metric('preLoopOperational'),(case,'operation retention census')
               assert operation_metric('sameAfterOperational')<=operation_metric('physicalAfterOperational'),(case,'operation comparison census')
+              dependency=[line for line in timed.splitlines() if line.startswith('PR57_DEPENDENCY_WINDOW ')]
+              if case in ('real121','grid18'):
+                  assert dependency,(case,'no 60s dependency window')
+                  m=re.search(r'\bsamples=(\d+)',dependency[-1])
+                  assert m and int(m.group(1))>=2,(case,'too few dependency samples')
+                  print('PR57_DEPENDENCY_RESULT',case,dependency[-1])
               hot=[line for line in timed.splitlines() if line.startswith('PR57_HOT_TIMING ')]
               assert hot,(case,'profile not engaged')
               last=hot[-1]
@@ -131,6 +137,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-pr57-operational-gap-60s
+          name: integrated-scale-pr57-dependency-churn-60s
           path: artifacts/hotpath/**
           retention-days: 14

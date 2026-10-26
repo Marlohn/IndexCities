@@ -159,6 +159,7 @@ public sealed partial class CitySimulation
             }
         }
         _pr57LastBlocked[v.Id]=sample;
+        Pr57DependencyObserve(v,sample);
     }
 
     void Pr57BlockFinishVehicle(Vehicle v,Pr57IdleSample before,double dt,double? operationsDt)
@@ -219,6 +220,80 @@ public sealed partial class CitySimulation
             _pr57LastBlocked.Remove(v.Id);
             _pr57OperationGapVehicles.Remove(v.Id);
         }
+    }
+
+
+    // PR57 observation only: a 60s census of OTHER mutable physical actors
+    // while one blocked vehicle has an apparently stable sampled read-set.
+    // A digest at a retry is NOT a write journal: intermediate writes, signals,
+    // junction ownership, external edits and time-dependent effects can be missed.
+    readonly record struct Pr57DependencyDigest(int Vehicles,int Nearby,int Pedestrians,int RoadRevision);
+    int _pr57DependencyTarget;
+    double _pr57DependencyStart,_pr57DependencyLastAt=double.NegativeInfinity;
+    Pr57DependencyDigest _pr57DependencyLast;
+    long _pr57DependencySamples,_pr57DependencyGlobalChanges,
+         _pr57DependencyNearbyChanges,_pr57DependencyPedestrianChanges,
+         _pr57DependencyRoadChanges,_pr57DependencySampleReset;
+    bool _pr57DependencyComplete;
+
+    static void Pr57DependencyVehicle(ref HashCode hash,Vehicle o)
+    {
+        hash.Add(o.Id);hash.Add(o.Position);hash.Add(o.Heading);
+        hash.Add(o.Status);hash.Add(o.RouteIndex);hash.Add(o.IntersectionClaim);
+        hash.Add(o.WaitingSince);hash.Add(o.Cause);hash.Add(o.FuelUnits);
+        hash.Add(o.DockPosition);hash.Add(o.HoldingPosition);
+        hash.Add(o.ManoeuvreDock);hash.Add(o.ManoeuvreSpaces.Count);
+        hash.Add(o.Detour.Count);hash.Add(o.TowPhase);hash.Add(o.ServicePhase);
+    }
+
+    void Pr57DependencyObserve(Vehicle v,Pr57BlockedRead sample)
+    {
+        if(_pr57DependencyComplete)return;
+        var now=VehicleMovementTime;
+        if(_pr57DependencyTarget==0)
+        {
+            if(sample.BlockerId is null||now-sample.StableSince<60)return;
+            _pr57DependencyTarget=v.Id;
+            _pr57DependencyStart=now;
+        }
+        if(v.Id!=_pr57DependencyTarget||now-_pr57DependencyLastAt<2-1e-6)return;
+        var global=new HashCode();
+        var nearby=new HashCode();
+        foreach(var other in State.Vehicles)
+        {
+            if(other.Id==v.Id)continue;
+            Pr57DependencyVehicle(ref global,other);
+            if(other.Position.Distance(v.Position)<=32)
+                Pr57DependencyVehicle(ref nearby,other);
+        }
+        var pedestrians=new HashCode();
+        foreach(var c in State.Citizens)
+        {
+            if(!c.Alive||!c.InsideMap)continue;
+            pedestrians.Add(c.Id);pedestrians.Add(c.Position);
+            pedestrians.Add(c.PathIndex);pedestrians.Add(c.CrossingNodeId);
+            pedestrians.Add(c.VehicleId);pedestrians.Add(c.BoardingVehicleId);
+        }
+        var next=new Pr57DependencyDigest(
+            global.ToHashCode(),nearby.ToHashCode(),pedestrians.ToHashCode(),State.RoadRevision);
+        if(_pr57DependencySamples>0)
+        {
+            if(next.Vehicles!=_pr57DependencyLast.Vehicles)_pr57DependencyGlobalChanges++;
+            if(next.Nearby!=_pr57DependencyLast.Nearby)_pr57DependencyNearbyChanges++;
+            if(next.Pedestrians!=_pr57DependencyLast.Pedestrians)_pr57DependencyPedestrianChanges++;
+            if(next.RoadRevision!=_pr57DependencyLast.RoadRevision)_pr57DependencyRoadChanges++;
+            if(sample.StableSince>_pr57DependencyStart)_pr57DependencySampleReset++;
+        }
+        _pr57DependencyLast=next;
+        _pr57DependencyLastAt=now;
+        _pr57DependencySamples++;
+        if(now-_pr57DependencyStart<60)return;
+        _pr57DependencyComplete=true;
+        Console.WriteLine(
+            $"PR57_DEPENDENCY_WINDOW target={_pr57DependencyTarget} elapsed={now-_pr57DependencyStart:F3} " +
+            $"samples={_pr57DependencySamples} globalChanges={_pr57DependencyGlobalChanges} " +
+            $"nearbyChanges={_pr57DependencyNearbyChanges} pedestrianChanges={_pr57DependencyPedestrianChanges} " +
+            $"roadRevisionChanges={_pr57DependencyRoadChanges} sampledReadResets={_pr57DependencySampleReset}");
     }
 
     void Pr57IdleProbeTick()
