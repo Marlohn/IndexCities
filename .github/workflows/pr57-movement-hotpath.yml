@@ -1,4 +1,4 @@
-name: PR57 residual movement hotspot attribution at host cadence
+name: PR57 blocked wake stage attribution at host cadence
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
@@ -92,9 +92,16 @@ jobs:
               assert [p.name for p in plain_paths]==[p.name for p in timed_paths],(case,'checkpoint names')
               for a,b in zip(plain_paths,timed_paths):
                   assert a.read_bytes()==b.read_bytes(),(case,a.name,'causal divergence')
-              assert 'PR57_HOT_TIMING' not in plain and 'PR57_IDLE_PROBE ' not in plain and 'PR57_BLOCK_PROBE ' not in plain,(case,'profile leakage')
+              assert 'PR57_HOT_TIMING' not in plain and 'PR57_IDLE_PROBE ' not in plain and 'PR57_BLOCK_PROBE ' not in plain and 'PR57_BLOCK_WAKE_CLASS ' not in plain,(case,'profile leakage')
               assert 'PR57_IDLE_PROBE ' in timed,(case,'idle probe not engaged')
               assert 'PR57_BLOCK_PROBE ' in timed,(case,'blocker probe not engaged')
+              assert 'PR57_BLOCK_WAKE_CLASS ' in timed,(case,'wake classification not engaged')
+              wake=next(line for line in reversed(timed.splitlines()) if line.startswith('PR57_BLOCK_WAKE_CLASS '))
+              def wake_metric(key):
+                  m=re.search(r'\b'+re.escape(key)+r'=(\d+)',wake)
+                  assert m,(case,key,wake)
+                  return int(m.group(1))
+              assert sum(wake_metric(k) for k in ('preLoop','inLoop','stepGate','positiveStep','junctionDenied','movementCommit'))==wake_metric('noHold'),(case,'wake stage census')
               hot=[line for line in timed.splitlines() if line.startswith('PR57_HOT_TIMING ')]
               assert hot,(case,'profile not engaged')
               last=hot[-1]
@@ -108,12 +115,13 @@ jobs:
               print('PR57_HOT_RESULT',case,'checkpoints',len(plain_paths),'plainWindows',len(windows),
                     'profile',last,'idle',next(line for line in reversed(timed.splitlines()) if line.startswith('PR57_IDLE_PROBE ')),
                     'block',next(line for line in reversed(timed.splitlines()) if line.startswith('PR57_BLOCK_PROBE ')),
+                    'wake',wake,
                     'plainWallRows',windows)
           PY
       - name: Preserve logs and complete checkpoints
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-pr57-movement-hotpath
+          name: integrated-scale-pr57-block-wake-stage
           path: artifacts/hotpath/**
           retention-days: 14
