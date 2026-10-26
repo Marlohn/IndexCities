@@ -305,6 +305,7 @@ public sealed partial class CitySimulation
     }
     void MoveVehiclesUnsplit(double dt,double? operationsDt=null)
     {
+        Pr57PrepareSiteOwnerRoster();
         var scanProfile=CostProfile;
         var pr57AllocCallStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
         // Release a passed junction even while a vehicle waits at the next one.
@@ -932,6 +933,7 @@ public sealed partial class CitySimulation
         }
         // A towed vehicle moves only with its tow (platform or trailing a heavy tow).
         SyncTowedVehicles();
+        _pr57SiteOwnerRoster=null; // no index may survive this movement slice
         if(pr57Bvh)_pr57VehicleBvh!.Refresh();
         if(scanProfile is not null){
             _pr57MovementAllocBytes[0]+=GC.GetAllocatedBytesForCurrentThread()-pr57AllocCallStart;

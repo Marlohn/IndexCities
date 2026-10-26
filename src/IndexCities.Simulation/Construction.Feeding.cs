@@ -125,34 +125,67 @@ public sealed partial class CitySimulation
         return vehicle.SitePathIndex>=vehicle.SitePath.Count;
     }
 
+    // PR57 opt-in: one conservative owner roster per movement slice. A normal
+    // passenger car cannot own a paver path, asphalt delivery, or dock manoeuvre.
+    // Include any externally edited car with a special path, dock or shipment;
+    // rebuild at every unsplit slice (and every public Advance boundary).
+    // This is a SUPerset: live predicates and exact body tests remain unchanged.
+    static readonly bool Pr57SiteOwnerRosterEnabled =
+        Environment.GetEnvironmentVariable("PR57_SITE_OWNER_ROSTER")=="1";
+    List<Vehicle>? _pr57SiteOwnerRoster;
+    int _pr57SiteOwnerVehicleCount;
+    bool _pr57SiteOwnerRosterAnnounced, _pr57SiteOwnerRosterUsedAnnounced;
+    void Pr57PrepareSiteOwnerRoster()
+    {
+        if(!Pr57SiteOwnerRosterEnabled){_pr57SiteOwnerRoster=null;return;}
+        _pr57SiteOwnerVehicleCount=State.Vehicles.Count;
+        _pr57SiteOwnerRoster=State.Vehicles.Where(v=>!v.PassengerCar||
+            v.Machine!=PavingMachine.None||v.SitePath.Count>0||
+            v.ManoeuvreDock!=null||v.ShipmentId!=null).ToList();
+        if(!_pr57SiteOwnerRosterAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine($"PR57_SITE_OWNER_ROSTER active=True candidates={_pr57SiteOwnerRoster.Count} vehicles={State.Vehicles.Count}");
+            _pr57SiteOwnerRosterAnnounced=true;
+        }
+    }
+
     double SafeSiteTravel(Vehicle vehicle,Point target,double distance,bool machinesOnly=false)
     {
         if(Pr57ZeroSiteSkip&&distance==0)return 0;
+        var siteOwners=Pr57SiteOwnerRosterEnabled&&_pr57SiteOwnerRoster is not null&&
+            _pr57SiteOwnerVehicleCount==State.Vehicles.Count
+            ?_pr57SiteOwnerRoster:State.Vehicles;
+        if(Pr57SiteOwnerRosterEnabled&&ReferenceEquals(siteOwners,_pr57SiteOwnerRoster)&&
+           !_pr57SiteOwnerRosterUsedAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine($"PR57_SITE_OWNER_ROSTER used=True candidates={siteOwners.Count} vehicles={State.Vehicles.Count}");
+            _pr57SiteOwnerRosterUsedAnnounced=true;
+        }
         // A moving machine holds its whole remaining path, not only its body:
         // a vehicle stopped anywhere on it (behind a turn, across an oncoming
         // lane) would wait for the machine while the machine waits for it.
         // The hold stops at the first body already on the path: space behind a
         // blocked machine is not held, and whoever stands on the path may leave.
         // Only a paving machine has reserved poses (MachineReservation is empty otherwise).
-        var reserved=vehicle.Machine!=PavingMachine.None?[]:State.Vehicles.Where(m=>m.Id!=vehicle.Id&&m.Machine!=PavingMachine.None).Select(MachineReservation)
+        var reserved=vehicle.Machine!=PavingMachine.None?[]:siteOwners.Where(m=>m.Id!=vehicle.Id&&m.Machine!=PavingMachine.None).Select(MachineReservation)
             .SelectMany(poses=>poses).Where(pose=>pose.Position.Distance(vehicle.Position)<=distance+12).ToList();
         // Lane traffic also respects an asphalt truck on its site path (see
         // Construction.ApproachYield).
-        if(machinesOnly)reserved.AddRange(State.Vehicles.Where(t=>t.Id!=vehicle.Id&&OnSitePath(t)&&t.Position.Distance(vehicle.Position)<=distance+40)
+        if(machinesOnly)reserved.AddRange(siteOwners.Where(t=>t.Id!=vehicle.Id&&OnSitePath(t)&&t.Position.Distance(vehicle.Position)<=distance+40)
             .SelectMany(SiteTruckReservation).Where(pose=>pose.Position.Distance(vehicle.Position)<=distance+12));
         // And an admitted way into or out of a bay (Mobility.SharedSpace).
-        if(machinesOnly)reserved.AddRange(State.Vehicles.Where(t=>t.Id!=vehicle.Id&&t.ManoeuvreDock!=null&&!OnSitePath(t)&&t.Position.Distance(vehicle.Position)<=distance+40)
+        if(machinesOnly)reserved.AddRange(siteOwners.Where(t=>t.Id!=vehicle.Id&&t.ManoeuvreDock!=null&&!OnSitePath(t)&&t.Position.Distance(vehicle.Position)<=distance+40)
             .SelectMany(AdmittedManoeuvre).Where(pose=>pose.Position.Distance(vehicle.Position)<=distance+12));
         // An asphalt truck on its site path or unloading at the paver bay keeps
         // its present body there (see Construction.ApproachYield). Trucks still
         // stacked together at the exterior staging origin have not entered yet.
-        if(machinesOnly)reserved.AddRange(State.Vehicles.Where(t=>t.Id!=vehicle.Id&&(OnAsphaltApproach(t)||UnloadingAsphaltBody(t))&&t.Position.Distance(vehicle.Position)<=distance+12&&
+        if(machinesOnly)reserved.AddRange(siteOwners.Where(t=>t.Id!=vehicle.Id&&(OnAsphaltApproach(t)||UnloadingAsphaltBody(t))&&t.Position.Distance(vehicle.Position)<=distance+12&&
                 !(t.Position.Distance(State.Entry)<8&&vehicle.Position.Distance(State.Entry)<8))
             .Select(t=>(t,t.Position,t.Heading)));
-        if(machinesOnly&&reserved.Count==0&&!State.Vehicles.Any(other=>other.Machine!=PavingMachine.None&&other.Status!=VehicleStatus.Outside&&other.Position.Distance(vehicle.Position)<=distance+12))return distance;
+        if(machinesOnly&&reserved.Count==0&&!siteOwners.Any(other=>other.Machine!=PavingMachine.None&&other.Status!=VehicleStatus.Outside&&other.Position.Distance(vehicle.Position)<=distance+12))return distance;
         var safe=0.0;
         while(safe<distance-.000001){var next=Math.Min(distance,safe+.5);var at=vehicle.Position.MoveTowards(target,next);
-            if(State.Vehicles.Any(other=>other.Id!=vehicle.Id&&other.Status!=VehicleStatus.Outside&&(!machinesOnly||other.Machine!=PavingMachine.None&&(other.Status==VehicleStatus.Parked||!(other.Position.Distance(State.Entry)<8&&vehicle.Position.Distance(State.Entry)<8)))&&other.Position.Distance(at)<12&&VehicleBodiesOverlap(vehicle,at,other)))break;
+            if((machinesOnly?siteOwners:State.Vehicles).Any(other=>other.Id!=vehicle.Id&&other.Status!=VehicleStatus.Outside&&(!machinesOnly||other.Machine!=PavingMachine.None&&(other.Status==VehicleStatus.Parked||!(other.Position.Distance(State.Entry)<8&&vehicle.Position.Distance(State.Entry)<8)))&&other.Position.Distance(at)<12&&VehicleBodiesOverlap(vehicle,at,other)))break;
             if(reserved.Any(pose=>pose.Position.Distance(at)<12&&BodiesOverlap(vehicle,at,vehicle.Heading,pose.Machine,pose.Position,pose.Heading)))break;
             safe=next;
         }
