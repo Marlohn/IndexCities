@@ -1,0 +1,139 @@
+name: PR57 combined indexes scale ABBA
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-composed-scale-ab.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  combined:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build and test baseline and both opt-in flags
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          for flag in 0 1; do
+            PR57_SITE_OWNER_ROSTER="$flag" PR57_BUILDING_WORK_ACCESS="$flag" dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --no-restore --verbosity quiet
+          done
+      - name: Restore real active construction
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-growth
+          run-id: 40250545171
+          github-token: ${{ github.token }}
+          path: artifacts/works
+      - name: Restore real congestion
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-legal-workplaces-8d
+          run-id: 40169101306
+          github-token: ${{ github.token }}
+          path: artifacts/real
+      - name: Restore artificial grid
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-host-scale-curve
+          run-id: 40258405557
+          github-token: ${{ github.token }}
+          path: artifacts/grid
+      - name: Replay four modes in both orders, same saves and 2-second quanta
+        shell: bash
+        run: |
+          set -euo pipefail
+          works="$(find artifacts/works -type f -path '*/growth/checkpoint-0.json' -print -quit)"
+          real="$(find artifacts/real -type f -path '*/pr57-jobs-20/checkpoint-11.json' -print -quit)"
+          grid="artifacts/grid/grid18-0/checkpoint-1.json"
+          for f in "$works" "$real" "$grid"; do test -s "$f"; echo "SOURCE $f $(sha256sum "$f")"; done
+          mkdir -p artifacts/combined
+          for case in works4h real121 grid18 cycle; do
+            if [[ "$case" == works4h ]]; then
+              args=(scale cycle --seed=42 --warmup=0 --days=4 --window=3600 --cap=300 --resume="$works")
+            elif [[ "$case" == real121 ]]; then
+              args=(scale cycle --seed=42 --warmup=0 --days=2 --window=1800 --cap=300 --resume="$real")
+            elif [[ "$case" == grid18 ]]; then
+              args=(scale grid --seed=42 --warmup=0 --days=3 --window=100 --cap=300 --resume="$grid")
+            else
+              args=(scale cycle --seed=42 --warmup=0 --days=2 --window=900 --cap=300)
+            fi
+            i=0
+            for mode in base roster access both both access roster base; do
+              roster=0; access=0
+              if [[ "$mode" == roster || "$mode" == both ]]; then roster=1; fi
+              if [[ "$mode" == access || "$mode" == both ]]; then access=1; fi
+              out="artifacts/combined/$case-$i"
+              mkdir -p "$out"
+              echo "COMPOSED_RUN case=$case i=$i mode=$mode roster=$roster access=$access"
+              PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_GRID_DIAG=1 \
+              PR57_SITE_OWNER_ROSTER="$roster" PR57_BUILDING_WORK_ACCESS="$access" \
+              PR57_DYNAMIC_BVH=0 PR57_PARALLEL_NEEDS=0 PR57_STAFF_PHASE_FUSION=0 \
+              PR57_UTILITY_REPLAY=0 PR57_POLLUTION_SIMD=0 PR57_PARALLEL_POLLUTION=0 \
+              PR57_CONSTRUCTION_WAIT_AGENDA=0 PR57_DISPATCH_SHIPMENT_LOOKUP=0 \
+              PR57_ROUTE_TREE=0 PR57_ORDER_SHIPMENT_INDEX=0 PR57_MAINTENANCE_SCHEDULE=0 \
+              PR57_SOURCE_DISTANCE_CACHE=0 PR57_WORK_ACCESS_INDEX=0 PR57_PEDESTRIAN_GRID=0 \
+              PR57_LIVING_ROSTER=0 PR57_CITIZEN_AGENDA=0 PR57_ENTRY_SWEEP_FILTER=0 \
+              PR57_SAVE_CAPTURE_DIR="$PWD/$out" \
+                timeout 180s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- "${args[@]}" | tee "$out.log"
+              i=$((i+1))
+            done
+          done
+      - name: Verify complete intermediate checkpoints and summarize end-to-end
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import pathlib,re
+          root=pathlib.Path('artifacts/combined')
+          modes=('base','roster','access','both','both','access','roster','base')
+          for case,seconds,windows in (('works4h',14400,4),('real121',3600,2),('grid18',300,3),('cycle',1800,2)):
+              rows=[]
+              for i,mode in enumerate(modes):
+                  log=(root/f'{case}-{i}.log').read_text()
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,i,'invariants')
+                  assert f'PR57_SITE_OWNER_ROSTER active={mode in ("roster","both")}' in log,(case,i,'roster flag')
+                  assert f'PR57_BUILDING_WORK_ACCESS active={mode in ("access","both")}' in log,(case,i,'access flag')
+                  if mode in ('roster','both') and case in ('works4h','real121','grid18'):
+                      assert 'PR57_SITE_OWNER_ROSTER used=True' in log,(case,i,'roster not exercised')
+                  if mode in ('access','both') and case=='works4h':
+                      assert 'PR57_BUILDING_WORK_ACCESS built=True' in log,(case,i,'access not exercised')
+                  windows_rows=[x for x in log.splitlines() if x.startswith('WINDOW ')]
+                  assert len(windows_rows)==windows,(case,i,'windows')
+                  def metric(row,key):
+                      m=re.search(r'\b'+re.escape(key)+r'=([0-9.]+)',row)
+                      assert m,(case,i,key,row)
+                      return float(m.group(1))
+                  values={key:sum(metric(w,key) for w in windows_rows) for key in ('wall','cpu','allocMB')}
+                  values.update({key:metric(windows_rows[-1],key) for key in ('pop','alive','openWorks')})
+                  rows.append(values)
+                  for n in range(windows+1):
+                      path=root/f'{case}-{i}'/f'checkpoint-{n}.json'
+                      ref=root/f'{case}-0'/f'checkpoint-{n}.json'
+                      assert path.is_file() and path.read_bytes()==ref.read_bytes(),(case,i,n,'divergent checkpoint')
+              def gain(a,b,k='wall'):
+                  return round(100*(rows[a][k]-rows[b][k])/rows[a][k],2)
+              print('PR57_COMPOSED_RESULT',case,'seconds',seconds,'modes',modes,'data',rows,
+                    'both_wall_ABBA',[gain(0,3),gain(7,4)],
+                    'roster_wall_ABBA',[gain(0,1),gain(7,6)],
+                    'access_wall_ABBA',[gain(0,2),gain(7,5)],
+                    'both_cpu_ABBA',[gain(0,3,'cpu'),gain(7,4,'cpu')],
+                    'both_alloc_ABBA',[gain(0,3,'allocMB'),gain(7,4,'allocMB')],
+                    'throughput_both',[round(seconds/rows[i]['wall'],2) for i in (3,4)],
+                    'checkpoints',windows+1,'identical',True)
+          PY
+      - name: Preserve logs and complete saves
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-composed-ab
+          path: artifacts/combined/**
+          retention-days: 14
