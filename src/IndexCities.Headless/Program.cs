@@ -125,7 +125,15 @@ if(!string.IsNullOrWhiteSpace(pr57SaveCaptureDir)){
     }
 }
 var census=args[0]=="census"?new Census():null;var stuck=args[0]=="stuck"?new Stuck():null;
-var profile=args[0]=="profile"?new StepCostProfile():null;var pr57ProfileFromWindow=int.TryParse(Environment.GetEnvironmentVariable("PR57_PROFILE_FROM_WINDOW"),out var profileStart)?profileStart:1;sim.CostProfile=profile is not null&&pr57ProfileFromWindow<=1?profile:null;
+var profile=args[0]=="profile"?new StepCostProfile():null;
+var pr57PhaseEffectEvery=Environment.GetEnvironmentVariable("PR57_PHASE_EFFECT_EVERY");
+if(!string.IsNullOrEmpty(pr57PhaseEffectEvery))
+{
+    if(profile is null||!int.TryParse(pr57PhaseEffectEvery,out var sampleEvery)||sampleEvery<1)
+        throw new ArgumentException("PR57_PHASE_EFFECT_EVERY requires profile and a positive integer");
+    profile.PhaseEffects=new Pr57PhaseEffects(sampleEvery);
+}
+var pr57ProfileFromWindow=int.TryParse(Environment.GetEnvironmentVariable("PR57_PROFILE_FROM_WINDOW"),out var profileStart)?profileStart:1;sim.CostProfile=profile is not null&&pr57ProfileFromWindow<=1?profile:null;
 var total=0.0;var gc0=GC.CollectionCount(0);var gc2=GC.CollectionCount(2);var alloc0=GC.GetTotalAllocatedBytes();var done=0;
 var liveEditedRoadId=-1;var liveOriginalMaintenance=0.0;
 for(var d=1;d<=days;d++){
@@ -221,6 +229,8 @@ if(profile is not null){
     var selected=profile.LaneLeaderSelectedBands.Sum();var limited=profile.LaneLeaderPotentialLimitBands.Sum();
     if(selected>laneHits||limited>selected)throw new InvalidOperationException("Lane leader selection accounting inconsistent");
     Console.WriteLine($"LANE_LEADER_WINNERS selected={selected} within32={profile.LaneLeaderSelectedBands[0]} between32and128={profile.LaneLeaderSelectedBands[1]} between128and512={profile.LaneLeaderSelectedBands[2]} beyond512={profile.LaneLeaderSelectedBands[3]} potentialLimits={limited} limitWithin32={profile.LaneLeaderPotentialLimitBands[0]} limit32to128={profile.LaneLeaderPotentialLimitBands[1]} limit128to512={profile.LaneLeaderPotentialLimitBands[2]} limitBeyond512={profile.LaneLeaderPotentialLimitBands[3]} farZeroDistance={profile.LaneLeaderFarZeroDistance} maxSelectedDistanceMeters={Math.Sqrt(profile.LaneLeaderSelectedMaxDistanceSquared):F2}");
+    if(profile.PhaseEffects is { } phaseEffects)
+        foreach(var line in phaseEffects.ReportLines())Console.WriteLine(line);
 }
 census?.Print(done);if(stuck!=null)Console.WriteLine($"STUCK SUMMARY guinchos chamados={sim.State.Ledger.Where(m=>m.Category=="Guincho"&&m.To=="global").Select(m=>(m.At,m.EntityId)).Distinct().Count()} rebocando agora={sim.State.Vehicles.Count(v=>v.Status==VehicleStatus.Towed)} sem combustível na via (total)={stuck.StrandedTotal} parados≥30min (máx)={stuck.StuckMax} mortos={sim.State.Citizens.Count(c=>!c.Alive)}");
 sw.Restart();var json=sim.SaveToJson();var save=sw.Elapsed.TotalSeconds;sw.Restart();CitySimulation.FromJson(json);
