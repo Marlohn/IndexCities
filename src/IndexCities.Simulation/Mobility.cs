@@ -1100,7 +1100,7 @@ public sealed partial class CitySimulation
                 }
                 Console.WriteLine($"PR57_ALLOC_PROFILE calls={_pr57MovementAllocCalls} totalMB={b[0]/1e6:F2} setupMB={b[1]/1e6:F2} laneMB={b[2]/1e6:F2} bendMB={b[3]/1e6:F2} siteMB={b[4]/1e6:F2} crossingMB={b[5]/1e6:F2} turnMB={b[6]/1e6:F2} operationsMB={b[7]/1e6:F2} preLaneMB={b[8]/1e6:F2} postTurnMB={b[9]/1e6:F2} finalizeMB={b[10]/1e6:F2} otherMB={other/1e6:F2}");
             }
-            if(Pr57QueueLimiterEnabled&&_pr57MovementAllocCalls%3000==0)Pr57QueueLimiterPrint(_pr57MovementAllocCalls);
+            if(Pr57QueueLimiterEnabled&&_pr57MovementAllocCalls%100==0)Pr57QueueLimiterPrint(_pr57MovementAllocCalls);
             if(pr57CostProbe&&_pr57MovementAllocCalls%60==0){
                 string[] names=["operations","nontravelling","moved","queue","junction","waiting","stationary-trip","other"];
                 var totalTicks=_pr57VehicleCostTicks.Sum();
