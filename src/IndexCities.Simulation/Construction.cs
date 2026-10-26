@@ -103,6 +103,7 @@ public sealed partial class CitySimulation
     static readonly bool Pr57OrderShipmentIndexEnabled=Environment.GetEnvironmentVariable("PR57_ORDER_SHIPMENT_INDEX")=="1";
     // PR57 isolated per-ProgressConstruction shipment membership; never survives Advance(2).
     static readonly bool Pr57ProgressShipmentLookupEnabled=Environment.GetEnvironmentVariable("PR57_PROGRESS_SHIPMENT_LOOKUP")=="1";
+    bool _pr57ProgressShipmentLookupAnnounced;
     readonly Dictionary<int,List<Shipment>> _pr57OrderShipments=new();
     bool _pr57OrderShipmentIndexAnnounced;
     // PR57-only causal waiting-project worklist. A stamp records a previous
@@ -287,9 +288,14 @@ public sealed partial class CitySimulation
     }
     bool ProgressConstruction(double dt)
     {
+        if(!_pr57ProgressShipmentLookupAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine($"PR57_PROGRESS_SHIPMENT_LOOKUP active={Pr57ProgressShipmentLookupEnabled}");
+            _pr57ProgressShipmentLookupAnnounced=true;
+        }
         // Original shipment insertion order, live Cargo/Complete/ProjectId; rebuilt each call.
         // If the shipment list grows or shrinks mid-phase, use the original full scan.
-        var progressShipments=Pr57ProgressShipmentLookupEnabled
+        var progressShipments=Pr57ProgressShipmentLookupEnabled&&State.Projects.Any(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress)
             ?Pr57ConstructionShipmentSource().Where(s=>s.ProjectId!=null).ToLookup(s=>s.ProjectId)
             :null;
         var indexedShipmentCount=State.Shipments.Count;
