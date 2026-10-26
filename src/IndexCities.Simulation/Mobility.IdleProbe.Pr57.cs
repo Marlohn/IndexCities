@@ -64,6 +64,18 @@ public sealed partial class CitySimulation
     readonly Dictionary<int,Pr57BlockedRead> _pr57LastBlocked=new();
     readonly HashSet<int> _pr57StableThirtyVehicles=new();
     bool _pr57BlockHadPrevious,_pr57BlockSeenThisVehicle;
+    // Stage is observational: 0=pre-loop, 1=in loop, 2=step gate,
+    // 3=positive step, 4=junction denied, 5=movement commit reached.
+    int _pr57BlockStage;
+    readonly long[] _pr57WakeNoHoldByStage=new long[6];
+    long _pr57WakeNoHoldShortGap,_pr57WakeNoHoldSameSelf,
+         _pr57WakeNoHoldCauseChanged,_pr57WakeNoHoldStatusChanged;
+    int _pr57WakeTraceCount;
+
+    void Pr57BlockMarkStage(int stage)
+    {
+        if(stage>_pr57BlockStage)_pr57BlockStage=stage;
+    }
     long _pr57BlockAttempts,_pr57BlockWithLeader,_pr57BlockNoLeader,
          _pr57BlockTowAttempts,_pr57BlockStrandedLeaders,_pr57BlockPastUTurn,
          _pr57BlockRepeat,_pr57BlockSameLeaderId,_pr57BlockSameLeaderRead,
@@ -74,6 +86,7 @@ public sealed partial class CitySimulation
     {
         _pr57BlockHadPrevious=_pr57LastBlocked.ContainsKey(v.Id);
         _pr57BlockSeenThisVehicle=false;
+        _pr57BlockStage=0;
     }
 
     void Pr57BlockObserve(Vehicle v,Vehicle? blocker,RoadNode node,
@@ -140,7 +153,33 @@ public sealed partial class CitySimulation
         if(_pr57BlockHadPrevious)
         {
             if(moved)_pr57BlockWakeMoved++;
-            else if(!_pr57BlockSeenThisVehicle)_pr57BlockWakeNoHold++;
+            else if(!_pr57BlockSeenThisVehicle)
+            {
+                _pr57BlockWakeNoHold++;
+                _pr57WakeNoHoldByStage[Math.Clamp(_pr57BlockStage,0,5)]++;
+                if(_pr57LastBlocked.TryGetValue(v.Id,out var previous))
+                {
+                    var gap=VehicleMovementTime-previous.ObservedAt;
+                    if(gap<2)_pr57WakeNoHoldShortGap++;
+                    if(v.Status!=previous.SelfStatus)_pr57WakeNoHoldStatusChanged++;
+                    if(!string.Equals(v.Cause,previous.SelfCause,StringComparison.Ordinal))
+                        _pr57WakeNoHoldCauseChanged++;
+                    var sameSelf=v.Position.Equals(previous.SelfPosition)
+                        &&v.Heading==previous.SelfHeading
+                        &&v.Status==previous.SelfStatus
+                        &&v.RouteIndex==previous.SelfRouteIndex
+                        &&v.IntersectionClaim==previous.SelfClaim
+                        &&v.WaitingSince==previous.SelfWait
+                        &&v.FuelUnits==previous.SelfFuel
+                        &&string.Equals(v.Cause,previous.SelfCause,StringComparison.Ordinal);
+                    if(sameSelf)_pr57WakeNoHoldSameSelf++;
+                    if(_pr57WakeTraceCount<16)
+                    {
+                        _pr57WakeTraceCount++;
+                        Console.WriteLine($"PR57_WAKE_TRACE vehicle={v.Id} at={VehicleMovementTime:F6} gap={gap:F6} stage={_pr57BlockStage} status={v.Status} oldStatus={previous.SelfStatus} route={v.RouteIndex} oldRoute={previous.SelfRouteIndex} cause={v.Cause?.Replace(' ','_')} oldCause={previous.SelfCause?.Replace(' ','_')} sameSelf={sameSelf}");
+                    }
+                }
+            }
         }
         if(moved||!_pr57BlockSeenThisVehicle)_pr57LastBlocked.Remove(v.Id);
     }
@@ -158,6 +197,13 @@ public sealed partial class CitySimulation
             $"sameSelfRead={_pr57BlockSameSelfRead} sameSampledReadSet={_pr57BlockSameFullRead} " +
             $"stableReadSet30s={_pr57BlockStableThirty} stableVehicles30s={_pr57StableThirtyVehicles.Count} " +
             $"wokeMoved={_pr57BlockWakeMoved} wokeWithoutHold={_pr57BlockWakeNoHold}");
+        Console.WriteLine(
+            $"PR57_BLOCK_WAKE_CLASS slices={_pr57IdleProbeSlices} noHold={_pr57BlockWakeNoHold} " +
+            $"preLoop={_pr57WakeNoHoldByStage[0]} inLoop={_pr57WakeNoHoldByStage[1]} " +
+            $"stepGate={_pr57WakeNoHoldByStage[2]} positiveStep={_pr57WakeNoHoldByStage[3]} " +
+            $"junctionDenied={_pr57WakeNoHoldByStage[4]} movementCommit={_pr57WakeNoHoldByStage[5]} " +
+            $"gapUnder2s={_pr57WakeNoHoldShortGap} sameSelf={_pr57WakeNoHoldSameSelf} " +
+            $"causeChanged={_pr57WakeNoHoldCauseChanged} statusChanged={_pr57WakeNoHoldStatusChanged}");
         Console.WriteLine(
             $"PR57_IDLE_PROBE slices={_pr57IdleProbeSlices} vehicles={_pr57IdleProbeVehicles} "+
             $"poseUnchanged={_pr57IdleProbePoseSame} sampledFieldsUnchanged={_pr57IdleProbeFieldsSame} "+
