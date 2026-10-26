@@ -1,4 +1,4 @@
-name: PR57 #168 sampled complete-vehicle nonlocal write boundaries
+name: 'PR57 #168 sampled complete-vehicle nonlocal write boundaries'
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
@@ -120,7 +120,7 @@ jobs:
                     "thirdVehicleChanges","unchangedPasses","beforeQueryChecks",
                     "beforeQueryDivergences","syncVehicleChanges","listChanges")
               census={k:int(val(last,k)) for k in keys}
-              assert census["samples"]>=1 and census["passes"]>0,(case,census)
+              assert census["samples"]>=1 and census["passes"]>0 and census["beforeQueryChecks"]>0,(case,census)
               print("PR57_168_RESULT",case,"seconds",seconds,"plain",metrics,
                     "simSecondsPerWallSecond",round(seconds/metrics["wall"],2),
                     "fullCheckpoints",windows+1,"census",census)
