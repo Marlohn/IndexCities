@@ -783,8 +783,8 @@ public sealed partial class CitySimulation
                     }
                 }
                 }
+                if(Pr57MutationAuditEnabled&&scanProfile is not null)Pr57MutationBeforeLeaderScan(v);
                 if(Pr57LaneReadWriteEnabled&&scanProfile is not null)
-                    if(Pr57MutationAuditEnabled&&scanProfile is not null)Pr57MutationBeforeLeaderScan(v);
                     Pr57LaneReadBeforeScan(v,enteringLane,speed*remaining,pr57LaneList.Count);
                 Pr57ScanLane(pr57LaneList);
                 if(scanProfile is not null){
