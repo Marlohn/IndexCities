@@ -392,6 +392,38 @@ public sealed partial class CitySimulation
         if(until>MovementEventEpsilon&&until<horizon){reason=pathReason;return until;}
         return horizon;
     }
+    // PR57 isolated POC: a swept, conservative envelope narrows ONLY the
+    // projected recheck loop. All candidate times and global slices are retained.
+    // No state is cached between calls or persisted.
+    static readonly bool Pr57EntrySweepFilterEnabled =
+        Environment.GetEnvironmentVariable("PR57_ENTRY_SWEEP_FILTER")=="1";
+    bool _pr57EntrySweepFilterAnnounced;
+    bool Pr57CanBlockDuringEntrySweep(Vehicle entrant,LaneAccess access,Vehicle other,Point velocity,double horizon)
+    {
+        // BlocksLaneEntry first requires both lateral bounds. The projected
+        // position is affine in t over [0,horizon], so endpoint extrema suffice.
+        var projectedEnd=other.Position+velocity*horizon;
+        var side0=access.Side(other.Position);
+        var side1=access.Side(projectedEnd);
+        var half=State.Tuning.RoadWidth/2;
+        var lower=Math.Max(-half,Math.Min(access.FromSide,access.ToSide)-.9);
+        var upper=Math.Min(half,Math.Max(access.FromSide,access.ToSide)+.9);
+        var sideSlack=1e-6*(1+Math.Abs(side0)+Math.Abs(side1)+Math.Abs(lower)+Math.Abs(upper));
+        if(Math.Max(side0,side1)<lower-sideSlack||Math.Min(side0,side1)>upper+sideSlack)return false;
+
+        // The crossing along-coordinate is a convex combination of the
+        // entrant's position and target. Approach speed is bounded by the
+        // largest of the two nominal speeds in BlocksLaneEntry, regardless of
+        // route or heading. Excluding an entire disjoint interval is exact.
+        var along0=access.Along(other.Position);
+        var along1=access.Along(projectedEnd);
+        var cross0=access.Along(entrant.Position);
+        var cross1=access.Along(access.Target);
+        var maxClearance=8+access.Distance*Math.Max(State.Tuning.VehicleSpeed,State.Tuning.HighwaySpeed)/access.Speed;
+        var alongSlack=1e-6*(1+Math.Abs(along0)+Math.Abs(along1)+Math.Abs(cross0)+Math.Abs(cross1)+Math.Abs(maxClearance));
+        return !(Math.Max(along0,along1)<Math.Min(cross0,cross1)-maxClearance-alongSlack||
+                 Math.Min(along0,along1)>Math.Max(cross0,cross1)+maxClearance+alongSlack);
+    }
     double NextVehicleMovementEvent(double horizon)
     {
         var profile=CostProfile;
@@ -434,11 +466,23 @@ public sealed partial class CitySimulation
                 foreach(var cut in cuts){var t=cut+MovementEventEpsilon;if(t>MovementEventEpsilon&&t<horizon)candidates.Add(t);}
             }
             if(profile is not null)projectionCandidates+=candidates.Count;
+            // Keep the exact original candidate set and ordering. Only the
+            // expensive all-occupant projected predicate is narrowed by a
+            // superset of bodies able to intersect the entry envelope.
+            var recheckOccupants=Pr57EntrySweepFilterEnabled&&candidates.Count>0
+                ?occupants.Where(other=>Pr57CanBlockDuringEntrySweep(v,access,other,ProjectedVelocity(other,held),horizon)).ToList()
+                :occupants;
+            if(Pr57EntrySweepFilterEnabled&&!_pr57EntrySweepFilterAnnounced&&
+               recheckOccupants.Count<occupants.Count&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+            {
+                Console.WriteLine($"PR57_ENTRY_SWEEP_FILTER active=True occupants={occupants.Count} candidates={recheckOccupants.Count}");
+                _pr57EntrySweepFilterAnnounced=true;
+            }
             foreach(var t in candidates){
                 if(t>=earliest)break;
                 if(profile is not null)projectionRechecks++;
                 var blocked=false;
-                foreach(var other in occupants){var projected=EntrySnapshot(other);projected.Position+=ProjectedVelocity(other,held)*t;if(BlocksLaneEntry(v,access,projected)){blocked=true;break;}}
+                foreach(var other in recheckOccupants){var projected=EntrySnapshot(other);projected.Position+=ProjectedVelocity(other,held)*t;if(BlocksLaneEntry(v,access,projected)){blocked=true;break;}}
                 // A prediction selects a time to RECHECK, never grants entry.
                 // If a queue or crossing stopped a vehicle, the actual frame at
                 // that event still blocks; it is never assumed to have left.
