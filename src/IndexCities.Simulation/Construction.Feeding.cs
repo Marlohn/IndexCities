@@ -133,11 +133,15 @@ public sealed partial class CitySimulation
     static readonly bool Pr57SiteOwnerRosterEnabled =
         Environment.GetEnvironmentVariable("PR57_SITE_OWNER_ROSTER")=="1";
     List<Vehicle>? _pr57SiteOwnerRoster;
+    List<Vehicle>? _pr57SiteOwnerSource;
+    List<Vehicle>.Enumerator _pr57SiteOwnerListVersion;
     int _pr57SiteOwnerVehicleCount;
     bool _pr57SiteOwnerRosterAnnounced, _pr57SiteOwnerRosterUsedAnnounced;
     void Pr57PrepareSiteOwnerRoster()
     {
         if(!Pr57SiteOwnerRosterEnabled){_pr57SiteOwnerRoster=null;return;}
+        _pr57SiteOwnerSource=State.Vehicles;
+        _pr57SiteOwnerListVersion=State.Vehicles.GetEnumerator();
         _pr57SiteOwnerVehicleCount=State.Vehicles.Count;
         _pr57SiteOwnerRoster=State.Vehicles.Where(v=>!v.PassengerCar||
             v.Machine!=PavingMachine.None||v.SitePath.Count>0||
@@ -152,9 +156,20 @@ public sealed partial class CitySimulation
     double SafeSiteTravel(Vehicle vehicle,Point target,double distance,bool machinesOnly=false)
     {
         if(Pr57ZeroSiteSkip&&distance==0)return 0;
-        var siteOwners=Pr57SiteOwnerRosterEnabled&&_pr57SiteOwnerRoster is not null&&
-            _pr57SiteOwnerVehicleCount==State.Vehicles.Count
-            ?_pr57SiteOwnerRoster:State.Vehicles;
+        // List<T>.Enumerator detects same-count replacements, reversals and
+        // remove/add pairs: Count alone cannot protect an in-slice roster.
+        // This is O(1) per query, with the original scan as the fallback.
+        // The public engine is synchronous; object-property edits between
+        // Advance(2) calls are covered by rebuilding at each movement slice.
+        var rosterValid=Pr57SiteOwnerRosterEnabled&&_pr57SiteOwnerRoster is not null&&
+            ReferenceEquals(_pr57SiteOwnerSource,State.Vehicles)&&
+            _pr57SiteOwnerVehicleCount==State.Vehicles.Count;
+        if(rosterValid)
+        {
+            try{_pr57SiteOwnerListVersion.MoveNext();}
+            catch(InvalidOperationException){rosterValid=false;_pr57SiteOwnerRoster=null;}
+        }
+        var siteOwners=rosterValid?_pr57SiteOwnerRoster!:State.Vehicles;
         if(Pr57SiteOwnerRosterEnabled&&ReferenceEquals(siteOwners,_pr57SiteOwnerRoster)&&
            !_pr57SiteOwnerRosterUsedAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
         {
