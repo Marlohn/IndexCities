@@ -240,7 +240,8 @@ static void Pr57AccessLiveEdit(CitySimulation sim,int quantum,ref int editedRoad
     }
     else if(quantum==600)
     {
-        var road=sim.State.Roads.Single(r=>r.Id==editedRoadId);
+        var restoreRoadId=editedRoadId;
+        var road=sim.State.Roads.Single(r=>r.Id==restoreRoadId);
         road.MaintenanceRatio=originalMaintenance;
         Console.WriteLine($"PR57_ACCESS_LIVE_EDIT phase=maintenance-on quantum={quantum} road={road.Id}");
     }
