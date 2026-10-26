@@ -4,6 +4,14 @@ public sealed partial class CitySimulation
 {
     // PR57-only allocation census for authentic congested checkpoint replays.
     // Observation is enabled exclusively by CostProfile; it never affects movement or saves.
+    // PR57 #155: intrusive, observational per-vehicle cost classification.
+    // Disabled in normal gameplay and in plain wall runs. No scheduler reads these counters.
+    static readonly bool Pr57VehicleCostProbeEnabled=Environment.GetEnvironmentVariable("PR57_VEHICLE_COST_PROBE")=="1";
+    readonly long[] _pr57VehicleCostTicks=new long[8];
+    readonly long[] _pr57VehicleCostCalls=new long[8];
+    readonly long[] _pr57VehicleCostBytes=new long[8];
+    readonly long[] _pr57VehicleCostClaimChanges=new long[8];
+    readonly long[] _pr57VehicleCostSpaceCountChanges=new long[8];
     readonly long[] _pr57MovementAllocBytes=new long[11]; // total, setup, lane, bend, site, crossing, turn, operations, pre-lane, post-turn, finalizer
     // PR57 observational split of preLane/postTurn. Indexes are never read by physics.
     readonly long[] _pr57RegionAllocBytes=new long[8]; // route, geometry, shared, entry, pose, blocked, junction, drive
@@ -314,6 +322,7 @@ public sealed partial class CitySimulation
     {
         Pr57PrepareSiteOwnerRoster();
         var scanProfile=CostProfile;
+        var pr57CostProbe=scanProfile is not null&&Pr57VehicleCostProbeEnabled;
         var pr57IdleProbe=scanProfile is not null&&Pr57IdleProbeEnabled;
         var pr57AllocCallStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
         // Release a passed junction even while a vehicle waits at the next one.
@@ -541,6 +550,13 @@ public sealed partial class CitySimulation
             // 3=between existing measured calls. All counters are disabled without profiling.
             var pr57VehicleAllocStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
             var pr57VehicleAllocStage=0;
+            // Capture before operations; the timer stops before existing finally diagnostics.
+            // These measurements are deliberately intrusive and never used for wall A/B.
+            var pr57CostStartTicks=pr57CostProbe?System.Diagnostics.Stopwatch.GetTimestamp():0L;
+            var pr57CostStartBytes=pr57CostProbe?GC.GetAllocatedBytesForCurrentThread():0L;
+            var pr57CostOldPosition=pr57CostProbe?v.Position:default;
+            var pr57CostOldClaim=pr57CostProbe?v.IntersectionClaim:null;
+            var pr57CostOldSpaces=pr57CostProbe?v.ManoeuvreSpaces.Count:0;
             try{
             // PR57: isolate whether the lateral entrant already obstructs the through lane
             // when it starts travelling, or reaches that pose during admission.
@@ -981,6 +997,26 @@ public sealed partial class CitySimulation
                 if(DriveWear(v,step)||steer==null&&!advanced)break;
             }
             }finally{
+                if(pr57CostProbe){
+                    var pr57ElapsedTicks=System.Diagnostics.Stopwatch.GetTimestamp()-pr57CostStartTicks;
+                    var pr57Allocated=GC.GetAllocatedBytesForCurrentThread()-pr57CostStartBytes;
+                    var pr57Moved=v.Position.Distance(pr57CostOldPosition)>1e-7;
+                    var pr57Cause=v.Cause;
+                    // 0 operations; 1 nontravelling; 2 moved; 3 lane/bay queue;
+                    // 4 crossing/junction; 5 other waiting; 6 stationary "in trip"; 7 other.
+                    var pr57Group=dt<=0?0:v.Status!=VehicleStatus.Travelling?1:pr57Moved?2:
+                        pr57Cause?.StartsWith("Fila",StringComparison.Ordinal)==true?3:
+                        pr57Cause?.Contains("cruzamento",StringComparison.OrdinalIgnoreCase)==true||
+                        pr57Cause?.Contains("curva",StringComparison.OrdinalIgnoreCase)==true||
+                        pr57Cause?.Contains("semáforo",StringComparison.OrdinalIgnoreCase)==true?4:
+                        pr57Cause?.StartsWith("Aguardando",StringComparison.Ordinal)==true?5:
+                        pr57Cause=="Em viagem"?6:7;
+                    _pr57VehicleCostTicks[pr57Group]+=pr57ElapsedTicks;
+                    _pr57VehicleCostBytes[pr57Group]+=pr57Allocated;
+                    _pr57VehicleCostCalls[pr57Group]++;
+                    if(v.IntersectionClaim!=pr57CostOldClaim)_pr57VehicleCostClaimChanges[pr57Group]++;
+                    if(v.ManoeuvreSpaces.Count!=pr57CostOldSpaces)_pr57VehicleCostSpaceCountChanges[pr57Group]++;
+                }
                 if(scanProfile is not null){
                     var allocNow=GC.GetAllocatedBytesForCurrentThread();
                     if(pr57VehicleAllocStage==0)_pr57MovementAllocBytes[7]+=allocNow-pr57VehicleAllocStart;
@@ -1041,6 +1077,14 @@ public sealed partial class CitySimulation
                     Console.WriteLine($"PR57_HOT_TIMING slices={_pr57MovementAllocCalls} siteMs={Ms(hot[0]):F3} siteCalls={calls[0]} crossingMs={Ms(hot[1]):F3} crossingCalls={calls[1]} turnMs={Ms(hot[2]):F3} turnCalls={calls[2]} junctionMs={Ms(hot[3]):F3} junctionCalls={calls[3]} ownerMs={Ms(detail[0]):F3} areaMs={Ms(detail[1]):F3} bendHolderMs={Ms(detail[2]):F3} bendPriorityMs={Ms(detail[3]):F3} preferenceMs={Ms(detail[4]):F3} turnWayMs={Ms(detail[5]):F3} bodyOnWayMs={Ms(detail[6]):F3}");
                 }
                 Console.WriteLine($"PR57_ALLOC_PROFILE calls={_pr57MovementAllocCalls} totalMB={b[0]/1e6:F2} setupMB={b[1]/1e6:F2} laneMB={b[2]/1e6:F2} bendMB={b[3]/1e6:F2} siteMB={b[4]/1e6:F2} crossingMB={b[5]/1e6:F2} turnMB={b[6]/1e6:F2} operationsMB={b[7]/1e6:F2} preLaneMB={b[8]/1e6:F2} postTurnMB={b[9]/1e6:F2} finalizeMB={b[10]/1e6:F2} otherMB={other/1e6:F2}");
+            }
+            if(pr57CostProbe&&_pr57MovementAllocCalls%60==0){
+                string[] names=["operations","nontravelling","moved","queue","junction","waiting","stationary-trip","other"];
+                var totalTicks=_pr57VehicleCostTicks.Sum();
+                for(var i=0;i<names.Length;i++){
+                    var ticks=_pr57VehicleCostTicks[i];
+                    Console.WriteLine($"PR57_VEHICLE_COST slices={_pr57MovementAllocCalls} group={names[i]} calls={_pr57VehicleCostCalls[i]} ms={ticks*1000.0/System.Diagnostics.Stopwatch.Frequency:F3} sharePct={(totalTicks==0?0:100.0*ticks/totalTicks):F2} allocMB={_pr57VehicleCostBytes[i]/1e6:F3} claimChanges={_pr57VehicleCostClaimChanges[i]} spaceCountChanges={_pr57VehicleCostSpaceCountChanges[i]}");
+                }
             }
         }
     }
