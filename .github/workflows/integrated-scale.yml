@@ -106,6 +106,7 @@ jobs:
                   if case.startswith('live'):
                       for phase in ('maintenance-off','maintenance-on','external-road-order','public-road-rebuild'):
                           assert f'PR57_ACCESS_LIVE_EDIT phase={phase}' in log,(case,mode,phase)
+                      assert 'phase=public-road-rebuild quantum=1200' in log,(case,mode,'public edit timing')
                   windows=[x for x in log.splitlines() if x.startswith('WINDOW ')]
                   assert len(windows)==(1 if case in ('grid','congested') else 2),(case,mode,'windows')
                   def val(row,key):
