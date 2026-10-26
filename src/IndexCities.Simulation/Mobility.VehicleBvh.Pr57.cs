@@ -9,6 +9,7 @@ public sealed partial class CitySimulation
     static readonly bool Pr57DynamicBvhEnabled =
         Environment.GetEnvironmentVariable("PR57_DYNAMIC_BVH") == "1";
     Pr57VehicleBvh? _pr57VehicleBvh;
+    bool _pr57BvhAnnounced;
 
     sealed class Pr57VehicleBvh
     {

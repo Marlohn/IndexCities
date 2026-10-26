@@ -335,6 +335,10 @@ public sealed partial class CitySimulation
             if(_pr57VehicleBvh is null||!_pr57VehicleBvh.Matches(State.Vehicles))
                 _pr57VehicleBvh=new Pr57VehicleBvh(State.Vehicles);
             else _pr57VehicleBvh.Refresh();
+            if(!_pr57BvhAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1"){
+                Console.WriteLine("PR57_DYNAMIC_BVH active=True");
+                _pr57BvhAnnounced=true;
+            }
         }
         var pr57FastScan=Environment.GetEnvironmentVariable("PR57_FAST_SCAN")=="1";
         // Independent A/B switch: isolate heading reuse from bend broad-phase.
