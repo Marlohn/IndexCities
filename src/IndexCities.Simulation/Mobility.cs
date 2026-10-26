@@ -323,13 +323,16 @@ public sealed partial class CitySimulation
         Pr57PrepareSiteOwnerRoster();
         var scanProfile=CostProfile;
         var pr57CostProbe=scanProfile is not null&&Pr57VehicleCostProbeEnabled;
+        var pr57DepProbe=scanProfile is not null&&Pr57BlockDepProbeEnabled&&dt>0;
         var pr57IdleProbe=scanProfile is not null&&Pr57IdleProbeEnabled;
         var pr57AllocCallStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
+        if(pr57DepProbe)Pr57DepBeginSlice();
         // Release a passed junction even while a vehicle waits at the next one.
         // Carriageway half-width (3.3 m) + truck half-length (3.6 m) covers the
         // actual rear of the truck; the former 9 m reservation could overlap
         // nearby junctions and make opposite queues hold each other forever.
         foreach(var vehicle in State.Vehicles){ClearPassedJunction(vehicle);ReleaseManoeuvre(vehicle);}
+        if(pr57DepProbe)Pr57DepAfterCleanup();
         // Same order as OrderBy(WaitingSince).ThenBy(Id): Ids are unique, so the
         // key is a total order and any sort yields the same sequence.
         // PR57 isolated A/B: during a batched movement slice, the loop below
@@ -911,6 +914,7 @@ public sealed partial class CitySimulation
                         v.Cause=blocker?.Status==VehicleStatus.Stranded?$"Aguardando veículo {blocker.Id} {(blocker.BrokenDown?"quebrado":"sem combustível")} na via":bayHold||entryHeld!=null?"Fila para acesso de carga":enteringLane?"Aguardando espaço para acessar a faixa":blocker!=null&&HoldsJunctionAhead(blocker,node)?(IsBend(node)?"Aguardando liberação da curva pelo veículo ":"Aguardando liberação do cruzamento pelo veículo ")+blocker.Id:"Fila na faixa";
                         if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;
                         if(pr57IdleProbe)Pr57BlockObserve(v,blocker,node,enteringLane,bayHold,entryHeld!=null);
+                        if(pr57DepProbe)Pr57DepBlocked(v,blocker);
                         if(scanProfile is not null){_pr57BlockedAllocBytes[0]+=GC.GetAllocatedBytesForCurrentThread()-allocStart;_pr57BlockedCalls[0]++;}
                         if(v.TowPhase==TowPhase.ToVehicle){
                             allocStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
@@ -1055,6 +1059,7 @@ public sealed partial class CitySimulation
         }
         // A towed vehicle moves only with its tow (platform or trailing a heavy tow).
         SyncTowedVehicles();
+        if(pr57DepProbe)Pr57DepEndSlice();
         if(pr57IdleProbe)Pr57IdleProbeTick();
         _pr57SiteOwnerRoster=null; // no index may survive this movement slice
         if(pr57Bvh)_pr57VehicleBvh!.Refresh();
