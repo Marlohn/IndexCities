@@ -92,8 +92,9 @@ jobs:
               assert [p.name for p in plain_paths]==[p.name for p in timed_paths],(case,'checkpoint names')
               for a,b in zip(plain_paths,timed_paths):
                   assert a.read_bytes()==b.read_bytes(),(case,a.name,'causal divergence')
-              assert 'PR57_HOT_TIMING' not in plain and 'PR57_IDLE_PROBE ' not in plain,(case,'profile leakage')
+              assert 'PR57_HOT_TIMING' not in plain and 'PR57_IDLE_PROBE ' not in plain and 'PR57_BLOCK_PROBE ' not in plain,(case,'profile leakage')
               assert 'PR57_IDLE_PROBE ' in timed,(case,'idle probe not engaged')
+              assert 'PR57_BLOCK_PROBE ' in timed,(case,'blocker probe not engaged')
               hot=[line for line in timed.splitlines() if line.startswith('PR57_HOT_TIMING ')]
               assert hot,(case,'profile not engaged')
               last=hot[-1]
@@ -105,7 +106,9 @@ jobs:
               windows=[line for line in plain.splitlines() if line.startswith('WINDOW ')]
               assert windows,(case,'no plain wall')
               print('PR57_HOT_RESULT',case,'checkpoints',len(plain_paths),'plainWindows',len(windows),
-                    'profile',last,'idle',next(line for line in reversed(timed.splitlines()) if line.startswith('PR57_IDLE_PROBE ')),'plainWallRows',windows)
+                    'profile',last,'idle',next(line for line in reversed(timed.splitlines()) if line.startswith('PR57_IDLE_PROBE ')),
+                    'block',next(line for line in reversed(timed.splitlines()) if line.startswith('PR57_BLOCK_PROBE ')),
+                    'plainWallRows',windows)
           PY
       - name: Preserve logs and complete checkpoints
         if: always()
