@@ -66,7 +66,7 @@ jobs:
             for mode in plain profile; do
               output="$PWD/artifacts/residual-162/$case-$mode"
               mkdir -p "$output"
-              phase_alloc=0; if [[ "$mode" == profile ]]; then phase_alloc=1; fi
+              phase_alloc=0; command=scale; if [[ "$mode" == profile ]]; then phase_alloc=1; command=profile; fi
               echo "PR57_162_RUN case=$case mode=$mode horizon=$((window*windows)) hostQuantum=Advance2 composed=6 safeSite=1"
               PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_GRID_DIAG=1 \
               PR57_SAVE_CAPTURE_DIR="$output" PR57_PHASE_ALLOC_PROBE="$phase_alloc" \
@@ -77,7 +77,7 @@ jobs:
               PR57_VEHICLE_COST_PROBE=0 PR57_HOT_TIMING=0 \
                 timeout 180s dotnet run --no-build -c Release \
                 --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
-                "$mode" "$fixture" --seed=42 --warmup=0 --days="$windows" \
+                "$command" "$fixture" --seed=42 --warmup=0 --days="$windows" \
                 --window="$window" --cap=300 --resume="$source" | tee "$output.log"
             done
           done
