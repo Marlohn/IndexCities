@@ -32,6 +32,7 @@ public sealed partial class CitySimulation
     readonly Dictionary<int,long> _pr57TargetTraceCounts=new();
     readonly Dictionary<int,Dictionary<int,long>> _laneBlockProbeLeaders=new();
     int _laneEntryOriginLastSecond=-1; // PR57: bounded, observational, never serialized
+    bool _pr57CausalHorizonAnnounced; // diagnostic only; no persisted state
     bool _pedestrianCrossingsChecked;
     bool ShiftActive(Citizen c)=>BuildingById(c.WorkplaceId) is {} b&&ShiftActiveIn(c,b);
     bool ShiftActiveIn(Citizen c,Building b)
@@ -337,7 +338,12 @@ public sealed partial class CitySimulation
         var pr57SpatialScan=Environment.GetEnvironmentVariable("PR57_SPATIAL_SCAN")=="1";
         // PR57: experimental allocation-light, exact-order spatial bitsets (off by default).
         var pr57BitsetScan=Environment.GetEnvironmentVariable("PR57_BITSET_SCAN")=="1";
-        var pr57Bvh=Pr57DynamicBvhEnabled&&!pr57SpatialScan&&!pr57BitsetScan&&!pr57ActiveScan;
+        // PR57 isolated A/B: far leaders cannot restrict this quantum's
+        // distance, but blocked decisions still recover the exact full winner.
+        // All physical predicates and all global movement slices are retained.
+        var pr57CausalHorizon=Environment.GetEnvironmentVariable("PR57_CAUSAL_HORIZON")=="1";
+        var pr57LaneGrid=pr57BitsetScan||pr57CausalHorizon;
+        var pr57Bvh=Pr57DynamicBvhEnabled&&!pr57SpatialScan&&!pr57LaneGrid&&!pr57ActiveScan;
         if(pr57Bvh){
             if(_pr57VehicleBvh is null||!_pr57VehicleBvh.Matches(State.Vehicles))
                 _pr57VehicleBvh=new Pr57VehicleBvh(State.Vehicles);
@@ -373,7 +379,7 @@ public sealed partial class CitySimulation
             ?State.Vehicles.Where(o=>!o.PassengerCar||o.Status!=VehicleStatus.Parked||_entryFrame?.ContainsKey(o.Id)==true).ToList()
             :State.Vehicles;
         var pr57ScanIds=pr57ActiveScan?pr57ScanCandidates.Select(o=>o.Id).ToHashSet():null;
-        var pr57VehicleOrder=pr57ActiveScan||pr57SpatialScan||pr57BitsetScan?State.Vehicles.Select((o,i)=>new{o.Id,Index=i}).ToDictionary(x=>x.Id,x=>x.Index):null;
+        var pr57VehicleOrder=pr57ActiveScan||pr57SpatialScan||pr57LaneGrid?State.Vehicles.Select((o,i)=>new{o.Id,Index=i}).ToDictionary(x=>x.Id,x=>x.Index):null;
         // PR57 spatial A/B: both indexes are per movement slice, updated after
         // each processed vehicle. Exact lane/bend predicates still decide every
         // collision. Bitset enumeration follows original State.Vehicles order,
@@ -381,12 +387,12 @@ public sealed partial class CitySimulation
         const double pr57CellWidth=32;
         static (int X,int Z) Pr57Cell(Point p)=>((int)Math.Floor(p.X/pr57CellWidth),(int)Math.Floor(p.Z/pr57CellWidth));
         var pr57Cells=pr57SpatialScan?new Dictionary<(int X,int Z),List<Vehicle>>():null;
-        var pr57BitsetCells=pr57BitsetScan?new Dictionary<(int X,int Z),ulong[]>():null;
+        var pr57BitsetCells=pr57LaneGrid?new Dictionary<(int X,int Z),ulong[]>():null;
         var pr57BitsetWords=(State.Vehicles.Count+63)/64;
-        var pr57BitsetScratch=pr57BitsetScan?new ulong[pr57BitsetWords]:null;
-        var pr57BitsetResults=pr57BitsetScan?new List<Vehicle>(64):null;
+        var pr57BitsetScratch=pr57LaneGrid?new ulong[pr57BitsetWords]:null;
+        var pr57BitsetResults=pr57LaneGrid?new List<Vehicle>(64):null;
         var pr57BendLeadersReuse=pr57BendReuse?new List<Vehicle>(32):null;
-        var pr57SpatialIds=pr57SpatialScan||pr57BitsetScan?pr57ScanCandidates.Select(o=>o.Id).ToHashSet():null;
+        var pr57SpatialIds=pr57SpatialScan||pr57LaneGrid?pr57ScanCandidates.Select(o=>o.Id).ToHashSet():null;
         var pr57WorldExtent=(pr57SpatialScan||pr57BitsetScan)&&pr57ScanCandidates.Count>0
             ?pr57ScanCandidates.Max(o=>Math.Max(Math.Abs(o.Position.X),Math.Abs(o.Position.Z))):0;
         void Pr57Add(Vehicle o){
@@ -484,7 +490,21 @@ public sealed partial class CitySimulation
             }
             return found;
         }
-        List<Vehicle> Pr57LaneCandidates(Vehicle v,bool entering){
+        List<Vehicle> Pr57LaneCandidates(Vehicle v,bool entering,double maxStep){
+            if(pr57CausalHorizon&&!entering){
+                // A normal leader affecting this step has forward <= maxStep+8
+                // and lateral <2.6m. Dock blockers are within 20m. The square
+                // encloses both without excluding any possible exact hit.
+                var forward=maxStep+8;
+                var radius=Math.Max(20,Math.Sqrt(forward*forward+2.6*2.6))+1e-6;
+                var nearby=Pr57Query(v.Position.X-radius,v.Position.X+radius,
+                                     v.Position.Z-radius,v.Position.Z+radius);
+                if(!_pr57CausalHorizonAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1"){
+                    Console.WriteLine($"PR57_CAUSAL_HORIZON used=True candidates={nearby.Count} total={State.Vehicles.Count} radius={radius:F3}");
+                    _pr57CausalHorizonAnnounced=true;
+                }
+                return nearby;
+            }
             // Entry admission uses a speed-dependent corridor: never spatially filter it.
             if(pr57Bvh&&!entering)return _pr57VehicleBvh!.Lane(v);
             if(!(pr57SpatialScan||pr57BitsetScan)||entering)return pr57ScanCandidates;
@@ -498,7 +518,7 @@ public sealed partial class CitySimulation
         }
         if(scanProfile is not null)_pr57MovementAllocBytes[1]+=GC.GetAllocatedBytesForCurrentThread()-pr57AllocCallStart;
         foreach(var v in ordered){
-            var pr57OldCell=pr57SpatialScan||pr57BitsetScan?Pr57Cell(v.Position):default;
+            var pr57OldCell=pr57SpatialScan||pr57LaneGrid?Pr57Cell(v.Position):default;
             // PR57 observation only: account for the residual outside the six measured calls.
             // Stages: 0=vehicle operations, 1=route/entry preparation, 2=post-safety hold,
             // 3=between existing measured calls. All counters are disabled without profiling.
@@ -663,8 +683,9 @@ public sealed partial class CitySimulation
                 if(scanProfile is not null){_pr57RegionAllocBytes[3]+=GC.GetAllocatedBytesForCurrentThread()-pr57RegionStart;pr57RegionStart=GC.GetAllocatedBytesForCurrentThread();}
                 var laneScanStart=scanProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
                 var pr57LaneAllocStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
-                var pr57LaneList=Pr57LaneCandidates(v,enteringLane);
-                foreach(var liveOther in pr57LaneList){
+                var pr57LaneList=Pr57LaneCandidates(v,enteringLane,speed*remaining);
+                void Pr57ScanLane(IEnumerable<Vehicle> candidates){
+                foreach(var liveOther in candidates){
                     var other=enteringLane?EntryFrameVehicle(liveOther):liveOther;
                     // A truck stopped at a dock with its body across this lane (a street bay)
                     // is queued behind like a leader, keeping the queue gap (Mobility.SharedSpace).
@@ -711,6 +732,8 @@ public sealed partial class CitySimulation
                         HoldFor(other,forward);
                     }
                 }
+                }
+                Pr57ScanLane(pr57LaneList);
                 if(scanProfile is not null){
                     scanProfile.MarkVehicleScan(0,laneScanStart,pr57LaneList.Count,laneCandidateHits);
                     if(blocker is not null)scanProfile.ObserveLaneLeaderSelection(v.Position,blocker.Position,leaderDistance,Math.Min(d,speed*remaining));
@@ -832,6 +855,11 @@ public sealed partial class CitySimulation
                 if(scanProfile is not null){_pr57RegionAllocBytes[4]+=GC.GetAllocatedBytesForCurrentThread()-pr57RegionStart;pr57RegionStart=GC.GetAllocatedBytesForCurrentThread();}
                 try{
                     if(step<.00001&&d>.00001){
+                        // A distant leader is irrelevant to the travelled step
+                        // but can still determine a wait cause or tow decision.
+                        // Recover the exact original full-scan winner if needed.
+                        if(pr57CausalHorizon&&!enteringLane&&blocker is null)
+                            Pr57ScanLane(State.Vehicles);
                         var allocStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
                         v.Cause=blocker?.Status==VehicleStatus.Stranded?$"Aguardando veículo {blocker.Id} {(blocker.BrokenDown?"quebrado":"sem combustível")} na via":bayHold||entryHeld!=null?"Fila para acesso de carga":enteringLane?"Aguardando espaço para acessar a faixa":blocker!=null&&HoldsJunctionAhead(blocker,node)?(IsBend(node)?"Aguardando liberação da curva pelo veículo ":"Aguardando liberação do cruzamento pelo veículo ")+blocker.Id:"Fila na faixa";
                         if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;
