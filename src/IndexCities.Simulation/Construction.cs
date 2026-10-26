@@ -112,7 +112,8 @@ public sealed partial class CitySimulation
     // Counting occurs on enumeration, including LINQ short-circuit behaviour.
     IEnumerable<Shipment> Pr57ConstructionShipmentSource()
     {
-        if(CostProfile is not { } profile)return State.Shipments;
+        var profile=CostProfile;
+        if(profile==null)return State.Shipments;
         profile.ConstructionShipmentQueries++;
         var source=State.Shipments;
         return Counted();
@@ -123,7 +124,8 @@ public sealed partial class CitySimulation
     }
     IEnumerable<RoadNode> Pr57ConstructionRoadSource()
     {
-        if(CostProfile is not { } profile)return State.Roads;
+        var profile=CostProfile;
+        if(profile==null)return State.Roads;
         profile.ConstructionRoadQueries++;
         var source=State.Roads;
         return Counted();
