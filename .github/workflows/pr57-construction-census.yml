@@ -1,4 +1,4 @@
-name: PR57 construction visit census at Advance(2)
+name: PR57 residual construction profile with composed shipment indices
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
@@ -38,7 +38,7 @@ jobs:
           run-id: 40169101306
           github-token: ${{ github.token }}
           path: artifacts/real
-      - name: Count real construction work in independent .NET processes
+      - name: Profile residual shipment work in fresh .NET processes (control and opt-in)
         shell: bash
         run: |
           set -euo pipefail
@@ -50,55 +50,58 @@ jobs:
             source="$works"; window=3600
             if [[ "$case" == real121 ]]; then source="$real"; window=1800; fi
             echo "PR57_CENSUS_CASE case=$case class=REAL sourceSha256=$(sha256sum "$source" | cut -d' ' -f1) window=$window windows=4 cadence=Advance2"
-            for mode in plain profiled; do
-              command=scale
-              if [[ "$mode" == profiled ]]; then command=profile; fi
+            for mode in baseProfile candidateProfile candidatePlain; do
+              enabled=0; command=profile
+              if [[ "$mode" == candidate* ]]; then enabled=1; fi
+              if [[ "$mode" == candidatePlain ]]; then command=scale; fi
               output="artifacts/census/$case-$mode"
               mkdir -p "$output"
               PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="$PWD/$output" \
               PR57_SITE_OWNER_ROSTER=1 PR57_BUILDING_WORK_ACCESS=1 \
+              PR57_DISPATCH_SHIPMENT_LOOKUP="$enabled" PR57_ORDER_SHIPMENT_INDEX="$enabled" \
               PR57_IDLE_SCAN_PROBE=0 PR57_HOT_TIMING=0 \
                 timeout 240s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
                   "$command" cycle --seed=42 --warmup=0 --days=4 --window="$window" --cap=200 --resume="$source" \
                   | tee "$output.log"
             done
           done
-      - name: Verify complete saves and census coverage
+      - name: Verify residual phase distribution and full save parity
         shell: bash
         run: |
           python3 - <<'PY'
           import pathlib,re
           root=pathlib.Path("artifacts/census")
           for case,window in (("works",3600),("real121",1800)):
-              logs={m:(root/f"{case}-{m}.log").read_text() for m in ("plain","profiled")}
+              modes=("baseProfile","candidateProfile","candidatePlain")
+              logs={m:(root/f"{case}-{m}.log").read_text() for m in modes}
               for mode,log in logs.items():
+                  assert f"PR57_ORDER_SHIPMENT_INDEX active={mode.startswith('candidate')}" in log,(case,mode,"flag")
                   assert "INVARIANTS OK" in log and "SAVE " in log,(case,mode)
                   assert len([x for x in log.splitlines() if x.startswith("WINDOW ")])==4,(case,mode)
               for i in range(5):
-                  a=(root/f"{case}-plain"/f"checkpoint-{i}.json").read_bytes()
-                  b=(root/f"{case}-profiled"/f"checkpoint-{i}.json").read_bytes()
-                  assert a==b,(case,i,"full checkpoint mismatch")
-              assert "PR57_CONSTRUCTION_CENSUS" not in logs["plain"],case
-              row=next((x for x in logs["profiled"].splitlines() if x.startswith("PR57_CONSTRUCTION_CENSUS ")),None)
-              assert row,(case,"missing profile census")
-              vals={k:int(v) for k,v in re.findall(r"([A-Za-z]+)=([0-9]+)",row)}
-              assert vals["steps"]==2*window,(case,vals)
-              assert vals["orderProjects"]>=0 and vals["progressProjects"]>=0,(case,vals)
-              assert vals["shipmentVisits"]>=vals["shipmentQueries"] or vals["shipmentVisits"]==0,(case,vals)
-              if case=="works":
-                  assert vals["orderProjects"]>0 and vals["progressProjects"]>0 and vals["workAccess"]>0,(case,vals)
-              rows=[x for x in logs["plain"].splitlines() if x.startswith("WINDOW ")]
+                  checkpoints=[(root/f"{case}-{mode}"/f"checkpoint-{i}.json").read_bytes() for mode in modes]
+                  assert checkpoints[0]==checkpoints[1]==checkpoints[2],(case,i,"full checkpoint mismatch")
+              for mode in modes[:2]:
+                  log=logs[mode]
+                  row=next((x for x in log.splitlines() if x.startswith("PR57_CONSTRUCTION_CENSUS ")),None)
+                  assert row,(case,mode,"missing profile census")
+                  vals={k:int(v) for k,v in re.findall(r"([A-Za-z]+)=([0-9]+)",row)}
+                  assert vals["steps"]==2*window,(case,mode,vals)
+                  phases=[x.strip() for x in log.splitlines() if x.strip().startswith("STEP_PHASE ")]
+                  assert len(phases)==13,(case,mode,len(phases))
+                  print(f"PR57_RESIDUAL_CENSUS case={case} mode={mode} {row}")
+                  print(f"PR57_RESIDUAL_PHASES case={case} mode={mode} "+ " | ".join(phases))
+              rows=[x for x in logs["candidatePlain"].splitlines() if x.startswith("WINDOW ")]
               wall=sum(float(re.search(r"\bwall=([0-9.]+)s",x).group(1)) for x in rows)
               cpu=sum(float(re.search(r"\bcpu=([0-9.]+)s",x).group(1)) for x in rows)
               alloc=sum(float(re.search(r"\ballocMB=([0-9.]+)",x).group(1)) for x in rows)
-              print(f"PR57_CENSUS_PLAIN case={case} simSeconds={4*window} wall={wall:.2f}s cpu={cpu:.2f}s allocMB={alloc:.1f} throughput={4*window/wall:.2f}sps")
-              print(f"PR57_CENSUS_RESULT case={case} {row}")
-              print(f"PR57_CENSUS_PARITY case={case} checkpoints=5")
+              print(f"PR57_RESIDUAL_PLAIN case={case} simSeconds={4*window} wall={wall:.2f}s cpu={cpu:.2f}s allocMB={alloc:.1f} throughput={4*window/wall:.2f}sps")
+              print(f"PR57_RESIDUAL_PARITY case={case} checkpoints=5 modes=3")
           PY
-      - name: Preserve evidence
+      - name: Preserve residual profile evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-pr57-construction-census
+          name: integrated-scale-pr57-construction-residual
           path: artifacts/census/**
           retention-days: 14
