@@ -155,11 +155,18 @@ public sealed class Pr57SiteOwnerRosterAdversarial
     public void In_slice_admission_of_excluded_car_invalidates_reservation_roster()
     {
         if(!Enabled)return;
-        var sim=new CitySimulation(42);
+        // Build a real drivable route: an empty route cannot reserve a
+        // physical entry sweep, so it would not test the missed-owner risk.
+        var initial=new CitySimulation(42,new(){ExternalFamilyCandidates=0});
+        for(var z=0;z<=20;z+=4)
+            initial.State.Roads.Add(new(){Id=initial.State.NextId++,Position=new(0,z)});
+        var sim=new CitySimulation(initial.State);
         sim.State.Vehicles.Clear();
         var mover=new Vehicle{Id=900031,Position=new(0,0),Heading=0,Status=VehicleStatus.Travelling};
         var car=new Vehicle{Id=900032,PassengerCar=true,Position=new(0,4),
-            Heading=0,Status=VehicleStatus.Travelling};
+            Heading=0,Status=VehicleStatus.Travelling,
+            Route=sim.State.Roads.Where(r=>r.Position.X==0&&r.Position.Z>=0&&r.Position.Z<=20)
+                .OrderBy(r=>r.Position.Z).Select(r=>r.Id).ToList(),RouteIndex=1};
         sim.State.Vehicles.AddRange([mover,car]);
         Prepare.Invoke(sim,null);
         Assert.DoesNotContain(car,Owners(sim));
@@ -172,7 +179,7 @@ public sealed class Pr57SiteOwnerRosterAdversarial
         var spaces=new List<RoadNode>();
         var limit=new LocalMovementAdmission{Route=car.Route.ToList(),
             SitePath=car.SitePath.ToList(),EndRouteIndex=0,ReachesDock=true};
-        var accepted=(bool)admit.Invoke(sim,[car,way,spaces,new Point(0,5),false,limit])!;
+        var accepted=(bool)admit.Invoke(sim,[car,way,spaces,new Point(0,12),false,limit])!;
         Assert.True(accepted);
         Assert.NotNull(car.ManoeuvreDock);
         Assert.Null(Roster.GetValue(sim)); // Exact fallback within the same slice.
