@@ -342,6 +342,11 @@ public sealed partial class CitySimulation
         // distance, but blocked decisions still recover the exact full winner.
         // All physical predicates and all global movement slices are retained.
         var pr57CausalHorizon=Environment.GetEnvironmentVariable("PR57_CAUSAL_HORIZON")=="1";
+        // PR57 structural POC: exact, slice-local ordered axis sweep, never a
+        // finite-distance lane cutoff. Tow handoffs conservatively use full scans.
+        var pr57AxisSweep=Environment.GetEnvironmentVariable("PR57_AXIS_SWEEP")=="1"
+            &&!State.Vehicles.Any(o=>o.TowPhase!=TowPhase.None||o.Status==VehicleStatus.Towed||o.TowTruckId!=null);
+        _pr57AxisSweepDirty=false;
         var pr57LaneGrid=pr57BitsetScan||pr57CausalHorizon;
         var pr57Bvh=Pr57DynamicBvhEnabled&&!pr57SpatialScan&&!pr57LaneGrid&&!pr57ActiveScan;
         if(pr57Bvh){
@@ -516,8 +521,16 @@ public sealed partial class CitySimulation
             return Pr57Query(Math.Min(v.Position.X,end.X)-20,Math.Max(v.Position.X,end.X)+20,
                              Math.Min(v.Position.Z,end.Z)-20,Math.Max(v.Position.Z,end.Z)+20);
         }
+        var pr57AxisIndex=pr57AxisSweep?new Pr57AxisSweepIndex(State.Vehicles,
+            Environment.GetEnvironmentVariable("PR57_AXIS_SWEEP_VERIFY")=="1"):null;
+        if(pr57AxisIndex is {Valid:false})pr57AxisIndex=null;
+        if(pr57AxisIndex is not null&&!_pr57AxisSweepAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1"){
+            Console.WriteLine($"PR57_AXIS_SWEEP active=True vehicles={State.Vehicles.Count}");
+            _pr57AxisSweepAnnounced=true;
+        }
         if(scanProfile is not null)_pr57MovementAllocBytes[1]+=GC.GetAllocatedBytesForCurrentThread()-pr57AllocCallStart;
         foreach(var v in ordered){
+            var pr57OldPosition=pr57AxisIndex is null?default:v.Position;
             var pr57OldCell=pr57SpatialScan||pr57LaneGrid?Pr57Cell(v.Position):default;
             // PR57 observation only: account for the residual outside the six measured calls.
             // Stages: 0=vehicle operations, 1=route/entry preparation, 2=post-safety hold,
@@ -683,7 +696,15 @@ public sealed partial class CitySimulation
                 if(scanProfile is not null){_pr57RegionAllocBytes[3]+=GC.GetAllocatedBytesForCurrentThread()-pr57RegionStart;pr57RegionStart=GC.GetAllocatedBytesForCurrentThread();}
                 var laneScanStart=scanProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
                 var pr57LaneAllocStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
-                var pr57LaneList=Pr57LaneCandidates(v,enteringLane,speed*remaining);
+                var pr57LaneList=pr57AxisIndex is not null&&!_pr57AxisSweepDirty
+                    &&pr57AxisIndex.Count==State.Vehicles.Count
+                    ?pr57AxisIndex.Lane(v,enteringLane)??Pr57LaneCandidates(v,enteringLane,speed*remaining)
+                    :Pr57LaneCandidates(v,enteringLane,speed*remaining);
+                if(pr57AxisIndex is not null&&!_pr57AxisSweepUsedAnnounced
+                    &&pr57LaneList.Count<State.Vehicles.Count&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1"){
+                    Console.WriteLine($"PR57_AXIS_SWEEP used=True candidates={pr57LaneList.Count} total={State.Vehicles.Count}");
+                    _pr57AxisSweepUsedAnnounced=true;
+                }
                 void Pr57ScanLane(IEnumerable<Vehicle> candidates){
                 foreach(var liveOther in candidates){
                     var other=enteringLane?EntryFrameVehicle(liveOther):liveOther;
@@ -748,6 +769,8 @@ public sealed partial class CitySimulation
                 var bendScanStart=scanProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
                 var pr57BendAllocStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
                 var pr57BendList=pr57ZeroBendSkip&&step==0&&v.Heading==approachHeading?Pr57EmptyBendList
+                    :pr57AxisIndex is not null&&!_pr57AxisSweepDirty&&pr57AxisIndex.Count==State.Vehicles.Count
+                        ?pr57AxisIndex.Bend(v,step)
                     :pr57Bvh?_pr57VehicleBvh!.Bend(v,step)
                     :pr57SpatialScan||pr57BitsetScan?Pr57Query(v.Position.X-step-12,v.Position.X+step+12,v.Position.Z-step-12,v.Position.Z+step+12):pr57ScanCandidates;
                 // A/B only: cheap conservative AABB and exact radius rejection BEFORE
@@ -971,6 +994,8 @@ public sealed partial class CitySimulation
                     }
                     pr57WorldExtent=Math.Max(pr57WorldExtent,Math.Max(Math.Abs(v.Position.X),Math.Abs(v.Position.Z)));
                 }
+                if(pr57AxisIndex is not null&&!_pr57AxisSweepDirty
+                    &&pr57AxisIndex.Count==State.Vehicles.Count)pr57AxisIndex.Update(v,pr57OldPosition);
                 if(pr57Bvh)_pr57VehicleBvh!.Update(v);
                 if(scanProfile is not null)_pr57MovementAllocBytes[10]+=GC.GetAllocatedBytesForCurrentThread()-pr57FinalizeAllocStart;
             }

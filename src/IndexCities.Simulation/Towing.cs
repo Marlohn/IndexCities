@@ -178,6 +178,7 @@ public sealed partial class CitySimulation
         if(!t.TowPrepaid)ChargeOwner(t,fee,"Guincho","Reboque físico: frete e combustível do guincho");
         t.TowPrepaid=true;
         State.OutsideStock.AddAmount(ResourceKind.Fuel,-(fuel));tow.AddFuel(fuel);
+        _pr57AxisSweepDirty=true;
         tow.Position=State.Entry;DispatchTow(tow,t,toVehicle,pose,plan);
         foreach(var c in Occupants(t)){c.Activity="Aguardando guincho";Personal(c,$"Veículo parado na via; guincho {tow.Id} chamado do exterior ({fee})");}
     }
@@ -381,6 +382,7 @@ public sealed partial class CitySimulation
         t.PushPath.Clear();t.PushHeading=null;
         // A repaired vehicle leaves the shop now (its place there is free).
         if(t.ServicePhase==ServicePhase.AwaitingReturn){t.ServiceShopId=null;t.ServiceBay=null;t.ServiceSpot=null;}
+        _pr57AxisSweepDirty=true;
         t.Status=VehicleStatus.Towed;t.Route.Clear();t.RouteIndex=0;t.Detour.Clear();t.IntersectionClaim=null;t.IntersectionEnteredAt=null;t.WaitingSince=0;t.DockPosition=null;SyncTowed(tow,t);
         tow.TowPhase=TowPhase.Delivering;tow.LoadTimer=0;
         StartDelivery(tow,t);
@@ -399,6 +401,7 @@ public sealed partial class CitySimulation
     }
     void DeliverTowed(Vehicle tow,Vehicle t)
     {
+        _pr57AxisSweepDirty=true;
         var destination=tow.TowDestination;var station=BuildingById(tow.TowStationId);
         // The station can stop operating while the tow unloads: the same rule sends it on.
         if(destination==TowDestination.Station&&(station==null||!StationOperates(station))){tow.TowPhase=TowPhase.Delivering;StartDelivery(tow,t);return;}
@@ -440,6 +443,7 @@ public sealed partial class CitySimulation
     // truck with nothing left to deliver simply leaves.
     void ResumeFromExterior(Vehicle t)
     {
+        _pr57AxisSweepDirty=true;
         t.Position=State.Entry;t.HoldingPosition=null;
         if(t.External&&PendingShipment(t)==null){
             foreach(var project in State.Projects.Where(p=>p.CrewVehicleId==t.Id))project.CrewVehicleId=null;
