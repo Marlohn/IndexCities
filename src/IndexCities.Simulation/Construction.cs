@@ -108,25 +108,51 @@ public sealed partial class CitySimulation
     static readonly bool Pr57ConstructionWaitAgendaEnabled=Environment.GetEnvironmentVariable("PR57_CONSTRUCTION_WAIT_AGENDA")=="1";
     readonly Dictionary<int,(int RoadEpoch,double Progress)> _pr57ConstructionWaitAccess=new();
     bool _pr57ConstructionWaitAgendaAnnounced;
+    // Profile-only instrumentation. The ordinary path returns the original list.
+    // Counting occurs on enumeration, including LINQ short-circuit behaviour.
+    IEnumerable<Shipment> Pr57ConstructionShipmentSource()
+    {
+        if(CostProfile is not { } profile)return State.Shipments;
+        profile.ConstructionShipmentQueries++;
+        var source=State.Shipments;
+        return Counted();
+        IEnumerable<Shipment> Counted()
+        {
+            foreach(var shipment in source){profile.ConstructionShipmentVisits++;yield return shipment;}
+        }
+    }
+    IEnumerable<RoadNode> Pr57ConstructionRoadSource()
+    {
+        if(CostProfile is not { } profile)return State.Roads;
+        profile.ConstructionRoadQueries++;
+        var source=State.Roads;
+        return Counted();
+        IEnumerable<RoadNode> Counted()
+        {
+            foreach(var road in source){profile.ConstructionRoadVisits++;yield return road;}
+        }
+    }
     void ReserveLocalMaterials()
     {
         var depot=State.Buildings.FirstOrDefault(b=>b.Kind==BuildingKind.WorksDepot&&b.Completed&&!b.Removed&&!b.OperationClosed);if(depot==null)return;
         var pendingByProject=Pr57DispatchShipmentLookup
-            ?State.Shipments.Where(s=>s.ProjectId!=null&&!s.Complete).ToLookup(s=>s.ProjectId)
+            ?Pr57ConstructionShipmentSource().Where(s=>s.ProjectId!=null&&!s.Complete).ToLookup(s=>s.ProjectId)
             :null;
         foreach(var k in Enum.GetValues<ResourceKind>().Where(k=>k!=ResourceKind.Food&&k!=ResourceKind.Fuel)){
             var free=depot.Quantity(k)-State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress).Sum(p=>p.LocalReserved.GetValueOrDefault(k));
             foreach(var p in State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress).OrderBy(p=>p.Id)){
-                var pending=pendingByProject==null?State.Shipments.Where(s=>s.ProjectId==p.Id&&!s.Complete).Sum(s=>s.Cargo.GetValueOrDefault(k)):pendingByProject[p.Id].Sum(s=>s.Cargo.GetValueOrDefault(k));var need=p.Required.GetValueOrDefault(k)-p.Delivered.GetValueOrDefault(k)-pending-p.LocalReserved.GetValueOrDefault(k);var reserve=Math.Max(0,Math.Min(free,need));p.LocalReserved.AddAmount(k,reserve);free-=reserve;
+                if(CostProfile is { } census)census.ConstructionReserveProjects++;
+                var pending=pendingByProject==null?Pr57ConstructionShipmentSource().Where(s=>s.ProjectId==p.Id&&!s.Complete).Sum(s=>s.Cargo.GetValueOrDefault(k)):pendingByProject[p.Id].Sum(s=>s.Cargo.GetValueOrDefault(k));var need=p.Required.GetValueOrDefault(k)-p.Delivered.GetValueOrDefault(k)-pending-p.LocalReserved.GetValueOrDefault(k);var reserve=Math.Max(0,Math.Min(free,need));p.LocalReserved.AddAmount(k,reserve);free-=reserve;
             }
         }
     }
     RoadNode? WorkAccess(WorkProject p)
     {
+        if(CostProfile is { } census){census.ConstructionWorkAccessCalls++;if(p.BuildingId!=null)census.ConstructionBuildingAccessCalls++;}
         // A demolished stretch is skipped: maintenance continues on the remaining network.
-        if(p.IsMaintenance&&p.MaintenanceRoadIds.Count>0){var remaining=p.MaintenanceRoadIds.Where(_roads.ContainsKey).ToList();if(remaining.Count==0)return null;var target=_roads[remaining[Math.Min(remaining.Count-1,(int)(p.Progress*remaining.Count))]];return Pr57WorkAccessIndexEnabled?Pr57IndexedMaintenanceAccess(target.Position):State.Roads.Where(r=>_workExteriorConnected.Contains(r.Id)&&r.Position.Distance(target.Position)<=State.Tuning.RoadStep+.05).MinBy(r=>r.Position.Distance(target.Position));}
+        if(p.IsMaintenance&&p.MaintenanceRoadIds.Count>0){var remaining=p.MaintenanceRoadIds.Where(_roads.ContainsKey).ToList();if(remaining.Count==0)return null;var target=_roads[remaining[Math.Min(remaining.Count-1,(int)(p.Progress*remaining.Count))]];return Pr57WorkAccessIndexEnabled?Pr57IndexedMaintenanceAccess(target.Position):Pr57ConstructionRoadSource().Where(r=>_workExteriorConnected.Contains(r.Id)&&r.Position.Distance(target.Position)<=State.Tuning.RoadStep+.05).MinBy(r=>r.Position.Distance(target.Position));}
         if(p.BuildingId!=null)return BuildingById(p.BuildingId) is {} b?ConstructionAccess(b):null;
-        return Pr57WorkAccessIndexEnabled?Pr57IndexedRoadProjectAccess(p):State.Roads.Where(r=>p.RoadPoints.Any(a=>a.Distance(r.Position)<=State.Tuning.RoadStep+.05)&&_workExteriorConnected.Contains(r.Id)).OrderBy(r=>r.Position.Distance(p.Position)).FirstOrDefault();
+        return Pr57WorkAccessIndexEnabled?Pr57IndexedRoadProjectAccess(p):Pr57ConstructionRoadSource().Where(r=>p.RoadPoints.Any(a=>a.Distance(r.Position)<=State.Tuning.RoadStep+.05)&&_workExteriorConnected.Contains(r.Id)).OrderBy(r=>r.Position.Distance(p.Position)).FirstOrDefault();
     }
     bool ProjectPay(WorkProject p,decimal value,string category,string reason)
     {
@@ -165,7 +191,7 @@ public sealed partial class CitySimulation
         IEnumerable<Shipment> PendingProjectShipments(int projectId)
         {
             if(!Pr57OrderShipmentIndexEnabled)
-                return State.Shipments.Where(s=>s.ProjectId==projectId&&!s.Complete);
+                return Pr57ConstructionShipmentSource().Where(s=>s.ProjectId==projectId&&!s.Complete);
             while(indexedShipmentCount<State.Shipments.Count)
             {
                 var shipment=State.Shipments[indexedShipmentCount++];
@@ -178,6 +204,7 @@ public sealed partial class CitySimulation
                 ?shipments.Where(s=>!s.Complete):Enumerable.Empty<Shipment>();
         }
         foreach(var p in State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress).OrderBy(p=>p.IsMaintenance?MaintenancePriority(p):4).ThenBy(p=>p.Id)){
+            if(CostProfile is { } census)census.ConstructionOrderProjects++;
             if(RoadPhysicalWorkDone(p))continue;
             // The previous real access check is reusable only while its road
             // graph and maintenance target remain unchanged. Check live cargo
@@ -258,6 +285,7 @@ public sealed partial class CitySimulation
     {
         var completedConstruction=false;
         foreach(var p in State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress)){
+            if(CostProfile is { } census)census.ConstructionProgressProjects++;
             if(RetireMaintenanceWithoutTargets(p))continue;
             if(IsPaving(p)&&!RoadPhysicalWorkDone(p)){if(ProgressPaving(p,dt)){if(!WaitForRoadConnection(p))completedConstruction|=CompleteConstructionProject(p);}continue;}
             if(RoadPhysicalWorkDone(p)){
@@ -270,9 +298,9 @@ public sealed partial class CitySimulation
                 // Old saves can contain a crew parked with the first load and
                 // no truck left to deliver the rest. Return that actual crew
                 // to the exterior, then reuse its truck for missing materials.
-                var missingUnordered=p.Required.Any(required=>p.Delivered.GetValueOrDefault(required.Key)+State.Shipments.Where(s=>s.ProjectId==p.Id&&!s.Complete).Sum(s=>s.Cargo.GetValueOrDefault(required.Key))+.001<required.Value);
+                var missingUnordered=p.Required.Any(required=>p.Delivered.GetValueOrDefault(required.Key)+Pr57ConstructionShipmentSource().Where(s=>s.ProjectId==p.Id&&!s.Complete).Sum(s=>s.Cargo.GetValueOrDefault(required.Key))+.001<required.Value);
                 if(missingUnordered&&p.CrewVehicleId is {} earlyCrewId&&VehicleById(earlyCrewId) is {Status:VehicleStatus.Parked,CrewAboard:true} earlyCrew){p.CrewVehicleId=null;ReturnExternal(earlyCrew);}
-                p.Cause=State.Shipments.Any(s=>s.ProjectId==p.Id&&!s.Complete)?WorkCause.AwaitingPhysicalDelivery:WorkCause.MissingMaterials;continue;
+                p.Cause=Pr57ConstructionShipmentSource().Any(s=>s.ProjectId==p.Id&&!s.Complete)?WorkCause.AwaitingPhysicalDelivery:WorkCause.MissingMaterials;continue;
             }
             var crew=p.CrewVehicleId==null?null:State.Vehicles.FirstOrDefault(v=>v.Id==p.CrewVehicleId&&v.CrewAboard);
             if(crew is {Status:VehicleStatus.Parked}&&crew.Position.Distance(DockAt(access,BuildingById(p.BuildingId),true))>2.5){
