@@ -153,6 +153,52 @@ public sealed partial class CitySimulation
         }
     }
 
+    // PR57 #161: reuse capacity only. The buffer is cleared for every physical
+    // query and after its result is consumed; no reservation decision survives
+    // an Advance(2), slice, vehicle mutation, or even the next query.
+    static readonly bool Pr57SafeSiteBufferEnabled =
+        Environment.GetEnvironmentVariable("PR57_SAFE_SITE_BUFFER")=="1";
+    readonly List<(Vehicle Machine,Point Position,double Heading)> _pr57SafeSiteReservationScratch=[];
+    bool _pr57SafeSiteBufferAnnounced;
+    List<(Vehicle Machine,Point Position,double Heading)> Pr57CollectSiteReservations(
+        Vehicle vehicle,List<Vehicle> siteOwners,double distance,bool machinesOnly)
+    {
+        var reserved=_pr57SafeSiteReservationScratch;
+        reserved.Clear();
+        var reach=distance+12;
+        if(vehicle.Machine==PavingMachine.None)
+            foreach(var machine in siteOwners)
+            {
+                if(machine.Id==vehicle.Id||machine.Machine==PavingMachine.None)continue;
+                foreach(var pose in MachineReservation(machine))
+                    if(pose.Position.Distance(vehicle.Position)<=reach)reserved.Add(pose);
+            }
+        if(machinesOnly)
+        {
+            foreach(var truck in siteOwners)
+            {
+                if(truck.Id==vehicle.Id||!OnSitePath(truck)||truck.Position.Distance(vehicle.Position)>distance+40)continue;
+                foreach(var pose in SiteTruckReservation(truck))
+                    if(pose.Position.Distance(vehicle.Position)<=reach)reserved.Add(pose);
+            }
+            foreach(var other in siteOwners)
+            {
+                if(other.Id==vehicle.Id||other.ManoeuvreDock==null||OnSitePath(other)||
+                   other.Position.Distance(vehicle.Position)>distance+40)continue;
+                foreach(var pose in AdmittedManoeuvre(other))
+                    if(pose.Position.Distance(vehicle.Position)<=reach)reserved.Add(pose);
+            }
+            foreach(var truck in siteOwners)
+            {
+                if(truck.Id==vehicle.Id||!(OnAsphaltApproach(truck)||UnloadingAsphaltBody(truck))||
+                   truck.Position.Distance(vehicle.Position)>reach||
+                   (truck.Position.Distance(State.Entry)<8&&vehicle.Position.Distance(State.Entry)<8))continue;
+                reserved.Add((truck,truck.Position,truck.Heading));
+            }
+        }
+        return reserved;
+    }
+
     double SafeSiteTravel(Vehicle vehicle,Point target,double distance,bool machinesOnly=false)
     {
         if(Pr57ZeroSiteSkip&&distance==0)return 0;
@@ -182,21 +228,34 @@ public sealed partial class CitySimulation
         // The hold stops at the first body already on the path: space behind a
         // blocked machine is not held, and whoever stands on the path may leave.
         // Only a paving machine has reserved poses (MachineReservation is empty otherwise).
-        var reserved=vehicle.Machine!=PavingMachine.None?[]:siteOwners.Where(m=>m.Id!=vehicle.Id&&m.Machine!=PavingMachine.None).Select(MachineReservation)
-            .SelectMany(poses=>poses).Where(pose=>pose.Position.Distance(vehicle.Position)<=distance+12).ToList();
-        // Lane traffic also respects an asphalt truck on its site path (see
-        // Construction.ApproachYield).
-        if(machinesOnly)reserved.AddRange(siteOwners.Where(t=>t.Id!=vehicle.Id&&OnSitePath(t)&&t.Position.Distance(vehicle.Position)<=distance+40)
-            .SelectMany(SiteTruckReservation).Where(pose=>pose.Position.Distance(vehicle.Position)<=distance+12));
-        // And an admitted way into or out of a bay (Mobility.SharedSpace).
-        if(machinesOnly)reserved.AddRange(siteOwners.Where(t=>t.Id!=vehicle.Id&&t.ManoeuvreDock!=null&&!OnSitePath(t)&&t.Position.Distance(vehicle.Position)<=distance+40)
-            .SelectMany(AdmittedManoeuvre).Where(pose=>pose.Position.Distance(vehicle.Position)<=distance+12));
-        // An asphalt truck on its site path or unloading at the paver bay keeps
-        // its present body there (see Construction.ApproachYield). Trucks still
-        // stacked together at the exterior staging origin have not entered yet.
-        if(machinesOnly)reserved.AddRange(siteOwners.Where(t=>t.Id!=vehicle.Id&&(OnAsphaltApproach(t)||UnloadingAsphaltBody(t))&&t.Position.Distance(vehicle.Position)<=distance+12&&
-                !(t.Position.Distance(State.Entry)<8&&vehicle.Position.Distance(State.Entry)<8))
-            .Select(t=>(t,t.Position,t.Heading)));
+        List<(Vehicle Machine,Point Position,double Heading)> reserved;
+        if(Pr57SafeSiteBufferEnabled)
+        {
+            reserved=Pr57CollectSiteReservations(vehicle,siteOwners,distance,machinesOnly);
+            if(!_pr57SafeSiteBufferAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+            {
+                Console.WriteLine("PR57_SAFE_SITE_BUFFER used=True");
+                _pr57SafeSiteBufferAnnounced=true;
+            }
+        }
+        else
+        {
+            reserved=vehicle.Machine!=PavingMachine.None?[]:siteOwners.Where(m=>m.Id!=vehicle.Id&&m.Machine!=PavingMachine.None).Select(MachineReservation)
+                .SelectMany(poses=>poses).Where(pose=>pose.Position.Distance(vehicle.Position)<=distance+12).ToList();
+            // Lane traffic also respects an asphalt truck on its site path (see
+            // Construction.ApproachYield).
+            if(machinesOnly)reserved.AddRange(siteOwners.Where(t=>t.Id!=vehicle.Id&&OnSitePath(t)&&t.Position.Distance(vehicle.Position)<=distance+40)
+                .SelectMany(SiteTruckReservation).Where(pose=>pose.Position.Distance(vehicle.Position)<=distance+12));
+            // And an admitted way into or out of a bay (Mobility.SharedSpace).
+            if(machinesOnly)reserved.AddRange(siteOwners.Where(t=>t.Id!=vehicle.Id&&t.ManoeuvreDock!=null&&!OnSitePath(t)&&t.Position.Distance(vehicle.Position)<=distance+40)
+                .SelectMany(AdmittedManoeuvre).Where(pose=>pose.Position.Distance(vehicle.Position)<=distance+12));
+            // An asphalt truck on its site path or unloading at the paver bay keeps
+            // its present body there (see Construction.ApproachYield). Trucks still
+            // stacked together at the exterior staging origin have not entered yet.
+            if(machinesOnly)reserved.AddRange(siteOwners.Where(t=>t.Id!=vehicle.Id&&(OnAsphaltApproach(t)||UnloadingAsphaltBody(t))&&t.Position.Distance(vehicle.Position)<=distance+12&&
+                    !(t.Position.Distance(State.Entry)<8&&vehicle.Position.Distance(State.Entry)<8))
+                .Select(t=>(t,t.Position,t.Heading)));
+        }
         if(machinesOnly&&reserved.Count==0&&!siteOwners.Any(other=>other.Machine!=PavingMachine.None&&other.Status!=VehicleStatus.Outside&&other.Position.Distance(vehicle.Position)<=distance+12))return distance;
         var safe=0.0;
         while(safe<distance-.000001){var next=Math.Min(distance,safe+.5);var at=vehicle.Position.MoveTowards(target,next);
@@ -204,6 +263,7 @@ public sealed partial class CitySimulation
             if(reserved.Any(pose=>pose.Position.Distance(at)<12&&BodiesOverlap(vehicle,at,vehicle.Heading,pose.Machine,pose.Position,pose.Heading)))break;
             safe=next;
         }
+        if(Pr57SafeSiteBufferEnabled)_pr57SafeSiteReservationScratch.Clear();
         return safe;
     }
 
