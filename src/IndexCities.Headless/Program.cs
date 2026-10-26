@@ -119,6 +119,7 @@ if(!string.IsNullOrWhiteSpace(pr57SaveCaptureDir)){
 var census=args[0]=="census"?new Census():null;var stuck=args[0]=="stuck"?new Stuck():null;
 var profile=args[0]=="profile"?new StepCostProfile():null;var pr57ProfileFromWindow=int.TryParse(Environment.GetEnvironmentVariable("PR57_PROFILE_FROM_WINDOW"),out var profileStart)?profileStart:1;sim.CostProfile=profile is not null&&pr57ProfileFromWindow<=1?profile:null;
 var total=0.0;var gc0=GC.CollectionCount(0);var gc2=GC.CollectionCount(2);var alloc0=GC.GetTotalAllocatedBytes();var done=0;
+var liveEditedRoadId=-1;var liveOriginalMaintenance=0.0;
 for(var d=1;d<=days;d++){
     if(profile is not null)sim.CostProfile=d>=pr57ProfileFromWindow?profile:null;
     // PR57 observational allocation/GC deltas per measured window (no simulation state mutation).
@@ -140,7 +141,7 @@ for(var d=1;d<=days;d++){
             for(var quantum=0;quantum<windowSeconds/2;quantum++)
             {
                 if(liveEdit&&d==1&&quantum is 900 or 1800 or 2700 or 3000)
-                    Pr57AccessLiveEdit(sim,quantum);
+                    Pr57AccessLiveEdit(sim,quantum,ref liveEditedRoadId,ref liveOriginalMaintenance);
                 sim.Advance(2);
             }
         }
@@ -221,9 +222,7 @@ return 0;
 
 // Only used by the PR57 opt-in runner. Edits are made between public quanta,
 // never inside a Step. Each A/B process replays the same deterministic choices.
-static int _pr57EditedRoadId=-1;
-static double _pr57OriginalMaintenance;
-static void Pr57AccessLiveEdit(CitySimulation sim,int quantum)
+static void Pr57AccessLiveEdit(CitySimulation sim,int quantum,ref int editedRoadId,ref double originalMaintenance)
 {
     var active=sim.State.Projects
         .Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress && p.BuildingId!=null)
@@ -234,15 +233,15 @@ static void Pr57AccessLiveEdit(CitySimulation sim,int quantum)
     {
         var road=sim.State.Roads.Where(r=>!r.Highway&&r.MaintenanceRatio>.05)
             .OrderBy(r=>r.Position.Distance(active.Door)).First();
-        _pr57EditedRoadId=road.Id;
-        _pr57OriginalMaintenance=road.MaintenanceRatio;
+        editedRoadId=road.Id;
+        originalMaintenance=road.MaintenanceRatio;
         road.MaintenanceRatio=.04;
         Console.WriteLine($"PR57_ACCESS_LIVE_EDIT phase=maintenance-off quantum={quantum} road={road.Id} activeWorks={sim.State.Projects.Count(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress)}");
     }
     else if(quantum==1800)
     {
-        var road=sim.State.Roads.Single(r=>r.Id==_pr57EditedRoadId);
-        road.MaintenanceRatio=_pr57OriginalMaintenance;
+        var road=sim.State.Roads.Single(r=>r.Id==editedRoadId);
+        road.MaintenanceRatio=originalMaintenance;
         Console.WriteLine($"PR57_ACCESS_LIVE_EDIT phase=maintenance-on quantum={quantum} road={road.Id}");
     }
     else if(quantum==2700)
