@@ -1,0 +1,84 @@
+name: PR57 mandatory Advance(2) cost floor in empty initial city
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-empty-step-floor.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  empty-step-floor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build and test unchanged gameplay
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Empty initial-city floor, independent plain processes and intrusive phase profile
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/floor
+          for mode in plain-a plain-b profiled; do
+            mkdir -p "artifacts/floor/$mode"
+            command=scale
+            if [[ "$mode" == profiled ]]; then command=profile; fi
+            echo "PR57_FLOOR_RUN mode=$mode empty=1 quanta=86400 horizon=172800"
+            PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="$PWD/artifacts/floor/$mode" \
+            PR57_SITE_OWNER_ROSTER=1 PR57_BUILDING_WORK_ACCESS=1 \
+            PR57_IDLE_SCAN_PROBE=0 PR57_HOT_TIMING=0 \
+              timeout 240s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                "$command" cycle --empty=1 --seed=42 --warmup=0 --days=8 --window=21600 --cap=120 \
+                | tee "artifacts/floor/$mode.log"
+          done
+      - name: Validate full-state parity, wall/CPU/allocations, empty-city interpretation
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import pathlib,re,statistics
+          root=pathlib.Path("artifacts/floor")
+          logs={k:(root/f"{k}.log").read_text() for k in ("plain-a","plain-b","profiled")}
+          checkpoints={}
+          for mode,log in logs.items():
+              assert "PR57 EMPTY baseline" in log,(mode,"wrong fixture")
+              assert "INVARIANTS OK" in log and "SAVE " in log,(mode,"save/invariants")
+              rows=[x for x in log.splitlines() if x.startswith("WINDOW ")]
+              assert len(rows)==8,(mode,"window count",len(rows))
+              assert all(re.search(r"\bpop=0 alive=0 dead=0\b",x) and "openWorks=0" in x for x in rows),(mode,"not empty")
+              paths=sorted((root/mode).glob("checkpoint-*.json"))
+              assert len(paths)==9,(mode,"checkpoint count",len(paths))
+              checkpoints[mode]=[p.read_bytes() for p in paths]
+              walls=[float(re.search(r"\bwall=([0-9.]+)s",x).group(1)) for x in rows]
+              cpus=[float(re.search(r"\bcpu=([0-9.]+)s",x).group(1)) for x in rows]
+              allocations=[float(re.search(r"\ballocMB=([0-9.]+)",x).group(1)) for x in rows]
+              wall=sum(walls)
+              print(f"PR57_FLOOR_RESULT mode={mode} steps=86400 simSeconds=172800 wall={wall:.3f}s cpu={sum(cpus):.3f}s allocMB={sum(allocations):.1f} throughput={172800/wall:.0f}sps usPerAdvance2={wall*1e6/86400:.2f} targetUs=17.11")
+          assert checkpoints["plain-a"]==checkpoints["plain-b"]==checkpoints["profiled"],"full checkpoint divergence"
+          assert "STEP_PROFILE " not in logs["plain-a"] and "STEP_PROFILE " not in logs["plain-b"],"profiler leaked into wall measurement"
+          assert "STEP_PROFILE " in logs["profiled"],"profile absent"
+          phases=[]
+          for line in logs["profiled"].splitlines():
+              m=re.search(r"STEP_PHASE name=([^ ]+) wall=([0-9.]+)s share=([0-9.]+)%",line)
+              if m: phases.append((float(m.group(2)),m.group(1),float(m.group(3))))
+          assert len(phases)==13,("phase census",len(phases))
+          for wall,name,share in sorted(phases,reverse=True)[:6]:
+              print(f"PR57_FLOOR_PHASE name={name} intrusiveWall={wall:.3f}s share={share:.2f}%")
+          print("PR57_FLOOR_PARITY 9 complete checkpoints identical across 3 fresh processes")
+          PY
+      - name: Preserve measurements and full checkpoints
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-empty-step-floor
+          path: artifacts/floor/**
+          retention-days: 14
