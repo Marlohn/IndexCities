@@ -32,13 +32,13 @@ var sw=Stopwatch.StartNew();CitySimulation sim;string info;
 // PR57-only bounded replay: restore a full real-city checkpoint instead of
 // rebuilding and simulating its first six days. No production rules are changed.
 var resumePath=Opt("resume","");
-if(resumePath.Length>0&&(args[1]!="cycle"||cycleHouses!=0||growth!=0||warmup!=0||args[0]=="repro")){
-    Console.Error.WriteLine("--resume requires profile|scale cycle, --warmup=0, --cycle-houses=0, --growth=0");return 2;
+if(resumePath.Length>0&&(cycleHouses!=0||growth!=0||warmup!=0||args[0]=="repro")){
+    Console.Error.WriteLine("--resume requires profile|scale, --warmup=0, --cycle-houses=0, --growth=0");return 2;
 }
 if(resumePath.Length>0){
     var source=File.ReadAllText(resumePath);
     sim=CitySimulation.FromJson(source);
-    info=$"PR57 saved-cycle replay elapsed={sim.State.ElapsedSeconds:F3} sourceSha256={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(source)))}";
+    info=$"PR57 saved-{args[1]} replay elapsed={sim.State.ElapsedSeconds:F3} sourceSha256={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(source)))}";
 }else if(args[1]=="cycle"){sim=Fixtures.Cycle(seed,cycleBypass);info="cycle (CityCycleTests.City, obras reais)"+(cycleBypass?" + bypass físico encomendado":"");}
 else (sim,info)=Fixtures.Grid(seed,int.Parse(Opt("rows","3")),double.Parse(Opt("length","400"),System.Globalization.CultureInfo.InvariantCulture),Opt("signals","1")=="1",growth>0);
 Console.WriteLine($"FIXTURE {info} build={sw.Elapsed.TotalSeconds:F1}s .NET={Environment.Version} cpu={Environment.ProcessorCount} release={!Debugger.IsAttached}");
