@@ -235,6 +235,14 @@ public sealed partial class CitySimulation
          _pr57DependencyNearbyChanges,_pr57DependencyPedestrianChanges,
          _pr57DependencyRoadChanges,_pr57DependencySampleReset;
     bool _pr57DependencyComplete;
+    // Boundary census is observational, only for the small authentic city.
+    // It samples after each vehicle, not every field write or external mutation.
+    readonly Dictionary<int,int> _pr57BoundaryActorHashes=new();
+    readonly Dictionary<int,bool> _pr57BoundaryActorNear=new();
+    long _pr57BoundarySamples,_pr57BoundaryChanged,_pr57BoundaryNearbyChanged,
+         _pr57BoundarySelfChanged,_pr57BoundaryClock30sTransitions;
+    int _pr57BoundaryFirstChangedActor,_pr57BoundaryLastClockPhase=int.MinValue;
+    int? _pr57BoundarySelfHash;
 
     static void Pr57DependencyVehicle(ref HashCode hash,Vehicle o)
     {
@@ -244,6 +252,48 @@ public sealed partial class CitySimulation
         hash.Add(o.DockPosition);hash.Add(o.HoldingPosition);
         hash.Add(o.ManoeuvreDock);hash.Add(o.ManoeuvreSpaces.Count);
         hash.Add(o.Detour.Count);hash.Add(o.TowPhase);hash.Add(o.ServicePhase);
+        hash.Add(o.ManoeuvreDeparture);hash.Add(o.DetourResumeNode);
+        hash.Add(o.MovementAdmission?.EndRouteIndex);
+        foreach(var id in o.ManoeuvreSpaces)hash.Add(id);
+        foreach(var pose in o.DockCorridor){hash.Add(pose.Position);hash.Add(pose.Heading);}
+        foreach(var id in o.Route)hash.Add(id);
+    }
+
+    // Compare physical actors at EACH completed vehicle boundary during one
+    // selected 60s window. This detects changes hidden by the old 2s digest,
+    // but does not detect write-and-restore within a single vehicle operation.
+    // Never consulted by physics, and never enabled for the large grid.
+    void Pr57DependencyBoundary(Vehicle processed)
+    {
+        if(_pr57DependencyTarget==0||_pr57DependencyComplete||State.Vehicles.Count>200)return;
+        var target=State.Vehicles.FirstOrDefault(o=>o.Id==_pr57DependencyTarget);
+        if(target is null)return;
+        _pr57BoundarySamples++;
+        var clockPhase=(int)Math.Floor(VehicleMovementTime/30);
+        if(_pr57BoundaryLastClockPhase!=int.MinValue&&clockPhase!=_pr57BoundaryLastClockPhase)
+            _pr57BoundaryClock30sTransitions++;
+        _pr57BoundaryLastClockPhase=clockPhase;
+        foreach(var other in State.Vehicles)
+        {
+            var h=new HashCode();Pr57DependencyVehicle(ref h,other);
+            var digest=h.ToHashCode();
+            if(other.Id==target.Id)
+            {
+                if(_pr57BoundarySelfHash is {} previous&&previous!=digest)_pr57BoundarySelfChanged++;
+                _pr57BoundarySelfHash=digest;
+                continue;
+            }
+            var near=other.Position.Distance(target.Position)<=32;
+            if(_pr57BoundaryActorHashes.TryGetValue(other.Id,out var old)&&old!=digest)
+            {
+                _pr57BoundaryChanged++;
+                if(near||_pr57BoundaryActorNear.GetValueOrDefault(other.Id))
+                    _pr57BoundaryNearbyChanged++;
+                if(_pr57BoundaryFirstChangedActor==0)_pr57BoundaryFirstChangedActor=other.Id;
+            }
+            _pr57BoundaryActorHashes[other.Id]=digest;
+            _pr57BoundaryActorNear[other.Id]=near;
+        }
     }
 
     void Pr57DependencyObserve(Vehicle v,Pr57BlockedRead sample)
@@ -293,7 +343,10 @@ public sealed partial class CitySimulation
             $"PR57_DEPENDENCY_WINDOW target={_pr57DependencyTarget} elapsed={now-_pr57DependencyStart:F3} " +
             $"samples={_pr57DependencySamples} globalChanges={_pr57DependencyGlobalChanges} " +
             $"nearbyChanges={_pr57DependencyNearbyChanges} pedestrianChanges={_pr57DependencyPedestrianChanges} " +
-            $"roadRevisionChanges={_pr57DependencyRoadChanges} sampledReadResets={_pr57DependencySampleReset}");
+            $"roadRevisionChanges={_pr57DependencyRoadChanges} sampledReadResets={_pr57DependencySampleReset} " +
+            $"boundarySamples={_pr57BoundarySamples} boundaryChanged={_pr57BoundaryChanged} " +
+            $"boundaryNearbyChanged={_pr57BoundaryNearbyChanged} boundarySelfChanged={_pr57BoundarySelfChanged} " +
+            $"clock30sTransitions={_pr57BoundaryClock30sTransitions} firstChangedActor={_pr57BoundaryFirstChangedActor}");
     }
 
     void Pr57IdleProbeTick()
