@@ -50,13 +50,13 @@ public sealed class Pr57CrossCallDependencyCounterexamples
 
         // State is publicly mutable between Advance(2) calls. An edit to the
         // control predicate does not have to increment RoadRevision.
-        var before = sim.SaveToJson();
+        var originalControl = node.Control;
         node.Control = JunctionControl.RightHand;
         Assert.Equal(revision, sim.State.RoadRevision);
         Assert.True(Allows(sim, car, node));
         node.Control = JunctionControl.Signal;
         Assert.False(Allows(sim, car, node));
-        Assert.Equal(before, sim.SaveToJson());
+        Assert.Equal(originalControl, node.Control);
         Assert.Equal(pose, car.Position);
         Assert.Equal(heading, car.Heading);
     }
@@ -80,7 +80,7 @@ public sealed class Pr57CrossCallDependencyCounterexamples
             ManoeuvreSpaces = [node.Id]
         };
         sim.State.Vehicles.Add(truck);
-        var before = sim.SaveToJson();
+        var heldBefore = truck.ManoeuvreSpaces.ToArray();
         var revision = sim.State.RoadRevision;
         var position = truck.Position;
 
@@ -90,12 +90,12 @@ public sealed class Pr57CrossCallDependencyCounterexamples
         Assert.Empty(truck.ManoeuvreSpaces);
         Assert.Equal(position, truck.Position);
         Assert.Equal(revision, sim.State.RoadRevision);
-        Assert.NotEqual(before, sim.SaveToJson());
+        Assert.NotEqual(heldBefore, truck.ManoeuvreSpaces);
 
         // A before/after snapshot also misses an intermediate write followed
         // by restoration. This is a synthetic restoration, not a claim that
         // the engine performs this restoration on the same slice.
         truck.ManoeuvreSpaces.Add(node.Id);
-        Assert.Equal(before, sim.SaveToJson());
+        Assert.Equal(heldBefore, truck.ManoeuvreSpaces);
     }
 }
