@@ -105,7 +105,34 @@ public sealed partial class CitySimulation
     {
         var held=new List<(Vehicle Body,Point Position,double Heading)>();spaces=[];endIndex=from-1;
         var near=SharedNodes();var found=spaces;
-        void Note(Point p,double h){foreach(var n in near)if(!found.Contains(n)&&EntersArea(o,p,h,n))found.Add(n);}
+        // One scratch buffer per manoeuvre, not per sampled pose. The broad
+        // phase only selects possible nodes; the exact predicate is unchanged.
+        var pr57NodeCandidates=Pr57SharedNodeGridEnabled?new List<int>():null;
+        void Note(Point p,double h)
+        {
+            if(pr57NodeCandidates is not null&&Pr57GatherSharedNodeCandidates(o,p,near,pr57NodeCandidates))
+            {
+                // A manoeuvre records spaces in the original SharedNodes order.
+                pr57NodeCandidates.Sort();
+                foreach(var index in pr57NodeCandidates)
+                {
+                    var node=near[index];
+                    if(!found.Contains(node)&&EntersArea(o,p,h,node))found.Add(node);
+                }
+                return;
+            }
+            foreach(var n in near)if(!found.Contains(n)&&EntersArea(o,p,h,n))found.Add(n);
+        }
+        bool TouchesSharedNode(Point p,double h)
+        {
+            if(pr57NodeCandidates is not null&&Pr57GatherSharedNodeCandidates(o,p,near,pr57NodeCandidates))
+            {
+                foreach(var index in pr57NodeCandidates)
+                    if(EntersArea(o,p,h,near[index]))return true;
+                return false;
+            }
+            return near.Any(n=>EntersArea(o,p,h,n));
+        }
         for(var index=0;index<site.Count;index++){
             var to=site[index];var heading=approach&&o.SiteDockHeading is {} dockHeading&&index==site.Count-1?dockHeading:to.Distance(at)>.001?Math.Atan2(to.X-at.X,to.Z-at.Z):facing;
             var run=new List<(Point Position,double Heading)>();SamplePoses(run,at,to,heading);foreach(var p in run){held.Add((o,p.Position,p.Heading));Note(p.Position,p.Heading);}at=to;facing=heading;
@@ -122,7 +149,7 @@ public sealed partial class CitySimulation
             for(var part=0;part<=8;part++)Note(at,facing+turn*part/8);held.Add((o,at,direction));
             var straight=new List<(Point Position,double Heading)>();SamplePoses(straight,at,lane,direction);foreach(var p in straight){held.Add((o,p.Position,p.Heading));Note(p.Position,p.Heading);}
             at=lane;facing=direction;points++;endIndex=i;
-            if(points>=minimum&&near.All(n=>!EntersArea(o,at,facing,n))&&(extraClear?.Invoke(at,facing)??true))break;
+            if(points>=minimum&&(pr57NodeCandidates is null?near.All(n=>!EntersArea(o,at,facing,n)):!TouchesSharedNode(at,facing))&&(extraClear?.Invoke(at,facing)??true))break;
         }
         return held;
     }
