@@ -14,6 +14,10 @@ public sealed class StepCostProfile
     // PR57 intrusive observation only. Net record counts do NOT imply causal inactivity.
     public long ConstructionDispatchActiveSteps, ConstructionDispatchShipmentChangedSteps, ConstructionDispatchShipmentNetDelta;
     public long ConstructionDispatchLedgerChangedSteps, ConstructionDispatchLedgerNetDelta, ConstructionDispatchNoShipmentOrLedgerSteps;
+    // PR57 intrusive cross-phase Cause observation; never influences gameplay.
+    public long Pr57CauseObserved, Pr57CauseProgressChanged, Pr57CauseIntermediateChanged, Pr57CauseDispatchChanged;
+    public long Pr57CauseDispatchUndoProgress, Pr57CauseDispatchReturnProgress;
+    public Dictionary<(string From,string To),long> Pr57CauseTransitions { get; } = new();
     public static readonly string[] DetailNames = { "infra-presence", "infra-demands", "infra-electricity", "infra-water", "infra-sewage-pollution", "infra-finalize", "needs-pollution", "needs-citizens" };
     public long[] DetailTicks { get; } = new long[DetailNames.Length];
     public static readonly string[] VehicleDetailNames = { "entry-check", "operations", "entry-events", "movement" };
@@ -208,6 +212,7 @@ public sealed partial class CitySimulation
             _pr57LivingRosterAnnounced=true;
         }
     }
+    static readonly bool Pr57CauseTransitionProbe=Environment.GetEnvironmentVariable("PR57_CAUSE_TRANSITION_PROBE")=="1";
     void Step(double dt)
     {
         Pr57WorkAccessBeginStep();
@@ -240,7 +245,13 @@ public sealed partial class CitySimulation
         MoveCitizens(dt);
         if(profile is not null)profile.Mark(2,ref started);
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,2,ref started);
+        // Observe persisted project diagnostics at causal boundaries, profile only.
+        var pr57CauseBeforeProgress=profile is not null&&Pr57CauseTransitionProbe
+            ?State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress).ToDictionary(p=>p.Id,p=>p.Cause):null;
+        if(pr57CauseBeforeProgress is not null)started=System.Diagnostics.Stopwatch.GetTimestamp();
         var completedConstruction=ProgressConstruction(dt);
+        var pr57CauseAfterProgress=pr57CauseBeforeProgress is null?null:State.Projects.ToDictionary(p=>p.Id,p=>p.Cause);
+        if(pr57CauseAfterProgress is not null)started=System.Diagnostics.Stopwatch.GetTimestamp();
         if(completedConstruction&&Pr57MaintenanceScheduleEnabled)_pr57MaintenanceScheduleReady=false;
         if(profile is not null)profile.Mark(3,ref started);
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,3,ref started);
@@ -264,6 +275,8 @@ public sealed partial class CitySimulation
         if(reviewEconomy){State.EconomyNextAt=State.ElapsedSeconds+State.Tuning.EconomyInterval;SeekHomesForAllDisplaced();ReviewMarkets();ReviewJobs();ScheduleMaintenance();}
         if(profile is not null)profile.Mark(9,ref started);
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,9,ref started);
+        var pr57CauseBeforeDispatch=pr57CauseBeforeProgress is null?null:State.Projects.ToDictionary(p=>p.Id,p=>p.Cause);
+        if(pr57CauseBeforeDispatch is not null)started=System.Diagnostics.Stopwatch.GetTimestamp();
         // PR57 profile-only productivity census around the unchanged dispatcher.
         var pr57DispatchActive=profile is not null&&State.Projects.Any(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress);
         var pr57ShipmentsBefore=profile is null?0:State.Shipments.Count;
@@ -277,6 +290,30 @@ public sealed partial class CitySimulation
             if(shipmentsDelta!=0){profile.ConstructionDispatchShipmentChangedSteps++;profile.ConstructionDispatchShipmentNetDelta+=shipmentsDelta;}
             if(ledgerDelta!=0){profile.ConstructionDispatchLedgerChangedSteps++;profile.ConstructionDispatchLedgerNetDelta+=ledgerDelta;}
             if(shipmentsDelta==0&&ledgerDelta==0)profile.ConstructionDispatchNoShipmentOrLedgerSteps++;
+        }
+        if(pr57CauseBeforeDispatch is not null)
+        {
+            foreach(var p in State.Projects)
+            {
+                if(!pr57CauseBeforeProgress!.TryGetValue(p.Id,out var before)
+                    ||!pr57CauseAfterProgress!.TryGetValue(p.Id,out var afterProgress)
+                    ||!pr57CauseBeforeDispatch.TryGetValue(p.Id,out var beforeDispatch))continue;
+                var afterDispatch=p.Cause;
+                profile!.Pr57CauseObserved++;
+                if(!string.Equals(before,afterProgress,StringComparison.Ordinal))profile.Pr57CauseProgressChanged++;
+                if(!string.Equals(afterProgress,beforeDispatch,StringComparison.Ordinal))profile.Pr57CauseIntermediateChanged++;
+                if(!string.Equals(beforeDispatch,afterDispatch,StringComparison.Ordinal))
+                {
+                    profile.Pr57CauseDispatchChanged++;
+                    var key=(beforeDispatch??"<null>",afterDispatch??"<null>");
+                    profile.Pr57CauseTransitions[key]=profile.Pr57CauseTransitions.GetValueOrDefault(key)+1;
+                }
+                if(!string.Equals(before,afterProgress,StringComparison.Ordinal)
+                    &&string.Equals(before,afterDispatch,StringComparison.Ordinal))profile.Pr57CauseDispatchUndoProgress++;
+                if(!string.Equals(beforeDispatch,afterDispatch,StringComparison.Ordinal)
+                    &&string.Equals(afterProgress,afterDispatch,StringComparison.Ordinal))profile.Pr57CauseDispatchReturnProgress++;
+            }
+            started=System.Diagnostics.Stopwatch.GetTimestamp();
         }
         if(profile is not null)profile.Mark(10,ref started);
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,10,ref started);
