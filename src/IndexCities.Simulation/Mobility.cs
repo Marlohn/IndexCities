@@ -327,6 +327,7 @@ public sealed partial class CitySimulation
         var pr57IdleProbe=scanProfile is not null&&Pr57IdleProbeEnabled;
         var pr57AllocCallStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
         if(pr57DepProbe)Pr57DepBeginSlice();
+        if(Pr57LaneReadWriteEnabled&&scanProfile is not null)Pr57LaneReadBeginSlice();
         // Release a passed junction even while a vehicle waits at the next one.
         // Carriageway half-width (3.3 m) + truck half-length (3.6 m) covers the
         // actual rear of the truck; the former 9 m reservation could overlap
@@ -779,6 +780,8 @@ public sealed partial class CitySimulation
                     }
                 }
                 }
+                if(Pr57LaneReadWriteEnabled&&scanProfile is not null)
+                    Pr57LaneReadBeforeScan(v,enteringLane,speed*remaining,pr57LaneList.Count);
                 Pr57ScanLane(pr57LaneList);
                 if(scanProfile is not null){
                     scanProfile.MarkVehicleScan(0,laneScanStart,pr57LaneList.Count,laneCandidateHits);
@@ -1059,6 +1062,7 @@ public sealed partial class CitySimulation
         }
         // A towed vehicle moves only with its tow (platform or trailing a heavy tow).
         SyncTowedVehicles();
+        if(Pr57LaneReadWriteEnabled&&scanProfile is not null)Pr57LaneReadEndSlice();
         if(pr57DepProbe)Pr57DepEndSlice();
         if(pr57IdleProbe)Pr57IdleProbeTick();
         _pr57SiteOwnerRoster=null; // no index may survive this movement slice
