@@ -292,6 +292,7 @@ public sealed partial class CitySimulation
         if(!hasEntry){
             MoveVehiclesUnsplit(dt);
             if(profile is not null){profile.MarkVehicle(3,ref started);profile.VehicleUnsplitSteps++;PrintCompletedLaneSliceHours(State.ElapsedSeconds+dt);}
+            _pr57VehicleBvh=null; // never persist a spatial index across public Advance(2)
             return;
         }
         if(profile is not null)profile.VehicleBatchedSteps++;
@@ -351,7 +352,7 @@ public sealed partial class CitySimulation
                 if(profile is not null){ObserveLaneWinnerOutcome();profile.MarkVehicle(3,ref started);profile.VehicleSlices++;}
                 _vehicleMovementOffset+=slice;
             }
-        }finally{_laneObservedWinner=null;_vehicleMovementBatch=null;_entryFrame=null;_entryFrameBuffer.Clear();_entrySnapshotReuse.Clear();_vehicleMovementClock=null;_vehicleMovementOffset=0;}
+        }finally{_laneObservedWinner=null;_vehicleMovementBatch=null;_entryFrame=null;_entryFrameBuffer.Clear();_entrySnapshotReuse.Clear();_vehicleMovementClock=null;_vehicleMovementOffset=0;_pr57VehicleBvh=null;}
         if(profile is not null&&Environment.GetEnvironmentVariable("PR57_TARGET_BLOCK_TRACE")=="1"){
             var targets=string.Join(";",State.Vehicles.Where(v=>v.Id is 1107 or 487 or 1174).OrderBy(v=>v.Id).Select(v=>$"{v.Id}:{v.Position.X:F6}:{v.Position.Z:F6}:{v.RouteIndex}:{v.Status}:{v.WaitingSince:F3}"));
             Console.WriteLine($"PR57_TRACE_OUTER end={State.ElapsedSeconds+dt:F3} slices={_pr57TraceSlices} movedSlices={_pr57TraceMovedSlices} vehicleMoves={_pr57TraceVehicleMoves} routeChanges={_pr57TraceRouteChanges} statusChanges={_pr57TraceStatusChanges} claimChanges={_pr57TraceClaimChanges} targets={targets}");
