@@ -323,6 +323,7 @@ public sealed partial class CitySimulation
         Pr57PrepareSiteOwnerRoster();
         var scanProfile=CostProfile;
         var pr57CostProbe=scanProfile is not null&&Pr57VehicleCostProbeEnabled;
+        var pr57LimiterProbe=scanProfile is not null&&Pr57QueueLimiterEnabled&&dt>0&&_pr57MovementAllocCalls%37==0;
         var pr57DepProbe=scanProfile is not null&&Pr57BlockDepProbeEnabled&&dt>0;
         var pr57IdleProbe=scanProfile is not null&&Pr57IdleProbeEnabled;
         var pr57AllocCallStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
@@ -720,6 +721,7 @@ public sealed partial class CitySimulation
                 }
                 if(scanProfile is not null){_pr57RegionAllocBytes[3]+=GC.GetAllocatedBytesForCurrentThread()-pr57RegionStart;pr57RegionStart=GC.GetAllocatedBytesForCurrentThread();}
                 var laneScanStart=scanProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
+                long pr57QueueLaneTicks=0,pr57QueueBendTicks=0;
                 var pr57LaneAllocStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
                 var pr57LaneList=pr57AxisIndex is not null&&!_pr57AxisSweepDirty
                     &&pr57AxisIndex.Count==State.Vehicles.Count
@@ -788,9 +790,13 @@ public sealed partial class CitySimulation
                     if(blocker is not null)scanProfile.ObserveLaneLeaderSelection(v.Position,blocker.Position,leaderDistance,Math.Min(d,speed*remaining));
                     _pr57MovementAllocBytes[2]+=GC.GetAllocatedBytesForCurrentThread()-pr57LaneAllocStart;
                 }
+                if(pr57LimiterProbe)pr57QueueLaneTicks=System.Diagnostics.Stopwatch.GetTimestamp()-laneScanStart;
                 var step=Math.Min(d,Math.Min(speed*remaining,Math.Max(0,leaderDistance-8)));
+                var pr57QueueFirstLimit=pr57LimiterProbe&&step<.00001?(leaderDistance<=8?1:8):0;
                 if(stopEarly>0)step=Math.Min(step,Math.Max(0,d-stopEarly));
+                if(pr57LimiterProbe&&pr57QueueFirstLimit==0&&step<.00001)pr57QueueFirstLimit=2;
                 if(crossingPoses!=null)step=ClearOfPoses(v,target,step,crossingPoses);
+                if(pr57LimiterProbe&&pr57QueueFirstLimit==0&&step<.00001)pr57QueueFirstLimit=3;
                 // At a bend the vehicle ahead in the same general direction can sit
                 // beyond the straight-lane strip above; its body still bounds this
                 // step and this turn. Opposite and parallel lanes are not involved.
@@ -832,19 +838,23 @@ public sealed partial class CitySimulation
                     if(scanProfile is not null){scanProfile.BendPrefilterCandidates+=pr57BendList.Count;scanProfile.BendPrefilterNear+=near;}
                 }
                 if(scanProfile is not null){scanProfile.MarkVehicleScan(1,bendScanStart,pr57BendList.Count,bendLeaders.Count);_pr57MovementAllocBytes[3]+=GC.GetAllocatedBytesForCurrentThread()-pr57BendAllocStart;}
+                if(pr57LimiterProbe)pr57QueueBendTicks=System.Diagnostics.Stopwatch.GetTimestamp()-bendScanStart;
                 if(bendLeaders.Count>0){
                     if(bendLeaders.Any(o=>TurnsInto(v,approachHeading,o))){v.Heading=approachHeading;step=0;}
                     else step=ClearOfPoses(v,target,step,bendLeaders.Where(o=>!VehicleBodiesOverlap(v,v.Position,o)).Select(o=>(o,o.Position,o.Heading)).ToList());
                 }
+                if(pr57LimiterProbe&&pr57QueueFirstLimit==0&&step<.00001)pr57QueueFirstLimit=4;
                 var pr57SiteAllocStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
                 var pr57SiteHotStart=Pr57HotTiming&&scanProfile is not null?System.Diagnostics.Stopwatch.GetTimestamp():0L;
                 var free=step;step=SafeSiteTravel(v,target,step,true);
+                if(pr57LimiterProbe&&pr57QueueFirstLimit==0&&step<.00001)pr57QueueFirstLimit=5;
                 if(pr57SiteHotStart!=0){_pr57DirectMovementTicks[0]+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57SiteHotStart;_pr57DirectMovementCalls[0]++;}
                 if(scanProfile is not null)_pr57MovementAllocBytes[4]+=GC.GetAllocatedBytesForCurrentThread()-pr57SiteAllocStart;
                 var afterSiteStep=step; // observação PR57: antes da verificação de travessia
                 var pr57CrossingAllocStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
                 var pr57CrossingHotStart=Pr57HotTiming&&scanProfile is not null?System.Diagnostics.Stopwatch.GetTimestamp():0L;
                 if(node.Neighbours.Count<3&&!node.Crosswalk)step=ClearOfCrossingAhead(v,target,step);
+                if(pr57LimiterProbe&&pr57QueueFirstLimit==0&&step<.00001)pr57QueueFirstLimit=6;
                 if(pr57CrossingHotStart!=0){_pr57DirectMovementTicks[1]+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57CrossingHotStart;_pr57DirectMovementCalls[1]++;}
                 if(scanProfile is not null)_pr57MovementAllocBytes[5]+=GC.GetAllocatedBytesForCurrentThread()-pr57CrossingAllocStart;
                 var afterCrossingStep=step; // observação PR57: sem alterar o passo
@@ -855,6 +865,7 @@ public sealed partial class CitySimulation
                 if(pr57TurnHotStart!=0){_pr57DirectMovementTicks[2]+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57TurnHotStart;_pr57DirectMovementCalls[2]++;}
                 if(scanProfile is not null)_pr57MovementAllocBytes[6]+=GC.GetAllocatedBytesForCurrentThread()-pr57TurnAllocStart;
                 if(steer is {} bend){v.Heading=bend.Heading;target=bend.To;step=bend.Distance;}
+                if(pr57LimiterProbe&&pr57QueueFirstLimit==0&&step<.00001)pr57QueueFirstLimit=7;
                 if(scanProfile is not null){
                     pr57VehicleAllocStart=GC.GetAllocatedBytesForCurrentThread();
                     pr57VehicleAllocStage=2;
@@ -915,6 +926,7 @@ public sealed partial class CitySimulation
                             Pr57ScanLane(State.Vehicles);
                         var allocStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
                         v.Cause=blocker?.Status==VehicleStatus.Stranded?$"Aguardando veículo {blocker.Id} {(blocker.BrokenDown?"quebrado":"sem combustível")} na via":bayHold||entryHeld!=null?"Fila para acesso de carga":enteringLane?"Aguardando espaço para acessar a faixa":blocker!=null&&HoldsJunctionAhead(blocker,node)?(IsBend(node)?"Aguardando liberação da curva pelo veículo ":"Aguardando liberação do cruzamento pelo veículo ")+blocker.Id:"Fila na faixa";
+                        if(pr57LimiterProbe)Pr57QueueLimiterObserve(pr57QueueFirstLimit,v.Cause,pr57QueueLaneTicks,pr57QueueBendTicks,blocker!=null,enteringLane);
                         if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;
                         if(pr57IdleProbe)Pr57BlockObserve(v,blocker,node,enteringLane,bayHold,entryHeld!=null);
                         if(pr57DepProbe)Pr57DepBlocked(v,blocker);
@@ -976,6 +988,7 @@ public sealed partial class CitySimulation
                         }
                     }
                     if(sharedAhead&&!junctionAllowed){
+                        if(pr57LimiterProbe)Pr57QueueLimiterObserve(9,v.Cause,pr57QueueLaneTicks,pr57QueueBendTicks,false,false);
                         if(pr57IdleProbe)Pr57BlockMarkStage(4);
                         var pr57DeniedStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
                         if(scanProfile is not null)_pr57JunctionCalls[1]++;
@@ -1087,6 +1100,7 @@ public sealed partial class CitySimulation
                 }
                 Console.WriteLine($"PR57_ALLOC_PROFILE calls={_pr57MovementAllocCalls} totalMB={b[0]/1e6:F2} setupMB={b[1]/1e6:F2} laneMB={b[2]/1e6:F2} bendMB={b[3]/1e6:F2} siteMB={b[4]/1e6:F2} crossingMB={b[5]/1e6:F2} turnMB={b[6]/1e6:F2} operationsMB={b[7]/1e6:F2} preLaneMB={b[8]/1e6:F2} postTurnMB={b[9]/1e6:F2} finalizeMB={b[10]/1e6:F2} otherMB={other/1e6:F2}");
             }
+            if(Pr57QueueLimiterEnabled&&_pr57MovementAllocCalls%3000==0)Pr57QueueLimiterPrint(_pr57MovementAllocCalls);
             if(pr57CostProbe&&_pr57MovementAllocCalls%60==0){
                 string[] names=["operations","nontravelling","moved","queue","junction","waiting","stationary-trip","other"];
                 var totalTicks=_pr57VehicleCostTicks.Sum();
