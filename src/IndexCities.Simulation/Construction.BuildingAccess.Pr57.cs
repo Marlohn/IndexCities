@@ -8,7 +8,7 @@ public sealed partial class CitySimulation
     static readonly bool Pr57BuildingAccessEnabled =
         Environment.GetEnvironmentVariable("PR57_BUILDING_WORK_ACCESS")=="1";
     readonly Dictionary<(int X,int Z),List<(int Order,RoadNode Road)>> _pr57BuildingAccessCells=new();
-    bool _pr57BuildingAccessActive,_pr57BuildingAccessAnnounced;
+    bool _pr57BuildingAccessActive,_pr57BuildingAccessAnnounced,_pr57BuildingAccessEngaged;
     int _pr57BuildingAccessBuiltEpoch=-1,_pr57BuildingAccessBuiltCount=-1;
 
     // State is externally mutable. Never use the index outside a public Advance
@@ -47,6 +47,11 @@ public sealed partial class CitySimulation
         }
         _pr57BuildingAccessBuiltEpoch=_roadEpoch;
         _pr57BuildingAccessBuiltCount=State.Roads.Count;
+        if(!_pr57BuildingAccessEngaged&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine($"PR57_BUILDING_WORK_ACCESS built=True roads={State.Roads.Count}");
+            _pr57BuildingAccessEngaged=true;
+        }
     }
 
     RoadNode? Pr57IndexedBuildingAccess(Building building)
