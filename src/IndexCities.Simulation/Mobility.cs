@@ -335,6 +335,7 @@ public sealed partial class CitySimulation
         // nearby junctions and make opposite queues hold each other forever.
         foreach(var vehicle in State.Vehicles){ClearPassedJunction(vehicle);ReleaseManoeuvre(vehicle);}
         if(pr57DepProbe)Pr57DepAfterCleanup();
+        if(Pr57MutationAuditEnabled&&scanProfile is not null)Pr57MutationBeginSlice();
         // Same order as OrderBy(WaitingSince).ThenBy(Id): Ids are unique, so the
         // key is a total order and any sort yields the same sequence.
         // PR57 isolated A/B: during a batched movement slice, the loop below
@@ -783,6 +784,7 @@ public sealed partial class CitySimulation
                 }
                 }
                 if(Pr57LaneReadWriteEnabled&&scanProfile is not null)
+                    if(Pr57MutationAuditEnabled&&scanProfile is not null)Pr57MutationBeforeLeaderScan(v);
                     Pr57LaneReadBeforeScan(v,enteringLane,speed*remaining,pr57LaneList.Count);
                 Pr57ScanLane(pr57LaneList);
                 if(scanProfile is not null){
@@ -1070,11 +1072,13 @@ public sealed partial class CitySimulation
                 if(pr57AxisIndex is not null&&!_pr57AxisSweepDirty
                     &&pr57AxisIndex.Count==State.Vehicles.Count)pr57AxisIndex.Update(v,pr57OldPosition);
                 if(pr57Bvh)_pr57VehicleBvh!.Update(v);
+                if(Pr57MutationAuditEnabled&&scanProfile is not null)Pr57MutationAfterVehicle(v);
                 if(scanProfile is not null)_pr57MovementAllocBytes[10]+=GC.GetAllocatedBytesForCurrentThread()-pr57FinalizeAllocStart;
             }
         }
         // A towed vehicle moves only with its tow (platform or trailing a heavy tow).
         SyncTowedVehicles();
+        if(Pr57MutationAuditEnabled&&scanProfile is not null)Pr57MutationAfterSync();
         if(Pr57LaneReadWriteEnabled&&scanProfile is not null)Pr57LaneReadEndSlice();
         if(pr57DepProbe)Pr57DepEndSlice();
         if(pr57IdleProbe)Pr57IdleProbeTick();
