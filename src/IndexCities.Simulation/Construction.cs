@@ -164,8 +164,20 @@ public sealed partial class CitySimulation
         value=Money(value);if(value>p.BudgetRemaining)return false;
         p.BudgetRemaining-=value;if(!Transfer("city","global",value,category,reason,p.Id)){p.BudgetRemaining+=value;return false;}p.CostPaid+=value;return true;
     }
+    // PR57 opt-in experiment: the second AssignLocalCrew call for the same
+    // project follows only shipment/truck/payment operations. Those operations
+    // cannot make a previously ineligible local citizen eligible in this Step.
+    // The first call remains mandatory; this flag never skips any global Step.
+    static readonly bool Pr57SingleCrewAssignmentEnabled=
+        Environment.GetEnvironmentVariable("PR57_SINGLE_CREW_ASSIGNMENT")=="1";
+    bool _pr57SingleCrewAssignmentAnnounced;
     void OrderConstruction()
     {
+        if(!_pr57SingleCrewAssignmentAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine($"PR57_SINGLE_CREW_ASSIGNMENT active={Pr57SingleCrewAssignmentEnabled}");
+            _pr57SingleCrewAssignmentAnnounced=true;
+        }
         if(!_pr57OrderShipmentIndexAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
         {
             Console.WriteLine($"PR57_ORDER_SHIPMENT_INDEX active={Pr57OrderShipmentIndexEnabled}");
@@ -283,7 +295,7 @@ public sealed partial class CitySimulation
                 if(source==null&&receiver!=null)ConfigureAsphaltApproach(vehicle,shipment);
                 p.Cause=WorkCause.MaterialsInTransit;
             }
-            if(!IsPaving(p))
+            if(!IsPaving(p)&&!Pr57SingleCrewAssignmentEnabled)
             {
                 var pr57CrewStarted=pr57DispatchProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
                 AssignLocalCrew(p,access);
