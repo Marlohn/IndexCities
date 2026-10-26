@@ -268,6 +268,15 @@ public sealed partial class CitySimulation
         if(!admitted){
             var departure=Leaving(v);
             if(limit==null){WayOut(v,out _,out var endIndex);limit=new(){Route=v.Route.ToList(),SitePath=v.SitePath.ToList(),EndRouteIndex=endIndex};}
+            // PR57: admission can turn an otherwise ordinary passenger car into
+            // an owner of a physical dock reservation during this same slice.
+            // Such a car was excluded from the initial owner superset. Fall back
+            // to the exact full scan for the rest of this slice, rather than
+            // silently miss its newly admitted path. No cross-Advance cache.
+            if(Pr57SiteOwnerRosterEnabled&&_pr57SiteOwnerRoster is not null&&
+                v.PassengerCar&&v.Machine==PavingMachine.None&&
+                v.SitePath.Count==0&&v.ShipmentId==null&&v.ManoeuvreDock==null)
+                _pr57SiteOwnerRoster=null;
             v.ManoeuvreDock=dock;v.ManoeuvreDeparture=departure;v.MovementAdmission=limit;
             // A reroute can retain the previous dock identity while the body
             // waits elsewhere. The newly acquired exit starts at its real pose,
