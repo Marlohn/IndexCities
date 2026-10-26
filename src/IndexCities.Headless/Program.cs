@@ -213,6 +213,13 @@ if(profile is not null){
     Console.WriteLine($"STEP_PROFILE steps={profile.Steps} measuredWall={measured:F3}s phases={StepCostProfile.Names.Length}");
     for(var i=0;i<StepCostProfile.Names.Length;i++)
         Console.WriteLine($"  STEP_PHASE name={StepCostProfile.Names[i]} wall={profile.Ticks[i]/(double)Stopwatch.Frequency:F3}s share={(ticks==0?0:100.0*profile.Ticks[i]/ticks):F2}%");
+    if(Environment.GetEnvironmentVariable("PR57_PHASE_ALLOC_PROBE")=="1")
+    {
+        var phaseBytes=profile.PhaseAllocatedBytes.Sum();
+        Console.WriteLine($"PR57_PHASE_ALLOC_SUM steps={profile.PhaseAllocationSteps} phaseBytes={phaseBytes} note=INTRUSIVE_THREAD_LOCAL_DELTAS_NOT_LIVE_HEAP");
+        for(var i=0;i<StepCostProfile.Names.Length;i++)
+            Console.WriteLine($"PR57_PHASE_ALLOC name={StepCostProfile.Names[i]} bytes={profile.PhaseAllocatedBytes[i]} share={(phaseBytes==0?0:100.0*profile.PhaseAllocatedBytes[i]/phaseBytes):F2}%");
+    }
     for(var i=0;i<StepCostProfile.DetailNames.Length;i++){
         var parent=profile.Ticks[i<6?6:8];
         Console.WriteLine($"  STEP_DETAIL name={StepCostProfile.DetailNames[i]} wall={profile.DetailTicks[i]/(double)Stopwatch.Frequency:F3}s parentShare={(parent==0?0:100.0*profile.DetailTicks[i]/parent):F2}%");

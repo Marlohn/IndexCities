@@ -4,6 +4,24 @@ public sealed class StepCostProfile
 {
     public static readonly string[] Names = { "vehicles", "paving-returns", "citizen-mobility", "construction", "maintenance", "relocation", "infrastructure", "businesses", "needs", "economy-review", "construction-dispatch", "market-followups", "demolition-finance-loans" };
     public long[] Ticks { get; } = new long[Names.Length];
+    // PR57 #160: opt-in, observational thread-local allocation census.
+    // These deltas are not retained heap, state mutations, or causal read/write sets.
+    public long[] PhaseAllocatedBytes { get; } = new long[Names.Length];
+    public long PhaseAllocationSteps { get; private set; }
+    static readonly bool Pr57PhaseAllocEnabled=Environment.GetEnvironmentVariable("PR57_PHASE_ALLOC_PROBE")=="1";
+    long _pr57PhaseAllocationBaseline;
+    bool _pr57PhaseAllocationTracking;
+    internal void BeginAllocationCensus()
+    {
+        if(!Pr57PhaseAllocEnabled)return;
+        _pr57PhaseAllocationBaseline=GC.GetAllocatedBytesForCurrentThread();
+        _pr57PhaseAllocationTracking=true;
+        PhaseAllocationSteps++;
+    }
+    internal void ResetAllocationCensusBaseline()
+    {
+        if(_pr57PhaseAllocationTracking)_pr57PhaseAllocationBaseline=GC.GetAllocatedBytesForCurrentThread();
+    }
     // PR57 sampled, intrusive observation; never consulted by gameplay.
     public Pr57PhaseEffects? PhaseEffects { get; set; }
     // PR57 observational census: counts actual enumeration visits, never controls simulation.
@@ -83,6 +101,12 @@ public sealed class StepCostProfile
         var now = System.Diagnostics.Stopwatch.GetTimestamp();
         Ticks[phase] += now - started;
         started = now;
+        if(_pr57PhaseAllocationTracking)
+        {
+            var allocated=GC.GetAllocatedBytesForCurrentThread();
+            PhaseAllocatedBytes[phase]+=allocated-_pr57PhaseAllocationBaseline;
+            _pr57PhaseAllocationBaseline=allocated;
+        }
     }
     internal void MarkDetail(int detail, ref long started)
     {
@@ -90,7 +114,7 @@ public sealed class StepCostProfile
         DetailTicks[detail] += now - started;
         started = now;
     }
-    internal void FinishStep() => Steps++;
+    internal void FinishStep() { Steps++; _pr57PhaseAllocationTracking=false; }
 }
 
 public sealed partial class CitySimulation
@@ -236,6 +260,8 @@ public sealed partial class CitySimulation
             effects!.Begin(System.Text.Json.JsonSerializer.Serialize(State,SaveOptions));
             started=System.Diagnostics.Stopwatch.GetTimestamp();
         }
+        // Observational allocation boundaries; all 13 phases still execute.
+        profile?.BeginAllocationCensus();
         // PR57 opt-in: one exact conservative node grid for all movement
         // sub-slices of this Step; discard at the public Advance boundary.
         Pr57PrepareSharedNodeGrid();
@@ -336,6 +362,7 @@ public sealed partial class CitySimulation
     void Pr57ObservePhaseEffect(Pr57PhaseEffects effects,int phase,ref long started)
     {
         effects.Observe(phase,System.Text.Json.JsonSerializer.Serialize(State,SaveOptions));
+        CostProfile?.ResetAllocationCensusBaseline();
         started=System.Diagnostics.Stopwatch.GetTimestamp();
     }
     public void CheckInvariants()
