@@ -101,6 +101,8 @@ public sealed partial class CitySimulation
     static readonly bool Pr57DispatchShipmentLookup=Environment.GetEnvironmentVariable("PR57_DISPATCH_SHIPMENT_LOOKUP")=="1";
     // PR57 POC: per-dispatch live membership index; only append new shipments, read live cargo/status.
     static readonly bool Pr57OrderShipmentIndexEnabled=Environment.GetEnvironmentVariable("PR57_ORDER_SHIPMENT_INDEX")=="1";
+    // PR57 isolated per-ProgressConstruction shipment membership; never survives Advance(2).
+    static readonly bool Pr57ProgressShipmentLookupEnabled=Environment.GetEnvironmentVariable("PR57_PROGRESS_SHIPMENT_LOOKUP")=="1";
     readonly Dictionary<int,List<Shipment>> _pr57OrderShipments=new();
     bool _pr57OrderShipmentIndexAnnounced;
     // PR57-only causal waiting-project worklist. A stamp records a previous
@@ -285,6 +287,16 @@ public sealed partial class CitySimulation
     }
     bool ProgressConstruction(double dt)
     {
+        // Original shipment insertion order, live Cargo/Complete/ProjectId; rebuilt each call.
+        // If the shipment list grows or shrinks mid-phase, use the original full scan.
+        var progressShipments=Pr57ProgressShipmentLookupEnabled
+            ?Pr57ConstructionShipmentSource().Where(s=>s.ProjectId!=null).ToLookup(s=>s.ProjectId)
+            :null;
+        var indexedShipmentCount=State.Shipments.Count;
+        IEnumerable<Shipment> PendingProgressShipments(int projectId)
+            =>progressShipments!=null&&State.Shipments.Count==indexedShipmentCount
+                ?progressShipments[projectId].Where(s=>s.ProjectId==projectId&&!s.Complete)
+                :Pr57ConstructionShipmentSource().Where(s=>s.ProjectId==projectId&&!s.Complete);
         var completedConstruction=false;
         foreach(var p in State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress)){
             if(CostProfile is { } census)census.ConstructionProgressProjects++;
@@ -300,9 +312,9 @@ public sealed partial class CitySimulation
                 // Old saves can contain a crew parked with the first load and
                 // no truck left to deliver the rest. Return that actual crew
                 // to the exterior, then reuse its truck for missing materials.
-                var missingUnordered=p.Required.Any(required=>p.Delivered.GetValueOrDefault(required.Key)+Pr57ConstructionShipmentSource().Where(s=>s.ProjectId==p.Id&&!s.Complete).Sum(s=>s.Cargo.GetValueOrDefault(required.Key))+.001<required.Value);
+                var missingUnordered=p.Required.Any(required=>p.Delivered.GetValueOrDefault(required.Key)+PendingProgressShipments(p.Id).Sum(s=>s.Cargo.GetValueOrDefault(required.Key))+.001<required.Value);
                 if(missingUnordered&&p.CrewVehicleId is {} earlyCrewId&&VehicleById(earlyCrewId) is {Status:VehicleStatus.Parked,CrewAboard:true} earlyCrew){p.CrewVehicleId=null;ReturnExternal(earlyCrew);}
-                p.Cause=Pr57ConstructionShipmentSource().Any(s=>s.ProjectId==p.Id&&!s.Complete)?WorkCause.AwaitingPhysicalDelivery:WorkCause.MissingMaterials;continue;
+                p.Cause=PendingProgressShipments(p.Id).Any()?WorkCause.AwaitingPhysicalDelivery:WorkCause.MissingMaterials;continue;
             }
             var crew=p.CrewVehicleId==null?null:State.Vehicles.FirstOrDefault(v=>v.Id==p.CrewVehicleId&&v.CrewAboard);
             if(crew is {Status:VehicleStatus.Parked}&&crew.Position.Distance(DockAt(access,BuildingById(p.BuildingId),true))>2.5){
