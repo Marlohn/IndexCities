@@ -17,6 +17,9 @@ public sealed class StepCostProfile
     // PR57 intrusive cross-phase Cause observation; never influences gameplay.
     public long Pr57CauseObserved, Pr57CauseProgressChanged, Pr57CauseIntermediateChanged, Pr57CauseDispatchChanged;
     public long Pr57CauseDispatchUndoProgress, Pr57CauseDispatchReturnProgress;
+    // PR57 observational breakdown of the existing dispatch phase; profile only.
+    public long Pr57DispatchReserveTicks, Pr57DispatchAccessTicks, Pr57DispatchCrewTicks;
+    public long Pr57DispatchReserveCalls, Pr57DispatchAccessCalls, Pr57DispatchCrewCalls;
     public Dictionary<(string From,string To),long> Pr57CauseTransitions { get; } = new();
     public static readonly string[] DetailNames = { "infra-presence", "infra-demands", "infra-electricity", "infra-water", "infra-sewage-pollution", "infra-finalize", "needs-pollution", "needs-citizens" };
     public long[] DetailTicks { get; } = new long[DetailNames.Length];

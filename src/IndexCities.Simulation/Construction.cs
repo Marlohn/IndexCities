@@ -177,7 +177,14 @@ public sealed partial class CitySimulation
             _pr57ConstructionWaitAgendaAnnounced=true;
         }
         if(!State.Projects.Any(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress))return;
+        var pr57DispatchProfile=CostProfile;
+        var pr57ReserveStarted=pr57DispatchProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
         ReserveLocalMaterials();
+        if(pr57DispatchProfile is not null)
+        {
+            pr57DispatchProfile.Pr57DispatchReserveTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57ReserveStarted;
+            pr57DispatchProfile.Pr57DispatchReserveCalls++;
+        }
         // If no specialist truck can leave and no worker can be dispatched
         // from the depot, rechecking an unchanged material-blocked road project
         // cannot trigger transport, crew assignment or payment this quantum.
@@ -225,8 +232,25 @@ public sealed partial class CitySimulation
                 p.Cause=WorkCause.AwaitingExternalTruck;
                 continue;
             }
-            var access=WorkAccess(p);if(access==null||!_workExteriorConnected.Contains(access.Id)){p.Cause=WorkCause.NoMaterialsAccess;continue;}
-            if(IsPaving(p))OrderPavingMachines(p,access);else AssignLocalCrew(p,access);
+            var pr57AccessStarted=pr57DispatchProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
+            var access=WorkAccess(p);
+            if(pr57DispatchProfile is not null)
+            {
+                pr57DispatchProfile.Pr57DispatchAccessTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57AccessStarted;
+                pr57DispatchProfile.Pr57DispatchAccessCalls++;
+            }
+            if(access==null||!_workExteriorConnected.Contains(access.Id)){p.Cause=WorkCause.NoMaterialsAccess;continue;}
+            if(IsPaving(p))OrderPavingMachines(p,access);
+            else
+            {
+                var pr57CrewStarted=pr57DispatchProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
+                AssignLocalCrew(p,access);
+                if(pr57DispatchProfile is not null)
+                {
+                    pr57DispatchProfile.Pr57DispatchCrewTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57CrewStarted;
+                    pr57DispatchProfile.Pr57DispatchCrewCalls++;
+                }
+            }
             foreach(var k in p.Required.Keys.ToList()){
                 var inflight=PendingProjectShipments(p.Id).Sum(s=>s.Cargo.GetValueOrDefault(k));
                 var missing=p.Required[k]-p.Delivered.GetValueOrDefault(k)-inflight;
@@ -259,7 +283,16 @@ public sealed partial class CitySimulation
                 if(source==null&&receiver!=null)ConfigureAsphaltApproach(vehicle,shipment);
                 p.Cause=WorkCause.MaterialsInTransit;
             }
-            if(!IsPaving(p))AssignLocalCrew(p,access);
+            if(!IsPaving(p))
+            {
+                var pr57CrewStarted=pr57DispatchProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
+                AssignLocalCrew(p,access);
+                if(pr57DispatchProfile is not null)
+                {
+                    pr57DispatchProfile.Pr57DispatchCrewTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57CrewStarted;
+                    pr57DispatchProfile.Pr57DispatchCrewCalls++;
+                }
+            }
             if(IsPaving(p)){OrderPavingMachines(p,access);continue;}
             if(p.CrewVehicleId==null&&p.LocalCrew.Count==0&&p.Required.All(k=>p.Delivered.GetValueOrDefault(k.Key)+.001>=k.Value))SendExternalCrew(p,access);
             if(Pr57ConstructionWaitAgendaEnabled&&p.IsMaintenance&&p.BuildingId==null&&p.MaintenanceRoadIds.Count>0
