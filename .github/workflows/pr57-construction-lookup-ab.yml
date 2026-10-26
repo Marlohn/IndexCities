@@ -1,0 +1,102 @@
+name: PR57 existing shipment indexes under 50 active real works
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-construction-lookup-ab.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  shipment-index-ab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build the already-tested HEAD
+        run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+      - name: Restore economic saves
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-growth
+          run-id: 40250545171
+          github-token: ${{ github.token }}
+          path: artifacts/works
+      - name: Restore congested save
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-legal-workplaces-8d
+          run-id: 40169101306
+          github-token: ${{ github.token }}
+          path: artifacts/real
+      - name: ABBA against same composed-flag branch baseline at Advance(2)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/lookup
+          works="$(find artifacts/works -type f -path '*/growth/checkpoint-0.json' -print -quit)"
+          real="$(find artifacts/real -type f -path '*/pr57-jobs-20/checkpoint-11.json' -print -quit)"
+          test -s "$works"; test -s "$real"
+          for case in works real121 cycle; do
+            source="$works"; window=3600; fixture=cycle
+            if [[ "$case" == real121 ]]; then source="$real"; window=1800; fi
+            if [[ "$case" == cycle ]]; then source=""; fi
+            echo "PR57_LOOKUP_CASE case=$case class=REAL sourceSha256=$(if [[ -n "$source" ]]; then sha256sum "$source" | cut -d' ' -f1; else echo initial-seed42; fi) window=$window windows=4 cadence=Advance2"
+            modes=(baseA candidateA)
+            if [[ "$case" == works ]]; then modes=(baseA candidateA candidateB baseB); fi
+            for mode in "${modes[@]}"; do
+              enabled=0; command=scale
+              if [[ "$mode" == candidate* ]]; then enabled=1; fi
+              output="artifacts/lookup/$case-$mode"
+              mkdir -p "$output"
+              args=()
+              if [[ -n "$source" ]]; then args+=(--resume="$source"); fi
+              PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="$PWD/$output" \
+              PR57_SITE_OWNER_ROSTER=1 PR57_BUILDING_WORK_ACCESS=1 PR57_GRID_DIAG=1 \
+              PR57_DISPATCH_SHIPMENT_LOOKUP="$enabled" PR57_ORDER_SHIPMENT_INDEX="$enabled" \
+              PR57_IDLE_SCAN_PROBE=0 PR57_HOT_TIMING=0 \
+                timeout 240s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                  "$command" "$fixture" --seed=42 --warmup=0 --days=4 --window="$window" --cap=200 "${args[@]}" \
+                  | tee "$output.log"
+            done
+          done
+      - name: Verify flags, invariants, complete checkpoints and wall
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import pathlib,re
+          root=pathlib.Path("artifacts/lookup")
+          for case,window in (("works",3600),("real121",1800),("cycle",3600)):
+              modes=("baseA","candidateA","candidateB","baseB") if case=="works" else ("baseA","candidateA")
+              saves={};wall={}
+              for mode in modes:
+                  log=(root/f"{case}-{mode}.log").read_text()
+                  enabled=mode.startswith("candidate")
+                  assert f"PR57_ORDER_SHIPMENT_INDEX active={enabled}" in log,(case,mode,"flag inactive")
+                  assert "INVARIANTS OK" in log and "SAVE " in log,(case,mode,"invariants/save")
+                  rows=[x for x in log.splitlines() if x.startswith("WINDOW ")]
+                  assert len(rows)==4,(case,mode,"window count",len(rows))
+                  wall[mode]=sum(float(re.search(r"\bwall=([0-9.]+)s",x).group(1)) for x in rows)
+                  cpu=sum(float(re.search(r"\bcpu=([0-9.]+)s",x).group(1)) for x in rows)
+                  alloc=sum(float(re.search(r"\ballocMB=([0-9.]+)",x).group(1)) for x in rows)
+                  saves[mode]=[(root/f"{case}-{mode}"/f"checkpoint-{i}.json").read_bytes() for i in range(5)]
+                  print(f"PR57_LOOKUP_RUN case={case} mode={mode} simSeconds={4*window} wall={wall[mode]:.2f}s cpu={cpu:.2f}s allocMB={alloc:.1f} throughput={4*window/wall[mode]:.2f}sps")
+              assert all(saves[m]==saves[modes[0]] for m in modes[1:]),(case,"complete checkpoint divergence")
+              for a,b in (("baseA","candidateA"),("baseB","candidateB")):
+                  if a in wall:
+                      print(f"PR57_LOOKUP_PAIR case={case} base={a} candidate={b} gainPct={100*(1-wall[b]/wall[a]):.2f}")
+              print(f"PR57_LOOKUP_PARITY case={case} checkpoints=5 modes={len(modes)}")
+          PY
+      - name: Preserve logs and checkpoints
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-construction-lookup-ab
+          path: artifacts/lookup/**
+          retention-days: 14
