@@ -63,6 +63,8 @@ public sealed partial class CitySimulation
 
     readonly Dictionary<int,Pr57BlockedRead> _pr57LastBlocked=new();
     readonly HashSet<int> _pr57StableThirtyVehicles=new();
+    readonly HashSet<int> _pr57StableSixtyVehicles=new();
+    readonly HashSet<int> _pr57OperationGapVehicles=new();
     bool _pr57BlockHadPrevious,_pr57BlockSeenThisVehicle;
     // Stage is observational: 0=pre-loop, 1=in loop, 2=step gate,
     // 3=positive step, 4=junction denied, 5=movement commit reached.
@@ -70,6 +72,10 @@ public sealed partial class CitySimulation
     readonly long[] _pr57WakeNoHoldByStage=new long[6];
     long _pr57WakeNoHoldShortGap,_pr57WakeNoHoldSameSelf,
          _pr57WakeNoHoldCauseChanged,_pr57WakeNoHoldStatusChanged;
+    long _pr57WakeOperational,_pr57WakeOperationalRetained,
+         _pr57WakeOperationalChanged,_pr57WakeOtherPreLoop,
+         _pr57BlockRepeatAfterOperational,_pr57BlockSameAfterOperational,
+         _pr57BlockStableSixty;
     int _pr57WakeTraceCount;
 
     void Pr57BlockMarkStage(int stage)
@@ -108,9 +114,11 @@ public sealed partial class CitySimulation
             blocker?.WaitingSince??0,blocker?.RouteIndex??0,
             blocker?.Cause,blocker?.FuelUnits??0,
             node.Id,enteringLane,bayHold,entryHeld,now,now);
+        var afterOperational=_pr57OperationGapVehicles.Remove(v.Id);
         if(_pr57LastBlocked.TryGetValue(v.Id,out var prior))
         {
             _pr57BlockRepeat++;
+            if(afterOperational)_pr57BlockRepeatAfterOperational++;
             var sameId=prior.BlockerId==sample.BlockerId;
             if(sameId)_pr57BlockSameLeaderId++;
             var sameLeader=sameId&&prior.BlockerPosition.Equals(sample.BlockerPosition)
@@ -136,20 +144,27 @@ public sealed partial class CitySimulation
                 &&prior.BayHold==sample.BayHold&&prior.EntryHeld==sample.EntryHeld)
             {
                 _pr57BlockSameFullRead++;
+                if(afterOperational)_pr57BlockSameAfterOperational++;
                 sample=sample with {StableSince=prior.StableSince};
                 if(now-prior.StableSince>=30)
                 {
                     _pr57BlockStableThirty++;
                     _pr57StableThirtyVehicles.Add(v.Id);
                 }
+                if(now-prior.StableSince>=60)
+                {
+                    _pr57BlockStableSixty++;
+                    _pr57StableSixtyVehicles.Add(v.Id);
+                }
             }
         }
         _pr57LastBlocked[v.Id]=sample;
     }
 
-    void Pr57BlockFinishVehicle(Vehicle v,Pr57IdleSample before)
+    void Pr57BlockFinishVehicle(Vehicle v,Pr57IdleSample before,double dt,double? operationsDt)
     {
         var moved=!v.Position.Equals(before.Position)||v.Heading!=before.Heading;
+        var retainAcrossOperational=false;
         if(_pr57BlockHadPrevious)
         {
             if(moved)_pr57BlockWakeMoved++;
@@ -173,6 +188,24 @@ public sealed partial class CitySimulation
                         &&v.FuelUnits==previous.SelfFuel
                         &&string.Equals(v.Cause,previous.SelfCause,StringComparison.Ordinal);
                     if(sameSelf)_pr57WakeNoHoldSameSelf++;
+                    // A batched MoveVehiclesUnsplit(0,dt) runs operations only.
+                    // Retain the sample for diagnosis, NEVER for skipping work:
+                    // third parties, routes, signals and other inputs can change.
+                    if(_pr57BlockStage==0)
+                    {
+                        if(dt<=.000001&&operationsDt is not null&&_vehicleMovementBatch is not null)
+                        {
+                            _pr57WakeOperational++;
+                            if(sameSelf)
+                            {
+                                _pr57WakeOperationalRetained++;
+                                retainAcrossOperational=true;
+                                _pr57OperationGapVehicles.Add(v.Id);
+                            }
+                            else _pr57WakeOperationalChanged++;
+                        }
+                        else _pr57WakeOtherPreLoop++;
+                    }
                     if(_pr57WakeTraceCount<16)
                     {
                         _pr57WakeTraceCount++;
@@ -181,7 +214,11 @@ public sealed partial class CitySimulation
                 }
             }
         }
-        if(moved||!_pr57BlockSeenThisVehicle)_pr57LastBlocked.Remove(v.Id);
+        if(moved||!_pr57BlockSeenThisVehicle&&!retainAcrossOperational)
+        {
+            _pr57LastBlocked.Remove(v.Id);
+            _pr57OperationGapVehicles.Remove(v.Id);
+        }
     }
 
     void Pr57IdleProbeTick()
@@ -204,6 +241,12 @@ public sealed partial class CitySimulation
             $"junctionDenied={_pr57WakeNoHoldByStage[4]} movementCommit={_pr57WakeNoHoldByStage[5]} " +
             $"gapUnder2s={_pr57WakeNoHoldShortGap} sameSelf={_pr57WakeNoHoldSameSelf} " +
             $"causeChanged={_pr57WakeNoHoldCauseChanged} statusChanged={_pr57WakeNoHoldStatusChanged}");
+        Console.WriteLine(
+            $"PR57_BLOCK_OPERATION slices={_pr57IdleProbeSlices} preLoopOperational={_pr57WakeOperational} " +
+            $"preLoopOther={_pr57WakeOtherPreLoop} retained={_pr57WakeOperationalRetained} " +
+            $"changed={_pr57WakeOperationalChanged} physicalAfterOperational={_pr57BlockRepeatAfterOperational} " +
+            $"sameAfterOperational={_pr57BlockSameAfterOperational} " +
+            $"stableReadSet60s={_pr57BlockStableSixty} stableVehicles60s={_pr57StableSixtyVehicles.Count}");
         Console.WriteLine(
             $"PR57_IDLE_PROBE slices={_pr57IdleProbeSlices} vehicles={_pr57IdleProbeVehicles} "+
             $"poseUnchanged={_pr57IdleProbePoseSame} sampledFieldsUnchanged={_pr57IdleProbeFieldsSame} "+

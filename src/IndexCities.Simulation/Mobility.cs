@@ -989,7 +989,7 @@ public sealed partial class CitySimulation
                 }
                 if(pr57IdleProbe){
                     Pr57IdleObserve(v,pr57IdleStart,pr57IdleLaneVisits,pr57IdleBendVisits);
-                    Pr57BlockFinishVehicle(v,pr57IdleStart);
+                    Pr57BlockFinishVehicle(v,pr57IdleStart,dt,operationsDt);
                 }
                 var pr57FinalizeAllocStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
                 // If an initially parked car starts moving during this pass, it
