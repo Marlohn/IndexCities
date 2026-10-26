@@ -107,4 +107,47 @@ public sealed class Pr57SiteOwnerRosterAdversarial
         Assert.Contains(machine,Owners(sim));
         Assert.Equal(FullScan(sim,mover),SiteTravel(sim,mover));
     }
+    [Fact]
+    public void Same_count_list_replacement_reordering_and_swap_invalidate_in_slice_roster()
+    {
+        if(!Enabled)return;
+        var sim=new CitySimulation(42);
+        sim.State.Vehicles.Clear();
+        var mover=new Vehicle{Id=900021,Position=new(0,0),Heading=0,Status=VehicleStatus.Travelling};
+        var car=new Vehicle{Id=900022,PassengerCar=true,Position=new(0,4),Heading=0,Status=VehicleStatus.Parked};
+        var machine=new Vehicle{Id=900023,Machine=PavingMachine.Paver,
+            Status=VehicleStatus.Parked,Position=new(0,4),Heading=0};
+        sim.State.Vehicles.AddRange([mover,car]);
+        Prepare.Invoke(sim,null);
+        Assert.DoesNotContain(car,Owners(sim));
+        for(var i=0;i<6;i++)Assert.Equal(8.0,SiteTravel(sim,mover));
+        Assert.NotNull(Roster.GetValue(sim)); // Exhausting the guard must not invalidate it.
+
+        // Count is unchanged: the former count-only guard missed this machine.
+        sim.State.Vehicles[1]=machine;
+        Assert.Equal(0.0,SiteTravel(sim,mover));
+        Assert.Equal(FullScan(sim,mover),SiteTravel(sim,mover));
+        Assert.Null(Roster.GetValue(sim));
+
+        sim.State.Vehicles[1]=car;
+        Prepare.Invoke(sim,null);
+        sim.State.Vehicles.Reverse();
+        Assert.Equal(FullScan(sim,mover),SiteTravel(sim,mover));
+        Assert.Null(Roster.GetValue(sim)); // Reordering also invalidates.
+
+        Prepare.Invoke(sim,null);
+        sim.State.Vehicles.Remove(car);
+        sim.State.Vehicles.Add(machine); // Two edits, same final count.
+        Assert.Equal(0.0,SiteTravel(sim,mover));
+        Assert.Equal(FullScan(sim,mover),SiteTravel(sim,mover));
+        Assert.Null(Roster.GetValue(sim));
+
+        // Public replacement of the entire list preserves Count but not identity.
+        sim.State.Vehicles=[mover,car];
+        Prepare.Invoke(sim,null);
+        sim.State.Vehicles=[mover,machine];
+        Assert.Equal(0.0,SiteTravel(sim,mover));
+        Assert.Equal(FullScan(sim,mover),SiteTravel(sim,mover));
+    }
+
 }
