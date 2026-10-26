@@ -1,0 +1,97 @@
+name: PR57 scale-knee phase attribution at host cadence
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-scale-knee-profile.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  scale-knee-profile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build Release
+        run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+      - name: Restore exact unprofiled reference checkpoints
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-host-scale-curve
+          run-id: 40258405557
+          github-token: ${{ github.token }}
+          path: artifacts/curve-reference
+      - name: Restore authentic congested city
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-legal-workplaces-8d
+          run-id: 40169101306
+          github-token: ${{ github.token }}
+          path: artifacts/real-source
+      - name: Attribute phases without changing game rules or skipping quanta
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/knee-profile
+          congested="$(find artifacts/real-source -type f -path '*/pr57-jobs-20/checkpoint-11.json' -print -quit)"
+          test -s "$congested"
+          for case in grid6 grid12 grid18 real121; do
+            out="artifacts/knee-profile/$case"
+            mkdir -p "$out"
+            if [[ "$case" == real121 ]]; then
+              args=(profile cycle --seed=42 --warmup=0 --days=1 --window=3600 --cap=300 --resume="$congested")
+            else
+              rows="${case#grid}"
+              args=(profile grid --seed=42 --rows="$rows" --length=600 --warmup=0 --days=1 --window=3600 --cap=300)
+            fi
+            echo "PR57_KNEE_PROFILE case=$case hostQuantum=2 profile=on"
+            PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_GRID_DIAG=1 \
+            PR57_BUILDING_WORK_ACCESS=0 PR57_DYNAMIC_BVH=0 PR57_PARALLEL_NEEDS=0 \
+            PR57_STAFF_PHASE_FUSION=0 PR57_UTILITY_REPLAY=0 PR57_POLLUTION_SIMD=0 \
+            PR57_PARALLEL_POLLUTION=0 PR57_CONSTRUCTION_WAIT_AGENDA=0 \
+            PR57_DISPATCH_SHIPMENT_LOOKUP=0 PR57_ROUTE_TREE=0 \
+            PR57_ORDER_SHIPMENT_INDEX=0 PR57_MAINTENANCE_SCHEDULE=0 \
+            PR57_SOURCE_DISTANCE_CACHE=0 PR57_WORK_ACCESS_INDEX=0 \
+            PR57_PEDESTRIAN_GRID=0 PR57_LIVING_ROSTER=0 PR57_CITIZEN_AGENDA=0 \
+            PR57_SAVE_CAPTURE_DIR="$PWD/$out" \
+              timeout 180s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- "${args[@]}" | tee "$out.log"
+          done
+      - name: Verify complete intermediate saves against unprofiled baseline and report phases
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import pathlib,re
+          root=pathlib.Path('artifacts/knee-profile')
+          ref=pathlib.Path('artifacts/curve-reference')
+          for case in ('grid6','grid12','grid18','real121'):
+              log=(root/f'{case}.log').read_text()
+              assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,'invariants/save')
+              assert 'STEP_PROFILE steps=1800' in log,(case,'step count')
+              assert 'PR57_AB_CHECKPOINT window=1' in log,(case,'checkpoint')
+              for n in (0,1):
+                  target=root/case/f'checkpoint-{n}.json'
+                  baseline=ref/f'{case}-0'/f'checkpoint-{n}.json'
+                  assert target.is_file() and baseline.is_file(),(case,n,'missing')
+                  assert target.read_bytes()==baseline.read_bytes(),(case,n,'causal divergence')
+              rows=re.findall(r'STEP_PHASE name=([^ ]+) wall=([0-9.]+)s share=([0-9.]+)%',log)
+              assert len(rows)==13,(case,rows)
+              phases=sorted(((name,float(sec),float(share)) for name,sec,share in rows),key=lambda x:-x[1])
+              wall=re.search(r'WINDOW 1 seconds=3600 wall=([0-9.]+)s.*cpu=([0-9.]+)s allocMB=([0-9.]+)',log)
+              assert wall,(case,'wall')
+              print('PR57_KNEE_RESULT',case,'wallCpuAlloc',wall.groups(),'topPhases',phases[:7],
+                    'checkpoint0And1ByteIdenticalToUnprofiled',True)
+          PY
+      - name: Preserve complete profile and checkpoints
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-scale-knee-profile
+          path: artifacts/knee-profile/**
+          retention-days: 14
