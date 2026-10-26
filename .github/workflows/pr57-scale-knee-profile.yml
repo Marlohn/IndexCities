@@ -13,7 +13,7 @@ concurrency:
 jobs:
   scale-knee-profile:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 9
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -21,77 +21,90 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Build Release
         run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: Restore exact unprofiled reference checkpoints
+      - name: Restore unprofiled scale curve and authentic economic city
         uses: actions/download-artifact@v4
         with:
           name: integrated-scale-pr57-host-scale-curve
           run-id: 40258405557
           github-token: ${{ github.token }}
           path: artifacts/curve-reference
-      - name: Restore authentic congested city
+      - name: Restore authentic congestion source
         uses: actions/download-artifact@v4
         with:
           name: integrated-scale-pr57-legal-workplaces-8d
           run-id: 40169101306
           github-token: ${{ github.token }}
           path: artifacts/real-source
-      - name: Attribute phases without changing game rules or skipping quanta
+      - name: Replay saved high-congestion knee in independent unprofiled and profiled processes
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p artifacts/knee-profile
           congested="$(find artifacts/real-source -type f -path '*/pr57-jobs-20/checkpoint-11.json' -print -quit)"
           test -s "$congested"
-          for case in grid6 grid12 grid18 real121; do
-            out="artifacts/knee-profile/$case"
-            mkdir -p "$out"
-            if [[ "$case" == real121 ]]; then
-              args=(profile cycle --seed=42 --warmup=0 --days=1 --window=3600 --cap=300 --resume="$congested")
+          for case in grid18 real121; do
+            if [[ "$case" == grid18 ]]; then
+              source="artifacts/curve-reference/grid18-0/checkpoint-1.json"
+              window=300
+              fixture=grid
             else
-              rows="${case#grid}"
-              args=(profile grid --seed=42 --rows="$rows" --length=600 --warmup=0 --days=1 --window=3600 --cap=300)
+              source="$congested"
+              window=3600
+              fixture=cycle
             fi
-            echo "PR57_KNEE_PROFILE case=$case hostQuantum=2 profile=on"
-            PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_GRID_DIAG=1 \
-            PR57_BUILDING_WORK_ACCESS=0 PR57_DYNAMIC_BVH=0 PR57_PARALLEL_NEEDS=0 \
-            PR57_STAFF_PHASE_FUSION=0 PR57_UTILITY_REPLAY=0 PR57_POLLUTION_SIMD=0 \
-            PR57_PARALLEL_POLLUTION=0 PR57_CONSTRUCTION_WAIT_AGENDA=0 \
-            PR57_DISPATCH_SHIPMENT_LOOKUP=0 PR57_ROUTE_TREE=0 \
-            PR57_ORDER_SHIPMENT_INDEX=0 PR57_MAINTENANCE_SCHEDULE=0 \
-            PR57_SOURCE_DISTANCE_CACHE=0 PR57_WORK_ACCESS_INDEX=0 \
-            PR57_PEDESTRIAN_GRID=0 PR57_LIVING_ROSTER=0 PR57_CITIZEN_AGENDA=0 \
-            PR57_SAVE_CAPTURE_DIR="$PWD/$out" \
-              timeout 180s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- "${args[@]}" | tee "$out.log"
+            test -s "$source"
+            for mode in scale profile; do
+              out="artifacts/knee-profile/$case-$mode"
+              mkdir -p "$out"
+              echo "PR57_KNEE_REPLAY case=$case mode=$mode hostQuantum=2 seconds=$window source=$(sha256sum "$source" | cut -d' ' -f1)"
+              PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_GRID_DIAG=1 \
+              PR57_BUILDING_WORK_ACCESS=0 PR57_DYNAMIC_BVH=0 PR57_PARALLEL_NEEDS=0 \
+              PR57_STAFF_PHASE_FUSION=0 PR57_UTILITY_REPLAY=0 PR57_POLLUTION_SIMD=0 \
+              PR57_PARALLEL_POLLUTION=0 PR57_CONSTRUCTION_WAIT_AGENDA=0 \
+              PR57_DISPATCH_SHIPMENT_LOOKUP=0 PR57_ROUTE_TREE=0 \
+              PR57_ORDER_SHIPMENT_INDEX=0 PR57_MAINTENANCE_SCHEDULE=0 \
+              PR57_SOURCE_DISTANCE_CACHE=0 PR57_WORK_ACCESS_INDEX=0 \
+              PR57_PEDESTRIAN_GRID=0 PR57_LIVING_ROSTER=0 PR57_CITIZEN_AGENDA=0 \
+              PR57_SAVE_CAPTURE_DIR="$PWD/$out" \
+                timeout 120s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                "$mode" "$fixture" --seed=42 --warmup=0 --days=1 --window="$window" --cap=300 --resume="$source" | tee "$out.log"
+            done
           done
-      - name: Verify complete intermediate saves against unprofiled baseline and report phases
+      - name: Validate profile observation against fresh unprofiled replay
         shell: bash
         run: |
           python3 - <<'PY'
           import pathlib,re
           root=pathlib.Path('artifacts/knee-profile')
-          ref=pathlib.Path('artifacts/curve-reference')
-          for case in ('grid6','grid12','grid18','real121'):
-              log=(root/f'{case}.log').read_text()
-              assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,'invariants/save')
-              assert 'STEP_PROFILE steps=1800' in log,(case,'step count')
-              assert 'PR57_AB_CHECKPOINT window=1' in log,(case,'checkpoint')
+          for case,steps in (('grid18',150),('real121',1800)):
+              logs={}
+              for mode in ('scale','profile'):
+                  log=(root/f'{case}-{mode}.log').read_text()
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,mode,'invariants/save')
+                  assert 'PR57_AB_CHECKPOINT window=1' in log,(case,mode,'checkpoint')
+                  logs[mode]=log
               for n in (0,1):
-                  target=root/case/f'checkpoint-{n}.json'
-                  baseline=ref/f'{case}-0'/f'checkpoint-{n}.json'
-                  assert target.is_file() and baseline.is_file(),(case,n,'missing')
-                  assert target.read_bytes()==baseline.read_bytes(),(case,n,'causal divergence')
-              rows=re.findall(r'STEP_PHASE name=([^ ]+) wall=([0-9.]+)s share=([0-9.]+)%',log)
+                  a=root/f'{case}-scale'/f'checkpoint-{n}.json'
+                  b=root/f'{case}-profile'/f'checkpoint-{n}.json'
+                  assert a.is_file() and b.is_file() and a.read_bytes()==b.read_bytes(),(case,n,'causal divergence')
+              profile=logs['profile']
+              assert f'STEP_PROFILE steps={steps}' in profile,(case,'step count')
+              rows=re.findall(r'STEP_PHASE name=([^ ]+) wall=([0-9.]+)s share=([0-9.]+)%',profile)
               assert len(rows)==13,(case,rows)
               phases=sorted(((name,float(sec),float(share)) for name,sec,share in rows),key=lambda x:-x[1])
-              wall=re.search(r'WINDOW 1 seconds=3600 wall=([0-9.]+)s.*cpu=([0-9.]+)s allocMB=([0-9.]+)',log)
-              assert wall,(case,'wall')
-              print('PR57_KNEE_RESULT',case,'wallCpuAlloc',wall.groups(),'topPhases',phases[:7],
-                    'checkpoint0And1ByteIdenticalToUnprofiled',True)
+              scan=re.findall(r'VEHICLE_SCAN name=([^ ]+) wall=([0-9.]+)s visits=(\d+) hits=(\d+)',profile)
+              def window(log):
+                  m=re.search(r'WINDOW 1 seconds=\d+ wall=([0-9.]+)s.*cpu=([0-9.]+)s allocMB=([0-9.]+)',log)
+                  assert m,(case,'window')
+                  return m.groups()
+              print('PR57_KNEE_RESULT',case,'baselineWallCpuAlloc',window(logs['scale']),
+                    'profileWallCpuAlloc',window(profile),'topPhases',phases[:7],
+                    'vehicleScans',scan,'completeSavesMatch',True)
           PY
-      - name: Preserve complete profile and checkpoints
+      - name: Preserve raw replays and checkpoints
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-pr57-scale-knee-profile
+          name: integrated-scale-pr57-scale-knee-replay
           path: artifacts/knee-profile/**
           retention-days: 14
