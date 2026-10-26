@@ -1,4 +1,4 @@
-name: 'PR57 real-quantum end-to-end scale curve'
+name: 'PR57 causal phase profile at measured scale'
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
@@ -14,9 +14,9 @@ concurrency:
   group: integrated-scale-pr57
   cancel-in-progress: false
 jobs:
-  scale-curve:
+  phase-profile:
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 14
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -24,72 +24,55 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Build unchanged integrated headless motor
         run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-      - name: Restore original real economic checkpoint
+      - name: Restore same real economic checkpoint
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p artifacts/source
           gh run download 40200371479 -n integrated-scale-pr57-work-access-index-ab -D artifacts/source
           test -s "$(find artifacts/source -type f -name checkpoint-16.json | grep real-maintenance-control-a | head -n 1)"
-      - name: Bounded progressive scale curve, each in a fresh .NET process
+      - name: Profile real and artificial scale points in independent processes
         shell: bash
         run: |
           python3 - <<'PY'
-          import json,os,pathlib,re,subprocess,time
-          root=pathlib.Path('artifacts/scale-curve')
+          import json,os,pathlib,re,subprocess
+          root=pathlib.Path('artifacts/phase-profile')
           root.mkdir(parents=True,exist_ok=True)
-          sources=list(pathlib.Path('artifacts/source').rglob('checkpoint-16.json'))
-          sources=[p for p in sources if 'real-maintenance-control-a' in str(p)]
+          sources=[p for p in pathlib.Path('artifacts/source').rglob('checkpoint-16.json') if 'real-maintenance-control-a' in str(p)]
           assert len(sources)==1,sources
-          cases=[('cycle',None),('real',None),('grid-3',3),('grid-6',6),('grid-9',9),('grid-12',12)]
-          for name,rows in cases:
-              target=root/name
-              target.mkdir(exist_ok=True)
-              opts=['scale','cycle','--seed=42','--warmup=0','--days=1','--window=7200','--cap=90']
-              if name=='real': opts.append('--resume='+str(sources[0].resolve()))
-              if rows is not None: opts=['scale','grid','--seed=42','--rows='+str(rows),'--length=600','--warmup=0','--days=1','--window=7200','--cap=90']
-              cmd=['/usr/bin/time','-v','dotnet','run','--no-build','-c','Release','--project','src/IndexCities.Headless/IndexCities.Headless.csproj','--',*opts]
+          for name,rows in [('real',None),('grid-6',6),('grid-12',12)]:
+              opts=['profile','cycle','--seed=42','--warmup=0','--days=1','--window=7200','--cap=120']
+              if rows is None: opts.append('--resume='+str(sources[0].resolve()))
+              else: opts=['profile','grid','--seed=42','--rows='+str(rows),'--length=600','--warmup=0','--days=1','--window=7200','--cap=120']
+              cmd=['dotnet','run','--no-build','-c','Release','--project','src/IndexCities.Headless/IndexCities.Headless.csproj','--',*opts]
               env={k:v for k,v in os.environ.items() if not k.startswith('PR57_')}
-              env.update(PR57_HOST_QUANTUM='1',PR57_AB_CHECKPOINT='1',PR57_SAVE_CAPTURE_DIR=str(target.resolve()))
-              start=time.monotonic()
+              env['PR57_HOST_QUANTUM']='1'
               try:
-                  p=subprocess.run(cmd,env=env,text=True,capture_output=True,timeout=120)
+                  p=subprocess.run(cmd,env=env,text=True,capture_output=True,timeout=180)
                   status='ok' if p.returncode==0 else 'exit-'+str(p.returncode)
                   stdout=p.stdout
                   stderr=p.stderr
               except subprocess.TimeoutExpired as ex:
-                  status='timeout-120s'
+                  status='timeout-180s'
                   stdout=ex.stdout or b''
                   stderr=ex.stderr or b''
                   if isinstance(stdout,bytes): stdout=stdout.decode('utf-8','replace')
                   if isinstance(stderr,bytes): stderr=stderr.decode('utf-8','replace')
-              (target/'stdout.log').write_text(stdout)
-              (target/'stderr.log').write_text(stderr)
-              windows=[x for x in stdout.splitlines() if x.startswith('WINDOW ')]
-              fixture=next((x for x in stdout.splitlines() if x.startswith('FIXTURE ')),'')
-              def extract(key,line):
-                  m=re.search(r'\b'+re.escape(key)+r'=([0-9.]+)',line)
-                  return float(m.group(1)) if m else None
-              mem=re.search(r'Maximum resident set size \(kbytes\):\s*(\d+)',stderr)
-              stats={'scenario':name,'rows':rows,'status':status,'elapsedHostSeconds':round(time.monotonic()-start,2),'fixture':fixture,'rssKiB':int(mem.group(1)) if mem else None}
-              if windows:
-                  line=windows[-1]
-                  stats.update({k:extract(k,line) for k in ('wall','cpu','allocMB','pop','alive','dead','employed','travelling','moving','ledger','openWorks','history','meals','wages')})
-                  stats['throughput']=round(7200/stats['wall'],2) if stats['wall'] else None
-              stats['invariants']='INVARIANTS OK' in stdout
-              stats['save']='SAVE ' in stdout
-              stats['checkpoints']=len(list(target.glob('checkpoint-*.json')))
-              print('PR57_SCALE_CURVE',json.dumps(stats,sort_keys=True),flush=True)
-              (target/'summary.json').write_text(json.dumps(stats,indent=2,sort_keys=True))
-              if status!='ok' or not windows or not stats['invariants'] or not stats['save']:
-                  print('PR57_SCALE_STOP: stop escalation at first incomplete scenario',flush=True)
-                  if name in ('cycle','real','grid-3','grid-6'): raise SystemExit('Required scale case incomplete: '+name)
-                  break
+              (root/(name+'.log')).write_text(stdout+'\nSTDERR\n'+stderr)
+              phases={}
+              for line in stdout.splitlines():
+                  if not line.startswith('  STEP_PHASE '): continue
+                  m=re.search(r'name=(\S+) wall=([0-9.]+)s share=([0-9.]+)%',line)
+                  if m: phases[m.group(1)]={'wall':float(m.group(2)),'share':float(m.group(3))}
+              window=next((x for x in stdout.splitlines() if x.startswith('WINDOW ')),'')
+              print('PR57_SCALE_PHASE',json.dumps({'scenario':name,'status':status,'window':window,'phases':phases,'profileSteps':next((x for x in stdout.splitlines() if x.startswith('STEP_PROFILE ')),''),'invariants':'INVARIANTS OK' in stdout,'save':'SAVE ' in stdout},sort_keys=True),flush=True)
+              if status!='ok' or not phases or 'INVARIANTS OK' not in stdout:
+                  raise SystemExit('Profile incomplete: '+name)
           PY
-      - name: Preserve raw outputs and exact saves
+      - name: Preserve profile raw evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-pr57-quantum-scale-curve
-          path: artifacts/scale-curve/**
+          name: integrated-scale-pr57-scale-phase-profile
+          path: artifacts/phase-profile/**
           retention-days: 14
