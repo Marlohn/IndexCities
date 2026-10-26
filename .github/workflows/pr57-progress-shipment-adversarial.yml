@@ -2,7 +2,9 @@ name: PR57 progress shipment mutation adversarial (opt-in)
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
-    paths: [.github/workflows/pr57-progress-shipment-adversarial.yml]
+    paths:
+      - .github/workflows/pr57-progress-shipment-adversarial.yml
+      - tests/IndexCities.Simulation.Tests/Pr57ProgressShipmentMutationAdversarial.cs
   workflow_dispatch:
 permissions:
   contents: read
