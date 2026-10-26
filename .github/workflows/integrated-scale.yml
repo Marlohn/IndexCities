@@ -1,4 +1,4 @@
-name: 'PR57 exact building-work access index A/B at host cadence'
+name: 'PR57 building-work access causal adversarials and multi-state A/B'
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
@@ -34,15 +34,28 @@ jobs:
           run-id: 40250545171
           github-token: ${{ github.token }}
           path: artifacts/real-growth
-      - name: Real construction A/B order reversed, idle economy and artificial traffic
+      - name: Restore authentic older congestion checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-legal-workplaces-8d
+          run-id: 40169101306
+          github-token: ${{ github.token }}
+          path: artifacts/real-congested
+      - name: Real construction A/B order reversed, late economy, congestion and artificial traffic
         shell: bash
         run: |
           set -euo pipefail
           source="$(find artifacts/real-growth -type f -path '*/growth/checkpoint-0.json' -print -quit)"
+          late="$(find artifacts/real-growth -type f -path '*/growth/checkpoint-6.json' -print -quit)"
+          congested="$(find artifacts/real-congested -type f -path '*/pr57-jobs-20/checkpoint-11.json' -print -quit)"
           test -s "$source"
-          echo "PR57_ACCESS_AB_SOURCE sha256=$(sha256sum "$source" | cut -d' ' -f1)"
+          test -s "$late"
+          test -s "$congested"
+          for input in "$source" "$late" "$congested"; do
+            echo "PR57_ACCESS_AB_SOURCE path=$input sha256=$(sha256sum "$input" | cut -d' ' -f1)"
+          done
           mkdir -p artifacts/access-ab
-          for case in realA realB cycle grid; do
+          for case in realA realB late congested cycle grid; do
             modes=(control candidate)
             if [[ "$case" == realB ]]; then modes=(candidate control); fi
             for mode in "${modes[@]}"; do
@@ -53,6 +66,10 @@ jobs:
               args=(scale cycle --seed=42 --warmup=0 --days=2 --window=3600 --cap=300)
               if [[ "$case" == realA || "$case" == realB ]]; then
                 args+=(--resume="$source")
+              elif [[ "$case" == late ]]; then
+                args+=(--resume="$late")
+              elif [[ "$case" == congested ]]; then
+                args=(scale cycle --seed=42 --warmup=0 --days=1 --window=3600 --cap=300 --resume="$congested")
               elif [[ "$case" == grid ]]; then
                 args=(scale grid --seed=42 --rows=12 --length=600 --warmup=0 --days=1 --window=3600 --cap=300)
               fi
@@ -76,7 +93,7 @@ jobs:
           python3 - <<'PY'
           import pathlib,re
           root=pathlib.Path('artifacts/access-ab')
-          for case in ('realA','realB','cycle','grid'):
+          for case in ('realA','realB','late','congested','cycle','grid'):
               results={}
               for mode in ('control','candidate'):
                   log=(root/f'{case}-{mode}.log').read_text()
@@ -85,7 +102,7 @@ jobs:
                   if case.startswith('real') and mode=='candidate':
                       assert 'PR57_BUILDING_WORK_ACCESS built=True' in log,(case,'candidate did not engage')
                   windows=[x for x in log.splitlines() if x.startswith('WINDOW ')]
-                  assert len(windows)==(1 if case=='grid' else 2),(case,mode,'windows')
+                  assert len(windows)==(1 if case in ('grid','congested') else 2),(case,mode,'windows')
                   def val(row,key):
                       match=re.search(r'\b'+re.escape(key)+r'=([0-9.]+)',row)
                       assert match,(case,mode,key,row)
