@@ -532,6 +532,7 @@ public sealed partial class CitySimulation
         if(scanProfile is not null)_pr57MovementAllocBytes[1]+=GC.GetAllocatedBytesForCurrentThread()-pr57AllocCallStart;
         foreach(var v in ordered){
             var pr57IdleStart=pr57IdleProbe?Pr57IdleSnapshot(v):default;
+            if(pr57IdleProbe)Pr57BlockBeginVehicle(v);
             long pr57IdleLaneVisits=0,pr57IdleBendVisits=0;
             var pr57OldPosition=pr57AxisIndex is null?default:v.Position;
             var pr57OldCell=pr57SpatialScan||pr57LaneGrid?Pr57Cell(v.Position):default;
@@ -891,6 +892,7 @@ public sealed partial class CitySimulation
                         var allocStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
                         v.Cause=blocker?.Status==VehicleStatus.Stranded?$"Aguardando veículo {blocker.Id} {(blocker.BrokenDown?"quebrado":"sem combustível")} na via":bayHold||entryHeld!=null?"Fila para acesso de carga":enteringLane?"Aguardando espaço para acessar a faixa":blocker!=null&&HoldsJunctionAhead(blocker,node)?(IsBend(node)?"Aguardando liberação da curva pelo veículo ":"Aguardando liberação do cruzamento pelo veículo ")+blocker.Id:"Fila na faixa";
                         if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;
+                        if(pr57IdleProbe)Pr57BlockObserve(v,blocker,node,enteringLane,bayHold,entryHeld!=null);
                         if(scanProfile is not null){_pr57BlockedAllocBytes[0]+=GC.GetAllocatedBytesForCurrentThread()-allocStart;_pr57BlockedCalls[0]++;}
                         if(v.TowPhase==TowPhase.ToVehicle){
                             allocStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
@@ -980,7 +982,10 @@ public sealed partial class CitySimulation
                     else if(pr57VehicleAllocStage==1)_pr57MovementAllocBytes[8]+=allocNow-pr57VehicleAllocStart;
                     else if(pr57VehicleAllocStage==2)_pr57MovementAllocBytes[9]+=allocNow-pr57VehicleAllocStart;
                 }
-                if(pr57IdleProbe)Pr57IdleObserve(v,pr57IdleStart,pr57IdleLaneVisits,pr57IdleBendVisits);
+                if(pr57IdleProbe){
+                    Pr57IdleObserve(v,pr57IdleStart,pr57IdleLaneVisits,pr57IdleBendVisits);
+                    Pr57BlockFinishVehicle(v,pr57IdleStart);
+                }
                 var pr57FinalizeAllocStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
                 // If an initially parked car starts moving during this pass, it
                 // becomes eligible for subsequent scans in original vehicle order.
