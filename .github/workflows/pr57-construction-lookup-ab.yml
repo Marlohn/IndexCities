@@ -1,4 +1,4 @@
-name: PR57 existing shipment indexes under 50 active real works
+name: PR57 progress-phase shipment lookup ABBA on composed real economy
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
@@ -11,7 +11,7 @@ concurrency:
   group: integrated-scale-pr57
   cancel-in-progress: false
 jobs:
-  shipment-index-ab:
+  progress-shipment-ab:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -19,8 +19,10 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Build the already-tested HEAD
-        run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+      - name: Build and test opt-in POC
+        run: |
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
       - name: Restore economic saves
         uses: actions/download-artifact@v4
         with:
@@ -35,7 +37,7 @@ jobs:
           run-id: 40169101306
           github-token: ${{ github.token }}
           path: artifacts/real
-      - name: ABBA against same composed-flag branch baseline at Advance(2)
+      - name: ABBA progress-only flag versus composed shipment-index baseline at Advance(2)
         shell: bash
         run: |
           set -euo pipefail
@@ -43,10 +45,11 @@ jobs:
           works="$(find artifacts/works -type f -path '*/growth/checkpoint-0.json' -print -quit)"
           real="$(find artifacts/real -type f -path '*/pr57-jobs-20/checkpoint-11.json' -print -quit)"
           test -s "$works"; test -s "$real"
-          for case in works real121 cycle; do
+          for case in works real121 cycle grid; do
             source="$works"; window=3600; fixture=cycle
             if [[ "$case" == real121 ]]; then source="$real"; window=1800; fi
-            if [[ "$case" == cycle ]]; then source=""; fi
+            if [[ "$case" == cycle || "$case" == grid ]]; then source=""; fi
+            if [[ "$case" == grid ]]; then fixture=grid; window=300; fi
             echo "PR57_LOOKUP_CASE case=$case class=REAL sourceSha256=$(if [[ -n "$source" ]]; then sha256sum "$source" | cut -d' ' -f1; else echo initial-seed42; fi) window=$window windows=4 cadence=Advance2"
             modes=(baseA candidateA)
             if [[ "$case" == works ]]; then modes=(baseA candidateA candidateB baseB); fi
@@ -59,10 +62,10 @@ jobs:
               if [[ -n "$source" ]]; then args+=(--resume="$source"); fi
               PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="$PWD/$output" \
               PR57_SITE_OWNER_ROSTER=1 PR57_BUILDING_WORK_ACCESS=1 PR57_GRID_DIAG=1 \
-              PR57_DISPATCH_SHIPMENT_LOOKUP="$enabled" PR57_ORDER_SHIPMENT_INDEX="$enabled" \
+              PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ORDER_SHIPMENT_INDEX=1 PR57_PROGRESS_SHIPMENT_LOOKUP="$enabled" \
               PR57_IDLE_SCAN_PROBE=0 PR57_HOT_TIMING=0 \
                 timeout 240s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
-                  "$command" "$fixture" --seed=42 --warmup=0 --days=4 --window="$window" --cap=200 "${args[@]}" \
+                  "$command" "$fixture" --seed=42 --warmup=0 --days=4 --window="$window" --rows=6 --length=200 --cap=200 "${args[@]}" \
                   | tee "$output.log"
             done
           done
@@ -72,13 +75,14 @@ jobs:
           python3 - <<'PY'
           import pathlib,re
           root=pathlib.Path("artifacts/lookup")
-          for case,window in (("works",3600),("real121",1800),("cycle",3600)):
+          for case,window in (("works",3600),("real121",1800),("cycle",3600),("grid",300)):
               modes=("baseA","candidateA","candidateB","baseB") if case=="works" else ("baseA","candidateA")
               saves={};wall={}
               for mode in modes:
                   log=(root/f"{case}-{mode}.log").read_text()
                   enabled=mode.startswith("candidate")
-                  assert f"PR57_ORDER_SHIPMENT_INDEX active={enabled}" in log,(case,mode,"flag inactive")
+                  assert f"PR57_PROGRESS_SHIPMENT_LOOKUP active={enabled}" in log,(case,mode,"flag inactive")
+                  assert "PR57_ORDER_SHIPMENT_INDEX active=True" in log,(case,mode,"composed baseline inactive")
                   assert "INVARIANTS OK" in log and "SAVE " in log,(case,mode,"invariants/save")
                   rows=[x for x in log.splitlines() if x.startswith("WINDOW ")]
                   assert len(rows)==4,(case,mode,"window count",len(rows))
@@ -97,6 +101,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-pr57-construction-lookup-ab
+          name: integrated-scale-pr57-progress-shipment-ab
           path: artifacts/lookup/**
           retention-days: 14
