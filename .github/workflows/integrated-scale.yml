@@ -25,8 +25,8 @@ jobs:
         run: |
           set -euo pipefail
           dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-          PR57_BUILDING_WORK_ACCESS=0 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --no-build --verbosity quiet
-          PR57_BUILDING_WORK_ACCESS=1 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --no-build --verbosity quiet
+          PR57_BUILDING_WORK_ACCESS=0 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+          PR57_BUILDING_WORK_ACCESS=1 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
       - name: Restore authentic economic checkpoint
         uses: actions/download-artifact@v4
         with:
