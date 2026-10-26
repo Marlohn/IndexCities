@@ -1,0 +1,76 @@
+name: "PR57 #166 authentic history persistence cost at host cadence"
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-history-save-166.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  history-persistence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_HOST_QUANTUM: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build isolated bench and validate simulation
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build scripts/Pr57HistorySaveBench/Pr57HistorySaveBench.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore 72h authentic economic replay
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-growth
+          run-id: 40250545171
+          github-token: ${{ github.token }}
+          path: artifacts/real-growth
+      - name: Measure save/load and 300 Advance(2) calls at 12/36/72h
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/history-save-166
+          for index in 1 3 6; do
+            source="$(find artifacts/real-growth -type f -path "*/growth/checkpoint-${index}.json" -print -quit)"
+            test -s "$source"
+            echo "PR57_HISTORY_SOURCE checkpoint=$index sha256=$(sha256sum "$source" | cut -d' ' -f1)"
+            dotnet run --project scripts/Pr57HistorySaveBench/Pr57HistorySaveBench.csproj -c Release --no-build -- "$source" | tee -a artifacts/history-save-166/metrics.log
+          done
+          python3 - <<'PY'
+          import pathlib,re
+          path=pathlib.Path('artifacts/history-save-166/metrics.log')
+          lines=[line for line in path.read_text().splitlines() if line.startswith('PR57_HISTORY_SAVE ')]
+          assert len(lines)==3,lines
+          for line,expected in zip(lines,((1,1404),(3,2421),(6,4271))):
+              d=dict(part.split('=',1) for part in line.split()[1:])
+              assert d['checkpoint']==f'checkpoint-{expected[0]}.json',d
+              assert int(d['aliveBefore'])==121,d
+              assert int(d['historyBefore'])==expected[1],d
+              assert int(d['steps'])==300 and int(d['simulatedSeconds'])==600 and d['hostQuantum']=='2',d
+              assert d['parity']=='save-load-invariants',d
+              assert all(float(d[key])>0 for key in ('saveWallMs','loadWallMs','advanceWallMs')),d
+          print('PR57_HISTORY_VALIDATED scenarios=3 authentic=True hostQuantum=2 saveLoad=True invariants=True')
+          PY
+      - name: Retain persistence measurements
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-history-save-166
+          path: artifacts/history-save-166/
+          if-no-files-found: warn
