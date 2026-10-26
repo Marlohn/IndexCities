@@ -25,7 +25,7 @@ jobs:
           set -euo pipefail
           dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
           for flag in 0 1; do
-            PR57_SITE_OWNER_ROSTER="$flag" PR57_BUILDING_WORK_ACCESS="$flag" dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --no-restore --verbosity quiet
+            PR57_SITE_OWNER_ROSTER="$flag" PR57_BUILDING_WORK_ACCESS="$flag" dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
           done
       - name: Restore real active construction
         uses: actions/download-artifact@v4
