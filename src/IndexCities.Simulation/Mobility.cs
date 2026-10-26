@@ -314,6 +314,7 @@ public sealed partial class CitySimulation
     {
         Pr57PrepareSiteOwnerRoster();
         var scanProfile=CostProfile;
+        var pr57IdleProbe=scanProfile is not null&&Pr57IdleProbeEnabled;
         var pr57AllocCallStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
         // Release a passed junction even while a vehicle waits at the next one.
         // Carriageway half-width (3.3 m) + truck half-length (3.6 m) covers the
@@ -530,6 +531,8 @@ public sealed partial class CitySimulation
         }
         if(scanProfile is not null)_pr57MovementAllocBytes[1]+=GC.GetAllocatedBytesForCurrentThread()-pr57AllocCallStart;
         foreach(var v in ordered){
+            var pr57IdleStart=pr57IdleProbe?Pr57IdleSnapshot(v):default;
+            long pr57IdleLaneVisits=0,pr57IdleBendVisits=0;
             var pr57OldPosition=pr57AxisIndex is null?default:v.Position;
             var pr57OldCell=pr57SpatialScan||pr57LaneGrid?Pr57Cell(v.Position):default;
             // PR57 observation only: account for the residual outside the six measured calls.
@@ -707,6 +710,7 @@ public sealed partial class CitySimulation
                 }
                 void Pr57ScanLane(IEnumerable<Vehicle> candidates){
                 foreach(var liveOther in candidates){
+                    if(pr57IdleProbe)pr57IdleLaneVisits++;
                     var other=enteringLane?EntryFrameVehicle(liveOther):liveOther;
                     // A truck stopped at a dock with its body across this lane (a street bay)
                     // is queued behind like a leader, keeping the queue gap (Mobility.SharedSpace).
@@ -773,6 +777,7 @@ public sealed partial class CitySimulation
                         ?pr57AxisIndex.Bend(v,step)
                     :pr57Bvh?_pr57VehicleBvh!.Bend(v,step)
                     :pr57SpatialScan||pr57BitsetScan?Pr57Query(v.Position.X-step-12,v.Position.X+step+12,v.Position.Z-step-12,v.Position.Z+step+12):pr57ScanCandidates;
+                if(pr57IdleProbe)pr57IdleBendVisits+=pr57BendList.Count;
                 // A/B only: cheap conservative AABB and exact radius rejection BEFORE
                 // heading/Ahead/body tests. The old order and all original exact predicates
                 // remain in the control path; no finite lane-leader cutoff is introduced.
@@ -975,6 +980,7 @@ public sealed partial class CitySimulation
                     else if(pr57VehicleAllocStage==1)_pr57MovementAllocBytes[8]+=allocNow-pr57VehicleAllocStart;
                     else if(pr57VehicleAllocStage==2)_pr57MovementAllocBytes[9]+=allocNow-pr57VehicleAllocStart;
                 }
+                if(pr57IdleProbe)Pr57IdleObserve(v,pr57IdleStart,pr57IdleLaneVisits,pr57IdleBendVisits);
                 var pr57FinalizeAllocStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
                 // If an initially parked car starts moving during this pass, it
                 // becomes eligible for subsequent scans in original vehicle order.
@@ -1002,6 +1008,7 @@ public sealed partial class CitySimulation
         }
         // A towed vehicle moves only with its tow (platform or trailing a heavy tow).
         SyncTowedVehicles();
+        if(pr57IdleProbe)Pr57IdleProbeTick();
         _pr57SiteOwnerRoster=null; // no index may survive this movement slice
         if(pr57Bvh)_pr57VehicleBvh!.Refresh();
         if(scanProfile is not null){
