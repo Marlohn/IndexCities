@@ -120,6 +120,14 @@ public sealed class StepCostProfile
 public sealed partial class CitySimulation
 {
     public CityState State {get;}
+    // PR57 #167: opt-in observational upper bound on public Advance(2)
+    // boundary work versus the complete Step(2), including every physical slice.
+    // Never used to change scheduling, state, or save behavior.
+    static readonly bool Pr57AdvanceBoundaryProbe =
+        Environment.GetEnvironmentVariable("PR57_ADVANCE_BOUNDARY_PROBE")=="1";
+    bool _pr57BoundaryActive;
+    long _pr57BoundaryCalls,_pr57BoundaryAdvanceTicks,_pr57BoundaryStepTicks;
+    long _pr57BoundaryAdvanceBytes,_pr57BoundaryStepBytes;
     // PR57-only diagnostic observer; not part of CityState or save.
     public StepCostProfile? CostProfile { get; set; }
     public decimal CityBalance=>Balance("city");
@@ -188,6 +196,9 @@ public sealed partial class CitySimulation
     public void Advance(double seconds)
     {
         if(!double.IsFinite(seconds)||seconds<0)throw new ArgumentOutOfRangeException(nameof(seconds));
+        _pr57BoundaryActive=Pr57AdvanceBoundaryProbe&&seconds==Quantum;
+        var pr57BoundaryStart=_pr57BoundaryActive?System.Diagnostics.Stopwatch.GetTimestamp():0L;
+        var pr57BoundaryBytesStart=_pr57BoundaryActive?GC.GetAllocatedBytesForCurrentThread():0L;
         Pr57BeginBuildingAccessAdvance();
         // A public Advance boundary permits direct external State edits (including tests).
         // Rebuild the opt-in agenda there; internal quanta still use incremental wakeups.
@@ -213,6 +224,22 @@ public sealed partial class CitySimulation
         _crosswalkBands.Clear();_crosswalkBandsActive=true;BeginWalkRoutes();
         try{var remaining=seconds;while(remaining>1e-8){var dt=Math.Min(Quantum,remaining);Step(dt);remaining-=dt;}}
         finally{_crosswalkBandsActive=false;_crosswalkBands.Clear();EndWalkRoutes();_pr57RouteTreeActive=false;_pr57RouteTreeParents.Clear();_pr57RouteTreeCalls.Clear();Pr57EndBuildingAccessAdvance();Pr57ClearSharedNodeGrid();}
+        if(_pr57BoundaryActive)
+        {
+            _pr57BoundaryAdvanceTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57BoundaryStart;
+            _pr57BoundaryAdvanceBytes+=GC.GetAllocatedBytesForCurrentThread()-pr57BoundaryBytesStart;
+            _pr57BoundaryCalls++;
+            _pr57BoundaryActive=false;
+            if(_pr57BoundaryCalls%100==0)
+            {
+                double Ms(long ticks)=>ticks*1000.0/System.Diagnostics.Stopwatch.Frequency;
+                Console.WriteLine($"PR57_ADVANCE_BOUNDARY calls={_pr57BoundaryCalls} quantum=2 " +
+                    $"advanceMs={Ms(_pr57BoundaryAdvanceTicks):F3} stepMs={Ms(_pr57BoundaryStepTicks):F3} " +
+                    $"outsideStepMs={Ms(_pr57BoundaryAdvanceTicks-_pr57BoundaryStepTicks):F3} " +
+                    $"advanceAllocMB={_pr57BoundaryAdvanceBytes/1e6:F3} stepAllocMB={_pr57BoundaryStepBytes/1e6:F3} " +
+                    $"outsideStepAllocMB={(_pr57BoundaryAdvanceBytes-_pr57BoundaryStepBytes)/1e6:F3}");
+            }
+        }
     }
     // PR57 opt-in: stable living-citizen roster, invalidated on death or population growth.
     // Rebuilt before Step, never while a Step enumerates it. Does not alter CityState/save.
@@ -242,6 +269,8 @@ public sealed partial class CitySimulation
     static readonly bool Pr57CauseTransitionProbe=Environment.GetEnvironmentVariable("PR57_CAUSE_TRANSITION_PROBE")=="1";
     void Step(double dt)
     {
+        var pr57BoundaryStepStart=_pr57BoundaryActive?System.Diagnostics.Stopwatch.GetTimestamp():0L;
+        var pr57BoundaryStepBytesStart=_pr57BoundaryActive?GC.GetAllocatedBytesForCurrentThread():0L;
         Pr57WorkAccessBeginStep();
         Pr57BeginStep();
         if(!Pr57LivingRosterEnabled&&!_pr57LivingRosterAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
@@ -356,6 +385,11 @@ public sealed partial class CitySimulation
         if(profile is not null)profile.Mark(12,ref started);
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,12,ref started);
         if(profile is not null)profile.FinishStep();
+        if(_pr57BoundaryActive)
+        {
+            _pr57BoundaryStepTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57BoundaryStepStart;
+            _pr57BoundaryStepBytes+=GC.GetAllocatedBytesForCurrentThread()-pr57BoundaryStepBytesStart;
+        }
     }
     // Intrusive PR57 observation only: serialize the same persisted CityState shape
     // between phases, never SaveToJson (intermediate states may be transient).
