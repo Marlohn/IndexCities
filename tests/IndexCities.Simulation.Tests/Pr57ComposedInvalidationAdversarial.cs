@@ -113,6 +113,11 @@ public sealed class Pr57ComposedInvalidationAdversarial
         Prepare.Invoke(sim, null);
         var owners = (List<Vehicle>)Roster.GetValue(sim)!;
         Assert.DoesNotContain(car, owners);
+        var before = (double)Travel.Invoke(sim, [mover, new Point(0, 8), 8.0, true])!;
+        Roster.SetValue(sim, null);
+        var beforeFull = (double)Travel.Invoke(sim, [mover, new Point(0, 8), 8.0, true])!;
+        Roster.SetValue(sim, owners);
+        Assert.Equal(beforeFull, before);
         var way = new List<(Vehicle Body, Point Position, double Heading)>();
         var spaces = new List<RoadNode>();
         var limit = new LocalMovementAdmission
@@ -124,8 +129,8 @@ public sealed class Pr57ComposedInvalidationAdversarial
         Assert.NotNull(car.ManoeuvreDock);
         Assert.Null(Roster.GetValue(sim)); // In-slice admission must force full physics.
 
-        var indexed = (double)Travel.Invoke(sim, [mover, new Point(0, 8), 8.0, true])!;
-        var full = (double)Travel.Invoke(sim, [mover, new Point(0, 8), 8.0, true])!;
-        Assert.Equal(full, indexed);
+        // With the roster invalidated, the next call uses the original scan.
+        var fallback = (double)Travel.Invoke(sim, [mover, new Point(0, 8), 8.0, true])!;
+        Assert.True(double.IsFinite(fallback));
     }
 }
