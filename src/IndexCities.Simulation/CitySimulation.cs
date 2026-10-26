@@ -147,6 +147,7 @@ public sealed partial class CitySimulation
     public void Advance(double seconds)
     {
         if(!double.IsFinite(seconds)||seconds<0)throw new ArgumentOutOfRangeException(nameof(seconds));
+        Pr57BeginBuildingAccessAdvance();
         // A public Advance boundary permits direct external State edits (including tests).
         // Rebuild the opt-in agenda there; internal quanta still use incremental wakeups.
         if(Pr57CitizenAgendaEnabled)_pr57AgendaReady=false;
@@ -170,7 +171,7 @@ public sealed partial class CitySimulation
         }
         _crosswalkBands.Clear();_crosswalkBandsActive=true;BeginWalkRoutes();
         try{var remaining=seconds;while(remaining>1e-8){var dt=Math.Min(Quantum,remaining);Step(dt);remaining-=dt;}}
-        finally{_crosswalkBandsActive=false;_crosswalkBands.Clear();EndWalkRoutes();_pr57RouteTreeActive=false;_pr57RouteTreeParents.Clear();_pr57RouteTreeCalls.Clear();}
+        finally{_crosswalkBandsActive=false;_crosswalkBands.Clear();EndWalkRoutes();_pr57RouteTreeActive=false;_pr57RouteTreeParents.Clear();_pr57RouteTreeCalls.Clear();Pr57EndBuildingAccessAdvance();}
     }
     // PR57 opt-in: stable living-citizen roster, invalidated on death or population growth.
     // Rebuilt before Step, never while a Step enumerates it. Does not alter CityState/save.
