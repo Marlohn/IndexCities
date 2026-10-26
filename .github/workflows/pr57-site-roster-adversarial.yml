@@ -1,4 +1,4 @@
-name: PR57 site owner roster adversarials and extended economic A/B
+name: PR57 owner roster same-count invalidation and economic A/B
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
@@ -25,6 +25,7 @@ jobs:
           set -euo pipefail
           dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
           PR57_SITE_OWNER_ROSTER=1 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --filter FullyQualifiedName~Pr57SiteOwnerRosterAdversarial --verbosity normal
+          PR57_SITE_OWNER_ROSTER=1 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --filter FullyQualifiedName~Same_count_list_replacement_reordering_and_swap_invalidate_in_slice_roster --verbosity normal
           for flag in 0 1; do
             PR57_SITE_OWNER_ROSTER="$flag" dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
           done
