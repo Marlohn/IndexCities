@@ -171,7 +171,7 @@ public sealed partial class CitySimulation
         }
         _crosswalkBands.Clear();_crosswalkBandsActive=true;BeginWalkRoutes();
         try{var remaining=seconds;while(remaining>1e-8){var dt=Math.Min(Quantum,remaining);Step(dt);remaining-=dt;}}
-        finally{_crosswalkBandsActive=false;_crosswalkBands.Clear();EndWalkRoutes();_pr57RouteTreeActive=false;_pr57RouteTreeParents.Clear();_pr57RouteTreeCalls.Clear();Pr57EndBuildingAccessAdvance();}
+        finally{_crosswalkBandsActive=false;_crosswalkBands.Clear();EndWalkRoutes();_pr57RouteTreeActive=false;_pr57RouteTreeParents.Clear();_pr57RouteTreeCalls.Clear();Pr57EndBuildingAccessAdvance();Pr57ClearSharedNodeGrid();}
     }
     // PR57 opt-in: stable living-citizen roster, invalidated on death or population growth.
     // Rebuilt before Step, never while a Step enumerates it. Does not alter CityState/save.
@@ -209,6 +209,9 @@ public sealed partial class CitySimulation
         }
         var profile = CostProfile;
         var started = profile is null ? 0L : System.Diagnostics.Stopwatch.GetTimestamp();
+        // PR57 opt-in: one exact conservative node grid for all movement
+        // sub-slices of this Step; discard at the public Advance boundary.
+        Pr57PrepareSharedNodeGrid();
         MoveVehicles(dt);
         if(profile is not null)profile.Mark(0,ref started);
         ReturnPavingMachines(dt);
