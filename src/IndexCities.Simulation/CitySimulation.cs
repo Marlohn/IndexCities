@@ -6,6 +6,11 @@ public sealed class StepCostProfile
     public long[] Ticks { get; } = new long[Names.Length];
     // PR57 sampled, intrusive observation; never consulted by gameplay.
     public Pr57PhaseEffects? PhaseEffects { get; set; }
+    // PR57 observational census: counts actual enumeration visits, never controls simulation.
+    public long ConstructionOrderProjects, ConstructionProgressProjects, ConstructionReserveProjects;
+    public long ConstructionWorkAccessCalls, ConstructionBuildingAccessCalls;
+    public long ConstructionRoadQueries, ConstructionRoadVisits;
+    public long ConstructionShipmentQueries, ConstructionShipmentVisits;
     public static readonly string[] DetailNames = { "infra-presence", "infra-demands", "infra-electricity", "infra-water", "infra-sewage-pollution", "infra-finalize", "needs-pollution", "needs-citizens" };
     public long[] DetailTicks { get; } = new long[DetailNames.Length];
     public static readonly string[] VehicleDetailNames = { "entry-check", "operations", "entry-events", "movement" };
