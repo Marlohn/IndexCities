@@ -330,6 +330,12 @@ public sealed partial class CitySimulation
         var pr57SpatialScan=Environment.GetEnvironmentVariable("PR57_SPATIAL_SCAN")=="1";
         // PR57: experimental allocation-light, exact-order spatial bitsets (off by default).
         var pr57BitsetScan=Environment.GetEnvironmentVariable("PR57_BITSET_SCAN")=="1";
+        var pr57Bvh=Pr57DynamicBvhEnabled&&!pr57SpatialScan&&!pr57BitsetScan&&!pr57ActiveScan;
+        if(pr57Bvh){
+            if(_pr57VehicleBvh is null||!_pr57VehicleBvh.Matches(State.Vehicles))
+                _pr57VehicleBvh=new Pr57VehicleBvh(State.Vehicles);
+            else _pr57VehicleBvh.Refresh();
+        }
         var pr57FastScan=Environment.GetEnvironmentVariable("PR57_FAST_SCAN")=="1";
         // Independent A/B switch: isolate heading reuse from bend broad-phase.
         var pr57BendPrefilter=pr57FastScan&&Environment.GetEnvironmentVariable("PR57_BEND_PREFILTER")!="0";
@@ -469,6 +475,7 @@ public sealed partial class CitySimulation
         }
         List<Vehicle> Pr57LaneCandidates(Vehicle v,bool entering){
             // Entry admission uses a speed-dependent corridor: never spatially filter it.
+            if(pr57Bvh&&!entering)return _pr57VehicleBvh!.Lane(v);
             if(!(pr57SpatialScan||pr57BitsetScan)||entering)return pr57ScanCandidates;
             // The leader ray extends beyond all indexed positions, with 20m
             // clearance for the existing BodyAcrossLane special case.
@@ -707,6 +714,7 @@ public sealed partial class CitySimulation
                 var bendScanStart=scanProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
                 var pr57BendAllocStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
                 var pr57BendList=pr57ZeroBendSkip&&step==0&&v.Heading==approachHeading?Pr57EmptyBendList
+                    :pr57Bvh?_pr57VehicleBvh!.Bend(v,step)
                     :pr57SpatialScan||pr57BitsetScan?Pr57Query(v.Position.X-step-12,v.Position.X+step+12,v.Position.Z-step-12,v.Position.Z+step+12):pr57ScanCandidates;
                 // A/B only: cheap conservative AABB and exact radius rejection BEFORE
                 // heading/Ahead/body tests. The old order and all original exact predicates
@@ -914,11 +922,13 @@ public sealed partial class CitySimulation
                     }
                     pr57WorldExtent=Math.Max(pr57WorldExtent,Math.Max(Math.Abs(v.Position.X),Math.Abs(v.Position.Z)));
                 }
+                if(pr57Bvh)_pr57VehicleBvh!.Update(v);
                 if(scanProfile is not null)_pr57MovementAllocBytes[10]+=GC.GetAllocatedBytesForCurrentThread()-pr57FinalizeAllocStart;
             }
         }
         // A towed vehicle moves only with its tow (platform or trailing a heavy tow).
         SyncTowedVehicles();
+        if(pr57Bvh)_pr57VehicleBvh!.Refresh();
         if(scanProfile is not null){
             _pr57MovementAllocBytes[0]+=GC.GetAllocatedBytesForCurrentThread()-pr57AllocCallStart;
             if(++_pr57MovementAllocCalls%300==0){
