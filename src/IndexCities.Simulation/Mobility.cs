@@ -616,6 +616,7 @@ public sealed partial class CitySimulation
             }else if(!_vehicleMovementBatch.Contains(v.Id)||v.Status!=VehicleStatus.Travelling)continue;
             var remaining=dt;
             while(remaining>.000001&&v.Status==VehicleStatus.Travelling){
+                if(pr57IdleProbe)Pr57BlockMarkStage(1);
                 if(scanProfile is not null){
                     var allocNow=GC.GetAllocatedBytesForCurrentThread();
                     if(pr57VehicleAllocStage==0)_pr57MovementAllocBytes[7]+=allocNow-pr57VehicleAllocStart;
@@ -883,6 +884,7 @@ public sealed partial class CitySimulation
                 }
                 if(scanProfile is not null){_pr57RegionAllocBytes[4]+=GC.GetAllocatedBytesForCurrentThread()-pr57RegionStart;pr57RegionStart=GC.GetAllocatedBytesForCurrentThread();}
                 try{
+                    if(pr57IdleProbe)Pr57BlockMarkStage(2);
                     if(step<.00001&&d>.00001){
                         // A distant leader is irrelevant to the travelled step
                         // but can still determine a wait cause or tow decision.
@@ -927,6 +929,7 @@ public sealed partial class CitySimulation
                     // A break/continue above previously escaped the postTurn region marker.
                     if(scanProfile is not null)_pr57RegionAllocBytes[5]+=GC.GetAllocatedBytesForCurrentThread()-pr57RegionStart;
                 }
+                if(pr57IdleProbe)Pr57BlockMarkStage(3);
                 // Entering is admitted whole too: a delivery near its bay takes no junction
                 // or bend before its entry is admitted.
                 pr57RegionStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
@@ -950,6 +953,7 @@ public sealed partial class CitySimulation
                         }
                     }
                     if(sharedAhead&&!junctionAllowed){
+                        if(pr57IdleProbe)Pr57BlockMarkStage(4);
                         var pr57DeniedStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
                         if(scanProfile is not null)_pr57JunctionCalls[1]++;
                         try{
@@ -967,6 +971,7 @@ public sealed partial class CitySimulation
                 }
                 pr57RegionStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
                 if(v.Fuel<=.000001){RunOutOfFuel(v);break;}
+                if(pr57IdleProbe)Pr57BlockMarkStage(5);
                 step=Math.Min(step,v.Fuel/FuelRate(v));v.Position=v.Position.MoveTowards(target,step);v.AddFuel(-(step*FuelRate(v)));v.FuelUnits=Math.Max(0,v.FuelUnits);v.AddFuelBurnedLastStep(step*FuelRate(v));remaining-=step/speed;v.WaitingSince=0;v.Cause="Em viagem";
                 ClearPassedJunction(v);
                 var advanced=!bayHold&&(d<=step+.001||stopEarly>0&&d-step<=stopEarly+.001);
