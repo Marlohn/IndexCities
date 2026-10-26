@@ -12,6 +12,11 @@ public sealed class Pr57PhaseEffects
     readonly Dictionary<string,long>[] _properties =
         Enumerable.Range(0,StepCostProfile.Names.Length).Select(_=>new Dictionary<string,long>(StringComparer.Ordinal)).ToArray();
     readonly long[,] _changedRecords = new long[StepCostProfile.Names.Length,Collections.Length];
+    // Nested persisted field census for the two causal bottlenecks: citizen effects
+    // in vehicle processing and project effects in construction/dispatch.
+    // This is an intrusive observation only; never used by simulation decisions.
+    readonly Dictionary<string,long>[] _nestedFields =
+        Enumerable.Range(0,StepCostProfile.Names.Length).Select(_=>new Dictionary<string,long>(StringComparer.Ordinal)).ToArray();
     readonly long[] _changedSteps = new long[StepCostProfile.Names.Length];
     readonly int _every;
     long _steps;
@@ -56,7 +61,12 @@ public sealed class Pr57PhaseEffects
                 {
                     if(property.Name!=Collections[k])continue;
                     if(old.ValueKind==JsonValueKind.Array&&property.Value.ValueKind==JsonValueKind.Array)
-                        _changedRecords[phase,k]+=ChangedById(old,property.Value);
+                    {
+                        // Count net changed fields, not writes, reads or transient effects.
+                        Action<string>? countField=property.Name is "Citizens" or "Projects"
+                            ?name=>CountNestedField(phase,property.Name+"."+name):null;
+                        _changedRecords[phase,k]+=ChangedById(old,property.Value,countField);
+                    }
                     else _changedRecords[phase,k]+=property.Value.ValueKind==JsonValueKind.Array
                         ?property.Value.GetArrayLength():1;
                 }
@@ -74,22 +84,49 @@ public sealed class Pr57PhaseEffects
         counts[name]=counts.GetValueOrDefault(name)+1;
     }
 
-    static long ChangedById(JsonElement before,JsonElement after)
+    void CountNestedField(int phase,string name)
     {
-        var old=new Dictionary<int,string>();
+        var counts=_nestedFields[phase];
+        counts[name]=counts.GetValueOrDefault(name)+1;
+    }
+
+    static void CountChangedFields(JsonElement before,JsonElement after,Action<string> count)
+    {
+        foreach(var field in after.EnumerateObject())
+            if(!before.TryGetProperty(field.Name,out var old)||old.GetRawText()!=field.Value.GetRawText())
+                count(field.Name);
+        foreach(var field in before.EnumerateObject())
+            if(!after.TryGetProperty(field.Name,out _))count(field.Name);
+    }
+
+    static long ChangedById(JsonElement before,JsonElement after,Action<string>? countField=null)
+    {
+        // JsonElements retain the live parent JsonDocument for this Observe call.
+        var old=new Dictionary<int,JsonElement>();
         foreach(var item in before.EnumerateArray())
         {
             if(!item.TryGetProperty("Id",out var id)||!id.TryGetInt32(out var number))
                 throw new InvalidOperationException("PR57 tracked entity lacks integer Id");
-            old[number]=item.GetRawText();
+            old[number]=item;
         }
         long changes=0;
         foreach(var item in after.EnumerateArray())
         {
             if(!item.TryGetProperty("Id",out var id)||!id.TryGetInt32(out var number))
                 throw new InvalidOperationException("PR57 tracked entity lacks integer Id");
-            if(!old.Remove(number,out var original)||original!=item.GetRawText())changes++;
+            if(!old.Remove(number,out var original))
+            {
+                changes++;
+                countField?.Invoke("<added>");
+            }
+            else if(original.GetRawText()!=item.GetRawText())
+            {
+                changes++;
+                if(countField is not null)CountChangedFields(original,item,countField);
+            }
         }
+        if(countField is not null)
+            foreach(var _ in old)countField("<removed>");
         return changes+old.Count;
     }
 
@@ -103,8 +140,10 @@ public sealed class Pr57PhaseEffects
                 .ThenBy(x=>x.Key,StringComparer.Ordinal).Take(8).Select(x=>$"{x.Key}:{x.Value}"));
             var records=string.Join(",",Enumerable.Range(0,Collections.Length)
                 .Select(k=>$"{Collections[k]}:{_changedRecords[i,k]}"));
+            var nested=string.Join(",",_nestedFields[i].OrderByDescending(x=>x.Value)
+                .ThenBy(x=>x.Key,StringComparer.Ordinal).Take(20).Select(x=>$"{x.Key}:{x.Value}"));
             yield return $"PR57_PHASE_EFFECT name={StepCostProfile.Names[i]} samples={Samples} changed={_changedSteps[i]} " +
-                         $"unchanged={Samples-_changedSteps[i]} topFields={top} netEntityChanges={records}";
+                         $"unchanged={Samples-_changedSteps[i]} topFields={top} netEntityChanges={records} nestedFields={nested}";
         }
     }
 }

@@ -105,6 +105,14 @@ jobs:
                   m=re.search(r" samples=(\d+) changed=(\d+) unchanged=(\d+)",row)
                   assert m and int(m.group(1))==expected and int(m.group(2))+int(m.group(3))==expected,(case,row)
                   print("PR57_EFFECT_RESULT",case,row)
+              assert all(" nestedFields=" in row for row in rows),(case,"nested census absent")
+              if case=="real121":
+                  vehicles=next(x for x in rows if "name=vehicles " in x)
+                  assert re.search(r"Citizens\\.[A-Za-z_]+:[1-9][0-9]*",vehicles),(case,"missing citizen field effect",vehicles)
+              if case=="works":
+                  for phase in ("construction","construction-dispatch"):
+                      row=next(x for x in rows if f"name={phase} " in x)
+                      assert re.search(r"Projects\\.[A-Za-z_]+:[1-9][0-9]*",row),(case,phase,"missing project field effect",row)
               economy=next(x for x in rows if "name=economy-review " in x)
               assert int(re.search(r" changed=(\d+)",economy).group(1))>0,(case,"clock not observed")
               print("PR57_EFFECT_PARITY",case,"completeCheckpoints=5 across=3 processes")
