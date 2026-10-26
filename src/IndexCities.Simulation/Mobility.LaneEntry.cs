@@ -259,7 +259,7 @@ public sealed partial class CitySimulation
     // entry they block is rechecked every step without substeps of its own, and
     // their next road sample is not a predicted arrival. Without a stranded
     // vehicle nothing here applies, so ordinary traffic keeps the same substeps.
-    bool HeldBehindStranded(Vehicle v)=>HeldInStrandedChain(v,false);
+    bool HeldBehindStranded(Vehicle v)=>Pr57StrandedGraphEnabled?Pr57HeldBehindStranded(v):HeldInStrandedChain(v,false);
     bool HeldInStrandedChain(Vehicle v,bool orAtItsJunction)
     {
         var current=v;
@@ -286,7 +286,7 @@ public sealed partial class CitySimulation
     {
         var profile=CostProfile;
         var started=profile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
-        var hasEntry=State.Vehicles.Any(LiveLaneEntry);
+        var hasEntry=Pr57StrandedGraphEnabled?Pr57HasLiveLaneEntry():State.Vehicles.Any(LiveLaneEntry);
         var pr57EntryFrameReuse=Environment.GetEnvironmentVariable("PR57_ENTRY_FRAME_REUSE")=="1";
         if(profile is not null)profile.MarkVehicle(0,ref started);
         if(!hasEntry){
@@ -326,7 +326,7 @@ public sealed partial class CitySimulation
                     _entryFrameBuffer.Add(v.Id,snapshot);
                 }
                 _entryFrame=_entryFrameBuffer;
-                var slice=NextVehicleMovementEvent(remaining);
+                var slice=Pr57StrandedGraphEnabled?Pr57NextMovementEvent(remaining):NextVehicleMovementEvent(remaining);
                 // PR57-only: compare actual physical state across each predicted boundary.
                 // This is not an event journal: transitions that reverse inside a slice are not visible.
                 var traceSlice=profile is not null&&Environment.GetEnvironmentVariable("PR57_TARGET_BLOCK_TRACE")=="1";
