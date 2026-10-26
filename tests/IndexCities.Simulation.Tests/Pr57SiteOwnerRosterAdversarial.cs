@@ -150,4 +150,36 @@ public sealed class Pr57SiteOwnerRosterAdversarial
         Assert.Equal(FullScan(sim,mover),SiteTravel(sim,mover));
     }
 
+
+    [Fact]
+    public void In_slice_admission_of_excluded_car_invalidates_reservation_roster()
+    {
+        if(!Enabled)return;
+        var sim=new CitySimulation(42);
+        sim.State.Vehicles.Clear();
+        var mover=new Vehicle{Id=900031,Position=new(0,0),Heading=0,Status=VehicleStatus.Travelling};
+        var car=new Vehicle{Id=900032,PassengerCar=true,Position=new(0,4),
+            Heading=0,Status=VehicleStatus.Travelling};
+        sim.State.Vehicles.AddRange([mover,car]);
+        Prepare.Invoke(sim,null);
+        Assert.DoesNotContain(car,Owners(sim));
+        Assert.Equal(8.0,SiteTravel(sim,mover));
+
+        // Exercise the actual internal admission setter after roster creation,
+        // without editing the vehicle list or advancing to the next quantum.
+        var admit=typeof(CitySimulation).GetMethod("AdmitManoeuvre",PrivateInstance)!;
+        var way=new List<(Vehicle Body,Point Position,double Heading)>();
+        var spaces=new List<RoadNode>();
+        var limit=new LocalMovementAdmission{Route=car.Route.ToList(),
+            SitePath=car.SitePath.ToList(),EndRouteIndex=0,ReachesDock=true};
+        var accepted=(bool)admit.Invoke(sim,[car,way,spaces,new Point(0,5),false,limit])!;
+        Assert.True(accepted);
+        Assert.NotNull(car.ManoeuvreDock);
+        Assert.Null(Roster.GetValue(sim)); // Exact fallback within the same slice.
+
+        // The new physical reservation must be visible to the full predicate.
+        var full=FullScan(sim,mover);
+        Assert.True(full<8.0,"The newly admitted dock path must obstruct the mover");
+        Assert.Equal(full,SiteTravel(sim,mover));
+    }
 }
