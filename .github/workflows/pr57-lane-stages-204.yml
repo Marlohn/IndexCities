@@ -1,0 +1,138 @@
+name: 'PR57 #204 bounded actual lane scan guard and cost census'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-lane-stages-204.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  lane-stages:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build Release and run full regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic real works checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-growth
+          run-id: 40250545171
+          github-token: ${{ github.token }}
+          path: artifacts/works
+      - name: Restore authentic congested checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-legal-workplaces-8d
+          run-id: 40169101306
+          github-token: ${{ github.token }}
+          path: artifacts/queue
+      - name: Restore clearly ARTIFICIAL GRID checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-host-scale-curve
+          run-id: 40258405557
+          github-token: ${{ github.token }}
+          path: artifacts/grid
+      - name: Execute independent Advance(2) control and bounded probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          works="$(find artifacts/works -type f -path '*/growth/checkpoint-0.json' -print -quit)"
+          queue="$(find artifacts/queue -type f -path '*/pr57-jobs-20/checkpoint-10.json' -print -quit)"
+          grid="artifacts/grid/grid18-0/checkpoint-1.json"
+          for source in "$works" "$queue" "$grid"; do test -s "$source"; sha256sum "$source"; done
+          mkdir -p artifacts/pair-204
+          for case in worksREAL queueREAL gridARTIFICIAL; do
+            source="$works"; fixture=cycle; horizon=300
+            if [[ "$case" == queueREAL ]]; then source="$queue"; fi
+            if [[ "$case" == gridARTIFICIAL ]]; then source="$grid"; fixture=grid; horizon=100; fi
+            for mode in plain probe; do
+              output="$PWD/artifacts/pair-204/$case-$mode"
+              mkdir -p "$output"
+              command=scale; enabled=0
+              if [[ "$mode" == probe ]]; then command=profile; enabled=1; fi
+              echo "PR57_204_RUN case=$case mode=$mode horizon=$horizon cadence=ADVANCE_2"
+              PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_GRID_DIAG=1 \
+              PR57_SAVE_CAPTURE_DIR="$output" PR57_204_LANE_STAGES="$enabled" \
+              PR57_LANE_READWRITE_PROBE=0 PR57_BLOCK_DEP_PROBE=0 \
+              PR57_VEHICLE_COST_PROBE=0 PR57_HOT_TIMING=0 PR57_PHASE_ALLOC_PROBE=0 \
+                timeout 180s dotnet run --no-build -c Release \
+                --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                "$command" "$fixture" --seed=42 --warmup=0 --days=1 \
+                --window="$horizon" --cap=300 --resume="$source" | tee "$output.log"
+            done
+          done
+      - name: Verify full-state parity and bounded stage census
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          root=Path('artifacts/lane-stages-204')
+          def value(line,key):
+              m=re.search(r'\\b'+re.escape(key)+r'=([0-9.]+)',line)
+              assert m,(key,line)
+              return float(m.group(1))
+          for case,horizon in [('worksREAL',300),('queueREAL',300),('gridARTIFICIAL',100)]:
+              plain=(root/f'{case}-plain.log').read_text()
+              probe=(root/f'{case}-probe.log').read_text()
+              for mode,log in [('plain',plain),('probe',probe)]:
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,mode)
+                  assert len([s for s in log.splitlines() if s.startswith('WINDOW ')])==1,(case,mode)
+                  for i in (0,1):
+                      assert (root/f'{case}-{mode}'/f'checkpoint-{i}.json').is_file(),(case,mode,i)
+              for i in (0,1):
+                  assert (root/f'{case}-plain'/f'checkpoint-{i}.json').read_bytes()==(root/f'{case}-probe'/f'checkpoint-{i}.json').read_bytes(),(case,i,'full JSON mismatch')
+              assert 'PR57_204_STAGE ' not in plain,case
+              rows=[s for s in probe.splitlines() if s.startswith('PR57_204_STAGE ')]
+              assert rows,(case,'no physical slices sampled')
+              keys=('scans','visits','bodyHits','earlyReject','occupied','coincident','entryBlocked','reachedGate','forwardReject','sideReject','reachedHeading','bodyCalls','occupiesCalls','entryCalls','frameCalls')
+              counts={k:0 for k in keys}
+              times={k:0.0 for k in ('scanMs','bodyMs','occupiesMs','entryMs','frameMs')}
+              for row in rows:
+                  for k in keys: counts[k]+=int(value(row,k))
+                  for k in times: times[k]+=value(row,k)
+                  assert value(row,'distinctActors')<=value(row,'scans'),row
+                  assert value(row,'earlyReject')+value(row,'bodyHits')<=value(row,'visits'),row
+                  assert value(row,'reachedGate')<=value(row,'occupied'),row
+                  assert value(row,'reachedHeading')<=value(row,'reachedGate'),row
+                  assert value(row,'bodyCalls')<=value(row,'visits'),row
+                  assert value(row,'scanMs')>=value(row,'bodyMs'),row
+              assert counts['visits']>0 and counts['scans']>0,(case,counts)
+              win=next(s for s in plain.splitlines() if s.startswith('WINDOW '))
+              print('PR57_204_RESULT',case,'seconds',horizon,'samples',len(rows),
+                    'counts',counts,'timingsMs',times,
+                    'plainWall',value(win,'wall'),'plainCpu',value(win,'cpu'),
+                    'plainAllocMB',value(win,'allocMB'),
+                    'simSecondsPerWallSecond',round(horizon/value(win,'wall'),2),
+                    'checkpoints',2,'parity','EXACT_FULL_JSON')
+          PY
+      - name: Preserve full checkpoints and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-lane-stages-204
+          path: artifacts/pair-204/**
+          retention-days: 14

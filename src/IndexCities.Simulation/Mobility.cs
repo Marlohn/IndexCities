@@ -326,6 +326,7 @@ public sealed partial class CitySimulation
         Pr57JunctionReadersBeginSlice(dt,operationsDt);
         var scanProfile=CostProfile;
         Pr57PairBeginSlice(dt,operationsDt,scanProfile is not null);
+        Pr57StageBeginSlice(dt,operationsDt,scanProfile is not null);
         var pr57CostProbe=scanProfile is not null&&Pr57VehicleCostProbeEnabled;
         var pr57LimiterProbe=scanProfile is not null&&Pr57QueueLimiterEnabled&&dt>0&&_pr57MovementAllocCalls%37==0;
         var pr57DepProbe=scanProfile is not null&&Pr57BlockDepProbeEnabled&&dt>0;
@@ -715,7 +716,7 @@ public sealed partial class CitySimulation
                 var fromSide=len>.01?RoadSide(v.Position):0;var toSide=len>.01?RoadSide(target):0;
                 var access=new LaneAccess(node,delta,len,target,d,speed,fromSide,toSide);
                 var enteringLane=v.PassengerCar&&v.RouteIndex==0&&insideMap&&len>.01&&Math.Abs(fromSide-toSide)>.1&&!AlreadyFollowingLane(v,node,approachHeading);
-                bool BlocksEntry(Vehicle other)=>enteringLane&&BlocksLaneEntry(v,access,other);
+                bool BlocksEntry(Vehicle other)=>enteringLane&&Pr57StageBlocksEntry(v,access,other);
                 // Apply the existing ID tie-break to the whole coincidence case.
                 // A tiny positive forward projection must not make its winner
                 // yield back to the other vehicle and freeze both indefinitely.
@@ -744,9 +745,11 @@ public sealed partial class CitySimulation
                     _pr57AxisSweepUsedAnnounced=true;
                 }
                 void Pr57ScanLane(IEnumerable<Vehicle> candidates){
+                var pr57StageScanStart=Pr57StageScanBegin(v);
                 foreach(var liveOther in candidates){
                     if(pr57IdleProbe)pr57IdleLaneVisits++;
-                    var other=enteringLane?EntryFrameVehicle(liveOther):liveOther;
+                    Pr57StageMark(0);
+                    var other=enteringLane?Pr57StageEntryFrame(liveOther):liveOther;
                     Pr57PairBeforeLaneCandidate(v,other,enteringLane);
                     Pr57CausalLaneCandidate(v,other);
                     // A truck stopped at a dock with its body across this lane (a street bay)
@@ -754,13 +757,15 @@ public sealed partial class CitySimulation
                     if(other.Id!=v.Id&&(pr57DockGateHoist?pr57DockGate:(!LeavesDock(v)||OnCarriageway(v)))&&
                        (!pr57DockAabb||(!other.PassengerCar&&other.Machine==PavingMachine.None&&
                          Math.Abs(other.Position.X-v.Position.X)<=20.00000001&&Math.Abs(other.Position.Z-v.Position.Z)<=20.00000001))&&
-                       BodyAcrossLane(v,other) is {} docked){HoldFor(other,docked);continue;}
-                    if(other.Id==v.Id||!OccupiesLane(other))continue;
+                       Pr57StageBodyAcross(v,other) is {} docked){Pr57StageMark(1);HoldFor(other,docked);continue;}
+                    if(other.Id==v.Id||!Pr57StageOccupies(other)){Pr57StageMark(2);continue;}
+                    Pr57StageMark(3);
                     var relative=other.Position-v.Position;
-                    if(insideMap&&relative.Distance(new(0,0))<.1){if(other.Status==VehicleStatus.Stranded||other.Id<v.Id)HoldFor(other,0);continue;}
+                    if(insideMap&&relative.Distance(new(0,0))<.1){Pr57StageMark(4);if(other.Status==VehicleStatus.Stranded||other.Id<v.Id)HoldFor(other,0);continue;}
                     // Entry occupancy is measured along the ROAD axis, including
                     // the opposite lane, rather than the diagonal lot heading.
-                    if(BlocksEntry(other)){HoldFor(other,0);continue;}
+                    if(BlocksEntry(other)){Pr57StageMark(5);HoldFor(other,0);continue;}
+                    Pr57StageMark(6);
                     // PR57 bitset A/B: the detour, opposing tow, and normal
                     // leader paths below all require forward > 0 and side < 2.6.
                     // Reject impossible candidates before the costly heading cosine;
@@ -770,10 +775,11 @@ public sealed partial class CitySimulation
                         var gateSin=pr57FastScan?pr57Sin:Math.Sin(v.Heading);
                         var gateCos=pr57FastScan?pr57Cos:Math.Cos(v.Heading);
                         pr57GateForward=relative.X*gateSin+relative.Z*gateCos;
-                        if(!(pr57GateForward>0))continue;
+                        if(!(pr57GateForward>0)){Pr57StageMark(7);continue;}
                         pr57GateSide=Math.Abs(relative.X*gateCos-relative.Z*gateSin);
-                        if(!(pr57GateSide<2.6))continue;
+                        if(!(pr57GateSide<2.6)){Pr57StageMark(8);continue;}
                     }
+                    Pr57StageMark(9);
                     var pr57CosDiff=pr57FastScan?Math.Cos(other.Heading-v.Heading):0;
                     // An overtaker committed to this lane: oncoming traffic waits for it.
                     if(other.Detour.Count>0&&(pr57FastScan?pr57CosDiff:Math.Cos(other.Heading-v.Heading))<-.5){var ahead=relative.X*(pr57FastScan?pr57Sin:Math.Sin(v.Heading))+relative.Z*(pr57FastScan?pr57Cos:Math.Cos(v.Heading));var across=Math.Abs(relative.X*(pr57FastScan?pr57Cos:Math.Cos(v.Heading))-relative.Z*(pr57FastScan?pr57Sin:Math.Sin(v.Heading)));if(ahead>0&&across<2.6){HoldFor(other,ahead);continue;}}
@@ -794,6 +800,7 @@ public sealed partial class CitySimulation
                         HoldFor(other,forward);
                     }
                 }
+                Pr57StageScanEnd(pr57StageScanStart);
                 }
                 if(Pr57MutationAuditEnabled&&scanProfile is not null)Pr57MutationBeforeLeaderScan(v);
                 if(Pr57LaneReadWriteEnabled&&scanProfile is not null)
@@ -1094,6 +1101,7 @@ public sealed partial class CitySimulation
         SyncTowedVehicles();
         Pr57ReservationAfterSync();
         Pr57PairEndSlice();
+        Pr57StageEndSlice();
         Pr57CausalEndSlice();
         Pr57JunctionCensusEndSlice();
         Pr57JunctionReadersEndSlice();
