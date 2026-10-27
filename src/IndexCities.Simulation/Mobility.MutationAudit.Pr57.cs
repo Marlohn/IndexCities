@@ -23,6 +23,9 @@ public sealed partial class CitySimulation
     // Stopwatch and allocation counters are included in the measured hook.
     void Pr57DirtyTouch(Vehicle? vehicle)
     {
+        // #223: mirror-only journal of already marked potential writers.
+        // No effect when the bounded dense probe is inactive.
+        Pr57DenseNotePotentialWrite(vehicle);
         if (!Pr57DirtyClosureProbeEnabled || !_pr57MutationSampleActive ||
             _pr57DirtyTouched is null || vehicle is null) return;
         var start = System.Diagnostics.Stopwatch.GetTimestamp();
