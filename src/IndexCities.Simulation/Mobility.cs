@@ -905,9 +905,11 @@ public sealed partial class CitySimulation
                 // than turning in place into a parked machine's or site truck's body,
                 // or into any other body that pose was clear of.
                 Pr57PoseGuardBegin(v,step,d);
-                if(step<.00001&&d>.00001&&State.Vehicles.Any(o=>o.Id!=v.Id&&o.Status!=VehicleStatus.Outside&&o.Position.Distance(v.Position)<12&&
+                if(step<.00001&&d>.00001&&
+                    (Pr57PoseForeachEnabled?Pr57PoseGuardForeach(v,approachHeading):
+                    State.Vehicles.Any(o=>o.Id!=v.Id&&o.Status!=VehicleStatus.Outside&&o.Position.Distance(v.Position)<12&&
                     Pr57PoseGuardCandidateReached()&&
-                    (StreetBody(o)?VehicleBodiesOverlap(v,v.Position,o):!(o.Position.Distance(State.Entry)<8&&v.Position.Distance(State.Entry)<8)&&TurnsInto(v,approachHeading,o))))v.Heading=approachHeading;
+                    (StreetBody(o)?VehicleBodiesOverlap(v,v.Position,o):!(o.Position.Distance(State.Entry)<8&&v.Position.Distance(State.Entry)<8)&&TurnsInto(v,approachHeading,o)))))v.Heading=approachHeading;
                 Pr57PoseGuardEnd(v);
                 if(scanProfile is not null&&Environment.GetEnvironmentVariable("PR57_TARGET_BLOCK_TRACE")=="1"&&(v.Id is 1107 or 487 or 1174)){
                     _pr57TargetTraceCounts.TryGetValue(v.Id,out var count);
