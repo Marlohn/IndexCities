@@ -381,6 +381,7 @@ public sealed partial class CitySimulation
         Pr57CrossSliceBegin();
         Pr57CandidateBeginSlice();
         Pr57S6GateShadowBeginSlice();
+        Pr57PhaseExposureBeginSlice();
         // Same order as OrderBy(WaitingSince).ThenBy(Id): Ids are unique, so the
         // key is a total order and any sort yields the same sequence.
         // PR57 isolated A/B: during a batched movement slice, the loop below
@@ -792,6 +793,7 @@ public sealed partial class CitySimulation
                     if(pr57IdleProbe)pr57IdleLaneVisits++;
                     Pr57StageMark(0);
                     var other=enteringLane?Pr57StageEntryFrame(liveOther):liveOther;
+                    if(_pr57PhaseActive)Pr57PhaseExposureRead(v,other,ReferenceEquals(other,liveOther));
                     Pr57PairBeforeLaneCandidate(v,other,enteringLane);
                     Pr57CausalLaneCandidate(v,other);
                     if(Pr57NegativeEnabled)Pr57NegativeBeginCandidate(other);
@@ -1160,6 +1162,7 @@ public sealed partial class CitySimulation
                 if(pr57Bvh)_pr57VehicleBvh!.Update(v);
                 if(Pr57MutationAuditEnabled&&scanProfile is not null)Pr57MutationAfterVehicle(v);
                 Pr57ReservationAfterVehicle(v);
+                Pr57PhaseExposureAfterVehicle(v);
                 if(scanProfile is not null)_pr57MovementAllocBytes[10]+=GC.GetAllocatedBytesForCurrentThread()-pr57FinalizeAllocStart;
             }
         }
@@ -1169,6 +1172,7 @@ public sealed partial class CitySimulation
         Pr57CrossSliceEnd();
         Pr57CandidateEndSlice();
         Pr57S6GateShadowEndSlice();
+        Pr57PhaseExposureEndSlice();
         Pr57ExclusiveEndSlice();
         Pr57PairEndSlice();
         Pr57StageEndSlice();
