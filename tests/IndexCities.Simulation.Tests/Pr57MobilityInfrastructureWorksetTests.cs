@@ -91,6 +91,27 @@ public sealed class Pr57MobilityInfrastructureWorksetTests
             $"mobilityPct={100.0*mobility/phaseTicks:F3} infrastructurePct={100.0*infrastructure/phaseTicks:F3} " +
             $"impossibleBothPhaseSpeedup={maxSpeedup:F4} candidateIntrusiveSeconds={candidateTicks/(double)Stopwatch.Frequency:F3} " +
             "scope=ENTRY_STATE_WORKSETS_NOT_CAUSAL_READ_SETS_OR_PLAIN_THROUGHPUT");
+        // #182: joint Amdahl filter on the SAME Step(2) replay, not a speedup.
+        // Phase timings are intrusive; this counterfactual deletes real work and
+        // cannot be used to justify skipping any phase or causal substep.
+        var jointTicks=profile.Ticks[0]+profile.Ticks[3]+profile.Ticks[6]+profile.Ticks[10];
+        var remainderTicks=phaseTicks-jointTicks;
+        Assert.True(remainderTicks>0);
+        Console.WriteLine($"PR57_182_JOINT case={label} steps={steps} " +
+            $"vehicleTicks={profile.Ticks[0]} constructionTicks={profile.Ticks[3]} " +
+            $"infrastructureTicks={profile.Ticks[6]} dispatchTicks={profile.Ticks[10]} " +
+            $"jointTicks={jointTicks} remainingTicks={remainderTicks} totalTicks={phaseTicks} " +
+            $"jointPct={100.0*jointTicks/phaseTicks:F3} remainingPct={100.0*remainderTicks/phaseTicks:F3} " +
+            $"impossibleJointSpeedup={(double)phaseTicks/remainderTicks:F4} " +
+            "scope=INTRUSIVE_PHASE_TIMING_NOT_WALL_OR_CAUSAL_READ_SETS");
+        for(var i=0;i<StepCostProfile.Names.Length;i++)
+            Console.WriteLine($"PR57_182_PHASE case={label} name={StepCostProfile.Names[i]} " +
+                $"ticks={profile.Ticks[i]} pct={100.0*profile.Ticks[i]/phaseTicks:F3}");
+        // Existing #174 observer already tracks NET repeated writes of entity IDs
+        // across phase boundaries; emit all phases, not only the two from #181.
+        foreach(var line in profile.PhaseEffects.ReportLines().Where(line=>
+                     line.StartsWith("PR57_PHASE_EFFECT name=",StringComparison.Ordinal)))
+            Console.WriteLine("PR57_182_"+line);
         foreach(var line in profile.PhaseEffects.ReportLines().Where(line=>
                      line.StartsWith("PR57_PHASE_EFFECT_SUMMARY",StringComparison.Ordinal)
                      ||line.StartsWith("PR57_PHASE_EFFECT name=citizen-mobility ",StringComparison.Ordinal)
