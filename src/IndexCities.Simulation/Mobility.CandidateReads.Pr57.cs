@@ -41,6 +41,7 @@ public sealed partial class CitySimulation
         _pr57CandidateActive = null;
         if (!_pr57CandidateSliceActive) return;
         Pr57FieldBeginSlice();
+        Pr57FanoutBeginSlice();
         if (_pr57ExclusiveSamples == 1)
         {
             _pr57CandidateSelected.Clear();
@@ -140,6 +141,8 @@ public sealed partial class CitySimulation
                     _pr57CandidateAllObservedSame++;
                 Pr57FieldCompare(previous.Occupiers, now.Occupiers, 3);
                 Pr57FieldCompare(previous.Deep, now.Deep, 9);
+                Pr57FanoutCompare(key, previous.Occupiers, now.Occupiers, 3);
+                Pr57FanoutCompare(key, previous.Deep, now.Deep, 9);
             }
         }
         _pr57CandidateCurrent[key] = now;
@@ -150,6 +153,7 @@ public sealed partial class CitySimulation
     {
         if (!_pr57CandidateSliceActive) return;
         Pr57FieldEndSlice();
+        Pr57FanoutEndSlice();
         Console.WriteLine(
             $"PR57_214_READS sample={_pr57ExclusiveSamples} eligibleSlice={_pr57ExclusiveEligibleSlices} " +
             $"selected={_pr57CandidateSelected.Count} capturedQueries={_pr57CandidateCaptured} " +
