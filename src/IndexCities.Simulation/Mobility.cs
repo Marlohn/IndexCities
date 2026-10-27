@@ -344,6 +344,7 @@ public sealed partial class CitySimulation
         Pr57JunctionReadersAfterCleanup();
         if(pr57DepProbe)Pr57DepAfterCleanup();
         if(Pr57MutationAuditEnabled&&scanProfile is not null)Pr57MutationBeginSlice();
+        Pr57CrossSliceBegin();
         // Same order as OrderBy(WaitingSince).ThenBy(Id): Ids are unique, so the
         // key is a total order and any sort yields the same sequence.
         // PR57 isolated A/B: during a batched movement slice, the loop below
@@ -807,6 +808,7 @@ public sealed partial class CitySimulation
                 }
                 Pr57StageScanEnd(pr57StageScanStart);
                 }
+                Pr57CrossSliceObserve(v,0,enteringLane,speed*remaining);
                 if(Pr57MutationAuditEnabled&&scanProfile is not null)Pr57MutationBeforeLeaderScan(v);
                 if(Pr57LaneReadWriteEnabled&&scanProfile is not null)
                     Pr57LaneReadBeforeScan(v,enteringLane,speed*remaining,pr57LaneList.Count);
@@ -835,6 +837,7 @@ public sealed partial class CitySimulation
                         ?pr57AxisIndex.Bend(v,step)
                     :pr57Bvh?_pr57VehicleBvh!.Bend(v,step)
                     :pr57SpatialScan||pr57BitsetScan?Pr57Query(v.Position.X-step-12,v.Position.X+step+12,v.Position.Z-step-12,v.Position.Z+step+12):pr57ScanCandidates;
+                Pr57CrossSliceObserve(v,1,false,step);
                 if(pr57IdleProbe)pr57IdleBendVisits+=pr57BendList.Count;
                 // A/B only: cheap conservative AABB and exact radius rejection BEFORE
                 // heading/Ahead/body tests. The old order and all original exact predicates
@@ -1116,6 +1119,7 @@ public sealed partial class CitySimulation
         // A towed vehicle moves only with its tow (platform or trailing a heavy tow).
         SyncTowedVehicles();
         Pr57ReservationAfterSync();
+        Pr57CrossSliceEnd();
         Pr57ExclusiveEndSlice();
         Pr57PairEndSlice();
         Pr57StageEndSlice();
