@@ -24,6 +24,8 @@ public sealed class StepCostProfile
     }
     // PR57 sampled, intrusive observation; never consulted by gameplay.
     public Pr57PhaseEffects? PhaseEffects { get; set; }
+    // PR57 #183: sampled read-only cross-phase presence/crew candidate census.
+    public Pr57CrossPhasePresenceProbe? CrossPhasePresence { get; set; }
     // PR57 observational census: counts actual enumeration visits, never controls simulation.
     public long ConstructionOrderProjects, ConstructionProgressProjects, ConstructionReserveProjects;
     public long ConstructionWorkAccessCalls, ConstructionBuildingAccessCalls;
@@ -289,6 +291,9 @@ public sealed partial class CitySimulation
             effects!.Begin(System.Text.Json.JsonSerializer.Serialize(State,SaveOptions));
             started=System.Diagnostics.Stopwatch.GetTimestamp();
         }
+        var presence=profile?.CrossPhasePresence;
+        var samplePresence=presence is not null&&presence.Begin(this);
+        if(samplePresence)started=System.Diagnostics.Stopwatch.GetTimestamp();
         // Observational allocation boundaries; all 13 phases still execute.
         profile?.BeginAllocationCensus();
         // PR57 opt-in: one exact conservative node grid for all movement
@@ -297,12 +302,15 @@ public sealed partial class CitySimulation
         MoveVehicles(dt);
         if(profile is not null)profile.Mark(0,ref started);
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,0,ref started);
+        if(samplePresence){presence!.Observe(this,0);profile?.ResetAllocationCensusBaseline();started=System.Diagnostics.Stopwatch.GetTimestamp();}
         ReturnPavingMachines(dt);
         if(profile is not null)profile.Mark(1,ref started);
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,1,ref started);
+        if(samplePresence){presence!.Observe(this,1);profile?.ResetAllocationCensusBaseline();started=System.Diagnostics.Stopwatch.GetTimestamp();}
         MoveCitizens(dt);
         if(profile is not null)profile.Mark(2,ref started);
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,2,ref started);
+        if(samplePresence){presence!.Observe(this,2);profile?.ResetAllocationCensusBaseline();started=System.Diagnostics.Stopwatch.GetTimestamp();}
         // Observe persisted project diagnostics at causal boundaries, profile only.
         var pr57CauseBeforeProgress=profile is not null&&Pr57CauseTransitionProbe
             ?State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress).ToDictionary(p=>p.Id,p=>p.Cause):null;
@@ -313,26 +321,33 @@ public sealed partial class CitySimulation
         if(completedConstruction&&Pr57MaintenanceScheduleEnabled)_pr57MaintenanceScheduleReady=false;
         if(profile is not null)profile.Mark(3,ref started);
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,3,ref started);
+        if(samplePresence){presence!.Observe(this,3);profile?.ResetAllocationCensusBaseline();started=System.Diagnostics.Stopwatch.GetTimestamp();}
         UpdateMaintenanceCondition(dt);
         if(profile is not null)profile.Mark(4,ref started);
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,4,ref started);
+        if(samplePresence){presence!.Observe(this,4);profile?.ResetAllocationCensusBaseline();started=System.Diagnostics.Stopwatch.GetTimestamp();}
         ProgressMunicipalRelocations(dt);
         if(profile is not null)profile.Mark(5,ref started);
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,5,ref started);
+        if(samplePresence){presence!.Observe(this,5);profile?.ResetAllocationCensusBaseline();started=System.Diagnostics.Stopwatch.GetTimestamp();}
         UpdateInfrastructure(dt);
         if(profile is not null)profile.Mark(6,ref started);
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,6,ref started);
+        if(samplePresence){presence!.Observe(this,6);profile?.ResetAllocationCensusBaseline();started=System.Diagnostics.Stopwatch.GetTimestamp();}
         OperateBusinesses(dt);
         if(profile is not null)profile.Mark(7,ref started);
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,7,ref started);
+        if(samplePresence){presence!.Observe(this,7);profile?.ResetAllocationCensusBaseline();started=System.Diagnostics.Stopwatch.GetTimestamp();}
         UpdateNeeds(dt);
         if(profile is not null)profile.Mark(8,ref started);
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,8,ref started);
+        if(samplePresence){presence!.Observe(this,8);profile?.ResetAllocationCensusBaseline();started=System.Diagnostics.Stopwatch.GetTimestamp();}
         State.AddElapsedSeconds(dt);State.Now=State.Now.AddSeconds(dt);
         var reviewEconomy=completedConstruction||State.ElapsedSeconds>=State.EconomyNextAt;
         if(reviewEconomy){State.EconomyNextAt=State.ElapsedSeconds+State.Tuning.EconomyInterval;SeekHomesForAllDisplaced();ReviewMarkets();ReviewJobs();ScheduleMaintenance();}
         if(profile is not null)profile.Mark(9,ref started);
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,9,ref started);
+        if(samplePresence){presence!.Observe(this,9);profile?.ResetAllocationCensusBaseline();started=System.Diagnostics.Stopwatch.GetTimestamp();}
         var pr57CauseBeforeDispatch=pr57CauseBeforeProgress is null?null:State.Projects.ToDictionary(p=>p.Id,p=>p.Cause);
         if(pr57CauseBeforeDispatch is not null)started=System.Diagnostics.Stopwatch.GetTimestamp();
         // PR57 profile-only productivity census around the unchanged dispatcher.
@@ -375,15 +390,18 @@ public sealed partial class CitySimulation
         }
         if(profile is not null)profile.Mark(10,ref started);
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,10,ref started);
+        if(samplePresence){presence!.Observe(this,10);profile?.ResetAllocationCensusBaseline();started=System.Diagnostics.Stopwatch.GetTimestamp();}
         if(reviewEconomy){RetryPurchasesAwaitingDestination();RestockBusinesses();ReviewEmigration();RecoverDebt();RetryCargoAwaitingDestination();ReviewVehicleRevisions();ResumeHeldDeliveries();RefuelIdleShopTows();}
         if(profile is not null)profile.Mark(11,ref started);
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,11,ref started);
+        if(samplePresence){presence!.Observe(this,11);profile?.ResetAllocationCensusBaseline();started=System.Diagnostics.Stopwatch.GetTimestamp();}
         ProgressBuildingDemolitions();
         while(State.Now>=State.NextDaily){DailyFinance();State.NextDaily=State.NextDaily.AddDays(1);}
         while(State.Now>=State.NextTaxDate){PropertyTaxes();State.NextTaxDate=State.NextTaxDate.AddMonths(1);}
         ProcessLoans();
         if(profile is not null)profile.Mark(12,ref started);
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,12,ref started);
+        if(samplePresence){presence!.Observe(this,12);profile?.ResetAllocationCensusBaseline();started=System.Diagnostics.Stopwatch.GetTimestamp();}
         if(profile is not null)profile.FinishStep();
         if(_pr57BoundaryActive)
         {

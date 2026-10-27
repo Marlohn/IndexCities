@@ -26,6 +26,8 @@ public sealed class Pr57MobilityInfrastructureWorksetTests
         var sim=CitySimulation.FromJson(initial);
         var control=CitySimulation.FromJson(initial);
         var profile=new StepCostProfile { PhaseEffects=new Pr57PhaseEffects(steps/6) };
+        if(Environment.GetEnvironmentVariable("PR57_183_PROBE")=="1")
+            profile.CrossPhasePresence=new Pr57CrossPhasePresenceProbe(10);
         sim.CostProfile=profile;
         var output=Environment.GetEnvironmentVariable("PR57_181_OUTPUT");
         if(!string.IsNullOrWhiteSpace(output))
@@ -112,6 +114,11 @@ public sealed class Pr57MobilityInfrastructureWorksetTests
         foreach(var line in profile.PhaseEffects.ReportLines().Where(line=>
                      line.StartsWith("PR57_PHASE_EFFECT name=",StringComparison.Ordinal)))
             Console.WriteLine("PR57_182_"+line);
+        if(profile.CrossPhasePresence is { } presence)
+        {
+            Assert.True(presence.Samples>0);
+            foreach(var line in presence.ReportLines())Console.WriteLine(line);
+        }
         foreach(var line in profile.PhaseEffects.ReportLines().Where(line=>
                      line.StartsWith("PR57_PHASE_EFFECT_SUMMARY",StringComparison.Ordinal)
                      ||line.StartsWith("PR57_PHASE_EFFECT name=citizen-mobility ",StringComparison.Ordinal)
