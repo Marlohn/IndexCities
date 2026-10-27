@@ -92,7 +92,7 @@ jobs:
               assert log.count("parity=FULL_JSON")==3,(case,"parity")
               joint=next(x for x in log.splitlines() if x.startswith(f"PR57_182_JOINT case={case} "))
               def jvalue(key):
-                  m=re.search(r"\\b"+key+r"=([0-9.]+)",joint)
+                  m=re.search(r"\b"+key+r"=([0-9.]+)",joint)
                   assert m,(case,key,joint)
                   return float(m.group(1))
               assert jvalue("steps")==steps,(case,joint)
@@ -103,7 +103,7 @@ jobs:
               phases=[x for x in log.splitlines() if x.startswith(f"PR57_182_PHASE case={case} ")]
               effects=[x for x in log.splitlines() if x.startswith("PR57_182_PR57_PHASE_EFFECT name=")]
               assert len(phases)==13 and len(effects)==13,(case,len(phases),len(effects))
-              phase_sum=sum(int(re.search(r"\\bticks=(\\d+)",x).group(1)) for x in phases)
+              phase_sum=sum(int(re.search(r"\bticks=(\d+)",x).group(1)) for x in phases)
               assert abs(phase_sum-jvalue("totalTicks"))<1,(case,phase_sum,joint)
               print("PR57_182_VERIFIED",joint)
           PY
