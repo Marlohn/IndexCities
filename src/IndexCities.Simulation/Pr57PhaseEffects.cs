@@ -12,6 +12,11 @@ public sealed class Pr57PhaseEffects
     readonly Dictionary<string,long>[] _properties =
         Enumerable.Range(0,StepCostProfile.Names.Length).Select(_=>new Dictionary<string,long>(StringComparer.Ordinal)).ToArray();
     readonly long[,] _changedRecords = new long[StepCostProfile.Names.Length,Collections.Length];
+    // #174: NET same-entity writes in different phases of the SAME sampled Step.
+    // This is not a causal read set and cannot authorize phase skipping.
+    readonly long[,] _revisitedEarlierPhase = new long[StepCostProfile.Names.Length,Collections.Length];
+    readonly HashSet<int>[] _stepWrittenIds =
+        Enumerable.Range(0,Collections.Length).Select(_=>new HashSet<int>()).ToArray();
     // Nested persisted field census for the two causal bottlenecks: citizen effects
     // in vehicle processing and project effects in construction/dispatch.
     // This is an intrusive observation only; never used by simulation decisions.
@@ -39,6 +44,7 @@ public sealed class Pr57PhaseEffects
     internal void Begin(string snapshot)
     {
         if(_previous is not null)throw new InvalidOperationException("Unfinished PR57 phase sample");
+        foreach(var ids in _stepWrittenIds)ids.Clear();
         _previous=snapshot;
         Samples++;
     }
@@ -65,7 +71,8 @@ public sealed class Pr57PhaseEffects
                         // Count net changed fields, not writes, reads or transient effects.
                         Action<string>? countField=property.Name is "Citizens" or "Projects"
                             ?name=>CountNestedField(phase,property.Name+"."+name):null;
-                        _changedRecords[phase,k]+=ChangedById(old,property.Value,countField);
+                        _changedRecords[phase,k]+=ChangedById(old,property.Value,countField,
+                            id=>{if(!_stepWrittenIds[k].Add(id))_revisitedEarlierPhase[phase,k]++;});
                     }
                     else _changedRecords[phase,k]+=property.Value.ValueKind==JsonValueKind.Array
                         ?property.Value.GetArrayLength():1;
@@ -99,7 +106,7 @@ public sealed class Pr57PhaseEffects
             if(!after.TryGetProperty(field.Name,out _))count(field.Name);
     }
 
-    static long ChangedById(JsonElement before,JsonElement after,Action<string>? countField=null)
+    static long ChangedById(JsonElement before,JsonElement after,Action<string>? countField=null,Action<int>? changedId=null)
     {
         // JsonElements retain the live parent JsonDocument for this Observe call.
         var old=new Dictionary<int,JsonElement>();
@@ -117,16 +124,21 @@ public sealed class Pr57PhaseEffects
             if(!old.Remove(number,out var original))
             {
                 changes++;
+                changedId?.Invoke(number);
                 countField?.Invoke("<added>");
             }
             else if(original.GetRawText()!=item.GetRawText())
             {
                 changes++;
+                changedId?.Invoke(number);
                 if(countField is not null)CountChangedFields(original,item,countField);
             }
         }
-        if(countField is not null)
-            foreach(var _ in old)countField("<removed>");
+        foreach(var removed in old.Keys)
+        {
+            changedId?.Invoke(removed);
+            countField?.Invoke("<removed>");
+        }
         return changes+old.Count;
     }
 
@@ -140,10 +152,12 @@ public sealed class Pr57PhaseEffects
                 .ThenBy(x=>x.Key,StringComparer.Ordinal).Take(8).Select(x=>$"{x.Key}:{x.Value}"));
             var records=string.Join(",",Enumerable.Range(0,Collections.Length)
                 .Select(k=>$"{Collections[k]}:{_changedRecords[i,k]}"));
+            var revisited=string.Join(",",Enumerable.Range(0,Collections.Length)
+                .Select(k=>$"{Collections[k]}:{_revisitedEarlierPhase[i,k]}"));
             var nested=string.Join(",",_nestedFields[i].OrderByDescending(x=>x.Value)
                 .ThenBy(x=>x.Key,StringComparer.Ordinal).Take(20).Select(x=>$"{x.Key}:{x.Value}"));
             yield return $"PR57_PHASE_EFFECT name={StepCostProfile.Names[i]} samples={Samples} changed={_changedSteps[i]} " +
-                         $"unchanged={Samples-_changedSteps[i]} topFields={top} netEntityChanges={records} nestedFields={nested}";
+                         $"unchanged={Samples-_changedSteps[i]} topFields={top} netEntityChanges={records} revisitedEarlierPhase={revisited} nestedFields={nested}";
         }
     }
 }
