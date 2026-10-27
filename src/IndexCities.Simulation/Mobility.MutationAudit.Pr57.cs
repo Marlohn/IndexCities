@@ -26,6 +26,7 @@ public sealed partial class CitySimulation
         // #223: mirror-only journal of already marked potential writers.
         // No effect when the bounded dense probe is inactive.
         Pr57DenseNotePotentialWrite(vehicle);
+        Pr57DockWriterTouch(vehicle); // #233: journal only already-marked potential writers
         if (!Pr57DirtyClosureProbeEnabled || !_pr57MutationSampleActive ||
             _pr57DirtyTouched is null || vehicle is null) return;
         var start = System.Diagnostics.Stopwatch.GetTimestamp();
