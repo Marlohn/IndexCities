@@ -345,6 +345,7 @@ public sealed partial class CitySimulation
         if(pr57DepProbe)Pr57DepAfterCleanup();
         if(Pr57MutationAuditEnabled&&scanProfile is not null)Pr57MutationBeginSlice();
         Pr57CrossSliceBegin();
+        Pr57CandidateBeginSlice();
         // Same order as OrderBy(WaitingSince).ThenBy(Id): Ids are unique, so the
         // key is a total order and any sort yields the same sequence.
         // PR57 isolated A/B: during a batched movement slice, the loop below
@@ -766,6 +767,7 @@ public sealed partial class CitySimulation
                        Pr57StageBodyAcross(v,other) is {} docked){Pr57StageMark(1);HoldFor(other,docked);continue;}
                     if(other.Id==v.Id||!Pr57StageOccupies(other)){Pr57StageMark(2);continue;}
                     Pr57StageMark(3);
+                    Pr57CandidateRead(other,3);
                     var relative=other.Position-v.Position;
                     if(insideMap&&relative.Distance(new(0,0))<.1){Pr57StageMark(4);if(other.Status==VehicleStatus.Stranded||other.Id<v.Id)HoldFor(other,0);continue;}
                     // Entry occupancy is measured along the ROAD axis, including
@@ -786,6 +788,7 @@ public sealed partial class CitySimulation
                         if(!(pr57GateSide<2.6)){Pr57StageMark(8);continue;}
                     }
                     Pr57StageMark(9);
+                    Pr57CandidateRead(other,9);
                     var pr57CosDiff=pr57FastScan?Math.Cos(other.Heading-v.Heading):0;
                     // An overtaker committed to this lane: oncoming traffic waits for it.
                     if(other.Detour.Count>0&&(pr57FastScan?pr57CosDiff:Math.Cos(other.Heading-v.Heading))<-.5){var ahead=relative.X*(pr57FastScan?pr57Sin:Math.Sin(v.Heading))+relative.Z*(pr57FastScan?pr57Cos:Math.Cos(v.Heading));var across=Math.Abs(relative.X*(pr57FastScan?pr57Cos:Math.Cos(v.Heading))-relative.Z*(pr57FastScan?pr57Sin:Math.Sin(v.Heading)));if(ahead>0&&across<2.6){HoldFor(other,ahead);continue;}}
@@ -809,10 +812,12 @@ public sealed partial class CitySimulation
                 Pr57StageScanEnd(pr57StageScanStart);
                 }
                 Pr57CrossSliceObserve(v,0,enteringLane,speed*remaining);
+                Pr57CandidateBeginQuery(v,0,enteringLane,speed*remaining,pr57LaneList.Count);
                 if(Pr57MutationAuditEnabled&&scanProfile is not null)Pr57MutationBeforeLeaderScan(v);
                 if(Pr57LaneReadWriteEnabled&&scanProfile is not null)
                     Pr57LaneReadBeforeScan(v,enteringLane,speed*remaining,pr57LaneList.Count);
                 Pr57ScanLane(pr57LaneList);
+                Pr57CandidateEndQuery();
                 if(blocker is not null)Pr57CausalWinner(v,blocker);
                 if(scanProfile is not null){
                     scanProfile.MarkVehicleScan(0,laneScanStart,pr57LaneList.Count,laneCandidateHits);
@@ -838,6 +843,7 @@ public sealed partial class CitySimulation
                     :pr57Bvh?_pr57VehicleBvh!.Bend(v,step)
                     :pr57SpatialScan||pr57BitsetScan?Pr57Query(v.Position.X-step-12,v.Position.X+step+12,v.Position.Z-step-12,v.Position.Z+step+12):pr57ScanCandidates;
                 Pr57CrossSliceObserve(v,1,false,step);
+                Pr57CandidateBeginQuery(v,1,false,step,pr57BendList.Count);
                 if(pr57IdleProbe)pr57IdleBendVisits+=pr57BendList.Count;
                 // A/B only: cheap conservative AABB and exact radius rejection BEFORE
                 // heading/Ahead/body tests. The old order and all original exact predicates
@@ -868,6 +874,9 @@ public sealed partial class CitySimulation
                     }
                     if(scanProfile is not null){scanProfile.BendPrefilterCandidates+=pr57BendList.Count;scanProfile.BendPrefilterNear+=near;}
                 }
+                if(Pr57CandidateReadsEnabled)
+                    foreach(var candidate in bendLeaders)Pr57CandidateRead(candidate,9);
+                Pr57CandidateEndQuery();
                 if(scanProfile is not null){scanProfile.MarkVehicleScan(1,bendScanStart,pr57BendList.Count,bendLeaders.Count);_pr57MovementAllocBytes[3]+=GC.GetAllocatedBytesForCurrentThread()-pr57BendAllocStart;}
                 if(pr57LimiterProbe)pr57QueueBendTicks=System.Diagnostics.Stopwatch.GetTimestamp()-bendScanStart;
                 if(bendLeaders.Count>0){
@@ -1120,6 +1129,7 @@ public sealed partial class CitySimulation
         SyncTowedVehicles();
         Pr57ReservationAfterSync();
         Pr57CrossSliceEnd();
+        Pr57CandidateEndSlice();
         Pr57ExclusiveEndSlice();
         Pr57PairEndSlice();
         Pr57StageEndSlice();
