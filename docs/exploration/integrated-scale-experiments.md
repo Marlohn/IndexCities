@@ -2981,7 +2981,7 @@ Os contadores somam **registros por fronteira amostrada**, não IDs únicos ao l
 
 **[Action #40452953487 success](https://github.com/Marlohn/IndexCities/actions/runs/40452953487):** build Release, **468/468 testes**, cinco checkpoints integrais exatamente idênticos aos de #184 (0/100/200/300/400 segundos), invariantes e save/load exatos; dez segmentos instrumentados. O perfil é **intrusivo**, portanto os tempos abaixo não são um A/B de throughput. As alocações de `GC.GetTotalAllocatedBytes` no primeiro bloco foram 1.879,65 MB, compatíveis com 1.879,59 MB do #184 sem profiler. O observador não prova independência causal de nenhum veículo.
 
-| Segmento (tempo simulado) | Alocação total intrusiva | Alocação em `vehicles` | Slices físicos extras | Movimento físico medido |
+| Segmento (tempo simulado) | Alocação total intrusiva | Alocação em `vehicles` | Sub-slices físicos (total) | Movimento físico medido |
 | --- | ---: | ---: | ---: | ---: |
 | 0–4s | 99,37 MB | 9,53 MB | 0 | — |
 | 4–10s | 165,13 MB | 164,64 MB | 21 | 858 ms |
@@ -2992,7 +2992,7 @@ Os contadores somam **registros por fronteira amostrada**, não IDs únicos ao l
 | 200–300s | 262,41 MB | 249,64 MB | 0 | — |
 | 300–400s | 254,20 MB | 241,53 MB | 0 | — |
 
-**Discriminante:** no primeiro bloco de 100s, `vehicles` responde por **1.685,94 MB / 1.879,65 MB = 89,69% das alocações por fase**. Os 210 slices extras se concentram em 23 chamadas `Advance(2)` (entre 4s e 50s); depois desaparecem. Só o intervalo 4–50s aloca **1.577,87 MB**, 83,94% de todo o primeiro bloco. O caminho [`MoveVehicles`](../../src/IndexCities.Simulation/Mobility.LaneEntry.cs) escolhe o processamento em sub-slices quando existe `LiveLaneEntry`; sem essa condição executa `MoveVehiclesUnsplit(dt)` uma vez. O detalhamento dos ticks atribui ~4,76s à movimentação repetida durante os 210 slices, muito mais do que à previsão de eventos de entrada. **Não é vazamento progressivo de heap nem simplesmente gravação de histórico.**
+**Discriminante:** no primeiro bloco de 100s, `vehicles` responde por **1.685,94 MB / 1.879,65 MB = 89,69% das alocações por fase**. Os 210 sub-slices se concentram em 23 chamadas `Advance(2)` (entre 4s e 50s); depois desaparecem. Só o intervalo 4–50s aloca **1.577,87 MB**, 83,94% de todo o primeiro bloco. O caminho [`MoveVehicles`](../../src/IndexCities.Simulation/Mobility.LaneEntry.cs) escolhe o processamento em sub-slices quando existe `LiveLaneEntry`; sem essa condição executa `MoveVehiclesUnsplit(dt)` uma vez. O detalhamento dos ticks atribui ~4,76s à movimentação repetida durante os 210 slices, muito mais do que à previsão de eventos de entrada. **Não é vazamento progressivo de heap nem simplesmente gravação de histórico.**
 
 **Transição de estado compatível, não prova de causalidade ID-a-ID:** o checkpoint inicial é às 07h; os 100s seguintes adicionam 424 eventos pessoais, incluindo 292 entradas de “Indo comprar alimentos” e 107 de “Vai de carro”. Há 291 caminhos pedonais presentes ao fim de 100s, contra zero no início, e 426 veículos `Travelling` contra 380. A primeira chamada de 2s registra 56,35 MB em `economy-review`; a segunda registra 25,59 MB em `citizen-mobility`; os slices começam depois. O fato de os snapshots terem apenas intervalos de 100s impede atribuir quais entradas específicas acionaram os 210 slices. A fixture permanece ARTIFICIAL, com 1.111 vivos e horizonte de 400s, não uma cidade economicamente sustentável.
 
