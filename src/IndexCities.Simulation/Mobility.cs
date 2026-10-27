@@ -325,6 +325,7 @@ public sealed partial class CitySimulation
         Pr57JunctionCensusBeginSlice(dt,operationsDt);
         Pr57JunctionReadersBeginSlice(dt,operationsDt);
         var scanProfile=CostProfile;
+        Pr57ExclusiveBeginSlice(dt,operationsDt,scanProfile is not null);
         Pr57PairBeginSlice(dt,operationsDt,scanProfile is not null);
         Pr57StageBeginSlice(dt,operationsDt,scanProfile is not null);
         var pr57CostProbe=scanProfile is not null&&Pr57VehicleCostProbeEnabled;
@@ -553,6 +554,7 @@ public sealed partial class CitySimulation
         }
         if(scanProfile is not null)_pr57MovementAllocBytes[1]+=GC.GetAllocatedBytesForCurrentThread()-pr57AllocCallStart;
         foreach(var v in ordered){
+            Pr57ExclusiveBeginVehicle(v);
             var pr57IdleStart=pr57IdleProbe?Pr57IdleSnapshot(v):default;
             if(pr57IdleProbe)Pr57BlockBeginVehicle(v);
             long pr57IdleLaneVisits=0,pr57IdleBendVisits=0;
@@ -649,6 +651,7 @@ public sealed partial class CitySimulation
                 _pr57_187MotionAttempts++;
             var remaining=dt;
             while(remaining>.000001&&v.Status==VehicleStatus.Travelling){
+                Pr57ExclusiveMark(1);
                 if(pr57IdleProbe)Pr57BlockMarkStage(1);
                 if(scanProfile is not null){
                     var allocNow=GC.GetAllocatedBytesForCurrentThread();
@@ -686,6 +689,7 @@ public sealed partial class CitySimulation
                 // the one just passed is held, if it waits past it), and a delivery to a
                 // busy bay just beyond it waits before it (Mobility.BayJunction).
                 if(scanProfile is not null){_pr57RegionAllocBytes[1]+=GC.GetAllocatedBytesForCurrentThread()-pr57RegionStart;pr57RegionStart=GC.GetAllocatedBytesForCurrentThread();}
+                Pr57ExclusiveMark(2);
                 var stopEarly=0.0;var bayHold=false;List<(Vehicle Body,Point Position,double Heading)>? crossingPoses=null;
                 if(node.Neighbours.Count<3&&!node.Crosswalk&&NextSharedOnApproach(v,node,delta,len,out var crossing,out var crossingIndex)&&v.IntersectionClaim!=crossing.Id){
                     if(WaitsClearOfPassedClaim(v,node,crossing,delta,len,target,d)){
@@ -732,6 +736,7 @@ public sealed partial class CitySimulation
                     pr57VehicleAllocStage=3;
                 }
                 if(scanProfile is not null){_pr57RegionAllocBytes[3]+=GC.GetAllocatedBytesForCurrentThread()-pr57RegionStart;pr57RegionStart=GC.GetAllocatedBytesForCurrentThread();}
+                Pr57ExclusiveMark(3);
                 var laneScanStart=scanProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
                 long pr57QueueLaneTicks=0,pr57QueueBendTicks=0;
                 var pr57LaneAllocStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
@@ -822,6 +827,7 @@ public sealed partial class CitySimulation
                 // At a bend the vehicle ahead in the same general direction can sit
                 // beyond the straight-lane strip above; its body still bounds this
                 // step and this turn. Opposite and parallel lanes are not involved.
+                Pr57ExclusiveMark(4);
                 var bendScanStart=scanProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
                 var pr57BendAllocStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
                 var pr57BendList=pr57ZeroBendSkip&&step==0&&v.Heading==approachHeading?Pr57EmptyBendList
@@ -866,6 +872,7 @@ public sealed partial class CitySimulation
                     else step=ClearOfPoses(v,target,step,bendLeaders.Where(o=>!VehicleBodiesOverlap(v,v.Position,o)).Select(o=>(o,o.Position,o.Heading)).ToList());
                 }
                 if(pr57LimiterProbe&&pr57QueueFirstLimit==0&&step<.00001)pr57QueueFirstLimit=4;
+                Pr57ExclusiveMark(5);
                 var pr57SiteAllocStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
                 var pr57SiteHotStart=Pr57HotTiming&&scanProfile is not null?System.Diagnostics.Stopwatch.GetTimestamp():0L;
                 var free=step;step=SafeSiteTravel(v,target,step,true);
@@ -893,6 +900,7 @@ public sealed partial class CitySimulation
                     pr57VehicleAllocStage=2;
                 }
                 pr57RegionStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
+                Pr57ExclusiveMark(6);
                 // Like a machine, a blocked vehicle keeps its verified pose rather
                 // than turning in place into a parked machine's or site truck's body,
                 // or into any other body that pose was clear of.
@@ -990,6 +998,7 @@ public sealed partial class CitySimulation
                 // Entering is admitted whole too: a delivery near its bay takes no junction
                 // or bend before its entry is admitted.
                 pr57RegionStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
+                Pr57ExclusiveMark(7);
                 // Include early break/continue in the measured admission region. The
                 // finally block is observational; it never changes the decision.
                 try{
@@ -1028,6 +1037,7 @@ public sealed partial class CitySimulation
                     if(scanProfile is not null)_pr57RegionAllocBytes[6]+=GC.GetAllocatedBytesForCurrentThread()-pr57RegionStart;
                 }
                 pr57RegionStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
+                Pr57ExclusiveMark(8);
                 if(v.Fuel<=.000001){RunOutOfFuel(v);break;}
                 if(pr57IdleProbe)Pr57BlockMarkStage(5);
                 step=Math.Min(step,v.Fuel/FuelRate(v));v.Position=v.Position.MoveTowards(target,step);v.AddFuel(-(step*FuelRate(v)));v.FuelUnits=Math.Max(0,v.FuelUnits);v.AddFuelBurnedLastStep(step*FuelRate(v));remaining-=step/speed;v.WaitingSince=0;v.Cause="Em viagem";
@@ -1039,6 +1049,7 @@ public sealed partial class CitySimulation
                 if(DriveWear(v,step)||steer==null&&!advanced)break;
             }
             }finally{
+                Pr57ExclusiveFinishVehicle(v);
                 if(pr57CostProbe){
                     var pr57ElapsedTicks=System.Diagnostics.Stopwatch.GetTimestamp()-pr57CostStartTicks;
                     var pr57Allocated=GC.GetAllocatedBytesForCurrentThread()-pr57CostStartBytes;
@@ -1100,6 +1111,7 @@ public sealed partial class CitySimulation
         // A towed vehicle moves only with its tow (platform or trailing a heavy tow).
         SyncTowedVehicles();
         Pr57ReservationAfterSync();
+        Pr57ExclusiveEndSlice();
         Pr57PairEndSlice();
         Pr57StageEndSlice();
         Pr57CausalEndSlice();
