@@ -383,6 +383,7 @@ public sealed partial class CitySimulation
         Pr57S6GateShadowBeginSlice();
         Pr57PhaseExposureBeginSlice();
         Pr57PhaseImpactBeginSlice();
+        Pr57S3CounterBeginSlice();
         // Same order as OrderBy(WaitingSince).ThenBy(Id): Ids are unique, so the
         // key is a total order and any sort yields the same sequence.
         // PR57 isolated A/B: during a batched movement slice, the loop below
@@ -795,7 +796,10 @@ public sealed partial class CitySimulation
                     if(pr57IdleProbe)pr57IdleLaneVisits++;
                     Pr57StageMark(0);
                     var other=enteringLane?Pr57StageEntryFrame(liveOther):liveOther;
+                    var pr57FlipBefore=_pr57S3CounterActive?_pr57PhaseCurrentFlips.Count:0;
                     if(_pr57PhaseActive)Pr57PhaseExposureRead(v,other,ReferenceEquals(other,liveOther));
+                    if(_pr57S3CounterActive&&_pr57PhaseCurrentFlips.Count>pr57FlipBefore)
+                        Pr57S3CounterObserve(v,other,enteringLane,insideMap,access);
                     Pr57PairBeforeLaneCandidate(v,other,enteringLane);
                     Pr57CausalLaneCandidate(v,other);
                     if(Pr57NegativeEnabled)Pr57NegativeBeginCandidate(other);
@@ -868,6 +872,7 @@ public sealed partial class CitySimulation
                 }
                 if(pr57LimiterProbe)pr57QueueLaneTicks=System.Diagnostics.Stopwatch.GetTimestamp()-laneScanStart;
                 var step=Math.Min(d,Math.Min(speed*remaining,Math.Max(0,leaderDistance-8)));
+                Pr57S3CounterAfterScan(leaderDistance);
                 Pr57PhaseImpactAfterScan(v,blocker,leaderDistance,step);
                 var pr57QueueFirstLimit=pr57LimiterProbe&&step<.00001?(leaderDistance<=8?1:8):0;
                 if(stopEarly>0)step=Math.Min(step,Math.Max(0,d-stopEarly));
@@ -1177,6 +1182,7 @@ public sealed partial class CitySimulation
         Pr57CrossSliceEnd();
         Pr57CandidateEndSlice();
         Pr57S6GateShadowEndSlice();
+        Pr57S3CounterEndSlice();
         Pr57PhaseImpactEndSlice();
         Pr57PhaseExposureEndSlice();
         Pr57ExclusiveEndSlice();
