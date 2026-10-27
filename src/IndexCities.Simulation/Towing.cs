@@ -390,7 +390,11 @@ public sealed partial class CitySimulation
         // A repaired vehicle leaves the shop now (its place there is free).
         if(t.ServicePhase==ServicePhase.AwaitingReturn){t.ServiceShopId=null;t.ServiceBay=null;t.ServiceSpot=null;}
         _pr57AxisSweepDirty=true;
-        t.Status=VehicleStatus.Towed;t.Route.Clear();t.RouteIndex=0;t.Detour.Clear();t.IntersectionClaim=null;t.IntersectionEnteredAt=null;t.WaitingSince=0;t.DockPosition=null;SyncTowed(tow,t);
+        t.Status=VehicleStatus.Towed;t.Route.Clear();t.RouteIndex=0;t.Detour.Clear();t.IntersectionClaim=null;t.IntersectionEnteredAt=null;t.WaitingSince=0;t.DockPosition=null;
+        // PR57 #201: observe the nonlocal target's reservation write before the
+        // next physical reader; does not affect authoritative traffic decisions.
+        Pr57ReservationWrite(t,"tow-load-target");
+        SyncTowed(tow,t);
         tow.TowPhase=TowPhase.Delivering;tow.LoadTimer=0;
         StartDelivery(tow,t);
     }
