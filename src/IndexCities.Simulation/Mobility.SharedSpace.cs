@@ -231,6 +231,7 @@ public sealed partial class CitySimulation
         v.MovementAdmission=new(){Route=v.Route.ToList(),SitePath=v.SitePath.ToList(),EndRouteIndex=endIndex};
         v.ManoeuvreDeparture=false;
         v.ManoeuvreSpaces=spaces.Select(s=>s.Id).Distinct().ToList();
+        Pr57ReservationWrite(v,"remember-lane-manoeuvre");
     }
     // A stopped lane vehicle whose way on is blocked by that body.
     bool WaitsOnBody(Vehicle v,Vehicle body)=>v.Status==VehicleStatus.Travelling&&v.WaitingSince>0&&v.RouteIndex<v.Route.Count&&BodyOnWay(v,TurnWay(v,out _))?.Id==body.Id;
@@ -310,6 +311,7 @@ public sealed partial class CitySimulation
             // never along a fictitious diagonal from that old dock to Route[0].
             v.DockCorridor=PhysicalDockWay(v,departure?v.Position:dock,departure).Select(p=>new MovementPose{Position=p.Position,Heading=p.Heading}).ToList();
             v.ManoeuvreSpaces=v.ManoeuvreSpaces.Concat(spaces.Select(s=>s.Id)).Where(id=>v.IntersectionClaim!=id).Distinct().ToList();
+            Pr57ReservationWrite(v,"admit-dock");
         }
         return true;
     }
@@ -480,6 +482,7 @@ public sealed partial class CitySimulation
                 return false;
         }
         m.ManoeuvreSpaces.AddRange(needed.Select(node=>node.Id));
+        Pr57ReservationWrite(m,"machine-spaces");
         return true;
     }
     // Admitted manoeuvres lane traffic keeps out of: a way out of a bay or a way
@@ -504,7 +507,7 @@ public sealed partial class CitySimulation
     void ReleaseManoeuvre(Vehicle v)
     {
         if(v.ManoeuvreDock==null&&v.ManoeuvreSpaces.Count==0)return;
-        if(v.Status is VehicleStatus.Outside or VehicleStatus.Towed||v.PassengerCar){v.ManoeuvreDock=null;v.DockCorridor.Clear();v.MovementAdmission=null;v.ManoeuvreSpaces.Clear();return;}
+        if(v.Status is VehicleStatus.Outside or VehicleStatus.Towed||v.PassengerCar){v.ManoeuvreDock=null;v.DockCorridor.Clear();v.MovementAdmission=null;v.ManoeuvreSpaces.Clear();Pr57ReservationWrite(v,"release-clear");return;}
         if(v.Status==VehicleStatus.Stranded||v.Machine!=PavingMachine.None&&v.Status!=VehicleStatus.Parked&&v.Status!=VehicleStatus.Travelling)return;
         List<(Vehicle Body,Point Position,double Heading)> rest=v.Machine!=PavingMachine.None?MachinePathAhead(v)
             :v.Status!=VehicleStatus.Travelling?[]
@@ -514,6 +517,7 @@ public sealed partial class CitySimulation
         // already counts a truck length around the node, which a parked body beside
         // it (a paver at the curb) would never leave.
         v.ManoeuvreSpaces.RemoveAll(id=>!_roads.TryGetValue(id,out var node)||!EntersArea(v,v.Position,v.Heading,node,CarriagewayHalfWidth)&&!rest.Any(p=>EntersArea(v,p.Position,p.Heading,node)));
+        Pr57ReservationWrite(v,"release-remove");
         if(v.ManoeuvreDock is {} dock){
             var atDock=v.Status is VehicleStatus.Unloading or VehicleStatus.Parked&&v.Position.Distance(dock)<.1;
             // A destination equal to an old dock is not an active entry. A

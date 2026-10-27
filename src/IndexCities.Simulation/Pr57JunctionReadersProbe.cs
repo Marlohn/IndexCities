@@ -239,6 +239,28 @@ public sealed partial class CitySimulation
         (v.IntersectionClaim,string.Join(",",v.ManoeuvreSpaces));
     Dictionary<int,(int? Claim,string Spaces)> Pr57ReservationSnapshot()=>
         State.Vehicles.ToDictionary(v=>v.Id,Pr57ReservationState);
+    // #198: bounded event-hook POC. Explicit callsites only, never feeds decisions.
+    // This is intentionally NOT universal coverage of public Vehicle mutations.
+    static readonly bool Pr57ReservationHooksEnabled =
+        Environment.GetEnvironmentVariable("PR57_198_RESERVATION_HOOKS") == "1";
+    readonly Dictionary<int,(int? Claim,string Spaces)> _pr57ReservationHookLast = new();
+    readonly HashSet<int> _pr57ReservationHookSinceCapture = new();
+    long _pr57ReservationHookCalls, _pr57ReservationHookChangedWrites;
+    long _pr57ReservationHookMissedBoundaryChanges, _pr57ReservationHookTicks;
+    void Pr57ReservationWrite(Vehicle vehicle,string site)
+    {
+        if(!_pr57ReservationWritersActive||!Pr57ReservationHooksEnabled)return;
+        var start=System.Diagnostics.Stopwatch.GetTimestamp();
+        _pr57ReservationHookCalls++;
+        var state=Pr57ReservationState(vehicle);
+        if(!_pr57ReservationHookLast.TryGetValue(vehicle.Id,out var prior)||prior!=state)
+        {
+            _pr57ReservationHookLast[vehicle.Id]=state;
+            _pr57ReservationHookSinceCapture.Add(vehicle.Id);
+            _pr57ReservationHookChangedWrites++;
+        }
+        _pr57ReservationHookTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-start;
+    }
     void Pr57ReservationBegin()
     {
         if(!_pr57JrActive||!Pr57ReservationWritersEnabled||_pr57ReservationWritersDone||
@@ -246,6 +268,13 @@ public sealed partial class CitySimulation
         _pr57ReservationWritersActive=true;
         var start=System.Diagnostics.Stopwatch.GetTimestamp();
         _pr57ReservationPrevious=Pr57ReservationSnapshot();
+        if(Pr57ReservationHooksEnabled)
+        {
+            _pr57ReservationHookLast.Clear();
+            foreach(var (id,state) in _pr57ReservationPrevious)
+                _pr57ReservationHookLast.Add(id,state);
+            _pr57ReservationHookSinceCapture.Clear();
+        }
         _pr57ReservationTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-start;
         _pr57ReservationSnapshots=1;
         _pr57ReservationChecks=_pr57ReservationPrevious.Count;
@@ -268,6 +297,8 @@ public sealed partial class CitySimulation
             }
             if(old==now)continue;
             changes++;_pr57ReservationChangedIds.Add(id);
+            if(Pr57ReservationHooksEnabled&&!_pr57ReservationHookSinceCapture.Contains(id))
+                _pr57ReservationHookMissedBoundaryChanges++;
             if(old.Claim!=now.Claim)_pr57ReservationClaimChanges++;
             if(old.Spaces!=now.Spaces)_pr57ReservationSpaceChanges++;
             if(writer>=0&&id!=writer)_pr57ReservationNonlocal++;
@@ -287,6 +318,7 @@ public sealed partial class CitySimulation
         }
         _pr57ReservationChanges+=changes;
         _pr57ReservationPrevious=current;
+        _pr57ReservationHookSinceCapture.Clear();
         _pr57ReservationTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-start;
     }
     void Pr57ReservationAfterCleanup()=>Pr57ReservationCapture(-1,"cleanup");
@@ -316,6 +348,9 @@ public sealed partial class CitySimulation
             $"initialUniqueSpaces={_pr57ReservationInitialOccupancy.Unique} " +
             $"finalClaims={occupancy.Claims} finalEntries={occupancy.Entries} finalUniqueSpaces={occupancy.Unique} " +
             $"candidateEvaluations={_pr57JrCandidateEvaluations} observerMs={elapsedMs:F3} " +
+            $"hookCalls={_pr57ReservationHookCalls} hookChangedWrites={_pr57ReservationHookChangedWrites} " +
+            $"hookMissedBoundaryChanges={_pr57ReservationHookMissedBoundaryChanges} " +
+            $"hookMs={1000.0*_pr57ReservationHookTicks/System.Diagnostics.Stopwatch.Frequency:F3} " +
             "scope=ONE_SLICE_NET_BOUNDARY_WRITES_NOT_TRANSIENT_JOURNAL_NOT_AB");
         _pr57ReservationWritersActive=false;
         _pr57ReservationWritersDone=true;

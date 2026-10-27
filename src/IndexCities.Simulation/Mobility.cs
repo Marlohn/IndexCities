@@ -1222,7 +1222,7 @@ public sealed partial class CitySimulation
             var bendBody=BodyOnWay(v,way);
             if(pr57Detail){_pr57JunctionDetailBytes[6]+=GC.GetAllocatedBytesForCurrentThread()-pr57DetailStart;_pr57JunctionDetailCalls[6]++;if(pr57DetailTickStart!=0)_pr57JunctionDetailTicks[6]+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57DetailTickStart;}
             if(bendBody is not null){Pr57JunctionReadersBlock(v,bendBody,"bendBody");v.Cause="Fila na faixa";return false;}
-            ReserveJunction(v,junction,null);RememberLaneManoeuvre(v,spaces);if(!v.ManoeuvreSpaces.Contains(junction.Id))v.ManoeuvreSpaces.Add(junction.Id);return true;
+            ReserveJunction(v,junction,null);RememberLaneManoeuvre(v,spaces);if(!v.ManoeuvreSpaces.Contains(junction.Id)){v.ManoeuvreSpaces.Add(junction.Id);Pr57ReservationWrite(v,"bend-add");}return true;
         }
         if(area==null&&junction.Neighbours.Count>=3&&State.Vehicles.FirstOrDefault(o=>Pr57JunctionReadersCandidate(v,o,3)&&o.Id!=v.Id&&o.Id!=v.TowTargetId&&Pr57JunctionReadersGate(v,o,5)&&o.IntersectionClaim==junction.Id&&Pr57JunctionReadersGate(v,o,6)&&o.Position.Distance(junction.Position)<9) is {} occupant){Pr57JunctionReadersBlock(v,occupant,"occupant");v.Cause="Aguardando liberação do cruzamento pelo veículo "+occupant.Id;return false;}
         // Only a walker physically at this crossing holds traffic back.
@@ -1260,7 +1260,7 @@ public sealed partial class CitySimulation
         }
         // A claim obtained at the stop line is not released on approach merely
         // because the body has not yet entered its square. Keep its local plan.
-        RememberLaneManoeuvre(v,crossed);if(!v.ManoeuvreSpaces.Contains(junction.Id))v.ManoeuvreSpaces.Add(junction.Id);
+        RememberLaneManoeuvre(v,crossed);if(!v.ManoeuvreSpaces.Contains(junction.Id)){v.ManoeuvreSpaces.Add(junction.Id);Pr57ReservationWrite(v,"crossing-add");}
         ReserveJunction(v,junction,area);return true;
     }
     void VehicleArrived(Vehicle v)
