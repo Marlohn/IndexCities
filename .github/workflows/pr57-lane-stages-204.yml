@@ -62,13 +62,13 @@ jobs:
           queue="$(find artifacts/queue -type f -path '*/pr57-jobs-20/checkpoint-10.json' -print -quit)"
           grid="artifacts/grid/grid18-0/checkpoint-1.json"
           for source in "$works" "$queue" "$grid"; do test -s "$source"; sha256sum "$source"; done
-          mkdir -p artifacts/pair-204
+          mkdir -p artifacts/lane-stages-204
           for case in worksREAL queueREAL gridARTIFICIAL; do
             source="$works"; fixture=cycle; horizon=300
             if [[ "$case" == queueREAL ]]; then source="$queue"; fi
             if [[ "$case" == gridARTIFICIAL ]]; then source="$grid"; fixture=grid; horizon=100; fi
             for mode in plain probe; do
-              output="$PWD/artifacts/pair-204/$case-$mode"
+              output="$PWD/artifacts/lane-stages-204/$case-$mode"
               mkdir -p "$output"
               command=scale; enabled=0
               if [[ "$mode" == probe ]]; then command=profile; enabled=1; fi
@@ -92,7 +92,7 @@ jobs:
           import re
           root=Path('artifacts/lane-stages-204')
           def value(line,key):
-              m=re.search(r'\\b'+re.escape(key)+r'=([0-9.]+)',line)
+              m=re.search(r'(?:^| )'+re.escape(key)+r'=([0-9.]+)',line)
               assert m,(key,line)
               return float(m.group(1))
           for case,horizon in [('worksREAL',300),('queueREAL',300),('gridARTIFICIAL',100)]:
@@ -134,5 +134,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: integrated-scale-pr57-lane-stages-204
-          path: artifacts/pair-204/**
+          path: artifacts/lane-stages-204/**
           retention-days: 14
