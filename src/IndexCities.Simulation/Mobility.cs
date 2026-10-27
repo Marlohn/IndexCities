@@ -767,7 +767,7 @@ public sealed partial class CitySimulation
                        Pr57StageBodyAcross(v,other) is {} docked){Pr57StageMark(1);HoldFor(other,docked);continue;}
                     if(other.Id==v.Id||!Pr57StageOccupies(other)){Pr57StageMark(2);continue;}
                     Pr57StageMark(3);
-                    Pr57CandidateRead(other,3);
+                    if(_pr57CandidateActive is not null)Pr57CandidateRead(other,3);
                     var relative=other.Position-v.Position;
                     if(insideMap&&relative.Distance(new(0,0))<.1){Pr57StageMark(4);if(other.Status==VehicleStatus.Stranded||other.Id<v.Id)HoldFor(other,0);continue;}
                     // Entry occupancy is measured along the ROAD axis, including
@@ -788,7 +788,7 @@ public sealed partial class CitySimulation
                         if(!(pr57GateSide<2.6)){Pr57StageMark(8);continue;}
                     }
                     Pr57StageMark(9);
-                    Pr57CandidateRead(other,9);
+                    if(_pr57CandidateActive is not null)Pr57CandidateRead(other,9);
                     var pr57CosDiff=pr57FastScan?Math.Cos(other.Heading-v.Heading):0;
                     // An overtaker committed to this lane: oncoming traffic waits for it.
                     if(other.Detour.Count>0&&(pr57FastScan?pr57CosDiff:Math.Cos(other.Heading-v.Heading))<-.5){var ahead=relative.X*(pr57FastScan?pr57Sin:Math.Sin(v.Heading))+relative.Z*(pr57FastScan?pr57Cos:Math.Cos(v.Heading));var across=Math.Abs(relative.X*(pr57FastScan?pr57Cos:Math.Cos(v.Heading))-relative.Z*(pr57FastScan?pr57Sin:Math.Sin(v.Heading)));if(ahead>0&&across<2.6){HoldFor(other,ahead);continue;}}
@@ -874,7 +874,7 @@ public sealed partial class CitySimulation
                     }
                     if(scanProfile is not null){scanProfile.BendPrefilterCandidates+=pr57BendList.Count;scanProfile.BendPrefilterNear+=near;}
                 }
-                if(Pr57CandidateReadsEnabled)
+                if(_pr57CandidateActive is not null)
                     foreach(var candidate in bendLeaders)Pr57CandidateRead(candidate,9);
                 Pr57CandidateEndQuery();
                 if(scanProfile is not null){scanProfile.MarkVehicleScan(1,bendScanStart,pr57BendList.Count,bendLeaders.Count);_pr57MovementAllocBytes[3]+=GC.GetAllocatedBytesForCurrentThread()-pr57BendAllocStart;}
