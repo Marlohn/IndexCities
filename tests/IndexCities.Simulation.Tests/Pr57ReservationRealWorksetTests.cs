@@ -96,4 +96,24 @@ public sealed class Pr57ReservationRealWorksetTests
             $"reserveTicks={profile.Pr57DispatchReserveTicks} dispatchTicks={profile.Ticks[10]} " +
             "scope=NET_RESERVATIONS_AND_ACTUAL_ENUMERATIONS_NOT_COMPLETE_CAUSAL_READ_SET");
     }
+
+    [Fact]
+    public void Empty_depot_still_initializes_persisted_zero_keys_before_guarding()
+    {
+        var sim=new CitySimulation(178);
+        sim.State.Buildings.Add(new Building { Id=100001, Kind=BuildingKind.WorksDepot, Completed=true });
+        var project=new WorkProject { Id=100002, Status=WorkStatus.Waiting,
+            Required=new() { [ResourceKind.Wood]=8 } };
+        sim.State.Projects.Add(project);
+        var reserve=typeof(CitySimulation).GetMethod("ReserveLocalMaterials",
+            System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic)!;
+        reserve.Invoke(sim,null);
+        var kinds=Enum.GetValues<ResourceKind>().Where(k=>k!=ResourceKind.Food&&k!=ResourceKind.Fuel).ToArray();
+        Assert.All(kinds,k=>Assert.True(project.LocalReserved.Units.ContainsKey(k),
+            $"Zero key {k} must remain persisted"));
+        Assert.All(kinds,k=>Assert.Equal(0,project.LocalReserved.Units[k]));
+        var snapshot=JsonSerializer.Serialize(project.LocalReserved);
+        reserve.Invoke(sim,null);
+        Assert.Equal(snapshot,JsonSerializer.Serialize(project.LocalReserved));
+    }
 }

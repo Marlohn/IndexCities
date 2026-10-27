@@ -137,9 +137,33 @@ public sealed partial class CitySimulation
             foreach(var road in source){profile.ConstructionRoadVisits++;yield return road;}
         }
     }
+    // PR57 #178: isolated, opt-in resource-workset POC. If every physical
+    // construction material is absent and every active project already has
+    // canonical zero reservation keys, ReserveLocalMaterials has no writes.
+    // Missing zero keys MUST fall back: AddAmount(k,0) creates persisted keys.
+    // No cache or cross-Step state is used; the complete scan still runs if
+    // stock, reservation, or serialization shape can change.
+    static readonly bool Pr57EmptyDepotReservationGuardEnabled=
+        Environment.GetEnvironmentVariable("PR57_EMPTY_DEPOT_RESERVATION_GUARD")=="1";
+    bool _pr57EmptyDepotGuardAnnounced;
     void ReserveLocalMaterials()
     {
         var depot=State.Buildings.FirstOrDefault(b=>b.Kind==BuildingKind.WorksDepot&&b.Completed&&!b.Removed&&!b.OperationClosed);if(depot==null)return;
+        if(Pr57EmptyDepotReservationGuardEnabled)
+        {
+            var kinds=Enum.GetValues<ResourceKind>().Where(k=>k!=ResourceKind.Food&&k!=ResourceKind.Fuel).ToArray();
+            if(kinds.All(k=>depot.Stock.Units.GetValueOrDefault(k)==0)
+                &&State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress)
+                    .All(p=>kinds.All(k=>p.LocalReserved.Units.TryGetValue(k,out var units)&&units==0)))
+            {
+                if(!_pr57EmptyDepotGuardAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+                {
+                    Console.WriteLine("PR57_EMPTY_DEPOT_RESERVATION_GUARD exercised=true");
+                    _pr57EmptyDepotGuardAnnounced=true;
+                }
+                return;
+            }
+        }
         var pendingByProject=Pr57DispatchShipmentLookup
             ?Pr57ConstructionShipmentSource().Where(s=>s.ProjectId!=null&&!s.Complete).ToLookup(s=>s.ProjectId)
             :null;
