@@ -158,6 +158,10 @@ public sealed partial class CitySimulation
     readonly Dictionary<int, (VehicleStatus Status, Point Position)> _pr57S6GateShadow = new();
     bool _pr57S6GateShadowActive;
     long _pr57S6GateVisits, _pr57S6GateStale, _pr57S6GateDisagree;
+    // #227: classify stale reads by the identity of the *reader*, not just
+    // by the stored vehicle. A self read is always rejected by the ID gate.
+    long _pr57S6GateStaleSelf, _pr57S6GateStaleThird, _pr57S6GateStaleThirdDisagree;
+    int _pr57S6GateFirstStaleReader = -1, _pr57S6GateFirstStaleOther = -1;
     long _pr57S6GateMissing, _pr57S6GateRefreshes, _pr57S6GateNew;
     long _pr57S6GateBuildTicks, _pr57S6GateRefreshTicks;
     long _pr57S6GateBuildBytes, _pr57S6GateRefreshBytes;
@@ -170,6 +174,8 @@ public sealed partial class CitySimulation
         var bytes = GC.GetAllocatedBytesForCurrentThread();
         _pr57S6GateShadow.Clear();
         _pr57S6GateVisits = _pr57S6GateStale = _pr57S6GateDisagree = 0;
+        _pr57S6GateStaleSelf = _pr57S6GateStaleThird = _pr57S6GateStaleThirdDisagree = 0;
+        _pr57S6GateFirstStaleReader = _pr57S6GateFirstStaleOther = -1;
         _pr57S6GateMissing = _pr57S6GateRefreshes = _pr57S6GateNew = 0;
         _pr57S6GateRefreshTicks = _pr57S6GateRefreshBytes = 0;
         foreach (var other in State.Vehicles)
@@ -189,15 +195,29 @@ public sealed partial class CitySimulation
             _pr57S6GateMissing++;
             return true;
         }
-        if (prior.Status != other.Status || prior.Position != other.Position)
+        var stale = prior.Status != other.Status || prior.Position != other.Position;
+        if (stale)
+        {
             _pr57S6GateStale++;
+            if (other.Id == reader.Id) _pr57S6GateStaleSelf++;
+            else _pr57S6GateStaleThird++;
+            if (_pr57S6GateFirstStaleReader < 0)
+            {
+                _pr57S6GateFirstStaleReader = reader.Id;
+                _pr57S6GateFirstStaleOther = other.Id;
+            }
+        }
         var shadow = other.Id != reader.Id &&
                      prior.Status != VehicleStatus.Outside &&
                      prior.Position.Distance(reader.Position) < 12;
         var live = other.Id != reader.Id &&
                    other.Status != VehicleStatus.Outside &&
                    other.Position.Distance(reader.Position) < 12;
-        if (shadow != live) _pr57S6GateDisagree++;
+        if (shadow != live)
+        {
+            _pr57S6GateDisagree++;
+            if (stale && other.Id != reader.Id) _pr57S6GateStaleThirdDisagree++;
+        }
         return true;
     }
 
@@ -233,7 +253,10 @@ public sealed partial class CitySimulation
         Console.WriteLine(
             $"PR57_226_S6_GATE sample={_pr57ExclusiveSamples} " +
             $"vehicles={_pr57S6GateShadow.Count} visits={_pr57S6GateVisits} " +
-            $"staleVisits={_pr57S6GateStale} gateDisagreements={_pr57S6GateDisagree} " +
+            $"staleVisits={_pr57S6GateStale} staleSelf={_pr57S6GateStaleSelf} " +
+            $"staleThird={_pr57S6GateStaleThird} staleThirdDisagreements={_pr57S6GateStaleThirdDisagree} " +
+            $"firstStaleReader={_pr57S6GateFirstStaleReader} firstStaleOther={_pr57S6GateFirstStaleOther} " +
+            $"gateDisagreements={_pr57S6GateDisagree} " +
             $"missingVisits={_pr57S6GateMissing} refreshes={_pr57S6GateRefreshes} " +
             $"newActors={_pr57S6GateNew} postSyncStale={finalStale} " +
             $"postSyncMissing={finalMissing} buildMs={Ms(_pr57S6GateBuildTicks):F6} " +
