@@ -8,6 +8,14 @@ public sealed partial class CitySimulation
     static readonly bool Pr57PoseGuardEnabled =
         Environment.GetEnvironmentVariable("PR57_207_POSE_GUARD") == "1";
 
+    // #208: count SAT calls only while the original s6 guard is evaluating.
+    // Thread-local scope follows the synchronous predicate; no decision is cached.
+    static readonly bool Pr57BodySatCensusEnabled =
+        Environment.GetEnvironmentVariable("PR57_208_BODY_SAT_CENSUS") == "1";
+    [ThreadStatic] static bool _pr57BodySatScope;
+    [ThreadStatic] static long _pr57BodySatCalls;
+    long _pr57BodySatObserved;
+
     long _pr57PoseCalls, _pr57PoseEligible, _pr57PoseCandidates, _pr57PoseHeadingChanges;
     long _pr57PoseTicks, _pr57PoseBytes;
     long _pr57PoseStartTicks, _pr57PoseStartBytes;
@@ -18,6 +26,8 @@ public sealed partial class CitySimulation
     {
         _pr57PoseCalls = _pr57PoseEligible = _pr57PoseCandidates = _pr57PoseHeadingChanges = 0;
         _pr57PoseTicks = _pr57PoseBytes = 0;
+        _pr57BodySatObserved = 0;
+        _pr57BodySatScope = false;
         _pr57PoseActive = false;
     }
 
@@ -30,6 +40,11 @@ public sealed partial class CitySimulation
         _pr57PoseOldHeading = vehicle.Heading;
         _pr57PoseStartTicks = System.Diagnostics.Stopwatch.GetTimestamp();
         _pr57PoseStartBytes = GC.GetAllocatedBytesForCurrentThread();
+        if (Pr57BodySatCensusEnabled)
+        {
+            _pr57BodySatCalls = 0;
+            _pr57BodySatScope = true;
+        }
     }
 
     // Called only after the original ID, status and distance short-circuits.
@@ -45,6 +60,11 @@ public sealed partial class CitySimulation
         if (!_pr57PoseActive) return;
         _pr57PoseTicks += System.Diagnostics.Stopwatch.GetTimestamp() - _pr57PoseStartTicks;
         _pr57PoseBytes += GC.GetAllocatedBytesForCurrentThread() - _pr57PoseStartBytes;
+        if (Pr57BodySatCensusEnabled)
+        {
+            _pr57BodySatObserved += _pr57BodySatCalls;
+            _pr57BodySatScope = false;
+        }
         if (vehicle.Heading != _pr57PoseOldHeading) _pr57PoseHeadingChanges++;
         _pr57PoseActive = false;
     }
@@ -58,5 +78,11 @@ public sealed partial class CitySimulation
             $"calls={_pr57PoseCalls} eligible={_pr57PoseEligible} geometryCandidates={_pr57PoseCandidates} " +
             $"headingChanges={_pr57PoseHeadingChanges} guardMs={ms:F6} guardMB={_pr57PoseBytes / 1e6:F6} " +
             "scope=s6-pose-guard-only observational=True intrusive=True");
+        if (Pr57BodySatCensusEnabled)
+            Console.WriteLine(
+                $"PR57_208_SAT sample={_pr57ExclusiveSamples} eligibleSlice={_pr57ExclusiveEligibleSlices} " +
+                $"satCalls={_pr57BodySatObserved} geometryCandidates={_pr57PoseCandidates} " +
+                $"guardMB={_pr57PoseBytes / 1e6:F6} " +
+                "scope=s6-pose-guard-BodiesOverlap-only observational=True intrusive=True");
     }
 }
