@@ -759,14 +759,16 @@ public sealed partial class CitySimulation
                     var other=enteringLane?Pr57StageEntryFrame(liveOther):liveOther;
                     Pr57PairBeforeLaneCandidate(v,other,enteringLane);
                     Pr57CausalLaneCandidate(v,other);
+                    if(Pr57NegativeEnabled)Pr57NegativeBeginCandidate(other);
                     // A truck stopped at a dock with its body across this lane (a street bay)
                     // is queued behind like a leader, keeping the queue gap (Mobility.SharedSpace).
                     if(other.Id!=v.Id&&(pr57DockGateHoist?pr57DockGate:(!LeavesDock(v)||OnCarriageway(v)))&&
                        (!pr57DockAabb||(!other.PassengerCar&&other.Machine==PavingMachine.None&&
                          Math.Abs(other.Position.X-v.Position.X)<=20.00000001&&Math.Abs(other.Position.Z-v.Position.Z)<=20.00000001))&&
-                       Pr57StageBodyAcross(v,other) is {} docked){Pr57StageMark(1);HoldFor(other,docked);continue;}
-                    if(other.Id==v.Id||!Pr57StageOccupies(other)){Pr57StageMark(2);continue;}
+                       Pr57StageBodyAcross(v,other) is {} docked){Pr57StageMark(1);if(Pr57NegativeEnabled)Pr57NegativeStage(1);HoldFor(other,docked);continue;}
+                    if(other.Id==v.Id||!Pr57StageOccupies(other)){Pr57StageMark(2);if(Pr57NegativeEnabled)Pr57NegativeStage(2);continue;}
                     Pr57StageMark(3);
+                    if(Pr57NegativeEnabled)Pr57NegativeStage(3);
                     if(_pr57CandidateActive is not null)Pr57CandidateRead(other,3);
                     var relative=other.Position-v.Position;
                     if(insideMap&&relative.Distance(new(0,0))<.1){Pr57StageMark(4);if(other.Status==VehicleStatus.Stranded||other.Id<v.Id)HoldFor(other,0);continue;}
