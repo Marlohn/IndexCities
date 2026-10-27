@@ -118,6 +118,7 @@ public sealed partial class CitySimulation
             Array.Clear(_pr57ExecRepeatedStageBytes);
             _pr57ExecRepeatedFullCount = 0;
         }
+        Pr57S5BeginSlice();
         if (Pr57PoseReadSetEnabled)
         {
             _pr57PoseRepeated = _pr57PoseSame = _pr57PoseChanged = _pr57PoseZero = 0;
@@ -145,6 +146,7 @@ public sealed partial class CitySimulation
             Array.Clear(_pr57ExecVehicleStageBytes);
         }
         _pr57ExecStart = System.Diagnostics.Stopwatch.GetTimestamp();
+        Pr57S5BeginVehicle();
     }
 
     void Pr57ExecMark(int stage)
@@ -152,6 +154,7 @@ public sealed partial class CitySimulation
         if (!_pr57ExecVehicleActive) return;
         _pr57ExecPath = unchecked((_pr57ExecPath ^ (uint)(stage + 1)) * 1099511628211UL);
         _pr57ExecMask |= 1 << stage;
+        Pr57S5Mark(stage);
     }
 
     void Pr57ExecRecordSegment(int stage, long ticks, long bytes)
@@ -177,6 +180,7 @@ public sealed partial class CitySimulation
         else if (full) _pr57ExecFullStill++;
         if (_pr57ExecBefore != after) _pr57ExecOwnChanged++;
 
+        var pr57S5RepeatedFull = false;
         if (_pr57ExecPrevious.TryGetValue(v.Id, out var previous))
         {
             _pr57ExecCompared++;
@@ -194,6 +198,7 @@ public sealed partial class CitySimulation
                 if (full)
                 {
                     _pr57ExecFullSameBefore++;
+                    pr57S5RepeatedFull = true;
                     if (Pr57PoseReadSetEnabled)
                     {
                         _pr57PoseRepeated++;
@@ -232,6 +237,7 @@ public sealed partial class CitySimulation
                 if (previous.After == after) _pr57ExecSamePathBeforeAfter++;
             }
         }
+        Pr57S5FinishVehicle(v.Id, pr57S5RepeatedFull);
         _pr57ExecCurrent[v.Id] = new(_pr57ExecBefore, after, _pr57ExecPath,
             _pr57ExecPoseHash, _pr57ExecPoseReads);
     }
@@ -283,6 +289,7 @@ public sealed partial class CitySimulation
                 "scope=s6-near-body-only fingerprintNotProof=True " +
                 "shipmentsClockPedestriansSignalsRoutesOmitted=True " +
                 "transientWritesNotTracked=True observational=True intrusive=True");
+        Pr57S5EndSlice();
         _pr57ExecPrevious.Clear();
         foreach (var (id, row) in _pr57ExecCurrent) _pr57ExecPrevious[id] = row;
         _pr57ExecCurrent.Clear();
