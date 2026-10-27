@@ -382,6 +382,7 @@ public sealed partial class CitySimulation
         Pr57CandidateBeginSlice();
         Pr57S6GateShadowBeginSlice();
         Pr57PhaseExposureBeginSlice();
+        Pr57PhaseImpactBeginSlice();
         // Same order as OrderBy(WaitingSince).ThenBy(Id): Ids are unique, so the
         // key is a total order and any sort yields the same sequence.
         // PR57 isolated A/B: during a batched movement slice, the loop below
@@ -592,6 +593,7 @@ public sealed partial class CitySimulation
         }
         if(scanProfile is not null)_pr57MovementAllocBytes[1]+=GC.GetAllocatedBytesForCurrentThread()-pr57AllocCallStart;
         foreach(var v in ordered){
+            Pr57PhaseImpactBeforeActor(v);
             Pr57ExclusiveBeginVehicle(v);
             var pr57IdleStart=pr57IdleProbe?Pr57IdleSnapshot(v):default;
             if(pr57IdleProbe)Pr57BlockBeginVehicle(v);
@@ -764,7 +766,7 @@ public sealed partial class CitySimulation
                 // yield back to the other vehicle and freeze both indefinitely.
                 var leaderDistance=double.MaxValue;Vehicle? blocker=null;
                 var laneCandidateHits=0;
-                void HoldFor(Vehicle other,double distance){Pr57CausalHold(v,other);if(scanProfile is not null){laneCandidateHits++;scanProfile.ObserveLaneHoldDistance(v.Position,other.Position,enteringLane);}if(distance<leaderDistance){leaderDistance=distance;blocker=other;}}
+                void HoldFor(Vehicle other,double distance){Pr57PhaseImpactHold(other,distance);Pr57CausalHold(v,other);if(scanProfile is not null){laneCandidateHits++;scanProfile.ObserveLaneHoldDistance(v.Position,other.Position,enteringLane);}if(distance<leaderDistance){leaderDistance=distance;blocker=other;}}
                 // A/B only: hoist invariant heading trigonometry for the original-order scan.
                 var pr57Sin=pr57FastScan?Math.Sin(v.Heading):0;
                 var pr57Cos=pr57FastScan?Math.Cos(v.Heading):0;
@@ -855,6 +857,7 @@ public sealed partial class CitySimulation
                 if(Pr57MutationAuditEnabled&&scanProfile is not null)Pr57MutationBeforeLeaderScan(v);
                 if(Pr57LaneReadWriteEnabled&&scanProfile is not null)
                     Pr57LaneReadBeforeScan(v,enteringLane,speed*remaining,pr57LaneList.Count);
+                Pr57PhaseImpactBeforeScan();
                 Pr57ScanLane(pr57LaneList);
                 Pr57CandidateEndQuery();
                 if(blocker is not null)Pr57CausalWinner(v,blocker);
@@ -865,6 +868,7 @@ public sealed partial class CitySimulation
                 }
                 if(pr57LimiterProbe)pr57QueueLaneTicks=System.Diagnostics.Stopwatch.GetTimestamp()-laneScanStart;
                 var step=Math.Min(d,Math.Min(speed*remaining,Math.Max(0,leaderDistance-8)));
+                Pr57PhaseImpactAfterScan(v,blocker,leaderDistance,step);
                 var pr57QueueFirstLimit=pr57LimiterProbe&&step<.00001?(leaderDistance<=8?1:8):0;
                 if(stopEarly>0)step=Math.Min(step,Math.Max(0,d-stopEarly));
                 if(pr57LimiterProbe&&pr57QueueFirstLimit==0&&step<.00001)pr57QueueFirstLimit=2;
@@ -1163,6 +1167,7 @@ public sealed partial class CitySimulation
                 if(Pr57MutationAuditEnabled&&scanProfile is not null)Pr57MutationAfterVehicle(v);
                 Pr57ReservationAfterVehicle(v);
                 Pr57PhaseExposureAfterVehicle(v);
+                Pr57PhaseImpactAfterActor(v);
                 if(scanProfile is not null)_pr57MovementAllocBytes[10]+=GC.GetAllocatedBytesForCurrentThread()-pr57FinalizeAllocStart;
             }
         }
@@ -1172,6 +1177,7 @@ public sealed partial class CitySimulation
         Pr57CrossSliceEnd();
         Pr57CandidateEndSlice();
         Pr57S6GateShadowEndSlice();
+        Pr57PhaseImpactEndSlice();
         Pr57PhaseExposureEndSlice();
         Pr57ExclusiveEndSlice();
         Pr57PairEndSlice();
