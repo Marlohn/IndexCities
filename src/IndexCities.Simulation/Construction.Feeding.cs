@@ -286,6 +286,8 @@ public sealed partial class CitySimulation
 
     static bool BodiesOverlap(Vehicle a,Point aAt,double aHeading,Vehicle b,Point bAt,double bHeading,double margin=.1)
     {
+        // #208 observational only: the original SAT computation below is untouched.
+        if (Pr57BodySatCensusEnabled && _pr57BodySatScope) _pr57BodySatCalls++;
         static double Dot(Point x,Point y)=>x.X*y.X+x.Z*y.Z;
         var af=new Point(Math.Sin(aHeading),Math.Cos(aHeading));var ar=new Point(af.Z,-af.X);
         var bf=new Point(Math.Sin(bHeading),Math.Cos(bHeading));var br=new Point(bf.Z,-bf.X);var delta=bAt-aAt;
