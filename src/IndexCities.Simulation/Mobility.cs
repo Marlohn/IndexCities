@@ -325,6 +325,7 @@ public sealed partial class CitySimulation
         Pr57JunctionCensusBeginSlice(dt,operationsDt);
         Pr57JunctionReadersBeginSlice(dt,operationsDt);
         var scanProfile=CostProfile;
+        Pr57PairBeginSlice(dt,operationsDt,scanProfile is not null);
         var pr57CostProbe=scanProfile is not null&&Pr57VehicleCostProbeEnabled;
         var pr57LimiterProbe=scanProfile is not null&&Pr57QueueLimiterEnabled&&dt>0&&_pr57MovementAllocCalls%37==0;
         var pr57DepProbe=scanProfile is not null&&Pr57BlockDepProbeEnabled&&dt>0;
@@ -746,6 +747,7 @@ public sealed partial class CitySimulation
                 foreach(var liveOther in candidates){
                     if(pr57IdleProbe)pr57IdleLaneVisits++;
                     var other=enteringLane?EntryFrameVehicle(liveOther):liveOther;
+                    Pr57PairBeforeLaneCandidate(v,other,enteringLane);
                     Pr57CausalLaneCandidate(v,other);
                     // A truck stopped at a dock with its body across this lane (a street bay)
                     // is queued behind like a leader, keeping the queue gap (Mobility.SharedSpace).
@@ -1091,6 +1093,7 @@ public sealed partial class CitySimulation
         // A towed vehicle moves only with its tow (platform or trailing a heavy tow).
         SyncTowedVehicles();
         Pr57ReservationAfterSync();
+        Pr57PairEndSlice();
         Pr57CausalEndSlice();
         Pr57JunctionCensusEndSlice();
         Pr57JunctionReadersEndSlice();
