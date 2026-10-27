@@ -2,7 +2,7 @@ name: 'PR57 #229 real s3 gate-flip writer and winner attribution'
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
-    paths: [.github/workflows/pr57-phase-impact-229.yml]
+    paths: [.github/workflows/pr57-phase-impact-229.yml, src/IndexCities.Simulation/Mobility.PhaseFlipImpact.Pr57.cs]
   workflow_dispatch:
 permissions:
   contents: read
