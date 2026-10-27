@@ -20,7 +20,7 @@ public sealed partial class CitySimulation
     int _pr57CausalCleanupChanged;
 
     Dictionary<int, (Pr57DepState State, string? Cause)> Pr57CausalWorld() =>
-        State.Vehicles.ToDictionary(v => v.Id, v => (Pr57DepSnapshot(v), v.Cause));
+        State.Vehicles.ToDictionary(v => v.Id, v => (State: Pr57DepSnapshot(v), Cause: (string?)v.Cause));
 
     void Pr57CausalBeginSlice(double dt, double? operationsDt)
     {
