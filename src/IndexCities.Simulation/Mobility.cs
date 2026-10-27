@@ -321,6 +321,7 @@ public sealed partial class CitySimulation
     void MoveVehiclesUnsplit(double dt,double? operationsDt=null)
     {
         Pr57PrepareSiteOwnerRoster();
+        Pr57CausalBeginSlice(dt,operationsDt);
         var scanProfile=CostProfile;
         var pr57CostProbe=scanProfile is not null&&Pr57VehicleCostProbeEnabled;
         var pr57LimiterProbe=scanProfile is not null&&Pr57QueueLimiterEnabled&&dt>0&&_pr57MovementAllocCalls%37==0;
@@ -334,6 +335,7 @@ public sealed partial class CitySimulation
         // actual rear of the truck; the former 9 m reservation could overlap
         // nearby junctions and make opposite queues hold each other forever.
         foreach(var vehicle in State.Vehicles){ClearPassedJunction(vehicle);ReleaseManoeuvre(vehicle);}
+        Pr57CausalAfterCleanup();
         if(pr57DepProbe)Pr57DepAfterCleanup();
         if(Pr57MutationAuditEnabled&&scanProfile is not null)Pr57MutationBeginSlice();
         // Same order as OrderBy(WaitingSince).ThenBy(Id): Ids are unique, so the
@@ -715,7 +717,7 @@ public sealed partial class CitySimulation
                 // yield back to the other vehicle and freeze both indefinitely.
                 var leaderDistance=double.MaxValue;Vehicle? blocker=null;
                 var laneCandidateHits=0;
-                void HoldFor(Vehicle other,double distance){if(scanProfile is not null){laneCandidateHits++;scanProfile.ObserveLaneHoldDistance(v.Position,other.Position,enteringLane);}if(distance<leaderDistance){leaderDistance=distance;blocker=other;}}
+                void HoldFor(Vehicle other,double distance){Pr57CausalHold(v,other);if(scanProfile is not null){laneCandidateHits++;scanProfile.ObserveLaneHoldDistance(v.Position,other.Position,enteringLane);}if(distance<leaderDistance){leaderDistance=distance;blocker=other;}}
                 // A/B only: hoist invariant heading trigonometry for the original-order scan.
                 var pr57Sin=pr57FastScan?Math.Sin(v.Heading):0;
                 var pr57Cos=pr57FastScan?Math.Cos(v.Heading):0;
@@ -741,6 +743,7 @@ public sealed partial class CitySimulation
                 foreach(var liveOther in candidates){
                     if(pr57IdleProbe)pr57IdleLaneVisits++;
                     var other=enteringLane?EntryFrameVehicle(liveOther):liveOther;
+                    Pr57CausalLaneCandidate(v,other);
                     // A truck stopped at a dock with its body across this lane (a street bay)
                     // is queued behind like a leader, keeping the queue gap (Mobility.SharedSpace).
                     if(other.Id!=v.Id&&(pr57DockGateHoist?pr57DockGate:(!LeavesDock(v)||OnCarriageway(v)))&&
@@ -791,6 +794,7 @@ public sealed partial class CitySimulation
                 if(Pr57LaneReadWriteEnabled&&scanProfile is not null)
                     Pr57LaneReadBeforeScan(v,enteringLane,speed*remaining,pr57LaneList.Count);
                 Pr57ScanLane(pr57LaneList);
+                if(blocker is not null)Pr57CausalWinner(v,blocker);
                 if(scanProfile is not null){
                     scanProfile.MarkVehicleScan(0,laneScanStart,pr57LaneList.Count,laneCandidateHits);
                     if(blocker is not null)scanProfile.ObserveLaneLeaderSelection(v.Position,blocker.Position,leaderDistance,Math.Min(d,speed*remaining));
@@ -987,7 +991,7 @@ public sealed partial class CitySimulation
                         var pr57AdmissionStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
                         if(scanProfile is not null)_pr57JunctionCalls[0]++;
                         var pr57JunctionHotStart=Pr57HotTiming&&scanProfile is not null?System.Diagnostics.Stopwatch.GetTimestamp():0L;
-                        try{junctionAllowed=MayEnterJunction(v,node);}
+                        try{Pr57CausalJunction(v,node);junctionAllowed=MayEnterJunction(v,node);}
                         finally{
                             if(pr57JunctionHotStart!=0){_pr57DirectMovementTicks[3]+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57JunctionHotStart;_pr57DirectMovementCalls[3]++;}
                             if(scanProfile is not null)_pr57JunctionAllocBytes[0]+=GC.GetAllocatedBytesForCurrentThread()-pr57AdmissionStart;
@@ -1082,6 +1086,7 @@ public sealed partial class CitySimulation
         }
         // A towed vehicle moves only with its tow (platform or trailing a heavy tow).
         SyncTowedVehicles();
+        Pr57CausalEndSlice();
         if(Pr57MutationAuditEnabled&&scanProfile is not null)Pr57MutationAfterSync();
         if(Pr57LaneReadWriteEnabled&&scanProfile is not null)Pr57LaneReadEndSlice();
         if(pr57DepProbe)Pr57DepEndSlice();
