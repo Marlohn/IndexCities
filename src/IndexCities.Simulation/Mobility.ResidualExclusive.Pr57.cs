@@ -8,6 +8,39 @@ public sealed partial class CitySimulation
 {
     static readonly bool Pr57ResidualExclusiveEnabled =
         Environment.GetEnvironmentVariable("PR57_206_RESIDUAL_EXCLUSIVE") == "1";
+    // PR57 #235: bounded cost of movement-slice setup before the ordered actor loop.
+    // Observation only; excludes the loop itself and later tow synchronization.
+    static readonly bool Pr57SetupGapEnabled =
+        Environment.GetEnvironmentVariable("PR57_235_SETUP_GAP") == "1";
+    bool _pr57SetupGapRunning;
+    long _pr57SetupGapStartTicks, _pr57SetupGapStartBytes;
+
+    void Pr57SetupGapStart(double dt, double? operationsDt)
+    {
+        _pr57SetupGapRunning = Pr57SetupGapEnabled && Pr57ResidualExclusiveEnabled
+            && CostProfile is not null && dt > 0 && operationsDt is null
+            && _pr57ExclusiveEligibleSlices is >= 36 and <= 38;
+        if (!_pr57SetupGapRunning) return;
+        _pr57SetupGapStartTicks = System.Diagnostics.Stopwatch.GetTimestamp();
+        _pr57SetupGapStartBytes = GC.GetAllocatedBytesForCurrentThread();
+    }
+
+    void Pr57SetupGapEnd(int orderedCount, int candidateCount)
+    {
+        if (!_pr57SetupGapRunning) return;
+        _pr57SetupGapRunning = false;
+        var elapsedTicks = System.Diagnostics.Stopwatch.GetTimestamp() - _pr57SetupGapStartTicks;
+        var bytes = GC.GetAllocatedBytesForCurrentThread() - _pr57SetupGapStartBytes;
+        if (!_pr57ExclusiveActive) return;
+        Console.WriteLine(
+            $"PR57_235_SETUP sample={_pr57ExclusiveSamples} vehicles={State.Vehicles.Count} " +
+            $"ordered={orderedCount} candidates={candidateCount} " +
+            $"setupMs={elapsedTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency:F6} " +
+            $"setupMB={bytes / 1e6:F6} scope=PRE_ORDERED_LOOP " +
+            "includesCleanupSortIndexes=True excludesActorLoopAndTowSync=True " +
+            "observational=True intrusive=True");
+    }
+
 
     // 0 operations/eligibility, 1 route/pose, 2 shared/bay,
     // 3 lane, 4 bend, 5 site/crossing/turn, 6 post-safety,
