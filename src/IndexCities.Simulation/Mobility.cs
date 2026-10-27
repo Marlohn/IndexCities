@@ -80,6 +80,54 @@ public sealed partial class CitySimulation
         _pr57Walk240Ticks[stage] += System.Diagnostics.Stopwatch.GetTimestamp() - start;
         _pr57Walk240Calls[stage]++;
     }
+    // PR57 #241: attribute walking arrivals by purpose and timed nested calls.
+    // Observation only; the original methods remain the sole decision makers.
+    static readonly bool Pr57Arrive241Enabled =
+        Environment.GetEnvironmentVariable("PR57_241_ARRIVAL_SPLIT") == "1";
+    readonly Dictionary<JourneyPurpose,(long Calls,long Ticks)> _pr57Arrive241Purposes = new();
+    readonly long[] _pr57Arrive241SubTicks = new long[3];
+    readonly long[] _pr57Arrive241SubCalls = new long[3];
+    void Pr57Arrive241Purpose(JourneyPurpose purpose,long start)
+    {
+        _pr57Arrive241Purposes.TryGetValue(purpose,out var row);
+        _pr57Arrive241Purposes[purpose]=(row.Calls+1,row.Ticks+System.Diagnostics.Stopwatch.GetTimestamp()-start);
+    }
+    void Pr57Arrive241Sub(int stage,long start)
+    {
+        _pr57Arrive241SubTicks[stage]+=System.Diagnostics.Stopwatch.GetTimestamp()-start;
+        _pr57Arrive241SubCalls[stage]++;
+    }
+    bool Pr57Arrive241Buy(Citizen c,Building b)
+    {
+        var start=System.Diagnostics.Stopwatch.GetTimestamp();
+        var result=TryBuyFood(c,b);
+        Pr57Arrive241Sub(0,start);
+        return result;
+    }
+    bool Pr57Arrive241Seek(Citizen c,int excluded)
+    {
+        var start=System.Diagnostics.Stopwatch.GetTimestamp();
+        var result=SeekFood(c,excluded);
+        Pr57Arrive241Sub(1,start);
+        return result;
+    }
+    bool Pr57Arrive241Journey(Citizen c,Building b,JourneyPurpose purpose)
+    {
+        var start=System.Diagnostics.Stopwatch.GetTimestamp();
+        var result=StartJourney(c,b,purpose);
+        Pr57Arrive241Sub(2,start);
+        return result;
+    }
+    public IEnumerable<string> Pr57Arrive241Report()
+    {
+        if(!Pr57Arrive241Enabled)yield break;
+        var hz=(double)System.Diagnostics.Stopwatch.Frequency;
+        foreach(var row in _pr57Arrive241Purposes.OrderBy(x=>x.Key))
+            yield return $"PR57_241_ARRIVAL purpose={row.Key} calls={row.Value.Calls} ms={row.Value.Ticks*1000/hz:F5} scope=INTRUSIVE_OBSERVATIONAL";
+        string[] names=["try-buy-food","seek-food","start-journey"];
+        for(var i=0;i<names.Length;i++)
+            yield return $"PR57_241_NESTED name={names[i]} calls={_pr57Arrive241SubCalls[i]} ms={_pr57Arrive241SubTicks[i]*1000/hz:F5} scope=INTRUSIVE_OBSERVATIONAL";
+    }
     public IEnumerable<string> Pr57Walk240Report()
     {
         if (!Pr57Walk240Enabled) yield break;
@@ -352,6 +400,10 @@ public sealed partial class CitySimulation
     }
     void CitizenArrived(Citizen c)
     {
+        var pr57Arrive241=Pr57Arrive241Enabled && CostProfile is not null;
+        var arrivalPurpose=pr57Arrive241?c.Purpose:default;
+        var arrivalStart=pr57Arrive241?System.Diagnostics.Stopwatch.GetTimestamp():0L;
+        try {
         if(c.Purpose==JourneyPurpose.Boarding){var vehicle=State.Vehicles.FirstOrDefault(v=>v.Id==c.BoardingVehicleId&&v.DriverId==c.Id);if(vehicle!=null&&vehicle.Position.Distance(c.Position)<.1){c.VehicleId=vehicle.Id;c.Activity=vehicle.PassengerCar?"Dirigindo carro particular":"Embarcou para entrega real";if(vehicle.PassengerCar){vehicle.Status=VehicleStatus.Travelling;vehicle.Cause="Em viagem";}}else {c.Activity="Veículo indisponível para embarque";if(State.Vehicles.FirstOrDefault(v=>v.Id==c.BoardingVehicleId&&v.PassengerCar&&v.DriverId==c.Id) is {} reserved)reserved.DriverId=null;}c.BoardingVehicleId=null;c.Path.Clear();c.PathIndex=0;return;}
         if(c.Purpose==JourneyPurpose.Leaving){c.Resident=false;c.InsideMap=false;c.Activity="Residindo no exterior";c.WorkplaceId=null;Personal(c,"Saiu fisicamente da cidade; dinheiro, patrimônio e dívidas persistem");return;}
         if(c.Purpose==JourneyPurpose.Construction){c.Activity="Trabalhando no canteiro";return;}
@@ -362,12 +414,23 @@ public sealed partial class CitySimulation
         else if(c.Purpose==JourneyPurpose.Work)c.Activity="No trabalho";
         else if(c.Purpose==JourneyPurpose.Home){if(FamilyById(c.FamilyId) is {} family){family.PantryUnits=checked(family.PantryUnits+c.BagFoodUnits);c.BagFood=0;}c.Activity="Em casa";}
         else if(c.Purpose==JourneyPurpose.Shopping){
-            if(TryBuyFood(c,destination)){if(BuildingById(FamilyById(c.FamilyId)?.HomeId) is {} home)StartJourney(c,home,JourneyPurpose.Home);}
-            else if(!SeekFood(c,destination.Id)&&BuildingById(FamilyById(c.FamilyId)?.HomeId) is {} home)StartJourney(c,home,JourneyPurpose.Home);
+            if(pr57Arrive241?Pr57Arrive241Buy(c,destination):TryBuyFood(c,destination)){
+                if(BuildingById(FamilyById(c.FamilyId)?.HomeId) is {} home){
+                    if(pr57Arrive241)Pr57Arrive241Journey(c,home,JourneyPurpose.Home);
+                    else StartJourney(c,home,JourneyPurpose.Home);
+                }
+            }
+            else if(!(pr57Arrive241?Pr57Arrive241Seek(c,destination.Id):SeekFood(c,destination.Id))&&BuildingById(FamilyById(c.FamilyId)?.HomeId) is {} home){
+                if(pr57Arrive241)Pr57Arrive241Journey(c,home,JourneyPurpose.Home);
+                else StartJourney(c,home,JourneyPurpose.Home);
+            }
         }
         else if(c.Purpose==JourneyPurpose.Visit)c.Activity="Visitando família em "+destination.Definition.Name;
         else if(c.Purpose==JourneyPurpose.Service)c.Activity="Aguardando o veículo na "+destination.Definition.Name+" "+destination.Id;
-        else if(c.Purpose==JourneyPurpose.Stroll){if(BuildingById(FamilyById(c.FamilyId)?.HomeId) is {} home&&StartJourney(c,home,JourneyPurpose.Home))c.Activity="Voltando do passeio";}
+        else if(c.Purpose==JourneyPurpose.Stroll){if(BuildingById(FamilyById(c.FamilyId)?.HomeId) is {} home&&(pr57Arrive241?Pr57Arrive241Journey(c,home,JourneyPurpose.Home):StartJourney(c,home,JourneyPurpose.Home)))c.Activity="Voltando do passeio";}
+        } finally {
+            if(pr57Arrive241)Pr57Arrive241Purpose(arrivalPurpose,arrivalStart);
+        }
     }
     void CitizenRoutine(Citizen c)
     {
