@@ -241,7 +241,8 @@ public sealed partial class CitySimulation
         State.Vehicles.ToDictionary(v=>v.Id,Pr57ReservationState);
     void Pr57ReservationBegin()
     {
-        if(!_pr57JrActive||!Pr57ReservationWritersEnabled||_pr57ReservationWritersDone)return;
+        if(!_pr57JrActive||!Pr57ReservationWritersEnabled||_pr57ReservationWritersDone||
+            _pr57JrTime<3611.05||_pr57JrTime>=3611.06)return;
         _pr57ReservationWritersActive=true;
         var start=System.Diagnostics.Stopwatch.GetTimestamp();
         _pr57ReservationPrevious=Pr57ReservationSnapshot();

@@ -1,4 +1,4 @@
-name: 'PR57 #197 slice-local reservation writer census'
+name: 'PR57 #197b reservation writer census at first real claim transition'
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
