@@ -1084,11 +1084,13 @@ public sealed partial class CitySimulation
                     &&pr57AxisIndex.Count==State.Vehicles.Count)pr57AxisIndex.Update(v,pr57OldPosition);
                 if(pr57Bvh)_pr57VehicleBvh!.Update(v);
                 if(Pr57MutationAuditEnabled&&scanProfile is not null)Pr57MutationAfterVehicle(v);
+                Pr57ReservationAfterVehicle(v);
                 if(scanProfile is not null)_pr57MovementAllocBytes[10]+=GC.GetAllocatedBytesForCurrentThread()-pr57FinalizeAllocStart;
             }
         }
         // A towed vehicle moves only with its tow (platform or trailing a heavy tow).
         SyncTowedVehicles();
+        Pr57ReservationAfterSync();
         Pr57CausalEndSlice();
         Pr57JunctionCensusEndSlice();
         Pr57JunctionReadersEndSlice();

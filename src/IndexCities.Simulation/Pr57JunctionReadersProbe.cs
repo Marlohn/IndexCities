@@ -54,12 +54,14 @@ public sealed partial class CitySimulation
         _pr57JrSelectedAtRead.Clear();
         _pr57JrPreference.Clear();
         _pr57JrSignals.Clear();
+        Pr57ReservationBegin();
     }
 
     // #195: snapshot after the real all-vehicle claim/manoeuvre cleanup.
     void Pr57JunctionReadersAfterCleanup()
     {
         if (_pr57JrActive) _pr57JrAfterCleanup = Pr57CausalWorld();
+        Pr57ReservationAfterCleanup();
     }
 
     // Counts real predicate evaluations, including misses; always returns true.
@@ -201,8 +203,121 @@ public sealed partial class CitySimulation
             $"preferenceCandidateEdges={_pr57JrPreference.Count} changedPreferenceEdges={changedPreference} " +
             $"signalReaderJunctionPairs={_pr57JrSignals.Count} redSignalChecks={_pr57JrRedChecks} " +
             "scope=BOUNDED_FIRST_LAST_SELECTED_READS_NET_CHANGES_NOT_WRITE_JOURNAL_NOT_EXACT_INVALIDATION");
+        Pr57ReservationEnd();
         _pr57JrActive = false;
         _pr57JrBefore = null;
         _pr57JrAfterCleanup = null;
+    }
+
+    // #197: observational, bounded to ONE real sub-slice. Snapshots after
+    // cleanup, after each processed vehicle (including third-party mutations),
+    // and after tow sync. These are NET writes between boundaries, NOT a
+    // complete transient write journal or a cache-invalidation proof.
+    static readonly bool Pr57ReservationWritersEnabled =
+        Environment.GetEnvironmentVariable("PR57_197_RESERVATION_WRITERS") == "1";
+    bool _pr57ReservationWritersActive, _pr57ReservationWritersDone;
+    Dictionary<int,(int? Claim,string Spaces)>? _pr57ReservationPrevious;
+    long _pr57ReservationTicks, _pr57ReservationSnapshots, _pr57ReservationChecks;
+    long _pr57ReservationVehiclePasses, _pr57ReservationChanges, _pr57ReservationClaimChanges;
+    long _pr57ReservationSpaceChanges, _pr57ReservationNonlocal, _pr57ReservationNewIds;
+    long _pr57ReservationRemovedIds, _pr57ReservationCleanupChanges, _pr57ReservationSyncChanges;
+    long _pr57ReservationWriterPassesWithChanges, _pr57ReservationMaxChangesPerPass;
+    readonly HashSet<int> _pr57ReservationChangedIds = new();
+    readonly HashSet<int> _pr57ReservationWriters = new();
+    (int Claims,int Entries,int Unique) Pr57ReservationOccupancy()
+    {
+        var claims=0;var entries=0;var spaces=new HashSet<int>();
+        foreach(var v in State.Vehicles)
+        {
+            if(v.IntersectionClaim is {} claim){claims++;spaces.Add(claim);}
+            foreach(var id in v.ManoeuvreSpaces){entries++;spaces.Add(id);}
+        }
+        return (claims,entries,spaces.Count);
+    }
+    (int Claims,int Entries,int Unique) _pr57ReservationInitialOccupancy;
+    static (int? Claim,string Spaces) Pr57ReservationState(Vehicle v)=>
+        (v.IntersectionClaim,string.Join(",",v.ManoeuvreSpaces));
+    Dictionary<int,(int? Claim,string Spaces)> Pr57ReservationSnapshot()=>
+        State.Vehicles.ToDictionary(v=>v.Id,Pr57ReservationState);
+    void Pr57ReservationBegin()
+    {
+        if(!_pr57JrActive||!Pr57ReservationWritersEnabled||_pr57ReservationWritersDone)return;
+        _pr57ReservationWritersActive=true;
+        var start=System.Diagnostics.Stopwatch.GetTimestamp();
+        _pr57ReservationPrevious=Pr57ReservationSnapshot();
+        _pr57ReservationTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-start;
+        _pr57ReservationSnapshots=1;
+        _pr57ReservationChecks=_pr57ReservationPrevious.Count;
+        _pr57ReservationInitialOccupancy=Pr57ReservationOccupancy();
+    }
+    void Pr57ReservationCapture(int writer,string phase)
+    {
+        if(!_pr57ReservationWritersActive||_pr57ReservationPrevious is null)return;
+        var start=System.Diagnostics.Stopwatch.GetTimestamp();
+        var current=Pr57ReservationSnapshot();
+        _pr57ReservationSnapshots++;
+        _pr57ReservationChecks+=current.Count;
+        var changes=0;
+        foreach(var (id,now) in current)
+        {
+            if(!_pr57ReservationPrevious.TryGetValue(id,out var old))
+            {
+                _pr57ReservationNewIds++;changes++;_pr57ReservationChangedIds.Add(id);
+                continue;
+            }
+            if(old==now)continue;
+            changes++;_pr57ReservationChangedIds.Add(id);
+            if(old.Claim!=now.Claim)_pr57ReservationClaimChanges++;
+            if(old.Spaces!=now.Spaces)_pr57ReservationSpaceChanges++;
+            if(writer>=0&&id!=writer)_pr57ReservationNonlocal++;
+        }
+        foreach(var id in _pr57ReservationPrevious.Keys)
+            if(!current.ContainsKey(id))
+            {
+                _pr57ReservationRemovedIds++;changes++;_pr57ReservationChangedIds.Add(id);
+            }
+        if(changes>0)
+        {
+            if(writer>=0)_pr57ReservationWriters.Add(writer);
+            if(phase=="cleanup")_pr57ReservationCleanupChanges+=changes;
+            if(phase=="sync")_pr57ReservationSyncChanges+=changes;
+            if(phase=="vehicle")_pr57ReservationWriterPassesWithChanges++;
+            _pr57ReservationMaxChangesPerPass=Math.Max(_pr57ReservationMaxChangesPerPass,changes);
+        }
+        _pr57ReservationChanges+=changes;
+        _pr57ReservationPrevious=current;
+        _pr57ReservationTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-start;
+    }
+    void Pr57ReservationAfterCleanup()=>Pr57ReservationCapture(-1,"cleanup");
+    void Pr57ReservationAfterVehicle(Vehicle v)
+    {
+        if(!_pr57ReservationWritersActive)return;
+        _pr57ReservationVehiclePasses++;
+        Pr57ReservationCapture(v.Id,"vehicle");
+    }
+    void Pr57ReservationAfterSync()=>Pr57ReservationCapture(-2,"sync");
+    void Pr57ReservationEnd()
+    {
+        if(!_pr57ReservationWritersActive)return;
+        var occupancy=Pr57ReservationOccupancy();
+        var elapsedMs=1000.0*_pr57ReservationTicks/System.Diagnostics.Stopwatch.Frequency;
+        Console.WriteLine(
+            $"PR57_197_RESERVATION_WRITERS time={_pr57JrTime:F9} dt={_pr57JrDuration:F9} " +
+            $"vehiclePasses={_pr57ReservationVehiclePasses} snapshots={_pr57ReservationSnapshots} " +
+            $"checks={_pr57ReservationChecks} netChanges={_pr57ReservationChanges} " +
+            $"claimChanges={_pr57ReservationClaimChanges} spaceChanges={_pr57ReservationSpaceChanges} " +
+            $"nonlocalChanges={_pr57ReservationNonlocal} newIds={_pr57ReservationNewIds} " +
+            $"removedIds={_pr57ReservationRemovedIds} cleanupChanges={_pr57ReservationCleanupChanges} " +
+            $"syncChanges={_pr57ReservationSyncChanges} writerPassesWithChanges={_pr57ReservationWriterPassesWithChanges} " +
+            $"distinctWriters={_pr57ReservationWriters.Count} distinctChangedIds={_pr57ReservationChangedIds.Count} " +
+            $"maxChangesPerPass={_pr57ReservationMaxChangesPerPass} " +
+            $"initialClaims={_pr57ReservationInitialOccupancy.Claims} initialEntries={_pr57ReservationInitialOccupancy.Entries} " +
+            $"initialUniqueSpaces={_pr57ReservationInitialOccupancy.Unique} " +
+            $"finalClaims={occupancy.Claims} finalEntries={occupancy.Entries} finalUniqueSpaces={occupancy.Unique} " +
+            $"candidateEvaluations={_pr57JrCandidateEvaluations} observerMs={elapsedMs:F3} " +
+            "scope=ONE_SLICE_NET_BOUNDARY_WRITES_NOT_TRANSIENT_JOURNAL_NOT_AB");
+        _pr57ReservationWritersActive=false;
+        _pr57ReservationWritersDone=true;
+        _pr57ReservationPrevious=null;
     }
 }
