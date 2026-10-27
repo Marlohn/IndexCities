@@ -119,6 +119,7 @@ public sealed partial class CitySimulation
             _pr57ExecRepeatedFullCount = 0;
         }
         Pr57S5BeginSlice();
+        Pr57StageCoherenceBeginSlice();
         if (Pr57PoseReadSetEnabled)
         {
             _pr57PoseRepeated = _pr57PoseSame = _pr57PoseChanged = _pr57PoseZero = 0;
@@ -147,11 +148,13 @@ public sealed partial class CitySimulation
         }
         _pr57ExecStart = System.Diagnostics.Stopwatch.GetTimestamp();
         Pr57S5BeginVehicle();
+        Pr57StageCoherenceBeginVehicle(v);
     }
 
     void Pr57ExecMark(int stage)
     {
         if (!_pr57ExecVehicleActive) return;
+        Pr57StageCoherenceMark(stage);
         _pr57ExecPath = unchecked((_pr57ExecPath ^ (uint)(stage + 1)) * 1099511628211UL);
         _pr57ExecMask |= 1 << stage;
         Pr57S5Mark(stage);
@@ -240,6 +243,7 @@ public sealed partial class CitySimulation
         Pr57S5FinishVehicle(v.Id, pr57S5RepeatedFull);
         _pr57ExecCurrent[v.Id] = new(_pr57ExecBefore, after, _pr57ExecPath,
             _pr57ExecPoseHash, _pr57ExecPoseReads);
+        Pr57StageCoherenceFinishVehicle();
     }
 
     void Pr57ExecEndSlice()
@@ -290,6 +294,7 @@ public sealed partial class CitySimulation
                 "shipmentsClockPedestriansSignalsRoutesOmitted=True " +
                 "transientWritesNotTracked=True observational=True intrusive=True");
         Pr57S5EndSlice();
+        Pr57StageCoherenceEndSlice();
         _pr57ExecPrevious.Clear();
         foreach (var (id, row) in _pr57ExecCurrent) _pr57ExecPrevious[id] = row;
         _pr57ExecCurrent.Clear();
