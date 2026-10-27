@@ -59,6 +59,8 @@ public sealed partial class CitySimulation
         _pr57ExclusiveTicks[_pr57ExclusiveStage] += now - _pr57ExclusiveStartTick;
         _pr57ExclusiveBytes[_pr57ExclusiveStage] += bytes - _pr57ExclusiveStartBytes;
         _pr57ExclusiveSegments[_pr57ExclusiveStage]++;
+        Pr57ExecRecordSegment(_pr57ExclusiveStage,
+            now - _pr57ExclusiveStartTick, bytes - _pr57ExclusiveStartBytes);
         Pr57ExecMark(nextStage);
         _pr57ExclusiveStage = nextStage;
         _pr57ExclusiveStartTick = now;

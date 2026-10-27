@@ -37,6 +37,16 @@ public sealed partial class CitySimulation
     long _pr57ExecSamePath, _pr57ExecSamePathBefore;
     long _pr57ExecSamePathBeforeAfter, _pr57ExecFullSameBefore;
     long _pr57ExecTicks, _pr57ExecFullTicks, _pr57ExecRepeatedTicks;
+    // PR57 #219: exclusive segments from #206, aggregated ONLY for the
+    // repeated full-path cohort. Stage 3/4 contain lane/bend scans; other
+    // stages can ALSO contain scans and external reads. Not an Amdahl bound.
+    static readonly bool Pr57StageCostEnabled =
+        Environment.GetEnvironmentVariable("PR57_219_STAGE_COST") == "1";
+    readonly long[] _pr57ExecVehicleStageTicks = new long[9];
+    readonly long[] _pr57ExecVehicleStageBytes = new long[9];
+    readonly long[] _pr57ExecRepeatedStageTicks = new long[9];
+    readonly long[] _pr57ExecRepeatedStageBytes = new long[9];
+    long _pr57ExecRepeatedFullCount;
 
     static Pr57ExecProjection Pr57ExecSnapshot(Vehicle v) => new(
         v.Status, v.Position, BitConverter.DoubleToInt64Bits(v.Heading),
@@ -61,6 +71,12 @@ public sealed partial class CitySimulation
         _pr57ExecSamePath = _pr57ExecSamePathBefore = 0;
         _pr57ExecSamePathBeforeAfter = _pr57ExecFullSameBefore = 0;
         _pr57ExecTicks = _pr57ExecFullTicks = _pr57ExecRepeatedTicks = 0;
+        if (Pr57StageCostEnabled)
+        {
+            Array.Clear(_pr57ExecRepeatedStageTicks);
+            Array.Clear(_pr57ExecRepeatedStageBytes);
+            _pr57ExecRepeatedFullCount = 0;
+        }
     }
 
     void Pr57ExecBeginVehicle(Vehicle v)
@@ -70,6 +86,11 @@ public sealed partial class CitySimulation
         _pr57ExecBefore = Pr57ExecSnapshot(v);
         _pr57ExecPath = 14695981039346656037UL; // deterministic FNV-style stage sequence
         _pr57ExecMask = 0;
+        if (Pr57StageCostEnabled)
+        {
+            Array.Clear(_pr57ExecVehicleStageTicks);
+            Array.Clear(_pr57ExecVehicleStageBytes);
+        }
         _pr57ExecStart = System.Diagnostics.Stopwatch.GetTimestamp();
     }
 
@@ -78,6 +99,13 @@ public sealed partial class CitySimulation
         if (!_pr57ExecVehicleActive) return;
         _pr57ExecPath = unchecked((_pr57ExecPath ^ (uint)(stage + 1)) * 1099511628211UL);
         _pr57ExecMask |= 1 << stage;
+    }
+
+    void Pr57ExecRecordSegment(int stage, long ticks, long bytes)
+    {
+        if (!Pr57StageCostEnabled || !_pr57ExecVehicleActive) return;
+        _pr57ExecVehicleStageTicks[stage] += ticks;
+        _pr57ExecVehicleStageBytes[stage] += bytes;
     }
 
     void Pr57ExecFinishVehicle(Vehicle v)
@@ -110,7 +138,19 @@ public sealed partial class CitySimulation
             {
                 _pr57ExecSamePathBefore++;
                 _pr57ExecRepeatedTicks += elapsed;
-                if (full) _pr57ExecFullSameBefore++;
+                if (full)
+                {
+                    _pr57ExecFullSameBefore++;
+                    if (Pr57StageCostEnabled)
+                    {
+                        _pr57ExecRepeatedFullCount++;
+                        for (var i = 0; i < 9; i++)
+                        {
+                            _pr57ExecRepeatedStageTicks[i] += _pr57ExecVehicleStageTicks[i];
+                            _pr57ExecRepeatedStageBytes[i] += _pr57ExecVehicleStageBytes[i];
+                        }
+                    }
+                }
                 if (previous.After == after) _pr57ExecSamePathBeforeAfter++;
             }
         }
@@ -136,6 +176,22 @@ public sealed partial class CitySimulation
             "scope=selectedProjectionNotFullInput noExternalClosure=True " +
             "clockNotIncluded=True pathEqualityNotDecisionEquality=True " +
             "observational=True intrusive=True");
+        if (Pr57StageCostEnabled)
+        {
+            var ticks = _pr57ExecRepeatedStageTicks.Sum();
+            var bytes = _pr57ExecRepeatedStageBytes.Sum();
+            var scanContaining = _pr57ExecRepeatedStageTicks[3] + _pr57ExecRepeatedStageTicks[4];
+            Console.WriteLine(
+                $"PR57_219_COST sample={_pr57ExclusiveSamples} eligibleSlice={_pr57ExclusiveEligibleSlices} " +
+                $"repeatedFull={_pr57ExecRepeatedFullCount} totalMs={Ms(ticks)} " +
+                $"scanContainingMs={Ms(scanContaining)} remainingStagesMs={Ms(ticks - scanContaining)} " +
+                $"stage6Ms={Ms(_pr57ExecRepeatedStageTicks[6])} totalMB={bytes / 1e6:F6} " +
+                string.Join(" ", Enumerable.Range(0, 9).Select(i =>
+                    $"s{i}Ms={Ms(_pr57ExecRepeatedStageTicks[i])} s{i}MB={_pr57ExecRepeatedStageBytes[i] / 1e6:F6}")) +
+                " scope=repeatedFullPathSelectedProjection stage3And4ContainScans=True " +
+                "remainingStagesNotScanFree=True externalInvalidatorsNotClosed=True " +
+                "observational=True intrusive=True");
+        }
         _pr57ExecPrevious.Clear();
         foreach (var (id, row) in _pr57ExecCurrent) _pr57ExecPrevious[id] = row;
         _pr57ExecCurrent.Clear();
