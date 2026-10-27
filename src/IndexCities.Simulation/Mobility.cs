@@ -42,6 +42,23 @@ public sealed partial class CitySimulation
     int _laneEntryOriginLastSecond=-1; // PR57: bounded, observational, never serialized
     bool _pr57CausalHorizonAnnounced; // diagnostic only; no persisted state
     bool _pedestrianCrossingsChecked;
+    // PR57 #224: opt-in, observational classification of the actual citizen loop.
+    // No state is skipped; category is captured BEFORE the canonical actor body.
+    static readonly bool Pr57CitizenStateCostEnabled =
+        Environment.GetEnvironmentVariable("PR57_224_CITIZEN_STATE_COST") == "1";
+    readonly long[] _pr57CitizenStateCalls = new long[4];
+    readonly long[] _pr57CitizenStateTicks = new long[4];
+    long _pr57CitizenSetupTicks, _pr57CitizenLoopTicks;
+    public IEnumerable<string> Pr57CitizenStateCostReport()
+    {
+        if (!Pr57CitizenStateCostEnabled) yield break;
+        string[] names = ["aboard", "walking", "stationary-due", "stationary-not-due"];
+        var hz = (double)System.Diagnostics.Stopwatch.Frequency;
+        var total = _pr57CitizenStateTicks.Sum();
+        yield return $"PR57_224_CITIZEN_SUM setupMs={_pr57CitizenSetupTicks * 1000 / hz:F4} loopMs={_pr57CitizenLoopTicks * 1000 / hz:F4} actorMs={total * 1000 / hz:F4} scope=INTRUSIVE_ALL_ACTORS_NO_SKIP";
+        for (var i = 0; i < names.Length; i++)
+            yield return $"PR57_224_CITIZEN_STATE name={names[i]} calls={_pr57CitizenStateCalls[i]} actorMs={_pr57CitizenStateTicks[i] * 1000 / hz:F4} actorShare={(total == 0 ? 0 : 100.0 * _pr57CitizenStateTicks[i] / total):F3}";
+    }
     bool ShiftActive(Citizen c)=>BuildingById(c.WorkplaceId) is {} b&&ShiftActiveIn(c,b);
     bool ShiftActiveIn(Citizen c,Building b)
     {
@@ -93,6 +110,8 @@ public sealed partial class CitySimulation
     }
     void MoveCitizens(double dt)
     {
+        var pr57StateCost = CostProfile is not null && Pr57CitizenStateCostEnabled;
+        var pr57SetupStart = pr57StateCost ? System.Diagnostics.Stopwatch.GetTimestamp() : 0L;
         if(!Pr57CitizenAgendaEnabled&&!_pr57AgendaAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1"){Console.WriteLine("PR57_CITIZEN_AGENDA active=False");_pr57AgendaAnnounced=true;}
         // Refresh derived crossings once for an old save before retrying routes.
         // Loading itself still preserves the serialized state exactly.
@@ -104,7 +123,13 @@ public sealed partial class CitySimulation
             Console.WriteLine($"PR57_PEDESTRIAN_GRID active={_pr57PedestrianGridActive} citizens={State.Citizens.Count} cellMetres=8");
             _pr57PedestrianGridAnnounced=true;
         }
+        if (pr57StateCost) _pr57CitizenSetupTicks += System.Diagnostics.Stopwatch.GetTimestamp() - pr57SetupStart;
+        var pr57LoopStart = pr57StateCost ? System.Diagnostics.Stopwatch.GetTimestamp() : 0L;
         foreach(var c in Pr57CitizenAgendaEnabled?Pr57CitizenAgendaCandidates():Pr57LiveCitizens()){
+            var pr57StateClass = pr57StateCost
+                ? (c.VehicleId is not null ? 0 : c.Moving ? 1 : State.ElapsedSeconds >= c.NextDecisionAt ? 2 : 3)
+                : -1;
+            var pr57ActorStart = pr57StateCost ? System.Diagnostics.Stopwatch.GetTimestamp() : 0L;
             try{
             if(!c.Moving&&c.PathRoadRevision!=State.RoadRevision&&(c.Activity.StartsWith("Sem rota",StringComparison.Ordinal)||c.Activity=="Viagem interrompida: rota removida"))c.NextDecisionAt=Math.Min(c.NextDecisionAt,State.ElapsedSeconds);
             if(c.ConstructionProjectId!=null&&ShiftActive(c)){c.AddWorkSecondsToday(dt);AccrueWage(c,dt);}
@@ -138,8 +163,17 @@ public sealed partial class CitySimulation
             }
             if(State.ElapsedSeconds<c.NextDecisionAt)continue;c.NextDecisionAt=State.ElapsedSeconds+60;
             CitizenRoutine(c);
-            }finally{if(_pr57PedestrianGridActive)Pr57UpdatePedestrianGrid(c);Pr57CitizenAgendaSchedule(c);}
+            }finally{
+                if(_pr57PedestrianGridActive)Pr57UpdatePedestrianGrid(c);
+                Pr57CitizenAgendaSchedule(c);
+                if (pr57StateCost)
+                {
+                    _pr57CitizenStateCalls[pr57StateClass]++;
+                    _pr57CitizenStateTicks[pr57StateClass] += System.Diagnostics.Stopwatch.GetTimestamp() - pr57ActorStart;
+                }
+            }
         }
+        if (pr57StateCost) _pr57CitizenLoopTicks += System.Diagnostics.Stopwatch.GetTimestamp() - pr57LoopStart;
     }
     // Crosswalk nodes in State.Roads order. Rebuilt at the start of every
     // MoveCitizens call and whenever the road list or crossings change.
