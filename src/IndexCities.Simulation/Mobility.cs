@@ -322,6 +322,7 @@ public sealed partial class CitySimulation
     {
         Pr57PrepareSiteOwnerRoster();
         Pr57CausalBeginSlice(dt,operationsDt);
+        Pr57JunctionCensusBeginSlice(dt,operationsDt);
         var scanProfile=CostProfile;
         var pr57CostProbe=scanProfile is not null&&Pr57VehicleCostProbeEnabled;
         var pr57LimiterProbe=scanProfile is not null&&Pr57QueueLimiterEnabled&&dt>0&&_pr57MovementAllocCalls%37==0;
@@ -991,7 +992,7 @@ public sealed partial class CitySimulation
                         var pr57AdmissionStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
                         if(scanProfile is not null)_pr57JunctionCalls[0]++;
                         var pr57JunctionHotStart=Pr57HotTiming&&scanProfile is not null?System.Diagnostics.Stopwatch.GetTimestamp():0L;
-                        try{Pr57CausalJunction(v,node);junctionAllowed=MayEnterJunction(v,node);}
+                        try{Pr57CausalJunction(v,node);Pr57JunctionCensusObserve(v,node);junctionAllowed=MayEnterJunction(v,node);}
                         finally{
                             if(pr57JunctionHotStart!=0){_pr57DirectMovementTicks[3]+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57JunctionHotStart;_pr57DirectMovementCalls[3]++;}
                             if(scanProfile is not null)_pr57JunctionAllocBytes[0]+=GC.GetAllocatedBytesForCurrentThread()-pr57AdmissionStart;
@@ -1087,6 +1088,7 @@ public sealed partial class CitySimulation
         // A towed vehicle moves only with its tow (platform or trailing a heavy tow).
         SyncTowedVehicles();
         Pr57CausalEndSlice();
+        Pr57JunctionCensusEndSlice();
         if(Pr57MutationAuditEnabled&&scanProfile is not null)Pr57MutationAfterSync();
         if(Pr57LaneReadWriteEnabled&&scanProfile is not null)Pr57LaneReadEndSlice();
         if(pr57DepProbe)Pr57DepEndSlice();
@@ -1224,6 +1226,7 @@ public sealed partial class CitySimulation
         // forever to a truck that is itself waiting for the road to clear.
         if(junction.Neighbours.Count<3)return true;
         var horizontal=Math.Abs(Math.Sin(v.Heading))>.7;
+        Pr57JunctionCensusSignalReached(v,junction);
         if(junction.Control==JunctionControl.Signal&&((VehicleMovementTime%60<30)!=horizontal))return false;
         // A vehicle already admitted to shared pavement must be able to leave
         // it before another occupant/approach takes the same physical space.
