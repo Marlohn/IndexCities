@@ -53,6 +53,9 @@ void Save(int index)
     Console.WriteLine($"PR57_186_CHECKPOINT step={index} sha256={hash} bytes={Encoding.UTF8.GetByteCount(json)} parity=SAVE_LOAD_INVARIANTS");
 }
 Save(0);
+previousTicks = Stopwatch.GetTimestamp();
+previousCpu = process.TotalProcessorTime;
+previousBytes = GC.GetTotalAllocatedBytes(true);
 for (var step = 1; step <= 200; step++)
 {
     sim.Advance(2);
@@ -106,6 +109,9 @@ for (var step = 1; step <= 200; step++)
     previousHistory = history;
     previousSlices = profile.VehicleSlices;
     if (step % 50 == 0) Save(step);
+    previousTicks = Stopwatch.GetTimestamp();
+    previousCpu = process.TotalProcessorTime;
+    previousBytes = GC.GetTotalAllocatedBytes(true);
 }
 if (sim.State.Now != initialNow.AddSeconds(400) ||
     sim.State.ElapsedSecondsUnits != initialUnits + 400_000_000L ||
