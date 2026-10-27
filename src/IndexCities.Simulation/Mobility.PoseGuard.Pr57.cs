@@ -65,9 +65,10 @@ public sealed partial class CitySimulation
 
     // Called only after the original ID, status and distance short-circuits.
     // Returning true preserves the original predicate; this is not a blocker count.
-    bool Pr57PoseGuardCandidateReached()
+    bool Pr57PoseGuardCandidateReached(Vehicle other)
     {
         if (_pr57PoseActive) _pr57PoseCandidates++;
+        Pr57ExecPoseCandidate(other); // #220: bounded read-only fingerprint
         return true;
     }
 
@@ -119,7 +120,7 @@ public sealed partial class CitySimulation
             if (_pr57PoseActive) _pr57PoseLoopVisits++;
             if (o.Id == v.Id || o.Status == VehicleStatus.Outside ||
                 !(o.Position.Distance(v.Position) < 12)) continue;
-            Pr57PoseGuardCandidateReached();
+            Pr57PoseGuardCandidateReached(o);
             if (_pr57PoseActive) _pr57PoseLoopNear++;
             if (Pr57PoseStreetBody(o))
             {
