@@ -61,8 +61,9 @@ public sealed class TowingTests
         Assert.DoesNotContain(sim.State.Vehicles,v=>v.Body is TruckBody.Tow or TruckBody.TowHeavy);
         Assert.Null(scene.Car.TowTruckId);
 
-        // The same public host cadence as production; no synthetic money or
-        // supplies, no direct helper invocation, no change to the rules.
+        // Real public host cadence and existing economic transfers, but this
+        // is a synthetic test city with seeded stock, not a sustainability run.
+        // No direct helper invocation and no change to production rules.
         sim.Advance(2);
         sim.Advance(2);
 
