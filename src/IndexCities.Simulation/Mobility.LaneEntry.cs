@@ -95,6 +95,9 @@ public sealed partial class CitySimulation
         public double MinSlice=double.PositiveInfinity,MaxSlice;
     }
     // Observational slice-delta census for the authentic blocked checkpoint only.
+    // #187: observational partial net-state census, never a causal independence proof.
+    static readonly bool Pr57SliceWorksetEnabled=Environment.GetEnvironmentVariable("PR57_187_SLICE_WORKSET")=="1";
+    long _pr57_187MotionAttempts;
     long _pr57TraceSlices,_pr57TraceMovedSlices,_pr57TraceVehicleMoves,_pr57TraceRouteChanges,_pr57TraceStatusChanges,_pr57TraceClaimChanges;
     readonly Dictionary<long,LaneSliceHour> _laneSliceHours=new();
     long _lastLaneSliceHourPrinted=-1;
@@ -296,6 +299,10 @@ public sealed partial class CitySimulation
             return;
         }
         if(profile is not null)profile.VehicleBatchedSteps++;
+        var pr57Workset=Pr57SliceWorksetEnabled&&profile is not null;
+        long worksetSlices=0,worksetCandidates=0,worksetAttempts=0,worksetPartialChanged=0;
+        long worksetMoved=0,worksetCauseChanged=0,worksetWaitingChanged=0,worksetClaimChanged=0;
+        long worksetOtherChanged=0,worksetNewVehicles=0,worksetProbeTicks=0,worksetMovementTicks=0;
         _vehicleMovementBatch=[];_vehicleMovementOffset=0;
         try{
             // Driver wages, loading timers, replanning and boarding transitions
@@ -329,10 +336,48 @@ public sealed partial class CitySimulation
                 var slice=Pr57StrandedGraphEnabled?Pr57NextMovementEvent(remaining):NextVehicleMovementEvent(remaining);
                 // PR57-only: compare actual physical state across each predicted boundary.
                 // This is not an event journal: transitions that reverse inside a slice are not visible.
+                var worksetProbeStart=pr57Workset?System.Diagnostics.Stopwatch.GetTimestamp():0L;
+                // Selected fields only; unchanged net state is NOT safe to skip.
+                var worksetBefore=pr57Workset?State.Vehicles.ToDictionary(v=>v.Id,v=>(
+                    v.Position,v.Heading,v.RouteIndex,v.Status,v.IntersectionClaim,
+                    v.WaitingSince,v.Cause,v.FuelUnits,RouteCount:v.Route.Count,
+                    SpaceCount:v.ManoeuvreSpaces.Count,DetourCount:v.Detour.Count,
+                    Eligible:_vehicleMovementBatch!.Contains(v.Id)&&v.Status==VehicleStatus.Travelling)):null;
+                if(worksetBefore is not null){
+                    worksetCandidates+=worksetBefore.Values.Count(p=>p.Eligible);
+                    worksetProbeTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-worksetProbeStart;
+                }
+                var worksetAttemptsBefore=_pr57_187MotionAttempts;
                 var traceSlice=profile is not null&&Environment.GetEnvironmentVariable("PR57_TARGET_BLOCK_TRACE")=="1";
                 var traceBefore=traceSlice?State.Vehicles.ToDictionary(v=>v.Id,v=>(v.Position,v.Heading,v.RouteIndex,v.Status,v.IntersectionClaim)):null;
                 if(profile is not null)profile.MarkVehicle(2,ref started);
+                var worksetMoveStart=pr57Workset?System.Diagnostics.Stopwatch.GetTimestamp():0L;
                 MoveVehiclesUnsplit(slice);
+                if(worksetBefore is not null){
+                    worksetMovementTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-worksetMoveStart;
+                    worksetProbeStart=System.Diagnostics.Stopwatch.GetTimestamp();
+                    worksetSlices++;
+                    worksetAttempts+=_pr57_187MotionAttempts-worksetAttemptsBefore;
+                    foreach(var v in State.Vehicles){
+                        if(!worksetBefore.TryGetValue(v.Id,out var prior)){worksetNewVehicles++;continue;}
+                        var moved=!v.Position.Equals(prior.Position);
+                        var causeChanged=v.Cause!=prior.Cause;
+                        var waitingChanged=v.WaitingSince!=prior.WaitingSince;
+                        var claimChanged=v.IntersectionClaim!=prior.IntersectionClaim;
+                        var changed=moved||v.Heading!=prior.Heading||v.RouteIndex!=prior.RouteIndex||
+                            v.Status!=prior.Status||claimChanged||waitingChanged||causeChanged||
+                            v.FuelUnits!=prior.FuelUnits||v.Route.Count!=prior.RouteCount||
+                            v.ManoeuvreSpaces.Count!=prior.SpaceCount||v.Detour.Count!=prior.DetourCount;
+                        if(prior.Eligible){
+                            if(changed)worksetPartialChanged++;
+                            if(moved)worksetMoved++;
+                            if(causeChanged)worksetCauseChanged++;
+                            if(waitingChanged)worksetWaitingChanged++;
+                            if(claimChanged)worksetClaimChanged++;
+                        }else if(changed)worksetOtherChanged++;
+                    }
+                    worksetProbeTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-worksetProbeStart;
+                }
                 if(traceBefore is not null){
                     int moved=0,heading=0,route=0,status=0,claim=0;
                     foreach(var vehicle in State.Vehicles){
@@ -353,6 +398,8 @@ public sealed partial class CitySimulation
                 _vehicleMovementOffset+=slice;
             }
         }finally{_laneObservedWinner=null;_vehicleMovementBatch=null;_entryFrame=null;_entryFrameBuffer.Clear();_entrySnapshotReuse.Clear();_vehicleMovementClock=null;_vehicleMovementOffset=0;_pr57VehicleBvh=null;}
+        if(pr57Workset)
+            Console.WriteLine($"PR57_187_BATCH time={State.ElapsedSeconds:F3} slices={worksetSlices} initialEligible={worksetCandidates} actualAttempts={worksetAttempts} partialChanged={worksetPartialChanged} moved={worksetMoved} causeChanged={worksetCauseChanged} waitingChanged={worksetWaitingChanged} claimChanged={worksetClaimChanged} otherChanged={worksetOtherChanged} newVehicles={worksetNewVehicles} observerMs={worksetProbeTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F3} movementMs={worksetMovementTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F3} scope=INTRUSIVE_PARTIAL_NET_STATE_NOT_CAUSAL_INDEPENDENCE");
         if(profile is not null&&Environment.GetEnvironmentVariable("PR57_TARGET_BLOCK_TRACE")=="1"){
             var targets=string.Join(";",State.Vehicles.Where(v=>v.Id is 1107 or 487 or 1174).OrderBy(v=>v.Id).Select(v=>$"{v.Id}:{v.Position.X:F6}:{v.Position.Z:F6}:{v.RouteIndex}:{v.Status}:{v.WaitingSince:F3}"));
             Console.WriteLine($"PR57_TRACE_OUTER end={State.ElapsedSeconds+dt:F3} slices={_pr57TraceSlices} movedSlices={_pr57TraceMovedSlices} vehicleMoves={_pr57TraceVehicleMoves} routeChanges={_pr57TraceRouteChanges} statusChanges={_pr57TraceStatusChanges} claimChanges={_pr57TraceClaimChanges} targets={targets}");

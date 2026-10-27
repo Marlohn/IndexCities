@@ -636,6 +636,10 @@ public sealed partial class CitySimulation
                 if(v.Route.Count==0||v.Route.Any(id=>!_roads.ContainsKey(id))){v.Status=VehicleStatus.Waiting;v.Cause="Rota interrompida; aguarda ligação viária";continue;}
                 _vehicleMovementBatch?.Add(v.Id);
             }else if(!_vehicleMovementBatch.Contains(v.Id)||v.Status!=VehicleStatus.Travelling)continue;
+            // #187: count actual physical candidates after the existing eligibility guard.
+            if(Pr57SliceWorksetEnabled&&scanProfile is not null&&dt>0&&
+               _vehicleMovementBatch is not null&&operationsDt is null)
+                _pr57_187MotionAttempts++;
             var remaining=dt;
             while(remaining>.000001&&v.Status==VehicleStatus.Travelling){
                 if(pr57IdleProbe)Pr57BlockMarkStage(1);
