@@ -263,8 +263,8 @@ public sealed partial class CitySimulation
             if(reserved.Any(pose=>pose.Position.Distance(at)<12&&BodiesOverlap(vehicle,at,vehicle.Heading,pose.Machine,pose.Position,pose.Heading)))break;
             safe=next;
         }
-        if(Pr57SafeSiteBufferEnabled)_pr57SafeSiteReservationScratch.Clear();
         Pr57S5SiteObserve(vehicle,distance,safe,machinesOnly,reserved.Count,siteOwners.Count);
+        if(Pr57SafeSiteBufferEnabled)_pr57SafeSiteReservationScratch.Clear();
         return safe;
     }
 
