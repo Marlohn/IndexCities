@@ -22,7 +22,7 @@ public sealed partial class CitySimulation
         MachinePhase Machine, bool BrokenDown);
 
     readonly record struct Pr57ExecPrior(
-        Pr57ExecProjection Before, Pr57ExecProjection After, ulong Path);
+        Pr57ExecProjection Before, Pr57ExecProjection After, ulong Path, ulong PoseHash, long PoseReads);
 
     readonly Dictionary<int, Pr57ExecPrior> _pr57ExecPrevious = new();
     readonly Dictionary<int, Pr57ExecPrior> _pr57ExecCurrent = new();
@@ -47,6 +47,47 @@ public sealed partial class CitySimulation
     readonly long[] _pr57ExecRepeatedStageTicks = new long[9];
     readonly long[] _pr57ExecRepeatedStageBytes = new long[9];
     long _pr57ExecRepeatedFullCount;
+    // #220: bounded fingerprint of actual near-body inputs read by the s6
+    // pose guard. This is NOT a complete dependency signature: other systems,
+    // shipments, route list contents, time and transient writes are omitted.
+    static readonly bool Pr57PoseReadSetEnabled =
+        Environment.GetEnvironmentVariable("PR57_220_POSE_READSET") == "1";
+    ulong _pr57ExecPoseHash;
+    long _pr57ExecPoseReads;
+    string? _pr57ExecCauseBefore;
+    long _pr57PoseRepeated, _pr57PoseSame, _pr57PoseChanged, _pr57PoseZero;
+    long _pr57PoseReadVisits, _pr57PoseSameS6Ticks, _pr57PoseChangedS6Ticks;
+    long _pr57PoseCauseValueChanged, _pr57PoseCauseReferenceReplaced;
+
+    static ulong Pr57PoseMix(ulong hash, long value) =>
+        unchecked((hash ^ (ulong)value) * 1099511628211UL);
+
+    // Called only AFTER the original ID/status/distance gates. Hashing follows
+    // the actual iteration order, not a reconstructed candidate list.
+    void Pr57ExecPoseCandidate(Vehicle other)
+    {
+        if (!Pr57PoseReadSetEnabled || !_pr57ExecVehicleActive) return;
+        var h = _pr57ExecPoseHash;
+        h = Pr57PoseMix(h, other.Id);
+        h = Pr57PoseMix(h, (int)other.Status);
+        h = Pr57PoseMix(h, (int)other.Machine);
+        h = Pr57PoseMix(h, BitConverter.DoubleToInt64Bits(other.Position.X));
+        h = Pr57PoseMix(h, BitConverter.DoubleToInt64Bits(other.Position.Z));
+        h = Pr57PoseMix(h, BitConverter.DoubleToInt64Bits(other.Heading));
+        h = Pr57PoseMix(h, other.RouteIndex);
+        h = Pr57PoseMix(h, other.Route.Count);
+        h = Pr57PoseMix(h, other.SitePathIndex);
+        h = Pr57PoseMix(h, other.SitePath.Count);
+        h = Pr57PoseMix(h, other.ShipmentId ?? -1);
+        h = Pr57PoseMix(h, other.IntersectionClaim ?? -1);
+        h = Pr57PoseMix(h, other.ManoeuvreSpaces.Count);
+        h = Pr57PoseMix(h, other.DockCorridor.Count);
+        h = Pr57PoseMix(h, other.MovementAdmission == null ? 0 : 1);
+        h = Pr57PoseMix(h, other.BrokenDown ? 1 : 0);
+        h = Pr57PoseMix(h, BitConverter.DoubleToInt64Bits(other.WaitingSince));
+        _pr57ExecPoseHash = h;
+        _pr57ExecPoseReads++;
+    }
 
     static Pr57ExecProjection Pr57ExecSnapshot(Vehicle v) => new(
         v.Status, v.Position, BitConverter.DoubleToInt64Bits(v.Heading),
@@ -77,6 +118,12 @@ public sealed partial class CitySimulation
             Array.Clear(_pr57ExecRepeatedStageBytes);
             _pr57ExecRepeatedFullCount = 0;
         }
+        if (Pr57PoseReadSetEnabled)
+        {
+            _pr57PoseRepeated = _pr57PoseSame = _pr57PoseChanged = _pr57PoseZero = 0;
+            _pr57PoseReadVisits = _pr57PoseSameS6Ticks = _pr57PoseChangedS6Ticks = 0;
+            _pr57PoseCauseValueChanged = _pr57PoseCauseReferenceReplaced = 0;
+        }
     }
 
     void Pr57ExecBeginVehicle(Vehicle v)
@@ -84,6 +131,12 @@ public sealed partial class CitySimulation
         if (!_pr57ExecActive) return;
         _pr57ExecVehicleActive = true;
         _pr57ExecBefore = Pr57ExecSnapshot(v);
+        if (Pr57PoseReadSetEnabled)
+        {
+            _pr57ExecPoseHash = 14695981039346656037UL;
+            _pr57ExecPoseReads = 0;
+            _pr57ExecCauseBefore = v.Cause;
+        }
         _pr57ExecPath = 14695981039346656037UL; // deterministic FNV-style stage sequence
         _pr57ExecMask = 0;
         if (Pr57StageCostEnabled)
@@ -141,6 +194,31 @@ public sealed partial class CitySimulation
                 if (full)
                 {
                     _pr57ExecFullSameBefore++;
+                    if (Pr57PoseReadSetEnabled)
+                    {
+                        _pr57PoseRepeated++;
+                        _pr57PoseReadVisits += _pr57ExecPoseReads;
+                        if (_pr57ExecPoseReads == 0) _pr57PoseZero++;
+                        var samePose = previous.PoseReads == _pr57ExecPoseReads &&
+                                       previous.PoseHash == _pr57ExecPoseHash;
+                        if (samePose)
+                        {
+                            _pr57PoseSame++;
+                            if (Pr57StageCostEnabled)
+                                _pr57PoseSameS6Ticks += _pr57ExecVehicleStageTicks[6];
+                        }
+                        else
+                        {
+                            _pr57PoseChanged++;
+                            if (Pr57StageCostEnabled)
+                                _pr57PoseChangedS6Ticks += _pr57ExecVehicleStageTicks[6];
+                        }
+                        if (!string.Equals(_pr57ExecCauseBefore, v.Cause,
+                                           StringComparison.Ordinal))
+                            _pr57PoseCauseValueChanged++;
+                        if (!ReferenceEquals(_pr57ExecCauseBefore, v.Cause))
+                            _pr57PoseCauseReferenceReplaced++;
+                    }
                     if (Pr57StageCostEnabled)
                     {
                         _pr57ExecRepeatedFullCount++;
@@ -154,7 +232,8 @@ public sealed partial class CitySimulation
                 if (previous.After == after) _pr57ExecSamePathBeforeAfter++;
             }
         }
-        _pr57ExecCurrent[v.Id] = new(_pr57ExecBefore, after, _pr57ExecPath);
+        _pr57ExecCurrent[v.Id] = new(_pr57ExecBefore, after, _pr57ExecPath,
+            _pr57ExecPoseHash, _pr57ExecPoseReads);
     }
 
     void Pr57ExecEndSlice()
@@ -192,6 +271,18 @@ public sealed partial class CitySimulation
                 "remainingStagesNotScanFree=True externalInvalidatorsNotClosed=True " +
                 "observational=True intrusive=True");
         }
+        if (Pr57PoseReadSetEnabled)
+            Console.WriteLine(
+                $"PR57_220_POSE_READSET sample={_pr57ExclusiveSamples} eligibleSlice={_pr57ExclusiveEligibleSlices} " +
+                $"repeatedFull={_pr57PoseRepeated} sameReadFingerprint={_pr57PoseSame} " +
+                $"changedReadFingerprint={_pr57PoseChanged} noNearCandidates={_pr57PoseZero} " +
+                $"nearCandidateReads={_pr57PoseReadVisits} sameS6Ms={Ms(_pr57PoseSameS6Ticks)} " +
+                $"changedS6Ms={Ms(_pr57PoseChangedS6Ticks)} " +
+                $"causeValueChanged={_pr57PoseCauseValueChanged} " +
+                $"causeReferenceReplaced={_pr57PoseCauseReferenceReplaced} " +
+                "scope=s6-near-body-only fingerprintNotProof=True " +
+                "shipmentsClockPedestriansSignalsRoutesOmitted=True " +
+                "transientWritesNotTracked=True observational=True intrusive=True");
         _pr57ExecPrevious.Clear();
         foreach (var (id, row) in _pr57ExecCurrent) _pr57ExecPrevious[id] = row;
         _pr57ExecCurrent.Clear();
