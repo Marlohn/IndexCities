@@ -14,6 +14,8 @@ public sealed partial class CitySimulation
         Environment.GetEnvironmentVariable("PR57_208_BODY_SAT_CENSUS") == "1";
     static readonly bool Pr57PoseForeachEnabled =
         Environment.GetEnvironmentVariable("PR57_210_POSE_FOREACH") == "1";
+    static readonly bool Pr57NoCaptureStreetBodyEnabled =
+        Environment.GetEnvironmentVariable("PR57_211_NO_CAPTURE_STREETBODY") == "1";
     static readonly bool Pr57ShipmentReadCensusEnabled =
         Environment.GetEnvironmentVariable("PR57_209_SHIPMENT_READ_CENSUS") == "1";
     [ThreadStatic] static bool _pr57BodySatScope;
@@ -23,6 +25,7 @@ public sealed partial class CitySimulation
     long _pr57ShipmentListTotal, _pr57ShipmentListMax;
     long _pr57PoseLoopVisits, _pr57PoseLoopNear, _pr57PoseLoopStreet;
     long _pr57PoseLoopEntryExcluded, _pr57PoseLoopTurn, _pr57PoseLoopHits;
+    long _pr57StreetBodyReads, _pr57StreetBodyBytes;
 
     long _pr57PoseCalls, _pr57PoseEligible, _pr57PoseCandidates, _pr57PoseHeadingChanges;
     long _pr57PoseTicks, _pr57PoseBytes;
@@ -39,6 +42,7 @@ public sealed partial class CitySimulation
         _pr57ShipmentListTotal = _pr57ShipmentListMax = 0;
         _pr57PoseLoopVisits = _pr57PoseLoopNear = _pr57PoseLoopStreet = 0;
         _pr57PoseLoopEntryExcluded = _pr57PoseLoopTurn = _pr57PoseLoopHits = 0;
+        _pr57StreetBodyReads = _pr57StreetBodyBytes = 0;
         _pr57BodySatScope = false;
         _pr57PoseActive = false;
     }
@@ -81,6 +85,31 @@ public sealed partial class CitySimulation
         _pr57PoseActive = false;
     }
 
+    // #211: distinguish a captured shipment predicate display-class allocation
+    // from real shipment reads. Isolated to the already opt-in #210 pose foreach.
+    // The alternate path preserves the exact original short-circuit order.
+    bool Pr57StreetBodyNoCapture(Vehicle o)
+    {
+        if (o.Machine != PavingMachine.None && o.Status == VehicleStatus.Parked) return true;
+        if (OnSitePath(o)) return true;
+        if (o.Machine != PavingMachine.None || o.Status != VehicleStatus.Unloading ||
+            o.ShipmentId is not {} id) return false;
+        foreach (var shipment in State.Shipments)
+            if (shipment.Id == id && shipment.ReceivingMachineId != null) return true;
+        return false;
+    }
+
+    bool Pr57PoseStreetBody(Vehicle o)
+    {
+        if (!_pr57PoseActive)
+            return Pr57NoCaptureStreetBodyEnabled ? Pr57StreetBodyNoCapture(o) : StreetBody(o);
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var result = Pr57NoCaptureStreetBodyEnabled ? Pr57StreetBodyNoCapture(o) : StreetBody(o);
+        _pr57StreetBodyBytes += GC.GetAllocatedBytesForCurrentThread() - before;
+        _pr57StreetBodyReads++;
+        return result;
+    }
+
     // #210: opt-in structural counterexample to LINQ Any, not a promoted optimization.
     // Preserve candidate order, short circuits and all original geometric decisions.
     bool Pr57PoseGuardForeach(Vehicle v, double approachHeading)
@@ -92,7 +121,7 @@ public sealed partial class CitySimulation
                 !(o.Position.Distance(v.Position) < 12)) continue;
             Pr57PoseGuardCandidateReached();
             if (_pr57PoseActive) _pr57PoseLoopNear++;
-            if (StreetBody(o))
+            if (Pr57PoseStreetBody(o))
             {
                 if (_pr57PoseActive) _pr57PoseLoopStreet++;
                 if (VehicleBodiesOverlap(v, v.Position, o))
@@ -134,6 +163,11 @@ public sealed partial class CitySimulation
                 $"satCalls={_pr57BodySatObserved} geometryCandidates={_pr57PoseCandidates} " +
                 $"guardMB={_pr57PoseBytes / 1e6:F6} " +
                 "scope=s6-pose-guard-BodiesOverlap-only observational=True intrusive=True");
+        if (Pr57PoseForeachEnabled)
+            Console.WriteLine(
+                $"PR57_211_STREETBODY sample={_pr57ExclusiveSamples} calls={_pr57StreetBodyReads} " +
+                $"bytes={_pr57StreetBodyBytes} noCapture={Pr57NoCaptureStreetBodyEnabled} " +
+                "scope=s6-pose-street-body-only observational=True intrusive=True");
         if (Pr57PoseForeachEnabled)
             Console.WriteLine(
                 $"PR57_210_LOOP sample={_pr57ExclusiveSamples} eligibleSlice={_pr57ExclusiveEligibleSlices} " +
