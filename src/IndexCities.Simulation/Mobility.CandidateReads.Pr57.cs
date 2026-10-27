@@ -19,6 +19,7 @@ public sealed partial class CitySimulation
         public int Enumerated;
         public readonly List<(int Id, string State)> Occupiers = new();
         public readonly List<(int Id, string State)> Deep = new();
+        public readonly List<Pr57NegativeRow> Negatives = new();
     }
 
     readonly HashSet<(int Id, int Kind)> _pr57CandidateSelected = new();
@@ -42,6 +43,7 @@ public sealed partial class CitySimulation
         if (!_pr57CandidateSliceActive) return;
         Pr57FieldBeginSlice();
         Pr57FanoutBeginSlice();
+        Pr57NegativeBeginSlice();
         if (_pr57ExclusiveSamples == 1)
         {
             _pr57CandidateSelected.Clear();
@@ -64,6 +66,10 @@ public sealed partial class CitySimulation
         var key = (actor.Id, kind);
         if (_pr57ExclusiveSamples == 1)
         {
+            // #217: deterministic ID-stratified sample avoids the first-48 GRID bias.
+            // It remains a bounded convenience sample, not a random fleet census.
+            if (Pr57NegativeEnabled && State.Vehicles.Count > 300 && (actor.Id & 15) != 0) return;
+            if (Pr57NegativeEnabled && State.Vehicles.Count is > 60 and <= 300 && (actor.Id & 3) != 0) return;
             if (!_pr57CandidateSelected.Contains(key) && _pr57CandidateSelected.Count >= 48)
                 return;
             _pr57CandidateSelected.Add(key);
@@ -87,7 +93,7 @@ public sealed partial class CitySimulation
     // bend: actual bendLeaders after the existing exact filter.
     void Pr57CandidateRead(Vehicle other, int tier)
     {
-        if (_pr57CandidateActive is not { } trace) return;
+        if (_pr57CandidateActive is not { } trace || Pr57NegativeEnabled) return;
         var ticks = System.Diagnostics.Stopwatch.GetTimestamp();
         var bytes = GC.GetAllocatedBytesForCurrentThread();
         var row = (other.Id, Pr57MutationSnapshot(other));
@@ -143,6 +149,7 @@ public sealed partial class CitySimulation
                 Pr57FieldCompare(previous.Deep, now.Deep, 9);
                 Pr57FanoutCompare(key, previous.Occupiers, now.Occupiers, 3);
                 Pr57FanoutCompare(key, previous.Deep, now.Deep, 9);
+                Pr57NegativeCompare(key, previous.Negatives, now.Negatives);
             }
         }
         _pr57CandidateCurrent[key] = now;
@@ -154,6 +161,7 @@ public sealed partial class CitySimulation
         if (!_pr57CandidateSliceActive) return;
         Pr57FieldEndSlice();
         Pr57FanoutEndSlice();
+        Pr57NegativeEndSlice();
         Console.WriteLine(
             $"PR57_214_READS sample={_pr57ExclusiveSamples} eligibleSlice={_pr57ExclusiveEligibleSlices} " +
             $"selected={_pr57CandidateSelected.Count} capturedQueries={_pr57CandidateCaptured} " +
