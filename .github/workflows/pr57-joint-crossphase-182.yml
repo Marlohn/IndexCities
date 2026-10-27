@@ -1,0 +1,116 @@
+name: 'PR57 #182 same-replay joint Amdahl and cross-phase net effects'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-joint-crossphase-182.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  joint-phase-census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build and run full regression suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --no-build --verbosity quiet
+      - name: Restore authentic economy-with-works save
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-growth
+          run-id: 40250545171
+          github-token: ${{ github.token }}
+          path: artifacts/works
+      - name: Restore authentic pre-gridlock save
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-legal-workplaces-8d
+          run-id: 40169101306
+          github-token: ${{ github.token }}
+          path: artifacts/queue
+      - name: Restore artificial GRID checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-host-scale-curve
+          run-id: 40258405557
+          github-token: ${{ github.token }}
+          path: artifacts/grid
+      - name: Measure joint phase burden and net cross-phase effects with full parity
+        shell: bash
+        run: |
+          set -euo pipefail
+          works="$(find artifacts/works -type f -path '*/growth/checkpoint-0.json' -print -quit)"
+          queue="$(find artifacts/queue -type f -path '*/pr57-jobs-20/checkpoint-10.json' -print -quit)"
+          grid="artifacts/grid/grid18-0/checkpoint-1.json"
+          for source in "$works" "$queue" "$grid"; do test -s "$source"; done
+          mkdir -p artifacts/joint-182
+          for case in worksREAL queueREAL gridARTIFICIAL; do
+            source="$works";steps=600
+            if [[ "$case" == queueREAL ]]; then source="$queue";fi
+            if [[ "$case" == gridARTIFICIAL ]]; then source="$grid";steps=150;fi
+            output="$PWD/artifacts/joint-182/$case"
+            mkdir -p "$output"
+            echo "PR57_182_SOURCE case=$case sha256=$(sha256sum "$source" | cut -d' ' -f1) steps=$steps"
+            PR57_181_SOURCE="$PWD/$source" PR57_181_CASE="$case"             PR57_181_STEPS="$steps" PR57_181_OUTPUT="$output"             PR57_SITE_OWNER_ROSTER=1 PR57_BUILDING_WORK_ACCESS=1             PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ORDER_SHIPMENT_INDEX=1             PR57_PROGRESS_SHIPMENT_LOOKUP=1 PR57_SINGLE_CREW_ASSIGNMENT=1             PR57_SAFE_SITE_BUFFER=1               timeout 240s dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj                 -c Release --no-build                 --filter FullyQualifiedName~Pr57MobilityInfrastructureWorksetTests                 --logger 'console;verbosity=detailed' | tee "$output.log"
+            grep -q "PR57_181_RESULT case=$case" "$output.log"
+            grep -q "PR57_182_JOINT case=$case" "$output.log"
+            test "$(grep -c "^PR57_182_PHASE case=$case " "$output.log")" -eq 13
+            test "$(grep -c "^PR57_182_PR57_PHASE_EFFECT name=" "$output.log")" -eq 13
+            grep -q 'PR57_181_PR57_PHASE_EFFECT name=citizen-mobility ' "$output.log"
+            grep -q 'PR57_181_PR57_PHASE_EFFECT name=infrastructure ' "$output.log"
+            test "$(find "$output" -name 'checkpoint-*.json' | wc -l)" -eq 4
+          done
+      - name: Verify complete parity, all 13 phase ticks, and joint Amdahl denominator
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import pathlib,re
+          root=pathlib.Path("artifacts/joint-182")
+          for case,steps in (("worksREAL",600),("queueREAL",600),("gridARTIFICIAL",150)):
+              log=(root/f"{case}.log").read_text()
+              line=next(x for x in log.splitlines() if x.startswith(f"PR57_181_RESULT case={case} "))
+              def value(key):
+                  m=re.search(r"\b"+key+r"=([0-9.]+)",line)
+                  assert m,(case,key,line)
+                  return float(m.group(1))
+              assert value("steps")==steps and value("liveVisits")>0,(case,line)
+              assert abs(value("liveVisits")-(value("movingVisits")+value("inVehicleVisits")+value("dueVisits")+value("waitingVisits")))<.1,(case,line)
+              assert value("allPhaseTicks")>0 and value("activeBuildingVisits")>0,(case,line)
+              assert value("impossibleBothPhaseSpeedup")>=1,(case,line)
+              assert len(list((root/case).glob("checkpoint-*.json")))==4,(case,"checkpoints")
+              assert log.count("parity=FULL_JSON")==3,(case,"parity")
+              joint=next(x for x in log.splitlines() if x.startswith(f"PR57_182_JOINT case={case} "))
+              def jvalue(key):
+                  m=re.search(r"\\b"+key+r"=([0-9.]+)",joint)
+                  assert m,(case,key,joint)
+                  return float(m.group(1))
+              assert jvalue("steps")==steps,(case,joint)
+              assert jvalue("jointTicks")>0 and jvalue("remainingTicks")>0,(case,joint)
+              assert abs(jvalue("totalTicks")-jvalue("jointTicks")-jvalue("remainingTicks"))<1,(case,joint)
+              assert abs(jvalue("jointTicks")-sum(jvalue(k) for k in ("vehicleTicks","constructionTicks","infrastructureTicks","dispatchTicks")))<1,(case,joint)
+              assert jvalue("impossibleJointSpeedup")>=1,(case,joint)
+              phases=[x for x in log.splitlines() if x.startswith(f"PR57_182_PHASE case={case} ")]
+              effects=[x for x in log.splitlines() if x.startswith("PR57_182_PR57_PHASE_EFFECT name=")]
+              assert len(phases)==13 and len(effects)==13,(case,len(phases),len(effects))
+              phase_sum=sum(int(re.search(r"\\bticks=(\\d+)",x).group(1)) for x in phases)
+              assert abs(phase_sum-jvalue("totalTicks"))<1,(case,phase_sum,joint)
+              print("PR57_182_VERIFIED",joint)
+          PY
+      - name: Preserve complete saves and workset observations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-joint-crossphase-182
+          path: artifacts/joint-182/**
+          retention-days: 14
