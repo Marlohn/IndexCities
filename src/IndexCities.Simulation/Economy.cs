@@ -274,6 +274,8 @@ public sealed partial class CitySimulation
     bool _pr57ParallelNeedsAnnounced,_pr57ParallelNeedsEngaged;
     void UpdateNeeds(double dt)
     {
+        var pr57NeedsStepProbe=Pr57NeedsStepProbe;
+        pr57NeedsStepProbe?.BeginStep();
         if(!_pr57NeedsSinglePassAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
         {
             Console.WriteLine($"PR57_NEEDS_SINGLE_PASS active={Pr57NeedsSinglePass}");
@@ -323,6 +325,7 @@ public sealed partial class CitySimulation
                         Personal(c,"Consumiu 1 alimento do estoque físico da residência");
                     }
                     var unmet=home==null?1:(1-home.WaterRatio)*.5+(1-home.ElectricityRatio)*.15+HomePollution(home.Position)*.1;
+                    pr57NeedsStepProbe?.Observe(c,home,unmet,family.Members.Count,family.Pantry);
                     rows.Add((c,unmet,family.Members.Count));
                 }
                 // Only distinct Citizen instances are written in parallel.
@@ -341,6 +344,7 @@ public sealed partial class CitySimulation
                 // Death changes shared wallets, inheritance, buildings, and
                 // histories; commit these in the original citizen order.
                 foreach(var row in rows)if(row.Citizen.Health<=0)CitizenDied(row.Citizen);
+                pr57NeedsStepProbe?.EndStep();
                 if(detail is not null)detail.MarkDetail(7,ref detailStarted);
                 return;
             }
@@ -349,10 +353,12 @@ public sealed partial class CitySimulation
             c.AddHungerSeconds(dt);var family=FamilyById(c.FamilyId)!;var home=BuildingById(family.HomeId);
             if(home!=null&&!c.Moving&&c.VehicleId==null&&c.Position.Distance(home.Door)<3&&c.HungerHours>=12&&family.Pantry>=1){family.AddPantry(-(1));c.HungerMicroseconds=Math.Max(0,checked(c.HungerMicroseconds-12*3600*FixedPoint.TimeScale));Personal(c,"Consumiu 1 alimento do estoque físico da residência");}
             var hungry=c.HungerHours>State.Tuning.HungerDamageAfterHours;var unmet=home==null?1:(1-home.WaterRatio)*.5+(1-home.ElectricityRatio)*.15+HomePollution(home.Position)*.1;
+            pr57NeedsStepProbe?.Observe(c,home,unmet,family.Members.Count,family.Pantry);
             if(hungry)c.AddHealth(-(dt/3600*(c.HungerHours/State.Tuning.HungerDamageAfterHours)));else if(c.HungerHours<18){c.AddHealth(dt/3600*.3);c.HealthUnits=Math.Min(100*FixedPoint.PointScale,c.HealthUnits);}
             c.AddHealth(-unmet*dt/86400);c.HealthUnits=Math.Clamp(c.HealthUnits,0,100*FixedPoint.PointScale);c.Satisfaction=Math.Clamp(80-c.HungerHours*.7-unmet*15-(family.Members.Count>Catalog.Definitions[BuildingKind.House].Capacity?8:0),0,100);
             if(c.Health<=0)CitizenDied(c);
         }
+        pr57NeedsStepProbe?.EndStep();
         if(detail is not null)detail.MarkDetail(7,ref detailStarted);
     }
     void CitizenDied(Citizen c)
