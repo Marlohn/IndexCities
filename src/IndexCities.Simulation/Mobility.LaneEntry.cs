@@ -296,6 +296,7 @@ public sealed partial class CitySimulation
             MoveVehiclesUnsplit(dt);
             if(profile is not null){profile.MarkVehicle(3,ref started);profile.VehicleUnsplitSteps++;PrintCompletedLaneSliceHours(State.ElapsedSeconds+dt);}
             _pr57VehicleBvh=null; // never persist a spatial index across public Advance(2)
+            Pr57JunctionCensusReportIfReady(State.ElapsedSeconds+dt);
             return;
         }
         if(profile is not null)profile.VehicleBatchedSteps++;
@@ -405,6 +406,7 @@ public sealed partial class CitySimulation
             Console.WriteLine($"PR57_TRACE_OUTER end={State.ElapsedSeconds+dt:F3} slices={_pr57TraceSlices} movedSlices={_pr57TraceMovedSlices} vehicleMoves={_pr57TraceVehicleMoves} routeChanges={_pr57TraceRouteChanges} statusChanges={_pr57TraceStatusChanges} claimChanges={_pr57TraceClaimChanges} targets={targets}");
         }
         if(profile is not null)PrintCompletedLaneSliceHours(State.ElapsedSeconds+dt);
+        Pr57JunctionCensusReportIfReady(State.ElapsedSeconds+dt);
     }
     Point ProjectedVelocity(Vehicle v,HashSet<int>? held)
     {
