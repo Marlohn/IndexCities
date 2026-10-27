@@ -12,9 +12,13 @@ public sealed partial class CitySimulation
     // Thread-local scope follows the synchronous predicate; no decision is cached.
     static readonly bool Pr57BodySatCensusEnabled =
         Environment.GetEnvironmentVariable("PR57_208_BODY_SAT_CENSUS") == "1";
+    static readonly bool Pr57ShipmentReadCensusEnabled =
+        Environment.GetEnvironmentVariable("PR57_209_SHIPMENT_READ_CENSUS") == "1";
     [ThreadStatic] static bool _pr57BodySatScope;
     [ThreadStatic] static long _pr57BodySatCalls;
     long _pr57BodySatObserved;
+    long _pr57ShipmentLookups, _pr57ShipmentVisits, _pr57ShipmentMatches;
+    long _pr57ShipmentListTotal, _pr57ShipmentListMax;
 
     long _pr57PoseCalls, _pr57PoseEligible, _pr57PoseCandidates, _pr57PoseHeadingChanges;
     long _pr57PoseTicks, _pr57PoseBytes;
@@ -27,6 +31,8 @@ public sealed partial class CitySimulation
         _pr57PoseCalls = _pr57PoseEligible = _pr57PoseCandidates = _pr57PoseHeadingChanges = 0;
         _pr57PoseTicks = _pr57PoseBytes = 0;
         _pr57BodySatObserved = 0;
+        _pr57ShipmentLookups = _pr57ShipmentVisits = _pr57ShipmentMatches = 0;
+        _pr57ShipmentListTotal = _pr57ShipmentListMax = 0;
         _pr57BodySatScope = false;
         _pr57PoseActive = false;
     }
@@ -40,7 +46,7 @@ public sealed partial class CitySimulation
         _pr57PoseOldHeading = vehicle.Heading;
         _pr57PoseStartTicks = System.Diagnostics.Stopwatch.GetTimestamp();
         _pr57PoseStartBytes = GC.GetAllocatedBytesForCurrentThread();
-        if (Pr57BodySatCensusEnabled)
+        if (Pr57BodySatCensusEnabled || Pr57ShipmentReadCensusEnabled)
         {
             _pr57BodySatCalls = 0;
             _pr57BodySatScope = true;
@@ -60,7 +66,7 @@ public sealed partial class CitySimulation
         if (!_pr57PoseActive) return;
         _pr57PoseTicks += System.Diagnostics.Stopwatch.GetTimestamp() - _pr57PoseStartTicks;
         _pr57PoseBytes += GC.GetAllocatedBytesForCurrentThread() - _pr57PoseStartBytes;
-        if (Pr57BodySatCensusEnabled)
+        if (Pr57BodySatCensusEnabled || Pr57ShipmentReadCensusEnabled)
         {
             _pr57BodySatObserved += _pr57BodySatCalls;
             _pr57BodySatScope = false;
@@ -84,5 +90,12 @@ public sealed partial class CitySimulation
                 $"satCalls={_pr57BodySatObserved} geometryCandidates={_pr57PoseCandidates} " +
                 $"guardMB={_pr57PoseBytes / 1e6:F6} " +
                 "scope=s6-pose-guard-BodiesOverlap-only observational=True intrusive=True");
+        if (Pr57ShipmentReadCensusEnabled)
+            Console.WriteLine(
+                $"PR57_209_SHIPMENTS sample={_pr57ExclusiveSamples} eligibleSlice={_pr57ExclusiveEligibleSlices} " +
+                $"lookups={_pr57ShipmentLookups} visits={_pr57ShipmentVisits} matches={_pr57ShipmentMatches} " +
+                $"listTotal={_pr57ShipmentListTotal} listMax={_pr57ShipmentListMax} " +
+                $"geometryCandidates={_pr57PoseCandidates} guardMB={_pr57PoseBytes / 1e6:F6} " +
+                "scope=s6-pose-guard-shipment-Any-only observational=True intrusive=True");
     }
 }
