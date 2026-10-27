@@ -201,7 +201,7 @@ public sealed partial class CitySimulation
 
     double SafeSiteTravel(Vehicle vehicle,Point target,double distance,bool machinesOnly=false)
     {
-        if(Pr57ZeroSiteSkip&&distance==0)return 0;
+        if(Pr57ZeroSiteSkip&&distance==0){Pr57S5SiteObserve(vehicle,distance,0,machinesOnly,0,0);return 0;}
         // List<T>.Enumerator detects same-count replacements, reversals and
         // remove/add pairs: Count alone cannot protect an in-slice roster.
         // This is O(1) per query, with the original scan as the fallback.
@@ -256,7 +256,7 @@ public sealed partial class CitySimulation
                     !(t.Position.Distance(State.Entry)<8&&vehicle.Position.Distance(State.Entry)<8))
                 .Select(t=>(t,t.Position,t.Heading)));
         }
-        if(machinesOnly&&reserved.Count==0&&!siteOwners.Any(other=>other.Machine!=PavingMachine.None&&other.Status!=VehicleStatus.Outside&&other.Position.Distance(vehicle.Position)<=distance+12))return distance;
+        if(machinesOnly&&reserved.Count==0&&!siteOwners.Any(other=>other.Machine!=PavingMachine.None&&other.Status!=VehicleStatus.Outside&&other.Position.Distance(vehicle.Position)<=distance+12)){Pr57S5SiteObserve(vehicle,distance,distance,machinesOnly,reserved.Count,siteOwners.Count);return distance;}
         var safe=0.0;
         while(safe<distance-.000001){var next=Math.Min(distance,safe+.5);var at=vehicle.Position.MoveTowards(target,next);
             if((machinesOnly?siteOwners:State.Vehicles).Any(other=>other.Id!=vehicle.Id&&other.Status!=VehicleStatus.Outside&&(!machinesOnly||other.Machine!=PavingMachine.None&&(other.Status==VehicleStatus.Parked||!(other.Position.Distance(State.Entry)<8&&vehicle.Position.Distance(State.Entry)<8)))&&other.Position.Distance(at)<12&&VehicleBodiesOverlap(vehicle,at,other)))break;
@@ -264,6 +264,7 @@ public sealed partial class CitySimulation
             safe=next;
         }
         if(Pr57SafeSiteBufferEnabled)_pr57SafeSiteReservationScratch.Clear();
+        Pr57S5SiteObserve(vehicle,distance,safe,machinesOnly,reserved.Count,siteOwners.Count);
         return safe;
     }
 
