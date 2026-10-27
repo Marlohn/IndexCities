@@ -46,8 +46,10 @@ void Save(int index)
         "parity=SAVE_LOAD_INVARIANTS");
 }
 Save(0);
-var allocatedBefore = GC.GetTotalAllocatedBytes(true);
-var cpuBefore = process.TotalProcessorTime;
+var allocationStart = GC.GetTotalAllocatedBytes(true);
+var cpuStart = process.TotalProcessorTime;
+long allocated = 0;
+double cpuMs = 0;
 var timer = Stopwatch.StartNew();
 for (var step = 1; step <= steps; step++)
 {
@@ -55,13 +57,17 @@ for (var step = 1; step <= steps; step++)
     if (step == steps / 2)
     {
         timer.Stop();
+        allocated += GC.GetTotalAllocatedBytes(true) - allocationStart;
+        cpuMs += (process.TotalProcessorTime - cpuStart).TotalMilliseconds;
         Save(1);
+        allocationStart = GC.GetTotalAllocatedBytes(true);
+        cpuStart = process.TotalProcessorTime;
         timer.Start();
     }
 }
 timer.Stop();
-var allocated = GC.GetTotalAllocatedBytes(true) - allocatedBefore;
-var cpuMs = (process.TotalProcessorTime - cpuBefore).TotalMilliseconds;
+allocated += GC.GetTotalAllocatedBytes(true) - allocationStart;
+cpuMs += (process.TotalProcessorTime - cpuStart).TotalMilliseconds;
 Save(2);
 if (sim.State.Now != initialNow.AddSeconds(steps * 2)
     || sim.State.ElapsedSecondsUnits != initialUnits + steps * 2_000_000L
