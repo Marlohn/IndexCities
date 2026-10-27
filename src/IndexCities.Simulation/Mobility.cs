@@ -68,6 +68,27 @@ public sealed partial class CitySimulation
         for (var i=0;i<names.Length;i++)
             yield return $"PR57_239_CITIZEN name={names[i]} calls={_pr57Citizen239Calls[i]} ms={_pr57Citizen239Ticks[i]*1000/hz:F5} scope=INTRUSIVE_OBSERVATIONAL";
     }
+    // PR57 #240: observational walking-physics cost split; never read by gameplay.
+    static readonly bool Pr57Walk240Enabled =
+        Environment.GetEnvironmentVariable("PR57_240_WALK_SPLIT") == "1";
+    readonly long[] _pr57Walk240Ticks = new long[4];
+    readonly long[] _pr57Walk240Calls = new long[4];
+    long _pr57Walk240Visits, _pr57Walk240Segments, _pr57Walk240Replans;
+    long _pr57Walk240CrosswalkCandidates, _pr57Walk240CitizenCandidates, _pr57Walk240VehicleCandidates;
+    void Pr57Walk240Record(int stage,long start)
+    {
+        _pr57Walk240Ticks[stage] += System.Diagnostics.Stopwatch.GetTimestamp() - start;
+        _pr57Walk240Calls[stage]++;
+    }
+    public IEnumerable<string> Pr57Walk240Report()
+    {
+        if (!Pr57Walk240Enabled) yield break;
+        string[] names = ["crossing-reached","pedestrian-gap","crossing-occupancy","citizen-arrived"];
+        var hz = (double)System.Diagnostics.Stopwatch.Frequency;
+        for (var i=0;i<names.Length;i++)
+            yield return $"PR57_240_WALK name={names[i]} calls={_pr57Walk240Calls[i]} ms={_pr57Walk240Ticks[i]*1000/hz:F5} scope=INTRUSIVE_OBSERVATIONAL";
+        yield return $"PR57_240_WALK_SUM visits={_pr57Walk240Visits} segments={_pr57Walk240Segments} replans={_pr57Walk240Replans} crosswalkCandidates={_pr57Walk240CrosswalkCandidates} citizenCandidates={_pr57Walk240CitizenCandidates} vehicleCandidates={_pr57Walk240VehicleCandidates} crossingGrid={Pr57CrosswalkGridEnabled} pedestrianGrid={_pr57PedestrianGridActive}";
+    }
     public IEnumerable<string> Pr57CitizenStateCostReport()
     {
         if (!Pr57CitizenStateCostEnabled) yield break;
@@ -132,6 +153,7 @@ public sealed partial class CitySimulation
         var pr57StateCost = CostProfile is not null && Pr57CitizenStateCostEnabled;
         var pr57SetupStart = pr57StateCost ? System.Diagnostics.Stopwatch.GetTimestamp() : 0L;
         var pr57Citizen239 = Pr57Citizen239Enabled && CostProfile is not null;
+        var pr57Walk240 = Pr57Walk240Enabled && CostProfile is not null;
         if(!Pr57CitizenAgendaEnabled&&!_pr57AgendaAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1"){Console.WriteLine("PR57_CITIZEN_AGENDA active=False");_pr57AgendaAnnounced=true;}
         // Refresh derived crossings once for an old save before retrying routes.
         // Loading itself still preserves the serialized state exactly.
@@ -165,31 +187,57 @@ public sealed partial class CitySimulation
             if(c.ConstructionProjectId!=null&&ShiftActive(c)){c.AddWorkSecondsToday(dt);AccrueWage(c,dt);}
             if(c.VehicleId is {} vid){var v=VehicleById(vid);if(v!=null){c.Position=v.Position;c.InsideMap=InMap(v.Position);}continue;}
             if(c.Moving){
+                if(pr57Walk240)_pr57Walk240Visits++;
                 if(c.Purpose==JourneyPurpose.Boarding)c.PathRoadRevision=State.RoadRevision;
-                if(c.PathRoadRevision!=State.RoadRevision&&c.Purpose==JourneyPurpose.Construction&&c.ConstructionProjectId is {} projectId){var project=State.Projects.First(p=>p.Id==projectId);var access=WorkAccess(project);var replacement=access==null?new List<Point>():PedestrianPath(c.Position,CrewPedestrianSite(access),access);c.Path=replacement;c.PathIndex=0;c.PathRoadRevision=State.RoadRevision;if(replacement.Count==0){c.Activity="Equipe aguardando rota de obra";continue;}}
+                if(c.PathRoadRevision!=State.RoadRevision&&c.Purpose==JourneyPurpose.Construction&&c.ConstructionProjectId is {} projectId){if(pr57Walk240)_pr57Walk240Replans++;var project=State.Projects.First(p=>p.Id==projectId);var access=WorkAccess(project);var replacement=access==null?new List<Point>():PedestrianPath(c.Position,CrewPedestrianSite(access),access);c.Path=replacement;c.PathIndex=0;c.PathRoadRevision=State.RoadRevision;if(replacement.Count==0){c.Activity="Equipe aguardando rota de obra";continue;}}
                 var journeyDestination=BuildingById(c.DestinationId);
                 var closeDoorDetour=journeyDestination!=null&&c.Purpose!=JourneyPurpose.Service&&c.Position.Distance(journeyDestination.Door)<3&&c.Path.Skip(c.PathIndex).Any(point=>point.Distance(journeyDestination.Door)>3)&&Access(journeyDestination) is {} doorAccess&&!CrossesLane(c.Position,journeyDestination.Door,doorAccess);
                 if((c.PathRoadRevision!=State.RoadRevision||closeDoorDetour)&&c.Purpose!=JourneyPurpose.Construction){
+                    if(pr57Walk240)_pr57Walk240Replans++;
                     var dest=journeyDestination;if(dest!=null){var replacement=CitizenRoute(c,dest);if(replacement.Count==0){c.Activity="Viagem interrompida: rota removida";c.Path.Clear();c.PathRoadRevision=State.RoadRevision;c.NextDecisionAt=State.ElapsedSeconds+300;continue;}c.Path=replacement;c.PathIndex=0;c.PathRoadRevision=State.RoadRevision;}
                 }
                 var distance=State.Tuning.WalkingSpeed*dt;
-                while(distance>0&&c.PathIndex<c.Path.Count){var target=c.Path[c.PathIndex];var d=c.Position.Distance(target);
+                while(distance>0&&c.PathIndex<c.Path.Count){if(pr57Walk240)_pr57Walk240Segments++;var target=c.Path[c.PathIndex];var d=c.Position.Distance(target);
                     if(c.CrossingNodeId is {} old&&(!_roads.TryGetValue(old,out var marked)||c.Position.Distance(marked.Position)>State.Tuning.RoadWidth+1))c.CrossingNodeId=null;
                     // A long sidewalk segment can pass several future crossings.
                     // Only negotiate the crossing reached by this physical step,
                     // and preserve an ongoing crossing before nearby alternatives.
                     var nextPosition=c.Position.MoveTowards(target,Math.Min(distance,d));
+                    var crossingStart=pr57Walk240?System.Diagnostics.Stopwatch.GetTimestamp():0L;
                     var crossing=CrossingReached(c,nextPosition);
+                    if(pr57Walk240){
+                        Pr57Walk240Record(0,crossingStart);
+                        if(!Pr57CrosswalkGridEnabled)_pr57Walk240CrosswalkCandidates+=_crosswalks.Count;
+                    }
                     if(crossing!=null&&c.CrossingNodeId!=crossing.Id){
                         // A vehicle already stopped in a queue does not advance onto the
                         // walker; only one entering or passing the crossing does. This
                         // breaks the circular wait between queues and waiting walkers.
+                        var occupancyStart=pr57Walk240?System.Diagnostics.Stopwatch.GetTimestamp():0L;
                         var occupied=State.Vehicles.Any(v=>v.Status==VehicleStatus.Travelling&&(v.IntersectionClaim==crossing.Id||v.WaitingSince==0&&v.Position.Distance(crossing.Position)<3.5));
+                        if(pr57Walk240){
+                            Pr57Walk240Record(2,occupancyStart);
+                            _pr57Walk240VehicleCandidates+=State.Vehicles.Count;
+                        }
                         if(occupied){c.Activity="Aguardando travessia";break;}c.CrossingNodeId=crossing.Id;
                     }
-                    var heading=d>.001?(target-c.Position)*(1/d):new Point(0,0);var gap=PedestrianGap(c,target,d,heading,Math.Min(distance,d)+.7);var travelled=Math.Min(distance,Math.Min(d,Math.Max(0,gap-.7)));if(travelled<.000001&&d>.001){c.Activity="Fila de pedestres";break;}c.Position=c.Position.MoveTowards(target,travelled);distance-=travelled;if(d<=travelled+.00001)c.PathIndex++;else break;
+                    var heading=d>.001?(target-c.Position)*(1/d):new Point(0,0);
+                    var gapStart=pr57Walk240?System.Diagnostics.Stopwatch.GetTimestamp():0L;
+                    var gap=PedestrianGap(c,target,d,heading,Math.Min(distance,d)+.7);
+                    if(pr57Walk240){
+                        Pr57Walk240Record(1,gapStart);
+                        if(!_pr57PedestrianGridActive)_pr57Walk240CitizenCandidates+=State.Citizens.Count;
+                    }
+                    var travelled=Math.Min(distance,Math.Min(d,Math.Max(0,gap-.7)));if(travelled<.000001&&d>.001){c.Activity="Fila de pedestres";break;}c.Position=c.Position.MoveTowards(target,travelled);distance-=travelled;if(d<=travelled+.00001)c.PathIndex++;else break;
                 }
-                c.InsideMap=InMap(c.Position);if(!c.Moving){c.CrossingNodeId=null;CitizenArrived(c);}continue;
+                c.InsideMap=InMap(c.Position);
+                if(!c.Moving){
+                    c.CrossingNodeId=null;
+                    var arrivalStart=pr57Walk240?System.Diagnostics.Stopwatch.GetTimestamp():0L;
+                    CitizenArrived(c);
+                    if(pr57Walk240)Pr57Walk240Record(3,arrivalStart);
+                }
+                continue;
             }
             if(State.ElapsedSeconds<c.NextDecisionAt)continue;c.NextDecisionAt=State.ElapsedSeconds+60;
             CitizenRoutine(c);
