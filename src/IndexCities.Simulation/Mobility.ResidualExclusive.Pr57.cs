@@ -49,6 +49,7 @@ public sealed partial class CitySimulation
         _pr57ExclusiveStartBytes = GC.GetAllocatedBytesForCurrentThread();
         _pr57ExclusiveOldPosition = vehicle.Position;
         Pr57ExecBeginVehicle(vehicle);
+        Pr57DenseBeginVehicle();
     }
 
     void Pr57ExclusiveMark(int nextStage)
@@ -72,6 +73,7 @@ public sealed partial class CitySimulation
         if (!_pr57ExclusiveVehicleActive) return;
         Pr57ExclusiveMark(0);
         Pr57ExecFinishVehicle(vehicle);
+        Pr57DenseFinishVehicle(vehicle);
         _pr57ExclusiveVehicleActive = false;
         _pr57ExclusiveVehicles++;
         if (vehicle.Status == VehicleStatus.Travelling) _pr57ExclusiveTravelling++;
@@ -83,6 +85,7 @@ public sealed partial class CitySimulation
         if (!_pr57ExclusiveActive) return;
         Pr57PoseGuardReport();
         Pr57ExecEndSlice();
+        Pr57DenseEndSlice();
         _pr57ExclusiveActive = false;
         static double Ms(long ticks) =>
             Math.Round(ticks * 1000.0 / System.Diagnostics.Stopwatch.Frequency, 6);
