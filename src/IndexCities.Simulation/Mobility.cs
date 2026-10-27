@@ -363,6 +363,12 @@ public sealed partial class CitySimulation
         Pr57ExclusiveBeginSlice(dt,operationsDt,scanProfile is not null);
         Pr57PairBeginSlice(dt,operationsDt,scanProfile is not null);
         Pr57StageBeginSlice(dt,operationsDt,scanProfile is not null);
+        // #236: state-based POC. When restoring the approach heading is bitwise
+        // identical to the current heading, the read-only pose scan cannot
+        // affect the canonical state. Do not skip any vehicle or sub-slice.
+        var pr57PoseNoopSkip=Environment.GetEnvironmentVariable("PR57_236_POSE_NOOP_SKIP")=="1";
+        var pr57PoseNoopEligible=0;
+        var pr57PoseNoopSkipped=0;
         var pr57CostProbe=scanProfile is not null&&Pr57VehicleCostProbeEnabled;
         var pr57LimiterProbe=scanProfile is not null&&Pr57QueueLimiterEnabled&&dt>0&&_pr57MovementAllocCalls%37==0;
         var pr57DepProbe=scanProfile is not null&&Pr57BlockDepProbeEnabled&&dt>0;
@@ -970,7 +976,16 @@ public sealed partial class CitySimulation
                 // than turning in place into a parked machine's or site truck's body,
                 // or into any other body that pose was clear of.
                 Pr57PoseGuardBegin(v,step,d);
-                if(step<.00001&&d>.00001&&
+                // Only the possible assignment v.Heading=approachHeading is a
+                // canonical effect of this predicate. Compare the exact double
+                // representation (including signed zero), not approximate angles.
+                var pr57PoseNoop=pr57PoseNoopSkip&&
+                    BitConverter.DoubleToInt64Bits(v.Heading)==BitConverter.DoubleToInt64Bits(approachHeading);
+                if(pr57PoseNoopSkip&&scanProfile is not null&&dt>0&&step<.00001&&d>.00001){
+                    pr57PoseNoopEligible++;
+                    if(pr57PoseNoop)pr57PoseNoopSkipped++;
+                }
+                if(step<.00001&&d>.00001&&!pr57PoseNoop&&
                     (Pr57PoseForeachEnabled?Pr57PoseGuardForeach(v,approachHeading):
                     State.Vehicles.Any(o=>Pr57S6GateShadowObserve(v,o)&&o.Id!=v.Id&&o.Status!=VehicleStatus.Outside&&o.Position.Distance(v.Position)<12&&
                     Pr57PoseGuardCandidateReached(o)&&
@@ -1183,6 +1198,8 @@ public sealed partial class CitySimulation
                 if(scanProfile is not null)_pr57MovementAllocBytes[10]+=GC.GetAllocatedBytesForCurrentThread()-pr57FinalizeAllocStart;
             }
         }
+        if(pr57PoseNoopSkip&&scanProfile is not null&&dt>0&&_pr57MovementAllocCalls>=36&&_pr57MovementAllocCalls<39)
+            Console.WriteLine($"PR57_236_POSE_NOOP sample={_pr57MovementAllocCalls-35} eligible={pr57PoseNoopEligible} skipped={pr57PoseNoopSkipped} evaluated={pr57PoseNoopEligible-pr57PoseNoopSkipped} scope=BITWISE_HEADING_NOOP");
         // A towed vehicle moves only with its tow (platform or trailing a heavy tow).
         SyncTowedVehicles();
         Pr57ReservationAfterSync();
