@@ -1186,7 +1186,7 @@ public sealed partial class CitySimulation
         // holder close to this crossing reserves it, as for claims (NearbyAreaOwner).
         if(v.ManoeuvreSpaces.Contains(junction.Id)){ReserveJunction(v,junction,area);return true;}
         pr57DetailStart=pr57Detail?GC.GetAllocatedBytesForCurrentThread():0L;pr57DetailTickStart=pr57Detail&&Pr57HotTiming?System.Diagnostics.Stopwatch.GetTimestamp():0L;
-        var manoeuvre=State.Vehicles.FirstOrDefault(o=>Pr57JunctionReadersCandidate(v,o)&&o.Id!=v.Id&&o.Id!=v.TowTargetId&&o.TowTruckId!=v.Id&&!Receives(o,v)&&(o.ManoeuvreSpaces.Contains(junction.Id)||area!=null&&o.ManoeuvreSpaces.Any(area.Contains)&&o.Position.Distance(junction.Position)<9));
+        var manoeuvre=State.Vehicles.FirstOrDefault(o=>Pr57JunctionReadersCandidate(v,o,0)&&o.Id!=v.Id&&o.Id!=v.TowTargetId&&o.TowTruckId!=v.Id&&!Receives(o,v)&&Pr57JunctionReadersGate(v,o,0)&&(o.ManoeuvreSpaces.Contains(junction.Id)||area!=null&&o.ManoeuvreSpaces.Any(area.Contains)&&Pr57JunctionReadersGate(v,o,1)&&o.Position.Distance(junction.Position)<9));
         if(pr57Detail){_pr57JunctionDetailBytes[0]+=GC.GetAllocatedBytesForCurrentThread()-pr57DetailStart;_pr57JunctionDetailCalls[0]++;if(pr57DetailTickStart!=0)_pr57JunctionDetailTicks[0]+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57DetailTickStart;}
         if(manoeuvre is not null){Pr57JunctionReadersBlock(v,manoeuvre,"manoeuvre");v.Cause=(IsBend(junction)?"Aguardando liberação da curva pelo veículo ":"Aguardando liberação do cruzamento pelo veículo ")+manoeuvre.Id;return false;}
         var continuing=area!=null&&v.IntersectionClaim is {} held&&area.Contains(held);
@@ -1203,12 +1203,12 @@ public sealed partial class CitySimulation
             // the bend together with every space it crosses up to the first place
             // its body can wait clear of them, with that way free of bodies.
             pr57DetailStart=pr57Detail?GC.GetAllocatedBytesForCurrentThread():0L;pr57DetailTickStart=pr57Detail&&Pr57HotTiming?System.Diagnostics.Stopwatch.GetTimestamp():0L;
-            var holder=State.Vehicles.FirstOrDefault(o=>Pr57JunctionReadersCandidate(v,o)&&o.Id!=v.Id&&o.Id!=v.TowTargetId&&o.TowTruckId!=v.Id&&!Receives(o,v)&&Holds(o,junction.Id));
+            var holder=State.Vehicles.FirstOrDefault(o=>Pr57JunctionReadersCandidate(v,o,1)&&o.Id!=v.Id&&o.Id!=v.TowTargetId&&o.TowTruckId!=v.Id&&!Receives(o,v)&&Pr57JunctionReadersGate(v,o,2)&&Holds(o,junction.Id));
             if(pr57Detail){_pr57JunctionDetailBytes[2]+=GC.GetAllocatedBytesForCurrentThread()-pr57DetailStart;_pr57JunctionDetailCalls[2]++;if(pr57DetailTickStart!=0)_pr57JunctionDetailTicks[2]+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57DetailTickStart;}
             if(holder is not null){Pr57JunctionReadersBlock(v,holder,"bendHolder");v.Cause="Aguardando liberação da curva pelo veículo "+holder.Id;return false;}
             double Arrived(Vehicle a)=>a.WaitingSince>0?a.WaitingSince:VehicleMovementTime;
             pr57DetailStart=pr57Detail?GC.GetAllocatedBytesForCurrentThread():0L;pr57DetailTickStart=pr57Detail&&Pr57HotTiming?System.Diagnostics.Stopwatch.GetTimestamp():0L;
-            var first=State.Vehicles.Where(o=>Pr57JunctionReadersCandidate(v,o)&&o.Id!=v.TowTargetId&&o.Status==VehicleStatus.Travelling&&!Leaving(o)&&o.RouteIndex<o.Route.Count&&o.Route[o.RouteIndex]==junction.Id&&TurnsAtBend(o,o.RouteIndex)&&o.Position.Distance(junction.Position)<11&&(o.Id==v.Id||CanTurnNow(o)))
+            var first=State.Vehicles.Where(o=>Pr57JunctionReadersCandidate(v,o,2)&&o.Id!=v.TowTargetId&&o.Status==VehicleStatus.Travelling&&!Leaving(o)&&o.RouteIndex<o.Route.Count&&o.Route[o.RouteIndex]==junction.Id&&Pr57JunctionReadersGate(v,o,3)&&TurnsAtBend(o,o.RouteIndex)&&Pr57JunctionReadersGate(v,o,4)&&o.Position.Distance(junction.Position)<11&&(o.Id==v.Id||CanTurnNow(o)))
                 .Append(v).Distinct().OrderBy(Arrived).ThenBy(o=>o.Id).First();
             if(pr57Detail){_pr57JunctionDetailBytes[3]+=GC.GetAllocatedBytesForCurrentThread()-pr57DetailStart;_pr57JunctionDetailCalls[3]++;if(pr57DetailTickStart!=0)_pr57JunctionDetailTicks[3]+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57DetailTickStart;}
             if(first.Id!=v.Id){Pr57JunctionReadersBlock(v,first,"bendPriority");v.Cause="Aguardando liberação da curva pelo veículo "+first.Id;return false;}
@@ -1222,7 +1222,7 @@ public sealed partial class CitySimulation
             if(bendBody is not null){Pr57JunctionReadersBlock(v,bendBody,"bendBody");v.Cause="Fila na faixa";return false;}
             ReserveJunction(v,junction,null);RememberLaneManoeuvre(v,spaces);if(!v.ManoeuvreSpaces.Contains(junction.Id))v.ManoeuvreSpaces.Add(junction.Id);return true;
         }
-        if(area==null&&junction.Neighbours.Count>=3&&State.Vehicles.FirstOrDefault(o=>Pr57JunctionReadersCandidate(v,o)&&o.Id!=v.Id&&o.Id!=v.TowTargetId&&o.IntersectionClaim==junction.Id&&o.Position.Distance(junction.Position)<9) is {} occupant){Pr57JunctionReadersBlock(v,occupant,"occupant");v.Cause="Aguardando liberação do cruzamento pelo veículo "+occupant.Id;return false;}
+        if(area==null&&junction.Neighbours.Count>=3&&State.Vehicles.FirstOrDefault(o=>Pr57JunctionReadersCandidate(v,o,3)&&o.Id!=v.Id&&o.Id!=v.TowTargetId&&Pr57JunctionReadersGate(v,o,5)&&o.IntersectionClaim==junction.Id&&Pr57JunctionReadersGate(v,o,6)&&o.Position.Distance(junction.Position)<9) is {} occupant){Pr57JunctionReadersBlock(v,occupant,"occupant");v.Cause="Aguardando liberação do cruzamento pelo veículo "+occupant.Id;return false;}
         // Only a walker physically at this crossing holds traffic back.
         if(State.Citizens.Any(c=>c.Alive&&c.VehicleId==null&&c.Moving&&c.CrossingNodeId==junction.Id&&c.Position.Distance(junction.Position)<State.Tuning.RoadWidth/2+1.5))return false;
         // A straight loading access/crosswalk is not a road intersection.
