@@ -252,9 +252,10 @@ if(profile is not null){
         foreach(var line in phaseEffects.ReportLines())Console.WriteLine(line);
 }
 // PR57 #224: print observational citizen state cost only when explicitly enabled.
-if(profile is not null)
+if(profile is not null){
     foreach(var line in sim.Pr57CitizenStateCostReport())Console.WriteLine(line);
     foreach(var line in sim.Pr57Citizen239Report())Console.WriteLine(line);
+}
 census?.Print(done);if(stuck!=null)Console.WriteLine($"STUCK SUMMARY guinchos chamados={sim.State.Ledger.Where(m=>m.Category=="Guincho"&&m.To=="global").Select(m=>(m.At,m.EntityId)).Distinct().Count()} rebocando agora={sim.State.Vehicles.Count(v=>v.Status==VehicleStatus.Towed)} sem combustível na via (total)={stuck.StrandedTotal} parados≥30min (máx)={stuck.StuckMax} mortos={sim.State.Citizens.Count(c=>!c.Alive)}");
 sw.Restart();var json=sim.SaveToJson();var save=sw.Elapsed.TotalSeconds;sw.Restart();CitySimulation.FromJson(json);
 Console.WriteLine($"SAVE {json.Length/1e6:F1}MB save={save:F2}s load={sw.Elapsed.TotalSeconds:F2}s sha256={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(json)))}");
