@@ -380,6 +380,7 @@ public sealed partial class CitySimulation
         if(Pr57MutationAuditEnabled&&scanProfile is not null)Pr57MutationBeginSlice();
         Pr57CrossSliceBegin();
         Pr57CandidateBeginSlice();
+        Pr57S6GateShadowBeginSlice();
         // Same order as OrderBy(WaitingSince).ThenBy(Id): Ids are unique, so the
         // key is a total order and any sort yields the same sequence.
         // PR57 isolated A/B: during a batched movement slice, the loop below
@@ -955,7 +956,7 @@ public sealed partial class CitySimulation
                 Pr57PoseGuardBegin(v,step,d);
                 if(step<.00001&&d>.00001&&
                     (Pr57PoseForeachEnabled?Pr57PoseGuardForeach(v,approachHeading):
-                    State.Vehicles.Any(o=>o.Id!=v.Id&&o.Status!=VehicleStatus.Outside&&o.Position.Distance(v.Position)<12&&
+                    State.Vehicles.Any(o=>Pr57S6GateShadowObserve(v,o)&&o.Id!=v.Id&&o.Status!=VehicleStatus.Outside&&o.Position.Distance(v.Position)<12&&
                     Pr57PoseGuardCandidateReached(o)&&
                     (StreetBody(o)?VehicleBodiesOverlap(v,v.Position,o):!(o.Position.Distance(State.Entry)<8&&v.Position.Distance(State.Entry)<8)&&TurnsInto(v,approachHeading,o)))))v.Heading=approachHeading;
                 Pr57PoseGuardEnd(v);
@@ -1103,6 +1104,7 @@ public sealed partial class CitySimulation
             }
             }finally{
                 Pr57ExclusiveFinishVehicle(v);
+                Pr57S6GateShadowAfterVehicle(v);
                 if(pr57CostProbe){
                     var pr57ElapsedTicks=System.Diagnostics.Stopwatch.GetTimestamp()-pr57CostStartTicks;
                     var pr57Allocated=GC.GetAllocatedBytesForCurrentThread()-pr57CostStartBytes;
@@ -1166,6 +1168,7 @@ public sealed partial class CitySimulation
         Pr57ReservationAfterSync();
         Pr57CrossSliceEnd();
         Pr57CandidateEndSlice();
+        Pr57S6GateShadowEndSlice();
         Pr57ExclusiveEndSlice();
         Pr57PairEndSlice();
         Pr57StageEndSlice();
