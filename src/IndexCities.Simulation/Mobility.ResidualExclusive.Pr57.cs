@@ -36,6 +36,7 @@ public sealed partial class CitySimulation
         Array.Clear(_pr57ExclusiveBytes);
         Array.Clear(_pr57ExclusiveSegments);
         _pr57ExclusiveVehicles = _pr57ExclusiveTravelling = _pr57ExclusiveMoved = 0;
+        Pr57PoseGuardReset();
     }
 
     void Pr57ExclusiveBeginVehicle(Vehicle vehicle)
@@ -74,6 +75,7 @@ public sealed partial class CitySimulation
     void Pr57ExclusiveEndSlice()
     {
         if (!_pr57ExclusiveActive) return;
+        Pr57PoseGuardReport();
         _pr57ExclusiveActive = false;
         static double Ms(long ticks) =>
             Math.Round(ticks * 1000.0 / System.Diagnostics.Stopwatch.Frequency, 6);
