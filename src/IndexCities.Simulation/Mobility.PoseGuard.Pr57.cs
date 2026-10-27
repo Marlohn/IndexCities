@@ -149,6 +149,103 @@ public sealed partial class CitySimulation
         return false;
     }
 
+    // #226: read-only, slice-local shadow of ONLY the first three s6 pose
+    // guard gates (ID, status, position). The canonical predicate always runs.
+    // This is NOT a reusable s6 decision: street bodies, routes, clock, signals,
+    // pedestrian and transient mutations remain outside this projection.
+    static readonly bool Pr57S6GateShadowEnabled =
+        Environment.GetEnvironmentVariable("PR57_226_S6_GATE_SHADOW") == "1";
+    readonly Dictionary<int, (VehicleStatus Status, Point Position)> _pr57S6GateShadow = new();
+    bool _pr57S6GateShadowActive;
+    long _pr57S6GateVisits, _pr57S6GateStale, _pr57S6GateDisagree;
+    long _pr57S6GateMissing, _pr57S6GateRefreshes, _pr57S6GateNew;
+    long _pr57S6GateBuildTicks, _pr57S6GateRefreshTicks;
+    long _pr57S6GateBuildBytes, _pr57S6GateRefreshBytes;
+
+    void Pr57S6GateShadowBeginSlice()
+    {
+        _pr57S6GateShadowActive = Pr57S6GateShadowEnabled && _pr57ExclusiveActive;
+        if (!_pr57S6GateShadowActive) return;
+        var started = System.Diagnostics.Stopwatch.GetTimestamp();
+        var bytes = GC.GetAllocatedBytesForCurrentThread();
+        _pr57S6GateShadow.Clear();
+        _pr57S6GateVisits = _pr57S6GateStale = _pr57S6GateDisagree = 0;
+        _pr57S6GateMissing = _pr57S6GateRefreshes = _pr57S6GateNew = 0;
+        _pr57S6GateRefreshTicks = _pr57S6GateRefreshBytes = 0;
+        foreach (var other in State.Vehicles)
+            _pr57S6GateShadow.Add(other.Id, (other.Status, other.Position));
+        _pr57S6GateBuildTicks = System.Diagnostics.Stopwatch.GetTimestamp() - started;
+        _pr57S6GateBuildBytes = GC.GetAllocatedBytesForCurrentThread() - bytes;
+    }
+
+    // Always returns true, so the original LINQ Any short-circuit and candidate
+    // order are unchanged. Observe BEFORE the canonical negative gates.
+    bool Pr57S6GateShadowObserve(Vehicle reader, Vehicle other)
+    {
+        if (!_pr57S6GateShadowActive) return true;
+        _pr57S6GateVisits++;
+        if (!_pr57S6GateShadow.TryGetValue(other.Id, out var prior))
+        {
+            _pr57S6GateMissing++;
+            return true;
+        }
+        if (prior.Status != other.Status || prior.Position != other.Position)
+            _pr57S6GateStale++;
+        var shadow = other.Id != reader.Id &&
+                     prior.Status != VehicleStatus.Outside &&
+                     prior.Position.Distance(reader.Position) < 12;
+        var live = other.Id != reader.Id &&
+                   other.Status != VehicleStatus.Outside &&
+                   other.Position.Distance(reader.Position) < 12;
+        if (shadow != live) _pr57S6GateDisagree++;
+        return true;
+    }
+
+    // A processed actor may change its own pose. Refresh only that actor;
+    // unmarked third-party writes are intentionally NOT repaired.
+    void Pr57S6GateShadowAfterVehicle(Vehicle actor)
+    {
+        if (!_pr57S6GateShadowActive) return;
+        var started = System.Diagnostics.Stopwatch.GetTimestamp();
+        var bytes = GC.GetAllocatedBytesForCurrentThread();
+        if (!_pr57S6GateShadow.ContainsKey(actor.Id)) _pr57S6GateNew++;
+        _pr57S6GateShadow[actor.Id] = (actor.Status, actor.Position);
+        _pr57S6GateRefreshes++;
+        _pr57S6GateRefreshTicks += System.Diagnostics.Stopwatch.GetTimestamp() - started;
+        _pr57S6GateRefreshBytes += GC.GetAllocatedBytesForCurrentThread() - bytes;
+    }
+
+    void Pr57S6GateShadowEndSlice()
+    {
+        if (!_pr57S6GateShadowActive) return;
+        // This final O(N) oracle is AFTER SyncTowedVehicles, and is not used
+        // to fix any decision or to claim complete transient-write coverage.
+        long finalStale = 0, finalMissing = 0;
+        foreach (var other in State.Vehicles)
+        {
+            if (!_pr57S6GateShadow.TryGetValue(other.Id, out var prior))
+                finalMissing++;
+            else if (prior.Status != other.Status || prior.Position != other.Position)
+                finalStale++;
+        }
+        static double Ms(long ticks) =>
+            ticks * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+        Console.WriteLine(
+            $"PR57_226_S6_GATE sample={_pr57ExclusiveSamples} " +
+            $"vehicles={_pr57S6GateShadow.Count} visits={_pr57S6GateVisits} " +
+            $"staleVisits={_pr57S6GateStale} gateDisagreements={_pr57S6GateDisagree} " +
+            $"missingVisits={_pr57S6GateMissing} refreshes={_pr57S6GateRefreshes} " +
+            $"newActors={_pr57S6GateNew} postSyncStale={finalStale} " +
+            $"postSyncMissing={finalMissing} buildMs={Ms(_pr57S6GateBuildTicks):F6} " +
+            $"refreshMs={Ms(_pr57S6GateRefreshTicks):F6} " +
+            $"buildMB={_pr57S6GateBuildBytes / 1e6:F6} " +
+            $"refreshMB={_pr57S6GateRefreshBytes / 1e6:F6} " +
+            "scope=ID_STATUS_POSITION_GATE_ONLY canonicalAlwaysRuns=True " +
+            "thirdPartyAndTransientWritersUnclosed=True observational=True intrusive=True");
+        _pr57S6GateShadow.Clear();
+        _pr57S6GateShadowActive = false;
+    }
+
     void Pr57PoseGuardReport()
     {
         if (!Pr57PoseGuardEnabled || !_pr57ExclusiveActive) return;
