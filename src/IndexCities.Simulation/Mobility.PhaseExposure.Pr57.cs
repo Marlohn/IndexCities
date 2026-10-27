@@ -87,7 +87,10 @@ public sealed partial class CitySimulation
         }
         if (Gate(reader.Position, initial.Position, sin, cos) !=
             Gate(reader.Position, current.Position, sin, cos))
+        {
             _pr57PhaseGateFlips++;
+            Pr57PhaseImpactFlip(reader, candidate, initial, current);
+        }
     }
 
     void Pr57PhaseExposureAfterVehicle(Vehicle vehicle)
