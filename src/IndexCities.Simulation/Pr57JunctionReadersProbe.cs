@@ -11,6 +11,10 @@ public sealed partial class CitySimulation
     bool _pr57JrActive;
     double _pr57JrTime, _pr57JrDuration;
     Dictionary<int,(Pr57DepState State,string? Cause)>? _pr57JrBefore;
+    Dictionary<int,(Pr57DepState State,string? Cause)>? _pr57JrAfterCleanup;
+    long _pr57JrCandidateEvaluations;
+    readonly HashSet<int> _pr57JrCandidateIds = new();
+    readonly HashSet<(int Reader,int Other)> _pr57JrCandidatePairs = new();
     readonly HashSet<(int Reader,int Other,string Kind)> _pr57JrBlockers = new();
     // #194: first/last ACTUAL selection reads, not a journal of every write.
     // This distinguishes physical changes from Cause-only changes and
@@ -32,12 +36,34 @@ public sealed partial class CitySimulation
         _pr57JrTime = VehicleMovementTime;
         _pr57JrDuration = dt;
         _pr57JrBefore = Pr57CausalWorld();
+        _pr57JrAfterCleanup = null;
+        _pr57JrCandidateEvaluations = 0;
+        _pr57JrCandidateIds.Clear();
+        _pr57JrCandidatePairs.Clear();
         _pr57JrAdmissions = 0;
         _pr57JrRedChecks = 0;
         _pr57JrBlockers.Clear();
         _pr57JrSelectedAtRead.Clear();
         _pr57JrPreference.Clear();
         _pr57JrSignals.Clear();
+    }
+
+    // #195: snapshot after the real all-vehicle claim/manoeuvre cleanup.
+    void Pr57JunctionReadersAfterCleanup()
+    {
+        if (_pr57JrActive) _pr57JrAfterCleanup = Pr57CausalWorld();
+    }
+
+    // Counts real predicate evaluations, including misses; always returns true.
+    bool Pr57JunctionReadersCandidate(Vehicle reader,Vehicle other)
+    {
+        if (_pr57JrActive)
+        {
+            _pr57JrCandidateEvaluations++;
+            _pr57JrCandidateIds.Add(other.Id);
+            _pr57JrCandidatePairs.Add((reader.Id,other.Id));
+        }
+        return true;
     }
 
     void Pr57JunctionReadersAdmission(Vehicle reader,RoadNode junction)
@@ -90,6 +116,8 @@ public sealed partial class CitySimulation
         long netPhysical=0,netCauseOnly=0,netUnchanged=0,missing=0;
         long physicalBeforeFirst=0,physicalAfterLast=0,physicalBetweenReads=0;
         long causeBeforeFirst=0,causeAfterLast=0,repeatedEdges=0,totalSelectedReads=0;
+        long selectedChangedDuringCleanup=0,selectedChangedAfterCleanupBeforeFirst=0;
+        long selectedUnchangedAfterCleanup=0,selectedMissingAfterCleanup=0;
         foreach (var (edge,seen) in _pr57JrSelectedAtRead)
         {
             totalSelectedReads += seen.Reads;
@@ -104,12 +132,21 @@ public sealed partial class CitySimulation
             else if (start.Cause!=end.Cause) netCauseOnly++;
             else netUnchanged++;
             if (start.State!=seen.First) physicalBeforeFirst++;
+            if (_pr57JrAfterCleanup is null || !_pr57JrAfterCleanup.TryGetValue(edge.Other,out var clean))
+                selectedMissingAfterCleanup++;
+            else
+            {
+                if (start.State!=clean.State) selectedChangedDuringCleanup++;
+                if (clean.State!=seen.First) selectedChangedAfterCleanupBeforeFirst++;
+                else selectedUnchangedAfterCleanup++;
+            }
             if (seen.Last!=end.State) physicalAfterLast++;
             if (seen.First!=seen.Last) physicalBetweenReads++;
             if (start.Cause!=seen.FirstCause) causeBeforeFirst++;
             if (seen.LastCause!=end.Cause) causeAfterLast++;
         }
         var changedPreference = _pr57JrPreference.Count(e => changed.Contains(e.Other));
+        var changedCandidateIds = _pr57JrCandidateIds.Count(id => changed.Contains(id));
         var affectedReaders = _pr57JrBlockers.Where(e => changed.Contains(e.Other))
             .Select(e => e.Reader).Distinct().Count();
         Console.WriteLine(
@@ -122,11 +159,20 @@ public sealed partial class CitySimulation
             $"physicalBeforeFirstRead={physicalBeforeFirst} physicalAfterLastRead={physicalAfterLast} " +
             $"physicalBetweenSelectedReads={physicalBetweenReads} " +
             $"causeBeforeFirstRead={causeBeforeFirst} causeAfterLastRead={causeAfterLast} " +
+            $"selectedChangedDuringCleanup={selectedChangedDuringCleanup} " +
+            $"selectedChangedAfterCleanupBeforeFirst={selectedChangedAfterCleanupBeforeFirst} " +
+            $"selectedUnchangedAfterCleanup={selectedUnchangedAfterCleanup} " +
+            $"selectedMissingAfterCleanup={selectedMissingAfterCleanup} " +
+            $"candidateEvaluations={_pr57JrCandidateEvaluations} " +
+            $"candidateDistinctVehicles={_pr57JrCandidateIds.Count} " +
+            $"candidateReaderPairs={_pr57JrCandidatePairs.Count} " +
+            $"changedCandidateVehicles={changedCandidateIds} " +
             $"repeatedSelectedEdges={repeatedEdges} totalSelectedReads={totalSelectedReads} " +
             $"preferenceCandidateEdges={_pr57JrPreference.Count} changedPreferenceEdges={changedPreference} " +
             $"signalReaderJunctionPairs={_pr57JrSignals.Count} redSignalChecks={_pr57JrRedChecks} " +
             "scope=BOUNDED_FIRST_LAST_SELECTED_READS_NET_CHANGES_NOT_WRITE_JOURNAL_NOT_EXACT_INVALIDATION");
         _pr57JrActive = false;
         _pr57JrBefore = null;
+        _pr57JrAfterCleanup = null;
     }
 }
