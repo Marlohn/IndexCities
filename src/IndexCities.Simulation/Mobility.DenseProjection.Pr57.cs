@@ -21,11 +21,54 @@ public sealed partial class CitySimulation
     long _pr57DenseCompared, _pr57DenseExternalChanges, _pr57DenseSyncChanges;
     long _pr57DenseSelfMisses, _pr57DenseUntracked, _pr57DenseCountChanges;
     long _pr57DenseProcessed, _pr57DensePostRepairMismatches;
+    // #223: strictly observational potential-writer journal. Only writers
+    // already calling Pr57DirtyTouch are covered; the O(N) audit remains
+    // an oracle for missing nonlocal writers, not an execution strategy.
+    readonly HashSet<int> _pr57DensePotentialWrites = new();
+    long _pr57DenseJournalTouches, _pr57DenseJournalFlushes;
+    long _pr57DenseJournalCompared, _pr57DenseJournalChanges;
+    long _pr57DenseJournalTicks, _pr57DenseJournalBytes;
+
+    void Pr57DenseNotePotentialWrite(Vehicle? vehicle)
+    {
+        if (_pr57DenseActive && vehicle is not null)
+        {
+            _pr57DenseJournalTouches++;
+            _pr57DensePotentialWrites.Add(vehicle.Id);
+        }
+    }
+
+    void Pr57DenseFlushJournal()
+    {
+        if (!_pr57DenseActive || _pr57DenseProjection is null) return;
+        var start = System.Diagnostics.Stopwatch.GetTimestamp();
+        var bytes = GC.GetAllocatedBytesForCurrentThread();
+        _pr57DenseJournalFlushes++;
+        foreach (var id in _pr57DensePotentialWrites)
+        {
+            if (!_pr57DenseIndices.TryGetValue(id, out var index)) continue;
+            _pr57DenseJournalCompared++;
+            var now = Pr57ExecSnapshot(_pr57DenseVehicles![index]);
+            if (_pr57DenseProjection[index] != now) _pr57DenseJournalChanges++;
+            _pr57DenseProjection[index] = now; // shadow only
+        }
+        _pr57DensePotentialWrites.Clear();
+        _pr57DenseJournalTicks += System.Diagnostics.Stopwatch.GetTimestamp() - start;
+        _pr57DenseJournalBytes += GC.GetAllocatedBytesForCurrentThread() - bytes;
+    }
 
     // The first ordered actor starts after the normal cleanup of reservations.
     void Pr57DenseBeginVehicle()
     {
         if (!Pr57DenseEnabled || !_pr57ExclusiveActive || _pr57DenseActive) return;
+        Pr57DenseBuild();
+    }
+
+    // Private test seam: permits an adversarial fixture to exercise the exact
+    // mirror/journal implementation without enabling profiling globally.
+    void Pr57DenseBuild()
+    {
+        if (_pr57DenseActive) return;
         var start = System.Diagnostics.Stopwatch.GetTimestamp();
         var bytes = GC.GetAllocatedBytesForCurrentThread();
         _pr57DenseActive = true;
@@ -38,6 +81,10 @@ public sealed partial class CitySimulation
         _pr57DenseCompared = _pr57DenseExternalChanges = _pr57DenseSyncChanges = 0;
         _pr57DenseSelfMisses = _pr57DenseUntracked = _pr57DenseCountChanges = 0;
         _pr57DenseProcessed = _pr57DensePostRepairMismatches = 0;
+        _pr57DensePotentialWrites.Clear();
+        _pr57DenseJournalTouches = _pr57DenseJournalFlushes = 0;
+        _pr57DenseJournalCompared = _pr57DenseJournalChanges = 0;
+        _pr57DenseJournalTicks = _pr57DenseJournalBytes = 0;
         for (var i = 0; i < _pr57DenseVehicles.Length; i++)
         {
             var v = _pr57DenseVehicles[i];
@@ -63,6 +110,7 @@ public sealed partial class CitySimulation
         else _pr57DenseUntracked++;
         _pr57DenseSelfTicks += System.Diagnostics.Stopwatch.GetTimestamp() - start;
         _pr57DenseSelfBytes += GC.GetAllocatedBytesForCurrentThread() - bytes;
+        Pr57DenseFlushJournal();
         Pr57DenseAudit(false, actor.Id);
     }
 
@@ -105,6 +153,7 @@ public sealed partial class CitySimulation
             return;
         }
         // Called after SyncTowedVehicles, including non-local tow mutations.
+        Pr57DenseFlushJournal();
         Pr57DenseAudit(true, -1);
         foreach (var v in State.Vehicles)
             if (_pr57DenseIndices.TryGetValue(v.Id, out var index) &&
@@ -118,6 +167,9 @@ public sealed partial class CitySimulation
             $"buildMs={Ms(_pr57DenseBuildTicks)} buildMB={_pr57DenseBuildBytes / 1e6:F6} " +
             $"selfMs={Ms(_pr57DenseSelfTicks)} selfMB={_pr57DenseSelfBytes / 1e6:F6} " +
             $"selfChanged={_pr57DenseSelfChanges} " +
+            $"journalTouches={_pr57DenseJournalTouches} journalFlushes={_pr57DenseJournalFlushes} " +
+            $"journalCompared={_pr57DenseJournalCompared} journalChanged={_pr57DenseJournalChanges} " +
+            $"journalMs={Ms(_pr57DenseJournalTicks)} journalMB={_pr57DenseJournalBytes / 1e6:F6} " +
             $"auditMs={Ms(_pr57DenseAuditTicks)} auditMB={_pr57DenseAuditBytes / 1e6:F6} " +
             $"audits={_pr57DenseAudits} compared={_pr57DenseCompared} " +
             $"nonLocalChanges={_pr57DenseExternalChanges} nonLocalIds={_pr57DenseExternalIds.Count} " +
@@ -132,5 +184,6 @@ public sealed partial class CitySimulation
         _pr57DenseProjection = null;
         _pr57DenseIndices.Clear();
         _pr57DenseExternalIds.Clear();
+        _pr57DensePotentialWrites.Clear();
     }
 }
