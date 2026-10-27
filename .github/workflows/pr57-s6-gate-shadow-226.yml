@@ -1,4 +1,4 @@
-name: 'PR57 #226 slice-local s6 negative-gate shadow versus canonical reads'
+name: 'PR57 #227 self versus third-party s6 stale-read adversarial audit'
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
@@ -87,7 +87,7 @@ jobs:
                 --window="$horizon" --cap=300 --resume="$source" | tee "$output.log"
             done
           done
-      - name: Verify full JSON parity and bounded s6 gate accounting
+      - name: Verify full JSON parity, stale attribution and bounded s6 gate accounting
         shell: bash
         run: |
           set -euo pipefail
@@ -112,10 +112,13 @@ jobs:
               for row in rows:
                   assert val(row,'vehicles')>0 and val(row,'visits')>0,(case,row)
                   assert val(row,'refreshes')>0,(case,row)
-                  assert val(row,'staleVisits')>=0 and val(row,'gateDisagreements')>=0,(case,row)
+                  assert val(row,'staleVisits')==val(row,'staleSelf')+val(row,'staleThird'),(case,row)
+                  assert val(row,'staleThirdDisagreements')<=val(row,'staleThird'),(case,row)
+                  assert val(row,'staleThirdDisagreements')<=val(row,'gateDisagreements'),(case,row)
+                  assert val(row,'gateDisagreements')>=0,(case,row)
                   assert val(row,'missingVisits')>=0 and val(row,'postSyncStale')>=0,(case,row)
-                  print('PR57_226_OBSERVED',case,row)
-              print('PR57_226_PARITY',case,'checkpoints',2,'processes',2,'horizon',horizon,'cadence','ADVANCE_2','fullJSON','EXACT')
+                  print('PR57_227_OBSERVED',case,row)
+              print('PR57_227_PARITY',case,'checkpoints',2,'processes',2,'horizon',horizon,'cadence','ADVANCE_2','fullJSON','EXACT')
           PY
       - name: Preserve checkpoints and logs
         if: always()
