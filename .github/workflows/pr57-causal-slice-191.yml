@@ -1,4 +1,4 @@
-name: 'PR57 #191 one GRID entry sub-slice causal lower-bound probe'
+name: 'PR57 #191 GRID causal slice lower-bound probe (nullable fix)'
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
