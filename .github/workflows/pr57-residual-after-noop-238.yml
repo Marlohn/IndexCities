@@ -37,7 +37,7 @@ jobs:
         with:
           name: integrated-scale-pr57-pose-noop-237
           run-id: 40589313790
-          github-token: \${{ github.token }}
+          github-token: ${{ github.token }}
           path: artifacts/prior
       - name: Advance(2) ABBA and bounded exclusive/phase profiles
         shell: bash
