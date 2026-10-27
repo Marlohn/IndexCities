@@ -89,7 +89,7 @@ public sealed partial class CitySimulation
         {
             if (_pr57PoseActive) _pr57PoseLoopVisits++;
             if (o.Id == v.Id || o.Status == VehicleStatus.Outside ||
-                o.Position.Distance(v.Position) >= 12) continue;
+                !(o.Position.Distance(v.Position) < 12)) continue;
             Pr57PoseGuardCandidateReached();
             if (_pr57PoseActive) _pr57PoseLoopNear++;
             if (StreetBody(o))
