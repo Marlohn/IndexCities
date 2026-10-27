@@ -12,6 +12,12 @@ public sealed partial class CitySimulation
     double _pr57JrTime, _pr57JrDuration;
     Dictionary<int,(Pr57DepState State,string? Cause)>? _pr57JrBefore;
     readonly HashSet<(int Reader,int Other,string Kind)> _pr57JrBlockers = new();
+    // #194: first/last ACTUAL selection reads, not a journal of every write.
+    // This distinguishes physical changes from Cause-only changes and
+    // changes already visible at the read from net changes after the last read.
+    readonly Dictionary<(int Reader,int Other,string Kind),
+        (Pr57DepState First,string? FirstCause,Pr57DepState Last,string? LastCause,int Reads)>
+        _pr57JrSelectedAtRead = new();
     readonly HashSet<(int Reader,int Other)> _pr57JrPreference = new();
     readonly HashSet<(int Reader,int Junction)> _pr57JrSignals = new();
     long _pr57JrAdmissions, _pr57JrRedChecks;
@@ -29,6 +35,7 @@ public sealed partial class CitySimulation
         _pr57JrAdmissions = 0;
         _pr57JrRedChecks = 0;
         _pr57JrBlockers.Clear();
+        _pr57JrSelectedAtRead.Clear();
         _pr57JrPreference.Clear();
         _pr57JrSignals.Clear();
     }
@@ -42,7 +49,15 @@ public sealed partial class CitySimulation
     // They omit unselected candidates and all other physical readers.
     void Pr57JunctionReadersBlock(Vehicle reader,Vehicle other,string kind)
     {
-        if (_pr57JrActive) _pr57JrBlockers.Add((reader.Id,other.Id,kind));
+        if (!_pr57JrActive) return;
+        var key = (reader.Id,other.Id,kind);
+        _pr57JrBlockers.Add(key);
+        var physical = Pr57DepSnapshot(other);
+        if (_pr57JrSelectedAtRead.TryGetValue(key,out var prior))
+            _pr57JrSelectedAtRead[key] =
+                (prior.First,prior.FirstCause,physical,other.Cause,prior.Reads+1);
+        else _pr57JrSelectedAtRead[key] =
+            (physical,other.Cause,physical,other.Cause,1);
     }
 
     // The competitors list is materialized by the real preference algorithm.
@@ -72,6 +87,28 @@ public sealed partial class CitySimulation
         foreach (var id in _pr57JrBefore.Keys)
             if (!after.ContainsKey(id)) changed.Add(id);
         var changedBlockers = _pr57JrBlockers.Count(e => changed.Contains(e.Other));
+        long netPhysical=0,netCauseOnly=0,netUnchanged=0,missing=0;
+        long physicalBeforeFirst=0,physicalAfterLast=0,physicalBetweenReads=0;
+        long causeBeforeFirst=0,causeAfterLast=0,repeatedEdges=0,totalSelectedReads=0;
+        foreach (var (edge,seen) in _pr57JrSelectedAtRead)
+        {
+            totalSelectedReads += seen.Reads;
+            if (seen.Reads>1) repeatedEdges++;
+            if (!_pr57JrBefore.TryGetValue(edge.Other,out var start) ||
+                !after.TryGetValue(edge.Other,out var end))
+            {
+                missing++;
+                continue;
+            }
+            if (start.State!=end.State) netPhysical++;
+            else if (start.Cause!=end.Cause) netCauseOnly++;
+            else netUnchanged++;
+            if (start.State!=seen.First) physicalBeforeFirst++;
+            if (seen.Last!=end.State) physicalAfterLast++;
+            if (seen.First!=seen.Last) physicalBetweenReads++;
+            if (start.Cause!=seen.FirstCause) causeBeforeFirst++;
+            if (seen.LastCause!=end.Cause) causeAfterLast++;
+        }
         var changedPreference = _pr57JrPreference.Count(e => changed.Contains(e.Other));
         var affectedReaders = _pr57JrBlockers.Where(e => changed.Contains(e.Other))
             .Select(e => e.Reader).Distinct().Count();
@@ -80,9 +117,15 @@ public sealed partial class CitySimulation
             $"admissions={_pr57JrAdmissions} changedVehicles={changed.Count} " +
             $"selectedBlockerEdges={_pr57JrBlockers.Count} changedBlockerEdges={changedBlockers} " +
             $"affectedReadersLowerBound={affectedReaders} " +
+            $"netPhysicalEdges={netPhysical} netCauseOnlyEdges={netCauseOnly} " +
+            $"netUnchangedEdges={netUnchanged} missingEndpointEdges={missing} " +
+            $"physicalBeforeFirstRead={physicalBeforeFirst} physicalAfterLastRead={physicalAfterLast} " +
+            $"physicalBetweenSelectedReads={physicalBetweenReads} " +
+            $"causeBeforeFirstRead={causeBeforeFirst} causeAfterLastRead={causeAfterLast} " +
+            $"repeatedSelectedEdges={repeatedEdges} totalSelectedReads={totalSelectedReads} " +
             $"preferenceCandidateEdges={_pr57JrPreference.Count} changedPreferenceEdges={changedPreference} " +
             $"signalReaderJunctionPairs={_pr57JrSignals.Count} redSignalChecks={_pr57JrRedChecks} " +
-            "scope=BOUNDED_OBSERVATIONAL_PARTIAL_GRAPH_NOT_EXACT_INVALIDATION");
+            "scope=BOUNDED_FIRST_LAST_SELECTED_READS_NET_CHANGES_NOT_WRITE_JOURNAL_NOT_EXACT_INVALIDATION");
         _pr57JrActive = false;
         _pr57JrBefore = null;
     }
