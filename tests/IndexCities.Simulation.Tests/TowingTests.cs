@@ -49,6 +49,35 @@ public sealed class TowingTests
         var fee=scene.Sim.State.Ledger.Single(m=>m.Category=="Guincho");Assert.Equal(scene.Driver.Account,fee.From);Assert.Equal("global",fee.To);Assert.Equal(before-fee.Amount,scene.Sim.Balance(scene.Driver.Account));
         Assert.DoesNotContain(scene.Sim.State.Obligations,o=>o.Kind=="Guincho");Assert.Equal(scene.Sim.State.Tuning.TotalMoney,scene.Sim.MonetaryTotal);scene.Sim.CheckInvariants();
     }
+    // PR57 #171: a genuine Advance(2) can add a NEW physical actor from within
+    // the ordered vehicle pass (TendStranded -> CallTow -> TowTruck). A slice-local
+    // physical mirror built from the entry roster must support insertion and
+    // update of the stranded target, not just refreshing the current actor.
+    [Fact] public void Pr57_171_Advance2_spawns_a_new_tow_and_mutates_the_stranded_target()
+    {
+        var scene=City();
+        var sim=scene.Sim;
+        var entryIds=sim.State.Vehicles.Select(v=>v.Id).ToHashSet();
+        Assert.DoesNotContain(sim.State.Vehicles,v=>v.Body is TruckBody.Tow or TruckBody.TowHeavy);
+        Assert.Null(scene.Car.TowTruckId);
+
+        // The same public host cadence as production; no synthetic money or
+        // supplies, no direct helper invocation, no change to the rules.
+        sim.Advance(2);
+        sim.Advance(2);
+
+        var tow=scene.Tow;
+        Assert.NotNull(tow);
+        Assert.DoesNotContain(tow!.Id,entryIds);
+        Assert.True(sim.State.Vehicles.Count>entryIds.Count);
+        Assert.Equal(tow.Id,scene.Car.TowTruckId);
+        Assert.Equal(TowPhase.ToVehicle,tow.TowPhase);
+        Assert.Equal(VehicleStatus.Stranded,scene.Car.Status);
+        sim.CheckInvariants();
+        var saved=sim.SaveToJson();
+        Assert.Equal(saved,CitySimulation.FromJson(saved).SaveToJson());
+    }
+
     [Fact] public void The_tow_stops_in_front_carries_the_car_and_its_people_to_the_station_where_the_owner_refuels_and_continues()
     {
         var scene=City();var car=scene.Car;var sawFront=false;var sawCarried=false;string? savedMidTow=null;double minFollowerGap=double.MaxValue;
