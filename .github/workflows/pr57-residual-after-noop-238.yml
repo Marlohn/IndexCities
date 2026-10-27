@@ -1,0 +1,136 @@
+name: 'PR57 #238 residual integrated phases after s6 state gate'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-residual-after-noop-238.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  residual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build Release and full regression
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore #237 authentic and artificial early/late checkpoints
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-pose-noop-237
+          run-id: 40589313790
+          github-token: \${{ github.token }}
+          path: artifacts/prior
+      - name: Advance(2) ABBA and bounded exclusive/phase profiles
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/residual-238
+          for case in worksREAL queueREAL gridARTIFICIAL; do
+            fixture=cycle; horizon=200
+            if [[ "$case" == gridARTIFICIAL ]]; then fixture=grid; horizon=100; fi
+            for epoch in early late; do
+              index=0
+              if [[ "$epoch" == late ]]; then index=5; fi
+              source="$(find artifacts/prior -type f -path "*/$case-control1/checkpoint-$index.json" -print -quit)"
+              test -s "$source"
+              echo "PR57_238_SOURCE case=$case epoch=$epoch index=$index sha256=$(sha256sum "$source" | cut -d' ' -f1)"
+              for mode in control1 variant1 variant2 control2 profileControl profileVariant; do
+                output="$PWD/artifacts/residual-238/$case-$epoch-$mode"
+                mkdir -p "$output"
+                enabled=0; observed=0; command=scale
+                if [[ "$mode" == variant* || "$mode" == profileVariant ]]; then enabled=1; fi
+                if [[ "$mode" == profile* ]]; then observed=1; command=profile; fi
+                echo "PR57_238_RUN case=$case epoch=$epoch mode=$mode headingNoop=$enabled profile=$observed horizon=$horizon cadence=ADVANCE_2"
+                PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_GRID_DIAG=1 \
+                PR57_SAVE_CAPTURE_DIR="$output" PR57_210_POSE_FOREACH=0 \
+                PR57_236_POSE_NOOP_SKIP="$enabled" \
+                PR57_206_RESIDUAL_EXCLUSIVE="$observed" PR57_207_POSE_GUARD=0 \
+                PR57_208_BODY_SAT_CENSUS=0 PR57_209_SHIPMENT_READ_CENSUS=0 \
+                PR57_LANE_READWRITE_PROBE=0 PR57_BLOCK_DEP_PROBE=0 \
+                PR57_VEHICLE_COST_PROBE=0 PR57_HOT_TIMING=0 PR57_PHASE_ALLOC_PROBE=0 \
+                  timeout 180s dotnet run --no-build -c Release \
+                  --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                  "$command" "$fixture" --seed=42 --warmup=0 --days=1 \
+                  --window="$horizon" --cap=300 --resume="$source" | tee "$output.log"
+              done
+            done
+          done
+      - name: Verify exact checkpoints and print residual partition
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re,statistics
+          root=Path('artifacts/residual-238')
+          def metric(line,key):
+              m=re.search(r'(?:^| )'+re.escape(key)+r'=([-0-9.]+)',line)
+              assert m,(key,line)
+              return float(m.group(1))
+          for case in ('worksREAL','queueREAL','gridARTIFICIAL'):
+              for epoch in ('early','late'):
+                  prefix=f'{case}-{epoch}'
+                  modes=('control1','variant1','variant2','control2','profileControl','profileVariant')
+                  logs={mode:(root/f'{prefix}-{mode}.log').read_text() for mode in modes}
+                  baseline=[(root/f'{prefix}-control1'/f'checkpoint-{i}.json').read_bytes() for i in (0,1)]
+                  for mode,log in logs.items():
+                      assert 'INVARIANTS OK' in log and 'SAVE ' in log,(prefix,mode)
+                      assert len([x for x in log.splitlines() if x.startswith('WINDOW ')])==1,(prefix,mode)
+                      for i in (0,1):
+                          assert (root/f'{prefix}-{mode}'/f'checkpoint-{i}.json').read_bytes()==baseline[i],(prefix,mode,i,'FULL_JSON_MISMATCH')
+                  rows={mode:next(x for x in logs[mode].splitlines() if x.startswith('WINDOW ')) for mode in modes}
+                  for key in ('wall','cpu','allocMB'):
+                      control=statistics.mean(metric(rows[m],key) for m in ('control1','control2'))
+                      variant=statistics.mean(metric(rows[m],key) for m in ('variant1','variant2'))
+                      print('PR57_238_ABBA',prefix,key,'control',round(control,6),'variant',round(variant,6),'ratio',round(control/variant,5) if variant else None)
+                  for mode in ('profileControl','profileVariant'):
+                      log=logs[mode]
+                      slices=[x for x in log.splitlines() if x.startswith('PR57_206_RESIDUAL ')]
+                      assert len(slices)==3,(prefix,mode,'exclusive samples',len(slices))
+                      stages=[sum(metric(row,f's{i}Ms') for row in slices) for i in range(9)]
+                      total=sum(stages)
+                      assert total>0,(prefix,mode)
+                      print('PR57_238_EXCLUSIVE',prefix,mode,'totalMs',round(total,5),
+                            's3to7Ms',round(sum(stages[3:8]),5),'s3to7Pct',round(100*sum(stages[3:8])/total,3),
+                            's6Pct',round(100*stages[6]/total,3),
+                            'stageMs',','.join(f'{x:.5f}' for x in stages),
+                            'scope','THREE_INTRUSIVE_SLICES_ONLY')
+                      phases=[x.strip() for x in log.splitlines() if x.strip().startswith('STEP_PHASE ')]
+                      assert len(phases)>=8,(prefix,mode,'phase rows',len(phases))
+                      phaseSum=sum(metric(x,'wall') for x in phases)
+                      assert phaseSum>0,(prefix,mode)
+                      ordered=sorted(((x.split('name=',1)[1].split(' ',1)[0],metric(x,'wall')) for x in phases),key=lambda x:-x[1])
+                      print('PR57_238_PHASES',prefix,mode,'sumSeconds',round(phaseSum,4),
+                            'top',','.join(f'{n}:{w:.4f}:{100*w/phaseSum:.2f}pct' for n,w in ordered[:8]),
+                            'scope','INTRUSIVE_WINDOW_ALL_PHASES')
+                      details=[x.strip() for x in log.splitlines() if x.strip().startswith('VEHICLE_DETAIL ')]
+                      print('PR57_238_VEHICLE_DETAILS',prefix,mode,
+                            ','.join(f'{x.split("name=",1)[1].split(" ",1)[0]}:{metric(x,"wall"):.5f}' for x in details))
+                  print('PR57_238_PARITY',prefix,'processes',6,'checkpoints',2,'fullJSON','EXACT','cadence','ADVANCE_2')
+          PY
+      - name: Preserve complete logs and causal checkpoints
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-residual-after-noop-238
+          path: artifacts/residual-238/**
+          retention-days: 14
