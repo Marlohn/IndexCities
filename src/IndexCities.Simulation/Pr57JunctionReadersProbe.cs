@@ -13,6 +13,11 @@ public sealed partial class CitySimulation
     Dictionary<int,(Pr57DepState State,string? Cause)>? _pr57JrBefore;
     Dictionary<int,(Pr57DepState State,string? Cause)>? _pr57JrAfterCleanup;
     long _pr57JrCandidateEvaluations;
+    // #196: bounded stage-gate census: visits to short-circuit predicate tails,
+    // NOT a complete physical read graph. The observer always returns true.
+    readonly long[] _pr57JrScanVisits = new long[4]; // manoeuvre, holder, bend-priority, occupant
+    readonly long[] _pr57JrGateVisits = new long[7]; // spaces, pose, holds, turn, pose, claim, pose
+    readonly HashSet<(int Reader,int Other)> _pr57JrPosePairs = new();
     readonly HashSet<int> _pr57JrCandidateIds = new();
     readonly HashSet<(int Reader,int Other)> _pr57JrCandidatePairs = new();
     readonly HashSet<(int Reader,int Other,string Kind)> _pr57JrBlockers = new();
@@ -38,6 +43,9 @@ public sealed partial class CitySimulation
         _pr57JrBefore = Pr57CausalWorld();
         _pr57JrAfterCleanup = null;
         _pr57JrCandidateEvaluations = 0;
+        Array.Clear(_pr57JrScanVisits);
+        Array.Clear(_pr57JrGateVisits);
+        _pr57JrPosePairs.Clear();
         _pr57JrCandidateIds.Clear();
         _pr57JrCandidatePairs.Clear();
         _pr57JrAdmissions = 0;
@@ -55,13 +63,27 @@ public sealed partial class CitySimulation
     }
 
     // Counts real predicate evaluations, including misses; always returns true.
-    bool Pr57JunctionReadersCandidate(Vehicle reader,Vehicle other)
+    bool Pr57JunctionReadersCandidate(Vehicle reader,Vehicle other,int scan)
     {
         if (_pr57JrActive)
         {
             _pr57JrCandidateEvaluations++;
+            _pr57JrScanVisits[scan]++;
             _pr57JrCandidateIds.Add(other.Id);
             _pr57JrCandidatePairs.Add((reader.Id,other.Id));
+        }
+        return true;
+    }
+
+    // Placed immediately before an existing field-dependent predicate tail.
+    // It does not itself inspect the field, and does not count the reads in
+    // earlier guards (tow links, status, route, Receives) or other algorithms.
+    bool Pr57JunctionReadersGate(Vehicle reader,Vehicle other,int gate)
+    {
+        if (_pr57JrActive)
+        {
+            _pr57JrGateVisits[gate]++;
+            if (gate is 1 or 4 or 6) _pr57JrPosePairs.Add((reader.Id,other.Id));
         }
         return true;
     }
@@ -147,6 +169,7 @@ public sealed partial class CitySimulation
         }
         var changedPreference = _pr57JrPreference.Count(e => changed.Contains(e.Other));
         var changedCandidateIds = _pr57JrCandidateIds.Count(id => changed.Contains(id));
+        var changedPosePairs = _pr57JrPosePairs.Count(e => changed.Contains(e.Other));
         var affectedReaders = _pr57JrBlockers.Where(e => changed.Contains(e.Other))
             .Select(e => e.Reader).Distinct().Count();
         Console.WriteLine(
@@ -164,6 +187,13 @@ public sealed partial class CitySimulation
             $"selectedUnchangedAfterCleanup={selectedUnchangedAfterCleanup} " +
             $"selectedMissingAfterCleanup={selectedMissingAfterCleanup} " +
             $"candidateEvaluations={_pr57JrCandidateEvaluations} " +
+            $"scanManoeuvre={_pr57JrScanVisits[0]} scanHolder={_pr57JrScanVisits[1]} " +
+            $"scanBendPriority={_pr57JrScanVisits[2]} scanOccupant={_pr57JrScanVisits[3]} " +
+            $"gateManoeuvreSpaces={_pr57JrGateVisits[0]} gateManoeuvrePose={_pr57JrGateVisits[1]} " +
+            $"gateHolderHolds={_pr57JrGateVisits[2]} gateBendTurn={_pr57JrGateVisits[3]} " +
+            $"gateBendPose={_pr57JrGateVisits[4]} gateOccupantClaim={_pr57JrGateVisits[5]} " +
+            $"gateOccupantPose={_pr57JrGateVisits[6]} poseReaderPairs={_pr57JrPosePairs.Count} " +
+            $"changedPoseReaderPairs={changedPosePairs} " +
             $"candidateDistinctVehicles={_pr57JrCandidateIds.Count} " +
             $"candidateReaderPairs={_pr57JrCandidatePairs.Count} " +
             $"changedCandidateVehicles={changedCandidateIds} " +
