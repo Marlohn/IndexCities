@@ -352,7 +352,10 @@ public sealed partial class CitySimulation
         var route=FindRoadRoute(n.Id,EntryNode().Id,ConstructionTrip(v));if(route.Count==0){v.Status=VehicleStatus.Waiting;v.Cause="Conexão externa interrompida";return;}
         v.Route=route;v.RouteIndex=0;v.DockPosition=null;v.Status=VehicleStatus.Travelling;v.DestinationBuildingId=null;v.ShipmentId=null;v.Cause="Retorno ao exterior";
     }
-    // #237: same bitwise predicate as #236, factored for adversarial tests.\n    static bool Pr57PoseHeadingNoop(double current,double approach)=>\n        BitConverter.DoubleToInt64Bits(current)==BitConverter.DoubleToInt64Bits(approach);\n    void MoveVehiclesUnsplit(double dt,double? operationsDt=null)
+    // #237: same bitwise predicate as #236, factored for adversarial tests.
+    static bool Pr57PoseHeadingNoop(double current,double approach)=>
+        BitConverter.DoubleToInt64Bits(current)==BitConverter.DoubleToInt64Bits(approach);
+    void MoveVehiclesUnsplit(double dt,double? operationsDt=null)
     {
         Pr57SetupGapStart(dt,operationsDt);
         Pr57PrepareSiteOwnerRoster();
