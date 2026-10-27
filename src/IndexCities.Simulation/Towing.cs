@@ -152,7 +152,7 @@ public sealed partial class CitySimulation
         var body=heavy?TruckBody.TowHeavy:TruckBody.Tow;
         if(State.Vehicles.FirstOrDefault(v=>v.Body==body&&v.External&&v.Status==VehicleStatus.Outside&&v.TowPhase==TowPhase.None&&v.ServicePhase==ServicePhase.None&&!v.BrokenDown&&v.ShipmentId==null) is {} idle)return idle;
         var tow=new Vehicle{Id=Id(),Body=body,External=true,ExternalDriverId=heavy?"guincheiro externo (pesado)":"guincheiro externo",Status=VehicleStatus.Outside,Position=State.Entry,CargoCapacity=0,Cause="Disponível no exterior"};
-        State.Vehicles.Add(tow);return tow;
+        State.Vehicles.Add(tow);Pr57DirtyTouch(tow);return tow;
     }
     void CallTow(Vehicle t)
     {
@@ -187,6 +187,7 @@ public sealed partial class CitySimulation
         tow.Route=toVehicle;tow.RouteIndex=0;tow.DockPosition=pose;tow.Detour.Clear();tow.WaitingSince=0;tow.IntersectionClaim=null;tow.Status=VehicleStatus.Travelling;
         tow.TowPhase=TowPhase.ToVehicle;tow.TowTargetId=t.Id;tow.TowDestination=plan.Kind;tow.TowStationId=plan.Station?.Id;tow.Cause=$"Guincho a caminho do veículo {t.Id}";
         t.TowTruckId=tow.Id;t.TowRoadRevision=null;AssignTowDestination(t,plan);t.Cause=$"{TowPrefix(t)}; aguardando guincho {tow.Id}";
+        Pr57DirtyTouch(tow);Pr57DirtyTouch(t);
     }
     // A vehicle bound for a shop counts against its room from the call on; one
     // still at a shop (repaired) keeps its place there until loaded.
@@ -253,6 +254,7 @@ public sealed partial class CitySimulation
             return false;
         }
         var t=State.Vehicles.FirstOrDefault(o=>o.Id==tow.TowTargetId);
+        Pr57DirtyTouch(t); // target may be changed by loading, delivery or abort
         if(t==null||t.TowTruckId!=tow.Id||tow.TowPhase is TowPhase.ToVehicle or TowPhase.Loading&&!AwaitsTow(t)){AbortTow(tow,t);return true;}
         switch(tow.TowPhase){
             case TowPhase.Loading:tow.AddLoadTimer(-(dt));if(tow.LoadTimer<=0)LoadTowed(tow,t);return true;
@@ -269,6 +271,7 @@ public sealed partial class CitySimulation
     void CheckTowFuel(Vehicle tow)
     {
         if(State.Vehicles.FirstOrDefault(o=>o.Id==tow.TowTargetId) is not {} t||tow.Route.Count==0)return;
+        Pr57DirtyTouch(t);
         var ahead=tow.Route.GetRange(Math.Max(0,tow.RouteIndex-1),tow.Route.Count-Math.Max(0,tow.RouteIndex-1));var remaining=RouteLength(ahead)+(ahead.Count>0&&_roads.TryGetValue(ahead[0],out var first)?first.Position.Distance(tow.Position):0);
         var home=TowHomeNode(tow)??EntryNode();
         if(tow.TowPhase==TowPhase.ToVehicle){if(!_roads.TryGetValue(tow.Route[^1],out var pickup)||PlanTowDelivery(t,pickup,tow.Fuel,remaining,TowClosedRoads(tow),null,home)==null){AbortTow(tow,t);t.Cause=TowPrefix(t)+"; outro guincho a caminho (o anterior voltou para reabastecer)";}return;}
@@ -278,6 +281,7 @@ public sealed partial class CitySimulation
     }
     void AbortTow(Vehicle tow,Vehicle? t)
     {
+        Pr57DirtyTouch(t);
         if(t!=null&&t.TowTruckId==tow.Id)t.TowTruckId=null;
         tow.TowPhase=TowPhase.None;tow.TowTargetId=null;tow.TowStationId=null;tow.TowExitWaitSince=0;tow.TowExitNoOther=false;ReturnTow(tow);
     }
@@ -297,6 +301,7 @@ public sealed partial class CitySimulation
     // the sample before it so the lane is known and it can still turn back.
     bool StartDelivery(Vehicle tow,Vehicle t,HashSet<int>? avoid=null)
     {
+        Pr57DirtyTouch(t);
         var closed=TowClosedRoads(tow);TowPlan? best=null;RoadNode? from=null;double cost=double.MaxValue;var home=TowHomeNode(tow)??EntryNode();
         var near=State.Roads.Where(r=>!r.ConstructionOnly&&r.Position.Distance(tow.Position)<=State.Tuning.RoadWidth).OrderBy(r=>closed.Contains(r.Id)?1:0).ThenBy(r=>r.Position.Distance(tow.Position)).ToList();
         if(near.Count==0&&NearestRoad(tow.Position) is {} nearest)near.Add(nearest);
@@ -362,6 +367,7 @@ public sealed partial class CitySimulation
     void TowReachedDock(Vehicle tow)
     {
         tow.IntersectionClaim=null;tow.WaitingSince=0;var t=State.Vehicles.FirstOrDefault(o=>o.Id==tow.TowTargetId);
+        Pr57DirtyTouch(t);
         if(tow.TowPhase==TowPhase.ToVehicle){
             if(t==null||!AwaitsTow(t)){AbortTow(tow,t);return;}
             // It stops facing away from the stranded vehicle, rear to its front.
@@ -379,6 +385,7 @@ public sealed partial class CitySimulation
     }
     void LoadTowed(Vehicle tow,Vehicle t)
     {
+        Pr57DirtyTouch(t);
         t.PushPath.Clear();t.PushHeading=null;
         // A repaired vehicle leaves the shop now (its place there is free).
         if(t.ServicePhase==ServicePhase.AwaitingReturn){t.ServiceShopId=null;t.ServiceBay=null;t.ServiceSpot=null;}
@@ -391,7 +398,7 @@ public sealed partial class CitySimulation
     {
         foreach(var tow in State.Vehicles){
             if(tow.TowPhase is not (TowPhase.Delivering or TowPhase.Unloading))continue;
-            if(State.Vehicles.FirstOrDefault(o=>o.Id==tow.TowTargetId) is {Status:VehicleStatus.Towed} t)SyncTowed(tow,t);
+            if(State.Vehicles.FirstOrDefault(o=>o.Id==tow.TowTargetId) is {Status:VehicleStatus.Towed} t){Pr57DirtyTouch(t);SyncTowed(tow,t);}
         }
     }
     static void SyncTowed(Vehicle tow,Vehicle t)
@@ -401,6 +408,7 @@ public sealed partial class CitySimulation
     }
     void DeliverTowed(Vehicle tow,Vehicle t)
     {
+        Pr57DirtyTouch(t);
         _pr57AxisSweepDirty=true;
         var destination=tow.TowDestination;var station=BuildingById(tow.TowStationId);
         // The station can stop operating while the tow unloads: the same rule sends it on.

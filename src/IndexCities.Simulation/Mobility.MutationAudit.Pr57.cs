@@ -9,6 +9,54 @@ public sealed partial class CitySimulation
     static readonly bool Pr57MutationAuditEnabled =
         Environment.GetEnvironmentVariable("PR57_VEHICLE_MUTATION_AUDIT") == "1";
 
+    // #173: deliberately intrusive sampled writer-closure falsification.
+    // These IDs are only observational. The live physics never reads them.
+    static readonly bool Pr57DirtyClosureProbeEnabled =
+        Environment.GetEnvironmentVariable("PR57_DIRTY_CLOSURE_PROBE") == "1";
+    HashSet<int>? _pr57DirtyTouched;
+    long _pr57DirtyMarkCalls, _pr57DirtyMarkTicks, _pr57DirtyMarkBytes,
+        _pr57DirtyUnique, _pr57DirtyActual, _pr57DirtyMissed,
+        _pr57DirtyOvermarked, _pr57DirtyNewIds, _pr57DirtyPreQueryMisses;
+
+    // The cost of this HashSet.Add is a LOWER BOUND for a physical index:
+    // it does not update any payload or perform the expensive exact audit.
+    // Stopwatch and allocation counters are included in the measured hook.
+    void Pr57DirtyTouch(Vehicle? vehicle)
+    {
+        if (!Pr57DirtyClosureProbeEnabled || !_pr57MutationSampleActive ||
+            _pr57DirtyTouched is null || vehicle is null) return;
+        var start = System.Diagnostics.Stopwatch.GetTimestamp();
+        var bytes = GC.GetAllocatedBytesForCurrentThread();
+        _pr57DirtyTouched.Add(vehicle.Id);
+        _pr57DirtyMarkTicks += System.Diagnostics.Stopwatch.GetTimestamp() - start;
+        _pr57DirtyMarkBytes += GC.GetAllocatedBytesForCurrentThread() - bytes;
+        _pr57DirtyMarkCalls++;
+    }
+
+    // Exact full-JSON verification is confined to the sampled audit, never to
+    // a production read path. Overmarks are allowed; misses falsify closure.
+    void Pr57DirtyCheck(Dictionary<int, string> previous, Dictionary<int, string> next)
+    {
+        if (!Pr57DirtyClosureProbeEnabled || _pr57DirtyTouched is null) return;
+        var actual = new HashSet<int>();
+        foreach (var (id, value) in next)
+            if (!previous.TryGetValue(id, out var old) ||
+                !string.Equals(old, value, StringComparison.Ordinal))
+            {
+                actual.Add(id);
+                if (!previous.ContainsKey(id)) _pr57DirtyNewIds++;
+            }
+        foreach (var id in previous.Keys)
+            if (!next.ContainsKey(id)) actual.Add(id);
+        _pr57DirtyUnique += _pr57DirtyTouched.Count;
+        _pr57DirtyActual += actual.Count;
+        foreach (var id in actual)
+            if (!_pr57DirtyTouched.Contains(id)) _pr57DirtyMissed++;
+        foreach (var id in _pr57DirtyTouched)
+            if (!actual.Contains(id)) _pr57DirtyOvermarked++;
+        _pr57DirtyTouched.Clear();
+    }
+
     Dictionary<int, string>? _pr57MutationMirror;
     bool _pr57MutationSampleActive;
     long _pr57MutationSlices, _pr57MutationSamples, _pr57MutationVehiclePasses,
@@ -34,6 +82,7 @@ public sealed partial class CitySimulation
         // Called after global junction/manoeuvre cleanup, before the ordered
         // vehicle loop. The cleanup is intentionally NOT considered independent.
         _pr57MutationMirror = Pr57MutationWorld();
+        if (Pr57DirtyClosureProbeEnabled) _pr57DirtyTouched = new HashSet<int>();
     }
 
     void Pr57MutationBeforeLeaderScan(Vehicle actor)
@@ -48,6 +97,8 @@ public sealed partial class CitySimulation
                  !string.Equals(prior, Pr57MutationSnapshot(v), StringComparison.Ordinal)))
             {
                 _pr57MutationBeforeQueryDivergences++;
+                if (Pr57DirtyClosureProbeEnabled && _pr57DirtyTouched?.Contains(v.Id) != true)
+                    _pr57DirtyPreQueryMisses++;
                 break;
             }
     }
@@ -56,6 +107,7 @@ public sealed partial class CitySimulation
     {
         if (!_pr57MutationSampleActive || _pr57MutationMirror is not { } old) return;
         _pr57MutationVehiclePasses++;
+        Pr57DirtyTouch(actor); // conservative actor writer, including unchanged passes
         var next = Pr57MutationWorld();
         var selfChanged = false;
         var thirdChanged = 0;
@@ -80,6 +132,7 @@ public sealed partial class CitySimulation
         }
         if (!selfChanged && thirdChanged == 0) _pr57MutationUnchangedPasses++;
         if (old.Count != next.Count) _pr57MutationListChanges++;
+        Pr57DirtyCheck(old, next);
         _pr57MutationMirror = next;
     }
 
@@ -93,6 +146,8 @@ public sealed partial class CitySimulation
                 _pr57MutationSyncVehicleChanges++;
         foreach (var id in old.Keys)
             if (!next.ContainsKey(id)) _pr57MutationSyncVehicleChanges++;
+        Pr57DirtyCheck(old, next);
+        _pr57DirtyTouched = null;
         _pr57MutationMirror = null;
         _pr57MutationSampleActive = false;
         Console.WriteLine(
@@ -106,5 +161,13 @@ public sealed partial class CitySimulation
             $"syncVehicleChanges={_pr57MutationSyncVehicleChanges} " +
             $"listChanges={_pr57MutationListChanges} " +
             "sampled=1of97 observational=True exactDependencies=False");
+        if (Pr57DirtyClosureProbeEnabled)
+            Console.WriteLine(
+                $"PR57_DIRTY_CLOSURE samples={_pr57MutationSamples} marks={_pr57DirtyMarkCalls} " +
+                $"uniqueTouched={_pr57DirtyUnique} actualChanged={_pr57DirtyActual} " +
+                $"missed={_pr57DirtyMissed} overmarked={_pr57DirtyOvermarked} " +
+                $"newIds={_pr57DirtyNewIds} preQueryMisses={_pr57DirtyPreQueryMisses} " +
+                $"markTicks={_pr57DirtyMarkTicks} markBytes={_pr57DirtyMarkBytes} " +
+                "scope=towHooksPlusActor observational=True fullClosureProven=False");
     }
 }
