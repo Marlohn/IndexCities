@@ -354,6 +354,7 @@ public sealed partial class CitySimulation
     }
     void MoveVehiclesUnsplit(double dt,double? operationsDt=null)
     {
+        Pr57SetupGapStart(dt,operationsDt);
         Pr57PrepareSiteOwnerRoster();
         Pr57CausalBeginSlice(dt,operationsDt);
         Pr57JunctionCensusBeginSlice(dt,operationsDt);
@@ -595,6 +596,7 @@ public sealed partial class CitySimulation
             _pr57AxisSweepAnnounced=true;
         }
         if(scanProfile is not null)_pr57MovementAllocBytes[1]+=GC.GetAllocatedBytesForCurrentThread()-pr57AllocCallStart;
+        Pr57SetupGapEnd(ordered.Length,pr57ScanCandidates.Count);
         foreach(var v in ordered){
             Pr57PhaseImpactBeforeActor(v);
             Pr57ExclusiveBeginVehicle(v);
