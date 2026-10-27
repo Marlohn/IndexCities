@@ -7,7 +7,7 @@ public sealed partial class CitySimulation
     static readonly bool Pr57PhaseImpactEnabled =
         Environment.GetEnvironmentVariable("PR57_229_PHASE_FLIP_IMPACT") == "1";
 
-    sealed class Pr57PhaseImpactFlip
+    sealed class Pr57PhaseFlipEvent
     {
         public int ReaderId, CandidateId;
         public Pr57PhaseExposureSnapshot Initial, AtRead;
@@ -18,7 +18,7 @@ public sealed partial class CitySimulation
     bool _pr57PhaseImpactActive;
     readonly Dictionary<int, Pr57PhaseExposureSnapshot> _pr57PhaseBeforeActor = new();
     readonly Dictionary<int, Pr57PhaseExposureSnapshot> _pr57PhaseAfterActor = new();
-    readonly List<Pr57PhaseImpactFlip> _pr57PhaseCurrentFlips = new();
+    readonly List<Pr57PhaseFlipEvent> _pr57PhaseCurrentFlips = new();
     long _pr57PhaseImpactFlips, _pr57PhaseImpactHeld, _pr57PhaseImpactWinners;
     long _pr57PhaseImpactBeforeOwn, _pr57PhaseImpactDuringOwn, _pr57PhaseImpactAfterOwn;
 
@@ -53,7 +53,7 @@ public sealed partial class CitySimulation
         Pr57PhaseExposureSnapshot initial, Pr57PhaseExposureSnapshot atRead)
     {
         if (!_pr57PhaseImpactActive) return;
-        _pr57PhaseCurrentFlips.Add(new Pr57PhaseImpactFlip {
+        _pr57PhaseCurrentFlips.Add(new Pr57PhaseFlipEvent {
             ReaderId = reader.Id, CandidateId = candidate.Id,
             Initial = initial, AtRead = atRead
         });
