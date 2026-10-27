@@ -12,6 +12,18 @@ public sealed partial class CitySimulation
     // Observation only; excludes the loop itself and later tow synchronization.
     static readonly bool Pr57SetupGapEnabled =
         Environment.GetEnvironmentVariable("PR57_235_SETUP_GAP") == "1";
+    // #244: bounded state/cohort attribution of the existing #206 stage timings.
+    // Read-only, opt-in; no physical decision, actor order or save observes this.
+    static readonly bool Pr57State244Enabled =
+        Environment.GetEnvironmentVariable("PR57_244_STATE_COST") == "1";
+    static readonly HashSet<int> Pr57State244PersistentIds =
+        (Environment.GetEnvironmentVariable("PR57_244_PERSISTENT_IDS") ?? "")
+        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .Select(id => int.Parse(id)).ToHashSet();
+    readonly long[][] _pr57State244Ticks = Enumerable.Range(0, 5).Select(_ => new long[9]).ToArray();
+    readonly long[] _pr57State244Calls = new long[5];
+    readonly long[] _pr57State244CurrentTicks = new long[9];
+    bool _pr57State244StartedTravelling;
     bool _pr57SetupGapRunning;
     long _pr57SetupGapStartTicks, _pr57SetupGapStartBytes;
 
@@ -69,6 +81,11 @@ public sealed partial class CitySimulation
         Array.Clear(_pr57ExclusiveBytes);
         Array.Clear(_pr57ExclusiveSegments);
         _pr57ExclusiveVehicles = _pr57ExclusiveTravelling = _pr57ExclusiveMoved = 0;
+        if (Pr57State244Enabled)
+        {
+            foreach (var row in _pr57State244Ticks) Array.Clear(row);
+            Array.Clear(_pr57State244Calls);
+        }
         Pr57PoseGuardReset();
         Pr57ExecBeginSlice();
     }
@@ -81,6 +98,11 @@ public sealed partial class CitySimulation
         _pr57ExclusiveStartTick = System.Diagnostics.Stopwatch.GetTimestamp();
         _pr57ExclusiveStartBytes = GC.GetAllocatedBytesForCurrentThread();
         _pr57ExclusiveOldPosition = vehicle.Position;
+        if (Pr57State244Enabled)
+        {
+            Array.Clear(_pr57State244CurrentTicks);
+            _pr57State244StartedTravelling = vehicle.Status == VehicleStatus.Travelling;
+        }
         Pr57ExecBeginVehicle(vehicle);
         Pr57DenseBeginVehicle();
     }
@@ -90,7 +112,9 @@ public sealed partial class CitySimulation
         if (!_pr57ExclusiveVehicleActive) return;
         var now = System.Diagnostics.Stopwatch.GetTimestamp();
         var bytes = GC.GetAllocatedBytesForCurrentThread();
-        _pr57ExclusiveTicks[_pr57ExclusiveStage] += now - _pr57ExclusiveStartTick;
+        var elapsed = now - _pr57ExclusiveStartTick;
+        _pr57ExclusiveTicks[_pr57ExclusiveStage] += elapsed;
+        if (Pr57State244Enabled) _pr57State244CurrentTicks[_pr57ExclusiveStage] += elapsed;
         _pr57ExclusiveBytes[_pr57ExclusiveStage] += bytes - _pr57ExclusiveStartBytes;
         _pr57ExclusiveSegments[_pr57ExclusiveStage]++;
         Pr57ExecRecordSegment(_pr57ExclusiveStage,
@@ -105,6 +129,19 @@ public sealed partial class CitySimulation
     {
         if (!_pr57ExclusiveVehicleActive) return;
         Pr57ExclusiveMark(0);
+        if (Pr57State244Enabled)
+        {
+            var moved = vehicle.Position.Distance(_pr57ExclusiveOldPosition) > 1e-7;
+            var travelling = _pr57State244StartedTravelling && vehicle.Status == VehicleStatus.Travelling;
+            var persistent = Pr57State244PersistentIds.Contains(vehicle.Id);
+            // 0 persistent/still travelling/still; 1 other persistent;
+            // 2 other travelling/still; 3 other travelling/moved; 4 other.
+            var group = persistent ? (travelling && !moved ? 0 : 1)
+                : travelling ? (moved ? 3 : 2) : 4;
+            _pr57State244Calls[group]++;
+            for (var i = 0; i < 9; i++)
+                _pr57State244Ticks[group][i] += _pr57State244CurrentTicks[i];
+        }
         Pr57ExecFinishVehicle(vehicle);
         Pr57DenseFinishVehicle(vehicle);
         _pr57ExclusiveVehicleActive = false;
@@ -131,5 +168,22 @@ public sealed partial class CitySimulation
             string.Join(" ", Enumerable.Range(0, 9).Select(i =>
                 $"s{i}Ms={Ms(_pr57ExclusiveTicks[i])} s{i}MB={_pr57ExclusiveBytes[i] / 1e6:F6} s{i}Segments={_pr57ExclusiveSegments[i]}")) +
             " scope=ordered-vehicle-loop only observational=True exclusiveWithinLoop=True intrusive=True");
+        if (Pr57State244Enabled)
+        {
+            string[] names = ["persistent-still", "persistent-other", "other-travelling-still",
+                "other-travelling-moved", "other"];
+            for (var group = 0; group < names.Length; group++)
+            {
+                var ticks = _pr57State244Ticks[group];
+                Console.WriteLine(
+                    $"PR57_244_STATE sample={_pr57ExclusiveSamples} group={names[group]} " +
+                    $"actors={_pr57State244Calls[group]} totalMs={Ms(ticks.Sum())} " +
+                    $"s3to5Ms={Ms(ticks[3] + ticks[4] + ticks[5])} " +
+                    string.Join(" ", Enumerable.Range(0, 9).Select(i => $"s{i}Ms={Ms(ticks[i])}")) +
+                    $" cohortIds={Pr57State244PersistentIds.Count} " +
+                    "scope=three-physical-slices sampled-post-state noCausalClosure=True " +
+                    "observational=True intrusive=True");
+            }
+        }
     }
 }
