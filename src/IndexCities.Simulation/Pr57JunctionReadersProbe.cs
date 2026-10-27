@@ -62,6 +62,7 @@ public sealed partial class CitySimulation
     {
         if (_pr57JrActive) _pr57JrAfterCleanup = Pr57CausalWorld();
         Pr57ReservationAfterCleanup();
+        Pr57ReservationShadowBegin();
     }
 
     // Counts real predicate evaluations, including misses; always returns true.
@@ -93,6 +94,7 @@ public sealed partial class CitySimulation
     void Pr57JunctionReadersAdmission(Vehicle reader,RoadNode junction)
     {
         if (_pr57JrActive) _pr57JrAdmissions++;
+        Pr57ReservationShadowAdmission(junction);
     }
 
     // These edges identify the ACTUAL object selected by an admission branch.
@@ -204,6 +206,7 @@ public sealed partial class CitySimulation
             $"signalReaderJunctionPairs={_pr57JrSignals.Count} redSignalChecks={_pr57JrRedChecks} " +
             "scope=BOUNDED_FIRST_LAST_SELECTED_READS_NET_CHANGES_NOT_WRITE_JOURNAL_NOT_EXACT_INVALIDATION");
         Pr57ReservationEnd();
+        Pr57ReservationShadowEnd();
         _pr57JrActive = false;
         _pr57JrBefore = null;
         _pr57JrAfterCleanup = null;
@@ -249,6 +252,7 @@ public sealed partial class CitySimulation
     long _pr57ReservationHookMissedBoundaryChanges, _pr57ReservationHookTicks;
     void Pr57ReservationWrite(Vehicle vehicle,string site)
     {
+        Pr57ReservationShadowWrite(vehicle);
         if(!_pr57ReservationWritersActive||!Pr57ReservationHooksEnabled)return;
         var start=System.Diagnostics.Stopwatch.GetTimestamp();
         _pr57ReservationHookCalls++;
