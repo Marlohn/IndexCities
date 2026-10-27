@@ -352,7 +352,7 @@ public sealed partial class CitySimulation
         var route=FindRoadRoute(n.Id,EntryNode().Id,ConstructionTrip(v));if(route.Count==0){v.Status=VehicleStatus.Waiting;v.Cause="Conexão externa interrompida";return;}
         v.Route=route;v.RouteIndex=0;v.DockPosition=null;v.Status=VehicleStatus.Travelling;v.DestinationBuildingId=null;v.ShipmentId=null;v.Cause="Retorno ao exterior";
     }
-    void MoveVehiclesUnsplit(double dt,double? operationsDt=null)
+    // #237: same bitwise predicate as #236, factored for adversarial tests.\n    static bool Pr57PoseHeadingNoop(double current,double approach)=>\n        BitConverter.DoubleToInt64Bits(current)==BitConverter.DoubleToInt64Bits(approach);\n    void MoveVehiclesUnsplit(double dt,double? operationsDt=null)
     {
         Pr57SetupGapStart(dt,operationsDt);
         Pr57PrepareSiteOwnerRoster();
@@ -980,7 +980,7 @@ public sealed partial class CitySimulation
                 // canonical effect of this predicate. Compare the exact double
                 // representation (including signed zero), not approximate angles.
                 var pr57PoseNoop=pr57PoseNoopSkip&&
-                    BitConverter.DoubleToInt64Bits(v.Heading)==BitConverter.DoubleToInt64Bits(approachHeading);
+                    Pr57PoseHeadingNoop(v.Heading,approachHeading);
                 if(pr57PoseNoopSkip&&scanProfile is not null&&dt>0&&step<.00001&&d>.00001){
                     pr57PoseNoopEligible++;
                     if(pr57PoseNoop)pr57PoseNoopSkipped++;
