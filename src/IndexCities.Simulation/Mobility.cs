@@ -49,6 +49,25 @@ public sealed partial class CitySimulation
     readonly long[] _pr57CitizenStateCalls = new long[4];
     readonly long[] _pr57CitizenStateTicks = new long[4];
     long _pr57CitizenSetupTicks, _pr57CitizenLoopTicks;
+    // PR57 #239: bounded, observational breakdown; never consulted by gameplay.
+    static readonly bool Pr57Citizen239Enabled =
+        Environment.GetEnvironmentVariable("PR57_239_CITIZEN_PHASES") == "1";
+    readonly long[] _pr57Citizen239Ticks = new long[7];
+    readonly long[] _pr57Citizen239Calls = new long[7];
+    void Pr57Citizen239Record(int stage,long start)
+    {
+        _pr57Citizen239Ticks[stage] += System.Diagnostics.Stopwatch.GetTimestamp() - start;
+        _pr57Citizen239Calls[stage]++;
+    }
+    public IEnumerable<string> Pr57Citizen239Report()
+    {
+        if (!Pr57Citizen239Enabled) yield break;
+        string[] names = ["update-crosswalks-cold","refresh-crosswalks","pedestrian-grid-rebuild",
+            "citizen-routine-total","seek-food","family-adults-shopper","start-journey"];
+        var hz = (double)System.Diagnostics.Stopwatch.Frequency;
+        for (var i=0;i<names.Length;i++)
+            yield return $"PR57_239_CITIZEN name={names[i]} calls={_pr57Citizen239Calls[i]} ms={_pr57Citizen239Ticks[i]*1000/hz:F5} scope=INTRUSIVE_OBSERVATIONAL";
+    }
     public IEnumerable<string> Pr57CitizenStateCostReport()
     {
         if (!Pr57CitizenStateCostEnabled) yield break;
@@ -112,13 +131,24 @@ public sealed partial class CitySimulation
     {
         var pr57StateCost = CostProfile is not null && Pr57CitizenStateCostEnabled;
         var pr57SetupStart = pr57StateCost ? System.Diagnostics.Stopwatch.GetTimestamp() : 0L;
+        var pr57Citizen239 = Pr57Citizen239Enabled && CostProfile is not null;
         if(!Pr57CitizenAgendaEnabled&&!_pr57AgendaAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1"){Console.WriteLine("PR57_CITIZEN_AGENDA active=False");_pr57AgendaAnnounced=true;}
         // Refresh derived crossings once for an old save before retrying routes.
         // Loading itself still preserves the serialized state exactly.
-        if(!_pedestrianCrossingsChecked){UpdateCrosswalks();_pedestrianCrossingsChecked=true;}
+        if(!_pedestrianCrossingsChecked){
+            var t=pr57Citizen239?System.Diagnostics.Stopwatch.GetTimestamp():0L;
+            UpdateCrosswalks();_pedestrianCrossingsChecked=true;
+            if(pr57Citizen239)Pr57Citizen239Record(0,t);
+        }
+        var refreshStart=pr57Citizen239?System.Diagnostics.Stopwatch.GetTimestamp():0L;
         RefreshCrosswalks();
+        if(pr57Citizen239)Pr57Citizen239Record(1,refreshStart);
         _pr57PedestrianGridActive=_pr57PedestrianGridEnabled;
-        if(_pr57PedestrianGridActive)Pr57RebuildPedestrianGrid();
+        if(_pr57PedestrianGridActive){
+            var gridStart=pr57Citizen239?System.Diagnostics.Stopwatch.GetTimestamp():0L;
+            Pr57RebuildPedestrianGrid();
+            if(pr57Citizen239)Pr57Citizen239Record(2,gridStart);
+        }
         if(!_pr57PedestrianGridAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1"){
             Console.WriteLine($"PR57_PEDESTRIAN_GRID active={_pr57PedestrianGridActive} citizens={State.Citizens.Count} cellMetres=8");
             _pr57PedestrianGridAnnounced=true;
@@ -293,18 +323,33 @@ public sealed partial class CitySimulation
     }
     void CitizenRoutine(Citizen c)
     {
+        var pr57Citizen239 = Pr57Citizen239Enabled && CostProfile is not null;
+        var routineStart=pr57Citizen239?System.Diagnostics.Stopwatch.GetTimestamp():0L;
+        try {
         if(!c.Resident||!c.InsideMap)return;
         // SPEC 8A: the driver waits at the shop door until the revision is done.
         if(c.Purpose==JourneyPurpose.Service&&WaitingForService(c))return;
         var family=FamilyById(c.FamilyId);var home=BuildingById(family?.HomeId);var job=BuildingById(c.WorkplaceId);
         if(c.ConstructionProjectId!=null){if(ShiftActive(c))return;var p=State.Projects.FirstOrDefault(p=>p.Id==c.ConstructionProjectId);p?.LocalCrew.Remove(c.Id);c.ConstructionProjectId=null;}
         if(job!=null&&ShiftActive(c)){
-            if(c.Position.Distance(job.Door)>3)StartJourney(c,job,JourneyPurpose.Work);else c.Activity="No trabalho";return;
+            if(c.Position.Distance(job.Door)>3){
+                var journeyStart=pr57Citizen239?System.Diagnostics.Stopwatch.GetTimestamp():0L;
+                StartJourney(c,job,JourneyPurpose.Work);
+                if(pr57Citizen239)Pr57Citizen239Record(6,journeyStart);
+            }else c.Activity="No trabalho";return;
         }
         if(home==null){c.Activity="Sem moradia";return;}
+        var adultsStart=pr57Citizen239?System.Diagnostics.Stopwatch.GetTimestamp():0L;
         var adults=family!.Members.Select(id=>CitizenWithId(id)).Where(x=>x.Alive&&x.Age>=18&&x.Resident).ToList();
         var existingShopper=adults.Any(x=>x.Id!=c.Id&&(x.Purpose==JourneyPurpose.Shopping&&x.Moving||x.BagFood>0));
-        if(family.Pantry<family.Members.Count*1.5&&c.Age>=18&&!existingShopper&&State.Now.Hour>=7&&State.Now.Hour<21){c.TriedShops.Clear();if(SeekFood(c))return;}
+        if(pr57Citizen239)Pr57Citizen239Record(5,adultsStart);
+        if(family.Pantry<family.Members.Count*1.5&&c.Age>=18&&!existingShopper&&State.Now.Hour>=7&&State.Now.Hour<21){
+            c.TriedShops.Clear();
+            var foodStart=pr57Citizen239?System.Diagnostics.Stopwatch.GetTimestamp():0L;
+            var foodFound=SeekFood(c);
+            if(pr57Citizen239)Pr57Citizen239Record(4,foodStart);
+            if(foodFound)return;
+        }
         if(c.Purpose==JourneyPurpose.Visit&&c.OutingUntil>State.ElapsedSeconds&&c.Position.Distance(home.Door)>3){
             // A failed food search updates its diagnosis, but does not make an
             // arrived visitor leave the actual interior or end the visit.
@@ -312,7 +357,14 @@ public sealed partial class CitySimulation
             return;
         }
         if(c.Position.Distance(home.Door)<=3&&c.Age>=18&&FreeTime(c)&&NextRandom()<State.Tuning.OutingChancePerMinute&&TryOuting(c,home))return;
-        if(c.Position.Distance(home.Door)>3)StartJourney(c,home,JourneyPurpose.Home);else c.Activity="Em casa";
+        if(c.Position.Distance(home.Door)>3){
+            var journeyStart=pr57Citizen239?System.Diagnostics.Stopwatch.GetTimestamp():0L;
+            StartJourney(c,home,JourneyPurpose.Home);
+            if(pr57Citizen239)Pr57Citizen239Record(6,journeyStart);
+        }else c.Activity="Em casa";
+        } finally {
+            if(pr57Citizen239)Pr57Citizen239Record(3,routineStart);
+        }
     }
     bool SeekFood(Citizen c,int? excluded=null)
     {
