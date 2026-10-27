@@ -257,6 +257,7 @@ if(profile is not null){
     foreach(var line in sim.Pr57Citizen239Report())Console.WriteLine(line);
     foreach(var line in sim.Pr57Walk240Report())Console.WriteLine(line);
     foreach(var line in sim.Pr57Arrive241Report())Console.WriteLine(line);
+    foreach(var line in sim.Pr57Food242Report())Console.WriteLine(line);
 }
 census?.Print(done);if(stuck!=null)Console.WriteLine($"STUCK SUMMARY guinchos chamados={sim.State.Ledger.Where(m=>m.Category=="Guincho"&&m.To=="global").Select(m=>(m.At,m.EntityId)).Distinct().Count()} rebocando agora={sim.State.Vehicles.Count(v=>v.Status==VehicleStatus.Towed)} sem combustível na via (total)={stuck.StrandedTotal} parados≥30min (máx)={stuck.StuckMax} mortos={sim.State.Citizens.Count(c=>!c.Alive)}");
 sw.Restart();var json=sim.SaveToJson();var save=sw.Elapsed.TotalSeconds;sw.Restart();CitySimulation.FromJson(json);

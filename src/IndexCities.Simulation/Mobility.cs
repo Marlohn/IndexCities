@@ -479,17 +479,39 @@ public sealed partial class CitySimulation
     }
     bool SeekFood(Citizen c,int? excluded=null)
     {
-        if(excluded!=null&&!c.TriedShops.Contains(excluded.Value))c.TriedShops.Add(excluded.Value);
-        // Choose by the family's real total cost: shelf price for what it needs plus
-        // a calibrated round-trip cost; a shop that cannot fill the basket costs
-        // another trip elsewhere.
-        var family=FamilyById(c.FamilyId);var wanted=Math.Max(1,(family?.Members.Count??1)*State.Tuning.PurchaseFoodPerPerson-(family?.Pantry??0));
-        decimal TripCost(Building shop)=>(decimal)(shop.Position.Distance(c.Position)*2)*State.Tuning.ShoppingTripCostPerMetre;
-        foreach(var shop in State.Buildings.Where(b=>b.Kind==BuildingKind.Grocery&&b.Completed&&!b.Removed&&b.CompanyId!=null&&!c.TriedShops.Contains(b.Id)).OrderBy(b=>b.SalePrice*(decimal)wanted+TripCost(b)*(b.Quantity(ResourceKind.Food)>=wanted?1:2)).ThenBy(b=>b.Id)){
-            if(!Open(shop)||shop.OperationalCapacity<=0||shop.Quantity(ResourceKind.Food)<.5)continue;
-            if(StartJourney(c,shop,JourneyPurpose.Shopping))return true;
+        // #242: observation only; preserve the lazy sorted enumeration, its
+        // candidate order, every StartJourney attempt, and all state writes.
+        var probe=Pr57Food242Enabled&&CostProfile is not null;
+        var start=probe?System.Diagnostics.Stopwatch.GetTimestamp():0L;
+        if(probe){_pr57Food242Calls++;if(excluded!=null)_pr57Food242ArrivalCalls++;}
+        try
+        {
+            if(excluded!=null&&!c.TriedShops.Contains(excluded.Value))c.TriedShops.Add(excluded.Value);
+            // Choose by the family's real total cost: shelf price for what it needs plus
+            // a calibrated round-trip cost; a shop that cannot fill the basket costs
+            // another trip elsewhere.
+            var family=FamilyById(c.FamilyId);var wanted=Math.Max(1,(family?.Members.Count??1)*State.Tuning.PurchaseFoodPerPerson-(family?.Pantry??0));
+            decimal TripCost(Building shop)=>(decimal)(shop.Position.Distance(c.Position)*2)*State.Tuning.ShoppingTripCostPerMetre;
+            foreach(var shop in State.Buildings.Where(b=>b.Kind==BuildingKind.Grocery&&b.Completed&&!b.Removed&&b.CompanyId!=null&&!c.TriedShops.Contains(b.Id)).OrderBy(b=>b.SalePrice*(decimal)wanted+TripCost(b)*(b.Quantity(ResourceKind.Food)>=wanted?1:2)).ThenBy(b=>b.Id)){
+                if(probe)_pr57Food242Candidates++;
+                if(!Open(shop)||shop.OperationalCapacity<=0||shop.Quantity(ResourceKind.Food)<.5){
+                    if(probe)_pr57Food242Rejected++;
+                    continue;
+                }
+                if(probe)_pr57Food242RouteAttempts++;
+                var routeStart=probe?System.Diagnostics.Stopwatch.GetTimestamp():0L;
+                var started=StartJourney(c,shop,JourneyPurpose.Shopping);
+                if(probe){
+                    _pr57Food242RouteTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-routeStart;
+                    if(started)_pr57Food242Success++;
+                }
+                if(started)return true;
+            }
+            c.Activity="Alimentos indisponíveis ou inacessíveis";c.Decision="Não existe loja operante, estoque e rota viáveis";
+            if(probe)_pr57Food242Failures++;
+            return false;
         }
-        c.Activity="Alimentos indisponíveis ou inacessíveis";c.Decision="Não existe loja operante, estoque e rota viáveis";return false;
+        finally{if(probe)_pr57Food242TotalTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-start;}
     }
     // A crew dock lies along the curb, away from its access node: driving to that
     // node's lane point is a long diagonal whose body ends in the opposite lane.
