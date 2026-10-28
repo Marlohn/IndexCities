@@ -125,6 +125,12 @@ jobs:
                           assert calls==expected,(case,phase,calls,expected)
                           unchanged=int(re.search(r'\bnoSelectedFieldChange=(\d+)',row).group(1))
                           assert 0<=unchanged<=calls,(case,phase,row)
+                          project_count=int(re.search(r'\\bprojects=(\\d+)',row).group(1))
+                          hot=[line for line in log.splitlines()
+                               if line.startswith(f'PR57_282_PROJECT phase={phase} ')]
+                          assert len(hot)==min(10,project_count),(case,phase,project_count,len(hot))
+                          ids=[int(re.search(r'\\bid=(\\d+)',line).group(1)) for line in hot]
+                          assert len(ids)==len(set(ids)),(case,phase,'DUPLICATE_PROJECT_ID')
                           print('PR57_282_RESULT',case,'living',living,row,flush=True)
                       for row in log.splitlines():
                           if row.startswith('PR57_282_PROJECT '):
