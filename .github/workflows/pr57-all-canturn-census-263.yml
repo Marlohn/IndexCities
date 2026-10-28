@@ -90,13 +90,13 @@ jobs:
                   assert 'slices=600 reader=1071 ' in lines[0],lines[0]
                   print(lines[0],flush=True)
                   census=[x for x in log.splitlines() if x.startswith('PR57_263_')]
+                  for line in census: print(line,flush=True)
                   assert len(census)==3,census
                   assert census[0].startswith('PR57_263_FANOUT slices=600 '),census
                   import re
-                  calls=int(re.search(r'calls=(\\d+)',census[0]).group(1))
-                  denied=int(re.search(r'denied=(\\d+)',census[0]).group(1))
+                  calls=int(re.search(r'calls=(\d+)',census[0]).group(1))
+                  denied=int(re.search(r'denied=(\d+)',census[0]).group(1))
                   assert calls>=412 and denied>0,census[0]
-                  for line in census: print(line,flush=True)
               for line in log.splitlines():
                   if line.startswith(('WINDOW ','STEP_PROFILE','  STEP_PHASE')):
                       print('PR57_263_METRIC',mode,line.strip(),flush=True)
