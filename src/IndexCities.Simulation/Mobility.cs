@@ -1237,7 +1237,11 @@ public sealed partial class CitySimulation
                         if(pr57CausalHorizon&&!enteringLane&&blocker is null)
                             Pr57ScanLane(State.Vehicles);
                         var allocStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
+                        // #254 observation: record the exact writer only when its label changes.
+                        var pr57Cause254Prior=Pr57Cause254Enabled&&_pr57Effect253Active?v.Cause:null;
                         v.Cause=blocker?.Status==VehicleStatus.Stranded?$"Aguardando veículo {blocker.Id} {(blocker.BrokenDown?"quebrado":"sem combustível")} na via":bayHold||entryHeld!=null?"Fila para acesso de carga":enteringLane?"Aguardando espaço para acessar a faixa":blocker!=null&&HoldsJunctionAhead(blocker,node)?(IsBend(node)?"Aguardando liberação da curva pelo veículo ":"Aguardando liberação do cruzamento pelo veículo ")+blocker.Id:"Fila na faixa";
+                        if(Pr57Cause254Enabled&&_pr57Effect253Active)
+                            Pr57Cause254Blocked(v,pr57Cause254Prior,blocker,leaderDistance,enteringLane,bayHold,entryHeld!=null,node.Id);
                         if(pr57LimiterProbe)Pr57QueueLimiterObserve(pr57QueueFirstLimit,v.Cause,pr57QueueLaneTicks,pr57QueueBendTicks,blocker!=null,enteringLane);
                         if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;
                         if(pr57IdleProbe)Pr57BlockObserve(v,blocker,node,enteringLane,bayHold,entryHeld!=null);
