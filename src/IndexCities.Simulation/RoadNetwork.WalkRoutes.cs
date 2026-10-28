@@ -27,12 +27,62 @@ public sealed partial class CitySimulation
         // Callers own and edit their path list.
         return new List<Point>(route);
     }
+    // PR57 #281: opt-in observation of the exact public Advance(2) boundary
+    // validation. No route is reused, rejected or invalidated differently.
+    static readonly bool Pr57WalkValidation281Enabled =
+        Environment.GetEnvironmentVariable("PR57_281_WALK_VALIDATION") == "1";
+    long _pr57Walk281Calls, _pr57Walk281Cached, _pr57Walk281Checked, _pr57Walk281Matched;
+    long _pr57Walk281Invalidated, _pr57Walk281RouteEntries, _pr57Walk281RoadVisits;
+    long _pr57Walk281NeighbourVisits, _pr57Walk281BuildingVisits;
+    long _pr57Walk281BeginTicks, _pr57Walk281MatchTicks, _pr57Walk281BeginBytes;
     void BeginWalkRoutes()
     {
         // The copy goes with the routes it describes: routes stored after a
         // change made outside are taken again at the end of this call.
-        if(_walkRoutes.Count>0&&(_walkRoutesStamp!=WalkStamp||_walkInputs==null||!_walkInputs.Matches(this))){_walkRoutes.Clear();_walkInputs=null;}
+        if(!Pr57WalkValidation281Enabled)
+        {
+            if(_walkRoutes.Count>0&&(_walkRoutesStamp!=WalkStamp||_walkInputs==null||!_walkInputs.Matches(this))){_walkRoutes.Clear();_walkInputs=null;}
+            _walkRoutesActive=true;
+            return;
+        }
+        var begin=System.Diagnostics.Stopwatch.GetTimestamp();
+        var allocated=GC.GetAllocatedBytesForCurrentThread();
+        var cached=_walkRoutes.Count>0;
+        var invalidated=false;
+        if(cached)
+        {
+            _pr57Walk281Cached++;
+            _pr57Walk281RouteEntries+=_walkRoutes.Count;
+            if(_walkRoutesStamp!=WalkStamp||_walkInputs==null)invalidated=true;
+            else
+            {
+                var started=System.Diagnostics.Stopwatch.GetTimestamp();
+                var matched=_walkInputs.Matches(this);
+                _pr57Walk281MatchTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-started;
+                _pr57Walk281Checked++;
+                if(matched)
+                {
+                    _pr57Walk281Matched++;
+                    // A successful Matches() necessarily visited every road,
+                    // every neighbour and every building. Failed early checks
+                    // are excluded rather than pretending they scanned all.
+                    _pr57Walk281RoadVisits+=State.Roads.Count;
+                    foreach(var road in State.Roads)_pr57Walk281NeighbourVisits+=road.Neighbours.Count;
+                    _pr57Walk281BuildingVisits+=State.Buildings.Count;
+                }
+                else invalidated=true;
+            }
+            if(invalidated){_walkRoutes.Clear();_walkInputs=null;_pr57Walk281Invalidated++;}
+        }
         _walkRoutesActive=true;
+        _pr57Walk281Calls++;
+        _pr57Walk281BeginTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-begin;
+        _pr57Walk281BeginBytes+=GC.GetAllocatedBytesForCurrentThread()-allocated;
+        if(_pr57Walk281Calls%50==0)
+        {
+            var hz=(double)System.Diagnostics.Stopwatch.Frequency;
+            Console.WriteLine($"PR57_281_WALK calls={_pr57Walk281Calls} cached={_pr57Walk281Cached} checked={_pr57Walk281Checked} matched={_pr57Walk281Matched} invalidated={_pr57Walk281Invalidated} routeEntriesSeen={_pr57Walk281RouteEntries} roadsVisitedOnMatch={_pr57Walk281RoadVisits} neighboursVisitedOnMatch={_pr57Walk281NeighbourVisits} buildingsVisitedOnMatch={_pr57Walk281BuildingVisits} beginMs={_pr57Walk281BeginTicks*1000/hz:F5} matchesMs={_pr57Walk281MatchTicks*1000/hz:F5} beginAllocatedBytes={_pr57Walk281BeginBytes} scope=INTRUSIVE_OBSERVATIONAL");
+        }
     }
     void EndWalkRoutes()
     {
