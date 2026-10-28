@@ -45,6 +45,7 @@ public sealed partial class CitySimulation
     static readonly bool Pr57PenetrationStackAxes=Environment.GetEnvironmentVariable("PR57_PENETRATION_STACK_AXES")=="1";
     static double Penetration(Vehicle a,Point aAt,double aHeading,Vehicle b,Point bAt,double bHeading)
     {
+        if(Pr57271Enabled)Pr57271PenetrationObserve(a,aAt,aHeading,b,bAt,bHeading);
         static double Dot(Point x,Point y)=>x.X*y.X+x.Z*y.Z;
         var af=new Point(Math.Sin(aHeading),Math.Cos(aHeading));var ar=new Point(af.Z,-af.X);var bf=new Point(Math.Sin(bHeading),Math.Cos(bHeading));var br=new Point(bf.Z,-bf.X);var d=bAt-aAt;
         if(!Pr57PenetrationStackAxes)
