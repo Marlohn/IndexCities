@@ -28,6 +28,7 @@ public sealed partial class CitySimulation
     bool Pr57JunctionDecision(Vehicle reader, RoadNode junction, Pr57JunctionExit reason, bool allowed)
     {
         Pr57Cause255Exit(reader,junction,reason,allowed);
+        Pr57260Decision(reader,junction,reason,allowed);
         if (!Pr57JunctionReasonsEnabled || CostProfile is null) return allowed;
         Pr57Junction247Decision(reader,junction,reason);
         var cohort = Pr57State244PersistentIds.Contains(reader.Id) ? 0 : 1;
