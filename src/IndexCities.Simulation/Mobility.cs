@@ -268,7 +268,7 @@ public sealed partial class CitySimulation
                             Pr57Walk240Record(2,occupancyStart);
                             _pr57Walk240VehicleCandidates+=State.Vehicles.Count;
                         }
-                        if(occupied){c.Activity="Aguardando travessia";break;}c.CrossingNodeId=crossing.Id;
+                        if(occupied){c.Activity="Aguardando travessia";break;}c.CrossingNodeId=crossing.Id;Pr57Crossing292Acquire(c,crossing.Id);
                     }
                     var heading=d>.001?(target-c.Position)*(1/d):new Point(0,0);
                     var gapStart=pr57Walk240?System.Diagnostics.Stopwatch.GetTimestamp():0L;

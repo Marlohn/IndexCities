@@ -33,10 +33,26 @@ public sealed partial class CitySimulation
     bool Pr57Crossing259Check(RoadNode junction)
     {
         if (!_pr57Crossing259Active)
-            return State.Citizens.Any(c => c.Alive && c.VehicleId == null &&
-                c.Moving && c.CrossingNodeId == junction.Id &&
-                c.Position.Distance(junction.Position) <
-                    State.Tuning.RoadWidth / 2 + 1.5);
+        {
+            if (!Pr57Crossing292Enabled)
+                return State.Citizens.Any(c => c.Alive && c.VehicleId == null &&
+                    c.Moving && c.CrossingNodeId == junction.Id &&
+                    c.Position.Distance(junction.Position) <
+                        State.Tuning.RoadWidth / 2 + 1.5);
+            // Observational only: preserve original Any order and short circuit.
+            var start292 = System.Diagnostics.Stopwatch.GetTimestamp();
+            var visits292 = 0;
+            var blocked292 = State.Citizens.Any(c =>
+            {
+                visits292++;
+                return c.Alive && c.VehicleId == null && c.Moving &&
+                    c.CrossingNodeId == junction.Id &&
+                    c.Position.Distance(junction.Position) <
+                        State.Tuning.RoadWidth / 2 + 1.5;
+            });
+            Pr57Crossing292Read(junction.Id,blocked292,visits292,start292);
+            return blocked292;
+        }
 
         var start = System.Diagnostics.Stopwatch.GetTimestamp();
         var visits = 0;
