@@ -228,7 +228,7 @@ public sealed partial class CitySimulation
         var started=census?System.Diagnostics.Stopwatch.GetTimestamp():0L;
         if(poses.Count==0)return null;var reach=poses.Max(p=>p.Position.Distance(v.Position))+12;
         foreach(var o in State.Vehicles){
-            if(census)visited++;
+            if(census){visited++;Pr57306Read(v,o);}
             if(o.Id==v.Id||o.Id==v.TowTargetId||o.TowTruckId==v.Id||o.Status is VehicleStatus.Outside or VehicleStatus.Towed||o.Position.Distance(v.Position)>reach||AtGateway(o)&&AtGateway(v))continue;
             if(census)eligible++;
             var now=Penetration(v,v.Position,v.Heading,o,o.Position,o.Heading);var limit=Math.Max(-.1,now+.001);
