@@ -1,0 +1,152 @@
+name: 'PR57 #282 per-project construction causal-field and cost census'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-construction-projects-282.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  construction-projects:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build and full regression
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic real and artificial checkpoints
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-pose-noop-237
+          run-id: 40589313790
+          github-token: ${{ github.token }}
+          path: artifacts/prior-237
+      - name: Restore real 14h economy checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-coexist-243
+          run-id: 40601570843
+          github-token: ${{ github.token }}
+          path: artifacts/prior-243
+      - name: Fresh-process observational A/B and full JSON parity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          from decimal import Decimal
+          import subprocess, os, json, hashlib, re
+          root=Path('artifacts/construction-projects-282')
+          root.mkdir(parents=True,exist_ok=True)
+          def source_for(case):
+              if case=='real14hREAL':
+                  return Path('artifacts/prior-243/overnight-08/checkpoint-1.json')
+              stem,idx={
+                  'worksEarlyREAL':('worksREAL',0),
+                  'worksLateREAL':('worksREAL',5),
+                  'gridARTIFICIAL':('gridARTIFICIAL',5)
+              }[case]
+              files=list(Path('artifacts/prior-237').rglob(f'{stem}-control1/checkpoint-{idx}.json'))
+              assert len(files)==1,(case,files)
+              return files[0]
+          cases=[
+              ('worksEarlyREAL','cycle',200),
+              ('worksLateREAL','cycle',200),
+              ('real14hREAL','cycle',200),
+              ('gridARTIFICIAL','grid',100)
+          ]
+          for i,(case,fixture,horizon) in enumerate(cases):
+              source=source_for(case)
+              assert source.is_file() and source.stat().st_size>0,(case,source)
+              original=source.read_bytes()
+              state=json.loads(original,parse_float=Decimal)
+              living=sum(bool(c.get('Alive')) for c in state['Citizens'])
+              if case=='real14hREAL':
+                  assert living==121 and len(state['Vehicles'])==98
+              paths={}
+              for mode in (('control','probe') if i%2==0 else ('probe','control')):
+                  dest=root/f'{case}-{mode}'
+                  dest.mkdir(parents=True,exist_ok=True)
+                  env=os.environ.copy()
+                  env.update({
+                      'PR57_HOST_QUANTUM':'1',
+                      'PR57_AB_CHECKPOINT':'1',
+                      'PR57_GRID_DIAG':'0',
+                      'PR57_282_CONSTRUCTION_PROJECTS':'1' if mode=='probe' else '0',
+                      'PR57_281_WALK_VALIDATION':'0',
+                      'PR57_239_CITIZEN_PHASES':'0',
+                      'PR57_224_CITIZEN_STATE_COST':'0',
+                      'PR57_SAVE_CAPTURE_DIR':str(dest.resolve())
+                  })
+                  cmd=['dotnet','run','--no-build','-c','Release',
+                       '--project','src/IndexCities.Headless/IndexCities.Headless.csproj',
+                       '--','profile',fixture,'--seed=42','--warmup=0','--days=1',
+                       f'--window={horizon}','--cap=600',f'--resume={source.resolve()}']
+                  logpath=root/f'{case}-{mode}.log'
+                  with logpath.open('w') as out:
+                      subprocess.run(cmd,env=env,stdout=out,stderr=subprocess.STDOUT,
+                                     check=True,timeout=240)
+                  log=logpath.read_text()
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,mode,log[-2000:])
+                  assert 'STEP_PROFILE steps=' in log,(case,mode,'NO_PROFILE')
+                  assert (dest/'checkpoint-0.json').read_bytes()==original,(case,mode,'SOURCE_CHANGED')
+                  assert (dest/'checkpoint-1.json').is_file(),(case,mode,'NO_FINAL_SAVE')
+                  windows=[line for line in log.splitlines() if line.startswith('WINDOW ')]
+                  assert len(windows)==1,(case,mode,windows)
+                  print('PR57_282_WINDOW',case,mode,windows[0],flush=True)
+                  if mode=='probe':
+                      rows=[line for line in log.splitlines() if line.startswith('PR57_282_SUM ')]
+                      assert len(rows)==2,(case,'MISSING_SUM',rows)
+                      census=next(line for line in log.splitlines() if line.startswith('PR57_CONSTRUCTION_CENSUS '))
+                      for phase in ('order','progress'):
+                          row=next(row for row in rows if f'phase={phase} ' in row)
+                          calls=int(re.search(r'\bcalls=(\d+)',row).group(1))
+                          key='orderProjects' if phase=='order' else 'progressProjects'
+                          expected=int(re.search(r'\b'+key+r'=(\d+)',census).group(1))
+                          assert calls==expected,(case,phase,calls,expected)
+                          unchanged=int(re.search(r'\bnoSelectedFieldChange=(\d+)',row).group(1))
+                          assert 0<=unchanged<=calls,(case,phase,row)
+                          print('PR57_282_RESULT',case,'living',living,row,flush=True)
+                      for row in log.splitlines():
+                          if row.startswith('PR57_282_PROJECT '):
+                              print('PR57_282_HOT',case,row,flush=True)
+                  else:
+                      assert 'PR57_282_SUM ' not in log,(case,'CONTROL_OBSERVER_ACTIVE')
+                  paths[mode]=dest
+              for checkpoint in (0,1):
+                  a=(paths['control']/f'checkpoint-{checkpoint}.json').read_bytes()
+                  b=(paths['probe']/f'checkpoint-{checkpoint}.json').read_bytes()
+                  assert a==b,(case,checkpoint,'FULL_JSON_MISMATCH')
+                  assert json.loads(a,parse_float=Decimal)==json.loads(b,parse_float=Decimal)
+                  print('PR57_282_CHECKPOINT',case,checkpoint,'sha256',
+                        hashlib.sha256(a).hexdigest(),flush=True)
+              print('PR57_282_PARITY',case,'processes=2','cadence=ADVANCE_2',
+                    f'callsPerArm={horizon//2}','fullJson=EXACT',
+                    'observationOnly=True',flush=True)
+          PY
+      - name: Preserve complete checkpoints and raw logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-construction-projects-282
+          path: artifacts/construction-projects-282/**
+          retention-days: 14
