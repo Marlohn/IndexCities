@@ -132,6 +132,7 @@ public sealed partial class CitySimulation
         if (!_pr57Effect253Active || !Pr57State244PersistentIds.Contains(v.Id)) return;
         var now = Pr57Effect253Capture(v);
         _pr57Effect253Before[v.Id] = now;
+        Pr57Cause255BeforeActor(v);
         if (_pr57Effect253PostCleanup.TryGetValue(v.Id, out var prior))
             Pr57Effect253Compare(prior, now, 2);
         _pr57Effect253Passes++;
@@ -151,6 +152,7 @@ public sealed partial class CitySimulation
         _pr57Effect253After[v.Id] = now;
         if (_pr57Effect253Before.TryGetValue(v.Id, out var prior))
         {
+            Pr57Cause255AfterActor(v, prior.Cause);
             if (Pr57Cause254Enabled &&
                 !string.Equals(prior.Cause, now.Cause, StringComparison.Ordinal))
             {
@@ -179,6 +181,7 @@ public sealed partial class CitySimulation
         _pr57Effect253LastEnd = now;
         _pr57Effect253Active = false;
         if (_pr57Effect253Slices != 600) return;
+        Pr57Cause255Report();
         Console.WriteLine(
             $"PR57_253_STATE_EFFECTS slices={_pr57Effect253Slices} cohort={Pr57State244PersistentIds.Count} " +
             $"actorPasses={_pr57Effect253Passes} stillTravelling={_pr57Effect253Still} " +
