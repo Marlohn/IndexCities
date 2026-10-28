@@ -200,6 +200,7 @@ public sealed partial class CitySimulation
     {
         Pr57312Begin();
         Pr57317Begin();
+        Pr57319Begin();
         Pr57Transitions290Begin(2);
         var pr57StateCost = CostProfile is not null && Pr57CitizenStateCostEnabled;
         var pr57SetupStart = pr57StateCost ? System.Diagnostics.Stopwatch.GetTimestamp() : 0L;
@@ -280,7 +281,7 @@ public sealed partial class CitySimulation
                         Pr57Walk240Record(1,gapStart);
                         if(!_pr57PedestrianGridActive)_pr57Walk240CitizenCandidates+=State.Citizens.Count;
                     }
-                    var travelled=Math.Min(distance,Math.Min(d,Math.Max(0,gap-.7)));if(travelled<.000001&&d>.001){c.Activity="Fila de pedestres";break;}Pr57317SetPosition(c,c.Position.MoveTowards(target,travelled),"walk");distance-=travelled;if(d<=travelled+.00001)c.PathIndex++;else break;
+                    var travelled=Math.Min(distance,Math.Min(d,Math.Max(0,gap-.7)));if(travelled<.000001&&d>.001){c.Activity="Fila de pedestres";break;}Pr57317SetPosition(c,c.Position.MoveTowards(target,travelled),"walk");distance-=travelled;if(d<=travelled+.00001)Pr57319AdvancePathIndex(c);else break;
                 }
                 c.InsideMap=InMap(c.Position);
                 if(!c.Moving){
@@ -307,6 +308,7 @@ public sealed partial class CitySimulation
         if (pr57StateCost) _pr57CitizenLoopTicks += System.Diagnostics.Stopwatch.GetTimestamp() - pr57LoopStart;
         Pr57Transitions290End(2);
         Pr57312End();
+        Pr57319End();
         Pr57317End();
     }
     // Crosswalk nodes in State.Roads order. Rebuilt at the start of every
