@@ -4951,3 +4951,23 @@ No GRID, as 12 chamadas batched foram **5–9, 11, 14–16, 19–20 e 22**, exat
 **Próximo discriminante:** registrar por `Advance(2)` o motivo do evento que limita cada sub-slice (rota/velocidade/entrada projetada/ocupação/combustível), custo de descobrir esse evento e número de atores efetivamente alterados após a publicação imediata. Testar se uma representação física conjunta consegue amortizar as **reavaliações canônicas necessárias** sem alterar limites temporais, ordem de escritores, docas, reservas, semáforos ou pedestres. Na economia REAL, medir separadamente o custo por avaliação, pois a multiplicação de passagens não explica sua variação. Não criar cache causal ou skip sem cobertura de invalidação e paridade.
 
 PR draft; main, SPEC, ARCHITECTURE oficial, PRs #51/#52/#55, merge e timers intocados. **Meta 10.000 vivos/80 anos/6h e gerações: não demonstradas.**
+
+## PR57 #299 — custo por passagem física e amplificação do batch (2026-10-28, São Paulo)
+
+**Pergunta discriminante após #298:** os picos do GRID decorrem de avaliações de fila individualmente mais caras no modo batched, ou de executar repetidamente toda a passagem física da cidade? **Nos dados observados, a multiplicação de passagens explica a maior parte da diferença de trabalho classificado; não há aumento do custo médio de fila por passagem.** Isto não prova que uma passagem possa ser eliminada.
+
+Reprocessamento **offline** do ZIP autêntico [Action #40734782987, artefato #12836742974](https://github.com/Marlohn/IndexCities/actions/runs/40734782987/artifacts/12836742974), SHA-256 `e7edc0e9108fc010a5d1d55b8df581a22d8e4e1e4c9a0b69907d2d34f534e163`. O [reprodutor #299](../../scripts/pr57-299-amplification.py) foi executado localmente e seu blob publicado é idêntico ao arquivo executado (Git SHA `1746d920ef8ea1cba2d8b528c7491a5c453018f1`). Confere **16/16 pares de checkpoints JSON integrais byte a byte**, oito processos .NET já executados pelo #298, todas as chamadas individuais `Advance(2)`, contagens por classe e clocks. Nenhum CI, mudança de motor ou simulação nova.
+
+| GRID ARTIFICIAL, sonda | Passagens físicas | Avaliações classe `queue`/passagem | Custo `queue` ms/passagem | Custo `vehicles` ms/passagem |
+| --- | ---: | ---: | ---: | ---: |
+| Batched, 12 chamadas, probe1/probe2 | 222 | **374,162** | **30,929 / 31,765** | 41,597 / 42,674 |
+| Unsplit aquecido, 34 chamadas após a 4ª, probe1/probe2 | 34 | **404,382** | **30,977 / 31,678** | 44,500 / 45,447 |
+| Unsplit incluindo cold start, 38 chamadas | 38 | 401,974 | 39,392 / 40,036 | 52,820 / 53,654 |
+
+Nas 12 chamadas batched, **83.064 avaliações `queue`** foram feitas em 222 passagens, contra **13.749** nas 34 chamadas unsplit posteriores à 4ª. O custo `queue` por passagem foi semelhante nas duas coortes aquecidas; o modo batched não demonstrou piora unitária. **Não é A/B de estados iguais:** as coortes ocupam chamadas e estados distintos, e os cronômetros são intrusivos. A comparação é diagnóstica, não estimativa causal de ganho.
+
+Na economia **REAL 14h** (121 vivos, 98 veículos), as 100 chamadas foram batched: **718 passagens**, **14.388 avaliações `queue`** e **20,039 avaliações/passagem**, com custo `queue` de **2,345 / 2,342 ms/passagem** nas duas sondas. Não há coorte unsplit equivalente nesse replay REAL.
+
+**Caminho de código:** `Mobility.LaneEntry.cs:MoveVehicles` decide `hasEntry` por `LiveLaneEntry`. Se verdadeiro, executa `MoveVehiclesUnsplit(0,dt)` uma vez e, para cada fronteira física prevista por `NextVehicleMovementEvent`, executa `MoveVehiclesUnsplit(slice)` sobre a cidade inteira. Os eventos incluem combustível, cruzamento, velocidade, curva, fim de rota e rechecagem de entrada; não são fatias arbitrárias descartáveis. O número de entradas vivas e a identidade dos vencedores **não** foram registrados por chamada nesse ZIP, e uma entrada isolada não foi demonstrada como causa dos 222 passes.
+
+**Decisão:** não otimizar o predicado `queue` isoladamente nem eliminar sub-slices por estado estacionário. A próxima sonda de maior valor é medir **por chamada e por fronteira física** quantas entradas vivas acionam o batch, quem vence o evento, quantos terceiros mudam e quantos atores são reavaliados; confrontar o custo de publicação imediata de uma representação compartilhada por ator com o custo da passagem completa, preservando ordem e causalidade. Se a dependência for densa, investigar execução data-oriented multifase sem cache entre `Advance(2)`. **Ganho integrado novo aceito: 0%; meta 10k/80 anos/6h, gerações e sustentabilidade não demonstradas.**
