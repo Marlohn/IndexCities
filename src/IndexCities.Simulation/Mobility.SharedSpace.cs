@@ -46,6 +46,21 @@ public sealed partial class CitySimulation
     static double Penetration(Vehicle a,Point aAt,double aHeading,Vehicle b,Point bAt,double bHeading)
     {
         if(Pr57271Enabled)Pr57271PenetrationObserve(a,aAt,aHeading,b,bAt,bHeading);
+        if(!Pr57272MemoEnabled||!_pr57272MemoActive)
+            return PenetrationCore(a,aAt,aHeading,b,bAt,bHeading);
+        var key=Pr57272Key(a,aAt,aHeading,b,bAt,bHeading);
+        if(_pr57272Memo!.TryGetValue(key,out var cached))
+        {
+            _pr57272SliceHits++;
+            return cached;
+        }
+        var result=PenetrationCore(a,aAt,aHeading,b,bAt,bHeading);
+        _pr57272Memo.Add(key,result);
+        _pr57272SliceMisses++;
+        return result;
+    }
+    static double PenetrationCore(Vehicle a,Point aAt,double aHeading,Vehicle b,Point bAt,double bHeading)
+    {
         static double Dot(Point x,Point y)=>x.X*y.X+x.Z*y.Z;
         var af=new Point(Math.Sin(aHeading),Math.Cos(aHeading));var ar=new Point(af.Z,-af.X);var bf=new Point(Math.Sin(bHeading),Math.Cos(bHeading));var br=new Point(bf.Z,-bf.X);var d=bAt-aAt;
         if(!Pr57PenetrationStackAxes)
