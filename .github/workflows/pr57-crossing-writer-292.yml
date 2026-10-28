@@ -5,6 +5,9 @@ on:
     paths:
       - .github/workflows/pr57-crossing-writer-292.yml
       - scripts/pr57-crossing-292/**
+      - src/IndexCities.Simulation/Pr57CrossingWriter292.cs
+      - src/IndexCities.Simulation/Mobility.CrossingGate259.Pr57.cs
+      - src/IndexCities.Simulation/Mobility.cs
   workflow_dispatch:
 permissions:
   contents: read
