@@ -549,6 +549,7 @@ public sealed partial class CitySimulation
         Pr57JunctionReadersBeginSlice(dt,operationsDt);
         var scanProfile=CostProfile;
         Pr57Effect253BeginSlice(dt,operationsDt,scanProfile is not null);
+        Pr57260BeginSlice(dt,operationsDt);
         Pr57ExclusiveBeginSlice(dt,operationsDt,scanProfile is not null);
         Pr57Man248BeginSlice(dt,operationsDt,scanProfile is not null);
         Pr57PairBeginSlice(dt,operationsDt,scanProfile is not null);
@@ -1408,6 +1409,7 @@ public sealed partial class CitySimulation
         // A towed vehicle moves only with its tow (platform or trailing a heavy tow).
         SyncTowedVehicles();
         Pr57Effect253EndSlice();
+        Pr57260EndSlice();
         Pr57ReservationAfterSync();
         Pr57CrossSliceEnd();
         Pr57CandidateEndSlice();
