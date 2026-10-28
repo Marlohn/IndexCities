@@ -3,7 +3,7 @@ on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
     paths:
-      - .github/workflows/pr57-junction-blockers-305.yml
+      - .github/workflows/pr57-candidate-prefix-305.yml
   workflow_dispatch:
 permissions:
   contents: read
