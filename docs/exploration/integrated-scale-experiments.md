@@ -4897,3 +4897,26 @@ No GRID, **99,9829%** do tempo acumulado da fase `economy-review` nessa janela o
 **Amdahl contextual:** no braço controle GRID, a fase agendada consumiu 421,285 ms de 14.683,905 ms de wall total de processo; removê-la gratuitamente (hipótese impossível, com efeitos econômicos obrigatórios) daria teto ilustrativo de **~1,0295× apenas nesse replay**. No controle REAL 14h, 26,726/3.425,003 ms implica **~1,0079×**. Não é A/B de aceleração, nem correção de custo frio por JIT. A diferença controle/sonda de wall não mede ganho. **Novo ganho integrado aceito: 0%.**
 
 **Decisão:** corrigir a interpretação de #279/#280: `economy-review` do GRID é uma despesa episódica na janela curta, não gargalo recorrente de 7,82 ms por `Advance(2)`. Não eliminar a revisão nem usar esse custo amortizado para prometer 10k/80y. O próximo discriminante de maior alcance é **decompor os picos físicos por chamada e estado** no GRID e na economia REAL aquecida, observando leitores dominantes e mutações canônicas em ordem, e procurar uma representação física multifase sem cache persistente antes de provar invalidação completa. Não retomar broadphases já encerradas nem criar agendamento por suposta inatividade. Main, PRs independentes, SPEC, arquitetura oficial, produto e timers permanecem intocados.
+
+### PR57 #297 — custo por avaliação da classe queue, sem inferir inatividade (28/10/2026)
+
+**Pergunta discriminante após #296:** a quantidade de avaliações de veículos terminadas com diagnóstico de fila explica, por si só, a variação de custo físico? **Não nos intervalos instrumentados:** a quantidade por sub-slice muda pouco, enquanto o tempo por avaliação muda consideravelmente. Isto não identifica o predicado que causou o tempo.
+
+**Reprodução sem CI novo:** script somente leitura [pr57-297-queue-work-unit.py](../../scripts/pr57-297-queue-work-unit.py), executado localmente sobre o ZIP autêntico da [Action #40728687937](https://github.com/Marlohn/IndexCities/actions/runs/40728687937/artifacts/12834686721), SHA-256 2f60330ac90fbfb716f644dcac70c7c732f827798729ec10c099375c554fba92. O script confere **8/8 pares de checkpoints JSON integrais** controle/sonda, 50 chamadas individuais Advance(2) no GRID artificial e 100 na economia REAL 14h, e diferencia snapshots **cumulativos a cada 60 passagens físicas**. A classe queue é definida pelo estado e causa *finais*, não pela origem causal do custo. Os cronômetros são intrusivos e não constituem A/B de ganho.
+
+| Cenário e janela de 60 sub-slices | Avaliações queue/slice | Tempo por avaliação queue | Avaliações moved na janela |
+| --- | ---: | ---: | ---: |
+| GRID ARTIFICIAL, 1–60 | 362,97 | 109,84 µs | 5.028 |
+| GRID ARTIFICIAL, 61–120 | 366,38 | 79,02 µs | 5.299 |
+| GRID ARTIFICIAL, 121–180 | 385,18 | 81,09 µs | 3.809 |
+| GRID ARTIFICIAL, 181–240 | 389,98 | 82,49 µs | 3.342 |
+| REAL 14h, 421–480 | 19,93 | 106,74 µs | 0 |
+| REAL 14h, 481–540 | 20,05 | 109,09 µs | 0 |
+| REAL 14h, 541–600 | 20,65 | **161,32 µs** | 0 |
+| REAL 14h, 601–660 | 21,53 | **161,04 µs** | 0 |
+
+No GRID, o intervalo amostrado de 240 passagens apresenta **1,39×** entre maior e menor tempo por avaliação queue; na economia REAL 14h, as 660 passagens amostradas apresentam **1,71×**. Nas quatro janelas REAIS finais da tabela, não houve avaliações classificadas como moved, mas as avaliações queue continuaram custosas e encareceram. Isso **não** prova ausência de movimento de todos os atores, nem de mutações intermediárias, e não autoriza pular passagens globais.
+
+**Limite temporal importante:** o snapshot de 60 passagens pode ser emitido **dentro** de uma chamada Advance(2) (no GRID, durante as chamadas 7, 11, 16 e 30). Portanto, não atribuir uma janela de 60 passagens a um Step exato nem a um pico individual 5/14/20/22. As 240 passagens do GRID não cobrem necessariamente as 50 chamadas inteiras. JIT, GC, geometria, atores terceiros, mutações e estado podem alterar custo por avaliação; os dados não os separam.
+
+**Decisão:** refutada a explicação por contagem de veículos em fila isoladamente. O próximo experimento útil é uma sonda **por chamada pública**, com deltas de passagens, classes e estágios físicos s1/s2/s3/s5/s7, além de alocação e GC, comparada a controle idêntico e com publicação imediata das mutações. Não escolher cache nem scheduler por Cause ou ausência de moved. **Novo ganho integrado aceito: 0%; meta 10k/80 anos/6h e gerações não demonstradas.**
