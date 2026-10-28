@@ -2,7 +2,7 @@ name: 'PR57 #266 real cohort per-ID stage and temporal cost'
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
-    paths: [.github/workflows/pr57-cohort-stages-264.yml]
+    paths: [.github/workflows/pr57-cohort-stages-266.yml]
   workflow_dispatch:
 permissions:
   contents: read
@@ -48,7 +48,7 @@ jobs:
           from pathlib import Path
           from decimal import Decimal
           import os, subprocess, json, hashlib, re
-          root=Path('artifacts/real-cohort-stages-264')
+          root=Path('artifacts/real-cohort-stages-266')
           root.mkdir(parents=True,exist_ok=True)
           earlier=Path('artifacts/prior/overnight-05/checkpoint-1.json')
           source=Path('artifacts/prior/overnight-08/checkpoint-1.json')
@@ -124,6 +124,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-pr57-real-cohort-stages-264
-          path: artifacts/real-cohort-stages-264/**
+          name: integrated-scale-pr57-real-cohort-stages-266
+          path: artifacts/real-cohort-stages-266/**
           retention-days: 14
