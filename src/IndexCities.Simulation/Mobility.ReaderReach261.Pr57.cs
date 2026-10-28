@@ -92,5 +92,6 @@ public sealed partial class CitySimulation
             "nestedCallsReachedOnly=True noExactReadWriteClosure=True " +
             "noCaching=True noSkippedSlices=True observational=True");
         Pr57262Report();
+        Pr57263Report();
     }
 }
