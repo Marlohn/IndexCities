@@ -4577,3 +4577,24 @@ O custo da coorte por bloco foi **298,567; 260,417; 225,682; 277,805; 201,101; 6
 A desativação do tiering reduz o wall curto instrumentado em ~**1,56×**, mas **não é ganho aceito do motor**: o estado final é igual e, no último bloco, o default já custa **62–64 ms**, contra **70 ms** com tiering desligado. Em todos os quatro processos as contagens de segmentos por estágio foram idênticas e a alocação por bloco permaneceu praticamente igual. O primeiro bloco ainda é caro mesmo com tiering desligado; inicialização/JIT, GC e candidatos internos continuam variáveis. Esses 200s não medem throughput sustentado após aquecimento por horas/anos nem equivalência com 10k/80y.
 
 **Decisão conjunta #266–267:** não tratar a fila como um único estado agendável, não promover configuração de runtime baseada em replay frio, nem reutilizar negativas sem invalidação causal completa. **Ganho integrado novo aceito = 0%.** Próximo discriminante: perfilar **estado aquecido** e leituras/escritas efetivas dos caminhos distintos s1, s2, s3/s5 e s7, comparando custo de manter invalidação por evento com reexecução física; se manutenção densa, estudar transformação data-oriented/por fase do executor inteiro. Sem mudanças de produto, SPEC, arquitetura oficial, main ou PRs independentes.
+
+
+## Ducentésima sexagésima oitava execução — composição física da coorte REAL aquecida (#268, 28/10/2026)
+
+**Pergunta discriminante após #267:** a coorte de 24 veículos REAL continua dominada por um único estágio quando o runtime está aquecido? **Não.** Reanalisei offline o ZIP autêntico da [Action #40649831352](https://github.com/Marlohn/IndexCities/actions/runs/40649831352), [artefato #12799088413](https://github.com/Marlohn/IndexCities/actions/runs/40649831352/artifacts/12799088413), SHA-256 do ZIP 9ec03bafc44c0c9a8cbf7f692af3845971cfd21562c3ea1fc4220ec6dd104f32, com o script reproduzível scripts/pr57-warm-stage-census-268.py. Quatro processos .NET independentes ABBA, 121 vivos, 98 veículos, 600 sub-slices e 100 chamadas individuais Advance(2) por processo. **Somente o último bloco de 100 sub-slices** foi usado na composição, não a média misturada com aquecimento. Os quatro checkpoints iniciais e finais têm SHA-256 esperado idêntico em cada extremo; 144 linhas por processo, 24 IDs, 100 passagens por ID/bloco, zero s8; invariantes e save/load validados no #267.
+
+| Último bloco (100 sub-slices) | Default A1 | Tiering off B1 | Tiering off B2 | Default A2 |
+| --- | ---: | ---: | ---: | ---: |
+| Coorte total, ms intrusivos | 64,189 | 70,095 | 70,403 | 62,201 |
+| s1 rota/pose, % da coorte | 14,58 | 12,70 | 12,71 | 14,68 |
+| s2 shared/bay, % | 16,54 | 14,71 | 14,64 | 17,16 |
+| s3 lane, % | 17,52 | 19,60 | 19,39 | 17,80 |
+| s5 site/crossing/turn, % | 13,04 | 13,95 | 13,94 | 14,12 |
+| s7 admissão, % | 29,14 | 30,84 | 31,05 | 26,92 |
+| Cinco IDs mais caros, % da coorte | 57,54 | 57,98 | 58,17 | 55,61 |
+
+**Concentração por ID, mas caminhos diferentes:** IDs 1453+1477 representam **88,5–92,8% de s1**; ID 23 representa **84,6–92,0% de s2**; IDs 1071+1243+1495 representam **100% de s7**. No código, s1 inclui saída/rota e admissão de manobra, s2 acessos e espaço compartilhado, s3 busca de líder, s5 geometria de curva/travessia e s7 prioridade/reservas/corpos. Nos saves, 1453/1477 têm RouteIndex=0 e causa de espera para acessar a faixa; 23 tem causa Fila na faixa e doca, e os três leitores s7 são carros esperando na faixa. A causa textual não explica necessariamente o custo; nenhum conjunto de dependências foi fechado.
+
+**Teto ilustrativo:** eliminar impossivelmente todo s7 daria no máximo **1,37–1,45× somente dentro da coorte aquecida**, não no wall integrado; s1+s2 e s3+s5 continuam com frações comparáveis. O primeiro bloco default custava 279–284 ms, contra 62–64 ms no último: misturar ambos distorce a priorização. Relógios intrusivos e um último bloco de apenas 100 sub-slices não comprovam regime estacionário de décadas. Nenhuma otimização, configuração de runtime, skip ou cache foi promovida. **Ganho integrado novo aceito: 0%.**
+
+**Próximo discriminante:** em replay REAL já aquecido, medir leituras/escritas e invalidação dos caminhos distintos (s1: 1453/1477; s2: 23; s7: 1071/1243/1495; s3/s5: demais), incluindo relógio, reservas, docas, terceiros e pedestres. Medir custo de manter o journal versus reexecutar, preservando ordem e todos os sub-slices; se manutenção densa, pivotar para representação/execução física em vez de cache de negativas. GRID permanece controle artificial, não prova econômica. Meta 10k/80y/6h, gerações e sustentabilidade não demonstradas.
