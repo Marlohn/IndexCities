@@ -910,14 +910,14 @@ public sealed partial class CitySimulation
                 }
                 var pr57RegionStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
                 // The way back from a works-site dock is admitted whole (Mobility.SharedSpace).
-                if(v.SitePathBeforeRoad&&(AtSiteDock(v)||v.ManoeuvreDock!=null)&&WayOut(v,out var siteSpaces) is var siteWay&&!AdmitManoeuvre(v,siteWay,siteSpaces,v.ManoeuvreDock??v.SitePath[0],true)){if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}
+                if(v.SitePathBeforeRoad&&(AtSiteDock(v)||v.ManoeuvreDock!=null)&&Pr57273WayOut(v,out var siteSpaces) is var siteWay&&!Pr57273Admit(v,siteWay,siteSpaces,v.ManoeuvreDock??v.SitePath[0],true)){if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}
                 if(v.SitePathBeforeRoad){if(!MoveConstructionSitePath(v,ref remaining,2))break;v.SitePathBeforeRoad=false;v.SitePath=[];v.SitePathIndex=0;}
                 if(_vehicleMovementBatch!=null)_vehicleMovementClock=State.ElapsedSeconds+_vehicleMovementOffset+dt-remaining;
                 if(v.Detour.Count>0){MoveAlongDetour(v,ref remaining);ClearPassedJunction(v);continue;}
                 // An approach already begun keeps its existing physical backing-out
                 // path when road traffic obstructs it; admission cannot prevent that recovery.
                 if(OnAsphaltApproach(v)&&YieldAsphaltApproach(v,ref remaining,2))break;
-                if(v.RouteIndex>=v.Route.Count){if(!v.PassengerCar&&!IsTow(v)&&v.RefuellingAt==null&&v.Machine==PavingMachine.None&&v.SitePathIndex==0&&v.DockPosition is {} entryDock&&v.Position.Distance(entryDock)>.01&&!DockAdmitted(v,entryDock)&&BayEntryHold(v).Count>0){HeldCargoBayBlocked(v,entryDock);if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}if(v.Machine==PavingMachine.None&&v.SitePathIndex<v.SitePath.Count){if(!MoveConstructionSitePath(v,ref remaining,2))break;}var carSpot=v.PassengerCar&&v.RefuellingAt==null;if(v.DockPosition is {} dock&&v.Position.Distance(dock)>.01){if(!carSpot&&HeldCargoBayBlocked(v,dock))break;
+                if(v.RouteIndex>=v.Route.Count){if(!v.PassengerCar&&!IsTow(v)&&v.RefuellingAt==null&&v.Machine==PavingMachine.None&&v.SitePathIndex==0&&v.DockPosition is {} entryDock&&v.Position.Distance(entryDock)>.01&&!DockAdmitted(v,entryDock)&&Pr57273BayEntryHold(v).Count>0){HeldCargoBayBlocked(v,entryDock);if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}if(v.Machine==PavingMachine.None&&v.SitePathIndex<v.SitePath.Count){if(!MoveConstructionSitePath(v,ref remaining,2))break;}var carSpot=v.PassengerCar&&v.RefuellingAt==null;if(v.DockPosition is {} dock&&v.Position.Distance(dock)>.01){if(!carSpot&&HeldCargoBayBlocked(v,dock))break;
                     // A machine has no bay admission: its slide across the lane waits for any body on it.
                     if(v.Machine!=PavingMachine.None&&MachineDockSlideBlocked(v,dock)){v.Cause="Fila para acesso de carga";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}var blocked=!carSpot&&State.Vehicles.Any(o=>o.Id!=v.Id&&!(o.PassengerCar&&o.Status==VehicleStatus.Parked)&&o.Status is VehicleStatus.Unloading or VehicleStatus.Parked&&o.Position.Distance(dock)<4);if(blocked){v.Cause="Fila para acesso de carga";break;}var distance=v.Position.Distance(dock);var moved=Math.Min(distance,State.Tuning.VehicleSpeed*remaining);if(v.Fuel<moved*FuelRate(v)){RunOutOfFuel(v);break;}if(v.TowPhase==TowPhase.ToVehicle&&!PickupLaneClear(v,dock)){v.Cause="Guincho aguardando a faixa livre para encostar";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}var toDock=dock-v.Position;if(v.PassengerCar&&distance>.01)v.Heading=Math.Atan2(toDock.X,toDock.Z);v.Position=v.Position.MoveTowards(dock,moved);Wear(v,moved);v.AddFuel(-(moved*FuelRate(v)));v.AddFuelBurnedLastStep(moved*FuelRate(v));remaining-=moved/State.Tuning.VehicleSpeed;if(moved<distance-.01)break;}if(v.TowPhase!=TowPhase.None){TowReachedDock(v);break;}if(v.ServicePhase==ServicePhase.ToService){ServiceArrived(v);break;}if(carSpot){CarReachedSpot(v);break;}v.Status=VehicleStatus.Unloading;v.LoadTimer=15;v.IntersectionClaim=null;v.Cause=v.RefuellingAt!=null?"Abastecendo combustível":v.ShipmentId is {} shipmentId&&State.Shipments.Any(s=>s.Id==shipmentId&&!s.PickedUp)?"Carregando na origem":"Descarregando no destino";break;}
                 if(scanProfile is not null){_pr57RegionAllocBytes[0]+=GC.GetAllocatedBytesForCurrentThread()-pr57RegionStart;pr57RegionStart=GC.GetAllocatedBytesForCurrentThread();}
@@ -931,17 +931,17 @@ public sealed partial class CitySimulation
                 if(v.RouteIndex>0&&v.RouteIndex+1<v.Route.Count&&len>.01&&d>.001&&Math.Abs(((v.Position.X-target.X)*delta.Z-(v.Position.Z-target.Z)*delta.X)/len)<.05&&
                     ((v.Position.X-target.X)*delta.X+(v.Position.Z-target.Z)*delta.Z)/len>0){v.RouteIndex++;continue;}
                 // Leaving a bay or dock is admitted whole, or the truck stays there (Mobility.SharedSpace).
-                if(LeavesDock(v)&&(v.ManoeuvreDock!=null||!OnCarriageway(v))&&WayOut(v,out var exitSpaces) is var exitWay&&!AdmitManoeuvre(v,exitWay,exitSpaces,v.ManoeuvreDock??v.Position,true)){if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}
+                if(LeavesDock(v)&&(v.ManoeuvreDock!=null||!OnCarriageway(v))&&Pr57273WayOut(v,out var exitSpaces) is var exitWay&&!Pr57273Admit(v,exitWay,exitSpaces,v.ManoeuvreDock??v.Position,true)){if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}
                 // The next junction is awaited at its stop line (also while the claim of
                 // the one just passed is held, if it waits past it), and a delivery to a
                 // busy bay just beyond it waits before it (Mobility.BayJunction).
                 if(scanProfile is not null){_pr57RegionAllocBytes[1]+=GC.GetAllocatedBytesForCurrentThread()-pr57RegionStart;pr57RegionStart=GC.GetAllocatedBytesForCurrentThread();}
                 Pr57ExclusiveMark(2);
                 var stopEarly=0.0;var bayHold=false;List<(Vehicle Body,Point Position,double Heading)>? crossingPoses=null;
-                if(node.Neighbours.Count<3&&!node.Crosswalk&&NextSharedOnApproach(v,node,delta,len,out var crossing,out var crossingIndex)&&v.IntersectionClaim!=crossing.Id){
+                if(node.Neighbours.Count<3&&!node.Crosswalk&&Pr57273NextShared(v,node,delta,len,out var crossing,out var crossingIndex)&&v.IntersectionClaim!=crossing.Id){
                     if(WaitsClearOfPassedClaim(v,node,crossing,delta,len,target,d)){
                         stopEarly=StopLineBefore(v,node,crossing,delta,len);
-                        if(HoldBeforeBayJunction(v,crossingIndex,out var exits)){bayHold=true;crossingPoses=exits;stopEarly=Math.Max(stopEarly,.001);}
+                        if(Pr57273HoldBefore(v,crossingIndex,out var exits)){bayHold=true;crossingPoses=exits;stopEarly=Math.Max(stopEarly,.001);}
                         if(d<=stopEarly+.001){
                             if(bayHold){v.Cause="Fila para acesso de carga";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}
                             if(stopEarly>0){v.RouteIndex++;continue;}
@@ -950,12 +950,12 @@ public sealed partial class CitySimulation
                     // The holder's remaining way (a machine leaving onto the lane just
                     // before the junction, say) is kept clear along the whole approach,
                     // also while the claim of the junction just passed is still held.
-                    var turning=ClaimHolderPoses(v,crossing);if(turning.Count>0)(crossingPoses??=[]).AddRange(turning);
+                    var turning=Pr57273Claim(v,crossing);if(turning.Count>0)(crossingPoses??=[]).AddRange(turning);
                 }
                 // Near its bay, a delivery not yet admitted keeps out of the dock corridor
                 // and of the way out of the truck that owns it (Mobility.SharedSpace).
                 if(scanProfile is not null){_pr57RegionAllocBytes[2]+=GC.GetAllocatedBytesForCurrentThread()-pr57RegionStart;pr57RegionStart=GC.GetAllocatedBytesForCurrentThread();}
-                var entryHeld=EntersBay(v)&&BayEntryHold(v) is {Count:>0} entryHold?entryHold:null;
+                var entryHeld=EntersBay(v)&&Pr57273BayEntryHold(v) is {Count:>0} entryHold?entryHold:null;
                 if(entryHeld!=null)(crossingPoses??=[]).AddRange(entryHeld);
                 var approachHeading=v.Heading;
                 var facing=target-v.Position;if(d>.01)v.Heading=Math.Atan2(facing.X,facing.Z);
