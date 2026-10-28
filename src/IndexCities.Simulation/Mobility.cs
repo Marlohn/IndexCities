@@ -199,6 +199,7 @@ public sealed partial class CitySimulation
     void MoveCitizens(double dt)
     {
         Pr57312Begin();
+        Pr57317Begin();
         Pr57Transitions290Begin(2);
         var pr57StateCost = CostProfile is not null && Pr57CitizenStateCostEnabled;
         var pr57SetupStart = pr57StateCost ? System.Diagnostics.Stopwatch.GetTimestamp() : 0L;
@@ -236,7 +237,7 @@ public sealed partial class CitySimulation
             try{
             if(!c.Moving&&c.PathRoadRevision!=State.RoadRevision&&(c.Activity.StartsWith("Sem rota",StringComparison.Ordinal)||c.Activity=="Viagem interrompida: rota removida"))c.NextDecisionAt=Math.Min(c.NextDecisionAt,State.ElapsedSeconds);
             if(c.ConstructionProjectId!=null&&ShiftActive(c)){c.AddWorkSecondsToday(dt);AccrueWage(c,dt);}
-            if(c.VehicleId is {} vid){var v=VehicleById(vid);if(v!=null){c.Position=v.Position;c.InsideMap=InMap(v.Position);}continue;}
+            if(c.VehicleId is {} vid){var v=VehicleById(vid);if(v!=null){Pr57317SetPosition(c,v.Position,"aboard");c.InsideMap=InMap(v.Position);}continue;}
             if(c.Moving){
                 if(pr57Walk240)_pr57Walk240Visits++;
                 if(c.Purpose==JourneyPurpose.Boarding)c.PathRoadRevision=State.RoadRevision;
@@ -249,7 +250,7 @@ public sealed partial class CitySimulation
                 }
                 var distance=State.Tuning.WalkingSpeed*dt;
                 while(distance>0&&c.PathIndex<c.Path.Count){if(pr57Walk240)_pr57Walk240Segments++;var target=c.Path[c.PathIndex];var d=c.Position.Distance(target);
-                    if(c.CrossingNodeId is {} old&&(!_roads.TryGetValue(old,out var marked)||c.Position.Distance(marked.Position)>State.Tuning.RoadWidth+1))c.CrossingNodeId=null;
+                    if(c.CrossingNodeId is {} old&&(!_roads.TryGetValue(old,out var marked)||c.Position.Distance(marked.Position)>State.Tuning.RoadWidth+1))Pr57317SetCrossing(c,null,"expire");
                     // A long sidewalk segment can pass several future crossings.
                     // Only negotiate the crossing reached by this physical step,
                     // and preserve an ongoing crossing before nearby alternatives.
@@ -270,7 +271,7 @@ public sealed partial class CitySimulation
                             Pr57Walk240Record(2,occupancyStart);
                             _pr57Walk240VehicleCandidates+=State.Vehicles.Count;
                         }
-                        if(occupied){c.Activity="Aguardando travessia";break;}c.CrossingNodeId=crossing.Id;Pr57Crossing292Acquire(c,crossing.Id);
+                        if(occupied){c.Activity="Aguardando travessia";break;}Pr57317SetCrossing(c,crossing.Id,"acquire");Pr57Crossing292Acquire(c,crossing.Id);
                     }
                     var heading=d>.001?(target-c.Position)*(1/d):new Point(0,0);
                     var gapStart=pr57Walk240?System.Diagnostics.Stopwatch.GetTimestamp():0L;
@@ -279,11 +280,11 @@ public sealed partial class CitySimulation
                         Pr57Walk240Record(1,gapStart);
                         if(!_pr57PedestrianGridActive)_pr57Walk240CitizenCandidates+=State.Citizens.Count;
                     }
-                    var travelled=Math.Min(distance,Math.Min(d,Math.Max(0,gap-.7)));if(travelled<.000001&&d>.001){c.Activity="Fila de pedestres";break;}c.Position=c.Position.MoveTowards(target,travelled);distance-=travelled;if(d<=travelled+.00001)c.PathIndex++;else break;
+                    var travelled=Math.Min(distance,Math.Min(d,Math.Max(0,gap-.7)));if(travelled<.000001&&d>.001){c.Activity="Fila de pedestres";break;}Pr57317SetPosition(c,c.Position.MoveTowards(target,travelled),"walk");distance-=travelled;if(d<=travelled+.00001)c.PathIndex++;else break;
                 }
                 c.InsideMap=InMap(c.Position);
                 if(!c.Moving){
-                    c.CrossingNodeId=null;
+                    Pr57317SetCrossing(c,null,"arrive");
                     var arrivalStart=pr57Walk240?System.Diagnostics.Stopwatch.GetTimestamp():0L;
                     CitizenArrived(c);
                     if(pr57Walk240)Pr57Walk240Record(3,arrivalStart);
@@ -306,6 +307,7 @@ public sealed partial class CitySimulation
         if (pr57StateCost) _pr57CitizenLoopTicks += System.Diagnostics.Stopwatch.GetTimestamp() - pr57LoopStart;
         Pr57Transitions290End(2);
         Pr57312End();
+        Pr57317End();
     }
     // Crosswalk nodes in State.Roads order. Rebuilt at the start of every
     // MoveCitizens call and whenever the road list or crossings change.
