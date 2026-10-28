@@ -219,15 +219,30 @@ public sealed partial class CitySimulation
     // A present body on v's way: any vehicle but v and the one it tows. A body
     // already in contact with v stays an obstacle: v may only move so that the
     // contact does not deepen (it separates), never through it.
-    Vehicle? BodyOnWay(Vehicle v,List<(Vehicle Body,Point Position,double Heading)> poses)
+    Vehicle? BodyOnWay(Vehicle v,List<(Vehicle Body,Point Position,double Heading)> poses,bool pr57305Onward=false)
     {
         Pr57261Hit(0);
+        // #305: counters observe the original ordered short-circuit; never drive physics.
+        var census=pr57305Onward&&Pr57305Target(v);
+        var visited=0;var eligible=0;var nearNegative=0;var geometry=0;
+        var started=census?System.Diagnostics.Stopwatch.GetTimestamp():0L;
         if(poses.Count==0)return null;var reach=poses.Max(p=>p.Position.Distance(v.Position))+12;
         foreach(var o in State.Vehicles){
+            if(census)visited++;
             if(o.Id==v.Id||o.Id==v.TowTargetId||o.TowTruckId==v.Id||o.Status is VehicleStatus.Outside or VehicleStatus.Towed||o.Position.Distance(v.Position)>reach||AtGateway(o)&&AtGateway(v))continue;
+            if(census)eligible++;
             var now=Penetration(v,v.Position,v.Heading,o,o.Position,o.Heading);var limit=Math.Max(-.1,now+.001);
-            foreach(var p in poses)if(p.Position.Distance(o.Position)<12&&Penetration(v,p.Position,p.Heading,o,o.Position,o.Heading)>limit)return o;
+            var tested=false;
+            foreach(var p in poses)if(p.Position.Distance(o.Position)<12){
+                if(census){geometry++;tested=true;}
+                if(Penetration(v,p.Position,p.Heading,o,o.Position,o.Heading)>limit){
+                    if(census)Pr57305Body(v,o,poses.Count,visited,eligible,nearNegative,geometry,started);
+                    return o;
+                }
+            }
+            if(census&&tested)nearNegative++;
         }
+        if(census)Pr57305Body(v,null,poses.Count,visited,eligible,nearNegative,geometry,started);
         return null;
     }
     // Traffic already circulating that would reach the way within the manoeuvre

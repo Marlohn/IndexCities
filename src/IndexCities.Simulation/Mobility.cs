@@ -1597,7 +1597,7 @@ public sealed partial class CitySimulation
         // junction while a docked body blocks the exit prevents that body from
         // acquiring the very junction it needs to leave.
         pr57DetailStart=pr57Detail?GC.GetAllocatedBytesForCurrentThread():0L;pr57DetailTickStart=pr57Detail&&Pr57HotTiming?System.Diagnostics.Stopwatch.GetTimestamp():0L;
-        var onwardBody=BodyOnWay(v,onward);
+        var onwardBody=BodyOnWay(v,onward,Pr57305Enabled);
         if(pr57Detail){_pr57JunctionDetailBytes[6]+=GC.GetAllocatedBytesForCurrentThread()-pr57DetailStart;_pr57JunctionDetailCalls[6]++;if(pr57DetailTickStart!=0)_pr57JunctionDetailTicks[6]+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57DetailTickStart;}
         if(onwardBody is not null){Pr57JunctionReadersBlock(v,onwardBody,"onwardBody");v.Cause="Fila na faixa";return Pr57JunctionDecision(v,junction,Pr57JunctionExit.OnwardBody,false);}
         if(crossed.Any(s=>s.Id!=junction.Id)){
