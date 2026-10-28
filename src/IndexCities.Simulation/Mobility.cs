@@ -198,6 +198,7 @@ public sealed partial class CitySimulation
     }
     void MoveCitizens(double dt)
     {
+        Pr57Transitions290Begin(2);
         var pr57StateCost = CostProfile is not null && Pr57CitizenStateCostEnabled;
         var pr57SetupStart = pr57StateCost ? System.Diagnostics.Stopwatch.GetTimestamp() : 0L;
         var pr57Citizen239 = Pr57Citizen239Enabled && CostProfile is not null;
@@ -300,6 +301,7 @@ public sealed partial class CitySimulation
             }
         }
         if (pr57StateCost) _pr57CitizenLoopTicks += System.Diagnostics.Stopwatch.GetTimestamp() - pr57LoopStart;
+        Pr57Transitions290End(2);
     }
     // Crosswalk nodes in State.Roads order. Rebuilt at the start of every
     // MoveCitizens call and whenever the road list or crossings change.
@@ -543,6 +545,7 @@ public sealed partial class CitySimulation
     void MoveVehiclesUnsplit(double dt,double? operationsDt=null)
     {
         Pr57SetupGapStart(dt,operationsDt);
+        Pr57Transitions290Begin(dt<=0?0:1);
         Pr57PrepareSiteOwnerRoster();
         Pr57CausalBeginSlice(dt,operationsDt);
         Pr57JunctionCensusBeginSlice(dt,operationsDt);
@@ -1408,6 +1411,7 @@ public sealed partial class CitySimulation
             Console.WriteLine($"PR57_236_POSE_NOOP sample={_pr57MovementAllocCalls-35} eligible={pr57PoseNoopEligible} skipped={pr57PoseNoopSkipped} evaluated={pr57PoseNoopEligible-pr57PoseNoopSkipped} scope=BITWISE_HEADING_NOOP");
         // A towed vehicle moves only with its tow (platform or trailing a heavy tow).
         SyncTowedVehicles();
+        Pr57Transitions290End(dt<=0?0:1);
         Pr57Effect253EndSlice();
         Pr57260EndSlice();
         Pr57ReservationAfterSync();
