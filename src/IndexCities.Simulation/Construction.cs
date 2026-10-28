@@ -253,6 +253,11 @@ public sealed partial class CitySimulation
         }
         foreach(var p in State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress).OrderBy(p=>p.IsMaintenance?MaintenancePriority(p):4).ThenBy(p=>p.Id)){
             if(CostProfile is { } census)census.ConstructionOrderProjects++;
+            var pr57ProjectProbe=CostProfile?.Pr57ConstructionProjects;
+            var pr57ProjectBefore=pr57ProjectProbe is null?default:Pr57ConstructionProjectProbe.Capture(p,State.Shipments.Count,State.Ledger.Count);
+            var pr57ProjectStarted=pr57ProjectProbe is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
+            try
+            {
             if(RoadPhysicalWorkDone(p))continue;
             // The previous real access check is reusable only while its road
             // graph and maintenance target remain unchanged. Check live cargo
@@ -334,6 +339,14 @@ public sealed partial class CitySimulation
             if(Pr57ConstructionWaitAgendaEnabled&&p.IsMaintenance&&p.BuildingId==null&&p.MaintenanceRoadIds.Count>0
                 &&p.Cause==WorkCause.AwaitingExternalTruck)
                 _pr57ConstructionWaitAccess[p.Id]=(_roadEpoch,p.Progress);
+            }
+            finally
+            {
+                if(pr57ProjectProbe is not null)
+                    pr57ProjectProbe.Observe("order",p.Id,pr57ProjectBefore,
+                        Pr57ConstructionProjectProbe.Capture(p,State.Shipments.Count,State.Ledger.Count),
+                        System.Diagnostics.Stopwatch.GetTimestamp()-pr57ProjectStarted);
+            }
         }
     }
     // Same margin as the dispatch checks: the leg, then the way back to the exterior.
@@ -375,6 +388,11 @@ public sealed partial class CitySimulation
         var completedConstruction=false;
         foreach(var p in State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress)){
             if(CostProfile is { } census)census.ConstructionProgressProjects++;
+            var pr57ProjectProbe=CostProfile?.Pr57ConstructionProjects;
+            var pr57ProjectBefore=pr57ProjectProbe is null?default:Pr57ConstructionProjectProbe.Capture(p,State.Shipments.Count,State.Ledger.Count);
+            var pr57ProjectStarted=pr57ProjectProbe is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
+            try
+            {
             if(RetireMaintenanceWithoutTargets(p))continue;
             if(IsPaving(p)&&!RoadPhysicalWorkDone(p)){if(ProgressPaving(p,dt)){if(!WaitForRoadConnection(p))completedConstruction|=CompleteConstructionProject(p);}continue;}
             if(RoadPhysicalWorkDone(p)){
@@ -420,6 +438,14 @@ public sealed partial class CitySimulation
             if(p.Progress<.999999)continue;
             if(RoadPhysicalWorkDone(p)&&WaitForRoadConnection(p))continue;
             completedConstruction|=CompleteConstructionProject(p);
+            }
+            finally
+            {
+                if(pr57ProjectProbe is not null)
+                    pr57ProjectProbe.Observe("progress",p.Id,pr57ProjectBefore,
+                        Pr57ConstructionProjectProbe.Capture(p,State.Shipments.Count,State.Ledger.Count),
+                        System.Diagnostics.Stopwatch.GetTimestamp()-pr57ProjectStarted);
+            }
         }
         return completedConstruction;
     }
