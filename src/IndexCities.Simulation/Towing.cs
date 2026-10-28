@@ -282,7 +282,7 @@ public sealed partial class CitySimulation
     void AbortTow(Vehicle tow,Vehicle? t)
     {
         Pr57DirtyTouch(t);
-        if(t!=null&&t.TowTruckId==tow.Id)t.TowTruckId=null;
+        if(t!=null&&t.TowTruckId==tow.Id){t.TowTruckId=null;Pr57307Publish(t);} // #308 observational target-only publication
         tow.TowPhase=TowPhase.None;tow.TowTargetId=null;tow.TowStationId=null;tow.TowExitWaitSince=0;tow.TowExitNoOther=false;ReturnTow(tow);
     }
     void ReplanTow(Vehicle tow,Vehicle t)
