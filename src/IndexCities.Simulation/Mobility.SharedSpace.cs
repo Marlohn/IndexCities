@@ -104,6 +104,7 @@ public sealed partial class CitySimulation
 
     List<(Vehicle Body,Point Position,double Heading)> Manoeuvre(Vehicle o,List<int> route,int from,Point at,double facing,IReadOnlyList<Point> site,bool approach,int minimum,out List<RoadNode> spaces,out int endIndex,Func<Point,double,bool>? extraClear=null,int? through=null)
     {
+        var pr57Man248 = Pr57Man248Before(o, route, from, at, facing, site, approach, minimum, extraClear, through);
         var held=new List<(Vehicle Body,Point Position,double Heading)>();spaces=[];endIndex=from-1;
         var near=SharedNodes();var found=spaces;
         // One scratch buffer per manoeuvre, not per sampled pose. The broad
@@ -152,6 +153,7 @@ public sealed partial class CitySimulation
             at=lane;facing=direction;points++;endIndex=i;
             if(points>=minimum&&(pr57NodeCandidates is null?near.All(n=>!EntersArea(o,at,facing,n)):!TouchesSharedNode(at,facing))&&(extraClear?.Invoke(at,facing)??true))break;
         }
+        Pr57Man248After(pr57Man248, held.Count);
         return held;
     }
     // A truck's way out of the dock at `at` toward home (predicted while it is
