@@ -7,6 +7,9 @@ public sealed partial class CitySimulation
 {
     static readonly bool Pr57266Enabled =
         Environment.GetEnvironmentVariable("PR57_266_COHORT_STAGES") == "1";
+    // #269: report already measured per-stage allocation; no extra actor hooks.
+    static readonly bool Pr57269StageBytesEnabled =
+        Environment.GetEnvironmentVariable("PR57_269_STAGE_BYTES") == "1";
     int[] _pr57266Ids = [];
     readonly Dictionary<int, int> _pr57266Slots = new();
     readonly long[,,] _pr57266Ticks = new long[24, 6, 9];
@@ -111,7 +114,10 @@ public sealed partial class CitySimulation
                     $"totalMs={Ms(ticks):F6} totalMB={bytes / 1e6:F6} " +
                     string.Join(" ", Enumerable.Range(0, 9).Select(stage =>
                         $"s{stage}Ms={Ms(_pr57266Ticks[slot, window, stage]):F6} " +
-                        $"s{stage}Segments={_pr57266Segments[slot, window, stage]}")) +
+                        $"s{stage}Segments={_pr57266Segments[slot, window, stage]}" +
+                        (Pr57269StageBytesEnabled
+                            ? $" s{stage}Bytes={_pr57266Bytes[slot, window, stage]}"
+                            : ""))) +
                     " observational=True");
             }
     }
