@@ -289,6 +289,9 @@ public sealed partial class CitySimulation
     {
         var profile=CostProfile;
         var started=profile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
+        var pr57300=Pr57300Enabled?new Pr57300Step():null;
+        _pr57300Step=pr57300;
+        var pr57300Call=pr57300 is null?0:++_pr57300Calls;
         var hasEntry=Pr57StrandedGraphEnabled?Pr57HasLiveLaneEntry():State.Vehicles.Any(LiveLaneEntry);
         var pr57EntryFrameReuse=Environment.GetEnvironmentVariable("PR57_ENTRY_FRAME_REUSE")=="1";
         if(profile is not null)profile.MarkVehicle(0,ref started);
@@ -297,6 +300,8 @@ public sealed partial class CitySimulation
             if(profile is not null){profile.MarkVehicle(3,ref started);profile.VehicleUnsplitSteps++;PrintCompletedLaneSliceHours(State.ElapsedSeconds+dt);}
             _pr57VehicleBvh=null; // never persist a spatial index across public Advance(2)
             Pr57JunctionCensusReportIfReady(State.ElapsedSeconds+dt);
+            pr57300?.Print(pr57300Call,false);
+            _pr57300Step=null;
             return;
         }
         if(profile is not null)profile.VehicleBatchedSteps++;
@@ -334,7 +339,9 @@ public sealed partial class CitySimulation
                     _entryFrameBuffer.Add(v.Id,snapshot);
                 }
                 _entryFrame=_entryFrameBuffer;
+                var pr57300ScheduleStart=pr57300 is null?0:System.Diagnostics.Stopwatch.GetTimestamp();
                 var slice=Pr57StrandedGraphEnabled?Pr57NextMovementEvent(remaining):NextVehicleMovementEvent(remaining);
+                if(pr57300 is not null)pr57300.ScheduleTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57300ScheduleStart;
                 // PR57-only: compare actual physical state across each predicted boundary.
                 // This is not an event journal: transitions that reverse inside a slice are not visible.
                 var worksetProbeStart=pr57Workset?System.Diagnostics.Stopwatch.GetTimestamp():0L;
@@ -353,7 +360,10 @@ public sealed partial class CitySimulation
                 var traceBefore=traceSlice?State.Vehicles.ToDictionary(v=>v.Id,v=>(v.Position,v.Heading,v.RouteIndex,v.Status,v.IntersectionClaim)):null;
                 if(profile is not null)profile.MarkVehicle(2,ref started);
                 var worksetMoveStart=pr57Workset?System.Diagnostics.Stopwatch.GetTimestamp():0L;
+                pr57300?.Capture(State.Vehicles);
+                var pr57300MoveStart=pr57300 is null?0:System.Diagnostics.Stopwatch.GetTimestamp();
                 MoveVehiclesUnsplit(slice);
+                if(pr57300 is not null){pr57300.MoveTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57300MoveStart;pr57300.After(State.Vehicles);}
                 if(worksetBefore is not null){
                     worksetMovementTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-worksetMoveStart;
                     worksetProbeStart=System.Diagnostics.Stopwatch.GetTimestamp();
@@ -398,7 +408,8 @@ public sealed partial class CitySimulation
                 if(profile is not null){ObserveLaneWinnerOutcome();profile.MarkVehicle(3,ref started);profile.VehicleSlices++;}
                 _vehicleMovementOffset+=slice;
             }
-        }finally{_laneObservedWinner=null;_vehicleMovementBatch=null;_entryFrame=null;_entryFrameBuffer.Clear();_entrySnapshotReuse.Clear();_vehicleMovementClock=null;_vehicleMovementOffset=0;_pr57VehicleBvh=null;}
+        }finally{_laneObservedWinner=null;_vehicleMovementBatch=null;_entryFrame=null;_entryFrameBuffer.Clear();_entrySnapshotReuse.Clear();_vehicleMovementClock=null;_vehicleMovementOffset=0;_pr57VehicleBvh=null;_pr57300Step=null;}
+        pr57300?.Print(pr57300Call,true);
         if(pr57Workset)
             Console.WriteLine($"PR57_187_BATCH time={State.ElapsedSeconds:F3} slices={worksetSlices} initialEligible={worksetCandidates} actualAttempts={worksetAttempts} partialChanged={worksetPartialChanged} moved={worksetMoved} causeChanged={worksetCauseChanged} waitingChanged={worksetWaitingChanged} claimChanged={worksetClaimChanged} otherChanged={worksetOtherChanged} newVehicles={worksetNewVehicles} observerMs={worksetProbeTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F3} movementMs={worksetMovementTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F3} scope=INTRUSIVE_PARTIAL_NET_STATE_NOT_CAUSAL_INDEPENDENCE");
         if(profile is not null&&Environment.GetEnvironmentVariable("PR57_TARGET_BLOCK_TRACE")=="1"){
@@ -480,7 +491,8 @@ public sealed partial class CitySimulation
         long blockedEntryChecks=0,projectionCandidates=0,projectionRechecks=0;
         var movementCause=-1;Vehicle? movementWinner=null;
         var entries=State.Vehicles.Where(v=>_vehicleMovementBatch!.Contains(v.Id)&&LiveLaneEntry(v)).ToList();
-        if(entries.Count==0){if(profile is not null)ObserveLaneSlice(horizon,0,-1,0,0,0);return horizon;}
+        _pr57300Step?.Entries(entries);
+        if(entries.Count==0){if(profile is not null)ObserveLaneSlice(horizon,0,-1,0,0,0);_pr57300Step?.Decision(0,-1,null,0,0,0);return horizon;}
         var held=State.Vehicles.Any(o=>o.Status==VehicleStatus.Stranded)?State.Vehicles.Where(HeldBehindStranded).Select(o=>o.Id).ToHashSet():null;
         foreach(var v in State.Vehicles.Where(v=>_vehicleMovementBatch!.Contains(v.Id))){
             // A blocked lot entry is not travelling to its lane target yet.
@@ -539,7 +551,9 @@ public sealed partial class CitySimulation
             }
         }
         var slice=Math.Max(Math.Min(earliest,horizon),Math.Min(MovementEventEpsilon,horizon));
-        if(profile is not null)ObserveLaneSlice(slice,earliest<horizon-1e-9?3:horizon<initialHorizon-1e-9?2:1,movementCause,blockedEntryChecks,projectionCandidates,projectionRechecks,movementWinner);
+        var reason=earliest<horizon-1e-9?3:horizon<initialHorizon-1e-9?2:1;
+        if(profile is not null)ObserveLaneSlice(slice,reason,movementCause,blockedEntryChecks,projectionCandidates,projectionRechecks,movementWinner);
+        _pr57300Step?.Decision(reason,movementCause,movementWinner,blockedEntryChecks,projectionCandidates,projectionRechecks);
         return slice;
     }
 }
