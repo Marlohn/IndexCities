@@ -4483,3 +4483,25 @@ Nas 600 passagens, `MayEnterJunction` retornou **489× `OnwardBody`** e **111× 
 **Teto estreito:** s7 foi cerca de **90,0% dos ~106,54 ms** instrumentados desse único leitor; porém seus 95,922 ms correspondem a apenas **~6,8% dos 1.408 ms** de wall integrado medido no braço sonda. Mesmo apagar hipoteticamente todo s7 **somente do leitor 1071** daria teto indicativo de **~1,073×** no intervalo, por Amdahl; essa eliminação não seria causalmente válida. Não extrapolar o percentual desse leitor para os demais veículos, para o GRID ou para 10k/80 anos.
 
 **Decisão:** esta execução responde à *alcançabilidade* para um leitor real e evita investir em `SpaceFree`/admissão de doca para ele nesta janela. O trabalho dominante local é s7 com `TurnWay`/`BodyOnWay`, mas ainda falta separar as chamadas diretas das transitivas e mapear escritores de posição/heading, reservas, pedestres, relógio, guincho e edições externas **antes de qualquer reutilização**. Próximo discriminante barato: atribuir as 901 chamadas aos seus chamadores reais e aos IDs dos candidatos, medindo eventos que poderiam alterar a primeira negativa; confrontar custo de manutenção causal com a reexecução. Se a manutenção for densa, encerrar esta pista e investigar execução por estado/fase e memória em escala. **Ganho integrado novo aceito: 0%.** PR draft; main, SPEC, arquitetura oficial, PRs independentes e timers intactos. Meta **10.000 vivos/80 anos/6h**, sustentabilidade e gerações não demonstradas.
+
+## Ducentésima sexagésima segunda execução — atribuição das chamadas transitivas do leitor REAL (#262, 28/10/2026)
+
+**Pergunta após #261:** as 412 chamadas de `TurnWay`/`BodyOnWay` além das 489 negativas diretas `OnwardBody` são reavaliações de outros candidatos por `CanTurnNow`, ou um conjunto de leitores não identificado? A sonda opt-in `PR57_262_NESTED_ATTRIBUTION=1` observa o retorno canônico de `CanTurnNow` apenas enquanto o veículo 1071 é processado, preservando o código de movimento e sem invocar predicados extras. Reutiliza a delimitação `PR57_261_PATH_REACH=1`; não altera decisão, ordem, estado ou persistência.
+
+**[Action #40640025238 — success](https://github.com/Marlohn/IndexCities/actions/runs/40640025238), [artefato #12795715069](https://github.com/Marlohn/IndexCities/actions/runs/40640025238/artifacts/12795715069):** .NET 8 Release, **491/491 testes**, controle e sonda em dois processos independentes, mesmo checkpoint econômico REAL das 14h do #243 (121 vivos, 98 veículos), 100 chamadas individuais `Advance(2)` por braço, 600 sub-slices. Checkpoints JSON completos inicial/final idênticos byte a byte, diferenças decimais zero, invariantes, histórico, ledger e save/load preservados.
+
+| Caminho realmente alcançado pelo leitor 1071 | Chamadas / retornos |
+| --- | ---: |
+| `MayEnterJunction` — `OnwardBody` (negativa direta) | 489 |
+| `MayEnterJunction` — `Pedestrian` (antes do onward) | 111 |
+| `TurnWay` e `BodyOnWay` totais, cada | 901 |
+| **Chamadas extras atribuídas a `CanTurnNow`** | **412 / 412** |
+| Candidato de `CanTurnNow` | **ID 1380, 412/412** |
+| `CanTurnNow(1380)` permitido | **0 / 412** |
+| `SpaceFree`, `TrafficOnWay`, `AdmitManoeuvre` | 0 |
+
+A decomposição fecha exatamente: **489 chamadas diretas + 412 avaliações transitivas = 901** em cada leitor físico. O caminho de código de `JunctionPreferenceAllows` usa `CanTurnNow` ao selecionar concorrentes; a sonda observa a chamada alcançada e o resultado, não um rastreamento universal de pilha nem a causa interna da negativa de 1380. Não há evidência de que o estado ou o bloqueador de 1380 permaneça causalmente invariável. Pedestres, semáforos, posições, heading, reservas, relógio e escritores externos continuam relevantes.
+
+**Custo e teto:** wall controle **1,42s**, sonda **1,43s** (arredondados), CPU **1,64→1,62s**, alocação **322,0→322,0 MB**. Tempos observacionais, **não** A/B de ganho. s7 do leitor 1071 consumiu ~96,93 ms intrusivos; mesmo eliminá-lo inteiro teria teto ilustrativo de apenas ~1,073× no wall deste recorte, conforme #261. **Não** se pode atribuir 412/901 do tempo às chamadas extras: são contagens, não duração por origem. Nenhum ganho integrado novo aceito (**0%**).
+
+**Decisão / próximo discriminante:** o problema transitivo ficou localizado em um candidato real, mas **não** justifica cache nem suspensão de sub-slices. Medir, numa única janela REAL delimitada, o fanout das negativas de `CanTurnNow` entre *todos* os leitores ativos, custo exclusivo e bloqueador efetivo, confrontando-o com alterações de terceiros; se a participação integrada for pequena ou a invalidação densa, abandonar essa reutilização local e pivotar para execução por estado/fase e memória/histórico. Não extrapolar a 10k/80 anos. PR draft; main, SPEC, arquitetura oficial, PRs independentes e timers intactos. Sustentabilidade, gerações e meta 10.000 vivos/80 anos/6h seguem não demonstradas.
