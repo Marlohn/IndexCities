@@ -11,6 +11,10 @@ namespace IndexCities.Simulation;
 // traffic on the road) are unchanged.
 public sealed partial class CitySimulation
 {
+    // #270 opt-in: reuse only an ephemeral sampling list inside one Manoeuvre call.
+    // Every sampled pose is copied into `held` before this buffer is cleared.
+    static readonly bool Pr57270ManoeuvreScratchEnabled =
+        Environment.GetEnvironmentVariable("PR57_270_MANOEUVRE_SCRATCH") == "1";
     // SPEC "Curva simples, um de cada vez": a sharp corner of a single road
     // (60 degrees or more, e.g. an L); gentler curves need no wait.
     bool IsBend(RoadNode node)
@@ -106,6 +110,8 @@ public sealed partial class CitySimulation
     {
         var pr57Man248 = Pr57Man248Before(o, route, from, at, facing, site, approach, minimum, extraClear, through);
         var held=new List<(Vehicle Body,Point Position,double Heading)>();spaces=[];endIndex=from-1;
+        // Scratch never escapes this invocation; no state or decision is cached.
+        List<(Point Position,double Heading)>? pr57270Scratch=null;
         var near=SharedNodes();var found=spaces;
         // One scratch buffer per manoeuvre, not per sampled pose. The broad
         // phase only selects possible nodes; the exact predicate is unchanged.
@@ -137,7 +143,8 @@ public sealed partial class CitySimulation
         }
         for(var index=0;index<site.Count;index++){
             var to=site[index];var heading=approach&&o.SiteDockHeading is {} dockHeading&&index==site.Count-1?dockHeading:to.Distance(at)>.001?Math.Atan2(to.X-at.X,to.Z-at.Z):facing;
-            var run=new List<(Point Position,double Heading)>();SamplePoses(run,at,to,heading);foreach(var p in run){held.Add((o,p.Position,p.Heading));Note(p.Position,p.Heading);}at=to;facing=heading;
+            var run=Pr57270ManoeuvreScratchEnabled?(pr57270Scratch??=new List<(Point Position,double Heading)>()):new List<(Point Position,double Heading)>();
+            run.Clear();SamplePoses(run,at,to,heading);foreach(var p in run){held.Add((o,p.Position,p.Heading));Note(p.Position,p.Heading);}at=to;facing=heading;
         }
         var points=0;
         for(var i=from;i<route.Count&&i<=(through??int.MaxValue);i++){
@@ -149,7 +156,8 @@ public sealed partial class CitySimulation
             // The lane model turns in place at once: the turn counts for the spaces it
             // enters, the body only takes the new heading.
             for(var part=0;part<=8;part++)Note(at,facing+turn*part/8);held.Add((o,at,direction));
-            var straight=new List<(Point Position,double Heading)>();SamplePoses(straight,at,lane,direction);foreach(var p in straight){held.Add((o,p.Position,p.Heading));Note(p.Position,p.Heading);}
+            var straight=Pr57270ManoeuvreScratchEnabled?(pr57270Scratch??=new List<(Point Position,double Heading)>()):new List<(Point Position,double Heading)>();
+            straight.Clear();SamplePoses(straight,at,lane,direction);foreach(var p in straight){held.Add((o,p.Position,p.Heading));Note(p.Position,p.Heading);}
             at=lane;facing=direction;points++;endIndex=i;
             if(points>=minimum&&(pr57NodeCandidates is null?near.All(n=>!EntersArea(o,at,facing,n)):!TouchesSharedNode(at,facing))&&(extraClear?.Invoke(at,facing)??true))break;
         }
