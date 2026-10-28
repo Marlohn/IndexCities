@@ -65,6 +65,7 @@ public sealed partial class CitySimulation
             return AdmitManoeuvre(v, way, spaces, dock, yieldToTraffic);
         var ticks = System.Diagnostics.Stopwatch.GetTimestamp();
         var bytes = GC.GetAllocatedBytesForCurrentThread();
+        Pr57275Observe(v, slot, 0);
         var result = AdmitManoeuvre(v, way, spaces, dock, yieldToTraffic);
         Pr57273Record(slot, 1, ticks, bytes, result);
         return result;
@@ -110,6 +111,7 @@ public sealed partial class CitySimulation
         if (!Pr57273Sample(v, out var slot)) return BayEntryHold(v);
         var ticks = System.Diagnostics.Stopwatch.GetTimestamp();
         var bytes = GC.GetAllocatedBytesForCurrentThread();
+        Pr57275Observe(v, slot, 1);
         var result = BayEntryHold(v);
         Pr57273Record(slot, 5, ticks, bytes, result.Count > 0);
         return result;
@@ -143,5 +145,6 @@ public sealed partial class CitySimulation
                     $"helperBytes={bytes} slices=100 scope=selectedS1S2Helpers " +
                     "otherS1S2OperationsUnmeasured=True noSkippedSlices=True");
             }
+        Pr57275Report();
     }
 }
