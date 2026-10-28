@@ -70,6 +70,7 @@ public sealed partial class CitySimulation
     void Pr57ExclusiveBeginSlice(double dt, double? operationsDt, bool profiled)
     {
         Pr57261BeginSlice(dt, operationsDt, profiled);
+        Pr57264BeginSlice(dt, operationsDt, profiled);
         _pr57ExclusiveActive = false;
         if (!Pr57ResidualExclusiveEnabled || !profiled || dt <= 0 || operationsDt is not null) return;
         _pr57ExclusiveEligibleSlices++;
@@ -94,6 +95,7 @@ public sealed partial class CitySimulation
     void Pr57ExclusiveBeginVehicle(Vehicle vehicle)
     {
         Pr57261BeginVehicle(vehicle);
+        Pr57264BeginVehicle(vehicle);
         if (!_pr57ExclusiveActive) return;
         _pr57ExclusiveVehicleActive = true;
         _pr57ExclusiveStage = 0;
@@ -131,6 +133,7 @@ public sealed partial class CitySimulation
     void Pr57ExclusiveFinishVehicle(Vehicle vehicle)
     {
         Pr57261FinishVehicle(vehicle);
+        Pr57264FinishVehicle(vehicle);
         if (!_pr57ExclusiveVehicleActive) return;
         Pr57ExclusiveMark(0);
         if (Pr57State244Enabled)
@@ -157,6 +160,7 @@ public sealed partial class CitySimulation
     void Pr57ExclusiveEndSlice()
     {
         Pr57261EndSlice();
+        Pr57264EndSlice();
         if (!_pr57ExclusiveActive) return;
         Pr57PoseGuardReport();
         Pr57ExecEndSlice();
