@@ -4920,3 +4920,34 @@ No GRID, o intervalo amostrado de 240 passagens apresenta **1,39×** entre maior
 **Limite temporal importante:** o snapshot de 60 passagens pode ser emitido **dentro** de uma chamada Advance(2) (no GRID, durante as chamadas 7, 11, 16 e 30). Portanto, não atribuir uma janela de 60 passagens a um Step exato nem a um pico individual 5/14/20/22. As 240 passagens do GRID não cobrem necessariamente as 50 chamadas inteiras. JIT, GC, geometria, atores terceiros, mutações e estado podem alterar custo por avaliação; os dados não os separam.
 
 **Decisão:** refutada a explicação por contagem de veículos em fila isoladamente. O próximo experimento útil é uma sonda **por chamada pública**, com deltas de passagens, classes e estágios físicos s1/s2/s3/s5/s7, além de alocação e GC, comparada a controle idêntico e com publicação imediata das mutações. Não escolher cache nem scheduler por Cause ou ausência de moved. **Novo ganho integrado aceito: 0%; meta 10k/80 anos/6h e gerações não demonstradas.**
+
+## PR57 #298 — modo batched e multiplicação de passagens físicas por Advance(2) (2026-10-28, São Paulo)
+
+**Pergunta discriminante após #297:** os picos do GRID artificial são predominantemente uma piora do custo unitário de cada veículo em fila, ou a troca para o executor de entrada com múltiplas passagens físicas por chamada pública? **Na janela observada, os 12 picos identificados em #295 coincidem exatamente com as 12 chamadas em modo batched.** O modo dividido executa até 26 sub-slices de movimento para um único `Advance(2)`; isso não autoriza eliminar nenhum evento ou passagem.
+
+**Evidência:** [Action #40734782987](https://github.com/Marlohn/IndexCities/actions/runs/40734782987) SUCCESS, .NET 8, **491/491 testes**, oito processos novos em ordem ABBA por cenário (controle/sonda/sonda/controle), flags compostas existentes, 50 chamadas individuais `Advance(2)` no GRID ARTIFICIAL e 100 na economia REAL 14h. **16/16 pares de checkpoints JSON integrais byte a byte**, invariantes, ledger, histórico e save/load preservados. [ZIP bruto #12836742974](https://github.com/Marlohn/IndexCities/actions/runs/40734782987/artifacts/12836742974), SHA-256 `e7edc0e9108fc010a5d1d55b8df581a22d8e4e1e4c9a0b69907d2d34f534e163`. A sonda opt-in `PR57_298_STEP_CLASS=1` lê os contadores intrusivos existentes `PR57_VEHICLE_COST_PROBE=1` **após** cada `Advance(2)`, registrando deltas das oito classes, alocação e GC por chamada; não muda física, ordem, scheduler ou estado. [Reprodutor offline #298](../../scripts/pr57-298-batch-boundary-audit.py) executado sobre o ZIP, blob Git `139db9a36e9c85f70c2e7a3e24c281389e795771` idêntico ao arquivo local executado.
+
+| Métrica | GRID ARTIFICIAL, 1.111 vivos / 787 veículos | Economia REAL 14h, 121 vivos / 98 veículos |
+| --- | ---: | ---: |
+| Chamadas `Advance(2)` | 50 | 100 |
+| Chamadas em modo batched | **12** | **100** |
+| Invocações `MoveVehiclesUnsplit` totais | 260 | 718 |
+| Passagens operacionais `dt=0` | 12 | 100 |
+| Sub-slices físicos de movimento | **248** | **618** |
+| Máximo de sub-slices de movimento em um `Advance(2)` | **26** | **8** |
+| Avaliações terminadas na classe `queue` | 98.339 | 14.388 |
+| Tempo intrusivo acumulado da classe `queue` nos dois processos | 8.363,025 / 8.573,128 ms | 1.683,945 / 1.681,471 ms |
+| Parcela `queue` dos cronômetros classificados | 78,39% / 78,44% | 76,98% / 77,05% |
+| Correlação passagens `MoveVehiclesUnsplit` × fase `vehicles` por chamada | **r=0,9647 / 0,9665** | r=0,1486 / 0,1624 |
+| Correlação contagem `queue` × fase `vehicles` por chamada | **r=0,9609 / 0,9628** | r=0,1358 / 0,1533 |
+| Coletas GC0/GC1/GC2 por processo de sonda | 67 / 10 / 2 | 19 / 1 / 0 |
+
+No GRID, as 12 chamadas batched foram **5–9, 11, 14–16, 19–20 e 22**, exatamente os 12 picos físicos descritivos do #295. Concentraram **82,15% / 82,29%** do tempo da fase `vehicles` e **69,88% / 69,54%** da soma dos walls das chamadas individuais instrumentadas. A chamada 14 teve 27 invocações `MoveVehiclesUnsplit`, sendo uma operacional e 26 de movimento. Nos outros 38 `Advance(2)` GRID, ocorreu uma única passagem sem split. Na economia REAL 14h, todas as 100 chamadas permaneceram batched, com 6–8 sub-slices de movimento por chamada; sua variabilidade de custo não se explica pelo número de passagens isoladamente.
+
+**Caminho causal confirmado no código:** `Mobility.LaneEntry.cs:MoveVehicles` escolhe a execução batched se existe `LiveLaneEntry`; executa a fase operacional uma vez e repete `NextVehicleMovementEvent(remaining)` + `MoveVehiclesUnsplit(slice)` até consumir os 2 segundos. Os eventos candidatos incluem mudanças reais de rota/velocidade, combustível, cruzamentos e bloqueios de entrada projetados. Os contadores mostram multiplicação de avaliações físicas, **não demonstram que algum sub-slice seja dispensável**. A classificação `queue` é por `Cause/Status` finais do ator, não identifica qual predicado ou escritor custou CPU. GC é contagem por processo e não prova causalidade dos picos. O replay é curto, instrumentado e o GRID é artificial; não extrapolar a 10k/80 anos.
+
+**Wall total dos processos (inclui harness/checkpoints):** GRID controle 14.804,483 / 14.738,272 ms, sonda 14.653,146 / 15.083,569 ms; REAL controle 3.438,091 / 3.263,169 ms, sonda 3.488,623 / 3.476,472 ms. Não é A/B de aceleração, nem ganho promovido. **Novo ganho integrado REAL aceito: 0%.**
+
+**Próximo discriminante:** registrar por `Advance(2)` o motivo do evento que limita cada sub-slice (rota/velocidade/entrada projetada/ocupação/combustível), custo de descobrir esse evento e número de atores efetivamente alterados após a publicação imediata. Testar se uma representação física conjunta consegue amortizar as **reavaliações canônicas necessárias** sem alterar limites temporais, ordem de escritores, docas, reservas, semáforos ou pedestres. Na economia REAL, medir separadamente o custo por avaliação, pois a multiplicação de passagens não explica sua variação. Não criar cache causal ou skip sem cobertura de invalidação e paridade.
+
+PR draft; main, SPEC, ARCHITECTURE oficial, PRs #51/#52/#55, merge e timers intocados. **Meta 10.000 vivos/80 anos/6h e gerações: não demonstradas.**
