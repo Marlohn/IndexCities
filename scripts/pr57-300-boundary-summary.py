@@ -7,7 +7,9 @@ import json
 import re
 from pathlib import Path
 
-CASES = {'gridARTIFICIAL': (50, 12, 248, 26),
+# Boundaries are only batched NextVehicleMovementEvent calls: 210 GRID.
+# The other 38 GRID Advance(2) use one unsplit physical pass each.
+CASES = {'gridARTIFICIAL': (50, 12, 210, 26),
          'real14hREAL': (100, 100, 618, 8)}
 FIELDS = ('boundaries', 'noEntry', 'full', 'movement', 'projection',
           'entriesSum', 'entriesMin', 'entriesMax', 'uniqueEntries',
