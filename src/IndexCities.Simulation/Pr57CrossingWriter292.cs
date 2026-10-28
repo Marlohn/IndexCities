@@ -56,7 +56,7 @@ public sealed partial class CitySimulation
     public IEnumerable<string> Pr57Crossing292Lines(int calls)
     {
         if(!Pr57Crossing292Enabled)yield break;
-        yield return FormattableString.Invariant(
+        yield return (
             $"PR57_292_READER calls={calls} acquisitions={_pr57Crossing292Acquires} " +
             $"distinctAcquiredNodes={_pr57Crossing292Versions.Count} lastCitizen={_pr57Crossing292LastCitizen} " +
             $"lastNode={_pr57Crossing292LastNode} readerCalls={_pr57Crossing292Reads} " +
