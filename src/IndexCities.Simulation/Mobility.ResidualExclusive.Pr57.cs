@@ -74,6 +74,7 @@ public sealed partial class CitySimulation
         Pr57266BeginSlice(dt, operationsDt, profiled);
         Pr57271BeginSlice(dt, operationsDt, profiled);
         Pr57272BeginSlice(dt, operationsDt);
+        Pr57273BeginSlice(dt, operationsDt);
         _pr57ExclusiveActive = false;
         if (!Pr57ResidualExclusiveEnabled || !profiled || dt <= 0 || operationsDt is not null) return;
         _pr57ExclusiveEligibleSlices++;
@@ -173,6 +174,7 @@ public sealed partial class CitySimulation
         Pr57266EndSlice();
         Pr57271EndSlice();
         Pr57272EndSlice();
+        Pr57273EndSlice();
         if (!_pr57ExclusiveActive) return;
         Pr57PoseGuardReport();
         Pr57ExecEndSlice();
