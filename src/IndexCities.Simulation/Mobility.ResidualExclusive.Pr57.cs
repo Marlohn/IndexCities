@@ -71,6 +71,7 @@ public sealed partial class CitySimulation
     {
         Pr57261BeginSlice(dt, operationsDt, profiled);
         Pr57264BeginSlice(dt, operationsDt, profiled);
+        Pr57266BeginSlice(dt, operationsDt, profiled);
         _pr57ExclusiveActive = false;
         if (!Pr57ResidualExclusiveEnabled || !profiled || dt <= 0 || operationsDt is not null) return;
         _pr57ExclusiveEligibleSlices++;
@@ -96,6 +97,7 @@ public sealed partial class CitySimulation
     {
         Pr57261BeginVehicle(vehicle);
         Pr57264BeginVehicle(vehicle);
+        Pr57266BeginVehicle(vehicle);
         if (!_pr57ExclusiveActive) return;
         _pr57ExclusiveVehicleActive = true;
         _pr57ExclusiveStage = 0;
@@ -114,6 +116,7 @@ public sealed partial class CitySimulation
     void Pr57ExclusiveMark(int nextStage)
     {
         Pr57261Mark(nextStage);
+        Pr57266Mark(nextStage);
         if (!_pr57ExclusiveVehicleActive) return;
         var now = System.Diagnostics.Stopwatch.GetTimestamp();
         var bytes = GC.GetAllocatedBytesForCurrentThread();
@@ -134,6 +137,7 @@ public sealed partial class CitySimulation
     {
         Pr57261FinishVehicle(vehicle);
         Pr57264FinishVehicle(vehicle);
+        Pr57266FinishVehicle(vehicle);
         if (!_pr57ExclusiveVehicleActive) return;
         Pr57ExclusiveMark(0);
         if (Pr57State244Enabled)
@@ -161,6 +165,7 @@ public sealed partial class CitySimulation
     {
         Pr57261EndSlice();
         Pr57264EndSlice();
+        Pr57266EndSlice();
         if (!_pr57ExclusiveActive) return;
         Pr57PoseGuardReport();
         Pr57ExecEndSlice();
