@@ -411,7 +411,14 @@ public sealed partial class CitySimulation
     List<(Vehicle Body,Point Position,double Heading)> OwnersWayOut(Vehicle v,Point dock)
     {
         var held=new List<(Vehicle Body,Point Position,double Heading)>();
-        foreach(var o in DockOwners(v,dock))held.AddRange(DockWayOut(o));
+        var pr57278Sample=Pr57278Sample(v);
+        var pr57278Owners=0;
+        foreach(var o in DockOwners(v,dock)){
+            var exit=DockWayOut(o);
+            if(pr57278Sample){Pr57278Owner(v,o,exit);pr57278Owners++;}
+            held.AddRange(exit);
+        }
+        if(pr57278Sample)Pr57278End(v,pr57278Owners,held.Count);
         return held;
     }
     // The slide from the lane into the dock: trucks keep their lane heading.
