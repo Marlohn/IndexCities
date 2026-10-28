@@ -1244,10 +1244,12 @@ public sealed partial class CitySimulation
                             Pr57ScanLane(State.Vehicles);
                         var allocStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
                         // #254 observation: record the exact writer only when its label changes.
+                        var pr57302BlockedPrior=Pr57302CauseIdsEnabled&&_pr57300Calls is >=76 and <=100?v.Cause:null;
                         var pr57Cause254Prior=Pr57Cause254Enabled&&_pr57Effect253Active?v.Cause:null;
                         v.Cause=blocker?.Status==VehicleStatus.Stranded?$"Aguardando veículo {blocker.Id} {(blocker.BrokenDown?"quebrado":"sem combustível")} na via":bayHold||entryHeld!=null?"Fila para acesso de carga":enteringLane?"Aguardando espaço para acessar a faixa":blocker!=null&&HoldsJunctionAhead(blocker,node)?(IsBend(node)?"Aguardando liberação da curva pelo veículo ":"Aguardando liberação do cruzamento pelo veículo ")+blocker.Id:"Fila na faixa";
                         if(Pr57Cause254Enabled&&_pr57Effect253Active)
                             Pr57Cause254Blocked(v,pr57Cause254Prior,blocker,leaderDistance,enteringLane,bayHold,entryHeld!=null,node.Id);
+                        if(Pr57302CauseIdsEnabled)Pr57302Writer(v,"blocked",pr57302BlockedPrior,node.Id);
                         if(pr57LimiterProbe)Pr57QueueLimiterObserve(pr57QueueFirstLimit,v.Cause,pr57QueueLaneTicks,pr57QueueBendTicks,blocker!=null,enteringLane);
                         if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;
                         if(pr57IdleProbe)Pr57BlockObserve(v,blocker,node,enteringLane,bayHold,entryHeld!=null);
@@ -1304,8 +1306,10 @@ public sealed partial class CitySimulation
                         var pr57AdmissionStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
                         if(scanProfile is not null)_pr57JunctionCalls[0]++;
                         var pr57JunctionHotStart=Pr57HotTiming&&scanProfile is not null?System.Diagnostics.Stopwatch.GetTimestamp():0L;
+                        var pr57302JunctionPrior=Pr57302CauseIdsEnabled&&_pr57300Calls is >=76 and <=100?v.Cause:null;
                         try{Pr57CausalJunction(v,node);Pr57JunctionCensusObserve(v,node);Pr57JunctionReadersAdmission(v,node);junctionAllowed=MayEnterJunction(v,node);}
                         finally{
+                            if(Pr57302CauseIdsEnabled)Pr57302Writer(v,"junction",pr57302JunctionPrior,node.Id);
                             if(pr57JunctionHotStart!=0){_pr57DirectMovementTicks[3]+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57JunctionHotStart;_pr57DirectMovementCalls[3]++;}
                             if(scanProfile is not null)_pr57JunctionAllocBytes[0]+=GC.GetAllocatedBytesForCurrentThread()-pr57AdmissionStart;
                         }
