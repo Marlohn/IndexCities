@@ -29,6 +29,7 @@ public sealed partial class CitySimulation
     {
         Pr57Cause255Exit(reader,junction,reason,allowed);
         Pr57260Decision(reader,junction,reason,allowed);
+        Pr57261Junction(reason,allowed);
         if (!Pr57JunctionReasonsEnabled || CostProfile is null) return allowed;
         Pr57Junction247Decision(reader,junction,reason);
         var cohort = Pr57State244PersistentIds.Contains(reader.Id) ? 0 : 1;

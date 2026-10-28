@@ -197,6 +197,7 @@ public sealed partial class CitySimulation
     // contact does not deepen (it separates), never through it.
     Vehicle? BodyOnWay(Vehicle v,List<(Vehicle Body,Point Position,double Heading)> poses)
     {
+        Pr57261Hit(0);
         if(poses.Count==0)return null;var reach=poses.Max(p=>p.Position.Distance(v.Position))+12;
         foreach(var o in State.Vehicles){
             if(o.Id==v.Id||o.Id==v.TowTargetId||o.TowTruckId==v.Id||o.Status is VehicleStatus.Outside or VehicleStatus.Towed||o.Position.Distance(v.Position)>reach||AtGateway(o)&&AtGateway(v))continue;
@@ -210,6 +211,7 @@ public sealed partial class CitySimulation
     // the time the truck needs to drive the way.
     Vehicle? TrafficOnWay(Vehicle v,List<(Vehicle Body,Point Position,double Heading)> poses)
     {
+        Pr57261Hit(1);
         if(poses.Count==0)return null;var length=0.0;for(var i=1;i<poses.Count;i++)length+=poses[i-1].Position.Distance(poses[i].Position);
         var seconds=length/State.Tuning.VehicleSpeed+1;
         foreach(var o in State.Vehicles){
@@ -224,6 +226,7 @@ public sealed partial class CitySimulation
     // a parked body keeps from turning does not hold the turn for others).
     List<(Vehicle Body,Point Position,double Heading)> TurnWay(Vehicle o,out List<RoadNode> spaces)
     {
+        Pr57261Hit(2);
         var way=Manoeuvre(o,o.Route,o.RouteIndex,o.Position,o.Heading,[],false,1,out spaces);
         if(way.Count>0){var end=way[^1];var run=new List<(Point Position,double Heading)>();SamplePoses(run,end.Position,end.Position+new Point(Math.Sin(end.Heading),Math.Cos(end.Heading))*8,end.Heading);way.AddRange(run.Select(p=>(o,p.Position,p.Heading)));}
         return way;
@@ -258,6 +261,7 @@ public sealed partial class CitySimulation
     // a signal shows green for the way v enters.
     bool SpaceFree(Vehicle v,RoadNode node,Point entering,bool yieldToTraffic=true)
     {
+        Pr57261Hit(3);
         var area=_junctionAreas.GetValueOrDefault(node.Id);
         foreach(var o in State.Vehicles){
             if(o.Id==v.Id||o.Id==v.TowTargetId||o.TowTruckId==v.Id||Receives(o,v))continue;
@@ -281,6 +285,7 @@ public sealed partial class CitySimulation
     // it keeps them and only its present way is checked against bodies.
     bool AdmitManoeuvre(Vehicle v,List<(Vehicle Body,Point Position,double Heading)> way,List<RoadNode> spaces,Point dock,bool yieldToTraffic,LocalMovementAdmission? limit=null)
     {
+        Pr57261Hit(4);
         var admitted=DockAdmitted(v,dock);
         if(!admitted){
             // A straight street has no shared node, but admitted dock sweeps
