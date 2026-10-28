@@ -6,6 +6,8 @@ using System.Diagnostics;
 using System.Text;
 using IndexCities.Simulation;
 
+System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
+
 if (args.Length != 5 || args[2] is not ("control" or "probe") ||
     !int.TryParse(args[3], out var calls) || calls < 25 || calls > 500)
 {
@@ -39,14 +41,14 @@ void Checkpoint(int step)
     File.WriteAllText(Path.Combine(output, $"checkpoint-{step}.json"), json, new UTF8Encoding(false));
     if (CitySimulation.FromJson(json).SaveToJson() != json)
         throw new InvalidOperationException($"Checkpoint {step} failed exact save/load roundtrip");
-    Console.WriteLine(FormattableString.Invariant(
+    Console.WriteLine(
         $"PR57_294_CHECKPOINT case={caseName} mode={mode} calls={step} " +
         $"elapsed={sim.State.ElapsedSeconds:F3} nextReview={sim.State.EconomyNextAt:F3} " +
         $"alive={sim.State.Citizens.Count(c => c.Alive)} vehicles={sim.State.Vehicles.Count} " +
         $"completed={sim.State.Projects.Count(p => p.Status == WorkStatus.Completed)} " +
         $"history={sim.State.Citizens.Sum(c => c.History.Count)} " +
         $"ledger={sim.State.Ledger.Count} events={sim.State.CityEvents.Count} " +
-        $"bytes={Encoding.UTF8.GetByteCount(json)}"));
+        $"bytes={Encoding.UTF8.GetByteCount(json)}");
 }
 Checkpoint(0);
 for (var i = 1; i <= calls; i++)
@@ -68,7 +70,7 @@ for (var i = 1; i <= calls; i++)
     else nonReviewTicks += economyTicks;
     totalEconomyTicks += economyTicks;
     if (trace)
-        Console.WriteLine(FormattableString.Invariant(
+        Console.WriteLine(
             $"PR57_294_STEP case={caseName} call={i} " +
             $"dueBefore={(elapsedBefore + 2 >= nextBefore)} reviewScheduleChanged={review} " +
             $"completedDelta={completedDelta} " +
@@ -76,16 +78,16 @@ for (var i = 1; i <= calls; i++)
             $"vehiclesMs={(phase.Ticks[0] - vehicleBefore) * 1000.0 / Stopwatch.Frequency:F6} " +
             $"citizensMs={(phase.Ticks[2] - citizenBefore) * 1000.0 / Stopwatch.Frequency:F6} " +
             $"advanceWallMs={wallTicks * 1000.0 / Stopwatch.Frequency:F6} " +
-            $"advanceAllocatedBytes={GC.GetAllocatedBytesForCurrentThread() - allocBefore}"));
+            $"advanceAllocatedBytes={GC.GetAllocatedBytesForCurrentThread() - allocBefore}");
     if (checkpoints.Contains(i)) Checkpoint(i);
 }
 var wall = (Stopwatch.GetTimestamp() - startedProcess) * 1000.0 / Stopwatch.Frequency;
 var cpu = (Process.GetCurrentProcess().TotalProcessorTime - cpuProcess).TotalMilliseconds;
-Console.WriteLine(FormattableString.Invariant(
+Console.WriteLine(
     $"PR57_294_FINAL case={caseName} mode={mode} calls={calls} reviewSteps={reviewSteps} " +
     $"reviewPhaseMs={reviewTicks * 1000.0 / Stopwatch.Frequency:F6} " +
     $"nonReviewPhaseMs={nonReviewTicks * 1000.0 / Stopwatch.Frequency:F6} " +
     $"totalEconomyPhaseMs={totalEconomyTicks * 1000.0 / Stopwatch.Frequency:F6} " +
     $"wallMs={wall:F6} cpuMs={cpu:F6} allocatedBytes={GC.GetTotalAllocatedBytes() - allocatedProcess} " +
-    $"cadence=Advance2 all13Phases=True exactCheckpoints=True noCache=True noSkippedSlices=True"));
+    $"cadence=Advance2 all13Phases=True exactCheckpoints=True noCache=True noSkippedSlices=True");
 return 0;
