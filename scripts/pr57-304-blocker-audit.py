@@ -28,11 +28,11 @@ for control, probe in (("control1", "probe1"), ("control2", "probe2")):
     exits = rows(lines, "PR57_303_RETURN")
     bodies = rows(lines, "PR57_304_BODY")
     walkers = rows(lines, "PR57_304_WALK")
-    assert len(exits) == 300, (probe, len(exits))
+    assert len(exits) == 600, (probe, len(exits))
     expected_body = collections.Counter(key(x) for x in exits if x["reason"] == "OnwardBody")
     expected_walk = collections.Counter(key(x) for x in exits if x["reason"] == "Pedestrian")
-    assert sum(expected_body.values()) == 264
-    assert sum(expected_walk.values()) == 36
+    assert sum(expected_body.values()) == 528
+    assert sum(expected_walk.values()) == 72
     assert collections.Counter(key(x) for x in bodies) == expected_body
     assert collections.Counter(key(x) for x in walkers) == expected_walk
     assert all(int(x["count"]) >= 1 for x in walkers)
@@ -51,6 +51,14 @@ for control, probe in (("control1", "probe1"), ("control2", "probe2")):
             p for x in walkers for p in x["ids"].split(",")).items())),
         "bodyFanoutDistinctReaders": {str(k): len(v) for k, v in sorted(blocker_readers.items())},
         "pedestrianFanoutDistinctReaders": {str(k): len(v) for k, v in sorted(pedestrian_readers.items())},
+        "bodyPoseVariants": {str(k): len({
+            (x["x"], x["z"], x["heading"], x["routeIndex"], x["status"], x["claim"])
+            for x in bodies if int(x["blocker"]) == k
+        }) for k in blocker_readers},
+        "pedestrianNodeReaders": {
+            str(node): sorted({int(x["id"]) for x in walkers if int(x["node"]) == node})
+            for node in sorted({int(x["node"]) for x in walkers})
+        },
         "maxPedestriansAtOneReturn": max(int(x["count"]) for x in walkers),
         "scope": "selected-body-and-return-time-pedestrian-matches-only",
         "notCausalClosure": True, "noSkippedSlices": True, "noGainClaim": True,
@@ -59,4 +67,4 @@ for control, probe in (("control1", "probe1"), ("control2", "probe2")):
     results.append({k: v for k, v in result.items() if k != "arm"})
 assert pairs == 8 and results[0] == results[1], "probe processes disagree"
 print("PR57_304_VERIFIED checkpointPairs=8/8 processes=4 allAdvance2=True "
-      "bodySelections=528 pedestrianReturns=72 noCausalClosure=True", flush=True)
+      "bodySelections=1056 pedestrianReturns=144 noCausalClosure=True", flush=True)
