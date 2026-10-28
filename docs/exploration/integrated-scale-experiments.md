@@ -4505,3 +4505,25 @@ A decomposição fecha exatamente: **489 chamadas diretas + 412 avaliações tra
 **Custo e teto:** wall controle **1,42s**, sonda **1,43s** (arredondados), CPU **1,64→1,62s**, alocação **322,0→322,0 MB**. Tempos observacionais, **não** A/B de ganho. s7 do leitor 1071 consumiu ~96,93 ms intrusivos; mesmo eliminá-lo inteiro teria teto ilustrativo de apenas ~1,073× no wall deste recorte, conforme #261. **Não** se pode atribuir 412/901 do tempo às chamadas extras: são contagens, não duração por origem. Nenhum ganho integrado novo aceito (**0%**).
 
 **Decisão / próximo discriminante:** o problema transitivo ficou localizado em um candidato real, mas **não** justifica cache nem suspensão de sub-slices. Medir, numa única janela REAL delimitada, o fanout das negativas de `CanTurnNow` entre *todos* os leitores ativos, custo exclusivo e bloqueador efetivo, confrontando-o com alterações de terceiros; se a participação integrada for pequena ou a invalidação densa, abandonar essa reutilização local e pivotar para execução por estado/fase e memória/histórico. Não extrapolar a 10k/80 anos. PR draft; main, SPEC, arquitetura oficial, PRs independentes e timers intactos. Sustentabilidade, gerações e meta 10.000 vivos/80 anos/6h seguem não demonstradas.
+
+## Ducentésima sexagésima terceira execução — fanout REAL de `CanTurnNow` (#263, 28/10/2026)
+
+**Pergunta após #262:** a avaliação transitiva do candidato 1380 pelo leitor 1071 é exceção, ou outros leitores também concentram custo em poucos candidatos e bloqueadores? A sonda opt-in `PR57_263_ALL_CAN_TURN=1` observa todas as chamadas canônicas alcançadas de `CanTurnNow` durante os mesmos 600 sub-slices do save econômico REAL de 14h (121 vivos, 98 veículos), classificando retorno, corpo efetivamente bloqueador e tempos inclusivos de `TurnWay` e `BodyOnWay`. Não substitui predicados, não reutiliza decisões e não elimina slices.
+
+**[Action #40641826237 — success](https://github.com/Marlohn/IndexCities/actions/runs/40641826237), [artefato bruto #12795622481](https://github.com/Marlohn/IndexCities/actions/runs/40641826237/artifacts/12795622481):** .NET 8 Release, **491/491 testes**, controle e sonda em processos .NET independentes, **100 chamadas individuais `Advance(2)` por braço**. Checkpoints JSON completos inicial/final idênticos byte a byte, zero diferenças decimais, invariantes, histórico, ledger e save/load preservados.
+
+| `CanTurnNow` REAL, 600 sub-slices | Resultado |
+| --- | ---: |
+| Chamadas alcançadas, todas negadas por corpo na faixa | **1.524 / 1.524** |
+| Candidatos distintos | **4** |
+| Candidatos (ID:chamadas) | 1071:412; 1380:412; 1243:350; 1282:350 |
+| Bloqueadores canônicos (ID:retornos) | **1511:824; 636:700** |
+| Tempo inclusivo `CanTurnNow` | **171,884 ms** |
+| `TurnWay` dentro desse tempo | 1.524 chamadas / **79,545 ms** |
+| `BodyOnWay` dentro desse tempo | 1.524 chamadas / **91,757 ms** |
+| Tempo residual não atribuído (inclui instrumentação) | **0,582 ms** |
+| Entrada em doca / avaliações permitidas | **0 / 0** |
+
+**Teto condicional, não ganho:** 171,884 ms representam ~**8,43%** dos 2,039s de wall instrumentado; zerar impossivelmente todo esse trabalho daria ~**1,092×** nesse replay. Os tempos são intrusivos e a medição é inclusiva; não extrapolar para outro estado, 10k ou 80 anos. Controle→sonda: **1,94→2,05s wall**, **322→322 MB** alocados, sem A/B de otimização. A Action anterior **#40641611238** falhou somente no parser de regex após executar os dois braços; corrigido o parser, o run #40641826237 passou. Os checkpoints brutos da primeira tentativa também foram preservados.
+
+**Decisão:** os quatro candidatos e dois bloqueadores localizam trabalho repetido, mas não demonstram invariância de posição, heading, rota, docas, reservas, pedestres, tempo ou escritores externos. **Nenhum cache promovido; ganho integrado novo aceito = 0%.** Como o teto de `CanTurnNow` isolado é pequeno frente à meta, evitar aprofundamento indefinido nesse predicado. Próxima pergunta discriminante: identificar, no mesmo estado REAL, quais classes de veículos e fases do motor efetivamente dominam o custo fora dessa árvore e que estados/decisões poderiam admitir execução incremental *com fecho causal*, confrontando custo de invalidação com reexecução. GRID artificial continua sendo cenário distinto, não prova econômica.
