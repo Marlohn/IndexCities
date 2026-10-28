@@ -5,6 +5,11 @@ namespace IndexCities.Simulation;
 // It is not an invalidation journal and never changes the return value.
 public sealed partial class CitySimulation
 {
+    // Keep the two-parameter reflection surface used by DockCorridorTests and
+    // existing callers. The three-parameter opt-in overload is only for #305.
+    Vehicle? BodyOnWay(Vehicle v, List<(Vehicle Body, Point Position, double Heading)> poses)
+        => BodyOnWay(v, poses, false);
+
     static readonly bool Pr57305Enabled =
         Environment.GetEnvironmentVariable("PR57_305_CANDIDATES") == "1";
 
