@@ -314,17 +314,21 @@ public sealed partial class CitySimulation
         // PR57 opt-in: one exact conservative node grid for all movement
         // sub-slices of this Step; discard at the public Advance boundary.
         Pr57PrepareSharedNodeGrid();
+        Pr57310Begin();
         MoveVehicles(dt);
+        Pr57310Boundary("vehicles");
         if(profile is not null)profile.Mark(0,ref started);
         if(Pr57Writer289Enabled)_pr57Writer289Phase=1;
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,0,ref started);
         if(samplePresence){presence!.Observe(this,0);profile?.ResetAllocationCensusBaseline();started=System.Diagnostics.Stopwatch.GetTimestamp();}
         ReturnPavingMachines(dt);
+        Pr57310Boundary("paving");
         if(profile is not null)profile.Mark(1,ref started);
         if(Pr57Writer289Enabled)_pr57Writer289Phase=2;
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,1,ref started);
         if(samplePresence){presence!.Observe(this,1);profile?.ResetAllocationCensusBaseline();started=System.Diagnostics.Stopwatch.GetTimestamp();}
         MoveCitizens(dt);
+        Pr57310Boundary("citizens");
         if(profile is not null)profile.Mark(2,ref started);
         if(Pr57Writer289Enabled)_pr57Writer289Phase=3;
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,2,ref started);
