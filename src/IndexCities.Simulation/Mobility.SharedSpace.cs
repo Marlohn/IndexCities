@@ -249,14 +249,30 @@ public sealed partial class CitySimulation
     // the turn (intention holds no one).
     bool CanTurnNow(Vehicle o)
     {
-        if(o.RouteIndex>=o.Route.Count||BodyOnWay(o,TurnWay(o,out _))!=null)
-            return Pr57262CanTurnNowResult(o,false);
+        var pr57263Start=Pr57263Begin();
+        if(o.RouteIndex>=o.Route.Count)
+            return Pr57263Finish(o,pr57263Start,0,null,false);
+        var pr57263StageStart=pr57263Start==0?0:System.Diagnostics.Stopwatch.GetTimestamp();
+        var turn=TurnWay(o,out _);
+        Pr57263Stage(0,pr57263StageStart);
+        pr57263StageStart=pr57263Start==0?0:System.Diagnostics.Stopwatch.GetTimestamp();
+        var body=BodyOnWay(o,turn);
+        Pr57263Stage(1,pr57263StageStart);
+        if(body!=null)
+            return Pr57263Finish(o,pr57263Start,1,body.Id,false);
         if(EntersBay(o)&&o.DockPosition is {} dock&&!DockAdmitted(o,dock)){
+            pr57263StageStart=pr57263Start==0?0:System.Diagnostics.Stopwatch.GetTimestamp();
             var way=EntryPlan(o,dock,out _,out _,out var needed);
-            if(needed&&BodyOnWay(o,way)!=null)
-                return Pr57262CanTurnNowResult(o,false);
+            Pr57263Stage(2,pr57263StageStart);
+            if(needed){
+                pr57263StageStart=pr57263Start==0?0:System.Diagnostics.Stopwatch.GetTimestamp();
+                var dockBody=BodyOnWay(o,way);
+                Pr57263Stage(3,pr57263StageStart);
+                if(dockBody!=null)
+                    return Pr57263Finish(o,pr57263Start,2,dockBody.Id,false);
+            }
         }
-        return Pr57262CanTurnNowResult(o,true);
+        return Pr57263Finish(o,pr57263Start,3,null,true);
     }
     // Whether v, leaving or entering a bay, may take the shared node now: no one
     // else holds it, no traffic presents at it, no walker is on its crossing and
