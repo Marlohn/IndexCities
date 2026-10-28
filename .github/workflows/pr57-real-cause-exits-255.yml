@@ -2,7 +2,7 @@ name: 'PR57 #255 canonical junction exits behind real Cause transitions'
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
-    paths: [.github/workflows/pr57-real-cause-transitions-255.yml]
+    paths: [.github/workflows/pr57-real-cause-exits-255.yml]
   workflow_dispatch:
 permissions:
   contents: read
