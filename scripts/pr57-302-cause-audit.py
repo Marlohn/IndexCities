@@ -10,7 +10,7 @@ from pathlib import Path
 
 root = Path(sys.argv[1])
 def fields(line):
-    return dict(re.findall(r"(\\w+)=([^\\s]+)", line))
+    return dict(re.findall(r"(\w+)=([^\s]+)", line))
 def rows(path, prefix):
     return [fields(line) for line in path.read_text().splitlines()
             if line.startswith(prefix + " ")]
