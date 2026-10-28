@@ -57,14 +57,22 @@ public sealed partial class CitySimulation
 
     double? Pr57StageBodyAcross(Vehicle actor, Vehicle other)
     {
-        if (!_pr57StageActive) return BodyAcrossLane(actor, other);
-        var start = System.Diagnostics.Stopwatch.GetTimestamp();
-        try { return BodyAcrossLane(actor, other); }
-        finally
+        // #258: compare the read-only compact candidate view AFTER the canonical
+        // result; the canonical predicate remains the sole decision maker.
+        double? canonical;
+        if (!_pr57StageActive) canonical = BodyAcrossLane(actor, other);
+        else
         {
-            _pr57StageCalls[1]++;
-            _pr57StageTicks[1] += System.Diagnostics.Stopwatch.GetTimestamp() - start;
+            var start = System.Diagnostics.Stopwatch.GetTimestamp();
+            try { canonical = BodyAcrossLane(actor, other); }
+            finally
+            {
+                _pr57StageCalls[1]++;
+                _pr57StageTicks[1] += System.Diagnostics.Stopwatch.GetTimestamp() - start;
+            }
         }
+        Pr57Body258Observe(actor, other, canonical);
+        return canonical;
     }
 
     bool Pr57StageOccupies(Vehicle other)
