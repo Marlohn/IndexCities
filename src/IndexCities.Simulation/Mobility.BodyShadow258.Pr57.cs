@@ -63,6 +63,7 @@ public sealed partial class CitySimulation
 
     void Pr57Body258BeginSlice()
     {
+        Pr57306BeginSlice();
         _pr57Body258Active = Pr57Body258Enabled && _pr57ExclusiveActive;
         if (!_pr57Body258Active) return;
         var start = System.Diagnostics.Stopwatch.GetTimestamp();
@@ -123,6 +124,7 @@ public sealed partial class CitySimulation
 
     void Pr57Body258AfterActor(Vehicle actor)
     {
+        Pr57306AfterActor(actor);
         if (!_pr57Body258Active || _pr57Body258Rows is null) return;
         var start = System.Diagnostics.Stopwatch.GetTimestamp();
         if (_pr57Body258Index.TryGetValue(actor.Id, out var index))
@@ -132,6 +134,7 @@ public sealed partial class CitySimulation
 
     void Pr57Body258EndSlice()
     {
+        Pr57306EndSlice();
         if (!_pr57Body258Active) return;
         var start = System.Diagnostics.Stopwatch.GetTimestamp();
         // One O(N) post-sync audit, never a per-read/per-actor O(N) census.
