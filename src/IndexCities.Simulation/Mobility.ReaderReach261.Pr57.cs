@@ -91,5 +91,6 @@ public sealed partial class CitySimulation
             " scope=REAL_14H_ONE_READER stageTimesIntrusive=True " +
             "nestedCallsReachedOnly=True noExactReadWriteClosure=True " +
             "noCaching=True noSkippedSlices=True observational=True");
+        Pr57262Report();
     }
 }

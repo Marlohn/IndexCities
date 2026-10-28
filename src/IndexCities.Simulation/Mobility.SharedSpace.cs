@@ -249,12 +249,14 @@ public sealed partial class CitySimulation
     // the turn (intention holds no one).
     bool CanTurnNow(Vehicle o)
     {
-        if(o.RouteIndex>=o.Route.Count||BodyOnWay(o,TurnWay(o,out _))!=null)return false;
+        if(o.RouteIndex>=o.Route.Count||BodyOnWay(o,TurnWay(o,out _))!=null)
+            return Pr57262CanTurnNowResult(o,false);
         if(EntersBay(o)&&o.DockPosition is {} dock&&!DockAdmitted(o,dock)){
             var way=EntryPlan(o,dock,out _,out _,out var needed);
-            if(needed&&BodyOnWay(o,way)!=null)return false;
+            if(needed&&BodyOnWay(o,way)!=null)
+                return Pr57262CanTurnNowResult(o,false);
         }
-        return true;
+        return Pr57262CanTurnNowResult(o,true);
     }
     // Whether v, leaving or entering a bay, may take the shared node now: no one
     // else holds it, no traffic presents at it, no walker is on its crossing and
