@@ -33,6 +33,10 @@ var reviewTicks = 0L;
 var nonReviewTicks = 0L;
 var totalEconomyTicks = 0L;
 var phase = sim.CostProfile;
+// PR57 #298: read-only per-Advance(2) deltas of existing intrusive vehicle
+// class clocks. Disabled unless explicitly enabled in the probe process.
+var class298 = trace && Environment.GetEnvironmentVariable("PR57_298_STEP_CLASS") == "1";
+long[]? lastClass298 = class298 ? sim.Pr57298VehicleCostSnapshot() : null;
 
 void Checkpoint(int step)
 {
@@ -60,9 +64,16 @@ for (var i = 1; i <= calls; i++)
     var vehicleBefore = phase.Ticks[0];
     var citizenBefore = phase.Ticks[2];
     var allocBefore = GC.GetAllocatedBytesForCurrentThread();
+    var gc0Before = class298 ? GC.CollectionCount(0) : 0;
+    var gc1Before = class298 ? GC.CollectionCount(1) : 0;
+    var gc2Before = class298 ? GC.CollectionCount(2) : 0;
     var started = Stopwatch.GetTimestamp();
     sim.Advance(2);
     var wallTicks = Stopwatch.GetTimestamp() - started;
+    var gc0Delta = class298 ? GC.CollectionCount(0) - gc0Before : 0;
+    var gc1Delta = class298 ? GC.CollectionCount(1) - gc1Before : 0;
+    var gc2Delta = class298 ? GC.CollectionCount(2) - gc2Before : 0;
+    var advanceAllocated298 = class298 ? GC.GetAllocatedBytesForCurrentThread() - allocBefore : 0;
     var economyTicks = phase.Ticks[9] - economyBefore;
     var review = sim.State.EconomyNextAt != nextBefore;
     var completedDelta = sim.State.Projects.Count(p => p.Status == WorkStatus.Completed) - completedBefore;
@@ -79,6 +90,39 @@ for (var i = 1; i <= calls; i++)
             $"citizensMs={(phase.Ticks[2] - citizenBefore) * 1000.0 / Stopwatch.Frequency:F6} " +
             $"advanceWallMs={wallTicks * 1000.0 / Stopwatch.Frequency:F6} " +
             $"advanceAllocatedBytes={GC.GetAllocatedBytesForCurrentThread() - allocBefore}");
+    if (class298)
+    {
+        // All values below are read AFTER the canonical Advance(2) has finished.
+        // The grouping is by final actor Cause/Status, NOT a causal dependency.
+        var current = sim.Pr57298VehicleCostSnapshot();
+        var slices = current[0] - lastClass298![0];
+        if (slices <= 0) throw new InvalidOperationException("Missing physical slices in #298");
+        long totalTicks = 0, totalBytes = 0;
+        for (var g = 0; g < 8; g++)
+        {
+            var k = 1 + 5 * g;
+            var n = current[k] - lastClass298[k];
+            var ticks = current[k + 1] - lastClass298[k + 1];
+            var bytes = current[k + 2] - lastClass298[k + 2];
+            var claims = current[k + 3] - lastClass298[k + 3];
+            var spaces = current[k + 4] - lastClass298[k + 4];
+            if (n < 0 || ticks < 0 || bytes < 0 || claims < 0 || spaces < 0)
+                throw new InvalidOperationException("Negative #298 class delta");
+            totalTicks += ticks;
+            totalBytes += bytes;
+            Console.WriteLine(
+                $"PR57_298_CLASS case={caseName} call={i} group={g} slices={slices} " +
+                $"evaluations={n} ticks={ticks} bytes={bytes} claimChanges={claims} spaceCountChanges={spaces}");
+        }
+        Console.WriteLine(
+            $"PR57_298_STEP case={caseName} call={i} slices={slices} " +
+            $"classifiedMs={totalTicks * 1000.0 / Stopwatch.Frequency:F6} classifiedBytes={totalBytes} " +
+            $"vehiclesMs={(phase.Ticks[0] - vehicleBefore) * 1000.0 / Stopwatch.Frequency:F6} " +
+            $"gc0={gc0Delta} gc1={gc1Delta} gc2={gc2Delta} " +
+            $"advanceAllocatedBytes={advanceAllocated298} stopwatchFrequency={Stopwatch.Frequency} " +
+            "classification=finalCauseStatus observational=True");
+        lastClass298 = current;
+    }
     if (checkpoints.Contains(i)) Checkpoint(i);
 }
 var wall = (Stopwatch.GetTimestamp() - startedProcess) * 1000.0 / Stopwatch.Frequency;
