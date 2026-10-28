@@ -446,13 +446,22 @@ public sealed partial class CitySimulation
     // outside that pavement and outside the exits of present dock owners.
     List<(Vehicle Body,Point Position,double Heading)> EntryPlan(Vehicle v,Point dock,out List<RoadNode> spaces,out LocalMovementAdmission limit,out bool needed)
     {
+        // #277 observes the original execution, including all negative geometry.
+        // The timer never gates work or caches a decision.
+        var pr57277Time=Pr57277Begin(v);
         var exits=OwnersWayOut(v,dock);
+        pr57277Time=Pr57277Stage(pr57277Time,0);
         bool Clear(Point p,double h)=>!exits.Any(o=>o.Position.Distance(p)<12&&BodiesOverlap(v,p,h,o.Body,o.Position,o.Heading));
         var way=Manoeuvre(v,v.Route,v.RouteIndex,v.Position,v.Heading,[],false,1,out spaces,out var endIndex,Clear);
+        pr57277Time=Pr57277Stage(pr57277Time,1);
         var safe=way.Count>0&&SharedNodes().All(n=>!EntersArea(v,way[^1].Position,way[^1].Heading,n))&&Clear(way[^1].Position,way[^1].Heading);
+        pr57277Time=Pr57277Stage(pr57277Time,2);
         if(!safe)way=WayIn(v,dock,out spaces);
+        pr57277Time=Pr57277Stage(pr57277Time,3);
         limit=new(){Route=v.Route.ToList(),SitePath=v.SitePath.ToList(),EndRouteIndex=endIndex,ReachesDock=!safe};
         needed=spaces.Count>0||!safe||exits.Any(o=>way.Any(p=>p.Position.Distance(o.Position)<12&&BodiesOverlap(v,p.Position,p.Heading,o.Body,o.Position,o.Heading)));
+        Pr57277Stage(pr57277Time,4);
+        Pr57277Record(v,exits.Count,spaces.Count,way.Count,safe,needed);
         return way;
     }
 

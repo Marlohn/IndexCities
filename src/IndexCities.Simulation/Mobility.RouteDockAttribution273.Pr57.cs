@@ -147,5 +147,6 @@ public sealed partial class CitySimulation
             }
         Pr57275Report();
         Pr57276Report();
+        Pr57277Report();
     }
 }
