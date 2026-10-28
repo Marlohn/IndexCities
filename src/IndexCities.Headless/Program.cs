@@ -126,6 +126,8 @@ if(!string.IsNullOrWhiteSpace(pr57SaveCaptureDir)){
 }
 var census=args[0]=="census"?new Census():null;var stuck=args[0]=="stuck"?new Stuck():null;
 var profile=args[0]=="profile"?new StepCostProfile():null;
+if(profile is not null&&Environment.GetEnvironmentVariable("PR57_282_CONSTRUCTION_PROJECTS")=="1")
+    profile.Pr57ConstructionProjects=new Pr57ConstructionProjectProbe();
 var pr57PhaseEffectEvery=Environment.GetEnvironmentVariable("PR57_PHASE_EFFECT_EVERY");
 if(!string.IsNullOrEmpty(pr57PhaseEffectEvery))
 {
@@ -237,6 +239,8 @@ if(profile is not null){
     if(selected>laneHits||limited>selected)throw new InvalidOperationException("Lane leader selection accounting inconsistent");
     Console.WriteLine($"LANE_LEADER_WINNERS selected={selected} within32={profile.LaneLeaderSelectedBands[0]} between32and128={profile.LaneLeaderSelectedBands[1]} between128and512={profile.LaneLeaderSelectedBands[2]} beyond512={profile.LaneLeaderSelectedBands[3]} potentialLimits={limited} limitWithin32={profile.LaneLeaderPotentialLimitBands[0]} limit32to128={profile.LaneLeaderPotentialLimitBands[1]} limit128to512={profile.LaneLeaderPotentialLimitBands[2]} limitBeyond512={profile.LaneLeaderPotentialLimitBands[3]} farZeroDistance={profile.LaneLeaderFarZeroDistance} maxSelectedDistanceMeters={Math.Sqrt(profile.LaneLeaderSelectedMaxDistanceSquared):F2}");
     Console.WriteLine($"PR57_CONSTRUCTION_CENSUS steps={profile.Steps} orderProjects={profile.ConstructionOrderProjects} progressProjects={profile.ConstructionProgressProjects} reserveProjects={profile.ConstructionReserveProjects} workAccess={profile.ConstructionWorkAccessCalls} buildingAccess={profile.ConstructionBuildingAccessCalls} roadQueries={profile.ConstructionRoadQueries} roadVisits={profile.ConstructionRoadVisits} shipmentQueries={profile.ConstructionShipmentQueries} shipmentVisits={profile.ConstructionShipmentVisits}");
+    if(profile.Pr57ConstructionProjects is { } constructionProjectProbe)
+        foreach(var row in constructionProjectProbe.Rows())Console.WriteLine(row);
     var pr57DispatchPhase=profile.Ticks[10]/(double)Stopwatch.Frequency;
     var pr57Reserve=profile.Pr57DispatchReserveTicks/(double)Stopwatch.Frequency;
     var pr57Access=profile.Pr57DispatchAccessTicks/(double)Stopwatch.Frequency;
