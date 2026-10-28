@@ -4,6 +4,7 @@ on:
     branches: [experimento/escala-motor-integrado-10k-80y]
     paths:
       - .github/workflows/pr57-save-cost-288.yml
+      - scripts/pr57-save-cost-288/**
   workflow_dispatch:
 permissions:
   contents: read
