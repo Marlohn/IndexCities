@@ -46,10 +46,7 @@ if (!string.Equals(original, sim.SaveToJson(), StringComparison.Ordinal))
 var sourceSha = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(original)));
 var strippedSha = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(strippedJson)));
 Console.WriteLine(FormattableString.Invariant(
-    $"PR57_288_SOURCE path={path} order={order} reps={repetitions} citizens={full.Citizens.Count} alive={full.Citizens.Count(c => c.Alive)} " +
-    $"historyRecords={historyRecords} ledgerRecords={ledgerRecords} cityEventRecords={cityEventRecords} " +
-    $"fullBytes={Encoding.UTF8.GetByteCount(original)} strippedBytes={Encoding.UTF8.GetByteCount(strippedJson)} " +
-    $"fullSha256={sourceSha} strippedSha256={strippedSha} fullByteRoundtrip=True counterfactualOnly=True"));
+    $"PR57_288_SOURCE path={path} order={order} reps={repetitions} citizens={full.Citizens.Count} alive={full.Citizens.Count(c => c.Alive)} historyRecords={historyRecords} ledgerRecords={ledgerRecords} cityEventRecords={cityEventRecords} fullBytes={Encoding.UTF8.GetByteCount(original)} strippedBytes={Encoding.UTF8.GetByteCount(strippedJson)} fullSha256={sourceSha} strippedSha256={strippedSha} fullByteRoundtrip=True counterfactualOnly=True"));
 
 static long Serialize(CityState state, JsonSerializerOptions options)
     => JsonSerializer.Serialize(state, options).Length;
@@ -78,10 +75,7 @@ static void Measure(string op, string mode, string order, int block, int count, 
     var cpuMs = (Process.GetCurrentProcess().TotalProcessorTime - beforeCpu).TotalMilliseconds;
     var allocBytes = GC.GetTotalAllocatedBytes(precise: true) - beforeAlloc;
     Console.WriteLine(FormattableString.Invariant(
-        $"PR57_288_RESULT op={op} mode={mode} order={order} block={block} reps={count} " +
-        $"wallMsPerOp={sw.Elapsed.TotalMilliseconds / count:F5} cpuMsPerOp={cpuMs / count:F5} " +
-        $"allocBytesPerOp={allocBytes / (double)count:F1} gc0={GC.CollectionCount(0) - gc0} " +
-        $"gc2={GC.CollectionCount(2) - gc2} checksum={checksum}"));
+        $"PR57_288_RESULT op={op} mode={mode} order={order} block={block} reps={count} wallMsPerOp={sw.Elapsed.TotalMilliseconds / count:F5} cpuMsPerOp={cpuMs / count:F5} allocBytesPerOp={allocBytes / (double)count:F1} gc0={GC.CollectionCount(0) - gc0} gc2={GC.CollectionCount(2) - gc2} checksum={checksum}"));
 }
 
 // ABBA/BAAB mitigates order bias, not the difference between .NET GC states.
