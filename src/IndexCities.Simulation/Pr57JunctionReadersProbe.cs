@@ -101,6 +101,7 @@ public sealed partial class CitySimulation
     // They omit unselected candidates and all other physical readers.
     void Pr57JunctionReadersBlock(Vehicle reader,Vehicle other,string kind)
     {
+        Pr57Junction247SelectedBlocker(reader,other,kind);
         if (!_pr57JrActive) return;
         var key = (reader.Id,other.Id,kind);
         _pr57JrBlockers.Add(key);

@@ -28,6 +28,7 @@ public sealed partial class CitySimulation
     bool Pr57JunctionDecision(Vehicle reader, RoadNode junction, Pr57JunctionExit reason, bool allowed)
     {
         if (!Pr57JunctionReasonsEnabled || CostProfile is null) return allowed;
+        Pr57Junction247Decision(reader,junction,reason);
         var cohort = Pr57State244PersistentIds.Contains(reader.Id) ? 0 : 1;
         _pr57JunctionReasonCounts[cohort, (int)reason]++;
         _pr57JunctionObservedCalls++;
@@ -74,5 +75,6 @@ public sealed partial class CitySimulation
             $"throughX={_pr57JunctionPreferenceDenials[1]} throughZ={_pr57JunctionPreferenceDenials[2]} " +
             $"rightHandYield={_pr57JunctionPreferenceDenials[3]} rightHandTie={_pr57JunctionPreferenceDenials[4]} " +
             "scope=actual-false-returns-of-JunctionPreferenceAllows");
+        Pr57Junction247Report(slices);
     }
 }
