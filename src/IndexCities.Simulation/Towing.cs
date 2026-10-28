@@ -395,6 +395,7 @@ public sealed partial class CitySimulation
         // next physical reader; does not affect authoritative traffic decisions.
         Pr57ReservationWrite(t,"tow-load-target");
         SyncTowed(tow,t);
+        Pr57307Publish(t); // #307: only the opt-in shadow, never canonical physics
         tow.TowPhase=TowPhase.Delivering;tow.LoadTimer=0;
         StartDelivery(tow,t);
     }
@@ -402,7 +403,7 @@ public sealed partial class CitySimulation
     {
         foreach(var tow in State.Vehicles){
             if(tow.TowPhase is not (TowPhase.Delivering or TowPhase.Unloading))continue;
-            if(State.Vehicles.FirstOrDefault(o=>o.Id==tow.TowTargetId) is {Status:VehicleStatus.Towed} t){Pr57DirtyTouch(t);SyncTowed(tow,t);}
+            if(State.Vehicles.FirstOrDefault(o=>o.Id==tow.TowTargetId) is {Status:VehicleStatus.Towed} t){Pr57DirtyTouch(t);SyncTowed(tow,t);Pr57307Publish(t);}
         }
     }
     static void SyncTowed(Vehicle tow,Vehicle t)

@@ -36,6 +36,13 @@ public sealed partial class CitySimulation
     {
         _pr57306Active = Pr57306Enabled && _pr57300Calls is >= 76 and <= 100;
         if (!_pr57306Active) return;
+        Pr57306Build();
+    }
+
+    // Test seam: construct the observational projection on a synthetic fixture.
+    void Pr57306Build()
+    {
+        _pr57306Active = true;
         var start = System.Diagnostics.Stopwatch.GetTimestamp();
         _pr57306Index.Clear();
         _pr57306Processed.Clear();
@@ -50,6 +57,7 @@ public sealed partial class CitySimulation
         _pr57306RefreshTicks = _pr57306ReadTicks = _pr57306AuditTicks = 0;
         _pr57306Reads = _pr57306Stale = _pr57306StaleAfterProcessed = 0;
         _pr57306Missing = _pr57306Refreshes = _pr57306PostSync = _pr57306Prints = 0;
+        _pr57307Published = _pr57307PublicationTicks = 0;
     }
 
     // Called at the exact original candidate visitation, before cheap filters.
@@ -102,7 +110,8 @@ public sealed partial class CitySimulation
                 $"vehicles={State.Vehicles.Count} reads={_pr57306Reads} " +
                 $"stale={_pr57306Stale} staleAfterProcessed={_pr57306StaleAfterProcessed} " +
                 $"missing={_pr57306Missing} refreshes={_pr57306Refreshes} " +
-                $"postSync={_pr57306PostSync} buildMs={Ms(_pr57306BuildTicks):F6} " +
+                $"postSync={_pr57306PostSync} nonlocalPublishes={_pr57307Published} " +
+                $"nonlocalMs={Ms(_pr57307PublicationTicks):F6} buildMs={Ms(_pr57306BuildTicks):F6} " +
                 $"refreshMs={Ms(_pr57306RefreshTicks):F6} readMs={Ms(_pr57306ReadTicks):F6} " +
                 $"auditMs={Ms(_pr57306AuditTicks):F6} " +
                 "scope=SELECTED_CANDIDATE_FIELDS_ONLY_NOT_CAUSAL_CLOSURE canonicalDecides=True");
