@@ -48,7 +48,7 @@ for control, probe in pairs:
             "eligible": int(row["eligible"]),
             "before": row["before"], "after": row["after"],
             "statusBefore": row["statusBefore"], "statusAfter": row["statusAfter"],
-            "claimBefore": row["claimBefore"], "claimAfter": row["claimAfter"]})
+            "claimBefore": row.get("claimBefore", ""), "claimAfter": row.get("claimAfter", "")})
     summary = {
         "arm": probe, "eligibleNet": len(eligible),
         "otherNet": len(changes) - len(eligible),
