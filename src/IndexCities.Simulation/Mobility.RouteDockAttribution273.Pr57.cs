@@ -146,5 +146,6 @@ public sealed partial class CitySimulation
                     "otherS1S2OperationsUnmeasured=True noSkippedSlices=True");
             }
         Pr57275Report();
+        Pr57276Report();
     }
 }

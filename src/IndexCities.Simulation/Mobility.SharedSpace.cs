@@ -333,16 +333,17 @@ public sealed partial class CitySimulation
             // A straight street has no shared node, but admitted dock sweeps
             // still exclude each other. Check the whole new plan atomically.
             if(yieldToTraffic&&ConflictsWithDockWay(v,way)){
+                Pr57276Gate(v,0);
                 v.Cause=yieldToTraffic?"Aguardando espaço para acessar a faixa":"Fila para acesso de carga";return false;
             }
             foreach(var space in spaces){
                 if(Holds(v,space.Id))continue;
                 var index=way.FindIndex(p=>EntersArea(v,p.Position,p.Heading,space));var from=index>0?way[index-1].Position:v.Position;
-                if(!SpaceFree(v,space,space.Position-from,yieldToTraffic))return false;
+                if(!SpaceFree(v,space,space.Position-from,yieldToTraffic)){Pr57276Gate(v,1);return false;}
             }
-            if(yieldToTraffic&&TrafficOnWay(v,way) is {}){v.Cause="Aguardando espaço para acessar a faixa";return false;}
+            if(yieldToTraffic&&TrafficOnWay(v,way) is {}){Pr57276Gate(v,2);v.Cause="Aguardando espaço para acessar a faixa";return false;}
         }
-        if(BodyOnWay(v,way) is {} body){if(!admitted)v.Cause=yieldToTraffic?"Aguardando espaço para acessar a faixa":"Fila para acesso de carga";return false;}
+        if(BodyOnWay(v,way) is {} body){Pr57276Gate(v,3);if(!admitted)v.Cause=yieldToTraffic?"Aguardando espaço para acessar a faixa":"Fila para acesso de carga";return false;}
         if(!admitted){
             var departure=Leaving(v);
             if(limit==null){WayOut(v,out _,out var endIndex);limit=new(){Route=v.Route.ToList(),SitePath=v.SitePath.ToList(),EndRouteIndex=endIndex};}
@@ -363,6 +364,7 @@ public sealed partial class CitySimulation
             v.ManoeuvreSpaces=v.ManoeuvreSpaces.Concat(spaces.Select(s=>s.Id)).Where(id=>v.IntersectionClaim!=id).Distinct().ToList();
             Pr57ReservationWrite(v,"admit-dock");
         }
+        Pr57276Gate(v,4);
         return true;
     }
 
@@ -463,9 +465,10 @@ public sealed partial class CitySimulation
     // once admitted, or when it is admitted now).
     List<(Vehicle Body,Point Position,double Heading)> BayEntryHold(Vehicle v)
     {
-        if(v.DockPosition is not {} dock||DockAdmitted(v,dock))return [];
+        if(v.DockPosition is not {} dock){Pr57276Gate(v,5);return [];}
+        if(DockAdmitted(v,dock)){Pr57276Gate(v,6);return [];}
         var way=EntryPlan(v,dock,out var spaces,out var limit,out var needed);
-        if(!needed)return [];
+        if(!needed){Pr57276Gate(v,7);return [];}
         var crewHeading=v.Route.Count>0&&_roads.TryGetValue(v.Route[^1],out var crewAccess)&&
             (crewAccess.Highway||crewAccess.Neighbours.Any(id=>Math.Abs(_roads[id].Position.X-crewAccess.Position.X)>.1))?Math.PI/2:0;
         if(limit.ReachesDock&&v.Machine==PavingMachine.None&&v.CrewAboard&&!CrewDockClear(dock,crewHeading,_roads.GetValueOrDefault(v.Route[^1]))){
@@ -475,7 +478,7 @@ public sealed partial class CitySimulation
             if(v.Route.Count>0&&_roads.TryGetValue(v.Route[^1],out var access)){
                 var revised=DockAt(access,BuildingById(shipment?.DestinationBuildingId),true);
                 if(CrewDockClear(revised,crewHeading,access)){v.DockPosition=dock=revised;way=EntryPlan(v,dock,out spaces,out limit,out needed);}
-                else {v.Cause=WorkCause.PavingSiteOccupied;return way;}
+                else {Pr57276Gate(v,8);v.Cause=WorkCause.PavingSiteOccupied;return way;}
             }
         }
         var occupied=false;
@@ -489,9 +492,11 @@ public sealed partial class CitySimulation
             occupied=OwnersWayOut(v,dock).Any(o=>o.Position.Distance(end.Item2)<12&&BodiesOverlap(v,end.Item2,end.Item3,o.Body,o.Position,o.Heading))||
                 DockOwners(v,dock).Any(o=>o.ManoeuvreDock is {} other&&Penetration(v,dock,v.Heading,o,other,o.Heading)>-.1);
         }
-        if(!occupied&&AdmitManoeuvre(v,way,spaces,dock,false,limit))return [];
+        if(!occupied&&AdmitManoeuvre(v,way,spaces,dock,false,limit)){Pr57276Gate(v,11);return [];}
+        Pr57276Gate(v,occupied?9:10);
         v.Cause="Fila para acesso de carga";
         // No prefix may be taken while the whole local manoeuvre is blocked.
+        Pr57276Gate(v,12);
         return way;
     }
 
