@@ -30,6 +30,7 @@ public sealed partial class CitySimulation
     // blocking return, before Cause is updated. No independent predicate.
     void Pr57Junction247SelectedBlocker(Vehicle reader, Vehicle other, string kind)
     {
+        Pr57304Body(reader,other,kind);
         Pr57Cause255SelectedBlocker(reader,other,kind);
         if (!Pr57Junction247Enabled || CostProfile is null ||
             !Pr57State244PersistentIds.Contains(reader.Id) ||

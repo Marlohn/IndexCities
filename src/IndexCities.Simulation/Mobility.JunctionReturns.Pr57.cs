@@ -31,6 +31,7 @@ public sealed partial class CitySimulation
 
     bool Pr57JunctionDecision(Vehicle reader, RoadNode junction, Pr57JunctionExit reason, bool allowed)
     {
+        if (reason == Pr57JunctionExit.Pedestrian) Pr57304Walk(reader,junction);
         Pr57Cause255Exit(reader,junction,reason,allowed);
         Pr57260Decision(reader,junction,reason,allowed);
         Pr57261Junction(reason,allowed);
