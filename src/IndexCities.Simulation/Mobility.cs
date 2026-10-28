@@ -586,6 +586,7 @@ public sealed partial class CitySimulation
         Pr57ActorShadowBeginSlice();
         Pr57DockWriterBeginSlice();
         Pr57Body258BeginSlice();
+        Pr57Crossing259BeginSlice();
         // Same order as OrderBy(WaitingSince).ThenBy(Id): Ids are unique, so the
         // key is a total order and any sort yields the same sequence.
         // PR57 isolated A/B: during a batched movement slice, the loop below
@@ -1415,6 +1416,7 @@ public sealed partial class CitySimulation
         Pr57ActorShadowEndSlice();
         Pr57DockWriterEndSlice();
         Pr57Body258EndSlice();
+        Pr57Crossing259EndSlice();
         Pr57PhaseImpactEndSlice();
         Pr57PhaseExposureEndSlice();
         Pr57ExclusiveEndSlice();
@@ -1559,7 +1561,7 @@ public sealed partial class CitySimulation
         }
         if(area==null&&junction.Neighbours.Count>=3&&State.Vehicles.FirstOrDefault(o=>Pr57JunctionReadersCandidate(v,o,3)&&o.Id!=v.Id&&o.Id!=v.TowTargetId&&Pr57JunctionReadersGate(v,o,5)&&o.IntersectionClaim==junction.Id&&Pr57JunctionReadersGate(v,o,6)&&o.Position.Distance(junction.Position)<9) is {} occupant){Pr57JunctionReadersBlock(v,occupant,"occupant");v.Cause="Aguardando liberação do cruzamento pelo veículo "+occupant.Id;return Pr57JunctionDecision(v,junction,Pr57JunctionExit.Occupant,false);}
         // Only a walker physically at this crossing holds traffic back.
-        if(State.Citizens.Any(c=>c.Alive&&c.VehicleId==null&&c.Moving&&c.CrossingNodeId==junction.Id&&c.Position.Distance(junction.Position)<State.Tuning.RoadWidth/2+1.5))return Pr57JunctionDecision(v,junction,Pr57JunctionExit.Pedestrian,false);
+        if(Pr57Crossing259Check(junction))return Pr57JunctionDecision(v,junction,Pr57JunctionExit.Pedestrian,false);
         // A straight loading access/crosswalk is not a road intersection.
         // Applying right-hand priority there can make the road vehicle yield
         // forever to a truck that is itself waiting for the road to clear.
