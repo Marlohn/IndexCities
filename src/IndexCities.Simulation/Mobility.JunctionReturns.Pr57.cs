@@ -5,6 +5,10 @@ namespace IndexCities.Simulation;
 // ordering, clock, reservations, citizens or persistence. Disabled by default.
 public sealed partial class CitySimulation
 {
+    // #303: targeted actual-return trace for the four #302 Cause-changing actors.
+    // Observational only. No decision reuse, scheduling change or skipped slice.
+    static readonly bool Pr57303ExitEnabled =
+        Environment.GetEnvironmentVariable("PR57_303_JUNCTION_EXITS") == "1";
     enum Pr57JunctionExit
     {
         ExistingManoeuvre, ManoeuvreHolder, AreaOwner, ExistingClaim,
@@ -30,6 +34,10 @@ public sealed partial class CitySimulation
         Pr57Cause255Exit(reader,junction,reason,allowed);
         Pr57260Decision(reader,junction,reason,allowed);
         Pr57261Junction(reason,allowed);
+        if (Pr57303ExitEnabled && _pr57300Calls is >= 76 and <= 100 &&
+            reader.Id is 1243 or 1282 or 1071 or 1380 &&
+            junction.Id is 346 or 466)
+            Console.WriteLine($"PR57_303_RETURN call={_pr57300Calls} slice={_pr57302CurrentSlice} id={reader.Id} node={junction.Id} reason={reason} allowed={(allowed?1:0)} control={junction.Control} clock={VehicleMovementTime:F9} cause={Uri.EscapeDataString(reader.Cause??"")} scope=ACTUAL_RETURN_NOT_CAUSAL_CLOSURE");
         if (!Pr57JunctionReasonsEnabled || CostProfile is null) return allowed;
         Pr57Junction247Decision(reader,junction,reason);
         var cohort = Pr57State244PersistentIds.Contains(reader.Id) ? 0 : 1;
