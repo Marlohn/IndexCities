@@ -552,6 +552,7 @@ public sealed partial class CitySimulation
         Pr57Man248BeginSlice(dt,operationsDt,scanProfile is not null);
         Pr57PairBeginSlice(dt,operationsDt,scanProfile is not null);
         Pr57StageBeginSlice(dt,operationsDt,scanProfile is not null);
+        Pr57Stage249BeginSlice(dt,operationsDt,scanProfile is not null);
         // #236: state-based POC. When restoring the approach heading is bitwise
         // identical to the current heading, the read-only pose scan cannot
         // affect the canonical state. Do not skip any vehicle or sub-slice.
@@ -1011,6 +1012,7 @@ public sealed partial class CitySimulation
                        Pr57StageBodyAcross(v,other) is {} docked){Pr57StageMark(1);if(Pr57NegativeEnabled)Pr57NegativeStage(1);HoldFor(other,docked);continue;}
                     if(other.Id==v.Id||!Pr57StageOccupies(other)){Pr57StageMark(2);if(Pr57NegativeEnabled)Pr57NegativeStage(2);continue;}
                     Pr57StageMark(3);
+                    Pr57Stage249Lane(other,3);
                     if(Pr57NegativeEnabled)Pr57NegativeStage(3);
                     if(_pr57CandidateActive is not null)Pr57CandidateRead(other,3);
                     var relative=other.Position-v.Position;
@@ -1033,6 +1035,7 @@ public sealed partial class CitySimulation
                         if(!(pr57GateSide<2.6)){Pr57StageMark(8);continue;}
                     }
                     Pr57StageMark(9);
+                    Pr57Stage249Lane(other,9);
                     if(_pr57CandidateActive is not null)Pr57CandidateRead(other,9);
                     var pr57CosDiff=pr57FastScan?Math.Cos(other.Heading-v.Heading):0;
                     // An overtaker committed to this lane: oncoming traffic waits for it.
@@ -1058,6 +1061,7 @@ public sealed partial class CitySimulation
                 }
                 Pr57CrossSliceObserve(v,0,enteringLane,speed*remaining);
                 Pr57CandidateBeginQuery(v,0,enteringLane,speed*remaining,pr57LaneList.Count);
+                Pr57Stage249BeginLane(pr57LaneList.Count);
                 if(Pr57MutationAuditEnabled&&scanProfile is not null)Pr57MutationBeforeLeaderScan(v);
                 if(Pr57LaneReadWriteEnabled&&scanProfile is not null)
                     Pr57LaneReadBeforeScan(v,enteringLane,speed*remaining,pr57LaneList.Count);
@@ -1122,6 +1126,7 @@ public sealed partial class CitySimulation
                     }
                     if(scanProfile is not null){scanProfile.BendPrefilterCandidates+=pr57BendList.Count;scanProfile.BendPrefilterNear+=near;}
                 }
+                Pr57Stage249FinishBend(pr57BendList.Count,bendLeaders);
                 if(_pr57CandidateActive is not null)
                     foreach(var candidate in bendLeaders)Pr57CandidateRead(candidate,9);
                 Pr57CandidateEndQuery();
@@ -1407,6 +1412,7 @@ public sealed partial class CitySimulation
         Pr57JunctionCensusEndSlice();
         Pr57JunctionReadersEndSlice();
         Pr57Man248EndSlice();
+        Pr57Stage249EndSlice();
         if(Pr57MutationAuditEnabled&&scanProfile is not null)Pr57MutationAfterSync();
         if(Pr57LaneReadWriteEnabled&&scanProfile is not null)Pr57LaneReadEndSlice();
         if(pr57DepProbe)Pr57DepEndSlice();
