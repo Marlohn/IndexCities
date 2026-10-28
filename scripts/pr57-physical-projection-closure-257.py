@@ -53,8 +53,8 @@ def body(text: str, signature: str) -> str:
 
 
 def fields(text: str, variable: str) -> list[str]:
-    return sorted(set(re.findall(r"\\b" + re.escape(variable) +
-                                 r"\\.([A-Za-z_]\\w*)", text)))
+    return sorted(set(re.findall(r"\b" + re.escape(variable) +
+                                 r"\.([A-Za-z_]\w*)", text)))
 
 
 def main() -> None:
@@ -89,7 +89,7 @@ def main() -> None:
         "body_across_is_delegated": "Pr57StageBodyAcross(v,other)" in lane_scan,
         "occupancy_is_delegated": "Pr57StageOccupies(other)" in lane_scan,
         "entry_block_is_delegated": "BlocksEntry(other)" in lane_scan,
-        "entry_reads_route_elements": bool(re.search(r"other\\.Route\\s*\\[", blocks_entry)),
+        "entry_reads_route_elements": bool(re.search(r"other\.Route\s*\[", blocks_entry)),
         "entry_reads_road_graph": "_roads." in blocks_entry,
         "entry_reads_tuning": "State.Tuning" in blocks_entry,
         "body_reads_dock_or_site_helpers":
