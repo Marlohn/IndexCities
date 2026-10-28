@@ -14,6 +14,24 @@ public sealed partial class CitySimulation
         int RouteIndex, long WaitBits, string? Cause, int? Claim,
         string Spaces, long FuelUnits);
 
+    // #254: bounded exact Cause transitions; observational, never consulted by physics.
+    static readonly bool Pr57Cause254Enabled =
+        Environment.GetEnvironmentVariable("PR57_254_CAUSE_TRACE") == "1";
+    int _pr57Cause254NetTransitions, _pr57Cause254BlockedWrites;
+    void Pr57Cause254Blocked(Vehicle v, string? previous, Vehicle? blocker,
+        double leaderDistance, bool enteringLane, bool bayHold, bool entryHeld, int nodeId)
+    {
+        if (!Pr57Cause254Enabled || !_pr57Effect253Active ||
+            !Pr57State244PersistentIds.Contains(v.Id) ||
+            string.Equals(previous, v.Cause, StringComparison.Ordinal)) return;
+        _pr57Cause254BlockedWrites++;
+        if (_pr57Cause254BlockedWrites > 100) return;
+        Console.WriteLine($"PR57_254_BLOCKED_WRITER id={v.Id} time={VehicleMovementTime:F6} " +
+            $"node={nodeId} before={Uri.EscapeDataString(previous ?? "")} " +
+            $"after={Uri.EscapeDataString(v.Cause ?? "")} blocker={blocker?.Id} " +
+            $"blockerStatus={blocker?.Status} leaderDistance={leaderDistance:F6} " +
+            $"enteringLane={enteringLane} bayHold={bayHold} entryHeld={entryHeld}");
+    }
     readonly long[] _pr57Effect253Changes = new long[5];
     // 0 between slices, 1 cleanup, 2 earlier actors, 3 own pass, 4 tow sync
     readonly long[] _pr57Effect253OwnFields = new long[9];
@@ -133,6 +151,18 @@ public sealed partial class CitySimulation
         _pr57Effect253After[v.Id] = now;
         if (_pr57Effect253Before.TryGetValue(v.Id, out var prior))
         {
+            if (Pr57Cause254Enabled &&
+                !string.Equals(prior.Cause, now.Cause, StringComparison.Ordinal))
+            {
+                _pr57Cause254NetTransitions++;
+                if (_pr57Cause254NetTransitions <= 100)
+                    Console.WriteLine($"PR57_254_NET_CAUSE id={v.Id} time={VehicleMovementTime:F6} " +
+                        $"before={Uri.EscapeDataString(prior.Cause ?? "")} " +
+                        $"after={Uri.EscapeDataString(now.Cause ?? "")} " +
+                        $"status={v.Status} routeIndex={v.RouteIndex} " +
+                        $"waitSince={v.WaitingSince:F6} claim={v.IntersectionClaim} " +
+                        $"positionX={v.Position.X:F6} positionZ={v.Position.Z:F6}");
+            }
             Pr57Effect253Compare(prior, now, 3);
             if (prior.Position == now.Position && v.Status == VehicleStatus.Travelling)
                 _pr57Effect253Still++;
@@ -160,6 +190,8 @@ public sealed partial class CitySimulation
             $"ownRouteIndexChanged={_pr57Effect253OwnFields[2]} ownWaitChanged={_pr57Effect253OwnFields[3]} " +
             $"ownCauseChanged={_pr57Effect253OwnFields[4]} ownClaimChanged={_pr57Effect253OwnFields[5]} " +
             $"ownSpacesChanged={_pr57Effect253OwnFields[6]} ownFuelChanged={_pr57Effect253OwnFields[7]} " +
+            $"cause254NetTransitions={_pr57Cause254NetTransitions} " +
+            $"cause254BlockedWrites={_pr57Cause254BlockedWrites} " +
             $"ownOtherFieldsChanged={_pr57Effect253OwnFields[8]} " +
             $"otherVehicleIntervals={_pr57Effect253OtherIntervals} " +
             $"otherVehicleChangedIntervals={_pr57Effect253OtherChangedIntervals} " +
