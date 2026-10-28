@@ -548,6 +548,7 @@ public sealed partial class CitySimulation
         Pr57JunctionCensusBeginSlice(dt,operationsDt);
         Pr57JunctionReadersBeginSlice(dt,operationsDt);
         var scanProfile=CostProfile;
+        Pr57Effect253BeginSlice(dt,operationsDt,scanProfile is not null);
         Pr57ExclusiveBeginSlice(dt,operationsDt,scanProfile is not null);
         Pr57Man248BeginSlice(dt,operationsDt,scanProfile is not null);
         Pr57PairBeginSlice(dt,operationsDt,scanProfile is not null);
@@ -571,6 +572,7 @@ public sealed partial class CitySimulation
         // actual rear of the truck; the former 9 m reservation could overlap
         // nearby junctions and make opposite queues hold each other forever.
         foreach(var vehicle in State.Vehicles){ClearPassedJunction(vehicle);ReleaseManoeuvre(vehicle);}
+        Pr57Effect253AfterCleanup();
         Pr57CausalAfterCleanup();
         Pr57JunctionReadersAfterCleanup();
         if(pr57DepProbe)Pr57DepAfterCleanup();
@@ -794,6 +796,7 @@ public sealed partial class CitySimulation
         if(scanProfile is not null)_pr57MovementAllocBytes[1]+=GC.GetAllocatedBytesForCurrentThread()-pr57AllocCallStart;
         Pr57SetupGapEnd(ordered.Length,pr57ScanCandidates.Count);
         foreach(var v in ordered){
+            Pr57Effect253BeforeActor(v);
             Pr57PhaseImpactBeforeActor(v);
             Pr57ExclusiveBeginVehicle(v);
             var pr57IdleStart=pr57IdleProbe?Pr57IdleSnapshot(v):default;
@@ -1328,6 +1331,7 @@ public sealed partial class CitySimulation
                 if(DriveWear(v,step)||steer==null&&!advanced)break;
             }
             }finally{
+                Pr57Effect253AfterActor(v);
                 Pr57ExclusiveFinishVehicle(v);
                 Pr57S6GateShadowAfterVehicle(v);
                 if(pr57CostProbe){
@@ -1396,6 +1400,7 @@ public sealed partial class CitySimulation
             Console.WriteLine($"PR57_236_POSE_NOOP sample={_pr57MovementAllocCalls-35} eligible={pr57PoseNoopEligible} skipped={pr57PoseNoopSkipped} evaluated={pr57PoseNoopEligible-pr57PoseNoopSkipped} scope=BITWISE_HEADING_NOOP");
         // A towed vehicle moves only with its tow (platform or trailing a heavy tow).
         SyncTowedVehicles();
+        Pr57Effect253EndSlice();
         Pr57ReservationAfterSync();
         Pr57CrossSliceEnd();
         Pr57CandidateEndSlice();
