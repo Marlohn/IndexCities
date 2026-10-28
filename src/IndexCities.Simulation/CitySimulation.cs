@@ -28,6 +28,8 @@ public sealed class StepCostProfile
     public Pr57CrossPhasePresenceProbe? CrossPhasePresence { get; set; }
     // PR57 observational census: counts actual enumeration visits, never controls simulation.
     public long ConstructionOrderProjects, ConstructionProgressProjects, ConstructionReserveProjects;
+    // PR57 #282: optional, observation-only project timing and selected-field census.
+    public Pr57ConstructionProjectProbe? Pr57ConstructionProjects { get; set; }
     public long ConstructionWorkAccessCalls, ConstructionBuildingAccessCalls;
     public long ConstructionRoadQueries, ConstructionRoadVisits;
     public long ConstructionShipmentQueries, ConstructionShipmentVisits;
