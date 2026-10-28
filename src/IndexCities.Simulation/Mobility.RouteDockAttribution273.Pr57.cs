@@ -117,7 +117,9 @@ public sealed partial class CitySimulation
 
     void Pr57273EndSlice()
     {
-        if (!Pr57273Enabled || _pr57273Slices != 600) return;
+        if (!Pr57273Enabled || !_pr57273Sampling) return;
+        _pr57273Sampling = false; // EndSlice may be called twice; report once.
+        if (_pr57273Slices != 600) return;
         for (var window = 0; window < 2; window++)
             for (var slot = 0; slot < 3; slot++)
             {
