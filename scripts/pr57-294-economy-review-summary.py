@@ -16,7 +16,7 @@ CASES = {"worksREAL": 100, "queueREAL": 100, "real14hREAL": 100, "gridARTIFICIAL
 
 
 def kv(line):
-    return dict(re.findall(r"(\\w+)=([^\\s]+)", line))
+    return dict(re.findall(r"(\w+)=([^\s]+)", line))
 
 
 def main():
