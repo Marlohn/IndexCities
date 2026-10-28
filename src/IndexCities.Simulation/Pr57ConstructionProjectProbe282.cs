@@ -5,7 +5,7 @@ namespace IndexCities.Simulation;
 public sealed class Pr57ConstructionProjectProbe
 {
     public readonly record struct Snapshot(
-        WorkCause Cause, WorkStatus Status, double Progress,
+        string Cause, WorkStatus Status, double Progress,
         int? CrewVehicleId, int LocalCrewCount, int ShipmentCount, int LedgerCount);
 
     sealed class Totals
