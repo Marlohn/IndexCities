@@ -115,6 +115,9 @@ public sealed partial class CitySimulation
 
     readonly Dictionary<int, Pr57341Reader> _pr57341Readers = new();
     readonly long[] _pr57341FieldWrites = new long[8];
+    readonly long[] _pr57341EphemeralFields = new long[8];
+    HashSet<Vehicle>? _pr57341Canonical;
+    long _pr57341EphemeralWrites;
     long _pr57341AllWrites, _pr57341PrefixFanout, _pr57341SelectedFanout,
         _pr57341SelfFanout, _pr57341OutsideReads, _pr57341DuringReads;
     bool _pr57341Started, _pr57341Inside;
@@ -122,6 +125,14 @@ public sealed partial class CitySimulation
 
     void Pr57341Written(Vehicle v, int field)
     {
+        // Only objects in the real CityState fleet can invalidate a live read.
+        // The engine also constructs temporary Vehicle geometry proxies.
+        if (_pr57341Canonical is null || !_pr57341Canonical.Contains(v))
+        {
+            _pr57341EphemeralWrites++;
+            _pr57341EphemeralFields[field]++;
+            return;
+        }
         _pr57341AllWrites++;
         _pr57341FieldWrites[field]++;
         if (_pr57341Inside) _pr57341DuringReads++;
@@ -159,6 +170,7 @@ public sealed partial class CitySimulation
         if (!_pr57341Started)
         {
             // Installed after replay deserialization, never used by physics.
+            _pr57341Canonical = new HashSet<Vehicle>(State.Vehicles, ReferenceEqualityComparer.Instance);
             Vehicle.Pr57341OnWrite = Pr57341Written;
             _pr57341Started = true;
         }
@@ -203,7 +215,8 @@ public sealed partial class CitySimulation
         if (!Pr57341Enabled) return;
         Console.WriteLine(
             $"PR57_341_WRITES slices={slices} started={_pr57341Started} " +
-            $"changedAssignments={_pr57341AllWrites} fieldWrites={string.Join(",",_pr57341FieldWrites)} " +
+            $"canonicalChangedAssignments={_pr57341AllWrites} fieldWrites={string.Join(",",_pr57341FieldWrites)} " +
+            $"ephemeralChangedAssignments={_pr57341EphemeralWrites} ephemeralFields={string.Join(",",_pr57341EphemeralFields)} " +
             $"prefixFanout={_pr57341PrefixFanout} selectedFanout={_pr57341SelectedFanout} " +
             $"selfFanout={_pr57341SelfFanout} duringReads={_pr57341DuringReads} " +
             $"outsideReads={_pr57341OutsideReads} " +
