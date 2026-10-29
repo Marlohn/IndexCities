@@ -9,7 +9,7 @@ approach=(root/"src/IndexCities.Simulation/Construction.ApproachYield.cs").read_
 witness=(root/"scripts/pr57-351-inject.py").read_text()
 assert "double? BodyAcrossLane(Vehicle v,Vehicle o)" in shared
 assert "||OnSitePath(o)" in shared
-assert "v.SitePath.Count>v.SitePathIndex" in approach
+assert "v.SitePathIndex<v.SitePath.Count" in approach
 key=witness.split("static string Pr57351Key(Vehicle o)=>",1)[1].split("void Pr57351Observe",1)[0]
 assert "o.SitePathBeforeRoad" in key and "o.SitePathIndex" in key
 assert "o.SitePath.Count" not in key and "string.Join(\",\",o.SitePath)" not in key
