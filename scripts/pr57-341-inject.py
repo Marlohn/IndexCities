@@ -116,6 +116,7 @@ public sealed partial class CitySimulation
     readonly Dictionary<int, Pr57341Reader> _pr57341Readers = new();
     readonly long[] _pr57341FieldWrites = new long[8];
     readonly long[] _pr57341EphemeralFields = new long[8];
+    readonly bool[] _pr57341EphemeralStackSampled = new bool[8];
     HashSet<Vehicle>? _pr57341Canonical;
     long _pr57341EphemeralWrites;
     long _pr57341AllWrites, _pr57341PrefixFanout, _pr57341SelectedFanout,
@@ -131,6 +132,12 @@ public sealed partial class CitySimulation
         {
             _pr57341EphemeralWrites++;
             _pr57341EphemeralFields[field]++;
+            if (!_pr57341EphemeralStackSampled[field])
+            {
+                _pr57341EphemeralStackSampled[field] = true;
+                Console.WriteLine($"PR57_341_EPHEMERAL_SITE field={field} id={v.Id} " +
+                    $"stack={new System.Diagnostics.StackTrace(1, false).ToString().Replace('\\n','|')}");
+            }
             return;
         }
         _pr57341AllWrites++;
