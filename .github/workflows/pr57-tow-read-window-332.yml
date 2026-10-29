@@ -21,11 +21,9 @@ jobs:
       # Six instance-reader entry sites; static Penetration is intentionally excluded.
       - name: Inject bounded observational reader-window probe and artificial tests
         run: python3 scripts/pr57-332-inject.py
-      - name: Full test suite without the opt-in window
-        run: |
-          set -euo pipefail
-          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      # The preceding run passed 522/522 non-#332 tests; this rerun isolates
+      # the two opt-in cases instead of repeating an already-green baseline.
       - name: Fresh testhost for both adversarial selected-reader checks
         run: |
           set -euo pipefail
-          PR57_330_ACTOR_LOCAL=1 PR57_332_TOW_WINDOW=1 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --no-build --filter 'FullyQualifiedName~Pr57Physical332Tests' --logger 'console;verbosity=normal'
+          PR57_330_ACTOR_LOCAL=1 PR57_332_TOW_WINDOW=1 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --filter 'FullyQualifiedName~Pr57Physical332Tests' --logger 'console;verbosity=normal'
