@@ -55,7 +55,7 @@ jobs:
           test -s "$input"
           for arm in control presence; do
             flag=0
-            if [[ "$arm" == churn ]]; then flag=1; fi
+            if [[ "$arm" == presence ]]; then flag=1; fi
             mkdir -p "artifacts/presence379/$arm"
             PR57_367_DIRECT_WRITERS=1 PR57_368_CANONICAL_GUARD=1 \
             PR57_369_INPLACE_WRITERS=1 PR57_370_NONLOCAL_WRITERS=1 \
@@ -72,7 +72,7 @@ jobs:
             test "$(grep -c '^PR57_337_HOUR ' "artifacts/presence379/$arm/census.log")" -eq 6
           done
           cmp artifacts/presence379/control/checkpoint-10800.json \
-              artifacts/presence379/churn/checkpoint-10800.json
+              artifacts/presence379/presence/checkpoint-10800.json
           sha256sum artifacts/presence379/*/checkpoint-10800.json \
             | tee artifacts/presence379/checkpoints.sha256
           python3 - <<'PY' | tee artifacts/presence379/summary.txt
