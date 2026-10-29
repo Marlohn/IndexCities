@@ -43,7 +43,7 @@ patch("                try{\n                    if(pr57IdleProbe)Pr57BlockMarkS
                     if(pr57IdleProbe)Pr57BlockMarkStage(2);""")
 patch("        if(pr57PoseNoopSkip&&scanProfile is not null&&dt>0&&_pr57MovementAllocCalls>=36", """        if(pr57390Sample&&_pr57390PhysicalCalls==600)
             for(var cell=0;cell<12;cell++)
-                Console.WriteLine($"PR57_390_CELL cell={cell} waitCohort={(cell>=6?1:0)} enteringLane={((cell%6)>=3?1:0)} outcome={cell%3} calls={_pr57390Calls[cell]} candidates={_pr57390Candidates[cell]} ticks={_pr57390Ticks[cell]} rawZero={_pr57390RawZero[cell]} finalZero={_pr57390FinalZero[cell]} physicalCalls={_pr57390PhysicalCalls} observationOnly=True noReorder=True noSkippedSlices=True");
+                Console.WriteLine($"PR57_390_CELL cell={cell} waitCohort={(cell>=6?1:0)} enteringLane={((cell%6)>=3?1:0)} outcome={cell%3} calls={_pr57390Calls[cell]} candidates={_pr57390Candidates[cell]} ticks={_pr57390Ticks[cell]} frequency={System.Diagnostics.Stopwatch.Frequency} rawZero={_pr57390RawZero[cell]} finalZero={_pr57390FinalZero[cell]} physicalCalls={_pr57390PhysicalCalls} observationOnly=True noReorder=True noSkippedSlices=True");
         if(pr57PoseNoopSkip&&scanProfile is not null&&dt>0&&_pr57MovementAllocCalls>=36""")
 p.write_text(s,encoding="utf-8")
 print("PR57_390_INJECTED observational=True noDecisionReuse=True")
