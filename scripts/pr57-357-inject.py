@@ -12,6 +12,11 @@ base=root/"src/IndexCities.Simulation"
 
 def patch(path,old,new):
     s=path.read_text()
+    if path.name=="Model.cs" and old=="public List<Point> SitePath {get;set;}=[];":
+        head,vehicle=s.split("public sealed class Vehicle\n{",1)
+        assert vehicle.count(old)==1,(str(path),old,vehicle.count(old))
+        path.write_text(head+"public sealed class Vehicle\n{"+vehicle.replace(old,new,1))
+        return
     assert s.count(old)==1,(str(path),old,s.count(old))
     path.write_text(s.replace(old,new,1))
 
