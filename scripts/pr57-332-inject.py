@@ -117,7 +117,9 @@ public sealed class Pr57Physical332Tests
         var poses = new List<(Vehicle Body, Point Position, double Heading)> {
             (reader, reader.Position, reader.Heading)
         };
-        Call(sim, "BodyOnWay", reader, poses, false);
+        typeof(CitySimulation).GetMethod("BodyOnWay", Private, null,
+            new[] { typeof(Vehicle), typeof(List<(Vehicle,Point,double)>), typeof(bool) }, null)!
+            .Invoke(sim, new object[] { reader, poses, false });
         Call(sim, "Pr57332Writer", target);
         Assert.Equal(2, Count(sim, "_pr57332Writes"));
         Assert.Equal(1, Reads(sim)[0]);
