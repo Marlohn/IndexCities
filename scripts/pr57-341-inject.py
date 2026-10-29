@@ -136,7 +136,7 @@ public sealed partial class CitySimulation
             {
                 _pr57341EphemeralStackSampled[field] = true;
                 Console.WriteLine($"PR57_341_EPHEMERAL_SITE field={field} id={v.Id} " +
-                    $"stack={new System.Diagnostics.StackTrace(1, false).ToString().Replace('\\n','|')}");
+                    $"stack={new System.Diagnostics.StackTrace(1, false).ToString().Replace('\n','|')}");
             }
             return;
         }
