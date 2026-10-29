@@ -1,0 +1,130 @@
+name: 'PR57 #348 REAL late-jam stage-boundary effects'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-state-effects-348.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  state-effects:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+      PR57_VEHICLE_COST_PROBE: '1'
+      PR57_246_JUNCTION_RETURNS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Inject checkout-only six-slice stage and effect observers
+        run: |
+          python3 scripts/pr57-346-inject.py
+          python3 scripts/pr57-345-observe.py
+          python3 scripts/pr57-348-inject.py
+      - name: Build authentic REAL replay and run simulation tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release
+      - name: Restore pinned authentic REAL 14h checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Run control and bounded stage-boundary effect census
+        shell: bash
+        run: |
+          set -euo pipefail
+          input="artifacts/input/real14hREAL-control/checkpoint-0.json"
+          test -s "$input"
+          for mode in control probe; do
+            mkdir -p "artifacts/effects348/$mode"
+            if [[ "$mode" == "probe" ]]; then flag=1; else flag=0; fi
+            PR57_206_RESIDUAL_EXCLUSIVE="$flag" \
+            PR57_244_STATE_COST="$flag" \
+            PR57_348_STAGE_EFFECTS="$flag" \
+            PR57_244_PERSISTENT_IDS="1071,1243,1282,1380" \
+            dotnet run --no-build -c Release \
+              --project scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj \
+              -- "$input" "artifacts/effects348/$mode" > "artifacts/effects348/$mode/full.log"
+            grep -E '^PR57_(337_(HOUR|FINAL)|345_PHASE|206_RESIDUAL|244_STATE|348_(EFFECT|ACTOR)) ' \
+              "artifacts/effects348/$mode/full.log" > "artifacts/effects348/$mode/census.log"
+            test "$(grep -c '^PR57_337_HOUR ' "artifacts/effects348/$mode/census.log")" -eq 6
+            test "$(grep -c '^PR57_345_PHASE ' "artifacts/effects348/$mode/census.log")" -eq 78
+            grep -q 'parity=IDENTICAL' "artifacts/effects348/$mode/census.log"
+          done
+          cmp artifacts/effects348/control/checkpoint-10800.json \
+              artifacts/effects348/probe/checkpoint-10800.json
+          python3 - <<'PY' | tee artifacts/effects348/summary.txt
+          from pathlib import Path
+          root=Path("artifacts/effects348")
+          def parse(mode,prefix):
+              return [
+                  {k:v for k,v in (item.split("=",1) for item in line.split()[1:] if "=" in item)}
+                  for line in (root/mode/"census.log").read_text().splitlines()
+                  if line.startswith(prefix+" ")
+              ]
+          samples=parse("probe","PR57_206_RESIDUAL")
+          states=parse("probe","PR57_244_STATE")
+          effects=parse("probe","PR57_348_EFFECT")
+          actors=parse("probe","PR57_348_ACTOR")
+          assert len(samples)==6 and len(states)==30 and len(effects)==30, (
+              len(samples),len(states),len(effects))
+          assert [int(s["eligibleSlice"]) for s in samples]==[40001,40002,40003,50001,50002,50003]
+          assert not parse("control","PR57_348_EFFECT")
+          assert not parse("control","PR57_206_RESIDUAL")
+          assert sum(int(e["actors"]) for e in effects)==588
+          assert sum(int(e["actors"]) for e in effects if e["group"]=="persistent-still")==24
+          assert sum(int(e["actors"]) for e in effects if e["group"]=="other-travelling-still")==162
+          assert len(actors)==186, len(actors)
+          for group in sorted({e["group"] for e in effects}):
+              rows=[e for e in effects if e["group"]==group]
+              state_rows=[s for s in states if s["group"]==group]
+              assert sum(int(e["actors"]) for e in rows)==sum(int(s["actors"]) for s in state_rows)
+              fields={key:sum(int(dict(pair.split(":",1) for pair in e["fields"].split(","))[key]) for e in rows)
+                      for key in ("position","heading","status","routeIndex","cause",
+                                  "waitingSince","claim","routeCount","detourCount",
+                                  "spacesCount","corridorCount","admissionIndex",
+                                  "admissionRouteCount","towPhase","towTarget",
+                                  "towTruck","fuelUnits")}
+              net={key:sum(int(dict(pair.split(":",1) for pair in e["netFields"].split(","))[key]) for e in rows)
+                   for key in fields}
+              print("PR57_348_SUMMARY group="+group+
+                    " actors="+str(sum(int(e["actors"]) for e in rows))+
+                    " changedActors="+str(sum(int(e["changedActors"]) for e in rows))+
+                    " netActors="+str(sum(int(e["netActors"]) for e in rows))+
+                    " changedBoundaries="+str(sum(int(e["changedBoundaries"]) for e in rows))+
+                    " blocked="+str(sum(int(e["blocked"]) for e in rows))+
+                    " blocker="+str(sum(int(e["blocker"]) for e in rows))+
+                    " entering="+str(sum(int(e["entering"]) for e in rows))+
+                    " bypass="+str(sum(int(e["bypass"]) for e in rows))+
+                    " bypassSuccess="+str(sum(int(e["bypassSuccess"]) for e in rows))+
+                    " fields="+",".join(f"{k}:{v}" for k,v in fields.items())+
+                    " netFields="+",".join(f"{k}:{v}" for k,v in net.items()))
+          print("PR57_348_PARITY byteIdentical=TRUE sixSlices=TRUE actors=588 "+
+                "scope=STAGE_BOUNDARIES_ONLY noSkippedSlices=TRUE")
+          PY
+      - name: Upload raw logs, census and checkpoints
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-state-effects-348
+          path: artifacts/effects348/**
+          if-no-files-found: warn
