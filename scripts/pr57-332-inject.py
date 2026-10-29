@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PR57 #332: selected physical-reader entry census between tow writer hooks.
+"""PR57 #332: selected instance-reader entry census between tow writer hooks.
 
 ARTIFICIAL fixture only. Builds on #331 and observes the exact interval
 between the two target publications in exterior delivery. No decisions use
@@ -57,8 +57,6 @@ sites = [
      "bool SpaceFree(Vehicle v,RoadNode node,Point entering,bool yieldToTraffic=true)\n    {\n", 2),
     ("src/IndexCities.Simulation/Mobility.SharedSpace.cs",
      "bool CanTurnNow(Vehicle o)\n    {\n", 3),
-    ("src/IndexCities.Simulation/Mobility.SharedSpace.cs",
-     "double Penetration(Vehicle a,Point aAt,double aHeading,Vehicle b,Point bAt,double bHeading)\n    {\n", 4),
     ("src/IndexCities.Simulation/Mobility.cs",
      "bool MayEnterJunction(Vehicle v,RoadNode junction)\n    {\n", 5),
     ("src/IndexCities.Simulation/RoadNetwork.cs",
@@ -103,8 +101,8 @@ public sealed class Pr57Physical332Tests
         Assert.Equal(2, Count(sim, "_pr57332Writes"));
         Assert.Equal(VehicleStatus.Outside, target.Status);
         var counts = Reads(sim);
-        Console.WriteLine("PR57_332_WINDOW writers=2 body={0} traffic={1} space={2} turn={3} penetration={4} junction={5} route={6} scope=ARTIFICIAL_SELECTED_ENTRY_SITES",
-            counts[0], counts[1], counts[2], counts[3], counts[4], counts[5], counts[6]);
+        Console.WriteLine("PR57_332_WINDOW writers=2 body={0} traffic={1} space={2} turn={3} penetration=NOT_INSTRUMENTED junction={5} route={6} scope=ARTIFICIAL_SELECTED_INSTANCE_ENTRY_SITES",
+            counts[0], counts[1], counts[2], counts[3], counts[5], counts[6]);
         Assert.All(counts, value => Assert.Equal(0, value));
     }
 
@@ -127,4 +125,4 @@ public sealed class Pr57Physical332Tests
     }
 }
 """)
-print("PR57_332_INJECTED sites=7 tests=2 canonicalDecisionsUntouched=True")
+print("PR57_332_INJECTED sites=6 tests=2 canonicalDecisionsUntouched=True")
