@@ -1,0 +1,113 @@
+name: 'PR57 #321 shared occupants per physical forecast'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-shared-occupants-321.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  shared-occupants:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build and existing tests
+        run: |
+          set -euo pipefail
+          dotnet build scripts/pr57-economy-review-294/Pr57EconomyReview294.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic REAL and GRID saves
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Fresh-process ABBA A/B with individual Advance(2)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/shared-occupants-321
+          for case in real14hREAL gridARTIFICIAL; do
+            input="artifacts/input/${case}-control/checkpoint-0.json"
+            test -s "$input"
+            calls=100
+            if [[ "$case" == gridARTIFICIAL ]]; then calls=50; fi
+            for arm in control1 shared1 shared2 control2; do
+              output="artifacts/shared-occupants-321/${case}-${arm}"
+              mkdir -p "$output"
+              cmd=(dotnet run --no-build -c Release --project scripts/pr57-economy-review-294/Pr57EconomyReview294.csproj -- "$input" "$case" probe "$calls" "$output")
+              if [[ "$arm" == shared* ]]; then
+                PR57_321_SHARED_OCCUPANTS=1 "${cmd[@]}" > "artifacts/shared-occupants-321/${case}-${arm}.log" 2>&1
+              else
+                "${cmd[@]}" > "artifacts/shared-occupants-321/${case}-${arm}.log" 2>&1
+              fi
+            done
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, statistics
+          root=Path('artifacts/shared-occupants-321')
+          def fields(line):
+              return dict(re.findall(r'([A-Za-z][A-Za-z0-9]*)=([^\s]+)',line))
+          pairs=0
+          for case,calls in [('real14hREAL',100),('gridARTIFICIAL',50)]:
+              rows={}
+              for arm in ('control1','shared1','shared2','control2'):
+                  lines=(root/f'{case}-{arm}.log').read_text().splitlines()
+                  final=[fields(x) for x in lines if x.startswith('PR57_294_FINAL ')]
+                  assert len(final)==1,(case,arm,'final')
+                  f=final[0]
+                  assert f['mode']=='probe' and f['cadence']=='Advance2'
+                  assert f['all13Phases']=='True' and f['noSkippedSlices']=='True'
+                  assert f['exactCheckpoints']=='True' and int(f['calls'])==calls
+                  steps=[fields(x) for x in lines if x.startswith('PR57_294_STEP ')]
+                  assert [int(x['call']) for x in steps]==list(range(1,calls+1)),(case,arm,'step-cadence')
+                  activation=[x for x in lines if x.startswith('PR57_321_ACTIVE ')]
+                  assert len(activation)==(1 if arm.startswith('shared') else 0),(case,arm,'activation')
+                  rows[arm]=(f,steps)
+              for suffix in ('1','2'):
+                  for step in (0,20,calls//2,calls):
+                      a=(root/f'{case}-control{suffix}'/f'checkpoint-{step}.json').read_bytes()
+                      b=(root/f'{case}-shared{suffix}'/f'checkpoint-{step}.json').read_bytes()
+                      assert a==b,(case,suffix,step)
+                      pairs+=1
+              for metric in ('wallMs','cpuMs','allocatedBytes'):
+                  a=statistics.mean(float(rows[f'control{i}'][0][metric]) for i in ('1','2'))
+                  b=statistics.mean(float(rows[f'shared{i}'][0][metric]) for i in ('1','2'))
+                  print(f'PR57_321_FULL case={case} metric={metric} control={a:.3f} shared={b:.3f} ratio={a/b:.6f} baseline=COMPOSED_FLAGS')
+              for metric in ('advanceWallMs','vehiclesMs','citizensMs','advanceAllocatedBytes'):
+                  a=statistics.mean(sum(float(x[metric]) for x in rows[f'control{i}'][1][-25:]) for i in ('1','2'))
+                  b=statistics.mean(sum(float(x[metric]) for x in rows[f'shared{i}'][1][-25:]) for i in ('1','2'))
+                  print(f'PR57_321_LAST25 case={case} metric={metric} control={a:.3f} shared={b:.3f} ratio={a/b if b else 0:.6f}')
+              for suffix in ('1','2'):
+                  c=float(rows[f'control{suffix}'][0]['wallMs'])
+                  s=float(rows[f'shared{suffix}'][0]['wallMs'])
+                  print(f'PR57_321_PAIR case={case} suffix={suffix} controlWallMs={c:.3f} sharedWallMs={s:.3f} ratio={c/s:.6f}')
+          assert pairs==16,pairs
+          print('PR57_321_VERIFIED checkpointPairs=16/16 processes=8 allAdvance2=True noSkippedSlices=True')
+          PY
+      - name: Preserve logs and checkpoints on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-shared-occupants-321
+          path: artifacts/shared-occupants-321/**
+          retention-days: 14
