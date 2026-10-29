@@ -38,7 +38,7 @@ props = {
     'TowTruckId': ('int?', None, 'old!=value'),
 }
 for name, (typ, init, predicate) in props.items():
-    old = f'public {typ} {name} {{get;set;}}' + (init or '')
+    old = f'public {typ} {name} {{get;set;}}' + (init or '') + (';' if init else '')
     field = '_pr57353' + name
     new = (f'private {typ} {field}' + (init or '') + ';\n    '
            f'public {typ} {name} {{get=>{field};set{{var old={field};{field}=value;'
