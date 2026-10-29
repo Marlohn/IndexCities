@@ -473,6 +473,12 @@ public sealed partial class CitySimulation
         if(until>MovementEventEpsilon&&until<horizon){reason=pathReason;return until;}
         return horizon;
     }
+    // PR57 #321: one immutable-for-this-forecast view of lane occupants.
+    // It is rebuilt for every physical sub-slice, never cached across Advance(2).
+    static readonly bool Pr57321SharedOccupantsEnabled =
+        Environment.GetEnvironmentVariable("PR57_321_SHARED_OCCUPANTS") == "1";
+    bool _pr57321Announced;
+
     // PR57 isolated POC: a swept, conservative envelope narrows ONLY the
     // projected recheck loop. All candidate times and global slices are retained.
     // No state is cached between calls or persisted.
@@ -514,11 +520,27 @@ public sealed partial class CitySimulation
         var entries=State.Vehicles.Where(v=>_vehicleMovementBatch!.Contains(v.Id)&&LiveLaneEntry(v)).ToList();
         _pr57300Step?.Entries(entries);
         if(entries.Count==0){if(profile is not null)ObserveLaneSlice(horizon,0,-1,0,0,0);_pr57300Step?.Decision(0,-1,null,0,0,0);return horizon;}
+        // The scheduler only forecasts: no canonical vehicle mutation occurs
+        // before its return. Preserve State.Vehicles order and the exact same
+        // OccupiesLane -> EntryFrameVehicle mapping for every entrant.
+        var pr57321Occupants = Pr57321SharedOccupantsEnabled
+            ? State.Vehicles.Where(OccupiesLane).Select(EntryFrameVehicle).ToArray()
+            : null;
+        if(pr57321Occupants is not null && !_pr57321Announced){
+            _pr57321Announced = true;
+            Console.WriteLine($"PR57_321_ACTIVE occupants={pr57321Occupants.Length} entries={entries.Count} scope=PER_FORECAST_ONLY");
+        }
         var held=State.Vehicles.Any(o=>o.Status==VehicleStatus.Stranded)?State.Vehicles.Where(HeldBehindStranded).Select(o=>o.Id).ToHashSet():null;
         foreach(var v in State.Vehicles.Where(v=>_vehicleMovementBatch!.Contains(v.Id))){
             // A blocked lot entry is not travelling to its lane target yet.
             // Its hypothetical arrival must not generate an extra substep.
-            if(TryLaneEntry(v,out var waitingAccess)&&State.Vehicles.Where(o=>o.Id!=v.Id&&OccupiesLane(o)).Select(EntryFrameVehicle).Any(o=>BlocksLaneEntry(v,waitingAccess,o))){if(profile is not null)blockedEntryChecks++;continue;}
+            if(TryLaneEntry(v,out var waitingAccess)&&
+               (pr57321Occupants is null
+                    ? State.Vehicles.Where(o=>o.Id!=v.Id&&OccupiesLane(o)).Select(EntryFrameVehicle).Any(o=>BlocksLaneEntry(v,waitingAccess,o))
+                    : pr57321Occupants.Any(o=>o.Id!=v.Id&&BlocksLaneEntry(v,waitingAccess,o)))){
+                if(profile is not null)blockedEntryChecks++;
+                continue;
+            }
             if(held?.Contains(v.Id)==true)continue;
             var candidate=TimeToMovementChange(v,horizon,out var cause);
             if(candidate<horizon-1e-9){movementCause=cause;movementWinner=v;}
@@ -527,7 +549,9 @@ public sealed partial class CitySimulation
         var earliest=horizon;
         foreach(var v in entries){
             TryLaneEntry(v,out var access);
-            var occupants=State.Vehicles.Where(o=>o.Id!=v.Id&&OccupiesLane(o)).Select(EntryFrameVehicle).ToList();
+            var occupants=pr57321Occupants is null
+                ? State.Vehicles.Where(o=>o.Id!=v.Id&&OccupiesLane(o)).Select(EntryFrameVehicle).ToList()
+                : pr57321Occupants.Where(o=>o.Id!=v.Id).ToList();
             if(!occupants.Any(o=>BlocksLaneEntry(v,access,o)))continue;
             var candidates=new SortedSet<double>();
             foreach(var other in occupants){
