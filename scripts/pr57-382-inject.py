@@ -18,8 +18,8 @@ patch("        Pr57381BeginSlice(dt,operationsDt);",
       "        Pr57382Begin(dt,operationsDt);\n        Pr57381BeginSlice(dt,operationsDt);")
 patch("        foreach(var vehicle in State.Vehicles){ClearPassedJunction(vehicle);ReleaseManoeuvre(vehicle);}",
       "        Pr57382Mark(0); // setup\n        foreach(var vehicle in State.Vehicles){ClearPassedJunction(vehicle);ReleaseManoeuvre(vehicle);}\n        Pr57382Mark(1); // global cleanup")
-patch("            foreach(var v in ordered){",
-      "            Pr57382Mark(2); // preparation and candidate indexes\n            foreach(var v in ordered){")
+patch("        foreach(var v in ordered){",
+      "        Pr57382Mark(2); // preparation and candidate indexes\n        foreach(var v in ordered){")
 patch("        SyncTowedVehicles();",
       "        Pr57382Mark(3); // ordered actor loop\n        SyncTowedVehicles();\n        Pr57382Mark(4); // tow synchronization")
 patch("        if(pr57Bvh)_pr57VehicleBvh!.Refresh();\n        if(scanProfile is not null){",
