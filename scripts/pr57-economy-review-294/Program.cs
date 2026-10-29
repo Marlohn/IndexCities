@@ -52,6 +52,14 @@ void Citizen323Snapshot(int call)
         Console.WriteLine($"PR57_323_COUNTER case={caseName} call={call} {line}");
 }
 
+var route324=trace&&Environment.GetEnvironmentVariable("PR57_324_ROUTE_EXPANSIONS")=="1";
+void Route324Snapshot(int call)
+{
+    if(!route324||!citizen323Steps.Contains(call))return;
+    foreach(var line in sim.Pr57324RouteReport())
+        Console.WriteLine($"PR57_324_COUNTER case={caseName} call={call} {line}");
+}
+
 void Checkpoint(int step)
 {
     sim.CheckInvariants();
@@ -70,6 +78,7 @@ void Checkpoint(int step)
 }
 Checkpoint(0);
 Citizen323Snapshot(0);
+Route324Snapshot(0);
 for (var i = 1; i <= calls; i++)
 {
     var nextBefore = sim.State.EconomyNextAt;
@@ -139,6 +148,7 @@ for (var i = 1; i <= calls; i++)
         lastClass298 = current;
     }
     Citizen323Snapshot(i);
+    Route324Snapshot(i);
     if (checkpoints.Contains(i)) Checkpoint(i);
 }
 var wall = (Stopwatch.GetTimestamp() - startedProcess) * 1000.0 / Stopwatch.Frequency;

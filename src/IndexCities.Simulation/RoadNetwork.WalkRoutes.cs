@@ -20,10 +20,11 @@ public sealed partial class CitySimulation
 
     List<Point> PedestrianPath(Point from,Point door,RoadNode? b)
     {
-        if(!_walkRoutesActive)return FindPedestrianPath(from,door,b);
+        if(Pr57324Enabled)_pr57324PedPathCalls++;
+        if(!_walkRoutesActive)return Pr57324ComputeWalk(from,door,b);
         if(_walkRoutesStamp!=WalkStamp){_walkRoutes.Clear();_walkRoutesStamp=WalkStamp;}
         var key=new WalkKey(BitConverter.DoubleToInt64Bits(from.X),BitConverter.DoubleToInt64Bits(from.Z),BitConverter.DoubleToInt64Bits(door.X),BitConverter.DoubleToInt64Bits(door.Z),b);
-        if(!_walkRoutes.TryGetValue(key,out var route)){if(_walkRoutes.Count>=65536)_walkRoutes.Clear();_walkRoutes[key]=route=FindPedestrianPath(from,door,b).ToArray();}
+        if(!_walkRoutes.TryGetValue(key,out var route)){if(_walkRoutes.Count>=65536)_walkRoutes.Clear();_walkRoutes[key]=route=Pr57324ComputeWalk(from,door,b).ToArray();}
         // Callers own and edit their path list.
         return new List<Point>(route);
     }
