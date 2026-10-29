@@ -101,7 +101,7 @@ public sealed class Pr57Physical332Tests
         Assert.Equal(2, Count(sim, "_pr57332Writes"));
         Assert.Equal(VehicleStatus.Outside, target.Status);
         var counts = Reads(sim);
-        Console.WriteLine("PR57_332_WINDOW writers=2 body={0} traffic={1} space={2} turn={3} penetration=NOT_INSTRUMENTED junction={5} route={6} scope=ARTIFICIAL_SELECTED_INSTANCE_ENTRY_SITES",
+        Console.WriteLine("PR57_332_WINDOW writers=2 body={0} traffic={1} space={2} turn={3} penetration=NOT_INSTRUMENTED junction={4} route={5} scope=ARTIFICIAL_SELECTED_INSTANCE_ENTRY_SITES",
             counts[0], counts[1], counts[2], counts[3], counts[5], counts[6]);
         Assert.All(counts, value => Assert.Equal(0, value));
     }
