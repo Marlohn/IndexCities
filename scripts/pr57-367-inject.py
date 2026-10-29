@@ -99,7 +99,8 @@ public sealed partial class CitySimulation
             if(_pr57367Active)Pr57367Finish();
             return;
         }
-        if(_pr57367Active||State.Now<Pr57367Start)return;
+        if(_pr57367Active){_pr57367Phase=0;return;}
+        if(State.Now<Pr57367Start)return;
         _pr57367Active=true;
         _pr57367Phase=0;
         foreach(var v in State.Vehicles)_pr57367Canonical.Add(v);
