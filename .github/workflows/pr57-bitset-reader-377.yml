@@ -1,0 +1,158 @@
+name: 'PR57 #377 REAL compact reverse-reader bitset ABBA'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [scripts/pr57-377-inject.py, .github/workflows/pr57-bitset-reader-377.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  real-shadow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+      PR57_VEHICLE_COST_PROBE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Inject reversible observational hooks into disposable checkout
+        run: |
+          set -euo pipefail
+          python3 scripts/pr57-367-inject.py
+          python3 scripts/pr57-368-inject.py
+          python3 scripts/pr57-369-inject.py
+          python3 scripts/pr57-370-inject.py
+          python3 scripts/pr57-372-inject.py
+          python3 scripts/pr57-374-inject.py
+          python3 scripts/pr57-376-inject.py
+          python3 scripts/pr57-377-inject.py
+      - name: Build and test
+        run: |
+          set -euo pipefail
+          dotnet build scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release
+      - name: Restore authentic REAL 14h checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Fresh-process ABBA HashSet and bitset plus dual parity
+        shell: bash
+        run: |
+          set -euo pipefail
+          input="artifacts/input/real14hREAL-control/checkpoint-0.json"
+          test -s "$input"
+          for arm in hash-a bit-a bit-b hash-b both; do
+            hash=0; bit=0
+            case "$arm" in
+              hash-*) hash=1 ;;
+              bit-*) bit=1 ;;
+              both) hash=1; bit=1 ;;
+            esac
+            mkdir -p "artifacts/bitset377/$arm"
+            PR57_367_DIRECT_WRITERS=1 PR57_368_CANONICAL_GUARD=1 \
+            PR57_369_INPLACE_WRITERS=1 PR57_370_NONLOCAL_WRITERS=1 \
+            PR57_372_WRITER_FRONTIER=1 PR57_372_PUBLISH=0 \
+            PR57_374_NEXT_SLICE_FANOUT=1 PR57_376_REVERSE_SHADOW="$hash" \
+            PR57_377_BITSET_SHADOW="$bit" \
+              dotnet run --no-build -c Release \
+                --project scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj \
+                -- "$input" "artifacts/bitset377/$arm" \
+                > "artifacts/bitset377/$arm/full.log"
+            grep -E '^PR57_(337_(HOUR|FINAL)|367_SUMMARY|369_SUMMARY|370_SUMMARY|372_SUMMARY|374_SUMMARY|376_SUMMARY|377_SUMMARY) ' \
+              "artifacts/bitset377/$arm/full.log" \
+              > "artifacts/bitset377/$arm/census.log"
+            test "$(grep -c '^PR57_337_HOUR ' "artifacts/bitset377/$arm/census.log")" -eq 6
+            grep -q 'parity=IDENTICAL' "artifacts/bitset377/$arm/census.log"
+            cmp "artifacts/bitset377/hash-a/checkpoint-10800.json" \
+                "artifacts/bitset377/$arm/checkpoint-10800.json"
+          done
+          sha256sum artifacts/bitset377/*/checkpoint-10800.json \
+            | tee artifacts/bitset377/checkpoints.sha256
+          python3 - <<'PY' | tee artifacts/bitset377/summary.txt
+          from pathlib import Path
+          import json
+          root=Path("artifacts/bitset377")
+          arms=("hash-a","bit-a","bit-b","hash-b","both")
+          def rows(arm,prefix):
+              return [dict(x.split("=",1) for x in line.split()[1:] if "=" in x)
+                      for line in (root/arm/"census.log").read_text().splitlines()
+                      if line.startswith(prefix+" ")]
+          def one(arm,prefix):
+              a=rows(arm,prefix)
+              assert len(a)==1,(arm,prefix,len(a))
+              return a[0]
+          keys=("physicalSlices","readCalls","uniqueReadPairs","writerEvents",
+                "uniqueWriters","externalEvents","writersWithReaders",
+                "invalidatedReaderPairs","maxReadersPerWriter")
+          expected=(600,1364887,1327930,1914,879,27,835,20036,29)
+          reference=None
+          data={}
+          for arm in arms:
+              assert int(one(arm,"PR57_367_SUMMARY")["writes"])==1852
+              assert int(one(arm,"PR57_369_SUMMARY")["countChanges"])==17
+              assert int(one(arm,"PR57_370_SUMMARY")["refContentDifferent"])==51
+              assert int(one(arm,"PR57_372_SUMMARY")["events"])==1920
+              assert int(one(arm,"PR57_374_SUMMARY")["events"])==1920
+              assert one(arm,"PR57_337_FINAL")["parity"]=="IDENTICAL"
+              h=rows(arm,"PR57_337_HOUR")
+              assert len(h)==6 and [int(x["hour"]) for x in h]==list(range(1,7))
+              assert all(int(x["living"])==121 for x in h)
+              hashrows=rows(arm,"PR57_376_SUMMARY")
+              bitrows=rows(arm,"PR57_377_SUMMARY")
+              assert len(hashrows)==(1 if arm.startswith("hash") or arm=="both" else 0)
+              assert len(bitrows)==(1 if arm.startswith("bit") or arm=="both" else 0)
+              for row in hashrows+bitrows:
+                  got=tuple(int(row[k]) for k in keys)
+                  assert got==expected,(arm,got,expected)
+                  assert row["noCausalClosure"]=="True"
+                  assert row["noDecisionReuse"]=="True"
+                  assert row["noSkippedSlices"]=="True"
+              for row in (hashrows+bitrows):
+                  if reference is None:reference=tuple(row[k] for k in keys)
+                  assert tuple(row[k] for k in keys)==reference
+              selected=hashrows[0] if hashrows and arm!="both" else bitrows[0]
+              data[arm]=dict(firstHourWallMs=float(h[0]["wallMs"]),
+                  firstHourCpuMs=float(h[0]["cpuMs"]),
+                  firstHourAllocBytes=int(h[0]["totalAllocatedBytes"]),
+                  sixHourWallMs=round(sum(float(x["wallMs"]) for x in h),3),
+                  sixHourCpuMs=round(sum(float(x["cpuMs"]) for x in h),3),
+                  sixHourAllocBytes=sum(int(x["totalAllocatedBytes"]) for x in h),
+                  registrationMs=round(int(selected["registrationTicks"])*1000/
+                                       int(selected["tickFrequency"]),3),
+                  propagationMs=round(int(selected["propagationTicks"])*1000/
+                                      int(selected["tickFrequency"]),3))
+          import hashlib
+          saves=[(root/a/"checkpoint-10800.json").read_bytes() for a in arms]
+          assert all(x==saves[0] for x in saves)
+          digest=hashlib.sha256(saves[0]).hexdigest()
+          assert digest=="e92293faf61a6ea2aab7dd0fdac83c14bd4668f611a126c701dc6705587bb9fa"
+          print(json.dumps(dict(scope="REAL_121_98_PARTIAL_OCCUPIES_600_SLICES",
+              parity="five byte-identical final saves; dual mode exact gate counters",
+              saveSha256=digest,expectedCounters=dict(zip(keys,expected)),
+              arms=data,noCausalClosure=True,noDecisionReuse=True,
+              noSkippedSlices=True,acceptedIntegratedGain=0),indent=2))
+          PY
+      - name: Upload original logs and checkpoints even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-bitset-reader-377
+          path: artifacts/bitset377/
+          if-no-files-found: warn
