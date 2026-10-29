@@ -49,7 +49,7 @@ jobs:
         with:
           name: integrated-scale-pr57-crossing-259
           run-id: 40633885112
-          github-token: \${{ github.token }}
+          github-token: ${{ github.token }}
           path: artifacts/input
       - name: Replay individual Advance(2) calls in fresh processes
         shell: bash
