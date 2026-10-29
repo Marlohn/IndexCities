@@ -194,13 +194,14 @@ public sealed partial class CitySimulation
         Pr57CitizenAgendaWake(c);
         if(TryDrive(c,destination,purpose))return true;
         var path=CitizenRoute(c,destination);if(path.Count==0){c.Activity="Sem rota para "+destination.Definition.Name;c.Decision="Acesso viário ou travessia indisponível";c.PathRoadRevision=State.RoadRevision;c.NextDecisionAt=State.ElapsedSeconds+300;return false;}
-        c.Path=path;c.PathIndex=0;c.PathRoadRevision=State.RoadRevision;c.Purpose=purpose;c.DestinationId=destination.Id;c.Activity=purpose switch{JourneyPurpose.Work=>"Indo trabalhar",JourneyPurpose.Home=>"Voltando para casa",JourneyPurpose.Shopping=>"Indo comprar alimentos",JourneyPurpose.Arriving=>"Chegando à cidade",JourneyPurpose.Visit=>"Indo visitar outra família",JourneyPurpose.Stroll=>"Passeando a pé",_=>"Indo ao canteiro"};Personal(c,c.Activity+" em "+destination.Definition.Name);return true;
+        Pr57320ReplacePath(c,path,"startJourney");Pr57320ResetIndex(c,"startJourney");c.PathRoadRevision=State.RoadRevision;c.Purpose=purpose;c.DestinationId=destination.Id;c.Activity=purpose switch{JourneyPurpose.Work=>"Indo trabalhar",JourneyPurpose.Home=>"Voltando para casa",JourneyPurpose.Shopping=>"Indo comprar alimentos",JourneyPurpose.Arriving=>"Chegando à cidade",JourneyPurpose.Visit=>"Indo visitar outra família",JourneyPurpose.Stroll=>"Passeando a pé",_=>"Indo ao canteiro"};Personal(c,c.Activity+" em "+destination.Definition.Name);return true;
     }
     void MoveCitizens(double dt)
     {
         Pr57312Begin();
         Pr57317Begin();
         Pr57319Begin();
+        Pr57320Begin();
         Pr57Transitions290Begin(2);
         var pr57StateCost = CostProfile is not null && Pr57CitizenStateCostEnabled;
         var pr57SetupStart = pr57StateCost ? System.Diagnostics.Stopwatch.GetTimestamp() : 0L;
@@ -242,12 +243,12 @@ public sealed partial class CitySimulation
             if(c.Moving){
                 if(pr57Walk240)_pr57Walk240Visits++;
                 if(c.Purpose==JourneyPurpose.Boarding)c.PathRoadRevision=State.RoadRevision;
-                if(c.PathRoadRevision!=State.RoadRevision&&c.Purpose==JourneyPurpose.Construction&&c.ConstructionProjectId is {} projectId){if(pr57Walk240)_pr57Walk240Replans++;var project=State.Projects.First(p=>p.Id==projectId);var access=WorkAccess(project);var replacement=access==null?new List<Point>():PedestrianPath(c.Position,CrewPedestrianSite(access),access);c.Path=replacement;c.PathIndex=0;c.PathRoadRevision=State.RoadRevision;if(replacement.Count==0){c.Activity="Equipe aguardando rota de obra";continue;}}
+                if(c.PathRoadRevision!=State.RoadRevision&&c.Purpose==JourneyPurpose.Construction&&c.ConstructionProjectId is {} projectId){if(pr57Walk240)_pr57Walk240Replans++;var project=State.Projects.First(p=>p.Id==projectId);var access=WorkAccess(project);var replacement=access==null?new List<Point>():PedestrianPath(c.Position,CrewPedestrianSite(access),access);Pr57320ReplacePath(c,replacement,"constructionReplan");Pr57320ResetIndex(c,"constructionReplan");c.PathRoadRevision=State.RoadRevision;if(replacement.Count==0){c.Activity="Equipe aguardando rota de obra";continue;}}
                 var journeyDestination=BuildingById(c.DestinationId);
                 var closeDoorDetour=journeyDestination!=null&&c.Purpose!=JourneyPurpose.Service&&c.Position.Distance(journeyDestination.Door)<3&&c.Path.Skip(c.PathIndex).Any(point=>point.Distance(journeyDestination.Door)>3)&&Access(journeyDestination) is {} doorAccess&&!CrossesLane(c.Position,journeyDestination.Door,doorAccess);
                 if((c.PathRoadRevision!=State.RoadRevision||closeDoorDetour)&&c.Purpose!=JourneyPurpose.Construction){
                     if(pr57Walk240)_pr57Walk240Replans++;
-                    var dest=journeyDestination;if(dest!=null){var replacement=CitizenRoute(c,dest);if(replacement.Count==0){c.Activity="Viagem interrompida: rota removida";c.Path.Clear();c.PathRoadRevision=State.RoadRevision;c.NextDecisionAt=State.ElapsedSeconds+300;continue;}c.Path=replacement;c.PathIndex=0;c.PathRoadRevision=State.RoadRevision;}
+                    var dest=journeyDestination;if(dest!=null){var replacement=CitizenRoute(c,dest);if(replacement.Count==0){c.Activity="Viagem interrompida: rota removida";Pr57320ClearPath(c,"noRoute");c.PathRoadRevision=State.RoadRevision;c.NextDecisionAt=State.ElapsedSeconds+300;continue;}Pr57320ReplacePath(c,replacement,"destinationReplan");Pr57320ResetIndex(c,"destinationReplan");c.PathRoadRevision=State.RoadRevision;}
                 }
                 var distance=State.Tuning.WalkingSpeed*dt;
                 while(distance>0&&c.PathIndex<c.Path.Count){if(pr57Walk240)_pr57Walk240Segments++;var target=c.Path[c.PathIndex];var d=c.Position.Distance(target);
@@ -308,6 +309,7 @@ public sealed partial class CitySimulation
         if (pr57StateCost) _pr57CitizenLoopTicks += System.Diagnostics.Stopwatch.GetTimestamp() - pr57LoopStart;
         Pr57Transitions290End(2);
         Pr57312End();
+        Pr57320End();
         Pr57319End();
         Pr57317End();
     }
@@ -414,12 +416,12 @@ public sealed partial class CitySimulation
         var arrivalPurpose=pr57Arrive241?c.Purpose:default;
         var arrivalStart=pr57Arrive241?System.Diagnostics.Stopwatch.GetTimestamp():0L;
         try {
-        if(c.Purpose==JourneyPurpose.Boarding){var vehicle=State.Vehicles.FirstOrDefault(v=>v.Id==c.BoardingVehicleId&&v.DriverId==c.Id);if(vehicle!=null&&vehicle.Position.Distance(c.Position)<.1){c.VehicleId=vehicle.Id;c.Activity=vehicle.PassengerCar?"Dirigindo carro particular":"Embarcou para entrega real";if(vehicle.PassengerCar){vehicle.Status=VehicleStatus.Travelling;vehicle.Cause="Em viagem";}}else {c.Activity="Veículo indisponível para embarque";if(State.Vehicles.FirstOrDefault(v=>v.Id==c.BoardingVehicleId&&v.PassengerCar&&v.DriverId==c.Id) is {} reserved)reserved.DriverId=null;}c.BoardingVehicleId=null;c.Path.Clear();c.PathIndex=0;return;}
+        if(c.Purpose==JourneyPurpose.Boarding){var vehicle=State.Vehicles.FirstOrDefault(v=>v.Id==c.BoardingVehicleId&&v.DriverId==c.Id);if(vehicle!=null&&vehicle.Position.Distance(c.Position)<.1){c.VehicleId=vehicle.Id;c.Activity=vehicle.PassengerCar?"Dirigindo carro particular":"Embarcou para entrega real";if(vehicle.PassengerCar){vehicle.Status=VehicleStatus.Travelling;vehicle.Cause="Em viagem";}}else {c.Activity="Veículo indisponível para embarque";if(State.Vehicles.FirstOrDefault(v=>v.Id==c.BoardingVehicleId&&v.PassengerCar&&v.DriverId==c.Id) is {} reserved)reserved.DriverId=null;}c.BoardingVehicleId=null;Pr57320ClearPath(c,"boardingArrived");Pr57320ResetIndex(c,"boardingArrived");return;}
         if(c.Purpose==JourneyPurpose.Leaving){c.Resident=false;c.InsideMap=false;c.Activity="Residindo no exterior";c.WorkplaceId=null;Personal(c,"Saiu fisicamente da cidade; dinheiro, patrimônio e dívidas persistem");return;}
         if(c.Purpose==JourneyPurpose.Construction){c.Activity="Trabalhando no canteiro";return;}
         var destination=BuildingById(c.DestinationId);if(destination==null){c.Activity="Destino indisponível";return;}
         // A driver waiting for a revision stays at the place by the shop reception.
-        c.Position=c.Purpose==JourneyPurpose.Service&&destination.Kind==BuildingKind.MechanicShop&&c.Path.Count>0?c.Path[^1]:destination.Door;c.Path.Clear();c.PathIndex=0;
+        c.Position=c.Purpose==JourneyPurpose.Service&&destination.Kind==BuildingKind.MechanicShop&&c.Path.Count>0?c.Path[^1]:destination.Door;Pr57320ClearPath(c,"arrived");Pr57320ResetIndex(c,"arrived");
         if(c.Purpose==JourneyPurpose.Arriving){c.Resident=true;c.InsideMap=true;c.Activity="Em casa";Personal(c,"Chegou à residência adquirida");}
         else if(c.Purpose==JourneyPurpose.Work)c.Activity="No trabalho";
         else if(c.Purpose==JourneyPurpose.Home){if(FamilyById(c.FamilyId) is {} family){family.PantryUnits=checked(family.PantryUnits+c.BagFoodUnits);c.BagFood=0;}c.Activity="Em casa";}
