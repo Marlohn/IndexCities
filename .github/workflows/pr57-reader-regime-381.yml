@@ -105,11 +105,11 @@ jobs:
           assert n("calls")==600
           assert n("dtZero")+n("dtPositive")==600
           assert n("operationsNonNull")+n("operationsNull")==600
-          assert n("zeroReaders")==n("zeroDtZero")+n("zeroDtPositive")==83
-          assert n("zeroNoEligible")+n("zeroWithEligible")==83
+          assert n("zeroReaders")==n("zeroDtZero")+n("zeroDtPositive")==84
+          assert n("zeroNoEligible")+n("zeroWithEligible")==84
           assert n("readerOccurrences")==13690
           assert n("opsReaders")+n("motionReaders")==13690
-          assert n("zeroBatchNull")+n("zeroBatchEmpty")+n("zeroBatchNonempty")==83
+          assert n("zeroBatchNull")+n("zeroBatchEmpty")+n("zeroBatchNonempty")==84
           assert all(r[k]=="True" for k in
                      ("noCausalClosure","noDecisionReuse","noSkippedSlices","observational"))
           print(json.dumps({"arms":arms,"regime":r,"partialGate":True,

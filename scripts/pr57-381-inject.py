@@ -117,7 +117,8 @@ public sealed partial class CitySimulation
     {
         if(!Pr57381Enabled)return;
         Pr57381Close();
-        if(_pr57381Slices!=600||_pr57381Zero!=83||
+        // #379 counts only slices 2..600; #380 proves slice 1 is empty too.
+        if(_pr57381Slices!=600||_pr57381Zero!=84||
            _pr57381ReaderOccurrences!=13690)
             throw new InvalidOperationException($"#381 reader regime / #379 mismatch: calls={_pr57381Slices} zero={_pr57381Zero} readers={_pr57381ReaderOccurrences}");
         Console.WriteLine($"PR57_381_SUMMARY calls={_pr57381Slices} "+
