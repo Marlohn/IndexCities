@@ -17,9 +17,9 @@ def patch(path, old, new):
 
 # #374 counts *every* MoveVehiclesUnsplit, including the operational
 # MoveVehiclesUnsplit(0, dt) before physical slices in a batched Step.
-# Close the prior slice BEFORE #377 rotates its current reader masks.
+# Close the prior slice BEFORE #374 calls #377BeginSlice and rotates masks.
 patch(mobility, "        Pr57374BeginSlice();",
-      "        Pr57374BeginSlice();\n        Pr57381BeginSlice(dt,operationsDt);")
+      "        Pr57381BeginSlice(dt,operationsDt);\n        Pr57374BeginSlice();")
 patch(bitset, "        Pr57379Finish();",
       "        Pr57379Finish();\n        Pr57381Finish();")
 
@@ -91,10 +91,11 @@ public sealed partial class CitySimulation
     void Pr57381BeginSlice(double dt,double? operationsDt)
     {
         if(!Pr57381Enabled||!_pr57377Active)return;
-        // #374 has already advanced its call counter; #377 has NOT rotated
-        // its masks. Thus Current still represents the preceding call.
+        // #374 has NOT advanced its counter, nor has #377 rotated its masks.
+        // Thus Current still represents the preceding call.
         Pr57381Close();
-        if(_pr57374PhysicalSlices>Pr57377SliceLimit)return;
+        // Called before #374 increments the call number: 0..599 are calls 1..600.
+        if(_pr57374PhysicalSlices>=Pr57377SliceLimit)return;
         _pr57381HaveCurrent=true;
         _pr57381DtZero=dt<=0;
         _pr57381Operations=operationsDt.HasValue;
@@ -118,7 +119,7 @@ public sealed partial class CitySimulation
         Pr57381Close();
         if(_pr57381Slices!=600||_pr57381Zero!=83||
            _pr57381ReaderOccurrences!=13690)
-            throw new InvalidOperationException("#381 reader regime / #379 mismatch");
+            throw new InvalidOperationException($"#381 reader regime / #379 mismatch: calls={_pr57381Slices} zero={_pr57381Zero} readers={_pr57381ReaderOccurrences}");
         Console.WriteLine($"PR57_381_SUMMARY calls={_pr57381Slices} "+
             $"dtZero={_pr57381DtZeroSlices} dtPositive={_pr57381MotionSlices} "+
             $"operationsNonNull={_pr57381OpsSlices} operationsNull={_pr57381Slices-_pr57381OpsSlices} "+
