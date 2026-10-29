@@ -63,6 +63,12 @@ def audit(path,expected=None):
                 assert int(t["reader"])!=int(t["blocker"])
                 assert any(t["blockerPre"+k]!=t["blockerPost"+k]
                            for k in ("X","Z","Heading","Status"))
+                # In this exact observed straight-west lane, the canonical
+                # leader distance uses the POST-writer position, not PRE.
+                pre_distance=float(t["readerX"])-float(t["blockerPreX"])
+                post_distance=float(t["readerX"])-float(t["blockerPostX"])
+                assert abs(post_distance-float(t["leaderDistance"]))<1e-9
+                assert abs(post_distance-pre_distance)>2.0
                 assert summary["arms"][a]["crossTrace"]==t
                 assert {k:int(v) for k,v in summary["arms"][a]["shadow"].items()
                         if k in COUNTS}==d
@@ -73,6 +79,9 @@ def audit(path,expected=None):
             assert [x[key] for x in hour_records["base"]]==[
                 x[key] for x in hour_records["probe"]],key
         return {"zipSha256":sha,"saveSha256":SAVE_SHA,"crossCohortTrace":traces["probe"],
+                "preWriterDistanceMeters":pre_distance,
+                "postWriterDistanceMeters":post_distance,
+                "distanceChangeMeters":post_distance-pre_distance,
                 "observational":True,"causalClosure":False,"acceptedSpeedup":False}
 
 if __name__=="__main__":
