@@ -40,6 +40,9 @@ def main():
         assert final['control'] == final['presence'], 'control and shadow saves differ'
         save_hash = hashlib.sha256(final['control']).hexdigest()
         assert save_hash == EXPECTED_SAVE, ('unexpected REAL checkpoint', save_hash)
+        vehicles = json.loads(final['control'])['Vehicles']
+        assert len(vehicles) == args.vehicles
+        assert len({v['Id'] for v in vehicles}) == args.vehicles, 'duplicate vehicle ID'
         reads = [summary_line(logs[arm], 'PR57_377_SUMMARY')
                  for arm in ('control', 'presence')]
         counters = ('physicalSlices', 'readCalls', 'uniqueReadPairs',
