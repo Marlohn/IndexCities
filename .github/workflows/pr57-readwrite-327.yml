@@ -1,0 +1,126 @@
+name: 'PR57 #327 same-slice physical read/write exposure'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-readwrite-327.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  readwrite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Inject observational probe only into job workspace
+        run: python3 scripts/pr57-327-inject.py
+      - name: Build and test
+        run: |
+          set -euo pipefail
+          dotnet build scripts/pr57-economy-review-294/Pr57EconomyReview294.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic REAL and explicitly ARTIFICIAL GRID saves
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Fresh-process ABBA, canonical Advance(2)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/readwrite-327
+          for case in real14hREAL gridARTIFICIAL; do
+            input="artifacts/input/$case-control/checkpoint-0.json"
+            test -s "$input"
+            calls=100
+            if [[ "$case" == gridARTIFICIAL ]]; then calls=50; fi
+            for arm in control1 probe1 probe2 control2; do
+              output="artifacts/readwrite-327/$case-$arm"
+              mkdir -p "$output"
+              observed=0
+              if [[ "$arm" == probe* ]]; then observed=1; fi
+              PR57_327_READWRITE="$observed" dotnet run --no-build -c Release \
+                --project scripts/pr57-economy-review-294/Pr57EconomyReview294.csproj \
+                -- "$input" "$case" probe "$calls" "$output" \
+                > "artifacts/readwrite-327/$case-$arm.log" 2>&1
+            done
+          done
+      - name: Verify complete checkpoint parity and read/write exposure
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re,statistics
+          root=Path("artifacts/readwrite-327")
+          def fields(line):
+              return dict(re.findall(r"([A-Za-z][A-Za-z0-9]*)=([^\s]+)",line))
+          pairs=0
+          for case,calls in (("real14hREAL",100),("gridARTIFICIAL",50)):
+              totals={}; rows={}
+              for arm in ("control1","probe1","probe2","control2"):
+                  lines=(root/f"{case}-{arm}.log").read_text().splitlines()
+                  final=[fields(x) for x in lines if x.startswith("PR57_294_FINAL ")]
+                  assert len(final)==1,(case,arm,"final")
+                  f=final[0]
+                  assert f["cadence"]=="Advance2" and f["all13Phases"]=="True"
+                  assert f["noSkippedSlices"]=="True" and f["exactCheckpoints"]=="True"
+                  assert f["mode"]=="probe" and int(f["calls"])==calls
+                  steps=[fields(x) for x in lines if x.startswith("PR57_294_STEP ")]
+                  assert [int(s["call"]) for s in steps]==list(range(1,calls+1))
+                  totals[arm]=f
+                  rows[arm]=[fields(x) for x in lines if x.startswith("PR57_327_RW ")]
+                  if arm.startswith("control"):
+                      assert not rows[arm],(case,arm,"unexpected probe")
+                  else:
+                      assert rows[arm],(case,arm,"missing probe")
+                      assert all(x["observational"]=="True" and x["noCausalClosure"]=="True" for x in rows[arm])
+                      lo=76 if case=="real14hREAL" else 46
+                      assert all(lo<=int(x["call"])<=calls for x in rows[arm])
+              for i in (1,2):
+                  for step in (0,20,calls//2,calls):
+                      a=(root/f"{case}-control{i}"/f"checkpoint-{step}.json").read_bytes()
+                      b=(root/f"{case}-probe{i}"/f"checkpoint-{step}.json").read_bytes()
+                      assert a==b,(case,i,step,"full checkpoint mismatch")
+                      pairs+=1
+              for arm in ("probe1","probe2"):
+                  sums={k:sum(float(x[k]) for x in rows[arm]) for k in (
+                      "bodyCalls","visits","eligibleVisits","allEdges","eligibleEdges",
+                      "writerHooks","changedHooks","changedAfterRead",
+                      "dirtyAllEdges","dirtyEligibleEdges","hookMs")}
+                  print(f"PR57_327_CENSUS case={case} arm={arm} slices={len(rows[arm])} "+
+                        " ".join(f"{k}={v:.6f}" for k,v in sums.items())+
+                        " scope=PARTIAL_READSET_NOT_SPEEDUP")
+              for metric in ("wallMs","cpuMs","allocatedBytes"):
+                  c=statistics.mean(float(totals[f"control{i}"][metric]) for i in (1,2))
+                  p=statistics.mean(float(totals[f"probe{i}"][metric]) for i in (1,2))
+                  print(f"PR57_327_FULL case={case} metric={metric} control={c:.3f} probe={p:.3f} intrusive=True")
+              print(f"PR57_327_PARITY case={case} checkpointPairs=8/8")
+          assert pairs==16
+          print("PR57_327_VERIFIED checkpointPairs=16/16 processes=8 cadence=Advance2 all13Phases=True")
+          PY
+      - name: Preserve raw logs and full checkpoints even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-readwrite-327
+          path: artifacts/readwrite-327/**
+          retention-days: 14
