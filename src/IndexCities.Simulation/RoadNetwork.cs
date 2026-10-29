@@ -83,7 +83,7 @@ public sealed partial class CitySimulation
             if(cached!=null)return cached;
         }
         var queue=new Queue<int>();var parent=new Dictionary<int,int>{{from,-1}};queue.Enqueue(from);
-        while(queue.Count>0){var id=queue.Dequeue();if(id==to)break;foreach(var next in _roads[id].Neighbours){if(parent.ContainsKey(next)||_roads[next].MaintenanceRatio<=.05||!construction&&_roads[next].ConstructionOnly||avoid!=null&&avoid.Contains(next))continue;parent[next]=id;queue.Enqueue(next);}}
+        while(queue.Count>0){var id=queue.Dequeue();if(Pr57325Enabled&&_pr57325InsideRoute)_pr57325BfsPops++;if(id==to)break;foreach(var next in _roads[id].Neighbours){if(parent.ContainsKey(next)||_roads[next].MaintenanceRatio<=.05||!construction&&_roads[next].ConstructionOnly||avoid!=null&&avoid.Contains(next))continue;parent[next]=id;queue.Enqueue(next);}}
         if(!parent.ContainsKey(to))return [];var result=new List<int>();for(var id=to;id!=-1;id=parent[id])result.Add(id);result.Reverse();return result;
     }
     // RouteLength(FindRoadRoute(from,to)) for every `to` an ordinary trip
@@ -115,7 +115,7 @@ public sealed partial class CitySimulation
     public List<Point> PedestrianRoute(Point from,Building destination)=>PedestrianPath(from,destination.Door,Access(destination));
     List<Point> FindPedestrianPath(Point from,Point door,RoadNode? b)
     {
-        var originalFrom=from;Point? crossingApproach=null;var laneApproach=new List<Point>();var a=NearestRoad(from);
+        var originalFrom=from;Point? crossingApproach=null;var laneApproach=new List<Point>();var a=Pr57325Nearest(from);
         if(a!=null&&!a.Highway&&(!a.Crosswalk||StraightRoad(a,out _))){
             var horizontal=a.Neighbours.Any(id=>Math.Abs(_roads[id].Position.X-a.Position.X)>.1);var vertical=a.Neighbours.Any(id=>Math.Abs(_roads[id].Position.Z-a.Position.Z)>.1);
             // On the axis is not enough: beyond a road end or a corner the
@@ -131,16 +131,16 @@ public sealed partial class CitySimulation
                 else {
                     // Nearest crosswalk by route length, then Id: one route tree
                     // from this node instead of one route search per crosswalk.
-                    var limit=State.Tuning.CrosswalkSpacing*3+State.Tuning.RoadWidth;var lengths=RouteLengthsFrom(a.Id,limit);RoadNode? recovery=null;var recoveryLength=0.0;
+                    var limit=State.Tuning.CrosswalkSpacing*3+State.Tuning.RoadWidth;var lengths=Pr57325RouteLengths(a.Id,limit);RoadNode? recovery=null;var recoveryLength=0.0;
                     foreach(var r in State.Roads){
                         if(!r.Crosswalk||r.Highway||r.ConstructionOnly||lengths==null||!lengths.TryGetValue(r.Id,out var length)||!(length<=limit))continue;
                         if(recovery==null||length<recoveryLength||length==recoveryLength&&r.Id<recovery.Id){recovery=r;recoveryLength=length;}
                     }
-                    if(recovery!=null){laneApproach.AddRange(FindRoadRoute(a.Id,recovery.Id).Select(id=>_roads[id].Position));a=recovery;crossingApproach=CrosswalkCentre(a,State);from=crossingApproach.Value;}
+                    if(recovery!=null){laneApproach.AddRange(Pr57325RoadRoute(a.Id,recovery.Id).Select(id=>_roads[id].Position));a=recovery;crossingApproach=CrosswalkCentre(a,State);from=crossingApproach.Value;}
                 }
             }
         }
-        if(a==null||b==null||a.Position.Distance(from)>24)return [];var ids=FindRoadRoute(a.Id,b.Id);if(ids.Count==0)return [];var offset=State.Tuning.RoadWidth/2-.7;
+        if(a==null||b==null||a.Position.Distance(from)>24)return [];var ids=Pr57325RoadRoute(a.Id,b.Id);if(ids.Count==0)return [];var offset=State.Tuning.RoadWidth/2-.7;
         var anchors=new List<RoadNode>{_roads[ids[0]]};
         for(var i=1;i<ids.Count-1;i++){var prior=_roads[ids[i-1]];var n=_roads[ids[i]];var next=_roads[ids[i+1]];var incoming=n.Position-prior.Position;var outgoing=next.Position-n.Position;if(Math.Abs(incoming.X*outgoing.Z-incoming.Z*outgoing.X)>.01||(prior.Highway&&n.Highway)!=(n.Highway&&next.Highway))anchors.Add(n);}
         if(ids.Count>1)anchors.Add(_roads[ids[^1]]);
@@ -176,11 +176,11 @@ public sealed partial class CitySimulation
         // Where a highway end, a nearby road or a corner breaks that, it would
         // cut asphalt outside paint: walk the real sidewalks from here instead.
         var prefix=points.ToList();
-        List<Point> Sidewalks(){var path=SidewalkWalk(prefix[^1],a,door,b);if(path.Count==0)return [];var result=prefix.ToList();foreach(var point in path.Skip(1))if(result[^1].Distance(point)>.001)result.Add(point);return result;}
+        List<Point> Sidewalks(){if(Pr57325Enabled)_pr57325FallbackCalls++;var path=SidewalkWalk(prefix[^1],a,door,b);if(path.Count==0)return [];var result=prefix.ToList();foreach(var point in path.Skip(1))if(result[^1].Distance(point)>.001)result.Add(point);return result;}
         // Crossing constructs the approach to real paint. A radial curb point
         // inserted beforehand could already cross the lane outside that paint.
         if(CrossesLane(from,walk[0],a)){if(!Crossing(a,points[^1],walk[0]))return Sidewalks();}else Add(walk[0]);
-        foreach(var point in walk.Skip(1))Add(point);var entry=b.Position+SideTowards(b.Position,door,offset);if(!Crossing(b,points[^1],entry))return Sidewalks();Add(door);return LegalWalk(points)?points:Sidewalks();
+        foreach(var point in walk.Skip(1))Add(point);var entry=b.Position+SideTowards(b.Position,door,offset);if(!Crossing(b,points[^1],entry))return Sidewalks();Add(door);return Pr57325Legal(points)?points:Sidewalks();
     }
 
     static Point SideTowards(Point road,Point door,double offset){var delta=door-road;var d=delta.Distance(new(0,0));return d<.01?new(0,offset):new(delta.X/d*offset,delta.Z/d*offset);}

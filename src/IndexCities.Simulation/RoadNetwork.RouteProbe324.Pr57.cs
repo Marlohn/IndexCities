@@ -28,5 +28,6 @@ public sealed partial class CitySimulation
         yield return $"PR57_324_ROUTE name=walkCache calls={_pr57324PedPathCalls} misses={_pr57324PedPathMisses} missMs={_pr57324PedPathMissTicks*1000/hz:F5} scope=INTRUSIVE_OBSERVATIONAL";
         yield return $"PR57_324_ROUTE name=surface calls={_pr57324SurfaceCalls} builds={_pr57324SurfaceBuilds} ms={_pr57324SurfaceTicks*1000/hz:F5} scope=INTRUSIVE_OBSERVATIONAL";
         yield return $"PR57_324_ROUTE name=sidewalk calls={_pr57324SidewalkCalls} ms={_pr57324SidewalkTicks*1000/hz:F5} edgesBuilt={_pr57324SidewalkEdgesBuilt} expanded={_pr57324SidewalkExpanded} pops={_pr57324SidewalkPops} legalChecks={_pr57324SidewalkLegalChecks} goalLinks={_pr57324SidewalkGoalLinks} scope=INTRUSIVE_OBSERVATIONAL";
+        if(Pr57325Enabled)foreach(var line in Pr57325BreakdownReport())yield return line;
     }
 }
