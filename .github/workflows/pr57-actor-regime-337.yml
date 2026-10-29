@@ -2,7 +2,7 @@ name: 'PR57 #337 authentic REAL actor-boundary regime census'
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
-    paths: [.github/workflows/pr57-actor-regime-337.yml]
+    paths: [.github/workflows/pr57-actor-regime-337.yml, scripts/pr57-actor-regime-337/Program.cs]
   workflow_dispatch:
 permissions:
   contents: read
