@@ -1,0 +1,124 @@
+name: 'PR57 #363 REAL occupancy writer census'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [scripts/pr57-363-inject.py, .github/workflows/pr57-occupancy-writers-363.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  bounded-real:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+      PR57_VEHICLE_COST_PROBE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Inject reversible observers in checkout only
+        run: |
+          python3 scripts/pr57-345-observe.py
+          python3 scripts/pr57-359-inject.py
+          python3 scripts/pr57-360-inject.py
+          python3 scripts/pr57-361-inject.py
+          python3 scripts/pr57-362-inject.py
+          python3 scripts/pr57-363-inject.py
+      - name: Build replay and test canonical engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release
+      - name: Restore authentic REAL 14h checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Replay each Advance(2) with identical prior observers, extra writer probe opt-in
+        shell: bash
+        run: |
+          set -euo pipefail
+          input="artifacts/input/real14hREAL-control/checkpoint-0.json"
+          test -s "$input"
+          for mode in control probe; do
+            mkdir -p "artifacts/writers363/$mode"
+            if [[ "$mode" == "probe" ]]; then flag=1; else flag=0; fi
+            PR57_206_RESIDUAL_EXCLUSIVE="1" \
+            PR57_244_STATE_COST="1" \
+            PR57_360_COMPONENT_SHADOW="1" \
+            PR57_361_NEGATIVE_READ_GRAPH="1" \
+            PR57_362_FILTERED_READ_GRAPH="1" \
+            PR57_363_OCCUPANCY_WRITES="$flag" \
+            PR57_244_PERSISTENT_IDS="1071,1243,1282,1380" \
+            dotnet run --no-build -c Release \
+              --project scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj \
+              -- "$input" "artifacts/writers363/$mode" \
+              > "artifacts/writers363/$mode/full.log"
+            grep -E '^PR57_(337_(HOUR|FINAL)|345_PHASE|359_(WINDOW|GROUP)|360_WINDOW|361_SLICE|362_SLICE|363_(SLICE|WINDOW)) ' \
+              "artifacts/writers363/$mode/full.log" \
+              > "artifacts/writers363/$mode/census.log"
+            test "$(grep -c '^PR57_337_HOUR ' "artifacts/writers363/$mode/census.log")" -eq 6
+            test "$(grep -c '^PR57_345_PHASE ' "artifacts/writers363/$mode/census.log")" -eq 78
+            grep -q 'parity=IDENTICAL' "artifacts/writers363/$mode/census.log"
+          done
+          cmp artifacts/writers363/control/checkpoint-10800.json \
+              artifacts/writers363/probe/checkpoint-10800.json
+          sha256sum artifacts/writers363/{control,probe}/checkpoint-10800.json \
+            | tee artifacts/writers363/checkpoints.sha256
+          python3 - <<'PY' | tee artifacts/writers363/summary.txt
+          from pathlib import Path
+          root=Path("artifacts/writers363")
+          def parse(mode,prefix):
+              return [{k:v for k,v in (part.split("=",1) for part in line.split()[1:] if "=" in part)}
+                      for line in (root/mode/"census.log").read_text().splitlines()
+                      if line.startswith(prefix+" ")]
+          assert len(parse("control","PR57_359_WINDOW"))==2
+          assert len(parse("probe","PR57_359_WINDOW"))==2
+          assert len(parse("control","PR57_362_SLICE"))==12
+          assert len(parse("probe","PR57_362_SLICE"))==12
+          assert not parse("control","PR57_363_SLICE")
+          assert not parse("control","PR57_363_WINDOW")
+          slices=parse("probe","PR57_363_SLICE")
+          windows=parse("probe","PR57_363_WINDOW")
+          assert len(slices)==12 and len(windows)==2,(slices,windows)
+          assert [int(x["ordinal"]) for x in slices]==list(range(40001,40007))+list(range(50001,50007))
+          assert [int(x["start"]) for x in windows]==[40001,50001]
+          for x in slices:
+              assert int(x["canonicalEffective"])<=int(x["canonicalAssignments"]),x
+              assert int(x["occupancyFlips"])<=int(x["canonicalEffective"]),x
+              assert int(x["readEdgesExposed"])<=2619,x
+              print("PR57_363_SLICE_VERIFIED "+" ".join(f"{k}={v}" for k,v in x.items()))
+          for x in windows:
+              assert int(x["slices"])==600,x
+              assert int(x["canonicalEffective"])+int(x["canonicalNoops"])==int(x["canonicalAssignments"]),x
+              assert int(x["occupancyFlips"])<=int(x["statusChanged"])+int(x["passengerChanged"]),x
+              assert sum(int(x[f"{n}Assign"]) for n in ("status","passenger","position","heading"))==int(x["canonicalAssignments"]),x
+              assert sum(int(x[f"{n}Changed"]) for n in ("status","passenger","position","heading"))==int(x["canonicalEffective"]),x
+              print("PR57_363_WINDOW_VERIFIED "+" ".join(f"{k}={v}" for k,v in x.items()))
+          print("PR57_363_SUMMARY real121=True grid=NOT_TESTED "+
+                "individualAdvance2=True noSkippedSlices=True "+
+                "notCausalClosure=True integratedSpeedupAccepted=False")
+          PY
+      - name: Upload raw logs, summaries and checkpoints
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-occupancy-writers-363
+          path: artifacts/writers363/**
+          if-no-files-found: warn
