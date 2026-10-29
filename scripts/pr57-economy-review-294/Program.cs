@@ -37,6 +37,20 @@ var phase = sim.CostProfile;
 // class clocks. Disabled unless explicitly enabled in the probe process.
 var class298 = trace && Environment.GetEnvironmentVariable("PR57_298_STEP_CLASS") == "1";
 long[]? lastClass298 = class298 ? sim.Pr57298VehicleCostSnapshot() : null;
+// PR57 #323: read existing cumulative citizen counters at selected public
+// Advance(2) boundaries. Read-only, opt-in; no state or scheduler reads them.
+var citizen323 = trace && Environment.GetEnvironmentVariable("PR57_323_CITIZEN_PER_CALL") == "1";
+var citizen323Steps = new HashSet<int> { 0, 1, 2, 21, 22, 23, 30, 31, 32, 50, 75, 76, 77, 100 };
+void Citizen323Snapshot(int call)
+{
+    if (!citizen323 || !citizen323Steps.Contains(call)) return;
+    foreach (var line in sim.Pr57CitizenStateCostReport()
+        .Concat(sim.Pr57Citizen239Report())
+        .Concat(sim.Pr57Walk240Report())
+        .Concat(sim.Pr57Arrive241Report())
+        .Concat(sim.Pr57Food242Report()))
+        Console.WriteLine($"PR57_323_COUNTER case={caseName} call={call} {line}");
+}
 
 void Checkpoint(int step)
 {
@@ -55,6 +69,7 @@ void Checkpoint(int step)
         $"bytes={Encoding.UTF8.GetByteCount(json)}");
 }
 Checkpoint(0);
+Citizen323Snapshot(0);
 for (var i = 1; i <= calls; i++)
 {
     var nextBefore = sim.State.EconomyNextAt;
@@ -123,6 +138,7 @@ for (var i = 1; i <= calls; i++)
             "classification=finalCauseStatus observational=True");
         lastClass298 = current;
     }
+    Citizen323Snapshot(i);
     if (checkpoints.Contains(i)) Checkpoint(i);
 }
 var wall = (Stopwatch.GetTimestamp() - startedProcess) * 1000.0 / Stopwatch.Frequency;
