@@ -21,6 +21,8 @@ jobs:
       # Six instance-reader entry sites; static Penetration is intentionally excluded.
       - name: Inject bounded observational reader-window probe and artificial tests
         run: python3 scripts/pr57-332-inject.py
+      # The previous run passed the window assertion; its positive control now
+      # selects the three-argument BodyOnWay overload explicitly.
       # The preceding run passed 522/522 non-#332 tests; this rerun isolates
       # the two opt-in cases instead of repeating an already-green baseline.
       - name: Fresh testhost for both adversarial selected-reader checks
