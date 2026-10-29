@@ -28,7 +28,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Inject observational probe only into job workspace
+      - name: Inject type-correct observational probe only into job workspace
         run: python3 scripts/pr57-327-inject.py
       - name: Build and test
         run: |
