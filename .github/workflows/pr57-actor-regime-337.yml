@@ -1,0 +1,58 @@
+name: 'PR57 #337 authentic REAL actor-boundary regime census'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-actor-regime-337.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  actor-regime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+      PR57_VEHICLE_COST_PROBE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build observational actor census
+        run: dotnet build scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj -c Release
+      - name: Restore pinned authentic REAL 14h checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Run six hours with individual Advance(2) and per-actor classification
+        shell: bash
+        run: |
+          set -euo pipefail
+          input="artifacts/input/real14hREAL-control/checkpoint-0.json"
+          test -s "$input"
+          mkdir -p artifacts/actor337
+          dotnet run --no-build -c Release \
+            --project scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj \
+            -- "$input" artifacts/actor337 \
+            | tee artifacts/actor337/replay.log
+      - name: Preserve raw actor census and full canonical checkpoint
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-actor-regime-337
+          path: artifacts/actor337/**
+          retention-days: 14
