@@ -203,7 +203,7 @@ public sealed partial class CitySimulation
         if (!Pr57341Enabled) return;
         Console.WriteLine(
             $"PR57_341_WRITES slices={slices} started={_pr57341Started} " +
-            $"changedAssignments={_pr57341AllWrites} fieldWrites={string.Join(',',_pr57341FieldWrites)} " +
+            $"changedAssignments={_pr57341AllWrites} fieldWrites={string.Join(",",_pr57341FieldWrites)} " +
             $"prefixFanout={_pr57341PrefixFanout} selectedFanout={_pr57341SelectedFanout} " +
             $"selfFanout={_pr57341SelfFanout} duringReads={_pr57341DuringReads} " +
             $"outsideReads={_pr57341OutsideReads} " +
