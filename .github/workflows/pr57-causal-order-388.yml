@@ -57,7 +57,7 @@ jobs:
             flag=0
             if [[ "$arm" == probe ]]; then flag=1; fi
             mkdir -p "artifacts/order388/$arm"
-            PR57_388_ORDER_SHADOW="$flag" \
+            PR57_387_ORDER_SHADOW="$flag" \
               dotnet run --no-build -c Release \
                 --project scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj \
                 -- "$input" "artifacts/order388/$arm" \
