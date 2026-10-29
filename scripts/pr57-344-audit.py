@@ -15,7 +15,7 @@ EXPECTED_CHECKPOINT = 'e92293faf61a6ea2aab7dd0fdac83c14bd4668f611a126c701dc67055
 
 
 def field(line, key):
-    match = re.search(r'(?<!\\w)' + re.escape(key) + r'=([^\\s]+)', line)
+    match = re.search(r'(?<!\w)' + re.escape(key) + r'=([^\s]+)', line)
     if not match:
         raise ValueError(f'Missing {key}: {line}')
     return match.group(1)
