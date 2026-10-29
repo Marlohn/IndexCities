@@ -1,0 +1,131 @@
+name: 'PR57 #357 REAL SitePath dependency exposure'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [scripts/pr57-357-inject.py, .github/workflows/pr57-sitepath-exposure-357.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  bounded-real:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+      PR57_VEHICLE_COST_PROBE: '1'
+      PR57_246_JUNCTION_RETURNS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Inject read-only SitePath observer into checkout
+        run: |
+          python3 scripts/pr57-346-inject.py
+          python3 scripts/pr57-345-observe.py
+          python3 scripts/pr57-348-inject.py
+          python3 scripts/pr57-351-inject.py
+          python3 scripts/pr57-353-inject.py
+          python3 scripts/pr57-357-inject.py
+      - name: Build REAL replay and test canonical engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release
+      - name: Restore authentic REAL 14h checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Replay 10800 individual Advance(2) per arm
+        shell: bash
+        run: |
+          set -euo pipefail
+          input="artifacts/input/real14hREAL-control/checkpoint-0.json"
+          test -s "$input"
+          for mode in control probe; do
+            mkdir -p "artifacts/site357/$mode"
+            if [[ "$mode" == "probe" ]]; then flag=1; else flag=0; fi
+            PR57_206_RESIDUAL_EXCLUSIVE="$flag" \
+            PR57_244_STATE_COST="$flag" \
+            PR57_348_STAGE_EFFECTS="$flag" \
+            PR57_351_LANE_WITNESS="$flag" \
+            PR57_353_JOURNAL="$flag" \
+            PR57_357_SITE_EXPOSURE="$flag" \
+            PR57_244_PERSISTENT_IDS="1071,1243,1282,1380" \
+            dotnet run --no-build -c Release \
+              --project scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj \
+              -- "$input" "artifacts/site357/$mode" > "artifacts/site357/$mode/full.log"
+            grep -E '^PR57_(337_(HOUR|FINAL)|345_PHASE|206_RESIDUAL|351_WITNESS|353_JOURNAL|357_SITE) ' \
+              "artifacts/site357/$mode/full.log" > "artifacts/site357/$mode/census.log"
+            test "$(grep -c '^PR57_337_HOUR ' "artifacts/site357/$mode/census.log")" -eq 6
+            test "$(grep -c '^PR57_345_PHASE ' "artifacts/site357/$mode/census.log")" -eq 78
+            grep -q 'parity=IDENTICAL' "artifacts/site357/$mode/census.log"
+          done
+          cmp artifacts/site357/control/checkpoint-10800.json \
+              artifacts/site357/probe/checkpoint-10800.json
+          sha256sum artifacts/site357/{control,probe}/checkpoint-10800.json \
+            | tee artifacts/site357/checkpoints.sha256
+          python3 - <<'PY' | tee artifacts/site357/summary.txt
+          from pathlib import Path
+          root=Path("artifacts/site357")
+          def parse(mode,prefix):
+              return [
+                  {k:v for k,v in (item.split("=",1) for item in line.split()[1:] if "=" in item)}
+                  for line in (root/mode/"census.log").read_text().splitlines()
+                  if line.startswith(prefix+" ")
+              ]
+          def n(row,key):return int(row[key].lstrip("$"))
+          site=parse("probe","PR57_357_SITE")
+          journal=parse("probe","PR57_353_JOURNAL")
+          witness=parse("probe","PR57_351_WITNESS")
+          assert len(site)==2,site
+          assert len(journal)==2,journal
+          assert len(witness)==6,len(witness)
+          assert not parse("control","PR57_357_SITE")
+          assert [n(r,"window") for r in site]==[40001,50001],site
+          assert [n(r,"window") for r in journal]==[40001,50001],journal
+          assert n(witness[-1],"compared")==80,witness[-1]
+          for row in site:
+              assert n(row,"readCalls")==n(row,"canonicalReads")+n(row,"tempReads"),row
+              assert n(row,"assignments")==n(row,"canonicalAssignments")+n(row,"tempAssignments"),row
+              assert n(row,"nonemptyReads")<=n(row,"canonicalReads"),row
+              assert n(row,"onSiteReads")<=n(row,"canonicalReads"),row
+              assert n(row,"uniquePairs")<=n(row,"canonicalReads"),row
+              assert n(row,"maxFanout")<=n(row,"uniqueReaders"),row
+              assert n(row,"withinChanges")+n(row,"betweenChanges")<=n(row,"snapshotPairs"),row
+              print("PR57_357_WINDOW "+" ".join(f"{k}={row[k]}" for k in (
+                  "window","readCalls","canonicalReads","tempReads","nonemptyReads",
+                  "onSiteReads","uniqueReaders","uniqueCandidates","uniquePairs",
+                  "maxFanout","assignments","canonicalAssignments","tempAssignments",
+                  "potentialFanout","snapshotPairs","withinChanges","betweenChanges",
+                  "onSiteFlips","hookMs")))
+          for row in journal:
+              print("PR57_353_WINDOW "+" ".join(f"{k}={row[k]}" for k in (
+                  "window","canonicalEvents","tempEvents","clockChanged","fields")))
+          print("PR57_357_PARITY checkpointByteIdentical=True individualAdvance2=True"+
+                " REAL121=TRUE GRID=NOT_TESTED noSkippedSlices=True"+
+                " sitePathInPlaceTransientUnseen=True causalClosure=False"+
+                " observational=True integratedSpeedupAccepted=False")
+          PY
+      - name: Upload raw logs, summaries and checkpoints
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-sitepath-exposure-357
+          path: artifacts/site357/**
+          if-no-files-found: warn
