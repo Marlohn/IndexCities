@@ -53,13 +53,14 @@ jobs:
             --project scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj \
             -- "$input" artifacts/journal341 \
             > artifacts/journal341/full.log
-          grep -E 'PR57_341_(WRITES|READER)|PR57_246_(RETURNS|COHORT)|PR57_337_(HOUR|FINAL)' \
+          grep -E 'PR57_341_(WRITES|READER|EPHEMERAL_SITE)|PR57_246_(RETURNS|COHORT)|PR57_337_(HOUR|FINAL)' \
             artifacts/journal341/full.log > artifacts/journal341/census.log
           test "$(grep -c '^PR57_337_HOUR ' artifacts/journal341/census.log)" -eq 6
           grep -q 'parity=IDENTICAL' artifacts/journal341/census.log
           test "$(grep -c '^PR57_341_READER ' artifacts/journal341/census.log)" -ge 4
           grep -q 'canonicalChangedAssignments=' artifacts/journal341/census.log
           grep -q 'ephemeralChangedAssignments=' artifacts/journal341/census.log
+          grep -q '^PR57_341_EPHEMERAL_SITE ' artifacts/journal341/census.log
           grep '^PR57_341_WRITES ' artifacts/journal341/census.log | tail -n 1
           grep '^PR57_341_READER ' artifacts/journal341/census.log | tail -n 4
           grep '^PR57_337_FINAL ' artifacts/journal341/census.log
