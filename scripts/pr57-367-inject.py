@@ -43,6 +43,15 @@ helpers="""    // PR57 #367 checkout-only instrumentation; no persisted or produ
     static bool Pr57367Same<T>(T a,T b)=>EqualityComparer<T>.Default.Equals(a,b);
 """
 replace(model,"public sealed class Vehicle\n{","public sealed class Vehicle\n{\n"+helpers)
+def replace_vehicle(old,new):
+    s=model.read_text(encoding="utf-8")
+    start=s.index("public sealed class Vehicle\n{")
+    stop=s.find("\npublic sealed class ",start+len("public sealed class Vehicle\n{"))
+    if stop<0: stop=len(s)
+    body=s[start:stop]
+    assert body.count(old)==1,("Vehicle",old,body.count(old))
+    model.write_text(s[:start]+body.replace(old,new)+s[stop:],encoding="utf-8")
+
 for name,kind in fields.items():
     old=f"    public {kind} {name} {{get;set;}}"
     backing="_pr57367"+name
@@ -52,7 +61,7 @@ for name,kind in fields.items():
          f"        if(Pr57367OnWrite is {{ }} callback&&!Pr57367Same(prior,value))\n"
          f"            callback(this,\"{name}\",prior,value);\n"
          f"    }} }}")
-    replace(model,old,new)
+    replace_vehicle(old,new)
 
 replace(engine,"        Pr57WorkAccessBeginStep();",
                "        Pr57367Begin();\n        Pr57WorkAccessBeginStep();")
