@@ -1,0 +1,141 @@
+name: 'PR57 #372 REAL writer frontier shadow epoch ABBA'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [scripts/pr57-372-inject.py, .github/workflows/pr57-writer-frontier-372.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  bounded-real:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+      PR57_VEHICLE_COST_PROBE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Inject only in disposable checkout
+        run: |
+          set -euo pipefail
+          python3 scripts/pr57-367-inject.py
+          python3 scripts/pr57-368-inject.py
+          python3 scripts/pr57-369-inject.py
+          python3 scripts/pr57-370-inject.py
+          python3 scripts/pr57-372-inject.py
+      - name: Build and test
+        run: |
+          set -euo pipefail
+          dotnet build scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release
+      - name: Restore authentic REAL 14h checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Four fresh processes ABBA with exact Advance(2), checkpoint parity
+        shell: bash
+        run: |
+          set -euo pipefail
+          input="artifacts/input/real14hREAL-control/checkpoint-0.json"
+          test -s "$input"
+          for arm in baseA publishA publishB baseB; do
+            mkdir -p "artifacts/frontier372/$arm"
+            flag=0
+            if [[ "$arm" == publish* ]]; then flag=1; fi
+            PR57_367_DIRECT_WRITERS=1 PR57_368_CANONICAL_GUARD=1 \
+            PR57_369_INPLACE_WRITERS=1 PR57_370_NONLOCAL_WRITERS=1 \
+            PR57_372_WRITER_FRONTIER=1 PR57_372_PUBLISH="$flag" \
+              dotnet run --no-build -c Release \
+                --project scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj \
+                -- "$input" "artifacts/frontier372/$arm" \
+                > "artifacts/frontier372/$arm/full.log"
+            grep -E '^PR57_(337_(HOUR|FINAL)|367_(FIELD|PHASE|SUMMARY)|368_GUARD|369_(FIELD|PHASE|SUMMARY)|370_(FIELD|PHASE|SUMMARY)|372_(FIELD|PHASE|SUMMARY)) ' \
+              "artifacts/frontier372/$arm/full.log" \
+              > "artifacts/frontier372/$arm/census.log"
+            test "$(grep -c '^PR57_337_HOUR ' "artifacts/frontier372/$arm/census.log")" -eq 6
+            grep -q 'parity=IDENTICAL' "artifacts/frontier372/$arm/census.log"
+          done
+          for arm in publishA publishB baseB; do
+            cmp artifacts/frontier372/baseA/checkpoint-10800.json \
+                "artifacts/frontier372/$arm/checkpoint-10800.json"
+          done
+          sha256sum artifacts/frontier372/{baseA,publishA,publishB,baseB}/checkpoint-10800.json \
+            | tee artifacts/frontier372/checkpoints.sha256
+          python3 - <<'PY' | tee artifacts/frontier372/summary.txt
+          from pathlib import Path
+          root=Path("artifacts/frontier372")
+          arms=("baseA","publishA","publishB","baseB")
+          def records(arm,prefix):
+              return [dict(part.split("=",1) for part in line.split()[1:] if "=" in part)
+                      for line in (root/arm/"census.log").read_text().splitlines()
+                      if line.startswith(prefix+" ")]
+          def one(arm,prefix):
+              rows=records(arm,prefix)
+              assert len(rows)==1,(arm,prefix,len(rows))
+              return rows[0]
+          baselines=[]
+          for arm in arms:
+              a=one(arm,"PR57_367_SUMMARY")
+              b=one(arm,"PR57_369_SUMMARY")
+              c=one(arm,"PR57_370_SUMMARY")
+              d=one(arm,"PR57_372_SUMMARY")
+              hours=records(arm,"PR57_337_HOUR")
+              assert len(hours)==6
+              assert [int(x["hour"]) for x in hours]==list(range(1,7))
+              assert one(arm,"PR57_337_FINAL")["parity"]=="IDENTICAL"
+              assert int(a["canonical"])==98 and int(a["noncanonical"])==0
+              assert int(a["writes"])==1852
+              assert int(c["refContentDifferent"])==51
+              expected=int(a["writes"])+int(b["countChanges"])+int(c["refContentDifferent"])
+              assert int(d["events"])==expected,(arm,d,expected)
+              assert int(d["additionalSites"])==6
+              publish=arm.startswith("publish")
+              assert d["publish"].lower()==str(publish).lower()
+              assert int(d["published"])==(expected if publish else 0)
+              assert int(d["epochTotal"])==(expected if publish else 0)
+              assert int(d["epochIds"])==(int(d["touched"]) if publish else 0)
+              assert sum(int(x["events"]) for x in records(arm,"PR57_372_FIELD"))==expected
+              assert sum(int(x["events"]) for x in records(arm,"PR57_372_PHASE"))==expected
+              baselines.append((a["writes"],b["countChanges"],c["refContentDifferent"],
+                                d["events"],d["touched"]))
+              print("PR57_372_ARM",arm,
+                    "events",expected,"dirtyIds",d["touched"],
+                    "epochIds",d["epochIds"],
+                    "publishMs",round(int(d["publishTicks"])*1000/int(d["tickFrequency"]),4),
+                    "hour1WallMs",hours[0]["wallMs"],
+                    "hour1AllocatedBytes",hours[0]["totalAllocatedBytes"],
+                    "hoursWallMs",round(sum(float(x["wallMs"]) for x in hours),3))
+          assert len(set(baselines))==1,baselines
+          for prefix in ("PR57_367_FIELD","PR57_367_PHASE",
+                         "PR57_369_FIELD","PR57_369_PHASE",
+                         "PR57_370_FIELD","PR57_370_PHASE",
+                         "PR57_372_FIELD","PR57_372_PHASE"):
+              snapshots=[sorted(tuple(sorted(x.items())) for x in records(arm,prefix))
+                         for arm in arms]
+              assert all(x==snapshots[0] for x in snapshots),(prefix,snapshots)
+          print("PR57_372_PARITY fourSavesIdentical=True scalarListRefCountersIdentical=True")
+          PY
+      - name: Upload raw evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-writer-frontier-372
+          path: artifacts/frontier372/
+          if-no-files-found: warn
