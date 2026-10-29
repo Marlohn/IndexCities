@@ -2,7 +2,7 @@ name: 'PR57 #353 REAL bounded canonical writer event journal'
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
-    paths: [.github/workflows/pr57-writer-journal-353.yml]
+    paths: [.github/workflows/pr57-writer-journal-353.yml, scripts/pr57-353-inject.py]
   workflow_dispatch:
 permissions:
   contents: read
