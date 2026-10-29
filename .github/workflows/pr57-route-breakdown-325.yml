@@ -2,7 +2,7 @@ name: 'PR57 #325 pedestrian route branch cost and BFS census'
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
-    paths: [.github/workflows/pr57-route-expansions-324.yml]
+    paths: [.github/workflows/pr57-route-breakdown-325.yml]
   workflow_dispatch:
 permissions:
   contents: read
