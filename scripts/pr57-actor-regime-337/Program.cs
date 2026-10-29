@@ -53,7 +53,8 @@ for (var hour=1;hour<=6;hour++)
         actorEvaluations+=calls; actorBytes+=bytes; claimChanges+=claims; spaceChanges+=spaces;
         Console.WriteLine($"PR57_337_GROUP hour={hour} group={groups[g]} calls={calls} actorMs={ticks*1000.0/Stopwatch.Frequency:F3} allocatedBytes={bytes} claimChanges={claims} spaceCountChanges={spaces}");
     }
-    if(slices!=12600 || actorEvaluations!=slices*sim.State.Vehicles.Count)
+    // #155 also counts extra zero-dt operations; never assume 7 calls per Advance(2).
+    if(slices<12600 || actorEvaluations!=slices*sim.State.Vehicles.Count)
         throw new InvalidOperationException($"Incomplete actor census: slices={slices} actors={actorEvaluations}");
     Console.WriteLine($"PR57_337_HOUR hour={hour} slices={slices} actors={actorEvaluations} actorAllocatedBytes={actorBytes} claimChanges={claimChanges} spaceCountChanges={spaceChanges} wallMs={clock.Elapsed.TotalMilliseconds:F3} cpuMs={(process.TotalProcessorTime-cpu0).TotalMilliseconds:F3} totalAllocatedBytes={GC.GetTotalAllocatedBytes(true)-alloc0} living={sim.State.Citizens.Count(c=>c.Alive)} ledger={sim.State.Ledger.Count} history={sim.State.Citizens.Sum(c=>(long)c.History.Count)} scope=POST_ACTOR_NET_CHANGES_NOT_WRITER_JOURNAL");
 }
