@@ -18,6 +18,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+      # Six instance-reader entry sites; static Penetration is intentionally excluded.
       - name: Inject bounded observational reader-window probe and artificial tests
         run: python3 scripts/pr57-332-inject.py
       - name: Full test suite without the opt-in window
