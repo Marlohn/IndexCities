@@ -1,0 +1,101 @@
+name: 'PR57 #472 .NET shared compressed log versus raw-event baseline'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-shared-log-net-472.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  net-representation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Verify unchanged engine tests
+        run: dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Download authentic #465 checkpoints
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-midnight-history-465
+          run-id: 41089003924
+          github-token: ${{ github.token }}
+          path: artifacts/input465
+      - name: Verify original authentic saves and isolated source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/shared-log-net-472/probe
+          python3 - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          pre=Path('artifacts/input465/A-pre/checkpoint-1.json')
+          mid=Path('artifacts/input465/A-mid/checkpoint-1.json')
+          assert pre.is_file() and mid.is_file()
+          assert pre.read_bytes()==Path('artifacts/input465/B-pre/checkpoint-1.json').read_bytes()
+          assert mid.read_bytes()==Path('artifacts/input465/B-mid/checkpoint-1.json').read_bytes()
+          a,b=json.loads(pre.read_bytes()),json.loads(mid.read_bytes())
+          assert a['Now']=='2026-01-07T23:59:58' and b['Now']=='2026-01-08T00:00:00'
+          assert sum(c['Alive'] for c in b['Citizens'])==121 and len(b['Vehicles'])==98
+          for p in (pre,mid):
+              print('PR57_472_AUTHENTIC',p,len(p.read_bytes()),hashlib.sha256(p.read_bytes()).hexdigest())
+          PY
+          cat > artifacts/shared-log-net-472/probe/probe.csproj <<'XML'
+          <Project Sdk="Microsoft.NET.Sdk">
+            <PropertyGroup>
+              <OutputType>Exe</OutputType>
+              <TargetFramework>net8.0</TargetFramework>
+              <ImplicitUsings>enable</ImplicitUsings>
+              <Nullable>enable</Nullable>
+              <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+            </PropertyGroup>
+            <ItemGroup>
+              <Compile Include="../../../scripts/pr57-472-shared-log-net-probe.cs" Link="Program.cs" />
+            </ItemGroup>
+          </Project>
+          XML
+          dotnet build artifacts/shared-log-net-472/probe/probe.csproj -c Release
+      - name: Isolated .NET measurements with independent fresh processes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/shared-log-net-472/results
+          pre=artifacts/input465/A-pre/checkpoint-1.json
+          mid=artifacts/input465/A-mid/checkpoint-1.json
+          project=artifacts/shared-log-net-472/probe/probe.csproj
+          for entry in 'raw 16384 1' 'packed 4096 1' 'packed 16384 1' 'packed 65536 1' 'packed 65536 2' 'packed 16384 2' 'packed 4096 2' 'raw 16384 2'; do
+            read -r mode block rep <<< "$entry"
+            echo "PR57_472_START $mode $block $rep"
+            dotnet run --project "$project" -c Release --no-build -- "$mode" "$block" "$rep" "$pre" "$mid" | tee "artifacts/shared-log-net-472/results/$mode-$block-$rep.log"
+          done
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          folder=Path('artifacts/shared-log-net-472/results')
+          rows=[]
+          for p in sorted(folder.glob('*.log')):
+              lines=[x for x in p.read_text().splitlines() if x.startswith('PR57_472_NET ')]
+              assert len(lines)==1,p
+              row=json.loads(lines[0].split(' ',1)[1]);rows.append(row)
+              assert row['checks']['exact'] is True and row['checks']['events']==12285
+              assert row['appended']==324
+              assert row['checks']['pointReads']==250
+          assert len(rows)==8
+          assert len([r for r in rows if r['mode']=='raw'])==2
+          assert len([r for r in rows if r['mode']=='packed'])==6
+          (folder/'summary.json').write_text(json.dumps(rows,indent=2,sort_keys=True))
+          print('PR57_472_NET_PROBE_PASS',len(rows))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integrated-scale-pr57-shared-log-net-472
+          path: artifacts/shared-log-net-472/
+          retention-days: 14
