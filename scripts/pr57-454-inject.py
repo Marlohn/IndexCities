@@ -63,8 +63,8 @@ once(s,"    bool CanTurnNow(Vehicle o)\n    {", """    // #454: read-only fanout
         var k=_pr57454Positive?1:0;
         if(_pr57454CurrentRepeats>0)_pr57454RepeatSlices[k]++;
         if(_pr57454CurrentCalls>_pr57454MaxCalls)_pr57454MaxCalls=_pr57454CurrentCalls;
-        if(_pr57454Slices%500==0)
-            Console.WriteLine($"PR57_454_SUM slices={_pr57454Slices} zeroCalls={_pr57454Calls[0]} positiveCalls={_pr57454Calls[1]} zeroUnique={_pr57454Unique[0]} positiveUnique={_pr57454Unique[1]} zeroRepeats={_pr57454Repeats[0]} positiveRepeats={_pr57454Repeats[1]} zeroFlips={_pr57454Flips[0]} positiveFlips={_pr57454Flips[1]} zeroAllowed={_pr57454Allowed[0]} positiveAllowed={_pr57454Allowed[1]} zeroRepeatSlices={_pr57454RepeatSlices[0]} positiveRepeatSlices={_pr57454RepeatSlices[1]} maxCallsPerSlice={_pr57454MaxCalls} maxFanout={_pr57454MaxFanout} observational=True");
+        // Every slice is emitted so the final line covers the entire replay.
+        Console.WriteLine($"PR57_454_SUM slices={_pr57454Slices} zeroCalls={_pr57454Calls[0]} positiveCalls={_pr57454Calls[1]} zeroUnique={_pr57454Unique[0]} positiveUnique={_pr57454Unique[1]} zeroRepeats={_pr57454Repeats[0]} positiveRepeats={_pr57454Repeats[1]} zeroFlips={_pr57454Flips[0]} positiveFlips={_pr57454Flips[1]} zeroAllowed={_pr57454Allowed[0]} positiveAllowed={_pr57454Allowed[1]} zeroRepeatSlices={_pr57454RepeatSlices[0]} positiveRepeatSlices={_pr57454RepeatSlices[1]} maxCallsPerSlice={_pr57454MaxCalls} maxFanout={_pr57454MaxFanout} observational=True");
     }
     bool CanTurnNow(Vehicle o)
     {""")
