@@ -49,6 +49,7 @@ def array_elements(raw):
             if escaped: escaped = False
             elif c == 92: escaped = True
             elif c == 34: quoted = False
+        elif c == 34: quoted = True
         elif c in (91, 123): depth += 1
         elif c in (93, 125): depth -= 1
         elif c == 44 and depth == 0:
