@@ -44,10 +44,8 @@ def audit(path):
                 prefix = f'prepared-458/{case}/{arm}/'
                 log = z.read(prefix + 'full.log').decode('utf-8')
                 assert 'INVARIANTS OK' in log and 'SAVE ' in log
-                if arm.startswith('A'):
-                    assert 'PR57_458_FAST_USED' not in log, (case, arm, 'fast gate')
-                if case == 'economyREAL14h':
-                    assert ('PR57_458_FAST_USED' in log) == arm.startswith('B')
+                expected_fast = arm.startswith('B') and case != 'gridARTIFICIAL'
+                assert ('PR57_458_FAST_USED' in log) == expected_fast, (case, arm, 'fast gate')
                 rows = [x for x in log.splitlines() if x.startswith('WINDOW ')]
                 assert len(rows) == 1, (case, arm, 'WINDOW_COUNT')
                 row = rows[0]
