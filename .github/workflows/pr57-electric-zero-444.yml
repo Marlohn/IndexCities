@@ -47,7 +47,7 @@ jobs:
         with:
           name: integrated-scale-pr57-pose-noop-237
           run-id: 40589313790
-          github-token: __GITHUB_TOKEN__
+          github-token: ${{ github.token }}
           path: artifacts/works
       - name: Fresh-process ABBA, every Advance(2), full intermediate JSON parity
         shell: bash
