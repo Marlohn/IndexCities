@@ -29,7 +29,7 @@ patch("CitySimulation.cs",
     readonly Dictionary<string,long> _pr57399ByMethod=new(StringComparer.Ordinal);
     long _pr57399RouteChanges,_pr57399TryChanges,_pr57399ReleaseChanges;
     long _pr57399Physical,_pr57399Captures,_pr57399Comparisons,_pr57399Logs,_pr57399Ticks;
-    int _pr57399Step;
+    int _pr57399Step,_pr57399Phase;
     bool _pr57399InPhysicalCleanup;
     void Pr57399Snapshot(Dictionary<int,int[]> destination)
     {
@@ -49,7 +49,7 @@ patch("CitySimulation.cs",
             _pr57399ByMethod[method]=_pr57399ByMethod.GetValueOrDefault(method)+1;
             if(method=="TryDrive")_pr57399TryChanges++;
             if(_pr57399Logs++<80)
-                Console.WriteLine($"PR57_399_ROUTE step={_pr57399Step} physical={_pr57399Physical} method={method} vehicle={v.Id} previousCount={(previous.TryGetValue(v.Id,out var before)?before.Length:-1)} currentCount={v.Route.Count}");
+                Console.WriteLine($"PR57_399_ROUTE step={_pr57399Step} phase={_pr57399Phase} physical={_pr57399Physical} method={method} vehicle={v.Id} previousCount={(previous.TryGetValue(v.Id,out var before)?before.Length:-1)} currentCount={v.Route.Count}");
         }
     }
     bool Pr57399TryDrive(Citizen c,Building destination,JourneyPurpose purpose)
@@ -82,11 +82,18 @@ patch("CitySimulation.cs",
     "        Pr57WorkAccessBeginStep();\n        Pr57BeginStep();",
     """        Pr57WorkAccessBeginStep();
         Pr57BeginStep();
-        if(Pr57399Enabled)_pr57399Step++;""")
+        if(Pr57399Enabled){_pr57399Step++;_pr57399Phase=0;}""")
+
+patch("CitySimulation.cs",
+    "        MoveCitizens(dt);",
+    """        if(Pr57399Enabled)_pr57399Phase=2;
+        MoveCitizens(dt);
+        if(Pr57399Enabled)_pr57399Phase=3;""")
 
 patch("CitySimulation.cs",
     "        if(reviewEconomy){RetryPurchasesAwaitingDestination();RestockBusinesses();ReviewEmigration();RecoverDebt();RetryCargoAwaitingDestination();ReviewVehicleRevisions();ResumeHeldDeliveries();RefuelIdleShopTows();}",
     """        if(reviewEconomy){
+            if(Pr57399Enabled)_pr57399Phase=11;
             if(Pr57399Enabled&&_pr57399Step<=1800)Pr57399Snapshot(_pr57399FollowBefore);
             RetryPurchasesAwaitingDestination();Pr57399Followup("RetryPurchases");
             RestockBusinesses();Pr57399Followup("RestockBusinesses");
@@ -96,6 +103,7 @@ patch("CitySimulation.cs",
             ReviewVehicleRevisions();Pr57399Followup("VehicleRevisions");
             ResumeHeldDeliveries();Pr57399Followup("ResumeHeldDeliveries");
             RefuelIdleShopTows();Pr57399Followup("RefuelIdleShopTows");
+            if(Pr57399Enabled)_pr57399Phase=12;
         }""")
 
 patch("CitySimulation.cs",
