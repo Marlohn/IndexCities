@@ -26,8 +26,8 @@ once("                var leaderDistance=double.MaxValue;Vehicle? blocker=null;"
 once("                void HoldFor(Vehicle other,double distance){Pr57PhaseImpactHold(other,distance);Pr57CausalHold(v,other);if(scanProfile is not null){laneCandidateHits++;scanProfile.ObserveLaneHoldDistance(v.Position,other.Position,enteringLane);}if(distance<leaderDistance){leaderDistance=distance;blocker=other;}}",
      "                void HoldFor(Vehicle other,double distance,int cause){Pr57PhaseImpactHold(other,distance);Pr57CausalHold(v,other);if(pr57408Sample)_pr57408Holds[cause]++;if(scanProfile is not null){laneCandidateHits++;scanProfile.ObserveLaneHoldDistance(v.Position,other.Position,enteringLane);}if(distance<leaderDistance){leaderDistance=distance;blocker=other;if(pr57408Sample)pr57408Cause=cause;}}")
 once("HoldFor(other,docked);continue;", "HoldFor(other,docked,1);continue;")
-once("HoldFor(other,0);continue;", "HoldFor(other,0,2);continue;")
-once("HoldFor(other,0);continue;", "HoldFor(other,0,3);continue;")
+once("if(other.Status==VehicleStatus.Stranded||other.Id<v.Id)HoldFor(other,0);continue;", "if(other.Status==VehicleStatus.Stranded||other.Id<v.Id)HoldFor(other,0,2);continue;")
+once("if(BlocksEntry(other)){Pr57StageMark(5);HoldFor(other,0);continue;", "if(BlocksEntry(other)){Pr57StageMark(5);HoldFor(other,0,3);continue;")
 once("HoldFor(other,ahead);continue;", "HoldFor(other,ahead,4);continue;")
 once("HoldFor(other,forward);continue;", "HoldFor(other,forward,5);continue;")
 once("HoldFor(other,forward);", "HoldFor(other,forward,6);")

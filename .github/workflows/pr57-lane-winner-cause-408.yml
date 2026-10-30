@@ -1,4 +1,4 @@
-name: 'PR57 #408 canonical lane winner causes REAL'
+name: 'PR57 #408 canonical lane winner causes REAL (corrected injector)'
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
