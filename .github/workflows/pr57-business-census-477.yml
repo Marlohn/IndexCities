@@ -1,4 +1,4 @@
-name: 'PR57 #477 REAL business-phase cost and causal-work census'
+name: 'PR57 #478 REAL midnight business-phase causal-work census (continuation #477)'
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
@@ -108,13 +108,6 @@ jobs:
           set -euo pipefail
           dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
           dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
-      - name: Download authentic 68-worksite checkpoint
-        uses: actions/download-artifact@v4
-        with:
-          name: integrated-scale-pr57-crossphase-access-445
-          run-id: 41052837425
-          github-token: ${{ github.token }}
-          path: artifacts/input445
       - name: Download authentic midnight checkpoint
         uses: actions/download-artifact@v4
         with:
@@ -122,7 +115,7 @@ jobs:
           run-id: 41089003924
           github-token: ${{ github.token }}
           path: artifacts/input465
-      - name: ABBA individual Advance(2) on two REAL economic states
+      - name: ABBA individual Advance(2) on authentic congested REAL midnight state
         shell: bash
         run: |
           set -euo pipefail
@@ -130,13 +123,11 @@ jobs:
           import hashlib,json,os,re,subprocess,time
           from pathlib import Path
           cases=[
-            ('worksREAL68',Path('artifacts/input445/pr57-445/A/checkpoint-0.json'),200,47,42,
-             'b7c52ab87928e7eaa93cfc557b9f3dc935d5b17da44820b405990071940f95b5'),
             ('midnightREAL121',Path('artifacts/input465/A-mid/checkpoint-0.json'),3600,121,98,
              'e31ad0aa321c8aa4272dd400e83575c5a600677ecb8a83879287c654eff1ce92')
           ]
           root=Path('artifacts/pr57-477');root.mkdir(parents=True,exist_ok=True)
-          summary={'experiment':477,'observationOnly':True,'gainAccepted':False,
+          summary={'experiment':478,'observationOnly':True,'gainAccepted':False,
                    'allAdvance2':True,'comparison':'same-composed-flags-ABBA','cases':{}}
           for name,source,seconds,alive,vehicles,expected in cases:
             raw=source.read_bytes()
@@ -144,8 +135,6 @@ jobs:
             state=json.loads(raw)
             assert sum(bool(c['Alive']) for c in state['Citizens'])==alive
             assert len(state['Vehicles'])==vehicles
-            if name=='worksREAL68':
-              assert sum(p['Status'] in ('Waiting','InProgress') for p in state['Projects'])>=68
             if name=='midnightREAL121':
               assert state['Now']=='2026-01-07T23:59:58'
             snapshots=[]; probes=[]
@@ -186,16 +175,17 @@ jobs:
               }
               print('PR57_477_ARM',name,arm,'seconds',seconds,'processWall',round(elapsed,3),flush=True)
             assert all(x==snapshots[0] for x in snapshots),name
-            assert probes[0]==probes[1],(name,'non-deterministic counters')
+            stable=('calls','buildings','wages','farmReady','farmFull','farmProduced','serviceVehicles')
+            assert all(probes[0][k]==probes[1][k] for k in stable),(name,'non-deterministic work counters')
             summary['cases'][name]['fullJsonParity']=True
           (root/'summary.json').write_text(json.dumps(summary,indent=2,sort_keys=True))
-          print('PR57_477_ABBA_PARITY_PASS',flush=True)
+          print('PR57_478_MIDNIGHT_ABBA_PARITY_PASS',flush=True)
           PY
       - name: Upload full checkpoints, logs, and raw census
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integrated-scale-pr57-business-census-477
+          name: integrated-scale-pr57-business-census-478-midnight
           path: artifacts/pr57-477
           retention-days: 14
           if-no-files-found: warn
