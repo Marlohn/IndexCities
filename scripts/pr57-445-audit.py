@@ -42,12 +42,12 @@ def audit(path):
             assert 'STEP_PROFILE steps=100' in log
             assert len(re.findall(r'^WINDOW ', log, re.M)) == 1
             assert len(re.findall(r'^PR57_AB_CHECKPOINT ', log, re.M)) == 1
-            assert len(re.findall(r'^\\s*STEP_PHASE ', log, re.M)) == 13
+            assert len(re.findall(r'^\s*STEP_PHASE ', log, re.M)) == 13
             rows = re.findall(r'^PR57_445_ACCESS .*', log, re.M)
             assert len(rows) == (1 if arm == 'B' else 0)
             if rows:
                 observed = {k: float(v) if k.endswith('Ms') else int(v)
-                            for k, v in re.findall(r'(\\w+)=([^ ]+)', rows[0])}
+                            for k, v in re.findall(r'(\w+)=([^ ]+)', rows[0])}
                 assert observed['steps'] == 100
                 assert observed['matched'] + observed['noProgress'] == observed['dispatch']
                 assert observed['sameNonNull'] + observed['sameNull'] + observed['differentAccess'] == observed['matched']
