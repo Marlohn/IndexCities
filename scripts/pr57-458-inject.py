@@ -23,6 +23,7 @@ once(
     // points. There are no cross-invocation caches or global slice skips.
     static readonly bool Pr57458Enabled =
         Environment.GetEnvironmentVariable("PR57_458_PREPARED_FRAMES")=="1";
+    bool _pr57458FirstUsed;
     readonly record struct Pr57458Frame(Point Forward,Point Right);
     static Pr57458Frame Pr57458Make(double heading)
     {
@@ -52,7 +53,10 @@ once(
             stackalloc Pr57458Frame[poses.Count]:Span<Pr57458Frame>.Empty;
         Span<byte> pr57458Seen=pr57458Fast?
             stackalloc byte[poses.Count]:Span<byte>.Empty;
-        if(pr57458Fast)pr57458Seen.Clear();
+        if(pr57458Fast){
+            pr57458Seen.Clear();
+            if(!_pr57458FirstUsed){_pr57458FirstUsed=true;Console.WriteLine("PR57_458_FAST_USED");}
+        }
         var pr57458Self=pr57458Fast?Pr57458Make(v.Heading):default;
         var reach=poses.Max(p=>p.Position.Distance(v.Position))+12;"""
 )
