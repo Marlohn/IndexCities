@@ -4,7 +4,7 @@ import hashlib, json, re, sys, zipfile
 
 EXPECTED_ZIP = 'ad5093fd3e605733cf12a203c7be2471d5e55e1a8c797958f66d0ac50c5bdbe4'
 EXPECTED_INPUT = '779c144f2d6b2b64ece079f5740bf8a0a473a47286ca40d8b5f6b9dd61ab616f'
-EXPECTED_FINAL = '9ef479844aa324867c0c7d7733c61af7d0f5227e4ca4a4d0365522cca23'
+EXPECTED_FINAL = '9ef479844aa324867c0c7d7733c61af7d0f5227e4ca4f1ba4a4d0365522cca23'
 COUNTERS = ('slices','calls','pairs','sameActor','samePoses','sameCandidates',
             'sameObserved','sameBlocker','sameTime','sameVisitCount','allVisits','matchedVisits')
 
