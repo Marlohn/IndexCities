@@ -59,6 +59,6 @@ patch("scripts/pr57-actor-regime-337/Program.cs", [
      """    var after=sim.Pr57298VehicleCostSnapshot();
     string[] pr57442Names={"windGenerationTicks","consumerSetupTicks","sourceSetupTicks","allocationTicks","ratioConsumptionTicks","calls","nightCalls","activeBuildings","streets","sources","positiveBuildingDemands","positiveStreetDemands","positiveBuildingRatios","positiveStreetRatios","positiveTotalDemands"};
     for(var k=0;k<pr57442Names.Length;k++)
-        Console.WriteLine($"PR57_442_ELECTRIC hour={hour} metric={pr57442Names[k]} value={sim.Pr57442ElectricStage[k]-pr57442Before[k]}");""")
+        Console.WriteLine($"PR57_442_ELECTRIC hour={hour} metric={pr57442Names[k]} value={sim.Pr57442ElectricStage[k]-pr57442Before[k]} frequency={Stopwatch.Frequency}");""")
 ])
 print("PR57_442_INJECTED observational=True electricExclusiveTimers=True everyAdvance2=True")
