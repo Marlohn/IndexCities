@@ -4,6 +4,7 @@
 Offline POC on original #465 artifact. No engine changes, no .NET throughput/heap claims.
 python3 scripts/pr57-471-shared-log-probe.py pr57-465-original.zip
 """
+from bisect import bisect_right
 import hashlib
 import json
 import statistics
@@ -138,17 +139,19 @@ class SharedLog:
 
     def get(self, key, idx):
         assert 0 <= idx < self.counts[key]
-        for begin, count, anchors in self.segments[key]:
-            if begin <= idx < begin+count:
-                rel = idx-begin
-                pos = anchors[rel//STRIDE]
-                for _ in range(rel % STRIDE + 1):
-                    length = struct.unpack('<H', self.read(pos, 2))[0]
-                    pos += 2
-                    event = self.read(pos, length)
-                    pos += length
-                return event
-        raise AssertionError((key, idx))
+        segments = self.segments[key]
+        segment_pos = bisect_right(segments, idx, key=lambda segment: segment[0]) - 1
+        assert segment_pos >= 0
+        begin, count, anchors = segments[segment_pos]
+        assert begin <= idx < begin+count
+        rel = idx-begin
+        pos = anchors[rel//STRIDE]
+        for _ in range(rel % STRIDE + 1):
+            length = struct.unpack('<H', self.read(pos, 2))[0]
+            pos += 2
+            event = self.read(pos, length)
+            pos += length
+        return event
 
     def dump(self):
         return b''.join(zlib.decompress(b) for b in self.sealed) + bytes(self.tail)
@@ -235,6 +238,15 @@ def adversarial():
         pass
     else:
         raise AssertionError('Oversize record must be rejected')
+    # Many append batches must retain logarithmic segment lookup, not a linear day scan.
+    log = SharedLog(64)
+    before = {('h', 7): []}
+    for i in range(100):
+        after = {('h', 7): before[('h', 7)] + [str(i).encode()]}
+        log.append(before, after)
+        before = after
+    assert len(log.segments[('h', 7)]) == 100
+    for i in range(100): assert log.get(('h', 7), i) == str(i).encode()
 
 
 def main(path):
