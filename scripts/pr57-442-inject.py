@@ -42,11 +42,15 @@ patch("src/IndexCities.Simulation/Infrastructure.cs", [
         Pr57442ElectricStage[7]+=active.Count;
         Pr57442ElectricStage[8]+=streets.Count;
         Pr57442ElectricStage[9]+=_sources.Count;
-        Pr57442ElectricStage[10]+=active.Count(b=>b.ElectricityDemand>0);
-        Pr57442ElectricStage[11]+=streets.Count(n=>allocation.Demands[active.Count+streets.IndexOf(n)]>0);
+        var pr57442PositiveBuildings=0;
+        foreach(var b in active)if(b.ElectricityDemand>0)pr57442PositiveBuildings++;
+        var pr57442PositiveStreets=0;
+        for(var j=0;j<streets.Count;j++)if(allocation.Demands[active.Count+j]>0)pr57442PositiveStreets++;
+        Pr57442ElectricStage[10]+=pr57442PositiveBuildings;
+        Pr57442ElectricStage[11]+=pr57442PositiveStreets;
         Pr57442ElectricStage[12]+=active.Count(b=>b.ElectricityRatio>0);
         Pr57442ElectricStage[13]+=streets.Count(n=>n.ElectricityRatio>0);
-        Pr57442ElectricStage[14]+=allocation.Demands.Take(active.Count+streets.Count).Count(d=>d>0);""")
+        Pr57442ElectricStage[14]+=pr57442PositiveBuildings+pr57442PositiveStreets;""")
 ])
 patch("scripts/pr57-actor-regime-337/Program.cs", [
     ("    var before = sim.Pr57298VehicleCostSnapshot();",
