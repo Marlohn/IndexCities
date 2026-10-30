@@ -32,7 +32,7 @@ def load(path, key):
                 z.read('base/full.log').decode(), len(base))
 
 def rows(text, prefix):
-    return [dict(re.findall(r'(\\w+)=([^ ]+)', line[len(prefix):]))
+    return [dict(re.findall(r'(\w+)=([^ ]+)', line[len(prefix):]))
             for line in text.splitlines() if line.startswith(prefix + ' ')]
 
 def main():
