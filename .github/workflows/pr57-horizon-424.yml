@@ -2,7 +2,7 @@ name: 'PR57 #424 first-scan remaining versus dt REAL'
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
-    paths: [.github/workflows/pr57-limiter-divergence-422.yml]
+    paths: [.github/workflows/pr57-horizon-424.yml]
   workflow_dispatch:
 permissions:
   contents: read
