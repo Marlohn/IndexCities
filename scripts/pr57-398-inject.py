@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PR57 #398: attribute the 11 true operational->physical route gaps to Step phases.
+"""PR57 #398: attribute the 11 true physical->operational route gaps to Step phases.
 
 Apply after #394/#395/#396/#397 ONLY in a disposable checkout. Observe exact
 Route contents for the 11 vehicle IDs witnessed in #397. Every canonical Step
@@ -18,7 +18,7 @@ def patch(old,new):
 patch(
     "    static readonly bool Pr57CauseTransitionProbe=Environment.GetEnvironmentVariable(\"PR57_CAUSE_TRANSITION_PROBE\")==\"1\";",
     """    static readonly bool Pr57398Enabled=Environment.GetEnvironmentVariable("PR57_398_ROUTE_PHASES")=="1";
-    // Exact IDs from the 11 true gap O>P Route changes in the #397 REAL trace.
+    // Exact IDs from the 11 true gap P>O Route changes in the #397 REAL trace.
     // This is a fixture-specific attribution probe, not an eligibility filter.
     static readonly HashSet<int> Pr57398Targets=new()
         {1487,1380,655,695,1507,596,677,1282,689,1468,1386};
