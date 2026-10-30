@@ -442,6 +442,9 @@ public sealed class TowingTests
         var scene=City();var sim=scene.Sim;var car=scene.Car;
         car.Status=VehicleStatus.Parked;car.DriverId=null;scene.Driver.VehicleId=null;
         car.ServicePhase=ServicePhase.None;car.ServiceShopId=null;car.ServiceBay=1;
+        // Force the parked target after the tow in WaitingSince/Id order.
+        // The first run proved that insertion order alone does not suffice.
+        car.WaitingSince=1;
         car.PushPath.Clear();
         var roadId=sim.State.Roads.First(r=>r.Position.Z==0).Id;
         var tow=new Vehicle{Id=sim.State.NextId++,Body=TruckBody.Tow,External=true,

@@ -1,4 +1,4 @@
-name: 'PR57 #416 tow nonlocal write adversarial repro'
+name: 'PR57 #416 tow nonlocal write adversarial repro (ordered)'
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
