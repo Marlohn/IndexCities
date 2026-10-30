@@ -1,0 +1,151 @@
+name: 'PR57 #428 exact HoldFor divergence witnesses REAL'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-hold-witness-428.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  real-semantic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+      PR57_VEHICLE_COST_PROBE: '1'
+      PR57_ADVANCE_BOUNDARY_PROBE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Inject observational shadow in disposable checkout
+        run: python3 scripts/pr57-428-inject.py
+      - name: Build and run regression suite
+        run: |
+          set -euo pipefail
+          dotnet build scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release
+      - name: Restore authentic REAL 14h checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Fresh .NET processes, individual Advance(2), identical save/horizon
+        shell: bash
+        run: |
+          set -euo pipefail
+          input="artifacts/input/real14hREAL-control/checkpoint-0.json"
+          test -s "$input"
+          for arm in base shadow; do
+            flag=0
+            if [[ "$arm" == shadow ]]; then flag=1; fi
+            mkdir -p "artifacts/hold428/$arm"
+            PR57_420_COHORT_SHADOW="$flag" PR57_426_SEMANTIC_SHADOW="$flag" PR57_428_HOLD_WITNESS="$flag" \
+              dotnet run --no-build -c Release \
+                --project scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj \
+                -- "$input" "artifacts/hold428/$arm" \
+                > "artifacts/hold428/$arm/full.log"
+            grep -q '^PR57_337_FINAL .*parity=IDENTICAL' "artifacts/hold428/$arm/full.log"
+          done
+          cmp artifacts/hold428/base/checkpoint-10800.json artifacts/hold428/shadow/checkpoint-10800.json
+          sha256sum artifacts/hold428/*/checkpoint-10800.json | tee artifacts/hold428/checkpoints.sha256
+          python3 - <<'PY_SUMMARY' | tee artifacts/hold428/summary.json
+          import hashlib,json
+          from pathlib import Path
+          root=Path('artifacts/hold428')
+          arms={}
+          signatures=[]
+          for arm in ('base','shadow'):
+              lines=(root/arm/'full.log').read_text().splitlines()
+              def rows(prefix):
+                  return [dict(x.split('=',1) for x in line.split()[1:] if '=' in x)
+                          for line in lines if line.startswith(prefix+' ')]
+              hours=rows('PR57_337_HOUR')
+              boundaries=rows('PR57_ADVANCE_BOUNDARY')
+              final=rows('PR57_337_FINAL')
+              cohort=rows('PR57_420_COHORT')
+              persistence=rows('PR57_420_SUMMARY')
+              semantic=rows('PR57_426_SUMMARY')
+              witnesses=[json.loads(line[len('PR57_428_WITNESS '):])
+                  for line in lines if line.startswith('PR57_428_WITNESS ')]
+              witness_summary=rows('PR57_428_SUMMARY')
+              assert len(hours)==6 and len(boundaries)==108 and len(final)==1
+              assert [int(b['calls']) for b in boundaries]==list(range(100,10801,100))
+              assert all(b['quantum']=='2' for b in boundaries)
+              assert all(int(h['living'])==121 for h in hours)
+              assert final[0]['parity']=='IDENTICAL'
+              signatures.append([tuple(h[k] for k in
+                  ('hour','slices','actors','claimChanges','spaceCountChanges',
+                   'living','ledger','history')) for h in hours])
+              if arm=='shadow':
+                  assert len(cohort)==4 and len(persistence)==len(semantic)==1
+                  assert len(witnesses)==2, ('expected two exact stable-reader HoldFor divergences',len(witnesses))
+                  assert len(witness_summary)==1 and int(witness_summary[0]['witnesses'])==2
+                  assert all(w['slice']==w['priorSlice']+1 for w in witnesses)
+                  assert len({(w['vehicle'],w['slice']) for w in witnesses})==2
+                  assert all(w['beforeHolds']!=w['afterHolds'] for w in witnesses)
+                  assert all(w['readerBefore']['Node']==w['readerAfter']['Node'] and
+                             w['readerBefore']['Entry']==w['readerAfter']['Entry'] and
+                             w['readerBefore']['RouteIndex']==w['readerAfter']['RouteIndex'] and
+                             w['readerBefore']['Waiting']==w['readerAfter']['Waiting'] and
+                             w['readerBefore']['X']==w['readerAfter']['X'] and
+                             w['readerBefore']['Z']==w['readerAfter']['Z'] and
+                             w['readerBefore']['Heading']==w['readerAfter']['Heading'] for w in witnesses)
+                  p=persistence[0]; s=semantic[0]
+                  assert s['observational']=='True' and s['causalClosure']=='False'
+                  assert s['noDecisionReuse']=='True'
+                  assert int(s['physical'])==int(p['physical'])==600
+                  assert int(s['first'])==int(p['firstScans'])
+                  assert int(s['pairs'])==int(p['consecutive'])
+                  assert int(s['stableReader'])==int(p['sameReader'])
+                  assert int(s['changedStep'])==int(p['sameReader'])-int(p['sameReaderDecision'])
+                  assert int(s['fullLists'])<=int(s['first'])
+                  assert int(s['sameIds'])<=int(s['pairs'])
+                  assert int(s['sameScalars'])<=int(s['sameIds'])
+                  assert int(s['sameHolds'])<=int(s['pairs'])
+                  assert int(s['readerIds'])<=int(s['stableReader'])
+                  assert int(s['readerScalars'])<=int(s['readerIds'])
+                  assert int(s['readerHolds'])<=int(s['stableReader'])
+                  assert int(s['changedIds'])<=int(s['changedStep'])
+                  assert int(s['changedScalars'])<=int(s['changedIds'])
+                  assert int(s['changedHolds'])<=int(s['changedStep'])
+                  assert sum(int(c['actors']) for c in cohort)==98*600
+              else:
+                  assert not cohort and not persistence and not semantic and not witnesses and not witness_summary
+              arms[arm]={'wallMs':round(sum(float(h['wallMs']) for h in hours),3),
+                         'cpuMs':sum(float(h['cpuMs']) for h in hours),
+                         'allocatedBytes':sum(int(h['totalAllocatedBytes']) for h in hours),
+                         'persistence':persistence[0] if persistence else None,
+                         'semantic':semantic[0] if semantic else None,
+                         'witnesses':witnesses,'witnessSummary':witness_summary[0] if witness_summary else None}
+          assert signatures[0]==signatures[1], 'intermediate economy/history mismatch'
+          saves=[(root/a/'checkpoint-10800.json').read_bytes() for a in ('base','shadow')]
+          assert saves[0]==saves[1], 'final saves differ'
+          sha=hashlib.sha256(saves[0]).hexdigest()
+          assert len(saves[0])==2254838
+          assert sha=='e92293faf61a6ea2aab7dd0fdac83c14bd4668f611a126c701dc6705587bb9fa'
+          print(json.dumps({'scope':'AUTHENTIC_REAL_121_LIVING_98_VEHICLES_6H',
+              'advance2PerArm':10800,'arms':arms,'saveSha256':sha,
+              'observational':True,'causalClosure':False,'optimizationGainAccepted':False},
+              sort_keys=True))
+          PY_SUMMARY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integrated-scale-pr57-hold-witness-428
+          path: artifacts/hold428
+          retention-days: 14
