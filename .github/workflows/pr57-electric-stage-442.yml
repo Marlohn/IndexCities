@@ -32,7 +32,9 @@ jobs:
         with:
           dotnet-version: '8.0.x'
       - name: Instrument existing DetailTicks in disposable runner only
-        run: |\n          python3 scripts/pr57-440-inject.py\n          python3 scripts/pr57-442-inject.py
+        run: |
+          python3 scripts/pr57-440-inject.py
+          python3 scripts/pr57-442-inject.py
       - name: Build and full regression suite
         run: |
           set -euo pipefail
