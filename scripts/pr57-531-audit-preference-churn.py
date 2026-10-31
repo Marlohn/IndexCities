@@ -98,4 +98,4 @@ def main(path):
 
 if __name__ == '__main__':
     assert len(sys.argv) == 2, __doc__
-    main(sys.argv[1:])
+    main(sys.argv[1])
