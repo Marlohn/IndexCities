@@ -609,8 +609,11 @@ public sealed partial class CitySimulation
         // among all vehicles that can execute. The all-vehicle junction cleanup
         // above and every physical candidate scan remain unchanged.
         var pr57BatchOrder=Environment.GetEnvironmentVariable("PR57_BATCH_ORDER")=="1"&&operationsDt is null?_vehicleMovementBatch:null;
-        var ordered=pr57BatchOrder is null?State.Vehicles.ToArray():State.Vehicles.Where(v=>pr57BatchOrder.Contains(v.Id)).ToArray();
-        Array.Sort(ordered,static (a,b)=>a.WaitingSince.CompareTo(b.WaitingSince) is var c and not 0?c:a.Id.CompareTo(b.Id));
+        var ordered=Pr57IncrementalActorOrderEnabled
+            ?Pr57IncrementalOrderedActors(pr57BatchOrder)
+            :pr57BatchOrder is null?State.Vehicles.ToArray():State.Vehicles.Where(v=>pr57BatchOrder.Contains(v.Id)).ToArray();
+        if(!Pr57IncrementalActorOrderEnabled)
+            Array.Sort(ordered,static (a,b)=>a.WaitingSince.CompareTo(b.WaitingSince) is var c and not 0?c:a.Id.CompareTo(b.Id));
         // PR57 isolated A/B: parked passenger cars are not lane occupants and
         // BodyAcrossLane explicitly excludes passenger cars. Build a stable
         // original-order candidate list once per movement slice.
