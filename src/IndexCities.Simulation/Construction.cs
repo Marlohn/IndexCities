@@ -164,14 +164,14 @@ public sealed partial class CitySimulation
                 return;
             }
         }
-        var pendingByProject=Pr57DispatchShipmentLookup
+        var pendingByProject=!Pr57SharedStepShipmentsEnabled&&Pr57DispatchShipmentLookup
             ?Pr57ConstructionShipmentSource().Where(s=>s.ProjectId!=null&&!s.Complete).ToLookup(s=>s.ProjectId)
             :null;
         foreach(var k in Enum.GetValues<ResourceKind>().Where(k=>k!=ResourceKind.Food&&k!=ResourceKind.Fuel)){
             var free=depot.Quantity(k)-State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress).Sum(p=>p.LocalReserved.GetValueOrDefault(k));
             foreach(var p in State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress).OrderBy(p=>p.Id)){
                 if(CostProfile is { } census)census.ConstructionReserveProjects++;
-                var pending=pendingByProject==null?Pr57ConstructionShipmentSource().Where(s=>s.ProjectId==p.Id&&!s.Complete).Sum(s=>s.Cargo.GetValueOrDefault(k)):pendingByProject[p.Id].Sum(s=>s.Cargo.GetValueOrDefault(k));var need=p.Required.GetValueOrDefault(k)-p.Delivered.GetValueOrDefault(k)-pending-p.LocalReserved.GetValueOrDefault(k);var reserve=Math.Max(0,Math.Min(free,need));p.LocalReserved.AddAmount(k,reserve);free-=reserve;
+                var pending=Pr57SharedStepShipmentsEnabled?Pr57SharedPendingProjectShipments(p.Id).Sum(s=>s.Cargo.GetValueOrDefault(k)):pendingByProject==null?Pr57ConstructionShipmentSource().Where(s=>s.ProjectId==p.Id&&!s.Complete).Sum(s=>s.Cargo.GetValueOrDefault(k)):pendingByProject[p.Id].Sum(s=>s.Cargo.GetValueOrDefault(k));var need=p.Required.GetValueOrDefault(k)-p.Delivered.GetValueOrDefault(k)-pending-p.LocalReserved.GetValueOrDefault(k);var reserve=Math.Max(0,Math.Min(free,need));p.LocalReserved.AddAmount(k,reserve);free-=reserve;
             }
         }
     }
@@ -233,11 +233,13 @@ public sealed partial class CitySimulation
         // Build membership lazily in insertion order. Any shipment appended by this
         // dispatcher becomes visible on the next query. Complete and Cargo are
         // deliberately read live, not snapshotted; no state is persisted.
-        if(Pr57OrderShipmentIndexEnabled)
+        if(Pr57OrderShipmentIndexEnabled&&!Pr57SharedStepShipmentsEnabled)
             foreach(var group in _pr57OrderShipments.Values)group.Clear();
         var indexedShipmentCount=0;
         IEnumerable<Shipment> PendingProjectShipments(int projectId)
         {
+            if(Pr57SharedStepShipmentsEnabled)
+                return Pr57SharedPendingProjectShipments(projectId);
             if(!Pr57OrderShipmentIndexEnabled)
                 return Pr57ConstructionShipmentSource().Where(s=>s.ProjectId==projectId&&!s.Complete);
             while(indexedShipmentCount<State.Shipments.Count)
@@ -377,12 +379,13 @@ public sealed partial class CitySimulation
         }
         // Original shipment insertion order, live Cargo/Complete/ProjectId; rebuilt each call.
         // If the shipment list grows or shrinks mid-phase, use the original full scan.
-        var progressShipments=Pr57ProgressShipmentLookupEnabled&&State.Projects.Any(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress)
+        var progressShipments=!Pr57SharedStepShipmentsEnabled&&Pr57ProgressShipmentLookupEnabled&&State.Projects.Any(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress)
             ?Pr57ConstructionShipmentSource().Where(s=>s.ProjectId!=null).ToLookup(s=>s.ProjectId)
             :null;
         var indexedShipmentCount=State.Shipments.Count;
         IEnumerable<Shipment> PendingProgressShipments(int projectId)
-            =>progressShipments!=null&&State.Shipments.Count==indexedShipmentCount
+            =>Pr57SharedStepShipmentsEnabled?Pr57SharedPendingProjectShipments(projectId)
+                :progressShipments!=null&&State.Shipments.Count==indexedShipmentCount
                 ?progressShipments[projectId].Where(s=>s.ProjectId==projectId&&!s.Complete)
                 :Pr57ConstructionShipmentSource().Where(s=>s.ProjectId==projectId&&!s.Complete);
         var completedConstruction=false;
