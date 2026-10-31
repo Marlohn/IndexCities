@@ -288,7 +288,7 @@ public sealed class Citizen
     public int Shift {get;set;}
     public string Activity {get;set;}="Chegando";
     public string Decision {get;set;}="";
-    public List<PersonalEvent> History {get;set;}=[];
+    public Pr57PersonalHistory History {get;set;}=new();
     public double OutingUntil {get;set;}
     [JsonIgnore] public string Account=>"sim:"+Id;
     [JsonIgnore] public bool Moving=>PathIndex<Path.Count;
