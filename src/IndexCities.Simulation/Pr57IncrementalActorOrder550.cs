@@ -51,6 +51,11 @@ public sealed partial class CitySimulation
 
     Vehicle[] Pr57IncrementalOrderedActors(HashSet<int>? batch)
     {
+        // No live lane-entry batch means there is only one unsplit physical
+        // visit in this Step: no subsequent sort exists to amortize a tree.
+        if (_vehicleMovementBatch is null)
+            return Pr57CanonicalActorOrder(batch is null
+                ? State.Vehicles : State.Vehicles.Where(v => batch.Contains(v.Id)));
         _pr57ActorOrderLookups++;
         // Membership and reference identity are rechecked on EVERY physical
         // slice. This catches additions, removals, replacements and reordering
