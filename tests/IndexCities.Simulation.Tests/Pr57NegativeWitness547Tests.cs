@@ -59,10 +59,13 @@ public sealed class Pr57NegativeWitness547Tests
             v.Route[0]=int.MaxValue; // in-place route edit
             Assert.False(Try(sim,v));
             v.Route[0]=sim.State.Roads[0].Id;
+            var road=sim.State.Roads[0];
+            var originalRoadPosition=road.Position;
             Store();
-            sim.State.Roads[0].Position=new Point(90,0); // no road epoch change
+            road.Position=new Point(originalRoadPosition.X+3,originalRoadPosition.Z); // no epoch change
             Assert.False(Try(sim,v));
-            sim.State.Roads[0].Position=new Point(0,0);
+            road.Position=originalRoadPosition;
+            Call(sim,"Pr57TurnWayCaptureRoads");
             Store();
             // Removing the exact blocker at its original index invalidates.
             sim.State.Vehicles.Remove(blocker);
