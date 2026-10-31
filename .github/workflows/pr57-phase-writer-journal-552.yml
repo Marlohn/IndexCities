@@ -95,3 +95,5 @@ jobs:
           path: artifacts/pr57-552
           retention-days: 14
           if-no-files-found: warn
+
+# Re-run after fixing independent C# property declarations in #552.

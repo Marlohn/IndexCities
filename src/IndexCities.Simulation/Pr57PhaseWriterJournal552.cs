@@ -17,8 +17,12 @@ public sealed partial class CitySimulation
     Pr57Writer552Frame? _pr57Writer552Previous;
     sealed class Pr57Writer552Frame
     {
-        public Dictionary<int,string> Vehicles {get;}=new(),Citizens {get;}=new(),Projects {get;}=new();
-        public List<int> VehicleOrder {get;}=new(),CitizenOrder {get;}=new(),ProjectOrder {get;}=new();
+        public Dictionary<int,string> Vehicles {get;}=new();
+        public Dictionary<int,string> Citizens {get;}=new();
+        public Dictionary<int,string> Projects {get;}=new();
+        public List<int> VehicleOrder {get;}=new();
+        public List<int> CitizenOrder {get;}=new();
+        public List<int> ProjectOrder {get;}=new();
     }
     Pr57Writer552Frame Pr57Writer552Capture()
     {
