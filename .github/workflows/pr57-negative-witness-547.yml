@@ -2,7 +2,7 @@ name: 'PR57 #547 monotone negative CanTurnNow witness A/B'
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
-    paths: [.github/workflows/pr57-step-turnway-workset-547.yml, tests/IndexCities.Simulation.Tests/Pr57NegativeWitness547Tests.cs]
+    paths: [.github/workflows/pr57-negative-witness-547.yml, tests/IndexCities.Simulation.Tests/Pr57NegativeWitness547Tests.cs]
   workflow_dispatch:
 permissions:
   contents: read
