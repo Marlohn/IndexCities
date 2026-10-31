@@ -18,8 +18,6 @@ public sealed partial class CitySimulation
     // PR57 observation only: split the zero-step branch, including paths that break/continue.
     readonly long[] _pr57BlockedAllocBytes=new long[6]; // cause, tow-approach, bypass, tow-exit, tow-reroute, tow-wait
     readonly long[] _pr57BlockedCalls=new long[6];
-    // PR57 #561: opt-in exact lower-bound witness, not persisted.
-    long _pr57ZeroWitness561Cuts,_pr57ZeroWitness561SavedCandidates;
     // PR57-only observation: full junction admission including early break/continue.
     readonly long[] _pr57JunctionAllocBytes=new long[2]; // MayEnterJunction, post-denial handling
     readonly long[] _pr57JunctionCalls=new long[3]; // MayEnterJunction, denied, bay-held before admission
@@ -576,12 +574,6 @@ public sealed partial class CitySimulation
         var pr57PoseNoopSkip=Environment.GetEnvironmentVariable("PR57_236_POSE_NOOP_SKIP")=="1";
         // #560 opt-in only. No physics is skipped; canonical fallback remains below.
         var pr57BlockedTail560=Environment.GetEnvironmentVariable("PR57_BLOCKED_TAIL_560")=="1";
-        // A zero distance is the lower bound of every HoldFor candidate.
-        // Re-evaluate each actor/sub-slice; no cross-step cache or invalidation.
-        var pr57ZeroWitness561=Environment.GetEnvironmentVariable("PR57_ZERO_WITNESS_561")=="1"
-            &&scanProfile is null&&!Pr57NegativeEnabled;
-        var pr57ZeroWitness561Shadow=pr57ZeroWitness561
-            &&Environment.GetEnvironmentVariable("PR57_ZERO_WITNESS_SHADOW")=="1";
         var pr57PoseNoopEligible=0;
         var pr57PoseNoopSkipped=0;
         var pr57CostProbe=scanProfile is not null&&Pr57VehicleCostProbeEnabled;
@@ -1021,27 +1013,7 @@ public sealed partial class CitySimulation
                 }
                 void Pr57ScanLane(IEnumerable<Vehicle> candidates){
                 var pr57StageScanStart=Pr57StageScanBegin(v);
-                var pr57ZeroExamined561=0;
-                var pr57ZeroSeen561=false;
-                Vehicle? pr57ZeroBlocker561=null;
                 foreach(var liveOther in candidates){
-                    // The first exact zero wins because HoldFor updates only on
-                    // strictly smaller distances and all distances are >= 0.
-                    // Shadow executes the suffix and verifies that first winner.
-                    if(pr57ZeroWitness561&&!pr57ZeroSeen561&&leaderDistance==0){
-                        pr57ZeroSeen561=true;
-                        pr57ZeroBlocker561=blocker;
-                        var saved=Math.Max(0,pr57LaneList.Count-pr57ZeroExamined561);
-                        if(saved>0){
-                            _pr57ZeroWitness561Cuts++;
-                            _pr57ZeroWitness561SavedCandidates+=saved;
-                            if(Environment.GetEnvironmentVariable("PR57_ZERO_WITNESS_DIAG")=="1"
-                               &&_pr57ZeroWitness561Cuts<=3)
-                                Console.WriteLine($"PR57_ZERO_WITNESS_561 cut={_pr57ZeroWitness561Cuts} vehicle={v.Id} blocker={blocker?.Id} examined={pr57ZeroExamined561} saved={saved} shadow={pr57ZeroWitness561Shadow}");
-                        }
-                        if(!pr57ZeroWitness561Shadow)break;
-                    }
-                    pr57ZeroExamined561++;
                     if(pr57IdleProbe)pr57IdleLaneVisits++;
                     Pr57StageMark(0);
                     var other=enteringLane?Pr57StageEntryFrame(liveOther):liveOther;
@@ -1106,9 +1078,6 @@ public sealed partial class CitySimulation
                         HoldFor(other,forward);
                     }
                 }
-                if(pr57ZeroSeen561&&pr57ZeroWitness561Shadow&&
-                   (leaderDistance!=0||!ReferenceEquals(blocker,pr57ZeroBlocker561)))
-                    throw new InvalidOperationException("PR57 #561 zero witness lost exact first blocker");
                 Pr57StageScanEnd(pr57StageScanStart);
                 }
                 Pr57CrossSliceObserve(v,0,enteringLane,speed*remaining);
