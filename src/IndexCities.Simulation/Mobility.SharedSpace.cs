@@ -15,6 +15,13 @@ public sealed partial class CitySimulation
     // Every sampled pose is copied into `held` before this buffer is cleared.
     static readonly bool Pr57270ManoeuvreScratchEnabled =
         Environment.GetEnvironmentVariable("PR57_270_MANOEUVRE_SCRATCH") == "1";
+    // PR57 #540: opt-in reentrant lease for *temporary* pose samples. No
+    // geometry or physical decision survives a call: only empty list capacity.
+    // Different nested Manoeuvre calls own distinct depth slots.
+    static readonly bool Pr57ReentrantManoeuvreScratchEnabled =
+        Environment.GetEnvironmentVariable("PR57_REENTRANT_MANOEUVRE_SCRATCH") == "1";
+    readonly List<List<(Point Position,double Heading)>> _pr57ManoeuvreScratchSlots = [];
+    int _pr57ManoeuvreScratchDepth;
     // SPEC "Curva simples, um de cada vez": a sharp corner of a single road
     // (60 degrees or more, e.g. an L); gentler curves need no wait.
     bool IsBend(RoadNode node)
@@ -125,9 +132,20 @@ public sealed partial class CitySimulation
     List<(Vehicle Body,Point Position,double Heading)> Manoeuvre(Vehicle o,List<int> route,int from,Point at,double facing,IReadOnlyList<Point> site,bool approach,int minimum,out List<RoadNode> spaces,out int endIndex,Func<Point,double,bool>? extraClear=null,int? through=null)
     {
         var pr57Man248 = Pr57Man248Before(o, route, from, at, facing, site, approach, minimum, extraClear, through);
+        // A lease is scoped to this invocation. Nested calls use the next slot,
+        // so their SamplePoses cannot overwrite an outer invocation's samples.
+        var pr57Lease = Pr57ReentrantManoeuvreScratchEnabled ? _pr57ManoeuvreScratchDepth++ : -1;
+        try
+        {
         var held=new List<(Vehicle Body,Point Position,double Heading)>();spaces=[];endIndex=from-1;
         // Scratch never escapes this invocation; no state or decision is cached.
         List<(Point Position,double Heading)>? pr57270Scratch=null;
+        if(pr57Lease>=0)
+        {
+            while(_pr57ManoeuvreScratchSlots.Count<=pr57Lease)
+                _pr57ManoeuvreScratchSlots.Add(new List<(Point Position,double Heading)>());
+            pr57270Scratch=_pr57ManoeuvreScratchSlots[pr57Lease];
+        }
         var near=SharedNodes();var found=spaces;
         // One scratch buffer per manoeuvre, not per sampled pose. The broad
         // phase only selects possible nodes; the exact predicate is unchanged.
@@ -159,7 +177,7 @@ public sealed partial class CitySimulation
         }
         for(var index=0;index<site.Count;index++){
             var to=site[index];var heading=approach&&o.SiteDockHeading is {} dockHeading&&index==site.Count-1?dockHeading:to.Distance(at)>.001?Math.Atan2(to.X-at.X,to.Z-at.Z):facing;
-            var run=Pr57270ManoeuvreScratchEnabled?(pr57270Scratch??=new List<(Point Position,double Heading)>()):new List<(Point Position,double Heading)>();
+            var run=(Pr57ReentrantManoeuvreScratchEnabled||Pr57270ManoeuvreScratchEnabled)?(pr57270Scratch??=new List<(Point Position,double Heading)>()):new List<(Point Position,double Heading)>();
             run.Clear();SamplePoses(run,at,to,heading);foreach(var p in run){held.Add((o,p.Position,p.Heading));Note(p.Position,p.Heading);}at=to;facing=heading;
         }
         var points=0;
@@ -172,13 +190,22 @@ public sealed partial class CitySimulation
             // The lane model turns in place at once: the turn counts for the spaces it
             // enters, the body only takes the new heading.
             for(var part=0;part<=8;part++)Note(at,facing+turn*part/8);held.Add((o,at,direction));
-            var straight=Pr57270ManoeuvreScratchEnabled?(pr57270Scratch??=new List<(Point Position,double Heading)>()):new List<(Point Position,double Heading)>();
+            var straight=(Pr57ReentrantManoeuvreScratchEnabled||Pr57270ManoeuvreScratchEnabled)?(pr57270Scratch??=new List<(Point Position,double Heading)>()):new List<(Point Position,double Heading)>();
             straight.Clear();SamplePoses(straight,at,lane,direction);foreach(var p in straight){held.Add((o,p.Position,p.Heading));Note(p.Position,p.Heading);}
             at=lane;facing=direction;points++;endIndex=i;
             if(points>=minimum&&(pr57NodeCandidates is null?near.All(n=>!EntersArea(o,at,facing,n)):!TouchesSharedNode(at,facing))&&(extraClear?.Invoke(at,facing)??true))break;
         }
         Pr57Man248After(pr57Man248, held.Count);
         return held;
+        }
+        finally
+        {
+            if(pr57Lease>=0)
+            {
+                _pr57ManoeuvreScratchSlots[pr57Lease].Clear();
+                _pr57ManoeuvreScratchDepth--;
+            }
+        }
     }
     // A truck's way out of the dock at `at` toward home (predicted while it is
     // still there, or along the route it now drives).
