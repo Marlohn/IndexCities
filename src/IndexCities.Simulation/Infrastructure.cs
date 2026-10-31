@@ -37,6 +37,7 @@ public sealed partial class CitySimulation
         var detailStarted=detail is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
         // Per-step working sets are reused buffers, refilled in list order.
         var active=_active;active.Clear();foreach(var b in State.Buildings)if(b.Completed&&!b.Removed)active.Add(b);
+        Pr57PhaseBuildingsPublish();
         // Presence does not change inside this calculation. Keep the public
         // query live, but count every building's present workers in one pass
         // over the citizens (the same WorkerPresentAt rule per worker).

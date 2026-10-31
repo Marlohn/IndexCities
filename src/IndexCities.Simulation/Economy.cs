@@ -55,7 +55,7 @@ public sealed partial class CitySimulation
         {
             if(availableByKind!=null)availableByKind[building.Kind]--;
         }
-        var houses=State.Buildings.Where(b=>b.Kind==BuildingKind.House&&b.Completed&&!b.Removed&&b.Demolition==null&&b.OwnerAccount==null&&b.FamilyId==null&&HasExteriorAccess(b)).OrderBy(b=>b.Id).ToList();
+        var houses=Pr57PhaseActiveBuildings().Where(b=>b.Kind==BuildingKind.House&&b.Demolition==null&&b.OwnerAccount==null&&b.FamilyId==null&&HasExteriorAccess(b)).OrderBy(b=>b.Id).ToList();
         // Every vacant house is offered each review; residents still travelling in
         // count against the same jobs, so demand stays bounded by real factors.
         var residents=State.Citizens.Count(c=>c.Alive&&c.Resident);
@@ -84,7 +84,7 @@ public sealed partial class CitySimulation
             }
             residents+=candidate.Adults;Event("Família adquiriu casa e iniciou viagem física de chegada");
         }
-        foreach(var b in State.Buildings.Where(b=>b.Completed&&!b.Removed&&b.Demolition==null&&b.Definition.Private&&b.Kind!=BuildingKind.House&&b.OwnerAccount==null)){
+        foreach(var b in Pr57PhaseActiveBuildings().Where(b=>b.Demolition==null&&b.Definition.Private&&b.Kind!=BuildingKind.House&&b.OwnerAccount==null)){
             if(!HasExteriorAccess(b)){b.Cause="Sem rota para funcionários e mercadorias";continue;}
             var score=BusinessOpportunity(b);var price=Price(b);var carryingCost=availableByKind==null?AnnualPropertyTax(b):price*State.TaxRates[b.Definition.TaxCategory];
             var company=State.Companies.FirstOrDefault(c=>c.Active&&Balance(c.Account)>price+3000+carryingCost&&score>.35);
@@ -93,8 +93,8 @@ public sealed partial class CitySimulation
             }
             if(!Transfer(company.Account,"global",price,"Imóvel empresarial","Primeira aquisição pelo valor de mercado",b.Id))continue;b.OwnerAccount=company.Account;b.CompanyId=company.Id;Sold(b);company.Buildings.Add(b.Id);if(b.Kind==BuildingKind.MechanicShop)b.SalePrice=State.Tuning.MechanicHourlyPrice;company.Decision="Adquiriu imóvel por oportunidade observável, sem clientes ou contratações garantidos";b.Cause="Aguardando equipe e estoque";Event(company.Name+" adquiriu "+b.Definition.Name);
         }
-        foreach(var b in State.Buildings.Where(b=>b.Completed&&!b.Removed&&!b.OperationClosed&&!b.Definition.Private&&b.Definition.Jobs>0)){var vacancies=Math.Max(0,b.Definition.Jobs-State.Citizens.Count(c=>c.Alive&&c.WorkplaceId==b.Id));var alternatives=State.Buildings.Where(a=>a.Completed&&!a.Removed&&a.CompanyId!=null&&!a.OperationClosed).Select(a=>a.SalaryOffer).DefaultIfEmpty(State.Tuning.HourlySalary).Max();var publicJobs=State.Buildings.Where(a=>a.Completed&&!a.Removed&&!a.OperationClosed&&!a.Definition.Private).Sum(a=>a.Definition.Jobs);var affordable=Available/Math.Max(1,publicJobs*8*7);var target=Math.Min(affordable,Math.Max(State.Tuning.HourlySalary,alternatives)*(.95m+(decimal)vacancies/Math.Max(1,b.Definition.Jobs)*.2m));b.SalaryOffer=Money(Math.Max(.1m,b.SalaryOffer+(target-b.SalaryOffer)*.08m));}
-        foreach(var b in State.Buildings.Where(b=>b.CompanyId!=null&&b.Completed&&!b.Removed)){
+        foreach(var b in Pr57PhaseActiveBuildings().Where(b=>!b.OperationClosed&&!b.Definition.Private&&b.Definition.Jobs>0)){var vacancies=Math.Max(0,b.Definition.Jobs-State.Citizens.Count(c=>c.Alive&&c.WorkplaceId==b.Id));var alternatives=State.Buildings.Where(a=>a.Completed&&!a.Removed&&a.CompanyId!=null&&!a.OperationClosed).Select(a=>a.SalaryOffer).DefaultIfEmpty(State.Tuning.HourlySalary).Max();var publicJobs=State.Buildings.Where(a=>a.Completed&&!a.Removed&&!a.OperationClosed&&!a.Definition.Private).Sum(a=>a.Definition.Jobs);var affordable=Available/Math.Max(1,publicJobs*8*7);var target=Math.Min(affordable,Math.Max(State.Tuning.HourlySalary,alternatives)*(.95m+(decimal)vacancies/Math.Max(1,b.Definition.Jobs)*.2m));b.SalaryOffer=Money(Math.Max(.1m,b.SalaryOffer+(target-b.SalaryOffer)*.08m));}
+        foreach(var b in Pr57PhaseActiveBuildings().Where(b=>b.CompanyId!=null)){
             var company=CompanyById(b.CompanyId)!;if(!company.Active)continue;var demand=BusinessOpportunity(b);
             b.OperationClosed=demand<.06&&State.ElapsedSeconds-b.LastCustomerAt>14*86400&&Balance(company.Account)<500;
             if(b.OperationClosed)b.Cause="Operação encerrada por baixa demanda e caixa; imóvel permanece da empresa";
@@ -130,7 +130,7 @@ public sealed partial class CitySimulation
             var home=BuildingById(FamilyById(c.FamilyId)?.HomeId);if(home==null)continue;
             // First of the highest score in building order, as a stable descending sort.
             Building? best=null;var bestScore=0m;
-            foreach(var b in State.Buildings.Where(b=>b.Completed&&!b.Removed&&b.Kind!=BuildingKind.House&&!b.OperationClosed&&(!b.Definition.Private||b.CompanyId!=null&&CompanyById(b.CompanyId)!.Active)&&Access(b)!=null&&hired.GetValueOrDefault(b.Id)<b.Definition.Jobs).Where(b=>RouteExists(Access(home)?.Id??-1,Access(b)!.Id)).Where(b=>Spendable(b.CompanyId==null?"city":"company:"+b.CompanyId)>b.SalaryOffer*8*3)){
+            foreach(var b in Pr57PhaseActiveBuildings().Where(b=>b.Kind!=BuildingKind.House&&!b.OperationClosed&&(!b.Definition.Private||b.CompanyId!=null&&CompanyById(b.CompanyId)!.Active)&&Access(b)!=null&&hired.GetValueOrDefault(b.Id)<b.Definition.Jobs).Where(b=>RouteExists(Access(home)?.Id??-1,Access(b)!.Id)).Where(b=>Spendable(b.CompanyId==null?"city":"company:"+b.CompanyId)>b.SalaryOffer*8*3)){
                 var score=b.SalaryOffer-(decimal)(home.Position.Distance(b.Position)/400);if(best==null||score>bestScore){best=b;bestScore=score;}
             }
             if(best==null){if(current==null)c.Decision="Sem vaga real com rota e empregador viável";continue;}
@@ -177,7 +177,7 @@ public sealed partial class CitySimulation
         // Workplaces do not change during this loop: group the citizens once,
         // keeping building order and citizen order within each building.
         var staff=StaffByWorkplace();
-        foreach(var b in State.Buildings.Where(b=>b.Completed&&!b.Removed)){
+        foreach(var b in Pr57PhaseActiveBuildings()){
             if(Pr57StaffPhaseFusionEnabled)
             {
                 // WorkerPresentAt was evaluated after movement, before this
@@ -211,7 +211,7 @@ public sealed partial class CitySimulation
     }
     void RestockBusinesses()
     {
-        foreach(var b in State.Buildings.Where(b=>b.Completed&&!b.Removed&&!b.OperationClosed&&b.CompanyId!=null&&CompanyById(b.CompanyId)!.Active)){
+        foreach(var b in Pr57PhaseActiveBuildings().Where(b=>!b.OperationClosed&&b.CompanyId!=null&&CompanyById(b.CompanyId)!.Active)){
             var account="company:"+b.CompanyId;var resource=b.Kind==BuildingKind.Grocery?ResourceKind.Food:ResourceKind.Fuel;
             if(b.Kind==BuildingKind.Farm){AcquireFarmTruck(b);continue;}if(b.Kind==BuildingKind.MechanicShop){AcquireShopTow(b);continue;}if(b.Kind is not (BuildingKind.Grocery or BuildingKind.FuelStation))continue;
             var target=Math.Min(b.Definition.Capacity,b.Kind==BuildingKind.Grocery?Math.Max(16,Population*5):Math.Max(40,State.Vehicles.Count(v=>!v.External)*40));
