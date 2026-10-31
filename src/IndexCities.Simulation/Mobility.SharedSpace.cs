@@ -249,6 +249,24 @@ public sealed partial class CitySimulation
     Vehicle? BodyOnWay(Vehicle v,List<(Vehicle Body,Point Position,double Heading)> poses,bool pr57305Onward=false)
     {
         Pr57261Hit(0);
+        // #546: alternate per-call contact representation; no state, decision or
+        // geometry is reused across calls or across ordered actor writes.
+        if(Pr57ContactFramesEnabled&&!Pr57271Enabled&&!Pr57272MemoEnabled
+           &&!(pr57305Onward&&Pr57305Enabled))
+        {
+            var result=Pr57BodyOnWayFrames(v,poses);
+            if(Pr57ContactFramesVerify)
+            {
+                var canonical=Pr57BodyOnWayCanonical(v,poses,pr57305Onward);
+                if(!ReferenceEquals(result,canonical))
+                    throw new InvalidOperationException("PR57_546_FIRST_BLOCKER_MISMATCH");
+            }
+            return result;
+        }
+        return Pr57BodyOnWayCanonical(v,poses,pr57305Onward);
+    }
+    Vehicle? Pr57BodyOnWayCanonical(Vehicle v,List<(Vehicle Body,Point Position,double Heading)> poses,bool pr57305Onward)
+    {
         // #305: counters observe the original ordered short-circuit; never drive physics.
         var census=pr57305Onward&&Pr57305Target(v);
         var visited=0;var eligible=0;var nearNegative=0;var geometry=0;
