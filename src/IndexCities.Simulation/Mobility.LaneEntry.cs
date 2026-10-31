@@ -223,7 +223,17 @@ public sealed partial class CitySimulation
         }
         return false;
     }
+    // PR57 #542: share only route-derived movement geometry across physical
+    // sub-slices. Every external, temporal and collision decision remains live.
     bool TryMovementTarget(Vehicle v,out RoadNode node,out Point target,out Point axis,out double length,out double speed)
+    {
+        if(Pr57MovementTargetTryGet(v,out node,out target,out axis,out length,out speed))
+            return true;
+        var found=Pr57MovementTargetFresh(v,out node,out target,out axis,out length,out speed);
+        if(found)Pr57MovementTargetStore(v,node,target,axis,length,speed);
+        return found;
+    }
+    bool Pr57MovementTargetFresh(Vehicle v,out RoadNode node,out Point target,out Point axis,out double length,out double speed)
     {
         node=null!;target=axis=default;length=speed=0;
         if(v.RouteIndex>=v.Route.Count||v.RouteIndex<0||!_roads.TryGetValue(v.Route[v.RouteIndex],out node!))return false;
