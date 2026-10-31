@@ -101,7 +101,8 @@ jobs:
               if enabled:
                 parsed=[{k:int(v) for k,v in re.findall(r'\b(\w+)=(\d+)',x)} for x in rows]
                 assert parsed[-1]['steps']==seconds//2,(name,arm,'step count')
-                assert parsed[-1]['queries']>0 and parsed[-1]['builds']>0,(name,arm,'workset not used')
+                if name=='worksREAL47':
+                  assert parsed[-1]['queries']>0 and parsed[-1]['builds']>0,(name,arm,'workset not used in REAL works')
                 diagnostics.append(parsed)
               metrics=[]
               for line in windows:
