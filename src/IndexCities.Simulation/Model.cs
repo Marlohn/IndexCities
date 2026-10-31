@@ -332,6 +332,28 @@ public sealed class MovementPose
 
 public sealed class Vehicle
 {
+    // PR57 #557: opt-in writer publication for a future physical dependency graph.
+    // This is deliberately NOT a complete dependency certificate: routes, docks,
+    // reservations, pedestrians, roads, and in-place list edits are not covered.
+    // No consumer may skip a physical decision based on this epoch alone.
+    static readonly bool Pr57ContactEpochEnabled =
+        Environment.GetEnvironmentVariable("PR57_CONTACT_EPOCH_557")=="1";
+    static readonly bool Pr57ContactEpochDiag =
+        Environment.GetEnvironmentVariable("PR57_CONTACT_EPOCH_DIAG")=="1";
+    static long _pr57GlobalContactEpoch;
+    [JsonIgnore] public long Pr57ContactEpoch {get;private set;}
+    public static long Pr57GlobalContactEpoch =>
+        System.Threading.Interlocked.Read(ref _pr57GlobalContactEpoch);
+    static bool Pr57SamePointBits(Point a,Point b) =>
+        BitConverter.DoubleToInt64Bits(a.X)==BitConverter.DoubleToInt64Bits(b.X)&&
+        BitConverter.DoubleToInt64Bits(a.Z)==BitConverter.DoubleToInt64Bits(b.Z);
+    void Pr57ContactWrite()
+    {
+        Pr57ContactEpoch++;
+        var epoch=System.Threading.Interlocked.Increment(ref _pr57GlobalContactEpoch);
+        if(Pr57ContactEpochDiag&&epoch%100==0)
+            Console.WriteLine($"PR57_CONTACT_EPOCH_557 epoch={epoch} scope=POSITION_HEADING_STATUS_ONLY");
+    }
     public int Id {get;set;}
     public TruckBody Body {get;set;}
     public bool ConstructionAccess {get;set;}
@@ -347,15 +369,18 @@ public sealed class Vehicle
     public double? SiteDockHeading {get;set;}
     public string OwnerAccount {get;set;}="global";
     public bool External {get;set;}
-    public Point Position {get;set;}
-    public double Heading {get;set;}
+    Point _pr57Position;
+    public Point Position {get=>_pr57Position;set{if(Pr57ContactEpochEnabled&&!Pr57SamePointBits(_pr57Position,value))Pr57ContactWrite();_pr57Position=value;}}
+    double _pr57Heading;
+    public double Heading {get=>_pr57Heading;set{if(Pr57ContactEpochEnabled&&BitConverter.DoubleToInt64Bits(_pr57Heading)!=BitConverter.DoubleToInt64Bits(value))Pr57ContactWrite();_pr57Heading=value;}}
     public long FuelUnits {get;set;}
     [JsonIgnore] public double Fuel {get=>FixedPoint.Value(FuelUnits,FixedPoint.ResourceScale);set=>FuelUnits=FixedPoint.Quantize(value,FixedPoint.ResourceScale);}
     public void AddFuel(double delta)=>FuelUnits=FixedPoint.Add(FuelUnits,delta,FixedPoint.ResourceScale);
     public long FuelBurnedLastStepUnits {get;set;}
     [JsonIgnore] public double FuelBurnedLastStep {get=>FixedPoint.Value(FuelBurnedLastStepUnits,FixedPoint.ResourceScale);set=>FuelBurnedLastStepUnits=FixedPoint.Quantize(value,FixedPoint.ResourceScale);}
     public void AddFuelBurnedLastStep(double delta)=>FuelBurnedLastStepUnits=FixedPoint.Add(FuelBurnedLastStepUnits,delta,FixedPoint.ResourceScale);
-    public VehicleStatus Status {get;set;}
+    VehicleStatus _pr57Status;
+    public VehicleStatus Status {get=>_pr57Status;set{if(Pr57ContactEpochEnabled&&_pr57Status!=value)Pr57ContactWrite();_pr57Status=value;}}
     public List<int> Route {get;set;}=[];
     public int RouteIndex {get;set;}
     public Point? DockPosition {get;set;}
