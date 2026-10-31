@@ -104,6 +104,21 @@ def check_zip(path, expected, fixtures):
                 log = z.read("worksREAL47/B1/full.log").decode()
                 m = re.search(r"PR57_CONSTRUCTION_CENSUS steps=(\d+) .*?shipmentQueries=(\d+) shipmentVisits=(\d+)", log)
                 assert m and tuple(map(int, m.groups())) == (100, 200, 41748)
+                ceilings = []
+                for arm in ("B1", "B2"):
+                    phase_log = z.read(f"worksREAL47/{arm}/full.log").decode()
+                    def phase(pattern):
+                        found = re.search(pattern, phase_log)
+                        assert found, (arm, pattern)
+                        return float(found.group(1))
+                    total = phase(r"STEP_PROFILE steps=100 measuredWall=([0-9.]+)s")
+                    progress = phase(r"STEP_PHASE name=construction wall=([0-9.]+)s")
+                    dispatch = phase(r"STEP_PHASE name=construction-dispatch wall=([0-9.]+)s")
+                    assert total > progress + dispatch
+                    ceilings.append(total / (total - progress - dispatch))
+                print(f"PR57_535_AMDAHL_CONSTRUCTION_ALL_FREE "
+                      f"intrusiveB1={ceilings[0]:.4f} intrusiveB2={ceilings[1]:.4f} "
+                      "note=not-shipment-index-speedup")
                 print("PR57_535_OBSERVED worksREAL47 steps=100 "
                       "fullListEnumerations=200 shipmentVisits=41748 "
                       "dispatchPotentialBuilds=100 "
