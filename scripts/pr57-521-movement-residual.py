@@ -30,7 +30,7 @@ def get_line(lines, prefix):
 
 
 def val(row, key, cast=float):
-    match = re.search(r'(?<!\\w)' + re.escape(key) + r'=([0-9.]+)', row)
+    match = re.search(r'(?<!\w)' + re.escape(key) + r'=([0-9.]+)', row)
     assert match, (key, row)
     return cast(match.group(1))
 
