@@ -106,10 +106,10 @@ def check_zip(path, expected, fixtures):
                 assert m and tuple(map(int, m.groups())) == (100, 200, 41748)
                 print("PR57_535_OBSERVED worksREAL47 steps=100 "
                       "fullListEnumerations=200 shipmentVisits=41748 "
-                      "dispatchAdditionalBuilds=100 "
-                      "dispatchHistoryReadsLowerBound=20100 "
-                      "dispatchHistoryReadsUpperBound=21400 "
-                      "note=structural-bound-not-profile-timing")
+                      "dispatchPotentialBuilds=100 "
+                      "dispatchPotentialReadsLowerBound=20100 "
+                      "dispatchPotentialReadsUpperBound=21400 "
+                      "note=conditional-on-at-least-one-dispatch-index-query-per-Step")
                 # Actual, persisted *input objects* as the adversarial fixture.
                 # RedirectCancelled/TryRedirectMunicipalCargo can reassign a
                 # Shipment.ProjectId without changing the list's Count.
