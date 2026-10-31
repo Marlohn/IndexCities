@@ -110,7 +110,7 @@ jobs:
                   assert vals['reassigns']>=0 and vals['completionFlips']>=0
                   assert vals['changedPhaseSteps']>=0
                   parsed.append(vals)
-                assert parsed==sorted(parsed,key=lambda x:x['slices'])
+                assert parsed==sorted(parsed,key=lambda x:x['steps'])
                 observations.append((parsed,witnesses))
               arms[arm]={'probe':probe,'inputSha256':hashlib.sha256(start).hexdigest(),
                          'finalSha256':hashlib.sha256(end).hexdigest(),
