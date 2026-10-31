@@ -37,6 +37,49 @@ public sealed class Pr57TurnWayWorksetAdversarialTests
     }
 
     [Fact]
+    public void Inplace_road_position_neighbours_and_crosswalk_invalidate_without_epoch()
+    {
+        if(Environment.GetEnvironmentVariable("PR57_STEP_TURNWAY_WORKSET")!="1")return;
+        var sim=new CitySimulation(42,new(){ExternalTruckCount=1});
+        Assert.True(sim.PlaceBuilding(BuildingKind.CityHall,new(-152,16)).Success);
+        Assert.True(sim.PlaceRoad(new(-192,0),new(-80,0)).Success);
+        var route=sim.State.Roads.Where(r=>Math.Abs(r.Position.Z)<.01)
+            .OrderBy(r=>r.Position.X).Take(4).Select(r=>r.Id).ToList();
+        Assert.True(route.Count>=3);
+        var vehicle=sim.State.Vehicles.First();
+        vehicle.Status=VehicleStatus.Travelling;
+        vehicle.Route=route;
+        vehicle.RouteIndex=0;
+        vehicle.Position=sim.State.Roads.First(r=>r.Id==route[0]).Position;
+        vehicle.Heading=0;
+        var road=sim.State.Roads.First(r=>r.Id==route[1]);
+        var epoch=typeof(CitySimulation).GetField("_roadEpoch",Private);
+        Assert.NotNull(epoch);
+        var originalEpoch=(int)epoch.GetValue(sim)!;
+        Invoke(sim,"Pr57TurnWayWorksetBegin");
+        try
+        {
+            MatchesFresh(sim,vehicle);
+            MatchesFresh(sim,vehicle); // warm hit
+            road.Position=new Point(road.Position.X+.75,road.Position.Z+1.25);
+            MatchesFresh(sim,vehicle);
+            road.Neighbours.Reverse(); // same collection and Count
+            MatchesFresh(sim,vehicle);
+            road.Crosswalk=!road.Crosswalk;
+            MatchesFresh(sim,vehicle);
+            // A new externally inserted road also invalidates the global
+            // shared-node dependency, even when it is outside the route.
+            sim.State.Roads.Add(new RoadNode{Id=999999,Position=new Point(900,900)});
+            MatchesFresh(sim,vehicle);
+            Assert.Equal(originalEpoch,(int)epoch.GetValue(sim)!);
+            var invalidations=typeof(CitySimulation).GetField("_pr57TurnWayInvalidations",Private);
+            Assert.NotNull(invalidations);
+            Assert.True((long)invalidations.GetValue(sim)!>=4);
+        }
+        finally { Invoke(sim,"Pr57TurnWayWorksetEnd"); }
+    }
+
+    [Fact]
     public void Pose_heading_route_index_inplace_route_and_road_epoch_invalidate_exactly()
     {
         // First test invocation (without flag) is the unmodified control.

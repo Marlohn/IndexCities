@@ -23,6 +23,40 @@ public sealed partial class CitySimulation
         public RoadNode[] Spaces = [];
     }
 
+    // #544: the public CityState exposes mutable RoadNode objects and mutable
+    // Neighbours lists. A road can change without _roadEpoch changing. An
+    // exact-input workset cannot use that epoch alone as a certificate.
+    // Capture once per Step, then check before each hit. This is deliberately
+    // conservative and may cost more than the saved geometry; A/B decides.
+    readonly record struct Pr57TurnWayRoadInput(
+        RoadNode Node, Point Position, bool Crosswalk, int[] Neighbours);
+    readonly List<Pr57TurnWayRoadInput> _pr57TurnWayRoadInputs = [];
+
+    void Pr57TurnWayCaptureRoads()
+    {
+        _pr57TurnWayRoadInputs.Clear();
+        foreach(var road in State.Roads)
+            _pr57TurnWayRoadInputs.Add(new(
+                road, road.Position, road.Crosswalk, road.Neighbours.ToArray()));
+    }
+
+    bool Pr57TurnWayRoadsUnchanged()
+    {
+        if(State.Roads.Count != _pr57TurnWayRoadInputs.Count)return false;
+        for(var i=0;i<State.Roads.Count;i++)
+        {
+            var road=State.Roads[i];
+            var before=_pr57TurnWayRoadInputs[i];
+            if(!ReferenceEquals(road,before.Node) ||
+               !road.Position.Equals(before.Position) ||
+               road.Crosswalk!=before.Crosswalk ||
+               road.Neighbours.Count!=before.Neighbours.Length)return false;
+            for(var j=0;j<before.Neighbours.Length;j++)
+                if(road.Neighbours[j]!=before.Neighbours[j])return false;
+        }
+        return true;
+    }
+
     readonly Dictionary<Vehicle, Pr57TurnWayEntry> _pr57TurnWayWorkset =
         new(ReferenceEqualityComparer.Instance);
     bool _pr57TurnWayActive;
@@ -32,13 +66,18 @@ public sealed partial class CitySimulation
     {
         _pr57TurnWayWorkset.Clear();
         _pr57TurnWayActive = Pr57StepTurnWayWorksetEnabled && CostProfile is null;
-        if(_pr57TurnWayActive)_pr57TurnWaySteps++;
+        if(_pr57TurnWayActive)
+        {
+            _pr57TurnWaySteps++;
+            Pr57TurnWayCaptureRoads();
+        }
     }
 
     void Pr57TurnWayWorksetEnd()
     {
         _pr57TurnWayActive = false;
         _pr57TurnWayWorkset.Clear();
+        _pr57TurnWayRoadInputs.Clear();
         if(Pr57StepTurnWayDiag && Pr57StepTurnWayWorksetEnabled && _pr57TurnWaySteps > 0
            && _pr57TurnWaySteps % 100 == 0)
             Console.WriteLine($"PR57_541_TURNWAY steps={_pr57TurnWaySteps} hits={_pr57TurnWayHits} misses={_pr57TurnWayMisses} invalidations={_pr57TurnWayInvalidations}");
@@ -68,6 +107,17 @@ public sealed partial class CitySimulation
         {
             _pr57TurnWayInvalidations++;
             _pr57TurnWayMisses++;
+            return false;
+        }
+        // Recheck every mutable road dependency, including in-place edits
+        // that leave Count and _roadEpoch unchanged. SharedNodes/route
+        // geometry can depend on a road not in this vehicle's route.
+        if(!Pr57TurnWayRoadsUnchanged())
+        {
+            _pr57TurnWayInvalidations++;
+            _pr57TurnWayMisses++;
+            _pr57TurnWayWorkset.Clear();
+            Pr57TurnWayCaptureRoads();
             return false;
         }
         if(Pr57StepTurnWayVerify)
