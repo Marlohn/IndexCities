@@ -1075,7 +1075,8 @@ public sealed partial class CitySimulation
                     &&ReferenceEquals(candidates,State.Vehicles))
                 {
                     pr57DenseTrig554 ??= new Pr57DenseTrigFrame554(State.Vehicles);
-                    var actorSin=Math.Sin(v.Heading),actorCos=Math.Cos(v.Heading);
+                    var actorSin=Math.Sin(v.Heading);
+                    var actorCos=Math.Cos(v.Heading);
                     var denseIndex=0;
                     if(!_pr57DenseLane554Announced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
                     {
