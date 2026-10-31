@@ -22,7 +22,7 @@ HOT = ('siteMs', 'crossingMs', 'turnMs', 'junctionMs')
 
 
 def rows(text, prefix):
-    return [dict(re.findall(r'([A-Za-z][A-Za-z0-9]*)=([^\\s]+)', line))
+    return [dict(re.findall(r'([A-Za-z][A-Za-z0-9]*)=([^\s]+)', line))
             for line in text.splitlines() if line.startswith(prefix)]
 
 
