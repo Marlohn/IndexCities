@@ -2,7 +2,7 @@ name: 'PR57 #546 contact frames BodyOnWay A/B'
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
-    paths: [.github/workflows/pr57-contact-frames-546.yml]
+    paths: [.github/workflows/pr57-contact-frames-546.yml, src/IndexCities.Simulation/Mobility.ContactFrames546.Pr57.cs]
   workflow_dispatch:
 permissions:
   contents: read
@@ -115,7 +115,7 @@ jobs:
           (root/'summary.json').write_text(json.dumps(summary,indent=2,sort_keys=True))
           print('PR57_546_CONTACT_FRAMES_ABBA_PASS',flush=True)
           PY_RUN
-      - name: Shadow-check exact TurnWay inputs in REAL and artificial replays
+      - name: Shadow-check exact contact frames in REAL replays
         shell: bash
         run: |
           set -euo pipefail

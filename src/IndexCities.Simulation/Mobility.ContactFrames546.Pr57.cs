@@ -84,10 +84,10 @@ public sealed partial class CitySimulation
 
                 if(!ready)
                 {
-                    frames=poses.Count<=64
-                        ? stackalloc Pr57ContactFrame[poses.Count]
-                        : (rented=ArrayPool<Pr57ContactFrame>.Shared.Rent(poses.Count))
-                            .AsSpan(0,poses.Count);
+                    // Pool once per invocation. A stackalloc inside this actor loop
+                    // would violate the ref-escape/CA2014 constraints.
+                    rented=ArrayPool<Pr57ContactFrame>.Shared.Rent(poses.Count);
+                    frames=rented.AsSpan(0,poses.Count);
                     for(var i=0;i<poses.Count;i++)
                         frames[i]=Pr57ContactAt(v,poses[i].Position,poses[i].Heading);
                     current=Pr57ContactAt(v,v.Position,v.Heading);
