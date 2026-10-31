@@ -549,59 +549,6 @@ public sealed partial class CitySimulation
         var route=FindRoadRoute(n.Id,EntryNode().Id,ConstructionTrip(v));if(route.Count==0){v.Status=VehicleStatus.Waiting;v.Cause="Conexão externa interrompida";return;}
         v.Route=route;v.RouteIndex=0;v.DockPosition=null;v.Status=VehicleStatus.Travelling;v.DestinationBuildingId=null;v.ShipmentId=null;v.Cause="Retorno ao exterior";
     }
-    // PR57 #554: experimental dense primitive lane kernel with exact writer repair. It performs every
-    // original candidate decision in the same order, but avoids the PR57
-    // observational wrapper chain. Unknown diagnostic/algorithm flags force
-    // the canonical path; no cached state survives a scan or a Step.
-    // #554: slice-local dense trigonometry, ordered actor write-through and
-    // bitwise lazy repair before every read, including nonlocal heading writes.
-    // No decisions, actors or slices are cached or skipped.
-    sealed class Pr57DenseTrigFrame554
-    {
-        readonly Vehicle[] _actors;
-        readonly long[] _bits;
-        readonly double[] _sin;
-        readonly double[] _cos;
-        readonly Dictionary<Vehicle,int> _slots=new(ReferenceEqualityComparer.Instance);
-        public Pr57DenseTrigFrame554(List<Vehicle> vehicles)
-        {
-            _actors=vehicles.ToArray();_bits=new long[_actors.Length];
-            _sin=new double[_actors.Length];_cos=new double[_actors.Length];
-            for(var i=0;i<_actors.Length;i++){_slots.Add(_actors[i],i);Store(i,_actors[i]);}
-        }
-        void Store(int i,Vehicle v)
-        {
-            _bits[i]=BitConverter.DoubleToInt64Bits(v.Heading);
-            _sin[i]=Math.Sin(v.Heading);_cos[i]=Math.Cos(v.Heading);
-        }
-        public void Refresh(Vehicle v)
-        {
-            if(_slots.TryGetValue(v,out var i)&&_bits[i]!=BitConverter.DoubleToInt64Bits(v.Heading))Store(i,v);
-        }
-        public void Read(int i,Vehicle v,out double sin,out double cos)
-        {
-            if((uint)i>=(uint)_actors.Length||!ReferenceEquals(_actors[i],v))
-            {sin=Math.Sin(v.Heading);cos=Math.Cos(v.Heading);return;}
-            if(_bits[i]!=BitConverter.DoubleToInt64Bits(v.Heading))Store(i,v);
-            sin=_sin[i];cos=_cos[i];
-        }
-    }
-    static readonly bool Pr57DenseLane554Enabled =
-        Environment.GetEnvironmentVariable("PR57_DENSE_TRIG_554") == "1";
-    static readonly bool Pr57DenseLane554Safe =
-        Environment.GetEnvironmentVariables().Keys.Cast<object>()
-            .Select(k => k.ToString() ?? "")
-            .Where(k => k.StartsWith("PR57_", StringComparison.Ordinal))
-            .All(k => k is "PR57_DENSE_TRIG_554" or "PR57_GRID_DIAG"
-                or "PR57_HOST_QUANTUM" or "PR57_AB_CHECKPOINT"
-                or "PR57_SAVE_CAPTURE_DIR" or "PR57_SITE_OWNER_ROSTER"
-                or "PR57_BUILDING_WORK_ACCESS" or "PR57_DISPATCH_SHIPMENT_LOOKUP"
-                or "PR57_ORDER_SHIPMENT_INDEX" or "PR57_PROGRESS_SHIPMENT_LOOKUP"
-                or "PR57_SINGLE_CREW_ASSIGNMENT" or "PR57_SAFE_SITE_BUFFER"
-                or "PR57_236_POSE_NOOP_SKIP" or "PR57_PARALLEL_NEEDS"
-                or "PR57_NEEDS_SINGLE_PASS" or "PR57_SHARED_STEP_SHIPMENTS"
-                or "PR57_SHARED_STEP_DIAG");
-    bool _pr57DenseLane554Announced;
     // #237: same bitwise predicate as #236, factored for adversarial tests.
     static bool Pr57PoseHeadingNoop(double current,double approach)=>
         BitConverter.DoubleToInt64Bits(current)==BitConverter.DoubleToInt64Bits(approach);
@@ -864,7 +811,6 @@ public sealed partial class CitySimulation
         }
         if(scanProfile is not null)_pr57MovementAllocBytes[1]+=GC.GetAllocatedBytesForCurrentThread()-pr57AllocCallStart;
         Pr57SetupGapEnd(ordered.Length,pr57ScanCandidates.Count);
-        Pr57DenseTrigFrame554? pr57DenseTrig554=null;
         foreach(var v in ordered){
             Pr57Effect253BeforeActor(v);
             Pr57PhaseImpactBeforeActor(v);
@@ -1064,69 +1010,6 @@ public sealed partial class CitySimulation
                     _pr57AxisSweepUsedAnnounced=true;
                 }
                 void Pr57ScanLane(IEnumerable<Vehicle> candidates){
-                // Whole-candidate production kernel: no radius/axis broadphase,
-                // no snapshot, no reordering, no skipped actor or sub-slice.
-                // The fallback retains all diagnostic observers and experimental
-                // alternate algorithms. In particular, entry-frame candidates
-                // are deliberately left to the original path.
-                if(Pr57DenseLane554Enabled&&Pr57DenseLane554Safe&&scanProfile is null
-                    &&!enteringLane&&!pr57ActiveScan&&!pr57SpatialScan
-                    &&!pr57LaneGrid&&!pr57Bvh&&!pr57AxisSweep&&!pr57FastScan
-                    &&ReferenceEquals(candidates,State.Vehicles))
-                {
-                    pr57DenseTrig554 ??= new Pr57DenseTrigFrame554(State.Vehicles);
-                    var actorSin=Math.Sin(v.Heading);
-                    var actorCos=Math.Cos(v.Heading);
-                    var denseIndex=0;
-                    if(!_pr57DenseLane554Announced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
-                    {
-                        Console.WriteLine("PR57_554_DENSE_TRIG used=True scope=full-canonical-order-no-observers");
-                        _pr57DenseLane554Announced=true;
-                    }
-                    foreach(var other in State.Vehicles)
-                    {
-                        pr57DenseTrig554.Read(denseIndex++,other,out var otherSin,out var otherCos);
-                        // Exactly the same physical predicates, winner tie-breaks,
-                        // and short-circuit ordering as the canonical scan below.
-                        if(other.Id!=v.Id&&(!LeavesDock(v)||OnCarriageway(v))&&
-                           BodyAcrossLane(v,other) is {} docked)
-                        {
-                            HoldFor(other,docked);
-                            continue;
-                        }
-                        if(other.Id==v.Id||!OccupiesLane(other))continue;
-                        var relative=other.Position-v.Position;
-                        if(insideMap&&relative.Distance(new(0,0))<.1)
-                        {
-                            if(other.Status==VehicleStatus.Stranded||other.Id<v.Id)HoldFor(other,0);
-                            continue;
-                        }
-                        // enteringLane is false by construction; BlocksEntry is false.
-                        if(other.Detour.Count>0&&Math.Cos(other.Heading-v.Heading)<-.5)
-                        {
-                            var ahead=relative.X*actorSin+relative.Z*actorCos;
-                            var across=Math.Abs(relative.X*actorCos-relative.Z*actorSin);
-                            if(ahead>0&&across<2.6){HoldFor(other,ahead);continue;}
-                        }
-                        var forward=relative.X*actorSin+relative.Z*actorCos;
-                        var side=Math.Abs(relative.X*actorCos-relative.Z*actorSin);
-                        if((other.TowPhase==TowPhase.Loading||
-                            other.TowPhase==TowPhase.Delivering&&other.WaitingSince==0)&&
-                            Math.Cos(other.Heading-v.Heading)<-.5&&forward>0&&side<1.2)
-                        {
-                            HoldFor(other,forward);
-                            continue;
-                        }
-                        if(Math.Cos(other.Heading-v.Heading)>.5&&forward>0&&side<2.6)
-                        {
-                            var back=-relative.X*otherSin-relative.Z*otherCos;
-                            var backSide=Math.Abs(-relative.X*otherCos+relative.Z*otherSin);
-                            if(back>0&&backSide<2.6&&other.Id>v.Id&&other.Status!=VehicleStatus.Stranded)continue;
-                            HoldFor(other,forward);
-                        }
-                    }
-                    return;
-                }
                 var pr57StageScanStart=Pr57StageScanBegin(v);
                 foreach(var liveOther in candidates){
                     if(pr57IdleProbe)pr57IdleLaneVisits++;
@@ -1472,7 +1355,6 @@ public sealed partial class CitySimulation
                 if(DriveWear(v,step)||steer==null&&!advanced)break;
             }
             }finally{
-                pr57DenseTrig554?.Refresh(v);
                 Pr57Effect253AfterActor(v);
                 Pr57ExclusiveFinishVehicle(v);
                 Pr57S6GateShadowAfterVehicle(v);
