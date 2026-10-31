@@ -121,7 +121,7 @@ public sealed partial class CitySimulation
     {
         if (!Pr57532Enabled) return;
         _pr57532Slices++;
-        if (_pr57532Slices % 300 == 0)
+        if (_pr57532Slices == 1 || _pr57532Slices % 300 == 0)
             Console.WriteLine($"PR57_532_WITNESS_SUM slices={_pr57532Slices} " +
                 $"calls={_pr57532Calls} attempts={_pr57532Attempts} " +
                 $"hits={_pr57532Hits} misses={_pr57532Misses} " +
