@@ -1,0 +1,147 @@
+name: 'PR57 #497 exclusive managed allocation scopes in REAL admission'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-exclusive-alloc-497.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  allocation-split:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+      PR57_PARALLEL_NEEDS: '0'
+      PR57_NEEDS_SINGLE_PASS: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Inject exclusive allocation scopes in disposable checkout only
+        run: python3 scripts/pr57-497-inject-exclusive-alloc.py
+      - name: Build and complete regression suite
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic REAL congested checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input259
+      - name: Restore authentic REAL 68-worksite checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossphase-access-445
+          run-id: 41052837425
+          github-token: ${{ github.token }}
+          path: artifacts/input445
+      - name: ABBA allocation scopes on two authentic REAL states and artificial GRID
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY_RUN'
+          import hashlib,json,os,re,subprocess,time
+          from pathlib import Path
+          cases=[
+            ('congestedREAL121',Path('artifacts/input259/real14hREAL-control/checkpoint-0.json'),200,121,98,'779c144f2d6b2b64ece079f5740bf8a0a473a47286ca40d8b5f6b9dd61ab616f'),
+            ('worksREAL47',Path('artifacts/input445/pr57-445/A/checkpoint-0.json'),200,47,42,'b7c52ab87928e7eaa93cfc557b9f3dc935d5b17da44820b405990071940f95b5'),
+            ('GRID_ARTIFICIAL',None,200,None,None,None)
+          ]
+          root=Path('artifacts/pr57-497');root.mkdir(parents=True,exist_ok=True)
+          names=['PenetrationCore','Manoeuvre','TurnWay','BodyOnWay','JunctionPreferenceAllows',
+                 'EntryPlan','AdmitManoeuvre','SpaceFree','CanTurnNow','ClearOfDockWay',
+                 'TrafficOnWay','WayIn','PhysicalDockWay','OwnedDockWay','BayEntryHold']
+          summary={'experiment':497,'observational':True,'gainAccepted':False,
+                   'cadence':'one public Advance(2) per quantum',
+                   'scope':'first 600 unsplit invocations, nested exclusive allocation bytes',
+                   'warning':'intrusive; exclusive parents include uninstrumented work; not pose-only',
+                   'comparison':'same composed flags, fresh processes ABBA','cases':{}}
+          for name,source,seconds,alive,vehicles,expected in cases:
+            raw=source.read_bytes() if source is not None else None
+            if raw is not None:
+              assert hashlib.sha256(raw).hexdigest()==expected,name
+              state=json.loads(raw)
+              assert sum(bool(c['Alive']) for c in state['Citizens'])==alive
+              assert len(state['Vehicles'])==vehicles
+            arms={};initials=[];finals=[];profiles=[]
+            for arm in ('A1','B1','B2','A2'):
+              dest=root/name/arm;dest.mkdir(parents=True,exist_ok=True)
+              probe=arm.startswith('B')
+              env=os.environ.copy()
+              env.update(PR57_HOST_QUANTUM='1',PR57_AB_CHECKPOINT='1',PR57_GRID_DIAG='0',
+                         PR57_SAVE_CAPTURE_DIR=str(dest.resolve()),
+                         PR57_497_ALLOC_SPLIT='1' if probe else '0')
+              cmd=['dotnet','run','--no-build','-c','Release',
+                   '--project','src/IndexCities.Headless/IndexCities.Headless.csproj',
+                   '--','profile','cycle' if source is not None else 'grid',
+                   '--seed=42','--warmup=0','--days=1',f'--window={seconds}','--cap=300']
+              if source is not None:cmd.append(f'--resume={source.resolve()}')
+              else:cmd.extend(['--rows=3','--length=400'])
+              t=time.perf_counter()
+              with (dest/'full.log').open('w') as out:
+                subprocess.run(cmd,env=env,stdout=out,stderr=subprocess.STDOUT,check=True,timeout=300)
+              wall=time.perf_counter()-t
+              log=(dest/'full.log').read_text()
+              assert 'INVARIANTS OK' in log and 'SAVE ' in log,(name,arm,log[-2500:])
+              assert len([x for x in log.splitlines() if x.startswith('WINDOW ')])==1
+              assert f'STEP_PROFILE steps={seconds//2} ' in log,(name,arm,'step count')
+              initial=(dest/'checkpoint-0.json').read_bytes()
+              if raw is not None:assert initial==raw,(name,arm,'input')
+              final=(dest/'checkpoint-1.json').read_bytes()
+              initials.append(initial);finals.append(final)
+              totals=[x for x in log.splitlines() if x.startswith('PR57_497_TOTAL ')]
+              rows=[x for x in log.splitlines() if x.startswith('PR57_497_KIND ')]
+              assert len(totals)==int(probe) and len(rows)==len(names)*int(probe),(name,arm,len(totals),len(rows))
+              profile=None
+              if probe:
+                total={k:int(v) for k,v in re.findall(r'([A-Za-z][A-Za-z0-9]*)=(\d+)',totals[0])}
+                assert total['calls']==600 and total['rootCalls']>0 and total['rootBytes']==total['exclusiveSum']
+                profile={'total':total,'kinds':{}}
+                for row in rows:
+                  kind=re.search(r'kind=(\w+)',row).group(1)
+                  values={k:int(v) for k,v in re.findall(r'([A-Za-z][A-Za-z0-9]*)=(\d+)',row)}
+                  assert kind in names and kind not in profile['kinds']
+                  assert values['inclusiveBytes']>=values['exclusiveBytes']>=0
+                  profile['kinds'][kind]=values
+                assert set(profile['kinds'])==set(names)
+                assert sum(x['exclusiveBytes'] for x in profile['kinds'].values())==total['rootBytes']
+                assert profile['kinds']['PenetrationCore']['calls']>0,(name,arm,'no SAT')
+                profiles.append(profile)
+              arms[arm]={'probe':probe,'wallSeconds':round(wall,5),
+                         'window':next(x for x in log.splitlines() if x.startswith('WINDOW ')),
+                         'initialSha256':hashlib.sha256(initial).hexdigest(),
+                         'finalSha256':hashlib.sha256(final).hexdigest(),
+                         'finalBytes':len(final),'allocationProfile':profile}
+              print('PR57_497_ARM',name,arm,'wall',round(wall,3),flush=True)
+            assert all(x==initials[0] for x in initials),(name,'initial mismatch')
+            assert all(x==finals[0] for x in finals),(name,'full save mismatch')
+            assert profiles[0]==profiles[1],(name,'deterministic allocation counts differ')
+            summary['cases'][name]={'stepsPerArm':seconds//2,'livingExpected':alive,
+               'artificial':source is None,'fullJsonParity':True,'arms':arms}
+          (root/'summary.json').write_text(json.dumps(summary,indent=2,sort_keys=True))
+          print('PR57_497_EXCLUSIVE_ALLOCATION_FULL_PARITY_PASS',flush=True)
+          PY_RUN
+      - name: Preserve logs, full saves and exclusive allocation census
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-exclusive-alloc-497
+          path: artifacts/pr57-497
+          retention-days: 14
+          if-no-files-found: warn
