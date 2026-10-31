@@ -215,6 +215,7 @@ public sealed partial class CitySimulation
         _pr57BoundaryActive=Pr57AdvanceBoundaryProbe&&seconds==Quantum;
         var pr57BoundaryStart=_pr57BoundaryActive?System.Diagnostics.Stopwatch.GetTimestamp():0L;
         var pr57BoundaryBytesStart=_pr57BoundaryActive?GC.GetAllocatedBytesForCurrentThread():0L;
+        Pr57PairBaselineAdvanceBegin();
         Pr57BeginBuildingAccessAdvance();
         // A public Advance boundary permits direct external State edits (including tests).
         // Rebuild the opt-in agenda there; internal quanta still use incremental wakeups.
@@ -239,7 +240,7 @@ public sealed partial class CitySimulation
         }
         _crosswalkBands.Clear();_crosswalkBandsActive=true;BeginWalkRoutes();
         try{var remaining=seconds;while(remaining>1e-8){var dt=Math.Min(Quantum,remaining);Step(dt);remaining-=dt;}}
-        finally{_crosswalkBandsActive=false;_crosswalkBands.Clear();EndWalkRoutes();_pr57RouteTreeActive=false;_pr57RouteTreeParents.Clear();_pr57RouteTreeCalls.Clear();Pr57EndBuildingAccessAdvance();Pr57ClearSharedNodeGrid();}
+        finally{_crosswalkBandsActive=false;_crosswalkBands.Clear();EndWalkRoutes();_pr57RouteTreeActive=false;_pr57RouteTreeParents.Clear();_pr57RouteTreeCalls.Clear();Pr57EndBuildingAccessAdvance();Pr57ClearSharedNodeGrid();Pr57PairBaselineAdvanceEnd();}
         if(_pr57BoundaryActive)
         {
             _pr57BoundaryAdvanceTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57BoundaryStart;

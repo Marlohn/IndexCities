@@ -258,7 +258,7 @@ public sealed partial class CitySimulation
             if(census){visited++;Pr57306Read(v,o);}
             if(o.Id==v.Id||o.Id==v.TowTargetId||o.TowTruckId==v.Id||o.Status is VehicleStatus.Outside or VehicleStatus.Towed||o.Position.Distance(v.Position)>reach||AtGateway(o)&&AtGateway(v))continue;
             if(census)eligible++;
-            var now=Penetration(v,v.Position,v.Heading,o,o.Position,o.Heading);var limit=Math.Max(-.1,now+.001);
+            var now=Pr57PairBaselineCurrent(v,o);var limit=Math.Max(-.1,now+.001);
             var tested=false;
             foreach(var p in poses)if(p.Position.Distance(o.Position)<12){
                 if(census){geometry++;tested=true;}
