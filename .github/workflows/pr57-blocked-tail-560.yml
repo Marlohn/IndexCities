@@ -2,7 +2,7 @@ name: 'PR57 #560 blocked recovery tail equivalence BAAB REAL'
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
-    paths: [.github/workflows/pr57-blocked-tail-560.yml, src/IndexCities.Simulation/Mobility.BlockedTail560.Pr57.cs]
+    paths: [.github/workflows/pr57-blocked-tail-560.yml, src/IndexCities.Simulation/Mobility.BlockedTail560.Pr57.cs, tests/IndexCities.Simulation.Tests/Pr57BlockedTail560AdversarialTests.cs]
   workflow_dispatch:
 permissions:
   contents: read
