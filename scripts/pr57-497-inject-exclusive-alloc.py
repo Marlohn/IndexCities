@@ -70,7 +70,7 @@ public sealed partial class CitySimulation
         "SpaceFree","CanTurnNow","ClearOfDockWay","TrafficOnWay",
         "WayIn","PhysicalDockWay","OwnedDockWay","BayEntryHold"
     };
-    readonly struct Pr57497Scope
+    readonly struct Pr57497Scope : IDisposable
     {
         readonly bool _active;
         readonly int _kind,_depth;
