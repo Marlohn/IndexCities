@@ -67,7 +67,7 @@ jobs:
             env=os.environ.copy()
             env.update(PR57_HOST_QUANTUM='1',PR57_AB_CHECKPOINT='1',PR57_GRID_DIAG='0',
                        PR57_SAVE_CAPTURE_DIR=str(dest.resolve()),
-                       PR57_505_READ_GRAPH='1' if probe else '0')
+                       PR57_504_READ_GRAPH='1' if probe else '0')
             cmd=['dotnet','run','--no-build','-c','Release',
                  '--project','src/IndexCities.Headless/IndexCities.Headless.csproj',
                  '--','profile','cycle','--seed=42','--warmup=0','--days=1',
