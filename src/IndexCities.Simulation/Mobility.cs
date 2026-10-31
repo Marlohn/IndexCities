@@ -552,15 +552,6 @@ public sealed partial class CitySimulation
     // #237: same bitwise predicate as #236, factored for adversarial tests.
     static bool Pr57PoseHeadingNoop(double current,double approach)=>
         BitConverter.DoubleToInt64Bits(current)==BitConverter.DoubleToInt64Bits(approach);
-    // #551: test the cost of empty-ownership cleanup before attempting a
-    // causally closed dirty-owner index. Flags off by default; no persisted state.
-    static readonly bool Pr57551SparseCleanupEnabled=
-        Environment.GetEnvironmentVariable("PR57_SPARSE_CLEANUP_551")=="1";
-    static readonly bool Pr57551SparseCleanupVerify=
-        Environment.GetEnvironmentVariable("PR57_SPARSE_CLEANUP_VERIFY")=="1";
-    static readonly bool Pr57551SparseCleanupDiag=
-        Environment.GetEnvironmentVariable("PR57_SPARSE_CLEANUP_DIAG")=="1";
-    long _pr57551CleanupSlices,_pr57551CleanupSkipped,_pr57551CleanupVisited;
     void MoveVehiclesUnsplit(double dt,double? operationsDt=null)
     {
         Pr57SetupGapStart(dt,operationsDt);
@@ -594,46 +585,7 @@ public sealed partial class CitySimulation
         // Carriageway half-width (3.3 m) + truck half-length (3.6 m) covers the
         // actual rear of the truck; the former 9 m reservation could overlap
         // nearby junctions and make opposite queues hold each other forever.
-        // PR57 #551 opt-in discriminant: exact empty-ownership fast path.
-        // Still scans every vehicle in canonical order at every physical slice.
-        // This is NOT a dirty queue, writer certificate or event executor.
-        // ClearPassedJunction on a vehicle with no claim/entry timestamp only
-        // calls the observational reservation hook and assigns null to null.
-        // ReleaseManoeuvre returns immediately without ownership.
-        if(!Pr57551SparseCleanupEnabled)
-        {
-            foreach(var vehicle in State.Vehicles){ClearPassedJunction(vehicle);ReleaseManoeuvre(vehicle);}
-        }
-        else
-        {
-            var skipped=0;
-            foreach(var vehicle in State.Vehicles)
-            {
-                if(vehicle.IntersectionClaim is null && vehicle.IntersectionEnteredAt is null &&
-                   vehicle.ManoeuvreDock is null && vehicle.ManoeuvreSpaces.Count==0)
-                {
-                    skipped++;
-                    if(Pr57551SparseCleanupVerify)
-                    {
-                        // Shadow runs the original pair, including all hooks.
-                        ClearPassedJunction(vehicle);ReleaseManoeuvre(vehicle);
-                        if(vehicle.IntersectionClaim is not null || vehicle.IntersectionEnteredAt is not null ||
-                           vehicle.ManoeuvreDock is not null || vehicle.ManoeuvreSpaces.Count!=0)
-                            throw new InvalidOperationException("PR57_551_EMPTY_OWNERSHIP_SHADOW_MISMATCH");
-                    }
-                    else Pr57ReservationWrite(vehicle,"clear-passed-claim");
-                }
-                else {ClearPassedJunction(vehicle);ReleaseManoeuvre(vehicle);}
-            }
-            if(Pr57551SparseCleanupDiag)
-            {
-                _pr57551CleanupSlices++;
-                _pr57551CleanupSkipped+=skipped;
-                _pr57551CleanupVisited+=State.Vehicles.Count;
-                if(_pr57551CleanupSlices%100==0)
-                    Console.WriteLine($"PR57_551_CLEANUP slices={_pr57551CleanupSlices} visited={_pr57551CleanupVisited} skipped={_pr57551CleanupSkipped} retained={_pr57551CleanupVisited-_pr57551CleanupSkipped} fullScanPerSlice=True noWriterCertificate=True");
-            }
-        }
+        foreach(var vehicle in State.Vehicles){ClearPassedJunction(vehicle);ReleaseManoeuvre(vehicle);}
         Pr57Effect253AfterCleanup();
         Pr57CausalAfterCleanup();
         Pr57JunctionReadersAfterCleanup();
