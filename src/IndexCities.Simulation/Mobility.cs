@@ -600,6 +600,7 @@ public sealed partial class CitySimulation
         Pr57ActorShadowBeginSlice();
         Pr57DockWriterBeginSlice();
         Pr57Body258BeginSlice();
+        Pr57WriterJunctionBegin(dt,operationsDt);
         Pr57Crossing259BeginSlice();
         // Same order as OrderBy(WaitingSince).ThenBy(Id): Ids are unique, so the
         // key is a total order and any sort yields the same sequence.
@@ -812,6 +813,7 @@ public sealed partial class CitySimulation
         if(scanProfile is not null)_pr57MovementAllocBytes[1]+=GC.GetAllocatedBytesForCurrentThread()-pr57AllocCallStart;
         Pr57SetupGapEnd(ordered.Length,pr57ScanCandidates.Count);
         foreach(var v in ordered){
+            Pr57WriterJunctionBeforeActor(v);
             Pr57Effect253BeforeActor(v);
             Pr57PhaseImpactBeforeActor(v);
             Pr57ExclusiveBeginVehicle(v);
@@ -1417,6 +1419,7 @@ public sealed partial class CitySimulation
                 Pr57ActorShadowAfterActor(v);
                 Pr57DockWriterAfterActor(v);
                 Pr57Body258AfterActor(v);
+                Pr57WriterJunctionAfterActor(v);
                 Pr57PhaseImpactAfterActor(v);
                 if(scanProfile is not null)_pr57MovementAllocBytes[10]+=GC.GetAllocatedBytesForCurrentThread()-pr57FinalizeAllocStart;
             }
@@ -1425,6 +1428,7 @@ public sealed partial class CitySimulation
             Console.WriteLine($"PR57_236_POSE_NOOP sample={_pr57MovementAllocCalls-35} eligible={pr57PoseNoopEligible} skipped={pr57PoseNoopSkipped} evaluated={pr57PoseNoopEligible-pr57PoseNoopSkipped} scope=BITWISE_HEADING_NOOP");
         // A towed vehicle moves only with its tow (platform or trailing a heavy tow).
         SyncTowedVehicles();
+        Pr57WriterJunctionEnd();
         Pr57Transitions290End(dt<=0?0:1);
         Pr57Effect253EndSlice();
         Pr57260EndSlice();
@@ -1512,7 +1516,7 @@ public sealed partial class CitySimulation
     {
         var horizontal=Math.Abs(Math.Sin(v.Heading))>.7;
         if(junction.Control==JunctionControl.Signal&&((VehicleMovementTime%60<30)!=horizontal))return Pr57JunctionPreferenceDenied(0);
-        var competitors=State.Vehicles.Where(o=>o.Id!=v.Id&&o.Status==VehicleStatus.Travelling&&o.RouteIndex<o.Route.Count&&o.Route[o.RouteIndex]==junction.Id&&o.Position.Distance(junction.Position)<14&&CanTurnNow(o)).ToList();
+        var competitors=Pr57WriterJunctionCandidates(junction).Where(o=>o.Id!=v.Id&&o.Status==VehicleStatus.Travelling&&o.RouteIndex<o.Route.Count&&o.Route[o.RouteIndex]==junction.Id&&o.Position.Distance(junction.Position)<14&&CanTurnNow(o)).ToList();
         Pr57JunctionReadersPreferenceCandidates(v,competitors);
         if(junction.Control==JunctionControl.ThroughX&&!horizontal&&competitors.Any(o=>Math.Abs(Math.Sin(o.Heading))>.7))return Pr57JunctionPreferenceDenied(1);
         if(junction.Control==JunctionControl.ThroughZ&&horizontal&&competitors.Any(o=>Math.Abs(Math.Cos(o.Heading))>.7))return Pr57JunctionPreferenceDenied(2);
@@ -1565,7 +1569,7 @@ public sealed partial class CitySimulation
             if(holder is not null){Pr57JunctionReadersBlock(v,holder,"bendHolder");v.Cause="Aguardando liberação da curva pelo veículo "+holder.Id;return Pr57JunctionDecision(v,junction,Pr57JunctionExit.BendHolder,false);}
             double Arrived(Vehicle a)=>a.WaitingSince>0?a.WaitingSince:VehicleMovementTime;
             pr57DetailStart=pr57Detail?GC.GetAllocatedBytesForCurrentThread():0L;pr57DetailTickStart=pr57Detail&&Pr57HotTiming?System.Diagnostics.Stopwatch.GetTimestamp():0L;
-            var first=State.Vehicles.Where(o=>Pr57JunctionReadersCandidate(v,o,2)&&o.Id!=v.TowTargetId&&o.Status==VehicleStatus.Travelling&&!Leaving(o)&&o.RouteIndex<o.Route.Count&&o.Route[o.RouteIndex]==junction.Id&&Pr57JunctionReadersGate(v,o,3)&&TurnsAtBend(o,o.RouteIndex)&&Pr57JunctionReadersGate(v,o,4)&&o.Position.Distance(junction.Position)<11&&(o.Id==v.Id||CanTurnNow(o)))
+            var first=Pr57WriterJunctionCandidates(junction).Where(o=>Pr57JunctionReadersCandidate(v,o,2)&&o.Id!=v.TowTargetId&&o.Status==VehicleStatus.Travelling&&!Leaving(o)&&o.RouteIndex<o.Route.Count&&o.Route[o.RouteIndex]==junction.Id&&Pr57JunctionReadersGate(v,o,3)&&TurnsAtBend(o,o.RouteIndex)&&Pr57JunctionReadersGate(v,o,4)&&o.Position.Distance(junction.Position)<11&&(o.Id==v.Id||CanTurnNow(o)))
                 .Append(v).Distinct().OrderBy(Arrived).ThenBy(o=>o.Id).First();
             if(pr57Detail){_pr57JunctionDetailBytes[3]+=GC.GetAllocatedBytesForCurrentThread()-pr57DetailStart;_pr57JunctionDetailCalls[3]++;if(pr57DetailTickStart!=0)_pr57JunctionDetailTicks[3]+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57DetailTickStart;}
             if(first.Id!=v.Id){Pr57JunctionReadersBlock(v,first,"bendPriority");v.Cause="Aguardando liberação da curva pelo veículo "+first.Id;return Pr57JunctionDecision(v,junction,Pr57JunctionExit.BendPriority,false);}
