@@ -262,7 +262,7 @@ public sealed partial class CitySimulation
             var tested=false;
             foreach(var p in poses)if(p.Position.Distance(o.Position)<12){
                 if(census){geometry++;tested=true;}
-                if(Pr57ContactExceeds555(v,p.Position,p.Heading,o,o.Position,o.Heading,limit)){
+                if(Penetration(v,p.Position,p.Heading,o,o.Position,o.Heading)>limit){
                     if(census)Pr57305Body(v,o,poses.Count,visited,eligible,nearNegative,geometry,started);
                     return o;
                 }
@@ -283,7 +283,7 @@ public sealed partial class CitySimulation
         foreach(var o in State.Vehicles){
             if(o.Id==v.Id||o.Id==v.TowTargetId||o.Status!=VehicleStatus.Travelling||o.WaitingSince>0||Leaving(o)||o.Machine!=PavingMachine.None||o.Position.Distance(v.Position)>seconds*State.Tuning.HighwaySpeed+20)continue;
             var forward=new Point(Math.Sin(o.Heading),Math.Cos(o.Heading));var reach=State.Tuning.VehicleSpeed*seconds;
-            for(var run=0.0;run<=reach;run+=1){var at=o.Position+forward*run;if(poses.Any(p=>p.Position.Distance(at)<12&&Pr57ContactExceeds555(v,p.Position,p.Heading,o,at,o.Heading,-.1)))return o;}
+            for(var run=0.0;run<=reach;run+=1){var at=o.Position+forward*run;if(poses.Any(p=>p.Position.Distance(at)<12&&Penetration(v,p.Position,p.Heading,o,at,o.Heading)>-.1))return o;}
         }
         return null;
     }
@@ -448,7 +448,7 @@ public sealed partial class CitySimulation
         foreach(var o in State.Vehicles){
             if(o.Id==v.Id||o.PassengerCar||o.Machine!=PavingMachine.None||o.Status is VehicleStatus.Outside or VehicleStatus.Towed)continue;
             var at=o.ManoeuvreDock is {} owned&&(o.ManoeuvreDeparture==true||o.MovementAdmission?.ReachesDock==true)?owned:o.Status is VehicleStatus.Unloading or VehicleStatus.Parked?o.DockPosition:null;if(at is not {} other||other.Distance(dock)>16)continue;
-            if(other.Distance(dock)<.1||Pr57ContactExceeds555(v,dock,v.Heading,o,other,o.Heading,-.1)||Pr57ContactExceeds555(v,dock,v.Heading,o,o.Position,o.Heading,-.1)){yield return o;continue;}
+            if(other.Distance(dock)<.1||Penetration(v,dock,v.Heading,o,other,o.Heading)>-.1||Penetration(v,dock,v.Heading,o,o.Position,o.Heading)>-.1){yield return o;continue;}
             // Distinct dock endpoints can share the same physical corridor. A
             // newcomer must wait outside that owner's exit too, instead of
             // stopping on it while waiting for a different occupied bay.
@@ -557,7 +557,7 @@ public sealed partial class CitySimulation
             // its physical service (ARCHITECTURE "onde se espera"). It need
             // not be outside its own acquired crossing, only other owners' exits.
             occupied=OwnersWayOut(v,dock).Any(o=>o.Position.Distance(end.Item2)<12&&BodiesOverlap(v,end.Item2,end.Item3,o.Body,o.Position,o.Heading))||
-                DockOwners(v,dock).Any(o=>o.ManoeuvreDock is {} other&&Pr57ContactExceeds555(v,dock,v.Heading,o,other,o.Heading,-.1));
+                DockOwners(v,dock).Any(o=>o.ManoeuvreDock is {} other&&Penetration(v,dock,v.Heading,o,other,o.Heading)>-.1);
         }
         if(!occupied&&AdmitManoeuvre(v,way,spaces,dock,false,limit)){Pr57276Gate(v,11);return [];}
         Pr57276Gate(v,occupied?9:10);
