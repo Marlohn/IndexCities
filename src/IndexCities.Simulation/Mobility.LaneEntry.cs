@@ -298,6 +298,7 @@ public sealed partial class CitySimulation
     static Vehicle EntrySnapshot(Vehicle v)=>new(){Id=v.Id,Position=v.Position,Heading=v.Heading,Status=v.Status,Fuel=v.Fuel,PassengerCar=v.PassengerCar,RouteIndex=v.RouteIndex,Route=v.Route.ToList()};
     void MoveVehicles(double dt)
     {
+        Pr57EventForecastBeginStep(dt);
         var profile=CostProfile;
         var started=profile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
         var pr57300=Pr57300Enabled?new Pr57300Step():null;
@@ -313,6 +314,7 @@ public sealed partial class CitySimulation
             Pr57JunctionCensusReportIfReady(State.ElapsedSeconds+dt);
             pr57300?.Print(pr57300Call,false);
             _pr57300Step=null;
+            Pr57EventForecastEndStep();
             return;
         }
         if(profile is not null)profile.VehicleBatchedSteps++;
@@ -439,6 +441,7 @@ public sealed partial class CitySimulation
         }
         if(profile is not null)PrintCompletedLaneSliceHours(State.ElapsedSeconds+dt);
         Pr57JunctionCensusReportIfReady(State.ElapsedSeconds+dt);
+        Pr57EventForecastEndStep();
     }
     Point ProjectedVelocity(Vehicle v,HashSet<int>? held)
     {
@@ -542,7 +545,7 @@ public sealed partial class CitySimulation
                 continue;
             }
             if(held?.Contains(v.Id)==true)continue;
-            var candidate=TimeToMovementChange(v,horizon,out var cause);
+            var candidate=Pr57ForecastMovementChange(v,horizon,out var cause);
             if(candidate<horizon-1e-9){movementCause=cause;movementWinner=v;}
             horizon=Math.Min(horizon,candidate);
         }
