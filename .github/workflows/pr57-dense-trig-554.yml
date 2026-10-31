@@ -1,4 +1,4 @@
-name: 'PR57 #554 slice-local dense trigonometry write-through A/B'
+name: 'PR57 #554 dense trigonometry BAAB longer REAL works'
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
@@ -50,7 +50,7 @@ jobs:
           run-id: 41052837425
           github-token: ${{ github.token }}
           path: artifacts/input445
-      - name: Unprofiled ABBA, fresh processes, two full checkpoints per arm
+      - name: Unprofiled BAAB, longer REAL works, fresh processes and full checkpoints
         shell: bash
         run: |
           set -euo pipefail
@@ -59,12 +59,12 @@ jobs:
           from pathlib import Path
           cases=[
             ('congestedREAL121',Path('artifacts/input259/real14hREAL-control/checkpoint-0.json'),3600,121,98,'779c144f2d6b2b64ece079f5740bf8a0a473a47286ca40d8b5f6b9dd61ab616f'),
-            ('worksREAL47',Path('artifacts/input445/pr57-445/A/checkpoint-0.json'),400,47,42,'b7c52ab87928e7eaa93cfc557b9f3dc935d5b17da44820b405990071940f95b5'),
+            ('worksREAL47',Path('artifacts/input445/pr57-445/A/checkpoint-0.json'),3600,47,42,'b7c52ab87928e7eaa93cfc557b9f3dc935d5b17da44820b405990071940f95b5'),
             ('gridARTIFICIAL',None,200,None,None,None)
           ]
           root=Path('artifacts/pr57-554');root.mkdir(parents=True,exist_ok=True)
           summary={'experiment':554,'gainAccepted':False,'mode':'unprofiled scale, public Advance(2)',
-                   'comparison':'composed flags vs same flags plus uninstrumented canonical lane kernel, fresh ABBA',
+                   'comparison':'composed flags vs same flags plus dense trig, fresh BAAB with longer REAL works',
                    'cases':{}}
           for name,source,seconds,alive,vehicles,expected in cases:
             raw=source.read_bytes() if source else None
@@ -74,7 +74,7 @@ jobs:
               assert sum(bool(c['Alive']) for c in state['Citizens'])==alive
               assert len(state['Vehicles'])==vehicles
             checkpoints=[];diagnostics=[];arms={}
-            for arm in ('A1','B1','B2','A2'):
+            for arm in ('B1','A1','A2','B2'):
               dest=root/name/arm;dest.mkdir(parents=True,exist_ok=True)
               enabled=arm.startswith('B')
               env=os.environ.copy()
@@ -112,8 +112,25 @@ jobs:
               assert all(x[i]==checkpoints[0][i] for x in checkpoints),(name,'FULL_JSON_PARITY_FAIL',i)
             summary['cases'][name]={'stepsPerArm':seconds//2,'fullJsonParityAt':[0,1,2],
                                      'artificial':source is None,'arms':arms}
+          for name,case in summary['cases'].items():
+            arms=case['arms']
+            def total(arm,index):return sum(row[index] for row in arms[arm]['metrics'])
+            a_wall=(total('A1',0)+total('A2',0))/2
+            b_wall=(total('B1',0)+total('B2',0))/2
+            a_cpu=(total('A1',1)+total('A2',1))/2
+            b_cpu=(total('B1',1)+total('B2',1))/2
+            a_alloc=(total('A1',2)+total('A2',2))/2
+            b_alloc=(total('B1',2)+total('B2',2))/2
+            case['aggregate']={'wallControlSeconds':a_wall,'wallVariantSeconds':b_wall,
+                               'throughputRatio':a_wall/b_wall,'cpuControlSeconds':a_cpu,
+                               'cpuVariantSeconds':b_cpu,'allocControlMB':a_alloc,
+                               'allocVariantMB':b_alloc}
+            print('PR57_554_BAAB_RESULT',name,'steps',case['stepsPerArm'],
+                  'ratio',round(a_wall/b_wall,5),'wall',round(a_wall,4),round(b_wall,4),
+                  'cpu',round(a_cpu,4),round(b_cpu,4),
+                  'allocMB',round(a_alloc,2),round(b_alloc,2),flush=True)
           (root/'summary.json').write_text(json.dumps(summary,indent=2,sort_keys=True))
-          print('PR57_554_DENSE_TRIG_ABBA_PASS',flush=True)
+          print('PR57_554_DENSE_TRIG_BAAB_LONG_WORKS_PASS',flush=True)
           PY_RUN
       - name: Diagnostic fast-kernel exercise in REAL replays
         shell: bash
