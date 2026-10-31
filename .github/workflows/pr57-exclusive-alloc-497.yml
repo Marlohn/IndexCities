@@ -2,7 +2,7 @@ name: 'PR57 #497 exclusive managed allocation scopes in REAL admission'
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
-    paths: [.github/workflows/pr57-exclusive-alloc-497.yml]
+    paths: [.github/workflows/pr57-exclusive-alloc-497.yml, scripts/pr57-497-inject-exclusive-alloc.py]
   workflow_dispatch:
 permissions:
   contents: read
