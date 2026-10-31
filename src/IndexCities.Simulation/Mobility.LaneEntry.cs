@@ -298,6 +298,7 @@ public sealed partial class CitySimulation
     static Vehicle EntrySnapshot(Vehicle v)=>new(){Id=v.Id,Position=v.Position,Heading=v.Heading,Status=v.Status,Fuel=v.Fuel,PassengerCar=v.PassengerCar,RouteIndex=v.RouteIndex,Route=v.Route.ToList()};
     void MoveVehicles(double dt)
     {
+        Pr57IncrementalActorOrderBeginStep();
         var profile=CostProfile;
         var started=profile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
         var pr57300=Pr57300Enabled?new Pr57300Step():null;
