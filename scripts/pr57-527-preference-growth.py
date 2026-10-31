@@ -13,7 +13,7 @@ from pathlib import Path
 
 DIGEST = '2561e9a9fe2379ee1f60b28ae45eaac67ceee81f998e69b7d10059e649d8fbd9'
 CASES = {'congestedREAL121': 100, 'worksREAL47': 300, 'GRID_ARTIFICIAL': 300}
-KV = re.compile(r'([A-Za-z][A-Za-z0-9]*)=([^\\s]+)')
+KV = re.compile(r'([A-Za-z][A-Za-z0-9]*)=([^\s]+)')
 
 
 def rows(log, prefix):
