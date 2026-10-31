@@ -49,6 +49,7 @@ def audit(path):
             gc0s = []
             initials, finals = [], []
             movement = []
+            profiled = []
             physical = []
             for arm in ARMS:
                 root = f'{case}/{arm}/'
@@ -79,6 +80,7 @@ def audit(path):
                 allocs.append(float(w['allocMB']))
                 gc0s.append(int(w['gc0']))
                 movement.append(float(phase['wall'].rstrip('s')))
+                profiled.append(float(p['measuredWall'].rstrip('s')))
                 physical.append((int(v['batched']), int(v['unsplit']), int(v['slices'])))
                 if case == 'congestedREAL121':
                     alloc = unique(lines, 'PR57_ALLOC_PROFILE calls=600 ')
@@ -102,7 +104,8 @@ def audit(path):
             assert max(gc0s) == min(gc0s), f'{case}: gen0 A/B mismatch'
             assert len(set(physical)) == 1, f'{case}: physical counts mismatch'
             out[case] = {'steps': steps, 'allocatedMB': allocs[0], 'gc0': gc0s[0],
-                         'physical': physical[0], 'vehicleWallRange': (min(movement), max(movement))}
+                         'physical': physical[0], 'vehicleWallRange': (min(movement), max(movement)),
+                         'profiledControl': (profiled[0], movement[0])}
     print('PR57_495_AUTHENTIC_ALLOCATION_BUDGET_PASS')
     print(f'zipSha256={EXPECTED_ZIP} cases=3 arms=12 checkpoints=24 CRC=OK')
     print(f'targetQuantaPerRealSecond={TARGET_QUANTA_PER_SECOND:.6f} '
@@ -112,10 +115,15 @@ def audit(path):
         # MB means decimal 1e6 bytes in Headless Program.cs, not MiB.
         required_gb_per_sec = per_step * TARGET_QUANTA_PER_SECOND / 1000
         b, u, s = row['physical']
+        profile_seconds, vehicle_seconds = row['profiledControl']
+        assert profile_seconds >= vehicle_seconds
+        free_vehicle_residual_us = (profile_seconds - vehicle_seconds) * 1e6 / row['steps']
         print(f'{case} steps={row["steps"]} allocMB={row["allocatedMB"]:.1f} '
               f'allocMBPerQuantum={per_step:.3f} '
               f'conditionalGBPerSecondAtTarget={required_gb_per_sec:.2f} '
-              f'gen0={row["gc0"]} batched={b} unsplit={u} slices={s}')
+              f'gen0={row["gc0"]} batched={b} unsplit={u} slices={s} '
+              f'freeVehicleResidualUsPerQuantum={free_vehicle_residual_us:.1f} '
+              f'freeVehicleResidualVsTarget={free_vehicle_residual_us/(1e6/TARGET_QUANTA_PER_SECOND):.1f}x')
     total, entry, junction = measured
     real = out['congestedREAL121']['allocatedMB']
     print(f'congestedREAL121 first600MoveUnsplitCallsAllocatedMB={total:.2f} '
