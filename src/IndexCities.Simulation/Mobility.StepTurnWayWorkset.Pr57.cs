@@ -31,11 +31,9 @@ public sealed partial class CitySimulation
     readonly record struct Pr57TurnWayRoadInput(
         RoadNode Node, Point Position, bool Crosswalk, int[] Neighbours);
     readonly List<Pr57TurnWayRoadInput> _pr57TurnWayRoadInputs = [];
-    long _pr57TurnWayRoadRevision;
 
     void Pr57TurnWayCaptureRoads()
     {
-        _pr57TurnWayRoadRevision++;
         _pr57TurnWayRoadInputs.Clear();
         foreach(var road in State.Roads)
             _pr57TurnWayRoadInputs.Add(new(
@@ -73,12 +71,10 @@ public sealed partial class CitySimulation
             _pr57TurnWaySteps++;
             Pr57TurnWayCaptureRoads();
         }
-        Pr57NegativeWitnessBegin();
     }
 
     void Pr57TurnWayWorksetEnd()
     {
-        Pr57NegativeWitnessEnd();
         _pr57TurnWayActive = false;
         _pr57TurnWayWorkset.Clear();
         _pr57TurnWayRoadInputs.Clear();

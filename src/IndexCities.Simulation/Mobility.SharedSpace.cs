@@ -324,8 +324,6 @@ public sealed partial class CitySimulation
     // the turn (intention holds no one).
     bool CanTurnNow(Vehicle o)
     {
-        // A live blocker is a sufficient negative certificate, never a positive one.
-        if(Pr57NegativeWitnessTry(o))return false;
         var pr57263Start=Pr57263Begin();
         if(o.RouteIndex>=o.Route.Count)
             return Pr57263Finish(o,pr57263Start,0,null,false);
@@ -336,10 +334,7 @@ public sealed partial class CitySimulation
         var body=BodyOnWay(o,turn);
         Pr57263Stage(1,pr57263StageStart);
         if(body!=null)
-        {
-            Pr57NegativeWitnessStore(o,turn,body);
             return Pr57263Finish(o,pr57263Start,1,body.Id,false);
-        }
         if(EntersBay(o)&&o.DockPosition is {} dock&&!DockAdmitted(o,dock)){
             pr57263StageStart=pr57263Start==0?0:System.Diagnostics.Stopwatch.GetTimestamp();
             var way=EntryPlan(o,dock,out _,out _,out var needed);
