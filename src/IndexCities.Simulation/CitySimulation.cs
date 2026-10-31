@@ -316,7 +316,11 @@ public sealed partial class CitySimulation
         // sub-slices of this Step; discard at the public Advance boundary.
         Pr57PrepareSharedNodeGrid();
         Pr57310Begin();
-        MoveVehicles(dt);
+        // PR57 #541: geometry-only, Step-scoped reuse. All vehicle motion and
+        // physical admission still execute in their original causal order.
+        Pr57TurnWayWorksetBegin();
+        try { MoveVehicles(dt); }
+        finally { Pr57TurnWayWorksetEnd(); }
         Pr57310Boundary("vehicles");
         if(profile is not null)profile.Mark(0,ref started);
         if(Pr57Writer289Enabled)_pr57Writer289Phase=1;

@@ -293,6 +293,15 @@ public sealed partial class CitySimulation
     List<(Vehicle Body,Point Position,double Heading)> TurnWay(Vehicle o,out List<RoadNode> spaces)
     {
         Pr57261Hit(2);
+        if(Pr57TurnWayWorksetTryGet(o,out var cached,out spaces))return cached;
+        var way=Pr57TurnWayFresh(o,out spaces);
+        Pr57TurnWayWorksetStore(o,way,spaces);
+        return way;
+    }
+    // Original physical construction, retained verbatim for fallback and
+    // optional shadow recomputation of every cache hit.
+    List<(Vehicle Body,Point Position,double Heading)> Pr57TurnWayFresh(Vehicle o,out List<RoadNode> spaces)
+    {
         var way=Manoeuvre(o,o.Route,o.RouteIndex,o.Position,o.Heading,[],false,1,out spaces);
         if(way.Count>0){var end=way[^1];var run=new List<(Point Position,double Heading)>();SamplePoses(run,end.Position,end.Position+new Point(Math.Sin(end.Heading),Math.Cos(end.Heading))*8,end.Heading);way.AddRange(run.Select(p=>(o,p.Position,p.Heading)));}
         return way;
