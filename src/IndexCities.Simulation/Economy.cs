@@ -272,6 +272,14 @@ public sealed partial class CitySimulation
     static readonly bool Pr57ParallelNeedsEnabled=Environment.GetEnvironmentVariable("PR57_PARALLEL_NEEDS")=="1";
     readonly List<(Citizen Citizen,double Unmet,int Members)> _pr57ParallelNeedsRows=[];
     bool _pr57ParallelNeedsAnnounced,_pr57ParallelNeedsEngaged;
+    // PR57 #565: transient primitive lanes, never serialized or reused across Steps.
+    Citizen[] _pr57NeedsBulkCitizens=Array.Empty<Citizen>();
+    long[] _pr57NeedsBulkHealth=Array.Empty<long>();
+    double[] _pr57NeedsBulkUnmet=Array.Empty<double>();
+    double[] _pr57NeedsBulkHunger=Array.Empty<double>();
+    double[] _pr57NeedsBulkSatisfaction=Array.Empty<double>();
+    int[] _pr57NeedsBulkMembers=Array.Empty<int>();
+    long _pr57NeedsBulkRowsCommitted;
     void UpdateNeeds(double dt)
     {
         var pr57NeedsStepProbe=Pr57NeedsStepProbe;
@@ -348,6 +356,82 @@ public sealed partial class CitySimulation
                 if(detail is not null)detail.MarkDetail(7,ref detailStarted);
                 return;
             }
+        }
+        // PR57 #565: data-oriented execution of mandatory updates only.
+        // Consecutive meal-free, death-free actors enter contiguous numeric
+        // lanes. Unsafe actors take the exact serial path after a flush.
+        if(Environment.GetEnvironmentVariable("PR57_NEEDS_BULK")=="1"&&!Pr57ParallelNeedsEnabled)
+        {
+            var count=0;
+            void Flush()
+            {
+                if(count==0)return;
+                for(var i=0;i<count;i++)
+                {
+                    var health=FixedPoint.Add(_pr57NeedsBulkHealth[i],dt/3600*.3,FixedPoint.PointScale);
+                    health=Math.Min(100*FixedPoint.PointScale,health);
+                    health=FixedPoint.Add(health,-_pr57NeedsBulkUnmet[i]*dt/86400,FixedPoint.PointScale);
+                    _pr57NeedsBulkHealth[i]=Math.Clamp(health,0,100*FixedPoint.PointScale);
+                    _pr57NeedsBulkSatisfaction[i]=Math.Clamp(
+                        80-_pr57NeedsBulkHunger[i]*.7-_pr57NeedsBulkUnmet[i]*15-
+                        (_pr57NeedsBulkMembers[i]>Catalog.Definitions[BuildingKind.House].Capacity?8:0),0,100);
+                }
+                for(var i=0;i<count;i++)
+                {
+                    _pr57NeedsBulkCitizens[i].HealthUnits=_pr57NeedsBulkHealth[i];
+                    _pr57NeedsBulkCitizens[i].Satisfaction=_pr57NeedsBulkSatisfaction[i];
+                    _pr57NeedsBulkCitizens[i]=null!;
+                }
+                _pr57NeedsBulkRowsCommitted+=count;
+                count=0;
+            }
+            void Canonical(Citizen c)
+            {
+                c.AddHungerSeconds(dt);var family=FamilyById(c.FamilyId)!;var home=BuildingById(family.HomeId);
+                if(home!=null&&!c.Moving&&c.VehicleId==null&&c.Position.Distance(home.Door)<3&&c.HungerHours>=12&&family.Pantry>=1){family.AddPantry(-(1));c.HungerMicroseconds=Math.Max(0,checked(c.HungerMicroseconds-12*3600*FixedPoint.TimeScale));Personal(c,"Consumiu 1 alimento do estoque físico da residência");}
+                var hungry=c.HungerHours>State.Tuning.HungerDamageAfterHours;var unmet=home==null?1:(1-home.WaterRatio)*.5+(1-home.ElectricityRatio)*.15+HomePollution(home.Position)*.1;
+                pr57NeedsStepProbe?.Observe(c,home,unmet,family.Members.Count,family.Pantry);
+                if(hungry)c.AddHealth(-(dt/3600*(c.HungerHours/State.Tuning.HungerDamageAfterHours)));else if(c.HungerHours<18){c.AddHealth(dt/3600*.3);c.HealthUnits=Math.Min(100*FixedPoint.PointScale,c.HealthUnits);}
+                c.AddHealth(-unmet*dt/86400);c.HealthUnits=Math.Clamp(c.HealthUnits,0,100*FixedPoint.PointScale);c.Satisfaction=Math.Clamp(80-c.HungerHours*.7-unmet*15-(family.Members.Count>Catalog.Definitions[BuildingKind.House].Capacity?8:0),0,100);
+                if(c.Health<=0)CitizenDied(c);
+            }
+            foreach(var c in Pr57NeedsCandidates().Where(c=>c.Alive&&c.Resident&&c.InsideMap))
+            {
+                // At 2s, health >=50, hunger <11h and unmet in [0,1],
+                // no meal, death, event or shared write is possible.
+                if(dt!=2||c.HungerHours>=11||c.HealthUnits<50*FixedPoint.PointScale)
+                {
+                    Flush();Canonical(c);continue;
+                }
+                var family=FamilyById(c.FamilyId)!;var home=BuildingById(family.HomeId);
+                var unmet=home==null?1:(1-home.WaterRatio)*.5+(1-home.ElectricityRatio)*.15+HomePollution(home.Position)*.1;
+                if(!double.IsFinite(unmet)||unmet<0||unmet>1)
+                {
+                    Flush();Canonical(c);continue;
+                }
+                if(count==_pr57NeedsBulkCitizens.Length)
+                {
+                    var capacity=Math.Max(16,count*2);
+                    Array.Resize(ref _pr57NeedsBulkCitizens,capacity);
+                    Array.Resize(ref _pr57NeedsBulkHealth,capacity);
+                    Array.Resize(ref _pr57NeedsBulkUnmet,capacity);
+                    Array.Resize(ref _pr57NeedsBulkHunger,capacity);
+                    Array.Resize(ref _pr57NeedsBulkSatisfaction,capacity);
+                    Array.Resize(ref _pr57NeedsBulkMembers,capacity);
+                }
+                c.AddHungerSeconds(dt);
+                pr57NeedsStepProbe?.Observe(c,home,unmet,family.Members.Count,family.Pantry);
+                _pr57NeedsBulkCitizens[count]=c;
+                _pr57NeedsBulkHealth[count]=c.HealthUnits;
+                _pr57NeedsBulkUnmet[count]=unmet;
+                _pr57NeedsBulkHunger[count]=c.HungerHours;
+                _pr57NeedsBulkMembers[count]=family.Members.Count;
+                count++;
+            }
+            Flush();
+            pr57NeedsStepProbe?.EndStep();
+            if(detail is not null)detail.MarkDetail(7,ref detailStarted);
+            return;
         }
         foreach(var c in Pr57NeedsCandidates().Where(c=>c.Alive&&c.Resident&&c.InsideMap)){
             c.AddHungerSeconds(dt);var family=FamilyById(c.FamilyId)!;var home=BuildingById(family.HomeId);
