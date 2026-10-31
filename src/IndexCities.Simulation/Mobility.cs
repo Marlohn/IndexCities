@@ -572,6 +572,8 @@ public sealed partial class CitySimulation
         // identical to the current heading, the read-only pose scan cannot
         // affect the canonical state. Do not skip any vehicle or sub-slice.
         var pr57PoseNoopSkip=Environment.GetEnvironmentVariable("PR57_236_POSE_NOOP_SKIP")=="1";
+        // #560 opt-in only. No physics is skipped; canonical fallback remains below.
+        var pr57BlockedTail560=Environment.GetEnvironmentVariable("PR57_BLOCKED_TAIL_560")=="1";
         var pr57PoseNoopEligible=0;
         var pr57PoseNoopSkipped=0;
         var pr57CostProbe=scanProfile is not null&&Pr57VehicleCostProbeEnabled;
@@ -1265,6 +1267,13 @@ public sealed partial class CitySimulation
                         if(pr57IdleProbe)Pr57BlockObserve(v,blocker,node,enteringLane,bayHold,entryHeld!=null);
                         if(pr57DepProbe)Pr57DepBlocked(v,blocker);
                         if(scanProfile is not null){_pr57BlockedAllocBytes[0]+=GC.GetAllocatedBytesForCurrentThread()-allocStart;_pr57BlockedCalls[0]++;}
+                        // #560: opt-in extraction of the mandatory blocked tail.
+                        // A future negative physical certificate may only replace the
+                        // expensive decision above; it must still execute this tail.
+                        if(pr57BlockedTail560){
+                            if(Pr57BlockedRecovery560(v,blocker,enteringLane,scanProfile is not null))continue;
+                            break;
+                        }
                         if(v.TowPhase==TowPhase.ToVehicle){
                             allocStart=scanProfile is null?0L:GC.GetAllocatedBytesForCurrentThread();
                             var recovered=TryTowContraflow(v)||TryTowFromBehind(v);
