@@ -195,11 +195,6 @@ for(var d=1;d<=days;d++){
     if(windowSeconds==86400)Console.WriteLine($"DAY {d} wall={w:F2}s eff={86400/w:F0}x {Stats(sim)}");
     else Console.WriteLine($"WINDOW {d} seconds={windowSeconds} wall={w:F2}s eff={windowSeconds/w:F0}x cpu={windowCpu:F2}s allocMB={windowAllocMB:F1} gc0={windowGc0} gc2={windowGc2} {Stats(sim)}");
     stuck?.Report(sim,d);
-    if(Environment.GetEnvironmentVariable("PR57_PERSONAL_HISTORY_DIAG")=="1")
-    {
-        var histories=sim.State.Citizens.Select(c=>c.History).ToArray();
-        Console.WriteLine($"PR57_PERSONAL_HISTORY window={d} citizens={histories.Length} events={histories.Sum(h=>h.Count)} sealedEvents={histories.Sum(h=>h.SealedEvents)} sealedBytes={histories.Sum(h=>(long)h.SealedBytes)} retainedHeapBytes={GC.GetTotalMemory(true)}");
-    }
     if(Environment.GetEnvironmentVariable("PR57_AB_CHECKPOINT")=="1"){
         sim.CheckInvariants();
         var snapshot=sim.SaveToJson();

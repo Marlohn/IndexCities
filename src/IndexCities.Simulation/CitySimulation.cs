@@ -124,7 +124,6 @@ public sealed class StepCostProfile
 public sealed partial class CitySimulation
 {
     public CityState State {get;}
-    static readonly bool Pr57PersonalHistoryChunksEnabled=Environment.GetEnvironmentVariable("PR57_PERSONAL_HISTORY_CHUNKS")=="1";
     // PR57 #167: opt-in observational upper bound on public Advance(2)
     // boundary work versus the complete Step(2), including every physical slice.
     // Never used to change scheduling, state, or save behavior.
@@ -162,7 +161,7 @@ public sealed partial class CitySimulation
         for(var i=0;i<State.Tuning.ExternalCompanyCandidates;i++)State.CompanyCandidates.Add(new(){Id=i+1,Capital=Money(State.Tuning.CompanyCapitalMinimum+(decimal)NextRandom()*(State.Tuning.CompanyCapitalMaximum-State.Tuning.CompanyCapitalMinimum)),RiskTolerance=.25+NextRandom()*.75});
         RebuildRoadGraph();CheckInvariants();
     }
-    public CitySimulation(CityState state){State=state;if(Pr57PersonalHistoryChunksEnabled)foreach(var c in State.Citizens)c.History.EnableChunks();LakeGeometry.Validate(state);RebuildRoadGraph(false);CheckInvariants();}
+    public CitySimulation(CityState state){State=state;LakeGeometry.Validate(state);RebuildRoadGraph(false);CheckInvariants();}
     int Id()=>State.NextId++;
     double NextRandom(){var x=State.RandomState;x^=x>>12;x^=x<<25;x^=x>>27;State.RandomState=x;return (x*2685821657736338717UL>>11)*(1.0/(1UL<<53));}
     public decimal Balance(string account)=>State.Wallets.GetValueOrDefault(account);
@@ -192,7 +191,6 @@ public sealed partial class CitySimulation
     void Personal(Citizen c,string description)
     {
         var pr57Writer289Start=Pr57Writer289Start(out var pr57Writer289Bytes);
-        if(Pr57PersonalHistoryChunksEnabled)c.History.EnableChunks();
         c.History.Add(new(State.Now,description));c.Decision=description;
         Pr57Writer289End(0,pr57Writer289Start,pr57Writer289Bytes);
     }
