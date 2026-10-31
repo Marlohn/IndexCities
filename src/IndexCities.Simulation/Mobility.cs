@@ -412,7 +412,6 @@ public sealed partial class CitySimulation
     }
     void CitizenArrived(Citizen c)
     {
-        Pr57Writer552Citizen(c.Id);
         var pr57Arrive241=Pr57Arrive241Enabled && CostProfile is not null;
         var arrivalPurpose=pr57Arrive241?c.Purpose:default;
         var arrivalStart=pr57Arrive241?System.Diagnostics.Stopwatch.GetTimestamp():0L;
@@ -1621,7 +1620,6 @@ public sealed partial class CitySimulation
     }
     void VehicleArrived(Vehicle v)
     {
-        Pr57Writer552Vehicle(v.Id);
         if(PavingMachineArrived(v))return;
         if(v.RefuellingAt is {} stationId&&BuildingById(stationId) is {} station&&Access(station) is {} stationAccess&&v.Position.Distance(DockAt(stationAccess,station,false))<3){Refuel(v,stationId);return;}
         var s=v.ShipmentId==null?null:State.Shipments.FirstOrDefault(s=>s.Id==v.ShipmentId);

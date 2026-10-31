@@ -478,7 +478,6 @@ public sealed partial class CitySimulation
     }
     bool CompleteConstructionProject(WorkProject p)
     {
-        Pr57Writer552Project(p.Id);
         if(p.CrewCostDue>0){var due=Money(p.CrewCostDue);if(!ProjectPay(p,due,IsPaving(p)?"Máquinas de pavimentação":"Equipe externa","Saldo do trabalho efetivamente realizado")){p.Cause=WorkCause.NoBudgetForPaving;return false;}if(IsPaving(p))p.MachineryPaid+=due;p.CrewCostDue=0;}
         if(IsPaving(p))OpenCompactedRoads(p);
         p.Progress=1;p.Status=WorkStatus.Completed;p.CompletedAt=State.Now;p.BudgetRemaining=0;p.Cause=WorkCause.Completed;
