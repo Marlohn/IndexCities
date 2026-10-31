@@ -1,0 +1,124 @@
+name: 'PR57 #254 authentic real queue Cause writer attribution'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-real-cause-transitions-254.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  state-effects:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build and regression tests
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic economic queue from #243
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-coexist-243
+          run-id: 40601570843
+          github-token: ${{ github.token }}
+          path: artifacts/prior
+      - name: Compare canonical control with strictly observational state-effects probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          from decimal import Decimal
+          import os, subprocess, json, hashlib
+          root=Path('artifacts/real-state-effects-254')
+          root.mkdir(parents=True,exist_ok=True)
+          earlier=Path('artifacts/prior/overnight-05/checkpoint-1.json')
+          source=Path('artifacts/prior/overnight-08/checkpoint-1.json')
+          assert earlier.is_file() and source.is_file()
+          def load(p): return json.loads(p.read_text(),parse_float=Decimal)
+          before=load(earlier); after=load(source)
+          av={v['Id']:v for v in before['Vehicles'] if v.get('Status')=='Travelling'}
+          bv={v['Id']:v for v in after['Vehicles'] if v.get('Status')=='Travelling'}
+          fields=('Position','Heading','WaitingSince','Cause','RouteIndex')
+          persistent=sorted(i for i in av.keys()&bv.keys()
+              if all(av[i].get(k)==bv[i].get(k) for k in fields))
+          assert len(persistent)==24,('unexpected authentic cohort',persistent)
+          assert sum(bool(c.get('Alive')) for c in after['Citizens'])==121
+          assert all(av[i]==bv[i] for i in persistent),'full vehicle state changed across 08h-14h'
+          print('PR57_254_SOURCE','sha256',hashlib.sha256(source.read_bytes()).hexdigest(),
+                'alive',121,'vehicles',len(after['Vehicles']),
+                'cohort',len(persistent),'ids',','.join(map(str,persistent)),
+                '08h_14h_full_vehicle_json','EQUAL',flush=True)
+          common={
+              'PR57_HOST_QUANTUM':'1','PR57_AB_CHECKPOINT':'1',
+              'PR57_244_PERSISTENT_IDS':','.join(map(str,persistent)),
+              'PR57_206_RESIDUAL_EXCLUSIVE':'0','PR57_IDLE_SCAN_PROBE':'0',
+              'PR57_VEHICLE_MUTATION_AUDIT':'0','PR57_PHASE_ALLOC_PROBE':'0'
+          }
+          def run(mode):
+              dest=root/mode;dest.mkdir(parents=True,exist_ok=True)
+              env=os.environ.copy();env.update(common)
+              env['PR57_253_STATE_EFFECTS']='1' if mode=='probe' else '0'
+              env['PR57_254_CAUSE_TRACE']='1' if mode=='probe' else '0'
+              env['PR57_SAVE_CAPTURE_DIR']=str(dest.resolve())
+              cmd=['dotnet','run','--no-build','-c','Release',
+                  '--project','src/IndexCities.Headless/IndexCities.Headless.csproj',
+                  '--','profile' if mode=='probe' else 'scale','cycle','--seed=42',
+                  '--warmup=0','--days=1','--window=200','--cap=600',
+                  f'--resume={source.resolve()}']
+              with (root/f'{mode}.log').open('w') as out:
+                  subprocess.run(cmd,env=env,stdout=out,stderr=subprocess.STDOUT,
+                                 check=True,timeout=240)
+              log=(root/f'{mode}.log').read_text()
+              assert 'INVARIANTS OK' in log and 'SAVE ' in log,(mode,log[-3000:])
+              assert (dest/'checkpoint-0.json').read_bytes()==source.read_bytes()
+              assert (dest/'checkpoint-1.json').is_file()
+              if mode=='probe':
+                  lines=[x for x in log.splitlines() if x.startswith('PR57_253_STATE_EFFECTS ')]
+                  assert len(lines)==1,(mode,log[-4000:])
+                  assert 'slices=600' in lines[0] and 'cohort=24' in lines[0],lines
+                  net=[x for x in log.splitlines() if x.startswith('PR57_254_NET_CAUSE ')]
+                  blocked=[x for x in log.splitlines() if x.startswith('PR57_254_BLOCKED_WRITER ')]
+                  assert len(net)==14,('unexpected Cause transitions',len(net),net)
+                  print('PR57_254_CAUSE_SUMMARY','netTransitions',len(net),
+                        'blockedWriterTransitions',len(blocked),flush=True)
+                  for item in net+blocked: print(item,flush=True)
+                  print('PR57_254_OBSERVATION',lines[0],flush=True)
+              for line in log.splitlines():
+                  if line.startswith(('WINDOW ','STEP_PROFILE','  STEP_PHASE')):
+                      print('PR57_254_METRIC',mode,line.strip(),flush=True)
+              return dest
+          control=run('control');probe=run('probe')
+          a=(control/'checkpoint-1.json').read_bytes()
+          b=(probe/'checkpoint-1.json').read_bytes()
+          assert a==b,'full JSON checkpoint mismatch'
+          assert load(control/'checkpoint-1.json')==load(probe/'checkpoint-1.json')
+          print('PR57_254_PARITY','fullJson','EXACT',
+                'semanticDecimalDiffs',0,'Advance2Calls',100,
+                'noSkippedSlices',True,'noOptimization',True,flush=True)
+          PY
+      - name: Preserve full checkpoint and raw logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-state-effects-254
+          path: artifacts/real-state-effects-254/**
+          retention-days: 14

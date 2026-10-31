@@ -1,0 +1,141 @@
+name: 'PR57 #439 nonvehicle causal work census REAL'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-nonvehicle-phase-effects-439.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  real-nonvehicle-census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+      PR57_VEHICLE_COST_PROBE: '1'
+      PR57_ADVANCE_BOUNDARY_PROBE: '1'
+      PR57_PHASE_ALLOC_PROBE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compose existing observational probes in disposable checkout
+        run: python3 scripts/pr57-439-inject.py
+      - name: Build and full regression suite
+        run: |
+          set -euo pipefail
+          dotnet build scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release
+      - name: Restore authentic REAL 14h checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Two fresh processes, every public Advance(2), six simulated hours
+        shell: bash
+        run: |
+          set -euo pipefail
+          input="artifacts/input/real14hREAL-control/checkpoint-0.json"
+          test -s "$input"
+          for arm in base shadow; do
+            flag=0
+            if [[ "$arm" == shadow ]]; then flag=1; fi
+            mkdir -p "artifacts/nonvehicle439/$arm"
+            PR57_439_NONVEHICLE="$flag" PR57_224_CITIZEN_STATE_COST="$flag" PR57_239_CITIZEN_PHASES="$flag" \
+              dotnet run --no-build -c Release \
+                --project scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj \
+                -- "$input" "artifacts/nonvehicle439/$arm" \
+                > "artifacts/nonvehicle439/$arm/full.log"
+            grep -q '^PR57_337_FINAL .*parity=IDENTICAL' "artifacts/nonvehicle439/$arm/full.log"
+          done
+          cmp artifacts/nonvehicle439/base/checkpoint-10800.json artifacts/nonvehicle439/shadow/checkpoint-10800.json
+          sha256sum artifacts/nonvehicle439/*/checkpoint-10800.json > artifacts/nonvehicle439/checkpoints.sha256
+          python3 - <<'PY_AUDIT' | tee artifacts/nonvehicle439/summary.json
+          import json,hashlib
+          from pathlib import Path
+          root=Path('artifacts/nonvehicle439')
+          arms={}; signatures=[]
+          phase_names=['vehicles','paving-returns','citizen-mobility','construction','maintenance',
+              'relocation','infrastructure','businesses','needs','economy-review',
+              'construction-dispatch','market-followups','demolition-finance-loans']
+          for arm in ('base','shadow'):
+              lines=(root/arm/'full.log').read_text().splitlines()
+              def rows(prefix):
+                  return [dict(x.split('=',1) for x in line.split()[1:] if '=' in x)
+                          for line in lines if line.startswith(prefix+' ')]
+              hours=rows('PR57_337_HOUR'); boundaries=rows('PR57_ADVANCE_BOUNDARY')
+              final=rows('PR57_337_FINAL'); phases=rows('PR57_439_PHASE')
+              citizens=rows('PR57_224_CITIZEN_STATE'); citizen_sum=rows('PR57_224_CITIZEN_SUM')
+              citizen_gates=rows('PR57_239_CITIZEN')
+              effect_sum=rows('PR57_PHASE_EFFECT_SUMMARY'); effects=rows('PR57_PHASE_EFFECT')
+              projects=rows('PR57_282_SUM'); dispatch=rows('PR57_439_EFFECTS')
+              assert len(hours)==6 and len(boundaries)==108 and len(final)==1
+              assert [int(x['calls']) for x in boundaries]==list(range(100,10801,100))
+              assert all(x['quantum']=='2' for x in boundaries)
+              assert all(int(x['living'])==121 for x in hours)
+              assert final[0]['parity']=='IDENTICAL'
+              assert len(phases)==6*13
+              for h in range(1,7):
+                  assert [x['name'] for x in phases if int(x['hour'])==h]==phase_names
+              assert all(float(x['ms'])>=0 and int(x['allocatedBytes'])>=0 for x in phases)
+              signatures.append([tuple(h[k] for k in
+                  ('hour','slices','actors','claimChanges','spaceCountChanges',
+                   'living','ledger','history')) for h in hours])
+              if arm=='shadow':
+                  assert len(citizen_sum)==1 and len(citizens)==4 and len(citizen_gates)==7
+                  assert {x['name'] for x in citizens}=={
+                      'aboard','walking','stationary-due','stationary-not-due'}
+                  assert sum(int(x['calls']) for x in citizens)==121*10800
+                  assert len(effect_sum)==1 and int(effect_sum[0]['samples'])==36
+                  assert int(effect_sum[0]['observedSteps'])==10800
+                  assert len(effects)==13 and [x['name'] for x in effects]==phase_names
+                  assert all(int(x['changed'])+int(x['unchanged'])==36 for x in effects)
+                  assert len(projects)==2 and {x['phase'] for x in projects}=={'order','progress'}
+                  assert len(dispatch)==1
+                  assert int(dispatch[0]['dispatchActiveSteps'])>=int(dispatch[0]['dispatchNoShipmentOrLedgerSteps'])
+              else:
+                  assert not citizens and not citizen_sum and not citizen_gates and not effects and not effect_sum and not projects and not dispatch
+              by_phase={x['name']:round(sum(float(p['ms']) for p in phases if p['name']==x['name']),3)
+                  for x in phases[:13]}
+              total=sum(by_phase.values())
+              arms[arm]={
+                  'wallMs':round(sum(float(h['wallMs']) for h in hours),3),
+                  'cpuMs':round(sum(float(h['cpuMs']) for h in hours),3),
+                  'allocatedBytes':sum(int(h['totalAllocatedBytes']) for h in hours),
+                  'phaseMs':by_phase,'phaseTotalMs':round(total,3),
+                  'nonvehicleMs':round(total-by_phase['vehicles'],3),
+                  'citizenStates':citizens,'citizenSum':citizen_sum,'citizenGates':citizen_gates,
+                  'phaseEffects':effects,'effectSummary':effect_sum,
+                  'projects':projects,'dispatch':dispatch}
+          assert signatures[0]==signatures[1], 'intermediate economy/history mismatch'
+          saves=[(root/a/'checkpoint-10800.json').read_bytes() for a in ('base','shadow')]
+          assert saves[0]==saves[1]
+          sha=hashlib.sha256(saves[0]).hexdigest()
+          assert len(saves[0])==2254838
+          assert sha=='e92293faf61a6ea2aab7dd0fdac83c14bd4668f611a126c701dc6705587bb9fa'
+          print(json.dumps({'scope':'AUTHENTIC_REAL_121_LIVING_98_VEHICLES_6H',
+              'advance2PerArm':10800,'arms':arms,'saveSha256':sha,
+              'phaseEffectSampling':'1_IN_300_STEPS_NET_PERSISTED_ONLY',
+              'observational':True,'causalClosure':False,'optimizationGainAccepted':False},
+              sort_keys=True))
+          PY_AUDIT
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integrated-scale-pr57-nonvehicle-439
+          path: artifacts/nonvehicle439
+          retention-days: 14

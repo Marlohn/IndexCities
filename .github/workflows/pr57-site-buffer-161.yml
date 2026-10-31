@@ -1,0 +1,133 @@
+name: PR57 safe-site reservation scratch buffer ABBA
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-site-buffer-161.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  safe-site-buffer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build and test both modes
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          for flag in 0 1; do
+            PR57_SAFE_SITE_BUFFER="$flag" PR57_SITE_OWNER_ROSTER=1 PR57_BUILDING_WORK_ACCESS=1 \
+            PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ORDER_SHIPMENT_INDEX=1 \
+            PR57_PROGRESS_SHIPMENT_LOOKUP=1 PR57_SINGLE_CREW_ASSIGNMENT=1 \
+              dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+          done
+      - name: Restore authentic active construction
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-growth
+          run-id: 40250545171
+          github-token: ${{ github.token }}
+          path: artifacts/works
+      - name: Restore authentic pre-gridlock city
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-legal-workplaces-8d
+          run-id: 40169101306
+          github-token: ${{ github.token }}
+          path: artifacts/queue
+      - name: Restore ARTIFICIAL larger-grid checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-host-scale-curve
+          run-id: 40258405557
+          github-token: ${{ github.token }}
+          path: artifacts/grid
+      - name: ABBA in independent processes with Advance(2) and full checkpoints
+        shell: bash
+        run: |
+          set -euo pipefail
+          works="$(find artifacts/works -type f -path '*/growth/checkpoint-0.json' -print -quit)"
+          queue="$(find artifacts/queue -type f -path '*/pr57-jobs-20/checkpoint-10.json' -print -quit)"
+          grid="artifacts/grid/grid18-0/checkpoint-1.json"
+          for source in "$works" "$queue" "$grid"; do test -s "$source"; echo "SOURCE_SHA256 $(sha256sum "$source")"; done
+          mkdir -p artifacts/site-buffer
+          for case in works4h queue1200 gridARTIFICIAL cycle; do
+            fixture=cycle; window=600; windows=3; source=""
+            if [[ "$case" == works4h ]]; then source="$works"; window=3600; windows=4; fi
+            if [[ "$case" == queue1200 ]]; then source="$queue"; window=300; windows=4; fi
+            if [[ "$case" == gridARTIFICIAL ]]; then source="$grid"; fixture=grid; window=100; windows=3; fi
+            classification=REAL_INITIAL
+            if [[ "$case" == works4h || "$case" == queue1200 ]]; then classification=REAL; fi
+            if [[ "$case" == gridARTIFICIAL ]]; then classification=ARTIFICIAL; fi
+            n=0
+            for mode in base candidate candidate base; do
+              enabled=0; if [[ "$mode" == candidate ]]; then enabled=1; fi
+              out="$PWD/artifacts/site-buffer/$case-$n"; mkdir -p "$out"
+              args=(--seed=42 --warmup=0 --days="$windows" --window="$window" --cap=300)
+              if [[ -n "$source" ]]; then args+=(--resume="$source"); else args+=(--rows=6 --length=200); fi
+              echo "PR57_SITE_BUFFER_RUN case=$case class=$classification mode=$mode order=$n flag=$enabled cadence=Advance2"
+              PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_GRID_DIAG=1 PR57_SAVE_CAPTURE_DIR="$out" \
+              PR57_SITE_OWNER_ROSTER=1 PR57_BUILDING_WORK_ACCESS=1 \
+              PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ORDER_SHIPMENT_INDEX=1 \
+              PR57_PROGRESS_SHIPMENT_LOOKUP=1 PR57_SINGLE_CREW_ASSIGNMENT=1 \
+              PR57_SAFE_SITE_BUFFER="$enabled" PR57_PHASE_ALLOC_PROBE=0 \
+              PR57_BLOCK_DEP_PROBE=0 PR57_GRAPH_PROBE=0 PR57_VEHICLE_COST_PROBE=0 PR57_HOT_TIMING=0 \
+                timeout 180s dotnet run --no-build -c Release \
+                  --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                  scale "$fixture" "${args[@]}" | tee "$out.log"
+              n=$((n+1))
+            done
+          done
+      - name: Verify exact causal replay and summarize wall CPU allocations
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import pathlib,re
+          root=pathlib.Path("artifacts/site-buffer")
+          for case,windows,window in (("works4h",4,3600),("queue1200",4,300),("gridARTIFICIAL",3,100),("cycle",3,600)):
+              metrics=[]
+              for i in range(4):
+                  log=(root/f"{case}-{i}.log").read_text()
+                  assert "INVARIANTS OK" in log and "SAVE " in log,(case,i,"invariants/save")
+                  if i in (1,2) and case in ("works4h","queue1200"):
+                      assert "PR57_SAFE_SITE_BUFFER used=True" in log,(case,i,"candidate flag not exercised")
+                  if i in (0,3):
+                      assert "PR57_SAFE_SITE_BUFFER used=True" not in log,(case,i,"control contaminated")
+                  rows=[s for s in log.splitlines() if s.startswith("WINDOW ")]
+                  assert len(rows)==windows,(case,i,"window count",len(rows))
+                  def get(row,key):
+                      match=re.search(r"\b"+re.escape(key)+r"=([0-9.]+)",row)
+                      assert match,(case,i,key,row)
+                      return float(match.group(1))
+                  data={key:sum(get(row,key) for row in rows) for key in ("wall","cpu","allocMB")}
+                  data.update({key:get(rows[-1],key) for key in ("pop","alive","openWorks")})
+                  metrics.append(data)
+                  for n in range(windows+1):
+                      a=(root/f"{case}-0"/f"checkpoint-{n}.json").read_bytes()
+                      b=(root/f"{case}-{i}"/f"checkpoint-{n}.json").read_bytes()
+                      assert a==b,(case,i,n,"full checkpoint diverged")
+              gain=lambda a,b,key:round(100*(1-metrics[b][key]/metrics[a][key]),2)
+              print("PR57_SITE_BUFFER_RESULT",case,"class",("ARTIFICIAL" if case=="gridARTIFICIAL" else "REAL"),
+                    "seconds",windows*window,"order","base,candidate,candidate,base",
+                    "metrics",metrics,"wallGainPct",[gain(0,1,"wall"),gain(3,2,"wall")],
+                    "cpuGainPct",[gain(0,1,"cpu"),gain(3,2,"cpu")],
+                    "allocReductionPct",[gain(0,1,"allocMB"),gain(3,2,"allocMB")],
+                    "throughput",[round(windows*window/x["wall"],2) for x in metrics],
+                    "exactCheckpoints",windows+1)
+          PY
+      - name: Preserve logs and checkpoints
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-site-buffer-161
+          path: artifacts/site-buffer/**
+          retention-days: 14

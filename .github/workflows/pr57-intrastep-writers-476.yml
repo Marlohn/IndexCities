@@ -1,0 +1,144 @@
+name: 'PR57 #476 authentic intra-Step cross-phase writer and presence census'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-intrastep-writers-476.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  causal-boundaries:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Enable existing observational presence probe only in disposable checkout
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('src/IndexCities.Headless/Program.cs')
+          source=p.read_text()
+          anchor='var pr57ProfileFromWindow=int.TryParse('
+          assert source.count(anchor)==1
+          source=source.replace(anchor,
+              'if(profile is not null && Environment.GetEnvironmentVariable("PR57_476_PRESENCE")=="1")\n'
+              '    profile.CrossPhasePresence=new Pr57CrossPhasePresenceProbe(1);\n'
+              +anchor)
+          anchor='// PR57 #224: print observational citizen state cost only when explicitly enabled.'
+          assert source.count(anchor)==1
+          source=source.replace(anchor,
+              'if(profile?.CrossPhasePresence is { } pr57476Presence)\n'
+              '    foreach(var line in pr57476Presence.ReportLines())Console.WriteLine(line);\n'
+              +anchor)
+          p.write_text(source)
+          print('PR57_476_DISPOSABLE_OBSERVATION_ONLY')
+          PY
+      - name: Build and complete regression tests
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic 68-worksite checkpoint from #445
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossphase-access-445
+          run-id: 41052837425
+          github-token: ${{ github.token }}
+          path: artifacts/input445
+      - name: Restore authentic midnight checkpoint from #465
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-midnight-history-465
+          run-id: 41089003924
+          github-token: ${{ github.token }}
+          path: artifacts/input465
+      - name: Run full canonical Advance(2) with intra-Step net-field and worker-presence observations
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,re,subprocess
+          from pathlib import Path
+          cases=[
+            ('worksREAL68',Path('artifacts/input445/pr57-445/A/checkpoint-0.json'),40,47,42,
+             'b7c52ab87928e7eaa93cfc557b9f3dc935d5b17da44820b405990071940f95b5'),
+            ('midnightREAL121',Path('artifacts/input465/A-mid/checkpoint-0.json'),4,121,98,
+             'e31ad0aa321c8aa4272dd400e83575c5a600677ecb8a83879287c654eff1ce92')
+          ]
+          root=Path('artifacts/pr57-476');root.mkdir(parents=True,exist_ok=True)
+          summary={'experiment':476,'observationOnly':True,'allAdvance2':True,
+                   'gainAccepted':False,'cases':{}}
+          for name,source,seconds,alive,vehicles,expected in cases:
+            raw=source.read_bytes()
+            assert hashlib.sha256(raw).hexdigest()==expected,(name,'input digest')
+            state=json.loads(raw)
+            assert sum(bool(c['Alive']) for c in state['Citizens'])==alive
+            assert len(state['Vehicles'])==vehicles
+            if name=='worksREAL68':
+              assert sum(p['Status'] in ('Waiting','InProgress') for p in state['Projects'])>=68
+            if name=='midnightREAL121':
+              assert state['Now']=='2026-01-07T23:59:58'
+            results={}
+            for arm in ('A','B'):
+              dest=root/name/arm;dest.mkdir(parents=True,exist_ok=True)
+              env=os.environ.copy()
+              env.update(PR57_HOST_QUANTUM='1',PR57_AB_CHECKPOINT='1',
+                         PR57_GRID_DIAG='0',PR57_SAVE_CAPTURE_DIR=str(dest.resolve()),
+                         PR57_PHASE_EFFECT_EVERY='1' if arm=='B' else '',
+                         PR57_476_PRESENCE='1' if arm=='B' else '0')
+              cmd=['dotnet','run','--no-build','-c','Release',
+                   '--project','src/IndexCities.Headless/IndexCities.Headless.csproj',
+                   '--','profile' if arm=='B' else 'scale','cycle','--seed=42',
+                   '--warmup=0','--days=1',f'--window={seconds}','--cap=300',
+                   f'--resume={source.resolve()}']
+              with (dest/'full.log').open('w') as out:
+                subprocess.run(cmd,env=env,stdout=out,stderr=subprocess.STDOUT,check=True,timeout=240)
+              log=(dest/'full.log').read_text()
+              assert 'INVARIANTS OK' in log and 'SAVE ' in log,(name,arm,log[-2500:])
+              assert len([x for x in log.splitlines() if x.startswith('WINDOW ')])==1
+              assert len([x for x in log.splitlines() if x.startswith('PR57_AB_CHECKPOINT ')])==1
+              assert (dest/'checkpoint-0.json').read_bytes()==raw
+              final=(dest/'checkpoint-1.json').read_bytes()
+              rows=[x for x in log.splitlines() if x.startswith('PR57_PHASE_EFFECT name=')]
+              presence=[x for x in log.splitlines() if x.startswith('PR57_183_PRESENCE_PHASE ')]
+              if arm=='B':
+                assert len(rows)==13 and len(presence)==13,(name,len(rows),len(presence))
+                assert f'PR57_PHASE_EFFECT_SUMMARY samples={seconds//2} ' in log
+                assert f'PR57_183_PRESENCE_SUMMARY samples={seconds//2} ' in log
+                assert f'STEP_PROFILE steps={seconds//2} ' in log
+                (dest/'phase-rows.json').write_text(json.dumps({'netFieldRows':rows,'presenceRows':presence},
+                    indent=2,ensure_ascii=False))
+              else: assert not rows and not presence
+              results[arm]={'sha256':hashlib.sha256(final).hexdigest(),
+                            'bytes':len(final),'advance2':seconds//2}
+            assert (root/name/'A/checkpoint-1.json').read_bytes()==(root/name/'B/checkpoint-1.json').read_bytes(),name
+            summary['cases'][name]={'inputSha256':expected,'fullJsonParity':True,'arms':results}
+            print('PR57_476_CASE',name,'steps',seconds//2,'sha256',results['A']['sha256'],flush=True)
+          (root/'summary.json').write_text(json.dumps(summary,indent=2,sort_keys=True))
+          print('PR57_476_INTRASTEP_PARITY_PASS',json.dumps(summary,sort_keys=True),flush=True)
+          PY
+      - name: Preserve complete checkpoints and raw per-phase reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-intrastep-writers-476
+          path: artifacts/pr57-476
+          retention-days: 14
+          if-no-files-found: warn

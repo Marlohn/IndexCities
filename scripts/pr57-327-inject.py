@@ -1,0 +1,36 @@
+#!/usr/bin/env python3
+"""Inject opt-in PR57 #327 observation only into the CI checkout, not the branch."""
+from pathlib import Path
+
+def inject(path, old, new):
+    p=Path(path)
+    s=p.read_text()
+    assert s.count(old)==1,(path,old,s.count(old))
+    p.write_text(s.replace(old,new,1))
+
+inject("src/IndexCities.Simulation/Mobility.LaneEntry.cs",
+       "        var pr57300Call=pr57300 is null?0:++_pr57300Calls;",
+       "        var pr57300Call=pr57300 is null?0:++_pr57300Calls;\n"
+       "        if(Pr57327Enabled && pr57300 is null) ++_pr57300Calls;")
+inject("src/IndexCities.Simulation/Mobility.cs",
+       "        Pr57JunctionReadersAfterCleanup();",
+       "        Pr57JunctionReadersAfterCleanup();\n        Pr57327BeginSlice(dt,operationsDt);")
+inject("src/IndexCities.Simulation/Mobility.cs",
+       "        Pr57JunctionReadersEndSlice();",
+       "        Pr57327EndSlice();\n        Pr57JunctionReadersEndSlice();")
+inject("src/IndexCities.Simulation/Mobility.SharedSpace.cs",
+       "        Pr57261Hit(0);",
+       "        Pr57261Hit(0);\n        Pr57327BodyCall();")
+inject("src/IndexCities.Simulation/Mobility.SharedSpace.cs",
+       "            if(census){visited++;Pr57306Read(v,o);}",
+       "            if(census){visited++;Pr57306Read(v,o);}\n            Pr57327Visit(v,o,false);")
+inject("src/IndexCities.Simulation/Mobility.SharedSpace.cs",
+       "            if(census)eligible++;",
+       "            if(census)eligible++;\n            Pr57327Visit(v,o,true);")
+inject("src/IndexCities.Simulation/Pr57JunctionReadersProbe.cs",
+       "        Pr57ReservationShadowWrite(vehicle);",
+       "        Pr57ReservationShadowWrite(vehicle);\n        Pr57327Write(vehicle,site);")
+out=Path("src/IndexCities.Simulation/Mobility.ReadWrite327.Pr57.cs")
+assert not out.exists()
+out.write_text("namespace IndexCities.Simulation;\n\n// PR57 #327: observational same-slice exposure. NOT a causal closure:\n// only BodyOnWay visits and explicit reservation writer hooks after cleanup.\npublic sealed partial class CitySimulation\n{\n    static readonly bool Pr57327Enabled =\n        Environment.GetEnvironmentVariable(\"PR57_327_READWRITE\") == \"1\";\n    bool _pr57327Active;\n    long _pr57327Call = -1; int _pr57327SliceWithinCall;\n    long _pr57327BodyCalls, _pr57327Visits, _pr57327Eligible;\n    long _pr57327Writes, _pr57327ChangedWrites, _pr57327WritesAfterReads;\n    long _pr57327HookTicks;\n    readonly Dictionary<int, HashSet<int>> _pr57327AllReaders = new();\n    readonly Dictionary<int, HashSet<int>> _pr57327EligibleReaders = new();\n    readonly Dictionary<int, (int? Claim, string Spaces)> _pr57327Reservations = new();\n    readonly HashSet<(int Candidate, int Reader)> _pr57327DirtyAll = new();\n    readonly HashSet<(int Candidate, int Reader)> _pr57327DirtyEligible = new();\n\n    void Pr57327BeginSlice(double dt, double? operationsDt)\n    {\n        _pr57327Active = false;\n        if (!Pr57327Enabled || dt <= 0 || operationsDt is not null) return;\n        if (_pr57327Call != _pr57300Calls)\n        {\n            _pr57327Call = _pr57300Calls;\n            _pr57327SliceWithinCall = 0;\n        }\n        _pr57327SliceWithinCall++;\n        var real = State.Vehicles.Count <= 150;\n        var selected = real\n            ? _pr57300Calls is >= 76 and <= 100\n            : (_pr57300Calls is >= 46 and <= 50) && _pr57327SliceWithinCall == 1;\n        if (!selected) return;\n        _pr57327Active = true;\n        _pr57327BodyCalls = _pr57327Visits = _pr57327Eligible = 0;\n        _pr57327Writes = _pr57327ChangedWrites = _pr57327WritesAfterReads = 0;\n        _pr57327HookTicks = 0;\n        _pr57327AllReaders.Clear();\n        _pr57327EligibleReaders.Clear();\n        _pr57327Reservations.Clear();\n        _pr57327DirtyAll.Clear();\n        _pr57327DirtyEligible.Clear();\n        foreach (var v in State.Vehicles)\n            _pr57327Reservations[v.Id] =\n                (v.IntersectionClaim, string.Join(\",\", v.ManoeuvreSpaces));\n    }\n\n    void Pr57327BodyCall()\n    {\n        if (_pr57327Active) _pr57327BodyCalls++;\n    }\n\n    void Pr57327Visit(Vehicle reader, Vehicle candidate, bool eligible)\n    {\n        if (!_pr57327Active) return;\n        if (eligible) _pr57327Eligible++;\n        else _pr57327Visits++;\n        var index = eligible ? _pr57327EligibleReaders : _pr57327AllReaders;\n        if (!index.TryGetValue(candidate.Id, out var readers))\n            index[candidate.Id] = readers = new HashSet<int>();\n        readers.Add(reader.Id);\n    }\n\n    void Pr57327Write(Vehicle vehicle, string site)\n    {\n        if (!_pr57327Active) return;\n        var started = System.Diagnostics.Stopwatch.GetTimestamp();\n        _pr57327Writes++;\n        var state = (Claim: vehicle.IntersectionClaim,\n                     Spaces: string.Join(\",\", vehicle.ManoeuvreSpaces));\n        if (!_pr57327Reservations.TryGetValue(vehicle.Id, out var prior) ||\n            prior != state)\n        {\n            _pr57327ChangedWrites++;\n            _pr57327Reservations[vehicle.Id] = state;\n            if (_pr57327AllReaders.TryGetValue(vehicle.Id, out var readers))\n            {\n                _pr57327WritesAfterReads++;\n                foreach (var id in readers)\n                    _pr57327DirtyAll.Add((vehicle.Id, id));\n            }\n            if (_pr57327EligibleReaders.TryGetValue(vehicle.Id, out var eligible))\n                foreach (var id in eligible)\n                    _pr57327DirtyEligible.Add((vehicle.Id, id));\n        }\n        _pr57327HookTicks +=\n            System.Diagnostics.Stopwatch.GetTimestamp() - started;\n    }\n\n    void Pr57327EndSlice()\n    {\n        if (!_pr57327Active) return;\n        var allEdges = _pr57327AllReaders.Values.Sum(s => s.Count);\n        var eligibleEdges = _pr57327EligibleReaders.Values.Sum(s => s.Count);\n        var hookMs = 1000.0 * _pr57327HookTicks /\n            System.Diagnostics.Stopwatch.Frequency;\n        Console.WriteLine(\n            $\"PR57_327_RW call={_pr57300Calls} slice={_pr57327SliceWithinCall} \" +\n            $\"vehicles={State.Vehicles.Count} bodyCalls={_pr57327BodyCalls} \" +\n            $\"visits={_pr57327Visits} eligibleVisits={_pr57327Eligible} \" +\n            $\"allEdges={allEdges} eligibleEdges={eligibleEdges} \" +\n            $\"writerHooks={_pr57327Writes} changedHooks={_pr57327ChangedWrites} \" +\n            $\"changedAfterRead={_pr57327WritesAfterReads} \" +\n            $\"dirtyAllEdges={_pr57327DirtyAll.Count} \" +\n            $\"dirtyEligibleEdges={_pr57327DirtyEligible.Count} \" +\n            $\"hookMs={hookMs:F6} \" +\n            \"scope=POST_CLEANUP_SAME_SLICE_PARTIAL_READSET_EXPLICIT_RESERVATION_WRITERS \" +\n            \"observational=True noCausalClosure=True\");\n        _pr57327Active = false;\n    }\n}\n")
+print("PR57_327_INJECTED anchors=7 observational=True noEngineBranchChange=True")

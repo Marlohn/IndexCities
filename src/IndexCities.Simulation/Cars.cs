@@ -86,7 +86,7 @@ public sealed partial class CitySimulation
     void CarReachedSpot(Vehicle v)
     {
         v.Status=VehicleStatus.Parked;v.Route.Clear();v.RouteIndex=0;v.IntersectionClaim=null;v.WaitingSince=0;
-        var occupants=new List<int>();if(v.DriverId is {} driver)occupants.Add(driver);occupants.AddRange(v.Passengers);v.DriverId=null;v.Passengers.Clear();
+        var occupants=new List<int>();if(v.DriverId is {} driver)occupants.Add(driver);occupants.AddRange(v.Passengers);foreach(var id in occupants)Pr57CitizenAgendaWake(CitizenWithId(id));v.DriverId=null;v.Passengers.Clear();
         if(v.TripPurpose==JourneyPurpose.Leaving){
             // The family leaves its home only now that the car actually left the city.
             foreach(var family in occupants.Select(id=>FamilyById(CitizenWithId(id).FamilyId)).OfType<Family>().Distinct()){if(BuildingById(family.HomeId) is {} house&&house.FamilyId==family.Id)house.FamilyId=null;family.HomeId=null;}
@@ -101,7 +101,7 @@ public sealed partial class CitySimulation
     // A car that lost its route or fuel stays where it physically is; people continue on foot.
     void LeaveCar(Vehicle v,string cause)
     {
-        var occupants=new List<int>();if(v.DriverId is {} driver)occupants.Add(driver);occupants.AddRange(v.Passengers);v.DriverId=null;v.Passengers.Clear();v.ParkingSpot=null;v.Route.Clear();v.RouteIndex=0;v.Cause=cause;
+        var occupants=new List<int>();if(v.DriverId is {} driver)occupants.Add(driver);occupants.AddRange(v.Passengers);foreach(var id in occupants)Pr57CitizenAgendaWake(CitizenWithId(id));v.DriverId=null;v.Passengers.Clear();v.ParkingSpot=null;v.Route.Clear();v.RouteIndex=0;v.Cause=cause;
         // A stranded car with a tow on the way still stands where it stopped: it keeps
         // holding the junction it is in until the tow loads it.
         if(v.Status!=VehicleStatus.Stranded||v.TowTruckId==null)v.IntersectionClaim=null;

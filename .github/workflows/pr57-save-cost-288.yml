@@ -1,0 +1,77 @@
+name: 'PR57 #288 authentic save/load history-cost counterfactual'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths:
+      - .github/workflows/pr57-save-cost-288.yml
+      - scripts/pr57-save-cost-288/**
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  save-history-cost:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build isolated probe and run existing simulation tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build scripts/pr57-save-cost-288/Pr57SaveCost288.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic #259 host-quantum checkpoints
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Isolated fresh-process ABBA and BAAB per original checkpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/save-cost-288
+          for case in worksREAL queueREAL real14hREAL gridARTIFICIAL; do
+            for checkpoint in 0 1; do
+              input="artifacts/input/${case}-control/checkpoint-${checkpoint}.json"
+              test -s "$input"
+              order=ABBA
+              if [[ "$checkpoint" == 1 ]]; then order=BAAB; fi
+              echo "PR57_288_INPUT case=$case checkpoint=$checkpoint order=$order sha256=$(sha256sum "$input" | cut -d' ' -f1)"
+              dotnet run --no-build -c Release --project scripts/pr57-save-cost-288/Pr57SaveCost288.csproj -- "$input" "$order" 6 \
+                | tee "artifacts/save-cost-288/${case}-checkpoint-${checkpoint}.log"
+            done
+          done
+      - name: Verify probe completion and retain raw numbers
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path("artifacts/save-cost-288")
+          for case in ("worksREAL","queueREAL","real14hREAL","gridARTIFICIAL"):
+              for checkpoint in (0,1):
+                  p=root/f"{case}-checkpoint-{checkpoint}.log"
+                  log=p.read_text()
+                  assert log.count("PR57_288_SOURCE ")==1,(p,"source")
+                  assert log.count("PR57_288_PARITY ")==1,(p,"parity")
+                  assert log.count("PR57_288_RESULT ")==10,(p,"measurements")
+                  assert "fullByteRoundtrip=True counterfactualOnly=True" in log,p
+                  assert "originalSaveUnchanged=True noAdvance=True" in log,p
+                  print("PR57_288_VERIFIED",case,checkpoint,"source, 10 measurements, canonical state intact")
+          PY
+      - name: Preserve raw measurements even if job fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-save-cost-288
+          path: artifacts/save-cost-288/**
+          retention-days: 14

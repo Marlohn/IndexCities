@@ -1,0 +1,134 @@
+name: 'PR57 #235 actor-major pre-loop setup cost'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-setup-gap-235.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  setup-gap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build Release and full regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic works checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-growth
+          run-id: 40250545171
+          github-token: ${{ github.token }}
+          path: artifacts/works
+      - name: Restore authentic congested checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-legal-workplaces-8d
+          run-id: 40169101306
+          github-token: ${{ github.token }}
+          path: artifacts/queue
+      - name: Restore explicitly ARTIFICIAL GRID checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-host-scale-curve
+          run-id: 40258405557
+          github-token: ${{ github.token }}
+          path: artifacts/grid
+      - name: Control versus bounded pre-loop setup at every Advance(2)
+        shell: bash
+        run: |
+          set -euo pipefail
+          works="$(find artifacts/works -type f -path '*/growth/checkpoint-0.json' -print -quit)"
+          queue="$(find artifacts/queue -type f -path '*/pr57-jobs-20/checkpoint-10.json' -print -quit)"
+          grid="artifacts/grid/grid18-0/checkpoint-1.json"
+          for source in "$works" "$queue" "$grid"; do test -s "$source"; sha256sum "$source"; done
+          mkdir -p artifacts/setup-gap-235
+          for case in worksREAL queueREAL gridARTIFICIAL; do
+            source="$works"; fixture=cycle; horizon=300
+            if [[ "$case" == queueREAL ]]; then source="$queue"; fi
+            if [[ "$case" == gridARTIFICIAL ]]; then source="$grid"; fixture=grid; horizon=100; fi
+            for slot in A B; do
+              observed=0
+              if [[ "$slot" == B ]]; then observed=1; fi
+              output="$PWD/artifacts/setup-gap-235/$case-$slot"
+              mkdir -p "$output"
+              echo "PR57_235_RUN case=$case slot=$slot observed=$observed horizon=$horizon cadence=ADVANCE_2"
+              PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_GRID_DIAG=1 \
+              PR57_SAVE_CAPTURE_DIR="$output" PR57_235_SETUP_GAP="$observed" PR57_233_DOCK_WRITER=0 \
+              PR57_206_RESIDUAL_EXCLUSIVE="$observed" PR57_228_PHASE_EXPOSURE=0 \
+              PR57_229_PHASE_FLIP_IMPACT=0 PR57_230_S3_COUNTERFACTUAL=0 \
+              PR57_210_POSE_FOREACH=0 PR57_225_STAGE_COHERENCE=0 \
+              PR57_222_DENSE_PROJECTION=0 PR57_219_STAGE_COST=0 PR57_224_CITIZEN_STATE_COST=0 \
+              PR57_220_POSE_READSET=0 PR57_221_S5_TEMPORAL=0 \
+              PR57_214_CANDIDATE_READS=0 PR57_213_CROSS_SLICE_INPUTS=0 \
+              PR57_217_NEGATIVE_FILTERS=0 PR57_VEHICLE_COST_PROBE=0 \
+              PR57_HOT_TIMING=0 PR57_PHASE_ALLOC_PROBE=0 \
+                timeout 180s dotnet run --no-build -c Release \
+                --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                profile "$fixture" --seed=42 --warmup=0 --days=1 \
+                --window="$horizon" --cap=300 --resume="$source" | tee "$output.log"
+            done
+          done
+      - name: Verify complete JSON parity and pre-loop setup versus ordered-loop costs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          root=Path('artifacts/setup-gap-235')
+          def metric(line,key):
+              m=re.search(r'(?:^| )'+re.escape(key)+r'=([-0-9.]+)',line)
+              assert m,(key,line)
+              return float(m.group(1))
+          for case,horizon in [('worksREAL',300),('queueREAL',300),('gridARTIFICIAL',100)]:
+              logs={slot:(root/f'{case}-{slot}.log').read_text() for slot in ('A','B')}
+              for slot,log in logs.items():
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log and 'STEP_PROFILE steps=' in log,(case,slot)
+                  for i in (0,1): assert (root/f'{case}-{slot}'/f'checkpoint-{i}.json').is_file(),(case,slot,i)
+              for i in (0,1):
+                  assert (root/f'{case}-A'/f'checkpoint-{i}.json').read_bytes()==(root/f'{case}-B'/f'checkpoint-{i}.json').read_bytes(),(case,i,'full JSON mismatch')
+              assert 'PR57_235_SETUP ' not in logs['A'],case
+              setup=[x for x in logs['B'].splitlines() if x.startswith('PR57_235_SETUP ')]
+              loop=[x for x in logs['B'].splitlines() if x.startswith('PR57_206_RESIDUAL ')]
+              assert len(setup)==3 and len(loop)==3,(case,len(setup),len(loop))
+              for i,(s,l) in enumerate(zip(setup,loop),1):
+                  assert metric(s,'sample')==i and metric(l,'sample')==i,(case,s,l)
+                  assert metric(s,'vehicles')>0 and metric(s,'ordered')>0,(case,s)
+                  assert metric(s,'candidates')>0,(case,s)
+                  assert metric(s,'setupMs')>0 and metric(s,'setupMB')>=0,(case,s)
+                  assert metric(l,'totalMs')>0,(case,l)
+                  assert 'scope=PRE_ORDERED_LOOP' in s and 'intrusive=True' in s,(case,s)
+                  print('PR57_235_SETUP_VS_LOOP',case,'sample',i,
+                        'setupMs',metric(s,'setupMs'),'orderedLoopMs',metric(l,'totalMs'),
+                        'setupMB',metric(s,'setupMB'),'orderedLoopMB',metric(l,'totalMB'),
+                        'scope','TWO_SEPARATE_INTRUSIVE_REGIONS')
+              print('PR57_235_PARITY',case,'checkpoints',2,'processes',2,'horizon',horizon,'cadence','ADVANCE_2','fullJSON','EXACT')
+          PY
+      - name: Preserve checkpoints and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-setup-gap-235
+          path: artifacts/setup-gap-235/**
+          retention-days: 14

@@ -17,8 +17,16 @@ public sealed partial class CitySimulation
     }
     static string MaintenanceCategory(WorkProject project)=>project.MaintenanceRoadIds.Count>0?"Manutenção / ruas":"Manutenção / instalações";
     int MaintenancePriority(WorkProject project)=>BuildingById(project.BuildingId)?.Kind switch{BuildingKind.WindPower or BuildingKind.WaterIntake or BuildingKind.WaterTreatment or BuildingKind.SewageTreatment=>0,BuildingKind.WorksDepot=>1,_=>project.MaintenanceRoadIds.Count>0?1:2};
+    static readonly bool Pr57MaintenanceScheduleEnabled=Environment.GetEnvironmentVariable("PR57_MAINTENANCE_SCHEDULE")=="1";
+    bool _pr57MaintenanceScheduleAnnounced;
     void UpdateMaintenanceCondition(double dt)
     {
+        if(!_pr57MaintenanceScheduleAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine($"PR57_MAINTENANCE_SCHEDULE active={Pr57MaintenanceScheduleEnabled}");
+            _pr57MaintenanceScheduleAnnounced=true;
+        }
+        if(Pr57MaintenanceScheduleEnabled){Pr57ScheduledMaintenanceCondition(dt);return;}
         var graphChanged=false;
         foreach(var building in State.Buildings.Where(b=>b.Completed&&!b.Removed&&!b.Definition.Private)){if(building.MaintenanceDueAt<=0)building.MaintenanceDueAt=State.ElapsedSeconds+MaintenanceInterval;if(State.ElapsedSeconds>=building.MaintenanceDueAt){building.AddMaintenanceRatio(-.03*dt/86400);building.MaintenanceRatioUnits=Math.Max(0,building.MaintenanceRatioUnits);}}
         foreach(var road in State.Roads.Where(r=>!r.Highway)){if(road.MaintenanceDueAt<=0)road.MaintenanceDueAt=State.ElapsedSeconds+MaintenanceInterval;var before=road.MaintenanceRatio;if(State.ElapsedSeconds>=road.MaintenanceDueAt){road.AddMaintenanceRatio(-.03*dt/86400);road.MaintenanceRatioUnits=Math.Max(0,road.MaintenanceRatioUnits);}if(before>.05&&road.MaintenanceRatio<=.05)graphChanged=true;}
@@ -66,16 +74,18 @@ public sealed partial class CitySimulation
     void RelocateMaintenanceCrew(WorkProject project,RoadNode access)
     {
         if(!project.IsMaintenance)return;
-        foreach(var citizen in project.LocalCrew.Select(id=>CitizenWithId(id)).Where(c=>c.Alive&&!c.Moving&&ShiftActive(c)&&c.Position.Distance(access.Position)>=State.Tuning.RoadWidth)){var target=CrewPedestrianSite(access);var route=PedestrianPath(citizen.Position,target,access);if(route.Count==0)continue;citizen.Path=route;citizen.PathIndex=0;citizen.PathRoadRevision=State.RoadRevision;citizen.Purpose=JourneyPurpose.Construction;citizen.Activity="Indo à manutenção física";}
+        foreach(var citizen in project.LocalCrew.Select(id=>CitizenWithId(id)).Where(c=>c.Alive&&!c.Moving&&ShiftActive(c)&&c.Position.Distance(access.Position)>=State.Tuning.RoadWidth)){var target=CrewPedestrianSite(access);var route=PedestrianPath(citizen.Position,target,access);if(route.Count==0)continue;Pr57CitizenAgendaWake(citizen);citizen.Path=route;citizen.PathIndex=0;citizen.PathRoadRevision=State.RoadRevision;citizen.Purpose=JourneyPurpose.Construction;citizen.Activity="Indo à manutenção física";}
     }
     void ProgressRoadMaintenance(WorkProject project)
     {
         if(project.MaintenanceRoadIds.Count==0)return;var finished=(int)Math.Floor(project.Progress*project.MaintenanceRoadIds.Count);var changed=false;
         while(project.MaintainedRoadIds.Count<finished){var id=project.MaintenanceRoadIds[project.MaintainedRoadIds.Count];project.MaintainedRoadIds.Add(id);if(!_roads.TryGetValue(id,out var road))continue;changed|=road.MaintenanceRatio<=.05;road.MaintenanceRatio=1;road.MaintenanceDueAt=State.ElapsedSeconds+MaintenanceInterval;}
         if(changed)RebuildRoadGraph();
+        if(Pr57MaintenanceScheduleEnabled)_pr57MaintenanceScheduleReady=false;
     }
     void CompleteMaintenance(WorkProject project)
     {
+        if(Pr57MaintenanceScheduleEnabled)_pr57MaintenanceScheduleReady=false;
         ProgressRoadMaintenance(project);if(BuildingById(project.BuildingId) is {} building){building.MaintenanceRatio=1;building.MaintenanceDueAt=State.ElapsedSeconds+MaintenanceInterval;building.PaidMaintenance+=project.CostPaid;}
         project.Cause=WorkCause.MaintenanceDone;Event(project.MaintenanceRoadIds.Count>0?"Manutenção viária concluída":"Manutenção de instalação municipal concluída");
     }

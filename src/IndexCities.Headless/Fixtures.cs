@@ -10,11 +10,43 @@ static class Fixtures
     static bool _scaled;
     static readonly Queue<(Point Position,double Rotation)> _pendingHouses=new();
     // Same layout as CityCycleTests.City(), with real construction until done.
-    public static CitySimulation Cycle(int seed)
+    public static CitySimulation Cycle(int seed,bool bypass=false)
     {
         var sim=new CitySimulation(seed);Require(sim.PlaceBuilding(BuildingKind.CityHall,new(-152,16)));
         Require(sim.PlaceRoad(new(-192,0),new(240,0)));sim.Advance(14400);
         Require(sim.PlaceRoad(new(-184,0),new(116,44),true));sim.Advance(7200);
+        // PR57-only alternate physical path around the westbound delivery queue.
+        // Three ordinary paid road projects; no private completion or free access.
+        var bypassIds=new List<int>();
+        if(bypass)
+        {
+            foreach(var (from,to) in new[]{
+                (new Point(-184,0),new Point(-184,-60)),
+                (new Point(-184,-60),new Point(-16,-60)),
+                (new Point(-16,-60),new Point(-16,0))})
+            {
+                var quote=sim.QuoteRoad(from,to);
+                Console.WriteLine($"PR57_BYPASS_QUOTE from={from} to={to} valid={quote.PhysicallyValid} accessible={quote.Accessible} cause={quote.Message.Replace(' ','_')}");
+                var result=sim.PlaceRoad(from,to);Require(result);
+                bypassIds.Add(result.Id!.Value);
+            }
+        }
+        // PR57 opt-in: paid, physically constructed frontage to test growth beyond
+        // the saturated 32 additional houses. No instant roads or population.
+        var extensionIds=new List<int>();
+        if(Environment.GetEnvironmentVariable("PR57_CYCLE_SOUTH_EXTENSION")=="1")
+        {
+            if(!bypass)throw new InvalidOperationException("PR57 south extension requires the real bypass");
+            foreach(var (from,to) in new[]{
+                (new Point(-184,-60),new Point(-184,-104)),
+                (new Point(-184,-104),new Point(-16,-104))})
+            {
+                var quote=sim.QuoteRoad(from,to);
+                Console.WriteLine($"PR57_EXTENSION_QUOTE from={from} to={to} valid={quote.PhysicallyValid} accessible={quote.Accessible} cause={quote.Message.Replace(' ','_')}");
+                var result=sim.PlaceRoad(from,to);Require(result);
+                extensionIds.Add(result.Id!.Value);
+            }
+        }
         foreach(var x in new[]{-128,-108,-88,-68,-48,-28,-8,12,32,52,72,92,112,132,152,172,192,212})Require(sim.PlaceBuilding(BuildingKind.House,new(x,14)));
         foreach(var x in new[]{-160,-140,-120,-100,-80,-60,-40,-20,0,20,40,60,80,100})Require(sim.PlaceBuilding(BuildingKind.House,new(x,58)));
         Require(sim.PlaceBuilding(BuildingKind.WorksDepot,new(-160,-18),Math.PI));Require(sim.PlaceBuilding(BuildingKind.Grocery,new(-124,-16),Math.PI));
@@ -28,7 +60,145 @@ static class Fixtures
         Require(sim.PlaceRoad(new(240,0),new(132,z),true));sim.Advance(14400);
         Require(sim.PlaceBuilding(BuildingKind.WaterIntake,new(144,z+14)));
         for(var i=0;i<240&&sim.State.Projects.Any(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress&&!p.IsMaintenance);i++)sim.Advance(3600);
+        if(bypass)
+        {
+            var roads=bypassIds.Select(id=>sim.State.Projects.Single(p=>p.Id==id)).ToArray();
+            Console.WriteLine($"PR57_BYPASS_READY completed={roads.Count(p=>p.Status==WorkStatus.Completed)}/{roads.Length} roadNodes={sim.State.Roads.Count} elapsed={sim.State.ElapsedSeconds:F0} statuses={string.Join(",",roads.Select(p=>$"{p.Id}:{p.Status}:{p.Progress:F3}:{p.Cause.Replace(' ','_')}"))}");
+        }
+        if(extensionIds.Count>0)
+        {
+            var roads=extensionIds.Select(id=>sim.State.Projects.Single(p=>p.Id==id)).ToArray();
+            Console.WriteLine($"PR57_EXTENSION_READY completed={roads.Count(p=>p.Status==WorkStatus.Completed)}/{roads.Length} elapsed={sim.State.ElapsedSeconds:F0} statuses={string.Join(",",roads.Select(p=>$"{p.Id}:{p.Status}:{p.Progress:F3}:{p.Cause.Replace(' ','_')}"))}");
+        }
+        // PR57-only workplace frontage: two paid, normally constructed road
+        // projects. Both comparison processes use the same new roads.
+        if(Environment.GetEnvironmentVariable("PR57_CYCLE_WORKFRONT")=="1")
+        {
+            if(!bypass||extensionIds.Count!=2)
+                throw new InvalidOperationException("PR57 workplace frontage requires the legally built south extension");
+            var ids=new List<int>();
+            foreach(var (from,to) in new[]{
+                (new Point(-184,-104),new Point(-184,-160)),
+                (new Point(-184,-160),new Point(228,-160))})
+            {
+                var quote=sim.QuoteRoad(from,to);
+                Console.WriteLine($"PR57_WORKFRONT_QUOTE from={from} to={to} valid={quote.PhysicallyValid} accessible={quote.Accessible} cause={quote.Message.Replace(' ','_')}");
+                if(!quote.PhysicallyValid)throw new InvalidOperationException("PR57 workplace road quote invalid: "+quote.Message);
+                var result=sim.PlaceRoad(from,to);Require(result);ids.Add(result.Id!.Value);
+            }
+            for(var i=0;i<72&&ids.Any(id=>sim.State.Projects.Single(p=>p.Id==id).Status!=WorkStatus.Completed);i++)
+                sim.Advance(3600);
+            var roads=ids.Select(id=>sim.State.Projects.Single(p=>p.Id==id)).ToArray();
+            Console.WriteLine($"PR57_WORKFRONT_READY completed={roads.Count(p=>p.Status==WorkStatus.Completed)}/{roads.Length} elapsed={sim.State.ElapsedSeconds:F0} statuses={string.Join(",",roads.Select(p=>$"{p.Id}:{p.Status}:{p.Progress:F3}:{p.Cause.Replace(' ','_')}"))}");
+            if(roads.Any(p=>p.Status!=WorkStatus.Completed))
+                throw new InvalidOperationException("PR57 workplace road not completed through real logistics");
+        }
         return sim;
+    }
+
+    // PR57-only representative-load probe. Requests ordinary house projects:
+    // no private completion, money injection, capacity scaling or forced residents.
+    // Failed quotes/orders remain observable rather than silently creating houses.
+    public static (int Placed,int Attempted) QueueCycleHousingProjects(CitySimulation sim,int requested)
+    {
+        var placed=0;var attempted=0;
+        foreach(var (z,rotation) in new[]{(30.0,Math.PI),(-14.0,Math.PI)})
+        {
+            for(var x=-176.0;x<=216&&placed<requested;x+=20)
+            {
+                var position=new Point(x,z);
+                if(!sim.QuoteBuilding(BuildingKind.House,position,rotation).PhysicallyValid)continue;
+                attempted++;
+                if(sim.PlaceBuilding(BuildingKind.House,position,rotation).Success)placed++;
+            }
+            if(placed>=requested)break;
+        }
+        // PR57 exploratory expansion, opt-in only: test the *existing*, normally
+        // constructed bypass road as extra frontage. Quote and order every home
+        // through the same player-facing construction commands as the first rows.
+        // No free houses, instant completions, population or resource injection.
+        if(Environment.GetEnvironmentVariable("PR57_CYCLE_SOUTH_HOUSING")=="1"&&placed<requested)
+        {
+            foreach(var (z,rotation) in new[]{(-74.0,Math.PI),(-46.0,0.0)})
+            {
+                var before=placed;
+                for(var x=-168.0;x<=-28&&placed<requested;x+=20)
+                {
+                    var position=new Point(x,z);
+                    if(!sim.QuoteBuilding(BuildingKind.House,position,rotation).PhysicallyValid)continue;
+                    attempted++;
+                    if(sim.PlaceBuilding(BuildingKind.House,position,rotation).Success)placed++;
+                }
+                Console.WriteLine($"PR57_CYCLE_SOUTH_ROW z={z:F0} newOrders={placed-before}");
+                if(placed>=requested)break;
+            }
+        }
+        // PR57 opt-in: extra row facing the NEW, ordinarily constructed road.
+        // Quotes, material deliveries and population remain entirely simulated.
+        if(Environment.GetEnvironmentVariable("PR57_CYCLE_SOUTH_EXTENSION")=="1"&&placed<requested)
+        {
+            var before=placed;
+            for(var x=-168.0;x<=-28&&placed<requested;x+=20)
+            {
+                var position=new Point(x,-118);
+                if(!sim.QuoteBuilding(BuildingKind.House,position,Math.PI).PhysicallyValid)continue;
+                attempted++;
+                if(sim.PlaceBuilding(BuildingKind.House,position,Math.PI).Success)placed++;
+            }
+            Console.WriteLine($"PR57_CYCLE_EXTENSION_ROW z=-118 newOrders={placed-before}");
+        }
+        // PR57-only load probe: use the opposite side of the *already paid and
+        // completed* south extension road. This does not mint homes or residents:
+        // each lot must pass the normal physical and exterior-access quote, and
+        // each accepted home remains subject to material deliveries and work.
+        if(Environment.GetEnvironmentVariable("PR57_CYCLE_NORTH_HOUSING")=="1"&&placed<requested)
+        {
+            if(Environment.GetEnvironmentVariable("PR57_CYCLE_SOUTH_EXTENSION")!="1")
+                throw new InvalidOperationException("PR57 north housing requires the legally built south extension");
+            var before=placed;
+            for(var x=-168.0;x<=-28&&placed<requested;x+=20)
+            {
+                var position=new Point(x,-90);
+                var quote=sim.QuoteBuilding(BuildingKind.House,position,0);
+                if(!quote.PhysicallyValid||!quote.Accessible)continue;
+                attempted++;
+                if(sim.PlaceBuilding(BuildingKind.House,position,0).Success)placed++;
+            }
+            Console.WriteLine($"PR57_CYCLE_NORTH_ROW z=-90 newOrders={placed-before}");
+        }
+        // PR57-only economic opportunity probe, opt-in and after ordinary
+        // housing orders. All twenty sites are real private businesses, not
+        // artificial job slots; completion, ownership, hiring and sales remain
+        // subject to the normal construction and market rules.
+        var workplaceOption=Environment.GetEnvironmentVariable("PR57_CYCLE_WORKPLACES");
+        if(workplaceOption!=null)
+        {
+            if(!int.TryParse(workplaceOption,out var requestedWorkplaces)||requestedWorkplaces<0||requestedWorkplaces>20)
+                throw new InvalidOperationException("PR57_CYCLE_WORKPLACES must be between 0 and 20");
+            if(requestedWorkplaces>0)
+            {
+                if(Environment.GetEnvironmentVariable("PR57_CYCLE_WORKFRONT")!="1")
+                    throw new InvalidOperationException("PR57 workplaces require the paid workplace road");
+                var sites=new List<(BuildingKind Kind,Point Position,double Rotation)>();
+                for(var i=0;i<10;i++)sites.Add((BuildingKind.Grocery,new Point(-168+i*20,-145),0));
+                for(var i=0;i<10;i++)
+                {
+                    var kind=i<6?BuildingKind.Farm:i<8?BuildingKind.FuelStation:BuildingKind.MechanicShop;
+                    var z=kind==BuildingKind.Farm?-186:kind==BuildingKind.FuelStation?-178:-176;
+                    sites.Add((kind,new Point(-164+i*40,z),Math.PI));
+                }
+                var accepted=0;
+                for(var i=0;i<requestedWorkplaces;i++)
+                {
+                    var (kind,position,rotation)=sites[i];
+                    var quote=sim.QuoteBuilding(kind,position,rotation);
+                    Console.WriteLine($"PR57_WORKPLACE_QUOTE index={i} kind={kind} x={position.X:F0} z={position.Z:F0} valid={quote.PhysicallyValid} accessible={quote.Accessible} cause={quote.Message.Replace(' ','_')}");
+                    if(quote.PhysicallyValid&&quote.Accessible&&sim.PlaceBuilding(kind,position,rotation).Success)accepted++;
+                }
+                Console.WriteLine($"PR57_WORKPLACE_ORDERS requested={requestedWorkplaces} placed={accepted} attempted={requestedWorkplaces} noInjectedJobs=1 noInstantCompletion=1");
+            }
+        }
+        return (placed,attempted);
     }
 
     // Grid of horizontal streets (60 m apart) on a west spine, connectors every

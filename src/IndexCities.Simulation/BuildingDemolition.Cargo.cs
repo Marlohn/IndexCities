@@ -54,7 +54,7 @@ public sealed partial class CitySimulation
         if(v.Position.Distance(spot)<.1){
             if(HeldCargoBayBlocked(v,spot))return;
             v.HoldingPosition=spot;v.DockPosition=spot;v.Route.Clear();v.RouteIndex=0;v.Status=VehicleStatus.Parked;v.LoadTimer=0;v.Cause=waiting+"; estacionada junto ao terreno, fora das faixas";
-            if(State.Citizens.FirstOrDefault(c=>c.Id==v.DriverId&&c.VehicleId==v.Id) is {} driver){Personal(driver,"Desembarcou: caminhão com carga de "+ReadableOwnerName(s.GoodsOwnerAccount)+" aguarda destino junto ao terreno demolido");driver.NextDecisionAt=State.ElapsedSeconds;}
+            if(State.Citizens.FirstOrDefault(c=>c.Id==v.DriverId&&c.VehicleId==v.Id) is {} driver){Personal(driver,"Desembarcou: caminhão com carga de "+ReadableOwnerName(s.GoodsOwnerAccount)+" aguarda destino junto ao terreno demolido");Pr57CitizenAgendaWake(driver);driver.NextDecisionAt=State.ElapsedSeconds;}
             ReleaseDriver(v);return;
         }
         var start=NearestRoad(v.Position);
@@ -92,7 +92,7 @@ public sealed partial class CitySimulation
         foreach(var c in State.Citizens.Where(c=>c.Alive&&c.Resident&&c.InsideMap&&c.VehicleId==null&&c.BoardingVehicleId==null&&c.ConstructionProjectId==null&&!c.Moving&&BuildingById(c.WorkplaceId) is {} job&&job.OwnerAccount==v.OwnerAccount&&c.Position.Distance(job.Door)<3&&ShiftActiveIn(c,job)).OrderBy(c=>c.Position.Distance(v.Position)).ThenBy(c=>c.Id)){
             var path=PedestrianRoute(c.Position,removed);if(path.Count==0)continue;
             path.Add(v.Position);
-            c.BoardingVehicleId=v.Id;c.Purpose=JourneyPurpose.Boarding;c.DestinationId=null;c.Path=path;c.PathIndex=0;c.PathRoadRevision=State.RoadRevision;c.Activity="Caminhando para embarcar no caminhão com carga em espera";
+            Pr57CitizenAgendaWake(c);c.BoardingVehicleId=v.Id;c.Purpose=JourneyPurpose.Boarding;c.DestinationId=null;c.Path=path;c.PathIndex=0;c.PathRoadRevision=State.RoadRevision;c.Activity="Caminhando para embarcar no caminhão com carga em espera";
             Personal(c,"Chamado para conduzir carga de "+ReadableOwnerName(s.GoodsOwnerAccount)+" a um prédio apto da mesma empresa");
             v.DriverId=c.Id;v.HoldingPosition=null;v.Status=VehicleStatus.Waiting;v.Cause=waiting+"; destino apto encontrado, motorista a caminho";return;
         }

@@ -1,0 +1,155 @@
+name: 'PR57 #270 opt-in per-manoeuvre ephemeral pose scratch A/B'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-manoeuvre-scratch-270.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  scratch-ab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build Release and full regression
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic real economic queue at 14h from #243
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-coexist-243
+          run-id: 40601570843
+          github-token: ${{ github.token }}
+          path: artifacts/real-prior
+      - name: Restore authentic construction checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-growth
+          run-id: 40250545171
+          github-token: ${{ github.token }}
+          path: artifacts/works-prior
+      - name: Restore explicitly artificial GRID checkpoint from #237
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-pose-noop-237
+          run-id: 40589313790
+          github-token: ${{ github.token }}
+          path: artifacts/grid-prior
+      - name: Fresh .NET processes, ABBA, exact full-state parity and warm allocation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          from decimal import Decimal
+          import os, subprocess, json, hashlib, re, statistics
+          root=Path('artifacts/manoeuvre-scratch-270')
+          root.mkdir(parents=True,exist_ok=True)
+          earlier=Path('artifacts/real-prior/overnight-05/checkpoint-1.json')
+          real=Path('artifacts/real-prior/overnight-08/checkpoint-1.json')
+          works=list(Path('artifacts/works-prior').rglob('growth/checkpoint-0.json'))
+          grid=list(Path('artifacts/grid-prior').rglob('gridARTIFICIAL-control1/checkpoint-5.json'))
+          assert earlier.is_file() and real.is_file() and len(works)==1 and len(grid)==1,(earlier,real,works,grid)
+          def load(p):return json.loads(p.read_text(),parse_float=Decimal)
+          before=load(earlier);after=load(real)
+          av={v['Id']:v for v in before['Vehicles'] if v.get('Status')=='Travelling'}
+          bv={v['Id']:v for v in after['Vehicles'] if v.get('Status')=='Travelling'}
+          fields=('Position','Heading','WaitingSince','Cause','RouteIndex')
+          persistent=sorted(i for i in av.keys()&bv.keys() if all(av[i].get(k)==bv[i].get(k) for k in fields))
+          assert len(persistent)==24 and len(after['Vehicles'])==98 and sum(bool(c.get('Alive')) for c in after['Citizens'])==121
+          cases=[('queueREAL14h',real,'cycle',200,600),
+                 ('worksREAL',works[0],'cycle',200,600),
+                 ('gridARTIFICIAL',grid[0],'grid',100,300)]
+          common={'PR57_HOST_QUANTUM':'1','PR57_AB_CHECKPOINT':'1','PR57_GRID_DIAG':'0',
+                  'PR57_206_RESIDUAL_EXCLUSIVE':'0','PR57_261_PATH_REACH':'0',
+                  'PR57_263_ALL_CAN_TURN':'0','PR57_253_STATE_EFFECTS':'0',
+                  'PR57_260_READ_EXPOSURE':'0','PR57_264_FULL_COHORT':'0',
+                  'PR57_244_STATE_COST':'0','PR57_244_PERSISTENT_IDS':','.join(map(str,persistent))}
+          for name,source,fixture,horizon,cap in cases:
+              print('PR57_270_SOURCE',name,'sha256',hashlib.sha256(source.read_bytes()).hexdigest(),
+                    'alive',sum(bool(c.get('Alive')) for c in load(source)['Citizens']),
+                    'vehicles',len(load(source)['Vehicles']),'horizon',horizon,flush=True)
+              modes=['control1','scratch1','scratch2','control2']
+              if name=='queueREAL14h':modes+=['profileControl','profileScratch']
+              paths={};stats={}
+              for mode in modes:
+                  dest=root/f'{name}-{mode}';dest.mkdir(parents=True,exist_ok=True)
+                  variant='scratch' in mode.lower()
+                  profile=mode.startswith('profile')
+                  env=os.environ.copy();env.update(common)
+                  env['PR57_270_MANOEUVRE_SCRATCH']='1' if variant else '0'
+                  env['PR57_266_COHORT_STAGES']='1' if profile else '0'
+                  env['PR57_269_STAGE_BYTES']='1' if profile else '0'
+                  env['PR57_SAVE_CAPTURE_DIR']=str(dest.resolve())
+                  cmd=['dotnet','run','--no-build','-c','Release',
+                       '--project','src/IndexCities.Headless/IndexCities.Headless.csproj',
+                       '--','profile' if profile else 'scale',fixture,'--seed=42',
+                       '--warmup=0','--days=1',f'--window={horizon}',f'--cap={cap}',
+                       f'--resume={source.resolve()}']
+                  with (root/f'{name}-{mode}.log').open('w') as out:
+                      subprocess.run(cmd,env=env,stdout=out,stderr=subprocess.STDOUT,check=True,timeout=240)
+                  log=(root/f'{name}-{mode}.log').read_text()
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(name,mode,log[-3000:])
+                  assert (dest/'checkpoint-0.json').read_bytes()==source.read_bytes(),(name,mode,'input mismatch')
+                  assert (dest/'checkpoint-1.json').is_file(),(name,mode,'missing output')
+                  rows=[x for x in log.splitlines() if x.startswith('WINDOW ')]
+                  assert len(rows)==1,(name,mode,rows)
+                  def metric(k):
+                      m=re.search(r'(?:^| )'+re.escape(k)+r'=([-0-9.]+)',rows[0])
+                      assert m,(k,rows[0])
+                      return float(m.group(1))
+                  stats[mode]={k:metric(k) for k in ('wall','cpu','allocMB')}
+                  print('PR57_270_WINDOW',name,mode,rows[0],flush=True)
+                  if profile:
+                      lines=[x for x in log.splitlines() if x.startswith('PR57_266_ROW ')]
+                      assert len(lines)==144,(name,mode,len(lines))
+                      warm=[x for x in lines if 'window=5 ' in x]
+                      assert len(warm)==24,(name,mode,len(warm))
+                      def bytes_at(stage):
+                          return sum(int(re.search(fr's{stage}Bytes=([0-9]+)',line).group(1)) for line in warm)
+                      print('PR57_270_WARM',mode,
+                            's1Bytes',bytes_at(1),'s2Bytes',bytes_at(2),
+                            's3Bytes',bytes_at(3),'s5Bytes',bytes_at(5),
+                            's7Bytes',bytes_at(7),
+                            'allBytes',sum(bytes_at(i) for i in range(9)),flush=True)
+                  paths[mode]=dest
+              original=[(paths['control1']/f'checkpoint-{i}.json').read_bytes() for i in (0,1)]
+              for mode in modes:
+                  for i in (0,1):
+                      assert (paths[mode]/f'checkpoint-{i}.json').read_bytes()==original[i],(name,mode,i,'FULL_JSON_MISMATCH')
+                  assert load(paths[mode]/'checkpoint-1.json')==load(paths['control1']/'checkpoint-1.json')
+              for k in ('wall','cpu','allocMB'):
+                  a=statistics.mean(stats[x][k] for x in ('control1','control2'))
+                  b=statistics.mean(stats[x][k] for x in ('scratch1','scratch2'))
+                  print('PR57_270_ABBA',name,'metric',k,'controlMean',round(a,6),
+                        'scratchMean',round(b,6),'controlOverScratch',round(a/b,5) if b else 'NA',flush=True)
+              print('PR57_270_PARITY',name,'fullJson=EXACT','decimalDiffs=0',
+                    'Advance2CallsPerArm',horizon//2,'processes',len(modes),
+                    'noSkippedSlices=True','optIn=True',flush=True)
+          PY
+      - name: Preserve raw logs and complete checkpoints
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-manoeuvre-scratch-270
+          path: artifacts/manoeuvre-scratch-270/**
+          retention-days: 14

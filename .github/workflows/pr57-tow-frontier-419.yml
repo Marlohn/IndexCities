@@ -1,0 +1,66 @@
+name: 'PR57 #419 exact tow writer to next-step service reader'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-tow-frontier-419.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  tow-frontier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      PR57_417_TOW_WRITER_READ: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Inject #417 exact writer/read hooks and #418 witness only in disposable checkout
+        run: python3 scripts/pr57-419-inject.py
+      - name: Run bounded public Advance(2) witness and reconcile writer/read frontier
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/tow419
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release \
+            --filter 'FullyQualifiedName~Pr57_418_postrepair_parked_car_calls_tow_and_consumes_nonlocal_push' \
+            --logger 'console;verbosity=detailed' 2>&1 | tee artifacts/tow419/witness.log
+          python3 - <<'PY_AUDIT' | tee artifacts/tow419/summary.json
+          import json
+          from pathlib import Path
+          lines=Path('artifacts/tow419/witness.log').read_text().splitlines()
+          def rows(prefix):
+              return [dict(token.split('=',1) for token in line.split(prefix+' ',1)[1].split() if '=' in token)
+                      for line in lines if prefix+' ' in line]
+          witness=rows('PR57_418_WITNESS')
+          summaries=rows('PR57_417_SUMMARY')
+          writes=rows('PR57_417_WRITE')
+          reads=rows('PR57_417_READ')
+          assert len(witness)==1 and len(summaries)==1,(witness,summaries)
+          w=witness[0];s=summaries[0]
+          assert w['syntheticPostRepair']=='True' and w['manualTow']=='False' and w['forcedOrder']=='False'
+          assert int(w['callStep'])==1 and int(w['writeStep'])==19 and int(w['moveStep'])==20
+          assert w['sameStep']=='False'
+          assert int(s['steps'])==20 and int(s['writes'])==1 and int(s['writesUnsplit'])==1
+          assert int(s['arrivalsParked'])>=1 and int(s['nextStepReads'])>=1
+          assert int(s['sameStepReads'])==0 and int(s['samePassReads'])==0
+          assert int(s['passes'])==sum(int(s[k]) for k in ('unsplit','operations','physical'))
+          assert s['observational']=='True' and s['causalClosure']=='False'
+          assert len(writes)>=1 and len(reads)>=1
+          assert any(int(x['step'])==19 and x['mode']=='unsplit' for x in writes)
+          assert any(int(x['step'])==20 and int(x['writerStep'])==19 for x in reads)
+          print(json.dumps({'scope':'SYNTHETIC_POSTREPAIR_CANONICAL_ADVANCE2',
+                            'witness':w,'exactSiteCensus':s,'writes':writes,'reads':reads,
+                            'optimizationGainAccepted':False,'universalCausalClosure':False},sort_keys=True))
+          PY_AUDIT
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integrated-scale-pr57-tow-frontier-419
+          path: artifacts/tow419
+          retention-days: 14

@@ -25,6 +25,7 @@ public sealed partial class CitySimulation
         // A heavy tow keeps its claim until the truck trailing it has also passed.
         var trailing=vehicle.Body==TruckBody.TowHeavy&&vehicle.TowPhase is TowPhase.Delivering or TowPhase.Unloading;
         if(vehicle.IntersectionClaim is {} held&&(!_roads.TryGetValue(held,out var road)||vehicle.Position.Distance(road.Position)>JunctionClearance&&(!trailing||(vehicle.Position-Forward(vehicle.Heading)*HeavyTowTrail).Distance(road.Position)>JunctionClearance)))vehicle.IntersectionClaim=null;
+        Pr57ReservationWrite(vehicle,"clear-passed-claim");
         if(vehicle.IntersectionClaim==null)vehicle.IntersectionEnteredAt=null;
         else if(_junctionAreas.ContainsKey(vehicle.IntersectionClaim.Value))vehicle.IntersectionEnteredAt??=vehicle.WaitingSince>0?vehicle.WaitingSince:VehicleMovementTime;
     }
@@ -51,5 +52,6 @@ public sealed partial class CitySimulation
         if(area==null)vehicle.IntersectionEnteredAt=null;else if(!continuing)vehicle.IntersectionEnteredAt=VehicleMovementTime;
         else vehicle.IntersectionEnteredAt??=vehicle.WaitingSince>0?vehicle.WaitingSince:VehicleMovementTime;
         vehicle.IntersectionClaim=junction.Id;
+        Pr57ReservationWrite(vehicle,"reserve-junction");
     }
 }

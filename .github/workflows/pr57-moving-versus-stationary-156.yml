@@ -1,0 +1,116 @@
+name: PR57 real moving-versus-blocked vehicle cost (observational)
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-moving-versus-stationary-156.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  moving-cost:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build Release and test unchanged simulation
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore REAL economic construction checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-growth
+          run-id: 40250545171
+          github-token: ${{ github.token }}
+          path: artifacts/works
+      - name: Restore REAL pre-gridlock checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-legal-workplaces-8d
+          run-id: 40169101306
+          github-token: ${{ github.token }}
+          path: artifacts/queue
+      - name: Observe moving and blocked costs in two authentic states with Advance(2)
+        shell: bash
+        run: |
+          set -euo pipefail
+          works="$(find artifacts/works -type f -path '*/growth/checkpoint-0.json' -print -quit)"
+          queue="$(find artifacts/queue -type f -path '*/pr57-jobs-20/checkpoint-10.json' -print -quit)"
+          test -s "$works"; test -s "$queue"
+          for case in works queue10; do
+            source="$works"; window=3600
+            if [[ "$case" == queue10 ]]; then source="$queue"; window=300; fi
+            echo "PR57_MOVING_CASE case=$case class=REAL sourceSha256=$(sha256sum "$source" | cut -d' ' -f1) windows=4 window=$window cadence=Advance2"
+            for mode in profile plain; do
+              output="$PWD/artifacts/moving-cost/$case-$mode"
+              mkdir -p "$output"
+              probe=0; command=scale
+              if [[ "$mode" == profile ]]; then probe=1; command=profile; fi
+              PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="$output" \
+              PR57_SITE_OWNER_ROSTER=1 PR57_BUILDING_WORK_ACCESS=1 \
+              PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ORDER_SHIPMENT_INDEX=1 \
+              PR57_PROGRESS_SHIPMENT_LOOKUP=1 PR57_SINGLE_CREW_ASSIGNMENT=1 \
+              PR57_VEHICLE_COST_PROBE="$probe" PR57_IDLE_SCAN_PROBE=0 PR57_HOT_TIMING=0 \
+                timeout 240s dotnet run --no-build -c Release \
+                  --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                  "$command" cycle --seed=42 --warmup=0 --days=4 --window="$window" \
+                  --cap=200 --resume="$source" | tee "artifacts/moving-cost/$case-$mode.log"
+            done
+          done
+      - name: Verify exact checkpoints and attribute intrusive vehicle cost by result
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import pathlib,re
+          root=pathlib.Path("artifacts/moving-cost")
+          for case,window in (("works",3600),("queue10",300)):
+              logs={mode:(root/f"{case}-{mode}.log").read_text() for mode in ("profile","plain")}
+              for mode,log in logs.items():
+                  assert "INVARIANTS OK" in log and "SAVE " in log,(case,mode,"invariants/save-load")
+                  assert sum(line.startswith("WINDOW ") for line in log.splitlines())==4,(case,mode,"window count")
+                  assert "PR57_HOST_QUANTUM" not in log or "Advance(3600)" not in log
+              for i in range(5):
+                  a=(root/f"{case}-profile"/f"checkpoint-{i}.json").read_bytes()
+                  b=(root/f"{case}-plain"/f"checkpoint-{i}.json").read_bytes()
+                  assert a==b,(case,i,"full checkpoint mismatch")
+              rows=[line for line in logs["profile"].splitlines() if line.startswith("PR57_VEHICLE_COST ")]
+              assert rows,(case,"vehicle cost probe missing")
+              assert "PR57_VEHICLE_COST " not in logs["plain"],(case,"plain contaminated")
+              last=int(re.search(r"slices=(\d+)",rows[-1]).group(1))
+              final=[line for line in rows if f"slices={last} " in line]
+              assert len(final)==8,(case,"group count",len(final))
+              groups={}
+              for line in final:
+                  group=re.search(r"group=([a-z-]+)",line).group(1)
+                  groups[group]={k:float(v) for k,v in re.findall(r"([A-Za-z]+)=([0-9.]+)",line)}
+                  print(f"PR57_MOVING_PROFILE case={case} "+line)
+              assert len(groups)==8 and abs(sum(v["sharePct"] for v in groups.values())-100)<0.2,(case,"shares")
+              moving=groups["moved"]
+              blocked=sum(groups[g]["ms"] for g in ("queue","junction","waiting","stationary-trip","other"))
+              total=sum(v["ms"] for v in groups.values())
+              print(f"PR57_MOVING_COST_SPLIT case={case} movedCalls={moving['calls']:.0f} movedMs={moving['ms']:.3f} blockedMs={blocked:.3f} blockedShareOfClassifiedPct={100*blocked/total:.2f} intrusive=True")
+              for mode,log in logs.items():
+                  windows=[line for line in log.splitlines() if line.startswith("WINDOW ")]
+                  wall=sum(float(re.search(r"\bwall=([0-9.]+)s",line).group(1)) for line in windows)
+                  cpu=sum(float(re.search(r"\bcpu=([0-9.]+)s",line).group(1)) for line in windows)
+                  alloc=sum(float(re.search(r"\ballocMB=([0-9.]+)",line).group(1)) for line in windows)
+                  print(f"PR57_MOVING_RUN case={case} mode={mode} seconds={4*window} wall={wall:.2f}s cpu={cpu:.2f}s allocMB={alloc:.1f} throughput={4*window/wall:.2f}sps note=NO_OPTIMIZATION_AB")
+              print(f"PR57_MOVING_PARITY case={case} completeCheckpoints=5 exact=True")
+              if case=="works":
+                  assert moving["calls"]>0,"REAL works control must include positive vehicle displacement"
+          PY
+      - name: Preserve logs and complete checkpoints
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-moving-cost-156
+          path: artifacts/moving-cost/**
+          retention-days: 14

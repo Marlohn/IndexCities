@@ -1,0 +1,136 @@
+name: 'PR57 building access live road mutation A/B at host cadence'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths:
+      - .github/workflows/integrated-scale.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  building-access-ab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build and simulation tests with opt-in off and on
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          PR57_BUILDING_WORK_ACCESS=0 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+          PR57_BUILDING_WORK_ACCESS=1 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic economic checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-growth
+          run-id: 40250545171
+          github-token: ${{ github.token }}
+          path: artifacts/real-growth
+      - name: Restore authentic older congestion checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-legal-workplaces-8d
+          run-id: 40169101306
+          github-token: ${{ github.token }}
+          path: artifacts/real-congested
+      - name: Real construction A/B order reversed, late economy, congestion and artificial traffic
+        shell: bash
+        run: |
+          set -euo pipefail
+          source="$(find artifacts/real-growth -type f -path '*/growth/checkpoint-0.json' -print -quit)"
+          late="$(find artifacts/real-growth -type f -path '*/growth/checkpoint-6.json' -print -quit)"
+          congested="$(find artifacts/real-congested -type f -path '*/pr57-jobs-20/checkpoint-11.json' -print -quit)"
+          test -s "$source"
+          test -s "$late"
+          test -s "$congested"
+          for input in "$source" "$late" "$congested"; do
+            echo "PR57_ACCESS_AB_SOURCE path=$input sha256=$(sha256sum "$input" | cut -d' ' -f1)"
+          done
+          mkdir -p artifacts/access-ab
+          for case in liveA liveB realA realB late congested cycle grid; do
+            modes=(control candidate)
+            if [[ "$case" == realB || "$case" == liveB ]]; then modes=(candidate control); fi
+            for mode in "${modes[@]}"; do
+              enabled=0
+              if [[ "$mode" == candidate ]]; then enabled=1; fi
+              output="artifacts/access-ab/$case-$mode"
+              mkdir -p "$output"
+              args=(scale cycle --seed=42 --warmup=0 --days=2 --window=3600 --cap=300)
+              if [[ "$case" == realA || "$case" == realB || "$case" == liveA || "$case" == liveB ]]; then
+                args+=(--resume="$source")
+              elif [[ "$case" == late ]]; then
+                args+=(--resume="$late")
+              elif [[ "$case" == congested ]]; then
+                args=(scale cycle --seed=42 --warmup=0 --days=1 --window=3600 --cap=300 --resume="$congested")
+              elif [[ "$case" == grid ]]; then
+                args=(scale grid --seed=42 --rows=12 --length=600 --warmup=0 --days=1 --window=3600 --cap=300)
+              fi
+              live=0
+              if [[ "$case" == liveA || "$case" == liveB ]]; then live=1; fi
+              echo "PR57_ACCESS_AB_RUN case=$case mode=$mode enabled=$enabled liveEdit=$live hostQuantum=2"
+              PR57_BUILDING_WORK_ACCESS="$enabled" PR57_GRID_DIAG=1 \
+              PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_ACCESS_LIVE_EDIT="$live" \
+              PR57_DYNAMIC_BVH=0 PR57_PARALLEL_NEEDS=0 PR57_STAFF_PHASE_FUSION=0 \
+              PR57_UTILITY_REPLAY=0 PR57_POLLUTION_SIMD=0 PR57_PARALLEL_POLLUTION=0 \
+              PR57_CONSTRUCTION_WAIT_AGENDA=0 PR57_DISPATCH_SHIPMENT_LOOKUP=0 \
+              PR57_ROUTE_TREE=0 PR57_ORDER_SHIPMENT_INDEX=0 PR57_MAINTENANCE_SCHEDULE=0 \
+              PR57_SOURCE_DISTANCE_CACHE=0 PR57_WORK_ACCESS_INDEX=0 PR57_PEDESTRIAN_GRID=0 \
+              PR57_LIVING_ROSTER=0 PR57_CITIZEN_AGENDA=0 \
+              PR57_SAVE_CAPTURE_DIR="$PWD/$output" \
+                timeout 360s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- "${args[@]}" \
+                | tee "$output.log"
+            done
+          done
+      - name: Check intermediate exact causal snapshots and print end-to-end A/B
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import pathlib,re
+          root=pathlib.Path('artifacts/access-ab')
+          for case in ('liveA','liveB','realA','realB','late','congested','cycle','grid'):
+              results={}
+              for mode in ('control','candidate'):
+                  log=(root/f'{case}-{mode}.log').read_text()
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,mode,'save/invariants')
+                  assert f'PR57_BUILDING_WORK_ACCESS active={str(mode=="candidate")}' in log,(case,mode,'flag')
+                  if (case.startswith('real') or case.startswith('live')) and mode=='candidate':
+                      assert 'PR57_BUILDING_WORK_ACCESS built=True' in log,(case,'candidate did not engage')
+                  if case.startswith('live'):
+                      for phase in ('maintenance-off','maintenance-on','external-road-order','public-road-rebuild'):
+                          assert f'PR57_ACCESS_LIVE_EDIT phase={phase}' in log,(case,mode,phase)
+                      assert 'phase=public-road-rebuild quantum=1200' in log,(case,mode,'public edit timing')
+                  windows=[x for x in log.splitlines() if x.startswith('WINDOW ')]
+                  assert len(windows)==(1 if case in ('grid','congested') else 2),(case,mode,'windows')
+                  def val(row,key):
+                      match=re.search(r'\b'+re.escape(key)+r'=([0-9.]+)',row)
+                      assert match,(case,mode,key,row)
+                      return float(match.group(1))
+                  results[mode]={k:sum(val(w,k) for w in windows) for k in ('wall','cpu','allocMB')}
+                  results[mode]['pop']=val(windows[-1],'pop')
+                  results[mode]['alive']=val(windows[-1],'alive')
+                  results[mode]['openWorks']=val(windows[-1],'openWorks')
+                  for i in range(len(windows)+1):
+                      path=root/f'{case}-{mode}'/f'checkpoint-{i}.json'
+                      assert path.is_file(),(case,mode,i)
+                      control=root/f'{case}-control'/f'checkpoint-{i}.json'
+                      assert path.read_bytes()==control.read_bytes(),(case,mode,'causal divergence',i)
+              c=results['control'];o=results['candidate']
+              print('PR57_BUILDING_ACCESS_RESULT',case,'control',c,'candidate',o,
+                    'wallReductionPct',round((c['wall']-o['wall'])/c['wall']*100,2),
+                    'fullIntermediateSavesMatch',True)
+          PY
+      - name: Preserve full checkpoints and logs even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-building-access-ab
+          path: artifacts/access-ab/**
+          retention-days: 14

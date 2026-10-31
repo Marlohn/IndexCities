@@ -1,0 +1,150 @@
+name: 'PR57 #386 REAL outer vehicle orchestration ABBA'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [scripts/pr57-386-inject.py, .github/workflows/pr57-outer-vehicle-386.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  real-outer-vehicle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+      PR57_VEHICLE_COST_PROBE: '1'
+      PR57_ADVANCE_BOUNDARY_PROBE: '1'
+      PR57_PHASE_ALLOC_PROBE: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Inject #384, #385 and #386 observational probes in disposable checkout
+        run: |
+          set -euo pipefail
+          python3 scripts/pr57-384-inject.py
+          python3 scripts/pr57-385-inject.py
+          python3 scripts/pr57-386-inject.py
+      - name: Build and test
+        run: |
+          set -euo pipefail
+          dotnet build scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release
+      - name: Restore authentic REAL 14h checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Four fresh processes ABBA, each 10800 individual Advance(2)
+        shell: bash
+        run: |
+          set -euo pipefail
+          input="artifacts/input/real14hREAL-control/checkpoint-0.json"
+          test -s "$input"
+          for arm in baseA probeA probeB baseB; do
+            flag=0
+            if [[ "$arm" == probe* ]]; then flag=1; fi
+            mkdir -p "artifacts/outer386/$arm"
+            PR57_385_SEGMENT_PROBE="$flag" PR57_386_OUTER_PROBE="$flag" \
+              dotnet run --no-build -c Release \
+                --project scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj \
+                -- "$input" "artifacts/outer386/$arm" \
+                > "artifacts/outer386/$arm/full.log"
+            grep -q '^PR57_337_FINAL .*parity=IDENTICAL' "artifacts/outer386/$arm/full.log"
+          done
+          cmp artifacts/outer386/baseA/checkpoint-10800.json artifacts/outer386/probeA/checkpoint-10800.json
+          cmp artifacts/outer386/baseA/checkpoint-10800.json artifacts/outer386/probeB/checkpoint-10800.json
+          cmp artifacts/outer386/baseA/checkpoint-10800.json artifacts/outer386/baseB/checkpoint-10800.json
+          sha256sum artifacts/outer386/*/checkpoint-10800.json | tee artifacts/outer386/checkpoints.sha256
+          python3 - <<'PY' | tee artifacts/outer386/summary.json
+          import json
+          from pathlib import Path
+          root=Path('artifacts/outer386')
+          names=('setup','cleanup','prepare','actorLoop','towSync','post')
+          def rows(arm,prefix):
+              return [dict(v.split('=',1) for v in line.split()[1:] if '=' in v)
+                      for line in (root/arm/'full.log').read_text().splitlines()
+                      if line.startswith(prefix+' ')]
+          result={}
+          for arm in ('baseA','probeA','probeB','baseB'):
+              hours=rows(arm,'PR57_337_HOUR')
+              phases=rows(arm,'PR57_384_HOUR')
+              seg=rows(arm,'PR57_385_SEGMENT')
+          outer=rows(arm,'PR57_386_OUTER')
+              boundary=rows(arm,'PR57_ADVANCE_BOUNDARY')
+              final=rows(arm,'PR57_337_FINAL')
+              assert len(hours)==len(phases)==len(outer)==6 and len(seg)==12 and len(boundary)==108 and len(final)==1
+              assert final[0]['parity']=='IDENTICAL'
+              assert all(int(h['living'])==121 for h in hours)
+              assert int(boundary[-1]['calls'])==10800
+              byhour={}
+              for h in range(1,7):
+                  p=next(x for x in phases if int(x['hour'])==h)
+                  two=[x for x in seg if int(x['hour'])==h]
+                  assert len(two)==2 and {x['regime'] for x in two}=={'operational','physical'}
+                  for x in two:
+                      measured=sum(float(x[n+'Ms']) for n in names)
+                      assert abs(measured-float(x['totalMs']))<.008
+                      if arm.startswith('base'):
+                          assert x['enabled']=='False' and int(x['calls'])==0 and measured==0
+                      else:
+                          assert x['enabled']=='True' and int(x['calls'])>0
+                  if arm.startswith('probe'):
+                      total=sum(float(x['totalMs']) for x in two)
+                      actorloop=sum(float(x['actorLoopMs']) for x in two)
+                      assert total<float(p['vehicleMs'])+1
+                      assert actorloop+1>=float(p['actorMs'])
+                  o=next(x for x in outer if int(x['hour'])==h)
+              assert o['enabled']==('True' if arm.startswith('probe') else 'False')
+              assert abs(sum(float(o[n+'Ms']) for n in ('gate','snapshot','forecast','unsplit','remainder'))-float(o['totalMs']))<.009
+              if arm.startswith('probe'):
+                  assert int(o['steps'])==1800
+                  assert int(o['physicalCalls'])>0
+                  assert int(o['operationalCalls'])==1800
+                  assert int(o['directCalls'])==0
+                  assert float(o['totalMs'])<=float(p['vehicleMs'])+1
+              else:
+                  assert int(o['steps'])==0 and float(o['totalMs'])==0
+              byhour[h]={'vehicleMs':float(p['vehicleMs']),
+                             'actorMs':float(p['actorMs']),
+                             'vehicleNonActorMs':float(p['vehicleNonActorMs']),
+                             'segments':two}
+              result[arm]={'wallMs':round(sum(float(x['wallMs']) for x in hours),3),
+                           'cpuMs':round(sum(float(x['cpuMs']) for x in hours),3),
+                           'allocatedBytes':sum(int(x['totalAllocatedBytes']) for x in hours),
+                           'calls':{g:sum(int(x['calls']) for x in seg if x['regime']==g)
+                                    for g in ('operational','physical')},
+                           'regionMs':{n:round(sum(float(x[n+'Ms']) for x in seg),3) for n in names},
+                           'vehicleNonActorMs':round(sum(x['vehicleNonActorMs'] for x in byhour.values()),3),
+                           'outerMs':{n:round(sum(float(o[n+'Ms']) for o in outer),3)
+                                      for n in ('total','gate','snapshot','forecast','unsplit','remainder')},
+                           'outerCounts':{n:sum(int(o[n]) for o in outer)
+                                          for n in ('steps','batchedSteps','physicalCalls','operationalCalls','directCalls')},
+                           'hours':byhour}
+          assert result['probeA']['calls']==result['probeB']['calls']
+          assert sum(result['probeA']['calls'].values())>=75600
+          print(json.dumps({'arms':result,'scope':'AUTHENTIC_REAL_121_LIVING_98_VEHICLES_6H_OUTER_ABBA',
+                            'advance2PerArm':10800,'intrusiveRegionTimers':True,'outer386':True,
+                            'causalClosure':False,'acceptedSpeedup':False},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integrated-scale-pr57-outer-vehicle-386
+          path: artifacts/outer386
+          retention-days: 14
+          if-no-files-found: warn

@@ -95,38 +95,207 @@ public sealed partial class CitySimulation
         var points=NewRoadPoints(start,end,reverse);
         var p=new WorkProject{Id=Id(),Position=points[0],RoadPoints=points,PavingVersion=1,MachineryQuoted=QuoteMachinery(start,Math.Max(120,points.Count*State.Tuning.RoadStep*2))*PavingComponents(points),Required=q.Materials,WorkSeconds=Math.Max(120,points.Count*State.Tuning.RoadStep*2),BudgetRemaining=q.Total,Cause=q.Message};State.Projects.Add(p);ReserveLocalMaterials();Event("Obra de rua confirmada; orçamento reservado"+(q.Accessible?"; materiais e equipe serão enviados":"; conecte o trecho a uma via pronta"));return new(true,State.LastMessage,p.Id);
     }
+    // PR57-only A/B: index in-flight shipments for reservation queries within
+    // this invocation. ToLookup preserves each project's shipment iteration order.
+    // Rebuilt every call: no cache survives state changes or dispatches.
+    static readonly bool Pr57DispatchShipmentLookup=Environment.GetEnvironmentVariable("PR57_DISPATCH_SHIPMENT_LOOKUP")=="1";
+    // PR57 POC: per-dispatch live membership index; only append new shipments, read live cargo/status.
+    static readonly bool Pr57OrderShipmentIndexEnabled=Environment.GetEnvironmentVariable("PR57_ORDER_SHIPMENT_INDEX")=="1";
+    // PR57 isolated per-ProgressConstruction shipment membership; never survives Advance(2).
+    static readonly bool Pr57ProgressShipmentLookupEnabled=Environment.GetEnvironmentVariable("PR57_PROGRESS_SHIPMENT_LOOKUP")=="1";
+    bool _pr57ProgressShipmentLookupAnnounced;
+    readonly Dictionary<int,List<Shipment>> _pr57OrderShipments=new();
+    bool _pr57OrderShipmentIndexAnnounced;
+    // PR57-only causal waiting-project worklist. A stamp records a previous
+    // successful physical access check; it never enters State or a save.
+    static readonly bool Pr57ConstructionWaitAgendaEnabled=Environment.GetEnvironmentVariable("PR57_CONSTRUCTION_WAIT_AGENDA")=="1";
+    readonly Dictionary<int,(int RoadEpoch,double Progress)> _pr57ConstructionWaitAccess=new();
+    bool _pr57ConstructionWaitAgendaAnnounced;
+    // Profile-only instrumentation. The ordinary path returns the original list.
+    // Counting occurs on enumeration, including LINQ short-circuit behaviour.
+    IEnumerable<Shipment> Pr57ConstructionShipmentSource()
+    {
+        var profile=CostProfile;
+        if(profile==null)return State.Shipments;
+        profile.ConstructionShipmentQueries++;
+        var source=State.Shipments;
+        return Counted();
+        IEnumerable<Shipment> Counted()
+        {
+            foreach(var shipment in source){profile.ConstructionShipmentVisits++;yield return shipment;}
+        }
+    }
+    IEnumerable<RoadNode> Pr57ConstructionRoadSource()
+    {
+        var profile=CostProfile;
+        if(profile==null)return State.Roads;
+        profile.ConstructionRoadQueries++;
+        var source=State.Roads;
+        return Counted();
+        IEnumerable<RoadNode> Counted()
+        {
+            foreach(var road in source){profile.ConstructionRoadVisits++;yield return road;}
+        }
+    }
+    // PR57 #178: isolated, opt-in resource-workset POC. If every physical
+    // construction material is absent and every active project already has
+    // canonical zero reservation keys, ReserveLocalMaterials has no writes.
+    // Missing zero keys MUST fall back: AddAmount(k,0) creates persisted keys.
+    // No cache or cross-Step state is used; the complete scan still runs if
+    // stock, reservation, or serialization shape can change.
+    static readonly bool Pr57EmptyDepotReservationGuardEnabled=
+        Environment.GetEnvironmentVariable("PR57_EMPTY_DEPOT_RESERVATION_GUARD")=="1";
+    bool _pr57EmptyDepotGuardAnnounced;
     void ReserveLocalMaterials()
     {
         var depot=State.Buildings.FirstOrDefault(b=>b.Kind==BuildingKind.WorksDepot&&b.Completed&&!b.Removed&&!b.OperationClosed);if(depot==null)return;
+        if(Pr57EmptyDepotReservationGuardEnabled)
+        {
+            var kinds=Enum.GetValues<ResourceKind>().Where(k=>k!=ResourceKind.Food&&k!=ResourceKind.Fuel).ToArray();
+            if(kinds.All(k=>depot.Stock.Units.GetValueOrDefault(k)==0)
+                &&State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress)
+                    .All(p=>kinds.All(k=>p.LocalReserved.Units.TryGetValue(k,out var units)&&units==0)))
+            {
+                if(!_pr57EmptyDepotGuardAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+                {
+                    Console.WriteLine("PR57_EMPTY_DEPOT_RESERVATION_GUARD exercised=true");
+                    _pr57EmptyDepotGuardAnnounced=true;
+                }
+                return;
+            }
+        }
+        var pendingByProject=!Pr57SharedStepShipmentsEnabled&&Pr57DispatchShipmentLookup
+            ?Pr57ConstructionShipmentSource().Where(s=>s.ProjectId!=null&&!s.Complete).ToLookup(s=>s.ProjectId)
+            :null;
         foreach(var k in Enum.GetValues<ResourceKind>().Where(k=>k!=ResourceKind.Food&&k!=ResourceKind.Fuel)){
             var free=depot.Quantity(k)-State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress).Sum(p=>p.LocalReserved.GetValueOrDefault(k));
             foreach(var p in State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress).OrderBy(p=>p.Id)){
-                var pending=State.Shipments.Where(s=>s.ProjectId==p.Id&&!s.Complete).Sum(s=>s.Cargo.GetValueOrDefault(k));var need=p.Required.GetValueOrDefault(k)-p.Delivered.GetValueOrDefault(k)-pending-p.LocalReserved.GetValueOrDefault(k);var reserve=Math.Max(0,Math.Min(free,need));p.LocalReserved.AddAmount(k,reserve);free-=reserve;
+                if(CostProfile is { } census)census.ConstructionReserveProjects++;
+                var pending=Pr57SharedStepShipmentsEnabled?Pr57SharedPendingProjectShipments(p.Id).Sum(s=>s.Cargo.GetValueOrDefault(k)):pendingByProject==null?Pr57ConstructionShipmentSource().Where(s=>s.ProjectId==p.Id&&!s.Complete).Sum(s=>s.Cargo.GetValueOrDefault(k)):pendingByProject[p.Id].Sum(s=>s.Cargo.GetValueOrDefault(k));var need=p.Required.GetValueOrDefault(k)-p.Delivered.GetValueOrDefault(k)-pending-p.LocalReserved.GetValueOrDefault(k);var reserve=Math.Max(0,Math.Min(free,need));p.LocalReserved.AddAmount(k,reserve);free-=reserve;
             }
         }
     }
     RoadNode? WorkAccess(WorkProject p)
     {
+        if(CostProfile is { } census){census.ConstructionWorkAccessCalls++;if(p.BuildingId!=null)census.ConstructionBuildingAccessCalls++;}
         // A demolished stretch is skipped: maintenance continues on the remaining network.
-        if(p.IsMaintenance&&p.MaintenanceRoadIds.Count>0){var remaining=p.MaintenanceRoadIds.Where(_roads.ContainsKey).ToList();if(remaining.Count==0)return null;var target=_roads[remaining[Math.Min(remaining.Count-1,(int)(p.Progress*remaining.Count))]];return State.Roads.Where(r=>_workExteriorConnected.Contains(r.Id)&&r.Position.Distance(target.Position)<=State.Tuning.RoadStep+.05).MinBy(r=>r.Position.Distance(target.Position));}
+        if(p.IsMaintenance&&p.MaintenanceRoadIds.Count>0){var remaining=p.MaintenanceRoadIds.Where(_roads.ContainsKey).ToList();if(remaining.Count==0)return null;var target=_roads[remaining[Math.Min(remaining.Count-1,(int)(p.Progress*remaining.Count))]];return Pr57WorkAccessIndexEnabled?Pr57IndexedMaintenanceAccess(target.Position):Pr57ConstructionRoadSource().Where(r=>_workExteriorConnected.Contains(r.Id)&&r.Position.Distance(target.Position)<=State.Tuning.RoadStep+.05).MinBy(r=>r.Position.Distance(target.Position));}
         if(p.BuildingId!=null)return BuildingById(p.BuildingId) is {} b?ConstructionAccess(b):null;
-        return State.Roads.Where(r=>p.RoadPoints.Any(a=>a.Distance(r.Position)<=State.Tuning.RoadStep+.05)&&_workExteriorConnected.Contains(r.Id)).OrderBy(r=>r.Position.Distance(p.Position)).FirstOrDefault();
+        return Pr57WorkAccessIndexEnabled?Pr57IndexedRoadProjectAccess(p):Pr57ConstructionRoadSource().Where(r=>p.RoadPoints.Any(a=>a.Distance(r.Position)<=State.Tuning.RoadStep+.05)&&_workExteriorConnected.Contains(r.Id)).OrderBy(r=>r.Position.Distance(p.Position)).FirstOrDefault();
     }
     bool ProjectPay(WorkProject p,decimal value,string category,string reason)
     {
         value=Money(value);if(value>p.BudgetRemaining)return false;
         p.BudgetRemaining-=value;if(!Transfer("city","global",value,category,reason,p.Id)){p.BudgetRemaining+=value;return false;}p.CostPaid+=value;return true;
     }
+    // PR57 opt-in experiment: the second AssignLocalCrew call for the same
+    // project follows only shipment/truck/payment operations. Those operations
+    // cannot make a previously ineligible local citizen eligible in this Step.
+    // The first call remains mandatory; this flag never skips any global Step.
+    static readonly bool Pr57SingleCrewAssignmentEnabled=
+        Environment.GetEnvironmentVariable("PR57_SINGLE_CREW_ASSIGNMENT")=="1";
+    bool _pr57SingleCrewAssignmentAnnounced;
     void OrderConstruction()
     {
+        if(!_pr57SingleCrewAssignmentAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine($"PR57_SINGLE_CREW_ASSIGNMENT active={Pr57SingleCrewAssignmentEnabled}");
+            _pr57SingleCrewAssignmentAnnounced=true;
+        }
+        if(!_pr57OrderShipmentIndexAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine($"PR57_ORDER_SHIPMENT_INDEX active={Pr57OrderShipmentIndexEnabled}");
+            _pr57OrderShipmentIndexAnnounced=true;
+        }
+        if(!_pr57ConstructionWaitAgendaAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine($"PR57_CONSTRUCTION_WAIT_AGENDA active={Pr57ConstructionWaitAgendaEnabled}");
+            _pr57ConstructionWaitAgendaAnnounced=true;
+        }
         if(!State.Projects.Any(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress))return;
+        var pr57DispatchProfile=CostProfile;
+        var pr57ReserveStarted=pr57DispatchProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
         ReserveLocalMaterials();
+        if(pr57DispatchProfile is not null)
+        {
+            pr57DispatchProfile.Pr57DispatchReserveTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57ReserveStarted;
+            pr57DispatchProfile.Pr57DispatchReserveCalls++;
+        }
+        // If no specialist truck can leave and no worker can be dispatched
+        // from the depot, rechecking an unchanged material-blocked road project
+        // cannot trigger transport, crew assignment or payment this quantum.
+        var waitingAgendaBlocked=false;
+        if(Pr57ConstructionWaitAgendaEnabled&&AvailableTruck()==null)
+        {
+            var depot=State.Buildings.FirstOrDefault(b=>b.Kind==BuildingKind.WorksDepot&&b.Completed&&!b.Removed&&!b.OperationClosed&&Access(b)!=null);
+            waitingAgendaBlocked=depot==null||!State.Citizens.Any(c=>c.Alive&&c.WorkplaceId==depot.Id&&c.ConstructionProjectId==null&&!c.Moving&&c.Position.Distance(depot.Door)<3&&ShiftActive(c));
+        }
+        // Build membership lazily in insertion order. Any shipment appended by this
+        // dispatcher becomes visible on the next query. Complete and Cargo are
+        // deliberately read live, not snapshotted; no state is persisted.
+        if(Pr57OrderShipmentIndexEnabled&&!Pr57SharedStepShipmentsEnabled)
+            foreach(var group in _pr57OrderShipments.Values)group.Clear();
+        var indexedShipmentCount=0;
+        IEnumerable<Shipment> PendingProjectShipments(int projectId)
+        {
+            if(Pr57SharedStepShipmentsEnabled)
+                return Pr57SharedPendingProjectShipments(projectId);
+            if(!Pr57OrderShipmentIndexEnabled)
+                return Pr57ConstructionShipmentSource().Where(s=>s.ProjectId==projectId&&!s.Complete);
+            while(indexedShipmentCount<State.Shipments.Count)
+            {
+                var shipment=State.Shipments[indexedShipmentCount++];
+                if(shipment.ProjectId is not int id)continue;
+                if(!_pr57OrderShipments.TryGetValue(id,out var group))
+                    _pr57OrderShipments[id]=group=[];
+                group.Add(shipment);
+            }
+            return _pr57OrderShipments.TryGetValue(projectId,out var shipments)
+                ?shipments.Where(s=>!s.Complete):Enumerable.Empty<Shipment>();
+        }
         foreach(var p in State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress).OrderBy(p=>p.IsMaintenance?MaintenancePriority(p):4).ThenBy(p=>p.Id)){
+            if(CostProfile is { } census)census.ConstructionOrderProjects++;
+            var pr57ProjectProbe=CostProfile?.Pr57ConstructionProjects;
+            var pr57ProjectBefore=pr57ProjectProbe is null?default:Pr57ConstructionProjectProbe.Capture(p,State.Shipments.Count,State.Ledger.Count);
+            var pr57ProjectStarted=pr57ProjectProbe is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
+            try
+            {
             if(RoadPhysicalWorkDone(p))continue;
-            var access=WorkAccess(p);if(access==null||!_workExteriorConnected.Contains(access.Id)){p.Cause=WorkCause.NoMaterialsAccess;continue;}
-            if(IsPaving(p))OrderPavingMachines(p,access);else AssignLocalCrew(p,access);
+            // The previous real access check is reusable only while its road
+            // graph and maintenance target remain unchanged. Check live cargo
+            // in original shipment order: a newly completed delivery disables
+            // this shortcut. Every Step and every construction progress call
+            // still executes, including all physical and economic effects.
+            if(waitingAgendaBlocked&&p.IsMaintenance&&p.BuildingId==null&&p.MaintenanceRoadIds.Count>0&&p.LocalCrew.Count==0
+                &&_pr57ConstructionWaitAccess.TryGetValue(p.Id,out var checkedAccess)
+                &&checkedAccess.RoadEpoch==_roadEpoch&&checkedAccess.Progress==p.Progress
+                &&p.Required.Any(k=>p.Delivered.GetValueOrDefault(k.Key)
+                    +PendingProjectShipments(p.Id).Sum(s=>s.Cargo.GetValueOrDefault(k.Key))+.001<k.Value))
+            {
+                p.Cause=WorkCause.AwaitingExternalTruck;
+                continue;
+            }
+            var pr57AccessStarted=pr57DispatchProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
+            var access=WorkAccess(p);
+            if(pr57DispatchProfile is not null)
+            {
+                pr57DispatchProfile.Pr57DispatchAccessTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57AccessStarted;
+                pr57DispatchProfile.Pr57DispatchAccessCalls++;
+            }
+            if(access==null||!_workExteriorConnected.Contains(access.Id)){p.Cause=WorkCause.NoMaterialsAccess;continue;}
+            if(IsPaving(p))OrderPavingMachines(p,access);
+            else
+            {
+                var pr57CrewStarted=pr57DispatchProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
+                AssignLocalCrew(p,access);
+                if(pr57DispatchProfile is not null)
+                {
+                    pr57DispatchProfile.Pr57DispatchCrewTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57CrewStarted;
+                    pr57DispatchProfile.Pr57DispatchCrewCalls++;
+                }
+            }
             foreach(var k in p.Required.Keys.ToList()){
-                var inflight=State.Shipments.Where(s=>s.ProjectId==p.Id&&!s.Complete).Sum(s=>s.Cargo.GetValueOrDefault(k));
+                var inflight=PendingProjectShipments(p.Id).Sum(s=>s.Cargo.GetValueOrDefault(k));
                 var missing=p.Required[k]-p.Delivered.GetValueOrDefault(k)-inflight;
                 if(missing<=.001)continue;
                 var receiver=IsPaving(p)&&k==ResourceKind.Asphalt?AsphaltReceiver(p):null;
@@ -151,15 +320,35 @@ public sealed partial class CitySimulation
                 // A crew truck waits at the site. Bringing the crew with the
                 // first load can occupy the only free truck while more loads
                 // remain. Bring it with the final committed delivery instead.
-                var allMaterialsDispatched=p.Required.All(required=>p.Delivered.GetValueOrDefault(required.Key)+State.Shipments.Where(s=>s.ProjectId==p.Id&&!s.Complete).Sum(s=>s.Cargo.GetValueOrDefault(required.Key))+.001>=required.Value);
+                var allMaterialsDispatched=p.Required.All(required=>p.Delivered.GetValueOrDefault(required.Key)+PendingProjectShipments(p.Id).Sum(s=>s.Cargo.GetValueOrDefault(required.Key))+.001>=required.Value);
                 if(!IsPaving(p)&&p.CrewVehicleId==null&&p.LocalCrew.Count==0&&allMaterialsDispatched){vehicle.CrewAboard=true;vehicle.CrewCount=3;p.CrewVehicleId=vehicle.Id;}
                 vehicle.DockPosition=DockAt(source==null?access:Access(source)!,source??BuildingById(p.BuildingId),vehicle.CrewAboard);
                 if(source==null&&receiver!=null)ConfigureAsphaltApproach(vehicle,shipment);
                 p.Cause=WorkCause.MaterialsInTransit;
             }
-            if(!IsPaving(p))AssignLocalCrew(p,access);
+            if(!IsPaving(p)&&!Pr57SingleCrewAssignmentEnabled)
+            {
+                var pr57CrewStarted=pr57DispatchProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
+                AssignLocalCrew(p,access);
+                if(pr57DispatchProfile is not null)
+                {
+                    pr57DispatchProfile.Pr57DispatchCrewTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57CrewStarted;
+                    pr57DispatchProfile.Pr57DispatchCrewCalls++;
+                }
+            }
             if(IsPaving(p)){OrderPavingMachines(p,access);continue;}
             if(p.CrewVehicleId==null&&p.LocalCrew.Count==0&&p.Required.All(k=>p.Delivered.GetValueOrDefault(k.Key)+.001>=k.Value))SendExternalCrew(p,access);
+            if(Pr57ConstructionWaitAgendaEnabled&&p.IsMaintenance&&p.BuildingId==null&&p.MaintenanceRoadIds.Count>0
+                &&p.Cause==WorkCause.AwaitingExternalTruck)
+                _pr57ConstructionWaitAccess[p.Id]=(_roadEpoch,p.Progress);
+            }
+            finally
+            {
+                if(pr57ProjectProbe is not null)
+                    pr57ProjectProbe.Observe("order",p.Id,pr57ProjectBefore,
+                        Pr57ConstructionProjectProbe.Capture(p,State.Shipments.Count,State.Ledger.Count),
+                        System.Diagnostics.Stopwatch.GetTimestamp()-pr57ProjectStarted);
+            }
         }
     }
     // Same margin as the dispatch checks: the leg, then the way back to the exterior.
@@ -178,13 +367,35 @@ public sealed partial class CitySimulation
         if(p.CrewVehicleId!=null||p.LocalCrew.Count>0)return;
         var depot=State.Buildings.FirstOrDefault(b=>b.Kind==BuildingKind.WorksDepot&&b.Completed&&!b.Removed&&!b.OperationClosed&&Access(b)!=null);if(depot==null)return;
         foreach(var c in State.Citizens.Where(c=>c.Alive&&c.WorkplaceId==depot.Id&&c.ConstructionProjectId==null&&!c.Moving&&c.Position.Distance(depot.Door)<3&&ShiftActive(c)).Take(3)){
-            var target=CrewPedestrianSite(access);var route=PedestrianPath(c.Position,target,access);if(route.Count==0)continue;c.ConstructionProjectId=p.Id;c.Purpose=JourneyPurpose.Construction;c.Path=route;c.PathIndex=0;c.PathRoadRevision=State.RoadRevision;c.Activity="Indo ao canteiro";p.LocalCrew.Add(c.Id);Personal(c,"Equipe municipal enviada à obra "+p.Id);
+            var target=CrewPedestrianSite(access);var route=PedestrianPath(c.Position,target,access);if(route.Count==0)continue;Pr57CitizenAgendaWake(c);c.ConstructionProjectId=p.Id;c.Purpose=JourneyPurpose.Construction;c.Path=route;c.PathIndex=0;c.PathRoadRevision=State.RoadRevision;c.Activity="Indo ao canteiro";p.LocalCrew.Add(c.Id);Personal(c,"Equipe municipal enviada à obra "+p.Id);
         }
     }
     bool ProgressConstruction(double dt)
     {
+        if(!_pr57ProgressShipmentLookupAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine($"PR57_PROGRESS_SHIPMENT_LOOKUP active={Pr57ProgressShipmentLookupEnabled}");
+            _pr57ProgressShipmentLookupAnnounced=true;
+        }
+        // Original shipment insertion order, live Cargo/Complete/ProjectId; rebuilt each call.
+        // If the shipment list grows or shrinks mid-phase, use the original full scan.
+        var progressShipments=!Pr57SharedStepShipmentsEnabled&&Pr57ProgressShipmentLookupEnabled&&State.Projects.Any(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress)
+            ?Pr57ConstructionShipmentSource().Where(s=>s.ProjectId!=null).ToLookup(s=>s.ProjectId)
+            :null;
+        var indexedShipmentCount=State.Shipments.Count;
+        IEnumerable<Shipment> PendingProgressShipments(int projectId)
+            =>Pr57SharedStepShipmentsEnabled?Pr57SharedPendingProjectShipments(projectId)
+                :progressShipments!=null&&State.Shipments.Count==indexedShipmentCount
+                ?progressShipments[projectId].Where(s=>s.ProjectId==projectId&&!s.Complete)
+                :Pr57ConstructionShipmentSource().Where(s=>s.ProjectId==projectId&&!s.Complete);
         var completedConstruction=false;
         foreach(var p in State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress)){
+            if(CostProfile is { } census)census.ConstructionProgressProjects++;
+            var pr57ProjectProbe=CostProfile?.Pr57ConstructionProjects;
+            var pr57ProjectBefore=pr57ProjectProbe is null?default:Pr57ConstructionProjectProbe.Capture(p,State.Shipments.Count,State.Ledger.Count);
+            var pr57ProjectStarted=pr57ProjectProbe is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
+            try
+            {
             if(RetireMaintenanceWithoutTargets(p))continue;
             if(IsPaving(p)&&!RoadPhysicalWorkDone(p)){if(ProgressPaving(p,dt)){if(!WaitForRoadConnection(p))completedConstruction|=CompleteConstructionProject(p);}continue;}
             if(RoadPhysicalWorkDone(p)){
@@ -197,9 +408,9 @@ public sealed partial class CitySimulation
                 // Old saves can contain a crew parked with the first load and
                 // no truck left to deliver the rest. Return that actual crew
                 // to the exterior, then reuse its truck for missing materials.
-                var missingUnordered=p.Required.Any(required=>p.Delivered.GetValueOrDefault(required.Key)+State.Shipments.Where(s=>s.ProjectId==p.Id&&!s.Complete).Sum(s=>s.Cargo.GetValueOrDefault(required.Key))+.001<required.Value);
+                var missingUnordered=p.Required.Any(required=>p.Delivered.GetValueOrDefault(required.Key)+PendingProgressShipments(p.Id).Sum(s=>s.Cargo.GetValueOrDefault(required.Key))+.001<required.Value);
                 if(missingUnordered&&p.CrewVehicleId is {} earlyCrewId&&VehicleById(earlyCrewId) is {Status:VehicleStatus.Parked,CrewAboard:true} earlyCrew){p.CrewVehicleId=null;ReturnExternal(earlyCrew);}
-                p.Cause=State.Shipments.Any(s=>s.ProjectId==p.Id&&!s.Complete)?WorkCause.AwaitingPhysicalDelivery:WorkCause.MissingMaterials;continue;
+                p.Cause=PendingProgressShipments(p.Id).Any()?WorkCause.AwaitingPhysicalDelivery:WorkCause.MissingMaterials;continue;
             }
             var crew=p.CrewVehicleId==null?null:State.Vehicles.FirstOrDefault(v=>v.Id==p.CrewVehicleId&&v.CrewAboard);
             if(crew is {Status:VehicleStatus.Parked}&&crew.Position.Distance(DockAt(access,BuildingById(p.BuildingId),true))>2.5){
@@ -230,6 +441,14 @@ public sealed partial class CitySimulation
             if(p.Progress<.999999)continue;
             if(RoadPhysicalWorkDone(p)&&WaitForRoadConnection(p))continue;
             completedConstruction|=CompleteConstructionProject(p);
+            }
+            finally
+            {
+                if(pr57ProjectProbe is not null)
+                    pr57ProjectProbe.Observe("progress",p.Id,pr57ProjectBefore,
+                        Pr57ConstructionProjectProbe.Capture(p,State.Shipments.Count,State.Ledger.Count),
+                        System.Diagnostics.Stopwatch.GetTimestamp()-pr57ProjectStarted);
+            }
         }
         return completedConstruction;
     }
