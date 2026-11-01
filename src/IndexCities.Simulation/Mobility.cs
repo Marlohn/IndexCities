@@ -1543,15 +1543,13 @@ public sealed partial class CitySimulation
         // holder close to this crossing reserves it, as for claims (NearbyAreaOwner).
         if(v.ManoeuvreSpaces.Contains(junction.Id)){ReserveJunction(v,junction,area);return Pr57JunctionDecision(v,junction,Pr57JunctionExit.ExistingManoeuvre,true);}
         pr57DetailStart=pr57Detail?GC.GetAllocatedBytesForCurrentThread():0L;pr57DetailTickStart=pr57Detail&&Pr57HotTiming?System.Diagnostics.Stopwatch.GetTimestamp():0L;
-        var fused=Pr57FusedAdmissionEnabled&&area is not null&&!Pr57JunctionReadersEnabled;
-        var admission=fused?Pr57PlanAdmissionReaders(v,junction,area!):default;
-        var manoeuvre=fused?admission.Manoeuvre:State.Vehicles.FirstOrDefault(o=>Pr57JunctionReadersCandidate(v,o,0)&&o.Id!=v.Id&&o.Id!=v.TowTargetId&&o.TowTruckId!=v.Id&&!Receives(o,v)&&Pr57JunctionReadersGate(v,o,0)&&(o.ManoeuvreSpaces.Contains(junction.Id)||area!=null&&o.ManoeuvreSpaces.Any(area.Contains)&&Pr57JunctionReadersGate(v,o,1)&&o.Position.Distance(junction.Position)<9));
+        var manoeuvre=State.Vehicles.FirstOrDefault(o=>Pr57JunctionReadersCandidate(v,o,0)&&o.Id!=v.Id&&o.Id!=v.TowTargetId&&o.TowTruckId!=v.Id&&!Receives(o,v)&&Pr57JunctionReadersGate(v,o,0)&&(o.ManoeuvreSpaces.Contains(junction.Id)||area!=null&&o.ManoeuvreSpaces.Any(area.Contains)&&Pr57JunctionReadersGate(v,o,1)&&o.Position.Distance(junction.Position)<9));
         if(pr57Detail){_pr57JunctionDetailBytes[0]+=GC.GetAllocatedBytesForCurrentThread()-pr57DetailStart;_pr57JunctionDetailCalls[0]++;if(pr57DetailTickStart!=0)_pr57JunctionDetailTicks[0]+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57DetailTickStart;}
         if(manoeuvre is not null){Pr57JunctionReadersBlock(v,manoeuvre,"manoeuvre");v.Cause=(IsBend(junction)?"Aguardando liberação da curva pelo veículo ":"Aguardando liberação do cruzamento pelo veículo ")+manoeuvre.Id;return Pr57JunctionDecision(v,junction,Pr57JunctionExit.ManoeuvreHolder,false);}
         var continuing=area!=null&&v.IntersectionClaim is {} held&&area.Contains(held);
         if(area!=null){
             pr57DetailStart=pr57Detail?GC.GetAllocatedBytesForCurrentThread():0L;pr57DetailTickStart=pr57Detail&&Pr57HotTiming?System.Diagnostics.Stopwatch.GetTimestamp():0L;
-            var owner=fused?admission.Owner:NearbyAreaOwner(area,junction,v);
+            var owner=NearbyAreaOwner(area,junction,v);
             if(pr57Detail){_pr57JunctionDetailBytes[1]+=GC.GetAllocatedBytesForCurrentThread()-pr57DetailStart;_pr57JunctionDetailCalls[1]++;if(pr57DetailTickStart!=0)_pr57JunctionDetailTicks[1]+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57DetailTickStart;}
             if(owner!=null&&owner.Id!=v.Id&&owner.Id!=v.TowTargetId){Pr57JunctionReadersBlock(v,owner,"areaOwner");v.Cause="Aguardando liberação do cruzamento pelo veículo "+owner.Id;return Pr57JunctionDecision(v,junction,Pr57JunctionExit.AreaOwner,false);}
         }
