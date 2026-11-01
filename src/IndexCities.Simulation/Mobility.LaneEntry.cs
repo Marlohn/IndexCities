@@ -277,13 +277,13 @@ public sealed partial class CitySimulation
     }
     // Pure value projection: the forecast is read-only until it returns.
     // Same predicate, same route, same ordering; only Position differs.
-    bool Pr57BlocksLaneEntryAt(Vehicle v,LaneAccess access,Vehicle other,Point position)
+    bool Pr57BlocksLaneEntryAt(Vehicle v,LaneAccess access,Vehicle other,Point projectedPosition)
     {
-        var side=access.Side(position);var half=State.Tuning.RoadWidth/2;
+        var side=access.Side(projectedPosition);var half=State.Tuning.RoadWidth/2;
         if(Math.Abs(side)>half||side<Math.Min(access.FromSide,access.ToSide)-.9||side>Math.Max(access.FromSide,access.ToSide)+.9)return false;
         var fraction=Math.Clamp((side-access.FromSide)/(access.ToSide-access.FromSide),0,1);
         var crossAlong=access.Along(v.Position)*(1-fraction)+access.Along(access.Target)*fraction;
-        var gap=access.Along(position)-crossAlong;
+        var gap=access.Along(projectedPosition)-crossAlong;
         var direction=(Math.Sin(other.Heading)*access.Axis.X+Math.Cos(other.Heading)*access.Axis.Z)/access.Length;
         if(other.Status!=VehicleStatus.Stranded&&Math.Abs(direction)<.5&&other.PassengerCar&&other.RouteIndex==0&&Math.Abs(access.FromSide)<=half&&other.Id>v.Id)return false;
         var approaching=other.Status==VehicleStatus.Travelling&&gap*direction<0;
@@ -292,7 +292,7 @@ public sealed partial class CitySimulation
         var approachSpeed=State.Tuning.VehicleSpeed;
         if(approaching){
             var ahead=Math.Max(State.Tuning.VehicleSpeed,State.Tuning.HighwaySpeed)*access.Distance/access.Speed;
-            var position=position;
+            var position=projectedPosition;
             for(var index=other.RouteIndex;index<other.Route.Count&&ahead>=0;index++){
                 if(!_roads.TryGetValue(other.Route[index],out var upcoming))break;
                 approachSpeed=Math.Max(approachSpeed,upcoming.Highway?State.Tuning.HighwaySpeed:State.Tuning.VehicleSpeed);

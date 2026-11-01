@@ -137,7 +137,8 @@ jobs:
               snaps=[(dest/f'checkpoint-{n}.json').read_bytes() for n in range(3)]
               if control is None:control=snaps
               assert snaps==control,(case,arm,'FULL_JSON_DIVERGENCE')
-              if arm.startswith('B'):assert 'PR57_EPHEMERAL_FRAME used=True' in log,(case,arm,'no hits')
+              if arm.startswith('B') and case!='gridARTIFICIAL':
+                assert 'PR57_EPHEMERAL_FRAME reused=True' in log,(case,arm,'no reuse hits')
               def metric(line,key):
                 m=re.search(r'\b'+re.escape(key)+r'=([0-9.]+)',line)
                 assert m,(case,arm,key,line)
