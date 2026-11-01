@@ -291,6 +291,7 @@ public sealed partial class CitySimulation
         Pr57WorkAccessBeginStep();
         Pr57BeginStep();
         Pr57SharedShipmentsBeginStep();
+        Pr57PhaseJournalBegin();
         if(!Pr57LivingRosterEnabled&&!_pr57LivingRosterAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
         {
             Console.WriteLine("PR57_LIVING_ROSTER active=False");
@@ -366,6 +367,7 @@ public sealed partial class CitySimulation
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,6,ref started);
         if(samplePresence){presence!.Observe(this,6);profile?.ResetAllocationCensusBaseline();started=System.Diagnostics.Stopwatch.GetTimestamp();}
         OperateBusinesses(dt);
+        Pr57PhaseJournalEnd();
         if(profile is not null)profile.Mark(7,ref started);
         if(Pr57Writer289Enabled)_pr57Writer289Phase=8;
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,7,ref started);
