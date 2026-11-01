@@ -560,6 +560,10 @@ public sealed partial class CitySimulation
         Pr57CausalBeginSlice(dt,operationsDt);
         Pr57JunctionCensusBeginSlice(dt,operationsDt);
         Pr57JunctionReadersBeginSlice(dt,operationsDt);
+        // PR57 #589: exact zero-distance certificate for a completed longitudinal winner.
+        // Every admissible HoldFor distance is nonnegative; ties retain first-in-order.
+        var pr57589Enabled=Environment.GetEnvironmentVariable("PR57_589_ZERO_CERTIFICATE")=="1";
+        var pr57589Shadow=Environment.GetEnvironmentVariable("PR57_589_SHADOW")=="1";
         var scanProfile=CostProfile;
         Pr57Effect253BeginSlice(dt,operationsDt,scanProfile is not null);
         Pr57260BeginSlice(dt,operationsDt);
@@ -1011,7 +1015,18 @@ public sealed partial class CitySimulation
                 }
                 void Pr57ScanLane(IEnumerable<Vehicle> candidates){
                 var pr57StageScanStart=Pr57StageScanBegin(v);
+                var pr57589Checked=0;
+                Vehicle? pr57589Witness=null;
                 foreach(var liveOther in candidates){
+                    if(pr57589Enabled&&scanProfile is null&&leaderDistance==0){
+                        if(pr57589Witness is null){pr57589Witness=blocker;_pr57589Certificates++;}
+                        if(!pr57589Shadow){
+                            _pr57589Cutoffs++;
+                            _pr57589Skipped+=pr57LaneList.Count-pr57589Checked;
+                            break;
+                        }
+                    }
+                    pr57589Checked++;
                     if(pr57IdleProbe)pr57IdleLaneVisits++;
                     Pr57StageMark(0);
                     var other=enteringLane?Pr57StageEntryFrame(liveOther):liveOther;
@@ -1076,6 +1091,9 @@ public sealed partial class CitySimulation
                         HoldFor(other,forward);
                     }
                 }
+                if(pr57589Shadow&&pr57589Witness is not null&&
+                    (leaderDistance!=0||!ReferenceEquals(blocker,pr57589Witness)))
+                    throw new InvalidOperationException("PR57 #589 zero-distance certificate changed its canonical winner");
                 Pr57StageScanEnd(pr57StageScanStart);
                 }
                 Pr57CrossSliceObserve(v,0,enteringLane,speed*remaining);
@@ -1453,6 +1471,8 @@ public sealed partial class CitySimulation
         if(pr57IdleProbe)Pr57IdleProbeTick();
         _pr57SiteOwnerRoster=null; // no index may survive this movement slice
         if(pr57Bvh)_pr57VehicleBvh!.Refresh();
+        if(pr57589Enabled&&dt>0&&++_pr57589Slices%100==0)
+            Console.WriteLine($"PR57_589_CERT slices={_pr57589Slices} certificates={_pr57589Certificates} cutoffs={_pr57589Cutoffs} skipped={_pr57589Skipped} shadow={pr57589Shadow}");
         if(scanProfile is not null){
             _pr57MovementAllocBytes[0]+=GC.GetAllocatedBytesForCurrentThread()-pr57AllocCallStart;
             if(++_pr57MovementAllocCalls%300==0){
