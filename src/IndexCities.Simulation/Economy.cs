@@ -176,11 +176,9 @@ public sealed partial class CitySimulation
     {
         // Workplaces do not change during this loop: group the citizens once,
         // keeping building order and citizen order within each building.
-        var phaseWorklistReady=Pr57PhaseJournalCanUse();
         var staff=StaffByWorkplace();
-        IEnumerable<Building> businessCandidates=phaseWorklistReady?_pr57PhaseWorklist:State.Buildings.Where(b=>b.Completed&&!b.Removed);
-        foreach(var b in businessCandidates){
-            if(Pr57StaffPhaseFusionEnabled||phaseWorklistReady)
+        foreach(var b in State.Buildings.Where(b=>b.Completed&&!b.Removed)){
+            if(Pr57StaffPhaseFusionEnabled)
             {
                 // WorkerPresentAt was evaluated after movement, before this
                 // immediately adjacent business phase; no citizen mutation

@@ -41,7 +41,7 @@ public sealed partial class CitySimulation
         // query live, but count every building's present workers in one pass
         // over the citizens (the same WorkerPresentAt rule per worker).
         var present=_present;present.Clear();var byId=_activeById;byId.Clear();foreach(var b in active){present.Add(b.Id,0);byId.Add(b.Id,b);}
-        if(Pr57StaffPhaseFusionEnabled||Pr57PhaseJournalEnabled)
+        if(Pr57StaffPhaseFusionEnabled)
         {
             if(!_pr57StaffPhaseFusionAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
             {
@@ -124,14 +124,12 @@ public sealed partial class CitySimulation
         UpdatePollution(dt,active);
         if(detail is not null)detail.MarkDetail(4,ref detailStarted);
         foreach(var b in active){
-            Pr57PhaseJournalRecord(b,present[b.Id]);
             var staff=StaffFactor(b);var service=b.Definition.Utility;
             if(b.Kind==BuildingKind.House){b.Cause=b.FamilyId==null?"Disponível no mercado":b.WaterRatio<.5?"Abastecimento de água insuficiente":b.ElectricityRatio<.5?"Energia insuficiente":"Residência ocupada";continue;}
             if(!service){var waterEffect=Math.Max(0,1-b.WaterOutageSeconds/(State.Tuning.WaterClosureHours*3600));b.OperationalCapacity=b.Definition.Capacity*staff*b.MaintenanceRatio*(.25+.75*b.ElectricityRatio)*(.4+.6*b.WaterRatio)*waterEffect;if(b.Kind==BuildingKind.Farm)b.OperationalCapacity=b.Definition.Width*b.Definition.Depth*.10*staff*b.WaterRatio*b.ElectricityRatio*waterEffect;}
             b.Cause=!b.Definition.Private&&b.MaintenanceRatio<.9?"Manutenção pendente; capacidade reduzida":!HasExteriorAccess(b)?"Sem acesso viário":b.Definition.Private&&b.CompanyId==null?"Procurando empresa":b.OperationClosed?"Operação encerrada; imóvel preservado":!Open(b)&&!service?"Fora do horário de funcionamento":present[b.Id]==0?"Sem funcionários presentes no turno":b.Kind==BuildingKind.WaterIntake&&b.OperationalCapacity==0?"Captação sem fonte natural viável/energia":b.Kind==BuildingKind.WaterTreatment&&State.RawWaterCapacity==0?"Falta captação de água bruta":b.Kind!=BuildingKind.WindPower&&b.ElectricityRatio<.1?"Energia insuficiente":b.WaterOutageSeconds>=State.Tuning.WaterClosureHours*3600?"Parada após falta persistente de água":b.Kind is BuildingKind.Grocery or BuildingKind.FuelStation&&b.Quantity(b.Kind==BuildingKind.Grocery?ResourceKind.Food:ResourceKind.Fuel)<.1?"Estoque insuficiente":b.WaterRatio<.5&&!service?"Capacidade reduzida por falta de água":"Operando";
             if(b.Definition.Private&&(b.CompanyId==null||b.OperationClosed||!CompanyById(b.CompanyId)!.Active)||!HasExteriorAccess(b))b.OperationalCapacity=0;
         }
-        Pr57PhaseJournalPublish();
         if(detail is not null)detail.MarkDetail(5,ref detailStarted);
         if(Pr57UtilityReplayEnabled&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1"&&State.ElapsedSeconds%3600==0)
             Console.WriteLine($"PR57_UTILITY_REPLAY_STATS at={State.ElapsedSeconds} hits={_pr57ElectricReplay.ReplayHits+_pr57WaterReplay.ReplayHits+_pr57SewageReplay.ReplayHits} misses={_pr57ElectricReplay.ReplayMisses+_pr57WaterReplay.ReplayMisses+_pr57SewageReplay.ReplayMisses}");
