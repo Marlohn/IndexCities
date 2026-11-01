@@ -271,7 +271,36 @@ public sealed class Citizen
     public long HealthUnits {get;set;}=100*FixedPoint.PointScale;
     [JsonIgnore] public double Health {get=>FixedPoint.Value(HealthUnits,FixedPoint.PointScale);set=>HealthUnits=FixedPoint.Quantize(value,FixedPoint.PointScale);}
     public void AddHealth(double delta)=>HealthUnits=FixedPoint.Add(HealthUnits,delta,FixedPoint.PointScale);
-    public double Satisfaction {get;set;}=65;
+    // PR57 #598: transient event-time materialization. Inputs are frozen at
+    // their canonical Step point; public getters, setters and JSON remain exact.
+    double _satisfaction=65;
+    bool _pr57SatisfactionPending;
+    double _pr57SatisfactionHunger,_pr57SatisfactionUnmet,_pr57SatisfactionExpected;
+    bool _pr57SatisfactionCrowded;
+    static readonly bool Pr57SatisfactionShadow=Environment.GetEnvironmentVariable("PR57_598_SHADOW")=="1";
+    public double Satisfaction
+    {
+        get
+        {
+            if(_pr57SatisfactionPending)
+            {
+                var computed=Math.Clamp(80-_pr57SatisfactionHunger*.7-_pr57SatisfactionUnmet*15-(_pr57SatisfactionCrowded?8:0),0,100);
+                if(Pr57SatisfactionShadow&&BitConverter.DoubleToInt64Bits(computed)!=BitConverter.DoubleToInt64Bits(_pr57SatisfactionExpected))
+                    throw new InvalidOperationException("PR57_598 satisfaction shadow mismatch");
+                _satisfaction=computed;_pr57SatisfactionPending=false;
+            }
+            return _satisfaction;
+        }
+        set {_pr57SatisfactionPending=false;_satisfaction=value;}
+    }
+    internal bool Pr57DeferSatisfaction(double hunger,double unmet,bool crowded)
+    {
+        var overwritten=_pr57SatisfactionPending;
+        _pr57SatisfactionHunger=hunger;_pr57SatisfactionUnmet=unmet;_pr57SatisfactionCrowded=crowded;
+        if(Pr57SatisfactionShadow)_pr57SatisfactionExpected=Math.Clamp(80-hunger*.7-unmet*15-(crowded?8:0),0,100);
+        _pr57SatisfactionPending=true;
+        return overwritten;
+    }
     public long BagFoodUnits {get;set;}
     [JsonIgnore] public double BagFood {get=>FixedPoint.Value(BagFoodUnits,FixedPoint.ResourceScale);set=>BagFoodUnits=FixedPoint.Quantize(value,FixedPoint.ResourceScale);}
     public void AddBagFood(double delta)=>BagFoodUnits=FixedPoint.Add(BagFoodUnits,delta,FixedPoint.ResourceScale);
