@@ -31,6 +31,9 @@ public sealed partial class CitySimulation
     readonly long[] _pr57DirectMovementCalls=new long[4];
     readonly long[] _pr57JunctionDetailTicks=new long[7]; // same regions as JunctionDetailBytes
     long _pr57MovementAllocCalls;
+    // PR57 #591: one actor-local contact traversal for longitudinal and bend decisions.
+    // Counters never enter the city state or save.
+    long _pr57591Slices, _pr57591FusedQueries, _pr57591AvoidedBendPassVisits;
     // Shared empty candidate list: read-only, never populated by a movement scan.
     static readonly List<Vehicle> Pr57EmptyBendList=[];
     // PR57-only bounded diagnostics for the two previously identified junction winners.
@@ -561,6 +564,9 @@ public sealed partial class CitySimulation
         Pr57JunctionCensusBeginSlice(dt,operationsDt);
         Pr57JunctionReadersBeginSlice(dt,operationsDt);
         var scanProfile=CostProfile;
+        // Opt-in experimental physical contact fusion. No persistent snapshot or cross-actor cache.
+        var pr57591Enabled=Environment.GetEnvironmentVariable("PR57_591_FUSED_CONTACT")=="1";
+        var pr57591Shadow=Environment.GetEnvironmentVariable("PR57_591_SHADOW")=="1";
         Pr57Effect253BeginSlice(dt,operationsDt,scanProfile is not null);
         Pr57260BeginSlice(dt,operationsDt);
         Pr57ExclusiveBeginSlice(dt,operationsDt,scanProfile is not null);
@@ -678,6 +684,9 @@ public sealed partial class CitySimulation
         var pr57BitsetScratch=pr57LaneGrid?new ulong[pr57BitsetWords]:null;
         var pr57BitsetResults=pr57LaneGrid?new List<Vehicle>(64):null;
         var pr57BendLeadersReuse=pr57BendReuse?new List<Vehicle>(32):null;
+        // Reused only within this movement call; filled from the canonical lane iteration.
+        var pr57591PreBend=pr57591Enabled?new List<Vehicle>(32):null;
+        var pr57591BendLeaders=pr57591Enabled?new List<Vehicle>(32):null;
         var pr57SpatialIds=pr57SpatialScan||pr57LaneGrid?pr57ScanCandidates.Select(o=>o.Id).ToHashSet():null;
         var pr57WorldExtent=(pr57SpatialScan||pr57BitsetScan)&&pr57ScanCandidates.Count>0
             ?pr57ScanCandidates.Max(o=>Math.Max(Math.Abs(o.Position.X),Math.Abs(o.Position.Z))):0;
@@ -1009,9 +1018,26 @@ public sealed partial class CitySimulation
                     Console.WriteLine($"PR57_AXIS_SWEEP used=True candidates={pr57LaneList.Count} total={State.Vehicles.Count}");
                     _pr57AxisSweepUsedAnnounced=true;
                 }
+                // The default lane and bend scans read the same live State.Vehicles.
+                // Gather bend candidates up to the maximum possible movement; the
+                // actual post-junction/post-crossing step filters them later.
+                // Entry frames, alternative indexes and profiling use the canonical path.
+                var pr57591UseFused=pr57591Enabled&&scanProfile is null&&!enteringLane&&
+                    !pr57ActiveScan&&!pr57SpatialScan&&!pr57BitsetScan&&!pr57AxisSweep&&
+                    !pr57Bvh&&!pr57ZeroBendSkip&&ReferenceEquals(pr57LaneList,State.Vehicles);
+                var pr57591MaxReach=Math.Min(d,speed*remaining)+12;
+                if(pr57591UseFused)pr57591PreBend!.Clear();
                 void Pr57ScanLane(IEnumerable<Vehicle> candidates){
                 var pr57StageScanStart=Pr57StageScanBegin(v);
                 foreach(var liveOther in candidates){
+                    if(pr57591UseFused&&liveOther.Id!=v.Id&&
+                       liveOther.Status is (VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded)&&
+                       liveOther.Position.Distance(v.Position)<=pr57591MaxReach&&
+                       Math.Cos(liveOther.Heading-v.Heading)>.5&&Ahead(v,liveOther)>0&&
+                       Math.Abs((liveOther.Position.X-v.Position.X)*Math.Cos(v.Heading)-
+                                (liveOther.Position.Z-v.Position.Z)*Math.Sin(v.Heading))>=2.6&&
+                       !(liveOther.Position.Distance(State.Entry)<8&&v.Position.Distance(State.Entry)<8))
+                        pr57591PreBend!.Add(liveOther);
                     if(pr57IdleProbe)pr57IdleLaneVisits++;
                     Pr57StageMark(0);
                     var other=enteringLane?Pr57StageEntryFrame(liveOther):liveOther;
@@ -1119,7 +1145,26 @@ public sealed partial class CitySimulation
                 // A/B only: cheap conservative AABB and exact radius rejection BEFORE
                 // heading/Ahead/body tests. The old order and all original exact predicates
                 // remain in the control path; no finite lane-leader cutoff is introduced.
-                var bendLeaders=pr57BendReuse?pr57BendLeadersReuse!:pr57BendPrefilter?new List<Vehicle>():pr57BendList.Where(o=>o.Id!=v.Id&&o.Status is VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded&&Math.Cos(o.Heading-v.Heading)>.5&&Ahead(v,o)>0&&
+                if(pr57591UseFused){
+                    pr57591BendLeaders!.Clear();
+                    foreach(var candidate in pr57591PreBend!)
+                        if(candidate.Position.Distance(v.Position)<=step+12)pr57591BendLeaders.Add(candidate);
+                    if(pr57591Shadow){
+                        var canonicalBend=pr57BendList.Where(o=>o.Id!=v.Id&&
+                            o.Status is VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded&&
+                            Math.Cos(o.Heading-v.Heading)>.5&&Ahead(v,o)>0&&
+                            Math.Abs((o.Position.X-v.Position.X)*Math.Cos(v.Heading)-
+                                     (o.Position.Z-v.Position.Z)*Math.Sin(v.Heading))>=2.6&&
+                            o.Position.Distance(v.Position)<=step+12&&
+                            !(o.Position.Distance(State.Entry)<8&&v.Position.Distance(State.Entry)<8)).ToList();
+                        if(canonicalBend.Count!=pr57591BendLeaders.Count||
+                           canonicalBend.Where((o,i)=>!ReferenceEquals(o,pr57591BendLeaders[i])).Any())
+                            throw new InvalidOperationException("PR57 #591 fused contact diverged from canonical bend order");
+                    }
+                    _pr57591FusedQueries++;
+                    _pr57591AvoidedBendPassVisits+=pr57BendList.Count;
+                }
+                var bendLeaders=pr57591UseFused?pr57591BendLeaders!:pr57BendReuse?pr57BendLeadersReuse!:pr57BendPrefilter?new List<Vehicle>():pr57BendList.Where(o=>o.Id!=v.Id&&o.Status is VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded&&Math.Cos(o.Heading-v.Heading)>.5&&Ahead(v,o)>0&&
                     Math.Abs((o.Position.X-v.Position.X)*Math.Cos(v.Heading)-(o.Position.Z-v.Position.Z)*Math.Sin(v.Heading))>=2.6&&o.Position.Distance(v.Position)<=step+12&&
                     !(o.Position.Distance(State.Entry)<8&&v.Position.Distance(State.Entry)<8)).ToList();
                 if(pr57BendReuse){
@@ -1421,6 +1466,8 @@ public sealed partial class CitySimulation
                 if(scanProfile is not null)_pr57MovementAllocBytes[10]+=GC.GetAllocatedBytesForCurrentThread()-pr57FinalizeAllocStart;
             }
         }
+        if(pr57591Enabled&&dt>0&&++_pr57591Slices%100==0)
+            Console.WriteLine($"PR57_591_FUSED slices={_pr57591Slices} queries={_pr57591FusedQueries} avoidedBendVisits={_pr57591AvoidedBendPassVisits} shadow={pr57591Shadow}");
         if(pr57PoseNoopSkip&&scanProfile is not null&&dt>0&&_pr57MovementAllocCalls>=36&&_pr57MovementAllocCalls<39)
             Console.WriteLine($"PR57_236_POSE_NOOP sample={_pr57MovementAllocCalls-35} eligible={pr57PoseNoopEligible} skipped={pr57PoseNoopSkipped} evaluated={pr57PoseNoopEligible-pr57PoseNoopSkipped} scope=BITWISE_HEADING_NOOP");
         // A towed vehicle moves only with its tow (platform or trailing a heavy tow).
