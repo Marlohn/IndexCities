@@ -285,7 +285,7 @@ public sealed partial class CitySimulation
         var detailStarted=detail is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
         // Pollution is unchanged during this routine, and residents in the same
         // home use exactly the same point. Retain every per-citizen calculation.
-        SnapshotPollution();var pollution=_homePollution;pollution.Clear();
+        Pr57ConsumePollutionSnapshot();var pollution=_homePollution;pollution.Clear();
         // Every home this loop can sample, computed together up front (a home the
         // loop no longer reaches only costs time; a missing one is computed below).
         _homePoints.Clear();
