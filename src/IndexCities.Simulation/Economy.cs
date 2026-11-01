@@ -103,7 +103,6 @@ public sealed partial class CitySimulation
             var companyJobs=company.Buildings.Select(id=>BuildingById(id)).Where(site=>site!=null&&!site.OperationClosed).Sum(site=>site!.Definition.Jobs);var liabilities=State.Obligations.Where(o=>o.Debtor==company.Account&&o.Outstanding>0).Sum(o=>o.Outstanding);var affordable=Math.Max(0,Balance(company.Account)-liabilities)/Math.Max(1,companyJobs*8*7);
             var target=Math.Min(affordable,(State.Tuning.HourlySalary*.75m+competition*.25m)*(decimal)(.9+ratio*.25));b.SalaryOffer=Money(Math.Max(.1m,b.SalaryOffer+(target-b.SalaryOffer)*.08m));
         }
-        if(Pr57JobFrontierEnabled)Pr57PublishJobFrontier();
     }
     decimal AnnualPropertyTax(Building building)=>MarketValue(building)*State.TaxRates[building.Definition.TaxCategory];
     double BusinessOpportunity(Building b)
@@ -118,33 +117,8 @@ public sealed partial class CitySimulation
             BuildingKind.MechanicShop=>Math.Clamp((State.Vehicles.Count(v=>!v.External&&v.Machine==PavingMachine.None)+homes*.2)/(4.0+competitors*10),0,1),_=>0};
         return opportunity/(1+(double)State.TaxRates[b.Definition.TaxCategory]*12);
     }
-    // PR57 #567: the market publishes salary/company writes at its phase
-    // boundary; the following job review consumes a one-review workset.
-    // No cache crosses Advance(2), and all live eligibility checks remain.
-    static readonly bool Pr57JobFrontierEnabled=Environment.GetEnvironmentVariable("PR57_JOB_FRONTIER")=="1";
-    static readonly bool Pr57JobFrontierShadow=Environment.GetEnvironmentVariable("PR57_JOB_FRONTIER_SHADOW")=="1";
-    static readonly bool Pr57JobFrontierDiag=Environment.GetEnvironmentVariable("PR57_JOB_FRONTIER_DIAG")=="1";
-    readonly List<(Building Building,int Ordinal)> _pr57JobFrontier=[];
-    bool _pr57JobFrontierReady,_pr57JobFrontierAnnounced;
-    void Pr57PublishJobFrontier()
-    {
-        var entries=_pr57JobFrontier;entries.Clear();
-        for(var i=0;i<State.Buildings.Count;i++)
-        {
-            var b=State.Buildings[i];
-            if(b.Completed&&!b.Removed&&b.Kind!=BuildingKind.House)entries.Add((b,i));
-        }
-        entries.Sort((x,y)=>
-        {
-            var salary=y.Building.SalaryOffer.CompareTo(x.Building.SalaryOffer);
-            return salary!=0?salary:x.Ordinal.CompareTo(y.Ordinal);
-        });
-        _pr57JobFrontierReady=true;
-    }
     void ReviewJobs()
     {
-        if(Pr57JobFrontierEnabled&&!_pr57JobFrontierReady)Pr57PublishJobFrontier();
-        long pr57Visited=0,pr57Pruned=0;
         // The road graph does not change during a review, and workplaces change
         // only below: keep each origin's reachable roads (the same rule as
         // FindRoadRoute) and live counts of alive workers per workplace.
@@ -155,63 +129,15 @@ public sealed partial class CitySimulation
             var current=BuildingById(c.WorkplaceId);if(current!=null&&(current.Removed||current.OperationClosed||current.CompanyId is {} ci&&!CompanyById(ci)!.Active)){SettleWages(c,current);hired[current.Id]--;c.WorkplaceId=null;current=null;Personal(c,"Vínculo encerrado: operação deixou de existir");}
             var home=BuildingById(FamilyById(c.FamilyId)?.HomeId);if(home==null)continue;
             // First of the highest score in building order, as a stable descending sort.
-            Building? best=null;var bestScore=0m;var bestOrdinal=int.MaxValue;
-            if(Pr57JobFrontierEnabled)
-            {
-                void Consider(Building b,int ordinal)
-                {
-                    if(!b.Completed||b.Removed||b.Kind==BuildingKind.House||b.OperationClosed
-                        ||b.Definition.Private&&(b.CompanyId==null||!CompanyById(b.CompanyId)!.Active))return;
-                    if(Access(b)==null||hired.GetValueOrDefault(b.Id)>=b.Definition.Jobs)return;
-                    if(!RouteExists(Access(home)?.Id??-1,Access(b)!.Id))return;
-                    if(Spendable(b.CompanyId==null?"city":"company:"+b.CompanyId)<=b.SalaryOffer*8*3)return;
-                    var score=b.SalaryOffer-(decimal)(home.Position.Distance(b.Position)/400);
-                    if(best==null||score>bestScore||score==bestScore&&ordinal<bestOrdinal)
-                    {best=b;bestScore=score;bestOrdinal=ordinal;}
-                }
-                // The salary upper bound is exact: travel penalty is >= 0.
-                // No other eligibility/affordability/route predicate is cached.
-                var examined=0;
-                foreach(var (candidate,ordinal) in _pr57JobFrontier)
-                {
-                    if(best!=null&&candidate.SalaryOffer<bestScore)
-                    {pr57Pruned+=_pr57JobFrontier.Count-examined;break;}
-                    examined++;pr57Visited++;
-                    Consider(candidate,ordinal);
-                }
-                if(Pr57JobFrontierShadow)
-                {
-                    Building? canonical=null;var canonicalScore=0m;
-                    foreach(var b in State.Buildings.Where(b=>b.Completed&&!b.Removed&&b.Kind!=BuildingKind.House&&!b.OperationClosed
-                        &&(!b.Definition.Private||b.CompanyId!=null&&CompanyById(b.CompanyId)!.Active)
-                        &&Access(b)!=null&&hired.GetValueOrDefault(b.Id)<b.Definition.Jobs)
-                        .Where(b=>RouteExists(Access(home)?.Id??-1,Access(b)!.Id))
-                        .Where(b=>Spendable(b.CompanyId==null?"city":"company:"+b.CompanyId)>b.SalaryOffer*8*3))
-                    {
-                        var score=b.SalaryOffer-(decimal)(home.Position.Distance(b.Position)/400);
-                        if(canonical==null||score>canonicalScore){canonical=b;canonicalScore=score;}
-                    }
-                    if(canonical?.Id!=best?.Id||canonical!=null&&canonicalScore!=bestScore)
-                        throw new InvalidOperationException("PR57_JOB_FRONTIER_SHADOW: canonical job selection diverged");
-                }
-            }
-            else
-            {
-                foreach(var b in State.Buildings.Where(b=>b.Completed&&!b.Removed&&b.Kind!=BuildingKind.House&&!b.OperationClosed&&(!b.Definition.Private||b.CompanyId!=null&&CompanyById(b.CompanyId)!.Active)&&Access(b)!=null&&hired.GetValueOrDefault(b.Id)<b.Definition.Jobs).Where(b=>RouteExists(Access(home)?.Id??-1,Access(b)!.Id)).Where(b=>Spendable(b.CompanyId==null?"city":"company:"+b.CompanyId)>b.SalaryOffer*8*3)){
-                    var score=b.SalaryOffer-(decimal)(home.Position.Distance(b.Position)/400);if(best==null||score>bestScore){best=b;bestScore=score;}
-                }
+            Building? best=null;var bestScore=0m;
+            foreach(var b in State.Buildings.Where(b=>b.Completed&&!b.Removed&&b.Kind!=BuildingKind.House&&!b.OperationClosed&&(!b.Definition.Private||b.CompanyId!=null&&CompanyById(b.CompanyId)!.Active)&&Access(b)!=null&&hired.GetValueOrDefault(b.Id)<b.Definition.Jobs).Where(b=>RouteExists(Access(home)?.Id??-1,Access(b)!.Id)).Where(b=>Spendable(b.CompanyId==null?"city":"company:"+b.CompanyId)>b.SalaryOffer*8*3)){
+                var score=b.SalaryOffer-(decimal)(home.Position.Distance(b.Position)/400);if(best==null||score>bestScore){best=b;bestScore=score;}
             }
             if(best==null){if(current==null)c.Decision="Sem vaga real com rota e empregador viável";continue;}
             if(current!=null&&best.Id!=current.Id&&best.SalaryOffer<current.SalaryOffer*1.15m&&!State.Obligations.Any(o=>o.Debtor==current.OwnerAccount&&o.Creditor==c.Account&&o.Kind=="Salário"&&o.Outstanding>0))continue;
             if(current?.Id==best.Id)continue;var old=c.WorkplaceId;if(current!=null)SettleWages(c,current);if(old is {} previous)hired[previous]--;hired[best.Id]=hired.GetValueOrDefault(best.Id)+1;c.WorkplaceId=best.Id;c.Shift=State.Citizens.Count(x=>x.Alive&&x.WorkplaceId==best.Id&&x.Id!=c.Id)%(best.Definition.Utility?3:best.Kind is BuildingKind.Grocery or BuildingKind.FuelStation or BuildingKind.MechanicShop?2:1);Pr57CitizenAgendaWake(c);c.NextDecisionAt=State.ElapsedSeconds;
             Personal(c,(old==null?"Contratado":"Mudou autonomamente de emprego")+" em "+best.Definition.Name+"; salário e rota avaliados");
         }
-        if(Pr57JobFrontierDiag&&!_pr57JobFrontierAnnounced)
-        {
-            Console.WriteLine($"PR57_JOB_FRONTIER_DIAG active={Pr57JobFrontierEnabled} candidates={_pr57JobFrontier.Count} visited={pr57Visited} pruned={pr57Pruned}");
-            _pr57JobFrontierAnnounced=true;
-        }
-        _pr57JobFrontierReady=false;
     }
     // Real vacancies with route from home and an employer able to pay, best first.
     List<Building> JobOptions(Building home)=>State.Buildings.Where(b=>b.Completed&&!b.Removed&&b.Kind!=BuildingKind.House&&!b.OperationClosed&&(!b.Definition.Private||b.CompanyId!=null&&CompanyById(b.CompanyId)!.Active)&&Access(b)!=null&&State.Citizens.Count(x=>x.Alive&&x.WorkplaceId==b.Id)<b.Definition.Jobs).Where(b=>FindRoadRoute(Access(home)?.Id??-1,Access(b)!.Id).Count>0).Where(b=>Spendable(b.CompanyId==null?"city":"company:"+b.CompanyId)>b.SalaryOffer*8*3).OrderByDescending(b=>JobScore(home,b)).ToList();
