@@ -471,6 +471,7 @@ public sealed partial class CitySimulation
     }
     void ReleaseConstructionCrew(WorkProject p)
     {
+        Pr57PhasePresenceInvalidate();
         ReleasePavingMachines(p);
         if(p.CrewVehicleId is {} id&&State.Vehicles.FirstOrDefault(v=>v.Id==id&&v.CrewAboard) is {} crew){crew.CrewAboard=false;crew.CrewCount=0;ReturnExternal(crew);}
         p.CrewVehicleId=null;
@@ -478,6 +479,7 @@ public sealed partial class CitySimulation
     }
     bool CompleteConstructionProject(WorkProject p)
     {
+        Pr57PhasePresenceInvalidate(); // Completion changes building eligibility even without crew.
         if(p.CrewCostDue>0){var due=Money(p.CrewCostDue);if(!ProjectPay(p,due,IsPaving(p)?"Máquinas de pavimentação":"Equipe externa","Saldo do trabalho efetivamente realizado")){p.Cause=WorkCause.NoBudgetForPaving;return false;}if(IsPaving(p))p.MachineryPaid+=due;p.CrewCostDue=0;}
         if(IsPaving(p))OpenCompactedRoads(p);
         p.Progress=1;p.Status=WorkStatus.Completed;p.CompletedAt=State.Now;p.BudgetRemaining=0;p.Cause=WorkCause.Completed;
@@ -495,6 +497,7 @@ public sealed partial class CitySimulation
     }
     void CancelWork(WorkProject p)
     {
+        Pr57PhasePresenceInvalidate();
         if(p.CrewCostDue>0){ProjectPay(p,Money(p.CrewCostDue),p.IsMaintenance?MaintenanceCategory(p):"Equipe externa","Trabalho realizado antes do cancelamento");p.CrewCostDue=0;}
         ReleasePavingMachines(p);
         if(IsPaving(p))OpenCompactedRoads(p);

@@ -41,7 +41,11 @@ public sealed partial class CitySimulation
         // query live, but count every building's present workers in one pass
         // over the citizens (the same WorkerPresentAt rule per worker).
         var present=_present;present.Clear();var byId=_activeById;byId.Clear();foreach(var b in active){present.Add(b.Id,0);byId.Add(b.Id,b);}
-        if(Pr57StaffPhaseFusionEnabled)
+        if(Pr57PhasePresenceTryUse(byId,present))
+        {
+            // The ordered MoveCitizens visit published both rosters; no population scan here.
+        }
+        else if(Pr57StaffPhaseFusionEnabled)
         {
             if(!_pr57StaffPhaseFusionAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
             {

@@ -42,6 +42,7 @@ public sealed partial class CitySimulation
     void ProgressMunicipalRelocations(double dt)
     {
         if(!State.MunicipalRelocations.Any(r=>r.Active))return;
+        Pr57PhasePresenceInvalidate(); // Transfer can reassign workers and change doors.
         foreach(var order in State.MunicipalRelocations.Where(r=>r.Active).ToList()){
             var source=BuildingById(order.SourceBuildingId);var target=BuildingById(order.TargetBuildingId);var project=State.Projects.FirstOrDefault(p=>p.Id==order.TargetProjectId);
             if(order.Stage==MunicipalRelocationStage.Constructing){

@@ -230,6 +230,7 @@ public sealed partial class CitySimulation
         }
         if (pr57StateCost) _pr57CitizenSetupTicks += System.Diagnostics.Stopwatch.GetTimestamp() - pr57SetupStart;
         var pr57LoopStart = pr57StateCost ? System.Diagnostics.Stopwatch.GetTimestamp() : 0L;
+        Pr57PhasePresenceBegin();
         foreach(var c in Pr57CitizenAgendaEnabled?Pr57CitizenAgendaCandidates():Pr57LiveCitizens()){
             var pr57StateClass = pr57StateCost
                 ? (c.VehicleId is not null ? 0 : c.Moving ? 1 : State.ElapsedSeconds >= c.NextDecisionAt ? 2 : 3)
@@ -299,6 +300,7 @@ public sealed partial class CitySimulation
                 Pr57312After(c, pr57312Before);
                 if(_pr57PedestrianGridActive)Pr57UpdatePedestrianGrid(c);
                 Pr57CitizenAgendaSchedule(c);
+                Pr57PhasePresenceCapture(c);
                 if (pr57StateCost)
                 {
                     _pr57CitizenStateCalls[pr57StateClass]++;
@@ -306,6 +308,7 @@ public sealed partial class CitySimulation
                 }
             }
         }
+        Pr57PhasePresenceEnd();
         if (pr57StateCost) _pr57CitizenLoopTicks += System.Diagnostics.Stopwatch.GetTimestamp() - pr57LoopStart;
         Pr57Transitions290End(2);
         Pr57312End();
