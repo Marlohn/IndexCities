@@ -152,7 +152,7 @@ public sealed partial class CitySimulation
         var body=heavy?TruckBody.TowHeavy:TruckBody.Tow;
         if(State.Vehicles.FirstOrDefault(v=>v.Body==body&&v.External&&v.Status==VehicleStatus.Outside&&v.TowPhase==TowPhase.None&&v.ServicePhase==ServicePhase.None&&!v.BrokenDown&&v.ShipmentId==null) is {} idle)return idle;
         var tow=new Vehicle{Id=Id(),Body=body,External=true,ExternalDriverId=heavy?"guincheiro externo (pesado)":"guincheiro externo",Status=VehicleStatus.Outside,Position=State.Entry,CargoCapacity=0,Cause="Disponível no exterior"};
-        State.Vehicles.Add(tow);Pr57595MembershipPublishAdded(tow);Pr57DirtyTouch(tow);return tow;
+        State.Vehicles.Add(tow);Pr57DirtyTouch(tow);return tow;
     }
     void CallTow(Vehicle t)
     {
