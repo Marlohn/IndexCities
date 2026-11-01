@@ -21,46 +21,6 @@ public sealed partial class CitySimulation
     readonly Dictionary<Point,CellFactors> _pollutionFactors=new();
     readonly List<long> _decayKeys=[];
     long[] _cellKeys=[];double[] _cellValues=[];int _cellCount,_cellLayout;
-    // PR57 #568: Step-local publication of the already computed post-infrastructure
-    // pollution snapshot. It is consumed only by the later needs phase. No
-    // cross-Advance reuse, no skipped physical/economic Step and no new state in saves.
-    static readonly bool Pr57StepWriteSetEnabled =
-        Environment.GetEnvironmentVariable("PR57_STEP_WRITESET")=="1";
-    static readonly bool Pr57StepWriteSetShadow =
-        Environment.GetEnvironmentVariable("PR57_STEP_WRITESET_SHADOW")=="1";
-    static readonly bool Pr57StepWriteSetDiag =
-        Environment.GetEnvironmentVariable("PR57_STEP_WRITESET_DIAG")=="1";
-    bool _pr57PollutionPublished;
-    long _pr57StepWriteSetCalls,_pr57StepWriteSetReuses,_pr57StepWriteSetFallbacks;
-    void Pr57ConsumePollutionSnapshot()
-    {
-        _pr57StepWriteSetCalls++;
-        if(!Pr57StepWriteSetEnabled||!_pr57PollutionPublished)
-        {
-            SnapshotPollution();
-            _pr57StepWriteSetFallbacks++;
-        }
-        else
-        {
-            // A diagnostic-only complete read validates the writer boundary.
-            // It is intentionally disabled in the unprofiled BAAB.
-            if(Pr57StepWriteSetShadow)
-            {
-                if(State.PollutionCells.Count!=_cellCount)
-                    throw new InvalidOperationException("PR57 #568 pollution writer count diverged");
-                var i=0;
-                foreach(var cell in State.PollutionCells)
-                {
-                    if(_cellKeys[i]!=cell.Key||_cellValues[i]!=(double)cell.Value)
-                        throw new InvalidOperationException("PR57 #568 untracked pollution writer");
-                    i++;
-                }
-            }
-            _pr57StepWriteSetReuses++;
-        }
-        if(Pr57StepWriteSetDiag&&_pr57StepWriteSetCalls==100)
-            Console.WriteLine($"PR57_STEP_WRITESET_DIAG active={Pr57StepWriteSetEnabled} reuses={_pr57StepWriteSetReuses} fallbacks={_pr57StepWriteSetFallbacks} calls={_pr57StepWriteSetCalls}");
-    }
     // Copies the cells in enumeration order; the layout changes whenever that
     // key sequence differs from the previous snapshot.
     void SnapshotPollution()
@@ -193,12 +153,10 @@ public sealed partial class CitySimulation
     void EmitPollution(Point point,double amount)
     {
         if(amount<=0||!InMap(point))return;var x=(int)Math.Floor(point.X/PollutionCellSize);var z=(int)Math.Floor(point.Z/PollutionCellSize);var key=((long)x<<32)|unchecked((uint)z);
-        _pr57PollutionPublished=false; // An actual writer invalidates the published Step snapshot.
         State.PollutionCells[key]=FixedPoint.Pollution(State.PollutionCells.GetValueOrDefault(key)+(decimal)amount);
     }
     void UpdatePollution(double dt,List<Building> active)
     {
-        _pr57PollutionPublished=false; // Also covers direct decay and cell removal.
         var recovery=Math.Exp(-.15*dt/86400);
         // Exact decimal decay keeps the exponential curve down to the removal
         // threshold. Compose each step; do not use pow(recovery,N).
@@ -208,8 +166,5 @@ public sealed partial class CitySimulation
         foreach(var building in active)EmitPollution(building.Position,building.UntreatedSewage/100*dt/86400);
         foreach(var vehicle in State.Vehicles)EmitPollution(vehicle.Position,vehicle.FuelBurnedLastStep*.01);
         SnapshotPollution();State.LakePollution=SampledPollution(State.LakeCentre);
-        // Publish only after the last pollution writer in infrastructure.
-        // OperateBusinesses does not write pollution; UpdateNeeds is next.
-        _pr57PollutionPublished=Pr57StepWriteSetEnabled;
     }
 }
