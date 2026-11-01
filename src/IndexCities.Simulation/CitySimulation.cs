@@ -288,7 +288,6 @@ public sealed partial class CitySimulation
         if(Pr57Writer289Enabled)_pr57Writer289Phase=0;
         var pr57BoundaryStepStart=_pr57BoundaryActive?System.Diagnostics.Stopwatch.GetTimestamp():0L;
         var pr57BoundaryStepBytesStart=_pr57BoundaryActive?GC.GetAllocatedBytesForCurrentThread():0L;
-        Pr57PhysicalBeginStep();
         Pr57WorkAccessBeginStep();
         Pr57BeginStep();
         Pr57SharedShipmentsBeginStep();
