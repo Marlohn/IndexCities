@@ -202,9 +202,6 @@ public sealed partial class CitySimulation
     }
     readonly EntityIndex<Building> _buildingIndex=new(b=>b.Id);readonly EntityIndex<Company> _companyIndex=new(c=>c.Id);readonly EntityIndex<Family> _familyIndex=new(f=>f.Id);
     readonly EntityIndex<Citizen> _citizenIndex=new(c=>c.Id);readonly EntityIndex<Vehicle> _vehicleIndex=new(v=>v.Id);
-    // PR57 #587 diagnostic only; never used to decide a simulation transition.
-    static readonly bool Pr57EntityMissDiag=Environment.GetEnvironmentVariable("PR57_587_MISS_DIAG")=="1";
-    long _pr57EntityMissAdvanceCalls;
     Building? BuildingById(int? id)=>id is null?null:_buildingIndex.Find(State.Buildings,id.Value) is {Removed:false} b?b:null;
     Company? CompanyById(int? id)=>id is null?null:_companyIndex.Find(State.Companies,id.Value);
     Family? FamilyById(int? id)=>id is null?null:_familyIndex.Find(State.Families,id.Value);
@@ -243,8 +240,6 @@ public sealed partial class CitySimulation
         _crosswalkBands.Clear();_crosswalkBandsActive=true;BeginWalkRoutes();
         try{var remaining=seconds;while(remaining>1e-8){var dt=Math.Min(Quantum,remaining);Step(dt);remaining-=dt;}}
         finally{_crosswalkBandsActive=false;_crosswalkBands.Clear();EndWalkRoutes();_pr57RouteTreeActive=false;_pr57RouteTreeParents.Clear();_pr57RouteTreeCalls.Clear();Pr57EndBuildingAccessAdvance();Pr57ClearSharedNodeGrid();}
-        if(Pr57EntityMissDiag&&++_pr57EntityMissAdvanceCalls%100==0)
-            Console.WriteLine($"PR57_587_MISS calls={_pr57EntityMissAdvanceCalls} citizen={_citizenIndex.Pr57MissScans} citizenFound={_citizenIndex.Pr57MissFound} vehicle={_vehicleIndex.Pr57MissScans} vehicleFound={_vehicleIndex.Pr57MissFound} building={_buildingIndex.Pr57MissScans} company={_companyIndex.Pr57MissScans} family={_familyIndex.Pr57MissScans}");
         if(_pr57BoundaryActive)
         {
             _pr57BoundaryAdvanceTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57BoundaryStart;
