@@ -288,7 +288,58 @@ public sealed class Citizen
     public int Shift {get;set;}
     public string Activity {get;set;}="Chegando";
     public string Decision {get;set;}="";
-    public List<PersonalEvent> History {get;set;}=[];
+    // PR57 #566: preserve the public mutable List contract. Reading the List
+    // permanently falls back to it, so retained external aliases stay live.
+    List<PersonalEvent>? _pr57HistoryList=[];
+    Pr57HistorySegments? _pr57HistorySegments;
+    bool _pr57HistoryListExposed;
+    [JsonIgnore] public List<PersonalEvent> History
+    {
+        get
+        {
+            if(_pr57HistorySegments is not null)
+            {
+                _pr57HistoryList=_pr57HistorySegments.ToList();
+                _pr57HistorySegments=null;
+            }
+            _pr57HistoryListExposed=true;
+            return _pr57HistoryList!;
+        }
+        set
+        {
+            _pr57HistorySegments=null;
+            _pr57HistoryList=value;
+            _pr57HistoryListExposed=true;
+        }
+    }
+    // Keep the exact persisted property name and position; JSON enumeration
+    // does not expose the mutable List or force segment materialization.
+    [JsonPropertyName("History")] public IEnumerable<PersonalEvent> Pr57HistoryJson
+    {
+        get=>_pr57HistorySegments is null?_pr57HistoryList!:_pr57HistorySegments;
+        set
+        {
+            _pr57HistorySegments=null;
+            _pr57HistoryList=value?.ToList()??[];
+            _pr57HistoryListExposed=false;
+        }
+    }
+    [JsonIgnore] public bool Pr57HistorySegmented=>_pr57HistorySegments is not null;
+    [JsonIgnore] public int Pr57HistoryEventCount=>_pr57HistorySegments?.Count??_pr57HistoryList?.Count??0;
+    public void Pr57AppendPersonalEvent(PersonalEvent entry)
+    {
+        if(!Pr57HistorySegments.Enabled||_pr57HistoryListExposed)
+        {
+            _pr57HistoryList!.Add(entry);
+            return;
+        }
+        if(_pr57HistorySegments is null)
+        {
+            _pr57HistorySegments=new Pr57HistorySegments(_pr57HistoryList!);
+            _pr57HistoryList=null;
+        }
+        _pr57HistorySegments.Append(entry);
+    }
     public double OutingUntil {get;set;}
     [JsonIgnore] public string Account=>"sim:"+Id;
     [JsonIgnore] public bool Moving=>PathIndex<Path.Count;
