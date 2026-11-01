@@ -1,0 +1,158 @@
+name: PR57 #582 ephemeral lane-frame value projections REAL ABBA
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-ephemeral-frame-582.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  ephemeral-frame:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compile and full regression suites with feature off/on
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          for flag in 0 1; do
+            PR57_EPHEMERAL_FRAME="$flag" PR57_EPHEMERAL_FRAME_VERIFY=1 \
+              dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+          done
+      - uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input259
+      - uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossphase-access-445
+          run-id: 41052837425
+          github-token: ${{ github.token }}
+          path: artifacts/input445
+      - name: Shadow with external vehicle heading edit before timing
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os,json,subprocess
+          from pathlib import Path
+          sources={
+            'works':Path('artifacts/input445/pr57-445/A/checkpoint-0.json'),
+            'congested':Path('artifacts/input259/real14hREAL-control/checkpoint-0.json')
+          }
+          root=Path('artifacts/ephemeral-frame/shadow')
+          for case,source in sources.items():
+            assert source.is_file(),source
+            for variant in ('original','external-edit'):
+              fixture=source
+              if variant=='external-edit':
+                state=json.loads(source.read_text())
+                vehicle=next(v for v in state['Vehicles'] if v.get('Route'))
+                vehicle['Heading']=float(vehicle['Heading'])+0.00001
+                fixture=root/case/'external-edited.json'
+                fixture.parent.mkdir(parents=True,exist_ok=True)
+                fixture.write_text(json.dumps(state,separators=(',',':')))
+              snapshots=[]
+              for flag in (0,1):
+                dest=root/case/variant/str(flag)
+                dest.mkdir(parents=True,exist_ok=True)
+                env=os.environ.copy()
+                env.update(PR57_HOST_QUANTUM='1',PR57_AB_CHECKPOINT='1',PR57_GRID_DIAG='1',
+                  PR57_EPHEMERAL_FRAME=str(flag),PR57_EPHEMERAL_FRAME_VERIFY='1',
+                  PR57_ENTRY_FRAME_REUSE='0',PR57_STAFF_PHASE_FUSION='0',PR57_CITIZEN_AGENDA='0',PR57_LIVING_ROSTER='0',
+                  PR57_SAVE_CAPTURE_DIR=str(dest.resolve()))
+                cmd=['dotnet','run','--no-build','-c','Release','--project',
+                  'src/IndexCities.Headless/IndexCities.Headless.csproj','--','scale','cycle',
+                  '--seed=42','--warmup=0','--days=1','--window=200','--cap=300',
+                  '--resume='+str(fixture.resolve())]
+                with (dest/'run.log').open('w') as log:
+                  subprocess.run(cmd,env=env,stdout=log,stderr=subprocess.STDOUT,check=True,timeout=180)
+                log=(dest/'run.log').read_text()
+                assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,variant,flag,log[-1000:])
+                if flag==1 and variant=='original' and case=='congested':
+                  assert 'PR57_EPHEMERAL_FRAME reused=True' in log,(case,variant,'no reused snapshots')
+                snapshots.append([(dest/f'checkpoint-{n}.json').read_bytes() for n in range(2)])
+              assert snapshots[0]==snapshots[1],(case,variant,'FULL_JSON_DIVERGENCE')
+              print('PR57_582_SHADOW',case,variant,'equal=True',flush=True)
+          PY
+      - name: Unprofiled fresh-process ABBA with every public Advance(2)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os,subprocess
+          from pathlib import Path
+          root=Path('artifacts/ephemeral-frame/abba')
+          cases=[
+            ('worksREAL',Path('artifacts/input445/pr57-445/A/checkpoint-0.json'),1800),
+            ('congestedREAL',Path('artifacts/input259/real14hREAL-control/checkpoint-0.json'),1800),
+            ('gridARTIFICIAL',None,100)]
+          for case,source,window in cases:
+            if source:assert source.is_file(),source
+            for arm,enabled in (('A1',0),('B1',1),('B2',1),('A2',0)):
+              dest=root/case/arm
+              dest.mkdir(parents=True,exist_ok=True)
+              env=os.environ.copy()
+              env.update(PR57_HOST_QUANTUM='1',PR57_AB_CHECKPOINT='1',PR57_GRID_DIAG='1',
+                PR57_EPHEMERAL_FRAME=str(enabled),PR57_EPHEMERAL_FRAME_VERIFY='0',
+                PR57_STAFF_PHASE_FUSION='0',PR57_CITIZEN_AGENDA='0',PR57_LIVING_ROSTER='0',
+                PR57_PARALLEL_NEEDS='0',PR57_PARALLEL_POLLUTION='0',
+                PR57_SAVE_CAPTURE_DIR=str(dest.resolve()))
+              cmd=['dotnet','run','--no-build','-c','Release','--project',
+                'src/IndexCities.Headless/IndexCities.Headless.csproj','--','scale',
+                'cycle' if source else 'grid','--seed=42','--warmup=0',
+                '--days=2','--window='+str(window),'--cap=300']
+              if source:cmd.append('--resume='+str(source.resolve()))
+              else:cmd.extend(['--rows=12','--length=600'])
+              with (dest/'run.log').open('w') as log:
+                subprocess.run(cmd,env=env,stdout=log,stderr=subprocess.STDOUT,check=True,timeout=180)
+              print('PR57_582_ARM',case,arm,'steps',window,flush=True)
+          PY
+      - name: Verify intermediate byte equality, actual hits and wall CPU allocations
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import pathlib,re
+          root=pathlib.Path('artifacts/ephemeral-frame/abba')
+          for case,steps in (('worksREAL',1800),('congestedREAL',1800),('gridARTIFICIAL',100)):
+            data=[]
+            control=None
+            for arm in ('A1','B1','B2','A2'):
+              dest=root/case/arm
+              log=(dest/'run.log').read_text()
+              assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,arm,'invariants/save')
+              windows=[x for x in log.splitlines() if x.startswith('WINDOW ')]
+              assert len(windows)==2,(case,arm,'windows',len(windows))
+              snaps=[(dest/f'checkpoint-{n}.json').read_bytes() for n in range(3)]
+              if control is None:control=snaps
+              assert snaps==control,(case,arm,'FULL_JSON_DIVERGENCE')
+              if arm.startswith('B'):assert 'PR57_EPHEMERAL_FRAME used=True' in log,(case,arm,'no hits')
+              def metric(line,key):
+                m=re.search(r'\b'+re.escape(key)+r'=([0-9.]+)',line)
+                assert m,(case,arm,key,line)
+                return float(m.group(1))
+              result={key:sum(metric(row,key) for row in windows) for key in ('wall','cpu','allocMB')}
+              result.update({key:metric(windows[-1],key) for key in ('pop','alive','openWorks')})
+              data.append(result)
+            ratios=[round(data[a]['wall']/data[b]['wall'],4) for a,b in ((0,1),(3,2))]
+            print('PR57_582_RESULT',case,'stepsPerArm',steps,'ABBA',data,'wallRatios',ratios,
+              'checkpointsPerArm',3,'byteEqual',True,flush=True)
+          PY
+      - name: Preserve complete checkpoints and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-ephemeral-frame-582
+          path: artifacts/ephemeral-frame/**
+          retention-days: 14
