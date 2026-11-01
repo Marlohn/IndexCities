@@ -272,25 +272,8 @@ public sealed partial class CitySimulation
     static readonly bool Pr57ParallelNeedsEnabled=Environment.GetEnvironmentVariable("PR57_PARALLEL_NEEDS")=="1";
     readonly List<(Citizen Citizen,double Unmet,int Members)> _pr57ParallelNeedsRows=[];
     bool _pr57ParallelNeedsAnnounced,_pr57ParallelNeedsEngaged;
-    // PR57 #598: first event-time vertical cut, never skipping Advance(2).
-    static readonly bool Pr57DeferredSatisfactionEnabled=Environment.GetEnvironmentVariable("PR57_598_DEFER_SATISFACTION")=="1";
-    long _pr57DeferredSatisfactionQueued,_pr57DeferredSatisfactionOverwritten,_pr57DeferredSatisfactionSteps;
-    void Pr57SetDeferredSatisfaction(Citizen c,double unmet,bool crowded)
-    {
-        var hunger=c.HungerHours;
-        if(!Pr57DeferredSatisfactionEnabled)
-        {
-            c.Satisfaction=Math.Clamp(80-hunger*.7-unmet*15-(crowded?8:0),0,100);
-            return;
-        }
-        if(c.Pr57DeferSatisfaction(hunger,unmet,crowded))
-            System.Threading.Interlocked.Increment(ref _pr57DeferredSatisfactionOverwritten);
-        System.Threading.Interlocked.Increment(ref _pr57DeferredSatisfactionQueued);
-    }
     void UpdateNeeds(double dt)
     {
-        if(Pr57DeferredSatisfactionEnabled&&++_pr57DeferredSatisfactionSteps%100==0)
-            Console.WriteLine($"PR57_598_LAZY steps={_pr57DeferredSatisfactionSteps} queued={_pr57DeferredSatisfactionQueued} overwritten={_pr57DeferredSatisfactionOverwritten}");
         var pr57NeedsStepProbe=Pr57NeedsStepProbe;
         pr57NeedsStepProbe?.BeginStep();
         if(!_pr57NeedsSinglePassAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
@@ -356,7 +339,7 @@ public sealed partial class CitySimulation
                     else if(c.HungerHours<18){c.AddHealth(dt/3600*.3);c.HealthUnits=Math.Min(100*FixedPoint.PointScale,c.HealthUnits);}
                     c.AddHealth(-unmet*dt/86400);
                     c.HealthUnits=Math.Clamp(c.HealthUnits,0,100*FixedPoint.PointScale);
-                    Pr57SetDeferredSatisfaction(c,unmet,members>Catalog.Definitions[BuildingKind.House].Capacity);
+                    c.Satisfaction=Math.Clamp(80-c.HungerHours*.7-unmet*15-(members>Catalog.Definitions[BuildingKind.House].Capacity?8:0),0,100);
                 });
                 // Death changes shared wallets, inheritance, buildings, and
                 // histories; commit these in the original citizen order.
@@ -372,7 +355,7 @@ public sealed partial class CitySimulation
             var hungry=c.HungerHours>State.Tuning.HungerDamageAfterHours;var unmet=home==null?1:(1-home.WaterRatio)*.5+(1-home.ElectricityRatio)*.15+HomePollution(home.Position)*.1;
             pr57NeedsStepProbe?.Observe(c,home,unmet,family.Members.Count,family.Pantry);
             if(hungry)c.AddHealth(-(dt/3600*(c.HungerHours/State.Tuning.HungerDamageAfterHours)));else if(c.HungerHours<18){c.AddHealth(dt/3600*.3);c.HealthUnits=Math.Min(100*FixedPoint.PointScale,c.HealthUnits);}
-            c.AddHealth(-unmet*dt/86400);c.HealthUnits=Math.Clamp(c.HealthUnits,0,100*FixedPoint.PointScale);Pr57SetDeferredSatisfaction(c,unmet,family.Members.Count>Catalog.Definitions[BuildingKind.House].Capacity);
+            c.AddHealth(-unmet*dt/86400);c.HealthUnits=Math.Clamp(c.HealthUnits,0,100*FixedPoint.PointScale);c.Satisfaction=Math.Clamp(80-c.HungerHours*.7-unmet*15-(family.Members.Count>Catalog.Definitions[BuildingKind.House].Capacity?8:0),0,100);
             if(c.Health<=0)CitizenDied(c);
         }
         pr57NeedsStepProbe?.EndStep();
