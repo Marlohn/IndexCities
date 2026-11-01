@@ -253,6 +253,7 @@ public sealed partial class CitySimulation
     long _pr57ReservationHookMissedBoundaryChanges, _pr57ReservationHookTicks;
     void Pr57ReservationWrite(Vehicle vehicle,string site)
     {
+        Pr57CleanupOwnerWrite(vehicle);
         Pr57ReservationShadowWrite(vehicle);
         if(!_pr57ReservationWritersActive||!Pr57ReservationHooksEnabled)return;
         var start=System.Diagnostics.Stopwatch.GetTimestamp();

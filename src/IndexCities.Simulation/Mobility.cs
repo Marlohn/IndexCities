@@ -585,7 +585,7 @@ public sealed partial class CitySimulation
         // Carriageway half-width (3.3 m) + truck half-length (3.6 m) covers the
         // actual rear of the truck; the former 9 m reservation could overlap
         // nearby junctions and make opposite queues hold each other forever.
-        foreach(var vehicle in State.Vehicles){ClearPassedJunction(vehicle);ReleaseManoeuvre(vehicle);}
+        Pr57CleanupOwnersRun();
         Pr57Effect253AfterCleanup();
         Pr57CausalAfterCleanup();
         Pr57JunctionReadersAfterCleanup();

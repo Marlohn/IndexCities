@@ -1,0 +1,128 @@
+name: 'PR57 #584 bounded physical read view REAL ABBA'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths:
+      - .github/workflows/pr57-cleanup-owner-584.yml
+      - src/IndexCities.Simulation/Mobility.cs
+      - src/IndexCities.Simulation/Mobility.CleanupOwners584.Pr57.cs
+      - src/IndexCities.Simulation/Pr57JunctionReadersProbe.cs
+      - src/IndexCities.Simulation/CitySimulation.cs
+      - scripts/pr57-584/**
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  cleanup-owner:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compile and test both modes
+        run: |
+          set -euo pipefail
+          dotnet build scripts/pr57-584/Pr57Physical584.csproj -c Release
+          PR57_584_CLEANUP_OWNER=0 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+          PR57_584_CLEANUP_OWNER=1 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic REAL saves
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Shadow with public edit before benchmark
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/cleanup-584
+          for case in worksREAL queueREAL gridARTIFICIAL; do
+            input="artifacts/input/$case-control/checkpoint-0.json"
+            test -s "$input"
+            calls=100
+            if [[ "$case" == gridARTIFICIAL ]]; then calls=50; fi
+            for mode in control probe; do
+              enabled=0
+              if [[ "$mode" == probe ]]; then enabled=1; fi
+              output="artifacts/cleanup-584/$case-shadow-$mode"
+              mkdir -p "$output"
+              PR57_584_CLEANUP_OWNER="$enabled" PR57_584_SHADOW=1 PR57_584_EXTERNAL_EDIT=1 \
+                dotnet run --no-build -c Release --project scripts/pr57-584/Pr57Physical584.csproj -- \
+                "$input" "$case" "$mode" "$calls" "$output" > "$output.log" 2>&1
+            done
+          done
+      - name: ABBA fresh processes and every public Advance(2)
+        shell: bash
+        run: |
+          set -euo pipefail
+          for case in worksREAL queueREAL gridARTIFICIAL; do
+            input="artifacts/input/$case-control/checkpoint-0.json"
+            calls=1800
+            if [[ "$case" == gridARTIFICIAL ]]; then calls=100; fi
+            for arm in A1 B1 B2 A2; do
+              enabled=0
+              mode=control
+              if [[ "$arm" == B* ]]; then enabled=1;mode=probe; fi
+              output="artifacts/cleanup-584/$case-$arm"
+              mkdir -p "$output"
+              PR57_584_CLEANUP_OWNER="$enabled" PR57_584_SHADOW=0 PR57_584_EXTERNAL_EDIT=0 \
+                dotnet run --no-build -c Release --project scripts/pr57-584/Pr57Physical584.csproj -- \
+                "$input" "$case" "$mode" "$calls" "$output" > "$output.log" 2>&1
+            done
+          done
+      - name: Check complete intermediate saves and report ABBA
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re,hashlib,json
+          root=Path('artifacts/cleanup-584')
+          for case in ('worksREAL','queueREAL','gridARTIFICIAL'):
+              calls=100 if case=='gridARTIFICIAL' else 1800
+              positions=(0,20,calls//2,calls)
+              metrics={}
+              for arm in ('A1','B1','B2','A2'):
+                  log=(root/f'{case}-{arm}.log').read_text()
+                  assert f'PR57_584_FINAL case={case}' in log,(case,arm,'final')
+                  assert log.count('PR57_584_WINDOW ')==3,(case,arm,'windows')
+                  stats=re.search(r'PR57_584_STATS .*',log).group(0)
+                  values={k:int(v) for k,v in re.findall(r'(builds|body|traffic|space|invalidations)=(\d+)',stats)}
+                  if arm.startswith('B'):
+                      assert values['builds']>0,(case,arm,'no admission')
+                      assert sum(values[k]>0 for k in ('body','traffic','space'))>=2,(case,arm,'fewer than two consumers',values)
+                  windows=re.findall(r'PR57_584_WINDOW .*',log)
+                  metrics[arm]=[sum(float(re.search(r'\b'+k+r'=([0-9.]+)',w).group(1)) for w in windows) for k in ('wallMs','cpuMs','allocatedBytes')]
+                  for at in positions:
+                      p=root/f'{case}-{arm}'/f'checkpoint-{at}.json'
+                      data=p.read_bytes()
+                      json.loads(data)
+                      reference=(root/f'{case}-A1'/f'checkpoint-{at}.json').read_bytes()
+                      assert data==reference,(case,arm,at,'CAUSAL_DIVERGENCE')
+                  print('PR57_584_ARM',case,arm,values,metrics[arm],flush=True)
+              for pair in (('A1','B1'),('A2','B2')):
+                  a,b=pair
+                  print('PR57_584_PAIR',case,a,b,'speedup',round(metrics[a][0]/metrics[b][0],5),flush=True)
+              for mode in ('control','probe'):
+                  log=(root/f'{case}-shadow-{mode}.log').read_text()
+                  assert 'PR57_584_EXTERNAL_EDIT' in log
+                  assert 'PR57_584_FINAL' in log
+                  for at in (0,20,50 if case!='gridARTIFICIAL' else 25,100 if case!='gridARTIFICIAL' else 50):
+                      p=root/f'{case}-shadow-{mode}'/f'checkpoint-{at}.json'
+                      a=(root/f'{case}-shadow-control'/f'checkpoint-{at}.json').read_bytes()
+                      assert p.read_bytes()==a,(case,mode,at,'SHADOW_DIVERGENCE')
+              print('PR57_584_PARITY',case,'fullSaves=True','shadow=True',flush=True)
+          PY
+      - name: Preserve logs and complete saves even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-cleanup-owner-584
+          path: artifacts/cleanup-584/**
+          retention-days: 14
