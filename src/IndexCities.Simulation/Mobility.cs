@@ -601,6 +601,7 @@ public sealed partial class CitySimulation
         Pr57DockWriterBeginSlice();
         Pr57Body258BeginSlice();
         Pr57Crossing259BeginSlice();
+        Pr57595MembershipBeginSlice();
         // Same order as OrderBy(WaitingSince).ThenBy(Id): Ids are unique, so the
         // key is a total order and any sort yields the same sequence.
         // PR57 isolated A/B: during a batched movement slice, the loop below
@@ -793,7 +794,9 @@ public sealed partial class CitySimulation
             }
             // Entry admission uses a speed-dependent corridor: never spatially filter it.
             if(pr57Bvh&&!entering)return _pr57VehicleBvh!.Lane(v);
-            if(!(pr57SpatialScan||pr57BitsetScan)||entering)return pr57ScanCandidates;
+            if(!(pr57SpatialScan||pr57BitsetScan)||entering)
+                return Pr57595MembershipEnabled&&!entering&&!pr57ActiveScan&&!pr57Bvh&&!pr57AxisSweep
+                    ?Pr57595MembershipCandidates():pr57ScanCandidates;
             // The leader ray extends beyond all indexed positions, with 20m
             // clearance for the existing BodyAcrossLane special case.
             var reach=2*(pr57WorldExtent+Math.Max(Math.Abs(v.Position.X),Math.Abs(v.Position.Z)))+40;
@@ -1437,6 +1440,7 @@ public sealed partial class CitySimulation
         Pr57DockWriterEndSlice();
         Pr57Body258EndSlice();
         Pr57Crossing259EndSlice();
+        Pr57595MembershipEndSlice();
         Pr57PhaseImpactEndSlice();
         Pr57PhaseExposureEndSlice();
         Pr57ExclusiveEndSlice();
