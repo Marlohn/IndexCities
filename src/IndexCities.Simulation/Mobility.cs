@@ -230,7 +230,15 @@ public sealed partial class CitySimulation
         }
         if (pr57StateCost) _pr57CitizenSetupTicks += System.Diagnostics.Stopwatch.GetTimestamp() - pr57SetupStart;
         var pr57LoopStart = pr57StateCost ? System.Diagnostics.Stopwatch.GetTimestamp() : 0L;
-        foreach(var c in Pr57CitizenAgendaEnabled?Pr57CitizenAgendaCandidates():Pr57LiveCitizens()){
+        // PR57 #599: only opt-in, pair consecutive actors from the exact canonical roster.
+        // The normal path retains its lazy enumeration and allocation behavior.
+        var pr57599Actors=Pr57599SpecWalkEnabled&&!_pr57PedestrianGridActive
+            ?(Pr57CitizenAgendaEnabled?Pr57CitizenAgendaCandidates():Pr57LiveCitizens()).ToArray():null;
+        var pr57599Index=0;
+        foreach(var c in (IEnumerable<Citizen>?)pr57599Actors??
+                         (Pr57CitizenAgendaEnabled?Pr57CitizenAgendaCandidates():Pr57LiveCitizens())){
+            if(pr57599Actors!=null&&(pr57599Index&1)==0&&pr57599Index+1<pr57599Actors.Length)
+                Pr57599PrepareWalkPair(c,pr57599Actors[pr57599Index+1],dt);
             var pr57StateClass = pr57StateCost
                 ? (c.VehicleId is not null ? 0 : c.Moving ? 1 : State.ElapsedSeconds >= c.NextDecisionAt ? 2 : 3)
                 : -1;
@@ -277,7 +285,9 @@ public sealed partial class CitySimulation
                     }
                     var heading=d>.001?(target-c.Position)*(1/d):new Point(0,0);
                     var gapStart=pr57Walk240?System.Diagnostics.Stopwatch.GetTimestamp():0L;
-                    var gap=PedestrianGap(c,target,d,heading,Math.Min(distance,d)+.7);
+                    var reach=Math.Min(distance,d)+.7;
+                    var gap=Pr57599TryWalkGap(c,target,d,heading,reach,out var speculativeGap)
+                        ?speculativeGap:PedestrianGap(c,target,d,heading,reach);
                     if(pr57Walk240){
                         Pr57Walk240Record(1,gapStart);
                         if(!_pr57PedestrianGridActive)_pr57Walk240CitizenCandidates+=State.Citizens.Count;
@@ -296,6 +306,7 @@ public sealed partial class CitySimulation
             if(State.ElapsedSeconds<c.NextDecisionAt)continue;c.NextDecisionAt=State.ElapsedSeconds+60;
             CitizenRoutine(c);
             }finally{
+                pr57599Index++;
                 Pr57312After(c, pr57312Before);
                 if(_pr57PedestrianGridActive)Pr57UpdatePedestrianGrid(c);
                 Pr57CitizenAgendaSchedule(c);
@@ -306,6 +317,7 @@ public sealed partial class CitySimulation
                 }
             }
         }
+        Pr57599WalkEndStep();
         if (pr57StateCost) _pr57CitizenLoopTicks += System.Diagnostics.Stopwatch.GetTimestamp() - pr57LoopStart;
         Pr57Transitions290End(2);
         Pr57312End();
