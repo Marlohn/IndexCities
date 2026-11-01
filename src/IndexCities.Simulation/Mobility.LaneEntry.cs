@@ -8,6 +8,13 @@ public sealed partial class CitySimulation
     // PR57 opt-in: reuse immutable-for-the-slice entry-frame copies across slices.
     // Never reuse these for projected EntrySnapshot() copies, which are mutated.
     readonly Dictionary<int,Vehicle> _entrySnapshotReuse=new();
+    // PR57 opt-in POC: avoid per-slice ephemeral Vehicle allocations and
+    // per-projection route clones. Never retained across Advance(2).
+    static readonly bool Pr57EphemeralFrameEnabled =
+        Environment.GetEnvironmentVariable("PR57_EPHEMERAL_FRAME")=="1";
+    static readonly bool Pr57EphemeralFrameVerify =
+        Environment.GetEnvironmentVariable("PR57_EPHEMERAL_FRAME_VERIFY")=="1";
+    bool _pr57EphemeralReuseAnnounced, _pr57EphemeralProjectionAnnounced;
     double _vehicleMovementOffset;
     double? _vehicleMovementClock;
     double VehicleMovementTime=>_vehicleMovementClock??State.ElapsedSeconds;
@@ -268,6 +275,32 @@ public sealed partial class CitySimulation
         }
         return Math.Abs(gap)<8+(approaching?access.Distance*approachSpeed/access.Speed:0);
     }
+    // Pure value projection: the forecast is read-only until it returns.
+    // Same predicate, same route, same ordering; only Position differs.
+    bool Pr57BlocksLaneEntryAt(Vehicle v,LaneAccess access,Vehicle other,Point position)
+    {
+        var side=access.Side(position);var half=State.Tuning.RoadWidth/2;
+        if(Math.Abs(side)>half||side<Math.Min(access.FromSide,access.ToSide)-.9||side>Math.Max(access.FromSide,access.ToSide)+.9)return false;
+        var fraction=Math.Clamp((side-access.FromSide)/(access.ToSide-access.FromSide),0,1);
+        var crossAlong=access.Along(v.Position)*(1-fraction)+access.Along(access.Target)*fraction;
+        var gap=access.Along(position)-crossAlong;
+        var direction=(Math.Sin(other.Heading)*access.Axis.X+Math.Cos(other.Heading)*access.Axis.Z)/access.Length;
+        if(other.Status!=VehicleStatus.Stranded&&Math.Abs(direction)<.5&&other.PassengerCar&&other.RouteIndex==0&&Math.Abs(access.FromSide)<=half&&other.Id>v.Id)return false;
+        var approaching=other.Status==VehicleStatus.Travelling&&gap*direction<0;
+        // Preserve F1's nominal speed bound across the other vehicle's route,
+        // including a faster node reachable before this entire manoeuvre ends.
+        var approachSpeed=State.Tuning.VehicleSpeed;
+        if(approaching){
+            var ahead=Math.Max(State.Tuning.VehicleSpeed,State.Tuning.HighwaySpeed)*access.Distance/access.Speed;
+            var position=position;
+            for(var index=other.RouteIndex;index<other.Route.Count&&ahead>=0;index++){
+                if(!_roads.TryGetValue(other.Route[index],out var upcoming))break;
+                approachSpeed=Math.Max(approachSpeed,upcoming.Highway?State.Tuning.HighwaySpeed:State.Tuning.VehicleSpeed);
+                ahead-=position.Distance(upcoming.Position);position=upcoming.Position;
+            }
+        }
+        return Math.Abs(gap)<8+(approaching?access.Distance*approachSpeed/access.Speed:0);
+    }
     // A vehicle stranded on the lane never moves, and the queue held behind it
     // only moves when its front bypasses it. Neither is a motion event: a lot
     // entry they block is rechecked every step without substeps of its own, and
@@ -304,7 +337,7 @@ public sealed partial class CitySimulation
         _pr57300Step=pr57300;
         var pr57300Call=pr57300 is null?0:++_pr57300Calls;
         var hasEntry=Pr57StrandedGraphEnabled?Pr57HasLiveLaneEntry():State.Vehicles.Any(LiveLaneEntry);
-        var pr57EntryFrameReuse=Environment.GetEnvironmentVariable("PR57_ENTRY_FRAME_REUSE")=="1";
+        var pr57EntryFrameReuse=Pr57EphemeralFrameEnabled||Environment.GetEnvironmentVariable("PR57_ENTRY_FRAME_REUSE")=="1";
         if(profile is not null)profile.MarkVehicle(0,ref started);
         if(!hasEntry){
             MoveVehiclesUnsplit(dt);
@@ -344,9 +377,25 @@ public sealed partial class CitySimulation
                         snapshot.RouteIndex=v.RouteIndex;
                         snapshot.Route.Clear();
                         snapshot.Route.AddRange(v.Route);
+                        if(Pr57EphemeralFrameEnabled&&!_pr57EphemeralReuseAnnounced&&
+                           Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1"){
+                            _pr57EphemeralReuseAnnounced=true;
+                            Console.WriteLine("PR57_EPHEMERAL_FRAME reused=True");
+                        }
                     }else{
                         snapshot=EntrySnapshot(v);
                         if(pr57EntryFrameReuse)_entrySnapshotReuse.Add(v.Id,snapshot);
+                    }
+                    if(Pr57EphemeralFrameEnabled&&Pr57EphemeralFrameVerify){
+                        var reference=EntrySnapshot(v);
+                        if(snapshot.Id!=reference.Id||!snapshot.Position.Equals(reference.Position)||
+                           BitConverter.DoubleToInt64Bits(snapshot.Heading)!=BitConverter.DoubleToInt64Bits(reference.Heading)||
+                           snapshot.Status!=reference.Status||
+                           BitConverter.DoubleToInt64Bits(snapshot.Fuel)!=BitConverter.DoubleToInt64Bits(reference.Fuel)||
+                           snapshot.PassengerCar!=reference.PassengerCar||
+                           snapshot.RouteIndex!=reference.RouteIndex||
+                           !snapshot.Route.SequenceEqual(reference.Route))
+                            throw new InvalidOperationException("PR57_EPHEMERAL_FRAME snapshot mismatch");
                     }
                     _entryFrameBuffer.Add(v.Id,snapshot);
                 }
@@ -588,7 +637,28 @@ public sealed partial class CitySimulation
                 if(t>=earliest)break;
                 if(profile is not null)projectionRechecks++;
                 var blocked=false;
-                foreach(var other in recheckOccupants){var projected=EntrySnapshot(other);projected.Position+=ProjectedVelocity(other,held)*t;if(BlocksLaneEntry(v,access,projected)){blocked=true;break;}}
+                foreach(var other in recheckOccupants){
+                    if(!Pr57EphemeralFrameEnabled){
+                        var projected=EntrySnapshot(other);
+                        projected.Position+=ProjectedVelocity(other,held)*t;
+                        if(BlocksLaneEntry(v,access,projected)){blocked=true;break;}
+                        continue;
+                    }
+                    var position=other.Position+ProjectedVelocity(other,held)*t;
+                    var fast=Pr57BlocksLaneEntryAt(v,access,other,position);
+                    if(Pr57EphemeralFrameVerify){
+                        var reference=EntrySnapshot(other);
+                        reference.Position+=ProjectedVelocity(other,held)*t;
+                        if(fast!=BlocksLaneEntry(v,access,reference))
+                            throw new InvalidOperationException("PR57_EPHEMERAL_FRAME projected predicate mismatch");
+                    }
+                    if(!_pr57EphemeralProjectionAnnounced&&
+                       Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1"){
+                        _pr57EphemeralProjectionAnnounced=true;
+                        Console.WriteLine("PR57_EPHEMERAL_FRAME projected=True");
+                    }
+                    if(fast){blocked=true;break;}
+                }
                 // A prediction selects a time to RECHECK, never grants entry.
                 // If a queue or crossing stopped a vehicle, the actual frame at
                 // that event still blocks; it is never assumed to have left.
