@@ -81,7 +81,7 @@ jobs:
                   arms[arm]={k:metric(k) for k in ('wall','cpu','allocMB')}
                   arms[arm]['last']=windows[-1]
                   if arm.startswith('B'):
-                      hits=[int(x) for x in re.findall(r'PR57_588_ORDER_HIT hits=(\\d+)',log)]
+                      hits=[int(x) for x in re.findall(r'PR57_588_ORDER_HIT hits=(\d+)',log)]
                       assert hits and max(hits)>0,(case,arm,'OPTIMIZED_PATH_NOT_EXERCISED')
                       arms[arm]['hitsAtLeast']=max(hits)
                   for i in range(days+1):
