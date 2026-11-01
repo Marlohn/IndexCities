@@ -103,7 +103,12 @@ jobs:
                 m=re.search(r'wall=([\d.]+)s .* cpu=([\d.]+)s allocMB=([\d.]+) gc0=(\d+) gc2=(\d+)',line)
                 assert m,(name,arm,'missing unprofiled metrics',line)
                 metrics.append([float(m.group(i)) for i in range(1,4)]+[int(m.group(i)) for i in (4,5)])
-              diag=[x for x in log.splitlines() if x.startswith('PR57_HISTORY_SEGMENT_DIAG ')]\n              assert len(diag)==1,(name,arm,'missing post-window diagnostic')\n              if enabled and name!='gridARTIFICIAL':\n                count=int(re.search(r'segmented=(\\d+)',diag[0]).group(1))\n                assert count>0,(name,arm,'NO_REAL_SEGMENT_ACTIVATION',diag[0])\n              arms[arm]={'enabled':enabled,'windows':windows,'metrics':metrics,'postWindowHeap':diag[0],
+              diag=[x for x in log.splitlines() if x.startswith('PR57_HISTORY_SEGMENT_DIAG ')]
+              assert len(diag)==1,(name,arm,'missing post-window diagnostic')
+              if enabled and name!='gridARTIFICIAL':
+                count=int(re.search(r'segmented=([0-9]+)',diag[0]).group(1))
+                assert count>0,(name,arm,'NO_REAL_SEGMENT_ACTIVATION',diag[0])
+              arms[arm]={'enabled':enabled,'windows':windows,'metrics':metrics,'postWindowHeap':diag[0],
                          'checkpointsSha256':[hashlib.sha256(s).hexdigest() for s in snaps],
                          'lastDiagnostic':rows[-1] if rows else None}
               print('PR57_566_ARM',name,arm,'wall',sum(x[0] for x in metrics),
