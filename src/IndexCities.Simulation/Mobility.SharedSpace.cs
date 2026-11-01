@@ -248,34 +248,21 @@ public sealed partial class CitySimulation
     // contact does not deepen (it separates), never through it.
     Vehicle? BodyOnWay(Vehicle v,List<(Vehicle Body,Point Position,double Heading)> poses,bool pr57305Onward=false)
     {
-        var rows=_pr57583Rows;
-        if(rows is not null){_pr57583BodyReads++;Pr57583VerifyRows(rows);}
-        var result=Pr57583BodyOnWayCore(v,poses,pr57305Onward,rows);
-        if(rows is not null&&Pr57583Shadow&&result?.Id!=Pr57583BodyOnWayCore(v,poses,pr57305Onward,null)?.Id)
-            throw new InvalidOperationException("PR57_583_BODY_SHADOW_MISMATCH");
-        return result;
-    }
-    Vehicle? Pr57583BodyOnWayCore(Vehicle v,List<(Vehicle Body,Point Position,double Heading)> poses,bool pr57305Onward,Pr57583Row[]? rows)
-    {
         Pr57261Hit(0);
         // #305: counters observe the original ordered short-circuit; never drive physics.
         var census=pr57305Onward&&Pr57305Target(v);
         var visited=0;var eligible=0;var nearNegative=0;var geometry=0;
         var started=census?System.Diagnostics.Stopwatch.GetTimestamp():0L;
         if(poses.Count==0)return null;var reach=poses.Max(p=>p.Position.Distance(v.Position))+12;
-        var count=rows?.Length??State.Vehicles.Count;
-        for(var i=0;i<count;i++){
-            var o=rows is null?State.Vehicles[i]:rows[i].Vehicle;
-            var position=rows is null?o.Position:rows[i].Position;
-            var status=rows is null?o.Status:rows[i].Status;
+        foreach(var o in State.Vehicles){
             if(census){visited++;Pr57306Read(v,o);}
-            if(o.Id==v.Id||o.Id==v.TowTargetId||o.TowTruckId==v.Id||status is VehicleStatus.Outside or VehicleStatus.Towed||position.Distance(v.Position)>reach||AtGateway(o)&&AtGateway(v))continue;
+            if(o.Id==v.Id||o.Id==v.TowTargetId||o.TowTruckId==v.Id||o.Status is VehicleStatus.Outside or VehicleStatus.Towed||o.Position.Distance(v.Position)>reach||AtGateway(o)&&AtGateway(v))continue;
             if(census)eligible++;
-            var now=Penetration(v,v.Position,v.Heading,o,position,o.Heading);var limit=Math.Max(-.1,now+.001);
+            var now=Penetration(v,v.Position,v.Heading,o,o.Position,o.Heading);var limit=Math.Max(-.1,now+.001);
             var tested=false;
-            foreach(var p in poses)if(p.Position.Distance(position)<12){
+            foreach(var p in poses)if(p.Position.Distance(o.Position)<12){
                 if(census){geometry++;tested=true;}
-                if(Penetration(v,p.Position,p.Heading,o,position,o.Heading)>limit){
+                if(Penetration(v,p.Position,p.Heading,o,o.Position,o.Heading)>limit){
                     if(census)Pr57305Body(v,o,poses.Count,visited,eligible,nearNegative,geometry,started);
                     return o;
                 }
@@ -290,26 +277,13 @@ public sealed partial class CitySimulation
     // the time the truck needs to drive the way.
     Vehicle? TrafficOnWay(Vehicle v,List<(Vehicle Body,Point Position,double Heading)> poses)
     {
-        var rows=_pr57583Rows;
-        if(rows is not null){_pr57583TrafficReads++;Pr57583VerifyRows(rows);}
-        var result=Pr57583TrafficOnWayCore(v,poses,rows);
-        if(rows is not null&&Pr57583Shadow&&result?.Id!=Pr57583TrafficOnWayCore(v,poses,null)?.Id)
-            throw new InvalidOperationException("PR57_583_TRAFFIC_SHADOW_MISMATCH");
-        return result;
-    }
-    Vehicle? Pr57583TrafficOnWayCore(Vehicle v,List<(Vehicle Body,Point Position,double Heading)> poses,Pr57583Row[]? rows)
-    {
         Pr57261Hit(1);
         if(poses.Count==0)return null;var length=0.0;for(var i=1;i<poses.Count;i++)length+=poses[i-1].Position.Distance(poses[i].Position);
         var seconds=length/State.Tuning.VehicleSpeed+1;
-        var count=rows?.Length??State.Vehicles.Count;
-        for(var i=0;i<count;i++){
-            var o=rows is null?State.Vehicles[i]:rows[i].Vehicle;
-            var position=rows is null?o.Position:rows[i].Position;
-            var status=rows is null?o.Status:rows[i].Status;
-            if(o.Id==v.Id||o.Id==v.TowTargetId||status!=VehicleStatus.Travelling||o.WaitingSince>0||Leaving(o)||o.Machine!=PavingMachine.None||position.Distance(v.Position)>seconds*State.Tuning.HighwaySpeed+20)continue;
+        foreach(var o in State.Vehicles){
+            if(o.Id==v.Id||o.Id==v.TowTargetId||o.Status!=VehicleStatus.Travelling||o.WaitingSince>0||Leaving(o)||o.Machine!=PavingMachine.None||o.Position.Distance(v.Position)>seconds*State.Tuning.HighwaySpeed+20)continue;
             var forward=new Point(Math.Sin(o.Heading),Math.Cos(o.Heading));var reach=State.Tuning.VehicleSpeed*seconds;
-            for(var run=0.0;run<=reach;run+=1){var at=position+forward*run;if(poses.Any(p=>p.Position.Distance(at)<12&&Penetration(v,p.Position,p.Heading,o,at,o.Heading)>-.1))return o;}
+            for(var run=0.0;run<=reach;run+=1){var at=o.Position+forward*run;if(poses.Any(p=>p.Position.Distance(at)<12&&Penetration(v,p.Position,p.Heading,o,at,o.Heading)>-.1))return o;}
         }
         return null;
     }
@@ -380,41 +354,14 @@ public sealed partial class CitySimulation
     // a signal shows green for the way v enters.
     bool SpaceFree(Vehicle v,RoadNode node,Point entering,bool yieldToTraffic=true)
     {
-        var rows=_pr57583Rows;
-        if(rows is null)return Pr57583SpaceFreeCore(v,node,entering,yieldToTraffic,null);
-        _pr57583SpaceReads++;
-        Pr57583VerifyRows(rows);
-        var previousCause=v.Cause;
-        var result=Pr57583SpaceFreeCore(v,node,entering,yieldToTraffic,rows);
-        if(Pr57583Shadow){
-            var resultCause=v.Cause;
-            _pr57583Rows=null;
-            v.Cause=previousCause;
-            try{
-                var expected=Pr57583SpaceFreeCore(v,node,entering,yieldToTraffic,null);
-                if(expected!=result||!string.Equals(v.Cause,resultCause,StringComparison.Ordinal))
-                    throw new InvalidOperationException("PR57_583_SPACE_SHADOW_MISMATCH");
-            }finally{v.Cause=resultCause;_pr57583Rows=rows;}
-        }
-        return result;
-    }
-    bool Pr57583SpaceFreeCore(Vehicle v,RoadNode node,Point entering,bool yieldToTraffic,Pr57583Row[]? rows)
-    {
         Pr57261Hit(3);
         var area=_junctionAreas.GetValueOrDefault(node.Id);
-        var count=rows?.Length??State.Vehicles.Count;
-        for(var i=0;i<count;i++){
-            var o=rows is null?State.Vehicles[i]:rows[i].Vehicle;
-            var position=rows is null?o.Position:rows[i].Position;
-            var status=rows is null?o.Status:rows[i].Status;
-            var claim=rows is null?o.IntersectionClaim:rows[i].Claim;
-            var routeIndex=rows is null?o.RouteIndex:rows[i].RouteIndex;
-            var waitingSince=rows is null?o.WaitingSince:rows[i].WaitingSince;
+        foreach(var o in State.Vehicles){
             if(o.Id==v.Id||o.Id==v.TowTargetId||o.TowTruckId==v.Id||Receives(o,v))continue;
-            if(Holds(o,node.Id)||area!=null&&(claim is {} held&&area.Contains(held)&&position.Distance(node.Position)<9||o.ManoeuvreSpaces.Any(area.Contains))){v.Cause=(IsBend(node)?"Aguardando liberação da curva pelo veículo ":"Aguardando liberação do cruzamento pelo veículo ")+o.Id;return false;}
+            if(Holds(o,node.Id)||area!=null&&(o.IntersectionClaim is {} held&&area.Contains(held)&&o.Position.Distance(node.Position)<9||o.ManoeuvreSpaces.Any(area.Contains))){v.Cause=(IsBend(node)?"Aguardando liberação da curva pelo veículo ":"Aguardando liberação do cruzamento pelo veículo ")+o.Id;return false;}
             // A lot exit yields to traffic presenting at the node; a vehicle entering
             // its bay through it is traffic itself and waits only for who arrived first.
-            if(status==VehicleStatus.Travelling&&!Leaving(o)&&routeIndex<o.Route.Count&&o.Route[routeIndex]==node.Id&&position.Distance(node.Position)<14&&CanTurnNow(o)&&(yieldToTraffic||IsBend(node)&&waitingSince>0&&(v.WaitingSince<=0||waitingSince<v.WaitingSince||waitingSince==v.WaitingSince&&o.Id<v.Id))){v.Cause=yieldToTraffic?"Aguardando espaço para acessar a faixa":"Fila para acesso de carga";return false;}
+            if(o.Status==VehicleStatus.Travelling&&!Leaving(o)&&o.RouteIndex<o.Route.Count&&o.Route[o.RouteIndex]==node.Id&&o.Position.Distance(node.Position)<14&&CanTurnNow(o)&&(yieldToTraffic||IsBend(node)&&o.WaitingSince>0&&(v.WaitingSince<=0||o.WaitingSince<v.WaitingSince||o.WaitingSince==v.WaitingSince&&o.Id<v.Id))){v.Cause=yieldToTraffic?"Aguardando espaço para acessar a faixa":"Fila para acesso de carga";return false;}
         }
         if(State.Citizens.Any(c=>c.Alive&&c.VehicleId==null&&c.Moving&&c.CrossingNodeId==node.Id&&c.Position.Distance(node.Position)<State.Tuning.RoadWidth/2+1.5)){v.Cause="Aguardando preferência/semáforo/travessia";return false;}
         if(node.Control==JunctionControl.Signal&&node.Neighbours.Count>=3&&((VehicleMovementTime%60<30)!=(Math.Abs(entering.X)>Math.Abs(entering.Z)))){v.Cause="Aguardando preferência/semáforo/travessia";return false;}
@@ -432,8 +379,6 @@ public sealed partial class CitySimulation
     bool AdmitManoeuvre(Vehicle v,List<(Vehicle Body,Point Position,double Heading)> way,List<RoadNode> spaces,Point dock,bool yieldToTraffic,LocalMovementAdmission? limit=null)
     {
         Pr57261Hit(4);
-        var pr57583Owner=Pr57583Begin();
-        try{
         var admitted=DockAdmitted(v,dock);
         if(!admitted){
             // A straight street has no shared node, but admitted dock sweeps
@@ -462,7 +407,6 @@ public sealed partial class CitySimulation
                 v.PassengerCar&&v.Machine==PavingMachine.None&&
                 v.SitePath.Count==0&&v.ShipmentId==null&&v.ManoeuvreDock==null)
                 _pr57SiteOwnerRoster=null;
-            Pr57583Invalidate();
             v.ManoeuvreDock=dock;v.ManoeuvreDeparture=departure;v.MovementAdmission=limit;
             // A reroute can retain the previous dock identity while the body
             // waits elsewhere. The newly acquired exit starts at its real pose,
@@ -473,7 +417,6 @@ public sealed partial class CitySimulation
         }
         Pr57276Gate(v,4);
         return true;
-        }finally{Pr57583End(pr57583Owner);}
     }
 
     // Only the physical connection dock <-> lane, not the onward lane trip.
