@@ -2,6 +2,78 @@ namespace IndexCities.Simulation;
 
 public sealed partial class CitySimulation
 {
+
+    // PR57 #579: speculative, Step-local first-segment physical proposals.
+    // Only pure route geometry is planned; ALL physics, readers, writers, waits,
+    // reservations, economy and sub-slices still run in canonical order.
+    static readonly bool Pr57PhysicalBatch=Environment.GetEnvironmentVariable("PR57_PHYSICAL_BATCH_PLAN")=="1";
+    static readonly bool Pr57PhysicalBatchShadow=Environment.GetEnvironmentVariable("PR57_PHYSICAL_BATCH_SHADOW")=="1";
+    sealed record Pr57PhysicalPlan(Vehicle Actor,object Route,RoadNode Node,RoadNode Next,
+        Point NodeAt,Point NextAt,Point Delta,double Length,Point Target,Point Corner,
+        long RoadEpoch,int[] Neighbours);
+    readonly Dictionary<int,Pr57PhysicalPlan> _pr57PhysicalPlans=new();
+    bool _pr57PhysicalPrepared,_pr57PhysicalReported,_pr57PhysicalUsed;
+    long _pr57PhysicalHits,_pr57PhysicalFallbacks;
+    void Pr57PhysicalBeginStep(){
+        if(!Pr57PhysicalBatch)return;
+        _pr57PhysicalPrepared=false;
+        _pr57PhysicalPlans.Clear();
+    }
+    static bool Pr57Same(double a,double b)=>BitConverter.DoubleToInt64Bits(a)==BitConverter.DoubleToInt64Bits(b);
+    static bool Pr57Same(Point a,Point b)=>Pr57Same(a.X,b.X)&&Pr57Same(a.Z,b.Z);
+    void Pr57PhysicalPrepare(Vehicle[] ordered,double? operationsDt){
+        if(!Pr57PhysicalBatch||operationsDt!=null||_vehicleMovementBatch is null||_pr57PhysicalPrepared)return;
+        _pr57PhysicalPrepared=true;
+        foreach(var v in ordered){
+            if(!_vehicleMovementBatch.Contains(v.Id)||v.Status!=VehicleStatus.Travelling||
+               v.RouteIndex!=0||v.Route.Count!=2||v.Detour.Count!=0||v.SitePathBeforeRoad||
+               v.ManoeuvreDock!=null||v.TowPhase!=TowPhase.None||v.ServicePhase!=ServicePhase.None)continue;
+            if(!_roads.TryGetValue(v.Route[0],out var node)||!_roads.TryGetValue(v.Route[1],out var next))continue;
+            var delta=next.Position-node.Position;
+            var len=delta.Distance(new(0,0));
+            var target=node.Position;
+            if(len>.01)target+=new Point(delta.Z/len*1.65,-delta.X/len*1.65);
+            var corner=InnerCornerOffset(v.Route,0,node,delta,len);
+            target+=corner;
+            _pr57PhysicalPlans[v.Id]=new(v,v.Route,node,next,node.Position,next.Position,
+                delta,len,target,corner,_roadEpoch,node.Neighbours.ToArray());
+        }
+        if(!_pr57PhysicalReported&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1"){
+            Console.WriteLine($"PR57_PHYSICAL_BATCH prepared=True count={_pr57PhysicalPlans.Count}");
+            _pr57PhysicalReported=true;
+        }
+    }
+    bool Pr57PhysicalTry(Vehicle v,RoadNode node,out Point delta,out double len,out Point target){
+        delta=target=default;len=0;
+        if(!Pr57PhysicalBatch||!_pr57PhysicalPlans.TryGetValue(v.Id,out var p))return false;
+        if(!ReferenceEquals(v,p.Actor)||!ReferenceEquals(v.Route,p.Route)||v.RouteIndex!=0||
+           v.Route.Count!=2||v.Route[0]!=p.Node.Id||v.Route[1]!=p.Next.Id||
+           !ReferenceEquals(node,p.Node)||!_roads.TryGetValue(p.Next.Id,out var next)||
+           !ReferenceEquals(next,p.Next)||_roadEpoch!=p.RoadEpoch||
+           !Pr57Same(node.Position,p.NodeAt)||!Pr57Same(next.Position,p.NextAt)||
+           !node.Neighbours.SequenceEqual(p.Neighbours)){
+            _pr57PhysicalFallbacks++;return false;
+        }
+        // The corner helper may read nonlocal road geometry. Recheck it at the
+        // serial commit point, falling back for ANY untracked geometry change.
+        var corner=InnerCornerOffset(v.Route,0,node,p.Delta,p.Length);
+        if(!Pr57Same(corner,p.Corner)){_pr57PhysicalFallbacks++;return false;}
+        delta=p.Delta;len=p.Length;target=p.Target;
+        if(Pr57PhysicalBatchShadow){
+            var d=next.Position-node.Position;var l=d.Distance(new(0,0));var t=node.Position;
+            if(l>.01)t+=new Point(d.Z/l*1.65,-d.X/l*1.65);
+            t+=InnerCornerOffset(v.Route,0,node,d,l);
+            if(!Pr57Same(delta,d)||!Pr57Same(len,l)||!Pr57Same(target,t))
+                throw new InvalidOperationException("PR57 physical batch shadow mismatch");
+        }
+        _pr57PhysicalHits++;
+        if(!_pr57PhysicalUsed&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1"){
+            Console.WriteLine($"PR57_PHYSICAL_BATCH used=True hits={_pr57PhysicalHits} fallback={_pr57PhysicalFallbacks}");
+            _pr57PhysicalUsed=true;
+        }
+        return true;
+    }
+
     // PR57-only allocation census for authentic congested checkpoint replays.
     // Observation is enabled exclusively by CostProfile; it never affects movement or saves.
     // PR57 #155: intrusive, observational per-vehicle cost classification.
@@ -611,6 +683,7 @@ public sealed partial class CitySimulation
         var pr57BatchOrder=Environment.GetEnvironmentVariable("PR57_BATCH_ORDER")=="1"&&operationsDt is null?_vehicleMovementBatch:null;
         var ordered=pr57BatchOrder is null?State.Vehicles.ToArray():State.Vehicles.Where(v=>pr57BatchOrder.Contains(v.Id)).ToArray();
         Array.Sort(ordered,static (a,b)=>a.WaitingSince.CompareTo(b.WaitingSince) is var c and not 0?c:a.Id.CompareTo(b.Id));
+        Pr57PhysicalPrepare(ordered,operationsDt);
         // PR57 isolated A/B: parked passenger cars are not lane occupants and
         // BodyAcrossLane explicitly excludes passenger cars. Build a stable
         // original-order candidate list once per movement slice.
@@ -934,10 +1007,16 @@ public sealed partial class CitySimulation
                     // A machine has no bay admission: its slide across the lane waits for any body on it.
                     if(v.Machine!=PavingMachine.None&&MachineDockSlideBlocked(v,dock)){v.Cause="Fila para acesso de carga";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}var blocked=!carSpot&&State.Vehicles.Any(o=>o.Id!=v.Id&&!(o.PassengerCar&&o.Status==VehicleStatus.Parked)&&o.Status is VehicleStatus.Unloading or VehicleStatus.Parked&&o.Position.Distance(dock)<4);if(blocked){v.Cause="Fila para acesso de carga";break;}var distance=v.Position.Distance(dock);var moved=Math.Min(distance,State.Tuning.VehicleSpeed*remaining);if(v.Fuel<moved*FuelRate(v)){RunOutOfFuel(v);break;}if(v.TowPhase==TowPhase.ToVehicle&&!PickupLaneClear(v,dock)){v.Cause="Guincho aguardando a faixa livre para encostar";if(v.WaitingSince==0)v.WaitingSince=VehicleMovementTime;break;}var toDock=dock-v.Position;if(v.PassengerCar&&distance>.01)v.Heading=Math.Atan2(toDock.X,toDock.Z);v.Position=v.Position.MoveTowards(dock,moved);Wear(v,moved);v.AddFuel(-(moved*FuelRate(v)));v.AddFuelBurnedLastStep(moved*FuelRate(v));remaining-=moved/State.Tuning.VehicleSpeed;if(moved<distance-.01)break;}if(v.TowPhase!=TowPhase.None){TowReachedDock(v);break;}if(v.ServicePhase==ServicePhase.ToService){ServiceArrived(v);break;}if(carSpot){CarReachedSpot(v);break;}v.Status=VehicleStatus.Unloading;v.LoadTimer=15;v.IntersectionClaim=null;v.Cause=v.RefuellingAt!=null?"Abastecendo combustível":v.ShipmentId is {} shipmentId&&State.Shipments.Any(s=>s.Id==shipmentId&&!s.PickedUp)?"Carregando na origem":"Descarregando no destino";break;}
                 if(scanProfile is not null){_pr57RegionAllocBytes[0]+=GC.GetAllocatedBytesForCurrentThread()-pr57RegionStart;pr57RegionStart=GC.GetAllocatedBytesForCurrentThread();}
-                var node=_roads[v.Route[v.RouteIndex]];if(node.ConstructionOnly&&!ConstructionTrip(v)){v.Status=VehicleStatus.Waiting;v.Cause="Rua ainda em obra: tráfego normal aguarda conclusão";break;}if(!node.Highway&&node.MaintenanceRatio<=.05){v.Status=VehicleStatus.Waiting;v.Cause="Via sem capacidade por manutenção não realizada";break;}var previous=v.RouteIndex>0?_roads[v.Route[v.RouteIndex-1]].Position:v.Position;
-                var delta=v.RouteIndex==0&&v.Route.Count>1?_roads[v.Route[1]].Position-node.Position:node.Position-previous;var len=delta.Distance(new(0,0));var target=node.Position;
-                if(len>.01)target+=new Point(delta.Z/len*1.65,-delta.X/len*1.65);
-                target+=InnerCornerOffset(v.Route,v.RouteIndex,node,delta,len);
+                var node=_roads[v.Route[v.RouteIndex]];if(node.ConstructionOnly&&!ConstructionTrip(v)){v.Status=VehicleStatus.Waiting;v.Cause="Rua ainda em obra: tráfego normal aguarda conclusão";break;}if(!node.Highway&&node.MaintenanceRatio<=.05){v.Status=VehicleStatus.Waiting;v.Cause="Via sem capacidade por manutenção não realizada";break;}
+                Point delta,target;double len;
+                if(!(operationsDt is null&&_vehicleMovementBatch is not null&&
+                     Pr57PhysicalTry(v,node,out delta,out len,out target))){
+                    var previous=v.RouteIndex>0?_roads[v.Route[v.RouteIndex-1]].Position:v.Position;
+                    delta=v.RouteIndex==0&&v.Route.Count>1?_roads[v.Route[1]].Position-node.Position:node.Position-previous;
+                    len=delta.Distance(new(0,0));target=node.Position;
+                    if(len>.01)target+=new Point(delta.Z/len*1.65,-delta.X/len*1.65);
+                    target+=InnerCornerOffset(v.Route,v.RouteIndex,node,delta,len);
+                }
                 var d=v.Position.Distance(target);var speed=(node.Highway?State.Tuning.HighwaySpeed:State.Tuning.VehicleSpeed)*Math.Max(.15,node.MaintenanceRatio);
                 // Already on this lane line past its point (e.g. a U-turn lands just
                 // beyond it): that point is reached, rather than turning back to it.
