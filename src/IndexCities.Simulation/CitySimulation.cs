@@ -191,7 +191,7 @@ public sealed partial class CitySimulation
     void Personal(Citizen c,string description)
     {
         var pr57Writer289Start=Pr57Writer289Start(out var pr57Writer289Bytes);
-        c.Pr57AppendPersonalEvent(new(State.Now,description));c.Decision=description;
+        c.History.Add(new(State.Now,description));c.Decision=description;
         Pr57Writer289End(0,pr57Writer289Start,pr57Writer289Bytes);
     }
     void Event(string description)

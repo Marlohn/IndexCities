@@ -210,9 +210,6 @@ for(var d=1;d<=days;d++){
 if(done>0)Console.WriteLine(windowSeconds==86400
     ? $"SUMMARY days={done} perDay={total/done:F2}s eff={86400*done/total:F0}x hours80y={total/done*29220/3600:F0} gen0={GC.CollectionCount(0)-gc0} gen2={GC.CollectionCount(2)-gc2} allocMB/day={(GC.GetTotalAllocatedBytes()-alloc0)/1e6/done:F0} workingSetMB={Process.GetCurrentProcess().WorkingSet64/1e6:F0}"
     : $"SUMMARY windows={done} secondsEach={windowSeconds} perWindow={total/done:F2}s eff={windowSeconds*done/total:F0}x gen0={GC.CollectionCount(0)-gc0} gen2={GC.CollectionCount(2)-gc2} allocMB/window={(GC.GetTotalAllocatedBytes()-alloc0)/1e6/done:F0} workingSetMB={Process.GetCurrentProcess().WorkingSet64/1e6:F0}");
-// #566: post-window-only retained-heap diagnostic; never included in timed Advance(2).
-if(Environment.GetEnvironmentVariable("PR57_HISTORY_SEGMENT_DIAG")=="1")
-    Console.WriteLine($"PR57_HISTORY_SEGMENT_DIAG segmented={sim.State.Citizens.Count(c=>c.Pr57HistorySegmented)} events={sim.State.Citizens.Sum(c=>c.Pr57HistoryEventCount)} heapBytes={GC.GetTotalMemory(true)}");
 if(profile is not null){
     var ticks=profile.Ticks.Sum();var measured=ticks/(double)Stopwatch.Frequency;
     Console.WriteLine($"STEP_PROFILE steps={profile.Steps} measuredWall={measured:F3}s phases={StepCostProfile.Names.Length}");
@@ -320,7 +317,7 @@ static void Pr57AccessLiveEdit(CitySimulation sim,int quantum,ref int editedRoad
     }
 }
 
-static string Stats(CitySimulation s){var st=s.State;var alive=st.Citizens.Where(c=>c.Alive&&c.Resident).ToList();return $"pop={s.Population} alive={st.Citizens.Count(c=>c.Alive)} dead={st.Citizens.Count(c=>!c.Alive)} employed={st.Citizens.Count(c=>c.Alive&&c.Resident&&c.WorkplaceId!=null)} moving={st.Citizens.Count(c=>c.Alive&&c.Moving)} vehicles={st.Vehicles.Count} travelling={st.Vehicles.Count(v=>v.Status==VehicleStatus.Travelling)} ledger={st.Ledger.Count} houses={st.Buildings.Count(b=>!b.Removed&&b.Kind==BuildingKind.House)} openWorks={st.Projects.Count(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress)} history={st.Citizens.Sum(c=>c.Pr57HistoryEventCount)} meals={st.Citizens.Sum(c=>c.Pr57HistoryJson.Count(h=>h.Description.StartsWith("Consumiu 1 alimento")))} wages={st.Ledger.Where(l=>l.Category.StartsWith("Salários / ")).Sum(l=>l.Amount):F2} health={(alive.Count==0?0:alive.Average(c=>c.Health)):F6} satisfaction={(alive.Count==0?0:alive.Average(c=>c.Satisfaction)):F6}";}
+static string Stats(CitySimulation s){var st=s.State;var alive=st.Citizens.Where(c=>c.Alive&&c.Resident).ToList();return $"pop={s.Population} alive={st.Citizens.Count(c=>c.Alive)} dead={st.Citizens.Count(c=>!c.Alive)} employed={st.Citizens.Count(c=>c.Alive&&c.Resident&&c.WorkplaceId!=null)} moving={st.Citizens.Count(c=>c.Alive&&c.Moving)} vehicles={st.Vehicles.Count} travelling={st.Vehicles.Count(v=>v.Status==VehicleStatus.Travelling)} ledger={st.Ledger.Count} houses={st.Buildings.Count(b=>!b.Removed&&b.Kind==BuildingKind.House)} openWorks={st.Projects.Count(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress)} history={st.Citizens.Sum(c=>c.History.Count)} meals={st.Citizens.Sum(c=>c.History.Count(h=>h.Description.StartsWith("Consumiu 1 alimento")))} wages={st.Ledger.Where(l=>l.Category.StartsWith("Salários / ")).Sum(l=>l.Amount):F2} health={(alive.Count==0?0:alive.Average(c=>c.Health)):F6} satisfaction={(alive.Count==0?0:alive.Average(c=>c.Satisfaction)):F6}";}
 
 static void PrintWorkDiagnostics(CitySimulation sim,int window)
 {
