@@ -167,7 +167,7 @@ public sealed partial class CitySimulation
     }
     Dictionary<int,List<Citizen>> StaffByWorkplace()
     {
-        if((Pr57LivingRosterEnabled||Pr57StaffPhaseFusionEnabled||_pr57PhasePresenceUsed)&&_pr57StaffPrepared)return _staff;
+        if((Pr57LivingRosterEnabled||Pr57StaffPhaseFusionEnabled)&&_pr57StaffPrepared)return _staff;
         foreach(var list in _staff.Values)list.Clear();
         foreach(var c in State.Citizens)if(c.WorkplaceId is {} site){if(!_staff.TryGetValue(site,out var list))_staff[site]=list=[];list.Add(c);}
         return _staff;
@@ -178,7 +178,7 @@ public sealed partial class CitySimulation
         // keeping building order and citizen order within each building.
         var staff=StaffByWorkplace();
         foreach(var b in State.Buildings.Where(b=>b.Completed&&!b.Removed)){
-            if(_pr57PhasePresenceUsed||Pr57StaffPhaseFusionEnabled)
+            if(Pr57StaffPhaseFusionEnabled)
             {
                 // WorkerPresentAt was evaluated after movement, before this
                 // immediately adjacent business phase; no citizen mutation
