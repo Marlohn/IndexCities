@@ -98,7 +98,7 @@ public sealed partial class CitySimulation
                 _pr57CleanupMismatches++;
                 _pr57CleanupFallback=true;
                 _pr57CleanupFallbacks++;
-                Console.WriteLine($"PR57_584_SHADOW_MISMATCH step={Steps} expected={actual.Count} tracked={_pr57CleanupOrder.Count}");
+                Console.WriteLine($"PR57_584_SHADOW_MISMATCH time={State.ElapsedSeconds} expected={actual.Count} tracked={_pr57CleanupOrder.Count}");
             }
         }
         if(_pr57CleanupFallback)

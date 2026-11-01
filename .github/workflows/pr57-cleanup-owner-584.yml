@@ -1,4 +1,4 @@
-name: 'PR57 #584 bounded physical read view REAL ABBA'
+name: 'PR57 #584 step-local sparse cleanup owners REAL ABBA'
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
@@ -28,7 +28,7 @@ jobs:
       - name: Compile and test both modes
         run: |
           set -euo pipefail
-          dotnet build scripts/pr57-584/Pr57Physical584.csproj -c Release
+          dotnet build scripts/pr57-584/Pr57Cleanup584.csproj -c Release
           PR57_584_CLEANUP_OWNER=0 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
           PR57_584_CLEANUP_OWNER=1 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
       - name: Restore authentic REAL saves
@@ -54,7 +54,7 @@ jobs:
               output="artifacts/cleanup-584/$case-shadow-$mode"
               mkdir -p "$output"
               PR57_584_CLEANUP_OWNER="$enabled" PR57_584_SHADOW=1 PR57_584_EXTERNAL_EDIT=1 \
-                dotnet run --no-build -c Release --project scripts/pr57-584/Pr57Physical584.csproj -- \
+                dotnet run --no-build -c Release --project scripts/pr57-584/Pr57Cleanup584.csproj -- \
                 "$input" "$case" "$mode" "$calls" "$output" > "$output.log" 2>&1
             done
           done
@@ -73,7 +73,7 @@ jobs:
               output="artifacts/cleanup-584/$case-$arm"
               mkdir -p "$output"
               PR57_584_CLEANUP_OWNER="$enabled" PR57_584_SHADOW=0 PR57_584_EXTERNAL_EDIT=0 \
-                dotnet run --no-build -c Release --project scripts/pr57-584/Pr57Physical584.csproj -- \
+                dotnet run --no-build -c Release --project scripts/pr57-584/Pr57Cleanup584.csproj -- \
                 "$input" "$case" "$mode" "$calls" "$output" > "$output.log" 2>&1
             done
           done
@@ -93,10 +93,11 @@ jobs:
                   assert f'PR57_584_FINAL case={case}' in log,(case,arm,'final')
                   assert log.count('PR57_584_WINDOW ')==3,(case,arm,'windows')
                   stats=re.search(r'PR57_584_STATS .*',log).group(0)
-                  values={k:int(v) for k,v in re.findall(r'(builds|body|traffic|space|invalidations)=(\d+)',stats)}
+                  values={k:int(v) for k,v in re.findall(r'(builds|slices|sparseSlices|skipped|visited|full|mismatches|writerAdds|fallbacks)=(\d+)',stats)}
                   if arm.startswith('B'):
-                      assert values['builds']>0,(case,arm,'no admission')
-                      assert sum(values[k]>0 for k in ('body','traffic','space'))>=2,(case,arm,'fewer than two consumers',values)
+                      assert values['builds']>0,(case,arm,'no roster')
+                      assert values['mismatches']==0,(case,arm,'missed writer',values)
+                      assert values['sparseSlices']>values['builds'] and values['skipped']>0,(case,arm,'no repeated full scan eliminated',values)
                   windows=re.findall(r'PR57_584_WINDOW .*',log)
                   metrics[arm]=[sum(float(re.search(r'\b'+k+r'=([0-9.]+)',w).group(1)) for w in windows) for k in ('wallMs','cpuMs','allocatedBytes')]
                   for at in positions:
