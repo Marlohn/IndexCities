@@ -1,4 +1,8 @@
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+
+// PR57 isolated test-only internal hook; does not change the public CitySimulation API.
+[assembly: InternalsVisibleTo("IndexCities.Simulation.Tests")]
 
 namespace IndexCities.Simulation;
 
@@ -21,8 +25,14 @@ public sealed partial class CitySimulation
         allocated=GC.GetAllocatedBytesForCurrentThread();
         return Stopwatch.GetTimestamp();
     }
+    // Only the three canonical append helpers are covered; never a full writer closure.
+    internal Action<int>? Pr57ControlledWriterPublished { get; set; }
+
     void Pr57Writer289End(int kind,long started,long allocated)
     {
+        // Synchronous publication AFTER the actual Personal/Event/Transfer append.
+        // Null by default, no global scan, no scheduler, no saved state change.
+        Pr57ControlledWriterPublished?.Invoke(kind);
         if(!Pr57Writer289Enabled)return;
         var ticks=Stopwatch.GetTimestamp()-started;
         var bytes=GC.GetAllocatedBytesForCurrentThread()-allocated;
