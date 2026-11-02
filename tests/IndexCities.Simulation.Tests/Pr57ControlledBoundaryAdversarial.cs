@@ -33,14 +33,10 @@ public sealed class Pr57ControlledBoundaryAdversarial
             case FoodStock f:
                 state.Buildings.Single(b => b.Id == f.Id).Stock.Units[ResourceKind.Food] = f.Units;
                 break;
-            case ReverseRoads _:
-                state.Roads.Reverse();
-                break;
-            case ReverseCitizens _:
-                state.Citizens.Reverse();
-                break;
             default:
-                throw new ArgumentOutOfRangeException(nameof(command));
+                // List reorder/replacement requires the real engine's graph
+                // and entity-index invalidation protocol. Not proven here.
+                throw new NotSupportedException("External list reorder is outside this boundary POC");
         }
     }
 
@@ -124,15 +120,15 @@ public sealed class Pr57ControlledBoundaryAdversarial
             new Hunger(citizen.Id, citizen.HungerMicroseconds + 1),
             new Price(building.Id, building.SalePrice + .01m),
             new FoodStock(building.Id,
-                building.Stock.Units.GetValueOrDefault(ResourceKind.Food) + 1),
-            new ReverseRoads(),
-            new ReverseCitizens()
+                building.Stock.Units.GetValueOrDefault(ResourceKind.Food) + 1)
         ];
         foreach (var command in commands)
         {
             Apply(baseline.State, command);
             boundary.Execute(command);
         }
+        Assert.Throws<NotSupportedException>(() => boundary.Execute(new ReverseRoads()));
+        Assert.Throws<NotSupportedException>(() => boundary.Execute(new ReverseCitizens()));
         Assert.Equal((long)commands.Length, boundary.Version);
         Assert.Equal(commands.Length, boundary.Journal().Length);
         Assert.Equal(baseline.SaveToJson(), boundary.Save());
