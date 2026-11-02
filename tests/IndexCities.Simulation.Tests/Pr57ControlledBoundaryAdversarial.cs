@@ -183,4 +183,80 @@ public sealed class Pr57ControlledBoundaryAdversarial
         Assert.True(checksum > 0);
         Console.WriteLine($"PR57_CONTROLLED_BOUNDARY case={label} citizens={baseline.State.Citizens.Count} buildings={baseline.State.Buildings.Count} roads={baseline.State.Roads.Count} checkpoints={checkpoints} byteEqual=True aliasIsolation=True commandJournal={candidate.Version} cloneMs={cloneMs:F4} cloneAllocBytes={cloneAlloc} direct300Ms={directMs:F4} direct300AllocBytes={directAlloc} journal300Ms={journalMs:F4} journal300AllocBytes={journalAlloc} read30Ms={readMs:F4} read30AllocBytes={readAlloc} epoch1800Ms={epochMs:F4} internalWriterJournal=False engineSpeedupClaim=False");
     }
+
+    // PR57 isolated negative gate. The engine's existing in-band needs probe
+    // observes real post-hunger inputs; it is NOT a complete internal-writer
+    // journal. Full SaveToJson each public boundary is an intentionally
+    // expensive, conservative detector, never a proposed production scheduler.
+    [Fact]
+    public void Real_boundary_full_snapshot_cost_and_needs_change_gate()
+    {
+        var path = Environment.GetEnvironmentVariable("PR57_CONTROLLED_SAVE_PATH");
+        if (string.IsNullOrWhiteSpace(path)) return;
+        var label = Environment.GetEnvironmentVariable("PR57_CONTROLLED_CASE") ?? "unspecified";
+        var initial = File.ReadAllText(path);
+        var baseline = CitySimulation.FromJson(initial);
+        var observed = CitySimulation.FromJson(initial);
+        var needs = new Pr57NeedsStepProbe();
+        observed.Pr57NeedsStepProbe = needs;
+
+        const int steps = 120;
+        var baselineCheckpoints = new List<string>();
+        long baselineTicks = 0, baselineAlloc = 0;
+        for (var i = 1; i <= steps; i++)
+        {
+            var started = Stopwatch.GetTimestamp();
+            var bytes = GC.GetAllocatedBytesForCurrentThread();
+            baseline.Advance(2);
+            baselineTicks += Stopwatch.GetTimestamp() - started;
+            baselineAlloc += GC.GetAllocatedBytesForCurrentThread() - bytes;
+            if (i % 10 == 0) baselineCheckpoints.Add(baseline.SaveToJson());
+        }
+
+        long observedTicks = 0, observedAlloc = 0;
+        long fingerprintTicks = 0, fingerprintAlloc = 0;
+        string? previous = null;
+        int changedFingerprints = 0, checkpointCount = 0;
+        for (var i = 1; i <= steps; i++)
+        {
+            var started = Stopwatch.GetTimestamp();
+            var bytes = GC.GetAllocatedBytesForCurrentThread();
+            observed.Advance(2);
+            observedTicks += Stopwatch.GetTimestamp() - started;
+            observedAlloc += GC.GetAllocatedBytesForCurrentThread() - bytes;
+
+            started = Stopwatch.GetTimestamp();
+            bytes = GC.GetAllocatedBytesForCurrentThread();
+            var snapshot = observed.SaveToJson();
+            fingerprintTicks += Stopwatch.GetTimestamp() - started;
+            fingerprintAlloc += GC.GetAllocatedBytesForCurrentThread() - bytes;
+            if (!string.Equals(previous, snapshot, StringComparison.Ordinal))
+                changedFingerprints++;
+            previous = snapshot;
+            if (i % 10 != 0) continue;
+            Assert.Equal(baselineCheckpoints[checkpointCount++], snapshot);
+            Assert.Equal(snapshot, CitySimulation.FromJson(snapshot).SaveToJson());
+        }
+
+        Assert.Equal(steps, needs.Records.Count);
+        Assert.Equal(steps, changedFingerprints); // clock alone changes each save
+        Assert.Equal(steps / 10, checkpointCount);
+        Assert.Equal(baseline.SaveToJson(), observed.SaveToJson());
+
+        long needsVisits = needs.Records.Sum(x => (long)x.Citizens);
+        long hungerChanged = needs.Records.Sum(x => (long)x.ChangedHunger);
+        long stableHomeInputs = needs.Records.Sum(x => (long)x.SameHomeInputs);
+        long changedHomeInputs = needs.Records.Sum(x => (long)x.ChangedHomeInputs);
+        Assert.True(needsVisits > 0);
+        double Ms(long ticks) => ticks * 1000.0 / Stopwatch.Frequency;
+        Console.WriteLine(
+            $"PR57_CONTROLLED_GATE case={label} steps={steps} checkpoints={checkpointCount} " +
+            $"byteEqual=True fingerprintChanged={changedFingerprints} " +
+            $"baselineAdvanceMs={Ms(baselineTicks):F3} baselineAdvanceAlloc={baselineAlloc} " +
+            $"needsProbeAdvanceMs={Ms(observedTicks):F3} needsProbeAdvanceAlloc={observedAlloc} " +
+            $"fullFingerprintMs={Ms(fingerprintTicks):F3} fullFingerprintAlloc={fingerprintAlloc} " +
+            $"needsVisits={needsVisits} changedHungerBetweenSteps={hungerChanged} " +
+            $"stableHomeInputs={stableHomeInputs} changedHomeInputs={changedHomeInputs} " +
+            $"internalWriterJournal=False safeSkippedSteps=0 engineSpeedupClaim=False");
+    }
 }
