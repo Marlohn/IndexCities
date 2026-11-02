@@ -19,6 +19,7 @@ public sealed class Pr57ControlledBoundaryAdversarial
     readonly record struct BuildingView(int Id, decimal SalePrice, long FoodUnits);
     readonly record struct CitizenView(int Id, long HungerUnits, long HealthUnits);
     readonly record struct JournalEntry(long Version, string Kind);
+    readonly record struct InternalWriterEvent(int Step, int Kind, int LedgerCount, int CityEventCount);
 
     static void Apply(CityState state, Command command)
     {
@@ -44,17 +45,29 @@ public sealed class Pr57ControlledBoundaryAdversarial
     {
         readonly CitySimulation _engine;
         readonly List<JournalEntry> _journal = [];
-        long _version;
+        readonly List<InternalWriterEvent> _internalWriters = [];
+        long _version, _internalVersion;
+        int _step;
 
         // Clone ONCE at ingress. Caller may retain and arbitrarily mutate its
         // original CityState; it cannot access the private engine or its lists.
-        public ControlledBoundary(CityState callerOwned)
+        public ControlledBoundary(CityState callerOwned, bool observeInternalWriters = false)
         {
             var json = new CitySimulation(callerOwned).SaveToJson();
             _engine = CitySimulation.FromJson(json);
+            if (observeInternalWriters)
+                _engine.Pr57ControlledWriterPublished = kind =>
+                {
+                    // O(1) per real append; no per-Step state census or polling.
+                    _internalWriters.Add(new InternalWriterEvent(_step, kind,
+                        _engine.State.Ledger.Count, _engine.State.CityEvents.Count));
+                    _internalVersion++;
+                };
         }
 
         public long Version => _version;
+        public long InternalVersion => _internalVersion;
+        public InternalWriterEvent[] InternalWriterEvents() => _internalWriters.ToArray();
         public JournalEntry[] Journal() => _journal.ToArray();
         public BuildingView[] Buildings() => _engine.Buildings
             .Select(b => new BuildingView(b.Id, b.SalePrice,
@@ -66,7 +79,7 @@ public sealed class Pr57ControlledBoundaryAdversarial
             Apply(_engine.State, command);
             _journal.Add(new JournalEntry(++_version, command.GetType().Name));
         }
-        public void Advance() => _engine.Advance(2);
+        public void Advance() { _step++; _engine.Advance(2); }
         public string Save() => _engine.SaveToJson();
     }
 
@@ -259,4 +272,100 @@ public sealed class Pr57ControlledBoundaryAdversarial
             $"stableHomeInputs={stableHomeInputs} changedHomeInputs={changedHomeInputs} " +
             $"internalWriterJournal=False safeSkippedSteps=0 engineSpeedupClaim=False");
     }
+    // One REAL writer cut: the three existing Personal/Event/Transfer append
+    // helpers publish synchronously at the write site. This is deliberately
+    // incomplete: direct writers, mutations of existing entries, state/clock,
+    // stocks and physical state are NOT tracked. No scheduler is enabled.
+    [Fact]
+    public void Real_internal_append_publication_has_exact_checkpoints_and_measured_cost()
+    {
+        var path = Environment.GetEnvironmentVariable("PR57_CONTROLLED_SAVE_PATH");
+        if (string.IsNullOrWhiteSpace(path)) return;
+        var label = Environment.GetEnvironmentVariable("PR57_CONTROLLED_CASE") ?? "unspecified";
+        var initial = File.ReadAllText(path);
+        var baseline = CitySimulation.FromJson(initial);
+        var candidate = new ControlledBoundary(CitySimulation.FromJson(initial).State,
+            observeInternalWriters: true);
+        Assert.Equal(baseline.SaveToJson(), candidate.Save());
+
+        var initialLedger = baseline.State.Ledger.Count;
+        var initialEvents = baseline.State.CityEvents.Count;
+        var initialPersonal = baseline.State.Citizens.Sum(c => c.History.Count);
+        const int steps = 120;
+        long baselineTicks = 0, candidateTicks = 0;
+        long baselineAlloc = 0, candidateAlloc = 0;
+        var checkpoints = 0;
+        for (var step = 1; step <= steps; step++)
+        {
+            var started = Stopwatch.GetTimestamp();
+            var bytes = GC.GetAllocatedBytesForCurrentThread();
+            baseline.Advance(2);
+            baselineTicks += Stopwatch.GetTimestamp() - started;
+            baselineAlloc += GC.GetAllocatedBytesForCurrentThread() - bytes;
+
+            started = Stopwatch.GetTimestamp();
+            bytes = GC.GetAllocatedBytesForCurrentThread();
+            candidate.Advance();
+            candidateTicks += Stopwatch.GetTimestamp() - started;
+            candidateAlloc += GC.GetAllocatedBytesForCurrentThread() - bytes;
+
+            if (step % 10 != 0) continue;
+            var actual = candidate.Save();
+            Assert.Equal(baseline.SaveToJson(), actual);
+            Assert.Equal(actual, CitySimulation.FromJson(actual).SaveToJson());
+            checkpoints++;
+        }
+
+        var publications = candidate.InternalWriterEvents();
+        Assert.Equal((long)publications.Length, candidate.InternalVersion);
+        var transfers = 0;
+        var events = 0;
+        var personal = 0;
+        var lastLedger = initialLedger;
+        var lastEvents = initialEvents;
+        var lastStep = 0;
+        foreach (var item in publications)
+        {
+            Assert.InRange(item.Kind, 0, 2);
+            Assert.InRange(item.Step, 1, steps);
+            Assert.True(item.Step >= lastStep, "Internal publication order must be monotonic");
+            lastStep = item.Step;
+            if (item.Kind == 2)
+            {
+                // The transfer entry must ALREADY exist when publication fires.
+                Assert.True(item.LedgerCount > lastLedger);
+                lastLedger = item.LedgerCount;
+                transfers++;
+            }
+            else if (item.Kind == 1)
+            {
+                Assert.True(item.CityEventCount > lastEvents);
+                lastEvents = item.CityEventCount;
+                events++;
+            }
+            else personal++;
+        }
+
+        var ledgerDelta = baseline.State.Ledger.Count - initialLedger;
+        var eventDelta = baseline.State.CityEvents.Count - initialEvents;
+        var personalDelta = baseline.State.Citizens.Sum(c => c.History.Count) - initialPersonal;
+        // Direct append paths can exist; only these three helpers are covered.
+        Assert.True(transfers <= ledgerDelta);
+        Assert.True(events <= eventDelta);
+        Assert.True(personal <= personalDelta);
+        Assert.Equal(steps / 10, checkpoints);
+        Assert.Equal(baseline.SaveToJson(), candidate.Save());
+        var activeSteps = publications.Select(p => p.Step).Distinct().Count();
+        double Ms(long ticks) => ticks * 1000.0 / Stopwatch.Frequency;
+        Console.WriteLine(
+            $"PR57_INTERNAL_WRITER case={label} steps={steps} checkpoints={checkpoints} " +
+            $"byteEqual=True writerEvents={publications.Length} activeSteps={activeSteps} " +
+            $"zeroEventSteps={steps - activeSteps} personal={personal}/{personalDelta} " +
+            $"cityEvents={events}/{eventDelta} transfers={transfers}/{ledgerDelta} " +
+            $"baselineAdvanceMs={Ms(baselineTicks):F3} observerAdvanceMs={Ms(candidateTicks):F3} " +
+            $"baselineAlloc={baselineAlloc} observerAlloc={candidateAlloc} " +
+            $"internalWriterJournal=partial exactAppendPublication=True " +
+            $"safeSkippedWork=0 engineSpeedupClaim=False");
+    }
+
 }
