@@ -368,4 +368,110 @@ public sealed class Pr57ControlledBoundaryAdversarial
             $"safeSkippedWork=0 engineSpeedupClaim=False");
     }
 
+    // PR57 isolated negative gate: price of the real RefreshCrosswalks reader
+    // (Mobility.cs) versus exact public-list validation. This is NOT a skip.
+    // A replica of the canonical scan is timed outside Advance(2); its ratio
+    // is an exploratory ceiling proxy, not an integrated speedup.
+    [Fact]
+    public void Real_crosswalk_reader_scan_vs_public_alias_validation_gate()
+    {
+        var path = Environment.GetEnvironmentVariable("PR57_CONTROLLED_SAVE_PATH");
+        if (string.IsNullOrWhiteSpace(path)) return;
+        var label = Environment.GetEnvironmentVariable("PR57_CONTROLLED_CASE") ?? "unspecified";
+        var initial = File.ReadAllText(path);
+        var engine = CitySimulation.FromJson(initial);
+        var prior = engine.State.Roads.ToArray();
+        var flags = prior.Select(n => n.Crosswalk).ToArray();
+        var crosswalks = new List<RoadNode>();
+        const int steps = 120;
+        const int repetitions = 8;
+        long advanceTicks = 0, scanTicks = 0, validateTicks = 0;
+        long scanAllocated = 0, validateAllocated = 0;
+        int stable = 0, changed = 0, maxRoads = 0, maxCrosswalks = 0;
+        for (var step = 0; step < steps; step++)
+        {
+            var started = Stopwatch.GetTimestamp();
+            engine.Advance(2);
+            advanceTicks += Stopwatch.GetTimestamp() - started;
+            maxRoads = Math.Max(maxRoads, engine.State.Roads.Count);
+
+            // Exact algorithm of Mobility.RefreshCrosswalks: same list
+            // traversal, Crosswalk predicate, and ordered list publication.
+            var bytes = GC.GetAllocatedBytesForCurrentThread();
+            started = Stopwatch.GetTimestamp();
+            for (var repeat = 0; repeat < repetitions; repeat++)
+            {
+                crosswalks.Clear();
+                foreach (var node in engine.State.Roads)
+                    if (node.Crosswalk) crosswalks.Add(node);
+            }
+            scanTicks += Stopwatch.GetTimestamp() - started;
+            scanAllocated += GC.GetAllocatedBytesForCurrentThread() - bytes;
+            maxCrosswalks = Math.Max(maxCrosswalks, crosswalks.Count);
+
+            // A negative certificate for mutable public List<RoadNode> must
+            // inspect membership/order and Crosswalk, not merely Count/epoch.
+            // Include snapshot maintenance when any input changes.
+            bytes = GC.GetAllocatedBytesForCurrentThread();
+            started = Stopwatch.GetTimestamp();
+            var roads = engine.State.Roads;
+            var dirty = roads.Count != prior.Length;
+            if (!dirty)
+                for (var i = 0; i < roads.Count; i++)
+                    if (!ReferenceEquals(roads[i], prior[i]) || roads[i].Crosswalk != flags[i])
+                    { dirty = true; break; }
+            if (dirty)
+            {
+                prior = roads.ToArray();
+                flags = prior.Select(n => n.Crosswalk).ToArray();
+                changed++;
+            }
+            else stable++;
+            validateTicks += Stopwatch.GetTimestamp() - started;
+            validateAllocated += GC.GetAllocatedBytesForCurrentThread() - bytes;
+        }
+        Assert.Equal(steps, stable + changed);
+        Assert.NotEmpty(engine.State.Roads);
+
+        // Adversaries on a separate authentic save: equal-Count reorder and
+        // in-place mutation bypass any Count-only or journal-only detector.
+        var adversary = CitySimulation.FromJson(initial);
+        var original = adversary.State.Roads.ToArray();
+        var originalFlags = original.Select(n => n.Crosswalk).ToArray();
+        static bool Same(List<RoadNode> roads, RoadNode[] refs, bool[] checks)
+        {
+            if (roads.Count != refs.Length) return false;
+            for (var i = 0; i < roads.Count; i++)
+                if (!ReferenceEquals(roads[i], refs[i]) || roads[i].Crosswalk != checks[i])
+                    return false;
+            return true;
+        }
+        Assert.True(Same(adversary.State.Roads, original, originalFlags));
+        Assert.True(original.Length >= 2);
+        (adversary.State.Roads[0], adversary.State.Roads[1]) =
+            (adversary.State.Roads[1], adversary.State.Roads[0]);
+        Assert.False(Same(adversary.State.Roads, original, originalFlags));
+        (adversary.State.Roads[0], adversary.State.Roads[1]) =
+            (adversary.State.Roads[1], adversary.State.Roads[0]);
+        var first = adversary.State.Roads[0];
+        first.Crosswalk = !first.Crosswalk;
+        Assert.False(Same(adversary.State.Roads, original, originalFlags));
+        first.Crosswalk = !first.Crosswalk;
+        Assert.True(Same(adversary.State.Roads, original, originalFlags));
+
+        double Ms(long ticks) => ticks * 1000.0 / Stopwatch.Frequency;
+        var scanMs = Ms(scanTicks) / repetitions;
+        var advanceMs = Ms(advanceTicks);
+        var validationMs = Ms(validateTicks);
+        Console.WriteLine(
+            $"PR57_CROSSWALK_READER_GATE case={label} steps={steps} roadsMax={maxRoads} " +
+            $"crosswalksMax={maxCrosswalks} stableMembership={stable} changedMembership={changed} " +
+            $"advanceMs={advanceMs:F3} replicaReaderMs={scanMs:F5} " +
+            $"readerShareProxyPct={100 * scanMs / advanceMs:F5} " +
+            $"publicNegativeValidationMs={validationMs:F5} " +
+            $"replicaScanAllocBytes={scanAllocated} validationAllocBytes={validateAllocated} " +
+            $"sameCountReorderDetected=True inPlaceFlagDetected=True " +
+            $"internalRoadWriterJournal=False safeSkippedWork=0 engineSpeedupClaim=False");
+    }
+
 }
