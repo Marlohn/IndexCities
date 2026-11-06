@@ -87,6 +87,10 @@ public sealed class Pr57VehicleOrderSensitivity
         var label = Environment.GetEnvironmentVariable("PR57_CONTROLLED_CASE") ?? "unspecified";
         var json = File.ReadAllText(path);
         var reference = CitySimulation.FromJson(json);
+        // The swap candidates must come from the input save, not from the
+        // reference state after Advance(2), which may add/remove vehicles.
+        var pairs = reference.State.Vehicles.Count - 1;
+        Assert.True(pairs > 0);
         reference.Advance(2);
         var expected = reference.State.Vehicles.OrderBy(v => v.Id)
             .Select(v => (v.Id, v.Position, v.Heading, v.Status,
@@ -94,8 +98,6 @@ public sealed class Pr57VehicleOrderSensitivity
         var expectedCitizens = reference.State.Citizens.OrderBy(v => v.Id)
             .Select(v => (v.Id, v.Position, v.Activity, v.VehicleId,
                 v.HungerMicroseconds, v.HealthUnits)).ToArray();
-        var pairs = reference.State.Vehicles.Count - 1;
-        Assert.True(pairs > 0);
         var changedVehiclePairs = 0;
         var changedCitizenPairs = 0;
         var firstPair = -1;
