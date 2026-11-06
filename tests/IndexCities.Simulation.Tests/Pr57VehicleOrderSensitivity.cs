@@ -122,6 +122,24 @@ public sealed class Pr57VehicleOrderSensitivity
                 {
                     firstPair = i;
                     Console.WriteLine($"PR57_ADJACENT_FIRST case={label} index={i} leftId={left} rightId={right}");
+                    // A projection can hide a causal change in shared state.
+                    // Inspect authentic project/shipment state after the same full Step.
+                    // Sorting by identity removes only collection-order noise.
+                    var referenceProjects = System.Text.Json.JsonSerializer.Serialize(
+                        reference.State.Projects.OrderBy(p => p.Id).ToArray());
+                    var trialProjects = System.Text.Json.JsonSerializer.Serialize(
+                        trial.State.Projects.OrderBy(p => p.Id).ToArray());
+                    var referenceShipments = System.Text.Json.JsonSerializer.Serialize(
+                        reference.State.Shipments.OrderBy(sh => sh.Id).ToArray());
+                    var trialShipments = System.Text.Json.JsonSerializer.Serialize(
+                        trial.State.Shipments.OrderBy(sh => sh.Id).ToArray());
+                    Console.WriteLine(
+                        $"PR57_ADJACENT_SHARED case={label} index={i} leftId={left} rightId={right} " +
+                        $"projectsEqual={String.Equals(referenceProjects, trialProjects, StringComparison.Ordinal)} " +
+                        $"shipmentsEqual={String.Equals(referenceShipments, trialShipments, StringComparison.Ordinal)} " +
+                        $"projectCount={reference.State.Projects.Count}/{trial.State.Projects.Count} " +
+                        $"shipmentCount={reference.State.Shipments.Count}/{trial.State.Shipments.Count} " +
+                        "scope=sorted-identity-shared-state-json notEngineParity=True");
                 }
             }
             if (!expectedCitizens.SequenceEqual(citizens)) changedCitizenPairs++;
