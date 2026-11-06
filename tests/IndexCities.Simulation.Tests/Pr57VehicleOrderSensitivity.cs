@@ -176,50 +176,40 @@ public sealed class Pr57VehicleOrderSensitivity
     }
 
 
-    // Adversarial causal intervention: remove one contested shipment from BOTH
-    // identical starting states. This is deliberately NOT a production-valid
-    // city; it tests whether the known order sensitivity requires shipment 1040.
+    // PR57 isolated causal observation: shipment 1040 is created during Advance(2),
+    // so deleting it from the input save is not a valid intervention.
     [Fact]
-    public void Real_save_shipment_1040_order_dependency_intervention()
+    public void Real_save_shipment_1040_creation_order_probe()
     {
         var path = Environment.GetEnvironmentVariable("PR57_CONTROLLED_SAVE_PATH");
         if (string.IsNullOrWhiteSpace(path)) return;
         var label = Environment.GetEnvironmentVariable("PR57_CONTROLLED_CASE") ?? "unspecified";
         var json = File.ReadAllText(path);
-        var input = CitySimulation.FromJson(json);
-        var index = input.State.Vehicles.FindIndex(v => v.Id == 18);
-        if (index < 0 || index + 1 >= input.State.Vehicles.Count ||
-            input.State.Vehicles[index + 1].Id != 19)
+        var reference = CitySimulation.FromJson(json);
+        var index = reference.State.Vehicles.FindIndex(v => v.Id == 18);
+        if (index < 0 || index + 1 >= reference.State.Vehicles.Count ||
+            reference.State.Vehicles[index + 1].Id != 19)
         {
-            Console.WriteLine($"PR57_SHIPMENT_INTERVENTION case={label} applicable=False");
+            Console.WriteLine($"PR57_SHIPMENT_CREATION case={label} applicable=False");
             return;
         }
-        foreach (var remove in new[] { false, true })
-        {
-            var reference = CitySimulation.FromJson(json);
-            var trial = CitySimulation.FromJson(json);
-            if (remove)
-            {
-                Assert.Equal(1, reference.State.Shipments.RemoveAll(s => s.Id == 1040));
-                Assert.Equal(1, trial.State.Shipments.RemoveAll(s => s.Id == 1040));
-            }
-            (trial.State.Vehicles[index], trial.State.Vehicles[index + 1]) =
-                (trial.State.Vehicles[index + 1], trial.State.Vehicles[index]);
-            reference.Advance(2);
-            trial.Advance(2);
-            var a = System.Text.Json.JsonSerializer.Serialize(
-                reference.State.Vehicles.OrderBy(v => v.Id).ToArray());
-            var b = System.Text.Json.JsonSerializer.Serialize(
-                trial.State.Vehicles.OrderBy(v => v.Id).ToArray());
-            var projectsA = System.Text.Json.JsonSerializer.Serialize(
-                reference.State.Projects.OrderBy(v => v.Id).ToArray());
-            var projectsB = System.Text.Json.JsonSerializer.Serialize(
-                trial.State.Projects.OrderBy(v => v.Id).ToArray());
-            Console.WriteLine(
-                $"PR57_SHIPMENT_INTERVENTION case={label} removed1040={remove} " +
-                $"vehiclesEqual={String.Equals(a, b, StringComparison.Ordinal)} " +
-                $"projectsEqual={String.Equals(projectsA, projectsB, StringComparison.Ordinal)} " +
-                "scope=adversarial-deletion-not-production-parity");
-        }
+        var trial = CitySimulation.FromJson(json);
+        var existed = reference.State.Shipments.Any(s => s.Id == 1040);
+        var fuel18 = reference.State.Vehicles.First(v => v.Id == 18).Fuel;
+        var fuel19 = reference.State.Vehicles.First(v => v.Id == 19).Fuel;
+        (trial.State.Vehicles[index], trial.State.Vehicles[index + 1]) =
+            (trial.State.Vehicles[index + 1], trial.State.Vehicles[index]);
+        reference.Advance(2);
+        trial.Advance(2);
+        var a = reference.State.Shipments.FirstOrDefault(s => s.Id == 1040);
+        var b = trial.State.Shipments.FirstOrDefault(s => s.Id == 1040);
+        Console.WriteLine(
+            $"PR57_SHIPMENT_CREATION case={label} existedBefore={existed} " +
+            $"fuel18Before={fuel18} fuel19Before={fuel19} " +
+            $"referenceVehicle={a?.VehicleId.ToString() ?? "none"} " +
+            $"trialVehicle={b?.VehicleId.ToString() ?? "none"} " +
+            $"referencePrice={a?.PricePaid.ToString() ?? "none"} " +
+            $"trialPrice={b?.PricePaid.ToString() ?? "none"} " +
+            "scope=authentic-save-full-Advance2-not-engine-parity");
     }
 }
