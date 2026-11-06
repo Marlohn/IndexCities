@@ -76,4 +76,59 @@ public sealed class Pr57VehicleOrderSensitivity
         // Both outcomes are informative: a divergence refutes naive batch
         // reordering; no divergence in 24 Steps is NOT a universal proof.
     }
+    // A minimal local-dependence probe, not a proof of safe parallel execution.
+    // Each trial starts from the same authentic save and swaps exactly one
+    // adjacent pair; all other actors and the full Advance(2) are preserved.
+    [Fact]
+    public void Real_save_adjacent_vehicle_swap_dependency_probe()
+    {
+        var path = Environment.GetEnvironmentVariable("PR57_CONTROLLED_SAVE_PATH");
+        if (string.IsNullOrWhiteSpace(path)) return;
+        var label = Environment.GetEnvironmentVariable("PR57_CONTROLLED_CASE") ?? "unspecified";
+        var json = File.ReadAllText(path);
+        var reference = CitySimulation.FromJson(json);
+        reference.Advance(2);
+        var expected = reference.State.Vehicles.OrderBy(v => v.Id)
+            .Select(v => (v.Id, v.Position, v.Heading, v.Status,
+                v.RouteIndex, v.Fuel, v.Cause, v.WaitingSince)).ToArray();
+        var expectedCitizens = reference.State.Citizens.OrderBy(v => v.Id)
+            .Select(v => (v.Id, v.Position, v.Activity, v.VehicleId,
+                v.HungerMicroseconds, v.HealthUnits)).ToArray();
+        var pairs = reference.State.Vehicles.Count - 1;
+        Assert.True(pairs > 0);
+        var changedVehiclePairs = 0;
+        var changedCitizenPairs = 0;
+        var firstPair = -1;
+        for (var i = 0; i < pairs; i++)
+        {
+            var trial = CitySimulation.FromJson(json);
+            var left = trial.State.Vehicles[i].Id;
+            var right = trial.State.Vehicles[i + 1].Id;
+            (trial.State.Vehicles[i], trial.State.Vehicles[i + 1]) =
+                (trial.State.Vehicles[i + 1], trial.State.Vehicles[i]);
+            trial.Advance(2);
+            var actual = trial.State.Vehicles.OrderBy(v => v.Id)
+                .Select(v => (v.Id, v.Position, v.Heading, v.Status,
+                    v.RouteIndex, v.Fuel, v.Cause, v.WaitingSince)).ToArray();
+            var citizens = trial.State.Citizens.OrderBy(v => v.Id)
+                .Select(v => (v.Id, v.Position, v.Activity, v.VehicleId,
+                    v.HungerMicroseconds, v.HealthUnits)).ToArray();
+            if (!expected.SequenceEqual(actual))
+            {
+                changedVehiclePairs++;
+                if (firstPair < 0)
+                {
+                    firstPair = i;
+                    Console.WriteLine($"PR57_ADJACENT_FIRST case={label} index={i} leftId={left} rightId={right}");
+                }
+            }
+            if (!expectedCitizens.SequenceEqual(citizens)) changedCitizenPairs++;
+        }
+        Console.WriteLine(
+            $"PR57_ADJACENT_REAL case={label} pairs={pairs} " +
+            $"vehicleChangedPairs={changedVehiclePairs} citizenChangedPairs={changedCitizenPairs} " +
+            $"firstChangedPair={firstPair} scope=single-adjacent-swap-one-full-Advance2 " +
+            "notEngineParity=True");
+    }
+
 }
