@@ -175,4 +175,51 @@ public sealed class Pr57VehicleOrderSensitivity
             "notEngineParity=True");
     }
 
+
+    // Adversarial causal intervention: remove one contested shipment from BOTH
+    // identical starting states. This is deliberately NOT a production-valid
+    // city; it tests whether the known order sensitivity requires shipment 1040.
+    [Fact]
+    public void Real_save_shipment_1040_order_dependency_intervention()
+    {
+        var path = Environment.GetEnvironmentVariable("PR57_CONTROLLED_SAVE_PATH");
+        if (string.IsNullOrWhiteSpace(path)) return;
+        var label = Environment.GetEnvironmentVariable("PR57_CONTROLLED_CASE") ?? "unspecified";
+        var json = File.ReadAllText(path);
+        var input = CitySimulation.FromJson(json);
+        var index = input.State.Vehicles.FindIndex(v => v.Id == 18);
+        if (index < 0 || index + 1 >= input.State.Vehicles.Count ||
+            input.State.Vehicles[index + 1].Id != 19)
+        {
+            Console.WriteLine($"PR57_SHIPMENT_INTERVENTION case={label} applicable=False");
+            return;
+        }
+        foreach (var remove in new[] { false, true })
+        {
+            var reference = CitySimulation.FromJson(json);
+            var trial = CitySimulation.FromJson(json);
+            if (remove)
+            {
+                Assert.Equal(1, reference.State.Shipments.RemoveAll(s => s.Id == 1040));
+                Assert.Equal(1, trial.State.Shipments.RemoveAll(s => s.Id == 1040));
+            }
+            (trial.State.Vehicles[index], trial.State.Vehicles[index + 1]) =
+                (trial.State.Vehicles[index + 1], trial.State.Vehicles[index]);
+            reference.Advance(2);
+            trial.Advance(2);
+            var a = System.Text.Json.JsonSerializer.Serialize(
+                reference.State.Vehicles.OrderBy(v => v.Id).ToArray());
+            var b = System.Text.Json.JsonSerializer.Serialize(
+                trial.State.Vehicles.OrderBy(v => v.Id).ToArray());
+            var projectsA = System.Text.Json.JsonSerializer.Serialize(
+                reference.State.Projects.OrderBy(v => v.Id).ToArray());
+            var projectsB = System.Text.Json.JsonSerializer.Serialize(
+                trial.State.Projects.OrderBy(v => v.Id).ToArray());
+            Console.WriteLine(
+                $"PR57_SHIPMENT_INTERVENTION case={label} removed1040={remove} " +
+                $"vehiclesEqual={String.Equals(a, b, StringComparison.Ordinal)} " +
+                $"projectsEqual={String.Equals(projectsA, projectsB, StringComparison.Ordinal)} " +
+                "scope=adversarial-deletion-not-production-parity");
+        }
+    }
 }
