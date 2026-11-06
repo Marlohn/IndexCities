@@ -71,6 +71,7 @@ jobs:
                 -c Release --no-build --filter FullyQualifiedName~Pr57VehicleOrderSensitivity \
                 --logger "console;verbosity=detailed" | tee "artifacts/controlled-boundary/order-$case.log"
             grep -F "PR57_ORDER_REAL case=$case" "artifacts/controlled-boundary/order-$case.log"
+            grep -F "PR57_ADJACENT_REAL case=$case" "artifacts/controlled-boundary/order-$case.log"
           done
       - name: Preserve test and maintenance logs
         if: always()
