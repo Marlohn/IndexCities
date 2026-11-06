@@ -133,6 +133,30 @@ public sealed class Pr57VehicleOrderSensitivity
                         reference.State.Shipments.OrderBy(sh => sh.Id).ToArray());
                     var trialShipments = System.Text.Json.JsonSerializer.Serialize(
                         trial.State.Shipments.OrderBy(sh => sh.Id).ToArray());
+                    // Identify the first shared entity whose actual serialized state differs.
+                    // This is a diagnostic witness, not a proof of the responsible writer.
+                    var firstProject = reference.State.Projects.OrderBy(p => p.Id)
+                        .Zip(trial.State.Projects.OrderBy(p => p.Id))
+                        .FirstOrDefault(pair =>
+                            !String.Equals(
+                                System.Text.Json.JsonSerializer.Serialize(pair.First),
+                                System.Text.Json.JsonSerializer.Serialize(pair.Second),
+                                StringComparison.Ordinal));
+                    var firstShipment = reference.State.Shipments.OrderBy(sh => sh.Id)
+                        .Zip(trial.State.Shipments.OrderBy(sh => sh.Id))
+                        .FirstOrDefault(pair =>
+                            !String.Equals(
+                                System.Text.Json.JsonSerializer.Serialize(pair.First),
+                                System.Text.Json.JsonSerializer.Serialize(pair.Second),
+                                StringComparison.Ordinal));
+                    Console.WriteLine(
+                        $"PR57_ADJACENT_SHARED_FIRST case={label} index={i} " +
+                        $"projectId={firstProject.First?.Id.ToString() ?? "none"} " +
+                        $"shipmentId={firstShipment.First?.Id.ToString() ?? "none"} " +
+                        $"projectReference={System.Text.Json.JsonSerializer.Serialize(firstProject.First)} " +
+                        $"projectTrial={System.Text.Json.JsonSerializer.Serialize(firstProject.Second)} " +
+                        $"shipmentReference={System.Text.Json.JsonSerializer.Serialize(firstShipment.First)} " +
+                        $"shipmentTrial={System.Text.Json.JsonSerializer.Serialize(firstShipment.Second)}");
                     Console.WriteLine(
                         $"PR57_ADJACENT_SHARED case={label} index={i} leftId={left} rightId={right} " +
                         $"projectsEqual={String.Equals(referenceProjects, trialProjects, StringComparison.Ordinal)} " +
