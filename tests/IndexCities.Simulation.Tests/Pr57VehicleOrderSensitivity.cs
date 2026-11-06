@@ -47,7 +47,17 @@ public sealed class Pr57VehicleOrderSensitivity
             if (!a.SequenceEqual(b))
             {
                 differingVehicleSteps++;
-                if (firstVehicleDifference < 0) firstVehicleDifference = step;
+                if (firstVehicleDifference < 0)
+                {
+                    firstVehicleDifference = step;
+                    // Diagnostic only: the first identity-level disagreement, not a
+                    // claim that list reordering is a valid engine optimization.
+                    var first = a.Zip(b).First(pair => !pair.First.Equals(pair.Second));
+                    Console.WriteLine(
+                        $"PR57_ORDER_FIRST case={label} step={step} " +
+                        $"baseline={first.First} reordered={first.Second} " +
+                        $"vehicleCount={a.Length}");
+                }
             }
             if (!c.SequenceEqual(d))
             {
