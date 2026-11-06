@@ -212,4 +212,48 @@ public sealed class Pr57VehicleOrderSensitivity
             $"trialPrice={b?.PricePaid.ToString() ?? "none"} " +
             "scope=authentic-save-full-Advance2-not-engine-parity");
     }
+
+    // PR57 isolated read-only probe: call the exact private truck selector on
+    // fresh copies of a real save. This does not change the engine or reorder
+    // the simulation's canonical execution.
+    [Fact]
+    public void Real_save_available_truck_selector_order_probe()
+    {
+        var path = Environment.GetEnvironmentVariable("PR57_CONTROLLED_SAVE_PATH");
+        if (string.IsNullOrWhiteSpace(path)) return;
+        var label = Environment.GetEnvironmentVariable("PR57_CONTROLLED_CASE") ?? "unspecified";
+        var json = File.ReadAllText(path);
+        var reference = CitySimulation.FromJson(json);
+        var index = reference.State.Vehicles.FindIndex(v => v.Id == 18);
+        if (index < 0 || index + 1 >= reference.State.Vehicles.Count ||
+            reference.State.Vehicles[index + 1].Id != 19)
+        {
+            Console.WriteLine($"PR57_TRUCK_SELECTOR case={label} applicable=False");
+            return;
+        }
+        // Observe the authentic resource of shipment 1040 after a full step.
+        // The probe itself runs against fresh, unadvanced input snapshots.
+        reference.Advance(2);
+        var shipment = reference.State.Shipments.FirstOrDefault(s => s.Id == 1040);
+        Assert.NotNull(shipment);
+        var kind = shipment.Cargo.Keys.Single();
+        var original = CitySimulation.FromJson(json);
+        var swapped = CitySimulation.FromJson(json);
+        (swapped.State.Vehicles[index], swapped.State.Vehicles[index + 1]) =
+            (swapped.State.Vehicles[index + 1], swapped.State.Vehicles[index]);
+        var selector = typeof(CitySimulation).GetMethods(
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.NonPublic)
+            .Single(m => m.Name == "AvailableTruck" &&
+                m.GetParameters().Length == 1 &&
+                m.GetParameters()[0].ParameterType == typeof(ResourceKind));
+        var first = selector.Invoke(original, new object[] { kind }) as Vehicle;
+        var second = selector.Invoke(swapped, new object[] { kind }) as Vehicle;
+        Console.WriteLine(
+            $"PR57_TRUCK_SELECTOR case={label} kind={kind} " +
+            $"initialOriginal={first?.Id.ToString() ?? "none"} " +
+            $"initialSwapped={second?.Id.ToString() ?? "none"} " +
+            $"shipment1040AfterAdvance={shipment.VehicleId} " +
+            "scope=private-selector-on-authentic-input-not-intra-step-writer");
+    }
 }
