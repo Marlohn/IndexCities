@@ -246,7 +246,8 @@ public sealed class Pr57VehicleOrderSensitivity
                 System.Reflection.BindingFlags.NonPublic)
             .Single(m => m.Name == "AvailableTruck" &&
                 m.GetParameters().Length == 1 &&
-                m.GetParameters()[0].ParameterType == typeof(ResourceKind));
+                (m.GetParameters()[0].ParameterType == typeof(ResourceKind) ||
+                 m.GetParameters()[0].ParameterType == typeof(ResourceKind?)));
         var first = selector.Invoke(original, new object[] { kind }) as Vehicle;
         var second = selector.Invoke(swapped, new object[] { kind }) as Vehicle;
         Console.WriteLine(
