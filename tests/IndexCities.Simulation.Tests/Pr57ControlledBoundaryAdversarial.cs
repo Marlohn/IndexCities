@@ -474,4 +474,112 @@ public sealed class Pr57ControlledBoundaryAdversarial
             $"internalRoadWriterJournal=False safeSkippedWork=0 engineSpeedupClaim=False");
     }
 
+
+    // PR57 recovery POC: independent data-oriented layout, not a spatial index,
+    // skip certificate or physics replacement. Every real vehicle participates
+    // in original list order. The exact same ordered 20m squared-distance
+    // predicate is evaluated against objects and a per-Step SoA projection.
+    // Reprojection cost is included; neither result is used by gameplay.
+    [Fact]
+    public void Real_vehicle_soa_projection_vs_ordered_pair_scan()
+    {
+        var path = Environment.GetEnvironmentVariable("PR57_CONTROLLED_SAVE_PATH");
+        if (string.IsNullOrWhiteSpace(path)) return;
+        var label = Environment.GetEnvironmentVariable("PR57_CONTROLLED_CASE") ?? "unspecified";
+        var engine = CitySimulation.FromJson(File.ReadAllText(path));
+        const int steps = 24;
+        const int repeats = 300;
+        long objectTicks = 0, projectionTicks = 0, arrayTicks = 0;
+        long objectBytes = 0, projectionBytes = 0, arrayBytes = 0;
+        long pairs = 0, matches = 0;
+        var maxVehicles = 0;
+        for (var step = 0; step < steps; step++)
+        {
+            engine.Advance(2); // Actual integrated engine, no omitted Steps.
+            var vehicles = engine.State.Vehicles;
+            maxVehicles = Math.Max(maxVehicles, vehicles.Count);
+            var n = vehicles.Count;
+            var beforeBytes = GC.GetAllocatedBytesForCurrentThread();
+            var start = Stopwatch.GetTimestamp();
+            var x = new double[n];
+            var z = new double[n];
+            for (var i = 0; i < n; i++)
+            {
+                x[i] = vehicles[i].Position.X;
+                z[i] = vehicles[i].Position.Z;
+            }
+            projectionTicks += Stopwatch.GetTimestamp() - start;
+            projectionBytes += GC.GetAllocatedBytesForCurrentThread() - beforeBytes;
+
+            // A non-spatial, full ordered pair scan: same predicate, same
+            // iteration order, and the same floating-point operation order.
+            long objectCount = 0;
+            beforeBytes = GC.GetAllocatedBytesForCurrentThread();
+            start = Stopwatch.GetTimestamp();
+            for (var repeat = 0; repeat < repeats; repeat++)
+                for (var i = 0; i < n; i++)
+                    for (var j = 0; j < n; j++)
+                    {
+                        var dx = vehicles[j].Position.X - vehicles[i].Position.X;
+                        var dz = vehicles[j].Position.Z - vehicles[i].Position.Z;
+                        if (dx * dx + dz * dz <= 400.0) objectCount++;
+                    }
+            objectTicks += Stopwatch.GetTimestamp() - start;
+            objectBytes += GC.GetAllocatedBytesForCurrentThread() - beforeBytes;
+
+            long arrayCount = 0;
+            beforeBytes = GC.GetAllocatedBytesForCurrentThread();
+            start = Stopwatch.GetTimestamp();
+            for (var repeat = 0; repeat < repeats; repeat++)
+                for (var i = 0; i < n; i++)
+                    for (var j = 0; j < n; j++)
+                    {
+                        var dx = x[j] - x[i];
+                        var dz = z[j] - z[i];
+                        if (dx * dx + dz * dz <= 400.0) arrayCount++;
+                    }
+            arrayTicks += Stopwatch.GetTimestamp() - start;
+            arrayBytes += GC.GetAllocatedBytesForCurrentThread() - beforeBytes;
+            Assert.Equal(objectCount, arrayCount);
+            pairs += (long)n * n * repeats;
+            matches += objectCount;
+        }
+
+        // Adversarial negative: a compact projection becomes stale on an
+        // external same-Count reorder or in-place nested position mutation.
+        // This experiment REBUILDS each Step and never claims cross-Step reuse.
+        var adversary = CitySimulation.FromJson(File.ReadAllText(path));
+        var bodies = adversary.State.Vehicles;
+        Assert.NotEmpty(bodies);
+        var captured = bodies.Select(v => (Reference: v, Position: v.Position)).ToArray();
+        static bool ProjectionCurrent(List<Vehicle> current,
+            (Vehicle Reference, Point Position)[] snapshot)
+        {
+            if (current.Count != snapshot.Length) return false;
+            for (var i = 0; i < current.Count; i++)
+                if (!ReferenceEquals(current[i], snapshot[i].Reference) ||
+                    current[i].Position != snapshot[i].Position) return false;
+            return true;
+        }
+        Assert.True(ProjectionCurrent(bodies, captured));
+        if (bodies.Count > 1)
+        {
+            (bodies[0], bodies[1]) = (bodies[1], bodies[0]);
+            Assert.False(ProjectionCurrent(bodies, captured));
+            (bodies[0], bodies[1]) = (bodies[1], bodies[0]);
+            Assert.True(ProjectionCurrent(bodies, captured));
+        }
+        var first = bodies[0];
+        first.Position = new Point(first.Position.X + 1.0, first.Position.Z);
+        Assert.False(ProjectionCurrent(bodies, captured));
+        double Ms(long ticks) => ticks * 1000.0 / Stopwatch.Frequency;
+        Console.WriteLine(
+            $"PR57_SOA_REAL case={label} steps={steps} repeats={repeats} " +
+            $"maxVehicles={maxVehicles} pairs={pairs} matches={matches} " +
+            $"objectMs={Ms(objectTicks):F4} objectAlloc={objectBytes} " +
+            $"projectionMs={Ms(projectionTicks):F4} projectionAlloc={projectionBytes} " +
+            $"soaMs={Ms(arrayTicks):F4} soaAlloc={arrayBytes} " +
+            $"orderedPairParity=True staleAliasDetected=True " +
+            $"scope=20m-pair-proxy integratedSpeedupClaim=False");
+    }
 }
