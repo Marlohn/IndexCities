@@ -1,0 +1,30 @@
+name: 'PR57 #199 reservation hook closure adversarial counterexamples'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-reservation-hook-closure-199.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  adversarial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compile Release and run targeted real mutation paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --filter FullyQualifiedName~Pr57ReservationHookClosureAdversarialTests --verbosity normal
+      - name: Full regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --no-build --verbosity normal

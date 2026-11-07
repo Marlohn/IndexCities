@@ -1,0 +1,97 @@
+name: 'PR57 #367 REAL direct canonical scalar writers'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [scripts/pr57-367-inject.py, .github/workflows/pr57-direct-writers-367.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  bounded-real:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+      PR57_VEHICLE_COST_PROBE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Inject opt-in direct setter observer into checkout only
+        run: python3 scripts/pr57-367-inject.py
+      - name: Build and test canonical engine with reversible observer
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release
+      - name: Restore authentic REAL 14h checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Replay individual Advance(2) in separate processes
+        shell: bash
+        run: |
+          set -euo pipefail
+          input="artifacts/input/real14hREAL-control/checkpoint-0.json"
+          test -s "$input"
+          for mode in control probe; do
+            mkdir -p "artifacts/direct367/$mode"
+            if [[ "$mode" == "probe" ]]; then flag=1; else flag=0; fi
+            PR57_367_DIRECT_WRITERS="$flag" dotnet run --no-build -c Release \
+              --project scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj \
+              -- "$input" "artifacts/direct367/$mode" \
+              > "artifacts/direct367/$mode/full.log"
+            grep -E '^PR57_(337_(HOUR|FINAL)|367_(FIELD|PHASE|EXAMPLE|SUMMARY)) ' \
+              "artifacts/direct367/$mode/full.log" \
+              > "artifacts/direct367/$mode/census.log"
+            test "$(grep -c '^PR57_337_HOUR ' "artifacts/direct367/$mode/census.log")" -eq 6
+            grep -q 'parity=IDENTICAL' "artifacts/direct367/$mode/census.log"
+          done
+          ! grep -q '^PR57_367_' artifacts/direct367/control/census.log
+          test "$(grep -c '^PR57_367_SUMMARY ' artifacts/direct367/probe/census.log)" -eq 1
+          test "$(grep -c '^PR57_367_FIELD ' artifacts/direct367/probe/census.log)" -ge 1
+          cmp artifacts/direct367/control/checkpoint-10800.json \
+              artifacts/direct367/probe/checkpoint-10800.json
+          sha256sum artifacts/direct367/{control,probe}/checkpoint-10800.json \
+            | tee artifacts/direct367/checkpoints.sha256
+          python3 - <<'PY' | tee artifacts/direct367/summary.txt
+          from pathlib import Path
+          root=Path("artifacts/direct367")
+          lines=(root/"probe"/"census.log").read_text().splitlines()
+          def parse(line):
+              return dict(part.split("=",1) for part in line.split()[1:] if "=" in part)
+          summaries=[parse(x) for x in lines if x.startswith("PR57_367_SUMMARY ")]
+          fields=[parse(x) for x in lines if x.startswith("PR57_367_FIELD ")]
+          phases=[parse(x) for x in lines if x.startswith("PR57_367_PHASE ")]
+          assert len(summaries)==1 and len(fields)>0
+          summary=summaries[0]
+          assert int(summary["canonical"])==98
+          assert int(summary["writes"])==sum(int(x["writes"]) for x in fields)
+          assert int(summary["writes"])==sum(int(x["writes"]) for x in phases)
+          print("PR57_367_AUDIT",summary)
+          for f in fields: print("PR57_367_AUDIT_FIELD",f)
+          for p in phases: print("PR57_367_AUDIT_PHASE",p)
+          PY
+      - name: Upload raw evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-direct-367
+          path: artifacts/direct367/
+          if-no-files-found: warn

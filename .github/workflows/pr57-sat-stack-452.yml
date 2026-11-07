@@ -1,0 +1,139 @@
+name: 'PR57 #452 exact SAT stack axes ABBA integrated'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-sat-stack-452.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  stack-abba:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build Release and regression suite
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic REAL 14h checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/real
+      - name: Restore authentic construction and artificial GRID checkpoints
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-pose-noop-237
+          run-id: 40589313790
+          github-token: ${{ github.token }}
+          path: artifacts/mixed
+      - name: Three fixtures ABBA, all individual Advance(2), full JSON parity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY_ABBA' | tee artifacts/pr57-452-console.log
+          import hashlib,json,os,re,statistics,subprocess
+          from pathlib import Path
+          from decimal import Decimal
+          root=Path('artifacts/sat-stack-452')
+          root.mkdir(parents=True,exist_ok=True)
+          real=Path('artifacts/real/real14hREAL-control/checkpoint-0.json')
+          works=list(Path('artifacts/mixed').rglob('worksREAL-control1/checkpoint-0.json'))
+          grid=list(Path('artifacts/mixed').rglob('gridARTIFICIAL-control1/checkpoint-5.json'))
+          assert real.is_file() and len(works)==1 and len(grid)==1
+          cases=[('economyREAL14h',real,'cycle',200,600,121,98),
+                 ('worksREAL',works[0],'cycle',200,600,47,42),
+                 ('gridARTIFICIAL',grid[0],'grid',100,300,1111,None)]
+          summaries={}
+          for name,source,fixture,horizon,cap,alive,vehicles in cases:
+              original=source.read_bytes()
+              state=json.loads(original,parse_float=Decimal)
+              assert sum(bool(c['Alive']) for c in state['Citizens'])==alive
+              if vehicles is not None: assert len(state['Vehicles'])==vehicles
+              if name=='economyREAL14h':
+                  assert hashlib.sha256(original).hexdigest()=='779c144f2d6b2b64ece079f5740bf8a0a473a47286ca40d8b5f6b9dd61ab616f'
+              if name=='worksREAL':
+                  assert hashlib.sha256(original).hexdigest()=='b7c52ab87928e7eaa93cfc557b9f3dc935d5b17da44820b405990071940f95b5'
+              stats={}; finals={}
+              for mode in ('A1','B1','B2','A2'):
+                  dest=root/name/mode
+                  dest.mkdir(parents=True,exist_ok=True)
+                  env=os.environ.copy()
+                  env.update(PR57_HOST_QUANTUM='1',PR57_AB_CHECKPOINT='1',
+                             PR57_GRID_DIAG='0',PR57_270_MANOEUVRE_SCRATCH='0',
+                             PR57_272_PENETRATION_MEMO='0',
+                             PR57_PENETRATION_STACK_AXES='1' if mode.startswith('B') else '0',
+                             PR57_SAVE_CAPTURE_DIR=str(dest.resolve()))
+                  cmd=['dotnet','run','--no-build','-c','Release',
+                       '--project','src/IndexCities.Headless/IndexCities.Headless.csproj',
+                       '--','scale',fixture,'--seed=42','--warmup=0',
+                       '--days=1',f'--window={horizon}',f'--cap={cap}',
+                       f'--resume={source.resolve()}']
+                  logpath=dest/'full.log'
+                  with logpath.open('w') as out:
+                      subprocess.run(cmd,env=env,stdout=out,stderr=subprocess.STDOUT,
+                                     check=True,timeout=240)
+                  log=logpath.read_text()
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log
+                  assert (dest/'checkpoint-0.json').read_bytes()==original
+                  final=(dest/'checkpoint-1.json').read_bytes()
+                  finals[mode]=final
+                  rows=[line for line in log.splitlines() if line.startswith('WINDOW ')]
+                  assert len(rows)==1,(name,mode,rows)
+                  def metric(key):
+                      m=re.search(r'(?:^| )'+re.escape(key)+r'=([-0-9.]+)',rows[0])
+                      assert m,(name,mode,key,rows[0])
+                      return float(m.group(1))
+                  stats[mode]={k:metric(k) for k in ('wall','cpu','allocMB')}
+                  print('PR57_452_WINDOW',name,mode,rows[0],flush=True)
+              assert len(set(finals.values()))==1,(name,'FULL_JSON_MISMATCH')
+              means={kind:{k:statistics.mean(stats[arm][k] for arm in arms)
+                           for k in ('wall','cpu','allocMB')}
+                     for kind,arms in (('A',('A1','A2')),('B',('B1','B2')))}
+              ratios={k:round(means['A'][k]/means['B'][k],5) if means['B'][k] else None
+                      for k in ('wall','cpu','allocMB')}
+              summaries[name]={'sourceSha256':hashlib.sha256(original).hexdigest(),
+                               'finalSha256':hashlib.sha256(finals['A1']).hexdigest(),
+                               'living':alive,'vehicles':len(state['Vehicles']),
+                               'callsAdvance2PerArm':horizon//2,
+                               'fullJsonParity':True,'stats':stats,'means':means,'ratiosAOverB':ratios}
+              print('PR57_452_PARITY',name,'fullJson=EXACT','Advance2PerArm',horizon//2,
+                    'wallAOverB',ratios['wall'],'cpuAOverB',ratios['cpu'],
+                    'allocAOverB',ratios['allocMB'],flush=True)
+          result={'experiment':452,'optIn':'PR57_PENETRATION_STACK_AXES',
+                  'baseline':'PR57 composed flags, stack axes off',
+                  'allAdvance2':True,'cases':summaries,
+                  'limitations':'Short horizons, including artificial GRID; A/B not a 10k/80y proof'}
+          (root/'summary.json').write_text(json.dumps(result,indent=2,sort_keys=True))
+          print('PR57_452_SUMMARY '+json.dumps(result,sort_keys=True),flush=True)
+          PY_ABBA
+      - name: Preserve raw logs and full checkpoints
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-sat-stack-452
+          path: |
+            artifacts/sat-stack-452
+            artifacts/pr57-452-console.log
+          retention-days: 14
+          if-no-files-found: warn

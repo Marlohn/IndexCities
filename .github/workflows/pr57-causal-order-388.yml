@@ -1,0 +1,119 @@
+name: 'PR57 #388 REAL intra-slice dependency shadow'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [scripts/pr57-388-inject.py, .github/workflows/pr57-causal-order-388.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  real-causal-order:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+      PR57_VEHICLE_COST_PROBE: '1'
+      PR57_ADVANCE_BOUNDARY_PROBE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Inject bounded observational probe in disposable checkout
+        run: |
+          set -euo pipefail
+          python3 scripts/pr57-387-inject.py
+          python3 scripts/pr57-388-inject.py
+      - name: Build and test
+        run: |
+          set -euo pipefail
+          dotnet build scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release
+      - name: Restore authentic REAL 14h checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Two fresh processes, each 10800 individual Advance(2)
+        shell: bash
+        run: |
+          set -euo pipefail
+          input="artifacts/input/real14hREAL-control/checkpoint-0.json"
+          test -s "$input"
+          for arm in base probe; do
+            flag=0
+            if [[ "$arm" == probe ]]; then flag=1; fi
+            mkdir -p "artifacts/order388/$arm"
+            PR57_387_ORDER_SHADOW="$flag" \
+              dotnet run --no-build -c Release \
+                --project scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj \
+                -- "$input" "artifacts/order388/$arm" \
+                > "artifacts/order388/$arm/full.log"
+            grep -q '^PR57_337_FINAL .*parity=IDENTICAL' "artifacts/order388/$arm/full.log"
+          done
+          cmp artifacts/order388/base/checkpoint-10800.json artifacts/order388/probe/checkpoint-10800.json
+          sha256sum artifacts/order388/*/checkpoint-10800.json | tee artifacts/order388/checkpoints.sha256
+          python3 - <<'PY' | tee artifacts/order388/summary.json
+          import json
+          from pathlib import Path
+          root=Path('artifacts/order388')
+          result={}
+          for arm in ('base','probe'):
+              data=(root/arm/'full.log').read_text().splitlines()
+              def rows(prefix):
+                  return [dict(v.split('=',1) for v in line.split()[1:] if '=' in v)
+                          for line in data if line.startswith(prefix+' ')]
+              hour=rows('PR57_337_HOUR')
+              boundary=rows('PR57_ADVANCE_BOUNDARY')
+              final=rows('PR57_337_FINAL')
+              shadow=rows('PR57_387_ORDER')
+              trace=rows('PR57_388_CROSS')
+              assert len(hour)==6 and len(boundary)==108 and len(final)==1
+              assert int(boundary[-1]['calls'])==10800
+              assert final[0]['parity']=='IDENTICAL'
+              assert all(int(h['living'])==121 for h in hour)
+              assert len(shadow)==(1 if arm=='probe' else 0)
+              assert len(trace)==(1 if arm=='probe' else 0), (arm, trace)
+              if shadow:
+                  s=shadow[0]
+                  assert int(s['physicalCalls'])==600
+                  assert int(s['crossCohortSelected'])==1
+                  assert trace[0]['reader']!=trace[0]['blocker']
+                  assert trace[0]['observationOnly']=='True'
+                  assert s['noReorder']=='True' and s['noSkippedSlices']=='True'
+                  for key in ('poseWriters','otherWriters','laneCandidateReads',
+                              'liveReadsAfterPose','crossCohortReads',
+                              'selectedAfterPose','crossCohortSelected'):
+                      assert int(s[key])>=0
+                  assert int(s['crossCohortReads'])<=int(s['liveReadsAfterPose'])
+                  assert int(s['crossCohortSelected'])<=int(s['selectedAfterPose'])
+              result[arm]={'wallMs':round(sum(float(h['wallMs']) for h in hour),3),
+                           'cpuMs':round(sum(float(h['cpuMs']) for h in hour),3),
+                           'allocatedBytes':sum(int(h['totalAllocatedBytes']) for h in hour),
+                           'shadow':shadow[0] if shadow else None,
+                           'crossTrace':trace[0] if trace else None}
+          print(json.dumps({'arms':result,'scope':'AUTHENTIC_REAL_121_LIVING_98_VEHICLES_6H',
+                            'advance2PerArm':10800,'sampledPhysicalCalls':600,
+                            'observational':True,'causalClosure':False,
+                            'acceptedSpeedup':False},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integrated-scale-pr57-causal-order-388
+          path: artifacts/order388
+          retention-days: 14
+          if-no-files-found: warn

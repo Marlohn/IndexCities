@@ -1,0 +1,128 @@
+name: 'PR57 #400 restock submethod and eleventh route witness REAL'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-restock-writers-400.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  real-restock-writers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+      PR57_VEHICLE_COST_PROBE: '1'
+      PR57_ADVANCE_BOUNDARY_PROBE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Inject observational #399 + targeted #400 in disposable checkout
+        run: |
+          set -euo pipefail
+          python3 scripts/pr57-399-inject.py
+          python3 scripts/pr57-400-inject.py
+      - name: Build and test
+        run: |
+          set -euo pipefail
+          dotnet build scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release
+      - name: Restore authentic REAL 14h checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Two fresh processes, 10800 individual Advance(2) per arm
+        shell: bash
+        run: |
+          set -euo pipefail
+          input="artifacts/input/real14hREAL-control/checkpoint-0.json"
+          test -s "$input"
+          for arm in base probe; do
+            flag=0
+            if [[ "$arm" == probe ]]; then flag=1; fi
+            mkdir -p "artifacts/restock400/$arm"
+            PR57_399_WRITER_METHODS="$flag" \
+            PR57_400_RESTOCK_WRITERS="$flag" \
+              dotnet run --no-build -c Release \
+                --project scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj \
+                -- "$input" "artifacts/restock400/$arm" \
+                > "artifacts/restock400/$arm/full.log"
+            grep -q '^PR57_337_FINAL .*parity=IDENTICAL' "artifacts/restock400/$arm/full.log"
+          done
+          cmp artifacts/restock400/base/checkpoint-10800.json artifacts/restock400/probe/checkpoint-10800.json
+          sha256sum artifacts/restock400/*/checkpoint-10800.json | tee artifacts/restock400/checkpoints.sha256
+          python3 - <<'PY' | tee artifacts/restock400/summary.json
+          import json
+          from pathlib import Path
+          root=Path('artifacts/restock400')
+          result={}
+          for arm in ('base','probe'):
+              lines=(root/arm/'full.log').read_text().splitlines()
+              def rows(prefix):
+                  return [dict(v.split('=',1) for v in line.split()[1:] if '=' in v)
+                          for line in lines if line.startswith(prefix+' ')]
+              hours=rows('PR57_337_HOUR')
+              advance=rows('PR57_ADVANCE_BOUNDARY')
+              final=rows('PR57_337_FINAL')
+              methods=rows('PR57_399_METHODS')
+              cleanup=rows('PR57_399_CLEANUP')
+              changes=rows('PR57_399_ROUTE')
+              releases=rows('PR57_399_RELEASE')
+              restock=rows('PR57_400_SUMMARY')
+              restock_changes=rows('PR57_400_ROUTE')
+              assert len(hours)==6 and len(advance)==108 and len(final)==1
+              assert int(advance[-1]['calls'])==10800 and final[0]['parity']=='IDENTICAL'
+              assert all(int(h['living'])==121 for h in hours)
+              assert len(methods)==len(cleanup)==len(restock)==(1 if arm=='probe' else 0)
+              row={'wallMs':round(sum(float(h['wallMs']) for h in hours),3),
+                   'cpuMs':round(sum(float(h['cpuMs']) for h in hours),3),
+                   'allocatedBytes':sum(int(h['totalAllocatedBytes']) for h in hours)}
+              if methods:
+                  m,c=methods[0],cleanup[0]
+                  assert int(m['steps'])==1820 and int(m['targets'])==11
+                  assert int(m['physical'])>=10000 and int(m['physical'])<12000
+                  assert int(c['physical'])==12000
+                  assert m['observational']==c['observational']=='True'
+                  assert m['noSkippedSlices']==c['noSkippedSlices']=='True'
+                  assert int(m['frequency'])>0
+                  assert int(m['routeChanges'])>=int(m['tryDriveChanges'])
+                  assert int(c['directAdmissionClears'])>=0
+                  r=restock[0]
+                  assert int(r['steps'])==1820 and int(r['physical'])==int(m['physical'])
+                  assert int(r['changes'])==int(r['local'])+int(r['import'])
+                  assert int(r['checks'])==int(r['captures'])
+                  assert r['observational']==r['noSkippedSlices']=='True'
+                  row.update({'methods':m,'cleanup':c,'routeExamples':changes,
+                              'releaseExamples':releases,'restock400':r,
+                              'restockChanges400':restock_changes})
+              result[arm]=row
+          print(json.dumps({'arms':result,
+              'scope':'AUTHENTIC_REAL_121_LIVING_98_VEHICLES_6H',
+              'advance2PerArm':10800,'targetRouteIds':11,
+              'methodWindowSteps':1820,'physicalCleanupWindow':12000,
+              'observational':True,'causalClosure':False,'optimizationGainAccepted':False},
+              sort_keys=True))
+          PY
+      - name: Upload original logs and saves
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-restock-writers-400
+          path: artifacts/restock400/
+          if-no-files-found: warn

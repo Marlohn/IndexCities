@@ -1,0 +1,163 @@
+name: 'PR57 #323 citizen spikes at public Advance(2) boundaries'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-citizen-spikes-323.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  citizen-spikes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build and existing tests
+        run: |
+          set -euo pipefail
+          dotnet build scripts/pr57-economy-review-294/Pr57EconomyReview294.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore same authentic REAL and explicitly ARTIFICIAL GRID saves as #321
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Fresh-process ABBA and bounded cumulative citizen counters
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/citizen-spikes-323
+          for case in real14hREAL gridARTIFICIAL; do
+            input="artifacts/input/${case}-control/checkpoint-0.json"
+            test -s "$input"
+            calls=100
+            if [[ "$case" == gridARTIFICIAL ]]; then calls=50; fi
+            for arm in control1 probe1 probe2 control2; do
+              output="artifacts/citizen-spikes-323/${case}-${arm}"
+              mkdir -p "$output"
+              observed=0
+              if [[ "$arm" == probe* ]]; then observed=1; fi
+              cmd=(dotnet run --no-build -c Release --project scripts/pr57-economy-review-294/Pr57EconomyReview294.csproj -- "$input" "$case" probe "$calls" "$output")
+              PR57_323_CITIZEN_PER_CALL="$observed" \
+              PR57_224_CITIZEN_STATE_COST="$observed" \
+              PR57_239_CITIZEN_PHASES="$observed" \
+              PR57_240_WALK_SPLIT="$observed" \
+              PR57_241_ARRIVAL_SPLIT="$observed" \
+              PR57_242_FOOD_SEARCH="$observed" \
+                "${cmd[@]}" > "artifacts/citizen-spikes-323/${case}-${arm}.log" 2>&1
+            done
+          done
+      - name: Verify checkpoints and print per-call counter deltas
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, statistics
+          root=Path("artifacts/citizen-spikes-323")
+          def fields(line):
+              return dict(re.findall(r"([A-Za-z][A-Za-z0-9]*)=([^\s]+)",line))
+          def snapshot(lines):
+              out={}
+              for line in lines:
+                  if not line.startswith("PR57_323_COUNTER "): continue
+                  m=re.match(r"PR57_323_COUNTER case=\S+ call=(\d+) (PR57_\d+_[A-Z_]+) (.*)",line)
+                  assert m,line
+                  call=int(m.group(1)); tag=m.group(2); f=fields(m.group(3))
+                  key=(tag,f.get("name",f.get("purpose","all")))
+                  assert key not in out.setdefault(call,{}),(call,key)
+                  out[call][key]=f
+              return out
+          def delta(snap, before, after, tag, name, metric):
+              key=(tag,name)
+              def number(call):
+                  return float(snap.get(call,{}).get(key,{}).get(metric,0))
+              return number(after)-number(before)
+          pairs=0
+          for case,calls in (("real14hREAL",100),("gridARTIFICIAL",50)):
+              logs={};steps={};snapshots={}
+              for arm in ("control1","probe1","probe2","control2"):
+                  lines=(root/f"{case}-{arm}.log").read_text().splitlines()
+                  final=[fields(x) for x in lines if x.startswith("PR57_294_FINAL ")]
+                  assert len(final)==1,(case,arm,"final")
+                  f=final[0]
+                  assert f["cadence"]=="Advance2" and f["all13Phases"]=="True"
+                  assert f["noSkippedSlices"]=="True" and f["exactCheckpoints"]=="True"
+                  assert int(f["calls"])==calls and f["mode"]=="probe"
+                  rows=[fields(x) for x in lines if x.startswith("PR57_294_STEP ")]
+                  assert [int(x["call"]) for x in rows]==list(range(1,calls+1))
+                  logs[arm]=f;steps[arm]=rows;snapshots[arm]=snapshot(lines)
+                  if arm.startswith("probe"):
+                      required=(0,1,2,21,22,23,30,31,32,50)
+                      assert all(k in snapshots[arm] for k in required),(case,arm,"missing counters")
+                      assert all(len(snapshots[arm][k])>=18 for k in required),(case,arm,"incomplete counters")
+                  else:
+                      assert not snapshots[arm],(case,arm,"control unexpectedly observed")
+              for suffix in ("1","2"):
+                  for step in (0,20,calls//2,calls):
+                      a=(root/f"{case}-control{suffix}"/f"checkpoint-{step}.json").read_bytes()
+                      b=(root/f"{case}-probe{suffix}"/f"checkpoint-{step}.json").read_bytes()
+                      assert a==b,(case,suffix,step,"full checkpoint mismatch")
+                      pairs+=1
+              for metric in ("wallMs","cpuMs","allocatedBytes"):
+                  control=statistics.mean(float(logs[f"control{i}"][metric]) for i in ("1","2"))
+                  probe=statistics.mean(float(logs[f"probe{i}"][metric]) for i in ("1","2"))
+                  print(f"PR57_323_FULL case={case} metric={metric} control={control:.3f} probe={probe:.3f} ratio={control/probe:.6f} scope=INTRUSIVE_NOT_SPEEDUP")
+              focus=((1,0),(2,1),(22,21),(23,22),(31,30),(32,31))
+              if calls==100: focus+=((77,76),)
+              metrics=(
+                  ("PR57_224_CITIZEN_SUM","all","setupMs"),
+                  ("PR57_224_CITIZEN_STATE","walking","calls"),
+                  ("PR57_224_CITIZEN_STATE","walking","actorMs"),
+                  ("PR57_224_CITIZEN_STATE","stationary-due","calls"),
+                  ("PR57_224_CITIZEN_STATE","stationary-due","actorMs"),
+                  ("PR57_239_CITIZEN","citizen-routine-total","calls"),
+                  ("PR57_239_CITIZEN","citizen-routine-total","ms"),
+                  ("PR57_239_CITIZEN","seek-food","ms"),
+                  ("PR57_239_CITIZEN","start-journey","ms"),
+                  ("PR57_240_WALK","citizen-arrived","calls"),
+                  ("PR57_240_WALK","citizen-arrived","ms"),
+                  ("PR57_240_WALK_SUM","all","replans"),
+                  ("PR57_241_NESTED","seek-food","ms"),
+                  ("PR57_242_FOOD","all","totalMs"),
+                  ("PR57_242_FOOD","all","visited"),
+                  ("PR57_242_FOOD","all","routes"),
+              )
+              for call,before in focus:
+                  for arm in ("probe1","probe2"):
+                      row=steps[arm][call-1]
+                      print(f"PR57_323_STEP case={case} arm={arm} call={call} citizensMs={row['citizensMs']} vehiclesMs={row['vehiclesMs']} advanceWallMs={row['advanceWallMs']} advanceAllocatedBytes={row['advanceAllocatedBytes']}")
+                      snap=snapshots[arm]
+                      for tag,name,metric in metrics:
+                          value=delta(snap,before,call,tag,name,metric)
+                          assert value>=-0.001,(case,arm,call,tag,name,metric,value)
+                          print(f"PR57_323_DELTA case={case} arm={arm} call={call} name={tag}:{name}:{metric} delta={value:.5f}")
+              print(f"PR57_323_PARITY case={case} checkpointPairs=8/8 controls=2 probes=2")
+          assert pairs==16,pairs
+          print("PR57_323_VERIFIED checkpointPairs=16/16 processes=8 allAdvance2=True noSkippedSlices=True")
+          PY
+      - name: Preserve raw logs and complete checkpoints on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-citizen-spikes-323
+          path: artifacts/citizen-spikes-323/**
+          retention-days: 14

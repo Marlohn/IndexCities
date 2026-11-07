@@ -14,7 +14,7 @@ public sealed partial class CitySimulation
         return trucks.FirstOrDefault(v=>v.Status==VehicleStatus.Outside&&v.ServicePhase==ServicePhase.None&&!v.BrokenDown&&(resource==null||v.Body==BodyFor(resource.Value)));
     }
 
-    RoadNode? ConstructionAccess(Building b)=>State.Roads.Where(r=>!r.Highway&&r.MaintenanceRatio>.05&&_workExteriorConnected.Contains(r.Id)&&r.Position.Distance(b.Door)<=State.Tuning.RoadWidth/2+3).MinBy(r=>r.Position.Distance(b.Door));
+    RoadNode? ConstructionAccess(Building b)=>_pr57BuildingAccessActive?Pr57IndexedBuildingAccess(b):State.Roads.Where(r=>!r.Highway&&r.MaintenanceRatio>.05&&_workExteriorConnected.Contains(r.Id)&&r.Position.Distance(b.Door)<=State.Tuning.RoadWidth/2+3).MinBy(r=>r.Position.Distance(b.Door));
 
     bool ConstructionTrip(Vehicle v)=>v.ConstructionAccess||v.Machine!=PavingMachine.None||v.ShipmentId is {} id&&State.Shipments.Any(s=>s.Id==id&&s.Purpose is ShipmentPurpose.Construction or ShipmentPurpose.Maintenance);
 }

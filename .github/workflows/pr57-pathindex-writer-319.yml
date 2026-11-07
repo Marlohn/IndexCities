@@ -1,0 +1,121 @@
+name: 'PR57 #319 derived Moving writer publication'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-pathindex-writer-319.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  pathindex-writer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build and existing tests
+        run: |
+          set -euo pipefail
+          dotnet build scripts/pr57-economy-review-294/Pr57EconomyReview294.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic REAL and GRID saves
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Fresh-process ABBA controls and writer probes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/pathindex-319
+          for case in real14hREAL gridARTIFICIAL; do
+            input="artifacts/input/${case}-control/checkpoint-0.json"
+            test -s "$input"
+            calls=100; start=76
+            if [[ "$case" == gridARTIFICIAL ]]; then calls=50; start=26; fi
+            for arm in control1 sparse1 path1 path2 sparse2 control2; do
+              output="artifacts/pathindex-319/${case}-${arm}"
+              mkdir -p "$output"
+              cmd=(dotnet run --no-build -c Release --project scripts/pr57-economy-review-294/Pr57EconomyReview294.csproj -- "$input" "$case" control "$calls" "$output")
+              case "$arm" in
+                path*) PR57_317_SPARSE_WRITERS=1 PR57_317_START="$start" PR57_319_PATH_INDEX=1 "${cmd[@]}" > "artifacts/pathindex-319/${case}-${arm}.log" 2>&1 ;;
+                sparse*) PR57_317_SPARSE_WRITERS=1 PR57_317_START="$start" "${cmd[@]}" > "artifacts/pathindex-319/${case}-${arm}.log" 2>&1 ;;
+                control*) "${cmd[@]}" > "artifacts/pathindex-319/${case}-${arm}.log" 2>&1 ;;
+              esac
+            done
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, statistics
+          root=Path('artifacts/pathindex-319')
+          def fields(line):
+              return dict(re.findall(r'([A-Za-z][A-Za-z0-9]*)=([^\s]+)',line))
+          pairs=0
+          for case,calls,start in [('real14hREAL',100,76),('gridARTIFICIAL',50,26)]:
+              rows={}
+              for arm in ('control1','sparse1','path1','path2','sparse2','control2'):
+                  lines=(root/f'{case}-{arm}.log').read_text().splitlines()
+                  final=[fields(x) for x in lines if x.startswith('PR57_294_FINAL ')]
+                  assert len(final)==1,(case,arm,'final')
+                  f=final[0]
+                  assert f['mode']=='control' and f['cadence']=='Advance2'
+                  assert f['noCache']=='True' and f['noSkippedSlices']=='True'
+                  assert f['exactCheckpoints']=='True' and int(f['calls'])==calls
+                  writers=[fields(x) for x in lines if x.startswith('PR57_317_WRITERS ')]
+                  summaries=[fields(x) for x in lines if x.startswith('PR57_319_SUMMARY ')]
+                  transitions=[fields(x) for x in lines if x.startswith('PR57_319_PATH ')]
+                  expected=calls-start+1 if arm.startswith(('sparse','path')) else 0
+                  assert len(writers)==expected,(case,arm,'writers',len(writers))
+                  assert len(summaries)==(calls-start+1 if arm.startswith('path') else 0),(case,arm,'summaries')
+                  assert len(transitions)==(sum(int(x['gateDeltas']) for x in summaries)),(case,arm,'transitionCount')
+                  rows[arm]=(f,writers,summaries,transitions)
+              for suffix in ('1','2'):
+                  for candidate in ('sparse','path'):
+                      for step in (0,20,calls//2,calls):
+                          a=(root/f'{case}-control{suffix}'/f'checkpoint-{step}.json').read_bytes()
+                          b=(root/f'{case}-{candidate}{suffix}'/f'checkpoint-{step}.json').read_bytes()
+                          assert a==b,(case,suffix,candidate,step)
+                          pairs+=1
+              for suffix in ('1','2'):
+                  base=sum(int(x['individualGateDeltas']) for x in rows[f'sparse{suffix}'][1])
+                  path=sum(int(x['individualGateDeltas']) for x in rows[f'path{suffix}'][1])
+                  path_events=sum(int(x['gateDeltas']) for x in rows[f'path{suffix}'][2])
+                  assert path>=base and path-base==path_events,(case,suffix,base,path,path_events)
+                  if case=='real14hREAL':
+                      assert base==8 and path==9 and path_events==1,(case,suffix,base,path,path_events)
+                      assert any(x['call']=='76' and x['citizen']=='1490' and x['node']=='804'
+                                 and x['beforeMoving']=='True' and x['afterMoving']=='False'
+                                 and x['beforeGate']=='True' and x['afterGate']=='False'
+                                 for x in rows[f'path{suffix}'][3]),(case,suffix,'missing-real-counterexample')
+                  print(f'PR57_319_EVENTS case={case} suffix={suffix} sparseGateDeltas={base} pathGateDeltas={path} pathIndexGateDeltas={path_events} scope=PARTIAL_WRITERS')
+              for metric in ('wallMs','cpuMs','allocatedBytes'):
+                  values={arm:statistics.mean(float(rows[f'{arm}{i}'][0][metric]) for i in ('1','2'))
+                          for arm in ('control','sparse','path')}
+                  print(f'PR57_319_COST case={case} metric={metric} control={values["control"]:.3f} sparse={values["sparse"]:.3f} path={values["path"]:.3f} observationalOnly=True')
+          assert pairs==32,pairs
+          print('PR57_319_VERIFIED checkpointPairs=32/32 processes=12 allAdvance2=True noSkippedSlices=True')
+          PY
+      - name: Preserve logs and checkpoints on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-pathindex-319
+          path: artifacts/pathindex-319/**
+          retention-days: 14

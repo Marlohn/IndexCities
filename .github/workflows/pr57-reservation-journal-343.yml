@@ -1,0 +1,69 @@
+name: 'PR57 #343 REAL reservation hooks versus read-boundary oracle'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-reservation-journal-343.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  reservation-journal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+      PR57_VEHICLE_COST_PROBE: '1'
+      PR57_246_JUNCTION_RETURNS: '1'
+      PR57_343_RESERVATION_JOURNAL: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Inject checkout-only reservation hook/read-boundary observer
+        run: python3 scripts/pr57-343-inject.py
+      - name: Build authentic six-hour replay
+        run: dotnet build scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj -c Release
+      - name: Restore pinned authentic REAL 14h checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Replay 10800 individual Advance(2) calls and audit reservation writers
+        shell: bash
+        run: |
+          set -euo pipefail
+          input="artifacts/input/real14hREAL-control/checkpoint-0.json"
+          test -s "$input"
+          mkdir -p artifacts/reservation343
+          dotnet run --no-build -c Release \
+            --project scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj \
+            -- "$input" artifacts/reservation343 > artifacts/reservation343/full.log
+          grep -E 'PR57_343_(SUMMARY|SITE)|PR57_337_(HOUR|FINAL)' \
+            artifacts/reservation343/full.log > artifacts/reservation343/census.log
+          test "$(grep -c '^PR57_337_HOUR ' artifacts/reservation343/census.log)" -eq 6
+          grep -q 'parity=IDENTICAL' artifacts/reservation343/census.log
+          grep '^PR57_343_SUMMARY ' artifacts/reservation343/census.log | tail -n 1 | grep -q 'started=True'
+          grep '^PR57_343_SUMMARY ' artifacts/reservation343/census.log | tail -n 1
+          grep '^PR57_343_SITE ' artifacts/reservation343/census.log | tail -n 20 || true
+          grep '^PR57_337_FINAL ' artifacts/reservation343/census.log
+      - name: Upload raw trace and canonical checkpoint
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-reservation-journal-343
+          path: artifacts/reservation343/**
+          if-no-files-found: warn

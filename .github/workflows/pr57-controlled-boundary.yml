@@ -1,0 +1,82 @@
+name: PR57 isolated controlled boundary real-save adversarial
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths:
+      - .github/workflows/pr57-controlled-boundary.yml
+      - tests/IndexCities.Simulation.Tests/Pr57ControlledBoundaryAdversarial.cs
+      - tests/IndexCities.Simulation.Tests/Pr57VehicleOrderSensitivity.cs
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  boundary-adversarial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compile isolated C# adapter against actual simulation
+        run: dotnet build tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release
+      - name: Restore authentic active-construction economy
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-growth
+          run-id: 40250545171
+          github-token: ${{ github.token }}
+          path: artifacts/real-growth
+      - name: Restore authentic congested economy
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-legal-workplaces-8d
+          run-id: 40169101306
+          github-token: ${{ github.token }}
+          path: artifacts/real-congested
+      - name: Adversarial aliases, controlled commands, maintenance costs and exact engine checkpoints
+        shell: bash
+        run: |
+          set -euo pipefail
+          works="$(find artifacts/real-growth -type f -path '*/growth/checkpoint-0.json' -print -quit)"
+          queue="$(find artifacts/real-congested -type f -path '*/pr57-jobs-20/checkpoint-11.json' -print -quit)"
+          test -s "$works" && test -s "$queue"
+          mkdir -p artifacts/controlled-boundary
+          for case in works-real congested-real; do
+            if [[ "$case" == works-real ]]; then save="$works"; else save="$queue"; fi
+            echo "PR57_BOUNDARY_INPUT case=$case sha256=$(sha256sum "$save" | cut -d' ' -f1)"
+            PR57_CONTROLLED_CASE="$case" PR57_CONTROLLED_SAVE_PATH="$PWD/$save" \
+              dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
+                -c Release --no-build --filter FullyQualifiedName~Pr57ControlledBoundaryAdversarial \
+                --logger "console;verbosity=detailed" | tee "artifacts/controlled-boundary/$case.log"
+            grep -F "PR57_CONTROLLED_BOUNDARY case=$case" "artifacts/controlled-boundary/$case.log"
+            grep -F "byteEqual=True aliasIsolation=True" "artifacts/controlled-boundary/$case.log"
+          done
+      - name: Adversarial ordered vehicle list on authentic saves
+        shell: bash
+        run: |
+          set -euo pipefail
+          works="$(find artifacts/real-growth -type f -path '*/growth/checkpoint-0.json' -print -quit)"
+          queue="$(find artifacts/real-congested -type f -path '*/pr57-jobs-20/checkpoint-11.json' -print -quit)"
+          test -s "$works" && test -s "$queue"
+          mkdir -p artifacts/controlled-boundary
+          for case in works-real congested-real; do
+            if [[ "$case" == works-real ]]; then save="$works"; else save="$queue"; fi
+            PR57_CONTROLLED_CASE="$case" PR57_CONTROLLED_SAVE_PATH="$PWD/$save" \
+              dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
+                -c Release --no-build --filter FullyQualifiedName~Pr57VehicleOrderSensitivity \
+                --logger "console;verbosity=detailed" | tee "artifacts/controlled-boundary/order-$case.log"
+            grep -F "PR57_ORDER_REAL case=$case" "artifacts/controlled-boundary/order-$case.log"
+            grep -F "PR57_ADJACENT_REAL case=$case" "artifacts/controlled-boundary/order-$case.log"
+          done
+      - name: Preserve test and maintenance logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-controlled-boundary
+          path: artifacts/controlled-boundary/**
+          retention-days: 14

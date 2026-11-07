@@ -1,0 +1,105 @@
+name: 'PR57 #290 physical sub-slice and citizen transition census'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths:
+      - .github/workflows/pr57-transitions-290.yml
+      - scripts/pr57-transitions-290/**
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  transition-census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build observer and full simulation tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build scripts/pr57-transitions-290/Pr57Transitions290.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic #259 checkpoint saves
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Fresh-process control and observer with exact full checkpoints
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/transitions-290
+          for case in worksREAL queueREAL real14hREAL gridARTIFICIAL; do
+            input="artifacts/input/${case}-control/checkpoint-0.json"
+            test -s "$input"
+            calls=100
+            if [[ "$case" == gridARTIFICIAL ]]; then calls=50; fi
+            order="control probe"
+            if [[ "$case" == queueREAL || "$case" == gridARTIFICIAL ]]; then order="probe control"; fi
+            for mode in $order; do
+              output="artifacts/transitions-290/${case}-${mode}"
+              mkdir -p "$output"
+              probe=0
+              if [[ "$mode" == probe ]]; then probe=1; fi
+              PR57_290_TRANSITIONS="$probe" dotnet run --no-build -c Release \
+                --project scripts/pr57-transitions-290/Pr57Transitions290.csproj -- \
+                "$input" "$case" "$mode" "$calls" "$output" \
+                > "artifacts/transitions-290/${case}-${mode}.log" 2>&1
+            done
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json,re
+          root=Path('artifacts/transitions-290')
+          for case in ('worksREAL','queueREAL','real14hREAL','gridARTIFICIAL'):
+              calls=50 if case=='gridARTIFICIAL' else 100
+              for at in sorted({0,20,calls//2,calls}):
+                  a=(root/f'{case}-control'/f'checkpoint-{at}.json').read_bytes()
+                  b=(root/f'{case}-probe'/f'checkpoint-{at}.json').read_bytes()
+                  assert a==b,(case,at,'FULL_JSON_MISMATCH')
+                  json.loads(a)
+                  print('PR57_290_PARITY',case,at,'sha256='+hashlib.sha256(a).hexdigest(),flush=True)
+              for mode in ('control','probe'):
+                  log=(root/f'{case}-{mode}.log').read_text()
+                  assert f'PR57_290_FINAL case={case} mode={mode} calls={calls}' in log
+                  assert log.count('PR57_290_WINDOW ')==3,(case,mode,'windows')
+                  assert log.count('PR57_290_PHASE ')==39,(case,mode,'phases')
+                  assert log.count('PR57_290_CHECKPOINT ')==4,(case,mode,'checkpoints')
+                  if mode=='probe':
+                      assert log.count('PR57_290_STAGE ')==12,(case,mode,'stages')
+                      final=[line for line in log.splitlines() if line.startswith('PR57_290_STAGE calls='+str(calls)+' ')]
+                      assert len(final)==3
+                      physical=next(x for x in final if 'stage=physical ' in x)
+                      intervals=int(re.search(r'intervals=(\d+)',physical).group(1))
+                      assert intervals>=calls,(case,intervals,calls)
+                  else:
+                      assert 'PR57_290_STAGE ' not in log
+              print('PR57_290_COMPLETE',case,'processes=2','callsPerArm='+str(calls),
+                    'cadence=Advance2','fullJsonParity=True',flush=True)
+          PY
+      - name: Preserve raw logs and complete checkpoints even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-transitions-290
+          path: artifacts/transitions-290/**
+          retention-days: 14

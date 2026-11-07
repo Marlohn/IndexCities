@@ -1,0 +1,66 @@
+name: 'PR57 #338 authentic REAL junction return stability census'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-junction-returns-338.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  junction-returns:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+      PR57_VEHICLE_COST_PROBE: '1'
+      PR57_246_JUNCTION_RETURNS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build existing six-hour observational replay
+        run: dotnet build scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj -c Release
+      - name: Restore pinned authentic REAL 14h checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Replay every Advance(2) and capture actual junction returns
+        shell: bash
+        run: |
+          set -euo pipefail
+          input="artifacts/input/real14hREAL-control/checkpoint-0.json"
+          test -s "$input"
+          mkdir -p artifacts/returns338
+          dotnet run --no-build -c Release \
+            --project scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj \
+            -- "$input" artifacts/returns338 \
+            > artifacts/returns338/full.log
+          grep -E 'PR57_246_(RETURNS|COHORT|PREFERENCE)|PR57_337_(GROUP|HOUR|FINAL)' artifacts/returns338/full.log \
+            > artifacts/returns338/census.log
+          test "$(grep -c '^PR57_337_HOUR ' artifacts/returns338/census.log)" -eq 6
+          test "$(grep -c '^PR57_337_FINAL ' artifacts/returns338/census.log)" -eq 1
+          grep '^PR57_246_RETURNS ' artifacts/returns338/census.log | tail -n 1
+          grep '^PR57_246_COHORT ' artifacts/returns338/census.log | tail -n 2
+          grep '^PR57_337_FINAL ' artifacts/returns338/census.log
+      - name: Upload raw evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-junction-returns-338
+          path: artifacts/returns338/**
+          if-no-files-found: warn

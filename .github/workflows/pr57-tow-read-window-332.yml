@@ -1,0 +1,31 @@
+name: 'PR57 #332 selected reader window between tow publications'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-tow-read-window-332.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  selected-reader-window:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      # Six instance-reader entry sites; static Penetration is intentionally excluded.
+      - name: Inject bounded observational reader-window probe and artificial tests
+        run: python3 scripts/pr57-332-inject.py
+      # The previous run passed the window assertion; its positive control now
+      # selects the three-argument BodyOnWay overload explicitly.
+      # The preceding run passed 522/522 non-#332 tests; this rerun isolates
+      # the two opt-in cases instead of repeating an already-green baseline.
+      - name: Fresh testhost for both adversarial selected-reader checks
+        run: |
+          set -euo pipefail
+          PR57_330_ACTOR_LOCAL=1 PR57_332_TOW_WINDOW=1 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --filter 'FullyQualifiedName~Pr57Physical332Tests' --logger 'console;verbosity=normal'

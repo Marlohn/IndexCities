@@ -13,7 +13,7 @@ public sealed partial class CitySimulation
     (double Heading,Point To,double Distance)? TurnClearance(Vehicle v,double approachHeading,double distance,LaneAccess lane)
     {
         var turned=v.Heading;
-        if(ParkedMachineOverlap(v,v.Position,approachHeading)||!ParkedMachineOverlap(v,v.Position,turned))return null;
+        if(ParkedMachineOverlap(v,v.Position,approachHeading)||!ParkedMachineOverlap(v,v.Position,turned)){Pr57S5TurnObserve(v,distance,false);return null;}
         var turn=Math.IEEERemainder(turned-approachHeading,2*Math.PI);
         // Part 0 drives on straight ahead; each further eighth of the turn
         // counts only if it and all before it are clear of every body.
@@ -32,8 +32,9 @@ public sealed partial class CitySimulation
             var ahead=v.Position+direction*reach;
             // Leaving the lane line, the body is checked against every body.
             v.Heading=heading;var safe=Math.Min(SafeSiteTravel(v,ahead,reach,true),SafeSiteTravel(v,ahead,reach));v.Heading=turned;
-            if(safe>=.05)return(heading,v.Position.MoveTowards(ahead,safe),safe);
+            if(safe>=.05){Pr57S5TurnObserve(v,distance,true);return(heading,v.Position.MoveTowards(ahead,safe),safe);}
         }
+        Pr57S5TurnObserve(v,distance,false);
         return null;
     }
 
@@ -46,12 +47,14 @@ public sealed partial class CitySimulation
     static double Ahead(Vehicle from,Vehicle other)=>(other.Position.X-from.Position.X)*Math.Sin(from.Heading)+(other.Position.Z-from.Position.Z)*Math.Cos(from.Heading);
     double ClearOfCrossingAhead(Vehicle v,Point target,double distance)
     {
+        // A zero-length segment cannot intersect a crossing during movement.
+        if(Pr57ZeroSiteSkip&&distance==0){Pr57S5CrossingObserve(v,distance,0,null);return 0;}
         // Junction admission already orders claim holders; they are left to it.
         // One turning out of the junction ahead still has its body across this
         // lane before this vehicle reaches admission, so it counts here.
-        if(v.IntersectionClaim!=null)return distance;
+        if(v.IntersectionClaim!=null){Pr57S5CrossingObserve(v,distance,distance,null);return distance;}
         var across=State.Vehicles.Where(o=>o.Id!=v.Id&&InMap(o.Position)&&LaneTraffic(o)&&Ahead(v,o)>0&&(o.IntersectionClaim!=null||Math.Abs(Math.Cos(o.Heading-v.Heading))<=.5)&&o.Position.Distance(v.Position)<=distance+12).ToList();
-        if(across.Count==0)return distance;
+        if(across.Count==0){Pr57S5CrossingObserve(v,distance,distance,across);return distance;}
         // At an informal crossing both can be ahead of one another. Preserve
         // the existing ID winner, but never let it pass through the other body.
         // Only its extra safety margin is waived, and only when the ENTIRE
@@ -66,6 +69,7 @@ public sealed partial class CitySimulation
             !(other.IntersectionClaim==null&&Ahead(other,v)>0&&v.Id<other.Id&&SideGap(other));
         var safe=0.0;
         while(safe<distance-.000001){var next=Math.Min(distance,safe+.5);var at=v.Position.MoveTowards(target,next);if(across.Any(o=>Blocked(at,o)))break;safe=next;}
+        Pr57S5CrossingObserve(v,distance,safe,across);
         return safe;
     }
 }

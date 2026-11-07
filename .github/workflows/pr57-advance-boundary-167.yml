@@ -1,0 +1,131 @@
+name: "PR57 #167 public Advance(2) boundary versus complete Step(2)"
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-advance-boundary-167.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  boundary-census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build and test unchanged simulation
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic economic and congestion checkpoints
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-growth
+          run-id: 40250545171
+          github-token: ${{ github.token }}
+          path: artifacts/works
+      - name: Restore authentic congestion checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-legal-workplaces-8d
+          run-id: 40169101306
+          github-token: ${{ github.token }}
+          path: artifacts/queue
+      - name: Restore artificial GRID with 1111 living
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-host-scale-curve
+          run-id: 40258405557
+          github-token: ${{ github.token }}
+          path: artifacts/grid
+      - name: Measure boundary without altering Step or host cadence
+        shell: bash
+        run: |
+          set -euo pipefail
+          works="$(find artifacts/works -type f -path '*/growth/checkpoint-0.json' -print -quit)"
+          queue="$(find artifacts/queue -type f -path '*/pr57-jobs-20/checkpoint-10.json' -print -quit)"
+          grid="artifacts/grid/grid18-0/checkpoint-1.json"
+          for source in "$works" "$queue" "$grid"; do
+            test -s "$source"
+            echo "PR57_167_SOURCE $(sha256sum "$source")"
+          done
+          mkdir -p artifacts/boundary-167
+          for case in worksREAL queueREAL gridARTIFICIAL; do
+            fixture=cycle; window=3600; windows=1; source="$works"
+            if [[ "$case" == queueREAL ]]; then source="$queue"; window=600; windows=2; fi
+            if [[ "$case" == gridARTIFICIAL ]]; then source="$grid"; fixture=grid; window=200; windows=3; fi
+            for mode in plain probe; do
+              enabled=0
+              if [[ "$mode" == probe ]]; then enabled=1; fi
+              output="$PWD/artifacts/boundary-167/$case-$mode"
+              mkdir -p "$output"
+              echo "PR57_167_RUN case=$case mode=$mode hostQuantum=2 boundaryProbe=$enabled"
+              PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_GRID_DIAG=1 \
+              PR57_SAVE_CAPTURE_DIR="$output" PR57_ADVANCE_BOUNDARY_PROBE="$enabled" \
+              PR57_SITE_OWNER_ROSTER=1 PR57_BUILDING_WORK_ACCESS=1 \
+              PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ORDER_SHIPMENT_INDEX=1 \
+              PR57_PROGRESS_SHIPMENT_LOOKUP=1 PR57_SINGLE_CREW_ASSIGNMENT=1 \
+              PR57_SAFE_SITE_BUFFER=1 PR57_PHASE_ALLOC_PROBE=0 PR57_HOT_TIMING=0 \
+                timeout 180s dotnet run --no-build -c Release \
+                --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                scale "$fixture" --seed=42 --warmup=0 --days="$windows" \
+                --window="$window" --cap=300 --resume="$source" | tee "$output.log"
+            done
+          done
+      - name: Verify complete causal parity and attribute boundary work
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import pathlib,re
+          root=pathlib.Path('artifacts/boundary-167')
+          def metric(line,key):
+              m=re.search(r'\b'+re.escape(key)+r'=([-0-9.]+)',line)
+              assert m,(key,line)
+              return float(m.group(1))
+          for case,windows,horizon in (('worksREAL',1,3600),('queueREAL',2,1200),('gridARTIFICIAL',3,600)):
+              logs={mode:(root/f'{case}-{mode}.log').read_text() for mode in ('plain','probe')}
+              for mode,log in logs.items():
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,mode,'save/invariants')
+                  rows=[x for x in log.splitlines() if x.startswith('WINDOW ')]
+                  assert len(rows)==windows,(case,mode,'windows',len(rows))
+                  for i in range(windows+1):
+                      a=(root/f'{case}-plain'/f'checkpoint-{i}.json').read_bytes()
+                      b=(root/f'{case}-{mode}'/f'checkpoint-{i}.json').read_bytes()
+                      assert a==b,(case,mode,i,'full state divergence')
+              assert 'PR57_ADVANCE_BOUNDARY ' not in logs['plain'],case
+              observations=[x for x in logs['probe'].splitlines() if x.startswith('PR57_ADVANCE_BOUNDARY ')]
+              assert observations,(case,'missing probe')
+              last=observations[-1]
+              calls=metric(last,'calls')
+              assert calls==horizon/2,(case,'incomplete probe',calls,horizon)
+              advance=metric(last,'advanceMs')
+              step=metric(last,'stepMs')
+              outside=metric(last,'outsideStepMs')
+              assert 0<=outside<=advance and abs((advance-step)-outside)<0.003,(case,last)
+              plainRows=[x for x in logs['plain'].splitlines() if x.startswith('WINDOW ')]
+              plainWall=sum(metric(x,'wall') for x in plainRows)
+              activity={k:metric(plainRows[-1],k) for k in ('alive','travelling','openWorks','history')}
+              if case=='worksREAL': assert activity['openWorks']>0,activity
+              if case=='gridARTIFICIAL': assert activity['alive']>=1000 and activity['travelling']>=200,activity
+              print('PR57_167_RESULT',case,'horizon',horizon,'activity',activity,
+                    'plainWallSeconds',round(plainWall,3),'plainRate',round(horizon/plainWall,2),
+                    'probeAdvanceMs',advance,'probeStepMs',step,'outsideStepMs',outside,
+                    'outsideStepPct',round(100*outside/advance,2),
+                    'outsideStepAllocMB',metric(last,'outsideStepAllocMB'),
+                    'checkpoints',windows+1)
+          PY
+      - name: Retain logs and complete checkpoints
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-advance-boundary-167
+          path: artifacts/boundary-167/**
+          retention-days: 14

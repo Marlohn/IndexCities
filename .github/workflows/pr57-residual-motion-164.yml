@@ -1,0 +1,136 @@
+name: PR57 #164 residual movement cost by vehicle outcome and hot region
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-residual-motion-164.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  residual-motion:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build and test current composed flags
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          PR57_SITE_OWNER_ROSTER=1 PR57_BUILDING_WORK_ACCESS=1 \
+          PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ORDER_SHIPMENT_INDEX=1 \
+          PR57_PROGRESS_SHIPMENT_LOOKUP=1 PR57_SINGLE_CREW_ASSIGNMENT=1 \
+          PR57_SAFE_SITE_BUFFER=1 \
+            dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic works checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-growth
+          run-id: 40250545171
+          github-token: ${{ github.token }}
+          path: artifacts/works
+      - name: Restore authentic congested checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-legal-workplaces-8d
+          run-id: 40169101306
+          github-token: ${{ github.token }}
+          path: artifacts/queue
+      - name: Restore ARTIFICIAL 1111 living grid
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-host-scale-curve
+          run-id: 40258405557
+          github-token: ${{ github.token }}
+          path: artifacts/grid
+      - name: Profile moving and blocked physical attempts against plain replay
+        shell: bash
+        run: |
+          set -euo pipefail
+          works="$(find artifacts/works -type f -path '*/growth/checkpoint-0.json' -print -quit)"
+          queue="$(find artifacts/queue -type f -path '*/pr57-jobs-20/checkpoint-10.json' -print -quit)"
+          grid="artifacts/grid/grid18-0/checkpoint-1.json"
+          for source in "$works" "$queue" "$grid"; do test -s "$source"; echo "PR57_164_SOURCE $(sha256sum "$source")"; done
+          mkdir -p artifacts/residual-164
+          for case in worksREAL queueREAL gridARTIFICIAL; do
+            fixture=cycle; window=3600; windows=1; source="$works"
+            if [[ "$case" == queueREAL ]]; then source="$queue"; window=600; windows=2; fi
+            if [[ "$case" == gridARTIFICIAL ]]; then source="$grid"; fixture=grid; window=200; windows=3; fi
+            for mode in plain probe; do
+              output="$PWD/artifacts/residual-164/$case-$mode"
+              mkdir -p "$output"
+              command=scale; enabled=0
+              if [[ "$mode" == probe ]]; then command=profile; enabled=1; fi
+              echo "PR57_164_RUN case=$case mode=$mode horizon=$((window*windows)) Advance2=True"
+              PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_GRID_DIAG=1 \
+              PR57_SAVE_CAPTURE_DIR="$output" PR57_HOT_TIMING="$enabled" \
+              PR57_VEHICLE_COST_PROBE="$enabled" \
+              PR57_SITE_OWNER_ROSTER=1 PR57_BUILDING_WORK_ACCESS=1 \
+              PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ORDER_SHIPMENT_INDEX=1 \
+              PR57_PROGRESS_SHIPMENT_LOOKUP=1 PR57_SINGLE_CREW_ASSIGNMENT=1 \
+              PR57_SAFE_SITE_BUFFER=1 PR57_LANE_READWRITE_PROBE=0 \
+              PR57_BLOCK_DEP_PROBE=0 PR57_GRAPH_PROBE=0 PR57_PHASE_ALLOC_PROBE=0 \
+                timeout 180s dotnet run --no-build -c Release \
+                --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                "$command" "$fixture" --seed=42 --warmup=0 --days="$windows" \
+                --window="$window" --cap=300 --resume="$source" | tee "$output.log"
+            done
+          done
+      - name: Verify full state parity and report residual cost fractions
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import pathlib,re
+          root=pathlib.Path("artifacts/residual-164")
+          def metric(line,key):
+              m=re.search(r"\b"+re.escape(key)+r"=([-0-9.]+)",line)
+              assert m,(key,line)
+              return float(m.group(1))
+          for case,windows,horizon in (("worksREAL",1,3600),("queueREAL",2,1200),("gridARTIFICIAL",3,600)):
+              logs={mode:(root/f"{case}-{mode}.log").read_text() for mode in ("plain","probe")}
+              for mode,log in logs.items():
+                  assert "INVARIANTS OK" in log and "SAVE " in log,(case,mode,"save/invariants")
+                  rows=[x for x in log.splitlines() if x.startswith("WINDOW ")]
+                  assert len(rows)==windows,(case,mode,"windows",len(rows))
+                  for i in range(windows+1):
+                      a=(root/f"{case}-plain"/f"checkpoint-{i}.json").read_bytes()
+                      b=(root/f"{case}-{mode}"/f"checkpoint-{i}.json").read_bytes()
+                      assert a==b,(case,mode,i,"full state divergence")
+              assert "PR57_VEHICLE_COST " not in logs["plain"]
+              assert "PR57_HOT_TIMING " not in logs["plain"]
+              costs=[x for x in logs["probe"].splitlines() if x.startswith("PR57_VEHICLE_COST ")]
+              hot=[x for x in logs["probe"].splitlines() if x.startswith("PR57_HOT_TIMING ")]
+              assert costs and hot,(case,"missing cost/hot observation",len(costs),len(hot))
+              lastSlice=max(metric(x,"slices") for x in costs)
+              groups={}
+              for x in costs:
+                  if metric(x,"slices")==lastSlice:
+                      name=re.search(r"\bgroup=([^ ]+)",x).group(1)
+                      groups[name]={k:metric(x,k) for k in ("calls","ms","allocMB","sharePct")}
+              assert len(groups)==8,(case,groups)
+              latest=hot[-1]
+              times={k:metric(latest,k) for k in ("siteMs","crossingMs","turnMs","junctionMs","turnWayMs","bodyOnWayMs")}
+              rows=[x for x in logs["plain"].splitlines() if x.startswith("WINDOW ")]
+              totals={k:sum(metric(x,k) for x in rows) for k in ("wall","cpu","allocMB")}
+              last=rows[-1]
+              activity={k:metric(last,k) for k in ("alive","pop","travelling","openWorks","history","ledger")}
+              if case=="gridARTIFICIAL": assert activity["alive"]>=1000 and activity["travelling"]>=200
+              if case=="worksREAL": assert activity["openWorks"]>0
+              print("PR57_164_RESULT",case,"horizon",horizon,"plain",totals,"activity",activity,
+                    "rate",round(horizon/totals["wall"],2),"checkpoints",windows+1,
+                    "profiledSlices",lastSlice,"vehicleGroups",groups,"hotTimesMs",times)
+          PY
+      - name: Preserve complete checkpoints and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-residual-164
+          path: artifacts/residual-164/**
+          retention-days: 14

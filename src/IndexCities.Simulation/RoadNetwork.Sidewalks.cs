@@ -34,10 +34,13 @@ public sealed partial class CitySimulation
 
     WalkSurface Surface()
     {
+        var p324start=Pr57324Enabled?System.Diagnostics.Stopwatch.GetTimestamp():0L;
+        if(Pr57324Enabled)_pr57324SurfaceCalls++;
         // Paint and lots change without a new road graph; buildings never move.
         long signature=State.Roads.Count;foreach(var r in State.Roads)if(r.Crosswalk)signature=signature*31+r.Id;
         foreach(var b in State.Buildings)if(!b.Removed)signature=signature*17+b.Id;
-        if(_walkSurface is {} cached&&cached.Signature==signature)return cached;
+        if(_walkSurface is {} cached&&cached.Signature==signature){if(Pr57324Enabled)_pr57324SurfaceTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-p324start;return cached;}
+        if(Pr57324Enabled)_pr57324SurfaceBuilds++;
         var s=new WalkSurface{Signature=signature};var half=State.Tuning.RoadWidth/2;var step=State.Tuning.RoadStep;
         var asphalt=State.Tuning.RoadWidth*(6.5/10.5);var corner=half-asphalt/2;var side=half-.7;
         void Add(int kind,Point c,double width,double depth)
@@ -90,6 +93,7 @@ public sealed partial class CitySimulation
             var index=s.Vertices.Count;Vertex(first,road.Id,index+1);Vertex(second,road.Id,index);
         }
         s.Edges=new List<(int,double)>?[s.Vertices.Count];
+        if(Pr57324Enabled)_pr57324SurfaceTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-p324start;
         return _walkSurface=s;
     }
 
@@ -166,12 +170,16 @@ public sealed partial class CitySimulation
     // link stays clear of building footprints, as sidewalks do.
     List<Point> SidewalkWalk(Point start,RoadNode from,Point door,RoadNode access)
     {
+        var p324start=Pr57324Enabled?System.Diagnostics.Stopwatch.GetTimestamp():0L;
+        if(Pr57324Enabled)_pr57324SidewalkCalls++;
+        try{
         var s=Surface();if(OffCrossing(s,door))return [];
         var offHighway=OffCrossing(s,start);if(offHighway&&Nearby(s,start,start).Any(i=>i.Kind==WalkSurface.Urban&&s.Boxes[i.Kind][i.Index].Has(start)))return [];
         bool Usable(int road)=>_roads.TryGetValue(road,out var node)&&(node.Highway||node.MaintenanceRatio>.05);
-        bool Legal(Point a,Point b,bool recovering=false)=>UnpaintedLength(s,a,b,ref recovering)<=UnpaintedTolerance&&!Blocked(s,a,b);
+        bool Legal(Point a,Point b,bool recovering=false){if(Pr57324Enabled)_pr57324SidewalkLegalChecks++;return UnpaintedLength(s,a,b,ref recovering)<=UnpaintedTolerance&&!Blocked(s,a,b);}
         var goalLinks=new Dictionary<int,double>();
         foreach(var road in access.Neighbours.Append(access.Id))if(s.RoadVertices.TryGetValue(road,out var own))foreach(var v in own){var p=s.Vertices[v].Position;if(p.Distance(door)<=State.Tuning.RoadWidth&&Usable(road)&&Legal(p,door))goalLinks[v]=p.Distance(door);}
+        if(Pr57324Enabled)_pr57324SidewalkGoalLinks+=goalLinks.Count;
         if(goalLinks.Count==0)return [];
         var count=s.Vertices.Count;var startId=count;var goalId=count+1;var across=State.Tuning.RoadWidth-1.4+.1;
         var cost=new Dictionary<int,double>{{startId,0}};var parent=new Dictionary<int,int>();var closed=new HashSet<int>();
@@ -186,6 +194,7 @@ public sealed partial class CitySimulation
                 yield break;
             }
             if(s.Edges[id]==null){
+                if(Pr57324Enabled)_pr57324SidewalkEdgesBuilt++;
                 var (position,road,partner)=s.Vertices[id];var edges=new List<(int,double)>();
                 // Across its own cell a walk may reach the opposite curb: legal only
                 // through paint, or on the highway where an urban road meets it.
@@ -196,7 +205,9 @@ public sealed partial class CitySimulation
             if(goalLinks.TryGetValue(id,out var last))yield return (goalId,last);
         }
         while(queue.TryDequeue(out var id,out _)){
+            if(Pr57324Enabled)_pr57324SidewalkPops++;
             if(id==goalId)break;if(!closed.Add(id))continue;
+            if(Pr57324Enabled)_pr57324SidewalkExpanded++;
             foreach(var (to,step) in Next(id)){
                 if(to<count&&!Usable(s.Vertices[to].Road))continue;
                 var total=cost[id]+step;if(cost.TryGetValue(to,out var known)&&known<=total)continue;
@@ -219,5 +230,6 @@ public sealed partial class CitySimulation
             result.Add(points[i]);
         }
         return result;
+        }finally{if(Pr57324Enabled)_pr57324SidewalkTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-p324start;}
     }
 }

@@ -1,0 +1,132 @@
+name: 'PR57 #456 REAL canonical pose and blocker prefix census'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-pose-prefix-456.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Inject observational instrumentation only into disposable checkout
+        run: python3 scripts/pr57-456-inject.py
+      - name: Build and run complete regression suite
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic REAL congestion checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/real
+      - name: A canonical and B observational, individual Advance(2), full JSON parity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY_CENSUS' | tee artifacts/pr57-456-console.log
+          import hashlib,json,os,re,subprocess
+          from pathlib import Path
+          from decimal import Decimal
+          root=Path('artifacts/pose-prefix-456')
+          root.mkdir(parents=True,exist_ok=True)
+          source=Path('artifacts/real/real14hREAL-control/checkpoint-0.json')
+          assert source.is_file()
+          original=source.read_bytes()
+          assert hashlib.sha256(original).hexdigest()=='779c144f2d6b2b64ece079f5740bf8a0a473a47286ca40d8b5f6b9dd61ab616f'
+          state=json.loads(original,parse_float=Decimal)
+          assert sum(bool(c['Alive']) for c in state['Citizens'])==121
+          assert len(state['Vehicles'])==98
+          finals={};summaries={}
+          for arm in ('A','B'):
+              dest=root/arm
+              dest.mkdir(parents=True,exist_ok=True)
+              env=os.environ.copy()
+              env.update(PR57_HOST_QUANTUM='1',PR57_AB_CHECKPOINT='1',
+                         PR57_GRID_DIAG='0',PR57_270_MANOEUVRE_SCRATCH='0',
+                         PR57_272_PENETRATION_MEMO='0',PR57_PENETRATION_STACK_AXES='0',
+                         PR57_456_POSE_PREFIX='1' if arm=='B' else '0',
+                         PR57_SAVE_CAPTURE_DIR=str(dest.resolve()))
+              cmd=['dotnet','run','--no-build','-c','Release',
+                   '--project','src/IndexCities.Headless/IndexCities.Headless.csproj',
+                   '--','scale','cycle','--seed=42','--warmup=0',
+                   '--days=1','--window=3600','--cap=3900',
+                   f'--resume={source.resolve()}']
+              with (dest/'full.log').open('w') as out:
+                  subprocess.run(cmd,env=env,stdout=out,stderr=subprocess.STDOUT,
+                                 check=True,timeout=400)
+              log=(dest/'full.log').read_text()
+              assert 'INVARIANTS OK' in log and 'SAVE ' in log
+              assert (dest/'checkpoint-0.json').read_bytes()==original
+              finals[arm]=(dest/'checkpoint-1.json').read_bytes()
+              windows=[x for x in log.splitlines() if x.startswith('WINDOW ')]
+              assert len(windows)==1 and re.search(r'\bseconds=3600\b',windows[0])
+              summaries[arm]={'window':windows[0]}
+              rows=[x for x in log.splitlines() if x.startswith('PR57_456_SUM ')]
+              if arm=='A':
+                  assert not rows
+              else:
+                  assert len(rows)==12618,len(rows)
+                  d={k:int(v) for k,v in re.findall(r'([A-Za-z][A-Za-z0-9]*)=([0-9]+)',rows[-1])}
+                  assert d['slices']==len(rows)
+                  assert d['calls']==d['bodyCalls']==d['hits']+d['misses']
+                  assert d['turnPoses']==d['bodyPoses']
+                  assert d['visits']>=d['eligible']>=d['hits']
+                  assert d['near']>=d['hits'] and d['calls']>0
+                  assert d['hitPrefixVisits']<=d['visits']
+                  assert d['hitPrefixEligible']<=d['eligible']
+                  assert d['hitPrefixNear']<=d['near']
+                  assert d['maxPoses']>0 and d['maxVisits']>0
+                  blocker_text=re.search(r'\bblockers=([^ ]*)',rows[-1]).group(1)
+                  blockers={int(x.split(':')[0]):int(x.split(':')[1])
+                            for x in blocker_text.split(';') if x}
+                  assert sum(blockers.values())==d['hits']
+                  summaries[arm]['census']=d
+                  summaries[arm]['blockers']=blockers
+                  summaries[arm]['lastRawCensus']=rows[-1]
+          assert finals['A']==finals['B'],'FULL_JSON_MISMATCH'
+          final_sha=hashlib.sha256(finals['A']).hexdigest()
+          summary={'experiment':456,'allAdvance2':True,
+                   'scope':'REAL 14h, canonical CanTurnNow preference pose/prefix, no caching',
+                   'baseline':'PR57 composed flags, stack axes off',
+                   'callsAdvance2PerArm':1800,'living':121,'vehicles':98,
+                   'inputSha256':hashlib.sha256(original).hexdigest(),
+                   'finalSha256':final_sha,'fullJsonParity':True,'arms':summaries,
+                   'limitations':'Intrusive observation, no acceleration or causal closure; first-blocker canonical order preserved.'}
+          (root/'summary.json').write_text(json.dumps(summary,indent=2,sort_keys=True))
+          print('PR57_456_CENSUS',json.dumps(summaries['B']['census'],sort_keys=True),flush=True)
+          print('PR57_456_BLOCKERS',json.dumps(summaries['B']['blockers'],sort_keys=True),flush=True)
+          print('PR57_456_PARITY',final_sha,flush=True)
+          PY_CENSUS
+      - name: Preserve original logs, full checkpoints and summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-pose-prefix-456
+          path: |
+            artifacts/pose-prefix-456
+            artifacts/pr57-456-console.log
+          retention-days: 14
+          if-no-files-found: warn

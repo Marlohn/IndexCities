@@ -1,0 +1,101 @@
+name: 'PR57 #289 authentic append writers versus phase costs'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths:
+      - .github/workflows/pr57-writers-289.yml
+      - scripts/pr57-writers-289/**
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  append-census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build observational runner and full simulation tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build scripts/pr57-writers-289/Pr57Writers289.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic #259 checkpoints
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Fresh-process observational arms with exact full checkpoint parity
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/writers-289
+          for case in worksREAL queueREAL real14hREAL gridARTIFICIAL; do
+            input="artifacts/input/${case}-control/checkpoint-0.json"
+            test -s "$input"
+            calls=100
+            if [[ "$case" == gridARTIFICIAL ]]; then calls=50; fi
+            order="control probe"
+            if [[ "$case" == queueREAL || "$case" == gridARTIFICIAL ]]; then order="probe control"; fi
+            for mode in $order; do
+              output="artifacts/writers-289/${case}-${mode}"
+              mkdir -p "$output"
+              probe=0
+              if [[ "$mode" == probe ]]; then probe=1; fi
+              PR57_289_WRITERS="$probe" dotnet run --no-build -c Release \
+                --project scripts/pr57-writers-289/Pr57Writers289.csproj -- \
+                "$input" "$case" "$mode" "$calls" "$output" \
+                > "artifacts/writers-289/${case}-${mode}.log" 2>&1
+            done
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json
+          root=Path('artifacts/writers-289')
+          for case in ('worksREAL','queueREAL','real14hREAL','gridARTIFICIAL'):
+              calls=50 if case=='gridARTIFICIAL' else 100
+              control=root/f'{case}-control'
+              probe=root/f'{case}-probe'
+              for checkpoint in sorted({0,20,calls//2,calls}):
+                  a=(control/f'checkpoint-{checkpoint}.json').read_bytes()
+                  b=(probe/f'checkpoint-{checkpoint}.json').read_bytes()
+                  assert a==b,(case,checkpoint,'FULL_JSON_MISMATCH')
+                  json.loads(a)
+                  print('PR57_289_PARITY',case,checkpoint,'sha256='+hashlib.sha256(a).hexdigest(),flush=True)
+              for mode in ('control','probe'):
+                  log=(root/f'{case}-{mode}.log').read_text()
+                  assert f'PR57_289_FINAL case={case} mode={mode} calls={calls}' in log
+                  assert log.count('PR57_289_WINDOW ')==3,(case,mode,'windows')
+                  assert log.count('PR57_289_PHASE ')==39,(case,mode,'phases')
+                  if mode=='probe':
+                      assert 'PR57_289_WRITER_SUMMARY ' in log
+                  else:
+                      assert 'PR57_289_WRITER_SUMMARY ' not in log
+              print('PR57_289_COMPLETE',case,'processes=2','callsPerArm='+str(calls),
+                    'cadence=Advance2','fullJsonParity=True',flush=True)
+          PY
+      - name: Preserve original logs and complete checkpoints even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-writers-289
+          path: artifacts/writers-289/**
+          retention-days: 14

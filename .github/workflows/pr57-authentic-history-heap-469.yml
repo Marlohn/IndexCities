@@ -1,0 +1,236 @@
+name: 'PR57 #469 authentic .NET history retained-heap and JSON cost'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-authentic-history-heap-469.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  authentic-history:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build and test unchanged simulation
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Simulation/IndexCities.Simulation.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Download authentic #465 REAL midnight checkpoints
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-midnight-history-465
+          run-id: 41089003924
+          github-token: ${{ github.token }}
+          path: artifacts/input465
+      - name: Validate original inputs and build isolated probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/history-heap-469/probe
+          python3 - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          p=Path('artifacts/input465/20h.json')
+          q=Path('artifacts/input465/A-mid/checkpoint-1.json')
+          assert p.exists() and q.exists(), 'authentic checkpoint missing'
+          assert hashlib.sha256(p.read_bytes()).hexdigest()=='e92293faf61a6ea2aab7dd0fdac83c14bd4668f611a126c701dc6705587bb9fa'
+          assert p.read_bytes()==Path('artifacts/input465/B-pre/checkpoint-0.json').read_bytes()
+          assert q.read_bytes()==Path('artifacts/input465/B-mid/checkpoint-1.json').read_bytes()
+          a,b=json.loads(p.read_bytes()),json.loads(q.read_bytes())
+          assert a['Now']=='2026-01-07T20:00:00' and b['Now']=='2026-01-08T00:00:00'
+          assert sum(c['Alive'] for c in a['Citizens'])==121
+          assert len(a['Vehicles'])==98
+          for label,raw in [('20h',p.read_bytes()),('midnight',q.read_bytes())]:
+              print('PR57_469_INPUT',label,len(raw),hashlib.sha256(raw).hexdigest())
+          PY
+          cat > artifacts/history-heap-469/probe/probe.csproj <<'XML'
+          <Project Sdk="Microsoft.NET.Sdk">
+            <PropertyGroup>
+              <OutputType>Exe</OutputType>
+              <TargetFramework>net8.0</TargetFramework>
+              <ImplicitUsings>enable</ImplicitUsings>
+              <Nullable>enable</Nullable>
+              <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+            </PropertyGroup>
+            <ItemGroup>
+              <ProjectReference Include="../../../src/IndexCities.Simulation/IndexCities.Simulation.csproj" />
+            </ItemGroup>
+          </Project>
+          XML
+          cat > artifacts/history-heap-469/probe/Program.cs <<'CS'
+          using System;
+          using System.Diagnostics;
+          using System.IO;
+          using System.Linq;
+          using System.Runtime.CompilerServices;
+          using System.Text.Json;
+          using System.Text.Json.Serialization;
+          using IndexCities.Simulation;
+
+          internal static class Program
+          {
+              private static readonly JsonSerializerOptions Options = new()
+              {
+                  WriteIndented = false,
+                  Converters = { new JsonStringEnumConverter() }
+              };
+
+              private static void Collect()
+              {
+                  GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+                  GC.WaitForPendingFinalizers();
+                  GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+              }
+
+              [MethodImpl(MethodImplOptions.NoInlining)]
+              private static CitySimulation LoadExact(string path, out object metrics)
+              {
+                  var raw = File.ReadAllText(path);
+                  var startCpu = Process.GetCurrentProcess().TotalProcessorTime;
+                  var allocated = GC.GetTotalAllocatedBytes(true);
+                  var watch = Stopwatch.StartNew();
+                  var sim = CitySimulation.FromJson(raw);
+                  var loadMs = watch.Elapsed.TotalMilliseconds;
+                  var loadCpuMs = (Process.GetCurrentProcess().TotalProcessorTime-startCpu).TotalMilliseconds;
+                  var loadBytes = GC.GetTotalAllocatedBytes(true)-allocated;
+                  var exact = sim.SaveToJson();
+                  if (!String.Equals(exact, raw, StringComparison.Ordinal))
+                      throw new InvalidDataException("canonical save/load byte parity failed");
+                  metrics = new { loadMs, loadCpuMs, loadBytes, exactRoundtrip = true,
+                      saveBytes = System.Text.Encoding.UTF8.GetByteCount(raw) };
+                  return sim;
+              }
+
+              [MethodImpl(MethodImplOptions.NoInlining)]
+              private static void DropHistory(CitySimulation sim)
+              {
+                  foreach (var c in sim.State.Citizens) c.History = new();
+              }
+
+              [MethodImpl(MethodImplOptions.NoInlining)]
+              private static void DropLedger(CitySimulation sim) => sim.State.Ledger = new();
+
+              [MethodImpl(MethodImplOptions.NoInlining)]
+              private static void DropEvents(CitySimulation sim) => sim.State.CityEvents = new();
+
+              private static object MeasureSerializer(CitySimulation sim)
+              {
+                  var wall = new double[7];
+                  var cpu = new double[7];
+                  var alloc = new long[7];
+                  var bytes = new int[7];
+                  for (var i = 0; i < wall.Length; i++)
+                  {
+                      var beforeCpu = Process.GetCurrentProcess().TotalProcessorTime;
+                      var beforeBytes = GC.GetTotalAllocatedBytes(true);
+                      var watch = Stopwatch.StartNew();
+                      var serialized = JsonSerializer.Serialize(sim.State, Options);
+                      wall[i] = watch.Elapsed.TotalMilliseconds;
+                      cpu[i] = (Process.GetCurrentProcess().TotalProcessorTime-beforeCpu).TotalMilliseconds;
+                      alloc[i] = GC.GetTotalAllocatedBytes(true)-beforeBytes;
+                      bytes[i] = System.Text.Encoding.UTF8.GetByteCount(serialized);
+                  }
+                  // First iteration is warm-up; no claim that GC/JIT noise is eliminated.
+                  return new { jsonBytes = bytes[^1], wallMedianMs = wall.Skip(1).Order().ElementAt(3),
+                      cpuMedianMs = cpu.Skip(1).Order().ElementAt(3),
+                      allocMedianBytes = alloc.Skip(1).Order().ElementAt(3),
+                      wallSamplesMs = wall.Skip(1).ToArray(), allocSamplesBytes = alloc.Skip(1).ToArray() };
+              }
+
+              public static int Main(string[] args)
+              {
+                  if (args.Length != 3) throw new ArgumentException("label source repeat");
+                  var label = args[0];
+                  var path = args[1];
+                  var repeat = int.Parse(args[2]);
+                  Collect();
+                  var heapBefore = GC.GetTotalMemory(true);
+                  var sim = LoadExact(path, out var load);
+                  var citizenCount = sim.State.Citizens.Count;
+                  var alive = sim.State.Citizens.Count(c => c.Alive);
+                  var historyCount = sim.State.Citizens.Sum(c => c.History.Count);
+                  var ledgerCount = sim.State.Ledger.Count;
+                  var eventsCount = sim.State.CityEvents.Count;
+                  var fullSerialization = MeasureSerializer(sim);
+                  Collect();
+                  var heapFull = GC.GetTotalMemory(true);
+                  DropHistory(sim);
+                  Collect();
+                  var heapWithoutHistory = GC.GetTotalMemory(true);
+                  var noHistorySerialization = MeasureSerializer(sim);
+                  DropLedger(sim);
+                  Collect();
+                  var heapWithoutLedger = GC.GetTotalMemory(true);
+                  var noLedgerSerialization = MeasureSerializer(sim);
+                  DropEvents(sim);
+                  Collect();
+                  var heapWithoutEvents = GC.GetTotalMemory(true);
+                  var noEventsSerialization = MeasureSerializer(sim);
+                  Console.WriteLine("PR57_469_NET_HEAP " + JsonSerializer.Serialize(new {
+                      label, repeat, citizenCount, alive, historyCount, ledgerCount, eventsCount,
+                      heapBefore, heapFull, heapWithoutHistory, heapWithoutLedger, heapWithoutEvents,
+                      historyReclaimedBytes = heapFull-heapWithoutHistory,
+                      ledgerReclaimedBytes = heapWithoutHistory-heapWithoutLedger,
+                      eventsReclaimedBytes = heapWithoutLedger-heapWithoutEvents,
+                      load, fullSerialization, noHistorySerialization, noLedgerSerialization, noEventsSerialization,
+                      caveat = "destructive isolated counterfactual; NOT valid simulation state or speedup"
+                  }));
+                  GC.KeepAlive(sim);
+                  return 0;
+              }
+          }
+          CS
+          dotnet build artifacts/history-heap-469/probe/probe.csproj -c Release
+      - name: Run fresh-process paired REAL memory and serializer census
+        shell: bash
+        run: |
+          set -euo pipefail
+          : > artifacts/history-heap-469/probe-results.log
+          for pair in '20h 1' 'midnight 1' 'midnight 2' '20h 2' '20h 3' 'midnight 3' 'midnight 4' '20h 4'; do
+            read -r label repeat <<< "$pair"
+            if [[ "$label" == "20h" ]]; then source=artifacts/input465/20h.json
+            else source=artifacts/input465/A-mid/checkpoint-1.json; fi
+            dotnet run --no-build -c Release --project artifacts/history-heap-469/probe/probe.csproj -- "$label" "$source" "$repeat" | tee -a artifacts/history-heap-469/probe-results.log
+          done
+          python3 - <<'PY'
+          import json,statistics
+          from pathlib import Path
+          lines=Path('artifacts/history-heap-469/probe-results.log').read_text().splitlines()
+          data=[json.loads(x.split('PR57_469_NET_HEAP ',1)[1]) for x in lines if 'PR57_469_NET_HEAP ' in x]
+          assert len(data)==8, 'missing fresh-process samples'
+          for label in ('20h','midnight'):
+              rows=[x for x in data if x['label']==label]
+              assert len(rows)==4 and sorted(x['repeat'] for x in rows)==[1,2,3,4]
+              assert len({(x['citizenCount'],x['historyCount'],x['ledgerCount'],x['eventsCount']) for x in rows})==1
+              for x in rows:
+                  assert x['load']['exactRoundtrip']
+                  assert x['fullSerialization']['jsonBytes']>x['noHistorySerialization']['jsonBytes']>x['noLedgerSerialization']['jsonBytes']
+              print('PR57_469_SUMMARY',json.dumps({
+                  'label':label, 'citizens':rows[0]['citizenCount'], 'history':rows[0]['historyCount'],
+                  'ledger':rows[0]['ledgerCount'],
+                  'historyHeapReclaimedMedian':statistics.median(x['historyReclaimedBytes'] for x in rows),
+                  'ledgerHeapReclaimedMedian':statistics.median(x['ledgerReclaimedBytes'] for x in rows),
+                  'historyJsonBytes':rows[0]['fullSerialization']['jsonBytes']-rows[0]['noHistorySerialization']['jsonBytes'],
+                  'ledgerJsonBytes':rows[0]['noHistorySerialization']['jsonBytes']-rows[0]['noLedgerSerialization']['jsonBytes'],
+                  'fullSerializeWallMedianMs':statistics.median(x['fullSerialization']['wallMedianMs'] for x in rows),
+                  'strippedSerializeWallMedianMs':statistics.median(x['noLedgerSerialization']['wallMedianMs'] for x in rows),
+              },sort_keys=True))
+          print('PR57_469_AUTHENTIC_NET_HEAP_PASS')
+          PY
+      - name: Preserve probe source and raw measurements
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-authentic-history-heap-469
+          path: artifacts/history-heap-469
+          retention-days: 14
+          if-no-files-found: warn
