@@ -99,6 +99,8 @@ public sealed partial class CitySimulation
     // this invocation. ToLookup preserves each project's shipment iteration order.
     // Rebuilt every call: no cache survives state changes or dispatches.
     static readonly bool Pr57DispatchShipmentLookup=Environment.GetEnvironmentVariable("PR57_DISPATCH_SHIPMENT_LOOKUP")=="1";
+    // Opt-in PR57 trace cap per simulation instance; never serialized.
+    int _pr57SelectorTraceCount;
     // PR57 POC: per-dispatch live membership index; only append new shipments, read live cargo/status.
     static readonly bool Pr57OrderShipmentIndexEnabled=Environment.GetEnvironmentVariable("PR57_ORDER_SHIPMENT_INDEX")=="1";
     // PR57 isolated per-ProgressConstruction shipment membership; never survives Advance(2).
@@ -301,7 +303,18 @@ public sealed partial class CitySimulation
                 var receiver=IsPaving(p)&&k==ResourceKind.Asphalt?AsphaltReceiver(p):null;
                 if(receiver!=null&&inflight>.001)continue;
                 if(IsPaving(p)&&k==ResourceKind.Asphalt&&receiver==null){p.Cause=WorkCause.AwaitingPavingMachines;continue;}
-                var vehicle=AvailableTruck(k);if(vehicle==null){p.Cause=WorkCause.AwaitingExternalTruck;break;}
+                // PR57 isolated selector cost probe. Observe actual dispatch calls, not a
+                // synthetic selector loop. The opt-in path does not change selection.
+                var pr57TraceSelector=Environment.GetEnvironmentVariable("PR57_TRACE_SHIPMENT_1040")=="1"
+                    &&_pr57SelectorTraceCount<32;
+                var pr57SelectorStarted=pr57TraceSelector?System.Diagnostics.Stopwatch.GetTimestamp():0L;
+                var vehicle=AvailableTruck(k);
+                if(pr57TraceSelector)
+                {
+                    _pr57SelectorTraceCount++;
+                    Console.WriteLine($"PR57_SELECTOR_COST call={_pr57SelectorTraceCount} project={p.Id} kind={k} vehicles={State.Vehicles.Count} chosen={vehicle?.Id.ToString()??"none"} elapsedTicks={System.Diagnostics.Stopwatch.GetTimestamp()-pr57SelectorStarted} frequency={System.Diagnostics.Stopwatch.Frequency} scope=real-dispatch-selector-only");
+                }
+                if(vehicle==null){p.Cause=WorkCause.AwaitingExternalTruck;break;}
                 var amount=Math.Min(missing,vehicle.CargoCapacity);
                 var local=p.LocalReserved.GetValueOrDefault(k);var depot=State.Buildings.FirstOrDefault(b=>b.Kind==BuildingKind.WorksDepot&&b.Completed&&!b.Removed&&!b.OperationClosed&&HasExteriorAccess(b));
                 var source=local>.001&&depot!=null?depot:null;if(source!=null)amount=Math.Min(amount,local);
