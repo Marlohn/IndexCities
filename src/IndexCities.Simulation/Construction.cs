@@ -316,6 +316,10 @@ public sealed partial class CitySimulation
                 if(!ProjectPay(p,price+fee,p.IsMaintenance?MaintenanceCategory(p):"Obras e materiais",(source==null?"Importação de ":"Transporte municipal de ")+k+"; produto, frete e combustível")){p.Cause=WorkCause.RemainingCommitmentInsufficient;continue;}
                 if(source==null)State.OutsideStock.AddAmount(k,-(amount));State.OutsideStock.AddAmount(ResourceKind.Fuel,-(fuel));vehicle.AddFuel(fuel);
                 var shipment=new Shipment{Id=Id(),Purpose=p.IsMaintenance?ShipmentPurpose.Maintenance:ShipmentPurpose.Construction,ProjectId=p.Id,SourceBuildingId=source?.Id,DestinationBuildingId=p.BuildingId,Destination=access.Position,VehicleId=vehicle.Id,Cargo=new(){{k,amount}},PricePaid=Money(price+fee),PickedUp=source==null};
+                // PR57 opt-in observation only: trace the actual causal dispatch, not a pre-Step selector proxy.
+                // No scheduling, ordering, accounting or simulation state is changed.
+                if(shipment.Id==1040&&Environment.GetEnvironmentVariable("PR57_TRACE_SHIPMENT_1040")=="1")
+                    Console.WriteLine($"PR57_DISPATCH_ACTUAL project={p.Id} kind={k} truck={vehicle.Id} fuelBefore={vehicle.Fuel-fuel:R} fuelAdded={fuel:R} freight={fee} materialPrice={price} shipmentPrice={shipment.PricePaid} source={source?.Id.ToString()??"outside"}");
                 shipment.ReceivingMachineId=receiver?.Id;State.Shipments.Add(shipment);vehicle.ConstructionAccess=true;vehicle.ShipmentId=shipment.Id;vehicle.Cargo=source==null?new(shipment.Cargo):new();vehicle.Route=route;vehicle.RouteIndex=0;vehicle.DockPosition=DockAt(source==null?access:Access(source)!,source??BuildingById(p.BuildingId),vehicle.CrewAboard);vehicle.Status=VehicleStatus.Travelling;vehicle.Position=State.Entry;vehicle.Cause="Entrega para obra "+p.Id;
                 // A crew truck waits at the site. Bringing the crew with the
                 // first load can occupy the only free truck while more loads
