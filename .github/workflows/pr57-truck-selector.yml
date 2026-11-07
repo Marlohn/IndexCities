@@ -44,6 +44,7 @@ jobs:
           test -s "$congested"
           for case in works-real congested-real; do
             if [[ "$case" == works-real ]]; then input="$works"; else input="$congested"; fi
+            input="$(realpath "$input")"
             echo "PR57_SELECTOR_INPUT case=$case sha256=$(sha256sum "$input" | cut -d' ' -f1)"
             PR57_CONTROLLED_SAVE_PATH="$input" PR57_CONTROLLED_CASE="$case" \
               dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
