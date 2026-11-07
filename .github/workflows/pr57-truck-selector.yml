@@ -48,5 +48,5 @@ jobs:
             PR57_CONTROLLED_SAVE_PATH="$input" PR57_CONTROLLED_CASE="$case" \
               dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
               -c Release --filter FullyQualifiedName~Real_save_available_truck_selector_order_probe \
-              --logger 'console;verbosity=detailed' --no-restore
+              --logger 'console;verbosity=detailed'
           done
