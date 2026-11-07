@@ -50,6 +50,6 @@ jobs:
             echo "PR57_SELECTOR_INPUT case=$case sha256=$(sha256sum "$input" | cut -d' ' -f1)"
             PR57_TRACE_SHIPMENT_1040=1 PR57_CONTROLLED_SAVE_PATH="$input" PR57_CONTROLLED_CASE="$case" \
               dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
-              -c Release --filter FullyQualifiedName~Real_save_available_truck_selector_order_probe \
+              -c Release --filter 'FullyQualifiedName~Real_save_available_truck_selector_order_probe|FullyQualifiedName~Real_save_shipment_1040_creation_order_probe' \
               --logger 'console;verbosity=detailed'
           done
