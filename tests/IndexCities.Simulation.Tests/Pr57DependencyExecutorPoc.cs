@@ -94,7 +94,7 @@ public sealed class Pr57DependencyExecutorPoc
         Assert.NotEmpty(baseline.State.Buildings);
         var id = baseline.State.Citizens[0].Id;
         var buildingId = baseline.State.Buildings[0].Id;
-        long elapsedTicks = 0, allocated = 0;
+        long elapsedTicks = 0, allocated = 0, baselineTicks = 0, baselineAllocated = 0;
         for (var step = 1; step <= 120; step++)
         {
             if (step == 31)
@@ -115,7 +115,11 @@ public sealed class Pr57DependencyExecutorPoc
             candidate.Advance();
             elapsedTicks += Stopwatch.GetTimestamp() - start;
             allocated += GC.GetAllocatedBytesForCurrentThread() - bytes;
+            var baselineStart = Stopwatch.GetTimestamp();
+            var baselineBytes = GC.GetAllocatedBytesForCurrentThread();
             baseline.Advance(2);
+            baselineTicks += Stopwatch.GetTimestamp() - baselineStart;
+            baselineAllocated += GC.GetAllocatedBytesForCurrentThread() - baselineBytes;
             if (step % 10 != 0) continue;
             var expected = baseline.SaveToJson();
             var actual = candidate.Snapshot();
@@ -130,6 +134,7 @@ public sealed class Pr57DependencyExecutorPoc
         Assert.Equal(120, cost.FallbackSteps);
         Assert.Equal(3, cost.ExternalInvalidations);
         Assert.Equal(3, cost.Commands);
+        Console.WriteLine($"PR57_DEPENDENCY_INTEGRATED_COST case={label} steps=120 baselineWallMs={baselineTicks * 1000.0 / Stopwatch.Frequency:F3} alternateWallMs={elapsedTicks * 1000.0 / Stopwatch.Frequency:F3} baselineAllocBytes={baselineAllocated} alternateAllocBytes={allocated} speedup={((double)baselineTicks / Math.Max(1, elapsedTicks)):F5} avoidedSteps={cost.AvoidedSteps} comparison=paired-in-process-not-ABBA-no-speedup-claim");
         Console.WriteLine($"PR57_DEPENDENCY_M0 case={label} requiredSteps={cost.RequiredSteps} avoidedSteps={cost.AvoidedSteps} invalidations={cost.ExternalInvalidations} fallbackSteps={cost.FallbackSteps} commands={cost.Commands} alternateWallMs={elapsedTicks * 1000.0 / Stopwatch.Frequency:F3} alternateAllocBytes={allocated} byteEqual=True accelerationClaim=False internalWriterCoverage=False");
     }
 }
