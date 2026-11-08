@@ -106,20 +106,20 @@ jobs:
                       "artifacts/controlled-boundary/checkpoints-$case-$trial.txt"
             done
             python3 - "$case" <<'PY'
-import pathlib, re, statistics, sys
-case = sys.argv[1]
-base = pathlib.Path("artifacts/controlled-boundary")
-times = {}
-for trial in ("baseline-1", "alternate-1", "alternate-2", "baseline-2"):
-    log = (base / f"structural-{case}-{trial}.log").read_text()
-    matches = re.findall(r"PR57_STRUCTURAL_COST[^\\n]*advanceWallMs=([0-9.]+)", log)
-    if len(matches) != 1:
-        raise SystemExit(f"Expected exactly one integrated cost for {case} {trial}, got {len(matches)}")
-    times[trial] = float(matches[0])
-baseline = statistics.mean(times[k] for k in ("baseline-1", "baseline-2"))
-alternate = statistics.mean(times[k] for k in ("alternate-1", "alternate-2"))
-print(f"PR57_STRUCTURAL_ABBA case={case} baselineMeanMs={baseline:.3f} alternateMeanMs={alternate:.3f} speedup={baseline/alternate:.5f} trials={times} samples=2-per-mode-not-statistically-robust")
-PY
+            import pathlib, re, statistics, sys
+            case = sys.argv[1]
+            base = pathlib.Path("artifacts/controlled-boundary")
+            times = {}
+            for trial in ("baseline-1", "alternate-1", "alternate-2", "baseline-2"):
+                log = (base / f"structural-{case}-{trial}.log").read_text()
+                matches = re.findall(r"PR57_STRUCTURAL_COST[^\n]*advanceWallMs=([0-9.]+)", log)
+                if len(matches) != 1:
+                    raise SystemExit(f"Expected exactly one integrated cost for {case} {trial}, got {len(matches)}")
+                times[trial] = float(matches[0])
+            baseline = statistics.mean(times[k] for k in ("baseline-1", "baseline-2"))
+            alternate = statistics.mean(times[k] for k in ("alternate-1", "alternate-2"))
+            print(f"PR57_STRUCTURAL_ABBA case={case} baselineMeanMs={baseline:.3f} alternateMeanMs={alternate:.3f} speedup={baseline/alternate:.5f} trials={times} samples=2-per-mode-not-statistically-robust")
+            PY
             echo "PR57_STRUCTURAL_PARITY case=$case fullJsonHashEqual=True steps=120"
           done
       - name: Preserve test and maintenance logs
