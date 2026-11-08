@@ -6,6 +6,7 @@ on:
       - .github/workflows/pr57-controlled-boundary.yml
       - tests/IndexCities.Simulation.Tests/Pr57ControlledBoundaryAdversarial.cs
       - tests/IndexCities.Simulation.Tests/Pr57VehicleOrderSensitivity.cs
+      - tests/IndexCities.Simulation.Tests/Pr57StructuralIntegratedGate.cs
   workflow_dispatch:
 permissions:
   contents: read
@@ -72,6 +73,34 @@ jobs:
                 --logger "console;verbosity=detailed" | tee "artifacts/controlled-boundary/order-$case.log"
             grep -F "PR57_ORDER_REAL case=$case" "artifacts/controlled-boundary/order-$case.log"
             grep -F "PR57_ADJACENT_REAL case=$case" "artifacts/controlled-boundary/order-$case.log"
+          done
+      - name: Integrated alternate mode checkpoint parity on both authentic saves
+        shell: bash
+        run: |
+          set -euo pipefail
+          works="$(find artifacts/real-growth -type f -path '*/growth/checkpoint-0.json' -print -quit)"
+          queue="$(find artifacts/real-congested -type f -path '*/pr57-jobs-20/checkpoint-11.json' -print -quit)"
+          test -s "$works" && test -s "$queue"
+          for case in works-real congested-real; do
+            if [[ "$case" == works-real ]]; then save="$works"; else save="$queue"; fi
+            for mode in baseline alternate; do
+              if [[ "$mode" == alternate ]]; then
+                export PR57_LIVING_ROSTER=1 PR57_CITIZEN_AGENDA=1
+              else
+                unset PR57_LIVING_ROSTER PR57_CITIZEN_AGENDA || true
+              fi
+              PR57_STRUCTURAL_SAVE_PATH="$PWD/$save" PR57_STRUCTURAL_CASE="$case" PR57_STRUCTURAL_MODE="$mode" \
+                dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
+                  -c Release --no-build --filter FullyQualifiedName~Pr57StructuralIntegratedGate \
+                  --logger "console;verbosity=detailed" | tee "artifacts/controlled-boundary/structural-$case-$mode.log"
+              grep 'PR57_STRUCTURAL_CHECKPOINT' "artifacts/controlled-boundary/structural-$case-$mode.log" \
+                | sed -E 's/^[^P]*PR57_STRUCTURAL_CHECKPOINT/PR57_STRUCTURAL_CHECKPOINT/' \
+                > "artifacts/controlled-boundary/checkpoints-$case-$mode.txt"
+              test "$(wc -l < "artifacts/controlled-boundary/checkpoints-$case-$mode.txt")" -eq 12
+            done
+            diff -u "artifacts/controlled-boundary/checkpoints-$case-baseline.txt" \
+                    "artifacts/controlled-boundary/checkpoints-$case-alternate.txt"
+            echo "PR57_STRUCTURAL_PARITY case=$case fullJsonHashEqual=True steps=120"
           done
       - name: Preserve test and maintenance logs
         if: always()
