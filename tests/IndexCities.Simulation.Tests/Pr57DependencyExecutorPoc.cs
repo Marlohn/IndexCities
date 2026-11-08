@@ -12,7 +12,7 @@ namespace IndexCities.Simulation.Tests;
 public sealed class Pr57DependencyExecutorPoc
 {
     private enum Domain { CitizenNeeds, BuildingEconomy, PhysicalMovement, Construction }
-    private readonly record struct Command(Domain Domain, int EntityId, long Value);
+    private readonly record struct Command(Domain Domain, int EntityId, long Value, decimal Money = 0);
     private readonly record struct ExecutionCost(long RequiredSteps, long AvoidedSteps,
         long ExternalInvalidations, long FallbackSteps, long Commands);
 
@@ -32,7 +32,19 @@ public sealed class Pr57DependencyExecutorPoc
             _dirty = true;
         }
 
-        // The only supported external edit in M0 is an explicit command.
+        public void SubmitPrice(int id, decimal price)
+        {
+            _pending.Enqueue(new Command(Domain.BuildingEconomy, id, 0, price));
+            _dirty = true;
+        }
+
+        public void SubmitFoodStock(int id, long units)
+        {
+            _pending.Enqueue(new Command(Domain.Construction, id, units));
+            _dirty = true;
+        }
+
+        // M0 supports only three explicit external edits. No aliases escape.
         // No mutable engine aliases are ever returned.
         public void Advance()
         {
@@ -43,6 +55,14 @@ public sealed class Pr57DependencyExecutorPoc
                     case Domain.CitizenNeeds:
                         _engine.State.Citizens.Single(c => c.Id == command.EntityId)
                             .HungerMicroseconds = command.Value;
+                        break;
+                    case Domain.BuildingEconomy:
+                        _engine.State.Buildings.Single(b => b.Id == command.EntityId)
+                            .SalePrice = command.Money;
+                        break;
+                    case Domain.Construction:
+                        _engine.State.Buildings.Single(b => b.Id == command.EntityId)
+                            .Stock.Units[ResourceKind.Food] = command.Value;
                         break;
                     default: throw new NotSupportedException("Uncertified external mutation");
                 }
@@ -73,6 +93,7 @@ public sealed class Pr57DependencyExecutorPoc
         Assert.NotEmpty(baseline.State.Vehicles);
         Assert.NotEmpty(baseline.State.Buildings);
         var id = baseline.State.Citizens[0].Id;
+        var buildingId = baseline.State.Buildings[0].Id;
         long elapsedTicks = 0, allocated = 0;
         for (var step = 1; step <= 120; step++)
         {
@@ -81,6 +102,13 @@ public sealed class Pr57DependencyExecutorPoc
                 var hunger = baseline.State.Citizens[0].HungerMicroseconds + 1;
                 baseline.State.Citizens[0].HungerMicroseconds = hunger;
                 candidate.SubmitNeeds(id, hunger);
+                var building = baseline.State.Buildings[0];
+                var price = building.SalePrice + .01m;
+                var food = building.Stock.Units.GetValueOrDefault(ResourceKind.Food) + 1;
+                building.SalePrice = price;
+                building.Stock.Units[ResourceKind.Food] = food;
+                candidate.SubmitPrice(buildingId, price);
+                candidate.SubmitFoodStock(buildingId, food);
             }
             var start = Stopwatch.GetTimestamp();
             var bytes = GC.GetAllocatedBytesForCurrentThread();
@@ -100,8 +128,8 @@ public sealed class Pr57DependencyExecutorPoc
         Assert.Equal(120, cost.RequiredSteps);
         Assert.Equal(0, cost.AvoidedSteps);
         Assert.Equal(120, cost.FallbackSteps);
-        Assert.Equal(1, cost.ExternalInvalidations);
-        Assert.Equal(1, cost.Commands);
+        Assert.Equal(3, cost.ExternalInvalidations);
+        Assert.Equal(3, cost.Commands);
         Console.WriteLine($"PR57_DEPENDENCY_M0 case={label} requiredSteps={cost.RequiredSteps} avoidedSteps={cost.AvoidedSteps} invalidations={cost.ExternalInvalidations} fallbackSteps={cost.FallbackSteps} commands={cost.Commands} alternateWallMs={elapsedTicks * 1000.0 / Stopwatch.Frequency:F3} alternateAllocBytes={allocated} byteEqual=True accelerationClaim=False internalWriterCoverage=False");
     }
 }
