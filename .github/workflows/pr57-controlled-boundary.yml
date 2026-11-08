@@ -83,7 +83,10 @@ jobs:
           test -s "$works" && test -s "$queue"
           for case in works-real congested-real; do
             if [[ "$case" == works-real ]]; then save="$works"; else save="$queue"; fi
-            for mode in baseline alternate; do
+            # Fresh dotnet test processes, ABBA ordering, with identical inputs.
+            # This measures the integrated mode rather than a local selector.
+            for trial in baseline-1 alternate-1 alternate-2 baseline-2; do
+              mode="${trial%-*}"
               if [[ "$mode" == alternate ]]; then
                 export PR57_LIVING_ROSTER=1 PR57_CITIZEN_AGENDA=1
               else
@@ -92,14 +95,31 @@ jobs:
               PR57_STRUCTURAL_SAVE_PATH="$PWD/$save" PR57_STRUCTURAL_CASE="$case" PR57_STRUCTURAL_MODE="$mode" \
                 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
                   -c Release --no-build --filter FullyQualifiedName~Pr57StructuralIntegratedGate \
-                  --logger "console;verbosity=detailed" | tee "artifacts/controlled-boundary/structural-$case-$mode.log"
-              grep 'PR57_STRUCTURAL_CHECKPOINT' "artifacts/controlled-boundary/structural-$case-$mode.log" \
+                  --logger "console;verbosity=detailed" | tee "artifacts/controlled-boundary/structural-$case-$trial.log"
+              grep 'PR57_STRUCTURAL_CHECKPOINT' "artifacts/controlled-boundary/structural-$case-$trial.log" \
                 | sed -E 's/^[^P]*PR57_STRUCTURAL_CHECKPOINT/PR57_STRUCTURAL_CHECKPOINT/' \
-                > "artifacts/controlled-boundary/checkpoints-$case-$mode.txt"
-              test "$(wc -l < "artifacts/controlled-boundary/checkpoints-$case-$mode.txt")" -eq 12
+                > "artifacts/controlled-boundary/checkpoints-$case-$trial.txt"
+              test "$(wc -l < "artifacts/controlled-boundary/checkpoints-$case-$trial.txt")" -eq 12
             done
-            diff -u "artifacts/controlled-boundary/checkpoints-$case-baseline.txt" \
-                    "artifacts/controlled-boundary/checkpoints-$case-alternate.txt"
+            for trial in alternate-1 alternate-2 baseline-2; do
+              diff -u "artifacts/controlled-boundary/checkpoints-$case-baseline-1.txt" \
+                      "artifacts/controlled-boundary/checkpoints-$case-$trial.txt"
+            done
+            python3 - "$case" <<'PY'
+import pathlib, re, statistics, sys
+case = sys.argv[1]
+base = pathlib.Path("artifacts/controlled-boundary")
+times = {}
+for trial in ("baseline-1", "alternate-1", "alternate-2", "baseline-2"):
+    log = (base / f"structural-{case}-{trial}.log").read_text()
+    matches = re.findall(r"PR57_STRUCTURAL_COST[^\\n]*advanceWallMs=([0-9.]+)", log)
+    if len(matches) != 1:
+        raise SystemExit(f"Expected exactly one integrated cost for {case} {trial}, got {len(matches)}")
+    times[trial] = float(matches[0])
+baseline = statistics.mean(times[k] for k in ("baseline-1", "baseline-2"))
+alternate = statistics.mean(times[k] for k in ("alternate-1", "alternate-2"))
+print(f"PR57_STRUCTURAL_ABBA case={case} baselineMeanMs={baseline:.3f} alternateMeanMs={alternate:.3f} speedup={baseline/alternate:.5f} trials={times} samples=2-per-mode-not-statistically-robust")
+PY
             echo "PR57_STRUCTURAL_PARITY case=$case fullJsonHashEqual=True steps=120"
           done
       - name: Preserve test and maintenance logs
