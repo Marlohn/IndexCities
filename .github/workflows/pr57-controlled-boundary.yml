@@ -118,7 +118,11 @@ jobs:
                 times[trial] = float(matches[0])
             baseline = statistics.mean(times[k] for k in ("baseline-1", "baseline-2"))
             alternate = statistics.mean(times[k] for k in ("alternate-1", "alternate-2"))
+            target_ms_per_advance = 21600.0 / 1_260_000_000 * 1000
+            baseline_us = baseline * 1000 / 120
+            alternate_us = alternate * 1000 / 120
             print(f"PR57_STRUCTURAL_ABBA case={case} baselineMeanMs={baseline:.3f} alternateMeanMs={alternate:.3f} speedup={baseline/alternate:.5f} trials={times} samples=2-per-mode-not-statistically-robust")
+            print(f"PR57_STRUCTURAL_TARGET_GAP case={case} population=real-save-not-10k baselineUsPerAdvance={baseline_us:.3f} alternateUsPerAdvance={alternate_us:.3f} exploratory10kTargetUs={target_ms_per_advance*1000:.4f} baselineGapRatio={baseline_us/(target_ms_per_advance*1000):.1f} alternateGapRatio={alternate_us/(target_ms_per_advance*1000):.1f} interpretation=reference-only-not-10k-extrapolation")
             PY
             echo "PR57_STRUCTURAL_PARITY case=$case fullJsonHashEqual=True steps=120"
           done
