@@ -26,13 +26,29 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Compile isolated C# adapter against actual simulation
         run: dotnet build tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release
-      - name: Restore authentic active-construction economy
-        uses: actions/download-artifact@v4
-        with:
-          name: integrated-scale-pr57-real-growth
-          run-id: 40250545171
-          github-token: ${{ github.token }}
-          path: artifacts/real-growth
+      # The historical growth artifact expired. Generate a NEW real-engine
+      # scenario instead; never present it as the original saved city.
+      - name: Generate new integrated construction candidate with real simulation
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          mkdir -p artifacts/real-growth/growth
+          PR57_HOST_QUANTUM=1 PR57_SAVE_CAPTURE_DIR="$PWD/artifacts/real-growth/growth" \
+            timeout 360s dotnet run --no-build -c Release \
+              --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+              scale cycle --seed=42 --warmup=0 --days=2 --window=3600 --cap=300 \
+              | tee artifacts/real-growth/generation.log
+          test -s artifacts/real-growth/growth/checkpoint-0.json
+          grep -F 'INVARIANTS OK' artifacts/real-growth/generation.log
+          python3 - <<'PY'
+          import json, pathlib
+          p = pathlib.Path('artifacts/real-growth/growth/checkpoint-0.json')
+          state = json.loads(p.read_text())
+          print('PR57_NEW_GROWTH_INPUT path=', p, 'bytes=', p.stat().st_size,
+                'topLevelKeys=', sorted(state)[:20],
+                'identity=NEW_ENGINE_GENERATED_NOT_ORIGINAL_ARTIFACT')
+          PY
       - name: Restore authentic congested economy
         uses: actions/download-artifact@v4
         with:
