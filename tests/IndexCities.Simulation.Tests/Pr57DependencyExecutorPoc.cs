@@ -128,6 +128,36 @@ public sealed class Pr57DependencyExecutorPoc
             var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(actual)));
             Console.WriteLine($"PR57_DEPENDENCY_CHECKPOINT case={label} step={step} sha256={hash}");
         }
+        // M0 persistence gate: reloading must preserve future causal evolution,
+        // not merely reproduce the same JSON at the instant of serialization.
+        // Use the same external commands on both reloaded engines, including
+        // a change to a need and to a building's economic/stock state.
+        var persisted = candidate.Snapshot();
+        var resumedBaseline = CitySimulation.FromJson(baseline.SaveToJson());
+        var resumedCandidate = new Executor(persisted);
+        for (var resumedStep = 1; resumedStep <= 10; resumedStep++)
+        {
+            if (resumedStep == 3)
+            {
+                var resumedHunger = resumedBaseline.State.Citizens[0].HungerMicroseconds + 1;
+                resumedBaseline.State.Citizens[0].HungerMicroseconds = resumedHunger;
+                resumedCandidate.SubmitNeeds(id, resumedHunger);
+                var resumedBuilding = resumedBaseline.State.Buildings[0];
+                var resumedPrice = resumedBuilding.SalePrice + .01m;
+                var resumedFood = resumedBuilding.Stock.Units.GetValueOrDefault(ResourceKind.Food) + 1;
+                resumedBuilding.SalePrice = resumedPrice;
+                resumedBuilding.Stock.Units[ResourceKind.Food] = resumedFood;
+                resumedCandidate.SubmitPrice(buildingId, resumedPrice);
+                resumedCandidate.SubmitFoodStock(buildingId, resumedFood);
+            }
+            resumedCandidate.Advance();
+            resumedBaseline.Advance(2);
+            Assert.Equal(resumedBaseline.SaveToJson(), resumedCandidate.Snapshot());
+        }
+        Assert.Equal(10, resumedCandidate.Cost.RequiredSteps);
+        Assert.Equal(10, resumedCandidate.Cost.FallbackSteps);
+        Assert.Equal(3, resumedCandidate.Cost.ExternalInvalidations);
+        Console.WriteLine($"PR57_DEPENDENCY_RESUME case={label} postLoadSteps=10 byteEqual=True externalCommands=3 fallbackSteps=10 avoidedSteps=0");
         var cost = candidate.Cost;
         Assert.Equal(120, cost.RequiredSteps);
         Assert.Equal(0, cost.AvoidedSteps);
