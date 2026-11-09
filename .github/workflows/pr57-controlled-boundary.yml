@@ -174,10 +174,9 @@ jobs:
                 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
                   -c Release --no-build --filter FullyQualifiedName~Pr57StructuralIntegratedGate \
                   --logger "console;verbosity=detailed" | tee "artifacts/controlled-boundary/structural-$case-$trial.log"
-              # The existing Step-vs-Advance observer emits at call 100. Its
-              # upper bound tests whether eliminating ALL public-boundary work
-              # could plausibly yield a macro speedup, without skipping phases.
-              grep -F "PR57_ADVANCE_BOUNDARY calls=100" "artifacts/controlled-boundary/structural-$case-$trial.log"
+              # The integrated gate emits PR57_STRUCTURAL_COST and checkpoint hashes.
+              # Do not require PR57_ADVANCE_BOUNDARY: this gate never emits it.
+              grep -F "PR57_STRUCTURAL_COST case=$case mode=$mode" "artifacts/controlled-boundary/structural-$case-$trial.log"
               grep 'PR57_STRUCTURAL_CHECKPOINT' "artifacts/controlled-boundary/structural-$case-$trial.log" \
                 | sed -E 's/^[^P]*PR57_STRUCTURAL_CHECKPOINT/PR57_STRUCTURAL_CHECKPOINT/' \
                 > "artifacts/controlled-boundary/checkpoints-$case-$trial.txt"
