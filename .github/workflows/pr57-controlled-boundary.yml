@@ -37,9 +37,10 @@ jobs:
           PR57_HOST_QUANTUM=1 PR57_SAVE_CAPTURE_DIR="$PWD/artifacts/real-growth/growth" \
             timeout 360s dotnet run --no-build -c Release \
               --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
-              scale cycle --seed=42 --warmup=0 --days=2 --window=3600 --cap=300 \
+              scale cycle --seed=42 --warmup=0 --cycle-houses=8 --days=2 --window=3600 --cap=300 \
               | tee artifacts/real-growth/generation.log
           test -s artifacts/real-growth/growth/checkpoint-0.json
+          grep -E '^CYCLE_HOUSING requested=8 placed=[1-9][0-9]* ' artifacts/real-growth/generation.log
           grep -F 'INVARIANTS OK' artifacts/real-growth/generation.log
           python3 - <<'PY'
           import json, pathlib
