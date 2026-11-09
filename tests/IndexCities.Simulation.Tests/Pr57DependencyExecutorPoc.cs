@@ -80,6 +80,44 @@ public sealed class Pr57DependencyExecutorPoc
         }
     }
 
+
+    // Independent structural candidate: amortize public-boundary invalidations
+    // across ten *real* 2-second quanta. Every internal phase still executes.
+    // Reject immediately if the boundary has observable causal semantics.
+    [Fact]
+    public void Authentic_saves_batched_public_boundary_exact_causal_gate()
+    {
+        var path = Environment.GetEnvironmentVariable("PR57_DEPENDENCY_SAVE_PATH");
+        if (string.IsNullOrWhiteSpace(path)) return;
+        var label = Environment.GetEnvironmentVariable("PR57_DEPENDENCY_CASE") ?? "unknown";
+        var json = File.ReadAllText(path);
+        var baseline = CitySimulation.FromJson(json);
+        var candidate = CitySimulation.FromJson(json);
+        long baselineTicks = 0, alternateTicks = 0;
+        long baselineBytes = 0, alternateBytes = 0;
+        for (var batch = 1; batch <= 12; batch++)
+        {
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            var started = Stopwatch.GetTimestamp();
+            for (var i = 0; i < 10; i++) baseline.Advance(2);
+            baselineTicks += Stopwatch.GetTimestamp() - started;
+            baselineBytes += GC.GetAllocatedBytesForCurrentThread() - before;
+
+            before = GC.GetAllocatedBytesForCurrentThread();
+            started = Stopwatch.GetTimestamp();
+            candidate.Advance(20);
+            alternateTicks += Stopwatch.GetTimestamp() - started;
+            alternateBytes += GC.GetAllocatedBytesForCurrentThread() - before;
+
+            var expected = baseline.SaveToJson();
+            var actual = candidate.SaveToJson();
+            var equal = string.Equals(expected, actual, StringComparison.Ordinal);
+            Console.WriteLine($"PR57_BATCH_BOUNDARY_CHECKPOINT case={label} step={batch * 10} byteEqual={equal} sha256={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(actual)))}");
+            Assert.True(equal, $"Public-boundary batching changed full JSON at step {batch * 10}; reject this candidate");
+        }
+        Console.WriteLine($"PR57_BATCH_BOUNDARY_COST case={label} baselineWallMs={baselineTicks * 1000.0 / Stopwatch.Frequency:F3} alternateWallMs={alternateTicks * 1000.0 / Stopwatch.Frequency:F3} baselineAllocBytes={baselineBytes} alternateAllocBytes={alternateBytes} speedup={(double)baselineTicks / Math.Max(1, alternateTicks):F5} publicBoundariesAvoided=108 internalQuantaAvoided=0 causalPhasesAvoided=0 comparison=paired-in-process-not-ABBA");
+    }
+
     [Fact]
     public void Authentic_saves_dependency_executor_m0_causal_parity_and_cost()
     {
