@@ -93,10 +93,33 @@ public sealed class Pr57DependencyExecutorPoc
         var json = File.ReadAllText(path);
         var baseline = CitySimulation.FromJson(json);
         var candidate = CitySimulation.FromJson(json);
+        // A boundary transformation must also survive external changes and
+        // persistence, not merely match an unmodified trajectory.
+        // Mutate both engines at the same PUBLIC boundary, never mid-quantum.
         long baselineTicks = 0, alternateTicks = 0;
         long baselineBytes = 0, alternateBytes = 0;
         for (var batch = 1; batch <= 12; batch++)
         {
+            if (batch == 4)
+            {
+                var citizenId = baseline.State.Citizens[0].Id;
+                var buildingId = baseline.State.Buildings[0].Id;
+                var hunger = baseline.State.Citizens[0].HungerMicroseconds + 1;
+                var price = baseline.State.Buildings[0].SalePrice + .01m;
+                var stock = baseline.State.Buildings[0].Stock.Units.GetValueOrDefault(ResourceKind.Food) + 1;
+                foreach (var engine in new[] { baseline, candidate })
+                {
+                    engine.State.Citizens.Single(c => c.Id == citizenId).HungerMicroseconds = hunger;
+                    var building = engine.State.Buildings.Single(b => b.Id == buildingId);
+                    building.SalePrice = price;
+                    building.Stock.Units[ResourceKind.Food] = stock;
+                }
+            }
+            if (batch == 8)
+            {
+                baseline = CitySimulation.FromJson(baseline.SaveToJson());
+                candidate = CitySimulation.FromJson(candidate.SaveToJson());
+            }
             var before = GC.GetAllocatedBytesForCurrentThread();
             var started = Stopwatch.GetTimestamp();
             for (var i = 0; i < 10; i++) baseline.Advance(2);
@@ -115,7 +138,7 @@ public sealed class Pr57DependencyExecutorPoc
             Console.WriteLine($"PR57_BATCH_BOUNDARY_CHECKPOINT case={label} step={batch * 10} byteEqual={equal} sha256={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(actual)))}");
             Assert.True(equal, $"Public-boundary batching changed full JSON at step {batch * 10}; reject this candidate");
         }
-        Console.WriteLine($"PR57_BATCH_BOUNDARY_COST case={label} baselineWallMs={baselineTicks * 1000.0 / Stopwatch.Frequency:F3} alternateWallMs={alternateTicks * 1000.0 / Stopwatch.Frequency:F3} baselineAllocBytes={baselineBytes} alternateAllocBytes={alternateBytes} speedup={(double)baselineTicks / Math.Max(1, alternateTicks):F5} publicBoundariesAvoided=108 internalQuantaAvoided=0 causalPhasesAvoided=0 comparison=paired-in-process-not-ABBA");
+        Console.WriteLine($"PR57_BATCH_BOUNDARY_COST case={label} baselineWallMs={baselineTicks * 1000.0 / Stopwatch.Frequency:F3} alternateWallMs={alternateTicks * 1000.0 / Stopwatch.Frequency:F3} baselineAllocBytes={baselineBytes} alternateAllocBytes={alternateBytes} speedup={(double)baselineTicks / Math.Max(1, alternateTicks):F5} publicBoundariesAvoided=108 internalQuantaAvoided=0 causalPhasesAvoided=0 externalEdits=3 saveLoadAtBatch=8 comparison=paired-in-process-not-ABBA");
     }
 
     [Fact]
