@@ -155,6 +155,28 @@ jobs:
                 grep -F "avoidedBoundaryRebuilds=0 invalidations=3 fallbackSteps=120" "artifacts/controlled-boundary/dependency-abba-$case-$trial.log"
               fi
             done
+            # Run the actual integrated gate in four fresh .NET processes.
+            # Do not compare dependency-M0 hashes with structural-gate hashes.
+            for trial in baseline-1 alternate-1 alternate-2 baseline-2; do
+              mode="${trial%-*}"
+              if [[ "$mode" == alternate ]]; then
+                export PR57_LIVING_ROSTER=1 PR57_CITIZEN_AGENDA=1 PR57_CERTIFIED_BOUNDARY=1
+              else
+                unset PR57_LIVING_ROSTER PR57_CITIZEN_AGENDA PR57_CERTIFIED_BOUNDARY || true
+              fi
+              diagnostic_dir="$PWD/artifacts/controlled-boundary/json-$case-$trial"
+              PR57_STRUCTURAL_CASE="$case" PR57_STRUCTURAL_MODE="$mode" \
+                PR57_STRUCTURAL_SAVE_PATH="$PWD/$save" \
+                PR57_STRUCTURAL_DIAGNOSTIC_DIR="$diagnostic_dir" \
+                dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
+                  -c Release --no-build --filter FullyQualifiedName~Authentic_save_integrated_alternate_mode_checkpoints \
+                  --logger "console;verbosity=detailed" | tee "artifacts/controlled-boundary/structural-$case-$trial.log"
+              grep 'PR57_STRUCTURAL_CHECKPOINT' "artifacts/controlled-boundary/structural-$case-$trial.log" \
+                | sed -E 's/^[^P]*PR57_STRUCTURAL_CHECKPOINT/PR57_STRUCTURAL_CHECKPOINT/' \
+                > "artifacts/controlled-boundary/checkpoints-$case-$trial.txt"
+              test "$(wc -l < "artifacts/controlled-boundary/checkpoints-$case-$trial.txt")" -eq 120
+              grep -F "PR57_STRUCTURAL_COST case=$case mode=$mode" "artifacts/controlled-boundary/structural-$case-$trial.log"
+            done
             # Diagnose canonical cross-process nondeterminism before blaming M1.
             python3 - "$case" <<'PY'
           import json, pathlib, sys
