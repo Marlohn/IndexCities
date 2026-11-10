@@ -46,7 +46,7 @@ public sealed class Pr57StructuralIntegratedGate
             engine.Advance(2);
             advanceTicks += Stopwatch.GetTimestamp() - advanceStart;
             advanceAllocated += GC.GetAllocatedBytesForCurrentThread() - advanceBytes;
-            if (step % 10 != 0) continue;
+            // Every Advance(2) is an observable public boundary. Comparing only\n            // every tenth boundary can conceal transient causal divergence.\n            // Check the complete serialized state after EACH quantum.\n            // Checkpoint costs are measured separately from Advance wall time.
             var checkpointStart = Stopwatch.GetTimestamp();
             var checkpointBytes = GC.GetAllocatedBytesForCurrentThread();
             var json = engine.SaveToJson();
@@ -57,6 +57,6 @@ public sealed class Pr57StructuralIntegratedGate
             checkpointAllocated += GC.GetAllocatedBytesForCurrentThread() - checkpointBytes;
         }
         double Ms(long ticks) => ticks * 1000.0 / Stopwatch.Frequency;
-        Console.WriteLine($"PR57_STRUCTURAL_COST case={label} mode={mode} steps=120 advanceWallMs={Ms(advanceTicks):F3} advanceAllocBytes={advanceAllocated} checkpointWallMs={Ms(checkpointTicks):F3} checkpointAllocBytes={checkpointAllocated} checkpointCount=12 includesJsonInAdvance=False");
+        Console.WriteLine($"PR57_STRUCTURAL_COST case={label} mode={mode} steps=120 advanceWallMs={Ms(advanceTicks):F3} advanceAllocBytes={advanceAllocated} checkpointWallMs={Ms(checkpointTicks):F3} checkpointAllocBytes={checkpointAllocated} checkpointCount=120 includesJsonInAdvance=False");
     }
 }
