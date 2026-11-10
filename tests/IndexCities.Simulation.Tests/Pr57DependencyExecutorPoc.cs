@@ -20,11 +20,16 @@ public sealed class Pr57DependencyExecutorPoc
     {
         private readonly CitySimulation _engine;
         private readonly Queue<Command> _pending = new();
-        private long _required, _invalidations, _fallback, _commands;
+        private long _required, _invalidations, _fallback, _commands, _avoided;
         private bool _dirty = true;
-        public Executor(string json) => _engine = CitySimulation.FromJson(json);
+        private readonly bool _certified;
+        public Executor(string json)
+        {
+            _engine = CitySimulation.FromJson(json);
+            _certified = Environment.GetEnvironmentVariable("PR57_DEPENDENCY_M1") == "1";
+        }
         public string Snapshot() => _engine.SaveToJson();
-        public ExecutionCost Cost => new(_required, 0, _invalidations, _fallback, _commands);
+        public ExecutionCost Cost => new(_required, _avoided, _invalidations, _fallback, _commands);
 
         public void SubmitNeeds(int id, long hunger)
         {
@@ -73,9 +78,21 @@ public sealed class Pr57DependencyExecutorPoc
             // influence citizen travel, business activity and economic effects.
             // Without a complete internal-writer contract the dependency closure
             // includes all 13 original phases. Preserve exact causal order.
-            _engine.Advance(2);
+            // M1: controlled internal boundary. Reuse incremental citizen and
+            // maintenance agendas only after a canonical public Advance has
+            // certified the state; any queued external edit forces fallback.
+            // All 13 phases and both seconds still execute in original order.
+            if (_certified && !_dirty)
+            {
+                _engine.Pr57AdvanceCertifiedQuantum();
+                _avoided++; // avoided PUBLIC agenda rebuild, not a simulation Step
+            }
+            else
+            {
+                _engine.Advance(2);
+                _fallback++;
+            }
             _required++;
-            _fallback++;
             _dirty = false;
         }
     }
@@ -216,16 +233,16 @@ public sealed class Pr57DependencyExecutorPoc
             Assert.Equal(resumedBaseline.SaveToJson(), resumedCandidate.Snapshot());
         }
         Assert.Equal(10, resumedCandidate.Cost.RequiredSteps);
-        Assert.Equal(10, resumedCandidate.Cost.FallbackSteps);
+        Assert.Equal(Environment.GetEnvironmentVariable("PR57_DEPENDENCY_M1") == "1" ? 2 : 10, resumedCandidate.Cost.FallbackSteps);
         Assert.Equal(3, resumedCandidate.Cost.ExternalInvalidations);
-        Console.WriteLine($"PR57_DEPENDENCY_RESUME case={label} postLoadSteps=10 byteEqual=True externalCommands=3 fallbackSteps=10 avoidedSteps=0");
+        Console.WriteLine($"PR57_DEPENDENCY_RESUME case={label} postLoadSteps=10 byteEqual=True externalCommands=3 fallbackSteps={resumedCandidate.Cost.FallbackSteps} avoidedPublicRebuilds={resumedCandidate.Cost.AvoidedSteps}");
         var cost = candidate.Cost;
         Assert.Equal(120, cost.RequiredSteps);
-        Assert.Equal(0, cost.AvoidedSteps);
-        Assert.Equal(120, cost.FallbackSteps);
+        Assert.Equal(Environment.GetEnvironmentVariable("PR57_DEPENDENCY_M1") == "1" ? 118 : 0, cost.AvoidedSteps);
+        Assert.Equal(Environment.GetEnvironmentVariable("PR57_DEPENDENCY_M1") == "1" ? 2 : 120, cost.FallbackSteps);
         Assert.Equal(3, cost.ExternalInvalidations);
         Assert.Equal(3, cost.Commands);
         Console.WriteLine($"PR57_DEPENDENCY_INTEGRATED_COST case={label} steps=120 baselineWallMs={baselineTicks * 1000.0 / Stopwatch.Frequency:F3} alternateWallMs={elapsedTicks * 1000.0 / Stopwatch.Frequency:F3} baselineAllocBytes={baselineAllocated} alternateAllocBytes={allocated} speedup={((double)baselineTicks / Math.Max(1, elapsedTicks)):F5} avoidedSteps={cost.AvoidedSteps} comparison=paired-in-process-not-ABBA-no-speedup-claim");
-        Console.WriteLine($"PR57_DEPENDENCY_M0 case={label} requiredSteps={cost.RequiredSteps} avoidedSteps={cost.AvoidedSteps} invalidations={cost.ExternalInvalidations} fallbackSteps={cost.FallbackSteps} commands={cost.Commands} alternateWallMs={elapsedTicks * 1000.0 / Stopwatch.Frequency:F3} alternateAllocBytes={allocated} byteEqual=True accelerationClaim=False internalWriterCoverage=False");
+        Console.WriteLine($"PR57_DEPENDENCY_M0 case={label} requiredSteps={cost.RequiredSteps} avoidedSteps={cost.AvoidedSteps} invalidations={cost.ExternalInvalidations} fallbackSteps={cost.FallbackSteps} commands={cost.Commands} alternateWallMs={elapsedTicks * 1000.0 / Stopwatch.Frequency:F3} alternateAllocBytes={allocated} byteEqual=True accelerationClaim=False internalWriterCoverage=certified-boundary-only");
     }
 }
