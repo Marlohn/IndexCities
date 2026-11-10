@@ -122,12 +122,19 @@ jobs:
                 > "artifacts/controlled-boundary/dependency-abba-$case-$trial.hashes"
               test "$(wc -l < "artifacts/controlled-boundary/dependency-abba-$case-$trial.hashes")" -eq 12
               grep -F 'PR57_DEPENDENCY_RESUME' "artifacts/controlled-boundary/dependency-abba-$case-$trial.log"
+              if [[ "$mode" == alternate ]]; then
+                grep -F "fallbackSteps=2 avoidedPublicRebuilds=8" "artifacts/controlled-boundary/dependency-abba-$case-$trial.log"
+                grep -F "avoidedBoundaryRebuilds=118 invalidations=3 fallbackSteps=2" "artifacts/controlled-boundary/dependency-abba-$case-$trial.log"
+              else
+                grep -F "fallbackSteps=10 avoidedPublicRebuilds=0" "artifacts/controlled-boundary/dependency-abba-$case-$trial.log"
+                grep -F "avoidedBoundaryRebuilds=0 invalidations=3 fallbackSteps=120" "artifacts/controlled-boundary/dependency-abba-$case-$trial.log"
+              fi
             done
             for trial in alternate-1 alternate-2 baseline-2; do
               diff -u "artifacts/controlled-boundary/dependency-abba-$case-baseline-1.hashes" \
                 "artifacts/controlled-boundary/dependency-abba-$case-$trial.hashes"
             done
-            echo "PR57_DEPENDENCY_ABBA_PARITY case=$case exactJsonHashes=True externalCommands=3 postLoadSteps=10 fallbackSteps=120 no-structural-speedup-claim"
+            echo "PR57_DEPENDENCY_ABBA_PARITY case=$case exactJsonHashes=True externalCommands=3 postLoadSteps=10 baselineFallbackSteps=120 alternateFallbackSteps=2 alternateAvoidedPublicRebuilds=118 no-structural-speedup-claim"
           done
       - name: Falsify 10x public-boundary batching against real causal saves
         shell: bash
