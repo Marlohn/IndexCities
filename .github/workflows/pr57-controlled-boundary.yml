@@ -8,6 +8,7 @@ on:
       - tests/IndexCities.Simulation.Tests/Pr57VehicleOrderSensitivity.cs
       - tests/IndexCities.Simulation.Tests/Pr57StructuralIntegratedGate.cs
       - tests/IndexCities.Simulation.Tests/Pr57DependencyExecutorPoc.cs
+      - src/IndexCities.Simulation/CitySimulation.cs
   workflow_dispatch:
 permissions:
   contents: read
@@ -169,9 +170,9 @@ jobs:
             for trial in baseline-1 alternate-1 alternate-2 baseline-2; do
               mode="${trial%-*}"
               if [[ "$mode" == alternate ]]; then
-                export PR57_LIVING_ROSTER=1 PR57_CITIZEN_AGENDA=1
+                export PR57_LIVING_ROSTER=1 PR57_CITIZEN_AGENDA=1 PR57_CERTIFIED_BOUNDARY=1
               else
-                unset PR57_LIVING_ROSTER PR57_CITIZEN_AGENDA || true
+                unset PR57_LIVING_ROSTER PR57_CITIZEN_AGENDA PR57_CERTIFIED_BOUNDARY || true
               fi
               PR57_ADVANCE_BOUNDARY_PROBE=1 PR57_STRUCTURAL_SAVE_PATH="$PWD/$save" PR57_STRUCTURAL_CASE="$case" PR57_STRUCTURAL_MODE="$mode" \
                 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
