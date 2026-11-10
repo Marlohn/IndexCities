@@ -13,7 +13,7 @@ public sealed class Pr57DependencyExecutorPoc
 {
     private enum Domain { CitizenNeeds, BuildingEconomy, PhysicalMovement, Construction }
     private readonly record struct Command(Domain Domain, int EntityId, long Value, decimal Money = 0);
-    private readonly record struct ExecutionCost(long RequiredSteps, long AvoidedSteps,
+    private readonly record struct ExecutionCost(long RequiredSteps, long AvoidedBoundaryRebuilds,
         long ExternalInvalidations, long FallbackSteps, long Commands);
 
     private sealed class Executor
@@ -235,14 +235,14 @@ public sealed class Pr57DependencyExecutorPoc
         Assert.Equal(10, resumedCandidate.Cost.RequiredSteps);
         Assert.Equal(Environment.GetEnvironmentVariable("PR57_DEPENDENCY_M1") == "1" ? 2 : 10, resumedCandidate.Cost.FallbackSteps);
         Assert.Equal(3, resumedCandidate.Cost.ExternalInvalidations);
-        Console.WriteLine($"PR57_DEPENDENCY_RESUME case={label} postLoadSteps=10 byteEqual=True externalCommands=3 fallbackSteps={resumedCandidate.Cost.FallbackSteps} avoidedPublicRebuilds={resumedCandidate.Cost.AvoidedSteps}");
+        Console.WriteLine($"PR57_DEPENDENCY_RESUME case={label} postLoadSteps=10 byteEqual=True externalCommands=3 fallbackSteps={resumedCandidate.Cost.FallbackSteps} avoidedPublicRebuilds={resumedCandidate.Cost.AvoidedBoundaryRebuilds}");
         var cost = candidate.Cost;
         Assert.Equal(120, cost.RequiredSteps);
-        Assert.Equal(Environment.GetEnvironmentVariable("PR57_DEPENDENCY_M1") == "1" ? 118 : 0, cost.AvoidedSteps);
+        Assert.Equal(Environment.GetEnvironmentVariable("PR57_DEPENDENCY_M1") == "1" ? 118 : 0, cost.AvoidedBoundaryRebuilds);
         Assert.Equal(Environment.GetEnvironmentVariable("PR57_DEPENDENCY_M1") == "1" ? 2 : 120, cost.FallbackSteps);
         Assert.Equal(3, cost.ExternalInvalidations);
         Assert.Equal(3, cost.Commands);
-        Console.WriteLine($"PR57_DEPENDENCY_INTEGRATED_COST case={label} steps=120 baselineWallMs={baselineTicks * 1000.0 / Stopwatch.Frequency:F3} alternateWallMs={elapsedTicks * 1000.0 / Stopwatch.Frequency:F3} baselineAllocBytes={baselineAllocated} alternateAllocBytes={allocated} speedup={((double)baselineTicks / Math.Max(1, elapsedTicks)):F5} avoidedSteps={cost.AvoidedSteps} comparison=paired-in-process-not-ABBA-no-speedup-claim");
-        Console.WriteLine($"PR57_DEPENDENCY_M0 case={label} requiredSteps={cost.RequiredSteps} avoidedSteps={cost.AvoidedSteps} invalidations={cost.ExternalInvalidations} fallbackSteps={cost.FallbackSteps} commands={cost.Commands} alternateWallMs={elapsedTicks * 1000.0 / Stopwatch.Frequency:F3} alternateAllocBytes={allocated} byteEqual=True accelerationClaim=False internalWriterCoverage=certified-boundary-only");
+        Console.WriteLine($"PR57_DEPENDENCY_INTEGRATED_COST case={label} steps=120 baselineWallMs={baselineTicks * 1000.0 / Stopwatch.Frequency:F3} alternateWallMs={elapsedTicks * 1000.0 / Stopwatch.Frequency:F3} baselineAllocBytes={baselineAllocated} alternateAllocBytes={allocated} speedup={((double)baselineTicks / Math.Max(1, elapsedTicks)):F5} avoidedSteps=0 avoidedBoundaryRebuilds={cost.AvoidedBoundaryRebuilds} comparison=paired-in-process-not-ABBA-no-speedup-claim");
+        Console.WriteLine($"PR57_DEPENDENCY_M0 case={label} requiredSteps={cost.RequiredSteps} avoidedSteps=0 avoidedBoundaryRebuilds={cost.AvoidedBoundaryRebuilds} invalidations={cost.ExternalInvalidations} fallbackSteps={cost.FallbackSteps} commands={cost.Commands} alternateWallMs={elapsedTicks * 1000.0 / Stopwatch.Frequency:F3} alternateAllocBytes={allocated} byteEqual=True accelerationClaim=False internalWriterCoverage=certified-boundary-only");
     }
 }
