@@ -131,13 +131,13 @@ jobs:
           test -s "$works" && test -s "$queue"
           for case in works-real congested-real; do
             if [[ "$case" == works-real ]]; then save="$works"; else save="$queue"; fi
-            PR57_LIVING_ROSTER=1 PR57_CITIZEN_AGENDA=1 \\
-              PR57_DEPENDENCY_CASE="$case" PR57_DEPENDENCY_SAVE_PATH="$PWD/$save" \\
-              PR57_SAME_PROCESS_DIAGNOSTIC_DIR="$PWD/artifacts/controlled-boundary/same-process-$case" \\
-              dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \\
-                -c Release --no-build --filter FullyQualifiedName~Authentic_saves_certified_boundary_same_process_every_quantum \\
+            PR57_LIVING_ROSTER=1 PR57_CITIZEN_AGENDA=1 \
+              PR57_DEPENDENCY_CASE="$case" PR57_DEPENDENCY_SAVE_PATH="$PWD/$save" \
+              PR57_SAME_PROCESS_DIAGNOSTIC_DIR="$PWD/artifacts/controlled-boundary/same-process-$case" \
+              dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
+                -c Release --no-build --filter FullyQualifiedName~Authentic_saves_certified_boundary_same_process_every_quantum \
                 --logger "console;verbosity=detailed" | tee "artifacts/controlled-boundary/same-process-$case.log"
-            grep -F "PR57_SAME_PROCESS_PARITY case=$case steps=120 byteEqual=True" \\
+            grep -F "PR57_SAME_PROCESS_PARITY case=$case steps=120 byteEqual=True" \
               "artifacts/controlled-boundary/same-process-$case.log"
           done
       - name: Cross-check opt-in causal agenda with external edits and save-load (fresh ABBA)
