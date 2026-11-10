@@ -158,6 +158,55 @@ public sealed class Pr57DependencyExecutorPoc
         Console.WriteLine($"PR57_BATCH_BOUNDARY_COST case={label} baselineWallMs={baselineTicks * 1000.0 / Stopwatch.Frequency:F3} alternateWallMs={alternateTicks * 1000.0 / Stopwatch.Frequency:F3} baselineAllocBytes={baselineBytes} alternateAllocBytes={alternateBytes} speedup={(double)baselineTicks / Math.Max(1, alternateTicks):F5} publicBoundariesAvoided=108 internalQuantaAvoided=0 causalPhasesAvoided=0 externalEdits=3 saveLoadAtBatch=8 comparison=paired-in-process-not-ABBA");
     }
 
+    // Same-process differential gate: isolates certified-boundary semantics from
+    // cross-process hash instability. Both engines have identical static opt-ins;
+    // only the PUBLIC versus CERTIFIED entry point differs.
+    [Fact]
+    public void Authentic_saves_certified_boundary_same_process_every_quantum()
+    {
+        var path = Environment.GetEnvironmentVariable("PR57_DEPENDENCY_SAVE_PATH");
+        if (string.IsNullOrWhiteSpace(path)) return;
+        Assert.Equal("1", Environment.GetEnvironmentVariable("PR57_LIVING_ROSTER"));
+        Assert.Equal("1", Environment.GetEnvironmentVariable("PR57_CITIZEN_AGENDA"));
+        var label = Environment.GetEnvironmentVariable("PR57_DEPENDENCY_CASE") ?? "unknown";
+        var original = File.ReadAllText(path);
+        var baseline = CitySimulation.FromJson(original);
+        var candidate = CitySimulation.FromJson(original);
+        Assert.NotEmpty(baseline.State.Citizens);
+        Assert.NotEmpty(baseline.State.Vehicles);
+        Assert.NotEmpty(baseline.State.Buildings);
+        long publicSteps = 0, certifiedSteps = 0;
+        for (var step = 1; step <= 120; step++)
+        {
+            if (step == 31)
+            {
+                foreach (var engine in new[] { baseline, candidate })
+                {
+                    engine.State.Citizens[0].NextDecisionAt = Math.Min(
+                        engine.State.Citizens[0].NextDecisionAt, engine.State.ElapsedSeconds);
+                }
+            }
+            baseline.Advance(2);
+            publicSteps++;
+            if (step == 31) candidate.Advance(2);
+            else { candidate.Pr57AdvanceCertifiedQuantum(); certifiedSteps++; }
+            var expected = baseline.SaveToJson();
+            var actual = candidate.SaveToJson();
+            if (!string.Equals(expected, actual, StringComparison.Ordinal))
+            {
+                var directory = Environment.GetEnvironmentVariable("PR57_SAME_PROCESS_DIAGNOSTIC_DIR");
+                if (!string.IsNullOrWhiteSpace(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                    File.WriteAllText(Path.Combine(directory, $"baseline-step-{step}.json"), expected);
+                    File.WriteAllText(Path.Combine(directory, $"alternate-step-{step}.json"), actual);
+                }
+                Assert.Fail($"PR57_SAME_PROCESS_DIVERGENCE case={label} step={step} publicSteps={publicSteps} certifiedSteps={certifiedSteps}");
+            }
+        }
+        Console.WriteLine($"PR57_SAME_PROCESS_PARITY case={label} steps=120 byteEqual=True publicSteps={publicSteps} certifiedSteps={certifiedSteps} fallbackSteps=1 comparison=same-process-every-quantum-not-speedup");
+    }
+
     [Fact]
     public void Authentic_saves_dependency_executor_m0_causal_parity_and_cost()
     {
