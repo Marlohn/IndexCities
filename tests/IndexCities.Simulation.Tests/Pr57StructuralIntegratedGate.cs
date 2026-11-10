@@ -30,6 +30,8 @@ public sealed class Pr57StructuralIntegratedGate
         Assert.NotEmpty(engine.State.Buildings);
         Assert.NotEmpty(engine.State.Vehicles);
         var certified = alternative && Environment.GetEnvironmentVariable("PR57_CERTIFIED_BOUNDARY") == "1";
+        // Never accept an alternate-mode run that silently used only public Advance.
+        if (alternative) Assert.True(certified, "PR57 alternate requires certified boundary opt-in");
         long certifiedSteps = 0, fallbackSteps = 0;
         long advanceTicks = 0, advanceAllocated = 0;
         long checkpointTicks = 0, checkpointAllocated = 0;
@@ -59,7 +61,10 @@ public sealed class Pr57StructuralIntegratedGate
             }
             advanceTicks += Stopwatch.GetTimestamp() - advanceStart;
             advanceAllocated += GC.GetAllocatedBytesForCurrentThread() - advanceBytes;
-            // Every Advance(2) is an observable public boundary. Comparing only\n            // every tenth boundary can conceal transient causal divergence.\n            // Check the complete serialized state after EACH quantum.\n            // Checkpoint costs are measured separately from Advance wall time.
+            // Every Advance(2) is an observable public boundary. Comparing only
+            // every tenth boundary can conceal transient causal divergence.
+            // Check the complete serialized state after EACH quantum.
+            // Checkpoint costs are measured separately from Advance wall time.
             var checkpointStart = Stopwatch.GetTimestamp();
             var checkpointBytes = GC.GetAllocatedBytesForCurrentThread();
             var json = engine.SaveToJson();
@@ -69,6 +74,8 @@ public sealed class Pr57StructuralIntegratedGate
             checkpointTicks += Stopwatch.GetTimestamp() - checkpointStart;
             checkpointAllocated += GC.GetAllocatedBytesForCurrentThread() - checkpointBytes;
         }
+        Assert.Equal(alternative ? 119L : 0L, certifiedSteps);
+        Assert.Equal(alternative ? 1L : 120L, fallbackSteps);
         double Ms(long ticks) => ticks * 1000.0 / Stopwatch.Frequency;
         Console.WriteLine($"PR57_STRUCTURAL_COST case={label} mode={mode} steps=120 advanceWallMs={Ms(advanceTicks):F3} advanceAllocBytes={advanceAllocated} checkpointWallMs={Ms(checkpointTicks):F3} checkpointAllocBytes={checkpointAllocated} checkpointCount=120 certifiedBoundary={certified} certifiedSteps={certifiedSteps} fallbackSteps={fallbackSteps} includesJsonInAdvance=False");
     }
