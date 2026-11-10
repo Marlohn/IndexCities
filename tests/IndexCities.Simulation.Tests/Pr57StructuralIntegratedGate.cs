@@ -68,6 +68,14 @@ public sealed class Pr57StructuralIntegratedGate
             var checkpointStart = Stopwatch.GetTimestamp();
             var checkpointBytes = GC.GetAllocatedBytesForCurrentThread();
             var json = engine.SaveToJson();
+            // Diagnostic-only exact full-state samples for cross-process mismatches.
+            var diagnosticDir = Environment.GetEnvironmentVariable("PR57_STRUCTURAL_DIAGNOSTIC_DIR");
+            if (!string.IsNullOrWhiteSpace(diagnosticDir) &&
+                step is 56 or 63 or 65 or 77 or 78)
+            {
+                Directory.CreateDirectory(diagnosticDir);
+                File.WriteAllText(Path.Combine(diagnosticDir, $"step-{step}.json"), json);
+            }
             var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(json)));
             Assert.Equal(json, CitySimulation.FromJson(json).SaveToJson());
             Console.WriteLine($"PR57_STRUCTURAL_CHECKPOINT case={label} step={step} sha256={hash}");
