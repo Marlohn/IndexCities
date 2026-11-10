@@ -68,10 +68,12 @@ public sealed class Pr57StructuralIntegratedGate
             var checkpointStart = Stopwatch.GetTimestamp();
             var checkpointBytes = GC.GetAllocatedBytesForCurrentThread();
             var json = engine.SaveToJson();
-            // Diagnostic-only exact full-state samples for cross-process mismatches.
+            // Diagnostic-only full JSON for every public boundary. Prior sparse samples
+            // hid the first differing field whenever a new divergent step appeared.
+            // File I/O stays outside measured Advance time, and only runs in CI
+            // when PR57_STRUCTURAL_DIAGNOSTIC_DIR is explicitly supplied.
             var diagnosticDir = Environment.GetEnvironmentVariable("PR57_STRUCTURAL_DIAGNOSTIC_DIR");
-            if (!string.IsNullOrWhiteSpace(diagnosticDir) &&
-                step is 56 or 63 or 65 or 77 or 78 or 79)
+            if (!string.IsNullOrWhiteSpace(diagnosticDir))
             {
                 Directory.CreateDirectory(diagnosticDir);
                 File.WriteAllText(Path.Combine(diagnosticDir, $"step-{step}.json"), json);
