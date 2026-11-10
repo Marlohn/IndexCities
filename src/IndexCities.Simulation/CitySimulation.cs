@@ -209,6 +209,25 @@ public sealed partial class CitySimulation
     Vehicle? VehicleById(int? id)=>id is null?null:_vehicleIndex.Find(State.Vehicles,id.Value);
     // Same contract as Enumerable.First: a missing Id is an inconsistent state.
     Citizen CitizenWithId(int id)=>CitizenById(id)??throw new InvalidOperationException("Sequence contains no matching element");
+    // PR57 experimental only: the caller explicitly certifies that no State alias
+    // was mutated since the previous controlled quantum. Never use this entry
+    // point for public commands, save/load, or untrusted state access.
+    // All original Step phases still run; only cross-boundary agenda rebuilds
+    // may be avoided. The ordinary Advance remains the mandatory fallback.
+    private bool _pr57ControlledBoundary;
+    public void Pr57AdvanceCertifiedQuantum()
+    {
+        if (_pr57ControlledBoundary) throw new InvalidOperationException("Nested PR57 controlled advance");
+        _pr57ControlledBoundary = true;
+        try { Advance(2); }
+        finally { _pr57ControlledBoundary = false; }
+    }
+    public void Pr57InvalidateCertifiedBoundary()
+    {
+        _pr57AgendaReady = false;
+        _pr57MaintenanceScheduleReady = false;
+    }
+
     public void Advance(double seconds)
     {
         if(!double.IsFinite(seconds)||seconds<0)throw new ArgumentOutOfRangeException(nameof(seconds));
@@ -218,10 +237,10 @@ public sealed partial class CitySimulation
         Pr57BeginBuildingAccessAdvance();
         // A public Advance boundary permits direct external State edits (including tests).
         // Rebuild the opt-in agenda there; internal quanta still use incremental wakeups.
-        if(Pr57CitizenAgendaEnabled)_pr57AgendaReady=false;
+        if(Pr57CitizenAgendaEnabled && !_pr57ControlledBoundary)_pr57AgendaReady=false;
         // Public Advance boundaries permit arbitrary external State edits.
         _pr57ConstructionWaitAccess.Clear();
-        if(Pr57MaintenanceScheduleEnabled)_pr57MaintenanceScheduleReady=false;
+        if(Pr57MaintenanceScheduleEnabled && !_pr57ControlledBoundary)_pr57MaintenanceScheduleReady=false;
         if(Pr57RouteTreeEnabled)
         {
             _pr57RouteTreeParents.Clear();_pr57RouteTreeCalls.Clear();
