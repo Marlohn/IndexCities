@@ -183,7 +183,7 @@ jobs:
               grep 'PR57_STRUCTURAL_CHECKPOINT' "artifacts/controlled-boundary/structural-$case-$trial.log" \
                 | sed -E 's/^[^P]*PR57_STRUCTURAL_CHECKPOINT/PR57_STRUCTURAL_CHECKPOINT/' \
                 > "artifacts/controlled-boundary/checkpoints-$case-$trial.txt"
-              test "$(wc -l < "artifacts/controlled-boundary/checkpoints-$case-$trial.txt")" -eq 12
+              test "$(wc -l < "artifacts/controlled-boundary/checkpoints-$case-$trial.txt")" -eq 120
             done
             for trial in alternate-1 alternate-2 baseline-2; do
               diff -u "artifacts/controlled-boundary/checkpoints-$case-baseline-1.txt" \
@@ -208,7 +208,7 @@ jobs:
           print(f"PR57_STRUCTURAL_ABBA case={case} baselineMeanMs={baseline:.3f} alternateMeanMs={alternate:.3f} speedup={baseline/alternate:.5f} trials={times} samples=2-per-mode-not-statistically-robust")
           print(f"PR57_STRUCTURAL_TARGET_GAP case={case} population=real-save-not-10k baselineUsPerAdvance={baseline_us:.3f} alternateUsPerAdvance={alternate_us:.3f} exploratory10kTargetUs={target_ms_per_advance*1000:.4f} baselineGapRatio={baseline_us/(target_ms_per_advance*1000):.1f} alternateGapRatio={alternate_us/(target_ms_per_advance*1000):.1f} interpretation=reference-only-not-10k-extrapolation")
           PY
-            echo "PR57_STRUCTURAL_PARITY case=$case fullJsonHashEqual=True steps=120"
+            echo "PR57_STRUCTURAL_PARITY case=$case fullJsonHashEqual=True publicBoundaryCheckpoints=120 steps=120"
           done
       - name: Preserve test and maintenance logs
         if: always()
