@@ -71,7 +71,7 @@ public sealed class Pr57StructuralIntegratedGate
             // Diagnostic-only exact full-state samples for cross-process mismatches.
             var diagnosticDir = Environment.GetEnvironmentVariable("PR57_STRUCTURAL_DIAGNOSTIC_DIR");
             if (!string.IsNullOrWhiteSpace(diagnosticDir) &&
-                step is 56 or 63 or 65 or 77 or 78)
+                step is 56 or 63 or 65 or 77 or 78 or 79)
             {
                 Directory.CreateDirectory(diagnosticDir);
                 File.WriteAllText(Path.Combine(diagnosticDir, $"step-{step}.json"), json);
