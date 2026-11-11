@@ -18,7 +18,7 @@ public sealed class Pr57DependencyExecutorPoc
 
     private sealed class Executor
     {
-        private readonly CitySimulation _engine;
+        private CitySimulation _engine;
         private readonly Queue<Command> _pending = new();
         private long _required, _invalidations, _fallback, _commands, _avoided;
         private bool _dirty = true;
@@ -29,6 +29,17 @@ public sealed class Pr57DependencyExecutorPoc
             _certified = Environment.GetEnvironmentVariable("PR57_DEPENDENCY_M1") == "1";
         }
         public string Snapshot() => _engine.SaveToJson();
+        // Explicit persistence boundary: no internal agenda survives reload.
+        // Rebuild from the serialized state and require canonical Advance(2)
+        // before certified quanta resume. Pending commands must not be lost.
+        public void Reload()
+        {
+            if (_pending.Count != 0)
+                throw new InvalidOperationException("Cannot reload with pending external commands");
+            _engine = CitySimulation.FromJson(_engine.SaveToJson());
+            _dirty = true;
+        }
+
         public ExecutionCost Cost => new(_required, _avoided, _invalidations, _fallback, _commands);
 
         public void SubmitNeeds(int id, long hunger)
@@ -416,6 +427,11 @@ public sealed class Pr57DependencyExecutorPoc
             var candidate = alternative ? new Executor(json) : null;
             for (var step = 0; step < 120; step++)
             {
+                if (step == 70)
+                {
+                    if (alternative) candidate!.Reload();
+                    else baseline = CitySimulation.FromJson(baseline!.SaveToJson());
+                }
                 if (step == 30)
                 {
                     if (alternative)
@@ -446,8 +462,8 @@ public sealed class Pr57DependencyExecutorPoc
             if (alternative)
             {
                 Assert.Equal(120, candidate!.Cost.RequiredSteps);
-                Assert.Equal(118, candidate.Cost.AvoidedBoundaryRebuilds);
-                Assert.Equal(2, candidate.Cost.FallbackSteps);
+                Assert.Equal(117, candidate.Cost.AvoidedBoundaryRebuilds);
+                Assert.Equal(3, candidate.Cost.FallbackSteps);
             }
         }
         var baselineTicks = elapsed[0] + elapsed[3];
@@ -460,6 +476,6 @@ public sealed class Pr57DependencyExecutorPoc
             $"baselineCpuMs={(cpuTicks[0] + cpuTicks[3]) / (double)TimeSpan.TicksPerMillisecond:F3} " +
             $"alternateCpuMs={(cpuTicks[1] + cpuTicks[2]) / (double)TimeSpan.TicksPerMillisecond:F3} " +
             $"speedup={(double)baselineTicks / Math.Max(1, alternateTicks):F5} " +
-            "byteEqual=True avoidedInternalSteps=0 certified=False");
+            "byteEqual=True saveLoadAt=71 fallbackSteps=3 avoidedInternalSteps=0 certified=False");
     }
 }
