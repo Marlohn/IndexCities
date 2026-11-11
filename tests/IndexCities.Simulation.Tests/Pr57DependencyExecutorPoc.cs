@@ -375,4 +375,60 @@ public sealed class Pr57DependencyExecutorPoc
         Console.WriteLine($"PR57_DEPENDENCY_INTEGRATED_COST case={label} steps=120 baselineWallMs={baselineTicks * 1000.0 / Stopwatch.Frequency:F3} alternateWallMs={elapsedTicks * 1000.0 / Stopwatch.Frequency:F3} baselineAllocBytes={baselineAllocated} alternateAllocBytes={allocated} speedup={((double)baselineTicks / Math.Max(1, elapsedTicks)):F5} avoidedSteps=0 avoidedBoundaryRebuilds={cost.AvoidedBoundaryRebuilds} comparison=paired-in-process-not-ABBA-no-speedup-claim");
         Console.WriteLine($"PR57_DEPENDENCY_M0 case={label} requiredSteps={cost.RequiredSteps} avoidedSteps=0 avoidedBoundaryRebuilds={cost.AvoidedBoundaryRebuilds} invalidations={cost.ExternalInvalidations} fallbackSteps={cost.FallbackSteps} commands={cost.Commands} alternateWallMs={elapsedTicks * 1000.0 / Stopwatch.Frequency:F3} alternateAllocBytes={allocated} byteEqual=True accelerationClaim=False internalWriterCoverage=certified-boundary-only");
     }
+
+    // End-to-end ABBA screen of the REAL integrated Advance(2) executor.
+    // Every step is compared outside timing; fresh .NET processes must repeat
+    // this test before any speedup can be certified.
+    [Fact]
+    public void Authentic_saves_dependency_m1_abba_integrated_screen()
+    {
+        var path = Environment.GetEnvironmentVariable("PR57_DEPENDENCY_SAVE_PATH");
+        if (string.IsNullOrWhiteSpace(path) ||
+            Environment.GetEnvironmentVariable("PR57_DEPENDENCY_M1") != "1") return;
+        var label = Environment.GetEnvironmentVariable("PR57_DEPENDENCY_CASE") ?? "unknown";
+        var json = File.ReadAllText(path);
+        var reference = CitySimulation.FromJson(json);
+        var hashes = new string[120];
+        for (var step = 0; step < 120; step++)
+        {
+            reference.Advance(2);
+            hashes[step] = reference.SaveToJson();
+        }
+        var order = new[] { false, true, true, false };
+        var elapsed = new long[4];
+        var allocated = new long[4];
+        for (var trial = 0; trial < order.Length; trial++)
+        {
+            var alternative = order[trial];
+            var baseline = alternative ? null : CitySimulation.FromJson(json);
+            var candidate = alternative ? new Executor(json) : null;
+            for (var step = 0; step < 120; step++)
+            {
+                var bytes = GC.GetAllocatedBytesForCurrentThread();
+                var start = Stopwatch.GetTimestamp();
+                if (alternative) candidate!.Advance();
+                else baseline!.Advance(2);
+                elapsed[trial] += Stopwatch.GetTimestamp() - start;
+                allocated[trial] += GC.GetAllocatedBytesForCurrentThread() - bytes;
+                var snapshot = alternative ? candidate!.Snapshot() : baseline!.SaveToJson();
+                Assert.True(string.Equals(hashes[step], snapshot, StringComparison.Ordinal),
+                    $"PR57_M1_ABBA_DIVERGENCE case={label} trial={trial} step={step + 1}");
+            }
+            if (alternative)
+            {
+                Assert.Equal(120, candidate!.Cost.RequiredSteps);
+                Assert.Equal(119, candidate.Cost.AvoidedBoundaryRebuilds);
+                Assert.Equal(1, candidate.Cost.FallbackSteps);
+            }
+        }
+        var baselineTicks = elapsed[0] + elapsed[3];
+        var alternateTicks = elapsed[1] + elapsed[2];
+        Console.WriteLine($"PR57_M1_ABBA case={label} stepsPerTrial=120 order=ABBA " +
+            $"baselineWallMs={baselineTicks * 1000.0 / Stopwatch.Frequency:F3} " +
+            $"alternateWallMs={alternateTicks * 1000.0 / Stopwatch.Frequency:F3} " +
+            $"baselineAllocBytes={allocated[0] + allocated[3]} " +
+            $"alternateAllocBytes={allocated[1] + allocated[2]} " +
+            $"speedup={(double)baselineTicks / Math.Max(1, alternateTicks):F5} " +
+            "byteEqual=True avoidedInternalSteps=0 certified=False");
+    }
 }
