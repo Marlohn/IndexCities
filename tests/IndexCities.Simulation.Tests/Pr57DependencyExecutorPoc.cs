@@ -417,6 +417,18 @@ public sealed class Pr57DependencyExecutorPoc
             reference.Advance(2);
             hashes[step] = reference.SaveToJson();
         }
+        // Prime both execution paths before the measured ABBA trajectories.
+        // The warm-up uses disposable clones, never the reference checkpoints;
+        // otherwise first-use JIT and serializer initialization bias A vs B.
+        var warmBaseline = CitySimulation.FromJson(json);
+        var warmAlternate = new Executor(json);
+        for (var warmStep = 0; warmStep < 8; warmStep++)
+        {
+            warmBaseline.Advance(2);
+            warmAlternate.Advance();
+            Assert.Equal(warmBaseline.SaveToJson(), warmAlternate.Snapshot());
+        }
+        Console.WriteLine($"PR57_M1_WARMUP case={label} steps=8 byteEqual=True excludedFromABBA=True");
         var order = new[] { false, true, true, false };
         var elapsed = new long[4];
         var allocated = new long[4];
