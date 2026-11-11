@@ -656,8 +656,9 @@ public sealed class Pr57DependencyExecutorPoc
             var simulation = CitySimulation.FromJson(original);
             var trialProfile = instrumented ? new StepCostProfile() : null;
             simulation.CostProfile = trialProfile;
-            var cpuBefore = Process.GetCurrentProcess().TotalProcessorTime.Ticks;
-            var allocBefore = GC.GetAllocatedBytesForCurrentThread();
+            // Scope CPU/allocation to Advance just like wall time. JSON
+            // checkpoints and save/load are intentionally outside this census.
+            // Process CPU is a coarse process-wide sample, not a thread CPU clock.
             for (var quantum = 1; quantum <= 120; quantum++)
             {
                 if (quantum == 31)
@@ -672,13 +673,15 @@ public sealed class Pr57DependencyExecutorPoc
                     simulation = CitySimulation.FromJson(simulation.SaveToJson());
                     simulation.CostProfile = trialProfile;
                 }
+                var cpuBefore = Process.GetCurrentProcess().TotalProcessorTime.Ticks;
+                var allocBefore = GC.GetAllocatedBytesForCurrentThread();
                 var started = Stopwatch.GetTimestamp();
                 simulation.Advance(2);
                 profileWall[trial] += Stopwatch.GetTimestamp() - started;
+                profileCpu[trial] += Process.GetCurrentProcess().TotalProcessorTime.Ticks - cpuBefore;
+                profileAlloc[trial] += GC.GetAllocatedBytesForCurrentThread() - allocBefore;
                 Assert.Equal(baselineCheckpoints[quantum - 1], simulation.SaveToJson());
             }
-            profileCpu[trial] = Process.GetCurrentProcess().TotalProcessorTime.Ticks - cpuBefore;
-            profileAlloc[trial] = GC.GetAllocatedBytesForCurrentThread() - allocBefore;
             if (instrumented) Assert.Equal(120, trialProfile!.Steps);
         }
         var unprofiledTicks = profileWall[0] + profileWall[3];
