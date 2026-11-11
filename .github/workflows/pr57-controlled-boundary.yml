@@ -141,6 +141,10 @@ jobs:
             test "$(grep -c 'PR57_DEPENDENCY_CHECKPOINT' "artifacts/controlled-boundary/dependency-$case.log")" -eq 12
           done
       - name: M1 integrated ABBA screen with exact intermediate JSON on both real saves
+        # Independent evidence gate: a preceding experimental assertion may fail,
+        # but must not suppress M1 parity/ABBA when the two saves exist.
+        # This does not bypass M1 assertions or make the overall job green.
+        if: ${{ success() || failure() }}
         shell: bash
         run: |
           set -euo pipefail
