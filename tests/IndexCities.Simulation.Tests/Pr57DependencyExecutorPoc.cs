@@ -602,6 +602,7 @@ public sealed class Pr57DependencyExecutorPoc
         var observed = CitySimulation.FromJson(original);
         var profile = new StepCostProfile();
         observed.CostProfile = profile;
+        var baselineCheckpoints = new string[120];
         for (var quantum = 1; quantum <= 120; quantum++)
         {
             if (quantum == 31)
@@ -623,8 +624,59 @@ public sealed class Pr57DependencyExecutorPoc
             baseline.Advance(2);
             observed.Advance(2);
             Assert.Equal(baseline.SaveToJson(), observed.SaveToJson());
+            baselineCheckpoints[quantum - 1] = baseline.SaveToJson();
         }
         Assert.Equal(120, profile.Steps);
+        // A phase profile is intrusive: quantify its measurement overhead in
+        // the same integrated engine before interpreting wall-referenced ceilings.
+        // ABBA uses fresh clones and identical edits/reload/checkpoints in every
+        // trajectory. JSON equality is checked outside each Advance timing.
+        var profileOrder = new[] { false, true, true, false };
+        var profileWall = new long[4];
+        var profileCpu = new long[4];
+        var profileAlloc = new long[4];
+        for (var trial = 0; trial < profileOrder.Length; trial++)
+        {
+            var instrumented = profileOrder[trial];
+            var simulation = CitySimulation.FromJson(original);
+            var trialProfile = instrumented ? new StepCostProfile() : null;
+            simulation.CostProfile = trialProfile;
+            var cpuBefore = Process.GetCurrentProcess().TotalProcessorTime.Ticks;
+            var allocBefore = GC.GetAllocatedBytesForCurrentThread();
+            for (var quantum = 1; quantum <= 120; quantum++)
+            {
+                if (quantum == 31)
+                {
+                    simulation.State.Citizens[0].HungerMicroseconds++;
+                    simulation.State.Buildings[0].SalePrice += .01m;
+                    var stock = simulation.State.Buildings[0].Stock.Units;
+                    stock[ResourceKind.Food] = stock.GetValueOrDefault(ResourceKind.Food) + 1;
+                }
+                if (quantum == 71)
+                {
+                    simulation = CitySimulation.FromJson(simulation.SaveToJson());
+                    simulation.CostProfile = trialProfile;
+                }
+                var started = Stopwatch.GetTimestamp();
+                simulation.Advance(2);
+                profileWall[trial] += Stopwatch.GetTimestamp() - started;
+                Assert.Equal(baselineCheckpoints[quantum - 1], simulation.SaveToJson());
+            }
+            profileCpu[trial] = Process.GetCurrentProcess().TotalProcessorTime.Ticks - cpuBefore;
+            profileAlloc[trial] = GC.GetAllocatedBytesForCurrentThread() - allocBefore;
+            if (instrumented) Assert.Equal(120, trialProfile!.Steps);
+        }
+        var unprofiledTicks = profileWall[0] + profileWall[3];
+        var profiledTicks = profileWall[1] + profileWall[2];
+        Console.WriteLine($"PR57_CROSS_PHASE_PROFILE_OVERHEAD case={label} order=ABBA quantaPerTrial=120 " +
+            $"unprofiledAdvanceWallMs={unprofiledTicks * 1000.0 / Stopwatch.Frequency:F3} " +
+            $"profiledAdvanceWallMs={profiledTicks * 1000.0 / Stopwatch.Frequency:F3} " +
+            $"wallRatio={(double)profiledTicks / Math.Max(1, unprofiledTicks):F5} " +
+            $"unprofiledCpuMs={(profileCpu[0] + profileCpu[3]) / (double)TimeSpan.TicksPerMillisecond:F3} " +
+            $"profiledCpuMs={(profileCpu[1] + profileCpu[2]) / (double)TimeSpan.TicksPerMillisecond:F3} " +
+            $"unprofiledAllocBytes={profileAlloc[0] + profileAlloc[3]} " +
+            $"profiledAllocBytes={profileAlloc[1] + profileAlloc[2]} " +
+            "byteEqual=True externalEdits=3 saveLoadAt=71 scope=intrusive-profile-calibration-not-speedup");
         Console.WriteLine($"PR57_CROSS_PHASE_PROFILE_PARITY case={label} quanta=120 byteEqual=True externalEdits=3 saveLoadAt=71");
     }
 }
