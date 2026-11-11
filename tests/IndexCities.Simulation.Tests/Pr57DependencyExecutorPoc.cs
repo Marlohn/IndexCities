@@ -413,6 +413,7 @@ public sealed class Pr57DependencyExecutorPoc
         for (var step = 0; step < 120; step++)
         {
             if (step == 30) ApplyExternalEdit(reference);
+            if (step == 70) reference = CitySimulation.FromJson(reference.SaveToJson());
             reference.Advance(2);
             hashes[step] = reference.SaveToJson();
         }
