@@ -319,7 +319,7 @@ jobs:
               else "checkpoint-parity"
           )
           print(f"PR57_JSON_VERDICT case={case} status={verdict} baselineDisagreement={sorted(baseline_disagreement)} alternatePairDisagreement={alternate_pair_disagreement} unexplainedAlternateSteps={unexplained}")
-          (base / f"parity-{case}.txt").write_text(verdict + "\\n")
+          (base / f"parity-{case}.txt").write_text(verdict + "\n")
           if unexplained: raise SystemExit("PR57 alternate state absent from both baseline realizations; see diagnostic JSON")
           PY
             python3 - "$case" <<'PY'
