@@ -550,6 +550,24 @@ public sealed class Pr57DependencyExecutorPoc
         var constructionTicks = profile.Ticks[3] + profile.Ticks[10];
         var fraction = totalProfiled == 0 ? 0 : constructionTicks / (double)totalProfiled;
         var idealCeiling = fraction >= 1 ? double.PositiveInfinity : 1 / (1 - fraction);
+        // Rank all original causal phases on the same integrated trajectory.
+        // This is an Amdahl upper bound, NOT a phase-skipping implementation:
+        // timings include profiling overhead and do not certify a speedup.
+        var ranked = profile.Ticks
+            .Select((ticks, index) => (Index: index, Ticks: ticks))
+            .OrderByDescending(entry => entry.Ticks)
+            .ThenBy(entry => entry.Index)
+            .ToArray();
+        var topFourTicks = ranked.Take(4).Sum(entry => entry.Ticks);
+        var topFourFraction = totalProfiled == 0 ? 0 : topFourTicks / (double)totalProfiled;
+        var topFourCeiling = topFourFraction >= 1 ? double.PositiveInfinity : 1 / (1 - topFourFraction);
+        var rankedPhases = string.Join(",", ranked.Select(entry =>
+            $"{StepCostProfile.Names[entry.Index]}:{(totalProfiled == 0 ? 0 : entry.Ticks / (double)totalProfiled):F6}"));
+        Console.WriteLine($"PR57_CROSS_PHASE_CEILING case={label} quanta=120 " +
+            $"rankedShares={rankedPhases} topFourFraction={topFourFraction:F6} " +
+            $"topFourIdealSpeedupCeiling={topFourCeiling:F5} " +
+            $"profiledVsWallFraction={(wallTicks == 0 ? 0 : totalProfiled / (double)wallTicks):F6} " +
+            "scope=intrusive-ideal-bound-no-skipped-phases-no-speedup-claim");
         Console.WriteLine($"PR57_CONSTRUCTION_CEILING case={label} quanta=120 " +
             $"profiledTicks={totalProfiled} constructionTicks={constructionTicks} " +
             $"constructionFraction={fraction:F6} idealSpeedupCeiling={idealCeiling:F5} " +
