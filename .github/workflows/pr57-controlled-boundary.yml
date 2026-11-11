@@ -234,13 +234,30 @@ jobs:
                       print(f"PR57_JSON_FIRST_DIFF case={case} step={step} pair={trials[0]}:{trial} detail={str(d)[:500]}")
                   else:
                       print(f"PR57_JSON_FIRST_DIFF case={case} step={step} unavailable=outside-diagnostic-sample")
-          unexplained = sorted(alternate_disagreement - baseline_disagreement)
-          verdict = "rejected" if unexplained else ("inconclusive-baseline-nondeterminism" if baseline_disagreement else "checkpoint-parity")
-          print(f"PR57_JSON_VERDICT case={case} status={verdict} baselineDisagreement={sorted(baseline_disagreement)} unexplainedAlternateSteps={unexplained}")
+          # Never certify a step merely because the two baselines disagree
+          # at that step. A different alternate value is not explained by
+          # baseline nondeterminism; compare each alternate against BOTH
+          # baseline realizations, not only the set of divergent step numbers.
+          unexplained = sorted(
+              i + 1 for i in range(120)
+              if any(
+                  hashes(alt)[i] not in (hashes("baseline-1")[i], hashes("baseline-2")[i])
+                  for alt in ("alternate-1", "alternate-2")
+              )
+          )
+          alternate_pair_disagreement = sorted(
+              i + 1 for i, (a, b) in enumerate(zip(hashes("alternate-1"), hashes("alternate-2"))) if a != b
+          )
+          # With unstable canonical baselines, matching one realization is
+          # still inconclusive: only all four byte-identical trajectories
+          # establish this window's checkpoint parity.
+          verdict = "rejected" if unexplained else (
+              "inconclusive-baseline-nondeterminism" if baseline_disagreement or alternate_pair_disagreement
+              else "checkpoint-parity"
+          )
+          print(f"PR57_JSON_VERDICT case={case} status={verdict} baselineDisagreement={sorted(baseline_disagreement)} alternatePairDisagreement={alternate_pair_disagreement} unexplainedAlternateSteps={unexplained}")
           (base / f"parity-{case}.txt").write_text(verdict + "\\n")
-          # Reject alternate-only divergence. Baseline instability remains
-          # explicitly inconclusive, but ABBA can still report diagnostic costs.
-          if unexplained: raise SystemExit("PR57 alternate-only causal divergence; see diagnostic JSON")
+          if unexplained: raise SystemExit("PR57 alternate state absent from both baseline realizations; see diagnostic JSON")
           PY
             python3 - "$case" <<'PY'
           import pathlib, re, statistics, sys
