@@ -79,6 +79,23 @@ jobs:
       # Ordered-truck sensitivity was already established causally (18/19).
       # Do not block structural ABBA on the historical selector probe, whose
       # Assert.NotNull fails for the newly generated construction scenario.
+      - name: Exact causal gate for opt-in empty municipal relocation on both saves
+        shell: bash
+        run: |
+          set -euo pipefail
+          works="$(find artifacts/real-growth -type f -path '*/growth/checkpoint-0.json' -print -quit)"
+          queue="$(find artifacts/real-congested -type f -path '*/pr57-jobs-20/checkpoint-11.json' -print -quit)"
+          test -s "$works" && test -s "$queue"
+          mkdir -p artifacts/controlled-boundary
+          for case in works-real congested-real; do
+            if [[ "$case" == works-real ]]; then save="$works"; else save="$queue"; fi
+            PR57_DEPENDENCY_CASE="$case" PR57_DEPENDENCY_SAVE_PATH="$PWD/$save" \
+              dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
+                -c Release --no-build --filter FullyQualifiedName~Authentic_saves_empty_relocation_fastpath_exact_causal_gate \
+                --logger "console;verbosity=detailed" | tee "artifacts/controlled-boundary/empty-relocation-$case.log"
+            grep -F "PR57_EMPTY_RELOCATION_PARITY case=$case steps=120 byteEqual=True" \
+              "artifacts/controlled-boundary/empty-relocation-$case.log"
+          done
       - name: Dependency executor M0 on authentic saves (mandatory causal fallback)
         shell: bash
         run: |
