@@ -658,9 +658,11 @@ public sealed class Pr57DependencyExecutorPoc
             var simulation = CitySimulation.FromJson(original);
             var trialProfile = instrumented ? new StepCostProfile() : null;
             simulation.CostProfile = trialProfile;
-            // Scope CPU/allocation to Advance just like wall time. JSON
-            // checkpoints and save/load are intentionally outside this census.
-            // Process CPU is a coarse process-wide sample, not a thread CPU clock.
+            // Sample process CPU once per trajectory: reading TotalProcessorTime
+            // inside every two-second quantum biases the wall measurement.
+            // CPU includes checkpoints and reload; wall/allocation remain
+            // Advance-only. The scopes are deliberately reported separately.
+            var cpuTrajectoryStart = cpuProcess.TotalProcessorTime.Ticks;
             for (var quantum = 1; quantum <= 120; quantum++)
             {
                 if (quantum == 31)
@@ -675,15 +677,14 @@ public sealed class Pr57DependencyExecutorPoc
                     simulation = CitySimulation.FromJson(simulation.SaveToJson());
                     simulation.CostProfile = trialProfile;
                 }
-                var cpuBefore = cpuProcess.TotalProcessorTime.Ticks;
                 var allocBefore = GC.GetAllocatedBytesForCurrentThread();
                 var started = Stopwatch.GetTimestamp();
                 simulation.Advance(2);
                 profileWall[trial] += Stopwatch.GetTimestamp() - started;
-                profileCpu[trial] += cpuProcess.TotalProcessorTime.Ticks - cpuBefore;
                 profileAlloc[trial] += GC.GetAllocatedBytesForCurrentThread() - allocBefore;
                 Assert.Equal(baselineCheckpoints[quantum - 1], simulation.SaveToJson());
             }
+            profileCpu[trial] = cpuProcess.TotalProcessorTime.Ticks - cpuTrajectoryStart;
             if (instrumented) Assert.Equal(120, trialProfile!.Steps);
         }
         var unprofiledTicks = profileWall[0] + profileWall[3];
@@ -692,8 +693,8 @@ public sealed class Pr57DependencyExecutorPoc
             $"unprofiledAdvanceWallMs={unprofiledTicks * 1000.0 / Stopwatch.Frequency:F3} " +
             $"profiledAdvanceWallMs={profiledTicks * 1000.0 / Stopwatch.Frequency:F3} " +
             $"wallRatio={(double)profiledTicks / Math.Max(1, unprofiledTicks):F5} " +
-            $"unprofiledCpuMs={(profileCpu[0] + profileCpu[3]) / (double)TimeSpan.TicksPerMillisecond:F3} " +
-            $"profiledCpuMs={(profileCpu[1] + profileCpu[2]) / (double)TimeSpan.TicksPerMillisecond:F3} " +
+            $"unprofiledTrajectoryCpuMs={(profileCpu[0] + profileCpu[3]) / (double)TimeSpan.TicksPerMillisecond:F3} " +
+            $"profiledTrajectoryCpuMs={(profileCpu[1] + profileCpu[2]) / (double)TimeSpan.TicksPerMillisecond:F3} " +
             $"unprofiledAllocBytes={profileAlloc[0] + profileAlloc[3]} " +
             $"profiledAllocBytes={profileAlloc[1] + profileAlloc[2]} " +
             "byteEqual=True externalEdits=3 saveLoadAt=71 scope=intrusive-profile-calibration-not-speedup");
