@@ -431,6 +431,10 @@ public sealed class Pr57DependencyExecutorPoc
         Console.WriteLine($"PR57_M1_WARMUP case={label} steps=8 byteEqual=True excludedFromABBA=True");
         var order = new[] { false, true, true, false };
         var elapsed = new long[4];
+        // End-to-end includes external edits, reload and every JSON checkpoint.
+        // Advance-only wall excludes those costs and must not be called integrated throughput.
+        var trajectoryWall = new long[4];
+        var trajectoryAllocated = new long[4];
         var allocated = new long[4];
         var cpuTicks = new long[4];
         for (var trial = 0; trial < order.Length; trial++)
@@ -439,6 +443,8 @@ public sealed class Pr57DependencyExecutorPoc
             var baseline = alternative ? null : CitySimulation.FromJson(json);
             var candidate = alternative ? new Executor(json) : null;
             var trialCpuStart = Process.GetCurrentProcess().TotalProcessorTime.Ticks;
+            var trialAllocatedStart = GC.GetAllocatedBytesForCurrentThread();
+            var trialWallStart = Stopwatch.GetTimestamp();
             for (var step = 0; step < 120; step++)
             {
                 if (step == 70)
@@ -474,6 +480,8 @@ public sealed class Pr57DependencyExecutorPoc
                 Assert.True(string.Equals(hashes[step], snapshot, StringComparison.Ordinal),
                     $"PR57_M1_ABBA_DIVERGENCE case={label} trial={trial} step={step + 1}");
             }
+            trajectoryWall[trial] = Stopwatch.GetTimestamp() - trialWallStart;
+            trajectoryAllocated[trial] = GC.GetAllocatedBytesForCurrentThread() - trialAllocatedStart;
             cpuTicks[trial] = Process.GetCurrentProcess().TotalProcessorTime.Ticks - trialCpuStart;
             if (alternative)
             {
@@ -484,6 +492,15 @@ public sealed class Pr57DependencyExecutorPoc
         }
         var baselineTicks = elapsed[0] + elapsed[3];
         var alternateTicks = elapsed[1] + elapsed[2];
+        var baselineTrajectoryTicks = trajectoryWall[0] + trajectoryWall[3];
+        var alternateTrajectoryTicks = trajectoryWall[1] + trajectoryWall[2];
+        Console.WriteLine($"PR57_M1_TRAJECTORY case={label} stepsPerTrial=120 order=ABBA " +
+            $"baselineWallMs={baselineTrajectoryTicks * 1000.0 / Stopwatch.Frequency:F3} " +
+            $"alternateWallMs={alternateTrajectoryTicks * 1000.0 / Stopwatch.Frequency:F3} " +
+            $"baselineAllocBytes={trajectoryAllocated[0] + trajectoryAllocated[3]} " +
+            $"alternateAllocBytes={trajectoryAllocated[1] + trajectoryAllocated[2]} " +
+            $"speedup={(double)baselineTrajectoryTicks / Math.Max(1, alternateTrajectoryTicks):F5} " +
+            "includesExternalEdits=True includesSaveLoad=True includesCheckpoints=True certified=False");
         Console.WriteLine($"PR57_M1_ABBA case={label} stepsPerTrial=120 order=ABBA " +
             $"baselineWallMs={baselineTicks * 1000.0 / Stopwatch.Frequency:F3} " +
             $"alternateWallMs={alternateTicks * 1000.0 / Stopwatch.Frequency:F3} " +
