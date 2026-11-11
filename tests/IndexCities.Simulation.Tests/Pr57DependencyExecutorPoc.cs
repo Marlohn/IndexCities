@@ -631,6 +631,21 @@ public sealed class Pr57DependencyExecutorPoc
         // the same integrated engine before interpreting wall-referenced ceilings.
         // ABBA uses fresh clones and identical edits/reload/checkpoints in every
         // trajectory. JSON equality is checked outside each Advance timing.
+        // Warm both code paths on disposable real-engine clones before ABBA.
+        // Otherwise the first unprofiled trial also pays JIT/init costs and
+        // biases the apparent instrumentation overhead downward.
+        var warmBaseline = CitySimulation.FromJson(original);
+        var warmObserved = CitySimulation.FromJson(original);
+        var warmProfile = new StepCostProfile();
+        warmObserved.CostProfile = warmProfile;
+        for (var warmQuantum = 0; warmQuantum < 8; warmQuantum++)
+        {
+            warmBaseline.Advance(2);
+            warmObserved.Advance(2);
+            Assert.Equal(warmBaseline.SaveToJson(), warmObserved.SaveToJson());
+        }
+        Assert.Equal(8, warmProfile.Steps);
+        Console.WriteLine($"PR57_CROSS_PHASE_PROFILE_WARMUP case={label} quanta=8 byteEqual=True disposable=True");
         var profileOrder = new[] { false, true, true, false };
         var profileWall = new long[4];
         var profileCpu = new long[4];
