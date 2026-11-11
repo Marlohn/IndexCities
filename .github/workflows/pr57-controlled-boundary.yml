@@ -152,9 +152,9 @@ jobs:
             for trial in baseline-1 alternate-1 alternate-2 baseline-2; do
               mode="${trial%-*}"
               if [[ "$mode" == alternate ]]; then
-                export PR57_LIVING_ROSTER=1 PR57_CITIZEN_AGENDA=1 PR57_DEPENDENCY_M1=1
+                export PR57_LIVING_ROSTER=1 PR57_CITIZEN_AGENDA=1 PR57_DEPENDENCY_M1=1 PR57_EMPTY_RELOCATION_FASTPATH=1
               else
-                unset PR57_LIVING_ROSTER PR57_CITIZEN_AGENDA PR57_DEPENDENCY_M1 || true
+                unset PR57_LIVING_ROSTER PR57_CITIZEN_AGENDA PR57_DEPENDENCY_M1 PR57_EMPTY_RELOCATION_FASTPATH || true
               fi
               PR57_DEPENDENCY_CASE="$case" PR57_DEPENDENCY_SAVE_PATH="$PWD/$save" \
                 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
