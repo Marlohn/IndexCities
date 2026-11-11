@@ -159,6 +159,7 @@ jobs:
                   -c Release --no-build --filter FullyQualifiedName~Authentic_saves_dependency_m1_abba_integrated_screen \
                   --logger "console;verbosity=detailed" | tee "$log"
               grep -F "PR57_M1_ABBA case=$case" "$log"
+              grep -F "PR57_M1_TRAJECTORY case=$case" "$log"
               grep -F "byteEqual=True saveLoadAt=71 fallbackSteps=3 avoidedInternalSteps=0 certified=False" "$log"
             done
             python3 - "$case" <<'PY'
@@ -179,6 +180,28 @@ jobs:
               speedups.append(metric("speedup"))
               baseline_ms.append(metric("baselineWallMs"))
               alternate_ms.append(metric("alternateWallMs"))
+          trajectory_speedups, trajectory_baseline_ms, trajectory_alternate_ms = [], [], []
+          for repeat in (1, 2):
+              content = pathlib.Path(f"artifacts/controlled-boundary/m1-abba-{case}-{repeat}.log").read_text()
+              lines = [line for line in content.splitlines() if f"PR57_M1_TRAJECTORY case={case} " in line and "speedup=" in line]
+              if not lines:
+                  raise SystemExit(f"Missing full causal trajectory: {case} repeat={repeat}")
+              line = lines[-1]
+              def trajectory_metric(name):
+                  match = re.search(rf"\\b{re.escape(name)}=([0-9.]+)", line)
+                  if not match:
+                      raise SystemExit(f"Missing trajectory {name}: {case} repeat={repeat}")
+                  return float(match.group(1))
+              trajectory_speedups.append(trajectory_metric("speedup"))
+              trajectory_baseline_ms.append(trajectory_metric("baselineWallMs"))
+              trajectory_alternate_ms.append(trajectory_metric("alternateWallMs"))
+          trajectory_median = statistics.median(trajectory_speedups)
+          print(f"PR57_M1_TRAJECTORY_FRESH_PROCESSES case={case} runs=2 "
+                f"speedups={trajectory_speedups} medianSpeedup={trajectory_median:.5f} "
+                f"baselineWallMs={trajectory_baseline_ms} alternateWallMs={trajectory_alternate_ms} "
+                f"includesExternalEdits=True includesSaveLoad=True includesCheckpoints=True "
+                f"verdict={'NO_MACRO_EVIDENCE' if all(v < 2 for v in trajectory_speedups) else 'REQUIRES_REPLICATION'} "
+                f"certified=False")
           median = statistics.median(speedups)
           print(f"PR57_M1_FRESH_PROCESSES case={case} runs=2 speedups={speedups} "
                 f"medianSpeedup={median:.5f} baselineWallMs={baseline_ms} "
