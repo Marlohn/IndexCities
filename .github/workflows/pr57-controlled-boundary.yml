@@ -154,7 +154,7 @@ jobs:
                 -c Release --no-build --filter FullyQualifiedName~Authentic_saves_dependency_m1_abba_integrated_screen \
                 --logger "console;verbosity=detailed" | tee "artifacts/controlled-boundary/m1-abba-$case.log"
             grep -F "PR57_M1_ABBA case=$case" "artifacts/controlled-boundary/m1-abba-$case.log"
-            grep -F "byteEqual=True avoidedInternalSteps=0 certified=False" "artifacts/controlled-boundary/m1-abba-$case.log"
+            grep -F "byteEqual=True saveLoadAt=71 fallbackSteps=3 avoidedInternalSteps=0 certified=False" "artifacts/controlled-boundary/m1-abba-$case.log"
           done
       - name: Falsify public-boundary batching on both real-engine saves
         shell: bash
