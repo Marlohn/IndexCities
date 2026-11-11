@@ -98,6 +98,53 @@ public sealed class Pr57DependencyExecutorPoc
     }
 
 
+    // Isolated parity gate for the empty municipal-relocation fastpath.
+    // The flag is process-global: compare trajectories sequentially, never
+    // toggle it while another test is using the simulation.
+    [Fact]
+    public void Authentic_saves_empty_relocation_fastpath_exact_causal_gate()
+    {
+        var path = Environment.GetEnvironmentVariable("PR57_DEPENDENCY_SAVE_PATH");
+        if (string.IsNullOrWhiteSpace(path)) return;
+        var label = Environment.GetEnvironmentVariable("PR57_DEPENDENCY_CASE") ?? "unknown";
+        var original = File.ReadAllText(path);
+        var old = Environment.GetEnvironmentVariable("PR57_EMPTY_RELOCATION_FASTPATH");
+        try
+        {
+            string[] Run(bool fastpath)
+            {
+                Environment.SetEnvironmentVariable("PR57_EMPTY_RELOCATION_FASTPATH", fastpath ? "1" : null);
+                var engine = CitySimulation.FromJson(original);
+                var checkpoints = new string[120];
+                for (var step = 1; step <= 120; step++)
+                {
+                    if (step == 31)
+                    {
+                        engine.State.Citizens[0].HungerMicroseconds++;
+                        engine.State.Buildings[0].SalePrice += .01m;
+                        var stock = engine.State.Buildings[0].Stock.Units;
+                        stock[ResourceKind.Food] = stock.GetValueOrDefault(ResourceKind.Food) + 1;
+                    }
+                    if (step == 71)
+                        engine = CitySimulation.FromJson(engine.SaveToJson());
+                    engine.Advance(2);
+                    checkpoints[step - 1] = engine.SaveToJson();
+                }
+                return checkpoints;
+            }
+            var baseline = Run(false);
+            var alternate = Run(true);
+            for (var i = 0; i < baseline.Length; i++)
+                Assert.True(string.Equals(baseline[i], alternate[i], StringComparison.Ordinal),
+                    $"PR57_EMPTY_RELOCATION_DIVERGENCE case={label} step={i + 1}");
+            Console.WriteLine($"PR57_EMPTY_RELOCATION_PARITY case={label} steps=120 byteEqual=True externalEdits=3 saveLoadAt=71 comparison=sequential-same-process-not-ABBA");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PR57_EMPTY_RELOCATION_FASTPATH", old);
+        }
+    }
+
     // Independent structural candidate: amortize public-boundary invalidations
     // across ten *real* 2-second quanta. Every internal phase still executes.
     // Reject immediately if the boundary has observable causal semantics.
