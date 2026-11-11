@@ -426,6 +426,7 @@ public sealed class Pr57DependencyExecutorPoc
             var alternative = order[trial];
             var baseline = alternative ? null : CitySimulation.FromJson(json);
             var candidate = alternative ? new Executor(json) : null;
+            var trialCpuStart = Process.GetCurrentProcess().TotalProcessorTime.Ticks;
             for (var step = 0; step < 120; step++)
             {
                 if (step == 70)
@@ -449,17 +450,19 @@ public sealed class Pr57DependencyExecutorPoc
                     else ApplyExternalEdit(baseline!);
                 }
                 var bytes = GC.GetAllocatedBytesForCurrentThread();
-                var cpuBefore = Process.GetCurrentProcess().TotalProcessorTime.Ticks;
+                // CPU is sampled once per trajectory: querying process CPU
+                // at every quantum dominates short Advance(2) wall timings.
+                // CPU totals include JSON assertions and are diagnostic only.
                 var start = Stopwatch.GetTimestamp();
                 if (alternative) candidate!.Advance();
                 else baseline!.Advance(2);
                 elapsed[trial] += Stopwatch.GetTimestamp() - start;
-                cpuTicks[trial] += Process.GetCurrentProcess().TotalProcessorTime.Ticks - cpuBefore;
                 allocated[trial] += GC.GetAllocatedBytesForCurrentThread() - bytes;
                 var snapshot = alternative ? candidate!.Snapshot() : baseline!.SaveToJson();
                 Assert.True(string.Equals(hashes[step], snapshot, StringComparison.Ordinal),
                     $"PR57_M1_ABBA_DIVERGENCE case={label} trial={trial} step={step + 1}");
             }
+            cpuTicks[trial] = Process.GetCurrentProcess().TotalProcessorTime.Ticks - trialCpuStart;
             if (alternative)
             {
                 Assert.Equal(120, candidate!.Cost.RequiredSteps);
