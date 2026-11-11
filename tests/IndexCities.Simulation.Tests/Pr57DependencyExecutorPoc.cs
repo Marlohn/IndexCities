@@ -561,16 +561,27 @@ public sealed class Pr57DependencyExecutorPoc
         var topFourTicks = ranked.Take(4).Sum(entry => entry.Ticks);
         var topFourFraction = totalProfiled == 0 ? 0 : topFourTicks / (double)totalProfiled;
         var topFourCeiling = topFourFraction >= 1 ? double.PositiveInfinity : 1 / (1 - topFourFraction);
+        // The normalized phase-only ceiling ignores time outside Mark() spans.
+        // Report a second, wall-referenced ideal bound to expose that omission.
+        // Both remain intrusive observations, not predictions of optimized wall time.
+        var topFourWallFraction = wallTicks <= 0 ? 0 : Math.Min(1, topFourTicks / (double)wallTicks);
+        var topFourWallCeiling = topFourWallFraction >= 1
+            ? double.PositiveInfinity : 1 / (1 - topFourWallFraction);
+        var constructionWallFraction = wallTicks <= 0 ? 0 : Math.Min(1, constructionTicks / (double)wallTicks);
+        var constructionWallCeiling = constructionWallFraction >= 1
+            ? double.PositiveInfinity : 1 / (1 - constructionWallFraction);
         var rankedPhases = string.Join(",", ranked.Select(entry =>
             $"{StepCostProfile.Names[entry.Index]}:{(totalProfiled == 0 ? 0 : entry.Ticks / (double)totalProfiled):F6}"));
         Console.WriteLine($"PR57_CROSS_PHASE_CEILING case={label} quanta=120 " +
             $"rankedShares={rankedPhases} topFourFraction={topFourFraction:F6} " +
             $"topFourIdealSpeedupCeiling={topFourCeiling:F5} " +
+            $"topFourWallFraction={topFourWallFraction:F6} topFourWallIdealCeiling={topFourWallCeiling:F5} " +
             $"profiledVsWallFraction={(wallTicks == 0 ? 0 : totalProfiled / (double)wallTicks):F6} " +
             "scope=intrusive-ideal-bound-no-skipped-phases-no-speedup-claim");
         Console.WriteLine($"PR57_CONSTRUCTION_CEILING case={label} quanta=120 " +
             $"profiledTicks={totalProfiled} constructionTicks={constructionTicks} " +
             $"constructionFraction={fraction:F6} idealSpeedupCeiling={idealCeiling:F5} " +
+            $"constructionWallFraction={constructionWallFraction:F6} constructionWallIdealCeiling={constructionWallCeiling:F5} " +
             $"integratedWallMs={wallTicks * 1000.0 / Stopwatch.Frequency:F3} " +
             $"constructionProjectsVisited={profile.ConstructionProgressProjects} " +
             $"dispatchProjectsVisited={profile.ConstructionOrderProjects} " +
