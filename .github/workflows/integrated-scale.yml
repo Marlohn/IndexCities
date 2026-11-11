@@ -30,11 +30,12 @@ jobs:
           dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
           PR57_BUILDING_WORK_ACCESS=0 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
           PR57_BUILDING_WORK_ACCESS=1 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
-      - name: Restore authentic economic checkpoint
+      # The original growth artifact has expired; use retained authentic workplace checkpoints.
+      - name: Restore authentic workplace checkpoint
         uses: actions/download-artifact@v4
         with:
-          name: integrated-scale-pr57-real-growth
-          run-id: 40250545171
+          name: integrated-scale-pr57-legal-workplaces-8d
+          run-id: 40169101306
           github-token: ${{ github.token }}
           path: artifacts/real-growth
       - name: Restore authentic older congestion checkpoint
@@ -48,8 +49,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          source="$(find artifacts/real-growth -type f -path '*/growth/checkpoint-0.json' -print -quit)"
-          late="$(find artifacts/real-growth -type f -path '*/growth/checkpoint-6.json' -print -quit)"
+          source="$(find artifacts/real-growth -type f -path '*/pr57-jobs-20/checkpoint-0.json' -print -quit)"
+          late="$(find artifacts/real-growth -type f -path '*/pr57-jobs-20/checkpoint-6.json' -print -quit)"
           congested="$(find artifacts/real-congested -type f -path '*/pr57-jobs-20/checkpoint-11.json' -print -quit)"
           test -s "$source"
           test -s "$late"
