@@ -111,12 +111,13 @@ public sealed class Pr57DependencyExecutorPoc
         var old = Environment.GetEnvironmentVariable("PR57_EMPTY_RELOCATION_FASTPATH");
         try
         {
-            (string[] Checkpoints, long WallTicks, long AllocBytes, long CpuTicks) Run(bool fastpath)
+            (string[] Checkpoints, long WallTicks, long AllocBytes, long CpuTicks, long EmptySteps, long NonEmptySteps) Run(bool fastpath)
             {
                 Environment.SetEnvironmentVariable("PR57_EMPTY_RELOCATION_FASTPATH", fastpath ? "1" : null);
                 var engine = CitySimulation.FromJson(original);
                 var checkpoints = new string[120];
                 long wallTicks = 0, allocated = 0, cpuTicks = 0;
+                long emptySteps = 0, nonEmptySteps = 0;
                 for (var step = 1; step <= 120; step++)
                 {
                     if (step == 31)
@@ -128,6 +129,8 @@ public sealed class Pr57DependencyExecutorPoc
                     }
                     if (step == 71)
                         engine = CitySimulation.FromJson(engine.SaveToJson());
+                    if (engine.State.MunicipalRelocations.Count == 0) emptySteps++;
+                    else nonEmptySteps++;
                     var bytesBefore = GC.GetAllocatedBytesForCurrentThread();
                     var cpuBefore = Process.GetCurrentProcess().TotalProcessorTime.Ticks;
                     var started = Stopwatch.GetTimestamp();
@@ -137,7 +140,7 @@ public sealed class Pr57DependencyExecutorPoc
                     allocated += GC.GetAllocatedBytesForCurrentThread() - bytesBefore;
                     checkpoints[step - 1] = engine.SaveToJson();
                 }
-                return (checkpoints, wallTicks, allocated, cpuTicks);
+                return (checkpoints, wallTicks, allocated, cpuTicks, emptySteps, nonEmptySteps);
             }
             // ABBA isolates this single opt-in, unlike the broader structural
             // workflow's alternate mode which enables several unrelated flags.
@@ -150,11 +153,18 @@ public sealed class Pr57DependencyExecutorPoc
                 for (var i = 0; i < a1.Checkpoints.Length; i++)
                     Assert.True(string.Equals(a1.Checkpoints[i], trial.Checkpoints[i], StringComparison.Ordinal),
                         $"PR57_EMPTY_RELOCATION_DIVERGENCE case={label} step={i + 1}");
+            Assert.True(b1.EmptySteps > 0, $"PR57_EMPTY_RELOCATION_NOT_EXERCISED case={label}");
+            Assert.Equal(a1.EmptySteps, b1.EmptySteps);
+            Assert.Equal(a1.NonEmptySteps, b1.NonEmptySteps);
+            Assert.Equal(a1.EmptySteps, b2.EmptySteps);
+            Assert.Equal(a1.NonEmptySteps, b2.NonEmptySteps);
+            Assert.Equal(a1.EmptySteps, a2.EmptySteps);
+            Assert.Equal(a1.NonEmptySteps, a2.NonEmptySteps);
             var baselineTicks = (a1.WallTicks + a2.WallTicks) / 2.0;
             var alternateTicks = (b1.WallTicks + b2.WallTicks) / 2.0;
             var speedup = baselineTicks / Math.Max(1, alternateTicks);
             Console.WriteLine($"PR57_EMPTY_RELOCATION_PARITY case={label} steps=120 byteEqual=True externalEdits=3 saveLoadAt=71 comparison=sequential-same-process-ABBA");
-            Console.WriteLine($"PR57_EMPTY_RELOCATION_ABBA case={label} baselineWallMs={baselineTicks * 1000 / Stopwatch.Frequency:F3} alternateWallMs={alternateTicks * 1000 / Stopwatch.Frequency:F3} speedup={speedup:F5} baselineAllocBytes={(a1.AllocBytes + a2.AllocBytes) / 2} alternateAllocBytes={(b1.AllocBytes + b2.AllocBytes) / 2} baselineCpuTicks={(a1.CpuTicks + a2.CpuTicks) / 2} alternateCpuTicks={(b1.CpuTicks + b2.CpuTicks) / 2} trials=2-per-mode sameProcess=True speedupCertified=False scope=single-empty-relocation-fastpath");
+            Console.WriteLine($"PR57_EMPTY_RELOCATION_ABBA case={label} baselineWallMs={baselineTicks * 1000 / Stopwatch.Frequency:F3} alternateWallMs={alternateTicks * 1000 / Stopwatch.Frequency:F3} speedup={speedup:F5} baselineAllocBytes={(a1.AllocBytes + a2.AllocBytes) / 2} alternateAllocBytes={(b1.AllocBytes + b2.AllocBytes) / 2} baselineCpuTicks={(a1.CpuTicks + a2.CpuTicks) / 2} alternateCpuTicks={(b1.CpuTicks + b2.CpuTicks) / 2} trials=2-per-mode sameProcess=True speedupCertified=False scope=single-empty-relocation-fastpath emptySteps={b1.EmptySteps} nonEmptyFallbackSteps={b1.NonEmptySteps} maxAvoidableFractionOfSteps={(double)b1.EmptySteps / 120:F5}");
 
         }
         finally
