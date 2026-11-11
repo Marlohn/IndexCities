@@ -89,12 +89,30 @@ jobs:
           mkdir -p artifacts/controlled-boundary
           for case in works-real congested-real; do
             if [[ "$case" == works-real ]]; then save="$works"; else save="$queue"; fi
-            PR57_DEPENDENCY_CASE="$case" PR57_DEPENDENCY_SAVE_PATH="$PWD/$save" \
-              dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
-                -c Release --no-build --filter FullyQualifiedName~Authentic_saves_empty_relocation_fastpath_exact_causal_gate \
-                --logger "console;verbosity=detailed" | tee "artifacts/controlled-boundary/empty-relocation-$case.log"
-            grep -F "PR57_EMPTY_RELOCATION_PARITY case=$case steps=120 byteEqual=True" \
-              "artifacts/controlled-boundary/empty-relocation-$case.log"
+            # Two independent dotnet test processes per save, each performing
+            # exact A-B-B-A trajectories. Do not call this a certified speedup:
+            # process/JIT and sample-count uncertainty remain explicit.
+            for repeat in 1 2; do
+              log="artifacts/controlled-boundary/empty-relocation-$case-$repeat.log"
+              PR57_DEPENDENCY_CASE="$case" PR57_DEPENDENCY_SAVE_PATH="$PWD/$save" \
+                dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
+                  -c Release --no-build --filter FullyQualifiedName~Authentic_saves_empty_relocation_fastpath_exact_causal_gate \
+                  --logger "console;verbosity=detailed" | tee "$log"
+              grep -F "PR57_EMPTY_RELOCATION_PARITY case=$case steps=120 byteEqual=True" "$log"
+              grep -F "PR57_EMPTY_RELOCATION_ABBA case=$case" "$log"
+            done
+            python3 - "$case" <<'PY'
+import pathlib, re, statistics, sys
+case = sys.argv[1]
+values = []
+for repeat in (1, 2):
+    log = pathlib.Path(f"artifacts/controlled-boundary/empty-relocation-{case}-{repeat}.log").read_text()
+    match = re.search(rf"PR57_EMPTY_RELOCATION_ABBA case={re.escape(case)} .*?speedup=([0-9.]+)", log)
+    if not match:
+        raise SystemExit(f"Missing ABBA for {case}, repeat {repeat}")
+    values.append(float(match.group(1)))
+print(f"PR57_EMPTY_RELOCATION_FRESH_PROCESSES case={case} runs=2 speedups={values} median={statistics.median(values):.5f} certified=False")
+PY
           done
       - name: Dependency executor M0 on authentic saves (mandatory causal fallback)
         shell: bash
