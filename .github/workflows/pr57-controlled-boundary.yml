@@ -141,9 +141,7 @@ jobs:
             test "$(grep -c 'PR57_DEPENDENCY_CHECKPOINT' "artifacts/controlled-boundary/dependency-$case.log")" -eq 12
           done
       - name: M1 integrated ABBA screen with exact intermediate JSON on both real saves
-        # Independent evidence gate: a preceding experimental assertion may fail,
-        # but must not suppress M1 parity/ABBA when the two saves exist.
-        # This does not bypass M1 assertions or make the overall job green.
+        # Independent evidence gate; two fresh test processes per save.
         if: ${{ success() || failure() }}
         shell: bash
         run: |
@@ -151,14 +149,43 @@ jobs:
           works="$(find artifacts/real-growth -type f -path '*/growth/checkpoint-0.json' -print -quit)"
           queue="$(find artifacts/real-congested -type f -path '*/pr57-jobs-20/checkpoint-11.json' -print -quit)"
           test -s "$works" && test -s "$queue"
+          mkdir -p artifacts/controlled-boundary
           for case in works-real congested-real; do
             if [[ "$case" == works-real ]]; then save="$works"; else save="$queue"; fi
-            PR57_DEPENDENCY_M1=1 PR57_DEPENDENCY_CASE="$case" PR57_DEPENDENCY_SAVE_PATH="$PWD/$save" \
-              dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
-                -c Release --no-build --filter FullyQualifiedName~Authentic_saves_dependency_m1_abba_integrated_screen \
-                --logger "console;verbosity=detailed" | tee "artifacts/controlled-boundary/m1-abba-$case.log"
-            grep -F "PR57_M1_ABBA case=$case" "artifacts/controlled-boundary/m1-abba-$case.log"
-            grep -F "byteEqual=True saveLoadAt=71 fallbackSteps=3 avoidedInternalSteps=0 certified=False" "artifacts/controlled-boundary/m1-abba-$case.log"
+            for repeat in 1 2; do
+              log="artifacts/controlled-boundary/m1-abba-$case-$repeat.log"
+              PR57_DEPENDENCY_M1=1 PR57_DEPENDENCY_CASE="$case" PR57_DEPENDENCY_SAVE_PATH="$PWD/$save" \
+                dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
+                  -c Release --no-build --filter FullyQualifiedName~Authentic_saves_dependency_m1_abba_integrated_screen \
+                  --logger "console;verbosity=detailed" | tee "$log"
+              grep -F "PR57_M1_ABBA case=$case" "$log"
+              grep -F "byteEqual=True saveLoadAt=71 fallbackSteps=3 avoidedInternalSteps=0 certified=False" "$log"
+            done
+            python3 - "$case" <<'PY'
+          import pathlib, re, statistics, sys
+          case = sys.argv[1]
+          speedups, baseline_ms, alternate_ms = [], [], []
+          for repeat in (1, 2):
+              content = pathlib.Path(f"artifacts/controlled-boundary/m1-abba-{case}-{repeat}.log").read_text()
+              lines = [line for line in content.splitlines() if f"PR57_M1_ABBA case={case} " in line and "speedup=" in line]
+              if not lines:
+                  raise SystemExit(f"Missing M1 integrated ABBA: {case} repeat={repeat}")
+              line = lines[-1]
+              def metric(name):
+                  match = re.search(rf"\\b{re.escape(name)}=([0-9.]+)", line)
+                  if not match:
+                      raise SystemExit(f"Missing {name}: {case} repeat={repeat}")
+                  return float(match.group(1))
+              speedups.append(metric("speedup"))
+              baseline_ms.append(metric("baselineWallMs"))
+              alternate_ms.append(metric("alternateWallMs"))
+          median = statistics.median(speedups)
+          print(f"PR57_M1_FRESH_PROCESSES case={case} runs=2 speedups={speedups} "
+                f"medianSpeedup={median:.5f} baselineWallMs={baseline_ms} "
+                f"alternateWallMs={alternate_ms} avoidedInternalSteps=0 "
+                f"verdict={'NO_MACRO_EVIDENCE' if all(v < 2 for v in speedups) else 'REQUIRES_REPLICATION'} "
+                f"certified=False")
+          PY
           done
       - name: Falsify public-boundary batching on both real-engine saves
         shell: bash
