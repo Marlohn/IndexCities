@@ -140,6 +140,22 @@ jobs:
             grep -F "avoidedSteps=0" "artifacts/controlled-boundary/dependency-$case.log"
             test "$(grep -c 'PR57_DEPENDENCY_CHECKPOINT' "artifacts/controlled-boundary/dependency-$case.log")" -eq 12
           done
+      - name: M1 integrated ABBA screen with exact intermediate JSON on both real saves
+        shell: bash
+        run: |
+          set -euo pipefail
+          works="$(find artifacts/real-growth -type f -path '*/growth/checkpoint-0.json' -print -quit)"
+          queue="$(find artifacts/real-congested -type f -path '*/pr57-jobs-20/checkpoint-11.json' -print -quit)"
+          test -s "$works" && test -s "$queue"
+          for case in works-real congested-real; do
+            if [[ "$case" == works-real ]]; then save="$works"; else save="$queue"; fi
+            PR57_DEPENDENCY_M1=1 PR57_DEPENDENCY_CASE="$case" PR57_DEPENDENCY_SAVE_PATH="$PWD/$save" \
+              dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
+                -c Release --no-build --filter FullyQualifiedName~Authentic_saves_dependency_m1_abba_integrated_screen \
+                --logger "console;verbosity=detailed" | tee "artifacts/controlled-boundary/m1-abba-$case.log"
+            grep -F "PR57_M1_ABBA case=$case" "artifacts/controlled-boundary/m1-abba-$case.log"
+            grep -F "byteEqual=True avoidedInternalSteps=0 certified=False" "artifacts/controlled-boundary/m1-abba-$case.log"
+          done
       - name: Falsify public-boundary batching on both real-engine saves
         shell: bash
         run: |
