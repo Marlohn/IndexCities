@@ -322,13 +322,19 @@ public sealed class Pr57DependencyExecutorPoc
             baseline.Advance(2);
             baselineTicks += Stopwatch.GetTimestamp() - baselineStart;
             baselineAllocated += GC.GetAllocatedBytesForCurrentThread() - baselineBytes;
-            if (step % 10 != 0) continue;
+            // Exact parity at EVERY public Advance(2) boundary: a divergence
+            // between sparse checkpoints may later self-heal and go unnoticed.
+            // Serialization remains outside the timed engine intervals.
             var expected = baseline.SaveToJson();
             var actual = candidate.Snapshot();
-            Assert.Equal(expected, actual);
+            Assert.True(string.Equals(expected, actual, StringComparison.Ordinal),
+                $"PR57_DEPENDENCY_DIVERGENCE case={label} step={step}");
             Assert.Equal(actual, CitySimulation.FromJson(actual).SaveToJson());
-            var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(actual)));
-            Console.WriteLine($"PR57_DEPENDENCY_CHECKPOINT case={label} step={step} sha256={hash}");
+            if (step % 10 == 0)
+            {
+                var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(actual)));
+                Console.WriteLine($"PR57_DEPENDENCY_CHECKPOINT case={label} step={step} sha256={hash}");
+            }
         }
         // M0 persistence gate: reloading must preserve future causal evolution,
         // not merely reproduce the same JSON at the instant of serialization.
