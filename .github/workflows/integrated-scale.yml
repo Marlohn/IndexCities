@@ -123,8 +123,11 @@ jobs:
                   for i in range(len(windows)+1):
                       path=root/f'{case}-{mode}'/f'checkpoint-{i}.json'
                       assert path.is_file(),(case,mode,i)
-                      control=root/f'{case}-control'/f'checkpoint-{i}.json'
-                      assert path.read_bytes()==control.read_bytes(),(case,mode,'causal divergence',i)
+
+              for i in range(len(windows)+1):
+                  control=root/f'{case}-control'/f'checkpoint-{i}.json'
+                  candidate=root/f'{case}-candidate'/f'checkpoint-{i}.json'
+                  assert candidate.read_bytes()==control.read_bytes(),(case,'causal divergence',i)
               c=results['control'];o=results['candidate']
               print('PR57_BUILDING_ACCESS_RESULT',case,'control',c,'candidate',o,
                     'wallReductionPct',round((c['wall']-o['wall'])/c['wall']*100,2),
