@@ -374,7 +374,12 @@ public sealed partial class CitySimulation
         if(Pr57Writer289Enabled)_pr57Writer289Phase=5;
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,4,ref started);
         if(samplePresence){presence!.Observe(this,4);profile?.ResetAllocationCensusBaseline();started=System.Diagnostics.Stopwatch.GetTimestamp();}
-        ProgressMunicipalRelocations(dt);
+        // PR57 isolated opt-in: empty relocation set has no entities to progress.
+        // Preserve the original phase whenever any relocation exists; external
+        // edits to State are visible at every Step without a cached guard.
+        if (Environment.GetEnvironmentVariable("PR57_EMPTY_RELOCATION_FASTPATH") != "1"
+            || State.MunicipalRelocations.Count != 0)
+            ProgressMunicipalRelocations(dt);
         if(profile is not null)profile.Mark(5,ref started);
         if(Pr57Writer289Enabled)_pr57Writer289Phase=6;
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,5,ref started);
