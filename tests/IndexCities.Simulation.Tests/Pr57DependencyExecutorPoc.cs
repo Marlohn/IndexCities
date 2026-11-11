@@ -646,6 +646,8 @@ public sealed class Pr57DependencyExecutorPoc
         }
         Assert.Equal(8, warmProfile.Steps);
         Console.WriteLine($"PR57_CROSS_PHASE_PROFILE_WARMUP case={label} quanta=8 byteEqual=True disposable=True");
+        // Reuse a single process handle during ABBA CPU sampling.
+        using var cpuProcess = Process.GetCurrentProcess();
         var profileOrder = new[] { false, true, true, false };
         var profileWall = new long[4];
         var profileCpu = new long[4];
@@ -673,12 +675,12 @@ public sealed class Pr57DependencyExecutorPoc
                     simulation = CitySimulation.FromJson(simulation.SaveToJson());
                     simulation.CostProfile = trialProfile;
                 }
-                var cpuBefore = Process.GetCurrentProcess().TotalProcessorTime.Ticks;
+                var cpuBefore = cpuProcess.TotalProcessorTime.Ticks;
                 var allocBefore = GC.GetAllocatedBytesForCurrentThread();
                 var started = Stopwatch.GetTimestamp();
                 simulation.Advance(2);
                 profileWall[trial] += Stopwatch.GetTimestamp() - started;
-                profileCpu[trial] += Process.GetCurrentProcess().TotalProcessorTime.Ticks - cpuBefore;
+                profileCpu[trial] += cpuProcess.TotalProcessorTime.Ticks - cpuBefore;
                 profileAlloc[trial] += GC.GetAllocatedBytesForCurrentThread() - allocBefore;
                 Assert.Equal(baselineCheckpoints[quantum - 1], simulation.SaveToJson());
             }
