@@ -225,6 +225,13 @@ jobs:
                 -c Release --no-build --filter FullyQualifiedName~Authentic_saves_construction_phase_ideal_speedup_ceiling \
                 --logger "console;verbosity=detailed" | tee "artifacts/controlled-boundary/ceiling-$case.log"
             grep -F "PR57_CONSTRUCTION_CEILING case=$case" "artifacts/controlled-boundary/ceiling-$case.log"
+            # The intrusive phase census is usable only if it leaves every
+            # integrated checkpoint byte-identical, including edits and reload.
+            PR57_DEPENDENCY_CASE="$case" PR57_DEPENDENCY_SAVE_PATH="$PWD/$save" \
+              dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
+                -c Release --no-build --filter FullyQualifiedName~Authentic_saves_phase_cost_profile_is_causally_observational \
+                --logger "console;verbosity=detailed" | tee "artifacts/controlled-boundary/profile-parity-$case.log"
+            grep -F "PR57_CROSS_PHASE_PROFILE_PARITY case=$case quanta=120 byteEqual=True" "artifacts/controlled-boundary/profile-parity-$case.log"
           done
       - name: Falsify public-boundary batching on both real-engine saves
         shell: bash
