@@ -389,8 +389,19 @@ public sealed class Pr57DependencyExecutorPoc
         var json = File.ReadAllText(path);
         var reference = CitySimulation.FromJson(json);
         var hashes = new string[120];
+        // Exercise a real cross-domain external edit, forcing the certified
+        // executor to fall back at the same causal boundary as public Advance.
+        // A later save/load is deliberately covered by the separate resume gate.
+        void ApplyExternalEdit(CitySimulation engine)
+        {
+            engine.State.Citizens[0].HungerMicroseconds++;
+            engine.State.Buildings[0].SalePrice += .01m;
+            var stock = engine.State.Buildings[0].Stock.Units;
+            stock[ResourceKind.Food] = stock.GetValueOrDefault(ResourceKind.Food) + 1;
+        }
         for (var step = 0; step < 120; step++)
         {
+            if (step == 30) ApplyExternalEdit(reference);
             reference.Advance(2);
             hashes[step] = reference.SaveToJson();
         }
@@ -404,6 +415,21 @@ public sealed class Pr57DependencyExecutorPoc
             var candidate = alternative ? new Executor(json) : null;
             for (var step = 0; step < 120; step++)
             {
+                if (step == 30)
+                {
+                    if (alternative)
+                    {
+                        // Submit the exact same edits through the controlled
+                        // boundary, never through an escaped mutable alias.
+                        var citizen = CitySimulation.FromJson(candidate!.Snapshot()).State.Citizens[0];
+                        var building = CitySimulation.FromJson(candidate.Snapshot()).State.Buildings[0];
+                        candidate.SubmitNeeds(citizen.Id, citizen.HungerMicroseconds + 1);
+                        candidate.SubmitPrice(building.Id, building.SalePrice + .01m);
+                        candidate.SubmitFoodStock(building.Id,
+                            building.Stock.Units.GetValueOrDefault(ResourceKind.Food) + 1);
+                    }
+                    else ApplyExternalEdit(baseline!);
+                }
                 var bytes = GC.GetAllocatedBytesForCurrentThread();
                 var start = Stopwatch.GetTimestamp();
                 if (alternative) candidate!.Advance();
@@ -417,8 +443,8 @@ public sealed class Pr57DependencyExecutorPoc
             if (alternative)
             {
                 Assert.Equal(120, candidate!.Cost.RequiredSteps);
-                Assert.Equal(119, candidate.Cost.AvoidedBoundaryRebuilds);
-                Assert.Equal(1, candidate.Cost.FallbackSteps);
+                Assert.Equal(118, candidate.Cost.AvoidedBoundaryRebuilds);
+                Assert.Equal(2, candidate.Cost.FallbackSteps);
             }
         }
         var baselineTicks = elapsed[0] + elapsed[3];
