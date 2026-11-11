@@ -4,6 +4,9 @@ on:
     branches: [experimento/escala-motor-integrado-10k-80y]
     paths:
       - .github/workflows/integrated-scale.yml
+      - src/IndexCities.Simulation/**
+      - src/IndexCities.Headless/**
+      - tests/IndexCities.Simulation.Tests/**
   workflow_dispatch:
 permissions:
   contents: read
