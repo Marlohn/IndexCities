@@ -102,17 +102,17 @@ jobs:
               grep -F "PR57_EMPTY_RELOCATION_ABBA case=$case" "$log"
             done
             python3 - "$case" <<'PY'
-import pathlib, re, statistics, sys
-case = sys.argv[1]
-values = []
-for repeat in (1, 2):
-    log = pathlib.Path(f"artifacts/controlled-boundary/empty-relocation-{case}-{repeat}.log").read_text()
-    match = re.search(rf"PR57_EMPTY_RELOCATION_ABBA case={re.escape(case)} .*?speedup=([0-9.]+)", log)
-    if not match:
-        raise SystemExit(f"Missing ABBA for {case}, repeat {repeat}")
-    values.append(float(match.group(1)))
-print(f"PR57_EMPTY_RELOCATION_FRESH_PROCESSES case={case} runs=2 speedups={values} median={statistics.median(values):.5f} certified=False")
-PY
+          import pathlib, re, statistics, sys
+          case = sys.argv[1]
+          values = []
+          for repeat in (1, 2):
+              log = pathlib.Path(f"artifacts/controlled-boundary/empty-relocation-{case}-{repeat}.log").read_text()
+              match = re.search(rf"PR57_EMPTY_RELOCATION_ABBA case={re.escape(case)} .*?speedup=([0-9.]+)", log)
+              if not match:
+                  raise SystemExit(f"Missing ABBA for {case}, repeat {repeat}")
+              values.append(float(match.group(1)))
+          print(f"PR57_EMPTY_RELOCATION_FRESH_PROCESSES case={case} runs=2 speedups={values} median={statistics.median(values):.5f} certified=False")
+          PY
           done
       - name: Dependency executor M0 on authentic saves (mandatory causal fallback)
         shell: bash
