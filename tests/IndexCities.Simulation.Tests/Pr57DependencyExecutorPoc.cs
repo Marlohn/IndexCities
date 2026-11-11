@@ -408,6 +408,7 @@ public sealed class Pr57DependencyExecutorPoc
         var order = new[] { false, true, true, false };
         var elapsed = new long[4];
         var allocated = new long[4];
+        var cpuTicks = new long[4];
         for (var trial = 0; trial < order.Length; trial++)
         {
             var alternative = order[trial];
@@ -431,10 +432,12 @@ public sealed class Pr57DependencyExecutorPoc
                     else ApplyExternalEdit(baseline!);
                 }
                 var bytes = GC.GetAllocatedBytesForCurrentThread();
+                var cpuBefore = Process.GetCurrentProcess().TotalProcessorTime.Ticks;
                 var start = Stopwatch.GetTimestamp();
                 if (alternative) candidate!.Advance();
                 else baseline!.Advance(2);
                 elapsed[trial] += Stopwatch.GetTimestamp() - start;
+                cpuTicks[trial] += Process.GetCurrentProcess().TotalProcessorTime.Ticks - cpuBefore;
                 allocated[trial] += GC.GetAllocatedBytesForCurrentThread() - bytes;
                 var snapshot = alternative ? candidate!.Snapshot() : baseline!.SaveToJson();
                 Assert.True(string.Equals(hashes[step], snapshot, StringComparison.Ordinal),
@@ -454,6 +457,8 @@ public sealed class Pr57DependencyExecutorPoc
             $"alternateWallMs={alternateTicks * 1000.0 / Stopwatch.Frequency:F3} " +
             $"baselineAllocBytes={allocated[0] + allocated[3]} " +
             $"alternateAllocBytes={allocated[1] + allocated[2]} " +
+            $"baselineCpuMs={(cpuTicks[0] + cpuTicks[3]) / (double)TimeSpan.TicksPerMillisecond:F3} " +
+            $"alternateCpuMs={(cpuTicks[1] + cpuTicks[2]) / (double)TimeSpan.TicksPerMillisecond:F3} " +
             $"speedup={(double)baselineTicks / Math.Max(1, alternateTicks):F5} " +
             "byteEqual=True avoidedInternalSteps=0 certified=False");
     }
