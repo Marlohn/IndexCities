@@ -511,4 +511,51 @@ public sealed class Pr57DependencyExecutorPoc
             $"speedup={(double)baselineTicks / Math.Max(1, alternateTicks):F5} " +
             "byteEqual=True saveLoadAt=71 fallbackSteps=3 avoidedInternalSteps=0 certified=False");
     }
+
+    // Quantitative falsification gate for the proposed construction-only cut.
+    // Measures the actual integrated engine, not a synthetic dispatch loop.
+    // Even a perfect elimination of these two phases cannot beat this ceiling.
+    [Fact]
+    public void Authentic_saves_construction_phase_ideal_speedup_ceiling()
+    {
+        var path = Environment.GetEnvironmentVariable("PR57_DEPENDENCY_SAVE_PATH");
+        if (string.IsNullOrWhiteSpace(path)) return;
+        var label = Environment.GetEnvironmentVariable("PR57_DEPENDENCY_CASE") ?? "unknown";
+        var engine = CitySimulation.FromJson(File.ReadAllText(path));
+        var profile = new StepCostProfile();
+        engine.CostProfile = profile;
+        long wallTicks = 0;
+        for (var quantum = 1; quantum <= 120; quantum++)
+        {
+            if (quantum == 31)
+            {
+                engine.State.Citizens[0].HungerMicroseconds++;
+                engine.State.Buildings[0].SalePrice += .01m;
+                var stock = engine.State.Buildings[0].Stock.Units;
+                stock[ResourceKind.Food] = stock.GetValueOrDefault(ResourceKind.Food) + 1;
+            }
+            if (quantum == 71)
+            {
+                engine = CitySimulation.FromJson(engine.SaveToJson());
+                engine.CostProfile = profile;
+            }
+            var started = Stopwatch.GetTimestamp();
+            engine.Advance(2);
+            wallTicks += Stopwatch.GetTimestamp() - started;
+        }
+        Assert.Equal(120, profile.Steps);
+        Assert.Equal(StepCostProfile.Names.Length, profile.Ticks.Length);
+        var totalProfiled = profile.Ticks.Sum();
+        // Index 3 is construction progress; index 10 is construction dispatch.
+        var constructionTicks = profile.Ticks[3] + profile.Ticks[10];
+        var fraction = totalProfiled == 0 ? 0 : constructionTicks / (double)totalProfiled;
+        var idealCeiling = fraction >= 1 ? double.PositiveInfinity : 1 / (1 - fraction);
+        Console.WriteLine($"PR57_CONSTRUCTION_CEILING case={label} quanta=120 " +
+            $"profiledTicks={totalProfiled} constructionTicks={constructionTicks} " +
+            $"constructionFraction={fraction:F6} idealSpeedupCeiling={idealCeiling:F5} " +
+            $"integratedWallMs={wallTicks * 1000.0 / Stopwatch.Frequency:F3} " +
+            $"constructionProjectsVisited={profile.ConstructionProgressProjects} " +
+            $"dispatchProjectsVisited={profile.ConstructionOrderProjects} " +
+            "externalEdits=3 saveLoadAt=71 scope=ideal-upper-bound-not-optimization");
+    }
 }
