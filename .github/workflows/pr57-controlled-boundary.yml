@@ -9,6 +9,7 @@ on:
       - tests/IndexCities.Simulation.Tests/Pr57StructuralIntegratedGate.cs
       - tests/IndexCities.Simulation.Tests/Pr57DependencyExecutorPoc.cs
       - src/IndexCities.Simulation/CitySimulation.cs
+      - src/IndexCities.Simulation/Construction.cs
   workflow_dispatch:
 permissions:
   contents: read
