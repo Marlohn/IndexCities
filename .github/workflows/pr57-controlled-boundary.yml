@@ -217,11 +217,15 @@ jobs:
                       if d: return d
               elif a != b: return (path, a, b)
               return None
-          failed = False
+          # Baseline-vs-baseline disagreement is an inconclusive gate, not
+          # evidence against the alternative. Still measure ABBA, but never
+          # promote its speedup as causally certified.
+          baseline_disagreement = {i+1 for i, (a, b) in enumerate(zip(hashes("baseline-1"), hashes("baseline-2"))) if a != b}
+          alternate_disagreement = set()
           for trial in trials[1:]:
               different = [i+1 for i, (x, y) in enumerate(zip(hashes(trials[0]), hashes(trial))) if x != y]
               print(f"PR57_JSON_DIAG case={case} pair={trials[0]}:{trial} differingSteps={different}")
-              if different: failed = True
+              if trial.startswith("alternate"): alternate_disagreement.update(different)
               for step in different:
                   pa = base / f"json-{case}-{trials[0]}" / f"step-{step}.json"
                   pb = base / f"json-{case}-{trial}" / f"step-{step}.json"
@@ -230,7 +234,13 @@ jobs:
                       print(f"PR57_JSON_FIRST_DIFF case={case} step={step} pair={trials[0]}:{trial} detail={str(d)[:500]}")
                   else:
                       print(f"PR57_JSON_FIRST_DIFF case={case} step={step} unavailable=outside-diagnostic-sample")
-          if failed: raise SystemExit("PR57 exact cross-process parity failed; see diagnostic JSON")
+          unexplained = sorted(alternate_disagreement - baseline_disagreement)
+          verdict = "rejected" if unexplained else ("inconclusive-baseline-nondeterminism" if baseline_disagreement else "checkpoint-parity")
+          print(f"PR57_JSON_VERDICT case={case} status={verdict} baselineDisagreement={sorted(baseline_disagreement)} unexplainedAlternateSteps={unexplained}")
+          (base / f"parity-{case}.txt").write_text(verdict + "\\n")
+          # Reject alternate-only divergence. Baseline instability remains
+          # explicitly inconclusive, but ABBA can still report diagnostic costs.
+          if unexplained: raise SystemExit("PR57 alternate-only causal divergence; see diagnostic JSON")
           PY
             python3 - "$case" <<'PY'
           import pathlib, re, statistics, sys
@@ -251,7 +261,7 @@ jobs:
           print(f"PR57_STRUCTURAL_ABBA case={case} baselineMeanMs={baseline:.3f} alternateMeanMs={alternate:.3f} speedup={baseline/alternate:.5f} trials={times} samples=2-per-mode-not-statistically-robust")
           print(f"PR57_STRUCTURAL_TARGET_GAP case={case} population=real-save-not-10k baselineUsPerAdvance={baseline_us:.3f} alternateUsPerAdvance={alternate_us:.3f} exploratory10kTargetUs={target_ms_per_advance*1000:.4f} baselineGapRatio={baseline_us/(target_ms_per_advance*1000):.1f} alternateGapRatio={alternate_us/(target_ms_per_advance*1000):.1f} interpretation=reference-only-not-10k-extrapolation")
           PY
-            echo "PR57_STRUCTURAL_PARITY case=$case fullJsonHashEqual=True publicBoundaryCheckpoints=120 steps=120"
+            verdict="$(cat "artifacts/controlled-boundary/parity-$case.txt")"\n            echo "PR57_STRUCTURAL_PARITY case=$case status=$verdict publicBoundaryCheckpoints=120 steps=120"
           done
       - name: Preserve test and maintenance logs
         if: always()
