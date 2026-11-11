@@ -576,4 +576,44 @@ public sealed class Pr57DependencyExecutorPoc
             $"dispatchProjectsVisited={profile.ConstructionOrderProjects} " +
             "externalEdits=3 saveLoadAt=71 scope=ideal-upper-bound-not-optimization");
     }
+
+    // The intrusive cross-phase ceiling must not perturb the canonical state.
+    // This gate compares every intermediate full JSON, including external edits
+    // and the persistence boundary, before trusting any phase ranking.
+    [Fact]
+    public void Authentic_saves_phase_cost_profile_is_causally_observational()
+    {
+        var path = Environment.GetEnvironmentVariable("PR57_DEPENDENCY_SAVE_PATH");
+        if (string.IsNullOrWhiteSpace(path)) return;
+        var label = Environment.GetEnvironmentVariable("PR57_DEPENDENCY_CASE") ?? "unknown";
+        var original = File.ReadAllText(path);
+        var baseline = CitySimulation.FromJson(original);
+        var observed = CitySimulation.FromJson(original);
+        var profile = new StepCostProfile();
+        observed.CostProfile = profile;
+        for (var quantum = 1; quantum <= 120; quantum++)
+        {
+            if (quantum == 31)
+            {
+                foreach (var engine in new[] { baseline, observed })
+                {
+                    engine.State.Citizens[0].HungerMicroseconds++;
+                    engine.State.Buildings[0].SalePrice += .01m;
+                    var stock = engine.State.Buildings[0].Stock.Units;
+                    stock[ResourceKind.Food] = stock.GetValueOrDefault(ResourceKind.Food) + 1;
+                }
+            }
+            if (quantum == 71)
+            {
+                baseline = CitySimulation.FromJson(baseline.SaveToJson());
+                observed = CitySimulation.FromJson(observed.SaveToJson());
+                observed.CostProfile = profile;
+            }
+            baseline.Advance(2);
+            observed.Advance(2);
+            Assert.Equal(baseline.SaveToJson(), observed.SaveToJson());
+        }
+        Assert.Equal(120, profile.Steps);
+        Console.WriteLine($"PR57_CROSS_PHASE_PROFILE_PARITY case={label} quanta=120 byteEqual=True externalEdits=3 saveLoadAt=71");
+    }
 }
