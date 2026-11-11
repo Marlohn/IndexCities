@@ -172,7 +172,7 @@ jobs:
                   raise SystemExit(f"Missing M1 integrated ABBA: {case} repeat={repeat}")
               line = lines[-1]
               def metric(name):
-                  match = re.search(rf"\\b{re.escape(name)}=([0-9.]+)", line)
+                  match = re.search(rf"\b{re.escape(name)}=([0-9.]+)", line)
                   if not match:
                       raise SystemExit(f"Missing {name}: {case} repeat={repeat}")
                   return float(match.group(1))
