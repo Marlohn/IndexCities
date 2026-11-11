@@ -111,11 +111,12 @@ public sealed class Pr57DependencyExecutorPoc
         var old = Environment.GetEnvironmentVariable("PR57_EMPTY_RELOCATION_FASTPATH");
         try
         {
-            string[] Run(bool fastpath)
+            (string[] Checkpoints, long WallTicks, long AllocBytes, long CpuTicks) Run(bool fastpath)
             {
                 Environment.SetEnvironmentVariable("PR57_EMPTY_RELOCATION_FASTPATH", fastpath ? "1" : null);
                 var engine = CitySimulation.FromJson(original);
                 var checkpoints = new string[120];
+                long wallTicks = 0, allocated = 0, cpuTicks = 0;
                 for (var step = 1; step <= 120; step++)
                 {
                     if (step == 31)
@@ -127,17 +128,34 @@ public sealed class Pr57DependencyExecutorPoc
                     }
                     if (step == 71)
                         engine = CitySimulation.FromJson(engine.SaveToJson());
+                    var bytesBefore = GC.GetAllocatedBytesForCurrentThread();
+                    var cpuBefore = Process.GetCurrentProcess().TotalProcessorTime.Ticks;
+                    var started = Stopwatch.GetTimestamp();
                     engine.Advance(2);
+                    wallTicks += Stopwatch.GetTimestamp() - started;
+                    cpuTicks += Process.GetCurrentProcess().TotalProcessorTime.Ticks - cpuBefore;
+                    allocated += GC.GetAllocatedBytesForCurrentThread() - bytesBefore;
                     checkpoints[step - 1] = engine.SaveToJson();
                 }
-                return checkpoints;
+                return (checkpoints, wallTicks, allocated, cpuTicks);
             }
-            var baseline = Run(false);
-            var alternate = Run(true);
-            for (var i = 0; i < baseline.Length; i++)
-                Assert.True(string.Equals(baseline[i], alternate[i], StringComparison.Ordinal),
-                    $"PR57_EMPTY_RELOCATION_DIVERGENCE case={label} step={i + 1}");
-            Console.WriteLine($"PR57_EMPTY_RELOCATION_PARITY case={label} steps=120 byteEqual=True externalEdits=3 saveLoadAt=71 comparison=sequential-same-process-not-ABBA");
+            // ABBA isolates this single opt-in, unlike the broader structural
+            // workflow's alternate mode which enables several unrelated flags.
+            // Checkpoints are outside the measured Advance(2) region.
+            var a1 = Run(false);
+            var b1 = Run(true);
+            var b2 = Run(true);
+            var a2 = Run(false);
+            foreach (var trial in new[] { b1, b2, a2 })
+                for (var i = 0; i < a1.Checkpoints.Length; i++)
+                    Assert.True(string.Equals(a1.Checkpoints[i], trial.Checkpoints[i], StringComparison.Ordinal),
+                        $"PR57_EMPTY_RELOCATION_DIVERGENCE case={label} step={i + 1}");
+            var baselineTicks = (a1.WallTicks + a2.WallTicks) / 2.0;
+            var alternateTicks = (b1.WallTicks + b2.WallTicks) / 2.0;
+            var speedup = baselineTicks / Math.Max(1, alternateTicks);
+            Console.WriteLine($"PR57_EMPTY_RELOCATION_PARITY case={label} steps=120 byteEqual=True externalEdits=3 saveLoadAt=71 comparison=sequential-same-process-ABBA");
+            Console.WriteLine($"PR57_EMPTY_RELOCATION_ABBA case={label} baselineWallMs={baselineTicks * 1000 / Stopwatch.Frequency:F3} alternateWallMs={alternateTicks * 1000 / Stopwatch.Frequency:F3} speedup={speedup:F5} baselineAllocBytes={(a1.AllocBytes + a2.AllocBytes) / 2} alternateAllocBytes={(b1.AllocBytes + b2.AllocBytes) / 2} baselineCpuTicks={(a1.CpuTicks + a2.CpuTicks) / 2} alternateCpuTicks={(b1.CpuTicks + b2.CpuTicks) / 2} trials=2-per-mode sameProcess=True speedupCertified=False scope=single-empty-relocation-fastpath");
+
         }
         finally
         {
