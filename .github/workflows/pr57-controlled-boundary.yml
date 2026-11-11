@@ -111,7 +111,12 @@ jobs:
               if not match:
                   raise SystemExit(f"Missing ABBA for {case}, repeat {repeat}")
               values.append(float(match.group(1)))
-          print(f"PR57_EMPTY_RELOCATION_FRESH_PROCESSES case={case} runs=2 speedups={values} median={statistics.median(values):.5f} certified=False")
+          median = statistics.median(values)
+          # A two-process sample is a screening result, not a robust speedup.
+          # Even a favorable result cannot certify parity beyond the checked saves.
+          gain = 1.0 - 1.0 / median if median > 0 else float('-inf')
+          verdict = "REJECT_SMALL_CLASS" if all(v < 1.02 for v in values) else "REQUIRES_MORE_EVIDENCE"
+          print(f"PR57_EMPTY_RELOCATION_FRESH_PROCESSES case={case} runs=2 speedups={values} median={median:.5f} measuredWallReduction={gain:.5f} verdict={verdict} certified=False")
           PY
           done
       - name: Dependency executor M0 on authentic saves (mandatory causal fallback)
