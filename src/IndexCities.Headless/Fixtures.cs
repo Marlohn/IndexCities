@@ -104,13 +104,22 @@ static class Fixtures
         var placed=0;var attempted=0;
         foreach(var (z,rotation) in new[]{(30.0,Math.PI),(-14.0,Math.PI)})
         {
+            var before=placed;
+            var rejectedPhysical=0;
+            var rejectedOrder=0;
             for(var x=-176.0;x<=216&&placed<requested;x+=20)
             {
                 var position=new Point(x,z);
-                if(!sim.QuoteBuilding(BuildingKind.House,position,rotation).PhysicallyValid)continue;
+                if(!sim.QuoteBuilding(BuildingKind.House,position,rotation).PhysicallyValid)
+                {
+                    rejectedPhysical++;
+                    continue;
+                }
                 attempted++;
                 if(sim.PlaceBuilding(BuildingKind.House,position,rotation).Success)placed++;
+                else rejectedOrder++;
             }
+            Console.WriteLine($"PR57_CYCLE_BASE_ROW z={z:F0} newOrders={placed-before} rejectedPhysical={rejectedPhysical} rejectedOrder={rejectedOrder}");
             if(placed>=requested)break;
         }
         // PR57 exploratory expansion, opt-in only: test the *existing*, normally
