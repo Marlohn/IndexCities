@@ -49,9 +49,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          source="$(find artifacts/real-growth -type f -path '*/pr57-jobs-20/checkpoint-0.json' -print -quit)"
-          late="$(find artifacts/real-growth -type f -path '*/pr57-jobs-20/checkpoint-6.json' -print -quit)"
-          congested="$(find artifacts/real-congested -type f -path '*/pr57-jobs-20/checkpoint-11.json' -print -quit)"
+          # The artifact upload may flatten the pr57-jobs-20 parent directory.
+          # Resolve the three checkpoints from one verified sibling set, not
+          # from an assumed ZIP root layout or from unrelated snapshots.
+          source="$(find artifacts/real-growth -type f -name 'checkpoint-0.json' -print -quit)"
+          test -n "$source"
+          checkpoint_dir="$(dirname "$source")"
+          late="$checkpoint_dir/checkpoint-6.json"
+          congested="$(find artifacts/real-congested -type f -name 'checkpoint-11.json' -print -quit)"
+          test -n "$congested"
+          test -f "$(dirname "$congested")/checkpoint-0.json"
+          echo "PR57_ACCESS_CHECKPOINT_SET dir=$checkpoint_dir"
+          find "$checkpoint_dir" -maxdepth 1 -name 'checkpoint-*.json' -printf '%f\\n' | sort -V
           test -s "$source"
           test -s "$late"
           test -s "$congested"
