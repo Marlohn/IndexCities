@@ -221,6 +221,14 @@ for(var d=1;d<=days;d++){
     if(Environment.GetEnvironmentVariable("PR57_AB_CHECKPOINT")=="1"){
         sim.CheckInvariants();
         var snapshot=sim.SaveToJson();
+        // PR57 causal validation: prove that each measured intermediate state
+        // survives the real persistence boundary, not just an in-memory A/B.
+        // Run outside the timed Advance(2) window; never mutate the live sim.
+        var restoredCheckpoint=CitySimulation.FromJson(snapshot);
+        restoredCheckpoint.CheckInvariants();
+        var roundtrip=restoredCheckpoint.SaveToJson();
+        if(!string.Equals(snapshot,roundtrip,StringComparison.Ordinal))
+            throw new InvalidOperationException($"PR57_AB_CHECKPOINT save/load mismatch at window {d}");
         if(!string.IsNullOrWhiteSpace(pr57SaveCaptureDir))
             File.WriteAllText(Path.Combine(pr57SaveCaptureDir,$"checkpoint-{d}.json"),snapshot);
         Console.WriteLine($"PR57_AB_CHECKPOINT window={d} sha256={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(snapshot)))} {Stats(sim)}");
