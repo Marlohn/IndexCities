@@ -122,7 +122,7 @@ jobs:
                   log=(root/f'{case}-{mode}.log').read_text()
                   assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,mode,'save/invariants')
                   assert f'PR57_BUILDING_WORK_ACCESS active={str(mode=="candidate")}' in log,(case,mode,'flag')
-                  if (case.startswith('real') or case.startswith('live')) and mode=='candidate':
+                  if (case.startswith('real') or case.startswith('live') or case.startswith('cycleLoad')) and mode=='candidate':
                       assert 'PR57_BUILDING_WORK_ACCESS built=True' in log,(case,'candidate did not engage')
                   if case.startswith('live'):
                       for phase in ('maintenance-off','maintenance-on','external-road-order','public-road-rebuild'):
