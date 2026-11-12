@@ -137,6 +137,10 @@ jobs:
                       tuple(val(w,k) for k in ('pop','alive','openWorks'))
                       for w in windows
                   ]
+                  # A recovered final population cannot conceal an extinct
+                  # intermediate quantum in an integrated A/B measurement.
+                  assert all(pop>0 and alive>0 for pop,alive,_ in results[mode]['census']),\
+                      (case,mode,'extinct intermediate window',results[mode]['census'])
                   if case.startswith('live'):
                       # Verify both modes received exactly the same external edits.
                       edits=[line for line in log.splitlines() if line.startswith('PR57_ACCESS_LIVE_EDIT phase=')]
