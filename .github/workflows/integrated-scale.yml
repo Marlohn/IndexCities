@@ -145,8 +145,12 @@ jobs:
                   assert all(pop>0 and alive>0 for pop,alive,_ in results[mode]['census']),\
                       (case,mode,'extinct intermediate window',results[mode]['census'])
                   if case.startswith('cycleLoad'):
-                      assert 'CYCLE_HOUSING requested=24 placed=' in log,(case,mode,'housing orders missing')
+                      housing=re.search(r'^CYCLE_HOUSING requested=24 placed=(\\d+) attempted=(\\d+)',log,re.M)
+                      assert housing,(case,mode,'housing orders missing')
+                      placed,attempted=map(int,housing.groups())
+                      assert placed==24,(case,mode,'incomplete housing workload',placed,attempted)
                       assert any(works>0 for _,_,works in results[mode]['census']),(case,mode,'no live construction workload')
+                      results[mode]['housingOrders']=placed
                   if case.startswith('live'):
                       # Verify both modes received exactly the same external edits.
                       edits=[line for line in log.splitlines() if line.startswith('PR57_ACCESS_LIVE_EDIT phase=')]
