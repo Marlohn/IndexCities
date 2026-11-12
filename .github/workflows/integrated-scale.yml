@@ -143,11 +143,11 @@ jobs:
                   if mode=='candidate':
                       assert work_rows,(case,mode,'missing building access work instrumentation')
                       fields=('advances','queries','baselineRows','candidateRows',
-                              'avoidedRows','rebuilds','invalidations','emptyResults','indexedRows')
+                              'avoidedRows','rebuilds','invalidations','emptyResults','indexedRows','checkedRows')
                       samples=[{k:int(val(line,k)) for k in fields} for line in work_rows]
                       assert all(x['advances']<y['advances'] for x,y in zip(samples,samples[1:])),(case,'nonmonotonic work samples')
                       cumulative=('queries','baselineRows','candidateRows','avoidedRows',
-                                  'rebuilds','invalidations','emptyResults','indexedRows')
+                                  'rebuilds','invalidations','emptyResults','indexedRows','checkedRows')
                       assert all(all(x[k]<=y[k] for k in cumulative)
                                  for x,y in zip(samples,samples[1:])),(case,'nonmonotonic cumulative counters')
                       work=samples[-1]
@@ -164,8 +164,8 @@ jobs:
                               assert day['indexedRows']>=0,(case,boundary,'negative rebuild work')
                               print('PR57_BUILDING_ACCESS_WORK_DAY',case,'mode',mode,
                                     'advances',boundary,'queries',day['queries'],
-                                    'avoidedRows',day['avoidedRows'],'indexedRows',day['indexedRows'],
-                                    'netAvoidedRows',day['avoidedRows']-day['indexedRows'],
+                                    'avoidedRows',day['avoidedRows'],'indexedRows',day['indexedRows'],'checkedRows',day['checkedRows'],
+                                    'netAvoidedRows',day['avoidedRows']-day['indexedRows']-day['checkedRows'],
                                     'rebuilds',day['rebuilds'],
                                     'invalidations',day['invalidations'],'emptyResults',day['emptyResults'])
                           first,second=(by_advance[n] for n in (1792,3584))
@@ -174,13 +174,13 @@ jobs:
                           for window,previous,current in ((1,None,first),(2,first,second)):
                               delta={k:current[k]-(previous[k] if previous else 0)
                                      for k in ('queries','baselineRows','candidateRows',
-                                               'avoidedRows','indexedRows','rebuilds','invalidations')}
+                                               'avoidedRows','indexedRows','checkedRows','rebuilds','invalidations')}
                               assert delta['queries']>0 and delta['baselineRows']>0,(case,window,'idle access window',delta)
                               assert delta['baselineRows']-delta['candidateRows']==delta['avoidedRows'],(case,window,'window work conservation',delta)
                               print('PR57_BUILDING_ACCESS_WORK_WINDOW',case,'window',window,
                                     'queries',delta['queries'],'baselineRows',delta['baselineRows'],
-                                    'avoidedRows',delta['avoidedRows'],'indexedRows',delta['indexedRows'],
-                                    'netAvoidedRows',delta['avoidedRows']-delta['indexedRows'],
+                                    'avoidedRows',delta['avoidedRows'],'indexedRows',delta['indexedRows'],'checkedRows',delta['checkedRows'],
+                                    'netAvoidedRows',delta['avoidedRows']-delta['indexedRows']-delta['checkedRows'],
                                     'rebuilds',delta['rebuilds'],'invalidations',delta['invalidations'])
                           assert work['advances']==3584,(case,mode,'incomplete two-window work measurement',work)
                       assert work['baselineRows']-work['candidateRows']==work['avoidedRows'],(case,'inconsistent avoided rows',work)
@@ -188,7 +188,7 @@ jobs:
                       # this replay. Keep their exact causal parity checks, but
                       # report a zero-work stratum rather than fail the whole ABBA.
                       if work['queries']==0:
-                          assert work['baselineRows']==0 and work['candidateRows']==0 and work['avoidedRows']==0 and work['indexedRows']==0,(case,'inconsistent zero-work counters',work)
+                          assert work['baselineRows']==0 and work['candidateRows']==0 and work['avoidedRows']==0 and work['indexedRows']==0 and work['checkedRows']==0,(case,'inconsistent zero-work counters',work)
                           print('PR57_BUILDING_ACCESS_NO_WORK',case,'mode',mode,'advances',work['advances'])
                       else:
                           assert work['baselineRows']>0,(case,'queries without baseline work',work)
@@ -196,8 +196,8 @@ jobs:
                       print('PR57_BUILDING_ACCESS_WORK_SAMPLE',case,'mode',mode,
                             'sampledAdvances',work['advances'],'queries',work['queries'],
                             'baselineRows',work['baselineRows'],'candidateRows',work['candidateRows'],
-                            'avoidedRows',work['avoidedRows'],'indexedRows',work['indexedRows'],
-                            'netAvoidedRows',work['avoidedRows']-work['indexedRows'],
+                            'avoidedRows',work['avoidedRows'],'indexedRows',work['indexedRows'],'checkedRows',work['checkedRows'],
+                            'netAvoidedRows',work['avoidedRows']-work['indexedRows']-work['checkedRows'],
                             'rebuilds',work['rebuilds'],
                             'invalidations',work['invalidations'],'emptyResults',work['emptyResults'],
                             'sampledRowReductionPct',round(100*work['avoidedRows']/work['baselineRows'],3) if work['baselineRows'] else 0.0)
@@ -280,7 +280,7 @@ jobs:
               # single favorable run. Index rebuilds are paid work.
               wa=a[1]['workSample']; wb=b[1]['workSample']
               total={k:wa[k]+wb[k] for k in ('queries','baselineRows','candidateRows',
-                                             'avoidedRows','indexedRows','rebuilds','invalidations')}
+                                             'avoidedRows','indexedRows','checkedRows','rebuilds','invalidations')}
               assert total['baselineRows']-total['candidateRows']==total['avoidedRows'],(label,'ABBA work conservation',total)
               if label=='cycleLoad':
                   # Both independent orders must exercise workplace access.
@@ -289,11 +289,11 @@ jobs:
                   for order,work in ((first,wa),(second,wb)):
                       assert work['queries']>0 and work['baselineRows']>0,(label,order,'no building-access workload',work)
                   assert total['queries']>0 and total['baselineRows']>0,(label,'ABBA has no building-access workload',total)
-              net=total['avoidedRows']-total['indexedRows']
+              net=total['avoidedRows']-total['indexedRows']-total['checkedRows']
               print('PR57_BUILDING_ACCESS_ABBA_WORK',label,
                     'queries',total['queries'],'baselineRows',total['baselineRows'],
                     'candidateRows',total['candidateRows'],'avoidedRows',total['avoidedRows'],
-                    'indexedRows',total['indexedRows'],'netAvoidedRows',net,
+                    'indexedRows',total['indexedRows'],'checkedRows',total['checkedRows'],'netAvoidedRows',net,
                     'netReductionPct',round(100*net/total['baselineRows'],3) if total['baselineRows'] else 0.0,
                     'rebuilds',total['rebuilds'],'invalidations',total['invalidations'])
               # Report whole-engine CPU and allocation alongside wall. A wall-only
