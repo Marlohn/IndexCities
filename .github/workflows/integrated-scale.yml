@@ -316,6 +316,18 @@ jobs:
                   for order,work in ((first,wa),(second,wb)):
                       assert work['queries']>0 and work['baselineRows']>0,(label,order,'no building-access workload',work)
                   assert total['queries']>0 and total['baselineRows']>0,(label,'ABBA has no building-access workload',total)
+              if label=='cycleLoad':
+                  # Pair each window across opposite ABBA orders. Aggregate totals
+                  # can conceal a regression in one of the two active windows.
+                  for window_index in range(2):
+                      for metric in ('wall','cpu','allocMB'):
+                          base_window=sum(pair[0]['windowMetrics'][window_index][metric] for pair in (a,b))
+                          opt_window=sum(pair[1]['windowMetrics'][window_index][metric] for pair in (a,b))
+                          assert base_window>0,(label,window_index,metric,'invalid paired baseline')
+                          print('PR57_BUILDING_ACCESS_ABBA_WINDOW_RESOURCE',label,
+                                'window',window_index+1,'metric',metric,
+                                'control',round(base_window,6),'candidate',round(opt_window,6),
+                                'reductionPct',round(100*(base_window-opt_window)/base_window,3))
               net=total['avoidedRows']-total['indexedRows']-total['checkedRows']
               print('PR57_BUILDING_ACCESS_ABBA_WORK',label,
                     'queries',total['queries'],'baselineRows',total['baselineRows'],
