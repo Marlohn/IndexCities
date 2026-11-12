@@ -84,8 +84,8 @@ jobs:
               elif [[ "$case" == congested ]]; then
                 args=(scale cycle --seed=42 --warmup=0 --days=1 --window=3600 --cap=300 --resume="$congested")
               elif [[ "$case" == cycleLoadA || "$case" == cycleLoadB ]]; then
-                # Real paid housing projects, normal delivery/crew and no minted population.
-                args=(scale cycle --seed=42 --warmup=0 --cycle-bypass=1 --cycle-houses=24 --days=2 --window=3600 --cap=300)
+                # Scale probe: 32 real paid housing orders (up from validated 24); normal delivery/crew, no minted population. Fail if any quote/order is rejected.
+                args=(scale cycle --seed=42 --warmup=0 --cycle-bypass=1 --cycle-houses=32 --days=2 --window=3600 --cap=300)
               elif [[ "$case" == grid ]]; then
                 args=(scale grid --seed=42 --rows=12 --length=600 --warmup=0 --days=1 --window=3600 --cap=300)
               fi
@@ -234,10 +234,10 @@ jobs:
                   assert all(pop>0 and alive>0 for pop,alive,_ in results[mode]['census']),\
                       (case,mode,'extinct intermediate window',results[mode]['census'])
                   if case.startswith('cycleLoad'):
-                      housing=re.search(r'^CYCLE_HOUSING requested=24 placed=(\d+) attempted=(\d+)',log,re.M)
+                      housing=re.search(r'^CYCLE_HOUSING requested=32 placed=(\d+) attempted=(\d+)',log,re.M)
                       assert housing,(case,mode,'housing orders missing')
                       placed,attempted=map(int,housing.groups())
-                      assert placed==24,(case,mode,'incomplete housing workload',placed,attempted)
+                      assert placed==32,(case,mode,'incomplete housing workload',placed,attempted)
                       assert any(works>0 for _,_,works in results[mode]['census']),(case,mode,'no live construction workload')
                       results[mode]['housingOrders']=placed
                   if case.startswith('live'):
