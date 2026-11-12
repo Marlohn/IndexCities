@@ -167,6 +167,20 @@ jobs:
                                     'netAvoidedRows',day['avoidedRows']-day['indexedRows'],
                                     'rebuilds',day['rebuilds'],
                                     'invalidations',day['invalidations'],'emptyResults',day['emptyResults'])
+                          first,second=(by_advance[n] for n in (1792,3584))
+                          # A cumulative positive count can hide an idle second
+                          # window. Require recurring work in BOTH measured windows.
+                          for window,previous,current in ((1,None,first),(2,first,second)):
+                              delta={k:current[k]-(previous[k] if previous else 0)
+                                     for k in ('queries','baselineRows','candidateRows',
+                                               'avoidedRows','indexedRows','rebuilds','invalidations')}
+                              assert delta['queries']>0 and delta['baselineRows']>0,(case,window,'idle access window',delta)
+                              assert delta['baselineRows']-delta['candidateRows']==delta['avoidedRows'],(case,window,'window work conservation',delta)
+                              print('PR57_BUILDING_ACCESS_WORK_WINDOW',case,'window',window,
+                                    'queries',delta['queries'],'baselineRows',delta['baselineRows'],
+                                    'avoidedRows',delta['avoidedRows'],'indexedRows',delta['indexedRows'],
+                                    'netAvoidedRows',delta['avoidedRows']-delta['indexedRows'],
+                                    'rebuilds',delta['rebuilds'],'invalidations',delta['invalidations'])
                           assert work['advances']==3584,(case,mode,'incomplete two-window work measurement',work)
                       assert work['baselineRows']-work['candidateRows']==work['avoidedRows'],(case,'inconsistent avoided rows',work)
                       # Some authentic saves have no workplace-access activity in
