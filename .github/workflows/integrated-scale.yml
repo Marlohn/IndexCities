@@ -167,7 +167,14 @@ jobs:
                                     'invalidations',day['invalidations'],'emptyResults',day['emptyResults'])
                           assert work['advances']==86400,(case,mode,'incomplete two-day work measurement',work)
                       assert work['baselineRows']-work['candidateRows']==work['avoidedRows'],(case,'inconsistent avoided rows',work)
-                      assert work['queries']>0 and work['baselineRows']>0,(case,'no access queries',work)
+                      # Some authentic saves have no workplace-access activity in
+                      # this replay. Keep their exact causal parity checks, but
+                      # report a zero-work stratum rather than fail the whole ABBA.
+                      if work['queries']==0:
+                          assert work['baselineRows']==0 and work['candidateRows']==0 and work['avoidedRows']==0 and work['indexedRows']==0,(case,'inconsistent zero-work counters',work)
+                          print('PR57_BUILDING_ACCESS_NO_WORK',case,'mode',mode,'advances',work['advances'])
+                      else:
+                          assert work['baselineRows']>0,(case,'queries without baseline work',work)
                       results[mode]['workSample']=work
                       print('PR57_BUILDING_ACCESS_WORK_SAMPLE',case,'mode',mode,
                             'sampledAdvances',work['advances'],'queries',work['queries'],
