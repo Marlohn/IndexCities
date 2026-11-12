@@ -249,6 +249,19 @@ jobs:
               # Require living residents in both independent ABBA repetitions.
               assert all(pair[0]['pop']>0 and pair[0]['alive']>0
                          for pair in (a,b)),(label,'extinct-city benchmark',a,b)
+              # Aggregate actual candidate work for both ABBA orders, not a
+              # single favorable run. Index rebuilds are paid work.
+              wa=a[1]['workSample']; wb=b[1]['workSample']
+              total={k:wa[k]+wb[k] for k in ('queries','baselineRows','candidateRows',
+                                             'avoidedRows','indexedRows','rebuilds','invalidations')}
+              assert total['baselineRows']-total['candidateRows']==total['avoidedRows'],(label,'ABBA work conservation',total)
+              net=total['avoidedRows']-total['indexedRows']
+              print('PR57_BUILDING_ACCESS_ABBA_WORK',label,
+                    'queries',total['queries'],'baselineRows',total['baselineRows'],
+                    'candidateRows',total['candidateRows'],'avoidedRows',total['avoidedRows'],
+                    'indexedRows',total['indexedRows'],'netAvoidedRows',net,
+                    'netReductionPct',round(100*net/total['baselineRows'],3) if total['baselineRows'] else 0.0,
+                    'rebuilds',total['rebuilds'],'invalidations',total['invalidations'])
               # Report whole-engine CPU and allocation alongside wall. A wall-only
               # change without reduced work is not structural evidence.
               for metric in ('cpu','allocMB'):
