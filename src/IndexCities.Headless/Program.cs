@@ -273,11 +273,17 @@ return 0;
 // never inside a Step. Each A/B process replays the same deterministic choices.
 static void Pr57AccessLiveEdit(CitySimulation sim,int quantum,ref int editedRoadId,ref double originalMaintenance)
 {
-    var active=sim.State.Projects
-        .Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress && p.BuildingId!=null)
-        .Select(p=>sim.State.Buildings.FirstOrDefault(b=>b.Id==p.BuildingId))
-        .FirstOrDefault(b=>b!=null&&!b.Removed);
-    if(active==null)throw new InvalidOperationException("PR57 live access replay lost all active building works");
+    // Only road selection requires active construction; restoration and
+    // road-order invalidation must run even if construction has finished.
+    var needsActiveWork=quantum==300 || quantum==1200;
+    var active=needsActiveWork
+        ? sim.State.Projects
+            .Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress && p.BuildingId!=null)
+            .Select(p=>sim.State.Buildings.FirstOrDefault(b=>b.Id==p.BuildingId))
+            .FirstOrDefault(b=>b!=null&&!b.Removed)
+        : null;
+    if(needsActiveWork && active==null)
+        throw new InvalidOperationException("PR57 live access replay lost all active building works");
     if(quantum==300)
     {
         var road=sim.State.Roads.Where(r=>!r.Highway&&r.MaintenanceRatio>.05)
