@@ -135,6 +135,26 @@ jobs:
                       assert match,(case,mode,key,row)
                       return float(match.group(1))
                   results[mode]={k:sum(val(w,k) for w in windows) for k in ('wall','cpu','allocMB')}
+                  # PR57 work counters are cumulative snapshots, emitted every 256 Advances.
+                  # Use the LAST observed snapshot, never sum snapshots or call it final.
+                  work_rows=[line for line in log.splitlines()
+                             if line.startswith('PR57_BUILDING_ACCESS_WORK ')]
+                  if mode=='candidate':
+                      assert work_rows,(case,mode,'missing building access work instrumentation')
+                      fields=('advances','queries','baselineRows','candidateRows',
+                              'avoidedRows','rebuilds','invalidations','emptyResults')
+                      samples=[{k:int(val(line,k)) for k in fields} for line in work_rows]
+                      assert all(x['advances']<y['advances'] for x,y in zip(samples,samples[1:])),(case,'nonmonotonic work samples')
+                      work=samples[-1]
+                      assert work['baselineRows']-work['candidateRows']==work['avoidedRows'],(case,'inconsistent avoided rows',work)
+                      assert work['queries']>0 and work['baselineRows']>0,(case,'no access queries',work)
+                      results[mode]['workSample']=work
+                      print('PR57_BUILDING_ACCESS_WORK_SAMPLE',case,'mode',mode,
+                            'sampledAdvances',work['advances'],'queries',work['queries'],
+                            'baselineRows',work['baselineRows'],'candidateRows',work['candidateRows'],
+                            'avoidedRows',work['avoidedRows'],'rebuilds',work['rebuilds'],
+                            'invalidations',work['invalidations'],'emptyResults',work['emptyResults'],
+                            'sampledRowReductionPct',round(100*work['avoidedRows']/work['baselineRows'],3))
                   results[mode]['pop']=val(windows[-1],'pop')
                   results[mode]['alive']=val(windows[-1],'alive')
                   results[mode]['openWorks']=val(windows[-1],'openWorks')
