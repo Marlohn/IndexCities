@@ -256,8 +256,11 @@ jobs:
                                              'avoidedRows','indexedRows','rebuilds','invalidations')}
               assert total['baselineRows']-total['candidateRows']==total['avoidedRows'],(label,'ABBA work conservation',total)
               if label=='cycleLoad':
-                  # A speedup with no indexed workplace queries cannot support
-                  # the building-access hypothesis, even with matching JSON.
+                  # Both independent orders must exercise workplace access.
+                  # An aggregate positive total can conceal an idle replay and
+                  # falsely attribute its wall change to this fastpath.
+                  for order,work in ((first,wa),(second,wb)):
+                      assert work['queries']>0 and work['baselineRows']>0,(label,order,'no building-access workload',work)
                   assert total['queries']>0 and total['baselineRows']>0,(label,'ABBA has no building-access workload',total)
               net=total['avoidedRows']-total['indexedRows']
               print('PR57_BUILDING_ACCESS_ABBA_WORK',label,
