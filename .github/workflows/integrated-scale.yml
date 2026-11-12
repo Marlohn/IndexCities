@@ -183,7 +183,7 @@ jobs:
                             'netAvoidedRows',work['avoidedRows']-work['indexedRows'],
                             'rebuilds',work['rebuilds'],
                             'invalidations',work['invalidations'],'emptyResults',work['emptyResults'],
-                            'sampledRowReductionPct',round(100*work['avoidedRows']/work['baselineRows'],3))
+                            'sampledRowReductionPct',round(100*work['avoidedRows']/work['baselineRows'],3) if work['baselineRows'] else 0.0)
                   results[mode]['pop']=val(windows[-1],'pop')
                   results[mode]['alive']=val(windows[-1],'alive')
                   results[mode]['openWorks']=val(windows[-1],'openWorks')
