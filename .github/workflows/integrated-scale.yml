@@ -171,6 +171,10 @@ jobs:
               assert baseline>0 and candidate>0,(label,'invalid wall')
               assert all(pair[0]['pop']==pair[1]['pop'] and pair[0]['alive']==pair[1]['alive']
                          for pair in (a,b)),(label,'population divergence')
+              # A fast but extinct city is not evidence for integrated scaling.
+              # Require living residents in both independent ABBA repetitions.
+              assert all(pair[0]['pop']>0 and pair[0]['alive']>0
+                         for pair in (a,b)),(label,'extinct-city benchmark',a,b)
               print('PR57_BUILDING_ACCESS_ABBA',label,
                     'controlWall',round(baseline,6),'candidateWall',round(candidate,6),
                     'wallReductionPct',round(100*(baseline-candidate)/baseline,3),
