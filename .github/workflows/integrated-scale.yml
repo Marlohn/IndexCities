@@ -152,6 +152,11 @@ jobs:
                       assert all(all(x[k]<=y[k] for k in cumulative)
                                  for x,y in zip(samples,samples[1:])),(case,'nonmonotonic cumulative counters')
                       work=samples[-1]
+                      if case.startswith('live'):
+                          # RoadStep changes at quantum 900 without changing road
+                          # membership. The opt-in index must actually invalidate
+                          # and rebuild; JSON equality alone cannot prove this path ran.
+                          assert work['invalidations']>=1 and work['rebuilds']>=2,(case,mode,'RoadStep spatial index invalidation not exercised',work)
                       # --window=3600 with --cap=300 executes 1792 Advances per
                       # measured window, not 43200 per simulated day. Require
                       # both exact measured-window boundaries (7 and 14 samples
