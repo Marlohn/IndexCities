@@ -145,6 +145,11 @@ jobs:
                   assert candidate.read_bytes()==control.read_bytes(),(case,'causal divergence',i)
               if case.startswith('live'):
                   assert results['control']['edits']==results['candidate']['edits'],(case,'external edit mismatch',results['control']['edits'],results['candidate']['edits'])
+                  for quantum in (300,600,900,1200):
+                      before=root/f'{case}-control'/f'live-edit-{quantum}.json'
+                      after=root/f'{case}-candidate'/f'live-edit-{quantum}.json'
+                      assert before.is_file() and after.is_file(),(case,'missing live edit checkpoint',quantum)
+                      assert before.read_bytes()==after.read_bytes(),(case,'transient post-edit causal divergence',quantum)
               c=results['control'];o=results['candidate']
               print('PR57_BUILDING_ACCESS_RESULT',case,'control',c,'candidate',o,
                     'wallReductionPct',round((c['wall']-o['wall'])/c['wall']*100,2),
