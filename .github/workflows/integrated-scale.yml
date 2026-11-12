@@ -182,6 +182,11 @@ jobs:
                                      for k in ('queries','baselineRows','candidateRows',
                                                'avoidedRows','indexedRows','checkedRows','rebuilds','invalidations')}
                               assert delta['queries']>0 and delta['baselineRows']>0,(case,window,'idle access window',delta)
+                              # A recurring exact membership scan is paid once per
+                              # Advance with access, even if indexed queries are cheap.
+                              # Require the ABBA to exercise and measure this cost
+                              # in BOTH windows before claiming net avoided work.
+                              assert delta['checkedRows']>0,(case,window,'membership validation cost not exercised',delta)
                               assert delta['baselineRows']-delta['candidateRows']==delta['avoidedRows'],(case,window,'window work conservation',delta)
                               print('PR57_BUILDING_ACCESS_WORK_WINDOW',case,'window',window,
                                     'queries',delta['queries'],'baselineRows',delta['baselineRows'],
