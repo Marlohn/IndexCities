@@ -313,7 +313,7 @@ static void Pr57AccessLiveEdit(CitySimulation sim,int quantum,ref int editedRoad
             Console.WriteLine($"PR57_ACCESS_LIVE_EDIT phase=public-road-rebuild quantum={quantum} oldRoad={road.Id} demolished=True replacementOrdered={replacement.Success} attempts={attempts}");
             return;
         }
-        Console.WriteLine($"PR57_ACCESS_LIVE_EDIT phase=public-road-rebuild quantum={quantum} demolished=False attempts={attempts}");
+        throw new InvalidOperationException($"PR57_ACCESS_LIVE_EDIT phase=public-road-rebuild quantum={quantum} demolished=False attempts={attempts}; no causal road mutation was exercised");
     }
 }
 
