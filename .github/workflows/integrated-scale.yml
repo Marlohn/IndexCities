@@ -150,11 +150,13 @@ jobs:
                       assert all(all(x[k]<=y[k] for k in cumulative)
                                  for x,y in zip(samples,samples[1:])),(case,'nonmonotonic cumulative counters')
                       work=samples[-1]
-                      # The 2-day host replay must expose exact full-day boundaries,
-                      # not just the most recent periodic 256-Advance sample.
+                      # --window=3600 with --cap=300 executes 1792 Advances per
+                      # measured window, not 43200 per simulated day. Require
+                      # both exact measured-window boundaries (7 and 14 samples
+                      # of 256 Advances), never extrapolate to full days.
                       if case.startswith('cycleLoad'):
                           by_advance={sample['advances']:sample for sample in samples}
-                          for boundary in (43200,86400):
+                          for boundary in (1792,3584):
                               assert boundary in by_advance,(case,mode,'missing exact day-boundary work sample',boundary)
                               day=by_advance[boundary]
                               assert day['baselineRows']-day['candidateRows']==day['avoidedRows'],(case,boundary,'work conservation')
@@ -165,7 +167,7 @@ jobs:
                                     'netAvoidedRows',day['avoidedRows']-day['indexedRows'],
                                     'rebuilds',day['rebuilds'],
                                     'invalidations',day['invalidations'],'emptyResults',day['emptyResults'])
-                          assert work['advances']==86400,(case,mode,'incomplete two-day work measurement',work)
+                          assert work['advances']==3584,(case,mode,'incomplete two-window work measurement',work)
                       assert work['baselineRows']-work['candidateRows']==work['avoidedRows'],(case,'inconsistent avoided rows',work)
                       # Some authentic saves have no workplace-access activity in
                       # this replay. Keep their exact causal parity checks, but
