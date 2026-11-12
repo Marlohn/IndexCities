@@ -85,13 +85,17 @@ jobs:
                 args=(scale cycle --seed=42 --warmup=0 --days=1 --window=3600 --cap=300 --resume="$congested")
               elif [[ "$case" == cycleLoadA || "$case" == cycleLoadB ]]; then
                 # Real paid housing projects, normal delivery/crew and no minted population.
-                args=(scale cycle --seed=42 --warmup=0 --cycle-houses=24 --days=2 --window=3600 --cap=300)
+                args=(scale cycle --seed=42 --warmup=0 --cycle-bypass=1 --cycle-houses=24 --days=2 --window=3600 --cap=300)
               elif [[ "$case" == grid ]]; then
                 args=(scale grid --seed=42 --rows=12 --length=600 --warmup=0 --days=1 --window=3600 --cap=300)
               fi
               live=0
               if [[ "$case" == liveA || "$case" == liveB ]]; then live=1; fi
+              housing_frontage=0
+              if [[ "$case" == cycleLoadA || "$case" == cycleLoadB ]]; then housing_frontage=1; fi
               echo "PR57_ACCESS_AB_RUN case=$case mode=$mode enabled=$enabled liveEdit=$live hostQuantum=2"
+              PR57_CYCLE_SOUTH_HOUSING="$housing_frontage" PR57_CYCLE_SOUTH_EXTENSION="$housing_frontage" \
+              PR57_CYCLE_NORTH_HOUSING="$housing_frontage" \
               PR57_BUILDING_WORK_ACCESS="$enabled" PR57_GRID_DIAG=1 \
               PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_ACCESS_LIVE_EDIT="$live" \
               PR57_DYNAMIC_BVH=0 PR57_PARALLEL_NEEDS=0 PR57_STAFF_PHASE_FUSION=0 \
