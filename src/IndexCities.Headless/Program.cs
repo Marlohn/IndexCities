@@ -275,7 +275,9 @@ static void Pr57AccessLiveEdit(CitySimulation sim,int quantum,ref int editedRoad
 {
     // Only road selection requires active construction; restoration and
     // road-order invalidation must run even if construction has finished.
-    var needsActiveWork=quantum==300 || quantum==1200;
+    // At quantum 1200 construction may already be complete; the public road
+    // mutation still needs to run to exercise cache invalidation.
+    var needsActiveWork=quantum==300;
     var active=needsActiveWork
         ? sim.State.Projects
             .Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress && p.BuildingId!=null)
@@ -308,8 +310,9 @@ static void Pr57AccessLiveEdit(CitySimulation sim,int quantum,ref int editedRoad
     else if(quantum==1200)
     {
         var attempts=0;
+        var anchor=sim.State.Roads.Single(r=>r.Id==editedRoadId).Position;
         foreach(var road in sim.State.Roads.Where(r=>!r.Highway&&r.Neighbours.Count<=2)
-                     .OrderBy(r=>r.Position.Distance(active.Door)).ToArray())
+                     .OrderBy(r=>r.Position.Distance(anchor)).ToArray())
         {
             attempts++;
             var position=road.Position;
