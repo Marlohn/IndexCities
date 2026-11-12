@@ -38,13 +38,6 @@ jobs:
           run-id: 40169101306
           github-token: ${{ github.token }}
           path: artifacts/real-growth
-      - name: Restore authentic older congestion checkpoint
-        uses: actions/download-artifact@v4
-        with:
-          name: integrated-scale-pr57-legal-workplaces-8d
-          run-id: 40169101306
-          github-token: ${{ github.token }}
-          path: artifacts/real-congested
       - name: Real construction A/B order reversed, late economy, congestion and artificial traffic
         shell: bash
         run: |
@@ -52,15 +45,20 @@ jobs:
           # The artifact upload may flatten the pr57-jobs-20 parent directory.
           # Resolve the three checkpoints from one verified sibling set, not
           # from an assumed ZIP root layout or from unrelated snapshots.
-          source="$(find artifacts/real-growth -type f -name 'checkpoint-0.json' -print -quit)"
-          test -n "$source"
-          checkpoint_dir="$(dirname "$source")"
+          # Select only a complete sibling set; a first arbitrary checkpoint-0
+          # can belong to a different or incomplete save family.
+          checkpoint_dir=""
+          while IFS= read -r candidate; do
+            dir="$(dirname "$candidate")"
+            if [[ -s "$dir/checkpoint-6.json" && -s "$dir/checkpoint-11.json" ]]; then
+              checkpoint_dir="$dir"
+              break
+            fi
+          done < <(find artifacts/real-growth -type f -name 'checkpoint-0.json' | sort)
+          test -n "$checkpoint_dir" || { echo "PR57_ACCESS_NO_COMPLETE_CHECKPOINT_SET"; exit 1; }
+          source="$checkpoint_dir/checkpoint-0.json"
           late="$checkpoint_dir/checkpoint-6.json"
-          # Select checkpoint 11 from the same sibling set as 0 and 6.
-          # The artifact was downloaded twice, but mixing independent first
-          # find matches can silently compare unrelated checkpoint families.
           congested="$checkpoint_dir/checkpoint-11.json"
-          test -s "$congested"
           echo "PR57_ACCESS_CHECKPOINT_SET dir=$checkpoint_dir"
           find "$checkpoint_dir" -maxdepth 1 -name 'checkpoint-*.json' -printf '%f\\n' | sort -V
           test -s "$source"
