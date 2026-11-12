@@ -255,6 +255,10 @@ jobs:
               total={k:wa[k]+wb[k] for k in ('queries','baselineRows','candidateRows',
                                              'avoidedRows','indexedRows','rebuilds','invalidations')}
               assert total['baselineRows']-total['candidateRows']==total['avoidedRows'],(label,'ABBA work conservation',total)
+              if label=='cycleLoad':
+                  # A speedup with no indexed workplace queries cannot support
+                  # the building-access hypothesis, even with matching JSON.
+                  assert total['queries']>0 and total['baselineRows']>0,(label,'ABBA has no building-access workload',total)
               net=total['avoidedRows']-total['indexedRows']
               print('PR57_BUILDING_ACCESS_ABBA_WORK',label,
                     'queries',total['queries'],'baselineRows',total['baselineRows'],
