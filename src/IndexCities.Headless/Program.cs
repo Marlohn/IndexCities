@@ -289,7 +289,7 @@ static void Pr57AccessLiveEdit(CitySimulation sim,int quantum,ref int editedRoad
     if(quantum==300)
     {
         var road=sim.State.Roads.Where(r=>!r.Highway&&r.MaintenanceRatio>.05)
-            .OrderBy(r=>r.Position.Distance(active.Door)).First();
+            .OrderBy(r=>r.Position.Distance(active!.Door)).First();
         editedRoadId=road.Id;
         originalMaintenance=road.MaintenanceRatio;
         road.MaintenanceRatio=.04;
@@ -310,7 +310,8 @@ static void Pr57AccessLiveEdit(CitySimulation sim,int quantum,ref int editedRoad
     else if(quantum==1200)
     {
         var attempts=0;
-        var anchor=sim.State.Roads.Single(r=>r.Id==editedRoadId).Position;
+        var anchorRoadId=editedRoadId;
+        var anchor=sim.State.Roads.Single(r=>r.Id==anchorRoadId).Position;
         foreach(var road in sim.State.Roads.Where(r=>!r.Highway&&r.Neighbours.Count<=2)
                      .OrderBy(r=>r.Position.Distance(anchor)).ToArray())
         {
