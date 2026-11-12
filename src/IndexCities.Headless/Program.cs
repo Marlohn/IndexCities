@@ -175,7 +175,7 @@ for(var d=1;d<=days;d++){
                 sim.Advance(2);
                 // Check the first completed quantum after each external mutation.
                 // A divergence may disappear before the next edit or day boundary.
-                if(liveEdit&&d==1&&quantum is 300 or 600 or 900 or 1200
+                if(liveEdit&&d==1&&(quantum is 300 or 600 or 900 or 1200)
                    &&Environment.GetEnvironmentVariable("PR57_AB_CHECKPOINT")=="1")
                 {
                     sim.CheckInvariants();
