@@ -47,12 +47,15 @@ public sealed partial class CitySimulation
 
     void Pr57EnsureBuildingAccessIndex()
     {
-        if(_pr57BuildingAccessBuiltEpoch==_roadEpoch&&
-           _pr57BuildingAccessBuiltCount==State.Roads.Count&&
+        if(_pr57BuildingAccessBuiltCount==State.Roads.Count&&
            _pr57BuildingAccessBuiltWidth==Math.Max(1,State.Tuning.RoadStep))
         {
-            if(_pr57BuildingAccessMembershipChecked)return;
-            // Exact identity and coordinates avoid hash collisions and stale buckets.
+            // An epoch bump may change connectivity or maintenance without
+            // changing spatial membership. Those predicates are read live by
+            // Pr57IndexedBuildingAccess, so do not rebuild identical buckets.
+            // Still recheck on an epoch bump, even within the same Advance.
+            if(_pr57BuildingAccessMembershipChecked&&
+               _pr57BuildingAccessBuiltEpoch==_roadEpoch)return;
             var unchanged=_pr57BuildingAccessMembership.Count==State.Roads.Count;
             for(var i=0;unchanged&&i<State.Roads.Count;i++)
             {
@@ -62,7 +65,11 @@ public sealed partial class CitySimulation
                           saved.X==road.Position.X&&saved.Z==road.Position.Z;
             }
             _pr57BuildingAccessMembershipChecked=true;
-            if(unchanged)return;
+            if(unchanged)
+            {
+                _pr57BuildingAccessBuiltEpoch=_roadEpoch;
+                return;
+            }
         }
         if(_pr57BuildingAccessBuiltEpoch>=0)_pr57BuildingAccessInvalidations++;
         _pr57BuildingAccessRebuilds++;
