@@ -150,6 +150,12 @@ jobs:
                       after=root/f'{case}-candidate'/f'live-edit-{quantum}.json'
                       assert before.is_file() and after.is_file(),(case,'missing live edit checkpoint',quantum)
                       assert before.read_bytes()==after.read_bytes(),(case,'transient post-edit causal divergence',quantum)
+                      # Also compare the immediate Advance(2) after each edit:
+                      # the next pre-edit snapshot may conceal a transient difference.
+                      post_control=root/f'{case}-control'/f'live-after-{quantum}.json'
+                      post_candidate=root/f'{case}-candidate'/f'live-after-{quantum}.json'
+                      assert post_control.is_file() and post_candidate.is_file(),(case,'missing post-Advance checkpoint',quantum)
+                      assert post_control.read_bytes()==post_candidate.read_bytes(),(case,'post-Advance causal divergence',quantum)
               c=results['control'];o=results['candidate']
               print('PR57_BUILDING_ACCESS_RESULT',case,'control',c,'candidate',o,
                     'wallReductionPct',round((c['wall']-o['wall'])/c['wall']*100,2),
