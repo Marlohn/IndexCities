@@ -145,7 +145,7 @@ jobs:
                   assert all(pop>0 and alive>0 for pop,alive,_ in results[mode]['census']),\
                       (case,mode,'extinct intermediate window',results[mode]['census'])
                   if case.startswith('cycleLoad'):
-                      housing=re.search(r'^CYCLE_HOUSING requested=24 placed=(\\d+) attempted=(\\d+)',log,re.M)
+                      housing=re.search(r'^CYCLE_HOUSING requested=24 placed=(\d+) attempted=(\d+)',log,re.M)
                       assert housing,(case,mode,'housing orders missing')
                       placed,attempted=map(int,housing.groups())
                       assert placed==24,(case,mode,'incomplete housing workload',placed,attempted)
