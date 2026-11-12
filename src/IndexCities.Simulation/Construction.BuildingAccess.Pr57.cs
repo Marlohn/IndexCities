@@ -12,7 +12,7 @@ public sealed partial class CitySimulation
     int _pr57BuildingAccessBuiltEpoch=-1,_pr57BuildingAccessBuiltCount=-1;
     long _pr57BuildingAccessAdvances,_pr57BuildingAccessQueries,_pr57BuildingAccessBaselineRows;
     long _pr57BuildingAccessCandidateRows,_pr57BuildingAccessRebuilds,_pr57BuildingAccessInvalidations;
-    long _pr57BuildingAccessEmptyResults;
+    long _pr57BuildingAccessEmptyResults,_pr57BuildingAccessIndexedRows;
 
     // State is externally mutable. Never use the index outside a public Advance
     // call; every Advance(2) starts with a fresh membership snapshot.
@@ -36,7 +36,7 @@ public sealed partial class CitySimulation
             if(Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1" &&
                (_pr57BuildingAccessAdvances==1||_pr57BuildingAccessAdvances%256==0||
                 _pr57BuildingAccessAdvances==43200||_pr57BuildingAccessAdvances==86400))
-                Console.WriteLine($"PR57_BUILDING_ACCESS_WORK advances={_pr57BuildingAccessAdvances} queries={_pr57BuildingAccessQueries} baselineRows={_pr57BuildingAccessBaselineRows} candidateRows={_pr57BuildingAccessCandidateRows} avoidedRows={_pr57BuildingAccessBaselineRows-_pr57BuildingAccessCandidateRows} rebuilds={_pr57BuildingAccessRebuilds} invalidations={_pr57BuildingAccessInvalidations} emptyResults={_pr57BuildingAccessEmptyResults}");
+                Console.WriteLine($"PR57_BUILDING_ACCESS_WORK advances={_pr57BuildingAccessAdvances} queries={_pr57BuildingAccessQueries} baselineRows={_pr57BuildingAccessBaselineRows} candidateRows={_pr57BuildingAccessCandidateRows} avoidedRows={_pr57BuildingAccessBaselineRows-_pr57BuildingAccessCandidateRows} rebuilds={_pr57BuildingAccessRebuilds} invalidations={_pr57BuildingAccessInvalidations} emptyResults={_pr57BuildingAccessEmptyResults} indexedRows={_pr57BuildingAccessIndexedRows}");
         }
         _pr57BuildingAccessActive=false;
         _pr57BuildingAccessBuiltEpoch=-1;
@@ -48,6 +48,8 @@ public sealed partial class CitySimulation
            _pr57BuildingAccessBuiltCount==State.Roads.Count)return;
         if(_pr57BuildingAccessBuiltEpoch>=0)_pr57BuildingAccessInvalidations++;
         _pr57BuildingAccessRebuilds++;
+        // Rebuilding visits every road, even if indexed queries skip most rows.
+        _pr57BuildingAccessIndexedRows+=State.Roads.Count;
         foreach(var bucket in _pr57BuildingAccessCells.Values)bucket.Clear();
         var width=Math.Max(1,State.Tuning.RoadStep);
         for(var i=0;i<State.Roads.Count;i++)
