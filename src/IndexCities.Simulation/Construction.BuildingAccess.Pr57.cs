@@ -10,6 +10,9 @@ public sealed partial class CitySimulation
     readonly Dictionary<(int X,int Z),List<(int Order,RoadNode Road)>> _pr57BuildingAccessCells=new();
     bool _pr57BuildingAccessActive,_pr57BuildingAccessAnnounced,_pr57BuildingAccessEngaged;
     int _pr57BuildingAccessBuiltEpoch=-1,_pr57BuildingAccessBuiltCount=-1;
+    long _pr57BuildingAccessAdvances,_pr57BuildingAccessQueries,_pr57BuildingAccessBaselineRows;
+    long _pr57BuildingAccessCandidateRows,_pr57BuildingAccessRebuilds,_pr57BuildingAccessInvalidations;
+    long _pr57BuildingAccessEmptyResults;
 
     // State is externally mutable. Never use the index outside a public Advance
     // call; every Advance(2) starts with a fresh membership snapshot.
@@ -26,6 +29,14 @@ public sealed partial class CitySimulation
 
     void Pr57EndBuildingAccessAdvance()
     {
+        if(_pr57BuildingAccessActive)
+        {
+            _pr57BuildingAccessAdvances++;
+            // Cumulative opt-in diagnostic. Count rows, not assumed CPU savings.
+            if(Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1" &&
+               (_pr57BuildingAccessAdvances==1||_pr57BuildingAccessAdvances%256==0))
+                Console.WriteLine($"PR57_BUILDING_ACCESS_WORK advances={_pr57BuildingAccessAdvances} queries={_pr57BuildingAccessQueries} baselineRows={_pr57BuildingAccessBaselineRows} candidateRows={_pr57BuildingAccessCandidateRows} avoidedRows={_pr57BuildingAccessBaselineRows-_pr57BuildingAccessCandidateRows} rebuilds={_pr57BuildingAccessRebuilds} invalidations={_pr57BuildingAccessInvalidations} emptyResults={_pr57BuildingAccessEmptyResults}");
+        }
         _pr57BuildingAccessActive=false;
         _pr57BuildingAccessBuiltEpoch=-1;
     }
@@ -34,6 +45,8 @@ public sealed partial class CitySimulation
     {
         if(_pr57BuildingAccessBuiltEpoch==_roadEpoch&&
            _pr57BuildingAccessBuiltCount==State.Roads.Count)return;
+        if(_pr57BuildingAccessBuiltEpoch>=0)_pr57BuildingAccessInvalidations++;
+        _pr57BuildingAccessRebuilds++;
         foreach(var bucket in _pr57BuildingAccessCells.Values)bucket.Clear();
         var width=Math.Max(1,State.Tuning.RoadStep);
         for(var i=0;i<State.Roads.Count;i++)
@@ -57,6 +70,8 @@ public sealed partial class CitySimulation
     RoadNode? Pr57IndexedBuildingAccess(Building building)
     {
         Pr57EnsureBuildingAccessIndex();
+        _pr57BuildingAccessQueries++;
+        _pr57BuildingAccessBaselineRows+=State.Roads.Count;
         var door=building.Door;
         var radius=State.Tuning.RoadWidth/2+3;
         var width=Math.Max(1,State.Tuning.RoadStep);
@@ -76,6 +91,7 @@ public sealed partial class CitySimulation
             if(!_pr57BuildingAccessCells.TryGetValue((x,z),out var bucket))continue;
             foreach(var (order,road) in bucket)
             {
+                _pr57BuildingAccessCandidateRows++;
                 if(road.Highway||road.MaintenanceRatio<=.05||
                    !_workExteriorConnected.Contains(road.Id))continue;
                 var distance=road.Position.Distance(door);
@@ -87,6 +103,7 @@ public sealed partial class CitySimulation
                 }
             }
         }
+        if(nearest==null)_pr57BuildingAccessEmptyResults++;
         return nearest;
     }
 }
