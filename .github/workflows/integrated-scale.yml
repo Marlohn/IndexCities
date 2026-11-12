@@ -68,9 +68,9 @@ jobs:
             echo "PR57_ACCESS_AB_SOURCE path=$input sha256=$(sha256sum "$input" | cut -d' ' -f1)"
           done
           mkdir -p artifacts/access-ab
-          for case in liveA liveB realA realB late congested cycle grid; do
+          for case in liveA liveB realA realB late congested cycle grid cycleLoadA cycleLoadB; do
             modes=(control candidate)
-            if [[ "$case" == realB || "$case" == liveB ]]; then modes=(candidate control); fi
+            if [[ "$case" == realB || "$case" == liveB || "$case" == cycleLoadB ]]; then modes=(candidate control); fi
             for mode in "${modes[@]}"; do
               enabled=0
               if [[ "$mode" == candidate ]]; then enabled=1; fi
@@ -83,6 +83,9 @@ jobs:
                 args+=(--resume="$late")
               elif [[ "$case" == congested ]]; then
                 args=(scale cycle --seed=42 --warmup=0 --days=1 --window=3600 --cap=300 --resume="$congested")
+              elif [[ "$case" == cycleLoadA || "$case" == cycleLoadB ]]; then
+                # Real paid housing projects, normal delivery/crew and no minted population.
+                args=(scale cycle --seed=42 --warmup=0 --cycle-houses=24 --days=2 --window=3600 --cap=300)
               elif [[ "$case" == grid ]]; then
                 args=(scale grid --seed=42 --rows=12 --length=600 --warmup=0 --days=1 --window=3600 --cap=300)
               fi
@@ -109,7 +112,7 @@ jobs:
           import pathlib,re
           root=pathlib.Path('artifacts/access-ab')
           paired={}
-          for case in ('liveA','liveB','realA','realB','late','congested','cycle','grid'):
+          for case in ('liveA','liveB','realA','realB','late','congested','cycle','grid','cycleLoadA','cycleLoadB'):
               results={}
               for mode in ('control','candidate'):
                   log=(root/f'{case}-{mode}.log').read_text()
@@ -141,6 +144,9 @@ jobs:
                   # intermediate quantum in an integrated A/B measurement.
                   assert all(pop>0 and alive>0 for pop,alive,_ in results[mode]['census']),\
                       (case,mode,'extinct intermediate window',results[mode]['census'])
+                  if case.startswith('cycleLoad'):
+                      assert 'CYCLE_HOUSING requested=24 placed=' in log,(case,mode,'housing orders missing')
+                      assert any(works>0 for _,_,works in results[mode]['census']),(case,mode,'no live construction workload')
                   if case.startswith('live'):
                       # Verify both modes received exactly the same external edits.
                       edits=[line for line in log.splitlines() if line.startswith('PR57_ACCESS_LIVE_EDIT phase=')]
@@ -175,7 +181,7 @@ jobs:
                     'fullIntermediateSavesMatch',True)
           # ABBA: pair opposite run orders before interpreting a wall reduction.
           # This is descriptive only; two pairs do not establish a 10k/80y gain.
-          for label,first,second in (('live','liveA','liveB'),('real','realA','realB')):
+          for label,first,second in (('live','liveA','liveB'),('real','realA','realB'),('cycleLoad','cycleLoadA','cycleLoadB')):
               a,b=paired[first],paired[second]
               baseline=sum(pair[0]['wall'] for pair in (a,b))
               candidate=sum(pair[1]['wall'] for pair in (a,b))
