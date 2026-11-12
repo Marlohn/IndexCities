@@ -159,7 +159,19 @@ for(var d=1;d<=days;d++){
             for(var quantum=0;quantum<windowSeconds/2;quantum++)
             {
                 if(liveEdit&&d==1&&quantum is 300 or 600 or 900 or 1200)
+                {
                     Pr57AccessLiveEdit(sim,quantum,ref liveEditedRoadId,ref liveOriginalMaintenance);
+                    // Capture the exact post-edit, pre-Advance state: end-of-window
+                    // equality alone cannot detect a transient causal divergence.
+                    if(Environment.GetEnvironmentVariable("PR57_AB_CHECKPOINT")=="1")
+                    {
+                        sim.CheckInvariants();
+                        var editSnapshot=sim.SaveToJson();
+                        if(!string.IsNullOrWhiteSpace(pr57SaveCaptureDir))
+                            File.WriteAllText(Path.Combine(pr57SaveCaptureDir,$"live-edit-{quantum}.json"),editSnapshot);
+                        Console.WriteLine($"PR57_ACCESS_EDIT_CHECKPOINT quantum={quantum} sha256={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(editSnapshot)))}");
+                    }
+                }
                 sim.Advance(2);
             }
         }
