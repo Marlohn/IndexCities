@@ -175,6 +175,15 @@ jobs:
               # Require living residents in both independent ABBA repetitions.
               assert all(pair[0]['pop']>0 and pair[0]['alive']>0
                          for pair in (a,b)),(label,'extinct-city benchmark',a,b)
+              # Report whole-engine CPU and allocation alongside wall. A wall-only
+              # change without reduced work is not structural evidence.
+              for metric in ('cpu','allocMB'):
+                  base_metric=sum(pair[0][metric] for pair in (a,b))
+                  opt_metric=sum(pair[1][metric] for pair in (a,b))
+                  assert base_metric>0,(label,metric,'invalid baseline')
+                  print('PR57_BUILDING_ACCESS_ABBA_RESOURCE',label,metric,
+                        'control',round(base_metric,6),'candidate',round(opt_metric,6),
+                        'reductionPct',round(100*(base_metric-opt_metric)/base_metric,3))
               print('PR57_BUILDING_ACCESS_ABBA',label,
                     'controlWall',round(baseline,6),'candidateWall',round(candidate,6),
                     'wallReductionPct',round(100*(baseline-candidate)/baseline,3),
