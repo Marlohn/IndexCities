@@ -131,6 +131,12 @@ jobs:
                   results[mode]['pop']=val(windows[-1],'pop')
                   results[mode]['alive']=val(windows[-1],'alive')
                   results[mode]['openWorks']=val(windows[-1],'openWorks')
+                  # Capture every intermediate census, not only the final one:
+                  # a transient extinction or work-count mismatch can recover.
+                  results[mode]['census']=[
+                      tuple(val(w,k) for k in ('pop','alive','openWorks'))
+                      for w in windows
+                  ]
                   if case.startswith('live'):
                       # Verify both modes received exactly the same external edits.
                       edits=[line for line in log.splitlines() if line.startswith('PR57_ACCESS_LIVE_EDIT phase=')]
@@ -158,6 +164,7 @@ jobs:
                       assert post_control.is_file() and post_candidate.is_file(),(case,'missing post-Advance checkpoint',quantum)
                       assert post_control.read_bytes()==post_candidate.read_bytes(),(case,'post-Advance causal divergence',quantum)
               c=results['control'];o=results['candidate']
+              assert c['census']==o['census'],(case,'intermediate population/work divergence',c['census'],o['census'])
               paired[case]=(c,o)
               print('PR57_BUILDING_ACCESS_RESULT',case,'control',c,'candidate',o,
                     'wallReductionPct',round((c['wall']-o['wall'])/c['wall']*100,2),
