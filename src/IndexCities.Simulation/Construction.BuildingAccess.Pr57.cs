@@ -34,7 +34,8 @@ public sealed partial class CitySimulation
             _pr57BuildingAccessAdvances++;
             // Cumulative opt-in diagnostic. Count rows, not assumed CPU savings.
             if(Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1" &&
-               (_pr57BuildingAccessAdvances==1||_pr57BuildingAccessAdvances%256==0))
+               (_pr57BuildingAccessAdvances==1||_pr57BuildingAccessAdvances%256==0||
+                _pr57BuildingAccessAdvances==43200||_pr57BuildingAccessAdvances==86400))
                 Console.WriteLine($"PR57_BUILDING_ACCESS_WORK advances={_pr57BuildingAccessAdvances} queries={_pr57BuildingAccessQueries} baselineRows={_pr57BuildingAccessBaselineRows} candidateRows={_pr57BuildingAccessCandidateRows} avoidedRows={_pr57BuildingAccessBaselineRows-_pr57BuildingAccessCandidateRows} rebuilds={_pr57BuildingAccessRebuilds} invalidations={_pr57BuildingAccessInvalidations} emptyResults={_pr57BuildingAccessEmptyResults}");
         }
         _pr57BuildingAccessActive=false;
