@@ -130,6 +130,11 @@ jobs:
                   results[mode]['pop']=val(windows[-1],'pop')
                   results[mode]['alive']=val(windows[-1],'alive')
                   results[mode]['openWorks']=val(windows[-1],'openWorks')
+                  if case.startswith('live'):
+                      # Verify both modes received exactly the same external edits.
+                      edits=[line for line in log.splitlines() if line.startswith('PR57_ACCESS_LIVE_EDIT phase=')]
+                      assert len(edits)==4,(case,mode,'unexpected live edit count',edits)
+                      results[mode]['edits']=edits
                   for i in range(len(windows)+1):
                       path=root/f'{case}-{mode}'/f'checkpoint-{i}.json'
                       assert path.is_file(),(case,mode,i)
@@ -138,6 +143,8 @@ jobs:
                   control=root/f'{case}-control'/f'checkpoint-{i}.json'
                   candidate=root/f'{case}-candidate'/f'checkpoint-{i}.json'
                   assert candidate.read_bytes()==control.read_bytes(),(case,'causal divergence',i)
+              if case.startswith('live'):
+                  assert results['control']['edits']==results['candidate']['edits'],(case,'external edit mismatch',results['control']['edits'],results['candidate']['edits'])
               c=results['control'];o=results['candidate']
               print('PR57_BUILDING_ACCESS_RESULT',case,'control',c,'candidate',o,
                     'wallReductionPct',round((c['wall']-o['wall'])/c['wall']*100,2),
