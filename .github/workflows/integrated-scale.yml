@@ -108,6 +108,7 @@ jobs:
           python3 - <<'PY'
           import pathlib,re
           root=pathlib.Path('artifacts/access-ab')
+          paired={}
           for case in ('liveA','liveB','realA','realB','late','congested','cycle','grid'):
               results={}
               for mode in ('control','candidate'):
@@ -157,8 +158,23 @@ jobs:
                       assert post_control.is_file() and post_candidate.is_file(),(case,'missing post-Advance checkpoint',quantum)
                       assert post_control.read_bytes()==post_candidate.read_bytes(),(case,'post-Advance causal divergence',quantum)
               c=results['control'];o=results['candidate']
+              paired[case]=(c,o)
               print('PR57_BUILDING_ACCESS_RESULT',case,'control',c,'candidate',o,
                     'wallReductionPct',round((c['wall']-o['wall'])/c['wall']*100,2),
+                    'fullIntermediateSavesMatch',True)
+          # ABBA: pair opposite run orders before interpreting a wall reduction.
+          # This is descriptive only; two pairs do not establish a 10k/80y gain.
+          for label,first,second in (('live','liveA','liveB'),('real','realA','realB')):
+              a,b=paired[first],paired[second]
+              baseline=sum(pair[0]['wall'] for pair in (a,b))
+              candidate=sum(pair[1]['wall'] for pair in (a,b))
+              assert baseline>0 and candidate>0,(label,'invalid wall')
+              assert all(pair[0]['pop']==pair[1]['pop'] and pair[0]['alive']==pair[1]['alive']
+                         for pair in (a,b)),(label,'population divergence')
+              print('PR57_BUILDING_ACCESS_ABBA',label,
+                    'controlWall',round(baseline,6),'candidateWall',round(candidate,6),
+                    'wallReductionPct',round(100*(baseline-candidate)/baseline,3),
+                    'order',first+':control-first,'+second+':candidate-first',
                     'fullIntermediateSavesMatch',True)
           PY
       - name: Preserve full checkpoints and logs even on failure
