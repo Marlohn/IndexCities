@@ -15,7 +15,7 @@ public sealed partial class CitySimulation
     double _pr57BuildingAccessBuiltWidth=double.NaN;
     long _pr57BuildingAccessAdvances,_pr57BuildingAccessQueries,_pr57BuildingAccessBaselineRows;
     long _pr57BuildingAccessCandidateRows,_pr57BuildingAccessRebuilds,_pr57BuildingAccessInvalidations;
-    long _pr57BuildingAccessEmptyResults,_pr57BuildingAccessIndexedRows;
+    long _pr57BuildingAccessEmptyResults,_pr57BuildingAccessIndexedRows,_pr57BuildingAccessCheckedRows;
 
     // State is externally mutable. Never use the index outside a public Advance
     // call; every Advance(2) starts with a fresh membership snapshot.
@@ -40,7 +40,7 @@ public sealed partial class CitySimulation
             if(Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1" &&
                (_pr57BuildingAccessAdvances==1||_pr57BuildingAccessAdvances%256==0||
                 _pr57BuildingAccessAdvances==43200||_pr57BuildingAccessAdvances==86400))
-                Console.WriteLine($"PR57_BUILDING_ACCESS_WORK advances={_pr57BuildingAccessAdvances} queries={_pr57BuildingAccessQueries} baselineRows={_pr57BuildingAccessBaselineRows} candidateRows={_pr57BuildingAccessCandidateRows} avoidedRows={_pr57BuildingAccessBaselineRows-_pr57BuildingAccessCandidateRows} rebuilds={_pr57BuildingAccessRebuilds} invalidations={_pr57BuildingAccessInvalidations} emptyResults={_pr57BuildingAccessEmptyResults} indexedRows={_pr57BuildingAccessIndexedRows}");
+                Console.WriteLine($"PR57_BUILDING_ACCESS_WORK advances={_pr57BuildingAccessAdvances} queries={_pr57BuildingAccessQueries} baselineRows={_pr57BuildingAccessBaselineRows} candidateRows={_pr57BuildingAccessCandidateRows} avoidedRows={_pr57BuildingAccessBaselineRows-_pr57BuildingAccessCandidateRows} rebuilds={_pr57BuildingAccessRebuilds} invalidations={_pr57BuildingAccessInvalidations} emptyResults={_pr57BuildingAccessEmptyResults} indexedRows={_pr57BuildingAccessIndexedRows} checkedRows={_pr57BuildingAccessCheckedRows}");
         }
         _pr57BuildingAccessActive=false;
     }
@@ -60,6 +60,7 @@ public sealed partial class CitySimulation
             for(var i=0;unchanged&&i<State.Roads.Count;i++)
             {
                 var road=State.Roads[i];
+                _pr57BuildingAccessCheckedRows++;
                 var saved=_pr57BuildingAccessMembership[i];
                 unchanged=ReferenceEquals(saved.Road,road)&&
                           saved.X==road.Position.X&&saved.Z==road.Position.Z;
