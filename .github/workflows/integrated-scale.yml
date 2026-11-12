@@ -231,6 +231,14 @@ jobs:
                       # Verify both modes received exactly the same external edits.
                       edits=[line for line in log.splitlines() if line.startswith('PR57_ACCESS_LIVE_EDIT phase=')]
                       assert len(edits)==4,(case,mode,'unexpected live edit count',edits)
+                      # Confirm the exact external spatial mutation happened, not
+                      # merely four unrelated edit log entries. Otherwise an
+                      # invalidation count cannot validate the RoadStep fallback.
+                      expected_edits=(('maintenance-off',300),('maintenance-on',600),
+                                      ('external-road-order',900),('public-road-rebuild',1200))
+                      for line,(phase,quantum) in zip(edits,expected_edits):
+                          assert f'phase={phase} quantum={quantum} ' in line,(case,mode,'wrong live edit',line)
+                      assert 'roadStepChanged=True' in edits[2],(case,mode,'RoadStep edit did not change bucket width',edits[2])
                       results[mode]['edits']=edits
                   for i in range(len(windows)+1):
                       path=root/f'{case}-{mode}'/f'checkpoint-{i}.json'
