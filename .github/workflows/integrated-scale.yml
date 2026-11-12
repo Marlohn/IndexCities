@@ -135,6 +135,7 @@ jobs:
                       assert match,(case,mode,key,row)
                       return float(match.group(1))
                   results[mode]={k:sum(val(w,k) for w in windows) for k in ('wall','cpu','allocMB')}
+                  results[mode]['windowMetrics']=[{k:val(w,k) for k in ('wall','cpu','allocMB')} for w in windows]
                   # PR57 work counters are cumulative snapshots, emitted every 256 Advances.
                   # Use the LAST observed snapshot, never sum snapshots or call it final.
                   work_rows=[line for line in log.splitlines()
@@ -248,6 +249,16 @@ jobs:
                       assert post_control.read_bytes()==post_candidate.read_bytes(),(case,'post-Advance causal divergence',quantum)
               c=results['control'];o=results['candidate']
               assert c['census']==o['census'],(case,'intermediate population/work divergence',c['census'],o['census'])
+              if case.startswith('cycleLoad'):
+                  for index,(control_window,candidate_window) in enumerate(zip(c['windowMetrics'],o['windowMetrics']),1):
+                      for metric in ('wall','cpu','allocMB'):
+                          baseline_value=control_window[metric]
+                          candidate_value=candidate_window[metric]
+                          assert baseline_value>0,(case,index,metric,'invalid baseline window')
+                          print('PR57_BUILDING_ACCESS_WINDOW_RESOURCE',case,'window',index,
+                                'metric',metric,'control',round(baseline_value,6),
+                                'candidate',round(candidate_value,6),
+                                'reductionPct',round(100*(baseline_value-candidate_value)/baseline_value,3))
               paired[case]=(c,o)
               print('PR57_BUILDING_ACCESS_RESULT',case,'control',c,'candidate',o,
                     'wallReductionPct',round((c['wall']-o['wall'])/c['wall']*100,2),
