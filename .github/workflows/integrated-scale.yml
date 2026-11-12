@@ -142,9 +142,13 @@ jobs:
                   if mode=='candidate':
                       assert work_rows,(case,mode,'missing building access work instrumentation')
                       fields=('advances','queries','baselineRows','candidateRows',
-                              'avoidedRows','rebuilds','invalidations','emptyResults')
+                              'avoidedRows','rebuilds','invalidations','emptyResults','indexedRows')
                       samples=[{k:int(val(line,k)) for k in fields} for line in work_rows]
                       assert all(x['advances']<y['advances'] for x,y in zip(samples,samples[1:])),(case,'nonmonotonic work samples')
+                      cumulative=('queries','baselineRows','candidateRows','avoidedRows',
+                                  'rebuilds','invalidations','emptyResults','indexedRows')
+                      assert all(all(x[k]<=y[k] for k in cumulative)
+                                 for x,y in zip(samples,samples[1:])),(case,'nonmonotonic cumulative counters')
                       work=samples[-1]
                       # The 2-day host replay must expose exact full-day boundaries,
                       # not just the most recent periodic 256-Advance sample.
@@ -154,9 +158,12 @@ jobs:
                               assert boundary in by_advance,(case,mode,'missing exact day-boundary work sample',boundary)
                               day=by_advance[boundary]
                               assert day['baselineRows']-day['candidateRows']==day['avoidedRows'],(case,boundary,'work conservation')
+                              assert day['indexedRows']>=0,(case,boundary,'negative rebuild work')
                               print('PR57_BUILDING_ACCESS_WORK_DAY',case,'mode',mode,
                                     'advances',boundary,'queries',day['queries'],
-                                    'avoidedRows',day['avoidedRows'],'rebuilds',day['rebuilds'],
+                                    'avoidedRows',day['avoidedRows'],'indexedRows',day['indexedRows'],
+                                    'netAvoidedRows',day['avoidedRows']-day['indexedRows'],
+                                    'rebuilds',day['rebuilds'],
                                     'invalidations',day['invalidations'],'emptyResults',day['emptyResults'])
                           assert work['advances']==86400,(case,mode,'incomplete two-day work measurement',work)
                       assert work['baselineRows']-work['candidateRows']==work['avoidedRows'],(case,'inconsistent avoided rows',work)
@@ -165,7 +172,9 @@ jobs:
                       print('PR57_BUILDING_ACCESS_WORK_SAMPLE',case,'mode',mode,
                             'sampledAdvances',work['advances'],'queries',work['queries'],
                             'baselineRows',work['baselineRows'],'candidateRows',work['candidateRows'],
-                            'avoidedRows',work['avoidedRows'],'rebuilds',work['rebuilds'],
+                            'avoidedRows',work['avoidedRows'],'indexedRows',work['indexedRows'],
+                            'netAvoidedRows',work['avoidedRows']-work['indexedRows'],
+                            'rebuilds',work['rebuilds'],
                             'invalidations',work['invalidations'],'emptyResults',work['emptyResults'],
                             'sampledRowReductionPct',round(100*work['avoidedRows']/work['baselineRows'],3))
                   results[mode]['pop']=val(windows[-1],'pop')
