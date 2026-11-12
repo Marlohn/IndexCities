@@ -53,6 +53,10 @@ Console.WriteLine($"FIXTURE {info} build={sw.Elapsed.TotalSeconds:F1}s .NET={Env
 if(cycleHouses>0&&args[1]=="cycle"){
     var ordered=Fixtures.QueueCycleHousingProjects(sim,cycleHouses);
     Console.WriteLine($"CYCLE_HOUSING requested={cycleHouses} placed={ordered.Placed} attempted={ordered.Attempted} {Stats(sim)}");
+    // PR57 load validity: abort before timing a smaller, nonrepresentative city.
+    // The CI must not report a speedup for fewer accepted paid construction orders.
+    if(Environment.GetEnvironmentVariable("PR57_CYCLE_SOUTH_HOUSING")=="1" && ordered.Placed!=cycleHouses)
+        throw new InvalidOperationException($"PR57 cycle housing workload incomplete: requested={cycleHouses} placed={ordered.Placed} attempted={ordered.Attempted}");
 }
 if(growth>0){sw.Restart();var hours=0;while(Fixtures.AddHouses(sim,growth)>0){sim.Advance(3600);hours++;}Console.WriteLine($"GROWTH {growth} casas/h por {hours} h wall={sw.Elapsed.TotalSeconds:F1}s pop={sim.Population}");}
 // PR57-only deterministic replay of the real 5183/5294/5179 queue.
