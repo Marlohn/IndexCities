@@ -216,7 +216,7 @@ for(var d=1;d<=days;d++){
     var windowGc0=GC.CollectionCount(0)-windowGc0Before;
     var windowGc2=GC.CollectionCount(2)-windowGc2Before;
     if(windowSeconds==86400)Console.WriteLine($"DAY {d} wall={w:F2}s eff={86400/w:F0}x {Stats(sim)}");
-    else Console.WriteLine($"WINDOW {d} seconds={windowSeconds} wall={w:F2}s eff={windowSeconds/w:F0}x cpu={windowCpu:F2}s allocMB={windowAllocMB:F1} gc0={windowGc0} gc2={windowGc2} {Stats(sim)}");
+    else Console.WriteLine($"WINDOW {d} seconds={windowSeconds} wall={w:F6}s eff={windowSeconds/w:F0}x cpu={windowCpu:F6}s allocMB={windowAllocMB:F6} gc0={windowGc0} gc2={windowGc2} {Stats(sim)}");
     stuck?.Report(sim,d);
     if(Environment.GetEnvironmentVariable("PR57_AB_CHECKPOINT")=="1"){
         sim.CheckInvariants();
