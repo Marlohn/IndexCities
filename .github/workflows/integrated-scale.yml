@@ -146,6 +146,19 @@ jobs:
                       samples=[{k:int(val(line,k)) for k in fields} for line in work_rows]
                       assert all(x['advances']<y['advances'] for x,y in zip(samples,samples[1:])),(case,'nonmonotonic work samples')
                       work=samples[-1]
+                      # The 2-day host replay must expose exact full-day boundaries,
+                      # not just the most recent periodic 256-Advance sample.
+                      if case.startswith('cycleLoad'):
+                          by_advance={sample['advances']:sample for sample in samples}
+                          for boundary in (43200,86400):
+                              assert boundary in by_advance,(case,mode,'missing exact day-boundary work sample',boundary)
+                              day=by_advance[boundary]
+                              assert day['baselineRows']-day['candidateRows']==day['avoidedRows'],(case,boundary,'work conservation')
+                              print('PR57_BUILDING_ACCESS_WORK_DAY',case,'mode',mode,
+                                    'advances',boundary,'queries',day['queries'],
+                                    'avoidedRows',day['avoidedRows'],'rebuilds',day['rebuilds'],
+                                    'invalidations',day['invalidations'],'emptyResults',day['emptyResults'])
+                          assert work['advances']==86400,(case,mode,'incomplete two-day work measurement',work)
                       assert work['baselineRows']-work['candidateRows']==work['avoidedRows'],(case,'inconsistent avoided rows',work)
                       assert work['queries']>0 and work['baselineRows']>0,(case,'no access queries',work)
                       results[mode]['workSample']=work
