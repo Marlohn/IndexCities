@@ -303,7 +303,7 @@ static void Pr57AccessLiveEdit(CitySimulation sim,int quantum,ref int editedRoad
     {
         var attempts=0;
         foreach(var road in sim.State.Roads.Where(r=>!r.Highway&&r.Neighbours.Count<=2)
-                     .OrderBy(r=>r.Position.Distance(active.Door)).Take(12).ToArray())
+                     .OrderBy(r=>r.Position.Distance(active.Door)).ToArray())
         {
             attempts++;
             var position=road.Position;
