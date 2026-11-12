@@ -173,6 +173,17 @@ for(var d=1;d<=days;d++){
                     }
                 }
                 sim.Advance(2);
+                // Check the first completed quantum after each external mutation.
+                // A divergence may disappear before the next edit or day boundary.
+                if(liveEdit&&d==1&&quantum is 300 or 600 or 900 or 1200
+                   &&Environment.GetEnvironmentVariable("PR57_AB_CHECKPOINT")=="1")
+                {
+                    sim.CheckInvariants();
+                    var postAdvanceSnapshot=sim.SaveToJson();
+                    if(!string.IsNullOrWhiteSpace(pr57SaveCaptureDir))
+                        File.WriteAllText(Path.Combine(pr57SaveCaptureDir,$"live-after-{quantum}.json"),postAdvanceSnapshot);
+                    Console.WriteLine($"PR57_ACCESS_AFTER_ADVANCE quantum={quantum} sha256={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(postAdvanceSnapshot)))}");
+                }
             }
         }
         else sim.Advance(windowSeconds);
