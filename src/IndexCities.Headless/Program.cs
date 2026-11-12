@@ -307,10 +307,11 @@ static void Pr57AccessLiveEdit(CitySimulation sim,int quantum,ref int editedRoad
         {
             attempts++;
             var position=road.Position;
+            var neighbour=sim.State.Roads.Where(r=>road.Neighbours.Contains(r.Id)).OrderBy(r=>r.Id).FirstOrDefault();
+            var replacementEndpoint=neighbour?.Position??position;
             var demolition=sim.DemolishRoad(road.Id);
             if(!demolition.Success)continue;
-            var neighbour=sim.State.Roads.Where(r=>road.Neighbours.Contains(r.Id)).OrderBy(r=>r.Id).FirstOrDefault();
-            var replacement=neighbour is null?sim.PlaceRoad(position,position):sim.PlaceRoad(position,neighbour.Position);
+            var replacement=sim.PlaceRoad(position,replacementEndpoint);
             if(!replacement.Success)
                 throw new InvalidOperationException($"PR57_ACCESS_LIVE_EDIT phase=public-road-rebuild quantum={quantum} oldRoad={road.Id} demolished=True replacementOrdered=False attempts={attempts}; replay must exercise both public mutations");
             Console.WriteLine($"PR57_ACCESS_LIVE_EDIT phase=public-road-rebuild quantum={quantum} oldRoad={road.Id} demolished=True replacementOrdered=True attempts={attempts}");
