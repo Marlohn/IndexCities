@@ -188,6 +188,12 @@ jobs:
                               # in BOTH windows before claiming net avoided work.
                               assert delta['checkedRows']>0,(case,window,'membership validation cost not exercised',delta)
                               assert delta['baselineRows']-delta['candidateRows']==delta['avoidedRows'],(case,window,'window work conservation',delta)
+                              # A broad-phase index that saves fewer rows than its own
+                              # exact validation and rebuild scans has no positive
+                              # row-work budget in this window. Fail rather than
+                              # reporting gross avoided rows as structural progress.
+                              net_rows=delta['avoidedRows']-delta['indexedRows']-delta['checkedRows']
+                              assert net_rows>0,(case,window,'nonpositive net avoided rows; reject this index workload',delta)
                               print('PR57_BUILDING_ACCESS_WORK_WINDOW',case,'window',window,
                                     'queries',delta['queries'],'baselineRows',delta['baselineRows'],
                                     'avoidedRows',delta['avoidedRows'],'indexedRows',delta['indexedRows'],'checkedRows',delta['checkedRows'],
