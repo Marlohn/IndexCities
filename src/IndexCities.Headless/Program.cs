@@ -339,8 +339,13 @@ static void Pr57AccessLiveEdit(CitySimulation sim,int quantum,ref int editedRoad
     }
     else if(quantum==900)
     {
+        // Exercise both external list-order invalidation and a changed spatial
+        // bucket width. The control and candidate receive identical mutations;
+        // the candidate must rebuild its cached cells before the next query.
         sim.State.Roads.Reverse();
-        Console.WriteLine($"PR57_ACCESS_LIVE_EDIT phase=external-road-order quantum={quantum} roads={sim.State.Roads.Count}");
+        var previousStep=sim.State.Tuning.RoadStep;
+        sim.State.Tuning.RoadStep=previousStep*1.01;
+        Console.WriteLine($"PR57_ACCESS_LIVE_EDIT phase=external-road-order quantum={quantum} roads={sim.State.Roads.Count} roadStepChanged={previousStep!=sim.State.Tuning.RoadStep}");
     }
     else if(quantum==1200)
     {
