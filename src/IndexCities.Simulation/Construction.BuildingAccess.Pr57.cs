@@ -12,6 +12,7 @@ public sealed partial class CitySimulation
     bool _pr57BuildingAccessMembershipChecked;
     readonly List<(RoadNode Road,double X,double Z)> _pr57BuildingAccessMembership=new();
     int _pr57BuildingAccessBuiltEpoch=-1,_pr57BuildingAccessBuiltCount=-1;
+    double _pr57BuildingAccessBuiltWidth=double.NaN;
     long _pr57BuildingAccessAdvances,_pr57BuildingAccessQueries,_pr57BuildingAccessBaselineRows;
     long _pr57BuildingAccessCandidateRows,_pr57BuildingAccessRebuilds,_pr57BuildingAccessInvalidations;
     long _pr57BuildingAccessEmptyResults,_pr57BuildingAccessIndexedRows;
@@ -47,7 +48,8 @@ public sealed partial class CitySimulation
     void Pr57EnsureBuildingAccessIndex()
     {
         if(_pr57BuildingAccessBuiltEpoch==_roadEpoch&&
-           _pr57BuildingAccessBuiltCount==State.Roads.Count)
+           _pr57BuildingAccessBuiltCount==State.Roads.Count&&
+           _pr57BuildingAccessBuiltWidth==Math.Max(1,State.Tuning.RoadStep))
         {
             if(_pr57BuildingAccessMembershipChecked)return;
             // Exact identity and coordinates avoid hash collisions and stale buckets.
@@ -81,6 +83,7 @@ public sealed partial class CitySimulation
         }
         _pr57BuildingAccessBuiltEpoch=_roadEpoch;
         _pr57BuildingAccessBuiltCount=State.Roads.Count;
+        _pr57BuildingAccessBuiltWidth=width;
         _pr57BuildingAccessMembershipChecked=true;
         if(!_pr57BuildingAccessEngaged&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
         {
