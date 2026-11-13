@@ -142,6 +142,15 @@ jobs:
                   candidate=root/f'{case}-candidate'/f'checkpoint-{index}.json'
                   assert control.is_file() and candidate.is_file(),(case,index,'missing JSON')
                   assert control.read_bytes()==candidate.read_bytes(),(case,index,'causal divergence')
+          # ABBA is also a determinism test: reversing the order of two
+          # identical seeded runs must not change any intermediate causal state.
+          # A/B equality alone cannot detect a shared order-dependent failure.
+          for mode in ('control','candidate'):
+              for index in range(3):
+                  first=root/f'cycleLoadA-{mode}'/f'checkpoint-{index}.json'
+                  second=root/f'cycleLoadB-{mode}'/f'checkpoint-{index}.json'
+                  assert first.read_bytes()==second.read_bytes(),(mode,index,'ABBA order-dependent JSON')
+              print('PR57_LOCAL_ABBA_ORDER_PARITY',mode,'checkpoints',3,'equal',True)
           for case in runs:
               for window in range(2):
                   for field in ('alive','openWorks'):
