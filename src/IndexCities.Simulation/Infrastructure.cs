@@ -1,3 +1,5 @@
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("IndexCities.Simulation.Tests")]
+
 namespace IndexCities.Simulation;
 
 public sealed partial class CitySimulation
