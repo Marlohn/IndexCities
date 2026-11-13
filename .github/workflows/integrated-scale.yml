@@ -114,7 +114,7 @@ jobs:
                       match=re.search(r'\b'+key+r'=([0-9.]+)',line)
                       assert match,(case,mode,key,line)
                       return float(match[1])
-                  assert all(number(w,'alive')>0 for w in windows) and any(number(w,'openWorks')>0 for w in windows),(case,mode,'inactive city')
+                  assert all(number(w,'alive')>0 and number(w,'openWorks')>0 for w in windows),(case,mode,'extinct or idle construction window')
                   metrics={key:[number(w,key) for w in windows] for key in ('wall','cpu','allocMB','alive','openWorks')}
                   work=[line for line in log.splitlines() if line.startswith('PR57_BUILDING_ACCESS_WORK ')]
                   if mode=='candidate':
