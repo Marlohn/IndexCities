@@ -369,6 +369,23 @@ jobs:
                           print('PR57_BUILDING_ACCESS_NO_WORK',case,'mode',mode,'advances',work['advances'])
                       else:
                           assert work['baselineRows']>0,(case,'queries without baseline work',work)
+                      # Exact 256-Advance samples at the end of each measured
+                      # 3600s/300x host window; report fallback/rebuild cost as
+                      # delta, not cumulative counts repeated for both windows.
+                      boundaries=(1792,) if len(windows)==1 else (1792,3584)
+                      by_advance={sample['advances']:sample for sample in samples}
+                      if case.startswith(('real','live')):
+                          assert all(boundary in by_advance for boundary in boundaries),(case,'missing window boundary',boundaries)
+                          previous=None
+                          deltas=[]
+                          for boundary in boundaries:
+                              current=by_advance[boundary]
+                              delta={k:current[k]-(previous[k] if previous else 0)
+                                     for k in cumulative}
+                              assert delta['baselineRows']-delta['candidateRows']==delta['avoidedRows'],(case,boundary,'window conservation')
+                              deltas.append(delta)
+                              previous=current
+                          results[mode]['workWindows']=deltas
                       results[mode]['workSample']=work
                       print('PR57_BUILDING_ACCESS_WORK_SAMPLE',case,'mode',mode,
                             'sampledAdvances',work['advances'],'queries',work['queries'],
@@ -483,6 +500,50 @@ jobs:
               print('PR57_BUILDING_ACCESS_RESULT',case,'control',c,'candidate',o,
                     'wallReductionPct',round((c['wall']-o['wall'])/c['wall']*100,2),
                     'fullIntermediateSavesMatch',True)
+          # Whole-Advance(2) wall fractions and fallback cost per window,
+          # paired across ABBA order to limit first-run bias. Row counts are
+          # diagnostic work units, NOT a measured CPU-time decomposition.
+          import statistics
+          for label,first,second in (('real','realA','realB'),('live','liveA','liveB')):
+              for index in range(2):
+                  order_reductions=[]
+                  for case in (first,second):
+                      control,candidate=paired[case]
+                      base=control['windowMetrics'][index]['wall']
+                      opt=candidate['windowMetrics'][index]['wall']
+                      assert base>0 and opt>0,(case,index,'invalid measured wall')
+                      reduction=100*(base-opt)/base
+                      order_reductions.append(reduction)
+                      work=candidate['workWindows'][index]
+                      avoided=work['avoidedRows']
+                      fallback=work['indexedRows']+work['checkedRows']
+                      net=avoided-fallback
+                      assert work['baselineRows']-work['candidateRows']==avoided,(case,index,'work mismatch')
+                      print('PR57_ACCESS_WALL_FRACTION',case,'window',index+1,
+                            'controlWall',round(base,6),'candidateWall',round(opt,6),
+                            'savedWallSeconds',round(base-opt,6),
+                            'savedWallFraction',round((base-opt)/base,6),
+                            'reductionPct',round(reduction,3),
+                            'queries',work['queries'],'avoidedRows',avoided,
+                            'fallbackRows',fallback,'indexedRows',work['indexedRows'],
+                            'checkedRows',work['checkedRows'],'netAvoidedRows',net,
+                            'fallbackPerAvoided',round(fallback/avoided,6) if avoided else None,
+                            'fallbackPerBaseline',round(fallback/work['baselineRows'],6) if work['baselineRows'] else None,
+                            'rebuilds',work['rebuilds'],'invalidations',work['invalidations'])
+                  print('PR57_ACCESS_ABBA_MEDIAN',label,'window',index+1,
+                        'orderReductionPct',','.join(str(round(v,3)) for v in order_reductions),
+                        'medianReductionPct',round(statistics.median(order_reductions),3))
+          for case in ('late','congested','cycle','grid'):
+              control,candidate=paired[case]
+              work=candidate['workSample']
+              reduction=100*(control['wall']-candidate['wall'])/control['wall']
+              print('PR57_ACCESS_NO_WORK_STRATUM',case,'queries',work['queries'],
+                    'avoidedRows',work['avoidedRows'],
+                    'fallbackRows',work['indexedRows']+work['checkedRows'],
+                    'controlWall',round(control['wall'],6),
+                    'candidateWall',round(candidate['wall'],6),
+                    'wallReductionPct',round(reduction,3),
+                    'attributableToIndex',work['queries']>0)
           # ABBA: pair opposite run orders before interpreting a wall reduction.
           # This is descriptive only; two pairs do not establish a 10k/80y gain.
           for label,first,second in (('live','liveA','liveB'),('real','realA','realB'),('cycleLoad','cycleLoadA','cycleLoadB')):
