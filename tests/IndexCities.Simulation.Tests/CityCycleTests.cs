@@ -71,14 +71,19 @@ public sealed class CityCycleTests
                 var resumed=CitySimulation.FromJson(candidateJson);
                 resumed.CheckInvariants();
                 Assert.Equal(candidateJson,resumed.SaveToJson());
-                // Continue independently from the checkpoint: no hidden
-                // profile state may influence the next integrated Advance(2).
+                // A persisted checkpoint must survive an entire independent
+                // continuation, not just the first Step after reload. This
+                // exercises recurring phase invalidations after save/load.
                 if(step==30)
                 {
-                    resumed.Advance(2);
                     var unprofiled=CitySimulation.FromJson(baselineJson);
-                    unprofiled.Advance(2);
-                    Assert.Equal(unprofiled.SaveToJson(),resumed.SaveToJson());
+                    for(var continuation=1;continuation<=30;continuation++)
+                    {
+                        resumed.Advance(2);
+                        unprofiled.Advance(2);
+                        Assert.Equal(unprofiled.SaveToJson(),resumed.SaveToJson());
+                        resumed.CheckInvariants();
+                    }
                 }
             }
         }
