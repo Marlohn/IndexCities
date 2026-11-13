@@ -107,6 +107,16 @@ jobs:
               PR57_SAVE_CAPTURE_DIR="$PWD/$output" \
                 timeout 360s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- "${args[@]}" \
                 | tee "$output.log"
+              # Fail at the first incomplete real workload, before spending the
+              # remaining ABBA budget on a non-representative 32-house run.
+              # Keep the full rejection log produced by QueueCycleHousingProjects.
+              if [[ "$case" == cycleLoadA || "$case" == cycleLoadB ]]; then
+                if ! grep -Eq '^CYCLE_HOUSING requested=32 placed=32 attempted=[0-9]+' "$output.log"; then
+                  echo "PR57_CYCLE_32_INCOMPLETE case=$case mode=$mode"
+                  grep -E '^(CYCLE_HOUSING|PR57_CYCLE_.*ROW|PR57_CYCLE_LOT_REJECT)' "$output.log" || true
+                  exit 1
+                fi
+              fi
             done
           done
       - name: Check intermediate exact causal snapshots and print end-to-end A/B
