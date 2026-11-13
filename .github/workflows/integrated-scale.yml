@@ -237,7 +237,10 @@ jobs:
                       housing=re.search(r'^CYCLE_HOUSING requested=32 placed=(\d+) attempted=(\d+)',log,re.M)
                       assert housing,(case,mode,'housing orders missing')
                       placed,attempted=map(int,housing.groups())
-                      assert placed==32,(case,mode,'incomplete housing workload',placed,attempted)
+                      assert placed==32,(case,mode,'incomplete housing workload',placed,attempted,
+                          [line for line in log.splitlines() if line.startswith(
+                              ('PR57_CYCLE_BASE_ROW','PR57_CYCLE_SOUTH_ROW',
+                               'PR57_CYCLE_EXTENSION_ROW','PR57_CYCLE_NORTH_ROW'))])
                       assert any(works>0 for _,_,works in results[mode]['census']),(case,mode,'no live construction workload')
                       results[mode]['housingOrders']=placed
                       results[mode]['housingAttempts']=attempted
