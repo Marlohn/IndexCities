@@ -117,6 +117,22 @@ jobs:
                   hits=[int(re.search(r'\bhits=(\d+)',s)[1]) for s in stats]
                   misses=[int(re.search(r'\bmisses=(\d+)',s)[1]) for s in stats]
                   assert hits==sorted(hits) and misses==sorted(misses),(name,'nonmonotonic counters')
+                  # Both complete integrated windows must actually reuse the
+                  # pure allocation; a final cumulative hit count can hide
+                  # an idle second window and falsely suggest recurring work.
+                  times=[int(re.search(r'\\bat=(\\d+)',s)[1]) for s in stats]
+                  assert times==sorted(times),(name,'nonmonotonic sample times')
+                  for window,start,end in ((1,0,36000),(2,36000,72000)):
+                      samples=[(t,h,m) for t,h,m in zip(times,hits,misses) if start<=t<=end]
+                      assert samples and samples[-1][0]==end,(name,window,'missing boundary counter',times)
+                      before=[(t,h,m) for t,h,m in zip(times,hits,misses) if t<=start]
+                      first=before[-1] if before else (start,0,0)
+                      dh=samples[-1][1]-first[1]
+                      dm=samples[-1][2]-first[2]
+                      assert dh>0,(name,window,'no recurring replay hits',dh,dm)
+                      assert dm>=0,(name,window,'negative fallback count',dh,dm)
+                      print('PR57_UTILITY_REPLAY_WORK_WINDOW',name,'window',window,
+                            'hits',dh,'misses',dm,'hitFraction',round(dh/(dh+dm),6))
                   print('PR57_UTILITY_REPLAY_WORK',name,'hits',hits[-1],'misses',misses[-1])
           # Include the initial save and compare both ABBA orders separately:
           # pooled totals alone can conceal order-dependent regressions.
