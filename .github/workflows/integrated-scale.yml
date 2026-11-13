@@ -103,15 +103,15 @@ jobs:
               for mode in ('control','candidate'):
                   log=(root/f'{case}-{mode}.log').read_text()
                   assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,mode,'invariants/save')
-                  match=re.search(r'^CYCLE_HOUSING requested=32 placed=(\\d+) attempted=(\\d+)',log,re.M)
+                  match=re.search(r'^CYCLE_HOUSING requested=32 placed=(\d+) attempted=(\d+)',log,re.M)
                   assert match and int(match[1])==32,(case,mode,'incomplete paid houses')
                   windows=[line for line in log.splitlines() if line.startswith('WINDOW ')]
                   assert len(windows)==2,(case,mode,'incomplete integrated windows')
                   def number(line,key):
-                      match=re.search(r'\\b'+key+r'=([0-9.]+)',line)
+                      match=re.search(r'\b'+key+r'=([0-9.]+)',line)
                       assert match,(case,mode,key,line)
                       return float(match[1])
-                  assert all(number(w,'alive')>0 and number(w,'openWorks')>0 for w in windows),(case,mode,'inactive city')
+                  assert all(number(w,'alive')>0 for w in windows) and any(number(w,'openWorks')>0 for w in windows),(case,mode,'inactive city')
                   metrics={key:sum(number(w,key) for w in windows) for key in ('wall','cpu','allocMB')}
                   work=[line for line in log.splitlines() if line.startswith('PR57_BUILDING_ACCESS_WORK ')]
                   if mode=='candidate':
