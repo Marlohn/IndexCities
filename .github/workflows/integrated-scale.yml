@@ -133,7 +133,7 @@ jobs:
                       # class on this window, not a CI infrastructure failure.
                       assert dh>=0 and dm>=0,(name,window,'negative counter delta',dh,dm)
                       print('PR57_UTILITY_REPLAY_WORK_WINDOW',name,'window',window,
-                            'hits',dh,'misses',dm,'hitFraction',round(dh/(dh+dm),6))
+                            'hits',dh,'misses',dm,'hitFraction',round(dh/(dh+dm),6) if dh+dm else 0.0)
                   print('PR57_UTILITY_REPLAY_WORK',name,'hits',hits[-1],'misses',misses[-1])
           # Include the initial save and compare both ABBA orders separately:
           # pooled totals alone can conceal order-dependent regressions.
