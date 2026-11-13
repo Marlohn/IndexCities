@@ -64,6 +64,17 @@ public sealed class CityCycleTests
             var baselineJson=baseline.SaveToJson();
             var candidateJson=candidate.SaveToJson();
             Assert.Equal(baselineJson,candidateJson);
+            // External, between-step mutation: the diagnostic observer must not
+            // retain a stale view of a causal building field across Advance(2).
+            // Apply the same legal state edit independently to both simulations.
+            if(step==30)
+            {
+                var original=baseline.State.Buildings.First(b=>b.Kind==BuildingKind.WaterTreatment);
+                var observed=candidate.State.Buildings.Single(b=>b.Id==original.Id);
+                original.MaintenanceRatio=0.5;
+                observed.MaintenanceRatio=0.5;
+                Assert.Equal(baseline.SaveToJson(),candidate.SaveToJson());
+            }
             // An observational profile must also leave each persisted checkpoint
             // loadable, not merely equal in the two in-memory simulations.
             if(step==30||step==60)
