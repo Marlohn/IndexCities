@@ -250,6 +250,18 @@ if(profile is not null){
     Console.WriteLine($"STEP_PROFILE steps={profile.Steps} measuredWall={measured:F3}s phases={StepCostProfile.Names.Length}");
     for(var i=0;i<StepCostProfile.Names.Length;i++)
         Console.WriteLine($"  STEP_PHASE name={StepCostProfile.Names[i]} wall={profile.Ticks[i]/(double)Stopwatch.Frequency:F3}s share={(ticks==0?0:100.0*profile.Ticks[i]/ticks):F2}%");
+    // PR57: observational multi-phase ceiling, using the same measured Step(2)
+    // phase ticks. No causal phase is skipped; percentages are not speedups.
+    if(Environment.GetEnvironmentVariable("PR57_CROSS_PHASE_CEILING")=="1")
+    {
+        var recurring=new[]{0,2,3,6,7,8,9,10,11};
+        var recurringTicks=recurring.Sum(i=>profile.Ticks[i]);
+        var otherTicks=ticks-recurringTicks;
+        var recurringShare=ticks==0?0:100.0*recurringTicks/ticks;
+        Console.WriteLine($"PR57_CROSS_PHASE_CEILING steps={profile.Steps} recurringTicks={recurringTicks} otherTicks={otherTicks} recurringSharePct={recurringShare:F3} immutableOtherSharePct={100-recurringShare:F3} theoreticalMaxSpeedup={(otherTicks>0?(double)ticks/otherTicks:double.PositiveInfinity):F3} note=INTRUSIVE_PROFILE_UPPER_BOUND_NOT_CAUSAL_PROOF");
+        foreach(var i in recurring)
+            Console.WriteLine($"PR57_CROSS_PHASE_PART name={StepCostProfile.Names[i]} ticks={profile.Ticks[i]} sharePct={(ticks==0?0:100.0*profile.Ticks[i]/ticks):F3}");
+    }
     if(Environment.GetEnvironmentVariable("PR57_PHASE_ALLOC_PROBE")=="1")
     {
         var phaseBytes=profile.PhaseAllocatedBytes.Sum();
