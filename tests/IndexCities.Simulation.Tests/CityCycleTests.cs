@@ -153,10 +153,18 @@ public sealed class CityCycleTests
                 }
                 Assert.Equal(plain.Result.Take(count),replay.Result.Take(count));
             }
-            Check();
-            Check(); // identical inputs must be replayable, not only equivalent
+            var hitsBefore=replay.ReplayHits;
+            var missesBefore=replay.ReplayMisses;
+            Check(); // new ordered snapshot must miss even after a prior replay
+            Assert.Equal(hitsBefore,replay.ReplayHits);
+            Assert.Equal(missesBefore+1,replay.ReplayMisses);
+            Check(); // identical inputs must actually reuse the allocation
+            Assert.Equal(hitsBefore+1,replay.ReplayHits);
+            Assert.Equal(missesBefore+1,replay.ReplayMisses);
             inputDemands[iteration%count]+=1;
-            Check(); // same geometry and cardinality, changed causal demand
+            Check(); // changed demand must invalidate the cached result
+            Assert.Equal(hitsBefore+1,replay.ReplayHits);
+            Assert.Equal(missesBefore+2,replay.ReplayMisses);
         }
         Assert.True(replay.ReplayHits>=98);
         Assert.True(replay.ReplayMisses>=204);
