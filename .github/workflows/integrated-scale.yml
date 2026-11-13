@@ -76,11 +76,15 @@ jobs:
             output="artifacts/access-ab/utility-$run.log"
             capture="artifacts/access-ab/utility-$run"
             mkdir -p "$capture"
+            # Exercise paid housing construction and its utility demand in the
+            # integrated engine, rather than only the small initial cycle.
+            PR57_CYCLE_SOUTH_HOUSING=1 PR57_CYCLE_SOUTH_EXTENSION=1 \
+            PR57_CYCLE_NORTH_HOUSING=1 \
             PR57_BUILDING_WORK_ACCESS=0 PR57_UTILITY_REPLAY="$enabled" PR57_GRID_DIAG=1 \
             PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="$PWD/$capture" \
               timeout 120s dotnet run --no-build -c Release \
               --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
-              scale cycle --seed=42 --warmup=0 --days=2 --window=120 --cap=300 \
+              scale cycle --seed=42 --warmup=0 --cycle-bypass=1 --cycle-houses=32 --days=2 --window=120 --cap=300 \
               | tee "$output"
             grep -q "PR57_UTILITY_REPLAY active=$( [[ "$enabled" == 1 ]] && echo True || echo False )" "$output"
           done
