@@ -264,6 +264,14 @@ jobs:
                       assert sum(v[0] for v in row_values)==placed,(case,mode,'row placement mismatch',row_values,placed)
                       assert sum(v[0]+v[3] for v in row_values)==attempted,(case,mode,'row attempt mismatch',row_values,attempted)
                       results[mode]['housingRows']=rows
+                      # Match each rejected quote/order decision, not only row totals.
+                      # Equal accepted orders and final saves may hide changed
+                      # rejection causes in the opt-in workload generator.
+                      rejections=[line for line in log.splitlines()
+                                  if line.startswith('PR57_CYCLE_LOT_REJECT ')]
+                      assert all(re.search(r'^PR57_CYCLE_LOT_REJECT stage=(physical|access|order) x=-?\d+ z=-?\d+ cause=\S+',line)
+                                 for line in rejections),(case,mode,'malformed housing rejection',rejections)
+                      results[mode]['housingRejections']=rejections
                   if case.startswith('live'):
                       # Verify both modes received exactly the same external edits.
                       edits=[line for line in log.splitlines() if line.startswith('PR57_ACCESS_LIVE_EDIT phase=')]
@@ -303,6 +311,7 @@ jobs:
               if case.startswith('cycleLoad'):
                   assert c['housingAttempts']==o['housingAttempts'],(case,'housing quote/order attempt divergence',c['housingAttempts'],o['housingAttempts'])
                   assert c['housingRows']==o['housingRows'],(case,'housing row decision divergence',c['housingRows'],o['housingRows'])
+                  assert c['housingRejections']==o['housingRejections'],(case,'housing rejection cause divergence',c['housingRejections'],o['housingRejections'])
                   for index,(control_window,candidate_window) in enumerate(zip(c['windowMetrics'],o['windowMetrics']),1):
                       for metric in ('wall','cpu','allocMB'):
                           baseline_value=control_window[metric]
