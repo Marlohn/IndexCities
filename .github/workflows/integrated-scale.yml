@@ -248,6 +248,17 @@ jobs:
                       rows=[line for line in log.splitlines()
                             if line.startswith(row_prefixes)]
                       assert rows,(case,mode,'missing housing-row decisions')
+                      # A successful 32-order probe must account for every ordinary
+                      # placement attempt, including rejected construction orders.
+                      # Prevent a changed fixture from reporting 32 accepted orders
+                      # while silently skipping or miscounting rejected attempts.
+                      row_values=[]
+                      for line in rows:
+                          match=re.search(r'newOrders=(\\d+) rejectedPhysical=(\\d+) rejectedAccess=(\\d+) rejectedOrder=(\\d+)',line)
+                          assert match,(case,mode,'malformed housing-row accounting',line)
+                          row_values.append(tuple(map(int,match.groups())))
+                      assert sum(v[0] for v in row_values)==placed,(case,mode,'row placement mismatch',row_values,placed)
+                      assert sum(v[0]+v[3] for v in row_values)==attempted,(case,mode,'row attempt mismatch',row_values,attempted)
                       results[mode]['housingRows']=rows
                   if case.startswith('live'):
                       # Verify both modes received exactly the same external edits.
