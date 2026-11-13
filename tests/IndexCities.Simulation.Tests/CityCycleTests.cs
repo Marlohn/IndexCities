@@ -174,9 +174,27 @@ public sealed class CityCycleTests
             Check(); // repeat the changed geometry to prove the new key is usable
             Assert.Equal(hitsBefore+2,replay.ReplayHits);
             Assert.Equal(missesBefore+3,replay.ReplayMisses);
+            // Capacity is also a causal input. The same consumers and sources
+            // must miss when available supply changes, then hit on exact repeat.
+            available=0.5;
+            Check();
+            Assert.Equal(hitsBefore+2,replay.ReplayHits);
+            Assert.Equal(missesBefore+4,replay.ReplayMisses);
+            Check();
+            Assert.Equal(hitsBefore+3,replay.ReplayHits);
+            Assert.Equal(missesBefore+4,replay.ReplayMisses);
+            // Cardinality changes can leave the previous source prefix intact.
+            // They must still invalidate, including when capacity is unchanged.
+            inputSources.Add(new Point(2000+iteration,-2000));
+            Check();
+            Assert.Equal(hitsBefore+3,replay.ReplayHits);
+            Assert.Equal(missesBefore+5,replay.ReplayMisses);
+            Check();
+            Assert.Equal(hitsBefore+4,replay.ReplayHits);
+            Assert.Equal(missesBefore+5,replay.ReplayMisses);
         }
-        Assert.True(replay.ReplayHits>=194);
-        Assert.True(replay.ReplayMisses>=300);
+        Assert.True(replay.ReplayHits>=386);
+        Assert.True(replay.ReplayMisses>=492);
     }
 
     // PR57: the cross-phase ceiling is observation only. Verify every integrated
