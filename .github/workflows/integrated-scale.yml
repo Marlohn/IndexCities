@@ -69,31 +69,67 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts/access-ab
-          for order in A B B A; do
-            if [[ "$order" == A ]]; then enabled=0; else enabled=1; fi
-            output="artifacts/access-ab/utility-${order}-$(ls artifacts/access-ab/utility-${order}-*.log 2>/dev/null | wc -l).log"
+          # Separate processes, alternating order. Measure the complete Advance(2)
+          # window; save/load and hashing occur after the timed window.
+          for run in A0 B0 B1 A1; do
+            if [[ "$run" == A* ]]; then enabled=0; else enabled=1; fi
+            output="artifacts/access-ab/utility-$run.log"
+            capture="artifacts/access-ab/utility-$run"
+            mkdir -p "$capture"
             PR57_BUILDING_WORK_ACCESS=0 PR57_UTILITY_REPLAY="$enabled" PR57_GRID_DIAG=1 \
+            PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="$PWD/$capture" \
               timeout 120s dotnet run --no-build -c Release \
               --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
-              profile cycle --seed=42 --warmup=0 --days=1 --window=120 --cap=300 \
+              scale cycle --seed=42 --warmup=0 --days=2 --window=120 --cap=300 \
               | tee "$output"
             grep -q "PR57_UTILITY_REPLAY active=$( [[ "$enabled" == 1 ]] && echo True || echo False )" "$output"
           done
           python3 - <<'PY'
-          import pathlib,re
-          logs=sorted(pathlib.Path('artifacts/access-ab').glob('utility-*.log'))
-          assert len(logs)==4,logs
-          enabled=[p for p in logs if p.name.startswith('utility-B-')]
-          assert len(enabled)==2,enabled
-          for p in enabled:
-              lines=p.read_text().splitlines()
-              stats=[s for s in lines if s.startswith('PR57_UTILITY_REPLAY_STATS ')]
-              assert stats,(p,'missing integrated replay counters')
-              hits=[int(re.search(r'\bhits=(\d+)',s)[1]) for s in stats]
-              misses=[int(re.search(r'\bmisses=(\d+)',s)[1]) for s in stats]
-              assert hits==sorted(hits) and misses==sorted(misses),(p,'nonmonotonic counters')
-              print('PR57_UTILITY_REPLAY_PROBE',p.name,'hits',hits[-1],'misses',misses[-1],
-                    'note','diagnostic_only_not_causal_parity_or_speedup')
+          import hashlib,pathlib,re,statistics
+          root=pathlib.Path('artifacts/access-ab')
+          runs={}
+          for name in ('A0','B0','B1','A1'):
+              log=(root/f'utility-{name}.log').read_text()
+              assert 'INVARIANTS OK' in log and 'SUMMARY windows=2' in log,(name,'incomplete run')
+              windows={}
+              for line in log.splitlines():
+                  if not line.startswith('WINDOW '): continue
+                  def metric(key):
+                      match=re.search(r'(?<!\\w)'+re.escape(key)+r'=([0-9.]+)',line)
+                      assert match,(name,key,line)
+                      return float(match[1])
+                  index=int(metric('WINDOW'))
+                  windows[index]={key:metric(key) for key in ('wall','cpu','allocMB')}
+              assert set(windows)=={1,2},(name,windows)
+              hashes={}
+              for p in sorted((root/f'utility-{name}').glob('checkpoint-*.json')):
+                  index=int(p.stem.split('-')[-1])
+                  hashes[index]=hashlib.sha256(p.read_bytes()).hexdigest().upper()
+              assert set(hashes)=={1,2},(name,'missing full JSON checkpoints')
+              for line in log.splitlines():
+                  if not line.startswith('PR57_AB_CHECKPOINT window='):continue
+                  match=re.search(r'window=(\\d+) sha256=([0-9A-F]+)',line)
+                  assert match and hashes[int(match[1])]==match[2],(name,'checkpoint hash mismatch')
+              runs[name]=(windows,hashes)
+              if name.startswith('B'):
+                  stats=[s for s in log.splitlines() if s.startswith('PR57_UTILITY_REPLAY_STATS ')]
+                  assert stats,(name,'missing integrated replay counters')
+                  hits=[int(re.search(r'\\bhits=(\\d+)',s)[1]) for s in stats]
+                  misses=[int(re.search(r'\\bmisses=(\\d+)',s)[1]) for s in stats]
+                  assert hits==sorted(hits) and misses==sorted(misses),(name,'nonmonotonic counters')
+                  print('PR57_UTILITY_REPLAY_WORK',name,'hits',hits[-1],'misses',misses[-1])
+          for index in (1,2):
+              hashes={name:runs[name][1][index] for name in runs}
+              assert len(set(hashes.values()))==1,('CAUSAL_JSON_DIVERGENCE',index,hashes)
+              for key in ('wall','cpu','allocMB'):
+                  baseline=sum(runs[name][0][index][key] for name in ('A0','A1'))
+                  candidate=sum(runs[name][0][index][key] for name in ('B0','B1'))
+                  assert baseline>0,(index,key,baseline)
+                  print('PR57_UTILITY_REPLAY_ABBA',f'window={index}',key,
+                        f'baseline={baseline:.6f}',f'candidate={candidate:.6f}',
+                        f'deltaPct={(candidate/baseline-1)*100:.3f}',
+                        'note=MEASURED_NOT_EXTRAPOLATED')
+          print('PR57_UTILITY_REPLAY_JSON_PARITY all_intermediate_checkpoints=2 save_load=verified')
           PY
       # The original growth artifact has expired; use retained authentic workplace checkpoints.
       - name: Validate 32 paid housing orders before restoring external saves
