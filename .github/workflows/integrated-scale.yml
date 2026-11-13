@@ -115,7 +115,7 @@ jobs:
                       assert match,(case,mode,key,line)
                       return float(match[1])
                   assert all(number(w,'alive')>0 for w in windows) and any(number(w,'openWorks')>0 for w in windows),(case,mode,'inactive city')
-                  metrics={key:sum(number(w,key) for w in windows) for key in ('wall','cpu','allocMB')}
+                  metrics={key:[number(w,key) for w in windows] for key in ('wall','cpu','allocMB','alive','openWorks')}
                   work=[line for line in log.splitlines() if line.startswith('PR57_BUILDING_ACCESS_WORK ')]
                   if mode=='candidate':
                       assert work,(case,'missing work evidence')
@@ -142,9 +142,24 @@ jobs:
                   candidate=root/f'{case}-candidate'/f'checkpoint-{index}.json'
                   assert control.is_file() and candidate.is_file(),(case,index,'missing JSON')
                   assert control.read_bytes()==candidate.read_bytes(),(case,index,'causal divergence')
+          for case in runs:
+              for window in range(2):
+                  for field in ('alive','openWorks'):
+                      baseline=runs[case]['control'][field][window]
+                      candidate=runs[case]['candidate'][field][window]
+                      assert baseline==candidate,(case,window+1,field,'state divergence')
+                  for metric in ('wall','cpu','allocMB'):
+                      baseline=runs[case]['control'][metric][window]
+                      candidate=runs[case]['candidate'][metric][window]
+                      assert baseline>0,(case,window+1,metric,'invalid baseline')
+                      print('PR57_LOCAL_ABBA_WINDOW',case,'window',window+1,metric,
+                            'control',round(baseline,6),'candidate',round(candidate,6),
+                            'reductionPct',round(100*(baseline-candidate)/baseline,3),
+                            'alive',int(runs[case]['control']['alive'][window]),
+                            'openWorks',int(runs[case]['control']['openWorks'][window]))
           for metric in ('wall','cpu','allocMB'):
-              baseline=sum(runs[case]['control'][metric] for case in runs)
-              candidate=sum(runs[case]['candidate'][metric] for case in runs)
+              baseline=sum(sum(runs[case]['control'][metric]) for case in runs)
+              candidate=sum(sum(runs[case]['candidate'][metric]) for case in runs)
               assert baseline>0,(metric,'invalid baseline')
               print('PR57_LOCAL_ABBA_32',metric,'control',round(baseline,6),
                     'candidate',round(candidate,6),
