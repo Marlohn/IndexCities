@@ -165,9 +165,18 @@ public sealed class CityCycleTests
             Check(); // changed demand must invalidate the cached result
             Assert.Equal(hitsBefore+1,replay.ReplayHits);
             Assert.Equal(missesBefore+2,replay.ReplayMisses);
+            // The same replay stream must reject a moved source even when
+            // capacity and aggregate demand are unchanged.
+            inputSources[0]=new Point(inputSources[0].X+1,inputSources[0].Y);
+            Check();
+            Assert.Equal(hitsBefore+1,replay.ReplayHits);
+            Assert.Equal(missesBefore+3,replay.ReplayMisses);
+            Check(); // repeat the changed geometry to prove the new key is usable
+            Assert.Equal(hitsBefore+2,replay.ReplayHits);
+            Assert.Equal(missesBefore+3,replay.ReplayMisses);
         }
-        Assert.True(replay.ReplayHits>=98);
-        Assert.True(replay.ReplayMisses>=204);
+        Assert.True(replay.ReplayHits>=194);
+        Assert.True(replay.ReplayMisses>=300);
     }
 
     // PR57: the cross-phase ceiling is observation only. Verify every integrated
