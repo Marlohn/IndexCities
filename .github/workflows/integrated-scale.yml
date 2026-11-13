@@ -122,7 +122,7 @@ jobs:
                   # an idle second window and falsely suggest recurring work.
                   times=[int(re.search(r'\bat=(\d+)',s)[1]) for s in stats]
                   assert times==sorted(times),(name,'nonmonotonic sample times')
-                  for window,start,end in ((1,0,36000),(2,36000,72000)):
+                  for window,start,end in ((1,0,120),(2,120,240)):
                       samples=[(t,h,m) for t,h,m in zip(times,hits,misses) if start<=t<=end]
                       assert samples and samples[-1][0]==end,(name,window,'missing boundary counter',times)
                       before=[(t,h,m) for t,h,m in zip(times,hits,misses) if t<=start]
