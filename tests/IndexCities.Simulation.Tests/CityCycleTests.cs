@@ -73,7 +73,12 @@ public sealed class CityCycleTests
                 var observed=candidate.State.Buildings.Single(b=>b.Id==original.Id);
                 original.MaintenanceRatio=0.5;
                 observed.MaintenanceRatio=0.5;
-                Assert.Equal(baseline.SaveToJson(),candidate.SaveToJson());
+                // Refresh the checkpoint after the mutation: the independent
+                // save/load continuation must exercise the changed maintenance
+                // condition, not the pre-mutation state captured above.
+                baselineJson=baseline.SaveToJson();
+                candidateJson=candidate.SaveToJson();
+                Assert.Equal(baselineJson,candidateJson);
             }
             // An observational profile must also leave each persisted checkpoint
             // loadable, not merely equal in the two in-memory simulations.
