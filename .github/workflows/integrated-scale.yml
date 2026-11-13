@@ -31,6 +31,62 @@ jobs:
           PR57_BUILDING_WORK_ACCESS=0 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
           PR57_BUILDING_WORK_ACCESS=1 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
       # The original growth artifact has expired; use retained authentic workplace checkpoints.
+      - name: Validate 32 paid housing orders before restoring external saves
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/access-ab
+          for case in cycleLoadA cycleLoadB; do
+            modes=(control candidate)
+            if [[ "$case" == realB || "$case" == liveB || "$case" == cycleLoadB ]]; then modes=(candidate control); fi
+            for mode in "${modes[@]}"; do
+              enabled=0
+              if [[ "$mode" == candidate ]]; then enabled=1; fi
+              output="artifacts/access-ab/$case-$mode"
+              mkdir -p "$output"
+              args=(scale cycle --seed=42 --warmup=0 --days=2 --window=3600 --cap=300)
+              if [[ "$case" == realA || "$case" == realB || "$case" == liveA || "$case" == liveB ]]; then
+                args+=(--resume="$source")
+              elif [[ "$case" == late ]]; then
+                args+=(--resume="$late")
+              elif [[ "$case" == congested ]]; then
+                args=(scale cycle --seed=42 --warmup=0 --days=1 --window=3600 --cap=300 --resume="$congested")
+              elif [[ "$case" == cycleLoadA || "$case" == cycleLoadB ]]; then
+                # Scale probe: 32 real paid housing orders (up from validated 24); normal delivery/crew, no minted population. Fail if any quote/order is rejected.
+                args=(scale cycle --seed=42 --warmup=0 --cycle-bypass=1 --cycle-houses=32 --days=2 --window=3600 --cap=300)
+              elif [[ "$case" == grid ]]; then
+                args=(scale grid --seed=42 --rows=12 --length=600 --warmup=0 --days=1 --window=3600 --cap=300)
+              fi
+              live=0
+              if [[ "$case" == liveA || "$case" == liveB ]]; then live=1; fi
+              housing_frontage=0
+              if [[ "$case" == cycleLoadA || "$case" == cycleLoadB ]]; then housing_frontage=1; fi
+              echo "PR57_ACCESS_AB_RUN case=$case mode=$mode enabled=$enabled liveEdit=$live hostQuantum=2"
+              PR57_CYCLE_SOUTH_HOUSING="$housing_frontage" PR57_CYCLE_SOUTH_EXTENSION="$housing_frontage" \
+              PR57_CYCLE_NORTH_HOUSING="$housing_frontage" \
+              PR57_BUILDING_WORK_ACCESS="$enabled" PR57_GRID_DIAG=1 \
+              PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_ACCESS_LIVE_EDIT="$live" \
+              PR57_DYNAMIC_BVH=0 PR57_PARALLEL_NEEDS=0 PR57_STAFF_PHASE_FUSION=0 \
+              PR57_UTILITY_REPLAY=0 PR57_POLLUTION_SIMD=0 PR57_PARALLEL_POLLUTION=0 \
+              PR57_CONSTRUCTION_WAIT_AGENDA=0 PR57_DISPATCH_SHIPMENT_LOOKUP=0 \
+              PR57_ROUTE_TREE=0 PR57_ORDER_SHIPMENT_INDEX=0 PR57_MAINTENANCE_SCHEDULE=0 \
+              PR57_SOURCE_DISTANCE_CACHE=0 PR57_WORK_ACCESS_INDEX=0 PR57_PEDESTRIAN_GRID=0 \
+              PR57_LIVING_ROSTER=0 PR57_CITIZEN_AGENDA=0 \
+              PR57_SAVE_CAPTURE_DIR="$PWD/$output" \
+                timeout 360s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- "${args[@]}" \
+                | tee "$output.log"
+              # Fail at the first incomplete real workload, before spending the
+              # remaining ABBA budget on a non-representative 32-house run.
+              # Keep the full rejection log produced by QueueCycleHousingProjects.
+              if [[ "$case" == cycleLoadA || "$case" == cycleLoadB ]]; then
+                if ! grep -Eq '^CYCLE_HOUSING requested=32 placed=32 attempted=[0-9]+' "$output.log"; then
+                  echo "PR57_CYCLE_32_INCOMPLETE case=$case mode=$mode"
+                  grep -E '^(CYCLE_HOUSING|PR57_CYCLE_.*ROW|PR57_CYCLE_LOT_REJECT)' "$output.log" || true
+                  exit 1
+                fi
+              fi
+            done
+          done
       - name: Restore authentic workplace checkpoint
         uses: actions/download-artifact@v4
         with:
@@ -69,7 +125,7 @@ jobs:
           done
           mkdir -p artifacts/access-ab
           # Run the unvalidated 32-house workload first: fail on its real rejection before consuming the long authentic-save ABBA suite.
-          for case in cycleLoadA cycleLoadB liveA liveB realA realB late congested cycle grid; do
+          for case in liveA liveB realA realB late congested cycle grid; do
             modes=(control candidate)
             if [[ "$case" == realB || "$case" == liveB || "$case" == cycleLoadB ]]; then modes=(candidate control); fi
             for mode in "${modes[@]}"; do
