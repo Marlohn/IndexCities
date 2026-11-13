@@ -192,9 +192,18 @@ public sealed class CityCycleTests
             Check();
             Assert.Equal(hitsBefore+4,replay.ReplayHits);
             Assert.Equal(missesBefore+5,replay.ReplayMisses);
+            // Reordering the same sources must invalidate even when their
+            // set, capacity and all consumer inputs remain unchanged.
+            (inputSources[0],inputSources[^1])=(inputSources[^1],inputSources[0]);
+            Check();
+            Assert.Equal(hitsBefore+4,replay.ReplayHits);
+            Assert.Equal(missesBefore+6,replay.ReplayMisses);
+            Check();
+            Assert.Equal(hitsBefore+5,replay.ReplayHits);
+            Assert.Equal(missesBefore+6,replay.ReplayMisses);
         }
-        Assert.True(replay.ReplayHits>=386);
-        Assert.True(replay.ReplayMisses>=492);
+        Assert.True(replay.ReplayHits>=482);
+        Assert.True(replay.ReplayMisses>=588);
     }
 
     // PR57: the cross-phase ceiling is observation only. Verify every integrated
