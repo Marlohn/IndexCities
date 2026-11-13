@@ -90,17 +90,17 @@ public sealed class CityCycleTests
         Assert.Equal(2,replay.ReplayHits);
         Assert.Equal(8,replay.ReplayMisses);
 
-        // Repeated identical zero-demand inputs may be replayed, but the next
-        // nonzero demand must force a full allocation rather than reuse zeros.
+        // Zero demand takes the original early-return path without caching.
+        // The next nonzero demand must not reuse the previous result.
         Array.Fill(demands,0.0);
         Compare(17);
         Compare(17);
-        Assert.Equal(3,replay.ReplayHits);
-        Assert.Equal(9,replay.ReplayMisses);
+        Assert.Equal(2,replay.ReplayHits);
+        Assert.Equal(8,replay.ReplayMisses);
         demands[2]=15;
         Compare(17);
-        Assert.Equal(3,replay.ReplayHits);
-        Assert.Equal(10,replay.ReplayMisses);
+        Assert.Equal(2,replay.ReplayHits);
+        Assert.Equal(9,replay.ReplayMisses);
     }
 
     // PR57: the cross-phase ceiling is observation only. Verify every integrated
