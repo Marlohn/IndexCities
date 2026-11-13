@@ -240,6 +240,15 @@ jobs:
                       assert placed==32,(case,mode,'incomplete housing workload',placed,attempted)
                       assert any(works>0 for _,_,works in results[mode]['census']),(case,mode,'no live construction workload')
                       results[mode]['housingOrders']=placed
+                      results[mode]['housingAttempts']=attempted
+                      # Compare actual construction-order decisions, not just the
+                      # eventual save: both paths must exercise identical quotes.
+                      row_prefixes=('PR57_CYCLE_BASE_ROW','PR57_CYCLE_SOUTH_ROW',
+                                    'PR57_CYCLE_EXTENSION_ROW','PR57_CYCLE_NORTH_ROW')
+                      rows=[line for line in log.splitlines()
+                            if line.startswith(row_prefixes)]
+                      assert rows,(case,mode,'missing housing-row decisions')
+                      results[mode]['housingRows']=rows
                   if case.startswith('live'):
                       # Verify both modes received exactly the same external edits.
                       edits=[line for line in log.splitlines() if line.startswith('PR57_ACCESS_LIVE_EDIT phase=')]
@@ -277,6 +286,8 @@ jobs:
               c=results['control'];o=results['candidate']
               assert c['census']==o['census'],(case,'intermediate population/work divergence',c['census'],o['census'])
               if case.startswith('cycleLoad'):
+                  assert c['housingAttempts']==o['housingAttempts'],(case,'housing quote/order attempt divergence',c['housingAttempts'],o['housingAttempts'])
+                  assert c['housingRows']==o['housingRows'],(case,'housing row decision divergence',c['housingRows'],o['housingRows'])
                   for index,(control_window,candidate_window) in enumerate(zip(c['windowMetrics'],o['windowMetrics']),1):
                       for metric in ('wall','cpu','allocMB'):
                           baseline_value=control_window[metric]
