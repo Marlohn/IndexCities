@@ -106,20 +106,25 @@ static class Fixtures
         {
             var before=placed;
             var rejectedPhysical=0;
+            var rejectedAccess=0;
             var rejectedOrder=0;
             for(var x=-176.0;x<=216&&placed<requested;x+=20)
             {
                 var position=new Point(x,z);
-                if(!sim.QuoteBuilding(BuildingKind.House,position,rotation).PhysicallyValid)
+                var quote=sim.QuoteBuilding(BuildingKind.House,position,rotation);
+                if(!quote.PhysicallyValid)
                 {
                     rejectedPhysical++;
                     continue;
                 }
+                // Keep the original ordering attempt: accessibility is recorded
+                // separately, not used to suppress a normal construction order.
+                if(!quote.Accessible)rejectedAccess++;
                 attempted++;
                 if(sim.PlaceBuilding(BuildingKind.House,position,rotation).Success)placed++;
                 else rejectedOrder++;
             }
-            Console.WriteLine($"PR57_CYCLE_BASE_ROW z={z:F0} newOrders={placed-before} rejectedPhysical={rejectedPhysical} rejectedOrder={rejectedOrder}");
+            Console.WriteLine($"PR57_CYCLE_BASE_ROW z={z:F0} newOrders={placed-before} rejectedPhysical={rejectedPhysical} rejectedAccess={rejectedAccess} rejectedOrder={rejectedOrder}");
             if(placed>=requested)break;
         }
         // PR57 exploratory expansion, opt-in only: test the *existing*, normally
