@@ -68,7 +68,8 @@ jobs:
             echo "PR57_ACCESS_AB_SOURCE path=$input sha256=$(sha256sum "$input" | cut -d' ' -f1)"
           done
           mkdir -p artifacts/access-ab
-          for case in liveA liveB realA realB late congested cycle grid cycleLoadA cycleLoadB; do
+          # Run the unvalidated 32-house workload first: fail on its real rejection before consuming the long authentic-save ABBA suite.
+          for case in cycleLoadA cycleLoadB liveA liveB realA realB late congested cycle grid; do
             modes=(control candidate)
             if [[ "$case" == realB || "$case" == liveB || "$case" == cycleLoadB ]]; then modes=(candidate control); fi
             for mode in "${modes[@]}"; do
