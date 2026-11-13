@@ -48,7 +48,11 @@ public sealed class CityCycleTests
     // Advance(2) boundary, not just a final aggregate or a laboratory phase.
     [Fact] public void Pr57_cross_phase_census_preserves_every_intermediate_save()
     {
-        var baseline=new CitySimulation(42);
+        // Exercise the actual integrated city fixture (roads, paid projects, utilities,
+        // logistics and businesses), not a newly created, effectively empty city.
+        var baseline=City();
+        Assert.NotEmpty(baseline.State.Projects);
+        Assert.NotEmpty(baseline.State.Buildings);
         var candidate=CitySimulation.FromJson(baseline.SaveToJson());
         var profile=new StepCostProfile();
         candidate.CostProfile=profile;
