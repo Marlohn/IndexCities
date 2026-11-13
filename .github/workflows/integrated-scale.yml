@@ -93,13 +93,13 @@ jobs:
               if [[ "$case" == liveA || "$case" == liveB ]]; then live=1; fi
               housing_frontage=0
               if [[ "$case" == cycleLoadA || "$case" == cycleLoadB ]]; then housing_frontage=1; fi
-              echo "PR57_UTILITY_REPLAY_AB_RUN case=$case mode=$mode replay=$enabled liveEdit=$live hostQuantum=2"
+              echo "PR57_ACCESS_AB_RUN case=$case mode=$mode enabled=$enabled liveEdit=$live hostQuantum=2"
               PR57_CYCLE_SOUTH_HOUSING="$housing_frontage" PR57_CYCLE_SOUTH_EXTENSION="$housing_frontage" \
               PR57_CYCLE_NORTH_HOUSING="$housing_frontage" \
-              PR57_BUILDING_WORK_ACCESS=0 PR57_GRID_DIAG=1 \
+              PR57_BUILDING_WORK_ACCESS="$enabled" PR57_GRID_DIAG=1 \
               PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_ACCESS_LIVE_EDIT="$live" \
               PR57_DYNAMIC_BVH=0 PR57_PARALLEL_NEEDS=0 PR57_STAFF_PHASE_FUSION=0 \
-              PR57_UTILITY_REPLAY="$enabled" PR57_POLLUTION_SIMD=0 PR57_PARALLEL_POLLUTION=0 \
+              PR57_UTILITY_REPLAY=0 PR57_POLLUTION_SIMD=0 PR57_PARALLEL_POLLUTION=0 \
               PR57_CONSTRUCTION_WAIT_AGENDA=0 PR57_DISPATCH_SHIPMENT_LOOKUP=0 \
               PR57_ROUTE_TREE=0 PR57_ORDER_SHIPMENT_INDEX=0 PR57_MAINTENANCE_SCHEDULE=0 \
               PR57_SOURCE_DISTANCE_CACHE=0 PR57_WORK_ACCESS_INDEX=0 PR57_PEDESTRIAN_GRID=0 \
@@ -273,13 +273,13 @@ jobs:
               if [[ "$case" == liveA || "$case" == liveB ]]; then live=1; fi
               housing_frontage=0
               if [[ "$case" == cycleLoadA || "$case" == cycleLoadB ]]; then housing_frontage=1; fi
-              echo "PR57_UTILITY_REPLAY_AB_RUN case=$case mode=$mode replay=$enabled liveEdit=$live hostQuantum=2"
+              echo "PR57_ACCESS_AB_RUN case=$case mode=$mode enabled=$enabled liveEdit=$live hostQuantum=2"
               PR57_CYCLE_SOUTH_HOUSING="$housing_frontage" PR57_CYCLE_SOUTH_EXTENSION="$housing_frontage" \
               PR57_CYCLE_NORTH_HOUSING="$housing_frontage" \
-              PR57_BUILDING_WORK_ACCESS=0 PR57_GRID_DIAG=1 \
+              PR57_BUILDING_WORK_ACCESS="$enabled" PR57_GRID_DIAG=1 \
               PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_ACCESS_LIVE_EDIT="$live" \
               PR57_DYNAMIC_BVH=0 PR57_PARALLEL_NEEDS=0 PR57_STAFF_PHASE_FUSION=0 \
-              PR57_UTILITY_REPLAY="$enabled" PR57_POLLUTION_SIMD=0 PR57_PARALLEL_POLLUTION=0 \
+              PR57_UTILITY_REPLAY=0 PR57_POLLUTION_SIMD=0 PR57_PARALLEL_POLLUTION=0 \
               PR57_CONSTRUCTION_WAIT_AGENDA=0 PR57_DISPATCH_SHIPMENT_LOOKUP=0 \
               PR57_ROUTE_TREE=0 PR57_ORDER_SHIPMENT_INDEX=0 PR57_MAINTENANCE_SCHEDULE=0 \
               PR57_SOURCE_DISTANCE_CACHE=0 PR57_WORK_ACCESS_INDEX=0 PR57_PEDESTRIAN_GRID=0 \
