@@ -102,6 +102,9 @@ static class Fixtures
     public static (int Placed,int Attempted) QueueCycleHousingProjects(CitySimulation sim,int requested)
     {
         var placed=0;var attempted=0;
+        // Diagnostic only: keep every original quote and placement decision unchanged.
+        static void ReportRejectedLot(Point position,string cause,string stage) =>
+            Console.WriteLine($"PR57_CYCLE_LOT_REJECT stage={stage} x={position.X:F0} z={position.Z:F0} cause={cause.Replace(' ','_')}");
         foreach(var (z,rotation) in new[]{(30.0,Math.PI),(-14.0,Math.PI)})
         {
             var before=placed;
@@ -115,14 +118,15 @@ static class Fixtures
                 if(!quote.PhysicallyValid)
                 {
                     rejectedPhysical++;
+                    ReportRejectedLot(position,quote.Message,"physical");
                     continue;
                 }
                 // Keep the original ordering attempt: accessibility is recorded
                 // separately, not used to suppress a normal construction order.
-                if(!quote.Accessible)rejectedAccess++;
+                if(!quote.Accessible){rejectedAccess++;ReportRejectedLot(position,quote.Message,"access");}
                 attempted++;
                 if(sim.PlaceBuilding(BuildingKind.House,position,rotation).Success)placed++;
-                else rejectedOrder++;
+                else {rejectedOrder++;ReportRejectedLot(position,quote.Message,"order");}
             }
             Console.WriteLine($"PR57_CYCLE_BASE_ROW z={z:F0} newOrders={placed-before} rejectedPhysical={rejectedPhysical} rejectedAccess={rejectedAccess} rejectedOrder={rejectedOrder}");
             if(placed>=requested)break;
@@ -143,12 +147,12 @@ static class Fixtures
                 {
                     var position=new Point(x,z);
                     var quote=sim.QuoteBuilding(BuildingKind.House,position,rotation);
-                    if(!quote.PhysicallyValid){rejectedPhysical++;continue;}
+                    if(!quote.PhysicallyValid){rejectedPhysical++;ReportRejectedLot(position,quote.Message,"physical");continue;}
                     // Preserve the original order attempt even when access fails.
-                    if(!quote.Accessible)rejectedAccess++;
+                    if(!quote.Accessible){rejectedAccess++;ReportRejectedLot(position,quote.Message,"access");}
                     attempted++;
                     if(sim.PlaceBuilding(BuildingKind.House,position,rotation).Success)placed++;
-                    else rejectedOrder++;
+                    else {rejectedOrder++;ReportRejectedLot(position,quote.Message,"order");}
                 }
                 Console.WriteLine($"PR57_CYCLE_SOUTH_ROW z={z:F0} newOrders={placed-before} rejectedPhysical={rejectedPhysical} rejectedAccess={rejectedAccess} rejectedOrder={rejectedOrder}");
                 if(placed>=requested)break;
@@ -166,11 +170,11 @@ static class Fixtures
             {
                 var position=new Point(x,-118);
                 var quote=sim.QuoteBuilding(BuildingKind.House,position,Math.PI);
-                if(!quote.PhysicallyValid){rejectedPhysical++;continue;}
-                if(!quote.Accessible)rejectedAccess++;
+                if(!quote.PhysicallyValid){rejectedPhysical++;ReportRejectedLot(position,quote.Message,"physical");continue;}
+                if(!quote.Accessible){rejectedAccess++;ReportRejectedLot(position,quote.Message,"access");}
                 attempted++;
                 if(sim.PlaceBuilding(BuildingKind.House,position,Math.PI).Success)placed++;
-                else rejectedOrder++;
+                else {rejectedOrder++;ReportRejectedLot(position,quote.Message,"order");}
             }
             Console.WriteLine($"PR57_CYCLE_EXTENSION_ROW z=-118 newOrders={placed-before} rejectedPhysical={rejectedPhysical} rejectedAccess={rejectedAccess} rejectedOrder={rejectedOrder}");
         }
@@ -190,13 +194,13 @@ static class Fixtures
             {
                 var position=new Point(x,-90);
                 var quote=sim.QuoteBuilding(BuildingKind.House,position,0);
-                if(!quote.PhysicallyValid){rejectedPhysical++;continue;}
+                if(!quote.PhysicallyValid){rejectedPhysical++;ReportRejectedLot(position,quote.Message,"physical");continue;}
                 // Match the other housing rows: record lack of access without
                 // suppressing the ordinary placement command or its rejection.
-                if(!quote.Accessible)rejectedAccess++;
+                if(!quote.Accessible){rejectedAccess++;ReportRejectedLot(position,quote.Message,"access");}
                 attempted++;
                 if(sim.PlaceBuilding(BuildingKind.House,position,0).Success)placed++;
-                else rejectedOrder++;
+                else {rejectedOrder++;ReportRejectedLot(position,quote.Message,"order");}
             }
             Console.WriteLine($"PR57_CYCLE_NORTH_ROW z=-90 newOrders={placed-before} rejectedPhysical={rejectedPhysical} rejectedAccess={rejectedAccess} rejectedOrder={rejectedOrder}");
         }
