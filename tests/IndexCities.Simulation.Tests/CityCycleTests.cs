@@ -142,7 +142,7 @@ public sealed class CityCycleTests
                 .Select(_=>new Point(random.Next(-200,201),random.Next(-200,201))).ToArray();
             var inputDemands=Enumerable.Range(0,count)
                 .Select(_=>(double)random.Next(1,50)).ToArray();
-            var available=(double)random.Next(1,80);
+            var available=1.0; // strictly below positive aggregate demand: exercise replay gate
             void Check()
             {
                 foreach(var allocation in new[]{replay,plain})
