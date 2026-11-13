@@ -89,8 +89,8 @@ jobs:
               lines=p.read_text().splitlines()
               stats=[s for s in lines if s.startswith('PR57_UTILITY_REPLAY_STATS ')]
               assert stats,(p,'missing integrated replay counters')
-              hits=[int(re.search(r'\\bhits=(\\d+)',s)[1]) for s in stats]
-              misses=[int(re.search(r'\\bmisses=(\\d+)',s)[1]) for s in stats]
+              hits=[int(re.search(r'\bhits=(\d+)',s)[1]) for s in stats]
+              misses=[int(re.search(r'\bmisses=(\d+)',s)[1]) for s in stats]
               assert hits==sorted(hits) and misses==sorted(misses),(p,'nonmonotonic counters')
               print('PR57_UTILITY_REPLAY_PROBE',p.name,'hits',hits[-1],'misses',misses[-1],
                     'note','diagnostic_only_not_causal_parity_or_speedup')
