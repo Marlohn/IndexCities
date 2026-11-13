@@ -103,6 +103,9 @@ jobs:
               for mode in ('control','candidate'):
                   log=(root/f'{case}-{mode}.log').read_text()
                   assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,mode,'invariants/save')
+                  assert f'PR57_BUILDING_WORK_ACCESS active={str(mode=="candidate")}' in log,(case,mode,'flag not honored')
+                  if mode=='candidate':
+                      assert 'PR57_BUILDING_WORK_ACCESS built=True' in log,(case,'candidate index not built')
                   match=re.search(r'^CYCLE_HOUSING requested=32 placed=(\d+) attempted=(\d+)',log,re.M)
                   assert match and int(match[1])==32,(case,mode,'incomplete paid houses')
                   windows=[line for line in log.splitlines() if line.startswith('WINDOW ')]
@@ -118,12 +121,21 @@ jobs:
                       assert work,(case,'missing work evidence')
                       samples={int(number(line,'advances')):line for line in work}
                       assert 1792 in samples and 3584 in samples,(case,'missing window work boundary')
-                      for boundary in (1792,3584):
+                      previous=None
+                      for window,boundary in enumerate((1792,3584),start=1):
                           line=samples[boundary]
                           avoided=number(line,'avoidedRows')
                           assert number(line,'baselineRows')-number(line,'candidateRows')==avoided,(case,boundary,'work conservation')
-                          print('PR57_LOCAL_ABBA_WORK',case,'advance',boundary,
-                                'netAvoidedRows',int(avoided-number(line,'indexedRows')-number(line,'checkedRows')))
+                          fields=('queries','baselineRows','avoidedRows','indexedRows','checkedRows')
+                          current={key:number(line,key) for key in fields}
+                          delta={key:current[key]-(previous[key] if previous else 0) for key in fields}
+                          net=delta['avoidedRows']-delta['indexedRows']-delta['checkedRows']
+                          print('PR57_LOCAL_ABBA_WORK',case,'window',window,'advance',boundary,
+                                'netAvoidedRows',int(net),'queries',int(delta['queries']),
+                                'indexedRows',int(delta['indexedRows']),'checkedRows',int(delta['checkedRows']))
+                          assert delta['queries']>0 and delta['baselineRows']>0,(case,window,'idle window')
+                          assert net>0,(case,window,'nonpositive net work',delta)
+                          previous=current
                   runs[case][mode]=metrics
               for index in range(3):
                   control=root/f'{case}-control'/f'checkpoint-{index}.json'
