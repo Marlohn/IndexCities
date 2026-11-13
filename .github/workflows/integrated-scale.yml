@@ -30,6 +30,38 @@ jobs:
           dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
           PR57_BUILDING_WORK_ACCESS=0 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
           PR57_BUILDING_WORK_ACCESS=1 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      # Bounded, observational cross-phase ceiling on the real integrated Step(2).
+      # This is NOT an A/B speedup and must not be extrapolated to 10k/80y.
+      - name: Measure recurring cross-phase ceiling on integrated cycle
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/access-ab
+          PR57_CROSS_PHASE_CEILING=1 timeout 120s dotnet run --no-build -c Release \
+            --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+            profile cycle --seed=42 --warmup=0 --days=1 --window=120 --cap=300 \
+            | tee artifacts/access-ab/cross-phase-ceiling.log
+          python3 - <<'PY'
+          import pathlib,re,math
+          log=pathlib.Path('artifacts/access-ab/cross-phase-ceiling.log').read_text()
+          line=next((s for s in log.splitlines() if s.startswith('PR57_CROSS_PHASE_CEILING ')),None)
+          assert line is not None,'missing cross-phase ceiling output'
+          fields=dict(re.findall(r'(\w+)=([^ ]+)',line))
+          steps=int(fields['steps'])
+          recurring=int(fields['recurringTicks'])
+          other=int(fields['otherTicks'])
+          share=float(fields['recurringSharePct'])
+          assert steps==60,(steps,'expected 60 integrated Advance(2) steps')
+          assert recurring>=0 and other>=0 and recurring+other>0,(recurring,other)
+          assert math.isfinite(share) and 0<=share<=100,share
+          assert abs(share-100*recurring/(recurring+other))<=0.002,(share,recurring,other)
+          parts=[s for s in log.splitlines() if s.startswith('PR57_CROSS_PHASE_PART ')]
+          assert len(parts)==9,('unexpected recurring phase count',parts)
+          assert sum(int(re.search(r'\bticks=(\d+)',s)[1]) for s in parts)==recurring,parts
+          print('PR57_CROSS_PHASE_CI_OK', 'steps',steps,'recurringTicks',recurring,
+                'otherTicks',other,'recurringSharePct',share,
+                'note','observational_intrusive_profile_not_speedup')
+          PY
       # The original growth artifact has expired; use retained authentic workplace checkpoints.
       - name: Validate 32 paid housing orders before restoring external saves
         shell: bash
