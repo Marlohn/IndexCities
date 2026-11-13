@@ -133,7 +133,7 @@ public sealed partial class CitySimulation
             if(b.Definition.Private&&(b.CompanyId==null||b.OperationClosed||!CompanyById(b.CompanyId)!.Active)||!HasExteriorAccess(b))b.OperationalCapacity=0;
         }
         if(detail is not null)detail.MarkDetail(5,ref detailStarted);
-        if(Pr57UtilityReplayEnabled&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1"&&State.ElapsedSeconds%3600==0)
+        if(Pr57UtilityReplayEnabled&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1"&&State.ElapsedSeconds%120==0)
             Console.WriteLine($"PR57_UTILITY_REPLAY_STATS at={State.ElapsedSeconds} hits={_pr57ElectricReplay.ReplayHits+_pr57WaterReplay.ReplayHits+_pr57SewageReplay.ReplayHits} misses={_pr57ElectricReplay.ReplayMisses+_pr57WaterReplay.ReplayMisses+_pr57SewageReplay.ReplayMisses}");
     }
     readonly List<Building> _active=[];readonly Dictionary<int,int> _present=new();readonly Dictionary<int,Building> _activeById=new();
