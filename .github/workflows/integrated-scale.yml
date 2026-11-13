@@ -62,6 +62,39 @@ jobs:
                 'otherTicks',other,'recurringSharePct',share,
                 'note','observational_intrusive_profile_not_speedup')
           PY
+      # Independent bounded utility replay experiment; do not apply the
+      # building-access index assertions to this unrelated optimization.
+      - name: Probe utility replay on integrated cycle with isolated ABBA
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/access-ab
+          for order in A B B A; do
+            if [[ "$order" == A ]]; then enabled=0; else enabled=1; fi
+            output="artifacts/access-ab/utility-${order}-$(ls artifacts/access-ab/utility-${order}-*.log 2>/dev/null | wc -l).log"
+            PR57_BUILDING_WORK_ACCESS=0 PR57_UTILITY_REPLAY="$enabled" PR57_GRID_DIAG=1 \
+              timeout 120s dotnet run --no-build -c Release \
+              --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+              profile cycle --seed=42 --warmup=0 --days=1 --window=120 --cap=300 \
+              | tee "$output"
+            grep -q "PR57_UTILITY_REPLAY active=$( [[ "$enabled" == 1 ]] && echo True || echo False )" "$output"
+          done
+          python3 - <<'PY'
+          import pathlib,re
+          logs=sorted(pathlib.Path('artifacts/access-ab').glob('utility-*.log'))
+          assert len(logs)==4,logs
+          enabled=[p for p in logs if p.name.startswith('utility-B-')]
+          assert len(enabled)==2,enabled
+          for p in enabled:
+              lines=p.read_text().splitlines()
+              stats=[s for s in lines if s.startswith('PR57_UTILITY_REPLAY_STATS ')]
+              assert stats,(p,'missing integrated replay counters')
+              hits=[int(re.search(r'\\bhits=(\\d+)',s)[1]) for s in stats]
+              misses=[int(re.search(r'\\bmisses=(\\d+)',s)[1]) for s in stats]
+              assert hits==sorted(hits) and misses==sorted(misses),(p,'nonmonotonic counters')
+              print('PR57_UTILITY_REPLAY_PROBE',p.name,'hits',hits[-1],'misses',misses[-1],
+                    'note','diagnostic_only_not_causal_parity_or_speedup')
+          PY
       # The original growth artifact has expired; use retained authentic workplace checkpoints.
       - name: Validate 32 paid housing orders before restoring external saves
         shell: bash
