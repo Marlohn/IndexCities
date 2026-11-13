@@ -43,4 +43,33 @@ public sealed class CityCycleTests
         var sim=new CitySimulation(42);sim.PlaceBuilding(BuildingKind.CityHall,new(-100,40));sim.PlaceBuilding(BuildingKind.Grocery,new(-70,40));sim.Advance(172800);
         Assert.Empty(sim.State.Citizens);Assert.Empty(sim.State.Companies);Assert.All(sim.State.Buildings,b=>Assert.Equal(0,b.Stock.Values.Sum()));sim.CheckInvariants();
     }
+
+    // PR57: the cross-phase ceiling is observation only. Verify every integrated
+    // Advance(2) boundary, not just a final aggregate or a laboratory phase.
+    [Fact] public void Pr57_cross_phase_census_preserves_every_intermediate_save()
+    {
+        var baseline=new CitySimulation(42);
+        var candidate=CitySimulation.FromJson(baseline.SaveToJson());
+        var profile=new StepCostProfile();
+        candidate.CostProfile=profile;
+        for(var step=1;step<=60;step++)
+        {
+            baseline.Advance(2);
+            candidate.Advance(2);
+            Assert.Equal(step,profile.Steps);
+            Assert.Equal(baseline.SaveToJson(),candidate.SaveToJson());
+        }
+        baseline.CheckInvariants();
+        candidate.CheckInvariants();
+        Assert.Equal(13,StepCostProfile.Names.Length);
+        Assert.Equal(13,profile.Ticks.Length);
+        Assert.True(profile.Ticks.Sum()>0);
+        var recurring=new[]{0,2,3,6,7,8,9,10,11};
+        Assert.Equal(9,recurring.Distinct().Count());
+        Assert.All(recurring,i=>Assert.InRange(i,0,profile.Ticks.Length-1));
+        var recurringTicks=recurring.Sum(i=>profile.Ticks[i]);
+        var otherTicks=profile.Ticks.Sum()-recurringTicks;
+        Assert.True(recurringTicks>=0&&otherTicks>=0);
+        Assert.Equal(profile.Ticks.Sum(),recurringTicks+otherTicks);
+    }
 }
