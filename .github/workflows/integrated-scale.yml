@@ -530,6 +530,18 @@ jobs:
                             'fallbackPerAvoided',round(fallback/avoided,6) if avoided else None,
                             'fallbackPerBaseline',round(fallback/work['baselineRows'],6) if work['baselineRows'] else None,
                             'rebuilds',work['rebuilds'],'invalidations',work['invalidations'])
+                  # Paired whole-engine CPU and allocations must be measured,
+                  # not inferred from avoided spatial-index row checks.
+                  for metric in ('cpu','allocMB'):
+                      baseline=sum(paired[case][0]['windowMetrics'][index][metric]
+                                   for case in (first,second))
+                      candidate=sum(paired[case][1]['windowMetrics'][index][metric]
+                                    for case in (first,second))
+                      assert baseline>0,(label,index,metric,'invalid baseline')
+                      print('PR57_ACCESS_ABBA_WINDOW_RESOURCE',label,'window',index+1,
+                            'metric',metric,'control',round(baseline,6),
+                            'candidate',round(candidate,6),
+                            'reductionPct',round(100*(baseline-candidate)/baseline,3))
                   print('PR57_ACCESS_ABBA_MEDIAN',label,'window',index+1,
                         'orderReductionPct',','.join(str(round(v,3)) for v in order_reductions),
                         'medianReductionPct',round(statistics.median(order_reductions),3))
