@@ -167,7 +167,7 @@ public sealed class CityCycleTests
             Assert.Equal(missesBefore+2,replay.ReplayMisses);
             // The same replay stream must reject a moved source even when
             // capacity and aggregate demand are unchanged.
-            inputSources[0]=new Point(inputSources[0].X+1,inputSources[0].Y);
+            inputSources[0]=new Point(1000+iteration,-1000);
             Check();
             Assert.Equal(hitsBefore+1,replay.ReplayHits);
             Assert.Equal(missesBefore+3,replay.ReplayMisses);
