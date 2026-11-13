@@ -105,7 +105,7 @@ jobs:
               for p in sorted((root/f'utility-{name}').glob('checkpoint-*.json')):
                   index=int(p.stem.split('-')[-1])
                   hashes[index]=hashlib.sha256(p.read_bytes()).hexdigest().upper()
-              assert set(hashes)=={1,2},(name,'missing full JSON checkpoints')
+              assert set(hashes)=={0,1,2},(name,'missing initial or intermediate full JSON checkpoints')
               for line in log.splitlines():
                   if not line.startswith('PR57_AB_CHECKPOINT window='):continue
                   match=re.search(r'window=(\d+) sha256=([0-9A-F]+)',line)
