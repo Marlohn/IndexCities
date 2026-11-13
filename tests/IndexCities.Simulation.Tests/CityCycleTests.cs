@@ -77,13 +77,19 @@ public sealed class CityCycleTests
                 if(step==30)
                 {
                     var unprofiled=CitySimulation.FromJson(baselineJson);
+                    // Re-enable the observation after load: a fresh profiler must
+                    // not alter any subsequent integrated causal boundary.
+                    var resumedProfile=new StepCostProfile();
+                    resumed.CostProfile=resumedProfile;
                     for(var continuation=1;continuation<=30;continuation++)
                     {
                         resumed.Advance(2);
                         unprofiled.Advance(2);
+                        Assert.Equal(continuation,resumedProfile.Steps);
                         Assert.Equal(unprofiled.SaveToJson(),resumed.SaveToJson());
                         resumed.CheckInvariants();
                     }
+                    Assert.True(resumedProfile.Ticks.Sum()>0);
                 }
             }
         }
