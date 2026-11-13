@@ -136,14 +136,21 @@ static class Fixtures
             foreach(var (z,rotation) in new[]{(-74.0,Math.PI),(-46.0,0.0)})
             {
                 var before=placed;
+                var rejectedPhysical=0;
+                var rejectedAccess=0;
+                var rejectedOrder=0;
                 for(var x=-168.0;x<=-28&&placed<requested;x+=20)
                 {
                     var position=new Point(x,z);
-                    if(!sim.QuoteBuilding(BuildingKind.House,position,rotation).PhysicallyValid)continue;
+                    var quote=sim.QuoteBuilding(BuildingKind.House,position,rotation);
+                    if(!quote.PhysicallyValid){rejectedPhysical++;continue;}
+                    // Preserve the original order attempt even when access fails.
+                    if(!quote.Accessible)rejectedAccess++;
                     attempted++;
                     if(sim.PlaceBuilding(BuildingKind.House,position,rotation).Success)placed++;
+                    else rejectedOrder++;
                 }
-                Console.WriteLine($"PR57_CYCLE_SOUTH_ROW z={z:F0} newOrders={placed-before}");
+                Console.WriteLine($"PR57_CYCLE_SOUTH_ROW z={z:F0} newOrders={placed-before} rejectedPhysical={rejectedPhysical} rejectedAccess={rejectedAccess} rejectedOrder={rejectedOrder}");
                 if(placed>=requested)break;
             }
         }
