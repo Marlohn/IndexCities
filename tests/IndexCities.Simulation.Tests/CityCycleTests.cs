@@ -127,6 +127,39 @@ public sealed class CityCycleTests
         // Return to the original cardinality after the compact snapshot.
         Compare(10);
         Assert.Equal(12,replay.ReplayMisses);
+
+        // Deterministic adversarial stream: change ordered consumers, sources,
+        // capacity and cardinality across calls, including exact repeats.
+        // Compare every output with a fresh uncached allocation so a stale
+        // replay cannot survive merely because final city JSON looks equal.
+        var random=new Random(57057);
+        for(var iteration=0;iteration<96;iteration++)
+        {
+            var count=1+random.Next(1,9);
+            var inputSources=Enumerable.Range(0,1+random.Next(1,5))
+                .Select(_=>new Point(random.Next(-200,201),random.Next(-200,201))).ToList();
+            var inputPoints=Enumerable.Range(0,count)
+                .Select(_=>new Point(random.Next(-200,201),random.Next(-200,201))).ToArray();
+            var inputDemands=Enumerable.Range(0,count)
+                .Select(_=>(double)random.Next(1,50)).ToArray();
+            var available=(double)random.Next(1,80);
+            void Check()
+            {
+                foreach(var allocation in new[]{replay,plain})
+                {
+                    allocation.Reset(count);
+                    for(var j=0;j<count;j++)allocation.Set(j,inputPoints[j],inputDemands[j]);
+                    allocation.Allocate(available,inputSources);
+                }
+                Assert.Equal(plain.Result.Take(count),replay.Result.Take(count));
+            }
+            Check();
+            Check(); // identical inputs must be replayable, not only equivalent
+            inputDemands[iteration%count]+=1;
+            Check(); // same geometry and cardinality, changed causal demand
+        }
+        Assert.True(replay.ReplayHits>=98);
+        Assert.True(replay.ReplayMisses>=204);
     }
 
     // PR57: the cross-phase ceiling is observation only. Verify every integrated
