@@ -114,8 +114,8 @@ jobs:
               if name.startswith('B'):
                   stats=[s for s in log.splitlines() if s.startswith('PR57_UTILITY_REPLAY_STATS ')]
                   assert stats,(name,'missing integrated replay counters')
-                  hits=[int(re.search(r'\\bhits=(\d+)',s)[1]) for s in stats]
-                  misses=[int(re.search(r'\\bmisses=(\d+)',s)[1]) for s in stats]
+                  hits=[int(re.search(r'\bhits=(\d+)',s)[1]) for s in stats]
+                  misses=[int(re.search(r'\bmisses=(\d+)',s)[1]) for s in stats]
                   assert hits==sorted(hits) and misses==sorted(misses),(name,'nonmonotonic counters')
                   print('PR57_UTILITY_REPLAY_WORK',name,'hits',hits[-1],'misses',misses[-1])
           for index in (1,2):
