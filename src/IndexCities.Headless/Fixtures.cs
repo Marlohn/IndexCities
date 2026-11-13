@@ -159,14 +159,20 @@ static class Fixtures
         if(Environment.GetEnvironmentVariable("PR57_CYCLE_SOUTH_EXTENSION")=="1"&&placed<requested)
         {
             var before=placed;
+            var rejectedPhysical=0;
+            var rejectedAccess=0;
+            var rejectedOrder=0;
             for(var x=-168.0;x<=-28&&placed<requested;x+=20)
             {
                 var position=new Point(x,-118);
-                if(!sim.QuoteBuilding(BuildingKind.House,position,Math.PI).PhysicallyValid)continue;
+                var quote=sim.QuoteBuilding(BuildingKind.House,position,Math.PI);
+                if(!quote.PhysicallyValid){rejectedPhysical++;continue;}
+                if(!quote.Accessible)rejectedAccess++;
                 attempted++;
                 if(sim.PlaceBuilding(BuildingKind.House,position,Math.PI).Success)placed++;
+                else rejectedOrder++;
             }
-            Console.WriteLine($"PR57_CYCLE_EXTENSION_ROW z=-118 newOrders={placed-before}");
+            Console.WriteLine($"PR57_CYCLE_EXTENSION_ROW z=-118 newOrders={placed-before} rejectedPhysical={rejectedPhysical} rejectedAccess={rejectedAccess} rejectedOrder={rejectedOrder}");
         }
         // PR57-only load probe: use the opposite side of the *already paid and
         // completed* south extension road. This does not mint homes or residents:
@@ -177,15 +183,20 @@ static class Fixtures
             if(Environment.GetEnvironmentVariable("PR57_CYCLE_SOUTH_EXTENSION")!="1")
                 throw new InvalidOperationException("PR57 north housing requires the legally built south extension");
             var before=placed;
+            var rejectedPhysical=0;
+            var rejectedAccess=0;
+            var rejectedOrder=0;
             for(var x=-168.0;x<=-28&&placed<requested;x+=20)
             {
                 var position=new Point(x,-90);
                 var quote=sim.QuoteBuilding(BuildingKind.House,position,0);
-                if(!quote.PhysicallyValid||!quote.Accessible)continue;
+                if(!quote.PhysicallyValid){rejectedPhysical++;continue;}
+                if(!quote.Accessible){rejectedAccess++;continue;}
                 attempted++;
                 if(sim.PlaceBuilding(BuildingKind.House,position,0).Success)placed++;
+                else rejectedOrder++;
             }
-            Console.WriteLine($"PR57_CYCLE_NORTH_ROW z=-90 newOrders={placed-before}");
+            Console.WriteLine($"PR57_CYCLE_NORTH_ROW z=-90 newOrders={placed-before} rejectedPhysical={rejectedPhysical} rejectedAccess={rejectedAccess} rejectedOrder={rejectedOrder}");
         }
         // PR57-only economic opportunity probe, opt-in and after ordinary
         // housing orders. All twenty sites are real private businesses, not
