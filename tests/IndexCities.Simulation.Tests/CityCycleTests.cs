@@ -77,6 +77,30 @@ public sealed class CityCycleTests
         Compare(17);
         Assert.Equal(2,replay.ReplayHits);
         Assert.Equal(5,replay.ReplayMisses);
+
+        // Exact replay must reject changes to the source geometry and cardinality,
+        // including edits that preserve capacity and total consumer demand.
+        // These are legal between-Advance(2) mutations in the integrated engine.
+        sources[0]=new Point(1,0);
+        Compare(17);
+        sources.Add(new Point(240,0));
+        Compare(17);
+        sources.RemoveAt(2);
+        Compare(17);
+        Assert.Equal(2,replay.ReplayHits);
+        Assert.Equal(8,replay.ReplayMisses);
+
+        // Repeated identical zero-demand inputs may be replayed, but the next
+        // nonzero demand must force a full allocation rather than reuse zeros.
+        Array.Fill(demands,0.0);
+        Compare(17);
+        Compare(17);
+        Assert.Equal(3,replay.ReplayHits);
+        Assert.Equal(9,replay.ReplayMisses);
+        demands[2]=15;
+        Compare(17);
+        Assert.Equal(3,replay.ReplayHits);
+        Assert.Equal(10,replay.ReplayMisses);
     }
 
     // PR57: the cross-phase ceiling is observation only. Verify every integrated
