@@ -98,7 +98,7 @@ public sealed class CityCycleTests
         Assert.Equal(2,replay.ReplayHits);
         Assert.Equal(8,replay.ReplayMisses);
         demands[2]=15;
-        Compare(17);
+        Compare(10); // Keep capacity below demand to exercise Allocate's replay gate.
         Assert.Equal(2,replay.ReplayHits);
         Assert.Equal(9,replay.ReplayMisses);
     }
