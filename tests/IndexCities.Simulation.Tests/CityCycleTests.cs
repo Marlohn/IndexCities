@@ -218,6 +218,20 @@ public sealed class CityCycleTests
         }
         Assert.True(replay.ReplayHits>=578);
         Assert.True(replay.ReplayMisses>=684);
+        // The integrated caller can rebuild ordered input collections between
+        // steps. Reuse must depend on exact values, not collection identity.
+        // Check a fresh uncached reference on both calls, including a snapshot
+        // with newly allocated source, position and demand collections.
+        var beforeMiss=replay.ReplayMisses;
+        var beforeHit=replay.ReplayHits;
+        Compare(10);
+        Assert.Equal(beforeMiss+1,replay.ReplayMisses);
+        sources=sources.ToList();
+        positions=positions.ToArray();
+        demands=demands.ToArray();
+        Compare(10);
+        Assert.Equal(beforeHit+1,replay.ReplayHits);
+        Assert.Equal(beforeMiss+1,replay.ReplayMisses);
     }
 
     // PR57: the cross-phase ceiling is observation only. Verify every integrated
