@@ -201,9 +201,23 @@ public sealed class CityCycleTests
             Check();
             Assert.Equal(hitsBefore+5,replay.ReplayHits);
             Assert.Equal(missesBefore+6,replay.ReplayMisses);
+            // Ordered consumers are also causal inputs: exchanging two
+            // consumers must invalidate even when their multiset, total
+            // demand, source order and available capacity stay unchanged.
+            // Force distinct inputs to avoid a coincidental no-op swap.
+            if(inputPoints[0]==inputPoints[^1] && inputDemands[0]==inputDemands[^1])
+                inputDemands[0]+=1;
+            (inputPoints[0],inputPoints[^1])=(inputPoints[^1],inputPoints[0]);
+            (inputDemands[0],inputDemands[^1])=(inputDemands[^1],inputDemands[0]);
+            Check();
+            Assert.Equal(hitsBefore+5,replay.ReplayHits);
+            Assert.Equal(missesBefore+7,replay.ReplayMisses);
+            Check();
+            Assert.Equal(hitsBefore+6,replay.ReplayHits);
+            Assert.Equal(missesBefore+7,replay.ReplayMisses);
         }
-        Assert.True(replay.ReplayHits>=482);
-        Assert.True(replay.ReplayMisses>=588);
+        Assert.True(replay.ReplayHits>=578);
+        Assert.True(replay.ReplayMisses>=684);
     }
 
     // PR57: the cross-phase ceiling is observation only. Verify every integrated
