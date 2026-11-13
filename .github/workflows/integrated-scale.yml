@@ -254,7 +254,7 @@ jobs:
                       # while silently skipping or miscounting rejected attempts.
                       row_values=[]
                       for line in rows:
-                          match=re.search(r'newOrders=(\\d+) rejectedPhysical=(\\d+) rejectedAccess=(\\d+) rejectedOrder=(\\d+)',line)
+                          match=re.search(r'newOrders=(\d+) rejectedPhysical=(\d+) rejectedAccess=(\d+) rejectedOrder=(\d+)',line)
                           assert match,(case,mode,'malformed housing-row accounting',line)
                           row_values.append(tuple(map(int,match.groups())))
                       assert sum(v[0] for v in row_values)==placed,(case,mode,'row placement mismatch',row_values,placed)
