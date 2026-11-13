@@ -191,7 +191,9 @@ static class Fixtures
                 var position=new Point(x,-90);
                 var quote=sim.QuoteBuilding(BuildingKind.House,position,0);
                 if(!quote.PhysicallyValid){rejectedPhysical++;continue;}
-                if(!quote.Accessible){rejectedAccess++;continue;}
+                // Match the other housing rows: record lack of access without
+                // suppressing the ordinary placement command or its rejection.
+                if(!quote.Accessible)rejectedAccess++;
                 attempted++;
                 if(sim.PlaceBuilding(BuildingKind.House,position,0).Success)placed++;
                 else rejectedOrder++;
