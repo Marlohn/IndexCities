@@ -101,6 +101,32 @@ public sealed class CityCycleTests
         Compare(10); // Keep capacity below demand to exercise Allocate's replay gate.
         Assert.Equal(2,replay.ReplayHits);
         Assert.Equal(9,replay.ReplayMisses);
+
+        // A city can gain/lose consumers while preserving capacity and total
+        // demand. Exact replay must invalidate on count and original order.
+        var compactPositions=new[]{positions[0],positions[2]};
+        var compactDemands=new[]{5.0,15.0};
+        void CompareCompact(Point[] points,double[] loads)
+        {
+            foreach(var allocation in new[]{replay,plain})
+            {
+                allocation.Reset(points.Length);
+                for(var i=0;i<points.Length;i++)allocation.Set(i,points[i],loads[i]);
+                allocation.Allocate(10,sources);
+            }
+            Assert.Equal(plain.Result.Take(points.Length),replay.Result.Take(points.Length));
+        }
+        CompareCompact(compactPositions,compactDemands);
+        Assert.Equal(10,replay.ReplayMisses);
+        CompareCompact(compactPositions,compactDemands);
+        Assert.Equal(3,replay.ReplayHits);
+        (compactPositions[0],compactPositions[1])=(compactPositions[1],compactPositions[0]);
+        (compactDemands[0],compactDemands[1])=(compactDemands[1],compactDemands[0]);
+        CompareCompact(compactPositions,compactDemands);
+        Assert.Equal(11,replay.ReplayMisses);
+        // Return to the original cardinality after the compact snapshot.
+        Compare(10);
+        Assert.Equal(12,replay.ReplayMisses);
     }
 
     // PR57: the cross-phase ceiling is observation only. Verify every integrated
