@@ -44,6 +44,41 @@ public sealed class CityCycleTests
         Assert.Empty(sim.State.Citizens);Assert.Empty(sim.State.Companies);Assert.All(sim.State.Buildings,b=>Assert.Equal(0,b.Stock.Values.Sum()));sim.CheckInvariants();
     }
 
+    // PR57: the pure allocation replay must actually skip repeated work, and
+    // must fall back on every changed causal input (including ordered sources).
+    [Fact] public void Pr57_utility_replay_exact_inputs_and_fallback_match_uncached_allocation()
+    {
+        var replay=new CapacityAllocation(false,true);
+        var plain=new CapacityAllocation();
+        var sources=new List<Point>{new(0,0),new(120,0)};
+        var positions=new[]{new Point(8,0),new Point(92,0),new Point(60,20)};
+        var demands=new[]{10.0,20.0,15.0};
+        void Compare(double capacity)
+        {
+            foreach(var allocation in new[]{replay,plain})
+            {
+                allocation.Reset(positions.Length);
+                for(var i=0;i<positions.Length;i++)allocation.Set(i,positions[i],demands[i]);
+                allocation.Allocate(capacity,sources);
+            }
+            Assert.Equal(plain.Result.Take(positions.Length),replay.Result.Take(positions.Length));
+        }
+        Compare(18);
+        Assert.Equal(0,replay.ReplayHits);
+        Assert.Equal(1,replay.ReplayMisses);
+        Compare(18);
+        Assert.Equal(1,replay.ReplayHits);
+        demands[1]=21;Compare(18);
+        positions[0]=new Point(9,0);Compare(18);
+        sources.Reverse();Compare(18);
+        Compare(17);
+        Assert.Equal(1,replay.ReplayHits);
+        Assert.Equal(5,replay.ReplayMisses);
+        Compare(17);
+        Assert.Equal(2,replay.ReplayHits);
+        Assert.Equal(5,replay.ReplayMisses);
+    }
+
     // PR57: the cross-phase ceiling is observation only. Verify every integrated
     // Advance(2) boundary, not just a final aggregate or a laboratory phase.
     [Fact] public void Pr57_cross_phase_census_preserves_every_intermediate_save()
