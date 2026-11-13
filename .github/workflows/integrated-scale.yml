@@ -118,18 +118,28 @@ jobs:
                   misses=[int(re.search(r'\bmisses=(\d+)',s)[1]) for s in stats]
                   assert hits==sorted(hits) and misses==sorted(misses),(name,'nonmonotonic counters')
                   print('PR57_UTILITY_REPLAY_WORK',name,'hits',hits[-1],'misses',misses[-1])
-          for index in (1,2):
+          # Include the initial save and compare both ABBA orders separately:
+          # pooled totals alone can conceal order-dependent regressions.
+          for index in (0,1,2):
               hashes={name:runs[name][1][index] for name in runs}
               assert len(set(hashes.values()))==1,('CAUSAL_JSON_DIVERGENCE',index,hashes)
+          for index in (1,2):
               for key in ('wall','cpu','allocMB'):
                   baseline=sum(runs[name][0][index][key] for name in ('A0','A1'))
                   candidate=sum(runs[name][0][index][key] for name in ('B0','B1'))
                   assert baseline>0,(index,key,baseline)
+                  for pair,control,alternative in (('forward','A0','B0'),('reverse','A1','B1')):
+                      a=runs[control][0][index][key]
+                      b=runs[alternative][0][index][key]
+                      assert a>0,(index,key,pair,a)
+                      print('PR57_UTILITY_REPLAY_PAIR',f'window={index}',key,
+                            f'order={pair}',f'baseline={a:.6f}',f'candidate={b:.6f}',
+                            f'deltaPct={(b/a-1)*100:.3f}')
                   print('PR57_UTILITY_REPLAY_ABBA',f'window={index}',key,
                         f'baseline={baseline:.6f}',f'candidate={candidate:.6f}',
                         f'deltaPct={(candidate/baseline-1)*100:.3f}',
                         'note=MEASURED_NOT_EXTRAPOLATED')
-          print('PR57_UTILITY_REPLAY_JSON_PARITY all_intermediate_checkpoints=2 save_load=verified')
+          print('PR57_UTILITY_REPLAY_JSON_PARITY initial_and_intermediate_checkpoints=3 equal=true')
           PY
       # The original growth artifact has expired; use retained authentic workplace checkpoints.
       - name: Validate 32 paid housing orders before restoring external saves
