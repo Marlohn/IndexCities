@@ -61,7 +61,26 @@ public sealed class CityCycleTests
             baseline.Advance(2);
             candidate.Advance(2);
             Assert.Equal(step,profile.Steps);
-            Assert.Equal(baseline.SaveToJson(),candidate.SaveToJson());
+            var baselineJson=baseline.SaveToJson();
+            var candidateJson=candidate.SaveToJson();
+            Assert.Equal(baselineJson,candidateJson);
+            // An observational profile must also leave each persisted checkpoint
+            // loadable, not merely equal in the two in-memory simulations.
+            if(step==30||step==60)
+            {
+                var resumed=CitySimulation.FromJson(candidateJson);
+                resumed.CheckInvariants();
+                Assert.Equal(candidateJson,resumed.SaveToJson());
+                // Continue independently from the checkpoint: no hidden
+                // profile state may influence the next integrated Advance(2).
+                if(step==30)
+                {
+                    resumed.Advance(2);
+                    var unprofiled=CitySimulation.FromJson(baselineJson);
+                    unprofiled.Advance(2);
+                    Assert.Equal(unprofiled.SaveToJson(),resumed.SaveToJson());
+                }
+            }
         }
         baseline.CheckInvariants();
         candidate.CheckInvariants();
