@@ -162,8 +162,17 @@ public sealed partial class CitySimulation
         // never contribute to WorkerPresentAt or business operation.
         foreach(var c in Pr57LivingRosterEnabled?_pr57LivingRoster:State.Citizens)if(c.WorkplaceId is {} site)
         {
-            if(!_staff.TryGetValue(site,out var list))_staff[site]=list=[];
-            list.Add(c);
+            // In fusion mode wages consume _pr57PresentStaff. Only mechanic
+            // operations still need the general workplace roster; avoid
+            // rebuilding lists for every other employer on every Step.
+            // Keep the original full roster for the opt-out and living-roster
+            // paths, which also consume _staff for infrastructure presence.
+            if(!Pr57StaffPhaseFusionEnabled ||
+               _activeById.TryGetValue(site,out var staffSite) && staffSite.Kind==BuildingKind.MechanicShop)
+            {
+                if(!_staff.TryGetValue(site,out var list))_staff[site]=list=[];
+                list.Add(c);
+            }
             // Fuse the infrastructure presence census into this same ordered
             // citizen pass; avoid traversing every workplace roster a second time.
             // Active buildings and their zeroed counters are prepared by
