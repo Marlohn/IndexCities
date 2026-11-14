@@ -24,6 +24,24 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+      # Publish at job start too: a timeout or cancelled long benchmark must not
+      # hide the run ID from the existing PR57 handoff comment.
+      - name: Publish PR57 run pointer before long tests
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR57_RUN_ID: ${{ github.run_id }}
+          PR57_RUN_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          body=$(printf "%s\n\n%s\n\n%s\n%s\n%s\n" \
+            "<!-- PR57_ACTIONS_HANDOFF_SINGLE -->" \
+            "**PR57 — execução iniciada (ponte operacional, não validação)**" \
+            "- Run: https://github.com/$GITHUB_REPOSITORY/actions/runs/$PR57_RUN_ID" \
+            "- SHA: $PR57_RUN_SHA" \
+            "- Estado: em andamento; consultar jobs e logs para o resultado")
+          gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/6874869959" -f body="$body" >/dev/null \
+            || echo "PR57_ACTIONS_HANDOFF_START_FAILED run=$PR57_RUN_ID"
       - name: Build and simulation tests with opt-in off and on
         shell: bash
         run: |
