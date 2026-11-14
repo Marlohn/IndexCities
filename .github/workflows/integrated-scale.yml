@@ -96,24 +96,25 @@ jobs:
               log=(root/f'utility-{name}.log').read_text()
               assert 'INVARIANTS OK' in log and 'SUMMARY windows=2' in log,(name,'incomplete run')
               windows={}
-              for line in log.splitlines():
-                  if not line.startswith('WINDOW '): continue
+              window_lines=[line for line in log.splitlines() if line.startswith('WINDOW ')]
+              assert len(window_lines)==2,(name,'unexpected integrated window count',len(window_lines))
+              for line in window_lines:
                   def metric(key):
                       match=re.search(r'(?<!\w)'+re.escape(key)+r'=([0-9.]+)',line)
                       assert match,(name,key,line)
                       return float(match[1])
                   index=int(line.split()[1])
+                  assert index not in windows,(name,'duplicate integrated window',index)
                   windows[index]={key:metric(key) for key in ('wall','cpu','allocMB')}
               assert set(windows)=={1,2},(name,windows)
               # A replay speedup is meaningless if the intended paid works
               # were rejected or the simulated city became extinct/idle.
               placed=re.search(r'^CYCLE_HOUSING requested=32 placed=(\d+) attempted=(\d+)',log,re.M)
               assert placed and int(placed[1])==32,(name,'incomplete paid housing workload')
-              for line in (line for line in log.splitlines() if line.startswith('WINDOW ')):
-                  # Inspect this window, not the stale line captured by metric()
-                  # in the preceding parsing loop.
+              for line in window_lines:
+                  # Validate each distinct causal window, not a stale or duplicated sample.
                   for key in ('alive','openWorks'):
-                      match=re.search(r'(?<!\\w)'+re.escape(key)+r'=([0-9.]+)',line)
+                      match=re.search(r'(?<!\w)'+re.escape(key)+r'=([0-9.]+)',line)
                       assert match and float(match[1])>0,(name,'extinct or idle work window',key,line)
               hashes={}
               for p in sorted((root/f'utility-{name}').glob('checkpoint-*.json')):
