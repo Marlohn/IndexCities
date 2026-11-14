@@ -165,7 +165,20 @@ public sealed partial class CitySimulation
                 return;
             RefitLeaf(node);
             for (var parent = node.Parent; parent >= 0; parent = _nodes[parent].Parent)
-                RefitBranch(_nodes[parent]);
+            {
+                var ancestor = _nodes[parent];
+                var minX = ancestor.MinX;
+                var maxX = ancestor.MaxX;
+                var minZ = ancestor.MinZ;
+                var maxZ = ancestor.MaxZ;
+                RefitBranch(ancestor);
+                // A moving leaf often stays inside its sibling's bounds. If the
+                // union is unchanged, every higher ancestor is unchanged too.
+                // This is exact for the BVH's stored AABBs; no vehicle is skipped.
+                if (ancestor.MinX == minX && ancestor.MaxX == maxX
+                    && ancestor.MinZ == minZ && ancestor.MaxZ == maxZ)
+                    break;
+            }
         }
 
         static double MinimumSquaredDistance(Node node, Point point)
