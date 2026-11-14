@@ -30,8 +30,27 @@ jobs:
           dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
           PR57_BUILDING_WORK_ACCESS=0 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
           PR57_BUILDING_WORK_ACCESS=1 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
-          # Isolate the opt-in in a fresh test process; do not change global flags mid-process.
-          PR57_STAFF_PHASE_FUSION=1 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --no-build --filter FullyQualifiedName~Pr57StaffFusionTests --logger 'console;verbosity=normal'
+          # Two fresh processes: compare the *entire* integrated saved state,
+          # not only wages, and fail on a missing marker or any JSON difference.
+          mkdir -p artifacts/access-ab
+          for fusion in 0 1; do
+            PR57_STAFF_PHASE_FUSION="$fusion" dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
+              -c Release --no-build --filter FullyQualifiedName~Pr57StaffFusionTests \
+              --logger 'console;verbosity=normal' | tee "artifacts/access-ab/staff-fusion-$fusion.log"
+          done
+          python3 - <<'PY'
+          import pathlib, re
+          hashes = []
+          for mode in ('0', '1'):
+              log = pathlib.Path(f'artifacts/access-ab/staff-fusion-{mode}.log').read_text()
+              matches = re.findall(r'PR57_STAFF_FUSION_JSON mode=([01]) sha256=([A-Fa-f0-9]{64})', log)
+              if len(matches) != 1 or matches[0][0] != mode:
+                  raise SystemExit(f'STAFF_FUSION_MARKER_INVALID mode={mode} matches={matches}')
+              hashes.append(matches[0][1].upper())
+          if hashes[0] != hashes[1]:
+              raise SystemExit(f'STAFF_FUSION_JSON_DIVERGENCE baseline={hashes[0]} fusion={hashes[1]}')
+          print(f'PR57_STAFF_FUSION_JSON_PARITY sha256={hashes[0]}')
+          PY
       # Bounded, observational cross-phase ceiling on the real integrated Step(2).
       # This is NOT an A/B speedup and must not be extrapolated to 10k/80y.
       - name: Measure recurring cross-phase ceiling on integrated cycle
