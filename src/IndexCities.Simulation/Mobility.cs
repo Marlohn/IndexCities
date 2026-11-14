@@ -631,9 +631,8 @@ public sealed partial class CitySimulation
         var pr57LaneGrid=pr57BitsetScan||pr57CausalHorizon;
         var pr57Bvh=Pr57DynamicBvhEnabled&&!pr57SpatialScan&&!pr57LaneGrid&&!pr57ActiveScan;
         if(pr57Bvh){
-            if(_pr57VehicleBvh is null||!_pr57VehicleBvh.Matches(State.Vehicles))
+            if(_pr57VehicleBvh is null||!_pr57VehicleBvh.TryRefresh(State.Vehicles))
                 _pr57VehicleBvh=new Pr57VehicleBvh(State.Vehicles);
-            else _pr57VehicleBvh.Refresh();
             if(!_pr57BvhAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1"){
                 Console.WriteLine("PR57_DYNAMIC_BVH active=True");
                 _pr57BvhAnnounced=true;
