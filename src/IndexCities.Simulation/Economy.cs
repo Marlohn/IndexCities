@@ -156,12 +156,27 @@ public sealed partial class CitySimulation
     void Pr57PrepareStaff()
     {
         foreach(var list in _staff.Values)list.Clear();
+        if(Pr57StaffPhaseFusionEnabled)
+            foreach(var list in _pr57PresentStaff.Values)list.Clear();
         // Living citizens retain original State.Citizens order. Dead citizens
         // never contribute to WorkerPresentAt or business operation.
         foreach(var c in Pr57LivingRosterEnabled?_pr57LivingRoster:State.Citizens)if(c.WorkplaceId is {} site)
         {
             if(!_staff.TryGetValue(site,out var list))_staff[site]=list=[];
             list.Add(c);
+            // Fuse the infrastructure presence census into this same ordered
+            // citizen pass; avoid traversing every workplace roster a second time.
+            // Active buildings and their zeroed counters are prepared by
+            // UpdateInfrastructure immediately before this call.
+            if(Pr57StaffPhaseFusionEnabled &&
+               _activeById.TryGetValue(site,out var workplace) &&
+               WorkerPresentAt(c,workplace))
+            {
+                _present[site]++;
+                if(!_pr57PresentStaff.TryGetValue(site,out var presentWorkers))
+                    _pr57PresentStaff[site]=presentWorkers=[];
+                presentWorkers.Add(c);
+            }
         }
         _pr57StaffPrepared=true;
     }
