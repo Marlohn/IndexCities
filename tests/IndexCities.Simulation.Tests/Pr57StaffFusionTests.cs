@@ -27,7 +27,6 @@ public sealed class Pr57StaffFusionTests
         {
             c.VehicleId=null;
             c.ConstructionProjectId=null;
-            c.Moving=false;
         }
         var before=workers.Select(c=>(c.WorkSecondsToday,c.WagesAccrued)).ToArray();
         var ledgerBefore=sim.State.Ledger.Count;
