@@ -905,7 +905,7 @@ jobs:
             "<!-- PR57_ACTIONS_HANDOFF_SINGLE -->" \
             "**PR57 — último job publicado por GitHub Actions (ponte operacional, não prova de desempenho)**" \
             "- Run: $run_url" \
-            "- SHA: `$PR57_RUN_SHA`" \
+            "- SHA: $PR57_RUN_SHA" \
             "- Tentativa: $PR57_RUN_ATTEMPT" \
             "- Job: building-access-ab" \
             "- Resultado: **$PR57_JOB_STATUS** (consultar log/artefatos antes de concluir paridade)")
