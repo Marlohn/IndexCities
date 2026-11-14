@@ -20,14 +20,31 @@ public sealed partial class CitySimulation
     sealed class CellFactors{public int Layout=-1,Count;public long[] Keys=[];public double[] Factors=[];}
     readonly Dictionary<Point,CellFactors> _pollutionFactors=new();
     readonly List<long> _decayKeys=[];
-    long[] _cellKeys=[];double[] _cellValues=[];int _cellCount,_cellLayout;
+    // PR57 opt-in: normalize the sampled dot-product order across save/load.
+    // All cells and their exact values remain present; no rounding is applied.
+    static readonly bool Pr57CanonicalPollutionOrder =
+        Environment.GetEnvironmentVariable("PR57_CANONICAL_POLLUTION_ORDER")=="1";
+    long[] _cellKeys=[];double[] _cellValues=[];long[] _previousCellKeys=[];
+    int _cellCount,_cellLayout;
     // Copies the cells in enumeration order; the layout changes whenever that
     // key sequence differs from the previous snapshot.
     void SnapshotPollution()
     {
         var count=State.PollutionCells.Count;var changed=count!=_cellCount;
         if(_cellKeys.Length<count){Array.Resize(ref _cellKeys,Math.Max(count,_cellKeys.Length*2));Array.Resize(ref _cellValues,_cellKeys.Length);}
-        var i=0;foreach(var entry in State.PollutionCells){if(!changed&&_cellKeys[i]!=entry.Key)changed=true;_cellKeys[i]=entry.Key;_cellValues[i]=(double)entry.Value;i++;}
+        if(!Pr57CanonicalPollutionOrder)
+        {
+            var i=0;foreach(var entry in State.PollutionCells){if(!changed&&_cellKeys[i]!=entry.Key)changed=true;_cellKeys[i]=entry.Key;_cellValues[i]=(double)entry.Value;i++;}
+        }
+        else
+        {
+            // Sort keys and values together; the original dictionary is untouched.
+            var i=0;foreach(var entry in State.PollutionCells){_cellKeys[i]=entry.Key;_cellValues[i]=(double)entry.Value;i++;}
+            if(count>1)Array.Sort(_cellKeys,_cellValues,0,count);
+            if(!changed)for(var j=0;j<count;j++)if(_previousCellKeys[j]!=_cellKeys[j]){changed=true;break;}
+            if(_previousCellKeys.Length<count)Array.Resize(ref _previousCellKeys,count);
+            Array.Copy(_cellKeys,_previousCellKeys,count);
+        }
         _cellCount=count;if(changed)_cellLayout++;
     }
     CellFactors FactorsFor(Point point)
