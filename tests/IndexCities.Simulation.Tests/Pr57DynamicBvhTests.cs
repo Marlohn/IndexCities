@@ -36,6 +36,14 @@ public sealed class Pr57DynamicBvhTests
         // same changed causal order; compare full persisted states across modes.
         Assert.True(resumed.State.Vehicles.Count > 1);
         resumed.State.Vehicles.Reverse();
+        // Exercise an external position mutation as well as roster reordering.
+        // Swap two existing positions: no vehicles are created or removed, and
+        // both baseline and opt-in must observe the new positions on Advance.
+        var first = resumed.State.Vehicles[0];
+        var second = resumed.State.Vehicles[1];
+        var firstPosition = first.Position;
+        first.Position = second.Position;
+        second.Position = firstPosition;
         for (var i = 0; i < 40; i++)
         {
             resumed.Advance(2);
