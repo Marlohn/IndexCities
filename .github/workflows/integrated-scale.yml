@@ -125,7 +125,16 @@ jobs:
                   if not line.startswith('PR57_AB_CHECKPOINT window='):continue
                   match=re.search(r'window=(\d+) sha256=([0-9A-F]+)',line)
                   assert match and hashes[int(match[1])]==match[2],(name,'checkpoint hash mismatch')
-              runs[name]=(windows,hashes)
+              # Exact construction-order decisions are causal inputs even when
+              # both modes happen to converge to identical saved states.
+              decisions=[line for line in log.splitlines()
+                         if line.startswith(('PR57_CYCLE_BASE_ROW',
+                                             'PR57_CYCLE_SOUTH_ROW',
+                                             'PR57_CYCLE_EXTENSION_ROW',
+                                             'PR57_CYCLE_NORTH_ROW',
+                                             'PR57_CYCLE_LOT_REJECT'))]
+              assert decisions,(name,'missing integrated housing decisions')
+              runs[name]=(windows,hashes,decisions)
               if name.startswith('B'):
                   stats=[s for s in log.splitlines() if s.startswith('PR57_UTILITY_REPLAY_STATS ')]
                   assert stats,(name,'missing integrated replay counters')
@@ -150,6 +159,13 @@ jobs:
                       print('PR57_UTILITY_REPLAY_WORK_WINDOW',name,'window',window,
                             'hits',dh,'misses',dm,'hitFraction',round(dh/(dh+dm),6) if dh+dm else 0.0)
                   print('PR57_UTILITY_REPLAY_WORK',name,'hits',hits[-1],'misses',misses[-1])
+          # A replay must not change the construction quote/order trace, even
+          # if later state converges to the same checkpoint JSON.
+          reference=runs['A0'][2]
+          for name in ('B0','B1','A1'):
+              assert runs[name][2]==reference,('HOUSING_DECISION_DIVERGENCE',name,
+                                               reference,runs[name][2])
+          print('PR57_UTILITY_REPLAY_HOUSING_DECISION_PARITY runs=4 equal=true')
           # Include the initial save and compare both ABBA orders separately:
           # pooled totals alone can conceal order-dependent regressions.
           for index in (0,1,2):
