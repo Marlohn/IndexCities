@@ -1,0 +1,159 @@
+name: PR57 blocked dependency census and probe parity discrimination
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-block-dependency-157.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  dependency-census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build and run simulation tests
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore REAL moving construction save
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-growth
+          run-id: 40250545171
+          github-token: ${{ github.token }}
+          path: artifacts/works
+      - name: Restore REAL pre-gridlock save
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-legal-workplaces-8d
+          run-id: 40169101306
+          github-token: ${{ github.token }}
+          path: artifacts/queue
+      - name: Observe exact full checkpoints with intrusive dependency probe and plain wall control
+        shell: bash
+        run: |
+          set -euo pipefail
+          works="$(find artifacts/works -type f -path '*/growth/checkpoint-0.json' -print -quit)"
+          queue="$(find artifacts/queue -type f -path '*/pr57-jobs-20/checkpoint-10.json' -print -quit)"
+          test -s "$works"; test -s "$queue"
+          for case in works queue10; do
+            source="$works"; window=3600
+            if [[ "$case" == queue10 ]]; then source="$queue"; window=300; fi
+            echo "PR57_DEP_CASE case=$case class=REAL sha256=$(sha256sum "$source" | cut -d' ' -f1) windows=4 window=$window cadence=Advance2"
+            for mode in profile plain; do
+              output="$PWD/artifacts/block-dep/$case-$mode"
+              mkdir -p "$output"
+              probe=0; command=scale
+              if [[ "$mode" == profile ]]; then probe=1; command=profile; fi
+              PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="$output" \
+              PR57_SITE_OWNER_ROSTER=1 PR57_BUILDING_WORK_ACCESS=1 \
+              PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ORDER_SHIPMENT_INDEX=1 \
+              PR57_PROGRESS_SHIPMENT_LOOKUP=1 PR57_SINGLE_CREW_ASSIGNMENT=1 \
+              PR57_BLOCK_DEP_PROBE="$probe" PR57_VEHICLE_COST_PROBE=0 PR57_IDLE_SCAN_PROBE=0 PR57_HOT_TIMING=0 \
+                timeout 240s dotnet run --no-build -c Release \
+                  --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                  "$command" cycle --seed=42 --warmup=0 --days=4 --window="$window" \
+                  --cap=200 --resume="$source" | tee "artifacts/block-dep/$case-$mode.log"
+            done
+          done
+          # Fresh-process factorial on the REAL queue: plain A/A, generic profiler,
+          # and profiler plus dependency probe. This isolates a prior 1e-20
+          # pollution-cell mismatch from the probe versus profiling itself.
+          source="$queue"; window=300
+          for mode in plain-2 profile-base; do
+            output="$PWD/artifacts/block-dep/queue10-$mode"
+            mkdir -p "$output"
+            command=scale
+            if [[ "$mode" == profile-base ]]; then command=profile; fi
+            PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="$output" \
+            PR57_SITE_OWNER_ROSTER=1 PR57_BUILDING_WORK_ACCESS=1 \
+            PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ORDER_SHIPMENT_INDEX=1 \
+            PR57_PROGRESS_SHIPMENT_LOOKUP=1 PR57_SINGLE_CREW_ASSIGNMENT=1 \
+            PR57_BLOCK_DEP_PROBE=0 PR57_VEHICLE_COST_PROBE=0 PR57_IDLE_SCAN_PROBE=0 PR57_HOT_TIMING=0 \
+              timeout 240s dotnet run --no-build -c Release \
+                --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                "$command" cycle --seed=42 --warmup=0 --days=4 --window="$window" \
+                --cap=200 --resume="$source" | tee "artifacts/block-dep/queue10-$mode.log"
+          done
+      - name: Verify causal-census evidence and discriminate decimal parity
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json,pathlib,re
+          from decimal import Decimal
+          root=pathlib.Path("artifacts/block-dep")
+          modes={"works":["profile","plain"],"queue10":["profile","plain","plain-2","profile-base"]}
+          def differences(a,b,path=""):
+              if type(a)!=type(b):
+                  yield (path,a,b);return
+              if isinstance(a,dict):
+                  for key in sorted(a.keys()|b.keys()):
+                      if key not in a or key not in b:
+                          yield (path+"/"+key,a.get(key),b.get(key))
+                      else:
+                          yield from differences(a[key],b[key],path+"/"+key)
+              elif isinstance(a,list):
+                  if len(a)!=len(b):yield (path+"/length",len(a),len(b))
+                  for j,(x,y) in enumerate(zip(a,b)):
+                      yield from differences(x,y,path+"/"+str(j))
+              elif a!=b:yield (path,a,b)
+          all_diffs={}
+          for case,window in (("works",3600),("queue10",300)):
+              logs={m:(root/f"{case}-{m}.log").read_text() for m in modes[case]}
+              for mode,log in logs.items():
+                  assert "INVARIANTS OK" in log and "SAVE " in log,(case,mode,"invariants/save-load")
+                  assert sum(x.startswith("WINDOW ") for x in log.splitlines())==4,(case,mode,"windows")
+                  windows=[x for x in log.splitlines() if x.startswith("WINDOW ")]
+                  wall=sum(float(re.search(r"\\bwall=([0-9.]+)s",x).group(1)) for x in windows)
+                  cpu=sum(float(re.search(r"\\bcpu=([0-9.]+)s",x).group(1)) for x in windows)
+                  alloc=sum(float(re.search(r"\\ballocMB=([0-9.]+)",x).group(1)) for x in windows)
+                  print(f"PR57_DEP_WALL case={case} mode={mode} class=REAL seconds={4*window} wall={wall:.2f}s cpu={cpu:.2f}s allocMB={alloc:.1f} sps={4*window/wall:.2f} noOptimizationAB=True")
+              rows=[x for x in logs["profile"].splitlines() if x.startswith("PR57_BLOCK_DEP ")]
+              assert rows,(case,"dependency probe inactive")
+              assert all(not any(x.startswith("PR57_BLOCK_DEP ") for x in logs[m].splitlines()) for m in modes[case] if m!="profile"),(case,"control polluted")
+              line=rows[-1]
+              values={k:int(v) for k,v in re.findall(r"(\\w+)=(\\d+)",line)}
+              assert values["zeroStep"]>0 and values["repeats"]>0,(case,values)
+              assert values["stableOtherAndSignal"]<=values["stableOther"]<=values["repeats"]
+              assert values["sameBlocker"]<=values["repeats"]
+              print(f"PR57_DEP_FINAL case={case} "+line)
+              pairs=[("profile","plain")] if case=="works" else [
+                  ("plain","plain-2"),("profile","profile-base"),
+                  ("plain","profile-base"),("profile","plain")]
+              for first,second in pairs:
+                  total=0; fields={}
+                  for i in range(5):
+                      a=(root/f"{case}-{first}"/f"checkpoint-{i}.json").read_bytes()
+                      b=(root/f"{case}-{second}"/f"checkpoint-{i}.json").read_bytes()
+                      if a==b:continue
+                      da=json.loads(a,parse_float=Decimal)
+                      db=json.loads(b,parse_float=Decimal)
+                      delta=list(differences(da,db))
+                      total+=len(delta)
+                      fields[i]=delta
+                      for path,x,y in delta[:8]:
+                          print(f"PR57_DEP_DELTA case={case} pair={first}/{second} checkpoint={i} path={path} a={x} b={y}")
+                      if not delta:
+                          raise AssertionError((case,first,second,i,"byte mismatch without JSON semantic diff"))
+                  all_diffs[(case,first,second)]=total
+                  print(f"PR57_DEP_PARITY case={case} pair={first}/{second} checkpoints=5 exact={total==0} differingFields={total}")
+          assert all_diffs[("works","profile","plain")]==0,"works probe not byte-exact"
+          assert all_diffs[("queue10","plain","plain-2")]==0,"plain A/A nondeterministic"
+          assert all_diffs[("queue10","profile","profile-base")]==0,"probe changes persisted state versus same generic profiler"
+          PY
+      - name: Preserve logs and checkpoints
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-block-dependency-157
+          path: artifacts/block-dep/**
+          retention-days: 14

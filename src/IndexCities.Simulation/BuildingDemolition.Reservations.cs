@@ -20,7 +20,7 @@ public sealed partial class CitySimulation
             if(s.Cargo.Any(k=>source.Quantity(k.Key)<k.Value)||!EnsureFuel(v,found.Access.Id))continue;
             s.DestinationBuildingId=found.Building.Id;s.Destination=found.Access.Position;s.VehicleId=v.Id;
             v.ShipmentId=s.Id;v.DriverId=driver.Id;
-            driver.BoardingVehicleId=v.Id;driver.Purpose=JourneyPurpose.Boarding;driver.Path=[driver.Position,v.Position];driver.PathIndex=0;driver.PathRoadRevision=State.RoadRevision;driver.Activity="Caminhando para embarcar no caminhão";
+            Pr57CitizenAgendaWake(driver);driver.BoardingVehicleId=v.Id;driver.Purpose=JourneyPurpose.Boarding;driver.Path=[driver.Position,v.Position];driver.PathIndex=0;driver.PathRoadRevision=State.RoadRevision;driver.Activity="Caminhando para embarcar no caminhão";
             v.Status=VehicleStatus.Unloading;v.LoadTimer=15;v.Cause="Retomando compra paga: carregando na fazenda com motorista real, sem nova cobrança";
             Event("Compra paga de "+ReadableOwnerName(s.GoodsOwnerAccount)+" retoma da fazenda a "+found.Building.Definition.Name+" #"+found.Building.Id+" da mesma empresa, sem nova cobrança");
         }

@@ -49,6 +49,36 @@ public sealed class TowingTests
         var fee=scene.Sim.State.Ledger.Single(m=>m.Category=="Guincho");Assert.Equal(scene.Driver.Account,fee.From);Assert.Equal("global",fee.To);Assert.Equal(before-fee.Amount,scene.Sim.Balance(scene.Driver.Account));
         Assert.DoesNotContain(scene.Sim.State.Obligations,o=>o.Kind=="Guincho");Assert.Equal(scene.Sim.State.Tuning.TotalMoney,scene.Sim.MonetaryTotal);scene.Sim.CheckInvariants();
     }
+    // PR57 #171: a genuine Advance(2) can add a NEW physical actor from within
+    // the ordered vehicle pass (TendStranded -> CallTow -> TowTruck). A slice-local
+    // physical mirror built from the entry roster must support insertion and
+    // update of the stranded target, not just refreshing the current actor.
+    [Fact] public void Pr57_171_Advance2_spawns_a_new_tow_and_mutates_the_stranded_target()
+    {
+        var scene=City();
+        var sim=scene.Sim;
+        var entryIds=sim.State.Vehicles.Select(v=>v.Id).ToHashSet();
+        Assert.DoesNotContain(sim.State.Vehicles,v=>v.Body is TruckBody.Tow or TruckBody.TowHeavy);
+        Assert.Null(scene.Car.TowTruckId);
+
+        // Real public host cadence and existing economic transfers, but this
+        // is a synthetic test city with seeded stock, not a sustainability run.
+        // No direct helper invocation and no change to production rules.
+        sim.Advance(2);
+        sim.Advance(2);
+
+        var tow=scene.Tow;
+        Assert.NotNull(tow);
+        Assert.DoesNotContain(tow!.Id,entryIds);
+        Assert.True(sim.State.Vehicles.Count>entryIds.Count);
+        Assert.Equal(tow.Id,scene.Car.TowTruckId);
+        Assert.Equal(TowPhase.ToVehicle,tow.TowPhase);
+        Assert.Equal(VehicleStatus.Stranded,scene.Car.Status);
+        sim.CheckInvariants();
+        var saved=sim.SaveToJson();
+        Assert.Equal(saved,CitySimulation.FromJson(saved).SaveToJson());
+    }
+
     [Fact] public void The_tow_stops_in_front_carries_the_car_and_its_people_to_the_station_where_the_owner_refuels_and_continues()
     {
         var scene=City();var car=scene.Car;var sawFront=false;var sawCarried=false;string? savedMidTow=null;double minFollowerGap=double.MaxValue;
@@ -377,5 +407,57 @@ public sealed class TowingTests
         Run(scene,300);
         Assert.Equal(VehicleStatus.Waiting,tow.Status);Assert.Equal(at,tow.Position);Assert.Equal(1,tow.Fuel);
         Assert.Contains("sem combustível para levar o veículo",tow.Cause);Assert.Contains("guincho sem combustível",scene.Car.Cause);sim.CheckInvariants();
+    }
+
+    // PR57 #416: synthetic adversarial witness. The parked target is a distinct
+    // vehicle; TowReachedDock writes PushPath/ServiceBay without changing the
+    // scalar candidate projection used by #412. No product rule is changed.
+    [Fact] public void Pr57_416_TowReachedDock_changes_nonlocal_push_without_scalar_pose_change()
+    {
+        var scene=City();var sim=scene.Sim;var car=scene.Car;
+        car.Status=VehicleStatus.Parked;car.ServiceShopId=null;car.ServiceBay=1;car.PushPath.Clear();
+        var tow=new Vehicle{Id=sim.State.NextId++,Body=TruckBody.Tow,External=true,
+            Position=new(20,-1.65),Heading=Math.PI/2,Status=VehicleStatus.Travelling,
+            TowPhase=TowPhase.ToVehicle,TowTargetId=car.Id};
+        car.TowTruckId=tow.Id;sim.State.Vehicles.Add(tow);
+        var position=car.Position;var heading=car.Heading;var status=car.Status;
+        var routeIndex=car.RouteIndex;var route=car.Route.ToArray();
+        typeof(CitySimulation).GetMethod("TowReachedDock",
+            System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic)!
+            .Invoke(sim,new object[]{tow});
+        Assert.Equal(position,car.Position);Assert.Equal(heading,car.Heading);
+        Assert.Equal(status,car.Status);Assert.Equal(routeIndex,car.RouteIndex);
+        Assert.True(route.SequenceEqual(car.Route));
+        Assert.Null(car.ServiceBay);Assert.Single(car.PushPath);
+        Assert.NotNull(car.PushHeading);
+        Assert.Equal(TowPhase.Loading,tow.TowPhase);
+    }
+
+    // PR57 #416: no live lane entrant -> public Advance(2) uses unsplit pass.
+    // The tow precedes its parked target, so the target's PushPath is consumed
+    // later in the SAME actor pass. A projection published only after each actor
+    // misses this nonlocal write until the next boundary.
+    [Fact] public void Pr57_416_unsplit_Advance2_reads_nonlocal_push_later_in_same_pass()
+    {
+        var scene=City();var sim=scene.Sim;var car=scene.Car;
+        car.Status=VehicleStatus.Parked;car.DriverId=null;scene.Driver.VehicleId=null;
+        car.ServicePhase=ServicePhase.None;car.ServiceShopId=null;car.ServiceBay=1;
+        // Force the parked target after the tow in WaitingSince/Id order.
+        // The first run proved that insertion order alone does not suffice.
+        car.WaitingSince=1;
+        car.PushPath.Clear();
+        var roadId=sim.State.Roads.First(r=>r.Position.Z==0).Id;
+        var tow=new Vehicle{Id=sim.State.NextId++,Body=TruckBody.Tow,External=true,
+            Position=new(20,-1.65),Heading=Math.PI/2,Status=VehicleStatus.Travelling,
+            Fuel=sim.State.Tuning.FuelTank,TowPhase=TowPhase.ToVehicle,TowTargetId=car.Id,
+            Route=[roadId],RouteIndex=1,DockPosition=new(20,-1.65)};
+        car.TowTruckId=tow.Id;sim.State.Vehicles.Insert(0,tow);
+        var before=car.Position;
+        sim.Advance(2);
+        Assert.Equal(TowPhase.Loading,tow.TowPhase);
+        Assert.Null(car.ServiceBay);
+        Assert.NotEmpty(car.PushPath);
+        Assert.NotEqual(before,car.Position);
+        Assert.Equal(VehicleStatus.Parked,car.Status);
     }
 }

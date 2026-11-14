@@ -1,0 +1,127 @@
+name: 'PR57 #198 bounded reservation writer event hooks versus snapshots'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-reservation-event-hooks-198.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  junction-census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_PHASE_ALLOC_PROBE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build and full regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build scripts/Pr57RegimeBench/Pr57RegimeBench.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic GRID checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-retained-heap-184
+          run-id: 40451480020
+          github-token: ${{ github.token }}
+          path: artifacts/reference
+      - name: Replay control and bounded predicate tail gate observational census
+        shell: bash
+        run: |
+          set -euo pipefail
+          source="$(find artifacts/reference -type f -path '*/gridARTIFICIAL/plain/checkpoint-0.json' -print -quit)"
+          test -s "$source"
+          mkdir -p artifacts/junction-197/control artifacts/junction-197/probe
+          timeout 180s dotnet run --project scripts/Pr57RegimeBench/Pr57RegimeBench.csproj -c Release --no-build -- "$source" "$PWD/artifacts/junction-197/control" | tee artifacts/junction-197/control.log
+          PR57_193_JUNCTION_READERS=1 PR57_197_RESERVATION_WRITERS=1 PR57_198_RESERVATION_HOOKS=1 timeout 180s dotnet run --project scripts/Pr57RegimeBench/Pr57RegimeBench.csproj -c Release --no-build -- "$source" "$PWD/artifacts/junction-197/probe" | tee artifacts/junction-197/probe.log
+      - name: Check complete JSON parity and census coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('artifacts/junction-197')
+          for i in (0,50,100,150,200):
+              assert (root/'control'/f'checkpoint-{i}.json').read_bytes()==(root/'probe'/f'checkpoint-{i}.json').read_bytes(),('FULL_JSON_DIFFERENCE',i)
+          lines=(root/'probe.log').read_text().splitlines()
+          rows=[dict(kv.split('=',1) for kv in s.split()[1:] if '=' in kv) for s in lines if s.startswith('PR57_193_JUNCTION_READERS ')]
+          assert len(rows)>0,('CENSUS_COUNT',len(rows))
+          assert sum(int(x['signalReaderJunctionPairs']) for x in rows)>0,rows
+          assert sum(int(x['admissions']) for x in rows)>0,rows
+          assert all(int(x['admissions'])>=int(x['signalReaderJunctionPairs']) for x in rows),rows
+          assert all(int(x['signalReaderJunctionPairs'])>=0 and int(x['redSignalChecks'])>=0 for x in rows),rows
+          assert all(int(x['changedVehicles'])>=0 for x in rows),rows
+          totals={key:sum(int(x[key]) for x in rows) for key in (
+              'selectedBlockerEdges','netPhysicalEdges','netCauseOnlyEdges',
+              'netUnchangedEdges','missingEndpointEdges','physicalBeforeFirstRead',
+              'physicalAfterLastRead','physicalBetweenSelectedReads',
+              'causeBeforeFirstRead','causeAfterLastRead','totalSelectedReads')}
+          assert totals['selectedBlockerEdges']>0,totals
+          assert totals['selectedBlockerEdges']==sum(totals[k] for k in (
+              'netPhysicalEdges','netCauseOnlyEdges','netUnchangedEdges','missingEndpointEdges')),totals
+          assert totals['totalSelectedReads']>=totals['selectedBlockerEdges'],totals
+          assert totals['physicalBeforeFirstRead']<=totals['selectedBlockerEdges'],totals
+          assert totals['physicalAfterLastRead']<=totals['selectedBlockerEdges'],totals
+          for key in ('selectedChangedDuringCleanup','selectedChangedAfterCleanupBeforeFirst','selectedUnchangedAfterCleanup','selectedMissingAfterCleanup','candidateEvaluations','candidateDistinctVehicles','candidateReaderPairs','changedCandidateVehicles'):
+              totals[key]=sum(int(x[key]) for x in rows)
+          assert totals['selectedUnchangedAfterCleanup']+totals['selectedChangedAfterCleanupBeforeFirst']+totals['selectedMissingAfterCleanup']==totals['selectedBlockerEdges'],totals
+          assert totals['candidateEvaluations']>=totals['candidateReaderPairs']>=totals['candidateDistinctVehicles'],totals
+          assert totals['changedCandidateVehicles']<=totals['candidateDistinctVehicles'],totals
+          assert totals['candidateEvaluations']>0,totals
+          gates=('scanManoeuvre','scanHolder','scanBendPriority','scanOccupant',
+                 'gateManoeuvreSpaces','gateManoeuvrePose','gateHolderHolds',
+                 'gateBendTurn','gateBendPose','gateOccupantClaim','gateOccupantPose',
+                 'poseReaderPairs','changedPoseReaderPairs')
+          g={key:sum(int(x[key]) for x in rows) for key in gates}
+          assert totals['candidateEvaluations']==sum(g[k] for k in gates[:4]),g
+          assert 0<=g['gateManoeuvrePose']<=g['gateManoeuvreSpaces']<=g['scanManoeuvre'],g
+          assert 0<=g['gateHolderHolds']<=g['scanHolder'],g
+          assert 0<=g['gateBendPose']<=g['gateBendTurn']<=g['scanBendPriority'],g
+          assert 0<=g['gateOccupantPose']<=g['gateOccupantClaim']<=g['scanOccupant'],g
+          assert 0<=g['changedPoseReaderPairs']<=g['poseReaderPairs']<=(
+              g['gateManoeuvrePose']+g['gateBendPose']+g['gateOccupantPose']),g
+          assert g['scanManoeuvre']>0 and g['gateManoeuvreSpaces']>0,g
+          writer=[dict(kv.split('=',1) for kv in s.split()[1:] if '=' in kv)
+                  for s in lines if s.startswith('PR57_197_RESERVATION_WRITERS ')]
+          assert len(writer)==1,('WRITER_SAMPLES',writer)
+          wr=writer[0]
+          assert int(wr['vehiclePasses'])>0,wr
+          assert int(wr['snapshots'])==int(wr['vehiclePasses'])+3,wr
+          assert int(wr['checks'])>=int(wr['vehiclePasses']),wr
+          assert int(wr['netChanges'])>=int(wr['cleanupChanges'])+int(wr['syncChanges']),wr
+          assert int(wr['nonlocalChanges'])<=int(wr['netChanges']),wr
+          assert int(wr['candidateEvaluations'])>0,wr
+          assert int(wr['hookCalls'])>=int(wr['hookChangedWrites'])>=4,wr
+          assert int(wr['hookMissedBoundaryChanges'])==0,('UNCOVERED_RESERVATION_WRITER',wr)
+          print('PR57_198_EVENT_HOOKS',wr)
+          print('PR57_197_WRITERS',wr)
+          print('PR57_197_GATES',g)
+          print('PR57_197_TOTALS',totals)
+          for mode in ('control','probe'):
+              assert any(s.startswith('PR57_186_DONE ') and 'cadence=ADVANCE_2' in s for s in (root/f'{mode}.log').read_text().splitlines())
+          print('PR57_197_VALIDATED checkpoints=5 parity=EXACT_FULL_JSON scope=INTRUSIVE_PARTIAL_CANDIDATE_CENSUS_NOT_EXACT_GRAPH_NOT_AB')
+          print('PR57_197_SAMPLE',rows)
+          PY
+      - name: Preserve logs and complete saves
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-reservation-event-hooks-198
+          path: artifacts/junction-197/**
+          retention-days: 14

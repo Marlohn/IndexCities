@@ -43,4 +43,273 @@ public sealed class CityCycleTests
         var sim=new CitySimulation(42);sim.PlaceBuilding(BuildingKind.CityHall,new(-100,40));sim.PlaceBuilding(BuildingKind.Grocery,new(-70,40));sim.Advance(172800);
         Assert.Empty(sim.State.Citizens);Assert.Empty(sim.State.Companies);Assert.All(sim.State.Buildings,b=>Assert.Equal(0,b.Stock.Values.Sum()));sim.CheckInvariants();
     }
+
+    // PR57: the pure allocation replay must actually skip repeated work, and
+    // must fall back on every changed causal input (including ordered sources).
+    [Fact] public void Pr57_utility_replay_exact_inputs_and_fallback_match_uncached_allocation()
+    {
+        var replay=new CapacityAllocation(false,true);
+        var plain=new CapacityAllocation();
+        var sources=new List<Point>{new(0,0),new(120,0)};
+        var positions=new[]{new Point(8,0),new Point(92,0),new Point(60,20)};
+        var demands=new[]{10.0,20.0,15.0};
+        void Compare(double capacity)
+        {
+            foreach(var allocation in new[]{replay,plain})
+            {
+                allocation.Reset(positions.Length);
+                for(var i=0;i<positions.Length;i++)allocation.Set(i,positions[i],demands[i]);
+                allocation.Allocate(capacity,sources);
+            }
+            Assert.Equal(plain.Result.Take(positions.Length),replay.Result.Take(positions.Length));
+        }
+        Compare(18);
+        Assert.Equal(0,replay.ReplayHits);
+        Assert.Equal(1,replay.ReplayMisses);
+        Compare(18);
+        Assert.Equal(1,replay.ReplayHits);
+        demands[1]=21;Compare(18);
+        positions[0]=new Point(9,0);Compare(18);
+        sources.Reverse();Compare(18);
+        Compare(17);
+        Assert.Equal(1,replay.ReplayHits);
+        Assert.Equal(5,replay.ReplayMisses);
+        Compare(17);
+        Assert.Equal(2,replay.ReplayHits);
+        Assert.Equal(5,replay.ReplayMisses);
+
+        // Exact replay must reject changes to the source geometry and cardinality,
+        // including edits that preserve capacity and total consumer demand.
+        // These are legal between-Advance(2) mutations in the integrated engine.
+        sources[0]=new Point(1,0);
+        Compare(17);
+        sources.Add(new Point(240,0));
+        Compare(17);
+        sources.RemoveAt(2);
+        Compare(17);
+        Assert.Equal(2,replay.ReplayHits);
+        Assert.Equal(8,replay.ReplayMisses);
+
+        // Zero demand takes the original early-return path without caching.
+        // The next nonzero demand must not reuse the previous result.
+        Array.Fill(demands,0.0);
+        Compare(17);
+        Compare(17);
+        Assert.Equal(2,replay.ReplayHits);
+        Assert.Equal(8,replay.ReplayMisses);
+        demands[2]=15;
+        Compare(10); // Keep capacity below demand to exercise Allocate's replay gate.
+        Assert.Equal(2,replay.ReplayHits);
+        Assert.Equal(9,replay.ReplayMisses);
+
+        // A city can gain/lose consumers while preserving capacity and total
+        // demand. Exact replay must invalidate on count and original order.
+        var compactPositions=new[]{positions[0],positions[2]};
+        var compactDemands=new[]{5.0,15.0};
+        void CompareCompact(Point[] points,double[] loads)
+        {
+            foreach(var allocation in new[]{replay,plain})
+            {
+                allocation.Reset(points.Length);
+                for(var i=0;i<points.Length;i++)allocation.Set(i,points[i],loads[i]);
+                allocation.Allocate(10,sources);
+            }
+            Assert.Equal(plain.Result.Take(points.Length),replay.Result.Take(points.Length));
+        }
+        CompareCompact(compactPositions,compactDemands);
+        Assert.Equal(10,replay.ReplayMisses);
+        CompareCompact(compactPositions,compactDemands);
+        Assert.Equal(3,replay.ReplayHits);
+        (compactPositions[0],compactPositions[1])=(compactPositions[1],compactPositions[0]);
+        (compactDemands[0],compactDemands[1])=(compactDemands[1],compactDemands[0]);
+        CompareCompact(compactPositions,compactDemands);
+        Assert.Equal(11,replay.ReplayMisses);
+        // Return to the original cardinality after the compact snapshot.
+        Compare(10);
+        Assert.Equal(12,replay.ReplayMisses);
+
+        // Deterministic adversarial stream: change ordered consumers, sources,
+        // capacity and cardinality across calls, including exact repeats.
+        // Compare every output with a fresh uncached allocation so a stale
+        // replay cannot survive merely because final city JSON looks equal.
+        var random=new Random(57057);
+        for(var iteration=0;iteration<96;iteration++)
+        {
+            var count=1+random.Next(1,9);
+            var inputSources=Enumerable.Range(0,1+random.Next(1,5))
+                .Select(_=>new Point(random.Next(-200,201),random.Next(-200,201))).ToList();
+            var inputPoints=Enumerable.Range(0,count)
+                .Select(_=>new Point(random.Next(-200,201),random.Next(-200,201))).ToArray();
+            var inputDemands=Enumerable.Range(0,count)
+                .Select(_=>(double)random.Next(1,50)).ToArray();
+            var available=1.0; // strictly below positive aggregate demand: exercise replay gate
+            void Check()
+            {
+                foreach(var allocation in new[]{replay,plain})
+                {
+                    allocation.Reset(count);
+                    for(var j=0;j<count;j++)allocation.Set(j,inputPoints[j],inputDemands[j]);
+                    allocation.Allocate(available,inputSources);
+                }
+                Assert.Equal(plain.Result.Take(count),replay.Result.Take(count));
+            }
+            var hitsBefore=replay.ReplayHits;
+            var missesBefore=replay.ReplayMisses;
+            Check(); // new ordered snapshot must miss even after a prior replay
+            Assert.Equal(hitsBefore,replay.ReplayHits);
+            Assert.Equal(missesBefore+1,replay.ReplayMisses);
+            Check(); // identical inputs must actually reuse the allocation
+            Assert.Equal(hitsBefore+1,replay.ReplayHits);
+            Assert.Equal(missesBefore+1,replay.ReplayMisses);
+            inputDemands[iteration%count]+=1;
+            Check(); // changed demand must invalidate the cached result
+            Assert.Equal(hitsBefore+1,replay.ReplayHits);
+            Assert.Equal(missesBefore+2,replay.ReplayMisses);
+            // The same replay stream must reject a moved source even when
+            // capacity and aggregate demand are unchanged.
+            inputSources[0]=new Point(1000+iteration,-1000);
+            Check();
+            Assert.Equal(hitsBefore+1,replay.ReplayHits);
+            Assert.Equal(missesBefore+3,replay.ReplayMisses);
+            Check(); // repeat the changed geometry to prove the new key is usable
+            Assert.Equal(hitsBefore+2,replay.ReplayHits);
+            Assert.Equal(missesBefore+3,replay.ReplayMisses);
+            // Capacity is also a causal input. The same consumers and sources
+            // must miss when available supply changes, then hit on exact repeat.
+            available=0.5;
+            Check();
+            Assert.Equal(hitsBefore+2,replay.ReplayHits);
+            Assert.Equal(missesBefore+4,replay.ReplayMisses);
+            Check();
+            Assert.Equal(hitsBefore+3,replay.ReplayHits);
+            Assert.Equal(missesBefore+4,replay.ReplayMisses);
+            // Cardinality changes can leave the previous source prefix intact.
+            // They must still invalidate, including when capacity is unchanged.
+            inputSources.Add(new Point(2000+iteration,-2000));
+            Check();
+            Assert.Equal(hitsBefore+3,replay.ReplayHits);
+            Assert.Equal(missesBefore+5,replay.ReplayMisses);
+            Check();
+            Assert.Equal(hitsBefore+4,replay.ReplayHits);
+            Assert.Equal(missesBefore+5,replay.ReplayMisses);
+            // Reordering the same sources must invalidate even when their
+            // set, capacity and all consumer inputs remain unchanged.
+            (inputSources[0],inputSources[^1])=(inputSources[^1],inputSources[0]);
+            Check();
+            Assert.Equal(hitsBefore+4,replay.ReplayHits);
+            Assert.Equal(missesBefore+6,replay.ReplayMisses);
+            Check();
+            Assert.Equal(hitsBefore+5,replay.ReplayHits);
+            Assert.Equal(missesBefore+6,replay.ReplayMisses);
+            // Ordered consumers are also causal inputs: exchanging two
+            // consumers must invalidate even when their multiset, total
+            // demand, source order and available capacity stay unchanged.
+            // Force distinct inputs to avoid a coincidental no-op swap.
+            if(inputPoints[0]==inputPoints[^1] && inputDemands[0]==inputDemands[^1])
+                inputDemands[0]+=1;
+            (inputPoints[0],inputPoints[^1])=(inputPoints[^1],inputPoints[0]);
+            (inputDemands[0],inputDemands[^1])=(inputDemands[^1],inputDemands[0]);
+            Check();
+            Assert.Equal(hitsBefore+5,replay.ReplayHits);
+            Assert.Equal(missesBefore+7,replay.ReplayMisses);
+            Check();
+            Assert.Equal(hitsBefore+6,replay.ReplayHits);
+            Assert.Equal(missesBefore+7,replay.ReplayMisses);
+        }
+        Assert.True(replay.ReplayHits>=578);
+        Assert.True(replay.ReplayMisses>=684);
+        // The integrated caller can rebuild ordered input collections between
+        // steps. Reuse must depend on exact values, not collection identity.
+        // Check a fresh uncached reference on both calls, including a snapshot
+        // with newly allocated source, position and demand collections.
+        var beforeMiss=replay.ReplayMisses;
+        var beforeHit=replay.ReplayHits;
+        Compare(10);
+        Assert.Equal(beforeMiss+1,replay.ReplayMisses);
+        sources=sources.ToList();
+        positions=positions.ToArray();
+        demands=demands.ToArray();
+        Compare(10);
+        Assert.Equal(beforeHit+1,replay.ReplayHits);
+        Assert.Equal(beforeMiss+1,replay.ReplayMisses);
+    }
+
+    // PR57: the cross-phase ceiling is observation only. Verify every integrated
+    // Advance(2) boundary, not just a final aggregate or a laboratory phase.
+    [Fact] public void Pr57_cross_phase_census_preserves_every_intermediate_save()
+    {
+        // Exercise the actual integrated city fixture (roads, paid projects, utilities,
+        // logistics and businesses), not a newly created, effectively empty city.
+        var baseline=City();
+        Assert.NotEmpty(baseline.State.Projects);
+        Assert.NotEmpty(baseline.State.Buildings);
+        var candidate=CitySimulation.FromJson(baseline.SaveToJson());
+        var profile=new StepCostProfile();
+        candidate.CostProfile=profile;
+        for(var step=1;step<=60;step++)
+        {
+            baseline.Advance(2);
+            candidate.Advance(2);
+            Assert.Equal(step,profile.Steps);
+            var baselineJson=baseline.SaveToJson();
+            var candidateJson=candidate.SaveToJson();
+            Assert.Equal(baselineJson,candidateJson);
+            // External, between-step mutation: the diagnostic observer must not
+            // retain a stale view of a causal building field across Advance(2).
+            // Apply the same legal state edit independently to both simulations.
+            if(step==30)
+            {
+                var original=baseline.State.Buildings.First(b=>b.Kind==BuildingKind.WaterTreatment);
+                var observed=candidate.State.Buildings.Single(b=>b.Id==original.Id);
+                original.MaintenanceRatio=0.5;
+                observed.MaintenanceRatio=0.5;
+                // Refresh the checkpoint after the mutation: the independent
+                // save/load continuation must exercise the changed maintenance
+                // condition, not the pre-mutation state captured above.
+                baselineJson=baseline.SaveToJson();
+                candidateJson=candidate.SaveToJson();
+                Assert.Equal(baselineJson,candidateJson);
+            }
+            // An observational profile must also leave each persisted checkpoint
+            // loadable, not merely equal in the two in-memory simulations.
+            if(step==30||step==60)
+            {
+                var resumed=CitySimulation.FromJson(candidateJson);
+                resumed.CheckInvariants();
+                Assert.Equal(candidateJson,resumed.SaveToJson());
+                // A persisted checkpoint must survive an entire independent
+                // continuation, not just the first Step after reload. This
+                // exercises recurring phase invalidations after save/load.
+                if(step==30)
+                {
+                    var unprofiled=CitySimulation.FromJson(baselineJson);
+                    // Re-enable the observation after load: a fresh profiler must
+                    // not alter any subsequent integrated causal boundary.
+                    var resumedProfile=new StepCostProfile();
+                    resumed.CostProfile=resumedProfile;
+                    for(var continuation=1;continuation<=30;continuation++)
+                    {
+                        resumed.Advance(2);
+                        unprofiled.Advance(2);
+                        Assert.Equal(continuation,resumedProfile.Steps);
+                        Assert.Equal(unprofiled.SaveToJson(),resumed.SaveToJson());
+                        resumed.CheckInvariants();
+                    }
+                    Assert.True(resumedProfile.Ticks.Sum()>0);
+                }
+            }
+        }
+        baseline.CheckInvariants();
+        candidate.CheckInvariants();
+        Assert.Equal(13,StepCostProfile.Names.Length);
+        Assert.Equal(13,profile.Ticks.Length);
+        Assert.True(profile.Ticks.Sum()>0);
+        var recurring=new[]{0,2,3,6,7,8,9,10,11};
+        Assert.Equal(9,recurring.Distinct().Count());
+        Assert.All(recurring,i=>Assert.InRange(i,0,profile.Ticks.Length-1));
+        var recurringTicks=recurring.Sum(i=>profile.Ticks[i]);
+        var otherTicks=profile.Ticks.Sum()-recurringTicks;
+        Assert.True(recurringTicks>=0&&otherTicks>=0);
+        Assert.Equal(profile.Ticks.Sum(),recurringTicks+otherTicks);
+    }
 }

@@ -1,0 +1,260 @@
+using IndexCities.Simulation;
+using Xunit;
+
+namespace IndexCities.Simulation.Tests;
+
+// PR57-only adversarial experiment. It does not change the engine or claim
+// that a different list order is a permitted production transformation.
+public sealed class Pr57VehicleOrderSensitivity
+{
+    [Fact]
+    public void Real_save_vehicle_order_sensitivity_for_speculative_batching()
+    {
+        var path = Environment.GetEnvironmentVariable("PR57_CONTROLLED_SAVE_PATH");
+        if (string.IsNullOrWhiteSpace(path)) return;
+        var label = Environment.GetEnvironmentVariable("PR57_CONTROLLED_CASE") ?? "unspecified";
+        var json = File.ReadAllText(path);
+        var baseline = CitySimulation.FromJson(json);
+        var reordered = CitySimulation.FromJson(json);
+        Assert.Equal(baseline.SaveToJson(), reordered.SaveToJson());
+        Assert.NotEmpty(reordered.State.Vehicles);
+
+        // Preserve every actor and all properties; change only iteration order.
+        reordered.State.Vehicles.Reverse();
+        const int steps = 24;
+        var differingVehicleSteps = 0;
+        var differingCitizenSteps = 0;
+        var firstVehicleDifference = -1;
+        var firstCitizenDifference = -1;
+        for (var step = 0; step < steps; step++)
+        {
+            baseline.Advance(2);
+            reordered.Advance(2);
+            // Compare by identity, so the initial list permutation alone
+            // cannot create a false positive.
+            var a = baseline.State.Vehicles.OrderBy(v => v.Id)
+                .Select(v => (v.Id, v.Position, v.Heading, v.Status,
+                    v.RouteIndex, v.Fuel, v.Cause, v.WaitingSince)).ToArray();
+            var b = reordered.State.Vehicles.OrderBy(v => v.Id)
+                .Select(v => (v.Id, v.Position, v.Heading, v.Status,
+                    v.RouteIndex, v.Fuel, v.Cause, v.WaitingSince)).ToArray();
+            var c = baseline.State.Citizens.OrderBy(v => v.Id)
+                .Select(v => (v.Id, v.Position, v.Activity, v.VehicleId,
+                    v.HungerMicroseconds, v.HealthUnits)).ToArray();
+            var d = reordered.State.Citizens.OrderBy(v => v.Id)
+                .Select(v => (v.Id, v.Position, v.Activity, v.VehicleId,
+                    v.HungerMicroseconds, v.HealthUnits)).ToArray();
+            if (!a.SequenceEqual(b))
+            {
+                differingVehicleSteps++;
+                if (firstVehicleDifference < 0)
+                {
+                    firstVehicleDifference = step;
+                    // Diagnostic only: the first identity-level disagreement, not a
+                    // claim that list reordering is a valid engine optimization.
+                    var first = a.Zip(b).First(pair => !pair.First.Equals(pair.Second));
+                    Console.WriteLine(
+                        $"PR57_ORDER_FIRST case={label} step={step} " +
+                        $"baseline={first.First} reordered={first.Second} " +
+                        $"vehicleCount={a.Length}");
+                }
+            }
+            if (!c.SequenceEqual(d))
+            {
+                differingCitizenSteps++;
+                if (firstCitizenDifference < 0) firstCitizenDifference = step;
+            }
+        }
+        Console.WriteLine(
+            $"PR57_ORDER_REAL case={label} steps={steps} " +
+            $"vehicles={baseline.State.Vehicles.Count} " +
+            $"vehicleDivergentSteps={differingVehicleSteps} " +
+            $"citizenDivergentSteps={differingCitizenSteps} " +
+            $"firstVehicleDifference={firstVehicleDifference} " +
+            $"firstCitizenDifference={firstCitizenDifference} " +
+            "scope=permuted-public-vehicle-list notEngineParity=True");
+        // Both outcomes are informative: a divergence refutes naive batch
+        // reordering; no divergence in 24 Steps is NOT a universal proof.
+    }
+    // A minimal local-dependence probe, not a proof of safe parallel execution.
+    // Each trial starts from the same authentic save and swaps exactly one
+    // adjacent pair; all other actors and the full Advance(2) are preserved.
+    [Fact]
+    public void Real_save_adjacent_vehicle_swap_dependency_probe()
+    {
+        var path = Environment.GetEnvironmentVariable("PR57_CONTROLLED_SAVE_PATH");
+        if (string.IsNullOrWhiteSpace(path)) return;
+        var label = Environment.GetEnvironmentVariable("PR57_CONTROLLED_CASE") ?? "unspecified";
+        var json = File.ReadAllText(path);
+        var reference = CitySimulation.FromJson(json);
+        // The swap candidates must come from the input save, not from the
+        // reference state after Advance(2), which may add/remove vehicles.
+        var pairs = reference.State.Vehicles.Count - 1;
+        Assert.True(pairs > 0);
+        reference.Advance(2);
+        var expected = reference.State.Vehicles.OrderBy(v => v.Id)
+            .Select(v => (v.Id, v.Position, v.Heading, v.Status,
+                v.RouteIndex, v.Fuel, v.Cause, v.WaitingSince)).ToArray();
+        var expectedCitizens = reference.State.Citizens.OrderBy(v => v.Id)
+            .Select(v => (v.Id, v.Position, v.Activity, v.VehicleId,
+                v.HungerMicroseconds, v.HealthUnits)).ToArray();
+        var changedVehiclePairs = 0;
+        var changedCitizenPairs = 0;
+        var firstPair = -1;
+        for (var i = 0; i < pairs; i++)
+        {
+            var trial = CitySimulation.FromJson(json);
+            var left = trial.State.Vehicles[i].Id;
+            var right = trial.State.Vehicles[i + 1].Id;
+            (trial.State.Vehicles[i], trial.State.Vehicles[i + 1]) =
+                (trial.State.Vehicles[i + 1], trial.State.Vehicles[i]);
+            trial.Advance(2);
+            var actual = trial.State.Vehicles.OrderBy(v => v.Id)
+                .Select(v => (v.Id, v.Position, v.Heading, v.Status,
+                    v.RouteIndex, v.Fuel, v.Cause, v.WaitingSince)).ToArray();
+            var citizens = trial.State.Citizens.OrderBy(v => v.Id)
+                .Select(v => (v.Id, v.Position, v.Activity, v.VehicleId,
+                    v.HungerMicroseconds, v.HealthUnits)).ToArray();
+            if (!expected.SequenceEqual(actual))
+            {
+                changedVehiclePairs++;
+                if (firstPair < 0)
+                {
+                    firstPair = i;
+                    Console.WriteLine($"PR57_ADJACENT_FIRST case={label} index={i} leftId={left} rightId={right}");
+                    // A projection can hide a causal change in shared state.
+                    // Inspect authentic project/shipment state after the same full Step.
+                    // Sorting by identity removes only collection-order noise.
+                    var referenceProjects = System.Text.Json.JsonSerializer.Serialize(
+                        reference.State.Projects.OrderBy(p => p.Id).ToArray());
+                    var trialProjects = System.Text.Json.JsonSerializer.Serialize(
+                        trial.State.Projects.OrderBy(p => p.Id).ToArray());
+                    var referenceShipments = System.Text.Json.JsonSerializer.Serialize(
+                        reference.State.Shipments.OrderBy(sh => sh.Id).ToArray());
+                    var trialShipments = System.Text.Json.JsonSerializer.Serialize(
+                        trial.State.Shipments.OrderBy(sh => sh.Id).ToArray());
+                    // Identify the first shared entity whose actual serialized state differs.
+                    // This is a diagnostic witness, not a proof of the responsible writer.
+                    var firstProject = reference.State.Projects.OrderBy(p => p.Id)
+                        .Zip(trial.State.Projects.OrderBy(p => p.Id))
+                        .FirstOrDefault(pair =>
+                            !String.Equals(
+                                System.Text.Json.JsonSerializer.Serialize(pair.First),
+                                System.Text.Json.JsonSerializer.Serialize(pair.Second),
+                                StringComparison.Ordinal));
+                    var firstShipment = reference.State.Shipments.OrderBy(sh => sh.Id)
+                        .Zip(trial.State.Shipments.OrderBy(sh => sh.Id))
+                        .FirstOrDefault(pair =>
+                            !String.Equals(
+                                System.Text.Json.JsonSerializer.Serialize(pair.First),
+                                System.Text.Json.JsonSerializer.Serialize(pair.Second),
+                                StringComparison.Ordinal));
+                    Console.WriteLine(
+                        $"PR57_ADJACENT_SHARED_FIRST case={label} index={i} " +
+                        $"projectId={firstProject.First?.Id.ToString() ?? "none"} " +
+                        $"shipmentId={firstShipment.First?.Id.ToString() ?? "none"} " +
+                        $"projectReference={System.Text.Json.JsonSerializer.Serialize(firstProject.First)} " +
+                        $"projectTrial={System.Text.Json.JsonSerializer.Serialize(firstProject.Second)} " +
+                        $"shipmentReference={System.Text.Json.JsonSerializer.Serialize(firstShipment.First)} " +
+                        $"shipmentTrial={System.Text.Json.JsonSerializer.Serialize(firstShipment.Second)}");
+                    Console.WriteLine(
+                        $"PR57_ADJACENT_SHARED case={label} index={i} leftId={left} rightId={right} " +
+                        $"projectsEqual={String.Equals(referenceProjects, trialProjects, StringComparison.Ordinal)} " +
+                        $"shipmentsEqual={String.Equals(referenceShipments, trialShipments, StringComparison.Ordinal)} " +
+                        $"projectCount={reference.State.Projects.Count}/{trial.State.Projects.Count} " +
+                        $"shipmentCount={reference.State.Shipments.Count}/{trial.State.Shipments.Count} " +
+                        "scope=sorted-identity-shared-state-json notEngineParity=True");
+                }
+            }
+            if (!expectedCitizens.SequenceEqual(citizens)) changedCitizenPairs++;
+        }
+        Console.WriteLine(
+            $"PR57_ADJACENT_REAL case={label} pairs={pairs} " +
+            $"vehicleChangedPairs={changedVehiclePairs} citizenChangedPairs={changedCitizenPairs} " +
+            $"firstChangedPair={firstPair} scope=single-adjacent-swap-one-full-Advance2 " +
+            "notEngineParity=True");
+    }
+
+
+    // PR57 isolated causal observation: shipment 1040 is created during Advance(2),
+    // so deleting it from the input save is not a valid intervention.
+    [Fact]
+    public void Real_save_shipment_1040_creation_order_probe()
+    {
+        var path = Environment.GetEnvironmentVariable("PR57_CONTROLLED_SAVE_PATH");
+        if (string.IsNullOrWhiteSpace(path)) return;
+        var label = Environment.GetEnvironmentVariable("PR57_CONTROLLED_CASE") ?? "unspecified";
+        var json = File.ReadAllText(path);
+        var reference = CitySimulation.FromJson(json);
+        var index = reference.State.Vehicles.FindIndex(v => v.Id == 18);
+        if (index < 0 || index + 1 >= reference.State.Vehicles.Count ||
+            reference.State.Vehicles[index + 1].Id != 19)
+        {
+            Console.WriteLine($"PR57_SHIPMENT_CREATION case={label} applicable=False");
+            return;
+        }
+        var trial = CitySimulation.FromJson(json);
+        var existed = reference.State.Shipments.Any(s => s.Id == 1040);
+        var fuel18 = reference.State.Vehicles.First(v => v.Id == 18).Fuel;
+        var fuel19 = reference.State.Vehicles.First(v => v.Id == 19).Fuel;
+        (trial.State.Vehicles[index], trial.State.Vehicles[index + 1]) =
+            (trial.State.Vehicles[index + 1], trial.State.Vehicles[index]);
+        reference.Advance(2);
+        trial.Advance(2);
+        var a = reference.State.Shipments.FirstOrDefault(s => s.Id == 1040);
+        var b = trial.State.Shipments.FirstOrDefault(s => s.Id == 1040);
+        Console.WriteLine(
+            $"PR57_SHIPMENT_CREATION case={label} existedBefore={existed} " +
+            $"fuel18Before={fuel18} fuel19Before={fuel19} " +
+            $"referenceVehicle={a?.VehicleId.ToString() ?? "none"} " +
+            $"trialVehicle={b?.VehicleId.ToString() ?? "none"} " +
+            $"referencePrice={a?.PricePaid.ToString() ?? "none"} " +
+            $"trialPrice={b?.PricePaid.ToString() ?? "none"} " +
+            "scope=authentic-save-full-Advance2-not-engine-parity");
+    }
+
+    // PR57 isolated read-only probe: call the exact private truck selector on
+    // fresh copies of a real save. This does not change the engine or reorder
+    // the simulation's canonical execution.
+    [Fact]
+    public void Real_save_available_truck_selector_order_probe()
+    {
+        var path = Environment.GetEnvironmentVariable("PR57_CONTROLLED_SAVE_PATH");
+        if (string.IsNullOrWhiteSpace(path)) return;
+        var label = Environment.GetEnvironmentVariable("PR57_CONTROLLED_CASE") ?? "unspecified";
+        var json = File.ReadAllText(path);
+        var reference = CitySimulation.FromJson(json);
+        var index = reference.State.Vehicles.FindIndex(v => v.Id == 18);
+        if (index < 0 || index + 1 >= reference.State.Vehicles.Count ||
+            reference.State.Vehicles[index + 1].Id != 19)
+        {
+            Console.WriteLine($"PR57_TRUCK_SELECTOR case={label} applicable=False");
+            return;
+        }
+        // Observe the authentic resource of shipment 1040 after a full step.
+        // The probe itself runs against fresh, unadvanced input snapshots.
+        reference.Advance(2);
+        var shipment = reference.State.Shipments.FirstOrDefault(s => s.Id == 1040);
+        Assert.NotNull(shipment);
+        var kind = shipment.Cargo.Keys.Single();
+        var original = CitySimulation.FromJson(json);
+        var swapped = CitySimulation.FromJson(json);
+        (swapped.State.Vehicles[index], swapped.State.Vehicles[index + 1]) =
+            (swapped.State.Vehicles[index + 1], swapped.State.Vehicles[index]);
+        var selector = typeof(CitySimulation).GetMethods(
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.NonPublic)
+            .Single(m => m.Name == "AvailableTruck" &&
+                m.GetParameters().Length == 1 &&
+                (m.GetParameters()[0].ParameterType == typeof(ResourceKind) ||
+                 m.GetParameters()[0].ParameterType == typeof(ResourceKind?)));
+        var first = selector.Invoke(original, new object[] { kind }) as Vehicle;
+        var second = selector.Invoke(swapped, new object[] { kind }) as Vehicle;
+        Console.WriteLine(
+            $"PR57_TRUCK_SELECTOR case={label} kind={kind} " +
+            $"initialOriginal={first?.Id.ToString() ?? "none"} " +
+            $"initialSwapped={second?.Id.ToString() ?? "none"} " +
+            $"shipment1040AfterAdvance={shipment.VehicleId} " +
+            "scope=private-selector-on-authentic-input-not-intra-step-writer");
+    }
+}

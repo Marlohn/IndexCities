@@ -1,0 +1,181 @@
+name: PR57 composed host-cadence scaling knee and residual profile
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-composed-curve.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  composed-curve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build unchanged engine in Release
+        run: dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+      - name: Restore real construction checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-growth
+          run-id: 40250545171
+          github-token: ${{ github.token }}
+          path: artifacts/works
+      - name: Restore real congested checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-legal-workplaces-8d
+          run-id: 40169101306
+          github-token: ${{ github.token }}
+          path: artifacts/real
+      - name: Restore four artificial load checkpoints from identical earlier curve
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-host-scale-curve
+          run-id: 40258405557
+          github-token: ${{ github.token }}
+          path: artifacts/grid
+      - name: ABBA at every load using the same saved state and Advance(2)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/composed-curve
+          works="$(find artifacts/works -type f -path '*/growth/checkpoint-0.json' -print -quit)"
+          real="$(find artifacts/real -type f -path '*/pr57-jobs-20/checkpoint-11.json' -print -quit)"
+          test -s "$works"; test -s "$real"
+          for case in grid2 grid6 grid12 grid18 works4h real121 cycle; do
+            if [[ "$case" == grid* ]]; then
+              source="artifacts/grid/$case-0/checkpoint-1.json"
+              test -s "$source"
+              args=(scale grid --seed=42 --warmup=0 --days=4 --window=300 --cap=300 --resume="$source")
+              horizon=1200
+              class=ARTIFICIAL
+            elif [[ "$case" == works4h ]]; then
+              source="$works"
+              args=(scale cycle --seed=42 --warmup=0 --days=4 --window=3600 --cap=300 --resume="$source")
+              horizon=14400
+              class=REAL
+            elif [[ "$case" == real121 ]]; then
+              source="$real"
+              args=(scale cycle --seed=42 --warmup=0 --days=2 --window=1800 --cap=300 --resume="$source")
+              horizon=3600
+              class=REAL
+            else
+              source=initial
+              args=(scale cycle --seed=42 --warmup=0 --days=2 --window=900 --cap=300)
+              horizon=1800
+              class=REAL
+            fi
+            if [[ "$source" != initial ]]; then
+              echo "PR57_CURVE_SOURCE case=$case class=$class sha256=$(sha256sum "$source" | cut -d' ' -f1)"
+            fi
+            i=0
+            for mode in control candidate candidate control; do
+              enabled=0
+              if [[ "$mode" == candidate ]]; then enabled=1; fi
+              out="artifacts/composed-curve/$case-$i"
+              mkdir -p "$out"
+              echo "PR57_CURVE_CASE case=$case class=$class mode=$mode index=$i simulatedSeconds=$horizon cadence=Advance2"
+              PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_GRID_DIAG=1 \
+              PR57_SITE_OWNER_ROSTER="$enabled" PR57_BUILDING_WORK_ACCESS="$enabled" \
+              PR57_STRANDED_GRAPH=0 PR57_SHARED_NODE_GRID=0 PR57_ENTRY_SWEEP_FILTER=0 \
+              PR57_DYNAMIC_BVH=0 PR57_PARALLEL_NEEDS=0 PR57_STAFF_PHASE_FUSION=0 \
+              PR57_UTILITY_REPLAY=0 PR57_POLLUTION_SIMD=0 PR57_PARALLEL_POLLUTION=0 \
+              PR57_CONSTRUCTION_WAIT_AGENDA=0 PR57_DISPATCH_SHIPMENT_LOOKUP=0 \
+              PR57_ROUTE_TREE=0 PR57_ORDER_SHIPMENT_INDEX=0 PR57_MAINTENANCE_SCHEDULE=0 \
+              PR57_SOURCE_DISTANCE_CACHE=0 PR57_WORK_ACCESS_INDEX=0 PR57_PEDESTRIAN_GRID=0 \
+              PR57_LIVING_ROSTER=0 PR57_CITIZEN_AGENDA=0 \
+              PR57_SAVE_CAPTURE_DIR="$PWD/$out" \
+                timeout 180s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- "${args[@]}" | tee "$out.log"
+              i=$((i+1))
+            done
+          done
+      - name: Verify all checkpoints and summarize measured scale curve
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import pathlib,re
+          root=pathlib.Path('artifacts/composed-curve')
+          cases=(('grid2',1200,4,'ARTIFICIAL'),('grid6',1200,4,'ARTIFICIAL'),
+                 ('grid12',1200,4,'ARTIFICIAL'),('grid18',1200,4,'ARTIFICIAL'),
+                 ('works4h',14400,4,'REAL'),('real121',3600,2,'REAL'),
+                 ('cycle',1800,2,'REAL'))
+          for case,seconds,windows,classification in cases:
+              data=[]
+              for i in range(4):
+                  log=(root/f'{case}-{i}.log').read_text()
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,i,'invariants/save')
+                  assert 'PR57_SITE_OWNER_ROSTER active=True' not in log if i in (0,3) else True
+                  assert 'PR57_BUILDING_WORK_ACCESS active=True' not in log if i in (0,3) else True
+                  if i in (1,2) and case in ('works4h','real121','grid18'):
+                      assert 'PR57_SITE_OWNER_ROSTER used=True' in log,(case,i,'roster path not used')
+                  if i in (1,2) and case=='works4h':
+                      assert 'PR57_BUILDING_WORK_ACCESS built=True' in log,(case,i,'access path not used')
+                  rows=[s for s in log.splitlines() if s.startswith('WINDOW ')]
+                  assert len(rows)==windows,(case,i,'window count',len(rows))
+                  def metric(row,key):
+                      m=re.search(r'\b'+re.escape(key)+r'=([0-9.]+)',row)
+                      assert m,(case,i,key,row)
+                      return float(m.group(1))
+                  stats={k:sum(metric(row,k) for row in rows) for k in ('wall','cpu','allocMB')}
+                  stats.update({k:metric(rows[-1],k) for k in ('pop','alive','openWorks')})
+                  data.append(stats)
+                  for n in range(windows+1):
+                      path=root/f'{case}-{i}'/f'checkpoint-{n}.json'
+                      reference=root/f'{case}-0'/f'checkpoint-{n}.json'
+                      assert path.is_file() and path.read_bytes()==reference.read_bytes(),(case,i,n,'causal divergence')
+              gain=lambda a,b,key:round(100*(data[a][key]-data[b][key])/data[a][key],2)
+              print('PR57_COMPOSED_CURVE_RESULT',case,'classification',classification,
+                    'horizonSeconds',seconds,'data',data,
+                    'wallGainAB',[gain(0,1,'wall'),gain(3,2,'wall')],
+                    'cpuGainAB',[gain(0,1,'cpu'),gain(3,2,'cpu')],
+                    'allocGainAB',[gain(0,1,'allocMB'),gain(3,2,'allocMB')],
+                    'candidateThroughput',[round(seconds/data[i]['wall'],2) for i in (1,2)],
+                    'checkpointPairs',3*(windows+1),'identical',True)
+          PY
+      - name: Profile residual phase cost separately from wall A/B
+        shell: bash
+        run: |
+          set -euo pipefail
+          for case in real121 grid18; do
+            if [[ "$case" == real121 ]]; then
+              source="$(find artifacts/real -type f -path '*/pr57-jobs-20/checkpoint-11.json' -print -quit)"
+              args=(profile cycle --seed=42 --warmup=0 --days=1 --window=3600 --cap=300 --resume="$source")
+            else
+              source="artifacts/grid/grid18-0/checkpoint-1.json"
+              args=(profile grid --seed=42 --warmup=0 --days=1 --window=300 --cap=300 --resume="$source")
+            fi
+            PR57_HOST_QUANTUM=1 PR57_SITE_OWNER_ROSTER=1 PR57_BUILDING_WORK_ACCESS=1 \
+            PR57_STRANDED_GRAPH=0 PR57_SHARED_NODE_GRID=0 PR57_ENTRY_SWEEP_FILTER=0 \
+            PR57_DYNAMIC_BVH=0 PR57_PARALLEL_NEEDS=0 PR57_STAFF_PHASE_FUSION=0 \
+            PR57_UTILITY_REPLAY=0 PR57_POLLUTION_SIMD=0 PR57_PARALLEL_POLLUTION=0 \
+            PR57_CONSTRUCTION_WAIT_AGENDA=0 PR57_DISPATCH_SHIPMENT_LOOKUP=0 \
+            PR57_ROUTE_TREE=0 PR57_ORDER_SHIPMENT_INDEX=0 PR57_MAINTENANCE_SCHEDULE=0 \
+            PR57_SOURCE_DISTANCE_CACHE=0 PR57_WORK_ACCESS_INDEX=0 PR57_PEDESTRIAN_GRID=0 \
+            PR57_LIVING_ROSTER=0 PR57_CITIZEN_AGENDA=0 \
+              timeout 180s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- "${args[@]}" \
+              | tee "artifacts/composed-curve/$case-profile.log"
+          done
+          python3 - <<'PY'
+          import pathlib
+          for case in ('real121','grid18'):
+              s=(pathlib.Path('artifacts/composed-curve')/f'{case}-profile.log').read_text()
+              assert 'INVARIANTS OK' in s and 'SAVE ' in s,(case,'profile invariants')
+              for line in s.splitlines():
+                  if line.startswith(('STEP_PROFILE','  STEP_PHASE','VEHICLE_PROFILE','  VEHICLE_DETAIL')):
+                      print('PR57_RESIDUAL',case,line)
+          PY
+      - name: Preserve raw A/B, profiles and full checkpoint saves
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-composed-curve
+          path: artifacts/composed-curve/**
+          retention-days: 14

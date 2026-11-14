@@ -1,0 +1,157 @@
+name: 'PR57 #465 authentic REAL midnight history and save/load census'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-real-midnight-history-465.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  midnight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build and test unmodified simulation
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic 20h REAL congestion checkpoint from #439
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-nonvehicle-439
+          run-id: 41037419970
+          github-token: ${{ github.token }}
+          path: artifacts/input439
+      - name: Replay authentic 20h to 23h59m58s, midnight and 00h00m02s in six fresh processes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY_REPLAY'
+          import hashlib, json, os, subprocess
+          from pathlib import Path
+          root=Path('artifacts/midnight-465')
+          root.mkdir(parents=True,exist_ok=True)
+          original=Path('artifacts/input439/base/checkpoint-10800.json')
+          assert original.is_file(), 'missing authentic #439 checkpoint'
+          raw=original.read_bytes()
+          assert hashlib.sha256(raw).hexdigest()=='e92293faf61a6ea2aab7dd0fdac83c14bd4668f611a126c701dc6705587bb9fa'
+          state=json.loads(raw)
+          assert state['Now']=='2026-01-07T20:00:00'
+          assert state['NextDaily']=='2026-01-08T00:00:00'
+          assert sum(bool(c['Alive']) for c in state['Citizens'])==121
+          assert len(state['Vehicles'])==98
+          (root/'20h.json').write_bytes(raw)
+          summary={}
+          for arm in ('A','B'):
+              source=root/'20h.json'
+              for stage,seconds in (('pre',14398),('mid',2),('post',2)):
+                  dest=root/f'{arm}-{stage}'
+                  dest.mkdir(parents=True,exist_ok=True)
+                  env=os.environ.copy()
+                  env.update(PR57_HOST_QUANTUM='1',PR57_AB_CHECKPOINT='1',
+                             PR57_GRID_DIAG='0',PR57_SAVE_CAPTURE_DIR=str(dest.resolve()),
+                             PR57_270_MANOEUVRE_SCRATCH='0',
+                             PR57_272_PENETRATION_MEMO='0',
+                             PR57_PENETRATION_STACK_AXES='0')
+                  cmd=['dotnet','run','--no-build','-c','Release',
+                       '--project','src/IndexCities.Headless/IndexCities.Headless.csproj',
+                       '--','scale','cycle','--seed=42','--warmup=0',
+                       '--days=1',f'--window={seconds}','--cap=600',
+                       f'--resume={source.resolve()}']
+                  with (dest/'full.log').open('w') as log:
+                      subprocess.run(cmd,env=env,stdout=log,stderr=subprocess.STDOUT,
+                                     check=True,timeout=360)
+                  output=(dest/'full.log').read_text()
+                  assert 'INVARIANTS OK' in output and 'SAVE ' in output, (arm,stage,output[-2000:])
+                  assert (dest/'checkpoint-0.json').read_bytes()==source.read_bytes(), (arm,stage,'resume mismatch')
+                  after=(dest/'checkpoint-1.json').read_bytes()
+                  summary[f'{arm}-{stage}']={
+                      'seconds':seconds,'advance2':seconds//2,
+                      'inputSha256':hashlib.sha256(source.read_bytes()).hexdigest(),
+                      'finalSha256':hashlib.sha256(after).hexdigest(),
+                      'windowLines':[s for s in output.splitlines() if s.startswith('WINDOW ')],
+                  }
+                  assert len(summary[f'{arm}-{stage}']['windowLines'])==1
+                  source=dest/'checkpoint-1.json'
+          (root/'replay-summary.json').write_text(json.dumps(summary,indent=2,sort_keys=True))
+          print('PR57_465_REPLAY '+json.dumps(summary,sort_keys=True))
+          PY_REPLAY
+          python3 scripts/pr57-465-midnight-history-audit.py artifacts/midnight-465 | tee artifacts/midnight-465/audit.log
+      - name: Build independent save/load timing probe without modifying simulation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/midnight-465/saveprobe
+          cat > artifacts/midnight-465/saveprobe/saveprobe.csproj <<'XML'
+          <Project Sdk="Microsoft.NET.Sdk">
+            <PropertyGroup>
+              <OutputType>Exe</OutputType>
+              <TargetFramework>net8.0</TargetFramework>
+              <ImplicitUsings>enable</ImplicitUsings>
+              <Nullable>enable</Nullable>
+            </PropertyGroup>
+            <ItemGroup>
+              <ProjectReference Include="../../../src/IndexCities.Simulation/IndexCities.Simulation.csproj" />
+            </ItemGroup>
+          </Project>
+          XML
+          cat > artifacts/midnight-465/saveprobe/Program.cs <<'CS'
+          using System.Diagnostics;
+          using System.Text;
+          using System.Text.Json;
+          using IndexCities.Simulation;
+
+          if (args.Length != 2) throw new ArgumentException("label path");
+          var label = args[0];
+          var source = File.ReadAllText(args[1]);
+          for (var i = 0; i < 5; i++)
+          {
+              var beforeCpu = Process.GetCurrentProcess().TotalProcessorTime;
+              var beforeBytes = GC.GetTotalAllocatedBytes();
+              var watch = Stopwatch.StartNew();
+              var sim = CitySimulation.FromJson(source);
+              var loadMs = watch.Elapsed.TotalMilliseconds;
+              watch.Restart();
+              var serialized = sim.SaveToJson();
+              var saveMs = watch.Elapsed.TotalMilliseconds;
+              if (serialized != source) throw new InvalidDataException("lossless roundtrip mismatch");
+              Console.WriteLine("PR57_465_SAVE_PROBE " + JsonSerializer.Serialize(new {
+                  label, iteration=i, bytes=Encoding.UTF8.GetByteCount(source),
+                  loadMs, saveMs,
+                  cpuMs=(Process.GetCurrentProcess().TotalProcessorTime-beforeCpu).TotalMilliseconds,
+                  allocatedBytes=GC.GetTotalAllocatedBytes()-beforeBytes,
+                  exactRoundtrip=true
+              }));
+          }
+          CS
+          dotnet build artifacts/midnight-465/saveprobe/saveprobe.csproj -c Release
+          for file in 20h.json A-pre/checkpoint-1.json A-mid/checkpoint-1.json A-post/checkpoint-1.json; do
+            label=${file//\//_}
+            dotnet run --no-build -c Release --project artifacts/midnight-465/saveprobe/saveprobe.csproj -- "$label" "artifacts/midnight-465/$file"
+          done | tee artifacts/midnight-465/saveprobe-results.log
+      - name: Preserve original saves, raw logs, exact delta audit and timing samples
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-midnight-history-465
+          path: artifacts/midnight-465
+          retention-days: 14
+          if-no-files-found: warn

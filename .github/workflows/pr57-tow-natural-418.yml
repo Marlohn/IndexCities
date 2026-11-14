@@ -1,0 +1,39 @@
+name: 'PR57 #418 parked post-repair tow canonical dispatch witness'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-tow-natural-418.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  tow-postrepair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Inject test only in disposable checkout
+        run: python3 scripts/pr57-418-inject.py
+      - name: Run focused public Advance(2) witness and all regression tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/tow418
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release \
+            --filter 'FullyQualifiedName~Pr57_418_postrepair_parked_car_calls_tow_and_consumes_nonlocal_push' \
+            --logger 'console;verbosity=detailed' 2>&1 | tee artifacts/tow418/witness.log
+          grep -q 'PR57_418_WITNESS ' artifacts/tow418/witness.log
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release \
+            --logger 'console;verbosity=normal' 2>&1 | tee artifacts/tow418/all-tests.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integrated-scale-pr57-tow-postrepair-418
+          path: artifacts/tow418
+          retention-days: 14

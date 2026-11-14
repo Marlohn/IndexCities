@@ -1,0 +1,103 @@
+name: 'PR57 #310 cross-phase physical fanout (observational)'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths:
+      - .github/workflows/pr57-phase-fanout-310.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  phase-fanout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build existing integrated replay and regression tests
+        run: |
+          set -euo pipefail
+          dotnet build scripts/pr57-economy-review-294/Pr57EconomyReview294.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic REAL and GRID checkpoints from #259
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Fresh-process ABBA, Advance(2), exact checkpoint parity
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/fanout-310
+          for case in real14hREAL gridARTIFICIAL; do
+            input="artifacts/input/${case}-control/checkpoint-0.json"
+            test -s "$input"
+            calls=100
+            start=76
+            if [[ "$case" == gridARTIFICIAL ]]; then calls=50; start=26; fi
+            for arm in control1 probe1 probe2 control2; do
+              mode=control
+              if [[ "$arm" == probe* ]]; then mode=probe; fi
+              output="artifacts/fanout-310/${case}-${arm}"
+              mkdir -p "$output"
+              if [[ "$mode" == probe ]]; then
+                PR57_310_PHASE_FANOUT=1 PR57_310_START="$start" \
+                  PR57_306_BODY_SHADOW=1 dotnet run --no-build -c Release \
+                  --project scripts/pr57-economy-review-294/Pr57EconomyReview294.csproj -- \
+                  "$input" "$case" "$mode" "$calls" "$output" \
+                  > "artifacts/fanout-310/${case}-${arm}.log" 2>&1
+              else
+                dotnet run --no-build -c Release \
+                  --project scripts/pr57-economy-review-294/Pr57EconomyReview294.csproj -- \
+                  "$input" "$case" "$mode" "$calls" "$output" \
+                  > "artifacts/fanout-310/${case}-${arm}.log" 2>&1
+              fi
+            done
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, re
+          root=Path("artifacts/fanout-310")
+          pairs=0
+          for case in ("real14hREAL","gridARTIFICIAL"):
+              for suffix in ("1","2"):
+                  a=root/f"{case}-control{suffix}"
+                  b=root/f"{case}-probe{suffix}"
+                  names={p.name for p in a.glob("checkpoint-*.json")}
+                  assert len(names)>=3,(case,suffix,names)
+                  assert names=={p.name for p in b.glob("checkpoint-*.json")}
+                  for name in sorted(names):
+                      aa=(a/name).read_bytes()
+                      bb=(b/name).read_bytes()
+                      assert aa==bb,(case,suffix,name)
+                      pairs+=1
+                  log=(root/f"{case}-probe{suffix}.log").read_text()
+                  phase=re.findall(r"^PR57_310_PHASE .*",log,re.M)
+                  assert len(phase)==(25 if case=="real14hREAL" else 25)*3,(case,suffix,len(phase))
+                  print(f"PR57_310_VERIFIED case={case} arm={suffix} checkpoints={len(names)} phaseRows={len(phase)} sha256Final={hashlib.sha256((b/f'checkpoint-{100 if case==\"real14hREAL\" else 50}.json').read_bytes()).hexdigest()}")
+          print(f"PR57_310_CHECKPOINT_PAIRS {pairs}")
+          PY
+      - name: Preserve raw logs and full checkpoints even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-phase-fanout-310
+          path: artifacts/fanout-310/**
+          retention-days: 14

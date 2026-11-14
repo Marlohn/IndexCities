@@ -1,0 +1,126 @@
+name: PR57 sampled persisted phase effects at Advance(2)
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-phase-effects.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  phase-effects:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build and regression tests
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore real economic saves
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-growth
+          run-id: 40250545171
+          github-token: ${{ github.token }}
+          path: artifacts/works
+      - name: Restore congested real save
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-legal-workplaces-8d
+          run-id: 40169101306
+          github-token: ${{ github.token }}
+          path: artifacts/real
+      - name: Restore artificial load
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-host-scale-curve
+          run-id: 40258405557
+          github-token: ${{ github.token }}
+          path: artifacts/grid
+      - name: Separate unprofiled wall, phase profile and intrusive net-effect census
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/effects
+          works="$(find artifacts/works -type f -path '*/growth/checkpoint-0.json' -print -quit)"
+          real="$(find artifacts/real -type f -path '*/pr57-jobs-20/checkpoint-11.json' -print -quit)"
+          grid="artifacts/grid/grid18-0/checkpoint-1.json"
+          test -s "$works"; test -s "$real"; test -s "$grid"
+          for case in works real121 grid18; do
+            source="$works"; fixture=cycle; window=3600; every=900; class=REAL
+            if [[ "$case" == real121 ]]; then source="$real";window=1800;every=300; fi
+            if [[ "$case" == grid18 ]]; then source="$grid";fixture=grid;window=300;every=75;class=ARTIFICIAL; fi
+            echo "PR57_EFFECT_CASE case=$case class=$class sourceSha256=$(sha256sum "$source" | cut -d' ' -f1) window=$window windows=4 cadence=Advance2"
+            for mode in plain profiled effect; do
+              command=scale; sampling=""
+              if [[ "$mode" != plain ]]; then command=profile; fi
+              if [[ "$mode" == effect ]]; then sampling="$every"; fi
+              output="artifacts/effects/$case-$mode"
+              mkdir -p "$output"
+              PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="$PWD/$output" \
+              PR57_SITE_OWNER_ROSTER=1 PR57_BUILDING_WORK_ACCESS=1 \
+              PR57_IDLE_SCAN_PROBE=0 PR57_HOT_TIMING=0 PR57_PHASE_EFFECT_EVERY="$sampling" \
+                timeout 240s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                  "$command" "$fixture" --seed=42 --warmup=0 --days=4 --window="$window" --cap=200 --resume="$source" \
+                  | tee "$output.log"
+            done
+          done
+      - name: Verify complete causal checkpoints and phase census
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import pathlib,re
+          root=pathlib.Path("artifacts/effects")
+          for case,every,window,kind in (("works",900,3600,"REAL"),("real121",300,1800,"REAL"),("grid18",75,300,"ARTIFICIAL")):
+              logs={mode:(root/f"{case}-{mode}.log").read_text() for mode in ("plain","profiled","effect")}
+              saves={}
+              for mode,log in logs.items():
+                  assert "INVARIANTS OK" in log and "SAVE " in log,(case,mode,"save/invariants")
+                  rows=[line for line in log.splitlines() if line.startswith("WINDOW ")]
+                  assert len(rows)==4,(case,mode,"window count",len(rows))
+                  paths=[root/f"{case}-{mode}"/f"checkpoint-{i}.json" for i in range(5)]
+                  assert all(p.is_file() for p in paths),(case,mode,"missing checkpoint")
+                  saves[mode]=[p.read_bytes() for p in paths]
+                  if mode=="plain":
+                      wall=sum(float(re.search(r"\bwall=([0-9.]+)s",line).group(1)) for line in rows)
+                      cpu=sum(float(re.search(r"\bcpu=([0-9.]+)s",line).group(1)) for line in rows)
+                      alloc=sum(float(re.search(r"\ballocMB=([0-9.]+)",line).group(1)) for line in rows)
+                      print(f"PR57_EFFECT_WALL case={case} class={kind} simSeconds={4*window} wall={wall:.2f}s cpu={cpu:.2f}s allocMB={alloc:.1f} throughput={4*window/wall:.2f}sps")
+              assert saves["plain"]==saves["profiled"]==saves["effect"],(case,"causal checkpoint divergence")
+              assert "PR57_PHASE_EFFECT_SUMMARY" not in logs["plain"] and "PR57_PHASE_EFFECT_SUMMARY" not in logs["profiled"],(case,"probe leakage")
+              expected=(4*window//2-1)//every+1
+              summary=re.search(r"PR57_PHASE_EFFECT_SUMMARY samples=(\d+) intervalSteps=(\d+) observedSteps=(\d+)",logs["effect"])
+              assert summary and tuple(map(int,summary.groups()))==(expected,every,4*window//2),(case,"sample count",summary.groups() if summary else None)
+              rows=[line for line in logs["effect"].splitlines() if line.startswith("PR57_PHASE_EFFECT name=")]
+              assert len(rows)==13,(case,"phase rows",len(rows))
+              for row in rows:
+                  m=re.search(r" samples=(\d+) changed=(\d+) unchanged=(\d+)",row)
+                  assert m and int(m.group(1))==expected and int(m.group(2))+int(m.group(3))==expected,(case,row)
+                  print("PR57_EFFECT_RESULT",case,row)
+              assert all(" nestedFields=" in row for row in rows),(case,"nested census absent")
+              if case=="real121":
+                  vehicles=next(x for x in rows if "name=vehicles " in x)
+                  assert re.search(r"Citizens\.[A-Za-z_]+:[1-9][0-9]*",vehicles),(case,"missing citizen field effect",vehicles)
+              if case=="works":
+                  for phase in ("construction","construction-dispatch"):
+                      row=next(x for x in rows if f"name={phase} " in x)
+                      assert re.search(r"Projects\.[A-Za-z_]+:[1-9][0-9]*",row),(case,phase,"missing project field effect",row)
+              economy=next(x for x in rows if "name=economy-review " in x)
+              assert int(re.search(r" changed=(\d+)",economy).group(1))>0,(case,"clock not observed")
+              print("PR57_EFFECT_PARITY",case,"completeCheckpoints=5 across=3 processes")
+          PY
+      - name: Preserve logs and full saves
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-phase-effects
+          path: artifacts/effects/**
+          retention-days: 14

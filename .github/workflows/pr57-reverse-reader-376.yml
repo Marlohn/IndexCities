@@ -1,0 +1,138 @@
+name: 'PR57 #376 REAL reverse-reader subscription shadow'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [scripts/pr57-376-inject.py, .github/workflows/pr57-reverse-reader-376.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  real-shadow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+      PR57_VEHICLE_COST_PROBE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Inject observational hooks only in disposable checkout
+        run: |
+          set -euo pipefail
+          python3 scripts/pr57-367-inject.py
+          python3 scripts/pr57-368-inject.py
+          python3 scripts/pr57-369-inject.py
+          python3 scripts/pr57-370-inject.py
+          python3 scripts/pr57-372-inject.py
+          python3 scripts/pr57-374-inject.py
+          python3 scripts/pr57-376-inject.py
+      - name: Build and test
+        run: |
+          set -euo pipefail
+          dotnet build scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release
+      - name: Restore authentic REAL 14h checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Fresh-process control and shadow with exact Advance(2)
+        shell: bash
+        run: |
+          set -euo pipefail
+          input="artifacts/input/real14hREAL-control/checkpoint-0.json"
+          test -s "$input"
+          for arm in control shadow; do
+            mkdir -p "artifacts/reverse376/$arm"
+            enabled=0
+            if [[ "$arm" == shadow ]]; then enabled=1; fi
+            PR57_367_DIRECT_WRITERS=1 PR57_368_CANONICAL_GUARD=1 \
+            PR57_369_INPLACE_WRITERS=1 PR57_370_NONLOCAL_WRITERS=1 \
+            PR57_372_WRITER_FRONTIER=1 PR57_372_PUBLISH=0 \
+            PR57_374_NEXT_SLICE_FANOUT=1 PR57_376_REVERSE_SHADOW="$enabled" \
+              dotnet run --no-build -c Release \
+                --project scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj \
+                -- "$input" "artifacts/reverse376/$arm" \
+                > "artifacts/reverse376/$arm/full.log"
+            grep -E '^PR57_(337_(HOUR|FINAL)|367_SUMMARY|369_SUMMARY|370_SUMMARY|372_SUMMARY|374_SUMMARY|376_SUMMARY) ' \
+              "artifacts/reverse376/$arm/full.log" \
+              > "artifacts/reverse376/$arm/census.log"
+            test "$(grep -c '^PR57_337_HOUR ' "artifacts/reverse376/$arm/census.log")" -eq 6
+            grep -q 'parity=IDENTICAL' "artifacts/reverse376/$arm/census.log"
+          done
+          cmp artifacts/reverse376/control/checkpoint-10800.json \
+              artifacts/reverse376/shadow/checkpoint-10800.json
+          sha256sum artifacts/reverse376/{control,shadow}/checkpoint-10800.json \
+            | tee artifacts/reverse376/checkpoints.sha256
+          python3 - <<'PY' | tee artifacts/reverse376/summary.txt
+          from pathlib import Path
+          root=Path("artifacts/reverse376")
+          def rows(arm,prefix):
+              return [dict(x.split("=",1) for x in line.split()[1:] if "=" in x)
+                      for line in (root/arm/"census.log").read_text().splitlines()
+                      if line.startswith(prefix+" ")]
+          def one(arm,prefix):
+              a=rows(arm,prefix)
+              assert len(a)==1,(arm,prefix,len(a))
+              return a[0]
+          a=one("control","PR57_372_SUMMARY")
+          b=one("shadow","PR57_372_SUMMARY")
+          assert int(a["events"])==int(b["events"])==1920
+          assert one("control","PR57_337_FINAL")["parity"]=="IDENTICAL"
+          assert one("shadow","PR57_337_FINAL")["parity"]=="IDENTICAL"
+          assert int(one("control","PR57_367_SUMMARY")["writes"])==1852
+          assert int(one("shadow","PR57_367_SUMMARY")["writes"])==1852
+          assert int(one("control","PR57_369_SUMMARY")["countChanges"])==17
+          assert int(one("shadow","PR57_369_SUMMARY")["countChanges"])==17
+          assert int(one("control","PR57_370_SUMMARY")["refContentDifferent"])==51
+          assert int(one("shadow","PR57_370_SUMMARY")["refContentDifferent"])==51
+          a374=one("control","PR57_374_SUMMARY")
+          b374=one("shadow","PR57_374_SUMMARY")
+          for key in ("events","physicalSlices","dirtySlices","dirtySliceIdPairs",
+                      "dirtyAdvances","dirtyAdvanceIdPairs","externalEvents",
+                      "nextSliceDirtyWindows","nextSliceDirtyCandidatePairs",
+                      "nextSliceReadCandidatePairs","nextSliceReadPairs",
+                      "nextSliceReadCalls","nextSliceTrue","nextSliceFalse"):
+              assert a374[key]==b374[key],(key,a374[key],b374[key])
+          assert not rows("control","PR57_376_SUMMARY")
+          s=one("shadow","PR57_376_SUMMARY")
+          assert int(s["physicalSlices"])==600
+          assert int(s["readCalls"])>0
+          assert 0<=int(s["uniqueReadPairs"])<=int(s["readCalls"])
+          assert 0<=int(s["uniqueWriters"])<=int(s["writerEvents"])<=1920
+          assert 0<=int(s["writersWithReaders"])<=int(s["uniqueWriters"])
+          assert 0<=int(s["maxReadersPerWriter"])<=98
+          assert int(s["invalidatedReaderPairs"])<=int(s["uniqueWriters"])*98
+          assert s["noCausalClosure"]=="True" and s["noSkippedSlices"]=="True"
+          print("PR57_376_PARTIAL",s)
+          for arm in ("control","shadow"):
+              h=rows(arm,"PR57_337_HOUR")
+              assert len(h)==6 and [int(x["hour"]) for x in h]==list(range(1,7))
+              print("PR57_376_ARM",arm,
+                    "wallMs",round(sum(float(x["wallMs"]) for x in h),3),
+                    "allocatedBytes",sum(int(x["totalAllocatedBytes"]) for x in h))
+          print("PR57_376_RESULT",s)
+          print("PR57_376_PARITY checkpointIdentical=True countersIdentical=True")
+          PY
+      - name: Upload original logs and checkpoints even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-reverse-reader-376
+          path: artifacts/reverse376/
+          if-no-files-found: warn
