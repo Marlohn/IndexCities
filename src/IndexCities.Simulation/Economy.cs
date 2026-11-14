@@ -178,11 +178,10 @@ public sealed partial class CitySimulation
         // keeping building order and citizen order within each building.
         var staff=StaffByWorkplace();
         foreach(var b in State.Buildings.Where(b=>b.Completed&&!b.Removed)){
-            if(Pr57StaffPhaseFusionEnabled)
+            if(Pr57StaffPhaseFusionEnabled && _activeById.ContainsKey(b.Id))
             {
-                // WorkerPresentAt was evaluated after movement, before this
-                // immediately adjacent business phase; no citizen mutation
-                // occurs in between. Preserve original building/citizen order.
+                // Only infrastructure workplaces were evaluated by WorkerPresentAt.
+                // All other businesses must retain the original wage calculation.
                 if(_pr57PresentStaff.TryGetValue(b.Id,out var presentWorkers))
                     foreach(var c in presentWorkers){c.AddWorkSecondsToday(dt);AccrueWage(c,dt);}
             }
