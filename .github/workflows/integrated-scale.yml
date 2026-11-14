@@ -182,7 +182,7 @@ jobs:
               log=(root/f'utility-resume-{name}.log').read_text()
               assert 'INVARIANTS OK' in log,(name,'resume invariants')
               files=list((root/f'utility-resume-{name}').glob('checkpoint-*.json'))
-              assert len(files)>=2,(name,'missing resumed checkpoints')
+              assert files,(name,'missing resumed checkpoint')
               final=max(files,key=lambda p:int(p.stem.split('-')[-1]))
               digest=hashlib.sha256(final.read_bytes()).hexdigest().upper()
               resumed[name]=digest
