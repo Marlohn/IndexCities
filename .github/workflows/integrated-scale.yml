@@ -94,7 +94,7 @@ jobs:
               if int(matches[0][2]) == 0 or int(matches[0][3]) == 0:
                   raise SystemExit(f'PR57_BVH_INACTIVE_CITY mode={mode}')
               hashes.append(matches[0][1].upper())
-              census = re.findall(r'PR57_BVH_CENSUS queries=(\\d+) roster=(\\d+) fullScanCandidates=(\\d+) actualCandidates=(\\d+) nodesVisited=(\\d+) refreshes=(\\d+) changedLeaves=(\\d+) vehicleUpdates=(\\d+)', log)
+              census = re.findall(r'PR57_BVH_CENSUS queries=(\d+) roster=(\d+) fullScanCandidates=(\d+) actualCandidates=(\d+) nodesVisited=(\d+) refreshes=(\d+) changedLeaves=(\d+) vehicleUpdates=(\d+)', log)
               if mode == '1':
                   if not census:
                       raise SystemExit('PR57_BVH_CENSUS_MISSING: fewer than 100 queries or BVH not exercised')
