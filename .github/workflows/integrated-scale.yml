@@ -180,7 +180,9 @@ jobs:
           resumed={}
           for name in ('A0','B0'):
               log=(root/f'utility-resume-{name}.log').read_text()
-              assert 'INVARIANTS OK' in log,(name,'resume invariants')
+              assert 'INVARIANTS OK' in log and 'SUMMARY windows=1' in log,(name,'resume incomplete')
+              resume_windows=[line for line in log.splitlines() if line.startswith('WINDOW ')]
+              assert len(resume_windows)==1 and resume_windows[0].split()[1]=='1',(name,'resume did not advance exactly one integrated window',resume_windows)
               files=list((root/f'utility-resume-{name}').glob('checkpoint-*.json'))
               assert files,(name,'missing resumed checkpoint')
               final=max(files,key=lambda p:int(p.stem.split('-')[-1]))
