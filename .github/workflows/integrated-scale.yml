@@ -87,7 +87,7 @@ jobs:
           for mode in ('0', '1'):
               log = pathlib.Path(f'artifacts/bvh-ab/mode-{mode}.log').read_text()
               activation = log.count('PR57_DYNAMIC_BVH active=True')
-              assert activation == (1 if mode == '1' else 0), ('BVH_ACTIVATION_MISMATCH', mode, activation)
+              assert activation == (2 if mode == '1' else 0), ('BVH_ACTIVATION_MISMATCH', mode, activation)
               matches = re.findall(r'PR57_DYNAMIC_BVH_JSON mode=([01]) sha256=([A-Fa-f0-9]{64}) vehicles=([0-9]+) alive=([0-9]+)', log)
               if len(matches) != 1 or matches[0][0] != mode:
                   raise SystemExit(f'PR57_BVH_MARKER_INVALID mode={mode} matches={matches}')
