@@ -41,13 +41,25 @@ public sealed partial class CitySimulation
             if (order.Length > 0) Build(order, 0, order.Length, -1, 0);
         }
 
-        public bool Matches(List<Vehicle> vehicles)
+        // Validate roster identity and observe external position mutations in one
+        // ordered pass. A changed roster triggers a full rebuild before any BVH
+        // reader; never reuse leaves indexed by stale vehicle IDs.
+        public bool TryRefresh(List<Vehicle> vehicles)
         {
             if (!ReferenceEquals(_vehicles, vehicles) || _leaves.Length != vehicles.Count)
                 return false;
+            _changedLeaves.Clear();
             for (var i = 0; i < vehicles.Count; i++)
+            {
                 if (!_indexById.TryGetValue(vehicles[i].Id, out var index) || index != i)
                     return false;
+                var leaf = _nodes[_leaves[i]];
+                var position = vehicles[i].Position;
+                if (leaf.MinX != position.X || leaf.MaxX != position.X
+                    || leaf.MinZ != position.Z || leaf.MaxZ != position.Z)
+                    _changedLeaves.Add(_leaves[i]);
+            }
+            RefitChanged();
             return true;
         }
 
@@ -98,20 +110,8 @@ public sealed partial class CitySimulation
 
         // Exact invalidation within a public Advance: catches positions changed
         // by towing, operations and lane-entry frame transitions between slices.
-        public void Refresh()
+        void RefitChanged()
         {
-            // Always observe every vehicle: callers can mutate positions between
-            // slices without notifying this experimental index.
-            _changedLeaves.Clear();
-            for (var i = 0; i < _leaves.Length; i++)
-            {
-                var leaf = _nodes[_leaves[i]];
-                var position = _vehicles[i].Position;
-                if (leaf.MinX != position.X || leaf.MaxX != position.X
-                    || leaf.MinZ != position.Z || leaf.MaxZ != position.Z)
-                    _changedLeaves.Add(_leaves[i]);
-            }
-
             // Sparse motion: update only affected ancestors. Dense motion:
             // refit each internal node once, bottom-up, instead of O(V log V)
             // repeated ancestor walks. Build assigns parents before children.
