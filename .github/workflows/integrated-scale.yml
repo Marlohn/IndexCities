@@ -163,7 +163,12 @@ jobs:
                   # an idle second window and falsely suggest recurring work.
                   times=[int(re.search(r'\bat=(\d+)',s)[1]) for s in stats]
                   assert times==sorted(times),(name,'nonmonotonic sample times')
-                  for window,start,end in ((1,0,120),(2,120,240)):
+                  # Counters use absolute simulation time: the saved-cycle fixture
+                  # begins near 54,000s, not at zero. Anchor to the final
+                  # three 120s boundaries to avoid reporting false zero work.
+                  assert len(times)>=3 and times[-1]-times[-3]==240,(name,'counter boundaries',times[-3:])
+                  origin=times[-3]
+                  for window,start,end in ((1,origin,origin+120),(2,origin+120,origin+240)):
                       samples=[(t,h,m) for t,h,m in zip(times,hits,misses) if start<=t<=end]
                       assert samples and samples[-1][0]==end,(name,window,'missing boundary counter',times)
                       before=[(t,h,m) for t,h,m in zip(times,hits,misses) if t<=start]
@@ -188,6 +193,651 @@ jobs:
               final=max(files,key=lambda p:int(p.stem.split('-')[-1]))
               digest=hashlib.sha256(final.read_bytes()).hexdigest().upper()
               resumed[name]=digest
+              if digest!=runs[name][1][2]:
+                  import json
+                  expected=json.loads((root/f'utility-{name}'/'checkpoint-2.json').read_text())
+                  actual=json.loads(final.read_text())
+                  def first_difference(a,b,path='
+          assert resumed['A0']==resumed['B0'],('SAVE_LOAD_REPLAY_DIVERGENCE',resumed)
+          print('PR57_UTILITY_REPLAY_SAVE_LOAD_PARITY modes=2 equal=true')
+          # A replay must not change the construction quote/order trace, even
+          # if later state converges to the same checkpoint JSON.
+          reference=runs['A0'][2]
+          for name in ('B0','B1','A1'):
+              assert runs[name][2]==reference,('HOUSING_DECISION_DIVERGENCE',name,
+                                               reference,runs[name][2])
+          print('PR57_UTILITY_REPLAY_HOUSING_DECISION_PARITY runs=4 equal=true')
+          # Include the initial save and compare both ABBA orders separately:
+          # pooled totals alone can conceal order-dependent regressions.
+          for index in (0,1,2):
+              hashes={name:runs[name][1][index] for name in runs}
+              assert len(set(hashes.values()))==1,('CAUSAL_JSON_DIVERGENCE',index,hashes)
+          for index in (1,2):
+              for key in ('wall','cpu','allocMB'):
+                  baseline=sum(runs[name][0][index][key] for name in ('A0','A1'))
+                  candidate=sum(runs[name][0][index][key] for name in ('B0','B1'))
+                  assert baseline>0,(index,key,baseline)
+                  for pair,control,alternative in (('forward','A0','B0'),('reverse','A1','B1')):
+                      a=runs[control][0][index][key]
+                      b=runs[alternative][0][index][key]
+                      assert a>0,(index,key,pair,a)
+                      print('PR57_UTILITY_REPLAY_PAIR',f'window={index}',key,
+                            f'order={pair}',f'baseline={a:.6f}',f'candidate={b:.6f}',
+                            f'deltaPct={(b/a-1)*100:.3f}')
+                  print('PR57_UTILITY_REPLAY_ABBA',f'window={index}',key,
+                        f'baseline={baseline:.6f}',f'candidate={candidate:.6f}',
+                        f'deltaPct={(candidate/baseline-1)*100:.3f}',
+                        'note=MEASURED_NOT_EXTRAPOLATED')
+          print('PR57_UTILITY_REPLAY_JSON_PARITY initial_and_intermediate_checkpoints=3 equal=true')
+          PY
+      # The original growth artifact has expired; use retained authentic workplace checkpoints.
+      - name: Validate 32 paid housing orders before restoring external saves
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/access-ab
+          for case in cycleLoadA cycleLoadB; do
+            modes=(control candidate)
+            if [[ "$case" == realB || "$case" == liveB || "$case" == cycleLoadB ]]; then modes=(candidate control); fi
+            for mode in "${modes[@]}"; do
+              enabled=0
+              if [[ "$mode" == candidate ]]; then enabled=1; fi
+              output="artifacts/access-ab/$case-$mode"
+              mkdir -p "$output"
+              args=(scale cycle --seed=42 --warmup=0 --days=2 --window=3600 --cap=300)
+              if [[ "$case" == realA || "$case" == realB || "$case" == liveA || "$case" == liveB ]]; then
+                args+=(--resume="$source")
+              elif [[ "$case" == late ]]; then
+                args+=(--resume="$late")
+              elif [[ "$case" == congested ]]; then
+                args=(scale cycle --seed=42 --warmup=0 --days=1 --window=3600 --cap=300 --resume="$congested")
+              elif [[ "$case" == cycleLoadA || "$case" == cycleLoadB ]]; then
+                # Scale probe: 32 real paid housing orders (up from validated 24); normal delivery/crew, no minted population. Fail if any quote/order is rejected.
+                args=(scale cycle --seed=42 --warmup=0 --cycle-bypass=1 --cycle-houses=32 --days=2 --window=3600 --cap=300)
+              elif [[ "$case" == grid ]]; then
+                args=(scale grid --seed=42 --rows=12 --length=600 --warmup=0 --days=1 --window=3600 --cap=300)
+              fi
+              live=0
+              if [[ "$case" == liveA || "$case" == liveB ]]; then live=1; fi
+              housing_frontage=0
+              if [[ "$case" == cycleLoadA || "$case" == cycleLoadB ]]; then housing_frontage=1; fi
+              echo "PR57_ACCESS_AB_RUN case=$case mode=$mode enabled=$enabled liveEdit=$live hostQuantum=2"
+              PR57_CYCLE_SOUTH_HOUSING="$housing_frontage" PR57_CYCLE_SOUTH_EXTENSION="$housing_frontage" \
+              PR57_CYCLE_NORTH_HOUSING="$housing_frontage" \
+              PR57_BUILDING_WORK_ACCESS="$enabled" PR57_GRID_DIAG=1 \
+              PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_ACCESS_LIVE_EDIT="$live" \
+              PR57_DYNAMIC_BVH=0 PR57_PARALLEL_NEEDS=0 PR57_STAFF_PHASE_FUSION=0 \
+              PR57_UTILITY_REPLAY=0 PR57_POLLUTION_SIMD=0 PR57_PARALLEL_POLLUTION=0 \
+              PR57_CONSTRUCTION_WAIT_AGENDA=0 PR57_DISPATCH_SHIPMENT_LOOKUP=0 \
+              PR57_ROUTE_TREE=0 PR57_ORDER_SHIPMENT_INDEX=0 PR57_MAINTENANCE_SCHEDULE=0 \
+              PR57_SOURCE_DISTANCE_CACHE=0 PR57_WORK_ACCESS_INDEX=0 PR57_PEDESTRIAN_GRID=0 \
+              PR57_LIVING_ROSTER=0 PR57_CITIZEN_AGENDA=0 \
+              PR57_SAVE_CAPTURE_DIR="$PWD/$output" \
+                timeout 360s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- "${args[@]}" \
+                | tee "$output.log"
+              # Fail at the first incomplete real workload, before spending the
+              # remaining ABBA budget on a non-representative 32-house run.
+              # Keep the full rejection log produced by QueueCycleHousingProjects.
+              if [[ "$case" == cycleLoadA || "$case" == cycleLoadB ]]; then
+                if ! grep -Eq '^CYCLE_HOUSING requested=32 placed=32 attempted=[0-9]+' "$output.log"; then
+                  echo "PR57_CYCLE_32_INCOMPLETE case=$case mode=$mode"
+                  grep -E '^(CYCLE_HOUSING|PR57_CYCLE_.*ROW|PR57_CYCLE_LOT_REJECT)' "$output.log" || true
+                  exit 1
+                fi
+              fi
+            done
+          done
+      # Independently validate the integrated 32-house ABBA before the external
+      # checkpoint download. An expired artifact must not hide a completed local
+      # causal experiment; the later full suite still checks authentic saves.
+      - name: Validate local 32-house ABBA before external artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib, re
+          root=pathlib.Path('artifacts/access-ab')
+          runs={}
+          for case in ('cycleLoadA','cycleLoadB'):
+              runs[case]={}
+              for mode in ('control','candidate'):
+                  log=(root/f'{case}-{mode}.log').read_text()
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,mode,'invariants/save')
+                  assert f'PR57_BUILDING_WORK_ACCESS active={str(mode=="candidate")}' in log,(case,mode,'flag not honored')
+                  if mode=='candidate':
+                      assert 'PR57_BUILDING_WORK_ACCESS built=True' in log,(case,'candidate index not built')
+                  match=re.search(r'^CYCLE_HOUSING requested=32 placed=(\d+) attempted=(\d+)',log,re.M)
+                  assert match and int(match[1])==32,(case,mode,'incomplete paid houses')
+                  windows=[line for line in log.splitlines() if line.startswith('WINDOW ')]
+                  assert len(windows)==2,(case,mode,'incomplete integrated windows')
+                  def number(line,key):
+                      match=re.search(r'\b'+key+r'=([0-9.]+)',line)
+                      assert match,(case,mode,key,line)
+                      return float(match[1])
+                  assert all(number(w,'alive')>0 and number(w,'openWorks')>0 for w in windows),(case,mode,'extinct or idle construction window')
+                  metrics={key:[number(w,key) for w in windows] for key in ('wall','cpu','allocMB','alive','openWorks')}
+                  work=[line for line in log.splitlines() if line.startswith('PR57_BUILDING_ACCESS_WORK ')]
+                  if mode=='candidate':
+                      assert work,(case,'missing work evidence')
+                      samples={int(number(line,'advances')):line for line in work}
+                      assert 1792 in samples and 3584 in samples,(case,'missing window work boundary')
+                      previous=None
+                      for window,boundary in enumerate((1792,3584),start=1):
+                          line=samples[boundary]
+                          avoided=number(line,'avoidedRows')
+                          assert number(line,'baselineRows')-number(line,'candidateRows')==avoided,(case,boundary,'work conservation')
+                          fields=('queries','baselineRows','avoidedRows','indexedRows','checkedRows')
+                          current={key:number(line,key) for key in fields}
+                          delta={key:current[key]-(previous[key] if previous else 0) for key in fields}
+                          net=delta['avoidedRows']-delta['indexedRows']-delta['checkedRows']
+                          print('PR57_LOCAL_ABBA_WORK',case,'window',window,'advance',boundary,
+                                'netAvoidedRows',int(net),'queries',int(delta['queries']),
+                                'indexedRows',int(delta['indexedRows']),'checkedRows',int(delta['checkedRows']))
+                          assert delta['queries']>0 and delta['baselineRows']>0,(case,window,'idle window')
+                          # A negative net is a quantitative counterexample, not a CI error:
+                          # retain causal checks and complete the ABBA wall/CPU comparison.
+                          print('PR57_LOCAL_ABBA_WORK_SIGN',case,'window',window,
+                                'netPositive',net>0,'netAvoidedRows',int(net))
+                          previous=current
+                  runs[case][mode]=metrics
+              for index in range(3):
+                  control=root/f'{case}-control'/f'checkpoint-{index}.json'
+                  candidate=root/f'{case}-candidate'/f'checkpoint-{index}.json'
+                  assert control.is_file() and candidate.is_file(),(case,index,'missing JSON')
+                  assert control.read_bytes()==candidate.read_bytes(),(case,index,'causal divergence')
+          # ABBA is also a determinism test: reversing the order of two
+          # identical seeded runs must not change any intermediate causal state.
+          # A/B equality alone cannot detect a shared order-dependent failure.
+          for mode in ('control','candidate'):
+              for index in range(3):
+                  first=root/f'cycleLoadA-{mode}'/f'checkpoint-{index}.json'
+                  second=root/f'cycleLoadB-{mode}'/f'checkpoint-{index}.json'
+                  assert first.read_bytes()==second.read_bytes(),(mode,index,'ABBA order-dependent JSON')
+              print('PR57_LOCAL_ABBA_ORDER_PARITY',mode,'checkpoints',3,'equal',True)
+          for case in runs:
+              for window in range(2):
+                  for field in ('alive','openWorks'):
+                      baseline=runs[case]['control'][field][window]
+                      candidate=runs[case]['candidate'][field][window]
+                      assert baseline==candidate,(case,window+1,field,'state divergence')
+                  for metric in ('wall','cpu','allocMB'):
+                      baseline=runs[case]['control'][metric][window]
+                      candidate=runs[case]['candidate'][metric][window]
+                      assert baseline>0,(case,window+1,metric,'invalid baseline')
+                      print('PR57_LOCAL_ABBA_WINDOW',case,'window',window+1,metric,
+                            'control',round(baseline,6),'candidate',round(candidate,6),
+                            'reductionPct',round(100*(baseline-candidate)/baseline,3),
+                            'alive',int(runs[case]['control']['alive'][window]),
+                            'openWorks',int(runs[case]['control']['openWorks'][window]))
+          for metric in ('wall','cpu','allocMB'):
+              baseline=sum(sum(runs[case]['control'][metric]) for case in runs)
+              candidate=sum(sum(runs[case]['candidate'][metric]) for case in runs)
+              assert baseline>0,(metric,'invalid baseline')
+              print('PR57_LOCAL_ABBA_32',metric,'control',round(baseline,6),
+                    'candidate',round(candidate,6),
+                    'reductionPct',round(100*(baseline-candidate)/baseline,3),
+                    'causalJSONMatch',True)
+          PY
+      - name: Restore authentic workplace checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-legal-workplaces-8d
+          run-id: 40169101306
+          github-token: ${{ github.token }}
+          path: artifacts/real-growth
+      - name: Real construction A/B order reversed, late economy, congestion and artificial traffic
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The artifact upload may flatten the pr57-jobs-20 parent directory.
+          # Resolve the three checkpoints from one verified sibling set, not
+          # from an assumed ZIP root layout or from unrelated snapshots.
+          # Select only a complete sibling set; a first arbitrary checkpoint-0
+          # can belong to a different or incomplete save family.
+          checkpoint_dir=""
+          while IFS= read -r candidate; do
+            dir="$(dirname "$candidate")"
+            if [[ -s "$dir/checkpoint-6.json" && -s "$dir/checkpoint-11.json" ]]; then
+              checkpoint_dir="$dir"
+              break
+            fi
+          done < <(find artifacts/real-growth -type f -name 'checkpoint-0.json' | sort)
+          test -n "$checkpoint_dir" || { echo "PR57_ACCESS_NO_COMPLETE_CHECKPOINT_SET"; exit 1; }
+          source="$checkpoint_dir/checkpoint-0.json"
+          late="$checkpoint_dir/checkpoint-6.json"
+          congested="$checkpoint_dir/checkpoint-11.json"
+          echo "PR57_ACCESS_CHECKPOINT_SET dir=$checkpoint_dir"
+          find "$checkpoint_dir" -maxdepth 1 -name 'checkpoint-*.json' -printf '%f\\n' | sort -V
+          test -s "$source"
+          test -s "$late"
+          test -s "$congested"
+          for input in "$source" "$late" "$congested"; do
+            echo "PR57_ACCESS_AB_SOURCE path=$input sha256=$(sha256sum "$input" | cut -d' ' -f1)"
+          done
+          mkdir -p artifacts/access-ab
+          # Run the unvalidated 32-house workload first: fail on its real rejection before consuming the long authentic-save ABBA suite.
+          for case in liveA liveB realA realB late congested cycle grid; do
+            modes=(control candidate)
+            if [[ "$case" == realB || "$case" == liveB || "$case" == cycleLoadB ]]; then modes=(candidate control); fi
+            for mode in "${modes[@]}"; do
+              enabled=0
+              if [[ "$mode" == candidate ]]; then enabled=1; fi
+              output="artifacts/access-ab/$case-$mode"
+              mkdir -p "$output"
+              args=(scale cycle --seed=42 --warmup=0 --days=2 --window=3600 --cap=300)
+              if [[ "$case" == realA || "$case" == realB || "$case" == liveA || "$case" == liveB ]]; then
+                args+=(--resume="$source")
+              elif [[ "$case" == late ]]; then
+                args+=(--resume="$late")
+              elif [[ "$case" == congested ]]; then
+                args=(scale cycle --seed=42 --warmup=0 --days=1 --window=3600 --cap=300 --resume="$congested")
+              elif [[ "$case" == cycleLoadA || "$case" == cycleLoadB ]]; then
+                # Scale probe: 32 real paid housing orders (up from validated 24); normal delivery/crew, no minted population. Fail if any quote/order is rejected.
+                args=(scale cycle --seed=42 --warmup=0 --cycle-bypass=1 --cycle-houses=32 --days=2 --window=3600 --cap=300)
+              elif [[ "$case" == grid ]]; then
+                args=(scale grid --seed=42 --rows=12 --length=600 --warmup=0 --days=1 --window=3600 --cap=300)
+              fi
+              live=0
+              if [[ "$case" == liveA || "$case" == liveB ]]; then live=1; fi
+              housing_frontage=0
+              if [[ "$case" == cycleLoadA || "$case" == cycleLoadB ]]; then housing_frontage=1; fi
+              echo "PR57_ACCESS_AB_RUN case=$case mode=$mode enabled=$enabled liveEdit=$live hostQuantum=2"
+              PR57_CYCLE_SOUTH_HOUSING="$housing_frontage" PR57_CYCLE_SOUTH_EXTENSION="$housing_frontage" \
+              PR57_CYCLE_NORTH_HOUSING="$housing_frontage" \
+              PR57_BUILDING_WORK_ACCESS="$enabled" PR57_GRID_DIAG=1 \
+              PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_ACCESS_LIVE_EDIT="$live" \
+              PR57_DYNAMIC_BVH=0 PR57_PARALLEL_NEEDS=0 PR57_STAFF_PHASE_FUSION=0 \
+              PR57_UTILITY_REPLAY=0 PR57_POLLUTION_SIMD=0 PR57_PARALLEL_POLLUTION=0 \
+              PR57_CONSTRUCTION_WAIT_AGENDA=0 PR57_DISPATCH_SHIPMENT_LOOKUP=0 \
+              PR57_ROUTE_TREE=0 PR57_ORDER_SHIPMENT_INDEX=0 PR57_MAINTENANCE_SCHEDULE=0 \
+              PR57_SOURCE_DISTANCE_CACHE=0 PR57_WORK_ACCESS_INDEX=0 PR57_PEDESTRIAN_GRID=0 \
+              PR57_LIVING_ROSTER=0 PR57_CITIZEN_AGENDA=0 \
+              PR57_SAVE_CAPTURE_DIR="$PWD/$output" \
+                timeout 360s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- "${args[@]}" \
+                | tee "$output.log"
+              # Fail at the first incomplete real workload, before spending the
+              # remaining ABBA budget on a non-representative 32-house run.
+              # Keep the full rejection log produced by QueueCycleHousingProjects.
+              if [[ "$case" == cycleLoadA || "$case" == cycleLoadB ]]; then
+                if ! grep -Eq '^CYCLE_HOUSING requested=32 placed=32 attempted=[0-9]+' "$output.log"; then
+                  echo "PR57_CYCLE_32_INCOMPLETE case=$case mode=$mode"
+                  grep -E '^(CYCLE_HOUSING|PR57_CYCLE_.*ROW|PR57_CYCLE_LOT_REJECT)' "$output.log" || true
+                  exit 1
+                fi
+              fi
+            done
+          done
+      - name: Check intermediate exact causal snapshots and print end-to-end A/B
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import pathlib,re
+          root=pathlib.Path('artifacts/access-ab')
+          paired={}
+          for case in ('liveA','liveB','realA','realB','late','congested','cycle','grid','cycleLoadA','cycleLoadB'):
+              results={}
+              for mode in ('control','candidate'):
+                  log=(root/f'{case}-{mode}.log').read_text()
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,mode,'save/invariants')
+                  assert f'PR57_BUILDING_WORK_ACCESS active={str(mode=="candidate")}' in log,(case,mode,'flag')
+                  if (case.startswith('real') or case.startswith('live') or case.startswith('cycleLoad')) and mode=='candidate':
+                      assert 'PR57_BUILDING_WORK_ACCESS built=True' in log,(case,'candidate did not engage')
+                  if case.startswith('live'):
+                      for phase in ('maintenance-off','maintenance-on','external-road-order','public-road-rebuild'):
+                          assert f'PR57_ACCESS_LIVE_EDIT phase={phase}' in log,(case,mode,phase)
+                      assert 'phase=external-road-order quantum=900' in log and 'roadStepChanged=True' in log,(case,mode,'spatial-width mutation not exercised')
+                      assert 'phase=public-road-rebuild quantum=1200' in log,(case,mode,'public edit timing')
+                  windows=[x for x in log.splitlines() if x.startswith('WINDOW ')]
+                  assert len(windows)==(1 if case in ('grid','congested') else 2),(case,mode,'windows')
+                  def val(row,key):
+                      match=re.search(r'\b'+re.escape(key)+r'=([0-9.]+)',row)
+                      assert match,(case,mode,key,row)
+                      return float(match.group(1))
+                  results[mode]={k:sum(val(w,k) for w in windows) for k in ('wall','cpu','allocMB')}
+                  results[mode]['windowMetrics']=[{k:val(w,k) for k in ('wall','cpu','allocMB')} for w in windows]
+                  # PR57 work counters are cumulative snapshots, emitted every 256 Advances.
+                  # Use the LAST observed snapshot, never sum snapshots or call it final.
+                  work_rows=[line for line in log.splitlines()
+                             if line.startswith('PR57_BUILDING_ACCESS_WORK ')]
+                  if mode=='candidate':
+                      assert work_rows,(case,mode,'missing building access work instrumentation')
+                      fields=('advances','queries','baselineRows','candidateRows',
+                              'avoidedRows','rebuilds','invalidations','emptyResults','indexedRows','checkedRows')
+                      samples=[{k:int(val(line,k)) for k in fields} for line in work_rows]
+                      assert all(x['advances']<y['advances'] for x,y in zip(samples,samples[1:])),(case,'nonmonotonic work samples')
+                      cumulative=('queries','baselineRows','candidateRows','avoidedRows',
+                                  'rebuilds','invalidations','emptyResults','indexedRows','checkedRows')
+                      assert all(all(x[k]<=y[k] for k in cumulative)
+                                 for x,y in zip(samples,samples[1:])),(case,'nonmonotonic cumulative counters')
+                      work=samples[-1]
+                      if case.startswith('live'):
+                          # RoadStep changes at quantum 900 without changing road
+                          # membership. The opt-in index must actually invalidate
+                          # and rebuild; JSON equality alone cannot prove this path ran.
+                          assert work['invalidations']>=1 and work['rebuilds']>=2,(case,mode,'RoadStep spatial index invalidation not exercised',work)
+                      # --window=3600 with --cap=300 executes 1792 Advances per
+                      # measured window, not 43200 per simulated day. Require
+                      # both exact measured-window boundaries (7 and 14 samples
+                      # of 256 Advances), never extrapolate to full days.
+                      if case.startswith('cycleLoad'):
+                          by_advance={sample['advances']:sample for sample in samples}
+                          for boundary in (1792,3584):
+                              assert boundary in by_advance,(case,mode,'missing exact day-boundary work sample',boundary)
+                              day=by_advance[boundary]
+                              assert day['baselineRows']-day['candidateRows']==day['avoidedRows'],(case,boundary,'work conservation')
+                              assert day['indexedRows']>=0,(case,boundary,'negative rebuild work')
+                              print('PR57_BUILDING_ACCESS_WORK_DAY',case,'mode',mode,
+                                    'advances',boundary,'queries',day['queries'],
+                                    'avoidedRows',day['avoidedRows'],'indexedRows',day['indexedRows'],'checkedRows',day['checkedRows'],
+                                    'netAvoidedRows',day['avoidedRows']-day['indexedRows']-day['checkedRows'],
+                                    'rebuilds',day['rebuilds'],
+                                    'invalidations',day['invalidations'],'emptyResults',day['emptyResults'])
+                          first,second=(by_advance[n] for n in (1792,3584))
+                          # A cumulative positive count can hide an idle second
+                          # window. Require recurring work in BOTH measured windows.
+                          for window,previous,current in ((1,None,first),(2,first,second)):
+                              delta={k:current[k]-(previous[k] if previous else 0)
+                                     for k in ('queries','baselineRows','candidateRows',
+                                               'avoidedRows','indexedRows','checkedRows','rebuilds','invalidations')}
+                              assert delta['queries']>0 and delta['baselineRows']>0,(case,window,'idle access window',delta)
+                              # A recurring exact membership scan is paid once per
+                              # Advance with access, even if indexed queries are cheap.
+                              # Require the ABBA to exercise and measure this cost
+                              # in BOTH windows before claiming net avoided work.
+                              assert delta['checkedRows']>0,(case,window,'membership validation cost not exercised',delta)
+                              assert delta['baselineRows']-delta['candidateRows']==delta['avoidedRows'],(case,window,'window work conservation',delta)
+                              # A broad-phase index that saves fewer rows than its own
+                              # exact validation and rebuild scans has no positive
+                              # row-work budget in this window. Fail rather than
+                              # reporting gross avoided rows as structural progress.
+                              net_rows=delta['avoidedRows']-delta['indexedRows']-delta['checkedRows']
+                              print('PR57_BUILDING_ACCESS_NET_WORK_VERDICT',case,'window',window,
+                                    'status','positive' if net_rows>0 else 'nonpositive',
+                                    'netAvoidedRows',net_rows)
+                              print('PR57_BUILDING_ACCESS_WORK_WINDOW',case,'window',window,
+                                    'queries',delta['queries'],'baselineRows',delta['baselineRows'],
+                                    'avoidedRows',delta['avoidedRows'],'indexedRows',delta['indexedRows'],'checkedRows',delta['checkedRows'],
+                                    'netAvoidedRows',delta['avoidedRows']-delta['indexedRows']-delta['checkedRows'],
+                                    'rebuilds',delta['rebuilds'],'invalidations',delta['invalidations'])
+                          assert work['advances']==3584,(case,mode,'incomplete two-window work measurement',work)
+                      assert work['baselineRows']-work['candidateRows']==work['avoidedRows'],(case,'inconsistent avoided rows',work)
+                      # Some authentic saves have no workplace-access activity in
+                      # this replay. Keep their exact causal parity checks, but
+                      # report a zero-work stratum rather than fail the whole ABBA.
+                      if work['queries']==0:
+                          assert work['baselineRows']==0 and work['candidateRows']==0 and work['avoidedRows']==0 and work['indexedRows']==0 and work['checkedRows']==0,(case,'inconsistent zero-work counters',work)
+                          print('PR57_BUILDING_ACCESS_NO_WORK',case,'mode',mode,'advances',work['advances'])
+                      else:
+                          assert work['baselineRows']>0,(case,'queries without baseline work',work)
+                      # Exact 256-Advance samples at the end of each measured
+                      # 3600s/300x host window; report fallback/rebuild cost as
+                      # delta, not cumulative counts repeated for both windows.
+                      boundaries=(1792,) if len(windows)==1 else (1792,3584)
+                      by_advance={sample['advances']:sample for sample in samples}
+                      if case.startswith(('real','live')):
+                          assert all(boundary in by_advance for boundary in boundaries),(case,'missing window boundary',boundaries)
+                          previous=None
+                          deltas=[]
+                          for boundary in boundaries:
+                              current=by_advance[boundary]
+                              delta={k:current[k]-(previous[k] if previous else 0)
+                                     for k in cumulative}
+                              assert delta['baselineRows']-delta['candidateRows']==delta['avoidedRows'],(case,boundary,'window conservation')
+                              deltas.append(delta)
+                              previous=current
+                          results[mode]['workWindows']=deltas
+                      results[mode]['workSample']=work
+                      print('PR57_BUILDING_ACCESS_WORK_SAMPLE',case,'mode',mode,
+                            'sampledAdvances',work['advances'],'queries',work['queries'],
+                            'baselineRows',work['baselineRows'],'candidateRows',work['candidateRows'],
+                            'avoidedRows',work['avoidedRows'],'indexedRows',work['indexedRows'],'checkedRows',work['checkedRows'],
+                            'netAvoidedRows',work['avoidedRows']-work['indexedRows']-work['checkedRows'],
+                            'rebuilds',work['rebuilds'],
+                            'invalidations',work['invalidations'],'emptyResults',work['emptyResults'],
+                            'sampledRowReductionPct',round(100*work['avoidedRows']/work['baselineRows'],3) if work['baselineRows'] else 0.0)
+                  results[mode]['pop']=val(windows[-1],'pop')
+                  results[mode]['alive']=val(windows[-1],'alive')
+                  results[mode]['openWorks']=val(windows[-1],'openWorks')
+                  # Capture every intermediate census, not only the final one:
+                  # a transient extinction or work-count mismatch can recover.
+                  results[mode]['census']=[
+                      tuple(val(w,k) for k in ('pop','alive','openWorks'))
+                      for w in windows
+                  ]
+                  # A recovered final population cannot conceal an extinct
+                  # intermediate quantum in an integrated A/B measurement.
+                  assert all(pop>0 and alive>0 for pop,alive,_ in results[mode]['census']),\
+                      (case,mode,'extinct intermediate window',results[mode]['census'])
+                  if case.startswith('cycleLoad'):
+                      housing=re.search(r'^CYCLE_HOUSING requested=32 placed=(\d+) attempted=(\d+)',log,re.M)
+                      assert housing,(case,mode,'housing orders missing')
+                      placed,attempted=map(int,housing.groups())
+                      assert placed==32,(case,mode,'incomplete housing workload',placed,attempted,
+                          [line for line in log.splitlines() if line.startswith(
+                              ('PR57_CYCLE_BASE_ROW','PR57_CYCLE_SOUTH_ROW',
+                               'PR57_CYCLE_EXTENSION_ROW','PR57_CYCLE_NORTH_ROW',
+                               'PR57_CYCLE_LOT_REJECT'))])
+                      assert any(works>0 for _,_,works in results[mode]['census']),(case,mode,'no live construction workload')
+                      results[mode]['housingOrders']=placed
+                      results[mode]['housingAttempts']=attempted
+                      # Compare actual construction-order decisions, not just the
+                      # eventual save: both paths must exercise identical quotes.
+                      row_prefixes=('PR57_CYCLE_BASE_ROW','PR57_CYCLE_SOUTH_ROW',
+                                    'PR57_CYCLE_EXTENSION_ROW','PR57_CYCLE_NORTH_ROW')
+                      rows=[line for line in log.splitlines()
+                            if line.startswith(row_prefixes)]
+                      assert rows,(case,mode,'missing housing-row decisions')
+                      # A successful 32-order probe must account for every ordinary
+                      # placement attempt, including rejected construction orders.
+                      # Prevent a changed fixture from reporting 32 accepted orders
+                      # while silently skipping or miscounting rejected attempts.
+                      row_values=[]
+                      for line in rows:
+                          match=re.search(r'newOrders=(\d+) rejectedPhysical=(\d+) rejectedAccess=(\d+) rejectedOrder=(\d+)',line)
+                          assert match,(case,mode,'malformed housing-row accounting',line)
+                          row_values.append(tuple(map(int,match.groups())))
+                      assert sum(v[0] for v in row_values)==placed,(case,mode,'row placement mismatch',row_values,placed)
+                      assert sum(v[0]+v[3] for v in row_values)==attempted,(case,mode,'row attempt mismatch',row_values,attempted)
+                      results[mode]['housingRows']=rows
+                      # Match each rejected quote/order decision, not only row totals.
+                      # Equal accepted orders and final saves may hide changed
+                      # rejection causes in the opt-in workload generator.
+                      rejections=[line for line in log.splitlines()
+                                  if line.startswith('PR57_CYCLE_LOT_REJECT ')]
+                      assert all(re.search(r'^PR57_CYCLE_LOT_REJECT stage=(physical|access|order) x=-?\d+ z=-?\d+ cause=\S+',line)
+                                 for line in rejections),(case,mode,'malformed housing rejection',rejections)
+                      results[mode]['housingRejections']=rejections
+                  if case.startswith('live'):
+                      # Verify both modes received exactly the same external edits.
+                      edits=[line for line in log.splitlines() if line.startswith('PR57_ACCESS_LIVE_EDIT phase=')]
+                      assert len(edits)==4,(case,mode,'unexpected live edit count',edits)
+                      # Confirm the exact external spatial mutation happened, not
+                      # merely four unrelated edit log entries. Otherwise an
+                      # invalidation count cannot validate the RoadStep fallback.
+                      expected_edits=(('maintenance-off',300),('maintenance-on',600),
+                                      ('external-road-order',900),('public-road-rebuild',1200))
+                      for line,(phase,quantum) in zip(edits,expected_edits):
+                          assert f'phase={phase} quantum={quantum} ' in line,(case,mode,'wrong live edit',line)
+                      assert 'roadStepChanged=True' in edits[2],(case,mode,'RoadStep edit did not change bucket width',edits[2])
+                      results[mode]['edits']=edits
+                  for i in range(len(windows)+1):
+                      path=root/f'{case}-{mode}'/f'checkpoint-{i}.json'
+                      assert path.is_file(),(case,mode,i)
+
+              for i in range(len(windows)+1):
+                  control=root/f'{case}-control'/f'checkpoint-{i}.json'
+                  candidate=root/f'{case}-candidate'/f'checkpoint-{i}.json'
+                  assert candidate.read_bytes()==control.read_bytes(),(case,'causal divergence',i)
+              if case.startswith('live'):
+                  assert results['control']['edits']==results['candidate']['edits'],(case,'external edit mismatch',results['control']['edits'],results['candidate']['edits'])
+                  for quantum in (300,600,900,1200):
+                      before=root/f'{case}-control'/f'live-edit-{quantum}.json'
+                      after=root/f'{case}-candidate'/f'live-edit-{quantum}.json'
+                      assert before.is_file() and after.is_file(),(case,'missing live edit checkpoint',quantum)
+                      assert before.read_bytes()==after.read_bytes(),(case,'transient post-edit causal divergence',quantum)
+                      # Also compare the immediate Advance(2) after each edit:
+                      # the next pre-edit snapshot may conceal a transient difference.
+                      post_control=root/f'{case}-control'/f'live-after-{quantum}.json'
+                      post_candidate=root/f'{case}-candidate'/f'live-after-{quantum}.json'
+                      assert post_control.is_file() and post_candidate.is_file(),(case,'missing post-Advance checkpoint',quantum)
+                      assert post_control.read_bytes()==post_candidate.read_bytes(),(case,'post-Advance causal divergence',quantum)
+              c=results['control'];o=results['candidate']
+              assert c['census']==o['census'],(case,'intermediate population/work divergence',c['census'],o['census'])
+              if case.startswith('cycleLoad'):
+                  assert c['housingAttempts']==o['housingAttempts'],(case,'housing quote/order attempt divergence',c['housingAttempts'],o['housingAttempts'])
+                  assert c['housingRows']==o['housingRows'],(case,'housing row decision divergence',c['housingRows'],o['housingRows'])
+                  assert c['housingRejections']==o['housingRejections'],(case,'housing rejection cause divergence',c['housingRejections'],o['housingRejections'])
+                  for index,(control_window,candidate_window) in enumerate(zip(c['windowMetrics'],o['windowMetrics']),1):
+                      for metric in ('wall','cpu','allocMB'):
+                          baseline_value=control_window[metric]
+                          candidate_value=candidate_window[metric]
+                          assert baseline_value>0,(case,index,metric,'invalid baseline window')
+                          print('PR57_BUILDING_ACCESS_WINDOW_RESOURCE',case,'window',index,
+                                'metric',metric,'control',round(baseline_value,6),
+                                'candidate',round(candidate_value,6),
+                                'reductionPct',round(100*(baseline_value-candidate_value)/baseline_value,3))
+              paired[case]=(c,o)
+              print('PR57_BUILDING_ACCESS_RESULT',case,'control',c,'candidate',o,
+                    'wallReductionPct',round((c['wall']-o['wall'])/c['wall']*100,2),
+                    'fullIntermediateSavesMatch',True)
+          # Whole-Advance(2) wall fractions and fallback cost per window,
+          # paired across ABBA order to limit first-run bias. Row counts are
+          # diagnostic work units, NOT a measured CPU-time decomposition.
+          import statistics
+          for label,first,second in (('real','realA','realB'),('live','liveA','liveB')):
+              for index in range(2):
+                  order_reductions=[]
+                  for case in (first,second):
+                      control,candidate=paired[case]
+                      base=control['windowMetrics'][index]['wall']
+                      opt=candidate['windowMetrics'][index]['wall']
+                      assert base>0 and opt>0,(case,index,'invalid measured wall')
+                      reduction=100*(base-opt)/base
+                      order_reductions.append(reduction)
+                      work=candidate['workWindows'][index]
+                      avoided=work['avoidedRows']
+                      fallback=work['indexedRows']+work['checkedRows']
+                      net=avoided-fallback
+                      assert work['baselineRows']-work['candidateRows']==avoided,(case,index,'work mismatch')
+                      print('PR57_ACCESS_WALL_FRACTION',case,'window',index+1,
+                            'controlWall',round(base,6),'candidateWall',round(opt,6),
+                            'savedWallSeconds',round(base-opt,6),
+                            'savedWallFraction',round((base-opt)/base,6),
+                            'reductionPct',round(reduction,3),
+                            'queries',work['queries'],'avoidedRows',avoided,
+                            'fallbackRows',fallback,'indexedRows',work['indexedRows'],
+                            'checkedRows',work['checkedRows'],'netAvoidedRows',net,
+                            'fallbackPerAvoided',round(fallback/avoided,6) if avoided else None,
+                            'fallbackPerBaseline',round(fallback/work['baselineRows'],6) if work['baselineRows'] else None,
+                            'rebuilds',work['rebuilds'],'invalidations',work['invalidations'])
+                  # Paired whole-engine CPU and allocations must be measured,
+                  # not inferred from avoided spatial-index row checks.
+                  for metric in ('cpu','allocMB'):
+                      baseline=sum(paired[case][0]['windowMetrics'][index][metric]
+                                   for case in (first,second))
+                      candidate=sum(paired[case][1]['windowMetrics'][index][metric]
+                                    for case in (first,second))
+                      assert baseline>0,(label,index,metric,'invalid baseline')
+                      print('PR57_ACCESS_ABBA_WINDOW_RESOURCE',label,'window',index+1,
+                            'metric',metric,'control',round(baseline,6),
+                            'candidate',round(candidate,6),
+                            'reductionPct',round(100*(baseline-candidate)/baseline,3))
+                  print('PR57_ACCESS_ABBA_MEDIAN',label,'window',index+1,
+                        'orderReductionPct',','.join(str(round(v,3)) for v in order_reductions),
+                        'medianReductionPct',round(statistics.median(order_reductions),3))
+          for case in ('late','congested','cycle','grid'):
+              control,candidate=paired[case]
+              work=candidate['workSample']
+              reduction=100*(control['wall']-candidate['wall'])/control['wall']
+              print('PR57_ACCESS_NO_WORK_STRATUM',case,'queries',work['queries'],
+                    'avoidedRows',work['avoidedRows'],
+                    'fallbackRows',work['indexedRows']+work['checkedRows'],
+                    'controlWall',round(control['wall'],6),
+                    'candidateWall',round(candidate['wall'],6),
+                    'wallReductionPct',round(reduction,3),
+                    'attributableToIndex',work['queries']>0)
+          # ABBA: pair opposite run orders before interpreting a wall reduction.
+          # This is descriptive only; two pairs do not establish a 10k/80y gain.
+          for label,first,second in (('live','liveA','liveB'),('real','realA','realB'),('cycleLoad','cycleLoadA','cycleLoadB')):
+              a,b=paired[first],paired[second]
+              baseline=sum(pair[0]['wall'] for pair in (a,b))
+              candidate=sum(pair[1]['wall'] for pair in (a,b))
+              assert baseline>0 and candidate>0,(label,'invalid wall')
+              assert all(pair[0]['pop']==pair[1]['pop'] and pair[0]['alive']==pair[1]['alive']
+                         for pair in (a,b)),(label,'population divergence')
+              # A fast but extinct city is not evidence for integrated scaling.
+              # Require living residents in both independent ABBA repetitions.
+              assert all(pair[0]['pop']>0 and pair[0]['alive']>0
+                         for pair in (a,b)),(label,'extinct-city benchmark',a,b)
+              # Aggregate actual candidate work for both ABBA orders, not a
+              # single favorable run. Index rebuilds are paid work.
+              wa=a[1]['workSample']; wb=b[1]['workSample']
+              total={k:wa[k]+wb[k] for k in ('queries','baselineRows','candidateRows',
+                                             'avoidedRows','indexedRows','checkedRows','rebuilds','invalidations')}
+              assert total['baselineRows']-total['candidateRows']==total['avoidedRows'],(label,'ABBA work conservation',total)
+              if label=='cycleLoad':
+                  # Both independent orders must exercise workplace access.
+                  # An aggregate positive total can conceal an idle replay and
+                  # falsely attribute its wall change to this fastpath.
+                  for order,work in ((first,wa),(second,wb)):
+                      assert work['queries']>0 and work['baselineRows']>0,(label,order,'no building-access workload',work)
+                  assert total['queries']>0 and total['baselineRows']>0,(label,'ABBA has no building-access workload',total)
+              if label=='cycleLoad':
+                  # Pair each window across opposite ABBA orders. Aggregate totals
+                  # can conceal a regression in one of the two active windows.
+                  for window_index in range(2):
+                      for metric in ('wall','cpu','allocMB'):
+                          base_window=sum(pair[0]['windowMetrics'][window_index][metric] for pair in (a,b))
+                          opt_window=sum(pair[1]['windowMetrics'][window_index][metric] for pair in (a,b))
+                          assert base_window>0,(label,window_index,metric,'invalid paired baseline')
+                          print('PR57_BUILDING_ACCESS_ABBA_WINDOW_RESOURCE',label,
+                                'window',window_index+1,'metric',metric,
+                                'control',round(base_window,6),'candidate',round(opt_window,6),
+                                'reductionPct',round(100*(base_window-opt_window)/base_window,3))
+              net=total['avoidedRows']-total['indexedRows']-total['checkedRows']
+              print('PR57_BUILDING_ACCESS_ABBA_WORK',label,
+                    'queries',total['queries'],'baselineRows',total['baselineRows'],
+                    'candidateRows',total['candidateRows'],'avoidedRows',total['avoidedRows'],
+                    'indexedRows',total['indexedRows'],'checkedRows',total['checkedRows'],'netAvoidedRows',net,
+                    'netReductionPct',round(100*net/total['baselineRows'],3) if total['baselineRows'] else 0.0,
+                    'rebuilds',total['rebuilds'],'invalidations',total['invalidations'])
+              # Report whole-engine CPU and allocation alongside wall. A wall-only
+              # change without reduced work is not structural evidence.
+              for metric in ('cpu','allocMB'):
+                  base_metric=sum(pair[0][metric] for pair in (a,b))
+                  opt_metric=sum(pair[1][metric] for pair in (a,b))
+                  assert base_metric>0,(label,metric,'invalid baseline')
+                  print('PR57_BUILDING_ACCESS_ABBA_RESOURCE',label,metric,
+                        'control',round(base_metric,6),'candidate',round(opt_metric,6),
+                        'reductionPct',round(100*(base_metric-opt_metric)/base_metric,3))
+              print('PR57_BUILDING_ACCESS_ABBA',label,
+                    'controlWall',round(baseline,6),'candidateWall',round(candidate,6),
+                    'wallReductionPct',round(100*(baseline-candidate)/baseline,3),
+                    'order',first+':control-first,'+second+':candidate-first',
+                    'fullIntermediateSavesMatch',True)
+          PY
+      - name: Preserve full checkpoints and logs even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-building-access-ab
+          path: artifacts/access-ab/**
+          retention-days: 14
+):
+                      if type(a)!=type(b): return (path,'type',str(type(a)),str(type(b)))
+                      if isinstance(a,dict):
+                          for key in sorted(set(a)|set(b)):
+                              if key not in a or key not in b: return (path+'.'+key,'missing key',key in a,key in b)
+                              diff=first_difference(a[key],b[key],path+'.'+key)
+                              if diff:return diff
+                      elif isinstance(a,list):
+                          if len(a)!=len(b):return (path,'length',len(a),len(b))
+                          for i,(x,y) in enumerate(zip(a,b)):
+                              diff=first_difference(x,y,f'{path}[{i}]')
+                              if diff:return diff
+                      elif a!=b:return (path,'value',repr(a)[:180],repr(b)[:180])
+                      return None
+                  print('PR57_SAVE_LOAD_FIRST_JSON_DIFF',name,first_difference(expected,actual))
               assert digest==runs[name][1][2],(name,'SAVE_LOAD_CONTINUATION_DIVERGENCE',digest,runs[name][1][2])
           assert resumed['A0']==resumed['B0'],('SAVE_LOAD_REPLAY_DIVERGENCE',resumed)
           print('PR57_UTILITY_REPLAY_SAVE_LOAD_PARITY modes=2 equal=true')
