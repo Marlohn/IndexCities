@@ -29,6 +29,7 @@ public sealed class Pr57DynamicBvhTests
             sim.CheckInvariants();
         }
         var checkpoint = sim.SaveToJson();
+        EmitCheckpoint("before-load", checkpoint);
         var resumed = CitySimulation.FromJson(checkpoint);
         Assert.Equal(checkpoint, resumed.SaveToJson());
         // First construct the opt-in BVH on the resumed object. Mutating
@@ -36,6 +37,7 @@ public sealed class Pr57DynamicBvhTests
         // merely populate a fresh tree from already-mutated positions.
         resumed.Advance(2);
         resumed.CheckInvariants();
+        EmitCheckpoint("before-external-mutation", resumed.SaveToJson());
         Assert.True(resumed.State.Vehicles.Count > 1);
         // Swap existing positions without changing roster identity. Both
         // baseline and opt-in must observe the mutation on the next slice.
@@ -46,6 +48,7 @@ public sealed class Pr57DynamicBvhTests
         second.Position = firstPosition;
         resumed.Advance(2);
         resumed.CheckInvariants();
+        EmitCheckpoint("after-position-swap", resumed.SaveToJson());
         // Separately exercise roster invalidation after a tree already exists.
         // Reversing the list must rebuild index-to-ID mapping before queries.
         resumed.State.Vehicles.Reverse();
@@ -57,8 +60,18 @@ public sealed class Pr57DynamicBvhTests
         Assert.NotEmpty(resumed.State.Vehicles);
         Assert.NotEmpty(resumed.State.Citizens.Where(c => c.Alive));
         Assert.Equal(resumed.State.Tuning.TotalMoney, resumed.MonetaryTotal);
+        EmitCheckpoint("after-roster-reversal", resumed.SaveToJson());
         var json = resumed.SaveToJson();
         var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(json)));
         Console.WriteLine($"PR57_DYNAMIC_BVH_JSON mode={Environment.GetEnvironmentVariable("PR57_DYNAMIC_BVH") ?? "0"} sha256={hash} vehicles={resumed.State.Vehicles.Count} alive={resumed.State.Citizens.Count(c => c.Alive)}");
+    }
+
+    // Deterministic full-state checkpoints for comparing fresh opt-in/off processes.
+    // No normalization or tolerance: external mutations, history, economy and
+    // traffic all remain in the persisted JSON used for each SHA-256 digest.
+    static void EmitCheckpoint(string stage, string json)
+    {
+        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(json)));
+        Console.WriteLine($"PR57_BVH_CHECKPOINT stage={stage} mode={Environment.GetEnvironmentVariable("PR57_DYNAMIC_BVH") ?? "0"} sha256={hash}");
     }
 }
