@@ -52,18 +52,9 @@ public sealed partial class CitySimulation
             }
             // One ordered citizen grouping and one presence evaluation serve
             // infrastructure demand and wages; no extra Step or changed order.
+            // Pr57PrepareStaff now performs grouping and exact presence checks
+            // in one ordered citizen pass; the second roster traversal is gone.
             Pr57PrepareStaff();
-            foreach(var list in _pr57PresentStaff.Values)list.Clear();
-            foreach(var (site,workers) in _staff)
-            {
-                if(!byId.TryGetValue(site,out var workplace))continue;
-                foreach(var c in workers)if(WorkerPresentAt(c,workplace))
-                {
-                    present[site]++;
-                    if(!_pr57PresentStaff.TryGetValue(site,out var list))_pr57PresentStaff[site]=list=[];
-                    list.Add(c);
-                }
-            }
         }
         else
         {
