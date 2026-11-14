@@ -63,6 +63,48 @@ public sealed partial class CitySimulation
             return true;
         }
 
+        int CompareAxis(int a, int b, bool xAxis)
+        {
+            var pa = _vehicles[a].Position;
+            var pb = _vehicles[b].Position;
+            var cmp = xAxis ? pa.X.CompareTo(pb.X) : pa.Z.CompareTo(pb.Z);
+            return cmp != 0 ? cmp : a.CompareTo(b);
+        }
+
+        void SelectMedian(int[] order, int low, int target, int high, bool xAxis)
+        {
+            // In-place deterministic quickselect. Three-way partition handles
+            // coincident positions; index tie-break ensures a total ordering.
+            while (high - low > 1)
+            {
+                var mid = low + (high - low) / 2;
+                var a = order[low]; var b = order[mid]; var c = order[high - 1];
+                if (CompareAxis(a, b, xAxis) > 0) (a, b) = (b, a);
+                if (CompareAxis(b, c, xAxis) > 0) (b, c) = (c, b);
+                if (CompareAxis(a, b, xAxis) > 0) b = a;
+                var pivot = b;
+                var left = low;
+                var right = high - 1;
+                for (var i = low; i <= right;)
+                {
+                    if (CompareAxis(order[i], pivot, xAxis) < 0)
+                    {
+                        (order[left], order[i]) = (order[i], order[left]);
+                        left++; i++;
+                    }
+                    else if (CompareAxis(order[i], pivot, xAxis) > 0)
+                    {
+                        (order[right], order[i]) = (order[i], order[right]);
+                        right--;
+                    }
+                    else i++;
+                }
+                if (target < left) high = left;
+                else if (target > right) low = right + 1;
+                else return;
+            }
+        }
+
         int Build(int[] order, int start, int length, int parent, int depth)
         {
             var index = _nodes.Count;
@@ -76,14 +118,11 @@ public sealed partial class CitySimulation
             }
             else
             {
-                Array.Sort(order, start, length, Comparer<int>.Create((a, b) =>
-                {
-                    var pa = _vehicles[a].Position;
-                    var pb = _vehicles[b].Position;
-                    var cmp = depth % 2 == 0 ? pa.X.CompareTo(pb.X) : pa.Z.CompareTo(pb.Z);
-                    return cmp != 0 ? cmp : a.CompareTo(b);
-                }));
+                // Median partition rather than sorting every subtree: the BVH
+                // only needs a spatial split, not sorted children. Deterministic
+                // index tie-breaks keep rebuilds reproducible.
                 var half = length / 2;
+                SelectMedian(order, start, start + half, start + length, depth % 2 == 0);
                 node.Left = Build(order, start, half, index, depth + 1);
                 node.Right = Build(order, start + half, length - half, index, depth + 1);
                 RefitBranch(node);
