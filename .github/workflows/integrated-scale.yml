@@ -110,7 +110,11 @@ jobs:
               placed=re.search(r'^CYCLE_HOUSING requested=32 placed=(\d+) attempted=(\d+)',log,re.M)
               assert placed and int(placed[1])==32,(name,'incomplete paid housing workload')
               for line in (line for line in log.splitlines() if line.startswith('WINDOW ')):
-                  assert metric('alive')>0 and metric('openWorks')>0,(name,'extinct or idle work window',line)
+                  # Inspect this window, not the stale line captured by metric()
+                  # in the preceding parsing loop.
+                  for key in ('alive','openWorks'):
+                      match=re.search(r'(?<!\\w)'+re.escape(key)+r'=([0-9.]+)',line)
+                      assert match and float(match[1])>0,(name,'extinct or idle work window',key,line)
               hashes={}
               for p in sorted((root/f'utility-{name}').glob('checkpoint-*.json')):
                   index=int(p.stem.split('-')[-1])
