@@ -77,7 +77,7 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts/bvh-ab
           for mode in 0 1; do
-            PR57_GRID_DIAG=1 PR57_DYNAMIC_BVH="$mode" dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
+            PR57_GRID_DIAG=1 PR57_BVH_CENSUS=1 PR57_DYNAMIC_BVH="$mode" dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
               -c Release --no-build --filter FullyQualifiedName~Pr57DynamicBvhTests \
               --logger 'console;verbosity=normal' | tee "artifacts/bvh-ab/mode-$mode.log"
           done
@@ -94,6 +94,16 @@ jobs:
               if int(matches[0][2]) == 0 or int(matches[0][3]) == 0:
                   raise SystemExit(f'PR57_BVH_INACTIVE_CITY mode={mode}')
               hashes.append(matches[0][1].upper())
+              census = re.findall(r'PR57_BVH_CENSUS queries=(\\d+) roster=(\\d+) fullScanCandidates=(\\d+) actualCandidates=(\\d+) nodesVisited=(\\d+) refreshes=(\\d+) changedLeaves=(\\d+) vehicleUpdates=(\\d+)', log)
+              if mode == '1':
+                  if not census:
+                      raise SystemExit('PR57_BVH_CENSUS_MISSING: fewer than 100 queries or BVH not exercised')
+                  q, roster, full, actual, visited, refreshes, changed, updates = map(int, census[-1])
+                  if q < 100 or roster <= 0 or full != q * roster or actual > full or visited <= 0 or refreshes <= 0 or updates <= 0:
+                      raise SystemExit(f'PR57_BVH_CENSUS_INVALID {census[-1]}')
+                  print(f'PR57_BVH_CENSUS_VERIFIED queries={q} fullScanCandidates={full} actualCandidates={actual} avoided={full-actual} nodesVisited={visited} refreshes={refreshes} changedLeaves={changed} updates={updates}')
+              elif census:
+                  raise SystemExit('PR57_BVH_CENSUS_BASELINE_UNEXPECTED')
           if hashes[0] != hashes[1]:
               raise SystemExit(f'PR57_BVH_JSON_DIVERGENCE baseline={hashes[0]} bvh={hashes[1]}')
           print(f'PR57_BVH_JSON_PARITY sha256={hashes[0]}')
