@@ -176,6 +176,19 @@ jobs:
                       print('PR57_UTILITY_REPLAY_WORK_WINDOW',name,'window',window,
                             'hits',dh,'misses',dm,'hitFraction',round(dh/(dh+dm),6) if dh+dm else 0.0)
                   print('PR57_UTILITY_REPLAY_WORK',name,'hits',hits[-1],'misses',misses[-1])
+          # The replay cache is cold after load; parity must survive fallback.
+          resumed={}
+          for name in ('A0','B0'):
+              log=(root/f'utility-resume-{name}.log').read_text()
+              assert 'INVARIANTS OK' in log,(name,'resume invariants')
+              files=list((root/f'utility-resume-{name}').glob('checkpoint-*.json'))
+              assert len(files)>=2,(name,'missing resumed checkpoints')
+              final=max(files,key=lambda p:int(p.stem.split('-')[-1]))
+              digest=hashlib.sha256(final.read_bytes()).hexdigest().upper()
+              resumed[name]=digest
+              assert digest==runs[name][1][2],(name,'SAVE_LOAD_CONTINUATION_DIVERGENCE',digest,runs[name][1][2])
+          assert resumed['A0']==resumed['B0'],('SAVE_LOAD_REPLAY_DIVERGENCE',resumed)
+          print('PR57_UTILITY_REPLAY_SAVE_LOAD_PARITY modes=2 equal=true')
           # A replay must not change the construction quote/order trace, even
           # if later state converges to the same checkpoint JSON.
           reference=runs['A0'][2]
