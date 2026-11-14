@@ -26,11 +26,15 @@ public sealed partial class CitySimulation
         readonly List<int> _hits = [];
         readonly List<Vehicle> _results = [];
         readonly List<int> _changedLeaves = [];
+        readonly List<int> _dirtyParents = [];
+        readonly int[] _dirtyParentMarks;
+        int _dirtyGeneration = 1;
 
         public Pr57VehicleBvh(List<Vehicle> vehicles)
         {
             _vehicles = vehicles;
             _leaves = new int[vehicles.Count];
+            _dirtyParentMarks = new int[Math.Max(0, 2 * vehicles.Count - 1)];
             var order = Enumerable.Range(0, vehicles.Count).ToArray();
             for (var i = 0; i < vehicles.Count; i++)
                 _indexById.Add(vehicles[i].Id, i);
@@ -121,12 +125,27 @@ public sealed partial class CitySimulation
             }
             else
             {
+                // Refit changed leaves first, then unique ancestors bottom-up.
+                // A parent must never observe a stale changed sibling.
+                _dirtyParents.Clear();
                 foreach (var index in _changedLeaves)
                 {
                     var leaf = _nodes[index];
                     RefitLeaf(leaf);
                     for (var parent = leaf.Parent; parent >= 0; parent = _nodes[parent].Parent)
-                        RefitBranch(_nodes[parent]);
+                    {
+                        if (_dirtyParentMarks[parent] == _dirtyGeneration) continue;
+                        _dirtyParentMarks[parent] = _dirtyGeneration;
+                        _dirtyParents.Add(parent);
+                    }
+                }
+                _dirtyParents.Sort((a, b) => b.CompareTo(a));
+                foreach (var parent in _dirtyParents)
+                    RefitBranch(_nodes[parent]);
+                if (++_dirtyGeneration == int.MaxValue)
+                {
+                    Array.Clear(_dirtyParentMarks);
+                    _dirtyGeneration = 1;
                 }
             }
         }
