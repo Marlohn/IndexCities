@@ -84,6 +84,8 @@ jobs:
           python3 - <<'PY'
           import pathlib, re
           hashes = []
+          checkpoints = {}
+          expected_stages = ('before-load', 'before-external-mutation', 'after-position-swap', 'after-roster-reversal')
           for mode in ('0', '1'):
               log = pathlib.Path(f'artifacts/bvh-ab/mode-{mode}.log').read_text()
               activation = log.count('PR57_DYNAMIC_BVH active=True')
@@ -94,6 +96,11 @@ jobs:
               if int(matches[0][2]) == 0 or int(matches[0][3]) == 0:
                   raise SystemExit(f'PR57_BVH_INACTIVE_CITY mode={mode}')
               hashes.append(matches[0][1].upper())
+              markers = re.findall(r'PR57_BVH_CHECKPOINT stage=([a-z-]+) mode=([01]) sha256=([A-Fa-f0-9]{64})', log)
+              stages = [stage for stage, marker_mode, _ in markers]
+              if stages != list(expected_stages) or any(marker_mode != mode for _, marker_mode, _ in markers):
+                  raise SystemExit(f'PR57_BVH_CHECKPOINT_INVALID mode={mode} stages={stages} markers={len(markers)}')
+              checkpoints[mode] = {stage: digest.upper() for stage, _, digest in markers}
               census = re.findall(r'PR57_BVH_CENSUS queries=(\d+) roster=(\d+) fullScanCandidates=(\d+) actualCandidates=(\d+) nodesVisited=(\d+) refreshes=(\d+) changedLeaves=(\d+) vehicleUpdates=(\d+)', log)
               if mode == '1':
                   if not census:
@@ -104,6 +111,10 @@ jobs:
                   print(f'PR57_BVH_CENSUS_VERIFIED queries={q} fullScanCandidates={full} actualCandidates={actual} avoided={full-actual} nodesVisited={visited} refreshes={refreshes} changedLeaves={changed} updates={updates}')
               elif census:
                   raise SystemExit('PR57_BVH_CENSUS_BASELINE_UNEXPECTED')
+          for stage in expected_stages:
+              if checkpoints['0'][stage] != checkpoints['1'][stage]:
+                  raise SystemExit(f'PR57_BVH_CHECKPOINT_DIVERGENCE stage={stage} baseline={checkpoints["0"][stage]} bvh={checkpoints["1"][stage]}')
+              print(f'PR57_BVH_CHECKPOINT_PARITY stage={stage} sha256={checkpoints["0"][stage]}')
           if hashes[0] != hashes[1]:
               raise SystemExit(f'PR57_BVH_JSON_DIVERGENCE baseline={hashes[0]} bvh={hashes[1]}')
           print(f'PR57_BVH_JSON_PARITY sha256={hashes[0]}')
