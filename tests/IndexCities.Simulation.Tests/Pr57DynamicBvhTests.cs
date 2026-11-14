@@ -31,19 +31,24 @@ public sealed class Pr57DynamicBvhTests
         var checkpoint = sim.SaveToJson();
         var resumed = CitySimulation.FromJson(checkpoint);
         Assert.Equal(checkpoint, resumed.SaveToJson());
-        // An external roster reorder must invalidate the BVH's index-to-ID
-        // mapping before the next movement slice. The baseline executes the
-        // same changed causal order; compare full persisted states across modes.
+        // First construct the opt-in BVH on the resumed object. Mutating
+        // positions after this slice must refit an existing tree, rather than
+        // merely populate a fresh tree from already-mutated positions.
+        resumed.Advance(2);
+        resumed.CheckInvariants();
         Assert.True(resumed.State.Vehicles.Count > 1);
-        resumed.State.Vehicles.Reverse();
-        // Exercise an external position mutation as well as roster reordering.
-        // Swap two existing positions: no vehicles are created or removed, and
-        // both baseline and opt-in must observe the new positions on Advance.
+        // Swap existing positions without changing roster identity. Both
+        // baseline and opt-in must observe the mutation on the next slice.
         var first = resumed.State.Vehicles[0];
         var second = resumed.State.Vehicles[1];
         var firstPosition = first.Position;
         first.Position = second.Position;
         second.Position = firstPosition;
+        resumed.Advance(2);
+        resumed.CheckInvariants();
+        // Separately exercise roster invalidation after a tree already exists.
+        // Reversing the list must rebuild index-to-ID mapping before queries.
+        resumed.State.Vehicles.Reverse();
         for (var i = 0; i < 40; i++)
         {
             resumed.Advance(2);
