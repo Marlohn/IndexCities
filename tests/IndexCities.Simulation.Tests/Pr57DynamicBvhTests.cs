@@ -31,6 +31,11 @@ public sealed class Pr57DynamicBvhTests
         var checkpoint = sim.SaveToJson();
         var resumed = CitySimulation.FromJson(checkpoint);
         Assert.Equal(checkpoint, resumed.SaveToJson());
+        // An external roster reorder must invalidate the BVH's index-to-ID
+        // mapping before the next movement slice. The baseline executes the
+        // same changed causal order; compare full persisted states across modes.
+        Assert.True(resumed.State.Vehicles.Count > 1);
+        resumed.State.Vehicles.Reverse();
         for (var i = 0; i < 40; i++)
         {
             resumed.Advance(2);
