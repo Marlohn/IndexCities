@@ -95,11 +95,21 @@ public sealed partial class CitySimulation
         // by towing, operations and lane-entry frame transitions between slices.
         public void Refresh()
         {
-            for (var i = _nodes.Count - 1; i >= 0; i--)
+            // PR57: preserve exact per-slice invalidation while avoiding a
+            // complete internal-tree refit when most vehicles are stationary.
+            // Compare every leaf (external mutations are allowed), but only
+            // propagate changed bounds to ancestors. No persisted dirty flag
+            // or assumption about who moved is needed.
+            for (var i = 0; i < _leaves.Length; i++)
             {
-                var node = _nodes[i];
-                if (node.VehicleIndex >= 0) RefitLeaf(node);
-                else RefitBranch(node);
+                var leaf = _nodes[_leaves[i]];
+                var position = _vehicles[i].Position;
+                if (leaf.MinX == position.X && leaf.MaxX == position.X
+                    && leaf.MinZ == position.Z && leaf.MaxZ == position.Z)
+                    continue;
+                RefitLeaf(leaf);
+                for (var parent = leaf.Parent; parent >= 0; parent = _nodes[parent].Parent)
+                    RefitBranch(_nodes[parent]);
             }
         }
 
