@@ -39,7 +39,26 @@ public sealed class Pr57StaffFusionTests
         Assert.True(workers[1].WagesAccrued>=before[1].WagesAccrued);
         Assert.True(sim.State.Ledger.Count>=ledgerBefore);
         Assert.Equal(sim.State.Tuning.TotalMoney,sim.MonetaryTotal);
-        var json=sim.SaveToJson();
+        // External edits between Steps must invalidate the previous workforce
+        // census. Swap the sites (including the non-infrastructure farm) and
+        // run a second integrated Step, then a save/load continuation.
+        workers[0].WorkplaceId=utility.Id;
+        workers[0].Position=utility.Door;
+        workers[1].WorkplaceId=farm.Id;
+        workers[1].Position=farm.Door;
+        foreach(var c in workers)
+        {
+            c.VehicleId=null;
+            c.ConstructionProjectId=null;
+        }
+        sim.Advance(2);
+        sim.CheckInvariants();
+        Assert.Equal(sim.State.Tuning.TotalMoney,sim.MonetaryTotal);
+        var resumed=CitySimulation.FromJson(sim.SaveToJson());
+        resumed.Advance(2);
+        resumed.CheckInvariants();
+        Assert.Equal(resumed.State.Tuning.TotalMoney,resumed.MonetaryTotal);
+        var json=resumed.SaveToJson();
         Assert.Equal(json,CitySimulation.FromJson(json).SaveToJson());
         // Full JSON hash is emitted for cross-process baseline/fusion comparison.
         var hash=Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
