@@ -25,6 +25,7 @@ public sealed partial class CitySimulation
         readonly int[] _leaves;
         readonly List<int> _hits = [];
         readonly List<Vehicle> _results = [];
+        readonly List<int> _changedLeaves = [];
 
         public Pr57VehicleBvh(List<Vehicle> vehicles)
         {
@@ -95,21 +96,38 @@ public sealed partial class CitySimulation
         // by towing, operations and lane-entry frame transitions between slices.
         public void Refresh()
         {
-            // PR57: preserve exact per-slice invalidation while avoiding a
-            // complete internal-tree refit when most vehicles are stationary.
-            // Compare every leaf (external mutations are allowed), but only
-            // propagate changed bounds to ancestors. No persisted dirty flag
-            // or assumption about who moved is needed.
+            // Always observe every vehicle: callers can mutate positions between
+            // slices without notifying this experimental index.
+            _changedLeaves.Clear();
             for (var i = 0; i < _leaves.Length; i++)
             {
                 var leaf = _nodes[_leaves[i]];
                 var position = _vehicles[i].Position;
-                if (leaf.MinX == position.X && leaf.MaxX == position.X
-                    && leaf.MinZ == position.Z && leaf.MaxZ == position.Z)
-                    continue;
-                RefitLeaf(leaf);
-                for (var parent = leaf.Parent; parent >= 0; parent = _nodes[parent].Parent)
-                    RefitBranch(_nodes[parent]);
+                if (leaf.MinX != position.X || leaf.MaxX != position.X
+                    || leaf.MinZ != position.Z || leaf.MaxZ != position.Z)
+                    _changedLeaves.Add(_leaves[i]);
+            }
+
+            // Sparse motion: update only affected ancestors. Dense motion:
+            // refit each internal node once, bottom-up, instead of O(V log V)
+            // repeated ancestor walks. Build assigns parents before children.
+            if (_changedLeaves.Count > _leaves.Length / 4)
+            {
+                foreach (var index in _changedLeaves)
+                    RefitLeaf(_nodes[index]);
+                for (var index = _nodes.Count - 1; index >= 0; index--)
+                    if (_nodes[index].VehicleIndex < 0)
+                        RefitBranch(_nodes[index]);
+            }
+            else
+            {
+                foreach (var index in _changedLeaves)
+                {
+                    var leaf = _nodes[index];
+                    RefitLeaf(leaf);
+                    for (var parent = leaf.Parent; parent >= 0; parent = _nodes[parent].Parent)
+                        RefitBranch(_nodes[parent]);
+                }
             }
         }
 
