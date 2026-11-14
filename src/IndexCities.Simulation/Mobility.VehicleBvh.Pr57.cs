@@ -165,13 +165,24 @@ public sealed partial class CitySimulation
             return sideMin <= 2.6000001 && sideMax >= -2.6000001;
         }
 
-        void Visit(int index, Func<Node, bool> overlaps)
+        // Avoid allocating a predicate closure for every leader query. The BVH
+        // still visits only intersecting nodes and Finish restores exact source order.
+        void VisitLane(int index, Point point, double sin, double cos)
         {
             var node = _nodes[index];
-            if (!overlaps(node)) return;
+            if (!MayHoldLane(node, point, sin, cos)) return;
             if (node.VehicleIndex >= 0) { _hits.Add(node.VehicleIndex); return; }
-            Visit(node.Left, overlaps);
-            Visit(node.Right, overlaps);
+            VisitLane(node.Left, point, sin, cos);
+            VisitLane(node.Right, point, sin, cos);
+        }
+
+        void VisitBend(int index, Point point, double radiusSquared)
+        {
+            var node = _nodes[index];
+            if (MinimumSquaredDistance(node, point) > radiusSquared) return;
+            if (node.VehicleIndex >= 0) { _hits.Add(node.VehicleIndex); return; }
+            VisitBend(node.Left, point, radiusSquared);
+            VisitBend(node.Right, point, radiusSquared);
         }
 
         List<Vehicle> Finish()
@@ -189,7 +200,7 @@ public sealed partial class CitySimulation
             var point = vehicle.Position;
             var sin = Math.Sin(vehicle.Heading);
             var cos = Math.Cos(vehicle.Heading);
-            Visit(0, node => MayHoldLane(node, point, sin, cos));
+            VisitLane(0, point, sin, cos);
             return Finish();
         }
 
@@ -199,7 +210,7 @@ public sealed partial class CitySimulation
             if (_nodes.Count == 0) return Finish();
             var point = vehicle.Position;
             var radius = step + 12 + 1e-7;
-            Visit(0, node => MinimumSquaredDistance(node, point) <= radius * radius);
+            VisitBend(0, point, radius * radius);
             return Finish();
         }
     }
