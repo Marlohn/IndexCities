@@ -11,6 +11,7 @@ on:
 permissions:
   contents: read
   actions: read
+  issues: write
 concurrency:
   group: integrated-scale-pr57
   cancel-in-progress: false
@@ -886,3 +887,27 @@ jobs:
           name: integrated-scale-pr57-building-access-ab
           path: artifacts/access-ab/**
           retention-days: 14
+      # PR57 only: publish the completed push run ID where the four timers can
+      # read it through the already-connected GitHub PR tools. No new service.
+      - name: Publish CI run pointer for PR57 timers
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR57_RUN_ID: ${{ github.run_id }}
+          PR57_RUN_ATTEMPT: ${{ github.run_attempt }}
+          PR57_RUN_SHA: ${{ github.sha }}
+          PR57_JOB_STATUS: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          run_url="https://github.com/$GITHUB_REPOSITORY/actions/runs/$PR57_RUN_ID"
+          body=$(printf "%s\n\n%s\n\n%s\n%s\n%s\n%s\n%s\n" \
+            "<!-- PR57_ACTIONS_HANDOFF_SINGLE -->" \
+            "**PR57 — último job publicado por GitHub Actions (ponte operacional, não prova de desempenho)**" \
+            "- Run: $run_url" \
+            "- SHA: `$PR57_RUN_SHA`" \
+            "- Tentativa: $PR57_RUN_ATTEMPT" \
+            "- Job: building-access-ab" \
+            "- Resultado: **$PR57_JOB_STATUS** (consultar log/artefatos antes de concluir paridade)")
+          gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/6874869959" -f body="$body" >/dev/null \
+            || echo "PR57_ACTIONS_HANDOFF_UPDATE_FAILED run=$PR57_RUN_ID status=$PR57_JOB_STATUS"
