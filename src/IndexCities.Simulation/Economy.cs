@@ -199,10 +199,12 @@ public sealed partial class CitySimulation
             ?(IEnumerable<Building>)_active
             :State.Buildings.Where(b=>b.Completed&&!b.Removed);
         foreach(var b in operatingBuildings){
-            if(Pr57StaffPhaseFusionEnabled && _activeById.ContainsKey(b.Id))
+            if(Pr57StaffPhaseFusionEnabled)
             {
-                // Only infrastructure workplaces were evaluated by WorkerPresentAt.
-                // All other businesses must retain the original wage calculation.
+                // _active is the exact completed/non-removed set used to build
+                // _activeById and the present-worker census in this Step.
+                // Avoid a second dictionary membership lookup per building.
+                // The fallback below is retained for the opt-out baseline.
                 if(_pr57PresentStaff.TryGetValue(b.Id,out var presentWorkers))
                     foreach(var c in presentWorkers){c.AddWorkSecondsToday(dt);AccrueWage(c,dt);}
             }
