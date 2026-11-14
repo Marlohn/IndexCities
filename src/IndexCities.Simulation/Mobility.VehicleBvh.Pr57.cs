@@ -154,8 +154,17 @@ public sealed partial class CitySimulation
         {
             if (!_indexById.TryGetValue(vehicle.Id, out var index)) return;
             var leaf = _leaves[index];
-            RefitLeaf(_nodes[leaf]);
-            for (var parent = _nodes[leaf].Parent; parent >= 0; parent = _nodes[parent].Parent)
+            var node = _nodes[leaf];
+            var position = vehicle.Position;
+            // Stationary vehicles are still processed by the integrated movement
+            // phase. Their bounds are already exact: avoid a redundant O(log V)
+            // ancestor refit without skipping any movement/economic side effects.
+            // Refresh continues to observe external mutations between slices.
+            if (node.MinX == position.X && node.MaxX == position.X
+                && node.MinZ == position.Z && node.MaxZ == position.Z)
+                return;
+            RefitLeaf(node);
+            for (var parent = node.Parent; parent >= 0; parent = _nodes[parent].Parent)
                 RefitBranch(_nodes[parent]);
         }
 
