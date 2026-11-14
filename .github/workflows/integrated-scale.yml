@@ -30,6 +30,8 @@ jobs:
           dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
           PR57_BUILDING_WORK_ACCESS=0 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
           PR57_BUILDING_WORK_ACCESS=1 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+          # Isolate the opt-in in a fresh test process; do not change global flags mid-process.
+          PR57_STAFF_PHASE_FUSION=1 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --no-build --filter FullyQualifiedName~Pr57StaffFusionTests --logger 'console;verbosity=normal'
       # Bounded, observational cross-phase ceiling on the real integrated Step(2).
       # This is NOT an A/B speedup and must not be extrapolated to 10k/80y.
       - name: Measure recurring cross-phase ceiling on integrated cycle
