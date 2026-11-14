@@ -192,7 +192,13 @@ public sealed partial class CitySimulation
         // Workplaces do not change during this loop: group the citizens once,
         // keeping building order and citizen order within each building.
         var staff=StaffByWorkplace();
-        foreach(var b in State.Buildings.Where(b=>b.Completed&&!b.Removed)){
+        // The immediately preceding infrastructure phase built _active in exact
+        // State.Buildings order. In fusion mode reuse that same per-Step set;
+        // no building mutation occurs between the two phases. Baseline stays live.
+        var operatingBuildings=Pr57StaffPhaseFusionEnabled
+            ?(IEnumerable<Building>)_active
+            :State.Buildings.Where(b=>b.Completed&&!b.Removed);
+        foreach(var b in operatingBuildings){
             if(Pr57StaffPhaseFusionEnabled && _activeById.ContainsKey(b.Id))
             {
                 // Only infrastructure workplaces were evaluated by WorkerPresentAt.
