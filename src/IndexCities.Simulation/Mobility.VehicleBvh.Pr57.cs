@@ -29,6 +29,9 @@ public sealed partial class CitySimulation
         readonly List<int> _dirtyParents = [];
         readonly int[] _dirtyParentMarks;
         int _dirtyGeneration = 1;
+        // PR57 observational census only; never read by physics or persistence.
+        static readonly bool Census = Environment.GetEnvironmentVariable("PR57_BVH_CENSUS") == "1";
+        long _queries, _candidates, _nodesVisited, _refreshes, _changed, _updates;
 
         public Pr57VehicleBvh(List<Vehicle> vehicles)
         {
@@ -59,6 +62,7 @@ public sealed partial class CitySimulation
                     || leaf.MinZ != position.Z || leaf.MaxZ != position.Z)
                     _changedLeaves.Add(_leaves[i]);
             }
+            if (Census) { _refreshes++; _changed += _changedLeaves.Count; }
             RefitChanged();
             return true;
         }
@@ -199,6 +203,7 @@ public sealed partial class CitySimulation
             // phase. Their bounds are already exact: avoid a redundant O(log V)
             // ancestor refit without skipping any movement/economic side effects.
             // Refresh continues to observe external mutations between slices.
+            if (Census) _updates++;
             if (node.MinX == position.X && node.MaxX == position.X
                 && node.MinZ == position.Z && node.MaxZ == position.Z)
                 return;
@@ -249,6 +254,7 @@ public sealed partial class CitySimulation
         // still visits only intersecting nodes and Finish restores exact source order.
         void VisitLane(int index, Point point, double sin, double cos)
         {
+            if (Census) _nodesVisited++;
             var node = _nodes[index];
             if (!MayHoldLane(node, point, sin, cos)) return;
             if (node.VehicleIndex >= 0) { _hits.Add(node.VehicleIndex); return; }
@@ -258,6 +264,7 @@ public sealed partial class CitySimulation
 
         void VisitBend(int index, Point point, double radiusSquared)
         {
+            if (Census) _nodesVisited++;
             var node = _nodes[index];
             if (MinimumSquaredDistance(node, point) > radiusSquared) return;
             if (node.VehicleIndex >= 0) { _hits.Add(node.VehicleIndex); return; }
@@ -270,6 +277,13 @@ public sealed partial class CitySimulation
             _hits.Sort(); // exact original State.Vehicles iteration order
             _results.Clear();
             foreach (var index in _hits) _results.Add(_vehicles[index]);
+            if (Census)
+            {
+                _queries++;
+                _candidates += _hits.Count;
+                if (_queries % 100 == 0)
+                    Console.WriteLine($"PR57_BVH_CENSUS queries={_queries} roster={_vehicles.Count} fullScanCandidates={_queries * _vehicles.Count} actualCandidates={_candidates} nodesVisited={_nodesVisited} refreshes={_refreshes} changedLeaves={_changed} vehicleUpdates={_updates}");
+            }
             return _results;
         }
 
