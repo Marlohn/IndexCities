@@ -721,7 +721,7 @@ jobs:
                   windows=[line for line in log.splitlines() if line.startswith('WINDOW ')]
                   assert len(windows)==2,(workload,trial,'windows')
                   def metric(line,key):
-                      m=re.search(r'(?<!\\w)'+re.escape(key)+r'=([0-9.]+)',line)
+                      m=re.search(r'(?<!\w)'+re.escape(key)+r'=([0-9.]+)',line)
                       assert m,(workload,trial,key,line)
                       return float(m[1])
                   measures={key:sum(metric(line,key) for line in windows) for key in ('wall','cpu','allocMB')}
@@ -731,9 +731,9 @@ jobs:
                   assert set(hashes)=={0,1,2},(workload,trial,'missing JSON')
                   for line in log.splitlines():
                       if line.startswith('PR57_AB_CHECKPOINT window='):
-                          m=re.search(r'window=(\\d+) sha256=([a-fA-F0-9]{64})',line)
+                          m=re.search(r'window=(\d+) sha256=([a-fA-F0-9]{64})',line)
                           assert m and hashes[int(m[1])]==m[2].lower(),(workload,trial,'hash')
-                  census=re.findall(r'PR57_SHARED_STEP_SUM steps=(\\d+) builds=(\\d+) appends=(\\d+) queries=(\\d+) reassigns=(\\d+) buckets=(\\d+)',log)
+                  census=re.findall(r'PR57_SHARED_STEP_SUM steps=(\d+) builds=(\d+) appends=(\d+) queries=(\d+) reassigns=(\d+) buckets=(\d+)',log)
                   if trial.startswith('B'):
                       assert census,(workload,trial,'opt-in not exercised')
                       steps,builds,appends,queries,reassigns,buckets=map(int,census[-1])
