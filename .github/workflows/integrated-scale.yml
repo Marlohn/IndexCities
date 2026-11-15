@@ -738,6 +738,7 @@ jobs:
                       assert census,(workload,trial,'opt-in not exercised')
                       steps,builds,appends,queries,reassigns,buckets=map(int,census[-1])
                       assert steps>0,(workload,trial,'no steps')
+                      assert queries>0 and builds>0,(workload,trial,'opt-in did not query/build the shipment workset')
                       print('PR57_SHARED_ISOLATED_WORK',workload,trial,'steps',steps,'builds',builds,'appends',appends,'queries',queries,'reassigns',reassigns,'buckets',buckets)
                   else:
                       assert not census,(workload,trial,'baseline opt-in leak')
