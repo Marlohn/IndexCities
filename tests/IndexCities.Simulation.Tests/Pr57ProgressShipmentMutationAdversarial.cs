@@ -31,6 +31,14 @@ public sealed class Pr57ProgressShipmentMutationAdversarial
 
     static void Probe(CitySimulation sim, int projectId, string stage, string expected)
     {
+        // Reflection bypasses Advance(2), which normally opens the shared
+        // shipment step. Start a fresh step here so each external mutation
+        // exercises the opt-in index rather than an uninitialized fallback.
+        if (Environment.GetEnvironmentVariable("PR57_SHARED_STEP_SHIPMENTS") == "1")
+        {
+            typeof(CitySimulation).GetMethod("Pr57SharedShipmentsBeginStep",
+                BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(sim, null);
+        }
         Progress.Invoke(sim, [2.0]);
         var actual = sim.State.Projects.Single(p => p.Id == projectId).Cause;
         Assert.Equal(expected, actual);
