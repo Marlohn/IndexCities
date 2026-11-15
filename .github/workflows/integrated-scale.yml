@@ -636,10 +636,10 @@ jobs:
                   assert set(hashes)=={0,1,2},(workload,trial,'missing full checkpoints')
                   for line in log.splitlines():
                       if line.startswith('PR57_AB_CHECKPOINT window='):
-                          m=re.search(r'window=(\\d+) sha256=([a-fA-F0-9]{64})',line)
+                          m=re.search(r'window=(\d+) sha256=([a-fA-F0-9]{64})',line)
                           assert m and hashes[int(m[1])]==m[2].lower(),(workload,trial,'bad checkpoint')
                   if mode:
-                      census=re.findall(r'PR57_BVH_CENSUS queries=(\\d+) roster=(\\d+) fullScanCandidates=(\\d+) actualCandidates=(\\d+) nodesVisited=(\\d+) refreshes=(\\d+) changedLeaves=(\\d+) vehicleUpdates=(\\d+)',log)
+                      census=re.findall(r'PR57_BVH_CENSUS queries=(\d+) roster=(\d+) fullScanCandidates=(\d+) actualCandidates=(\d+) nodesVisited=(\d+) refreshes=(\d+) changedLeaves=(\d+) vehicleUpdates=(\d+)',log)
                       assert census,(workload,trial,'missing BVH census')
                       q,roster,full,actual,visited,refresh,changed,updates=map(int,census[-1])
                       assert q>0 and full==q*roster and actual<full and visited>0,(workload,trial,'BVH no avoided work')
