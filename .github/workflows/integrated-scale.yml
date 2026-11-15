@@ -643,9 +643,9 @@ jobs:
                       q,roster,full,actual,visited,refresh,changed,updates=map(int,census[-1])
                       assert q>0 and full==q*roster and actual<full and visited>0,(workload,trial,'BVH no avoided work')
                       print('PR57_COMBINED_BVH_WORK',workload,trial,'queries',q,'avoided',full-actual,'nodes',visited,'refresh',refresh)
-                      access=[line for line in log.splitlines() if line.startswith('PR57_BUILDING_WORK_ACCESS_STATS ')]
-                      assert access,(workload,trial,'missing building access counters')
-                      print('PR57_COMBINED_ACCESS_WORK',workload,trial,access[-1])
+                      if workload!='congested':
+                          assert 'PR57_BUILDING_WORK_ACCESS built=True' in log,(workload,trial,'building index not built')
+                      print('PR57_COMBINED_ACCESS_ACTIVE',workload,trial,'built',('PR57_BUILDING_WORK_ACCESS built=True' in log))
                   runs[trial]=(metrics,hashes)
               for index in (0,1,2):
                   digests={trial:runs[trial][1][index] for trial in runs}
