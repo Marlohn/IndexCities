@@ -709,12 +709,12 @@ jobs:
               log=(pathlib.Path('artifacts/access-ab')/f'phase-{case}.log').read_text()
               line=next((s for s in log.splitlines() if s.startswith('PR57_CROSS_PHASE_CEILING ')),None)
               assert line,(case,'missing integrated profile')
-              fields=dict(re.findall(r'(\\w+)=([^ ]+)',line))
+              fields=dict(re.findall(r'(\w+)=([^ ]+)',line))
               assert int(fields['steps'])==60,(case,'not 60 Advance(2) calls')
               parts={}
               for part in log.splitlines():
                   if not part.startswith('PR57_CROSS_PHASE_PART '):continue
-                  values=dict(re.findall(r'(\\w+)=([^ ]+)',part))
+                  values=dict(re.findall(r'(\w+)=([^ ]+)',part))
                   parts[values['name']]=int(values['ticks'])
               assert len(parts)==9,(case,'missing recurring phase')
               recurring=int(fields['recurringTicks'])
