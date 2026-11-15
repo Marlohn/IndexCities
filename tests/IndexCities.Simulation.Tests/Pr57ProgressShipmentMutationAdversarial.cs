@@ -173,9 +173,17 @@ public sealed class Pr57ProgressShipmentMutationAdversarial
         load.Cargo.Clear();
         foreach (var requirement in project.Required)
             load.Cargo[requirement.Key] = requirement.Value;
+        // Reflection bypasses Advance(2): explicitly initialize the shared
+        // workset before each probe so the opt-in cargo predicate is exercised.
+        if (Environment.GetEnvironmentVariable("PR57_SHARED_STEP_SHIPMENTS") == "1")
+            typeof(CitySimulation).GetMethod("Pr57SharedShipmentsBeginStep",
+                BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(synthetic, null);
         Progress.Invoke(synthetic, [2.0]);
         Assert.Equal(truck.Id, project.CrewVehicleId);
         load.Cargo.Clear();
+        if (Environment.GetEnvironmentVariable("PR57_SHARED_STEP_SHIPMENTS") == "1")
+            typeof(CitySimulation).GetMethod("Pr57SharedShipmentsBeginStep",
+                BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(synthetic, null);
         Progress.Invoke(synthetic, [2.0]);
         Assert.Null(project.CrewVehicleId);
         Console.WriteLine("PR57_PROGRESS_MUTATION cargo-live=True crew-return=True synthetic=True");
