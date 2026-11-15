@@ -7,6 +7,11 @@ public sealed partial class CitySimulation
     // PR57 #155: intrusive, observational per-vehicle cost classification.
     // Disabled in normal gameplay and in plain wall runs. No scheduler reads these counters.
     static readonly bool Pr57VehicleCostProbeEnabled=Environment.GetEnvironmentVariable("PR57_VEHICLE_COST_PROBE")=="1";
+    // PR57 isolated, intrusive census: cleanup and ordering cannot be assumed removable.
+    static readonly bool Pr57SliceSetupProbeEnabled=Environment.GetEnvironmentVariable("PR57_SLICE_SETUP_PROBE")=="1";
+    readonly long[] _pr57SliceSetupTicks=new long[2]; // junction cleanup, canonical sort (including materialization)
+    readonly long[] _pr57SliceSetupCalls=new long[2];
+    readonly long[] _pr57SliceSetupVehicles=new long[2];
     readonly long[] _pr57VehicleCostTicks=new long[8];
     readonly long[] _pr57VehicleCostCalls=new long[8];
     readonly long[] _pr57VehicleCostBytes=new long[8];
@@ -575,6 +580,8 @@ public sealed partial class CitySimulation
         var pr57PoseNoopEligible=0;
         var pr57PoseNoopSkipped=0;
         var pr57CostProbe=scanProfile is not null&&Pr57VehicleCostProbeEnabled;
+        var pr57SetupProbe=scanProfile is not null&&Pr57SliceSetupProbeEnabled;
+        var pr57SetupStart=pr57SetupProbe?System.Diagnostics.Stopwatch.GetTimestamp():0L;
         var pr57LimiterProbe=scanProfile is not null&&Pr57QueueLimiterEnabled&&dt>0&&_pr57MovementAllocCalls%37==0;
         var pr57DepProbe=scanProfile is not null&&Pr57BlockDepProbeEnabled&&dt>0;
         var pr57IdleProbe=scanProfile is not null&&Pr57IdleProbeEnabled;
@@ -586,6 +593,11 @@ public sealed partial class CitySimulation
         // actual rear of the truck; the former 9 m reservation could overlap
         // nearby junctions and make opposite queues hold each other forever.
         foreach(var vehicle in State.Vehicles){ClearPassedJunction(vehicle);ReleaseManoeuvre(vehicle);}
+        if(pr57SetupProbe){
+            _pr57SliceSetupTicks[0]+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57SetupStart;
+            _pr57SliceSetupCalls[0]++;
+            _pr57SliceSetupVehicles[0]+=State.Vehicles.Count;
+        }
         Pr57Effect253AfterCleanup();
         Pr57CausalAfterCleanup();
         Pr57JunctionReadersAfterCleanup();
@@ -609,8 +621,14 @@ public sealed partial class CitySimulation
         // among all vehicles that can execute. The all-vehicle junction cleanup
         // above and every physical candidate scan remain unchanged.
         var pr57BatchOrder=Environment.GetEnvironmentVariable("PR57_BATCH_ORDER")=="1"&&operationsDt is null?_vehicleMovementBatch:null;
+        if(pr57SetupProbe)pr57SetupStart=System.Diagnostics.Stopwatch.GetTimestamp();
         var ordered=pr57BatchOrder is null?State.Vehicles.ToArray():State.Vehicles.Where(v=>pr57BatchOrder.Contains(v.Id)).ToArray();
         Array.Sort(ordered,static (a,b)=>a.WaitingSince.CompareTo(b.WaitingSince) is var c and not 0?c:a.Id.CompareTo(b.Id));
+        if(pr57SetupProbe){
+            _pr57SliceSetupTicks[1]+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57SetupStart;
+            _pr57SliceSetupCalls[1]++;
+            _pr57SliceSetupVehicles[1]+=ordered.Length;
+        }
         // PR57 isolated A/B: parked passenger cars are not lane occupants and
         // BodyAcrossLane explicitly excludes passenger cars. Build a stable
         // original-order candidate list once per movement slice.
@@ -1479,6 +1497,10 @@ public sealed partial class CitySimulation
                 Pr57Man248Report(_pr57MovementAllocCalls);
             }
             if(Pr57QueueLimiterEnabled&&_pr57MovementAllocCalls%100==0)Pr57QueueLimiterPrint(_pr57MovementAllocCalls);
+            if(pr57SetupProbe&&_pr57MovementAllocCalls%60==0){
+                var hz=System.Diagnostics.Stopwatch.Frequency;
+                Console.WriteLine($"PR57_SLICE_SETUP slices={_pr57MovementAllocCalls} cleanupCalls={_pr57SliceSetupCalls[0]} cleanupVehicles={_pr57SliceSetupVehicles[0]} cleanupMs={_pr57SliceSetupTicks[0]*1000.0/hz:F5} sortCalls={_pr57SliceSetupCalls[1]} sortVehicles={_pr57SliceSetupVehicles[1]} sortMs={_pr57SliceSetupTicks[1]*1000.0/hz:F5} scope=INTRUSIVE_NO_SKIP");
+            }
             if(pr57CostProbe&&_pr57MovementAllocCalls%60==0){
                 string[] names=["operations","nontravelling","moved","queue","junction","waiting","stationary-trip","other"];
                 var totalTicks=_pr57VehicleCostTicks.Sum();
