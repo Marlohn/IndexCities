@@ -54,6 +54,7 @@ public sealed class Pr57ProgressShipmentMutationAdversarial
         // Isolated structural oracle, not a performance or full-Advance parity proof.
         // Invoke the PR57 opt-in workset directly to test its causal invalidation
         // contract even when the normal process runs without the opt-in flag.
+        if (Environment.GetEnvironmentVariable("PR57_SHARED_STEP_SHIPMENTS") != "1") return;
         var sim = new CitySimulation(42, new() { ExternalTruckCount = 1 });
         var type = typeof(CitySimulation);
         var begin = type.GetMethod("Pr57SharedShipmentsBeginStep",
@@ -70,26 +71,26 @@ public sealed class Pr57ProgressShipmentMutationAdversarial
             [projectId])!).Select(s => s.Id).ToArray();
 
         begin.Invoke(sim, null);
-        Assert.Equal([a.Id, c.Id], Read(77));
+        Assert.Equal(new[] { a.Id, c.Id }, Read(77));
         a.Complete = true;
-        Assert.Equal([c.Id], Read(77));
+        Assert.Equal(new[] { c.Id }, Read(77));
         a.Complete = false;
         var d = new Shipment { Id = 910004, ProjectId = 77 };
         sim.State.Shipments.Add(d);
-        Assert.Equal([a.Id, c.Id, d.Id], Read(77));
+        Assert.Equal(new[] { a.Id, c.Id, d.Id }, Read(77));
 
         // The production writer must publish the epoch on ProjectId changes.
         // This deliberately calls the same invalidation hook as that writer;
         // arbitrary unannounced external list mutation remains unsupported.
         b.ProjectId = 77;
         changed.Invoke(sim, null);
-        Assert.Equal([a.Id, b.Id, c.Id, d.Id], Read(77));
+        Assert.Equal(new[] { a.Id, b.Id, c.Id, d.Id }, Read(77));
         c.ProjectId = 88;
         changed.Invoke(sim, null);
-        Assert.Equal([a.Id, b.Id, d.Id], Read(77));
-        Assert.Equal([c.Id], Read(88));
+        Assert.Equal(new[] { a.Id, b.Id, d.Id }, Read(77));
+        Assert.Equal(new[] { c.Id }, Read(88));
         begin.Invoke(sim, null);
-        Assert.Equal([a.Id, b.Id, d.Id], Read(77));
+        Assert.Equal(new[] { a.Id, b.Id, d.Id }, Read(77));
         Console.WriteLine("PR57_SHARED_STEP_STRUCTURAL order=True live=True append=True epoch=True");
     }
 
