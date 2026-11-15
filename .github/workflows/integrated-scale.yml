@@ -791,7 +791,7 @@ jobs:
           # not an already-optimized vehicle path. This is intrusive, not a speedup.
           for case in real congested; do
             if [[ "$case" == real ]]; then profile_source="$source"; else profile_source="$congested"; fi
-            PR57_CROSS_PHASE_CEILING=1 PR57_SLICE_SETUP_PROBE=1 PR57_DYNAMIC_BVH=0 PR57_BUILDING_WORK_ACCESS=0 \
+            PR57_CROSS_PHASE_CEILING=1 PR57_SLICE_SETUP_PROBE=1 PR57_206_RESIDUAL_EXCLUSIVE=1 PR57_DYNAMIC_BVH=0 PR57_BUILDING_WORK_ACCESS=0 \
               PR57_PARALLEL_NEEDS=0 PR57_STAFF_PHASE_FUSION=0 \
               timeout 120s dotnet run --no-build -c Release \
               --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
@@ -817,6 +817,19 @@ jobs:
               final=dict(re.findall(r'(\w+)=([^ ]+)',setup[-1]))
               assert int(final['cleanupCalls'])>0 and int(final['sortCalls'])>0,(case,'inactive setup probe')
               print('PR57_SLICE_SETUP_AUTHENTIC',case,setup[-1])
+              residual=[line for line in log.splitlines() if line.startswith('PR57_206_RESIDUAL ')]
+              assert len(residual)==3,(case,'exclusive slices not sampled',len(residual))
+              for index,record in enumerate(residual,1):
+                  stage=dict(re.findall(r'(\w+)=([^ ]+)',record))
+                  assert int(stage['sample'])==index,(case,'unexpected exclusive sample',stage)
+                  assert int(stage['vehicles'])>0,(case,'no live vehicle work',stage)
+                  stage_ms=[float(stage[f's{i}Ms']) for i in range(9)]
+                  assert all(value>=0 for value in stage_ms),(case,'negative exclusive timing')
+                  assert abs(sum(stage_ms)-float(stage['totalMs']))<0.002,(case,'exclusive sum mismatch')
+                  print('PR57_AUTHENTIC_EXCLUSIVE',case,'sample',index,
+                        'vehicles',stage['vehicles'],'totalMs',stage['totalMs'],
+                        *[f's{i}Ms={stage_ms[i]:.6f}' for i in range(9)],
+                        'scope=three_consecutive_physical_slices_intrusive_not_ABBA')
               assert len(parts)==9,(case,'missing recurring phase')
               recurring=int(fields['recurringTicks'])
               other=int(fields['otherTicks'])
