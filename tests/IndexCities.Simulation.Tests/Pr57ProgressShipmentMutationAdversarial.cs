@@ -49,6 +49,51 @@ public sealed class Pr57ProgressShipmentMutationAdversarial
     }
 
     [Fact]
+    public void Shared_step_membership_preserves_order_live_predicates_append_and_epoch_rebuild()
+    {
+        // Isolated structural oracle, not a performance or full-Advance parity proof.
+        // Invoke the PR57 opt-in workset directly to test its causal invalidation
+        // contract even when the normal process runs without the opt-in flag.
+        var sim = new CitySimulation(42, new() { ExternalTruckCount = 1 });
+        var type = typeof(CitySimulation);
+        var begin = type.GetMethod("Pr57SharedShipmentsBeginStep",
+            BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var query = type.GetMethod("Pr57SharedPendingProjectShipments",
+            BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var changed = type.GetMethod("Pr57SharedShipmentProjectChanged",
+            BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var a = new Shipment { Id = 910001, ProjectId = 77 };
+        var b = new Shipment { Id = 910002, ProjectId = 88 };
+        var c = new Shipment { Id = 910003, ProjectId = 77 };
+        sim.State.Shipments.AddRange([a, b, c]);
+        int[] Read(int projectId) => ((IEnumerable<Shipment>)query.Invoke(sim,
+            [projectId])!).Select(s => s.Id).ToArray();
+
+        begin.Invoke(sim, null);
+        Assert.Equal([a.Id, c.Id], Read(77));
+        a.Complete = true;
+        Assert.Equal([c.Id], Read(77));
+        a.Complete = false;
+        var d = new Shipment { Id = 910004, ProjectId = 77 };
+        sim.State.Shipments.Add(d);
+        Assert.Equal([a.Id, c.Id, d.Id], Read(77));
+
+        // The production writer must publish the epoch on ProjectId changes.
+        // This deliberately calls the same invalidation hook as that writer;
+        // arbitrary unannounced external list mutation remains unsupported.
+        b.ProjectId = 77;
+        changed.Invoke(sim, null);
+        Assert.Equal([a.Id, b.Id, c.Id, d.Id], Read(77));
+        c.ProjectId = 88;
+        changed.Invoke(sim, null);
+        Assert.Equal([a.Id, b.Id, d.Id], Read(77));
+        Assert.Equal([c.Id], Read(88));
+        begin.Invoke(sim, null);
+        Assert.Equal([a.Id, b.Id, d.Id], Read(77));
+        Console.WriteLine("PR57_SHARED_STEP_STRUCTURAL order=True live=True append=True epoch=True");
+    }
+
+    [Fact]
     public void External_membership_and_live_cargo_changes_rebuild_between_calls_and_preserve_save()
     {
         var (sim, projectId, shipmentId) = Setup();
