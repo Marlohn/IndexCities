@@ -91,7 +91,23 @@ public sealed class Pr57ProgressShipmentMutationAdversarial
         Assert.Equal(new[] { c.Id }, Read(88));
         begin.Invoke(sim, null);
         Assert.Equal(new[] { a.Id, b.Id, d.Id }, Read(77));
-        Console.WriteLine("PR57_SHARED_STEP_STRUCTURAL order=True live=True append=True epoch=True");
+
+        // Step-boundary replacement with unchanged count must not retain stale
+        // pooled object references. Mid-Step unannounced edits remain unsupported.
+        var replacement = new Shipment { Id = 910005, ProjectId = 88 };
+        sim.State.Shipments[0] = replacement;
+        begin.Invoke(sim, null);
+        Assert.Equal(new[] { b.Id, d.Id }, Read(77));
+        Assert.Equal(new[] { replacement.Id, c.Id }, Read(88));
+
+        // Shrinking forces a full rebuild before an append can reuse the bucket.
+        sim.State.Shipments.RemoveAt(1);
+        Assert.Equal(new[] { d.Id }, Read(77));
+        var appended = new Shipment { Id = 910006, ProjectId = 77 };
+        sim.State.Shipments.Add(appended);
+        Assert.Equal(new[] { d.Id, appended.Id }, Read(77));
+        Assert.Equal(new[] { replacement.Id, c.Id }, Read(88));
+        Console.WriteLine("PR57_SHARED_STEP_STRUCTURAL order=True live=True append=True epoch=True boundaryReplace=True shrink=True");
     }
 
     [Fact]
