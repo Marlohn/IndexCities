@@ -40,8 +40,23 @@ jobs:
             "- Run: https://github.com/$GITHUB_REPOSITORY/actions/runs/$PR57_RUN_ID" \
             "- SHA: $PR57_RUN_SHA" \
             "- Estado: em andamento; consultar jobs e logs para o resultado")
-          gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/6874869959" -f body="$body" >/dev/null \
-            || echo "PR57_ACTIONS_HANDOFF_START_FAILED run=$PR57_RUN_ID"
+          # The original pointer comment belongs to another GitHub principal.
+          # Actions cannot PATCH that comment (403) even with issues:write.
+          # Instead, find or create one comment owned by github-actions[bot].
+          marker='<!-- PR57_ACTIONS_HANDOFF_BOT -->'
+          body="$marker
+          $body"
+          ids=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/57/comments?per_page=100" \
+            --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- PR57_ACTIONS_HANDOFF_BOT -->"))) | .id') \
+            || { echo "PR57_RUN_POINTER_LOOKUP_FAILED run=$PR57_RUN_ID"; exit 0; }
+          id=$(printf '%s\n' "$ids" | sed '/^$/d' | tail -n 1)
+          if [[ -n "$id" ]]; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$id" -f body="$body" >/dev/null \
+              || echo "PR57_RUN_POINTER_UPDATE_FAILED run=$PR57_RUN_ID"
+          else
+            gh api -X POST "repos/$GITHUB_REPOSITORY/issues/57/comments" -f body="$body" >/dev/null \
+              || echo "PR57_RUN_POINTER_CREATE_FAILED run=$PR57_RUN_ID"
+          fi
       - name: Build and simulation tests with opt-in off and on
         shell: bash
         run: |
@@ -1162,5 +1177,18 @@ jobs:
             "- Tentativa: $PR57_RUN_ATTEMPT" \
             "- Job: building-access-ab" \
             "- Resultado: **$PR57_JOB_STATUS** (consultar log/artefatos antes de concluir paridade)")
-          gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/6874869959" -f body="$body" >/dev/null \
-            || echo "PR57_ACTIONS_HANDOFF_UPDATE_FAILED run=$PR57_RUN_ID status=$PR57_JOB_STATUS"
+          # Update only the bot-owned pointer (never PATCH a human/app comment).
+          marker='<!-- PR57_ACTIONS_HANDOFF_BOT -->'
+          body="$marker
+          $body"
+          ids=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/57/comments?per_page=100" \
+            --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- PR57_ACTIONS_HANDOFF_BOT -->"))) | .id') \
+            || { echo "PR57_RUN_POINTER_LOOKUP_FAILED run=$PR57_RUN_ID"; exit 0; }
+          id=$(printf '%s\n' "$ids" | sed '/^$/d' | tail -n 1)
+          if [[ -n "$id" ]]; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$id" -f body="$body" >/dev/null \
+              || echo "PR57_RUN_POINTER_UPDATE_FAILED run=$PR57_RUN_ID status=$PR57_JOB_STATUS"
+          else
+            gh api -X POST "repos/$GITHUB_REPOSITORY/issues/57/comments" -f body="$body" >/dev/null \
+              || echo "PR57_RUN_POINTER_CREATE_FAILED run=$PR57_RUN_ID status=$PR57_JOB_STATUS"
+          fi
