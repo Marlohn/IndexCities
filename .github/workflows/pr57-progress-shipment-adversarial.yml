@@ -33,7 +33,7 @@ jobs:
             PR57_GRID_DIAG=1 PR57_PROGRESS_MUTATION_DIR="$PWD/artifacts/progress-mutation/$mode" \
             PR57_SITE_OWNER_ROSTER=1 PR57_BUILDING_WORK_ACCESS=1 \
             PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ORDER_SHIPMENT_INDEX=1 \
-            PR57_PROGRESS_SHIPMENT_LOOKUP="$enabled" \
+            PR57_PROGRESS_SHIPMENT_LOOKUP="$enabled" PR57_SHARED_STEP_SHIPMENTS="$enabled" \
               dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
                 -c Release --no-build --filter FullyQualifiedName~Pr57ProgressShipmentMutationAdversarial \
                 --logger "console;verbosity=normal" | tee "artifacts/progress-mutation/$mode.log"
@@ -41,6 +41,9 @@ jobs:
             if [[ "$mode" == on ]]; then expected=True; fi
             grep -F "PR57_PROGRESS_SHIPMENT_LOOKUP active=$expected" "artifacts/progress-mutation/$mode.log"
             grep -F "PR57_PROGRESS_MUTATION cargo-live=True crew-return=True synthetic=True" "artifacts/progress-mutation/$mode.log"
+            if [[ "$mode" == on ]]; then
+              grep -F "PR57_SHARED_STEP_STRUCTURAL order=True live=True append=True epoch=True boundaryReplace=True shrink=True" "artifacts/progress-mutation/$mode.log"
+            fi
           done
           for checkpoint in before after-restoration after-resume; do
             cmp "artifacts/progress-mutation/off/$checkpoint.json" \
@@ -54,7 +57,7 @@ jobs:
           for enabled in 0 1; do
             PR57_SITE_OWNER_ROSTER=1 PR57_BUILDING_WORK_ACCESS=1 \
             PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ORDER_SHIPMENT_INDEX=1 \
-            PR57_PROGRESS_SHIPMENT_LOOKUP="$enabled" \
+            PR57_PROGRESS_SHIPMENT_LOOKUP="$enabled" PR57_SHARED_STEP_SHIPMENTS="$enabled" \
               dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
                 -c Release --no-build --verbosity quiet
           done
