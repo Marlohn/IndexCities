@@ -64,6 +64,9 @@ jobs:
           dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
           PR57_BUILDING_WORK_ACCESS=0 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
           PR57_BUILDING_WORK_ACCESS=1 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+          mkdir -p artifacts
+          PR57_SHARED_STEP_SHIPMENTS=1 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --no-build --filter FullyQualifiedName~Shared_step_membership_preserves_order_live_predicates_append_and_epoch_rebuild --logger 'console;verbosity=normal' | tee artifacts/shared-step-structural.log
+          grep -q 'PR57_SHARED_STEP_STRUCTURAL order=True live=True append=True epoch=True' artifacts/shared-step-structural.log
           # Two fresh processes: compare the *entire* integrated saved state,
           # not only wages, and fail on a missing marker or any JSON difference.
           mkdir -p artifacts/access-ab
