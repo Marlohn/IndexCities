@@ -537,7 +537,7 @@ jobs:
                   for line in windows:
                       index=int(line.split()[1])
                       def metric(key):
-                          m=re.search(r'(?<!\\w)'+re.escape(key)+r'=([0-9.]+)',line)
+                          m=re.search(r'(?<!\w)'+re.escape(key)+r'=([0-9.]+)',line)
                           assert m,(workload,trial,key,line)
                           return float(m[1])
                       metrics[index]={key:metric(key) for key in ('wall','cpu','allocMB')}
@@ -549,8 +549,14 @@ jobs:
                   assert set(hashes)=={0,1,2},(workload,trial,'missing full JSON checkpoint')
                   for line in log.splitlines():
                       if line.startswith('PR57_AB_CHECKPOINT window='):
-                          m=re.search(r'window=(\\d+) sha256=([0-9A-Fa-f]{64})',line)
+                          m=re.search(r'window=(\d+) sha256=([0-9A-Fa-f]{64})',line)
                           assert m and hashes[int(m[1])]==m[2].upper(),(workload,trial,'checkpoint marker mismatch')
+                  if trial.startswith('B'):
+                      census=re.findall(r'PR57_BVH_CENSUS queries=(\d+) roster=(\d+) fullScanCandidates=(\d+) actualCandidates=(\d+) nodesVisited=(\d+) refreshes=(\d+) changedLeaves=(\d+) vehicleUpdates=(\d+)',log)
+                      assert census,(workload,trial,'BVH not demonstrably queried')
+                      q,roster,full,actual,visited,refreshes,changed,updates=map(int,census[-1])
+                      assert q>=100 and full==q*roster and actual<=full and visited>0,(workload,trial,'invalid BVH census')
+                      print('PR57_BVH_REAL_WORK',workload,trial,'queries',q,'avoided',full-actual,'visited',visited,'refreshes',refreshes,'updates',updates)
                   runs[trial]=(metrics,hashes)
               for checkpoint in (0,1,2):
                   digests={trial:runs[trial][1][checkpoint] for trial in runs}
