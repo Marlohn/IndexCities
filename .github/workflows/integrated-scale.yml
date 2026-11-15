@@ -733,7 +733,7 @@ jobs:
                   parts[values['name']]=int(values['ticks'])
               setup=[line for line in log.splitlines() if line.startswith('PR57_SLICE_SETUP ')]
               assert setup,(case,'missing opt-in slice setup census')
-              final=dict(re.findall(r'(\\w+)=([^ ]+)',setup[-1]))
+              final=dict(re.findall(r'(\w+)=([^ ]+)',setup[-1]))
               assert int(final['cleanupCalls'])>0 and int(final['sortCalls'])>0,(case,'inactive setup probe')
               print('PR57_SLICE_SETUP_AUTHENTIC',case,setup[-1])
               assert len(parts)==9,(case,'missing recurring phase')
