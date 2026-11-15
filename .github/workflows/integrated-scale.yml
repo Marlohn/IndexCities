@@ -690,6 +690,48 @@ jobs:
             echo "PR57_ACCESS_AB_SOURCE path=$input sha256=$(sha256sum "$input" | cut -d' ' -f1)"
           done
           mkdir -p artifacts/access-ab
+          # Observational ceiling on the SAME authentic checkpoints used by ABBA.
+          # Disable every opt-in: phase shares must describe baseline recurring work,
+          # not an already-optimized vehicle path. This is intrusive, not a speedup.
+          for case in real congested; do
+            if [[ "$case" == real ]]; then profile_source="$source"; else profile_source="$congested"; fi
+            PR57_CROSS_PHASE_CEILING=1 PR57_DYNAMIC_BVH=0 PR57_BUILDING_WORK_ACCESS=0 \
+              PR57_PARALLEL_NEEDS=0 PR57_STAFF_PHASE_FUSION=0 \
+              timeout 120s dotnet run --no-build -c Release \
+              --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+              profile cycle --seed=42 --warmup=0 --days=1 --window=120 --cap=300 \
+              --resume="$profile_source" | tee "artifacts/access-ab/phase-$case.log"
+          done
+          python3 - <<'PY'
+          import pathlib,re
+          shares={}
+          for case in ('real','congested'):
+              log=(pathlib.Path('artifacts/access-ab')/f'phase-{case}.log').read_text()
+              line=next((s for s in log.splitlines() if s.startswith('PR57_CROSS_PHASE_CEILING ')),None)
+              assert line,(case,'missing integrated profile')
+              fields=dict(re.findall(r'(\\w+)=([^ ]+)',line))
+              assert int(fields['steps'])==60,(case,'not 60 Advance(2) calls')
+              parts={}
+              for part in log.splitlines():
+                  if not part.startswith('PR57_CROSS_PHASE_PART '):continue
+                  values=dict(re.findall(r'(\\w+)=([^ ]+)',part))
+                  parts[values['name']]=int(values['ticks'])
+              assert len(parts)==9,(case,'missing recurring phase')
+              recurring=int(fields['recurringTicks'])
+              other=int(fields['otherTicks'])
+              assert sum(parts.values())==recurring and recurring+other>0
+              total=recurring+other
+              shares[case]={name:100*ticks/total for name,ticks in parts.items()}
+              for name,ticks in sorted(parts.items(),key=lambda p:-p[1]):
+                  share=100*ticks/total
+                  print('PR57_AUTHENTIC_PHASE',case,name,'ticks',ticks,'sharePct',round(share,3),
+                        'idealRemovalCeilingX',round(total/(total-ticks),4) if ticks<total else 'inf')
+          for name in shares['real']:
+              print('PR57_PHASE_SHARE_DELTA',name,'realPct',round(shares['real'][name],3),
+                    'congestedPct',round(shares['congested'][name],3),
+                    'deltaPoints',round(shares['congested'][name]-shares['real'][name],3))
+          print('PR57_AUTHENTIC_PHASE_PROFILE_OK note=intrusive_observational_not_speedup')
+          PY
           # Run the unvalidated 32-house workload first: fail on its real rejection before consuming the long authentic-save ABBA suite.
           for case in liveA liveB realA realB late congested cycle grid; do
             modes=(control candidate)
