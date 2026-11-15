@@ -615,7 +615,8 @@ jobs:
                   mode=trial.startswith('B')
                   assert 'INVARIANTS OK' in log and 'SUMMARY windows=2' in log,(workload,trial,'incomplete')
                   assert f'PR57_BUILDING_WORK_ACCESS active={mode}' in log,(workload,trial,'access activation')
-                  assert f'PR57_DYNAMIC_BVH active={mode}' in log,(workload,trial,'BVH activation')
+                  # The engine emits this marker only when BVH is enabled; baseline has no active=False marker.
+                  assert ('PR57_DYNAMIC_BVH active=True' in log)==mode,(workload,trial,'BVH activation')
                   if workload=='live':
                       for phase in ('maintenance-off','maintenance-on','external-road-order','public-road-rebuild'):
                           assert f'PR57_ACCESS_LIVE_EDIT phase={phase}' in log,(trial,phase,'external mutation absent')
