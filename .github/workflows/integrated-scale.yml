@@ -490,6 +490,81 @@ jobs:
           run-id: 40169101306
           github-token: ${{ github.token }}
           path: artifacts/real-growth
+      # Real-save BVH ABBA: four fresh processes per workload, not a CityCycle microbench.
+      - name: Measure BVH ABBA on authentic construction and congestion checkpoints
+        shell: bash
+        run: |
+          set -euo pipefail
+          checkpoint_dir=""
+          while IFS= read -r candidate; do
+            dir="$(dirname "$candidate")"
+            if [[ -s "$dir/checkpoint-6.json" && -s "$dir/checkpoint-11.json" ]]; then checkpoint_dir="$dir"; break; fi
+          done < <(find artifacts/real-growth -type f -name 'checkpoint-0.json' | sort)
+          test -n "$checkpoint_dir" || { echo "PR57_BVH_NO_AUTHENTIC_CHECKPOINTS"; exit 1; }
+          mkdir -p artifacts/bvh-real
+          for workload in construction congestion; do
+            input="$checkpoint_dir/checkpoint-0.json"
+            if [[ "$workload" == congestion ]]; then input="$checkpoint_dir/checkpoint-11.json"; fi
+            echo "PR57_BVH_REAL_SOURCE workload=$workload sha256=$(sha256sum "$input" | cut -d' ' -f1)"
+            for trial in A0 B0 B1 A1; do
+              mode=0; if [[ "$trial" == B* ]]; then mode=1; fi
+              capture="artifacts/bvh-real/$workload-$trial"
+              mkdir -p "$capture"
+              PR57_DYNAMIC_BVH="$mode" PR57_BVH_CENSUS=1 PR57_GRID_DIAG=1 \
+              PR57_BUILDING_WORK_ACCESS=0 PR57_PARALLEL_NEEDS=0 PR57_STAFF_PHASE_FUSION=0 \
+              PR57_UTILITY_REPLAY=0 PR57_POLLUTION_SIMD=0 PR57_PARALLEL_POLLUTION=0 \
+              PR57_CONSTRUCTION_WAIT_AGENDA=0 PR57_DISPATCH_SHIPMENT_LOOKUP=0 \
+              PR57_ROUTE_TREE=0 PR57_ORDER_SHIPMENT_INDEX=0 PR57_MAINTENANCE_SCHEDULE=0 \
+              PR57_SOURCE_DISTANCE_CACHE=0 PR57_WORK_ACCESS_INDEX=0 PR57_PEDESTRIAN_GRID=0 \
+              PR57_LIVING_ROSTER=0 PR57_CITIZEN_AGENDA=0 \
+              PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="$PWD/$capture" \
+                timeout 90s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                scale cycle --seed=42 --warmup=0 --days=2 --window=120 --cap=300 --resume="$input" \
+                | tee "$capture.log"
+            done
+          done
+          python3 - <<'PY'
+          import hashlib,pathlib,re
+          root=pathlib.Path('artifacts/bvh-real')
+          for workload in ('construction','congestion'):
+              runs={}
+              for trial in ('A0','B0','B1','A1'):
+                  log=(root/f'{workload}-{trial}.log').read_text()
+                  assert 'INVARIANTS OK' in log and 'SUMMARY windows=2' in log,(workload,trial,'incomplete integrated run')
+                  windows=[line for line in log.splitlines() if line.startswith('WINDOW ')]
+                  assert len(windows)==2,(workload,trial,'missing windows')
+                  metrics={}
+                  for line in windows:
+                      index=int(line.split()[1])
+                      def metric(key):
+                          m=re.search(r'(?<!\\w)'+re.escape(key)+r'=([0-9.]+)',line)
+                          assert m,(workload,trial,key,line)
+                          return float(m[1])
+                      metrics[index]={key:metric(key) for key in ('wall','cpu','allocMB')}
+                      alive=metric('alive')
+                      assert alive>0,(workload,trial,'inactive population')
+                  hashes={}
+                  for path in (root/f'{workload}-{trial}').glob('checkpoint-*.json'):
+                      hashes[int(path.stem.split('-')[-1])]=hashlib.sha256(path.read_bytes()).hexdigest().upper()
+                  assert set(hashes)=={0,1,2},(workload,trial,'missing full JSON checkpoint')
+                  for line in log.splitlines():
+                      if line.startswith('PR57_AB_CHECKPOINT window='):
+                          m=re.search(r'window=(\\d+) sha256=([0-9A-Fa-f]{64})',line)
+                          assert m and hashes[int(m[1])]==m[2].upper(),(workload,trial,'checkpoint marker mismatch')
+                  runs[trial]=(metrics,hashes)
+              for checkpoint in (0,1,2):
+                  digests={trial:runs[trial][1][checkpoint] for trial in runs}
+                  assert len(set(digests.values()))==1,(workload,checkpoint,'FULL_JSON_DIVERGENCE',digests)
+                  print('PR57_BVH_REAL_JSON_PARITY',workload,'checkpoint',checkpoint,'sha256',next(iter(digests.values())))
+              for window in (1,2):
+                  for key in ('wall','cpu','allocMB'):
+                      a=sum(runs[t][0][window][key] for t in ('A0','A1'))
+                      b=sum(runs[t][0][window][key] for t in ('B0','B1'))
+                      assert a>0,(workload,window,key)
+                      print('PR57_BVH_REAL_ABBA',workload,'window',window,key,
+                            'baseline',round(a,6),'candidate',round(b,6),
+                            'deltaPct',round(100*(b/a-1),3))
+          PY
       - name: Real construction A/B order reversed, late economy, congestion and artificial traffic
         shell: bash
         run: |
