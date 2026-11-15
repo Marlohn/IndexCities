@@ -555,7 +555,7 @@ jobs:
                       census=re.findall(r'PR57_BVH_CENSUS queries=(\d+) roster=(\d+) fullScanCandidates=(\d+) actualCandidates=(\d+) nodesVisited=(\d+) refreshes=(\d+) changedLeaves=(\d+) vehicleUpdates=(\d+)',log)
                       assert census,(workload,trial,'BVH not demonstrably queried')
                       q,roster,full,actual,visited,refreshes,changed,updates=map(int,census[-1])
-                      assert q>=100 and full==q*roster and actual<=full and visited>0,(workload,trial,'invalid BVH census')
+                      assert q>=100 and roster>0 and full==q*roster and 0<=actual<full and visited>0,(workload,trial,'BVH did not avoid candidates')
                       print('PR57_BVH_REAL_WORK',workload,trial,'queries',q,'avoided',full-actual,'visited',visited,'refreshes',refreshes,'updates',updates)
                   runs[trial]=(metrics,hashes)
               for checkpoint in (0,1,2):
