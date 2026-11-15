@@ -733,7 +733,7 @@ jobs:
           print('PR57_AUTHENTIC_PHASE_PROFILE_OK note=intrusive_observational_not_speedup')
           PY
           # Run the unvalidated 32-house workload first: fail on its real rejection before consuming the long authentic-save ABBA suite.
-          for case in liveA liveB realA realB late congested cycle grid; do
+          for case in cycleLoadA cycleLoadB liveA liveB realA realB late congested cycle grid; do
             modes=(control candidate)
             if [[ "$case" == realB || "$case" == liveB || "$case" == cycleLoadB ]]; then modes=(candidate control); fi
             for mode in "${modes[@]}"; do
