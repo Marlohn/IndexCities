@@ -45,7 +45,7 @@ public sealed class Pr57BoardingReuseAdversarialTests
         }
         Assert.Equal(plain.SaveToJson(), reuse.SaveToJson());
         Assert.Null(reuse.State.Citizens.Single(c => c.Id == 901001).BoardingVehicleId);
-        Assert.Equal(car && matchingDriver ? null : matchingDriver ? 901001 : 901003,
+        Assert.Equal(car && matchingDriver ? (int?)null : matchingDriver ? 901001 : 901003,
             reuse.State.Vehicles.Single(v => v.Id == 901002).DriverId);
         Assert.Equal(reuse.SaveToJson(), CitySimulation.FromJson(reuse.SaveToJson()).SaveToJson());
     }
