@@ -18,6 +18,18 @@ public sealed class Pr57JunctionBlockerMutationTests
             Neighbours = new List<int> { 990102, 990103, 990104, 990105 }
         };
         seed.State.Roads.Add(junction);
+        // The area-owner branch exists only when two nearby junctions are
+        // connected in the road graph. A lone synthetic node cannot exercise it.
+        seed.State.Roads.Add(new RoadNode
+        {
+            Id = 990102, Position = new Point(4, 0),
+            Neighbours = new List<int> { 990101, 990106, 990107 }
+        });
+        seed.State.Roads.Add(new RoadNode { Id = 990103, Position = new Point(0, 4), Neighbours = new List<int> { 990101 } });
+        seed.State.Roads.Add(new RoadNode { Id = 990104, Position = new Point(-4, 0), Neighbours = new List<int> { 990101 } });
+        seed.State.Roads.Add(new RoadNode { Id = 990105, Position = new Point(0, -4), Neighbours = new List<int> { 990101 } });
+        seed.State.Roads.Add(new RoadNode { Id = 990106, Position = new Point(8, 0), Neighbours = new List<int> { 990102 } });
+        seed.State.Roads.Add(new RoadNode { Id = 990107, Position = new Point(4, 4), Neighbours = new List<int> { 990102 } });
         seed.State.Vehicles.Add(new Vehicle
         {
             Id = 990201, Position = new Point(0, 0),
