@@ -637,7 +637,24 @@ public sealed partial class CitySimulation
         var pr57BatchOrder=Environment.GetEnvironmentVariable("PR57_BATCH_ORDER")=="1"&&operationsDt is null?_vehicleMovementBatch:null;
         if(pr57SetupProbe)pr57SetupStart=System.Diagnostics.Stopwatch.GetTimestamp();
         var ordered=pr57BatchOrder is null?State.Vehicles.ToArray():State.Vehicles.Where(v=>pr57BatchOrder.Contains(v.Id)).ToArray();
-        Array.Sort(ordered,static (a,b)=>a.WaitingSince.CompareTo(b.WaitingSince) is var c and not 0?c:a.Id.CompareTo(b.Id));
+        // PR57 opt-in: an already canonical array needs no comparison sort.
+        // Compare the exact same keys as Array.Sort; no state is cached between
+        // slices, so external mutations of WaitingSince or the vehicle list
+        // automatically invalidate eligibility. Fall back on any inversion.
+        var pr57SortedFastPath=Environment.GetEnvironmentVariable("PR57_SORT_ORDERED_FASTPATH")=="1";
+        var pr57AlreadyOrdered=pr57SortedFastPath;
+        if(pr57AlreadyOrdered)
+            for(var i=1;i<ordered.Length;i++){
+                var previous=ordered[i-1];
+                var current=ordered[i];
+                var comparison=previous.WaitingSince.CompareTo(current.WaitingSince);
+                if(comparison>0||comparison==0&&previous.Id.CompareTo(current.Id)>0){
+                    pr57AlreadyOrdered=false;
+                    break;
+                }
+            }
+        if(!pr57AlreadyOrdered)
+            Array.Sort(ordered,static (a,b)=>a.WaitingSince.CompareTo(b.WaitingSince) is var c and not 0?c:a.Id.CompareTo(b.Id));
         if(pr57SetupProbe){
             _pr57SliceSetupTicks[1]+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57SetupStart;
             _pr57SliceSetupCalls[1]++;
