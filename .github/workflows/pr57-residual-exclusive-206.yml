@@ -10,8 +10,11 @@ permissions:
   contents: read
   actions: read
   issues: write
+# Isolate this active decisive gate from the hundreds of historical PR57
+# workflows using integrated-scale-pr57. GitHub only retains one pending run
+# per group by default, so older pending pushes can otherwise be displaced.
 concurrency:
-  group: integrated-scale-pr57
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 jobs:
   residual-exclusive:
@@ -178,6 +181,7 @@ jobs:
 
       - name: Publish PR57 push run pointer
         if: always()
+        continue-on-error: true # CI verdict belongs to tests, not PR-comment permissions
         uses: actions/github-script@v7
         with:
           script: |
