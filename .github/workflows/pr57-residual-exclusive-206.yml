@@ -98,6 +98,7 @@ jobs:
               assert 'PR57_206_RESIDUAL ' not in logs['plain']
               rows=[x for x in logs['probe'].splitlines() if x.startswith('PR57_206_RESIDUAL ')]
               assert len(rows)==3,(case,'expected three consecutive physical slices',len(rows))
+              slice_costs=[]
               for i,row in enumerate(rows,1):
                   assert int(metric(row,'sample'))==i,(case,row)
                   assert int(metric(row,'eligibleSlice'))==36+i,(case,row)
@@ -107,12 +108,27 @@ jobs:
                   assert all(x>=0 for x in ticks+bytes_) and all(x>=0 for x in segments),(case,row)
                   assert abs(sum(ticks)-metric(row,'totalMs'))<0.00005,(case,row)
                   assert abs(sum(bytes_)-metric(row,'totalMB'))<0.00002,(case,row)
+                  slice_costs.append(ticks)
                   assert segments[0]>=metric(row,'vehicles')>0,(case,row)
                   assert metric(row,'moved')<=metric(row,'vehicles'),(case,row)
                   assert metric(row,'travelling')<=metric(row,'vehicles'),(case,row)
                   print('PR57_206_SLICE',case,'sample',i,'vehicles',metric(row,'vehicles'),
                         'moved',metric(row,'moved'),'exclusiveMs',ticks,'exclusiveMB',bytes_,
                         'segments',segments,'scope','ORDERED_VEHICLE_LOOP_INTRUSIVE')
+              # Quantitative structural triage: these are intrusive physical-loop
+              # fractions, NOT end-to-end Amdahl ceilings or speedups. Do not
+              # extrapolate them to 10k citizens or the 80-year target.
+              physical=[sum(sample[j] for sample in slice_costs) for j in range(9)]
+              physical_total=sum(physical)
+              assert physical_total>0,(case,'zero measured physical work')
+              for j,spent in enumerate(physical):
+                  share=spent/physical_total
+                  physical_ceiling=float('inf') if share>=1 else 1/(1-share)
+                  print('PR57_206_PHYSICAL_BOUND',case,'region',f's{j}',
+                        'intrusiveShare',round(share,6),
+                        'physicalOnlyMaxSpeedup',round(physical_ceiling,6),
+                        'samples',len(slice_costs),
+                        'NOT_END_TO_END_AMDAHL',True)
               plain=next(x for x in logs['plain'].splitlines() if x.startswith('WINDOW '))
               probe=next(x for x in logs['probe'].splitlines() if x.startswith('WINDOW '))
               plain_wall=metric(plain,'wall')
