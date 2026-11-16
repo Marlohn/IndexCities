@@ -91,6 +91,41 @@ public sealed class Pr57BoardingReuseAdversarialTests
         Assert.Equal(reuse.SaveToJson(), CitySimulation.FromJson(reuse.SaveToJson()).SaveToJson());
     }
 
+    [Fact]
+    public void Missing_reserved_vehicle_falls_back_without_mutating_other_drivers()
+    {
+        var seed = new CitySimulation(42);
+        seed.State.Citizens.Add(new Citizen
+        {
+            Id = 901201, Position = new Point(0, 0),
+            Purpose = JourneyPurpose.Boarding, BoardingVehicleId = 999999
+        });
+        seed.State.Vehicles.Add(new Vehicle
+        {
+            Id = 901202, PassengerCar = true, DriverId = 901201,
+            Position = new Point(0, 0), Status = VehicleStatus.Parked
+        });
+        var initial = seed.SaveToJson();
+        var plain = CitySimulation.FromJson(initial);
+        var reuse = CitySimulation.FromJson(initial);
+        var previous = Environment.GetEnvironmentVariable("PR57_BOARDING_REUSE_LOOKUP");
+        try
+        {
+            Environment.SetEnvironmentVariable("PR57_BOARDING_REUSE_LOOKUP", null);
+            Arrive(plain, 901201);
+            Environment.SetEnvironmentVariable("PR57_BOARDING_REUSE_LOOKUP", "1");
+            Arrive(reuse, 901201);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PR57_BOARDING_REUSE_LOOKUP", previous);
+        }
+        Assert.Equal(plain.SaveToJson(), reuse.SaveToJson());
+        Assert.Null(reuse.State.Citizens.Single(c => c.Id == 901201).BoardingVehicleId);
+        Assert.Equal((int?)901201, reuse.State.Vehicles.Single(v => v.Id == 901202).DriverId);
+        Assert.Equal(reuse.SaveToJson(), CitySimulation.FromJson(reuse.SaveToJson()).SaveToJson());
+    }
+
     private static void Arrive(CitySimulation sim, int citizenId = 901001)
     {
         var method = typeof(CitySimulation).GetMethod("CitizenArrived",
