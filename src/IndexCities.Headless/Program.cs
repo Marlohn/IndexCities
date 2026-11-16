@@ -177,6 +177,17 @@ for(var d=1;d<=days;d++){
                     }
                 }
                 sim.Advance(2);
+                // PR57-only exact intermediate causal checkpoint for the residual
+                // exclusive experiment. Same observation in both arms, after
+                // Advance(2), without changing the production simulation.
+                if(Environment.GetEnvironmentVariable("PR57_206_MID_CHECKPOINT")=="1"
+                   && quantum+1==windowSeconds/4 && !string.IsNullOrWhiteSpace(pr57SaveCaptureDir))
+                {
+                    sim.CheckInvariants();
+                    var midpoint=sim.SaveToJson();
+                    File.WriteAllText(Path.Combine(pr57SaveCaptureDir,"checkpoint-mid.json"),midpoint);
+                    Console.WriteLine($"PR57_206_MID_CHECKPOINT quantum={quantum+1} sha256={Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(midpoint)))}");
+                }
                 // Check the first completed quantum after each external mutation.
                 // A divergence may disappear before the next edit or day boundary.
                 if(liveEdit&&d==1&&(quantum is 300 or 600 or 900 or 1200)
