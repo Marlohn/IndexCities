@@ -421,13 +421,21 @@ public sealed partial class CitySimulation
         }
         return gap;
     }
+    // PR57 experimental census: records eligible second searches without changing decisions or saves.
+    static readonly bool Pr57BoardingReuseEnabled = Environment.GetEnvironmentVariable("PR57_BOARDING_REUSE_LOOKUP") == "1";
+    long _pr57BoardingArrivals, _pr57BoardingFailures, _pr57BoardingSecondSearchesAvoided, _pr57BoardingCandidateUpperBound;
+    public IEnumerable<string> Pr57BoardingReuseReport()
+    {
+        if (!Pr57BoardingReuseEnabled) yield break;
+        yield return $"PR57_BOARDING_REUSE_CENSUS arrivals={_pr57BoardingArrivals} failures={_pr57BoardingFailures} secondSearchesAvoided={_pr57BoardingSecondSearchesAvoided} candidateUpperBound={_pr57BoardingCandidateUpperBound} note=UPPER_BOUND_NOT_VISITS";
+    }
     void CitizenArrived(Citizen c)
     {
         var pr57Arrive241=Pr57Arrive241Enabled && CostProfile is not null;
         var arrivalPurpose=pr57Arrive241?c.Purpose:default;
         var arrivalStart=pr57Arrive241?System.Diagnostics.Stopwatch.GetTimestamp():0L;
         try {
-        if(c.Purpose==JourneyPurpose.Boarding){var vehicle=State.Vehicles.FirstOrDefault(v=>v.Id==c.BoardingVehicleId&&v.DriverId==c.Id);if(vehicle!=null&&vehicle.Position.Distance(c.Position)<.1){c.VehicleId=vehicle.Id;c.Activity=vehicle.PassengerCar?"Dirigindo carro particular":"Embarcou para entrega real";if(vehicle.PassengerCar){vehicle.Status=VehicleStatus.Travelling;vehicle.Cause="Em viagem";}}else {c.Activity="Veículo indisponível para embarque";if(Environment.GetEnvironmentVariable("PR57_BOARDING_REUSE_LOOKUP")=="1"){if(vehicle is {PassengerCar:true})vehicle.DriverId=null;}else if(State.Vehicles.FirstOrDefault(v=>v.Id==c.BoardingVehicleId&&v.PassengerCar&&v.DriverId==c.Id) is {} reserved)reserved.DriverId=null;}c.BoardingVehicleId=null;Pr57320ClearPath(c,"boardingArrived");Pr57320ResetIndex(c,"boardingArrived");return;}
+        if(c.Purpose==JourneyPurpose.Boarding){if(Pr57BoardingReuseEnabled)_pr57BoardingArrivals++;var vehicle=State.Vehicles.FirstOrDefault(v=>v.Id==c.BoardingVehicleId&&v.DriverId==c.Id);if(vehicle!=null&&vehicle.Position.Distance(c.Position)<.1){c.VehicleId=vehicle.Id;c.Activity=vehicle.PassengerCar?"Dirigindo carro particular":"Embarcou para entrega real";if(vehicle.PassengerCar){vehicle.Status=VehicleStatus.Travelling;vehicle.Cause="Em viagem";}}else {c.Activity="Veículo indisponível para embarque";if(Pr57BoardingReuseEnabled){_pr57BoardingFailures++;_pr57BoardingSecondSearchesAvoided++;_pr57BoardingCandidateUpperBound+=State.Vehicles.Count;if(vehicle is {PassengerCar:true})vehicle.DriverId=null;}else if(State.Vehicles.FirstOrDefault(v=>v.Id==c.BoardingVehicleId&&v.PassengerCar&&v.DriverId==c.Id) is {} reserved)reserved.DriverId=null;}c.BoardingVehicleId=null;Pr57320ClearPath(c,"boardingArrived");Pr57320ResetIndex(c,"boardingArrived");return;}
         if(c.Purpose==JourneyPurpose.Leaving){c.Resident=false;c.InsideMap=false;c.Activity="Residindo no exterior";c.WorkplaceId=null;Personal(c,"Saiu fisicamente da cidade; dinheiro, patrimônio e dívidas persistem");return;}
         if(c.Purpose==JourneyPurpose.Construction){c.Activity="Trabalhando no canteiro";return;}
         var destination=BuildingById(c.DestinationId);if(destination==null){c.Activity="Destino indisponível";return;}
