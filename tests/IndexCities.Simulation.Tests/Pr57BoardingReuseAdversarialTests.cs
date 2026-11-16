@@ -50,11 +50,52 @@ public sealed class Pr57BoardingReuseAdversarialTests
         Assert.Equal(reuse.SaveToJson(), CitySimulation.FromJson(reuse.SaveToJson()).SaveToJson());
     }
 
-    private static void Arrive(CitySimulation sim)
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Available_boarding_preserves_vehicle_and_full_json(bool car)
+    {
+        var seed = new CitySimulation(42);
+        var citizen = new Citizen
+        {
+            Id = 901101, Position = new Point(0, 0),
+            Purpose = JourneyPurpose.Boarding, BoardingVehicleId = 901102
+        };
+        seed.State.Citizens.Add(citizen);
+        seed.State.Vehicles.Add(new Vehicle
+        {
+            Id = 901102, PassengerCar = car, DriverId = citizen.Id,
+            Position = new Point(0, 0), Status = VehicleStatus.Parked
+        });
+        var initial = seed.SaveToJson();
+        var plain = CitySimulation.FromJson(initial);
+        var reuse = CitySimulation.FromJson(initial);
+        var previous = Environment.GetEnvironmentVariable("PR57_BOARDING_REUSE_LOOKUP");
+        try
+        {
+            Environment.SetEnvironmentVariable("PR57_BOARDING_REUSE_LOOKUP", null);
+            Arrive(plain, citizen.Id);
+            Environment.SetEnvironmentVariable("PR57_BOARDING_REUSE_LOOKUP", "1");
+            Arrive(reuse, citizen.Id);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PR57_BOARDING_REUSE_LOOKUP", previous);
+        }
+        Assert.Equal(plain.SaveToJson(), reuse.SaveToJson());
+        Assert.Equal((int?)901102, reuse.State.Citizens.Single(c => c.Id == citizen.Id).VehicleId);
+        Assert.Null(reuse.State.Citizens.Single(c => c.Id == citizen.Id).BoardingVehicleId);
+        Assert.Equal(car ? VehicleStatus.Travelling : VehicleStatus.Parked,
+            reuse.State.Vehicles.Single(v => v.Id == 901102).Status);
+        Assert.Equal(reuse.SaveToJson(), CitySimulation.FromJson(reuse.SaveToJson()).SaveToJson());
+    }
+
+    private static void Arrive(CitySimulation sim, int citizenId = 901001)
     {
         var method = typeof(CitySimulation).GetMethod("CitizenArrived",
             BindingFlags.Instance | BindingFlags.NonPublic);
         Assert.NotNull(method);
-        method!.Invoke(sim, new object[] { sim.State.Citizens.Single(c => c.Id == 901001) });
+        method!.Invoke(sim, new object[] { sim.State.Citizens.Single(c => c.Id == citizenId) });
     }
 }
