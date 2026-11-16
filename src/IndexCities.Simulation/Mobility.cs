@@ -1507,7 +1507,7 @@ public sealed partial class CitySimulation
         // detection at the next slice boundary.
         if(scanProfile is not null){
             _pr57MovementAllocBytes[0]+=GC.GetAllocatedBytesForCurrentThread()-pr57AllocCallStart;
-            if(++_pr57MovementAllocCalls%300==0){
+            if(++_pr57MovementAllocCalls%(Pr57HotTiming?50:300)==0){
                 var b=_pr57MovementAllocBytes;
                 var other=b[0]-b[1]-b[2]-b[3]-b[4]-b[5]-b[6]-b[7]-b[8]-b[9]-b[10];
                 var region=_pr57RegionAllocBytes;
