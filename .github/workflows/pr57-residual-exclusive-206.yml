@@ -9,7 +9,6 @@ on:
 permissions:
   contents: read
   actions: read
-  issues: write
   statuses: write
 # Isolate this active decisive gate from the hundreds of historical PR57
 # workflows using integrated-scale-pr57. GitHub only retains one pending run
@@ -195,29 +194,6 @@ jobs:
           name: integrated-scale-pr57-residual-exclusive-206
           path: artifacts/residual-exclusive-206/**
           retention-days: 14
-
-      - name: Publish PR57 push run pointer
-        if: always()
-        continue-on-error: true # CI verdict belongs to tests, not PR-comment permissions
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const marker = 'PR57_ACTIONS_HANDOFF_BOT';
-            const { owner, repo } = context.repo;
-            const issue_number = 57;
-            const body = [marker,
-              'run_id=' + context.runId,
-              'run_url=https://github.com/' + owner + '/' + repo + '/actions/runs/' + context.runId,
-              'sha=' + context.sha,
-              'job_status=' + '${{ job.status }}'].join(String.fromCharCode(10));
-            const comments = await github.paginate(github.rest.issues.listComments,
-              { owner, repo, issue_number, per_page: 100 });
-            const existing = comments.find(c => c.user?.login === 'github-actions[bot]' && c.body?.includes(marker));
-            if (existing) {
-              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
-            } else {
-              await github.rest.issues.createComment({ owner, repo, issue_number, body });
-            }
 
       # Independent from PR comments: a status on the exact SHA is discoverable
       # by GitHub get_commit_combined_status and survives bot comment failures.
