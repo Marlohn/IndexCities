@@ -67,7 +67,7 @@ jobs:
               if [[ "$mode" == probe ]]; then enabled=1; fi
               echo "PR57_206_RUN case=$case mode=$mode horizon=$horizon cadence=ADVANCE_2"
               PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_GRID_DIAG=1 \
-              PR57_SAVE_CAPTURE_DIR="$output" PR57_206_RESIDUAL_EXCLUSIVE="$enabled" \
+              PR57_SAVE_CAPTURE_DIR="$output" PR57_206_RESIDUAL_EXCLUSIVE="$enabled" PR57_206_MID_CHECKPOINT=1 \
               PR57_LANE_READWRITE_PROBE=0 PR57_BLOCK_DEP_PROBE=0 \
               PR57_VEHICLE_COST_PROBE=0 PR57_HOT_TIMING=0 PR57_PHASE_ALLOC_PROBE=0 \
                 timeout 180s dotnet run --no-build -c Release \
@@ -97,6 +97,12 @@ jobs:
                       assert (root/f'{case}-{mode}'/f'checkpoint-{i}.json').is_file(),(case,mode,i)
               for i in (0,1):
                   assert (root/f'{case}-plain'/f'checkpoint-{i}.json').read_bytes()==(root/f'{case}-probe'/f'checkpoint-{i}.json').read_bytes(),(case,i,'full JSON mismatch')
+              # Exact full JSON after half the measured Advance(2) window:
+              # initial, intermediate, and final states must all match.
+              midpoint_files=[root/f'{case}-{mode}'/'checkpoint-mid.json' for mode in ('plain','probe')]
+              assert all(p.is_file() for p in midpoint_files),(case,'midpoint missing')
+              assert midpoint_files[0].read_bytes()==midpoint_files[1].read_bytes(),(case,'midpoint full JSON mismatch')
+              assert all('PR57_206_MID_CHECKPOINT ' in logs[mode] for mode in ('plain','probe')),(case,'midpoint probe inactive')
               assert 'PR57_206_RESIDUAL ' not in logs['plain']
               rows=[x for x in logs['probe'].splitlines() if x.startswith('PR57_206_RESIDUAL ')]
               assert len(rows)==3,(case,'expected three consecutive physical slices',len(rows))
@@ -143,7 +149,7 @@ jobs:
                     'probeAllocMB',metric(probe,'allocMB'),
                     'intrusiveWallRatio',round(probe_wall/plain_wall,6),
                     'plainSimSecondsPerWallSecond',round(horizon/plain_wall,2),
-                    'checkpoints',2,'parity','EXACT_FULL_JSON',
+                    'checkpoints',3,'parity','EXACT_FULL_JSON',
                     'note','PROBE_OVERHEAD_NOT_OPTIMIZATION_SPEEDUP')
           PY
       - name: Preserve full checkpoints and logs
