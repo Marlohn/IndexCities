@@ -169,23 +169,30 @@ jobs:
               # Report measured inclusive hot cost versus the independent plain
               # integrated wall, NOT an optimization or a non-intrusive speedup.
               hot=[x for x in logs['probe'].splitlines() if x.startswith('PR57_HOT_TIMING ')]
-              assert len(hot)>=1,(case,'junction hot timing missing',len(hot))
-              # Cumulative counters emit every 300 movement slices; use the final
-              # snapshot, not the first or a sum of overlapping snapshots.
-              hot=hot[-1:]
+              # Sparse real saves may execute fewer than 300 movement slices:
+              # no snapshot is emitted, and zero cannot be inferred from absence.
+              # QueueREAL is the required active-junction representative.
+              assert hot or case!='queueREAL',(case,'junction hot timing missing',len(hot))
               plain_window=next(x for x in logs['plain'].splitlines() if x.startswith('WINDOW '))
               plain_wall_ms=metric(plain_window,'wall')*1000
               assert plain_wall_ms>0,(case,'plain wall missing')
-              junction_ms=metric(hot[0],'junctionMs')
-              turn_ms=metric(hot[0],'turnWayMs')
-              body_ms=metric(hot[0],'bodyOnWayMs')
-              assert min(junction_ms,turn_ms,body_ms)>=0
-              assert turn_ms+body_ms<=junction_ms+0.01,(case,'nested timing exceeds admission')
-              print('PR57_JUNCTION_HOT_BOUND',case,'junctionMs',junction_ms,
-                    'turnWayMs',turn_ms,'bodyOnWayMs',body_ms,
-                    'plainIntegratedWallMs',plain_wall_ms,
-                    'intrusiveNestedFraction',round((turn_ms+body_ms)/plain_wall_ms,6),
-                    'limitation','PROBE_INTRUSIVE_NOT_ABBA_NOT_CAUSAL_SPEEDUP')
+              if hot:
+                  # Cumulative samples overlap; select only the final snapshot.
+                  final=hot[-1]
+                  junction_ms=metric(final,'junctionMs')
+                  turn_ms=metric(final,'turnWayMs')
+                  body_ms=metric(final,'bodyOnWayMs')
+                  assert min(junction_ms,turn_ms,body_ms)>=0
+                  assert turn_ms+body_ms<=junction_ms+0.01,(case,'nested timing exceeds admission')
+                  print('PR57_JUNCTION_HOT_BOUND',case,'junctionMs',junction_ms,
+                        'turnWayMs',turn_ms,'bodyOnWayMs',body_ms,
+                        'plainIntegratedWallMs',plain_wall_ms,
+                        'intrusiveNestedFraction',round((turn_ms+body_ms)/plain_wall_ms,6),
+                        'limitation','PROBE_INTRUSIVE_NOT_ABBA_NOT_CAUSAL_SPEEDUP')
+              else:
+                  print('PR57_JUNCTION_HOT_BOUND',case,'status','NO_SNAPSHOT_BEFORE_300_MOVEMENT_SLICES',
+                        'plainIntegratedWallMs',plain_wall_ms,
+                        'limitation','UNMEASURED_NOT_ZERO_NOT_SPEEDUP')
               # Quantitative structural triage: these are intrusive physical-loop
               # fractions, NOT end-to-end Amdahl ceilings or speedups. Do not
               # extrapolate them to 10k citizens or the 80-year target.
