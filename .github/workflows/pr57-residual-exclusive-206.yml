@@ -33,35 +33,26 @@ jobs:
           set -euo pipefail
           dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
           dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
-      - name: Restore authentic real works checkpoint
+      # Original October artifacts expired. These retained November snapshots
+      # are derived from authentic resumed saves, not original source saves.
+      - name: Restore retained authentic-derived snapshots
         uses: actions/download-artifact@v4
         with:
-          name: integrated-scale-pr57-real-growth
-          run-id: 40250545171
+          name: integrated-scale-pr57-building-access-ab
+          run-id: 43766908676
           github-token: ${{ github.token }}
-          path: artifacts/works
-      - name: Restore authentic congested checkpoint
-        uses: actions/download-artifact@v4
-        with:
-          name: integrated-scale-pr57-legal-workplaces-8d
-          run-id: 40169101306
-          github-token: ${{ github.token }}
-          path: artifacts/queue
-      - name: Restore clearly ARTIFICIAL GRID checkpoint
-        uses: actions/download-artifact@v4
-        with:
-          name: integrated-scale-pr57-host-scale-curve
-          run-id: 40258405557
-          github-token: ${{ github.token }}
-          path: artifacts/grid
+          path: artifacts/retained
       - name: Execute independent Advance(2) control and bounded probe
         shell: bash
         run: |
           set -euo pipefail
-          works="$(find artifacts/works -type f -path '*/growth/checkpoint-0.json' -print -quit)"
-          queue="$(find artifacts/queue -type f -path '*/pr57-jobs-20/checkpoint-10.json' -print -quit)"
-          grid="artifacts/grid/grid18-0/checkpoint-1.json"
-          for source in "$works" "$queue" "$grid"; do test -s "$source"; sha256sum "$source"; done
+          works="$(find artifacts/retained -type f -path '*/realA-control/checkpoint-0.json' -print -quit)"
+          queue="$(find artifacts/retained -type f -path '*/congested-control/checkpoint-0.json' -print -quit)"
+          grid="$(find artifacts/retained -type f -path '*/grid-control/checkpoint-0.json' -print -quit)"
+          for source in "$works" "$queue" "$grid"; do
+            test -s "$source" || { echo "PR57_206_RETAINED_CHECKPOINT_MISSING source=$source"; exit 1; }
+            echo "PR57_206_DERIVED_SOURCE path=$source sha256=$(sha256sum "$source" | cut -d' ' -f1)"
+          done
           mkdir -p artifacts/residual-exclusive-206
           for case in worksREAL queueREAL gridARTIFICIAL; do
             source="$works"; fixture=cycle; horizon=300
