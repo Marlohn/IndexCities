@@ -80,7 +80,7 @@ jobs:
             source="$works"; fixture=cycle; horizon=300
             if [[ "$case" == queueREAL ]]; then source="$queue"; fi
             if [[ "$case" == gridARTIFICIAL ]]; then source="$grid"; fixture=grid; horizon=100; fi
-            for mode in plain probe; do
+            for mode in plain probe boarding; do
               output="$PWD/artifacts/residual-exclusive-206/$case-$mode"
               mkdir -p "$output"
               # Keep the same Headless command and StepCostProfile in both arms;
@@ -89,7 +89,7 @@ jobs:
               if [[ "$mode" == probe ]]; then enabled=1; fi
               echo "PR57_206_RUN case=$case mode=$mode horizon=$horizon cadence=ADVANCE_2"
               PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_GRID_DIAG=1 \
-              PR57_SAVE_CAPTURE_DIR="$output" PR57_206_RESIDUAL_EXCLUSIVE="$enabled" PR57_206_MID_CHECKPOINT=1 PR57_240_WALK_SPLIT="$enabled" \
+              PR57_SAVE_CAPTURE_DIR="$output" PR57_206_RESIDUAL_EXCLUSIVE="$enabled" PR57_206_MID_CHECKPOINT=1 PR57_240_WALK_SPLIT="$enabled" PR57_BOARDING_REUSE_LOOKUP="$([[ "$mode" == boarding ]] && echo 1 || echo 0)" \
               PR57_LANE_READWRITE_PROBE=0 PR57_BLOCK_DEP_PROBE=0 \
               PR57_VEHICLE_COST_PROBE=0 PR57_HOT_TIMING=0 PR57_PHASE_ALLOC_PROBE=0 \
                 timeout 180s dotnet run --no-build -c Release \
@@ -111,7 +111,7 @@ jobs:
               assert m,(key,line)
               return float(m.group(1))
           for case,horizon in [('worksREAL',300),('queueREAL',300),('gridARTIFICIAL',100)]:
-              logs={mode:(root/f'{case}-{mode}.log').read_text() for mode in ('plain','probe')}
+              logs={mode:(root/f'{case}-{mode}.log').read_text() for mode in ('plain','probe','boarding')}
               for mode,log in logs.items():
                   assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,mode)
                   assert len([x for x in log.splitlines() if x.startswith('WINDOW ')])==1,(case,mode)
@@ -119,11 +119,16 @@ jobs:
                       assert (root/f'{case}-{mode}'/f'checkpoint-{i}.json').is_file(),(case,mode,i)
               for i in (0,1):
                   assert (root/f'{case}-plain'/f'checkpoint-{i}.json').read_bytes()==(root/f'{case}-probe'/f'checkpoint-{i}.json').read_bytes(),(case,i,'full JSON mismatch')
+              # Opt-in boarding lookup must preserve all serialized causal state.
+              for i in (0,1):
+                  assert (root/f'{case}-plain'/f'checkpoint-{i}.json').read_bytes()==(root/f'{case}-boarding'/f'checkpoint-{i}.json').read_bytes(),(case,i,'boarding full JSON mismatch')
+              assert 'PR57_206_RESIDUAL ' not in logs['boarding']
               # Exact full JSON after half the measured Advance(2) window:
               # initial, intermediate, and final states must all match.
               midpoint_files=[root/f'{case}-{mode}'/'checkpoint-mid.json' for mode in ('plain','probe')]
               assert all(p.is_file() for p in midpoint_files),(case,'midpoint missing')
               assert midpoint_files[0].read_bytes()==midpoint_files[1].read_bytes(),(case,'midpoint full JSON mismatch')
+              assert midpoint_files[0].read_bytes()==(root/f'{case}-boarding'/'checkpoint-mid.json').read_bytes(),(case,'boarding midpoint full JSON mismatch')
               assert all('PR57_206_MID_CHECKPOINT ' in logs[mode] for mode in ('plain','probe')),(case,'midpoint probe inactive')
               assert 'PR57_206_RESIDUAL ' not in logs['plain']
               rows=[x for x in logs['probe'].splitlines() if x.startswith('PR57_206_RESIDUAL ')]
@@ -172,6 +177,12 @@ jobs:
                         'physicalOnlyMaxSpeedup',round(physical_ceiling,6),
                         'samples',len(slice_costs),
                         'NOT_END_TO_END_AMDAHL',True)
+              boarding=next(x for x in logs['boarding'].splitlines() if x.startswith('WINDOW '))
+              print('PR57_BOARDING_AB',case,'flag','PR57_BOARDING_REUSE_LOOKUP=1',
+                    'wall',metric(boarding,'wall'),'cpu',metric(boarding,'cpu'),
+                    'allocMB',metric(boarding,'allocMB'),
+                    'checkpoints',3,'parity','EXACT_FULL_JSON',
+                    'note','SINGLE_ORDER_NOT_ABBA_NO_HIT_COUNT')
               plain=next(x for x in logs['plain'].splitlines() if x.startswith('WINDOW '))
               probe=next(x for x in logs['probe'].splitlines() if x.startswith('WINDOW '))
               plain_wall=metric(plain,'wall')
