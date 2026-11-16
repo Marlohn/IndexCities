@@ -172,6 +172,50 @@ public sealed class Pr57BoardingReuseAdversarialTests
         Assert.Equal(reuse.SaveToJson(), CitySimulation.FromJson(reuse.SaveToJson()).SaveToJson());
     }
 
+    [Fact]
+    public void Duplicate_reservation_candidates_preserve_first_match_and_save_load()
+    {
+        // A later matching candidate must not replace the first match merely
+        // because it is closer. This is an adversarial serialized-state case.
+        var seed = new CitySimulation(42);
+        seed.State.Citizens.Add(new Citizen
+        {
+            Id = 901401, Position = new Point(0, 0),
+            Purpose = JourneyPurpose.Boarding, BoardingVehicleId = 901402
+        });
+        seed.State.Vehicles.Add(new Vehicle
+        {
+            Id = 901402, PassengerCar = true, DriverId = 901401,
+            Position = new Point(50, 50), Status = VehicleStatus.Parked
+        });
+        seed.State.Vehicles.Add(new Vehicle
+        {
+            Id = 901402, PassengerCar = true, DriverId = 901401,
+            Position = new Point(0, 0), Status = VehicleStatus.Parked
+        });
+        var initial = seed.SaveToJson();
+        var plain = CitySimulation.FromJson(initial);
+        var reuse = CitySimulation.FromJson(initial);
+        var previous = Environment.GetEnvironmentVariable("PR57_BOARDING_REUSE_LOOKUP");
+        try
+        {
+            Environment.SetEnvironmentVariable("PR57_BOARDING_REUSE_LOOKUP", null);
+            Arrive(plain, 901401);
+            Environment.SetEnvironmentVariable("PR57_BOARDING_REUSE_LOOKUP", "1");
+            Arrive(reuse, 901401);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PR57_BOARDING_REUSE_LOOKUP", previous);
+        }
+        Assert.Equal(plain.SaveToJson(), reuse.SaveToJson());
+        Assert.Null(reuse.State.Citizens.Single(c => c.Id == 901401).VehicleId);
+        Assert.Null(reuse.State.Citizens.Single(c => c.Id == 901401).BoardingVehicleId);
+        Assert.Null(reuse.State.Vehicles[0].DriverId);
+        Assert.Equal((int?)901401, reuse.State.Vehicles[1].DriverId);
+        Assert.Equal(reuse.SaveToJson(), CitySimulation.FromJson(reuse.SaveToJson()).SaveToJson());
+    }
+
     private static void Arrive(CitySimulation sim, int citizenId = 901001)
     {
         var method = typeof(CitySimulation).GetMethod("CitizenArrived",
