@@ -133,6 +133,11 @@ public sealed partial class CitySimulation
         for(var i=0;i<names.Length;i++)
             yield return $"PR57_241_NESTED name={names[i]} calls={_pr57Arrive241SubCalls[i]} ms={_pr57Arrive241SubTicks[i]*1000/hz:F5} scope=INTRUSIVE_OBSERVATIONAL";
     }
+    bool Pr57Walk240OccupancyCandidate(Vehicle _)
+    {
+        _pr57Walk240VehicleCandidates++;
+        return true;
+    }
     public IEnumerable<string> Pr57Walk240Report()
     {
         if (!Pr57Walk240Enabled) yield break;
@@ -273,11 +278,12 @@ public sealed partial class CitySimulation
                         // walker; only one entering or passing the crossing does. This
                         // breaks the circular wait between queues and waiting walkers.
                         var occupancyStart=pr57Walk240?System.Diagnostics.Stopwatch.GetTimestamp():0L;
-                        var occupied=State.Vehicles.Any(v=>v.Status==VehicleStatus.Travelling&&(v.IntersectionClaim==crossing.Id||v.WaitingSince==0&&v.Position.Distance(crossing.Position)<3.5));
-                        if(pr57Walk240){
-                            Pr57Walk240Record(2,occupancyStart);
-                            _pr57Walk240VehicleCandidates+=State.Vehicles.Count;
-                        }
+                        // Count the predicate visits actually performed by Any (which short-circuits).
+                        // The observer never influences the occupancy decision.
+                        var occupied=pr57Walk240
+                            ?State.Vehicles.Any(v=>Pr57Walk240OccupancyCandidate(v)&&v.Status==VehicleStatus.Travelling&&(v.IntersectionClaim==crossing.Id||v.WaitingSince==0&&v.Position.Distance(crossing.Position)<3.5))
+                            :State.Vehicles.Any(v=>v.Status==VehicleStatus.Travelling&&(v.IntersectionClaim==crossing.Id||v.WaitingSince==0&&v.Position.Distance(crossing.Position)<3.5));
+                        if(pr57Walk240)Pr57Walk240Record(2,occupancyStart);
                         if(occupied){c.Activity="Aguardando travessia";break;}Pr57317SetCrossing(c,crossing.Id,"acquire");Pr57Crossing292Acquire(c,crossing.Id);
                     }
                     var heading=d>.001?(target-c.Position)*(1/d):new Point(0,0);
