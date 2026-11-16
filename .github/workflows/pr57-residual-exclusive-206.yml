@@ -169,7 +169,10 @@ jobs:
               # Report measured inclusive hot cost versus the independent plain
               # integrated wall, NOT an optimization or a non-intrusive speedup.
               hot=[x for x in logs['probe'].splitlines() if x.startswith('PR57_HOT_TIMING ')]
-              assert len(hot)==1,(case,'junction hot timing missing',len(hot))
+              assert len(hot)>=1,(case,'junction hot timing missing',len(hot))
+              # Cumulative counters emit every 300 movement slices; use the final
+              # snapshot, not the first or a sum of overlapping snapshots.
+              hot=hot[-1:]
               plain_window=next(x for x in logs['plain'].splitlines() if x.startswith('WINDOW '))
               plain_wall_ms=metric(plain_window,'wall')*1000
               assert plain_wall_ms>0,(case,'plain wall missing')
