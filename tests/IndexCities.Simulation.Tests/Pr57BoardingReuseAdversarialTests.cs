@@ -126,6 +126,52 @@ public sealed class Pr57BoardingReuseAdversarialTests
         Assert.Equal(reuse.SaveToJson(), CitySimulation.FromJson(reuse.SaveToJson()).SaveToJson());
     }
 
+    [Fact]
+    public void External_driver_change_between_arrivals_preserves_full_json()
+    {
+        var seed = new CitySimulation(42);
+        seed.State.Citizens.Add(new Citizen
+        {
+            Id = 901301, Position = new Point(0, 0),
+            Purpose = JourneyPurpose.Boarding, BoardingVehicleId = 901303
+        });
+        seed.State.Citizens.Add(new Citizen
+        {
+            Id = 901302, Position = new Point(0, 0),
+            Purpose = JourneyPurpose.Boarding, BoardingVehicleId = 901303
+        });
+        seed.State.Vehicles.Add(new Vehicle
+        {
+            Id = 901303, PassengerCar = true, DriverId = 901301,
+            Position = new Point(50, 50), Status = VehicleStatus.Parked
+        });
+        var initial = seed.SaveToJson();
+        var plain = CitySimulation.FromJson(initial);
+        var reuse = CitySimulation.FromJson(initial);
+        var previous = Environment.GetEnvironmentVariable("PR57_BOARDING_REUSE_LOOKUP");
+        try
+        {
+            Environment.SetEnvironmentVariable("PR57_BOARDING_REUSE_LOOKUP", null);
+            Arrive(plain, 901301);
+            // External mutation between arrivals must be visible to the next lookup.
+            plain.State.Vehicles.Single(v => v.Id == 901303).DriverId = 901302;
+            Arrive(plain, 901302);
+
+            Environment.SetEnvironmentVariable("PR57_BOARDING_REUSE_LOOKUP", "1");
+            Arrive(reuse, 901301);
+            reuse.State.Vehicles.Single(v => v.Id == 901303).DriverId = 901302;
+            Arrive(reuse, 901302);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PR57_BOARDING_REUSE_LOOKUP", previous);
+        }
+        Assert.Equal(plain.SaveToJson(), reuse.SaveToJson());
+        Assert.Null(reuse.State.Vehicles.Single(v => v.Id == 901303).DriverId);
+        Assert.All(reuse.State.Citizens, c => Assert.Null(c.BoardingVehicleId));
+        Assert.Equal(reuse.SaveToJson(), CitySimulation.FromJson(reuse.SaveToJson()).SaveToJson());
+    }
+
     private static void Arrive(CitySimulation sim, int citizenId = 901001)
     {
         var method = typeof(CitySimulation).GetMethod("CitizenArrived",
