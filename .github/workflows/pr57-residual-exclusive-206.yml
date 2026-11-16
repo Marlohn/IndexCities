@@ -2,7 +2,9 @@ name: 'PR57 #206 bounded exclusive physical executor region census'
 on:
   push:
     branches: [experimento/escala-motor-integrado-10k-80y]
-    paths: [.github/workflows/pr57-residual-exclusive-206.yml]
+    paths:
+      - .github/workflows/pr57-residual-exclusive-206.yml
+      - src/IndexCities.Simulation/Mobility.cs
   workflow_dispatch:
 permissions:
   contents: read
