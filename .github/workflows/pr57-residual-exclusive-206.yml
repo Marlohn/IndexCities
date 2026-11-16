@@ -93,7 +93,7 @@ jobs:
               PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_GRID_DIAG=1 \
               PR57_SAVE_CAPTURE_DIR="$output" PR57_206_RESIDUAL_EXCLUSIVE="$enabled" PR57_206_MID_CHECKPOINT=1 PR57_240_WALK_SPLIT="$enabled" PR57_BOARDING_REUSE_LOOKUP="$([[ "$mode" == boarding ]] && echo 1 || echo 0)" \
               PR57_LANE_READWRITE_PROBE=0 PR57_BLOCK_DEP_PROBE=0 \
-              PR57_VEHICLE_COST_PROBE=0 PR57_HOT_TIMING=0 PR57_PHASE_ALLOC_PROBE=0 \
+              PR57_VEHICLE_COST_PROBE=0 PR57_HOT_TIMING="$enabled" PR57_PHASE_ALLOC_PROBE=0 \
                 timeout 180s dotnet run --no-build -c Release \
                 --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
                 "$command" "$fixture" --seed=42 --warmup=0 --days=1 \
@@ -165,6 +165,24 @@ jobs:
               print('PR57_240_CROSSING_BOUND',case,'occupancyCalls',crossing_calls,
                     'vehicleCandidates',vehicle_candidates,'intrusiveOccupancyMs',crossing_ms,
                     'scope','OBSERVATIONAL_NOT_SPEEDUP')
+              # Junction detailed stopwatch is enabled only in the probe arm.
+              # Report measured inclusive hot cost versus the independent plain
+              # integrated wall, NOT an optimization or a non-intrusive speedup.
+              hot=[x for x in logs['probe'].splitlines() if x.startswith('PR57_HOT_TIMING ')]
+              assert len(hot)==1,(case,'junction hot timing missing',len(hot))
+              plain_window=next(x for x in logs['plain'].splitlines() if x.startswith('WINDOW '))
+              plain_wall_ms=metric(plain_window,'wall')*1000
+              assert plain_wall_ms>0,(case,'plain wall missing')
+              junction_ms=metric(hot[0],'junctionMs')
+              turn_ms=metric(hot[0],'turnWayMs')
+              body_ms=metric(hot[0],'bodyOnWayMs')
+              assert min(junction_ms,turn_ms,body_ms)>=0
+              assert turn_ms+body_ms<=junction_ms+0.01,(case,'nested timing exceeds admission')
+              print('PR57_JUNCTION_HOT_BOUND',case,'junctionMs',junction_ms,
+                    'turnWayMs',turn_ms,'bodyOnWayMs',body_ms,
+                    'plainIntegratedWallMs',plain_wall_ms,
+                    'intrusiveNestedFraction',round((turn_ms+body_ms)/plain_wall_ms,6),
+                    'limitation','PROBE_INTRUSIVE_NOT_ABBA_NOT_CAUSAL_SPEEDUP')
               # Quantitative structural triage: these are intrusive physical-loop
               # fractions, NOT end-to-end Amdahl ceilings or speedups. Do not
               # extrapolate them to 10k citizens or the 80-year target.
