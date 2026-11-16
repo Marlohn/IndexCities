@@ -422,7 +422,7 @@ public sealed partial class CitySimulation
         return gap;
     }
     // PR57 experimental census: records eligible second searches without changing decisions or saves.
-    static readonly bool Pr57BoardingReuseEnabled = Environment.GetEnvironmentVariable("PR57_BOARDING_REUSE_LOOKUP") == "1";
+    static bool Pr57BoardingReuseEnabled => Environment.GetEnvironmentVariable("PR57_BOARDING_REUSE_LOOKUP") == "1";
     long _pr57BoardingArrivals, _pr57BoardingFailures, _pr57BoardingSecondSearchesAvoided, _pr57BoardingCandidateUpperBound;
     public IEnumerable<string> Pr57BoardingReuseReport()
     {
