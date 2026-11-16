@@ -6,6 +6,7 @@ on:
       - .github/workflows/pr57-residual-exclusive-206.yml
       - src/IndexCities.Simulation/Mobility.cs
       - tests/IndexCities.Simulation.Tests/Pr57BoardingReuseAdversarialTests.cs
+      - tests/IndexCities.Simulation.Tests/Pr57JunctionBlockerMutationTests.cs
   workflow_dispatch:
 permissions:
   contents: read
