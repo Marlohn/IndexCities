@@ -405,9 +405,9 @@ public sealed partial class CitySimulation
         // PR57 #541: geometry-only, Step-scoped reuse. All vehicle motion and
         // physical admission still execute in their original causal order.
         Pr57TurnWayWorksetBegin();
-        var pr57MutableVehicles=Pr57MutablePhaseProbe?Pr57VehicleMutable(State):null;
-        var pr57MutableCitizens=Pr57MutablePhaseProbe?Pr57CitizenMutable(State):null;
-        var pr57MutableProjects=Pr57MutablePhaseProbe?Pr57ProjectMutable(State):null;
+        var pr57MutableVehicles=Pr57MutablePhaseProbe?Pr57TimedMutable(State,0):null;
+        var pr57MutableCitizens=Pr57MutablePhaseProbe?Pr57TimedMutable(State,1):null;
+        var pr57MutableProjects=Pr57MutablePhaseProbe?Pr57TimedMutable(State,2):null;
         var pr57PhaseVehicles=Pr57PhaseIdentityProbe?State.Vehicles.Select(v=>v.Id.ToString()).ToArray():null;
         var pr57PhaseCitizens=Pr57PhaseIdentityProbe?State.Citizens.Select(c=>c.Id.ToString()).ToArray():null;
         var pr57PhaseProjects=Pr57PhaseIdentityProbe?State.Projects.Select(p=>p.Id.ToString()).ToArray():null;
@@ -488,9 +488,9 @@ public sealed partial class CitySimulation
         OrderConstruction();
         if(Pr57MutablePhaseProbe)
         {
-            var v=Pr57CompareMutable(pr57MutableVehicles!,Pr57VehicleMutable(State));
-            var c=Pr57CompareMutable(pr57MutableCitizens!,Pr57CitizenMutable(State));
-            var p=Pr57CompareMutable(pr57MutableProjects!,Pr57ProjectMutable(State));
+            var v=Pr57CompareMutable(pr57MutableVehicles!,Pr57TimedMutable(State,0));
+            var c=Pr57CompareMutable(pr57MutableCitizens!,Pr57TimedMutable(State,1));
+            var p=Pr57CompareMutable(pr57MutableProjects!,Pr57TimedMutable(State,2));
             _pr57MutableVehicleSame+=v.same;_pr57MutableVehicleChanged+=v.changed;
             _pr57MutableCitizenSame+=c.same;_pr57MutableCitizenChanged+=c.changed;
             _pr57MutableProjectSame+=p.same;_pr57MutableProjectChanged+=p.changed;
