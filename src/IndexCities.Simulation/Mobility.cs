@@ -606,6 +606,8 @@ public sealed partial class CitySimulation
         // Observational only; no eligibility or causal branch is modified.
         var pr57MotionCensus=Environment.GetEnvironmentVariable("PR57_MOTION_QUANTA_CENSUS")=="1";
         long pr57MotionActors=0,pr57MotionQuanta=0;
+        long pr57MotionNoQuantumActors=0,pr57MotionQuantumActors=0;
+        long pr57MotionNoQuantumTicks=0,pr57MotionQuantumTicks=0;
         var pr57CostProbe=scanProfile is not null&&Pr57VehicleCostProbeEnabled;
         var pr57SetupProbe=scanProfile is not null&&Pr57SliceSetupProbeEnabled;
         var pr57SetupStart=pr57SetupProbe?System.Diagnostics.Stopwatch.GetTimestamp():0L;
@@ -913,6 +915,9 @@ public sealed partial class CitySimulation
         Pr57SetupGapEnd(ordered.Length,pr57ScanCandidates.Count);
         foreach(var v in ordered){
             if(pr57MotionCensus)pr57MotionActors++;
+            // Classify complete mandatory actor processing, not only the physical loop.
+            var pr57MotionActorStart=pr57MotionCensus?System.Diagnostics.Stopwatch.GetTimestamp():0L;
+            var pr57MotionActorQuantaStart=pr57MotionQuanta;
             Pr57Effect253BeforeActor(v);
             Pr57PhaseImpactBeforeActor(v);
             Pr57ExclusiveBeginVehicle(v);
@@ -1457,6 +1462,11 @@ public sealed partial class CitySimulation
                 if(DriveWear(v,step)||steer==null&&!advanced)break;
             }
             }finally{
+                if(pr57MotionCensus){
+                    var actorTicks=System.Diagnostics.Stopwatch.GetTimestamp()-pr57MotionActorStart;
+                    if(pr57MotionQuanta==pr57MotionActorQuantaStart){pr57MotionNoQuantumActors++;pr57MotionNoQuantumTicks+=actorTicks;}
+                    else{pr57MotionQuantumActors++;pr57MotionQuantumTicks+=actorTicks;}
+                }
                 Pr57Effect253AfterActor(v);
                 Pr57ExclusiveFinishVehicle(v);
                 Pr57S6GateShadowAfterVehicle(v);
@@ -1583,7 +1593,7 @@ public sealed partial class CitySimulation
             }
             if(Pr57QueueLimiterEnabled&&_pr57MovementAllocCalls%100==0)Pr57QueueLimiterPrint(_pr57MovementAllocCalls);
             if(pr57MotionCensus&&_pr57MovementAllocCalls%60==0)
-                Console.WriteLine($"PR57_MOTION_QUANTA_CENSUS slice={_pr57MovementAllocCalls} actors={pr57MotionActors} physicalQuanta={pr57MotionQuanta} scope=INTRUSIVE_OBSERVATIONAL_NO_SKIP");
+                Console.WriteLine($"PR57_MOTION_QUANTA_CENSUS slice={_pr57MovementAllocCalls} actors={pr57MotionActors} physicalQuanta={pr57MotionQuanta} noQuantumActors={pr57MotionNoQuantumActors} quantumActors={pr57MotionQuantumActors} noQuantumMs={pr57MotionNoQuantumTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} quantumMs={pr57MotionQuantumTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} scope=INTRUSIVE_OBSERVATIONAL_NO_SKIP");
             if(pr57SetupProbe&&_pr57MovementAllocCalls%60==0){
                 var hz=System.Diagnostics.Stopwatch.Frequency;
                 Console.WriteLine($"PR57_SLICE_SETUP slices={_pr57MovementAllocCalls} cleanupCalls={_pr57SliceSetupCalls[0]} cleanupVehicles={_pr57SliceSetupVehicles[0]} cleanupMs={_pr57SliceSetupTicks[0]*1000.0/hz:F5} sortCalls={_pr57SliceSetupCalls[1]} sortVehicles={_pr57SliceSetupVehicles[1]} sortMs={_pr57SliceSetupTicks[1]*1000.0/hz:F5} guardHits={_pr57SortGuardHits} guardFallbacks={_pr57SortGuardFallbacks} guardComparisons={_pr57SortGuardComparisons} scope=INTRUSIVE_NO_SKIP");
