@@ -608,6 +608,7 @@ public sealed partial class CitySimulation
         long pr57MotionActors=0,pr57MotionQuanta=0;
         long pr57MotionNoQuantumActors=0,pr57MotionQuantumActors=0;
         long pr57MotionNoQuantumTicks=0,pr57MotionQuantumTicks=0,pr57MotionPhysicalTicks=0;
+        long pr57LaneExactTicks=0,pr57BendSelectTicks=0,pr57LaneCandidates=0,pr57BendCandidates=0,pr57BendSelected=0;
         var pr57CostProbe=scanProfile is not null&&Pr57VehicleCostProbeEnabled;
         var pr57SetupProbe=scanProfile is not null&&Pr57SliceSetupProbeEnabled;
         var pr57SetupStart=pr57SetupProbe?System.Diagnostics.Stopwatch.GetTimestamp():0L;
@@ -1195,7 +1196,9 @@ public sealed partial class CitySimulation
                 if(Pr57LaneReadWriteEnabled&&scanProfile is not null)
                     Pr57LaneReadBeforeScan(v,enteringLane,speed*remaining,pr57LaneList.Count);
                 Pr57PhaseImpactBeforeScan();
+                var pr57LaneExactStart=pr57MotionCensus?System.Diagnostics.Stopwatch.GetTimestamp():0L;
                 Pr57ScanLane(pr57LaneList);
+                if(pr57MotionCensus){pr57LaneExactTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57LaneExactStart;pr57LaneCandidates+=pr57LaneList.Count;}
                 Pr57CandidateEndQuery();
                 if(blocker is not null)Pr57CausalWinner(v,blocker);
                 if(scanProfile is not null){
@@ -1229,6 +1232,7 @@ public sealed partial class CitySimulation
                 // A/B only: cheap conservative AABB and exact radius rejection BEFORE
                 // heading/Ahead/body tests. The old order and all original exact predicates
                 // remain in the control path; no finite lane-leader cutoff is introduced.
+                var pr57BendSelectStart=pr57MotionCensus?System.Diagnostics.Stopwatch.GetTimestamp():0L;
                 var bendLeaders=pr57BendReuse?pr57BendLeadersReuse!:pr57BendPrefilter?new List<Vehicle>():pr57BendList.Where(o=>o.Id!=v.Id&&o.Status is VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded&&Math.Cos(o.Heading-v.Heading)>.5&&Ahead(v,o)>0&&
                     Math.Abs((o.Position.X-v.Position.X)*Math.Cos(v.Heading)-(o.Position.Z-v.Position.Z)*Math.Sin(v.Heading))>=2.6&&o.Position.Distance(v.Position)<=step+12&&
                     !(o.Position.Distance(State.Entry)<8&&v.Position.Distance(State.Entry)<8)).ToList();
@@ -1255,6 +1259,7 @@ public sealed partial class CitySimulation
                     }
                     if(scanProfile is not null){scanProfile.BendPrefilterCandidates+=pr57BendList.Count;scanProfile.BendPrefilterNear+=near;}
                 }
+                if(pr57MotionCensus){pr57BendSelectTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57BendSelectStart;pr57BendCandidates+=pr57BendList.Count;pr57BendSelected+=bendLeaders.Count;}
                 Pr57Stage249FinishBend(pr57BendList.Count,bendLeaders);
                 if(_pr57CandidateActive is not null)
                     foreach(var candidate in bendLeaders)Pr57CandidateRead(candidate,9);
@@ -1597,7 +1602,7 @@ public sealed partial class CitySimulation
             }
             if(Pr57QueueLimiterEnabled&&_pr57MovementAllocCalls%100==0)Pr57QueueLimiterPrint(_pr57MovementAllocCalls);
             if(pr57MotionCensus&&_pr57MovementAllocCalls%60==0)
-                Console.WriteLine($"PR57_MOTION_QUANTA_CENSUS slice={_pr57MovementAllocCalls} actors={pr57MotionActors} physicalQuanta={pr57MotionQuanta} noQuantumActors={pr57MotionNoQuantumActors} quantumActors={pr57MotionQuantumActors} noQuantumMs={pr57MotionNoQuantumTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} quantumMs={pr57MotionQuantumTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} physicalLoopMs={pr57MotionPhysicalTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} scope=INTRUSIVE_OBSERVATIONAL_NO_SKIP");
+                Console.WriteLine($"PR57_MOTION_QUANTA_CENSUS slice={_pr57MovementAllocCalls} actors={pr57MotionActors} physicalQuanta={pr57MotionQuanta} noQuantumActors={pr57MotionNoQuantumActors} quantumActors={pr57MotionQuantumActors} noQuantumMs={pr57MotionNoQuantumTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} quantumMs={pr57MotionQuantumTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} physicalLoopMs={pr57MotionPhysicalTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} laneExactMs={pr57LaneExactTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} laneCandidates={pr57LaneCandidates} bendSelectMs={pr57BendSelectTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} bendCandidates={pr57BendCandidates} bendSelected={pr57BendSelected} scope=INTRUSIVE_OBSERVATIONAL_NO_SKIP");
             if(pr57SetupProbe&&_pr57MovementAllocCalls%60==0){
                 var hz=System.Diagnostics.Stopwatch.Frequency;
                 Console.WriteLine($"PR57_SLICE_SETUP slices={_pr57MovementAllocCalls} cleanupCalls={_pr57SliceSetupCalls[0]} cleanupVehicles={_pr57SliceSetupVehicles[0]} cleanupMs={_pr57SliceSetupTicks[0]*1000.0/hz:F5} sortCalls={_pr57SliceSetupCalls[1]} sortVehicles={_pr57SliceSetupVehicles[1]} sortMs={_pr57SliceSetupTicks[1]*1000.0/hz:F5} guardHits={_pr57SortGuardHits} guardFallbacks={_pr57SortGuardFallbacks} guardComparisons={_pr57SortGuardComparisons} scope=INTRUSIVE_NO_SKIP");
