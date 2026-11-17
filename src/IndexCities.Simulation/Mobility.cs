@@ -580,7 +580,7 @@ public sealed partial class CitySimulation
     static readonly bool Pr57CleanupWorkCensus =
         Environment.GetEnvironmentVariable("PR57_CLEANUP_WORK_CENSUS")=="1";
     long _pr57CleanupCensusSlices, _pr57CleanupCensusSkipped, _pr57CleanupCensusRequired, _pr57CleanupCensusTicks;
-    long _pr57FullMotionSlices, _pr57FullMotionTicks, _pr57FullPhysicalTicks, _pr57FullMotionQuanta;
+    long _pr57FullMotionSlices, _pr57FullMotionTicks, _pr57FullPhysicalTicks, _pr57FullMotionQuanta, _pr57RosterPrepareTicks;
     void MoveVehiclesUnsplit(double dt,double? operationsDt=null)
     {
         // PR57 opt-in: cumulative, non-sampled full-slice versus physical-loop cost.
@@ -589,7 +589,9 @@ public sealed partial class CitySimulation
         var pr57FullMotionStart=pr57FullMotionTiming?System.Diagnostics.Stopwatch.GetTimestamp():0L;
         Pr57SetupGapStart(dt,operationsDt);
         Pr57Transitions290Begin(dt<=0?0:1);
+        var pr57RosterStart=pr57FullMotionTiming?System.Diagnostics.Stopwatch.GetTimestamp():0L;
         Pr57PrepareSiteOwnerRoster();
+        if(pr57FullMotionTiming)_pr57RosterPrepareTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57RosterStart;
         Pr57CausalBeginSlice(dt,operationsDt);
         Pr57JunctionCensusBeginSlice(dt,operationsDt);
         Pr57JunctionReadersBeginSlice(dt,operationsDt);
@@ -1592,7 +1594,7 @@ public sealed partial class CitySimulation
             _pr57FullMotionQuanta+=pr57MotionQuanta;
             _pr57FullMotionTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57FullMotionStart;
             if(_pr57FullMotionSlices%60==0)
-                Console.WriteLine($"PR57_MOTION_FULL_CUMULATIVE slices={_pr57FullMotionSlices} fullMs={_pr57FullMotionTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} physicalLoopMs={_pr57FullPhysicalTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} physicalQuanta={_pr57FullMotionQuanta} scope=INTRUSIVE_OBSERVATIONAL_ALL_SLICES");
+                Console.WriteLine($"PR57_MOTION_FULL_CUMULATIVE slices={_pr57FullMotionSlices} fullMs={_pr57FullMotionTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} physicalLoopMs={_pr57FullPhysicalTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} physicalQuanta={_pr57FullMotionQuanta} rosterPrepareMs={_pr57RosterPrepareTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} scope=INTRUSIVE_OBSERVATIONAL_ALL_SLICES");
         }
         if(scanProfile is not null){
             _pr57MovementAllocBytes[0]+=GC.GetAllocatedBytesForCurrentThread()-pr57AllocCallStart;
