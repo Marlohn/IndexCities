@@ -274,24 +274,33 @@ jobs:
                   # Cumulative 300-slice snapshots: report mandatory work and skipped work
                   # for each fresh-process arm without treating timing as a speedup.
                   census=[x for x in log.splitlines() if x.startswith('PR57_CLEANUP_WORK_CENSUS ')]
-                  assert census,(case,trial,'CENSUS_MISSING')
-                  def census_value(row,key):
-                      match=re.search(r'(?:^| )'+key+r'=([0-9]+)',row)
-                      assert match,(case,trial,key,row)
-                      return int(match.group(1))
-                  final=census[-1]
-                  skipped=census_value(final,'skipped')
-                  required=census_value(final,'required')
-                  ticks=census_value(final,'cleanupTicks')
-                  frequency=census_value(final,'frequency')
-                  slices=census_value(final,'slices')
-                  assert slices>=300 and required>0 and frequency>0,(case,trial,final)
-                  assert (skipped==0 if trial.startswith('A') else skipped>=0),(case,trial,final)
-                  print('PR57_CLEANUP_WORK_RESULT',case,trial,'slices',slices,
-                        'skipped',skipped,'required',required,
-                        'skipFraction',round(skipped/(skipped+required),6),
-                        'cleanupMeasuredMs',round(1000*ticks/frequency,6),
-                        'scope','INTRUSIVE_CENSUS_NOT_ABBA_SPEEDUP')
+                  if not census:
+                      # Diagnostic emits only every 300 movement slices; preserve ABBA/JSON checks.
+                      profile=re.search(r'VEHICLE_PROFILE steps=([0-9]+).*? slices=([0-9]+)',log)
+                      assert profile,(case,trial,'NO_VEHICLE_PROFILE')
+                      observed=int(profile.group(2))
+                      assert case=='worksREAL' and observed<300,(case,trial,'UNEXPECTED_CENSUS_MISSING',observed)
+                      print('PR57_CLEANUP_WORK_CENSORED',case,trial,'movementSlices',observed,
+                            'emissionThreshold',300,'skipFraction','UNMEASURED',
+                            'cleanupMeasuredMs','UNMEASURED')
+                  else:
+                      def census_value(row,key):
+                          match=re.search(r'(?:^| )'+key+r'=([0-9]+)',row)
+                          assert match,(case,trial,key,row)
+                          return int(match.group(1))
+                      final=census[-1]
+                      skipped=census_value(final,'skipped')
+                      required=census_value(final,'required')
+                      ticks=census_value(final,'cleanupTicks')
+                      frequency=census_value(final,'frequency')
+                      slices=census_value(final,'slices')
+                      assert slices>=300 and required>0 and frequency>0,(case,trial,final)
+                      assert (skipped==0 if trial.startswith('A') else skipped>=0),(case,trial,final)
+                      print('PR57_CLEANUP_WORK_RESULT',case,trial,'slices',slices,
+                            'skipped',skipped,'required',required,
+                            'skipFraction',round(skipped/(skipped+required),6),
+                            'cleanupMeasuredMs',round(1000*ticks/frequency,6),
+                            'scope','INTRUSIVE_CENSUS_NOT_ABBA_SPEEDUP')
                   for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
                       current=prefix/checkpoint
                       baseline=root/f'{case}-A1'/checkpoint
