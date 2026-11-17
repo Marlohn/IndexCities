@@ -238,6 +238,11 @@ public sealed partial class CitySimulation
         // A public Advance boundary permits direct external State edits (including tests).
         // Rebuild the opt-in agenda there; internal quanta still use incremental wakeups.
         if(Pr57CitizenAgendaEnabled && !_pr57ControlledBoundary)_pr57AgendaReady=false;
+        // PR57 living roster is not persisted: callers can mutate Citizen.Alive
+        // through the public State alias without changing Citizens.Count.
+        // Only a certified internal boundary may reuse its previous roster.
+        if (Pr57LivingRosterEnabled && !_pr57ControlledBoundary)
+            _pr57LivingRosterDirty = true;
         // Public Advance boundaries permit arbitrary external State edits.
         _pr57ConstructionWaitAccess.Clear();
         if(Pr57MaintenanceScheduleEnabled && !_pr57ControlledBoundary)_pr57MaintenanceScheduleReady=false;
