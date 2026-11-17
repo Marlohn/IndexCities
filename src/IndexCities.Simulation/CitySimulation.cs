@@ -326,6 +326,19 @@ public sealed partial class CitySimulation
                 Console.WriteLine($"PR57_LIVING_ROSTER_WORK steps={_pr57RosterSteps} rebuilds={_pr57RosterRebuilds} scanned={_pr57RosterScanned} selected={_pr57RosterSelected} needsFallbacks={_pr57RosterNeedsFallbacks}");
         }
     }
+    // PR57 diagnostic only: count entity identity overlap at three causal boundaries.
+    // No work is skipped; do not enable for wall-time ABBA measurements.
+    static readonly bool Pr57PhaseIdentityProbe=Environment.GetEnvironmentVariable("PR57_PHASE_IDENTITY_PROBE")=="1";
+    int _pr57PhaseIdentitySteps;
+    long _pr57PhaseVehicleRepeated, _pr57PhaseCitizenRepeated, _pr57PhaseProjectRepeated;
+    long _pr57PhaseVehicleChanged, _pr57PhaseCitizenChanged, _pr57PhaseProjectChanged;
+    static (int repeated,int changed) Pr57IdentityOverlap<T>(IEnumerable<T> before,IEnumerable<T> after,Func<T,string> identity)
+    {
+        var oldIds=new HashSet<string>(before.Select(identity),StringComparer.Ordinal);
+        var newIds=new HashSet<string>(after.Select(identity),StringComparer.Ordinal);
+        var repeated=oldIds.Count(id=>newIds.Contains(id));
+        return (repeated,oldIds.Count+newIds.Count-2*repeated);
+    }
     static readonly bool Pr57CauseTransitionProbe=Environment.GetEnvironmentVariable("PR57_CAUSE_TRANSITION_PROBE")=="1";
     void Step(double dt)
     {
@@ -363,6 +376,9 @@ public sealed partial class CitySimulation
         // PR57 #541: geometry-only, Step-scoped reuse. All vehicle motion and
         // physical admission still execute in their original causal order.
         Pr57TurnWayWorksetBegin();
+        var pr57PhaseVehicles=Pr57PhaseIdentityProbe?State.Vehicles.Select(v=>v.Id.ToString()).ToArray():null;
+        var pr57PhaseCitizens=Pr57PhaseIdentityProbe?State.Citizens.Select(c=>c.Id.ToString()).ToArray():null;
+        var pr57PhaseProjects=Pr57PhaseIdentityProbe?State.Projects.Select(p=>p.Id.ToString()).ToArray():null;
         try { MoveVehicles(dt); }
         finally { Pr57TurnWayWorksetEnd(); }
         Pr57310Boundary("vehicles");
@@ -438,6 +454,17 @@ public sealed partial class CitySimulation
         var pr57ShipmentsBefore=profile is null?0:State.Shipments.Count;
         var pr57LedgerBefore=profile is null?0:State.Ledger.Count;
         OrderConstruction();
+        if(Pr57PhaseIdentityProbe)
+        {
+            var vehicles=Pr57IdentityOverlap(pr57PhaseVehicles!,State.Vehicles.Select(v=>v.Id.ToString()),id=>id);
+            var citizens=Pr57IdentityOverlap(pr57PhaseCitizens!,State.Citizens.Select(c=>c.Id.ToString()),id=>id);
+            var projects=Pr57IdentityOverlap(pr57PhaseProjects!,State.Projects.Select(p=>p.Id.ToString()),id=>id);
+            _pr57PhaseVehicleRepeated+=vehicles.repeated;_pr57PhaseVehicleChanged+=vehicles.changed;
+            _pr57PhaseCitizenRepeated+=citizens.repeated;_pr57PhaseCitizenChanged+=citizens.changed;
+            _pr57PhaseProjectRepeated+=projects.repeated;_pr57PhaseProjectChanged+=projects.changed;
+            if(++_pr57PhaseIdentitySteps%100==0)
+                Console.WriteLine($"PR57_PHASE_IDENTITY steps={_pr57PhaseIdentitySteps} vehiclesRepeated={_pr57PhaseVehicleRepeated} vehiclesChanged={_pr57PhaseVehicleChanged} citizensRepeated={_pr57PhaseCitizenRepeated} citizensChanged={_pr57PhaseCitizenChanged} projectsRepeated={_pr57PhaseProjectRepeated} projectsChanged={_pr57PhaseProjectChanged} scope=INTRUSIVE_OBSERVATION_NO_SKIP");
+        }
         if(pr57DispatchActive)
         {
             var shipmentsDelta=State.Shipments.Count-pr57ShipmentsBefore;
