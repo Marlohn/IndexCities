@@ -12,6 +12,9 @@ public sealed partial class CitySimulation
     readonly long[] _pr57SliceSetupTicks=new long[2]; // junction cleanup, canonical sort (including materialization)
     readonly long[] _pr57SliceSetupCalls=new long[2];
     readonly long[] _pr57SliceSetupVehicles=new long[2];
+    // PR57 opt-in sort eligibility census: counts canonical-order hits, inversions,
+    // and comparisons performed by the linear guard; no cached gameplay state.
+    long _pr57SortGuardHits, _pr57SortGuardFallbacks, _pr57SortGuardComparisons;
     readonly long[] _pr57VehicleCostTicks=new long[8];
     readonly long[] _pr57VehicleCostCalls=new long[8];
     readonly long[] _pr57VehicleCostBytes=new long[8];
@@ -682,8 +685,9 @@ public sealed partial class CitySimulation
         // automatically invalidate eligibility. Fall back on any inversion.
         var pr57SortedFastPath=Environment.GetEnvironmentVariable("PR57_SORT_ORDERED_FASTPATH")=="1";
         var pr57AlreadyOrdered=pr57SortedFastPath;
-        if(pr57AlreadyOrdered)
+        if(pr57AlreadyOrdered){
             for(var i=1;i<ordered.Length;i++){
+                if(pr57SetupProbe)_pr57SortGuardComparisons++;
                 var previous=ordered[i-1];
                 var current=ordered[i];
                 var comparison=previous.WaitingSince.CompareTo(current.WaitingSince);
@@ -692,6 +696,11 @@ public sealed partial class CitySimulation
                     break;
                 }
             }
+            if(pr57SetupProbe){
+                if(pr57AlreadyOrdered)_pr57SortGuardHits++;
+                else _pr57SortGuardFallbacks++;
+            }
+        }
         if(!pr57AlreadyOrdered)
             Array.Sort(ordered,static (a,b)=>a.WaitingSince.CompareTo(b.WaitingSince) is var c and not 0?c:a.Id.CompareTo(b.Id));
         if(pr57SetupProbe){
@@ -1569,7 +1578,7 @@ public sealed partial class CitySimulation
             if(Pr57QueueLimiterEnabled&&_pr57MovementAllocCalls%100==0)Pr57QueueLimiterPrint(_pr57MovementAllocCalls);
             if(pr57SetupProbe&&_pr57MovementAllocCalls%60==0){
                 var hz=System.Diagnostics.Stopwatch.Frequency;
-                Console.WriteLine($"PR57_SLICE_SETUP slices={_pr57MovementAllocCalls} cleanupCalls={_pr57SliceSetupCalls[0]} cleanupVehicles={_pr57SliceSetupVehicles[0]} cleanupMs={_pr57SliceSetupTicks[0]*1000.0/hz:F5} sortCalls={_pr57SliceSetupCalls[1]} sortVehicles={_pr57SliceSetupVehicles[1]} sortMs={_pr57SliceSetupTicks[1]*1000.0/hz:F5} scope=INTRUSIVE_NO_SKIP");
+                Console.WriteLine($"PR57_SLICE_SETUP slices={_pr57MovementAllocCalls} cleanupCalls={_pr57SliceSetupCalls[0]} cleanupVehicles={_pr57SliceSetupVehicles[0]} cleanupMs={_pr57SliceSetupTicks[0]*1000.0/hz:F5} sortCalls={_pr57SliceSetupCalls[1]} sortVehicles={_pr57SliceSetupVehicles[1]} sortMs={_pr57SliceSetupTicks[1]*1000.0/hz:F5} guardHits={_pr57SortGuardHits} guardFallbacks={_pr57SortGuardFallbacks} guardComparisons={_pr57SortGuardComparisons} scope=INTRUSIVE_NO_SKIP");
             }
             if(pr57CostProbe&&_pr57MovementAllocCalls%60==0){
                 string[] names=["operations","nontravelling","moved","queue","junction","waiting","stationary-trip","other"];
