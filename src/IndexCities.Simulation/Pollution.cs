@@ -197,7 +197,7 @@ public sealed partial class CitySimulation
                     order=(order^(ulong)BitConverter.DoubleToInt64Bits(_cellValues[i]))*1099511628211UL;
                 }
             }
-            Console.WriteLine($"PR57_LAKE_SLICE_TRACE time={State.TimeSeconds:R} count={_cellCount} order={order:X16} lakeBits={BitConverter.DoubleToInt64Bits(State.LakePollution):X16}");
+            Console.WriteLine($"PR57_LAKE_SLICE_TRACE time={State.ElapsedSeconds:R} count={_cellCount} order={order:X16} lakeBits={BitConverter.DoubleToInt64Bits(State.LakePollution):X16}");
         }
     }
 }
