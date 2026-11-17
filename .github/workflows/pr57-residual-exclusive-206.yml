@@ -97,7 +97,7 @@ jobs:
               PR57_SAVE_CAPTURE_DIR="$output" PR57_206_RESIDUAL_EXCLUSIVE="$enabled" PR57_206_MID_CHECKPOINT=1 PR57_240_WALK_SPLIT="$enabled" PR57_BOARDING_REUSE_LOOKUP="$([[ "$mode" == boarding ]] && echo 1 || echo 0)" \
               PR57_LANE_READWRITE_PROBE=0 PR57_BLOCK_DEP_PROBE=0 \
               PR57_VEHICLE_COST_PROBE=0 PR57_HOT_TIMING="$enabled" PR57_PHASE_ALLOC_PROBE=0 \
-              PR57_SORT_ORDERED_FASTPATH="$enabled" PR57_SLICE_SETUP_PROBE="$enabled" PR57_PHASE_IDENTITY_PROBE="$([[ "$mode" == probe ]] && echo 1 || echo 0)" \
+              PR57_SORT_ORDERED_FASTPATH="$enabled" PR57_SLICE_SETUP_PROBE="$enabled" PR57_PHASE_IDENTITY_PROBE="$([[ "$mode" == probe ]] && echo 1 || echo 0)" PR57_MUTABLE_PHASE_PROBE="$([[ "$mode" == probe ]] && echo 1 || echo 0)" \
                 timeout 180s dotnet run --no-build -c Release \
                 --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
                 "$command" "$fixture" --seed=42 --warmup=0 --days=1 \
@@ -127,6 +127,10 @@ jobs:
                   assert identity and 'steps=100' in identity[0],(case,'identity probe not exercised')
                   assert not any('PR57_PHASE_IDENTITY ' in logs[m] for m in ('plain','boarding')),(case,'probe leaked into controls')
                   print('PR57_PHASE_IDENTITY_CI',case,identity[-1], 'scope=OBSERVATIONAL_NOT_SPEEDUP')
+                  mutable=[line for line in logs['probe'].splitlines() if line.startswith('PR57_MUTABLE_PHASE ')]
+                  assert mutable and 'steps=100' in mutable[0],(case,'mutable phase probe not exercised')
+                  assert not any('PR57_MUTABLE_PHASE ' in logs[m] for m in ('plain','boarding')),(case,'mutable probe leaked into controls')
+                  print('PR57_MUTABLE_PHASE_CI',case,mutable[-1], 'scope=SELECTED_FIELDS_OBSERVATIONAL_NOT_SPEEDUP')
                   assert len([x for x in log.splitlines() if x.startswith('WINDOW ')])==1,(case,mode)
                   for i in (0,1):
                       assert (root/f'{case}-{mode}'/f'checkpoint-{i}.json').is_file(),(case,mode,i)
