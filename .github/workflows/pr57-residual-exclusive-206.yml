@@ -242,7 +242,7 @@ jobs:
               output="$PWD/artifacts/residual-exclusive-206/cleanup-abba/$case-$trial"
               mkdir -p "$output"
               echo "PR57_CLEANUP_RUN case=$case trial=$trial optIn=$enabled"
-              PR57_EMPTY_RESERVATION_CLEANUP_GATE="$enabled" PR57_HOST_QUANTUM=1 \
+              PR57_EMPTY_RESERVATION_CLEANUP_GATE="$enabled" PR57_CLEANUP_WORK_CENSUS=1 PR57_HOST_QUANTUM=1 \
               PR57_AB_CHECKPOINT=1 PR57_206_MID_CHECKPOINT=1 \
               PR57_SAVE_CAPTURE_DIR="$output" \
               PR57_206_RESIDUAL_EXCLUSIVE=0 PR57_240_WALK_SPLIT=0 \
@@ -271,6 +271,27 @@ jobs:
                       match=re.search(r'(?:^| )'+key+r'=([-0-9.]+)',row)
                       assert match,(case,trial,key,row)
                       rows[trial][key]=float(match.group(1))
+                  # Cumulative 300-slice snapshots: report mandatory work and skipped work
+                  # for each fresh-process arm without treating timing as a speedup.
+                  census=[x for x in log.splitlines() if x.startswith('PR57_CLEANUP_WORK_CENSUS ')]
+                  assert census,(case,trial,'CENSUS_MISSING')
+                  def census_value(row,key):
+                      match=re.search(r'(?:^| )'+key+r'=([0-9]+)',row)
+                      assert match,(case,trial,key,row)
+                      return int(match.group(1))
+                  final=census[-1]
+                  skipped=census_value(final,'skipped')
+                  required=census_value(final,'required')
+                  ticks=census_value(final,'cleanupTicks')
+                  frequency=census_value(final,'frequency')
+                  slices=census_value(final,'slices')
+                  assert slices>=300 and required>0 and frequency>0,(case,trial,final)
+                  assert (skipped==0 if trial.startswith('A') else skipped>=0),(case,trial,final)
+                  print('PR57_CLEANUP_WORK_RESULT',case,trial,'slices',slices,
+                        'skipped',skipped,'required',required,
+                        'skipFraction',round(skipped/(skipped+required),6),
+                        'cleanupMeasuredMs',round(1000*ticks/frequency,6),
+                        'scope','INTRUSIVE_CENSUS_NOT_ABBA_SPEEDUP')
                   for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
                       current=prefix/checkpoint
                       baseline=root/f'{case}-A1'/checkpoint
