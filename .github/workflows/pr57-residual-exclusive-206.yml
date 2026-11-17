@@ -536,9 +536,9 @@ jobs:
                         'limitation','REBUILD_FALLBACK_COUNTERS_NOT_YET_EXPOSED_NO_10K_PROOF')
           PY
       - name: Measure opt-in bend enumeration reuse with fresh-process ABBA
-        # Quarantined: run 44179081642, worksREAL/checkpoint-1 FULL_JSON_MISMATCH.
-        # Do not treat this opt-in as causally equivalent until fixed and revalidated.
-        if: ${{ false }}
+        # Revalidation only: prior worksREAL mismatch in run 44179081642;
+        # independent lake-slice replay repeated equal in run 44195925158.
+        # This ABBA must pass exact full JSON before any performance claim.
         shell: bash
         run: |
           set -euo pipefail
