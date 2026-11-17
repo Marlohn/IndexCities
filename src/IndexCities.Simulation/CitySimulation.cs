@@ -339,6 +339,24 @@ public sealed partial class CitySimulation
         var repeated=oldIds.Count(id=>newIds.Contains(id));
         return (repeated,oldIds.Count+newIds.Count-2*repeated);
     }
+    // PR57 observational, deliberately incomplete mutable-field fingerprint: NOT a skip certificate.
+    static readonly bool Pr57MutablePhaseProbe=Environment.GetEnvironmentVariable("PR57_MUTABLE_PHASE_PROBE")=="1";
+    int _pr57MutableSteps;
+    long _pr57MutableVehicleSame,_pr57MutableVehicleChanged,_pr57MutableCitizenSame,_pr57MutableCitizenChanged,_pr57MutableProjectSame,_pr57MutableProjectChanged;
+    static (long same,long changed) Pr57CompareMutable(Dictionary<int,string> before,Dictionary<int,string> after)
+    {
+        long same=0,changed=0;
+        foreach(var entry in before)
+        {
+            if(after.TryGetValue(entry.Key,out var value)&&StringComparer.Ordinal.Equals(entry.Value,value))same++;
+            else changed++;
+        }
+        foreach(var id in after.Keys)if(!before.ContainsKey(id))changed++;
+        return (same,changed);
+    }
+    static Dictionary<int,string> Pr57VehicleMutable(CityState state)=>state.Vehicles.ToDictionary(v=>v.Id,v=>FormattableString.Invariant(`${v.Status}|${v.Position.X:R}|${v.Position.Z:R}`));
+    static Dictionary<int,string> Pr57CitizenMutable(CityState state)=>state.Citizens.ToDictionary(c=>c.Id,c=>FormattableString.Invariant(`${c.Alive}|${c.Resident}|${c.InsideMap}|${c.Decision}`));
+    static Dictionary<int,string> Pr57ProjectMutable(CityState state)=>state.Projects.ToDictionary(p=>p.Id,p=>FormattableString.Invariant(`${p.Status}|${p.BudgetRemaining}|${p.Cause}`));
     static readonly bool Pr57CauseTransitionProbe=Environment.GetEnvironmentVariable("PR57_CAUSE_TRANSITION_PROBE")=="1";
     void Step(double dt)
     {
@@ -376,6 +394,9 @@ public sealed partial class CitySimulation
         // PR57 #541: geometry-only, Step-scoped reuse. All vehicle motion and
         // physical admission still execute in their original causal order.
         Pr57TurnWayWorksetBegin();
+        var pr57MutableVehicles=Pr57MutablePhaseProbe?Pr57VehicleMutable(State):null;
+        var pr57MutableCitizens=Pr57MutablePhaseProbe?Pr57CitizenMutable(State):null;
+        var pr57MutableProjects=Pr57MutablePhaseProbe?Pr57ProjectMutable(State):null;
         var pr57PhaseVehicles=Pr57PhaseIdentityProbe?State.Vehicles.Select(v=>v.Id.ToString()).ToArray():null;
         var pr57PhaseCitizens=Pr57PhaseIdentityProbe?State.Citizens.Select(c=>c.Id.ToString()).ToArray():null;
         var pr57PhaseProjects=Pr57PhaseIdentityProbe?State.Projects.Select(p=>p.Id.ToString()).ToArray():null;
@@ -454,6 +475,17 @@ public sealed partial class CitySimulation
         var pr57ShipmentsBefore=profile is null?0:State.Shipments.Count;
         var pr57LedgerBefore=profile is null?0:State.Ledger.Count;
         OrderConstruction();
+        if(Pr57MutablePhaseProbe)
+        {
+            var v=Pr57CompareMutable(pr57MutableVehicles!,Pr57VehicleMutable(State));
+            var c=Pr57CompareMutable(pr57MutableCitizens!,Pr57CitizenMutable(State));
+            var p=Pr57CompareMutable(pr57MutableProjects!,Pr57ProjectMutable(State));
+            _pr57MutableVehicleSame+=v.same;_pr57MutableVehicleChanged+=v.changed;
+            _pr57MutableCitizenSame+=c.same;_pr57MutableCitizenChanged+=c.changed;
+            _pr57MutableProjectSame+=p.same;_pr57MutableProjectChanged+=p.changed;
+            if(++_pr57MutableSteps%100==0)
+                Console.WriteLine($"PR57_MUTABLE_PHASE steps={_pr57MutableSteps} vehicleSame={_pr57MutableVehicleSame} vehicleChanged={_pr57MutableVehicleChanged} citizenSame={_pr57MutableCitizenSame} citizenChanged={_pr57MutableCitizenChanged} projectSame={_pr57MutableProjectSame} projectChanged={_pr57MutableProjectChanged} scope=SELECTED_FIELDS_ONLY_NO_SKIP");
+        }
         if(Pr57PhaseIdentityProbe)
         {
             var vehicles=Pr57IdentityOverlap(pr57PhaseVehicles!,State.Vehicles.Select(v=>v.Id.ToString()),id=>id);
