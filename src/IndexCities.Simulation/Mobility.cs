@@ -574,6 +574,9 @@ public sealed partial class CitySimulation
     // Disabled by default; no saved-state or official API change.
     static readonly bool Pr57EmptyReservationCleanupGate =
         Environment.GetEnvironmentVariable("PR57_EMPTY_RESERVATION_CLEANUP_GATE")=="1";
+    static readonly bool Pr57CleanupWorkCensus =
+        Environment.GetEnvironmentVariable("PR57_CLEANUP_WORK_CENSUS")=="1";
+    long _pr57CleanupCensusSlices, _pr57CleanupCensusSkipped, _pr57CleanupCensusRequired, _pr57CleanupCensusTicks;
     void MoveVehiclesUnsplit(double dt,double? operationsDt=null)
     {
         Pr57SetupGapStart(dt,operationsDt);
@@ -613,6 +616,8 @@ public sealed partial class CitySimulation
         // release. Re-evaluate the serialized fields on every slice (including
         // after external mutations); never retain a cross-slice roster.
         // A dangling entered-at clock still needs canonical cleanup.
+        var pr57CleanupStart=Pr57CleanupWorkCensus?System.Diagnostics.Stopwatch.GetTimestamp():0L;
+        long pr57CleanupSkipped=0,pr57CleanupRequired=0;
         foreach(var vehicle in State.Vehicles)
         {
             if(Pr57EmptyReservationCleanupGate &&
@@ -620,9 +625,26 @@ public sealed partial class CitySimulation
                vehicle.IntersectionEnteredAt is null &&
                vehicle.ManoeuvreDock is null &&
                vehicle.ManoeuvreSpaces.Count==0)
+            {
+                if(Pr57CleanupWorkCensus)pr57CleanupSkipped++;
                 continue;
+            }
+            if(Pr57CleanupWorkCensus)pr57CleanupRequired++;
             ClearPassedJunction(vehicle);
             ReleaseManoeuvre(vehicle);
+        }
+        if(Pr57CleanupWorkCensus)
+        {
+            _pr57CleanupCensusSkipped+=pr57CleanupSkipped;
+            _pr57CleanupCensusRequired+=pr57CleanupRequired;
+            _pr57CleanupCensusTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57CleanupStart;
+            if(++_pr57CleanupCensusSlices%300==0)
+                Console.WriteLine("PR57_CLEANUP_WORK_CENSUS slices="+_pr57CleanupCensusSlices+
+                    " optIn="+Pr57EmptyReservationCleanupGate+
+                    " skipped="+_pr57CleanupCensusSkipped+
+                    " required="+_pr57CleanupCensusRequired+
+                    " cleanupTicks="+_pr57CleanupCensusTicks+
+                    " frequency="+System.Diagnostics.Stopwatch.Frequency);
         }
         if(pr57SetupProbe){
             _pr57SliceSetupTicks[0]+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57SetupStart;
