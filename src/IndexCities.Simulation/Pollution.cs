@@ -183,5 +183,21 @@ public sealed partial class CitySimulation
         foreach(var building in active)EmitPollution(building.Position,building.UntreatedSewage/100*dt/86400);
         foreach(var vehicle in State.Vehicles)EmitPollution(vehicle.Position,vehicle.FuelBurnedLastStep*.01);
         SnapshotPollution();State.LakePollution=SampledPollution(State.LakeCentre);
+        // PR57 diagnostic only: trace the exact lake sum and cell enumeration
+        // at each pollution update, without changing the game state or summation.
+        // Compare two independent baseline processes by the first differing line.
+        if(Environment.GetEnvironmentVariable("PR57_LAKE_SLICE_TRACE")=="1")
+        {
+            ulong order=14695981039346656037UL;
+            for(var i=0;i<_cellCount;i++)
+            {
+                unchecked
+                {
+                    order=(order^(ulong)_cellKeys[i])*1099511628211UL;
+                    order=(order^(ulong)BitConverter.DoubleToInt64Bits(_cellValues[i]))*1099511628211UL;
+                }
+            }
+            Console.WriteLine($"PR57_LAKE_SLICE_TRACE time={State.TimeSeconds:R} count={_cellCount} order={order:X16} lakeBits={BitConverter.DoubleToInt64Bits(State.LakePollution):X16}");
+        }
     }
 }
