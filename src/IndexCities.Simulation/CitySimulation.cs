@@ -495,8 +495,10 @@ public sealed partial class CitySimulation
             _pr57MutableCitizenSame+=c.same;_pr57MutableCitizenChanged+=c.changed;
             _pr57MutableProjectSame+=p.same;_pr57MutableProjectChanged+=p.changed;
             if(++_pr57MutableSteps%100==0)
+            {
                 Console.WriteLine($"PR57_MUTABLE_COST steps={_pr57MutableSteps} vehicleTicks={_pr57MutableVehicleTicks} citizenTicks={_pr57MutableCitizenTicks} projectTicks={_pr57MutableProjectTicks} frequency={System.Diagnostics.Stopwatch.Frequency}");
                 Console.WriteLine($"PR57_MUTABLE_PHASE steps={_pr57MutableSteps} vehicleSame={_pr57MutableVehicleSame} vehicleChanged={_pr57MutableVehicleChanged} citizenSame={_pr57MutableCitizenSame} citizenChanged={_pr57MutableCitizenChanged} projectSame={_pr57MutableProjectSame} projectChanged={_pr57MutableProjectChanged} scope=SELECTED_FIELDS_ONLY_NO_SKIP");
+            }
         }
         if(Pr57PhaseIdentityProbe)
         {
