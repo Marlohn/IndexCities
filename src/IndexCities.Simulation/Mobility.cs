@@ -749,7 +749,9 @@ public sealed partial class CitySimulation
         // bend-scan effect (restoring that heading) is also a no-op.
         var pr57ZeroBendSkip=Environment.GetEnvironmentVariable("PR57_ZERO_BEND_SKIP")=="1";
         // PR57 A/B: reuse bend-leader storage across movement iterations, preserving the full predicate and order.
-        var pr57BendReuse=pr57BitsetScan&&!pr57BendPrefilter&&Environment.GetEnvironmentVariable("PR57_BEND_REUSE")=="1";
+        var pr57BendReuse=!pr57BendPrefilter&&(
+            pr57BitsetScan&&Environment.GetEnvironmentVariable("PR57_BEND_REUSE")=="1"
+            ||Environment.GetEnvironmentVariable("PR57_BEND_REUSE_ANY_SCAN")=="1");
         // PR57 A/B: the vehicle does not change during a leader enumeration;
         // hoist its dock eligibility check outside the per-candidate loop.
         var pr57DockGateHoist=pr57BitsetScan&&Environment.GetEnvironmentVariable("PR57_DOCK_GATE_HOIST")=="1";
