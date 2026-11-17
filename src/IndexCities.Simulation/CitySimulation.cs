@@ -342,6 +342,17 @@ public sealed partial class CitySimulation
     // PR57 observational, deliberately incomplete mutable-field fingerprint: NOT a skip certificate.
     static readonly bool Pr57MutablePhaseProbe=Environment.GetEnvironmentVariable("PR57_MUTABLE_PHASE_PROBE")=="1";
     int _pr57MutableSteps;
+    long _pr57MutableVehicleTicks,_pr57MutableCitizenTicks,_pr57MutableProjectTicks;
+    Dictionary<int,string> Pr57TimedMutable(CityState state,int kind)
+    {
+        var start=System.Diagnostics.Stopwatch.GetTimestamp();
+        var result=kind switch { 0=>Pr57VehicleMutable(state),1=>Pr57CitizenMutable(state),_=>Pr57ProjectMutable(state) };
+        var elapsed=System.Diagnostics.Stopwatch.GetTimestamp()-start;
+        if(kind==0)_pr57MutableVehicleTicks+=elapsed;
+        else if(kind==1)_pr57MutableCitizenTicks+=elapsed;
+        else _pr57MutableProjectTicks+=elapsed;
+        return result;
+    }
     long _pr57MutableVehicleSame,_pr57MutableVehicleChanged,_pr57MutableCitizenSame,_pr57MutableCitizenChanged,_pr57MutableProjectSame,_pr57MutableProjectChanged;
     static (long same,long changed) Pr57CompareMutable(Dictionary<int,string> before,Dictionary<int,string> after)
     {
@@ -484,6 +495,7 @@ public sealed partial class CitySimulation
             _pr57MutableCitizenSame+=c.same;_pr57MutableCitizenChanged+=c.changed;
             _pr57MutableProjectSame+=p.same;_pr57MutableProjectChanged+=p.changed;
             if(++_pr57MutableSteps%100==0)
+                Console.WriteLine($"PR57_MUTABLE_COST steps={_pr57MutableSteps} vehicleTicks={_pr57MutableVehicleTicks} citizenTicks={_pr57MutableCitizenTicks} projectTicks={_pr57MutableProjectTicks} frequency={System.Diagnostics.Stopwatch.Frequency}");
                 Console.WriteLine($"PR57_MUTABLE_PHASE steps={_pr57MutableSteps} vehicleSame={_pr57MutableVehicleSame} vehicleChanged={_pr57MutableVehicleChanged} citizenSame={_pr57MutableCitizenSame} citizenChanged={_pr57MutableCitizenChanged} projectSame={_pr57MutableProjectSame} projectChanged={_pr57MutableProjectChanged} scope=SELECTED_FIELDS_ONLY_NO_SKIP");
         }
         if(Pr57PhaseIdentityProbe)
