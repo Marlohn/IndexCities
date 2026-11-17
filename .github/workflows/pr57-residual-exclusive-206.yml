@@ -652,6 +652,46 @@ jobs:
                         'parity','EXACT_FULL_JSON_THREE_CHECKPOINTS',
                         'limitation','NO_10K_PROOF')
           PY
+      - name: Diagnose baseline lake pollution determinism without bend reuse
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="artifacts/residual-exclusive-206/lake-baseline-repeat"
+          mkdir -p "$root"
+          source="$(find artifacts/retained -type f -path '*/realA-control/checkpoint-0.json' -print -quit)"
+          test -s "$source"
+          for trial in A1 A2; do
+            mkdir -p "$root/$trial"
+            echo "PR57_LAKE_BASELINE_RUN trial=$trial canonical=0 bendReuse=0"
+            PR57_LAKE_SLICE_TRACE=1 PR57_CANONICAL_POLLUTION_ORDER=0 \
+            PR57_BEND_REUSE_ANY_SCAN=0 PR57_HOST_QUANTUM=1 \
+            PR57_AB_CHECKPOINT=1 PR57_206_MID_CHECKPOINT=1 \
+            PR57_SAVE_CAPTURE_DIR="$root/$trial" \
+              timeout 180s dotnet run --no-build -c Release \
+              --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+              profile cycle --seed=42 --warmup=0 --days=1 \
+              --window=300 --cap=300 --resume="$source" > "$root/$trial.log"
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('artifacts/residual-exclusive-206/lake-baseline-repeat')
+          traces=[]
+          for trial in ('A1','A2'):
+              log=(root/f'{trial}.log').read_text()
+              assert 'INVARIANTS OK' in log and 'SAVE ' in log,(trial,'invariants')
+              trace=[line for line in log.splitlines() if line.startswith('PR57_LAKE_SLICE_TRACE ')]
+              assert trace,(trial,'trace not exercised')
+              traces.append(trace)
+              print('PR57_LAKE_BASELINE_TRACE_COUNT',trial,len(trace))
+          mismatch=next(((i,a,b) for i,(a,b) in enumerate(zip(*traces)) if a!=b),None)
+          if mismatch is None and len(traces[0])!=len(traces[1]):
+              mismatch=(min(map(len,traces)),'END_OF_TRACE','END_OF_TRACE')
+          print('PR57_LAKE_BASELINE_FIRST_DIFFERENCE',mismatch if mismatch else 'NONE')
+          for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+              a=(root/'A1'/checkpoint).read_bytes()
+              b=(root/'A2'/checkpoint).read_bytes()
+              print('PR57_LAKE_BASELINE_FULL_JSON',checkpoint,'EQUAL' if a==b else 'DIFFERENT')
+          PY
       - name: Preserve full checkpoints and logs
         if: always()
         uses: actions/upload-artifact@v4
