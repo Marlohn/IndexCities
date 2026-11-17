@@ -571,6 +571,9 @@ public sealed partial class CitySimulation
     // #237: same bitwise predicate as #236, factored for adversarial tests.
     static bool Pr57PoseHeadingNoop(double current,double approach)=>
         BitConverter.DoubleToInt64Bits(current)==BitConverter.DoubleToInt64Bits(approach);
+    // Disabled by default; no saved-state or official API change.
+    static readonly bool Pr57EmptyReservationCleanupGate =
+        Environment.GetEnvironmentVariable("PR57_EMPTY_RESERVATION_CLEANUP_GATE")=="1";
     void MoveVehiclesUnsplit(double dt,double? operationsDt=null)
     {
         Pr57SetupGapStart(dt,operationsDt);
@@ -606,7 +609,21 @@ public sealed partial class CitySimulation
         // Carriageway half-width (3.3 m) + truck half-length (3.6 m) covers the
         // actual rear of the truck; the former 9 m reservation could overlap
         // nearby junctions and make opposite queues hold each other forever.
-        foreach(var vehicle in State.Vehicles){ClearPassedJunction(vehicle);ReleaseManoeuvre(vehicle);}
+        // PR57 isolated opt-in: a completely unreserved vehicle has nothing to
+        // release. Re-evaluate the serialized fields on every slice (including
+        // after external mutations); never retain a cross-slice roster.
+        // A dangling entered-at clock still needs canonical cleanup.
+        foreach(var vehicle in State.Vehicles)
+        {
+            if(Pr57EmptyReservationCleanupGate &&
+               vehicle.IntersectionClaim is null &&
+               vehicle.IntersectionEnteredAt is null &&
+               vehicle.ManoeuvreDock is null &&
+               vehicle.ManoeuvreSpaces.Count==0)
+                continue;
+            ClearPassedJunction(vehicle);
+            ReleaseManoeuvre(vehicle);
+        }
         if(pr57SetupProbe){
             _pr57SliceSetupTicks[0]+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57SetupStart;
             _pr57SliceSetupCalls[0]++;
