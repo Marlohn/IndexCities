@@ -226,6 +226,9 @@ public sealed partial class CitySimulation
     {
         _pr57AgendaReady = false;
         _pr57MaintenanceScheduleReady = false;
+        // External State aliases can change Alive without changing Citizens.Count.
+        // Invalidate the opt-in roster when a certified caller yields control.
+        _pr57LivingRosterDirty = true;
     }
 
     public void Advance(double seconds)
