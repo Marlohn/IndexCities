@@ -291,7 +291,8 @@ public sealed partial class CitySimulation
     bool _pr57LivingRosterDirty=true,_pr57LivingRosterAnnounced;
     int _pr57LivingRosterCount=-1;
     IEnumerable<Citizen> Pr57LiveCitizens()=>Pr57LivingRosterEnabled?_pr57LivingRoster:State.Citizens.Where(c=>c.Alive);
-    IEnumerable<Citizen> Pr57NeedsCandidates()=>Pr57LivingRosterEnabled?_pr57LivingRoster:State.Citizens;
+    // Direct diagnostic calls to UpdateNeeds bypass Step/Pr57BeginStep; an unbuilt roster must not hide citizens.
+    IEnumerable<Citizen> Pr57NeedsCandidates()=>Pr57LivingRosterEnabled&&!_pr57LivingRosterDirty&&_pr57LivingRosterCount==State.Citizens.Count?_pr57LivingRoster:State.Citizens;
     void Pr57BeginStep()
     {
         _pr57StaffPrepared=false;
