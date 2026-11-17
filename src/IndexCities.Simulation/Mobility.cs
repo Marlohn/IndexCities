@@ -768,6 +768,7 @@ public sealed partial class CitySimulation
         // PR57 A/B: exact-order bitset cells intersecting the full, conservative
         // lane corridor, including the 20m dock-body exception (off by default).
         var pr57CorridorScan=pr57BitsetScan&&Environment.GetEnvironmentVariable("PR57_CORRIDOR_SCAN")=="1";
+        var pr57PoseAabb=Environment.GetEnvironmentVariable("PR57_POSE_AABB")=="1";
         // PR57 A/B: separate the exact 20m dock-body neighborhood from the
         // 2.6m forward-lane corridor; their union retains original vehicle order.
         var pr57SplitCorridor=pr57CorridorScan&&Environment.GetEnvironmentVariable("PR57_SPLIT_CORRIDOR")=="1";
@@ -1320,7 +1321,9 @@ public sealed partial class CitySimulation
                 }
                 if(step<.00001&&d>.00001&&!pr57PoseNoop&&
                     (Pr57PoseForeachEnabled?Pr57PoseGuardForeach(v,approachHeading):
-                    State.Vehicles.Any(o=>Pr57S6GateShadowObserve(v,o)&&o.Id!=v.Id&&o.Status!=VehicleStatus.Outside&&o.Position.Distance(v.Position)<12&&
+                    State.Vehicles.Any(o=>Pr57S6GateShadowObserve(v,o)&&o.Id!=v.Id&&o.Status!=VehicleStatus.Outside&&
+                    (!pr57PoseAabb||(Math.Abs(o.Position.X-v.Position.X)<12&&Math.Abs(o.Position.Z-v.Position.Z)<12))&&
+                    o.Position.Distance(v.Position)<12&&
                     Pr57PoseGuardCandidateReached(o)&&
                     (StreetBody(o)?VehicleBodiesOverlap(v,v.Position,o):!(o.Position.Distance(State.Entry)<8&&v.Position.Distance(State.Entry)<8)&&TurnsInto(v,approachHeading,o)))))v.Heading=approachHeading;
                 Pr57PoseGuardEnd(v);
