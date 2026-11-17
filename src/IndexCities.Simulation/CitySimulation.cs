@@ -354,9 +354,9 @@ public sealed partial class CitySimulation
         foreach(var id in after.Keys)if(!before.ContainsKey(id))changed++;
         return (same,changed);
     }
-    static Dictionary<int,string> Pr57VehicleMutable(CityState state)=>state.Vehicles.ToDictionary(v=>v.Id,v=>FormattableString.Invariant(`${v.Status}|${v.Position.X:R}|${v.Position.Z:R}`));
-    static Dictionary<int,string> Pr57CitizenMutable(CityState state)=>state.Citizens.ToDictionary(c=>c.Id,c=>FormattableString.Invariant(`${c.Alive}|${c.Resident}|${c.InsideMap}|${c.Decision}`));
-    static Dictionary<int,string> Pr57ProjectMutable(CityState state)=>state.Projects.ToDictionary(p=>p.Id,p=>FormattableString.Invariant(`${p.Status}|${p.BudgetRemaining}|${p.Cause}`));
+    static Dictionary<int,string> Pr57VehicleMutable(CityState state)=>state.Vehicles.ToDictionary(v=>v.Id,v=>FormattableString.Invariant($"${v.Status}|${v.Position.X:R}|${v.Position.Z:R}"));
+    static Dictionary<int,string> Pr57CitizenMutable(CityState state)=>state.Citizens.ToDictionary(c=>c.Id,c=>FormattableString.Invariant($"${c.Alive}|${c.Resident}|${c.InsideMap}|${c.Decision}"));
+    static Dictionary<int,string> Pr57ProjectMutable(CityState state)=>state.Projects.ToDictionary(p=>p.Id,p=>FormattableString.Invariant($"${p.Status}|${p.BudgetRemaining}|${p.Cause}"));
     static readonly bool Pr57CauseTransitionProbe=Environment.GetEnvironmentVariable("PR57_CAUSE_TRANSITION_PROBE")=="1";
     void Step(double dt)
     {
