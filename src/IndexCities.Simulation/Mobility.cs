@@ -580,8 +580,13 @@ public sealed partial class CitySimulation
     static readonly bool Pr57CleanupWorkCensus =
         Environment.GetEnvironmentVariable("PR57_CLEANUP_WORK_CENSUS")=="1";
     long _pr57CleanupCensusSlices, _pr57CleanupCensusSkipped, _pr57CleanupCensusRequired, _pr57CleanupCensusTicks;
+    long _pr57FullMotionSlices, _pr57FullMotionTicks, _pr57FullPhysicalTicks, _pr57FullMotionQuanta;
     void MoveVehiclesUnsplit(double dt,double? operationsDt=null)
     {
+        // PR57 opt-in: cumulative, non-sampled full-slice versus physical-loop cost.
+        // Stopwatch instrumentation is never read by physics or serialized.
+        var pr57FullMotionTiming=Environment.GetEnvironmentVariable("PR57_MOTION_QUANTA_CENSUS")=="1";
+        var pr57FullMotionStart=pr57FullMotionTiming?System.Diagnostics.Stopwatch.GetTimestamp():0L;
         Pr57SetupGapStart(dt,operationsDt);
         Pr57Transitions290Begin(dt<=0?0:1);
         Pr57PrepareSiteOwnerRoster();
@@ -1578,6 +1583,14 @@ public sealed partial class CitySimulation
         // has already completed; no BVH reader runs between slices. Avoid a
         // second full vehicle-position scan here, retaining external-mutation
         // detection at the next slice boundary.
+        if(pr57FullMotionTiming){
+            _pr57FullMotionSlices++;
+            _pr57FullPhysicalTicks+=pr57MotionPhysicalTicks;
+            _pr57FullMotionQuanta+=pr57MotionQuanta;
+            _pr57FullMotionTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57FullMotionStart;
+            if(_pr57FullMotionSlices%60==0)
+                Console.WriteLine($"PR57_MOTION_FULL_CUMULATIVE slices={_pr57FullMotionSlices} fullMs={_pr57FullMotionTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} physicalLoopMs={_pr57FullPhysicalTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} physicalQuanta={_pr57FullMotionQuanta} scope=INTRUSIVE_OBSERVATIONAL_ALL_SLICES");
+        }
         if(scanProfile is not null){
             _pr57MovementAllocBytes[0]+=GC.GetAllocatedBytesForCurrentThread()-pr57AllocCallStart;
             if(++_pr57MovementAllocCalls%(Pr57HotTiming?50:300)==0){
