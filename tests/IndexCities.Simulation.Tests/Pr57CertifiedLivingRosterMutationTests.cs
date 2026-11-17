@@ -9,6 +9,50 @@ namespace IndexCities.Simulation.Tests;
 public sealed class Pr57CertifiedLivingRosterMutationTests
 {
     [Fact]
+    public void Certified_quanta_reuse_roster_until_explicit_external_invalidation()
+    {
+        // The opt-in must do actual avoided enumeration, not merely produce
+        // matching JSON while rebuilding the roster on every quantum.
+        var seed = CityCycleTests.City();
+        for (var hour = 0; hour < 48; hour++) seed.Advance(3600);
+        var original = seed.SaveToJson();
+        var baseline = CitySimulation.FromJson(original);
+        var certified = CitySimulation.FromJson(original);
+        static long Counter(CitySimulation sim, string name)
+        {
+            var field = typeof(CitySimulation).GetField(name,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(field);
+            return (long)field.GetValue(sim)!;
+        }
+
+        for (var quantum = 0; quantum < 8; quantum++)
+        {
+            baseline.Advance(2);
+            certified.Pr57AdvanceCertifiedQuantum();
+            Assert.Equal(baseline.SaveToJson(), certified.SaveToJson());
+        }
+        if (Environment.GetEnvironmentVariable("PR57_LIVING_ROSTER") != "1") return;
+
+        var steps = Counter(certified, "_pr57RosterSteps");
+        var rebuilds = Counter(certified, "_pr57RosterRebuilds");
+        var scanned = Counter(certified, "_pr57RosterScanned");
+        Assert.Equal(8, steps);
+        Assert.True(rebuilds < steps,
+            $"Certified quanta did not avoid a roster rebuild: {rebuilds}/{steps}");
+        Assert.True(scanned < steps * certified.State.Citizens.Count,
+            $"Certified quanta did not avoid citizen scans: {scanned}");
+
+        // Explicitly yield the certified boundary to external writers.
+        certified.Pr57InvalidateCertifiedBoundary();
+        var before = Counter(certified, "_pr57RosterRebuilds");
+        baseline.Advance(2);
+        certified.Pr57AdvanceCertifiedQuantum();
+        Assert.Equal(baseline.SaveToJson(), certified.SaveToJson());
+        Assert.Equal(before + 1, Counter(certified, "_pr57RosterRebuilds"));
+    }
+
+    [Fact]
     public void Certified_boundary_rebuilds_living_roster_after_external_alive_mutation()
     {
         var seed = CityCycleTests.City();
