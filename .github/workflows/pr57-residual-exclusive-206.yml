@@ -592,6 +592,63 @@ jobs:
                         'parity','EXACT_FULL_JSON_THREE_CHECKPOINTS',
                         'limitation','NO_10K_PROOF')
           PY
+      - name: Measure opt-in pose AABB crew candidate filtering with fresh-process ABBA
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$PWD/artifacts/residual-exclusive-206/pose-aabb-abba"
+          mkdir -p "$root"
+          for case in worksREAL queueREAL; do
+            source="$PWD/artifacts/residual-exclusive-206/$case-plain/checkpoint-0.json"
+            test -s "$source"
+            for trial in A1 B1 B2 A2; do
+              enabled=0
+              if [[ "$trial" == B* ]]; then enabled=1; fi
+              output="$root/$case-$trial"
+              mkdir -p "$output"
+              echo "PR57_POSE_AABB_RUN case=$case trial=$trial optIn=$enabled"
+              PR57_POSE_AABB="$enabled" PR57_HOST_QUANTUM=1 \
+              PR57_AB_CHECKPOINT=1 PR57_206_MID_CHECKPOINT=1 \
+              PR57_SAVE_CAPTURE_DIR="$output" PR57_206_RESIDUAL_EXCLUSIVE=0 \
+              PR57_240_WALK_SPLIT=0 PR57_BOARDING_REUSE_LOOKUP=0 \
+                timeout 180s dotnet run --no-build -c Release \
+                --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                profile cycle --seed=42 --warmup=0 --days=1 \
+                --window=300 --cap=300 --resume="$source" | tee "$output.log"
+            done
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import re,statistics
+          root=Path('artifacts/residual-exclusive-206/pose-aabb-abba')
+          for case in ('worksREAL','queueREAL'):
+              rows={}
+              for trial in ('A1','B1','B2','A2'):
+                  prefix=root/f'{case}-{trial}'
+                  log=(root/f'{case}-{trial}.log').read_text()
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,trial)
+                  windows=[x for x in log.splitlines() if x.startswith('WINDOW ')]
+                  assert len(windows)==1,(case,trial,'WINDOW_COUNT')
+                  rows[trial]={}
+                  for key in ('wall','cpu','allocMB'):
+                      m=re.search(r'(?:^| )'+key+r'=([-0-9.]+)',windows[0])
+                      assert m,(case,trial,key)
+                      rows[trial][key]=float(m.group(1))
+                  for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                      assert (prefix/checkpoint).is_file(),(case,trial,checkpoint)
+              for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                  baseline=(root/f'{case}-A1'/checkpoint).read_bytes()
+                  assert all((root/f'{case}-{trial}'/checkpoint).read_bytes()==baseline
+                             for trial in ('B1','B2','A2')),(case,checkpoint,'FULL_JSON_MISMATCH')
+              for key in ('wall','cpu','allocMB'):
+                  a=statistics.mean(rows[t][key] for t in ('A1','A2'))
+                  b=statistics.mean(rows[t][key] for t in ('B1','B2'))
+                  print('PR57_POSE_AABB_ABBA',case,key,'baseline',a,'optIn',b,
+                        'ratio_A_over_B',a/b if b>0 else 'UNDEFINED',
+                        'raw',[(t,rows[t][key]) for t in ('A1','B1','B2','A2')],
+                        'parity','EXACT_FULL_JSON_THREE_CHECKPOINTS',
+                        'limitation','NO_10K_PROOF')
+          PY
       - name: Preserve full checkpoints and logs
         if: always()
         uses: actions/upload-artifact@v4
