@@ -290,24 +290,40 @@ public sealed partial class CitySimulation
     readonly List<Citizen> _pr57LivingRoster=[];
     bool _pr57LivingRosterDirty=true,_pr57LivingRosterAnnounced;
     int _pr57LivingRosterCount=-1;
+    long _pr57RosterSteps,_pr57RosterRebuilds,_pr57RosterScanned,_pr57RosterSelected,_pr57RosterNeedsFallbacks;
     IEnumerable<Citizen> Pr57LiveCitizens()=>Pr57LivingRosterEnabled?_pr57LivingRoster:State.Citizens.Where(c=>c.Alive);
     // Direct diagnostic calls to UpdateNeeds bypass Step/Pr57BeginStep; an unbuilt roster must not hide citizens.
-    IEnumerable<Citizen> Pr57NeedsCandidates()=>Pr57LivingRosterEnabled&&!_pr57LivingRosterDirty&&_pr57LivingRosterCount==State.Citizens.Count?_pr57LivingRoster:State.Citizens;
+    IEnumerable<Citizen> Pr57NeedsCandidates()
+    {
+        if(!Pr57LivingRosterEnabled)return State.Citizens;
+        if(!_pr57LivingRosterDirty&&_pr57LivingRosterCount==State.Citizens.Count)return _pr57LivingRoster;
+        _pr57RosterNeedsFallbacks++;
+        return State.Citizens;
+    }
     void Pr57BeginStep()
     {
         _pr57StaffPrepared=false;
         if(!Pr57LivingRosterEnabled)return;
+        _pr57RosterSteps++;
         if(_pr57LivingRosterDirty||_pr57LivingRosterCount!=State.Citizens.Count)
         {
+            _pr57RosterRebuilds++;
+            _pr57RosterScanned+=State.Citizens.Count;
             _pr57LivingRoster.Clear();
             foreach(var c in State.Citizens)if(c.Alive)_pr57LivingRoster.Add(c);
             _pr57LivingRosterCount=State.Citizens.Count;
             _pr57LivingRosterDirty=false;
         }
-        if(!_pr57LivingRosterAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        _pr57RosterSelected+=_pr57LivingRoster.Count;
+        if(Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
         {
-            Console.WriteLine($"PR57_LIVING_ROSTER active=True living={_pr57LivingRoster.Count} citizens={State.Citizens.Count}");
-            _pr57LivingRosterAnnounced=true;
+            if(!_pr57LivingRosterAnnounced)
+            {
+                Console.WriteLine($"PR57_LIVING_ROSTER active=True living={_pr57LivingRoster.Count} citizens={State.Citizens.Count}");
+                _pr57LivingRosterAnnounced=true;
+            }
+            if(_pr57RosterSteps%25==0)
+                Console.WriteLine($"PR57_LIVING_ROSTER_WORK steps={_pr57RosterSteps} rebuilds={_pr57RosterRebuilds} scanned={_pr57RosterScanned} selected={_pr57RosterSelected} needsFallbacks={_pr57RosterNeedsFallbacks}");
         }
     }
     static readonly bool Pr57CauseTransitionProbe=Environment.GetEnvironmentVariable("PR57_CAUSE_TRANSITION_PROBE")=="1";
