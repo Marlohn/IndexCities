@@ -242,7 +242,7 @@ jobs:
               output="$PWD/artifacts/residual-exclusive-206/cleanup-abba/$case-$trial"
               mkdir -p "$output"
               echo "PR57_CLEANUP_RUN case=$case trial=$trial optIn=$enabled"
-              PR57_EMPTY_RESERVATION_CLEANUP_GATE="$enabled" PR57_CLEANUP_WORK_CENSUS=1 PR57_HOST_QUANTUM=1 \
+              PR57_EMPTY_RESERVATION_CLEANUP_GATE="$enabled" PR57_CLEANUP_WORK_CENSUS=1 PR57_HOST_QUANTUM=1 PR57_ADVANCE_BOUNDARY_PROBE=1 \
               PR57_AB_CHECKPOINT=1 PR57_206_MID_CHECKPOINT=1 \
               PR57_SAVE_CAPTURE_DIR="$output" \
               PR57_206_RESIDUAL_EXCLUSIVE=0 PR57_240_WALK_SPLIT=0 \
@@ -271,6 +271,37 @@ jobs:
                       match=re.search(r'(?:^| )'+key+r'=([-0-9.]+)',row)
                       assert match,(case,trial,key,row)
                       rows[trial][key]=float(match.group(1))
+                  # Simultaneous boundary and Step phase measurements on the SAME
+                  # fresh-process ABBA arm. These are intrusive accounting, not speedup.
+                  boundaries=[x for x in log.splitlines() if x.startswith('PR57_ADVANCE_BOUNDARY ')]
+                  phases=[x for x in log.splitlines() if x.startswith('  STEP_PHASE name=')]
+                  assert boundaries and phases,(case,trial,'MISSING_SIMULTANEOUS_BOUNDARY_OR_PHASE')
+                  final_boundary=boundaries[-1]
+                  def number(row,key):
+                      match=re.search(r'(?:^| )'+re.escape(key)+r'=([-0-9.]+)',row)
+                      assert match,(case,trial,key,row)
+                      return float(match.group(1))
+                  calls=number(final_boundary,'calls')
+                  advance=number(final_boundary,'advanceMs')
+                  step=number(final_boundary,'stepMs')
+                  outside=number(final_boundary,'outsideStepMs')
+                  assert calls>=100 and advance>0 and step>=0 and outside>=0,(case,trial,final_boundary)
+                  assert abs(advance-step-outside)<0.01,(case,trial,'BOUNDARY_PARTITION')
+                  phase_sum=0.0
+                  phase_rows=[]
+                  for phase in phases:
+                      name=re.search(r'name=([^ ]+)',phase).group(1)
+                      spent=number(phase,'wall')*1000
+                      phase_sum+=spent
+                      phase_rows.append((name,spent))
+                  # StepCostProfile includes warmup/measurement in its own scope;
+                  # do not force equality to a different boundary interval.
+                  print('PR57_CROSS_PHASE_BOUND',case,trial,'calls',int(calls),
+                        'advanceMs',advance,'stepMs',step,'outsideStepMs',outside,
+                        'outsideFraction',round(outside/advance,6),
+                        'phaseProfileMs',round(phase_sum,3),
+                        'phaseSharesOfProfile',[(name,round(ms/phase_sum,6)) for name,ms in phase_rows] if phase_sum else [],
+                        'scope','INTRUSIVE_SAME_ARM_NOT_WALL_SPEEDUP')
                   # Cumulative 300-slice snapshots: report mandatory work and skipped work
                   # for each fresh-process arm without treating timing as a speedup.
                   census=[x for x in log.splitlines() if x.startswith('PR57_CLEANUP_WORK_CENSUS ')]
