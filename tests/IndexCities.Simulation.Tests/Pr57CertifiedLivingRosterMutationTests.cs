@@ -119,4 +119,39 @@ public sealed class Pr57CertifiedLivingRosterMutationTests
         }
     }
 
+    [Fact]
+    public void Certified_boundary_handles_external_citizen_remove_and_reinsert_at_same_count()
+    {
+        var seed = CityCycleTests.City();
+        for (var hour = 0; hour < 48; hour++) seed.Advance(3600);
+        var original = seed.SaveToJson();
+        var baseline = CitySimulation.FromJson(original);
+        var certified = CitySimulation.FromJson(original);
+        Assert.True(baseline.State.Citizens.Count > 1);
+
+        baseline.Advance(2);
+        certified.Pr57AdvanceCertifiedQuantum();
+        Assert.Equal(baseline.SaveToJson(), certified.SaveToJson());
+
+        // Count-only validation cannot detect replacement/reinsertion at another index.
+        // Keep the same citizen identities and causal state, but mutate list membership order
+        // through remove/insert, as an external editor may do between certified quanta.
+        foreach (var sim in new[] { baseline, certified })
+        {
+            var citizens = sim.State.Citizens;
+            var moved = citizens[0];
+            citizens.RemoveAt(0);
+            citizens.Insert(citizens.Count, moved);
+        }
+        Assert.Equal(baseline.State.Citizens.Count, certified.State.Citizens.Count);
+        certified.Pr57InvalidateCertifiedBoundary();
+
+        for (var quantum = 0; quantum < 4; quantum++)
+        {
+            baseline.Advance(2);
+            certified.Pr57AdvanceCertifiedQuantum();
+            Assert.Equal(baseline.SaveToJson(), certified.SaveToJson());
+        }
+    }
+
 }
