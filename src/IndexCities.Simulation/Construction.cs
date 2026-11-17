@@ -209,6 +209,9 @@ public sealed partial class CitySimulation
     static readonly bool Pr57SingleCrewAssignmentEnabled=
         Environment.GetEnvironmentVariable("PR57_SINGLE_CREW_ASSIGNMENT")=="1";
     bool _pr57SingleCrewAssignmentAnnounced;
+    // PR57 opt-in: one per-dispatch ID membership index; citizen fields are read live.
+    // Duplicate IDs retain the original Any/All semantics; never persisted.
+    static readonly bool Pr57CrewMembershipIndexEnabled=Environment.GetEnvironmentVariable("PR57_CREW_MEMBERSHIP_INDEX")=="1";
     void OrderConstruction()
     {
         if(!_pr57SingleCrewAssignmentAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
@@ -267,6 +270,8 @@ public sealed partial class CitySimulation
             return _pr57OrderShipments.TryGetValue(projectId,out var shipments)
                 ?shipments.Where(s=>!s.Complete):Enumerable.Empty<Shipment>();
         }
+        var pr57CrewMembership=Pr57CrewMembershipIndexEnabled&&State.Projects.Any(p=>p.LocalCrew.Count>0&&p.Status is WorkStatus.Waiting or WorkStatus.InProgress)
+            ?State.Citizens.ToLookup(c=>c.Id):null;
         foreach(var p in State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress).OrderBy(p=>p.IsMaintenance?MaintenancePriority(p):4).ThenBy(p=>p.Id)){
             if(CostProfile is { } census)census.ConstructionOrderProjects++;
             var pr57ProjectProbe=CostProfile?.Pr57ConstructionProjects;
@@ -301,7 +306,7 @@ public sealed partial class CitySimulation
             else
             {
                 var pr57CrewStarted=pr57DispatchProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
-                AssignLocalCrew(p,access);
+                AssignLocalCrew(p,access,pr57CrewMembership);
                 if(pr57DispatchProfile is not null)
                 {
                     pr57DispatchProfile.Pr57DispatchCrewTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57CrewStarted;
@@ -358,7 +363,7 @@ public sealed partial class CitySimulation
             if(!IsPaving(p)&&!Pr57SingleCrewAssignmentEnabled)
             {
                 var pr57CrewStarted=pr57DispatchProfile is null?0L:System.Diagnostics.Stopwatch.GetTimestamp();
-                AssignLocalCrew(p,access);
+                AssignLocalCrew(p,access,pr57CrewMembership);
                 if(pr57DispatchProfile is not null)
                 {
                     pr57DispatchProfile.Pr57DispatchCrewTicks+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57CrewStarted;
@@ -390,9 +395,13 @@ public sealed partial class CitySimulation
         if(!ProjectPay(project,fee,project.IsMaintenance?MaintenanceCategory(project):"Equipe externa","Transporte físico e combustível da equipe externa")){project.Cause=WorkCause.CommitmentInsufficientForCrew;return;}
         State.OutsideStock.AddAmount(ResourceKind.Fuel,-(fuel));vehicle.AddFuel(fuel);var shipment=new Shipment{Id=Id(),Purpose=project.IsMaintenance?ShipmentPurpose.Maintenance:ShipmentPurpose.Construction,ProjectId=project.Id,DestinationBuildingId=project.BuildingId,VehicleId=vehicle.Id,PickedUp=true,PricePaid=Money(fee)};State.Shipments.Add(shipment);vehicle.ConstructionAccess=true;vehicle.ShipmentId=shipment.Id;vehicle.Cargo.Clear();vehicle.Route=route;vehicle.RouteIndex=0;vehicle.Position=State.Entry;vehicle.Status=VehicleStatus.Travelling;vehicle.CrewAboard=true;vehicle.CrewCount=3;vehicle.DockPosition=DockAt(access,BuildingById(project.BuildingId),true);project.CrewVehicleId=vehicle.Id;
     }
-    void AssignLocalCrew(WorkProject p,RoadNode access)
+    void AssignLocalCrew(WorkProject p,RoadNode access,ILookup<int,Citizen>? pr57CrewMembership=null)
     {
-        p.LocalCrew.RemoveAll(id=>State.Citizens.All(c=>c.Id!=id||!c.Alive||c.ConstructionProjectId!=p.Id||BuildingById(c.WorkplaceId)?.Kind!=BuildingKind.WorksDepot));
+        // The lookup only narrows ID candidates. All mutable eligibility fields,
+        // including assignment and workplace, are checked at each original call.
+        p.LocalCrew.RemoveAll(id=>!(pr57CrewMembership is null
+            ?State.Citizens.Any(c=>c.Id==id&&c.Alive&&c.ConstructionProjectId==p.Id&&BuildingById(c.WorkplaceId)?.Kind==BuildingKind.WorksDepot)
+            :pr57CrewMembership[id].Any(c=>c.Alive&&c.ConstructionProjectId==p.Id&&BuildingById(c.WorkplaceId)?.Kind==BuildingKind.WorksDepot)));
         if(p.CrewVehicleId!=null||p.LocalCrew.Count>0)return;
         var depot=State.Buildings.FirstOrDefault(b=>b.Kind==BuildingKind.WorksDepot&&b.Completed&&!b.Removed&&!b.OperationClosed&&Access(b)!=null);if(depot==null)return;
         foreach(var c in State.Citizens.Where(c=>c.Alive&&c.WorkplaceId==depot.Id&&c.ConstructionProjectId==null&&!c.Moving&&c.Position.Distance(depot.Door)<3&&ShiftActive(c)).Take(3)){
