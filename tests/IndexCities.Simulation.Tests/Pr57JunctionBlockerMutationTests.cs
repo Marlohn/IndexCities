@@ -65,4 +65,45 @@ public sealed class Pr57JunctionBlockerMutationTests
         Assert.DoesNotContain(first.Id.ToString(), entrant.Cause);
         Assert.Equal(sim.SaveToJson(), CitySimulation.FromJson(sim.SaveToJson()).SaveToJson());
     }
+    [Fact]
+    public void Cleanup_of_idle_vehicle_must_preserve_claim_clock_and_empty_manoeuvre()
+    {
+        var sim = new CitySimulation(42);
+        var road = new RoadNode { Id = 991001, Position = new Point(0, 0) };
+        sim.State.Roads.Add(road);
+        var vehicle = new Vehicle
+        {
+            Id = 991002, Position = new Point(0, 0),
+            Status = VehicleStatus.Travelling,
+            IntersectionClaim = road.Id,
+            IntersectionEnteredAt = null,
+            WaitingSince = 12
+        };
+        sim.State.Vehicles.Add(vehicle);
+        // Rehydrate the road lookup as in a real save/load boundary.
+        sim = CitySimulation.FromJson(sim.SaveToJson());
+        vehicle = sim.State.Vehicles.Single(v => v.Id == 991002);
+        var clear = typeof(CitySimulation).GetMethod("ClearPassedJunction",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+        var release = typeof(CitySimulation).GetMethod("ReleaseManoeuvre",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(clear);
+        Assert.NotNull(release);
+
+        // An idle body can retain its claim. Moving it externally must release
+        // the claim even without a movement step; stale clock must be cleared.
+        clear!.Invoke(sim, new object[] { vehicle });
+        Assert.Equal(road.Id, vehicle.IntersectionClaim);
+        vehicle.Position = new Point(40, 0);
+        clear.Invoke(sim, new object[] { vehicle });
+        Assert.Null(vehicle.IntersectionClaim);
+        Assert.Null(vehicle.IntersectionEnteredAt);
+
+        // The truly empty state is the only unconditional release no-op.
+        var before = sim.SaveToJson();
+        release!.Invoke(sim, new object[] { vehicle });
+        Assert.Equal(before, sim.SaveToJson());
+        Assert.Equal(before, CitySimulation.FromJson(before).SaveToJson());
+    }
+
 }
