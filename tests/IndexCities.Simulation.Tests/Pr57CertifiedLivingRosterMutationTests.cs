@@ -92,4 +92,31 @@ public sealed class Pr57CertifiedLivingRosterMutationTests
         resumed.Pr57AdvanceCertifiedQuantum();
         Assert.Equal(baseline.SaveToJson(), resumed.SaveToJson());
     }
+    [Fact]
+    public void Certified_boundary_handles_external_citizen_reordering_without_count_change()
+    {
+        var seed = CityCycleTests.City();
+        for (var hour = 0; hour < 48; hour++) seed.Advance(3600);
+        var json = seed.SaveToJson();
+        var baseline = CitySimulation.FromJson(json);
+        var certified = CitySimulation.FromJson(json);
+        Assert.True(baseline.State.Citizens.Count > 1);
+
+        baseline.Advance(2);
+        certified.Pr57AdvanceCertifiedQuantum();
+        Assert.Equal(baseline.SaveToJson(), certified.SaveToJson());
+
+        // External writers can reorder the same citizen objects without changing Count.
+        // A cached iteration order must not survive the explicit certified boundary.
+        baseline.State.Citizens.Reverse();
+        certified.State.Citizens.Reverse();
+        certified.Pr57InvalidateCertifiedBoundary();
+        for (var quantum = 0; quantum < 4; quantum++)
+        {
+            baseline.Advance(2);
+            certified.Pr57AdvanceCertifiedQuantum();
+            Assert.Equal(baseline.SaveToJson(), certified.SaveToJson());
+        }
+    }
+
 }
