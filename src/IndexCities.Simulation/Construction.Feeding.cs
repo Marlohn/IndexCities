@@ -140,6 +140,19 @@ public sealed partial class CitySimulation
     List<Vehicle>.Enumerator _pr57SiteOwnerListVersion;
     int _pr57SiteOwnerVehicleCount;
     bool _pr57SiteOwnerRosterAnnounced, _pr57SiteOwnerRosterUsedAnnounced;
+    // Diagnostic-only counters: measure the unavoidable exclusion recheck and
+    // the reduction in candidate scans without changing reservation decisions.
+    long _pr57RosterQueries, _pr57RosterExcludedChecks, _pr57RosterCandidateChecks, _pr57RosterFullScanEquivalent;
+    void Pr57RosterObserve(int excluded,int candidates,int full)
+    {
+        if(Environment.GetEnvironmentVariable("PR57_ROSTER_DIAG")!="1")return;
+        _pr57RosterQueries++;
+        _pr57RosterExcludedChecks+=excluded;
+        _pr57RosterCandidateChecks+=candidates;
+        _pr57RosterFullScanEquivalent+=full;
+        if(_pr57RosterQueries%10000==0)
+            Console.WriteLine($"PR57_ROSTER_COST queries={_pr57RosterQueries} excludedChecks={_pr57RosterExcludedChecks} candidateChecks={_pr57RosterCandidateChecks} fullEquivalent={_pr57RosterFullScanEquivalent}");
+    }
     void Pr57PrepareSiteOwnerRoster()
     {
         if(!Pr57SiteOwnerRosterEnabled){_pr57SiteOwnerRoster=null;return;}
@@ -233,6 +246,8 @@ public sealed partial class CitySimulation
             _pr57SiteOwnerRoster=null;
         }
         var siteOwners=rosterValid?_pr57SiteOwnerRoster!:State.Vehicles;
+        if(Pr57SiteOwnerRosterEnabled)
+            Pr57RosterObserve(rosterValid?_pr57SiteOwnerExcluded?.Count??0:0,siteOwners.Count,State.Vehicles.Count);
         if(Pr57SiteOwnerRosterEnabled&&ReferenceEquals(siteOwners,_pr57SiteOwnerRoster)&&
            !_pr57SiteOwnerRosterUsedAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
         {
