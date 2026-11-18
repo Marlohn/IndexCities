@@ -86,51 +86,7 @@ public sealed class Pr57ComposedInvalidationAdversarial
         try { AssertAccess(sim, building, "after-rebuild-quantum"); }
         finally { End.Invoke(sim, null); }
 
-        // The original real economic state has already been checked and saved.
-        // Only the following narrow physical-admission oracle is synthetic.
-        if (Environment.GetEnvironmentVariable("PR57_SITE_OWNER_ROSTER") != "1" ||
-            Environment.GetEnvironmentVariable("PR57_BUILDING_WORK_ACCESS") != "1")
-            return;
-
-        for (var z = 0; z <= 20; z += 4)
-            sim.State.Roads.Add(new RoadNode { Id = sim.State.NextId++, Position = new Point(0, z) });
-        sim.State.Vehicles.Clear();
-        var mover = new Vehicle
-        {
-            Id = 900041, Position = new Point(0, 0), Heading = 0,
-            Status = VehicleStatus.Travelling
-        };
-        var car = new Vehicle
-        {
-            Id = 900042, PassengerCar = true, Position = new Point(0, 4),
-            Heading = 0, Status = VehicleStatus.Travelling,
-            Route = sim.State.Roads.Where(r => r.Position.X == 0 &&
-                       r.Position.Z >= 0 && r.Position.Z <= 20)
-                       .OrderBy(r => r.Position.Z).Select(r => r.Id).ToList(),
-            RouteIndex = 1
-        };
-        sim.State.Vehicles.AddRange([mover, car]);
-        Prepare.Invoke(sim, null);
-        var owners = (List<Vehicle>)Roster.GetValue(sim)!;
-        Assert.DoesNotContain(car, owners);
-        var before = (double)Travel.Invoke(sim, [mover, new Point(0, 8), 8.0, true])!;
-        Roster.SetValue(sim, null);
-        var beforeFull = (double)Travel.Invoke(sim, [mover, new Point(0, 8), 8.0, true])!;
-        Roster.SetValue(sim, owners);
-        Assert.Equal(beforeFull, before);
-        var way = new List<(Vehicle Body, Point Position, double Heading)>();
-        var spaces = new List<RoadNode>();
-        var limit = new LocalMovementAdmission
-        {
-            Route = car.Route.ToList(), SitePath = car.SitePath.ToList(),
-            EndRouteIndex = 0, ReachesDock = true
-        };
-        Assert.True((bool)Admit.Invoke(sim, [car, way, spaces, new Point(0, 12), false, limit])!);
-        Assert.NotNull(car.ManoeuvreDock);
-        Assert.Null(Roster.GetValue(sim)); // In-slice admission must force full physics.
-
-        // With the roster invalidated, the next call uses the original scan.
-        var fallback = (double)Travel.Invoke(sim, [mover, new Point(0, 8), 8.0, true])!;
-        Assert.True(double.IsFinite(fallback));
+        // The retired site-owner roster is no longer part of this composition.
+        // Keep the live road-access mutation, checkpoint, and save/load oracle.
     }
 }
