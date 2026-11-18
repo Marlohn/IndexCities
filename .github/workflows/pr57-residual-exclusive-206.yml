@@ -652,11 +652,11 @@ jobs:
                         'parity','EXACT_FULL_JSON_THREE_CHECKPOINTS',
                         'limitation','NO_10K_PROOF')
           PY
-      - name: Measure opt-in route guard loop with fresh-process ABBA
+      - name: Measure opt-in lane quadrant gate with fresh-process ABBA
         shell: bash
         run: |
           set -euo pipefail
-          root="$PWD/artifacts/residual-exclusive-206/route-guard-abba"
+          root="$PWD/artifacts/residual-exclusive-206/lane-quadrant-abba"
           mkdir -p "$root"
           for case in worksREAL queueREAL; do
             source="$PWD/artifacts/residual-exclusive-206/$case-plain/checkpoint-0.json"
@@ -666,8 +666,8 @@ jobs:
               if [[ "$trial" == B* ]]; then enabled=1; fi
               output="$root/$case-$trial"
               mkdir -p "$output"
-              echo "PR57_ROUTE_GUARD_RUN case=$case trial=$trial optIn=$enabled"
-              PR57_ROUTE_GUARD_LOOP="$enabled" PR57_HOST_QUANTUM=1 \
+              echo "PR57_LANE_QUADRANT_RUN case=$case trial=$trial optIn=$enabled"
+              PR57_LANE_QUADRANT_GATE="$enabled" PR57_HOST_QUANTUM=1 \
               PR57_AB_CHECKPOINT=1 PR57_206_MID_CHECKPOINT=1 \
               PR57_SAVE_CAPTURE_DIR="$output" PR57_206_RESIDUAL_EXCLUSIVE=0 \
               PR57_240_WALK_SPLIT=0 PR57_BOARDING_REUSE_LOOKUP=0 \
@@ -680,7 +680,7 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import re,statistics
-          root=Path('artifacts/residual-exclusive-206/route-guard-abba')
+          root=Path('artifacts/residual-exclusive-206/lane-quadrant-abba')
           for case in ('worksREAL','queueREAL'):
               rows={}
               for trial in ('A1','B1','B2','A2'):
@@ -703,7 +703,7 @@ jobs:
               for key in ('wall','cpu','allocMB'):
                   a=statistics.mean(rows[t][key] for t in ('A1','A2'))
                   b=statistics.mean(rows[t][key] for t in ('B1','B2'))
-                  print('PR57_ROUTE_GUARD_ABBA',case,key,'baseline',a,'optIn',b,
+                  print('PR57_LANE_QUADRANT_ABBA',case,key,'baseline',a,'optIn',b,
                         'ratio_A_over_B',a/b if b>0 else 'UNDEFINED',
                         'raw',[(t,rows[t][key]) for t in ('A1','B1','B2','A2')],
                         'parity','EXACT_FULL_JSON_THREE_CHECKPOINTS',
