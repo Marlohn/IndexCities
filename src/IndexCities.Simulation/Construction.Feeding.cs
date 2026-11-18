@@ -125,52 +125,9 @@ public sealed partial class CitySimulation
         return vehicle.SitePathIndex>=vehicle.SitePath.Count;
     }
 
-    // PR57 opt-in: one conservative owner roster per movement slice. A normal
-    // passenger car cannot own a paver path, asphalt delivery, or dock manoeuvre.
-    // Include any externally edited car with a special path, dock or shipment;
-    // rebuild at every unsplit slice (and every public Advance boundary).
-    // This is a SUPerset: live predicates and exact body tests remain unchanged.
-    static readonly bool Pr57SiteOwnerRosterEnabled =
-        Environment.GetEnvironmentVariable("PR57_SITE_OWNER_ROSTER")=="1";
-    List<Vehicle>? _pr57SiteOwnerRoster;
-    // Excluded references must be rechecked: Vehicle fields are publicly mutable
-    // without a List<T> version increment, even during a movement slice.
-    List<Vehicle>? _pr57SiteOwnerExcluded;
-    List<Vehicle>? _pr57SiteOwnerSource;
-    List<Vehicle>.Enumerator _pr57SiteOwnerListVersion;
-    int _pr57SiteOwnerVehicleCount;
-    bool _pr57SiteOwnerRosterAnnounced, _pr57SiteOwnerRosterUsedAnnounced;
-    // Diagnostic-only counters: measure the unavoidable exclusion recheck and
-    // the reduction in candidate scans without changing reservation decisions.
-    long _pr57RosterQueries, _pr57RosterExcludedChecks, _pr57RosterCandidateChecks, _pr57RosterFullScanEquivalent;
-    void Pr57RosterObserve(int excluded,int candidates,int full)
-    {
-        if(Environment.GetEnvironmentVariable("PR57_ROSTER_DIAG")!="1")return;
-        _pr57RosterQueries++;
-        _pr57RosterExcludedChecks+=excluded;
-        _pr57RosterCandidateChecks+=candidates;
-        _pr57RosterFullScanEquivalent+=full;
-        if(_pr57RosterQueries%10000==0)
-            Console.WriteLine($"PR57_ROSTER_COST queries={_pr57RosterQueries} excludedChecks={_pr57RosterExcludedChecks} candidateChecks={_pr57RosterCandidateChecks} fullEquivalent={_pr57RosterFullScanEquivalent}");
-    }
-    void Pr57PrepareSiteOwnerRoster()
-    {
-        if(!Pr57SiteOwnerRosterEnabled){_pr57SiteOwnerRoster=null;return;}
-        _pr57SiteOwnerSource=State.Vehicles;
-        _pr57SiteOwnerListVersion=State.Vehicles.GetEnumerator();
-        _pr57SiteOwnerVehicleCount=State.Vehicles.Count;
-        _pr57SiteOwnerRoster=State.Vehicles.Where(v=>!v.PassengerCar||
-            v.Machine!=PavingMachine.None||v.SitePath.Count>0||
-            v.ManoeuvreDock!=null||v.ShipmentId!=null).ToList();
-        _pr57SiteOwnerExcluded=State.Vehicles.Where(v=>v.PassengerCar&&
-            v.Machine==PavingMachine.None&&v.SitePath.Count==0&&
-            v.ManoeuvreDock==null&&v.ShipmentId==null).ToList();
-        if(!_pr57SiteOwnerRosterAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
-        {
-            Console.WriteLine($"PR57_SITE_OWNER_ROSTER active=True candidates={_pr57SiteOwnerRoster.Count} vehicles={State.Vehicles.Count}");
-            _pr57SiteOwnerRosterAnnounced=true;
-        }
-    }
+    // Compatibility hook for the movement-slice caller. The rejected owner
+    // roster no longer builds or retains a filtered list.
+    void Pr57PrepareSiteOwnerRoster() { }
 
     // PR57 #161: reuse capacity only. The buffer is cleared for every physical
     // query and after its result is consumed; no reservation decision survives
@@ -221,39 +178,9 @@ public sealed partial class CitySimulation
     double SafeSiteTravel(Vehicle vehicle,Point target,double distance,bool machinesOnly=false)
     {
         if(Pr57ZeroSiteSkip&&distance==0){Pr57S5SiteObserve(vehicle,distance,0,machinesOnly,0,0);return 0;}
-        // List<T>.Enumerator detects same-count replacements, reversals and
-        // remove/add pairs: Count alone cannot protect an in-slice roster.
-        // This is O(1) per query, with the original scan as the fallback.
-        // The public engine is synchronous; object-property edits between
-        // Advance(2) calls are covered by rebuilding at each movement slice.
-        var rosterValid=Pr57SiteOwnerRosterEnabled&&_pr57SiteOwnerRoster is not null&&
-            ReferenceEquals(_pr57SiteOwnerSource,State.Vehicles)&&
-            _pr57SiteOwnerVehicleCount==State.Vehicles.Count;
-        if(rosterValid)
-        {
-            try{_pr57SiteOwnerListVersion.MoveNext();}
-            catch(InvalidOperationException){rosterValid=false;_pr57SiteOwnerRoster=null;}
-        }
-        // A property-only promotion (car -> machine/site owner) does not
-        // invalidate List<T>.Enumerator. Detect it before consulting the
-        // reduced roster; exact full scan is mandatory on any promotion.
-        if(rosterValid&&_pr57SiteOwnerExcluded is not null&&
-           _pr57SiteOwnerExcluded.Any(v=>!v.PassengerCar||
-               v.Machine!=PavingMachine.None||v.SitePath.Count>0||
-               v.ManoeuvreDock!=null||v.ShipmentId!=null))
-        {
-            rosterValid=false;
-            _pr57SiteOwnerRoster=null;
-        }
-        var siteOwners=rosterValid?_pr57SiteOwnerRoster!:State.Vehicles;
-        if(Pr57SiteOwnerRosterEnabled)
-            Pr57RosterObserve(rosterValid?_pr57SiteOwnerExcluded?.Count??0:0,siteOwners.Count,State.Vehicles.Count);
-        if(Pr57SiteOwnerRosterEnabled&&ReferenceEquals(siteOwners,_pr57SiteOwnerRoster)&&
-           !_pr57SiteOwnerRosterUsedAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
-        {
-            Console.WriteLine($"PR57_SITE_OWNER_ROSTER used=True candidates={siteOwners.Count} vehicles={State.Vehicles.Count}");
-            _pr57SiteOwnerRosterUsedAnnounced=true;
-        }
+        // Canonical full scan: public Vehicle fields can change in-place
+        // without a collection-version change, including within a slice.
+        var siteOwners=State.Vehicles;
         // A moving machine holds its whole remaining path, not only its body:
         // a vehicle stopped anywhere on it (behind a turn, across an oncoming
         // lane) would wait for the machine while the machine waits for it.
