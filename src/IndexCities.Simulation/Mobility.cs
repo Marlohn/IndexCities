@@ -34,8 +34,6 @@ public sealed partial class CitySimulation
     readonly long[] _pr57JunctionDetailCalls=new long[7];
     // PR57 opt-in diagnostic only: timings are observational and not persisted.
     // Categories are nested; their wall times must not be added together.
-    // PR57 isolated, reversible directional rejection after mandatory lane observers.
-    static readonly bool Pr57LaneQuadrantGate=Environment.GetEnvironmentVariable("PR57_LANE_QUADRANT_GATE")=="1";
     static readonly bool Pr57HotTiming=Environment.GetEnvironmentVariable("PR57_HOT_TIMING")=="1";
     readonly long[] _pr57DirectMovementTicks=new long[4]; // site, crossing, turn, junction
     readonly long[] _pr57DirectMovementCalls=new long[4];
@@ -1166,22 +1164,6 @@ public sealed partial class CitySimulation
                     // the opposite lane, rather than the diagonal lot heading.
                     if(BlocksEntry(other)){Pr57StageMark(5);HoldFor(other,0);continue;}
                     Pr57StageMark(6);
-                    // PR57 isolated opt-in: a vector in the opposite closed quadrant
-                    // cannot have positive projection on this heading. All dock,
-                    // occupancy, coincidence and entry observers already ran above.
-                    // Strict heading intervals avoid cardinal-axis rounding assumptions.
-                    // No persistent state or change to candidate iteration order.
-                    if(Pr57LaneQuadrantGate){
-                        var h=v.Heading;
-                        var dx=relative.X;var dz=relative.Z;
-                        if((h>0&&h<Math.PI/2&&dx<=0&&dz<=0)||
-                           (h>Math.PI/2&&h<Math.PI&&dx<=0&&dz>=0)||
-                           (h>-Math.PI&&h< -Math.PI/2&&dx>=0&&dz>=0)||
-                           (h> -Math.PI/2&&h<0&&dx>=0&&dz<=0)){
-                            Pr57StageMark(7);
-                            continue;
-                        }
-                    }
                     // PR57 bitset A/B: the detour, opposing tow, and normal
                     // leader paths below all require forward > 0 and side < 2.6.
                     // Reject impossible candidates before the costly heading cosine;
