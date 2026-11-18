@@ -189,7 +189,7 @@ public sealed partial class CitySimulation
             // Upper bound on scanned vehicle entries, not a claim of time saved.
             _pr57ZeroSiteReservationUpperBound+=State.Vehicles.Count;
         }
-        if(_pr57ZeroSiteCalls%10000==0)
+        if(_pr57ZeroSiteCalls==1||_pr57ZeroSiteCalls%1000==0)
             Console.WriteLine($"PR57_ZERO_SITE_CENSUS calls={_pr57ZeroSiteCalls} zero={_pr57ZeroSiteHits} vehicle_scan_upper_bound={_pr57ZeroSiteReservationUpperBound}");
     }
 
