@@ -86,7 +86,7 @@ jobs:
             adversary=0
             if [[ "$mode" == B1 ]]; then adversary=1; fi
             mkdir -p "artifacts/lake-trace/$scenario/$mode"
-            PR57_LAKE_SLICE_TRACE=1 PR57_LAKE_ORDER_ADVERSARY="$adversary" \
+            PR57_LAKE_EXACT_SAMPLE23=1 PR57_LAKE_SLICE_TRACE=1 PR57_LAKE_ORDER_ADVERSARY="$adversary" \
             PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_206_MID_CHECKPOINT=1 \
             PR57_SAVE_CAPTURE_DIR="$PWD/artifacts/lake-trace/$scenario/$mode" \
               timeout 180s dotnet run --no-build -c Release \
@@ -105,11 +105,21 @@ jobs:
                   log=(root/f'{mode}.log').read_text()
                   assert 'INVARIANTS OK' in log and 'SAVE ' in log,(scenario,mode)
                   traces[mode]=[s for s in log.splitlines() if s.startswith('PR57_LAKE_SLICE_TRACE ')]
+                  exact=[line for line in log.splitlines() if line.startswith('PR57_LAKE_EXACT_SAMPLE23 ')]
+                  print('PR57_LAKE_EXACT_SAMPLE23_COUNT',scenario,mode,len(exact))
+                  traces[mode+'_exact']=exact
                   assert traces[mode],(scenario,mode,'NO_LAKE_TRACE')
                   if mode=='B1':
                       census=[s for s in log.splitlines() if s.startswith('PR57_LAKE_ADVERSARY_CENSUS ')]
                       assert census,(scenario,'NO_ADVERSARY_CENSUS')
                       print('PR57_LAKE_ADVERSARY_LAST',scenario,census[-1])
+              for other in ('A2','B1'):
+                  aa=traces['A1_exact'];bb=traces[other+'_exact']
+                  if len(aa)!=len(bb):
+                      print('PR57_LAKE_EXACT_COUNT_DIFFERENCE',scenario,other,len(aa),len(bb))
+                  else:
+                      first=next(((i,x,y) for i,(x,y) in enumerate(zip(aa,bb)) if x!=y),None)
+                      print('PR57_LAKE_EXACT_FIRST_DIFFERENCE',scenario,other,first if first else 'NONE')
               for other in ('A2','B1'):
                   for i,(a,b) in enumerate(zip(traces['A1'],traces[other])):
                       if a!=b:
