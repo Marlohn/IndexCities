@@ -211,15 +211,28 @@ public sealed partial class CitySimulation
         if(Environment.GetEnvironmentVariable("PR57_LAKE_SLICE_TRACE")=="1")
         {
             ulong order=14695981039346656037UL;
+            // A commutative fingerprint distinguishes enumeration-only changes
+            // from changed cell keys/values without modifying their order.
+            // Two independent accumulators reduce accidental hash collisions.
+            ulong multisetSum=0,multisetXor=0;
             for(var i=0;i<_cellCount;i++)
             {
                 unchecked
                 {
-                    order=(order^(ulong)_cellKeys[i])*1099511628211UL;
-                    order=(order^(ulong)BitConverter.DoubleToInt64Bits(_cellValues[i]))*1099511628211UL;
+                    var keyBits=(ulong)_cellKeys[i];
+                    var valueBits=(ulong)BitConverter.DoubleToInt64Bits(_cellValues[i]);
+                    order=(order^keyBits)*1099511628211UL;
+                    order=(order^valueBits)*1099511628211UL;
+                    var mixed=(keyBits^0x9E3779B97F4A7C15UL)*0xBF58476D1CE4E5B9UL;
+                    mixed=(mixed^valueBits)*0x94D049BB133111EBUL;
+                    mixed^=mixed>>30;
+                    mixed*=0xBF58476D1CE4E5B9UL;
+                    mixed^=mixed>>27;
+                    multisetSum+=mixed;
+                    multisetXor^=mixed;
                 }
             }
-            Console.WriteLine($"PR57_LAKE_SLICE_TRACE time={State.ElapsedSeconds:R} count={_cellCount} order={order:X16} lakeBits={BitConverter.DoubleToInt64Bits(State.LakePollution):X16}");
+            Console.WriteLine($"PR57_LAKE_SLICE_TRACE time={State.ElapsedSeconds:R} count={_cellCount} order={order:X16} multisetSum={multisetSum:X16} multisetXor={multisetXor:X16} lakeBits={BitConverter.DoubleToInt64Bits(State.LakePollution):X16}");
         }
     }
 }
