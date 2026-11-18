@@ -826,33 +826,16 @@ public sealed partial class CitySimulation
             if(pr57BitsetCells is not null){
                 // A very long diagonal corridor is cheaper to scan in full.
                 // This is a conservative fallback, never a physical cutoff.
-                var pr57LargeSparseQuery=Environment.GetEnvironmentVariable("PR57_SPARSE_GRID_QUERY")=="1";
                 var pr57QueryArea=((long)last.X-first.X+1)*((long)last.Z-first.Z+1);
-                if(pr57QueryArea>256&&!pr57LargeSparseQuery)
-                    return pr57ScanCandidates;
-                // Isolated opt-in: for a huge sparse rectangle, visit occupied cells
-                // rather than return every vehicle. The inclusive rectangle is the
-                // same as the original cell walk, and the bitset preserves order.
-                // External vehicle mutations are reflected by per-actor cell updates.
-                // A dense rectangle still takes the canonical full-scan fallback.
-                if(pr57QueryArea>256&&pr57BitsetCells.Count>=pr57QueryArea)
+                if(pr57QueryArea>256)
                     return pr57ScanCandidates;
                 var found=pr57BitsetResults!;
                 found.Clear();
                 var scratch=pr57BitsetScratch!;
                 Array.Clear(scratch);
-                if(pr57QueryArea>256&&pr57LargeSparseQuery){
-                    foreach(var entry in pr57BitsetCells){
-                        if(entry.Key.X<first.X||entry.Key.X>last.X||
-                           entry.Key.Z<first.Z||entry.Key.Z>last.Z)continue;
-                        var bits=entry.Value;
+                for(var x=first.X;x<=last.X;x++)for(var z=first.Z;z<=last.Z;z++)
+                    if(pr57BitsetCells.TryGetValue((x,z),out var bits))
                         for(var i=0;i<scratch.Length;i++)scratch[i]|=bits[i];
-                    }
-                }else{
-                    for(var x=first.X;x<=last.X;x++)for(var z=first.Z;z<=last.Z;z++)
-                        if(pr57BitsetCells.TryGetValue((x,z),out var bits))
-                            for(var i=0;i<scratch.Length;i++)scratch[i]|=bits[i];
-                }
                 for(var i=0;i<scratch.Length;i++){
                     var word=scratch[i];
                     while(word!=0){
