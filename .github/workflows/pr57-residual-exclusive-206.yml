@@ -10,6 +10,7 @@ on:
       - tests/IndexCities.Simulation.Tests/Pr57BoardingReuseAdversarialTests.cs
       - tests/IndexCities.Simulation.Tests/Pr57JunctionBlockerMutationTests.cs
       - tests/IndexCities.Simulation.Tests/Pr57CertifiedLivingRosterMutationTests.cs
+      - tests/IndexCities.Simulation.Tests/Pr57SiteOwnerRosterAdversarial.cs
   workflow_dispatch:
 permissions:
   contents: read
