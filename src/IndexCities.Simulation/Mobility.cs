@@ -1588,7 +1588,7 @@ public sealed partial class CitySimulation
         if(Pr57LaneReadWriteEnabled&&scanProfile is not null)Pr57LaneReadEndSlice();
         if(pr57DepProbe)Pr57DepEndSlice();
         if(pr57IdleProbe)Pr57IdleProbeTick();
-        _pr57SiteOwnerRoster=null; // no index may survive this movement slice
+        // PR57: removed site-owner roster has no per-slice state to clear.
         // PR57: the next movement slice always Refreshes before its first BVH
         // query (or rebuilds if the vehicle roster changed). SyncTowedVehicles
         // has already completed; no BVH reader runs between slices. Avoid a
