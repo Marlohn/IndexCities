@@ -374,6 +374,18 @@ public sealed partial class CitySimulation
         if(Pr57Writer289Enabled)_pr57Writer289Phase=0;
         var pr57BoundaryStepStart=_pr57BoundaryActive?System.Diagnostics.Stopwatch.GetTimestamp():0L;
         var pr57BoundaryStepBytesStart=_pr57BoundaryActive?GC.GetAllocatedBytesForCurrentThread():0L;
+        // PR57 isolated, observational ULP forensics. Never changes pollution or gameplay.
+        // Enable only in short adversarial runs: prints exact IEEE-754 bits on a change.
+        var pr57PollutionTrace = Environment.GetEnvironmentVariable("PR57_POLLUTION_ULP_TRACE") == "1";
+        var pr57PollutionBits = pr57PollutionTrace ? BitConverter.DoubleToInt64Bits(State.LakePollution) : 0L;
+        void Pr57ObservePollutionBits(string phase)
+        {
+            if (!pr57PollutionTrace) return;
+            var next = BitConverter.DoubleToInt64Bits(State.LakePollution);
+            if (next == pr57PollutionBits) return;
+            Console.WriteLine($"PR57_POLLUTION_ULP phase={phase} elapsed={State.ElapsedSeconds:R} before=0x{pr57PollutionBits:X16} after=0x{next:X16}");
+            pr57PollutionBits = next;
+        }
         Pr57WorkAccessBeginStep();
         Pr57BeginStep();
         Pr57SharedShipmentsBeginStep();
@@ -415,18 +427,21 @@ public sealed partial class CitySimulation
         finally { Pr57TurnWayWorksetEnd(); }
         Pr57310Boundary("vehicles");
         if(profile is not null)profile.Mark(0,ref started);
+        Pr57ObservePollutionBits("0");
         if(Pr57Writer289Enabled)_pr57Writer289Phase=1;
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,0,ref started);
         if(samplePresence){presence!.Observe(this,0);profile?.ResetAllocationCensusBaseline();started=System.Diagnostics.Stopwatch.GetTimestamp();}
         ReturnPavingMachines(dt);
         Pr57310Boundary("paving");
         if(profile is not null)profile.Mark(1,ref started);
+        Pr57ObservePollutionBits("1");
         if(Pr57Writer289Enabled)_pr57Writer289Phase=2;
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,1,ref started);
         if(samplePresence){presence!.Observe(this,1);profile?.ResetAllocationCensusBaseline();started=System.Diagnostics.Stopwatch.GetTimestamp();}
         MoveCitizens(dt);
         Pr57310Boundary("citizens");
         if(profile is not null)profile.Mark(2,ref started);
+        Pr57ObservePollutionBits("2");
         if(Pr57Writer289Enabled)_pr57Writer289Phase=3;
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,2,ref started);
         if(samplePresence){presence!.Observe(this,2);profile?.ResetAllocationCensusBaseline();started=System.Diagnostics.Stopwatch.GetTimestamp();}
@@ -439,11 +454,13 @@ public sealed partial class CitySimulation
         if(pr57CauseAfterProgress is not null)started=System.Diagnostics.Stopwatch.GetTimestamp();
         if(completedConstruction&&Pr57MaintenanceScheduleEnabled)_pr57MaintenanceScheduleReady=false;
         if(profile is not null)profile.Mark(3,ref started);
+        Pr57ObservePollutionBits("3");
         if(Pr57Writer289Enabled)_pr57Writer289Phase=4;
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,3,ref started);
         if(samplePresence){presence!.Observe(this,3);profile?.ResetAllocationCensusBaseline();started=System.Diagnostics.Stopwatch.GetTimestamp();}
         UpdateMaintenanceCondition(dt);
         if(profile is not null)profile.Mark(4,ref started);
+        Pr57ObservePollutionBits("4");
         if(Pr57Writer289Enabled)_pr57Writer289Phase=5;
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,4,ref started);
         if(samplePresence){presence!.Observe(this,4);profile?.ResetAllocationCensusBaseline();started=System.Diagnostics.Stopwatch.GetTimestamp();}
@@ -454,21 +471,25 @@ public sealed partial class CitySimulation
             || State.MunicipalRelocations.Count != 0)
             ProgressMunicipalRelocations(dt);
         if(profile is not null)profile.Mark(5,ref started);
+        Pr57ObservePollutionBits("5");
         if(Pr57Writer289Enabled)_pr57Writer289Phase=6;
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,5,ref started);
         if(samplePresence){presence!.Observe(this,5);profile?.ResetAllocationCensusBaseline();started=System.Diagnostics.Stopwatch.GetTimestamp();}
         UpdateInfrastructure(dt);
         if(profile is not null)profile.Mark(6,ref started);
+        Pr57ObservePollutionBits("6");
         if(Pr57Writer289Enabled)_pr57Writer289Phase=7;
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,6,ref started);
         if(samplePresence){presence!.Observe(this,6);profile?.ResetAllocationCensusBaseline();started=System.Diagnostics.Stopwatch.GetTimestamp();}
         OperateBusinesses(dt);
         if(profile is not null)profile.Mark(7,ref started);
+        Pr57ObservePollutionBits("7");
         if(Pr57Writer289Enabled)_pr57Writer289Phase=8;
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,7,ref started);
         if(samplePresence){presence!.Observe(this,7);profile?.ResetAllocationCensusBaseline();started=System.Diagnostics.Stopwatch.GetTimestamp();}
         UpdateNeeds(dt);
         if(profile is not null)profile.Mark(8,ref started);
+        Pr57ObservePollutionBits("8");
         if(Pr57Writer289Enabled)_pr57Writer289Phase=9;
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,8,ref started);
         if(samplePresence){presence!.Observe(this,8);profile?.ResetAllocationCensusBaseline();started=System.Diagnostics.Stopwatch.GetTimestamp();}
@@ -476,6 +497,7 @@ public sealed partial class CitySimulation
         var reviewEconomy=completedConstruction||State.ElapsedSeconds>=State.EconomyNextAt;
         if(reviewEconomy){State.EconomyNextAt=State.ElapsedSeconds+State.Tuning.EconomyInterval;SeekHomesForAllDisplaced();ReviewMarkets();ReviewJobs();ScheduleMaintenance();}
         if(profile is not null)profile.Mark(9,ref started);
+        Pr57ObservePollutionBits("9");
         if(Pr57Writer289Enabled)_pr57Writer289Phase=10;
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,9,ref started);
         if(samplePresence){presence!.Observe(this,9);profile?.ResetAllocationCensusBaseline();started=System.Diagnostics.Stopwatch.GetTimestamp();}
@@ -545,11 +567,13 @@ public sealed partial class CitySimulation
             started=System.Diagnostics.Stopwatch.GetTimestamp();
         }
         if(profile is not null)profile.Mark(10,ref started);
+        Pr57ObservePollutionBits("10");
         if(Pr57Writer289Enabled)_pr57Writer289Phase=11;
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,10,ref started);
         if(samplePresence){presence!.Observe(this,10);profile?.ResetAllocationCensusBaseline();started=System.Diagnostics.Stopwatch.GetTimestamp();}
         if(reviewEconomy){RetryPurchasesAwaitingDestination();RestockBusinesses();ReviewEmigration();RecoverDebt();RetryCargoAwaitingDestination();ReviewVehicleRevisions();ResumeHeldDeliveries();RefuelIdleShopTows();}
         if(profile is not null)profile.Mark(11,ref started);
+        Pr57ObservePollutionBits("11");
         if(Pr57Writer289Enabled)_pr57Writer289Phase=12;
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,11,ref started);
         if(samplePresence){presence!.Observe(this,11);profile?.ResetAllocationCensusBaseline();started=System.Diagnostics.Stopwatch.GetTimestamp();}
@@ -558,6 +582,7 @@ public sealed partial class CitySimulation
         while(State.Now>=State.NextTaxDate){PropertyTaxes();State.NextTaxDate=State.NextTaxDate.AddMonths(1);}
         ProcessLoans();
         if(profile is not null)profile.Mark(12,ref started);
+        Pr57ObservePollutionBits("12");
         if(Pr57Writer289Enabled)_pr57Writer289Phase=13;
         if(sampleEffects)Pr57ObservePhaseEffect(effects!,12,ref started);
         if(samplePresence){presence!.Observe(this,12);profile?.ResetAllocationCensusBaseline();started=System.Diagnostics.Stopwatch.GetTimestamp();}
