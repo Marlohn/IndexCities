@@ -152,6 +152,28 @@ public sealed class Pr57SiteOwnerRosterAdversarial
 
 
     [Fact]
+    public void In_slice_owner_field_mutation_without_list_change_preserves_full_scan()
+    {
+        if(!Enabled)return;
+        var sim=new CitySimulation(42);
+        sim.State.Vehicles.Clear();
+        var mover=new Vehicle{Id=900041,Position=new(0,0),Heading=0,
+            Status=VehicleStatus.Travelling};
+        var car=new Vehicle{Id=900042,PassengerCar=true,Position=new(0,4),
+            Heading=0,Status=VehicleStatus.Parked};
+        sim.State.Vehicles.AddRange([mover,car]);
+        Prepare.Invoke(sim,null);
+        Assert.DoesNotContain(car,Owners(sim));
+        Assert.Equal(8.0,SiteTravel(sim,mover));
+
+        // Public State permits in-place mutation without a list revision.
+        // The exact original full scan is the causal oracle, including
+        // a same-count transition from an excluded car to a site machine.
+        car.Machine=PavingMachine.Paver;
+        Assert.Equal(FullScan(sim,mover),SiteTravel(sim,mover));
+    }
+
+    [Fact]
     public void In_slice_admission_of_excluded_car_invalidates_reservation_roster()
     {
         if(!Enabled)return;
