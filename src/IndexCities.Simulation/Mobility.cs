@@ -9,7 +9,6 @@ public sealed partial class CitySimulation
     static readonly bool Pr57VehicleCostProbeEnabled=Environment.GetEnvironmentVariable("PR57_VEHICLE_COST_PROBE")=="1";
     // PR57 isolated, intrusive census: cleanup and ordering cannot be assumed removable.
     static readonly bool Pr57SliceSetupProbeEnabled=Environment.GetEnvironmentVariable("PR57_SLICE_SETUP_PROBE")=="1";
-    Vehicle[] _pr57OrderedVehicleBuffer=[]; // PR57 opt-in snapshot reuse; never serialized
     readonly long[] _pr57SliceSetupTicks=new long[2]; // junction cleanup, canonical sort (including materialization)
     readonly long[] _pr57SliceSetupCalls=new long[2];
     readonly long[] _pr57SliceSetupVehicles=new long[2];
@@ -693,18 +692,8 @@ public sealed partial class CitySimulation
         // above and every physical candidate scan remain unchanged.
         var pr57BatchOrder=Environment.GetEnvironmentVariable("PR57_BATCH_ORDER")=="1"&&operationsDt is null?_vehicleMovementBatch:null;
         if(pr57SetupProbe)pr57SetupStart=System.Diagnostics.Stopwatch.GetTimestamp();
-        // PR57 opt-in: reuse an exact-size snapshot buffer across slices, while
-        // retaining the canonical sort and full vehicle processing. Copy every
-        // live reference on every call: external list edits and WaitingSince
-        // mutations are never hidden by a cross-slice ordering cache.
-        var pr57ReuseOrderSnapshot=Environment.GetEnvironmentVariable("PR57_REUSE_ORDER_SNAPSHOT")=="1"&&pr57BatchOrder is null;
-        Vehicle[] ordered;
-        if(pr57ReuseOrderSnapshot){
-            if(_pr57OrderedVehicleBuffer.Length!=State.Vehicles.Count)
-                _pr57OrderedVehicleBuffer=new Vehicle[State.Vehicles.Count];
-            State.Vehicles.CopyTo(_pr57OrderedVehicleBuffer);
-            ordered=_pr57OrderedVehicleBuffer;
-        }else ordered=pr57BatchOrder is null?State.Vehicles.ToArray():State.Vehicles.Where(v=>pr57BatchOrder.Contains(v.Id)).ToArray();
+        // Canonical snapshot: never retain vehicle references across Advance slices.
+        Vehicle[] ordered=pr57BatchOrder is null?State.Vehicles.ToArray():State.Vehicles.Where(v=>pr57BatchOrder.Contains(v.Id)).ToArray();
         // PR57 opt-in: an already canonical array needs no comparison sort.
         // Compare the exact same keys as Array.Sort; no state is cached between
         // slices, so external mutations of WaitingSince or the vehicle list
