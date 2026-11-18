@@ -5,6 +5,7 @@ on:
     paths:
       - .github/workflows/pr57-residual-exclusive-206.yml
       - src/IndexCities.Simulation/Mobility.cs
+      - src/IndexCities.Simulation/Mobility.SharedSpace.cs
       - src/IndexCities.Simulation/Construction.cs
       - src/IndexCities.Simulation/Construction.Feeding.cs
       - src/IndexCities.Simulation/CitySimulation.cs
