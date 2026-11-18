@@ -183,6 +183,28 @@ public sealed partial class CitySimulation
         foreach(var building in active)EmitPollution(building.Position,building.UntreatedSewage/100*dt/86400);
         foreach(var vehicle in State.Vehicles)EmitPollution(vehicle.Position,vehicle.FuelBurnedLastStep*.01);
         SnapshotPollution();State.LakePollution=SampledPollution(State.LakeCentre);
+        // PR57 opt-in adversarial diagnostic: recompute the same dot product in
+        // canonical key order, without changing the baseline sum, cells or state.
+        // Distinguishes order-sensitive floating point accumulation from a
+        // genuinely different pollution-cell multiset across processes.
+        if(Environment.GetEnvironmentVariable("PR57_LAKE_ORDER_ADVERSARY")=="1")
+        {
+            var indices=new int[_cellCount];
+            for(var j=0;j<indices.Length;j++)indices[j]=j;
+            Array.Sort(indices,(a,b)=>_cellKeys[a].CompareTo(_cellKeys[b]));
+            var factors=FactorsFor(State.LakeCentre).Factors;
+            double canonical=0;
+            for(var j=0;j<indices.Length;j++)
+            {
+                var index=indices[j];
+                canonical+=_cellValues[index]*factors[index];
+            }
+            canonical=Math.Clamp(canonical,0,2);
+            var baselineBits=BitConverter.DoubleToInt64Bits(State.LakePollution);
+            var canonicalBits=BitConverter.DoubleToInt64Bits(canonical);
+            if(baselineBits!=canonicalBits)
+                Console.WriteLine($"PR57_LAKE_ORDER_ADVERSARY elapsed={State.ElapsedSeconds:R} cells={_cellCount} baseline=0x{baselineBits:X16} canonical=0x{canonicalBits:X16} ulpBitsDelta={Math.Abs((decimal)baselineBits-canonicalBits)}");
+        }
         // PR57 diagnostic only: trace the exact lake sum and cell enumeration
         // at each pollution update, without changing the game state or summation.
         // Compare two independent baseline processes by the first differing line.
