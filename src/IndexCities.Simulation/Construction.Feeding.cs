@@ -133,6 +133,9 @@ public sealed partial class CitySimulation
     static readonly bool Pr57SiteOwnerRosterEnabled =
         Environment.GetEnvironmentVariable("PR57_SITE_OWNER_ROSTER")=="1";
     List<Vehicle>? _pr57SiteOwnerRoster;
+    // Excluded references must be rechecked: Vehicle fields are publicly mutable
+    // without a List<T> version increment, even during a movement slice.
+    List<Vehicle>? _pr57SiteOwnerExcluded;
     List<Vehicle>? _pr57SiteOwnerSource;
     List<Vehicle>.Enumerator _pr57SiteOwnerListVersion;
     int _pr57SiteOwnerVehicleCount;
@@ -146,6 +149,9 @@ public sealed partial class CitySimulation
         _pr57SiteOwnerRoster=State.Vehicles.Where(v=>!v.PassengerCar||
             v.Machine!=PavingMachine.None||v.SitePath.Count>0||
             v.ManoeuvreDock!=null||v.ShipmentId!=null).ToList();
+        _pr57SiteOwnerExcluded=State.Vehicles.Where(v=>v.PassengerCar&&
+            v.Machine==PavingMachine.None&&v.SitePath.Count==0&&
+            v.ManoeuvreDock==null&&v.ShipmentId==null).ToList();
         if(!_pr57SiteOwnerRosterAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
         {
             Console.WriteLine($"PR57_SITE_OWNER_ROSTER active=True candidates={_pr57SiteOwnerRoster.Count} vehicles={State.Vehicles.Count}");
@@ -214,6 +220,17 @@ public sealed partial class CitySimulation
         {
             try{_pr57SiteOwnerListVersion.MoveNext();}
             catch(InvalidOperationException){rosterValid=false;_pr57SiteOwnerRoster=null;}
+        }
+        // A property-only promotion (car -> machine/site owner) does not
+        // invalidate List<T>.Enumerator. Detect it before consulting the
+        // reduced roster; exact full scan is mandatory on any promotion.
+        if(rosterValid&&_pr57SiteOwnerExcluded is not null&&
+           _pr57SiteOwnerExcluded.Any(v=>!v.PassengerCar||
+               v.Machine!=PavingMachine.None||v.SitePath.Count>0||
+               v.ManoeuvreDock!=null||v.ShipmentId!=null))
+        {
+            rosterValid=false;
+            _pr57SiteOwnerRoster=null;
         }
         var siteOwners=rosterValid?_pr57SiteOwnerRoster!:State.Vehicles;
         if(Pr57SiteOwnerRosterEnabled&&ReferenceEquals(siteOwners,_pr57SiteOwnerRoster)&&
