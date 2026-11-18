@@ -175,8 +175,27 @@ public sealed partial class CitySimulation
         return reserved;
     }
 
+    // Diagnostic-only census for the zero-distance hypothesis. No result or
+    // reservation is cached; normal collision and observation paths stay intact.
+    static readonly bool Pr57ZeroSiteCensus=Environment.GetEnvironmentVariable("PR57_ZERO_SITE_CENSUS")=="1";
+    long _pr57ZeroSiteCalls,_pr57ZeroSiteHits,_pr57ZeroSiteReservationUpperBound;
+    void Pr57ObserveZeroSiteCensus(double distance)
+    {
+        if(!Pr57ZeroSiteCensus)return;
+        _pr57ZeroSiteCalls++;
+        if(distance==0)
+        {
+            _pr57ZeroSiteHits++;
+            // Upper bound on scanned vehicle entries, not a claim of time saved.
+            _pr57ZeroSiteReservationUpperBound+=State.Vehicles.Count;
+        }
+        if(_pr57ZeroSiteCalls%10000==0)
+            Console.WriteLine($"PR57_ZERO_SITE_CENSUS calls={_pr57ZeroSiteCalls} zero={_pr57ZeroSiteHits} vehicle_scan_upper_bound={_pr57ZeroSiteReservationUpperBound}");
+    }
+
     double SafeSiteTravel(Vehicle vehicle,Point target,double distance,bool machinesOnly=false)
     {
+        Pr57ObserveZeroSiteCensus(distance);
         if(Pr57ZeroSiteSkip&&distance==0){Pr57S5SiteObserve(vehicle,distance,0,machinesOnly,0,0);return 0;}
         // Canonical full scan: public Vehicle fields can change in-place
         // without a collection-version change, including within a slice.
