@@ -172,6 +172,8 @@ public sealed partial class CitySimulation
         if(amount<=0||!InMap(point))return;var x=(int)Math.Floor(point.X/PollutionCellSize);var z=(int)Math.Floor(point.Z/PollutionCellSize);var key=((long)x<<32)|unchecked((uint)z);
         State.PollutionCells[key]=FixedPoint.Pollution(State.PollutionCells.GetValueOrDefault(key)+(decimal)amount);
     }
+    // PR57 diagnostic counters: no simulation-state mutation or save impact.
+    long _pr57LakeAdversaryComparisons,_pr57LakeAdversaryDifferences;
     void UpdatePollution(double dt,List<Building> active)
     {
         var recovery=Math.Exp(-.15*dt/86400);
@@ -202,6 +204,10 @@ public sealed partial class CitySimulation
             canonical=Math.Clamp(canonical,0,2);
             var baselineBits=BitConverter.DoubleToInt64Bits(State.LakePollution);
             var canonicalBits=BitConverter.DoubleToInt64Bits(canonical);
+            _pr57LakeAdversaryComparisons++;
+            if(baselineBits!=canonicalBits)_pr57LakeAdversaryDifferences++;
+            if(_pr57LakeAdversaryComparisons%50==0)
+                Console.WriteLine($"PR57_LAKE_ADVERSARY_CENSUS comparisons={_pr57LakeAdversaryComparisons} differences={_pr57LakeAdversaryDifferences} cells={_cellCount}");
             if(baselineBits!=canonicalBits)
                 Console.WriteLine($"PR57_LAKE_ORDER_ADVERSARY elapsed={State.ElapsedSeconds:R} cells={_cellCount} baseline=0x{baselineBits:X16} canonical=0x{canonicalBits:X16} ulpBitsDelta={Math.Abs((decimal)baselineBits-canonicalBits)}");
         }
