@@ -29,6 +29,7 @@ jobs:
     timeout-minutes: 18
     env:
       PR57_SITE_OWNER_ROSTER: '1'
+      PR57_ROSTER_DIAG: '1'
       PR57_BUILDING_WORK_ACCESS: '1'
       PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
       PR57_ORDER_SHIPMENT_INDEX: '1'
