@@ -173,7 +173,7 @@ public sealed partial class CitySimulation
         State.PollutionCells[key]=FixedPoint.Pollution(State.PollutionCells.GetValueOrDefault(key)+(decimal)amount);
     }
     // PR57 diagnostic counters: no simulation-state mutation or save impact.
-    long _pr57LakeAdversaryComparisons,_pr57LakeAdversaryDifferences;
+    long _pr57LakeAdversaryComparisons,_pr57LakeAdversaryDifferences,_pr57LakeSliceSamples;
     void UpdatePollution(double dt,List<Building> active)
     {
         var recovery=Math.Exp(-.15*dt/86400);
@@ -216,6 +216,7 @@ public sealed partial class CitySimulation
         // Compare two independent baseline processes by the first differing line.
         if(Environment.GetEnvironmentVariable("PR57_LAKE_SLICE_TRACE")=="1")
         {
+            _pr57LakeSliceSamples++;
             ulong order=14695981039346656037UL;
             // A commutative fingerprint distinguishes enumeration-only changes
             // from changed cell keys/values without modifying their order.
@@ -242,7 +243,7 @@ public sealed partial class CitySimulation
             // Exact sorted key/value payload at the historically divergent sample.
             // The trace is read-only and opt-in; unlike fingerprints it identifies
             // the first changed cell without depending on dictionary enumeration.
-            if(Environment.GetEnvironmentVariable("PR57_LAKE_EXACT_SAMPLE23")=="1" && _pr57LakeAdversaryComparisons==23)
+            if(Environment.GetEnvironmentVariable("PR57_LAKE_EXACT_SAMPLE23")=="1" && _pr57LakeSliceSamples==23)
             {
                 var exact=new (long Key,long Bits)[_cellCount];
                 for(var i=0;i<_cellCount;i++)exact[i]=(_cellKeys[i],BitConverter.DoubleToInt64Bits(_cellValues[i]));
