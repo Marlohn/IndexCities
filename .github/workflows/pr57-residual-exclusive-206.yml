@@ -4,6 +4,7 @@ on:
     branches: [experimento/escala-motor-integrado-10k-80y]
     paths:
       - .github/workflows/pr57-residual-exclusive-206.yml
+      - src/IndexCities.Simulation/Pollution.cs
       - src/IndexCities.Simulation/Mobility.cs
       - src/IndexCities.Simulation/Mobility.SharedSpace.cs
       - src/IndexCities.Simulation/Construction.cs
@@ -73,6 +74,50 @@ jobs:
           run-id: 43766908676
           github-token: ${{ github.token }}
           path: artifacts/retained
+      - name: Compare lake slice trace in independent fresh processes
+        shell: bash
+        run: |
+          set -euo pipefail
+          source="$(find artifacts/retained -type f -path '*/realA-control/checkpoint-0.json' -print -quit)"
+          test -s "$source"
+          mkdir -p artifacts/lake-trace
+          for mode in A1 A2 B1; do
+            adversary=0
+            if [[ "$mode" == B1 ]]; then adversary=1; fi
+            mkdir -p "artifacts/lake-trace/$mode"
+            PR57_LAKE_SLICE_TRACE=1 PR57_LAKE_ORDER_ADVERSARY="$adversary" \
+            PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_206_MID_CHECKPOINT=1 \
+            PR57_SAVE_CAPTURE_DIR="$PWD/artifacts/lake-trace/$mode" \
+              timeout 180s dotnet run --no-build -c Release \
+              --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+              profile cycle --seed=42 --warmup=0 --days=1 \
+              --window=300 --cap=300 --resume="$source" \
+              > "artifacts/lake-trace/$mode.log"
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('artifacts/lake-trace')
+          traces={}
+          for mode in ('A1','A2','B1'):
+              log=(root/f'{mode}.log').read_text()
+              assert 'INVARIANTS OK' in log and 'SAVE ' in log,mode
+              traces[mode]=[s for s in log.splitlines() if s.startswith('PR57_LAKE_SLICE_TRACE ')]
+              assert traces[mode],(mode,'NO_LAKE_TRACE')
+          for other in ('A2','B1'):
+              for i,(a,b) in enumerate(zip(traces['A1'],traces[other])):
+                  if a!=b:
+                      print('PR57_LAKE_FIRST_DIFFERENCE',other,'index',i,'baseline',a,'other',b)
+                      break
+              else:
+                  if len(traces['A1'])!=len(traces[other]):
+                      print('PR57_LAKE_TRACE_LENGTH_DIFFERENCE',other,len(traces['A1']),len(traces[other]))
+                  else:
+                      print('PR57_LAKE_TRACE_EQUAL',other,'samples',len(traces['A1']))
+              for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                  a=(root/'A1'/checkpoint).read_bytes()
+                  b=(root/other/checkpoint).read_bytes()
+                  print('PR57_LAKE_JSON',other,checkpoint,'equal',a==b,'baselineBytes',len(a),'otherBytes',len(b))
+          PY
       - name: Execute independent Advance(2) control and bounded probe
         shell: bash
         run: |
