@@ -1021,16 +1021,9 @@ public sealed partial class CitySimulation
                 if(v.Status==VehicleStatus.Stranded){TendStranded(v);continue;}
                 if(v.Status==VehicleStatus.Waiting){if(v.ShipmentId is {} si&&State.Shipments.FirstOrDefault(s=>s.Id==si) is {} shipment){if(shipment.Cancelled)RedirectCancelled(v,shipment);else ReplanVehicle(v,shipment);}else if(v.External)ReturnExternal(v);else if(v.HomeBuildingId!=null&&v.DestinationBuildingId==v.HomeBuildingId)ReturnLocal(v);continue;}
                 if(v.Status!=VehicleStatus.Travelling)continue;
-                // PR57 isolated opt-in: avoid LINQ delegate/enumerator work on every
-                // operations pass. Same short-circuit and road membership checks;
-                // no persistent cache, so road mutations need no invalidation.
-                var pr57RouteGuardLoop=Environment.GetEnvironmentVariable("PR57_ROUTE_GUARD_LOOP")=="1";
-                var pr57RouteBroken=v.Route.Count==0;
-                if(pr57RouteGuardLoop){
-                    for(var ri=0;!pr57RouteBroken&&ri<v.Route.Count;ri++)
-                        if(!_roads.ContainsKey(v.Route[ri]))pr57RouteBroken=true;
-                }else if(!pr57RouteBroken)pr57RouteBroken=v.Route.Any(id=>!_roads.ContainsKey(id));
-                if(pr57RouteBroken){v.Status=VehicleStatus.Waiting;v.Cause="Rota interrompida; aguarda ligação viária";continue;}
+                // Canonical short-circuit route guard; the PR57 loop opt-in
+                // regressed wall time in both integrated save benchmarks.
+                if(v.Route.Count==0||v.Route.Any(id=>!_roads.ContainsKey(id))){v.Status=VehicleStatus.Waiting;v.Cause="Rota interrompida; aguarda ligação viária";continue;}
                 _vehicleMovementBatch?.Add(v.Id);
             }else if(!_vehicleMovementBatch.Contains(v.Id)||v.Status!=VehicleStatus.Travelling)continue;
             // #187: count actual physical candidates after the existing eligibility guard.
