@@ -239,6 +239,17 @@ public sealed partial class CitySimulation
                 }
             }
             Console.WriteLine($"PR57_LAKE_SLICE_TRACE time={State.ElapsedSeconds:R} count={_cellCount} order={order:X16} multisetSum={multisetSum:X16} multisetXor={multisetXor:X16} lakeBits={BitConverter.DoubleToInt64Bits(State.LakePollution):X16}");
+            // Exact sorted key/value payload at the historically divergent sample.
+            // The trace is read-only and opt-in; unlike fingerprints it identifies
+            // the first changed cell without depending on dictionary enumeration.
+            if(Environment.GetEnvironmentVariable("PR57_LAKE_EXACT_SAMPLE23")=="1" && _pr57LakeAdversaryComparisons==23)
+            {
+                var exact=new (long Key,long Bits)[_cellCount];
+                for(var i=0;i<_cellCount;i++)exact[i]=(_cellKeys[i],BitConverter.DoubleToInt64Bits(_cellValues[i]));
+                Array.Sort(exact,(a,b)=>a.Key.CompareTo(b.Key));
+                foreach(var entry in exact)
+                    Console.WriteLine($"PR57_LAKE_EXACT_SAMPLE23 key={entry.Key} valueBits={entry.Bits:X16}");
+            }
         }
     }
 }
