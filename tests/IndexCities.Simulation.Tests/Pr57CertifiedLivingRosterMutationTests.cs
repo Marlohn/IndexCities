@@ -155,6 +155,45 @@ public sealed class Pr57CertifiedLivingRosterMutationTests
     }
 
     [Fact]
+    public void Public_advance_rebuilds_roster_after_external_reorder_at_constant_count()
+    {
+        var seed = CityCycleTests.City();
+        for (var hour = 0; hour < 48; hour++) seed.Advance(3600);
+        var json = seed.SaveToJson();
+        var baseline = CitySimulation.FromJson(json);
+        var probe = CitySimulation.FromJson(json);
+        Assert.True(baseline.State.Citizens.Count > 1);
+
+        static long Rebuilds(CitySimulation sim)
+        {
+            var field = typeof(CitySimulation).GetField(
+                "_pr57RosterRebuilds", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(field);
+            return (long)field.GetValue(sim)!;
+        }
+
+        // A public Advance is an untrusted boundary: changing iteration order
+        // without changing Count must not reuse the prior roster.
+        for (var step = 0; step < 5; step++)
+        {
+            baseline.State.Citizens.Reverse();
+            probe.State.Citizens.Reverse();
+            Assert.Equal(baseline.State.Citizens.Count, probe.State.Citizens.Count);
+            var before = Rebuilds(probe);
+            baseline.Advance(2);
+            probe.Advance(2);
+            Assert.Equal(baseline.SaveToJson(), probe.SaveToJson());
+            if (Environment.GetEnvironmentVariable("PR57_LIVING_ROSTER") == "1")
+                Assert.Equal(before + 1, Rebuilds(probe));
+        }
+
+        var resumed = CitySimulation.FromJson(probe.SaveToJson());
+        baseline.Advance(2);
+        resumed.Advance(2);
+        Assert.Equal(baseline.SaveToJson(), resumed.SaveToJson());
+    }
+
+    [Fact]
     public void Public_advance_rebuilds_roster_after_external_alive_mutation_at_constant_count()
     {
         var seed = CityCycleTests.City();
