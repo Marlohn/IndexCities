@@ -234,4 +234,42 @@ public sealed class Pr57CertifiedLivingRosterMutationTests
         Assert.Equal(baseline.SaveToJson(), resumed.SaveToJson());
     }
 
+
+    [Fact]
+    public void Certified_boundary_handles_simultaneous_alive_and_order_mutation_at_constant_count()
+    {
+        var seed = CityCycleTests.City();
+        for (var hour = 0; hour < 48; hour++) seed.Advance(3600);
+        var json = seed.SaveToJson();
+        var baseline = CitySimulation.FromJson(json);
+        var certified = CitySimulation.FromJson(json);
+        Assert.True(baseline.State.Citizens.Count > 1);
+
+        baseline.Advance(2);
+        certified.Pr57AdvanceCertifiedQuantum();
+        Assert.Equal(baseline.SaveToJson(), certified.SaveToJson());
+
+        // Both membership of the living subset and iteration order change at
+        // the same external boundary while the public collection size stays fixed.
+        foreach (var sim in new[] { baseline, certified })
+        {
+            var citizens = sim.State.Citizens;
+            var index = citizens.FindIndex(c => c.Alive);
+            Assert.True(index >= 0);
+            citizens[index].Alive = false;
+            citizens.Reverse();
+        }
+        certified.Pr57InvalidateCertifiedBoundary();
+        for (var quantum = 0; quantum < 5; quantum++)
+        {
+            baseline.Advance(2);
+            certified.Pr57AdvanceCertifiedQuantum();
+            Assert.Equal(baseline.SaveToJson(), certified.SaveToJson());
+        }
+
+        var resumed = CitySimulation.FromJson(certified.SaveToJson());
+        baseline.Advance(2);
+        resumed.Pr57AdvanceCertifiedQuantum();
+        Assert.Equal(baseline.SaveToJson(), resumed.SaveToJson());
+    }
 }
