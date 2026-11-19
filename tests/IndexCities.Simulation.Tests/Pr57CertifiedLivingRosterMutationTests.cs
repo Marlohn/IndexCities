@@ -438,6 +438,69 @@ public sealed class Pr57CertifiedLivingRosterMutationTests
         }
     }
 
+
+    [Theory]
+    [InlineData("realA-control")]
+    [InlineData("congested-control")]
+    public void Certified_external_mutation_on_authentic_derived_snapshot_preserves_full_json(string scenario)
+    {
+        var root = Environment.GetEnvironmentVariable("PR57_REAL_SNAPSHOT_DIR");
+        if (string.IsNullOrWhiteSpace(root)) return; // CI #206 supplies retained saves.
+        Assert.True(Directory.Exists(root), $"Missing retained snapshot root: {root}");
+        var candidates = Directory.GetFiles(root, "checkpoint-0.json", SearchOption.AllDirectories)
+            .Where(p => string.Equals(Path.GetFileName(Path.GetDirectoryName(p)),
+                scenario, StringComparison.Ordinal)).ToArray();
+        Assert.Single(candidates);
+        var json = File.ReadAllText(candidates[0]);
+        var baseline = CitySimulation.FromJson(json);
+        var certified = CitySimulation.FromJson(json);
+        Assert.NotEmpty(baseline.State.Citizens.Where(c => c.Alive));
+        Assert.True(baseline.State.Citizens.Count > 1);
+        var population = baseline.State.Citizens.Count;
+
+        static long Counter(CitySimulation sim, string name)
+        {
+            var field = typeof(CitySimulation).GetField(name,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(field);
+            return (long)field.GetValue(sim)!;
+        }
+
+        // Populate a certified cache on the actual integrated saved state.
+        baseline.Advance(2);
+        certified.Pr57AdvanceCertifiedQuantum();
+        Assert.Equal(baseline.SaveToJson(), certified.SaveToJson());
+        var before = Counter(certified, "_pr57RosterRebuilds");
+        var scannedBefore = Counter(certified, "_pr57RosterScanned");
+
+        // External editor changes membership and ordering without changing Count.
+        foreach (var sim in new[] { baseline, certified })
+        {
+            var citizens = sim.State.Citizens;
+            var index = citizens.FindIndex(c => c.Alive);
+            Assert.True(index >= 0);
+            citizens[index].Alive = false;
+            citizens.Reverse();
+            Assert.Equal(population, citizens.Count);
+        }
+        certified.Pr57InvalidateCertifiedBoundary();
+        for (var quantum = 0; quantum < 6; quantum++)
+        {
+            baseline.Advance(2);
+            certified.Pr57AdvanceCertifiedQuantum();
+            Assert.Equal(baseline.SaveToJson(), certified.SaveToJson());
+        }
+        if (Environment.GetEnvironmentVariable("PR57_LIVING_ROSTER") == "1")
+        {
+            Assert.Equal(before + 1, Counter(certified, "_pr57RosterRebuilds"));
+            Assert.Equal(scannedBefore + population, Counter(certified, "_pr57RosterScanned"));
+        }
+        var resumed = CitySimulation.FromJson(certified.SaveToJson());
+        baseline.Advance(2);
+        resumed.Pr57AdvanceCertifiedQuantum();
+        Assert.Equal(baseline.SaveToJson(), resumed.SaveToJson());
+    }
+
     [Fact]
     public void Certified_roster_is_invalidated_by_interleaved_public_advance_and_external_alive_change()
     {
