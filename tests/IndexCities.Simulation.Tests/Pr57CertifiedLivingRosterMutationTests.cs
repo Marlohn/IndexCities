@@ -386,6 +386,58 @@ public sealed class Pr57CertifiedLivingRosterMutationTests
         }
     }
 
+
+    [Fact]
+    public void Certified_save_load_then_external_membership_swap_requires_one_rebuild()
+    {
+        var seed = CityCycleTests.City();
+        for (var hour = 0; hour < 48; hour++) seed.Advance(3600);
+        var json = seed.SaveToJson();
+        var baseline = CitySimulation.FromJson(json);
+        var candidate = CitySimulation.FromJson(json);
+        for (var i = 0; i < 4; i++)
+        {
+            baseline.Advance(2);
+            candidate.Pr57AdvanceCertifiedQuantum();
+            Assert.Equal(baseline.SaveToJson(), candidate.SaveToJson());
+        }
+
+        // Save/load must discard the old private cache before an external
+        // mutation changes both order and living membership at constant Count.
+        candidate = CitySimulation.FromJson(candidate.SaveToJson());
+        var count = baseline.State.Citizens.Count;
+        foreach (var sim in new[] { baseline, candidate })
+        {
+            var citizens = sim.State.Citizens;
+            var index = citizens.FindIndex(c => c.Alive);
+            Assert.True(index >= 0);
+            citizens[index].Alive = false;
+            citizens.Reverse();
+            Assert.Equal(count, citizens.Count);
+        }
+        candidate.Pr57InvalidateCertifiedBoundary();
+
+        static long Counter(CitySimulation sim, string name)
+        {
+            var field = typeof(CitySimulation).GetField(
+                name, BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(field);
+            return (long)field.GetValue(sim)!;
+        }
+        for (var i = 0; i < 6; i++)
+        {
+            baseline.Advance(2);
+            candidate.Pr57AdvanceCertifiedQuantum();
+            Assert.Equal(baseline.SaveToJson(), candidate.SaveToJson());
+        }
+        if (Environment.GetEnvironmentVariable("PR57_LIVING_ROSTER") == "1")
+        {
+            Assert.Equal(1, Counter(candidate, "_pr57RosterRebuilds"));
+            Assert.Equal(count, Counter(candidate, "_pr57RosterScanned"));
+            Assert.Equal(6, Counter(candidate, "_pr57RosterSteps"));
+        }
+    }
+
     [Fact]
     public void Certified_roster_is_invalidated_by_interleaved_public_advance_and_external_alive_change()
     {
