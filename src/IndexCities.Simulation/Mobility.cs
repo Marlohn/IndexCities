@@ -1728,7 +1728,7 @@ public sealed partial class CitySimulation
             pr57DetailStart=pr57Detail?GC.GetAllocatedBytesForCurrentThread():0L;pr57DetailTickStart=pr57Detail&&Pr57HotTiming?System.Diagnostics.Stopwatch.GetTimestamp():0L;
             var way=TurnWay(v,out var spaces);
             if(pr57Detail){_pr57JunctionDetailBytes[5]+=GC.GetAllocatedBytesForCurrentThread()-pr57DetailStart;_pr57JunctionDetailCalls[5]++;if(pr57DetailTickStart!=0)_pr57JunctionDetailTicks[5]+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57DetailTickStart;}
-            foreach(var space in spaces.Where(s=>s.Id!=junction.Id)){var index=way.FindIndex(p=>EntersArea(v,p.Position,p.Heading,space));var from=index>0?way[index-1].Position:v.Position;if(!SpaceFree(v,space,space.Position-from,false))return Pr57JunctionDecision(v,junction,Pr57JunctionExit.BendSpace,false);}}
+            foreach(var space in spaces.Where(s=>s.Id!=junction.Id)){var index=way.FindIndex(p=>EntersArea(v,p.Position,p.Heading,space));var from=index>0?way[index-1].Position:v.Position;if(!SpaceFree(v,space,space.Position-from,false))return Pr57JunctionDecision(v,junction,Pr57JunctionExit.BendSpace,false);}
             pr57DetailStart=pr57Detail?GC.GetAllocatedBytesForCurrentThread():0L;pr57DetailTickStart=pr57Detail&&Pr57HotTiming?System.Diagnostics.Stopwatch.GetTimestamp():0L;
             var bendBody=BodyOnWay(v,way);
             if(pr57Detail){_pr57JunctionDetailBytes[6]+=GC.GetAllocatedBytesForCurrentThread()-pr57DetailStart;_pr57JunctionDetailCalls[6]++;if(pr57DetailTickStart!=0)_pr57JunctionDetailTicks[6]+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57DetailTickStart;}
@@ -1767,7 +1767,7 @@ public sealed partial class CitySimulation
         if(pr57Detail){_pr57JunctionDetailBytes[6]+=GC.GetAllocatedBytesForCurrentThread()-pr57DetailStart;_pr57JunctionDetailCalls[6]++;if(pr57DetailTickStart!=0)_pr57JunctionDetailTicks[6]+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57DetailTickStart;}
         if(onwardBody is not null){Pr57JunctionReadersBlock(v,onwardBody,"onwardBody");v.Cause="Fila na faixa";return Pr57JunctionDecision(v,junction,Pr57JunctionExit.OnwardBody,false);}
         if(crossed.Any(s=>s.Id!=junction.Id)){
-            foreach(var space in crossed.Where(s=>s.Id!=junction.Id)){var index=onward.FindIndex(p=>EntersArea(v,p.Position,p.Heading,space));var from=index>0?onward[index-1].Position:v.Position;if(!SpaceFree(v,space,space.Position-from,false))return Pr57JunctionDecision(v,junction,Pr57JunctionExit.OnwardSpace,false);}}
+            foreach(var space in crossed.Where(s=>s.Id!=junction.Id)){var index=onward.FindIndex(p=>EntersArea(v,p.Position,p.Heading,space));var from=index>0?onward[index-1].Position:v.Position;if(!SpaceFree(v,space,space.Position-from,false))return Pr57JunctionDecision(v,junction,Pr57JunctionExit.OnwardSpace,false);}
         }
         // A claim obtained at the stop line is not released on approach merely
         // because the body has not yet entered its square. Keep its local plan.
