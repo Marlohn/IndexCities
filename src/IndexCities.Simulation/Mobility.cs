@@ -781,20 +781,10 @@ public sealed partial class CitySimulation
             ?State.Vehicles.Where(o=>!o.PassengerCar||o.Status!=VehicleStatus.Parked||_entryFrame?.ContainsKey(o.Id)==true).ToList()
             :State.Vehicles;
         var pr57ScanIds=pr57ActiveScan?pr57ScanCandidates.Select(o=>o.Id).ToHashSet():null;
-        // PR57 isolated A/B: rebuild the original-order ID index without allocating
-        // an anonymous object per vehicle. Never cache across external mutations.
-        // Dictionary.Add retains the baseline duplicate-ID failure behavior.
-        var pr57DirectOrderMap=Environment.GetEnvironmentVariable("PR57_DIRECT_ORDER_MAP")=="1";
+        // Preserve the baseline per-slice ordering and duplicate-ID behavior.
         Dictionary<int,int>? pr57VehicleOrder=null;
-        if(pr57ActiveScan||pr57SpatialScan||pr57LaneGrid){
-            if(pr57DirectOrderMap){
-                pr57VehicleOrder=new Dictionary<int,int>(State.Vehicles.Count);
-                for(var i=0;i<State.Vehicles.Count;i++)
-                    pr57VehicleOrder.Add(State.Vehicles[i].Id,i);
-            }else{
-                pr57VehicleOrder=State.Vehicles.Select((o,i)=>new{o.Id,Index=i}).ToDictionary(x=>x.Id,x=>x.Index);
-            }
-        }
+        if(pr57ActiveScan||pr57SpatialScan||pr57LaneGrid)
+            pr57VehicleOrder=State.Vehicles.Select((o,i)=>new{o.Id,Index=i}).ToDictionary(x=>x.Id,x=>x.Index);
         // PR57 spatial A/B: both indexes are per movement slice, updated after
         // each processed vehicle. Exact lane/bend predicates still decide every
         // collision. Bitset enumeration follows original State.Vehicles order,
