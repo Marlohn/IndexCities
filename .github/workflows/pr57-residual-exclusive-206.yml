@@ -74,6 +74,13 @@ jobs:
           run-id: 43766908676
           github-token: ${{ github.token }}
           path: artifacts/retained
+      - name: Verify certified roster mutations on retained real-derived saves
+        shell: bash
+        run: |
+          set -euo pipefail
+          PR57_REAL_SNAPSHOT_DIR="$PWD/artifacts/retained" PR57_LIVING_ROSTER=1 \
+            dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
+            -c Release --no-build --filter FullyQualifiedName~Certified_external_mutation_on_authentic_derived_snapshot_preserves_full_json --verbosity normal
       - name: Compare lake slice trace in independent fresh processes
         shell: bash
         run: |
