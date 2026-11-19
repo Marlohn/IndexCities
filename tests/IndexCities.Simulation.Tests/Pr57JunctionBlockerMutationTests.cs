@@ -150,6 +150,12 @@ public sealed class Pr57JunctionBlockerMutationTests
         Assert.Equal(admittedLive, admittedReloaded);
         Assert.DoesNotContain(occupant.Id.ToString(), entrant.Cause);
         Assert.DoesNotContain(occupant.Id.ToString(), restoredEntrant.Cause);
+        // An admitted entrant owns its crossing space and must not be forced
+        // to yield backwards. Explicitly withdraw that admission before testing
+        // a fresh attempt against the reintroduced external blocker.
+        entrant.ManoeuvreSpaces.Clear();
+        entrant.IntersectionClaim = null;
+        entrant.IntersectionEnteredAt = null;
         // Reintroduce the same blocker after a save/load boundary. The next
         // admission must observe both external fields, not a stale no-blocker result.
         occupant.Position = new Point(1, 0);
