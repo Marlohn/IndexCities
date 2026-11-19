@@ -169,4 +169,58 @@ public sealed class Pr57JunctionBlockerMutationTests
         Assert.Contains(occupant.Id.ToString(), restoredBlockedEntrant.Cause);
     }
 
+
+    [Fact]
+    public void Junction_manoeuvre_holder_rechecks_external_space_mutation_after_reload()
+    {
+        var sim = new CitySimulation(42);
+        var junction = new RoadNode
+        {
+            Id = 993101, Position = new Point(0, 0),
+            Neighbours = new List<int> { 993102, 993103, 993104 }
+        };
+        sim.State.Roads.Add(junction);
+        sim.State.Roads.Add(new RoadNode { Id = 993102, Position = new Point(4, 0), Neighbours = new List<int> { 993101 } });
+        sim.State.Roads.Add(new RoadNode { Id = 993103, Position = new Point(0, 4), Neighbours = new List<int> { 993101 } });
+        sim.State.Roads.Add(new RoadNode { Id = 993104, Position = new Point(-4, 0), Neighbours = new List<int> { 993101 } });
+        sim.State.Vehicles.Add(new Vehicle { Id = 993201, Position = new Point(0, 0), Status = VehicleStatus.Travelling });
+        sim.State.Vehicles.Add(new Vehicle { Id = 993202, Position = new Point(1, 0), Status = VehicleStatus.Travelling });
+        sim = CitySimulation.FromJson(sim.SaveToJson());
+        var entrant = sim.State.Vehicles.Single(v => v.Id == 993201);
+        var holder = sim.State.Vehicles.Single(v => v.Id == 993202);
+        var node = sim.State.Roads.Single(r => r.Id == junction.Id);
+        var method = typeof(CitySimulation).GetMethod("MayEnterJunction",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(method);
+        bool Admit(CitySimulation city, Vehicle vehicle, RoadNode road) =>
+            (bool)method!.Invoke(city, new object[] { vehicle, road })!;
+
+        // A serialized manoeuvre-space reservation must be observed even when
+        // the holder has no IntersectionClaim. Removing it externally must
+        // invalidate the blocker without retaining a cross-slice roster.
+        holder.ManoeuvreSpaces.Add(node.Id);
+        Assert.False(Admit(sim, entrant, node));
+        Assert.Contains(holder.Id.ToString(), entrant.Cause);
+        holder.ManoeuvreSpaces.Clear();
+        var unblocked = sim.SaveToJson();
+        var liveDecision = Admit(sim, entrant, node);
+        var reloaded = CitySimulation.FromJson(unblocked);
+        var reloadEntrant = reloaded.State.Vehicles.Single(v => v.Id == entrant.Id);
+        var reloadNode = reloaded.State.Roads.Single(r => r.Id == node.Id);
+        Assert.Equal(liveDecision, Admit(reloaded, reloadEntrant, reloadNode));
+        Assert.DoesNotContain(holder.Id.ToString(), entrant.Cause);
+        Assert.DoesNotContain(holder.Id.ToString(), reloadEntrant.Cause);
+
+        // Test a fresh admission, not a vehicle already admitted to the area.
+        entrant.ManoeuvreSpaces.Clear();
+        entrant.IntersectionClaim = null;
+        entrant.IntersectionEnteredAt = null;
+        holder.ManoeuvreSpaces.Add(node.Id);
+        Assert.False(Admit(sim, entrant, node));
+        Assert.Contains(holder.Id.ToString(), entrant.Cause);
+        var blocked = CitySimulation.FromJson(sim.SaveToJson());
+        Assert.False(Admit(blocked,
+            blocked.State.Vehicles.Single(v => v.Id == entrant.Id),
+            blocked.State.Roads.Single(r => r.Id == node.Id)));
+    }
 }
