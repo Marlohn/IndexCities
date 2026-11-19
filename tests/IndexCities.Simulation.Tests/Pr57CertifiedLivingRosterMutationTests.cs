@@ -385,4 +385,42 @@ public sealed class Pr57CertifiedLivingRosterMutationTests
             Assert.Equal(count, Counter(resumed, "_pr57RosterScanned"));
         }
     }
+
+    [Fact]
+    public void Certified_roster_is_invalidated_by_interleaved_public_advance_and_external_alive_change()
+    {
+        var seed = CityCycleTests.City();
+        for (var hour = 0; hour < 48; hour++) seed.Advance(3600);
+        var json = seed.SaveToJson();
+        var baseline = CitySimulation.FromJson(json);
+        var candidate = CitySimulation.FromJson(json);
+        var id = baseline.State.Citizens.First(c => c.Alive).Id;
+
+        for (var quantum = 0; quantum < 4; quantum++)
+        {
+            baseline.Advance(2);
+            candidate.Pr57AdvanceCertifiedQuantum();
+            Assert.Equal(baseline.SaveToJson(), candidate.SaveToJson());
+        }
+
+        // Public Advance is untrusted and must break the prior certified
+        // reuse window even when the collection count is unchanged.
+        foreach (var sim in new[] { baseline, candidate })
+            sim.State.Citizens.Single(c => c.Id == id).Alive = false;
+        baseline.Advance(2);
+        candidate.Advance(2);
+        Assert.Equal(baseline.SaveToJson(), candidate.SaveToJson());
+
+        for (var quantum = 0; quantum < 5; quantum++)
+        {
+            baseline.Advance(2);
+            candidate.Pr57AdvanceCertifiedQuantum();
+            Assert.Equal(baseline.SaveToJson(), candidate.SaveToJson());
+        }
+
+        var resumed = CitySimulation.FromJson(candidate.SaveToJson());
+        baseline.Advance(2);
+        resumed.Pr57AdvanceCertifiedQuantum();
+        Assert.Equal(baseline.SaveToJson(), resumed.SaveToJson());
+    }
 }
