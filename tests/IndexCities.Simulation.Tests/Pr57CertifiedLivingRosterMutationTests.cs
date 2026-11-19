@@ -528,6 +528,15 @@ public sealed class Pr57CertifiedLivingRosterMutationTests
             Assert.True(bitsA == bitsB,
                 $"Baseline lake divergence scenario={scenario} quantum={quantum} A=0x{bitsA:X16} B=0x{bitsB:X16}");
             Assert.Equal(a.SaveToJson(), b.SaveToJson());
+            // Reload only one replay halfway through: a baseline serialization
+            // boundary must not hide or introduce a one-ULP difference.
+            if (quantum == 15)
+            {
+                b = CitySimulation.FromJson(b.SaveToJson());
+                Assert.Equal(a.SaveToJson(), b.SaveToJson());
+                Assert.Equal(BitConverter.DoubleToInt64Bits(a.State.LakePollution),
+                    BitConverter.DoubleToInt64Bits(b.State.LakePollution));
+            }
         }
     }
 
