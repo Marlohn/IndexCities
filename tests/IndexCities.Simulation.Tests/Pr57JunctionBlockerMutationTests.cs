@@ -106,4 +106,49 @@ public sealed class Pr57JunctionBlockerMutationTests
         Assert.Equal(before, CitySimulation.FromJson(before).SaveToJson());
     }
 
+    [Fact]
+    public void Junction_occupant_rechecks_external_claim_mutation_and_save_reload()
+    {
+        var sim = new CitySimulation(42);
+        var junction = new RoadNode
+        {
+            Id = 992101, Position = new Point(0, 0),
+            Neighbours = new List<int> { 992102, 992103, 992104 }
+        };
+        sim.State.Roads.Add(junction);
+        sim.State.Roads.Add(new RoadNode { Id = 992102, Position = new Point(4, 0), Neighbours = new List<int> { 992101 } });
+        sim.State.Roads.Add(new RoadNode { Id = 992103, Position = new Point(0, 4), Neighbours = new List<int> { 992101 } });
+        sim.State.Roads.Add(new RoadNode { Id = 992104, Position = new Point(-4, 0), Neighbours = new List<int> { 992101 } });
+        sim.State.Vehicles.Add(new Vehicle { Id = 992201, Position = new Point(0, 0), Status = VehicleStatus.Travelling });
+        sim.State.Vehicles.Add(new Vehicle
+        {
+            Id = 992202, Position = new Point(1, 0),
+            Status = VehicleStatus.Travelling, IntersectionClaim = junction.Id
+        });
+        sim = CitySimulation.FromJson(sim.SaveToJson());
+        var entrant = sim.State.Vehicles.Single(v => v.Id == 992201);
+        var occupant = sim.State.Vehicles.Single(v => v.Id == 992202);
+        var node = sim.State.Roads.Single(r => r.Id == junction.Id);
+        var method = typeof(CitySimulation).GetMethod("MayEnterJunction",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(method);
+        bool Admit() => (bool)method!.Invoke(sim, new object[] { entrant, node })!;
+
+        Assert.False(Admit());
+        Assert.Contains(occupant.Id.ToString(), entrant.Cause);
+        // A live external mutation must invalidate any remembered blocker.
+        occupant.Position = new Point(40, 0);
+        occupant.IntersectionClaim = null;
+        var afterMutation = sim.SaveToJson();
+        var admittedLive = Admit();
+        var causeLive = entrant.Cause;
+        var restored = CitySimulation.FromJson(afterMutation);
+        var restoredEntrant = restored.State.Vehicles.Single(v => v.Id == entrant.Id);
+        var restoredNode = restored.State.Roads.Single(r => r.Id == node.Id);
+        var admittedReloaded = (bool)method!.Invoke(restored, new object[] { restoredEntrant, restoredNode })!;
+        Assert.Equal(admittedLive, admittedReloaded);
+        Assert.Equal(causeLive, restoredEntrant.Cause);
+        Assert.DoesNotContain(occupant.Id.ToString(), entrant.Cause);
+    }
+
 }
