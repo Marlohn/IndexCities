@@ -154,4 +154,45 @@ public sealed class Pr57CertifiedLivingRosterMutationTests
         }
     }
 
+    [Fact]
+    public void Public_advance_rebuilds_roster_after_external_alive_mutation_at_constant_count()
+    {
+        var seed = CityCycleTests.City();
+        for (var hour = 0; hour < 48; hour++) seed.Advance(3600);
+        var json = seed.SaveToJson();
+        var baseline = CitySimulation.FromJson(json);
+        var probe = CitySimulation.FromJson(json);
+        var id = baseline.State.Citizens.First(c => c.Alive).Id;
+        var count = baseline.State.Citizens.Count;
+
+        static long Rebuilds(CitySimulation sim)
+        {
+            var field = typeof(CitySimulation).GetField(
+                "_pr57RosterRebuilds", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(field);
+            return (long)field.GetValue(sim)!;
+        }
+
+        // Every public Advance(2) is an untrusted boundary, even if Count is unchanged.
+        // Mutate Alive in both copies and compare full serialized causal state each time.
+        foreach (var alive in new[] { true, false, true, false, true })
+        {
+            baseline.State.Citizens.Single(c => c.Id == id).Alive = alive;
+            probe.State.Citizens.Single(c => c.Id == id).Alive = alive;
+            Assert.Equal(count, baseline.State.Citizens.Count);
+            Assert.Equal(count, probe.State.Citizens.Count);
+            var before = Rebuilds(probe);
+            baseline.Advance(2);
+            probe.Advance(2);
+            Assert.Equal(baseline.SaveToJson(), probe.SaveToJson());
+            if (Environment.GetEnvironmentVariable("PR57_LIVING_ROSTER") == "1")
+                Assert.Equal(before + 1, Rebuilds(probe));
+        }
+
+        var resumed = CitySimulation.FromJson(probe.SaveToJson());
+        baseline.Advance(2);
+        resumed.Advance(2);
+        Assert.Equal(baseline.SaveToJson(), resumed.SaveToJson());
+    }
+
 }
