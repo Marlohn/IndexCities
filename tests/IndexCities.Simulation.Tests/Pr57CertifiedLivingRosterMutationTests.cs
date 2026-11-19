@@ -501,6 +501,36 @@ public sealed class Pr57CertifiedLivingRosterMutationTests
         Assert.Equal(baseline.SaveToJson(), resumed.SaveToJson());
     }
 
+    // Baseline-only control: catches non-determinism without enabling either
+    // the certified roster or the pollution-order normalization. The retained
+    // authentic-derived snapshots are supplied by the existing #206 gate.
+    [Theory]
+    [InlineData("realA-control")]
+    [InlineData("congested-control")]
+    public void Original_baseline_replay_preserves_exact_lake_bits_and_json(string scenario)
+    {
+        var root = Environment.GetEnvironmentVariable("PR57_REAL_SNAPSHOT_DIR");
+        if (string.IsNullOrWhiteSpace(root)) return;
+        Assert.True(Directory.Exists(root));
+        var candidates = Directory.GetFiles(root, "checkpoint-0.json", SearchOption.AllDirectories)
+            .Where(p => string.Equals(Path.GetFileName(Path.GetDirectoryName(p)),
+                scenario, StringComparison.Ordinal)).ToArray();
+        Assert.Single(candidates);
+        var initial = File.ReadAllText(candidates[0]);
+        var a = CitySimulation.FromJson(initial);
+        var b = CitySimulation.FromJson(initial);
+        for (var quantum = 0; quantum < 32; quantum++)
+        {
+            a.Advance(2);
+            b.Advance(2);
+            var bitsA = BitConverter.DoubleToInt64Bits(a.State.LakePollution);
+            var bitsB = BitConverter.DoubleToInt64Bits(b.State.LakePollution);
+            Assert.True(bitsA == bitsB,
+                $"Baseline lake divergence scenario={scenario} quantum={quantum} A=0x{bitsA:X16} B=0x{bitsB:X16}");
+            Assert.Equal(a.SaveToJson(), b.SaveToJson());
+        }
+    }
+
     [Fact]
     public void Certified_roster_is_invalidated_by_interleaved_public_advance_and_external_alive_change()
     {
