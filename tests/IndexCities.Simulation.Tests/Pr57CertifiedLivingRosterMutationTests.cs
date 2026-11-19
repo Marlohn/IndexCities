@@ -341,4 +341,48 @@ public sealed class Pr57CertifiedLivingRosterMutationTests
         resumed.Pr57AdvanceCertifiedQuantum();
         Assert.Equal(baseline.SaveToJson(), resumed.SaveToJson());
     }
+
+    [Fact]
+    public void Certified_save_load_discards_cached_roster_and_rebuilds_once()
+    {
+        var seed = CityCycleTests.City();
+        for (var hour = 0; hour < 48; hour++) seed.Advance(3600);
+        var json = seed.SaveToJson();
+        var baseline = CitySimulation.FromJson(json);
+        var certified = CitySimulation.FromJson(json);
+        for (var quantum = 0; quantum < 6; quantum++)
+        {
+            baseline.Advance(2);
+            certified.Pr57AdvanceCertifiedQuantum();
+            Assert.Equal(baseline.SaveToJson(), certified.SaveToJson());
+        }
+
+        // Serialization must never carry the private certified cache into a
+        // new simulation, even when the public population remains unchanged.
+        var resumed = CitySimulation.FromJson(certified.SaveToJson());
+        var count = resumed.State.Citizens.Count;
+        static long Counter(CitySimulation sim, string name)
+        {
+            var field = typeof(CitySimulation).GetField(name,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(field);
+            return (long)field.GetValue(sim)!;
+        }
+        if (Environment.GetEnvironmentVariable("PR57_LIVING_ROSTER") == "1")
+        {
+            Assert.Equal(0, Counter(resumed, "_pr57RosterRebuilds"));
+            Assert.Equal(0, Counter(resumed, "_pr57RosterScanned"));
+        }
+        for (var quantum = 0; quantum < 6; quantum++)
+        {
+            baseline.Advance(2);
+            resumed.Pr57AdvanceCertifiedQuantum();
+            Assert.Equal(baseline.SaveToJson(), resumed.SaveToJson());
+        }
+        if (Environment.GetEnvironmentVariable("PR57_LIVING_ROSTER") == "1")
+        {
+            Assert.Equal(1, Counter(resumed, "_pr57RosterRebuilds"));
+            Assert.Equal(count, Counter(resumed, "_pr57RosterScanned"));
+        }
+    }
 }
