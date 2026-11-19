@@ -407,9 +407,20 @@ public sealed class Pr57CertifiedLivingRosterMutationTests
         // reuse window even when the collection count is unchanged.
         foreach (var sim in new[] { baseline, candidate })
             sim.State.Citizens.Single(c => c.Id == id).Alive = false;
+        static long Rebuilds(CitySimulation sim)
+        {
+            var field = typeof(CitySimulation).GetField(
+                "_pr57RosterRebuilds", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(field);
+            return (long)field.GetValue(sim)!;
+        }
+        var beforePublic = Rebuilds(candidate);
         baseline.Advance(2);
         candidate.Advance(2);
         Assert.Equal(baseline.SaveToJson(), candidate.SaveToJson());
+        if (Environment.GetEnvironmentVariable("PR57_LIVING_ROSTER") == "1")
+            Assert.Equal(beforePublic + 1, Rebuilds(candidate));
+        var afterPublic = Rebuilds(candidate);
 
         for (var quantum = 0; quantum < 5; quantum++)
         {
@@ -417,6 +428,9 @@ public sealed class Pr57CertifiedLivingRosterMutationTests
             candidate.Pr57AdvanceCertifiedQuantum();
             Assert.Equal(baseline.SaveToJson(), candidate.SaveToJson());
         }
+
+        if (Environment.GetEnvironmentVariable("PR57_LIVING_ROSTER") == "1")
+            Assert.Equal(afterPublic + 1, Rebuilds(candidate));
 
         var resumed = CitySimulation.FromJson(candidate.SaveToJson());
         baseline.Advance(2);
