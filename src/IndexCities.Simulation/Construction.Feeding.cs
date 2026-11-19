@@ -235,17 +235,9 @@ public sealed partial class CitySimulation
                 .Select(t=>(t,t.Position,t.Heading)));
         }
         if(machinesOnly&&reserved.Count==0&&!siteOwners.Any(other=>other.Machine!=PavingMachine.None&&other.Status!=VehicleStatus.Outside&&other.Position.Distance(vehicle.Position)<=distance+12)){Pr57S5SiteObserve(vehicle,distance,distance,machinesOnly,reserved.Count,siteOwners.Count);return distance;}
-        // PR57 opt-in: an immutable broad phase for this single call only. Every
-        // sampled pose lies within 'distance' of the starting pose; a body
-        // farther than distance+12 cannot pass the canonical <12 gate.
-        // Do not persist across calls/slices: vehicle poses are externally mutable.
-        var pr57CorridorEnabled=Environment.GetEnvironmentVariable("PR57_SITE_CORRIDOR_PREFILTER")=="1";
-        var pr57CorridorCandidates=pr57CorridorEnabled
-            ?siteOwners.Where(other=>other.Position.Distance(vehicle.Position)<=distance+12).ToList()
-            :null;
         var safe=0.0;
         while(safe<distance-.000001){var next=Math.Min(distance,safe+.5);var at=vehicle.Position.MoveTowards(target,next);
-            if((pr57CorridorCandidates??(machinesOnly?siteOwners:State.Vehicles)).Any(other=>other.Id!=vehicle.Id&&other.Status!=VehicleStatus.Outside&&(!machinesOnly||other.Machine!=PavingMachine.None&&(other.Status==VehicleStatus.Parked||!(other.Position.Distance(State.Entry)<8&&vehicle.Position.Distance(State.Entry)<8)))&&other.Position.Distance(at)<12&&VehicleBodiesOverlap(vehicle,at,other)))break;
+            if((machinesOnly?siteOwners:State.Vehicles).Any(other=>other.Id!=vehicle.Id&&other.Status!=VehicleStatus.Outside&&(!machinesOnly||other.Machine!=PavingMachine.None&&(other.Status==VehicleStatus.Parked||!(other.Position.Distance(State.Entry)<8&&vehicle.Position.Distance(State.Entry)<8)))&&other.Position.Distance(at)<12&&VehicleBodiesOverlap(vehicle,at,other)))break;
             if(reserved.Any(pose=>pose.Position.Distance(at)<12&&BodiesOverlap(vehicle,at,vehicle.Heading,pose.Machine,pose.Position,pose.Heading)))break;
             safe=next;
         }
