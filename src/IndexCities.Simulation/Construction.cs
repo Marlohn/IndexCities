@@ -148,7 +148,6 @@ public sealed partial class CitySimulation
     static readonly bool Pr57EmptyDepotReservationGuardEnabled=
         Environment.GetEnvironmentVariable("PR57_EMPTY_DEPOT_RESERVATION_GUARD")=="1";
     bool _pr57EmptyDepotGuardAnnounced;
-    static readonly bool Pr57ReserveActiveSnapshotEnabled=Environment.GetEnvironmentVariable("PR57_RESERVE_ACTIVE_SNAPSHOT")=="1";
     void ReserveLocalMaterials()
     {
         var depot=State.Buildings.FirstOrDefault(b=>b.Kind==BuildingKind.WorksDepot&&b.Completed&&!b.Removed&&!b.OperationClosed);if(depot==null)return;
@@ -167,23 +166,12 @@ public sealed partial class CitySimulation
                 return;
             }
         }
-        // PR57 isolated opt-in: material reservation uses one stable active-project
-        // snapshot per invocation. Status and membership cannot change inside this
-        // synchronous method; reservation amounts remain read live for each kind.
-        // The original enumeration/order and all material/ledger rules are retained.
-        var pr57ReserveActive=Pr57ReserveActiveSnapshotEnabled
-            ?State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress).ToArray()
-            :null;
         var pendingByProject=!Pr57SharedStepShipmentsEnabled&&Pr57DispatchShipmentLookup
             ?Pr57ConstructionShipmentSource().Where(s=>s.ProjectId!=null&&!s.Complete).ToLookup(s=>s.ProjectId)
             :null;
         foreach(var k in Enum.GetValues<ResourceKind>().Where(k=>k!=ResourceKind.Food&&k!=ResourceKind.Fuel)){
-            var free=depot.Quantity(k)-(pr57ReserveActive is null
-                ?State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress).Sum(p=>p.LocalReserved.GetValueOrDefault(k))
-                :pr57ReserveActive.Sum(p=>p.LocalReserved.GetValueOrDefault(k)));
-            foreach(var p in (pr57ReserveActive is null
-                ?State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress)
-                :pr57ReserveActive.AsEnumerable()).OrderBy(p=>p.Id)){
+            var free=depot.Quantity(k)-State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress).Sum(p=>p.LocalReserved.GetValueOrDefault(k));
+            foreach(var p in State.Projects.Where(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress).OrderBy(p=>p.Id)){
                 if(CostProfile is { } census)census.ConstructionReserveProjects++;
                 var pending=Pr57SharedStepShipmentsEnabled?Pr57SharedPendingProjectShipments(p.Id).Sum(s=>s.Cargo.GetValueOrDefault(k)):pendingByProject==null?Pr57ConstructionShipmentSource().Where(s=>s.ProjectId==p.Id&&!s.Complete).Sum(s=>s.Cargo.GetValueOrDefault(k)):pendingByProject[p.Id].Sum(s=>s.Cargo.GetValueOrDefault(k));var need=p.Required.GetValueOrDefault(k)-p.Delivered.GetValueOrDefault(k)-pending-p.LocalReserved.GetValueOrDefault(k);var reserve=Math.Max(0,Math.Min(free,need));p.LocalReserved.AddAmount(k,reserve);free-=reserve;
             }
