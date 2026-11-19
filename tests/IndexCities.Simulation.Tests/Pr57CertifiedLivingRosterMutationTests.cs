@@ -296,6 +296,19 @@ public sealed class Pr57CertifiedLivingRosterMutationTests
         certified.Pr57AdvanceCertifiedQuantum();
         Assert.Equal(baseline.SaveToJson(), certified.SaveToJson());
 
+        // Count the actual invalidation cost, not just JSON equality: a stale
+        // roster may look correct when both swapped citizens are temporarily idle.
+        static long Counter(CitySimulation sim, string name)
+        {
+            var field = typeof(CitySimulation).GetField(name,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(field);
+            return (long)field.GetValue(sim)!;
+        }
+        var aliveBeforeSwap = certified.State.Citizens.Count(c => c.Alive);
+        var rebuildsBeforeSwap = Counter(certified, "_pr57RosterRebuilds");
+        var scannedBeforeSwap = Counter(certified, "_pr57RosterScanned");
+
         // Swap membership without changing either Citizens.Count or living count.
         // A count-only roster cache would silently retain the wrong citizen.
         foreach (var sim in new[] { baseline, certified })
@@ -307,6 +320,7 @@ public sealed class Pr57CertifiedLivingRosterMutationTests
             first.Alive = true;
             second.Alive = false;
             Assert.Equal(population, sim.State.Citizens.Count);
+            Assert.Equal(aliveBeforeSwap, sim.State.Citizens.Count(c => c.Alive));
         }
         certified.Pr57InvalidateCertifiedBoundary();
         for (var quantum = 0; quantum < 5; quantum++)
@@ -314,6 +328,13 @@ public sealed class Pr57CertifiedLivingRosterMutationTests
             baseline.Advance(2);
             certified.Pr57AdvanceCertifiedQuantum();
             Assert.Equal(baseline.SaveToJson(), certified.SaveToJson());
+        }
+        if (Environment.GetEnvironmentVariable("PR57_LIVING_ROSTER") == "1")
+        {
+            Assert.Equal(rebuildsBeforeSwap + 1,
+                Counter(certified, "_pr57RosterRebuilds"));
+            Assert.Equal(scannedBeforeSwap + population,
+                Counter(certified, "_pr57RosterScanned"));
         }
         var resumed = CitySimulation.FromJson(certified.SaveToJson());
         baseline.Advance(2);
