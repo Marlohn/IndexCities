@@ -362,8 +362,47 @@ jobs:
                       assert (prefix/checkpoint).is_file(),(case,trial,checkpoint)
               for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
                   baseline=(root/f'{case}-A1'/checkpoint).read_bytes()
-                  assert all((root/f'{case}-{trial}'/checkpoint).read_bytes()==baseline
-                             for trial in ('B1','B2','A2')),(case,checkpoint,'FULL_JSON_MISMATCH')
+                  for trial in ('B1','B2','A2'):
+                      candidate=(root/f'{case}-{trial}'/checkpoint).read_bytes()
+                      if candidate == baseline:
+                          continue
+                      import json, decimal, hashlib
+                      def first_difference(left,right,path='
+              a=statistics.mean(values[t]['wall'] for t in ('A1','A2'))
+              b=statistics.mean(values[t]['wall'] for t in ('B1','B2'))
+              assert a>0 and b>0
+              print('PR57_RESERVE_SNAPSHOT_ABBA',case,'baselineWall',a,'optWall',b,
+                    'ratio',a/b,'baselineCpu',statistics.mean(values[t]['cpu'] for t in ('A1','A2')),
+                    'optCpu',statistics.mean(values[t]['cpu'] for t in ('B1','B2')),
+                    'baselineAllocMB',statistics.mean(values[t]['allocMB'] for t in ('A1','A2')),
+                    'optAllocMB',statistics.mean(values[t]['allocMB'] for t in ('B1','B2')),
+                    'parity','EXACT_FULL_JSON','checkpoints',3,
+                    'limitation','SMALL_REAL_SAVES_NOT_10K')
+          PY
+      ):
+                          if type(left) is not type(right):
+                              return path,repr(left)[:180],repr(right)[:180]
+                          if isinstance(left,dict):
+                              for key in sorted(left.keys() | right.keys()):
+                                  if key not in left or key not in right:
+                                      return path+'.'+key,repr(left.get(key,'<missing>'))[:180],repr(right.get(key,'<missing>'))[:180]
+                                  found=first_difference(left[key],right[key],path+'.'+key)
+                                  if found: return found
+                          elif isinstance(left,list):
+                              if len(left)!=len(right): return path+'.length',str(len(left)),str(len(right))
+                              for index,(a,b) in enumerate(zip(left,right)):
+                                  found=first_difference(a,b,path+'['+str(index)+']')
+                                  if found: return found
+                          elif left != right:
+                              return path,repr(left)[:180],repr(right)[:180]
+                          return None
+                      left=json.loads(baseline,parse_float=decimal.Decimal)
+                      right=json.loads(candidate,parse_float=decimal.Decimal)
+                      print('PR57_RESERVE_EXACT_DIVERGENCE',case,trial,checkpoint,
+                            'baselineSha256',hashlib.sha256(baseline).hexdigest(),
+                            'candidateSha256',hashlib.sha256(candidate).hexdigest(),
+                            'firstDifference',first_difference(left,right),flush=True)
+                      raise AssertionError((case,trial,checkpoint,'FULL_JSON_MISMATCH'))
               a=statistics.mean(values[t]['wall'] for t in ('A1','A2'))
               b=statistics.mean(values[t]['wall'] for t in ('B1','B2'))
               assert a>0 and b>0
