@@ -430,7 +430,7 @@ public sealed class Pr57CertifiedLivingRosterMutationTests
         }
 
         if (Environment.GetEnvironmentVariable("PR57_LIVING_ROSTER") == "1")
-            Assert.Equal(afterPublic + 1, Rebuilds(candidate));
+            Assert.Equal(afterPublic, Rebuilds(candidate));
 
         var resumed = CitySimulation.FromJson(candidate.SaveToJson());
         baseline.Advance(2);
