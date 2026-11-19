@@ -272,4 +272,52 @@ public sealed class Pr57CertifiedLivingRosterMutationTests
         resumed.Pr57AdvanceCertifiedQuantum();
         Assert.Equal(baseline.SaveToJson(), resumed.SaveToJson());
     }
+
+    [Fact]
+    public void Certified_boundary_rebuilds_when_living_membership_swaps_at_fixed_population_and_alive_count()
+    {
+        var seed = CityCycleTests.City();
+        for (var hour = 0; hour < 48; hour++) seed.Advance(3600);
+        var json = seed.SaveToJson();
+        var baseline = CitySimulation.FromJson(json);
+        var certified = CitySimulation.FromJson(json);
+        var ids = baseline.State.Citizens.Where(c => c.Alive).Take(2).Select(c => c.Id).ToArray();
+        Assert.Equal(2, ids.Length);
+        var population = baseline.State.Citizens.Count;
+
+        // Establish a cached roster, then remove one member at a certified boundary.
+        baseline.Advance(2);
+        certified.Pr57AdvanceCertifiedQuantum();
+        Assert.Equal(baseline.SaveToJson(), certified.SaveToJson());
+        foreach (var sim in new[] { baseline, certified })
+            sim.State.Citizens.Single(c => c.Id == ids[0]).Alive = false;
+        certified.Pr57InvalidateCertifiedBoundary();
+        baseline.Advance(2);
+        certified.Pr57AdvanceCertifiedQuantum();
+        Assert.Equal(baseline.SaveToJson(), certified.SaveToJson());
+
+        // Swap membership without changing either Citizens.Count or living count.
+        // A count-only roster cache would silently retain the wrong citizen.
+        foreach (var sim in new[] { baseline, certified })
+        {
+            var first = sim.State.Citizens.Single(c => c.Id == ids[0]);
+            var second = sim.State.Citizens.Single(c => c.Id == ids[1]);
+            Assert.False(first.Alive);
+            Assert.True(second.Alive);
+            first.Alive = true;
+            second.Alive = false;
+            Assert.Equal(population, sim.State.Citizens.Count);
+        }
+        certified.Pr57InvalidateCertifiedBoundary();
+        for (var quantum = 0; quantum < 5; quantum++)
+        {
+            baseline.Advance(2);
+            certified.Pr57AdvanceCertifiedQuantum();
+            Assert.Equal(baseline.SaveToJson(), certified.SaveToJson());
+        }
+        var resumed = CitySimulation.FromJson(certified.SaveToJson());
+        baseline.Advance(2);
+        resumed.Pr57AdvanceCertifiedQuantum();
+        Assert.Equal(baseline.SaveToJson(), resumed.SaveToJson());
+    }
 }
