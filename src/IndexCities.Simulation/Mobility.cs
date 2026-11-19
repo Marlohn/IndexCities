@@ -1251,19 +1251,16 @@ public sealed partial class CitySimulation
                 // heading/Ahead/body tests. The old order and all original exact predicates
                 // remain in the control path; no finite lane-leader cutoff is introduced.
                 var pr57BendSelectStart=pr57MotionCensus?System.Diagnostics.Stopwatch.GetTimestamp():0L;
-                // PR57 opt-in: reuse only within this quantum; external mutations are observed next quantum.
-                var pr57BendEntryGuard=Environment.GetEnvironmentVariable("PR57_BEND_ENTRY_GUARD")=="1";
-                var pr57BendVehicleNearEntry=pr57BendEntryGuard&&v.Position.Distance(State.Entry)<8;
                 var bendLeaders=pr57BendReuse?pr57BendLeadersReuse!:pr57BendPrefilter?new List<Vehicle>():pr57BendList.Where(o=>o.Id!=v.Id&&o.Status is VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded&&Math.Cos(o.Heading-v.Heading)>.5&&Ahead(v,o)>0&&
                     Math.Abs((o.Position.X-v.Position.X)*Math.Cos(v.Heading)-(o.Position.Z-v.Position.Z)*Math.Sin(v.Heading))>=2.6&&o.Position.Distance(v.Position)<=step+12&&
-                    !(o.Position.Distance(State.Entry)<8&&(pr57BendEntryGuard?pr57BendVehicleNearEntry:v.Position.Distance(State.Entry)<8))).ToList();
+                    !(o.Position.Distance(State.Entry)<8&&v.Position.Distance(State.Entry)<8)).ToList();
                 if(pr57BendReuse){
                     // Same short-circuit predicate as the control LINQ Where; no new spatial cutoff.
                     bendLeaders.Clear();
                     foreach(var o in pr57BendList)
                         if(o.Id!=v.Id&&o.Status is VehicleStatus.Travelling or VehicleStatus.Waiting or VehicleStatus.Stranded&&Math.Cos(o.Heading-v.Heading)>.5&&Ahead(v,o)>0&&
                            Math.Abs((o.Position.X-v.Position.X)*Math.Cos(v.Heading)-(o.Position.Z-v.Position.Z)*Math.Sin(v.Heading))>=2.6&&o.Position.Distance(v.Position)<=step+12&&
-                           !(o.Position.Distance(State.Entry)<8&&(pr57BendEntryGuard?pr57BendVehicleNearEntry:v.Position.Distance(State.Entry)<8)))bendLeaders.Add(o);
+                           !(o.Position.Distance(State.Entry)<8&&v.Position.Distance(State.Entry)<8))bendLeaders.Add(o);
                 }
                 else if(pr57BendPrefilter){
                     var reach=step+12;
@@ -1276,7 +1273,7 @@ public sealed partial class CitySimulation
                         near++;
                         if(Math.Cos(o.Heading-v.Heading)>.5&&Ahead(v,o)>0&&
                             Math.Abs((o.Position.X-v.Position.X)*Math.Cos(v.Heading)-(o.Position.Z-v.Position.Z)*Math.Sin(v.Heading))>=2.6&&
-                            !(o.Position.Distance(State.Entry)<8&&(pr57BendEntryGuard?pr57BendVehicleNearEntry:v.Position.Distance(State.Entry)<8)))bendLeaders.Add(o);
+                            !(o.Position.Distance(State.Entry)<8&&v.Position.Distance(State.Entry)<8))bendLeaders.Add(o);
                     }
                     if(scanProfile is not null){scanProfile.BendPrefilterCandidates+=pr57BendList.Count;scanProfile.BendPrefilterNear+=near;}
                 }
