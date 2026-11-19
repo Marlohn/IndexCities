@@ -64,7 +64,7 @@ jobs:
         run: |
           set -euo pipefail
           dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
-          PR57_LIVING_ROSTER=1 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+          PR57_LIVING_ROSTER=1 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity normal
       # Original October artifacts expired. These retained November snapshots
       # are derived from authentic resumed saves, not original source saves.
       - name: Restore retained authentic-derived snapshots
