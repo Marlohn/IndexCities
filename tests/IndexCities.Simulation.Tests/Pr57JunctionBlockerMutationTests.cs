@@ -149,6 +149,17 @@ public sealed class Pr57JunctionBlockerMutationTests
         Assert.Equal(admittedLive, admittedReloaded);
         Assert.Equal(causeLive, restoredEntrant.Cause);
         Assert.DoesNotContain(occupant.Id.ToString(), entrant.Cause);
+        // Reintroduce the same blocker after a save/load boundary. The next
+        // admission must observe both external fields, not a stale no-blocker result.
+        occupant.Position = new Point(1, 0);
+        occupant.IntersectionClaim = node.Id;
+        Assert.False(Admit());
+        Assert.Contains(occupant.Id.ToString(), entrant.Cause);
+        var restoredBlocked = CitySimulation.FromJson(sim.SaveToJson());
+        var restoredBlockedEntrant = restoredBlocked.State.Vehicles.Single(v => v.Id == entrant.Id);
+        var restoredBlockedNode = restoredBlocked.State.Roads.Single(r => r.Id == node.Id);
+        Assert.False((bool)method.Invoke(restoredBlocked, new object[] { restoredBlockedEntrant, restoredBlockedNode })!);
+        Assert.Contains(occupant.Id.ToString(), restoredBlockedEntrant.Cause);
     }
 
 }
