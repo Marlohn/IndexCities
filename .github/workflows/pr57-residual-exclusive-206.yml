@@ -214,7 +214,7 @@ jobs:
                   assert 'INVARIANTS OK' in log,(case,mode,'invariants')
                   lines=[line for line in log.splitlines() if 'PR57_CROSSING_OCCUPANCY checks=' in line]
                   assert lines,(case,mode,'missing census')
-                  totals={key:sum(int(m.group(1)) for line in lines if (m:=re.search(r'\\b'+key+r'=(\\d+)',line))) for key in ('checks','candidates','fallbacks','builds')}
+                  totals={key:sum(int(m.group(1)) for line in lines if (m:=re.search(r'\b'+key+r'=(\d+)',line))) for key in ('checks','candidates','fallbacks','builds')}
                   print('PR57_CROSSING_INDEX_CENSUS',case,mode,totals)
                   if mode=='B':
                       assert totals['checks']>0,(case,'index never exercised')
