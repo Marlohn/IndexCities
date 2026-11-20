@@ -131,6 +131,23 @@ public sealed class Pr57LakeBaselineOrderTests
         Assert.Equal(LakeBits(original), LakeBits(originalReload));
         Assert.Equal(LakeBits(mutated), LakeBits(mutatedReload));
         Console.WriteLine($"PR57_LAKE_INTEGRATED_REINSERT_JSON exact={originalJson == mutatedJson} originalBytes={originalJson.Length} mutatedBytes={mutatedJson.Length}");
+        // Resume both streams from their exact saved states. This detects
+        // serialization-dependent causal drift without assuming that two
+        // different insertion histories must have identical raw JSON.
+        for (var resumedStep = 0; resumedStep < 3; resumedStep++)
+        {
+            original.Advance(2);
+            originalReload.Advance(2);
+            mutated.Advance(2);
+            mutatedReload.Advance(2);
+            var originalExact = original.SaveToJson() == originalReload.SaveToJson();
+            var mutatedExact = mutated.SaveToJson() == mutatedReload.SaveToJson();
+            Console.WriteLine($"PR57_LAKE_REINSERT_RESUME step={resumedStep + 1} originalExact={originalExact} mutatedExact={mutatedExact} originalBits={LakeBits(original):X16}/{LakeBits(originalReload):X16} mutatedBits={LakeBits(mutated):X16}/{LakeBits(mutatedReload):X16}");
+            Assert.Equal(LakeBits(original), LakeBits(originalReload));
+            Assert.Equal(LakeBits(mutated), LakeBits(mutatedReload));
+            Assert.True(originalExact, "Baseline continuation changed after save/load.");
+            Assert.True(mutatedExact, "Externally reordered continuation changed after save/load.");
+        }
     }
 
 }
