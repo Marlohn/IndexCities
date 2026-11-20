@@ -262,6 +262,10 @@ public sealed partial class CitySimulation
                 return State.Vehicles.Any(v=>v.Status==VehicleStatus.Travelling&&(v.IntersectionClaim==crossing.Id||v.WaitingSince==0&&v.Position.Distance(crossing.Position)<3.5));
             }
             if(pr57CrossingClaimed==null){
+                // One query is cheaper as the canonical scan; build only on repeat.
+                // No mutation has occurred yet, so the second query can snapshot safely.
+                if(pr57CrossingChecks==1)
+                    return State.Vehicles.Any(v=>v.Status==VehicleStatus.Travelling&&(v.IntersectionClaim==crossing.Id||v.WaitingSince==0&&v.Position.Distance(crossing.Position)<3.5));
                 pr57CrossingBuilds++;
                 pr57CrossingClaimed=State.Vehicles.Where(v=>v.Status==VehicleStatus.Travelling&&v.IntersectionClaim!=null)
                     .GroupBy(v=>v.IntersectionClaim!.Value).ToDictionary(g=>g.Key,g=>g.ToArray());
