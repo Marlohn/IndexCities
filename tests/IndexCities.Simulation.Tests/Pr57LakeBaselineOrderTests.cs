@@ -142,6 +142,16 @@ public sealed class Pr57LakeBaselineOrderTests
         // Resume both streams from their exact saved states. This detects
         // serialization-dependent causal drift without assuming that two
         // different insertion histories must have identical raw JSON.
+        // Inject an external order-only mutation AFTER the save/load boundary.
+        // This is deliberately distinct from the initial reinsertion: a stale
+        // pollution snapshot must not survive a mid-session public-state edit.
+        var reorderKeys = mutatedReload.State.PollutionCells.Keys.ToArray();
+        var reorderValues = reorderKeys.Select(key => (Key: key, Value: mutatedReload.State.PollutionCells[key])).ToArray();
+        foreach (var key in reorderKeys) Assert.True(mutatedReload.State.PollutionCells.Remove(key));
+        foreach (var entry in reorderValues.Reverse()) mutatedReload.State.PollutionCells.Add(entry.Key, entry.Value);
+        Assert.Equal(mutated.State.PollutionCells.OrderBy(p => p.Key).ToArray(),
+                     mutatedReload.State.PollutionCells.OrderBy(p => p.Key).ToArray());
+
         for (var resumedStep = 0; resumedStep < 3; resumedStep++)
         {
             original.Advance(2);
