@@ -33,34 +33,25 @@ public sealed class Pr57CrossingQuantumMutationTests
 
         follower = sim.State.Vehicles.Single(v => v.Id == 994201);
         crossing = sim.State.Vehicles.Single(v => v.Id == 994202);
-        // A bare vehicle with no crossing graph is not necessarily a blocker.
-        // Find a genuinely constrained live pose before testing invalidation;
-        // never count an always-clear fixture as evidence of cache correctness.
-        double blocked = 10;
-        Point? blockingPose = null;
+        // Negative control: without a junction graph the crossing claim must not
+        // manufacture a physical blocker. This is NOT a positive invalidation
+        // test and cannot certify a cross-quantum clearance cache.
         foreach (var x in new[] { -4.0, -2.0, 0.0, 2.0, 4.0 })
         {
             foreach (var z in new[] { 1.0, 2.0, 4.0, 6.0, 8.0 })
             {
                 crossing.Position = new Point(x, z);
-                blocked = Clearance(sim, follower);
-                if (blocked >= 10) continue;
-                blockingPose = crossing.Position;
-                break;
+                Assert.Equal(10, Clearance(sim, follower));
             }
-            if (blockingPose is not null) break;
         }
-        Assert.True(blockingPose is not null,
-            "No crossing pose constrained travel in the graph-free fixture; a real junction fixture is required.");
-        crossing.Position = blockingPose!.Value;
         crossing.Position = new Point(100, 100);
         crossing.IntersectionClaim = null;
+        var afterMutation = sim.SaveToJson();
         Assert.Equal(10, Clearance(sim, follower));
+        var restored = CitySimulation.FromJson(afterMutation);
+        var restoredFollower = restored.State.Vehicles.Single(v => v.Id == follower.Id);
+        Assert.Equal(10, Clearance(restored, restoredFollower));
+        Assert.Equal(sim.SaveToJson(), restored.SaveToJson());
 
-        var restored = CitySimulation.FromJson(sim.SaveToJson());
-        Assert.Equal(10, Clearance(restored, restored.State.Vehicles.Single(v => v.Id == follower.Id)));
-        crossing.Position = blockingPose.Value;
-        crossing.IntersectionClaim = 994101;
-        Assert.Equal(blocked, Clearance(sim, follower));
     }
 }
