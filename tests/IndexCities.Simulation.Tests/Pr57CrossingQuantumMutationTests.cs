@@ -406,7 +406,7 @@ public sealed class Pr57CrossingQuantumMutationTests
             city.State.Vehicles.Add(new Vehicle
             {
                 Id = id, Position = new Point(0, z), Heading = 0,
-                Status = VehicleStatus.Travelling,
+                Status = VehicleStatus.Travelling, External = true,
                 Route = new List<int> { 999201, 999202, 999203 }
             });
         var snapshot = city.SaveToJson();
@@ -418,11 +418,11 @@ public sealed class Pr57CrossingQuantumMutationTests
         var nearFollower = near.State.Vehicles.Single(v => v.Id == 999301);
         var farFollower = far.State.Vehicles.Single(v => v.Id == 999301);
         Console.WriteLine($"PR57_INTEGRATED_LANE_POSITIVE near={nearFollower.Position} far={farFollower.Position}");
-        // Run 44801042171 established that both fixtures remain at (0,0).
-        // Preserve that observed negative control; it is not evidence that
-        // lane-winner invalidation works, and must not certify a cache.
-        Assert.Equal(new Point(0, 0), nearFollower.Position);
-        Assert.Equal(nearFollower.Position, farFollower.Position);
+        // The earlier stationary fixture had no driver and could never enter
+        // physical movement. External vehicles use the canonical driver-free
+        // travel path. Require actual motion before testing a lane winner.
+        Assert.NotEqual(new Point(0, 0), farFollower.Position);
+        Assert.NotEqual(nearFollower.Position, farFollower.Position);
     }
 
 }
