@@ -477,6 +477,16 @@ public sealed class Pr57CrossingQuantumMutationTests
         near.Advance(2);
         reinsertionFresh.Advance(2);
         Assert.Equal(reinsertionFresh.SaveToJson(), near.SaveToJson());
+        // Reordering the persisted collection is another external mutation.
+        // An index may retain references only while respecting canonical
+        // iteration/tie-breaking order; compare the complete integrated state.
+        near.State.Vehicles.Reverse();
+        var reorderedSnapshot = near.SaveToJson();
+        var reorderedFresh = CitySimulation.FromJson(reorderedSnapshot);
+        Assert.Equal(reorderedSnapshot, reorderedFresh.SaveToJson());
+        near.Advance(2);
+        reorderedFresh.Advance(2);
+        Assert.Equal(reorderedFresh.SaveToJson(), near.SaveToJson());
         // A Step-scoped spatial workset must also remain causal on subsequent
         // quanta, not merely at the first post-mutation boundary. Reload a
         // fresh reference at every checkpoint to expose retained stale state.
