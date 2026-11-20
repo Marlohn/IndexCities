@@ -242,6 +242,40 @@ public sealed partial class CitySimulation
             _pr57PedestrianGridAnnounced=true;
         }
         if (pr57StateCost) _pr57CitizenSetupTicks += System.Diagnostics.Stopwatch.GetTimestamp() - pr57SetupStart;
+        // PR57 isolated opt-in: exact crossing occupancy candidate index for this citizen phase.
+        // A CitizenArrived/CitizenRoutine may change vehicles; thereafter use the canonical scan.
+        // Claims use IDs, and free-moving vehicles use a conservative 3.5m cell neighborhood.
+        var pr57CrossingOccupancyIndex=Environment.GetEnvironmentVariable("PR57_CROSSING_OCCUPANCY_INDEX")=="1";
+        var pr57CrossingOccupancyDirty=false;
+        var pr57CrossingClaimed=pr57CrossingOccupancyIndex
+            ?State.Vehicles.Where(v=>v.Status==VehicleStatus.Travelling&&v.IntersectionClaim!=null)
+                .GroupBy(v=>v.IntersectionClaim!.Value).ToDictionary(g=>g.Key,g=>g.ToArray()):null;
+        const double pr57CrossingCell=8;
+        static (int X,int Z) Pr57CrossingKey(Point p)=>((int)Math.Floor(p.X/pr57CrossingCell),(int)Math.Floor(p.Z/pr57CrossingCell));
+        var pr57CrossingNearby=pr57CrossingOccupancyIndex
+            ?State.Vehicles.Where(v=>v.Status==VehicleStatus.Travelling&&v.WaitingSince==0)
+                .GroupBy(v=>Pr57CrossingKey(v.Position)).ToDictionary(g=>g.Key,g=>g.ToArray()):null;
+        long pr57CrossingChecks=0,pr57CrossingFallbacks=0,pr57CrossingCandidates=0;
+        bool Pr57CrossingOccupied(RoadNode crossing){
+            pr57CrossingChecks++;
+            if(pr57CrossingOccupancyDirty){
+                pr57CrossingFallbacks++;
+                return State.Vehicles.Any(v=>v.Status==VehicleStatus.Travelling&&(v.IntersectionClaim==crossing.Id||v.WaitingSince==0&&v.Position.Distance(crossing.Position)<3.5));
+            }
+            if(pr57CrossingClaimed!.TryGetValue(crossing.Id,out var claimed))
+                foreach(var v in claimed){
+                    pr57CrossingCandidates++;
+                    if(v.Status==VehicleStatus.Travelling&&v.IntersectionClaim==crossing.Id)return true;
+                }
+            var key=Pr57CrossingKey(crossing.Position);
+            for(var x=key.X-1;x<=key.X+1;x++)for(var z=key.Z-1;z<=key.Z+1;z++)
+                if(pr57CrossingNearby!.TryGetValue((x,z),out var near))
+                    foreach(var v in near){
+                        pr57CrossingCandidates++;
+                        if(v.Status==VehicleStatus.Travelling&&v.WaitingSince==0&&v.Position.Distance(crossing.Position)<3.5)return true;
+                    }
+            return false;
+        }
         var pr57LoopStart = pr57StateCost ? System.Diagnostics.Stopwatch.GetTimestamp() : 0L;
         foreach(var c in Pr57CitizenAgendaEnabled?Pr57CitizenAgendaCandidates():Pr57LiveCitizens()){
             var pr57StateClass = pr57StateCost
@@ -283,9 +317,11 @@ public sealed partial class CitySimulation
                         var occupancyStart=pr57Walk240?System.Diagnostics.Stopwatch.GetTimestamp():0L;
                         // Count the predicate visits actually performed by Any (which short-circuits).
                         // The observer never influences the occupancy decision.
-                        var occupied=pr57Walk240
-                            ?State.Vehicles.Any(v=>Pr57Walk240OccupancyCandidate(v)&&v.Status==VehicleStatus.Travelling&&(v.IntersectionClaim==crossing.Id||v.WaitingSince==0&&v.Position.Distance(crossing.Position)<3.5))
-                            :State.Vehicles.Any(v=>v.Status==VehicleStatus.Travelling&&(v.IntersectionClaim==crossing.Id||v.WaitingSince==0&&v.Position.Distance(crossing.Position)<3.5));
+                        var occupied=pr57CrossingOccupancyIndex&&!pr57Walk240
+                            ?Pr57CrossingOccupied(crossing)
+                            :pr57Walk240
+                                ?State.Vehicles.Any(v=>Pr57Walk240OccupancyCandidate(v)&&v.Status==VehicleStatus.Travelling&&(v.IntersectionClaim==crossing.Id||v.WaitingSince==0&&v.Position.Distance(crossing.Position)<3.5))
+                                :State.Vehicles.Any(v=>v.Status==VehicleStatus.Travelling&&(v.IntersectionClaim==crossing.Id||v.WaitingSince==0&&v.Position.Distance(crossing.Position)<3.5));
                         if(pr57Walk240)Pr57Walk240Record(2,occupancyStart);
                         if(occupied){c.Activity="Aguardando travessia";break;}Pr57317SetCrossing(c,crossing.Id,"acquire");Pr57Crossing292Acquire(c,crossing.Id);
                     }
@@ -302,12 +338,14 @@ public sealed partial class CitySimulation
                 if(!c.Moving){
                     Pr57317SetCrossing(c,null,"arrive");
                     var arrivalStart=pr57Walk240?System.Diagnostics.Stopwatch.GetTimestamp():0L;
+                    pr57CrossingOccupancyDirty=true;
                     CitizenArrived(c);
                     if(pr57Walk240)Pr57Walk240Record(3,arrivalStart);
                 }
                 continue;
             }
             if(State.ElapsedSeconds<c.NextDecisionAt)continue;c.NextDecisionAt=State.ElapsedSeconds+60;
+            pr57CrossingOccupancyDirty=true;
             CitizenRoutine(c);
             }finally{
                 Pr57312After(c, pr57312Before);
@@ -320,6 +358,8 @@ public sealed partial class CitySimulation
                 }
             }
         }
+        if(pr57CrossingOccupancyIndex&&Environment.GetEnvironmentVariable("PR57_CROSSING_OCCUPANCY_DIAG")=="1")
+            Console.WriteLine($"PR57_CROSSING_OCCUPANCY checks={pr57CrossingChecks} candidates={pr57CrossingCandidates} fallbacks={pr57CrossingFallbacks} vehicles={State.Vehicles.Count}");
         if (pr57StateCost) _pr57CitizenLoopTicks += System.Diagnostics.Stopwatch.GetTimestamp() - pr57LoopStart;
         Pr57Transitions290End(2);
         Pr57312End();
