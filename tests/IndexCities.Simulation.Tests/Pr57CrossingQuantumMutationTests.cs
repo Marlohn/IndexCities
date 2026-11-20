@@ -296,6 +296,23 @@ public sealed class Pr57CrossingQuantumMutationTests
             Assert.Equal(Clearance(fresh), Clearance(sim));
             Assert.Equal(snapshot, sim.SaveToJson());
         }
+        // External editor can also rewire the road graph while retaining the
+        // same vehicles and route IDs. Compare the live crossing query with a
+        // fresh deserialize at every boundary, including restoration.
+        var junction = sim.State.Roads.Single(r => r.Id == 998002);
+        var originalNeighbours = junction.Neighbours.ToList();
+        foreach (var neighbours in new[] {
+            new List<int> { 998001, 998003 },
+            originalNeighbours
+        })
+        {
+            junction.Neighbours = neighbours;
+            var snapshot = sim.SaveToJson();
+            var fresh = CitySimulation.FromJson(snapshot);
+            Assert.Equal(snapshot, fresh.SaveToJson());
+            Assert.Equal(Clearance(fresh), Clearance(sim));
+            Assert.Equal(snapshot, sim.SaveToJson());
+        }
         blocker.IntersectionClaim = null;
         var noClaim = CitySimulation.FromJson(sim.SaveToJson());
         Assert.Equal(Clearance(noClaim), Clearance(sim));
