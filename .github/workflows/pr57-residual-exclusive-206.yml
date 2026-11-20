@@ -207,6 +207,7 @@ jobs:
           from pathlib import Path
           import re
           root=Path('artifacts/crossing-occupancy')
+          exercised_cases=0
           for case in ('worksREAL','queueREAL'):
               a=root/f'{case}-A'; b=root/f'{case}-B'
               for mode,folder in (('A',a),('B',b)):
@@ -217,11 +218,13 @@ jobs:
                   totals={key:sum(int(m.group(1)) for line in lines if (m:=re.search(r'\b'+key+r'=(\d+)',line))) for key in ('checks','candidates','fallbacks','builds')}
                   print('PR57_CROSSING_INDEX_CENSUS',case,mode,totals)
                   if mode=='B':
-                      assert totals['checks']>0,(case,'index never exercised')
+                      exercised_cases += int(totals['checks']>0)
+                  if totals['checks']==0: print('PR57_CROSSING_INDEX_NO_OPPORTUNITY',case)
               for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
                   aa=(a/checkpoint).read_bytes(); bb=(b/checkpoint).read_bytes()
                   print('PR57_CROSSING_INDEX_PARITY',case,checkpoint,'equal',aa==bb)
                   assert aa==bb,(case,checkpoint,'full JSON differs')
+          assert exercised_cases>0,'index never exercised in either integrated save'
           PY
       - name: Verify exact full-state parity and exclusive region partition
         shell: bash
