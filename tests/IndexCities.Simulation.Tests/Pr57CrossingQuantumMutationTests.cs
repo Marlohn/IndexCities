@@ -446,6 +446,16 @@ public sealed class Pr57CrossingQuantumMutationTests
         var releasedFollower = near.State.Vehicles.Single(v => v.Id == 999301);
         Console.WriteLine($"PR57_LANE_MUTATION_COUNTERFACTUAL blocked={blockedFollower.Position} released={releasedFollower.Position}");
         Assert.NotEqual(blockedFollower.Position, releasedFollower.Position);
+        // Reverse the external mutation after a successful release. A retained
+        // index must also notice a blocker re-entering the lane, not only
+        // leaving it; compare a fresh integrated reference at the boundary.
+        near.State.Vehicles.Single(v => v.Id == 999302).Position = new Point(0, 9);
+        var reentrySnapshot = near.SaveToJson();
+        var reentryFresh = CitySimulation.FromJson(reentrySnapshot);
+        Assert.Equal(reentrySnapshot, reentryFresh.SaveToJson());
+        near.Advance(2);
+        reentryFresh.Advance(2);
+        Assert.Equal(reentryFresh.SaveToJson(), near.SaveToJson());
         // A Step-scoped spatial workset must also remain causal on subsequent
         // quanta, not merely at the first post-mutation boundary. Reload a
         // fresh reference at every checkpoint to expose retained stale state.
