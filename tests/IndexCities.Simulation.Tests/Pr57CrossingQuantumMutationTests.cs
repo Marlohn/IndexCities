@@ -407,6 +407,9 @@ public sealed class Pr57CrossingQuantumMutationTests
             {
                 Id = id, Position = new Point(0, z), Heading = 0,
                 Status = VehicleStatus.Travelling, External = true,
+                // A default-constructed vehicle has no usable fuel. The prior
+                // positive control was stationary even with external admission.
+                Fuel = 30,
                 Route = new List<int> { 999201, 999202, 999203 }
             });
         var snapshot = city.SaveToJson();
