@@ -279,6 +279,23 @@ public sealed class Pr57CrossingQuantumMutationTests
             Assert.Equal(Clearance(routeFresh), Clearance(sim));
             Assert.Equal(routeSnapshot, sim.SaveToJson());
         }
+        // The querying vehicle's route is mutable too. A cached lane result
+        // keyed only by blocker identity would miss this external mutation.
+        var follower = sim.State.Vehicles.Single(v => v.Id == 998101);
+        var followerRoute = follower.Route.ToList();
+        foreach (var route in new[] {
+            new List<int>(),
+            new List<int> { 998003, 998002, 998001 },
+            followerRoute
+        })
+        {
+            follower.Route = route;
+            var snapshot = sim.SaveToJson();
+            var fresh = CitySimulation.FromJson(snapshot);
+            Assert.Equal(snapshot, fresh.SaveToJson());
+            Assert.Equal(Clearance(fresh), Clearance(sim));
+            Assert.Equal(snapshot, sim.SaveToJson());
+        }
         blocker.IntersectionClaim = null;
         var noClaim = CitySimulation.FromJson(sim.SaveToJson());
         Assert.Equal(Clearance(noClaim), Clearance(sim));
