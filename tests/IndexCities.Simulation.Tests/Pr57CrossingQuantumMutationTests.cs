@@ -215,4 +215,32 @@ public sealed class Pr57CrossingQuantumMutationTests
         Assert.Equal(withoutCrossing, Check(blockedReload));
     }
 
+
+    [Fact]
+    public void Lane_occupancy_predicate_rechecks_external_status_mutation_against_fresh_state()
+    {
+        // Research guard for a future laneExact cache: status changes are external
+        // inputs, not a property of the querying actor or its route.
+        var method = typeof(CitySimulation).GetMethod("Pr57StageOccupies",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(method);
+        var city = new CitySimulation(42);
+        city.State.Vehicles.Add(new Vehicle
+        {
+            Id = 997101, Position = new Point(0, 4), Heading = 0,
+            Status = VehicleStatus.Travelling
+        });
+        bool Occupies(CitySimulation sim) => (bool)method!.Invoke(sim, new object[]
+        {
+            sim.State.Vehicles.Single(v => v.Id == 997101)
+        })!;
+        foreach (var status in new[] { VehicleStatus.Travelling, VehicleStatus.Stranded,
+                     VehicleStatus.Travelling })
+        {
+            city.State.Vehicles.Single(v => v.Id == 997101).Status = status;
+            var fresh = CitySimulation.FromJson(city.SaveToJson());
+            Assert.Equal(Occupies(fresh), Occupies(city));
+            Assert.Equal(fresh.SaveToJson(), city.SaveToJson());
+        }
+    }
 }
