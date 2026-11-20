@@ -120,6 +120,12 @@ public sealed class Pr57LakeBaselineOrderTests
             Console.WriteLine($"PR57_LAKE_INTEGRATED_REINSERT step={step + 1} original={a:X16} reordered={b:X16} same={a == b}");
             Assert.True(double.IsFinite(BitConverter.Int64BitsToDouble(a)));
             Assert.True(double.IsFinite(BitConverter.Int64BitsToDouble(b)));
+            // Compare the two original histories at each integrated checkpoint, not
+            // only each history against its own reload. A different JSON ordering
+            // is distinct from a numerical LakePollution divergence.
+            var originalCheckpoint = original.SaveToJson();
+            var mutatedCheckpoint = mutated.SaveToJson();
+            Console.WriteLine($"PR57_LAKE_CROSS_HISTORY step={step + 1} lakeBitsEqual={a == b} fullJsonEqual={originalCheckpoint == mutatedCheckpoint} originalLength={originalCheckpoint.Length} mutatedLength={mutatedCheckpoint.Length}");
             Assert.Equal(original.State.PollutionCells.OrderBy(p => p.Key).ToArray(),
                          mutated.State.PollutionCells.OrderBy(p => p.Key).ToArray());
         }
