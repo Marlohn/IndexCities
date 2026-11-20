@@ -89,4 +89,48 @@ public sealed class Pr57LakeBaselineOrderTests
         Console.WriteLine($"PR57_LAKE_EXTERNAL_REINSERT before={before:X16} after={after:X16} reload={afterReload:X16} changed={before != after}");
     }
 
+    [Fact]
+    public void Lake_baseline_external_reinsertion_survives_integrated_advance_and_reload()
+    {
+        // Integrated Advance(2), not a standalone pollution microbenchmark.
+        // Observe exact state without enabling canonical pollution or altering game rules.
+        var original = new CitySimulation(42);
+        var mutated = new CitySimulation(42);
+        var cells = Enumerable.Range(0, 32)
+            .Select(i => (Key: ((long)(i % 8) << 32) | (uint)(i / 8),
+                          Value: (decimal)(i % 3 == 0 ? 0.00000001 : i % 3 == 1 ? 0.001 : 0.1)))
+            .ToArray();
+        foreach (var cell in cells)
+        {
+            original.State.PollutionCells.Add(cell.Key, cell.Value);
+            mutated.State.PollutionCells.Add(cell.Key, cell.Value);
+        }
+        foreach (var cell in cells) Assert.True(mutated.State.PollutionCells.Remove(cell.Key));
+        foreach (var cell in cells.Reverse()) mutated.State.PollutionCells.Add(cell.Key, cell.Value);
+
+        static long LakeBits(CitySimulation city) =>
+            BitConverter.DoubleToInt64Bits(city.State.LakePollution);
+
+        for (var step = 0; step < 3; step++)
+        {
+            original.Advance(2);
+            mutated.Advance(2);
+            var a = LakeBits(original);
+            var b = LakeBits(mutated);
+            Console.WriteLine($"PR57_LAKE_INTEGRATED_REINSERT step={step + 1} original={a:X16} reordered={b:X16} same={a == b}");
+            Assert.True(double.IsFinite(BitConverter.Int64BitsToDouble(a)));
+            Assert.True(double.IsFinite(BitConverter.Int64BitsToDouble(b)));
+            Assert.Equal(original.State.PollutionCells.OrderBy(p => p.Key).ToArray(),
+                         mutated.State.PollutionCells.OrderBy(p => p.Key).ToArray());
+        }
+
+        var originalJson = original.SaveToJson();
+        var mutatedJson = mutated.SaveToJson();
+        var originalReload = CitySimulation.FromJson(originalJson);
+        var mutatedReload = CitySimulation.FromJson(mutatedJson);
+        Assert.Equal(LakeBits(original), LakeBits(originalReload));
+        Assert.Equal(LakeBits(mutated), LakeBits(mutatedReload));
+        Console.WriteLine($"PR57_LAKE_INTEGRATED_REINSERT_JSON exact={originalJson == mutatedJson} originalBytes={originalJson.Length} mutatedBytes={mutatedJson.Length}");
+    }
+
 }
