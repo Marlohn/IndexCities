@@ -195,6 +195,24 @@ public sealed class Pr57CrossingQuantumMutationTests
         Console.WriteLine($"PR57_CROSSING_ROUTE_ELIGIBILITY with={withCrossing:R} without={withoutCrossing:R} constrained={withCrossing < withoutCrossing}");
         Assert.InRange(withCrossing, 0, 10);
         Assert.Equal(10, withoutCrossing);
+        // A real, route-eligible blocker was observed in #44678375287.
+        // Require a strictly positive physical obstruction, not just a
+        // diagnostic print or an unconstrained geometry fixture.
+        Assert.True(withCrossing < withoutCrossing,
+            $"Route-eligible crossing failed to constrain travel: {withCrossing:R} vs {withoutCrossing:R}");
+        blocker.Position = new Point(0, 4);
+        blocker.IntersectionClaim = 996002;
+        var restoredCrossing = Check(sim);
+        Assert.Equal(withCrossing, restoredCrossing);
+        var blockedSnapshot = sim.SaveToJson();
+        var blockedReload = CitySimulation.FromJson(blockedSnapshot);
+        Assert.Equal(blockedSnapshot, blockedReload.SaveToJson());
+        Assert.Equal(withCrossing, Check(blockedReload));
+        // Mutating a loaded city must invalidate the same physical result.
+        var loadedBlocker = blockedReload.State.Vehicles.Single(v => v.Id == 996102);
+        loadedBlocker.Position = new Point(100, 100);
+        loadedBlocker.IntersectionClaim = null;
+        Assert.Equal(withoutCrossing, Check(blockedReload));
     }
 
 }
