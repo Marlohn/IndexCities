@@ -15,6 +15,7 @@ on:
       - tests/IndexCities.Simulation.Tests/Pr57CertifiedLivingRosterMutationTests.cs
       - tests/IndexCities.Simulation.Tests/Pr57SiteOwnerRosterAdversarial.cs
       - tests/IndexCities.Simulation.Tests/Pr57CrossingQuantumMutationTests.cs
+      - tests/IndexCities.Simulation.Tests/Pr57LakeBaselineOrderTests.cs
   workflow_dispatch:
 permissions:
   contents: read
