@@ -352,4 +352,43 @@ public sealed class Pr57CrossingQuantumMutationTests
             Assert.Equal(fresh.SaveToJson(), city.SaveToJson());
         }
     }
+    [Fact]
+    public void Integrated_advance_rechecks_competing_lane_vehicles_after_external_mutation_and_reload()
+    {
+        // Exercise the real vehicle movement path rather than treating a
+        // standalone occupancy predicate as proof of leader selection.
+        var city = new CitySimulation(42);
+        city.State.Roads.Add(new RoadNode { Id = 999001, Position = new Point(0, 0), Neighbours = new List<int> { 999002 } });
+        city.State.Roads.Add(new RoadNode { Id = 999002, Position = new Point(0, 20), Neighbours = new List<int> { 999001, 999003 } });
+        city.State.Roads.Add(new RoadNode { Id = 999003, Position = new Point(0, 40), Neighbours = new List<int> { 999002 } });
+        foreach (var (id, z) in new[] { (999101, 0.0), (999102, 9.0), (999103, 15.0) })
+            city.State.Vehicles.Add(new Vehicle
+            {
+                Id = id, Position = new Point(0, z), Heading = 0,
+                Status = VehicleStatus.Travelling,
+                Route = new List<int> { 999001, 999002, 999003 }
+            });
+        city = CitySimulation.FromJson(city.SaveToJson());
+        foreach (var (status, z) in new[] {
+            (VehicleStatus.Travelling, 9.0),
+            (VehicleStatus.Stranded, 9.0),
+            (VehicleStatus.Travelling, 30.0),
+            (VehicleStatus.Travelling, 9.0)
+        })
+        {
+            var candidate = city.State.Vehicles.Single(v => v.Id == 999102);
+            candidate.Status = status;
+            candidate.Position = new Point(0, z);
+            var snapshot = city.SaveToJson();
+            var fresh = CitySimulation.FromJson(snapshot);
+            Assert.Equal(snapshot, fresh.SaveToJson());
+            city.Advance(2);
+            fresh.Advance(2);
+            // Full serialized state includes movement, claims, economy and
+            // history; any stale lane winner must become observable here.
+            Assert.Equal(fresh.SaveToJson(), city.SaveToJson());
+            Assert.Equal(3, city.State.Vehicles.Count(v => v.Id is >= 999101 and <= 999103));
+        }
+    }
+
 }
