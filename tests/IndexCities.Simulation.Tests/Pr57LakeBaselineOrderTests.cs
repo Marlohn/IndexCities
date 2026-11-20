@@ -168,4 +168,45 @@ public sealed class Pr57LakeBaselineOrderTests
         }
     }
 
+
+    [Fact]
+    public void Lake_real_derived_saves_observe_external_order_and_exact_reload()
+    {
+        // Retained snapshots are authentic-derived, not original player saves.
+        // This is an observational baseline experiment; no normalization is enabled.
+        var root = Environment.GetEnvironmentVariable("PR57_REAL_SNAPSHOT_DIR");
+        if (string.IsNullOrWhiteSpace(root)) return;
+        Assert.True(Directory.Exists(root), $"Missing retained snapshot directory: {root}");
+        foreach (var scenario in new[] { "realA-control", "congested-control" })
+        {
+            var sources = Directory.GetFiles(root, "checkpoint-0.json", SearchOption.AllDirectories)
+                .Where(p => Path.GetFileName(Path.GetDirectoryName(p)) == scenario).ToArray();
+            Assert.Single(sources);
+            var initial = File.ReadAllText(sources[0]);
+            var control = CitySimulation.FromJson(initial);
+            var altered = CitySimulation.FromJson(initial);
+            var entries = altered.State.PollutionCells.ToArray();
+            // Remove/reinsert identical entries to test external ordering, not pollution mass.
+            foreach (var entry in entries) Assert.True(altered.State.PollutionCells.Remove(entry.Key));
+            foreach (var entry in entries.Reverse())
+                altered.State.PollutionCells.Add(entry.Key, entry.Value);
+            Assert.Equal(control.State.PollutionCells.OrderBy(x => x.Key).ToArray(),
+                         altered.State.PollutionCells.OrderBy(x => x.Key).ToArray());
+            for (var step = 0; step < 3; step++)
+            {
+                control.Advance(2);
+                altered.Advance(2);
+                var a = BitConverter.DoubleToInt64Bits(control.State.LakePollution);
+                var b = BitConverter.DoubleToInt64Bits(altered.State.LakePollution);
+                var controlJson = control.SaveToJson();
+                var alteredJson = altered.SaveToJson();
+                Console.WriteLine($"PR57_LAKE_REAL_ORDER scenario={scenario} step={step + 1} original={a:X16} reordered={b:X16} bitsEqual={a == b} jsonEqual={controlJson == alteredJson} cells={entries.Length}");
+                // Do not assert cross-history equality: a real divergence is the sought result.
+                // Assert each history survives its own save/load with exact causal JSON.
+                Assert.Equal(controlJson, CitySimulation.FromJson(controlJson).SaveToJson());
+                Assert.Equal(alteredJson, CitySimulation.FromJson(alteredJson).SaveToJson());
+            }
+        }
+    }
+
 }
