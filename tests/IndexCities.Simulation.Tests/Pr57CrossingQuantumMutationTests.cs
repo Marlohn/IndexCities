@@ -261,6 +261,24 @@ public sealed class Pr57CrossingQuantumMutationTests
             Assert.Equal(snapshot, sim.SaveToJson());
             Assert.InRange(before, 0, 10);
         }
+        // Route membership is also externally mutable. A cross-quantum lane
+        // cache must not retain eligibility from the previous route; compare
+        // the live result with a fresh deserialize at each mutation boundary.
+        var originalRoute = blocker.Route.ToList();
+        foreach (var route in new[] {
+            new List<int>(),
+            new List<int> { 998004, 998002, 998005 },
+            new List<int> { 998005, 998002, 998004 },
+            originalRoute
+        })
+        {
+            blocker.Route = route;
+            var routeSnapshot = sim.SaveToJson();
+            var routeFresh = CitySimulation.FromJson(routeSnapshot);
+            Assert.Equal(routeSnapshot, routeFresh.SaveToJson());
+            Assert.Equal(Clearance(routeFresh), Clearance(sim));
+            Assert.Equal(routeSnapshot, sim.SaveToJson());
+        }
         blocker.IntersectionClaim = null;
         var noClaim = CitySimulation.FromJson(sim.SaveToJson());
         Assert.Equal(Clearance(noClaim), Clearance(sim));
