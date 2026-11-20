@@ -155,4 +155,46 @@ public sealed class Pr57CrossingQuantumMutationTests
         }
     }
 
+    [Fact]
+    public void Crossing_route_eligibility_probe_after_external_mutation_and_reload()
+    {
+        // Unlike the earlier geometry matrix, these vehicles have explicit
+        // connected routes. This is an opt-in research fixture, not a cache.
+        var sim = new CitySimulation(42);
+        sim.State.Roads.Add(new RoadNode { Id = 996001, Position = new Point(0, 0), Neighbours = new List<int> { 996002 } });
+        sim.State.Roads.Add(new RoadNode { Id = 996002, Position = new Point(0, 4), Neighbours = new List<int> { 996001, 996003, 996004, 996005 } });
+        sim.State.Roads.Add(new RoadNode { Id = 996003, Position = new Point(0, 8), Neighbours = new List<int> { 996002 } });
+        sim.State.Roads.Add(new RoadNode { Id = 996004, Position = new Point(-4, 4), Neighbours = new List<int> { 996002 } });
+        sim.State.Roads.Add(new RoadNode { Id = 996005, Position = new Point(4, 4), Neighbours = new List<int> { 996002 } });
+        sim.State.Vehicles.Add(new Vehicle {
+            Id = 996101, Position = new Point(0, 0), Heading = 0,
+            Status = VehicleStatus.Travelling, Route = new List<int> { 996001, 996002, 996003 }
+        });
+        sim.State.Vehicles.Add(new Vehicle {
+            Id = 996102, Position = new Point(0, 4), Heading = Math.PI / 2,
+            Status = VehicleStatus.Travelling, IntersectionClaim = 996002,
+            Route = new List<int> { 996004, 996002, 996005 }
+        });
+        sim = CitySimulation.FromJson(sim.SaveToJson());
+        var clearance = typeof(CitySimulation).GetMethod("ClearOfCrossingAhead",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(clearance);
+        double Check(CitySimulation city) => (double)clearance!.Invoke(city, new object[] {
+            city.State.Vehicles.Single(v => v.Id == 996101), new Point(0, 10), 10.0
+        })!;
+        var before = sim.SaveToJson();
+        var withCrossing = Check(sim);
+        Assert.Equal(before, sim.SaveToJson());
+        var blocker = sim.State.Vehicles.Single(v => v.Id == 996102);
+        blocker.Position = new Point(100, 100);
+        blocker.IntersectionClaim = null;
+        var withoutCrossing = Check(sim);
+        var reloaded = CitySimulation.FromJson(sim.SaveToJson());
+        Assert.Equal(withoutCrossing, Check(reloaded));
+        Assert.Equal(sim.SaveToJson(), reloaded.SaveToJson());
+        Console.WriteLine($"PR57_CROSSING_ROUTE_ELIGIBILITY with={withCrossing:R} without={withoutCrossing:R} constrained={withCrossing < withoutCrossing}");
+        Assert.InRange(withCrossing, 0, 10);
+        Assert.Equal(10, withoutCrossing);
+    }
+
 }
