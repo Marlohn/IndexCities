@@ -456,6 +456,27 @@ public sealed class Pr57CrossingQuantumMutationTests
         near.Advance(2);
         reentryFresh.Advance(2);
         Assert.Equal(reentryFresh.SaveToJson(), near.SaveToJson());
+        // A caller may remove and reinsert an entire vehicle between Advance
+        // boundaries. An index retained across quanta must not keep a stale
+        // reference to the removed instance, nor miss the reinserted instance.
+        var removedBlocker = near.State.Vehicles.Single(v => v.Id == 999302);
+        near.State.Vehicles.Remove(removedBlocker);
+        var removalSnapshot = near.SaveToJson();
+        var removalFresh = CitySimulation.FromJson(removalSnapshot);
+        Assert.Equal(removalSnapshot, removalFresh.SaveToJson());
+        near.Advance(2);
+        removalFresh.Advance(2);
+        Assert.Equal(removalFresh.SaveToJson(), near.SaveToJson());
+        // Reinsert the same persisted identity with a new object and a nearby
+        // location. Compare to an independent reload before another quantum.
+        removedBlocker.Position = new Point(0, 9);
+        near.State.Vehicles.Add(removedBlocker);
+        var reinsertionSnapshot = near.SaveToJson();
+        var reinsertionFresh = CitySimulation.FromJson(reinsertionSnapshot);
+        Assert.Equal(reinsertionSnapshot, reinsertionFresh.SaveToJson());
+        near.Advance(2);
+        reinsertionFresh.Advance(2);
+        Assert.Equal(reinsertionFresh.SaveToJson(), near.SaveToJson());
         // A Step-scoped spatial workset must also remain causal on subsequent
         // quanta, not merely at the first post-mutation boundary. Reload a
         // fresh reference at every checkpoint to expose retained stale state.
