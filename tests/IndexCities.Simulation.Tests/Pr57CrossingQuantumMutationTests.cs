@@ -217,6 +217,59 @@ public sealed class Pr57CrossingQuantumMutationTests
 
 
     [Fact]
+    public void Route_eligible_crossing_rechecks_external_status_and_claim_mutations_after_reload()
+    {
+        // A positive route-eligible crossing is known to constrain clearance.
+        // Compare every live mutation to an independently deserialized state;
+        // do not assume that Stranded necessarily stops occupying the crossing.
+        var sim = new CitySimulation(42);
+        sim.State.Roads.Add(new RoadNode { Id = 998001, Position = new Point(0, 0), Neighbours = new List<int> { 998002 } });
+        sim.State.Roads.Add(new RoadNode { Id = 998002, Position = new Point(0, 4), Neighbours = new List<int> { 998001, 998003, 998004, 998005 } });
+        sim.State.Roads.Add(new RoadNode { Id = 998003, Position = new Point(0, 8), Neighbours = new List<int> { 998002 } });
+        sim.State.Roads.Add(new RoadNode { Id = 998004, Position = new Point(-4, 4), Neighbours = new List<int> { 998002 } });
+        sim.State.Roads.Add(new RoadNode { Id = 998005, Position = new Point(4, 4), Neighbours = new List<int> { 998002 } });
+        sim.State.Vehicles.Add(new Vehicle
+        {
+            Id = 998101, Position = new Point(0, 0), Heading = 0,
+            Status = VehicleStatus.Travelling, Route = new List<int> { 998001, 998002, 998003 }
+        });
+        sim.State.Vehicles.Add(new Vehicle
+        {
+            Id = 998102, Position = new Point(0, 4), Heading = Math.PI / 2,
+            Status = VehicleStatus.Travelling, IntersectionClaim = 998002,
+            Route = new List<int> { 998004, 998002, 998005 }
+        });
+        sim = CitySimulation.FromJson(sim.SaveToJson());
+        var method = typeof(CitySimulation).GetMethod("ClearOfCrossingAhead",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(method);
+        double Clearance(CitySimulation city) => (double)method!.Invoke(city, new object[]
+        {
+            city.State.Vehicles.Single(v => v.Id == 998101), new Point(0, 10), 10.0
+        })!;
+        var blocker = sim.State.Vehicles.Single(v => v.Id == 998102);
+        Assert.True(Clearance(sim) < 10);
+        foreach (var status in new[] { VehicleStatus.Stranded, VehicleStatus.Travelling,
+                     VehicleStatus.Stranded, VehicleStatus.Travelling })
+        {
+            blocker.Status = status;
+            var snapshot = sim.SaveToJson();
+            var reloaded = CitySimulation.FromJson(snapshot);
+            Assert.Equal(snapshot, reloaded.SaveToJson());
+            var before = Clearance(sim);
+            Assert.Equal(before, Clearance(reloaded));
+            Assert.Equal(snapshot, sim.SaveToJson());
+            Assert.InRange(before, 0, 10);
+        }
+        blocker.IntersectionClaim = null;
+        var noClaim = CitySimulation.FromJson(sim.SaveToJson());
+        Assert.Equal(Clearance(noClaim), Clearance(sim));
+        blocker.IntersectionClaim = 998002;
+        var restored = CitySimulation.FromJson(sim.SaveToJson());
+        Assert.Equal(Clearance(restored), Clearance(sim));
+    }
+
+    [Fact]
     public void Lane_occupancy_predicate_rechecks_external_status_mutation_against_fresh_state()
     {
         // Research guard for a future laneExact cache: status changes are external
