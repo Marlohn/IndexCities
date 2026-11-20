@@ -426,6 +426,12 @@ public sealed class Pr57CrossingQuantumMutationTests
         // travel path. Require actual motion before testing a lane winner.
         Assert.NotEqual(new Point(0, 0), farFollower.Position);
         Assert.NotEqual(nearFollower.Position, farFollower.Position);
+        // Establish a counterfactual at the mutation boundary, not merely
+        // live-vs-reload parity: both worlds share the same first quantum.
+        // A cache that ignores external position would incorrectly reuse the
+        // previous winner. The follower must react to the changed blocker.
+        var stillBlocked = CitySimulation.FromJson(near.SaveToJson());
+        stillBlocked.Advance(2);
         // Once lane competition is observable, mutate the live blocker
         // between integrated quanta and compare against a reloaded snapshot.
         // A stale cross-quantum winner must not change the full state.
@@ -436,6 +442,10 @@ public sealed class Pr57CrossingQuantumMutationTests
         near.Advance(2);
         reloaded.Advance(2);
         Assert.Equal(reloaded.SaveToJson(), near.SaveToJson());
+        var blockedFollower = stillBlocked.State.Vehicles.Single(v => v.Id == 999301);
+        var releasedFollower = near.State.Vehicles.Single(v => v.Id == 999301);
+        Console.WriteLine($"PR57_LANE_MUTATION_COUNTERFACTUAL blocked={blockedFollower.Position} released={releasedFollower.Position}");
+        Assert.NotEqual(blockedFollower.Position, releasedFollower.Position);
     }
 
 }
