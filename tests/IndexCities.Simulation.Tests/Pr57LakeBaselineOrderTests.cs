@@ -126,6 +126,8 @@ public sealed class Pr57LakeBaselineOrderTests
             var originalCheckpoint = original.SaveToJson();
             var mutatedCheckpoint = mutated.SaveToJson();
             Console.WriteLine($"PR57_LAKE_CROSS_HISTORY step={step + 1} lakeBitsEqual={a == b} fullJsonEqual={originalCheckpoint == mutatedCheckpoint} originalLength={originalCheckpoint.Length} mutatedLength={mutatedCheckpoint.Length}");
+            Assert.Equal(a, b); // Adversarial external reinsertion must not change integrated lake bits.
+            Assert.Equal(originalCheckpoint, mutatedCheckpoint); // Full causal state, not a rounded sample.
             Assert.Equal(original.State.PollutionCells.OrderBy(p => p.Key).ToArray(),
                          mutated.State.PollutionCells.OrderBy(p => p.Key).ToArray());
         }
