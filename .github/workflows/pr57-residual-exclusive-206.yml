@@ -179,6 +179,50 @@ jobs:
                 --window="$horizon" --cap=300 --resume="$source" | tee "$output.log"
             done
           done
+      - name: Test crossing occupancy opt-in against canonical integrated saves
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crossing-occupancy
+          for case in worksREAL queueREAL; do
+            scenario=realA-control
+            if [[ "$case" == queueREAL ]]; then scenario=congested-control; fi
+            source="$(find artifacts/retained -type f -path "*/$scenario/checkpoint-0.json" -print -quit)"
+            test -s "$source"
+            for mode in A B; do
+              enabled=0
+              if [[ "$mode" == B ]]; then enabled=1; fi
+              dest="$PWD/artifacts/crossing-occupancy/$case-$mode"
+              mkdir -p "$dest"
+              PR57_CROSSING_OCCUPANCY_INDEX="$enabled" PR57_CROSSING_OCCUPANCY_DIAG=1 \
+              PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_206_MID_CHECKPOINT=1 \
+              PR57_SAVE_CAPTURE_DIR="$dest" \
+                timeout 180s dotnet run --no-build -c Release \
+                --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                profile cycle --seed=42 --warmup=0 --days=1 \
+                --window=300 --cap=300 --resume="$source" > "$dest/run.log"
+            done
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          root=Path('artifacts/crossing-occupancy')
+          for case in ('worksREAL','queueREAL'):
+              a=root/f'{case}-A'; b=root/f'{case}-B'
+              for mode,folder in (('A',a),('B',b)):
+                  log=(folder/'run.log').read_text()
+                  assert 'INVARIANTS OK' in log,(case,mode,'invariants')
+                  lines=[line for line in log.splitlines() if 'PR57_CROSSING_OCCUPANCY checks=' in line]
+                  assert lines,(case,mode,'missing census')
+                  totals={key:sum(int(m.group(1)) for line in lines if (m:=re.search(r'\\b'+key+r'=(\\d+)',line))) for key in ('checks','candidates','fallbacks','builds')}
+                  print('PR57_CROSSING_INDEX_CENSUS',case,mode,totals)
+                  if mode=='B':
+                      assert totals['checks']>0,(case,'index never exercised')
+              for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                  aa=(a/checkpoint).read_bytes(); bb=(b/checkpoint).read_bytes()
+                  print('PR57_CROSSING_INDEX_PARITY',case,checkpoint,'equal',aa==bb)
+                  assert aa==bb,(case,checkpoint,'full JSON differs')
+          PY
       - name: Verify exact full-state parity and exclusive region partition
         shell: bash
         run: |
