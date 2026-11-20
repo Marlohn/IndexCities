@@ -9,6 +9,39 @@ namespace IndexCities.Simulation.Tests;
 public sealed class Pr57JunctionBlockerMutationTests
 {
     [Fact]
+    public void Pedestrian_crosswalk_snapshot_rechecks_external_flag_mutation_on_next_move()
+    {
+        // An external editor can mutate Crosswalk without incrementing RoadRevision.
+        // A cross-call cache keyed only by revision would silently retain stale nodes.
+        var sim = new CitySimulation(42);
+        sim.State.Roads.Add(new RoadNode { Id = 998101, Position = new Point(0, 0) });
+        sim.State.Roads.Add(new RoadNode { Id = 998102, Position = new Point(40, 0) });
+        sim = CitySimulation.FromJson(sim.SaveToJson());
+        var move = typeof(CitySimulation).GetMethod("MoveCitizens",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+        var field = typeof(CitySimulation).GetField("_crosswalks",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(move);
+        Assert.NotNull(field);
+        void Tick() => move!.Invoke(sim, new object[] { 2.0 });
+        List<RoadNode> Crossings() => (List<RoadNode>)field!.GetValue(sim)!;
+
+        Tick(); // initialize old-save derived crossings before injecting mutations
+        var road = sim.State.Roads.Single(r => r.Id == 998101);
+        road.Crosswalk = true;
+        Tick();
+        Assert.Contains(Crossings(), r => r.Id == road.Id);
+        road.Crosswalk = false;
+        Tick();
+        Assert.DoesNotContain(Crossings(), r => r.Id == road.Id);
+
+        // Rehydration must not restore the previously cached crossing.
+        sim = CitySimulation.FromJson(sim.SaveToJson());
+        Tick();
+        Assert.DoesNotContain(Crossings(), r => r.Id == road.Id);
+    }
+
+    [Fact]
     public void Junction_occupant_selection_rechecks_live_position_and_first_match()
     {
         var seed = new CitySimulation(42);
