@@ -391,4 +391,34 @@ public sealed class Pr57CrossingQuantumMutationTests
         }
     }
 
+    [Fact]
+    public void Integrated_lane_competition_probe_requires_observable_follower_response()
+    {
+        // A positive control for lane-candidate optimizations: identical
+        // integrated states differ only in a candidate's external position.
+        // Without an observable follower response, the existing live-vs-reload
+        // equality test cannot certify lane-winner invalidation.
+        var city = new CitySimulation(42);
+        city.State.Roads.Add(new RoadNode { Id = 999201, Position = new Point(0, 0), Neighbours = new List<int> { 999202 } });
+        city.State.Roads.Add(new RoadNode { Id = 999202, Position = new Point(0, 20), Neighbours = new List<int> { 999201, 999203 } });
+        city.State.Roads.Add(new RoadNode { Id = 999203, Position = new Point(0, 40), Neighbours = new List<int> { 999202 } });
+        foreach (var (id, z) in new[] { (999301, 0.0), (999302, 9.0) })
+            city.State.Vehicles.Add(new Vehicle
+            {
+                Id = id, Position = new Point(0, z), Heading = 0,
+                Status = VehicleStatus.Travelling,
+                Route = new List<int> { 999201, 999202, 999203 }
+            });
+        var snapshot = city.SaveToJson();
+        var near = CitySimulation.FromJson(snapshot);
+        var far = CitySimulation.FromJson(snapshot);
+        far.State.Vehicles.Single(v => v.Id == 999302).Position = new Point(100, 100);
+        near.Advance(2);
+        far.Advance(2);
+        var nearFollower = near.State.Vehicles.Single(v => v.Id == 999301);
+        var farFollower = far.State.Vehicles.Single(v => v.Id == 999301);
+        Console.WriteLine($"PR57_INTEGRATED_LANE_POSITIVE near={nearFollower.Position} far={farFollower.Position}");
+        Assert.NotEqual(nearFollower.Position, farFollower.Position);
+    }
+
 }
