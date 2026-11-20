@@ -103,4 +103,56 @@ public sealed class Pr57CrossingQuantumMutationTests
         Assert.Equal(blocked, Clearance(blockedReload));
     }
 
+    [Fact]
+    public void Crossing_clearance_geometry_matrix_reports_positive_hits_without_mutating_state()
+    {
+        // Diagnostic, not a cache certification: enumerate connected two-way and
+        // four-way junctions, body positions and headings. Record exact positive
+        // hits rather than assuming that a road graph alone forces a blocker.
+        var method = typeof(CitySimulation).GetMethod("ClearOfCrossingAhead",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(method);
+        foreach (var fourWay in new[] { false, true })
+        {
+            var sim = new CitySimulation(42);
+            sim.State.Roads.Add(new RoadNode
+            {
+                Id = 995001, Position = new Point(0, 4),
+                Neighbours = fourWay
+                    ? new List<int> { 995002, 995003, 995004, 995005 }
+                    : new List<int> { 995002, 995003 }
+            });
+            sim.State.Roads.Add(new RoadNode { Id = 995002, Position = new Point(0, 0), Neighbours = new List<int> { 995001 } });
+            sim.State.Roads.Add(new RoadNode { Id = 995003, Position = new Point(0, 8), Neighbours = new List<int> { 995001 } });
+            if (fourWay)
+            {
+                sim.State.Roads.Add(new RoadNode { Id = 995004, Position = new Point(-4, 4), Neighbours = new List<int> { 995001 } });
+                sim.State.Roads.Add(new RoadNode { Id = 995005, Position = new Point(4, 4), Neighbours = new List<int> { 995001 } });
+            }
+            sim.State.Vehicles.Add(new Vehicle { Id = 995101, Position = new Point(0, 0), Heading = 0, Status = VehicleStatus.Travelling });
+            sim.State.Vehicles.Add(new Vehicle { Id = 995102, Position = new Point(0, 4), Heading = 0, Status = VehicleStatus.Travelling, IntersectionClaim = 995001 });
+            sim = CitySimulation.FromJson(sim.SaveToJson());
+            var follower = sim.State.Vehicles.Single(v => v.Id == 995101);
+            var blocker = sim.State.Vehicles.Single(v => v.Id == 995102);
+            int cases = 0, constrained = 0;
+            double minimum = 10;
+            foreach (var heading in new[] { 0.0, Math.PI / 2, Math.PI, -Math.PI / 2 })
+            foreach (var x in new[] { -4.0, -2.0, 0.0, 2.0, 4.0 })
+            foreach (var z in new[] { 0.0, 2.0, 4.0, 6.0, 8.0 })
+            {
+                blocker.Heading = heading;
+                blocker.Position = new Point(x, z);
+                var before = sim.SaveToJson();
+                var distance = (double)method!.Invoke(sim, new object[] { follower, new Point(0, 10), 10.0 })!;
+                Assert.Equal(before, sim.SaveToJson());
+                Assert.True(double.IsFinite(distance) && distance >= 0 && distance <= 10,
+                    $"Invalid clearance {distance} at ({x},{z}), fourWay={fourWay}");
+                cases++;
+                if (distance < 10) constrained++;
+                minimum = Math.Min(minimum, distance);
+            }
+            Console.WriteLine($"PR57_CROSSING_GEOMETRY_MATRIX fourWay={fourWay} cases={cases} constrained={constrained} minimum={minimum:R}");
+        }
+    }
+
 }
