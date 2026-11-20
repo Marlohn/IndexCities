@@ -54,4 +54,52 @@ public sealed class Pr57CrossingQuantumMutationTests
         Assert.Equal(sim.SaveToJson(), restored.SaveToJson());
 
     }
+    [Fact]
+    public void Connected_crossing_rechecks_live_blocker_after_external_mutation_and_reload()
+    {
+        // Positive control: unlike the graph-free fixture, this junction has
+        // connected approaches. A clearance cache must be invalidated by
+        // editor changes to both pose and claim, even without a road revision.
+        var sim = new CitySimulation(42);
+        sim.State.Roads.Add(new RoadNode
+        {
+            Id = 994101, Position = new Point(0, 4),
+            Neighbours = new List<int> { 994102, 994103, 994104, 994105 }
+        });
+        sim.State.Roads.Add(new RoadNode { Id = 994102, Position = new Point(0, 0), Neighbours = new List<int> { 994101 } });
+        sim.State.Roads.Add(new RoadNode { Id = 994103, Position = new Point(0, 8), Neighbours = new List<int> { 994101 } });
+        sim.State.Roads.Add(new RoadNode { Id = 994104, Position = new Point(-4, 4), Neighbours = new List<int> { 994101 } });
+        sim.State.Roads.Add(new RoadNode { Id = 994105, Position = new Point(4, 4), Neighbours = new List<int> { 994101 } });
+        sim.State.Vehicles.Add(new Vehicle { Id = 994301, Position = new Point(0, 0), Heading = 0, Status = VehicleStatus.Travelling });
+        sim.State.Vehicles.Add(new Vehicle
+        {
+            Id = 994302, Position = new Point(0, 4), Heading = Math.PI / 2,
+            Status = VehicleStatus.Travelling, IntersectionClaim = 994101
+        });
+        sim = CitySimulation.FromJson(sim.SaveToJson());
+        var method = typeof(CitySimulation).GetMethod("ClearOfCrossingAhead",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(method);
+        double Clearance(CitySimulation city) =>
+            (double)method!.Invoke(city, new object[]
+            {
+                city.State.Vehicles.Single(v => v.Id == 994301), new Point(0, 10), 10.0
+            })!;
+        var blocker = sim.State.Vehicles.Single(v => v.Id == 994302);
+        var blocked = Clearance(sim);
+        Assert.True(blocked < 10, $"Connected junction did not constrain travel: {blocked:R}");
+        blocker.Position = new Point(100, 100);
+        blocker.IntersectionClaim = null;
+        var unblocked = Clearance(sim);
+        Assert.Equal(10, unblocked);
+        var snapshot = sim.SaveToJson();
+        var reloaded = CitySimulation.FromJson(snapshot);
+        Assert.Equal(unblocked, Clearance(reloaded));
+        blocker.Position = new Point(0, 4);
+        blocker.IntersectionClaim = 994101;
+        Assert.Equal(blocked, Clearance(sim));
+        var blockedReload = CitySimulation.FromJson(sim.SaveToJson());
+        Assert.Equal(blocked, Clearance(blockedReload));
+    }
+
 }
