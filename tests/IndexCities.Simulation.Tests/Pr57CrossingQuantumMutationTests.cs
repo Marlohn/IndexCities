@@ -301,12 +301,20 @@ public sealed class Pr57CrossingQuantumMutationTests
         // fresh deserialize at every boundary, including restoration.
         var junction = sim.State.Roads.Single(r => r.Id == 998002);
         var originalNeighbours = junction.Neighbours.ToList();
-        foreach (var neighbours in new[] {
-            new List<int> { 998001, 998003 },
-            originalNeighbours
-        })
+        var west = sim.State.Roads.Single(r => r.Id == 998004);
+        var east = sim.State.Roads.Single(r => r.Id == 998005);
+        var westNeighbours = west.Neighbours.ToList();
+        var eastNeighbours = east.Neighbours.ToList();
+        foreach (var disconnected in new[] { true, false })
         {
-            junction.Neighbours = neighbours;
+            // Keep both ends of each road edge consistent. FromJson repairs
+            // asymmetric road graphs, so comparing raw JSON after a one-sided
+            // mutation would test normalization rather than crossing clearance.
+            junction.Neighbours = disconnected
+                ? new List<int> { 998001, 998003 }
+                : originalNeighbours.ToList();
+            west.Neighbours = disconnected ? new List<int>() : westNeighbours.ToList();
+            east.Neighbours = disconnected ? new List<int>() : eastNeighbours.ToList();
             var snapshot = sim.SaveToJson();
             var fresh = CitySimulation.FromJson(snapshot);
             Assert.Equal(snapshot, fresh.SaveToJson());
