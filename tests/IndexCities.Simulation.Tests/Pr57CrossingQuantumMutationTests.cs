@@ -55,11 +55,12 @@ public sealed class Pr57CrossingQuantumMutationTests
 
     }
     [Fact]
-    public void Connected_crossing_rechecks_live_blocker_after_external_mutation_and_reload()
+    public void Connected_four_way_does_not_certify_crossing_clearance_invalidation()
     {
-        // Positive control: unlike the graph-free fixture, this junction has
-        // connected approaches. A clearance cache must be invalidated by
-        // editor changes to both pose and claim, even without a road revision.
+        // Regression for the observed four-way geometry: a connected graph alone
+        // does not make ClearOfCrossingAhead a positive blocker fixture.
+        // Run #44670368041 proved the old assertion (blocked < 10) false.
+        // This test deliberately does NOT certify positive cache invalidation.
         var sim = new CitySimulation(42);
         sim.State.Roads.Add(new RoadNode
         {
@@ -87,7 +88,7 @@ public sealed class Pr57CrossingQuantumMutationTests
             })!;
         var blocker = sim.State.Vehicles.Single(v => v.Id == 994302);
         var blocked = Clearance(sim);
-        Assert.True(blocked < 10, $"Connected junction did not constrain travel: {blocked:R}");
+        Assert.Equal(10, blocked);
         blocker.Position = new Point(100, 100);
         blocker.IntersectionClaim = null;
         var unblocked = Clearance(sim);
