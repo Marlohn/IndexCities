@@ -426,6 +426,16 @@ public sealed class Pr57CrossingQuantumMutationTests
         // travel path. Require actual motion before testing a lane winner.
         Assert.NotEqual(new Point(0, 0), farFollower.Position);
         Assert.NotEqual(nearFollower.Position, farFollower.Position);
+        // Once lane competition is observable, mutate the live blocker
+        // between integrated quanta and compare against a reloaded snapshot.
+        // A stale cross-quantum winner must not change the full state.
+        near.State.Vehicles.Single(v => v.Id == 999302).Position = new Point(100, 100);
+        var mutatedSnapshot = near.SaveToJson();
+        var reloaded = CitySimulation.FromJson(mutatedSnapshot);
+        Assert.Equal(mutatedSnapshot, reloaded.SaveToJson());
+        near.Advance(2);
+        reloaded.Advance(2);
+        Assert.Equal(reloaded.SaveToJson(), near.SaveToJson());
     }
 
 }
