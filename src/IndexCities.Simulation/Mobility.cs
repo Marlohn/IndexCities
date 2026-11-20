@@ -255,8 +255,10 @@ public sealed partial class CitySimulation
         static (int X,int Z) Pr57CrossingKey(Point p)=>((int)Math.Floor(p.X/pr57CrossingCell),(int)Math.Floor(p.Z/pr57CrossingCell));
         long pr57CrossingBuilds=0,pr57CrossingIndexedVehicles=0;
         long pr57CrossingChecks=0,pr57CrossingFallbacks=0,pr57CrossingCandidates=0;
+        long pr57CrossingCanonicalScanUpper=0,pr57CrossingIndexBuildVisits=0;
         bool Pr57CrossingOccupied(RoadNode crossing){
             pr57CrossingChecks++;
+            pr57CrossingCanonicalScanUpper+=State.Vehicles.Count;
             if(pr57CrossingOccupancyDirty){
                 pr57CrossingFallbacks++;
                 return State.Vehicles.Any(v=>v.Status==VehicleStatus.Travelling&&(v.IntersectionClaim==crossing.Id||v.WaitingSince==0&&v.Position.Distance(crossing.Position)<3.5));
@@ -267,6 +269,7 @@ public sealed partial class CitySimulation
                 if(pr57CrossingChecks==1)
                     return State.Vehicles.Any(v=>v.Status==VehicleStatus.Travelling&&(v.IntersectionClaim==crossing.Id||v.WaitingSince==0&&v.Position.Distance(crossing.Position)<3.5));
                 pr57CrossingBuilds++;
+                pr57CrossingIndexBuildVisits+=2L*State.Vehicles.Count;
                 pr57CrossingClaimed=State.Vehicles.Where(v=>v.Status==VehicleStatus.Travelling&&v.IntersectionClaim!=null)
                     .GroupBy(v=>v.IntersectionClaim!.Value).ToDictionary(g=>g.Key,g=>g.ToArray());
                 pr57CrossingNearby=State.Vehicles.Where(v=>v.Status==VehicleStatus.Travelling&&v.WaitingSince==0)
@@ -370,7 +373,7 @@ public sealed partial class CitySimulation
             }
         }
         if(pr57CrossingOccupancyIndex&&Environment.GetEnvironmentVariable("PR57_CROSSING_OCCUPANCY_DIAG")=="1")
-            Console.WriteLine($"PR57_CROSSING_OCCUPANCY checks={pr57CrossingChecks} candidates={pr57CrossingCandidates} fallbacks={pr57CrossingFallbacks} builds={pr57CrossingBuilds} indexedVehicles={pr57CrossingIndexedVehicles} vehicles={State.Vehicles.Count}");
+            Console.WriteLine($"PR57_CROSSING_OCCUPANCY checks={pr57CrossingChecks} candidates={pr57CrossingCandidates} fallbacks={pr57CrossingFallbacks} builds={pr57CrossingBuilds} indexedVehicles={pr57CrossingIndexedVehicles} canonicalScanUpper={pr57CrossingCanonicalScanUpper} indexBuildVisits={pr57CrossingIndexBuildVisits} vehicles={State.Vehicles.Count}");
         if (pr57StateCost) _pr57CitizenLoopTicks += System.Diagnostics.Stopwatch.GetTimestamp() - pr57LoopStart;
         Pr57Transitions290End(2);
         Pr57312End();
