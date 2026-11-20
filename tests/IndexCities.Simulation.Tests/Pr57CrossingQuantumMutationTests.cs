@@ -442,6 +442,10 @@ public sealed class Pr57CrossingQuantumMutationTests
         near.Advance(2);
         reloaded.Advance(2);
         Assert.Equal(reloaded.SaveToJson(), near.SaveToJson());
+        var blockedFollower = stillBlocked.State.Vehicles.Single(v => v.Id == 999301);
+        var releasedFollower = near.State.Vehicles.Single(v => v.Id == 999301);
+        Console.WriteLine($"PR57_LANE_MUTATION_COUNTERFACTUAL blocked={blockedFollower.Position} released={releasedFollower.Position}");
+        Assert.NotEqual(blockedFollower.Position, releasedFollower.Position);
         // A Step-scoped spatial workset must also remain causal on subsequent
         // quanta, not merely at the first post-mutation boundary. Reload a
         // fresh reference at every checkpoint to expose retained stale state.
@@ -454,10 +458,6 @@ public sealed class Pr57CrossingQuantumMutationTests
             freshCheckpoint.Advance(2);
             Assert.Equal(freshCheckpoint.SaveToJson(), near.SaveToJson());
         }
-        var blockedFollower = stillBlocked.State.Vehicles.Single(v => v.Id == 999301);
-        var releasedFollower = near.State.Vehicles.Single(v => v.Id == 999301);
-        Console.WriteLine($"PR57_LANE_MUTATION_COUNTERFACTUAL blocked={blockedFollower.Position} released={releasedFollower.Position}");
-        Assert.NotEqual(blockedFollower.Position, releasedFollower.Position);
     }
 
 }
