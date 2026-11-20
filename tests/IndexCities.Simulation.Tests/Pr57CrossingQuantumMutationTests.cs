@@ -296,6 +296,23 @@ public sealed class Pr57CrossingQuantumMutationTests
             Assert.Equal(Clearance(fresh), Clearance(sim));
             Assert.Equal(snapshot, sim.SaveToJson());
         }
+        // External movement of the querying vehicle changes the geometry of
+        // the clearance request even when the blocker and both routes stay put.
+        // A future cross-quantum reuse must re-evaluate this dependency.
+        var originalFollowerPosition = follower.Position;
+        foreach (var position in new[] {
+            new Point(0.5, 0), new Point(0, 1), originalFollowerPosition
+        })
+        {
+            follower.Position = position;
+            var snapshot = sim.SaveToJson();
+            var fresh = CitySimulation.FromJson(snapshot);
+            Assert.Equal(snapshot, fresh.SaveToJson());
+            var liveClearance = Clearance(sim);
+            Assert.Equal(Clearance(fresh), liveClearance);
+            Assert.True(double.IsFinite(liveClearance) && liveClearance >= 0 && liveClearance <= 10);
+            Assert.Equal(snapshot, sim.SaveToJson());
+        }
         // Road graph topology is canonicalized during FromJson even when both
         // Neighbours lists are edited symmetrically: the loader restores edges
         // from road geometry. Such an edit is not a valid JSON-parity fixture.
