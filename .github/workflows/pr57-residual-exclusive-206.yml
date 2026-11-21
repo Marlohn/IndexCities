@@ -599,6 +599,69 @@ jobs:
                         'parity','EXACT_FULL_JSON_THREE_CHECKPOINTS',
                         'limitation','REBUILD_FALLBACK_COUNTERS_NOT_YET_EXPOSED_NO_10K_PROOF')
           PY
+      - name: Diagnose baseline lake pollution determinism without bend reuse
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="artifacts/residual-exclusive-206/lake-baseline-repeat"
+          mkdir -p "$root"
+          source="$(find artifacts/retained -type f -path '*/realA-control/checkpoint-0.json' -print -quit)"
+          test -s "$source"
+          for trial in A1 A2 B1; do
+            mkdir -p "$root/$trial"
+            bend=0
+            if [[ "$trial" == B1 ]]; then bend=1; fi
+            echo "PR57_LAKE_BASELINE_RUN trial=$trial canonical=0 bendReuse=$bend"
+            PR57_LAKE_SLICE_TRACE=1 PR57_POLLUTION_ULP_TRACE=1 PR57_CANONICAL_POLLUTION_ORDER=0 \
+            PR57_BEND_REUSE_ANY_SCAN="$bend" PR57_HOST_QUANTUM=1 \
+            PR57_AB_CHECKPOINT=1 PR57_206_MID_CHECKPOINT=1 \
+            PR57_SAVE_CAPTURE_DIR="$root/$trial" \
+              timeout 180s dotnet run --no-build -c Release \
+              --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+              profile cycle --seed=42 --warmup=0 --days=1 \
+              --window=300 --cap=300 --resume="$source" > "$root/$trial.log"
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('artifacts/residual-exclusive-206/lake-baseline-repeat')
+          traces=[]
+          for trial in ('A1','A2','B1'):
+              log=(root/f'{trial}.log').read_text()
+              assert 'INVARIANTS OK' in log and 'SAVE ' in log,(trial,'invariants')
+              trace=[line for line in log.splitlines() if line.startswith('PR57_LAKE_SLICE_TRACE ')]
+              assert trace,(trial,'trace not exercised')
+              traces.append(trace)
+              print('PR57_LAKE_BASELINE_TRACE_COUNT',trial,len(trace))
+          ulp_traces={}
+          for trial in ('A1','A2','B1'):
+              log=(root/f'{trial}.log').read_text()
+              ulp=[line for line in log.splitlines() if line.startswith('PR57_POLLUTION_ULP ')]
+              assert ulp,(trial,'ULP phase trace not exercised')
+              ulp_traces[trial]=ulp
+              print('PR57_POLLUTION_ULP_COUNT',trial,len(ulp))
+          for trial in ('A2','B1'):
+              a,b=ulp_traces['A1'],ulp_traces[trial]
+              mismatch=next(((i,x,y) for i,(x,y) in enumerate(zip(a,b)) if x!=y),None)
+              if mismatch is None and len(a)!=len(b):
+                  mismatch=(min(len(a),len(b)),'END_OF_TRACE','END_OF_TRACE')
+              print('PR57_POLLUTION_ULP_FIRST_DIFFERENCE',trial,mismatch if mismatch else 'NONE')
+          mismatch=next(((i,a,b) for i,(a,b) in enumerate(zip(traces[0],traces[1])) if a!=b),None)
+          if mismatch is None and len(traces[0])!=len(traces[1]):
+              mismatch=(min(map(len,traces)),'END_OF_TRACE','END_OF_TRACE')
+          print('PR57_LAKE_BASELINE_FIRST_DIFFERENCE',mismatch if mismatch else 'NONE')
+          for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+              a=(root/'A1'/checkpoint).read_bytes()
+              b=(root/'A2'/checkpoint).read_bytes()
+              print('PR57_LAKE_BASELINE_FULL_JSON',checkpoint,'EQUAL' if a==b else 'DIFFERENT')
+          bend_mismatch=next(((i,a,b) for i,(a,b) in enumerate(zip(traces[0],traces[2])) if a!=b),None)
+          if bend_mismatch is None and len(traces[0])!=len(traces[2]):
+              bend_mismatch=(min(len(traces[0]),len(traces[2])),'END_OF_TRACE','END_OF_TRACE')
+          print('PR57_BEND_LAKE_FIRST_DIFFERENCE',bend_mismatch if bend_mismatch else 'NONE')
+          for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+              a=(root/'A1'/checkpoint).read_bytes()
+              b=(root/'B1'/checkpoint).read_bytes()
+              print('PR57_BEND_LAKE_FULL_JSON',checkpoint,'EQUAL' if a==b else 'DIFFERENT')
+          PY
       - name: Measure opt-in bend enumeration reuse with fresh-process ABBA
         # Revalidation only: prior worksREAL mismatch in run 44179081642;
         # independent lake-slice replay repeated equal in run 44195925158.
@@ -715,69 +778,6 @@ jobs:
                         'raw',[(t,rows[t][key]) for t in ('A1','B1','B2','A2')],
                         'parity','EXACT_FULL_JSON_THREE_CHECKPOINTS',
                         'limitation','NO_10K_PROOF')
-          PY
-      - name: Diagnose baseline lake pollution determinism without bend reuse
-        shell: bash
-        run: |
-          set -euo pipefail
-          root="artifacts/residual-exclusive-206/lake-baseline-repeat"
-          mkdir -p "$root"
-          source="$(find artifacts/retained -type f -path '*/realA-control/checkpoint-0.json' -print -quit)"
-          test -s "$source"
-          for trial in A1 A2 B1; do
-            mkdir -p "$root/$trial"
-            bend=0
-            if [[ "$trial" == B1 ]]; then bend=1; fi
-            echo "PR57_LAKE_BASELINE_RUN trial=$trial canonical=0 bendReuse=$bend"
-            PR57_LAKE_SLICE_TRACE=1 PR57_POLLUTION_ULP_TRACE=1 PR57_CANONICAL_POLLUTION_ORDER=0 \
-            PR57_BEND_REUSE_ANY_SCAN="$bend" PR57_HOST_QUANTUM=1 \
-            PR57_AB_CHECKPOINT=1 PR57_206_MID_CHECKPOINT=1 \
-            PR57_SAVE_CAPTURE_DIR="$root/$trial" \
-              timeout 180s dotnet run --no-build -c Release \
-              --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
-              profile cycle --seed=42 --warmup=0 --days=1 \
-              --window=300 --cap=300 --resume="$source" > "$root/$trial.log"
-          done
-          python3 - <<'PY'
-          from pathlib import Path
-          root=Path('artifacts/residual-exclusive-206/lake-baseline-repeat')
-          traces=[]
-          for trial in ('A1','A2','B1'):
-              log=(root/f'{trial}.log').read_text()
-              assert 'INVARIANTS OK' in log and 'SAVE ' in log,(trial,'invariants')
-              trace=[line for line in log.splitlines() if line.startswith('PR57_LAKE_SLICE_TRACE ')]
-              assert trace,(trial,'trace not exercised')
-              traces.append(trace)
-              print('PR57_LAKE_BASELINE_TRACE_COUNT',trial,len(trace))
-          ulp_traces={}
-          for trial in ('A1','A2','B1'):
-              log=(root/f'{trial}.log').read_text()
-              ulp=[line for line in log.splitlines() if line.startswith('PR57_POLLUTION_ULP ')]
-              assert ulp,(trial,'ULP phase trace not exercised')
-              ulp_traces[trial]=ulp
-              print('PR57_POLLUTION_ULP_COUNT',trial,len(ulp))
-          for trial in ('A2','B1'):
-              a,b=ulp_traces['A1'],ulp_traces[trial]
-              mismatch=next(((i,x,y) for i,(x,y) in enumerate(zip(a,b)) if x!=y),None)
-              if mismatch is None and len(a)!=len(b):
-                  mismatch=(min(len(a),len(b)),'END_OF_TRACE','END_OF_TRACE')
-              print('PR57_POLLUTION_ULP_FIRST_DIFFERENCE',trial,mismatch if mismatch else 'NONE')
-          mismatch=next(((i,a,b) for i,(a,b) in enumerate(zip(traces[0],traces[1])) if a!=b),None)
-          if mismatch is None and len(traces[0])!=len(traces[1]):
-              mismatch=(min(map(len,traces)),'END_OF_TRACE','END_OF_TRACE')
-          print('PR57_LAKE_BASELINE_FIRST_DIFFERENCE',mismatch if mismatch else 'NONE')
-          for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
-              a=(root/'A1'/checkpoint).read_bytes()
-              b=(root/'A2'/checkpoint).read_bytes()
-              print('PR57_LAKE_BASELINE_FULL_JSON',checkpoint,'EQUAL' if a==b else 'DIFFERENT')
-          bend_mismatch=next(((i,a,b) for i,(a,b) in enumerate(zip(traces[0],traces[2])) if a!=b),None)
-          if bend_mismatch is None and len(traces[0])!=len(traces[2]):
-              bend_mismatch=(min(len(traces[0]),len(traces[2])),'END_OF_TRACE','END_OF_TRACE')
-          print('PR57_BEND_LAKE_FIRST_DIFFERENCE',bend_mismatch if bend_mismatch else 'NONE')
-          for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
-              a=(root/'A1'/checkpoint).read_bytes()
-              b=(root/'B1'/checkpoint).read_bytes()
-              print('PR57_BEND_LAKE_FULL_JSON',checkpoint,'EQUAL' if a==b else 'DIFFERENT')
           PY
       - name: Validate sparse occupied-cell bitset query with fresh-process ABBA
         shell: bash
