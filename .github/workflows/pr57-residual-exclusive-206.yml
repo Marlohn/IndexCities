@@ -1077,6 +1077,65 @@ jobs:
                     'censusB1',values['B1']['census'],'censusB2',values['B2']['census'],
                     'limitation','SMALL_REAL_SAVES_NOT_10K')
           PY
+      - name: PR57 quiescent parked gate integrated ABBA and exact causal parity
+        # Isolated opt-in; full JSON parity precedes any wall claim.
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/residual-exclusive-206/quiescent-parked-abba
+          for case in worksREAL queueREAL; do
+            scenario=realA-control
+            if [[ "$case" == queueREAL ]]; then scenario=congested-control; fi
+            source="$(find artifacts/retained -type f -path "*/$scenario/checkpoint-0.json" -print -quit)"
+            test -s "$source"
+            for trial in A1 B1 B2 A2; do
+              enabled=0
+              if [[ "$trial" == B* ]]; then enabled=1; fi
+              dest="$PWD/artifacts/residual-exclusive-206/quiescent-parked-abba/$case-$trial"
+              mkdir -p "$dest"
+              echo "PR57_QUIESCENT_RUN case=$case trial=$trial enabled=$enabled"
+              PR57_QUIESCENT_PARKED_GATE="$enabled" PR57_HOST_QUANTUM=1 \
+              PR57_AB_CHECKPOINT=1 PR57_206_MID_CHECKPOINT=1 \
+              PR57_SAVE_CAPTURE_DIR="$dest" \
+                timeout 180s dotnet run --no-build -c Release \
+                --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                profile cycle --seed=42 --warmup=0 --days=1 \
+                --window=300 --cap=300 --resume="$source" > "$dest/run.log"
+            done
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, statistics
+          root=Path('artifacts/residual-exclusive-206/quiescent-parked-abba')
+          for case in ('worksREAL','queueREAL'):
+              rows={}
+              for trial in ('A1','B1','B2','A2'):
+                  folder=root/f'{case}-{trial}'
+                  log=(folder/'run.log').read_text()
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,trial,'invariants')
+                  windows=[line for line in log.splitlines() if line.startswith('WINDOW ')]
+                  assert len(windows)==1,(case,trial,'window')
+                  rows[trial]={}
+                  for key in ('wall','cpu','allocMB'):
+                      match=re.search(r'(?:^| )'+key+r'=([-0-9.]+)',windows[0])
+                      assert match,(case,trial,key)
+                      rows[trial][key]=float(match.group(1))
+                  for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                      assert (folder/checkpoint).is_file(),(case,trial,checkpoint)
+              for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                  baseline=(root/f'{case}-A1'/checkpoint).read_bytes()
+                  for trial in ('B1','B2','A2'):
+                      assert (root/f'{case}-{trial}'/checkpoint).read_bytes()==baseline,(case,trial,checkpoint,'FULL_JSON_MISMATCH')
+              def avg(trials,key):return statistics.mean(rows[t][key] for t in trials)
+              a=avg(('A1','A2'),'wall');b=avg(('B1','B2'),'wall')
+              print('PR57_QUIESCENT_ABBA',case,'baselineWall',a,'optWall',b,'ratio',a/b,
+                    'baselineCpu',avg(('A1','A2'),'cpu'),'optCpu',avg(('B1','B2'),'cpu'),
+                    'baselineAllocMB',avg(('A1','A2'),'allocMB'),
+                    'optAllocMB',avg(('B1','B2'),'allocMB'),
+                    'parity','EXACT_FULL_JSON_THREE_CHECKPOINTS',
+                    'limitation','NO_ELIGIBILITY_COUNTER_SMALL_REAL_SAVES_NOT_10K')
+          PY
       - name: PR57 site body broadphase integrated ABBA and exact causal parity
         # This gate uses snapshots restored before the independent sparse-bitset
         # experiment; keep its causal verdict observable if that experiment fails.
