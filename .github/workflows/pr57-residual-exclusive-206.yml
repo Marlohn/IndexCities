@@ -1134,6 +1134,55 @@ jobs:
                     'parity','EXACT_FULL_JSON_THREE_CHECKPOINTS',
                     'limitation','NO_WORK_AVOIDANCE_COUNTER_SMALL_REAL_SAVES_NOT_10K')
           PY
+      - name: Census actual site-body work with broadphase off and on
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$PWD/artifacts/residual-exclusive-206/site-body-census"
+          mkdir -p "$root"
+          for case in worksREAL queueREAL; do
+            scenario=realA-control
+            if [[ "$case" == queueREAL ]]; then scenario=congested-control; fi
+            source="$(find artifacts/retained -type f -path "*/$scenario/checkpoint-0.json" -print -quit)"
+            test -s "$source"
+            for enabled in 0 1; do
+              dest="$root/$case-$enabled"
+              mkdir -p "$dest"
+              PR57_SITE_BODY_CENSUS=1 PR57_SITE_BODY_BROADPHASE="$enabled" PR57_HOST_QUANTUM=1 \
+              PR57_AB_CHECKPOINT=1 PR57_206_MID_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="$dest" \
+                timeout 180s dotnet run --no-build -c Release \
+                --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                profile cycle --seed=42 --warmup=0 --days=1 \
+                --window=300 --cap=300 --resume="$source" > "$dest/run.log"
+            done
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          root=Path('artifacts/residual-exclusive-206/site-body-census')
+          for case in ('worksREAL','queueREAL'):
+              rows={}
+              for enabled in ('0','1'):
+                  folder=root/f'{case}-{enabled}'
+                  log=(folder/'run.log').read_text()
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,enabled)
+                  census=[line for line in log.splitlines() if line.startswith('PR57_SITE_BODY_CENSUS ')]
+                  assert census,(case,enabled,'NO_CENSUS')
+                  line=census[-1]
+                  rows[enabled]={key:int(value) for key,value in re.findall(r'(queries|probes|inspected|all_candidates|selected_candidates|build_visits)=(\\d+)',line)}
+                  assert len(rows[enabled])==6,(case,enabled,line)
+                  for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                      assert (folder/checkpoint).is_file(),(case,enabled,checkpoint)
+              for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                  assert (root/f'{case}-0'/checkpoint).read_bytes()==(root/f'{case}-1'/checkpoint).read_bytes(),(case,checkpoint,'FULL_JSON_MISMATCH')
+              a,b=rows['0'],rows['1']
+              assert a['queries']==b['queries'] and a['probes']==b['probes'],(case,a,b)
+              print('PR57_SITE_BODY_CENSUS_DECISION',case,'baseline',a,'optIn',b,
+                    'visits_avoided',a['inspected']-b['inspected'],
+                    'build_visits',b['build_visits'],
+                    'parity','EXACT_FULL_JSON_THREE_CHECKPOINTS',
+                    'limitation','CENSUS_INSTRUMENTED_NOT_ABBA_NOT_10K')
+          PY
       - name: Preserve full checkpoints and logs
         if: always()
         uses: actions/upload-artifact@v4
