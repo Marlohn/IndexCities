@@ -234,10 +234,11 @@ for(var d=1;d<=days;d++){
         }
     }
     var w=sw.Elapsed.TotalSeconds;
-    if(minAlive>0 && sim.State.Citizens.Count(c=>c.Alive)<minAlive)
-        throw new InvalidOperationException($"PR57_SCALE_UNDERPOPULATED stage=window-{d} required={minAlive} actual={sim.State.Citizens.Count(c=>c.Alive)}");
-    if(sim.State.Citizens.Count(c=>c.Alive)<minAlive)
-        throw new InvalidOperationException($"PR57_SCALE_UNDERPOPULATED stage=window window={d} requiredAlive={minAlive} actualAlive={sim.State.Citizens.Count(c=>c.Alive)}");
+    // Experimental population validity is checked after every measured window.
+    // A city below the requested live load cannot establish a scale result.
+    var aliveAtWindowEnd=sim.State.Citizens.Count(c=>c.Alive);
+    if(aliveAtWindowEnd<minAlive)
+        throw new InvalidOperationException($"PR57_SCALE_UNDERPOPULATED stage=window-{d} requiredAlive={minAlive} actualAlive={aliveAtWindowEnd}");
     var windowCpu=(Process.GetCurrentProcess().TotalProcessorTime-windowCpuBefore).TotalSeconds;
     total+=w;done=d;
     var windowAllocMB=(GC.GetTotalAllocatedBytes()-windowAllocBefore)/1e6;
