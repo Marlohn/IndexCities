@@ -668,6 +668,7 @@ public sealed partial class CitySimulation
         var pr57MotionCensus=Environment.GetEnvironmentVariable("PR57_MOTION_QUANTA_CENSUS")=="1";
         long pr57MotionActors=0,pr57MotionQuanta=0;
         long pr57MotionNoQuantumActors=0,pr57MotionQuantumActors=0;
+        long pr57NoQuantumParked=0,pr57NoQuantumOther=0,pr57NoQuantumParkedTicks=0,pr57NoQuantumOtherTicks=0;
         long pr57MotionNoQuantumTicks=0,pr57MotionQuantumTicks=0,pr57MotionPhysicalTicks=0;
         long pr57LaneExactTicks=0,pr57LaneCandidateTicks=0,pr57BendSelectTicks=0,pr57LaneCandidates=0,pr57LaneSelfCandidates=0,pr57LaneOtherCandidates=0,pr57BendCandidates=0,pr57BendSelected=0;
         var pr57CostProbe=scanProfile is not null&&Pr57VehicleCostProbeEnabled;
@@ -1565,7 +1566,7 @@ public sealed partial class CitySimulation
             }finally{
                 if(pr57MotionCensus){
                     var actorTicks=System.Diagnostics.Stopwatch.GetTimestamp()-pr57MotionActorStart;
-                    if(pr57MotionQuanta==pr57MotionActorQuantaStart){pr57MotionNoQuantumActors++;pr57MotionNoQuantumTicks+=actorTicks;}
+                    if(pr57MotionQuanta==pr57MotionActorQuantaStart){pr57MotionNoQuantumActors++;pr57MotionNoQuantumTicks+=actorTicks; if(v.Status==VehicleStatus.Parked){pr57NoQuantumParked++;pr57NoQuantumParkedTicks+=actorTicks;}else{pr57NoQuantumOther++;pr57NoQuantumOtherTicks+=actorTicks;}}
                     else{pr57MotionQuantumActors++;pr57MotionQuantumTicks+=actorTicks;}
                 }
                 Pr57Effect253AfterActor(v);
@@ -1702,7 +1703,7 @@ public sealed partial class CitySimulation
             }
             if(Pr57QueueLimiterEnabled&&_pr57MovementAllocCalls%100==0)Pr57QueueLimiterPrint(_pr57MovementAllocCalls);
             if(pr57MotionCensus&&_pr57MovementAllocCalls%60==0)
-                Console.WriteLine($"PR57_MOTION_QUANTA_CENSUS slice={_pr57MovementAllocCalls} actors={pr57MotionActors} physicalQuanta={pr57MotionQuanta} noQuantumActors={pr57MotionNoQuantumActors} quantumActors={pr57MotionQuantumActors} noQuantumMs={pr57MotionNoQuantumTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} quantumMs={pr57MotionQuantumTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} physicalLoopMs={pr57MotionPhysicalTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} laneExactMs={pr57LaneExactTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} laneCandidateSelectMs={pr57LaneCandidateTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} laneCandidates={pr57LaneCandidates} laneSelfCandidates={pr57LaneSelfCandidates} laneOtherCandidates={pr57LaneOtherCandidates} bendSelectMs={pr57BendSelectTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} bendCandidates={pr57BendCandidates} bendSelected={pr57BendSelected} scope=INTRUSIVE_OBSERVATIONAL_NO_SKIP");
+                Console.WriteLine($"PR57_MOTION_QUANTA_CENSUS slice={_pr57MovementAllocCalls} actors={pr57MotionActors} physicalQuanta={pr57MotionQuanta} noQuantumActors={pr57MotionNoQuantumActors} noQuantumParked={pr57NoQuantumParked} noQuantumOther={pr57NoQuantumOther} noQuantumParkedMs={pr57NoQuantumParkedTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} noQuantumOtherMs={pr57NoQuantumOtherTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} quantumActors={pr57MotionQuantumActors} noQuantumMs={pr57MotionNoQuantumTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} quantumMs={pr57MotionQuantumTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} physicalLoopMs={pr57MotionPhysicalTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} laneExactMs={pr57LaneExactTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} laneCandidateSelectMs={pr57LaneCandidateTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} laneCandidates={pr57LaneCandidates} laneSelfCandidates={pr57LaneSelfCandidates} laneOtherCandidates={pr57LaneOtherCandidates} bendSelectMs={pr57BendSelectTicks*1000.0/System.Diagnostics.Stopwatch.Frequency:F5} bendCandidates={pr57BendCandidates} bendSelected={pr57BendSelected} scope=INTRUSIVE_OBSERVATIONAL_NO_SKIP");
             if(pr57SetupProbe&&_pr57MovementAllocCalls%60==0){
                 var hz=System.Diagnostics.Stopwatch.Frequency;
                 Console.WriteLine($"PR57_SLICE_SETUP slices={_pr57MovementAllocCalls} cleanupCalls={_pr57SliceSetupCalls[0]} cleanupVehicles={_pr57SliceSetupVehicles[0]} cleanupMs={_pr57SliceSetupTicks[0]*1000.0/hz:F5} sortCalls={_pr57SliceSetupCalls[1]} sortVehicles={_pr57SliceSetupVehicles[1]} sortMs={_pr57SliceSetupTicks[1]*1000.0/hz:F5} guardHits={_pr57SortGuardHits} guardFallbacks={_pr57SortGuardFallbacks} guardComparisons={_pr57SortGuardComparisons} scope=INTRUSIVE_NO_SKIP");
