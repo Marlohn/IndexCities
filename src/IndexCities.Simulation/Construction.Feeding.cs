@@ -193,6 +193,10 @@ public sealed partial class CitySimulation
             Console.WriteLine($"PR57_ZERO_SITE_CENSUS calls={_pr57ZeroSiteCalls} zero={_pr57ZeroSiteHits} vehicle_scan_upper_bound={_pr57ZeroSiteReservationUpperBound}");
     }
 
+    // Opt-in only: avoid re-enumerating all vehicles at each 0.5m physical probe.
+    static readonly bool Pr57SiteBodyBroadphaseEnabled =
+        Environment.GetEnvironmentVariable("PR57_SITE_BODY_BROADPHASE")=="1";
+
     double SafeSiteTravel(Vehicle vehicle,Point target,double distance,bool machinesOnly=false)
     {
         Pr57ObserveZeroSiteCensus(distance);
@@ -235,9 +239,16 @@ public sealed partial class CitySimulation
                 .Select(t=>(t,t.Position,t.Heading)));
         }
         if(machinesOnly&&reserved.Count==0&&!siteOwners.Any(other=>other.Machine!=PavingMachine.None&&other.Status!=VehicleStatus.Outside&&other.Position.Distance(vehicle.Position)<=distance+12)){Pr57S5SiteObserve(vehicle,distance,distance,machinesOnly,reserved.Count,siteOwners.Count);return distance;}
+        // PR57 isolated experiment: a single conservative broad phase for the
+        // repeated half-metre body tests. Positions do not mutate inside this
+        // query; preserve original enumeration order and exact narrow predicates.
+        // The extra metre covers roundoff at the strict 12m narrow-phase edge.
+        var bodyCandidates=Pr57SiteBodyBroadphaseEnabled&&distance>0
+            ?siteOwners.Where(other=>other.Position.Distance(vehicle.Position)<=distance+13).ToList()
+            :siteOwners;
         var safe=0.0;
         while(safe<distance-.000001){var next=Math.Min(distance,safe+.5);var at=vehicle.Position.MoveTowards(target,next);
-            if((machinesOnly?siteOwners:State.Vehicles).Any(other=>other.Id!=vehicle.Id&&other.Status!=VehicleStatus.Outside&&(!machinesOnly||other.Machine!=PavingMachine.None&&(other.Status==VehicleStatus.Parked||!(other.Position.Distance(State.Entry)<8&&vehicle.Position.Distance(State.Entry)<8)))&&other.Position.Distance(at)<12&&VehicleBodiesOverlap(vehicle,at,other)))break;
+            if(bodyCandidates.Any(other=>other.Id!=vehicle.Id&&other.Status!=VehicleStatus.Outside&&(!machinesOnly||other.Machine!=PavingMachine.None&&(other.Status==VehicleStatus.Parked||!(other.Position.Distance(State.Entry)<8&&vehicle.Position.Distance(State.Entry)<8)))&&other.Position.Distance(at)<12&&VehicleBodiesOverlap(vehicle,at,other)))break;
             if(reserved.Any(pose=>pose.Position.Distance(at)<12&&BodiesOverlap(vehicle,at,vehicle.Heading,pose.Machine,pose.Position,pose.Heading)))break;
             safe=next;
         }
