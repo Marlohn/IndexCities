@@ -1169,7 +1169,7 @@ jobs:
                   census=[line for line in log.splitlines() if line.startswith('PR57_SITE_BODY_CENSUS ')]
                   assert census,(case,enabled,'NO_CENSUS')
                   line=census[-1]
-                  rows[enabled]={key:int(value) for key,value in re.findall(r'(queries|probes|inspected|all_candidates|selected_candidates|build_visits)=(\\d+)',line)}
+                  rows[enabled]={key:int(value) for key,value in re.findall(r'(queries|probes|inspected|all_candidates|selected_candidates|build_visits)=(\d+)',line)}
                   assert len(rows[enabled])==6,(case,enabled,line)
                   for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
                       assert (folder/checkpoint).is_file(),(case,enabled,checkpoint)
