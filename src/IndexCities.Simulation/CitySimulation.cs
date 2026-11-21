@@ -423,8 +423,16 @@ public sealed partial class CitySimulation
         var pr57PhaseVehicles=Pr57PhaseIdentityProbe?State.Vehicles.Select(v=>v.Id.ToString()).ToArray():null;
         var pr57PhaseCitizens=Pr57PhaseIdentityProbe?State.Citizens.Select(c=>c.Id.ToString()).ToArray():null;
         var pr57PhaseProjects=Pr57PhaseIdentityProbe?State.Projects.Select(p=>p.Id.ToString()).ToArray():null;
+        // PR57 opt-in: only the synchronous vehicle phase may reuse ABSENT
+        // driver IDs; public State edits and other phases must see fresh misses.
+        var pr57DriverMissingWindow=Environment.GetEnvironmentVariable("PR57_DRIVER_MISSING_INDEX")=="1";
+        if(pr57DriverMissingWindow)_citizenIndex.Pr57BeginAbsentWindow();
         try { MoveVehicles(dt); }
-        finally { Pr57TurnWayWorksetEnd(); }
+        finally
+        {
+            if(pr57DriverMissingWindow)_citizenIndex.Pr57EndAbsentWindow();
+            Pr57TurnWayWorksetEnd();
+        }
         Pr57310Boundary("vehicles");
         if(profile is not null)profile.Mark(0,ref started);
         Pr57ObservePollutionBits("0");
