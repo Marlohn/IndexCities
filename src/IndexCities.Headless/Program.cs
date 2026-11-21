@@ -16,7 +16,7 @@ using IndexCities.Simulation;
 //          --strand=N empties the tank of N driving vehicles each day and follows the tow and the queue for 30 min
 // Results are measurements, not product rules: see docs/exploration/ritmo-velocidades.md.
 Console.OutputEncoding=Encoding.UTF8;
-var known=new HashSet<string>{"rows","length","days","cap","signals","seed","growth","warmup","strand","window","cycle-houses","cycle-bypass","resume","empty","min-alive"};
+var known=new HashSet<string>{"rows","length","days","cap","signals","seed","growth","warmup","strand","window","cycle-houses","cycle-bypass","resume","empty","min-alive","min-alive"};
 var opts=new Dictionary<string,string>();foreach(var p in args.Skip(2).Select(a=>a.TrimStart('-').Split('=',2)))opts[p[0]]=p.Length>1?p[1]:"1";
 string Opt(string k,string d)=>opts.GetValueOrDefault(k,d);
 if(opts.Keys.FirstOrDefault(k=>!known.Contains(k)) is {} unknown){Console.Error.WriteLine("opção desconhecida: --"+unknown);return 2;}
@@ -27,6 +27,8 @@ var cycleBypass=Opt("cycle-bypass","0")=="1";
 if(cycleHouses<0||cycleHouses>48){Console.Error.WriteLine("--cycle-houses deve estar entre 0 e 48 (sonda experimental PR57)");return 2;}
 // PR57 benchmark validity gate: refuse to label a run as a population-scale
 // measurement if the real integrated simulation has fewer living Sims.
+var minAlive=int.Parse(Opt("min-alive","0"));
+if(minAlive<0){Console.Error.WriteLine("--min-alive must be nonnegative");return 2;}
 var minAlive=int.Parse(Opt("min-alive","0"));
 if(minAlive<0){Console.Error.WriteLine("--min-alive must be nonnegative");return 2;}
 var windowSeconds=int.Parse(Opt("window","86400"));
@@ -121,6 +123,9 @@ sw.Restart();sim.Advance(warmup*86400);
 if(minAlive>0 && sim.State.Citizens.Count(c=>c.Alive)<minAlive)
     throw new InvalidOperationException($"PR57_SCALE_UNDERPOPULATED stage=warmup required={minAlive} actual={sim.State.Citizens.Count(c=>c.Alive)}");
 Console.WriteLine($"WARMUP {warmup}d wall={sw.Elapsed.TotalSeconds:F1}s {Stats(sim)}");
+// PR57 workload guard: refuse to report a requested population that is absent.
+if(sim.State.Citizens.Count(c=>c.Alive)<minAlive)
+    throw new InvalidOperationException($"PR57_SCALE_UNDERPOPULATED stage=warmup requiredAlive={minAlive} actualAlive={sim.State.Citizens.Count(c=>c.Alive)}");
 // PR57-only snapshot capture: a read-only save for comparing process-local
 // serialization and causal state; no production simulation rule changes.
 var pr57SaveCaptureDir=Environment.GetEnvironmentVariable("PR57_SAVE_CAPTURE_DIR");
@@ -233,6 +238,8 @@ for(var d=1;d<=days;d++){
     var w=sw.Elapsed.TotalSeconds;
     if(minAlive>0 && sim.State.Citizens.Count(c=>c.Alive)<minAlive)
         throw new InvalidOperationException($"PR57_SCALE_UNDERPOPULATED stage=window-{d} required={minAlive} actual={sim.State.Citizens.Count(c=>c.Alive)}");
+    if(sim.State.Citizens.Count(c=>c.Alive)<minAlive)
+        throw new InvalidOperationException($"PR57_SCALE_UNDERPOPULATED stage=window window={d} requiredAlive={minAlive} actualAlive={sim.State.Citizens.Count(c=>c.Alive)}");
     var windowCpu=(Process.GetCurrentProcess().TotalProcessorTime-windowCpuBefore).TotalSeconds;
     total+=w;done=d;
     var windowAllocMB=(GC.GetTotalAllocatedBytes()-windowAllocBefore)/1e6;
