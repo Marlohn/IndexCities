@@ -1,0 +1,26 @@
+name: 'PR57 #356 selected lane witness causal counterexample'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [scripts/pr57-356-inject.py, .github/workflows/pr57-readset-counterexample-356.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  causal-counterexample:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Inject isolated adversarial test into checkout
+        run: python3 scripts/pr57-356-inject.py
+      - name: Run focused canonical predicate counterexample
+        run: dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --filter FullyQualifiedName~Pr57ReadsetCounterexample356Tests --logger 'console;verbosity=normal'
+      - name: Run full simulation test suite
+        run: dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --no-restore

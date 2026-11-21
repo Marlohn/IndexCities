@@ -14,7 +14,24 @@ public sealed partial class CitySimulation
 
     // The asphalt truck unloading at the receiving paver's bay occupies the street
     // with its present body only; its future path is not held.
-    bool UnloadingAsphaltBody(Vehicle v)=>v.Machine==PavingMachine.None&&v.Status==VehicleStatus.Unloading&&v.ShipmentId is {} id&&State.Shipments.Any(s=>s.Id==id&&s.ReceivingMachineId!=null);
+    bool UnloadingAsphaltBody(Vehicle v)
+    {
+        if(v.Machine!=PavingMachine.None||v.Status!=VehicleStatus.Unloading||v.ShipmentId is not {} id)return false;
+        // #209: preserve the original Any short-circuit. The optional observer
+        // counts shipment reads only inside the bounded s6 pose guard.
+        if(!Pr57ShipmentReadCensusEnabled||!_pr57BodySatScope)
+            return State.Shipments.Any(s=>s.Id==id&&s.ReceivingMachineId!=null);
+        _pr57ShipmentLookups++;
+        var count=State.Shipments.Count;
+        _pr57ShipmentListTotal+=count;
+        if(count>_pr57ShipmentListMax)_pr57ShipmentListMax=count;
+        var found=State.Shipments.Any(s=>{
+            _pr57ShipmentVisits++;
+            return s.Id==id&&s.ReceivingMachineId!=null;
+        });
+        if(found)_pr57ShipmentMatches++;
+        return found;
+    }
     // Bodies lane traffic never drives or turns into: a parked machine, an
     // asphalt truck on its site path (also where its hold stops at a body
     // already on it, or at its lane end) or one unloading at the paver bay.

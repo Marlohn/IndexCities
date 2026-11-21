@@ -99,7 +99,7 @@ public sealed partial class CitySimulation
         var home=BuildingById(FamilyById(c.FamilyId)?.HomeId);var from=home==null?null:Access(home);var to=Access(target);
         if(home!=null&&(from==null||to==null||FindRoadRoute(from.Id,to.Id).Count==0)){SettleWages(c,target);c.WorkplaceId=null;order.WorkersLeft++;Personal(c,"Saiu do emprego: o novo endereço de "+name+" não tem trajeto viável desde a moradia");return;}
         if(home!=null&&JobOptions(home).FirstOrDefault(b=>b.Id!=target.Id) is {} better&&JobScore(home,better)>JobScore(home,target)+target.SalaryOffer*.15m){
-            SettleWages(c,target);c.WorkplaceId=better.Id;c.Shift=State.Citizens.Count(x=>x.Alive&&x.WorkplaceId==better.Id&&x.Id!=c.Id)%(better.Definition.Utility?3:better.Kind is BuildingKind.Grocery or BuildingKind.FuelStation?2:1);c.NextDecisionAt=State.ElapsedSeconds;
+            SettleWages(c,target);c.WorkplaceId=better.Id;c.Shift=State.Citizens.Count(x=>x.Alive&&x.WorkplaceId==better.Id&&x.Id!=c.Id)%(better.Definition.Utility?3:better.Kind is BuildingKind.Grocery or BuildingKind.FuelStation?2:1);Pr57CitizenAgendaWake(c);c.NextDecisionAt=State.ElapsedSeconds;
             order.WorkersLeft++;Personal(c,"Reavaliou o emprego na mudança de "+name+": trocou por "+better.Definition.Name+" (salário e trajeto melhores)");return;
         }
         order.WorkersContinued++;Personal(c,"Reavaliou o emprego na mudança de "+name+": continua no novo endereço");

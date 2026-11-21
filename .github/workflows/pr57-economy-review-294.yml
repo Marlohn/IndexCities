@@ -1,0 +1,109 @@
+name: 'PR57 #294 economy review event versus recurring Step cost'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths:
+      - .github/workflows/pr57-economy-review-294.yml
+      - scripts/pr57-economy-review-294/**
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  economy-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build observational replay and run simulation tests
+        run: |
+          set -euo pipefail
+          dotnet build scripts/pr57-economy-review-294/Pr57EconomyReview294.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic #259 saves
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Fresh-process ABBA Advance(2), full JSON parity and per-step review census
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/economy-294
+          for case in worksREAL queueREAL real14hREAL gridARTIFICIAL; do
+            input="artifacts/input/${case}-control/checkpoint-0.json"
+            test -s "$input"
+            calls=100
+            if [[ "$case" == gridARTIFICIAL ]]; then calls=50; fi
+            order="control probe"
+            if [[ "$case" == queueREAL || "$case" == gridARTIFICIAL ]]; then order="probe control"; fi
+            for mode in $order; do
+              output="artifacts/economy-294/${case}-${mode}"
+              mkdir -p "$output"
+              dotnet run --no-build -c Release \
+                --project scripts/pr57-economy-review-294/Pr57EconomyReview294.csproj -- \
+                "$input" "$case" "$mode" "$calls" "$output" \
+                > "artifacts/economy-294/${case}-${mode}.log" 2>&1
+            done
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, json, re, statistics
+          root=Path('artifacts/economy-294')
+          for case in ('worksREAL','queueREAL','real14hREAL','gridARTIFICIAL'):
+              calls=50 if case=='gridARTIFICIAL' else 100
+              for at in sorted({0,20,calls//2,calls}):
+                  a=(root/f'{case}-control'/f'checkpoint-{at}.json').read_bytes()
+                  b=(root/f'{case}-probe'/f'checkpoint-{at}.json').read_bytes()
+                  assert a==b,(case,at,'FULL_JSON_MISMATCH')
+                  json.loads(a)
+                  print('PR57_294_PARITY',case,at,'sha256='+hashlib.sha256(a).hexdigest(),flush=True)
+              for mode in ('control','probe'):
+                  log=(root/f'{case}-{mode}.log').read_text()
+                  assert log.count('PR57_294_FINAL ')==1,(case,mode,'final')
+                  assert log.count('PR57_294_CHECKPOINT ')==4,(case,mode,'checkpoints')
+                  assert log.count('PR57_294_STEP ')==(calls if mode=='probe' else 0),(case,mode,'steps')
+              log=(root/f'{case}-probe.log').read_text()
+              steps=[dict(re.findall(r'(\w+)=([^\s]+)',line)) for line in log.splitlines() if line.startswith('PR57_294_STEP ')]
+              reviews=[float(s['economyMs']) for s in steps if s['reviewScheduleChanged']=='True']
+              idle=[float(s['economyMs']) for s in steps if s['reviewScheduleChanged']=='False']
+              expected=0 if case=='worksREAL' else 1
+              assert len(reviews)==expected,(case,'reviewCount',len(reviews))
+              assert len(reviews)+len(idle)==calls
+              assert all(int(s['completedDelta'])==0 for s in steps),(case,'completedConstruction')
+              if reviews:
+                  first=next(int(s['call']) for s in steps if s['reviewScheduleChanged']=='True')
+                  assert first==(1 if case=='gridARTIFICIAL' else 4),(case,'reviewAt',first)
+              median=statistics.median(idle)
+              print('PR57_294_CENSUS',case,'calls='+str(calls),'reviewCalls='+str(len(reviews)),
+                    'reviewPhaseMs='+str(round(sum(reviews),5)),
+                    'nonReviewPhaseMs='+str(round(sum(idle),5)),
+                    'nonReviewMedianMs='+str(round(median,6)),
+                    'reviewPhaseSharePct='+str(round(100*sum(reviews)/(sum(reviews)+sum(idle)),3)),
+                    'noOptimizations=True','fullJsonParity=True',flush=True)
+          print('PR57_294_VERIFIED cases=4 processes=8 checkpointPairs=16 allAdvance2=True',flush=True)
+          PY
+      - name: Preserve raw logs and full checkpoints even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-economy-294
+          path: artifacts/economy-294/**
+          retention-days: 14

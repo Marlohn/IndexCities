@@ -1,0 +1,129 @@
+name: 'PR57 #222 bounded dense physical mirror and nonlocal writer audit'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-dense-mirror-222.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  dense-mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build Release and full regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic works checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-growth
+          run-id: 40250545171
+          github-token: ${{ github.token }}
+          path: artifacts/works
+      - name: Restore authentic congested checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-legal-workplaces-8d
+          run-id: 40169101306
+          github-token: ${{ github.token }}
+          path: artifacts/queue
+      - name: Restore explicitly ARTIFICIAL GRID checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-host-scale-curve
+          run-id: 40258405557
+          github-token: ${{ github.token }}
+          path: artifacts/grid
+      - name: Replay each Advance(2) with and without dense mirror observation
+        shell: bash
+        run: |
+          set -euo pipefail
+          works="$(find artifacts/works -type f -path '*/growth/checkpoint-0.json' -print -quit)"
+          queue="$(find artifacts/queue -type f -path '*/pr57-jobs-20/checkpoint-10.json' -print -quit)"
+          grid="artifacts/grid/grid18-0/checkpoint-1.json"
+          for source in "$works" "$queue" "$grid"; do test -s "$source"; sha256sum "$source"; done
+          mkdir -p artifacts/dense-mirror-222
+          for case in worksREAL queueREAL gridARTIFICIAL; do
+            source="$works"; fixture=cycle; horizon=300
+            if [[ "$case" == queueREAL ]]; then source="$queue"; fi
+            if [[ "$case" == gridARTIFICIAL ]]; then source="$grid"; fixture=grid; horizon=100; fi
+            for mode in control mirror; do
+              output="$PWD/artifacts/dense-mirror-222/$case-$mode"
+              mkdir -p "$output"
+              command=profile; observed=0
+              if [[ "$mode" == mirror ]]; then observed=1; fi
+              echo "PR57_222_RUN case=$case mode=$mode horizon=$horizon cadence=ADVANCE_2"
+              PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_GRID_DIAG=1 \
+              PR57_SAVE_CAPTURE_DIR="$output" PR57_206_RESIDUAL_EXCLUSIVE=1 \
+              PR57_218_EXEC_PATH=0 PR57_219_STAGE_COST=0 \
+              PR57_220_POSE_READSET=0 PR57_221_S5_TEMPORAL=0 PR57_222_DENSE_PROJECTION="$observed" \
+              PR57_214_CANDIDATE_READS=0 PR57_213_CROSS_SLICE_INPUTS=0 \
+              PR57_217_NEGATIVE_FILTERS=0 PR57_VEHICLE_COST_PROBE=0 \
+              PR57_HOT_TIMING=0 PR57_PHASE_ALLOC_PROBE=0 \
+                timeout 180s dotnet run --no-build -c Release \
+                --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                "$command" "$fixture" --seed=42 --warmup=0 --days=1 \
+                --window="$horizon" --cap=300 --resume="$source" | tee "$output.log"
+            done
+          done
+      - name: Verify full JSON parity and dense mirror accounting
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          root=Path('artifacts/dense-mirror-222')
+          def metric(line,key):
+              m=re.search(r'(?:^| )'+re.escape(key)+r'=([-0-9.]+)',line)
+              assert m,(key,line)
+              return float(m.group(1))
+          for case,horizon in [('worksREAL',300),('queueREAL',300),('gridARTIFICIAL',100)]:
+              logs={m:(root/f'{case}-{m}.log').read_text() for m in ('control','mirror')}
+              for mode,log in logs.items():
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,mode)
+                  assert len([x for x in log.splitlines() if x.startswith('WINDOW ')])==1,(case,mode)
+                  for i in (0,1):
+                      assert (root/f'{case}-{mode}'/f'checkpoint-{i}.json').is_file(),(case,mode,i)
+              for i in (0,1):
+                  assert (root/f'{case}-control'/f'checkpoint-{i}.json').read_bytes()==(root/f'{case}-mirror'/f'checkpoint-{i}.json').read_bytes(),(case,i,'full JSON mismatch')
+              assert 'PR57_222_DENSE ' not in logs['control']
+              rows=[x for x in logs['mirror'].splitlines() if x.startswith('PR57_222_DENSE ')]
+              assert len(rows)==3,(case,len(rows))
+              for i,row in enumerate(rows,1):
+                  assert metric(row,'sample')==i and 'active=True' in row,(case,row)
+                  assert metric(row,'processed')>0,(case,row)
+                  assert metric(row,'audits')==metric(row,'processed')+1,(case,row)
+                  assert metric(row,'compared')>=metric(row,'vehicles')*metric(row,'audits')*0.9,(case,row)
+                  assert metric(row,'postRepairMismatches')==0,(case,row)
+                  assert metric(row,'buildMs')>=0 and metric(row,'selfMs')>=0 and metric(row,'auditMs')>=0
+                  print('PR57_222_VERIFIED',case,row)
+              print('PR57_222_PARITY',case,'checkpoints',2,'processes',2,'horizon',horizon,'cadence','ADVANCE_2','fullJSON','EXACT')
+          PY
+      - name: Preserve checkpoints and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-dense-mirror-222
+          path: artifacts/dense-mirror-222/**
+          retention-days: 14

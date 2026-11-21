@@ -1,0 +1,141 @@
+name: 'PR57 #384 REAL integrated phase residual ABBA'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [scripts/pr57-384-inject.py, .github/workflows/pr57-phase-residual-384.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  real-phase-residual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+      PR57_VEHICLE_COST_PROBE: '1'
+      PR57_ADVANCE_BOUNDARY_PROBE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Inject only observational phase output in disposable checkout
+        run: python3 scripts/pr57-384-inject.py
+      - name: Build and test
+        run: |
+          set -euo pipefail
+          dotnet build scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release
+      - name: Restore authentic REAL 14h checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Four fresh processes, ABBA, each 10800 individual Advance(2)
+        shell: bash
+        run: |
+          set -euo pipefail
+          input="artifacts/input/real14hREAL-control/checkpoint-0.json"
+          test -s "$input"
+          for arm in baseA allocA allocB baseB; do
+            flag=0
+            if [[ "$arm" == alloc* ]]; then flag=1; fi
+            mkdir -p "artifacts/phase384/$arm"
+            PR57_PHASE_ALLOC_PROBE="$flag" \
+              dotnet run --no-build -c Release \
+                --project scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj \
+                -- "$input" "artifacts/phase384/$arm" \
+                > "artifacts/phase384/$arm/full.log"
+            grep -q '^PR57_337_FINAL .*parity=IDENTICAL' "artifacts/phase384/$arm/full.log"
+          done
+          cmp artifacts/phase384/baseA/checkpoint-10800.json artifacts/phase384/allocA/checkpoint-10800.json
+          cmp artifacts/phase384/baseA/checkpoint-10800.json artifacts/phase384/allocB/checkpoint-10800.json
+          cmp artifacts/phase384/baseA/checkpoint-10800.json artifacts/phase384/baseB/checkpoint-10800.json
+          sha256sum artifacts/phase384/*/checkpoint-10800.json | tee artifacts/phase384/checkpoints.sha256
+          python3 - <<'PY' | tee artifacts/phase384/summary.json
+          import json
+          from pathlib import Path
+          root=Path('artifacts/phase384')
+          names=['vehicles','paving-returns','citizen-mobility','construction',
+                 'maintenance','relocation','infrastructure','businesses',
+                 'needs','economy-review','construction-dispatch',
+                 'market-followups','demolition-finance-loans']
+          def rows(arm,prefix):
+              return [dict(v.split('=',1) for v in line.split()[1:] if '=' in v)
+                      for line in (root/arm/'full.log').read_text().splitlines()
+                      if line.startswith(prefix+' ')]
+          out={}
+          for arm in ('baseA','allocA','allocB','baseB'):
+              h=rows(arm,'PR57_337_HOUR')
+              ph=rows(arm,'PR57_384_PHASE')
+              hr=rows(arm,'PR57_384_HOUR')
+              bound=rows(arm,'PR57_ADVANCE_BOUNDARY')
+              fin=rows(arm,'PR57_337_FINAL')
+              assert len(h)==6 and len(ph)==78 and len(hr)==6 and len(bound)==108 and len(fin)==1
+              assert fin[0]['parity']=='IDENTICAL'
+              assert all(int(x['living'])==121 for x in h)
+              assert sum(int(x['slices']) for x in h)>=75600
+              assert int(bound[-1]['calls'])==10800
+              byhour={}
+              for hour in range(1,7):
+                  p=sorted((x for x in ph if int(x['hour'])==hour),key=lambda x:int(x['index']))
+                  assert len(p)==13 and [x['name'] for x in p]==names
+                  q=[x for x in hr if int(x['hour'])==hour]
+                  assert len(q)==1
+                  q=q[0]
+                  assert int(q['steps'])==1800
+                  total=sum(float(x['ms']) for x in p)
+                  assert abs(total-float(q['phaseMs']))<.015
+                  assert abs(float(p[0]['ms'])-float(q['vehicleMs']))<.002
+                  assert abs(float(q['vehicleMs'])-float(q['actorMs'])-float(q['vehicleNonActorMs']))<.003
+                  assert abs(total-float(q['vehicleMs'])-float(q['otherPhaseMs']))<.015
+                  assert int(q['phaseAllocatedBytes'])==sum(int(x['allocatedBytes']) for x in p)
+                  byhour[hour]=p
+              if arm.startswith('base'):
+                  assert all(int(x['phaseAllocatedBytes'])==0 for x in hr)
+              else:
+                  assert all(int(x['phaseAllocatedBytes'])>0 for x in hr)
+              phases=[round(sum(float(byhour[j][i]['ms']) for j in range(1,7)),3) for i in range(13)]
+              wall=sum(float(x['wallMs']) for x in h)
+              actor=sum(float(x['actorMs']) for x in hr)
+              phase=sum(phases)
+              assert actor<phases[0]<phase<wall
+              out[arm]={'wallMs':round(wall,3),
+                        'cpuMs':round(sum(float(x['cpuMs']) for x in h),3),
+                        'allocatedBytes':sum(int(x['totalAllocatedBytes']) for x in h),
+                        'phaseMs':round(phase,3),'actorMs':round(actor,3),
+                        'vehicleNonActorMs':round(phases[0]-actor,3),
+                        'otherPhaseMs':round(sum(phases[1:]),3),
+                        'outsidePhasesMs':round(wall-phase,3),
+                        'advanceBoundaryMs':float(bound[-1]['advanceMs']),
+                        'stepBoundaryMs':float(bound[-1]['stepMs']),
+                        'outsideStepMs':float(bound[-1]['outsideStepMs']),
+                        'phaseAllocatedBytes':sum(int(x['phaseAllocatedBytes']) for x in hr),
+                        'phaseMsByName':dict(zip(names,phases))}
+          for key in ('allocA','allocB','baseB'):
+              assert out[key]['phaseMs']>0
+          print(json.dumps({'arms':out,'scope':'AUTHENTIC_REAL_121_LIVING_98_VEHICLES_6H_ABBA',
+                            'advance2PerArm':10800,'nestedIntrusiveTimers':True,
+                            'phaseAllocProbeOnlyABDimension':True,
+                            'causalClosure':False,'acceptedSpeedup':False},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integrated-scale-pr57-phase-residual-384
+          path: artifacts/phase384
+          retention-days: 14
+          if-no-files-found: warn

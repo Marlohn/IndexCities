@@ -1,0 +1,148 @@
+name: 'PR57 #246 authentic 14h junction denial reasons in authentic real queue'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-real-junction-246.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  real-junction:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build and existing simulation regressions
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic 08h and 14h queue from #243
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-coexist-243
+          run-id: 40601570843
+          github-token: ${{ github.token }}
+          path: artifacts/prior
+      - name: Count actual admission return sites in same real queue
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          from decimal import Decimal
+          import os, subprocess, hashlib, json
+          root=Path('artifacts/real-junction-246')
+          root.mkdir(parents=True,exist_ok=True)
+          earlier=Path('artifacts/prior/overnight-05/checkpoint-1.json')
+          source=Path('artifacts/prior/overnight-08/checkpoint-1.json')
+          assert earlier.is_file() and source.is_file()
+          def load(p):
+              return json.loads(p.read_text(),parse_float=Decimal)
+          before=load(earlier); after=load(source)
+          av={v['Id']:v for v in before['Vehicles'] if v.get('Status')=='Travelling'}
+          bv={v['Id']:v for v in after['Vehicles'] if v.get('Status')=='Travelling'}
+          fields=('Position','Heading','WaitingSince','Cause','RouteIndex')
+          persistent=sorted(i for i in av.keys()&bv.keys() if all(av[i].get(k)==bv[i].get(k) for k in fields))
+          assert len(persistent)==24,('persistent cohort changed',persistent)
+          assert sum(bool(c.get('Alive')) for c in after['Citizens'])==121
+          print('PR57_246_SOURCE', '08h',before['Now'],'14h',after['Now'],
+                'persistent',len(persistent),'ids',','.join(map(str,persistent)),
+                'alive',121,'sha256',hashlib.sha256(source.read_bytes()).hexdigest(),flush=True)
+          common={
+              'PR57_HOST_QUANTUM':'1','PR57_AB_CHECKPOINT':'1',
+              'PR57_236_POSE_NOOP_SKIP':'1','PR57_GRID_DIAG':'1',
+              'PR57_242_FOOD_SEARCH':'0','PR57_239_CITIZEN_PHASES':'0',
+              'PR57_240_WALK_SPLIT':'0','PR57_241_ARRIVAL_SPLIT':'0',
+              'PR57_224_CITIZEN_STATE_COST':'0','PR57_VEHICLE_COST_PROBE':'0',
+              'PR57_IDLE_SCAN_PROBE':'0','PR57_PHASE_ALLOC_PROBE':'0',
+              'PR57_244_PERSISTENT_IDS':','.join(map(str,persistent))
+          }
+          def run(mode):
+              dest=root/mode
+              dest.mkdir(parents=True,exist_ok=True)
+              env=os.environ.copy();env.update(common)
+              env['PR57_SAVE_CAPTURE_DIR']=str(dest.resolve())
+              hot=mode=='hot'
+              env['PR57_206_RESIDUAL_EXCLUSIVE']='0'
+              env['PR57_244_STATE_COST']='0'
+              env['PR57_HOT_TIMING']='0'
+              env['PR57_192_JUNCTION_CENSUS']='0'
+              env['PR57_246_JUNCTION_RETURNS']='1' if hot else '0'
+              command=['dotnet','run','--no-build','-c','Release',
+                  '--project','src/IndexCities.Headless/IndexCities.Headless.csproj',
+                  '--','scale' if not hot else 'profile','cycle','--seed=42',
+                  '--warmup=0','--days=1','--window=200','--cap=600',
+                  f'--resume={source.resolve()}']
+              print('PR57_246_RUN',mode,'cadence','ADVANCE_2',flush=True)
+              with (root/f'{mode}.log').open('w') as out:
+                  subprocess.run(command,env=env,stdout=out,stderr=subprocess.STDOUT,
+                                 check=True,timeout=240)
+              log=(root/f'{mode}.log').read_text()
+              assert 'INVARIANTS OK' in log and 'SAVE ' in log,(mode,log[-2500:])
+              assert (dest/'checkpoint-0.json').read_bytes()==source.read_bytes(),(mode,'resume')
+              assert (dest/'checkpoint-1.json').is_file(),mode
+              if hot:
+                  for key in ('PR57_246_RETURNS','PR57_246_COHORT','PR57_246_PREFERENCE'):
+                      assert key in log,(key,log[-4000:])
+              for line in log.splitlines():
+                  if line.startswith(('WINDOW ','STEP_PROFILE','  STEP_PHASE',
+                      'PR57_244_STATE','PR57_206_RESIDUAL','PR57_HOT_TIMING',
+                      'PR57_192_JUNCTION_CENSUS','PR57_JUNCTION_ALLOC',
+                      'PR57_JUNCTION_DETAIL')):
+                      print('PR57_246_LOG',mode,line.strip(),flush=True)
+              return dest
+          control=run('control')
+          hot=run('hot')
+          a=load(control/'checkpoint-1.json')
+          b=load(hot/'checkpoint-1.json')
+          count=0;examples=[]
+          def visit(x,y,path):
+              global count
+              if type(x)!=type(y):
+                  count+=1
+                  if len(examples)<12:examples.append((path,str(x),str(y)))
+              elif isinstance(x,dict):
+                  for k in x.keys()|y.keys():
+                      if k not in x or k not in y:
+                          count+=1
+                          if len(examples)<12:examples.append((path+'.'+k,'missing','missing'))
+                      else:visit(x[k],y[k],path+'.'+k)
+              elif isinstance(x,list):
+                  if len(x)!=len(y):
+                      count+=1
+                      if len(examples)<12:examples.append((path+'.length',len(x),len(y)))
+                  for i,(u,v) in enumerate(zip(x,y)):visit(u,v,f'{path}[{i}]')
+              elif x!=y:
+                  count+=1
+                  if len(examples)<12:examples.append((path,str(x),str(y)))
+          visit(a,b,'$')
+          exact=(control/'checkpoint-1.json').read_bytes()==(hot/'checkpoint-1.json').read_bytes()
+          print('PR57_246_PARITY','exactFullJson',exact,'semanticDecimalDiffs',count,
+                'examples',json.dumps(examples,ensure_ascii=False),flush=True)
+          assert exact and count==0,'No causal equivalence claim: full checkpoint mismatch'
+          print('PR57_246_DONE','observational=True','noOptimization=True',
+                'noPerformanceGainClaim=True',flush=True)
+          PY
+      - name: Preserve complete checkpoints and raw logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-junction-246
+          path: artifacts/real-junction-246/**
+          retention-days: 14

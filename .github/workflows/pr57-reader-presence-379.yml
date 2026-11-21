@@ -1,0 +1,140 @@
+name: 'PR57 #379 REAL reader presence vs partial edge churn'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [scripts/pr57-379-inject.py, .github/workflows/pr57-reader-presence-379.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  real-shadow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+      PR57_VEHICLE_COST_PROBE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Inject observational hooks in disposable checkout
+        run: |
+          set -euo pipefail
+          for n in 367 368 369 370 372 374 376 377 378 379; do
+            python3 "scripts/pr57-$n-inject.py"
+          done
+      - name: Build and test
+        run: |
+          set -euo pipefail
+          dotnet build scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release
+      - name: Restore authentic REAL 14h checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Fresh-process observational control and XOR shadow
+        shell: bash
+        run: |
+          set -euo pipefail
+          input="artifacts/input/real14hREAL-control/checkpoint-0.json"
+          test -s "$input"
+          for arm in control presence; do
+            flag=0
+            if [[ "$arm" == presence ]]; then flag=1; fi
+            mkdir -p "artifacts/presence379/$arm"
+            PR57_367_DIRECT_WRITERS=1 PR57_368_CANONICAL_GUARD=1 \
+            PR57_369_INPLACE_WRITERS=1 PR57_370_NONLOCAL_WRITERS=1 \
+            PR57_372_WRITER_FRONTIER=1 PR57_372_PUBLISH=0 \
+            PR57_374_NEXT_SLICE_FANOUT=1 PR57_376_REVERSE_SHADOW=0 \
+            PR57_377_BITSET_SHADOW=1 PR57_378_CHURN_SHADOW=1 PR57_379_PRESENCE_SHADOW="$flag" \
+              dotnet run --no-build -c Release \
+                --project scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj \
+                -- "$input" "artifacts/presence379/$arm" \
+                > "artifacts/presence379/$arm/full.log"
+            grep -E '^PR57_(337_(HOUR|FINAL)|367_SUMMARY|369_SUMMARY|370_SUMMARY|372_SUMMARY|374_SUMMARY|377_SUMMARY|378_SUMMARY|379_SUMMARY) ' \
+              "artifacts/presence379/$arm/full.log" > "artifacts/presence379/$arm/census.log"
+            grep -q 'parity=IDENTICAL' "artifacts/presence379/$arm/census.log"
+            test "$(grep -c '^PR57_337_HOUR ' "artifacts/presence379/$arm/census.log")" -eq 6
+          done
+          cmp artifacts/presence379/control/checkpoint-10800.json \
+              artifacts/presence379/presence/checkpoint-10800.json
+          sha256sum artifacts/presence379/*/checkpoint-10800.json \
+            | tee artifacts/presence379/checkpoints.sha256
+          python3 - <<'PY' | tee artifacts/presence379/summary.txt
+          import json
+          from pathlib import Path
+          root=Path("artifacts/presence379")
+          def rows(arm,prefix):
+              return [dict(x.split("=",1) for x in line.split()[1:] if "=" in x)
+                      for line in (root/arm/"census.log").read_text().splitlines()
+                      if line.startswith(prefix+" ")]
+          def one(arm,prefix):
+              found=rows(arm,prefix)
+              assert len(found)==1,(arm,prefix,len(found))
+              return found[0]
+          keys=("physicalSlices","readCalls","uniqueReadPairs","writerEvents",
+                "uniqueWriters","externalEvents","writersWithReaders",
+                "invalidatedReaderPairs","maxReadersPerWriter")
+          expected=(600,1364887,1327930,1914,879,27,835,20036,29)
+          arms={}
+          for arm in ("control","presence"):
+              for prefix,field,value in (("PR57_367_SUMMARY","writes",1852),
+                                         ("PR57_369_SUMMARY","countChanges",17),
+                                         ("PR57_370_SUMMARY","refContentDifferent",51),
+                                         ("PR57_372_SUMMARY","events",1920),
+                                         ("PR57_374_SUMMARY","events",1920)):
+                  assert int(one(arm,prefix)[field])==value
+              assert one(arm,"PR57_337_FINAL")["parity"]=="IDENTICAL"
+              assert tuple(int(one(arm,"PR57_377_SUMMARY")[k]) for k in keys)==expected
+              h=rows(arm,"PR57_337_HOUR")
+              assert len(h)==6 and all(int(x["living"])==121 for x in h)
+              assert len(rows(arm,"PR57_378_SUMMARY"))==1
+              assert len(rows(arm,"PR57_379_SUMMARY"))==(1 if arm=="presence" else 0)
+              arms[arm]={"wallMs":round(sum(float(x["wallMs"]) for x in h),3),
+                         "cpuMs":round(sum(float(x["cpuMs"]) for x in h),3),
+                         "allocatedBytes":sum(int(x["totalAllocatedBytes"]) for x in h)}
+          r=one("presence","PR57_378_SUMMARY")
+          def num(k):return int(r[k])
+          assert num("physicalSlices")==600 and num("transitions")==599
+          assert num("changedTransitions")+num("unchangedTransitions")==599
+          assert (num("unchangedTransitions")+num("churn1to10")+
+                  num("churn11to100")+num("churnOver100"))==599
+          assert num("noWriterPairs")<=599 and num("quietPairs")<=num("noWriterPairs")
+          assert num("quietChurn")<=num("noWriterChurn")
+          assert all(r[k]=="True" for k in ("noCausalClosure","noDecisionReuse",
+                                             "noSkippedSlices","observational"))
+          p=one("presence","PR57_379_SUMMARY")
+          def pn(k):return int(p[k])
+          assert pn("transitions")==599 and pn("changed")==num("changedTransitions")
+          assert pn("edgeChurn")==num("addedEdges")+num("removedEdges")
+          assert pn("toggledChurn")+pn("persistentChurn")==pn("edgeChurn")
+          assert pn("onlyPresence")<=pn("changed")
+          assert pn("withoutPresence")<=pn("changed")-pn("onlyPresence")
+          assert pn("zeroActive")+pn("oneToTen")+pn("elevenToThirty")+pn("overThirty")==599
+          assert all(p[k]=="True" for k in ("noCausalClosure","noDecisionReuse","noSkippedSlices","observational"))
+          assert one("control","PR57_378_SUMMARY")["addedEdges"]==r["addedEdges"]
+          assert one("control","PR57_378_SUMMARY")["removedEdges"]==r["removedEdges"]
+          print(json.dumps({"arms":arms,"churn":r,"presence":p,"gate":"PARTIAL_OCCUPIES_ONLY",
+                            "causalClosure":False,"acceptedSpeedup":False},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integrated-scale-pr57-reader-presence-379
+          path: artifacts/presence379
+          if-no-files-found: warn

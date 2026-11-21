@@ -1,0 +1,148 @@
+name: 'PR57 #217 negative lane candidate eligibility'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-negative-eligibility-217.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  candidate-reads:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build Release and full regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic works checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-growth
+          run-id: 40250545171
+          github-token: ${{ github.token }}
+          path: artifacts/works
+      - name: Restore authentic congested checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-legal-workplaces-8d
+          run-id: 40169101306
+          github-token: ${{ github.token }}
+          path: artifacts/queue
+      - name: Restore explicitly ARTIFICIAL GRID checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-host-scale-curve
+          run-id: 40258405557
+          github-token: ${{ github.token }}
+          path: artifacts/grid
+      - name: Replay every Advance(2) with and without bounded observer
+        shell: bash
+        run: |
+          set -euo pipefail
+          works="$(find artifacts/works -type f -path '*/growth/checkpoint-0.json' -print -quit)"
+          queue="$(find artifacts/queue -type f -path '*/pr57-jobs-20/checkpoint-10.json' -print -quit)"
+          grid="artifacts/grid/grid18-0/checkpoint-1.json"
+          for source in "$works" "$queue" "$grid"; do test -s "$source"; sha256sum "$source"; done
+          mkdir -p artifacts/negative-eligibility-217
+          for case in worksREAL queueREAL gridARTIFICIAL; do
+            source="$works"; fixture=cycle; horizon=300
+            if [[ "$case" == queueREAL ]]; then source="$queue"; fi
+            if [[ "$case" == gridARTIFICIAL ]]; then source="$grid"; fixture=grid; horizon=100; fi
+            for mode in plain probe; do
+              output="$PWD/artifacts/negative-eligibility-217/$case-$mode"
+              mkdir -p "$output"
+              command=scale; observed=0
+              if [[ "$mode" == probe ]]; then command=profile; observed=1; fi
+              echo "PR57_217_RUN case=$case mode=$mode horizon=$horizon cadence=ADVANCE_2 observational=$observed"
+              PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_GRID_DIAG=1 \
+              PR57_SAVE_CAPTURE_DIR="$output" PR57_206_RESIDUAL_EXCLUSIVE="$observed" \
+              PR57_213_CROSS_SLICE_INPUTS=0 PR57_214_CANDIDATE_READS="$observed" PR57_216_CANDIDATE_FANOUT=0 PR57_217_NEGATIVE_FILTERS="$observed" PR57_215_FIELD_DIFFS=0 PR57_210_POSE_FOREACH=0 \
+              PR57_211_NO_CAPTURE_STREETBODY=0 PR57_LANE_READWRITE_PROBE=0 \
+              PR57_VEHICLE_MUTATION_AUDIT=0 PR57_BLOCK_DEP_PROBE=0 \
+              PR57_VEHICLE_COST_PROBE=0 PR57_HOT_TIMING=0 PR57_PHASE_ALLOC_PROBE=0 \
+                timeout 180s dotnet run --no-build -c Release \
+                --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                "$command" "$fixture" --seed=42 --warmup=0 --days=1 \
+                --window="$horizon" --cap=300 --resume="$source" | tee "$output.log"
+            done
+          done
+      - name: Verify full-state parity and bounded census arithmetic
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          root=Path('artifacts/negative-eligibility-217')
+          def metric(line,key):
+              m=re.search(r'(?:^| )'+re.escape(key)+r'=([-0-9.]+)',line)
+              assert m,(key,line)
+              return int(float(m.group(1)))
+          for case,horizon in [('worksREAL',300),('queueREAL',300),('gridARTIFICIAL',100)]:
+              plain=(root/f'{case}-plain.log').read_text()
+              probe=(root/f'{case}-probe.log').read_text()
+              for mode,log in [('plain',plain),('probe',probe)]:
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,mode)
+                  assert len([x for x in log.splitlines() if x.startswith('WINDOW ')])==1,(case,mode)
+                  for i in (0,1):
+                      assert (root/f'{case}-{mode}'/f'checkpoint-{i}.json').read_bytes()==(root/f'{case}-plain'/f'checkpoint-{i}.json').read_bytes(),(case,mode,i,'full JSON mismatch')
+              rows=[x for x in probe.splitlines() if x.startswith('PR57_214_READS ')]
+              residual=[x for x in probe.splitlines() if x.startswith('PR57_206_RESIDUAL ')]
+              assert len(rows)==len(residual)==3,(case,'bounded samples',len(rows),len(residual))
+              for i,row in enumerate(rows,1):
+                  g=lambda k:metric(row,k)
+                  assert g('sample')==i and g('eligibleSlice')==36+i,(case,row)
+                  assert 0<=g('selected')<=48,(case,row)
+                  assert 0<=g('revisited')<=g('capturedQueries'),(case,row)
+                  assert 0<=g('selfAndQuerySame')<=g('revisited'),(case,row)
+                  assert g('laneSelfSame')+g('bendSelfSame')==g('selfAndQuerySame'),(case,row)
+                  for k in ('enumeratedCountSame','occupierOrderedIdsSame','occupierOrderedStatesSame','deepOrderedIdsSame','deepOrderedStatesSame','allObservedSame','timeChanged'):
+                      assert 0<=g(k)<=g('selfAndQuerySame'),(case,k,row)
+                  assert g('occupierOrderedStatesSame')<=g('occupierOrderedIdsSame'),(case,row)
+                  assert g('deepOrderedStatesSame')<=g('deepOrderedIdsSame'),(case,row)
+                  assert g('snapshotCalls')>=0 and g('snapshotBytes')>=0,(case,row)
+                  if i==1: assert g('revisited')==0,(case,row)
+                  print('PR57_217_CENSUS',case,row)
+              negative=[x for x in probe.splitlines() if x.startswith('PR57_217_NEGATIVE ')]
+              assert len(negative)==3,(case,'negative samples',len(negative))
+              for i,row in enumerate(negative,1):
+                  g=lambda k:metric(row,k)
+                  assert g('sample')==i,(case,row)
+                  assert 0<=g('selected')<=48,(case,row)
+                  assert 0<=g('affectedReaders')<=g('comparedReaders')<=48,(case,row)
+                  assert 0<=g('negativeRows')<=g('alignedRows')<=g('capturedRows')*2,(case,row)
+                  for k in ('negativePoseChanges','negativeGateChanges','stageTransitions'):
+                      assert 0<=g(k)<=g('negativeRows'),(case,k,row)
+                  assert g('becameOccupied')+g('becameDock')+g('lostOccupied')<=g('stageTransitions'),(case,row)
+                  assert 0<=g('candidateReaderEdges')<=g('changedCandidateIds')*g('comparedReaders'),(case,row)
+                  assert 0<=g('maxFanout')<=g('comparedReaders'),(case,row)
+                  if i==1: assert g('comparedReaders')==0,(case,row)
+                  print('PR57_217_NEGATIVE_VERIFIED',case,row)
+              print('PR57_217_PARITY',case,'checkpoints',2,'processes',2,'horizon',horizon,'cadence','ADVANCE_2','fullJSON','EXACT')
+          PY
+      - name: Preserve full checkpoints and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-negative-eligibility-217
+          path: artifacts/negative-eligibility-217/**
+          retention-days: 14

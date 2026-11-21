@@ -1,0 +1,164 @@
+name: 'PR57 #243 real overnight congestion and daytime shopping coexistence'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-real-coexist-243.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  coexist:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build and regression on current branch
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic congested economy save from #237
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-pose-noop-237
+          run-id: 40589313790
+          github-token: ${{ github.token }}
+          path: artifacts/prior
+      - name: Observe overnight to next afternoon and same-save 200s profiles
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import os, subprocess, hashlib, json, re, collections, math
+          root=Path('artifacts/real-coexist-243')
+          root.mkdir(parents=True,exist_ok=True)
+          source=Path('artifacts/prior/queueREAL-control1/checkpoint-0.json')
+          assert source.is_file(),source
+          base_env={
+              'PR57_HOST_QUANTUM':'1','PR57_AB_CHECKPOINT':'1',
+              'PR57_236_POSE_NOOP_SKIP':'1','PR57_GRID_DIAG':'1',
+              'PR57_239_CITIZEN_PHASES':'0','PR57_240_WALK_SPLIT':'0',
+              'PR57_241_ARRIVAL_SPLIT':'0','PR57_224_CITIZEN_STATE_COST':'0',
+              'PR57_206_RESIDUAL_EXCLUSIVE':'0','PR57_207_POSE_GUARD':'0',
+              'PR57_208_BODY_SAT_CENSUS':'0','PR57_209_SHIPMENT_READ_CENSUS':'0',
+              'PR57_LANE_READWRITE_PROBE':'0','PR57_BLOCK_DEP_PROBE':'0',
+              'PR57_VEHICLE_COST_PROBE':'0','PR57_HOT_TIMING':'0',
+              'PR57_PHASE_ALLOC_PROBE':'0'
+          }
+          def run(label,mode,src,seconds):
+              assert src.is_file(),src
+              dest=root/label
+              dest.mkdir(parents=True,exist_ok=True)
+              env=os.environ.copy()
+              env.update(base_env)
+              env['PR57_SAVE_CAPTURE_DIR']=str(dest.resolve())
+              env['PR57_242_FOOD_SEARCH']='1' if mode=='profile' else '0'
+              command=['dotnet','run','--no-build','-c','Release',
+                  '--project','src/IndexCities.Headless/IndexCities.Headless.csproj',
+                  '--',mode,'cycle','--seed=42','--warmup=0','--days=1',
+                  f'--window={seconds}','--cap=600',f'--resume={src.resolve()}']
+              print('PR57_243_RUN',label,'mode',mode,'seconds',seconds,
+                    'inputSha256',hashlib.sha256(src.read_bytes()).hexdigest(),flush=True)
+              with (root/f'{label}.log').open('w') as f:
+                  subprocess.run(command,env=env,stdout=f,stderr=subprocess.STDOUT,check=True,timeout=420)
+              log=(root/f'{label}.log').read_text()
+              assert 'INVARIANTS OK' in log and 'SAVE ' in log,(label,log[-2500:])
+              assert len([x for x in log.splitlines() if x.startswith('WINDOW ')])==1,(label,log[-2500:])
+              assert (dest/'checkpoint-0.json').is_file() and (dest/'checkpoint-1.json').is_file(),label
+              return dest,log
+          def load(path):
+              return json.loads(path.read_text())
+          def purchases(state):
+              return sum(x.get('Category')=='Alimentos' and x.get('Reason')=='Compra presencial de alimento existente' for x in state['Ledger'])
+          def snap(state):
+              vs=state['Vehicles']
+              travellers=[v for v in vs if v.get('Status')=='Travelling']
+              waiting=[v for v in travellers if (v.get('WaitingSince') or 0)>0]
+              groceries=[b for b in state['Buildings'] if b.get('Kind')=='Grocery' and b.get('Completed') and not b.get('Removed') and b.get('CompanyId') is not None]
+              return {'now':state['Now'],'alive':sum(bool(x.get('Alive')) for x in state['Citizens']),
+                      'travelling':len(travellers),'waitingSinceSet':len(waiting),
+                      'vehicles':len(vs),'groceriesCompleted':len(groceries),
+                      'purchases':purchases(state),'ledger':len(state['Ledger']),
+                      'history':sum(len(c.get('History',[])) for c in state['Citizens'])}
+          start=load(source)
+          print('PR57_243_SOURCE',json.dumps(snap(start),sort_keys=True),
+                'sha256',hashlib.sha256(source.read_bytes()).hexdigest(),flush=True)
+          endpoints=[source]
+          prior=start
+          # Nine consecutive two-hour windows: ~22:00 through ~16:00 next day.
+          # Every simulated second is advanced through a distinct Advance(2) call.
+          for i in range(1,10):
+              dest,log=run(f'overnight-{i:02d}','scale',endpoints[-1],7200)
+              first=load(dest/'checkpoint-0.json')
+              last=load(dest/'checkpoint-1.json')
+              assert first==prior,(i,'resume mismatch')
+              before=snap(first);after=snap(last)
+              assert after['purchases']>=before['purchases'],(i,'ledger purchases declined')
+              print('PR57_243_WINDOW',i,'start',before['now'],'end',after['now'],
+                    'alive',after['alive'],'vehicles',after['vehicles'],
+                    'travelling',after['travelling'],'waitingSinceSet',after['waitingSinceSet'],
+                    'groceriesCompleted',after['groceriesCompleted'],
+                    'purchasesDelta',after['purchases']-before['purchases'],
+                    'historyDelta',after['history']-before['history'],
+                    'wall',next(x for x in log.splitlines() if x.startswith('WINDOW ')).split('wall=')[1].split()[0],
+                    'scope','AUTHENTIC_REAL_ECONOMY_ADVANCE_2',flush=True)
+              endpoints.append(dest/'checkpoint-1.json')
+              prior=last
+          # Short profiles at 08,10,12,14,16h from the exact same real checkpoints.
+          # They are observational, not an A/B of a performance change.
+          for i in range(5,10):
+              src=endpoints[i]
+              ctrl,clog=run(f'day-{i:02d}-control','scale',src,200)
+              prof,plog=run(f'day-{i:02d}-profile','profile',src,200)
+              for j in (0,1):
+                  assert (ctrl/f'checkpoint-{j}.json').read_bytes()==(prof/f'checkpoint-{j}.json').read_bytes(),(i,j,'FULL_JSON_MISMATCH')
+              a=load(ctrl/'checkpoint-0.json');b=load(ctrl/'checkpoint-1.json')
+              av={v['Id']:v for v in a['Vehicles'] if v.get('Status')=='Travelling'}
+              bv={v['Id']:v for v in b['Vehicles'] if v.get('Status')=='Travelling'}
+              common=set(av)&set(bv)
+              stationary=[id for id in common if av[id].get('Position')==bv[id].get('Position')]
+              phase=[x.strip() for x in plog.splitlines() if x.strip().startswith('STEP_PHASE ')]
+              assert len(phase)>0,(i,'missing phase timing')
+              phaseRows=[]
+              for line in phase:
+                  m=re.search(r'name=([^ ]+) wall=([0-9.]+)s',line)
+                  assert m,line
+                  phaseRows.append((m.group(1),float(m.group(2))))
+              phaseRows.sort(key=lambda x:-x[1])
+              food=[x for x in plog.splitlines() if x.startswith('PR57_242_FOOD ')]
+              assert len(food)==1,(i,'missing food probe')
+              print('PR57_243_DAY',i,'now',a['Now'],'alive',snap(a)['alive'],
+                    'travellingStart',len(av),'travellingEnd',len(bv),
+                    'travellingBoth',len(common),'samePositionAfter200s',len(stationary),
+                    'samePositionIds',','.join(map(str,sorted(stationary)[:12])),
+                    'purchases200s',purchases(b)-purchases(a),
+                    'foodProbe',food[0].replace(' ',';'),
+                    'phaseTop',','.join(f'{n}:{v:.4f}s' for n,v in phaseRows[:6]),
+                    'scope','INTRUSIVE_PHASES_NO_OPTIMIZATION_AB',flush=True)
+              print('PR57_243_PARITY',i,'checkpoints',2,'fullJSON','EXACT',
+                    'cadence','ADVANCE_2',flush=True)
+          print('PR57_243_DONE overnightWindows=9 daylightProfiles=5 noFabricatedEconomy=True',flush=True)
+          PY
+      - name: Preserve complete causal saves and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-coexist-243
+          path: artifacts/real-coexist-243/**
+          retention-days: 14

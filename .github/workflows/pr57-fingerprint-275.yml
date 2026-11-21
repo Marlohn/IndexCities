@@ -1,0 +1,108 @@
+name: 'PR57 #275 partial projected invalidation cost/churn'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-fingerprint-275.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  fingerprint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build Release and regression
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic REAL economic checkpoint from #243
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-coexist-243
+          run-id: 40601570843
+          github-token: ${{ github.token }}
+          path: artifacts/prior
+      - name: Two fresh .NET processes and exact full-JSON parity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          from decimal import Decimal
+          import subprocess, os, json, hashlib
+          root=Path('artifacts/fingerprint-275'); root.mkdir(parents=True,exist_ok=True)
+          source=Path('artifacts/prior/overnight-08/checkpoint-1.json')
+          assert source.is_file()
+          state=json.loads(source.read_text(),parse_float=Decimal)
+          assert sum(bool(c.get('Alive')) for c in state['Citizens'])==121
+          assert len(state['Vehicles'])==98
+          paths={}
+          for mode in ('control','probe'):
+              dest=root/mode; dest.mkdir(parents=True,exist_ok=True)
+              env=os.environ.copy()
+              env.update({
+                  'PR57_HOST_QUANTUM':'1','PR57_AB_CHECKPOINT':'1',
+                  'PR57_GRID_DIAG':'0','PR57_206_RESIDUAL_EXCLUSIVE':'0',
+                  'PR57_270_MANOEUVRE_SCRATCH':'0',
+                  'PR57_271_PENETRATION_KEYS':'0',
+                  'PR57_272_PENETRATION_MEMO':'0',
+                  'PR57_273_ROUTE_DOCK':'1',
+                  'PR57_275_FINGERPRINT':'1' if mode=='probe' else '0',
+                  'PR57_SAVE_CAPTURE_DIR':str(dest.resolve())
+              })
+              cmd=['dotnet','run','--no-build','-c','Release',
+                   '--project','src/IndexCities.Headless/IndexCities.Headless.csproj',
+                   '--','profile','cycle','--seed=42','--warmup=0',
+                   '--days=1','--window=200','--cap=600',
+                   f'--resume={source.resolve()}']
+              logpath=root/f'{mode}.log'
+              with logpath.open('w') as out:
+                  subprocess.run(cmd,env=env,stdout=out,stderr=subprocess.STDOUT,
+                                 check=True,timeout=240)
+              log=logpath.read_text()
+              assert 'INVARIANTS OK' in log and 'SAVE ' in log,(mode,log[-2500:])
+              assert (dest/'checkpoint-0.json').read_bytes()==source.read_bytes()
+              assert (dest/'checkpoint-1.json').is_file()
+              windows=[x for x in log.splitlines() if x.startswith('WINDOW ')]
+              assert len(windows)==1,(mode,windows)
+              print('PR57_275_WINDOW',mode,windows[0],flush=True)
+              if mode=='probe':
+                  rows=[x for x in log.splitlines() if x.startswith('PR57_275_ROW ')]
+                  assert len(rows)==12,(len(rows),rows)
+                  for row in rows: print(row,flush=True)
+              paths[mode]=dest
+          for i in (0,1):
+              a=(paths['control']/f'checkpoint-{i}.json').read_bytes()
+              b=(paths['probe']/f'checkpoint-{i}.json').read_bytes()
+              assert a==b,('FULL_JSON_MISMATCH',i)
+              assert json.loads(a,parse_float=Decimal)==json.loads(b,parse_float=Decimal)
+              print('PR57_275_CHECKPOINT',i,'sha256',hashlib.sha256(a).hexdigest(),flush=True)
+          print('PR57_275_PARITY fullJson=EXACT decimalDiffs=0 processes=2',
+                'Advance2CallsPerArm=100 physicalSlicesPerArm=600',
+                'observationOnly=True noSkippedSlices=True',flush=True)
+          PY
+      - name: Preserve raw logs and complete checkpoints
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-fingerprint-275
+          path: artifacts/fingerprint-275/**
+          retention-days: 14

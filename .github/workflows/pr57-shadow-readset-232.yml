@@ -1,0 +1,25 @@
+name: 'PR57 #232 s3 dock negative dependency counterexample'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-shadow-readset-232.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  dock-readset:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Run bounded adversarial counterexample only (no benchmark)
+        run: |
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
+            -c Release --filter FullyQualifiedName~Pr57ShadowReadsetAdversarialTests \
+            --verbosity normal

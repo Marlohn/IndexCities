@@ -1,0 +1,130 @@
+name: 'PR57 #248 intra-slice manoeuvre explicit-input reuse census'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-manoeuvre-repeats-248.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  geometry-census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build Release and existing regressions
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic 14h economic queue from #243
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-coexist-243
+          run-id: 40601570843
+          github-token: ${{ github.token }}
+          path: artifacts/real-prior
+      - name: Restore explicitly artificial GRID from #237
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-pose-noop-237
+          run-id: 40589313790
+          github-token: ${{ github.token }}
+          path: artifacts/grid-prior
+      - name: Replay individual Advance(2) and compare complete checkpoints
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          from decimal import Decimal
+          import os, subprocess, json, hashlib
+          root=Path('artifacts/manoeuvre-248')
+          root.mkdir(parents=True,exist_ok=True)
+          real=Path('artifacts/real-prior/overnight-08/checkpoint-1.json')
+          grids=list(Path('artifacts/grid-prior').rglob('gridARTIFICIAL-control1/checkpoint-5.json'))
+          assert real.is_file() and len(grids)==1,(real,grids)
+          cases=[('queueREAL',real,'cycle',200,600),('gridARTIFICIAL',grids[0],'grid',100,300)]
+          common={
+              'PR57_HOST_QUANTUM':'1','PR57_AB_CHECKPOINT':'1',
+              'PR57_236_POSE_NOOP_SKIP':'1','PR57_GRID_DIAG':'1',
+              'PR57_HOT_TIMING':'0','PR57_206_RESIDUAL_EXCLUSIVE':'0',
+              'PR57_246_JUNCTION_RETURNS':'0','PR57_247_JUNCTION_BLOCKERS':'0',
+              'PR57_239_CITIZEN_PHASES':'0','PR57_240_WALK_SPLIT':'0',
+              'PR57_241_ARRIVAL_SPLIT':'0','PR57_242_FOOD_SEARCH':'0'
+          }
+          def parse(p):
+              return json.loads(p.read_text(),parse_float=Decimal)
+          for name,source,fixture,horizon,cap in cases:
+              before=parse(source)
+              print('PR57_248_SOURCE',name,'sha256',hashlib.sha256(source.read_bytes()).hexdigest(),
+                    'alive',sum(bool(c.get('Alive')) for c in before['Citizens']),
+                    'vehicles',len(before['Vehicles']),'cadence','ADVANCE_2',flush=True)
+              paths={}
+              for mode in ('control','observed'):
+                  dest=root/f'{name}-{mode}'
+                  dest.mkdir(parents=True,exist_ok=True)
+                  env=os.environ.copy();env.update(common)
+                  env['PR57_SAVE_CAPTURE_DIR']=str(dest.resolve())
+                  env['PR57_248_MANOEUVRE_REPEATS']='1' if mode=='observed' else '0'
+                  command=['dotnet','run','--no-build','-c','Release',
+                      '--project','src/IndexCities.Headless/IndexCities.Headless.csproj',
+                      '--','profile' if mode=='observed' else 'scale',fixture,'--seed=42',
+                      '--warmup=0','--days=1',f'--window={horizon}',f'--cap={cap}',
+                      f'--resume={source.resolve()}']
+                  with (root/f'{name}-{mode}.log').open('w') as out:
+                      subprocess.run(command,env=env,stdout=out,stderr=subprocess.STDOUT,
+                                     check=True,timeout=240)
+                  log=(root/f'{name}-{mode}.log').read_text()
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(name,mode,log[-3000:])
+                  assert (dest/'checkpoint-0.json').read_bytes()==source.read_bytes(),(name,mode,'resume')
+                  assert (dest/'checkpoint-1.json').is_file(),(name,mode,'final')
+                  if mode=='observed':
+                      lines=[x for x in log.splitlines() if x.startswith('PR57_248_MANOEUVRE ')]
+                      assert len(lines)==(2 if name=='queueREAL' else 1),(name,lines)
+                      for line in lines: print('PR57_248_RESULT',name,line,flush=True)
+                  print('PR57_248_WINDOW',name,mode,
+                        *[x for x in log.splitlines() if x.startswith('WINDOW ')],flush=True)
+                  paths[mode]=dest
+              a=paths['control']/'checkpoint-1.json'
+              b=paths['observed']/'checkpoint-1.json'
+              exact=a.read_bytes()==b.read_bytes()
+              # Decimal comparison also catches tiny differences hidden by float parsing.
+              def differences(x,y):
+                  if type(x)!=type(y):return 1
+                  if isinstance(x,dict):
+                      if x.keys()!=y.keys():return 1
+                      return sum(differences(x[k],y[k]) for k in x)
+                  if isinstance(x,list):
+                      if len(x)!=len(y):return 1
+                      return sum(differences(u,v) for u,v in zip(x,y))
+                  return int(x!=y)
+              diff=differences(parse(a),parse(b))
+              print('PR57_248_PARITY',name,'exactFullJson',exact,'semanticDecimalDiffs',diff,
+                    'horizon',horizon,'callsAdvance2',horizon//2,flush=True)
+              assert exact and diff==0,(name,'FULL_CHECKPOINT_MISMATCH')
+          print('PR57_248_DONE','observational=True','noOptimization=True',
+                'noCachePromotion=True',flush=True)
+          PY
+      - name: Preserve complete logs and causal checkpoints
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-manoeuvre-repeats-248
+          path: artifacts/manoeuvre-248/**
+          retention-days: 14
