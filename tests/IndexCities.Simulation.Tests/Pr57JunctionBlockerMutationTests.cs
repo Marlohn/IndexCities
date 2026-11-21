@@ -295,4 +295,37 @@ public sealed class Pr57JunctionBlockerMutationTests
         }
     }
 
+
+    [Fact]
+    public void Integrated_advance_rechecks_external_claim_only_mutation_across_reload()
+    {
+        // A caller may change a crossing reservation without moving the vehicle.
+        // This catches indexes invalidated only by position or RoadRevision.
+        var live = new CitySimulation(42);
+        live.State.Roads.Add(new RoadNode
+        {
+            Id = 995101, Position = new Point(0, 0),
+            Neighbours = new List<int> { 995102, 995103, 995104 }
+        });
+        live.State.Roads.Add(new RoadNode { Id = 995102, Position = new Point(4, 0), Neighbours = new List<int> { 995101 } });
+        live.State.Roads.Add(new RoadNode { Id = 995103, Position = new Point(0, 4), Neighbours = new List<int> { 995101 } });
+        live.State.Roads.Add(new RoadNode { Id = 995104, Position = new Point(-4, 0), Neighbours = new List<int> { 995101 } });
+        live.State.Vehicles.Add(new Vehicle { Id = 995201, Position = new Point(0, 0), Status = VehicleStatus.Travelling });
+        live.State.Vehicles.Add(new Vehicle
+        {
+            Id = 995202, Position = new Point(1, 0),
+            Status = VehicleStatus.Travelling, IntersectionClaim = 995101
+        });
+        live = CitySimulation.FromJson(live.SaveToJson());
+        live.Advance(2);
+        var blocker = live.State.Vehicles.Single(v => v.Id == 995202);
+        blocker.IntersectionClaim = blocker.IntersectionClaim is null ? 995101 : null;
+        for (var checkpoint = 0; checkpoint < 3; checkpoint++)
+        {
+            var restored = CitySimulation.FromJson(live.SaveToJson());
+            live.Advance(2);
+            restored.Advance(2);
+            Assert.Equal(restored.SaveToJson(), live.SaveToJson());
+        }
+    }
 }
