@@ -256,4 +256,43 @@ public sealed class Pr57JunctionBlockerMutationTests
             blocked.State.Vehicles.Single(v => v.Id == entrant.Id),
             blocked.State.Roads.Single(r => r.Id == node.Id)));
     }
+    [Fact]
+    public void Integrated_advance_after_external_blocker_mutation_matches_reloaded_state_at_each_checkpoint()
+    {
+        // Exercise the complete integrated tick after direct external writes.
+        // Both instances use the CI-selected experimental mode; this is a
+        // save/load causal gate, not a baseline-versus-opt-in speedup claim.
+        var live = new CitySimulation(42);
+        live.State.Roads.Add(new RoadNode
+        {
+            Id = 994101, Position = new Point(0, 0),
+            Neighbours = new List<int> { 994102, 994103, 994104 }
+        });
+        live.State.Roads.Add(new RoadNode { Id = 994102, Position = new Point(4, 0), Neighbours = new List<int> { 994101 } });
+        live.State.Roads.Add(new RoadNode { Id = 994103, Position = new Point(0, 4), Neighbours = new List<int> { 994101 } });
+        live.State.Roads.Add(new RoadNode { Id = 994104, Position = new Point(-4, 0), Neighbours = new List<int> { 994101 } });
+        live.State.Vehicles.Add(new Vehicle
+        {
+            Id = 994201, Position = new Point(0, 0), Status = VehicleStatus.Travelling
+        });
+        live.State.Vehicles.Add(new Vehicle
+        {
+            Id = 994202, Position = new Point(1, 0),
+            Status = VehicleStatus.Travelling, IntersectionClaim = 994101
+        });
+        live = CitySimulation.FromJson(live.SaveToJson());
+        live.Advance(2);
+        var blocker = live.State.Vehicles.Single(v => v.Id == 994202);
+        blocker.Position = new Point(40, 0);
+        blocker.IntersectionClaim = null;
+
+        for (var checkpoint = 0; checkpoint < 3; checkpoint++)
+        {
+            var restored = CitySimulation.FromJson(live.SaveToJson());
+            live.Advance(2);
+            restored.Advance(2);
+            Assert.Equal(restored.SaveToJson(), live.SaveToJson());
+        }
+    }
+
 }
