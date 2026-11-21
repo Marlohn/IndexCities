@@ -359,4 +359,50 @@ public sealed class Pr57JunctionBlockerMutationTests
         }
     }
 
+
+    [Fact]
+    public void Junction_manoeuvre_holders_recheck_external_vehicle_order_without_cached_winner()
+    {
+        // An external editor may reorder the canonical vehicle list while both
+        // reservations remain live. A retained first-match index must not win.
+        var sim = new CitySimulation(42);
+        const int junctionId = 997101;
+        sim.State.Roads.Add(new RoadNode
+        {
+            Id = junctionId, Position = new Point(0, 0),
+            Neighbours = new List<int> { 997102, 997103, 997104 }
+        });
+        sim.State.Roads.Add(new RoadNode { Id = 997102, Position = new Point(4, 0), Neighbours = new List<int> { junctionId } });
+        sim.State.Roads.Add(new RoadNode { Id = 997103, Position = new Point(0, 4), Neighbours = new List<int> { junctionId } });
+        sim.State.Roads.Add(new RoadNode { Id = 997104, Position = new Point(-4, 0), Neighbours = new List<int> { junctionId } });
+        sim.State.Vehicles.Add(new Vehicle { Id = 997201, Position = new Point(0, 0), Status = VehicleStatus.Travelling });
+        sim.State.Vehicles.Add(new Vehicle { Id = 997202, Position = new Point(1, 0), Status = VehicleStatus.Travelling });
+        sim.State.Vehicles.Add(new Vehicle { Id = 997203, Position = new Point(1, 1), Status = VehicleStatus.Travelling });
+        sim = CitySimulation.FromJson(sim.SaveToJson());
+        var entrant = sim.State.Vehicles.Single(v => v.Id == 997201);
+        var first = sim.State.Vehicles.Single(v => v.Id == 997202);
+        var second = sim.State.Vehicles.Single(v => v.Id == 997203);
+        first.ManoeuvreSpaces.Add(junctionId);
+        second.ManoeuvreSpaces.Add(junctionId);
+        var node = sim.State.Roads.Single(r => r.Id == junctionId);
+        var method = typeof(CitySimulation).GetMethod("MayEnterJunction",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(method);
+        bool Admit(CitySimulation city, Vehicle vehicle, RoadNode road) =>
+            (bool)method!.Invoke(city, new object[] { vehicle, road })!;
+
+        Assert.False(Admit(sim, entrant, node));
+        Assert.Contains(first.Id.ToString(), entrant.Cause);
+        sim.State.Vehicles.Remove(second);
+        sim.State.Vehicles.Insert(1, second);
+        Assert.False(Admit(sim, entrant, node));
+        Assert.Contains(second.Id.ToString(), entrant.Cause);
+        Assert.DoesNotContain(first.Id.ToString(), entrant.Cause);
+
+        var restored = CitySimulation.FromJson(sim.SaveToJson());
+        var restoredEntrant = restored.State.Vehicles.Single(v => v.Id == entrant.Id);
+        Assert.False(Admit(restored, restoredEntrant,
+            restored.State.Roads.Single(r => r.Id == junctionId)));
+        Assert.Contains(second.Id.ToString(), restoredEntrant.Cause);
+    }
 }
