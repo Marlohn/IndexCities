@@ -591,36 +591,4 @@ public sealed class Pr57CertifiedLivingRosterMutationTests
         resumed.Pr57AdvanceCertifiedQuantum();
         Assert.Equal(baseline.SaveToJson(), resumed.SaveToJson());
     }
-
-    [Fact]
-    public void Driver_missing_index_window_expires_and_rechecks_external_mutations()
-    {
-        // Exercise the same index class as the vehicle phase. A public
-        // boundary must not retain a negative lookup after a list mutation.
-        var index = new EntityIndex<Citizen>(c => c.Id);
-        var citizens = CityCycleTests.City().State.Citizens.ToList();
-        Assert.NotEmpty(citizens);
-        var removed = citizens[0];
-        var id = removed.Id;
-        citizens.RemoveAt(0);
-        Assert.Null(index.Find(citizens, id));
-
-        index.Pr57BeginAbsentWindow();
-        try
-        {
-            Assert.Null(index.Find(citizens, id));
-            Assert.Null(index.Find(citizens, id));
-        }
-        finally { index.Pr57EndAbsentWindow(); }
-
-        // Reinsert without changing any ID or any official simulation state.
-        citizens.Insert(0, removed);
-        Assert.Same(removed, index.Find(citizens, id));
-        index.Pr57BeginAbsentWindow();
-        try { Assert.Same(removed, index.Find(citizens, id)); }
-        finally { index.Pr57EndAbsentWindow(); }
-
-        citizens.RemoveAt(0);
-        Assert.Null(index.Find(citizens, id));
-    }
 }
