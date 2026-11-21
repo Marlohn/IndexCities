@@ -16,7 +16,7 @@ using IndexCities.Simulation;
 //          --strand=N empties the tank of N driving vehicles each day and follows the tow and the queue for 30 min
 // Results are measurements, not product rules: see docs/exploration/ritmo-velocidades.md.
 Console.OutputEncoding=Encoding.UTF8;
-var known=new HashSet<string>{"rows","length","days","cap","signals","seed","growth","warmup","strand","window","cycle-houses","cycle-bypass","resume","empty"};
+var known=new HashSet<string>{"rows","length","days","cap","signals","seed","growth","warmup","strand","window","cycle-houses","cycle-bypass","resume","empty","min-alive"};
 var opts=new Dictionary<string,string>();foreach(var p in args.Skip(2).Select(a=>a.TrimStart('-').Split('=',2)))opts[p[0]]=p.Length>1?p[1]:"1";
 string Opt(string k,string d)=>opts.GetValueOrDefault(k,d);
 if(opts.Keys.FirstOrDefault(k=>!known.Contains(k)) is {} unknown){Console.Error.WriteLine("opção desconhecida: --"+unknown);return 2;}
@@ -25,6 +25,10 @@ var seed=int.Parse(Opt("seed","42"));var days=int.Parse(Opt("days","7"));var cap
 var cycleHouses=int.Parse(Opt("cycle-houses","0"));
 var cycleBypass=Opt("cycle-bypass","0")=="1";
 if(cycleHouses<0||cycleHouses>48){Console.Error.WriteLine("--cycle-houses deve estar entre 0 e 48 (sonda experimental PR57)");return 2;}
+// PR57 benchmark validity gate: refuse to label a run as a population-scale
+// measurement if the real integrated simulation has fewer living Sims.
+var minAlive=int.Parse(Opt("min-alive","0"));
+if(minAlive<0){Console.Error.WriteLine("--min-alive must be nonnegative");return 2;}
 var windowSeconds=int.Parse(Opt("window","86400"));
 if(windowSeconds<2||windowSeconds>86400||windowSeconds%2!=0){Console.Error.WriteLine("--window deve estar entre 2 e 86400 segundos e ser múltiplo de 2");return 2;}
 if(windowSeconds!=86400&&(args[0]=="census"||args[0]=="stuck")){Console.Error.WriteLine("--window parcial é exclusivo de scale/profile");return 2;}
@@ -114,6 +118,8 @@ if(args[0]=="repro"){
     return 0;
 }
 sw.Restart();sim.Advance(warmup*86400);
+if(minAlive>0 && sim.State.Citizens.Count(c=>c.Alive)<minAlive)
+    throw new InvalidOperationException($"PR57_SCALE_UNDERPOPULATED stage=warmup required={minAlive} actual={sim.State.Citizens.Count(c=>c.Alive)}");
 Console.WriteLine($"WARMUP {warmup}d wall={sw.Elapsed.TotalSeconds:F1}s {Stats(sim)}");
 // PR57-only snapshot capture: a read-only save for comparing process-local
 // serialization and causal state; no production simulation rule changes.
@@ -225,6 +231,8 @@ for(var d=1;d<=days;d++){
         }
     }
     var w=sw.Elapsed.TotalSeconds;
+    if(minAlive>0 && sim.State.Citizens.Count(c=>c.Alive)<minAlive)
+        throw new InvalidOperationException($"PR57_SCALE_UNDERPOPULATED stage=window-{d} required={minAlive} actual={sim.State.Citizens.Count(c=>c.Alive)}");
     var windowCpu=(Process.GetCurrentProcess().TotalProcessorTime-windowCpuBefore).TotalSeconds;
     total+=w;done=d;
     var windowAllocMB=(GC.GetTotalAllocatedBytes()-windowAllocBefore)/1e6;
