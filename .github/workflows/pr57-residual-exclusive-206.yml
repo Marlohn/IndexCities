@@ -1065,8 +1065,43 @@ jobs:
                       assert (prefix/checkpoint).is_file(),(case,trial,checkpoint)
               for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
                   baseline=(root/f'{case}-A1'/checkpoint).read_bytes()
-                  assert all((root/f'{case}-{trial}'/checkpoint).read_bytes()==baseline
-                             for trial in ('B1','B2','A2')),(case,checkpoint,'FULL_JSON_MISMATCH')
+                  for trial in ('B1','B2','A2'):
+                      candidate=(root/f'{case}-{trial}'/checkpoint).read_bytes()
+                      if candidate != baseline:
+                          import json
+                          left=json.loads(baseline)
+                          right=json.loads(candidate)
+                          def first_difference(a,b,path='
+              def mean(trials,key):return statistics.mean(values[t][key] for t in trials)
+              a,b=mean(('A1','A2'),'wall'),mean(('B1','B2'),'wall')
+              print('PR57_SHARED_NODE_GRID_ABBA',case,'baselineWall',a,'optWall',b,
+                    'ratio',a/b,'baselineCpu',mean(('A1','A2'),'cpu'),
+                    'optCpu',mean(('B1','B2'),'cpu'),
+                    'baselineAllocMB',mean(('A1','A2'),'allocMB'),
+                    'optAllocMB',mean(('B1','B2'),'allocMB'),
+                    'parity','EXACT_FULL_JSON_THREE_CHECKPOINTS',
+                    'censusB1',values['B1']['census'],'censusB2',values['B2']['census'],
+                    'limitation','SMALL_REAL_SAVES_NOT_10K')
+          PY
+      - name: ):
+                              if type(a) is not type(b):
+                                  return path,a,b
+                              if isinstance(a,dict):
+                                  for key in sorted(set(a)|set(b)):
+                                      if key not in a or key not in b:
+                                          return path+'.'+str(key),a.get(key,'<MISSING>'),b.get(key,'<MISSING>')
+                                      mismatch=first_difference(a[key],b[key],path+'.'+str(key))
+                                      if mismatch:return mismatch
+                              elif isinstance(a,list):
+                                  if len(a)!=len(b):return path+'.length',len(a),len(b)
+                                  for index,(x,y) in enumerate(zip(a,b)):
+                                      mismatch=first_difference(x,y,path+'['+str(index)+']')
+                                      if mismatch:return mismatch
+                              elif a!=b:return path,a,b
+                              return None
+                          mismatch=first_difference(left,right)
+                          print('PR57_SHARED_NODE_FIRST_JSON_DIFF',case,trial,checkpoint,repr(mismatch),flush=True)
+                          raise AssertionError((case,trial,checkpoint,'FULL_JSON_MISMATCH'))
               def mean(trials,key):return statistics.mean(values[t][key] for t in trials)
               a,b=mean(('A1','A2'),'wall'),mean(('B1','B2'),'wall')
               print('PR57_SHARED_NODE_GRID_ABBA',case,'baselineWall',a,'optWall',b,
