@@ -13,13 +13,21 @@ public sealed partial class CitySimulation
     List<RoadNode>? _pr57SharedNodeGridNodes;
     int _pr57SharedNodeGridEpoch=-1;
     bool _pr57SharedNodeGridUsedAnnounced;
+    bool _pr57SharedNodeGridPending;
 
     void Pr57PrepareSharedNodeGrid()
     {
         _pr57SharedNodeGrid=null;
         _pr57SharedNodeGridNodes=null;
-        if(!Pr57SharedNodeGridEnabled||State.Vehicles.Count==0)return;
-        var nodes=SharedNodes();
+        // Defer the spatial build until a real manoeuvre requests candidates.
+        // Steps with no such query pay no node enumeration or bucket construction.
+        _pr57SharedNodeGridPending=Pr57SharedNodeGridEnabled&&State.Vehicles.Count>0;
+        _pr57SharedNodeGridEpoch=_roadEpoch;
+    }
+
+    void Pr57BuildSharedNodeGridOnDemand(List<RoadNode> nodes)
+    {
+        _pr57SharedNodeGridPending=false;
         if(nodes.Count<8)return;
         var grid=new Dictionary<(int X,int Z),List<int>>();
         for(var i=0;i<nodes.Count;i++)
@@ -41,6 +49,8 @@ public sealed partial class CitySimulation
     bool Pr57GatherSharedNodeCandidates(Vehicle body,Point at,List<RoadNode> nodes,List<int> result)
     {
         result.Clear();
+        if(_pr57SharedNodeGridPending&&_pr57SharedNodeGridEpoch==_roadEpoch)
+            Pr57BuildSharedNodeGridOnDemand(nodes);
         if(_pr57SharedNodeGrid is not {} grid||
            !ReferenceEquals(_pr57SharedNodeGridNodes,nodes)||
            _pr57SharedNodeGridEpoch!=_roadEpoch)return false;
@@ -64,5 +74,6 @@ public sealed partial class CitySimulation
     {
         _pr57SharedNodeGrid=null;
         _pr57SharedNodeGridNodes=null;
+        _pr57SharedNodeGridPending=false;
     }
 }
