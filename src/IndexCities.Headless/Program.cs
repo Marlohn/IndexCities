@@ -16,7 +16,7 @@ using IndexCities.Simulation;
 //          --strand=N empties the tank of N driving vehicles each day and follows the tow and the queue for 30 min
 // Results are measurements, not product rules: see docs/exploration/ritmo-velocidades.md.
 Console.OutputEncoding=Encoding.UTF8;
-var known=new HashSet<string>{"rows","length","days","cap","signals","seed","growth","warmup","strand","window","cycle-houses","cycle-bypass","resume","empty","min-alive","min-alive"};
+var known=new HashSet<string>{"rows","length","days","cap","signals","seed","growth","warmup","strand","window","cycle-houses","cycle-bypass","resume","empty","min-alive"};
 var opts=new Dictionary<string,string>();foreach(var p in args.Skip(2).Select(a=>a.TrimStart('-').Split('=',2)))opts[p[0]]=p.Length>1?p[1]:"1";
 string Opt(string k,string d)=>opts.GetValueOrDefault(k,d);
 if(opts.Keys.FirstOrDefault(k=>!known.Contains(k)) is {} unknown){Console.Error.WriteLine("opção desconhecida: --"+unknown);return 2;}
@@ -27,8 +27,6 @@ var cycleBypass=Opt("cycle-bypass","0")=="1";
 if(cycleHouses<0||cycleHouses>48){Console.Error.WriteLine("--cycle-houses deve estar entre 0 e 48 (sonda experimental PR57)");return 2;}
 // PR57 benchmark validity gate: refuse to label a run as a population-scale
 // measurement if the real integrated simulation has fewer living Sims.
-var minAlive=int.Parse(Opt("min-alive","0"));
-if(minAlive<0){Console.Error.WriteLine("--min-alive must be nonnegative");return 2;}
 var minAlive=int.Parse(Opt("min-alive","0"));
 if(minAlive<0){Console.Error.WriteLine("--min-alive must be nonnegative");return 2;}
 var windowSeconds=int.Parse(Opt("window","86400"));
