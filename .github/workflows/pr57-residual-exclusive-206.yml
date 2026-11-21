@@ -1276,6 +1276,25 @@ jobs:
                     'parity','EXACT_FULL_JSON_THREE_CHECKPOINTS',
                     'limitation','CENSUS_INSTRUMENTED_NOT_ABBA_NOT_10K')
           PY
+      # PR57 integrated population validity probe. This executes the real Headless
+      # simulation; a failed minimum is evidence of an underpopulated fixture,
+      # never a performance result or a passing 100-living-Sim benchmark.
+      - name: Probe minimum 100 living Sims in integrated cycle
+        if: always()
+        shell: bash
+        run: |
+          set -uo pipefail
+          mkdir -p artifacts/residual-exclusive-206
+          set +e
+          timeout 180s dotnet run --project src/IndexCities.Headless/IndexCities.Headless.csproj \\
+            -c Release --no-build -- scale cycle --warmup=0 --days=1 --window=20 --min-alive=100 \\
+            > artifacts/residual-exclusive-206/min-alive-100-cycle.log 2>&1
+          code=$?
+          set -e
+          cat artifacts/residual-exclusive-206/min-alive-100-cycle.log
+          echo "PR57_MIN_ALIVE_100_CYCLE exit_code=$code (0=valid first 20s window; nonzero=invalid/timeout; no speedup claim)"
+          # A failed representativeness probe must not suppress independent causal tests.
+          exit 0
       - name: Preserve full checkpoints and logs
         if: always()
         uses: actions/upload-artifact@v4
