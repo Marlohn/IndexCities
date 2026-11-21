@@ -62,6 +62,10 @@ public sealed partial class CitySimulation
         for(var x=firstX;x<=lastX;x++)
             for(var z=firstZ;z<=lastZ;z++)
                 if(grid.TryGetValue((x,z),out var bucket))result.AddRange(bucket);
+        // Spatial cell traversal is not canonical node traversal. Restore the
+        // original node-list order before exact predicates and tie-breaking.
+        // Every node occurs in one bucket, so ascending indices are sufficient.
+        result.Sort();
         if(!_pr57SharedNodeGridUsedAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
         {
             Console.WriteLine($"PR57_SHARED_NODE_GRID used=True nodes={nodes.Count} candidates={result.Count}");
