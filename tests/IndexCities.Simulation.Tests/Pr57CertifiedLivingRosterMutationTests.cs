@@ -51,6 +51,49 @@ public sealed class Pr57CertifiedLivingRosterMutationTests
     }
 
     [Fact]
+    public void Certified_boundary_matches_public_after_external_vehicle_membership_roundtrip()
+    {
+        // Same-count membership replacement across an external boundary must not
+        // allow a certified citizen roster to conceal a vehicle-list mutation.
+        var seed = CityCycleTests.City();
+        for (var hour = 0; hour < 48; hour++) seed.Advance(3600);
+        var json = seed.SaveToJson();
+        var baseline = CitySimulation.FromJson(json);
+        var certified = CitySimulation.FromJson(json);
+        Assert.NotEmpty(baseline.State.Vehicles);
+
+        for (var quantum = 0; quantum < 3; quantum++)
+        {
+            baseline.Advance(2);
+            certified.Pr57AdvanceCertifiedQuantum();
+            Assert.Equal(baseline.SaveToJson(), certified.SaveToJson());
+        }
+
+        foreach (var sim in new[] { baseline, certified })
+        {
+            // Remove and reinsert the same vehicle at a different position,
+            // preserving its identity, all physical blockers, and list size.
+            var vehicle = sim.State.Vehicles[0];
+            sim.State.Vehicles.RemoveAt(0);
+            sim.State.Vehicles.Add(vehicle);
+            vehicle.Position = sim.State.Entry;
+        }
+        certified.Pr57InvalidateCertifiedBoundary();
+
+        for (var quantum = 0; quantum < 6; quantum++)
+        {
+            baseline.Advance(2);
+            certified.Pr57AdvanceCertifiedQuantum();
+            Assert.Equal(baseline.SaveToJson(), certified.SaveToJson());
+        }
+
+        var resumed = CitySimulation.FromJson(certified.SaveToJson());
+        baseline.Advance(2);
+        resumed.Pr57AdvanceCertifiedQuantum();
+        Assert.Equal(baseline.SaveToJson(), resumed.SaveToJson());
+    }
+
+    [Fact]
     public void Certified_quanta_reuse_roster_until_explicit_external_invalidation()
     {
         // The opt-in must do actual avoided enumeration, not merely produce
