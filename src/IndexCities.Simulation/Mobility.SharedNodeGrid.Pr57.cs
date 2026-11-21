@@ -14,6 +14,8 @@ public sealed partial class CitySimulation
     int _pr57SharedNodeGridEpoch=-1;
     bool _pr57SharedNodeGridUsedAnnounced;
     bool _pr57SharedNodeGridPending;
+    long _pr57SharedNodeSteps, _pr57SharedNodeBuilds, _pr57SharedNodeQueries;
+    long _pr57SharedNodeVisited, _pr57SharedNodeBaselineVisits, _pr57SharedNodeSorts;
 
     void Pr57PrepareSharedNodeGrid()
     {
@@ -22,6 +24,7 @@ public sealed partial class CitySimulation
         // Defer the spatial build until a real manoeuvre requests candidates.
         // Steps with no such query pay no node enumeration or bucket construction.
         _pr57SharedNodeGridPending=Pr57SharedNodeGridEnabled&&State.Vehicles.Count>0;
+        if(_pr57SharedNodeGridPending)_pr57SharedNodeSteps++;
         _pr57SharedNodeGridEpoch=_roadEpoch;
     }
 
@@ -29,6 +32,7 @@ public sealed partial class CitySimulation
     {
         _pr57SharedNodeGridPending=false;
         if(nodes.Count<8)return;
+        _pr57SharedNodeBuilds++;
         var grid=new Dictionary<(int X,int Z),List<int>>();
         for(var i=0;i<nodes.Count;i++)
         {
@@ -59,13 +63,23 @@ public sealed partial class CitySimulation
         var lastX=(int)Math.Floor((at.X+reach)/Pr57SharedNodeCellWidth);
         var firstZ=(int)Math.Floor((at.Z-reach)/Pr57SharedNodeCellWidth);
         var lastZ=(int)Math.Floor((at.Z+reach)/Pr57SharedNodeCellWidth);
+        _pr57SharedNodeQueries++;
+        _pr57SharedNodeBaselineVisits+=nodes.Count;
+        var bucketsFound=0;
         for(var x=firstX;x<=lastX;x++)
             for(var z=firstZ;z<=lastZ;z++)
-                if(grid.TryGetValue((x,z),out var bucket))result.AddRange(bucket);
+                if(grid.TryGetValue((x,z),out var bucket))
+                {
+                    result.AddRange(bucket);
+                    bucketsFound++;
+                }
         // Spatial cell traversal is not canonical node traversal. Restore the
         // original node-list order before exact predicates and tie-breaking.
         // Every node occurs in one bucket, so ascending indices are sufficient.
-        result.Sort();
+        // Within a single bucket, indices are already in canonical insertion order.
+        // Multiple buckets must be sorted to preserve exact physical tie-breaks.
+        if(bucketsFound>1){result.Sort();_pr57SharedNodeSorts++;}
+        _pr57SharedNodeVisited+=result.Count;
         if(!_pr57SharedNodeGridUsedAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
         {
             Console.WriteLine($"PR57_SHARED_NODE_GRID used=True nodes={nodes.Count} candidates={result.Count}");
@@ -76,6 +90,8 @@ public sealed partial class CitySimulation
 
     void Pr57ClearSharedNodeGrid()
     {
+        if(Pr57SharedNodeGridEnabled&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+            Console.WriteLine($"PR57_SHARED_NODE_CENSUS steps={_pr57SharedNodeSteps} builds={_pr57SharedNodeBuilds} queries={_pr57SharedNodeQueries} baselineVisits={_pr57SharedNodeBaselineVisits} candidateVisits={_pr57SharedNodeVisited} sorts={_pr57SharedNodeSorts}");
         _pr57SharedNodeGrid=null;
         _pr57SharedNodeGridNodes=null;
         _pr57SharedNodeGridPending=false;
