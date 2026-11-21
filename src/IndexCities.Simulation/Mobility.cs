@@ -1069,6 +1069,18 @@ public sealed partial class CitySimulation
             if(_vehicleMovementBatch==null||operationsDt!=null){
                 var operationTime=operationsDt??dt;
                 v.FuelBurnedLastStep=0;
+                // PR57 isolated opt-in: a truly quiescent parked vehicle has no
+                // operation to perform in this slice. The all-vehicle junction
+                // release, canonical ordering, per-actor hooks and finalizer above
+                // and below still execute. Read live fields on EVERY slice so
+                // externally changed service/tow/route state takes the slow path.
+                // Do not skip Outside, Waiting, Stranded or any service/tow actor.
+                if(Environment.GetEnvironmentVariable("PR57_QUIESCENT_PARKED_GATE")=="1" &&
+                   v.Status==VehicleStatus.Parked && !v.External &&
+                   v.ServicePhase==ServicePhase.None && v.ServiceShopId is null &&
+                   v.PushPath.Count==0 && !IsTow(v) && v.TowTruckId is null &&
+                   v.TowPhase==TowPhase.None && v.Detour.Count==0)
+                    continue;
                 if(v.Status==VehicleStatus.Towed)continue;
                 // Lot manoeuvres, service queues, exterior service and calls for parked broken vehicles.
                 if((v.ServicePhase!=ServicePhase.None||v.ServiceShopId!=null||v.PushPath.Count>0||v.Status==VehicleStatus.Outside)&&TendService(v,operationTime))continue;
