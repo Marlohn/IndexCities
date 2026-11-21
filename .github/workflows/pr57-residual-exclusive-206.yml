@@ -1078,6 +1078,9 @@ jobs:
                     'limitation','SMALL_REAL_SAVES_NOT_10K')
           PY
       - name: PR57 site body broadphase integrated ABBA and exact causal parity
+        # This gate uses snapshots restored before the independent sparse-bitset
+        # experiment; keep its causal verdict observable if that experiment fails.
+        if: always()
         shell: bash
         run: |
           set -euo pipefail
