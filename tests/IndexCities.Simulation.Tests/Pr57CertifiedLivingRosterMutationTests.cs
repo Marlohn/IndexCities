@@ -9,6 +9,48 @@ namespace IndexCities.Simulation.Tests;
 public sealed class Pr57CertifiedLivingRosterMutationTests
 {
     [Fact]
+    public void Certified_boundary_matches_public_after_external_vehicle_reorder_and_position_mutation()
+    {
+        // A certified citizen agenda must not hide external changes to traffic:
+        // vehicle iteration order and pose can affect subsequent occupancy and trips.
+        var seed = CityCycleTests.City();
+        for (var hour = 0; hour < 48; hour++) seed.Advance(3600);
+        var json = seed.SaveToJson();
+        var baseline = CitySimulation.FromJson(json);
+        var certified = CitySimulation.FromJson(json);
+        Assert.NotEmpty(baseline.State.Vehicles);
+
+        for (var quantum = 0; quantum < 4; quantum++)
+        {
+            baseline.Advance(2);
+            certified.Pr57AdvanceCertifiedQuantum();
+            Assert.Equal(baseline.SaveToJson(), certified.SaveToJson());
+        }
+
+        // Same-count external reorder plus a physical pose mutation, not merely
+        // a no-op invalidation. Preserve identical inputs in both replays.
+        foreach (var sim in new[] { baseline, certified })
+        {
+            sim.State.Vehicles.Reverse();
+            var vehicle = sim.State.Vehicles[0];
+            vehicle.Position = sim.State.Entry;
+        }
+        certified.Pr57InvalidateCertifiedBoundary();
+
+        for (var quantum = 0; quantum < 8; quantum++)
+        {
+            baseline.Advance(2);
+            certified.Pr57AdvanceCertifiedQuantum();
+            Assert.Equal(baseline.SaveToJson(), certified.SaveToJson());
+        }
+
+        var resumed = CitySimulation.FromJson(certified.SaveToJson());
+        baseline.Advance(2);
+        resumed.Pr57AdvanceCertifiedQuantum();
+        Assert.Equal(baseline.SaveToJson(), resumed.SaveToJson());
+    }
+
+    [Fact]
     public void Certified_quanta_reuse_roster_until_explicit_external_invalidation()
     {
         // The opt-in must do actual avoided enumeration, not merely produce
