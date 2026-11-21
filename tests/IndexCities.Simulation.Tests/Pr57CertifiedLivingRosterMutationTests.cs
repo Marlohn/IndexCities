@@ -591,4 +591,42 @@ public sealed class Pr57CertifiedLivingRosterMutationTests
         resumed.Pr57AdvanceCertifiedQuantum();
         Assert.Equal(baseline.SaveToJson(), resumed.SaveToJson());
     }
+
+    [Fact]
+    public void Driver_missing_index_window_expires_and_rechecks_external_mutations()
+    {
+        // Exercise the same EntityIndex<Citizen> used by CitySimulation's vehicle
+        // phase without requiring a particular fixture to contain absent drivers.
+        // The public boundary must never retain a negative lookup across quanta.
+        var index = new EntityIndex<Citizen>(c => c.Id);
+        var citizens = CityCycleTests.City().State.Citizens.ToList();
+        Assert.NotEmpty(citizens);
+        var absent = citizens.Max(c => c.Id) + 1000;
+        Assert.Null(index.Find(citizens, absent));
+
+        index.Pr57BeginAbsentWindow();
+        try
+        {
+            Assert.Null(index.Find(citizens, absent));
+            Assert.Null(index.Find(citizens, absent)); // repeated miss in one phase
+        }
+        finally { index.Pr57EndAbsentWindow(); }
+
+        // Reuse a live citizen object at the absent ID only in this test copy.
+        // A stale negative cache after phase exit would incorrectly return null.
+        var replacement = citizens[0];
+        var originalId = replacement.Id;
+        replacement.Id = absent;
+        try
+        {
+            Assert.Same(replacement, index.Find(citizens, absent));
+            index.Pr57BeginAbsentWindow();
+            try { Assert.Same(replacement, index.Find(citizens, absent)); }
+            finally { index.Pr57EndAbsentWindow(); }
+        }
+        finally { replacement.Id = originalId; }
+
+        Assert.Same(replacement, index.Find(citizens, originalId));
+        Assert.Null(index.Find(citizens, absent));
+    }
 }
