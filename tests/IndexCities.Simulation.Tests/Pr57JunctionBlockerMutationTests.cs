@@ -328,4 +328,35 @@ public sealed class Pr57JunctionBlockerMutationTests
             Assert.Equal(restored.SaveToJson(), live.SaveToJson());
         }
     }
+    [Fact]
+    public void Integrated_advance_rechecks_external_manoeuvre_only_mutation_across_reload()
+    {
+        // External editors can modify a serialized reservation without touching
+        // position, IntersectionClaim, or RoadRevision. A cross-tick roster
+        // invalidated by those fields alone would retain an obsolete blocker.
+        var live = new CitySimulation(42);
+        live.State.Roads.Add(new RoadNode
+        {
+            Id = 996101, Position = new Point(0, 0),
+            Neighbours = new List<int> { 996102, 996103, 996104 }
+        });
+        live.State.Roads.Add(new RoadNode { Id = 996102, Position = new Point(4, 0), Neighbours = new List<int> { 996101 } });
+        live.State.Roads.Add(new RoadNode { Id = 996103, Position = new Point(0, 4), Neighbours = new List<int> { 996101 } });
+        live.State.Roads.Add(new RoadNode { Id = 996104, Position = new Point(-4, 0), Neighbours = new List<int> { 996101 } });
+        live.State.Vehicles.Add(new Vehicle { Id = 996201, Position = new Point(0, 0), Status = VehicleStatus.Travelling });
+        live.State.Vehicles.Add(new Vehicle { Id = 996202, Position = new Point(1, 0), Status = VehicleStatus.Travelling });
+        live = CitySimulation.FromJson(live.SaveToJson());
+        live.Advance(2);
+        var blocker = live.State.Vehicles.Single(v => v.Id == 996202);
+        blocker.ManoeuvreSpaces.Add(996101);
+
+        for (var checkpoint = 0; checkpoint < 3; checkpoint++)
+        {
+            var restored = CitySimulation.FromJson(live.SaveToJson());
+            live.Advance(2);
+            restored.Advance(2);
+            Assert.Equal(restored.SaveToJson(), live.SaveToJson());
+        }
+    }
+
 }
