@@ -197,9 +197,23 @@ public sealed partial class CitySimulation
     static readonly bool Pr57SiteBodyBroadphaseEnabled =
         Environment.GetEnvironmentVariable("PR57_SITE_BODY_BROADPHASE")=="1";
 
+    // PR57 observational census: counts actual narrow-phase candidate visits,
+    // mandatory half-metre probes and broadphase construction work. Opt-in only.
+    static readonly bool Pr57SiteBodyCensusEnabled =
+        Environment.GetEnvironmentVariable("PR57_SITE_BODY_CENSUS")=="1";
+    long _pr57SiteBodyQueries,_pr57SiteBodyProbes,_pr57SiteBodyVisits;
+    long _pr57SiteBodyAvailable,_pr57SiteBodySelected,_pr57SiteBodyBuildVisits;
+    void Pr57ReportSiteBodyCensus()
+    {
+        if(!Pr57SiteBodyCensusEnabled)return;
+        if(_pr57SiteBodyQueries<=5||_pr57SiteBodyQueries%100==0)
+            Console.WriteLine($"PR57_SITE_BODY_CENSUS queries={_pr57SiteBodyQueries} probes={_pr57SiteBodyProbes} inspected={_pr57SiteBodyVisits} all_candidates={_pr57SiteBodyAvailable} selected_candidates={_pr57SiteBodySelected} build_visits={_pr57SiteBodyBuildVisits} broadphase={Pr57SiteBodyBroadphaseEnabled}");
+    }
+
     double SafeSiteTravel(Vehicle vehicle,Point target,double distance,bool machinesOnly=false)
     {
         Pr57ObserveZeroSiteCensus(distance);
+        if(Pr57SiteBodyCensusEnabled)_pr57SiteBodyQueries++;
         if(Pr57ZeroSiteSkip&&distance==0){Pr57S5SiteObserve(vehicle,distance,0,machinesOnly,0,0);return 0;}
         // Canonical full scan: public Vehicle fields can change in-place
         // without a collection-version change, including within a slice.
@@ -243,16 +257,23 @@ public sealed partial class CitySimulation
         // repeated half-metre body tests. Positions do not mutate inside this
         // query; preserve original enumeration order and exact narrow predicates.
         // The extra metre covers roundoff at the strict 12m narrow-phase edge.
+        if(Pr57SiteBodyCensusEnabled)
+        {
+            _pr57SiteBodyAvailable+=siteOwners.Count;
+            if(Pr57SiteBodyBroadphaseEnabled&&distance>0)_pr57SiteBodyBuildVisits+=siteOwners.Count;
+        }
         var bodyCandidates=Pr57SiteBodyBroadphaseEnabled&&distance>0
             ?siteOwners.Where(other=>other.Position.Distance(vehicle.Position)<=distance+13).ToList()
             :siteOwners;
+        if(Pr57SiteBodyCensusEnabled)_pr57SiteBodySelected+=bodyCandidates.Count;
         var safe=0.0;
-        while(safe<distance-.000001){var next=Math.Min(distance,safe+.5);var at=vehicle.Position.MoveTowards(target,next);
-            if(bodyCandidates.Any(other=>other.Id!=vehicle.Id&&other.Status!=VehicleStatus.Outside&&(!machinesOnly||other.Machine!=PavingMachine.None&&(other.Status==VehicleStatus.Parked||!(other.Position.Distance(State.Entry)<8&&vehicle.Position.Distance(State.Entry)<8)))&&other.Position.Distance(at)<12&&VehicleBodiesOverlap(vehicle,at,other)))break;
+        while(safe<distance-.000001){if(Pr57SiteBodyCensusEnabled)_pr57SiteBodyProbes++;var next=Math.Min(distance,safe+.5);var at=vehicle.Position.MoveTowards(target,next);
+            if(bodyCandidates.Any(other=>{if(Pr57SiteBodyCensusEnabled)_pr57SiteBodyVisits++;return other.Id!=vehicle.Id&&other.Status!=VehicleStatus.Outside&&(!machinesOnly||other.Machine!=PavingMachine.None&&(other.Status==VehicleStatus.Parked||!(other.Position.Distance(State.Entry)<8&&vehicle.Position.Distance(State.Entry)<8)))&&other.Position.Distance(at)<12&&VehicleBodiesOverlap(vehicle,at,other);}))break;
             if(reserved.Any(pose=>pose.Position.Distance(at)<12&&BodiesOverlap(vehicle,at,vehicle.Heading,pose.Machine,pose.Position,pose.Heading)))break;
             safe=next;
         }
         Pr57S5SiteObserve(vehicle,distance,safe,machinesOnly,reserved.Count,siteOwners.Count);
+        Pr57ReportSiteBodyCensus();
         if(Pr57SafeSiteBufferEnabled)_pr57SafeSiteReservationScratch.Clear();
         return safe;
     }
