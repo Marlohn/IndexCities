@@ -1182,62 +1182,22 @@ jobs:
                   left=(root/f'{case}-0'/checkpoint).read_bytes()
                   right=(root/f'{case}-1'/checkpoint).read_bytes()
                   if left!=right:
-                      import json,hashlib
+                      import json, hashlib
                       a=json.loads(left); b=json.loads(right)
-                      def first_difference(x,y,path='
-              a,b=rows['0'],rows['1']
-              if a is None or b is None:
-                  print('PR57_SITE_BODY_CENSUS_UNAVAILABLE',case,'baseline',a,'optIn',b,
-                        'parity','EXACT_FULL_JSON_THREE_CHECKPOINTS',
-                        'reason','NO_CENSUS_EMITTED_NO_WORK_DECISION')
-                  continue
-              assert a['queries']==b['queries'] and a['probes']==b['probes'],(case,a,b)
-              print('PR57_SITE_BODY_CENSUS_DECISION',case,'baseline',a,'optIn',b,
-                    'visits_avoided',a['inspected']-b['inspected'],
-                    'build_visits',b['build_visits'],
-                    'parity','EXACT_FULL_JSON_THREE_CHECKPOINTS',
-                    'limitation','CENSUS_INSTRUMENTED_NOT_ABBA_NOT_10K')
-          PY
-      - name: Preserve full checkpoints and logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: integrated-scale-pr57-residual-exclusive-206
-          path: artifacts/residual-exclusive-206/**
-          retention-days: 14
-
-      # Independent from PR comments: a status on the exact SHA is discoverable
-      # by GitHub get_commit_combined_status and survives bot comment failures.
-      - name: Publish final status on tested commit
-        if: always()
-        continue-on-error: true
-        uses: actions/github-script@v7
-        env:
-          PR57_TEST_JOB_STATUS: ${{ job.status }}
-        with:
-          script: |
-            const { owner, repo } = context.repo;
-            const status = process.env.PR57_TEST_JOB_STATUS;
-            await github.rest.repos.createCommitStatus({
-              owner, repo, sha: context.sha,
-              state: status === 'success' ? 'success' : status === 'cancelled' ? 'error' : 'failure',
-              context: 'pr57/residual-exclusive-206',
-              target_url: `https://github.com/${owner}/${repo}/actions/runs/${context.runId}`,
-              description: `PR57 #206: ${status}; inspect full JSON parity and cost logs`
-            });
-):
+                      def first_difference(x,y,path='$'):
                           if type(x)!=type(y): return path,repr(x)[:180],repr(y)[:180]
                           if isinstance(x,dict):
                               for k in sorted(set(x)|set(y)):
-                                  if k not in x or k not in y:return path+'.'+str(k),repr(x.get(k,'MISSING'))[:180],repr(y.get(k,'MISSING'))[:180]
+                                  if k not in x or k not in y:
+                                      return path+'.'+str(k),repr(x.get(k,'MISSING'))[:180],repr(y.get(k,'MISSING'))[:180]
                                   d=first_difference(x[k],y[k],path+'.'+str(k))
-                                  if d:return d
+                                  if d: return d
                           elif isinstance(x,list):
-                              if len(x)!=len(y):return path+'.length',len(x),len(y)
+                              if len(x)!=len(y): return path+'.length',len(x),len(y)
                               for n,(u,v) in enumerate(zip(x,y)):
                                   d=first_difference(u,v,path+'['+str(n)+']')
-                                  if d:return d
-                          elif x!=y:return path,repr(x)[:180],repr(y)[:180]
+                                  if d: return d
+                          elif x!=y: return path,repr(x)[:180],repr(y)[:180]
                           return None
                       print('PR57_SITE_BODY_JSON_FIRST_DIFFERENCE',case,checkpoint,first_difference(a,b),
                             'baselineSHA',hashlib.sha256(left).hexdigest(),
