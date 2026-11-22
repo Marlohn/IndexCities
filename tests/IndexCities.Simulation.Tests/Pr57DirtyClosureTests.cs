@@ -97,4 +97,38 @@ public sealed class Pr57DirtyClosureTests
         Assert.Equal(1, Counter(sim, "_pr57DirtyMissed"));
         Call(sim, "Pr57MutationAfterSync");
     }
+    // Integrated lower-bound census: executes the full engine, never a shadow
+    // scheduler. No internal step is classified as avoidable without closure.
+    [Fact]
+    public void Integrated_advance_ceiling_reports_full_work_and_zero_certified_skips()
+    {
+        var sim = new CitySimulation(42);
+        var before = sim.SaveToJson();
+        var aliveBefore = sim.State.Citizens.Count(c => c.Alive);
+        var process = System.Diagnostics.Process.GetCurrentProcess();
+        var cpu = process.TotalProcessorTime;
+        var bytes = GC.GetTotalAllocatedBytes(true);
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        const int advances = 100;
+        for (var i = 0; i < advances; i++) sim.Advance(2);
+        clock.Stop();
+        sim.CheckInvariants();
+        var after = sim.SaveToJson();
+        Assert.Equal(after, CitySimulation.FromJson(after).SaveToJson());
+        Assert.NotEqual(before, after);
+        var aliveAfter = sim.State.Citizens.Count(c => c.Alive);
+        var history = sim.State.Citizens.Sum(c => (long)c.History.Count);
+        Console.WriteLine(
+            $"PR57_INTEGRATED_CEILING steps={advances} seconds=200 aliveBefore={aliveBefore} " +
+            $"aliveAfter={aliveAfter} historyEntries={history} " +
+            $"wallMs={clock.Elapsed.TotalMilliseconds:F3} " +
+            $"cpuMs={(process.TotalProcessorTime - cpu).TotalMilliseconds:F3} " +
+            $"allocatedBytes={GC.GetTotalAllocatedBytes(true) - bytes} " +
+            $"certifiedAvoidableInternalSteps=0 actualAvoidedInternalSteps=0 " +
+            $"causalClosureProven=False organicCityUnverified=True " +
+            $"scope=FULL_ENGINE_100_ADVANCES_NOT_ABBA_NOT_MACRO_PROOF");
+        Assert.True(aliveBefore > 0);
+        Assert.True(aliveAfter > 0);
+    }
+
 }
