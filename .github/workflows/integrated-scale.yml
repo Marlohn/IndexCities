@@ -169,7 +169,7 @@ jobs:
               def fields(prefix):
                   line=next((s for s in log.splitlines() if s.startswith(prefix)),None)
                   assert line is not None,(scenario,'missing',prefix)
-                  return dict(re.findall(r'(\\w+)=([^ ]+)',line))
+                  return dict(re.findall(r'(\w+)=([^ ]+)',line))
               ceiling=fields('PR57_CROSS_PHASE_CEILING ')
               window=fields('WINDOW 1 ')
               alloc=fields('PR57_PHASE_ALLOC_SUM ')
@@ -180,7 +180,7 @@ jobs:
               assert recurring>=0 and other>0 and 0<=share<=100 and math.isfinite(share)
               assert abs(share-100*recurring/(recurring+other))<=0.002
               parts=[s for s in log.splitlines() if s.startswith('PR57_CROSS_PHASE_PART ')]
-              assert len(parts)==9 and sum(int(re.search(r'\\bticks=(\\d+)',s)[1]) for s in parts)==recurring
+              assert len(parts)==9 and sum(int(re.search(r'\bticks=(\d+)',s)[1]) for s in parts)==recurring
               assert float(window['alive'])>0 and float(window['wall'])>0 and float(window['cpu'])>0
               assert float(window['allocMB'])>=0 and int(alloc['steps'])==60
               assert 'PR57_AB_CHECKPOINT window=1 sha256=' in log and 'INVARIANTS OK' in log
