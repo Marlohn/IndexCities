@@ -181,7 +181,7 @@ jobs:
               assert abs(share-100*recurring/(recurring+other))<=0.002
               parts=[s for s in log.splitlines() if s.startswith('PR57_CROSS_PHASE_PART ')]
               assert len(parts)==9 and sum(int(re.search(r'\bticks=(\d+)',s)[1]) for s in parts)==recurring
-              assert float(window['alive'])>0 and float(window['wall'])>0 and float(window['cpu'])>0
+              assert float(window['alive'])>0 and float(window['wall'].removesuffix('s'))>0 and float(window['cpu'].removesuffix('s'))>0
               assert float(window['allocMB'])>=0 and int(alloc['steps'])==60
               assert 'PR57_AB_CHECKPOINT window=1 sha256=' in log and 'INVARIANTS OK' in log
               if scenario=='works':
