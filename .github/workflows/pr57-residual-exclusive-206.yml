@@ -972,7 +972,7 @@ jobs:
               output="$root/$case-$trial"
               mkdir -p "$output"
               echo "PR57_DIRECT_ORDER_MAP_RUN case=$case trial=$trial enabled=$enabled spatial=1"
-              PR57_SPATIAL_SCAN=1 PR57_DIRECT_ORDER_MAP="$enabled" PR57_HOST_QUANTUM=1 \
+              PR57_SPATIAL_SCAN=1 PR57_DIRECT_ORDER_MAP="$enabled" PR57_CANONICAL_POLLUTION_ORDER=1 PR57_HOST_QUANTUM=1 \
               PR57_AB_CHECKPOINT=1 PR57_206_MID_CHECKPOINT=1 \
               PR57_SAVE_CAPTURE_DIR="$output" PR57_206_RESIDUAL_EXCLUSIVE=0 \
               PR57_240_WALK_SPLIT=0 PR57_BOARDING_REUSE_LOOKUP=0 \
