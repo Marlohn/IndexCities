@@ -109,7 +109,10 @@ public sealed class Pr57DirtyClosureTests
         // Optional ceiling probe: advance the same real city, never inject
         // citizens or substitute a synthetic fixture. Bound the search to
         // avoid turning an unattainable population into an unbounded CI run.
-        var require100 = Environment.GetEnvironmentVariable("PR57_ORGANIC_100_CEILING") == "1";
+        // CI must execute the organic ceiling rather than silently skip the opt-in gate.
+        // Local runs remain opt-in; this is reversible without touching workflows.
+        var require100 = Environment.GetEnvironmentVariable("CI") == "true" ||
+            Environment.GetEnvironmentVariable("PR57_ORGANIC_100_CEILING") == "1";
         var hoursToTarget = 48;
         if (require100)
         {
