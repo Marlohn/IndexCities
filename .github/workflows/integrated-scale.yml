@@ -57,6 +57,15 @@ jobs:
             gh api -X POST "repos/$GITHUB_REPOSITORY/issues/57/comments" -f body="$body" >/dev/null \
               || echo "PR57_RUN_POINTER_CREATE_FAILED run=$PR57_RUN_ID"
           fi
+      # Focused population-capacity diagnostic before the expensive ABBA suite.
+      # The organic city must not be relabelled as 100-live if it never reaches 100.
+      - name: Diagnose PR57 organic 100-live ceiling
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 150s dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
+            -c Release --filter FullyQualifiedName~Integrated_advance_ceiling_reports_full_work_and_zero_certified_skips \
+            --logger 'console;verbosity=normal'
       - name: Build and simulation tests with opt-in off and on
         shell: bash
         run: |
