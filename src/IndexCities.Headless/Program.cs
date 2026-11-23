@@ -273,6 +273,24 @@ if(done>0)Console.WriteLine(windowSeconds==86400
 if(profile is not null){
     var ticks=profile.Ticks.Sum();var measured=ticks/(double)Stopwatch.Frequency;
     Console.WriteLine($"STEP_PROFILE steps={profile.Steps} measuredWall={measured:F3}s phases={StepCostProfile.Names.Length}");
+
+    // PR57 opt-in: integrated causal ceiling on a real, persisted organic city.
+    // Phase costs are observed, not evidence that any phase can be skipped.
+    // Fail closed rather than accidentally reporting a grid/cycle fixture as organic.
+    if(Environment.GetEnvironmentVariable("PR57_INTEGRATED_CEILING")=="1")
+    {
+        if(resumePath.Length==0 || minAlive<100)
+            throw new InvalidOperationException("PR57_INTEGRATED_CEILING requires --resume=<authentic-organic-save> and --min-alive>=100");
+        var alive=sim.State.Citizens.Count(c=>c.Alive);
+        if(alive<minAlive)
+            throw new InvalidOperationException($"PR57_INTEGRATED_CEILING underpopulated: required={minAlive} actual={alive}");
+        var measuredUsPerStep=profile.Steps==0?double.NaN:measured*1e6/profile.Steps;
+        var targetUs=21600.0/(80*365.25*86400/2)*1e6;
+        Console.WriteLine($"PR57_INTEGRATED_CEILING source=AUTHENTIC_RESUME requiredAlive={minAlive} actualAlive={alive} advances={profile.Steps} observedPhaseWallSeconds={measured:F6} observedPhaseUsPerAdvance={measuredUsPerStep:F3} budgetUsPerAdvance={targetUs:F3} ratioToBudget={measuredUsPerStep/targetUs:F3} mandatoryExecutedAdvances={profile.Steps} provenAvoidableInternalAdvances=0 causalClosureProven=False note=OBSERVATIONAL_UPPER_BOUND_NO_SAFE_SKIP_IDENTIFIED");
+        for(var i=0;i<StepCostProfile.Names.Length;i++)
+            Console.WriteLine($"PR57_INTEGRATED_CEILING_PHASE name={StepCostProfile.Names[i]} observedSeconds={profile.Ticks[i]/(double)Stopwatch.Frequency:F6} candidateAvoidable=False note=NO_CAUSAL_ELIGIBILITY_PROOF");
+    }
+
     for(var i=0;i<StepCostProfile.Names.Length;i++)
         Console.WriteLine($"  STEP_PHASE name={StepCostProfile.Names[i]} wall={profile.Ticks[i]/(double)Stopwatch.Frequency:F3}s share={(ticks==0?0:100.0*profile.Ticks[i]/ticks):F2}%");
     // PR57: observational multi-phase ceiling, using the same measured Step(2)
