@@ -106,6 +106,23 @@ public sealed class Pr57DirtyClosureTests
         // The observed population is reported, never inflated to a target.
         var sim = CityCycleTests.City();
         for (var hour = 0; hour < 48; hour++) sim.Advance(3600);
+        // Optional ceiling probe: advance the same real city, never inject
+        // citizens or substitute a synthetic fixture. Bound the search to
+        // avoid turning an unattainable population into an unbounded CI run.
+        var require100 = Environment.GetEnvironmentVariable("PR57_ORGANIC_100_CEILING") == "1";
+        var hoursToTarget = 48;
+        if (require100)
+        {
+            while (sim.State.Citizens.Count(c => c.Alive) < 100 && hoursToTarget < 168)
+            {
+                sim.Advance(3600);
+                hoursToTarget++;
+            }
+            var reached = sim.State.Citizens.Count(c => c.Alive);
+            Console.WriteLine($"PR57_ORGANIC_100_CEILING hours={hoursToTarget} alive={reached} target=100 reached={reached >= 100}");
+            Assert.True(reached >= 100,
+                $"Organic city did not reach 100 living Sims in {hoursToTarget} hours; measured {reached}. No synthetic population was injected.");
+        }
         var before = sim.SaveToJson();
         var aliveBefore = sim.State.Citizens.Count(c => c.Alive);
         var process = System.Diagnostics.Process.GetCurrentProcess();
@@ -129,7 +146,7 @@ public sealed class Pr57DirtyClosureTests
             $"allocatedBytes={GC.GetTotalAllocatedBytes(true) - bytes} " +
             $"certifiedAvoidableInternalSteps=0 actualAvoidedInternalSteps=0 " +
             $"causalClosureProven=False organicCityUnverified=False " +
-            $"scope=ORGANIC_CYCLE_48H_100_ADVANCES_NOT_ABBA_NOT_MACRO_PROOF");
+            $"scope=ORGANIC_CYCLE_100_ADVANCES_NOT_ABBA_NOT_MACRO_PROOF warmupHours={hoursToTarget} target100Required={require100}");
         // A seed-only city may have no living citizens. Record that limitation
         // instead of failing the entire existing CI or claiming an organic load.
         Assert.True(aliveBefore > 0 && aliveAfter > 0);
