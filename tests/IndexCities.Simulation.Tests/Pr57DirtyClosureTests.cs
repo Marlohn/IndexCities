@@ -102,7 +102,10 @@ public sealed class Pr57DirtyClosureTests
     [Fact]
     public void Integrated_advance_ceiling_reports_full_work_and_zero_certified_skips()
     {
-        var sim = new CitySimulation(42);
+        // Use the existing organic city lifecycle rather than an empty seed.
+        // The observed population is reported, never inflated to a target.
+        var sim = CityCycleTests.City();
+        for (var hour = 0; hour < 48; hour++) sim.Advance(3600);
         var before = sim.SaveToJson();
         var aliveBefore = sim.State.Citizens.Count(c => c.Alive);
         var process = System.Diagnostics.Process.GetCurrentProcess();
@@ -125,11 +128,11 @@ public sealed class Pr57DirtyClosureTests
             $"cpuMs={(process.TotalProcessorTime - cpu).TotalMilliseconds:F3} " +
             $"allocatedBytes={GC.GetTotalAllocatedBytes(true) - bytes} " +
             $"certifiedAvoidableInternalSteps=0 actualAvoidedInternalSteps=0 " +
-            $"causalClosureProven=False organicCityUnverified=True " +
-            $"scope=FULL_ENGINE_100_ADVANCES_NOT_ABBA_NOT_MACRO_PROOF");
+            $"causalClosureProven=False organicCityUnverified=False " +
+            $"scope=ORGANIC_CYCLE_48H_100_ADVANCES_NOT_ABBA_NOT_MACRO_PROOF");
         // A seed-only city may have no living citizens. Record that limitation
         // instead of failing the entire existing CI or claiming an organic load.
-        Assert.True(aliveBefore >= 0 && aliveAfter >= 0);
+        Assert.True(aliveBefore > 0 && aliveAfter > 0);
     }
 
 }
