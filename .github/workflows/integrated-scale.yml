@@ -98,7 +98,105 @@ jobs:
           print(f'PR57_STAFF_FUSION_JSON_PARITY sha256={hashes[0]}')
           PY
       # Exact full-state A/B of the actual vehicle BVH in two fresh processes.
+      - name: Restore authentic workplace checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-legal-workplaces-8d
+          run-id: 40169101306
+          github-token: ${{ github.token }}
+          path: artifacts/real-growth
+      - name: Focused authentic construction and congestion baseline profile
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The artifact upload may flatten the pr57-jobs-20 parent directory.
+          # Resolve the three checkpoints from one verified sibling set, not
+          # from an assumed ZIP root layout or from unrelated snapshots.
+          # Select only a complete sibling set; a first arbitrary checkpoint-0
+          # can belong to a different or incomplete save family.
+          checkpoint_dir=""
+          while IFS= read -r candidate; do
+            dir="$(dirname "$candidate")"
+            if [[ -s "$dir/checkpoint-6.json" && -s "$dir/checkpoint-11.json" ]]; then
+              checkpoint_dir="$dir"
+              break
+            fi
+          done < <(find artifacts/real-growth -type f -name 'checkpoint-0.json' | sort)
+          test -n "$checkpoint_dir" || { echo "PR57_ACCESS_NO_COMPLETE_CHECKPOINT_SET"; exit 1; }
+          source="$checkpoint_dir/checkpoint-0.json"
+          late="$checkpoint_dir/checkpoint-6.json"
+          congested="$checkpoint_dir/checkpoint-11.json"
+          echo "PR57_ACCESS_CHECKPOINT_SET dir=$checkpoint_dir"
+          find "$checkpoint_dir" -maxdepth 1 -name 'checkpoint-*.json' -printf '%f\\n' | sort -V
+          test -s "$source"
+          test -s "$late"
+          test -s "$congested"
+          for input in "$source" "$late" "$congested"; do
+            echo "PR57_ACCESS_AB_SOURCE path=$input sha256=$(sha256sum "$input" | cut -d' ' -f1)"
+          done
+          mkdir -p artifacts/access-ab
+          # Observational ceiling on the SAME authentic checkpoints used by ABBA.
+          # Disable every opt-in: phase shares must describe baseline recurring work,
+          # not an already-optimized vehicle path. This is intrusive, not a speedup.
+          for case in real congested; do
+            if [[ "$case" == real ]]; then profile_source="$source"; else profile_source="$congested"; fi
+            PR57_CROSS_PHASE_CEILING=1 PR57_SLICE_SETUP_PROBE=1 PR57_206_RESIDUAL_EXCLUSIVE=1 PR57_DYNAMIC_BVH=0 PR57_BUILDING_WORK_ACCESS=0 \
+              PR57_PARALLEL_NEEDS=0 PR57_STAFF_PHASE_FUSION=0 \
+              timeout 120s dotnet run --no-build -c Release \
+              --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+              profile cycle --seed=42 --warmup=0 --days=1 --window=120 --cap=300 \
+              --resume="$profile_source" | tee "artifacts/access-ab/phase-$case.log"
+          done
+          python3 - <<'PY'
+          import pathlib,re
+          shares={}
+          for case in ('real','congested'):
+              log=(pathlib.Path('artifacts/access-ab')/f'phase-{case}.log').read_text()
+              line=next((s for s in log.splitlines() if s.startswith('PR57_CROSS_PHASE_CEILING ')),None)
+              assert line,(case,'missing integrated profile')
+              fields=dict(re.findall(r'(\w+)=([^ ]+)',line))
+              assert int(fields['steps'])==60,(case,'not 60 Advance(2) calls')
+              parts={}
+              for part in log.splitlines():
+                  if not part.startswith('PR57_CROSS_PHASE_PART '):continue
+                  values=dict(re.findall(r'(\w+)=([^ ]+)',part))
+                  parts[values['name']]=int(values['ticks'])
+              setup=[line for line in log.splitlines() if line.startswith('PR57_SLICE_SETUP ')]
+              assert setup,(case,'missing opt-in slice setup census')
+              final=dict(re.findall(r'(\w+)=([^ ]+)',setup[-1]))
+              assert int(final['cleanupCalls'])>0 and int(final['sortCalls'])>0,(case,'inactive setup probe')
+              print('PR57_SLICE_SETUP_AUTHENTIC',case,setup[-1])
+              residual=[line for line in log.splitlines() if line.startswith('PR57_206_RESIDUAL ')]
+              assert len(residual)==3,(case,'exclusive slices not sampled',len(residual))
+              for index,record in enumerate(residual,1):
+                  stage=dict(re.findall(r'(\w+)=([^ ]+)',record))
+                  assert int(stage['sample'])==index,(case,'unexpected exclusive sample',stage)
+                  assert int(stage['vehicles'])>0,(case,'no live vehicle work',stage)
+                  stage_ms=[float(stage[f's{i}Ms']) for i in range(9)]
+                  assert all(value>=0 for value in stage_ms),(case,'negative exclusive timing')
+                  assert abs(sum(stage_ms)-float(stage['totalMs']))<0.002,(case,'exclusive sum mismatch')
+                  print('PR57_AUTHENTIC_EXCLUSIVE',case,'sample',index,
+                        'vehicles',stage['vehicles'],'totalMs',stage['totalMs'],
+                        *[f's{i}Ms={stage_ms[i]:.6f}' for i in range(9)],
+                        'scope=three_consecutive_physical_slices_intrusive_not_ABBA')
+              assert len(parts)==9,(case,'missing recurring phase')
+              recurring=int(fields['recurringTicks'])
+              other=int(fields['otherTicks'])
+              assert sum(parts.values())==recurring and recurring+other>0
+              total=recurring+other
+              shares[case]={name:100*ticks/total for name,ticks in parts.items()}
+              for name,ticks in sorted(parts.items(),key=lambda p:-p[1]):
+                  share=100*ticks/total
+                  print('PR57_AUTHENTIC_PHASE',case,name,'ticks',ticks,'sharePct',round(share,3),
+                        'idealRemovalCeilingX',round(total/(total-ticks),4) if ticks<total else 'inf')
+          for name in shares['real']:
+              print('PR57_PHASE_SHARE_DELTA',name,'realPct',round(shares['real'][name],3),
+                    'congestedPct',round(shares['congested'][name],3),
+                    'deltaPoints',round(shares['congested'][name]-shares['real'][name],3))
+          print('PR57_AUTHENTIC_PHASE_PROFILE_OK note=intrusive_observational_not_speedup')
+          PY
       - name: Validate PR57 dynamic BVH integrated JSON parity
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           set -euo pipefail
@@ -149,6 +247,7 @@ jobs:
       # Bounded, observational cross-phase ceiling on the real integrated Step(2).
       # This is NOT an A/B speedup and must not be extrapolated to 10k/80y.
       - name: Measure integrated recurring phase upper bound in two workloads
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           set -euo pipefail
@@ -205,6 +304,7 @@ jobs:
       # Independent bounded utility replay experiment; do not apply the
       # building-access index assertions to this unrelated optimization.
       - name: Probe utility replay on integrated cycle with isolated ABBA
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           set -euo pipefail
@@ -388,6 +488,7 @@ jobs:
           PY
       # The original growth artifact has expired; use retained authentic workplace checkpoints.
       - name: Validate 32 paid housing orders before restoring external saves
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           set -euo pipefail
@@ -447,6 +548,7 @@ jobs:
       # checkpoint download. An expired artifact must not hide a completed local
       # causal experiment; the later full suite still checks authentic saves.
       - name: Validate local 32-house ABBA before external artifact
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           set -euo pipefail
@@ -535,6 +637,7 @@ jobs:
                     'causalJSONMatch',True)
           PY
       - name: Restore authentic workplace checkpoint
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/download-artifact@v4
         with:
           name: integrated-scale-pr57-legal-workplaces-8d
@@ -543,6 +646,7 @@ jobs:
           path: artifacts/real-growth
       # Real-save BVH ABBA: four fresh processes per workload, not a CityCycle microbench.
       - name: Measure BVH ABBA on authentic construction and congestion checkpoints
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           set -euo pipefail
@@ -624,6 +728,7 @@ jobs:
           PY
       # Combined opt-ins are a distinct hypothesis; never add isolated speedups.
       - name: Measure combined BVH and building-access ABBA on authentic saves
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           set -euo pipefail
@@ -712,6 +817,7 @@ jobs:
                   print('PR57_COMBINED_ABBA',workload,metric,'baseline',round(a,6),'combined',round(b,6),'speedup',round(a/b,5),'reductionPct',round(100*(a-b)/a,3))
           PY
       - name: Measure isolated shared-step shipments ABBA on authentic saves
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           set -euo pipefail
@@ -790,6 +896,7 @@ jobs:
                   print('PR57_SHARED_ISOLATED_ABBA',workload,key,'baseline',round(baseline,6),'indexed',round(indexed,6),'speedup',round(baseline/indexed,5))
           PY
       - name: Real construction A/B order reversed, late economy, congestion and artificial traffic
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           set -euo pipefail
@@ -932,6 +1039,7 @@ jobs:
             done
           done
       - name: Check intermediate exact causal snapshots and print end-to-end A/B
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           python3 - <<'PY'
