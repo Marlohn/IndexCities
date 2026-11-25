@@ -116,8 +116,9 @@ jobs:
           done < <(find artifacts/real-growth -type f -name 'checkpoint-0.json' | sort)
           test -n "$checkpoint_dir" || { echo PR57_SHARED_ISOLATED_MISSING_SAVE; exit 1; }
           mkdir -p artifacts/shared-isolated-ab
-          for workload in real congested; do
+          for workload in real late congested; do
             input="$checkpoint_dir/checkpoint-0.json"
+            [[ "$workload" == late ]] && input="$checkpoint_dir/checkpoint-6.json"
             [[ "$workload" == congested ]] && input="$checkpoint_dir/checkpoint-11.json"
             for trial in A0 B0 B1 A1; do
               mode=0; [[ "$trial" == B* ]] && mode=1
@@ -140,7 +141,7 @@ jobs:
           python3 - <<'PY'
           import hashlib,pathlib,re,statistics
           root=pathlib.Path('artifacts/shared-isolated-ab')
-          for workload in ('real','congested'):
+          for workload in ('real','late','congested'):
               runs={}
               for trial in ('A0','B0','B1','A1'):
                   log=(root/f'{workload}-{trial}.log').read_text()
@@ -176,6 +177,9 @@ jobs:
               for checkpoint in (0,1,2):
                   digests={trial:entry[1][checkpoint] for trial,entry in runs.items()}
                   assert len(set(digests.values()))==1,(workload,checkpoint,'JSON divergence',digests)
+                  reference=(root/f'{workload}-A0'/f'checkpoint-{checkpoint}.json').read_bytes()
+                  for trial in ('B0','B1','A1'):
+                      assert (root/f'{workload}-{trial}'/f'checkpoint-{checkpoint}.json').read_bytes()==reference,(workload,trial,checkpoint,'byte divergence')
                   print('PR57_SHARED_ISOLATED_PARITY',workload,'checkpoint',checkpoint,'sha256',next(iter(digests.values())))
               for key in ('wall','cpu','allocMB'):
                   baseline=sum(runs[t][0][key] for t in ('A0','A1'))
