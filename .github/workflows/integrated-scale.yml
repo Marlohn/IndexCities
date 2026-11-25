@@ -105,7 +105,86 @@ jobs:
           run-id: 40169101306
           github-token: ${{ github.token }}
           path: artifacts/real-growth
+      - name: Measure isolated shared-step shipments ABBA on authentic saves
+        shell: bash
+        run: |
+          set -euo pipefail
+          checkpoint_dir=""
+          while IFS= read -r candidate; do
+            dir="$(dirname "$candidate")"
+            if [[ -s "$dir/checkpoint-6.json" && -s "$dir/checkpoint-11.json" ]]; then checkpoint_dir="$dir"; break; fi
+          done < <(find artifacts/real-growth -type f -name 'checkpoint-0.json' | sort)
+          test -n "$checkpoint_dir" || { echo PR57_SHARED_ISOLATED_MISSING_SAVE; exit 1; }
+          mkdir -p artifacts/shared-isolated-ab
+          for workload in real congested; do
+            input="$checkpoint_dir/checkpoint-0.json"
+            [[ "$workload" == congested ]] && input="$checkpoint_dir/checkpoint-11.json"
+            for trial in A0 B0 B1 A1; do
+              mode=0; [[ "$trial" == B* ]] && mode=1
+              capture="artifacts/shared-isolated-ab/$workload-$trial"
+              mkdir -p "$capture"
+              PR57_SHARED_STEP_SHIPMENTS="$mode" PR57_SHARED_STEP_DIAG=1 \
+              PR57_DYNAMIC_BVH=0 PR57_BUILDING_WORK_ACCESS=0 PR57_BVH_CENSUS=0 \
+              PR57_PARALLEL_NEEDS=0 PR57_STAFF_PHASE_FUSION=0 PR57_UTILITY_REPLAY=0 \
+              PR57_POLLUTION_SIMD=0 PR57_PARALLEL_POLLUTION=0 PR57_CONSTRUCTION_WAIT_AGENDA=0 \
+              PR57_DISPATCH_SHIPMENT_LOOKUP=0 PR57_ROUTE_TREE=0 PR57_ORDER_SHIPMENT_INDEX=0 \
+              PR57_MAINTENANCE_SCHEDULE=0 PR57_SOURCE_DISTANCE_CACHE=0 PR57_WORK_ACCESS_INDEX=0 \
+              PR57_PEDESTRIAN_GRID=0 PR57_LIVING_ROSTER=0 PR57_CITIZEN_AGENDA=0 \
+              PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="$PWD/$capture" \
+                timeout 90s dotnet run --no-build -c Release \
+                --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                scale cycle --seed=42 --warmup=0 --days=2 --window=120 --cap=300 --resume="$input" \
+                | tee "$capture.log"
+            done
+          done
+          python3 - <<'PY'
+          import hashlib,pathlib,re,statistics
+          root=pathlib.Path('artifacts/shared-isolated-ab')
+          for workload in ('real','congested'):
+              runs={}
+              for trial in ('A0','B0','B1','A1'):
+                  log=(root/f'{workload}-{trial}.log').read_text()
+                  assert 'INVARIANTS OK' in log and 'SUMMARY windows=2' in log,(workload,trial,'incomplete')
+                  windows=[line for line in log.splitlines() if line.startswith('WINDOW ')]
+                  assert len(windows)==2,(workload,trial,'windows')
+                  def metric(line,key):
+                      m=re.search(r'(?<!\w)'+re.escape(key)+r'=([0-9.]+)',line)
+                      assert m,(workload,trial,key,line)
+                      return float(m[1])
+                  measures={key:sum(metric(line,key) for line in windows) for key in ('wall','cpu','allocMB')}
+                  assert all(metric(line,'alive')>0 for line in windows),(workload,trial,'no living population')
+                  hashes={int(p.stem.split('-')[-1]):hashlib.sha256(p.read_bytes()).hexdigest()
+                          for p in (root/f'{workload}-{trial}').glob('checkpoint-*.json')}
+                  assert set(hashes)=={0,1,2},(workload,trial,'missing JSON')
+                  for line in log.splitlines():
+                      if line.startswith('PR57_AB_CHECKPOINT window='):
+                          m=re.search(r'window=(\d+) sha256=([a-fA-F0-9]{64})',line)
+                          assert m and hashes[int(m[1])]==m[2].lower(),(workload,trial,'hash')
+                  census=re.findall(r'PR57_SHARED_STEP_SUM steps=(\d+) builds=(\d+) appends=(\d+) queries=(\d+) reassigns=(\d+) buckets=(\d+)',log)
+                  if trial.startswith('B'):
+                      assert census,(workload,trial,'opt-in not exercised')
+                      steps,builds,appends,queries,reassigns,buckets=map(int,census[-1])
+                      assert steps>0,(workload,trial,'no steps')
+                      if workload=='real':
+                          assert queries>0 and builds>0,(workload,trial,'opt-in did not query/build the shipment workset')
+                      elif queries==0 and builds==0:
+                          print('PR57_SHARED_ISOLATED_INACTIVE',workload,trial,'no shipment work in this save; no speedup claim')
+                      print('PR57_SHARED_ISOLATED_WORK',workload,trial,'steps',steps,'builds',builds,'appends',appends,'queries',queries,'reassigns',reassigns,'buckets',buckets)
+                  else:
+                      assert not census,(workload,trial,'baseline opt-in leak')
+                  runs[trial]=(measures,hashes)
+              for checkpoint in (0,1,2):
+                  digests={trial:entry[1][checkpoint] for trial,entry in runs.items()}
+                  assert len(set(digests.values()))==1,(workload,checkpoint,'JSON divergence',digests)
+                  print('PR57_SHARED_ISOLATED_PARITY',workload,'checkpoint',checkpoint,'sha256',next(iter(digests.values())))
+              for key in ('wall','cpu','allocMB'):
+                  baseline=sum(runs[t][0][key] for t in ('A0','A1'))
+                  indexed=sum(runs[t][0][key] for t in ('B0','B1'))
+                  assert baseline>0,(workload,key)
+                  print('PR57_SHARED_ISOLATED_ABBA',workload,key,'baseline',round(baseline,6),'indexed',round(indexed,6),'speedup',round(baseline/indexed,5))
+          PY
       - name: Focused authentic construction and congestion baseline profile
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           set -euo pipefail
@@ -816,85 +895,6 @@ jobs:
                   assert a>0
                   print('PR57_COMBINED_ABBA',workload,metric,'baseline',round(a,6),'combined',round(b,6),'speedup',round(a/b,5),'reductionPct',round(100*(a-b)/a,3))
           PY
-      - name: Measure isolated shared-step shipments ABBA on authentic saves
-        if: github.event_name == 'workflow_dispatch'
-        shell: bash
-        run: |
-          set -euo pipefail
-          checkpoint_dir=""
-          while IFS= read -r candidate; do
-            dir="$(dirname "$candidate")"
-            if [[ -s "$dir/checkpoint-6.json" && -s "$dir/checkpoint-11.json" ]]; then checkpoint_dir="$dir"; break; fi
-          done < <(find artifacts/real-growth -type f -name 'checkpoint-0.json' | sort)
-          test -n "$checkpoint_dir" || { echo PR57_SHARED_ISOLATED_MISSING_SAVE; exit 1; }
-          mkdir -p artifacts/shared-isolated-ab
-          for workload in real congested; do
-            input="$checkpoint_dir/checkpoint-0.json"
-            [[ "$workload" == congested ]] && input="$checkpoint_dir/checkpoint-11.json"
-            for trial in A0 B0 B1 A1; do
-              mode=0; [[ "$trial" == B* ]] && mode=1
-              capture="artifacts/shared-isolated-ab/$workload-$trial"
-              mkdir -p "$capture"
-              PR57_SHARED_STEP_SHIPMENTS="$mode" PR57_SHARED_STEP_DIAG=1 \
-              PR57_DYNAMIC_BVH=0 PR57_BUILDING_WORK_ACCESS=0 PR57_BVH_CENSUS=0 \
-              PR57_PARALLEL_NEEDS=0 PR57_STAFF_PHASE_FUSION=0 PR57_UTILITY_REPLAY=0 \
-              PR57_POLLUTION_SIMD=0 PR57_PARALLEL_POLLUTION=0 PR57_CONSTRUCTION_WAIT_AGENDA=0 \
-              PR57_DISPATCH_SHIPMENT_LOOKUP=0 PR57_ROUTE_TREE=0 PR57_ORDER_SHIPMENT_INDEX=0 \
-              PR57_MAINTENANCE_SCHEDULE=0 PR57_SOURCE_DISTANCE_CACHE=0 PR57_WORK_ACCESS_INDEX=0 \
-              PR57_PEDESTRIAN_GRID=0 PR57_LIVING_ROSTER=0 PR57_CITIZEN_AGENDA=0 \
-              PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="$PWD/$capture" \
-                timeout 90s dotnet run --no-build -c Release \
-                --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
-                scale cycle --seed=42 --warmup=0 --days=2 --window=120 --cap=300 --resume="$input" \
-                | tee "$capture.log"
-            done
-          done
-          python3 - <<'PY'
-          import hashlib,pathlib,re,statistics
-          root=pathlib.Path('artifacts/shared-isolated-ab')
-          for workload in ('real','congested'):
-              runs={}
-              for trial in ('A0','B0','B1','A1'):
-                  log=(root/f'{workload}-{trial}.log').read_text()
-                  assert 'INVARIANTS OK' in log and 'SUMMARY windows=2' in log,(workload,trial,'incomplete')
-                  windows=[line for line in log.splitlines() if line.startswith('WINDOW ')]
-                  assert len(windows)==2,(workload,trial,'windows')
-                  def metric(line,key):
-                      m=re.search(r'(?<!\w)'+re.escape(key)+r'=([0-9.]+)',line)
-                      assert m,(workload,trial,key,line)
-                      return float(m[1])
-                  measures={key:sum(metric(line,key) for line in windows) for key in ('wall','cpu','allocMB')}
-                  assert all(metric(line,'alive')>0 for line in windows),(workload,trial,'no living population')
-                  hashes={int(p.stem.split('-')[-1]):hashlib.sha256(p.read_bytes()).hexdigest()
-                          for p in (root/f'{workload}-{trial}').glob('checkpoint-*.json')}
-                  assert set(hashes)=={0,1,2},(workload,trial,'missing JSON')
-                  for line in log.splitlines():
-                      if line.startswith('PR57_AB_CHECKPOINT window='):
-                          m=re.search(r'window=(\d+) sha256=([a-fA-F0-9]{64})',line)
-                          assert m and hashes[int(m[1])]==m[2].lower(),(workload,trial,'hash')
-                  census=re.findall(r'PR57_SHARED_STEP_SUM steps=(\d+) builds=(\d+) appends=(\d+) queries=(\d+) reassigns=(\d+) buckets=(\d+)',log)
-                  if trial.startswith('B'):
-                      assert census,(workload,trial,'opt-in not exercised')
-                      steps,builds,appends,queries,reassigns,buckets=map(int,census[-1])
-                      assert steps>0,(workload,trial,'no steps')
-                      if workload=='real':
-                          assert queries>0 and builds>0,(workload,trial,'opt-in did not query/build the shipment workset')
-                      elif queries==0 and builds==0:
-                          print('PR57_SHARED_ISOLATED_INACTIVE',workload,trial,'no shipment work in this save; no speedup claim')
-                      print('PR57_SHARED_ISOLATED_WORK',workload,trial,'steps',steps,'builds',builds,'appends',appends,'queries',queries,'reassigns',reassigns,'buckets',buckets)
-                  else:
-                      assert not census,(workload,trial,'baseline opt-in leak')
-                  runs[trial]=(measures,hashes)
-              for checkpoint in (0,1,2):
-                  digests={trial:entry[1][checkpoint] for trial,entry in runs.items()}
-                  assert len(set(digests.values()))==1,(workload,checkpoint,'JSON divergence',digests)
-                  print('PR57_SHARED_ISOLATED_PARITY',workload,'checkpoint',checkpoint,'sha256',next(iter(digests.values())))
-              for key in ('wall','cpu','allocMB'):
-                  baseline=sum(runs[t][0][key] for t in ('A0','A1'))
-                  indexed=sum(runs[t][0][key] for t in ('B0','B1'))
-                  assert baseline>0,(workload,key)
-                  print('PR57_SHARED_ISOLATED_ABBA',workload,key,'baseline',round(baseline,6),'indexed',round(indexed,6),'speedup',round(baseline/indexed,5))
-          PY
       - name: Real construction A/B order reversed, late economy, congestion and artificial traffic
         if: github.event_name == 'workflow_dispatch'
         shell: bash
@@ -1393,7 +1393,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: integrated-scale-pr57-building-access-ab
-          path: artifacts/access-ab/**
+          path: |
+            artifacts/access-ab/**
+            artifacts/shared-isolated-ab/**
           retention-days: 14
       # PR57 only: publish the completed push run ID where the four timers can
       # read it through the already-connected GitHub PR tools. No new service.
