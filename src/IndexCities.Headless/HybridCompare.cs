@@ -37,23 +37,56 @@ static class HybridCompare
     // building completion or catalog edits. This is not a claim of stability.
     static CitySimulation Organic100(int seed)
     {
-        var sim = Fixtures.Cycle(seed);
+        // Order the bypass before the initial construction queue, as in the
+        // measured #74 scenario. Late road orders were stranded behind that queue.
+        var sim = new CitySimulation(seed);
         void Require(CommandResult r)
         {
             if (!r.Success) throw new InvalidOperationException("Organic workload: " + r.Message);
         }
+        Require(sim.PlaceBuilding(BuildingKind.CityHall,new(-152,16)));
+        Require(sim.PlaceRoad(new(-192,0),new(240,0))); sim.Advance(14400);
+        Require(sim.PlaceRoad(new(-184,0),new(116,44),true)); sim.Advance(7200);
         var roads = new (Point From, Point To)[] {
             (new(-184,0),new(-184,-60)),
             (new(-184,-60),new(-16,-60)),
             (new(-16,-60),new(-16,0)),
             (new(-184,-60),new(-184,-104)),
-            (new(-184,-104),new(-16,-104)),
-            (new(-184,-104),new(-184,-160)),
-            (new(-184,-160),new(228,-160))
+            (new(-184,-104),new(-16,-104))
         };
         foreach (var (from,to) in roads) Require(sim.PlaceRoad(from,to));
-        for (int h=0; h<96 && sim.State.Projects.Any(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress && !p.IsMaintenance); h++)
+        foreach(var x in new[]{-128,-108,-88,-68,-48,-28,-8,12,32,52,72,92,112,132,152,172,192,212})
+            Require(sim.PlaceBuilding(BuildingKind.House,new(x,14)));
+        foreach(var x in new[]{-160,-140,-120,-100,-80,-60,-40,-20,0,20,40,60,80,100})
+            Require(sim.PlaceBuilding(BuildingKind.House,new(x,58)));
+        Require(sim.PlaceBuilding(BuildingKind.WorksDepot,new(-160,-18),Math.PI));
+        Require(sim.PlaceBuilding(BuildingKind.Grocery,new(-124,-16),Math.PI));
+        Require(sim.PlaceBuilding(BuildingKind.FuelStation,new(-88,-20),Math.PI));
+        Require(sim.PlaceBuilding(BuildingKind.Farm,new(-44,-28),Math.PI));
+        Require(sim.PlaceBuilding(BuildingKind.WindPower,new(0,-16),Math.PI));
+        Require(sim.PlaceBuilding(BuildingKind.WindPower,new(120,-16),Math.PI));
+        Require(sim.PlaceBuilding(BuildingKind.WaterTreatment,new(40,-20),Math.PI));
+        Require(sim.PlaceBuilding(BuildingKind.SewageTreatment,new(80,-20),Math.PI));
+        var lake=sim.State.LakeCentre;
+        var intakeZ=Math.Round((lake.Z-sim.State.LakeRadius-30)/4)*4;
+        if(!sim.QuoteRoad(new(240,0),new(132,intakeZ),true).PhysicallyValid) intakeZ=32;
+        Require(sim.PlaceRoad(new(240,0),new(132,intakeZ),true)); sim.Advance(14400);
+        Require(sim.PlaceBuilding(BuildingKind.WaterIntake,new(144,intakeZ+14)));
+        for(int h=0;h<240 && sim.State.Projects.Any(p=>p.Status is WorkStatus.Waiting or WorkStatus.InProgress && !p.IsMaintenance);h++)
             sim.Advance(3600);
+        var frontIds=new List<int>();
+        foreach(var (from,to) in new[]{(new Point(-184,-104),new Point(-184,-160)),(new Point(-184,-160),new Point(228,-160))})
+        {
+            var result=sim.PlaceRoad(from,to); Require(result); frontIds.Add(result.Id!.Value);
+        }
+        for(int h=0;h<72 && frontIds.Any(id=>sim.State.Projects.Single(p=>p.Id==id).Status!=WorkStatus.Completed);h++)
+            sim.Advance(3600);
+        foreach(var id in frontIds)
+        {
+            var project=sim.State.Projects.Single(p=>p.Id==id);
+            Console.WriteLine($"HYBRID_ORGANIC_FRONT id={id} status={project.Status} cause={project.Cause}");
+            if(project.Status!=WorkStatus.Completed) throw new InvalidOperationException("Organic workplace frontage not completed");
+        }
         int houses=0, jobs=0;
         var rows = new (double Z, double Rotation, double Start, double End)[] {
             (30,Math.PI,-176,216),(-14,Math.PI,-176,216),
