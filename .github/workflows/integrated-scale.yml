@@ -60,6 +60,8 @@ jobs:
       # Focused population-capacity diagnostic before the expensive ABBA suite.
       # The organic city must not be relabelled as 100-live if it never reaches 100.
       - name: Diagnose PR57 organic 100-live ceiling
+        # Optional growth diagnosis; not relevant to the focused shipments A/B gate.
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           set -euo pipefail
