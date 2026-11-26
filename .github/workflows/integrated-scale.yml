@@ -12,6 +12,7 @@ permissions:
   contents: read
   actions: read
   issues: write
+  statuses: write
 concurrency:
   group: integrated-scale-pr57
   cancel-in-progress: false
@@ -20,6 +21,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 18
     steps:
+      # Bridge push-only CI to the commit-status API read by connected timers.
+      - name: Publish PR57 focused ABBA status at start
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR57_RUN_ID: ${{ github.run_id }}
+          PR57_RUN_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          url="https://github.com/$GITHUB_REPOSITORY/actions/runs/$PR57_RUN_ID"
+          gh api -X POST "repos/$GITHUB_REPOSITORY/statuses/$PR57_RUN_SHA" \
+            -f state=pending -f context=pr57/focused-abba \
+            -f description="PR57 focused ABBA running" -f target_url="$url" >/dev/null \
+            || echo "PR57_STATUS_PENDING_WRITE_FAILED run=$PR57_RUN_ID"
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
@@ -1440,3 +1455,21 @@ jobs:
             gh api -X POST "repos/$GITHUB_REPOSITORY/issues/57/comments" -f body="$body" >/dev/null \
               || echo "PR57_RUN_POINTER_CREATE_FAILED run=$PR57_RUN_ID status=$PR57_JOB_STATUS"
           fi
+      - name: Publish PR57 focused ABBA status at finish
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR57_RUN_ID: ${{ github.run_id }}
+          PR57_RUN_SHA: ${{ github.sha }}
+          PR57_JOB_STATUS: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          state=failure
+          [[ "$PR57_JOB_STATUS" == success ]] && state=success
+          [[ "$PR57_JOB_STATUS" == cancelled ]] && state=error
+          url="https://github.com/$GITHUB_REPOSITORY/actions/runs/$PR57_RUN_ID"
+          gh api -X POST "repos/$GITHUB_REPOSITORY/statuses/$PR57_RUN_SHA" \
+            -f state="$state" -f context=pr57/focused-abba \
+            -f description="PR57 focused ABBA $PR57_JOB_STATUS" -f target_url="$url" >/dev/null \
+            || echo "PR57_STATUS_FINAL_WRITE_FAILED run=$PR57_RUN_ID status=$PR57_JOB_STATUS"
