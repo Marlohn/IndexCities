@@ -12,7 +12,7 @@ concurrency:
 jobs:
   differential:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     steps:
       - name: Publish run pointer
         env:
@@ -60,6 +60,38 @@ jobs:
               b=sum(float(results[x][key]) for x in ('B1','B2'))/2
               print(f'HYBRID_ABBA metric={key} reference={a:.6f} candidate={b:.6f} ratio={a/b if b else float("inf"):.6f}')
           print('HYBRID_GATE H01 exact_checkpoints=4 candidate_scope=finance_deadlines macro_target_proven=false')
+          PY
+      - name: Gate next architecture on organically grown 100-resident city
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p hybrid-artifacts/organic
+          runner=src/IndexCities.Headless/bin/Release/net8.0/IndexCities.Headless.dll
+          dotnet "$runner" hybrid-prepare 42 hybrid-artifacts/organic/input.json organic100 | tee hybrid-artifacts/organic/prepare.log
+          for arm in A1 B1 B2 A2; do
+            mode=reference
+            if [[ $arm == B* ]]; then mode=calendar; fi
+            dotnet "$runner" hybrid-run hybrid-artifacts/organic/input.json "$mode" "hybrid-artifacts/organic/$arm" | tee "hybrid-artifacts/organic/$arm.log"
+          done
+          for i in 1 2 3 4; do
+            for arm in B1 B2 A2; do
+              cmp "hybrid-artifacts/organic/A1/checkpoint-$i.json" "hybrid-artifacts/organic/$arm/checkpoint-$i.json"
+            done
+            echo "HYBRID_ORGANIC_PARITY checkpoint=$i exact=true"
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          r={}
+          for arm in ('A1','B1','B2','A2'):
+              line=next(x for x in Path(f'hybrid-artifacts/organic/{arm}.log').read_text().splitlines() if x.startswith('HYBRID_RESULT '))
+              r[arm]=dict(x.split('=',1) for x in line.split()[1:])
+          for arm in r:
+              assert int(r[arm]['initialAlive'])>=100
+          for key in ('wall','cpu','allocatedBytes','loanPhaseCalls'):
+              a=sum(float(r[x][key]) for x in ('A1','A2'))/2
+              b=sum(float(r[x][key]) for x in ('B1','B2'))/2
+              print(f'HYBRID_ORGANIC_ABBA metric={key} reference={a:.6f} candidate={b:.6f} ratio={a/b if b else float("inf"):.6f}')
+          print('HYBRID_ORGANIC_GATE organic_start_ge100=true exact_checkpoints=4 sustained_population_not_proven=true macro_target_proven=false')
           PY
       - uses: actions/upload-artifact@v4
         if: always()
