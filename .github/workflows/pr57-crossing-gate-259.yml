@@ -1,0 +1,144 @@
+name: 'PR57 #259 reached junction pedestrian gate census'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-crossing-gate-259.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  crossing-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build Release and run regression suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic works and congested real checkpoints
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-growth
+          run-id: 40250545171
+          github-token: ${{ github.token }}
+          path: artifacts/works
+      - name: Restore authentic initial real queue
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-legal-workplaces-8d
+          run-id: 40169101306
+          github-token: ${{ github.token }}
+          path: artifacts/queue
+      - name: Restore authentic real 14h economic queue
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-coexist-243
+          run-id: 40601570843
+          github-token: ${{ github.token }}
+          path: artifacts/real14h
+      - name: Restore clearly ARTIFICIAL GRID checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-host-scale-curve
+          run-id: 40258405557
+          github-token: ${{ github.token }}
+          path: artifacts/grid
+      - name: Run independent Advance(2) control and observational probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import os, subprocess, hashlib, re
+          root=Path('artifacts/crossing-259')
+          root.mkdir(parents=True,exist_ok=True)
+          sources={
+            'worksREAL': (next(Path('artifacts/works').glob('**/growth/checkpoint-0.json')),300,'cycle'),
+            'queueREAL': (next(Path('artifacts/queue').glob('**/pr57-jobs-20/checkpoint-10.json')),300,'cycle'),
+            'real14hREAL': (Path('artifacts/real14h/overnight-08/checkpoint-1.json'),200,'cycle'),
+            'gridARTIFICIAL': (Path('artifacts/grid/grid18-0/checkpoint-1.json'),100,'grid')
+          }
+          def metric(row,key):
+            m=re.search(r'(?:^| )'+re.escape(key)+r'=([-0-9.]+)',row)
+            assert m,(key,row)
+            return float(m.group(1))
+          for case,(source,horizon,fixture) in sources.items():
+            assert source.is_file() and source.stat().st_size>0,(case,source)
+            print('PR57_259_SOURCE',case,'sha256',hashlib.sha256(source.read_bytes()).hexdigest(),flush=True)
+            for mode in ('control','probe'):
+              dest=root/f'{case}-{mode}'
+              dest.mkdir(parents=True,exist_ok=True)
+              env=os.environ.copy()
+              env.update({
+                'PR57_HOST_QUANTUM':'1','PR57_AB_CHECKPOINT':'1',
+                'PR57_SAVE_CAPTURE_DIR':str(dest.resolve()),
+                'PR57_206_RESIDUAL_EXCLUSIVE':'1' if mode=='probe' else '0',
+                'PR57_259_CROSSING_GATE':'1' if mode=='probe' else '0',
+                'PR57_236_POSE_NOOP_SKIP':'0',
+                'PR57_PHASE_ALLOC_PROBE':'0','PR57_HOT_TIMING':'0',
+                'PR57_VEHICLE_MUTATION_AUDIT':'0',
+                'PR57_258_BODY_SHADOW':'0'
+              })
+              cmd=['dotnet','run','--no-build','-c','Release',
+                   '--project','src/IndexCities.Headless/IndexCities.Headless.csproj',
+                   '--','profile' if mode=='probe' else 'scale',fixture,'--seed=42',
+                   '--warmup=0','--days=1',f'--window={horizon}',
+                   '--cap=600',f'--resume={source.resolve()}']
+              with (root/f'{case}-{mode}.log').open('w') as output:
+                subprocess.run(cmd,env=env,stdout=output,stderr=subprocess.STDOUT,
+                               check=True,timeout=240)
+              log=(root/f'{case}-{mode}.log').read_text()
+              assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,mode,log[-3000:])
+              for i in (0,1):
+                assert (dest/f'checkpoint-{i}.json').is_file(),(case,mode,i)
+              assert (dest/'checkpoint-0.json').read_bytes()==source.read_bytes(),(case,mode,'source mismatch')
+              if mode=='control':
+                assert 'PR57_259_CROSSING ' not in log
+              else:
+                rows=[x for x in log.splitlines() if x.startswith('PR57_259_CROSSING ')]
+                assert len(rows)==3,(case,len(rows),log[-4000:])
+                totalCalls=0
+                for row in rows:
+                  calls=int(metric(row,'calls'));blocked=int(metric(row,'blocked'))
+                  visits=int(metric(row,'visits'));potential=int(metric(row,'potentialVisits'))
+                  assert 0<=blocked<=calls and 0<=visits<=potential
+                  assert metric(row,'elapsedMs')>=0
+                  totalCalls+=calls
+                  print('PR57_259_GATE',case,row,flush=True)
+                print('PR57_259_GATE_SUM',case,'calls',totalCalls,
+                      'horizon',horizon,'cadence','ADVANCE_2',flush=True)
+              for line in log.splitlines():
+                if line.startswith(('WINDOW ','STEP_PROFILE','  STEP_PHASE')):
+                  print('PR57_259_METRIC',case,mode,line.strip(),flush=True)
+            for i in (0,1):
+              a=(root/f'{case}-control'/f'checkpoint-{i}.json').read_bytes()
+              b=(root/f'{case}-probe'/f'checkpoint-{i}.json').read_bytes()
+              assert a==b,(case,i,'full JSON mismatch')
+            print('PR57_259_PARITY',case,'fullJson','EXACT',
+                  'Advance2Calls',horizon//2,'noOptimizedDecision',True,flush=True)
+          PY
+      - name: Preserve full checkpoints and raw logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          path: artifacts/crossing-259/**
+          retention-days: 14

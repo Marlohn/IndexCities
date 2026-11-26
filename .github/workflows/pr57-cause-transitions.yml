@@ -1,0 +1,120 @@
+name: PR57 cause transitions across progress and dispatch
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-cause-transitions.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  dispatch-productivity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build and run simulation tests
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore REAL saved cities
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-growth
+          run-id: 40250545171
+          github-token: ${{ github.token }}
+          path: artifacts/works
+      - name: Restore REAL congested city
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-legal-workplaces-8d
+          run-id: 40169101306
+          github-token: ${{ github.token }}
+          path: artifacts/real
+      - name: Profile dispatch productivity and measure wall separately
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/cause-transitions
+          works="$(find artifacts/works -type f -path '*/growth/checkpoint-0.json' -print -quit)"
+          real="$(find artifacts/real -type f -path '*/pr57-jobs-20/checkpoint-11.json' -print -quit)"
+          test -s "$works"; test -s "$real"
+          for case in works real121; do
+            source="$works"; window=3600
+            if [[ "$case" == real121 ]]; then source="$real"; window=1800; fi
+            echo "PR57_CAUSE_RUN_CASE case=$case class=REAL sourceSha256=$(sha256sum "$source" | cut -d' ' -f1) window=$window windows=4 cadence=Advance2"
+            for mode in profile plain; do
+              command=profile; sample=300
+              if [[ "$mode" == plain ]]; then command=scale; sample=""; fi
+              output="artifacts/cause-transitions/$case-$mode"
+              mkdir -p "$output"
+              PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="$PWD/$output" \
+              PR57_SITE_OWNER_ROSTER=1 PR57_BUILDING_WORK_ACCESS=1 \
+              PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ORDER_SHIPMENT_INDEX=1 PR57_PROGRESS_SHIPMENT_LOOKUP=1 \
+              PR57_CAUSE_TRANSITION_PROBE=1 PR57_PHASE_EFFECT_EVERY="$sample" PR57_GRID_DIAG=1 PR57_IDLE_SCAN_PROBE=0 PR57_HOT_TIMING=0 \
+                timeout 240s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                  "$command" cycle --seed=42 --warmup=0 --days=4 --window="$window" --cap=200 --resume="$source" \
+                  | tee "$output.log"
+            done
+          done
+      - name: Verify checkpoint parity and dispatch productivity
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import pathlib,re
+          root=pathlib.Path("artifacts/cause-transitions")
+          for case,window in (("works",3600),("real121",1800)):
+              logs={m:(root/f"{case}-{m}.log").read_text() for m in ("profile","plain")}
+              for mode,log in logs.items():
+                  assert "PR57_ORDER_SHIPMENT_INDEX active=True" in log,(case,mode,"order flag")
+                  assert "PR57_PROGRESS_SHIPMENT_LOOKUP active=True" in log,(case,mode,"progress flag")
+                  assert "INVARIANTS OK" in log and "SAVE " in log,(case,mode)
+                  assert len([x for x in log.splitlines() if x.startswith("WINDOW ")])==4,(case,mode)
+              for i in range(5):
+                  a=(root/f"{case}-profile"/f"checkpoint-{i}.json").read_bytes()
+                  b=(root/f"{case}-plain"/f"checkpoint-{i}.json").read_bytes()
+                  assert a==b,(case,i,"full checkpoint mismatch")
+              profile=logs["profile"]
+              census=next(x for x in profile.splitlines() if x.startswith("PR57_CONSTRUCTION_CENSUS "))
+              row=next(x for x in profile.splitlines() if x.startswith("PR57_DISPATCH_PRODUCTIVITY "))
+              vals={k:int(v) for k,v in re.findall(r"([A-Za-z]+)=(-?[0-9]+)",row)}
+              steps=int(re.search(r"steps=([0-9]+)",census).group(1))
+              assert steps==2*window,(case,steps)
+              active=vals["activeSteps"]
+              assert 0<=active<=steps
+              assert 0<=vals["shipmentChangedSteps"]<=active
+              assert 0<=vals["ledgerChangedSteps"]<=active
+              assert 0<=vals["noShipmentOrLedgerSteps"]<=active
+              assert vals["noShipmentOrLedgerSteps"]+max(vals["shipmentChangedSteps"],vals["ledgerChangedSteps"])<=active
+              assert "PR57_PHASE_EFFECT_SUMMARY samples=" in profile
+              transition=next(x for x in profile.splitlines() if x.startswith("PR57_CAUSE_TRANSITIONS "))
+              fields={k:int(v) for k,v in re.findall(r"([A-Za-z]+)=([0-9]+)",transition)}
+              assert fields["observed"]>0,(case,"no projects observed")
+              assert 0<=fields["undoProgress"]<=fields["progressChanged"]<=fields["observed"]
+              assert 0<=fields["returnProgress"]<=fields["dispatchChanged"]<=fields["observed"]
+              print(f"PR57_CAUSE_TRANSITION_RESULT case={case} {transition}")
+              print(f"PR57_CAUSE_TRANSITION_PAIRS case={case} "+repr([x for x in profile.splitlines() if x.startswith("PR57_CAUSE_PAIR ")][:12]))
+              effects=next(x for x in profile.splitlines() if x.startswith("PR57_PHASE_EFFECT name=construction-dispatch "))
+              print(f"PR57_CAUSE_RUN_RESULT case={case} steps={steps} {row}")
+              print(f"PR57_CAUSE_RUN_NET_FIELDS case={case} {effects}")
+              rows=[x for x in logs["plain"].splitlines() if x.startswith("WINDOW ")]
+              wall=sum(float(re.search(r"\bwall=([0-9.]+)s",x).group(1)) for x in rows)
+              cpu=sum(float(re.search(r"\bcpu=([0-9.]+)s",x).group(1)) for x in rows)
+              alloc=sum(float(re.search(r"\ballocMB=([0-9.]+)",x).group(1)) for x in rows)
+              print(f"PR57_CAUSE_RUN_PLAIN case={case} simSeconds={4*window} wall={wall:.2f}s cpu={cpu:.2f}s allocMB={alloc:.1f} throughput={4*window/wall:.2f}sps note=NO_AB_SPEEDUP")
+              print(f"PR57_CAUSE_RUN_PARITY case={case} checkpoints=5 modes=2")
+          PY
+      - name: Preserve diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-cause-transitions
+          path: artifacts/cause-transitions/**
+          retention-days: 14

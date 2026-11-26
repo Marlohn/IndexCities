@@ -1,0 +1,82 @@
+name: 'PR57 #186 GRID 7am regime and phase allocation census'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-grid-regime-186.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  grid-regime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_PHASE_ALLOC_PROBE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build read-only observer and run regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build scripts/Pr57RegimeBench/Pr57RegimeBench.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic GRID snapshots from #184
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-retained-heap-184
+          run-id: 40451480020
+          github-token: ${{ github.token }}
+          path: artifacts/reference
+      - name: Measure per-phase allocation and 7am decision burst in full Advance(2)
+        shell: bash
+        run: |
+          set -euo pipefail
+          source="$(find artifacts/reference -type f -path '*/gridARTIFICIAL/plain/checkpoint-0.json' -print -quit)"
+          test -s "$source"
+          mkdir -p artifacts/regime-186
+          timeout 180s dotnet run --project scripts/Pr57RegimeBench/Pr57RegimeBench.csproj \
+            -c Release --no-build -- "$source" "$PWD/artifacts/regime-186" \
+            | tee artifacts/regime-186.log
+      - name: Verify exact complete checkpoint parity against #184
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib
+          ref=pathlib.Path("artifacts/reference")
+          base=next(ref.glob("**/gridARTIFICIAL/plain/checkpoint-0.json")).parent
+          out=pathlib.Path("artifacts/regime-186")
+          for i in range(5):
+              a=(base/f"checkpoint-{i}.json").read_bytes()
+              b=(out/f"checkpoint-{i*50}.json").read_bytes()
+              assert a==b,("GRID",i,"full checkpoint mismatch")
+          lines=pathlib.Path("artifacts/regime-186.log").read_text().splitlines()
+          marks=[1,2,5,10,25,50,75,100,150,200]
+          for mark in marks:
+              assert sum(x.startswith("PR57_186_SEGMENT ") and f"toStep={mark} " in x for x in lines)==1,mark
+          assert any(x.startswith("PR57_186_DONE ") and "cadence=ADVANCE_2" in x for x in lines)
+          print("PR57_186_VALIDATED fullCheckpoints=5 segmentMarks=10 parity=EXACT_JSON")
+          PY
+      - name: Preserve complete checkpoints and allocation logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-grid-regime-186
+          path: |
+            artifacts/regime-186/**
+            artifacts/regime-186.log
+          retention-days: 14

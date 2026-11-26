@@ -1,0 +1,121 @@
+name: 'PR57 #358 REAL blocked-reader pedestrian and signal shadow'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [scripts/pr57-358-inject.py, .github/workflows/pr57-gate-shadow-358.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  bounded-real:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+      PR57_VEHICLE_COST_PROBE: '1'
+      PR57_246_JUNCTION_RETURNS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Inject checkout-only gate shadow without changing decisions
+        run: |
+          python3 scripts/pr57-346-inject.py
+          python3 scripts/pr57-345-observe.py
+          python3 scripts/pr57-351-inject.py
+          python3 scripts/pr57-358-inject.py
+      - name: Build REAL replay and test canonical engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release
+      - name: Restore authentic REAL 14h checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Replay 10800 individual Advance(2) per arm
+        shell: bash
+        run: |
+          set -euo pipefail
+          input="artifacts/input/real14hREAL-control/checkpoint-0.json"
+          test -s "$input"
+          for mode in control probe; do
+            mkdir -p "artifacts/gate358/$mode"
+            if [[ "$mode" == "probe" ]]; then flag=1; else flag=0; fi
+            PR57_206_RESIDUAL_EXCLUSIVE=1 \
+            PR57_244_STATE_COST=0 \
+            PR57_351_LANE_WITNESS=0 \
+            PR57_358_GATE_SHADOW="$flag" \
+            PR57_244_PERSISTENT_IDS="1071,1243,1282,1380" \
+            dotnet run --no-build -c Release \
+              --project scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj \
+              -- "$input" "artifacts/gate358/$mode" > "artifacts/gate358/$mode/full.log"
+            grep -E '^PR57_(337_(HOUR|FINAL)|345_PHASE|206_RESIDUAL|358_GATE) ' \
+              "artifacts/gate358/$mode/full.log" > "artifacts/gate358/$mode/census.log"
+            test "$(grep -c '^PR57_337_HOUR ' "artifacts/gate358/$mode/census.log")" -eq 6
+            test "$(grep -c '^PR57_345_PHASE ' "artifacts/gate358/$mode/census.log")" -eq 78
+            grep -q 'parity=IDENTICAL' "artifacts/gate358/$mode/census.log"
+          done
+          cmp artifacts/gate358/control/checkpoint-10800.json \
+              artifacts/gate358/probe/checkpoint-10800.json
+          sha256sum artifacts/gate358/{control,probe}/checkpoint-10800.json \
+            | tee artifacts/gate358/checkpoints.sha256
+          python3 - <<'PY' | tee artifacts/gate358/summary.txt
+          from pathlib import Path
+          root=Path("artifacts/gate358")
+          def parse(mode,prefix):
+              return [
+                  {k:v for k,v in (item.split("=",1) for item in line.split()[1:] if "=" in item)}
+                  for line in (root/mode/"census.log").read_text().splitlines()
+                  if line.startswith(prefix+" ")
+              ]
+          def n(row,key):return int(row[key])
+          rows=parse("probe","PR57_358_GATE")
+          assert len(rows)==2,rows
+          assert not parse("control","PR57_358_GATE")
+          assert [n(r,"window") for r in rows]==[40001,50001],rows
+          for row in rows:
+              assert n(row,"eligible")>0,row
+              assert n(row,"compared")>0,row
+              assert n(row,"clockChanged")==n(row,"compared"),row
+              assert n(row,"actualAllowed")<=n(row,"actualReturns"),row
+              assert n(row,"pedChanged")<=n(row,"compared"),row
+              assert n(row,"redChanged")<=n(row,"compared"),row
+              assert n(row,"noNode")<=n(row,"eligible"),row
+              assert float(row["lastTime"])>=float(row["firstTime"]),row
+              print("PR57_358_WINDOW "+" ".join(f"{k}={row[k]}" for k in (
+                  "window","eligible","noNode","readers","nodes","compared",
+                  "nodeChanged","pedChanged","redChanged","phaseChanged",
+                  "headingChanged","clockChanged","pedestrianPositive",
+                  "redPositive","signalReads","actualReturns","actualAllowed",
+                  "actualPedestrian","actualSignal","actualOnwardBody",
+                  "predicateVisits","predicateMs","predicateAllocatedBytes",
+                  "firstTime","lastTime")))
+          print("PR57_358_PARITY checkpointByteIdentical=True individualAdvance2=True"+
+                " REAL121=True GRID=NOT_TESTED noSkippedSlices=True"+
+                " shadowNotCausalClosure=True observational=True"+
+                " integratedSpeedupAccepted=False")
+          PY
+      - name: Upload raw logs, summaries and checkpoints
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-gate-shadow-358
+          path: artifacts/gate358/**
+          if-no-files-found: warn

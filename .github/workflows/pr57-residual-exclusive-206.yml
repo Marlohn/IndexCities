@@ -1,0 +1,1347 @@
+name: 'PR57 #206 bounded exclusive physical executor region census'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths:
+      - .github/workflows/pr57-residual-exclusive-206.yml
+      - src/IndexCities.Simulation/Pollution.cs
+      - src/IndexCities.Simulation/Mobility.cs
+      - src/IndexCities.Simulation/Mobility.SharedSpace.cs
+      - src/IndexCities.Simulation/Construction.cs
+      - src/IndexCities.Simulation/Construction.Feeding.cs
+      - src/IndexCities.Simulation/CitySimulation.cs
+      - src/IndexCities.Simulation/EntityIndex.cs
+      - src/IndexCities.Simulation/Mobility.SharedNodeGrid.Pr57.cs
+      - tests/IndexCities.Simulation.Tests/Pr57BoardingReuseAdversarialTests.cs
+      - tests/IndexCities.Simulation.Tests/Pr57JunctionBlockerMutationTests.cs
+      - tests/IndexCities.Simulation.Tests/Pr57CertifiedLivingRosterMutationTests.cs
+      - tests/IndexCities.Simulation.Tests/Pr57SiteOwnerRosterAdversarial.cs
+      - tests/IndexCities.Simulation.Tests/Pr57CrossingQuantumMutationTests.cs
+      - tests/IndexCities.Simulation.Tests/Pr57LakeBaselineOrderTests.cs
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+  statuses: write
+# Isolate this active decisive gate from the hundreds of historical PR57
+# workflows using integrated-scale-pr57. GitHub only retains one pending run
+# per group by default, so older pending pushes can otherwise be displaced.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  residual-exclusive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_ROSTER_DIAG: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      # Commit Status API is readable through the connected GitHub plugin,
+      # unlike the pull-request-only run lookup used by the timers.
+      - name: Publish pending status on tested commit
+        continue-on-error: true
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            await github.rest.repos.createCommitStatus({
+              owner, repo, sha: context.sha,
+              state: 'pending',
+              context: 'pr57/residual-exclusive-206',
+              target_url: `https://github.com/${owner}/${repo}/actions/runs/${context.runId}`,
+              description: 'CI started; inspect run to see causal parity and measurements'
+            });
+
+      - name: Build Release and run full regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          PR57_LIVING_ROSTER=1 dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity normal
+      # Original October artifacts expired. These retained November snapshots
+      # are derived from authentic resumed saves, not original source saves.
+      - name: Restore retained authentic-derived snapshots
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-building-access-ab
+          run-id: 43766908676
+          github-token: ${{ github.token }}
+          path: artifacts/retained
+      - name: Verify certified roster mutations on retained real-derived saves
+        shell: bash
+        run: |
+          set -euo pipefail
+          PR57_REAL_SNAPSHOT_DIR="$PWD/artifacts/retained" PR57_LIVING_ROSTER=1 \
+            dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
+            -c Release --no-build --filter 'FullyQualifiedName~Certified_external_mutation_on_authentic_derived_snapshot_preserves_full_json|FullyQualifiedName~Lake_real_derived_saves_observe_external_order_and_exact_reload' --verbosity normal
+      - name: Compare lake slice trace in independent fresh processes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/lake-trace
+          for scenario in realA-control congested-control; do
+            source="$(find artifacts/retained -type f -path "*/$scenario/checkpoint-0.json" -print -quit)"
+            test -s "$source"
+            for mode in A1 A2 B1; do
+            adversary=0
+            if [[ "$mode" == B1 ]]; then adversary=1; fi
+            mkdir -p "artifacts/lake-trace/$scenario/$mode"
+            PR57_LAKE_EXACT_SAMPLE23=1 PR57_LAKE_SLICE_TRACE=1 PR57_LAKE_ORDER_ADVERSARY="$adversary" \
+            PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_206_MID_CHECKPOINT=1 \
+            PR57_SAVE_CAPTURE_DIR="$PWD/artifacts/lake-trace/$scenario/$mode" \
+              timeout 180s dotnet run --no-build -c Release \
+              --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+              profile cycle --seed=42 --warmup=0 --days=1 \
+              --window=300 --cap=300 --resume="$source" \
+              > "artifacts/lake-trace/$scenario/$mode.log"
+            done
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          for scenario in ('realA-control','congested-control'):
+              root=Path('artifacts/lake-trace')/scenario
+              traces={}
+              for mode in ('A1','A2','B1'):
+                  log=(root/f'{mode}.log').read_text()
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(scenario,mode)
+                  traces[mode]=[s for s in log.splitlines() if s.startswith('PR57_LAKE_SLICE_TRACE ')]
+                  exact=[line for line in log.splitlines() if line.startswith('PR57_LAKE_EXACT_SAMPLE23 ')]
+                  print('PR57_LAKE_EXACT_SAMPLE23_COUNT',scenario,mode,len(exact))
+                  traces[mode+'_exact']=exact
+                  assert traces[mode],(scenario,mode,'NO_LAKE_TRACE')
+                  if mode=='B1':
+                      census=[s for s in log.splitlines() if s.startswith('PR57_LAKE_ADVERSARY_CENSUS ')]
+                      assert census,(scenario,'NO_ADVERSARY_CENSUS')
+                      print('PR57_LAKE_ADVERSARY_LAST',scenario,census[-1])
+              for other in ('A2','B1'):
+                  aa=traces['A1_exact'];bb=traces[other+'_exact']
+                  if len(aa)!=len(bb):
+                      print('PR57_LAKE_EXACT_COUNT_DIFFERENCE',scenario,other,len(aa),len(bb))
+                  else:
+                      first=next(((i,x,y) for i,(x,y) in enumerate(zip(aa,bb)) if x!=y),None)
+                      print('PR57_LAKE_EXACT_FIRST_DIFFERENCE',scenario,other,first if first else 'NONE')
+              for other in ('A2','B1'):
+                  for i,(a,b) in enumerate(zip(traces['A1'],traces[other])):
+                      if a!=b:
+                          print('PR57_LAKE_FIRST_DIFFERENCE',scenario,other,'index',i,'baseline',a,'other',b)
+                          break
+                  else:
+                      if len(traces['A1'])!=len(traces[other]):
+                          print('PR57_LAKE_TRACE_LENGTH_DIFFERENCE',scenario,other,len(traces['A1']),len(traces[other]))
+                      else:
+                          print('PR57_LAKE_TRACE_EQUAL',scenario,other,'samples',len(traces['A1']))
+                  for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                      a=(root/'A1'/checkpoint).read_bytes()
+                      b=(root/other/checkpoint).read_bytes()
+                      print('PR57_LAKE_JSON',scenario,other,checkpoint,'equal',a==b,'baselineBytes',len(a),'otherBytes',len(b))
+          PY
+      - name: Execute independent Advance(2) control and bounded probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          works="$(find artifacts/retained -type f -path '*/realA-control/checkpoint-0.json' -print -quit)"
+          queue="$(find artifacts/retained -type f -path '*/congested-control/checkpoint-0.json' -print -quit)"
+          grid="$(find artifacts/retained -type f -path '*/grid-control/checkpoint-0.json' -print -quit)"
+          for source in "$works" "$queue" "$grid"; do
+            test -s "$source" || { echo "PR57_206_RETAINED_CHECKPOINT_MISSING source=$source"; exit 1; }
+            echo "PR57_206_DERIVED_SOURCE path=$source sha256=$(sha256sum "$source" | cut -d' ' -f1)"
+          done
+          mkdir -p artifacts/residual-exclusive-206
+          for case in worksREAL queueREAL gridARTIFICIAL; do
+            source="$works"; fixture=cycle; horizon=300
+            if [[ "$case" == queueREAL ]]; then source="$queue"; fi
+            if [[ "$case" == gridARTIFICIAL ]]; then source="$grid"; fixture=grid; horizon=100; fi
+            for mode in plain probe boarding; do
+              output="$PWD/artifacts/residual-exclusive-206/$case-$mode"
+              mkdir -p "$output"
+              # Keep the same Headless command and StepCostProfile in both arms;
+              # only the isolated exclusive probe flag may differ.
+              command=profile; enabled=0
+              if [[ "$mode" == probe ]]; then enabled=1; fi
+              echo "PR57_206_RUN case=$case mode=$mode horizon=$horizon cadence=ADVANCE_2"
+              PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_GRID_DIAG=1 \
+              PR57_ZERO_SITE_CENSUS="$enabled" PR57_SAVE_CAPTURE_DIR="$output" PR57_206_RESIDUAL_EXCLUSIVE="$enabled" PR57_206_MID_CHECKPOINT=1 PR57_240_WALK_SPLIT="$enabled" PR57_BOARDING_REUSE_LOOKUP="$([[ "$mode" == boarding ]] && echo 1 || echo 0)" \
+              PR57_LANE_READWRITE_PROBE=0 PR57_BLOCK_DEP_PROBE=0 \
+              PR57_VEHICLE_COST_PROBE=0 PR57_HOT_TIMING="$enabled" PR57_PHASE_ALLOC_PROBE=0 \
+              PR57_SORT_ORDERED_FASTPATH="$enabled" PR57_SLICE_SETUP_PROBE="$enabled" PR57_PHASE_IDENTITY_PROBE="$([[ "$mode" == probe ]] && echo 1 || echo 0)" PR57_MUTABLE_PHASE_PROBE="$([[ "$mode" == probe ]] && echo 1 || echo 0)" PR57_MOTION_QUANTA_CENSUS="$([[ "$mode" == probe ]] && echo 1 || echo 0)" \
+                timeout 180s dotnet run --no-build -c Release \
+                --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                "$command" "$fixture" --seed=42 --warmup=0 --days=1 \
+                --window="$horizon" --cap=300 --resume="$source" | tee "$output.log"
+            done
+          done
+      - name: Test crossing occupancy opt-in against canonical integrated saves
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crossing-occupancy
+          for case in worksREAL queueREAL; do
+            scenario=realA-control
+            if [[ "$case" == queueREAL ]]; then scenario=congested-control; fi
+            source="$(find artifacts/retained -type f -path "*/$scenario/checkpoint-0.json" -print -quit)"
+            test -s "$source"
+            for mode in A B; do
+              enabled=0
+              if [[ "$mode" == B ]]; then enabled=1; fi
+              dest="$PWD/artifacts/crossing-occupancy/$case-$mode"
+              mkdir -p "$dest"
+              PR57_CROSSING_OCCUPANCY_INDEX="$enabled" PR57_CROSSING_OCCUPANCY_DIAG=1 \
+              PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_206_MID_CHECKPOINT=1 \
+              PR57_SAVE_CAPTURE_DIR="$dest" \
+                timeout 180s dotnet run --no-build -c Release \
+                --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                profile cycle --seed=42 --warmup=0 --days=1 \
+                --window=300 --cap=300 --resume="$source" > "$dest/run.log"
+            done
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          root=Path('artifacts/crossing-occupancy')
+          exercised_cases=0
+          for case in ('worksREAL','queueREAL'):
+              a=root/f'{case}-A'; b=root/f'{case}-B'
+              for mode,folder in (('A',a),('B',b)):
+                  log=(folder/'run.log').read_text()
+                  assert 'INVARIANTS OK' in log,(case,mode,'invariants')
+                  lines=[line for line in log.splitlines() if 'PR57_CROSSING_OCCUPANCY checks=' in line]
+                  if mode=='B': assert lines,(case,mode,'missing opt-in census')
+                  totals={key:sum(int(m.group(1)) for line in lines if (m:=re.search(r'\b'+key+r'=(\d+)',line))) for key in ('checks','candidates','fallbacks','builds','indexedVehicles','canonicalScanUpper','indexBuildVisits')}
+                  print('PR57_CROSSING_INDEX_CENSUS',case,mode,totals)
+                  if mode=='B':
+                      exercised_cases += int(totals['checks']>0)
+                  if totals['checks']==0: print('PR57_CROSSING_INDEX_NO_OPPORTUNITY',case)
+              for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                  aa=(a/checkpoint).read_bytes(); bb=(b/checkpoint).read_bytes()
+                  print('PR57_CROSSING_INDEX_PARITY',case,checkpoint,'equal',aa==bb)
+                  assert aa==bb,(case,checkpoint,'full JSON differs')
+          assert exercised_cases>0,'index never exercised in either integrated save'
+          PY
+      - name: Verify exact full-state parity and exclusive region partition
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          root=Path('artifacts/residual-exclusive-206')
+          def metric(line,key):
+              m=re.search(r'(?:^| )'+re.escape(key)+r'=([-0-9.]+)',line)
+              assert m,(key,line)
+              return float(m.group(1))
+          for case,horizon in [('worksREAL',300),('queueREAL',300),('gridARTIFICIAL',100)]:
+              logs={mode:(root/f'{case}-{mode}.log').read_text() for mode in ('plain','probe','boarding')}
+              for mode,log in logs.items():
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,mode)
+              # Identity census is observational and confined to the existing probe arm.
+              # A 300-second window contains 150 Advance(2) slices; the probe logs at slice 100.
+              if case in ('worksREAL','queueREAL'):
+                  identity=[line for line in logs['probe'].splitlines() if line.startswith('PR57_PHASE_IDENTITY ')]
+                  assert identity and 'steps=100' in identity[0],(case,'identity probe not exercised')
+                  assert not any('PR57_PHASE_IDENTITY ' in logs[m] for m in ('plain','boarding')),(case,'probe leaked into controls')
+                  print('PR57_PHASE_IDENTITY_CI',case,identity[-1], 'scope=OBSERVATIONAL_NOT_SPEEDUP')
+                  mutable=[line for line in logs['probe'].splitlines() if line.startswith('PR57_MUTABLE_PHASE ')]
+                  assert mutable and 'steps=100' in mutable[0],(case,'mutable phase probe not exercised')
+                  assert not any('PR57_MUTABLE_PHASE ' in logs[m] for m in ('plain','boarding')),(case,'mutable probe leaked into controls')
+                  print('PR57_MUTABLE_PHASE_CI',case,mutable[-1], 'scope=SELECTED_FIELDS_OBSERVATIONAL_NOT_SPEEDUP')
+                  assert len([x for x in log.splitlines() if x.startswith('WINDOW ')])==1,(case,mode)
+                  for i in (0,1):
+                      assert (root/f'{case}-{mode}'/f'checkpoint-{i}.json').is_file(),(case,mode,i)
+              for i in (0,1):
+                  assert (root/f'{case}-plain'/f'checkpoint-{i}.json').read_bytes()==(root/f'{case}-probe'/f'checkpoint-{i}.json').read_bytes(),(case,i,'full JSON mismatch')
+              # Opt-in boarding lookup must preserve all serialized causal state.
+              for i in (0,1):
+                  assert (root/f'{case}-plain'/f'checkpoint-{i}.json').read_bytes()==(root/f'{case}-boarding'/f'checkpoint-{i}.json').read_bytes(),(case,i,'boarding full JSON mismatch')
+              assert 'PR57_206_RESIDUAL ' not in logs['boarding']
+              # Exact full JSON after half the measured Advance(2) window:
+              # initial, intermediate, and final states must all match.
+              midpoint_files=[root/f'{case}-{mode}'/'checkpoint-mid.json' for mode in ('plain','probe')]
+              assert all(p.is_file() for p in midpoint_files),(case,'midpoint missing')
+              assert midpoint_files[0].read_bytes()==midpoint_files[1].read_bytes(),(case,'midpoint full JSON mismatch')
+              assert midpoint_files[0].read_bytes()==(root/f'{case}-boarding'/'checkpoint-mid.json').read_bytes(),(case,'boarding midpoint full JSON mismatch')
+              assert all('PR57_206_MID_CHECKPOINT ' in logs[mode] for mode in ('plain','probe')),(case,'midpoint probe inactive')
+              assert 'PR57_206_RESIDUAL ' not in logs['plain']
+              rows=[x for x in logs['probe'].splitlines() if x.startswith('PR57_206_RESIDUAL ')]
+              assert len(rows)==3,(case,'expected three consecutive physical slices',len(rows))
+              slice_costs=[]
+              for i,row in enumerate(rows,1):
+                  assert int(metric(row,'sample'))==i,(case,row)
+                  assert int(metric(row,'eligibleSlice'))==36+i,(case,row)
+                  ticks=[metric(row,f's{j}Ms') for j in range(9)]
+                  bytes_=[metric(row,f's{j}MB') for j in range(9)]
+                  segments=[int(metric(row,f's{j}Segments')) for j in range(9)]
+                  assert all(x>=0 for x in ticks+bytes_) and all(x>=0 for x in segments),(case,row)
+                  assert abs(sum(ticks)-metric(row,'totalMs'))<0.00005,(case,row)
+                  assert abs(sum(bytes_)-metric(row,'totalMB'))<0.00002,(case,row)
+                  slice_costs.append(ticks)
+                  assert segments[0]>=metric(row,'vehicles')>0,(case,row)
+                  assert metric(row,'moved')<=metric(row,'vehicles'),(case,row)
+                  assert metric(row,'travelling')<=metric(row,'vehicles'),(case,row)
+                  print('PR57_206_SLICE',case,'sample',i,'vehicles',metric(row,'vehicles'),
+                        'moved',metric(row,'moved'),'exclusiveMs',ticks,'exclusiveMB',bytes_,
+                        'segments',segments,'scope','ORDERED_VEHICLE_LOOP_INTRUSIVE')
+              # Crossing occupancy is already timed in the real citizen loop (#240).
+              # This is an observational ceiling, not an implemented speedup.
+              walk=[x for x in logs['probe'].splitlines() if x.startswith('PR57_240_WALK ')]
+              occupancy=[x for x in walk if 'name=crossing-occupancy ' in x]
+              summary=[x for x in logs['probe'].splitlines() if x.startswith('PR57_240_WALK_SUM ')]
+              assert len(occupancy)==1 and len(summary)==1,(case,'walk probe inactive')
+              crossing_ms=metric(occupancy[0],'ms')
+              crossing_calls=int(metric(occupancy[0],'calls'))
+              vehicle_candidates=int(metric(summary[0],'vehicleCandidates'))
+              assert crossing_ms>=0 and crossing_calls>=0 and vehicle_candidates>=0
+              print('PR57_240_CROSSING_BOUND',case,'occupancyCalls',crossing_calls,
+                    'vehicleCandidates',vehicle_candidates,'intrusiveOccupancyMs',crossing_ms,
+                    'scope','OBSERVATIONAL_NOT_SPEEDUP')
+              # Junction detailed stopwatch is enabled only in the probe arm.
+              # Report measured inclusive hot cost versus the independent plain
+              # integrated wall, NOT an optimization or a non-intrusive speedup.
+              hot=[x for x in logs['probe'].splitlines() if x.startswith('PR57_HOT_TIMING ')]
+              # Sparse real saves may execute fewer than 300 movement slices:
+              # no snapshot is emitted, and zero cannot be inferred from absence.
+              # QueueREAL is the required active-junction representative.
+              assert hot or case!='queueREAL',(case,'junction hot timing missing',len(hot))
+              plain_window=next(x for x in logs['plain'].splitlines() if x.startswith('WINDOW '))
+              plain_wall_ms=metric(plain_window,'wall')*1000
+              assert plain_wall_ms>0,(case,'plain wall missing')
+              if hot:
+                  # Cumulative samples overlap; select only the final snapshot.
+                  final=hot[-1]
+                  junction_ms=metric(final,'junctionMs')
+                  turn_ms=metric(final,'turnWayMs')
+                  body_ms=metric(final,'bodyOnWayMs')
+                  assert min(junction_ms,turn_ms,body_ms)>=0
+                  assert turn_ms+body_ms<=junction_ms+0.01,(case,'nested timing exceeds admission')
+                  print('PR57_JUNCTION_HOT_BOUND',case,'junctionMs',junction_ms,
+                        'turnWayMs',turn_ms,'bodyOnWayMs',body_ms,
+                        'plainIntegratedWallMs',plain_wall_ms,
+                        'intrusiveNestedFraction',round((turn_ms+body_ms)/plain_wall_ms,6),
+                        'limitation','PROBE_INTRUSIVE_NOT_ABBA_NOT_CAUSAL_SPEEDUP')
+              else:
+                  print('PR57_JUNCTION_HOT_BOUND',case,'status','NO_SNAPSHOT_BEFORE_300_MOVEMENT_SLICES',
+                        'plainIntegratedWallMs',plain_wall_ms,
+                        'limitation','UNMEASURED_NOT_ZERO_NOT_SPEEDUP')
+              # Quantitative structural triage: these are intrusive physical-loop
+              # fractions, NOT end-to-end Amdahl ceilings or speedups. Do not
+              # extrapolate them to 10k citizens or the 80-year target.
+              physical=[sum(sample[j] for sample in slice_costs) for j in range(9)]
+              physical_total=sum(physical)
+              assert physical_total>0,(case,'zero measured physical work')
+              for j,spent in enumerate(physical):
+                  share=spent/physical_total
+                  physical_ceiling=float('inf') if share>=1 else 1/(1-share)
+                  print('PR57_206_PHYSICAL_BOUND',case,'region',f's{j}',
+                        'intrusiveShare',round(share,6),
+                        'physicalOnlyMaxSpeedup',round(physical_ceiling,6),
+                        'samples',len(slice_costs),
+                        'NOT_END_TO_END_AMDAHL',True)
+              boarding=next(x for x in logs['boarding'].splitlines() if x.startswith('WINDOW '))
+              print('PR57_BOARDING_AB',case,'flag','PR57_BOARDING_REUSE_LOOKUP=1',
+                    'wall',metric(boarding,'wall'),'cpu',metric(boarding,'cpu'),
+                    'allocMB',metric(boarding,'allocMB'),
+                    'checkpoints',3,'parity','EXACT_FULL_JSON',
+                    'note','SINGLE_ORDER_NOT_ABBA_NO_HIT_COUNT')
+              plain=next(x for x in logs['plain'].splitlines() if x.startswith('WINDOW '))
+              probe=next(x for x in logs['probe'].splitlines() if x.startswith('WINDOW '))
+              plain_wall=metric(plain,'wall')
+              probe_wall=metric(probe,'wall')
+              assert plain_wall>0 and probe_wall>0,(case,'nonpositive wall')
+              print('PR57_206_RESULT',case,'horizon',horizon,
+                    'plainWall',plain_wall,'plainCpu',metric(plain,'cpu'),
+                    'plainAllocMB',metric(plain,'allocMB'),
+                    'probeWall',probe_wall,'probeCpu',metric(probe,'cpu'),
+                    'probeAllocMB',metric(probe,'allocMB'),
+                    'intrusiveWallRatio',round(probe_wall/plain_wall,6),
+                    'plainSimSecondsPerWallSecond',round(horizon/plain_wall,2),
+                    'checkpoints',3,'parity','EXACT_FULL_JSON',
+                    'note','PROBE_OVERHEAD_NOT_OPTIMIZATION_SPEEDUP')
+          PY
+      - name: Validate empty-reservation cleanup gate with fresh-process ABBA
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/residual-exclusive-206/cleanup-abba
+          for case in worksREAL queueREAL; do
+            source="$PWD/artifacts/residual-exclusive-206/$case-plain/checkpoint-0.json"
+            test -s "$source"
+            for trial in A1 B1 B2 A2; do
+              enabled=0
+              if [[ "$trial" == B* ]]; then enabled=1; fi
+              output="$PWD/artifacts/residual-exclusive-206/cleanup-abba/$case-$trial"
+              mkdir -p "$output"
+              echo "PR57_CLEANUP_RUN case=$case trial=$trial optIn=$enabled"
+              PR57_EMPTY_RESERVATION_CLEANUP_GATE="$enabled" PR57_CLEANUP_WORK_CENSUS=1 PR57_HOST_QUANTUM=1 PR57_ADVANCE_BOUNDARY_PROBE=1 \
+              PR57_AB_CHECKPOINT=1 PR57_206_MID_CHECKPOINT=1 \
+              PR57_SAVE_CAPTURE_DIR="$output" \
+              PR57_206_RESIDUAL_EXCLUSIVE=0 PR57_240_WALK_SPLIT=0 \
+              PR57_BOARDING_REUSE_LOOKUP=0 \
+                timeout 180s dotnet run --no-build -c Release \
+                --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                profile cycle --seed=42 --warmup=0 --days=1 \
+                --window=300 --cap=300 --resume="$source" | tee "$output.log"
+            done
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import re,statistics
+          root=Path('artifacts/residual-exclusive-206/cleanup-abba')
+          for case in ('worksREAL','queueREAL'):
+              rows={}
+              for trial in ('A1','B1','B2','A2'):
+                  prefix=root/f'{case}-{trial}'
+                  log=(root/f'{case}-{trial}.log').read_text()
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,trial)
+                  windows=[x for x in log.splitlines() if x.startswith('WINDOW ')]
+                  assert len(windows)==1,(case,trial)
+                  row=windows[0]
+                  rows[trial]={}
+                  for key in ('wall','cpu','allocMB'):
+                      match=re.search(r'(?:^| )'+key+r'=([-0-9.]+)',row)
+                      assert match,(case,trial,key,row)
+                      rows[trial][key]=float(match.group(1))
+                  # Simultaneous boundary and Step phase measurements on the SAME
+                  # fresh-process ABBA arm. These are intrusive accounting, not speedup.
+                  boundaries=[x for x in log.splitlines() if x.startswith('PR57_ADVANCE_BOUNDARY ')]
+                  phases=[x for x in log.splitlines() if x.startswith('  STEP_PHASE name=')]
+                  assert boundaries and phases,(case,trial,'MISSING_SIMULTANEOUS_BOUNDARY_OR_PHASE')
+                  final_boundary=boundaries[-1]
+                  def number(row,key):
+                      match=re.search(r'(?:^| )'+re.escape(key)+r'=([-0-9.]+)',row)
+                      assert match,(case,trial,key,row)
+                      return float(match.group(1))
+                  calls=number(final_boundary,'calls')
+                  advance=number(final_boundary,'advanceMs')
+                  step=number(final_boundary,'stepMs')
+                  outside=number(final_boundary,'outsideStepMs')
+                  assert calls>=100 and advance>0 and step>=0 and outside>=0,(case,trial,final_boundary)
+                  assert abs(advance-step-outside)<0.01,(case,trial,'BOUNDARY_PARTITION')
+                  phase_sum=0.0
+                  phase_rows=[]
+                  for phase in phases:
+                      name=re.search(r'name=([^ ]+)',phase).group(1)
+                      spent=number(phase,'wall')*1000
+                      phase_sum+=spent
+                      phase_rows.append((name,spent))
+                  # StepCostProfile includes warmup/measurement in its own scope;
+                  # do not force equality to a different boundary interval.
+                  print('PR57_CROSS_PHASE_BOUND',case,trial,'calls',int(calls),
+                        'advanceMs',advance,'stepMs',step,'outsideStepMs',outside,
+                        'outsideFraction',round(outside/advance,6),
+                        'phaseProfileMs',round(phase_sum,3),
+                        'phaseSharesOfProfile',[(name,round(ms/phase_sum,6)) for name,ms in phase_rows] if phase_sum else [],
+                        'scope','INTRUSIVE_SAME_ARM_NOT_WALL_SPEEDUP')
+                  # Cumulative 300-slice snapshots: report mandatory work and skipped work
+                  # for each fresh-process arm without treating timing as a speedup.
+                  census=[x for x in log.splitlines() if x.startswith('PR57_CLEANUP_WORK_CENSUS ')]
+                  if not census:
+                      # Diagnostic emits only every 300 movement slices; preserve ABBA/JSON checks.
+                      profile=re.search(r'VEHICLE_PROFILE steps=([0-9]+).*? slices=([0-9]+)',log)
+                      assert profile,(case,trial,'NO_VEHICLE_PROFILE')
+                      observed=int(profile.group(2))
+                      assert case=='worksREAL' and observed<300,(case,trial,'UNEXPECTED_CENSUS_MISSING',observed)
+                      print('PR57_CLEANUP_WORK_CENSORED',case,trial,'movementSlices',observed,
+                            'emissionThreshold',300,'skipFraction','UNMEASURED',
+                            'cleanupMeasuredMs','UNMEASURED')
+                  else:
+                      def census_value(row,key):
+                          match=re.search(r'(?:^| )'+key+r'=([0-9]+)',row)
+                          assert match,(case,trial,key,row)
+                          return int(match.group(1))
+                      final=census[-1]
+                      skipped=census_value(final,'skipped')
+                      required=census_value(final,'required')
+                      ticks=census_value(final,'cleanupTicks')
+                      frequency=census_value(final,'frequency')
+                      slices=census_value(final,'slices')
+                      assert slices>=300 and required>0 and frequency>0,(case,trial,final)
+                      assert (skipped==0 if trial.startswith('A') else skipped>=0),(case,trial,final)
+                      print('PR57_CLEANUP_WORK_RESULT',case,trial,'slices',slices,
+                            'skipped',skipped,'required',required,
+                            'skipFraction',round(skipped/(skipped+required),6),
+                            'cleanupMeasuredMs',round(1000*ticks/frequency,6),
+                            'scope','INTRUSIVE_CENSUS_NOT_ABBA_SPEEDUP')
+                  for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                      current=prefix/checkpoint
+                      baseline=root/f'{case}-A1'/checkpoint
+                      assert current.is_file() and baseline.is_file(),(case,trial,checkpoint,'missing')
+                      assert current.read_bytes()==baseline.read_bytes(),(case,trial,checkpoint,'JSON_MISMATCH')
+              for key in ('wall','cpu','allocMB'):
+                  a=statistics.median(rows[t][key] for t in ('A1','A2'))
+                  b=statistics.median(rows[t][key] for t in ('B1','B2'))
+                  print('PR57_CLEANUP_ABBA',case,key,'baseline',a,'optIn',b,
+                        'ratio_A_over_B',a/b if b>0 else 'UNDEFINED',
+                        'raw',[(t,rows[t][key]) for t in ('A1','B1','B2','A2')],
+                        'parity','EXACT_FULL_JSON_THREE_CHECKPOINTS',
+                        'limitation','NO_SKIP_COUNTER_NO_10K_PROOF')
+          PY
+      - name: Validate crew membership index with fresh-process ABBA
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$PWD/artifacts/residual-exclusive-206/crew-membership-abba"
+          mkdir -p "$root"
+          for case in worksREAL queueREAL; do
+            source="$PWD/artifacts/residual-exclusive-206/$case-plain/checkpoint-0.json"
+            test -s "$source"
+            for trial in A1 B1 B2 A2; do
+              enabled=0
+              if [[ "$trial" == B* ]]; then enabled=1; fi
+              output="$root/$case-$trial"
+              mkdir -p "$output"
+              echo "PR57_CREW_INDEX_RUN case=$case trial=$trial optIn=$enabled"
+              PR57_CREW_MEMBERSHIP_INDEX="$enabled" PR57_HOST_QUANTUM=1 \
+              PR57_AB_CHECKPOINT=1 PR57_206_MID_CHECKPOINT=1 \
+              PR57_SAVE_CAPTURE_DIR="$output" PR57_206_RESIDUAL_EXCLUSIVE=0 \
+              PR57_240_WALK_SPLIT=0 PR57_BOARDING_REUSE_LOOKUP=0 \
+                timeout 180s dotnet run --no-build -c Release \
+                --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                profile cycle --seed=42 --warmup=0 --days=1 \
+                --window=300 --cap=300 --resume="$source" | tee "$output.log"
+            done
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import re,statistics
+          root=Path('artifacts/residual-exclusive-206/crew-membership-abba')
+          for case in ('worksREAL','queueREAL'):
+              rows={}
+              for trial in ('A1','B1','B2','A2'):
+                  prefix=root/f'{case}-{trial}'
+                  log=(root/f'{case}-{trial}.log').read_text()
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,trial)
+                  windows=[line for line in log.splitlines() if line.startswith('WINDOW ')]
+                  assert len(windows)==1,(case,trial,'WINDOW_COUNT')
+                  rows[trial]={}
+                  for key in ('wall','cpu','allocMB'):
+                      match=re.search(r'(?:^| )'+key+r'=([-0-9.]+)',windows[0])
+                      assert match,(case,trial,key)
+                      rows[trial][key]=float(match.group(1))
+                  for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                      assert (prefix/checkpoint).is_file(),(case,trial,checkpoint)
+              for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                  baseline=(root/f'{case}-A1'/checkpoint).read_bytes()
+                  assert all((root/f'{case}-{trial}'/checkpoint).read_bytes()==baseline
+                             for trial in ('B1','B2','A2')),(case,checkpoint,'FULL_JSON_MISMATCH')
+              for key in ('wall','cpu','allocMB'):
+                  a=statistics.mean(rows[t][key] for t in ('A1','A2'))
+                  b=statistics.mean(rows[t][key] for t in ('B1','B2'))
+                  print('PR57_CREW_INDEX_ABBA',case,key,'baseline',a,'optIn',b,
+                        'ratio_A_over_B',a/b if b>0 else 'UNDEFINED',
+                        'raw',[(t,rows[t][key]) for t in ('A1','B1','B2','A2')],
+                        'parity','EXACT_FULL_JSON_THREE_CHECKPOINTS',
+                        'limitation','NO_MEMBERSHIP_HIT_COUNTER_NO_10K_PROOF')
+          PY
+      - name: Validate living citizen roster with fresh-process ABBA
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$PWD/artifacts/residual-exclusive-206/living-roster-abba"
+          mkdir -p "$root"
+          for case in worksREAL queueREAL; do
+            source="$PWD/artifacts/residual-exclusive-206/$case-plain/checkpoint-0.json"
+            test -s "$source"
+            for trial in A1 B1 B2 A2; do
+              enabled=0
+              if [[ "$trial" == B* ]]; then enabled=1; fi
+              output="$root/$case-$trial"
+              mkdir -p "$output"
+              echo "PR57_LIVING_ROSTER_RUN case=$case trial=$trial optIn=$enabled"
+              PR57_LIVING_ROSTER="$enabled" PR57_GRID_DIAG=1 PR57_HOST_QUANTUM=1 \
+              PR57_AB_CHECKPOINT=1 PR57_206_MID_CHECKPOINT=1 \
+              PR57_SAVE_CAPTURE_DIR="$output" PR57_206_RESIDUAL_EXCLUSIVE=0 \
+              PR57_240_WALK_SPLIT=0 PR57_BOARDING_REUSE_LOOKUP=0 \
+                timeout 180s dotnet run --no-build -c Release \
+                --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                profile cycle --seed=42 --warmup=0 --days=1 \
+                --window=300 --cap=300 --resume="$source" | tee "$output.log"
+            done
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import re,statistics
+          root=Path('artifacts/residual-exclusive-206/living-roster-abba')
+          for case in ('worksREAL','queueREAL'):
+              rows={}
+              for trial in ('A1','B1','B2','A2'):
+                  prefix=root/f'{case}-{trial}'
+                  log=(root/f'{case}-{trial}.log').read_text()
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,trial)
+                  expected='active=True' if trial.startswith('B') else 'active=False'
+                  assert any('PR57_LIVING_ROSTER' in line and expected in line for line in log.splitlines()),(case,trial,'OPT_IN_NOT_OBSERVED')
+                  windows=[line for line in log.splitlines() if line.startswith('WINDOW ')]
+                  assert len(windows)==1,(case,trial,'WINDOW_COUNT')
+                  rows[trial]={}
+                  for key in ('wall','cpu','allocMB'):
+                      match=re.search(r'(?:^| )'+key+r'=([-0-9.]+)',windows[0])
+                      assert match,(case,trial,key)
+                      rows[trial][key]=float(match.group(1))
+                  for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                      assert (prefix/checkpoint).is_file(),(case,trial,checkpoint)
+              for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                  baseline=(root/f'{case}-A1'/checkpoint).read_bytes()
+                  assert all((root/f'{case}-{trial}'/checkpoint).read_bytes()==baseline for trial in ('B1','B2','A2')),(case,checkpoint,'FULL_JSON_MISMATCH')
+              for key in ('wall','cpu','allocMB'):
+                  a=statistics.mean(rows[t][key] for t in ('A1','A2'))
+                  b=statistics.mean(rows[t][key] for t in ('B1','B2'))
+                  print('PR57_LIVING_ROSTER_ABBA',case,key,'baseline',a,'optIn',b,
+                        'ratio_A_over_B',a/b if b>0 else 'UNDEFINED',
+                        'raw',[(t,rows[t][key]) for t in ('A1','B1','B2','A2')],
+                        'parity','EXACT_FULL_JSON_THREE_CHECKPOINTS',
+                        'limitation','REBUILD_FALLBACK_COUNTERS_NOT_YET_EXPOSED_NO_10K_PROOF')
+          PY
+      - name: Diagnose baseline lake pollution determinism without bend reuse
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="artifacts/residual-exclusive-206/lake-baseline-repeat"
+          mkdir -p "$root"
+          source="$(find artifacts/retained -type f -path '*/realA-control/checkpoint-0.json' -print -quit)"
+          test -s "$source"
+          for trial in A1 A2 B1; do
+            mkdir -p "$root/$trial"
+            bend=0
+            if [[ "$trial" == B1 ]]; then bend=1; fi
+            echo "PR57_LAKE_BASELINE_RUN trial=$trial canonical=0 bendReuse=$bend"
+            PR57_LAKE_SLICE_TRACE=1 PR57_POLLUTION_ULP_TRACE=1 PR57_CANONICAL_POLLUTION_ORDER=0 \
+            PR57_BEND_REUSE_ANY_SCAN="$bend" PR57_HOST_QUANTUM=1 \
+            PR57_AB_CHECKPOINT=1 PR57_206_MID_CHECKPOINT=1 \
+            PR57_SAVE_CAPTURE_DIR="$root/$trial" \
+              timeout 180s dotnet run --no-build -c Release \
+              --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+              profile cycle --seed=42 --warmup=0 --days=1 \
+              --window=300 --cap=300 --resume="$source" > "$root/$trial.log"
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('artifacts/residual-exclusive-206/lake-baseline-repeat')
+          traces=[]
+          for trial in ('A1','A2','B1'):
+              log=(root/f'{trial}.log').read_text()
+              assert 'INVARIANTS OK' in log and 'SAVE ' in log,(trial,'invariants')
+              trace=[line for line in log.splitlines() if line.startswith('PR57_LAKE_SLICE_TRACE ')]
+              assert trace,(trial,'trace not exercised')
+              traces.append(trace)
+              print('PR57_LAKE_BASELINE_TRACE_COUNT',trial,len(trace))
+          ulp_traces={}
+          for trial in ('A1','A2','B1'):
+              log=(root/f'{trial}.log').read_text()
+              ulp=[line for line in log.splitlines() if line.startswith('PR57_POLLUTION_ULP ')]
+              assert ulp,(trial,'ULP phase trace not exercised')
+              ulp_traces[trial]=ulp
+              print('PR57_POLLUTION_ULP_COUNT',trial,len(ulp))
+          for trial in ('A2','B1'):
+              a,b=ulp_traces['A1'],ulp_traces[trial]
+              mismatch=next(((i,x,y) for i,(x,y) in enumerate(zip(a,b)) if x!=y),None)
+              if mismatch is None and len(a)!=len(b):
+                  mismatch=(min(len(a),len(b)),'END_OF_TRACE','END_OF_TRACE')
+              print('PR57_POLLUTION_ULP_FIRST_DIFFERENCE',trial,mismatch if mismatch else 'NONE')
+          mismatch=next(((i,a,b) for i,(a,b) in enumerate(zip(traces[0],traces[1])) if a!=b),None)
+          if mismatch is None and len(traces[0])!=len(traces[1]):
+              mismatch=(min(map(len,traces)),'END_OF_TRACE','END_OF_TRACE')
+          print('PR57_LAKE_BASELINE_FIRST_DIFFERENCE',mismatch if mismatch else 'NONE')
+          for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+              a=(root/'A1'/checkpoint).read_bytes()
+              b=(root/'A2'/checkpoint).read_bytes()
+              print('PR57_LAKE_BASELINE_FULL_JSON',checkpoint,'EQUAL' if a==b else 'DIFFERENT')
+          bend_mismatch=next(((i,a,b) for i,(a,b) in enumerate(zip(traces[0],traces[2])) if a!=b),None)
+          if bend_mismatch is None and len(traces[0])!=len(traces[2]):
+              bend_mismatch=(min(len(traces[0]),len(traces[2])),'END_OF_TRACE','END_OF_TRACE')
+          print('PR57_BEND_LAKE_FIRST_DIFFERENCE',bend_mismatch if bend_mismatch else 'NONE')
+          for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+              a=(root/'A1'/checkpoint).read_bytes()
+              b=(root/'B1'/checkpoint).read_bytes()
+              print('PR57_BEND_LAKE_FULL_JSON',checkpoint,'EQUAL' if a==b else 'DIFFERENT')
+          PY
+      - name: Measure opt-in bend enumeration reuse with fresh-process ABBA
+        # Revalidation only: prior worksREAL mismatch in run 44179081642;
+        # independent lake-slice replay repeated equal in run 44195925158.
+        # This ABBA must pass exact full JSON before any performance claim.
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$PWD/artifacts/residual-exclusive-206/bend-reuse-abba"
+          mkdir -p "$root"
+          for case in worksREAL queueREAL; do
+            source="$PWD/artifacts/residual-exclusive-206/$case-plain/checkpoint-0.json"
+            test -s "$source"
+            for trial in A1 B1 B2 A2; do
+              enabled=0
+              if [[ "$trial" == B* ]]; then enabled=1; fi
+              output="$root/$case-$trial"
+              mkdir -p "$output"
+              echo "PR57_BEND_REUSE_RUN case=$case trial=$trial optIn=$enabled"
+              PR57_BEND_REUSE_ANY_SCAN="$enabled" PR57_HOST_QUANTUM=1 \
+              PR57_AB_CHECKPOINT=1 PR57_206_MID_CHECKPOINT=1 \
+              PR57_SAVE_CAPTURE_DIR="$output" PR57_206_RESIDUAL_EXCLUSIVE=0 \
+              PR57_240_WALK_SPLIT=0 PR57_BOARDING_REUSE_LOOKUP=0 \
+                timeout 180s dotnet run --no-build -c Release \
+                --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                profile cycle --seed=42 --warmup=0 --days=1 \
+                --window=300 --cap=300 --resume="$source" | tee "$output.log"
+            done
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import re,statistics
+          root=Path('artifacts/residual-exclusive-206/bend-reuse-abba')
+          for case in ('worksREAL','queueREAL'):
+              rows={}
+              for trial in ('A1','B1','B2','A2'):
+                  prefix=root/f'{case}-{trial}'
+                  log=(root/f'{case}-{trial}.log').read_text()
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,trial)
+                  windows=[x for x in log.splitlines() if x.startswith('WINDOW ')]
+                  assert len(windows)==1,(case,trial,'WINDOW_COUNT')
+                  rows[trial]={}
+                  for key in ('wall','cpu','allocMB'):
+                      m=re.search(r'(?:^| )'+key+r'=([-0-9.]+)',windows[0])
+                      assert m,(case,trial,key)
+                      rows[trial][key]=float(m.group(1))
+                  for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                      assert (prefix/checkpoint).is_file(),(case,trial,checkpoint)
+              for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                  baseline=(root/f'{case}-A1'/checkpoint).read_bytes()
+                  assert all((root/f'{case}-{trial}'/checkpoint).read_bytes()==baseline
+                             for trial in ('B1','B2','A2')),(case,checkpoint,'FULL_JSON_MISMATCH')
+              for key in ('wall','cpu','allocMB'):
+                  a=statistics.mean(rows[t][key] for t in ('A1','A2'))
+                  b=statistics.mean(rows[t][key] for t in ('B1','B2'))
+                  print('PR57_BEND_REUSE_ABBA',case,key,'baseline',a,'optIn',b,
+                        'ratio_A_over_B',a/b if b>0 else 'UNDEFINED',
+                        'raw',[(t,rows[t][key]) for t in ('A1','B1','B2','A2')],
+                        'parity','EXACT_FULL_JSON_THREE_CHECKPOINTS',
+                        'limitation','NO_10K_PROOF')
+          PY
+      - name: Measure opt-in dock radius exact gate with fresh-process ABBA
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$PWD/artifacts/residual-exclusive-206/dock-radius-abba"
+          mkdir -p "$root"
+          for case in worksREAL queueREAL; do
+            source="$PWD/artifacts/residual-exclusive-206/$case-plain/checkpoint-0.json"
+            test -s "$source"
+            for trial in A1 B1 B2 A2; do
+              enabled=0
+              if [[ "$trial" == B* ]]; then enabled=1; fi
+              output="$root/$case-$trial"
+              mkdir -p "$output"
+              echo "PR57_DOCK_RADIUS_RUN case=$case trial=$trial optIn=$enabled"
+              PR57_DOCK_RADIUS_EXACT_GATE="$enabled" PR57_HOST_QUANTUM=1 \
+              PR57_AB_CHECKPOINT=1 PR57_206_MID_CHECKPOINT=1 \
+              PR57_SAVE_CAPTURE_DIR="$output" PR57_206_RESIDUAL_EXCLUSIVE=0 \
+              PR57_240_WALK_SPLIT=0 PR57_BOARDING_REUSE_LOOKUP=0 \
+                timeout 180s dotnet run --no-build -c Release \
+                --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                profile cycle --seed=42 --warmup=0 --days=1 \
+                --window=300 --cap=300 --resume="$source" | tee "$output.log"
+            done
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import re,statistics
+          root=Path('artifacts/residual-exclusive-206/dock-radius-abba')
+          for case in ('worksREAL','queueREAL'):
+              rows={}
+              for trial in ('A1','B1','B2','A2'):
+                  prefix=root/f'{case}-{trial}'
+                  log=(root/f'{case}-{trial}.log').read_text()
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,trial)
+                  windows=[x for x in log.splitlines() if x.startswith('WINDOW ')]
+                  assert len(windows)==1,(case,trial,'WINDOW_COUNT')
+                  rows[trial]={}
+                  for key in ('wall','cpu','allocMB'):
+                      m=re.search(r'(?:^| )'+key+r'=([-0-9.]+)',windows[0])
+                      assert m,(case,trial,key)
+                      rows[trial][key]=float(m.group(1))
+                  for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                      assert (prefix/checkpoint).is_file(),(case,trial,checkpoint)
+              for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                  baseline=(root/f'{case}-A1'/checkpoint).read_bytes()
+                  assert all((root/f'{case}-{trial}'/checkpoint).read_bytes()==baseline
+                             for trial in ('B1','B2','A2')),(case,checkpoint,'FULL_JSON_MISMATCH')
+              for key in ('wall','cpu','allocMB'):
+                  a=statistics.mean(rows[t][key] for t in ('A1','A2'))
+                  b=statistics.mean(rows[t][key] for t in ('B1','B2'))
+                  print('PR57_DOCK_RADIUS_ABBA',case,key,'baseline',a,'optIn',b,
+                        'ratio_A_over_B',a/b if b>0 else 'UNDEFINED',
+                        'raw',[(t,rows[t][key]) for t in ('A1','B1','B2','A2')],
+                        'parity','EXACT_FULL_JSON_THREE_CHECKPOINTS',
+                        'limitation','NO_10K_PROOF')
+          PY
+      - name: Validate sparse occupied-cell bitset query with fresh-process ABBA
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$PWD/artifacts/residual-exclusive-206/sparse-bitset-abba"
+          mkdir -p "$root"
+          for case in worksREAL queueREAL; do
+            source="$PWD/artifacts/residual-exclusive-206/$case-plain/checkpoint-0.json"
+            test -s "$source"
+            for trial in A1 B1 B2 A2; do
+              enabled=0
+              if [[ "$trial" == B* ]]; then enabled=1; fi
+              output="$root/$case-$trial"
+              mkdir -p "$output"
+              echo "PR57_SPARSE_BITSET_RUN case=$case trial=$trial sparse=$enabled bitset=1"
+              PR57_BITSET_SCAN=1 PR57_SPARSE_GRID_QUERY="$enabled" \
+              PR57_GRID_DIAG=1 PR57_HOST_QUANTUM=1 \
+              PR57_AB_CHECKPOINT=1 PR57_206_MID_CHECKPOINT=1 \
+              PR57_SAVE_CAPTURE_DIR="$output" PR57_206_RESIDUAL_EXCLUSIVE=0 \
+              PR57_240_WALK_SPLIT=0 PR57_BOARDING_REUSE_LOOKUP=0 \
+                timeout 180s dotnet run --no-build -c Release \
+                --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                profile cycle --seed=42 --warmup=0 --days=1 \
+                --window=300 --cap=300 --resume="$source" | tee "$output.log"
+            done
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import re,statistics
+          root=Path('artifacts/residual-exclusive-206/sparse-bitset-abba')
+          for case in ('worksREAL','queueREAL'):
+              rows={}
+              for trial in ('A1','B1','B2','A2'):
+                  prefix=root/f'{case}-{trial}'
+                  log=(root/f'{case}-{trial}.log').read_text()
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,trial,'INVARIANTS')
+                  windows=[line for line in log.splitlines() if line.startswith('WINDOW ')]
+                  assert len(windows)==1,(case,trial,'WINDOW_COUNT')
+                  rows[trial]={}
+                  for key in ('wall','cpu','allocMB'):
+                      m=re.search(r'(?:^| )'+key+r'=([-0-9.]+)',windows[0])
+                      assert m,(case,trial,key)
+                      rows[trial][key]=float(m.group(1))
+                  for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                      assert (prefix/checkpoint).is_file(),(case,trial,checkpoint)
+              for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                  a=(root/f'{case}-A1'/checkpoint).read_bytes()
+                  assert all((root/f'{case}-{trial}'/checkpoint).read_bytes()==a
+                             for trial in ('B1','B2','A2')),(case,checkpoint,'FULL_JSON_MISMATCH')
+              for key in ('wall','cpu','allocMB'):
+                  a=statistics.mean(rows[t][key] for t in ('A1','A2'))
+                  b=statistics.mean(rows[t][key] for t in ('B1','B2'))
+                  print('PR57_SPARSE_BITSET_ABBA',case,key,'baseline',a,'optIn',b,
+                        'ratio_A_over_B',a/b if b>0 else 'UNDEFINED',
+                        'raw',[(t,rows[t][key]) for t in ('A1','B1','B2','A2')],
+                        'parity','EXACT_FULL_JSON_THREE_CHECKPOINTS',
+                        'limitation','NO_10K_PROOF;WORK_AVOIDED_NOT_YET_COUNTED')
+          PY
+      - name: Validate zero-site skip with fresh-process ABBA
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$PWD/artifacts/residual-exclusive-206/zero-site-skip-abba"
+          mkdir -p "$root"
+          for case in worksREAL queueREAL; do
+            source="$PWD/artifacts/residual-exclusive-206/$case-plain/checkpoint-0.json"
+            test -s "$source"
+            for trial in A1 B1 B2 A2; do
+              enabled=0
+              if [[ "$trial" == B* ]]; then enabled=1; fi
+              output="$root/$case-$trial"
+              mkdir -p "$output"
+              echo "PR57_ZERO_SITE_SKIP_RUN case=$case trial=$trial optIn=$enabled"
+              PR57_ZERO_SITE_SKIP="$enabled" PR57_ZERO_SITE_CENSUS=1 PR57_HOST_QUANTUM=1 \
+              PR57_AB_CHECKPOINT=1 PR57_206_MID_CHECKPOINT=1 \
+              PR57_SAVE_CAPTURE_DIR="$output" PR57_206_RESIDUAL_EXCLUSIVE=0 \
+              PR57_240_WALK_SPLIT=0 PR57_BOARDING_REUSE_LOOKUP=0 \
+                timeout 180s dotnet run --no-build -c Release \
+                --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                profile cycle --seed=42 --warmup=0 --days=1 \
+                --window=300 --cap=300 --resume="$source" | tee "$output.log"
+            done
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import re,statistics
+          root=Path('artifacts/residual-exclusive-206/zero-site-skip-abba')
+          for case in ('worksREAL','queueREAL'):
+              values={}
+              for trial in ('A1','B1','B2','A2'):
+                  prefix=root/f'{case}-{trial}'
+                  log=(root/f'{case}-{trial}.log').read_text()
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,trial)
+                  windows=[line for line in log.splitlines() if line.startswith('WINDOW ')]
+                  assert len(windows)==1,(case,trial)
+                  values[trial]={}
+                  for key in ('wall','cpu','allocMB'):
+                      match=re.search(r'(?:^| )'+key+r'=([-0-9.]+)',windows[0])
+                      assert match,(case,trial,key)
+                      values[trial][key]=float(match.group(1))
+                  assert 'PR57_ZERO_SITE_CENSUS calls=' in log,(case,trial,'CENSUS_MISSING')
+                  for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                      assert (prefix/checkpoint).is_file(),(case,trial,checkpoint)
+              for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                  baseline=(root/f'{case}-A1'/checkpoint).read_bytes()
+                  assert all((root/f'{case}-{trial}'/checkpoint).read_bytes()==baseline
+                             for trial in ('B1','B2','A2')),(case,checkpoint,'FULL_JSON_MISMATCH')
+              def mean(trials,key):return statistics.mean(values[t][key] for t in trials)
+              a,b=mean(('A1','A2'),'wall'),mean(('B1','B2'),'wall')
+              assert a>0 and b>0
+              print('PR57_ZERO_SITE_SKIP_ABBA',case,'baselineWall',a,'optWall',b,
+                    'ratio',a/b,'baselineCpu',mean(('A1','A2'),'cpu'),
+                    'optCpu',mean(('B1','B2'),'cpu'),
+                    'baselineAllocMB',mean(('A1','A2'),'allocMB'),
+                    'optAllocMB',mean(('B1','B2'),'allocMB'),
+                    'parity','EXACT_FULL_JSON_THREE_CHECKPOINTS',
+                    'limitation','SMALL_REAL_SAVES_NOT_10K')
+          PY
+      - name: Validate reuse order snapshot with fresh-process ABBA
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$PWD/artifacts/residual-exclusive-206/reuse-order-snapshot-abba"
+          mkdir -p "$root"
+          for case in worksREAL queueREAL; do
+            source="$PWD/artifacts/residual-exclusive-206/$case-plain/checkpoint-0.json"
+            test -s "$source"
+            for trial in A1 B1 B2 A2; do
+              enabled=0
+              if [[ "$trial" == B* ]]; then enabled=1; fi
+              output="$root/$case-$trial"
+              mkdir -p "$output"
+              echo "PR57_REUSE_ORDER_SNAPSHOT_RUN case=$case trial=$trial optIn=$enabled"
+              PR57_REUSE_ORDER_SNAPSHOT="$enabled" PR57_HOST_QUANTUM=1 \
+              PR57_AB_CHECKPOINT=1 PR57_206_MID_CHECKPOINT=1 \
+              PR57_SAVE_CAPTURE_DIR="$output" PR57_206_RESIDUAL_EXCLUSIVE=0 \
+              PR57_240_WALK_SPLIT=0 PR57_BOARDING_REUSE_LOOKUP=0 \
+                timeout 180s dotnet run --no-build -c Release \
+                --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                profile cycle --seed=42 --warmup=0 --days=1 \
+                --window=300 --cap=300 --resume="$source" | tee "$output.log"
+            done
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import re,statistics
+          root=Path('artifacts/residual-exclusive-206/reuse-order-snapshot-abba')
+          for case in ('worksREAL','queueREAL'):
+              values={}
+              for trial in ('A1','B1','B2','A2'):
+                  prefix=root/f'{case}-{trial}'
+                  log=(root/f'{case}-{trial}.log').read_text()
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,trial)
+                  windows=[line for line in log.splitlines() if line.startswith('WINDOW ')]
+                  assert len(windows)==1,(case,trial)
+                  values[trial]={}
+                  for key in ('wall','cpu','allocMB'):
+                      match=re.search(r'(?:^| )'+key+r'=([-0-9.]+)',windows[0])
+                      assert match,(case,trial,key)
+                      values[trial][key]=float(match.group(1))
+                  for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                      assert (prefix/checkpoint).is_file(),(case,trial,checkpoint)
+              for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                  baseline=(root/f'{case}-A1'/checkpoint).read_bytes()
+                  assert all((root/f'{case}-{trial}'/checkpoint).read_bytes()==baseline
+                             for trial in ('B1','B2','A2')),(case,checkpoint,'FULL_JSON_MISMATCH')
+              def mean(trials,key):return statistics.mean(values[t][key] for t in trials)
+              a,b=mean(('A1','A2'),'wall'),mean(('B1','B2'),'wall')
+              assert a>0 and b>0
+              print('PR57_REUSE_ORDER_SNAPSHOT_ABBA',case,'baselineWall',a,'optWall',b,
+                    'ratio',a/b,'baselineCpu',mean(('A1','A2'),'cpu'),
+                    'optCpu',mean(('B1','B2'),'cpu'),
+                    'baselineAllocMB',mean(('A1','A2'),'allocMB'),
+                    'optAllocMB',mean(('B1','B2'),'allocMB'),
+                    'parity','EXACT_FULL_JSON_THREE_CHECKPOINTS',
+                    'limitation','SMALL_REAL_SAVES_NOT_10K')
+          PY
+      - name: Validate direct vehicle order map with spatial index in fresh-process ABBA
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$PWD/artifacts/residual-exclusive-206/direct-order-map-abba"
+          mkdir -p "$root"
+          for case in worksREAL queueREAL; do
+            source="$PWD/artifacts/residual-exclusive-206/$case-plain/checkpoint-0.json"
+            test -s "$source"
+            for trial in A1 B1 B2 A2; do
+              enabled=0
+              if [[ "$trial" == B* ]]; then enabled=1; fi
+              output="$root/$case-$trial"
+              mkdir -p "$output"
+              echo "PR57_DIRECT_ORDER_MAP_RUN case=$case trial=$trial enabled=$enabled spatial=1"
+              PR57_SPATIAL_SCAN=1 PR57_DIRECT_ORDER_MAP="$enabled" PR57_CANONICAL_POLLUTION_ORDER=1 PR57_HOST_QUANTUM=1 \
+              PR57_AB_CHECKPOINT=1 PR57_206_MID_CHECKPOINT=1 \
+              PR57_SAVE_CAPTURE_DIR="$output" PR57_206_RESIDUAL_EXCLUSIVE=0 \
+              PR57_240_WALK_SPLIT=0 PR57_BOARDING_REUSE_LOOKUP=0 \
+                timeout 180s dotnet run --no-build -c Release \
+                --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                profile cycle --seed=42 --warmup=0 --days=1 \
+                --window=300 --cap=300 --resume="$source" | tee "$output.log"
+            done
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import re,statistics
+          root=Path('artifacts/residual-exclusive-206/direct-order-map-abba')
+          for case in ('worksREAL','queueREAL'):
+              values={}
+              for trial in ('A1','B1','B2','A2'):
+                  prefix=root/f'{case}-{trial}'
+                  log=(root/f'{case}-{trial}.log').read_text()
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,trial)
+                  windows=[line for line in log.splitlines() if line.startswith('WINDOW ')]
+                  assert len(windows)==1,(case,trial)
+                  values[trial]={}
+                  for key in ('wall','cpu','allocMB'):
+                      match=re.search(r'(?:^| )'+key+r'=([-0-9.]+)',windows[0])
+                      assert match,(case,trial,key)
+                      values[trial][key]=float(match.group(1))
+                  for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                      assert (prefix/checkpoint).is_file(),(case,trial,checkpoint)
+              for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                  baseline=(root/f'{case}-A1'/checkpoint).read_bytes()
+                  assert all((root/f'{case}-{trial}'/checkpoint).read_bytes()==baseline
+                             for trial in ('B1','B2','A2')),(case,checkpoint,'FULL_JSON_MISMATCH')
+              def mean(trials,key):return statistics.mean(values[t][key] for t in trials)
+              a,b=mean(('A1','A2'),'wall'),mean(('B1','B2'),'wall')
+              print('PR57_DIRECT_ORDER_MAP_ABBA',case,'baselineWall',a,'optWall',b,
+                    'ratio',a/b,'baselineCpu',mean(('A1','A2'),'cpu'),
+                    'optCpu',mean(('B1','B2'),'cpu'),
+                    'baselineAllocMB',mean(('A1','A2'),'allocMB'),
+                    'optAllocMB',mean(('B1','B2'),'allocMB'),
+                    'parity','EXACT_FULL_JSON_THREE_CHECKPOINTS',
+                    'limitation','SMALL_REAL_SAVES_NOT_10K')
+          PY
+      - name: Validate lazy shared node grid in fresh-process ABBA
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$PWD/artifacts/residual-exclusive-206/shared-node-grid-abba"
+          mkdir -p "$root"
+          for case in worksREAL queueREAL; do
+            source="$PWD/artifacts/residual-exclusive-206/$case-plain/checkpoint-0.json"
+            test -s "$source"
+            for trial in A1 B1 B2 A2; do
+              enabled=0
+              if [[ "$trial" == B* ]]; then enabled=1; fi
+              output="$root/$case-$trial"
+              mkdir -p "$output"
+              echo "PR57_SHARED_NODE_GRID_RUN case=$case trial=$trial enabled=$enabled"
+              PR57_SHARED_NODE_GRID="$enabled" PR57_GRID_DIAG=1 PR57_HOST_QUANTUM=1 \
+              PR57_AB_CHECKPOINT=1 PR57_206_MID_CHECKPOINT=1 \
+              PR57_SAVE_CAPTURE_DIR="$output" PR57_206_RESIDUAL_EXCLUSIVE=0 \
+              PR57_240_WALK_SPLIT=0 PR57_BOARDING_REUSE_LOOKUP=0 \
+                timeout 180s dotnet run --no-build -c Release \
+                --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                profile cycle --seed=42 --warmup=0 --days=1 \
+                --window=300 --cap=300 --resume="$source" | tee "$output.log"
+            done
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import re,statistics
+          root=Path('artifacts/residual-exclusive-206/shared-node-grid-abba')
+          for case in ('worksREAL','queueREAL'):
+              values={}
+              for trial in ('A1','B1','B2','A2'):
+                  prefix=root/f'{case}-{trial}'
+                  log=(root/f'{case}-{trial}.log').read_text()
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,trial)
+                  windows=[line for line in log.splitlines() if line.startswith('WINDOW ')]
+                  assert len(windows)==1,(case,trial)
+                  values[trial]={}
+                  for key in ('wall','cpu','allocMB'):
+                      match=re.search(r'(?:^| )'+key+r'=([-0-9.]+)',windows[0])
+                      assert match,(case,trial,key)
+                      values[trial][key]=float(match.group(1))
+                  if trial.startswith('B'):
+                      census=[line for line in log.splitlines() if line.startswith('PR57_SHARED_NODE_CENSUS ')]
+                      assert census,(case,trial,'MISSING_GRID_CENSUS')
+                      values[trial]['census']=census[-1]
+                  for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                      assert (prefix/checkpoint).is_file(),(case,trial,checkpoint)
+              for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                  baseline=(root/f'{case}-A1'/checkpoint).read_bytes()
+                  for trial in ('B1','B2','A2'):
+                      candidate=(root/f'{case}-{trial}'/checkpoint).read_bytes()
+                      if candidate != baseline:
+                          import json
+                          left=json.loads(baseline)
+                          right=json.loads(candidate)
+                          def first_difference(a,b,path='$'):
+                              if type(a) is not type(b):
+                                  return path,a,b
+                              if isinstance(a,dict):
+                                  for key in sorted(set(a)|set(b)):
+                                      if key not in a or key not in b:
+                                          return path+'.'+str(key),a.get(key,'<MISSING>'),b.get(key,'<MISSING>')
+                                      mismatch=first_difference(a[key],b[key],path+'.'+str(key))
+                                      if mismatch:return mismatch
+                              elif isinstance(a,list):
+                                  if len(a)!=len(b):return path+'.length',len(a),len(b)
+                                  for index,(x,y) in enumerate(zip(a,b)):
+                                      mismatch=first_difference(x,y,path+'['+str(index)+']')
+                                      if mismatch:return mismatch
+                              elif a!=b:return path,a,b
+                              return None
+                          mismatch=first_difference(left,right)
+                          print('PR57_SHARED_NODE_FIRST_JSON_DIFF',case,trial,checkpoint,repr(mismatch),flush=True)
+                          raise AssertionError((case,trial,checkpoint,'FULL_JSON_MISMATCH'))
+              def mean(trials,key):return statistics.mean(values[t][key] for t in trials)
+              a,b=mean(('A1','A2'),'wall'),mean(('B1','B2'),'wall')
+              print('PR57_SHARED_NODE_GRID_ABBA',case,'baselineWall',a,'optWall',b,
+                    'ratio',a/b,'baselineCpu',mean(('A1','A2'),'cpu'),
+                    'optCpu',mean(('B1','B2'),'cpu'),
+                    'baselineAllocMB',mean(('A1','A2'),'allocMB'),
+                    'optAllocMB',mean(('B1','B2'),'allocMB'),
+                    'parity','EXACT_FULL_JSON_THREE_CHECKPOINTS',
+                    'censusB1',values['B1']['census'],'censusB2',values['B2']['census'],
+                    'limitation','SMALL_REAL_SAVES_NOT_10K')
+          PY
+      - name: PR57 quiescent parked gate integrated ABBA and exact causal parity
+        # Isolated opt-in; full JSON parity precedes any wall claim.
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/residual-exclusive-206/quiescent-parked-abba
+          for case in worksREAL queueREAL; do
+            scenario=realA-control
+            if [[ "$case" == queueREAL ]]; then scenario=congested-control; fi
+            source="$(find artifacts/retained -type f -path "*/$scenario/checkpoint-0.json" -print -quit)"
+            test -s "$source"
+            for trial in A1 B1 B2 A2; do
+              enabled=0
+              if [[ "$trial" == B* ]]; then enabled=1; fi
+              dest="$PWD/artifacts/residual-exclusive-206/quiescent-parked-abba/$case-$trial"
+              mkdir -p "$dest"
+              echo "PR57_QUIESCENT_RUN case=$case trial=$trial enabled=$enabled"
+              PR57_QUIESCENT_PARKED_GATE="$enabled" PR57_HOST_QUANTUM=1 \
+              PR57_AB_CHECKPOINT=1 PR57_206_MID_CHECKPOINT=1 \
+              PR57_SAVE_CAPTURE_DIR="$dest" \
+                timeout 180s dotnet run --no-build -c Release \
+                --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                profile cycle --seed=42 --warmup=0 --days=1 \
+                --window=300 --cap=300 --resume="$source" > "$dest/run.log"
+            done
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, statistics
+          root=Path('artifacts/residual-exclusive-206/quiescent-parked-abba')
+          for case in ('worksREAL','queueREAL'):
+              rows={}
+              for trial in ('A1','B1','B2','A2'):
+                  folder=root/f'{case}-{trial}'
+                  log=(folder/'run.log').read_text()
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,trial,'invariants')
+                  windows=[line for line in log.splitlines() if line.startswith('WINDOW ')]
+                  assert len(windows)==1,(case,trial,'window')
+                  rows[trial]={}
+                  for key in ('wall','cpu','allocMB'):
+                      match=re.search(r'(?:^| )'+key+r'=([-0-9.]+)',windows[0])
+                      assert match,(case,trial,key)
+                      rows[trial][key]=float(match.group(1))
+                  for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                      assert (folder/checkpoint).is_file(),(case,trial,checkpoint)
+              for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                  baseline=(root/f'{case}-A1'/checkpoint).read_bytes()
+                  for trial in ('B1','B2','A2'):
+                      assert (root/f'{case}-{trial}'/checkpoint).read_bytes()==baseline,(case,trial,checkpoint,'FULL_JSON_MISMATCH')
+              def avg(trials,key):return statistics.mean(rows[t][key] for t in trials)
+              a=avg(('A1','A2'),'wall');b=avg(('B1','B2'),'wall')
+              print('PR57_QUIESCENT_ABBA',case,'baselineWall',a,'optWall',b,'ratio',a/b,
+                    'baselineCpu',avg(('A1','A2'),'cpu'),'optCpu',avg(('B1','B2'),'cpu'),
+                    'baselineAllocMB',avg(('A1','A2'),'allocMB'),
+                    'optAllocMB',avg(('B1','B2'),'allocMB'),
+                    'parity','EXACT_FULL_JSON_THREE_CHECKPOINTS',
+                    'limitation','NO_ELIGIBILITY_COUNTER_SMALL_REAL_SAVES_NOT_10K')
+          PY
+      - name: PR57 site body broadphase integrated ABBA and exact causal parity
+        # This gate uses snapshots restored before the independent sparse-bitset
+        # experiment; keep its causal verdict observable if that experiment fails.
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/residual-exclusive-206/site-body-abba
+          for case in worksREAL queueREAL; do
+            scenario=realA-control
+            if [[ "$case" == queueREAL ]]; then scenario=congested-control; fi
+            source="$(find artifacts/retained -type f -path "*/$scenario/checkpoint-0.json" -print -quit)"
+            test -s "$source"
+            for trial in A1 B1 B2 A2; do
+              enabled=0
+              if [[ "$trial" == B* ]]; then enabled=1; fi
+              dest="$PWD/artifacts/residual-exclusive-206/site-body-abba/$case-$trial"
+              mkdir -p "$dest"
+              echo "PR57_SITE_BODY_RUN case=$case trial=$trial enabled=$enabled"
+              PR57_SITE_BODY_BROADPHASE="$enabled" PR57_HOST_QUANTUM=1 \
+              PR57_AB_CHECKPOINT=1 PR57_206_MID_CHECKPOINT=1 \
+              PR57_SAVE_CAPTURE_DIR="$dest" \
+                timeout 180s dotnet run --no-build -c Release \
+                --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                profile cycle --seed=42 --warmup=0 --days=1 \
+                --window=300 --cap=300 --resume="$source" > "$dest/run.log"
+            done
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, statistics
+          root=Path('artifacts/residual-exclusive-206/site-body-abba')
+          for case in ('worksREAL','queueREAL'):
+              rows={}
+              for trial in ('A1','B1','B2','A2'):
+                  folder=root/f'{case}-{trial}'
+                  log=(folder/'run.log').read_text()
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,trial,'invariants')
+                  windows=[line for line in log.splitlines() if line.startswith('WINDOW ')]
+                  assert len(windows)==1,(case,trial,'window')
+                  rows[trial]={}
+                  for key in ('wall','cpu','allocMB'):
+                      match=re.search(r'(?:^| )'+key+r'=([-0-9.]+)',windows[0])
+                      assert match,(case,trial,key)
+                      rows[trial][key]=float(match.group(1))
+                  for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                      assert (folder/checkpoint).is_file(),(case,trial,checkpoint)
+              for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                  baseline=(root/f'{case}-A1'/checkpoint).read_bytes()
+                  for trial in ('B1','B2','A2'):
+                      assert (root/f'{case}-{trial}'/checkpoint).read_bytes()==baseline,(case,trial,checkpoint,'FULL_JSON_MISMATCH')
+              def avg(trials,key):return statistics.mean(rows[t][key] for t in trials)
+              a=avg(('A1','A2'),'wall');b=avg(('B1','B2'),'wall')
+              print('PR57_SITE_BODY_ABBA',case,'baselineWall',a,'optWall',b,'ratio',a/b,
+                    'baselineCpu',avg(('A1','A2'),'cpu'),'optCpu',avg(('B1','B2'),'cpu'),
+                    'baselineAllocMB',avg(('A1','A2'),'allocMB'),
+                    'optAllocMB',avg(('B1','B2'),'allocMB'),
+                    'parity','EXACT_FULL_JSON_THREE_CHECKPOINTS',
+                    'limitation','NO_WORK_AVOIDANCE_COUNTER_SMALL_REAL_SAVES_NOT_10K')
+          PY
+      - name: Census actual site-body work with broadphase off and on
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$PWD/artifacts/residual-exclusive-206/site-body-census"
+          mkdir -p "$root"
+          for case in worksREAL queueREAL; do
+            scenario=realA-control
+            if [[ "$case" == queueREAL ]]; then scenario=congested-control; fi
+            source="$(find artifacts/retained -type f -path "*/$scenario/checkpoint-0.json" -print -quit)"
+            test -s "$source"
+            for enabled in 0 1; do
+              dest="$root/$case-$enabled"
+              mkdir -p "$dest"
+              PR57_SITE_BODY_CENSUS=1 PR57_SITE_BODY_BROADPHASE="$enabled" PR57_HOST_QUANTUM=1 \
+              PR57_AB_CHECKPOINT=1 PR57_206_MID_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="$dest" \
+                timeout 180s dotnet run --no-build -c Release \
+                --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                profile cycle --seed=42 --warmup=0 --days=1 \
+                --window=300 --cap=300 --resume="$source" > "$dest/run.log"
+            done
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          root=Path('artifacts/residual-exclusive-206/site-body-census')
+          for case in ('worksREAL','queueREAL'):
+              rows={}
+              for enabled in ('0','1'):
+                  folder=root/f'{case}-{enabled}'
+                  log=(folder/'run.log').read_text()
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,enabled)
+                  census=[line for line in log.splitlines() if line.startswith('PR57_SITE_BODY_CENSUS ')]
+                  if census:
+                      line=census[-1]
+                      rows[enabled]={key:int(value) for key,value in re.findall(r'(queries|probes|inspected|all_candidates|selected_candidates|build_visits)=(\d+)',line)}
+                      assert len(rows[enabled])==6,(case,enabled,line)
+                  else:
+                      rows[enabled]=None  # No observed census; never infer zero work.
+                  for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                      assert (folder/checkpoint).is_file(),(case,enabled,checkpoint)
+              for checkpoint in ('checkpoint-0.json','checkpoint-mid.json','checkpoint-1.json'):
+                  left=(root/f'{case}-0'/checkpoint).read_bytes()
+                  right=(root/f'{case}-1'/checkpoint).read_bytes()
+                  if left!=right:
+                      import json, hashlib
+                      a=json.loads(left); b=json.loads(right)
+                      def first_difference(x,y,path='$'):
+                          if type(x)!=type(y): return path,repr(x)[:180],repr(y)[:180]
+                          if isinstance(x,dict):
+                              for k in sorted(set(x)|set(y)):
+                                  if k not in x or k not in y:
+                                      return path+'.'+str(k),repr(x.get(k,'MISSING'))[:180],repr(y.get(k,'MISSING'))[:180]
+                                  d=first_difference(x[k],y[k],path+'.'+str(k))
+                                  if d: return d
+                          elif isinstance(x,list):
+                              if len(x)!=len(y): return path+'.length',len(x),len(y)
+                              for n,(u,v) in enumerate(zip(x,y)):
+                                  d=first_difference(u,v,path+'['+str(n)+']')
+                                  if d: return d
+                          elif x!=y: return path,repr(x)[:180],repr(y)[:180]
+                          return None
+                      print('PR57_SITE_BODY_JSON_FIRST_DIFFERENCE',case,checkpoint,first_difference(a,b),
+                            'baselineSHA',hashlib.sha256(left).hexdigest(),
+                            'optSHA',hashlib.sha256(right).hexdigest(),flush=True)
+                      raise AssertionError((case,checkpoint,'FULL_JSON_MISMATCH'))
+              a,b=rows['0'],rows['1']
+              if a is None or b is None:
+                  print('PR57_SITE_BODY_CENSUS_UNAVAILABLE',case,'baseline',a,'optIn',b,
+                        'parity','EXACT_FULL_JSON_THREE_CHECKPOINTS',
+                        'reason','NO_CENSUS_EMITTED_NO_WORK_DECISION')
+                  continue
+              assert a['queries']==b['queries'] and a['probes']==b['probes'],(case,a,b)
+              print('PR57_SITE_BODY_CENSUS_DECISION',case,'baseline',a,'optIn',b,
+                    'visits_avoided',a['inspected']-b['inspected'],
+                    'build_visits',b['build_visits'],
+                    'parity','EXACT_FULL_JSON_THREE_CHECKPOINTS',
+                    'limitation','CENSUS_INSTRUMENTED_NOT_ABBA_NOT_10K')
+          PY
+      # PR57 integrated population validity probe. This executes the real Headless
+      # simulation; a failed minimum is evidence of an underpopulated fixture,
+      # never a performance result or a passing 100-living-Sim benchmark.
+      - name: Probe minimum 100 living Sims in integrated cycle
+        if: always()
+        shell: bash
+        run: |
+          set -uo pipefail
+          mkdir -p artifacts/residual-exclusive-206
+          set +e
+          timeout 180s dotnet run --project src/IndexCities.Headless/IndexCities.Headless.csproj \
+            -c Release --no-build -- scale cycle --warmup=0 --days=1 --window=20 --min-alive=100 \
+            > artifacts/residual-exclusive-206/min-alive-100-cycle.log 2>&1
+          code=$?
+          set -e
+          cat artifacts/residual-exclusive-206/min-alive-100-cycle.log
+          echo "PR57_MIN_ALIVE_100_CYCLE exit_code=$code (0=valid first 20s window; nonzero=invalid/timeout; no speedup claim)"
+          # A failed representativeness probe must not suppress independent causal tests.
+          exit 0
+      - name: Preserve full checkpoints and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-residual-exclusive-206
+          path: artifacts/residual-exclusive-206/**
+          retention-days: 14
+
+      # Independent from PR comments: a status on the exact SHA is discoverable
+      # by GitHub get_commit_combined_status and survives bot comment failures.
+      - name: Publish final status on tested commit
+        if: always()
+        continue-on-error: true
+        uses: actions/github-script@v7
+        env:
+          PR57_TEST_JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const status = process.env.PR57_TEST_JOB_STATUS;
+            await github.rest.repos.createCommitStatus({
+              owner, repo, sha: context.sha,
+              state: status === 'success' ? 'success' : status === 'cancelled' ? 'error' : 'failure',
+              context: 'pr57/residual-exclusive-206',
+              target_url: `https://github.com/${owner}/${repo}/actions/runs/${context.runId}`,
+              description: `PR57 #206: ${status}; inspect full JSON parity and cost logs`
+            });

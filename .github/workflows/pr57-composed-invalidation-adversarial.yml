@@ -1,0 +1,61 @@
+name: PR57 composed invalidation adversarial
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-composed-invalidation-adversarial.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  composed-adversarial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compile and run joint mutation adversarial in fresh off/on processes
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release
+          for mode in off on; do
+            flag=0
+            if [[ "$mode" == on ]]; then flag=1; fi
+            mkdir -p "artifacts/composed-invalidation/$mode"
+            PR57_COMPOSED_ADVERSARIAL_DIR="$PWD/artifacts/composed-invalidation/$mode" \
+            PR57_SITE_OWNER_ROSTER="$flag" PR57_BUILDING_WORK_ACCESS="$flag" \
+              dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
+              -c Release --no-build \
+              --filter FullyQualifiedName~Pr57ComposedInvalidationAdversarial --verbosity normal
+          done
+      - name: Compare intermediate real economic checkpoints byte-for-byte
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in before after-demolition after-paid-rebuild-command; do
+            cmp "artifacts/composed-invalidation/off/$name.json" \
+                "artifacts/composed-invalidation/on/$name.json"
+            echo "PR57_COMPOSED_INVALIDATION checkpoint=$name identical=True"
+          done
+          echo "PR57_COMPOSED_INVALIDATION checkpoints=3 identical=True cadence=Advance2"
+      - name: Run full test suites in independent baseline and composed processes
+        shell: bash
+        run: |
+          set -euo pipefail
+          for flag in 0 1; do
+            PR57_SITE_OWNER_ROSTER="$flag" PR57_BUILDING_WORK_ACCESS="$flag" \
+              dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
+              -c Release --no-build --verbosity quiet
+          done
+      - name: Preserve complete checkpoints
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-composed-invalidation
+          path: artifacts/composed-invalidation/**
+          retention-days: 14

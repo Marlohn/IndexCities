@@ -1,0 +1,126 @@
+name: 'PR57 #298 per-Advance physical queue cost and GC census'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths:
+      - .github/workflows/pr57-physical-step-class-298.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  physical-step:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build observational harness and run simulation tests
+        run: |
+          set -euo pipefail
+          dotnet build scripts/pr57-economy-review-294/Pr57EconomyReview294.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic #259 REAL and artificial GRID saves
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Fresh-process ABBA with unchanged Advance(2) and exact checkpoints
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/step-class-298
+          for case in gridARTIFICIAL real14hREAL; do
+            input="artifacts/input/${case}-control/checkpoint-0.json"
+            test -s "$input"
+            calls=100
+            if [[ "$case" == gridARTIFICIAL ]]; then calls=50; fi
+            for arm in control1 probe1 probe2 control2; do
+              mode=control
+              if [[ "$arm" == probe* ]]; then mode=probe; fi
+              output="artifacts/step-class-298/${case}-${arm}"
+              mkdir -p "$output"
+              if [[ "$mode" == probe ]]; then
+                PR57_VEHICLE_COST_PROBE=1 PR57_298_STEP_CLASS=1 dotnet run --no-build -c Release \
+                  --project scripts/pr57-economy-review-294/Pr57EconomyReview294.csproj -- \
+                  "$input" "$case" "$mode" "$calls" "$output" \
+                  > "artifacts/step-class-298/${case}-${arm}.log" 2>&1
+              else
+                dotnet run --no-build -c Release \
+                  --project scripts/pr57-economy-review-294/Pr57EconomyReview294.csproj -- \
+                  "$input" "$case" "$mode" "$calls" "$output" \
+                  > "artifacts/step-class-298/${case}-${arm}.log" 2>&1
+              fi
+            done
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json,re,statistics
+          root=Path('artifacts/step-class-298')
+          parity=0
+          for case,calls in [('gridARTIFICIAL',50),('real14hREAL',100)]:
+              logs={}
+              for arm in ('control1','probe1','probe2','control2'):
+                  log=(root/f'{case}-{arm}.log').read_text()
+                  logs[arm]=log
+                  assert log.count('PR57_294_FINAL ')==1,(case,arm,'final')
+                  assert log.count('PR57_294_CHECKPOINT ')==4,(case,arm,'checkpoints')
+                  if arm.startswith('probe'):
+                      assert log.count('PR57_298_STEP ')==calls,(case,arm,'step')
+                      assert log.count('PR57_298_CLASS ')==calls*8,(case,arm,'class')
+                      assert log.count('PR57_294_STEP ')==calls,(case,arm,'phases')
+                  else:
+                      assert 'PR57_298_CLASS ' not in log,(case,arm,'control contaminated')
+              for control,probe in [('control1','probe1'),('control2','probe2')]:
+                  for at in sorted({0,20,calls//2,calls}):
+                      a=(root/f'{case}-{control}'/f'checkpoint-{at}.json').read_bytes()
+                      b=(root/f'{case}-{probe}'/f'checkpoint-{at}.json').read_bytes()
+                      assert a==b,(case,control,probe,at,'FULL_JSON_MISMATCH')
+                      json.loads(a)
+                      parity+=1
+                      print('PR57_298_PARITY',case,control,probe,at,hashlib.sha256(a).hexdigest(),flush=True)
+              for probe in ('probe1','probe2'):
+                  groups={}
+                  for line in logs[probe].splitlines():
+                      if not line.startswith('PR57_298_CLASS '): continue
+                      v=dict(re.findall(r'(\w+)=([^\s]+)',line))
+                      key=int(v['call'])
+                      groups.setdefault(key,[]).append(v)
+                  assert sorted(groups)==list(range(1,calls+1))
+                  queue=[]
+                  for call,items in groups.items():
+                      assert sorted(int(v['group']) for v in items)==list(range(8))
+                      assert len({int(v['slices']) for v in items})==1
+                      assert int(items[0]['slices'])>0
+                      queue.append(next(v for v in items if int(v['group'])==3))
+                  print('PR57_298_CENSUS',case,probe,'calls='+str(calls),
+                        'queueEvaluations='+str(sum(int(v['evaluations']) for v in queue)),
+                        'queueTicks='+str(sum(int(v['ticks']) for v in queue)),
+                        'queueBytes='+str(sum(int(v['bytes']) for v in queue)),
+                        'fullJsonParity=True','allAdvance2=True','noPhysicsSkip=True',flush=True)
+          assert parity==16
+          print('PR57_298_VERIFIED processes=8 checkpointPairs=16 classification=finalCauseStatus',flush=True)
+          PY
+      - name: Preserve raw logs and checkpoints even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-step-class-298
+          path: artifacts/step-class-298/**
+          retention-days: 14

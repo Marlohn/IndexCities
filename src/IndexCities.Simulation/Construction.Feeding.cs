@@ -2,6 +2,9 @@ namespace IndexCities.Simulation;
 
 public sealed partial class CitySimulation
 {
+    // PR57-only A/B: zero distance has no swept path. Do not build machine/site
+    // reservations when no displacement can occur; off by default.
+    static readonly bool Pr57ZeroSiteSkip=Environment.GetEnvironmentVariable("PR57_ZERO_SITE_SKIP")=="1";
     (RoadNode Road,Point Position) PavingBay(RoadNode access,PavingMachine kind,WorkProject? work=null)
     {
         var route=FindRoadRoute(EntryNode().Id,access.Id,true);
@@ -122,36 +125,156 @@ public sealed partial class CitySimulation
         return vehicle.SitePathIndex>=vehicle.SitePath.Count;
     }
 
+    // Compatibility hook for the movement-slice caller. The rejected owner
+    // roster no longer builds or retains a filtered list.
+    void Pr57PrepareSiteOwnerRoster() { }
+
+    // PR57 #161: reuse capacity only. The buffer is cleared for every physical
+    // query and after its result is consumed; no reservation decision survives
+    // an Advance(2), slice, vehicle mutation, or even the next query.
+    static readonly bool Pr57SafeSiteBufferEnabled =
+        Environment.GetEnvironmentVariable("PR57_SAFE_SITE_BUFFER")=="1";
+    readonly List<(Vehicle Machine,Point Position,double Heading)> _pr57SafeSiteReservationScratch=[];
+    bool _pr57SafeSiteBufferAnnounced;
+    List<(Vehicle Machine,Point Position,double Heading)> Pr57CollectSiteReservations(
+        Vehicle vehicle,List<Vehicle> siteOwners,double distance,bool machinesOnly)
+    {
+        var reserved=_pr57SafeSiteReservationScratch;
+        reserved.Clear();
+        var reach=distance+12;
+        if(vehicle.Machine==PavingMachine.None)
+            foreach(var machine in siteOwners)
+            {
+                if(machine.Id==vehicle.Id||machine.Machine==PavingMachine.None)continue;
+                foreach(var pose in MachineReservation(machine))
+                    if(pose.Position.Distance(vehicle.Position)<=reach)reserved.Add(pose);
+            }
+        if(machinesOnly)
+        {
+            foreach(var truck in siteOwners)
+            {
+                if(truck.Id==vehicle.Id||!OnSitePath(truck)||truck.Position.Distance(vehicle.Position)>distance+40)continue;
+                foreach(var pose in SiteTruckReservation(truck))
+                    if(pose.Position.Distance(vehicle.Position)<=reach)reserved.Add(pose);
+            }
+            foreach(var other in siteOwners)
+            {
+                if(other.Id==vehicle.Id||other.ManoeuvreDock==null||OnSitePath(other)||
+                   other.Position.Distance(vehicle.Position)>distance+40)continue;
+                foreach(var pose in AdmittedManoeuvre(other))
+                    if(pose.Position.Distance(vehicle.Position)<=reach)reserved.Add(pose);
+            }
+            foreach(var truck in siteOwners)
+            {
+                if(truck.Id==vehicle.Id||!(OnAsphaltApproach(truck)||UnloadingAsphaltBody(truck))||
+                   truck.Position.Distance(vehicle.Position)>reach||
+                   (truck.Position.Distance(State.Entry)<8&&vehicle.Position.Distance(State.Entry)<8))continue;
+                reserved.Add((truck,truck.Position,truck.Heading));
+            }
+        }
+        return reserved;
+    }
+
+    // Diagnostic-only census for the zero-distance hypothesis. No result or
+    // reservation is cached; normal collision and observation paths stay intact.
+    static readonly bool Pr57ZeroSiteCensus=Environment.GetEnvironmentVariable("PR57_ZERO_SITE_CENSUS")=="1";
+    long _pr57ZeroSiteCalls,_pr57ZeroSiteHits,_pr57ZeroSiteReservationUpperBound;
+    void Pr57ObserveZeroSiteCensus(double distance)
+    {
+        if(!Pr57ZeroSiteCensus)return;
+        _pr57ZeroSiteCalls++;
+        if(distance==0)
+        {
+            _pr57ZeroSiteHits++;
+            // Upper bound on scanned vehicle entries, not a claim of time saved.
+            _pr57ZeroSiteReservationUpperBound+=State.Vehicles.Count;
+        }
+        if(_pr57ZeroSiteCalls==1||_pr57ZeroSiteCalls%1000==0)
+            Console.WriteLine($"PR57_ZERO_SITE_CENSUS calls={_pr57ZeroSiteCalls} zero={_pr57ZeroSiteHits} vehicle_scan_upper_bound={_pr57ZeroSiteReservationUpperBound}");
+    }
+
+    // Opt-in only: avoid re-enumerating all vehicles at each 0.5m physical probe.
+    static readonly bool Pr57SiteBodyBroadphaseEnabled =
+        Environment.GetEnvironmentVariable("PR57_SITE_BODY_BROADPHASE")=="1";
+
+    // PR57 observational census: counts actual narrow-phase candidate visits,
+    // mandatory half-metre probes and broadphase construction work. Opt-in only.
+    static readonly bool Pr57SiteBodyCensusEnabled =
+        Environment.GetEnvironmentVariable("PR57_SITE_BODY_CENSUS")=="1";
+    long _pr57SiteBodyQueries,_pr57SiteBodyProbes,_pr57SiteBodyVisits;
+    long _pr57SiteBodyAvailable,_pr57SiteBodySelected,_pr57SiteBodyBuildVisits;
+    void Pr57ReportSiteBodyCensus()
+    {
+        if(!Pr57SiteBodyCensusEnabled)return;
+        if(_pr57SiteBodyQueries<=5||_pr57SiteBodyQueries%100==0)
+            Console.WriteLine($"PR57_SITE_BODY_CENSUS queries={_pr57SiteBodyQueries} probes={_pr57SiteBodyProbes} inspected={_pr57SiteBodyVisits} all_candidates={_pr57SiteBodyAvailable} selected_candidates={_pr57SiteBodySelected} build_visits={_pr57SiteBodyBuildVisits} broadphase={Pr57SiteBodyBroadphaseEnabled}");
+    }
+
     double SafeSiteTravel(Vehicle vehicle,Point target,double distance,bool machinesOnly=false)
     {
+        Pr57ObserveZeroSiteCensus(distance);
+        if(Pr57SiteBodyCensusEnabled)_pr57SiteBodyQueries++;
+        if(Pr57ZeroSiteSkip&&distance==0){Pr57S5SiteObserve(vehicle,distance,0,machinesOnly,0,0);return 0;}
+        // Canonical full scan: public Vehicle fields can change in-place
+        // without a collection-version change, including within a slice.
+        var siteOwners=State.Vehicles;
         // A moving machine holds its whole remaining path, not only its body:
         // a vehicle stopped anywhere on it (behind a turn, across an oncoming
         // lane) would wait for the machine while the machine waits for it.
         // The hold stops at the first body already on the path: space behind a
         // blocked machine is not held, and whoever stands on the path may leave.
         // Only a paving machine has reserved poses (MachineReservation is empty otherwise).
-        var reserved=vehicle.Machine!=PavingMachine.None?[]:State.Vehicles.Where(m=>m.Id!=vehicle.Id&&m.Machine!=PavingMachine.None).Select(MachineReservation)
-            .SelectMany(poses=>poses).Where(pose=>pose.Position.Distance(vehicle.Position)<=distance+12).ToList();
-        // Lane traffic also respects an asphalt truck on its site path (see
-        // Construction.ApproachYield).
-        if(machinesOnly)reserved.AddRange(State.Vehicles.Where(t=>t.Id!=vehicle.Id&&OnSitePath(t)&&t.Position.Distance(vehicle.Position)<=distance+40)
-            .SelectMany(SiteTruckReservation).Where(pose=>pose.Position.Distance(vehicle.Position)<=distance+12));
-        // And an admitted way into or out of a bay (Mobility.SharedSpace).
-        if(machinesOnly)reserved.AddRange(State.Vehicles.Where(t=>t.Id!=vehicle.Id&&t.ManoeuvreDock!=null&&!OnSitePath(t)&&t.Position.Distance(vehicle.Position)<=distance+40)
-            .SelectMany(AdmittedManoeuvre).Where(pose=>pose.Position.Distance(vehicle.Position)<=distance+12));
-        // An asphalt truck on its site path or unloading at the paver bay keeps
-        // its present body there (see Construction.ApproachYield). Trucks still
-        // stacked together at the exterior staging origin have not entered yet.
-        if(machinesOnly)reserved.AddRange(State.Vehicles.Where(t=>t.Id!=vehicle.Id&&(OnAsphaltApproach(t)||UnloadingAsphaltBody(t))&&t.Position.Distance(vehicle.Position)<=distance+12&&
-                !(t.Position.Distance(State.Entry)<8&&vehicle.Position.Distance(State.Entry)<8))
-            .Select(t=>(t,t.Position,t.Heading)));
-        if(machinesOnly&&reserved.Count==0&&!State.Vehicles.Any(other=>other.Machine!=PavingMachine.None&&other.Status!=VehicleStatus.Outside&&other.Position.Distance(vehicle.Position)<=distance+12))return distance;
+        List<(Vehicle Machine,Point Position,double Heading)> reserved;
+        if(Pr57SafeSiteBufferEnabled)
+        {
+            reserved=Pr57CollectSiteReservations(vehicle,siteOwners,distance,machinesOnly);
+            if(!_pr57SafeSiteBufferAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+            {
+                Console.WriteLine("PR57_SAFE_SITE_BUFFER used=True");
+                _pr57SafeSiteBufferAnnounced=true;
+            }
+        }
+        else
+        {
+            reserved=vehicle.Machine!=PavingMachine.None?[]:siteOwners.Where(m=>m.Id!=vehicle.Id&&m.Machine!=PavingMachine.None).Select(MachineReservation)
+                .SelectMany(poses=>poses).Where(pose=>pose.Position.Distance(vehicle.Position)<=distance+12).ToList();
+            // Lane traffic also respects an asphalt truck on its site path (see
+            // Construction.ApproachYield).
+            if(machinesOnly)reserved.AddRange(siteOwners.Where(t=>t.Id!=vehicle.Id&&OnSitePath(t)&&t.Position.Distance(vehicle.Position)<=distance+40)
+                .SelectMany(SiteTruckReservation).Where(pose=>pose.Position.Distance(vehicle.Position)<=distance+12));
+            // And an admitted way into or out of a bay (Mobility.SharedSpace).
+            if(machinesOnly)reserved.AddRange(siteOwners.Where(t=>t.Id!=vehicle.Id&&t.ManoeuvreDock!=null&&!OnSitePath(t)&&t.Position.Distance(vehicle.Position)<=distance+40)
+                .SelectMany(AdmittedManoeuvre).Where(pose=>pose.Position.Distance(vehicle.Position)<=distance+12));
+            // An asphalt truck on its site path or unloading at the paver bay keeps
+            // its present body there (see Construction.ApproachYield). Trucks still
+            // stacked together at the exterior staging origin have not entered yet.
+            if(machinesOnly)reserved.AddRange(siteOwners.Where(t=>t.Id!=vehicle.Id&&(OnAsphaltApproach(t)||UnloadingAsphaltBody(t))&&t.Position.Distance(vehicle.Position)<=distance+12&&
+                    !(t.Position.Distance(State.Entry)<8&&vehicle.Position.Distance(State.Entry)<8))
+                .Select(t=>(t,t.Position,t.Heading)));
+        }
+        if(machinesOnly&&reserved.Count==0&&!siteOwners.Any(other=>other.Machine!=PavingMachine.None&&other.Status!=VehicleStatus.Outside&&other.Position.Distance(vehicle.Position)<=distance+12)){Pr57S5SiteObserve(vehicle,distance,distance,machinesOnly,reserved.Count,siteOwners.Count);return distance;}
+        // PR57 isolated experiment: a single conservative broad phase for the
+        // repeated half-metre body tests. Positions do not mutate inside this
+        // query; preserve original enumeration order and exact narrow predicates.
+        // The extra metre covers roundoff at the strict 12m narrow-phase edge.
+        if(Pr57SiteBodyCensusEnabled)
+        {
+            _pr57SiteBodyAvailable+=siteOwners.Count;
+            if(Pr57SiteBodyBroadphaseEnabled&&distance>0)_pr57SiteBodyBuildVisits+=siteOwners.Count;
+        }
+        var bodyCandidates=Pr57SiteBodyBroadphaseEnabled&&distance>0
+            ?siteOwners.Where(other=>other.Position.Distance(vehicle.Position)<=distance+13).ToList()
+            :siteOwners;
+        if(Pr57SiteBodyCensusEnabled)_pr57SiteBodySelected+=bodyCandidates.Count;
         var safe=0.0;
-        while(safe<distance-.000001){var next=Math.Min(distance,safe+.5);var at=vehicle.Position.MoveTowards(target,next);
-            if(State.Vehicles.Any(other=>other.Id!=vehicle.Id&&other.Status!=VehicleStatus.Outside&&(!machinesOnly||other.Machine!=PavingMachine.None&&(other.Status==VehicleStatus.Parked||!(other.Position.Distance(State.Entry)<8&&vehicle.Position.Distance(State.Entry)<8)))&&other.Position.Distance(at)<12&&VehicleBodiesOverlap(vehicle,at,other)))break;
+        while(safe<distance-.000001){if(Pr57SiteBodyCensusEnabled)_pr57SiteBodyProbes++;var next=Math.Min(distance,safe+.5);var at=vehicle.Position.MoveTowards(target,next);
+            if(bodyCandidates.Any(other=>{if(Pr57SiteBodyCensusEnabled)_pr57SiteBodyVisits++;return other.Id!=vehicle.Id&&other.Status!=VehicleStatus.Outside&&(!machinesOnly||other.Machine!=PavingMachine.None&&(other.Status==VehicleStatus.Parked||!(other.Position.Distance(State.Entry)<8&&vehicle.Position.Distance(State.Entry)<8)))&&other.Position.Distance(at)<12&&VehicleBodiesOverlap(vehicle,at,other);}))break;
             if(reserved.Any(pose=>pose.Position.Distance(at)<12&&BodiesOverlap(vehicle,at,vehicle.Heading,pose.Machine,pose.Position,pose.Heading)))break;
             safe=next;
         }
+        Pr57S5SiteObserve(vehicle,distance,safe,machinesOnly,reserved.Count,siteOwners.Count);
+        Pr57ReportSiteBodyCensus();
+        if(Pr57SafeSiteBufferEnabled)_pr57SafeSiteReservationScratch.Clear();
         return safe;
     }
 
@@ -174,6 +297,8 @@ public sealed partial class CitySimulation
 
     static bool BodiesOverlap(Vehicle a,Point aAt,double aHeading,Vehicle b,Point bAt,double bHeading,double margin=.1)
     {
+        // #208 observational only: the original SAT computation below is untouched.
+        if (Pr57BodySatCensusEnabled && _pr57BodySatScope) _pr57BodySatCalls++;
         static double Dot(Point x,Point y)=>x.X*y.X+x.Z*y.Z;
         var af=new Point(Math.Sin(aHeading),Math.Cos(aHeading));var ar=new Point(af.Z,-af.X);
         var bf=new Point(Math.Sin(bHeading),Math.Cos(bHeading));var br=new Point(bf.Z,-bf.X);var delta=bAt-aAt;

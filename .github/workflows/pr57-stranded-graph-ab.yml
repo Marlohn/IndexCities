@@ -1,0 +1,133 @@
+name: PR57 exact stranded leader graph ABBA at host cadence
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-stranded-graph-ab.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  stranded-graph:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compile and test with stranded graph off and on
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          for flag in 0 1; do
+            PR57_STRANDED_GRAPH="$flag" PR57_SITE_OWNER_ROSTER=1 PR57_BUILDING_WORK_ACCESS=1 \
+              dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+          done
+      - name: Restore authentic construction city
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-growth
+          run-id: 40250545171
+          github-token: ${{ github.token }}
+          path: artifacts/works
+      - name: Restore authentic congested city
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-legal-workplaces-8d
+          run-id: 40169101306
+          github-token: ${{ github.token }}
+          path: artifacts/real
+      - name: Restore artificial grid envelope
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-host-scale-curve
+          run-id: 40258405557
+          github-token: ${{ github.token }}
+          path: artifacts/grid
+      - name: ABBA in independent processes with every quantum Advance(2)
+        shell: bash
+        run: |
+          set -euo pipefail
+          works="$(find artifacts/works -type f -path '*/growth/checkpoint-0.json' -print -quit)"
+          real="$(find artifacts/real -type f -path '*/pr57-jobs-20/checkpoint-11.json' -print -quit)"
+          grid="artifacts/grid/grid18-0/checkpoint-1.json"
+          for f in "$works" "$real" "$grid"; do test -s "$f"; sha256sum "$f"; done
+          mkdir -p artifacts/stranded-graph
+          for case in works4h real121 grid18 cycle; do
+            if [[ "$case" == works4h ]]; then
+              args=(scale cycle --seed=42 --warmup=0 --days=4 --window=3600 --cap=300 --resume="$works")
+            elif [[ "$case" == real121 ]]; then
+              args=(scale cycle --seed=42 --warmup=0 --days=2 --window=1800 --cap=300 --resume="$real")
+            elif [[ "$case" == grid18 ]]; then
+              args=(scale grid --seed=42 --warmup=0 --days=3 --window=100 --cap=300 --resume="$grid")
+            else
+              args=(scale cycle --seed=42 --warmup=0 --days=2 --window=900 --cap=300)
+            fi
+            i=0
+            for mode in control candidate candidate control; do
+              enabled=0
+              if [[ "$mode" == candidate ]]; then enabled=1; fi
+              out="artifacts/stranded-graph/$case-$i"
+              mkdir -p "$out"
+              echo "PR57_STRANDED_GRAPH_AB case=$case mode=$mode index=$i flag=$enabled cadence=Advance2"
+              PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_GRID_DIAG=1 \
+              PR57_STRANDED_GRAPH="$enabled" PR57_SHARED_NODE_GRID=0 PR57_SITE_OWNER_ROSTER=1 PR57_BUILDING_WORK_ACCESS=1 \
+              PR57_DYNAMIC_BVH=0 PR57_PARALLEL_NEEDS=0 PR57_STAFF_PHASE_FUSION=0 \
+              PR57_UTILITY_REPLAY=0 PR57_POLLUTION_SIMD=0 PR57_PARALLEL_POLLUTION=0 \
+              PR57_CONSTRUCTION_WAIT_AGENDA=0 PR57_DISPATCH_SHIPMENT_LOOKUP=0 \
+              PR57_ROUTE_TREE=0 PR57_ORDER_SHIPMENT_INDEX=0 PR57_MAINTENANCE_SCHEDULE=0 \
+              PR57_SOURCE_DISTANCE_CACHE=0 PR57_WORK_ACCESS_INDEX=0 PR57_PEDESTRIAN_GRID=0 \
+              PR57_LIVING_ROSTER=0 PR57_CITIZEN_AGENDA=0 PR57_ENTRY_SWEEP_FILTER=0 \
+              PR57_SAVE_CAPTURE_DIR="$PWD/$out" \
+                timeout 180s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- "${args[@]}" | tee "$out.log"
+              i=$((i+1))
+            done
+          done
+      - name: Verify exact checkpoints, flags, invariants and report A/B wall CPU allocation
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import pathlib,re
+          root=pathlib.Path('artifacts/stranded-graph')
+          exercised=[]
+          for case,seconds,windows in (('works4h',14400,4),('real121',3600,2),('grid18',300,3),('cycle',1800,2)):
+              results=[]
+              for i in range(4):
+                  log=(root/f'{case}-{i}.log').read_text()
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,i,'invariants/save')
+                  if i in (1,2) and 'PR57_STRANDED_GRAPH used=True' in log: exercised.append((case,i))
+                  rows=[s for s in log.splitlines() if s.startswith('WINDOW ')]
+                  assert len(rows)==windows,(case,i,'window count',len(rows))
+                  def val(row,key):
+                      m=re.search(r'\b'+re.escape(key)+r'=([0-9.]+)',row)
+                      assert m,(case,i,key,row)
+                      return float(m.group(1))
+                  stats={k:sum(val(row,k) for row in rows) for k in ('wall','cpu','allocMB')}
+                  stats.update({k:val(rows[-1],k) for k in ('pop','alive','openWorks')})
+                  results.append(stats)
+                  for n in range(windows+1):
+                      a=root/f'{case}-{i}'/f'checkpoint-{n}.json'
+                      b=root/f'{case}-0'/f'checkpoint-{n}.json'
+                      assert a.is_file() and a.read_bytes()==b.read_bytes(),(case,i,n,'causal divergence')
+              gain=lambda a,b,k:round(100*(results[a][k]-results[b][k])/results[a][k],2)
+              print('PR57_STRANDED_GRAPH_RESULT',case,'seconds',seconds,'data',results,
+                    'wallGainAB',[gain(0,1,'wall'),gain(3,2,'wall')],
+                    'cpuGainAB',[gain(0,1,'cpu'),gain(3,2,'cpu')],
+                    'allocGainAB',[gain(0,1,'allocMB'),gain(3,2,'allocMB')],
+                    'candidateThroughput',[round(seconds/results[i]['wall'],2) for i in (1,2)],
+                    'checkpoints',windows+1,'identical',True)
+          assert exercised,('opt-in path never exercised',exercised)
+          print('PR57_STRANDED_GRAPH_EXERCISED',exercised)
+          PY
+      - name: Preserve independent logs and complete checkpoints
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-stranded-graph-ab
+          path: artifacts/stranded-graph/**
+          retention-days: 14

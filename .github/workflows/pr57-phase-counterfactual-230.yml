@@ -1,0 +1,147 @@
+name: 'PR57 #230 read-only full s3 candidate gate counterfactual'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-phase-counterfactual-230.yml, src/IndexCities.Simulation/Mobility.PhaseCounterfactual.Pr57.cs]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  s3-flip-impact:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build Release and complete regression
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic works checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-growth
+          run-id: 40250545171
+          github-token: ${{ github.token }}
+          path: artifacts/works
+      - name: Restore authentic congested checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-legal-workplaces-8d
+          run-id: 40169101306
+          github-token: ${{ github.token }}
+          path: artifacts/queue
+      - name: Restore explicitly ARTIFICIAL GRID checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-host-scale-curve
+          run-id: 40258405557
+          github-token: ${{ github.token }}
+          path: artifacts/grid
+      - name: Full-state control versus intrusive observer at every Advance(2)
+        shell: bash
+        run: |
+          set -euo pipefail
+          works="$(find artifacts/works -type f -path '*/growth/checkpoint-0.json' -print -quit)"
+          queue="$(find artifacts/queue -type f -path '*/pr57-jobs-20/checkpoint-10.json' -print -quit)"
+          grid="artifacts/grid/grid18-0/checkpoint-1.json"
+          for source in "$works" "$queue" "$grid"; do test -s "$source"; sha256sum "$source"; done
+          mkdir -p artifacts/phase-counterfactual-230
+          for case in worksREAL queueREAL gridARTIFICIAL; do
+            source="$works"; fixture=cycle; horizon=300
+            if [[ "$case" == queueREAL ]]; then source="$queue"; fi
+            if [[ "$case" == gridARTIFICIAL ]]; then source="$grid"; fixture=grid; horizon=100; fi
+            for slot in A B; do
+              observed=0
+              if [[ "$slot" == B ]]; then observed=1; fi
+              output="$PWD/artifacts/phase-counterfactual-230/$case-$slot"
+              mkdir -p "$output"
+              echo "PR57_230_RUN case=$case slot=$slot observed=$observed horizon=$horizon cadence=ADVANCE_2"
+              PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_GRID_DIAG=1 \
+              PR57_SAVE_CAPTURE_DIR="$output" PR57_228_PHASE_EXPOSURE="$observed" PR57_229_PHASE_FLIP_IMPACT="$observed" PR57_230_S3_COUNTERFACTUAL="$observed" PR57_226_S6_GATE_SHADOW=0 \
+              PR57_206_RESIDUAL_EXCLUSIVE="$observed" PR57_218_EXEC_PATH=0 \
+              PR57_210_POSE_FOREACH=0 PR57_225_STAGE_COHERENCE=0 \
+              PR57_222_DENSE_PROJECTION=0 PR57_219_STAGE_COST=0 PR57_224_CITIZEN_STATE_COST=0 \
+              PR57_220_POSE_READSET=0 PR57_221_S5_TEMPORAL=0 \
+              PR57_214_CANDIDATE_READS=0 PR57_213_CROSS_SLICE_INPUTS=0 \
+              PR57_217_NEGATIVE_FILTERS=0 PR57_VEHICLE_COST_PROBE=0 \
+              PR57_HOT_TIMING=0 PR57_PHASE_ALLOC_PROBE=0 \
+                timeout 180s dotnet run --no-build -c Release \
+                --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                profile "$fixture" --seed=42 --warmup=0 --days=1 \
+                --window="$horizon" --cap=300 --resume="$source" | tee "$output.log"
+            done
+          done
+      - name: Verify full JSON parity and bounded s3 phase exposure
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          root=Path('artifacts/phase-counterfactual-230')
+          def val(line,key):
+              m=re.search(r'(?:^| )'+re.escape(key)+r'=([-0-9.]+)',line)
+              assert m,(key,line)
+              return float(m.group(1))
+          for case,horizon in [('worksREAL',300),('queueREAL',300),('gridARTIFICIAL',100)]:
+              logs={slot:(root/f'{case}-{slot}.log').read_text() for slot in ('A','B')}
+              for slot,log in logs.items():
+                  assert 'INVARIANTS OK' in log and 'SAVE ' in log and 'STEP_PROFILE steps=' in log,(case,slot)
+                  for i in (0,1): assert (root/f'{case}-{slot}'/f'checkpoint-{i}.json').is_file(),(case,slot,i)
+              for i in (0,1):
+                  assert (root/f'{case}-A'/f'checkpoint-{i}.json').read_bytes()==(root/f'{case}-B'/f'checkpoint-{i}.json').read_bytes(),(case,i,'full JSON mismatch')
+              assert 'PR57_228_PHASE_EXPOSURE ' not in logs['A'],case
+              rows=[x for x in logs['B'].splitlines() if x.startswith('PR57_228_PHASE_EXPOSURE ')]
+              assert len(rows)==3,(case,len(rows))
+              for row in rows:
+                  assert val(row,'vehicles')>0 and val(row,'processedActors')>0,(case,row)
+                  assert val(row,'s3Visits')>0,(case,row)
+                  assert val(row,'changedThird')==val(row,'changedProcessed')+val(row,'changedUnprocessed'),(case,row)
+                  assert val(row,'gateFlips')<=val(row,'changedThird'),(case,row)
+                  assert val(row,'missing')==0,(case,row)
+                  print('PR57_230_OBSERVED',case,row)
+              summaries=[x for x in logs['B'].splitlines() if x.startswith('PR57_229_PHASE_IMPACT ')]
+              flips=[x for x in logs['B'].splitlines() if x.startswith('PR57_229_PHASE_FLIP ')]
+              assert len(summaries)==3,(case,len(summaries))
+              assert len(flips)==sum(int(val(x,'flips')) for x in summaries),(case,len(flips),summaries)
+              if case=='worksREAL': assert len(flips)>0,(case,'expected real gate counterexample')
+              for row in flips:
+                  assert 'candidateProcessed=True' in row and 'canonicalAlwaysDecides=True' in row,(case,row)
+                  assert 'beforeKnown=True' in row and 'afterKnown=True' in row,(case,row)
+                  print('PR57_230_FLIP_OBSERVED',case,row)
+              counter=[x for x in logs['B'].splitlines() if x.startswith('PR57_230_S3_COUNTERFACTUAL ')]
+              totals=[x for x in logs['B'].splitlines() if x.startswith('PR57_230_S3_SUMMARY ')]
+              assert len(totals)==3,(case,len(totals))
+              assert len(counter)==len(flips)==sum(int(val(x,'flips')) for x in totals),(case,len(counter),len(flips))
+              for row in counter:
+                  assert 'liveMismatch=False' in row,(case,row)
+                  print('PR57_230_COUNTER',case,row)
+              for row in totals:
+                  assert val(row,'liveMismatch')==0 and val(row,'missing')==0,(case,row)
+                  print('PR57_230_SUMMARY',case,row)
+              print('PR57_230_IMPACT',case,'flips',len(flips),'summaries',len(summaries))
+              print('PR57_230_PARITY',case,'checkpoints',2,'processes',2,'horizon',horizon,'cadence','ADVANCE_2','fullJSON','EXACT')
+          PY
+      - name: Preserve checkpoints and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-phase-counterfactual-230
+          path: artifacts/phase-counterfactual-230/**
+          retention-days: 14

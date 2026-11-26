@@ -1,0 +1,56 @@
+name: PR57 isolated truck selector probe
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths:
+      - .github/workflows/pr57-truck-selector.yml
+      - src/IndexCities.Simulation/Construction.cs
+      - src/IndexCities.Simulation/Construction.Fleet.cs
+      - tests/IndexCities.Simulation.Tests/Pr57VehicleOrderSensitivity.cs
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: pr57-truck-selector-probe
+  cancel-in-progress: false
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Restore real construction and congestion saves
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-growth
+          run-id: 40250545171
+          github-token: ${{ github.token }}
+          path: artifacts/real-growth
+      - name: Restore older congestion save
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-legal-workplaces-8d
+          run-id: 40169101306
+          github-token: ${{ github.token }}
+          path: artifacts/real-congested
+      - name: Execute existing real-save selector test on two saves
+        shell: bash
+        run: |
+          set -euo pipefail
+          works="$(find artifacts/real-growth -type f -path '*/growth/checkpoint-0.json' -print -quit)"
+          congested="$(find artifacts/real-congested -type f -path '*/pr57-jobs-20/checkpoint-11.json' -print -quit)"
+          test -s "$works"
+          test -s "$congested"
+          for case in works-real congested-real; do
+            if [[ "$case" == works-real ]]; then input="$works"; else input="$congested"; fi
+            input="$(realpath "$input")"
+            echo "PR57_SELECTOR_INPUT case=$case sha256=$(sha256sum "$input" | cut -d' ' -f1)"
+            PR57_TRACE_SHIPMENT_1040=1 PR57_CONTROLLED_SAVE_PATH="$input" PR57_CONTROLLED_CASE="$case" \
+              dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj \
+              -c Release --filter 'FullyQualifiedName~Real_save_available_truck_selector_order_probe|FullyQualifiedName~Real_save_shipment_1040_creation_order_probe' \
+              --logger 'console;verbosity=detailed'
+          done

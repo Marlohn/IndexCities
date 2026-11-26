@@ -1,0 +1,142 @@
+name: 'PR57 #447 REAL pre-state physical cohort allocation'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-precohort-447.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  precohort-real:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+      PR57_VEHICLE_COST_PROBE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Inject strictly observational cohort accounting in disposable checkout
+        run: python3 scripts/pr57-447-inject.py
+      - name: Build and run regression suite
+        run: |
+          set -euo pipefail
+          dotnet build scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release
+      - name: Restore authentic REAL 14h checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Two fresh processes with canonical individual Advance(2)
+        shell: bash
+        run: |
+          set -euo pipefail
+          input="artifacts/input/real14hREAL-control/checkpoint-0.json"
+          test -s "$input"
+          for arm in A B; do
+            flag=0
+            if [[ "$arm" == B ]]; then flag=1; fi
+            mkdir -p "artifacts/precohort447/$arm"
+            PR57_447_COHORT_ALLOC="$flag" \
+              dotnet run --no-build -c Release \
+                --project scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj \
+                -- "$input" "artifacts/precohort447/$arm" \
+                > "artifacts/precohort447/$arm/full.log"
+            grep -q '^PR57_337_FINAL .*parity=IDENTICAL' "artifacts/precohort447/$arm/full.log"
+          done
+          cmp artifacts/precohort447/A/checkpoint-10800.json artifacts/precohort447/B/checkpoint-10800.json
+          sha256sum artifacts/precohort447/*/checkpoint-10800.json | tee artifacts/precohort447/checkpoints.sha256
+          python3 - <<'PY_SUMMARY' | tee artifacts/precohort447/summary-console.log
+          import json
+          from collections import defaultdict
+          from pathlib import Path
+          root=Path('artifacts/precohort447')
+          def rows(arm,prefix):
+              return [dict(x.split('=',1) for x in line.split()[1:] if '=' in x)
+                      for line in (root/arm/'full.log').read_text().splitlines()
+                      if line.startswith(prefix+' ')]
+          result={}
+          for arm in ('A','B'):
+              groups=rows(arm,'PR57_337_GROUP')
+              hours=rows(arm,'PR57_337_HOUR')
+              cohorts=rows(arm,'PR57_447_COHORT')
+              checks=rows(arm,'PR57_447_HOUR')
+              finals=rows(arm,'PR57_337_FINAL')
+              alloc=rows(arm,'PR57_ALLOC_PROFILE')
+              assert len(groups)==48 and len(hours)==6 and len(finals)==1
+              assert finals[0]['parity']=='IDENTICAL'
+              assert len(alloc)>0
+              assert len(cohorts)==(30 if arm=='B' else 0)
+              assert len(checks)==(6 if arm=='B' else 0)
+              assert all(int(h['living'])==121 for h in hours)
+              assert sum(int(h['slices']) for h in hours)>=75600
+              actor_bytes=sum(int(g['allocatedBytes']) for g in groups)
+              actor_calls=sum(int(g['calls']) for g in groups)
+              record={'advance2':10800,'actorBytes':actor_bytes,'actorCalls':actor_calls,
+                      'processBytes':sum(int(h['totalAllocatedBytes']) for h in hours),
+                      'wallMs':round(sum(float(h['wallMs']) for h in hours),3),
+                      'cpuMs':round(sum(float(h['cpuMs']) for h in hours),3),
+                      'lastStageAllocation':alloc[-1],
+                      'finalSha256':finals[0]['sha256']}
+              if arm=='B':
+                  sums=defaultdict(lambda:[0,0,0])
+                  for c in cohorts:
+                      kind=int(c['kind'])
+                      assert kind in range(5)
+                      for j,key in enumerate(('calls','ticks','allocatedBytes')):
+                          sums[kind][j]+=int(c[key])
+                  assert len(sums)==5
+                  assert sum(v[0] for v in sums.values())==actor_calls
+                  assert sum(v[2] for v in sums.values())==actor_bytes
+                  for hour in range(1,7):
+                      gs=[g for g in groups if int(g['hour'])==hour]
+                      cs=[c for c in cohorts if int(c['hour'])==hour]
+                      assert len(gs)==8 and len(cs)==5
+                      assert sum(int(c['calls']) for c in cs)==sum(int(g['calls']) for g in gs)
+                      assert sum(int(c['allocatedBytes']) for c in cs)==sum(int(g['allocatedBytes']) for g in gs)
+                      h=[x for x in checks if int(x['hour'])==hour]
+                      assert len(h)==1
+                      assert int(h[0]['calls'])==sum(int(c['calls']) for c in cs)
+                      assert int(h[0]['allocatedBytes'])==sum(int(c['allocatedBytes']) for c in cs)
+                  record['preCohorts']={
+                      ['operations','nontravelling','travellingWaiting','travellingActive','special'][k]:
+                      {'calls':v[0],'ticks':v[1],'allocatedBytes':v[2],
+                       'actorByteSharePct':round(100*v[2]/actor_bytes,4)}
+                      for k,v in sorted(sums.items())}
+                  record['waitingPlusSpecialByteSharePct']=round(
+                      100*(sums[2][2]+sums[4][2])/actor_bytes,4)
+              result[arm]=record
+          assert result['A']['finalSha256']==result['B']['finalSha256']
+          summary={'experiment':447,'scope':'AUTHENTIC_REAL_121_LIVING_98_VEHICLES_6H',
+                   'observationOnly':True,'noSkippedSlices':True,
+                   'fullJsonParity':True,'speedupAccepted':False,
+                   'cohortDefinition':'pre-actor status, waitingSince, detour/site/tow',
+                   'stageCounters':'marginal and overlapping, not cohort-stage cross-tab',
+                   'arms':result}
+          (root/'summary.json').write_text(json.dumps(summary,indent=2,sort_keys=True))
+          print(json.dumps(summary,indent=2,sort_keys=True))
+          PY_SUMMARY
+      - name: Preserve full logs, counters and checkpoints
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-precohort-447
+          path: artifacts/precohort447
+          retention-days: 14
+          if-no-files-found: warn

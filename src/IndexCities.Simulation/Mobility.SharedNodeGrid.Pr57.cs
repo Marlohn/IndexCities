@@ -1,0 +1,99 @@
+namespace IndexCities.Simulation;
+
+// PR57 experimental broad phase for the shared-node geometry in Manoeuvre.
+// Only a movement Step owns this grid. It is rebuilt from the authoritative
+// shared-node list, never serialized, and discarded at the public Advance edge.
+// Exact EntersArea predicates and original shared-node order remain authoritative.
+public sealed partial class CitySimulation
+{
+    static readonly bool Pr57SharedNodeGridEnabled =
+        Environment.GetEnvironmentVariable("PR57_SHARED_NODE_GRID")=="1";
+    const double Pr57SharedNodeCellWidth=32;
+    Dictionary<(int X,int Z),List<int>>? _pr57SharedNodeGrid;
+    List<RoadNode>? _pr57SharedNodeGridNodes;
+    int _pr57SharedNodeGridEpoch=-1;
+    bool _pr57SharedNodeGridUsedAnnounced;
+    bool _pr57SharedNodeGridPending;
+    long _pr57SharedNodeSteps, _pr57SharedNodeBuilds, _pr57SharedNodeQueries;
+    long _pr57SharedNodeVisited, _pr57SharedNodeBaselineVisits, _pr57SharedNodeSorts;
+
+    void Pr57PrepareSharedNodeGrid()
+    {
+        _pr57SharedNodeGrid=null;
+        _pr57SharedNodeGridNodes=null;
+        // Defer the spatial build until a real manoeuvre requests candidates.
+        // Steps with no such query pay no node enumeration or bucket construction.
+        _pr57SharedNodeGridPending=Pr57SharedNodeGridEnabled&&State.Vehicles.Count>0;
+        if(_pr57SharedNodeGridPending)_pr57SharedNodeSteps++;
+        _pr57SharedNodeGridEpoch=_roadEpoch;
+    }
+
+    void Pr57BuildSharedNodeGridOnDemand(List<RoadNode> nodes)
+    {
+        _pr57SharedNodeGridPending=false;
+        if(nodes.Count<8)return;
+        _pr57SharedNodeBuilds++;
+        var grid=new Dictionary<(int X,int Z),List<int>>();
+        for(var i=0;i<nodes.Count;i++)
+        {
+            var position=nodes[i].Position;
+            var cell=((int)Math.Floor(position.X/Pr57SharedNodeCellWidth),
+                      (int)Math.Floor(position.Z/Pr57SharedNodeCellWidth));
+            if(!grid.TryGetValue(cell,out var list))grid[cell]=list=[];
+            list.Add(i);
+        }
+        _pr57SharedNodeGrid=grid;
+        _pr57SharedNodeGridNodes=nodes;
+        _pr57SharedNodeGridEpoch=_roadEpoch;
+    }
+
+    // Returns false if a stale or absent index requires the original full scan.
+    // For every heading, EntersArea implies each coordinate is within
+    // clearance+half-length+half-width. No physical overlap can be filtered out.
+    bool Pr57GatherSharedNodeCandidates(Vehicle body,Point at,List<RoadNode> nodes,List<int> result)
+    {
+        result.Clear();
+        if(_pr57SharedNodeGridPending&&_pr57SharedNodeGridEpoch==_roadEpoch)
+            Pr57BuildSharedNodeGridOnDemand(nodes);
+        if(_pr57SharedNodeGrid is not {} grid||
+           !ReferenceEquals(_pr57SharedNodeGridNodes,nodes)||
+           _pr57SharedNodeGridEpoch!=_roadEpoch)return false;
+        var reach=CarriagewayHalfWidth+BodyHalfLength(body)+BodyHalfWidth(body);
+        var firstX=(int)Math.Floor((at.X-reach)/Pr57SharedNodeCellWidth);
+        var lastX=(int)Math.Floor((at.X+reach)/Pr57SharedNodeCellWidth);
+        var firstZ=(int)Math.Floor((at.Z-reach)/Pr57SharedNodeCellWidth);
+        var lastZ=(int)Math.Floor((at.Z+reach)/Pr57SharedNodeCellWidth);
+        _pr57SharedNodeQueries++;
+        _pr57SharedNodeBaselineVisits+=nodes.Count;
+        var bucketsFound=0;
+        for(var x=firstX;x<=lastX;x++)
+            for(var z=firstZ;z<=lastZ;z++)
+                if(grid.TryGetValue((x,z),out var bucket))
+                {
+                    result.AddRange(bucket);
+                    bucketsFound++;
+                }
+        // Spatial cell traversal is not canonical node traversal. Restore the
+        // original node-list order before exact predicates and tie-breaking.
+        // Every node occurs in one bucket, so ascending indices are sufficient.
+        // Within a single bucket, indices are already in canonical insertion order.
+        // Multiple buckets must be sorted to preserve exact physical tie-breaks.
+        if(bucketsFound>1){result.Sort();_pr57SharedNodeSorts++;}
+        _pr57SharedNodeVisited+=result.Count;
+        if(!_pr57SharedNodeGridUsedAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine($"PR57_SHARED_NODE_GRID used=True nodes={nodes.Count} candidates={result.Count}");
+            _pr57SharedNodeGridUsedAnnounced=true;
+        }
+        return true;
+    }
+
+    void Pr57ClearSharedNodeGrid()
+    {
+        if(Pr57SharedNodeGridEnabled&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+            Console.WriteLine($"PR57_SHARED_NODE_CENSUS steps={_pr57SharedNodeSteps} builds={_pr57SharedNodeBuilds} queries={_pr57SharedNodeQueries} baselineVisits={_pr57SharedNodeBaselineVisits} candidateVisits={_pr57SharedNodeVisited} sorts={_pr57SharedNodeSorts}");
+        _pr57SharedNodeGrid=null;
+        _pr57SharedNodeGridNodes=null;
+        _pr57SharedNodeGridPending=false;
+    }
+}

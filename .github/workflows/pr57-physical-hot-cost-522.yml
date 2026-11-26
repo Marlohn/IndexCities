@@ -1,0 +1,125 @@
+name: 'PR57 #522 REAL unsplit physical hot-cost census'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-physical-hot-cost-522.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  physical-cost:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+      PR57_PARALLEL_NEEDS: '0'
+      PR57_NEEDS_SINGLE_PASS: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build and run canonical regression tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic REAL congested checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input259
+      - name: Restore authentic REAL 68-worksite checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossphase-access-445
+          run-id: 41052837425
+          github-token: ${{ github.token }}
+          path: artifacts/input445
+      - name: Fresh-process ABBA at individual Advance(2) cadence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY_RUN'
+          import hashlib,json,os,re,subprocess
+          from pathlib import Path
+          cases=[
+            ('congestedREAL121',Path('artifacts/input259/real14hREAL-control/checkpoint-0.json'),200,121,98,'779c144f2d6b2b64ece079f5740bf8a0a473a47286ca40d8b5f6b9dd61ab616f'),
+            ('worksREAL47',Path('artifacts/input445/pr57-445/A/checkpoint-0.json'),600,47,42,'b7c52ab87928e7eaa93cfc557b9f3dc935d5b17da44820b405990071940f95b5'),
+            ('GRID_ARTIFICIAL',None,600,None,None,None)
+          ]
+          root=Path('artifacts/pr57-522');root.mkdir(parents=True,exist_ok=True)
+          summary={'experiment':522,'observational':True,'gainAccepted':False,
+                   'cadence':'individual Advance(2)','comparison':'same composed flags; fresh processes ABBA','cases':{}}
+          for name,source,seconds,alive,vehicles,expected in cases:
+            raw=source.read_bytes() if source is not None else None
+            if raw is not None:
+              assert hashlib.sha256(raw).hexdigest()==expected,name
+              state=json.loads(raw)
+              assert sum(bool(c['Alive']) for c in state['Citizens'])==alive
+              assert len(state['Vehicles'])==vehicles
+            arms={};initials=[];finals=[]
+            for arm in ('A1','B1','B2','A2'):
+              dest=root/name/arm;dest.mkdir(parents=True,exist_ok=True)
+              probe=arm.startswith('B')
+              env=os.environ.copy()
+              env.update(PR57_HOST_QUANTUM='1',PR57_AB_CHECKPOINT='1',PR57_GRID_DIAG='0',
+                         PR57_SAVE_CAPTURE_DIR=str(dest.resolve()),
+                         PR57_HOT_TIMING='1' if probe else '0',
+                         PR57_VEHICLE_COST_PROBE='1' if probe else '0')
+              cmd=['dotnet','run','--no-build','-c','Release',
+                   '--project','src/IndexCities.Headless/IndexCities.Headless.csproj',
+                   '--','profile','cycle' if source is not None else 'grid',
+                   '--seed=42','--warmup=0','--days=1',f'--window={seconds}','--cap=300']
+              if source is not None:cmd.append(f'--resume={source.resolve()}')
+              else:cmd.extend(['--rows=3','--length=400'])
+              with (dest/'full.log').open('w') as out:
+                subprocess.run(cmd,env=env,stdout=out,stderr=subprocess.STDOUT,check=True,timeout=300)
+              log=(dest/'full.log').read_text()
+              assert 'INVARIANTS OK' in log and 'SAVE ' in log,(name,arm,log[-2500:])
+              assert f'STEP_PROFILE steps={seconds//2} ' in log,(name,arm,'step count')
+              initial=(dest/'checkpoint-0.json').read_bytes()
+              if raw is not None:assert initial==raw,(name,arm,'input')
+              final=(dest/'checkpoint-1.json').read_bytes()
+              initials.append(initial);finals.append(final)
+              hot=[x for x in log.splitlines() if x.startswith('PR57_HOT_TIMING ')]
+              groups=[x for x in log.splitlines() if x.startswith('PR57_VEHICLE_COST ')]
+              assert bool(hot)==probe and bool(groups)==probe,(name,arm,'probe engagement',hot,groups)
+              windows=[x for x in log.splitlines() if x.startswith('WINDOW ')]
+              assert len(windows)==1,(name,arm,windows)
+              arms[arm]={'probe':probe,'window':windows[0],
+                         'initialSha256':hashlib.sha256(initial).hexdigest(),
+                         'finalSha256':hashlib.sha256(final).hexdigest(),
+                         'hotReports':hot,'lastVehicleCostGroups':groups[-8:],
+                         'vehicleProfile':next(x for x in log.splitlines() if x.startswith('VEHICLE_PROFILE ')),
+                         'movementDetail':next(x for x in log.splitlines() if x.strip().startswith('VEHICLE_DETAIL name=movement ')).strip()}
+              print('PR57_522_ARM',name,arm,'hot',len(hot),'groups',len(groups),flush=True)
+            assert all(x==initials[0] for x in initials),(name,'initial mismatch')
+            assert all(x==finals[0] for x in finals),(name,'full save mismatch')
+            summary['cases'][name]={'stepsPerArm':seconds//2,'artificial':source is None,
+                                     'fullJsonParity':True,'arms':arms}
+          (root/'summary.json').write_text(json.dumps(summary,indent=2,sort_keys=True))
+          print('PR57_522_PHYSICAL_HOT_COST_PARITY_PASS',flush=True)
+          PY_RUN
+      - name: Preserve logs and full saves even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-physical-hot-cost-522
+          path: artifacts/pr57-522
+          retention-days: 14
+          if-no-files-found: warn

@@ -1,0 +1,134 @@
+name: 'PR57 #414 per-actor nonlocal writer census REAL'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-nonlocal-writers-414.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  real-scalar-shadow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+      PR57_VEHICLE_COST_PROBE: '1'
+      PR57_ADVANCE_BOUNDARY_PROBE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Inject observational probes in disposable checkout
+        run: |
+          set -euo pipefail
+          python3 scripts/pr57-408-inject.py
+          python3 scripts/pr57-410-inject.py
+          python3 scripts/pr57-412-inject.py
+          python3 scripts/pr57-414-inject.py
+      - name: Build and test
+        run: |
+          set -euo pipefail
+          dotnet build scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release
+      - name: Restore authentic REAL 14h checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input
+      - name: Two fresh processes, 10800 individual Advance(2) per arm
+        shell: bash
+        run: |
+          set -euo pipefail
+          input="artifacts/input/real14hREAL-control/checkpoint-0.json"
+          test -s "$input"
+          for arm in base probe; do
+            flag=0
+            if [[ "$arm" == probe ]]; then flag=1; fi
+            mkdir -p "artifacts/scalar414/$arm"
+            PR57_408_WINNER_CAUSE="$flag" PR57_410_SCALAR_SHADOW="$flag" PR57_412_SCALAR_PROJECTION="$flag" PR57_414_NONLOCAL_CENSUS="$flag" \
+              dotnet run --no-build -c Release \
+                --project scripts/pr57-actor-regime-337/Pr57ActorRegime337.csproj \
+                -- "$input" "artifacts/scalar414/$arm" \
+                > "artifacts/scalar414/$arm/full.log"
+            grep -q '^PR57_337_FINAL .*parity=IDENTICAL' "artifacts/scalar414/$arm/full.log"
+          done
+          cmp artifacts/scalar414/base/checkpoint-10800.json artifacts/scalar414/probe/checkpoint-10800.json
+          sha256sum artifacts/scalar414/*/checkpoint-10800.json | tee artifacts/scalar414/checkpoints.sha256
+          python3 - <<'PY_SUMMARY' | tee artifacts/scalar414/summary.json
+          import json
+          from pathlib import Path
+          root=Path('artifacts/scalar414')
+          arms={}
+          for arm in ('base','probe'):
+              lines=(root/arm/'full.log').read_text().splitlines()
+              def rows(prefix):
+                  return [dict(x.split('=',1) for x in line.split()[1:] if '=' in x)
+                          for line in lines if line.startswith(prefix+' ')]
+              hours=rows('PR57_337_HOUR')
+              boundaries=rows('PR57_ADVANCE_BOUNDARY')
+              final=rows('PR57_337_FINAL')
+              cells=rows('PR57_408_CELL')
+              shadow=rows('PR57_410_SUMMARY')
+              witnesses=rows('PR57_410_WITNESS')
+              projection=rows('PR57_412_SUMMARY')
+              projection_witnesses=rows('PR57_412_STALE')+rows('PR57_412_MISMATCH')
+              census=rows('PR57_414_SUMMARY')
+              census_witnesses=rows('PR57_414_WITNESS')
+              assert len(hours)==6 and len(boundaries)==108 and len(final)==1
+              assert int(boundaries[-1]['calls'])==10800 and final[0]['parity']=='IDENTICAL'
+              assert all(int(h['living'])==121 for h in hours)
+              if arm=='probe':
+                  assert len(cells)==28 and len(shadow)==1 and len(projection)==1 and len(census)==1
+                  c=census[0]
+                  assert c['observational']=='True' and c['causalClosure']=='False'
+                  assert c['netBoundaryOnly']=='True' and c['routeHashWitnessOnly']=='True'
+                  assert int(c['physical'])==600 and int(c['actors'])==58800
+                  assert int(c['checks'])==58800*97
+                  assert int(c['crossEither'])>=max(int(c['crossScalar']),int(c['crossExtra']))
+                  assert int(c['witnesses'])==len(census_witnesses)
+                  p=projection[0]
+                  assert p['observational']=='True' and p['causalClosure']=='False'
+                  assert int(p['physical'])==600 and int(p['scans'])==int(shadow[0]['scans'])
+                  assert int(p['ordinary'])==int(shadow[0]['bindingOrdinary'])
+                  assert int(p['ordinaryExact'])<=int(p['ordinarySameId'])<=int(p['ordinary'])
+                  assert int(p['candidateReads'])==int(shadow[0]['candidates'])
+                  assert int(p['witnesses'])==len(projection_witnesses)
+                  s=shadow[0]
+                  assert s['observational']=='True' and s['causalClosure']=='False'
+                  assert int(s['scans'])==sum(int(x['scans']) for x in cells)
+                  assert int(s['bindingOrdinary'])==sum(int(x['scans']) for x in cells if x['cause']=='6' and x['binding']=='1')
+                  assert int(s['bindingOrdinaryExact'])<=int(s['bindingOrdinarySameId'])<=int(s['bindingOrdinary'])
+                  assert int(s['witnesses'])==len(witnesses)
+              else:
+                  assert not cells and not shadow and not witnesses and not projection and not projection_witnesses and not census and not census_witnesses
+              arms[arm]={'wallMs':round(sum(float(h['wallMs']) for h in hours),3),
+                         'cpuMs':sum(float(h['cpuMs']) for h in hours),
+                         'allocatedBytes':sum(int(h['totalAllocatedBytes']) for h in hours),
+                         'final':final[0], 'shadow':shadow[0] if shadow else None,
+                         'witnesses':witnesses, 'projection':projection[0] if projection else None, 'projectionWitnesses':projection_witnesses,
+                         'census':census[0] if census else None,'censusWitnesses':census_witnesses}
+          print(json.dumps({'scope':'AUTHENTIC_REAL_121_LIVING_98_VEHICLES_6H',
+                            'advance2PerArm':10800,'arms':arms,
+                            'observational':True,'causalClosure':False,
+                            'optimizationGainAccepted':False},sort_keys=True))
+          PY_SUMMARY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integrated-scale-pr57-nonlocal-writers-414
+          path: artifacts/scalar414
+          retention-days: 14

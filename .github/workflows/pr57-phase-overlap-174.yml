@@ -1,0 +1,116 @@
+name: 'PR57 #174 sampled cross-phase net-write overlap'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-phase-overlap-174.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  overlap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build and test complete suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic works save
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-growth
+          run-id: 40250545171
+          github-token: ${{ github.token }}
+          path: artifacts/works
+      - name: Restore authentic congested save
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-legal-workplaces-8d
+          run-id: 40169101306
+          github-token: ${{ github.token }}
+          path: artifacts/queue
+      - name: Restore artificial GRID checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-host-scale-curve
+          run-id: 40258405557
+          github-token: ${{ github.token }}
+          path: artifacts/grid
+      - name: Run plain and intrusive observation in independent processes
+        shell: bash
+        run: |
+          set -euo pipefail
+          works="$(find artifacts/works -type f -path '*/growth/checkpoint-0.json' -print -quit)"
+          queue="$(find artifacts/queue -type f -path '*/pr57-jobs-20/checkpoint-10.json' -print -quit)"
+          grid="artifacts/grid/grid18-0/checkpoint-1.json"
+          test -s "$works";test -s "$queue";test -s "$grid"
+          mkdir -p artifacts/phase-overlap-174
+          for case in worksREAL queueREAL gridARTIFICIAL; do
+            source="$works";fixture=cycle;window=1800;every=150
+            if [[ "$case" == queueREAL ]]; then source="$queue";window=1200;every=100;fi
+            if [[ "$case" == gridARTIFICIAL ]]; then source="$grid";fixture=grid;window=300;every=25;fi
+            echo "PR57_174_SOURCE case=$case sha256=$(sha256sum "$source" | cut -d' ' -f1) window=$window every=$every"
+            for mode in plain probe; do
+              command=scale;sampling=""
+              if [[ "$mode" == probe ]]; then command=profile;sampling="$every";fi
+              output="$PWD/artifacts/phase-overlap-174/$case-$mode"
+              mkdir -p "$output"
+              PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="$output" \
+              PR57_SITE_OWNER_ROSTER=1 PR57_BUILDING_WORK_ACCESS=1 \
+              PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ORDER_SHIPMENT_INDEX=1 \
+              PR57_PROGRESS_SHIPMENT_LOOKUP=1 PR57_SINGLE_CREW_ASSIGNMENT=1 \
+              PR57_SAFE_SITE_BUFFER=1 PR57_PHASE_EFFECT_EVERY="$sampling" \
+              PR57_VEHICLE_MUTATION_AUDIT=0 PR57_DIRTY_CLOSURE_PROBE=0 \
+                timeout 300s dotnet run --no-build -c Release \
+                  --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                  "$command" "$fixture" --seed=42 --warmup=0 --days=1 \
+                  --window="$window" --cap=300 --resume="$source" | tee "$output.log"
+            done
+          done
+      - name: Verify full state parity and report write overlaps
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import pathlib,re
+          root=pathlib.Path("artifacts/phase-overlap-174")
+          for case,seconds,every in (("worksREAL",1800,150),("queueREAL",1200,100),("gridARTIFICIAL",300,25)):
+              logs={}
+              for mode in ("plain","probe"):
+                  log=(root/f"{case}-{mode}.log").read_text()
+                  assert "INVARIANTS OK" in log and "SAVE " in log,(case,mode)
+                  assert len([x for x in log.splitlines() if x.startswith("WINDOW ")])==1,(case,mode)
+                  logs[mode]=log
+                  for index in (0,1):
+                      a=(root/f"{case}-plain"/f"checkpoint-{index}.json").read_bytes()
+                      b=(root/f"{case}-{mode}"/f"checkpoint-{index}.json").read_bytes()
+                      assert a==b,(case,mode,index,"full checkpoint divergence")
+              assert "PR57_PHASE_EFFECT_SUMMARY" not in logs["plain"]
+              summary=re.search(r"PR57_PHASE_EFFECT_SUMMARY samples=(\d+) intervalSteps=(\d+) observedSteps=(\d+)",logs["probe"])
+              assert summary and tuple(map(int,summary.groups()))==(6,every,seconds//2),(case,summary.groups() if summary else None)
+              rows=[x for x in logs["probe"].splitlines() if x.startswith("PR57_PHASE_EFFECT name=")]
+              assert len(rows)==13,(case,len(rows))
+              for row in rows:
+                  assert "revisitedEarlierPhase=" in row,(case,row)
+                  values=re.search(r"revisitedEarlierPhase=([^ ]+)",row).group(1)
+                  assert len(values.split(","))==5,(case,row)
+                  print("PR57_174_PHASE",case,row)
+              print("PR57_174_PARITY",case,"completeCheckpoints=2","simSeconds",seconds,
+                    "samples",6,"note=NET_WRITES_ONLY_NOT_CAUSAL_READ_SETS")
+          PY
+      - name: Preserve full checkpoints and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-phase-overlap-174
+          path: artifacts/phase-overlap-174/**
+          retention-days: 14

@@ -132,7 +132,7 @@ public sealed partial class CitySimulation
             // External trucks follow the existing cancellation: nothing to load, back to the exterior.
             if(v==null||v.External){if(preserve&&v==null){s.VehicleId=0;continue;}s.Cancelled=true;if(v==null)s.Complete=true;continue;}
             s.Complete=!preserve;s.Cancelled=!preserve;if(preserve)s.VehicleId=0;v.ShipmentId=null;
-            if(State.Citizens.FirstOrDefault(c=>c.Id==v.DriverId) is {} driver&&driver.VehicleId!=v.Id){driver.BoardingVehicleId=null;driver.Path.Clear();driver.PathIndex=0;v.DriverId=null;}
+            if(State.Citizens.FirstOrDefault(c=>c.Id==v.DriverId) is {} driver&&driver.VehicleId!=v.Id){Pr57CitizenAgendaWake(driver);driver.BoardingVehicleId=null;driver.Path.Clear();driver.PathIndex=0;v.DriverId=null;}
             else ReleaseDriver(v);
             v.Status=VehicleStatus.Parked;v.LoadTimer=0;v.Cause=preserve?"Destino demolido: compra paga reservada ao comprador na fazenda; caminhão e motorista livres":s.SourceBuildingId==building.Id?"Carga reservada perdida com "+building.Definition.Name+" demolido":"Entrega cancelada: "+building.Definition.Name+" de destino demolido; carga permanece na origem";
         }

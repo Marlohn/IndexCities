@@ -1,0 +1,134 @@
+name: 'PR57 #242 real shopping search visits and route attempts'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-real-food-search-242.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  food:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build and full regression
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore real daytime checkpoints from legal construction and economy
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-legal-workplaces-0-20
+          run-id: 40167945274
+          github-token: ${{ github.token }}
+          path: artifacts/prior-real
+      - name: Restore artificial GRID late checkpoint for contrast
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-pose-noop-237
+          run-id: 40589313790
+          github-token: ${{ github.token }}
+          path: artifacts/prior-grid
+      - name: Replay genuine daytime purchases, same saves and Advance(2)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import os, subprocess, hashlib, json, re
+          
+          root=Path('artifacts/food-242')
+          root.mkdir(parents=True,exist_ok=True)
+          real=Path('artifacts/prior-real')
+          grid=Path('artifacts/prior-grid')
+          common={
+           'PR57_HOST_QUANTUM':'1','PR57_AB_CHECKPOINT':'1',
+           'PR57_236_POSE_NOOP_SKIP':'1','PR57_GRID_DIAG':'1',
+           'PR57_239_CITIZEN_PHASES':'0','PR57_240_WALK_SPLIT':'0',
+           'PR57_241_ARRIVAL_SPLIT':'0','PR57_224_CITIZEN_STATE_COST':'0',
+           'PR57_206_RESIDUAL_EXCLUSIVE':'0','PR57_207_POSE_GUARD':'0',
+           'PR57_208_BODY_SAT_CENSUS':'0','PR57_209_SHIPMENT_READ_CENSUS':'0',
+           'PR57_LANE_READWRITE_PROBE':'0','PR57_BLOCK_DEP_PROBE':'0',
+           'PR57_VEHICLE_COST_PROBE':'0','PR57_HOT_TIMING':'0',
+           'PR57_PHASE_ALLOC_PROBE':'0'
+          }
+          def run(case,stage,mode,source,fixture,window):
+              assert source.is_file(),source
+              dest=root/f'{case}-{stage}-{mode}'
+              dest.mkdir(parents=True,exist_ok=True)
+              env=os.environ.copy()
+              env.update(common)
+              env['PR57_242_FOOD_SEARCH']='1' if mode=='profile' else '0'
+              env['PR57_SAVE_CAPTURE_DIR']=str(dest.resolve())
+              cmd=['dotnet','run','--no-build','-c','Release','--project',
+                  'src/IndexCities.Headless/IndexCities.Headless.csproj','--',
+                  'profile' if mode=='profile' else 'scale',fixture,
+                  '--seed=42','--warmup=0','--days=1',f'--window={window}',
+                  '--cap=300',f'--resume={source.resolve()}']
+              print('PR57_242_RUN',case,stage,mode,'window',window,
+                    'sourceSha256',hashlib.sha256(source.read_bytes()).hexdigest(),flush=True)
+              with (root/f'{case}-{stage}-{mode}.log').open('w') as f:
+                  subprocess.run(cmd,env=env,stdout=f,stderr=subprocess.STDOUT,check=True,timeout=300)
+              log=(root/f'{case}-{stage}-{mode}.log').read_text()
+              assert 'INVARIANTS OK' in log and 'SAVE ' in log,(case,stage,mode,log[-3000:])
+              assert len([x for x in log.splitlines() if x.startswith('WINDOW ')])==1,(case,stage,mode)
+              return dest,log
+          
+          cases=[]
+          for case,source in [
+           ('realOneShop',real/'pr57-jobs-0/checkpoint-3.json'),
+           ('realElevenShops',real/'pr57-jobs-20/checkpoint-3.json')
+          ]:
+              prep,_=run(case,'prep','control',source,'cycle',17400)
+              cases.append((case,'cycle',prep/'checkpoint-1.json',2400))
+          cases.append(('gridArtificialLater','grid',grid/'gridARTIFICIAL-control1/checkpoint-5.json',100))
+          for case,fixture,source,window in cases:
+              c,clog=run(case,'replay','control',source,fixture,window)
+              p,plog=run(case,'replay','profile',source,fixture,window)
+              for index in (0,1):
+                  assert (c/f'checkpoint-{index}.json').read_bytes()==(p/f'checkpoint-{index}.json').read_bytes(),(case,index,'FULL_JSON_MISMATCH')
+              rows=[line for line in plog.splitlines() if line.startswith('PR57_242_FOOD ')]
+              assert len(rows)==1,(case,rows)
+              fields=dict(re.findall(r'(\w+)=([^\s]+)',rows[0]))
+              start=json.loads((c/'checkpoint-0.json').read_text())
+              end=json.loads((c/'checkpoint-1.json').read_text())
+              purchases=lambda state:sum(row.get('Category')=='Alimentos' and row.get('Reason')=='Compra presencial de alimento existente' for row in state['Ledger'])
+              foodDelta=purchases(end)-purchases(start)
+              assert foodDelta>=0
+              print('PR57_242_RESULT',case,'initialNow',start['Now'],'finalNow',end['Now'],
+                    'alive',sum(x['Alive'] for x in end['Citizens']),
+                    'completedGroceries',sum(x['Kind']=='Grocery' and x['Completed'] and not x['Removed'] and x['CompanyId'] is not None for x in end['Buildings']),
+                    'foodPurchasesDelta',foodDelta,
+                    'calls',fields['calls'],'arrivalCalls',fields['arrivalCalls'],
+                    'visited',fields['visited'],'rejected',fields['rejected'],
+                    'routes',fields['routes'],'routeSuccess',fields['routeSuccess'],
+                    'failedCalls',fields['failedCalls'],
+                    'totalMs',fields['totalMs'],'routeMs',fields['routeMs'],
+                    'scope','INTRUSIVE_NOT_ABBA',flush=True)
+              print('PR57_242_PARITY',case,'checkpoints',2,'fullJSON','EXACT',
+                    'cadence','ADVANCE_2',flush=True)
+          PY
+      - name: Preserve complete logs and checkpoints
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-food-search-242
+          path: artifacts/food-242/**
+          retention-days: 14

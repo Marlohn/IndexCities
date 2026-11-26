@@ -1,0 +1,186 @@
+name: 'PR57 #493 sampled REAL needs math versus lookup cost'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-needs-math-493.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  needs-cost:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+      PR57_PARALLEL_NEEDS: '0'
+      PR57_NEEDS_SINGLE_PASS: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Inject sampled observational timing only in disposable checkout
+        shell: bash
+        run: |
+          python3 - <<'PY_INJECT'
+          from pathlib import Path
+          p=Path('src/IndexCities.Simulation/Economy.cs')
+          s=p.read_text()
+          anchor='readonly Dictionary<Point,double> _homePollution=new();readonly List<Point> _homePoints=[];'
+          assert s.count(anchor)==1
+          s=s.replace(anchor,anchor+'''
+              // PR57 #493: temporary sampled instrumentation; no state/save writer.
+              public readonly long[] Pr57493Cost=new long[6];
+              static readonly bool Pr57493TimingEnabled=Environment.GetEnvironmentVariable("PR57_493_NEEDS_TIMING")=="1";
+              long _pr57493Steps;''',1)
+          anchor='var pr57NeedsStepProbe=Pr57NeedsStepProbe;'
+          assert s.count(anchor)==1
+          s=s.replace(anchor,anchor+'''
+              var pr57493Sample=Pr57493TimingEnabled && (++_pr57493Steps%8==0);
+              if(pr57493Sample)Pr57493Cost[5]++;''',1)
+          first='foreach(var c in Pr57NeedsCandidates().Where(c=>c.Alive&&c.Resident&&c.InsideMap)){'
+          last='\n        pr57NeedsStepProbe?.EndStep();'
+          assert s.count(first)==1
+          start=s.index(first);end=s.index(last,start)
+          b=s[start:end]
+          def once(old,new):
+              global b
+              assert b.count(old)==1,(old[:80],b.count(old))
+              b=b.replace(old,new,1)
+          once(first,first+'''
+              var pr57493Start=pr57493Sample?System.Diagnostics.Stopwatch.GetTimestamp():0L;''')
+          once('var hungry=c.HungerHours>State.Tuning.HungerDamageAfterHours;var unmet=',
+               '''if(pr57493Sample){Pr57493Cost[0]+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57493Start;pr57493Start=System.Diagnostics.Stopwatch.GetTimestamp();}
+              var hungry=c.HungerHours>State.Tuning.HungerDamageAfterHours;var unmet=''')
+          once('pr57NeedsStepProbe?.Observe(c,home,unmet,family.Members.Count,family.Pantry);',
+               '''pr57NeedsStepProbe?.Observe(c,home,unmet,family.Members.Count,family.Pantry);
+              if(pr57493Sample){Pr57493Cost[1]+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57493Start;pr57493Start=System.Diagnostics.Stopwatch.GetTimestamp();}''')
+          once('if(c.Health<=0)CitizenDied(c);',
+               '''if(pr57493Sample){Pr57493Cost[2]+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57493Start;pr57493Start=System.Diagnostics.Stopwatch.GetTimestamp();}
+              if(c.Health<=0)CitizenDied(c);
+              if(pr57493Sample){Pr57493Cost[3]+=System.Diagnostics.Stopwatch.GetTimestamp()-pr57493Start;Pr57493Cost[4]++;}''')
+          s=s[:start]+b+s[end:]
+          p.write_text(s)
+          p=Path('src/IndexCities.Headless/Program.cs')
+          s=p.read_text()
+          anchor='// PR57 #224: print observational citizen state cost only when explicitly enabled.'
+          assert s.count(anchor)==1
+          s=s.replace(anchor,'''if(Environment.GetEnvironmentVariable("PR57_493_NEEDS_TIMING")=="1")
+          {
+              var p493=sim.Pr57493Cost;
+              Console.WriteLine($"PR57_493_NEEDS sampledSteps={p493[5]} sampledCitizens={p493[4]} resolveTicks={p493[0]} serviceTicks={p493[1]} mathTicks={p493[2]} deathTicks={p493[3]} frequency={Stopwatch.Frequency} note=INTRUSIVE_SAMPLED_NOT_ACCELERATION");
+          }
+          '''+anchor,1)
+          p.write_text(s)
+          print('PR57_493_DISPOSABLE_OBSERVATIONAL_INJECTION_PASS')
+          PY_INJECT
+      - name: Build and complete regression suite
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic REAL congested checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossing-259
+          run-id: 40633885112
+          github-token: ${{ github.token }}
+          path: artifacts/input259
+      - name: Restore authentic REAL 68-worksite checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-crossphase-access-445
+          run-id: 41052837425
+          github-token: ${{ github.token }}
+          path: artifacts/input445
+      - name: ABBA on two authentic REAL states and clearly artificial GRID
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY_RUN'
+          import hashlib,json,os,re,subprocess,time
+          from pathlib import Path
+          cases=[
+            ('congestedREAL121',Path('artifacts/input259/real14hREAL-control/checkpoint-0.json'),200,121,98,'779c144f2d6b2b64ece079f5740bf8a0a473a47286ca40d8b5f6b9dd61ab616f'),
+            ('worksREAL47',Path('artifacts/input445/pr57-445/A/checkpoint-0.json'),200,47,42,'b7c52ab87928e7eaa93cfc557b9f3dc935d5b17da44820b405990071940f95b5'),
+            ('GRID_ARTIFICIAL',None,100,None,None,None)
+          ]
+          root=Path('artifacts/pr57-493');root.mkdir(parents=True,exist_ok=True)
+          summary={'experiment':493,'observational':True,'gainAccepted':False,
+                   'cadence':'one public Advance(2) per quantum','sampleEverySteps':8,
+                   'comparison':'same composed flags, fresh processes ABBA','cases':{}}
+          for name,source,seconds,alive,vehicles,expected in cases:
+            raw=source.read_bytes() if source is not None else None
+            if raw is not None:
+              assert hashlib.sha256(raw).hexdigest()==expected,name
+              state=json.loads(raw)
+              assert sum(bool(c['Alive']) for c in state['Citizens'])==alive
+              assert len(state['Vehicles'])==vehicles
+            arms={};initials=[];finals=[];counts=[]
+            for arm in ('A1','B1','B2','A2'):
+              dest=root/name/arm;dest.mkdir(parents=True,exist_ok=True)
+              probe=arm.startswith('B')
+              env=os.environ.copy()
+              env.update(PR57_HOST_QUANTUM='1',PR57_AB_CHECKPOINT='1',PR57_GRID_DIAG='0',
+                         PR57_SAVE_CAPTURE_DIR=str(dest.resolve()),
+                         PR57_493_NEEDS_TIMING='1' if probe else '0')
+              cmd=['dotnet','run','--no-build','-c','Release',
+                   '--project','src/IndexCities.Headless/IndexCities.Headless.csproj',
+                   '--','profile','cycle' if source is not None else 'grid',
+                   '--seed=42','--warmup=0','--days=1',f'--window={seconds}','--cap=300']
+              if source is not None:cmd.append(f'--resume={source.resolve()}')
+              else:cmd.extend(['--rows=3','--length=400'])
+              t=time.perf_counter()
+              with (dest/'full.log').open('w') as out:
+                subprocess.run(cmd,env=env,stdout=out,stderr=subprocess.STDOUT,check=True,timeout=300)
+              wall=time.perf_counter()-t
+              log=(dest/'full.log').read_text()
+              assert 'INVARIANTS OK' in log and 'SAVE ' in log,(name,arm,log[-2500:])
+              assert len([x for x in log.splitlines() if x.startswith('WINDOW ')])==1
+              assert f'STEP_PROFILE steps={seconds//2} ' in log,(name,arm,'step count')
+              initial=(dest/'checkpoint-0.json').read_bytes()
+              if raw is not None:assert initial==raw,(name,arm,'input')
+              final=(dest/'checkpoint-1.json').read_bytes()
+              initials.append(initial);finals.append(final)
+              rows=[x for x in log.splitlines() if x.startswith('PR57_493_NEEDS ')]
+              assert len(rows)==int(probe),(name,arm,rows)
+              row=None
+              if probe:
+                row={k:int(v) for k,v in re.findall(r'([A-Za-z][A-Za-z0-9]*)=(\d+)',rows[0])}
+                assert row['sampledSteps']==(seconds//2)//8,(name,arm,row)
+                assert row['sampledCitizens']>0
+                assert all(row[k]>=0 for k in ('resolveTicks','serviceTicks','mathTicks','deathTicks'))
+                counts.append((row['sampledSteps'],row['sampledCitizens']))
+              arms[arm]={'probe':probe,'wallSeconds':round(wall,5),
+                         'window':next(x for x in log.splitlines() if x.startswith('WINDOW ')),
+                         'initialSha256':hashlib.sha256(initial).hexdigest(),
+                         'finalSha256':hashlib.sha256(final).hexdigest(),
+                         'finalBytes':len(final),'census':row}
+              print('PR57_493_ARM',name,arm,'wall',round(wall,3),flush=True)
+            assert all(x==initials[0] for x in initials),(name,'initial mismatch')
+            assert all(x==finals[0] for x in finals),(name,'full save mismatch')
+            assert counts[0]==counts[1],(name,'sample count mismatch')
+            summary['cases'][name]={'stepsPerArm':seconds//2,'livingExpected':alive,
+               'artificial':source is None,'fullJsonParity':True,'arms':arms}
+          (root/'summary.json').write_text(json.dumps(summary,indent=2,sort_keys=True))
+          print('PR57_493_SAMPLED_NEEDS_FULL_PARITY_PASS',flush=True)
+          PY_RUN
+      - name: Preserve logs, full saves and sampled exclusive costs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-needs-math-493
+          path: artifacts/pr57-493
+          retention-days: 14
+          if-no-files-found: warn

@@ -1,0 +1,26 @@
+name: PR57 cross-call dependency counterexamples (targeted regression)
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-crosscall-dependencies.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  crosscall:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build Release
+        run: dotnet build tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release
+      - name: Exercise synthetic cross-call counterexamples
+        run: dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --no-build --filter FullyQualifiedName~Pr57CrossCallDependencyCounterexamples --verbosity normal
+      - name: Run entire simulation regression suite
+        run: dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --no-build --verbosity quiet

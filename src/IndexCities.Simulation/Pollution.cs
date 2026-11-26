@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace IndexCities.Simulation;
@@ -19,14 +20,31 @@ public sealed partial class CitySimulation
     sealed class CellFactors{public int Layout=-1,Count;public long[] Keys=[];public double[] Factors=[];}
     readonly Dictionary<Point,CellFactors> _pollutionFactors=new();
     readonly List<long> _decayKeys=[];
-    long[] _cellKeys=[];double[] _cellValues=[];int _cellCount,_cellLayout;
+    // PR57 opt-in: normalize the sampled dot-product order across save/load.
+    // All cells and their exact values remain present; no rounding is applied.
+    static readonly bool Pr57CanonicalPollutionOrder =
+        Environment.GetEnvironmentVariable("PR57_CANONICAL_POLLUTION_ORDER")=="1";
+    long[] _cellKeys=[];double[] _cellValues=[];long[] _previousCellKeys=[];
+    int _cellCount,_cellLayout;
     // Copies the cells in enumeration order; the layout changes whenever that
     // key sequence differs from the previous snapshot.
     void SnapshotPollution()
     {
         var count=State.PollutionCells.Count;var changed=count!=_cellCount;
         if(_cellKeys.Length<count){Array.Resize(ref _cellKeys,Math.Max(count,_cellKeys.Length*2));Array.Resize(ref _cellValues,_cellKeys.Length);}
-        var i=0;foreach(var entry in State.PollutionCells){if(!changed&&_cellKeys[i]!=entry.Key)changed=true;_cellKeys[i]=entry.Key;_cellValues[i]=(double)entry.Value;i++;}
+        if(!Pr57CanonicalPollutionOrder)
+        {
+            var i=0;foreach(var entry in State.PollutionCells){if(!changed&&_cellKeys[i]!=entry.Key)changed=true;_cellKeys[i]=entry.Key;_cellValues[i]=(double)entry.Value;i++;}
+        }
+        else
+        {
+            // Sort keys and values together; the original dictionary is untouched.
+            var i=0;foreach(var entry in State.PollutionCells){_cellKeys[i]=entry.Key;_cellValues[i]=(double)entry.Value;i++;}
+            if(count>1)Array.Sort(_cellKeys,_cellValues,0,count);
+            if(!changed)for(var j=0;j<count;j++)if(_previousCellKeys[j]!=_cellKeys[j]){changed=true;break;}
+            if(_previousCellKeys.Length<count)Array.Resize(ref _previousCellKeys,count);
+            Array.Copy(_cellKeys,_previousCellKeys,count);
+        }
         _cellCount=count;if(changed)_cellLayout++;
     }
     CellFactors FactorsFor(Point point)
@@ -45,11 +63,101 @@ public sealed partial class CitySimulation
         var load=0.0;var factors=FactorsFor(point).Factors;for(var i=0;i<_cellCount;i++)load+=_cellValues[i]*factors[i];
         return Math.Clamp(load,0,2);
     }
+    // PR57-only POC: compute independent household pollution dot products on
+    // worker threads. Factors are resolved serially before workers start;
+    // each household still sums every cell in the original cell order.
+    // Results are published serially in original point order. No CityState
+    // fields, cells, clocks, events or save contents are touched by workers.
+    static readonly bool Pr57ParallelPollutionEnabled=Environment.GetEnvironmentVariable("PR57_PARALLEL_POLLUTION")=="1";
+    readonly List<double[]> _pr57ParallelPollutionFactors=[];
+    double[] _pr57ParallelPollutionResults=[];
+    bool _pr57ParallelPollutionAnnounced,_pr57ParallelPollutionEngaged;
+    bool Pr57TrySamplePollutionParallel(List<Point> points,Dictionary<Point,double> loads)
+    {
+        if(!_pr57ParallelPollutionAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine($"PR57_PARALLEL_POLLUTION active={Pr57ParallelPollutionEnabled} processors={Environment.ProcessorCount}");
+            _pr57ParallelPollutionAnnounced=true;
+        }
+        // A tiny workload cannot amortize the per-Step parallel barrier.
+        if(!Pr57ParallelPollutionEnabled||Environment.ProcessorCount<2||points.Count<64||_cellCount<16)return false;
+        if(!_pr57ParallelPollutionEngaged&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine($"PR57_PARALLEL_POLLUTION engaged=True homes={points.Count} cells={_cellCount}");
+            _pr57ParallelPollutionEngaged=true;
+        }
+        _pr57ParallelPollutionFactors.Clear();
+        foreach(var point in points)_pr57ParallelPollutionFactors.Add(FactorsFor(point).Factors);
+        if(_pr57ParallelPollutionResults.Length<points.Count)Array.Resize(ref _pr57ParallelPollutionResults,points.Count);
+        var factors=_pr57ParallelPollutionFactors;
+        var values=_cellValues;
+        var count=_cellCount;
+        var results=_pr57ParallelPollutionResults;
+        System.Threading.Tasks.Parallel.For(0,points.Count,index=>
+        {
+            var weights=factors[index];
+            double load=0;
+            for(var j=0;j<count;j++)load+=values[j]*weights[j];
+            results[index]=Math.Clamp(load,0,2);
+        });
+        for(var index=0;index<points.Count;index++)loads[points[index]]=results[index];
+        return true;
+    }
+    // PR57 opt-in: exact per-home cell order, SIMD across independent homes.
+    // A cell-major matrix is rebuilt only when cell layout or sampled homes
+    // change. Each SIMD lane still accumulates all cells in original order.
+    // No cell, quantum, event or state update is skipped.
+    static readonly bool Pr57PollutionSimdEnabled=Environment.GetEnvironmentVariable("PR57_POLLUTION_SIMD")=="1";
+    readonly List<Point> _pr57SimdPoints=[];
+    double[] _pr57SimdMatrix=[];
+    int _pr57SimdLayout=-1,_pr57SimdStride;
+    bool _pr57SimdAnnounced,_pr57SimdEngaged;
+    bool Pr57TrySamplePollutionSimd(List<Point> points,Dictionary<Point,double> loads)
+    {
+        if(!_pr57SimdAnnounced&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine($"PR57_POLLUTION_SIMD active={Pr57PollutionSimdEnabled} vectorWidth={Vector<double>.Count}");
+            _pr57SimdAnnounced=true;
+        }
+        if(!Pr57PollutionSimdEnabled||!Vector.IsHardwareAccelerated||points.Count<32||_cellCount<16)return false;
+        if(!_pr57SimdEngaged&&Environment.GetEnvironmentVariable("PR57_GRID_DIAG")=="1")
+        {
+            Console.WriteLine($"PR57_POLLUTION_SIMD engaged=True homes={points.Count} cells={_cellCount}");
+            _pr57SimdEngaged=true;
+        }
+        var width=Vector<double>.Count;
+        var stride=((points.Count+width-1)/width)*width;
+        var rebuild=_pr57SimdLayout!=_cellLayout||_pr57SimdStride!=stride||_pr57SimdPoints.Count!=points.Count;
+        if(!rebuild)for(var i=0;i<points.Count;i++)if(_pr57SimdPoints[i]!=points[i]){rebuild=true;break;}
+        if(rebuild)
+        {
+            _pr57SimdPoints.Clear();_pr57SimdPoints.AddRange(points);
+            var size=checked(_cellCount*stride);
+            if(_pr57SimdMatrix.Length<size)Array.Resize(ref _pr57SimdMatrix,size);
+            for(var home=0;home<points.Count;home++)
+            {
+                var factors=FactorsFor(points[home]).Factors;
+                for(var cell=0;cell<_cellCount;cell++)_pr57SimdMatrix[cell*stride+home]=factors[cell];
+            }
+            _pr57SimdLayout=_cellLayout;_pr57SimdStride=stride;
+        }
+        for(var home=0;home<points.Count;home+=width)
+        {
+            var sum=Vector<double>.Zero;
+            for(var cell=0;cell<_cellCount;cell++)
+                sum+=new Vector<double>(_cellValues[cell])*new Vector<double>(_pr57SimdMatrix,cell*stride+home);
+            for(var lane=0;lane<Math.Min(width,points.Count-home);lane++)
+                loads[points[home+lane]]=Math.Clamp(sum[lane],0,2);
+        }
+        return true;
+    }
     // SampledPollution of each point into `loads`. Four points share one pass
     // over the cells; each keeps its own sum in cell order, so every result is
     // the one SampledPollution(point) gives.
     void SampledPollution(List<Point> points,Dictionary<Point,double> loads)
     {
+        if(Pr57TrySamplePollutionParallel(points,loads))return;
+        if(Pr57TrySamplePollutionSimd(points,loads))return;
         var i=0;
         for(;i+4<=points.Count;i+=4){
             var a=FactorsFor(points[i]).Factors;var b=FactorsFor(points[i+1]).Factors;var c=FactorsFor(points[i+2]).Factors;var d=FactorsFor(points[i+3]).Factors;
@@ -64,6 +172,8 @@ public sealed partial class CitySimulation
         if(amount<=0||!InMap(point))return;var x=(int)Math.Floor(point.X/PollutionCellSize);var z=(int)Math.Floor(point.Z/PollutionCellSize);var key=((long)x<<32)|unchecked((uint)z);
         State.PollutionCells[key]=FixedPoint.Pollution(State.PollutionCells.GetValueOrDefault(key)+(decimal)amount);
     }
+    // PR57 diagnostic counters: no simulation-state mutation or save impact.
+    long _pr57LakeAdversaryComparisons,_pr57LakeAdversaryDifferences,_pr57LakeSliceSamples;
     void UpdatePollution(double dt,List<Building> active)
     {
         var recovery=Math.Exp(-.15*dt/86400);
@@ -75,5 +185,72 @@ public sealed partial class CitySimulation
         foreach(var building in active)EmitPollution(building.Position,building.UntreatedSewage/100*dt/86400);
         foreach(var vehicle in State.Vehicles)EmitPollution(vehicle.Position,vehicle.FuelBurnedLastStep*.01);
         SnapshotPollution();State.LakePollution=SampledPollution(State.LakeCentre);
+        // PR57 opt-in adversarial diagnostic: recompute the same dot product in
+        // canonical key order, without changing the baseline sum, cells or state.
+        // Distinguishes order-sensitive floating point accumulation from a
+        // genuinely different pollution-cell multiset across processes.
+        if(Environment.GetEnvironmentVariable("PR57_LAKE_ORDER_ADVERSARY")=="1")
+        {
+            var indices=new int[_cellCount];
+            for(var j=0;j<indices.Length;j++)indices[j]=j;
+            Array.Sort(indices,(a,b)=>_cellKeys[a].CompareTo(_cellKeys[b]));
+            var factors=FactorsFor(State.LakeCentre).Factors;
+            double canonical=0;
+            for(var j=0;j<indices.Length;j++)
+            {
+                var index=indices[j];
+                canonical+=_cellValues[index]*factors[index];
+            }
+            canonical=Math.Clamp(canonical,0,2);
+            var baselineBits=BitConverter.DoubleToInt64Bits(State.LakePollution);
+            var canonicalBits=BitConverter.DoubleToInt64Bits(canonical);
+            _pr57LakeAdversaryComparisons++;
+            if(baselineBits!=canonicalBits)_pr57LakeAdversaryDifferences++;
+            if(_pr57LakeAdversaryComparisons%50==0)
+                Console.WriteLine($"PR57_LAKE_ADVERSARY_CENSUS comparisons={_pr57LakeAdversaryComparisons} differences={_pr57LakeAdversaryDifferences} cells={_cellCount}");
+            if(baselineBits!=canonicalBits)
+                Console.WriteLine($"PR57_LAKE_ORDER_ADVERSARY elapsed={State.ElapsedSeconds:R} cells={_cellCount} baseline=0x{baselineBits:X16} canonical=0x{canonicalBits:X16} ulpBitsDelta={Math.Abs((decimal)baselineBits-canonicalBits)}");
+        }
+        // PR57 diagnostic only: trace the exact lake sum and cell enumeration
+        // at each pollution update, without changing the game state or summation.
+        // Compare two independent baseline processes by the first differing line.
+        if(Environment.GetEnvironmentVariable("PR57_LAKE_SLICE_TRACE")=="1")
+        {
+            _pr57LakeSliceSamples++;
+            ulong order=14695981039346656037UL;
+            // A commutative fingerprint distinguishes enumeration-only changes
+            // from changed cell keys/values without modifying their order.
+            // Two independent accumulators reduce accidental hash collisions.
+            ulong multisetSum=0,multisetXor=0;
+            for(var i=0;i<_cellCount;i++)
+            {
+                unchecked
+                {
+                    var keyBits=(ulong)_cellKeys[i];
+                    var valueBits=(ulong)BitConverter.DoubleToInt64Bits(_cellValues[i]);
+                    order=(order^keyBits)*1099511628211UL;
+                    order=(order^valueBits)*1099511628211UL;
+                    var mixed=(keyBits^0x9E3779B97F4A7C15UL)*0xBF58476D1CE4E5B9UL;
+                    mixed=(mixed^valueBits)*0x94D049BB133111EBUL;
+                    mixed^=mixed>>30;
+                    mixed*=0xBF58476D1CE4E5B9UL;
+                    mixed^=mixed>>27;
+                    multisetSum+=mixed;
+                    multisetXor^=mixed;
+                }
+            }
+            Console.WriteLine($"PR57_LAKE_SLICE_TRACE time={State.ElapsedSeconds:R} count={_cellCount} order={order:X16} multisetSum={multisetSum:X16} multisetXor={multisetXor:X16} lakeBits={BitConverter.DoubleToInt64Bits(State.LakePollution):X16}");
+            // Exact sorted key/value payload at the historically divergent sample.
+            // The trace is read-only and opt-in; unlike fingerprints it identifies
+            // the first changed cell without depending on dictionary enumeration.
+            if(Environment.GetEnvironmentVariable("PR57_LAKE_EXACT_SAMPLE23")=="1" && _pr57LakeSliceSamples==23)
+            {
+                var exact=new (long Key,long Bits)[_cellCount];
+                for(var i=0;i<_cellCount;i++)exact[i]=(_cellKeys[i],BitConverter.DoubleToInt64Bits(_cellValues[i]));
+                Array.Sort(exact,(a,b)=>a.Key.CompareTo(b.Key));
+                foreach(var entry in exact)
+                    Console.WriteLine($"PR57_LAKE_EXACT_SAMPLE23 key={entry.Key} valueBits={entry.Bits:X16}");
+            }
+        }
     }
 }

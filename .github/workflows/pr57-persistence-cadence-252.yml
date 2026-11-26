@@ -1,0 +1,122 @@
+name: 'PR57 #252 authentic persistence cost and autosave cadence'
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-persistence-cadence-252.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  persistence-cadence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      PR57_SITE_OWNER_ROSTER: '1'
+      PR57_BUILDING_WORK_ACCESS: '1'
+      PR57_DISPATCH_SHIPMENT_LOOKUP: '1'
+      PR57_ORDER_SHIPMENT_INDEX: '1'
+      PR57_PROGRESS_SHIPMENT_LOOKUP: '1'
+      PR57_SINGLE_CREW_ASSIGNMENT: '1'
+      PR57_SAFE_SITE_BUFFER: '1'
+      PR57_236_POSE_NOOP_SKIP: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build observational harness and run regressions
+        run: |
+          set -euo pipefail
+          dotnet build scripts/Pr57PersistenceCadence252/Pr57PersistenceCadence252.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore authentic economic history 00h and 16h from #243
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-coexist-243
+          run-id: 40601570843
+          github-token: ${{ github.token }}
+          path: artifacts/real-prior
+      - name: Restore explicitly artificial GRID from #237
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-pose-noop-237
+          run-id: 40589313790
+          github-token: ${{ github.token }}
+          path: artifacts/grid-prior
+      - name: Compare fresh-process ABBA no-save and save-every-60-sim-seconds
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          from decimal import Decimal
+          from statistics import median
+          import subprocess, os, json, hashlib
+          root=Path('artifacts/persistence-cadence-252')
+          root.mkdir(parents=True,exist_ok=True)
+          first=Path('artifacts/real-prior/overnight-01/checkpoint-1.json')
+          last=Path('artifacts/real-prior/overnight-09/checkpoint-1.json')
+          grids=list(Path('artifacts/grid-prior').rglob('gridARTIFICIAL-control1/checkpoint-5.json'))
+          assert first.is_file() and last.is_file() and len(grids)==1,(first,last,grids)
+          cases=[('real00',first,300,121),('real16',last,300,121),
+                 ('gridARTIFICIAL',grids[0],150,1111)]
+          dll=Path('scripts/Pr57PersistenceCadence252/bin/Release/net8.0/Pr57PersistenceCadence252.dll')
+          assert dll.is_file(),dll
+          all_metrics={}
+          for name,source,steps,expected_alive in cases:
+              before=json.loads(source.read_text(),parse_float=Decimal)
+              alive=sum(bool(c.get('Alive')) for c in before['Citizens'])
+              assert alive==expected_alive,(name,alive)
+              print('PR57_252_SOURCE',name,'sha256',hashlib.sha256(source.read_bytes()).hexdigest(),
+                    'alive',alive,'vehicles',len(before['Vehicles']),
+                    'scope','AUTHENTIC_REAL_ECONOMY' if name!='gridARTIFICIAL' else 'ARTIFICIAL_GRID',
+                    flush=True)
+              runs=[]
+              for index,(arm,interval) in enumerate((('A',0),('B',30),('B',30),('A',0)),1):
+                  out=root/f'{name}-{index}-{arm}.json'
+                  command=['dotnet',str(dll),str(source.resolve()),str(steps),str(interval),str(out.resolve())]
+                  proc=subprocess.run(command,capture_output=True,text=True,check=True,timeout=240)
+                  (root/f'{name}-{index}-{arm}.log').write_text(proc.stdout+proc.stderr)
+                  rows=[x for x in proc.stdout.splitlines() if x.startswith('PR57_252_METRIC ')]
+                  assert len(rows)==1,(name,index,proc.stdout,proc.stderr)
+                  metric=dict(x.split('=',1) for x in rows[0].split()[1:])
+                  assert int(metric['steps'])==steps and metric['quantum']=='2'
+                  assert int(metric['interval'])==interval
+                  assert int(metric['autosaves'])==steps//30 if interval else int(metric['autosaves'])==0
+                  assert metric['invariant']=='PASS' and metric['roundtrip']=='PASS'
+                  assert int(metric['alive'])==expected_alive
+                  assert hashlib.sha256(out.read_bytes()).hexdigest()==metric['finalSha256']
+                  print('PR57_252_RUN',name,index,arm,rows[0],flush=True)
+                  runs.append((arm,metric,out))
+              original=runs[0][2].read_bytes()
+              assert all(path.read_bytes()==original for _,_,path in runs),(name,'FULL_JSON_MISMATCH')
+              assert all(json.loads(path.read_text(),parse_float=Decimal)==before or
+                         json.loads(path.read_text(),parse_float=Decimal)==json.loads(original,parse_float=Decimal)
+                         for _,_,path in runs)
+              a=[float(m['loopWallMs']) for arm,m,_ in runs if arm=='A']
+              b=[float(m['loopWallMs']) for arm,m,_ in runs if arm=='B']
+              direct=[float(m['periodicSaveWallMs']) for arm,m,_ in runs if arm=='B']
+              share=median(direct)/median(b)
+              print('PR57_252_SUMMARY',name,'A_wall_ms',round(median(a),3),
+                    'B_wall_ms',round(median(b),3),'B_save_wall_ms',round(median(direct),3),
+                    'B_save_wall_share',round(share,6),
+                    'save_repeats',runs[0][1]['saveRepeats'],
+                    'A_B_full_json','EXACT','callsAdvance2',steps,
+                    'note','stress_cadence_not_host_autosave',flush=True)
+              all_metrics[name]={'control_wall_ms':median(a),'stress_wall_ms':median(b),
+                                 'direct_save_wall_ms':median(direct),'stress_save_share':share}
+          (root/'summary.json').write_text(json.dumps(all_metrics,indent=2,sort_keys=True))
+          print('PR57_252_DONE','all_12_processes_independent=True',
+                'no_product_code_changed=True','no_optimization_speedup_claim=True',flush=True)
+          PY
+      - name: Preserve complete metrics and final saves
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-persistence-cadence-252
+          path: artifacts/persistence-cadence-252/**
+          retention-days: 14

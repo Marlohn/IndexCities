@@ -1,0 +1,111 @@
+name: PR57 residual profile after five composed opt-in indices
+on:
+  push:
+    branches: [experimento/escala-motor-integrado-10k-80y]
+    paths: [.github/workflows/pr57-construction-census.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: integrated-scale-pr57
+  cancel-in-progress: false
+jobs:
+  construction-census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build and tests
+        run: |
+          set -euo pipefail
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release --verbosity quiet
+      - name: Restore real construction save
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-real-growth
+          run-id: 40250545171
+          github-token: ${{ github.token }}
+          path: artifacts/works
+      - name: Restore real congestion save
+        uses: actions/download-artifact@v4
+        with:
+          name: integrated-scale-pr57-legal-workplaces-8d
+          run-id: 40169101306
+          github-token: ${{ github.token }}
+          path: artifacts/real
+      - name: Profile progress-phase shipment lookup against four-flag baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/census
+          works="$(find artifacts/works -type f -path '*/growth/checkpoint-0.json' -print -quit)"
+          real="$(find artifacts/real -type f -path '*/pr57-jobs-20/checkpoint-11.json' -print -quit)"
+          test -s "$works"; test -s "$real"
+          for case in works real121; do
+            source="$works"; window=3600
+            if [[ "$case" == real121 ]]; then source="$real"; window=1800; fi
+            echo "PR57_CENSUS_CASE case=$case class=REAL sourceSha256=$(sha256sum "$source" | cut -d' ' -f1) window=$window windows=4 cadence=Advance2"
+            for mode in baseProfile candidateProfile basePlain candidatePlain; do
+              enabled=0; command=profile
+              if [[ "$mode" == candidate* ]]; then enabled=1; fi
+              if [[ "$mode" == *Plain ]]; then command=scale; fi
+              output="artifacts/census/$case-$mode"
+              mkdir -p "$output"
+              PR57_HOST_QUANTUM=1 PR57_AB_CHECKPOINT=1 PR57_SAVE_CAPTURE_DIR="$PWD/$output" \
+              PR57_SITE_OWNER_ROSTER=1 PR57_BUILDING_WORK_ACCESS=1 \
+              PR57_DISPATCH_SHIPMENT_LOOKUP=1 PR57_ORDER_SHIPMENT_INDEX=1 PR57_PROGRESS_SHIPMENT_LOOKUP="$enabled" \
+              PR57_GRID_DIAG=1 PR57_IDLE_SCAN_PROBE=0 PR57_HOT_TIMING=0 \
+                timeout 240s dotnet run --no-build -c Release --project src/IndexCities.Headless/IndexCities.Headless.csproj -- \
+                  "$command" cycle --seed=42 --warmup=0 --days=4 --window="$window" --cap=200 --resume="$source" \
+                  | tee "$output.log"
+            done
+          done
+      - name: Verify residual phase distribution and full save parity
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import pathlib,re
+          root=pathlib.Path("artifacts/census")
+          for case,window in (("works",3600),("real121",1800)):
+              modes=("baseProfile","candidateProfile","basePlain","candidatePlain")
+              logs={m:(root/f"{case}-{m}.log").read_text() for m in modes}
+              for mode,log in logs.items():
+                  assert "PR57_ORDER_SHIPMENT_INDEX active=True" in log and f"PR57_PROGRESS_SHIPMENT_LOOKUP active={mode.startswith('candidate')}" in log,(case,mode,"flag")
+                  assert "INVARIANTS OK" in log and "SAVE " in log,(case,mode)
+                  assert len([x for x in log.splitlines() if x.startswith("WINDOW ")])==4,(case,mode)
+              for i in range(5):
+                  checkpoints=[(root/f"{case}-{mode}"/f"checkpoint-{i}.json").read_bytes() for mode in modes]
+                  assert len(set(checkpoints))==1,(case,i,"full checkpoint mismatch")
+              for mode in modes[:2]:
+                  log=logs[mode]
+                  row=next((x for x in log.splitlines() if x.startswith("PR57_CONSTRUCTION_CENSUS ")),None)
+                  assert row,(case,mode,"missing profile census")
+                  vals={k:int(v) for k,v in re.findall(r"([A-Za-z]+)=([0-9]+)",row)}
+                  assert vals["steps"]==2*window,(case,mode,vals)
+                  phases=[x.strip() for x in log.splitlines() if x.strip().startswith("STEP_PHASE ")]
+                  assert len(phases)==13,(case,mode,len(phases))
+                  print(f"PR57_RESIDUAL_CENSUS case={case} mode={mode} {row}")
+                  print(f"PR57_RESIDUAL_PHASES case={case} mode={mode} "+ " | ".join(phases))
+              walls={}
+              for mode in ("basePlain","candidatePlain"):
+                  rows=[x for x in logs[mode].splitlines() if x.startswith("WINDOW ")]
+                  wall=sum(float(re.search(r"\bwall=([0-9.]+)s",x).group(1)) for x in rows)
+                  cpu=sum(float(re.search(r"\bcpu=([0-9.]+)s",x).group(1)) for x in rows)
+                  alloc=sum(float(re.search(r"\ballocMB=([0-9.]+)",x).group(1)) for x in rows)
+                  walls[mode]=wall
+                  print(f"PR57_RESIDUAL_PLAIN case={case} mode={mode} simSeconds={4*window} wall={wall:.2f}s cpu={cpu:.2f}s allocMB={alloc:.1f} throughput={4*window/wall:.2f}sps")
+              print(f"PR57_RESIDUAL_SINGLE_ORDER case={case} gainPct={100*(1-walls['candidatePlain']/walls['basePlain']):.2f} note=not-ABBA")
+              print(f"PR57_RESIDUAL_PARITY case={case} checkpoints=5 modes=4")
+          PY
+      - name: Preserve residual profile evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-scale-pr57-construction-residual
+          path: artifacts/census/**
+          retention-days: 14
