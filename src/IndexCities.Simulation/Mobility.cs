@@ -210,6 +210,26 @@ public sealed partial class CitySimulation
         var route=FindRoadRoute(n.Id,EntryNode().Id,ConstructionTrip(v));if(route.Count==0){v.Status=VehicleStatus.Waiting;v.Cause="Conexão externa interrompida";return;}
         v.Route=route;v.RouteIndex=0;v.DockPosition=null;v.Status=VehicleStatus.Travelling;v.DestinationBuildingId=null;v.ShipmentId=null;v.Cause="Retorno ao exterior";
     }
+    // Explicit operation boundary: preserve the canonical per-vehicle order.
+    // False means this quantum is consumed by operations, not physical movement.
+    bool PrepareVehicleOperationForMovement(Vehicle v,double operationTime)
+    {
+        v.FuelBurnedLastStep=0;
+        if(v.Status==VehicleStatus.Towed)return false;
+        // Lot manoeuvres, service queues, exterior service and calls for parked broken vehicles.
+        if((v.ServicePhase!=ServicePhase.None||v.ServiceShopId!=null||v.PushPath.Count>0||v.Status==VehicleStatus.Outside)&&TendService(v,operationTime))return false;
+        if(IsTow(v)&&OperateTow(v,operationTime))return false;
+        if(!v.External&&v.Status is VehicleStatus.Travelling or VehicleStatus.Unloading or VehicleStatus.Waiting){var actualDriver=CitizenById(v.DriverId) is {} c&&c.Alive&&(v.PassengerCar||IsTow(v)||c.Resident&&c.InsideMap)&&c.VehicleId==v.Id?c:null;if(actualDriver==null){v.Cause=v.PassengerCar||v.ShipmentId==null?IsTow(v)?"Guincho aguardando o motorista embarcar":"Aguardando motorista embarcar":"Sem motorista local presente; carga e viagem preservadas";return false;}}
+        if(!v.PassengerCar&&v.DriverId is {} driver&&CitizenById(driver) is {} citizen&&v.Status is VehicleStatus.Travelling or VehicleStatus.Unloading){citizen.Position=v.Position;citizen.AddWorkSecondsToday(operationTime);AccrueWage(citizen,operationTime);citizen.Activity=IsTow(v)?"Dirigindo o guincho da oficina":"Conduzindo entrega real";}
+        if(v.Status==VehicleStatus.Unloading){v.AddLoadTimer(-(operationTime));if(v.LoadTimer<=0)VehicleArrived(v);return false;}
+        if(v.Machine!=PavingMachine.None&&v.Status==VehicleStatus.Waiting){ReplanPavingMachine(v);return false;}
+        if(v.PassengerCar&&v.Status==VehicleStatus.Waiting){ReplanCar(v);return false;}
+        if(v.Status==VehicleStatus.Stranded){TendStranded(v);return false;}
+        if(v.Status==VehicleStatus.Waiting){if(v.ShipmentId is {} si&&State.Shipments.FirstOrDefault(s=>s.Id==si) is {} shipment){if(shipment.Cancelled)RedirectCancelled(v,shipment);else ReplanVehicle(v,shipment);}else if(v.External)ReturnExternal(v);else if(v.HomeBuildingId!=null&&v.DestinationBuildingId==v.HomeBuildingId)ReturnLocal(v);return false;}
+        if(v.Status!=VehicleStatus.Travelling)return false;
+        if(v.Route.Count==0||v.Route.Any(id=>!_roads.ContainsKey(id))){v.Status=VehicleStatus.Waiting;v.Cause="Rota interrompida; aguarda ligação viária";return false;}
+        return true;
+    }
     void MoveVehiclesUnsplit(double dt,double? operationsDt=null)
     {
         // Release a passed junction even while a vehicle waits at the next one.
@@ -225,21 +245,7 @@ public sealed partial class CitySimulation
             // replanned-elsewhere vehicle does not resume old waypoints.
             if(v.Detour.Count>0&&v.Status!=VehicleStatus.Travelling)v.Detour.Clear();
             if(_vehicleMovementBatch==null||operationsDt!=null){
-                var operationTime=operationsDt??dt;
-                v.FuelBurnedLastStep=0;
-                if(v.Status==VehicleStatus.Towed)continue;
-                // Lot manoeuvres, service queues, exterior service and calls for parked broken vehicles.
-                if((v.ServicePhase!=ServicePhase.None||v.ServiceShopId!=null||v.PushPath.Count>0||v.Status==VehicleStatus.Outside)&&TendService(v,operationTime))continue;
-                if(IsTow(v)&&OperateTow(v,operationTime))continue;
-                if(!v.External&&v.Status is VehicleStatus.Travelling or VehicleStatus.Unloading or VehicleStatus.Waiting){var actualDriver=CitizenById(v.DriverId) is {} c&&c.Alive&&(v.PassengerCar||IsTow(v)||c.Resident&&c.InsideMap)&&c.VehicleId==v.Id?c:null;if(actualDriver==null){v.Cause=v.PassengerCar||v.ShipmentId==null?IsTow(v)?"Guincho aguardando o motorista embarcar":"Aguardando motorista embarcar":"Sem motorista local presente; carga e viagem preservadas";continue;}}
-                if(!v.PassengerCar&&v.DriverId is {} driver&&CitizenById(driver) is {} citizen&&v.Status is VehicleStatus.Travelling or VehicleStatus.Unloading){citizen.Position=v.Position;citizen.AddWorkSecondsToday(operationTime);AccrueWage(citizen,operationTime);citizen.Activity=IsTow(v)?"Dirigindo o guincho da oficina":"Conduzindo entrega real";}
-                if(v.Status==VehicleStatus.Unloading){v.AddLoadTimer(-(operationTime));if(v.LoadTimer<=0)VehicleArrived(v);continue;}
-                if(v.Machine!=PavingMachine.None&&v.Status==VehicleStatus.Waiting){ReplanPavingMachine(v);continue;}
-                if(v.PassengerCar&&v.Status==VehicleStatus.Waiting){ReplanCar(v);continue;}
-                if(v.Status==VehicleStatus.Stranded){TendStranded(v);continue;}
-                if(v.Status==VehicleStatus.Waiting){if(v.ShipmentId is {} si&&State.Shipments.FirstOrDefault(s=>s.Id==si) is {} shipment){if(shipment.Cancelled)RedirectCancelled(v,shipment);else ReplanVehicle(v,shipment);}else if(v.External)ReturnExternal(v);else if(v.HomeBuildingId!=null&&v.DestinationBuildingId==v.HomeBuildingId)ReturnLocal(v);continue;}
-                if(v.Status!=VehicleStatus.Travelling)continue;
-                if(v.Route.Count==0||v.Route.Any(id=>!_roads.ContainsKey(id))){v.Status=VehicleStatus.Waiting;v.Cause="Rota interrompida; aguarda ligação viária";continue;}
+                if(!PrepareVehicleOperationForMovement(v,operationsDt??dt))continue;
                 _vehicleMovementBatch?.Add(v.Id);
             }else if(!_vehicleMovementBatch.Contains(v.Id)||v.Status!=VehicleStatus.Travelling)continue;
             var remaining=dt;
