@@ -239,7 +239,14 @@ public sealed partial class CitySimulation
         foreach(var vehicle in State.Vehicles){ClearPassedJunction(vehicle);ReleaseManoeuvre(vehicle);}
         // Same order as OrderBy(WaitingSince).ThenBy(Id): Ids are unique, so the
         // key is a total order and any sort yields the same sequence.
-        var ordered=State.Vehicles.ToArray();Array.Sort(ordered,static (a,b)=>a.WaitingSince.CompareTo(b.WaitingSince) is var c and not 0?c:a.Id.CompareTo(b.Id));
+        // Subsequent physical substeps have no operational work. Keep every
+        // admitted body (even if its status changed) and every outstanding detour
+        // for the canonical cleanup below. Other bodies remain in State.Vehicles
+        // for collision, service and reservation queries; only dispatch is reduced.
+        var ordered=ExperimentalCausalCalendarEnabled&&_vehicleMovementBatch!=null&&operationsDt==null
+            ?State.Vehicles.Where(v=>_vehicleMovementBatch.Contains(v.Id)||v.Detour.Count>0).ToArray()
+            :State.Vehicles.ToArray();
+        Array.Sort(ordered,static (a,b)=>a.WaitingSince.CompareTo(b.WaitingSince) is var c and not 0?c:a.Id.CompareTo(b.Id));
         foreach(var v in ordered){
             // A bypass belongs to the trip in progress: a stopped, parked or
             // replanned-elsewhere vehicle does not resume old waypoints.
