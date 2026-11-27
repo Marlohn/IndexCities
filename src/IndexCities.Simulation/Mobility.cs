@@ -236,7 +236,18 @@ public sealed partial class CitySimulation
         // Carriageway half-width (3.3 m) + truck half-length (3.6 m) covers the
         // actual rear of the truck; the former 9 m reservation could overlap
         // nearby junctions and make opposite queues hold each other forever.
-        foreach(var vehicle in State.Vehicles){ClearPassedJunction(vehicle);ReleaseManoeuvre(vehicle);}
+        // Reservation cleanup is independent of dispatch membership: a tow or
+        // another body may have changed a non-admitted vehicle in the last slice.
+        // Select the live reservation workset, including legacy orphan timestamps.
+        // Both cleanup methods are no-ops outside these predicates; preserve list order.
+        if(ExperimentalCausalCalendarEnabled&&_vehicleMovementBatch!=null&&operationsDt==null){
+            foreach(var vehicle in State.Vehicles){
+                if(vehicle.IntersectionClaim!=null||vehicle.IntersectionEnteredAt!=null)ClearPassedJunction(vehicle);
+                if(vehicle.ManoeuvreDock!=null||vehicle.ManoeuvreSpaces.Count!=0)ReleaseManoeuvre(vehicle);
+            }
+        }else{
+            foreach(var vehicle in State.Vehicles){ClearPassedJunction(vehicle);ReleaseManoeuvre(vehicle);}
+        }
         // Same order as OrderBy(WaitingSince).ThenBy(Id): Ids are unique, so the
         // key is a total order and any sort yields the same sequence.
         // Subsequent physical substeps have no operational work. Keep every
