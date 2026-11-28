@@ -69,6 +69,7 @@ public sealed partial class CitySimulation
     public void Advance(double seconds)
     {
         if(!double.IsFinite(seconds)||seconds<0)throw new ArgumentOutOfRangeException(nameof(seconds));
+        if(ExperimentalCausalCalendarEnabled)ExperimentalRebuildLoanDeadline();
         _crosswalkBands.Clear();_crosswalkBandsActive=true;BeginWalkRoutes();
         try{var remaining=seconds;while(remaining>1e-8){var dt=Math.Min(Quantum,remaining);Step(dt);remaining-=dt;}}
         finally{_crosswalkBandsActive=false;_crosswalkBands.Clear();EndWalkRoutes();}
@@ -85,9 +86,14 @@ public sealed partial class CitySimulation
         OrderConstruction();
         if(reviewEconomy){RetryPurchasesAwaitingDestination();RestockBusinesses();ReviewEmigration();RecoverDebt();RetryCargoAwaitingDestination();ReviewVehicleRevisions();ResumeHeldDeliveries();RefuelIdleShopTows();}
         ProgressBuildingDemolitions();
-        while(State.Now>=State.NextDaily){DailyFinance();State.NextDaily=State.NextDaily.AddDays(1);}
-        while(State.Now>=State.NextTaxDate){PropertyTaxes();State.NextTaxDate=State.NextTaxDate.AddMonths(1);}
-        ProcessLoans();
+        if(ExperimentalCausalCalendarEnabled)ExperimentalProcessFinance();
+        else
+        {
+            while(State.Now>=State.NextDaily){DailyFinance();State.NextDaily=State.NextDaily.AddDays(1);}
+            while(State.Now>=State.NextTaxDate){PropertyTaxes();State.NextTaxDate=State.NextTaxDate.AddMonths(1);}
+            ExperimentalLoanPhaseCalls++;
+            ProcessLoans();
+        }
     }
     public void CheckInvariants()
     {

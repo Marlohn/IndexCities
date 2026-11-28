@@ -1,0 +1,113 @@
+name: Hybrid causal differential
+on:
+  push:
+    branches: [experimento/motor-hibrido-causal-integrado]
+  workflow_dispatch:
+permissions:
+  contents: read
+  statuses: write
+concurrency:
+  group: hybrid-causal-differential
+  cancel-in-progress: false
+jobs:
+  differential:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Publish run pointer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api -X POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" -f state=pending -f context=hybrid/causal-differential -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" -f description="Hybrid differential running"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build and test real simulation
+        run: |
+          dotnet build src/IndexCities.Headless/IndexCities.Headless.csproj -c Release
+          dotnet test tests/IndexCities.Simulation.Tests/IndexCities.Simulation.Tests.csproj -c Release
+      - name: Run actual city ABBA from a shared save
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p hybrid-artifacts
+          runner=src/IndexCities.Headless/bin/Release/net8.0/IndexCities.Headless.dll
+          dotnet "$runner" hybrid-prepare 42 hybrid-artifacts/input.json | tee hybrid-artifacts/prepare.log
+          for arm in A1 B1 B2 A2; do
+            mode=reference
+            if [[ $arm == B* ]]; then mode=calendar; fi
+            dotnet "$runner" hybrid-run hybrid-artifacts/input.json "$mode" "hybrid-artifacts/$arm" | tee "hybrid-artifacts/$arm.log"
+          done
+          for i in 1 2 3 4; do
+            for arm in B1 B2 A2; do
+              cmp "hybrid-artifacts/A1/checkpoint-$i.json" "hybrid-artifacts/$arm/checkpoint-$i.json"
+            done
+            echo "HYBRID_PARITY checkpoint=$i exact=true"
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          results={}
+          for arm in ('A1','B1','B2','A2'):
+              line=next(x for x in Path(f'hybrid-artifacts/{arm}.log').read_text().splitlines() if x.startswith('HYBRID_RESULT '))
+              results[arm]=dict(x.split('=',1) for x in line.split()[1:])
+          for arm in results:
+              calls=int(results[arm]['loanPhaseCalls'])
+              assert calls>0, (arm,calls)
+          assert max(int(results[a]['loanPhaseCalls']) for a in ('B1','B2')) < min(int(results[a]['loanPhaseCalls']) for a in ('A1','A2'))
+          for key in ('wall','cpu','allocatedBytes','loanPhaseCalls'):
+              a=sum(float(results[x][key]) for x in ('A1','A2'))/2
+              b=sum(float(results[x][key]) for x in ('B1','B2'))/2
+              print(f'HYBRID_ABBA metric={key} reference={a:.6f} candidate={b:.6f} ratio={a/b if b else float("inf"):.6f}')
+          print('HYBRID_GATE H01 exact_checkpoints=4 candidate_scope=finance_deadlines macro_target_proven=false')
+          PY
+      - name: Gate next architecture on organically grown 100-resident city
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p hybrid-artifacts/organic
+          runner=src/IndexCities.Headless/bin/Release/net8.0/IndexCities.Headless.dll
+          dotnet "$runner" hybrid-prepare 42 hybrid-artifacts/organic/input.json organic100 | tee hybrid-artifacts/organic/prepare.log
+          for arm in A1 B1 B2 A2; do
+            mode=reference
+            if [[ $arm == B* ]]; then mode=calendar; fi
+            dotnet "$runner" hybrid-run hybrid-artifacts/organic/input.json "$mode" "hybrid-artifacts/organic/$arm" | tee "hybrid-artifacts/organic/$arm.log"
+          done
+          for i in 1 2 3 4; do
+            for arm in B1 B2 A2; do
+              cmp "hybrid-artifacts/organic/A1/checkpoint-$i.json" "hybrid-artifacts/organic/$arm/checkpoint-$i.json"
+            done
+            echo "HYBRID_ORGANIC_PARITY checkpoint=$i exact=true"
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          r={}
+          for arm in ('A1','B1','B2','A2'):
+              line=next(x for x in Path(f'hybrid-artifacts/organic/{arm}.log').read_text().splitlines() if x.startswith('HYBRID_RESULT '))
+              r[arm]=dict(x.split('=',1) for x in line.split()[1:])
+          for arm in r:
+              assert int(r[arm]['initialAlive'])>=100
+          for key in ('wall','cpu','allocatedBytes','loanPhaseCalls'):
+              a=sum(float(r[x][key]) for x in ('A1','A2'))/2
+              b=sum(float(r[x][key]) for x in ('B1','B2'))/2
+              print(f'HYBRID_ORGANIC_ABBA metric={key} reference={a:.6f} candidate={b:.6f} ratio={a/b if b else float("inf"):.6f}')
+          print('HYBRID_ORGANIC_GATE organic_start_ge100=true exact_checkpoints=4 sustained_population_not_proven=true macro_target_proven=false')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hybrid-causal-differential
+          path: hybrid-artifacts/
+          retention-days: 14
+      - name: Publish completed status
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          case "$JOB_STATUS" in
+            success) state=success ;;
+            failure) state=failure ;;
+            *) state=error ;;
+          esac
+          gh api -X POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" -f state="$state" -f context=hybrid/causal-differential -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" -f description="Hybrid differential $JOB_STATUS"
