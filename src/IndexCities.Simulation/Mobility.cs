@@ -240,7 +240,9 @@ public sealed partial class CitySimulation
         // another body may have changed a non-admitted vehicle in the last slice.
         // Select the live reservation workset, including legacy orphan timestamps.
         // Both cleanup methods are no-ops outside these predicates; preserve list order.
-        if(ExperimentalCausalCalendarEnabled&&_vehicleMovementBatch!=null&&operationsDt==null){
+        if(ExperimentalCausalCalendarEnabled&&_vehicleMovementBatch!=null){
+            // The same reservation predicates apply at the operation boundary:
+            // dispatch may change later, but cleanup precedes every operation.
             foreach(var vehicle in State.Vehicles){
                 if(vehicle.IntersectionClaim!=null||vehicle.IntersectionEnteredAt!=null)ClearPassedJunction(vehicle);
                 if(vehicle.ManoeuvreDock!=null||vehicle.ManoeuvreSpaces.Count!=0)ReleaseManoeuvre(vehicle);
